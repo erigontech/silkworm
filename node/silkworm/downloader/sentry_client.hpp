@@ -57,6 +57,7 @@ class SentryClient : public rpc::Client<sentry::Sentry>, public ActiveComponent 
     void subscribe(Scope, subscriber_t callback);  // subscribe with sentry to receive messages
 
     /*[[long_running]]*/ void execution_loop() override;  // do a long-running loop to wait for messages
+    /*[[long_running]]*/ void stats_receiving_loop();  // do a long-running loop to wait for peer statistics
 
     static Scope scope(const sentry::InboundMessage& message);  // find the scope of the message
 

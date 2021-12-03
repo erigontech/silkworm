@@ -44,7 +44,7 @@ TEST_CASE("Proof-of-Stake consensus engine") {
     parent.header.gas_limit = header.gas_limit;
     parent.header.base_fee_per_gas = 1'000'000'000;
 
-    EthashEngine ethash_engine{kMainnetConfig};
+//    EthashEngine ethash_engine{kMainnetConfig};
     ProofOfStakeEngine pos_engine{kMainnetConfig};
 
     header.base_fee_per_gas = pos_engine.expected_base_fee_per_gas(header, parent.header);
@@ -52,7 +52,7 @@ TEST_CASE("Proof-of-Stake consensus engine") {
     InMemoryState state;
     state.insert_block(parent, header.parent_hash);
 
-    CHECK(ethash_engine.validate_block_header(header, state, /*with_future_timestamp_check=*/false) ==
+//    CHECK(ethash_engine.validate_block_header(header, state, /*with_future_timestamp_check=*/false) ==
           ValidationResult::kWrongDifficulty);
 
     CHECK(pos_engine.validate_block_header(header, state, /*with_future_timestamp_check=*/false) ==

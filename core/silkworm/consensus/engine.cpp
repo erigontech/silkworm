@@ -26,7 +26,7 @@ namespace silkworm::consensus {
 void IConsensusEngine::finalize(IntraBlockState&, const Block&, const evmc_revision&) {}
 
 ValidationResult pre_validate_transaction(const Transaction& txn, uint64_t block_number, const ChainConfig& config,
-                                      const std::optional<intx::uint256>& base_fee_per_gas) {
+                                          const std::optional<intx::uint256>& base_fee_per_gas) {
     const evmc_revision rev{config.revision(block_number)};
 
     if (txn.chain_id.has_value()) {
@@ -66,6 +66,11 @@ ValidationResult pre_validate_transaction(const Transaction& txn, uint64_t block
     const intx::uint128 g0{intrinsic_gas(txn, rev >= EVMC_HOMESTEAD, rev >= EVMC_ISTANBUL)};
     if (txn.gas_limit < g0) {
         return ValidationResult::kIntrinsicGas;
+    }
+
+    // EIP-2681: Limit account nonce to 2^64-1
+    if (txn.nonce >= UINT64_MAX) {
+        return ValidationResult::kNonceTooHigh;
     }
 
     return ValidationResult::kOk;

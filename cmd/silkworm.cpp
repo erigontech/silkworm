@@ -235,9 +235,10 @@ int main(int argc, char* argv[]) {
 
         // Deploy and check tables
         {
-            auto tx{chaindata_env.start_write()};
-            db::table::check_or_create_chaindata_tables(tx);
+            db::RWTxn tx(chaindata_env);
+            db::table::check_or_create_chaindata_tables(*tx);
             tx.commit();
+            log::Message() << "Schema version " << db::read_schema_version(*tx)->to_string();
         }
 
         // Check db is initialized with chain config

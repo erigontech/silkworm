@@ -40,7 +40,7 @@ std::optional<VersionBase> read_schema_version(mdbx::txn& txn) noexcept {
     return VersionBase{Major, Minor, Patch};
 }
 
-void write_schema_version(mdbx::txn& txn, VersionBase& schema_version) {
+void write_schema_version(mdbx::txn& txn, const VersionBase& schema_version) {
     auto old_schema_version{read_schema_version(txn)};
     if (old_schema_version.has_value()) {
         if (schema_version == old_schema_version.value()) {

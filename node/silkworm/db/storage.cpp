@@ -196,6 +196,11 @@ std::unique_ptr<PruneMode> parse_prune_mode(const std::string& mode, const Prune
     if (beforeCallTraces.has_value())
         call_traces = std::make_unique<BlockAmount>(BlockAmount::Type::kBefore, *beforeCallTraces);
 
+    if(!history) history = std::make_unique<BlockAmount>();
+    if(!receipts) receipts = std::make_unique<BlockAmount>();
+    if(!tx_index) tx_index = std::make_unique<BlockAmount>();
+    if(!call_traces) call_traces = std::make_unique<BlockAmount>();
+
     return std::make_unique<PruneMode>(*history.release(), *receipts.release(), *tx_index.release(),
                                        *call_traces.release());
 }

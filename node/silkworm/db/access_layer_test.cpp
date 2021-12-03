@@ -23,6 +23,7 @@
 #include <silkworm/common/test_context.hpp>
 #include <silkworm/db/buffer.hpp>
 #include <silkworm/db/storage.hpp>
+#include <silkworm/db/tables.hpp>
 #include <silkworm/execution/execution.hpp>
 #include <silkworm/stagedsync/stagedsync.hpp>
 
@@ -203,27 +204,41 @@ namespace db {
         REQUIRE(thrown);
     }
 
-    TEST_CASE("Read schema Version") {
+    TEST_CASE("Schema Version") {
         test::Context context(/*with_create_tables=*/false);
 
-        auto version{db::read_schema_version(context.txn())};
-        CHECK(version.has_value() == false);
+        SECTION("Read/Write") {
+            auto version{db::read_schema_version(context.txn())};
+            CHECK(version.has_value() == false);
 
-        version = VersionBase{3, 0, 0};
-        CHECK_NOTHROW(db::write_schema_version(context.txn(), version.value()));
-        version = db::read_schema_version(context.txn());
-        CHECK(version.has_value() == true);
+            version = VersionBase{3, 0, 0};
+            CHECK_NOTHROW(db::write_schema_version(context.txn(), version.value()));
+            context.commit_and_renew_txn();
+            version = db::read_schema_version(context.txn());
+            CHECK(version.has_value() == true);
 
-        context.commit_and_renew_txn();
+            auto version2{db::read_schema_version(context.txn())};
+            CHECK(version.value() == version2.value());
 
-        auto version2{db::read_schema_version(context.txn())};
-        CHECK(version.value() == version2.value());
+            version2 = VersionBase{2, 0, 0};
+            CHECK_THROWS(db::write_schema_version(context.txn(), version2.value()));
 
-        version2 = VersionBase{2, 0, 0};
-        CHECK_THROWS(db::write_schema_version(context.txn(), version2.value()));
+            version2 = VersionBase{3, 1, 0};
+            CHECK_NOTHROW(db::write_schema_version(context.txn(), version2.value()));
+        }
 
-        version2 = VersionBase{3, 1, 0};
-        CHECK_NOTHROW(db::write_schema_version(context.txn(), version2.value()));
+        SECTION("Incompatible schema") {
+            // Reduce compat schema version
+            auto incompat_version = VersionBase{db::table::kRequiredSchemaVersion.Major - 1, 0, 0};
+            REQUIRE_NOTHROW(db::write_schema_version(context.txn(), incompat_version));
+            REQUIRE_THROWS(db::table::check_or_create_chaindata_tables(context.txn()));
+        }
+
+        SECTION("Incompatible table") {
+            (void)context.txn().create_map(db::table::kBlockBodies.name, mdbx::key_mode::reverse,
+                                           mdbx::value_mode::multi_reverse);
+            REQUIRE_THROWS(db::table::check_or_create_chaindata_tables(context.txn()));
+        }
     }
 
     TEST_CASE("Storage and Prune Modes") {

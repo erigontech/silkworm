@@ -43,7 +43,6 @@ class EthashEngine : public EngineBase {
     void finalize(IntraBlockState& state, const Block& block, evmc_revision revision) override;
 
   private:
-    std::optional<int> epoch_number_{std::nullopt};
     ethash::epoch_context_ptr epoch_context_{nullptr, ethash_destroy_epoch_context};
 };
 

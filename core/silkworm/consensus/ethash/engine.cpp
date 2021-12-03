@@ -46,9 +46,9 @@ void EthashEngine::finalize(IntraBlockState& state, const Block& block, const ev
 // Ethash ProofOfWork verification
 ValidationResult EthashEngine::validate_seal(const BlockHeader& header) {
     const int epoch_number{static_cast<int>(header.number / ethash::epoch_length)};
-    if (epoch_number != epoch_number_) {
+    if (!epoch_context_ || epoch_context_->epoch_number != epoch_number) {
+        epoch_context_.reset(); // Firstly release the obsoleted context
         epoch_context_ = ethash::create_epoch_context(epoch_number);
-        epoch_number_ = epoch_number;
     }
 
     const auto nonce{endian::load_big_u64(header.nonce.data())};

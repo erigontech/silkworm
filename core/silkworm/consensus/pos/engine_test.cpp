@@ -53,7 +53,7 @@ TEST_CASE("Proof-of-Stake consensus engine") {
     state.insert_block(parent, header.parent_hash);
 
 //    CHECK(ethash_engine.validate_block_header(header, state, /*with_future_timestamp_check=*/false) ==
-          ValidationResult::kWrongDifficulty);
+//          ValidationResult::kWrongDifficulty);
 
     CHECK(pos_engine.validate_block_header(header, state, /*with_future_timestamp_check=*/false) ==
           ValidationResult::kOk);

@@ -43,6 +43,7 @@ enum class [[nodiscard]] ValidationResult{
     kWrongBaseFee,       // see EIP-1559
     kInvalidSeal,        // Nonce or mix_hash (invalid Proof of Work)
     kInvalidMixHash,     // Invalid mix_hash (Clique, EIP-225)
+    kNonceTooHigh,       // Tn ≥ 2^64 - 1 (EIP-2681)
 
     // See [YP] Section 6.2 "Execution", Eq (58)
     kMissingSender,          // S(T) = ∅

@@ -27,6 +27,8 @@ inline constexpr ChainConfig kLondonConfig{
     1,  // chain_id
     SealEngineType::kNoProof,
     {0, 0, 0, 0, 0, 0, 0, 0, 0},
+    std::nullopt,  // dao_block
+    0,             // muir_glacier_block
 };
 
 static_assert(kLondonConfig.revision(0) == EVMC_LONDON);

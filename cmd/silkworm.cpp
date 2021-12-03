@@ -14,6 +14,7 @@
     limitations under the License.
 */
 
+#include <memory>
 #include <optional>
 #include <regex>
 
@@ -181,14 +182,26 @@ void parse_command_line(CLI::App& cli, int argc, char* argv[], log::Settings& lo
     if (node_settings.chaindata_env_config.growth_size > node_settings.chaindata_env_config.max_size / 2) {
         throw std::invalid_argument("--chaindata.growthsize too wide");
     }
+
     node_settings.batch_size = parse_size(batch_size).value();
     node_settings.etl_buffer_size = parse_size(etl_buffer_size).value();
-    node_settings.prune_mode = db::parse_prune_mode(prune_mode);
-    if (cli["--prune.h.older"]->count()) node_settings.prune_mode.history = cli["--prune.h.older"]->as<BlockNum>();
-    if (cli["--prune.r.older"]->count()) node_settings.prune_mode.receipts = cli["--prune.r.older"]->as<BlockNum>();
-    if (cli["--prune.t.older"]->count()) node_settings.prune_mode.tx_index = cli["--prune.t.older"]->as<BlockNum>();
-    if (cli["--prune.c.older"]->count()) node_settings.prune_mode.call_traces = cli["--prune.c.older"]->as<BlockNum>();
-    // TODO (Andrea) - Prune before
+
+    // Parse prune mode
+    std::optional<BlockNum> olderHistory, olderReceipts, olderTxIndex, olderCallTraces;
+    if (cli["--prune.h.older"]->count()) olderHistory.emplace(cli["--prune.h.older"]->as<BlockNum>());
+    if (cli["--prune.r.older"]->count()) olderReceipts.emplace(cli["--prune.r.older"]->as<BlockNum>());
+    if (cli["--prune.t.older"]->count()) olderTxIndex.emplace(cli["--prune.t.older"]->as<BlockNum>());
+    if (cli["--prune.c.older"]->count()) olderCallTraces.emplace(cli["--prune.c.older"]->as<BlockNum>());
+
+    std::optional<BlockNum> beforeHistory, beforeReceipts, beforeTxIndex, beforeCallTraces;
+    if (cli["--prune.h.before"]->count()) beforeHistory.emplace(cli["--prune.h.before"]->as<BlockNum>());
+    if (cli["--prune.r.before"]->count()) beforeReceipts.emplace(cli["--prune.r.before"]->as<BlockNum>());
+    if (cli["--prune.t.before"]->count()) beforeTxIndex.emplace(cli["--prune.t.before"]->as<BlockNum>());
+    if (cli["--prune.c.before"]->count()) beforeCallTraces.emplace(cli["--prune.c.before"]->as<BlockNum>());
+
+    node_settings.prune_mode = db::parse_prune_mode(prune_mode,  //
+                                                    olderHistory, olderReceipts, olderTxIndex, olderCallTraces,
+                                                    beforeHistory, beforeReceipts, beforeTxIndex, beforeCallTraces);
 
     // Set chain
     if (chain_opts_chain_name->count()) {
@@ -206,7 +219,8 @@ int main(int argc, char* argv[]) {
 
         parse_command_line(cli, argc, argv, log_settings, node_settings);
 
-        log::init(log_settings);                      // Initialize logging with cli settings
+        log::init(log_settings);  // Initialize logging with cli settings
+
         node_settings.data_directory->etl().clear();  // Clear previous etl files (if any)
         {
             auto& config = node_settings.chaindata_env_config;
@@ -240,8 +254,8 @@ int main(int argc, char* argv[]) {
                 log::Message() << "Initializing chain configuration for chain id " << node_settings.network_id;
                 db::initialize_genesis(*tx, genesis_json, /*allow_exceptions=*/true);
                 tx.commit();
-                log::Message() << "Initialized chain configuration " << db_chain_config.value().to_json().dump();
                 db_chain_config = db::read_chain_config(*tx);
+                log::Message() << "Initialized chain configuration " << db_chain_config.value().to_json().dump();
             }
 
             if (db_chain_config.value().chain_id != node_settings.network_id) {
@@ -264,20 +278,20 @@ int main(int argc, char* argv[]) {
         {
             db::RWTxn tx(chaindata_env);
             auto db_prune_mode{db::read_prune_mode(*tx)};
-            if (db_prune_mode != node_settings.prune_mode) {
+            if (db_prune_mode != *node_settings.prune_mode) {
                 // In case we have mismatching modes (cli != db) we prevent
                 // further execution ONLY if we've already synced something
                 auto header_download_progress{db::stages::read_stage_progress(*tx, db::stages::kHeadersKey)};
                 if (header_download_progress) {
                     throw std::runtime_error("Can't change prune_mode on already synced data. Expected " +
-                                             node_settings.prune_mode.to_string() + " got " +
+                                             node_settings.prune_mode->to_string() + " got " +
                                              db_prune_mode.to_string());
                 }
-                db::write_prune_mode(*tx, node_settings.prune_mode);
+                db::write_prune_mode(*tx, *node_settings.prune_mode);
                 tx.commit();
-                db_prune_mode = db::read_prune_mode(*tx);
+                node_settings.prune_mode = std::make_unique<db::PruneMode>(db::read_prune_mode(*tx));
             }
-            log::Message() << "Prune mode " << db_prune_mode.to_string();
+            log::Message() << "Prune mode " << node_settings.prune_mode->to_string();
         }
 
         // Do sync stuff here

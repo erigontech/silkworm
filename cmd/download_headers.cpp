@@ -55,6 +55,7 @@ int main(int argc, char* argv[]) {
     log::Info() << "STARTING";
 
     std::thread message_receiving;
+    std::thread stats_receiving;
     std::thread block_request_processing;
     std::thread header_processing;
     int return_value = 0;
@@ -90,6 +91,7 @@ int main(int argc, char* argv[]) {
         sentry.set_status(head_hash, head_td, chain_identity);
         sentry.hand_shake();
         message_receiving = std::thread([&sentry]() { sentry.execution_loop(); });
+        stats_receiving = std::thread([&sentry]() { sentry.stats_receiving_loop(); });
 
         // Block provider - provides headers and bodies to external peers
         BlockProvider block_provider{sentry, Db::ReadOnlyAccess{db}};
@@ -121,6 +123,7 @@ int main(int argc, char* argv[]) {
 
     // wait threads termination
     if (message_receiving.joinable()) message_receiving.join();
+    if (stats_receiving.joinable()) message_receiving.join();
     if (block_request_processing.joinable()) block_request_processing.join();
     if (header_processing.joinable()) header_processing.join();
 

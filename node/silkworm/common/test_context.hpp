@@ -27,7 +27,7 @@ namespace silkworm::test {
 //! \remarks Context follows the RAII idiom and cleans up its temporary directory upon destruction.
 class Context {
   public:
-    Context();
+    explicit Context(bool with_create_tables = true);
 
     // Not copyable nor movable
     Context(const Context&) = delete;

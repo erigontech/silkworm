@@ -17,7 +17,7 @@
 #ifndef SILKWORM_CONSENSUS_MERGE_ENGINE_HPP_
 #define SILKWORM_CONSENSUS_MERGE_ENGINE_HPP_
 
-#include <silkworm/consensus/ethash/engine.hpp>
+#include <silkworm/consensus/noproof/engine.hpp>
 #include <silkworm/consensus/pos/engine.hpp>
 
 namespace silkworm::consensus {
@@ -43,7 +43,7 @@ class MergeEngine : public IEngine {
     bool terminal_pow_block(const BlockHeader& header, const BlockState& state) const;
 
     intx::uint256 terminal_total_difficulty_;
-    EthashEngine ethash_engine_;
+    NoProofEngine ethash_engine_;
     ProofOfStakeEngine pos_engine_;
 };
 

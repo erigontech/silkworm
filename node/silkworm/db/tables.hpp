@@ -27,6 +27,8 @@ see its common/dbutils/bucket.go.
 */
 namespace silkworm::db::table {
 
+inline constexpr VersionBase kRequiredSchemaVersion{3, 0, 0};  // We're compatible with this
+
 inline constexpr const char* kLastHeaderKey{"LastHeader"};
 
 /* Canonical tables */

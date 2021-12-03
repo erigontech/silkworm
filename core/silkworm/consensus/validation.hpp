@@ -59,6 +59,7 @@ enum class [[nodiscard]] ValidationResult{
     kInvalidSignature,              // EIP-2
     kWrongChainId,                  // EIP-155
     kUnsupportedTransactionType,    // EIP-2718
+    kNonceTooHigh,                  // Tn ≥ 2^64 - 1 (EIP-2681)
 
     // See [YP] Section 11.1 "Ommer Validation", Eq (157)
     kTooManyOmmers,       // ‖BU‖ > 2

@@ -69,6 +69,11 @@ ValidationResult pre_validate_transaction(const Transaction& txn, uint64_t block
         return ValidationResult::kIntrinsicGas;
     }
 
+    // EIP-2681: Limit account nonce to 2^64-1
+    if (txn.nonce >= UINT64_MAX) {
+        return ValidationResult::kNonceTooHigh;
+    }
+
     return ValidationResult::kOk;
 }
 

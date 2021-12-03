@@ -81,6 +81,12 @@ evmc::result EVM::create(const evmc_message& message) noexcept {
     }
 
     const uint64_t nonce{state_.get_nonce(message.sender)};
+    if (nonce + 1 < nonce) {
+        // EIP-2681: Limit account nonce to 2^64-1
+        // See also https://github.com/ethereum/go-ethereum/blob/v1.10.13/core/vm/evm.go#L426
+        res.status_code = EVMC_ARGUMENT_OUT_OF_RANGE;
+        return res;
+    }
     state_.set_nonce(message.sender, nonce + 1);
 
     evmc::address contract_addr{};

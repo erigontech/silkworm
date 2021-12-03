@@ -204,7 +204,7 @@ namespace db {
     }
 
     TEST_CASE("Read schema Version") {
-        test::Context context;
+        test::Context context(/*with_create_tables=*/false);
 
         auto version{db::read_schema_version(context.txn())};
         CHECK(version.has_value() == false);
@@ -231,7 +231,6 @@ namespace db {
         auto& txn{context.txn()};
 
         SECTION("Prune Mode") {
-
             BlockAmount blockAmount;
             REQUIRE(blockAmount.value() == 0);
             REQUIRE(blockAmount.value_from_head(1'000'000) == 0);
@@ -264,7 +263,7 @@ namespace db {
                 bool hasThrown{false};
                 try {
                     (void)db::read_prune_mode(txn);
-                } catch (const std::runtime_error& ) {
+                } catch (const std::runtime_error&) {
                     hasThrown = true;
                 }
                 REQUIRE(hasThrown);

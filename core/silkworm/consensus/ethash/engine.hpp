@@ -18,6 +18,10 @@
 #ifndef SILKWORM_CONSENSUS_ETHASH_ENGINE_HPP_
 #define SILKWORM_CONSENSUS_ETHASH_ENGINE_HPP_
 
+#include <optional>
+
+#include <ethash/ethash.hpp>
+
 #include <silkworm/consensus/base/engine.hpp>
 
 namespace silkworm::consensus {
@@ -37,6 +41,10 @@ class EthashEngine : public EngineBase {
     //! \param [in] block: current block to apply rewards for.
     //! \param [in] revision: EVM fork.
     void finalize(IntraBlockState& state, const Block& block, evmc_revision revision) override;
+
+  private:
+    std::optional<int> epoch_number_{std::nullopt};
+    ethash::epoch_context_ptr epoch_context_{nullptr, ethash_destroy_epoch_context};
 };
 
 }  // namespace silkworm::consensus

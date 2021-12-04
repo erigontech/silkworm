@@ -123,9 +123,7 @@ void Buffer::write_to_state_table() {
 
     for (const auto& address : addresses) {
         if (auto it{accounts_.find(address)}; it != accounts_.end()) {
-            if (state_table.seek(to_slice(address))) {
-                state_table.erase();
-            }
+            state_table.erase(to_slice(address));
             if (it->second.has_value()) {
                 Bytes encoded{it->second->encode_for_storage()};
                 state_table.upsert(to_slice(address), to_slice(encoded));

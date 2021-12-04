@@ -171,20 +171,14 @@ static void revert_state(ByteView key, ByteView value, mdbx::cursor& plain_state
                     Bytes key_hash(kAddressLength + 8, '\0');
                     std::memcpy(&key_hash[0], key.data(), kAddressLength);
                     endian::store_big_u64(&key_hash[kAddressLength], i);
-                    if (plain_code_table.seek(db::to_slice(key_hash))) {
-                        plain_code_table.erase();
-                    }
+                    plain_code_table.erase(db::to_slice(key_hash));
                 }
             }
             auto new_encoded_account{account.encode_for_storage(false)};
-            if (plain_state_table.seek(db::to_slice(key))) {
-                plain_state_table.erase(/*whole_multivalue*/ true);
-            }
+            plain_state_table.erase(db::to_slice(key), /*whole_multivalue=*/ true);
             plain_state_table.upsert(db::to_slice(key), db::to_slice(new_encoded_account));
         } else {
-            if (plain_code_table.seek(db::to_slice(key))) {
-                plain_code_table.erase();
-            }
+            plain_state_table.erase(db::to_slice(key));
         }
         return;
     }

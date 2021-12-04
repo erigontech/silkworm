@@ -86,7 +86,6 @@ void Collector::load(mdbx::cursor& target, LoadFunc load_func, MDBX_put_flags_t 
                 mdbx::slice k{db::to_slice(etl_entry.key)};
 
                 if (etl_entry.value.empty()) {
-                    // TODO (Andrew) test case
                     target.erase(k);
                 } else {
                     mdbx::slice v{db::to_slice(etl_entry.value)};

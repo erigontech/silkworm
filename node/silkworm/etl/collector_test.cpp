@@ -31,9 +31,7 @@ static std::vector<Entry> generate_entry_set(size_t size) {
     std::set<Bytes> keys;
     while (pairs.size() < size) {
         Bytes key(8, '\0');
-        Bytes value(8, '\0');
         endian::store_big_u64(&key[0], static_cast<unsigned>(std::rand()) % 200000000u);
-        endian::store_big_u64(&value[0], static_cast<unsigned>(std::rand()) % 200000000u);
 
         if (keys.count(key)) {
             // we want unique keys
@@ -41,8 +39,14 @@ static std::vector<Entry> generate_entry_set(size_t size) {
         } else {
             keys.insert(key);
         }
-
-        pairs.push_back({key, value});
+        if (pairs.size() % 100) {
+            Bytes value(8, '\0');
+            endian::store_big_u64(&value[0], static_cast<unsigned>(std::rand()) % 200000000u);
+            pairs.push_back({key, value});
+        } else {
+            Bytes value;
+            pairs.push_back({key, value});
+        }
     }
     return pairs;
 }
@@ -54,8 +58,9 @@ void run_collector_test(LoadFunc load_func, bool do_copy = true) {
     std::srand(std::time(nullptr));
 
     // Generate Test Entries
-    auto set{generate_entry_set(1000)};                               // 1000 entries in total
-    auto collector{Collector(context.dir().etl().path(), 100 * 16)};  // 100 entries per file (16 bytes per entry)
+    auto set{generate_entry_set(1000)};  // 1000 entries in total
+    auto collector{Collector(context.dir().etl().path(),
+                             100 * 16 - 8 * 10)};  // 100 entries per file (16 bytes per entry) minus 10 keys empty
 
     // Collection
     for (auto&& entry : set) {

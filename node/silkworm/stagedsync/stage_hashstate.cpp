@@ -302,7 +302,6 @@ static void hashstate_unwind(mdbx::txn& txn, BlockNum unwind_to, HashstateOperat
                 rlp::success_or_throw(err);
 
                 if (acc.incarnation <= 0 || acc.code_hash != kEmptyHash) {
-                    target_table.erase(new_key);
                     target_table.upsert(new_key, db::to_slice(db_value));
                     return true;
                 }
@@ -318,7 +317,6 @@ static void hashstate_unwind(mdbx::txn& txn, BlockNum unwind_to, HashstateOperat
                 }
 
                 auto new_value(acc.encode_for_storage());
-                target_table.erase(new_key);
                 target_table.upsert(new_key, db::to_slice(new_value));
                 return true;
             };
@@ -360,7 +358,6 @@ static void hashstate_unwind(mdbx::txn& txn, BlockNum unwind_to, HashstateOperat
                 Bytes hashed_key(kHashLength + db::kIncarnationLength, '\0');
                 std::memcpy(&hashed_key[0], address_hash.bytes, kHashLength);
                 std::memcpy(&hashed_key[kHashLength], db::block_key(incarnation).data(), db::kIncarnationLength);
-                target_table.erase(db::to_slice(hashed_key));
                 target_table.upsert(db::to_slice(hashed_key), code_hash_data.value);
                 return true;
             };

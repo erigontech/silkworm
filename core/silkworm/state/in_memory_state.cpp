@@ -69,53 +69,53 @@ uint64_t InMemoryState::previous_incarnation(const evmc::address& address) const
 
 std::optional<BlockHeader> InMemoryState::read_header(uint64_t block_number,
                                                       const evmc::bytes32& block_hash) const noexcept {
-    if (!headers_.count(block_number)) {
-        return std::nullopt;
+    const auto it1{headers_.find(block_number)};
+    if (it1 != headers_.end()) {
+        const auto it2{it1->second.find(block_hash)};
+        if (it2 != it1->second.end()) {
+            return it2->second;
+        }
     }
-    auto it{headers_.at(block_number).find(block_hash)};
-    if (it == headers_.at(block_number).end()) {
-        return std::nullopt;
-    }
-    return it->second;
+    return std::nullopt;
 }
 
 std::optional<BlockBody> InMemoryState::read_body(uint64_t block_number,
                                                   const evmc::bytes32& block_hash) const noexcept {
-    if (!bodies_.count(block_number)) {
-        return std::nullopt;
+    const auto it1{bodies_.find(block_number)};
+    if (it1 != bodies_.end()) {
+        const auto it2{it1->second.find(block_hash)};
+        if (it2 != it1->second.end()) {
+            return it2->second;
+        }
     }
-    auto it{bodies_.at(block_number).find(block_hash)};
-    if (it == bodies_.at(block_number).end()) {
-        return std::nullopt;
-    }
-    return it->second;
+    return std::nullopt;
 }
 
 std::optional<intx::uint256> InMemoryState::total_difficulty(uint64_t block_number,
                                                              const evmc::bytes32& block_hash) const noexcept {
-    if (!difficulty_.count(block_number)) {
-        return std::nullopt;
+    const auto it1{difficulty_.find(block_number)};
+    if (it1 != difficulty_.end()) {
+        const auto it2{it1->second.find(block_hash)};
+        if (it2 != it1->second.end()) {
+            return it2->second;
+        }
     }
-
-    auto it{difficulty_.at(block_number).find(block_hash)};
-    if (it == difficulty_.at(block_number).end()) {
-        return std::nullopt;
-    }
-    return it->second;
+    return std::nullopt;
 }
 
 uint64_t InMemoryState::current_canonical_block() const {
-    if (!canonical_hashes_.size()) {
+    if (canonical_hashes_.empty()) {
         return 0;
     }
     return canonical_hashes_.rbegin()->first;
 }
 
 std::optional<evmc::bytes32> InMemoryState::canonical_hash(uint64_t block_number) const {
-    if (!canonical_hashes_.count(block_number)) {
-        return std::nullopt;
+    const auto& ret{canonical_hashes_.find(block_number)};
+    if (ret != canonical_hashes_.end()) {
+        return ret->second;
     }
-    return canonical_hashes_.at(block_number);
+    return std::nullopt;
 }
 
 void InMemoryState::insert_block(const Block& block, const evmc::bytes32& hash) {

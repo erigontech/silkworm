@@ -61,7 +61,7 @@ class EngineBase : public IEngine {
 
     //! \brief See [YP] Section 11.1 "Ommer Validation"
     bool is_kin(const BlockHeader& branch_header, const BlockHeader& mainline_header,
-                const evmc::bytes32& mainline_hash, unsigned n, const BlockState& state,
+                const evmc::bytes32& mainline_hash, unsigned int n, const BlockState& state,
                 std::vector<BlockHeader>& old_ommers);
 };
 

@@ -69,12 +69,11 @@ uint64_t InMemoryState::previous_incarnation(const evmc::address& address) const
 
 std::optional<BlockHeader> InMemoryState::read_header(uint64_t block_number,
                                                       const evmc::bytes32& block_hash) const noexcept {
-    if (block_number >= headers_.size()) {
+    if (!headers_.count(block_number)) {
         return std::nullopt;
     }
-
-    auto it{headers_[block_number].find(block_hash)};
-    if (it == headers_[block_number].end()) {
+    auto it{headers_.at(block_number).find(block_hash)};
+    if (it == headers_.at(block_number).end()) {
         return std::nullopt;
     }
     return it->second;
@@ -82,12 +81,11 @@ std::optional<BlockHeader> InMemoryState::read_header(uint64_t block_number,
 
 std::optional<BlockBody> InMemoryState::read_body(uint64_t block_number,
                                                   const evmc::bytes32& block_hash) const noexcept {
-    if (block_number >= bodies_.size()) {
+    if (!bodies_.count(block_number)) {
         return std::nullopt;
     }
-
-    auto it{bodies_[block_number].find(block_hash)};
-    if (it == bodies_[block_number].end()) {
+    auto it{bodies_.at(block_number).find(block_hash)};
+    if (it == bodies_.at(block_number).end()) {
         return std::nullopt;
     }
     return it->second;
@@ -95,43 +93,36 @@ std::optional<BlockBody> InMemoryState::read_body(uint64_t block_number,
 
 std::optional<intx::uint256> InMemoryState::total_difficulty(uint64_t block_number,
                                                              const evmc::bytes32& block_hash) const noexcept {
-    if (block_number >= difficulty_.size()) {
+    if (!difficulty_.count(block_number)) {
         return std::nullopt;
     }
 
-    auto it{difficulty_[block_number].find(block_hash)};
-    if (it == difficulty_[block_number].end()) {
+    auto it{difficulty_.at(block_number).find(block_hash)};
+    if (it == difficulty_.at(block_number).end()) {
         return std::nullopt;
     }
     return it->second;
 }
 
-uint64_t InMemoryState::current_canonical_block() const { return canonical_hashes_.size() - 1; }
+uint64_t InMemoryState::current_canonical_block() const {
+    if (!canonical_hashes_.size()) {
+        return 0;
+    }
+    return canonical_hashes_.rbegin()->first;
+}
 
 std::optional<evmc::bytes32> InMemoryState::canonical_hash(uint64_t block_number) const {
-    if (block_number >= canonical_hashes_.size()) {
+    if (!canonical_hashes_.count(block_number)) {
         return std::nullopt;
     }
-
-    return canonical_hashes_[block_number];
+    return canonical_hashes_.at(block_number);
 }
 
 void InMemoryState::insert_block(const Block& block, const evmc::bytes32& hash) {
     uint64_t block_number{block.header.number};
 
-    if (headers_.size() <= block_number) {
-        headers_.resize(block_number + 1);
-    }
     headers_[block_number][hash] = block.header;
-
-    if (bodies_.size() <= block_number) {
-        bodies_.resize(block_number + 1);
-    }
     bodies_[block_number][hash] = block;
-
-    if (difficulty_.size() <= block_number) {
-        difficulty_.resize(block_number + 1);
-    }
     if (block_number == 0) {
         difficulty_[block_number][hash] = 0;
     } else {
@@ -141,13 +132,10 @@ void InMemoryState::insert_block(const Block& block, const evmc::bytes32& hash) 
 }
 
 void InMemoryState::canonize_block(uint64_t block_number, const evmc::bytes32& block_hash) {
-    if (canonical_hashes_.size() <= block_number) {
-        canonical_hashes_.resize(block_number + 1);
-    }
     canonical_hashes_[block_number] = block_hash;
 }
 
-void InMemoryState::decanonize_block(uint64_t block_number) { canonical_hashes_.resize(block_number); }
+void InMemoryState::decanonize_block(uint64_t block_number) { (void)canonical_hashes_.erase(block_number); }
 
 void InMemoryState::insert_receipts(uint64_t, const std::vector<Receipt>&) {}
 

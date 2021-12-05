@@ -46,6 +46,8 @@ namespace detail {
 ::mdbx::env_managed open_env(const EnvConfig& config) {
     namespace fs = std::filesystem;
 
+    std::optional<size_t> db_file_size;
+
     if (config.path.empty()) {
         throw std::invalid_argument("Invalid argument : config.path");
     }
@@ -55,19 +57,29 @@ namespace detail {
     if (db_path.has_filename()) {
         db_path += std::filesystem::path::preferred_separator;  // Remove ambiguity. It has to be a directory
     }
+    if (!fs::exists(db_path)) {
+        fs::create_directories(db_path);
+    } else if (!fs::is_directory(db_path)) {
+        throw std::runtime_error("Path " + db_path.string() + " is not valid");
+    }
+
     fs::path db_file{db::get_datafile_path(db_path)};
-    if (!config.create) {
-        if (!fs::exists(db_path) || !fs::is_directory(db_path) || fs::is_empty(db_path) || !fs::exists(db_file) ||
-            !fs::is_regular_file(db_file) || !fs::file_size(db_file)) {
-            throw std::runtime_error("Unable to locate " + db_file.string() + ", which is required to exist");
-        }
-    } else {
-        if (!fs::exists(db_path)) {
-            fs::create_directories(db_path);
-        } else {
-            if (fs::exists(db_file)) {
-                throw std::runtime_error("File " + db_file.string() + " already exists but create was set");
-            }
+    if (fs::exists(db_file)) {
+        db_file_size.emplace(fs::file_size(db_file));
+    }
+
+    if (!config.create && !db_file_size.has_value()) {
+        throw std::runtime_error("Unable to locate " + db_file.string() + ", which is required to exist");
+    } else if (config.create && db_file_size.has_value()) {
+        throw std::runtime_error("File " + db_file.string() + " already exists but create was set");
+    }
+
+    // Prevent mapping a file with a smaller map size than the size on disk.
+    // Opening would not fail but only a part of data would be mapped.
+    if (db_file_size.has_value()) {
+        if (db_file_size.value() > config.max_size) {
+            throw std::runtime_error("Database map size is too small. Min required " +
+                                     human_size(db_file_size.value()));
         }
     }
 
@@ -97,9 +109,9 @@ namespace detail {
     }
 
     ::mdbx::env_managed::create_parameters cp{};  // Default create parameters
-    if (!(config.shared)) {
-        const intptr_t max_map_size = config.inmemory ? 64_Mebi : 2_Tebi;
-        const intptr_t growth_size = config.inmemory ? 2_Mebi : 2_Gibi;
+    if (!config.shared) {
+        auto max_map_size = static_cast<intptr_t>(config.inmemory ? 64_Mebi : config.max_size);
+        auto growth_size = static_cast<intptr_t>(config.inmemory ? 2_Mebi : config.growth_size);
         cp.geometry.make_dynamic(::mdbx::env::geometry::default_value, max_map_size);
         cp.geometry.growth_step = growth_size;
         cp.geometry.pagesize = 4_Kibi;

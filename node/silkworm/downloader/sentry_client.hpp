@@ -19,8 +19,11 @@
 
 #include <interfaces/sentry.grpc.pb.h>
 
-#include "internals/grpc_sync_client.hpp"
-#include "internals/sentry_type_casts.hpp"
+#include <silkworm/chain/identity.hpp>
+#include <silkworm/concurrency/active_component.hpp>
+#include <silkworm/downloader/internals/grpc_sync_client.hpp>
+#include <silkworm/downloader/internals/sentry_type_casts.hpp>
+#include <silkworm/downloader/internals/types.hpp>
 
 namespace silkworm {
 
@@ -29,29 +32,43 @@ namespace silkworm {
  * It connects to the Sentry, send rpc and receive reply.
  */
 
-// An rpc
-using SentryRpc = rpc::Call<sentry::Sentry>;
-
 /*
  * A client to connect to a remote sentry
  * The remote sentry must implement the ethereum p2p protocol and must have an interface specified by sentry.proto
  * SentryClient uses gRPC/protobuf to communicate with the remote sentry.
  */
-class SentryClient : public rpc::Client<sentry::Sentry> {
+class SentryClient : public rpc::Client<sentry::Sentry>, public ActiveComponent {
   public:
     using base_t = rpc::Client<sentry::Sentry>;
+    using subscriber_t = std::function<void(const sentry::InboundMessage&)>;
 
-    explicit SentryClient(std::string sentry_addr);  // connect to the remote sentry
+    explicit SentryClient(const std::string& sentry_addr);  // connect to the remote sentry
     SentryClient(const SentryClient&) = delete;
     SentryClient(SentryClient&&) = delete;
 
-    void exec_remotely(SentryRpc& rpc);  // send a rpc request to the remote sentry
+    void set_status(Hash head_hash, BigInt head_td, const ChainIdentity&);  // init the remote sentry
 
-    void stop() { stopping_.store(true); }
-    bool is_stopping() const { return stopping_.load(); }
+    using base_t::exec_remotely;  // exec_remotely(SentryRpc& rpc) sends a rpc request to the remote sentry
+
+    enum Scope { BlockRequests = 0x01, BlockAnnouncements = 0x02, Other = 0x04 };
+    // enum values enable bit masking, for example: cope = BlockRequests & BlockAnnouncements
+
+    void subscribe(Scope, subscriber_t callback);  // subscribe with sentry to receive messages
+
+    /*[[long_running]]*/ void execution_loop() override;  // do a long-running loop to wait for messages
+
+    static Scope scope(const sentry::InboundMessage& message);  // find the scope of the message
 
   protected:
-    std::atomic<bool> stopping_{false};
+    void publish(const sentry::InboundMessage&);  // notifying registered subscribers
+
+    std::map<Scope, std::list<subscriber_t>> subscribers_;  // todo: optimize
+};
+
+// custom exception
+class SentryClientException : public std::runtime_error {
+  public:
+    explicit SentryClientException(const std::string& cause) : std::runtime_error(cause) {}
 };
 
 }  // namespace silkworm

@@ -1,5 +1,5 @@
 #[[
-   Copyright 2020 The Silkworm Authors
+   Copyright 2020-2021 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -14,7 +14,6 @@
    limitations under the License.
 ]]
 
-set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED YES)
 set(CMAKE_CXX_EXTENSIONS NO)
 
@@ -25,3 +24,7 @@ set(CMAKE_CXX_VISIBILITY_PRESET hidden)
 set(CMAKE_VISIBILITY_INLINES_HIDDEN YES)
 
 cmake_policy(SET CMP0063 NEW)
+
+if(CMAKE_HOST_SYSTEM_PROCESSOR STREQUAL "arm64")
+  set(CMAKE_OSX_ARCHITECTURES "arm64" CACHE STRING "")
+endif()

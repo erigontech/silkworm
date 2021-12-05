@@ -43,10 +43,10 @@ int main(int argc, char* argv[]) {
 
     try {
         auto env{db::open_env(db_config)};
-        stagedsync::TransactionManager tm{env};
+        db::RWTxn tm{env};
         stagedsync::success_or_throw(stagedsync::unwind_log_index(tm, data_dir.etl().path(), unwind_to));
     } catch (const std::exception& ex) {
-        SILKWORM_LOG(LogLevel::Error) << ex.what() << std::endl;
+        log::Error() << ex.what();
         return -5;
     }
     return 0;

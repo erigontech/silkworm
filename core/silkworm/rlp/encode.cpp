@@ -17,7 +17,6 @@
 #include "encode.hpp"
 
 #include <silkworm/common/endian.hpp>
-#include <silkworm/common/util.hpp>
 
 namespace silkworm::rlp {
 
@@ -39,11 +38,6 @@ size_t length_of_length(uint64_t payload_length) {
     } else {
         return 1 + 8 - intx::clz(payload_length) / 8;
     }
-}
-
-void encode(Bytes& to, const evmc::bytes32& hash) {
-    to.push_back(kEmptyStringCode + kHashLength);
-    to.append(full_view(hash));
 }
 
 void encode(Bytes& to, ByteView s) {

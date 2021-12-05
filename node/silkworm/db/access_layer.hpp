@@ -41,7 +41,7 @@ class MissingSenders : public std::runtime_error {
 std::optional<VersionBase> read_schema_version(mdbx::txn& txn) noexcept;
 
 // Writes database schema version (throws on downgrade)
-void write_schema_version(mdbx::txn& txn, VersionBase& schema_version);
+void write_schema_version(mdbx::txn& txn, const VersionBase& schema_version);
 
 std::optional<BlockHeader> read_header(mdbx::txn& txn, BlockNum block_number, const uint8_t (&hash)[kHashLength]);
 

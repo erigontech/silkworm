@@ -18,14 +18,31 @@
 
 #include <catch2/catch.hpp>
 
+#include <silkworm/chain/difficulty.hpp>
 #include <silkworm/chain/genesis.hpp>
 #include <silkworm/common/test_context.hpp>
+#include <silkworm/consensus/engine.hpp>
 #include <silkworm/db/genesis.hpp>
 
 #include "persisted_chain.hpp"
 #include "working_chain.hpp"
 
 namespace silkworm {
+
+class DummyConsensusEngine : public consensus::IConsensusEngine {
+  public:
+    ValidationResult pre_validate_block(const Block&, BlockState&) override { return ValidationResult::kOk; }
+
+    ValidationResult validate_block_header(const BlockHeader&, BlockState&, bool) override {
+        return ValidationResult::kOk;
+    }
+
+    ValidationResult validate_seal(const BlockHeader&) override { return ValidationResult::kOk; }
+
+    evmc::address get_beneficiary(const BlockHeader&) override { return {}; }
+
+    std::optional<BlockHeader> get_parent_header(const BlockState&, const BlockHeader&) { return {}; }
+};
 
 TEST_CASE("working/persistent-chain integration test") {
     test::Context context;
@@ -53,14 +70,20 @@ TEST_CASE("working/persistent-chain integration test") {
         BlockNum highest_in_db = 0;
 
         // creating the working chain as the downloader does at its construction
-        WorkingChain wc;
+        WorkingChain wc(std::make_unique<DummyConsensusEngine>());
         wc.recover_initial_state(tx);
         wc.sync_current_state(highest_in_db);
+
+        // auto timestamp = header0->timestamp;
 
         // receiving 3 headers from a peer
         BlockHeader header1;
         header1.number = 1;
         header1.difficulty = 1'000'000;
+        // header1.gas_limit = 5000;
+        // header1.timestamp = ++timestamp;
+        // header1.difficulty = canonical_difficulty(header1.number, header1.timestamp, header0->difficulty,
+        // header0->timestamp, false, ChainIdentity::mainnet.chain);
         header1.parent_hash = header0_hash;
         auto header1_hash = header1.hash();
 
@@ -73,13 +96,14 @@ TEST_CASE("working/persistent-chain integration test") {
         BlockHeader header1b;
         header1b.number = 1;
         header1b.difficulty = 2'000'000;
+        header1b.gas_limit = 5000;
         header1b.parent_hash = header0_hash;
         header1b.extra_data = string_to_bytes("I'm different");
         auto header1b_hash = header1b.hash();
 
         // processing the headers
         std::vector<BlockHeader> headers = {header1, header2, header1b};
-        PeerId peerId = "1";
+        PeerId peerId{1};
         wc.accept_headers(headers, peerId);
 
         // saving headers ready to persists as the header downloader does in the forward() method
@@ -135,7 +159,7 @@ TEST_CASE("working/persistent-chain integration test") {
         BlockNum highest_in_db = 0;
 
         // creating the working chain as the downloader does at its construction
-        WorkingChain wc;
+        WorkingChain wc(std::make_unique<DummyConsensusEngine>());
         wc.recover_initial_state(tx);
         wc.sync_current_state(highest_in_db);
 
@@ -154,7 +178,7 @@ TEST_CASE("working/persistent-chain integration test") {
 
         // processing the headers
         std::vector<BlockHeader> headers = {header1, header2};
-        PeerId peerId = "1";
+        PeerId peerId{1};
         wc.accept_headers(headers, peerId);
 
         // creating the persisted chain as the header downloader does at the beginning of the forward() method
@@ -193,7 +217,7 @@ TEST_CASE("working/persistent-chain integration test") {
         auto header1b_hash = header1b.hash();
 
         std::vector<BlockHeader> headers_bis = {header1b};
-        peerId = "2";
+        peerId = Hash{2};
         wc.accept_headers(headers_bis, peerId);
 
         // saving headers ready to persist as the header downloader does in the forward() method
@@ -247,7 +271,7 @@ TEST_CASE("working/persistent-chain integration test") {
         BlockNum highest_in_db = 0;
 
         // creating the working chain as the downloader does at its construction
-        WorkingChain wc;
+        WorkingChain wc(std::make_unique<DummyConsensusEngine>());
         wc.recover_initial_state(tx);
         wc.sync_current_state(highest_in_db);
 
@@ -266,7 +290,7 @@ TEST_CASE("working/persistent-chain integration test") {
 
         // processing the headers
         std::vector<BlockHeader> headers = {header1, header2};
-        PeerId peerId = "1";
+        PeerId peerId{1};
         wc.accept_headers(headers, peerId);
 
         // creating the persisted chain as the header downloader does at the beginning of the forward() method
@@ -305,7 +329,7 @@ TEST_CASE("working/persistent-chain integration test") {
         auto header1b_hash = header1b.hash();
 
         std::vector<BlockHeader> headers_bis = {header1b};
-        peerId = "2";
+        peerId = Hash{2};
         wc.accept_headers(headers_bis, peerId);
 
         // saving headers ready to persist as the header downloader does in the forward() method
@@ -362,7 +386,7 @@ TEST_CASE("working/persistent-chain integration test") {
         BlockNum highest_in_db = 0;
 
         // creating the working chain as the downloader does at its construction
-        WorkingChain wc;
+        WorkingChain wc(std::make_unique<DummyConsensusEngine>());
         wc.recover_initial_state(tx);
         wc.sync_current_state(highest_in_db);
 
@@ -375,7 +399,7 @@ TEST_CASE("working/persistent-chain integration test") {
         auto header1b_hash = header1b.hash();
 
         std::vector<BlockHeader> headers = {header1b};
-        PeerId peerId = "1";
+        PeerId peerId{1};
         wc.accept_headers(headers, peerId);
 
         // creating the persisted chain as the header downloader does at the beginning of the forward() method
@@ -417,7 +441,7 @@ TEST_CASE("working/persistent-chain integration test") {
 
         // processing the headers
         std::vector<BlockHeader> headers_bis = {header1, header2};
-        peerId = "2";
+        peerId = Hash{2};
         wc.accept_headers(headers_bis, peerId);
 
         // saving headers ready to persist as the header downloader does in the forward() method

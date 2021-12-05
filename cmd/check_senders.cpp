@@ -48,7 +48,6 @@ struct app_options_t {
 };
 
 int main(int argc, char* argv[]) {
-
     SignalHandler::init();
 
     namespace fs = std::filesystem;
@@ -81,7 +80,7 @@ int main(int argc, char* argv[]) {
     CLI11_PARSE(app, argc, argv);
 
     if (options.debug) {
-        SILKWORM_LOG_VERBOSITY(LogLevel::Trace);
+        log::set_verbosity(log::Level::kTrace);
     }
 
     if (!options.block_from) options.block_from = 1u;  // Block 0 (genesis) has no transactions
@@ -116,19 +115,19 @@ int main(int argc, char* argv[]) {
         }
 
         if (rc = static_cast<int>(result), rc) {
-            SILKWORM_LOG(LogLevel::Error)
-                << (app_recover ? "Recovery" : "Unwind") << " returned " << magic_enum::enum_name(result) << std::endl;
+            log::Error() << (app_recover ? "Recovery" : "Unwind") << " returned "
+                                << magic_enum::enum_name(result);
         } else {
             if (!options.dry) {
-                SILKWORM_LOG(LogLevel::Info) << "Committing" << std::endl;
+                log::Info() << "Committing";
                 txn.commit();
             } else {
-                SILKWORM_LOG(LogLevel::Info) << "Not committing (--dry)" << std::endl;
+                log::Info() << "Not committing (--dry)";
             }
         }
 
     } catch (const std::exception& ex) {
-        SILKWORM_LOG(LogLevel::Error) << ex.what() << std::endl;
+        log::Error() << ex.what();
         return -1;
     }
 

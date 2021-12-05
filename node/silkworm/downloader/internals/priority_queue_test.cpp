@@ -46,27 +46,28 @@ TEST_CASE("heap_based_priority_queue - element ordering") {
 TEST_CASE("Oldest_First_Anchor_Queue") {
     using namespace std::literals::chrono_literals;
     BlockHeader dummy_header;
+    PeerId dummy_peer_id{1};
     time_point_t now = std::chrono::system_clock::now();
 
     OldestFirstAnchorQueue queue;
 
-    auto anchor = std::make_shared<Anchor>(dummy_header, "dummy-peer-id");
+    auto anchor = std::make_shared<Anchor>(dummy_header, dummy_peer_id);
     anchor->blockHeight = 1;
     anchor->timestamp = now;
     queue.push(anchor);
 
-    anchor = std::make_shared<Anchor>(dummy_header, "dummy-peer-id");
+    anchor = std::make_shared<Anchor>(dummy_header, dummy_peer_id);
     anchor->blockHeight = 3;
     anchor->timestamp = now;
     queue.push(anchor);
 
-    anchor = std::make_shared<Anchor>(dummy_header, "dummy-peer-id");
+    anchor = std::make_shared<Anchor>(dummy_header, dummy_peer_id);
     anchor->blockHeight = 2;
     anchor->timestamp = now + 2s;
     queue.push(anchor);
     auto anchor2 = anchor;
 
-    anchor = std::make_shared<Anchor>(dummy_header, "dummy-peer-id");
+    anchor = std::make_shared<Anchor>(dummy_header, dummy_peer_id);
     anchor->blockHeight = 4;
     anchor->timestamp = now + 4s;
     queue.push(anchor);
@@ -180,12 +181,12 @@ TEST_CASE("Youngest_First_Link_Queue") {
     }
 }
 
-TEST_CASE("Oldest_First_Link_Queue") {
+TEST_CASE("Oldest_First_Link_Queue (old impl)") {
     using namespace std::literals::chrono_literals;
     BlockHeader dummy_header;
     bool persisted = true;
 
-    OldestFirstLinkQueue queue;
+    set_based_priority_queue<std::shared_ptr<Link>, LinkOlderThan> queue;
 
     auto link = std::make_shared<Link>(dummy_header, persisted);
     link->blockHeight = 1;
@@ -234,5 +235,45 @@ TEST_CASE("Oldest_First_Link_Queue") {
         REQUIRE(queue.top()->blockHeight == 1);
     }
     */
+}
+
+TEST_CASE("Oldest_First_Link_Queue") {
+    using namespace std::literals::chrono_literals;
+    BlockHeader dummy_header;
+    bool persisted = true;
+
+    OldestFirstLinkQueue queue;
+
+    auto link = std::make_shared<Link>(dummy_header, persisted);
+    link->blockHeight = 1;
+    queue.push(link);
+
+    link = std::make_shared<Link>(dummy_header, persisted);
+    link->blockHeight = 4;
+    queue.push(link);
+
+    link = std::make_shared<Link>(dummy_header, persisted);
+    link->blockHeight = 3;
+    queue.push(link);
+
+    link = std::make_shared<Link>(dummy_header, persisted);
+    link->blockHeight = 2;
+    queue.push(link);
+
+    SECTION("element ordering") {
+        REQUIRE(queue.size() == 4);
+
+        REQUIRE(queue.top()->blockHeight == 1);  // top
+        queue.pop();
+        REQUIRE(queue.top()->blockHeight == 2);
+        queue.pop();
+        REQUIRE(queue.top()->blockHeight == 3);
+        queue.pop();
+        REQUIRE(queue.top()->blockHeight == 4);
+        queue.pop();
+
+        REQUIRE(queue.size() == 0);
+    }
+
 }
 }  // namespace silkworm

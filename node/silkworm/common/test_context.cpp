@@ -20,7 +20,7 @@
 
 namespace silkworm::test {
 
-Context::Context() : tmp_dir_{}, data_dir_{tmp_dir_.path()} {
+Context::Context(bool with_create_tables) : tmp_dir_{}, data_dir_{tmp_dir_.path()} {
     data_dir_.deploy();
 
     db::EnvConfig config{data_dir_.chaindata().path().string(), /*create=*/true};
@@ -28,7 +28,9 @@ Context::Context() : tmp_dir_{}, data_dir_{tmp_dir_.path()} {
 
     env_ = db::open_env(config);
     txn_ = env_.start_write();
-    db::table::create_all(txn_);
+    if (with_create_tables) {
+        db::table::check_or_create_chaindata_tables(txn_);
+    }
 }
 
 }  // namespace silkworm::test

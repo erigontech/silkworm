@@ -31,7 +31,7 @@
 
 namespace silkworm::rlp {
 
-void encode(Bytes& to, const Hash& h) { rlp::encode(to, dynamic_cast<const evmc::bytes32&>(h)); }
+void encode(Bytes& to, const Hash& h) { rlp::encode(to, ByteView{h}); }
 
 size_t length(const BlockBodiesPacket66& from) noexcept { return rlp::length_eth66_packet(from); }
 

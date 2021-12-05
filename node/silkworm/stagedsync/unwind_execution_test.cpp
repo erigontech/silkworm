@@ -36,7 +36,7 @@ using namespace silkworm::consensus;
 
 TEST_CASE("Unwind Execution") {
     test::Context context;
-    stagedsync::TransactionManager txn{context.txn()};
+    db::RWTxn txn{context.txn()};
 
     // ---------------------------------------
     // Prepare
@@ -141,7 +141,7 @@ TEST_CASE("Unwind Execution") {
     CHECK((*current_sender).nonce == 1);
 
     ethash::hash256 code_hash{keccak256(contract_code)};
-    CHECK(to_hex(contract_account->code_hash) == to_hex(full_view(code_hash.bytes)));
+    CHECK(to_hex(contract_account->code_hash) == to_hex(code_hash.bytes));
 
     evmc::bytes32 storage_key0{};
     evmc::bytes32 storage0{buffer2.read_storage(contract_address, kDefaultIncarnation, storage_key0)};

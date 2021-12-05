@@ -31,7 +31,7 @@ static constexpr size_t kBitmapBufferSizeLimit = 256_Mebi;
 
 namespace fs = std::filesystem;
 
-static StageResult history_index_stage(TransactionManager& txn, const std::filesystem::path& etl_path, bool storage) {
+static StageResult history_index_stage(db::RWTxn& txn, const std::filesystem::path& etl_path, bool storage) {
     fs::create_directories(etl_path);
 
     etl::Collector collector(etl_path, /* flush size */ 512_Mebi);
@@ -57,8 +57,8 @@ static StageResult history_index_stage(TransactionManager& txn, const std::files
     Bytes start{db::block_key(last_processed_block_number + 1)};
 
     // Extract
-    SILKWORM_LOG(LogLevel::Info) << "Started " << (storage ? "Storage" : "Account")
-                                 << " Index Extraction. From: " << (last_processed_block_number + 1) << std::endl;
+    log::Info() << "Started " << (storage ? "Storage" : "Account")
+                       << " Index Extraction. From: " << (last_processed_block_number + 1);
 
     size_t allocated_space{0};
     BlockNum block_number{0};
@@ -90,7 +90,7 @@ static StageResult history_index_stage(TransactionManager& txn, const std::files
         if (64 * bitmaps.size() + allocated_space > kBitmapBufferSizeLimit) {
             flush_bitmaps_to_etl();
             allocated_space = 0;
-            SILKWORM_LOG(LogLevel::Info) << "Current Block: " << block_number << std::endl;
+            log::Info() << "Current Block: " << block_number;
         }
         data = changeset_table.to_next(/*throw_notfound*/ false);
     }
@@ -99,11 +99,11 @@ static StageResult history_index_stage(TransactionManager& txn, const std::files
         flush_bitmaps_to_etl();
     }
 
-    SILKWORM_LOG(LogLevel::Info) << "Latest Block: " << block_number << std::endl;
+    log::Info() << "Latest Block: " << block_number;
 
     // Proceed only if we've done something
     if (!collector.empty()) {
-        SILKWORM_LOG(LogLevel::Info) << "Started Loading" << std::endl;
+        log::Info() << "Started Loading";
 
         MDBX_put_flags_t db_flags{last_processed_block_number ? MDBX_put_flags_t::MDBX_UPSERT
                                                               : MDBX_put_flags_t::MDBX_APPEND};
@@ -150,15 +150,15 @@ static StageResult history_index_stage(TransactionManager& txn, const std::files
         txn.commit();
 
     } else {
-        SILKWORM_LOG(LogLevel::Info) << "Nothing to process" << std::endl;
+        log::Info() << "Nothing to process";
     }
 
-    SILKWORM_LOG(LogLevel::Info) << "All Done" << std::endl;
+    log::Info() << "All Done";
 
     return StageResult::kSuccess;
 }
 
-StageResult history_index_unwind(TransactionManager& txn, const std::filesystem::path& etl_path, uint64_t unwind_to,
+StageResult history_index_unwind(db::RWTxn& txn, const std::filesystem::path& etl_path, uint64_t unwind_to,
                                  bool storage) {
     // We take data from header table and transform it and put it in blockhashes table
     db::MapConfig index_config = storage ? db::table::kStorageHistory : db::table::kAccountHistory;
@@ -168,7 +168,7 @@ StageResult history_index_unwind(TransactionManager& txn, const std::filesystem:
 
     auto index_table{db::open_cursor(*txn, index_config)};
     // Extract
-    SILKWORM_LOG(LogLevel::Info) << "Started " << (storage ? "Storage" : "Account") << " Index Unwind" << std::endl;
+    log::Info() << "Started " << (storage ? "Storage" : "Account") << " Index Unwind";
     if (index_table.to_first(/* throw_notfound = */ false)) {
         auto data{index_table.current()};
         while (data) {
@@ -202,12 +202,12 @@ StageResult history_index_unwind(TransactionManager& txn, const std::filesystem:
     db::stages::write_stage_progress(*txn, stage_key, unwind_to);
     collector.load(index_table, nullptr, MDBX_put_flags_t::MDBX_UPSERT, /* log_every_percent = */ 100);
     txn.commit();
-    SILKWORM_LOG(LogLevel::Info) << "All Done" << std::endl;
+    log::Info() << "All Done";
 
     return StageResult::kSuccess;
 }
 
-StageResult history_index_prune(TransactionManager& txn, const std::filesystem::path& etl_path, uint64_t prune_from,
+StageResult history_index_prune(db::RWTxn& txn, const std::filesystem::path& etl_path, uint64_t prune_from,
                                 bool storage) {
     db::MapConfig index_config = storage ? db::table::kStorageHistory : db::table::kAccountHistory;
     const char* stage_key = storage ? db::stages::kStorageHistoryIndexKey : db::stages::kAccountHistoryIndexKey;
@@ -217,8 +217,7 @@ StageResult history_index_prune(TransactionManager& txn, const std::filesystem::
     auto last_processed_block{db::stages::read_stage_progress(*txn, stage_key)};
 
     auto index_table{db::open_cursor(*txn, index_config)};
-    SILKWORM_LOG(LogLevel::Info) << "Pruning " << (storage ? "Storage" : "Account") << " History from: " << prune_from
-                                 << std::endl;
+    log::Info() << "Pruning " << (storage ? "Storage" : "Account") << " History from: " << prune_from;
 
     if (index_table.to_first(/* throw_notfound = */ false)) {
         auto data{index_table.current()};
@@ -250,31 +249,30 @@ StageResult history_index_prune(TransactionManager& txn, const std::filesystem::
 
     collector.load(index_table, nullptr, MDBX_put_flags_t::MDBX_UPSERT, /* log_every_percent = */ 100);
     txn.commit();
-    SILKWORM_LOG(LogLevel::Info) << "Pruning " << (storage ? "Storage" : "Account") << " History finished..."
-                                 << std::endl;
+    log::Info() << "Pruning " << (storage ? "Storage" : "Account") << " History finished...";
 
     return StageResult::kSuccess;
 }
 
-StageResult stage_account_history(TransactionManager& txn, const std::filesystem::path& etl_path, uint64_t) {
+StageResult stage_account_history(db::RWTxn& txn, const std::filesystem::path& etl_path, uint64_t) {
     return history_index_stage(txn, etl_path, false);
 }
-StageResult stage_storage_history(TransactionManager& txn, const std::filesystem::path& etl_path, uint64_t) {
+StageResult stage_storage_history(db::RWTxn& txn, const std::filesystem::path& etl_path, uint64_t) {
     return history_index_stage(txn, etl_path, true);
 }
 
-StageResult unwind_account_history(TransactionManager& txn, const std::filesystem::path& etl_path, uint64_t unwind_to) {
+StageResult unwind_account_history(db::RWTxn& txn, const std::filesystem::path& etl_path, uint64_t unwind_to) {
     return history_index_unwind(txn, etl_path, unwind_to, false);
 }
 
-StageResult unwind_storage_history(TransactionManager& txn, const std::filesystem::path& etl_path, uint64_t unwind_to) {
+StageResult unwind_storage_history(db::RWTxn& txn, const std::filesystem::path& etl_path, uint64_t unwind_to) {
     return history_index_unwind(txn, etl_path, unwind_to, true);
 }
 
-StageResult prune_account_history(TransactionManager& txn, const std::filesystem::path& etl_path, uint64_t prune_from) {
+StageResult prune_account_history(db::RWTxn& txn, const std::filesystem::path& etl_path, uint64_t prune_from) {
     return history_index_prune(txn, etl_path, prune_from, false);
 }
-StageResult prune_storage_history(TransactionManager& txn, const std::filesystem::path& etl_path, uint64_t prune_from) {
+StageResult prune_storage_history(db::RWTxn& txn, const std::filesystem::path& etl_path, uint64_t prune_from) {
     return history_index_prune(txn, etl_path, prune_from, true);
 }
 

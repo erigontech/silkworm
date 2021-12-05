@@ -201,25 +201,25 @@ static evmc::bytes32 setup_storage(mdbx::txn& txn, ByteView storage_key) {
 
     auto hashed_storage{db::open_cursor(txn, db::table::kHashedStorage)};
 
-    db::upsert_storage_value(hashed_storage, storage_key, full_view(loc1), val1);
-    db::upsert_storage_value(hashed_storage, storage_key, full_view(loc2), val2);
-    db::upsert_storage_value(hashed_storage, storage_key, full_view(loc3), val3);
-    db::upsert_storage_value(hashed_storage, storage_key, full_view(loc4), val4);
+    db::upsert_storage_value(hashed_storage, storage_key, loc1, val1);
+    db::upsert_storage_value(hashed_storage, storage_key, loc2, val2);
+    db::upsert_storage_value(hashed_storage, storage_key, loc3, val3);
+    db::upsert_storage_value(hashed_storage, storage_key, loc4, val4);
 
     HashBuilder storage_hb;
 
     Bytes value_rlp;
     rlp::encode(value_rlp, val1);
-    storage_hb.add_leaf(unpack_nibbles(full_view(loc1)), value_rlp);
+    storage_hb.add_leaf(unpack_nibbles(loc1), value_rlp);
     value_rlp.clear();
     rlp::encode(value_rlp, val2);
-    storage_hb.add_leaf(unpack_nibbles(full_view(loc2)), value_rlp);
+    storage_hb.add_leaf(unpack_nibbles(loc2), value_rlp);
     value_rlp.clear();
     rlp::encode(value_rlp, val3);
-    storage_hb.add_leaf(unpack_nibbles(full_view(loc3)), value_rlp);
+    storage_hb.add_leaf(unpack_nibbles(loc3), value_rlp);
     value_rlp.clear();
     rlp::encode(value_rlp, val4);
-    storage_hb.add_leaf(unpack_nibbles(full_view(loc4)), value_rlp);
+    storage_hb.add_leaf(unpack_nibbles(loc4), value_rlp);
 
     return storage_hb.root_hash();
 }
@@ -252,43 +252,43 @@ TEST_CASE("Account and storage trie") {
     const auto key1{0xB000000000000000000000000000000000000000000000000000000000000000_bytes32};
     const Account a1{0, 3 * kEther};
     hashed_accounts.upsert(db::to_slice(key1), db::to_slice(a1.encode_for_storage()));
-    hb.add_leaf(unpack_nibbles(full_view(key1)), a1.rlp(/*storage_root=*/kEmptyRoot));
+    hb.add_leaf(unpack_nibbles(key1), a1.rlp(/*storage_root=*/kEmptyRoot));
 
     // Some address whose hash starts with 0xB040
     const auto address2{0x7db3e81b72d2695e19764583f6d219dbee0f35ca_address};
-    const auto key2{keccak256(full_view(address2))};
+    const auto key2{keccak256(address2)};
     REQUIRE((key2.bytes[0] == 0xB0 && key2.bytes[1] == 0x40));
     const Account a2{0, 1 * kEther};
-    hashed_accounts.upsert(mdbx::slice{key2.bytes, kHashLength}, db::to_slice(a2.encode_for_storage()));
-    hb.add_leaf(unpack_nibbles(full_view(key2.bytes)), a2.rlp(/*storage_root=*/kEmptyRoot));
+    hashed_accounts.upsert(db::to_slice(key2.bytes), db::to_slice(a2.encode_for_storage()));
+    hb.add_leaf(unpack_nibbles(key2.bytes), a2.rlp(/*storage_root=*/kEmptyRoot));
 
     // Some address whose hash starts with 0xB041
     const auto address3{0x16b07afd1c635f77172e842a000ead9a2a222459_address};
-    const auto key3{keccak256(full_view(address3))};
+    const auto key3{keccak256(address3)};
     REQUIRE((key3.bytes[0] == 0xB0 && key3.bytes[1] == 0x41));
     const auto code_hash{0x5be74cad16203c4905c068b012a2e9fb6d19d036c410f16fd177f337541440dd_bytes32};
     const Account a3{0, 2 * kEther, code_hash, kDefaultIncarnation};
-    hashed_accounts.upsert(mdbx::slice{key3.bytes, kHashLength}, db::to_slice(a3.encode_for_storage()));
+    hashed_accounts.upsert(db::to_slice(key3.bytes), db::to_slice(a3.encode_for_storage()));
 
-    Bytes storage_key{db::storage_prefix(full_view(key3.bytes), kDefaultIncarnation)};
+    Bytes storage_key{db::storage_prefix(key3.bytes, kDefaultIncarnation)};
     const evmc::bytes32 storage_root{setup_storage(txn, storage_key)};
 
-    hb.add_leaf(unpack_nibbles(full_view(key3.bytes)), a3.rlp(storage_root));
+    hb.add_leaf(unpack_nibbles(key3.bytes), a3.rlp(storage_root));
 
     const auto key4a{0xB1A0000000000000000000000000000000000000000000000000000000000000_bytes32};
     const Account a4a{0, 4 * kEther};
     hashed_accounts.upsert(db::to_slice(key4a), db::to_slice(a4a.encode_for_storage()));
-    hb.add_leaf(unpack_nibbles(full_view(key4a)), a4a.rlp(/*storage_root=*/kEmptyRoot));
+    hb.add_leaf(unpack_nibbles(key4a), a4a.rlp(/*storage_root=*/kEmptyRoot));
 
     const auto key5{0xB310000000000000000000000000000000000000000000000000000000000000_bytes32};
     const Account a5{0, 8 * kEther};
     hashed_accounts.upsert(db::to_slice(key5), db::to_slice(a5.encode_for_storage()));
-    hb.add_leaf(unpack_nibbles(full_view(key5)), a5.rlp(/*storage_root=*/kEmptyRoot));
+    hb.add_leaf(unpack_nibbles(key5), a5.rlp(/*storage_root=*/kEmptyRoot));
 
     const auto key6{0xB340000000000000000000000000000000000000000000000000000000000000_bytes32};
     const Account a6{0, 1 * kEther};
     hashed_accounts.upsert(db::to_slice(key6), db::to_slice(a6.encode_for_storage()));
-    hb.add_leaf(unpack_nibbles(full_view(key6)), a6.rlp(/*storage_root=*/kEmptyRoot));
+    hb.add_leaf(unpack_nibbles(key6), a6.rlp(/*storage_root=*/kEmptyRoot));
 
     // ----------------------------------------------------------------
     // Populate account & storage trie DB tables
@@ -348,11 +348,11 @@ TEST_CASE("Account and storage trie") {
 
     // Some address whose hash starts with 0xB1
     const auto address4b{0x4f61f2d5ebd991b85aa1677db97307caf5215c91_address};
-    const auto key4b{keccak256(full_view(address4b))};
+    const auto key4b{keccak256(address4b)};
     REQUIRE(key4b.bytes[0] == key4a.bytes[0]);
 
     const Account a4b{0, 5 * kEther};
-    hashed_accounts.upsert(mdbx::slice{key4b.bytes, kHashLength}, db::to_slice(a4b.encode_for_storage()));
+    hashed_accounts.upsert(db::to_slice(key4b.bytes), db::to_slice(a4b.encode_for_storage()));
 
     auto account_change_table{db::open_cursor(txn, db::table::kAccountChangeSet)};
     account_change_table.upsert(db::to_slice(db::block_key(1)), db::to_slice(address4b));
@@ -377,7 +377,7 @@ TEST_CASE("Account and storage trie") {
     CHECK(node2a == node2b);
 
     SECTION("Delete an account") {
-        hashed_accounts.erase(mdbx::slice{key2.bytes, kHashLength});
+        hashed_accounts.erase(db::to_slice(key2.bytes));
         account_change_table.upsert(db::to_slice(db::block_key(2)), db::to_slice(address2));
 
         increment_intermediate_hashes(txn, context.dir().etl().path(), /*from=*/1);
@@ -399,10 +399,10 @@ TEST_CASE("Account and storage trie") {
     }
 
     SECTION("Delete several accounts") {
-        hashed_accounts.erase(mdbx::slice{key2.bytes, kHashLength});
+        hashed_accounts.erase(db::to_slice(key2.bytes));
         account_change_table.upsert(db::to_slice(db::block_key(2)), db::to_slice(address2));
 
-        hashed_accounts.erase(mdbx::slice{key3.bytes, kHashLength});
+        hashed_accounts.erase(db::to_slice(key3.bytes));
         account_change_table.upsert(db::to_slice(db::block_key(2)), db::to_slice(address3));
 
         increment_intermediate_hashes(txn, context.dir().etl().path(), /*from=*/1);
@@ -442,9 +442,8 @@ TEST_CASE("Account trie around extension node") {
     HashBuilder hb;
 
     for (const auto& key : keys) {
-        auto key_view{full_view(key)};
-        hashed_accounts.upsert(db::to_slice(key_view), db::to_slice(a.encode_for_storage()));
-        hb.add_leaf(unpack_nibbles(key_view), a.rlp(/*storage_root=*/kEmptyRoot));
+        hashed_accounts.upsert(db::to_slice(key), db::to_slice(a.encode_for_storage()));
+        hb.add_leaf(unpack_nibbles(key), a.rlp(/*storage_root=*/kEmptyRoot));
     }
 
     const evmc::bytes32 expected_root{hb.root_hash()};
@@ -477,13 +476,13 @@ TEST_CASE("Account trie around extension node") {
 static evmc::address int_to_address(uint64_t i) {
     uint8_t be[8];
     endian::store_big_u64(be, i);
-    return to_address(full_view(be));
+    return to_evmc_address(be);
 }
 
 static evmc::bytes32 int_to_bytes32(uint64_t i) {
     uint8_t be[8];
     endian::store_big_u64(be, i);
-    return to_bytes32(full_view(be));
+    return to_bytes32(be);
 }
 
 TEST_CASE("Incremental vs regeneration") {
@@ -504,8 +503,8 @@ TEST_CASE("Incremental vs regeneration") {
     static constexpr Account one_eth{0, 1 * kEther};
     for (size_t i{0}; i < 3 * n; ++i) {
         const evmc::address address{int_to_address(i)};
-        const auto hash{keccak256(full_view(address))};
-        hashed_accounts.upsert(mdbx::slice{hash.bytes, kHashLength}, db::to_slice(one_eth.encode_for_storage()));
+        const auto hash{keccak256(address)};
+        hashed_accounts.upsert(db::to_slice(hash.bytes), db::to_slice(one_eth.encode_for_storage()));
     }
 
     regenerate_intermediate_hashes(txn, context.dir().etl().path());
@@ -516,16 +515,16 @@ TEST_CASE("Incremental vs regeneration") {
     static constexpr Account two_eth{0, 2 * kEther};
     for (size_t i{0}; i < n; ++i) {
         const evmc::address address{int_to_address(i)};
-        const auto hash{keccak256(full_view(address))};
-        hashed_accounts.upsert(mdbx::slice{hash.bytes, kHashLength}, db::to_slice(two_eth.encode_for_storage()));
+        const auto hash{keccak256(address)};
+        hashed_accounts.upsert(db::to_slice(hash.bytes), db::to_slice(two_eth.encode_for_storage()));
         account_change_table.upsert(db::to_slice(block_key), db::to_slice(address));
     }
 
     // Delete the second third of the accounts
     for (size_t i{n}; i < 2 * n; ++i) {
         const evmc::address address{int_to_address(i)};
-        const auto hash{keccak256(full_view(address))};
-        hashed_accounts.erase(mdbx::slice{hash.bytes, kHashLength});
+        const auto hash{keccak256(address)};
+        hashed_accounts.erase(db::to_slice(hash.bytes));
         account_change_table.upsert(db::to_slice(block_key), db::to_slice(address));
     }
 
@@ -534,8 +533,8 @@ TEST_CASE("Incremental vs regeneration") {
     // And add some new accounts, each holding 1 ETH
     for (size_t i{3 * n}; i < 4 * n; ++i) {
         const evmc::address address{int_to_address(i)};
-        const auto hash{keccak256(full_view(address))};
-        hashed_accounts.upsert(mdbx::slice{hash.bytes, kHashLength}, db::to_slice(one_eth.encode_for_storage()));
+        const auto hash{keccak256(address)};
+        hashed_accounts.upsert(db::to_slice(hash.bytes), db::to_slice(one_eth.encode_for_storage()));
         account_change_table.upsert(db::to_slice(block_key), db::to_slice(address));
     }
 
@@ -553,8 +552,8 @@ TEST_CASE("Incremental vs regeneration") {
     // Accounts [0,n) now hold 2 ETH
     for (size_t i{0}; i < n; ++i) {
         const evmc::address address{int_to_address(i)};
-        const auto hash{keccak256(full_view(address))};
-        hashed_accounts.upsert(mdbx::slice{hash.bytes, kHashLength}, db::to_slice(two_eth.encode_for_storage()));
+        const auto hash{keccak256(address)};
+        hashed_accounts.upsert(db::to_slice(hash.bytes), db::to_slice(two_eth.encode_for_storage()));
     }
 
     // Accounts [n,2n) are deleted
@@ -562,8 +561,8 @@ TEST_CASE("Incremental vs regeneration") {
     // Accounts [2n,4n) hold 1 ETH
     for (size_t i{2 * n}; i < 4 * n; ++i) {
         const evmc::address address{int_to_address(i)};
-        const auto hash{keccak256(full_view(address))};
-        hashed_accounts.upsert(mdbx::slice{hash.bytes, kHashLength}, db::to_slice(one_eth.encode_for_storage()));
+        const auto hash{keccak256(address)};
+        hashed_accounts.upsert(db::to_slice(hash.bytes), db::to_slice(one_eth.encode_for_storage()));
     }
 
     const auto fused_root{regenerate_intermediate_hashes(txn, context.dir().etl().path())};
@@ -609,16 +608,14 @@ TEST_CASE("Incremental vs regeneration for storage") {
     static constexpr auto address1{0x1000000000000000000000000000000000000000_address};
     static constexpr auto address2{0x2000000000000000000000000000000000000000_address};
 
-    static const auto hashed_address1{keccak256(full_view(address1))};
-    static const auto hashed_address2{keccak256(full_view(address2))};
+    static const auto hashed_address1{keccak256(address1)};
+    static const auto hashed_address2{keccak256(address2)};
 
-    hashed_accounts.upsert(mdbx::slice{hashed_address1.bytes, kHashLength},
-                           db::to_slice(account1.encode_for_storage()));
-    hashed_accounts.upsert(mdbx::slice{hashed_address2.bytes, kHashLength},
-                           db::to_slice(account2.encode_for_storage()));
+    hashed_accounts.upsert(db::to_slice(hashed_address1.bytes), db::to_slice(account1.encode_for_storage()));
+    hashed_accounts.upsert(db::to_slice(hashed_address2.bytes), db::to_slice(account2.encode_for_storage()));
 
-    static const Bytes storage_prefix1{db::storage_prefix(full_view(hashed_address1.bytes), incarnation1)};
-    static const Bytes storage_prefix2{db::storage_prefix(full_view(hashed_address2.bytes), incarnation2)};
+    static const Bytes storage_prefix1{db::storage_prefix(hashed_address1.bytes, incarnation1)};
+    static const Bytes storage_prefix2{db::storage_prefix(hashed_address2.bytes, incarnation2)};
 
     static const Bytes storage_change_key1{db::storage_change_key(/*block_number=*/1, address1, incarnation1)};
     static const Bytes storage_change_key2{db::storage_change_key(/*block_number=*/1, address2, incarnation2)};
@@ -626,13 +623,13 @@ TEST_CASE("Incremental vs regeneration for storage") {
     const auto upsert_storage_for_two_test_accounts = [&](size_t i, ByteView value, bool register_change) {
         const evmc::bytes32 plain_loc1{int_to_bytes32(2 * i)};
         const evmc::bytes32 plain_loc2{int_to_bytes32(2 * i + 1)};
-        const auto hashed_loc1{keccak256(full_view(plain_loc1))};
-        const auto hashed_loc2{keccak256(full_view(plain_loc2))};
-        db::upsert_storage_value(hashed_storage, storage_prefix1, full_view(hashed_loc1.bytes), value);
-        db::upsert_storage_value(hashed_storage, storage_prefix2, full_view(hashed_loc2.bytes), value);
+        const auto hashed_loc1{keccak256(plain_loc1)};
+        const auto hashed_loc2{keccak256(plain_loc2)};
+        db::upsert_storage_value(hashed_storage, storage_prefix1, hashed_loc1.bytes, value);
+        db::upsert_storage_value(hashed_storage, storage_prefix2, hashed_loc2.bytes, value);
         if (register_change) {
-            storage_change_table.upsert(db::to_slice(storage_change_key1), mdbx::slice{plain_loc1.bytes, kHashLength});
-            storage_change_table.upsert(db::to_slice(storage_change_key2), mdbx::slice{plain_loc2.bytes, kHashLength});
+            storage_change_table.upsert(db::to_slice(storage_change_key1), db::to_slice(plain_loc1.bytes));
+            storage_change_table.upsert(db::to_slice(storage_change_key2), db::to_slice(plain_loc2.bytes));
         }
     };
 
@@ -705,7 +702,7 @@ TEST_CASE("Storage deletion") {
     auto& txn{context.txn()};
 
     static constexpr auto address{0x1000000000000000000000000000000000000000_address};
-    static const auto hashed_address{keccak256(full_view(address))};
+    static const auto hashed_address{keccak256(address)};
 
     static constexpr Account account{
         1,                                                                           // nonce
@@ -719,25 +716,25 @@ TEST_CASE("Storage deletion") {
     auto storage_change_table{db::open_cursor(txn, db::table::kStorageChangeSet)};
     auto storage_trie{db::open_cursor(txn, db::table::kTrieOfStorage)};
 
-    hashed_accounts.upsert(mdbx::slice{hashed_address.bytes, kHashLength}, db::to_slice(account.encode_for_storage()));
+    hashed_accounts.upsert(db::to_slice(hashed_address.bytes), db::to_slice(account.encode_for_storage()));
 
     static constexpr auto plain_location1{0x1000000000000000000000000000000000000000000000000000000000000000_bytes32};
     static constexpr auto plain_location2{0x1A00000000000000000000000000000000000000000000000000000000000000_bytes32};
     static constexpr auto plain_location3{0x1E00000000000000000000000000000000000000000000000000000000000000_bytes32};
 
-    static const auto hashed_location1{keccak256(full_view(plain_location1))};
-    static const auto hashed_location2{keccak256(full_view(plain_location2))};
-    static const auto hashed_location3{keccak256(full_view(plain_location3))};
+    static const auto hashed_location1{keccak256(plain_location1)};
+    static const auto hashed_location2{keccak256(plain_location2)};
+    static const auto hashed_location3{keccak256(plain_location3)};
 
     static const Bytes value1{*from_hex("0xABCD")};
     static const Bytes value2{*from_hex("0x4321")};
     static const Bytes value3{*from_hex("0x4444")};
 
-    static const Bytes storage_prefix{db::storage_prefix(full_view(hashed_address.bytes), kDefaultIncarnation)};
+    static const Bytes storage_prefix{db::storage_prefix(hashed_address.bytes, kDefaultIncarnation)};
 
-    db::upsert_storage_value(hashed_storage, storage_prefix, full_view(hashed_location1.bytes), value1);
-    db::upsert_storage_value(hashed_storage, storage_prefix, full_view(hashed_location2.bytes), value2);
-    db::upsert_storage_value(hashed_storage, storage_prefix, full_view(hashed_location3.bytes), value3);
+    db::upsert_storage_value(hashed_storage, storage_prefix, hashed_location1.bytes, value1);
+    db::upsert_storage_value(hashed_storage, storage_prefix, hashed_location2.bytes, value2);
+    db::upsert_storage_value(hashed_storage, storage_prefix, hashed_location3.bytes, value3);
 
     regenerate_intermediate_hashes(txn, context.dir().etl().path());
 
@@ -752,15 +749,15 @@ TEST_CASE("Storage deletion") {
     }
 
     SECTION("Delete storage and increment the trie") {
-        db::upsert_storage_value(hashed_storage, storage_prefix, full_view(hashed_location1.bytes), {});
-        db::upsert_storage_value(hashed_storage, storage_prefix, full_view(hashed_location2.bytes), {});
-        db::upsert_storage_value(hashed_storage, storage_prefix, full_view(hashed_location3.bytes), {});
+        db::upsert_storage_value(hashed_storage, storage_prefix, hashed_location1.bytes, {});
+        db::upsert_storage_value(hashed_storage, storage_prefix, hashed_location2.bytes, {});
+        db::upsert_storage_value(hashed_storage, storage_prefix, hashed_location3.bytes, {});
 
         static const Bytes storage_change_key{db::storage_change_key(/*block_number=*/1, address, kDefaultIncarnation)};
 
-        storage_change_table.upsert(db::to_slice(storage_change_key), mdbx::slice{plain_location1.bytes, kHashLength});
-        storage_change_table.upsert(db::to_slice(storage_change_key), mdbx::slice{plain_location2.bytes, kHashLength});
-        storage_change_table.upsert(db::to_slice(storage_change_key), mdbx::slice{plain_location3.bytes, kHashLength});
+        storage_change_table.upsert(db::to_slice(storage_change_key), db::to_slice(plain_location1.bytes));
+        storage_change_table.upsert(db::to_slice(storage_change_key), db::to_slice(plain_location2.bytes));
+        storage_change_table.upsert(db::to_slice(storage_change_key), db::to_slice(plain_location3.bytes));
 
         increment_intermediate_hashes(txn, context.dir().etl().path(), /*from=*/0);
         const std::map<Bytes, Node> nodes_b{read_all_nodes(storage_trie)};

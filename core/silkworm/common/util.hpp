@@ -48,41 +48,17 @@ ByteView right_pad(ByteView view, size_t min_size, Bytes& buffer);
 
 // Converts bytes to evmc::address; input is cropped if necessary.
 // Short inputs are left-padded with 0s.
-evmc::address to_address(ByteView bytes);
+evmc::address to_evmc_address(ByteView bytes);
 
 // Converts bytes to evmc::bytes32; input is cropped if necessary.
 // Short inputs are left-padded with 0s.
 evmc::bytes32 to_bytes32(ByteView bytes);
 
-template <unsigned N>
-ByteView full_view(const uint8_t (&bytes)[N]) {
-    return {bytes, N};
-}
-
-inline ByteView full_view(const evmc::address& address) { return {address.bytes, kAddressLength}; }
-
-inline ByteView full_view(const evmc::bytes32& hash) { return {hash.bytes, kHashLength}; }
-
 //! \brief Strips leftmost zeroed bytes from byte sequence
 //! \param [in] data : The view to process
 //! \return A new view of the sequence
-ByteView zeroless_view(const ByteView& data);
+ByteView zeroless_view(ByteView data);
 
-//! \brief Strips leftmost zeroed bytes from byte sequence
-//! \param [in] data : The view to process
-//! \return A new view of the sequence
-template <unsigned N>
-ByteView zeroless_view(const uint8_t (&data)[N]) {
-    return zeroless_view(ByteView{data, N});
-}
-
-//! \brief Strips leftmost zeroed bytes from byte sequence
-//! \param [in] hash : a reference to evmc::bytes32
-//! \return A new view of the sequence
-ByteView zeroless_view(const evmc::bytes32& hash);
-
-std::string to_hex(const evmc::address& address);
-std::string to_hex(const evmc::bytes32& hash);
 std::string to_hex(ByteView bytes);
 
 std::optional<unsigned> decode_hex_digit(char ch) noexcept;

@@ -16,7 +16,18 @@
 
 #include "config.hpp"
 
+#include <functional>
+
+#include <silkworm/common/as_range.hpp>
+
 namespace silkworm {
+
+static const std::vector<std::pair<std::string, const ChainConfig*>> kKnownChainConfigs{
+    {"mainnet", &kMainnetConfig},  //
+    {"ropsten", &kRopstenConfig},  //
+    {"rinkeby", &kRinkebyConfig},  //
+    {"goerli", &kGoerliConfig}     //
+};
 
 static inline void member_to_json(nlohmann::json& json, const std::string& key, const std::optional<uint64_t>& source) {
     if (source.has_value()) {
@@ -108,5 +119,27 @@ void ChainConfig::set_revision_block(evmc_revision rev, std::optional<uint64_t> 
 bool operator==(const ChainConfig& a, const ChainConfig& b) { return a.to_json() == b.to_json(); }
 
 std::ostream& operator<<(std::ostream& out, const ChainConfig& obj) { return out << obj.to_json(); }
+
+const ChainConfig* lookup_chain_config(std::variant<uint64_t, std::string> identifier) noexcept {
+    auto it{as_range::find_if(kKnownChainConfigs,
+                              [&identifier](const std::pair<std::string, const ChainConfig*>& x) -> bool {
+                                  if (std::holds_alternative<std::string>(identifier)) {
+                                      return iequals(x.first, std::get<std::string>(identifier));
+                                  }
+                                  return x.second->chain_id == std::get<uint64_t>(identifier);
+                              })};
+    if (it == kKnownChainConfigs.end()) {
+        return nullptr;
+    }
+    return it->second;
+}
+
+std::map<std::string, uint64_t> get_known_chains_map() noexcept {
+    std::map<std::string, uint64_t> ret;
+    as_range::for_each(kKnownChainConfigs, [&ret](const std::pair<std::string, const ChainConfig*>& x) -> void {
+        ret[x.first] = x.second->chain_id;
+    });
+    return ret;
+}
 
 }  // namespace silkworm

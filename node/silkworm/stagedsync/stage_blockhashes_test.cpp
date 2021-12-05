@@ -34,7 +34,7 @@ TEST_CASE("Stage Block Hashes") {
         0x0b42b6393c1f53060fe3ddbfcd7aadcca894465a5a438f69c87d790b2299b9b2_bytes32};
 
     test::Context context;
-    stagedsync::TransactionManager txn{context.txn()};
+    db::RWTxn txn{context.txn()};
 
     // ---------------------------------------
     // Prepare

@@ -22,8 +22,7 @@
 
 namespace silkworm {
 void abort_due_to_assertion_failure(char const* expr, char const* file, long line) {
-    SILKWORM_LOG(LogLevel::Critical) << "Assert failed: " << expr << "\n"
-                                     << "Source: " << file << ", line " << line << "\n";
+    log::Critical() << "Assert failed: " << expr << " " << "Source: " << file << ", line " << line;
     std::abort();
 }
 }  // namespace silkworm

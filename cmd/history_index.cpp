@@ -60,7 +60,7 @@ int main(int argc, char* argv[]) {
             txn.commit();
         }
 
-        stagedsync::TransactionManager tm{env};
+        db::RWTxn tm{env};
         if (storage) {
             stagedsync::success_or_throw(stagedsync::stage_storage_history(tm, data_dir.etl().path()));
         } else {
@@ -68,7 +68,7 @@ int main(int argc, char* argv[]) {
         }
 
     } catch (const std::exception& ex) {
-        SILKWORM_LOG(LogLevel::Error) << ex.what() << std::endl;
+        log::Error() << ex.what();
         return -5;
     }
     return 0;

@@ -18,20 +18,17 @@
 #include <chrono>
 #include <thread>
 
-#include <silkworm/chain/preverified_hashes.hpp>
 #include <silkworm/common/log.hpp>
 
-#include "internals/header_retrieval.hpp"
-#include "messages/InboundGetBlockHeaders.hpp"
+#include "messages/InboundMessage.hpp"
 #include "messages/OutboundGetBlockHeaders.hpp"
 #include "messages/OutboundNewBlockHashes.hpp"
-#include "rpc/ReceiveMessages.hpp"
-#include "rpc/SetStatus.hpp"
 
 namespace silkworm {
 
-HeaderDownloader::HeaderDownloader(SentryClient& sentry, Db::ReadWriteAccess db_access, ChainIdentity chain_identity)
-    : chain_identity_(std::move(chain_identity)), db_access_{db_access}, sentry_{sentry} {
+HeaderDownloader::HeaderDownloader(SentryClient& sentry, const Db::ReadWriteAccess& db_access,
+                                   const ChainIdentity& chain_identity)
+    : db_access_{db_access}, sentry_{sentry}, working_chain_(consensus::engine_factory(chain_identity.chain)) {
     auto tx = db_access_.start_ro_tx();
     working_chain_.recover_initial_state(tx);
     working_chain_.set_preverified_hashes(&(PreverifiedHashes::per_chain.at(chain_identity.chain.chain_id)));
@@ -39,70 +36,43 @@ HeaderDownloader::HeaderDownloader(SentryClient& sentry, Db::ReadWriteAccess db_
 
 HeaderDownloader::~HeaderDownloader() {
     stop();
-    SILKWORM_LOG(LogLevel::Error) << "HeaderDownloader destroyed\n";
+    log::Error() << "HeaderDownloader destroyed";
 }
 
-void HeaderDownloader::send_status() {
-    HeaderRetrieval headers(db_access_);
-    auto [head_hash, head_td] = headers.head_hash_and_total_difficulty();
+void HeaderDownloader::receive_message(const sentry::InboundMessage& raw_message) {
+    auto message = InboundBlockAnnouncementMessage::make(raw_message, working_chain_, sentry_);
 
-    rpc::SetStatus set_status(chain_identity_, head_hash, head_td);
-    sentry_.exec_remotely(set_status);
+    log::Info() << "HeaderDownloader received message " << *message;
 
-    SILKWORM_LOG(LogLevel::Info) << "HeaderDownloader, set_status sent\n";
-    sentry::SetStatusReply reply = set_status.reply();
-
-    sentry::Protocol supported_protocol = reply.protocol();
-    if (supported_protocol != sentry::Protocol::ETH66) {
-        SILKWORM_LOG(LogLevel::Critical) << "HeaderDownloader: sentry do not support eth/66 protocol, is_stopping...\n";
-        sentry_.stop();
-        throw HeaderDownloaderException("HeaderDownloader exception, cause: sentry do not support eth/66 protocol");
-    }
-}
-
-void HeaderDownloader::receive_messages() {
-    // todo: handle connection loss and retry (at each re-connect re-send status)
-
-    // send status to sentry
-    send_status();
-
-    // send a message subscription
-    rpc::ReceiveMessages message_subscription(rpc::ReceiveMessages::Scope::BlockAnnouncements);
-    sentry_.exec_remotely(message_subscription);
-
-    // receive messages
-    while (!is_stopping() && !sentry_.is_stopping() && message_subscription.receive_one_reply()) {
-        auto message = InboundBlockAnnouncementMessage::make(message_subscription.reply(), working_chain_, sentry_);
-
-        SILKWORM_LOG(LogLevel::Info) << "HeaderDownloader received message " << *message << "\n";
-
-        messages_.push(message);
-    }
-
-    SILKWORM_LOG(LogLevel::Warn) << "HeaderDownloader execution loop is stopping...\n";
+    messages_.push(message);
 }
 
 void HeaderDownloader::execution_loop() {
     using namespace std::chrono_literals;
 
+    sentry_.subscribe(SentryClient::Scope::BlockAnnouncements,
+                      [this](const sentry::InboundMessage& msg) { receive_message(msg); });
+
     while (!is_stopping() && !sentry_.is_stopping()) {
+        log::Trace() << "HeaderDownloader status: " << working_chain_.human_readable_status();
+
         // pop a message from the queue
         std::shared_ptr<Message> message;
         bool present = messages_.timed_wait_and_pop(message, 1000ms);
         if (!present) continue;  // timeout, needed to check exiting_
 
-        SILKWORM_LOG(LogLevel::Trace) << "HeaderDownloader processing message " << message->name() << "\n";
-
-        SILKWORM_LOG(LogLevel::Trace) << "HeaderDownloader status: " << working_chain_.human_readable_verbose_status() << "\n";
+        log::Trace() << "HeaderDownloader processing message " << message->name();
 
         // process the message (command pattern)
         message->execute();
 
         auto out_message = std::dynamic_pointer_cast<OutboundMessage>(message);
         if (out_message) {
-            SILKWORM_LOG(LogLevel::Info) << "HeaderDownloader sent message " << *out_message << "\n";
+            log::Info() << "HeaderDownloader sent message " << *out_message;
         }
     }
+
+    log::Warning() << "HeaderDownloader execution_loop is stopping...";
 }
 
 auto HeaderDownloader::forward(bool first_sync) -> Stage::Result {
@@ -113,7 +83,7 @@ auto HeaderDownloader::forward(bool first_sync) -> Stage::Result {
     bool new_height_reached = false;
     std::thread message_receiving;
 
-    SILKWORM_LOG(LogLevel::Info) << "HeaderDownloader forward operation started\n";
+    log::Info() << "HeaderDownloader forward operation started";
 
     try {
         Db::ReadWriteAccess::Tx tx = db_access_.start_tx();  // this will start a new tx only if db_access has not
@@ -121,7 +91,7 @@ auto HeaderDownloader::forward(bool first_sync) -> Stage::Result {
         PersistedChain persisted_chain_(tx);
 
         if (persisted_chain_.unwind_detected()) {
-            result.status = Stage::Result::Unknown; // todo: Erigon does not change stage-state here, what can we do?
+            result.status = Stage::Result::Unknown;  // todo: Erigon does not change stage-state here, what can we do?
             return result;
         }
 
@@ -142,8 +112,7 @@ auto HeaderDownloader::forward(bool first_sync) -> Stage::Result {
                 // check if it needs to persist some headers
                 auto command = withdraw_stable_headers();
                 auto [stable_headers, in_sync] = command->result().get();  // blocking
-                SILKWORM_LOG(LogLevel::Trace)
-                    << "HeaderDownloader persisting " << stable_headers.size() << " headers\n";
+                log::Trace() << "HeaderDownloader persisting " << stable_headers.size() << " headers";
                 persisted_chain_.persist(stable_headers);
 
                 // do announcements
@@ -160,9 +129,8 @@ auto HeaderDownloader::forward(bool first_sync) -> Stage::Result {
                 }
 
                 // todo: log progress - logProgressHeaders(logPrefix, prevProgress, progress)
-                SILKWORM_LOG(LogLevel::Trace)
-                    << "HeaderDownloader status: current persisted height=" << persisted_chain_.highest_height()
-                    << "\n";
+                log::Trace() << "HeaderDownloader status: current persisted height="
+                             << persisted_chain_.highest_height();
             } else {
                 std::this_thread::sleep_for(1s);
             }
@@ -180,10 +148,9 @@ auto HeaderDownloader::forward(bool first_sync) -> Stage::Result {
 
         tx.commit();  // this will commit if the tx was started here
 
-        SILKWORM_LOG(LogLevel::Info) << "HeaderDownloader forward operation completed\n";
+        log::Info() << "HeaderDownloader forward operation completed";
     } catch (const std::exception& e) {
-        SILKWORM_LOG(LogLevel::Error) << "HeaderDownloader forward operation is stopping due to an exception: "
-                                      << e.what() << "\n";
+        log::Error() << "HeaderDownloader forward operation is stopping due to an exception: " << e.what();
         // tx rollback executed automatically if needed
         result.status = Stage::Result::Error;
     }
@@ -191,14 +158,14 @@ auto HeaderDownloader::forward(bool first_sync) -> Stage::Result {
     stop();  // todo: it is better to try to cancel the grpc call, do a message_subscription.try_cancel() or both
     message_receiving.join();
 
-    SILKWORM_LOG(LogLevel::Debug) << "HeaderDownloader forward operation clean exit\n";
+    log::Debug() << "HeaderDownloader forward operation clean exit";
     return result;
 }
 
 auto HeaderDownloader::unwind_to(BlockNum new_height, Hash bad_block) -> Stage::Result {
     Stage::Result result;
 
-    SILKWORM_LOG(LogLevel::Info) << "HeaderDownloader unwind operation started\n";
+    log::Info() << "HeaderDownloader unwind operation started";
 
     try {
         Db::ReadWriteAccess::Tx tx = db_access_.start_tx();
@@ -218,10 +185,9 @@ auto HeaderDownloader::unwind_to(BlockNum new_height, Hash bad_block) -> Stage::
 
         tx.commit();
 
-        SILKWORM_LOG(LogLevel::Info) << "HeaderDownloader unwind operation completed\n";
+        log::Info() << "HeaderDownloader unwind operation completed";
     } catch (const std::exception& e) {
-        SILKWORM_LOG(LogLevel::Error) << "HeaderDownloader unwind operation is stopping due to an exception: "
-                                      << e.what() << "\n";
+        log::Error() << "HeaderDownloader unwind operation is stopping due to an exception: " << e.what();
         // tx rollback executed automatically if needed
         result.status = Stage::Result::Error;
     }
@@ -235,7 +201,7 @@ void HeaderDownloader::send_header_requests() {
 
     auto message = std::make_shared<OutboundGetBlockHeaders>(working_chain_, sentry_);
 
-    SILKWORM_LOG(LogLevel::Info) << "HeaderDownloader sending message " << *message << "\n";
+    log::Info() << "HeaderDownloader sending message " << *message;
 
     messages_.push(message);
 }
@@ -246,7 +212,7 @@ void HeaderDownloader::send_announcements() {
 
     auto message = std::make_shared<OutboundNewBlockHashes>(working_chain_, sentry_);
 
-    SILKWORM_LOG(LogLevel::Info) << "HeaderDownloader sending announcements\n";
+    log::Info() << "HeaderDownloader sending announcements";
 
     messages_.push(message);
 }

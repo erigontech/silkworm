@@ -70,7 +70,7 @@ static void flush_bitmaps(etl::Collector& collector, std::unordered_map<std::str
     map.clear();
 }
 
-StageResult stage_log_index(TransactionManager& txn, const std::filesystem::path& etl_path, uint64_t) {
+StageResult stage_log_index(db::RWTxn& txn, const std::filesystem::path& etl_path, uint64_t) {
     fs::create_directories(etl_path);
     etl::Collector topic_collector(etl_path, /* flush size */ 256_Mebi);
     etl::Collector addresses_collector(etl_path, /* flush size */ 256_Mebi);
@@ -79,7 +79,7 @@ StageResult stage_log_index(TransactionManager& txn, const std::filesystem::path
     auto last_processed_block_number{db::stages::read_stage_progress(*txn, db::stages::kLogIndexKey)};
 
     // Extract
-    SILKWORM_LOG(LogLevel::Info) << "Started Log Index Extraction" << std::endl;
+    log::Info() << "Started Log Index Extraction";
     Bytes start(8, '\0');
     endian::store_big_u64(&start[0], last_processed_block_number);
 
@@ -104,13 +104,13 @@ StageResult stage_log_index(TransactionManager& txn, const std::filesystem::path
         // Flushes
         if (topics_allocated_space > kBitmapBufferSizeLimit) {
             flush_bitmaps(topic_collector, topic_bitmaps);
-            SILKWORM_LOG(LogLevel::Info) << "Current Block: " << block_number << std::endl;
+            log::Info() << "Current Block: " << block_number;
             topics_allocated_space = 0;
         }
 
         if (addresses_allocated_space > kBitmapBufferSizeLimit) {
             flush_bitmaps(addresses_collector, addresses_bitmaps);
-            SILKWORM_LOG(LogLevel::Info) << "Current Block: " << block_number << std::endl;
+            log::Info() << "Current Block: " << block_number;
             addresses_allocated_space = 0;
         }
 
@@ -122,9 +122,9 @@ StageResult stage_log_index(TransactionManager& txn, const std::filesystem::path
     flush_bitmaps(topic_collector, topic_bitmaps);
     flush_bitmaps(addresses_collector, addresses_bitmaps);
 
-    SILKWORM_LOG(LogLevel::Info) << "Latest Block: " << block_number << std::endl;
+    log::Info() << "Latest Block: " << block_number;
     // Proceed only if we've done something
-    SILKWORM_LOG(LogLevel::Info) << "Started Topics Loading" << std::endl;
+    log::Info() << "Started Topics Loading";
     // if stage has never been touched then appending is safe
     MDBX_put_flags_t db_flags{last_processed_block_number ? MDBX_put_flags_t::MDBX_UPSERT
                                                           : MDBX_put_flags_t::MDBX_APPEND};
@@ -136,7 +136,7 @@ StageResult stage_log_index(TransactionManager& txn, const std::filesystem::path
                          /* log_every_percent = */ 10);
     target.close();
     target = db::open_cursor(*txn, db::table::kLogAddressIndex);
-    SILKWORM_LOG(LogLevel::Info) << "Started Address Loading" << std::endl;
+    log::Info() << "Started Address Loading";
     addresses_collector.load(target, loader_function, db_flags,
                              /* log_every_percent = */ 10);
 
@@ -145,12 +145,12 @@ StageResult stage_log_index(TransactionManager& txn, const std::filesystem::path
 
     txn.commit();
 
-    SILKWORM_LOG(LogLevel::Info) << "All Done" << std::endl;
+    log::Info() << "All Done";
 
     return StageResult::kSuccess;
 }
 
-static StageResult unwind_log_index(TransactionManager& txn, etl::Collector& collector, uint64_t unwind_to,
+static StageResult unwind_log_index(db::RWTxn& txn, etl::Collector& collector, uint64_t unwind_to,
                                     bool topics) {
     auto index_table{topics ? db::open_cursor(*txn, db::table::kLogTopicIndex)
                             : db::open_cursor(*txn, db::table::kLogAddressIndex)};
@@ -195,27 +195,27 @@ static StageResult unwind_log_index(TransactionManager& txn, etl::Collector& col
     return StageResult::kSuccess;
 }
 
-StageResult unwind_log_index(TransactionManager& txn, const std::filesystem::path& etl_path, uint64_t unwind_to) {
+StageResult unwind_log_index(db::RWTxn& txn, const std::filesystem::path& etl_path, uint64_t unwind_to) {
     etl::Collector collector(etl_path, /* flush size */ 256_Mebi);
 
-    SILKWORM_LOG(LogLevel::Info) << "Started Topic Index Unwind" << std::endl;
+    log::Info() << "Started Topic Index Unwind";
     auto result{unwind_log_index(txn, collector, unwind_to, true)};
     collector.clear();
     if (result != StageResult::kSuccess) {
         return result;
     }
-    SILKWORM_LOG(LogLevel::Info) << "Started Address Index Unwind" << std::endl;
+    log::Info() << "Started Address Index Unwind";
     result = unwind_log_index(txn, collector, unwind_to, false);
     collector.clear();
     if (result != StageResult::kSuccess) {
         return result;
     }
     db::stages::write_stage_progress(*txn, db::stages::kLogIndexKey, unwind_to);
-    SILKWORM_LOG(LogLevel::Info) << "All Done" << std::endl;
+    log::Info() << "All Done";
     return StageResult::kSuccess;
 }
 
-void prune_log_index(TransactionManager& txn, etl::Collector& collector, uint64_t prune_from, bool topics) {
+void prune_log_index(db::RWTxn& txn, etl::Collector& collector, uint64_t prune_from, bool topics) {
     auto last_processed_block{db::stages::read_stage_progress(*txn, db::stages::kLogIndexKey)};
 
     auto index_table{topics ? db::open_cursor(*txn, db::table::kLogTopicIndex)
@@ -253,16 +253,16 @@ void prune_log_index(TransactionManager& txn, etl::Collector& collector, uint64_
     txn.commit();
 }
 
-StageResult prune_log_index(TransactionManager& txn, const std::filesystem::path& etl_path, uint64_t prune_from) {
+StageResult prune_log_index(db::RWTxn& txn, const std::filesystem::path& etl_path, uint64_t prune_from) {
     etl::Collector collector(etl_path, /* flush size */ 256_Mebi);
 
-    SILKWORM_LOG(LogLevel::Info) << "Pruning Log Index from: " << prune_from << std::endl;
+    log::Info() << "Pruning Log Index from: " << prune_from;
     prune_log_index(txn, collector, prune_from, true);
     collector.clear();
     prune_log_index(txn, collector, prune_from, false);
     collector.clear();
 
-    SILKWORM_LOG(LogLevel::Info) << "Pruning Log Index finished..." << std::endl;
+    log::Info() << "Pruning Log Index finished...";
     return StageResult::kSuccess;
 }
 

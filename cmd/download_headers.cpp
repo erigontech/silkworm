@@ -13,7 +13,7 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 */
-#include <chrono>
+#include <filesystem>
 #include <iostream>
 #include <string>
 #include <thread>
@@ -25,7 +25,6 @@
 #include <silkworm/common/log.hpp>
 #include <silkworm/downloader/block_provider.hpp>
 #include <silkworm/downloader/header_downloader.hpp>
-#include <silkworm/downloader/sentry_client.hpp>
 
 using namespace silkworm;
 
@@ -42,24 +41,21 @@ int main(int argc, char* argv[]) {
     string temporary_file_path = ".";
     string sentry_addr = "127.0.0.1:9091";
 
-    app.add_option("--chaindata", db_path, "Path to the chain database", true)
-        ->check(CLI::ExistingDirectory);
-    app.add_option("--chain", chain_name, "Network name", true)
-        ->needs("--chaindata");
+    app.add_option("--chaindata", db_path, "Path to the chain database", true)->check(CLI::ExistingDirectory);
+    app.add_option("--chain", chain_name, "Network name", true)->needs("--chaindata");
     app.add_option("-s,--sentryaddr", sentry_addr, "address:port of sentry", true);
-        //  todo ->check?
+    //  todo ->check?
     app.add_option("-f,--filesdir", temporary_file_path, "Path to a temp files dir", true)
         ->check(CLI::ExistingDirectory);
 
     CLI11_PARSE(app, argc, argv);
 
-    SILKWORM_LOG_VERBOSITY(LogLevel::Trace);
-    std::ofstream log_file("downloader.log", std::ios::out | std::ios::app);
-    SILKWORM_LOG_STREAMS(cerr, log_file);
-    SILKWORM_LOG(LogLevel::Info) << "STARTING\n";
+    log::set_verbosity(log::Level::kTrace);
+    log::tee_file(std::filesystem::path("downloader.log"));
+    log::Info() << "STARTING";
 
+    std::thread message_receiving;
     std::thread block_request_processing;
-    std::thread header_receiving;
     std::thread header_processing;
     int return_value = 0;
 
@@ -91,15 +87,16 @@ int main(int argc, char* argv[]) {
 
         // Sentry client - connects to sentry
         SentryClient sentry{sentry_addr};
+        sentry.set_status(head_hash, head_td, chain_identity);
+        message_receiving = std::thread([&sentry]() { sentry.execution_loop(); });
 
         // Block provider - provides headers and bodies to external peers
-        BlockProvider block_provider{sentry, Db::ReadOnlyAccess{db}, chain_identity};
+        BlockProvider block_provider{sentry, Db::ReadOnlyAccess{db}};
         block_request_processing = std::thread([&block_provider]() { block_provider.execution_loop(); });
 
         // Stage1 - Header downloader - example code
         bool first_sync = true;  // = starting up silkworm
         HeaderDownloader header_downloader{sentry, Db::ReadWriteAccess{db}, chain_identity};
-        header_receiving = std::thread([&header_downloader]() { header_downloader.receive_messages(); });
         header_processing = std::thread([&header_downloader]() { header_downloader.execution_loop(); });
 
         // Sample stage loop with 1 stage
@@ -108,7 +105,7 @@ int main(int argc, char* argv[]) {
             if (stage_result.status != Stage::Result::UnwindNeeded) {
                 stage_result = header_downloader.forward(first_sync);
             } else {
-                stage_result = header_downloader.unwind_to(*stage_result.unwind_point);
+                stage_result = header_downloader.unwind_to(*stage_result.unwind_point, /*bad_block=*/{});
             }
         } while (stage_result.status != Stage::Result::Error);
 
@@ -122,8 +119,8 @@ int main(int argc, char* argv[]) {
     }
 
     // wait threads termination
+    if (message_receiving.joinable()) message_receiving.join();
     if (block_request_processing.joinable()) block_request_processing.join();
-    if (header_receiving.joinable()) header_receiving.join();
     if (header_processing.joinable()) header_processing.join();
 
     return return_value;

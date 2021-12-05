@@ -32,12 +32,12 @@ InboundNewBlock::InboundNewBlock(const sentry::InboundMessage& msg, WorkingChain
 
     reqId_ = RANDOM_NUMBER.generate_one();  // for trace purposes
 
-    peerId_ = string_from_H512(msg.peer_id());
+    peerId_ = hash_from_H256(msg.peer_id());
 
     ByteView data = string_view_to_byte_view(msg.data());  // copy for consumption
     rlp::success_or_throw(rlp::decode(data, packet_));
 
-    SILKWORM_LOG(LogLevel::Trace) << "Received message " << *this << "\n";
+    log::Trace() << "Received message " << *this;
 }
 
 void InboundNewBlock::execute() {

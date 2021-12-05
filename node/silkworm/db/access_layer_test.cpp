@@ -23,6 +23,7 @@
 #include <silkworm/common/test_context.hpp>
 #include <silkworm/db/buffer.hpp>
 #include <silkworm/db/storage.hpp>
+#include <silkworm/db/tables.hpp>
 #include <silkworm/execution/execution.hpp>
 #include <silkworm/stagedsync/stagedsync.hpp>
 
@@ -143,7 +144,7 @@ namespace db {
 
         main_crs.to_first();
         db::cursor_for_each(main_crs, walk_func);
-        CHECK(table_names.size() == sizeof(db::table::kTables) / sizeof(db::table::kTables[0]));
+        CHECK(table_names.size() == sizeof(db::table::kChainDataTables) / sizeof(db::table::kChainDataTables[0]));
         CHECK(table_names.size() == main_stat.ms_entries);
 
         main_crs.to_first();
@@ -203,27 +204,41 @@ namespace db {
         REQUIRE(thrown);
     }
 
-    TEST_CASE("Read schema Version") {
-        test::Context context;
+    TEST_CASE("Schema Version") {
+        test::Context context(/*with_create_tables=*/false);
 
-        auto version{db::read_schema_version(context.txn())};
-        CHECK(version.has_value() == false);
+        SECTION("Read/Write") {
+            auto version{db::read_schema_version(context.txn())};
+            CHECK(version.has_value() == false);
 
-        version = VersionBase{3, 0, 0};
-        CHECK_NOTHROW(db::write_schema_version(context.txn(), version.value()));
-        version = db::read_schema_version(context.txn());
-        CHECK(version.has_value() == true);
+            version = VersionBase{3, 0, 0};
+            CHECK_NOTHROW(db::write_schema_version(context.txn(), version.value()));
+            context.commit_and_renew_txn();
+            version = db::read_schema_version(context.txn());
+            CHECK(version.has_value() == true);
 
-        context.commit_and_renew_txn();
+            auto version2{db::read_schema_version(context.txn())};
+            CHECK(version.value() == version2.value());
 
-        auto version2{db::read_schema_version(context.txn())};
-        CHECK(version.value() == version2.value());
+            version2 = VersionBase{2, 0, 0};
+            CHECK_THROWS(db::write_schema_version(context.txn(), version2.value()));
 
-        version2 = VersionBase{2, 0, 0};
-        CHECK_THROWS(db::write_schema_version(context.txn(), version2.value()));
+            version2 = VersionBase{3, 1, 0};
+            CHECK_NOTHROW(db::write_schema_version(context.txn(), version2.value()));
+        }
 
-        version2 = VersionBase{3, 1, 0};
-        CHECK_NOTHROW(db::write_schema_version(context.txn(), version2.value()));
+        SECTION("Incompatible schema") {
+            // Reduce compat schema version
+            auto incompat_version = VersionBase{db::table::kRequiredSchemaVersion.Major - 1, 0, 0};
+            REQUIRE_NOTHROW(db::write_schema_version(context.txn(), incompat_version));
+            REQUIRE_THROWS(db::table::check_or_create_chaindata_tables(context.txn()));
+        }
+
+        SECTION("Incompatible table") {
+            (void)context.txn().create_map(db::table::kBlockBodies.name, mdbx::key_mode::reverse,
+                                           mdbx::value_mode::multi_reverse);
+            REQUIRE_THROWS(db::table::check_or_create_chaindata_tables(context.txn()));
+        }
     }
 
     TEST_CASE("Storage and Prune Modes") {
@@ -231,53 +246,118 @@ namespace db {
         auto& txn{context.txn()};
 
         SECTION("Prune Mode") {
+            BlockAmount blockAmount;
+            REQUIRE(blockAmount.value() == 0);
+            REQUIRE(blockAmount.value_from_head(1'000'000) == 0);
+
             // Uninitialized mode
             PruneMode default_mode{};
-            CHECK(default_mode.to_string() == "default");
+            CHECK(default_mode.to_string() == "--prune=");
 
             // No value in db -> no pruning
-            auto prune_mode{db::read_prune_mode(txn)};
-            CHECK(prune_mode.to_string() == "--prune=");
-            CHECK_NOTHROW(db::write_prune_mode(txn, prune_mode));
+            {
+                auto prune_mode{db::read_prune_mode(txn)};
+                CHECK(prune_mode.to_string() == "--prune=");
+                CHECK_NOTHROW(db::write_prune_mode(txn, prune_mode));
+                auto db_prune_mode = std::make_unique<db::PruneMode>(db::read_prune_mode(txn));
+                REQUIRE(prune_mode == *db_prune_mode);
+            }
 
             // Cross-check we have the same value
-            prune_mode = db::read_prune_mode(txn);
-            CHECK(prune_mode.to_string() == "--prune=");
+            {
+                auto prune_mode = db::read_prune_mode(txn);
+                CHECK(prune_mode.to_string() == "--prune=");
+            }
 
-            // Set default prune value for History
-            prune_mode.history.emplace(kDefaultPruneThreshold);
-            CHECK_NOTHROW(db::write_prune_mode(txn, prune_mode));
-            prune_mode = db::read_prune_mode(txn);
-            CHECK(prune_mode.to_string() == "--prune=h");
+            // Write rubbish to prune mode
+            {
+                auto target{db::open_cursor(txn, table::kDatabaseInfo)};
+                std::string db_key{"pruneHistoryType"};
+                std::string db_value{"random"};
+                target.upsert(mdbx::slice(db_key), mdbx::slice(db_value));
+                bool hasThrown{false};
+                try {
+                    (void)db::read_prune_mode(txn);
+                } catch (const std::runtime_error&) {
+                    hasThrown = true;
+                }
+                REQUIRE(hasThrown);
+                db_value = "older";
+                target.upsert(mdbx::slice(db_key), mdbx::slice(db_value));
+            }
 
-            // Set default prune value for receipts
-            prune_mode.receipts.emplace(kDefaultPruneThreshold);
-            CHECK_NOTHROW(db::write_prune_mode(txn, prune_mode));
-            prune_mode = db::read_prune_mode(txn);
-            CHECK(prune_mode.to_string() == "--prune=hr");
+            // Provide different combinations of cli arguments
+            std::string prune, expected;
+            std::optional<BlockNum> olderHistory, olderReceipts, olderTxIndex, olderCallTraces;
+            std::optional<BlockNum> beforeHistory, beforeReceipts, beforeTxIndex, beforeCallTraces;
 
-            // Set default prune value for tx_index and CallTraces
-            prune_mode.tx_index.emplace(kDefaultPruneThreshold);
-            prune_mode.call_traces.emplace(kDefaultPruneThreshold);
-            CHECK_NOTHROW(db::write_prune_mode(txn, prune_mode));
-            prune_mode = db::read_prune_mode(txn);
-            CHECK(prune_mode.to_string() == "--prune=hrtc");
+            prune = "hrtc";
+            expected = "--prune=hrtc";
+            {
+                auto prune_mode = db::parse_prune_mode(prune,  //
+                                                       olderHistory, olderReceipts, olderTxIndex, olderCallTraces,
+                                                       beforeHistory, beforeReceipts, beforeTxIndex, beforeCallTraces);
+                REQUIRE(prune_mode->to_string() == expected);
+                REQUIRE_NOTHROW(db::write_prune_mode(txn, *prune_mode));
+                prune_mode = std::make_unique<db::PruneMode>(db::read_prune_mode(txn));
+                REQUIRE(prune_mode->to_string() == expected);
+                REQUIRE(prune_mode->history().value_from_head(10) == 0);
+            }
 
-            // Set non-default prune value for History
-            prune_mode.history.emplace(1'000u);
-            CHECK_NOTHROW(db::write_prune_mode(txn, prune_mode));
-            prune_mode = db::read_prune_mode(txn);
-            CHECK(prune_mode.to_string() == "--prune=rtc --prune.h.older=1000");
+            prune = "htc";
+            olderHistory.emplace(8000);
+            beforeReceipts.emplace(10000);
+            expected = "--prune=tc --prune.h.older=8000 --prune.r.before=10000";
+            {
+                auto prune_mode = db::parse_prune_mode(prune,  //
+                                                       olderHistory, olderReceipts, olderTxIndex, olderCallTraces,
+                                                       beforeHistory, beforeReceipts, beforeTxIndex, beforeCallTraces);
+                REQUIRE(prune_mode->to_string() == expected);
+                REQUIRE_NOTHROW(db::write_prune_mode(txn, *prune_mode));
+                prune_mode = std::make_unique<db::PruneMode>(db::read_prune_mode(txn));
+                REQUIRE(prune_mode->to_string() == expected);
+                REQUIRE(prune_mode->history() != prune_mode->receipts());
+                REQUIRE(prune_mode->tx_index() == prune_mode->call_traces());
+            }
 
-            // Parse from string with one discrete value
-            std::string mode_str{"hrtc"};
-            prune_mode = db::parse_prune_mode(mode_str, 1'000u);
-            CHECK(prune_mode.to_string() == "--prune=rtc --prune.h.older=1000");
+            prune = "htc";
+            olderHistory.emplace(kFullImmutabilityThreshold);
+            beforeReceipts.emplace(10000);
+            expected = "--prune=htc --prune.r.before=10000";
+            {
+                auto prune_mode = db::parse_prune_mode(prune,  //
+                                                       olderHistory, olderReceipts, olderTxIndex, olderCallTraces,
+                                                       beforeHistory, beforeReceipts, beforeTxIndex, beforeCallTraces);
+                REQUIRE(prune_mode->to_string() == expected);
+                REQUIRE_NOTHROW(db::write_prune_mode(txn, *prune_mode));
+                prune_mode = std::make_unique<db::PruneMode>(db::read_prune_mode(txn));
+                REQUIRE(prune_mode->to_string() == expected);
+                REQUIRE(prune_mode->receipts().value() == 10000);
+                REQUIRE(prune_mode->history().value() == kFullImmutabilityThreshold);
+            }
 
-            // Parse from string with all discrete values
-            prune_mode = db::parse_prune_mode(mode_str, 1'000u, 999u, 998u, 997u);
-            CHECK(prune_mode.to_string() ==
-                  "--prune= --prune.h.older=1000 --prune.r.older=999 --prune.t.older=998 --prune.c.older=997");
+            prune = "hrtc";
+            olderHistory.emplace(kFullImmutabilityThreshold + 5);
+            beforeReceipts.reset();
+            beforeCallTraces.emplace(10000);
+            expected = "--prune=rt --prune.h.older=90005 --prune.c.before=10000";
+            {
+                auto prune_mode = db::parse_prune_mode(prune,  //
+                                                       olderHistory, olderReceipts, olderTxIndex, olderCallTraces,
+                                                       beforeHistory, beforeReceipts, beforeTxIndex, beforeCallTraces);
+                REQUIRE(prune_mode->to_string() == expected);
+                REQUIRE_NOTHROW(db::write_prune_mode(txn, *prune_mode));
+                prune_mode = std::make_unique<db::PruneMode>(db::read_prune_mode(txn));
+                REQUIRE(prune_mode->to_string() == expected);
+                REQUIRE(prune_mode->receipts().value() == kFullImmutabilityThreshold);
+                REQUIRE(prune_mode->tx_index().value() == kFullImmutabilityThreshold);
+                REQUIRE(prune_mode->call_traces().type() == BlockAmount::Type::kBefore);
+                REQUIRE(prune_mode->history().value_from_head(1'000'000) == 909'995);
+                REQUIRE(prune_mode->receipts().value_from_head(1'000'000) == 910'000);
+                REQUIRE(prune_mode->tx_index().value_from_head(1'000'000) == 910'000);
+                REQUIRE(prune_mode->call_traces().type() == BlockAmount::Type::kBefore);
+                REQUIRE(prune_mode->call_traces().value_from_head(1'000'000) == 9'999);
+            }
         }
     }
 
@@ -357,7 +437,7 @@ namespace db {
             CHECK(bh->block.header == header);
             CHECK(bh->block.ommers == body.ommers);
             CHECK(bh->block.transactions == body.transactions);
-            CHECK(full_view(bh->hash) == full_view(hash.bytes));
+            CHECK(ByteView{bh->hash} == ByteView{hash.bytes});
 
             CHECK(!bh->block.transactions[0].from);
             CHECK(!bh->block.transactions[1].from);
@@ -382,7 +462,7 @@ namespace db {
             CHECK(bh->block.header == header);
             CHECK(bh->block.ommers == body.ommers);
             CHECK(bh->block.transactions == body.transactions);
-            CHECK(full_view(bh->hash) == full_view(hash.bytes));
+            CHECK(ByteView{bh->hash} == ByteView{hash.bytes});
 
             CHECK(bh->block.transactions[0].from == 0x5a0b54d5dc17e0aadc383d2db43b0a0d3e029c4c_address);
             CHECK(bh->block.transactions[1].from == 0x941591b6ca8e8dd05c69efdec02b77c72dac1496_address);
@@ -418,7 +498,7 @@ namespace db {
 
         buffer.write_to_db();
 
-        stagedsync::TransactionManager tm{txn};
+        db::RWTxn tm{txn};
         REQUIRE(stagedsync::stage_account_history(tm, context.dir().etl().path()) == stagedsync::StageResult::kSuccess);
 
         std::optional<Account> current_account{read_account(txn, miner_a)};
@@ -437,7 +517,7 @@ namespace db {
         auto table{db::open_cursor(txn, table::kPlainState)};
 
         const auto addr{0xb000000000000000000000000000000000000008_address};
-        const Bytes key{storage_prefix(full_view(addr), kDefaultIncarnation)};
+        const Bytes key{storage_prefix(addr, kDefaultIncarnation)};
 
         const auto loc1{0x000000000000000000000000000000000000a000000000000000000000000037_bytes32};
         const auto loc2{0x0000000000000000000000000000000000000000000000000000000000000000_bytes32};
@@ -448,17 +528,9 @@ namespace db {
         const auto val2{0x000000000000000000000000000000000000000000005666856076ebaf477f07_bytes32};
         const auto val3{0x4400000000000000000000000000000000000000000000000000000000000000_bytes32};
 
-        Bytes dat1{full_view(loc1)};
-        dat1.append(zeroless_view(val1));
-        table.upsert(to_slice(key), to_slice(dat1));
-
-        Bytes dat2{full_view(loc2)};
-        dat2.append(zeroless_view(val2));
-        table.upsert(to_slice(key), to_slice(dat2));
-
-        Bytes dat3{full_view(loc3)};
-        dat3.append(zeroless_view(val3));
-        table.upsert(to_slice(key), to_slice(dat3));
+        upsert_storage_value(table, key, loc1, val1);
+        upsert_storage_value(table, key, loc2, val2);
+        upsert_storage_value(table, key, loc3, val3);
 
         CHECK(db::read_storage(txn, addr, kDefaultIncarnation, loc1) == val1);
         CHECK(db::read_storage(txn, addr, kDefaultIncarnation, loc2) == val2);
@@ -493,20 +565,20 @@ namespace db {
 
         auto table{db::open_cursor(txn, table::kAccountChangeSet)};
 
-        Bytes data1{full_view(addr1)};
+        Bytes data1{ByteView{addr1}};
         Bytes key1{block_key(block_num1)};
         data1.append(*from_hex(val1));
         table.upsert(to_slice(key1), to_slice(data1));
 
-        Bytes data2{full_view(addr2)};
+        Bytes data2{ByteView{addr2}};
         data2.append(*from_hex(val2));
         table.upsert(to_slice(key1), to_slice(data2));
 
-        Bytes data3{full_view(addr3)};
+        Bytes data3{ByteView{addr3}};
         data3.append(*from_hex(val3));
         table.upsert(to_slice(key1), to_slice(data3));
 
-        Bytes data4{full_view(addr4)};
+        Bytes data4{ByteView{addr4}};
         Bytes key2{block_key(block_num2)};
         data4.append(*from_hex(val4));
         table.upsert(to_slice(key2), to_slice(data4));
@@ -562,22 +634,22 @@ namespace db {
 
         auto table{db::open_cursor(txn, table::kStorageChangeSet)};
 
-        Bytes data1{full_view(location1)};
+        Bytes data1{ByteView{location1}};
         data1.append(val1);
         auto key1{storage_change_key(block_num1, addr1, incarnation1)};
         table.upsert(db::to_slice(key1), db::to_slice(data1));
 
-        Bytes data2{full_view(location2)};
+        Bytes data2{ByteView{location2}};
         data2.append(val2);
         auto key2{storage_change_key(block_num1, addr2, incarnation2)};
         table.upsert(db::to_slice(key2), db::to_slice(data2));
 
-        Bytes data3{full_view(location3)};
+        Bytes data3{ByteView{location3}};
         data3.append(val3);
         auto key3{storage_change_key(block_num1, addr3, incarnation3)};
         table.upsert(db::to_slice(key3), db::to_slice(data3));
 
-        Bytes data4{full_view(location4)};
+        Bytes data4{ByteView{location4}};
         data4.append(val4);
         auto key4{storage_change_key(block_num3, addr4, incarnation4)};
         table.upsert(db::to_slice(key4), db::to_slice(data4));
@@ -628,7 +700,6 @@ namespace db {
     }
 
     TEST_CASE("Head header") {
-
         test::Context context;
         auto& txn{context.txn()};
 

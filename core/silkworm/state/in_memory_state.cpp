@@ -45,9 +45,9 @@ ByteView InMemoryState::read_code(const evmc::bytes32& code_hash) const noexcept
 evmc::bytes32 InMemoryState::read_storage(const evmc::address& address, uint64_t incarnation,
                                           const evmc::bytes32& location) const noexcept {
     const auto it1{storage_.find(address)};
-    if (it1 != storage_.end()) {
+    if (it1 != storage_.end()){
         const auto it2{it1->second.find(incarnation)};
-        if (it2 != it1->second.end()) {
+        if (it2 != it1->second.end()){
             const auto it3{it2->second.find(location)};
             if (it3 == it2->second.end()) {
                 return it3->second;
@@ -199,14 +199,16 @@ void InMemoryState::unwind_state_changes(uint64_t block_number) {
 size_t InMemoryState::number_of_accounts() const { return accounts_.size(); }
 
 size_t InMemoryState::storage_size(const evmc::address& address, uint64_t incarnation) const {
-    const auto it1{storage_.find(address)};
-    if (it1 != storage_.end()) {
-        const auto it2{it1->second.find(incarnation)};
-        if (it2 != it1->second.end()) {
-            return it2->second.size();
-        }
+    auto it1{storage_.find(address)};
+    if (it1 == storage_.end()) {
+        return 0;
     }
-    return 0;
+    auto it2{it1->second.find(incarnation)};
+    if (it2 == it1->second.end()) {
+        return 0;
+    }
+
+    return it2->second.size();
 }
 
 // https://eth.wiki/fundamentals/patricia-tree#storage-trie

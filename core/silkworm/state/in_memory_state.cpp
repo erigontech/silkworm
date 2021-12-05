@@ -44,19 +44,17 @@ ByteView InMemoryState::read_code(const evmc::bytes32& code_hash) const noexcept
 
 evmc::bytes32 InMemoryState::read_storage(const evmc::address& address, uint64_t incarnation,
                                           const evmc::bytes32& location) const noexcept {
-    auto it1{storage_.find(address)};
-    if (it1 == storage_.end()) {
-        return {};
+    const auto it1{storage_.find(address)};
+    if (it1 != storage_.end()) {
+        const auto it2{it1->second.find(incarnation)};
+        if (it2 != it1->second.end()) {
+            const auto it3{it2->second.find(location)};
+            if (it3 != it2->second.end()) {
+                return it3->second;
+            }
+        }
     }
-    auto it2{it1->second.find(incarnation)};
-    if (it2 == it1->second.end()) {
-        return {};
-    }
-    auto it3{it2->second.find(location)};
-    if (it3 == it2->second.end()) {
-        return {};
-    }
-    return it3->second;
+    return {};
 }
 
 uint64_t InMemoryState::previous_incarnation(const evmc::address& address) const noexcept {
@@ -201,34 +199,29 @@ void InMemoryState::unwind_state_changes(uint64_t block_number) {
 size_t InMemoryState::number_of_accounts() const { return accounts_.size(); }
 
 size_t InMemoryState::storage_size(const evmc::address& address, uint64_t incarnation) const {
-    auto it1{storage_.find(address)};
-    if (it1 == storage_.end()) {
-        return 0;
+    const auto it1{storage_.find(address)};
+    if (it1 != storage_.end()) {
+        const auto it2{it1->second.find(incarnation)};
+        if (it2 != it1->second.end()) {
+            return it2->second.size();
+        }
     }
-    auto it2{it1->second.find(incarnation)};
-    if (it2 == it1->second.end()) {
-        return 0;
-    }
-
-    return it2->second.size();
+    return 0;
 }
 
 // https://eth.wiki/fundamentals/patricia-tree#storage-trie
 evmc::bytes32 InMemoryState::account_storage_root(const evmc::address& address, uint64_t incarnation) const {
+
     auto it1{storage_.find(address)};
     if (it1 == storage_.end()) {
         return kEmptyRoot;
     }
     auto it2{it1->second.find(incarnation)};
-    if (it2 == it1->second.end()) {
+    if (it2 == it1->second.end() || it2->second.empty()) {
         return kEmptyRoot;
     }
 
     const auto& storage{it2->second};
-
-    if (storage.empty()) {
-        return kEmptyRoot;
-    }
 
     std::map<evmc::bytes32, Bytes> storage_rlp;
     Bytes buffer;

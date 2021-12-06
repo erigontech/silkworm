@@ -122,7 +122,7 @@ void parse_command_line(CLI::App& cli, int argc, char* argv[], log::Settings& lo
 
     cli.add_option("--sentry.api.addr", node_settings.sentry_api_addr, "Sentry api endpoint", true)
         ->check(EndPointValidator(/*allow_empty=*/true));
-    
+
     cli.add_flag("--fakepow", node_settings.fake_pow, "Disables proof-of-work verification");
     // Chain options
     auto chains_map{get_known_chains_map()};
@@ -145,6 +145,7 @@ void parse_command_line(CLI::App& cli, int argc, char* argv[], log::Settings& lo
                     "h - prune history (ChangeSets, HistoryIndices - used by historical state access)\n"
                     "r - prune receipts (Receipts, Logs, LogTopicIndex, LogAddressIndex - used by eth_getLogs and "
                     "similar RPC methods)\n"
+                    "s - prune senders recovered\n"
                     "t - prune transaction by it's hash index\n"
                     "c - prune call traces (used by trace_* methods)\n"
                     "If item is NOT in the list - means NO pruning for this data.\n"
@@ -156,6 +157,8 @@ void parse_command_line(CLI::App& cli, int argc, char* argv[], log::Settings& lo
         ->check(CLI::Range(0u, UINT32_MAX));
     prune_opts.add_option("--prune.r.older", "Override default 90k blocks of receipts to prune")
         ->check(CLI::Range(0u, UINT32_MAX));
+    prune_opts.add_option("--prune.s.older", "Override default 90k blocks of senders to prune")
+        ->check(CLI::Range(0u, UINT32_MAX));
     prune_opts.add_option("--prune.t.older", "Override default 90k blocks of transactions to prune")
         ->check(CLI::Range(0u, UINT32_MAX));
     prune_opts.add_option("--prune.c.older", "Override default 90k blocks of call traces to prune")
@@ -163,6 +166,8 @@ void parse_command_line(CLI::App& cli, int argc, char* argv[], log::Settings& lo
     prune_opts.add_option("--prune.h.before", "Prune history data before this block")
         ->check(CLI::Range(0u, UINT32_MAX));
     prune_opts.add_option("--prune.r.before", "Prune receipts data before this block")
+        ->check(CLI::Range(0u, UINT32_MAX));
+    prune_opts.add_option("--prune.s.before", "Prune senders data before this block")
         ->check(CLI::Range(0u, UINT32_MAX));
     prune_opts.add_option("--prune.t.before", "Prune transactions data before this block")
         ->check(CLI::Range(0u, UINT32_MAX));
@@ -194,21 +199,24 @@ void parse_command_line(CLI::App& cli, int argc, char* argv[], log::Settings& lo
     node_settings.etl_buffer_size = parse_size(etl_buffer_size).value();
 
     // Parse prune mode
-    std::optional<BlockNum> olderHistory, olderReceipts, olderTxIndex, olderCallTraces;
+    db::PruneDistance olderHistory, olderReceipts, olderSenders, olderTxIndex, olderCallTraces;
     if (cli["--prune.h.older"]->count()) olderHistory.emplace(cli["--prune.h.older"]->as<BlockNum>());
     if (cli["--prune.r.older"]->count()) olderReceipts.emplace(cli["--prune.r.older"]->as<BlockNum>());
+    if (cli["--prune.s.older"]->count()) olderSenders.emplace(cli["--prune.s.older"]->as<BlockNum>());
     if (cli["--prune.t.older"]->count()) olderTxIndex.emplace(cli["--prune.t.older"]->as<BlockNum>());
     if (cli["--prune.c.older"]->count()) olderCallTraces.emplace(cli["--prune.c.older"]->as<BlockNum>());
 
-    std::optional<BlockNum> beforeHistory, beforeReceipts, beforeTxIndex, beforeCallTraces;
+    db::PruneThreshold beforeHistory, beforeReceipts, beforeSenders, beforeTxIndex, beforeCallTraces;
     if (cli["--prune.h.before"]->count()) beforeHistory.emplace(cli["--prune.h.before"]->as<BlockNum>());
     if (cli["--prune.r.before"]->count()) beforeReceipts.emplace(cli["--prune.r.before"]->as<BlockNum>());
+    if (cli["--prune.s.before"]->count()) beforeSenders.emplace(cli["--prune.s.before"]->as<BlockNum>());
     if (cli["--prune.t.before"]->count()) beforeTxIndex.emplace(cli["--prune.t.before"]->as<BlockNum>());
     if (cli["--prune.c.before"]->count()) beforeCallTraces.emplace(cli["--prune.c.before"]->as<BlockNum>());
 
-    node_settings.prune_mode = db::parse_prune_mode(prune_mode,  //
-                                                    olderHistory, olderReceipts, olderTxIndex, olderCallTraces,
-                                                    beforeHistory, beforeReceipts, beforeTxIndex, beforeCallTraces);
+    node_settings.prune_mode =
+        db::parse_prune_mode(prune_mode,  //
+                             olderHistory, olderReceipts, olderSenders, olderTxIndex, olderCallTraces, beforeHistory,
+                             beforeReceipts, beforeSenders, beforeTxIndex, beforeCallTraces);
 
     // Set chain
     if (chain_opts_chain_name->count()) {

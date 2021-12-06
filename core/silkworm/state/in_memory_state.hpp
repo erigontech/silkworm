@@ -102,15 +102,15 @@ class InMemoryState : public State {
         storage_;
 
     // block number -> hash -> header
-    std::vector<std::unordered_map<evmc::bytes32, BlockHeader>> headers_;
+    std::map<BlockNum, std::unordered_map<evmc::bytes32, BlockHeader>> headers_;
 
     // block number -> hash -> body
-    std::vector<std::unordered_map<evmc::bytes32, BlockBody>> bodies_;
+    std::map<BlockNum, std::unordered_map<evmc::bytes32, BlockBody>> bodies_;
 
     // block number -> hash -> total difficulty
-    std::vector<std::unordered_map<evmc::bytes32, intx::uint256>> difficulty_;
+    std::map<BlockNum, std::unordered_map<evmc::bytes32, intx::uint256>> difficulty_;
 
-    std::vector<evmc::bytes32> canonical_hashes_;
+    std::map<BlockNum, evmc::bytes32> canonical_hashes_;
 
     std::unordered_map<uint64_t, AccountChanges> account_changes_;  // per block
     std::unordered_map<uint64_t, StorageChanges> storage_changes_;  // per block

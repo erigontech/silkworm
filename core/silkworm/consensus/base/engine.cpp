@@ -16,7 +16,6 @@
 
 #include "engine.hpp"
 
-#include <silkworm/chain/difficulty.hpp>
 #include <silkworm/chain/protocol_param.hpp>
 #include <silkworm/common/as_range.hpp>
 #include <silkworm/crypto/ecdsa.hpp>
@@ -25,19 +24,12 @@
 
 namespace silkworm::consensus {
 
-ValidationResult ConsensusEngineBase::pre_validate_block(const silkworm::Block& block, silkworm::BlockState& state) {
+ValidationResult EngineBase::pre_validate_block(const Block& block, const BlockState& state) {
     const BlockHeader& header{block.header};
 
     if (ValidationResult err{validate_block_header(header, state, /*with_future_timestamp_check=*/true)};
         err != ValidationResult::kOk) {
         return err;
-    }
-
-    Bytes ommers_rlp;
-    rlp::encode(ommers_rlp, block.ommers);
-    ethash::hash256 ommers_hash{keccak256(ommers_rlp)};
-    if (ByteView{ommers_hash.bytes} != ByteView{header.ommers_hash}) {
-        return ValidationResult::kWrongOmmersHash;
     }
 
     static constexpr auto kEncoder = [](Bytes& to, const Transaction& txn) {
@@ -47,6 +39,26 @@ ValidationResult ConsensusEngineBase::pre_validate_block(const silkworm::Block& 
     evmc::bytes32 txn_root{trie::root_hash(block.transactions, kEncoder)};
     if (txn_root != header.transactions_root) {
         return ValidationResult::kWrongTransactionsRoot;
+    }
+
+    for (const Transaction& txn : block.transactions) {
+        if (ValidationResult err{pre_validate_transaction(txn, header.number, chain_config_, header.base_fee_per_gas)};
+            err != ValidationResult::kOk) {
+            return err;
+        }
+    }
+
+    if (block.ommers.empty()) {
+        return header.ommers_hash == kEmptyListHash ? ValidationResult::kOk : ValidationResult::kWrongOmmersHash;
+    } else if (prohibit_ommers_) {
+        return ValidationResult::kTooManyOmmers;
+    }
+
+    Bytes ommers_rlp;
+    rlp::encode(ommers_rlp, block.ommers);
+    ethash::hash256 ommers_hash{keccak256(ommers_rlp)};
+    if (ByteView{ommers_hash.bytes} != ByteView{header.ommers_hash}) {
+        return ValidationResult::kWrongOmmersHash;
     }
 
     if (block.ommers.size() > 2) {
@@ -74,18 +86,11 @@ ValidationResult ConsensusEngineBase::pre_validate_block(const silkworm::Block& 
         }
     }
 
-    for (const Transaction& txn : block.transactions) {
-        ValidationResult err{pre_validate_transaction(txn, header.number, chain_config_, header.base_fee_per_gas)};
-        if (err != ValidationResult::kOk) {
-            return err;
-        }
-    }
-
     return ValidationResult::kOk;
 }
 
-ValidationResult ConsensusEngineBase::validate_block_header(const BlockHeader& header, BlockState& state,
-                                                            bool with_future_timestamp_check) {
+ValidationResult EngineBase::validate_block_header(const BlockHeader& header, const BlockState& state,
+                                                   bool with_future_timestamp_check) {
     if (with_future_timestamp_check) {
         const std::time_t now{std::time(nullptr)};
         if (header.timestamp > static_cast<uint64_t>(now)) {
@@ -107,8 +112,12 @@ ValidationResult ConsensusEngineBase::validate_block_header(const BlockHeader& h
         return ValidationResult::kInvalidGasLimit;
     }
 
-    if (header.extra_data.length() > 32) {
+    if (header.extra_data.length() > param::kMaxExtraDataBytes) {
         return ValidationResult::kExtraDataTooLong;
+    }
+
+    if (prohibit_ommers_ && header.ommers_hash != kEmptyListHash) {
+        return ValidationResult::kWrongOmmersHash;
     }
 
     const std::optional<BlockHeader> parent{get_parent_header(state, header)};
@@ -131,11 +140,8 @@ ValidationResult ConsensusEngineBase::validate_block_header(const BlockHeader& h
         return ValidationResult::kInvalidGasLimit;
     }
 
-    const bool parent_has_uncles{parent->ommers_hash != kEmptyListHash};
-    const intx::uint256 difficulty{canonical_difficulty(header.number, header.timestamp, parent->difficulty,
-                                                        parent->timestamp, parent_has_uncles, chain_config_)};
-    if (difficulty != header.difficulty) {
-        return ValidationResult::kWrongDifficulty;
+    if (ValidationResult res{validate_difficulty(header, *parent)}; res != ValidationResult::kOk) {
+        return res;
     }
 
     // https://eips.ethereum.org/EIPS/eip-779
@@ -154,16 +160,16 @@ ValidationResult ConsensusEngineBase::validate_block_header(const BlockHeader& h
     return validate_seal(header);
 }
 
-std::optional<BlockHeader> ConsensusEngineBase::get_parent_header(const BlockState& state, const BlockHeader& header) {
+std::optional<BlockHeader> EngineBase::get_parent_header(const BlockState& state, const BlockHeader& header) {
     if (header.number == 0) {
         return std::nullopt;
     }
     return state.read_header(header.number - 1, header.parent_hash);
 }
 
-bool ConsensusEngineBase::is_kin(const BlockHeader& branch_header, const BlockHeader& mainline_header,
-                                 const evmc::bytes32& mainline_hash, unsigned int n, const BlockState& state,
-                                 std::vector<BlockHeader>& old_ommers) {
+bool EngineBase::is_kin(const BlockHeader& branch_header, const BlockHeader& mainline_header,
+                        const evmc::bytes32& mainline_hash, unsigned int n, const BlockState& state,
+                        std::vector<BlockHeader>& old_ommers) {
     if (n == 0 || branch_header == mainline_header) {
         return false;
     }
@@ -188,10 +194,10 @@ bool ConsensusEngineBase::is_kin(const BlockHeader& branch_header, const BlockHe
     return is_kin(branch_header, mainline_parent.value(), mainline_header.parent_hash, n - 1, state, old_ommers);
 }
 
-evmc::address ConsensusEngineBase::get_beneficiary(const BlockHeader& header) { return header.beneficiary; }
+evmc::address EngineBase::get_beneficiary(const BlockHeader& header) { return header.beneficiary; }
 
-std::optional<intx::uint256> ConsensusEngineBase::expected_base_fee_per_gas(const BlockHeader& header,
-                                                                            const BlockHeader& parent) {
+std::optional<intx::uint256> EngineBase::expected_base_fee_per_gas(const BlockHeader& header,
+                                                                   const BlockHeader& parent) {
     if (chain_config_.revision(header.number) < EVMC_LONDON) {
         return std::nullopt;
     }
@@ -228,6 +234,5 @@ std::optional<intx::uint256> ConsensusEngineBase::expected_base_fee_per_gas(cons
         }
     }
 }
-ValidationResult ConsensusEngineBase::validate_seal(const BlockHeader&) { return ValidationResult::kOk; }
 
 }  // namespace silkworm::consensus

@@ -33,17 +33,17 @@ enum class [[nodiscard]] ValidationResult{
     kWrongLogsBloom,         // wrong Hb
 
     // See [YP] Section 4.3.4 "Block Header Validity", Eq (50)
-    kUnknownParent,      // P(H) = ∅ ∨ Hi ≠ P(H)Hi + 1
-    kWrongDifficulty,    // Hd ≠ D(H)
-    kGasAboveLimit,      // Hg > Hl
-    kInvalidGasLimit,    // |Hl-P(H)Hl|≥P(H)Hl/1024 ∨ Hl<5000
-    kInvalidTimestamp,   // Hs ≤ P(H)Hs
-    kExtraDataTooLong,   // ‖Hx‖ > 32
-    kWrongDaoExtraData,  // see EIP-779
-    kWrongBaseFee,       // see EIP-1559
-    kInvalidSeal,        // Nonce or mix_hash (invalid Proof of Work)
-    kInvalidMixHash,     // Invalid mix_hash (Clique, EIP-225)
-    kNonceTooHigh,       // Tn ≥ 2^64 - 1 (EIP-2681)
+    kUnknownParent,                 // P(H) = ∅ ∨ Hi ≠ P(H)Hi + 1
+    kUnknownParentTotalDifficulty,  // failed to look up parent's total difficulty
+    kWrongDifficulty,               // Hd ≠ D(H)
+    kGasAboveLimit,                 // Hg > Hl
+    kInvalidGasLimit,               // |Hl-P(H)Hl|≥P(H)Hl/1024 ∨ Hl<5000
+    kInvalidTimestamp,              // Hs ≤ P(H)Hs
+    kExtraDataTooLong,              // ‖Hx‖ > 32
+    kWrongDaoExtraData,             // see EIP-779
+    kWrongBaseFee,                  // see EIP-1559
+    kInvalidSeal,                   // Nonce or mix_hash (invalid Proof of Work)
+    kInvalidNonce,                  // Hn != 0 (Proof of State, EIP-3675)
 
     // See [YP] Section 6.2 "Execution", Eq (58)
     kMissingSender,          // S(T) = ∅
@@ -59,6 +59,7 @@ enum class [[nodiscard]] ValidationResult{
     kInvalidSignature,              // EIP-2
     kWrongChainId,                  // EIP-155
     kUnsupportedTransactionType,    // EIP-2718
+    kNonceTooHigh,                  // Tn ≥ 2^64 - 1 (EIP-2681)
 
     // See [YP] Section 11.1 "Ommer Validation", Eq (157)
     kTooManyOmmers,       // ‖BU‖ > 2
@@ -69,13 +70,9 @@ enum class [[nodiscard]] ValidationResult{
     // See [YP] Section 11.2 "Transaction Validation", Eq (160)
     kWrongBlockGas,  // BHg ≠ l(BR)u
 
-    // Clique (EIP-225)
-    kUnauthorizedSigner,  // Handling an unauthorized voting signer
-    kMissingSigner,       // Missing Signer in extra_data
-    kRecentlySigned,      // Signer has already recently signed
-    kInvalidVote,         // Non-Existing vote option
-    kInvalidCheckpointBeneficiary,
-    kMissingVanity,  // ‖Hx‖ < 32+65
+    // See EIP-3675: Upgrade consensus to Proof-of-Stake
+    kPoSBlockBeforeMerge,
+    kPoWBlockAfterMerge,
 };
 
 }  // namespace silkworm

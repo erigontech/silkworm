@@ -25,7 +25,7 @@
 
 namespace silkworm {
 
-ExecutionProcessor::ExecutionProcessor(const Block& block, consensus::IConsensusEngine& consensus_engine, State& state,
+ExecutionProcessor::ExecutionProcessor(const Block& block, consensus::IEngine& consensus_engine, State& state,
                                        const ChainConfig& config)
     : state_{state}, consensus_engine_{consensus_engine}, evm_{block, state_, config} {
     evm_.beneficiary = consensus_engine.get_beneficiary(block.header);
@@ -33,7 +33,7 @@ ExecutionProcessor::ExecutionProcessor(const Block& block, consensus::IConsensus
 
 ValidationResult ExecutionProcessor::validate_transaction(const Transaction& txn) const noexcept {
     assert(consensus::pre_validate_transaction(txn, evm_.block().header.number, evm_.config(),
-                                           evm_.block().header.base_fee_per_gas) == ValidationResult::kOk);
+                                               evm_.block().header.base_fee_per_gas) == ValidationResult::kOk);
 
     if (!txn.from.has_value()) {
         return ValidationResult::kMissingSender;

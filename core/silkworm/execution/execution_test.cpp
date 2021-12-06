@@ -32,8 +32,6 @@
 
 namespace silkworm {
 
-using namespace silkworm::consensus;
-
 TEST_CASE("Execute two blocks") {
     // ---------------------------------------
     // Prepare

@@ -23,6 +23,7 @@
 #include <variant>
 
 #include <evmc/evmc.h>
+#include <intx/intx.hpp>
 #include <nlohmann/json.hpp>
 
 #include <silkworm/common/util.hpp>
@@ -71,6 +72,9 @@ struct ChainConfig {
 
     // https://github.com/ethereum/execution-specs/blob/master/network-upgrades/mainnet-upgrades/arrow-glacier.md
     std::optional<uint64_t> arrow_glacier_block{std::nullopt};
+
+    // PoW to PoS switch; see EIP-3675
+    std::optional<intx::uint256> terminal_total_difficulty{std::nullopt};
 
     // Returns the revision level at given block number
     // In other words, on behalf of Json chain config data

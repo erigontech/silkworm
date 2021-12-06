@@ -71,6 +71,8 @@ namespace param {
     inline constexpr uint64_t kBaseFeeMaxChangeDenominator{8};
     inline constexpr uint64_t kElasticityMultiplier{2};
 
+    inline constexpr uint64_t kMaxExtraDataBytes{32};
+
 }  // namespace param
 
 }  // namespace silkworm

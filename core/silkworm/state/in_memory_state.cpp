@@ -44,19 +44,17 @@ ByteView InMemoryState::read_code(const evmc::bytes32& code_hash) const noexcept
 
 evmc::bytes32 InMemoryState::read_storage(const evmc::address& address, uint64_t incarnation,
                                           const evmc::bytes32& location) const noexcept {
-    auto it1{storage_.find(address)};
-    if (it1 == storage_.end()) {
-        return {};
+    const auto it1{storage_.find(address)};
+    if (it1 != storage_.end()) {
+        const auto it2{it1->second.find(incarnation)};
+        if (it2 != it1->second.end()) {
+            const auto it3{it2->second.find(location)};
+            if (it3 != it2->second.end()) {
+                return it3->second;
+            }
+        }
     }
-    auto it2{it1->second.find(incarnation)};
-    if (it2 == it1->second.end()) {
-        return {};
-    }
-    auto it3{it2->second.find(location)};
-    if (it3 == it2->second.end()) {
-        return {};
-    }
-    return it3->second;
+    return {};
 }
 
 uint64_t InMemoryState::previous_incarnation(const evmc::address& address) const noexcept {
@@ -69,69 +67,60 @@ uint64_t InMemoryState::previous_incarnation(const evmc::address& address) const
 
 std::optional<BlockHeader> InMemoryState::read_header(uint64_t block_number,
                                                       const evmc::bytes32& block_hash) const noexcept {
-    if (block_number >= headers_.size()) {
-        return std::nullopt;
+    const auto it1{headers_.find(block_number)};
+    if (it1 != headers_.end()) {
+        const auto it2{it1->second.find(block_hash)};
+        if (it2 != it1->second.end()) {
+            return it2->second;
+        }
     }
-
-    auto it{headers_[block_number].find(block_hash)};
-    if (it == headers_[block_number].end()) {
-        return std::nullopt;
-    }
-    return it->second;
+    return std::nullopt;
 }
 
 std::optional<BlockBody> InMemoryState::read_body(uint64_t block_number,
                                                   const evmc::bytes32& block_hash) const noexcept {
-    if (block_number >= bodies_.size()) {
-        return std::nullopt;
+    const auto it1{bodies_.find(block_number)};
+    if (it1 != bodies_.end()) {
+        const auto it2{it1->second.find(block_hash)};
+        if (it2 != it1->second.end()) {
+            return it2->second;
+        }
     }
-
-    auto it{bodies_[block_number].find(block_hash)};
-    if (it == bodies_[block_number].end()) {
-        return std::nullopt;
-    }
-    return it->second;
+    return std::nullopt;
 }
 
 std::optional<intx::uint256> InMemoryState::total_difficulty(uint64_t block_number,
                                                              const evmc::bytes32& block_hash) const noexcept {
-    if (block_number >= difficulty_.size()) {
-        return std::nullopt;
+    const auto it1{difficulty_.find(block_number)};
+    if (it1 != difficulty_.end()) {
+        const auto it2{it1->second.find(block_hash)};
+        if (it2 != it1->second.end()) {
+            return it2->second;
+        }
     }
-
-    auto it{difficulty_[block_number].find(block_hash)};
-    if (it == difficulty_[block_number].end()) {
-        return std::nullopt;
-    }
-    return it->second;
+    return std::nullopt;
 }
 
-uint64_t InMemoryState::current_canonical_block() const { return canonical_hashes_.size() - 1; }
+uint64_t InMemoryState::current_canonical_block() const {
+    if (canonical_hashes_.empty()) {
+        return 0;
+    }
+    return canonical_hashes_.rbegin()->first;
+}
 
 std::optional<evmc::bytes32> InMemoryState::canonical_hash(uint64_t block_number) const {
-    if (block_number >= canonical_hashes_.size()) {
-        return std::nullopt;
+    const auto& ret{canonical_hashes_.find(block_number)};
+    if (ret != canonical_hashes_.end()) {
+        return ret->second;
     }
-
-    return canonical_hashes_[block_number];
+    return std::nullopt;
 }
 
 void InMemoryState::insert_block(const Block& block, const evmc::bytes32& hash) {
     uint64_t block_number{block.header.number};
 
-    if (headers_.size() <= block_number) {
-        headers_.resize(block_number + 1);
-    }
     headers_[block_number][hash] = block.header;
-
-    if (bodies_.size() <= block_number) {
-        bodies_.resize(block_number + 1);
-    }
     bodies_[block_number][hash] = block;
-
-    if (difficulty_.size() <= block_number) {
-        difficulty_.resize(block_number + 1);
-    }
     if (block_number == 0) {
         difficulty_[block_number][hash] = 0;
     } else {
@@ -141,13 +130,10 @@ void InMemoryState::insert_block(const Block& block, const evmc::bytes32& hash) 
 }
 
 void InMemoryState::canonize_block(uint64_t block_number, const evmc::bytes32& block_hash) {
-    if (canonical_hashes_.size() <= block_number) {
-        canonical_hashes_.resize(block_number + 1);
-    }
     canonical_hashes_[block_number] = block_hash;
 }
 
-void InMemoryState::decanonize_block(uint64_t block_number) { canonical_hashes_.resize(block_number); }
+void InMemoryState::decanonize_block(uint64_t block_number) { (void)canonical_hashes_.erase(block_number); }
 
 void InMemoryState::insert_receipts(uint64_t, const std::vector<Receipt>&) {}
 
@@ -213,34 +199,29 @@ void InMemoryState::unwind_state_changes(uint64_t block_number) {
 size_t InMemoryState::number_of_accounts() const { return accounts_.size(); }
 
 size_t InMemoryState::storage_size(const evmc::address& address, uint64_t incarnation) const {
-    auto it1{storage_.find(address)};
-    if (it1 == storage_.end()) {
-        return 0;
+    const auto it1{storage_.find(address)};
+    if (it1 != storage_.end()) {
+        const auto it2{it1->second.find(incarnation)};
+        if (it2 != it1->second.end()) {
+            return it2->second.size();
+        }
     }
-    auto it2{it1->second.find(incarnation)};
-    if (it2 == it1->second.end()) {
-        return 0;
-    }
-
-    return it2->second.size();
+    return 0;
 }
 
 // https://eth.wiki/fundamentals/patricia-tree#storage-trie
 evmc::bytes32 InMemoryState::account_storage_root(const evmc::address& address, uint64_t incarnation) const {
+
     auto it1{storage_.find(address)};
     if (it1 == storage_.end()) {
         return kEmptyRoot;
     }
     auto it2{it1->second.find(incarnation)};
-    if (it2 == it1->second.end()) {
+    if (it2 == it1->second.end() || it2->second.empty()) {
         return kEmptyRoot;
     }
 
     const auto& storage{it2->second};
-
-    if (storage.empty()) {
-        return kEmptyRoot;
-    }
 
     std::map<evmc::bytes32, Bytes> storage_rlp;
     Bytes buffer;

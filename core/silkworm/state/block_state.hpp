@@ -19,6 +19,8 @@
 
 #include <optional>
 
+#include <intx/intx.hpp>
+
 #include <silkworm/common/base.hpp>
 #include <silkworm/types/block.hpp>
 
@@ -33,6 +35,9 @@ class BlockState {
 
     virtual std::optional<BlockBody> read_body(BlockNum block_number,
                                                const evmc::bytes32& block_hash) const noexcept = 0;
+
+    virtual std::optional<intx::uint256> total_difficulty(uint64_t block_number,
+                                                          const evmc::bytes32& block_hash) const noexcept = 0;
 };
 
 }  // namespace silkworm

@@ -27,7 +27,7 @@ Blockchain::Blockchain(State& state, const ChainConfig& config, const Block& gen
     prime_state_with_genesis(genesis_block);
 }
 
-Blockchain::Blockchain(State& state, std::unique_ptr<IConsensusEngine>& engine, const ChainConfig& config,
+Blockchain::Blockchain(State& state, std::unique_ptr<IEngine>& engine, const ChainConfig& config,
                        const Block& genesis_block)
     : state_{state}, config_{config}, engine_{std::move(engine)} {
     prime_state_with_genesis(genesis_block);

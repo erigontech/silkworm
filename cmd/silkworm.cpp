@@ -65,8 +65,12 @@ struct PruneModeValidator : public CLI::Validator {
 };
 
 struct EndPointValidator : public CLI::Validator {
-    EndPointValidator() {
-        func_ = [](const std::string& value) -> std::string {
+    explicit EndPointValidator(bool allow_empty = false) {
+        func_ = [&allow_empty](const std::string& value) -> std::string {
+            if (value.empty() && allow_empty) {
+                return {};
+            }
+
             const std::regex pattern(R"(([\da-fA-F\.\:]*)\:([\d]*))");
             std::smatch matches;
             if (!std::regex_match(value, matches, pattern)) {
@@ -114,9 +118,12 @@ void parse_command_line(CLI::App& cli, int argc, char* argv[], log::Settings& lo
                    "Use the endpoint form i.e. ip-address:port\n"
                    "DO NOT EXPOSE TO THE INTERNET",
                    true)
-        ->check(EndPointValidator());
-    cli.add_flag("--fakepow", node_settings.fake_pow, "Disables proof-of-work verification");
+        ->check(EndPointValidator(/*allow_empty=*/false));
 
+    cli.add_option("--sentry.api.addr", node_settings.sentry_api_addr, "Sentry api endpoint", true)
+        ->check(EndPointValidator(/*allow_empty=*/true));
+    
+    cli.add_flag("--fakepow", node_settings.fake_pow, "Disables proof-of-work verification");
     // Chain options
     auto chains_map{get_known_chains_map()};
     auto& chain_opts = *cli.add_option_group("Chain", "Chain selection options");

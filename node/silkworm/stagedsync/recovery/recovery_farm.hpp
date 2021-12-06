@@ -23,8 +23,8 @@
 
 #include <silkworm/common/signal_handler.hpp>
 #include <silkworm/etl/collector.hpp>
+#include <silkworm/stagedsync/common.hpp>
 #include <silkworm/stagedsync/recovery/recovery_worker.hpp>
-#include <silkworm/stagedsync/util.hpp>
 
 namespace silkworm::stagedsync::recovery {
 

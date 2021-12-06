@@ -18,8 +18,6 @@
 #ifndef SILKWORM_CONSENSUS_ETHASH_ENGINE_HPP_
 #define SILKWORM_CONSENSUS_ETHASH_ENGINE_HPP_
 
-#include <optional>
-
 #include <ethash/ethash.hpp>
 
 #include <silkworm/consensus/base/engine.hpp>

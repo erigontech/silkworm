@@ -14,14 +14,16 @@
    limitations under the License.
 */
 
-#include "PeerMinBlock.hpp"
+#include "engine.hpp"
 
-namespace silkworm::rpc {
+namespace silkworm::consensus {
 
-PeerMinBlock::PeerMinBlock(const std::string& peerId, BlockNum minBlock)
-    : UnaryCall("PeerMinBlock", &sentry::Sentry::Stub::PeerMinBlock, {}) {
-    request_.set_allocated_peer_id(to_H512(peerId).release());
-    request_.set_min_block(minBlock);  // take ownership
+ValidationResult ProofOfStakeEngine::validate_seal(const BlockHeader& header) {
+    return header.nonce == BlockHeader::NonceType{} ? ValidationResult::kOk : ValidationResult::kInvalidNonce;
 }
 
-}  // namespace silkworm::rpc
+ValidationResult ProofOfStakeEngine::validate_difficulty(const BlockHeader& header, const BlockHeader&) {
+    return header.difficulty == 0 ? ValidationResult::kOk : ValidationResult::kWrongDifficulty;
+}
+
+}  // namespace silkworm::consensus

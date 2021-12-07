@@ -18,6 +18,8 @@
 
 namespace silkworm {
 
+// TODO (Andrew) what about terminal total difficulty?
+
 std::vector<BlockNum> ChainIdentity::distinct_fork_numbers() const {
     std::vector<BlockNum> forks;
 

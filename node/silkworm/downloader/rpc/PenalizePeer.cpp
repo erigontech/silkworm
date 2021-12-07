@@ -18,9 +18,9 @@
 
 namespace silkworm::rpc {
 
-PenalizePeer::PenalizePeer(const PeerId& peerId, Penalty penalty)
+PenalizePeer::PenalizePeer(const std::string& peerId, Penalty penalty)
     : UnaryCall("PenalizePeer", &sentry::Sentry::Stub::PenalizePeer, {}) {
-    request_.set_allocated_peer_id(to_H256(peerId).release());
+    request_.set_allocated_peer_id(to_H512(peerId).release());
 
     sentry::PenaltyKind raw_penalty = static_cast<sentry::PenaltyKind>(penalty);
     request_.set_penalty(raw_penalty);

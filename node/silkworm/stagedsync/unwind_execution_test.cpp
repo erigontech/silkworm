@@ -31,8 +31,7 @@
 
 #include "stagedsync.hpp"
 
-using namespace silkworm;
-using namespace silkworm::consensus;
+namespace silkworm {
 
 TEST_CASE("Unwind Execution") {
     test::Context context;
@@ -147,3 +146,5 @@ TEST_CASE("Unwind Execution") {
     evmc::bytes32 storage0{buffer2.read_storage(contract_address, kDefaultIncarnation, storage_key0)};
     CHECK(to_hex(storage0) == "000000000000000000000000000000000000000000000000000000000000002a");
 }
+
+}  // namespace silkworm

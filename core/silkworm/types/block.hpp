@@ -34,6 +34,8 @@
 namespace silkworm {
 
 struct BlockHeader {
+    using NonceType = std::array<uint8_t, 8>;
+
     evmc::bytes32 parent_hash{};
     evmc::bytes32 ommers_hash{};
     evmc::address beneficiary{};
@@ -50,7 +52,7 @@ struct BlockHeader {
     Bytes extra_data{};
 
     evmc::bytes32 mix_hash{};
-    std::array<uint8_t, 8> nonce{};
+    NonceType nonce{};
 
     std::optional<intx::uint256> base_fee_per_gas{std::nullopt};  // EIP-1559
 

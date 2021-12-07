@@ -14,24 +14,24 @@
    limitations under the License.
 */
 
-#pragma once
-#ifndef SILKWORM_CONSENSUS_NOPROOF_ENGINE_HPP_
-#define SILKWORM_CONSENSUS_NOPROOF_ENGINE_HPP_
+#ifndef SILKWORM_CONSENSUS_POS_ENGINE_HPP_
+#define SILKWORM_CONSENSUS_POS_ENGINE_HPP_
 
-#include <silkworm/consensus/ethash/engine.hpp>
+#include <silkworm/consensus/base/engine.hpp>
 
 namespace silkworm::consensus {
 
-// This consensus engine does not validate PoW seal.
-// It is used in the consensus tests.
-class NoProofEngine : public EthashEngine {
+// Consensus engine applicable to Proof-of-Stake blocks.
+// See EIP-3675: Upgrade consensus to Proof-of-Stake.
+class ProofOfStakeEngine : public EngineBase {
   public:
-    explicit NoProofEngine(const ChainConfig& chain_config) : EthashEngine(chain_config) {}
+    explicit ProofOfStakeEngine(const ChainConfig& chain_config) : EngineBase(chain_config, /*prohibit_ommers=*/true) {}
 
-    //! \brief Validates the seal of the header
-    ValidationResult validate_seal(const BlockHeader& header) final;
+    ValidationResult validate_seal(const BlockHeader& header) override;
+
+    ValidationResult validate_difficulty(const BlockHeader& header, const BlockHeader& parent) override;
 };
 
 }  // namespace silkworm::consensus
 
-#endif  // SILKWORM_CONSENSUS_NOPROOF_ENGINE_HPP_
+#endif  // SILKWORM_CONSENSUS_POS_ENGINE_HPP_

@@ -46,28 +46,27 @@ TEST_CASE("heap_based_priority_queue - element ordering") {
 TEST_CASE("Oldest_First_Anchor_Queue") {
     using namespace std::literals::chrono_literals;
     BlockHeader dummy_header;
-    PeerId dummy_peer_id{1};
     time_point_t now = std::chrono::system_clock::now();
 
     OldestFirstAnchorQueue queue;
 
-    auto anchor = std::make_shared<Anchor>(dummy_header, dummy_peer_id);
+    auto anchor = std::make_shared<Anchor>(dummy_header, "dummy-peer-id");
     anchor->blockHeight = 1;
     anchor->timestamp = now;
     queue.push(anchor);
 
-    anchor = std::make_shared<Anchor>(dummy_header, dummy_peer_id);
+    anchor = std::make_shared<Anchor>(dummy_header, "dummy-peer-id");
     anchor->blockHeight = 3;
     anchor->timestamp = now;
     queue.push(anchor);
 
-    anchor = std::make_shared<Anchor>(dummy_header, dummy_peer_id);
+    anchor = std::make_shared<Anchor>(dummy_header, "dummy-peer-id");
     anchor->blockHeight = 2;
     anchor->timestamp = now + 2s;
     queue.push(anchor);
     auto anchor2 = anchor;
 
-    anchor = std::make_shared<Anchor>(dummy_header, dummy_peer_id);
+    anchor = std::make_shared<Anchor>(dummy_header, "dummy-peer-id");
     anchor->blockHeight = 4;
     anchor->timestamp = now + 4s;
     queue.push(anchor);

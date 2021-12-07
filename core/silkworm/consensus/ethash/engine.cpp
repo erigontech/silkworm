@@ -16,14 +16,13 @@
 
 #include "engine.hpp"
 
-#include <ethash/ethash.hpp>
-
+#include <silkworm/chain/difficulty.hpp>
 #include <silkworm/chain/protocol_param.hpp>
 #include <silkworm/common/endian.hpp>
 
 namespace silkworm::consensus {
 
-void ConsensusEngineEthash::finalize(IntraBlockState& state, const Block& block, const evmc_revision& revision) {
+void EthashEngine::finalize(IntraBlockState& state, const Block& block, const evmc_revision revision) {
     intx::uint256 block_reward;
     if (revision >= EVMC_CONSTANTINOPLE) {
         block_reward = param::kBlockRewardConstantinople;
@@ -44,10 +43,13 @@ void ConsensusEngineEthash::finalize(IntraBlockState& state, const Block& block,
     state.add_to_balance(block.header.beneficiary, miner_reward);
 }
 
-ValidationResult ConsensusEngineEthash::validate_seal(const BlockHeader& header) {
-    // Ethash ProofOfWork verification
-    auto epoch_number{header.number / ethash::epoch_length};
-    auto epoch_context{ethash::create_epoch_context(static_cast<int>(epoch_number))};
+// Ethash ProofOfWork verification
+ValidationResult EthashEngine::validate_seal(const BlockHeader& header) {
+    const int epoch_number{static_cast<int>(header.number / ethash::epoch_length)};
+    if (!epoch_context_ || epoch_context_->epoch_number != epoch_number) {
+        epoch_context_.reset(); // Firstly release the obsoleted context
+        epoch_context_ = ethash::create_epoch_context(epoch_number);
+    }
 
     const auto nonce{endian::load_big_u64(header.nonce.data())};
     const auto seal_hash(header.hash(/*for_sealing =*/true));
@@ -55,7 +57,15 @@ ValidationResult ConsensusEngineEthash::validate_seal(const BlockHeader& header)
     const auto sealh256{ethash::hash256_from_bytes(seal_hash.bytes)};
     const auto mixh256{ethash::hash256_from_bytes(header.mix_hash.bytes)};
 
-    const auto ec{ethash::verify_against_difficulty(*epoch_context, sealh256, mixh256, nonce, diff256)};
+    const auto ec{ethash::verify_against_difficulty(*epoch_context_, sealh256, mixh256, nonce, diff256)};
     return ec ? ValidationResult::kInvalidSeal : ValidationResult::kOk;
 }
+
+ValidationResult EthashEngine::validate_difficulty(const BlockHeader& header, const BlockHeader& parent) {
+    const bool parent_has_uncles{parent.ommers_hash != kEmptyListHash};
+    const intx::uint256 difficulty{canonical_difficulty(header.number, header.timestamp, parent.difficulty,
+                                                        parent.timestamp, parent_has_uncles, chain_config_)};
+    return difficulty == header.difficulty ? ValidationResult::kOk : ValidationResult::kWrongDifficulty;
+}
+
 }  // namespace silkworm::consensus

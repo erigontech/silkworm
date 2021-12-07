@@ -34,7 +34,7 @@ class ExecutionProcessor {
     ExecutionProcessor(const ExecutionProcessor&) = delete;
     ExecutionProcessor& operator=(const ExecutionProcessor&) = delete;
 
-    ExecutionProcessor(const Block& block, consensus::IConsensusEngine& engine, State& state, const ChainConfig& config);
+    ExecutionProcessor(const Block& block, consensus::IEngine& engine, State& state, const ChainConfig& config);
 
     // Preconditions:
     // 1) consensus' pre_validate_transaction(txn) must return kOk
@@ -66,7 +66,7 @@ class ExecutionProcessor {
 
     uint64_t cumulative_gas_used_{0};
     IntraBlockState state_;
-    consensus::IConsensusEngine& consensus_engine_;
+    consensus::IEngine& consensus_engine_;
     EVM evm_;
 };
 

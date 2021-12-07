@@ -80,7 +80,7 @@ inline std::ostream& operator<<(std::ostream& out, const evmc::bytes32& b32) {
     return out;
 }
 
-using PeerId = Hash;
+using PeerId = std::string;
 
 enum Penalty : int {
     NoPenalty = 0,
@@ -98,7 +98,7 @@ struct PeerPenalization {
     Penalty penalty;
     PeerId peerId;
 
-    PeerPenalization(Penalty p, const PeerId& id) : penalty(p), peerId(id) {}  // unnecessary with c++20
+    PeerPenalization(Penalty p, PeerId id) : penalty(p), peerId(id) {}  // unnecessary with c++20
 };
 
 inline std::ostream& operator<<(std::ostream& os, const PeerPenalization& penalization) {

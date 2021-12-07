@@ -100,7 +100,7 @@ struct Anchor {
     std::vector<std::shared_ptr<Link>> links;  // Links attached immediately to this anchor
     PeerId peerId;
 
-    Anchor(const BlockHeader& header, const PeerId& p) {
+    Anchor(const BlockHeader& header, PeerId p) {
         parentHash = header.parent_hash;
         blockHeight = header.number;
         // timestamp = 0; automatically set to unix epoch by the constructor

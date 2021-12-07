@@ -23,7 +23,7 @@ namespace silkworm::rpc {
 
 class PenalizePeer : public rpc::UnaryCall<sentry::Sentry, sentry::PenalizePeerRequest, google::protobuf::Empty> {
   public:
-    PenalizePeer(const PeerId& peerId, Penalty penalty);
+    PenalizePeer(const std::string& peerId, Penalty penalty);
 };
 
 }  // namespace silkworm::rpc

@@ -17,6 +17,7 @@
 extern PROTOBUF_INTERNAL_EXPORT_sentry_2eproto ::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<1> scc_info_Forks_sentry_2eproto;
 extern PROTOBUF_INTERNAL_EXPORT_sentry_2eproto ::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<0> scc_info_OutboundMessageData_sentry_2eproto;
 extern PROTOBUF_INTERNAL_EXPORT_types_2eproto ::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<1> scc_info_H256_types_2eproto;
+extern PROTOBUF_INTERNAL_EXPORT_types_2eproto ::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<1> scc_info_H512_types_2eproto;
 namespace sentry {
 class OutboundMessageDataDefaultTypeInternal {
  public:
@@ -93,7 +94,7 @@ static void InitDefaultsscc_info_InboundMessage_sentry_2eproto() {
 
 ::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<1> scc_info_InboundMessage_sentry_2eproto =
     {{ATOMIC_VAR_INIT(::PROTOBUF_NAMESPACE_ID::internal::SCCInfoBase::kUninitialized), 1, 0, InitDefaultsscc_info_InboundMessage_sentry_2eproto}, {
-      &scc_info_H256_types_2eproto.base,}};
+      &scc_info_H512_types_2eproto.base,}};
 
 static void InitDefaultsscc_info_MessagesRequest_sentry_2eproto() {
   GOOGLE_PROTOBUF_VERIFY_VERSION;
@@ -133,7 +134,7 @@ static void InitDefaultsscc_info_PeerMinBlockRequest_sentry_2eproto() {
 
 ::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<1> scc_info_PeerMinBlockRequest_sentry_2eproto =
     {{ATOMIC_VAR_INIT(::PROTOBUF_NAMESPACE_ID::internal::SCCInfoBase::kUninitialized), 1, 0, InitDefaultsscc_info_PeerMinBlockRequest_sentry_2eproto}, {
-      &scc_info_H256_types_2eproto.base,}};
+      &scc_info_H512_types_2eproto.base,}};
 
 static void InitDefaultsscc_info_PenalizePeerRequest_sentry_2eproto() {
   GOOGLE_PROTOBUF_VERIFY_VERSION;
@@ -147,7 +148,7 @@ static void InitDefaultsscc_info_PenalizePeerRequest_sentry_2eproto() {
 
 ::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<1> scc_info_PenalizePeerRequest_sentry_2eproto =
     {{ATOMIC_VAR_INIT(::PROTOBUF_NAMESPACE_ID::internal::SCCInfoBase::kUninitialized), 1, 0, InitDefaultsscc_info_PenalizePeerRequest_sentry_2eproto}, {
-      &scc_info_H256_types_2eproto.base,}};
+      &scc_info_H512_types_2eproto.base,}};
 
 static void InitDefaultsscc_info_SendMessageByIdRequest_sentry_2eproto() {
   GOOGLE_PROTOBUF_VERIFY_VERSION;
@@ -162,7 +163,7 @@ static void InitDefaultsscc_info_SendMessageByIdRequest_sentry_2eproto() {
 ::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<2> scc_info_SendMessageByIdRequest_sentry_2eproto =
     {{ATOMIC_VAR_INIT(::PROTOBUF_NAMESPACE_ID::internal::SCCInfoBase::kUninitialized), 2, 0, InitDefaultsscc_info_SendMessageByIdRequest_sentry_2eproto}, {
       &scc_info_OutboundMessageData_sentry_2eproto.base,
-      &scc_info_H256_types_2eproto.base,}};
+      &scc_info_H512_types_2eproto.base,}};
 
 static void InitDefaultsscc_info_SendMessageByMinBlockRequest_sentry_2eproto() {
   GOOGLE_PROTOBUF_VERIFY_VERSION;
@@ -204,7 +205,7 @@ static void InitDefaultsscc_info_SentPeers_sentry_2eproto() {
 
 ::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<1> scc_info_SentPeers_sentry_2eproto =
     {{ATOMIC_VAR_INIT(::PROTOBUF_NAMESPACE_ID::internal::SCCInfoBase::kUninitialized), 1, 0, InitDefaultsscc_info_SentPeers_sentry_2eproto}, {
-      &scc_info_H256_types_2eproto.base,}};
+      &scc_info_H512_types_2eproto.base,}};
 
 static void InitDefaultsscc_info_SetStatusReply_sentry_2eproto() {
   GOOGLE_PROTOBUF_VERIFY_VERSION;
@@ -364,16 +365,16 @@ const char descriptor_table_protodef_sentry_2eproto[] PROTOBUF_SECTION_VARIABLE(
   "ageData\022\021\n\tmin_block\030\002 \001(\004\"a\n\026SendMessag"
   "eByIdRequest\022)\n\004data\030\001 \001(\0132\033.sentry.Outb"
   "oundMessageData\022\034\n\007peer_id\030\002 \001(\0132\013.types"
-  ".H256\"_\n\037SendMessageToRandomPeersRequest"
+  ".H512\"_\n\037SendMessageToRandomPeersRequest"
   "\022)\n\004data\030\001 \001(\0132\033.sentry.OutboundMessageD"
   "ata\022\021\n\tmax_peers\030\002 \001(\004\"\'\n\tSentPeers\022\032\n\005p"
-  "eers\030\001 \003(\0132\013.types.H256\"Y\n\023PenalizePeerR"
-  "equest\022\034\n\007peer_id\030\001 \001(\0132\013.types.H256\022$\n\007"
+  "eers\030\001 \003(\0132\013.types.H512\"Y\n\023PenalizePeerR"
+  "equest\022\034\n\007peer_id\030\001 \001(\0132\013.types.H512\022$\n\007"
   "penalty\030\002 \001(\0162\023.sentry.PenaltyKind\"F\n\023Pe"
   "erMinBlockRequest\022\034\n\007peer_id\030\001 \001(\0132\013.typ"
-  "es.H256\022\021\n\tmin_block\030\002 \001(\004\"[\n\016InboundMes"
+  "es.H512\022\021\n\tmin_block\030\002 \001(\004\"[\n\016InboundMes"
   "sage\022\035\n\002id\030\001 \001(\0162\021.sentry.MessageId\022\014\n\004d"
-  "ata\030\002 \001(\014\022\034\n\007peer_id\030\003 \001(\0132\013.types.H256\""
+  "ata\030\002 \001(\014\022\034\n\007peer_id\030\003 \001(\0132\013.types.H512\""
   "4\n\005Forks\022\034\n\007genesis\030\001 \001(\0132\013.types.H256\022\r"
   "\n\005forks\030\002 \003(\004\"\234\001\n\nStatusData\022\022\n\nnetwork_"
   "id\030\001 \001(\004\022%\n\020total_difficulty\030\002 \001(\0132\013.typ"
@@ -995,14 +996,14 @@ void SendMessageByMinBlockRequest::InternalSwap(SendMessageByMinBlockRequest* ot
 class SendMessageByIdRequest::_Internal {
  public:
   static const ::sentry::OutboundMessageData& data(const SendMessageByIdRequest* msg);
-  static const ::types::H256& peer_id(const SendMessageByIdRequest* msg);
+  static const ::types::H512& peer_id(const SendMessageByIdRequest* msg);
 };
 
 const ::sentry::OutboundMessageData&
 SendMessageByIdRequest::_Internal::data(const SendMessageByIdRequest* msg) {
   return *msg->data_;
 }
-const ::types::H256&
+const ::types::H512&
 SendMessageByIdRequest::_Internal::peer_id(const SendMessageByIdRequest* msg) {
   return *msg->peer_id_;
 }
@@ -1027,7 +1028,7 @@ SendMessageByIdRequest::SendMessageByIdRequest(const SendMessageByIdRequest& fro
     data_ = nullptr;
   }
   if (from._internal_has_peer_id()) {
-    peer_id_ = new ::types::H256(*from.peer_id_);
+    peer_id_ = new ::types::H512(*from.peer_id_);
   } else {
     peer_id_ = nullptr;
   }
@@ -1100,7 +1101,7 @@ const char* SendMessageByIdRequest::_InternalParse(const char* ptr, ::PROTOBUF_N
           CHK_(ptr);
         } else goto handle_unusual;
         continue;
-      // .types.H256 peer_id = 2;
+      // .types.H512 peer_id = 2;
       case 2:
         if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 18)) {
           ptr = ctx->ParseMessage(_internal_mutable_peer_id(), ptr);
@@ -1143,7 +1144,7 @@ failure:
         1, _Internal::data(this), target, stream);
   }
 
-  // .types.H256 peer_id = 2;
+  // .types.H512 peer_id = 2;
   if (this->has_peer_id()) {
     target = stream->EnsureSpace(target);
     target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
@@ -1174,7 +1175,7 @@ size_t SendMessageByIdRequest::ByteSizeLong() const {
         *data_);
   }
 
-  // .types.H256 peer_id = 2;
+  // .types.H512 peer_id = 2;
   if (this->has_peer_id()) {
     total_size += 1 +
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
@@ -1216,7 +1217,7 @@ void SendMessageByIdRequest::MergeFrom(const SendMessageByIdRequest& from) {
     _internal_mutable_data()->::sentry::OutboundMessageData::MergeFrom(from._internal_data());
   }
   if (from.has_peer_id()) {
-    _internal_mutable_peer_id()->::types::H256::MergeFrom(from._internal_peer_id());
+    _internal_mutable_peer_id()->::types::H512::MergeFrom(from._internal_peer_id());
   }
 }
 
@@ -1566,7 +1567,7 @@ const char* SentPeers::_InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::
     ptr = ::PROTOBUF_NAMESPACE_ID::internal::ReadTag(ptr, &tag);
     CHK_(ptr);
     switch (tag >> 3) {
-      // repeated .types.H256 peers = 1;
+      // repeated .types.H512 peers = 1;
       case 1:
         if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 10)) {
           ptr -= 1;
@@ -1606,7 +1607,7 @@ failure:
   ::PROTOBUF_NAMESPACE_ID::uint32 cached_has_bits = 0;
   (void) cached_has_bits;
 
-  // repeated .types.H256 peers = 1;
+  // repeated .types.H512 peers = 1;
   for (unsigned int i = 0,
       n = static_cast<unsigned int>(this->_internal_peers_size()); i < n; i++) {
     target = stream->EnsureSpace(target);
@@ -1630,7 +1631,7 @@ size_t SentPeers::ByteSizeLong() const {
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
-  // repeated .types.H256 peers = 1;
+  // repeated .types.H512 peers = 1;
   total_size += 1UL * this->_internal_peers_size();
   for (const auto& msg : this->peers_) {
     total_size +=
@@ -1704,10 +1705,10 @@ void SentPeers::InternalSwap(SentPeers* other) {
 
 class PenalizePeerRequest::_Internal {
  public:
-  static const ::types::H256& peer_id(const PenalizePeerRequest* msg);
+  static const ::types::H512& peer_id(const PenalizePeerRequest* msg);
 };
 
-const ::types::H256&
+const ::types::H512&
 PenalizePeerRequest::_Internal::peer_id(const PenalizePeerRequest* msg) {
   return *msg->peer_id_;
 }
@@ -1727,7 +1728,7 @@ PenalizePeerRequest::PenalizePeerRequest(const PenalizePeerRequest& from)
   : ::PROTOBUF_NAMESPACE_ID::Message() {
   _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
   if (from._internal_has_peer_id()) {
-    peer_id_ = new ::types::H256(*from.peer_id_);
+    peer_id_ = new ::types::H512(*from.peer_id_);
   } else {
     peer_id_ = nullptr;
   }
@@ -1790,7 +1791,7 @@ const char* PenalizePeerRequest::_InternalParse(const char* ptr, ::PROTOBUF_NAME
     ptr = ::PROTOBUF_NAMESPACE_ID::internal::ReadTag(ptr, &tag);
     CHK_(ptr);
     switch (tag >> 3) {
-      // .types.H256 peer_id = 1;
+      // .types.H512 peer_id = 1;
       case 1:
         if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 10)) {
           ptr = ctx->ParseMessage(_internal_mutable_peer_id(), ptr);
@@ -1833,7 +1834,7 @@ failure:
   ::PROTOBUF_NAMESPACE_ID::uint32 cached_has_bits = 0;
   (void) cached_has_bits;
 
-  // .types.H256 peer_id = 1;
+  // .types.H512 peer_id = 1;
   if (this->has_peer_id()) {
     target = stream->EnsureSpace(target);
     target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
@@ -1864,7 +1865,7 @@ size_t PenalizePeerRequest::ByteSizeLong() const {
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
-  // .types.H256 peer_id = 1;
+  // .types.H512 peer_id = 1;
   if (this->has_peer_id()) {
     total_size += 1 +
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
@@ -1909,7 +1910,7 @@ void PenalizePeerRequest::MergeFrom(const PenalizePeerRequest& from) {
   (void) cached_has_bits;
 
   if (from.has_peer_id()) {
-    _internal_mutable_peer_id()->::types::H256::MergeFrom(from._internal_peer_id());
+    _internal_mutable_peer_id()->::types::H512::MergeFrom(from._internal_peer_id());
   }
   if (from.penalty() != 0) {
     _internal_set_penalty(from._internal_penalty());
@@ -1954,10 +1955,10 @@ void PenalizePeerRequest::InternalSwap(PenalizePeerRequest* other) {
 
 class PeerMinBlockRequest::_Internal {
  public:
-  static const ::types::H256& peer_id(const PeerMinBlockRequest* msg);
+  static const ::types::H512& peer_id(const PeerMinBlockRequest* msg);
 };
 
-const ::types::H256&
+const ::types::H512&
 PeerMinBlockRequest::_Internal::peer_id(const PeerMinBlockRequest* msg) {
   return *msg->peer_id_;
 }
@@ -1977,7 +1978,7 @@ PeerMinBlockRequest::PeerMinBlockRequest(const PeerMinBlockRequest& from)
   : ::PROTOBUF_NAMESPACE_ID::Message() {
   _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
   if (from._internal_has_peer_id()) {
-    peer_id_ = new ::types::H256(*from.peer_id_);
+    peer_id_ = new ::types::H512(*from.peer_id_);
   } else {
     peer_id_ = nullptr;
   }
@@ -2040,7 +2041,7 @@ const char* PeerMinBlockRequest::_InternalParse(const char* ptr, ::PROTOBUF_NAME
     ptr = ::PROTOBUF_NAMESPACE_ID::internal::ReadTag(ptr, &tag);
     CHK_(ptr);
     switch (tag >> 3) {
-      // .types.H256 peer_id = 1;
+      // .types.H512 peer_id = 1;
       case 1:
         if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 10)) {
           ptr = ctx->ParseMessage(_internal_mutable_peer_id(), ptr);
@@ -2082,7 +2083,7 @@ failure:
   ::PROTOBUF_NAMESPACE_ID::uint32 cached_has_bits = 0;
   (void) cached_has_bits;
 
-  // .types.H256 peer_id = 1;
+  // .types.H512 peer_id = 1;
   if (this->has_peer_id()) {
     target = stream->EnsureSpace(target);
     target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
@@ -2112,7 +2113,7 @@ size_t PeerMinBlockRequest::ByteSizeLong() const {
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
-  // .types.H256 peer_id = 1;
+  // .types.H512 peer_id = 1;
   if (this->has_peer_id()) {
     total_size += 1 +
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
@@ -2158,7 +2159,7 @@ void PeerMinBlockRequest::MergeFrom(const PeerMinBlockRequest& from) {
   (void) cached_has_bits;
 
   if (from.has_peer_id()) {
-    _internal_mutable_peer_id()->::types::H256::MergeFrom(from._internal_peer_id());
+    _internal_mutable_peer_id()->::types::H512::MergeFrom(from._internal_peer_id());
   }
   if (from.min_block() != 0) {
     _internal_set_min_block(from._internal_min_block());
@@ -2203,10 +2204,10 @@ void PeerMinBlockRequest::InternalSwap(PeerMinBlockRequest* other) {
 
 class InboundMessage::_Internal {
  public:
-  static const ::types::H256& peer_id(const InboundMessage* msg);
+  static const ::types::H512& peer_id(const InboundMessage* msg);
 };
 
-const ::types::H256&
+const ::types::H512&
 InboundMessage::_Internal::peer_id(const InboundMessage* msg) {
   return *msg->peer_id_;
 }
@@ -2231,7 +2232,7 @@ InboundMessage::InboundMessage(const InboundMessage& from)
       GetArena());
   }
   if (from._internal_has_peer_id()) {
-    peer_id_ = new ::types::H256(*from.peer_id_);
+    peer_id_ = new ::types::H512(*from.peer_id_);
   } else {
     peer_id_ = nullptr;
   }
@@ -2313,7 +2314,7 @@ const char* InboundMessage::_InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE
           CHK_(ptr);
         } else goto handle_unusual;
         continue;
-      // .types.H256 peer_id = 3;
+      // .types.H512 peer_id = 3;
       case 3:
         if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 26)) {
           ptr = ctx->ParseMessage(_internal_mutable_peer_id(), ptr);
@@ -2361,7 +2362,7 @@ failure:
         2, this->_internal_data(), target);
   }
 
-  // .types.H256 peer_id = 3;
+  // .types.H512 peer_id = 3;
   if (this->has_peer_id()) {
     target = stream->EnsureSpace(target);
     target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
@@ -2392,7 +2393,7 @@ size_t InboundMessage::ByteSizeLong() const {
         this->_internal_data());
   }
 
-  // .types.H256 peer_id = 3;
+  // .types.H512 peer_id = 3;
   if (this->has_peer_id()) {
     total_size += 1 +
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
@@ -2440,7 +2441,7 @@ void InboundMessage::MergeFrom(const InboundMessage& from) {
     _internal_set_data(from._internal_data());
   }
   if (from.has_peer_id()) {
-    _internal_mutable_peer_id()->::types::H256::MergeFrom(from._internal_peer_id());
+    _internal_mutable_peer_id()->::types::H512::MergeFrom(from._internal_peer_id());
   }
   if (from.id() != 0) {
     _internal_set_id(from._internal_id());

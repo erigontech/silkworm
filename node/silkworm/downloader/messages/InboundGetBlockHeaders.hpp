@@ -34,7 +34,7 @@ class InboundGetBlockHeaders : public InboundMessage {
     void execute() override;
 
   private:
-    PeerId peerId_;
+    std::string peerId_;
     GetBlockHeadersPacket66 packet_;
     Db::ReadOnlyAccess db_;
     SentryClient& sentry_;

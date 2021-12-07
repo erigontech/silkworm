@@ -658,23 +658,23 @@ class SendMessageByIdRequest PROTOBUF_FINAL :
       ::sentry::OutboundMessageData* data);
   ::sentry::OutboundMessageData* unsafe_arena_release_data();
 
-  // .types.H256 peer_id = 2;
+  // .types.H512 peer_id = 2;
   bool has_peer_id() const;
   private:
   bool _internal_has_peer_id() const;
   public:
   void clear_peer_id();
-  const ::types::H256& peer_id() const;
-  ::types::H256* release_peer_id();
-  ::types::H256* mutable_peer_id();
-  void set_allocated_peer_id(::types::H256* peer_id);
+  const ::types::H512& peer_id() const;
+  ::types::H512* release_peer_id();
+  ::types::H512* mutable_peer_id();
+  void set_allocated_peer_id(::types::H512* peer_id);
   private:
-  const ::types::H256& _internal_peer_id() const;
-  ::types::H256* _internal_mutable_peer_id();
+  const ::types::H512& _internal_peer_id() const;
+  ::types::H512* _internal_mutable_peer_id();
   public:
   void unsafe_arena_set_allocated_peer_id(
-      ::types::H256* peer_id);
-  ::types::H256* unsafe_arena_release_peer_id();
+      ::types::H512* peer_id);
+  ::types::H512* unsafe_arena_release_peer_id();
 
   // @@protoc_insertion_point(class_scope:sentry.SendMessageByIdRequest)
  private:
@@ -684,7 +684,7 @@ class SendMessageByIdRequest PROTOBUF_FINAL :
   typedef void InternalArenaConstructable_;
   typedef void DestructorSkippable_;
   ::sentry::OutboundMessageData* data_;
-  ::types::H256* peer_id_;
+  ::types::H512* peer_id_;
   mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   friend struct ::TableStruct_sentry_2eproto;
 };
@@ -960,22 +960,22 @@ class SentPeers PROTOBUF_FINAL :
   enum : int {
     kPeersFieldNumber = 1,
   };
-  // repeated .types.H256 peers = 1;
+  // repeated .types.H512 peers = 1;
   int peers_size() const;
   private:
   int _internal_peers_size() const;
   public:
   void clear_peers();
-  ::types::H256* mutable_peers(int index);
-  ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::types::H256 >*
+  ::types::H512* mutable_peers(int index);
+  ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::types::H512 >*
       mutable_peers();
   private:
-  const ::types::H256& _internal_peers(int index) const;
-  ::types::H256* _internal_add_peers();
+  const ::types::H512& _internal_peers(int index) const;
+  ::types::H512* _internal_add_peers();
   public:
-  const ::types::H256& peers(int index) const;
-  ::types::H256* add_peers();
-  const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::types::H256 >&
+  const ::types::H512& peers(int index) const;
+  ::types::H512* add_peers();
+  const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::types::H512 >&
       peers() const;
 
   // @@protoc_insertion_point(class_scope:sentry.SentPeers)
@@ -985,7 +985,7 @@ class SentPeers PROTOBUF_FINAL :
   template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
   typedef void InternalArenaConstructable_;
   typedef void DestructorSkippable_;
-  ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::types::H256 > peers_;
+  ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::types::H512 > peers_;
   mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   friend struct ::TableStruct_sentry_2eproto;
 };
@@ -1106,23 +1106,23 @@ class PenalizePeerRequest PROTOBUF_FINAL :
     kPeerIdFieldNumber = 1,
     kPenaltyFieldNumber = 2,
   };
-  // .types.H256 peer_id = 1;
+  // .types.H512 peer_id = 1;
   bool has_peer_id() const;
   private:
   bool _internal_has_peer_id() const;
   public:
   void clear_peer_id();
-  const ::types::H256& peer_id() const;
-  ::types::H256* release_peer_id();
-  ::types::H256* mutable_peer_id();
-  void set_allocated_peer_id(::types::H256* peer_id);
+  const ::types::H512& peer_id() const;
+  ::types::H512* release_peer_id();
+  ::types::H512* mutable_peer_id();
+  void set_allocated_peer_id(::types::H512* peer_id);
   private:
-  const ::types::H256& _internal_peer_id() const;
-  ::types::H256* _internal_mutable_peer_id();
+  const ::types::H512& _internal_peer_id() const;
+  ::types::H512* _internal_mutable_peer_id();
   public:
   void unsafe_arena_set_allocated_peer_id(
-      ::types::H256* peer_id);
-  ::types::H256* unsafe_arena_release_peer_id();
+      ::types::H512* peer_id);
+  ::types::H512* unsafe_arena_release_peer_id();
 
   // .sentry.PenaltyKind penalty = 2;
   void clear_penalty();
@@ -1140,7 +1140,7 @@ class PenalizePeerRequest PROTOBUF_FINAL :
   template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
   typedef void InternalArenaConstructable_;
   typedef void DestructorSkippable_;
-  ::types::H256* peer_id_;
+  ::types::H512* peer_id_;
   int penalty_;
   mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   friend struct ::TableStruct_sentry_2eproto;
@@ -1262,23 +1262,23 @@ class PeerMinBlockRequest PROTOBUF_FINAL :
     kPeerIdFieldNumber = 1,
     kMinBlockFieldNumber = 2,
   };
-  // .types.H256 peer_id = 1;
+  // .types.H512 peer_id = 1;
   bool has_peer_id() const;
   private:
   bool _internal_has_peer_id() const;
   public:
   void clear_peer_id();
-  const ::types::H256& peer_id() const;
-  ::types::H256* release_peer_id();
-  ::types::H256* mutable_peer_id();
-  void set_allocated_peer_id(::types::H256* peer_id);
+  const ::types::H512& peer_id() const;
+  ::types::H512* release_peer_id();
+  ::types::H512* mutable_peer_id();
+  void set_allocated_peer_id(::types::H512* peer_id);
   private:
-  const ::types::H256& _internal_peer_id() const;
-  ::types::H256* _internal_mutable_peer_id();
+  const ::types::H512& _internal_peer_id() const;
+  ::types::H512* _internal_mutable_peer_id();
   public:
   void unsafe_arena_set_allocated_peer_id(
-      ::types::H256* peer_id);
-  ::types::H256* unsafe_arena_release_peer_id();
+      ::types::H512* peer_id);
+  ::types::H512* unsafe_arena_release_peer_id();
 
   // uint64 min_block = 2;
   void clear_min_block();
@@ -1296,7 +1296,7 @@ class PeerMinBlockRequest PROTOBUF_FINAL :
   template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
   typedef void InternalArenaConstructable_;
   typedef void DestructorSkippable_;
-  ::types::H256* peer_id_;
+  ::types::H512* peer_id_;
   ::PROTOBUF_NAMESPACE_ID::uint64 min_block_;
   mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   friend struct ::TableStruct_sentry_2eproto;
@@ -1435,23 +1435,23 @@ class InboundMessage PROTOBUF_FINAL :
   std::string* _internal_mutable_data();
   public:
 
-  // .types.H256 peer_id = 3;
+  // .types.H512 peer_id = 3;
   bool has_peer_id() const;
   private:
   bool _internal_has_peer_id() const;
   public:
   void clear_peer_id();
-  const ::types::H256& peer_id() const;
-  ::types::H256* release_peer_id();
-  ::types::H256* mutable_peer_id();
-  void set_allocated_peer_id(::types::H256* peer_id);
+  const ::types::H512& peer_id() const;
+  ::types::H512* release_peer_id();
+  ::types::H512* mutable_peer_id();
+  void set_allocated_peer_id(::types::H512* peer_id);
   private:
-  const ::types::H256& _internal_peer_id() const;
-  ::types::H256* _internal_mutable_peer_id();
+  const ::types::H512& _internal_peer_id() const;
+  ::types::H512* _internal_mutable_peer_id();
   public:
   void unsafe_arena_set_allocated_peer_id(
-      ::types::H256* peer_id);
-  ::types::H256* unsafe_arena_release_peer_id();
+      ::types::H512* peer_id);
+  ::types::H512* unsafe_arena_release_peer_id();
 
   // .sentry.MessageId id = 1;
   void clear_id();
@@ -1470,7 +1470,7 @@ class InboundMessage PROTOBUF_FINAL :
   typedef void InternalArenaConstructable_;
   typedef void DestructorSkippable_;
   ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr data_;
-  ::types::H256* peer_id_;
+  ::types::H512* peer_id_;
   int id_;
   mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   friend struct ::TableStruct_sentry_2eproto;
@@ -2419,24 +2419,24 @@ inline void SendMessageByIdRequest::set_allocated_data(::sentry::OutboundMessage
   // @@protoc_insertion_point(field_set_allocated:sentry.SendMessageByIdRequest.data)
 }
 
-// .types.H256 peer_id = 2;
+// .types.H512 peer_id = 2;
 inline bool SendMessageByIdRequest::_internal_has_peer_id() const {
   return this != internal_default_instance() && peer_id_ != nullptr;
 }
 inline bool SendMessageByIdRequest::has_peer_id() const {
   return _internal_has_peer_id();
 }
-inline const ::types::H256& SendMessageByIdRequest::_internal_peer_id() const {
-  const ::types::H256* p = peer_id_;
-  return p != nullptr ? *p : reinterpret_cast<const ::types::H256&>(
-      ::types::_H256_default_instance_);
+inline const ::types::H512& SendMessageByIdRequest::_internal_peer_id() const {
+  const ::types::H512* p = peer_id_;
+  return p != nullptr ? *p : reinterpret_cast<const ::types::H512&>(
+      ::types::_H512_default_instance_);
 }
-inline const ::types::H256& SendMessageByIdRequest::peer_id() const {
+inline const ::types::H512& SendMessageByIdRequest::peer_id() const {
   // @@protoc_insertion_point(field_get:sentry.SendMessageByIdRequest.peer_id)
   return _internal_peer_id();
 }
 inline void SendMessageByIdRequest::unsafe_arena_set_allocated_peer_id(
-    ::types::H256* peer_id) {
+    ::types::H512* peer_id) {
   if (GetArena() == nullptr) {
     delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(peer_id_);
   }
@@ -2448,35 +2448,35 @@ inline void SendMessageByIdRequest::unsafe_arena_set_allocated_peer_id(
   }
   // @@protoc_insertion_point(field_unsafe_arena_set_allocated:sentry.SendMessageByIdRequest.peer_id)
 }
-inline ::types::H256* SendMessageByIdRequest::release_peer_id() {
+inline ::types::H512* SendMessageByIdRequest::release_peer_id() {
   
-  ::types::H256* temp = peer_id_;
+  ::types::H512* temp = peer_id_;
   peer_id_ = nullptr;
   if (GetArena() != nullptr) {
     temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
   }
   return temp;
 }
-inline ::types::H256* SendMessageByIdRequest::unsafe_arena_release_peer_id() {
+inline ::types::H512* SendMessageByIdRequest::unsafe_arena_release_peer_id() {
   // @@protoc_insertion_point(field_release:sentry.SendMessageByIdRequest.peer_id)
   
-  ::types::H256* temp = peer_id_;
+  ::types::H512* temp = peer_id_;
   peer_id_ = nullptr;
   return temp;
 }
-inline ::types::H256* SendMessageByIdRequest::_internal_mutable_peer_id() {
+inline ::types::H512* SendMessageByIdRequest::_internal_mutable_peer_id() {
   
   if (peer_id_ == nullptr) {
-    auto* p = CreateMaybeMessage<::types::H256>(GetArena());
+    auto* p = CreateMaybeMessage<::types::H512>(GetArena());
     peer_id_ = p;
   }
   return peer_id_;
 }
-inline ::types::H256* SendMessageByIdRequest::mutable_peer_id() {
+inline ::types::H512* SendMessageByIdRequest::mutable_peer_id() {
   // @@protoc_insertion_point(field_mutable:sentry.SendMessageByIdRequest.peer_id)
   return _internal_mutable_peer_id();
 }
-inline void SendMessageByIdRequest::set_allocated_peer_id(::types::H256* peer_id) {
+inline void SendMessageByIdRequest::set_allocated_peer_id(::types::H512* peer_id) {
   ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArena();
   if (message_arena == nullptr) {
     delete reinterpret_cast< ::PROTOBUF_NAMESPACE_ID::MessageLite*>(peer_id_);
@@ -2607,37 +2607,37 @@ inline void SendMessageToRandomPeersRequest::set_max_peers(::PROTOBUF_NAMESPACE_
 
 // SentPeers
 
-// repeated .types.H256 peers = 1;
+// repeated .types.H512 peers = 1;
 inline int SentPeers::_internal_peers_size() const {
   return peers_.size();
 }
 inline int SentPeers::peers_size() const {
   return _internal_peers_size();
 }
-inline ::types::H256* SentPeers::mutable_peers(int index) {
+inline ::types::H512* SentPeers::mutable_peers(int index) {
   // @@protoc_insertion_point(field_mutable:sentry.SentPeers.peers)
   return peers_.Mutable(index);
 }
-inline ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::types::H256 >*
+inline ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::types::H512 >*
 SentPeers::mutable_peers() {
   // @@protoc_insertion_point(field_mutable_list:sentry.SentPeers.peers)
   return &peers_;
 }
-inline const ::types::H256& SentPeers::_internal_peers(int index) const {
+inline const ::types::H512& SentPeers::_internal_peers(int index) const {
   return peers_.Get(index);
 }
-inline const ::types::H256& SentPeers::peers(int index) const {
+inline const ::types::H512& SentPeers::peers(int index) const {
   // @@protoc_insertion_point(field_get:sentry.SentPeers.peers)
   return _internal_peers(index);
 }
-inline ::types::H256* SentPeers::_internal_add_peers() {
+inline ::types::H512* SentPeers::_internal_add_peers() {
   return peers_.Add();
 }
-inline ::types::H256* SentPeers::add_peers() {
+inline ::types::H512* SentPeers::add_peers() {
   // @@protoc_insertion_point(field_add:sentry.SentPeers.peers)
   return _internal_add_peers();
 }
-inline const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::types::H256 >&
+inline const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::types::H512 >&
 SentPeers::peers() const {
   // @@protoc_insertion_point(field_list:sentry.SentPeers.peers)
   return peers_;
@@ -2647,24 +2647,24 @@ SentPeers::peers() const {
 
 // PenalizePeerRequest
 
-// .types.H256 peer_id = 1;
+// .types.H512 peer_id = 1;
 inline bool PenalizePeerRequest::_internal_has_peer_id() const {
   return this != internal_default_instance() && peer_id_ != nullptr;
 }
 inline bool PenalizePeerRequest::has_peer_id() const {
   return _internal_has_peer_id();
 }
-inline const ::types::H256& PenalizePeerRequest::_internal_peer_id() const {
-  const ::types::H256* p = peer_id_;
-  return p != nullptr ? *p : reinterpret_cast<const ::types::H256&>(
-      ::types::_H256_default_instance_);
+inline const ::types::H512& PenalizePeerRequest::_internal_peer_id() const {
+  const ::types::H512* p = peer_id_;
+  return p != nullptr ? *p : reinterpret_cast<const ::types::H512&>(
+      ::types::_H512_default_instance_);
 }
-inline const ::types::H256& PenalizePeerRequest::peer_id() const {
+inline const ::types::H512& PenalizePeerRequest::peer_id() const {
   // @@protoc_insertion_point(field_get:sentry.PenalizePeerRequest.peer_id)
   return _internal_peer_id();
 }
 inline void PenalizePeerRequest::unsafe_arena_set_allocated_peer_id(
-    ::types::H256* peer_id) {
+    ::types::H512* peer_id) {
   if (GetArena() == nullptr) {
     delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(peer_id_);
   }
@@ -2676,35 +2676,35 @@ inline void PenalizePeerRequest::unsafe_arena_set_allocated_peer_id(
   }
   // @@protoc_insertion_point(field_unsafe_arena_set_allocated:sentry.PenalizePeerRequest.peer_id)
 }
-inline ::types::H256* PenalizePeerRequest::release_peer_id() {
+inline ::types::H512* PenalizePeerRequest::release_peer_id() {
   
-  ::types::H256* temp = peer_id_;
+  ::types::H512* temp = peer_id_;
   peer_id_ = nullptr;
   if (GetArena() != nullptr) {
     temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
   }
   return temp;
 }
-inline ::types::H256* PenalizePeerRequest::unsafe_arena_release_peer_id() {
+inline ::types::H512* PenalizePeerRequest::unsafe_arena_release_peer_id() {
   // @@protoc_insertion_point(field_release:sentry.PenalizePeerRequest.peer_id)
   
-  ::types::H256* temp = peer_id_;
+  ::types::H512* temp = peer_id_;
   peer_id_ = nullptr;
   return temp;
 }
-inline ::types::H256* PenalizePeerRequest::_internal_mutable_peer_id() {
+inline ::types::H512* PenalizePeerRequest::_internal_mutable_peer_id() {
   
   if (peer_id_ == nullptr) {
-    auto* p = CreateMaybeMessage<::types::H256>(GetArena());
+    auto* p = CreateMaybeMessage<::types::H512>(GetArena());
     peer_id_ = p;
   }
   return peer_id_;
 }
-inline ::types::H256* PenalizePeerRequest::mutable_peer_id() {
+inline ::types::H512* PenalizePeerRequest::mutable_peer_id() {
   // @@protoc_insertion_point(field_mutable:sentry.PenalizePeerRequest.peer_id)
   return _internal_mutable_peer_id();
 }
-inline void PenalizePeerRequest::set_allocated_peer_id(::types::H256* peer_id) {
+inline void PenalizePeerRequest::set_allocated_peer_id(::types::H512* peer_id) {
   ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArena();
   if (message_arena == nullptr) {
     delete reinterpret_cast< ::PROTOBUF_NAMESPACE_ID::MessageLite*>(peer_id_);
@@ -2748,24 +2748,24 @@ inline void PenalizePeerRequest::set_penalty(::sentry::PenaltyKind value) {
 
 // PeerMinBlockRequest
 
-// .types.H256 peer_id = 1;
+// .types.H512 peer_id = 1;
 inline bool PeerMinBlockRequest::_internal_has_peer_id() const {
   return this != internal_default_instance() && peer_id_ != nullptr;
 }
 inline bool PeerMinBlockRequest::has_peer_id() const {
   return _internal_has_peer_id();
 }
-inline const ::types::H256& PeerMinBlockRequest::_internal_peer_id() const {
-  const ::types::H256* p = peer_id_;
-  return p != nullptr ? *p : reinterpret_cast<const ::types::H256&>(
-      ::types::_H256_default_instance_);
+inline const ::types::H512& PeerMinBlockRequest::_internal_peer_id() const {
+  const ::types::H512* p = peer_id_;
+  return p != nullptr ? *p : reinterpret_cast<const ::types::H512&>(
+      ::types::_H512_default_instance_);
 }
-inline const ::types::H256& PeerMinBlockRequest::peer_id() const {
+inline const ::types::H512& PeerMinBlockRequest::peer_id() const {
   // @@protoc_insertion_point(field_get:sentry.PeerMinBlockRequest.peer_id)
   return _internal_peer_id();
 }
 inline void PeerMinBlockRequest::unsafe_arena_set_allocated_peer_id(
-    ::types::H256* peer_id) {
+    ::types::H512* peer_id) {
   if (GetArena() == nullptr) {
     delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(peer_id_);
   }
@@ -2777,35 +2777,35 @@ inline void PeerMinBlockRequest::unsafe_arena_set_allocated_peer_id(
   }
   // @@protoc_insertion_point(field_unsafe_arena_set_allocated:sentry.PeerMinBlockRequest.peer_id)
 }
-inline ::types::H256* PeerMinBlockRequest::release_peer_id() {
+inline ::types::H512* PeerMinBlockRequest::release_peer_id() {
   
-  ::types::H256* temp = peer_id_;
+  ::types::H512* temp = peer_id_;
   peer_id_ = nullptr;
   if (GetArena() != nullptr) {
     temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
   }
   return temp;
 }
-inline ::types::H256* PeerMinBlockRequest::unsafe_arena_release_peer_id() {
+inline ::types::H512* PeerMinBlockRequest::unsafe_arena_release_peer_id() {
   // @@protoc_insertion_point(field_release:sentry.PeerMinBlockRequest.peer_id)
   
-  ::types::H256* temp = peer_id_;
+  ::types::H512* temp = peer_id_;
   peer_id_ = nullptr;
   return temp;
 }
-inline ::types::H256* PeerMinBlockRequest::_internal_mutable_peer_id() {
+inline ::types::H512* PeerMinBlockRequest::_internal_mutable_peer_id() {
   
   if (peer_id_ == nullptr) {
-    auto* p = CreateMaybeMessage<::types::H256>(GetArena());
+    auto* p = CreateMaybeMessage<::types::H512>(GetArena());
     peer_id_ = p;
   }
   return peer_id_;
 }
-inline ::types::H256* PeerMinBlockRequest::mutable_peer_id() {
+inline ::types::H512* PeerMinBlockRequest::mutable_peer_id() {
   // @@protoc_insertion_point(field_mutable:sentry.PeerMinBlockRequest.peer_id)
   return _internal_mutable_peer_id();
 }
-inline void PeerMinBlockRequest::set_allocated_peer_id(::types::H256* peer_id) {
+inline void PeerMinBlockRequest::set_allocated_peer_id(::types::H512* peer_id) {
   ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArena();
   if (message_arena == nullptr) {
     delete reinterpret_cast< ::PROTOBUF_NAMESPACE_ID::MessageLite*>(peer_id_);
@@ -2930,24 +2930,24 @@ inline void InboundMessage::set_allocated_data(std::string* data) {
   // @@protoc_insertion_point(field_set_allocated:sentry.InboundMessage.data)
 }
 
-// .types.H256 peer_id = 3;
+// .types.H512 peer_id = 3;
 inline bool InboundMessage::_internal_has_peer_id() const {
   return this != internal_default_instance() && peer_id_ != nullptr;
 }
 inline bool InboundMessage::has_peer_id() const {
   return _internal_has_peer_id();
 }
-inline const ::types::H256& InboundMessage::_internal_peer_id() const {
-  const ::types::H256* p = peer_id_;
-  return p != nullptr ? *p : reinterpret_cast<const ::types::H256&>(
-      ::types::_H256_default_instance_);
+inline const ::types::H512& InboundMessage::_internal_peer_id() const {
+  const ::types::H512* p = peer_id_;
+  return p != nullptr ? *p : reinterpret_cast<const ::types::H512&>(
+      ::types::_H512_default_instance_);
 }
-inline const ::types::H256& InboundMessage::peer_id() const {
+inline const ::types::H512& InboundMessage::peer_id() const {
   // @@protoc_insertion_point(field_get:sentry.InboundMessage.peer_id)
   return _internal_peer_id();
 }
 inline void InboundMessage::unsafe_arena_set_allocated_peer_id(
-    ::types::H256* peer_id) {
+    ::types::H512* peer_id) {
   if (GetArena() == nullptr) {
     delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(peer_id_);
   }
@@ -2959,35 +2959,35 @@ inline void InboundMessage::unsafe_arena_set_allocated_peer_id(
   }
   // @@protoc_insertion_point(field_unsafe_arena_set_allocated:sentry.InboundMessage.peer_id)
 }
-inline ::types::H256* InboundMessage::release_peer_id() {
+inline ::types::H512* InboundMessage::release_peer_id() {
   
-  ::types::H256* temp = peer_id_;
+  ::types::H512* temp = peer_id_;
   peer_id_ = nullptr;
   if (GetArena() != nullptr) {
     temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
   }
   return temp;
 }
-inline ::types::H256* InboundMessage::unsafe_arena_release_peer_id() {
+inline ::types::H512* InboundMessage::unsafe_arena_release_peer_id() {
   // @@protoc_insertion_point(field_release:sentry.InboundMessage.peer_id)
   
-  ::types::H256* temp = peer_id_;
+  ::types::H512* temp = peer_id_;
   peer_id_ = nullptr;
   return temp;
 }
-inline ::types::H256* InboundMessage::_internal_mutable_peer_id() {
+inline ::types::H512* InboundMessage::_internal_mutable_peer_id() {
   
   if (peer_id_ == nullptr) {
-    auto* p = CreateMaybeMessage<::types::H256>(GetArena());
+    auto* p = CreateMaybeMessage<::types::H512>(GetArena());
     peer_id_ = p;
   }
   return peer_id_;
 }
-inline ::types::H256* InboundMessage::mutable_peer_id() {
+inline ::types::H512* InboundMessage::mutable_peer_id() {
   // @@protoc_insertion_point(field_mutable:sentry.InboundMessage.peer_id)
   return _internal_mutable_peer_id();
 }
-inline void InboundMessage::set_allocated_peer_id(::types::H256* peer_id) {
+inline void InboundMessage::set_allocated_peer_id(::types::H512* peer_id) {
   ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArena();
   if (message_arena == nullptr) {
     delete reinterpret_cast< ::PROTOBUF_NAMESPACE_ID::MessageLite*>(peer_id_);

@@ -34,7 +34,7 @@ class InboundNewBlockHashes : public InboundMessage {
     void execute() override;
 
   private:
-    PeerId peerId_;
+    std::string peerId_;
     NewBlockHashesPacket packet_;
     uint64_t reqId_;
     WorkingChain& working_chain_;

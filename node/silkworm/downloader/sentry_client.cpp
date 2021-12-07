@@ -103,7 +103,7 @@ void SentryClient::stats_receiving_loop() {
     while (!is_stopping() && receive_peer_stats.receive_one_reply()) {
         const sentry::PeersReply& stat = receive_peer_stats.reply();
 
-        auto peerId = hash_from_H256(stat.peer_id());
+        auto peerId = string_from_H512(stat.peer_id());
         const char* event = "";
         if (stat.event() == sentry::PeersReply::Connect) {
             event = "connected";

@@ -207,7 +207,7 @@ static void InitDefaultsscc_info_PeersReply_sentry_2eproto() {
 
 ::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<1> scc_info_PeersReply_sentry_2eproto =
     {{ATOMIC_VAR_INIT(::PROTOBUF_NAMESPACE_ID::internal::SCCInfoBase::kUninitialized), 1, 0, InitDefaultsscc_info_PeersReply_sentry_2eproto}, {
-      &scc_info_H256_types_2eproto.base,}};
+      &scc_info_H512_types_2eproto.base,}};
 
 static void InitDefaultsscc_info_PeersRequest_sentry_2eproto() {
   GOOGLE_PROTOBUF_VERIFY_VERSION;
@@ -510,7 +510,7 @@ const char descriptor_table_protodef_sentry_2eproto[] PROTOBUF_SECTION_VARIABLE(
   "entry.MessageId\"\022\n\020PeerCountRequest\"\037\n\016P"
   "eerCountReply\022\r\n\005count\030\001 \001(\004\"\016\n\014PeersReq"
   "uest\"\201\001\n\nPeersReply\022\034\n\007peer_id\030\001 \001(\0132\013.t"
-  "ypes.H256\022+\n\005event\030\002 \001(\0162\034.sentry.PeersR"
+  "ypes.H512\022+\n\005event\030\002 \001(\0162\034.sentry.PeersR"
   "eply.PeerEvent\"(\n\tPeerEvent\022\013\n\007Connect\020\000"
   "\022\016\n\nDisconnect\020\001*\332\005\n\tMessageId\022\r\n\tSTATUS"
   "_65\020\000\022\030\n\024GET_BLOCK_HEADERS_65\020\001\022\024\n\020BLOCK"
@@ -4351,10 +4351,10 @@ void PeersRequest::InternalSwap(PeersRequest* other) {
 
 class PeersReply::_Internal {
  public:
-  static const ::types::H256& peer_id(const PeersReply* msg);
+  static const ::types::H512& peer_id(const PeersReply* msg);
 };
 
-const ::types::H256&
+const ::types::H512&
 PeersReply::_Internal::peer_id(const PeersReply* msg) {
   return *msg->peer_id_;
 }
@@ -4374,7 +4374,7 @@ PeersReply::PeersReply(const PeersReply& from)
   : ::PROTOBUF_NAMESPACE_ID::Message() {
   _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
   if (from._internal_has_peer_id()) {
-    peer_id_ = new ::types::H256(*from.peer_id_);
+    peer_id_ = new ::types::H512(*from.peer_id_);
   } else {
     peer_id_ = nullptr;
   }
@@ -4437,7 +4437,7 @@ const char* PeersReply::_InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID:
     ptr = ::PROTOBUF_NAMESPACE_ID::internal::ReadTag(ptr, &tag);
     CHK_(ptr);
     switch (tag >> 3) {
-      // .types.H256 peer_id = 1;
+      // .types.H512 peer_id = 1;
       case 1:
         if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 10)) {
           ptr = ctx->ParseMessage(_internal_mutable_peer_id(), ptr);
@@ -4480,7 +4480,7 @@ failure:
   ::PROTOBUF_NAMESPACE_ID::uint32 cached_has_bits = 0;
   (void) cached_has_bits;
 
-  // .types.H256 peer_id = 1;
+  // .types.H512 peer_id = 1;
   if (this->has_peer_id()) {
     target = stream->EnsureSpace(target);
     target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
@@ -4511,7 +4511,7 @@ size_t PeersReply::ByteSizeLong() const {
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
-  // .types.H256 peer_id = 1;
+  // .types.H512 peer_id = 1;
   if (this->has_peer_id()) {
     total_size += 1 +
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
@@ -4556,7 +4556,7 @@ void PeersReply::MergeFrom(const PeersReply& from) {
   (void) cached_has_bits;
 
   if (from.has_peer_id()) {
-    _internal_mutable_peer_id()->::types::H256::MergeFrom(from._internal_peer_id());
+    _internal_mutable_peer_id()->::types::H512::MergeFrom(from._internal_peer_id());
   }
   if (from.event() != 0) {
     _internal_set_event(from._internal_event());

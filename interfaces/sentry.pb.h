@@ -2830,23 +2830,23 @@ class PeersReply PROTOBUF_FINAL :
     kPeerIdFieldNumber = 1,
     kEventFieldNumber = 2,
   };
-  // .types.H256 peer_id = 1;
+  // .types.H512 peer_id = 1;
   bool has_peer_id() const;
   private:
   bool _internal_has_peer_id() const;
   public:
   void clear_peer_id();
-  const ::types::H256& peer_id() const;
-  ::types::H256* release_peer_id();
-  ::types::H256* mutable_peer_id();
-  void set_allocated_peer_id(::types::H256* peer_id);
+  const ::types::H512& peer_id() const;
+  ::types::H512* release_peer_id();
+  ::types::H512* mutable_peer_id();
+  void set_allocated_peer_id(::types::H512* peer_id);
   private:
-  const ::types::H256& _internal_peer_id() const;
-  ::types::H256* _internal_mutable_peer_id();
+  const ::types::H512& _internal_peer_id() const;
+  ::types::H512* _internal_mutable_peer_id();
   public:
   void unsafe_arena_set_allocated_peer_id(
-      ::types::H256* peer_id);
-  ::types::H256* unsafe_arena_release_peer_id();
+      ::types::H512* peer_id);
+  ::types::H512* unsafe_arena_release_peer_id();
 
   // .sentry.PeersReply.PeerEvent event = 2;
   void clear_event();
@@ -2864,7 +2864,7 @@ class PeersReply PROTOBUF_FINAL :
   template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
   typedef void InternalArenaConstructable_;
   typedef void DestructorSkippable_;
-  ::types::H256* peer_id_;
+  ::types::H512* peer_id_;
   int event_;
   mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   friend struct ::TableStruct_sentry_2eproto;
@@ -4263,24 +4263,24 @@ inline void PeerCountReply::set_count(::PROTOBUF_NAMESPACE_ID::uint64 value) {
 
 // PeersReply
 
-// .types.H256 peer_id = 1;
+// .types.H512 peer_id = 1;
 inline bool PeersReply::_internal_has_peer_id() const {
   return this != internal_default_instance() && peer_id_ != nullptr;
 }
 inline bool PeersReply::has_peer_id() const {
   return _internal_has_peer_id();
 }
-inline const ::types::H256& PeersReply::_internal_peer_id() const {
-  const ::types::H256* p = peer_id_;
-  return p != nullptr ? *p : reinterpret_cast<const ::types::H256&>(
-      ::types::_H256_default_instance_);
+inline const ::types::H512& PeersReply::_internal_peer_id() const {
+  const ::types::H512* p = peer_id_;
+  return p != nullptr ? *p : reinterpret_cast<const ::types::H512&>(
+      ::types::_H512_default_instance_);
 }
-inline const ::types::H256& PeersReply::peer_id() const {
+inline const ::types::H512& PeersReply::peer_id() const {
   // @@protoc_insertion_point(field_get:sentry.PeersReply.peer_id)
   return _internal_peer_id();
 }
 inline void PeersReply::unsafe_arena_set_allocated_peer_id(
-    ::types::H256* peer_id) {
+    ::types::H512* peer_id) {
   if (GetArena() == nullptr) {
     delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(peer_id_);
   }
@@ -4292,35 +4292,35 @@ inline void PeersReply::unsafe_arena_set_allocated_peer_id(
   }
   // @@protoc_insertion_point(field_unsafe_arena_set_allocated:sentry.PeersReply.peer_id)
 }
-inline ::types::H256* PeersReply::release_peer_id() {
+inline ::types::H512* PeersReply::release_peer_id() {
   
-  ::types::H256* temp = peer_id_;
+  ::types::H512* temp = peer_id_;
   peer_id_ = nullptr;
   if (GetArena() != nullptr) {
     temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
   }
   return temp;
 }
-inline ::types::H256* PeersReply::unsafe_arena_release_peer_id() {
+inline ::types::H512* PeersReply::unsafe_arena_release_peer_id() {
   // @@protoc_insertion_point(field_release:sentry.PeersReply.peer_id)
   
-  ::types::H256* temp = peer_id_;
+  ::types::H512* temp = peer_id_;
   peer_id_ = nullptr;
   return temp;
 }
-inline ::types::H256* PeersReply::_internal_mutable_peer_id() {
+inline ::types::H512* PeersReply::_internal_mutable_peer_id() {
   
   if (peer_id_ == nullptr) {
-    auto* p = CreateMaybeMessage<::types::H256>(GetArena());
+    auto* p = CreateMaybeMessage<::types::H512>(GetArena());
     peer_id_ = p;
   }
   return peer_id_;
 }
-inline ::types::H256* PeersReply::mutable_peer_id() {
+inline ::types::H512* PeersReply::mutable_peer_id() {
   // @@protoc_insertion_point(field_mutable:sentry.PeersReply.peer_id)
   return _internal_mutable_peer_id();
 }
-inline void PeersReply::set_allocated_peer_id(::types::H256* peer_id) {
+inline void PeersReply::set_allocated_peer_id(::types::H512* peer_id) {
   ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArena();
   if (message_arena == nullptr) {
     delete reinterpret_cast< ::PROTOBUF_NAMESPACE_ID::MessageLite*>(peer_id_);

@@ -133,7 +133,7 @@ message PeersReply {
     Connect = 0;
     Disconnect = 1;
   }
-  types.H256 peer_id = 1;
+  types.H512 peer_id = 1;
   PeerEvent event = 2;
 }
 

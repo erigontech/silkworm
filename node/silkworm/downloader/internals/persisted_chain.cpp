@@ -15,6 +15,7 @@
 */
 
 #include "persisted_chain.hpp"
+#include "measures.hpp"
 
 #include <silkworm/common/as_range.hpp>
 #include <silkworm/common/log.hpp>
@@ -59,7 +60,14 @@ BlockNum PersistedChain::unwind_point() { return unwind_point_; }
 // Erigon's func (hi *HeaderInserter) FeedHeader
 
 void PersistedChain::persist(const Headers& headers) {
+    if (headers.empty()) return;
+
+    MeasureScopeExecTime measure_curr_scope("PersistedChain::persist() method, " + std::to_string(headers.size()) + " headers");
+
     as_range::for_each(headers, [this](const auto& header) { persist(*header); });
+
+    log::Trace() << "PersistedChain: saved " << headers.size() << " headers from height "
+                 << header_at(headers.begin()).number << " to height " << header_at(headers.cbegin()).number;
 }
 
 void PersistedChain::persist(const BlockHeader& header) {  // todo: try to modularize
@@ -130,7 +138,7 @@ void PersistedChain::persist(const BlockHeader& header) {  // todo: try to modul
     // Save header
     tx_.write_header(header, true);  // true = with_header_numbers
 
-    log::Trace() << "PersistedChain: saved header height=" << height << " hash=" << hash;
+    // log::Trace() << "PersistedChain: saved header height=" << height << " hash=" << hash;
 
     previous_hash_ = hash;
 }

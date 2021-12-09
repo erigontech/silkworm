@@ -22,19 +22,13 @@
 
 namespace silkworm {
 
-Worker::~Worker() {
-    if (state_.load() != WorkerState::kStopped) {
-        state_.store(WorkerState::kStopping);
-        thread_->join();
-        thread_.reset(nullptr);
-    }
-}
+Worker::~Worker() { stop(/*wait=*/true); }
 
 void Worker::start(bool wait) {
     WorkerState expected_stopped{WorkerState::kStopped};
     if (!state_.compare_exchange_strong(expected_stopped, WorkerState::kStarting)) {
         WorkerState expected_exception_thrown{WorkerState::kExceptionThrown};
-        if (!state_.compare_exchange_strong(expected_exception_thrown, WorkerState::kStarting)){
+        if (!state_.compare_exchange_strong(expected_exception_thrown, WorkerState::kStarting)) {
             return;
         }
     }
@@ -45,33 +39,37 @@ void Worker::start(bool wait) {
     thread_ = std::make_unique<std::thread>([&]() {
         WorkerState expected_starting{WorkerState::kStarting};
         if (state_.compare_exchange_strong(expected_starting, WorkerState::kStarted)) {
+            signal_started(this);
             try {
                 work();
-                state_.store(WorkerState::kStopped);
             } catch (const std::exception& ex) {
-                log::Error() << "Exception thrown in worker thread : " << ex.what();
+                log::Error() << "Exception thrown in " << name_ << " thread : " << ex.what();
                 exception_ptr_ = std::current_exception();
-                state_.store(WorkerState::kExceptionThrown);
             }
         }
+        state_.store(exception_ptr_ ? WorkerState::kExceptionThrown : WorkerState::kStopped);
+        signal_stopped(this);
     });
 
     while (wait) {
         std::this_thread::sleep_for(std::chrono::milliseconds(10));
-        auto state{get_state()};
-        if (state == WorkerState::kStarted) {
+        if (auto state{get_state()}; state == WorkerState::kStarted) {
             break;
         }
     }
 }
 
 void Worker::stop(bool wait) {
+    if (!thread_) return;
+
     WorkerState expected_state{WorkerState::kStarted};
     if (state_.compare_exchange_strong(expected_state, WorkerState::kStopping)) {
         kick();
     }
+
     if (wait) {
         thread_->join();
+        thread_.reset();
     }
 }
 
@@ -91,6 +89,30 @@ bool Worker::wait_for_kick(uint32_t timeout_milliseconds) {
         break;
     }
     return !is_stopping();
+}
+
+std::string Worker::what() {
+    std::string ret{};
+    if (has_exception()) {
+        try {
+            std::rethrow_exception(exception_ptr_);
+        } catch (const std::exception& ex) {
+            ret = ex.what();
+        } catch (const std::string& ex) {
+            ret = ex;
+        } catch (const char* ex) {
+            ret = ex;
+        } catch (...) {
+            ret = "Undefined error";
+        }
+    }
+    return ret;
+}
+
+void Worker::rethrow() {
+    if (has_exception()) {
+        std::rethrow_exception(exception_ptr_);
+    }
 }
 
 }  //  namespace silkworm

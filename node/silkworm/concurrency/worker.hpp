@@ -23,6 +23,7 @@
 #include <thread>
 
 #include <silkworm/common/signal_handler.hpp>
+#include <boost/signals2/signal.hpp>
 
 namespace silkworm {
 
@@ -31,7 +32,9 @@ class Worker {
   public:
     enum class WorkerState { kStopped, kStarting, kStarted, kStopping, kExceptionThrown };
 
-    Worker() = default;
+    Worker() : name_{"worker"}{};
+    explicit Worker(std::string& name) : name_{name}{};
+    explicit Worker(std::string&& name) : name_{std::move(name)}{};
 
     /* Not movable nor copyable */
     Worker(Worker const&) = delete;
@@ -52,24 +55,17 @@ class Worker {
     //! \brief Whether this worker/thread has encountered an exception
     bool has_exception() const { return exception_ptr_.operator bool(); }
 
-    //! \brief Returns the message of occurred exception (if any)
-    std::string what() {
-        std::string ret{};
-        if (has_exception()) {
-            try {
-                std::rethrow_exception(exception_ptr_);
-            } catch (const std::exception& ex) {
-                ret = ex.what();
-            } catch (const std::string& ex) {
-                ret = ex;
-            } catch (const char* ex){
-                ret = ex;
-            } catch (...) {
-                ret = "Undefined error";
-            }
-        }
-        return ret;
-    }
+    //! \brief Returns the message of captured exception (if any)
+    std::string what();
+
+    //! \brief Rethrows captured exception (if any)
+    void rethrow();
+
+    //! \brief Signals connected handlers the underlying thread is about to start
+    boost::signals2::signal<void(Worker* sender)> signal_started;
+
+    //! \brief Signals connected handlers the underlying thread is terminated
+    boost::signals2::signal<void(Worker* sender)> signal_stopped;
 
   protected:
     /**
@@ -86,6 +82,7 @@ class Worker {
     std::mutex kick_mtx_{};                                   // Mutex for conditional wait of kick
 
   private:
+    std::string name_;
     std::atomic<WorkerState> state_{WorkerState::kStopped};
     std::unique_ptr<std::thread> thread_{nullptr};
     std::exception_ptr exception_ptr_{nullptr};

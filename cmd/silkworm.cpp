@@ -322,7 +322,7 @@ int main(int argc, char* argv[]) {
         // do other stuff meanwhile in this thread like compute total memory consumption
         // and/or cpu load and/or, again, total number of connected peers
         // TODO(Andrea)
-        while (sync_loop.get_state() == Worker::WorkerState::kStarted) {
+        while (sync_loop.get_state() == Worker::State::kStarted) {
             std::this_thread::sleep_for(std::chrono::milliseconds(500));
         }
         if (sync_loop.has_exception()) {

@@ -427,7 +427,7 @@ bool RecoveryFarm::initialize_new_worker() {
         auto connector{worker->signal_completed.connect(std::bind(&RecoveryFarm::worker_completed_handler, this, _1))};
         workers_.emplace_back(std::move(worker), std::move(connector));
         workers_.back().first->start(/*wait=*/true);
-        return workers_.back().first->get_state() == Worker::WorkerState::kStarted;
+        return workers_.back().first->get_state() == Worker::State::kStarted;
     } catch (const std::exception& ex) {
         log::Error() << "Unable to initialize new recovery worker : " << ex.what();
         return false;

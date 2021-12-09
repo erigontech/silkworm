@@ -42,9 +42,9 @@ TEST_CASE("Worker") {
 
     SECTION("No throw") {
         ThreadWorker worker(false);
-        REQUIRE(worker.get_state() == Worker::WorkerState::kStopped);
+        REQUIRE(worker.get_state() == Worker::State::kStopped);
         worker.start(true);
-        REQUIRE(worker.get_state() == Worker::WorkerState::kStarted);
+        REQUIRE(worker.get_state() == Worker::State::kStarted);
         worker.kick();
         std::this_thread::sleep_for(std::chrono::milliseconds(50));
         REQUIRE(worker.get_increment() == 1);
@@ -52,17 +52,17 @@ TEST_CASE("Worker") {
         std::this_thread::sleep_for(std::chrono::milliseconds(50));
         REQUIRE(worker.get_increment() == 2);
         worker.stop(true);
-        REQUIRE(worker.get_state() == Worker::WorkerState::kStopped);
+        REQUIRE(worker.get_state() == Worker::State::kStopped);
     }
 
     SECTION("Throw") {
         ThreadWorker worker(true);
-        REQUIRE(worker.get_state() == Worker::WorkerState::kStopped);
+        REQUIRE(worker.get_state() == Worker::State::kStopped);
         worker.start(true);
-        REQUIRE(worker.get_state() == Worker::WorkerState::kStarted);
+        REQUIRE(worker.get_state() == Worker::State::kStarted);
         worker.kick();
         std::this_thread::sleep_for(std::chrono::milliseconds(50));
-        REQUIRE(worker.get_state() == Worker::WorkerState::kExceptionThrown);
+        REQUIRE(worker.get_state() == Worker::State::kExceptionThrown);
         REQUIRE(worker.what() == "An exception");
     }
 }

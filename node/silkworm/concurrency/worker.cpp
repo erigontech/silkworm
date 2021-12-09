@@ -25,10 +25,10 @@ namespace silkworm {
 Worker::~Worker() { stop(/*wait=*/true); }
 
 void Worker::start(bool wait) {
-    WorkerState expected_stopped{WorkerState::kStopped};
-    if (!state_.compare_exchange_strong(expected_stopped, WorkerState::kStarting)) {
-        WorkerState expected_exception_thrown{WorkerState::kExceptionThrown};
-        if (!state_.compare_exchange_strong(expected_exception_thrown, WorkerState::kStarting)) {
+    State expected_stopped{State::kStopped};
+    if (!state_.compare_exchange_strong(expected_stopped, State::kStarting)) {
+        State expected_exception_thrown{State::kExceptionThrown};
+        if (!state_.compare_exchange_strong(expected_exception_thrown, State::kStarting)) {
             return;
         }
     }
@@ -37,8 +37,8 @@ void Worker::start(bool wait) {
     kicked_.store(false);
 
     thread_ = std::make_unique<std::thread>([&]() {
-        WorkerState expected_starting{WorkerState::kStarting};
-        if (state_.compare_exchange_strong(expected_starting, WorkerState::kStarted)) {
+        State expected_starting{State::kStarting};
+        if (state_.compare_exchange_strong(expected_starting, State::kStarted)) {
             signal_started(this);
             try {
                 work();
@@ -47,13 +47,13 @@ void Worker::start(bool wait) {
                 exception_ptr_ = std::current_exception();
             }
         }
-        state_.store(exception_ptr_ ? WorkerState::kExceptionThrown : WorkerState::kStopped);
+        state_.store(exception_ptr_ ? State::kExceptionThrown : State::kStopped);
         signal_stopped(this);
     });
 
     while (wait) {
         std::this_thread::sleep_for(std::chrono::milliseconds(10));
-        if (auto state{get_state()}; state == WorkerState::kStarted) {
+        if (auto state{get_state()}; state == State::kStarted) {
             break;
         }
     }
@@ -62,8 +62,8 @@ void Worker::start(bool wait) {
 void Worker::stop(bool wait) {
     if (!thread_) return;
 
-    WorkerState expected_state{WorkerState::kStarted};
-    if (state_.compare_exchange_strong(expected_state, WorkerState::kStopping)) {
+    State expected_state{State::kStarted};
+    if (state_.compare_exchange_strong(expected_state, State::kStopping)) {
         kick();
     }
 

@@ -30,7 +30,7 @@ namespace silkworm {
 // If you only need stoppability, use ActiveComponent instead.
 class Worker {
   public:
-    enum class WorkerState { kStopped, kStarting, kStarted, kStopping, kExceptionThrown };
+    enum class State { kStopped, kStarting, kStarted, kStopping, kExceptionThrown };
 
     Worker() : name_{"worker"}{};
     explicit Worker(std::string& name) : name_{name}{};
@@ -47,10 +47,10 @@ class Worker {
     void kick();                   // Kicks worker thread if waiting
 
     //! \brief Whether this worker/thread has received a stop request
-    bool is_stopping() const { return state_.load() == WorkerState::kStopping || SignalHandler::signalled(); }
+    bool is_stopping() const { return state_.load() == State::kStopping || SignalHandler::signalled(); }
 
     //! \brief Retrieves current state of thread
-    WorkerState get_state() { return state_.load(); }
+    State get_state() { return state_.load(); }
 
     //! \brief Whether this worker/thread has encountered an exception
     bool has_exception() const { return exception_ptr_.operator bool(); }
@@ -83,7 +83,7 @@ class Worker {
 
   private:
     std::string name_;
-    std::atomic<WorkerState> state_{WorkerState::kStopped};
+    std::atomic<State> state_{State::kStopped};
     std::unique_ptr<std::thread> thread_{nullptr};
     std::exception_ptr exception_ptr_{nullptr};
     virtual void work() = 0;  // Derived classes must override

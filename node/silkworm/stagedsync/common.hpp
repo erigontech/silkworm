@@ -23,6 +23,8 @@
 
 #include <magic_enum.hpp>
 
+#include <silkworm/common/settings.hpp>
+
 namespace silkworm::stagedsync {
 
 enum class [[nodiscard]] StageResult{
@@ -67,6 +69,38 @@ inline void success_or_throw(StageResult code) {
         throw StageError(code);
     }
 }
+
+//! \brief Base Stage interface. All stages MUST inherit from this class and MUST override forward / unwind /
+//! prune
+class IStage {
+  public:
+    explicit IStage(const char* stage_name, NodeSettings* node_settings ): stage_name_{stage_name}, node_settings_{node_settings}{};
+
+    //! \brief Forward is called when the stage is executed. The main logic of the stage should be here.
+    //! \param [in] txn : A db transaction holder
+    //! \return StageResult
+    //! \remarks Must be overridden
+    [[nodiscard]] virtual StageResult forward(db::RWTxn& txn) = 0;
+
+    //! \brief Unwind is called when the stage should be unwound. The unwind logic should be there.
+    //! \param [in] txn : A db transaction holder
+    //! \return StageResult
+    //! \remarks Must be overridden
+    [[nodiscard]] virtual StageResult unwind(db::RWTxn& txn) = 0;
+
+    //! \brief Prune is called when (part of) stage previously persisted data should be deleted. The pruning logic
+    //! should be there.
+    //! \param [in] txn : A db transaction holder
+    //! \return StageResult
+    [[nodiscard]] virtual StageResult prune(db::RWTxn& txn) = 0;
+
+    //! \brief Returns the actual progress recorded into db
+    BlockNum get_progress(db::RWTxn& txn);
+
+  protected:
+    const char* stage_name_;
+    NodeSettings* node_settings_;
+};
 
 }  // namespace silkworm::stagedsync
 

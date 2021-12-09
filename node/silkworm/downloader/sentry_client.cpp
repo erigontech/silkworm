@@ -26,7 +26,7 @@
 namespace silkworm {
 
 SentryClient::SentryClient(const std::string& sentry_addr)
-        : base_t(grpc::CreateChannel(sentry_addr, grpc::InsecureChannelCredentials())) {}
+    : base_t(grpc::CreateChannel(sentry_addr, grpc::InsecureChannelCredentials())) {}
 
 SentryClient::Scope SentryClient::scope(const sentry::InboundMessage& message) {
     switch (message.id()) {
@@ -47,7 +47,7 @@ void SentryClient::subscribe(Scope scope, subscriber_t callback) { subscribers_[
 
 void SentryClient::publish(const sentry::InboundMessage& message) {
     auto subscribers = subscribers_[scope(message)];
-    for (auto& subscriber: subscribers) {
+    for (auto& subscriber : subscribers) {
         subscriber(message);
     }
 }
@@ -57,7 +57,6 @@ void SentryClient::set_status(Hash head_hash, BigInt head_td, const ChainIdentit
     exec_remotely(set_status);
     log::Info() << "SentryClient, set_status sent";
 }
-
 
 void SentryClient::hand_shake() {
     rpc::HandShake hand_shake;
@@ -88,8 +87,9 @@ void SentryClient::execution_loop() {
         publish(message);
     }
 
-    // note: do we need to handle connection loss with an outer loop that wait and than re-try hand_shake and so on? (we would redo set_status too)
-
+    // note: do we need to handle connection loss with an outer loop that wait and then re-try hand_shake and so on?
+    // (we would redo set_status & hand-shake too)
+    stop();
     log::Warning() << "SentryClient execution loop is stopping...";
 }
 
@@ -108,8 +108,7 @@ void SentryClient::stats_receiving_loop() {
         if (stat.event() == sentry::PeersReply::Connect) {
             event = "connected";
             active_peers++;
-        }
-        else {
+        } else {
             event = "disconnected";
             active_peers--;
         }
@@ -117,6 +116,7 @@ void SentryClient::stats_receiving_loop() {
         log::Trace() << "SentryClient: peer " << peerId << " " << event << ", active " << active_peers;
     }
 
+    stop();
     log::Warning() << "SentryClient stats loop is stopping...";
 }
 

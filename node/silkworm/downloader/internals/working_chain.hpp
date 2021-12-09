@@ -100,7 +100,7 @@ class WorkingChain {
     void save_external_announce(Hash hash);
     bool has_link(Hash hash);
     std::vector<Announce>& announces_to_do();
-    void add_bad_headers(std::set<Hash>);
+    void add_bad_headers(const std::set<Hash>& bads);
     void set_preverified_hashes(const PreverifiedHashes*);
 
   protected:

@@ -72,6 +72,7 @@ void HeaderDownloader::execution_loop() {
         }
     }
 
+    stop();
     log::Warning() << "HeaderDownloader execution_loop is stopping...";
 }
 

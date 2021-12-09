@@ -60,6 +60,7 @@ void BlockProvider::execution_loop() {
         message->execute();
     }
 
+    stop();
     log::Warning() << "BlockProvider execution_loop is stopping...";
 }
 

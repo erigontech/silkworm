@@ -19,7 +19,6 @@
 namespace silkworm {
 
 StopWatch::TimePoint StopWatch::start(bool with_reset) noexcept {
-    
     using namespace std::chrono_literals;
     if (with_reset) {
         reset();
@@ -59,13 +58,12 @@ StopWatch::Duration StopWatch::since_start(const TimePoint& origin) noexcept {
     return Duration(origin - start_time_);
 }
 
-StopWatch::TimePoint StopWatch::stop() noexcept {
-    if (started_) {
-        TimePoint res{lap().first};
-        started_ = false;
-        return res;
+std::pair<StopWatch::TimePoint, StopWatch::Duration> StopWatch::stop() noexcept {
+    if (!started_) {
+        return {};
     }
-    return {};
+    started_ = false;
+    return lap();
 }
 
 void StopWatch::reset() noexcept {

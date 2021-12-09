@@ -52,8 +52,9 @@ class StopWatch {
     Duration since_start(const TimePoint& origin) noexcept;
 
     //! \brief Stops the watch
-    //! \return The timepoint of stop
-    TimePoint stop() noexcept;
+    //! \return The timepoint of stop and the duration since start (if no laptimes) or the duration from previous
+    //! laptime
+    std::pair<TimePoint, Duration> stop() noexcept;
 
     //! \brief Stops the watch and clears all counters
     void reset() noexcept;

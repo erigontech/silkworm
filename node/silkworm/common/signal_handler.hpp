@@ -15,8 +15,8 @@
 */
 
 #pragma once
-#ifndef SILKWORM_SIGNAL_HANDLER_HPP_
-#define SILKWORM_SIGNAL_HANDLER_HPP_
+#ifndef SILKWORM_COMMON_SIGNAL_HANDLER_HPP_
+#define SILKWORM_COMMON_SIGNAL_HANDLER_HPP_
 
 #include <atomic>
 #include <cstdint>
@@ -37,4 +37,4 @@ class SignalHandler {
 };
 
 }  // namespace silkworm
-#endif  // SILKWORM_SIGNAL_HANDLER_HPP_
+#endif  // SILKWORM_COMMON_SIGNAL_HANDLER_HPP_

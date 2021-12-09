@@ -25,9 +25,11 @@
 #include <silkworm/chain/genesis.hpp>
 #include <silkworm/common/log.hpp>
 #include <silkworm/common/settings.hpp>
+#include <silkworm/common/signal_handler.hpp>
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/genesis.hpp>
 #include <silkworm/db/stages.hpp>
+#include <silkworm/stagedsync/sync_loop.hpp>
 
 using namespace silkworm;
 
@@ -227,6 +229,7 @@ void parse_command_line(CLI::App& cli, int argc, char* argv[], log::Settings& lo
 int main(int argc, char* argv[]) {
     CLI::App cli("Silkworm node");
     cli.get_formatter()->column_width(50);
+    int ret{0};
 
     try {
         log::Settings log_settings{};  // Holds logging settings
@@ -235,6 +238,7 @@ int main(int argc, char* argv[]) {
         parse_command_line(cli, argc, argv, log_settings, node_settings);
 
         log::init(log_settings);  // Initialize logging with cli settings
+        SignalHandler::init();
 
         node_settings.data_directory->etl().clear();  // Clear previous etl files (if any)
         {
@@ -311,6 +315,19 @@ int main(int argc, char* argv[]) {
         }
 
         // Do sync stuff here
+        stagedysnc::SyncLoop sync_loop(&node_settings, &chaindata_env);
+        sync_loop.start(/*wait=*/true);
+
+        // Wait till sync_loop completes
+        // do other stuff meanwhile in this thread like compute total memory consumption
+        // and/or cpu load and/or, again, total number of connected peers
+        // TODO(Andrea)
+        while (sync_loop.get_state() == Worker::WorkerState::kStarted) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(500));
+        }
+        if (sync_loop.has_exception()) {
+            ret = -1;
+        }
 
         log::Message() << "Closing Database chaindata path " << node_settings.data_directory->chaindata().path();
         chaindata_env.close();
@@ -319,17 +336,17 @@ int main(int argc, char* argv[]) {
         return cli.exit(ex);
     } catch (const std::runtime_error& ex) {
         log::Error() << ex.what();
-        return -1;
+        ret = -1;
     } catch (const std::invalid_argument& ex) {
         std::cerr << "\tInvalid argument :" << ex.what() << "\n" << std::endl;
-        return -3;
+        ret = -3;
     } catch (const std::exception& ex) {
         std::cerr << "\tUnexpected error : " << ex.what() << "\n" << std::endl;
-        return -4;
+        ret = -4;
     } catch (...) {
         std::cerr << "\tUnexpected undefined error\n" << std::endl;
-        return -99;
+        ret = -99;
     }
 
-    return 0;
+    return ret;
 }

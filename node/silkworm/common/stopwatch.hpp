@@ -15,8 +15,8 @@
 */
 
 #pragma once
-#ifndef SILKWORM_STOPWATCH_HPP_
-#define SILKWORM_STOPWATCH_HPP_
+#ifndef SILKWORM_COMMON_STOPWATCH_HPP_
+#define SILKWORM_COMMON_STOPWATCH_HPP_
 
 #include <chrono>
 #include <iomanip>
@@ -75,7 +75,7 @@ class StopWatch {
     /// <summary>
     /// Returns the vector of laptimes
     /// </summary>
-    const std::vector<std::pair<TimePoint, Duration>>& laps() const { return laps_; }
+    [[nodiscard]] const std::vector<std::pair<TimePoint, Duration>>& laps() const { return laps_; }
 
     /// <summary>
     /// Returns a human readable duration
@@ -92,4 +92,4 @@ class StopWatch {
 
 }  // namespace silkworm
 
-#endif  // !SILKWORM_STOPWATCH_HPP_
+#endif  // !SILKWORM_COMMON_STOPWATCH_HPP_

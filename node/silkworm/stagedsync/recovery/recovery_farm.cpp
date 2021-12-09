@@ -410,7 +410,7 @@ bool RecoveryFarm::dispatch_batch() {
                 continue;
             }
             log::Info() << "Max recovery workers adjusted " << max_workers_ << " -> " << workers_.size();
-            max_workers_ = workers_.size();  // Don't try to spawn new workers. Maybe we're OOM
+            max_workers_ = static_cast<uint32_t>(workers_.size());  // Don't try to spawn new workers. Maybe we're OOM
         }
 
         // No other option than wait a while and retry

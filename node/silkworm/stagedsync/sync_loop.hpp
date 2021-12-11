@@ -27,12 +27,13 @@ class SyncLoop final : public Worker {
   public:
     explicit SyncLoop(silkworm::NodeSettings* node_settings, mdbx::env_managed* chaindata_env)
         : Worker("SyncLoop"), node_settings_{node_settings}, chaindata_env_{chaindata_env} {};
-    ~SyncLoop() = default;
+    ~SyncLoop() override = default;
 
   private:
-    silkworm::NodeSettings* node_settings_;
-    mdbx::env_managed* chaindata_env_;
-    void work() override;
+    silkworm::NodeSettings* node_settings_;  // As being passed by CLI arguments and/or already initialized data
+    mdbx::env_managed* chaindata_env_;       // The actual opened environment
+    void work() override;                    // The loop itself
+
 };
 }  // namespace silkworm::stagedysnc
 #endif  // SILKWORM_STAGEDSYNC_SYNCLOOP_HPP_

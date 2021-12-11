@@ -14,11 +14,10 @@
    limitations under the License.
 */
 
-#include <filesystem>
-
+#include <silkworm/common/as_range.hpp>
+#include <silkworm/common/assert.hpp>
 #include <silkworm/common/endian.hpp>
 #include <silkworm/common/log.hpp>
-#include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/stages.hpp>
 #include <silkworm/db/tables.hpp>
 #include <silkworm/etl/collector.hpp>
@@ -27,45 +26,27 @@
 
 namespace silkworm::stagedsync {
 
-namespace fs = std::filesystem;
+StageResult BlockHashes::forward(db::RWTxn& txn) {
+    /*
+     * Creates HeaderNumber index by transforming
+     *      from CanonicalHashes bucket : BlockNumber ->  HeaderHash
+     *        to HeaderNumber bucket    : HeaderHash  ->  BlockNumber
+     */
 
-StageResult stage_blockhashes(db::RWTxn& txn, const std::filesystem::path& etl_path, uint64_t prune_from) {
-    fs::create_directories(etl_path);
-    etl::Collector collector(etl_path, /* flush size */ 512_Mebi);
-    uint32_t block_number{0};
+    etl::Collector collector(node_settings_->data_directory->etl().path(), node_settings_->etl_buffer_size);
+    uint32_t block_number, blocks_processed_count;
+    auto previous_progress{db::stages::read_stage_progress(*txn, stage_name_)};
+    auto expected_block_number{previous_progress + 1};
+    auto source{db::open_cursor(*txn, db::table::kCanonicalHashes)};
 
-    // We take data from header table and transform it and put it in blockhashes table
-    auto canonical_hashes_table{db::open_cursor(*txn, db::table::kCanonicalHashes)};
-
-    auto last_processed_block_number{db::stages::read_stage_progress(*txn, db::stages::kBlockHashesKey)};
-    auto expected_block_number{last_processed_block_number + 1};
-    // Just ignore everything that comes before prune_from
-    if (expected_block_number < prune_from) {
-        expected_block_number = prune_from;
-    }
-    uint32_t blocks_processed_count{0};
-
-    // Extract
-    log::Info() << "Started BlockHashes Extraction";
+    log::Trace() << stage_name_ << " started from " << expected_block_number;
 
     auto header_key{db::block_key(expected_block_number)};
-    auto header_data{canonical_hashes_table.lower_bound(db::to_slice(header_key), /*throw_notfound*/ false)};
+    auto header_data{source.lower_bound(db::to_slice(header_key), /*throw_notfound*/ false)};
     while (header_data) {
         auto reached_block_number{endian::load_big_u64(static_cast<uint8_t*>(header_data.key.iov_base))};
-        if (reached_block_number != expected_block_number) {
-            // Something wrong with db
-            // Blocks are out of sequence for any reason
-            // Should not happen but you never know
-            log::Error() << "Bad headers sequence. Expected " << expected_block_number << " got "
-                         << reached_block_number;
-            return StageResult::kBadChainSequence;
-        }
-
-        if (header_data.value.length() != kHashLength) {
-            log::Error() << "Bad header hash for block " << expected_block_number;
-            return StageResult::kBadBlockHash;
-        }
-
+        SILKWORM_ASSERT(reached_block_number == expected_block_number);
+        SILKWORM_ASSERT(header_data.value.length() == kHashLength);
         collector.collect(
             etl::Entry{Bytes(static_cast<uint8_t*>(header_data.value.iov_base), header_data.value.iov_len),
                        Bytes(static_cast<uint8_t*>(header_data.key.iov_base), header_data.key.iov_len)});
@@ -73,64 +54,71 @@ StageResult stage_blockhashes(db::RWTxn& txn, const std::filesystem::path& etl_p
         // Save last processed block_number and expect next in sequence
         ++blocks_processed_count;
         block_number = expected_block_number++;
-        header_data = canonical_hashes_table.to_next(/*throw_notfound*/ false);
+        header_data = source.to_next(/*throw_notfound*/ false);
     }
-    canonical_hashes_table.close();
+    source.close();
 
-    log::Info() << "Entries Collected << " << blocks_processed_count;
+    log::Trace() << stage_name_ << " entries collected " << blocks_processed_count;
 
     // Proceed only if we've done something
     if (blocks_processed_count) {
-        log::Info() << "Started BlockHashes Loading";
-
-        /*
-         * If we're on first sync then we shouldn't have any records in target
-         * table. For this reason we can apply MDB_APPEND to load as
-         * collector (with no transform) ensures collected entries
-         * are already sorted. If instead target table contains already
-         * some data the only option is to load in upsert mode as we
-         * cannot guarantee keys are sorted amongst different calls
-         * of this stage
-         */
-        auto target_table{db::open_cursor(*txn, db::table::kHeaderNumbers)};
-        auto target_table_rcount{txn->get_map_stat(target_table.map()).ms_entries};
-        MDBX_put_flags_t db_flags{target_table_rcount ? MDBX_put_flags_t::MDBX_UPSERT : MDBX_put_flags_t::MDBX_APPEND};
+        log::Trace() << stage_name_ << " ETL load : " << human_size(collector.size());
+        auto target{db::open_cursor(*txn, db::table::kHeaderNumbers)};
+        auto target_rcount{txn->get_map_stat(target.map()).ms_entries};
+        MDBX_put_flags_t db_flags{target_rcount ? MDBX_put_flags_t::MDBX_UPSERT : MDBX_put_flags_t::MDBX_APPEND};
 
         // Eventually load collected items with no transform (may throw)
-        collector.load(target_table, nullptr, db_flags, /* log_every_percent = */ 10);
+        collector.load(target, nullptr, db_flags, /* log_every_percent = */ 10);
 
         // Update progress height with last processed block
         db::stages::write_stage_progress(*txn, db::stages::kBlockHashesKey, block_number);
 
         txn.commit();
-
-    } else {
-        log::Info() << "Nothing to process";
     }
 
-    log::Info() << "All Done";
-
+    log::Trace() << stage_name_ << " completed";
     return StageResult::kSuccess;
 }
 
-StageResult unwind_blockhashes(db::RWTxn& txn, const std::filesystem::path&, uint64_t unwind_to) {
-    // We take data from header table and transform it and put it in blockhashes table
-    auto canonical_hashes_table{db::open_cursor(*txn, db::table::kCanonicalHashes)};
-    auto blockhashes_table{db::open_cursor(*txn, db::table::kHeaderNumbers)};
-    // Extract
-    log::Info() << "Started BlockHashes Extraction";
+StageResult BlockHashes::unwind(db::RWTxn& txn, BlockNum to) {
+    /*
+     * Unwinds HeaderNumber index by
+     *      select CanonicalHashes->HeaderHash
+     *        from CanonicalHashes
+     *       where CanonicalHashes->BlockNumber > to
+     *        into vector;
+     *    for-each vector
+     *      delete HeaderNumber
+     *       where HeaderNumber->HeaderHash == vector.item
+     */
 
-    auto header_key{db::block_key(unwind_to + 1)};
-    auto header_data{canonical_hashes_table.lower_bound(db::to_slice(header_key), /*throw_notfound*/ false)};
-    while (header_data) {
-        if (blockhashes_table.seek(header_data.value)) {
-            blockhashes_table.erase(true);
-        }
-        header_data = canonical_hashes_table.to_next(/*throw_notfound*/ false);
+    auto source{db::open_cursor(*txn, db::table::kCanonicalHashes)};
+    auto initial_key{db::block_key(to + 1)};
+    auto source_data{source.lower_bound(db::to_slice(initial_key), false)};
+
+    std::vector<Bytes> collected_keys;
+    if (source_data) {
+        db::cursor_for_each(
+            source, [&collected_keys](::mdbx::cursor& _cursor, ::mdbx::cursor::move_result& _data) -> bool {
+                collected_keys.emplace_back(static_cast<uint8_t*>(_data.value.iov_base), _data.value.iov_len);
+                return true;
+            });
     }
-    txn.commit();
-    log::Info() << "All Done";
+    source.close();
 
+    if (!collected_keys.empty()) {
+        std::sort(collected_keys.begin(), collected_keys.end());
+        auto target{db::open_cursor(*txn, db::table::kHeaderNumbers)};
+        as_range::for_each(collected_keys,
+                           [&target](const Bytes& key) -> void { (void)target.erase(db::to_slice(key)); });
+        target.close();
+    }
+
+    // Update unwind progress
+    // TODO(Andrea) This might be unneeded as unwind is global within the cycle
+    db::stages::write_stage_unwind(*txn, stage_name_, to);
+
+    txn.commit();
     return StageResult::kSuccess;
 }
 

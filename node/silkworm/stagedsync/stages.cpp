@@ -24,7 +24,6 @@ StageResult no_prune(db::RWTxn&, const std::filesystem::path&, uint64_t)  { retu
 std::vector<Stage> get_archive_node_stages() {
     return {
         {stage_headers,         no_unwind,              no_prune, 1},
-        {stage_blockhashes,     unwind_blockhashes,     no_prune, 2},
         {stage_bodies,          no_unwind,              no_prune, 3},
         {stage_senders,         unwind_senders,         no_prune, 4},
         {stage_execution,       unwind_execution,       no_prune, 5},
@@ -40,7 +39,6 @@ std::vector<Stage> get_archive_node_stages() {
 std::vector<Stage> get_pruned_node_stages() {
     return {
         {stage_headers,         no_unwind,              no_prune,              1},
-        {stage_blockhashes,     unwind_blockhashes,     no_prune,              2},
         {stage_bodies,          no_unwind,              no_prune,              3},
         {stage_senders,         unwind_senders,         prune_senders,         4},
         {stage_execution,       unwind_execution,       prune_execution,       5},
@@ -56,7 +54,6 @@ std::vector<Stage> get_pruned_node_stages() {
 std::vector<Stage> get_miner_mode_stages() {
     return {
         {stage_headers,         no_unwind,              no_prune,        1},
-        {stage_blockhashes,     unwind_blockhashes,     no_prune,        2},
         {stage_bodies,          no_unwind,              no_prune,        3},
         {stage_senders,         unwind_senders,         prune_senders,   4},
         {stage_execution,       unwind_execution,       prune_execution, 5},

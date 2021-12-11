@@ -27,10 +27,7 @@ Worker::~Worker() { stop(/*wait=*/true); }
 void Worker::start(bool wait) {
     State expected_stopped{State::kStopped};
     if (!state_.compare_exchange_strong(expected_stopped, State::kStarting)) {
-        State expected_exception_thrown{State::kExceptionThrown};
-        if (!state_.compare_exchange_strong(expected_exception_thrown, State::kStarting)) {
-            return;
-        }
+        return;
     }
 
     exception_ptr_ = nullptr;
@@ -47,7 +44,7 @@ void Worker::start(bool wait) {
                 exception_ptr_ = std::current_exception();
             }
         }
-        state_.store(exception_ptr_ ? State::kExceptionThrown : State::kStopped);
+        state_.store(State::kStopped);
         signal_stopped(this);
     });
 

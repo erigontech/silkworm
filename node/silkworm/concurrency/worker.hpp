@@ -30,7 +30,7 @@ namespace silkworm {
 // If you only need stoppability, use ActiveComponent instead.
 class Worker {
   public:
-    enum class State { kStopped, kStarting, kStarted, kStopping, kExceptionThrown };
+    enum class State { kStopped, kStarting, kStarted, kStopping };
 
     Worker() : name_{"worker"}{};
     explicit Worker(std::string& name) : name_{name}{};
@@ -53,7 +53,7 @@ class Worker {
     State get_state() { return state_.load(); }
 
     //! \brief Whether this worker/thread has encountered an exception
-    bool has_exception() const { return exception_ptr_.operator bool(); }
+    bool has_exception() const { return exception_ptr_ != nullptr; }
 
     //! \brief Returns the message of captured exception (if any)
     std::string what();

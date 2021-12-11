@@ -75,21 +75,23 @@ inline void success_or_throw(StageResult code) {
 class IStage {
   public:
     explicit IStage(const char* stage_name, NodeSettings* node_settings ): stage_name_{stage_name}, node_settings_{node_settings}{};
+    virtual ~IStage() = default;
 
-    //! \brief Forward is called when the stage is executed. The main logic of the stage should be here.
+    //! \brief Forward is called when the stage is executed. The main logic of the stage must be here.
     //! \param [in] txn : A db transaction holder
     //! \return StageResult
     //! \remarks Must be overridden
     [[nodiscard]] virtual StageResult forward(db::RWTxn& txn) = 0;
 
-    //! \brief Unwind is called when the stage should be unwound. The unwind logic should be there.
+    //! \brief Unwind is called when the stage should be unwound. The unwind logic must be here.
     //! \param [in] txn : A db transaction holder
+    //! \param [in] to : New height we need to unwind to
     //! \return StageResult
     //! \remarks Must be overridden
-    [[nodiscard]] virtual StageResult unwind(db::RWTxn& txn) = 0;
+    [[nodiscard]] virtual StageResult unwind(db::RWTxn& txn, BlockNum to) = 0;
 
     //! \brief Prune is called when (part of) stage previously persisted data should be deleted. The pruning logic
-    //! should be there.
+    //! must be here.
     //! \param [in] txn : A db transaction holder
     //! \return StageResult
     [[nodiscard]] virtual StageResult prune(db::RWTxn& txn) = 0;

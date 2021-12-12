@@ -34,7 +34,8 @@ StageResult BlockHashes::forward(db::RWTxn& txn) {
      */
 
     etl::Collector collector(node_settings_->data_directory->etl().path(), node_settings_->etl_buffer_size);
-    uint32_t block_number, blocks_processed_count;
+    uint32_t block_number{0};
+    uint32_t blocks_processed_count{0};
     auto previous_progress{db::stages::read_stage_progress(*txn, stage_name_)};
     auto expected_block_number{previous_progress + 1};
     auto source{db::open_cursor(*txn, db::table::kCanonicalHashes)};
@@ -121,5 +122,7 @@ StageResult BlockHashes::unwind(db::RWTxn& txn, BlockNum to) {
     txn.commit();
     return StageResult::kSuccess;
 }
+
+StageResult BlockHashes::prune(db::RWTxn&) { return StageResult::kSuccess; }
 
 }  // namespace silkworm::stagedsync

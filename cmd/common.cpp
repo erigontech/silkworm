@@ -121,6 +121,9 @@ void parse_silkworm_command_line(CLI::App& cli, int argc, char* argv[], log::Set
     cli.add_option("--sentry.api.addr", node_settings.sentry_api_addr, "Sentry api endpoint", true)
         ->check(IPEndPointValidator(/*allow_empty=*/true));
 
+    cli.add_option("--sync.loop.throttle", node_settings.sync_loop_throttle,
+                   "Sets the minimum time between sync loop starts (in seconds)", true);
+
     cli.add_flag("--fakepow", node_settings.fake_pow, "Disables proof-of-work verification");
     // Chain options
     auto chains_map{get_known_chains_map()};
@@ -174,8 +177,6 @@ void parse_silkworm_command_line(CLI::App& cli, int argc, char* argv[], log::Set
 
     // Logging options
     auto& log_opts = *cli.add_option_group("Log", "Logging options");
-    log_opts.add_option("--log.interval", log_settings.log_interval, "Logging interval", true)
-        ->check(CLI::Range(5u, 600u));
     log_opts.add_option("--log.verbosity", log_settings.log_verbosity, "Sets log verbosity", true)
         ->check(CLI::Range(static_cast<uint32_t>(log::Level::kCritical), static_cast<uint32_t>(log::Level::kTrace)))
         ->default_val(std::to_string(static_cast<uint32_t>(log_settings.log_verbosity)));

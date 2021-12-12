@@ -91,12 +91,11 @@ int main(int argc, char* argv[]) {
         // do other stuff meanwhile in this thread like compute total memory consumption
         // and/or cpu load and/or, again, total number of connected peers
         bool expected_status{true};
-        auto& wait_interval{log_settings.log_interval};
         while (!sync_loop_terminated.compare_exchange_strong(expected_status, false)) {
             expected_status = true;
             {
                 std::unique_lock l(sync_loop_mtx);
-                if (sync_loop_terminated_cv.wait_for(l, std::chrono::seconds(wait_interval)) ==
+                if (sync_loop_terminated_cv.wait_for(l, std::chrono::seconds(30)) ==
                     std::cv_status::no_timeout) {
                     continue;
                 }
@@ -104,7 +103,9 @@ int main(int argc, char* argv[]) {
 
             // The previous wait has timed-out without notification, so we can proceed with
             // timed logging
-            log::Info() << "Master thread logging alloc=" << human_size(s_allocated_memory.load());
+            log::Info() << kColorGreenHigh << "Memory allocation " << kColorWhiteHigh << human_size(s_allocated_memory.load())
+                        << kColorGreenHigh << "  Etl temp size " << kColorWhiteHigh << human_size(node_settings.data_directory->etl().size())
+                        << kColorGreenHigh << "  Chaindata size " << kColorWhiteHigh << human_size(node_settings.data_directory->chaindata().size());
         }
 
         if (sync_loop.has_exception()) {

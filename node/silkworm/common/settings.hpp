@@ -38,6 +38,7 @@ struct NodeSettings {
     std::string sentry_api_addr{};                   // Default address of sentry
     bool fake_pow{false};                            // Whether to check for PoW or not
     std::unique_ptr<db::PruneMode> prune_mode;       // Prune mode
+    uint32_t sync_loop_throttle;                     // Minimum interval amongst sync cycle
 };
 
 }  // namespace silkworm

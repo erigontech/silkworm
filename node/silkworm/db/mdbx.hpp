@@ -50,7 +50,6 @@ class RWTxn {
     // Useful in staged sync for running several stages on a handful of blocks atomically.
     // The code that invokes the stages is responsible for committing the external txn later on.
     explicit RWTxn(mdbx::txn& external_txn) : external_txn_{&external_txn} {}
-    explicit RWTxn(mdbx::txn&& external_txn) : external_txn_{&external_txn} {}
 
     // Not copyable nor movable
     RWTxn(const RWTxn&) = delete;
@@ -60,7 +59,6 @@ class RWTxn {
     mdbx::txn* operator->() { return external_txn_ ? external_txn_ : &managed_txn_; }
 
     void commit(const bool renew = true) {
-
         /*
          * renew is required here due to RAII
          * RWTxn txn(env);

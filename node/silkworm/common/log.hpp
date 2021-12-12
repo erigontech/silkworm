@@ -41,7 +41,6 @@ struct Settings {
     bool log_utc{false};                // Whether timestamps should be in UTC or imbue local timezone
     bool log_nocolor{false};            // Whether to disable colorized output
     bool log_threads{false};            // Whether to print thread ids in log lines
-    uint32_t log_interval{30};          // Default interval amongst log lines (in seconds)
     Level log_verbosity{Level::kInfo};  // Log verbosity level
     std::string log_file;               // Log to file
 };

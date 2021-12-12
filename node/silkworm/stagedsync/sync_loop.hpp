@@ -21,19 +21,24 @@
 #include <silkworm/common/settings.hpp>
 #include <silkworm/concurrency/worker.hpp>
 #include <silkworm/db/mdbx.hpp>
+#include <silkworm/stagedsync/common.hpp>
 
 namespace silkworm::stagedysnc {
 class SyncLoop final : public Worker {
   public:
-    explicit SyncLoop(silkworm::NodeSettings* node_settings, mdbx::env_managed* chaindata_env)
-        : Worker("SyncLoop"), node_settings_{node_settings}, chaindata_env_{chaindata_env} {};
+    explicit SyncLoop(silkworm::NodeSettings* node_settings, mdbx::env* chaindata_env)
+        : Worker("SyncLoop"), node_settings_{node_settings}, chaindata_env_{chaindata_env} {
+        load_stages();
+    };
     ~SyncLoop() override = default;
 
   private:
     silkworm::NodeSettings* node_settings_;  // As being passed by CLI arguments and/or already initialized data
-    mdbx::env_managed* chaindata_env_;       // The actual opened environment
-    void work() override;                    // The loop itself
-
+    mdbx::env* chaindata_env_;               // The actual opened environment
+    std::vector<std::unique_ptr<stagedsync::IStage>> stages_{};  // Collection of stages
+    size_t current_stage_{0};                                    // Index of current stage
+    void work() override;                                        // The loop itself
+    void load_stages();
 };
 }  // namespace silkworm::stagedysnc
 #endif  // SILKWORM_STAGEDSYNC_SYNCLOOP_HPP_

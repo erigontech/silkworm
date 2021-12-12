@@ -74,7 +74,8 @@ inline void success_or_throw(StageResult code) {
 //! prune
 class IStage {
   public:
-    explicit IStage(const char* stage_name, NodeSettings* node_settings ): stage_name_{stage_name}, node_settings_{node_settings}{};
+    explicit IStage(const char* stage_name, NodeSettings* node_settings)
+        : stage_name_{stage_name}, node_settings_{node_settings} {};
     virtual ~IStage() = default;
 
     //! \brief Forward is called when the stage is executed. The main logic of the stage must be here.
@@ -98,6 +99,8 @@ class IStage {
 
     //! \brief Returns the actual progress recorded into db
     BlockNum get_progress(db::RWTxn& txn);
+
+    [[nodiscard]] const char* name() const { return stage_name_; }
 
   protected:
     const char* stage_name_;

@@ -37,7 +37,10 @@ StageResult BlockHashes::forward(db::RWTxn& txn) {
     uint32_t block_number{0};
     uint32_t blocks_processed_count{0};
     auto previous_progress{db::stages::read_stage_progress(*txn, stage_name_)};
-    auto expected_block_number{previous_progress + 1};
+    // Corner case. If previous_progress==0 it means we have never executed this stage before
+    // Otherwise we have already reached block x and we need to start from x+1
+    auto expected_block_number{previous_progress ? previous_progress + 1 : previous_progress};
+
     auto source{db::open_cursor(*txn, db::table::kCanonicalHashes)};
 
     log::Trace() << stage_name_ << " started from " << expected_block_number;

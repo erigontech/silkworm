@@ -226,8 +226,7 @@ void parse_silkworm_command_line(CLI::App& cli, int argc, char* argv[], log::Set
 }
 
 void run_preflight_checklist(NodeSettings& node_settings) {
-    node_settings.data_directory->create();                                  // Ensures all subdirs are present
-    node_settings.data_directory->etl().clear();                             // Clear previous etl files (if any)
+    node_settings.data_directory->deploy();                                  // Ensures all subdirs are present
     bool chaindata_exclusive{node_settings.chaindata_env_config.exclusive};  // Save setting
     {
         auto& config = node_settings.chaindata_env_config;

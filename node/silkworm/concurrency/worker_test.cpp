@@ -62,7 +62,8 @@ TEST_CASE("Worker") {
         REQUIRE(worker.get_state() == Worker::State::kStarted);
         worker.kick();
         std::this_thread::sleep_for(std::chrono::milliseconds(50));
-        REQUIRE(worker.get_state() == Worker::State::kExceptionThrown);
-        REQUIRE(worker.what() == "An exception");
+        REQUIRE(worker.get_state() == Worker::State::kStopped);
+        REQUIRE(worker.has_exception() == true);
+        REQUIRE_THROWS(worker.rethrow());
     }
 }

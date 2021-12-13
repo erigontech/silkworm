@@ -82,9 +82,6 @@ if(NOT SILKWORM_CORE_ONLY)
   add_executable(unwind_log_index unwind_log_index.cpp)
   target_link_libraries(unwind_log_index PRIVATE silkworm_node CLI11::CLI11)
 
-  add_executable(blockhashes blockhashes.cpp)
-  target_link_libraries(blockhashes PRIVATE silkworm_node CLI11::CLI11)
-  
   add_executable(hashstate hashstate.cpp)
   target_link_libraries(hashstate PRIVATE silkworm_node CLI11::CLI11)
 

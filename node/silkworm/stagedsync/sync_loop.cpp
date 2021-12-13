@@ -28,7 +28,6 @@ void SyncLoop::load_stages() { stages_.push_back(std::make_unique<stagedsync::Bl
 void SyncLoop::work() {
     log::Trace() << "Synchronization loop started";
 
-    unsigned int counter{0};
     bool is_first_cycle{true};
     std::unique_ptr<db::RWTxn> cycle_txn{nullptr};
     mdbx::txn_managed external_txn;
@@ -45,12 +44,12 @@ void SyncLoop::work() {
         {
             auto ro_tx{chaindata_env_->start_read()};
             auto origin{db::stages::read_stage_progress(ro_tx, db::stages::kHeadersKey)};
-            if (highest_seen_header >= origin && highest_seen_header - origin < 8096) {
+            if (highest_seen_header >= origin && highest_seen_header - origin > 8096) {
                 cycle_in_one_tx = false;
             }
             auto previous_finish_progress{db::stages::read_stage_progress(ro_tx, db::stages::kFinishKey)};
             if (highest_seen_header >= previous_finish_progress &&
-                highest_seen_header - previous_finish_progress < 8096) {
+                highest_seen_header - previous_finish_progress > 8096) {
                 cycle_in_one_tx = false;
             }
         }
@@ -65,19 +64,15 @@ void SyncLoop::work() {
         }
 
         while (current_stage_ < stages_.size()) {
-            auto stage_result{stages_.at(current_stage_)->forward(*cycle_txn)};
+            auto& stage{stages_.at(current_stage_)};
+            auto stage_result{stage->forward(*cycle_txn)};
             stagedsync::success_or_throw(stage_result);
             auto [_, stage_duration] = stop_watch.lap();
-            log::Trace() << "Stage " << stages_.at(current_stage_)->name() << " done in "
+            log::Trace() << "Stage " << stage->name() << " done in "
                          << StopWatch::format(stage_duration);
             ++current_stage_;
         }
 
-        // std::this_thread::sleep_for(std::chrono::seconds(3));
-        // log::Info() << "Sync loop operations in progress";
-        // if (++counter > 10) {
-        //   throw std::runtime_error("Forced exception");
-        // }
 
         if (cycle_in_one_tx) {
             external_txn.commit();

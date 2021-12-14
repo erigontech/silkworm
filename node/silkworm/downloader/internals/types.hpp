@@ -44,7 +44,7 @@ class Hash : public evmc::bytes32 {
 
     std::string to_hex() { return silkworm::to_hex(*this); }
     static Hash from_hex(const std::string& hex) {
-        return Hash(evmc::literals::internal::from_hex<bytes32>(hex.c_str()));
+        return {evmc::literals::internal::from_hex<bytes32>(hex.c_str())};
     }
 
     // conversion to ByteView is handled in ByteView class,
@@ -63,7 +63,7 @@ using time_point_t = std::chrono::time_point<std::chrono::system_clock>;
 using seconds_t = std::chrono::seconds;
 
 // defined elsewhere: ByteView string_view_to_byte_view(std::string_view sv)
-inline Bytes string_to_bytes(const std::string& s) { return Bytes(s.begin(), s.end()); }
+inline Bytes string_to_bytes(const std::string& s) { return {s.begin(), s.end()}; }
 
 inline std::ostream& operator<<(std::ostream& out, const silkworm::ByteView& bytes) {
     out << silkworm::to_hex(bytes);
@@ -98,7 +98,7 @@ struct PeerPenalization {
     Penalty penalty;
     PeerId peerId;
 
-    PeerPenalization(Penalty p, PeerId id) : penalty(p), peerId(id) {}  // unnecessary with c++20
+    PeerPenalization(Penalty p, PeerId id) : penalty(p), peerId(std::move(id)) {}  // unnecessary with c++20
 };
 
 inline std::ostream& operator<<(std::ostream& os, const PeerPenalization& penalization) {

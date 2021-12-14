@@ -42,12 +42,12 @@ void* operator new[](size_t size) {
     return malloc(size);
 }
 
-void operator delete(void* ptr, size_t size) {
+void operator delete(void* ptr, size_t size) noexcept {
     s_allocated_memory -= size;
     free(ptr);
 }
 
-void operator delete[](void* ptr, size_t size) {
+void operator delete[](void* ptr, size_t size) noexcept {
     s_allocated_memory -= size;
     free(ptr);
 }

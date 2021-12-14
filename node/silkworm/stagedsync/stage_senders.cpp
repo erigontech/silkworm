@@ -14,7 +14,6 @@
    limitations under the License.
 */
 
-#include <silkworm/common/log.hpp>
 #include <silkworm/db/stages.hpp>
 #include <silkworm/stagedsync/recovery/recovery_farm.hpp>
 
@@ -22,39 +21,37 @@
 
 namespace silkworm::stagedsync {
 
-namespace fs = std::filesystem;
-
-StageResult stage_senders(db::RWTxn& txn, const std::filesystem::path& etl_path, uint64_t) {
-    fs::create_directories(etl_path);
-    etl::Collector collector(etl_path, /* flush size */ 512_Mebi);
-
+StageResult Senders::forward(db::RWTxn& txn) {
     // Create farm instance and do work
     // Max number of workers is set to number of cores - 1 (one thread is left for main)
-    recovery::RecoveryFarm farm(*txn, std::thread::hardware_concurrency() - 1, kDefaultRecoverySenderBatch, collector);
+    etl::Collector collector(node_settings_->data_directory->etl().path(), node_settings_->etl_buffer_size);
+    recovery::RecoveryFarm farm(txn, collector, std::thread::hardware_concurrency() - 1, node_settings_->batch_size);
 
-    auto block_to{db::stages::read_stage_progress(*txn, db::stages::kBlockBodiesKey)};
-
-    const StageResult res{farm.recover(block_to)};
+    const auto res{farm.recover()};
     if (res == StageResult::kSuccess) {
         txn.commit();
     }
     return res;
 }
 
-StageResult unwind_senders(db::RWTxn& txn, const std::filesystem::path&, uint64_t unwind_point) {
-    const StageResult res{recovery::RecoveryFarm::unwind(*txn, unwind_point)};
+StageResult Senders::unwind(db::RWTxn& txn, BlockNum to) {
+    const StageResult res{recovery::RecoveryFarm::unwind(*txn, to)};
     if (res == StageResult::kSuccess) {
         txn.commit();
     }
     return res;
 }
 
-StageResult prune_senders(db::RWTxn& txn, const std::filesystem::path&, uint64_t prune_from) {
-    log::Info() << "Pruning Sender Recovery from: " << prune_from;
-    auto prune_table{db::open_cursor(*txn, db::table::kSenders)};
-    auto prune_point{db::block_key(prune_from)};
-    db::cursor_erase(prune_table, prune_point, db::CursorMoveDirection::Reverse);
-    log::Info() << "Pruning Sender Recovery finished...";
+StageResult Senders::prune(db::RWTxn& txn) {
+
+    auto progress{get_progress(txn)};
+    auto prune_to_block{node_settings_->prune_mode->senders().value_from_head(progress)};
+    if (prune_to_block) {
+        auto upper_key{db::block_key(prune_to_block + 1)};
+        auto prune_table{db::open_cursor(*txn, db::table::kSenders)};
+        db::cursor_erase(prune_table, upper_key, db::CursorMoveDirection::Reverse);
+    }
+
     return StageResult::kSuccess;
 }
 

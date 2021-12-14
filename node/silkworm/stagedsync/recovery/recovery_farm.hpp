@@ -35,19 +35,15 @@ class RecoveryFarm {
 
     //! \brief This class coordinates the recovery of senders' addresses through multiple threads. May eventually handle
     //! the unwinding of already recovered addresses.
-    //! \param [in] db_transaction : the database transaction we should work on
-    //! \param [in] max_workers : max number of parallel recovery workers
-    //! \param [in] max_batch_size : max number of transactions to be sent a worker for recovery
-    RecoveryFarm(mdbx::txn& db_transaction, uint32_t max_workers, size_t max_batch_size, etl::Collector& collector);
+    RecoveryFarm(db::RWTxn& txn, etl::Collector& collector, uint32_t max_workers, size_t batch_size);
     ~RecoveryFarm();
 
     //! \brief Recover sender's addresses from transactions
-    //! \param [in] to :  Upper boundary for blocks to process (included)
     //! \return A code indicating process status
-    StageResult recover(BlockNum to);
+    StageResult recover();
 
     //! \brief Issue an interruption request
-    void stop() { should_stop_.store(true); }
+    void stop() { is_stopping_.store(true); }
 
     //! \brief Unwinds sender's recovery i.e. deletes recovered addresses from storage
     //! \param [in] db_transaction : the database transaction we should work on
@@ -57,7 +53,7 @@ class RecoveryFarm {
 
   private:
     //! \brief Whether running tasks should stop
-    bool should_stop() { return should_stop_.load() || SignalHandler::signalled(); }
+    bool is_stopping() { return is_stopping_.load() || SignalHandler::signalled(); }
 
     //! \brief Commands every threaded recovery worker to stop
     //! \param [in] wait : whether to wait for worker stopped
@@ -96,7 +92,8 @@ class RecoveryFarm {
     void worker_completed_handler(RecoveryWorker* sender);
 
     friend class RecoveryWorker;
-    mdbx::txn& db_transaction_;  // Database transaction
+    db::RWTxn& txn_;
+    etl::Collector& collector_;
 
     using harvest_pair = std::pair<uint32_t, uint32_t>;  // Worker id + batch id
     using worker_pair = std::pair<std::unique_ptr<RecoveryWorker>, boost::signals2::connection>;
@@ -114,13 +111,13 @@ class RecoveryFarm {
     BlockNum header_index_offset_{};                     // To retrieve proper header hash while harvesting
 
     /* Batches */
-    size_t max_batch_size_;                        // Max number of transaction to be sent a worker for recovery
+    size_t batch_size_;                            // Max number of transaction to be sent a worker for recovery
     uint32_t batch_id_{0};                         // Incremental id of launched batches
     std::atomic<uint32_t> completed_batch_id_{0};  // Incremental id of completed batches
     std::vector<RecoveryPackage> batch_;           // Collection of transactions to be sent a worker for recovery
-    etl::Collector& collector_;
 
-    std::atomic_bool should_stop_{false};
+
+    std::atomic_bool is_stopping_{false};
 
     /* Stats */
     size_t total_recovered_transactions_{0};

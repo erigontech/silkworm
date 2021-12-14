@@ -28,14 +28,10 @@
 
 namespace silkworm::stagedsync::recovery {
 
-RecoveryFarm::RecoveryFarm(mdbx::txn& db_transaction, uint32_t max_workers, size_t max_batch_size,
-                           etl::Collector& collector)
-    : db_transaction_{db_transaction},
-      max_workers_{max_workers},
-      max_batch_size_{max_batch_size},
-      collector_{collector} {
+RecoveryFarm::RecoveryFarm(db::RWTxn& txn, etl::Collector& collector, uint32_t max_workers, size_t batch_size)
+    : txn_{txn}, collector_{collector}, max_workers_{max_workers}, batch_size_{batch_size / sizeof(RecoveryPackage)} {
     workers_.reserve(max_workers);
-    batch_.reserve(max_batch_size);
+    batch_.reserve(batch_size_);
 }
 
 RecoveryFarm::~RecoveryFarm() {
@@ -45,36 +41,29 @@ RecoveryFarm::~RecoveryFarm() {
     }
 }
 
-StageResult RecoveryFarm::recover(BlockNum to) {
+StageResult RecoveryFarm::recover() {
     // Check we have a valid chain configuration
-    auto chain_config{db::read_chain_config(db_transaction_)};
+    auto chain_config{db::read_chain_config(*txn_)};
     if (!chain_config.has_value()) {
         return StageResult::kUnknownChainId;
     }
 
     // Check stage boundaries from previous execution and previous stage execution
-    BlockNum from{0};
-    {
-        auto senders_stage_progress{db::stages::read_stage_progress(db_transaction_, db::stages::kSendersKey)};
-        auto bodies_stage_progress{db::stages::read_stage_progress(db_transaction_, db::stages::kBlockBodiesKey)};
-        if (senders_stage_progress > bodies_stage_progress) {
-            // Something bad had happened. Not possible sender stage is ahead of bodies
-            // Maybe we need to unwind ?
-            log::Error() << "Bad progress sequence. Sender stage progress " << senders_stage_progress
-                         << " while Bodies stage " << bodies_stage_progress;
-            return StageResult::kInvalidProgress;
-        }
-        to = std::min(bodies_stage_progress, to);
-        if (to <= senders_stage_progress) {
-            return StageResult::kSuccess;  // Really nothing to process
-        }
-        from = senders_stage_progress + 1;
+    auto previous_progress{db::stages::read_stage_progress(*txn_, db::stages::kSendersKey)};
+    auto expected_block_number{previous_progress ? previous_progress + 1 : previous_progress};
+    auto bodies_stage_progress{db::stages::read_stage_progress(*txn_, db::stages::kBlockBodiesKey)};
+    if (expected_block_number > bodies_stage_progress) {
+        // Something bad had happened. Not possible sender stage is ahead of bodies
+        // Maybe we need to unwind ?
+        log::Error() << "Bad progress sequence. Sender stage progress " << previous_progress << " while Bodies stage "
+                     << bodies_stage_progress;
+        return StageResult::kInvalidProgress;
     }
 
     // Load canonical headers
-    uint64_t headers_count{to - from};
+    uint64_t headers_count{bodies_stage_progress - previous_progress};
     headers_.reserve(headers_count);
-    auto stage_result{fill_canonical_headers(from, to)};
+    auto stage_result{fill_canonical_headers(expected_block_number, bodies_stage_progress)};
     if (stage_result != StageResult::kSuccess) {
         return stage_result;
     }
@@ -84,30 +73,29 @@ StageResult RecoveryFarm::recover(BlockNum to) {
     }
 
     // Load block bodies
-    uint64_t reached_block_num{0};      // Block number being processed
-    uint64_t expected_block_num{from};  // Expected block number in sequence
-    header_index_offset_ = from;        // See collect_workers_results
+    uint64_t reached_block_num{0};                 // Block number being processed
+    header_index_offset_ = expected_block_number;  // See collect_workers_results
 
-    log::Trace() << "Begin read block bodies ... ";
-    auto bodies_table{db::open_cursor(db_transaction_, db::table::kBlockBodies)};
-    auto transactions_table{db::open_cursor(db_transaction_, db::table::kBlockTransactions)};
+    log::Trace() << "Senders begin read block bodies ... ";
+    auto bodies_table{db::open_cursor(*txn_, db::table::kBlockBodies)};
+    auto transactions_table{db::open_cursor(*txn_, db::table::kBlockTransactions)};
 
     // Set to first block and read all in sequence
-    auto bodies_initial_key{db::block_key(expected_block_num, headers_it_1_->bytes)};
+    auto bodies_initial_key{db::block_key(expected_block_number, headers_it_1_->bytes)};
     auto body_data{bodies_table.find(db::to_slice(bodies_initial_key), false)};
-    while (body_data.done && !should_stop()) {
+    while (body_data.done && !is_stopping()) {
         auto body_data_key_view{db::from_slice(body_data.key)};
         reached_block_num = endian::load_big_u64(body_data_key_view.data());
-        if (reached_block_num < expected_block_num) {
+        if (reached_block_num < expected_block_number) {
             // The same block height has been recorded
             // but is not canonical;
             body_data = bodies_table.to_next(false);
             continue;
-        } else if (reached_block_num > expected_block_num) {
+        } else if (reached_block_num > expected_block_number) {
             // We surpassed the expected block which means
             // either the db misses a block or blocks are not persisted
             // in sequence
-            log::Error() << "Senders' recovery : Bad block sequence expected " << expected_block_num << " got "
+            log::Error() << "Senders' recovery : Bad block sequence expected " << expected_block_number << " got "
                          << reached_block_num;
             stage_result = StageResult::kBadChainSequence;
             break;
@@ -137,31 +125,32 @@ StageResult RecoveryFarm::recover(BlockNum to) {
             // We'd go beyond collected canonical headers
             break;
         }
-        expected_block_num++;
+        expected_block_number++;
         body_data = bodies_table.to_next(false);
     }
 
-    if (!should_stop()                            // No stop requests
+    if (!is_stopping()                            // No stop requests
         && stage_result == StageResult::kSuccess  // Previous steps ok
         && dispatch_batch()                       // Residual batch dispatched
     ) {
-        log::Trace() << "End   read block bodies ... ";
+        log::Trace() << "Senders end read block bodies ... ";
         wait_workers_completion();
 
         // If everything ok from previous steps wait for all workers to complete
         // and collect results
 
         collect_workers_results();
-        if (!collector_.empty() && !should_stop()) {
+        if (!collector_.empty() && !is_stopping()) {
             try {
                 // Prepare target table
-                auto target_table{db::open_cursor(db_transaction_, db::table::kSenders)};
-                log::Info() << "ETL Load [2/2] : Loading data into " << db::table::kSenders.name;
+                auto target_table{db::open_cursor(*txn_, db::table::kSenders)};
+                log::Trace() << "ETL Load : Loading data into " << db::table::kSenders.name << " "
+                             << human_size(collector_.size());
                 collector_.load(target_table, nullptr, MDBX_put_flags_t::MDBX_APPEND,
-                                /* log_every_percent = */ (total_recovered_transactions_ <= max_batch_size_ ? 50 : 10));
+                                /* log_every_percent = */ (total_recovered_transactions_ <= batch_size_ ? 50 : 10));
 
                 // Update stage progress with last reached block number
-                db::stages::write_stage_progress(db_transaction_, db::stages::kSendersKey, reached_block_num);
+                db::stages::write_stage_progress(*txn_, db::stages::kSendersKey, reached_block_num);
 
             } catch (const mdbx::exception& ex) {
                 log::Error() << "Unexpected db error in " << std::string(__FUNCTION__) << " : " << ex.what();
@@ -240,7 +229,7 @@ bool RecoveryFarm::collect_workers_results() {
 
         // Select worker and pop the queue
         auto& worker{workers_.at(harvest_pairs_.front().first)};
-        log::Trace() << "Collecting  results from worker " << worker.first->get_id();
+        log::Trace() << "Collecting  results from worker #" << worker.first->get_id();
         harvest_pairs_.pop();
         l.unlock();
 
@@ -303,7 +292,7 @@ StageResult RecoveryFarm::transform_and_fill_batch(const ChainConfig& config, ui
     }
 
     // Do we overflow ?
-    if ((batch_.size() + transactions.size()) > max_batch_size_) {
+    if ((batch_.size() * sizeof(RecoveryPackage) + transactions.size() * sizeof(RecoveryPackage)) > batch_size_) {
         if (!dispatch_batch()) {
             return StageResult::kUnexpectedError;
         }
@@ -367,7 +356,7 @@ StageResult RecoveryFarm::transform_and_fill_batch(const ChainConfig& config, ui
 }
 
 bool RecoveryFarm::dispatch_batch() {
-    if (should_stop() || batch_.empty()) {
+    if (is_stopping() || batch_.empty()) {
         return true;
     }
 
@@ -379,7 +368,7 @@ bool RecoveryFarm::dispatch_batch() {
     }
 
     // Locate first available worker
-    while (!should_stop()) {
+    while (!is_stopping()) {
         auto it = as_range::find_if(
             workers_, [](const worker_pair& w) { return w.first->get_status() == RecoveryWorker::Status::Idle; });
 
@@ -416,14 +405,15 @@ bool RecoveryFarm::dispatch_batch() {
         // No other option than wait a while and retry
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
-    return false;
+
+    return is_stopping();
 }
 
 bool RecoveryFarm::initialize_new_worker() {
     log::Trace() << "Launching worker #" << workers_.size();
     using namespace std::placeholders;
     try {
-        auto worker{std::make_unique<RecoveryWorker>(workers_.size(), max_batch_size_ * kAddressLength)};
+        auto worker{std::make_unique<RecoveryWorker>(workers_.size(), batch_size_ * kAddressLength)};
         auto connector{worker->signal_completed.connect(std::bind(&RecoveryFarm::worker_completed_handler, this, _1))};
         workers_.emplace_back(std::move(worker), std::move(connector));
         workers_.back().first->start(/*wait=*/true);
@@ -435,9 +425,8 @@ bool RecoveryFarm::initialize_new_worker() {
 }
 
 StageResult RecoveryFarm::fill_canonical_headers(BlockNum from, BlockNum to) noexcept {
-    if ((to - from) > 16) {
-        log::Info() << "Loading canonical headers [" << from << " .. " << to << "]";
-    }
+
+    log::Trace() << "Senders loading canonical headers [" << from << " .. " << to << "]";
 
     // Locate starting canonical header selected
     BlockNum reached_block_num{0};
@@ -445,7 +434,7 @@ StageResult RecoveryFarm::fill_canonical_headers(BlockNum from, BlockNum to) noe
 
     // Enclose in try catch block as db cursor reads may fail
     try {
-        auto hashes_table{db::open_cursor(db_transaction_, db::table::kCanonicalHashes)};
+        auto hashes_table{db::open_cursor(*txn_, db::table::kCanonicalHashes)};
         auto header_key{db::block_key(expected_block_num)};
         // Read all headers up to upper bound (included)
         auto data{hashes_table.find(db::to_slice(header_key), false)};

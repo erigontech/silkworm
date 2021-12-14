@@ -23,7 +23,10 @@
 
 namespace silkworm::stagedysnc {
 
-void SyncLoop::load_stages() { stages_.push_back(std::make_unique<stagedsync::BlockHashes>(node_settings_)); }
+void SyncLoop::load_stages() {
+    stages_.push_back(std::make_unique<stagedsync::BlockHashes>(node_settings_));
+    stages_.push_back(std::make_unique<stagedsync::Senders>(node_settings_));
+}
 
 void SyncLoop::work() {
     log::Trace() << "Synchronization loop started";

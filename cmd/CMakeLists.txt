@@ -36,6 +36,7 @@ endif()
 if(NOT SILKWORM_CORE_ONLY)
 
   find_package(absl CONFIG REQUIRED)
+  find_package(CLI11 CONFIG REQUIRED)
 
   file(GLOB_RECURSE SILKWORM_NODE_TESTS CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/node/silkworm/*_test.cpp")
   add_executable(node_test unit_test.cpp ${SILKWORM_NODE_TESTS})
@@ -49,11 +50,6 @@ if(NOT SILKWORM_CORE_ONLY)
 
   add_executable(scan_txs scan_txs.cpp)
   target_link_libraries(scan_txs PRIVATE silkworm_node CLI11::CLI11 absl::time)
-
-  find_package(CLI11 CONFIG REQUIRED)
-
-  add_executable(check_senders check_senders.cpp)
-  target_link_libraries(check_senders PRIVATE silkworm_node CLI11::CLI11)
 
   add_executable(check_pow check_pow.cpp)
   target_link_libraries(check_pow PRIVATE silkworm_node CLI11::CLI11)

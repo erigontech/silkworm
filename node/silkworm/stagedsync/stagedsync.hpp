@@ -38,6 +38,17 @@ class BlockHashes final : public IStage {
     StageResult prune(db::RWTxn& txn) final;
 };
 
+class Senders final : public IStage {
+  public:
+    explicit Senders(NodeSettings* node_settings) : IStage(db::stages::kSendersKey, node_settings){};
+    ~Senders() override = default;
+
+    StageResult forward(db::RWTxn& txn) final;
+    StageResult unwind(db::RWTxn& txn, BlockNum to) final;
+    StageResult prune(db::RWTxn& txn) final;
+
+};
+
 inline constexpr size_t kDefaultBatchSize = 512_Mebi;          // TODO(Andrea) Replace with value from CLI
 inline constexpr size_t kDefaultRecoverySenderBatch = 50'000;  // This a number of transactions not number of bytes
 
@@ -55,7 +66,6 @@ struct Stage {
 // Stage functions
 StageResult stage_headers(db::RWTxn& txn, const std::filesystem::path& etl_path, uint64_t prune_from = 0);
 StageResult stage_bodies(db::RWTxn& txn, const std::filesystem::path& etl_path, uint64_t prune_from = 0);
-StageResult stage_senders(db::RWTxn& txn, const std::filesystem::path& etl_path, uint64_t prune_from = 0);
 StageResult stage_execution(db::RWTxn& txn, const std::filesystem::path& etl_path, size_t batch_size,
                             uint64_t prune_from);
 inline StageResult stage_execution(db::RWTxn& txn, const std::filesystem::path& etl_path, uint64_t prune_from = 0) {
@@ -91,7 +101,6 @@ StageResult stage_tx_lookup(db::RWTxn& txn, const std::filesystem::path& etl_pat
 
 // Unwind functions
 StageResult no_unwind(db::RWTxn& txn, const std::filesystem::path& etl_path, uint64_t unwind_to);
-StageResult unwind_senders(db::RWTxn& txn, const std::filesystem::path& etl_path, uint64_t unwind_to);
 StageResult unwind_execution(db::RWTxn& txn, const std::filesystem::path& etl_path, uint64_t unwind_to);
 StageResult unwind_hashstate(db::RWTxn& txn, const std::filesystem::path& etl_path, uint64_t unwind_to);
 StageResult unwind_interhashes(db::RWTxn& txn, const std::filesystem::path& etl_path, uint64_t unwind_to);
@@ -102,7 +111,6 @@ StageResult unwind_tx_lookup(db::RWTxn& txn, const std::filesystem::path& etl_pa
 
 // Prune functions
 StageResult no_prune(db::RWTxn& txn, const std::filesystem::path& etl_path, uint64_t prune_from);
-StageResult prune_senders(db::RWTxn& txn, const std::filesystem::path& etl_path, uint64_t prune_from);
 StageResult prune_execution(db::RWTxn& txn, const std::filesystem::path& etl_path, uint64_t prune_from);
 StageResult prune_account_history(db::RWTxn& txn, const std::filesystem::path& etl_path, uint64_t prune_from);
 StageResult prune_storage_history(db::RWTxn& txn, const std::filesystem::path& etl_path, uint64_t prune_from);

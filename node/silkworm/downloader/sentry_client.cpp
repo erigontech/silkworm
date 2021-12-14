@@ -18,8 +18,10 @@
 
 #include <silkworm/common/log.hpp>
 
-#include "rpc/ReceiveMessages.hpp"
-#include "rpc/SetStatus.hpp"
+#include "rpc/hand_shake.hpp"
+#include "rpc/receive_messages.hpp"
+#include "rpc/receive_peer_stats.hpp"
+#include "rpc/set_status.hpp"
 
 namespace silkworm {
 
@@ -53,13 +55,19 @@ void SentryClient::publish(const sentry::InboundMessage& message) {
 void SentryClient::set_status(Hash head_hash, BigInt head_td, const ChainIdentity& chain_identity) {
     rpc::SetStatus set_status{chain_identity, head_hash, head_td};
     exec_remotely(set_status);
-
     log::Info() << "SentryClient, set_status sent";
-    sentry::SetStatusReply reply = set_status.reply();
+}
+
+void SentryClient::hand_shake() {
+    rpc::HandShake hand_shake;
+    exec_remotely(hand_shake);
+
+    log::Info() << "SentryClient, hand_shake sent";
+    sentry::HandShakeReply reply = hand_shake.reply();
 
     sentry::Protocol supported_protocol = reply.protocol();
     if (supported_protocol != sentry::Protocol::ETH66) {
-        log::Critical() << "SentryClient: sentry do not support eth/66 protocol, is_stopping...";
+        log::Critical() << "SentryClient: sentry do not support eth/66 protocol, is stopping...";
         stop();
         throw SentryClientException("SentryClient exception, cause: sentry do not support eth/66 protocol");
     }
@@ -79,9 +87,37 @@ void SentryClient::execution_loop() {
         publish(message);
     }
 
-    // note: do we need to handle connection loss retrying re-connect? (we would redo set_status too)
-
+    // note: do we need to handle connection loss with an outer loop that wait and then re-try hand_shake and so on?
+    // (we would redo set_status & hand-shake too)
+    stop();
     log::Warning() << "SentryClient execution loop is stopping...";
+}
+
+void SentryClient::stats_receiving_loop() {
+    // send a stats subscription
+    rpc::ReceivePeerStats receive_peer_stats;
+    exec_remotely(receive_peer_stats);
+
+    // receive stats
+    int active_peers = 0;
+    while (!is_stopping() && receive_peer_stats.receive_one_reply()) {
+        const sentry::PeersReply& stat = receive_peer_stats.reply();
+
+        auto peerId = string_from_H512(stat.peer_id());
+        const char* event = "";
+        if (stat.event() == sentry::PeersReply::Connect) {
+            event = "connected";
+            active_peers++;
+        } else {
+            event = "disconnected";
+            active_peers--;
+        }
+
+        log::Trace() << "SentryClient: peer " << peerId << " " << event << ", active " << active_peers;
+    }
+
+    stop();
+    log::Warning() << "SentryClient stats loop is stopping...";
 }
 
 }  // namespace silkworm

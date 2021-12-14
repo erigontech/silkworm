@@ -14,7 +14,7 @@
    limitations under the License.
 */
 
-#include "SetStatus.hpp"
+#include "set_status.hpp"
 
 namespace silkworm::rpc {
 

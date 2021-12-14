@@ -19,6 +19,8 @@
 #include <silkworm/common/as_range.hpp>
 #include <silkworm/common/log.hpp>
 
+#include "silkworm/common/stopwatch.hpp"
+
 namespace silkworm {
 
 PersistedChain::PersistedChain(Db::ReadWriteAccess::Tx& tx) : tx_(tx), canonical_cache_(1000) {
@@ -40,26 +42,37 @@ PersistedChain::PersistedChain(Db::ReadWriteAccess::Tx& tx) : tx_(tx), canonical
     initial_height_ = headers_height;  // in Erigon is highest_in_db_
 }
 
-bool PersistedChain::best_header_changed() { return new_canonical_; }
+bool PersistedChain::best_header_changed() const { return new_canonical_; }
 
-bool PersistedChain::unwind_detected() { return unwind_detected_; }
+bool PersistedChain::unwind_detected() const { return unwind_detected_; }
 
-bool PersistedChain::unwind() { return unwind_; }
+bool PersistedChain::unwind() const { return unwind_; }
 
-BlockNum PersistedChain::initial_height() { return initial_height_; }
+BlockNum PersistedChain::initial_height() const { return initial_height_; }
 
-BlockNum PersistedChain::highest_height() { return highest_bn_; }
+BlockNum PersistedChain::highest_height() const { return highest_bn_; }
 
-Hash PersistedChain::highest_hash() { return highest_hash_; }
+Hash PersistedChain::highest_hash() const { return highest_hash_; }
 
-BigInt PersistedChain::total_difficulty() { return local_td_; }
+BigInt PersistedChain::total_difficulty() const { return local_td_; }
 
-BlockNum PersistedChain::unwind_point() { return unwind_point_; }
+BlockNum PersistedChain::unwind_point() const { return unwind_point_; }
 
 // Erigon's func (hi *HeaderInserter) FeedHeader
 
 void PersistedChain::persist(const Headers& headers) {
+    if (headers.empty()) return;
+
+    StopWatch measure_curr_scope;                  // only for test
+    auto start_time = measure_curr_scope.start();  // only for test
+
     as_range::for_each(headers, [this](const auto& header) { persist(*header); });
+
+    auto [end_time, _] = measure_curr_scope.lap();  // only for test
+
+    log::Trace() << "PersistedChain: saved " << headers.size() << " headers from height "
+                 << header_at(headers.begin()).number << " to height " << header_at(headers.rbegin()).number
+                 << " (duration=" << measure_curr_scope.format(end_time - start_time) << ")"; // only for test
 }
 
 void PersistedChain::persist(const BlockHeader& header) {  // todo: try to modularize
@@ -114,13 +127,13 @@ void PersistedChain::persist(const BlockHeader& header) {  // todo: try to modul
 
         highest_bn_ = height;
         highest_hash_ = hash;
-        highest_timestamp_ = header.timestamp;
+        // highest_timestamp_ = header.timestamp;
         canonical_cache_.put(height, hash);
         local_td_ = td;  // this makes sure we end up choosing the chain with the max total difficulty
 
         if (forking_point < unwind_point_) {  // See if the forking point affects the unwind-point (the block number to
             unwind_point_ = forking_point;    // which other stages will need to unwind before the new canonical chain
-            unwind_ = true;                   // is applied)
+            unwind_ = true;                   // is applied
         }
     }
 
@@ -130,7 +143,7 @@ void PersistedChain::persist(const BlockHeader& header) {  // todo: try to modul
     // Save header
     tx_.write_header(header, true);  // true = with_header_numbers
 
-    log::Trace() << "PersistedChain: saved header height=" << height << " hash=" << hash;
+    // log::Trace() << "PersistedChain: saved header height=" << height << " hash=" << hash;
 
     previous_hash_ = hash;
 }
@@ -240,7 +253,7 @@ std::set<Hash> PersistedChain::remove_headers(BlockNum unwind_point, Hash bad_bl
 
     BlockNum headers_height = tx.read_stage_progress(db::stages::kHeadersKey);
 
-    // todo: the following code changed in Erigon, adeguate
+    // todo: the following code changed in Erigon, fix it
 
     bool is_bad_block = (bad_block != Hash{});
     for (BlockNum current_height = headers_height; current_height > unwind_point; current_height--) {

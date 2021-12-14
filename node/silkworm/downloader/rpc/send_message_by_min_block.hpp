@@ -14,14 +14,19 @@
    limitations under the License.
 */
 
-#include "SendMessageByMinBlock.hpp"
+#ifndef SILKWORM_SEND_MESSAGE_BY_MIN_BLOCK_HPP
+#define SILKWORM_SEND_MESSAGE_BY_MIN_BLOCK_HPP
+
+#include <silkworm/downloader/sentry_client.hpp>
 
 namespace silkworm::rpc {
 
-SendMessageByMinBlock::SendMessageByMinBlock(BlockNum min_block, std::unique_ptr<sentry::OutboundMessageData> message)
-    : UnaryCall("SendMessageByMinBlock", &sentry::Sentry::Stub::SendMessageByMinBlock, {}) {
-    request_.set_min_block(min_block);
-    request_.set_allocated_data(message.release());  // take ownership
-}
+class SendMessageByMinBlock
+    : public rpc::UnaryCall<sentry::Sentry, sentry::SendMessageByMinBlockRequest, sentry::SentPeers> {
+  public:
+    SendMessageByMinBlock(BlockNum min_block, std::unique_ptr<sentry::OutboundMessageData> message);
+};
 
 }  // namespace silkworm::rpc
+
+#endif  // SILKWORM_SEND_MESSAGE_BY_MIN_BLOCK_HPP

@@ -14,7 +14,7 @@
    limitations under the License.
 */
 
-#include "ReceiveMessages.hpp"
+#include "receive_messages.hpp"
 
 namespace silkworm::rpc {
 

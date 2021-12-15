@@ -16,8 +16,10 @@
 
 #include "sync_loop.hpp"
 
+#include <boost/format.hpp>
+
+#include <silkworm/common/asio_timer.hpp>
 #include <silkworm/common/log.hpp>
-#include <silkworm/common/stopwatch.hpp>
 #include <silkworm/db/stages.hpp>
 #include <silkworm/stagedsync/stagedsync.hpp>
 
@@ -34,7 +36,17 @@ void SyncLoop::work() {
     bool is_first_cycle{true};
     std::unique_ptr<db::RWTxn> cycle_txn{nullptr};
     mdbx::txn_managed external_txn;
+
     StopWatch stop_watch;
+    Timer log_timer(
+        node_settings_->asio_context, 5000,
+        [&]() -> bool {
+            static std::string fmt{"Stage %u/%u : %s"};
+            std::string prefix = boost::str(boost::format(fmt) % (current_stage_ + 1) % stages_.size() % stages_.at(current_stage_)->name());
+            log::Info(prefix, {});
+            return !is_stopping();
+        },
+        true);
 
     while (!is_stopping()) {
         current_stage_ = 0;
@@ -66,16 +78,14 @@ void SyncLoop::work() {
             cycle_txn = std::make_unique<db::RWTxn>(*chaindata_env_);
         }
 
-        while (current_stage_ < stages_.size()) {
+        while (!is_stopping() && current_stage_ < stages_.size()) {
             auto& stage{stages_.at(current_stage_)};
             auto stage_result{stage->forward(*cycle_txn)};
             stagedsync::success_or_throw(stage_result);
             auto [_, stage_duration] = stop_watch.lap();
-            log::Trace() << "Stage " << stage->name() << " done in "
-                         << StopWatch::format(stage_duration);
+            log::Trace() << "Stage " << stage->name() << " done in " << StopWatch::format(stage_duration);
             ++current_stage_;
         }
-
 
         if (cycle_in_one_tx) {
             external_txn.commit();
@@ -85,28 +95,35 @@ void SyncLoop::work() {
         cycle_txn.reset();
         is_first_cycle = false;
 
-        auto [time_point, _] = stop_watch.lap();
-        auto cycle_duration{stop_watch.since_start(time_point)};
-        log::Info() << "Cycle completed in " << stop_watch.format(cycle_duration);
-
-        if (node_settings_->sync_loop_throttle) {
-            auto min_duration = std::chrono::duration_cast<StopWatch::Duration>(
-                std::chrono::seconds(node_settings_->sync_loop_throttle));
-            if (min_duration > cycle_duration) {
-                auto wait_duration{min_duration - cycle_duration};
-                log::Info() << "Next cycle starts in " << StopWatch::format(wait_duration);
-                auto next_start_time = std::chrono::high_resolution_clock::now() + wait_duration;
-                while (std::chrono::high_resolution_clock::now() < next_start_time) {
-                    std::this_thread::sleep_for(std::chrono::milliseconds(100));
-                    if (is_stopping()) {
-                        break;
-                    }
-                }
-            }
+        if (!is_stopping()) {
+            auto [time_point, _] = stop_watch.lap();
+            auto cycle_duration{stop_watch.since_start(time_point)};
+            log::Info() << "Cycle completed in " << StopWatch::format(cycle_duration);
+            throttle_next_cycle(cycle_duration);
         }
     }
 
     log::Trace() << "Synchronization loop stopped";
+}
+
+void SyncLoop::throttle_next_cycle(const StopWatch::Duration& cycle_duration) {
+    if (!node_settings_->sync_loop_throttle) {
+        return;
+    }
+
+    auto min_duration =
+        std::chrono::duration_cast<StopWatch::Duration>(std::chrono::seconds(node_settings_->sync_loop_throttle));
+    if (min_duration > cycle_duration) {
+        auto wait_duration{min_duration - cycle_duration};
+        log::Info() << "Next cycle starts in " << StopWatch::format(wait_duration);
+        auto next_start_time = std::chrono::high_resolution_clock::now() + wait_duration;
+        while (std::chrono::high_resolution_clock::now() < next_start_time) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            if (is_stopping()) {
+                break;
+            }
+        }
+    }
 }
 
 }  // namespace silkworm::stagedysnc

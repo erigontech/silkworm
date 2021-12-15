@@ -69,7 +69,7 @@ StageResult RecoveryFarm::recover() {
     }
 
     if (headers_.size() > 16) {
-        log::Info() << "Collected " << headers_.size() << " canonical headers";
+        log::Info("Recovery headers", {"collected", std::to_string(headers_.size())});
     }
 
     // Load block bodies
@@ -245,7 +245,6 @@ bool RecoveryFarm::collect_workers_results() {
                 ret = false;
                 break;
             case RecoveryWorker::Status::ResultsReady:
-                log::Trace() << "Collecting results from worker #" << worker.first->get_id();
                 if (worker.first->pull_results(worker_results)) {
                     try {
                         for (const auto& [block_num, data] : worker_results) {

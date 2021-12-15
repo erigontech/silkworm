@@ -19,6 +19,7 @@
 #define SILKWORM_STAGEDSYNC_SYNCLOOP_HPP_
 
 #include <silkworm/common/settings.hpp>
+#include <silkworm/common/stopwatch.hpp>
 #include <silkworm/concurrency/worker.hpp>
 #include <silkworm/db/mdbx.hpp>
 #include <silkworm/stagedsync/common.hpp>
@@ -38,7 +39,9 @@ class SyncLoop final : public Worker {
     std::vector<std::unique_ptr<stagedsync::IStage>> stages_{};  // Collection of stages
     size_t current_stage_{0};                                    // Index of current stage
     void work() override;                                        // The loop itself
-    void load_stages();
+    void load_stages();                                          // Fills the vector of stages
+
+    void throttle_next_cycle(const StopWatch::Duration& cycle_duration);  // Delays (if required) next cycle run
 };
 }  // namespace silkworm::stagedysnc
 #endif  // SILKWORM_STAGEDSYNC_SYNCLOOP_HPP_

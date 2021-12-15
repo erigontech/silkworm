@@ -60,6 +60,7 @@ void tee_file(const std::filesystem::path& path);
 class BufferBase {
   public:
     explicit BufferBase(Level level);
+    explicit BufferBase(Level level, std::string_view msg, std::vector<std::string> args);
     ~BufferBase() { flush(); }
 
     // Accumulators
@@ -82,7 +83,9 @@ class BufferBase {
 template <Level level>
 class LogBuffer : public BufferBase {
   public:
-    LogBuffer() : BufferBase(level){};
+    explicit LogBuffer() : BufferBase(level){};
+    explicit LogBuffer(std::string_view msg, std::vector<std::string> args = {})
+        : BufferBase(level, msg, args){};
 };
 
 using Trace = LogBuffer<Level::kTrace>;

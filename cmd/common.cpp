@@ -237,13 +237,13 @@ void run_preflight_checklist(NodeSettings& node_settings) {
     }
 
     // Open chaindata environment and check tables are consistent
-    log::Message() << "Opening Database chaindata path " << node_settings.data_directory->chaindata().path();
+    log::Message("Opening database", {"path", node_settings.data_directory->chaindata().path().string()});
     auto chaindata_env{silkworm::db::open_env(node_settings.chaindata_env_config)};
     db::RWTxn tx(chaindata_env);
 
     // Ensures all tables are present
     db::table::check_or_create_chaindata_tables(*tx);
-    log::Message() << "Schema version " << db::read_schema_version(*tx)->to_string();
+    log::Message("Database schema", {"version", db::read_schema_version(*tx)->to_string()});
 
     // Check db is initialized with chain config
     {
@@ -255,11 +255,13 @@ void run_preflight_checklist(NodeSettings& node_settings) {
                 throw std::runtime_error("Could not initialize db for chain id " +
                                          std::to_string(node_settings.network_id) + " : unknown network");
             }
-            log::Message() << "Initializing chain configuration for chain id " << node_settings.network_id;
+            log::Message("Priming database", {"network id", std::to_string(node_settings.network_id)});
             db::initialize_genesis(*tx, genesis_json, /*allow_exceptions=*/true);
-            db_chain_config = db::read_chain_config(*tx);
-            log::Message() << "Initialized chain configuration " << db_chain_config.value().to_json().dump();
+            tx.commit();
         }
+
+        db_chain_config = db::read_chain_config(*tx);
+        log::Message("Initialized chain", {"configuration", db_chain_config.value().to_json().dump()});
 
         if (db_chain_config.value().chain_id != node_settings.network_id) {
             throw std::runtime_error("Incompatible network id. Command line expects " +
@@ -274,7 +276,7 @@ void run_preflight_checklist(NodeSettings& node_settings) {
                 break;
             }
         }
-        log::Message() << "Starting Silkworm on " << chain_name;
+        log::Message("Starting Silkworm", {"chain", chain_name});
     }
 
     // Detect prune-mode and verify is compatible
@@ -291,7 +293,7 @@ void run_preflight_checklist(NodeSettings& node_settings) {
             db::write_prune_mode(*tx, *node_settings.prune_mode);
             node_settings.prune_mode = std::make_unique<db::PruneMode>(db::read_prune_mode(*tx));
         }
-        log::Message() << "Prune mode " << node_settings.prune_mode->to_string();
+        log::Message("Effective pruning", {"mode", node_settings.prune_mode->to_string()});
     }
 
     tx.commit(/*renew=*/false);

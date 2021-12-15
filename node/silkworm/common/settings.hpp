@@ -20,6 +20,8 @@
 
 #include <memory>
 
+#include <boost/asio.hpp>
+
 #include <silkworm/chain/config.hpp>
 #include <silkworm/common/base.hpp>
 #include <silkworm/common/directories.hpp>
@@ -29,6 +31,7 @@
 namespace silkworm {
 
 struct NodeSettings {
+    boost::asio::io_context asio_context;            // Async context (e.g. for timers)
     std::unique_ptr<DataDirectory> data_directory;   // Pointer to data folder
     db::EnvConfig chaindata_env_config{};            // Chaindata db config
     uint64_t network_id{kMainnetConfig.chain_id};    // Network/Chain id

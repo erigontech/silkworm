@@ -33,7 +33,6 @@ Collector::~Collector() {
 
 void Collector::flush_buffer() {
     if (buffer_.size()) {
-        log::Info() << "Flushing Buffer File...";
         buffer_.sort();
 
         /* Build a unique file name to pass FileProvider */
@@ -43,7 +42,8 @@ void Collector::flush_buffer() {
         file_providers_.emplace_back(new FileProvider(new_file_path.string(), file_providers_.size()));
         file_providers_.back()->flush(buffer_);
         buffer_.clear();
-        log::Info() << "Buffer Flushed";
+        log::Info("Collector flushed file", {"path", std::string(file_providers_.back()->get_file_name()), "size",
+                                             human_size(file_providers_.back()->get_file_size())});
     }
 }
 
@@ -97,7 +97,7 @@ void Collector::load(mdbx::cursor& target, LoadFunc load_func, MDBX_put_flags_t 
                 actual_progress += progress_step;
                 dummy_counter = progress_increment_count;
                 log::Info() << "ETL Load Progress "
-                                   << " << " << actual_progress << "%";
+                            << " << " << actual_progress << "%";
             }
         }
 
@@ -143,7 +143,7 @@ void Collector::load(mdbx::cursor& target, LoadFunc load_func, MDBX_put_flags_t 
             actual_progress += progress_step;
             dummy_counter = progress_increment_count;
             log::Info() << "ETL Load Progress "
-                               << " << " << actual_progress << "%";
+                        << " << " << actual_progress << "%";
         }
 
         // From the provider which has served the current key

@@ -56,10 +56,10 @@ class Collector {
               MDBX_put_flags_t flags = MDBX_put_flags_t::MDBX_UPSERT, uint32_t log_every_percent = 100u);
 
     //! \brief Returns the number of actually collected items
-    size_t size() const { return size_; }
+    [[nodiscard]] size_t size() const { return size_; }
 
     //! \brief Returns whether this instance is empty (i.e. no items)
-    bool empty() const { return size_ == 0; }
+    [[nodiscard]] bool empty() const { return size_ == 0; }
 
     //! \brief Clears contents of collector and reset
     void clear() {

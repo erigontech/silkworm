@@ -72,6 +72,15 @@ int main(int argc, char* argv[]) {
 
         auto chaindata_env{silkworm::db::open_env(node_settings.chaindata_env_config)};
 
+        // Start boost asio
+        using asio_guard_type = boost::asio::executor_work_guard<boost::asio::io_context::executor_type>;
+        auto asio_guard = std::make_unique<asio_guard_type>(node_settings.asio_context.get_executor());
+        std::thread asio_thread{[&node_settings]() -> void {
+            log::Trace("Boost Asio", {"state", "started"});
+            node_settings.asio_context.run();
+            log::Trace("Boost Asio", {"state", "stopped"});
+        }};
+
         // Start sync loop
         stagedysnc::SyncLoop sync_loop(&node_settings, &chaindata_env);
         std::atomic_bool sync_loop_terminated{false};
@@ -95,22 +104,27 @@ int main(int argc, char* argv[]) {
             expected_status = true;
             {
                 std::unique_lock l(sync_loop_mtx);
-                if (sync_loop_terminated_cv.wait_for(l, std::chrono::seconds(30)) ==
-                    std::cv_status::no_timeout) {
+                if (sync_loop_terminated_cv.wait_for(l, std::chrono::seconds(30)) == std::cv_status::no_timeout) {
                     continue;
                 }
             }
 
             // The previous wait has timed-out without notification, so we can proceed with
             // timed logging
-            log::Info() << kColorGreenHigh << "Memory allocation " << kColorWhiteHigh << human_size(s_allocated_memory.load())
-                        << kColorGreenHigh << "  Etl temp size " << kColorWhiteHigh << human_size(node_settings.data_directory->etl().size())
-                        << kColorGreenHigh << "  Chaindata size " << kColorWhiteHigh << human_size(node_settings.data_directory->chaindata().size());
+            log::Info("Resource usage",
+                      {
+                          "Memory", human_size(s_allocated_memory.load()),                            //
+                          "Chaindata", human_size(node_settings.data_directory->chaindata().size()),  //
+                          "Etl", human_size(node_settings.data_directory->etl().size())               //
+                      });
         }
 
         if (sync_loop.has_exception()) {
             ret = -1;
         }
+
+        asio_guard.reset();
+        asio_thread.join();
 
         log::Message() << "Closing Database chaindata path " << node_settings.data_directory->chaindata().path();
         chaindata_env.close();

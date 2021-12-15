@@ -83,6 +83,15 @@ BufferBase::BufferBase(Level level) : level_(level) {
     }
 }
 
+BufferBase::BufferBase(Level level, std::string_view msg, std::vector<std::string> args) : BufferBase(level) {
+    ss_ << std::left << std::setw(30) << std::setfill(' ') << msg;
+    bool left{true};
+    for (const auto& arg : args) {
+        ss_ << (left ? kColorGreen : kColorWhiteHigh) << arg << kColorReset << (left ? "=" : " ") << kColorReset;
+        left = !left;
+    }
+}
+
 void BufferBase::flush() {
     if (level_ > settings_.log_verbosity) {
         return;

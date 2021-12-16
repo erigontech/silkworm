@@ -102,11 +102,10 @@ StageResult BlockHashes::unwind(db::RWTxn& txn, BlockNum to) {
 
     std::vector<Bytes> collected_keys;
     if (source_data) {
-        db::cursor_for_each(
-            source, [&collected_keys](::mdbx::cursor&, ::mdbx::cursor::move_result& _data) -> bool {
-                collected_keys.emplace_back(static_cast<uint8_t*>(_data.value.iov_base), _data.value.iov_len);
-                return true;
-            });
+        db::cursor_for_each(source, [&collected_keys](::mdbx::cursor&, ::mdbx::cursor::move_result& _data) -> bool {
+            collected_keys.emplace_back(static_cast<uint8_t*>(_data.value.iov_base), _data.value.iov_len);
+            return true;
+        });
     }
     source.close();
 
@@ -127,5 +126,9 @@ StageResult BlockHashes::unwind(db::RWTxn& txn, BlockNum to) {
 }
 
 StageResult BlockHashes::prune(db::RWTxn&) { return StageResult::kSuccess; }
+
+std::vector<std::string> BlockHashes::get_log_progress() {
+    return {};
+}
 
 }  // namespace silkworm::stagedsync

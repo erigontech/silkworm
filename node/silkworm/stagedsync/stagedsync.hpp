@@ -25,6 +25,7 @@
 #include <silkworm/db/stages.hpp>
 #include <silkworm/db/tables.hpp>
 #include <silkworm/stagedsync/common.hpp>
+#include <silkworm/stagedsync/recovery/recovery_farm.hpp>
 
 namespace silkworm::stagedsync {
 
@@ -36,6 +37,7 @@ class BlockHashes final : public IStage {
     StageResult forward(db::RWTxn& txn) final;
     StageResult unwind(db::RWTxn& txn, BlockNum to) final;
     StageResult prune(db::RWTxn& txn) final;
+    std::vector<std::string> get_log_progress() final;
 };
 
 class Senders final : public IStage {
@@ -46,6 +48,10 @@ class Senders final : public IStage {
     StageResult forward(db::RWTxn& txn) final;
     StageResult unwind(db::RWTxn& txn, BlockNum to) final;
     StageResult prune(db::RWTxn& txn) final;
+    std::vector<std::string> get_log_progress() final;
+
+  private:
+    std::unique_ptr<recovery::RecoveryFarm> farm_{nullptr};
 
 };
 

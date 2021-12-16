@@ -68,10 +68,6 @@ StageResult RecoveryFarm::recover() {
         return stage_result;
     }
 
-    if (headers_.size() > 16) {
-        log::Info("Recovery headers", {"collected", std::to_string(headers_.size())});
-    }
-
     // Load block bodies
     uint64_t reached_block_num{0};                 // Block number being processed
     header_index_offset_ = expected_block_number;  // See collect_workers_results
@@ -190,9 +186,16 @@ StageResult RecoveryFarm::unwind(mdbx::txn& db_transaction, BlockNum new_height)
     }
 }
 
+std::vector<std::string> RecoveryFarm::get_log_progress() {
+    return {"blocks",       std::to_string(headers_.size()),  //
+            "processed",    std::to_string(total_processed_blocks_),
+            "transactions", std::to_string(total_recovered_transactions_),
+            "workers",      std::to_string(workers_in_flight_.load())};
+}
+
 void RecoveryFarm::stop_all_workers(bool wait) {
-    log::Debug() << "Stopping workers ... ";
     for (const auto& item : workers_) {
+        log::Trace("Stopping recovery worker ...", {"id", std::to_string(item.first->get_id())});
         item.first->stop(wait);
     }
 }
@@ -229,7 +232,7 @@ bool RecoveryFarm::collect_workers_results() {
 
         // Select worker and pop the queue
         auto& worker{workers_.at(harvest_pairs_.front().first)};
-        log::Trace() << "Collecting  results from worker #" << worker.first->get_id();
+        log::Trace() << "Collecting results from worker #" << worker.first->get_id();
         harvest_pairs_.pop();
         l.unlock();
 
@@ -254,9 +257,10 @@ bool RecoveryFarm::collect_workers_results() {
                             Bytes etl_data(data.data(), data.length());
                             collector_.collect(etl::Entry{etl_key, etl_data});
                         }
-                        log::Info() << "ETL Load [1/2] : "
-                                    << (boost::format(fmt_row) % worker_results.back().first %
-                                        total_recovered_transactions_ % workers_in_flight_.load());
+                        //                        log::Info() << "ETL Load [1/2] : "
+                        //                                    << (boost::format(fmt_row) % worker_results.back().first %
+                        //                                        total_recovered_transactions_ %
+                        //                                        workers_in_flight_.load());
                         worker_results.resize(0);
 
                     } catch (const std::exception& ex) {
@@ -372,7 +376,8 @@ bool RecoveryFarm::dispatch_batch() {
             workers_, [](const worker_pair& w) { return w.first->get_status() == RecoveryWorker::Status::Idle; });
 
         if (it != workers_.end()) {
-            log::Trace() << "Dispatching package to worker #" << it->first->get_id();
+            log::Trace("Dispatching work",
+                       {"worker", std::to_string(it->first->get_id()), "batch", std::to_string(batch_id_)});
             it->first->set_work(batch_id_++, batch_);  // Worker will swap contents
             batch_.resize(0);
             workers_in_flight_++;
@@ -424,8 +429,9 @@ bool RecoveryFarm::initialize_new_worker() {
 }
 
 StageResult RecoveryFarm::fill_canonical_headers(BlockNum from, BlockNum to) noexcept {
-
-    log::Trace() << "Senders loading canonical headers [" << from << " .. " << to << "]";
+    if (to - from > 16) {
+        log::Info("Collecting headers ...", {"from", std::to_string(from), "to", std::to_string(to)});
+    }
 
     // Locate starting canonical header selected
     BlockNum reached_block_num{0};
@@ -486,7 +492,9 @@ void RecoveryFarm::worker_completed_handler(RecoveryWorker* sender) {
     // Ensure worker threads complete batches in the same order they
     // were launched
     while (completed_batch_id_.load() != sender->get_batch_id()) {
-        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        log::Trace("Waiting ...", {"completed_batch_id", std::to_string(completed_batch_id_.load()),
+                                   "incoming_batch_id", std::to_string(sender->get_batch_id())});
     }
 
     // Save the id of worker ready for harvest

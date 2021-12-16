@@ -25,6 +25,7 @@
 #include <boost/asio.hpp>
 
 #include <silkworm/common/assert.hpp>
+#include <silkworm/common/signal_handler.hpp>
 
 namespace silkworm {
 
@@ -46,12 +47,11 @@ class Timer {
         }
     };
 
-    ~Timer() {
-        stop();
-    }
+    ~Timer() { stop(); }
 
     void start() {
-        if (is_running) {
+        bool expected_running{false};
+        if (!is_running.compare_exchange_strong(expected_running, true)) {
             return;
         }
         timer_.expires_from_now(boost::posix_time::milliseconds(interval_));
@@ -64,7 +64,6 @@ class Timer {
                 start();
             }
         });
-        is_running = true;
     }
 
     void stop() {

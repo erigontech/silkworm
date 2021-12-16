@@ -25,9 +25,11 @@ StageResult Senders::forward(db::RWTxn& txn) {
     // Create farm instance and do work
     // Max number of workers is set to number of cores - 1 (one thread is left for main)
     etl::Collector collector(node_settings_->data_directory->etl().path(), node_settings_->etl_buffer_size);
-    recovery::RecoveryFarm farm(txn, collector, std::thread::hardware_concurrency() - 1, node_settings_->batch_size);
+    farm_ = std::make_unique<recovery::RecoveryFarm>(txn, collector, std::thread::hardware_concurrency() - 1,
+                                                     node_settings_->batch_size);
 
-    const auto res{farm.recover()};
+    const auto res{farm_->recover()};
+    farm_.reset();
     if (res == StageResult::kSuccess) {
         txn.commit();
     }
@@ -43,7 +45,6 @@ StageResult Senders::unwind(db::RWTxn& txn, BlockNum to) {
 }
 
 StageResult Senders::prune(db::RWTxn& txn) {
-
     auto progress{get_progress(txn)};
     auto prune_to_block{node_settings_->prune_mode->senders().value_from_head(progress)};
     if (prune_to_block) {
@@ -53,6 +54,13 @@ StageResult Senders::prune(db::RWTxn& txn) {
     }
 
     return StageResult::kSuccess;
+}
+
+std::vector<std::string> Senders::get_log_progress() {
+    if (!farm_) {
+        return {};
+    }
+    return farm_->get_log_progress();
 }
 
 }  // namespace silkworm::stagedsync

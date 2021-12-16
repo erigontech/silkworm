@@ -41,10 +41,14 @@ void SyncLoop::work() {
     Timer log_timer(
         node_settings_->asio_context, 5000,
         [&]() -> bool {
+            if (is_stopping()) {
+                return false;
+            }
             static std::string fmt{"Stage %u/%u : %s"};
-            std::string prefix = boost::str(boost::format(fmt) % (current_stage_ + 1) % stages_.size() % stages_.at(current_stage_)->name());
-            log::Info(prefix, {});
-            return !is_stopping();
+            std::string prefix = boost::str(boost::format(fmt) % (current_stage_ + 1) % stages_.size() %
+                                            stages_.at(current_stage_)->name());
+            log::Info(prefix, stages_.at(current_stage_)->get_log_progress());
+            return true;
         },
         true);
 
@@ -103,6 +107,7 @@ void SyncLoop::work() {
         }
     }
 
+    log_timer.stop();
     log::Trace() << "Synchronization loop stopped";
 }
 
@@ -113,15 +118,17 @@ void SyncLoop::throttle_next_cycle(const StopWatch::Duration& cycle_duration) {
 
     auto min_duration =
         std::chrono::duration_cast<StopWatch::Duration>(std::chrono::seconds(node_settings_->sync_loop_throttle));
-    if (min_duration > cycle_duration) {
-        auto wait_duration{min_duration - cycle_duration};
-        log::Info() << "Next cycle starts in " << StopWatch::format(wait_duration);
-        auto next_start_time = std::chrono::high_resolution_clock::now() + wait_duration;
-        while (std::chrono::high_resolution_clock::now() < next_start_time) {
-            std::this_thread::sleep_for(std::chrono::milliseconds(100));
-            if (is_stopping()) {
-                break;
-            }
+    if (min_duration <= cycle_duration) {
+        return;
+    }
+
+    auto wait_duration{min_duration - cycle_duration};
+    log::Info() << "Next cycle starts in " << StopWatch::format(wait_duration);
+    auto next_start_time = std::chrono::high_resolution_clock::now() + wait_duration;
+    while (std::chrono::high_resolution_clock::now() < next_start_time) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        if (is_stopping()) {
+            break;
         }
     }
 }

@@ -67,6 +67,9 @@ void RecoveryWorker::work() {
 
         results_.clear();
         BlockNum block_num{batch_.front().block_num};
+        BlockNum last_block_num{batch_.back().block_num};
+        results_.reserve(last_block_num - block_num + 1);
+
         size_t block_data_offset{0};
         size_t block_data_length{0};
 
@@ -111,5 +114,6 @@ void RecoveryWorker::work() {
         // Raise finished event
         signal_completed(this);
     }
+
 }
 }  // namespace silkworm::stagedsync::recovery

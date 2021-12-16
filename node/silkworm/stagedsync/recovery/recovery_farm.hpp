@@ -51,6 +51,9 @@ class RecoveryFarm {
     //! \return A code indicating process status
     static StageResult unwind(mdbx::txn& db_transaction, BlockNum new_height);
 
+    //! \brief Returns a collection of progress strings to be printed in log
+    [[nodiscard]] std::vector<std::string> get_log_progress();
+
   private:
     //! \brief Whether running tasks should stop
     bool is_stopping() { return is_stopping_.load() || SignalHandler::signalled(); }

@@ -258,9 +258,9 @@ void run_preflight_checklist(NodeSettings& node_settings) {
             log::Message("Priming database", {"network id", std::to_string(node_settings.network_id)});
             db::initialize_genesis(*tx, genesis_json, /*allow_exceptions=*/true);
             tx.commit();
+            db_chain_config = db::read_chain_config(*tx);
         }
 
-        db_chain_config = db::read_chain_config(*tx);
         log::Message("Initialized chain", {"configuration", db_chain_config.value().to_json().dump()});
 
         if (db_chain_config.value().chain_id != node_settings.network_id) {

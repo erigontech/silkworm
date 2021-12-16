@@ -19,7 +19,7 @@
 
 #include <memory>
 
-#include <interfaces/types.pb.h>
+#include <types/types.pb.h>
 
 #include "types.hpp"
 

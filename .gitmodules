@@ -23,10 +23,6 @@
 [submodule "libmdbx"]
 	path = libmdbx
 	url = https://github.com/erthink/libmdbx.git
-[submodule "erigon-lib"]
-	path = erigon-lib
-	url = https://github.com/ledgerwatch/erigon-lib.git
-	branch = stable
 [submodule "interfaces/proto"]
 	path = interfaces/proto
 	url = https://github.com/ledgerwatch/interfaces.git

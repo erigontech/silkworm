@@ -72,6 +72,7 @@ void RecoveryWorker::work() {
 
         size_t block_data_offset{0};
         size_t block_data_length{0};
+        auto data_ptr = reinterpret_cast<evmc_address*>(data_.data());
 
         for (auto const& package : batch_) {
             // On block switching store the results
@@ -93,7 +94,9 @@ void RecoveryWorker::work() {
                 ecdsa::recover_address(package.hash.bytes, package.signature, package.odd_y_parity, context_)};
 
             if (recovered_address.has_value()) {
-                std::memcpy(&data_[block_data_offset + block_data_length], recovered_address->bytes, kAddressLength);
+                *data_ptr = recovered_address.value();
+                ++data_ptr;
+//                std::memcpy(&data_[block_data_offset + block_data_length], recovered_address->bytes, kAddressLength);
                 block_data_length += kAddressLength;
             } else {
                 last_error_ = "Public key recovery failed at block #" + std::to_string(package.block_num);

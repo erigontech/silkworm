@@ -27,3 +27,7 @@
 	path = erigon-lib
 	url = https://github.com/ledgerwatch/erigon-lib.git
 	branch = stable
+[submodule "interfaces/proto"]
+	path = interfaces/proto
+	url = https://github.com/ledgerwatch/interfaces.git
+	branch = stable

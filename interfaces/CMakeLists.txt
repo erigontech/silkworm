@@ -35,7 +35,7 @@ find_program(GRPC_CPP_PLUGIN_EXECUTABLE grpc_cpp_plugin REQUIRED)
 
 # ---------------------------------------------------------------------------------------------------------------------
 # types proto file
-get_filename_component(PROTO_PATH "../erigon-lib/interfaces" ABSOLUTE)
+set(PROTO_PATH "${CMAKE_CURRENT_SOURCE_DIR}/proto")
 set(TYPES_PROTO "${PROTO_PATH}/types/types.proto")
 
 # types sources

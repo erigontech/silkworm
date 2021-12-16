@@ -52,6 +52,16 @@ void operator delete[](void* ptr, size_t size) noexcept {
     free(ptr);
 }
 
+void operator delete(void* ptr) noexcept {
+    s_allocated_memory -= sizeof(ptr);
+    free(ptr);
+}
+
+void operator delete[](void* ptr) noexcept {
+    s_allocated_memory -= sizeof(ptr);
+    free(ptr);
+}
+
 int main(int argc, char* argv[]) {
     using namespace boost::placeholders;
 

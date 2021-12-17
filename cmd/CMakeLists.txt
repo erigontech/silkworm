@@ -115,9 +115,6 @@ if(NOT SILKWORM_CORE_ONLY)
   # Benchmarks
   add_subdirectory(benchmark)
 
-endif(NOT SILKWORM_CORE_ONLY)
-
-if(NOT SILKWORM_WASM_API)
   # Ethereum Consensus Tests
   hunter_add_package(CLI11)
   find_package(CLI11 CONFIG REQUIRED)

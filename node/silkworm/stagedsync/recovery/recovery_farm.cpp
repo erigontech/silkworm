@@ -18,8 +18,6 @@
 
 #include <functional>
 
-#include <boost/format.hpp>
-
 #include <silkworm/common/as_range.hpp>
 #include <silkworm/common/endian.hpp>
 #include <silkworm/common/log.hpp>
@@ -28,15 +26,16 @@
 
 namespace silkworm::stagedsync::recovery {
 
-RecoveryFarm::RecoveryFarm(db::RWTxn& txn, etl::Collector& collector, uint32_t max_workers, size_t batch_size)
-    : txn_{txn}, collector_{collector}, max_workers_{max_workers}, batch_size_{batch_size / sizeof(RecoveryPackage)} {
-    workers_.reserve(max_workers);
+RecoveryFarm::RecoveryFarm(db::RWTxn& txn, etl::Collector& collector, size_t batch_size)
+    : txn_{txn}, collector_{collector}, batch_size_{batch_size / (sizeof(RecoveryPackage))} {
+    workers_.reserve(max_workers_);
     batch_.reserve(batch_size_);
 }
 
 RecoveryFarm::~RecoveryFarm() {
     while (!workers_.empty()) {
-        workers_.back().second.disconnect();
+        workers_.back()->signal_task_completed.disconnect_all_slots();
+        workers_.back()->signal_worker_stopped.disconnect_all_slots();
         workers_.pop_back();
     }
 }
@@ -104,6 +103,11 @@ StageResult RecoveryFarm::recover() {
             continue;
         }
 
+        // Check we've been requested to interrupt
+        if (SignalHandler::signalled()) {
+            stop();
+        }
+
         // Get the body and its transactions
         auto body_rlp{db::from_slice(body_data.value)};
         auto block_body{db::detail::decode_stored_block_body(body_rlp)};
@@ -159,9 +163,10 @@ StageResult RecoveryFarm::recover() {
                 stage_result = StageResult::kUnexpectedError;
             }
         }
+    } else {
+        stop_all_workers(/*wait=*/true);
     }
 
-    stop_all_workers(/*wait=*/true);
     return stage_result;
 }
 
@@ -194,27 +199,15 @@ std::vector<std::string> RecoveryFarm::get_log_progress() {
 }
 
 void RecoveryFarm::stop_all_workers(bool wait) {
-    for (const auto& item : workers_) {
-        log::Trace("Stopping recovery worker ...", {"id", std::to_string(item.first->get_id())});
-        item.first->stop(wait);
+    for (const auto& worker : workers_) {
+        log::Trace("Stopping recovery worker ...", {"id", std::to_string(worker->get_id())});
+        worker->stop(wait);
     }
 }
 
 void RecoveryFarm::wait_workers_completion() {
-    if (!workers_.empty()) {
-        uint32_t attempts{0};
-        do {
-            auto it = as_range::find_if(workers_, [](const worker_pair& w) {
-                return w.first->get_status() == RecoveryWorker::Status::Working;
-            });
-            if (it == workers_.end()) {
-                break;
-            }
-            std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-            if (!(++attempts % 60)) {
-                log::Info() << "Waiting for workers to complete ...";
-            }
-        } while (true);
+    while (workers_in_flight_.load()) {
+        std::this_thread::yield();
     }
 }
 
@@ -225,30 +218,33 @@ bool RecoveryFarm::collect_workers_results() {
     std::vector<std::pair<BlockNum, ByteView>> worker_results{};
     while (ret) {
         // Check we have results to pull
-        std::unique_lock l(harvest_mutex_);
-        if (harvest_pairs_.empty()) {
+        std::optional<size_t> harvest_id;
+        {
+            std::scoped_lock l(harvest_mutex_);
+            if (!harvestable_workers_.empty()) {
+                harvest_id.emplace(std::move(harvestable_workers_.front()));
+                harvestable_workers_.pop();
+            }
+        }
+        if (!harvest_id.has_value()) {
             break;
         }
 
         // Select worker and pop the queue
-        auto& worker{workers_.at(harvest_pairs_.front().first)};
-        log::Trace() << "Collecting results from worker #" << worker.first->get_id();
-        harvest_pairs_.pop();
-        l.unlock();
+        auto& worker{*(workers_.at(harvest_id.value()))};
+        log::Trace() << "Collecting results from worker #" << worker.get_id();
 
-        auto status = worker.first->get_status();
-        switch (status) {
+        switch (worker.get_status()) {
             case RecoveryWorker::Status::Error:
-                log::Error() << "Got error from worker #" << worker.first->get_id() << " : "
-                             << worker.first->get_error();
+                log::Error() << "Got error from worker #" << worker.get_id() << " : " << worker.get_error();
                 ret = false;
                 break;
             case RecoveryWorker::Status::Aborted:
-                log::Trace() << "Got aborted from worker #" << worker.first->get_id();
+                log::Trace() << "Got aborted from worker #" << worker.get_id();
                 ret = false;
                 break;
             case RecoveryWorker::Status::ResultsReady:
-                if (worker.first->pull_results(worker_results)) {
+                if (worker.pull_results(worker_results)) {
                     try {
                         for (const auto& [block_num, data] : worker_results) {
                             total_processed_blocks_++;
@@ -257,10 +253,6 @@ bool RecoveryFarm::collect_workers_results() {
                             Bytes etl_data(data.data(), data.length());
                             collector_.collect(etl::Entry{etl_key, etl_data});
                         }
-                        //                        log::Info() << "ETL Load [1/2] : "
-                        //                                    << (boost::format(fmt_row) % worker_results.back().first %
-                        //                                        total_recovered_transactions_ %
-                        //                                        workers_in_flight_.load());
                         worker_results.resize(0);
 
                     } catch (const std::exception& ex) {
@@ -269,7 +261,7 @@ bool RecoveryFarm::collect_workers_results() {
                     }
                 } else {
                     log::Error() << "Unexpected error in " << std::string(__FUNCTION__) << " : "
-                                 << "could not pull results from worker #" << worker.first->get_id();
+                                 << "could not pull results from worker #" << worker.get_id();
                     ret = false;
                 }
                 break;
@@ -289,13 +281,16 @@ bool RecoveryFarm::collect_workers_results() {
 }
 
 StageResult RecoveryFarm::transform_and_fill_batch(const ChainConfig& config, uint64_t block_num,
+
                                                    std::vector<Transaction>& transactions) {
-    if (transactions.empty()) {
-        return StageResult::kSuccess;
+    if (is_stopping()) {
+        return StageResult::kAborted;
     }
 
     // Do we overflow ?
-    if ((batch_.size() * sizeof(RecoveryPackage) + transactions.size() * sizeof(RecoveryPackage)) > batch_size_) {
+    size_t accrued_batch_size{batch_.size() * sizeof(RecoveryPackage)};
+    size_t this_block_size{transactions.size() * sizeof(RecoveryPackage)};
+    if (accrued_batch_size + this_block_size > batch_size_) {
         if (!dispatch_batch()) {
             return StageResult::kUnexpectedError;
         }
@@ -359,10 +354,6 @@ StageResult RecoveryFarm::transform_and_fill_batch(const ChainConfig& config, ui
 }
 
 bool RecoveryFarm::dispatch_batch() {
-    if (is_stopping() || batch_.empty()) {
-        return true;
-    }
-
     // First worker created
     if (workers_.empty()) {
         if (!initialize_new_worker()) {
@@ -372,29 +363,34 @@ bool RecoveryFarm::dispatch_batch() {
 
     // Locate first available worker
     while (!is_stopping()) {
-        auto it = as_range::find_if(
-            workers_, [](const worker_pair& w) { return w.first->get_status() == RecoveryWorker::Status::Idle; });
+        auto it = as_range::find_if(workers_, [](const std::unique_ptr<RecoveryWorker>& w) {
+            return w->get_status() == RecoveryWorker::Status::Idle;
+        });
 
         if (it != workers_.end()) {
-            log::Trace("Dispatching work",
-                       {"worker", std::to_string(it->first->get_id()), "batch", std::to_string(batch_id_)});
-            it->first->set_work(batch_id_++, batch_);  // Worker will swap contents
-            batch_.resize(0);
+            log::Trace("Dispatching work", {"worker", std::to_string((*it)->get_id())});
+            (*it)->set_work(batch_);  // Worker will swap contents
             workers_in_flight_++;
+            batch_.resize(0);
             return true;
         }
 
-        // Do we have ready results from workers that we need to harvest ?
-        it = as_range::find_if(workers_, [](const worker_pair& w) {
-            auto s = static_cast<int>(w.first->get_status());
-            return (s >= 2);
-        });
-        if (it != workers_.end()) {
-            if (!collect_workers_results()) {
-                return false;
-            }
+        if (workers_in_flight_ < workers_.size()) {
+            if (!collect_workers_results()) return false;
             continue;
         }
+
+        //        // Do we have ready results from workers that we need to harvest ?
+        //        it = as_range::find_if(workers_, [](const std::unique_ptr<RecoveryWorker>& w) {
+        //            auto s = static_cast<int>(w->get_status());
+        //            return (s >= 2);
+        //        });
+        //        if (it != workers_.end()) {
+        //            if (!collect_workers_results()) {
+        //                return false;
+        //            }
+        //            continue;
+        //        }
 
         // We don't have a worker available
         // Maybe we can create a new one if available
@@ -407,7 +403,8 @@ bool RecoveryFarm::dispatch_batch() {
         }
 
         // No other option than wait a while and retry
-        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        std::unique_lock lck(worker_completed_mtx_);
+        (void)worker_completed_cv_.wait_for(lck, std::chrono::milliseconds(100));
     }
 
     return is_stopping();
@@ -417,11 +414,11 @@ bool RecoveryFarm::initialize_new_worker() {
     log::Trace() << "Launching worker #" << workers_.size();
     using namespace std::placeholders;
     try {
-        auto worker{std::make_unique<RecoveryWorker>(workers_.size(), batch_size_ * kAddressLength)};
-        auto connector{worker->signal_completed.connect(std::bind(&RecoveryFarm::worker_completed_handler, this, _1))};
-        workers_.emplace_back(std::move(worker), std::move(connector));
-        workers_.back().first->start(/*wait=*/true);
-        return workers_.back().first->get_state() == Worker::State::kStarted;
+        workers_.emplace_back(new RecoveryWorker(workers_.size(), batch_size_ * kAddressLength));
+        workers_.back()->signal_task_completed.connect(std::bind(&RecoveryFarm::task_completed_handler, this, _1));
+        workers_.back()->signal_worker_stopped.connect(std::bind(&RecoveryFarm::worker_completed_handler, this, _1));
+        workers_.back()->start(/*wait=*/true);
+        return workers_.back()->get_state() == Worker::State::kStarted;
     } catch (const std::exception& ex) {
         log::Error() << "Unable to initialize new recovery worker : " << ex.what();
         return false;
@@ -488,21 +485,22 @@ StageResult RecoveryFarm::fill_canonical_headers(BlockNum from, BlockNum to) noe
     }
 }
 
-void RecoveryFarm::worker_completed_handler(RecoveryWorker* sender) {
-    // Ensure worker threads complete batches in the same order they
-    // were launched
-    while (completed_batch_id_.load() != sender->get_batch_id()) {
-        std::this_thread::sleep_for(std::chrono::milliseconds(10));
-        log::Trace("Waiting ...", {"completed_batch_id", std::to_string(completed_batch_id_.load()),
-                                   "incoming_batch_id", std::to_string(sender->get_batch_id())});
+void RecoveryFarm::task_completed_handler(RecoveryWorker* sender) {
+    {
+        std::scoped_lock l(harvest_mutex_);
+        harvestable_workers_.push(sender->get_id());
     }
+    if (workers_in_flight_) {
+        workers_in_flight_--;
+    }
+    worker_completed_cv_.notify_one();
+}
 
-    // Save the id of worker ready for harvest
-    std::lock_guard l(harvest_mutex_);
-    harvest_pair item{sender->get_id(), sender->get_batch_id()};
-    harvest_pairs_.push(item);
-    completed_batch_id_++;
-    workers_in_flight_--;
+void RecoveryFarm::worker_completed_handler(Worker*) {
+    if (workers_in_flight_) {
+        workers_in_flight_--;
+    }
+    worker_completed_cv_.notify_one();
 }
 
 }  // namespace silkworm::stagedsync::recovery

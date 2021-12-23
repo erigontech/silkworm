@@ -39,7 +39,7 @@ void SyncLoop::work() {
 
     StopWatch stop_watch;
     Timer log_timer(
-        node_settings_->asio_context, 5000,
+        node_settings_->asio_context, node_settings_->sync_loop_log_interval * 1'000,
         [&]() -> bool {
             if (is_stopping()) {
                 return false;

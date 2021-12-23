@@ -36,7 +36,7 @@ void Worker::start(bool wait) {
     thread_ = std::make_unique<std::thread>([&]() {
         State expected_starting{State::kStarting};
         if (state_.compare_exchange_strong(expected_starting, State::kStarted)) {
-            signal_started(this);
+            signal_worker_started(this);
             try {
                 work();
             } catch (const std::exception& ex) {
@@ -45,11 +45,11 @@ void Worker::start(bool wait) {
             }
         }
         state_.store(State::kStopped);
-        signal_stopped(this);
+        signal_worker_stopped(this);
     });
 
     while (wait) {
-        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        std::this_thread::yield();
         if (auto state{get_state()}; state == State::kStarted) {
             break;
         }
@@ -76,14 +76,15 @@ void Worker::kick() {
 }
 
 bool Worker::wait_for_kick(uint32_t timeout_milliseconds) {
-    while (!SignalHandler::signalled()) {
-        bool expected_kick_value{true};
-        if (!kicked_.compare_exchange_strong(expected_kick_value, false)) {
+    bool expected_kicked_value{true};
+    while (!is_stopping() && !kicked_.compare_exchange_strong(expected_kicked_value, false)) {
+        if (timeout_milliseconds) {
             std::unique_lock l(kick_mtx_);
             (void)kicked_cv_.wait_for(l, std::chrono::milliseconds(timeout_milliseconds));
-            continue;
+        } else {
+            std::this_thread::yield();
         }
-        break;
+        expected_kicked_value = true;
     }
     return !is_stopping();
 }

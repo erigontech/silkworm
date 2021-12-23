@@ -30,6 +30,7 @@ namespace silkworm {
 // If you only need stoppability, use ActiveComponent instead.
 class Worker {
   public:
+
     enum class State { kStopped, kStarting, kStarted, kStopping };
 
     Worker() : name_{"worker"}{};
@@ -47,7 +48,7 @@ class Worker {
     void kick();                   // Kicks worker thread if waiting
 
     //! \brief Whether this worker/thread has received a stop request
-    bool is_stopping() const { return state_.load() == State::kStopping || SignalHandler::signalled(); }
+    bool is_stopping() const { return state_.load() == State::kStopping; }
 
     //! \brief Retrieves current state of thread
     State get_state() { return state_.load(); }
@@ -62,10 +63,10 @@ class Worker {
     void rethrow();
 
     //! \brief Signals connected handlers the underlying thread is about to start
-    boost::signals2::signal<void(Worker* sender)> signal_started;
+    boost::signals2::signal<void(Worker* sender)> signal_worker_started;
 
     //! \brief Signals connected handlers the underlying thread is terminated
-    boost::signals2::signal<void(Worker* sender)> signal_stopped;
+    boost::signals2::signal<void(Worker* sender)> signal_worker_stopped;
 
   protected:
     /**

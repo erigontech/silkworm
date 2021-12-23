@@ -102,7 +102,7 @@ int main(int argc, char* argv[]) {
             sync_loop_terminated_cv.notify_all();
         };
         auto sync_loop_terminated_connector =
-            sync_loop.signal_stopped.connect(boost::bind<void>(sync_loop_terminated_cb, _1));
+            sync_loop.signal_worker_stopped.connect(boost::bind<void>(sync_loop_terminated_cb, _1));
 
         sync_loop.start(/*wait=*/true);
 
@@ -114,7 +114,7 @@ int main(int argc, char* argv[]) {
             expected_status = true;
             {
                 std::unique_lock l(sync_loop_mtx);
-                if (sync_loop_terminated_cv.wait_for(l, std::chrono::seconds(30)) == std::cv_status::no_timeout) {
+                if (sync_loop_terminated_cv.wait_for(l, std::chrono::seconds(60)) == std::cv_status::no_timeout) {
                     continue;
                 }
             }

@@ -57,19 +57,14 @@ class RecoveryWorker final : public silkworm::Worker {
     //! \param [in] data_size: sets the amount of memory to allocate for recovered addresses
     //! \remarks data_size is expressed as number of transactions to recover per batch times address size
     explicit RecoveryWorker(uint32_t id, size_t data_size);
-
-    ~RecoveryWorker();
+    ~RecoveryWorker() final;
 
     //! \brief Feed the worker with a new set of data to process
-    //! \param [in] batch_id : identifier of work batch
     //! \param [in] batch : collection of work packages
-    void set_work(uint32_t batch_id, std::vector<RecoveryPackage>& farm_batch);
+    void set_work(std::vector<RecoveryPackage>& farm_batch);
 
     //! \brief Return the instance unique identifier
     uint32_t get_id() const { return id_; };
-
-    //! \brief Return the current batch identifier this instance is working on
-    uint32_t get_batch_id() const { return batch_id_; };
 
     //! \brief Return the last error encountered by this Recoverer
     //! \return A string. If empty means no error found
@@ -85,14 +80,13 @@ class RecoveryWorker final : public silkworm::Worker {
     bool pull_results(std::vector<std::pair<BlockNum, ByteView>>& out_results);
 
     //! \brief Signals connected handlers a task is completed
-    boost::signals2::signal<void(RecoveryWorker* sender)> signal_completed;
+    boost::signals2::signal<void(RecoveryWorker* sender)> signal_task_completed;
 
   private:
     const uint32_t id_;                                     // Current worker identifier
-    uint32_t batch_id_{0};                                  // Current batch identifier
     std::vector<RecoveryPackage> batch_;                    // Batch to process
     Bytes data_;                                            // Results data buffer
-    secp256k1_context* context_;                            // Elliptic curve context;
+    secp256k1_context* context_{nullptr};                   // Elliptic curve context;
     std::vector<std::pair<BlockNum, ByteView>> results_{};  // Results per block pointing to data area
     std::string last_error_{};                              // Description of last error occurrence
     std::atomic<Status> status_{Status::Idle};              // Status of worker
@@ -104,4 +98,5 @@ class RecoveryWorker final : public silkworm::Worker {
 
 }  // namespace silkworm::stagedsync::recovery
 
-#endif
+#endif // SILKWORM_STAGEDSYNC_RECOVERY_WORKER_HPP_
+

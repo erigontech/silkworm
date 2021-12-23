@@ -22,11 +22,10 @@
 namespace silkworm::stagedsync {
 
 StageResult Senders::forward(db::RWTxn& txn) {
+
     // Create farm instance and do work
-    // Max number of workers is set to number of cores - 1 (one thread is left for main)
     etl::Collector collector(node_settings_->data_directory->etl().path(), node_settings_->etl_buffer_size);
-    farm_ = std::make_unique<recovery::RecoveryFarm>(txn, collector, std::thread::hardware_concurrency() - 1,
-                                                     node_settings_->batch_size);
+    farm_ = std::make_unique<recovery::RecoveryFarm>(txn, collector, node_settings_->batch_size);
 
     const auto res{farm_->recover()};
     farm_.reset();

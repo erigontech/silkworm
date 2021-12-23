@@ -124,6 +124,10 @@ void parse_silkworm_command_line(CLI::App& cli, int argc, char* argv[], log::Set
     cli.add_option("--sync.loop.throttle", node_settings.sync_loop_throttle,
                    "Sets the minimum time between sync loop starts (in seconds)", true);
 
+    cli.add_option("--sync.loop.log.interval", node_settings.sync_loop_log_interval,
+                   "Sets the minimum time between sync loop logs (in seconds)", true)
+        ->check(CLI::Range(5u, 600u));
+
     cli.add_flag("--fakepow", node_settings.fake_pow, "Disables proof-of-work verification");
     // Chain options
     auto chains_map{get_known_chains_map()};
@@ -299,6 +303,7 @@ void run_preflight_checklist(NodeSettings& node_settings) {
     tx.commit(/*renew=*/false);
     chaindata_env.close();
     node_settings.chaindata_env_config.exclusive = chaindata_exclusive;
+    node_settings.chaindata_env_config.create = false; // Has already been created
 }
 
 }  // namespace silkworm::cmd

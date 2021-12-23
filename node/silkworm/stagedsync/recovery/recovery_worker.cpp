@@ -16,26 +16,28 @@
 
 #include "recovery_worker.hpp"
 
+#include <secp256k1_recovery.h>
+
+#include <silkworm/common/assert.hpp>
+#include <silkworm/common/log.hpp>
+#include <silkworm/common/stopwatch.hpp>
+
 namespace silkworm::stagedsync::recovery {
 
 RecoveryWorker::RecoveryWorker(uint32_t id, size_t data_size) : id_(id) {
     // Allocate enough memory to store results output
-    assert(data_size % kAddressLength == 0);
+    SILKWORM_ASSERT(data_size % kAddressLength == 0);
     data_.resize(data_size);
-    context_ = ecdsa::create_context();
-    if (!context_) {
-        throw std::runtime_error("Could not create elliptic curve context");
-    }
 }
 
 RecoveryWorker::~RecoveryWorker() {
     if (context_) {
         std::free(context_);
     }
+    stop(true);
 }
 
-void RecoveryWorker::set_work(uint32_t batch_id, std::vector<RecoveryPackage>& farm_batch) {
-    batch_id_ = batch_id;
+void RecoveryWorker::set_work(std::vector<RecoveryPackage>& farm_batch) {
     batch_.swap(farm_batch);
     status_.store(Status::Working);
     Worker::kick();
@@ -57,6 +59,21 @@ bool RecoveryWorker::pull_results(std::vector<std::pair<BlockNum, ByteView>>& ou
 }
 
 void RecoveryWorker::work() {
+    StopWatch sw;
+    context_ = ecdsa::create_context();
+    if (!context_) {
+        last_error_ = "Could not create elliptic curve context";
+        status_.store(Status::Error);
+        signal_task_completed(this);
+        return;
+    }
+
+    // Ancillary fields for ecdsa recovery
+    secp256k1_ecdsa_recoverable_signature recoverable_signature;
+    secp256k1_pubkey public_key;
+    size_t kOutLen{65};
+    Bytes out(kOutLen, '\0');
+
     while (wait_for_kick()) {
         /**
          * Each work package is a pair of BlockNum + Transaction data.
@@ -65,6 +82,7 @@ void RecoveryWorker::work() {
          * memory area for addresses of the block is created and stored in results_ vector
          */
 
+        sw.start(true);
         results_.clear();
         BlockNum block_num{batch_.front().block_num};
         BlockNum last_block_num{batch_.back().block_num};
@@ -90,13 +108,27 @@ void RecoveryWorker::work() {
                 block_num = package.block_num;
             }
 
-            std::optional<evmc::address> recovered_address{
-                ecdsa::recover_address(package.hash.bytes, package.signature, package.odd_y_parity, context_)};
+            //            const auto key_hash{ethash::keccak256(package.hash.bytes, 32)};
+            //            *data_ptr = evmc::address(*reinterpret_cast<const evmc_address*>(&key_hash.bytes[12]));
+            //            ++data_ptr;
+            //            block_data_length += kAddressLength;
+
+            std::optional<evmc::address> recovered_address;
+            if (secp256k1_ecdsa_recoverable_signature_parse_compact(context_, &recoverable_signature,
+                                                                    &package.signature[0], package.odd_y_parity)) {
+                if (secp256k1_ecdsa_recover(context_, &public_key, &recoverable_signature, package.hash.bytes)) {
+                    secp256k1_ec_pubkey_serialize(context_, &out[0], &kOutLen, &public_key, SECP256K1_EC_UNCOMPRESSED);
+                    auto key_hash{ethash::keccak256(&public_key.data[1], 64)};
+                    recovered_address.emplace(*reinterpret_cast<const evmc_address*>(&key_hash.bytes[12]));
+                }
+            }
+
+//            std::optional<evmc::address> recovered_address{
+//                ecdsa::recover_address(package.hash.bytes, package.signature, package.odd_y_parity, context_)};
 
             if (recovered_address.has_value()) {
-                *data_ptr = recovered_address.value();
+                *data_ptr = *recovered_address;
                 ++data_ptr;
-//                std::memcpy(&data_[block_data_offset + block_data_length], recovered_address->bytes, kAddressLength);
                 block_data_length += kAddressLength;
             } else {
                 last_error_ = "Public key recovery failed at block #" + std::to_string(package.block_num);
@@ -114,9 +146,10 @@ void RecoveryWorker::work() {
             status_.store(Status::ResultsReady);
         }
 
-        // Raise finished event
-        signal_completed(this);
+        // Raise task completed event
+        auto [_, elapsed]{sw.stop()};
+        log::Trace("Worker completed", {"elapsed", StopWatch::format(elapsed)});
+        signal_task_completed(this);
     }
-
 }
 }  // namespace silkworm::stagedsync::recovery

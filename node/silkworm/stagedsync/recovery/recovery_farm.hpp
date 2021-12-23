@@ -35,7 +35,7 @@ class RecoveryFarm {
 
     //! \brief This class coordinates the recovery of senders' addresses through multiple threads. May eventually handle
     //! the unwinding of already recovered addresses.
-    RecoveryFarm(db::RWTxn& txn, etl::Collector& collector, uint32_t max_workers, size_t batch_size);
+    RecoveryFarm(db::RWTxn& txn, etl::Collector& collector, size_t batch_size);
     ~RecoveryFarm();
 
     //! \brief Recover sender's addresses from transactions
@@ -43,7 +43,10 @@ class RecoveryFarm {
     StageResult recover();
 
     //! \brief Issue an interruption request
-    void stop() { is_stopping_.store(true); }
+    void stop() {
+        is_stopping_.store(true);
+        stop_all_workers(false);
+    }
 
     //! \brief Unwinds sender's recovery i.e. deletes recovered addresses from storage
     //! \param [in] db_transaction : the database transaction we should work on
@@ -55,8 +58,11 @@ class RecoveryFarm {
     [[nodiscard]] std::vector<std::string> get_log_progress();
 
   private:
+    friend class RecoveryWorker;
+    friend class Worker;
+
     //! \brief Whether running tasks should stop
-    bool is_stopping() { return is_stopping_.load() || SignalHandler::signalled(); }
+    bool is_stopping() { return is_stopping_.load(); }
 
     //! \brief Commands every threaded recovery worker to stop
     //! \param [in] wait : whether to wait for worker stopped
@@ -91,22 +97,24 @@ class RecoveryFarm {
     //! \return A code indicating process status
     StageResult fill_canonical_headers(BlockNum from, BlockNum to) noexcept;
 
-    //! \brief Handle completion signal from workers
-    void worker_completed_handler(RecoveryWorker* sender);
+    //! \brief Handle task completion signal from workers
+    void task_completed_handler(RecoveryWorker* sender);
 
-    friend class RecoveryWorker;
+    //! \brief Handle worker terminated signal from workers
+    void worker_completed_handler(Worker* sender);
+
     db::RWTxn& txn_;
     etl::Collector& collector_;
 
-    using harvest_pair = std::pair<uint32_t, uint32_t>;  // Worker id + batch id
-    using worker_pair = std::pair<std::unique_ptr<RecoveryWorker>, boost::signals2::connection>;
-
     /* Recovery workers */
-    uint32_t max_workers_;                        // Max number of workers/threads
-    std::vector<worker_pair> workers_{};          // Actual collection of recoverers
-    std::mutex harvest_mutex_;                    // Guards the harvest queue
-    std::queue<harvest_pair> harvest_pairs_{};    // Queue of harvest pairs
-    std::atomic<uint32_t> workers_in_flight_{0};  // Counter of grinding workers
+    uint32_t max_workers_{std::thread::hardware_concurrency() - 1};  // Max number of workers/threads
+    std::vector<std::unique_ptr<RecoveryWorker>> workers_{};         // Actual collection of recoverers
+    std::mutex harvest_mutex_;                                       // Guards the harvest queue
+    std::queue<size_t> harvestable_workers_{};                       // Queue of ready to harvest workers
+    std::atomic<uint32_t> workers_in_flight_{0};                     // Counter of grinding workers
+
+    std::mutex worker_completed_mtx_{};
+    std::condition_variable worker_completed_cv_{};
 
     /* Canonical headers */
     std::vector<evmc::bytes32> headers_{};               // Collected canonical headers
@@ -114,11 +122,8 @@ class RecoveryFarm {
     BlockNum header_index_offset_{};                     // To retrieve proper header hash while harvesting
 
     /* Batches */
-    size_t batch_size_;                            // Max number of transaction to be sent a worker for recovery
-    uint32_t batch_id_{0};                         // Incremental id of launched batches
-    std::atomic<uint32_t> completed_batch_id_{0};  // Incremental id of completed batches
-    std::vector<RecoveryPackage> batch_;           // Collection of transactions to be sent a worker for recovery
-
+    size_t batch_size_;                   // Max number of transaction to be sent a worker for recovery
+    std::vector<RecoveryPackage> batch_;  // Collection of transactions to be sent a worker for recovery
 
     std::atomic_bool is_stopping_{false};
 

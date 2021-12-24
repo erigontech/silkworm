@@ -103,9 +103,11 @@ StageResult RecoveryFarm::recover() {
             continue;
         }
 
-        // Check we've been requested to interrupt
-        if (SignalHandler::signalled()) {
+        // Every 10 blocks check the SignalHandler has been triggered
+        if (!(reached_block_num % 10) && SignalHandler::signalled()) {
+            stop_all_workers(/*wait=*/false);
             stop();
+            continue;
         }
 
         // Get the body and its transactions
@@ -167,7 +169,7 @@ StageResult RecoveryFarm::recover() {
         stop_all_workers(/*wait=*/true);
     }
 
-    return stage_result;
+    return is_stopping() ? StageResult::kAborted : stage_result;
 }
 
 StageResult RecoveryFarm::unwind(mdbx::txn& db_transaction, BlockNum new_height) {
@@ -222,7 +224,7 @@ bool RecoveryFarm::collect_workers_results() {
         {
             std::scoped_lock l(harvest_mutex_);
             if (!harvestable_workers_.empty()) {
-                harvest_id.emplace(std::move(harvestable_workers_.front()));
+                harvest_id.emplace(harvestable_workers_.front());
                 harvestable_workers_.pop();
             }
         }
@@ -380,18 +382,6 @@ bool RecoveryFarm::dispatch_batch() {
             continue;
         }
 
-        //        // Do we have ready results from workers that we need to harvest ?
-        //        it = as_range::find_if(workers_, [](const std::unique_ptr<RecoveryWorker>& w) {
-        //            auto s = static_cast<int>(w->get_status());
-        //            return (s >= 2);
-        //        });
-        //        if (it != workers_.end()) {
-        //            if (!collect_workers_results()) {
-        //                return false;
-        //            }
-        //            continue;
-        //        }
-
         // We don't have a worker available
         // Maybe we can create a new one if available
         if (workers_.size() != max_workers_) {
@@ -405,6 +395,10 @@ bool RecoveryFarm::dispatch_batch() {
         // No other option than wait a while and retry
         std::unique_lock lck(worker_completed_mtx_);
         (void)worker_completed_cv_.wait_for(lck, std::chrono::milliseconds(100));
+        if (SignalHandler::signalled()) {
+            stop_all_workers(/*wait=*/false);
+            stop();
+        }
     }
 
     return is_stopping();

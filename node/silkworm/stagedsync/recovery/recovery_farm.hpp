@@ -43,10 +43,7 @@ class RecoveryFarm {
     StageResult recover();
 
     //! \brief Issue an interruption request
-    void stop() {
-        is_stopping_.store(true);
-        stop_all_workers(false);
-    }
+    void stop() { is_stopping_.store(true); }
 
     //! \brief Unwinds sender's recovery i.e. deletes recovered addresses from storage
     //! \param [in] db_transaction : the database transaction we should work on

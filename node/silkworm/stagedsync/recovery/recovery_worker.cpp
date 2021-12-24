@@ -16,8 +16,6 @@
 
 #include "recovery_worker.hpp"
 
-#include <secp256k1_recovery.h>
-
 #include <silkworm/common/assert.hpp>
 #include <silkworm/common/log.hpp>
 #include <silkworm/common/stopwatch.hpp>
@@ -68,12 +66,6 @@ void RecoveryWorker::work() {
         return;
     }
 
-    // Ancillary fields for ecdsa recovery
-    secp256k1_ecdsa_recoverable_signature recoverable_signature;
-    secp256k1_pubkey public_key;
-    size_t kOutLen{65};
-    Bytes out(kOutLen, '\0');
-
     while (wait_for_kick()) {
         /**
          * Each work package is a pair of BlockNum + Transaction data.
@@ -108,23 +100,8 @@ void RecoveryWorker::work() {
                 block_num = package.block_num;
             }
 
-            //            const auto key_hash{ethash::keccak256(package.hash.bytes, 32)};
-            //            *data_ptr = evmc::address(*reinterpret_cast<const evmc_address*>(&key_hash.bytes[12]));
-            //            ++data_ptr;
-            //            block_data_length += kAddressLength;
-
-            std::optional<evmc::address> recovered_address;
-            if (secp256k1_ecdsa_recoverable_signature_parse_compact(context_, &recoverable_signature,
-                                                                    &package.signature[0], package.odd_y_parity)) {
-                if (secp256k1_ecdsa_recover(context_, &public_key, &recoverable_signature, package.hash.bytes)) {
-                    secp256k1_ec_pubkey_serialize(context_, &out[0], &kOutLen, &public_key, SECP256K1_EC_UNCOMPRESSED);
-                    auto key_hash{ethash::keccak256(&public_key.data[1], 64)};
-                    recovered_address.emplace(*reinterpret_cast<const evmc_address*>(&key_hash.bytes[12]));
-                }
-            }
-
-//            std::optional<evmc::address> recovered_address{
-//                ecdsa::recover_address(package.hash.bytes, package.signature, package.odd_y_parity, context_)};
+            std::optional<evmc::address> recovered_address{
+                ecdsa::recover_address(package.hash.bytes, package.signature, package.odd_y_parity, context_)};
 
             if (recovered_address.has_value()) {
                 *data_ptr = *recovered_address;

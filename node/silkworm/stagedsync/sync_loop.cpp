@@ -31,6 +31,8 @@ void SyncLoop::load_stages() {
 }
 
 void SyncLoop::work() {
+    static std::string log_prefix_fmt{"Stage %u/%u : %s"};
+
     log::Trace() << "Synchronization loop started";
 
     bool is_first_cycle{true};
@@ -44,8 +46,7 @@ void SyncLoop::work() {
             if (is_stopping()) {
                 return false;
             }
-            static std::string fmt{"Stage %u/%u : %s"};
-            std::string prefix = boost::str(boost::format(fmt) % (current_stage_ + 1) % stages_.size() %
+            std::string prefix = boost::str(boost::format(log_prefix_fmt) % (current_stage_ + 1) % stages_.size() %
                                             stages_.at(current_stage_)->name());
             log::Info(prefix, stages_.at(current_stage_)->get_log_progress());
             return true;
@@ -86,8 +87,11 @@ void SyncLoop::work() {
             auto& stage{stages_.at(current_stage_)};
             auto stage_result{stage->forward(*cycle_txn)};
             stagedsync::success_or_throw(stage_result);
+
             auto [_, stage_duration] = stop_watch.lap();
-            log::Trace() << "Stage " << stage->name() << " done in " << StopWatch::format(stage_duration);
+            std::string prefix = boost::str(boost::format(log_prefix_fmt) % (current_stage_ + 1) % stages_.size() %
+                                            stages_.at(current_stage_)->name());
+            log::Info(prefix, {"done", StopWatch::format(stage_duration)});
             ++current_stage_;
         }
 

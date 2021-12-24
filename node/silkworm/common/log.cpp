@@ -16,6 +16,7 @@
 
 #include <fstream>
 #include <iostream>
+#include <mutex>
 #include <ostream>
 #include <regex>
 #include <thread>
@@ -27,7 +28,7 @@
 namespace silkworm::log {
 
 static Settings settings_{};
-
+static std::mutex out_mtx{};
 static std::unique_ptr<std::fstream> file_{nullptr};
 
 void init(Settings& settings) {
@@ -106,6 +107,7 @@ void BufferBase::flush() {
         line = std::regex_replace(line, color_pattern, "");
         colorized = false;
     }
+    std::unique_lock out_lck{out_mtx};
     auto& out = settings_.log_std_out ? std::cout : std::cerr;
     out << line << std::endl;
     if (file_ && file_->is_open()) {
@@ -114,6 +116,7 @@ void BufferBase::flush() {
         }
         *file_ << line << std::endl;
     }
+    out_lck.unlock();
 }
 
 }  // namespace silkworm::log

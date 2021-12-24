@@ -125,8 +125,8 @@ class RecoveryFarm {
     std::atomic_bool is_stopping_{false};
 
     /* Stats */
-    size_t total_recovered_transactions_{0};
-    size_t total_processed_blocks_{0};
+    size_t highest_processed_block_{0};
+    size_t total_collected_transactions_{0};
 };
 
 }  // namespace silkworm::stagedsync::recovery

@@ -27,9 +27,10 @@
 namespace silkworm::stagedsync::recovery {
 
 RecoveryFarm::RecoveryFarm(db::RWTxn& txn, etl::Collector& collector, size_t batch_size)
-    : txn_{txn}, collector_{collector}, batch_size_{batch_size / (sizeof(RecoveryPackage))} {
+    : txn_{txn}, collector_{collector}, batch_size_{std::min(batch_size / sizeof(RecoveryPackage), size_t(100'000))} {
     workers_.reserve(max_workers_);
     batch_.reserve(batch_size_);
+    log::Info() << "Batch size " << batch_size_;
 }
 
 RecoveryFarm::~RecoveryFarm() {
@@ -149,7 +150,7 @@ StageResult RecoveryFarm::recover() {
                 log::Trace() << "ETL Load : Loading data into " << db::table::kSenders.name << " "
                              << human_size(collector_.size());
                 collector_.load(target_table, nullptr, MDBX_put_flags_t::MDBX_APPEND,
-                                /* log_every_percent = */ (total_recovered_transactions_ <= batch_size_ ? 50 : 10));
+                                /* log_every_percent = */ (total_collected_transactions_ <= batch_size_ ? 50 : 10));
 
                 // Update stage progress with last reached block number
                 db::stages::write_stage_progress(*txn_, db::stages::kSendersKey, reached_block_num);
@@ -195,8 +196,8 @@ StageResult RecoveryFarm::unwind(mdbx::txn& db_transaction, BlockNum new_height)
 
 std::vector<std::string> RecoveryFarm::get_log_progress() {
     return {"blocks",       std::to_string(headers_.size()),  //
-            "processed",    std::to_string(total_processed_blocks_),
-            "transactions", std::to_string(total_recovered_transactions_),
+            "current",      std::to_string(highest_processed_block_),
+            "transactions", std::to_string(total_collected_transactions_),
             "workers",      std::to_string(workers_in_flight_.load())};
 }
 
@@ -249,8 +250,6 @@ bool RecoveryFarm::collect_workers_results() {
                 if (worker.pull_results(worker_results)) {
                     try {
                         for (const auto& [block_num, data] : worker_results) {
-                            total_processed_blocks_++;
-                            total_recovered_transactions_ += (data.length() / kAddressLength);
                             auto etl_key{db::block_key(block_num, headers_.at(block_num - header_index_offset_).bytes)};
                             Bytes etl_data(data.data(), data.length());
                             collector_.collect(etl::Entry{etl_key, etl_data});
@@ -283,16 +282,13 @@ bool RecoveryFarm::collect_workers_results() {
 }
 
 StageResult RecoveryFarm::transform_and_fill_batch(const ChainConfig& config, uint64_t block_num,
-
                                                    std::vector<Transaction>& transactions) {
     if (is_stopping()) {
         return StageResult::kAborted;
     }
 
     // Do we overflow ?
-    size_t accrued_batch_size{batch_.size() * sizeof(RecoveryPackage)};
-    size_t this_block_size{transactions.size() * sizeof(RecoveryPackage)};
-    if (accrued_batch_size + this_block_size > batch_size_) {
+    if (batch_.size() + transactions.size() > batch_size_) {
         if (!dispatch_batch()) {
             return StageResult::kUnexpectedError;
         }
@@ -351,6 +347,9 @@ StageResult RecoveryFarm::transform_and_fill_batch(const ChainConfig& config, ui
 
         tx_id++;
     }
+
+    highest_processed_block_ = block_num;
+    total_collected_transactions_ += transactions.size();
 
     return StageResult::kSuccess;
 }

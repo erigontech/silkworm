@@ -94,7 +94,7 @@ struct Anchor {
     Hash parentHash;         // Hash of the header this anchor can be connected to (to disappear)
     BlockNum blockHeight;    // block height of the anchor
     time_point_t timestamp;  // Zero when anchor has just been created, otherwise timestamps when timeout on this anchor
-                             // request expires
+                             // request expires // todo: rename in reqTime
     time_point_t prev_timestamp;  // Used to restore timestamp when a request fails for network reasons
     int timeouts = 0;  // Number of timeout that this anchor has experienced;after certain threshold,it gets invalidated
     std::vector<std::shared_ptr<Link>> links;  // Links attached immediately to this anchor

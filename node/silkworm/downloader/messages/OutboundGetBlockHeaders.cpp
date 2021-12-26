@@ -24,14 +24,15 @@
 
 namespace silkworm {
 
-OutboundGetBlockHeaders::OutboundGetBlockHeaders(WorkingChain& wc, SentryClient& s) : working_chain_(wc), sentry_(s) {}
+OutboundGetBlockHeaders::OutboundGetBlockHeaders(WorkingChain& wc, SentryClient& s, Breadth b)
+    : working_chain_(wc), sentry_(s), breadth_(b) {}
 
 void OutboundGetBlockHeaders::execute() {
     using namespace std::literals::chrono_literals;
 
     time_point_t now = std::chrono::system_clock::now();
     seconds_t timeout = 5s;
-    int max_requests = 64;  // limit the number of requests sent per round
+    int max_requests = breadth_ == Wide_Req ? 64 : 1;  // limit the number of requests sent per round
 
     // anchor extension
     do {
@@ -57,6 +58,10 @@ void OutboundGetBlockHeaders::execute() {
 
         max_requests--;
     } while (max_requests > 0);  // && packet != std::nullopt && receiving_peers != nullptr
+
+    if (breadth_ == Narrow_Req) {
+        return; // skip request_skeleton
+    }
 
     // anchor collection
     auto packet = working_chain_.request_skeleton();

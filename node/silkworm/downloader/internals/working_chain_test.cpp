@@ -958,4 +958,157 @@ TEST_CASE("WorkingChain - process_segment - (5) pre-verified hashes with canonic
     }
 }
 
+
+// A test related to an apparent bug
+// -----------------------------------------------------------------------------------------------------------------
+
+TEST_CASE("WorkingChain - process_segment - (6) overlapping segment") {
+    using namespace std;
+
+    WorkingChain_ForTest chain;
+    chain.top_seen_block_height(1'000'000);
+
+    PeerId peerId = "1";
+
+    std::array<BlockHeader, 10> headers;
+
+    for (size_t i = 1; i < headers.size(); i++) {  // skip first header for simplicity
+        headers[i].number = i;
+        headers[i].difficulty = i;  // improve!
+        headers[i].parent_hash = headers[i - 1].hash();
+    }
+
+    INFO("new_anchor") {
+        auto [penalty, requestMoreHeaders] = chain.accept_headers({headers[5]}, peerId);
+
+        REQUIRE(penalty == Penalty::NoPenalty);
+        REQUIRE(requestMoreHeaders == true);
+        REQUIRE(chain.anchor_queue_.size() == 1);
+        REQUIRE(chain.anchors_.size() == 1);
+        REQUIRE(chain.link_queue_.size() == 1);
+        REQUIRE(chain.links_.size() == 1);
+
+        auto anchor = chain.anchors_[headers[5].parent_hash];
+        REQUIRE(anchor != nullptr);
+        REQUIRE(anchor->parentHash == headers[5].parent_hash);
+        REQUIRE(anchor->blockHeight == headers[5].number);
+        REQUIRE(anchor->peerId == peerId);
+
+        REQUIRE(anchor->links.size() == 1);
+        REQUIRE(anchor->links[0]->hash == headers[5].hash());
+        REQUIRE(anchor->links[0]->next.size() == 0);
+    }
+
+    INFO("extend_down") {
+        auto [penalty, requestMoreHeaders] = chain.accept_headers(
+            {headers[5], headers[4], headers[3]}, peerId);  // add a segment that overlap the previous one
+
+        REQUIRE(penalty == Penalty::NoPenalty);
+        REQUIRE(requestMoreHeaders == true);
+        REQUIRE(chain.anchor_queue_.size() == 2);
+        REQUIRE(chain.anchors_.size() == 1);
+        REQUIRE(chain.link_queue_.size() == 3);
+        REQUIRE(chain.links_.size() == 3);
+
+        auto anchor = chain.anchors_[headers[3].parent_hash];
+        REQUIRE(anchor != nullptr);
+        REQUIRE(anchor->parentHash == headers[3].parent_hash);
+        REQUIRE(anchor->blockHeight == headers[3].number);
+        REQUIRE(anchor->links.size() == 1);
+
+        REQUIRE(anchor->links[0]->hash == headers[3].hash());
+        REQUIRE(anchor->links[0]->next.size() == 1);
+        REQUIRE(anchor->links[0]->next[0]->hash == headers[4].hash());
+        REQUIRE(anchor->links[0]->next[0]->next.size() == 1);
+        REQUIRE(anchor->links[0]->next[0]->next[0]->hash == headers[5].hash());
+        REQUIRE(anchor->links[0]->next[0]->next[0]->next.size() == 0);
+
+    }
+}
+
+TEST_CASE("WorkingChain - process_segment - (7) invalidating anchor") {
+    using namespace std;
+
+    WorkingChain_ForTest chain;
+    chain.top_seen_block_height(1'000'000);
+
+    PeerId peerId = "1";
+
+    std::array<BlockHeader, 10> headers;
+
+    for (size_t i = 1; i < headers.size(); i++) {  // skip first header for simplicity
+        headers[i].number = i;
+        headers[i].difficulty = i;  // improve!
+        headers[i].parent_hash = headers[i - 1].hash();
+    }
+
+    INFO("new_anchor") {
+        auto [penalty, requestMoreHeaders] = chain.accept_headers({headers[5]}, peerId);
+
+        REQUIRE(penalty == Penalty::NoPenalty);
+        REQUIRE(requestMoreHeaders == true);
+        REQUIRE(chain.anchor_queue_.size() == 1);
+        REQUIRE(chain.anchors_.size() == 1);
+        REQUIRE(chain.link_queue_.size() == 1);
+        REQUIRE(chain.links_.size() == 1);
+
+        auto anchor = chain.anchors_[headers[5].parent_hash];
+        REQUIRE(anchor != nullptr);
+        REQUIRE(anchor->parentHash == headers[5].parent_hash);
+        REQUIRE(anchor->blockHeight == headers[5].number);
+        REQUIRE(anchor->peerId == peerId);
+
+        REQUIRE(anchor->links.size() == 1);
+        REQUIRE(anchor->links[0]->hash == headers[5].hash());
+        REQUIRE(anchor->links[0]->next.size() == 0);
+    }
+
+    INFO("invalidating") {
+        using namespace std::literals::chrono_literals;
+
+        time_point_t now = std::chrono::system_clock::now();
+        seconds_t timeout = 5s;
+
+        auto anchor = chain.anchor_queue_.top();
+        anchor->timeouts = 10;
+        anchor->timestamp = now - timeout;
+
+        auto [packet, penalizations] = chain.request_more_headers(now, timeout);
+
+        REQUIRE(packet == std::nullopt);
+        REQUIRE(!penalizations.empty());
+
+        REQUIRE(chain.anchor_queue_.size() == 0);
+        REQUIRE(chain.anchors_.size() == 0);
+        REQUIRE(chain.link_queue_.size() == 0);
+        REQUIRE(chain.links_.size() == 0);
+    }
+
+    INFO("new_anchor again") {
+        auto [penalty, requestMoreHeaders] = chain.accept_headers(
+            {headers[5], headers[4], headers[3]}, peerId);  // add a segment that overlap the previous one
+
+        REQUIRE(penalty == Penalty::NoPenalty);
+        REQUIRE(requestMoreHeaders == true);
+        REQUIRE(chain.anchor_queue_.size() == 1);
+        REQUIRE(chain.anchors_.size() == 1);
+        REQUIRE(chain.link_queue_.size() == 3);
+        REQUIRE(chain.links_.size() == 3);
+
+        auto anchor = chain.anchors_[headers[3].parent_hash];
+        REQUIRE(anchor != nullptr);
+        REQUIRE(anchor->parentHash == headers[3].parent_hash);
+        REQUIRE(anchor->blockHeight == headers[3].number);
+        REQUIRE(anchor->links.size() == 1);
+
+        REQUIRE(anchor->links[0]->hash == headers[3].hash());
+        REQUIRE(anchor->links[0]->next.size() == 1);
+        REQUIRE(anchor->links[0]->next[0]->hash == headers[4].hash());
+        REQUIRE(anchor->links[0]->next[0]->next.size() == 1);
+        REQUIRE(anchor->links[0]->next[0]->next[0]->hash == headers[5].hash());
+        REQUIRE(anchor->links[0]->next[0]->next[0]->next.size() == 0);
+
+    }
+}
+
 }  // namespace silkworm

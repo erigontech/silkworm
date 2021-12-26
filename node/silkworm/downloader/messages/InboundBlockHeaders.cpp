@@ -51,7 +51,7 @@ void InboundBlockHeaders::execute() {
     // If the working chain need more headers we issue an header request here (header downloader issues this request
     // periodically, but it could not be in a forward phase at this moment)
     if (penalty == Penalty::NoPenalty && requestMoreHeaders) {
-        OutboundGetBlockHeaders message(working_chain_, sentry_);
+        OutboundGetBlockHeaders message(working_chain_, sentry_, OutboundGetBlockHeaders::Narrow_Req);
         message.execute();
     }
 

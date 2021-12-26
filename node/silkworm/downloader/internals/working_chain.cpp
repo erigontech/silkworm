@@ -226,11 +226,11 @@ void WorkingChain::reduce_persisted_links_to(size_t limit) {
 std::optional<GetBlockHeadersPacket66> WorkingChain::request_skeleton() {
     BlockNum top = top_seen_height_;
     BlockNum bottom = highest_in_db_ + stride;
-    if (top < bottom) {
+    if (top <= bottom) {
         return std::nullopt;
     }
 
-    BlockNum lowest_anchor = lowest_anchor_within_range(bottom, top);
+    BlockNum lowest_anchor = lowest_anchor_within_range(bottom, top+1);
 
     BlockNum length = (lowest_anchor - bottom) / stride;
 
@@ -259,7 +259,7 @@ size_t WorkingChain::anchors_within_range(BlockNum max) {
 BlockNum WorkingChain::lowest_anchor_within_range(BlockNum bottom, BlockNum top) {
     BlockNum lowest = top;
     for (const auto& anchor : anchors_) {
-        if (anchor.second->blockHeight > bottom && anchor.second->blockHeight < lowest) {
+        if (anchor.second->blockHeight >= bottom && anchor.second->blockHeight < lowest) {
             lowest = anchor.second->blockHeight;
         }
     }
@@ -303,8 +303,11 @@ auto WorkingChain::request_more_headers(time_point_t time_point, seconds_t timeo
             anchor->update_timestamp(time_point + timeout);
             anchor_queue_.fix();  // re-sort
 
-            GetBlockHeadersPacket66 packet{RANDOM_NUMBER.generate_one(), {anchor->blockHeight, max_len, 0, true}};
-            // todo: why we use blockHeight in place of parentHash?
+            GetBlockHeadersPacket66 packet{
+                RANDOM_NUMBER.generate_one(),
+                {anchor->blockHeight-1, max_len, 0, true}
+            }; // we use blockHeight in place of parentHash to get also ommers if presents
+
             return {packet, penalties};  // try (again) to extend this anchor
         } else {
             // ancestors of this anchor seem to be unavailable, invalidate and move on
@@ -474,7 +477,8 @@ auto WorkingChain::process_segment(const Segment& segment, bool is_a_new_block, 
     auto [foundTip, end] = find_link(segment, start);
 
     if (end == 0) {
-        log::Debug() << "WorkingChain: duplicate segment";
+        log::Debug() << "WorkingChain: duplicated segment, bn=" << segment[start]->number << ", "
+                     << (foundAnchor ? "removing corresponding anchor" : "corresponding anchor not found");
         // If duplicate segment is extending from the anchor, the anchor needs to be deleted,
         // otherwise it will keep producing requests that will be found duplicate
         if (foundAnchor) remove_anchor(segment[start]->hash());  // note: hash and not parent_hash
@@ -514,7 +518,7 @@ auto WorkingChain::process_segment(const Segment& segment, bool is_a_new_block, 
             op = "new anchor";
             requestMore = new_anchor(segment_slice, peerId);
         }
-        log::Debug() << "Segment: " << op << " start=" << startNum << " end=" << endNum;
+        log::Debug() << "Segment: " << op << " start=" << startNum << " end=" << endNum << " (more=" << requestMore << ")";
     } catch (segment_cut_and_paste_error& e) {
         log::Debug() << "Segment: " << op << " failure, reason:" << e.what();
         return false;

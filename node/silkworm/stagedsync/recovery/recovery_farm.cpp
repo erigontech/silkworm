@@ -63,6 +63,7 @@ StageResult RecoveryFarm::recover() {
     // Load canonical headers
     uint64_t headers_count{bodies_stage_progress - previous_progress};
     headers_.reserve(headers_count);
+    current_phase_ = 1;
     auto stage_result{fill_canonical_headers(expected_block_number, bodies_stage_progress)};
     if (stage_result != StageResult::kSuccess) {
         return stage_result;
@@ -73,6 +74,7 @@ StageResult RecoveryFarm::recover() {
     header_index_offset_ = expected_block_number;  // See collect_workers_results
 
     log::Trace() << "Senders begin read block bodies ... ";
+    current_phase_ = 2;
     auto bodies_table{db::open_cursor(*txn_, db::table::kBlockBodies)};
     auto transactions_table{db::open_cursor(*txn_, db::table::kBlockTransactions)};
 
@@ -137,6 +139,7 @@ StageResult RecoveryFarm::recover() {
         && dispatch_batch()                       // Residual batch dispatched
     ) {
         log::Trace() << "Senders end read block bodies ... ";
+        current_phase_ = 3;
         wait_workers_completion();
 
         // If everything ok from previous steps wait for all workers to complete
@@ -195,10 +198,21 @@ StageResult RecoveryFarm::unwind(mdbx::txn& db_transaction, BlockNum new_height)
 }
 
 std::vector<std::string> RecoveryFarm::get_log_progress() {
-    return {"blocks",       std::to_string(headers_.size()),  //
-            "current",      std::to_string(highest_processed_block_),
-            "transactions", std::to_string(total_collected_transactions_),
-            "workers",      std::to_string(workers_in_flight_.load())};
+    switch (current_phase_) {
+        case 1:
+            return {"phase", std::to_string(current_phase_) + "/3"};
+        case 2:
+            return {"phase",        std::to_string(current_phase_) + "/3",  //
+                    "blocks",       std::to_string(headers_.size()),        //
+                    "current",      std::to_string(highest_processed_block_),
+                    "transactions", std::to_string(total_collected_transactions_),
+                    "workers",      std::to_string(workers_in_flight_.load())};
+        case 3:
+            return {"phase", std::to_string(current_phase_) + "/3"};
+        default:
+            break;
+    }
+    return {};
 }
 
 void RecoveryFarm::stop_all_workers(bool wait) {
@@ -340,8 +354,9 @@ StageResult RecoveryFarm::transform_and_fill_batch(const ChainConfig& config, ui
         Bytes rlp{};
         rlp::encode(rlp, transaction, /*for_signing=*/true, /*wrap_eip2718_into_array=*/false);
 
-        auto hash{keccak256(rlp)};
-        batch_.push_back(RecoveryPackage{block_num, hash, transaction.odd_y_parity});
+
+        auto tx_hash{keccak256(rlp)};
+        batch_.push_back(RecoveryPackage{block_num, tx_hash, transaction.odd_y_parity});
         intx::be::unsafe::store(batch_.back().signature, transaction.r);
         intx::be::unsafe::store(batch_.back().signature + kHashLength, transaction.s);
 

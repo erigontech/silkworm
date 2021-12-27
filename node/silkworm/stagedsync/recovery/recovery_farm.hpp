@@ -104,7 +104,7 @@ class RecoveryFarm {
     etl::Collector& collector_;
 
     /* Recovery workers */
-    uint32_t max_workers_{std::thread::hardware_concurrency() - 1};  // Max number of workers/threads
+    uint32_t max_workers_{std::thread::hardware_concurrency()};  // Max number of workers/threads
     std::vector<std::unique_ptr<RecoveryWorker>> workers_{};         // Actual collection of recoverers
     std::mutex harvest_mutex_;                                       // Guards the harvest queue
     std::queue<size_t> harvestable_workers_{};                       // Queue of ready to harvest workers
@@ -125,6 +125,7 @@ class RecoveryFarm {
     std::atomic_bool is_stopping_{false};
 
     /* Stats */
+    uint16_t current_phase_{0};
     size_t highest_processed_block_{0};
     size_t total_collected_transactions_{0};
 };

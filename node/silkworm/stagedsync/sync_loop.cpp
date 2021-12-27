@@ -109,6 +109,8 @@ void SyncLoop::work() {
             log::Info() << "Cycle completed in " << StopWatch::format(cycle_duration);
             throttle_next_cycle(cycle_duration);
         }
+
+        break; // TODO(Andrea) Remove
     }
 
     log_timer.stop();

@@ -20,12 +20,14 @@
 #include <cassert>
 #include <cstring>
 #include <iterator>
+#include <memory>
 
 #include <ethash/keccak.hpp>
 #include <evmone/analysis.hpp>
 #include <evmone/baseline.hpp>
 #include <evmone/evmone.h>
 #include <evmone/execution.hpp>
+#include <evmone/tracing.hpp>
 #include <evmone/vm.hpp>
 
 #include <silkworm/chain/protocol_param.hpp>
@@ -34,6 +36,28 @@
 #include "precompiled.hpp"
 
 namespace silkworm {
+
+class DelegatingTracer : public evmone::Tracer {
+  public:
+    explicit DelegatingTracer(EvmTracer& tracer) noexcept : tracer_(tracer) {}
+
+  private:
+    void on_execution_start(evmc_revision rev, const evmc_message& msg, evmone::bytes_view code) noexcept override {
+        tracer_.on_execution_start(rev, msg, code);
+    }
+
+    void on_instruction_start(uint32_t pc, const evmone::ExecutionState& state) noexcept override {
+        tracer_.on_instruction_start(pc, state);
+    }
+
+    void on_execution_end(const evmc_result& result) noexcept override {
+        tracer_.on_execution_end(result);
+    }
+
+    friend class EVM;
+
+    EvmTracer& tracer_;
+};
 
 EVM::EVM(const Block& block, IntraBlockState& state, const ChainConfig& config) noexcept
     : beneficiary{block.header.beneficiary},
@@ -301,6 +325,13 @@ evmc_result EVM::execute_with_default_interpreter(evmc_revision rev, const evmc_
 }
 
 evmc_revision EVM::revision() const noexcept { return config().revision(block_.header.number); }
+
+void EVM::add_tracer(EvmTracer& tracer) noexcept {
+    assert(advanced_analysis_cache == nullptr);
+
+    const auto vm{static_cast<evmone::VM*>(evm1_)};
+    vm->add_tracer(std::make_unique<DelegatingTracer>(tracer));
+}
 
 uint8_t EVM::number_of_precompiles() const noexcept {
     const evmc_revision rev{revision()};

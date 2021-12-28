@@ -26,7 +26,7 @@ endif()
 
 file(GLOB_RECURSE SILKWORM_CORE_TESTS CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/core/silkworm/*_test.cpp")
 add_executable(core_test unit_test.cpp ${SILKWORM_CORE_TESTS})
-target_link_libraries(core_test silkworm_core Catch2::Catch2)
+target_link_libraries(core_test silkworm_core Catch2::Catch2 evmone)
 if(MSVC)
   target_compile_options(core_test PRIVATE /EHa- /EHsc)
 else()

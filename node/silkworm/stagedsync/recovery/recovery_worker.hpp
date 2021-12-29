@@ -33,10 +33,11 @@ namespace silkworm::stagedsync::recovery {
 
 //! \brief A recovery package
 struct RecoveryPackage {
-    BlockNum block_num;     // Block number this package refers to
-    ethash::hash256 hash;   // Keccak hash of transaction's rlp representation
-    bool odd_y_parity;      // Whether y parity is odd (https://eips.ethereum.org/EIPS/eip-155)
-    uint8_t signature[64];  // Signature of transaction
+    BlockNum block_num;        // Block number this package refers to
+    ethash::hash256 tx_hash;   // Keccak hash of transaction's rlp representation
+    bool odd_y_parity;         // Whether y parity is odd (https://eips.ethereum.org/EIPS/eip-155)
+    uint8_t tx_signature[64];  // Signature of transaction
+    evmc::address tx_from;     // Recovered address
 };
 
 //! \brief A threaded worker in charge to recover sender's addresses from transaction signatures
@@ -98,5 +99,4 @@ class RecoveryWorker final : public silkworm::Worker {
 
 }  // namespace silkworm::stagedsync::recovery
 
-#endif // SILKWORM_STAGEDSYNC_RECOVERY_WORKER_HPP_
-
+#endif  // SILKWORM_STAGEDSYNC_RECOVERY_WORKER_HPP_

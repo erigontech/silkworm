@@ -50,10 +50,9 @@ class Collector {
     //! \param [in] target : an mdbx cursor opened on target table
     //! \param [in] load_func : Pointer to function transforming collected entries. If NULL no transform is executed
     //! \param [in] flags : Optional put flags for append or upsert (default)
-    //! \param [in] log_every_percent : Emits a log line indicating progress every this percent increment in processed
     //! items
     void load(mdbx::cursor& target, LoadFunc load_func = nullptr,
-              MDBX_put_flags_t flags = MDBX_put_flags_t::MDBX_UPSERT, uint32_t log_every_percent = 100u);
+              MDBX_put_flags_t flags = MDBX_put_flags_t::MDBX_UPSERT);
 
     //! \brief Returns the number of actually collected items
     [[nodiscard]] size_t size() const { return size_; }
@@ -66,6 +65,9 @@ class Collector {
         file_providers_.clear();
         size_ = 0;
     }
+
+    //! \brief Returns the hex representation of current load key (for progress tracking)
+    [[nodiscard]] std::string get_load_key() const { return loading_key_; }
 
   private:
     static std::filesystem::path set_work_path(const std::optional<std::filesystem::path>& provided_work_path);
@@ -88,8 +90,9 @@ class Collector {
      */
     uintptr_t unique_id_{reinterpret_cast<uintptr_t>(this)};
 
-    std::vector<std::unique_ptr<FileProvider>> file_providers_;
-    size_t size_{0};
+    std::vector<std::unique_ptr<FileProvider>> file_providers_;  // Collection of file providers
+    size_t size_{0};                                             // Total collected size
+    std::string loading_key_{};                                  // Actual load key (for log purposes)
 };
 
 }  // namespace silkworm::etl

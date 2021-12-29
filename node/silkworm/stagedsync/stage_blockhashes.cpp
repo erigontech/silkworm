@@ -72,7 +72,7 @@ StageResult BlockHashes::forward(db::RWTxn& txn) {
         MDBX_put_flags_t db_flags{target_rcount ? MDBX_put_flags_t::MDBX_UPSERT : MDBX_put_flags_t::MDBX_APPEND};
 
         // Eventually load collected items with no transform (may throw)
-        collector.load(target, nullptr, db_flags, /* log_every_percent = */ 10);
+        collector.load(target, nullptr, db_flags);
 
         // Update progress height with last processed block
         db::stages::write_stage_progress(*txn, db::stages::kBlockHashesKey, block_number);

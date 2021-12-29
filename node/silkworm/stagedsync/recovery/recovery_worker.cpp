@@ -101,7 +101,7 @@ void RecoveryWorker::work() {
             }
 
             std::optional<evmc::address> recovered_address{
-                ecdsa::recover_address(package.hash.bytes, package.signature, package.odd_y_parity, context_)};
+                ecdsa::recover_address(package.tx_hash.bytes, package.tx_signature, package.odd_y_parity, context_)};
 
             if (recovered_address.has_value()) {
                 *data_ptr = *recovered_address;

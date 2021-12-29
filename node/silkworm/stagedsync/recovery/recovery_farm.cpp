@@ -27,10 +27,9 @@
 namespace silkworm::stagedsync::recovery {
 
 RecoveryFarm::RecoveryFarm(db::RWTxn& txn, etl::Collector& collector, size_t batch_size)
-    : txn_{txn}, collector_{collector}, batch_size_{std::min(batch_size / sizeof(RecoveryPackage), size_t(100'000))} {
+    : txn_{txn}, collector_{collector}, batch_size_{batch_size / sizeof(RecoveryPackage)} {
     workers_.reserve(max_workers_);
     batch_.reserve(batch_size_);
-    log::Info() << "Batch size " << batch_size_;
 }
 
 RecoveryFarm::~RecoveryFarm() {
@@ -152,8 +151,7 @@ StageResult RecoveryFarm::recover() {
                 auto target_table{db::open_cursor(*txn_, db::table::kSenders)};
                 log::Trace() << "ETL Load : Loading data into " << db::table::kSenders.name << " "
                              << human_size(collector_.size());
-                collector_.load(target_table, nullptr, MDBX_put_flags_t::MDBX_APPEND,
-                                /* log_every_percent = */ (total_collected_transactions_ <= batch_size_ ? 50 : 10));
+                collector_.load(target_table, nullptr, MDBX_put_flags_t::MDBX_APPEND);
 
                 // Update stage progress with last reached block number
                 db::stages::write_stage_progress(*txn_, db::stages::kSendersKey, reached_block_num);
@@ -200,7 +198,7 @@ StageResult RecoveryFarm::unwind(mdbx::txn& db_transaction, BlockNum new_height)
 std::vector<std::string> RecoveryFarm::get_log_progress() {
     switch (current_phase_) {
         case 1:
-            return {"phase", std::to_string(current_phase_) + "/3"};
+            return {"phase", std::to_string(current_phase_) + "/3", "blocks", std::to_string(headers_.size())};
         case 2:
             return {"phase",        std::to_string(current_phase_) + "/3",  //
                     "blocks",       std::to_string(headers_.size()),        //
@@ -208,7 +206,7 @@ std::vector<std::string> RecoveryFarm::get_log_progress() {
                     "transactions", std::to_string(total_collected_transactions_),
                     "workers",      std::to_string(workers_in_flight_.load())};
         case 3:
-            return {"phase", std::to_string(current_phase_) + "/3"};
+            return {"phase", std::to_string(current_phase_) + "/3", "key", collector_.get_load_key()};
         default:
             break;
     }
@@ -354,11 +352,10 @@ StageResult RecoveryFarm::transform_and_fill_batch(const ChainConfig& config, ui
         Bytes rlp{};
         rlp::encode(rlp, transaction, /*for_signing=*/true, /*wrap_eip2718_into_array=*/false);
 
-
         auto tx_hash{keccak256(rlp)};
         batch_.push_back(RecoveryPackage{block_num, tx_hash, transaction.odd_y_parity});
-        intx::be::unsafe::store(batch_.back().signature, transaction.r);
-        intx::be::unsafe::store(batch_.back().signature + kHashLength, transaction.s);
+        intx::be::unsafe::store(batch_.back().tx_signature, transaction.r);
+        intx::be::unsafe::store(batch_.back().tx_signature + kHashLength, transaction.s);
 
         tx_id++;
     }

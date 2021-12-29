@@ -131,14 +131,11 @@ StageResult stage_log_index(db::RWTxn& txn, const std::filesystem::path& etl_pat
 
     // Eventually load collected items WITH transform (may throw)
     auto target{db::open_cursor(*txn, db::table::kLogTopicIndex)};
-
-    topic_collector.load(target, loader_function, db_flags,
-                         /* log_every_percent = */ 10);
+    topic_collector.load(target, loader_function, db_flags);
     target.close();
     target = db::open_cursor(*txn, db::table::kLogAddressIndex);
     log::Info() << "Started Address Loading";
-    addresses_collector.load(target, loader_function, db_flags,
-                             /* log_every_percent = */ 10);
+    addresses_collector.load(target, loader_function, db_flags);
 
     // Update progress height with last processed block
     db::stages::write_stage_progress(*txn, db::stages::kLogIndexKey, block_number);
@@ -189,7 +186,7 @@ static StageResult unwind_log_index(db::RWTxn& txn, etl::Collector& collector, u
         data = index_table.to_next(/*throw_notfound*/ false);
     }
 
-    collector.load(index_table, nullptr, MDBX_put_flags_t::MDBX_UPSERT, /* log_every_percent = */ 100);
+    collector.load(index_table, nullptr, MDBX_put_flags_t::MDBX_UPSERT);
     txn.commit();
 
     return StageResult::kSuccess;
@@ -249,7 +246,7 @@ void prune_log_index(db::RWTxn& txn, etl::Collector& collector, uint64_t prune_f
         }
     }
 
-    collector.load(index_table, nullptr, MDBX_put_flags_t::MDBX_UPSERT, /* log_every_percent = */ 100);
+    collector.load(index_table, nullptr, MDBX_put_flags_t::MDBX_UPSERT);
     txn.commit();
 }
 

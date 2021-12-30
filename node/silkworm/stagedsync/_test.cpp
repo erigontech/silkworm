@@ -17,6 +17,7 @@
 #include <catch2/catch.hpp>
 
 #include <silkworm/common/endian.hpp>
+#include <silkworm/common/log.hpp>
 #include <silkworm/common/settings.hpp>
 #include <silkworm/common/test_util.hpp>
 #include <silkworm/db/access_layer.hpp>
@@ -41,6 +42,10 @@ TEST_CASE("Sync Stages") {
     node_settings.chaindata_env_config.create = true;
     node_settings.chaindata_env_config.exclusive = true;
 
+    log::Settings log_settings{};
+    log_settings.log_std_out = true;
+    log::init(log_settings);
+
     auto chaindata_env{db::open_env(node_settings.chaindata_env_config)};
     db::RWTxn txn(chaindata_env);
     db::table::check_or_create_chaindata_tables(*txn);
@@ -53,7 +58,7 @@ TEST_CASE("Sync Stages") {
     node_settings.chain_config = db::read_chain_config(*txn);
 
     SECTION("BlockHashes") {
-        static std::vector<evmc::bytes32> block_hashes = {
+        std::vector<evmc::bytes32> block_hashes = {
             0x3ac225168df54212a25c1c01fd35bebfea408fdac2e31ddd6f80a4bbf9a5f1cb_bytes32,
             0xb5553de315e0edf504d9150af82dafa5c4667fa618ed0a6f19c69b41166c5510_bytes32,
             0x0b42b6393c1f53060fe3ddbfcd7aadcca894465a5a438f69c87d790b2299b9b2_bytes32};
@@ -107,43 +112,40 @@ TEST_CASE("Sync Stages") {
     }
 
     SECTION("Senders") {
-        static std::vector<evmc::bytes32> hashes{
+        std::vector<evmc::bytes32> block_hashes{
             0x3ac225168df54212a25c1c01fd35bebfea408fdac2e31ddd6f80a4bbf9a5f1cb_bytes32,
             0xb5553de315e0edf504d9150af82dafa5c4667fa618ed0a6f19c69b41166c5510_bytes32,
             0x0b42b6393c1f53060fe3ddbfcd7aadcca894465a5a438f69c87d790b2299b9b2_bytes32};
 
-        auto bodies_table{db::open_cursor(*txn, db::table::kBlockBodies)};
-        auto transaction_table{db::open_cursor(*txn, db::table::kBlockTransactions)};
-
-        db::detail::BlockBodyForStorage block{};
         auto sample_transactions{test::sample_transactions()};
-        block.base_txn_id = db::increment_map_sequence(*txn, db::table::kSenders.name);
-        block.txn_count = 1;
 
-        // First block
-        Bytes tx_rlp{};
-        rlp::encode(tx_rlp, sample_transactions[0]);
-        transaction_table.upsert(db::to_slice(db::block_key(1)), db::to_slice(tx_rlp));
-        bodies_table.upsert(db::to_slice(db::block_key(1, hashes[0].bytes)), db::to_slice(block.encode()));
+        BlockBody block_body;
 
-        // Second block
-        block.base_txn_id = db::increment_map_sequence(*txn, db::table::kSenders.name);
-        rlp::encode(tx_rlp, sample_transactions[1]);
-        transaction_table.upsert(db::to_slice(db::block_key(2)), db::to_slice(tx_rlp));
-        bodies_table.upsert(db::to_slice(db::block_key(2, hashes[1].bytes)), db::to_slice(block.encode()));
+        // First block - 1 transaction
+        block_body.transactions.push_back(sample_transactions[0]);
+        REQUIRE_NOTHROW(db::write_body(*txn, block_body, block_hashes[0].bytes, 1));
 
-        // Third block
-        block.base_txn_id = db::increment_map_sequence(*txn, db::table::kSenders.name);
-        block.txn_count = 0;
-        bodies_table.upsert(db::to_slice(db::block_key(3, hashes[2].bytes)), db::to_slice(block.encode()));
+        // Second block - 1 transactions
+        REQUIRE_NOTHROW(db::write_body(*txn, block_body, block_hashes[1].bytes, 2));
 
-        auto canonical_table{db::open_cursor(*txn, db::table::kCanonicalHashes)};
-        canonical_table.upsert(db::to_slice(db::block_key(0)), db::to_slice(hashes[0]));
-        canonical_table.upsert(db::to_slice(db::block_key(1)), db::to_slice(hashes[0]));
-        canonical_table.upsert(db::to_slice(db::block_key(2)), db::to_slice(hashes[1]));
-        canonical_table.upsert(db::to_slice(db::block_key(3)), db::to_slice(hashes[2]));
-        db::stages::write_stage_progress(*txn, db::stages::kBlockBodiesKey, 3);
+        // Third block - 0 transactions
+        block_body.transactions.clear();
+        REQUIRE_NOTHROW(db::write_body(*txn, block_body, block_hashes[2].bytes, 3));
+
+        // Update bodies progress
+        REQUIRE_NOTHROW(db::stages::write_stage_progress(*txn, db::stages::kBlockBodiesKey, 3));
+
+        // Write canonical hashes
+        REQUIRE_NOTHROW(db::write_canonical_header_hash(*txn, block_hashes[0].bytes, 1));
+        REQUIRE_NOTHROW(db::write_canonical_header_hash(*txn, block_hashes[1].bytes, 2));
+        REQUIRE_NOTHROW(db::write_canonical_header_hash(*txn, block_hashes[2].bytes, 3));
+
+        // Commit
         REQUIRE_NOTHROW(txn.commit());
+
+        // Verify sequence for transactions has been incremented properly
+        auto last_tx_sequence{db::read_map_sequence(*txn, db::table::kBlockTransactions.name)};
+        REQUIRE(last_tx_sequence == 2);
 
         // Check forward works
         stagedsync::Senders stage(&node_settings);
@@ -156,15 +158,15 @@ TEST_CASE("Sync Stages") {
             REQUIRE(txn->get_map_stat(senders_map).ms_entries == 2);
 
             auto expected_sender{0xc15eb501c014515ad0ecb4ecbf75cc597110b060_address};
-            auto written_senders{db::read_senders(*txn, 1, hashes[0].bytes)};
+            auto written_senders{db::read_senders(*txn, 1, block_hashes[0].bytes)};
             REQUIRE(written_senders.size() == 1);
             REQUIRE(written_senders[0] == expected_sender);
 
-            written_senders = db::read_senders(*txn, 2, hashes[1].bytes);
+            written_senders = db::read_senders(*txn, 2, block_hashes[1].bytes);
             REQUIRE(written_senders.size() == 1);
             REQUIRE(written_senders[0] == expected_sender);
 
-            written_senders = db::read_senders(*txn, 3, hashes[2].bytes);
+            written_senders = db::read_senders(*txn, 3, block_hashes[2].bytes);
             REQUIRE(written_senders.empty());
         }
 
@@ -177,14 +179,14 @@ TEST_CASE("Sync Stages") {
             REQUIRE(txn->get_map_stat(senders_map).ms_entries == 1);
 
             auto expected_sender{0xc15eb501c014515ad0ecb4ecbf75cc597110b060_address};
-            auto written_senders{db::read_senders(*txn, 1, hashes[0].bytes)};
+            auto written_senders{db::read_senders(*txn, 1, block_hashes[0].bytes)};
             REQUIRE(written_senders.size() == 1);
             REQUIRE(written_senders[0] == expected_sender);
 
-            written_senders = db::read_senders(*txn, 2, hashes[1].bytes);
+            written_senders = db::read_senders(*txn, 2, block_hashes[1].bytes);
             REQUIRE(written_senders.empty());
 
-            written_senders = db::read_senders(*txn, 3, hashes[2].bytes);
+            written_senders = db::read_senders(*txn, 3, block_hashes[2].bytes);
             REQUIRE(written_senders.empty());
         }
 

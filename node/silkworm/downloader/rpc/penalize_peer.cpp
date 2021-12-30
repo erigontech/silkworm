@@ -14,24 +14,16 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_SENTRY_TYPE_CASTS_HPP
-#define SILKWORM_SENTRY_TYPE_CASTS_HPP
+#include "penalize_peer.hpp"
 
-#include <memory>
+namespace silkworm::rpc {
 
-#include <types/types.pb.h>
+PenalizePeer::PenalizePeer(const std::string& peerId, Penalty penalty)
+    : UnaryCall("PenalizePeer", &sentry::Sentry::Stub::PenalizePeer, {}) {
+    request_.set_allocated_peer_id(to_H512(peerId).release());
 
-#include "types.hpp"
+    sentry::PenaltyKind raw_penalty = static_cast<sentry::PenaltyKind>(penalty);
+    request_.set_penalty(raw_penalty);
+}
 
-namespace silkworm {
-
-std::unique_ptr<types::H256> to_H256(const intx::uint256& orig);
-std::unique_ptr<types::H256> to_H256(const Hash& orig);
-std::unique_ptr<types::H512> to_H512(const std::string& orig);
-
-intx::uint256 uint256_from_H256(const types::H256& orig);
-Hash hash_from_H256(const types::H256& orig);
-std::string string_from_H512(const types::H512& orig);
-
-}  // namespace silkworm
-#endif  // SILKWORM_SENTRY_TYPE_CASTS_HPP
+}  // namespace silkworm::rpc

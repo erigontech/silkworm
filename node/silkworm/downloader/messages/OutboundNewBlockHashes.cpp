@@ -17,7 +17,7 @@ limitations under the License.
 #include "OutboundNewBlockHashes.hpp"
 
 #include <silkworm/common/log.hpp>
-#include <silkworm/downloader/rpc/SendMessageToAll.hpp>
+#include <silkworm/downloader/rpc/send_message_to_all.hpp>
 #include <silkworm/rlp/encode_vector.hpp>
 
 namespace silkworm {

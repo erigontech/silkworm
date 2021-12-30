@@ -23,3 +23,7 @@
 [submodule "libmdbx"]
 	path = libmdbx
 	url = https://github.com/erthink/libmdbx.git
+[submodule "interfaces/proto"]
+	path = interfaces/proto
+	url = https://github.com/ledgerwatch/interfaces.git
+	branch = stable

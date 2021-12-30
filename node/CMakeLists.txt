@@ -25,12 +25,12 @@ file(GLOB_RECURSE SILKWORM_NODE_SRC CONFIGURE_DEPENDS "*.cpp" "*.hpp" "*.c" "*.h
 list(FILTER SILKWORM_NODE_SRC EXCLUDE REGEX "_test\.cpp$")
 
 set(SILKWORM_INTERFACE_SRC
-        ${SILKWORM_MAIN_DIR}/interfaces/sentry.grpc.pb.cc
-        ${SILKWORM_MAIN_DIR}/interfaces/sentry.grpc.pb.h
-        ${SILKWORM_MAIN_DIR}/interfaces/sentry.pb.cc
-        ${SILKWORM_MAIN_DIR}/interfaces/sentry.pb.h
-        ${SILKWORM_MAIN_DIR}/interfaces/types.pb.cc
-        ${SILKWORM_MAIN_DIR}/interfaces/types.pb.h)
+        ${SILKWORM_MAIN_DIR}/interfaces/p2psentry/sentry.grpc.pb.cc
+        ${SILKWORM_MAIN_DIR}/interfaces/p2psentry/sentry.grpc.pb.h
+        ${SILKWORM_MAIN_DIR}/interfaces/p2psentry/sentry.pb.cc
+        ${SILKWORM_MAIN_DIR}/interfaces/p2psentry/sentry.pb.h
+        ${SILKWORM_MAIN_DIR}/interfaces/types/types.pb.cc
+        ${SILKWORM_MAIN_DIR}/interfaces/types/types.pb.h)
 
 add_library(silkworm_node ${SILKWORM_NODE_SRC} ${SILKWORM_INTERFACE_SRC})
 
@@ -43,7 +43,7 @@ endif(NOT MSVC)
 
 target_include_directories(silkworm_node PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}
-        ${SILKWORM_MAIN_DIR}
+        ${SILKWORM_MAIN_DIR}/interfaces
         ${SILKWORM_MAIN_DIR}/magic_enum/include)
 
 set(SILKWORM_NODE_PUBLIC_LIBS silkworm_core mdbx-static absl::flat_hash_map absl::flat_hash_set absl::btree roaring

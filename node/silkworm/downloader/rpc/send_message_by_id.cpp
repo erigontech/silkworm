@@ -14,24 +14,14 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_SENTRY_TYPE_CASTS_HPP
-#define SILKWORM_SENTRY_TYPE_CASTS_HPP
+#include "send_message_by_id.hpp"
 
-#include <memory>
+namespace silkworm::rpc {
 
-#include <types/types.pb.h>
+SendMessageById::SendMessageById(const std::string& peerId, std::unique_ptr<sentry::OutboundMessageData> message)
+    : UnaryCall("SendMessageById", &sentry::Sentry::Stub::SendMessageById, {}) {
+    request_.set_allocated_peer_id(to_H512(peerId).release());
+    request_.set_allocated_data(message.release());  // take ownership
+}
 
-#include "types.hpp"
-
-namespace silkworm {
-
-std::unique_ptr<types::H256> to_H256(const intx::uint256& orig);
-std::unique_ptr<types::H256> to_H256(const Hash& orig);
-std::unique_ptr<types::H512> to_H512(const std::string& orig);
-
-intx::uint256 uint256_from_H256(const types::H256& orig);
-Hash hash_from_H256(const types::H256& orig);
-std::string string_from_H512(const types::H512& orig);
-
-}  // namespace silkworm
-#endif  // SILKWORM_SENTRY_TYPE_CASTS_HPP
+}  // namespace silkworm::rpc

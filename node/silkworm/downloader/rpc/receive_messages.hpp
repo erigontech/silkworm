@@ -14,24 +14,20 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_SENTRY_TYPE_CASTS_HPP
-#define SILKWORM_SENTRY_TYPE_CASTS_HPP
+#ifndef SILKWORM_RECEIVE_MESSAGES_HPP
+#define SILKWORM_RECEIVE_MESSAGES_HPP
 
-#include <memory>
+#include <silkworm/downloader/sentry_client.hpp>
 
-#include <types/types.pb.h>
+namespace silkworm::rpc {
 
-#include "types.hpp"
+class ReceiveMessages : public rpc::OutStreamingCall<sentry::Sentry, sentry::MessagesRequest, sentry::InboundMessage> {
+  public:
+    ReceiveMessages(int scope);
 
-namespace silkworm {
+    static SentryClient::Scope scope(const sentry::InboundMessage&);
+};
 
-std::unique_ptr<types::H256> to_H256(const intx::uint256& orig);
-std::unique_ptr<types::H256> to_H256(const Hash& orig);
-std::unique_ptr<types::H512> to_H512(const std::string& orig);
+}  // namespace silkworm::rpc
 
-intx::uint256 uint256_from_H256(const types::H256& orig);
-Hash hash_from_H256(const types::H256& orig);
-std::string string_from_H512(const types::H512& orig);
-
-}  // namespace silkworm
-#endif  // SILKWORM_SENTRY_TYPE_CASTS_HPP
+#endif  // SILKWORM_RECEIVE_MESSAGES_HPP

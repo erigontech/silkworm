@@ -53,15 +53,15 @@ class PersistedChain {
     static std::set<Hash> remove_headers(BlockNum new_height, Hash bad_block,
                                          std::optional<BlockNum>& new_max_block_num, Db::ReadWriteAccess::Tx& tx);
 
-    bool best_header_changed();
-    bool unwind_detected();  // todo: do we need both unwind() & unwind_detected() ?
-    bool unwind();
+    bool best_header_changed() const;
+    bool unwind_detected() const;  // todo: do we need both unwind() & unwind_detected() ?
+    bool unwind() const;
 
-    BlockNum unwind_point();
-    BlockNum initial_height();
-    BlockNum highest_height();
-    Hash highest_hash();
-    BigInt total_difficulty();
+    BlockNum unwind_point() const;
+    BlockNum initial_height() const;
+    BlockNum highest_height() const;
+    Hash highest_hash() const;
+    BigInt total_difficulty() const;
 
   private:
     BlockNum find_forking_point(Db::ReadWriteAccess::Tx&, const BlockHeader& header, BlockNum height,
@@ -73,7 +73,7 @@ class PersistedChain {
     Hash highest_hash_;
     BlockNum initial_height_{};
     BlockNum highest_bn_{};
-    uint64_t highest_timestamp_{};
+    // uint64_t highest_timestamp_{};
     // BlockNum previous_height_{};
     BigInt local_td_;
     BlockNum unwind_point_{};

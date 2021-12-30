@@ -19,12 +19,12 @@
 #include <thread>
 
 #include <CLI/CLI.hpp>
-#include <node/silkworm/downloader/internals/header_retrieval.hpp>
 
 #include <silkworm/common/directories.hpp>
 #include <silkworm/common/log.hpp>
 #include <silkworm/downloader/block_provider.hpp>
 #include <silkworm/downloader/header_downloader.hpp>
+#include <silkworm/downloader/internals/header_retrieval.hpp>
 
 using namespace silkworm;
 
@@ -54,9 +54,6 @@ int main(int argc, char* argv[]) {
     log::tee_file(std::filesystem::path("downloader.log"));
     log::Info() << "STARTING";
 
-    std::thread message_receiving;
-    std::thread block_request_processing;
-    std::thread header_processing;
     int return_value = 0;
 
     try {
@@ -88,16 +85,18 @@ int main(int argc, char* argv[]) {
         // Sentry client - connects to sentry
         SentryClient sentry{sentry_addr};
         sentry.set_status(head_hash, head_td, chain_identity);
-        message_receiving = std::thread([&sentry]() { sentry.execution_loop(); });
+        sentry.hand_shake();
+        auto message_receiving = std::thread([&sentry]() { sentry.execution_loop(); });
+        auto stats_receiving = std::thread([&sentry]() { sentry.stats_receiving_loop(); });
 
         // Block provider - provides headers and bodies to external peers
         BlockProvider block_provider{sentry, Db::ReadOnlyAccess{db}};
-        block_request_processing = std::thread([&block_provider]() { block_provider.execution_loop(); });
+        auto block_request_processing = std::thread([&block_provider]() { block_provider.execution_loop(); });
 
         // Stage1 - Header downloader - example code
         bool first_sync = true;  // = starting up silkworm
         HeaderDownloader header_downloader{sentry, Db::ReadWriteAccess{db}, chain_identity};
-        header_processing = std::thread([&header_downloader]() { header_downloader.execution_loop(); });
+        auto header_processing = std::thread([&header_downloader]() { header_downloader.execution_loop(); });
 
         // Sample stage loop with 1 stage
         Stage::Result stage_result{Stage::Result::Unknown};
@@ -113,15 +112,16 @@ int main(int argc, char* argv[]) {
         std::cin.get();            // wait for user press "enter"
         block_provider.stop();     // signal exiting
         header_downloader.stop();  // signal exiting
+
+        // wait threads termination
+        message_receiving.join();
+        stats_receiving.join();
+        block_request_processing.join();
+        header_processing.join();
     } catch (std::exception& e) {
         cerr << "Exception: " << e.what() << "\n";
         return_value = 1;
     }
-
-    // wait threads termination
-    if (message_receiving.joinable()) message_receiving.join();
-    if (block_request_processing.joinable()) block_request_processing.join();
-    if (header_processing.joinable()) header_processing.join();
 
     return return_value;
 }

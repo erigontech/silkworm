@@ -28,6 +28,7 @@
 #include <nlohmann/json.hpp>
 
 #include <silkworm/chain/difficulty.hpp>
+#include <silkworm/chain/intrinsic_gas.hpp>
 #include <silkworm/common/as_range.hpp>
 #include <silkworm/common/cast.hpp>
 #include <silkworm/common/endian.hpp>
@@ -281,9 +282,8 @@ void init_pre_state(const nlohmann::json& pre, State& state) {
         const nlohmann::json& j{entry.value()};
 
         Account account;
-        const Bytes balance_str{from_hex(j["balance"].get<std::string>()).value()};
-        const auto balance{endian::from_big_compact<intx::uint256>(balance_str, /*allow_leading_zeros=*/true)};
-        account.balance = *balance;
+        const auto balance{intx::from_string<intx::uint256>(j["balance"].get<std::string>())};
+        account.balance = balance;
         const Bytes nonce_str{from_hex(j["nonce"].get<std::string>()).value()};
         const auto nonce{endian::from_big_compact<uint64_t>(nonce_str, /*allow_leading_zeros=*/true)};
         account.nonce = *nonce;
@@ -365,19 +365,17 @@ bool post_check(const InMemoryState& state, const nlohmann::json& expected) {
             return false;
         }
 
-        const Bytes balance_str{from_hex(j["balance"].get<std::string>()).value()};
-        const auto expected_balance{endian::from_big_compact<intx::uint256>(balance_str, /*allow_leading_zeros=*/true)};
+        const auto expected_balance{intx::from_string<intx::uint256>(j["balance"].get<std::string>())};
         if (account->balance != expected_balance) {
             std::cout << "Balance mismatch for " << entry.key() << ":\n"
                       << to_string(account->balance, 16) << " != " << j["balance"] << std::endl;
             return false;
         }
 
-        const Bytes nonce_str{from_hex(j["nonce"].get<std::string>()).value()};
-        const auto expected_nonce{endian::from_big_compact<uint64_t>(nonce_str, /*allow_leading_zeros=*/true)};
+        const auto expected_nonce{intx::from_string<intx::uint256>(j["nonce"].get<std::string>())};
         if (account->nonce != expected_nonce) {
             std::cout << "Nonce mismatch for " << entry.key() << ":\n"
-                      << account->nonce << " != " << *expected_nonce << std::endl;
+                      << account->nonce << " != " << j["nonce"] << std::endl;
             return false;
         }
 
@@ -551,7 +549,8 @@ RunResults transaction_test(const nlohmann::json& j) {
     }
 
     for (const auto& entry : j["result"].items()) {
-        const bool should_be_valid{!entry.value().contains("exception")};
+        const auto& test{entry.value()};
+        const bool should_be_valid{!test.contains("exception")};
 
         if (!decoded) {
             if (should_be_valid) {
@@ -599,10 +598,20 @@ RunResults transaction_test(const nlohmann::json& j) {
             continue;
         }
 
-        const std::string expected_sender{entry.value()["sender"].get<std::string>()};
+        const std::string expected_sender{test["sender"].get<std::string>()};
         if (txn.from != to_evmc_address(*from_hex(expected_sender))) {
             std::cout << "Sender mismatch for " << entry.key() << ":\n"
                       << to_hex(*txn.from) << " != " << expected_sender << std::endl;
+            return Status::kFailed;
+        }
+
+        const auto expected_intrinsic_gas{intx::from_string<intx::uint256>(test["intrinsicGas"].get<std::string>())};
+        const evmc_revision rev{config.revision(/*block_number=*/0)};
+        const auto calculated_intrinsic_gas{intrinsic_gas(txn, rev >= EVMC_HOMESTEAD, rev >= EVMC_ISTANBUL)};
+        if (calculated_intrinsic_gas != expected_intrinsic_gas) {
+            std::cout << "Intrinsic gas mismatch for " << entry.key() << ":\n"
+                      << intx::to_string(calculated_intrinsic_gas, /*base=*/16)
+                      << " != " << intx::to_string(expected_intrinsic_gas, /*base=*/16) << std::endl;
             return Status::kFailed;
         }
     }

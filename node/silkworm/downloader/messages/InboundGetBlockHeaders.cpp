@@ -20,7 +20,7 @@
 #include <silkworm/common/log.hpp>
 #include <silkworm/downloader/internals/header_retrieval.hpp>
 #include <silkworm/downloader/packets/BlockHeadersPacket.hpp>
-#include <silkworm/downloader/rpc/SendMessageById.hpp>
+#include <silkworm/downloader/rpc/send_message_by_id.hpp>
 
 namespace silkworm {
 

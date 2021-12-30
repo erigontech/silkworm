@@ -14,24 +14,20 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_SENTRY_TYPE_CASTS_HPP
-#define SILKWORM_SENTRY_TYPE_CASTS_HPP
+#ifndef SILKWORM_HAND_SHAKE_HPP
+#define SILKWORM_HAND_SHAKE_HPP
 
-#include <memory>
+#include <silkworm/chain/identity.hpp>
+#include <silkworm/downloader/internals/types.hpp>
+#include <silkworm/downloader/sentry_client.hpp>
 
-#include <types/types.pb.h>
+namespace silkworm::rpc {
 
-#include "types.hpp"
+  class HandShake : public rpc::UnaryCall<sentry::Sentry, google::protobuf::Empty, sentry::HandShakeReply> {
+  public:
+      HandShake();
+};
 
-namespace silkworm {
+}  // namespace silkworm::rpc
 
-std::unique_ptr<types::H256> to_H256(const intx::uint256& orig);
-std::unique_ptr<types::H256> to_H256(const Hash& orig);
-std::unique_ptr<types::H512> to_H512(const std::string& orig);
-
-intx::uint256 uint256_from_H256(const types::H256& orig);
-Hash hash_from_H256(const types::H256& orig);
-std::string string_from_H512(const types::H512& orig);
-
-}  // namespace silkworm
-#endif  // SILKWORM_SENTRY_TYPE_CASTS_HPP
+#endif  // SILKWORM_HAND_SHAKE_HPP

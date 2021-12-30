@@ -59,7 +59,7 @@ TEST_CASE("Sync Stages") {
             0x0b42b6393c1f53060fe3ddbfcd7aadcca894465a5a438f69c87d790b2299b9b2_bytes32};
 
         auto canonical_table{db::open_cursor(*txn, db::table::kCanonicalHashes)};
-        BlockNum block_num{0};
+        BlockNum block_num{1};
         for (const auto& hash : block_hashes) {
             Bytes block_key{db::block_key(block_num++)};
             canonical_table.insert(db::to_slice(block_key), db::to_slice(hash));
@@ -75,7 +75,7 @@ TEST_CASE("Sync Stages") {
         {
             // Verify written data is consistent
             auto target_table{db::open_cursor(*txn, db::table::kHeaderNumbers)};
-            REQUIRE(txn->get_map_stat(target_table.map()).ms_entries == block_hashes.size());
+            REQUIRE(txn->get_map_stat(target_table.map()).ms_entries == block_hashes.size() + 1);  // Block 0 is genesis
 
             std::vector<std::pair<evmc::bytes32, BlockNum>> written_data{};
             db::cursor_for_each(
@@ -86,10 +86,12 @@ TEST_CASE("Sync Stages") {
                     return true;
                 });
 
-            REQUIRE(written_data.size() == block_hashes.size());
+            REQUIRE(written_data.size() == block_hashes.size() + 1);
             for (const auto& [written_hash, written_block_num] : written_data) {
-                REQUIRE(written_block_num < block_hashes.size());
-                REQUIRE(written_hash == block_hashes.at(written_block_num));
+                REQUIRE(written_block_num < block_hashes.size() + 1);
+                if (written_block_num) {
+                    REQUIRE(written_hash == block_hashes.at(written_block_num - 1));
+                }
             }
         }
 
@@ -99,7 +101,7 @@ TEST_CASE("Sync Stages") {
         {
             // Verify written data is consistent
             auto target_table{db::open_cursor(*txn, db::table::kHeaderNumbers)};
-            REQUIRE(txn->get_map_stat(target_table.map()).ms_entries == block_hashes.size() - 1);
+            REQUIRE(txn->get_map_stat(target_table.map()).ms_entries == 2);
             REQUIRE(target_table.seek(db::to_slice(block_hashes.back())) == false);
         }
     }

@@ -22,7 +22,7 @@
 
 namespace silkworm::ecdsa {
 
-intx::uint256 y_parity_and_chain_id_to_v(bool odd, const std::optional<intx::uint256>& chain_id) {
+intx::uint256 y_parity_and_chain_id_to_v(bool odd, const std::optional<intx::uint256>& chain_id) noexcept {
     if (chain_id.has_value()) {
         return chain_id.value() * 2 + 35 + odd;
     } else {
@@ -30,7 +30,7 @@ intx::uint256 y_parity_and_chain_id_to_v(bool odd, const std::optional<intx::uin
     }
 }
 
-std::optional<YParityAndChainId> v_to_y_parity_and_chain_id(const intx::uint256& v) {
+std::optional<YParityAndChainId> v_to_y_parity_and_chain_id(const intx::uint256& v) noexcept {
     YParityAndChainId res{};
     if (v == 27 || v == 28) {
         // pre EIP-155
@@ -52,7 +52,7 @@ std::optional<YParityAndChainId> v_to_y_parity_and_chain_id(const intx::uint256&
 
 secp256k1_context* create_context(uint32_t flags) { return secp256k1_context_create(flags); }
 
-bool is_valid_signature(const intx::uint256& r, const intx::uint256& s, bool homestead) {
+bool is_valid_signature(const intx::uint256& r, const intx::uint256& s, bool homestead) noexcept {
     if (!r || !s) {
         return false;
     }
@@ -66,7 +66,8 @@ bool is_valid_signature(const intx::uint256& r, const intx::uint256& s, bool hom
     return true;
 }
 
-std::optional<Bytes> recover(ByteView message, ByteView signature, bool odd_y_parity, secp256k1_context* context) {
+std::optional<Bytes> recover(ByteView message, ByteView signature, bool odd_y_parity,
+                             secp256k1_context* context) noexcept {
     static secp256k1_context* static_context{create_context()};
     if (!context) {
         context = static_context;
@@ -92,7 +93,7 @@ std::optional<Bytes> recover(ByteView message, ByteView signature, bool odd_y_pa
     return out;
 }
 
-std::optional<evmc::address> public_key_to_address(const Bytes& public_key) {
+std::optional<evmc::address> public_key_to_address(const Bytes& public_key) noexcept {
     if (public_key.length() != 65 || public_key[0] != 4u) {
         return std::nullopt;
     }
@@ -102,7 +103,7 @@ std::optional<evmc::address> public_key_to_address(const Bytes& public_key) {
 }
 
 std::optional<evmc::address> recover_address(ByteView message, ByteView signature, bool odd_y_parity,
-                                             secp256k1_context* context) {
+                                             secp256k1_context* context) noexcept {
     const auto recovered_public_key{recover(message, signature, odd_y_parity, context)};
     return public_key_to_address(recovered_public_key.value_or(Bytes{}));
 }

@@ -35,7 +35,7 @@ class RecoveryFarm {
 
     //! \brief This class coordinates the recovery of senders' addresses through multiple threads. May eventually handle
     //! the unwinding of already recovered addresses.
-    RecoveryFarm(db::RWTxn& txn, etl::Collector& collector, size_t batch_size);
+    RecoveryFarm(db::RWTxn& txn, NodeSettings* node_settings);
     ~RecoveryFarm();
 
     //! \brief Recover sender's addresses from transactions
@@ -43,7 +43,12 @@ class RecoveryFarm {
     StageResult recover();
 
     //! \brief Issue an interruption request
-    void stop() { is_stopping_.store(true); }
+    void stop() {
+        bool expected{false};
+        if (is_stopping_.compare_exchange_strong(expected, true)) {
+            stop_all_workers(false);
+        }
+    }
 
     //! \brief Unwinds sender's recovery i.e. deletes recovered addresses from storage
     //! \param [in] db_transaction : the database transaction we should work on
@@ -56,7 +61,7 @@ class RecoveryFarm {
 
   private:
     friend class RecoveryWorker;
-    friend class Worker;
+    friend class ::silkworm::Worker;
 
     //! \brief Whether running tasks should stop
     bool is_stopping() { return is_stopping_.load(); }
@@ -68,17 +73,18 @@ class RecoveryFarm {
     //! \brief Make the farm wait for every threaded worker to stop
     void wait_workers_completion();
 
+    //! \brief Gets the first harvestable worker in the queue
+    std::optional<size_t> get_harvestable_worker();
+
     //! \brief Collects results from worker's completed tasks
     bool collect_workers_results();
 
     //! \brief Transforms transactions into recoverable packages
-    //! \param [in] config : active chain configuration
     //! \param [in] block_num : block number owning this set of transactions
     //! \param [in] transactions : a set of transactions to transform
     //! \return A code indicating process status
     //! \remarks If detects a batch overflow it also dispatches
-    StageResult transform_and_fill_batch(const ChainConfig& config, BlockNum block_num,
-                                         std::vector<Transaction>& transactions);
+    StageResult transform_and_fill_batch(BlockNum block_num, std::vector<Transaction>& transactions);
 
     //! \brief Dispatches the collected batch of recovery packages to first available worker
     //! \returns True if operation succeeds, false otherwise
@@ -100,23 +106,29 @@ class RecoveryFarm {
     //! \brief Handle worker terminated signal from workers
     void worker_completed_handler(Worker* sender);
 
-    db::RWTxn& txn_;
-    etl::Collector& collector_;
+    db::RWTxn& txn_;               // Managed transaction
+    NodeSettings* node_settings_;  // Global node settings
+    etl::Collector collector_;     // Reserved collector
 
     /* Recovery workers */
     uint32_t max_workers_{std::thread::hardware_concurrency()};  // Max number of workers/threads
-    std::vector<std::unique_ptr<RecoveryWorker>> workers_{};         // Actual collection of recoverers
-    std::mutex harvest_mutex_;                                       // Guards the harvest queue
-    std::queue<size_t> harvestable_workers_{};                       // Queue of ready to harvest workers
-    std::atomic<uint32_t> workers_in_flight_{0};                     // Counter of grinding workers
+    std::vector<std::unique_ptr<RecoveryWorker>> workers_{};     // Actual collection of recoverers
+    std::mutex harvest_mutex_;                                   // Guards the harvest queue
+    std::queue<size_t> harvestable_workers_{};                   // Queue of ready to harvest workers
+    std::atomic<uint32_t> workers_in_flight_{0};                 // Counter of grinding workers
 
     std::mutex worker_completed_mtx_{};
     std::condition_variable worker_completed_cv_{};
 
-    /* Canonical headers */
-    std::vector<evmc::bytes32> headers_{};               // Collected canonical headers
-    std::vector<evmc::bytes32>::iterator headers_it_1_;  // For blocks reading
-    BlockNum header_index_offset_{};                     // To retrieve proper header hash while harvesting
+    /* Canonical blocks + headers */
+    struct HeaderInfo {
+        HeaderInfo(uint32_t count, const evmc::bytes32& hash) : txn_count(count), block_hash{hash} {};
+        uint32_t txn_count;
+        evmc::bytes32 block_hash;
+    };
+    std::vector<HeaderInfo> headers_{};               // Collected canonical headers
+    std::vector<HeaderInfo>::iterator headers_it_1_;  // For blocks reading
+    BlockNum header_index_offset_{};                  // To retrieve proper header hash while harvesting
 
     /* Batches */
     size_t batch_size_;                   // Max number of transaction to be sent a worker for recovery

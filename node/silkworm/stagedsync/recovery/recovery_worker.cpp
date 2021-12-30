@@ -16,17 +16,10 @@
 
 #include "recovery_worker.hpp"
 
-#include <silkworm/common/assert.hpp>
 #include <silkworm/common/log.hpp>
 #include <silkworm/common/stopwatch.hpp>
 
 namespace silkworm::stagedsync::recovery {
-
-RecoveryWorker::RecoveryWorker(uint32_t id, size_t data_size) : id_(id) {
-    // Allocate enough memory to store results output
-    SILKWORM_ASSERT(data_size % kAddressLength == 0);
-    data_.resize(data_size);
-}
 
 RecoveryWorker::~RecoveryWorker() {
     if (context_) {
@@ -35,35 +28,18 @@ RecoveryWorker::~RecoveryWorker() {
     stop(true);
 }
 
-void RecoveryWorker::set_work(std::vector<RecoveryPackage>& farm_batch) {
+void RecoveryWorker::set_work(std::vector<RecoveryPackage>& farm_batch, bool kick) {
     batch_.swap(farm_batch);
-    status_.store(Status::Working);
-    Worker::kick();
-}
-
-std::string RecoveryWorker::get_error() const {
-    return (status_.load() == Status::Error) ? last_error_ : std::string();
-}
-
-RecoveryWorker::Status RecoveryWorker::get_status() const { return status_.load(); }
-
-bool RecoveryWorker::pull_results(std::vector<std::pair<BlockNum, ByteView>>& out_results) {
-    Status expected_status{Status::ResultsReady};
-    if (status_.compare_exchange_strong(expected_status, Status::Idle)) {
-        std::swap(out_results, results_);
-        return true;
+    if (kick) {
+        Worker::kick();
     }
-    return false;
 }
 
 void RecoveryWorker::work() {
     StopWatch sw;
     context_ = ecdsa::create_context();
     if (!context_) {
-        last_error_ = "Could not create elliptic curve context";
-        status_.store(Status::Error);
-        signal_task_completed(this);
-        return;
+        throw std::runtime_error("Could not create elliptic curve context");
     }
 
     while (wait_for_kick()) {
@@ -75,57 +51,27 @@ void RecoveryWorker::work() {
          */
 
         sw.start(true);
-        results_.clear();
         BlockNum block_num{batch_.front().block_num};
-        BlockNum last_block_num{batch_.back().block_num};
-        results_.reserve(last_block_num - block_num + 1);
 
-        size_t block_data_offset{0};
-        size_t block_data_length{0};
-        auto data_ptr = reinterpret_cast<evmc_address*>(data_.data());
-
-        for (auto const& package : batch_) {
-            // On block switching store the results
-            if (block_num != package.block_num) {
-                if (Worker::is_stopping()) {
-                    status_.store(Status::Aborted);
-                    break;
-                }
-
-                ByteView data_view{&data_[block_data_offset], block_data_length};
-                results_.emplace_back(block_num, data_view);
-
-                block_data_offset += block_data_length;
-                block_data_length = 0;
-                block_num = package.block_num;
+        for (auto& package : batch_) {
+            // On block switching check stopping
+            if (block_num != package.block_num && is_stopping()) {
+                throw std::runtime_error("Operation cancelled");
             }
 
             std::optional<evmc::address> recovered_address{
                 ecdsa::recover_address(package.tx_hash.bytes, package.tx_signature, package.odd_y_parity, context_)};
 
             if (recovered_address.has_value()) {
-                *data_ptr = *recovered_address;
-                ++data_ptr;
-                block_data_length += kAddressLength;
+                memcpy(package.tx_from.bytes, recovered_address.value().bytes, sizeof(evmc::address));
             } else {
-                last_error_ = "Public key recovery failed at block #" + std::to_string(package.block_num);
-                status_.store(Status::Error);
-                break;  // No need to process other transactions
+                throw std::runtime_error("Unable to recover from address in block " + std::to_string(block_num));
             }
-        }
-
-        if (status_.load() == Status::Working) {
-            // Store results for last block
-            if (block_data_length) {
-                ByteView data_view{&data_[block_data_offset], block_data_length};
-                results_.emplace_back(block_num, data_view);
-            }
-            status_.store(Status::ResultsReady);
         }
 
         // Raise task completed event
         auto [_, elapsed]{sw.stop()};
-        log::Trace("Worker completed", {"elapsed", StopWatch::format(elapsed)});
+        log::Trace(name_, {"task completed", StopWatch::format(elapsed)});
         signal_task_completed(this);
     }
 }

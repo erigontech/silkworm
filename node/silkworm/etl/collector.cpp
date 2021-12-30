@@ -19,6 +19,7 @@
 
 #include <silkworm/common/directories.hpp>
 #include <silkworm/common/log.hpp>
+#include <silkworm/common/signal_handler.hpp>
 
 namespace silkworm::etl {
 
@@ -75,6 +76,9 @@ void Collector::load(mdbx::cursor& target, LoadFunc load_func, MDBX_put_flags_t 
 
         for (const auto& etl_entry : buffer_.entries()) {
             if (!--counter) {
+                if (SignalHandler::signalled()) {
+                    throw std::runtime_error("Operation cancelled");
+                }
                 counter = 10;
                 loading_key_ = to_hex(etl_entry.key);
             }
@@ -122,6 +126,9 @@ void Collector::load(mdbx::cursor& target, LoadFunc load_func, MDBX_put_flags_t 
         auto& file_provider{file_providers_.at(provider_index)};  // and set current file provider
 
         if (!--counter) {
+            if (SignalHandler::signalled()) {
+                throw std::runtime_error("Operation cancelled");
+            }
             counter = 10;
             loading_key_ = to_hex(etl_entry.key);
         }

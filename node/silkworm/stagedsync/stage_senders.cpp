@@ -24,8 +24,11 @@ namespace silkworm::stagedsync {
 StageResult Senders::forward(db::RWTxn& txn) {
 
     // Create farm instance and do work
-    etl::Collector collector(node_settings_->data_directory->etl().path(), node_settings_->etl_buffer_size);
-    farm_ = std::make_unique<recovery::RecoveryFarm>(txn, collector, node_settings_->batch_size);
+    if(!node_settings_->chain_config.has_value()) {
+        return StageResult::kUnknownChainId;
+    }
+
+    farm_ = std::make_unique<recovery::RecoveryFarm>(txn, node_settings_);
 
     const auto res{farm_->recover()};
     farm_.reset();

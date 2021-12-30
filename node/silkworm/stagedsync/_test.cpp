@@ -20,8 +20,11 @@
 #include <silkworm/common/settings.hpp>
 #include <silkworm/common/test_util.hpp>
 #include <silkworm/db/access_layer.hpp>
+#include <silkworm/db/genesis.hpp>
 #include <silkworm/stagedsync/common.hpp>
 #include <silkworm/stagedsync/stagedsync.hpp>
+
+#include "silkworm/chain/genesis.hpp"
 
 using namespace silkworm;
 using namespace evmc::literals;
@@ -42,6 +45,12 @@ TEST_CASE("Sync Stages") {
     db::RWTxn txn(chaindata_env);
     db::table::check_or_create_chaindata_tables(*txn);
     txn.commit(true);
+
+    auto source_data{read_genesis_data(node_settings.network_id)};
+    auto genesis_json = nlohmann::json::parse(source_data, nullptr, /* allow_exceptions = */ false);
+    db::initialize_genesis(*txn, genesis_json, /*allow_exceptions=*/true);
+    txn.commit();
+    node_settings.chain_config = db::read_chain_config(*txn);
 
     SECTION("BlockHashes") {
         static std::vector<evmc::bytes32> block_hashes = {
@@ -157,7 +166,6 @@ TEST_CASE("Sync Stages") {
             REQUIRE(written_senders.empty());
         }
 
-
         // Check unwind works
         stage_result = stage.unwind(txn, 1);
         REQUIRE(stage_result == stagedsync::StageResult::kSuccess);
@@ -179,7 +187,5 @@ TEST_CASE("Sync Stages") {
         }
 
         // TODO(Andrea) Check prune works
-
-
     }
 }

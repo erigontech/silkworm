@@ -49,8 +49,8 @@ void Worker::start(bool wait) {
     });
 
     while (wait) {
-        std::this_thread::yield();
-        if (auto state{get_state()}; state == State::kStarted) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(5));
+        if (auto state{get_state()}; state == State::kStarted || state == State::kKickWaiting) {
             break;
         }
     }
@@ -59,10 +59,8 @@ void Worker::start(bool wait) {
 void Worker::stop(bool wait) {
     if (!thread_) return;
 
-    State expected_state{State::kStarted};
-    if (state_.compare_exchange_strong(expected_state, State::kStopping)) {
-        kick();
-    }
+    state_.store(State::kStopping);
+    kick();
 
     if (wait) {
         thread_->join();
@@ -77,7 +75,13 @@ void Worker::kick() {
 
 bool Worker::wait_for_kick(uint32_t timeout_milliseconds) {
     bool expected_kicked_value{true};
-    while (!is_stopping() && !kicked_.compare_exchange_strong(expected_kicked_value, false)) {
+    while (!kicked_.compare_exchange_strong(expected_kicked_value, false)) {
+        auto current_state{get_state()};
+        if (current_state == Worker::State::kStarted) {
+            state_.store(Worker::State::kKickWaiting);
+        } else if (current_state == State::kStopping) {
+            break;
+        }
         if (timeout_milliseconds) {
             std::unique_lock l(kick_mtx_);
             (void)kicked_cv_.wait_for(l, std::chrono::milliseconds(timeout_milliseconds));
@@ -86,7 +90,12 @@ bool Worker::wait_for_kick(uint32_t timeout_milliseconds) {
         }
         expected_kicked_value = true;
     }
-    return !is_stopping();
+
+    if (is_stopping()) {
+        return false;
+    }
+    state_.store(State::kStarted);
+    return true;
 }
 
 std::string Worker::what() {

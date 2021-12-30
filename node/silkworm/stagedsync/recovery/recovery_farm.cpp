@@ -26,8 +26,11 @@
 
 namespace silkworm::stagedsync::recovery {
 
-RecoveryFarm::RecoveryFarm(db::RWTxn& txn, etl::Collector& collector, size_t batch_size)
-    : txn_{txn}, collector_{collector}, batch_size_{batch_size / sizeof(RecoveryPackage)} {
+RecoveryFarm::RecoveryFarm(db::RWTxn& txn, NodeSettings* node_settings)
+    : txn_{txn},
+      node_settings_{node_settings},
+      collector_(node_settings_->data_directory->etl().path(), node_settings_->etl_buffer_size),
+      batch_size_{node_settings->batch_size / std::thread::hardware_concurrency() / sizeof(RecoveryPackage)} {
     workers_.reserve(max_workers_);
     batch_.reserve(batch_size_);
 }
@@ -41,12 +44,6 @@ RecoveryFarm::~RecoveryFarm() {
 }
 
 StageResult RecoveryFarm::recover() {
-    // Check we have a valid chain configuration
-    auto chain_config{db::read_chain_config(*txn_)};
-    if (!chain_config.has_value()) {
-        return StageResult::kUnknownChainId;
-    }
-
     // Check stage boundaries from previous execution and previous stage execution
     auto previous_progress{db::stages::read_stage_progress(*txn_, db::stages::kSendersKey)};
     auto expected_block_number{previous_progress ? previous_progress + 1 : previous_progress};
@@ -60,8 +57,6 @@ StageResult RecoveryFarm::recover() {
     }
 
     // Load canonical headers
-    uint64_t headers_count{bodies_stage_progress - previous_progress};
-    headers_.reserve(headers_count);
     current_phase_ = 1;
     auto stage_result{fill_canonical_headers(expected_block_number, bodies_stage_progress)};
     if (stage_result != StageResult::kSuccess) {
@@ -78,7 +73,7 @@ StageResult RecoveryFarm::recover() {
     auto transactions_table{db::open_cursor(*txn_, db::table::kBlockTransactions)};
 
     // Set to first block and read all in sequence
-    auto bodies_initial_key{db::block_key(expected_block_number, headers_it_1_->bytes)};
+    auto bodies_initial_key{db::block_key(expected_block_number, headers_it_1_->block_hash.bytes)};
     auto body_data{bodies_table.find(db::to_slice(bodies_initial_key), false)};
     while (body_data.done && !is_stopping()) {
         auto body_data_key_view{db::from_slice(body_data.key)};
@@ -98,7 +93,7 @@ StageResult RecoveryFarm::recover() {
             break;
         }
 
-        if (memcmp(&body_data_key_view[8], headers_it_1_->bytes, sizeof(kHashLength)) != 0) {
+        if (memcmp(&body_data_key_view[8], headers_it_1_->block_hash.bytes, sizeof(kHashLength)) != 0) {
             // We stumbled into a non-canonical block (not matching header)
             // move next and repeat
             body_data = bodies_table.to_next(false);
@@ -116,9 +111,10 @@ StageResult RecoveryFarm::recover() {
         auto body_rlp{db::from_slice(body_data.value)};
         auto block_body{db::detail::decode_stored_block_body(body_rlp)};
         if (block_body.txn_count) {
+            headers_it_1_->txn_count = block_body.txn_count;
             std::vector<Transaction> transactions{
                 db::read_transactions(transactions_table, block_body.base_txn_id, block_body.txn_count)};
-            stage_result = transform_and_fill_batch(chain_config.value(), reached_block_num, transactions);
+            stage_result = transform_and_fill_batch(reached_block_num, transactions);
             if (stage_result != StageResult::kSuccess) {
                 break;
             }
@@ -145,7 +141,7 @@ StageResult RecoveryFarm::recover() {
         // and collect results
 
         collect_workers_results();
-        if (!collector_.empty() && !is_stopping()) {
+        if (!collector_.empty()) {
             try {
                 // Prepare target table
                 auto target_table{db::open_cursor(*txn_, db::table::kSenders)};
@@ -155,6 +151,7 @@ StageResult RecoveryFarm::recover() {
 
                 // Update stage progress with last reached block number
                 db::stages::write_stage_progress(*txn_, db::stages::kSendersKey, reached_block_num);
+                txn_.commit();
 
             } catch (const mdbx::exception& ex) {
                 log::Error() << "Unexpected db error in " << std::string(__FUNCTION__) << " : " << ex.what();
@@ -171,6 +168,7 @@ StageResult RecoveryFarm::recover() {
         stop_all_workers(/*wait=*/true);
     }
 
+    headers_.clear();
     return is_stopping() ? StageResult::kAborted : stage_result;
 }
 
@@ -222,68 +220,60 @@ void RecoveryFarm::stop_all_workers(bool wait) {
 
 void RecoveryFarm::wait_workers_completion() {
     while (workers_in_flight_.load()) {
-        std::this_thread::yield();
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
     }
 }
 
+std::optional<size_t> RecoveryFarm::get_harvestable_worker() {
+    std::optional<size_t> ret;
+    {
+        std::scoped_lock l(harvest_mutex_);
+        if (!harvestable_workers_.empty()) {
+            ret.emplace(harvestable_workers_.front());
+            harvestable_workers_.pop();
+        }
+    }
+    return ret;
+}
+
 bool RecoveryFarm::collect_workers_results() {
-    static std::string fmt_row{"%10u b %12u t %4u w"};
-
     bool ret{true};
-    std::vector<std::pair<BlockNum, ByteView>> worker_results{};
-    while (ret) {
-        // Check we have results to pull
-        std::optional<size_t> harvest_id;
-        {
-            std::scoped_lock l(harvest_mutex_);
-            if (!harvestable_workers_.empty()) {
-                harvest_id.emplace(harvestable_workers_.front());
-                harvestable_workers_.pop();
-            }
-        }
-        if (!harvest_id.has_value()) {
-            break;
-        }
-
-        // Select worker and pop the queue
-        auto& worker{*(workers_.at(harvest_id.value()))};
-        log::Trace() << "Collecting results from worker #" << worker.get_id();
-
-        switch (worker.get_status()) {
-            case RecoveryWorker::Status::Error:
-                log::Error() << "Got error from worker #" << worker.get_id() << " : " << worker.get_error();
-                ret = false;
-                break;
-            case RecoveryWorker::Status::Aborted:
-                log::Trace() << "Got aborted from worker #" << worker.get_id();
-                ret = false;
-                break;
-            case RecoveryWorker::Status::ResultsReady:
-                if (worker.pull_results(worker_results)) {
-                    try {
-                        for (const auto& [block_num, data] : worker_results) {
-                            auto etl_key{db::block_key(block_num, headers_.at(block_num - header_index_offset_).bytes)};
-                            Bytes etl_data(data.data(), data.length());
-                            collector_.collect(etl::Entry{etl_key, etl_data});
-                        }
-                        worker_results.resize(0);
-
-                    } catch (const std::exception& ex) {
-                        log::Error() << "Unexpected error in " << std::string(__FUNCTION__) << " : " << ex.what();
-                        ret = false;
+    try {
+        std::vector<RecoveryPackage> worker_batch;
+        auto harvestable_worker{get_harvestable_worker()};
+        while (harvestable_worker.has_value()) {
+            auto& worker{*(workers_.at(harvestable_worker.value()))};
+            log::Trace("Collecting results", {"worker", std::to_string(harvestable_worker.value())});
+            worker.set_work(worker_batch, /*kick=*/false);
+            BlockNum block_num{0};
+            Bytes etl_key;
+            Bytes etl_data;
+            for (const auto& package : worker_batch) {
+                if (package.block_num != block_num) {
+                    if (!etl_key.empty()) {
+                        collector_.collect({etl_key, etl_data});
+                        etl_key.clear();
+                        etl_data.clear();
                     }
-                } else {
-                    log::Error() << "Unexpected error in " << std::string(__FUNCTION__) << " : "
-                                 << "could not pull results from worker #" << worker.get_id();
-                    ret = false;
+                    block_num = package.block_num;
+                    const auto& header_info{headers_.at(block_num - header_index_offset_)};
+                    etl_key = db::block_key(block_num, header_info.block_hash.bytes);
+                    etl_data.clear();
                 }
-                break;
-
-            default:
-                // Should not happen
-                log::Error() << "Got not ready status for harvest worker ";
-                ret = false;
+                etl_data.append(package.tx_from.bytes, sizeof(evmc::address));
+            }
+            if (!etl_key.empty()) {
+                collector_.collect({etl_key, etl_data});
+                etl_key.clear();
+                etl_data.clear();
+            }
+            worker_batch.clear();
+            harvestable_worker = get_harvestable_worker();
         }
+
+    } catch (const std::exception& ex) {
+        log::Error() << "Unexpected error in " << std::string(__FUNCTION__) << " : " << ex.what();
+        ret = false;
     }
 
     // Something bad happened stop all recovery process
@@ -293,8 +283,7 @@ bool RecoveryFarm::collect_workers_results() {
     return ret;
 }
 
-StageResult RecoveryFarm::transform_and_fill_batch(const ChainConfig& config, uint64_t block_num,
-                                                   std::vector<Transaction>& transactions) {
+StageResult RecoveryFarm::transform_and_fill_batch(uint64_t block_num, std::vector<Transaction>& transactions) {
     if (is_stopping()) {
         return StageResult::kAborted;
     }
@@ -306,7 +295,7 @@ StageResult RecoveryFarm::transform_and_fill_batch(const ChainConfig& config, ui
         }
     }
 
-    const evmc_revision rev{config.revision(block_num)};
+    const evmc_revision rev{node_settings_->chain_config->revision(block_num)};
     const bool has_homestead{rev >= EVMC_HOMESTEAD};
     const bool has_spurious_dragon{rev >= EVMC_SPURIOUS_DRAGON};
     const bool has_berlin{rev >= EVMC_BERLIN};
@@ -343,7 +332,7 @@ StageResult RecoveryFarm::transform_and_fill_batch(const ChainConfig& config, ui
                 log::Error() << "EIP-155 signature for transaction #" << tx_id << " in block #" << block_num
                              << " before Spurious Dragon";
                 return StageResult::kInvalidTransaction;
-            } else if (transaction.chain_id.value() != config.chain_id) {
+            } else if (transaction.chain_id.value() != node_settings_->chain_config->chain_id) {
                 log::Error() << "EIP-155 invalid signature for transaction #" << tx_id << " in block #" << block_num;
                 return StageResult::kInvalidTransaction;
             }
@@ -367,30 +356,21 @@ StageResult RecoveryFarm::transform_and_fill_batch(const ChainConfig& config, ui
 }
 
 bool RecoveryFarm::dispatch_batch() {
-    // First worker created
-    if (workers_.empty()) {
-        if (!initialize_new_worker()) {
-            return false;
-        }
-    }
-
     // Locate first available worker
-    while (!is_stopping()) {
+    uint_fast32_t wait_count{5};
+    while (!is_stopping() && collect_workers_results() == true) {
         auto it = as_range::find_if(workers_, [](const std::unique_ptr<RecoveryWorker>& w) {
-            return w->get_status() == RecoveryWorker::Status::Idle;
+            return w->get_state() == RecoveryWorker::State::kKickWaiting;
         });
 
         if (it != workers_.end()) {
-            log::Trace("Dispatching work", {"worker", std::to_string((*it)->get_id())});
-            (*it)->set_work(batch_);  // Worker will swap contents
+            log::Trace("Dispatching batch ...",
+                       {"worker", std::to_string((*it)->get_id()), "items", std::to_string(batch_.size())});
+            (*it)->set_work(batch_, /*kick=*/true);  // Worker will swap contents
             workers_in_flight_++;
-            batch_.resize(0);
+            batch_.clear();
+            batch_.reserve(batch_size_);
             return true;
-        }
-
-        if (workers_in_flight_ < workers_.size()) {
-            if (!collect_workers_results()) return false;
-            continue;
         }
 
         // We don't have a worker available
@@ -399,15 +379,22 @@ bool RecoveryFarm::dispatch_batch() {
             if (initialize_new_worker()) {
                 continue;
             }
-            log::Info() << "Max recovery workers adjusted " << max_workers_ << " -> " << workers_.size();
+            if (workers_.empty()) {
+                log::Error() << "Unable to initialize any recovery worker. Aborting";
+                return false;
+            }
+            log::Debug() << "Max recovery workers adjusted " << max_workers_ << " -> " << workers_.size();
             max_workers_ = static_cast<uint32_t>(workers_.size());  // Don't try to spawn new workers. Maybe we're OOM
         }
 
         // No other option than wait a while and retry
+        if (!--wait_count) {
+            wait_count = 5;
+            log::Info() << "Waiting for available worker ...";
+        }
         std::unique_lock lck(worker_completed_mtx_);
-        (void)worker_completed_cv_.wait_for(lck, std::chrono::milliseconds(100));
+        (void)worker_completed_cv_.wait_for(lck, std::chrono::seconds(5));
         if (SignalHandler::signalled()) {
-            stop_all_workers(/*wait=*/false);
             stop();
         }
     }
@@ -416,14 +403,14 @@ bool RecoveryFarm::dispatch_batch() {
 }
 
 bool RecoveryFarm::initialize_new_worker() {
-    log::Trace() << "Launching worker #" << workers_.size();
+    log::Trace("Spawning new Recovery worker", {"id", std::to_string(workers_.size())});
     using namespace std::placeholders;
     try {
-        workers_.emplace_back(new RecoveryWorker(workers_.size(), batch_size_ * kAddressLength));
+        workers_.emplace_back(new RecoveryWorker(workers_.size()));
         workers_.back()->signal_task_completed.connect(std::bind(&RecoveryFarm::task_completed_handler, this, _1));
         workers_.back()->signal_worker_stopped.connect(std::bind(&RecoveryFarm::worker_completed_handler, this, _1));
         workers_.back()->start(/*wait=*/true);
-        return workers_.back()->get_state() == Worker::State::kStarted;
+        return true;
     } catch (const std::exception& ex) {
         log::Error() << "Unable to initialize new recovery worker : " << ex.what();
         return false;
@@ -431,7 +418,9 @@ bool RecoveryFarm::initialize_new_worker() {
 }
 
 StageResult RecoveryFarm::fill_canonical_headers(BlockNum from, BlockNum to) noexcept {
-    if (to - from > 16) {
+    uint64_t headers_count{to - from};
+    headers_.reserve(headers_count);
+    if (headers_count > 16) {
         log::Info("Collecting headers ...", {"from", std::to_string(from), "to", std::to_string(to)});
     }
 
@@ -460,7 +449,7 @@ StageResult RecoveryFarm::fill_canonical_headers(BlockNum from, BlockNum to) noe
             }
 
             // We have a canonical header hash in right sequence
-            headers_.push_back(to_bytes32(db::from_slice(data.value)));
+            headers_.emplace_back(0, to_bytes32(db::from_slice(data.value)));
             if (reached_block_num == to) {
                 break;
             }
@@ -501,9 +490,12 @@ void RecoveryFarm::task_completed_handler(RecoveryWorker* sender) {
     worker_completed_cv_.notify_one();
 }
 
-void RecoveryFarm::worker_completed_handler(Worker*) {
+void RecoveryFarm::worker_completed_handler(Worker* sender) {
     if (workers_in_flight_) {
         workers_in_flight_--;
+    }
+    if (sender->has_exception()) {
+        stop();
     }
     worker_completed_cv_.notify_one();
 }

@@ -31,7 +31,7 @@ namespace silkworm {
 class Worker {
   public:
 
-    enum class State { kStopped, kStarting, kStarted, kStopping };
+    enum class State { kStopped, kStarting, kStarted, kKickWaiting, kStopping };
 
     Worker() : name_{"worker"}{};
     explicit Worker(std::string& name) : name_{name}{};
@@ -81,9 +81,9 @@ class Worker {
     std::atomic_bool kicked_{false};                          // Whether the kick has been received
     std::condition_variable kicked_cv_{};                     // Condition variable to wait for kick
     std::mutex kick_mtx_{};                                   // Mutex for conditional wait of kick
+    std::string name_;
 
   private:
-    std::string name_;
     std::atomic<State> state_{State::kStopped};
     std::unique_ptr<std::thread> thread_{nullptr};
     std::exception_ptr exception_ptr_{nullptr};

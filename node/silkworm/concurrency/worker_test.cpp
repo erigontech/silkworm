@@ -44,7 +44,7 @@ TEST_CASE("Worker") {
         ThreadWorker worker(false);
         REQUIRE(worker.get_state() == Worker::State::kStopped);
         worker.start(true);
-        REQUIRE(worker.get_state() == Worker::State::kStarted);
+        REQUIRE(worker.get_state() == Worker::State::kKickWaiting);
         worker.kick();
         std::this_thread::sleep_for(std::chrono::milliseconds(50));
         REQUIRE(worker.get_increment() == 1);
@@ -59,7 +59,7 @@ TEST_CASE("Worker") {
         ThreadWorker worker(true);
         REQUIRE(worker.get_state() == Worker::State::kStopped);
         worker.start(true);
-        REQUIRE(worker.get_state() == Worker::State::kStarted);
+        REQUIRE(worker.get_state() == Worker::State::kKickWaiting);
         worker.kick();
         std::this_thread::sleep_for(std::chrono::milliseconds(50));
         REQUIRE(worker.get_state() == Worker::State::kStopped);

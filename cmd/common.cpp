@@ -251,8 +251,8 @@ void run_preflight_checklist(NodeSettings& node_settings) {
 
     // Check db is initialized with chain config
     {
-        auto db_chain_config{db::read_chain_config(*tx)};
-        while (!db_chain_config.has_value()) {
+        node_settings.chain_config = db::read_chain_config(*tx);
+        while (!node_settings.chain_config.has_value()) {
             auto source_data{read_genesis_data(node_settings.network_id)};
             auto genesis_json = nlohmann::json::parse(source_data, nullptr, /* allow_exceptions = */ false);
             if (genesis_json.is_discarded()) {
@@ -262,20 +262,20 @@ void run_preflight_checklist(NodeSettings& node_settings) {
             log::Message("Priming database", {"network id", std::to_string(node_settings.network_id)});
             db::initialize_genesis(*tx, genesis_json, /*allow_exceptions=*/true);
             tx.commit();
-            db_chain_config = db::read_chain_config(*tx);
+            node_settings.chain_config = db::read_chain_config(*tx);
         }
 
-        log::Message("Initialized chain", {"configuration", db_chain_config.value().to_json().dump()});
+        log::Message("Initialized chain", {"configuration", node_settings.chain_config.value().to_json().dump()});
 
-        if (db_chain_config.value().chain_id != node_settings.network_id) {
+        if (node_settings.chain_config.value().chain_id != node_settings.network_id) {
             throw std::runtime_error("Incompatible network id. Command line expects " +
                                      std::to_string(node_settings.network_id) + "; Database has " +
-                                     std::to_string(db_chain_config.value().chain_id));
+                                     std::to_string(node_settings.chain_config.value().chain_id));
         }
         std::string chain_name{" unknown/custom network"};
         auto chains_map{get_known_chains_map()};
         for (auto& [name, id] : chains_map) {
-            if (id == db_chain_config.value().chain_id) {
+            if (id == node_settings.chain_config.value().chain_id) {
                 chain_name = name;
                 break;
             }
@@ -303,7 +303,7 @@ void run_preflight_checklist(NodeSettings& node_settings) {
     tx.commit(/*renew=*/false);
     chaindata_env.close();
     node_settings.chaindata_env_config.exclusive = chaindata_exclusive;
-    node_settings.chaindata_env_config.create = false; // Has already been created
+    node_settings.chaindata_env_config.create = false;  // Has already been created
 }
 
 }  // namespace silkworm::cmd

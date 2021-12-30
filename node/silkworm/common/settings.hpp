@@ -35,6 +35,7 @@ struct NodeSettings {
     std::unique_ptr<DataDirectory> data_directory;   // Pointer to data folder
     db::EnvConfig chaindata_env_config{};            // Chaindata db config
     uint64_t network_id{kMainnetConfig.chain_id};    // Network/Chain id
+    std::optional<ChainConfig> chain_config;         // Chain config
     size_t batch_size{512_Mebi};                     // Batch size to use in stages
     size_t etl_buffer_size{256_Mebi};                // Buffer size for ETL operations
     std::string private_api_addr{"127.0.0.1:9090"};  // Default API listener

@@ -22,7 +22,7 @@
 #include <string>
 
 #include <CLI/CLI.hpp>
-#include <boost/bind.hpp>
+#include <boost/bind/bind.hpp>
 #include <boost/format.hpp>
 #include <magic_enum.hpp>
 

@@ -21,6 +21,7 @@
 #include <atomic>
 #include <chrono>
 #include <cstdint>
+#include <utility>
 
 #include <boost/asio.hpp>
 
@@ -40,7 +41,7 @@ class Timer {
     //! \param auto_start [in] : whether to start the timer immediately
     explicit Timer(boost::asio::io_context& asio_context, uint32_t interval, std::function<bool()> call_back,
                    bool auto_start = false)
-        : interval_(interval), timer_(asio_context), call_back_(call_back) {
+        : interval_(interval), timer_(asio_context), call_back_(std::move(call_back)) {
         SILKWORM_ASSERT(interval > 0);
         if (auto_start) {
             start();
@@ -55,7 +56,7 @@ class Timer {
             return;
         }
         timer_.expires_from_now(boost::posix_time::milliseconds(interval_));
-        (void)timer_.async_wait([=](const boost::system::error_code& ec) {
+        (void)timer_.async_wait([&, this](const boost::system::error_code& ec) {
             bool expected{true};
             if (!is_running.compare_exchange_strong(expected, false)) {
                 return;

@@ -106,7 +106,7 @@ void SyncLoop::work() {
         if (!is_stopping()) {
             auto [time_point, _] = stop_watch.lap();
             auto cycle_duration{stop_watch.since_start(time_point)};
-            log::Info() << "Cycle completed in " << StopWatch::format(cycle_duration);
+            log::Info("Cycle completed", {"elapsed", StopWatch::format(cycle_duration)});
             throttle_next_cycle(cycle_duration);
         }
 

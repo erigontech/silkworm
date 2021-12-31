@@ -19,6 +19,7 @@
 #include <functional>
 
 #include <silkworm/common/as_range.hpp>
+#include <silkworm/common/assert.hpp>
 #include <silkworm/common/endian.hpp>
 #include <silkworm/common/log.hpp>
 #include <silkworm/db/access_layer.hpp>
@@ -440,17 +441,8 @@ StageResult RecoveryFarm::fill_canonical_headers(BlockNum from, BlockNum to) noe
         auto data{hashes_table.find(db::to_slice(header_key), false)};
         while (data.done) {
             reached_block_num = endian::load_big_u64(static_cast<uint8_t*>(data.key.iov_base));
-            if (reached_block_num != expected_block_num) {
-                log::Error() << "Bad block number sequence ! Expected " << expected_block_num << " got "
-                             << reached_block_num;
-                return StageResult::kBadChainSequence;
-            }
-
-            if (data.value.length() != kHashLength) {
-                log::Error() << "Bad header hash at height " << reached_block_num
-                             << " (hash len == " << data.value.length() << " - should be " << kHashLength << ")";
-                return StageResult::kBadBlockHash;
-            }
+            SILKWORM_ASSERT(reached_block_num == expected_block_num);
+            SILKWORM_ASSERT(data.value.length() == kHashLength);
 
             // We have a canonical header hash in right sequence
             headers_.emplace_back(0, to_bytes32(db::from_slice(data.value)));

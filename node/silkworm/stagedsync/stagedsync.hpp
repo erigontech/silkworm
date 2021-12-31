@@ -38,6 +38,14 @@ class BlockHashes final : public IStage {
     StageResult unwind(db::RWTxn& txn, BlockNum to) final;
     StageResult prune(db::RWTxn& txn) final;
     std::vector<std::string> get_log_progress() final;
+
+  private:
+
+    std::unique_ptr<etl::Collector> collector_{nullptr};
+
+    /* Stats */
+    uint16_t current_phase_{0};
+    BlockNum reached_block_num_{0};
 };
 
 class Senders final : public IStage {

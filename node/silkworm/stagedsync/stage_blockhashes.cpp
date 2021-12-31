@@ -14,6 +14,8 @@
    limitations under the License.
 */
 
+#include <memory>
+
 #include <silkworm/common/as_range.hpp>
 #include <silkworm/common/assert.hpp>
 #include <silkworm/common/endian.hpp>
@@ -33,54 +35,67 @@ StageResult BlockHashes::forward(db::RWTxn& txn) {
      *        to HeaderNumber bucket    : HeaderHash  ->  BlockNumber
      */
 
-    etl::Collector collector(node_settings_->data_directory->etl().path(), node_settings_->etl_buffer_size);
-    uint32_t block_number{0};
-    uint32_t blocks_processed_count{0};
-    auto previous_progress{db::stages::read_stage_progress(*txn, stage_name_)};
-    // Corner case. If previous_progress==0 it means we have never executed this stage before
-    // Otherwise we have already reached block x and we need to start from x+1
-    auto expected_block_number{previous_progress ? previous_progress + 1 : previous_progress};
-
-    auto source{db::open_cursor(*txn, db::table::kCanonicalHashes)};
-
-    log::Trace() << stage_name_ << " started from " << expected_block_number;
-
-    auto header_key{db::block_key(expected_block_number)};
-    auto header_data{source.lower_bound(db::to_slice(header_key), /*throw_notfound*/ false)};
-    while (header_data) {
-        auto reached_block_number{endian::load_big_u64(static_cast<uint8_t*>(header_data.key.iov_base))};
-        SILKWORM_ASSERT(reached_block_number == expected_block_number);
-        SILKWORM_ASSERT(header_data.value.length() == kHashLength);
-        collector.collect(
-            etl::Entry{Bytes(static_cast<uint8_t*>(header_data.value.iov_base), header_data.value.iov_len),
-                       Bytes(static_cast<uint8_t*>(header_data.key.iov_base), header_data.key.iov_len)});
-
-        // Save last processed block_number and expect next in sequence
-        ++blocks_processed_count;
-        block_number = expected_block_number++;
-        header_data = source.to_next(/*throw_notfound*/ false);
+    // Check stage boundaries from previous execution and previous stage execution
+    auto previous_progress{db::stages::read_stage_progress(*txn, db::stages::kBlockHashesKey)};
+    auto headers_stage_progress{db::stages::read_stage_progress(*txn, db::stages::kHeadersKey)};
+    if (previous_progress == headers_stage_progress) {
+        // Nothing to process
+        return StageResult::kSuccess;
+    } else if (previous_progress > headers_stage_progress) {
+        // Something bad had happened.
+        // Maybe we need to unwind ?
+        log::Error() << "Bad progress sequence. BlockHashes stage progress " << previous_progress
+                     << " while Headers stage " << headers_stage_progress;
+        return StageResult::kInvalidProgress;
     }
-    source.close();
 
-    log::Trace() << stage_name_ << " entries collected " << blocks_processed_count;
+    auto expected_block_number{previous_progress + 1};
+    reached_block_num_ = 0;
+    uint64_t headers_count{headers_stage_progress - previous_progress};
+    if (headers_count > 16) {
+        log::Info("Collecting headers ...",
+                  {"from", std::to_string(expected_block_number), "to", std::to_string(headers_stage_progress)});
+    }
+
+    collector_ =
+        std::make_unique<etl::Collector>(node_settings_->data_directory->etl().path(), node_settings_->etl_buffer_size);
+    auto header_key{db::block_key(expected_block_number)};
+    if (auto source{db::open_cursor(*txn, db::table::kCanonicalHashes)}; source.seek(db::to_slice(header_key))) {
+        auto data{source.current()};
+        while (data.done) {
+            reached_block_num_ = {endian::load_big_u64(static_cast<uint8_t*>(data.key.iov_base))};
+            SILKWORM_ASSERT(reached_block_num_ == expected_block_number);
+            SILKWORM_ASSERT(data.value.length() == kHashLength);
+            collector_->collect(etl::Entry{Bytes(static_cast<uint8_t*>(data.value.iov_base), data.value.iov_len),
+                                           Bytes(static_cast<uint8_t*>(data.key.iov_base), data.key.iov_len)});
+            // Do we need to abort ?
+            if (!(expected_block_number % 1024) && SignalHandler::signalled()) {
+                throw std::runtime_error("Operation cancelled");
+            }
+            expected_block_number++;
+        }
+    }
+
+    if (reached_block_num_ != headers_stage_progress) {
+        throw std::runtime_error("Unable to read all headers. Expected height " +
+                                 std::to_string(headers_stage_progress) + " got " + std::to_string(reached_block_num_));
+    }
 
     // Proceed only if we've done something
-    if (blocks_processed_count) {
-        log::Trace() << stage_name_ << " ETL load : " << human_size(collector.size());
+    if (!collector_->empty()) {
         auto target{db::open_cursor(*txn, db::table::kHeaderNumbers)};
         auto target_rcount{txn->get_map_stat(target.map()).ms_entries};
         MDBX_put_flags_t db_flags{target_rcount ? MDBX_put_flags_t::MDBX_UPSERT : MDBX_put_flags_t::MDBX_APPEND};
 
         // Eventually load collected items with no transform (may throw)
-        collector.load(target, nullptr, db_flags);
+        collector_->load(target, nullptr, db_flags);
 
         // Update progress height with last processed block
-        db::stages::write_stage_progress(*txn, db::stages::kBlockHashesKey, block_number);
+        db::stages::write_stage_progress(*txn, db::stages::kBlockHashesKey, reached_block_num_);
 
         txn.commit();
     }
-
-    log::Trace() << stage_name_ << " completed";
+    collector_.reset();
     return StageResult::kSuccess;
 }
 
@@ -128,6 +143,15 @@ StageResult BlockHashes::unwind(db::RWTxn& txn, BlockNum to) {
 StageResult BlockHashes::prune(db::RWTxn&) { return StageResult::kSuccess; }
 
 std::vector<std::string> BlockHashes::get_log_progress() {
+    switch (current_phase_) {
+        case 1:
+            return {"phase", std::to_string(current_phase_) + "/2", "block", std::to_string(reached_block_num_)};
+        case 2:
+            return {"phase", std::to_string(current_phase_) + "/2", "key",
+                    collector_ ? collector_->get_load_key() : ""};
+        default:
+            break;
+    }
     return {};
 }
 

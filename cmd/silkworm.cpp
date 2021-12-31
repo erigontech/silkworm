@@ -18,7 +18,6 @@
 #include <regex>
 
 #include <CLI/CLI.hpp>
-#include <boost/bind/bind.hpp>
 
 #include <silkworm/common/log.hpp>
 #include <silkworm/common/settings.hpp>
@@ -67,7 +66,6 @@ int main(int argc, char* argv[]) {
 
     CLI::App cli("Silkworm node");
     cli.get_formatter()->column_width(50);
-    int ret{0};
 
     try {
         log::Settings log_settings{};  // Holds logging settings
@@ -93,44 +91,23 @@ int main(int argc, char* argv[]) {
 
         // Start sync loop
         stagedysnc::SyncLoop sync_loop(&node_settings, &chaindata_env);
-        std::atomic_bool sync_loop_terminated{false};
-        std::mutex sync_loop_mtx;
-        std::condition_variable sync_loop_terminated_cv{};
-        std::function<void(Worker * sender)> sync_loop_terminated_cb = [&sync_loop_terminated,
-                                                                        &sync_loop_terminated_cv](Worker*) -> void {
-            sync_loop_terminated.store(true);
-            sync_loop_terminated_cv.notify_all();
-        };
-        auto sync_loop_terminated_connector =
-            sync_loop.signal_worker_stopped.connect(boost::bind<void>(sync_loop_terminated_cb, _1));
+        sync_loop.start(/*wait=*/false);
 
-        sync_loop.start(/*wait=*/true);
-
-        // Wait till sync_loop completes
-        // do other stuff meanwhile in this thread like compute total memory consumption
-        // and/or cpu load and/or, again, total number of connected peers
-        bool expected_status{true};
-        while (!sync_loop_terminated.compare_exchange_strong(expected_status, false)) {
-            expected_status = true;
-            {
-                std::unique_lock l(sync_loop_mtx);
-                if (sync_loop_terminated_cv.wait_for(l, std::chrono::seconds(60)) == std::cv_status::no_timeout) {
-                    continue;
-                }
+        // Keep waiting till sync_loop stops
+        // Signals are handled in sync_loop and below
+        auto t1{std::chrono::steady_clock::now()};
+        while (sync_loop.get_state() != Worker::State::kStopped) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(500));
+            auto t2{std::chrono::steady_clock::now()};
+            if ((t2 - t1) > std::chrono::seconds(60)) {
+                t1 = std::chrono::steady_clock::now();
+                log::Info("Resource usage",
+                          {
+                              "alloc", human_size(s_allocated_memory.load()),                         //
+                              "chain", human_size(node_settings.data_directory->chaindata().size()),  //
+                              "etl-tmp", human_size(node_settings.data_directory->etl().size())       //
+                          });
             }
-
-            // The previous wait has timed-out without notification, so we can proceed with
-            // timed logging
-            log::Info("Resource usage",
-                      {
-                          "Memory", human_size(s_allocated_memory.load()),                            //
-                          "Chaindata", human_size(node_settings.data_directory->chaindata().size()),  //
-                          "Etl", human_size(node_settings.data_directory->etl().size())               //
-                      });
-        }
-
-        if (sync_loop.has_exception()) {
-            ret = -1;
         }
 
         asio_guard.reset();
@@ -138,22 +115,22 @@ int main(int argc, char* argv[]) {
 
         log::Message() << "Closing Database chaindata path " << node_settings.data_directory->chaindata().path();
         chaindata_env.close();
+        sync_loop.rethrow();  // Eventually throws the exception which caused the stop
+        return 0;
 
     } catch (const CLI::ParseError& ex) {
         return cli.exit(ex);
     } catch (const std::runtime_error& ex) {
         log::Error() << ex.what();
-        ret = -1;
+        return -1;
     } catch (const std::invalid_argument& ex) {
         std::cerr << "\tInvalid argument :" << ex.what() << "\n" << std::endl;
-        ret = -3;
+        return -3;
     } catch (const std::exception& ex) {
         std::cerr << "\tUnexpected error : " << ex.what() << "\n" << std::endl;
-        ret = -4;
+        return -4;
     } catch (...) {
         std::cerr << "\tUnexpected undefined error\n" << std::endl;
-        ret = -99;
+        return -99;
     }
-
-    return ret;
 }

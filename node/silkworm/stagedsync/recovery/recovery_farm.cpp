@@ -46,15 +46,20 @@ RecoveryFarm::~RecoveryFarm() {
 StageResult RecoveryFarm::recover() {
     // Check stage boundaries from previous execution and previous stage execution
     auto previous_progress{db::stages::read_stage_progress(*txn_, db::stages::kSendersKey)};
-    auto expected_block_number{previous_progress ? previous_progress + 1 : previous_progress};
     auto bodies_stage_progress{db::stages::read_stage_progress(*txn_, db::stages::kBlockBodiesKey)};
-    if (expected_block_number > bodies_stage_progress) {
+
+    if (previous_progress == bodies_stage_progress) {
+        // Nothing to process
+        return StageResult::kSuccess;
+    } else if (previous_progress > bodies_stage_progress) {
         // Something bad had happened. Not possible sender stage is ahead of bodies
         // Maybe we need to unwind ?
         log::Error() << "Bad progress sequence. Sender stage progress " << previous_progress << " while Bodies stage "
                      << bodies_stage_progress;
         return StageResult::kInvalidProgress;
     }
+
+    auto expected_block_number = previous_progress + 1;
 
     // Load canonical headers
     current_phase_ = 1;
@@ -101,8 +106,7 @@ StageResult RecoveryFarm::recover() {
         }
 
         // Every 10 blocks check the SignalHandler has been triggered
-        if (!(reached_block_num % 10) && SignalHandler::signalled()) {
-            stop_all_workers(/*wait=*/false);
+        if (!(reached_block_num % 16) && SignalHandler::signalled()) {
             stop();
             continue;
         }
@@ -455,6 +459,11 @@ StageResult RecoveryFarm::fill_canonical_headers(BlockNum from, BlockNum to) noe
             }
             expected_block_num++;
             data = hashes_table.to_next(false);
+
+            // Do we need to abort ?
+            if (!(expected_block_num % 1024) && SignalHandler::signalled()) {
+                throw std::runtime_error("Operation cancelled");
+            }
         }
 
         // If we've not reached block_to something is wrong

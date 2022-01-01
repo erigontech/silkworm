@@ -1,5 +1,5 @@
 #[[
-   Copyright 2020-2021 The Silkworm Authors
+   Copyright 2020-2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -59,9 +59,6 @@ if(NOT SILKWORM_CORE_ONLY)
 
   add_executable(genesistool genesistool.cpp)
   target_link_libraries(genesistool PRIVATE CLI11::CLI11)
-
-  add_executable(execute execute.cpp)
-  target_link_libraries(execute PRIVATE silkworm_node CLI11::CLI11)
 
   add_executable(unwind_execution unwind_execution.cpp)
   target_link_libraries(unwind_execution PRIVATE silkworm_node CLI11::CLI11)

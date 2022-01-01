@@ -1,5 +1,5 @@
 /*
-   Copyright 2021 The Silkworm Authors
+   Copyright 2021-2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@
 #include <filesystem>
 #include <vector>
 
+#include <silkworm/consensus/engine.hpp>
 #include <silkworm/db/stages.hpp>
 #include <silkworm/db/tables.hpp>
 #include <silkworm/stagedsync/common.hpp>
@@ -40,7 +41,6 @@ class BlockHashes final : public IStage {
     std::vector<std::string> get_log_progress() final;
 
   private:
-
     std::unique_ptr<etl::Collector> collector_{nullptr};
 
     /* Stats */
@@ -60,7 +60,24 @@ class Senders final : public IStage {
 
   private:
     std::unique_ptr<recovery::RecoveryFarm> farm_{nullptr};
+};
 
+class Execution final : public IStage {
+  public:
+    explicit Execution(NodeSettings* node_settings)
+        : IStage(db::stages::kExecutionKey, node_settings),
+          consensus_engine_{consensus::engine_factory(node_settings->chain_config.value())} {};
+    ~Execution() override = default;
+
+    StageResult forward(db::RWTxn& txn) final;
+    StageResult unwind(db::RWTxn& txn, BlockNum to) final;
+    StageResult prune(db::RWTxn& txn) final;
+    std::vector<std::string> get_log_progress() final;
+
+  private:
+    std::unique_ptr<consensus::IEngine> consensus_engine_;
+    BlockNum block_num_{0};
+    StageResult execute_batch(db::RWTxn& txn, BlockNum max_block_num, BlockNum prune_from);
 };
 
 inline constexpr size_t kDefaultBatchSize = 512_Mebi;          // TODO(Andrea) Replace with value from CLI

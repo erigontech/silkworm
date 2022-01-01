@@ -1,5 +1,5 @@
 /*
-   Copyright 2021 The Silkworm Authors
+   Copyright 2021-2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -36,7 +36,7 @@ StageResult BlockHashes::forward(db::RWTxn& txn) {
      */
 
     // Check stage boundaries from previous execution and previous stage execution
-    auto previous_progress{db::stages::read_stage_progress(*txn, db::stages::kBlockHashesKey)};
+    auto previous_progress{db::stages::read_stage_progress(*txn, stage_name_)};
     auto headers_stage_progress{db::stages::read_stage_progress(*txn, db::stages::kHeadersKey)};
     if (previous_progress == headers_stage_progress) {
         // Nothing to process
@@ -49,8 +49,8 @@ StageResult BlockHashes::forward(db::RWTxn& txn) {
         return StageResult::kInvalidProgress;
     }
 
-    auto expected_block_number{previous_progress + 1};
     reached_block_num_ = 0;
+    auto expected_block_number{previous_progress + 1};
     uint64_t headers_count{headers_stage_progress - previous_progress};
     if (headers_count > 16) {
         log::Info("Collecting headers ...",
@@ -60,20 +60,20 @@ StageResult BlockHashes::forward(db::RWTxn& txn) {
     collector_ =
         std::make_unique<etl::Collector>(node_settings_->data_directory->etl().path(), node_settings_->etl_buffer_size);
     auto header_key{db::block_key(expected_block_number)};
-    if (auto source{db::open_cursor(*txn, db::table::kCanonicalHashes)}; source.seek(db::to_slice(header_key))) {
-        auto data{source.current()};
-        while (data.done) {
-            reached_block_num_ = {endian::load_big_u64(static_cast<uint8_t*>(data.key.iov_base))};
-            SILKWORM_ASSERT(reached_block_num_ == expected_block_number);
-            SILKWORM_ASSERT(data.value.length() == kHashLength);
-            collector_->collect(etl::Entry{Bytes(static_cast<uint8_t*>(data.value.iov_base), data.value.iov_len),
-                                           Bytes(static_cast<uint8_t*>(data.key.iov_base), data.key.iov_len)});
-            // Do we need to abort ?
-            if (!(expected_block_number % 1024) && SignalHandler::signalled()) {
-                throw std::runtime_error("Operation cancelled");
-            }
-            expected_block_number++;
+    auto source{db::open_cursor(*txn, db::table::kCanonicalHashes)};
+    auto data{source.find(db::to_slice(header_key), /*throw_notfound=*/false)};
+    while (data.done) {
+        reached_block_num_ = {endian::load_big_u64(static_cast<uint8_t*>(data.key.iov_base))};
+        SILKWORM_ASSERT(reached_block_num_ == expected_block_number);
+        SILKWORM_ASSERT(data.value.length() == kHashLength);
+        collector_->collect(etl::Entry{Bytes(static_cast<uint8_t*>(data.value.iov_base), data.value.iov_len),
+                                       Bytes(static_cast<uint8_t*>(data.key.iov_base), data.key.iov_len)});
+        // Do we need to abort ?
+        if (!(expected_block_number % 1024) && SignalHandler::signalled()) {
+            throw std::runtime_error("Operation cancelled");
         }
+        expected_block_number++;
+        data = source.to_next(/*throw_notfound=*/false);
     }
 
     if (reached_block_num_ != headers_stage_progress) {
@@ -91,7 +91,7 @@ StageResult BlockHashes::forward(db::RWTxn& txn) {
         collector_->load(target, nullptr, db_flags);
 
         // Update progress height with last processed block
-        db::stages::write_stage_progress(*txn, db::stages::kBlockHashesKey, reached_block_num_);
+        db::stages::write_stage_progress(*txn, stage_name_, reached_block_num_);
 
         txn.commit();
     }

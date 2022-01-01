@@ -1,5 +1,5 @@
 /*
-    Copyright 2021 The Silkworm Authors
+    Copyright 2021-2022 The Silkworm Authors
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -115,7 +115,7 @@ void SignalHandler::handle(int sig_code) {
         log::Message() << kColorYellow << "Got " << sig_name(sig_code) << ". Shutting down ...";
     }
     if (++sig_count_ >= 10) {
-        abort();
+        std::abort();
     }
     if (sig_count_ > 1) {
         log::Message() << kColorYellow << "Already shutting down. Interrupt more to panic. " << (10 - sig_count_);

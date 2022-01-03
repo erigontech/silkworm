@@ -25,7 +25,6 @@ std::vector<Stage> get_archive_node_stages() {
     return {
         {stage_headers,         no_unwind,              no_prune, 1},
         {stage_bodies,          no_unwind,              no_prune, 3},
-        {stage_execution,       unwind_execution,       no_prune, 5},
         {stage_hashstate,       unwind_hashstate,       no_prune, 6},
         {stage_interhashes,     unwind_interhashes,     no_prune, 7},
         {stage_account_history, unwind_account_history, no_prune, 8},
@@ -39,7 +38,6 @@ std::vector<Stage> get_pruned_node_stages() {
     return {
         {stage_headers,         no_unwind,              no_prune,              1},
         {stage_bodies,          no_unwind,              no_prune,              3},
-        {stage_execution,       unwind_execution,       prune_execution,       5},
         {stage_hashstate,       unwind_hashstate,       no_prune,              6},
         {stage_interhashes,     unwind_interhashes,     no_prune,              7},
         {stage_account_history, unwind_account_history, prune_account_history, 8},
@@ -53,7 +51,6 @@ std::vector<Stage> get_miner_mode_stages() {
     return {
         {stage_headers,         no_unwind,              no_prune,        1},
         {stage_bodies,          no_unwind,              no_prune,        3},
-        {stage_execution,       unwind_execution,       prune_execution, 5},
         {stage_hashstate,       unwind_hashstate,       no_prune,        6},
         {stage_interhashes,     unwind_interhashes,     no_prune,        7},
     };

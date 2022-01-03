@@ -107,8 +107,8 @@ inline StageResult stage_execution(db::RWTxn& txn, const std::filesystem::path& 
 
 /*
     * Operation is used to distinguish what bucket we want to generated
-    * HashAccount is for genenerating HashedAccountBucket
-    * HashStorage is for genenerating HashedStorageBucket
+    * HashAccount is for generating HashedAccountBucket
+    * HashStorage is for generating HashedStorageBucket
     * Code generates hashed key => code_hash mapping
 
 */

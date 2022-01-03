@@ -58,6 +58,9 @@ StageResult Execution::forward(db::RWTxn& txn) {
 
     block_num_ = previous_progress + 1;
     BlockNum max_block_num{bodies_stage_progress};
+    if (bodies_stage_progress - previous_progress > 16) {
+        log::Info("Begin Execution", {"from", std::to_string(block_num_), "to", std::to_string(bodies_stage_progress)});
+    }
     while (block_num_ <= max_block_num) {
         // TODO(Andrea) Prune logic must be amended
         const auto res{execute_batch(txn, max_block_num, 0)};
@@ -121,6 +124,19 @@ StageResult Execution::execute_batch(db::RWTxn& txn, BlockNum max_block_num, Blo
         return StageResult::kUnknownError;
     }
 }
+
+StageResult Execution::unwind(db::RWTxn& txn, BlockNum to) {
+    (void)txn;
+    (void)to;
+    throw std::runtime_error("Not yet implemented");
+}
+
+StageResult Execution::prune(db::RWTxn& txn) {
+    (void)txn;
+    throw std::runtime_error("Not yet implemented");
+};
+
+std::vector<std::string> Execution::get_log_progress() { return {"block", std::to_string(block_num_)}; }
 
 // Revert State for given address/storage location
 static void revert_state(ByteView key, ByteView value, mdbx::cursor& plain_state_table,

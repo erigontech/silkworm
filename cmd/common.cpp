@@ -252,7 +252,7 @@ void run_preflight_checklist(NodeSettings& node_settings) {
     // Check db is initialized with chain config
     {
         node_settings.chain_config = db::read_chain_config(*tx);
-        while (!node_settings.chain_config.has_value()) {
+        if (!node_settings.chain_config.has_value()) {
             auto source_data{read_genesis_data(node_settings.network_id)};
             auto genesis_json = nlohmann::json::parse(source_data, nullptr, /* allow_exceptions = */ false);
             if (genesis_json.is_discarded()) {
@@ -267,7 +267,9 @@ void run_preflight_checklist(NodeSettings& node_settings) {
 
         log::Message("Initialized chain", {"configuration", node_settings.chain_config.value().to_json().dump()});
 
-        if (node_settings.chain_config.value().chain_id != node_settings.network_id) {
+        if (!node_settings.chain_config.has_value()) {
+            throw std::runtime_error("Unable to retrieve chain configuration");
+        } else if (node_settings.chain_config.value().chain_id != node_settings.network_id) {
             throw std::runtime_error("Incompatible network id. Command line expects " +
                                      std::to_string(node_settings.network_id) + "; Database has " +
                                      std::to_string(node_settings.chain_config.value().chain_id));

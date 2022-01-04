@@ -158,20 +158,16 @@ std::vector<Transaction> read_transactions(mdbx::cursor& txn_table, uint64_t bas
     if (count == 0) {
         return v;
     }
-    v.reserve(count);
-
-    Bytes key(8, '\0');
-    endian::store_big_u64(key.data(), base_id);
+    v.resize(count);
+    auto key{db::block_key(base_id)};
 
     uint64_t i{0};
     for (auto data{txn_table.find(to_slice(key), false)}; data.done && i < count;
          data = txn_table.to_next(/*throw_notfound = */ false), ++i) {
         ByteView data_view{from_slice(data.value)};
-        Transaction eth_txn;
-        rlp::success_or_throw(rlp::decode(data_view, eth_txn));
-        v.push_back(eth_txn);
+        rlp::success_or_throw(rlp::decode(data_view, v.at(i)));
     }
-
+    SILKWORM_ASSERT(i == count);
     return v;
 }
 

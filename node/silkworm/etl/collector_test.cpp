@@ -59,8 +59,11 @@ void run_collector_test(LoadFunc load_func, bool do_copy = true) {
 
     // Generate Test Entries
     auto set{generate_entry_set(1000)};  // 1000 entries in total
-    auto collector{Collector(context.dir().etl().path(),
-                             100 * 16 - 8 * 10)};  // 100 entries per file (16 bytes per entry) minus 10 keys empty
+    size_t generated_size{0};
+    for (const auto& entry :set) {
+        generated_size += entry.size() + 8;
+    }
+    auto collector{Collector(context.dir().etl().path(), generated_size / 10)};  // expect 10 files
 
     // Collection
     for (auto&& entry : set) {

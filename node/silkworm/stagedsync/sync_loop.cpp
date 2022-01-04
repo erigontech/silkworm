@@ -90,9 +90,11 @@ void SyncLoop::work() {
             stagedsync::success_or_throw(stage_result);
 
             auto [_, stage_duration] = stop_watch.lap();
-            std::string prefix = boost::str(boost::format(log_prefix_fmt) % (current_stage_ + 1) % stages_.size() %
-                                            stages_.at(current_stage_)->name());
-            log::Info(prefix, {"done", StopWatch::format(stage_duration)});
+            if (stage_duration > std::chrono::milliseconds(5)) {
+                std::string prefix = boost::str(boost::format(log_prefix_fmt) % (current_stage_ + 1) % stages_.size() %
+                                                stages_.at(current_stage_)->name());
+                log::Info(prefix, {"done", StopWatch::format(stage_duration)});
+            }
             ++current_stage_;
         }
 
@@ -111,7 +113,7 @@ void SyncLoop::work() {
             throttle_next_cycle(cycle_duration);
         }
 
-        break; // TODO(Andrea) Remove
+        break;  // TODO(Andrea) Remove
     }
 
     log_timer.stop();

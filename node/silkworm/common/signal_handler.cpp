@@ -17,7 +17,6 @@
 #include "signal_handler.hpp"
 
 #include <csignal>
-#include <iostream>
 
 #include <silkworm/common/log.hpp>
 

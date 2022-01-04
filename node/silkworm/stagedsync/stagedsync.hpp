@@ -78,6 +78,14 @@ class Execution final : public IStage {
     std::unique_ptr<consensus::IEngine> consensus_engine_;
     BlockNum block_num_{0};
     StageResult execute_batch(db::RWTxn& txn, BlockNum max_block_num, BlockNum prune_from);
+
+    // Stats
+    std::mutex progress_mtx_;  // Synchronizes access to progress stats
+    std::chrono::time_point<std::chrono::steady_clock> start_time_{std::chrono::steady_clock::now()};
+    std::chrono::time_point<std::chrono::steady_clock> lap_time_{std::chrono::steady_clock::now()};
+    size_t processed_blocks_{0};
+    size_t processed_transactions_{0};
+    size_t processed_mgas_{0};
 };
 
 inline constexpr size_t kDefaultBatchSize = 512_Mebi;          // TODO(Andrea) Replace with value from CLI

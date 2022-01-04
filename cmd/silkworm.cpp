@@ -27,38 +27,45 @@
 
 #include "common.hpp"
 
+#if defined(_WIN32)
+#include <Psapi.h>
+#endif
+
+#if defined(__linux__)
+#include <fstream>
+#include <regex>
+#endif
+
 using namespace silkworm;
 
-static std::atomic<size_t> s_allocated_memory{0};
+size_t get_mem_usage() {
+    size_t ret{0};
+#if defined(_WIN32)
 
-void* operator new(size_t size) {
-    s_allocated_memory += size;
-    return malloc(size);
-}
+    static HANDLE phandle{GetCurrentProcess()};
+    PROCESS_MEMORY_COUNTERS_EX pmc;
+    (void)K32GetProcessMemoryInfo(phandle, (PROCESS_MEMORY_COUNTERS*)&pmc, sizeof(pmc));
+    ret = pmc.WorkingSetSize;
 
-void* operator new[](size_t size) {
-    s_allocated_memory += size;
-    return malloc(size);
-}
+#endif
 
-void operator delete(void* ptr, size_t size) noexcept {
-    s_allocated_memory -= size;
-    free(ptr);
-}
+#if defined(__linux__)
 
-void operator delete[](void* ptr, size_t size) noexcept {
-    s_allocated_memory -= size;
-    free(ptr);
-}
+    static const std::regex pattern{R"(^VmRSS:\s*(\d*)\s*kB$)", std::regex_constants::icase};
+    std::smatch matches;
+    std::string line;
+    std::ifstream input("/proc/self/status");
+    while (std::getline(input, line)) {
+        if (std::regex_search(line, matches, pattern, std::regex_constants::match_default)) {
+            std::string int_part = matches[1].str();
+            auto value{std::strtoull(int_part.c_str(), nullptr, 10)};
+            ret = value * 1_Kibi;
+            break;
+        }
+    }
 
-void operator delete(void* ptr) noexcept {
-    s_allocated_memory -= sizeof(ptr);
-    free(ptr);
-}
-
-void operator delete[](void* ptr) noexcept {
-    s_allocated_memory -= sizeof(ptr);
-    free(ptr);
+#endif
+    return ret;
 }
 
 int main(int argc, char* argv[]) {
@@ -103,7 +110,7 @@ int main(int argc, char* argv[]) {
                 t1 = std::chrono::steady_clock::now();
                 log::Info("Resource usage",
                           {
-                              "alloc", human_size(s_allocated_memory.load()),                         //
+                              "mem", human_size(get_mem_usage()),                                     //
                               "chain", human_size(node_settings.data_directory->chaindata().size()),  //
                               "etl-tmp", human_size(node_settings.data_directory->etl().size())       //
                           });

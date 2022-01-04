@@ -19,6 +19,7 @@
 
 #include <silkworm/common/endian.hpp>
 #include <silkworm/common/log.hpp>
+#include <silkworm/common/signal_handler.hpp>
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/buffer.hpp>
 #include <silkworm/db/stages.hpp>
@@ -56,6 +57,14 @@ StageResult Execution::forward(db::RWTxn& txn) {
         return StageResult::kInvalidProgress;
     }
 
+    std::unique_lock progress_lock(progress_mtx_);
+    processed_blocks_ = 0;
+    processed_transactions_ = 0;
+    processed_mgas_ = 0;
+    start_time_ = std::chrono::steady_clock::now();
+    lap_time_ = start_time_;
+    progress_lock.unlock();
+
     block_num_ = previous_progress + 1;
     BlockNum max_block_num{bodies_stage_progress};
     if (bodies_stage_progress - previous_progress > 16) {
@@ -69,6 +78,9 @@ StageResult Execution::forward(db::RWTxn& txn) {
         }
         db::stages::write_stage_progress(*txn, db::stages::kExecutionKey, block_num_);
         txn.commit();
+        if (SignalHandler::signalled()) {
+            return StageResult::kAborted;
+        }
         block_num_++;
     }
     return StageResult::kSuccess;
@@ -82,6 +94,10 @@ StageResult Execution::execute_batch(db::RWTxn& txn, BlockNum max_block_num, Blo
         std::vector<Receipt> receipts;
 
         while (true) {
+            if (!(block_num_ % 64) && SignalHandler::signalled()) {
+                return StageResult::kAborted;
+            }
+
             std::optional<BlockWithHash> block_with_hash{db::read_block(*txn, block_num_, /*read_senders=*/true)};
             if (!block_with_hash.has_value()) {
                 return StageResult::kBadChainSequence;
@@ -100,8 +116,23 @@ StageResult Execution::execute_batch(db::RWTxn& txn, BlockNum max_block_num, Blo
             // TODO(Andrea) implement pruning
             buffer.insert_receipts(block_num_, receipts);
 
-            if (buffer.current_batch_size() >= node_settings_->batch_size || block_num_ >= max_block_num) {
+            processed_blocks_++;
+            processed_transactions_ += block_with_hash->block.transactions.size();
+            processed_mgas_ += block_with_hash->block.header.gas_used / 1'000'000;
+
+            const bool overflows{buffer.current_batch_size() >= node_settings_->batch_size};
+            if (overflows || block_num_ >= max_block_num) {
                 buffer.write_to_db();
+                if (overflows) {
+                    log::Info("Flushed batch", {"size", human_size(buffer.current_batch_size())});
+                    std::unique_lock progress_lock(progress_mtx_);
+                    processed_blocks_ = 0;
+                    processed_transactions_ = 0;
+                    processed_mgas_ = 0;
+                    start_time_ = std::chrono::steady_clock::now();
+                    lap_time_ = start_time_;
+                    progress_lock.unlock();
+                }
                 return StageResult::kSuccess;
             }
             block_num_++;
@@ -136,7 +167,23 @@ StageResult Execution::prune(db::RWTxn& txn) {
     throw std::runtime_error("Not yet implemented");
 };
 
-std::vector<std::string> Execution::get_log_progress() { return {"block", std::to_string(block_num_)}; }
+std::vector<std::string> Execution::get_log_progress() {
+    std::unique_lock progress_lock(progress_mtx_);
+    lap_time_ = std::chrono::steady_clock::now();
+    auto elapsed_seconds =
+        static_cast<uint32_t>(std::chrono::duration_cast<std::chrono::seconds>(lap_time_ - start_time_).count());
+    if (!elapsed_seconds) {
+        progress_lock.unlock();
+        return {};
+    }
+    auto speed_blocks = processed_blocks_ / elapsed_seconds;
+    auto speed_transactions = processed_transactions_ / elapsed_seconds;
+    auto speed_mgas = processed_mgas_ / elapsed_seconds;
+    progress_lock.unlock();
+
+    return {"block",  std::to_string(block_num_),         "blocks/s", std::to_string(speed_blocks),
+            "txns/s", std::to_string(speed_transactions), "Mgas/s",   std::to_string(speed_mgas)};
+}
 
 // Revert State for given address/storage location
 static void revert_state(ByteView key, ByteView value, mdbx::cursor& plain_state_table,

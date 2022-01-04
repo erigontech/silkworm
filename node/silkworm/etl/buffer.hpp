@@ -40,7 +40,7 @@ class Buffer {
 
     void put(const Entry& entry) {
         // Add a new entry to the buffer
-        size_ += entry.size();
+        size_ += entry.size() + sizeof(head_t);
         buffer_.push_back(entry);
     }
 

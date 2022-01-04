@@ -68,10 +68,10 @@ class Timer {
     }
 
     void stop() {
-        if (!is_running) {
-            return;
+        bool expected_running{true};
+        if(is_running.compare_exchange_strong(expected_running, false)) {
+            (void)timer_.cancel();
         }
-        (void)timer_.cancel();
     }
 
   private:

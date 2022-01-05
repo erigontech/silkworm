@@ -66,7 +66,8 @@ void RecoveryWorker::work() {
         // Raise task completed event
         auto [_, elapsed]{sw.stop()};
         auto elapsed_seconds{std::chrono::duration_cast<std::chrono::seconds>(elapsed)};
-        auto package_speed{processed / static_cast<uint32_t >(elapsed_seconds.count())};
+        auto package_speed{elapsed_seconds.count() ? processed / static_cast<uint32_t>(elapsed_seconds.count())
+                                                   : processed};
         log::Trace(name_, {"task completed", StopWatch::format(elapsed), "txn/s", std::to_string(package_speed)});
         signal_task_completed(this);
     }

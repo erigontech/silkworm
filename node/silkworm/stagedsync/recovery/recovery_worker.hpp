@@ -48,7 +48,11 @@ class RecoveryWorker final : public silkworm::Worker {
     //! \param [in] id : unique identifier for this instance
     //! \remarks data_size is expressed as number of transactions to recover per batch times address size
     explicit RecoveryWorker(uint32_t id)
-        : Worker("Address recoverer #" + std::to_string(id)), id_(id), context_{ecdsa::create_context()} {};
+        : Worker("Address recoverer #" + std::to_string(id)), id_(id), context_{ecdsa::create_context()} {
+        if (!context_) {
+            throw std::runtime_error("Could not create elliptic curve context");
+        }
+    };
     ~RecoveryWorker() final;
 
     //! \brief Feed the worker with a new set of data to process

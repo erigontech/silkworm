@@ -37,9 +37,6 @@ void RecoveryWorker::set_work(std::vector<RecoveryPackage>& farm_batch, bool kic
 
 void RecoveryWorker::work() {
     StopWatch sw;
-    if (!context_) {
-        throw std::runtime_error("Could not create elliptic curve context");
-    }
 
     while (wait_for_kick()) {
 

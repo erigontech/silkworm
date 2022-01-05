@@ -124,11 +124,10 @@ void Buffer::write_to_state_table() {
     for (const auto& address : addresses) {
         if (auto it{accounts_.find(address)}; it != accounts_.end()) {
             auto key{to_slice(address)};
+            state_table.erase(key, /*whole_multivalue=*/true);  // PlainState is multivalue
             if (it->second.has_value()) {
                 Bytes encoded{it->second->encode_for_storage()};
                 state_table.upsert(key, to_slice(encoded));
-            } else {
-                state_table.erase(key);
             }
         }
 

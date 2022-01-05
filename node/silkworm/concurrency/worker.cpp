@@ -100,20 +100,17 @@ bool Worker::wait_for_kick(uint32_t timeout_milliseconds) {
 
 std::string Worker::what() {
     std::string ret{};
-    if (has_exception()) {
-        try {
-            std::rethrow_exception(exception_ptr_);
-        } catch (const std::exception& ex) {
-            ret = ex.what();
-        } catch (const std::string& ex) {
-            ret = ex;
-        } catch (const char* ex) {
-            ret = ex;
-        } catch (...) {
-            ret = "Undefined error";
-        }
+    try {
+        rethrow();
+    } catch (const std::exception& ex) {
+        ret = ex.what();
+    } catch (const std::string& ex) {
+        ret = ex;
+    } catch (const char* ex) {
+        ret = ex;
+    } catch (...) {
+        ret = "Undefined error";
     }
-    return ret;
 }
 
 void Worker::rethrow() {

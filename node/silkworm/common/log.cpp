@@ -1,5 +1,5 @@
 /*
-   Copyright 2020-2021 The Silkworm Authors
+   Copyright 2020-2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -71,6 +71,10 @@ static inline std::pair<const char*, const char*> get_channel_settings(Level lev
 }
 
 BufferBase::BufferBase(Level level) : level_(level) {
+    if (level > settings_.log_verbosity) {
+        return;
+    }
+    
     auto [prefix, color] = get_channel_settings(level);
     // Prefix
     ss_ << kColorReset << " " << color << prefix << kColorReset << " ";
@@ -87,13 +91,15 @@ BufferBase::BufferBase(Level level) : level_(level) {
 }
 
 BufferBase::BufferBase(Level level, std::string_view msg, std::vector<std::string> args) : BufferBase(level) {
-    if (level <= settings_.log_verbosity) {
-        ss_ << std::left << std::setw(30) << std::setfill(' ') << msg;
-        bool left{true};
-        for (const auto& arg : args) {
-            ss_ << (left ? kColorGreen : kColorWhiteHigh) << arg << kColorReset << (left ? "=" : " ") << kColorReset;
-            left = !left;
-        }
+    if (level > settings_.log_verbosity) {
+        return;
+    }
+
+    ss_ << std::left << std::setw(30) << std::setfill(' ') << msg;
+    bool left{true};
+    for (const auto& arg : args) {
+        ss_ << (left ? kColorGreen : kColorWhiteHigh) << arg << kColorReset << (left ? "=" : " ") << kColorReset;
+        left = !left;
     }
 }
 

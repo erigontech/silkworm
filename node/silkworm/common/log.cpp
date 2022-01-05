@@ -49,6 +49,8 @@ void tee_file(const std::filesystem::path& path) {
 
 void set_verbosity(Level level) { settings_.log_verbosity = level; }
 
+bool test_verbosity(Level level) { return level <= settings_.log_verbosity; }
+
 static inline std::pair<const char*, const char*> get_channel_settings(Level level) {
     switch (level) {
         case Level::kTrace:
@@ -85,11 +87,13 @@ BufferBase::BufferBase(Level level) : level_(level) {
 }
 
 BufferBase::BufferBase(Level level, std::string_view msg, std::vector<std::string> args) : BufferBase(level) {
-    ss_ << std::left << std::setw(30) << std::setfill(' ') << msg;
-    bool left{true};
-    for (const auto& arg : args) {
-        ss_ << (left ? kColorGreen : kColorWhiteHigh) << arg << kColorReset << (left ? "=" : " ") << kColorReset;
-        left = !left;
+    if (level <= settings_.log_verbosity) {
+        ss_ << std::left << std::setw(30) << std::setfill(' ') << msg;
+        bool left{true};
+        for (const auto& arg : args) {
+            ss_ << (left ? kColorGreen : kColorWhiteHigh) << arg << kColorReset << (left ? "=" : " ") << kColorReset;
+            left = !left;
+        }
     }
 }
 

@@ -54,6 +54,12 @@ void init(Settings& settings);
 //! \note This function is not thread safe as it's meant to be used at start of process and never called again
 void set_verbosity(Level level);
 
+//! \brief Checks if provided log level will be effectively printed on behalf of current settings
+//! \return True / False
+//! \remarks Some logging operations may implement computations which would be completely wasted if the outcome is not
+//! printed
+bool test_verbosity(Level level);
+
 //! \brief Sets a file output for log teeing
 //! \note This function is not thread safe as it's meant to be used at start of process and never called again
 void tee_file(const std::filesystem::path& path);

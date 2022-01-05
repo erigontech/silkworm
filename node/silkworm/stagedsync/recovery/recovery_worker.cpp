@@ -37,20 +37,13 @@ void RecoveryWorker::set_work(std::vector<RecoveryPackage>& farm_batch, bool kic
 
 void RecoveryWorker::work() {
     StopWatch sw;
-    context_ = ecdsa::create_context();
     if (!context_) {
         throw std::runtime_error("Could not create elliptic curve context");
     }
 
     while (wait_for_kick()) {
-        /**
-         * Each work package is a pair of BlockNum + Transaction data.
-         * Work packages are processed in order and recovered sender's addresses are
-         * stored in allocated memory area. At block level break s byteview of
-         * memory area for addresses of the block is created and stored in results_ vector
-         */
-
         sw.start(true);
+        size_t processed{0};
         BlockNum block_num{batch_.front().block_num};
 
         for (auto& package : batch_) {
@@ -67,11 +60,14 @@ void RecoveryWorker::work() {
             } else {
                 throw std::runtime_error("Unable to recover from address in block " + std::to_string(block_num));
             }
+            processed++;
         }
 
         // Raise task completed event
         auto [_, elapsed]{sw.stop()};
-        log::Trace(name_, {"task completed", StopWatch::format(elapsed)});
+        auto elapsed_seconds{std::chrono::duration_cast<std::chrono::seconds>(elapsed)};
+        auto package_speed{processed / static_cast<uint32_t >(elapsed_seconds.count())};
+        log::Trace(name_, {"task completed", StopWatch::format(elapsed), "txn/s", std::to_string(package_speed)});
         signal_task_completed(this);
     }
 }

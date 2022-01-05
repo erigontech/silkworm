@@ -47,7 +47,8 @@ class RecoveryWorker final : public silkworm::Worker {
     //! \brief Creates an instance of recovery worker
     //! \param [in] id : unique identifier for this instance
     //! \remarks data_size is expressed as number of transactions to recover per batch times address size
-    explicit RecoveryWorker(uint32_t id) : Worker("Address recoverer #" + std::to_string(id)), id_(id){};
+    explicit RecoveryWorker(uint32_t id)
+        : Worker("Address recoverer #" + std::to_string(id)), id_(id), context_{ecdsa::create_context()} {};
     ~RecoveryWorker() final;
 
     //! \brief Feed the worker with a new set of data to process
@@ -62,9 +63,9 @@ class RecoveryWorker final : public silkworm::Worker {
     boost::signals2::signal<void(RecoveryWorker* sender)> signal_task_completed;
 
   private:
-    const uint32_t id_;                    // Unique identifier
-    std::vector<RecoveryPackage> batch_;   // Batch to process
-    secp256k1_context* context_{nullptr};  // Elliptic curve context;
+    const uint32_t id_;                   // Unique identifier
+    std::vector<RecoveryPackage> batch_;  // Batch to process
+    secp256k1_context* context_;          // Elliptic curve context;
 
     //! \brief Basic recovery work loop
     //! \remarks Overrides Worker::work()

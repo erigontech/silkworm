@@ -67,6 +67,13 @@ TEST_CASE("Stop Watch") {
     CHECK(sw1.format(1200us) == "1.200ms");
     CHECK(sw1.format(200us) == "200us");
 
+    (void)sw1.stop();
+    (void)sw1.start(/*with_reset=*/true);
+    CHECK(sw1.laps().empty() == false);
+    (void)sw1.stop();
+    auto[_, duration4]{sw1.stop()};
+    CHECK(duration4.count() == 0);
+
     sw1.reset();
     CHECK(sw1.laps().empty());  // No more laps
     CHECK_FALSE(sw1);           // Not started

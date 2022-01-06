@@ -97,7 +97,7 @@ int main(int argc, char* argv[]) {
         }};
 
         // Start sync loop
-        stagedysnc::SyncLoop sync_loop(&node_settings, &chaindata_env);
+        stagedsync::SyncLoop sync_loop(&node_settings, &chaindata_env);
         sync_loop.start(/*wait=*/false);
 
         // Keep waiting till sync_loop stops

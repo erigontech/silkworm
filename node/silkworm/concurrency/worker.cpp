@@ -111,6 +111,7 @@ std::string Worker::what() {
     } catch (...) {
         ret = "Undefined error";
     }
+    return ret;
 }
 
 void Worker::rethrow() {

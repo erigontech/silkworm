@@ -32,8 +32,6 @@ void SyncLoop::load_stages() {
 }
 
 void SyncLoop::work() {
-    static std::string log_prefix_fmt{"Stage %u/%u : %s"};
-
     log::Trace() << "Synchronization loop started";
 
     bool is_first_cycle{true};
@@ -47,9 +45,7 @@ void SyncLoop::work() {
             if (is_stopping()) {
                 return false;
             }
-            std::string prefix = boost::str(boost::format(log_prefix_fmt) % (current_stage_ + 1) % stages_.size() %
-                                            stages_.at(current_stage_)->name());
-            log::Info(prefix, stages_.at(current_stage_)->get_log_progress());
+            log::Info(get_log_prefix(), stages_.at(current_stage_)->get_log_progress());
             return true;
         },
         true);
@@ -91,9 +87,7 @@ void SyncLoop::work() {
 
             auto [_, stage_duration] = stop_watch.lap();
             if (stage_duration > std::chrono::milliseconds(5)) {
-                std::string prefix = boost::str(boost::format(log_prefix_fmt) % (current_stage_ + 1) % stages_.size() %
-                                                stages_.at(current_stage_)->name());
-                log::Info(prefix, {"done", StopWatch::format(stage_duration)});
+                log::Info(get_log_prefix(), {"done", StopWatch::format(stage_duration)});
             }
             ++current_stage_;
         }
@@ -125,8 +119,8 @@ void SyncLoop::throttle_next_cycle(const StopWatch::Duration& cycle_duration) {
         return;
     }
 
-    auto min_duration =
-        std::chrono::duration_cast<StopWatch::Duration>(std::chrono::seconds(node_settings_->sync_loop_throttle_seconds));
+    auto min_duration = std::chrono::duration_cast<StopWatch::Duration>(
+        std::chrono::seconds(node_settings_->sync_loop_throttle_seconds));
     if (min_duration <= cycle_duration) {
         return;
     }
@@ -141,5 +135,10 @@ void SyncLoop::throttle_next_cycle(const StopWatch::Duration& cycle_duration) {
         }
     }
 }
+std::string SyncLoop::get_log_prefix() const {
+    static std::string log_prefix_fmt{"Stage %u/%u : %s"};
+    return boost::str(boost::format(log_prefix_fmt) % (current_stage_ + 1) % stages_.size() %
+                      stages_.at(current_stage_)->name());
+}
 
-}  // namespace silkworm::stagedysnc
+}  // namespace silkworm::stagedsync

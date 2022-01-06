@@ -1,5 +1,5 @@
 /*
-    Copyright 2021 The Silkworm Authors
+    Copyright 2021-2022 The Silkworm Authors
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -42,8 +42,8 @@ struct NodeSettings {
     std::string sentry_api_addr{};                   // Default address(es) of sentry
     bool fake_pow{false};                            // Whether to verify Proof-of-Work
     std::unique_ptr<db::PruneMode> prune_mode;       // Prune mode
-    uint32_t sync_loop_throttle{0};                  // Minimum interval amongst sync cycle
-    uint32_t sync_loop_log_interval{10};             // Interval for sync loop to emit logs
+    uint32_t sync_loop_throttle_seconds{0};          // Minimum interval amongst sync cycle
+    uint32_t sync_loop_log_interval_seconds{10};     // Interval for sync loop to emit logs
 };
 
 }  // namespace silkworm

@@ -67,7 +67,7 @@ void tee_file(const std::filesystem::path& path);
 class BufferBase {
   public:
     explicit BufferBase(Level level);
-    explicit BufferBase(Level level, std::string_view msg, std::vector<std::string> args);
+    explicit BufferBase(Level level, std::string_view msg, const std::vector<std::string>& args);
     ~BufferBase() { flush(); }
 
     // Accumulators

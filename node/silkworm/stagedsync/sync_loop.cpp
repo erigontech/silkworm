@@ -23,7 +23,7 @@
 #include <silkworm/db/stages.hpp>
 #include <silkworm/stagedsync/stagedsync.hpp>
 
-namespace silkworm::stagedysnc {
+namespace silkworm::stagedsync {
 
 void SyncLoop::load_stages() {
     stages_.push_back(std::make_unique<stagedsync::BlockHashes>(node_settings_));
@@ -42,7 +42,7 @@ void SyncLoop::work() {
 
     StopWatch stop_watch;
     Timer log_timer(
-        node_settings_->asio_context, node_settings_->sync_loop_log_interval * 1'000,
+        node_settings_->asio_context, node_settings_->sync_loop_log_interval_seconds * 1'000,
         [&]() -> bool {
             if (is_stopping()) {
                 return false;
@@ -121,12 +121,12 @@ void SyncLoop::work() {
 }
 
 void SyncLoop::throttle_next_cycle(const StopWatch::Duration& cycle_duration) {
-    if (!node_settings_->sync_loop_throttle) {
+    if (!node_settings_->sync_loop_throttle_seconds) {
         return;
     }
 
     auto min_duration =
-        std::chrono::duration_cast<StopWatch::Duration>(std::chrono::seconds(node_settings_->sync_loop_throttle));
+        std::chrono::duration_cast<StopWatch::Duration>(std::chrono::seconds(node_settings_->sync_loop_throttle_seconds));
     if (min_duration <= cycle_duration) {
         return;
     }

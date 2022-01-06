@@ -24,7 +24,7 @@
 #include <silkworm/db/mdbx.hpp>
 #include <silkworm/stagedsync/common.hpp>
 
-namespace silkworm::stagedysnc {
+namespace silkworm::stagedsync {
 class SyncLoop final : public Worker {
   public:
     explicit SyncLoop(silkworm::NodeSettings* node_settings, mdbx::env* chaindata_env)

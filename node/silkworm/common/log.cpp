@@ -90,7 +90,7 @@ BufferBase::BufferBase(Level level) : level_(level) {
     }
 }
 
-BufferBase::BufferBase(Level level, std::string_view msg, std::vector<std::string> args) : BufferBase(level) {
+BufferBase::BufferBase(Level level, std::string_view msg, const std::vector<std::string>& args) : BufferBase(level) {
     if (level > settings_.log_verbosity) {
         return;
     }
@@ -126,7 +126,6 @@ void BufferBase::flush() {
         }
         *file_ << line << std::endl;
     }
-    out_lck.unlock();
 }
 
 }  // namespace silkworm::log

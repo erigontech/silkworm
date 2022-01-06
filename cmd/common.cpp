@@ -121,10 +121,10 @@ void parse_silkworm_command_line(CLI::App& cli, int argc, char* argv[], log::Set
     cli.add_option("--sentry.api.addr", node_settings.sentry_api_addr, "Sentry api endpoint", true)
         ->check(IPEndPointValidator(/*allow_empty=*/true));
 
-    cli.add_option("--sync.loop.throttle", node_settings.sync_loop_throttle,
+    cli.add_option("--sync.loop.throttle", node_settings.sync_loop_throttle_seconds,
                    "Sets the minimum time between sync loop starts (in seconds)", true);
 
-    cli.add_option("--sync.loop.log.interval", node_settings.sync_loop_log_interval,
+    cli.add_option("--sync.loop.log.interval", node_settings.sync_loop_log_interval_seconds,
                    "Sets the minimum time between sync loop logs (in seconds)", true)
         ->check(CLI::Range(5u, 600u));
 

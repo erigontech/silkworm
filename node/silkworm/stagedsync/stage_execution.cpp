@@ -72,9 +72,12 @@ StageResult Execution::forward(db::RWTxn& txn) {
     if (bodies_stage_progress - previous_progress > 16) {
         log::Info("Begin Execution", {"from", std::to_string(block_num_), "to", std::to_string(bodies_stage_progress)});
     }
+
+    AnalysisCache analysis_cache;
+
     while (block_num_ <= max_block_num) {
         // TODO(Andrea) Prune logic must be amended
-        const auto res{execute_batch(txn, max_block_num, 0)};
+        const auto res{execute_batch(txn, max_block_num, 0, analysis_cache)};
         if (res != StageResult::kSuccess) {
             return res;
         }
@@ -91,10 +94,11 @@ StageResult Execution::forward(db::RWTxn& txn) {
     return StageResult::kSuccess;
 }
 
-StageResult Execution::execute_batch(db::RWTxn& txn, BlockNum max_block_num, BlockNum prune_from) {
+StageResult Execution::execute_batch(db::RWTxn& txn, BlockNum max_block_num, BlockNum prune_from,
+                                     AnalysisCache& analysis_cache) {
     try {
         db::Buffer buffer(*txn, prune_from);
-        AnalysisCache analysis_cache;
+        //AnalysisCache analysis_cache;
         ExecutionStatePool state_pool;
         std::vector<Receipt> receipts;
 

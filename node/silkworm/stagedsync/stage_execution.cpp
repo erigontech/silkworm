@@ -20,6 +20,7 @@
 #include <silkworm/common/endian.hpp>
 #include <silkworm/common/log.hpp>
 #include <silkworm/common/signal_handler.hpp>
+#include <silkworm/common/stopwatch.hpp>
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/buffer.hpp>
 #include <silkworm/db/stages.hpp>
@@ -36,6 +37,7 @@ StageResult Execution::forward(db::RWTxn& txn) {
         return StageResult::kUnknownConsensusEngine;
     }
 
+    StopWatch commit_stopwatch;
     // Check stage boundaries from previous execution and previous stage execution
     auto previous_progress{get_progress(txn)};
     auto bodies_stage_progress{db::stages::read_stage_progress(*txn, db::stages::kBlockBodiesKey)};
@@ -77,7 +79,10 @@ StageResult Execution::forward(db::RWTxn& txn) {
             return res;
         }
         db::stages::write_stage_progress(*txn, db::stages::kExecutionKey, block_num_);
+        (void)commit_stopwatch.start();
         txn.commit();
+        auto [_, duration]{commit_stopwatch.stop()};
+        log::Info("Commit time", {"batch", StopWatch::format(duration)});
         if (SignalHandler::signalled()) {
             return StageResult::kAborted;
         }

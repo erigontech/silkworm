@@ -79,7 +79,7 @@ StageResult Execution::forward(db::RWTxn& txn) {
             return res;
         }
         db::stages::write_stage_progress(*txn, db::stages::kExecutionKey, block_num_);
-        (void)commit_stopwatch.start();
+        (void)commit_stopwatch.start(/*with_reset=*/true);
         txn.commit();
         auto [_, duration]{commit_stopwatch.stop()};
         log::Info("Commit time", {"batch", StopWatch::format(duration)});

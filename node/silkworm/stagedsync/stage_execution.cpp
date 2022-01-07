@@ -74,10 +74,11 @@ StageResult Execution::forward(db::RWTxn& txn) {
     }
 
     AnalysisCache analysis_cache;
+    ExecutionStatePool state_pool;
 
     while (block_num_ <= max_block_num) {
         // TODO(Andrea) Prune logic must be amended
-        const auto res{execute_batch(txn, max_block_num, 0, analysis_cache)};
+        const auto res{execute_batch(txn, max_block_num, 0, analysis_cache, state_pool)};
         if (res != StageResult::kSuccess) {
             return res;
         }
@@ -95,11 +96,9 @@ StageResult Execution::forward(db::RWTxn& txn) {
 }
 
 StageResult Execution::execute_batch(db::RWTxn& txn, BlockNum max_block_num, BlockNum prune_from,
-                                     AnalysisCache& analysis_cache) {
+                                     AnalysisCache& analysis_cache, ExecutionStatePool& state_pool) {
     try {
         db::Buffer buffer(*txn, prune_from);
-        //AnalysisCache analysis_cache;
-        ExecutionStatePool state_pool;
         std::vector<Receipt> receipts;
 
         while (true) {
@@ -131,9 +130,8 @@ StageResult Execution::execute_batch(db::RWTxn& txn, BlockNum max_block_num, Blo
 
             const bool overflows{buffer.current_batch_size() >= node_settings_->batch_size};
             if (overflows || block_num_ >= max_block_num) {
-                buffer.write_to_db();
                 if (overflows) {
-                    log::Info("Flushed batch", {"size", human_size(buffer.current_batch_size())});
+                    log::Info("Flushing batch ...", {"size", human_size(buffer.current_batch_size())});
                     std::unique_lock progress_lock(progress_mtx_);
                     processed_blocks_ = 0;
                     processed_transactions_ = 0;
@@ -142,6 +140,10 @@ StageResult Execution::execute_batch(db::RWTxn& txn, BlockNum max_block_num, Blo
                     lap_time_ = start_time_;
                     progress_lock.unlock();
                 }
+                auto t0{std::chrono::steady_clock::now()};
+                buffer.write_to_db();
+                auto t1{std::chrono::steady_clock::now()};
+                log::Info("Flushed batch", {"in", StopWatch::format(t1 - t0)});
                 return StageResult::kSuccess;
             }
             block_num_++;

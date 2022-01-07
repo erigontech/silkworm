@@ -26,6 +26,7 @@
 #include <silkworm/db/stages.hpp>
 #include <silkworm/db/tables.hpp>
 #include <silkworm/execution/analysis_cache.hpp>
+#include <silkworm/execution/state_pool.hpp>
 #include <silkworm/stagedsync/common.hpp>
 #include <silkworm/stagedsync/recovery/recovery_farm.hpp>
 
@@ -79,7 +80,7 @@ class Execution final : public IStage {
     std::unique_ptr<consensus::IEngine> consensus_engine_;
     BlockNum block_num_{0};
     StageResult execute_batch(db::RWTxn& txn, BlockNum max_block_num, BlockNum prune_from,
-                              AnalysisCache& analysis_cache);
+                              AnalysisCache& analysis_cache, ExecutionStatePool& state_pool);
 
     // Stats
     std::mutex progress_mtx_;  // Synchronizes access to progress stats

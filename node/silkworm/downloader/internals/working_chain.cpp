@@ -55,7 +55,8 @@ bool WorkingChain::in_sync() const {
 }
 
 std::string WorkingChain::human_readable_status() const {
-    return std::to_string(links_.size()) + " links, " + std::to_string(anchors_.size()) + " anchors";
+    return std::to_string(links_.size()) + " links (" +  std::to_string(link_queue_.size()) + " persisted), "
+           + std::to_string(anchors_.size()) + " anchors";
 }
 
 std::string WorkingChain::human_readable_verbose_status() const {
@@ -225,16 +226,25 @@ void WorkingChain::reduce_persisted_links_to(size_t limit) {
  */
 std::optional<GetBlockHeadersPacket66> WorkingChain::request_skeleton() {
     BlockNum top = top_seen_height_;
-    BlockNum bottom = highest_in_db_ + stride;
+    BlockNum bottom = highest_in_db_ + stride; // warning: this can be inside a chain in memory
     if (top <= bottom) {
         return std::nullopt;
     }
+    
+    BlockNum lowest_anchor = lowest_anchor_within_range(0, top+1);
+    // using bottom variable in place of zero as bottom value in the range is wrong because if there is an anchor under
+    // bottom we issue a wrong request, f.e. if the anchor=1536 was extended down we would request again origin=1536
 
-    BlockNum lowest_anchor = lowest_anchor_within_range(bottom, top+1);
+    if (lowest_anchor <= bottom) {
+        log::Debug() << "WorkingChain, no need for skeleton request (lowest_anchor = " << lowest_anchor
+                     << ", highest_in_db = " << highest_in_db_ << ")";
+        return std::nullopt;
+    }
 
     BlockNum length = (lowest_anchor - bottom) / stride;
 
     if (length > max_len) length = max_len;
+
     if (length == 0) {
         log::Debug() << "WorkingChain, no need for skeleton request (lowest_anchor = " << lowest_anchor
                      << ", highest_in_db = " << highest_in_db_ << ")";
@@ -265,6 +275,7 @@ BlockNum WorkingChain::lowest_anchor_within_range(BlockNum bottom, BlockNum top)
     }
     return lowest;
 }
+
 
 /*
  * Anchor extension query.
@@ -324,7 +335,7 @@ auto WorkingChain::request_more_headers(time_point_t time_point, seconds_t timeo
 }
 
 void WorkingChain::invalidate(Anchor& anchor) {
-    auto link_to_remove = anchor.links;
+    auto& link_to_remove = anchor.links;
     while (!link_to_remove.empty()) {
         auto removal = link_to_remove.back();
         link_to_remove.pop_back();
@@ -367,10 +378,22 @@ void WorkingChain::request_nack(const GetBlockHeadersPacket66& packet) {
 bool WorkingChain::has_link(Hash hash) { return (links_.find(hash) != links_.end()); }
 
 auto WorkingChain::find_bad_header(const std::vector<BlockHeader>& headers) -> bool {
-    return as_range::any_of(headers, [&](const BlockHeader& header) -> bool {
-        const Hash& hash{header.hash()};
-        return contains(bad_headers_, hash);
-    });
+    for (auto& header : headers) {
+        if (is_zero(header.parent_hash) && header.number != 0) {
+            log::Warning() << "WorkingChain: received malformed header: " <<  header.number;
+            return true;
+        }
+        if (header.difficulty == 0) {
+            log::Warning() << "WorkingChain: received header w/ wrong diff: " <<  header.number;
+            return true;
+        }
+        Hash header_hash = header.hash();
+        if (contains(bad_headers_, header_hash)) {
+            log::Warning() << "WorkingChain: received bad header: " <<  header.number;
+            return true;
+        }
+    }
+    return false;
 }
 
 auto WorkingChain::accept_headers(const std::vector<BlockHeader>& headers, const PeerId& peer_id)
@@ -477,8 +500,8 @@ auto WorkingChain::process_segment(const Segment& segment, bool is_a_new_block, 
     auto [foundTip, end] = find_link(segment, start);
 
     if (end == 0) {
-        log::Debug() << "WorkingChain: duplicated segment, bn=" << segment[start]->number << ", "
-                     << (foundAnchor ? "removing corresponding anchor" : "corresponding anchor not found");
+        log::Debug() << "WorkingChain: duplicated segment, bn=" << segment[start]->number << ", hash=" << segment[start]->hash()
+                     << (foundAnchor ? ", removing corresponding anchor" : ", corresponding anchor not found");
         // If duplicate segment is extending from the anchor, the anchor needs to be deleted,
         // otherwise it will keep producing requests that will be found duplicate
         if (foundAnchor) remove_anchor(segment[start]->hash());  // note: hash and not parent_hash
@@ -518,7 +541,8 @@ auto WorkingChain::process_segment(const Segment& segment, bool is_a_new_block, 
             op = "new anchor";
             requestMore = new_anchor(segment_slice, peerId);
         }
-        log::Debug() << "Segment: " << op << " start=" << startNum << " end=" << endNum << " (more=" << requestMore << ")";
+        log::Debug() << "Segment: " << op << " start=" << startNum << " (" << segment[start]->hash() << ") end=" <<
+            endNum << " (" << segment[end-1]->hash() << ") (more=" << requestMore << ")";
     } catch (segment_cut_and_paste_error& e) {
         log::Debug() << "Segment: " << op << " failure, reason:" << e.what();
         return false;
@@ -553,8 +577,8 @@ void WorkingChain::reduce_links_to(size_t limit) {
 // find_anchors tries to find the highest link the in the new segment that can be attached to an existing anchor
 auto WorkingChain::find_anchor(const Segment& segment) -> std::tuple<Found, Start> {  // todo: do we need a span?
     for (size_t i = 0; i < segment.size(); i++)
-        if (anchors_.find(segment[i]->hash()) != anchors_.end())  // todo: hash() compute the value,
-            return {true, i};                                     // do we need to cache it?
+        if (anchors_.find(segment[i]->hash()) != anchors_.end())  // todo: hash() compute the value, save cpu
+            return {true, i};                         // segment[i]->hash() == anchor.parent_hash
 
     return {false, 0};
 }
@@ -616,19 +640,23 @@ void WorkingChain::connect(Segment::Slice segment_slice) {  // throw segment_cut
     bool anchor_preverified =
         as_range::any_of(anchor->links, [](const auto& link) -> bool { return link->preverified; });
 
-    anchors_.erase(anchor->parentHash);  // Anchor is removed from the map, but not from the anchorQueue
+    [[maybe_unused]] auto erased = anchors_.erase(anchor->parentHash);  // Anchor is removed from the map, but not from the anchorQueue
     // This is because it is hard to find the index under which the anchor is stored in the anchorQueue
     // But removal will happen anyway, in th function request_more_headers, if it disappears from the map
+    assert(erased == 1);
 
     // todo: this block is also in "extend_down" method
+    assert(prev_link->hash() == anchor->parentHash);
     prev_link->next = std::move(anchor->links);
     anchor->links.clear();
     if (anchor_preverified) mark_as_preverified(prev_link);  // Mark the entire segment as preverified
 
     if (contains(bad_headers_, attachment_link.value()->hash)) {
-        invalidate(*anchor);
-        // todo: add & return penalties: []PenaltyItem := append(penalties, PenaltyItem{Penalty: AbandonedAnchorPenalty,
-        // PeerID: anchor.peerID})
+        log::Warning() << "WorkingChain: invalidating anchor because connected to bad headers, "
+                       << "height=" << anchor->blockHeight;
+        invalidate(*anchor); // todo: in prev lines we erased anchor links so invalidate does nothing!
+        // todo: add & return penalties
+        // []PenaltyItem := append(penalties, PenaltyItem{Penalty: AbandonedAnchorPenalty, PeerID: anchor.peerID})
     } else if (attachment_link.value()->persisted) {
         auto link = links_.find(link_header->hash());
         if (link != links_.end())  // todo: Erigon code assume true always, check!
@@ -686,6 +714,7 @@ auto WorkingChain::extend_down(Segment::Slice segment_slice) -> RequestMoreHeade
     }
 
     // todo: this block is also in "connect" method
+    assert(prev_link->hash() == old_anchor->parentHash);
     prev_link->next = std::move(old_anchor->links);
     old_anchor->links.clear();
     if (anchor_preverified) mark_as_preverified(prev_link);  // Mark the entire segment as preverified

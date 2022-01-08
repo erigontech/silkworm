@@ -75,6 +75,12 @@ class WorkingChain {
     std::string human_readable_status() const;
     std::string human_readable_verbose_status() const;
 
+    // make an anchor collection (skeleton request) or many anchor extension upon the last execution time
+    auto request_headers(time_point_t tp) -> std::tuple<std::vector<GetBlockHeadersPacket66>, std::vector<PeerPenalization>>;
+    // todo: incorpora l'algo che in questo momento e' in OutboundGetBlockHeaders - inoltre decide qui quando fare la skeleton
+    // memorizzando il tempo dell'ultima skeleton fatta e facendo in modo che siano intervallate almeno di 60s
+
+
     // core functionalities: anchor collection
     // to collect anchor more quickly we do a skeleton request i.e. a request of many headers equally distributed in a
     // given range of block chain that we want to fill

@@ -61,7 +61,10 @@ void HeaderDownloader::execution_loop() {
         bool present = messages_.timed_wait_and_pop(message, 1000ms);
         if (!present) continue;  // timeout, needed to check exiting_
 
-        log::Trace() << "HeaderDownloader processing message " << message->name();
+        auto in_message = std::dynamic_pointer_cast<InboundMessage>(message);
+        if (in_message) {
+            log::Info() << "HeaderDownloader processing message " << *in_message;
+        }
 
         // process the message (command pattern)
         message->execute();

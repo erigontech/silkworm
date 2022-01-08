@@ -101,6 +101,12 @@ StageResult Execution::execute_batch(db::RWTxn& txn, BlockNum max_block_num, Blo
         db::Buffer buffer(*txn, prune_from);
         std::vector<Receipt> receipts;
 
+        {
+            std::unique_lock progress_lock(progress_mtx_);
+            start_time_ = std::chrono::steady_clock::now();
+            lap_time_ = start_time_;
+        }
+
         while (true) {
             if (!(block_num_ % 64) && SignalHandler::signalled()) {
                 return StageResult::kAborted;
@@ -136,8 +142,6 @@ StageResult Execution::execute_batch(db::RWTxn& txn, BlockNum max_block_num, Blo
                     processed_blocks_ = 0;
                     processed_transactions_ = 0;
                     processed_mgas_ = 0;
-                    start_time_ = std::chrono::steady_clock::now();
-                    lap_time_ = start_time_;
                     progress_lock.unlock();
                 }
                 auto t0{std::chrono::steady_clock::now()};

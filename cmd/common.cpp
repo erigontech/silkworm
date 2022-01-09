@@ -107,7 +107,7 @@ void parse_silkworm_command_line(CLI::App& cli, int argc, char* argv[], log::Set
     cli.add_option("--chaindata.maxsize", chaindata_max_size, "Chaindata database max size", true)
         ->check(HumanSizeParserValidator("64MB", {"4TB"}));
     cli.add_option("--batchsize", batch_size, "Batch size for stage execution", true)
-        ->check(HumanSizeParserValidator("4MB", {"2GB"}));
+        ->check(HumanSizeParserValidator("64MB", {"16GB"}));
     cli.add_option("--etl.buffersize", etl_buffer_size, "Buffer size for ETL operations", true)
         ->check(HumanSizeParserValidator("64MB", {"1GB"}));
     cli.add_option("--private.api.addr", node_settings.private_api_addr,

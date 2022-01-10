@@ -63,8 +63,7 @@ StageResult Execution::forward(db::RWTxn& txn) {
     processed_blocks_ = 0;
     processed_transactions_ = 0;
     processed_mgas_ = 0;
-    start_time_ = std::chrono::steady_clock::now();
-    lap_time_ = start_time_;
+    lap_time_ = std::chrono::steady_clock::now();
     progress_lock.unlock();
 
     block_num_ = previous_progress + 1;
@@ -103,8 +102,7 @@ StageResult Execution::execute_batch(db::RWTxn& txn, BlockNum max_block_num, Blo
 
         {
             std::unique_lock progress_lock(progress_mtx_);
-            start_time_ = std::chrono::steady_clock::now();
-            lap_time_ = start_time_;
+            lap_time_ = std::chrono::steady_clock::now();
         }
 
         while (true) {
@@ -129,25 +127,19 @@ StageResult Execution::execute_batch(db::RWTxn& txn, BlockNum max_block_num, Blo
 
             // TODO(Andrea) implement pruning
             buffer.insert_receipts(block_num_, receipts);
-
+            std::unique_lock progress_lock(progress_mtx_);
             processed_blocks_++;
             processed_transactions_ += block_with_hash->block.transactions.size();
             processed_mgas_ += block_with_hash->block.header.gas_used / 1'000'000;
+            progress_lock.unlock();
 
             const bool overflows{buffer.current_batch_size() >= node_settings_->batch_size};
             if (overflows || block_num_ >= max_block_num) {
-                if (overflows) {
-                    log::Info("Flushing batch ...", {"size", human_size(buffer.current_batch_size())});
-                    std::unique_lock progress_lock(progress_mtx_);
-                    processed_blocks_ = 0;
-                    processed_transactions_ = 0;
-                    processed_mgas_ = 0;
-                    progress_lock.unlock();
-                }
                 auto t0{std::chrono::steady_clock::now()};
                 buffer.write_to_db();
                 auto t1{std::chrono::steady_clock::now()};
-                log::Info("Flushed batch", {"in", StopWatch::format(t1 - t0)});
+                log::Info("Flushed batch",
+                          {"size", human_size(buffer.current_batch_size()), "in", StopWatch::format(t1 - t0)});
                 return StageResult::kSuccess;
             }
             block_num_++;
@@ -184,16 +176,19 @@ StageResult Execution::prune(db::RWTxn& txn) {
 
 std::vector<std::string> Execution::get_log_progress() {
     std::unique_lock progress_lock(progress_mtx_);
-    lap_time_ = std::chrono::steady_clock::now();
-    auto elapsed_seconds =
-        static_cast<uint32_t>(std::chrono::duration_cast<std::chrono::seconds>(lap_time_ - start_time_).count());
-    if (!elapsed_seconds) {
-        progress_lock.unlock();
-        return {};
+    auto now{std::chrono::steady_clock::now()};
+    auto elapsed{now - lap_time_};
+    lap_time_ = now;
+    auto elapsed_seconds = static_cast<uint32_t>(std::chrono::duration_cast<std::chrono::seconds>(elapsed).count());
+    if (!elapsed_seconds || !processed_blocks_) {
+        return {"block", std::to_string(block_num_)};
     }
     auto speed_blocks = processed_blocks_ / elapsed_seconds;
     auto speed_transactions = processed_transactions_ / elapsed_seconds;
     auto speed_mgas = processed_mgas_ / elapsed_seconds;
+    processed_blocks_ = 0;
+    processed_transactions_ = 0;
+    processed_mgas_ = 0;
     progress_lock.unlock();
 
     return {"block",  std::to_string(block_num_),         "blocks/s", std::to_string(speed_blocks),

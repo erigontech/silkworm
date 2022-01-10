@@ -84,7 +84,6 @@ class Execution final : public IStage {
 
     // Stats
     std::mutex progress_mtx_;  // Synchronizes access to progress stats
-    std::chrono::time_point<std::chrono::steady_clock> start_time_{std::chrono::steady_clock::now()};
     std::chrono::time_point<std::chrono::steady_clock> lap_time_{std::chrono::steady_clock::now()};
     size_t processed_blocks_{0};
     size_t processed_transactions_{0};

@@ -47,7 +47,7 @@ if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
   add_compile_options(/wd4068) # Silence warning C4068: unknown pragma
   add_compile_options(/wd5030) # Silence warning C5030: unknown gnu/clang attribute
   add_compile_options(/W4)     # Display all other un-silenced warnings
-  # add_compile_options(/bigobj) # Increase .obj sections, needed for hard coded pre-verified hashes
+  add_compile_options(/bigobj) # Increase .obj sections, needed for hard coded pre-verified hashes
 
   # Required for proper detection of __cplusplus
   # see https://docs.microsoft.com/en-us/cpp/build/reference/zc-cplusplus?view=msvc-160

@@ -70,7 +70,7 @@ StageResult BlockHashes::forward(db::RWTxn& txn) {
                                        Bytes(static_cast<uint8_t*>(data.key.iov_base), data.key.iov_len)});
         // Do we need to abort ?
         if (!(expected_block_number % 1024) && SignalHandler::signalled()) {
-            throw std::runtime_error("Operation cancelled");
+            return StageResult::kAborted;
         }
         expected_block_number++;
         data = source.to_next(/*throw_notfound=*/false);

@@ -125,6 +125,7 @@ class WorkingChain {
     auto find_anchor(const Segment&) -> std::tuple<Found, Start>;
     auto find_link(const Segment&, size_t start) -> std::tuple<Found, End>;
     auto get_link(const Hash& hash) -> std::optional<std::shared_ptr<Link>>;
+    auto find_anchor(std::shared_ptr<Link> link) -> std::optional<std::shared_ptr<Anchor>>;
 
     void reduce_links_to(size_t limit);
     void reduce_persisted_links_to(size_t limit);

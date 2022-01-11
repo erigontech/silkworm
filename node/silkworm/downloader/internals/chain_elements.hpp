@@ -93,19 +93,22 @@ struct Link {
 struct Anchor {
     Hash parentHash;         // Hash of the header this anchor can be connected to (to disappear)
     BlockNum blockHeight;    // block height of the anchor
-    time_point_t timestamp;  // Zero when anchor has just been created, otherwise timestamps when timeout on this anchor
-                             // request expires // todo: rename in reqTime
+    time_point_t timestamp;  // request/arrival time
     time_point_t prev_timestamp;  // Used to restore timestamp when a request fails for network reasons
     int timeouts = 0;  // Number of timeout that this anchor has experienced;after certain threshold,it gets invalidated
     std::vector<std::shared_ptr<Link>> links;  // Links attached immediately to this anchor
+    BlockNum lastLinkHeight; // the blockHeight of the last link of the chain bundle anchored to this
     PeerId peerId;
 
     Anchor(const BlockHeader& header, PeerId p) {
         parentHash = header.parent_hash;
         blockHeight = header.number;
-        // timestamp = 0; automatically set to unix epoch by the constructor
+        lastLinkHeight = blockHeight;
+        timestamp = std::chrono::system_clock::now();
         peerId = std::move(p);
     }
+
+    BlockNum chainLength() { return lastLinkHeight - blockHeight + 1; }
 
     void remove_child(std::shared_ptr<Link> child) {
         auto to_remove =

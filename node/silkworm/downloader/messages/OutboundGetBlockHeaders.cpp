@@ -19,8 +19,8 @@
 #include <sstream>
 
 #include <silkworm/common/log.hpp>
-#include <silkworm/downloader/rpc/PenalizePeer.hpp>
-#include <silkworm/downloader/rpc/SendMessageByMinBlock.hpp>
+#include <silkworm/downloader/rpc/penalize_peer.hpp>
+#include <silkworm/downloader/rpc/send_message_by_min_block.hpp>
 
 namespace silkworm {
 

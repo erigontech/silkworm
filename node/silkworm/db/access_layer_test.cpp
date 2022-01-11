@@ -31,8 +31,6 @@
 
 namespace silkworm {
 
-using namespace silkworm::consensus;
-
 static BlockBody sample_block_body() {
     BlockBody body;
     body.transactions.resize(2);

@@ -29,19 +29,17 @@
 
 namespace silkworm {
 
-class DummyConsensusEngine : public consensus::IConsensusEngine {
+class DummyConsensusEngine : public consensus::IEngine {
   public:
-    ValidationResult pre_validate_block(const Block&, BlockState&) override { return ValidationResult::kOk; }
+    ValidationResult pre_validate_block(const Block&, const BlockState&) override { return ValidationResult::kOk; }
 
-    ValidationResult validate_block_header(const BlockHeader&, BlockState&, bool) override {
+    ValidationResult validate_block_header(const BlockHeader&, const BlockState&, bool) override {
         return ValidationResult::kOk;
     }
 
     ValidationResult validate_seal(const BlockHeader&) override { return ValidationResult::kOk; }
 
     evmc::address get_beneficiary(const BlockHeader&) override { return {}; }
-
-    std::optional<BlockHeader> get_parent_header(const BlockState&, const BlockHeader&) { return {}; }
 };
 
 TEST_CASE("working/persistent-chain integration test") {
@@ -103,7 +101,7 @@ TEST_CASE("working/persistent-chain integration test") {
 
         // processing the headers
         std::vector<BlockHeader> headers = {header1, header2, header1b};
-        PeerId peerId{1};
+        PeerId peerId = "1";
         wc.accept_headers(headers, peerId);
 
         // saving headers ready to persists as the header downloader does in the forward() method
@@ -178,7 +176,7 @@ TEST_CASE("working/persistent-chain integration test") {
 
         // processing the headers
         std::vector<BlockHeader> headers = {header1, header2};
-        PeerId peerId{1};
+        PeerId peerId = "1";
         wc.accept_headers(headers, peerId);
 
         // creating the persisted chain as the header downloader does at the beginning of the forward() method
@@ -217,7 +215,7 @@ TEST_CASE("working/persistent-chain integration test") {
         auto header1b_hash = header1b.hash();
 
         std::vector<BlockHeader> headers_bis = {header1b};
-        peerId = Hash{2};
+        peerId = "2";
         wc.accept_headers(headers_bis, peerId);
 
         // saving headers ready to persist as the header downloader does in the forward() method
@@ -290,7 +288,7 @@ TEST_CASE("working/persistent-chain integration test") {
 
         // processing the headers
         std::vector<BlockHeader> headers = {header1, header2};
-        PeerId peerId{1};
+        PeerId peerId = "1";
         wc.accept_headers(headers, peerId);
 
         // creating the persisted chain as the header downloader does at the beginning of the forward() method
@@ -329,7 +327,7 @@ TEST_CASE("working/persistent-chain integration test") {
         auto header1b_hash = header1b.hash();
 
         std::vector<BlockHeader> headers_bis = {header1b};
-        peerId = Hash{2};
+        peerId = "2";
         wc.accept_headers(headers_bis, peerId);
 
         // saving headers ready to persist as the header downloader does in the forward() method
@@ -399,7 +397,7 @@ TEST_CASE("working/persistent-chain integration test") {
         auto header1b_hash = header1b.hash();
 
         std::vector<BlockHeader> headers = {header1b};
-        PeerId peerId{1};
+        PeerId peerId = "1";
         wc.accept_headers(headers, peerId);
 
         // creating the persisted chain as the header downloader does at the beginning of the forward() method
@@ -441,7 +439,7 @@ TEST_CASE("working/persistent-chain integration test") {
 
         // processing the headers
         std::vector<BlockHeader> headers_bis = {header1, header2};
-        peerId = Hash{2};
+        peerId = "2";
         wc.accept_headers(headers_bis, peerId);
 
         // saving headers ready to persist as the header downloader does in the forward() method

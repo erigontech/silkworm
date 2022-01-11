@@ -1,7 +1,7 @@
 /*
    Copyright 2021 The Silkworm Authors
 
-   Licensed under the Apache License, Version 2.0 (the "License");
+Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
    You may obtain a copy of the License at
 
@@ -14,14 +14,13 @@
    limitations under the License.
 */
 
-#include "SendMessageById.hpp"
+#include "send_message_to_all.hpp"
 
 namespace silkworm::rpc {
 
-SendMessageById::SendMessageById(const PeerId& peerId, std::unique_ptr<sentry::OutboundMessageData> message)
-    : UnaryCall("SendMessageById", &sentry::Sentry::Stub::SendMessageById, {}) {
-    request_.set_allocated_peer_id(to_H256(peerId).release());
-    request_.set_allocated_data(message.release());  // take ownership
+SendMessageToAll::SendMessageToAll(std::unique_ptr<sentry::OutboundMessageData> message)
+    : UnaryCall("SendMessageToAll", &sentry::Sentry::Stub::SendMessageToAll, {}) {
+    request_.Swap(message.get());
 }
 
 }  // namespace silkworm::rpc

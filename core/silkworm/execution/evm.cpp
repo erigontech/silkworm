@@ -20,12 +20,14 @@
 #include <cassert>
 #include <cstring>
 #include <iterator>
+#include <memory>
 
 #include <ethash/keccak.hpp>
 #include <evmone/analysis.hpp>
 #include <evmone/baseline.hpp>
 #include <evmone/evmone.h>
 #include <evmone/execution.hpp>
+#include <evmone/tracing.hpp>
 #include <evmone/vm.hpp>
 
 #include <silkworm/chain/protocol_param.hpp>
@@ -34,6 +36,30 @@
 #include "precompiled.hpp"
 
 namespace silkworm {
+
+class DelegatingTracer : public evmone::Tracer {
+  public:
+    explicit DelegatingTracer(EvmTracer& tracer, IntraBlockState& intra_block_state) noexcept
+        : tracer_(tracer), intra_block_state_(intra_block_state) {}
+
+  private:
+    void on_execution_start(evmc_revision rev, const evmc_message& msg, evmone::bytes_view code) noexcept override {
+        tracer_.on_execution_start(rev, msg, code);
+    }
+
+    void on_instruction_start(uint32_t pc, const evmone::ExecutionState& state) noexcept override {
+        tracer_.on_instruction_start(pc, state, intra_block_state_);
+    }
+
+    void on_execution_end(const evmc_result& result) noexcept override {
+        tracer_.on_execution_end(result, intra_block_state_);
+    }
+
+    friend class EVM;
+
+    EvmTracer& tracer_;
+    IntraBlockState& intra_block_state_;
+};
 
 EVM::EVM(const Block& block, IntraBlockState& state, const ChainConfig& config) noexcept
     : beneficiary{block.header.beneficiary},
@@ -302,6 +328,13 @@ evmc_result EVM::execute_with_default_interpreter(evmc_revision rev, const evmc_
 
 evmc_revision EVM::revision() const noexcept { return config().revision(block_.header.number); }
 
+void EVM::add_tracer(EvmTracer& tracer) noexcept {
+    assert(advanced_analysis_cache == nullptr);
+
+    const auto vm{static_cast<evmone::VM*>(evm1_)};
+    vm->add_tracer(std::make_unique<DelegatingTracer>(tracer, state_));
+}
+
 uint8_t EVM::number_of_precompiles() const noexcept {
     const evmc_revision rev{revision()};
 
@@ -492,7 +525,13 @@ evmc_tx_context EvmHost::get_tx_context() const noexcept {
     context.block_timestamp = static_cast<int64_t>(header.timestamp);
     assert(header.gas_limit <= INT64_MAX);  // EIP-1985
     context.block_gas_limit = static_cast<int64_t>(header.gas_limit);
-    intx::be::store(context.block_difficulty.bytes, header.difficulty);
+    if (header.difficulty != 0) {
+        intx::be::store(context.block_difficulty.bytes, header.difficulty);
+    } else {
+        // EIP-4399: Supplant DIFFICULTY opcode with RANDOM
+        // We use 0 header difficulty as the telltale of PoS blocks
+        std::memcpy(context.block_difficulty.bytes, header.mix_hash.bytes, kHashLength);
+    }
     intx::be::store(context.chain_id.bytes, intx::uint256{evm_.config().chain_id});
     intx::be::store(context.block_base_fee.bytes, base_fee_per_gas);
     return context;

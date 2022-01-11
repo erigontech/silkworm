@@ -29,12 +29,27 @@
 #include <silkworm/state/intra_block_state.hpp>
 #include <silkworm/types/block.hpp>
 
+namespace evmone {
+struct ExecutionState;
+using bytes_view = std::basic_string_view<uint8_t>;
+}
+
 namespace silkworm {
 
 struct CallResult {
     evmc_status_code status{EVMC_SUCCESS};
     uint64_t gas_left{0};
     Bytes data;
+};
+
+class EvmTracer {
+  public:
+    virtual void on_execution_start(evmc_revision rev, const evmc_message& msg, evmone::bytes_view code) noexcept = 0;
+
+    virtual void on_instruction_start(uint32_t pc, const evmone::ExecutionState& state,
+                                      const IntraBlockState& intra_block_state) noexcept = 0;
+
+    virtual void on_execution_end(const evmc_result& result, const IntraBlockState& intra_block_state) noexcept = 0;
 };
 
 class EVM {
@@ -58,6 +73,8 @@ class EVM {
     CallResult execute(const Transaction& txn, uint64_t gas) noexcept;
 
     evmc_revision revision() const noexcept;
+
+    void add_tracer(EvmTracer& tracer) noexcept;
 
     // Point to a cache instance in order to enable execution with evmone advanced rather than baseline interpreter
     AnalysisCache* advanced_analysis_cache{nullptr};

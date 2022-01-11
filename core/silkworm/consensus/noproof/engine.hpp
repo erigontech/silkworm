@@ -21,17 +21,17 @@
 #include <silkworm/consensus/ethash/engine.hpp>
 
 namespace silkworm::consensus {
-// Proof of Work implementation
-class ConsensusEngineNoproof : public ConsensusEngineEthash {
-    using base = ConsensusEngineEthash;
 
+// This consensus engine does not validate PoW seal.
+// It is used in the consensus tests.
+class NoProofEngine : public EthashEngine {
   public:
-    explicit ConsensusEngineNoproof(const ChainConfig& chain_config) : base(chain_config){};
+    explicit NoProofEngine(const ChainConfig& chain_config) : EthashEngine(chain_config) {}
 
     //! \brief Validates the seal of the header
     ValidationResult validate_seal(const BlockHeader& header) final;
-
 };
 
 }  // namespace silkworm::consensus
+
 #endif  // SILKWORM_CONSENSUS_NOPROOF_ENGINE_HPP_

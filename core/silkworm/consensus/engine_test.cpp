@@ -39,25 +39,24 @@ static const ChainConfig kTestConfig{
 };
 
 TEST_CASE("Consensus Engine factory") {
-    std::unique_ptr<IConsensusEngine> consensus_engine;
-    consensus_engine = consensus::engine_factory(kMainnetConfig);  // Ethash consensus engine
+    std::unique_ptr<IEngine> consensus_engine;
+    consensus_engine = engine_factory(kMainnetConfig);  // Ethash consensus engine
     CHECK(consensus_engine != nullptr);
-    consensus_engine = consensus::engine_factory(kRopstenConfig);  // Ethash consensus engine
+    consensus_engine = engine_factory(kRopstenConfig);  // Ethash consensus engine
     CHECK(consensus_engine != nullptr);
-    consensus_engine = consensus::engine_factory(test::kLondonConfig);  // Noproof consensus engine
+    consensus_engine = engine_factory(test::kLondonConfig);  // Noproof consensus engine
     CHECK(consensus_engine != nullptr);
-    consensus_engine = consensus::engine_factory(kRinkebyConfig);  // Clique consensus engine
+    consensus_engine = engine_factory(kRinkebyConfig);  // Clique consensus engine
     CHECK(consensus_engine == nullptr);
-    consensus_engine = consensus::engine_factory(kGoerliConfig);  // Clique consensus engine
+    consensus_engine = engine_factory(kGoerliConfig);  // Clique consensus engine
     CHECK(consensus_engine == nullptr);
 }
 
 TEST_CASE("Consensus Engine Seal") {
-    std::unique_ptr<IConsensusEngine> consensus_engine{
-        consensus::engine_factory(kMainnetConfig)};  // Ethash consensus engine
+    std::unique_ptr<IEngine> consensus_engine{engine_factory(kMainnetConfig)};  // Ethash consensus engine
     BlockHeader fake_header{};
     CHECK(consensus_engine->validate_seal(fake_header) != ValidationResult::kOk);
-    consensus_engine = consensus::engine_factory(test::kLondonConfig);  // Noproof consensus engine
+    consensus_engine = engine_factory(test::kLondonConfig);  // Noproof consensus engine
     CHECK(consensus_engine->validate_seal(fake_header) == ValidationResult::kOk);
 }
 

@@ -14,19 +14,12 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_SENDMESSAGEBYMINBLOCK_HPP
-#define SILKWORM_SENDMESSAGEBYMINBLOCK_HPP
-
-#include <silkworm/downloader/sentry_client.hpp>
+#include "peer_count.hpp"
 
 namespace silkworm::rpc {
 
-class SendMessageByMinBlock
-    : public rpc::UnaryCall<sentry::Sentry, sentry::SendMessageByMinBlockRequest, sentry::SentPeers> {
-  public:
-    SendMessageByMinBlock(BlockNum min_block, std::unique_ptr<sentry::OutboundMessageData> message);
-};
+PeerCount::PeerCount() : UnaryCall("PeerCount", &sentry::Sentry::Stub::PeerCount, {}) {
+
+}
 
 }  // namespace silkworm::rpc
-
-#endif  // SILKWORM_SENDMESSAGEBYMINBLOCK_HPP

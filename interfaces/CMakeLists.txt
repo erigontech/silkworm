@@ -35,39 +35,38 @@ find_program(GRPC_CPP_PLUGIN_EXECUTABLE grpc_cpp_plugin REQUIRED)
 
 # ---------------------------------------------------------------------------------------------------------------------
 # types proto file
-get_filename_component(TYPES_PROTO "types.proto" ABSOLUTE)
-get_filename_component(TYPES_PROTO_PATH "${TYPES_PROTO}" PATH)
+set(PROTO_PATH "${CMAKE_CURRENT_SOURCE_DIR}/proto")
+set(TYPES_PROTO "${PROTO_PATH}/types/types.proto")
 
 # types sources
-set(TYPES_PROTO_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/types.pb.cc")
-set(TYPES_PROTO_HEADERS "${CMAKE_CURRENT_SOURCE_DIR}/types.pb.h")
+set(TYPES_PROTO_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/types/types.pb.cc")
+set(TYPES_PROTO_HEADERS "${CMAKE_CURRENT_SOURCE_DIR}/types/types.pb.h")
 
 add_custom_command(
         OUTPUT "${TYPES_PROTO_SOURCES}" "${TYPES_PROTO_HEADERS}"
         COMMAND ${PROTOBUF_PROTOC}
         ARGS --cpp_out "${CMAKE_CURRENT_SOURCE_DIR}"
-          -I "${TYPES_PROTO_PATH}"
+          -I "${PROTO_PATH}"
           "${TYPES_PROTO}"
         DEPENDS "${TYPES_PROTO}"
 )
 
 # ---------------------------------------------------------------------------------------------------------------------
 # gRPC proto file
-get_filename_component(SENTRY_PROTO "sentry.proto" ABSOLUTE)
-get_filename_component(SENTRY_PROTO_PATH "${SENTRY_PROTO}" PATH)
+set(SENTRY_PROTO "${PROTO_PATH}/p2psentry/sentry.proto")
 
 # Generate sources
-set(SENTRY_PROTO_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/sentry.pb.cc")
-set(SENTRY_PROTO_HEADERS "${CMAKE_CURRENT_SOURCE_DIR}/sentry.pb.h")
-set(SENTRY_GRPC_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/sentry.grpc.pb.cc")
-set(SENTRY_GRPC_HEADERS "${CMAKE_CURRENT_SOURCE_DIR}/sentry.grpc.pb.h")
+set(SENTRY_PROTO_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/p2psentry/sentry.pb.cc")
+set(SENTRY_PROTO_HEADERS "${CMAKE_CURRENT_SOURCE_DIR}/p2psentry/sentry.pb.h")
+set(SENTRY_GRPC_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/p2psentry/sentry.grpc.pb.cc")
+set(SENTRY_GRPC_HEADERS "${CMAKE_CURRENT_SOURCE_DIR}/p2psentry/sentry.grpc.pb.h")
 
 add_custom_command(
     OUTPUT "${SENTRY_PROTO_SOURCES}" "${SENTRY_PROTO_HEADERS}" "${SENTRY_GRPC_SOURCES}" "${SENTRY_GRPC_HEADERS}"
     COMMAND ${PROTOBUF_PROTOC}
     ARGS --grpc_out "${CMAKE_CURRENT_SOURCE_DIR}"
       --cpp_out "${CMAKE_CURRENT_SOURCE_DIR}"
-      -I "${SENTRY_PROTO_PATH}"
+      -I "${PROTO_PATH}"
       --plugin=protoc-gen-grpc="${GRPC_CPP_PLUGIN_EXECUTABLE}"
       "${SENTRY_PROTO}"
     DEPENDS "${SENTRY_PROTO}"

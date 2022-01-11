@@ -28,17 +28,16 @@
 
 namespace silkworm::consensus {
 
-class IConsensusEngine {
+class IEngine {
   public:
-    explicit IConsensusEngine() = default;
-    virtual ~IConsensusEngine() = default;
+    virtual ~IEngine() = default;
 
     //! \brief Performs validation of block header & body that can be done prior to sender recovery and execution.
     //! \brief See [YP] Sections 4.3.2 "Holistic Validity", 4.3.4 "Block Header Validity", and 11.1 "Ommer Validation".
     //! \param [in] block: block to pre-validate.
     //! \param [in] state: current state.
     //! \note Shouldn't be used for genesis block.
-    virtual ValidationResult pre_validate_block(const Block& block, BlockState& state) = 0;
+    virtual ValidationResult pre_validate_block(const Block& block, const BlockState& state) = 0;
 
     //! \brief See [YP] Section 4.3.4 "Block Header Validity".
     //! \param [in] header: header to validate.
@@ -46,7 +45,7 @@ class IConsensusEngine {
     //! \param [in] with_future_timestamp_check : whether to check header timestamp is in the future wrt host current
     //! time \see https://github.com/torquem-ch/silkworm/issues/448
     //! \note Shouldn't be used for genesis block.
-    virtual ValidationResult validate_block_header(const BlockHeader& header, BlockState& state,
+    virtual ValidationResult validate_block_header(const BlockHeader& header, const BlockState& state,
                                                    bool with_future_timestamp_check) = 0;
 
     //! \brief Validates the seal of the header
@@ -57,7 +56,7 @@ class IConsensusEngine {
     //! \param [in] block: current block to apply rewards for.
     //! \param [in] revision: EVM fork.
     //! \remarks For Ethash See [YP] Section 11.3 "Reward Application".
-    virtual void finalize(IntraBlockState& state, const Block& block, const evmc_revision& revision);
+    virtual void finalize(IntraBlockState& state, const Block& block, evmc_revision revision);
 
     //! \brief See [YP] Section 11.3 "Reward Application".
     //! \param [in] header: Current block to get beneficiary from
@@ -72,7 +71,7 @@ ValidationResult pre_validate_transaction(const Transaction& txn, uint64_t block
                                           const std::optional<intx::uint256>& base_fee_per_gas);
 
 //! \brief Creates an instance of proper Consensus Engine on behalf of chain configuration
-std::unique_ptr<IConsensusEngine> engine_factory(const ChainConfig& chain_config);
+std::unique_ptr<IEngine> engine_factory(const ChainConfig& chain_config);
 
 }  // namespace silkworm::consensus
 

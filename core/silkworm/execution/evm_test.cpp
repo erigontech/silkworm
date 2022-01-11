@@ -16,13 +16,23 @@
 
 #include "evm.hpp"
 
+#include <map>
+#include <vector>
+
 #include <catch2/catch.hpp>
+#include <evmone/execution_state.hpp>
 
 #include <silkworm/chain/protocol_param.hpp>
 #include <silkworm/common/util.hpp>
 #include <silkworm/state/in_memory_state.hpp>
 
 #include "address.hpp"
+
+namespace evmone {
+class Tracer;
+struct ExecutionState;
+using bytes_view = std::basic_string_view<uint8_t>;
+}
 
 namespace silkworm {
 
@@ -358,6 +368,143 @@ TEST_CASE("EIP-3541: Reject new contracts starting with the 0xEF byte") {
 
     txn.data = *from_hex("0x60fe60005360016000f3");
     CHECK(evm.execute(txn, gas).status == EVMC_SUCCESS);
+}
+
+TEST_CASE("Tracing smart contract with storage") {
+    Block block{};
+    block.header.number = 10'336'006;
+    evmc::address caller{0x0a6bb546b9208cfab9e8fa2b9b2c042b18df7030_address};
+
+    // This contract initially sets its 0th storage to 0x2a
+    // and its 1st storage to 0x01c9.
+    // When called, it updates the 0th storage to the input provided.
+    Bytes code{*from_hex("602a6000556101c960015560068060166000396000f3600035600055")};
+    // https://github.com/CoinCulture/evm-tools
+    // 0      PUSH1  => 2a
+    // 2      PUSH1  => 00
+    // 4      SSTORE         // storage[0] = 0x2a
+    // 5      PUSH2  => 01c9
+    // 8      PUSH1  => 01
+    // 10     SSTORE         // storage[1] = 0x01c9
+    // 11     PUSH1  => 06   // deploy begin
+    // 13     DUP1
+    // 14     PUSH1  => 16
+    // 16     PUSH1  => 00
+    // 18     CODECOPY
+    // 19     PUSH1  => 00
+    // 21     RETURN         // deploy end
+    // 22     PUSH1  => 00   // contract code
+    // 24     CALLDATALOAD
+    // 25     PUSH1  => 00
+    // 27     SSTORE         // storage[0] = input[0]
+
+    InMemoryState db;
+    IntraBlockState state{db};
+    EVM evm{block, state, kMainnetConfig};
+
+    Transaction txn{};
+    txn.from = caller;
+    txn.data = code;
+
+    class TestTracer : public EvmTracer {
+      public:
+        TestTracer(std::optional<evmc::address> contract_address = std::nullopt, std::optional<evmc::bytes32> key = std::nullopt)
+            : contract_address_(contract_address), key_(key) {}
+
+        void on_execution_start(evmc_revision /*rev*/, const evmc_message& /*msg*/, evmone::bytes_view bytecode) noexcept override {
+            bytecode_ = Bytes{bytecode};
+        }
+        void on_instruction_start(uint32_t pc, const evmone::ExecutionState& state, const IntraBlockState& intra_block_state) noexcept override {
+            pc_stack_.push_back(pc);
+            memory_size_stack_[pc] = state.memory.size();
+            if (contract_address_) {
+                storage_stack_[pc] = intra_block_state.get_current_storage(contract_address_.value(), key_.value_or(evmc::bytes32{}));
+            }
+        }
+        void on_execution_end(const evmc_result& res, const IntraBlockState& intra_block_state) noexcept override {
+            result_ = {res.status_code, static_cast<uint64_t>(res.gas_left), {res.output_data, res.output_size}};
+            if (contract_address_) {
+                const auto pc = pc_stack_.back();
+                storage_stack_[pc] = intra_block_state.get_current_storage(contract_address_.value(), key_.value_or(evmc::bytes32{}));
+            }
+        }
+
+        const Bytes& bytecode() const { return bytecode_; }
+        const std::vector<uint32_t>& pc_stack() const { return pc_stack_; }
+        const std::map<uint32_t, std::size_t>& memory_size_stack() const { return memory_size_stack_; }
+        const std::map<uint32_t, evmc::bytes32>& storage_stack() const { return storage_stack_; }
+        const CallResult& result() const { return result_; }
+
+      private:
+        std::optional<evmc::address> contract_address_;
+        std::optional<evmc::bytes32> key_;
+        Bytes bytecode_;
+        std::vector<uint32_t> pc_stack_;
+        std::map<uint32_t, std::size_t> memory_size_stack_;
+        std::map<uint32_t, evmc::bytes32> storage_stack_;
+        CallResult result_;
+    };
+
+    // First execution: out of gas
+    TestTracer tracer1;
+    evm.add_tracer(tracer1);
+
+    uint64_t gas{0};
+    CallResult res{evm.execute(txn, gas)};
+    CHECK(res.status == EVMC_OUT_OF_GAS);
+    CHECK(res.data.empty());
+
+    CHECK(tracer1.bytecode() == code);
+    CHECK(tracer1.pc_stack() == std::vector<uint32_t>{0});
+    CHECK(tracer1.memory_size_stack() == std::map<uint32_t, std::size_t>{{0, 0}});
+    CHECK(tracer1.result().status == EVMC_OUT_OF_GAS);
+    CHECK(tracer1.result().gas_left == 0);
+    CHECK(tracer1.result().data == Bytes{});
+
+    // Second execution: success
+    TestTracer tracer2;
+    evm.add_tracer(tracer2);
+
+    gas = 50'000;
+    res = evm.execute(txn, gas);
+    CHECK(res.status == EVMC_SUCCESS);
+    CHECK(res.data == from_hex("600035600055"));
+
+    CHECK(tracer2.bytecode() == code);
+    CHECK(tracer2.pc_stack() == std::vector<uint32_t>{0,2,4,5,8,10,11,13,14,16,18,19,21});
+    CHECK(tracer2.memory_size_stack() == std::map<uint32_t, std::size_t>{
+        {0, 0}, {2, 0}, {4, 0}, {5, 0}, {8, 0}, {10, 0}, {11, 0}, {13, 0}, {14, 0}, {16, 0}, {18, 0}, {19, 32}, {21, 32}});
+    CHECK(tracer2.result().status == EVMC_SUCCESS);
+    CHECK(tracer2.result().gas_left == 9964);
+    CHECK(tracer2.result().data == res.data);
+
+    // Third execution: success
+    evmc::address contract_address{create_address(caller, 1)};
+    evmc::bytes32 key0{};
+
+    TestTracer tracer3{contract_address, key0};
+    evm.add_tracer(tracer3);
+
+    CHECK(to_hex(zeroless_view(state.get_current_storage(contract_address, key0))) == "2a");
+    evmc::bytes32 new_val{to_bytes32(*from_hex("f5"))};
+    txn.to = contract_address;
+    txn.data = ByteView{new_val};
+    gas = 50'000;
+    res = evm.execute(txn, gas);
+    CHECK(res.status == EVMC_SUCCESS);
+    CHECK(res.data.empty());
+    CHECK(state.get_current_storage(contract_address, key0) == new_val);
+    CHECK(tracer3.storage_stack() == std::map<uint32_t, evmc::bytes32>{
+        {0, to_bytes32(*from_hex("2a"))},
+        {2, to_bytes32(*from_hex("2a"))},
+        {3, to_bytes32(*from_hex("2a"))},
+        {5, to_bytes32(*from_hex("f5"))}});
+
+    CHECK(tracer3.pc_stack() == std::vector<uint32_t>{0,2,3,5});
+    CHECK(tracer3.memory_size_stack() == std::map<uint32_t, std::size_t>{{0, 0}, {2, 0}, {3, 0}, {5, 0}});
+    CHECK(tracer3.result().status == EVMC_SUCCESS);
+    CHECK(tracer3.result().gas_left == 49191);
+    CHECK(tracer3.result().data == Bytes{});
 }
 
 }  // namespace silkworm

@@ -128,11 +128,31 @@ TEST_CASE("JSON serialization") {
             "ethash":{}
         })");
 
-    const std::optional<ChainConfig> config{ChainConfig::from_json(mainnet_json)};
+    const std::optional<ChainConfig> config1{ChainConfig::from_json(mainnet_json)};
 
-    REQUIRE(config);
-    CHECK(config == kMainnetConfig);
-    CHECK(config->to_json() == mainnet_json);
+    REQUIRE(config1);
+    CHECK(config1 == kMainnetConfig);
+    CHECK(config1->to_json() == mainnet_json);
+
+    const auto merge_test_json = nlohmann::json::parse(R"({
+            "chainId":1337302,
+            "homesteadBlock":0,
+            "eip150Block":0,
+            "eip155Block":0,
+            "byzantiumBlock":0,
+            "constantinopleBlock":0,
+            "petersburgBlock":0,
+            "istanbulBlock":0,
+            "berlinBlock":0,
+            "londonBlock":0,
+            "terminalTotalDifficulty":"39387012740608862000000"
+        })");
+
+    const std::optional<ChainConfig> config2{ChainConfig::from_json(merge_test_json)};
+
+    REQUIRE(config2);
+    CHECK(config2->terminal_total_difficulty == intx::from_string<intx::uint256>("39387012740608862000000"));
+    CHECK(config2->to_json() == merge_test_json);
 }
 
 }  // namespace silkworm

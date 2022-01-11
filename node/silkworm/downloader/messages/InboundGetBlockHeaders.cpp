@@ -20,7 +20,7 @@
 #include <silkworm/common/log.hpp>
 #include <silkworm/downloader/internals/header_retrieval.hpp>
 #include <silkworm/downloader/packets/BlockHeadersPacket.hpp>
-#include <silkworm/downloader/rpc/SendMessageById.hpp>
+#include <silkworm/downloader/rpc/send_message_by_id.hpp>
 
 namespace silkworm {
 
@@ -31,7 +31,7 @@ InboundGetBlockHeaders::InboundGetBlockHeaders(const sentry::InboundMessage& msg
         throw std::logic_error("InboundGetBlockHeaders received wrong InboundMessage");
     }
 
-    peerId_ = hash_from_H256(msg.peer_id());
+    peerId_ = string_from_H512(msg.peer_id());
 
     ByteView data = string_view_to_byte_view(msg.data());
     rlp::success_or_throw(rlp::decode(data, packet_));

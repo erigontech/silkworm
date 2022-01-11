@@ -14,17 +14,18 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_SENDMESSAGEBYID_HPP
-#define SILKWORM_SENDMESSAGEBYID_HPP
+#ifndef SILKWORM_PENALIZE_PEER_HPP
+#define SILKWORM_PENALIZE_PEER_HPP
 
 #include <silkworm/downloader/sentry_client.hpp>
 
 namespace silkworm::rpc {
 
-class SendMessageById : public rpc::UnaryCall<sentry::Sentry, sentry::SendMessageByIdRequest, sentry::SentPeers> {
+class PenalizePeer : public rpc::UnaryCall<sentry::Sentry, sentry::PenalizePeerRequest, google::protobuf::Empty> {
   public:
-    SendMessageById(const PeerId& peerId, std::unique_ptr<sentry::OutboundMessageData> message);
+    PenalizePeer(const std::string& peerId, Penalty penalty);
 };
 
 }  // namespace silkworm::rpc
-#endif  // SILKWORM_SENDMESSAGEBYID_HPP
+
+#endif  // SILKWORM_PENALIZE_PEER_HPP

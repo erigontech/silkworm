@@ -70,7 +70,7 @@ std::string WorkingChain::human_readable_verbose_status() const {
 
 std::vector<Announce>& WorkingChain::announces_to_do() { return announces_to_do_; }
 
-void WorkingChain::add_bad_headers(std::set<Hash> bads) {
+void WorkingChain::add_bad_headers(const std::set<Hash>& bads) {
     bad_headers_.insert(bads.begin(), bads.end());  // todo: use set_union or merge?
 }
 
@@ -269,7 +269,7 @@ BlockNum WorkingChain::lowest_anchor_within_range(BlockNum bottom, BlockNum top)
 /*
  * Anchor extension query.
  * The function uses an auxiliary data structure, anchorQueue to decide which anchors to select for queries first.
- * anchorQueue is a priority queue of anchors, priorities by the timestamp of latest anchor extension query issued
+ * anchorQueue is a priority queue of anchors, priorities by the timestamp of the latest anchor extension query issued
  * for an anchor. Anchors for which the extension queries were not issued for the longest time, come on top.
  * The anchor on top gets repeated query, but only after certain timeout (currently 5 second) since the last query,
  * and only of the anchor still exists (i.e. it has not been extended yet). Also, if an anchor gets certain number
@@ -416,7 +416,7 @@ std::tuple<bool, Penalty> HeaderList::childrenParentValidity(const std::vector<H
  * SplitIntoSegments takes a collection of headers and return a collection of chain segments in a specific order.
  * This order is the ascending order of the lowest block height in the segment.
  * There may be many possible ways to split a chain bundle into segments, we choose one that is simple and that assures
- * this properties:
+ * these properties:
  *    - segments form a partial order
  *    - whatever part of the chain that becomes canonical it is not necessary to redo the process of division into
  * segments
@@ -546,7 +546,7 @@ void WorkingChain::reduce_links_to(size_t limit) {
     }
 }
 
-// find_anchors tries to finds the highest link the in the new segment that can be attached to an existing anchor
+// find_anchors tries to find the highest link the in the new segment that can be attached to an existing anchor
 auto WorkingChain::find_anchor(const Segment& segment) -> std::tuple<Found, Start> {  // todo: do we need a span?
     for (size_t i = 0; i < segment.size(); i++)
         if (anchors_.find(segment[i]->hash()) != anchors_.end())  // todo: hash() compute the value,
@@ -648,7 +648,7 @@ auto WorkingChain::extend_down(Segment::Slice segment_slice) -> RequestMoreHeade
 
     anchors_.erase(old_anchor->parentHash);  // Anchor is removed from the map, but not from the anchorQueue
     // This is because it is hard to find the index under which the anchor is stored in the anchorQueue
-    // But removal will happen anyway, in th function RequestMoreHeaders, if it disapppears from the map
+    // But removal will happen anyway, in th function RequestMoreHeaders, if it disappears from the map
 
     // todo: modularize this block in "add_anchor_if_not_present"
     auto new_anchor_header = *segment_slice.rbegin();  // lowest header

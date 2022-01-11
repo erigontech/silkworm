@@ -62,7 +62,7 @@ StageResult Execution::forward(db::RWTxn& txn) {
     std::unique_lock progress_lock(progress_mtx_);
     processed_blocks_ = 0;
     processed_transactions_ = 0;
-    processed_mgas_ = 0;
+    processed_gas_ = 0;
     lap_time_ = std::chrono::steady_clock::now();
     progress_lock.unlock();
 
@@ -106,7 +106,7 @@ StageResult Execution::execute_batch(db::RWTxn& txn, BlockNum max_block_num, Blo
         }
 
         while (true) {
-            if (!(block_num_ % 64) && SignalHandler::signalled()) {
+            if ((block_num_ % 64 == 0) && SignalHandler::signalled()) {
                 return StageResult::kAborted;
             }
 
@@ -130,7 +130,7 @@ StageResult Execution::execute_batch(db::RWTxn& txn, BlockNum max_block_num, Blo
             std::unique_lock progress_lock(progress_mtx_);
             processed_blocks_++;
             processed_transactions_ += block_with_hash->block.transactions.size();
-            processed_mgas_ += block_with_hash->block.header.gas_used / 1'000'000;
+            processed_gas_ += block_with_hash->block.header.gas_used;
             progress_lock.unlock();
 
             const bool overflows{buffer.current_batch_size() >= node_settings_->batch_size};
@@ -185,10 +185,10 @@ std::vector<std::string> Execution::get_log_progress() {
     }
     auto speed_blocks = processed_blocks_ / elapsed_seconds;
     auto speed_transactions = processed_transactions_ / elapsed_seconds;
-    auto speed_mgas = processed_mgas_ / elapsed_seconds;
+    auto speed_mgas = processed_gas_ / elapsed_seconds / 1'000'000;
     processed_blocks_ = 0;
     processed_transactions_ = 0;
-    processed_mgas_ = 0;
+    processed_gas_ = 0;
     progress_lock.unlock();
 
     return {"block",  std::to_string(block_num_),         "blocks/s", std::to_string(speed_blocks),

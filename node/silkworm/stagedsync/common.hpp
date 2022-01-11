@@ -100,6 +100,7 @@ class IStage {
     //! \brief Returns the actual progress recorded into db
     BlockNum get_progress(db::RWTxn& txn);
 
+    //! \brief This function implementation MUST be thread safe as is called asynchronously from ASIO thread
     [[nodiscard]] virtual std::vector<std::string> get_log_progress() = 0;
 
     [[nodiscard]] const char* name() const { return stage_name_; }

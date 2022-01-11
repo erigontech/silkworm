@@ -87,7 +87,7 @@ class Execution final : public IStage {
     std::chrono::time_point<std::chrono::steady_clock> lap_time_{std::chrono::steady_clock::now()};
     size_t processed_blocks_{0};
     size_t processed_transactions_{0};
-    size_t processed_mgas_{0};
+    size_t processed_gas_{0};
 };
 
 inline constexpr size_t kDefaultBatchSize = 512_Mebi;          // TODO(Andrea) Replace with value from CLI

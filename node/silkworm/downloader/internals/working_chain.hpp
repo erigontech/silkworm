@@ -129,8 +129,8 @@ class WorkingChain {
     void reduce_links_to(size_t limit);
     void reduce_persisted_links_to(size_t limit);
 
-    void invalidate(Anchor&);
-    void remove(Anchor& anchor);
+    void invalidate(std::shared_ptr<Anchor>);
+    void remove(std::shared_ptr<Anchor>);
     void remove_anchor(const Hash& hash);
     bool find_bad_header(const std::vector<BlockHeader>&);
     auto add_header_as_link(const BlockHeader& header, bool persisted) -> std::shared_ptr<Link>;

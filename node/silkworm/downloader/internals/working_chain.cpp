@@ -55,8 +55,9 @@ bool WorkingChain::in_sync() const {
 }
 
 std::string WorkingChain::human_readable_status() const {
-    return std::to_string(links_.size()) + " links (" +  std::to_string(link_queue_.size()) + " persisted), "
-           + std::to_string(anchors_.size()) + " anchors";
+    return std::to_string(links_.size()) + "/" + std::to_string(link_queue_.size()) + " links (" +
+           std::to_string(persisted_link_queue_.size()) + " persisted), " +
+           std::to_string(anchors_.size()) + "/" + std::to_string(anchor_queue_.size()) + " anchors";
 }
 
 std::string WorkingChain::human_readable_verbose_status() const {
@@ -230,9 +231,9 @@ std::optional<GetBlockHeadersPacket66> WorkingChain::request_skeleton() {
     if (top <= bottom) {
         return std::nullopt;
     }
-    
-    BlockNum lowest_anchor = lowest_anchor_within_range(0, top+1);
-    // using bottom variable in place of zero as bottom value in the range is wrong because if there is an anchor under
+
+    BlockNum lowest_anchor = lowest_anchor_within_range(highest_in_db_, top+1);
+    // using bottom variable in place of highest_in_db_ in the range is wrong because if there is an anchor under
     // bottom we issue a wrong request, f.e. if the anchor=1536 was extended down we would request again origin=1536
 
     if (lowest_anchor <= bottom) {
@@ -324,8 +325,7 @@ auto WorkingChain::request_more_headers(time_point_t time_point, seconds_t timeo
             // ancestors of this anchor seem to be unavailable, invalidate and move on
             log::Warning() << "WorkingChain: invalidating anchor for suspected unavailability, "
                            << "height=" << anchor->blockHeight;
-            invalidate(*anchor);
-            anchors_.erase(anchor->parentHash);
+            invalidate(anchor);
             anchor_queue_.pop();
             penalties.emplace_back(Penalty::AbandonedAnchorPenalty, anchor->peerId);
         }
@@ -334,8 +334,10 @@ auto WorkingChain::request_more_headers(time_point_t time_point, seconds_t timeo
     return {nullopt, penalties};
 }
 
-void WorkingChain::invalidate(Anchor& anchor) {
-    auto& link_to_remove = anchor.links;
+void WorkingChain::invalidate(std::shared_ptr<Anchor> anchor) {
+    anchors_.erase(anchor->parentHash);
+    // remove upwards
+    auto& link_to_remove = anchor->links;
     while (!link_to_remove.empty()) {
         auto removal = link_to_remove.back();
         link_to_remove.pop_back();
@@ -503,7 +505,7 @@ auto WorkingChain::process_segment(const Segment& segment, bool is_a_new_block, 
         log::Debug() << "WorkingChain: duplicated segment, bn=" << segment[start]->number << ", hash=" << segment[start]->hash()
                      << (foundAnchor ? ", removing corresponding anchor" : ", corresponding anchor not found");
         // If duplicate segment is extending from the anchor, the anchor needs to be deleted,
-        // otherwise it will keep producing requests that will be found duplicate
+        // otherwise it will keep producing requests that will be found duplicate -> but this affect new anchors from block announcements
         if (foundAnchor) remove_anchor(segment[start]->hash());  // note: hash and not parent_hash
         return false;
     }
@@ -584,10 +586,10 @@ auto WorkingChain::find_anchor(const Segment& segment) -> std::tuple<Found, Star
 }
 
 // find_link find the highest existing link (from start) that the new segment can be attached to
-auto WorkingChain::find_link(const Segment& segment, size_t start)
-    -> std::tuple<Found, End> {  // todo: End o Header_Ref?
+auto WorkingChain::find_link(const Segment& segment, size_t start) -> std::tuple<Found, End> {
     auto duplicate_link = get_link(segment[start]->hash());
     if (duplicate_link) return {false, 0};
+
     for (size_t i = start; i < segment.size(); i++) {
         // Check if the header can be attached to any links
         auto attaching_link = get_link(segment[i]->parent_hash);
@@ -640,13 +642,11 @@ void WorkingChain::connect(Segment::Slice segment_slice) {  // throw segment_cut
     bool anchor_preverified =
         as_range::any_of(anchor->links, [](const auto& link) -> bool { return link->preverified; });
 
-    [[maybe_unused]] auto erased = anchors_.erase(anchor->parentHash);  // Anchor is removed from the map, but not from the anchorQueue
+    anchors_.erase(anchor->parentHash);  // Anchor is removed from the map, but not from the anchorQueue
     // This is because it is hard to find the index under which the anchor is stored in the anchorQueue
     // But removal will happen anyway, in th function request_more_headers, if it disappears from the map
-    assert(erased == 1);
 
     // todo: this block is also in "extend_down" method
-    assert(prev_link->hash() == anchor->parentHash);
     prev_link->next = std::move(anchor->links);
     anchor->links.clear();
     if (anchor_preverified) mark_as_preverified(prev_link);  // Mark the entire segment as preverified
@@ -654,7 +654,7 @@ void WorkingChain::connect(Segment::Slice segment_slice) {  // throw segment_cut
     if (contains(bad_headers_, attachment_link.value()->hash)) {
         log::Warning() << "WorkingChain: invalidating anchor because connected to bad headers, "
                        << "height=" << anchor->blockHeight;
-        invalidate(*anchor); // todo: in prev lines we erased anchor links so invalidate does nothing!
+        invalidate(anchor); // todo: in prev lines we erased anchor links so invalidate does nothing!
         // todo: add & return penalties
         // []PenaltyItem := append(penalties, PenaltyItem{Penalty: AbandonedAnchorPenalty, PeerID: anchor.peerID})
     } else if (attachment_link.value()->persisted) {
@@ -714,7 +714,6 @@ auto WorkingChain::extend_down(Segment::Slice segment_slice) -> RequestMoreHeade
     }
 
     // todo: this block is also in "connect" method
-    assert(prev_link->hash() == old_anchor->parentHash);
     prev_link->next = std::move(old_anchor->links);
     old_anchor->links.clear();
     if (anchor_preverified) mark_as_preverified(prev_link);  // Mark the entire segment as preverified
@@ -767,7 +766,7 @@ auto WorkingChain::new_anchor(Segment::Slice segment_slice, PeerId peerId) -> Re
     if (!pre_existing) {
         if (anchor_header->number < highest_in_db_)
             throw segment_cut_and_paste_error(
-                "segment cut&paste error, new anchor too far in the past: " + to_string(anchor_header->number) +
+                "segment cut&paste precondition not meet, new anchor too far in the past: " + to_string(anchor_header->number) +
                 ", latest header in db: " + to_string(highest_in_db_));
         if (anchors_.size() >= anchor_limit)
             throw segment_cut_and_paste_error("segment cut&paste error, too many anchors: " +
@@ -809,7 +808,7 @@ auto WorkingChain::add_header_as_link(const BlockHeader& header, bool persisted)
     return link;
 }
 
-void WorkingChain::remove(Anchor& anchor) { remove_anchor(anchor.parentHash); }
+void WorkingChain::remove(std::shared_ptr<Anchor> anchor) { remove_anchor(anchor->parentHash); }
 
 void WorkingChain::remove_anchor(const Hash& hash) {
     // Anchor is removed from the map, but not from the anchorQueue

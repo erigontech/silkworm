@@ -560,9 +560,14 @@ TEST_CASE("WorkingChain - process_segment - (2) extending down with 2 siblings")
 
     std::array<BlockHeader, 10> headers;
 
+    BlockHeader h0;
+    h0.number = 0;
+    h0.difficulty = 0;
+
     BlockHeader h1;
     h1.number = 1;
     h1.difficulty = 100;
+    h1.parent_hash = h0.hash();
 
     BlockHeader h2;
     h2.number = 2;
@@ -578,6 +583,8 @@ TEST_CASE("WorkingChain - process_segment - (2) extending down with 2 siblings")
     chain.accept_headers({h2, h2b}, peerId);
 
     chain.accept_headers({h1}, peerId);
+
+    REQUIRE(chain.anchors_.size() == 1);
 
     auto anchor = chain.anchors_[h1.parent_hash];
     REQUIRE(anchor != nullptr);
@@ -959,10 +966,10 @@ TEST_CASE("WorkingChain - process_segment - (5) pre-verified hashes with canonic
 }
 
 
-// A test related to an apparent bug
+// Corner cases
 // -----------------------------------------------------------------------------------------------------------------
 
-TEST_CASE("WorkingChain - process_segment - (6) overlapping segment") {
+TEST_CASE("WorkingChain - process_segment - (6) (malicious) siblings") {
     using namespace std;
 
     WorkingChain_ForTest chain;
@@ -972,12 +979,17 @@ TEST_CASE("WorkingChain - process_segment - (6) overlapping segment") {
 
     std::array<BlockHeader, 10> headers;
 
-    for (size_t i = 1; i < headers.size(); i++) {  // skip first header for simplicity
+    headers[0].number = 0;
+    headers[0].difficulty = 0;
+    for (size_t i = 1; i < headers.size(); i++) {
         headers[i].number = i;
         headers[i].difficulty = i;  // improve!
         headers[i].parent_hash = headers[i - 1].hash();
     }
 
+    /* chain:
+     *         h5
+     */
     INFO("new_anchor") {
         auto [penalty, requestMoreHeaders] = chain.accept_headers({headers[5]}, peerId);
 
@@ -999,7 +1011,10 @@ TEST_CASE("WorkingChain - process_segment - (6) overlapping segment") {
         REQUIRE(anchor->links[0]->next.size() == 0);
     }
 
-    INFO("extend_down") {
+    /* chain:
+     *         h3 <-- h4 <-- h5
+     */
+    INFO("extend_down overlapping") {
         auto [penalty, requestMoreHeaders] = chain.accept_headers(
             {headers[5], headers[4], headers[3]}, peerId);  // add a segment that overlap the previous one
 
@@ -1023,6 +1038,74 @@ TEST_CASE("WorkingChain - process_segment - (6) overlapping segment") {
         REQUIRE(anchor->links[0]->next[0]->next[0]->hash == headers[5].hash());
         REQUIRE(anchor->links[0]->next[0]->next[0]->next.size() == 0);
 
+    }
+
+    /* chain:
+     *         h3 <--- h4 <--- h5
+     *              |--------- h5'
+     */
+    INFO("far new anchor") {
+        BlockHeader h5p;
+        h5p.number = 5;
+        h5p.parent_hash = headers[3].hash();
+        h5p.difficulty = headers[3].difficulty + 1;
+
+        // add a segment with a siblings with far parent
+        auto [penalty, requestMoreHeaders] = chain.accept_headers({h5p}, peerId);
+
+        REQUIRE(penalty == Penalty::NoPenalty);
+        REQUIRE(requestMoreHeaders == true);
+        REQUIRE(chain.anchor_queue_.size() == 2);
+        REQUIRE(chain.anchors_.size() == 1);
+        REQUIRE(chain.link_queue_.size() == 4);
+        REQUIRE(chain.links_.size() == 4);
+
+        auto anchor = chain.anchors_[headers[3].parent_hash];
+        REQUIRE(anchor != nullptr);
+        REQUIRE(anchor->parentHash == headers[3].parent_hash);
+        REQUIRE(anchor->blockHeight == headers[3].number);
+        REQUIRE(anchor->links.size() == 2); // 2 siblings
+
+        REQUIRE(anchor->links[0]->hash == headers[3].hash());
+        REQUIRE(anchor->links[0]->next.size() == 1);
+        REQUIRE(anchor->links[0]->next[0]->hash == headers[4].hash());
+        REQUIRE(anchor->links[0]->next[0]->next.size() == 1);
+        REQUIRE(anchor->links[0]->next[0]->next[0]->hash == headers[5].hash());
+        REQUIRE(anchor->links[0]->next[0]->next[0]->next.size() == 0);
+
+        REQUIRE(anchor->links[1]->hash == h5p.hash());
+    }
+
+    /* chain:
+     *         h3 <--- h4 <--- h5
+     *              |--------- h5'
+     *                   X---- h5"
+     */
+    INFO("malicious new anchor") {
+        BlockHeader h5s;
+        h5s.number = 5;
+        h5s.parent_hash = h5s.hash(); // a wrong hash
+        h5s.difficulty = 5;
+
+        // add a segment with a siblings with far parent
+        auto [penalty, requestMoreHeaders] = chain.accept_headers({h5s}, peerId);
+
+        REQUIRE(penalty == Penalty::NoPenalty);
+        REQUIRE(requestMoreHeaders == true);
+        REQUIRE(chain.anchor_queue_.size() == 3);
+        REQUIRE(chain.anchors_.size() == 2);
+        REQUIRE(chain.link_queue_.size() == 5);
+        REQUIRE(chain.links_.size() == 5);
+
+        auto anchor = chain.anchors_[headers[3].parent_hash];
+        REQUIRE(anchor != nullptr);
+        REQUIRE(anchor->parentHash == headers[3].parent_hash);
+        REQUIRE(anchor->blockHeight == headers[3].number);
+        REQUIRE(anchor->links.size() == 2); // 2 siblings
+
+        auto anchor2 = chain.anchors_[h5s.parent_hash];
+        REQUIRE(anchor2 != nullptr);
+        REQUIRE(anchor2->links[0]->hash == h5s.hash());
     }
 }
 
@@ -1109,6 +1192,7 @@ TEST_CASE("WorkingChain - process_segment - (7) invalidating anchor") {
         REQUIRE(anchor->links[0]->next[0]->next[0]->next.size() == 0);
 
     }
+
 }
 
 }  // namespace silkworm

@@ -19,6 +19,7 @@
 
 #include <silkworm/common/directories.hpp>
 #include <silkworm/common/log.hpp>
+#include <silkworm/common/signal_handler.hpp>
 
 namespace silkworm::etl {
 
@@ -33,7 +34,6 @@ Collector::~Collector() {
 
 void Collector::flush_buffer() {
     if (buffer_.size()) {
-        log::Info() << "Flushing Buffer File...";
         buffer_.sort();
 
         /* Build a unique file name to pass FileProvider */
@@ -43,7 +43,8 @@ void Collector::flush_buffer() {
         file_providers_.emplace_back(new FileProvider(new_file_path.string(), file_providers_.size()));
         file_providers_.back()->flush(buffer_);
         buffer_.clear();
-        log::Info() << "Buffer Flushed";
+        log::Info("Collector flushed file", {"path", std::string(file_providers_.back()->get_file_name()), "size",
+                                             human_size(file_providers_.back()->get_file_size())});
     }
 }
 
@@ -63,23 +64,24 @@ void Collector::collect(Entry&& entry) {
     }
 }
 
-void Collector::load(mdbx::cursor& target, LoadFunc load_func, MDBX_put_flags_t flags, uint32_t log_every_percent) {
-    const auto overall_size{size()};  // Amount of work
-
-    if (!overall_size) {
-        log::Info() << "ETL Load called without data to process";
+void Collector::load(mdbx::cursor& target, LoadFunc load_func, MDBX_put_flags_t flags) {
+    size_t counter{10};  // Every 10 entry we track the key being loaded
+    loading_key_.clear();
+    if (empty()) {
         return;
     }
-
-    const uint32_t progress_step{log_every_percent ? std::min(log_every_percent, 100u) : 100u};
-    const size_t progress_increment_count{overall_size / (100 / progress_step)};
-    size_t dummy_counter{progress_increment_count};
-    uint32_t actual_progress{0};
 
     if (file_providers_.empty()) {
         buffer_.sort();
 
         for (const auto& etl_entry : buffer_.entries()) {
+            if (!--counter) {
+                if (SignalHandler::signalled()) {
+                    throw std::runtime_error("Operation cancelled");
+                }
+                counter = 10;
+                loading_key_ = to_hex(etl_entry.key);
+            }
             if (load_func) {
                 load_func(etl_entry, target, flags);
             } else {
@@ -92,15 +94,9 @@ void Collector::load(mdbx::cursor& target, LoadFunc load_func, MDBX_put_flags_t 
                     mdbx::error::success_or_throw(target.put(k, &v, flags));
                 }
             }
-
-            if (!--dummy_counter) {
-                actual_progress += progress_step;
-                dummy_counter = progress_increment_count;
-                log::Info() << "ETL Load Progress "
-                                   << " << " << actual_progress << "%";
-            }
         }
 
+        size_ = 0;
         buffer_.clear();
         return;
     }
@@ -129,6 +125,14 @@ void Collector::load(mdbx::cursor& target, LoadFunc load_func, MDBX_put_flags_t 
         auto& [etl_entry, provider_index]{queue.top()};           // Pick the smallest key by reference
         auto& file_provider{file_providers_.at(provider_index)};  // and set current file provider
 
+        if (!--counter) {
+            if (SignalHandler::signalled()) {
+                throw std::runtime_error("Operation cancelled");
+            }
+            counter = 10;
+            loading_key_ = to_hex(etl_entry.key);
+        }
+
         // Process linked pairs
         if (load_func) {
             load_func(etl_entry, target, flags);
@@ -136,14 +140,6 @@ void Collector::load(mdbx::cursor& target, LoadFunc load_func, MDBX_put_flags_t 
             mdbx::slice k{db::to_slice(etl_entry.key)};
             mdbx::slice v{db::to_slice(etl_entry.value)};
             mdbx::error::success_or_throw(target.put(k, &v, flags));
-        }
-
-        // Display progress
-        if (!--dummy_counter) {
-            actual_progress += progress_step;
-            dummy_counter = progress_increment_count;
-            log::Info() << "ETL Load Progress "
-                               << " << " << actual_progress << "%";
         }
 
         // From the provider which has served the current key

@@ -1,5 +1,5 @@
 #[[
-   Copyright 2020-2021 The Silkworm Authors
+   Copyright 2020-2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -36,24 +36,20 @@ endif()
 if(NOT SILKWORM_CORE_ONLY)
 
   find_package(absl CONFIG REQUIRED)
+  find_package(CLI11 CONFIG REQUIRED)
 
   file(GLOB_RECURSE SILKWORM_NODE_TESTS CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/node/silkworm/*_test.cpp")
   add_executable(node_test unit_test.cpp ${SILKWORM_NODE_TESTS})
   target_link_libraries(node_test silkworm_node Catch2::Catch2)
 
-  add_executable(silkworm silkworm.cpp)
-  target_link_libraries(silkworm PRIVATE silkworm_node CLI11::CLI11)
+  add_executable(silkworm silkworm.cpp common.cpp)
+  target_link_libraries(silkworm PRIVATE silkworm_node CLI11::CLI11 $<$<BOOL:${MSVC}>:Kernel32.lib>)
 
   add_executable(check_changes check_changes.cpp)
   target_link_libraries(check_changes PRIVATE silkworm_node CLI11::CLI11 absl::time)
 
   add_executable(scan_txs scan_txs.cpp)
   target_link_libraries(scan_txs PRIVATE silkworm_node CLI11::CLI11 absl::time)
-
-  find_package(CLI11 CONFIG REQUIRED)
-
-  add_executable(check_senders check_senders.cpp)
-  target_link_libraries(check_senders PRIVATE silkworm_node CLI11::CLI11)
 
   add_executable(check_pow check_pow.cpp)
   target_link_libraries(check_pow PRIVATE silkworm_node CLI11::CLI11)
@@ -63,9 +59,6 @@ if(NOT SILKWORM_CORE_ONLY)
 
   add_executable(genesistool genesistool.cpp)
   target_link_libraries(genesistool PRIVATE CLI11::CLI11)
-
-  add_executable(execute execute.cpp)
-  target_link_libraries(execute PRIVATE silkworm_node CLI11::CLI11)
 
   add_executable(unwind_execution unwind_execution.cpp)
   target_link_libraries(unwind_execution PRIVATE silkworm_node CLI11::CLI11)
@@ -82,9 +75,6 @@ if(NOT SILKWORM_CORE_ONLY)
   add_executable(unwind_log_index unwind_log_index.cpp)
   target_link_libraries(unwind_log_index PRIVATE silkworm_node CLI11::CLI11)
 
-  add_executable(blockhashes blockhashes.cpp)
-  target_link_libraries(blockhashes PRIVATE silkworm_node CLI11::CLI11)
-  
   add_executable(hashstate hashstate.cpp)
   target_link_libraries(hashstate PRIVATE silkworm_node CLI11::CLI11)
 

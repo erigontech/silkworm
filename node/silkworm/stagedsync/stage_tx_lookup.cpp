@@ -107,7 +107,7 @@ StageResult stage_tx_lookup(db::RWTxn& txn, const std::filesystem::path& etl_pat
         MDBX_put_flags_t db_flags{target_table_rcount ? MDBX_put_flags_t::MDBX_UPSERT : MDBX_put_flags_t::MDBX_APPEND};
 
         // Eventually load collected items with no transform (may throw)
-        collector.load(target_table, nullptr, db_flags, /* log_every_percent = */ 10);
+        collector.load(target_table, nullptr, db_flags);
 
         // Update progress height with last processed block
         db::stages::write_stage_progress(*txn, db::stages::kTxLookupKey, block_number);

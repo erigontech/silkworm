@@ -123,10 +123,11 @@ void Buffer::write_to_state_table() {
 
     for (const auto& address : addresses) {
         if (auto it{accounts_.find(address)}; it != accounts_.end()) {
-            state_table.erase(to_slice(address));
+            auto key{to_slice(address)};
+            state_table.erase(key, /*whole_multivalue=*/true);  // PlainState is multivalue
             if (it->second.has_value()) {
                 Bytes encoded{it->second->encode_for_storage()};
-                state_table.upsert(to_slice(address), to_slice(encoded));
+                state_table.upsert(key, to_slice(encoded));
             }
         }
 
@@ -180,7 +181,8 @@ void Buffer::write_to_db() {
         for (const auto& account_entry : block_entry.second) {
             data = ByteView{account_entry.first};
             data.append(account_entry.second);
-            account_change_table.upsert(to_slice(change_key), to_slice(data));
+            auto data_slice{to_slice(data)};
+            account_change_table.put(to_slice(change_key), &data_slice, MDBX_APPENDDUP);
         }
     }
 
@@ -196,20 +198,25 @@ void Buffer::write_to_db() {
                 for (const auto& storage_entry : incarnation_entry.second) {
                     data = ByteView{storage_entry.first};
                     data.append(storage_entry.second);
-                    storage_change_table.upsert(to_slice(change_key), to_slice(data));
+                    auto data_slice{to_slice(data)};
+                    storage_change_table.put(to_slice(change_key), &data_slice, MDBX_APPENDDUP);
                 }
             }
         }
     }
 
     auto receipt_table{db::open_cursor(txn_, table::kBlockReceipts)};
-    for (const auto& entry : receipts_) {
-        receipt_table.upsert(to_slice(entry.first), to_slice(entry.second));
+    for (const auto& [block_key, receipts] : receipts_) {
+        auto k{to_slice(block_key)};
+        auto v{to_slice(receipts)};
+        receipt_table.put(k, &v, MDBX_APPEND);
     }
 
     auto log_table{db::open_cursor(txn_, table::kLogs)};
-    for (const auto& entry : logs_) {
-        log_table.upsert(to_slice(entry.first), to_slice(entry.second));
+    for (const auto& [log_key, value] : logs_) {
+        auto k{to_slice(log_key)};
+        auto v{to_slice(value)};
+        log_table.put(k, &v, MDBX_APPEND);
     }
 }
 

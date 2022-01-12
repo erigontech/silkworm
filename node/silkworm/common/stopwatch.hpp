@@ -15,8 +15,8 @@
 */
 
 #pragma once
-#ifndef SILKWORM_STOPWATCH_HPP_
-#define SILKWORM_STOPWATCH_HPP_
+#ifndef SILKWORM_COMMON_STOPWATCH_HPP_
+#define SILKWORM_COMMON_STOPWATCH_HPP_
 
 #include <chrono>
 #include <iomanip>
@@ -28,59 +28,42 @@
 #include <vector>
 
 namespace silkworm {
-/// <summary>
-/// This class mimics the behavior of a stopwatch to measure timings of operations
-/// </summary>
+//! \brief This class mimics the behavior of a stopwatch to measure timings of operations
 class StopWatch {
   public:
-    typedef std::chrono::time_point<std::chrono::high_resolution_clock> TimePoint;
-    typedef std::chrono::nanoseconds Duration;
+    using TimePoint = std::chrono::time_point<std::chrono::high_resolution_clock>;
+    using Duration = std::chrono::nanoseconds;
 
-    /// <summary>
-    /// Creates a new instance
-    /// </summary>
+    //! \brief Creates a new instance
     StopWatch() = default;
     ~StopWatch() = default;
 
-    /// <summary>
-    /// Starts the clock
-    /// </summary>
-    /// <returns>The TimePoint it was started on</returns>
-    TimePoint start() noexcept;
+    //! \brief Starts the clock
+    //! \return The TimePoint it was started on
+    TimePoint start(bool with_reset = false) noexcept;
 
-    /// <summary>
-    /// Records a lap time
-    /// </summary>
-    /// <returns>A pair of TimePoint and Duration</returns>
+    //! \brief Records a lap time
+    //! \return A pair of TimePoint and Duration
     std::pair<TimePoint, Duration> lap() noexcept;
 
-    /// <summary>
-    /// Computes the duration amongst the start time and the
-    /// provided timepoint
-    /// </summary>
-    /// <param name="origin">An origin timepoint</param>
-    /// <returns>A Duration</returns>
+    //! \brief Computes the duration amongst the start time and the provided timepoint
+    //! \param origin [in] : An origin timepoint
+    //! \return  Duration
     Duration since_start(const TimePoint& origin) noexcept;
 
-    /// <summary>
-    /// Stops the watch
-    /// </summary>
-    TimePoint stop() noexcept;
+    //! \brief Stops the watch
+    //! \return The timepoint of stop and the duration since start (if no laptimes) or the duration from previous
+    //! laptime
+    std::pair<TimePoint, Duration> stop() noexcept;
 
-    /// <summary>
-    /// Stops the watch and clears all counters
-    /// </summary>
+    //! \brief Stops the watch and clears all counters
     void reset() noexcept;
 
-    /// <summary>
-    /// Returns the vector of laptimes
-    /// </summary>
-    const std::vector<std::pair<TimePoint, Duration>>& laps() const { return laps_; }
+    //! \brief Returns the vector of laptimes
+    [[nodiscard]] const std::vector<std::pair<TimePoint, Duration>>& laps() const { return laps_; }
 
-    /// <summary>
-    /// Returns a human readable duration
-    /// </summary>
-    static std::string format(Duration duration);
+    //! \brief Returns a human readable duration
+    static std::string format(Duration duration) noexcept;
 
     explicit operator bool() const noexcept { return started_; }
 
@@ -92,4 +75,4 @@ class StopWatch {
 
 }  // namespace silkworm
 
-#endif  // !SILKWORM_STOPWATCH_HPP_
+#endif  // !SILKWORM_COMMON_STOPWATCH_HPP_

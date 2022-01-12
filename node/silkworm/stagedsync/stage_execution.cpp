@@ -1,5 +1,5 @@
 /*
-   Copyright 2020-2021 The Silkworm Authors
+   Copyright 2020-2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -17,11 +17,10 @@
 #include <filesystem>
 #include <string>
 
-#include <silkworm/chain/config.hpp>
 #include <silkworm/common/endian.hpp>
 #include <silkworm/common/log.hpp>
+#include <silkworm/common/signal_handler.hpp>
 #include <silkworm/common/stopwatch.hpp>
-#include <silkworm/consensus/engine.hpp>
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/buffer.hpp>
 #include <silkworm/db/stages.hpp>
@@ -31,120 +30,169 @@
 
 namespace silkworm::stagedsync {
 
-// block_num is input-output
-static StageResult execute_batch_of_blocks(mdbx::txn& txn, const ChainConfig& config, const BlockNum max_block,
-                                           const size_t batch_size, BlockNum& block_num, BlockNum prune_from) noexcept {
-    try {
-        db::Buffer buffer{txn, prune_from};
-        AnalysisCache analysis_cache;
-        ExecutionStatePool state_pool;
-        std::vector<Receipt> receipts;
-        auto consensus_engine{consensus::engine_factory(config)};
-        if (!consensus_engine) {
-            return StageResult::kUnknownConsensusEngine;
+StageResult Execution::forward(db::RWTxn& txn) {
+    if (!node_settings_->chain_config.has_value()) {
+        return StageResult::kUnknownChainId;
+    } else if (!consensus_engine_) {
+        return StageResult::kUnknownConsensusEngine;
+    }
+
+    StopWatch commit_stopwatch;
+    // Check stage boundaries from previous execution and previous stage execution
+    auto previous_progress{get_progress(txn)};
+    auto bodies_stage_progress{db::stages::read_stage_progress(*txn, db::stages::kBlockBodiesKey)};
+    auto senders_stage_progress{db::stages::read_stage_progress(*txn, db::stages::kSendersKey)};
+
+    if (previous_progress == bodies_stage_progress) {
+        // Nothing to process
+        return StageResult::kSuccess;
+    } else if (previous_progress > bodies_stage_progress) {
+        // Something bad had happened. Not possible execution stage is ahead of bodies
+        // Maybe we need to unwind ?
+        log::Error() << "Bad progress sequence. Execution stage progress " << previous_progress
+                     << " while Bodies stage " << bodies_stage_progress;
+        return StageResult::kInvalidProgress;
+    } else if (previous_progress > senders_stage_progress) {
+        // Same as above but for senders
+        log::Error() << "Bad progress sequence. Execution stage progress " << previous_progress
+                     << " while Senders stage " << senders_stage_progress;
+        return StageResult::kInvalidProgress;
+    }
+
+    std::unique_lock progress_lock(progress_mtx_);
+    processed_blocks_ = 0;
+    processed_transactions_ = 0;
+    processed_gas_ = 0;
+    lap_time_ = std::chrono::steady_clock::now();
+    progress_lock.unlock();
+
+    block_num_ = previous_progress + 1;
+    BlockNum max_block_num{bodies_stage_progress};
+    if (bodies_stage_progress - previous_progress > 16) {
+        log::Info("Begin Execution", {"from", std::to_string(block_num_), "to", std::to_string(bodies_stage_progress)});
+    }
+
+    AnalysisCache analysis_cache;
+    ExecutionStatePool state_pool;
+
+    while (block_num_ <= max_block_num) {
+        // TODO(Andrea) Prune logic must be amended
+        const auto res{execute_batch(txn, max_block_num, 0, analysis_cache, state_pool)};
+        if (res != StageResult::kSuccess) {
+            return res;
         }
+        db::stages::write_stage_progress(*txn, db::stages::kExecutionKey, block_num_);
+        (void)commit_stopwatch.start(/*with_reset=*/true);
+        txn.commit();
+        auto [_, duration]{commit_stopwatch.stop()};
+        log::Info("Commit time", {"batch", StopWatch::format(duration)});
+        if (SignalHandler::signalled()) {
+            return StageResult::kAborted;
+        }
+        block_num_++;
+    }
+    return StageResult::kSuccess;
+}
+
+StageResult Execution::execute_batch(db::RWTxn& txn, BlockNum max_block_num, BlockNum prune_from,
+                                     AnalysisCache& analysis_cache, ExecutionStatePool& state_pool) {
+    try {
+        db::Buffer buffer(*txn, prune_from);
+        std::vector<Receipt> receipts;
+
+        {
+            std::unique_lock progress_lock(progress_mtx_);
+            lap_time_ = std::chrono::steady_clock::now();
+        }
+
         while (true) {
-            std::optional<BlockWithHash> bh{db::read_block(txn, block_num, /*read_senders=*/true)};
-            if (!bh.has_value()) {
-                return StageResult::kBadChainSequence;
+            if ((block_num_ % 64 == 0) && SignalHandler::signalled()) {
+                return StageResult::kAborted;
             }
 
-            ExecutionProcessor processor{bh->block, *consensus_engine, buffer, config};
+            std::optional<BlockWithHash> block_with_hash{db::read_block(*txn, block_num_, /*read_senders=*/true)};
+            if (!block_with_hash.has_value()) {
+                return StageResult::kBadChainSequence;
+            }
+            ExecutionProcessor processor(block_with_hash->block, *consensus_engine_, buffer,
+                                         node_settings_->chain_config.value());
             processor.evm().advanced_analysis_cache = &analysis_cache;
             processor.evm().state_pool = &state_pool;
 
             if (const auto res{processor.execute_and_write_block(receipts)}; res != ValidationResult::kOk) {
-                log::Error() << "Validation error " << magic_enum::enum_name<ValidationResult>(res)
-                                    << " at block " << block_num;
+                log::Error("Block Validation Error", {"block", std::to_string(block_num_), "err",
+                                                      std::string(magic_enum::enum_name<ValidationResult>(res))});
                 return StageResult::kInvalidBlock;
             }
 
             // TODO(Andrea) implement pruning
-            buffer.insert_receipts(block_num, receipts);
+            buffer.insert_receipts(block_num_, receipts);
+            std::unique_lock progress_lock(progress_mtx_);
+            processed_blocks_++;
+            processed_transactions_ += block_with_hash->block.transactions.size();
+            processed_gas_ += block_with_hash->block.header.gas_used;
+            progress_lock.unlock();
 
-            if (block_num % 1000 == 0) {
-                log::Debug() << "Blocks <= " << block_num << " executed";
-            }
-
-            if (buffer.current_batch_size() >= batch_size || block_num >= max_block) {
+            const bool overflows{buffer.current_batch_size() >= node_settings_->batch_size};
+            if (overflows || block_num_ >= max_block_num) {
+                auto t0{std::chrono::steady_clock::now()};
                 buffer.write_to_db();
+                auto t1{std::chrono::steady_clock::now()};
+                log::Info("Flushed batch",
+                          {"size", human_size(buffer.current_batch_size()), "in", StopWatch::format(t1 - t0)});
                 return StageResult::kSuccess;
             }
-
-            ++block_num;
+            block_num_++;
         }
+
     } catch (const mdbx::exception& ex) {
-        log::Error() << "DB error " << ex.what() << " at block " << block_num;
+        log::Error("DB Error", {"block", std::to_string(block_num_)}) << " " << ex.what();
         return StageResult::kDbError;
     } catch (const db::MissingSenders&) {
-        log::Error() << "Missing or incorrect senders at block " << block_num;
+        log::Error("Missing senders", {"block", std::to_string(block_num_)});
         return StageResult::kMissingSenders;
     } catch (const rlp::DecodingError& ex) {
-        log::Error() << ex.what() << " at block " << block_num;
+        log::Error("RLP decoding error", {"block", std::to_string(block_num_)}) << " " << ex.what();
         return StageResult::kDecodingError;
     } catch (const std::exception& ex) {
-        log::Error() << "Unexpected error " << ex.what() << " at block " << block_num;
+        log::Error("Unexpected error", {"block", std::to_string(block_num_)}) << " " << ex.what();
         return StageResult::kUnexpectedError;
     } catch (...) {
-        log::Error() << "Unknown error at block " << block_num;
+        log::Error("Unexpected undefined error", {"block", std::to_string(block_num_)});
         return StageResult::kUnknownError;
     }
 }
 
-StageResult stage_execution(db::RWTxn& txn, const std::filesystem::path&, size_t batch_size,
-                            uint64_t prune_from) {
-    StageResult res{StageResult::kSuccess};
+StageResult Execution::unwind(db::RWTxn& txn, BlockNum to) {
+    (void)txn;
+    (void)to;
+    throw std::runtime_error("Not yet implemented");
+}
 
-    try {
-        const auto chain_config{db::read_chain_config(*txn)};
-        if (!chain_config.has_value()) {
-            return StageResult::kUnknownChainId;
-        }
+StageResult Execution::prune(db::RWTxn& txn) {
+    (void)txn;
+    throw std::runtime_error("Not yet implemented");
+};
 
-        const BlockNum max_block{db::stages::read_stage_progress(*txn, db::stages::kBlockBodiesKey)};
-        BlockNum block_num{db::stages::read_stage_progress(*txn, db::stages::kExecutionKey) + 1};
-        if (block_num > max_block) {
-            log::Error() << "Stage progress is " << (block_num - 1) << " which is <= than requested block_to "
-                                << max_block;
-            return StageResult::kInvalidRange;
-        }
-
-        // Execution needs senders hence we need to check whether sender's stage is
-        // at least at max_block as set above
-        const BlockNum max_block_senders{db::stages::read_stage_progress(*txn, db::stages::kSendersKey)};
-        if (max_block > max_block_senders) {
-            log::Error() << "Sender's stage progress is " << (max_block_senders)
-                                << " which is <= than requested block_to " << max_block;
-            return StageResult::kMissingSenders;
-        }
-
-        StopWatch sw{};
-        (void)sw.start();
-
-        for (; block_num <= max_block; ++block_num) {
-            res = execute_batch_of_blocks(*txn, chain_config.value(), max_block, batch_size, block_num, prune_from);
-            if (res != StageResult::kSuccess) {
-                return res;
-            }
-
-            db::stages::write_stage_progress(*txn, db::stages::kExecutionKey, block_num);
-
-            txn.commit();
-
-            (void)sw.lap();
-            log::Info() << (block_num == max_block ? "All blocks" : "Blocks") << " <= " << block_num
-                               << " committed"
-                               << " in " << StopWatch::format(sw.laps().back().second);
-        }
-    } catch (const mdbx::exception& ex) {
-        log::Error() << "DB Error " << ex.what() << " in stage_execution";
-        return StageResult::kDbError;
-    } catch (const std::exception& ex) {
-        log::Error() << "Unexpected error " << ex.what() << " in stage execution";
-        return StageResult::kUnexpectedError;
+std::vector<std::string> Execution::get_log_progress() {
+    std::unique_lock progress_lock(progress_mtx_);
+    auto now{std::chrono::steady_clock::now()};
+    auto elapsed{now - lap_time_};
+    lap_time_ = now;
+    auto elapsed_seconds = static_cast<uint32_t>(std::chrono::duration_cast<std::chrono::seconds>(elapsed).count());
+    if (!elapsed_seconds || !processed_blocks_) {
+        return {"block", std::to_string(block_num_)};
     }
+    auto speed_blocks = processed_blocks_ / elapsed_seconds;
+    auto speed_transactions = processed_transactions_ / elapsed_seconds;
+    auto speed_mgas = processed_gas_ / elapsed_seconds / 1'000'000;
+    processed_blocks_ = 0;
+    processed_transactions_ = 0;
+    processed_gas_ = 0;
+    progress_lock.unlock();
 
-    return res;
+    return {"block",  std::to_string(block_num_),         "blocks/s", std::to_string(speed_blocks),
+            "txns/s", std::to_string(speed_transactions), "Mgas/s",   std::to_string(speed_mgas)};
 }
 
 // Revert State for given address/storage location
@@ -175,7 +223,7 @@ static void revert_state(ByteView key, ByteView value, mdbx::cursor& plain_state
                 }
             }
             auto new_encoded_account{account.encode_for_storage(false)};
-            plain_state_table.erase(db::to_slice(key), /*whole_multivalue=*/ true);
+            plain_state_table.erase(db::to_slice(key), /*whole_multivalue=*/true);
             plain_state_table.upsert(db::to_slice(key), db::to_slice(new_encoded_account));
         } else {
             plain_state_table.erase(db::to_slice(key));

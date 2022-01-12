@@ -30,6 +30,7 @@ inline constexpr BlockNum kFullImmutabilityThreshold{90'000};
 
 inline constexpr const char* kPruneModeHistoryKey{"pruneHistory"};
 inline constexpr const char* kPruneModeReceiptsKey{"pruneReceipts"};
+inline constexpr const char* kPruneModeSendersKey{"pruneSenders"};
 inline constexpr const char* kPruneModeTxIndexKey{"pruneTxIndex"};
 inline constexpr const char* kPruneModeCallTracesKey{"pruneCallTraces"};
 
@@ -66,28 +67,32 @@ class BlockAmount {
 class PruneMode {
   public:
     explicit PruneMode() : history_(), receipts_(), tx_index_(), call_traces_(){};
-    explicit PruneMode(BlockAmount& history, BlockAmount& receipts, BlockAmount& tx_index, BlockAmount& call_traces)
+    explicit PruneMode(BlockAmount& history, BlockAmount& receipts, BlockAmount& senders, BlockAmount& tx_index,
+                       BlockAmount& call_traces)
         : history_{std::move(history)},
           receipts_{std::move(receipts)},
+          senders_{std::move(senders)},
           tx_index_{std::move(tx_index)},
           call_traces_{std::move(call_traces)} {};
 
     [[nodiscard]] const BlockAmount& history() const { return history_; }
     [[nodiscard]] const BlockAmount& receipts() const { return receipts_; }
+    [[nodiscard]] const BlockAmount& senders() const { return senders_; }
     [[nodiscard]] const BlockAmount& tx_index() const { return tx_index_; }
     [[nodiscard]] const BlockAmount& call_traces() const { return call_traces_; }
 
     [[nodiscard]] std::string to_string() const;
 
     bool operator==(const PruneMode& other) const {
-        return history_ == other.history_ && receipts_ == other.receipts_ && tx_index_ == other.tx_index_ &&
-               call_traces_ == other.call_traces_;
+        return history_ == other.history_ && receipts_ == other.receipts_ && senders_ == other.senders_ &&
+               tx_index_ == other.tx_index_ && call_traces_ == other.call_traces_;
     }
     bool operator!=(const PruneMode& other) const { return !(this->operator==(other)); }
 
   private:
     BlockAmount history_;      // Holds the pruning threshold for history
     BlockAmount receipts_;     // Holds the pruning threshold for receipts
+    BlockAmount senders_;      // Holds the pruning threshold for senders
     BlockAmount tx_index_;     // Holds the pruning threshold for tx_index
     BlockAmount call_traces_;  // Holds the pruning threshold for call traces
 };
@@ -105,9 +110,10 @@ void write_prune_mode(mdbx::txn& txn, const PruneMode& value);
 //! \brief Parses prune mode from a string
 //! \param [in] mode : the string representation of PruneMode
 std::unique_ptr<PruneMode> parse_prune_mode(const std::string& mode, const PruneDistance& olderHistory,
-                                            const PruneDistance& olderReceipts, const PruneDistance& olderTxIndex,
-                                            const PruneDistance& olderCallTraces, const PruneThreshold& beforeHistory,
-                                            const PruneThreshold& beforeReceipts, const PruneThreshold& beforeTxIndex,
+                                            const PruneDistance& olderReceipts, const PruneDistance& olderSenders,
+                                            const PruneDistance& olderTxIndex, const PruneDistance& olderCallTraces,
+                                            const PruneThreshold& beforeHistory, const PruneThreshold& beforeReceipts,
+                                            const PruneThreshold& beforeSenders, const PruneThreshold& beforeTxIndex,
                                             const PruneThreshold& beforeCallTraces);
 
 }  // namespace silkworm::db

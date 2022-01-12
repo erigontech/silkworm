@@ -22,7 +22,7 @@
 #include <string>
 
 #include <CLI/CLI.hpp>
-#include <boost/bind.hpp>
+#include <boost/bind/bind.hpp>
 #include <boost/format.hpp>
 #include <magic_enum.hpp>
 
@@ -36,11 +36,11 @@
 #include <silkworm/db/stages.hpp>
 #include <silkworm/db/storage.hpp>
 #include <silkworm/stagedsync/stagedsync.hpp>
-#include <silkworm/state/in_memory_state.hpp>
 #include <silkworm/trie/hash_builder.hpp>
 
 namespace fs = std::filesystem;
 using namespace silkworm;
+using namespace boost::placeholders;
 
 class Progress {
   public:
@@ -979,7 +979,6 @@ void do_extract_headers(db::EnvConfig& config, const std::string& file_name, uin
 }
 
 int main(int argc, char* argv[]) {
-
     SignalHandler::init();
 
     CLI::App app_main("Silkworm db tool");

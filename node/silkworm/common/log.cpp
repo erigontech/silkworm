@@ -1,5 +1,5 @@
 /*
-   Copyright 2020-2021 The Silkworm Authors
+   Copyright 2020-2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 
 #include <fstream>
 #include <iostream>
+#include <mutex>
 #include <ostream>
 #include <regex>
 #include <thread>
@@ -27,7 +28,7 @@
 namespace silkworm::log {
 
 static Settings settings_{};
-
+static std::mutex out_mtx{};
 static std::unique_ptr<std::fstream> file_{nullptr};
 
 void init(Settings& settings) {
@@ -48,6 +49,8 @@ void tee_file(const std::filesystem::path& path) {
 
 void set_verbosity(Level level) { settings_.log_verbosity = level; }
 
+bool test_verbosity(Level level) { return level <= settings_.log_verbosity; }
+
 static inline std::pair<const char*, const char*> get_channel_settings(Level level) {
     switch (level) {
         case Level::kTrace:
@@ -67,7 +70,9 @@ static inline std::pair<const char*, const char*> get_channel_settings(Level lev
     }
 }
 
-BufferBase::BufferBase(Level level) : level_(level) {
+BufferBase::BufferBase(Level level) : should_print_(level <= settings_.log_verbosity) {
+    if (!should_print_) return;
+
     auto [prefix, color] = get_channel_settings(level);
     // Prefix
     ss_ << kColorReset << " " << color << prefix << kColorReset << " ";
@@ -83,10 +88,18 @@ BufferBase::BufferBase(Level level) : level_(level) {
     }
 }
 
-void BufferBase::flush() {
-    if (level_ > settings_.log_verbosity) {
-        return;
+BufferBase::BufferBase(Level level, std::string_view msg, const std::vector<std::string>& args) : BufferBase(level) {
+    if (!should_print_) return;
+    ss_ << std::left << std::setw(30) << std::setfill(' ') << msg;
+    bool left{true};
+    for (const auto& arg : args) {
+        ss_ << (left ? kColorGreen : kColorWhiteHigh) << arg << kColorReset << (left ? "=" : " ") << kColorReset;
+        left = !left;
     }
+}
+
+void BufferBase::flush() {
+    if (!should_print_) return;
 
     // Pattern to identify colorization
     static const std::regex color_pattern("(\\\x1b\\[[0-9;]{1,}m)");
@@ -97,6 +110,7 @@ void BufferBase::flush() {
         line = std::regex_replace(line, color_pattern, "");
         colorized = false;
     }
+    std::unique_lock out_lck{out_mtx};
     auto& out = settings_.log_std_out ? std::cout : std::cerr;
     out << line << std::endl;
     if (file_ && file_->is_open()) {

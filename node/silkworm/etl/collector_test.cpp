@@ -1,5 +1,5 @@
 /*
-   Copyright 2020-2021 The Silkworm Authors
+   Copyright 2020-2022 The Silkworm Authors
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
    You may obtain a copy of the License at
@@ -59,8 +59,11 @@ void run_collector_test(LoadFunc load_func, bool do_copy = true) {
 
     // Generate Test Entries
     auto set{generate_entry_set(1000)};  // 1000 entries in total
-    auto collector{Collector(context.dir().etl().path(),
-                             100 * 16 - 8 * 10)};  // 100 entries per file (16 bytes per entry) minus 10 keys empty
+    size_t generated_size{0};
+    for (const auto& entry : set) {
+        generated_size += entry.size() + 8;
+    }
+    auto collector{Collector(context.dir().etl().path(), generated_size / 10)};  // expect 10 files
 
     // Collection
     for (auto&& entry : set) {

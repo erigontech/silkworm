@@ -18,26 +18,31 @@
 
 namespace silkworm {
 
-StopWatch::TimePoint StopWatch::start() noexcept {
+StopWatch::TimePoint StopWatch::start(bool with_reset) noexcept {
+    using namespace std::chrono_literals;
+    if (with_reset) {
+        reset();
+    }
+
     if (started_) {
         return start_time_;
     }
-    
+
     started_ = true;
     if (start_time_ == TimePoint()) {
         start_time_ = std::chrono::high_resolution_clock::now();
     }
-    if (laps_.size()) {
+    if (!laps_.empty()) {
         auto& [t, d] = laps_.back();
         laps_.emplace_back(start_time_, std::chrono::duration_cast<Duration>(start_time_ - t));
     } else {
-        laps_.emplace_back(start_time_, std::chrono::duration_cast<Duration>(start_time_ - start_time_));
+        laps_.emplace_back(start_time_, std::chrono::duration_cast<Duration>(0s));
     }
     return start_time_;
 }
 
 std::pair<StopWatch::TimePoint, StopWatch::Duration> StopWatch::lap() noexcept {
-    if (!started_ || !laps_.size()) {
+    if (!started_ || laps_.empty()) {
         return {};
     }
     const auto lap_time{std::chrono::high_resolution_clock::now()};
@@ -53,22 +58,22 @@ StopWatch::Duration StopWatch::since_start(const TimePoint& origin) noexcept {
     return Duration(origin - start_time_);
 }
 
-StopWatch::TimePoint StopWatch::stop() noexcept {
-    if (started_) {
-        TimePoint res{lap().first};
-        started_ = false;
-        return res;
+std::pair<StopWatch::TimePoint, StopWatch::Duration> StopWatch::stop() noexcept {
+    if (!started_) {
+        return {};
     }
-    return {};
+    auto ret{lap()};
+    started_ = false;
+    return ret;
 }
 
 void StopWatch::reset() noexcept {
-    stop();
+    (void)stop();
     start_time_ = TimePoint();
     std::vector<std::pair<TimePoint, Duration>>().swap(laps_);
 }
 
-std::string StopWatch::format(Duration duration) {
+std::string StopWatch::format(Duration duration) noexcept {
     using days = std::chrono::duration<int, std::ratio<86400>>;
     auto d = std::chrono::duration_cast<days>(duration);
     duration -= d;

@@ -123,12 +123,12 @@ BlockNum BlockAmount::value_from_head(BlockNum stage_head) const {
 }
 
 std::string PruneMode::to_string() const {
-
     std::string short_form{"--prune="};
     std::string long_form{};
 
     history_.to_string(short_form, long_form, 'h');
     receipts_.to_string(short_form, long_form, 'r');
+    senders_.to_string(short_form, long_form, 's');
     tx_index_.to_string(short_form, long_form, 't');
     call_traces_.to_string(short_form, long_form, 'c');
 
@@ -140,25 +140,28 @@ PruneMode read_prune_mode(mdbx::txn& txn) {
 
     auto history{read_block_amount_for_key(src, kPruneModeHistoryKey)};
     auto receipts{read_block_amount_for_key(src, kPruneModeReceiptsKey)};
+    auto senders{read_block_amount_for_key(src, kPruneModeSendersKey)};
     auto tx_index{read_block_amount_for_key(src, kPruneModeTxIndexKey)};
     auto call_traces{read_block_amount_for_key(src, kPruneModeCallTracesKey)};
-    return PruneMode{history, receipts, tx_index, call_traces};
+    return PruneMode{history, receipts, senders, tx_index, call_traces};
 }
 
 void write_prune_mode(mdbx::txn& txn, const PruneMode& value) {
     auto target{db::open_cursor(txn, table::kDatabaseInfo)};
     write_block_amount_for_key(target, kPruneModeHistoryKey, value.history());
     write_block_amount_for_key(target, kPruneModeReceiptsKey, value.receipts());
+    write_block_amount_for_key(target, kPruneModeSendersKey, value.senders());
     write_block_amount_for_key(target, kPruneModeTxIndexKey, value.tx_index());
     write_block_amount_for_key(target, kPruneModeCallTracesKey, value.call_traces());
 }
 
 std::unique_ptr<PruneMode> parse_prune_mode(const std::string& mode, const PruneDistance& olderHistory,
-                                            const PruneDistance& olderReceipts, const PruneDistance& olderTxIndex,
-                                            const PruneDistance& olderCallTraces, const PruneThreshold& beforeHistory,
-                                            const PruneThreshold& beforeReceipts, const PruneThreshold& beforeTxIndex,
+                                            const PruneDistance& olderReceipts, const PruneDistance& olderSenders,
+                                            const PruneDistance& olderTxIndex, const PruneDistance& olderCallTraces,
+                                            const PruneThreshold& beforeHistory, const PruneThreshold& beforeReceipts,
+                                            const PruneThreshold& beforeSenders, const PruneThreshold& beforeTxIndex,
                                             const PruneThreshold& beforeCallTraces) {
-    std::unique_ptr<BlockAmount> history, receipts, tx_index, call_traces = std::make_unique<BlockAmount>();
+    std::unique_ptr<BlockAmount> history, receipts, senders, tx_index, call_traces = std::make_unique<BlockAmount>();
 
     if (!mode.empty() && !(iequals(mode, "default") || iequals(mode, "disabled"))) {
         for (const auto& c : mode) {
@@ -168,6 +171,9 @@ std::unique_ptr<PruneMode> parse_prune_mode(const std::string& mode, const Prune
                     break;
                 case 'r':
                     receipts = std::make_unique<BlockAmount>(BlockAmount::Type::kOlder, kFullImmutabilityThreshold);
+                    break;
+                case 's':
+                    senders = std::make_unique<BlockAmount>(BlockAmount::Type::kOlder, kFullImmutabilityThreshold);
                     break;
                 case 't':
                     tx_index = std::make_unique<BlockAmount>(BlockAmount::Type::kOlder, kFullImmutabilityThreshold);
@@ -184,6 +190,7 @@ std::unique_ptr<PruneMode> parse_prune_mode(const std::string& mode, const Prune
     // Apply discrete values for 'older' if provided
     if (olderHistory.has_value()) history = std::make_unique<BlockAmount>(BlockAmount::Type::kOlder, *olderHistory);
     if (olderReceipts.has_value()) receipts = std::make_unique<BlockAmount>(BlockAmount::Type::kOlder, *olderReceipts);
+    if (olderSenders.has_value()) senders = std::make_unique<BlockAmount>(BlockAmount::Type::kOlder, *olderSenders);
     if (olderTxIndex.has_value()) tx_index = std::make_unique<BlockAmount>(BlockAmount::Type::kOlder, *olderTxIndex);
     if (olderCallTraces.has_value())
         call_traces = std::make_unique<BlockAmount>(BlockAmount::Type::kOlder, *olderCallTraces);
@@ -192,16 +199,18 @@ std::unique_ptr<PruneMode> parse_prune_mode(const std::string& mode, const Prune
     if (beforeHistory.has_value()) history = std::make_unique<BlockAmount>(BlockAmount::Type::kBefore, *beforeHistory);
     if (beforeReceipts.has_value())
         receipts = std::make_unique<BlockAmount>(BlockAmount::Type::kBefore, *beforeReceipts);
+    if (beforeSenders.has_value()) senders = std::make_unique<BlockAmount>(BlockAmount::Type::kBefore, *beforeSenders);
     if (beforeTxIndex.has_value()) tx_index = std::make_unique<BlockAmount>(BlockAmount::Type::kBefore, *beforeTxIndex);
     if (beforeCallTraces.has_value())
         call_traces = std::make_unique<BlockAmount>(BlockAmount::Type::kBefore, *beforeCallTraces);
 
-    if(!history) history = std::make_unique<BlockAmount>();
-    if(!receipts) receipts = std::make_unique<BlockAmount>();
-    if(!tx_index) tx_index = std::make_unique<BlockAmount>();
-    if(!call_traces) call_traces = std::make_unique<BlockAmount>();
+    if (!history) history = std::make_unique<BlockAmount>();
+    if (!receipts) receipts = std::make_unique<BlockAmount>();
+    if (!senders) senders = std::make_unique<BlockAmount>();
+    if (!tx_index) tx_index = std::make_unique<BlockAmount>();
+    if (!call_traces) call_traces = std::make_unique<BlockAmount>();
 
-    return std::make_unique<PruneMode>(*history.release(), *receipts.release(), *tx_index.release(),
+    return std::make_unique<PruneMode>(*history.release(), *receipts.release(), *senders.release(), *tx_index.release(),
                                        *call_traces.release());
 }
 

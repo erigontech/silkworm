@@ -286,15 +286,16 @@ namespace db {
 
             // Provide different combinations of cli arguments
             std::string prune, expected;
-            std::optional<BlockNum> olderHistory, olderReceipts, olderTxIndex, olderCallTraces;
-            std::optional<BlockNum> beforeHistory, beforeReceipts, beforeTxIndex, beforeCallTraces;
+            db::PruneDistance olderHistory, olderReceipts, olderSenders, olderTxIndex, olderCallTraces;
+            db::PruneThreshold beforeHistory, beforeReceipts, beforeSenders, beforeTxIndex, beforeCallTraces;
 
-            prune = "hrtc";
-            expected = "--prune=hrtc";
+            prune = "hrstc";
+            expected = "--prune=hrstc";
             {
-                auto prune_mode = db::parse_prune_mode(prune,  //
-                                                       olderHistory, olderReceipts, olderTxIndex, olderCallTraces,
-                                                       beforeHistory, beforeReceipts, beforeTxIndex, beforeCallTraces);
+                auto prune_mode =
+                    db::parse_prune_mode(prune,  //
+                                         olderHistory, olderReceipts, olderSenders, olderTxIndex, olderCallTraces,
+                                         beforeHistory, beforeReceipts, beforeSenders, beforeTxIndex, beforeCallTraces);
                 REQUIRE(prune_mode->to_string() == expected);
                 REQUIRE_NOTHROW(db::write_prune_mode(txn, *prune_mode));
                 prune_mode = std::make_unique<db::PruneMode>(db::read_prune_mode(txn));
@@ -304,12 +305,14 @@ namespace db {
 
             prune = "htc";
             olderHistory.emplace(8000);
+            olderSenders.emplace(80000);
             beforeReceipts.emplace(10000);
-            expected = "--prune=tc --prune.h.older=8000 --prune.r.before=10000";
+            expected = "--prune=tc --prune.h.older=8000 --prune.r.before=10000 --prune.s.older=80000";
             {
-                auto prune_mode = db::parse_prune_mode(prune,  //
-                                                       olderHistory, olderReceipts, olderTxIndex, olderCallTraces,
-                                                       beforeHistory, beforeReceipts, beforeTxIndex, beforeCallTraces);
+                auto prune_mode =
+                    db::parse_prune_mode(prune,  //
+                                         olderHistory, olderReceipts, olderSenders, olderTxIndex, olderCallTraces,
+                                         beforeHistory, beforeReceipts, beforeSenders, beforeTxIndex, beforeCallTraces);
                 REQUIRE(prune_mode->to_string() == expected);
                 REQUIRE_NOTHROW(db::write_prune_mode(txn, *prune_mode));
                 prune_mode = std::make_unique<db::PruneMode>(db::read_prune_mode(txn));
@@ -320,12 +323,14 @@ namespace db {
 
             prune = "htc";
             olderHistory.emplace(kFullImmutabilityThreshold);
+            olderSenders.reset();
             beforeReceipts.emplace(10000);
             expected = "--prune=htc --prune.r.before=10000";
             {
                 auto prune_mode = db::parse_prune_mode(prune,  //
-                                                       olderHistory, olderReceipts, olderTxIndex, olderCallTraces,
-                                                       beforeHistory, beforeReceipts, beforeTxIndex, beforeCallTraces);
+                                                       olderHistory, olderReceipts, olderSenders, olderTxIndex,
+                                                       olderCallTraces, beforeHistory, beforeReceipts, beforeSenders,
+                                                       beforeTxIndex, beforeCallTraces);
                 REQUIRE(prune_mode->to_string() == expected);
                 REQUIRE_NOTHROW(db::write_prune_mode(txn, *prune_mode));
                 prune_mode = std::make_unique<db::PruneMode>(db::read_prune_mode(txn));
@@ -340,9 +345,10 @@ namespace db {
             beforeCallTraces.emplace(10000);
             expected = "--prune=rt --prune.h.older=90005 --prune.c.before=10000";
             {
-                auto prune_mode = db::parse_prune_mode(prune,  //
-                                                       olderHistory, olderReceipts, olderTxIndex, olderCallTraces,
-                                                       beforeHistory, beforeReceipts, beforeTxIndex, beforeCallTraces);
+                auto prune_mode =
+                    db::parse_prune_mode(prune,  //
+                                         olderHistory, olderReceipts, olderSenders, olderTxIndex, olderCallTraces,
+                                         beforeHistory, beforeReceipts, beforeSenders, beforeTxIndex, beforeCallTraces);
                 REQUIRE(prune_mode->to_string() == expected);
                 REQUIRE_NOTHROW(db::write_prune_mode(txn, *prune_mode));
                 prune_mode = std::make_unique<db::PruneMode>(db::read_prune_mode(txn));

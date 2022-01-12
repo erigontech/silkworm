@@ -58,10 +58,24 @@ class RWTxn {
     mdbx::txn& operator*() { return external_txn_ ? *external_txn_ : managed_txn_; }
     mdbx::txn* operator->() { return external_txn_ ? external_txn_ : &managed_txn_; }
 
-    void commit() {
+    void commit(const bool renew = true) {
+        /*
+         * renew is required here due to RAII
+         * RWTxn txn(env);
+         * txn.commit();
+         * env.close();
+         * causes a segfault for tx being aborted when the env is already closed
+         *
+         * Workarounds
+         * - either pass renew==false to last commit
+         * - or keep RWTxn in a lower scope
+         * */
+
         if (external_txn_ == nullptr) {
             managed_txn_.commit();
-            managed_txn_ = env_->start_write();  // renew transaction
+            if (renew) {
+                managed_txn_ = env_->start_write();  // renew transaction
+            }
         }
     }
 
@@ -70,7 +84,6 @@ class RWTxn {
     mdbx::env* env_{nullptr};
     mdbx::txn_managed managed_txn_;
 };
-
 
 //! \brief Pointer to a processing function invoked by cursor_for_each & cursor_for_count on each record
 //! \param [in] _cursor : A reference to the cursor

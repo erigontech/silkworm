@@ -20,6 +20,7 @@ if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
   add_definitions(-DVC_EXTRALEAN)         # Process windows headers faster ...
   add_definitions(-DWIN32_LEAN_AND_MEAN)  # ... and prevent winsock mismatch with Boost's
   add_definitions(-DNOMINMAX)             # Prevent MSVC to tamper with std::min/std::max
+  add_definitions(-DPSAPI_VERSION=2)      # For process info
 
   # LINK : fatal error LNK1104: cannot open file 'libboost_date_time-vc142-mt-x64-1_72.lib
   # is solved by this (issue only for MVC)

@@ -142,8 +142,7 @@ static StageResult history_index_stage(db::RWTxn& txn, const std::filesystem::pa
                     mdbx::slice v{db::to_slice(current_chunk_bytes)};
                     mdbx::error::success_or_throw(history_index_table.put(k, &v, put_flags));
                 }
-            },
-            db_flags, /* log_every_percent = */ 20);
+            }, db_flags);
 
         // Update progress height with last processed block
         db::stages::write_stage_progress(*txn, stage_key, block_number);
@@ -200,7 +199,7 @@ StageResult history_index_unwind(db::RWTxn& txn, const std::filesystem::path& et
     }
 
     db::stages::write_stage_progress(*txn, stage_key, unwind_to);
-    collector.load(index_table, nullptr, MDBX_put_flags_t::MDBX_UPSERT, /* log_every_percent = */ 100);
+    collector.load(index_table, nullptr, MDBX_put_flags_t::MDBX_UPSERT);
     txn.commit();
     log::Info() << "All Done";
 
@@ -247,7 +246,7 @@ StageResult history_index_prune(db::RWTxn& txn, const std::filesystem::path& etl
         }
     }
 
-    collector.load(index_table, nullptr, MDBX_put_flags_t::MDBX_UPSERT, /* log_every_percent = */ 100);
+    collector.load(index_table, nullptr, MDBX_put_flags_t::MDBX_UPSERT);
     txn.commit();
     log::Info() << "Pruning " << (storage ? "Storage" : "Account") << " History finished...";
 

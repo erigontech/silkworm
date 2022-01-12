@@ -43,10 +43,10 @@ struct YParityAndChainId {
 //! \return Y parity and eventually chain Id
 //! \remarks chain_id is always returned unless v ∈ {27, 28}
 //! \see https://eips.ethereum.org/EIPS/eip-155.
-std::optional<YParityAndChainId> v_to_y_parity_and_chain_id(const intx::uint256& v);
+std::optional<YParityAndChainId> v_to_y_parity_and_chain_id(const intx::uint256& v) noexcept;
 
 //! \see https://eips.ethereum.org/EIPS/eip-155
-intx::uint256 y_parity_and_chain_id_to_v(bool odd, const std::optional<intx::uint256>& chain_id);
+intx::uint256 y_parity_and_chain_id_to_v(bool odd, const std::optional<intx::uint256>& chain_id) noexcept;
 
 // Verifies whether the signature values are valid with
 // the given chain rules.
@@ -55,7 +55,7 @@ intx::uint256 y_parity_and_chain_id_to_v(bool odd, const std::optional<intx::uin
 //! \param [in] s : signature's s
 //! \param [in] homestead : whether the chain has homestead rules
 //! \return True or false
-bool is_valid_signature(const intx::uint256& r, const intx::uint256& s, bool homestead);
+bool is_valid_signature(const intx::uint256& r, const intx::uint256& s, bool homestead) noexcept;
 
 //! \brief Creates a secp2561 context
 //! \param [in] flags : creation flags
@@ -71,12 +71,12 @@ secp256k1_context* create_context(uint32_t flags = SECP256K1_CONTEXT_SIGN | SECP
 //! \return An optional Bytes. Should it has no value the recovery has failed
 //! This is different from recover_address as the whole 64 bytes are returned.
 std::optional<Bytes> recover(ByteView message, ByteView signature, bool odd_y_parity,
-                             secp256k1_context* context = nullptr);
+                             secp256k1_context* context = nullptr) noexcept;
 
 //! Tries extract address from recovered public key
 //! \param [in] public_key :  The recovered public key
 //! \return An optional evmc::address. Should it has no value the recovery has failed.
-std::optional<evmc::address> public_key_to_address(const Bytes& public_key);
+std::optional<evmc::address> public_key_to_address(const Bytes& public_key) noexcept;
 
 //! \brief Tries recover the address used for message signing
 //! \param [in] message : the signed message
@@ -85,7 +85,7 @@ std::optional<evmc::address> public_key_to_address(const Bytes& public_key);
 //! \param [in] context : a pointer to an existing context. Should it be nullptr a default context is used
 //! \return An optional address value. Should it has no value the recovery has failed
 std::optional<evmc::address> recover_address(ByteView message, ByteView signature, bool odd_y_parity,
-                                             secp256k1_context* context = nullptr);
+                                             secp256k1_context* context = nullptr) noexcept;
 
 }  // namespace silkworm::ecdsa
 

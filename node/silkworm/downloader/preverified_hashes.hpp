@@ -1,17 +1,17 @@
 /*
-Copyright 2021 The Silkworm Authors
+    Copyright 2021-2022 The Silkworm Authors
 
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
 
-    http://www.apache.org/licenses/LICENSE-2.0
+        http://www.apache.org/licenses/LICENSE-2.0
 
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
 */
 
 #ifndef SILKWORM_PREVERIFIED_HASHES_HPP
@@ -20,8 +20,8 @@ limitations under the License.
 #include <map>
 #include <set>
 
-#include "silkworm/chain/identity.hpp"
-#include "silkworm/common/base.hpp"
+#include <silkworm/chain/identity.hpp>
+#include <silkworm/common/base.hpp>
 
 namespace silkworm {
 
@@ -45,7 +45,7 @@ struct PreverifiedHashes {
     std::set<evmc::bytes32> hashes;  // Set of hashes of headers that are known to belong to canonical chain
     uint64_t height{0};              // Block height corresponding to the highest preverified header
 
-    bool contains(const evmc::bytes32& hash) const { return hashes.find(hash) != hashes.end(); }
+    [[nodiscard]] bool contains(const evmc::bytes32& hash) const { return hashes.find(hash) != hashes.end(); }
 
     static PreverifiedHashes none;  // A void set of hashes that can be used to turn-off pre-verified hashes usage and
                                     // that is useful for  (the default construction of) classes that use this

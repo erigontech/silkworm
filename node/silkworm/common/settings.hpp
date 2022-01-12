@@ -20,7 +20,11 @@
 
 #include <memory>
 
-#include <boost/asio.hpp>
+#ifdef __APPLE__
+// otherwise <boost/asio/detail/socket_types.hpp> dependency doesn't compile
+#define _DARWIN_C_SOURCE
+#endif
+#include <boost/asio/io_context.hpp>
 
 #include <silkworm/chain/config.hpp>
 #include <silkworm/common/base.hpp>

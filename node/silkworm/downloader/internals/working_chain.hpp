@@ -19,7 +19,7 @@
 
 #include <gsl/span>
 
-#include <silkworm/chain/preverified_hashes.hpp>
+#include "silkworm/downloader/preverified_hashes.hpp"
 #include <silkworm/common/lru_cache.hpp>
 #include <silkworm/consensus/engine.hpp>
 #include <silkworm/downloader/packets/GetBlockHeadersPacket.hpp>

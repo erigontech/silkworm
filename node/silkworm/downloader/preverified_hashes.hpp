@@ -20,8 +20,8 @@ limitations under the License.
 #include <map>
 #include <set>
 
-#include <silkworm/chain/identity.hpp>
-#include <silkworm/common/base.hpp>
+#include "silkworm/chain/identity.hpp"
+#include "silkworm/common/base.hpp"
 
 namespace silkworm {
 

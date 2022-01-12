@@ -23,7 +23,12 @@
 #include <cstdint>
 #include <utility>
 
-#include <boost/asio.hpp>
+#ifdef __APPLE__
+// otherwise <boost/asio/detail/socket_types.hpp> dependency doesn't compile
+#define _DARWIN_C_SOURCE
+#endif
+#include <boost/asio/deadline_timer.hpp>
+#include <boost/asio/io_context.hpp>
 
 #include <silkworm/common/assert.hpp>
 #include <silkworm/common/signal_handler.hpp>
@@ -69,7 +74,7 @@ class Timer {
 
     void stop() {
         bool expected_running{true};
-        if(is_running.compare_exchange_strong(expected_running, false)) {
+        if (is_running.compare_exchange_strong(expected_running, false)) {
             (void)timer_.cancel();
         }
     }

@@ -17,6 +17,7 @@
 #include "recovery_farm.hpp"
 
 #include <functional>
+#include <mutex>
 
 #include <silkworm/common/as_range.hpp>
 #include <silkworm/common/assert.hpp>

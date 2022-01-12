@@ -78,6 +78,17 @@ TEST_CASE("Hex") {
     parsed_bytes = from_hex("0x0a1f");
     CHECK((parsed_bytes.has_value() == true && parsed_bytes.value() == expected_bytes));
 
+    std::string src(24, '1');
+    Bytes expected(12, 0x11);
+    for (size_t i=0; i<24; ++i)
+    {
+        auto parsed = from_hex(src);
+        CHECK((parsed.has_value() == true && parsed.value() == expected));
+        src[i] = 'g';
+        CHECK(from_hex(src).has_value() == false);
+        src[i] = '1';
+    }
+
 }
 
 TEST_CASE("Padding") {

@@ -105,7 +105,7 @@ TEST_CASE("working/persistent-chain integration test") {
         PeerId peerId = "1";
         wc.accept_headers(headers, peerId);
 
-        // saving headers ready to persists as the header downloader does in the forward() method
+        // saving headers ready to persist as the header downloader does in the forward() method
         Headers headers_to_persist = wc.withdraw_stable_headers();
         PersistedChain pc(tx);
         pc.persist(headers_to_persist);
@@ -113,6 +113,7 @@ TEST_CASE("working/persistent-chain integration test") {
         // check internal status
         BigInt expected_td = header0->difficulty + header1.difficulty + header2.difficulty;
 
+        REQUIRE(headers_to_persist.size() == 3);
         REQUIRE(pc.total_difficulty() == expected_td);
         REQUIRE(pc.best_header_changed() == true);
         REQUIRE(pc.highest_height() == 2);

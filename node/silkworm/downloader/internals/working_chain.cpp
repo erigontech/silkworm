@@ -308,6 +308,7 @@ auto WorkingChain::request_more_headers(time_point_t time_point, seconds_t timeo
         }
 
         if (anchor->timestamp > time_point) {
+            log::Trace() << "WorkingChain: no anchor ready for extension yet";
             return {nullopt, penalties};  // anchor not ready for "extend" re-request yet
         }
 
@@ -317,16 +318,20 @@ auto WorkingChain::request_more_headers(time_point_t time_point, seconds_t timeo
 
             GetBlockHeadersPacket66 packet{
                 RANDOM_NUMBER.generate_one(),
-                {anchor->blockHeight-1, max_len, 0, true}
+                {anchor->blockHeight, max_len, 0, true}
             }; // we use blockHeight in place of parentHash to get also ommers if presents
+               // we could request from origin=blockHeight-1 but debugging becomes more difficult
+
+            log::Trace() << "WorkingChain: trying to extend anchor " << anchor->blockHeight <<
+                " (chain bundle len = " << anchor->chainLength() << ", last link = " << anchor->lastLinkHeight << " )";
 
             return {packet, penalties};  // try (again) to extend this anchor
         } else {
             // ancestors of this anchor seem to be unavailable, invalidate and move on
             log::Warning() << "WorkingChain: invalidating anchor for suspected unavailability, "
                            << "height=" << anchor->blockHeight;
-            invalidate(anchor);
             anchor_queue_.pop();
+            invalidate(anchor);
             penalties.emplace_back(Penalty::AbandonedAnchorPenalty, anchor->peerId);
         }
     }
@@ -335,7 +340,7 @@ auto WorkingChain::request_more_headers(time_point_t time_point, seconds_t timeo
 }
 
 void WorkingChain::invalidate(std::shared_ptr<Anchor> anchor) {
-    anchors_.erase(anchor->parentHash);
+    remove(anchor);
     // remove upwards
     auto& link_to_remove = anchor->links;
     while (!link_to_remove.empty()) {
@@ -621,7 +626,7 @@ auto WorkingChain::find_anchor(std::shared_ptr<Link> link) -> std::optional<std:
         }
     } while (it != links_.end());
 
-    auto a = anchors_.find(link->header->parent_hash);
+    auto a = anchors_.find(parent_link->header->parent_hash);
     if (a == anchors_.end()) {
         return std::nullopt;    // possible?
     }
@@ -637,9 +642,9 @@ void WorkingChain::connect(Segment::Slice segment_slice) {  // throw segment_cut
     if (!attachment_link)
         throw segment_cut_and_paste_error("segment cut&paste error, connect attachment link not found for " +
                                           to_hex(link_header->parent_hash));
-    if (attachment_link.value()->preverified && !attachment_link.value()->next.empty())
-        throw segment_cut_and_paste_error("segment cut&paste error, cannot connect to preverified link " +
-                                          to_string(attachment_link.value()->blockHeight) + " with children");
+    //if (attachment_link.value()->preverified && !attachment_link.value()->next.empty())
+    //    throw segment_cut_and_paste_error("segment cut&paste error, cannot connect to preverified link " +
+    //                                      to_string(attachment_link.value()->blockHeight) + " with children");
 
     // this block is the same in extend_down
     auto header_to_anchor = *segment_slice.begin();    // highest header
@@ -674,9 +679,7 @@ void WorkingChain::connect(Segment::Slice segment_slice) {  // throw segment_cut
     bool anchor_preverified =
         as_range::any_of(anchor->links, [](const auto& link) -> bool { return link->preverified; });
 
-    anchors_.erase(anchor->parentHash);  // Anchor is removed from the map, but not from the anchorQueue
-    // This is because it is hard to find the index under which the anchor is stored in the anchorQueue
-    // But removal will happen anyway, in th function request_more_headers, if it disappears from the map
+    remove(anchor);
 
     // this block is also in "extend_down" method
     prev_link->next = std::move(anchor->links);
@@ -710,9 +713,7 @@ auto WorkingChain::extend_down(Segment::Slice segment_slice) -> RequestMoreHeade
     bool anchor_preverified =
         as_range::any_of(old_anchor->links, [](const auto& link) -> bool { return link->preverified; });
 
-    anchors_.erase(old_anchor->parentHash);  // Anchor is removed from the map, but not from the anchorQueue
-    // This is because it is hard to find the index under which the anchor is stored in the anchorQueue
-    // But removal will happen anyway, in th function RequestMoreHeaders, if it disappears from the map
+    remove(old_anchor);
 
     // todo: modularize this block in "add_anchor_if_not_present"
     auto new_anchor_header = *segment_slice.rbegin();  // lowest header
@@ -763,9 +764,9 @@ void WorkingChain::extend_up(Segment::Slice segment_slice) {  // throw segment_c
     if (!attachment_link)
         throw segment_cut_and_paste_error("segment cut&paste error, extend up attachment link not found for " +
                                           to_hex(link_header->parent_hash));
-    if (attachment_link.value()->preverified && !attachment_link.value()->next.empty())
-        throw segment_cut_and_paste_error("segment cut&paste error, cannot extend up from preverified link " +
-                                          to_string(attachment_link.value()->blockHeight) + " with children");
+    //if (attachment_link.value()->preverified && !attachment_link.value()->next.empty())
+    //    throw segment_cut_and_paste_error("segment cut&paste error, cannot extend up from preverified link " +
+    //                                      to_string(attachment_link.value()->blockHeight) + " with children");
 
     auto a = find_anchor(attachment_link.value());
     if (!a.has_value())
@@ -788,8 +789,13 @@ void WorkingChain::extend_up(Segment::Slice segment_slice) {  // throw segment_c
 
     if (attachment_link.value()->persisted && !contains(bad_headers_, attachment_link.value()->hash)) {
         auto link = links_.find(link_header->hash());
-        if (link != links_.end())  // todo: Erigon code assume true always, check!
+        if (link != links_.end()) {
             insert_list_.push(link->second);
+        }
+        else {
+            throw segment_cut_and_paste_error("segment cut&paste error, extend up cannot add header persistent queue " +
+                                              to_string(link_header->number));
+        }
     }
 }
 
@@ -851,16 +857,18 @@ auto WorkingChain::add_header_as_link(const BlockHeader& header, bool persisted)
     return link;
 }
 
-void WorkingChain::remove(std::shared_ptr<Anchor> anchor) { remove_anchor(anchor->parentHash); }
+void WorkingChain::remove(std::shared_ptr<Anchor> anchor) {
+    size_t erased1 = anchors_.erase(anchor->parentHash);
+    bool erased2 = anchor_queue_.erase(anchor);
+
+    if (erased1 == 0 || !erased2) {
+        log::Warning() << "WorkingChain: removal of anchor failed, bn=" << anchor->blockHeight;
+    }
+}
 
 void WorkingChain::remove_anchor(const Hash& hash) {
-    // Anchor is removed from the map, but not from the anchorQueue
-    // This is because it is hard to find the index under which the anchor is stored in the anchorQueue
-    // But removal will happen anyway, in the function request_more_headers, if it disappears from the map
-    size_t erased = anchors_.erase(hash);
-    if (erased == 0) {
-        log::Warning() << "WorkingChain: removal of anchor failed, " << to_hex(hash) << " not found";
-    }
+    auto a = anchors_.find(hash);
+    remove(a->second);
 }
 
 // Mark a link and all its ancestors as preverified

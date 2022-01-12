@@ -507,7 +507,7 @@ TEST_CASE("WorkingChain - process_segment - (1) simple chain") {
         REQUIRE(penalty == Penalty::NoPenalty);
         REQUIRE(requestMoreHeaders == true);
         REQUIRE(chain.anchors_.size() == 2);
-        REQUIRE(chain.anchor_queue_.size() == 3);  // (there is 1 old anchor that will be erased later)
+        REQUIRE(chain.anchor_queue_.size() == 2);
         REQUIRE(chain.link_queue_.size() == 8);
         REQUIRE(chain.links_.size() == 8);
 
@@ -530,7 +530,7 @@ TEST_CASE("WorkingChain - process_segment - (1) simple chain") {
         REQUIRE(penalty == Penalty::NoPenalty);
         REQUIRE(requestMoreHeaders == false);
         REQUIRE(chain.anchors_.size() == 1);
-        REQUIRE(chain.anchor_queue_.size() == 3);  // (there are 2 old anchors that will be erased later)
+        REQUIRE(chain.anchor_queue_.size() == 1);
         REQUIRE(chain.link_queue_.size() == 9);
         REQUIRE(chain.links_.size() == 9);
 
@@ -698,7 +698,7 @@ TEST_CASE("WorkingChain - process_segment - (3) chain with branches") {
 
         REQUIRE(penalty == Penalty::NoPenalty);
         REQUIRE(requestMoreHeaders == true);
-        REQUIRE(chain.anchor_queue_.size() == 2);  // there are old anchors
+        REQUIRE(chain.anchor_queue_.size() == 1);
         REQUIRE(chain.anchors_.size() == 1);
         REQUIRE(chain.link_queue_.size() == 5);
         REQUIRE(chain.links_.size() == 5);
@@ -739,7 +739,7 @@ TEST_CASE("WorkingChain - process_segment - (3) chain with branches") {
 
         REQUIRE(penalty == Penalty::NoPenalty);
         REQUIRE(requestMoreHeaders == true);
-        REQUIRE(chain.anchor_queue_.size() == 3);  // there are old anchors
+        REQUIRE(chain.anchor_queue_.size() == 2);
         REQUIRE(chain.anchors_.size() == 2);
         REQUIRE(chain.link_queue_.size() == 8);
         REQUIRE(chain.links_.size() == 8);
@@ -776,7 +776,7 @@ TEST_CASE("WorkingChain - process_segment - (3) chain with branches") {
 
         REQUIRE(penalty == Penalty::NoPenalty);
         REQUIRE(requestMoreHeaders == true);
-        REQUIRE(chain.anchor_queue_.size() == 4);  // there are old anchors
+        REQUIRE(chain.anchor_queue_.size() == 1);
         REQUIRE(chain.anchors_.size() == 1);
         REQUIRE(chain.link_queue_.size() == 14);
         REQUIRE(chain.links_.size() == 14);
@@ -1020,7 +1020,7 @@ TEST_CASE("WorkingChain - process_segment - (6) (malicious) siblings") {
 
         REQUIRE(penalty == Penalty::NoPenalty);
         REQUIRE(requestMoreHeaders == true);
-        REQUIRE(chain.anchor_queue_.size() == 2);
+        REQUIRE(chain.anchor_queue_.size() == 1);
         REQUIRE(chain.anchors_.size() == 1);
         REQUIRE(chain.link_queue_.size() == 3);
         REQUIRE(chain.links_.size() == 3);
@@ -1041,21 +1041,21 @@ TEST_CASE("WorkingChain - process_segment - (6) (malicious) siblings") {
     }
 
     /* chain:
-     *         h3 <--- h4 <--- h5
-     *              |--------- h5'
+     *     (h2) <--- h3 <--- h4 <--- h5
+     *      |----------------------- h5'
      */
-    INFO("far new anchor") {
+    INFO("extend up with wrong header") {
         BlockHeader h5p;
         h5p.number = 5;
-        h5p.parent_hash = headers[3].hash();
-        h5p.difficulty = headers[3].difficulty + 1;
+        h5p.parent_hash = headers[2].hash();    // wrong, it should have number = 3
+        h5p.difficulty = headers[2].difficulty + 1;
 
         // add a segment with a siblings with far parent
         auto [penalty, requestMoreHeaders] = chain.accept_headers({h5p}, peerId);
 
         REQUIRE(penalty == Penalty::NoPenalty);
-        REQUIRE(requestMoreHeaders == true);
-        REQUIRE(chain.anchor_queue_.size() == 2);
+        REQUIRE(requestMoreHeaders == false);
+        REQUIRE(chain.anchor_queue_.size() == 1);
         REQUIRE(chain.anchors_.size() == 1);
         REQUIRE(chain.link_queue_.size() == 4);
         REQUIRE(chain.links_.size() == 4);
@@ -1077,11 +1077,11 @@ TEST_CASE("WorkingChain - process_segment - (6) (malicious) siblings") {
     }
 
     /* chain:
-     *         h3 <--- h4 <--- h5
-     *              |--------- h5'
-     *                   X---- h5"
+     *     (h2) <--- h3 <--- h4 <--- h5
+     *      |----------------------- h5'
+     *                         X---- h5"
      */
-    INFO("malicious new anchor") {
+    INFO("new anchor with unknown parent") {
         BlockHeader h5s;
         h5s.number = 5;
         h5s.parent_hash = h5s.hash(); // a wrong hash
@@ -1092,7 +1092,7 @@ TEST_CASE("WorkingChain - process_segment - (6) (malicious) siblings") {
 
         REQUIRE(penalty == Penalty::NoPenalty);
         REQUIRE(requestMoreHeaders == true);
-        REQUIRE(chain.anchor_queue_.size() == 3);
+        REQUIRE(chain.anchor_queue_.size() == 2);
         REQUIRE(chain.anchors_.size() == 2);
         REQUIRE(chain.link_queue_.size() == 5);
         REQUIRE(chain.links_.size() == 5);

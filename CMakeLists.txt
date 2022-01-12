@@ -125,7 +125,7 @@ add_subdirectory(libff)
 if(NOT SILKWORM_CORE_ONLY)
 
   # Roaring Bitmaps
-  set(ENABLE_ROARING_TESTS OFF)
+  option(ENABLE_ROARING_TESTS "" OFF)
   option(ROARING_BUILD_STATIC "Build a static library" ON)
   if(NOT MSVC)
     # Not supported on MSVC

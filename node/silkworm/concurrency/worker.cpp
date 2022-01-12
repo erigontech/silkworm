@@ -22,56 +22,49 @@
 
 namespace silkworm {
 
-Worker::~Worker() {
-    if (state_.load() != WorkerState::kStopped) {
-        state_.store(WorkerState::kStopping);
-        thread_->join();
-        thread_.reset(nullptr);
-    }
-}
+Worker::~Worker() { stop(/*wait=*/true); }
 
 void Worker::start(bool wait) {
-    WorkerState expected_stopped{WorkerState::kStopped};
-    if (!state_.compare_exchange_strong(expected_stopped, WorkerState::kStarting)) {
-        WorkerState expected_exception_thrown{WorkerState::kExceptionThrown};
-        if (!state_.compare_exchange_strong(expected_exception_thrown, WorkerState::kStarting)){
-            return;
-        }
+    State expected_stopped{State::kStopped};
+    if (!state_.compare_exchange_strong(expected_stopped, State::kStarting)) {
+        return;
     }
 
     exception_ptr_ = nullptr;
     kicked_.store(false);
 
     thread_ = std::make_unique<std::thread>([&]() {
-        WorkerState expected_starting{WorkerState::kStarting};
-        if (state_.compare_exchange_strong(expected_starting, WorkerState::kStarted)) {
+        State expected_starting{State::kStarting};
+        if (state_.compare_exchange_strong(expected_starting, State::kStarted)) {
+            signal_worker_started(this);
             try {
                 work();
-                state_.store(WorkerState::kStopped);
             } catch (const std::exception& ex) {
-                log::Error() << "Exception thrown in worker thread : " << ex.what();
+                log::Error() << "Exception thrown in " << name_ << " thread : " << ex.what();
                 exception_ptr_ = std::current_exception();
-                state_.store(WorkerState::kExceptionThrown);
             }
         }
+        state_.store(State::kStopped);
+        signal_worker_stopped(this);
     });
 
     while (wait) {
-        std::this_thread::sleep_for(std::chrono::milliseconds(10));
-        auto state{get_state()};
-        if (state == WorkerState::kStarted) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(5));
+        if (auto state{get_state()}; state == State::kStarted || state == State::kKickWaiting) {
             break;
         }
     }
 }
 
 void Worker::stop(bool wait) {
-    WorkerState expected_state{WorkerState::kStarted};
-    if (state_.compare_exchange_strong(expected_state, WorkerState::kStopping)) {
-        kick();
-    }
+    if (!thread_) return;
+
+    state_.store(State::kStopping);
+    kick();
+
     if (wait) {
         thread_->join();
+        thread_.reset();
     }
 }
 
@@ -81,16 +74,50 @@ void Worker::kick() {
 }
 
 bool Worker::wait_for_kick(uint32_t timeout_milliseconds) {
-    while (!SignalHandler::signalled()) {
-        bool expected_kick_value{true};
-        if (!kicked_.compare_exchange_strong(expected_kick_value, false)) {
+    bool expected_kicked_value{true};
+    while (!kicked_.compare_exchange_strong(expected_kicked_value, false)) {
+        auto current_state{get_state()};
+        if (current_state == Worker::State::kStarted) {
+            state_.store(Worker::State::kKickWaiting);
+        } else if (current_state == State::kStopping) {
+            break;
+        }
+        if (timeout_milliseconds) {
             std::unique_lock l(kick_mtx_);
             (void)kicked_cv_.wait_for(l, std::chrono::milliseconds(timeout_milliseconds));
-            continue;
+        } else {
+            std::this_thread::yield();
         }
-        break;
+        expected_kicked_value = true;
     }
-    return !is_stopping();
+
+    if (is_stopping()) {
+        return false;
+    }
+    state_.store(State::kStarted);
+    return true;
+}
+
+std::string Worker::what() {
+    std::string ret{};
+    try {
+        rethrow();
+    } catch (const std::exception& ex) {
+        ret = ex.what();
+    } catch (const std::string& ex) {
+        ret = ex;
+    } catch (const char* ex) {
+        ret = ex;
+    } catch (...) {
+        ret = "Undefined error";
+    }
+    return ret;
+}
+
+void Worker::rethrow() {
+    if (has_exception()) {
+        std::rethrow_exception(exception_ptr_);
+    }
 }
 
 }  //  namespace silkworm

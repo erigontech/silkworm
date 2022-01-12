@@ -33,69 +33,43 @@ namespace silkworm::stagedsync::recovery {
 
 //! \brief A recovery package
 struct RecoveryPackage {
-    BlockNum block_num;     // Block number this package refers to
-    ethash::hash256 hash;   // Keccak hash of transaction's rlp representation
-    bool odd_y_parity;      // Whether y parity is odd (https://eips.ethereum.org/EIPS/eip-155)
-    uint8_t signature[64];  // Signature of transaction
+    BlockNum block_num;        // Block number this package refers to
+    ethash::hash256 tx_hash;   // Keccak hash of transaction's rlp representation
+    bool odd_y_parity;         // Whether y parity is odd (https://eips.ethereum.org/EIPS/eip-155)
+    uint8_t tx_signature[64];  // Signature of transaction
+    evmc::address tx_from;     // Recovered address
 };
 
 //! \brief A threaded worker in charge to recover sender's addresses from transaction signatures
 //! \remarks Inherits from silkworm::Worker
 class RecoveryWorker final : public silkworm::Worker {
   public:
-    //! \brief Status of Recovery worker
-    enum class Status {
-        Idle = 0,          // Waiting for task
-        Working = 1,       // Processing task
-        ResultsReady = 2,  // Results ready to collect
-        Error = 3,         // Some error encountered. Higher level RecoveryFarm should stop processing
-        Aborted = 4,       // A user request for cancellation has been intercepted
-    };
-
     //! \brief Creates an instance of recovery worker
     //! \param [in] id : unique identifier for this instance
-    //! \param [in] data_size: sets the amount of memory to allocate for recovered addresses
     //! \remarks data_size is expressed as number of transactions to recover per batch times address size
-    explicit RecoveryWorker(uint32_t id, size_t data_size);
-
-    ~RecoveryWorker();
+    explicit RecoveryWorker(uint32_t id)
+        : Worker("Address recoverer #" + std::to_string(id)), id_(id), context_{ecdsa::create_context()} {
+        if (!context_) {
+            throw std::runtime_error("Could not create elliptic curve context");
+        }
+    };
+    ~RecoveryWorker() final;
 
     //! \brief Feed the worker with a new set of data to process
-    //! \param [in] batch_id : identifier of work batch
     //! \param [in] batch : collection of work packages
-    void set_work(uint32_t batch_id, std::vector<RecoveryPackage>& farm_batch);
+    //! \param [in] kick : whether to kick the worker
+    void set_work(std::vector<RecoveryPackage>& farm_batch, bool kick = false);
 
-    //! \brief Return the instance unique identifier
-    uint32_t get_id() const { return id_; };
-
-    //! \brief Return the current batch identifier this instance is working on
-    uint32_t get_batch_id() const { return batch_id_; };
-
-    //! \brief Return the last error encountered by this Recoverer
-    //! \return A string. If empty means no error found
-    std::string get_error() const;
-
-    //! \brief Return the Status of this Recoverer
-    Status get_status() const;
-
-    //! \brief Serves the processed results to higher level
-    //! \param [in/out] out_results : a reference to a vector for results
-    //! \return True if the accrued results have been fed into out_results. False otherwise
-    //! \remarks This operates oa swap of contents among instance held results and provided reference
-    bool pull_results(std::vector<std::pair<BlockNum, ByteView>>& out_results);
+    //! \brief Returns the identifier of this recoverer
+    uint32_t get_id() const { return id_; }
 
     //! \brief Signals connected handlers a task is completed
-    boost::signals2::signal<void(RecoveryWorker* sender)> signal_completed;
+    boost::signals2::signal<void(RecoveryWorker* sender)> signal_task_completed;
 
   private:
-    const uint32_t id_;                                     // Current worker identifier
-    uint32_t batch_id_{0};                                  // Current batch identifier
-    std::vector<RecoveryPackage> batch_;                    // Batch to process
-    Bytes data_;                                            // Results data buffer
-    secp256k1_context* context_;                            // Elliptic curve context;
-    std::vector<std::pair<BlockNum, ByteView>> results_{};  // Results per block pointing to data area
-    std::string last_error_{};                              // Description of last error occurrence
-    std::atomic<Status> status_{Status::Idle};              // Status of worker
+    const uint32_t id_;                   // Unique identifier
+    std::vector<RecoveryPackage> batch_;  // Batch to process
+    secp256k1_context* context_;          // Elliptic curve context;
 
     //! \brief Basic recovery work loop
     //! \remarks Overrides Worker::work()
@@ -104,4 +78,4 @@ class RecoveryWorker final : public silkworm::Worker {
 
 }  // namespace silkworm::stagedsync::recovery
 
-#endif
+#endif  // SILKWORM_STAGEDSYNC_RECOVERY_WORKER_HPP_

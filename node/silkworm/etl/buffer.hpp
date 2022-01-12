@@ -40,24 +40,24 @@ class Buffer {
 
     void put(const Entry& entry) {
         // Add a new entry to the buffer
-        size_ += entry.size();
+        size_ += entry.size() + sizeof(head_t);
         buffer_.push_back(entry);
     }
 
     void put(Entry&& entry) {
         // Add a new entry to the buffer
-        size_ += entry.size();
+        size_ += entry.size() + sizeof(head_t);
         buffer_.push_back(std::move(entry));
     }
 
     void clear() noexcept {
         // Set the buffer to contain 0 entries
-        buffer_.resize(0);
+        buffer_.clear();
         size_ = 0;
     }
 
-    bool overflows() const noexcept {
-        // Whether or not accounted size overflows optimal_size_ (i.e. time to flush)
+    [[nodiscard]] bool overflows() const noexcept {
+        // Whether accounted size overflows optimal_size_ (i.e. time to flush)
         return size_ >= optimal_size_;
     }
 
@@ -66,12 +66,12 @@ class Buffer {
         std::sort(buffer_.begin(), buffer_.end());
     }
 
-    size_t size() const noexcept {
+    [[nodiscard]] size_t size() const noexcept {
         // Actual size of accounted data
         return size_;
     }
 
-    const std::vector<Entry>& entries() const noexcept { return buffer_; }
+    [[nodiscard]] const std::vector<Entry>& entries() const noexcept { return buffer_; }
 
   private:
     size_t optimal_size_;

@@ -1,5 +1,5 @@
 /*
-   Copyright 2020-2021 The Silkworm Authors
+   Copyright 2020-2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -34,7 +34,7 @@ void FileProvider::flush(Buffer& buffer) {
 
     // Check we have enough space to store all data
     auto entries{buffer.entries()};
-    file_size_ = {buffer.size() + entries.size() * sizeof(head_t)};
+    file_size_ = buffer.size();
     fs::path workdir(fs::path(file_name_).parent_path());
     if (fs::space(workdir).available < file_size_) {
         file_size_ = 0;

@@ -1,5 +1,5 @@
 /*
-   Copyright 2020-2021 The Silkworm Authors
+   Copyright 2020-2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@
 
 #include <filesystem>
 #include <sstream>
+#include <vector>
 
 #include <silkworm/common/terminal.hpp>
 
@@ -53,6 +54,12 @@ void init(Settings& settings);
 //! \note This function is not thread safe as it's meant to be used at start of process and never called again
 void set_verbosity(Level level);
 
+//! \brief Checks if provided log level will be effectively printed on behalf of current settings
+//! \return True / False
+//! \remarks Some logging operations may implement computations which would be completely wasted if the outcome is not
+//! printed
+bool test_verbosity(Level level);
+
 //! \brief Sets a file output for log teeing
 //! \note This function is not thread safe as it's meant to be used at start of process and never called again
 void tee_file(const std::filesystem::path& path);
@@ -60,12 +67,13 @@ void tee_file(const std::filesystem::path& path);
 class BufferBase {
   public:
     explicit BufferBase(Level level);
+    explicit BufferBase(Level level, std::string_view msg, const std::vector<std::string>& args);
     ~BufferBase() { flush(); }
 
     // Accumulators
     template <class T>
     inline void append(T const& t) {
-        ss_ << t;
+        if (should_print_) ss_ << t;
     }
     template <class T>
     BufferBase& operator<<(T const& t) {
@@ -75,14 +83,15 @@ class BufferBase {
 
   protected:
     void flush();
-    Level level_;
+    const bool should_print_;
     std::stringstream ss_;
 };
 
 template <Level level>
 class LogBuffer : public BufferBase {
   public:
-    LogBuffer() : BufferBase(level){};
+    explicit LogBuffer() : BufferBase(level){};
+    explicit LogBuffer(std::string_view msg, std::vector<std::string> args = {}) : BufferBase(level, msg, args){};
 };
 
 using Trace = LogBuffer<Level::kTrace>;

@@ -118,11 +118,11 @@ void hashstate_promote_clean_state(mdbx::txn& txn, const fs::path& etl_path) {
 
     log::Info() << "Started Account Loading";
     auto target{db::open_cursor(txn, db::table::kHashedAccounts)};
-    collector_account.load(target, nullptr, MDBX_put_flags_t::MDBX_APPEND, 10);
+    collector_account.load(target, nullptr, MDBX_put_flags_t::MDBX_APPEND);
 
     log::Info() << "Started Storage Loading";
     target = db::open_cursor(txn, db::table::kHashedStorage);
-    collector_storage.load(target, storage_load, MDBX_put_flags_t::MDBX_APPENDDUP, 10);
+    collector_storage.load(target, storage_load, MDBX_put_flags_t::MDBX_APPENDDUP);
 }
 
 void hashstate_promote_clean_code(mdbx::txn& txn, const fs::path& etl_path) {
@@ -146,7 +146,7 @@ void hashstate_promote_clean_code(mdbx::txn& txn, const fs::path& etl_path) {
 
     log::Info() << "Started Code Loading";
     tbl = db::open_cursor(txn, db::table::kContractCode);
-    collector.load(tbl, nullptr, MDBX_put_flags_t::MDBX_APPEND, 10);
+    collector.load(tbl, nullptr, MDBX_put_flags_t::MDBX_APPEND);
 }
 
 /*

@@ -23,15 +23,19 @@
 #include <thread>
 
 #include <silkworm/common/signal_handler.hpp>
+#include <boost/signals2/signal.hpp>
 
 namespace silkworm {
 
 // If you only need stoppability, use ActiveComponent instead.
 class Worker {
   public:
-    enum class WorkerState { kStopped, kStarting, kStarted, kStopping, kExceptionThrown };
 
-    Worker() = default;
+    enum class State { kStopped, kStarting, kStarted, kKickWaiting, kStopping };
+
+    Worker() : name_{"worker"}{};
+    explicit Worker(std::string& name) : name_{name}{};
+    explicit Worker(std::string&& name) : name_{std::move(name)}{};
 
     /* Not movable nor copyable */
     Worker(Worker const&) = delete;
@@ -44,32 +48,25 @@ class Worker {
     void kick();                   // Kicks worker thread if waiting
 
     //! \brief Whether this worker/thread has received a stop request
-    bool is_stopping() const { return state_.load() == WorkerState::kStopping || SignalHandler::signalled(); }
+    bool is_stopping() const { return state_.load() == State::kStopping; }
 
     //! \brief Retrieves current state of thread
-    WorkerState get_state() { return state_.load(); }
+    State get_state() { return state_.load(); }
 
     //! \brief Whether this worker/thread has encountered an exception
-    bool has_exception() const { return exception_ptr_.operator bool(); }
+    bool has_exception() const { return exception_ptr_ != nullptr; }
 
-    //! \brief Returns the message of occurred exception (if any)
-    std::string what() {
-        std::string ret{};
-        if (has_exception()) {
-            try {
-                std::rethrow_exception(exception_ptr_);
-            } catch (const std::exception& ex) {
-                ret = ex.what();
-            } catch (const std::string& ex) {
-                ret = ex;
-            } catch (const char* ex){
-                ret = ex;
-            } catch (...) {
-                ret = "Undefined error";
-            }
-        }
-        return ret;
-    }
+    //! \brief Returns the message of captured exception (if any)
+    std::string what();
+
+    //! \brief Rethrows captured exception (if any)
+    void rethrow();
+
+    //! \brief Signals connected handlers the underlying thread is about to start
+    boost::signals2::signal<void(Worker* sender)> signal_worker_started;
+
+    //! \brief Signals connected handlers the underlying thread is terminated
+    boost::signals2::signal<void(Worker* sender)> signal_worker_stopped;
 
   protected:
     /**
@@ -84,9 +81,10 @@ class Worker {
     std::atomic_bool kicked_{false};                          // Whether the kick has been received
     std::condition_variable kicked_cv_{};                     // Condition variable to wait for kick
     std::mutex kick_mtx_{};                                   // Mutex for conditional wait of kick
+    std::string name_;
 
   private:
-    std::atomic<WorkerState> state_{WorkerState::kStopped};
+    std::atomic<State> state_{State::kStopped};
     std::unique_ptr<std::thread> thread_{nullptr};
     std::exception_ptr exception_ptr_{nullptr};
     virtual void work() = 0;  // Derived classes must override

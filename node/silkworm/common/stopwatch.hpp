@@ -31,8 +31,8 @@ namespace silkworm {
 //! \brief This class mimics the behavior of a stopwatch to measure timings of operations
 class StopWatch {
   public:
-    typedef std::chrono::time_point<std::chrono::high_resolution_clock> TimePoint;
-    typedef std::chrono::nanoseconds Duration;
+    using TimePoint = std::chrono::time_point<std::chrono::high_resolution_clock>;
+    using Duration = std::chrono::nanoseconds;
 
     //! \brief Creates a new instance
     StopWatch() = default;

@@ -70,11 +70,9 @@ static inline std::pair<const char*, const char*> get_channel_settings(Level lev
     }
 }
 
-BufferBase::BufferBase(Level level) : level_(level) {
-    if (level > settings_.log_verbosity) {
-        return;
-    }
-    
+BufferBase::BufferBase(Level level) : should_print_(level <= settings_.log_verbosity) {
+    if (!should_print_) return;
+
     auto [prefix, color] = get_channel_settings(level);
     // Prefix
     ss_ << kColorReset << " " << color << prefix << kColorReset << " ";
@@ -91,10 +89,7 @@ BufferBase::BufferBase(Level level) : level_(level) {
 }
 
 BufferBase::BufferBase(Level level, std::string_view msg, const std::vector<std::string>& args) : BufferBase(level) {
-    if (level > settings_.log_verbosity) {
-        return;
-    }
-
+    if (!should_print_) return;
     ss_ << std::left << std::setw(30) << std::setfill(' ') << msg;
     bool left{true};
     for (const auto& arg : args) {
@@ -104,9 +99,7 @@ BufferBase::BufferBase(Level level, std::string_view msg, const std::vector<std:
 }
 
 void BufferBase::flush() {
-    if (level_ > settings_.log_verbosity) {
-        return;
-    }
+    if (!should_print_) return;
 
     // Pattern to identify colorization
     static const std::regex color_pattern("(\\\x1b\\[[0-9;]{1,}m)");

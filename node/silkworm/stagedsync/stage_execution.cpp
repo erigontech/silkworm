@@ -297,7 +297,6 @@ StageResult unwind_execution(db::RWTxn& txn, const std::filesystem::path&, uint6
             if(erased > 16) {
                 log::Info() << "Erased " << erased << " records from " << map_config.name;
             }
-            unwind_cursor.close();
         }
         txn.commit();
         return StageResult::kSuccess;

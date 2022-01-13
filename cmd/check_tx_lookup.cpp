@@ -1,5 +1,5 @@
 /*
-   Copyright 2021 The Silkworm Authors
+   Copyright 2021-2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -22,8 +22,8 @@
 #include <silkworm/common/directories.hpp>
 #include <silkworm/common/endian.hpp>
 #include <silkworm/common/log.hpp>
-#include <silkworm/common/signal_handler.hpp>
 #include <silkworm/common/util.hpp>
+#include <silkworm/concurrency/signal_handler.hpp>
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/stages.hpp>
 #include <silkworm/etl/collector.hpp>
@@ -80,7 +80,7 @@ int main(int argc, char* argv[]) {
                      i++, transaction_data = transactions_table.to_next(false)) {
                     if (!transaction_data) {
                         log::Error() << "Block " << block_number << " transaction " << i << " not found in "
-                                            << db::table::kBlockTransactions.name << " table";
+                                     << db::table::kBlockTransactions.name << " table";
                         continue;
                     }
 
@@ -89,9 +89,9 @@ int main(int argc, char* argv[]) {
                     ByteView transaction_view{transaction_hash.bytes};
                     auto lookup_data{tx_lookup_table.find(db::to_slice(transaction_view), false)};
                     if (!lookup_data) {
-                        log::Error()
-                            << "Block " << block_number << " transaction " << i << " with hash "
-                            << to_hex(transaction_view) << " not found in " << db::table::kTxLookup.name << " table";
+                        log::Error() << "Block " << block_number << " transaction " << i << " with hash "
+                                     << to_hex(transaction_view) << " not found in " << db::table::kTxLookup.name
+                                     << " table";
                         continue;
                     }
 
@@ -100,15 +100,14 @@ int main(int argc, char* argv[]) {
                     auto actual_block_number{endian::load_big_u64(lookup_block_value.data())};
 
                     if (actual_block_number != expected_block_number) {
-                        log::Error()
-                            << "Mismatch: Expected block number for tx with hash: " << to_hex(transaction_view)
-                            << " is " << expected_block_number << ", but got: " << actual_block_number;
+                        log::Error() << "Mismatch: Expected block number for tx with hash: " << to_hex(transaction_view)
+                                     << " is " << expected_block_number << ", but got: " << actual_block_number;
                     }
                 }
 
                 if (i != body.txn_count) {
                     log::Error() << "Block " << block_number << " claims " << body.txn_count
-                                        << " transactions but only " << i << " read";
+                                 << " transactions but only " << i << " read";
                 }
             }
 

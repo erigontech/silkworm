@@ -1,5 +1,5 @@
 /*
-   Copyright 2020-2021 The Silkworm Authors
+   Copyright 2020-2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -21,7 +21,7 @@
 #include <atomic>
 #include <queue>
 
-#include <silkworm/common/signal_handler.hpp>
+#include <silkworm/concurrency/signal_handler.hpp>
 #include <silkworm/etl/collector.hpp>
 #include <silkworm/stagedsync/common.hpp>
 #include <silkworm/stagedsync/recovery/recovery_worker.hpp>

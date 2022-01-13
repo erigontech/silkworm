@@ -1,5 +1,5 @@
 /*
-    Copyright 2021 The Silkworm Authors
+    Copyright 2021-2022 The Silkworm Authors
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -15,8 +15,8 @@
 */
 
 #pragma once
-#ifndef SILKWORM_COMMON_SIGNAL_HANDLER_HPP_
-#define SILKWORM_COMMON_SIGNAL_HANDLER_HPP_
+#ifndef SILKWORM_CONCURRENCY_SIGNAL_HANDLER_HPP_
+#define SILKWORM_CONCURRENCY_SIGNAL_HANDLER_HPP_
 
 #include <atomic>
 #include <cstdint>
@@ -37,4 +37,5 @@ class SignalHandler {
 };
 
 }  // namespace silkworm
-#endif  // SILKWORM_COMMON_SIGNAL_HANDLER_HPP_
+
+#endif  // SILKWORM_CONCURRENCY_SIGNAL_HANDLER_HPP_

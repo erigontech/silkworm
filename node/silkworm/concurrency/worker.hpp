@@ -1,5 +1,5 @@
 /*
-   Copyright 2020 - 2021 The Silkworm Authors
+   Copyright 2020-2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -22,20 +22,20 @@
 #include <iostream>
 #include <thread>
 
-#include <silkworm/common/signal_handler.hpp>
 #include <boost/signals2/signal.hpp>
+
+#include <silkworm/concurrency/signal_handler.hpp>
 
 namespace silkworm {
 
 // If you only need stoppability, use ActiveComponent instead.
 class Worker {
   public:
-
     enum class State { kStopped, kStarting, kStarted, kKickWaiting, kStopping };
 
-    Worker() : name_{"worker"}{};
-    explicit Worker(std::string& name) : name_{name}{};
-    explicit Worker(std::string&& name) : name_{std::move(name)}{};
+    Worker() : name_{"worker"} {}
+    explicit Worker(std::string& name) : name_{name} {}
+    explicit Worker(std::string&& name) : name_{std::move(name)} {}
 
     /* Not movable nor copyable */
     Worker(Worker const&) = delete;

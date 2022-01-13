@@ -441,7 +441,7 @@ StageResult RecoveryFarm::fill_canonical_headers(BlockNum from, BlockNum to) noe
         // Read all headers up to upper bound (included)
         auto data{hashes_table.find(db::to_slice(header_key), false)};
         while (data.done) {
-            reached_block_num = endian::load_big_u64(data.key.byte_ptr());
+            reached_block_num = endian::load_big_u64(static_cast<uint8_t*>(data.key.data()));
             SILKWORM_ASSERT(reached_block_num == expected_block_num);
             SILKWORM_ASSERT(data.value.length() == kHashLength);
 

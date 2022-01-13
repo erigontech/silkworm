@@ -83,7 +83,7 @@ static StageResult history_index_stage(db::RWTxn& txn, const std::filesystem::pa
             bitmaps.emplace(composite_key, roaring::Roaring64Map());
         }
         // Add block number to the bitmap of current key
-        block_number = endian::load_big_u64(data.key.byte_ptr());
+        block_number = endian::load_big_u64(static_cast<uint8_t*>(data.key.data()));
         bitmaps.at(composite_key).add(block_number);
         allocated_space += 8;
         // Flush to ETL

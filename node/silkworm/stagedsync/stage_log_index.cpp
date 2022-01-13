@@ -96,9 +96,9 @@ StageResult stage_log_index(db::RWTxn& txn, const std::filesystem::path& etl_pat
     auto log_data{log_table.lower_bound(db::to_slice(start), false)};
     while (log_data) {
         // Decode CBOR and distribute it to the 2 bitmaps
-        block_number = endian::load_big_u64(log_data.key.byte_ptr());
+        block_number = endian::load_big_u64(static_cast<uint8_t*>(log_data.key.data()));
         current_listener.set_block_number(block_number);
-        cbor::input input(log_data.value.byte_ptr(), log_data.value.length());
+        cbor::input input(log_data.value.data(), log_data.value.length());
         cbor::decoder decoder(input, current_listener);
         decoder.run();
         // Flushes

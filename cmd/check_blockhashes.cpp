@@ -60,13 +60,14 @@ int main(int argc, char* argv[]) {
             ByteView hash_data_view{db::from_slice(canonical_hashes_data.value)};  // Canonical Hash
             auto block_hashes_data{blockhashes_table.find(canonical_hashes_data.value, /*throw_notfound*/ false)};
             if (!block_hashes_data) {
-                uint64_t hash_block_number{endian::load_big_u64(canonical_hashes_data.key.byte_ptr())};
+                uint64_t hash_block_number{
+                    endian::load_big_u64(static_cast<uint8_t*>(canonical_hashes_data.key.data()))};
                 log::Error() << "Hash " << to_hex(hash_data_view) << " (block " << hash_block_number
                              << ") not found in " << db::table::kHeaderNumbers.name << " table ";
 
             } else if (block_hashes_data.value != canonical_hashes_data.key) {
-                uint64_t hash_height = endian::load_big_u64(canonical_hashes_data.key.byte_ptr());
-                uint64_t block_height = endian::load_big_u64(block_hashes_data.value.byte_ptr());
+                uint64_t hash_height = endian::load_big_u64(static_cast<uint8_t*>(canonical_hashes_data.key.data()));
+                uint64_t block_height = endian::load_big_u64(static_cast<uint8_t*>(block_hashes_data.value.data()));
                 log::Error() << "Hash " << to_hex(hash_data_view) << " should match block " << hash_height
                              << " but got " << block_height;
             }

@@ -63,7 +63,7 @@ StageResult BlockHashes::forward(db::RWTxn& txn) {
     auto source{db::open_cursor(*txn, db::table::kCanonicalHashes)};
     auto data{source.find(db::to_slice(header_key), /*throw_notfound=*/false)};
     while (data.done) {
-        reached_block_num_ = {endian::load_big_u64(data.key.byte_ptr())};
+        reached_block_num_ = endian::load_big_u64(static_cast<uint8_t*>(data.key.data()));
         SILKWORM_ASSERT(reached_block_num_ == expected_block_number);
         SILKWORM_ASSERT(data.value.length() == kHashLength);
         // TODO (Andrew) is the value, key order intentional?

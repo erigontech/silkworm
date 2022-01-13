@@ -54,7 +54,7 @@ StageResult stage_tx_lookup(db::RWTxn& txn, const std::filesystem::path& etl_pat
         auto body_rlp{db::from_slice(bodies_data.value)};
         auto body{db::detail::decode_stored_block_body(body_rlp)};
         // Block number is computed here in order to record accurate stage progress
-        block_number = endian::load_big_u64(bodies_data.key.byte_ptr());
+        block_number = endian::load_big_u64(static_cast<uint8_t*>(bodies_data.key.data()));
         // Iterate over transactions in current block
         if (body.txn_count) {
             // Extract compact form of big endian block number

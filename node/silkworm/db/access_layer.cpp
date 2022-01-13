@@ -32,11 +32,11 @@ std::optional<VersionBase> read_schema_version(mdbx::txn& txn) noexcept {
 
     auto data{src.current()};
     SILKWORM_ASSERT(data.value.length() == 12);
-    auto Major{endian::load_big_u32(data.value.byte_ptr())};
+    auto Major{endian::load_big_u32(static_cast<uint8_t*>(data.value.data()))};
     data.value.remove_prefix(sizeof(uint32_t));
-    auto Minor{endian::load_big_u32(data.value.byte_ptr())};
+    auto Minor{endian::load_big_u32(static_cast<uint8_t*>(data.value.data()))};
     data.value.remove_prefix(sizeof(uint32_t));
-    auto Patch{endian::load_big_u32(data.value.byte_ptr())};
+    auto Patch{endian::load_big_u32(static_cast<uint8_t*>(data.value.data()))};
     return VersionBase{Major, Minor, Patch};
 }
 
@@ -182,7 +182,7 @@ std::optional<BlockWithHash> read_block(mdbx::txn& txn, BlockNum block_number, b
 
     BlockWithHash bh{};
     SILKWORM_ASSERT(data.value.length() == kHashLength);
-    std::memcpy(bh.hash.bytes, data.value.byte_ptr(), kHashLength);
+    std::memcpy(bh.hash.bytes, data.value.data(), kHashLength);
 
     // Locate header
     src = db::open_cursor(txn, table::kHeaders);
@@ -265,7 +265,7 @@ std::vector<evmc::address> read_senders(mdbx::txn& txn, BlockNum block_number, c
     if (data) {
         SILKWORM_ASSERT(data.value.length() % kAddressLength == 0);
         senders.resize(data.value.length() / kAddressLength);
-        std::memcpy(senders.data(), data.value.byte_ptr(), data.value.length());
+        std::memcpy(senders.data(), data.value.data(), data.value.length());
     }
     return senders;
 }
@@ -352,7 +352,7 @@ std::optional<Account> read_account(mdbx::txn& txn, const evmc::address& address
         auto key{storage_prefix(address, acc.incarnation)};
         if (auto data{src.find(to_slice(key), /*throw_notfound*/ false)};
             data.done && data.value.length() == kHashLength) {
-            std::memcpy(acc.code_hash.bytes, data.value.byte_ptr(), kHashLength);
+            std::memcpy(acc.code_hash.bytes, data.value.data(), kHashLength);
         }
     }
 
@@ -394,7 +394,7 @@ std::optional<uint64_t> read_previous_incarnation(mdbx::txn& txn, const evmc::ad
     auto src{db::open_cursor(txn, table::kIncarnationMap)};
     if (auto data{src.find(to_slice(address), /*throw_notfound=*/false)}; data.done) {
         SILKWORM_ASSERT(data.value.length() == 8);
-        return endian::load_big_u64(data.value.byte_ptr());
+        return endian::load_big_u64(static_cast<uint8_t*>(data.value.data()));
     }
     return std::nullopt;
 }
@@ -409,7 +409,7 @@ AccountChanges read_account_changes(mdbx::txn& txn, BlockNum block_num) {
     while (data) {
         SILKWORM_ASSERT(data.value.length() >= kAddressLength);
         evmc::address address;
-        std::memcpy(address.bytes, data.value.byte_ptr(), kAddressLength);
+        std::memcpy(address.bytes, data.value.data(), kAddressLength);
         data.value.remove_prefix(kAddressLength);
         changes[address] = db::from_slice(data.value);
         data = src.to_current_next_multi(/*throw_not_found=*/false);
@@ -436,13 +436,13 @@ StorageChanges read_storage_changes(mdbx::txn& txn, BlockNum block_num) {
         SILKWORM_ASSERT(data.key.length() == kPlainStoragePrefixLength);
 
         evmc::address address;
-        std::memcpy(address.bytes, data.key.byte_ptr(), kAddressLength);
+        std::memcpy(address.bytes, data.key.data(), kAddressLength);
         data.key.remove_prefix(kAddressLength);
-        uint64_t incarnation{endian::load_big_u64(data.key.byte_ptr())};
+        uint64_t incarnation{endian::load_big_u64(static_cast<uint8_t*>(data.key.data()))};
 
         SILKWORM_ASSERT(data.value.length() >= kHashLength);
         evmc::bytes32 location;
-        std::memcpy(location.bytes, data.value.byte_ptr(), kHashLength);
+        std::memcpy(location.bytes, data.value.data(), kHashLength);
         data.value.remove_prefix(kHashLength);
 
         changes[address][incarnation][location] = db::from_slice(data.value);

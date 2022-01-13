@@ -82,6 +82,13 @@ class Execution final : public IStage {
     StageResult execute_batch(db::RWTxn& txn, BlockNum max_block_num, BlockNum prune_from,
                               AnalysisCache& analysis_cache, ExecutionStatePool& state_pool);
 
+    //! \brief For given changeset cursor/bucket it reverts the changes on states buckets
+    static void unwind_state_from_changeset(mdbx::cursor& source, mdbx::cursor& plain_state_table,
+                                            mdbx::cursor& plain_code_table, BlockNum unwind_to);
+
+    //! \brief Revert State for given address/storage location
+    static void revert_state(ByteView key, ByteView value, mdbx::cursor& plain_state_table,
+                             mdbx::cursor& plain_code_table);
     // Stats
     std::mutex progress_mtx_;  // Synchronizes access to progress stats
     std::chrono::time_point<std::chrono::steady_clock> lap_time_{std::chrono::steady_clock::now()};
@@ -89,8 +96,6 @@ class Execution final : public IStage {
     size_t processed_transactions_{0};
     size_t processed_gas_{0};
 };
-
-inline constexpr size_t kDefaultBatchSize = 512_Mebi;          // TODO(Andrea) Replace with value from CLI
 
 typedef StageResult (*StageFunc)(db::RWTxn&, const std::filesystem::path& etl_path, uint64_t prune_from);
 typedef StageResult (*UnwindFunc)(db::RWTxn&, const std::filesystem::path& etl_path, uint64_t unwind_to);
@@ -106,11 +111,6 @@ struct Stage {
 // Stage functions
 StageResult stage_headers(db::RWTxn& txn, const std::filesystem::path& etl_path, uint64_t prune_from = 0);
 StageResult stage_bodies(db::RWTxn& txn, const std::filesystem::path& etl_path, uint64_t prune_from = 0);
-StageResult stage_execution(db::RWTxn& txn, const std::filesystem::path& etl_path, size_t batch_size,
-                            uint64_t prune_from);
-inline StageResult stage_execution(db::RWTxn& txn, const std::filesystem::path& etl_path, uint64_t prune_from = 0) {
-    return stage_execution(txn, etl_path, kDefaultBatchSize, prune_from);
-}
 
 /* HashState Promotion Functions*/
 
@@ -141,7 +141,6 @@ StageResult stage_tx_lookup(db::RWTxn& txn, const std::filesystem::path& etl_pat
 
 // Unwind functions
 StageResult no_unwind(db::RWTxn& txn, const std::filesystem::path& etl_path, uint64_t unwind_to);
-StageResult unwind_execution(db::RWTxn& txn, const std::filesystem::path& etl_path, uint64_t unwind_to);
 StageResult unwind_hashstate(db::RWTxn& txn, const std::filesystem::path& etl_path, uint64_t unwind_to);
 StageResult unwind_interhashes(db::RWTxn& txn, const std::filesystem::path& etl_path, uint64_t unwind_to);
 StageResult unwind_account_history(db::RWTxn& txn, const std::filesystem::path& etl_path, uint64_t unwind_to);

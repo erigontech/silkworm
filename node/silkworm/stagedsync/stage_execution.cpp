@@ -164,9 +164,59 @@ StageResult Execution::execute_batch(db::RWTxn& txn, BlockNum max_block_num, Blo
 }
 
 StageResult Execution::unwind(db::RWTxn& txn, BlockNum to) {
-    (void)txn;
-    (void)to;
-    throw std::runtime_error("Not yet implemented");
+    BlockNum execution_progress{db::stages::read_stage_progress(*txn, db::stages::kExecutionKey)};
+    if (to >= execution_progress) {
+        return StageResult::kSuccess;
+    }
+
+    log::Info() << "Unwind Execution from " << execution_progress << " to " << to;
+
+    static const db::MapConfig unwind_tables[7] = {
+        db::table::kPlainState,         //
+        db::table::kPlainContractCode,  //
+        db::table::kAccountChangeSet,   //
+        db::table::kStorageChangeSet,   //
+        db::table::kBlockReceipts,      //
+        db::table::kLogs,               //
+        db::table::kCallTraceSet        //
+    };
+
+    try {
+        if (to == 0) {
+            for (const auto& unwind_table : unwind_tables) {
+                auto unwind_map_handle{db::open_map(*txn, unwind_table)};
+                txn->clear_map(unwind_map_handle);
+            }
+        } else {
+            {
+                auto plain_state_table{db::open_cursor(*txn, db::table::kPlainState)};
+                auto plain_code_table{db::open_cursor(*txn, db::table::kPlainContractCode)};
+                auto account_changeset_table{db::open_cursor(*txn, db::table::kAccountChangeSet)};
+                auto storage_changeset_table{db::open_cursor(*txn, db::table::kStorageChangeSet)};
+                unwind_state_from_changeset(account_changeset_table, plain_state_table, plain_code_table, to);
+                unwind_state_from_changeset(storage_changeset_table, plain_state_table, plain_code_table, to);
+            }
+
+            // Delete records which has keys greater than unwind point
+            // Note erasing forward the start key is included that's why we increase unwind_to by 1
+            Bytes start_key(8, '\0');
+            endian::store_big_u64(&start_key[0], to + 1);
+            for (int i = 2; i < 7; ++i) {
+                auto unwind_cursor{db::open_cursor(*txn, unwind_tables[i])};
+                auto erased{db::cursor_erase(unwind_cursor, start_key, db::CursorMoveDirection::Forward)};
+                log::Info() << "Erased " << erased << " records from " << unwind_tables[i].name;
+                unwind_cursor.close();
+            }
+        }
+        txn.commit();
+        return StageResult::kSuccess;
+    } catch (const mdbx::exception& ex) {
+        log::Error() << "Unexpected db error in " << std::string(__FUNCTION__) << " : " << ex.what();
+        return StageResult::kDbError;
+    } catch (...) {
+        log::Error() << "Unexpected unknown error in " << std::string(__FUNCTION__);
+        return StageResult::kUnexpectedError;
+    }
 }
 
 StageResult Execution::prune(db::RWTxn& txn) {
@@ -195,8 +245,7 @@ std::vector<std::string> Execution::get_log_progress() {
             "txns/s", std::to_string(speed_transactions), "Mgas/s",   std::to_string(speed_mgas)};
 }
 
-// Revert State for given address/storage location
-static void revert_state(ByteView key, ByteView value, mdbx::cursor& plain_state_table,
+void Execution::revert_state(ByteView key, ByteView value, mdbx::cursor& plain_state_table,
                          mdbx::cursor& plain_code_table) {
     if (key.size() == kAddressLength) {
         if (!value.empty()) {
@@ -242,9 +291,8 @@ static void revert_state(ByteView key, ByteView value, mdbx::cursor& plain_state
     }
 }
 
-// For given changeset cursor/bucket it reverts the changes on states buckets
-static void unwind_state_from_changeset(mdbx::cursor& source, mdbx::cursor& plain_state_table,
-                                        mdbx::cursor& plain_code_table, BlockNum unwind_to) {
+void Execution::unwind_state_from_changeset(mdbx::cursor& source, mdbx::cursor& plain_state_table,
+                                            mdbx::cursor& plain_code_table, BlockNum unwind_to) {
     auto src_data{source.to_last(/*throw_notfound*/ false)};
     while (src_data) {
         Bytes key(db::from_slice(src_data.key));
@@ -256,62 +304,6 @@ static void unwind_state_from_changeset(mdbx::cursor& source, mdbx::cursor& plai
         auto [new_key, new_value]{db::change_set_to_plain_state_format(key, value)};
         revert_state(new_key, new_value, plain_state_table, plain_code_table);
         src_data = source.to_previous(/*throw_notfound*/ false);
-    }
-}
-
-StageResult unwind_execution(db::RWTxn& txn, const std::filesystem::path&, uint64_t unwind_to) {
-    BlockNum execution_progress{db::stages::read_stage_progress(*txn, db::stages::kExecutionKey)};
-    if (unwind_to >= execution_progress) {
-        return StageResult::kSuccess;
-    }
-
-    log::Info() << "Unwind Execution from " << execution_progress << " to " << unwind_to;
-
-    static const db::MapConfig unwind_tables[7] = {
-        db::table::kPlainState,         //
-        db::table::kPlainContractCode,  //
-        db::table::kAccountChangeSet,   //
-        db::table::kStorageChangeSet,   //
-        db::table::kBlockReceipts,      //
-        db::table::kLogs,               //
-        db::table::kCallTraceSet        //
-    };
-
-    try {
-        if (unwind_to == 0) {
-            for (const auto& unwind_table : unwind_tables) {
-                auto unwind_map_handle{db::open_map(*txn, unwind_table)};
-                txn->clear_map(unwind_map_handle);
-            }
-        } else {
-            {
-                auto plain_state_table{db::open_cursor(*txn, db::table::kPlainState)};
-                auto plain_code_table{db::open_cursor(*txn, db::table::kPlainContractCode)};
-                auto account_changeset_table{db::open_cursor(*txn, db::table::kAccountChangeSet)};
-                auto storage_changeset_table{db::open_cursor(*txn, db::table::kStorageChangeSet)};
-                unwind_state_from_changeset(account_changeset_table, plain_state_table, plain_code_table, unwind_to);
-                unwind_state_from_changeset(storage_changeset_table, plain_state_table, plain_code_table, unwind_to);
-            }
-
-            // Delete records which has keys greater than unwind point
-            // Note erasing forward the start key is included that's why we increase unwind_to by 1
-            Bytes start_key(8, '\0');
-            endian::store_big_u64(&start_key[0], unwind_to + 1);
-            for (int i = 2; i < 7; ++i) {
-                auto unwind_cursor{db::open_cursor(*txn, unwind_tables[i])};
-                auto erased{db::cursor_erase(unwind_cursor, start_key, db::CursorMoveDirection::Forward)};
-                log::Info() << "Erased " << erased << " records from " << unwind_tables[i].name;
-                unwind_cursor.close();
-            }
-        }
-        txn.commit();
-        return StageResult::kSuccess;
-    } catch (const mdbx::exception& ex) {
-        log::Error() << "Unexpected db error in " << std::string(__FUNCTION__) << " : " << ex.what();
-        return StageResult::kDbError;
-    } catch (...) {
-        log::Error() << "Unexpected unknown error in " << std::string(__FUNCTION__);
-        return StageResult::kUnexpectedError;
     }
 }
 

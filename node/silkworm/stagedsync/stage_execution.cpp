@@ -307,6 +307,56 @@ void Execution::unwind_state_from_changeset(mdbx::cursor& source, mdbx::cursor& 
     }
 }
 
+StageResult unwind_execution(db::RWTxn& txn, const std::filesystem::path&, uint64_t unwind_to) {
+    BlockNum execution_progress{db::stages::read_stage_progress(*txn, db::stages::kExecutionKey)};
+    if (unwind_to >= execution_progress) {
+        return StageResult::kSuccess;
+    }
+
+    log::Info() << "Unwind Execution from " << execution_progress << " to " << unwind_to;
+
+    static const db::MapConfig unwind_tables[5] = {
+        db::table::kAccountChangeSet,   //
+        db::table::kStorageChangeSet,   //
+        db::table::kBlockReceipts,      //
+        db::table::kLogs,               //
+        db::table::kCallTraceSet        //
+    };
+
+    try {
+
+        {
+            // Revert states
+            auto plain_state_table{db::open_cursor(*txn, db::table::kPlainState)};
+            auto plain_code_table{db::open_cursor(*txn, db::table::kPlainContractCode)};
+            auto account_changeset_table{db::open_cursor(*txn, db::table::kAccountChangeSet)};
+            auto storage_changeset_table{db::open_cursor(*txn, db::table::kStorageChangeSet)};
+            unwind_state_from_changeset(account_changeset_table, plain_state_table, plain_code_table, unwind_to);
+            unwind_state_from_changeset(storage_changeset_table, plain_state_table, plain_code_table, unwind_to);
+        }
+
+        // Delete records which has keys greater than unwind point
+        // Note erasing forward the start key is included that's why we increase unwind_to by 1
+        Bytes start_key(8, '\0');
+        endian::store_big_u64(&start_key[0], unwind_to + 1);
+        for (const auto& map_config : unwind_tables) {
+            auto unwind_cursor{db::open_cursor(*txn, map_config)};
+            auto erased{db::cursor_erase(unwind_cursor, start_key, db::CursorMoveDirection::Forward)};
+            if(erased > 16) {
+                log::Info() << "Erased " << erased << " records from " << map_config.name;
+            }
+        }
+        txn.commit();
+        return StageResult::kSuccess;
+    } catch (const mdbx::exception& ex) {
+        log::Error() << "Unexpected db error in " << std::string(__FUNCTION__) << " : " << ex.what();
+        return StageResult::kDbError;
+    } catch (...) {
+        log::Error() << "Unexpected unknown error in " << std::string(__FUNCTION__);
+        return StageResult::kUnexpectedError;
+    }
+}
+
 StageResult prune_execution(db::RWTxn& txn, const std::filesystem::path&, uint64_t prune_from) {
     static const db::MapConfig prune_tables[] = {
         db::table::kAccountChangeSet,  //

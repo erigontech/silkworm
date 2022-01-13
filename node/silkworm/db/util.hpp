@@ -1,5 +1,5 @@
 /*
-   Copyright 2020-2021 The Silkworm Authors
+   Copyright 2020-2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -129,7 +129,7 @@ std::pair<Bytes, Bytes> change_set_to_plain_state_format(ByteView key, ByteView 
 
 inline mdbx::slice to_slice(ByteView value) { return {value.data(), value.length()}; }
 
-inline ByteView from_slice(const mdbx::slice slice) { return {static_cast<uint8_t*>(slice.iov_base), slice.iov_len}; }
+inline ByteView from_slice(const mdbx::slice slice) { return {slice.byte_ptr(), slice.length()}; }
 
 // If there exists an entry in a multivalue table with a given key and a value starting with a given prefix,
 // return the suffix of the value.

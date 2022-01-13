@@ -1,5 +1,5 @@
 /*
-   Copyright 2021 The Silkworm Authors
+   Copyright 2021-2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -58,7 +58,7 @@ static StageResult history_index_stage(db::RWTxn& txn, const std::filesystem::pa
 
     // Extract
     log::Info() << "Started " << (storage ? "Storage" : "Account")
-                       << " Index Extraction. From: " << (last_processed_block_number + 1);
+                << " Index Extraction. From: " << (last_processed_block_number + 1);
 
     size_t allocated_space{0};
     BlockNum block_number{0};
@@ -83,7 +83,7 @@ static StageResult history_index_stage(db::RWTxn& txn, const std::filesystem::pa
             bitmaps.emplace(composite_key, roaring::Roaring64Map());
         }
         // Add block number to the bitmap of current key
-        block_number = endian::load_big_u64(static_cast<uint8_t*>(data.key.iov_base));
+        block_number = endian::load_big_u64(data.key.byte_ptr());
         bitmaps.at(composite_key).add(block_number);
         allocated_space += 8;
         // Flush to ETL
@@ -142,7 +142,8 @@ static StageResult history_index_stage(db::RWTxn& txn, const std::filesystem::pa
                     mdbx::slice v{db::to_slice(current_chunk_bytes)};
                     mdbx::error::success_or_throw(history_index_table.put(k, &v, put_flags));
                 }
-            }, db_flags);
+            },
+            db_flags);
 
         // Update progress height with last processed block
         db::stages::write_stage_progress(*txn, stage_key, block_number);

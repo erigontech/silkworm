@@ -84,13 +84,13 @@ TEST_CASE("Sync Stages") {
             REQUIRE(txn->get_map_stat(target_table.map()).ms_entries == block_hashes.size() + 1);  // Block 0 is genesis
 
             std::vector<std::pair<evmc::bytes32, BlockNum>> written_data{};
-            db::cursor_for_each(
-                target_table, [&written_data](::mdbx::cursor&, ::mdbx::cursor::move_result& data) -> bool {
-                    auto written_block_num{endian::load_big_u64(static_cast<uint8_t*>(data.value.iov_base))};
-                    auto written_hash{to_bytes32(db::from_slice(data.key))};
-                    written_data.emplace_back(written_hash, written_block_num);
-                    return true;
-                });
+            db::cursor_for_each(target_table,
+                                [&written_data](::mdbx::cursor&, ::mdbx::cursor::move_result& data) -> bool {
+                                    auto written_block_num{endian::load_big_u64(data.value.byte_ptr())};
+                                    auto written_hash{to_bytes32(db::from_slice(data.key))};
+                                    written_data.emplace_back(written_hash, written_block_num);
+                                    return true;
+                                });
 
             REQUIRE(written_data.size() == block_hashes.size() + 1);
             for (const auto& [written_hash, written_block_num] : written_data) {

@@ -1,5 +1,5 @@
 /*
-   Copyright 2020-2021 The Silkworm Authors
+   Copyright 2020-2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -441,7 +441,7 @@ StageResult RecoveryFarm::fill_canonical_headers(BlockNum from, BlockNum to) noe
         // Read all headers up to upper bound (included)
         auto data{hashes_table.find(db::to_slice(header_key), false)};
         while (data.done) {
-            reached_block_num = endian::load_big_u64(static_cast<uint8_t*>(data.key.iov_base));
+            reached_block_num = endian::load_big_u64(data.key.byte_ptr());
             SILKWORM_ASSERT(reached_block_num == expected_block_num);
             SILKWORM_ASSERT(data.value.length() == kHashLength);
 

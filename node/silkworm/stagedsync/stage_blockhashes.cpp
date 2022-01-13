@@ -63,11 +63,11 @@ StageResult BlockHashes::forward(db::RWTxn& txn) {
     auto source{db::open_cursor(*txn, db::table::kCanonicalHashes)};
     auto data{source.find(db::to_slice(header_key), /*throw_notfound=*/false)};
     while (data.done) {
-        reached_block_num_ = {endian::load_big_u64(static_cast<uint8_t*>(data.key.iov_base))};
+        reached_block_num_ = {endian::load_big_u64(data.key.byte_ptr())};
         SILKWORM_ASSERT(reached_block_num_ == expected_block_number);
         SILKWORM_ASSERT(data.value.length() == kHashLength);
-        collector_->collect(etl::Entry{Bytes(static_cast<uint8_t*>(data.value.iov_base), data.value.iov_len),
-                                       Bytes(static_cast<uint8_t*>(data.key.iov_base), data.key.iov_len)});
+        // TODO (Andrew) is the value, key order intentional?
+        collector_->collect(etl::Entry{Bytes{db::from_slice(data.value)}, Bytes{db::from_slice(data.key)}});
         // Do we need to abort ?
         if (!(expected_block_number % 1024) && SignalHandler::signalled()) {
             return StageResult::kAborted;

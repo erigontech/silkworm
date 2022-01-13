@@ -1,5 +1,5 @@
 /*
-    Copyright 2021 The Silkworm Authors
+    Copyright 2021-2022 The Silkworm Authors
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -31,7 +31,7 @@
 #include <boost/asio/io_context.hpp>
 
 #include <silkworm/common/assert.hpp>
-#include <silkworm/common/signal_handler.hpp>
+#include <silkworm/concurrency/signal_handler.hpp>
 
 namespace silkworm {
 

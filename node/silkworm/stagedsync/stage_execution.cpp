@@ -1,17 +1,17 @@
 /*
-   Copyright 2020-2022 The Silkworm Authors
+    Copyright 2020-2022 The Silkworm Authors
 
-   Licensed under the Apache License, Version 2.0 (the "License");
-   you may not use this file except in compliance with the License.
-   You may obtain a copy of the License at
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
 
-       http://www.apache.org/licenses/LICENSE-2.0
+        http://www.apache.org/licenses/LICENSE-2.0
 
-   Unless required by applicable law or agreed to in writing, software
-   distributed under the License is distributed on an "AS IS" BASIS,
-   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-   See the License for the specific language governing permissions and
-   limitations under the License.
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
 */
 
 #include <filesystem>
@@ -19,8 +19,8 @@
 
 #include <silkworm/common/endian.hpp>
 #include <silkworm/common/log.hpp>
-#include <silkworm/common/signal_handler.hpp>
 #include <silkworm/common/stopwatch.hpp>
+#include <silkworm/concurrency/signal_handler.hpp>
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/buffer.hpp>
 #include <silkworm/db/stages.hpp>
@@ -268,15 +268,14 @@ StageResult unwind_execution(db::RWTxn& txn, const std::filesystem::path&, uint6
     log::Info() << "Unwind Execution from " << execution_progress << " to " << unwind_to;
 
     static const db::MapConfig unwind_tables[5] = {
-        db::table::kAccountChangeSet,   //
-        db::table::kStorageChangeSet,   //
-        db::table::kBlockReceipts,      //
-        db::table::kLogs,               //
-        db::table::kCallTraceSet        //
+        db::table::kAccountChangeSet,  //
+        db::table::kStorageChangeSet,  //
+        db::table::kBlockReceipts,     //
+        db::table::kLogs,              //
+        db::table::kCallTraceSet       //
     };
 
     try {
-
         {
             // Revert states
             auto plain_state_table{db::open_cursor(*txn, db::table::kPlainState)};
@@ -294,7 +293,7 @@ StageResult unwind_execution(db::RWTxn& txn, const std::filesystem::path&, uint6
         for (const auto& map_config : unwind_tables) {
             auto unwind_cursor{db::open_cursor(*txn, map_config)};
             auto erased{db::cursor_erase(unwind_cursor, start_key, db::CursorMoveDirection::Forward)};
-            if(erased > 16) {
+            if (erased > 16) {
                 log::Info() << "Erased " << erased << " records from " << map_config.name;
             }
         }

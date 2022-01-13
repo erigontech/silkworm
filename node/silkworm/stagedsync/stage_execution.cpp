@@ -172,15 +172,14 @@ StageResult Execution::unwind(db::RWTxn& txn, BlockNum to) {
     log::Info() << "Unwind Execution from " << execution_progress << " to " << to;
 
     static const db::MapConfig unwind_tables[5] = {
-        db::table::kAccountChangeSet,   //
-        db::table::kStorageChangeSet,   //
-        db::table::kBlockReceipts,      //
-        db::table::kLogs,               //
-        db::table::kCallTraceSet        //
+        db::table::kAccountChangeSet,  //
+        db::table::kStorageChangeSet,  //
+        db::table::kBlockReceipts,     //
+        db::table::kLogs,              //
+        db::table::kCallTraceSet       //
     };
 
     try {
-
         {
             // Revert states
             auto plain_state_table{db::open_cursor(*txn, db::table::kPlainState)};
@@ -198,10 +197,11 @@ StageResult Execution::unwind(db::RWTxn& txn, BlockNum to) {
         for (const auto& map_config : unwind_tables) {
             auto unwind_cursor{db::open_cursor(*txn, map_config)};
             auto erased{db::cursor_erase(unwind_cursor, start_key, db::CursorMoveDirection::Forward)};
-            if(erased > 16) {
+            if (erased > 16) {
                 log::Info() << "Erased " << erased << " records from " << map_config.name;
             }
         }
+        db::stages::write_stage_progress(*txn, db::stages::kExecutionKey, to);
         txn.commit();
         return StageResult::kSuccess;
     } catch (const mdbx::exception& ex) {
@@ -214,8 +214,51 @@ StageResult Execution::unwind(db::RWTxn& txn, BlockNum to) {
 }
 
 StageResult Execution::prune(db::RWTxn& txn) {
-    (void)txn;
-    throw std::runtime_error("Not yet implemented");
+
+    try {
+        BlockNum execution_progress{db::stages::read_stage_progress(*txn, db::stages::kExecutionKey)};
+        BlockNum prune_progress{db::stages::read_stage_prune_progress(*txn, db::stages::kExecutionKey)};
+        if (prune_progress >= execution_progress) {
+            return StageResult::kSuccess;
+        }
+
+        if (node_settings_->prune_mode->history().enabled()) {
+            auto prune_from{node_settings_->prune_mode->history().value_from_head(execution_progress)};
+            auto key{db::block_key(prune_from)};
+            auto origin{db::open_cursor(*txn, db::table::kAccountChangeSet)};
+            (void)db::cursor_erase(origin, key, db::CursorMoveDirection::Reverse);
+            origin.close();
+            origin = db::open_cursor(*txn, db::table::kStorageChangeSet);
+            (void)db::cursor_erase(origin, key, db::CursorMoveDirection::Reverse);
+        }
+
+        if (node_settings_->prune_mode->receipts().enabled()) {
+            auto prune_from{node_settings_->prune_mode->receipts().value_from_head(execution_progress)};
+            auto key{db::block_key(prune_from)};
+            auto origin{db::open_cursor(*txn, db::table::kBlockReceipts)};
+            (void)db::cursor_erase(origin, key, db::CursorMoveDirection::Reverse);
+            origin.close();
+            origin = db::open_cursor(*txn, db::table::kLogs);
+            (void)db::cursor_erase(origin, key, db::CursorMoveDirection::Reverse);
+        }
+
+        if (node_settings_->prune_mode->call_traces().enabled()) {
+            auto prune_from{node_settings_->prune_mode->receipts().value_from_head(execution_progress)};
+            auto key{db::block_key(prune_from)};
+            auto origin{db::open_cursor(*txn, db::table::kCallTraceSet)};
+            (void)db::cursor_erase(origin, key, db::CursorMoveDirection::Reverse);
+        }
+
+        db::stages::write_stage_prune_progress(*txn, db::stages::kExecutionKey, execution_progress);
+        txn.commit();
+        return StageResult::kSuccess;
+    } catch (const mdbx::exception& ex) {
+        log::Error() << "Unexpected db error in " << std::string(__FUNCTION__) << " : " << ex.what();
+        return StageResult::kDbError;
+    } catch (...) {
+        log::Error() << "Unexpected unknown error in " << std::string(__FUNCTION__);
+        return StageResult::kUnexpectedError;
+    }
 };
 
 std::vector<std::string> Execution::get_log_progress() {
@@ -240,7 +283,7 @@ std::vector<std::string> Execution::get_log_progress() {
 }
 
 void Execution::revert_state(ByteView key, ByteView value, mdbx::cursor& plain_state_table,
-                         mdbx::cursor& plain_code_table) {
+                             mdbx::cursor& plain_code_table) {
     if (key.size() == kAddressLength) {
         if (!value.empty()) {
             auto [account, err1]{decode_account_from_storage(value)};
@@ -301,32 +344,6 @@ void Execution::unwind_state_from_changeset(mdbx::cursor& source, mdbx::cursor& 
     }
 }
 
-StageResult prune_execution(db::RWTxn& txn, const std::filesystem::path&, uint64_t prune_from) {
-    static const db::MapConfig prune_tables[] = {
-        db::table::kAccountChangeSet,  //
-        db::table::kStorageChangeSet,  //
-        db::table::kBlockReceipts,     //
-        db::table::kCallTraceSet,      //
-        db::table::kLogs               //
-    };
-
-    try {
-        const auto prune_point{db::block_key(prune_from)};
-        for (const auto& prune_table : prune_tables) {
-            auto prune_cursor{db::open_cursor(*txn, prune_table)};
-            auto erased{db::cursor_erase(prune_cursor, prune_point, db::CursorMoveDirection::Reverse)};
-            log::Info() << "Erased " << erased << " records from " << prune_table.name;
-            prune_cursor.close();
-        }
-        txn.commit();  // TODO(Giulio) Should we commit here or at return of stage ?
-        return StageResult::kSuccess;
-    } catch (const mdbx::exception& ex) {
-        log::Error() << "Unexpected db error in " << std::string(__FUNCTION__) << " : " << ex.what();
-        return StageResult::kDbError;
-    } catch (...) {
-        log::Error() << "Unexpected unknown error in " << std::string(__FUNCTION__);
-        return StageResult::kUnexpectedError;
-    }
-}
+StageResult prune_execution(db::RWTxn& txn, const std::filesystem::path&, uint64_t prune_from) {}
 
 }  // namespace silkworm::stagedsync

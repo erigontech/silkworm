@@ -1,5 +1,5 @@
 /*
-    Copyright 2021 The Silkworm Authors
+    Copyright 2021-2022 The Silkworm Authors
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
     limitations under the License.
 */
 
-#include "storage.hpp"
+#include "prune_mode.hpp"
 
 #include <silkworm/common/endian.hpp>
 

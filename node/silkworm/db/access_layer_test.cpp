@@ -1,5 +1,5 @@
 /*
-   Copyright 2020-2021 The Silkworm Authors
+   Copyright 2020-2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -22,7 +22,7 @@
 #include <silkworm/chain/protocol_param.hpp>
 #include <silkworm/common/test_context.hpp>
 #include <silkworm/db/buffer.hpp>
-#include <silkworm/db/storage.hpp>
+#include <silkworm/db/prune_mode.hpp>
 #include <silkworm/db/tables.hpp>
 #include <silkworm/execution/execution.hpp>
 #include <silkworm/stagedsync/stagedsync.hpp>
@@ -327,10 +327,10 @@ namespace db {
             beforeReceipts.emplace(10000);
             expected = "--prune=htc --prune.r.before=10000";
             {
-                auto prune_mode = db::parse_prune_mode(prune,  //
-                                                       olderHistory, olderReceipts, olderSenders, olderTxIndex,
-                                                       olderCallTraces, beforeHistory, beforeReceipts, beforeSenders,
-                                                       beforeTxIndex, beforeCallTraces);
+                auto prune_mode =
+                    db::parse_prune_mode(prune,  //
+                                         olderHistory, olderReceipts, olderSenders, olderTxIndex, olderCallTraces,
+                                         beforeHistory, beforeReceipts, beforeSenders, beforeTxIndex, beforeCallTraces);
                 REQUIRE(prune_mode->to_string() == expected);
                 REQUIRE_NOTHROW(db::write_prune_mode(txn, *prune_mode));
                 prune_mode = std::make_unique<db::PruneMode>(db::read_prune_mode(txn));

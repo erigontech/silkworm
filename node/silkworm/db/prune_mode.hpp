@@ -1,5 +1,5 @@
 /*
-    Copyright 2021 The Silkworm Authors
+    Copyright 2021-2022 The Silkworm Authors
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -15,11 +15,11 @@
 */
 
 #pragma once
-#ifndef SILKWORM_DB_STORAGE_HPP_
-#define SILKWORM_DB_STORAGE_HPP_
+#ifndef SILKWORM_DB_PRUNE_MODE_HPP_
+#define SILKWORM_DB_PRUNE_MODE_HPP_
 
-#include "mdbx.hpp"
-#include "tables.hpp"
+#include <silkworm/db/mdbx.hpp>
+#include <silkworm/db/tables.hpp>
 
 namespace silkworm::db {
 
@@ -118,4 +118,4 @@ std::unique_ptr<PruneMode> parse_prune_mode(const std::string& mode, const Prune
 
 }  // namespace silkworm::db
 
-#endif  // SILKWORM_DB_STORAGE_HPP_
+#endif  // SILKWORM_DB_PRUNE_MODE_HPP_

@@ -1,5 +1,5 @@
 /*
-   Copyright 2021 The Silkworm Authors
+   Copyright 2021-2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -43,9 +43,7 @@ class Hash : public evmc::bytes32 {
     static constexpr size_t length() { return sizeof(evmc::bytes32); }
 
     std::string to_hex() { return silkworm::to_hex(*this); }
-    static Hash from_hex(const std::string& hex) {
-        return {evmc::literals::internal::from_hex<bytes32>(hex.c_str())};
-    }
+    static Hash from_hex(const std::string& hex) { return {evmc::literals::internal::from_hex<bytes32>(hex.c_str())}; }
 
     // conversion to ByteView is handled in ByteView class,
     // conversion operator Byte() { return {bytes, length()}; } is handled elsewhere
@@ -61,9 +59,6 @@ using BigInt = intx::uint256;  // use intx::to_string, from_string, ...
 
 using time_point_t = std::chrono::time_point<std::chrono::system_clock>;
 using seconds_t = std::chrono::seconds;
-
-// defined elsewhere: ByteView string_view_to_byte_view(std::string_view sv)
-inline Bytes string_to_bytes(const std::string& s) { return {s.begin(), s.end()}; }
 
 inline std::ostream& operator<<(std::ostream& out, const silkworm::ByteView& bytes) {
     out << silkworm::to_hex(bytes);

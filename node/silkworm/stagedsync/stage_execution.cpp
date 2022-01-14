@@ -197,9 +197,7 @@ StageResult Execution::unwind(db::RWTxn& txn, BlockNum to) {
         for (const auto& map_config : unwind_tables) {
             auto unwind_cursor{db::open_cursor(*txn, map_config)};
             auto erased{db::cursor_erase(unwind_cursor, start_key, db::CursorMoveDirection::Forward)};
-            if (erased > 16) {
-                log::Info() << "Erased " << erased << " records from " << map_config.name;
-            }
+            log::Info() << "Erased " << erased << " records from " << map_config.name;
         }
         db::stages::write_stage_progress(*txn, db::stages::kExecutionKey, to);
         txn.commit();
@@ -214,11 +212,10 @@ StageResult Execution::unwind(db::RWTxn& txn, BlockNum to) {
 }
 
 StageResult Execution::prune(db::RWTxn& txn) {
-
     try {
         BlockNum execution_progress{db::stages::read_stage_progress(*txn, db::stages::kExecutionKey)};
         BlockNum prune_progress{db::stages::read_stage_prune_progress(*txn, db::stages::kExecutionKey)};
-        if (prune_progress >= execution_progress) {
+        if (prune_progress >= execution_progress || node_settings_->prune_mode == nullptr) {
             return StageResult::kSuccess;
         }
 
@@ -226,27 +223,32 @@ StageResult Execution::prune(db::RWTxn& txn) {
             auto prune_from{node_settings_->prune_mode->history().value_from_head(execution_progress)};
             auto key{db::block_key(prune_from)};
             auto origin{db::open_cursor(*txn, db::table::kAccountChangeSet)};
-            (void)db::cursor_erase(origin, key, db::CursorMoveDirection::Reverse);
+            size_t erased = db::cursor_erase(origin, key, db::CursorMoveDirection::Reverse);
+            log::Info() << "Erased " << erased << " records from " << db::table::kAccountChangeSet.name;
             origin.close();
             origin = db::open_cursor(*txn, db::table::kStorageChangeSet);
-            (void)db::cursor_erase(origin, key, db::CursorMoveDirection::Reverse);
+            erased = db::cursor_erase(origin, key, db::CursorMoveDirection::Reverse);
+            log::Info() << "Erased " << erased << " records from " << db::table::kStorageChangeSet.name;
         }
 
         if (node_settings_->prune_mode->receipts().enabled()) {
             auto prune_from{node_settings_->prune_mode->receipts().value_from_head(execution_progress)};
             auto key{db::block_key(prune_from)};
             auto origin{db::open_cursor(*txn, db::table::kBlockReceipts)};
-            (void)db::cursor_erase(origin, key, db::CursorMoveDirection::Reverse);
+            size_t erased = db::cursor_erase(origin, key, db::CursorMoveDirection::Reverse);
+            log::Info() << "Erased " << erased << " records from " << db::table::kBlockReceipts.name;
             origin.close();
             origin = db::open_cursor(*txn, db::table::kLogs);
-            (void)db::cursor_erase(origin, key, db::CursorMoveDirection::Reverse);
+            erased = db::cursor_erase(origin, key, db::CursorMoveDirection::Reverse);
+            log::Info() << "Erased " << erased << " records from " << db::table::kLogs.name;
         }
 
         if (node_settings_->prune_mode->call_traces().enabled()) {
             auto prune_from{node_settings_->prune_mode->receipts().value_from_head(execution_progress)};
             auto key{db::block_key(prune_from)};
             auto origin{db::open_cursor(*txn, db::table::kCallTraceSet)};
-            (void)db::cursor_erase(origin, key, db::CursorMoveDirection::Reverse);
+            size_t erased = db::cursor_erase(origin, key, db::CursorMoveDirection::Reverse);
+            log::Info() << "Erased " << erased << " records from " << db::table::kCallTraceSet.name;
         }
 
         db::stages::write_stage_prune_progress(*txn, db::stages::kExecutionKey, execution_progress);
@@ -343,7 +345,5 @@ void Execution::unwind_state_from_changeset(mdbx::cursor& source, mdbx::cursor& 
         src_data = source.to_previous(/*throw_notfound*/ false);
     }
 }
-
-StageResult prune_execution(db::RWTxn& txn, const std::filesystem::path&, uint64_t prune_from) {}
 
 }  // namespace silkworm::stagedsync

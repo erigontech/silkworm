@@ -79,8 +79,7 @@ std::pair<Bytes, Bytes> change_set_to_plain_state_format(const ByteView key, con
         const Bytes address{value.substr(0, kAddressLength)};
         const Bytes previous_value{value.substr(kAddressLength)};
         return {address, previous_value};
-    } else {  // StorageChangeSet
-        assert(key.length() == 8 + kPlainStoragePrefixLength);
+    } else if (key.length() == 8 + kPlainStoragePrefixLength) {  // StorageChangeSet
         // See storage_change_key
         const ByteView address_with_incarnation{key.substr(8)};
         const ByteView location{value.substr(0, kHashLength)};
@@ -89,6 +88,7 @@ std::pair<Bytes, Bytes> change_set_to_plain_state_format(const ByteView key, con
         const Bytes previous_value{value.substr(kHashLength)};
         return {full_key, previous_value};
     }
+    throw std::runtime_error("Invalid key length " + std::to_string(key.length()) + " in " + std::string(__FUNCTION__));
 }
 
 std::optional<ByteView> find_value_suffix(mdbx::cursor& table, ByteView key, ByteView value_prefix) {

@@ -21,9 +21,13 @@
 #include <silkworm/common/settings.hpp>
 #include <silkworm/common/test_util.hpp>
 #include <silkworm/db/access_layer.hpp>
+#include <silkworm/db/buffer.hpp>
 #include <silkworm/db/genesis.hpp>
+#include <silkworm/execution/address.hpp>
+#include <silkworm/execution/execution.hpp>
 #include <silkworm/stagedsync/common.hpp>
 #include <silkworm/stagedsync/stagedsync.hpp>
+#include <silkworm/trie/vector_root.hpp>
 
 #include "silkworm/chain/genesis.hpp"
 
@@ -41,6 +45,9 @@ TEST_CASE("Sync Stages") {
     node_settings.chaindata_env_config.inmemory = true;
     node_settings.chaindata_env_config.create = true;
     node_settings.chaindata_env_config.exclusive = true;
+    node_settings.prune_mode =
+        db::parse_prune_mode("", std::nullopt, std::nullopt, std::nullopt, std::nullopt, std::nullopt, std::nullopt,
+                             std::nullopt, std::nullopt, std::nullopt, std::nullopt);
 
     log::Settings log_settings{};
     log_settings.log_std_out = true;
@@ -192,5 +199,168 @@ TEST_CASE("Sync Stages") {
         }
 
         // TODO(Andrea) Check prune works
+    }
+
+    SECTION("Execution") {
+        // ---------------------------------------
+        // Prepare
+        // ---------------------------------------
+
+        uint64_t block_number{1};
+        auto miner{0x5a0b54d5dc17e0aadc383d2db43b0a0d3e029c4c_address};
+
+        Block block{};
+        block.header.number = block_number;
+        block.header.beneficiary = miner;
+        block.header.gas_limit = 100'000;
+        block.header.gas_used = 63'820;
+
+        static constexpr auto kEncoder = [](Bytes& to, const Receipt& r) { rlp::encode(to, r); };
+        std::vector<Receipt> receipts{
+            {Transaction::Type::kLegacy, true, block.header.gas_used, {}, {}},
+        };
+        block.header.receipts_root = trie::root_hash(receipts, kEncoder);
+
+        // This contract initially sets its 0th storage to 0x2a
+        // and its 1st storage to 0x01c9.
+        // When called, it updates its 0th storage to the input provided.
+        Bytes contract_code{*from_hex("600035600055")};
+        Bytes deployment_code{*from_hex("602a6000556101c960015560068060166000396000f3") + contract_code};
+
+        block.transactions.resize(1);
+        block.transactions[0].data = deployment_code;
+        block.transactions[0].gas_limit = block.header.gas_limit;
+        block.transactions[0].type = Transaction::Type::kLegacy;
+
+        auto sender{0xb685342b8c54347aad148e1f22eff3eb3eb29391_address};
+        block.transactions[0].r = 1;  // dummy
+        block.transactions[0].s = 1;  // dummy
+        block.transactions[0].from = sender;
+
+        db::Buffer buffer{*txn, 0};
+        Account sender_account{};
+        sender_account.balance = kEther;
+        buffer.update_account(sender, std::nullopt, sender_account);
+
+        // ---------------------------------------
+        // Execute first block
+        // ---------------------------------------
+        auto expected_validation_result{magic_enum::enum_name(ValidationResult::kOk)};
+        auto actual_validation_result{
+            magic_enum::enum_name(execute_block(block, buffer, node_settings.chain_config.value()))};
+        REQUIRE(expected_validation_result == actual_validation_result);
+        auto contract_address{create_address(sender, /*nonce=*/0)};
+
+        // ---------------------------------------
+        // Execute second block
+        // ---------------------------------------
+        std::string new_val{"000000000000000000000000000000000000000000000000000000000000003e"};
+
+        block_number = 2;
+        block.header.number = block_number;
+        block.header.gas_used = 26'201;
+        receipts[0].cumulative_gas_used = block.header.gas_used;
+        block.header.receipts_root = trie::root_hash(receipts, kEncoder);
+
+        block.transactions[0].nonce = 1;
+        block.transactions[0].value = 1000;
+        block.transactions[0].to = contract_address;
+        block.transactions[0].data = *from_hex(new_val);
+
+        actual_validation_result =
+            magic_enum::enum_name(execute_block(block, buffer, node_settings.chain_config.value()));
+        REQUIRE(expected_validation_result == actual_validation_result);
+
+        // ---------------------------------------
+        // Execute third block
+        // ---------------------------------------
+
+        new_val = "000000000000000000000000000000000000000000000000000000000000003b";
+
+        block_number = 3;
+        block.header.number = block_number;
+
+        block.transactions[0].nonce = 2;
+        block.transactions[0].data = *from_hex(new_val);
+
+        actual_validation_result =
+            magic_enum::enum_name(execute_block(block, buffer, node_settings.chain_config.value()));
+        REQUIRE(expected_validation_result == actual_validation_result);
+
+        db::stages::write_stage_progress(*txn, db::stages::kExecutionKey, 3);
+
+        buffer.write_to_db();
+        txn.commit();
+
+        SECTION("Execution Unwind") {
+            // ---------------------------------------
+            // Unwind 3rd block and checks if state is second block
+            // ---------------------------------------
+            stagedsync::Execution stage(&node_settings);
+            REQUIRE(stage.unwind(txn, 2) == stagedsync::StageResult::kSuccess);
+
+            db::Buffer buffer2{*txn, 0};
+
+            std::optional<Account> contract_account{buffer2.read_account(contract_address)};
+            REQUIRE(contract_account.has_value());
+            CHECK(intx::to_string(contract_account.value().balance) == "1000");  // 2000 - 1000
+
+            std::optional<Account> current_sender{buffer2.read_account(sender)};
+            REQUIRE(current_sender.has_value());
+            CHECK(intx::to_string(current_sender.value().balance) == std::to_string(kEther - 1000));
+            CHECK(current_sender.value().nonce == 2);  // Nonce at 2nd block
+
+            ethash::hash256 code_hash{keccak256(contract_code)};
+            CHECK(to_hex(contract_account->code_hash) == to_hex(code_hash.bytes));
+
+            evmc::bytes32 storage_key0{};
+            evmc::bytes32 storage0{buffer2.read_storage(contract_address, kDefaultIncarnation, storage_key0)};
+            CHECK(to_hex(storage0) == "000000000000000000000000000000000000000000000000000000000000003e");
+        }
+
+        SECTION("Execution Prune Default") {
+            log::Info() << "Pruning with " << node_settings.prune_mode->to_string();
+            stagedsync::Execution stage(&node_settings);
+            REQUIRE(stage.prune(txn) == stagedsync::StageResult::kSuccess);
+
+            // With default settings nothing should be pruned
+            auto account_changeset_table{db::open_cursor(*txn, db::table::kAccountChangeSet)};
+            auto data{account_changeset_table.to_first(false)};
+            REQUIRE(data.done);
+            BlockNum expected_block_num{0};  // We have account changes from genesis
+            auto actual_block_num = endian::load_big_u64(db::from_slice(data.key).data());
+            REQUIRE(actual_block_num == expected_block_num);
+            account_changeset_table.close();
+
+            auto storage_changeset_table{db::open_cursor(*txn, db::table::kStorageChangeSet)};
+            data = storage_changeset_table.to_first(false);
+            REQUIRE(data.done);
+            expected_block_num = 1;  // First storage change is at block 1
+            actual_block_num = endian::load_big_u64(db::from_slice(data.key).data());
+            REQUIRE(actual_block_num == expected_block_num);
+            storage_changeset_table.close();
+            REQUIRE(db::stages::read_stage_prune_progress(*txn, db::stages::kExecutionKey) == 3);
+        }
+
+        SECTION("Execution Prune History") {
+            // Override prune mode and issue pruning
+            node_settings.prune_mode =
+                db::parse_prune_mode("", std::nullopt, std::nullopt, std::nullopt, std::nullopt, std::nullopt, 2,
+                                     std::nullopt, std::nullopt, std::nullopt, std::nullopt);
+
+            log::Info() << "Pruning with " << node_settings.prune_mode->to_string();
+            REQUIRE(node_settings.prune_mode->history().enabled());
+            stagedsync::Execution stage(&node_settings);
+            REQUIRE(stage.prune(txn) == stagedsync::StageResult::kSuccess);
+
+            auto account_changeset_table{db::open_cursor(*txn, db::table::kAccountChangeSet)};
+            auto data{account_changeset_table.to_first(false)};
+            REQUIRE(data.done);
+            BlockNum expected_block_num = 1; // We've pruned history before 2
+            BlockNum actual_block_num = endian::load_big_u64(db::from_slice(data.key).data());
+            REQUIRE(actual_block_num == expected_block_num);
+            account_changeset_table.close();
+            REQUIRE(db::stages::read_stage_prune_progress(*txn, db::stages::kExecutionKey) == 3);
+        }
     }
 }

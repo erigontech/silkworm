@@ -60,9 +60,6 @@ if(NOT SILKWORM_CORE_ONLY)
   add_executable(genesistool genesistool.cpp)
   target_link_libraries(genesistool PRIVATE CLI11::CLI11)
 
-  add_executable(unwind_execution unwind_execution.cpp)
-  target_link_libraries(unwind_execution PRIVATE silkworm_node CLI11::CLI11)
-
   add_executable(unwind_hashstate unwind_hashstate.cpp)
   target_link_libraries(unwind_hashstate PRIVATE silkworm_node CLI11::CLI11)
 

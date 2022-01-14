@@ -33,8 +33,8 @@
 #include <silkworm/common/endian.hpp>
 #include <silkworm/concurrency/signal_handler.hpp>
 #include <silkworm/db/genesis.hpp>
+#include <silkworm/db/prune_mode.hpp>
 #include <silkworm/db/stages.hpp>
-#include <silkworm/db/storage.hpp>
 #include <silkworm/stagedsync/stagedsync.hpp>
 #include <silkworm/trie/hash_builder.hpp>
 
@@ -204,8 +204,10 @@ dbFreeInfo get_freeInfo(::mdbx::txn& txn) {
     auto page_size{txn.get_map_stat(free_map).ms_psize};
 
     const auto& collect_func{[&ret, &page_size](const ::mdbx::cursor&, ::mdbx::cursor::move_result& data) -> bool {
-        size_t txId = *(static_cast<size_t*>(data.key.iov_base));
-        size_t pagesCount = *(static_cast<uint32_t*>(data.value.iov_base));
+        size_t txId;
+        std::memcpy(&txId, data.key.data(), sizeof(size_t));
+        size_t pagesCount;
+        std::memcpy(&pagesCount, data.value.data(), sizeof(size_t));
         size_t pagesSize = pagesCount * page_size;
         ret.pages += pagesCount;
         ret.size += pagesSize;
@@ -352,12 +354,12 @@ void do_stages(db::EnvConfig& config) {
 
         auto result{crs.to_first(/*throw_notfound =*/false)};
         while (result) {
-            size_t height{endian::load_big_u64(static_cast<uint8_t*>(result.value.iov_base))};
+            size_t height{endian::load_big_u64(static_cast<uint8_t*>(result.value.data()))};
 
             // Handle "prune_" stages
             size_t offset{0};
             static const char* prune_prefix = "prune_";
-            if (std::memcmp(result.key.iov_base, prune_prefix, 6) == 0) {
+            if (std::memcmp(result.key.data(), prune_prefix, 6) == 0) {
                 offset = 6;
             }
 

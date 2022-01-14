@@ -33,8 +33,8 @@
 #include <silkworm/common/endian.hpp>
 #include <silkworm/concurrency/signal_handler.hpp>
 #include <silkworm/db/genesis.hpp>
+#include <silkworm/db/prune_mode.hpp>
 #include <silkworm/db/stages.hpp>
-#include <silkworm/db/storage.hpp>
 #include <silkworm/stagedsync/stagedsync.hpp>
 #include <silkworm/trie/hash_builder.hpp>
 

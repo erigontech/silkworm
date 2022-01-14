@@ -1,5 +1,5 @@
 /*
-   Copyright 2021 The Silkworm Authors
+   Copyright 2021-2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -96,9 +96,9 @@ StageResult stage_log_index(db::RWTxn& txn, const std::filesystem::path& etl_pat
     auto log_data{log_table.lower_bound(db::to_slice(start), false)};
     while (log_data) {
         // Decode CBOR and distribute it to the 2 bitmaps
-        block_number = endian::load_big_u64(static_cast<uint8_t*>(log_data.key.iov_base));
+        block_number = endian::load_big_u64(static_cast<uint8_t*>(log_data.key.data()));
         current_listener.set_block_number(block_number);
-        cbor::input input(log_data.value.iov_base, log_data.value.iov_len);
+        cbor::input input(log_data.value.data(), log_data.value.length());
         cbor::decoder decoder(input, current_listener);
         decoder.run();
         // Flushes
@@ -147,8 +147,7 @@ StageResult stage_log_index(db::RWTxn& txn, const std::filesystem::path& etl_pat
     return StageResult::kSuccess;
 }
 
-static StageResult unwind_log_index(db::RWTxn& txn, etl::Collector& collector, uint64_t unwind_to,
-                                    bool topics) {
+static StageResult unwind_log_index(db::RWTxn& txn, etl::Collector& collector, uint64_t unwind_to, bool topics) {
     auto index_table{topics ? db::open_cursor(*txn, db::table::kLogTopicIndex)
                             : db::open_cursor(*txn, db::table::kLogAddressIndex)};
     if (unwind_to >= db::stages::read_stage_progress(*txn, db::stages::kLogIndexKey)) {

@@ -66,7 +66,7 @@ int main(int argc, char* argv[]) {
 
         auto bodies_data{bodies_table.to_first(false)};
         while (bodies_data) {
-            auto block_number(endian::load_big_u64(static_cast<uint8_t*>(bodies_data.key.iov_base)));
+            auto block_number(endian::load_big_u64(static_cast<uint8_t*>(bodies_data.key.data())));
             auto body_rlp{db::from_slice(bodies_data.value)};
             auto body{db::detail::decode_stored_block_body(body_rlp)};
 

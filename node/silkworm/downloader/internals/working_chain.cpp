@@ -113,11 +113,8 @@ Headers WorkingChain::withdraw_stable_headers() {
 
         insert_list_.pop();
 
-        // Verify if not
-        VerificationResult assessment = Preverified;
-        if (!link->preverified) {
-            assessment = verify(*link);
-        }
+        // Verify
+        VerificationResult assessment = verify(*link);
 
         if (assessment == Postpone) {
             links_in_future.push_back(link);
@@ -127,9 +124,7 @@ Headers WorkingChain::withdraw_stable_headers() {
             continue;
         }
 
-        if (contains(links_, link->hash)) {
             link_queue_.erase(link);
-        }
 
         if (assessment == Skip) {
             links_.erase(link->hash);
@@ -152,8 +147,6 @@ Headers WorkingChain::withdraw_stable_headers() {
             highest_in_db_ = link->blockHeight;
         }
         link->persisted = true;
-        // link->header = nullptr; // we can drop header reference to free memory except that consensus engine may need
-        // it
         persisted_link_queue_.push(link);
 
         // All the headers attached to this can be persisted, let's add them to the queue, this feeds the current loop
@@ -188,6 +181,8 @@ Headers WorkingChain::withdraw_stable_headers() {
 }
 
 auto WorkingChain::verify(const Link& link) -> VerificationResult {
+    if (link.preverified) return Preverified;
+
     if (contains(bad_headers_, link.hash)) return Skip;
 
     bool with_future_timestamp_check = true;
@@ -548,10 +543,12 @@ auto WorkingChain::process_segment(const Segment& segment, bool is_a_new_block, 
             op = "new anchor";
             requestMore = new_anchor(segment_slice, peerId);
         }
-        log::Debug() << "Segment: " << op << " start=" << startNum << " (" << segment[start]->hash() << ") end=" <<
-            endNum << " (" << segment[end-1]->hash() << ") (more=" << requestMore << ")";
+        log::Debug() << "WorkingChain, segment " << op << " start=" << startNum << " (" << segment[start]->hash()
+            << ") end=" << endNum << " (" << segment[end-1]->hash() << ") (more=" << requestMore << ")";
     } catch (segment_cut_and_paste_error& e) {
-        log::Debug() << "Segment: " << op << " failure, reason:" << e.what();
+        log::Warning() << "WorkingChain, segment cut&paste error, " << op << " start=" << startNum << " ("
+            << segment[start]->hash() << ") end=" << endNum << " (" << segment[end-1]->hash() << ") failed, reason: "
+            << e.what();
         return false;
     }
 
@@ -624,11 +621,16 @@ auto WorkingChain::find_anchor(std::shared_ptr<Link> link) -> std::optional<std:
         if (it != links_.end()) {
             parent_link = it->second;
         }
-    } while (it != links_.end());
+    } while (it != links_.end() || parent_link->persisted);
+
+    if (parent_link->persisted) {
+        return std::nullopt; // ok, no anchor because the link is in a segment attached to a persisted link
+    }
 
     auto a = anchors_.find(parent_link->header->parent_hash);
     if (a == anchors_.end()) {
-        return std::nullopt;    // possible?
+        log::Error() << "WorkingChain: segment without anchor or persisted attach point, starting bn=" << link->blockHeight;
+        return std::nullopt; // wrong, no anchor but there should be
     }
     return a->second;
 }
@@ -640,7 +642,7 @@ void WorkingChain::connect(Segment::Slice segment_slice) {  // throw segment_cut
     auto link_header = *segment_slice.rbegin();  // lowest header
     auto attachment_link = get_link(link_header->parent_hash);
     if (!attachment_link)
-        throw segment_cut_and_paste_error("segment cut&paste error, connect attachment link not found for " +
+        throw segment_cut_and_paste_error("connect attachment link not found for " +
                                           to_hex(link_header->parent_hash));
     //if (attachment_link.value()->preverified && !attachment_link.value()->next.empty())
     //    throw segment_cut_and_paste_error("segment cut&paste error, cannot connect to preverified link " +
@@ -651,16 +653,16 @@ void WorkingChain::connect(Segment::Slice segment_slice) {  // throw segment_cut
     auto a = anchors_.find(header_to_anchor->hash());  // header_to_anchor->hash() == anchor.parent_hash
     bool attaching = a != anchors_.end();
     if (!attaching)
-        throw segment_cut_and_paste_error("segment cut&paste error, connect attachment anchors not found for " +
+        throw segment_cut_and_paste_error("connect attachment anchors not found for " +
                                           to_hex(header_to_anchor->hash()));
     auto anchor = a->second;
 
-    // find deepest anchor
-    auto deep_a = find_anchor(attachment_link.value());
-    if (!deep_a.has_value())
-        throw segment_cut_and_paste_error("segment cut&paste error, connect deepest anchor not found for " +
-                                          to_string(attachment_link.value()->blockHeight));
-    auto deepest_anchor = deep_a.value();
+    if (contains(bad_headers_, attachment_link.value()->hash)) {
+        invalidate(anchor);
+        // todo: return []PenaltyItem := append(penalties, PenaltyItem{Penalty: AbandonedAnchorPenalty, PeerID: anchor.peerID})
+        throw segment_cut_and_paste_error("anchor connected to bad headers, "
+            "height=" + to_string(anchor->blockHeight) + " parent hash=" + to_hex(anchor->parentHash));
+    }
 
     // Iterate over headers backwards (from parents towards children)
     std::shared_ptr<Link> prev_link = attachment_link.value();
@@ -673,7 +675,18 @@ void WorkingChain::connect(Segment::Slice segment_slice) {  // throw segment_cut
         if (preverified_hashes_->contains(link->hash)) mark_as_preverified(link);
     }
 
-    deepest_anchor->lastLinkHeight = std::max(deepest_anchor->lastLinkHeight, anchor->lastLinkHeight);
+    // find deepest anchor
+    //if (!attachment_link.value()->persisted) { todo: activate this code when persisted property will be updated in the previos loop
+        auto deep_a = find_anchor(attachment_link.value());
+        if (deep_a.has_value()) {
+            auto deepest_anchor = deep_a.value();
+            deepest_anchor->lastLinkHeight = std::max(deepest_anchor->lastLinkHeight, anchor->lastLinkHeight);
+        }
+        //else {
+        //    log::Error() << "WorkingChain: segment without anchor or persisted attach point, starting bn="
+        //                 << attachment_link.value()->blockHeight;
+        //}
+    //}
 
     // this block is the same in extend_down
     bool anchor_preverified =
@@ -686,13 +699,7 @@ void WorkingChain::connect(Segment::Slice segment_slice) {  // throw segment_cut
     anchor->links.clear();
     if (anchor_preverified) mark_as_preverified(prev_link);  // Mark the entire segment as preverified
 
-    if (contains(bad_headers_, attachment_link.value()->hash)) {
-        log::Warning() << "WorkingChain: invalidating anchor because connected to bad headers, "
-                       << "height=" << anchor->blockHeight;
-        invalidate(anchor); // todo: in prev lines we erased anchor links so invalidate does nothing!
-        // todo: add & return penalties
-        // []PenaltyItem := append(penalties, PenaltyItem{Penalty: AbandonedAnchorPenalty, PeerID: anchor.peerID})
-    } else if (attachment_link.value()->persisted) {
+    if (attachment_link.value()->persisted) {
         auto link = links_.find(link_header->hash());
         if (link != links_.end())  // todo: Erigon code assume true always, check!
             insert_list_.push(link->second);
@@ -706,7 +713,7 @@ auto WorkingChain::extend_down(Segment::Slice segment_slice) -> RequestMoreHeade
     auto a = anchors_.find(anchor_header->hash());
     bool attaching = a != anchors_.end();
     if (!attaching)
-        throw segment_cut_and_paste_error("segment cut&paste error, extend down attachment anchors not found for " +
+        throw segment_cut_and_paste_error("extend down attachment anchors not found for " +
                                           to_hex(anchor_header->hash()));
 
     auto old_anchor = a->second;
@@ -762,15 +769,21 @@ void WorkingChain::extend_up(Segment::Slice segment_slice) {  // throw segment_c
     auto link_header = *segment_slice.rbegin();  // lowest header
     auto attachment_link = get_link(link_header->parent_hash);
     if (!attachment_link)
-        throw segment_cut_and_paste_error("segment cut&paste error, extend up attachment link not found for " +
+        throw segment_cut_and_paste_error("extend up attachment link not found for " +
                                           to_hex(link_header->parent_hash));
     //if (attachment_link.value()->preverified && !attachment_link.value()->next.empty())
     //    throw segment_cut_and_paste_error("segment cut&paste error, cannot extend up from preverified link " +
     //                                      to_string(attachment_link.value()->blockHeight) + " with children");
 
+    if (contains(bad_headers_, attachment_link.value()->hash)) {
+        // todo: return penalties
+        throw segment_cut_and_paste_error("connection to bad headers, height="
+            + to_string(link_header->number) + " hash=" + to_hex(link_header->hash()));
+    }
+
     auto a = find_anchor(attachment_link.value());
     if (!a.has_value())
-        throw segment_cut_and_paste_error("segment cut&paste error, cannot extend up, anchor not found for " +
+        throw segment_cut_and_paste_error("cannot extend up, anchor not found for " +
                                           to_string(attachment_link.value()->blockHeight));
     auto anchor = a.value();
 
@@ -787,13 +800,13 @@ void WorkingChain::extend_up(Segment::Slice segment_slice) {  // throw segment_c
 
     anchor->lastLinkHeight = std::max(anchor->lastLinkHeight, prev_link->blockHeight);
 
-    if (attachment_link.value()->persisted && !contains(bad_headers_, attachment_link.value()->hash)) {
+    if (attachment_link.value()->persisted) {
         auto link = links_.find(link_header->hash());
         if (link != links_.end()) {
             insert_list_.push(link->second);
         }
         else {
-            throw segment_cut_and_paste_error("segment cut&paste error, extend up cannot add header persistent queue " +
+            throw segment_cut_and_paste_error("extend up cannot add header to persistent queue " +
                                               to_string(link_header->number));
         }
     }

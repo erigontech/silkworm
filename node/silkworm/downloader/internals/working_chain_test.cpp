@@ -1,5 +1,5 @@
 /*
-   Copyright 2020 The Silkworm Authors
+   Copyright 2020-2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -20,6 +20,8 @@
 
 #include <catch2/catch.hpp>
 
+#include <silkworm/common/cast.hpp>
+
 namespace silkworm {
 // Useful definitions
 // ----------------------------------------------------------------------------
@@ -32,7 +34,7 @@ class WorkingChain_ForTest : public WorkingChain {
     using WorkingChain::links_;
     using WorkingChain::WorkingChain;
 
-    WorkingChain_ForTest(): WorkingChain(consensus::engine_factory(ChainIdentity::mainnet.chain)) {}
+    WorkingChain_ForTest() : WorkingChain(consensus::engine_factory(ChainIdentity::mainnet.chain)) {}
 };
 
 /*
@@ -182,7 +184,7 @@ TEST_CASE("HeaderList - split_into_segments - Two headers connected to the third
     header3.difficulty = 1010;
     header3.parent_hash = header1.hash();
     header3.extra_data =
-        string_to_bytes("I'm different");  // To make sure the hash of h3 is different from the hash of h2
+        string_view_to_byte_view("I'm different");  // To make sure the hash of h3 is different from the hash of h2
     headers.push_back(header3);
 
     auto headerList = HeaderList::make(headers);
@@ -216,7 +218,7 @@ TEST_CASE("HeaderList - split_into_segments - Same three headers, but in a rever
     header3.difficulty = 1010;
     header3.parent_hash = header1.hash();
     header3.extra_data =
-        string_to_bytes("I'm different");  // To make sure the hash of h3 is different from the hash of h2
+        string_view_to_byte_view("I'm different");  // To make sure the hash of h3 is different from the hash of h2
 
     headers.push_back(header3);
     headers.push_back(header2);
@@ -257,7 +259,7 @@ TEST_CASE("HeaderList - split_into_segments - Two headers not connected to each 
     header3.difficulty = 1010;
     header3.parent_hash = header1.hash();
     header3.extra_data =
-        string_to_bytes("I'm different");  // To make sure the hash of h3 is different from the hash of h2
+        string_view_to_byte_view("I'm different");  // To make sure the hash of h3 is different from the hash of h2
 
     headers.push_back(header3);
     headers.push_back(header2);
@@ -341,7 +343,7 @@ TEST_CASE("HeaderList - split_into_segments - Four headers connected") {
     header4.number = 3;
     header4.difficulty = 101010;
     header4.parent_hash = header2.hash();
-    header4.extra_data = string_to_bytes("I'm different");
+    header4.extra_data = string_view_to_byte_view("I'm different");
     headers.push_back(header4);
 
     auto headerList = HeaderList::make(headers);
@@ -545,7 +547,8 @@ TEST_CASE("WorkingChain - process_segment - (1) simple chain") {
  *         h1 <----- h2
  *
  *         1st iteration: receive {h2, h2b} -> new_anchor(h2), new_anchor(h2b) [= 1 anchor with 2 links]
- *         2nd iteration: receive {h1} -> extend_down(h2/h2b) => one anchor(h1) with a link to h1 with 2 link (h2 and h2b)
+ *         2nd iteration: receive {h1} -> extend_down(h2/h2b) => one anchor(h1) with a link to h1 with 2 links
+ *                                                                                                (h2 and h2b)
  */
 TEST_CASE("WorkingChain - process_segment - (2) extending down with 2 siblings") {
     using namespace std;
@@ -570,7 +573,7 @@ TEST_CASE("WorkingChain - process_segment - (2) extending down with 2 siblings")
     h2b.number = 2;
     h2b.difficulty = 20;
     h2b.parent_hash = h1.hash();
-    h2b.extra_data = string_to_bytes("h2b");  // so hash(h2) != hash(h2b)
+    h2b.extra_data = string_view_to_byte_view("h2b");  // so hash(h2) != hash(h2b)
 
     chain.accept_headers({h2, h2b}, peerId);
 
@@ -608,7 +611,7 @@ TEST_CASE("WorkingChain - process_segment - (3) chain with branches") {
 
     for (size_t i = 1; i < headers.size(); i++) {  // skip first header for simplicity
         headers[i].number = i;
-        headers[i].difficulty = i*100;  // improve!
+        headers[i].difficulty = i * 100;  // improve!
         headers[i].parent_hash = headers[i - 1].hash();
     }
 
@@ -616,31 +619,31 @@ TEST_CASE("WorkingChain - process_segment - (3) chain with branches") {
     h3a.number = 3;
     h3a.difficulty = 1030;
     h3a.parent_hash = headers[2].hash();
-    h3a.extra_data = string_to_bytes("h3a");  // so hash(h3a) != hash(h3)
+    h3a.extra_data = string_view_to_byte_view("h3a");  // so hash(h3a) != hash(h3)
 
     BlockHeader h4a;
     h4a.number = 4;
     h4a.difficulty = 1040;
     h4a.parent_hash = h3a.hash();
-    h4a.extra_data = string_to_bytes("h4a");  // so hash(h4a) != hash(h4)
+    h4a.extra_data = string_view_to_byte_view("h4a");  // so hash(h4a) != hash(h4)
 
     BlockHeader h6a;
     h6a.number = 6;
     h6a.difficulty = 1060;
     h6a.parent_hash = headers[5].hash();
-    h6a.extra_data = string_to_bytes("h6a");  // so hash(h6a) != hash(h6) != hash(h6b)
+    h6a.extra_data = string_view_to_byte_view("h6a");  // so hash(h6a) != hash(h6) != hash(h6b)
 
     BlockHeader h6b;
     h6b.number = 6;
     h6b.difficulty = 1065;
     h6b.parent_hash = headers[5].hash();
-    h6b.extra_data = string_to_bytes("h6b");  // so hash(h6a) != hash(h6) != hash(h6b)
+    h6b.extra_data = string_view_to_byte_view("h6b");  // so hash(h6a) != hash(h6) != hash(h6b)
 
     BlockHeader h7b;
     h7b.number = 7;
     h7b.difficulty = 1070;
     h7b.parent_hash = h6b.hash();
-    h7b.extra_data = string_to_bytes("h7b");  // so hash(h7b) != hash(h7)
+    h7b.extra_data = string_view_to_byte_view("h7b");  // so hash(h7b) != hash(h7)
 
     /* chain status:
      *         void
@@ -793,14 +796,13 @@ TEST_CASE("WorkingChain - process_segment - (3) chain with branches") {
 
         auto anchor = chain.anchors_[headers[1].parent_hash];
         auto curr_link = anchor->links[0];
-        for(size_t i = 2; i <= 9; i++) { // verify canonical chain
+        for (size_t i = 2; i <= 9; i++) {  // verify canonical chain
             auto next_link = curr_link->find_child(headers[i].hash());
             REQUIRE(next_link != curr_link->next.end());
             curr_link = *next_link;
         }
     }
 }
-
 
 // TESTs related to WorkingChain::accept_headers (pre-verified hashes)
 // -------------------------------------------------------------------
@@ -832,35 +834,35 @@ TEST_CASE("WorkingChain - process_segment - (4) pre-verified hashes on canonical
     h3a.number = 3;
     h3a.difficulty = 1030;
     h3a.parent_hash = headers[2].hash();
-    h3a.extra_data = string_to_bytes("h3a");  // so hash(h3a) != hash(h3)
+    h3a.extra_data = string_view_to_byte_view("h3a");  // so hash(h3a) != hash(h3)
 
     BlockHeader h4a;
     h4a.number = 4;
     h4a.difficulty = 1040;
     h4a.parent_hash = h3a.hash();
-    h4a.extra_data = string_to_bytes("h4a");  // so hash(h4a) != hash(h4)
+    h4a.extra_data = string_view_to_byte_view("h4a");  // so hash(h4a) != hash(h4)
 
     BlockHeader h6a;
     h6a.number = 6;
     h6a.difficulty = 1060;
     h6a.parent_hash = headers[5].hash();
-    h6a.extra_data = string_to_bytes("h6a");  // so hash(h6a) != hash(h6) != hash(h6b)
+    h6a.extra_data = string_view_to_byte_view("h6a");  // so hash(h6a) != hash(h6) != hash(h6b)
 
     BlockHeader h6b;
     h6b.number = 6;
     h6b.difficulty = 1065;
     h6b.parent_hash = headers[5].hash();
-    h6b.extra_data = string_to_bytes("h6b");  // so hash(h6a) != hash(h6) != hash(h6b)
+    h6b.extra_data = string_view_to_byte_view("h6b");  // so hash(h6a) != hash(h6) != hash(h6b)
 
     BlockHeader h7b;
     h7b.number = 7;
     h7b.difficulty = 1070;
     h7b.parent_hash = h6b.hash();
-    h7b.extra_data = string_to_bytes("h7b");  // so hash(h7b) != hash(h7)
+    h7b.extra_data = string_view_to_byte_view("h7b");  // so hash(h7b) != hash(h7)
 
     PreverifiedHashes mynet_preverified_hashes = {
-        {headers[8].hash(), headers[9].hash()}, // hashes
-        headers[9].number                       // height
+        {headers[8].hash(), headers[9].hash()},  // hashes
+        headers[9].number                        // height
     };
 
     chain.set_preverified_hashes(&mynet_preverified_hashes);
@@ -873,13 +875,13 @@ TEST_CASE("WorkingChain - process_segment - (4) pre-verified hashes on canonical
 
     auto link1 = chain.links_[headers[1].hash()];
     REQUIRE(link1 != nullptr);
-    REQUIRE(link1->preverified == false);   // pre-verification can be propagated
+    REQUIRE(link1->preverified == false);  // pre-verification can be propagated
 
     // adding the connecting part of the chain - we expect that pre-verification will be propagated
     chain.accept_headers({headers[4], headers[5], headers[6], h6a, h6b, headers[7]}, peerId);
 
     // a simple test
-    REQUIRE(link1->preverified == true);    // verify propagation
+    REQUIRE(link1->preverified == true);  // verify propagation
 
     // canonical chain headers must be pre-verified
     for (size_t i = 1; i < headers.size(); i++) {
@@ -888,12 +890,11 @@ TEST_CASE("WorkingChain - process_segment - (4) pre-verified hashes on canonical
         REQUIRE(link->preverified == true);
     }
     // non canonical headers must be non pre-verified
-    for (auto header: {&h3a, &h4a, &h6a, &h6b, &h7b}) {
+    for (auto header : {&h3a, &h4a, &h6a, &h6b, &h7b}) {
         auto link = chain.links_[header->hash()];
         REQUIRE(link != nullptr);
         REQUIRE(link->preverified == false);
     }
-
 }
 
 /* chain:
@@ -925,12 +926,12 @@ TEST_CASE("WorkingChain - process_segment - (5) pre-verified hashes with canonic
         b_headers[i].number = i;
         b_headers[i].difficulty = i * 100;
         b_headers[i].parent_hash = b_headers[i - 1].hash();
-        b_headers[i].extra_data = string_to_bytes("alternate");  // so hash(a_headers[i]) != hash(b_headers[i])
+        b_headers[i].extra_data = string_view_to_byte_view("alternate");  // so hash(a_headers[i]) != hash(b_headers[i])
     }
 
     PreverifiedHashes mynet_preverified_hashes = {
-        {b_headers[6].hash()}, // hashes
-        b_headers[6].number                   // height
+        {b_headers[6].hash()},  // hashes
+        b_headers[6].number     // height
     };
 
     chain.set_preverified_hashes(&mynet_preverified_hashes);
@@ -955,7 +956,6 @@ TEST_CASE("WorkingChain - process_segment - (5) pre-verified hashes with canonic
         REQUIRE(link != nullptr);
         REQUIRE(link->preverified == true);
     }
-
 }
 
 }  // namespace silkworm

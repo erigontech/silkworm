@@ -97,6 +97,17 @@ class Execution final : public IStage {
     size_t processed_gas_{0};
 };
 
+class HashState final : public IStage {
+  public:
+    explicit HashState(NodeSettings* node_settings) : IStage(db::stages::kHashStateKey, node_settings){};
+    ~HashState() override = default;
+    StageResult forward(db::RWTxn& txn) final;
+    StageResult unwind(db::RWTxn& txn, BlockNum to) final;
+    StageResult prune(db::RWTxn& txn) final;
+    std::vector<std::string> get_log_progress() final;
+
+};
+
 typedef StageResult (*StageFunc)(db::RWTxn&, const std::filesystem::path& etl_path, uint64_t prune_from);
 typedef StageResult (*UnwindFunc)(db::RWTxn&, const std::filesystem::path& etl_path, uint64_t unwind_to);
 typedef StageResult (*PruneFunc)(db::RWTxn&, const std::filesystem::path& etl_path, uint64_t prune_from);
@@ -150,7 +161,6 @@ StageResult unwind_tx_lookup(db::RWTxn& txn, const std::filesystem::path& etl_pa
 
 // Prune functions
 StageResult no_prune(db::RWTxn& txn, const std::filesystem::path& etl_path, uint64_t prune_from);
-StageResult prune_execution(db::RWTxn& txn, const std::filesystem::path& etl_path, uint64_t prune_from);
 StageResult prune_account_history(db::RWTxn& txn, const std::filesystem::path& etl_path, uint64_t prune_from);
 StageResult prune_storage_history(db::RWTxn& txn, const std::filesystem::path& etl_path, uint64_t prune_from);
 StageResult prune_log_index(db::RWTxn& txn, const std::filesystem::path& etl_path, uint64_t prune_from);

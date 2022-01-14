@@ -28,6 +28,46 @@ namespace silkworm::stagedsync {
 
 namespace fs = std::filesystem;
 
+StageResult HashState::forward(db::RWTxn& txn) {
+    // Check stage boundaries from previous execution and previous stage execution
+    auto previous_progress{db::stages::read_stage_progress(*txn, stage_name_)};
+    auto execution_stage_progress{db::stages::read_stage_progress(*txn, db::stages::kExecutionKey)};
+    if (previous_progress == execution_stage_progress) {
+        // Nothing to process
+        return StageResult::kSuccess;
+    } else if (previous_progress > execution_stage_progress) {
+        // Something bad had happened. Not possible execution stage is ahead of bodies
+        // Maybe we need to unwind ?
+        log::Error() << "Bad progress sequence. HashState stage progress " << previous_progress
+                     << " while Execution stage " << execution_stage_progress;
+        return StageResult::kInvalidProgress;
+    }
+
+    if (execution_stage_progress - previous_progress > 16) {
+        log::Info("Begin HashState",
+                  {"from", std::to_string(previous_progress), "to", std::to_string(execution_stage_progress)});
+    }
+
+    if (previous_progress != 0) {
+        log::Info() << "Starting Account Hashing";
+        hashstate_promote(*txn, HashstateOperation::HashAccount);
+        log::Info() << "Starting Storage Hashing";
+        hashstate_promote(*txn, HashstateOperation::HashStorage);
+        log::Info() << "Hashing Code Keys";
+        hashstate_promote(*txn, HashstateOperation::Code);
+    } else {
+        hashstate_promote_clean_state(*txn, etl_path.string());
+        hashstate_promote_clean_code(*txn, etl_path.string());
+    }
+    // Update progress height with last processed block
+    db::stages::write_stage_progress(*txn, db::stages::kHashStateKey,
+                                     db::stages::read_stage_progress(*txn, db::stages::kExecutionKey));
+    txn.commit();
+
+    log::Info() << "All Done!";
+    return StageResult::kSuccess;
+}
+
 /*
  *  Convert get tables configuration pair for incremental promotion
  *  First configuration of the pair is the source and second configuration is the table to fill.
@@ -65,9 +105,7 @@ static void storage_load(const etl::Entry& entry, mdbx::cursor& cursor, MDBX_put
  *  This is way faster than using changeset because it uses less database reads.
  */
 void hashstate_promote_clean_state(mdbx::txn& txn, const fs::path& etl_path) {
-    log::Info() << "Hashing state";
 
-    fs::create_directories(etl_path);
     etl::Collector collector_account(etl_path, 512_Mebi);
     etl::Collector collector_storage(etl_path, 512_Mebi);
 
@@ -243,6 +281,7 @@ void hashstate_promote(mdbx::txn& txn, HashstateOperation operation) {
 }
 
 StageResult stage_hashstate(db::RWTxn& txn, const fs::path& etl_path, uint64_t) {
+
     log::Info() << "Starting HashState";
 
     auto last_processed_block_number{db::stages::read_stage_progress(*txn, db::stages::kHashStateKey)};

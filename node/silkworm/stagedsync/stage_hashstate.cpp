@@ -16,6 +16,7 @@
 
 #include <filesystem>
 
+#include <silkworm/common/assert.hpp>
 #include <silkworm/common/endian.hpp>
 #include <silkworm/common/log.hpp>
 #include <silkworm/db/access_layer.hpp>
@@ -56,8 +57,8 @@ StageResult HashState::forward(db::RWTxn& txn) {
         log::Info() << "Hashing Code Keys";
         hashstate_promote(*txn, HashstateOperation::Code);
     } else {
-        hashstate_promote_clean_state(*txn, etl_path.string());
-        hashstate_promote_clean_code(*txn, etl_path.string());
+        promote_clean_state(txn);
+        promote_clean_code(txn);
     }
     // Update progress height with last processed block
     db::stages::write_stage_progress(*txn, db::stages::kHashStateKey,
@@ -66,6 +67,107 @@ StageResult HashState::forward(db::RWTxn& txn) {
 
     log::Info() << "All Done!";
     return StageResult::kSuccess;
+}
+
+void HashState::promote_clean_state(db::RWTxn& txn) {
+
+    // TODO(Andrea) Maybe introduce an assertion for target tables to be empty ?
+    etl::Collector account_collector(node_settings_->data_directory->etl().path(), node_settings_->etl_buffer_size);
+    etl::Collector storage_collector(node_settings_->data_directory->etl().path(), node_settings_->etl_buffer_size);
+
+    auto source{db::open_cursor(*txn, db::table::kPlainState)};
+    auto data{source.to_first(/*throw_notfound=*/false)};
+    int percent{0};
+    uint8_t next_start_byte{0};
+    while (data) {
+        if (data.key.at(0) >= next_start_byte) {
+            log::Info() << "Progress: " << percent << "%";
+            percent += 10;
+            next_start_byte += 25;
+        }
+
+        // Account
+        if (data.key.length() == kAddressLength) {
+            auto hash{keccak256(db::from_slice(data.key))};
+            etl::Entry entry{Bytes(hash.bytes, kHashLength), Bytes{db::from_slice(data.value)}};
+            account_collector.collect(std::move(entry));
+        } else {
+            SILKWORM_ASSERT(data.key.length() ==
+                            db::kPlainStoragePrefixLength);  // plain state key = address + incarnation
+            SILKWORM_ASSERT(data.value.length() >
+                            kHashLength);  // plain state value = unhashed location + zeroless value
+
+            Bytes new_key(kHashLength * 2 + db::kIncarnationLength, '\0');
+
+            size_t new_key_pos{0};
+            std::memcpy(&new_key[new_key_pos], keccak256(db::from_slice(data.key).substr(0, kAddressLength)).bytes,
+                        kHashLength);
+            data.key.remove_prefix(kAddressLength);
+            new_key_pos += kHashLength;
+
+            std::memcpy(&new_key[new_key_pos], data.key.data(), db::kIncarnationLength);
+            new_key_pos += db::kIncarnationLength;
+
+            std::memcpy(&new_key[new_key_pos], keccak256(db::from_slice(data.value).substr(0, kHashLength)).bytes,
+                        kHashLength);
+            data.value.remove_prefix(kHashLength);
+
+            etl::Entry entry{new_key, Bytes{db::from_slice(data.value)}};
+            storage_collector.collect(std::move(entry));
+        }
+
+        data = source.to_next(/*throw_notfound=*/false);
+    }
+
+    if (!account_collector.empty()) {
+        auto target{db::open_cursor(*txn, db::table::kHashedAccounts)};
+        account_collector.load(target, nullptr, MDBX_put_flags_t::MDBX_APPEND);
+    }
+    if (!storage_collector.empty()) {
+        auto target = db::open_cursor(*txn, db::table::kHashedStorage);
+
+        // ETL key contains hashed location; for DB put we need to move it from key to value
+        auto load_func = [](const etl::Entry& entry, mdbx::cursor& cursor, MDBX_put_flags_t flags) -> void {
+            assert(entry.key.length() == db::kHashedStoragePrefixLength + kHashLength);
+            Bytes value(kHashLength + entry.value.length(), '\0');
+            std::memcpy(&value[0], &entry.key[db::kHashedStoragePrefixLength], kHashLength);
+            std::memcpy(&value[kHashLength], entry.value.data(), entry.value.length());
+
+            mdbx::slice k{entry.key.data(), db::kHashedStoragePrefixLength};
+            mdbx::slice v{db::to_slice(value)};
+            mdbx::error::success_or_throw(cursor.put(k, &v, flags));
+        };
+
+        storage_collector.load(target, load_func, MDBX_put_flags_t::MDBX_APPENDDUP);
+    }
+}
+
+void HashState::promote_clean_code(db::RWTxn& txn) {
+
+    // TODO(Andrea) Maybe introduce an assertion for target table to be empty ?
+    etl::Collector collector(node_settings_->data_directory->etl().path(), node_settings_->etl_buffer_size);
+
+    auto source{db::open_cursor(*txn, db::table::kPlainContractCode)};
+    auto data{source.to_first(/*throw_notfound=*/false)};
+    while (data) {
+        Bytes new_key(kHashLength + db::kIncarnationLength, '\0');
+        std::memcpy(&new_key[0], keccak256(db::from_slice(data.key.safe_middle(0, kAddressLength))).bytes, kHashLength);
+        std::memcpy(&new_key[kHashLength], data.key.safe_middle(kAddressLength, db::kIncarnationLength).data(),
+                    db::kIncarnationLength);
+        etl::Entry entry{new_key, Bytes{db::from_slice(data.value)}};
+        collector.collect(std::move(entry));
+        data = source.to_next(/*throw_notfound=*/false);
+    }
+    source.close();
+    if (!collector.empty()) {
+        source = db::open_cursor(*txn, db::table::kContractCode);
+        collector.load(source, nullptr, MDBX_put_flags_t::MDBX_APPEND);
+    }
+}
+
+std::vector<std::string> HashState::get_log_progress() {
+    // TODO(Andrea) find a reasonable to log progress
+    return {};
 }
 
 /*
@@ -87,25 +189,11 @@ static std::pair<db::MapConfig, db::MapConfig> get_tables_for_promote(HashstateO
     }
 }
 
-// ETL key contains hashed location; for DB put we need to move it from key to value
-static void storage_load(const etl::Entry& entry, mdbx::cursor& cursor, MDBX_put_flags_t flags) {
-    assert(entry.key.length() == db::kHashedStoragePrefixLength + kHashLength);
-
-    Bytes value(kHashLength + entry.value.length(), '\0');
-    std::memcpy(&value[0], &entry.key[db::kHashedStoragePrefixLength], kHashLength);
-    std::memcpy(&value[kHashLength], entry.value.data(), entry.value.length());
-
-    mdbx::slice k{entry.key.data(), db::kHashedStoragePrefixLength};
-    mdbx::slice v{db::to_slice(value)};
-    mdbx::error::success_or_throw(cursor.put(k, &v, flags));
-}
-
 /*
  *  If we haven't done hashstate before(first sync), it is possible to just hash values from plainstates,
  *  This is way faster than using changeset because it uses less database reads.
  */
 void hashstate_promote_clean_state(mdbx::txn& txn, const fs::path& etl_path) {
-
     etl::Collector collector_account(etl_path, 512_Mebi);
     etl::Collector collector_storage(etl_path, 512_Mebi);
 
@@ -281,7 +369,6 @@ void hashstate_promote(mdbx::txn& txn, HashstateOperation operation) {
 }
 
 StageResult stage_hashstate(db::RWTxn& txn, const fs::path& etl_path, uint64_t) {
-
     log::Info() << "Starting HashState";
 
     auto last_processed_block_number{db::stages::read_stage_progress(*txn, db::stages::kHashStateKey)};

@@ -106,6 +106,21 @@ class HashState final : public IStage {
     StageResult prune(db::RWTxn& txn) final;
     std::vector<std::string> get_log_progress() final;
 
+  private:
+    enum class OperationType {
+        HashAccount,  // To generate HashedAccount table
+        HashStorage,  // To generate HashedStorage table
+        Code          // To generate hashed key => code_hash mapping
+    };
+
+    //! \brief If we haven't done hashstate before (this is first sync), it is possible to just hash values from
+    //! plainstates, This is way faster than using changeset because it uses less database reads.
+    void promote_clean_state(db::RWTxn& txn);
+    void promote_clean_code(db::RWTxn& txn);
+
+    //! \brief Retrieve tables configuration pair for incremental promotion
+    //! \return A pair where first is the source and second is the target
+    [[nodiscard]] std::pair<db::MapConfig, db::MapConfig> get_promote_tables(OperationType operation);
 };
 
 typedef StageResult (*StageFunc)(db::RWTxn&, const std::filesystem::path& etl_path, uint64_t prune_from);

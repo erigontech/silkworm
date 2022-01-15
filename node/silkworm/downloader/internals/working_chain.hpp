@@ -119,22 +119,23 @@ class WorkingChain {
 
     auto process_segment(const Segment&, bool is_a_new_block, const PeerId&) -> RequestMoreHeaders;
 
-    using Found = bool;
     using Start = size_t;
     using End = size_t;
-    auto find_anchor(const Segment&) -> std::tuple<Found, Start>;
-    auto find_link(const Segment&, size_t start) -> std::tuple<Found, End>;
+    auto find_anchor(const Segment&) -> std::tuple<std::optional<std::shared_ptr<Anchor>>, Start>;
+    auto find_link(const Segment&, size_t start) -> std::tuple<std::optional<std::shared_ptr<Link>>, End>;
     auto get_link(const Hash& hash) -> std::optional<std::shared_ptr<Link>>;
     auto find_anchor(std::shared_ptr<Link> link) -> std::optional<std::shared_ptr<Anchor>>;
 
     void reduce_links_to(size_t limit);
     void reduce_persisted_links_to(size_t limit);
 
+    using Pre_Existing = bool;
     void invalidate(std::shared_ptr<Anchor>);
     void remove(std::shared_ptr<Anchor>);
-    void remove_anchor(const Hash& hash);
     bool find_bad_header(const std::vector<BlockHeader>&);
     auto add_header_as_link(const BlockHeader& header, bool persisted) -> std::shared_ptr<Link>;
+    auto add_anchor_if_not_present(const BlockHeader& header, PeerId, bool check_limits)
+                                                                  -> std::tuple<std::shared_ptr<Anchor>, Pre_Existing>;
     void mark_as_preverified(std::shared_ptr<Link>);
     size_t anchors_within_range(BlockNum max);
     BlockNum lowest_anchor_within_range(BlockNum bottom, BlockNum top);
@@ -142,11 +143,10 @@ class WorkingChain {
     enum VerificationResult { Preverified, Skip, Postpone, Accept };
     VerificationResult verify(const Link& link);
 
-    using Error = int;
-    void connect(Segment::Slice);                                   // throw segment_cut_and_paste_error
-    auto extend_down(Segment::Slice) -> RequestMoreHeaders;         // throw segment_cut_and_paste_error
-    void extend_up(Segment::Slice);                                 // throw segment_cut_and_paste_error
-    auto new_anchor(Segment::Slice, PeerId) -> RequestMoreHeaders;  // throw segment_cut_and_paste_error
+    void connect(std::shared_ptr<Link>, Segment::Slice, std::shared_ptr<Anchor>);
+    auto extend_down(Segment::Slice, std::shared_ptr<Anchor>) -> RequestMoreHeaders;
+    void extend_up(std::shared_ptr<Link>, Segment::Slice);
+    auto new_anchor(Segment::Slice, PeerId) -> RequestMoreHeaders;
 
     YoungestFirstLinkQueue link_queue_;          // Priority queue of non-persisted links used to limit their number
     OldestFirstAnchorQueue anchor_queue_;        // Priority queue of anchors used to sequence the header requests

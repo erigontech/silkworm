@@ -250,15 +250,14 @@ struct HeaderList : std::enable_shared_from_this<HeaderList> {
 };
 
 // Segment, a sequence of headers connected to one another (with parent-hash relationship),
-// without any branching, ordered from high block number to lower block number
+// without any branching, ordered from high block number to lower block number, from children to parents
 struct Segment
     : public std::vector<HeaderList::Header_Ref> {  // pointers/iterators to the headers that belongs to this segment
 
     Segment(std::shared_ptr<HeaderList> line) : line_(line) {}
 
     void push_back(const HeaderList::Header_Ref& val) {
-        assert(empty() ||
-               back()->number == val->number + 1);  // also back()->parent_hash == val->hash() (expensive test)
+        assert(empty() || back()->number == val->number + 1);  // also back()->parent_hash == val->hash() but expensive
         std::vector<HeaderList::Header_Ref>::push_back(val);
     }
 

@@ -355,7 +355,7 @@ TEST_CASE("HeaderList - split_into_segments - Four headers connected") {
     REQUIRE(segments[0].size() == 1);  // segment 0 - 1 headers
     REQUIRE(segments[1].size() == 1);  // segment 1 - 1 headers
     REQUIRE(segments[2].size() == 2);  // segment 2 - 2 headers
-    REQUIRE(segments[2][0]->number == header2.number);
+    REQUIRE(segments[2][0]->number == header2.number); // segments are ordered from high number to
     REQUIRE(segments[2][1]->number == header1.number);
     REQUIRE(segments[0][0] != segments[1][0]);
 }

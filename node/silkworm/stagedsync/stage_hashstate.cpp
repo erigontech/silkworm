@@ -60,9 +60,11 @@ StageResult HashState::forward(db::RWTxn& txn) {
         promote_clean_state(txn);
         promote_clean_code(txn);
     }
+
+    // TODO(Andrea) How can we check all blocks have been processed ?
+
     // Update progress height with last processed block
-    db::stages::write_stage_progress(*txn, db::stages::kHashStateKey,
-                                     db::stages::read_stage_progress(*txn, db::stages::kExecutionKey));
+    db::stages::write_stage_progress(*txn, db::stages::kHashStateKey, execution_stage_progress);
     txn.commit();
 
     log::Info() << "All Done!";
@@ -70,7 +72,6 @@ StageResult HashState::forward(db::RWTxn& txn) {
 }
 
 void HashState::promote_clean_state(db::RWTxn& txn) {
-
     // TODO(Andrea) Maybe introduce an assertion for target tables to be empty ?
     etl::Collector account_collector(node_settings_->data_directory->etl().path(), node_settings_->etl_buffer_size);
     etl::Collector storage_collector(node_settings_->data_directory->etl().path(), node_settings_->etl_buffer_size);
@@ -143,7 +144,6 @@ void HashState::promote_clean_state(db::RWTxn& txn) {
 }
 
 void HashState::promote_clean_code(db::RWTxn& txn) {
-
     // TODO(Andrea) Maybe introduce an assertion for target table to be empty ?
     etl::Collector collector(node_settings_->data_directory->etl().path(), node_settings_->etl_buffer_size);
 
@@ -166,7 +166,7 @@ void HashState::promote_clean_code(db::RWTxn& txn) {
 }
 
 std::vector<std::string> HashState::get_log_progress() {
-    // TODO(Andrea) find a reasonable to log progress
+    // TODO(Andrea) find a reasonable way to log progress
     return {};
 }
 
@@ -187,92 +187,6 @@ static std::pair<db::MapConfig, db::MapConfig> get_tables_for_promote(HashstateO
             error.append(": unknown operation");
             throw std::runtime_error(error);
     }
-}
-
-/*
- *  If we haven't done hashstate before(first sync), it is possible to just hash values from plainstates,
- *  This is way faster than using changeset because it uses less database reads.
- */
-void hashstate_promote_clean_state(mdbx::txn& txn, const fs::path& etl_path) {
-    etl::Collector collector_account(etl_path, 512_Mebi);
-    etl::Collector collector_storage(etl_path, 512_Mebi);
-
-    auto src{db::open_cursor(txn, db::table::kPlainState)};
-    auto data{src.to_first(/*throw_notfound=*/false)};
-    int percent{0};
-    uint8_t next_start_byte{0};
-    while (data) {
-        if (data.key.at(0) >= next_start_byte) {
-            log::Info() << "Progress: " << percent << "%";
-            percent += 10;
-            next_start_byte += 25;
-        }
-
-        // Account
-        if (data.key.length() == kAddressLength) {
-            auto hash{keccak256(db::from_slice(data.key))};
-            etl::Entry entry{Bytes(hash.bytes, kHashLength), Bytes{db::from_slice(data.value)}};
-            collector_account.collect(std::move(entry));
-        } else {
-            Bytes new_key(kHashLength * 2 + db::kIncarnationLength, '\0');
-            size_t new_key_pos{0};
-
-            // plain state key = address + incarnation
-            assert(data.key.length() == db::kPlainStoragePrefixLength);
-
-            std::memcpy(&new_key[new_key_pos], keccak256(db::from_slice(data.key).substr(0, kAddressLength)).bytes,
-                        kHashLength);
-            data.key.remove_prefix(kAddressLength);
-            new_key_pos += kHashLength;
-
-            std::memcpy(&new_key[new_key_pos], data.key.data(), db::kIncarnationLength);
-            new_key_pos += db::kIncarnationLength;
-
-            // plain state value = unhashed location + zeroless value
-            assert(data.value.length() > kHashLength);
-
-            std::memcpy(&new_key[new_key_pos], keccak256(db::from_slice(data.value).substr(0, kHashLength)).bytes,
-                        kHashLength);
-            data.value.remove_prefix(kHashLength);
-
-            etl::Entry entry{new_key, Bytes{db::from_slice(data.value)}};
-            collector_storage.collect(std::move(entry));
-        }
-
-        data = src.to_next(/*throw_notfound=*/false);
-    }
-
-    log::Info() << "Started Account Loading";
-    auto target{db::open_cursor(txn, db::table::kHashedAccounts)};
-    collector_account.load(target, nullptr, MDBX_put_flags_t::MDBX_APPEND);
-
-    log::Info() << "Started Storage Loading";
-    target = db::open_cursor(txn, db::table::kHashedStorage);
-    collector_storage.load(target, storage_load, MDBX_put_flags_t::MDBX_APPENDDUP);
-}
-
-void hashstate_promote_clean_code(mdbx::txn& txn, const fs::path& etl_path) {
-    log::Info() << "Hashing code keys";
-
-    fs::create_directories(etl_path);
-    etl::Collector collector(etl_path, 512_Mebi);
-
-    auto tbl{db::open_cursor(txn, db::table::kPlainContractCode)};
-    auto data{tbl.to_first(/*throw_notfound=*/false)};
-    while (data) {
-        Bytes new_key(kHashLength + db::kIncarnationLength, '\0');
-        std::memcpy(&new_key[0], keccak256(db::from_slice(data.key.safe_middle(0, kAddressLength))).bytes, kHashLength);
-        std::memcpy(&new_key[kHashLength], data.key.safe_middle(kAddressLength, db::kIncarnationLength).data(),
-                    db::kIncarnationLength);
-        etl::Entry entry{new_key, Bytes{db::from_slice(data.value)}};
-        collector.collect(std::move(entry));
-        data = tbl.to_next(/*throw_notfound=*/false);
-    }
-    tbl.close();
-
-    log::Info() << "Started Code Loading";
-    tbl = db::open_cursor(txn, db::table::kContractCode);
-    collector.load(tbl, nullptr, MDBX_put_flags_t::MDBX_APPEND);
 }
 
 /*

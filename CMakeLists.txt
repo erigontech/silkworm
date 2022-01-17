@@ -1,5 +1,5 @@
 #[[
-   Copyright 2020-2021 The Silkworm Authors
+   Copyright 2020-2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -148,21 +148,20 @@ find_package(ethash CONFIG REQUIRED) # Required from here below
 
 add_subdirectory(evmone/evmc)
 
-add_library(evmone evmone/lib/evmone/analysis.cpp
-                   evmone/lib/evmone/analysis.hpp
+add_library(evmone evmone/lib/evmone/advanced_analysis.cpp
+                   evmone/lib/evmone/advanced_analysis.hpp
+                   evmone/lib/evmone/advanced_execution.cpp
+                   evmone/lib/evmone/advanced_execution.hpp
+                   evmone/lib/evmone/advanced_instructions.cpp
                    evmone/lib/evmone/baseline_instruction_table.cpp
                    evmone/lib/evmone/baseline_instruction_table.hpp
                    evmone/lib/evmone/baseline.cpp
                    evmone/lib/evmone/baseline.hpp
                    evmone/lib/evmone/execution_state.hpp
-                   evmone/lib/evmone/execution.cpp
-                   evmone/lib/evmone/execution.hpp
-                   evmone/lib/evmone/instruction_traits.hpp
                    evmone/lib/evmone/instructions_calls.cpp
-                   evmone/lib/evmone/instructions_op2fn.hpp
-                   evmone/lib/evmone/instructions.cpp
+                   evmone/lib/evmone/instructions_traits.hpp
+                   evmone/lib/evmone/instructions_xmacro.hpp
                    evmone/lib/evmone/instructions.hpp
-                   evmone/lib/evmone/limits.hpp
                    evmone/lib/evmone/opcodes_helpers.h
                    evmone/lib/evmone/tracing.cpp
                    evmone/lib/evmone/tracing.hpp

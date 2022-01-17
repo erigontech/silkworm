@@ -1,5 +1,5 @@
 /*
-   Copyright 2020-2021 The Silkworm Authors
+   Copyright 2020-2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -20,11 +20,13 @@
 #include <memory>
 #include <stack>
 
-namespace evmone {
+namespace evmone::advanced {
 struct AdvancedExecutionState;
 }
 
 namespace silkworm {
+
+using EvmoneExecutionState = evmone::advanced::AdvancedExecutionState;
 
 // Object pool of EVM execution states.
 // This implementation is not thread-safe; use ThreadSafeExecutionStatePool instead!
@@ -36,12 +38,12 @@ class ExecutionStatePool {
     ExecutionStatePool(const ExecutionStatePool&) = delete;
     ExecutionStatePool& operator=(const ExecutionStatePool&) = delete;
 
-    virtual std::unique_ptr<evmone::AdvancedExecutionState> acquire() noexcept;
+    virtual std::unique_ptr<EvmoneExecutionState> acquire() noexcept;
 
-    virtual void release(std::unique_ptr<evmone::AdvancedExecutionState> obj) noexcept;
+    virtual void release(std::unique_ptr<EvmoneExecutionState> obj) noexcept;
 
   private:
-    std::stack<std::unique_ptr<evmone::AdvancedExecutionState>> pool_;
+    std::stack<std::unique_ptr<EvmoneExecutionState>> pool_;
 };
 
 }  // namespace silkworm

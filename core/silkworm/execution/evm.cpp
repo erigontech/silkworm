@@ -1,5 +1,5 @@
 /*
-   Copyright 2020-2021 The Silkworm Authors
+   Copyright 2020-2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -23,10 +23,10 @@
 #include <memory>
 
 #include <ethash/keccak.hpp>
-#include <evmone/analysis.hpp>
+#include <evmone/advanced_analysis.hpp>
+#include <evmone/advanced_execution.hpp>
 #include <evmone/baseline.hpp>
 #include <evmone/evmone.h>
-#include <evmone/execution.hpp>
 #include <evmone/tracing.hpp>
 #include <evmone/vm.hpp>
 
@@ -276,11 +276,11 @@ evmc_result EVM::execute_with_baseline_interpreter(evmc_revision rev, const evmc
 
     const auto analysis{evmone::baseline::analyze(code.data(), code.size())};
 
-    std::unique_ptr<evmone::AdvancedExecutionState> state;
+    std::unique_ptr<EvmoneExecutionState> state;
     if (state_pool) {
         state = state_pool->acquire();
     } else {
-        state = std::make_unique<evmone::AdvancedExecutionState>();
+        state = std::make_unique<EvmoneExecutionState>();
     }
 
     EvmHost host{*this};
@@ -300,24 +300,24 @@ evmc_result EVM::execute_with_default_interpreter(evmc_revision rev, const evmc_
                                                   const evmc::bytes32& code_hash) noexcept {
     assert(advanced_analysis_cache != nullptr);
 
-    std::shared_ptr<evmone::AdvancedCodeAnalysis> analysis{advanced_analysis_cache->get(code_hash, rev)};
+    auto analysis{advanced_analysis_cache->get(code_hash, rev)};
     if (!analysis) {
-        analysis = std::make_shared<evmone::AdvancedCodeAnalysis>(evmone::analyze(rev, code.data(), code.size()));
+        analysis = std::make_shared<EvmoneCodeAnalysis>(evmone::advanced::analyze(rev, code.data(), code.size()));
         advanced_analysis_cache->put(code_hash, analysis, rev);
     }
 
-    std::unique_ptr<evmone::AdvancedExecutionState> state;
+    std::unique_ptr<EvmoneExecutionState> state;
     if (state_pool) {
         state = state_pool->acquire();
     } else {
-        state = std::make_unique<evmone::AdvancedExecutionState>();
+        state = std::make_unique<EvmoneExecutionState>();
     }
 
     EvmHost host{*this};
 
     state->reset(msg, rev, host.get_interface(), host.to_context(), code.data(), code.size());
 
-    evmc_result res{evmone::execute(*state, *analysis)};
+    evmc_result res{evmone::advanced::execute(*state, *analysis)};
 
     if (state_pool) {
         state_pool->release(std::move(state));

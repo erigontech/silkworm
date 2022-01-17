@@ -140,8 +140,8 @@ StageResult RecoveryFarm::recover() {
         && dispatch_batch()                       // Residual batch dispatched
     ) {
         log::Trace() << "Senders end read block bodies ... ";
-        current_phase_ = 3;
         wait_workers_completion();
+        current_phase_ = 3;
 
         // If everything ok from previous steps wait for all workers to complete
         // and collect results

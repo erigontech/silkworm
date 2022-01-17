@@ -14,7 +14,6 @@
    limitations under the License.
 */
 
-
 #include <silkworm/common/assert.hpp>
 #include <silkworm/common/endian.hpp>
 #include <silkworm/common/log.hpp>
@@ -104,6 +103,7 @@ StageResult HashState::unwind(db::RWTxn& txn, BlockNum to) {
 
 StageResult HashState::prune(db::RWTxn& txn) {
     // TODO(Andrea) This is yet to be implemented
+    (void)txn;
     return StageResult::kUnknownError;
 }
 

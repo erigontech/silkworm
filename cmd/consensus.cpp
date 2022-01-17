@@ -1,5 +1,5 @@
 /*
-   Copyright 2020-2021 The Silkworm Authors
+   Copyright 2020-2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -703,7 +703,7 @@ int main(int argc, char* argv[]) {
         }
     }
 
-    thread_pool thread_pool{num_threads, /*stack_size=*/16 * kMebi};
+    thread_pool thread_pool{num_threads, /*stack_size=*/32 * kMebi};
 
     const fs::path root_dir{tests_path};
 

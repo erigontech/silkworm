@@ -116,11 +116,12 @@ StageResult BlockHashes::unwind(db::RWTxn& txn, BlockNum to) {
     auto source_data{source.lower_bound(db::to_slice(initial_key), false)};
 
     std::vector<Bytes> collected_keys;
+    db::WalkFunc walk_func = [&collected_keys](::mdbx::cursor&, ::mdbx::cursor::move_result& data) -> bool {
+        collected_keys.emplace_back(db::from_slice(data.value));
+        return true;
+    };
     if (source_data) {
-        db::cursor_for_each(source, [&collected_keys](::mdbx::cursor&, ::mdbx::cursor::move_result& _data) -> bool {
-            collected_keys.emplace_back(db::from_slice(_data.value));
-            return true;
-        });
+        db::cursor_for_each(source, walk_func);
     }
     source.close();
 

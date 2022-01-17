@@ -1,5 +1,5 @@
 /*
-   Copyright 2021 The Silkworm Authors
+   Copyright 2021-2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -69,14 +69,14 @@ TEST_CASE("RWTxn") {
         const auto handle{tx.open_map(table_name)};
         REQUIRE(tx.get_map_stat(handle).ms_entries == kGeneticCode.size());
     }
-   
+
     SECTION("External") {
         static const char* table_name{"GeneticCode"};
         auto ext_tx{env.start_write()};
         {
             auto tx{db::RWTxn(ext_tx)};
             (void)tx->create_map(table_name, mdbx::key_mode::usual, mdbx::value_mode::single);
-            tx.commit(); // Does not have any effect
+            tx.commit();  // Does not have any effect
         }
         ext_tx.abort();
         ext_tx = env.start_write();
@@ -98,14 +98,14 @@ TEST_CASE("Cursor walk") {
 
     // A map to collect data
     std::map<std::string, std::string> data_map;
-    const auto save_all_data_map{[&data_map](::mdbx::cursor, mdbx::cursor::move_result& entry) {
+    WalkFunc save_all_data_map{[&data_map](::mdbx::cursor&, ::mdbx::cursor::move_result& entry) {
         data_map.emplace(entry.key, entry.value);
         return true;
     }};
 
     // A vector to collect data
     std::vector<std::pair<std::string, std::string>> data_vec;
-    const auto save_all_data_vec{[&data_vec](::mdbx::cursor, mdbx::cursor::move_result& entry) {
+    WalkFunc save_all_data_vec{[&data_vec](::mdbx::cursor&, ::mdbx::cursor::move_result& entry) {
         data_vec.emplace_back(entry.key, entry.value);
         return true;
     }};
@@ -151,7 +151,7 @@ TEST_CASE("Cursor walk") {
         data_map.clear();
 
         // early stop
-        const auto save_some_data{[&data_map](::mdbx::cursor, mdbx::cursor::move_result& entry) {
+        WalkFunc save_some_data{[&data_map](::mdbx::cursor&, ::mdbx::cursor::move_result& entry) {
             if (entry.value == "Threonine") {
                 return false;
             }

@@ -1,5 +1,5 @@
 /*
-   Copyright 2021 The Silkworm Authors
+   Copyright 2021-2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -14,7 +14,6 @@
    limitations under the License.
 */
 
-#include <filesystem>
 
 #include <silkworm/common/assert.hpp>
 #include <silkworm/common/endian.hpp>
@@ -26,8 +25,6 @@
 #include "stagedsync.hpp"
 
 namespace silkworm::stagedsync {
-
-namespace fs = std::filesystem;
 
 StageResult HashState::forward(db::RWTxn& txn) {
     // Check stage boundaries from previous execution and previous stage execution
@@ -51,11 +48,11 @@ StageResult HashState::forward(db::RWTxn& txn) {
 
     if (previous_progress != 0) {
         log::Info() << "Starting Account Hashing";
-        hashstate_promote(*txn, HashstateOperation::HashAccount);
+        promote_incremental(txn, OperationType::HashAccount);
         log::Info() << "Starting Storage Hashing";
-        hashstate_promote(*txn, HashstateOperation::HashStorage);
+        promote_incremental(txn, OperationType::HashStorage);
         log::Info() << "Hashing Code Keys";
-        hashstate_promote(*txn, HashstateOperation::Code);
+        promote_incremental(txn, OperationType::Code);
     } else {
         promote_clean_state(txn);
         promote_clean_code(txn);
@@ -69,6 +66,45 @@ StageResult HashState::forward(db::RWTxn& txn) {
 
     log::Info() << "All Done!";
     return StageResult::kSuccess;
+}
+
+StageResult HashState::unwind(db::RWTxn& txn, BlockNum to) {
+    try {
+        auto stage_height{db::stages::read_stage_progress(*txn, db::stages::kHashStateKey)};
+        if (to >= stage_height) {
+            log::Error() << "Stage progress is " << stage_height << " which is <= than requested unwind_to";
+            return StageResult::kAborted;
+        }
+
+        log::Info() << "Unwinding HashState from " << stage_height << " to " << to << " ...";
+
+        log::Info() << "[1/3] Hashed accounts ... ";
+        demote_incremental(txn, to, OperationType::HashAccount);
+
+        log::Info() << "[2/3] Hashed storage ... ";
+        demote_incremental(txn, to, OperationType::HashStorage);
+
+        log::Info() << "[3/3] Code ... ";
+        demote_incremental(txn, to, OperationType::Code);
+
+        // Update progress height with last processed block
+        db::stages::write_stage_progress(*txn, db::stages::kHashStateKey, to);
+
+        log::Info() << "Committing ... ";
+        txn.commit();
+
+        log::Info() << "All Done!";
+        return StageResult::kSuccess;
+
+    } catch (const std::exception& ex) {
+        log::Error() << "Unexpected error : " << ex.what();
+        return StageResult::kAborted;
+    }
+}
+
+StageResult HashState::prune(db::RWTxn& txn) {
+    // TODO(Andrea) This is yet to be implemented
+    return StageResult::kUnknownError;
 }
 
 void HashState::promote_clean_state(db::RWTxn& txn) {
@@ -165,44 +201,15 @@ void HashState::promote_clean_code(db::RWTxn& txn) {
     }
 }
 
-std::vector<std::string> HashState::get_log_progress() {
-    // TODO(Andrea) find a reasonable way to log progress
-    return {};
-}
+void HashState::promote_incremental(db::RWTxn& txn, OperationType operation) {
+    auto [changeset_config, target_config] = HashState::get_operation_tables(operation);
 
-/*
- *  Convert get tables configuration pair for incremental promotion
- *  First configuration of the pair is the source and second configuration is the table to fill.
- */
-static std::pair<db::MapConfig, db::MapConfig> get_tables_for_promote(HashstateOperation operation) {
-    switch (operation) {
-        case HashstateOperation::HashAccount:
-            return {db::table::kAccountChangeSet, db::table::kHashedAccounts};
-        case HashstateOperation::HashStorage:
-            return {db::table::kStorageChangeSet, db::table::kHashedStorage};
-        case HashstateOperation::Code:
-            return {db::table::kAccountChangeSet, db::table::kContractCode};
-        default:
-            std::string error{magic_enum::enum_name<HashstateOperation>(operation)};
-            error.append(": unknown operation");
-            throw std::runtime_error(error);
-    }
-}
+    auto changeset_table{db::open_cursor(*txn, changeset_config)};
+    auto plainstate_table{db::open_cursor(*txn, db::table::kPlainState)};
+    auto codehash_table{db::open_cursor(*txn, db::table::kPlainContractCode)};
+    auto target_table{db::open_cursor(*txn, target_config)};
 
-/*
- *  If we have done hashstate before(not first sync),
- *  We need to use changeset because we can use the progress system.
- *  Note: Standard Promotion is way slower than Clean Promotion
- */
-void hashstate_promote(mdbx::txn& txn, HashstateOperation operation) {
-    auto [changeset_config, target_config] = get_tables_for_promote(operation);
-
-    auto changeset_table{db::open_cursor(txn, changeset_config)};
-    auto plainstate_table{db::open_cursor(txn, db::table::kPlainState)};
-    auto codehash_table{db::open_cursor(txn, db::table::kPlainContractCode)};
-    auto target_table{db::open_cursor(txn, target_config)};
-
-    auto start_block_number{db::stages::read_stage_progress(txn, db::stages::kHashStateKey) + 1};
+    auto start_block_number{db::stages::read_stage_progress(*txn, db::stages::kHashStateKey) + 1};
 
     Bytes start_key{db::block_key(start_block_number)};
     auto changeset_data{changeset_table.lower_bound(db::to_slice(start_key), /*throw_notfound=*/false)};
@@ -212,7 +219,7 @@ void hashstate_promote(mdbx::txn& txn, HashstateOperation operation) {
         Bytes mdb_value_as_bytes{db::from_slice(changeset_data.value)};
         auto [db_key, _]{db::change_set_to_plain_state_format(mdb_key_as_bytes, mdb_value_as_bytes)};
 
-        if (operation == HashstateOperation::HashAccount) {
+        if (operation == OperationType::HashAccount) {
             // We get account and hash its key.
             auto plainstate_data{plainstate_table.find(db::to_slice(db_key), /*throw_notfound=*/false)};
             if (!plainstate_data) {
@@ -224,7 +231,7 @@ void hashstate_promote(mdbx::txn& txn, HashstateOperation operation) {
             target_table.upsert(db::to_slice(hash.bytes), plainstate_data.value);
             changeset_data = changeset_table.to_next(false);
 
-        } else if (operation == HashstateOperation::HashStorage) {
+        } else if (operation == OperationType::HashStorage) {
             auto plainstate_data{plainstate_table.find(db::to_slice(db_key), /*throw_notfound=*/false)};
             if (!plainstate_data) {
                 changeset_data = changeset_table.to_next(/*throw_notfound=*/false);
@@ -282,44 +289,15 @@ void hashstate_promote(mdbx::txn& txn, HashstateOperation operation) {
     }
 }
 
-StageResult stage_hashstate(db::RWTxn& txn, const fs::path& etl_path, uint64_t) {
-    log::Info() << "Starting HashState";
+void HashState::demote_incremental(db::RWTxn& txn, BlockNum to, OperationType operation) {
+    auto [changeset_config, target_config] = get_operation_tables(operation);
 
-    auto last_processed_block_number{db::stages::read_stage_progress(*txn, db::stages::kHashStateKey)};
-    if (last_processed_block_number != 0) {
-        log::Info() << "Starting Account Hashing";
-        hashstate_promote(*txn, HashstateOperation::HashAccount);
-        log::Info() << "Starting Storage Hashing";
-        hashstate_promote(*txn, HashstateOperation::HashStorage);
-        log::Info() << "Hashing Code Keys";
-        hashstate_promote(*txn, HashstateOperation::Code);
-    } else {
-        hashstate_promote_clean_state(*txn, etl_path.string());
-        hashstate_promote_clean_code(*txn, etl_path.string());
-    }
-    // Update progress height with last processed block
-    db::stages::write_stage_progress(*txn, db::stages::kHashStateKey,
-                                     db::stages::read_stage_progress(*txn, db::stages::kExecutionKey));
-    txn.commit();
+    auto changeset_table{db::open_cursor(*txn, changeset_config)};
+    auto target_table{db::open_cursor(*txn, target_config)};
+    auto code_table{db::open_cursor(*txn, db::table::kContractCode)};
+    auto contract_code_table{db::open_cursor(*txn, db::table::kPlainContractCode)};
 
-    log::Info() << "All Done!";
-    return StageResult::kSuccess;
-}
-
-/*
- *  If we have done hashstate before(not first sync),
- *  We need to use changeset because we can use the progress system.
- *  Note: Standard Promotion is way slower than Clean Promotion
- */
-static void hashstate_unwind(mdbx::txn& txn, BlockNum unwind_to, HashstateOperation operation) {
-    auto [changeset_config, target_config] = get_tables_for_promote(operation);
-
-    auto changeset_table{db::open_cursor(txn, changeset_config)};
-    auto target_table{db::open_cursor(txn, target_config)};
-    auto code_table{db::open_cursor(txn, db::table::kContractCode)};
-    auto contract_code_table{db::open_cursor(txn, db::table::kPlainContractCode)};
-
-    Bytes start_key{db::block_key(unwind_to + 1)};
+    Bytes start_key{db::block_key(to + 1)};
     auto changeset_data{changeset_table.lower_bound(db::to_slice(start_key), /*throw_notfound=*/false)};
     if (!changeset_data) {
         return;
@@ -327,8 +305,9 @@ static void hashstate_unwind(mdbx::txn& txn, BlockNum unwind_to, HashstateOperat
 
     db::WalkFunc unwind_func;
     switch (operation) {
-        case silkworm::stagedsync::HashstateOperation::HashAccount:
-            unwind_func = [&target_table, &code_table](::mdbx::cursor, ::mdbx::cursor::move_result data) -> bool {
+        case OperationType::HashAccount:
+            unwind_func = [&target_table, &code_table](const ::mdbx::cursor&,
+                                                       const ::mdbx::cursor::move_result& data) -> bool {
                 auto [db_key, db_value]{
                     db::change_set_to_plain_state_format(db::from_slice(data.key), db::from_slice(data.value))};
 
@@ -361,8 +340,8 @@ static void hashstate_unwind(mdbx::txn& txn, BlockNum unwind_to, HashstateOperat
                 return true;
             };
             break;
-        case silkworm::stagedsync::HashstateOperation::HashStorage:
-            unwind_func = [&target_table](::mdbx::cursor, ::mdbx::cursor::move_result data) -> bool {
+        case OperationType::HashStorage:
+            unwind_func = [&target_table](const ::mdbx::cursor&, const ::mdbx::cursor::move_result& data) -> bool {
                 auto [db_key, db_value]{
                     db::change_set_to_plain_state_format(db::from_slice(data.key), db::from_slice(data.value))};
 
@@ -377,9 +356,9 @@ static void hashstate_unwind(mdbx::txn& txn, BlockNum unwind_to, HashstateOperat
                 return true;
             };
             break;
-        case silkworm::stagedsync::HashstateOperation::Code:
-            unwind_func = [&target_table, &contract_code_table](::mdbx::cursor,
-                                                                ::mdbx::cursor::move_result data) -> bool {
+        case OperationType::Code:
+            unwind_func = [&target_table, &contract_code_table](const ::mdbx::cursor&,
+                                                                const ::mdbx::cursor::move_result& data) -> bool {
                 auto [db_key, db_value]{
                     db::change_set_to_plain_state_format(db::from_slice(data.key), db::from_slice(data.value))};
                 if (db_value.empty()) {
@@ -403,46 +382,32 @@ static void hashstate_unwind(mdbx::txn& txn, BlockNum unwind_to, HashstateOperat
             };
             break;
         default:
-            std::string error{magic_enum::enum_name<HashstateOperation>(operation)};
-            error.append(": unknown operation");
+            std::string error{magic_enum::enum_name<OperationType>(operation)};
+            error.append(": unimplemented operation");
             throw std::runtime_error(error);
     }
 
     (void)db::cursor_for_each(changeset_table, unwind_func);
 }
 
-StageResult unwind_hashstate(db::RWTxn& txn, const fs::path&, uint64_t unwind_to) {
-    try {
-        auto stage_height{db::stages::read_stage_progress(*txn, db::stages::kHashStateKey)};
-        if (unwind_to >= stage_height) {
-            log::Error() << "Stage progress is " << stage_height << " which is <= than requested unwind_to";
-            return StageResult::kAborted;
-        }
-
-        log::Info() << "Unwinding HashState from " << stage_height << " to " << unwind_to << " ...";
-
-        log::Info() << "[1/3] Hashed accounts ... ";
-        hashstate_unwind(*txn, unwind_to, HashstateOperation::HashAccount);
-
-        log::Info() << "[2/3] Hashed storage ... ";
-        hashstate_unwind(*txn, unwind_to, HashstateOperation::HashStorage);
-
-        log::Info() << "[3/3] Code ... ";
-        hashstate_unwind(*txn, unwind_to, HashstateOperation::Code);
-
-        // Update progress height with last processed block
-        db::stages::write_stage_progress(*txn, db::stages::kHashStateKey, unwind_to);
-
-        log::Info() << "Committing ... ";
-        txn.commit();
-
-        log::Info() << "All Done!";
-        return StageResult::kSuccess;
-
-    } catch (const std::exception& ex) {
-        log::Error() << "Unexpected error : " << ex.what();
-        return StageResult::kAborted;
+std::pair<db::MapConfig, db::MapConfig> HashState::get_operation_tables(OperationType operation) {
+    switch (operation) {
+        case OperationType::HashAccount:
+            return {db::table::kAccountChangeSet, db::table::kHashedAccounts};
+        case OperationType::HashStorage:
+            return {db::table::kStorageChangeSet, db::table::kHashedStorage};
+        case OperationType::Code:
+            return {db::table::kAccountChangeSet, db::table::kContractCode};
+        default:
+            std::string error{magic_enum::enum_name<OperationType>(operation)};
+            error.append(": unimplemented operation");
+            throw std::runtime_error(error);
     }
+}
+
+std::vector<std::string> HashState::get_log_progress() {
+    // TODO(Andrea) find a reasonable way to log progress
+    return {};
 }
 
 }  // namespace silkworm::stagedsync

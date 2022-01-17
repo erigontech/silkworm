@@ -91,13 +91,13 @@ TEST_CASE("Sync Stages") {
             REQUIRE(txn->get_map_stat(target_table.map()).ms_entries == block_hashes.size() + 1);  // Block 0 is genesis
 
             std::vector<std::pair<evmc::bytes32, BlockNum>> written_data{};
-            db::cursor_for_each(
-                target_table, [&written_data](::mdbx::cursor&, ::mdbx::cursor::move_result& data) -> bool {
-                    auto written_block_num{endian::load_big_u64(static_cast<uint8_t*>(data.value.data()))};
-                    auto written_hash{to_bytes32(db::from_slice(data.key))};
-                    written_data.emplace_back(written_hash, written_block_num);
-                    return true;
-                });
+            db::WalkFunc walk_func = [&written_data](::mdbx::cursor&, ::mdbx::cursor::move_result& data) -> bool {
+                auto written_block_num{endian::load_big_u64(static_cast<uint8_t*>(data.value.data()))};
+                auto written_hash{to_bytes32(db::from_slice(data.key))};
+                written_data.emplace_back(written_hash, written_block_num);
+                return true;
+            };
+            (void)db::cursor_for_each(target_table, walk_func);
 
             REQUIRE(written_data.size() == block_hashes.size() + 1);
             for (const auto& [written_hash, written_block_num] : written_data) {
@@ -201,7 +201,7 @@ TEST_CASE("Sync Stages") {
         // TODO(Andrea) Check prune works
     }
 
-    SECTION("Execution") {
+    SECTION("Execution and HashState") {
         // ---------------------------------------
         // Prepare
         // ---------------------------------------
@@ -254,7 +254,7 @@ TEST_CASE("Sync Stages") {
         // ---------------------------------------
         // Execute second block
         // ---------------------------------------
-        std::string new_val{"000000000000000000000000000000000000000000000000000000000000003e"};
+        auto new_val{0x000000000000000000000000000000000000000000000000000000000000003e_bytes32};
 
         block_number = 2;
         block.header.number = block_number;
@@ -265,7 +265,7 @@ TEST_CASE("Sync Stages") {
         block.transactions[0].nonce = 1;
         block.transactions[0].value = 1000;
         block.transactions[0].to = contract_address;
-        block.transactions[0].data = *from_hex(new_val);
+        block.transactions[0].data = ByteView(new_val);
 
         actual_validation_result =
             magic_enum::enum_name(execute_block(block, buffer, node_settings.chain_config.value()));
@@ -275,22 +275,21 @@ TEST_CASE("Sync Stages") {
         // Execute third block
         // ---------------------------------------
 
-        new_val = "000000000000000000000000000000000000000000000000000000000000003b";
+        new_val = 0x000000000000000000000000000000000000000000000000000000000000003b_bytes32;
 
         block_number = 3;
         block.header.number = block_number;
-
         block.transactions[0].nonce = 2;
-        block.transactions[0].data = *from_hex(new_val);
+        block.transactions[0].value = 1000;
+        block.transactions[0].to = contract_address;
+        block.transactions[0].data = ByteView{new_val};
 
         actual_validation_result =
             magic_enum::enum_name(execute_block(block, buffer, node_settings.chain_config.value()));
         REQUIRE(expected_validation_result == actual_validation_result);
-
-        db::stages::write_stage_progress(*txn, db::stages::kExecutionKey, 3);
-
-        buffer.write_to_db();
-        txn.commit();
+        REQUIRE_NOTHROW(buffer.write_to_db());
+        REQUIRE_NOTHROW(db::stages::write_stage_progress(*txn, db::stages::kExecutionKey, 3));
+        REQUIRE_NOTHROW(txn.commit());
 
         SECTION("Execution Unwind") {
             // ---------------------------------------
@@ -356,11 +355,71 @@ TEST_CASE("Sync Stages") {
             auto account_changeset_table{db::open_cursor(*txn, db::table::kAccountChangeSet)};
             auto data{account_changeset_table.to_first(false)};
             REQUIRE(data.done);
-            BlockNum expected_block_num = 1; // We've pruned history before 2
+            BlockNum expected_block_num = 1;  // We've pruned history before 2
             BlockNum actual_block_num = endian::load_big_u64(db::from_slice(data.key).data());
             REQUIRE(actual_block_num == expected_block_num);
             account_changeset_table.close();
             REQUIRE(db::stages::read_stage_prune_progress(*txn, db::stages::kExecutionKey) == 3);
+        }
+
+        SECTION("HashState") {
+            stagedsync::HashState stage(&node_settings);
+            auto expected_stage_result{
+                magic_enum::enum_name<stagedsync::StageResult>(stagedsync::StageResult::kSuccess)};
+            auto actual_stage_result = magic_enum::enum_name<stagedsync::StageResult>(stage.forward(txn));
+            REQUIRE(expected_stage_result == actual_stage_result);
+            REQUIRE(db::stages::read_stage_progress(*txn, db::stages::kHashStateKey) == 3);
+
+            // ---------------------------------------
+            // Check hashed account
+            // ---------------------------------------
+            auto hashed_accounts_table{db::open_cursor(*txn, db::table::kHashedAccounts)};
+            auto hashed_sender{keccak256(sender)};
+            REQUIRE(hashed_accounts_table.seek(db::to_slice(hashed_sender.bytes)));
+            {
+                auto account_encoded{db::from_slice(hashed_accounts_table.current().value)};
+                auto [account, _]{decode_account_from_storage(account_encoded)};
+                CHECK(account.nonce == 3);
+                CHECK(account.balance < kEther);
+            }
+
+            // ---------------------------------------
+            // Check hashed storage
+            // ---------------------------------------
+            auto hashed_storage_table{db::open_cursor(*txn, db::table::kHashedStorage)};
+            auto hashed_contract{keccak256(contract_address)};
+            Bytes storage_key{db::storage_prefix(hashed_contract.bytes, kDefaultIncarnation)};
+            REQUIRE(hashed_storage_table.find(db::to_slice(storage_key)));
+            REQUIRE(hashed_storage_table.count_multivalue() == 2);
+
+            // location 0
+            auto hashed_loc0{keccak256(0x0000000000000000000000000000000000000000000000000000000000000000_bytes32)};
+            hashed_storage_table.to_current_first_multi();
+            mdbx::slice db_val{hashed_storage_table.current().value};
+            REQUIRE(db_val.starts_with(db::to_slice(hashed_loc0.bytes)));
+            ByteView value{db::from_slice(db_val).substr(kHashLength)};
+            REQUIRE(to_hex(value) == to_hex(zeroless_view(new_val)));
+
+            // location 1
+            auto hashed_loc1{keccak256(0x0000000000000000000000000000000000000000000000000000000000000001_bytes32)};
+            hashed_storage_table.to_current_next_multi();
+            db_val = hashed_storage_table.current().value;
+            CHECK(db_val.starts_with(db::to_slice(hashed_loc1.bytes)));
+            value = db::from_slice(db_val).substr(kHashLength);
+            CHECK(to_hex(value) == "01c9");
+
+            // Unwind the stage
+            actual_stage_result = magic_enum::enum_name<stagedsync::StageResult>(stage.unwind(txn, 1));
+            REQUIRE(expected_stage_result == actual_stage_result);
+            hashed_accounts_table = db::open_cursor(*txn, db::table::kHashedAccounts);
+            REQUIRE(hashed_accounts_table.seek(db::to_slice(hashed_sender.bytes)));
+            {
+                auto account_encoded{db::from_slice(hashed_accounts_table.current().value)};
+                auto [account, _]{decode_account_from_storage(account_encoded)};
+                CHECK(account.nonce == 2);
+                CHECK(account.balance < kEther);
+                CHECK(db::stages::read_stage_progress(*txn, db::stages::kHashStateKey) == 1);
+            }
         }
     }
 }

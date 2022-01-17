@@ -118,9 +118,15 @@ class HashState final : public IStage {
     void promote_clean_state(db::RWTxn& txn);
     void promote_clean_code(db::RWTxn& txn);
 
+    //! \brief If we have done hashstate before (this is NOT first sync) we must changesets.
+    //! \remarks This is way slower than clean promotion
+    void promote_incremental(db::RWTxn& txn, OperationType operation);
+
+    void demote_incremental(db::RWTxn& txn, BlockNum to, OperationType operation);
+
     //! \brief Retrieve tables configuration pair for incremental promotion
     //! \return A pair where first is the source and second is the target
-    [[nodiscard]] std::pair<db::MapConfig, db::MapConfig> get_promote_tables(OperationType operation);
+    [[nodiscard]] static std::pair<db::MapConfig, db::MapConfig> get_operation_tables(OperationType operation);
 };
 
 typedef StageResult (*StageFunc)(db::RWTxn&, const std::filesystem::path& etl_path, uint64_t prune_from);
@@ -153,7 +159,6 @@ enum class HashstateOperation {
     Code,
 };
 
-void hashstate_promote(mdbx::txn&, HashstateOperation);
 
 /* **************************** */
 StageResult stage_hashstate(db::RWTxn& txn, const std::filesystem::path& etl_path, uint64_t prune_from = 0);
@@ -165,7 +170,6 @@ StageResult stage_tx_lookup(db::RWTxn& txn, const std::filesystem::path& etl_pat
 
 // Unwind functions
 StageResult no_unwind(db::RWTxn& txn, const std::filesystem::path& etl_path, uint64_t unwind_to);
-StageResult unwind_hashstate(db::RWTxn& txn, const std::filesystem::path& etl_path, uint64_t unwind_to);
 StageResult unwind_interhashes(db::RWTxn& txn, const std::filesystem::path& etl_path, uint64_t unwind_to);
 StageResult unwind_account_history(db::RWTxn& txn, const std::filesystem::path& etl_path, uint64_t unwind_to);
 StageResult unwind_storage_history(db::RWTxn& txn, const std::filesystem::path& etl_path, uint64_t unwind_to);

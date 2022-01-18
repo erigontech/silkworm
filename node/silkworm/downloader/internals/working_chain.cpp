@@ -183,7 +183,7 @@ Headers WorkingChain::withdraw_stable_headers() {
 auto WorkingChain::verify(const Link& link) -> VerificationResult {
     if (link.preverified) return Preverified;
 
-    if (link.blockHeight < highest_in_db_) return Skip;    // todo: check! Erigon searchs in the db
+    // todo: Erigon here searches in the db to see if the link is already present and in this case Skips it
 
     if (contains(bad_headers_, link.hash)) return Skip;
 

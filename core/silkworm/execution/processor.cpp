@@ -1,5 +1,5 @@
 /*
-   Copyright 2020-2021 The Silkworm Authors
+   Copyright 2020-2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -113,12 +113,15 @@ Receipt ExecutionProcessor::execute_transaction(const Transaction& txn) noexcept
 
     cumulative_gas_used_ += gas_used;
 
+    const std::vector<Log> logs{state_.move_logs_out()};
+    const Bloom bloom{logs_bloom(logs)};
+
     return {
         txn.type,                       // type
         vm_res.status == EVMC_SUCCESS,  // success
         cumulative_gas_used_,           // cumulative_gas_used
-        logs_bloom(state_.logs()),      // bloom
-        state_.logs(),                  // logs
+        bloom,                          // bloom
+        logs,                           // logs
     };
 }
 

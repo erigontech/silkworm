@@ -135,30 +135,6 @@ TEST_CASE("HeaderList - split_into_segments - Two connected headers with wrong n
     REQUIRE(penalty == Penalty::WrongChildBlockHeightPenalty);
 }
 
-/* WrongChildDifficultyPenalty check is not implemented in Erigon/Silkworm code, so this test is commented
-    TEST_CASE("HeaderList::split_into_segments - Two connected headers with wrong difficulty") {
-        std::vector<BlockHeader> headers;
-
-        BlockHeader header1;
-        header1.number = 1;
-        header1.difficulty = 10;
-        headers.push_back(header1);
-
-        BlockHeader header2;
-        header2.number = 2;
-        header2.difficulty = 2000; // Expected difficulty 10 + 1000 = 1010;
-        header2.parent_hash = header1.hash();
-        headers.push_back(header2);
-
-        auto headerList = HeaderList::make(headers);
-
-        auto [segments, penalty] = headerList->split_into_segments();
-
-        REQUIRE(segments.size() == 0);
-        REQUIRE(penalty == Penalty::WrongChildDifficultyPenalty);
-    }
-*/
-
 /* input:
  *         h1 <----- h2
  *               |-- h3
@@ -402,6 +378,7 @@ TEST_CASE("WorkingChain - process_segment - (1) simple chain") {
         REQUIRE(anchor != nullptr);
         REQUIRE(anchor->parentHash == headers[1].parent_hash);
         REQUIRE(anchor->blockHeight == headers[1].number);
+        REQUIRE(anchor->lastLinkHeight == headers[2].number);
         REQUIRE(anchor->peerId == peerId);
 
         REQUIRE(anchor->links.size() == 1);
@@ -433,6 +410,7 @@ TEST_CASE("WorkingChain - process_segment - (1) simple chain") {
         REQUIRE(anchor != nullptr);
         REQUIRE(anchor->parentHash == headers[1].parent_hash);
         REQUIRE(anchor->blockHeight == headers[1].number);
+        REQUIRE(anchor->lastLinkHeight == headers[4].number);
         REQUIRE(anchor->links.size() == 1);
 
         REQUIRE(anchor->links[0]->hash == headers[1].hash());
@@ -468,12 +446,14 @@ TEST_CASE("WorkingChain - process_segment - (1) simple chain") {
         REQUIRE(anchor1 != nullptr);
         REQUIRE(anchor1->parentHash == headers[1].parent_hash);
         REQUIRE(anchor1->blockHeight == headers[1].number);
+        REQUIRE(anchor1->lastLinkHeight == headers[4].number);
         REQUIRE(anchor1->links.size() == 1);
 
         auto anchor2 = chain.anchors_[headers[8].parent_hash];
         REQUIRE(anchor2 != nullptr);
         REQUIRE(anchor2->parentHash == headers[8].parent_hash);
         REQUIRE(anchor2->blockHeight == headers[8].number);
+        REQUIRE(anchor2->lastLinkHeight == headers[9].number);
         REQUIRE(anchor2->links.size() == 1);
 
         REQUIRE(anchor1->links[0]->hash == headers[1].hash());
@@ -511,7 +491,27 @@ TEST_CASE("WorkingChain - process_segment - (1) simple chain") {
         REQUIRE(chain.link_queue_.size() == 8);
         REQUIRE(chain.links_.size() == 8);
 
-        // todo: test on link chain
+        auto anchor1 = chain.anchors_[headers[1].parent_hash];
+        REQUIRE(anchor1 != nullptr);
+        REQUIRE(anchor1->parentHash == headers[1].parent_hash);
+        REQUIRE(anchor1->blockHeight == headers[1].number);
+        REQUIRE(anchor1->lastLinkHeight == headers[4].number);
+        REQUIRE(anchor1->links.size() == 1);
+
+        auto anchor2 = chain.anchors_[headers[6].parent_hash];
+        REQUIRE(anchor2 != nullptr);
+        REQUIRE(anchor2->parentHash == headers[6].parent_hash);
+        REQUIRE(anchor2->blockHeight == headers[6].number);
+        REQUIRE(anchor2->lastLinkHeight == headers[9].number);
+        REQUIRE(anchor2->links.size() == 1);
+
+        REQUIRE(anchor2->links[0]->hash == headers[6].hash());
+        REQUIRE(anchor2->links[0]->next.size() == 1);
+        REQUIRE(anchor2->links[0]->next[0]->hash == headers[7].hash());
+        REQUIRE(anchor2->links[0]->next[0]->next.size() == 1);
+        REQUIRE(anchor2->links[0]->next[0]->next[0]->hash == headers[8].hash());
+        REQUIRE(anchor2->links[0]->next[0]->next[0]->next.size() == 1);
+        REQUIRE(anchor2->links[0]->next[0]->next[0]->next[0]->hash == headers[9].hash());
     }
 
     /* chain status:
@@ -534,7 +534,21 @@ TEST_CASE("WorkingChain - process_segment - (1) simple chain") {
         REQUIRE(chain.link_queue_.size() == 9);
         REQUIRE(chain.links_.size() == 9);
 
-        // todo: test on link chain
+        auto anchor = chain.anchors_[headers[1].parent_hash];
+        REQUIRE(anchor != nullptr);
+        REQUIRE(anchor->parentHash == headers[1].parent_hash);
+        REQUIRE(anchor->blockHeight == headers[1].number);
+        REQUIRE(anchor->lastLinkHeight == headers[9].number);
+        REQUIRE(anchor->links.size() == 1);
+
+        size_t i = 1;
+        auto* current_links = &(anchor->links);
+        while(current_links->size() > 0) {
+            REQUIRE(current_links->at(0)->hash == headers[i].hash());
+            current_links = &(current_links->at(0)->next);
+            i++;
+        }
+        REQUIRE(i == 10);
     }
 }
 

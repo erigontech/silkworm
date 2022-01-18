@@ -61,12 +61,31 @@ std::string WorkingChain::human_readable_status() const {
 }
 
 std::string WorkingChain::human_readable_verbose_status() const {
-    std::string verbose_status;
-    verbose_status += std::to_string(links_.size()) + " links, " + std::to_string(anchors_.size()) + " anchors (";
-    for (auto& anchor: anchors_) {
-        verbose_status += std::to_string(anchor.second->blockHeight) + ",";
+    std::string verbose_status = human_readable_status() + "\n";
+
+    verbose_status += "--**--\n";
+
+    // order
+    std::multimap<BlockNum, std::shared_ptr<Anchor>> ordered_anchors;
+    for (auto& a: anchors_) {
+        auto anchor = a.second;
+        ordered_anchors.insert({anchor->blockHeight, anchor});
     }
-    verbose_status += ")";
+
+    // dump
+    for (auto& a: ordered_anchors) {
+        auto anchor = a.second;
+        auto seconds_from_last_req = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now() - anchor->timestamp);
+        std::string anchor_dump = "--**-- anchor " + to_hex(anchor->parentHash) +
+                                  ": start=" + std::to_string(anchor->blockHeight) +
+                                  ", end=" + std::to_string(anchor->lastLinkHeight) +
+                                  ", len=" + std::to_string(anchor->chainLength()) +
+                                  ", ts=" +  std::to_string(seconds_from_last_req.count()) + "secs\n";
+        verbose_status += anchor_dump;
+    }
+
+    verbose_status += "--**--";
+
     return verbose_status;
 }
 
@@ -223,6 +242,7 @@ void WorkingChain::reduce_persisted_links_to(size_t limit) {
  * hole near the bottom. If the lowest hole is not so big we do not need a skeleton query yet.
  */
 std::optional<GetBlockHeadersPacket66> WorkingChain::request_skeleton() {
+
     BlockNum top = top_seen_height_;
     BlockNum bottom = highest_in_db_ + stride; // warning: this can be inside a chain in memory
     if (top <= bottom) {
@@ -328,7 +348,7 @@ auto WorkingChain::request_more_headers(time_point_t time_point, seconds_t timeo
             // ancestors of this anchor seem to be unavailable, invalidate and move on
             log::Warning() << "WorkingChain: invalidating anchor for suspected unavailability, "
                            << "height=" << anchor->blockHeight;
-            anchor_queue_.pop();
+            //no need to do anchor_queue_.pop(), implicitly done in the following
             invalidate(anchor);
             penalties.emplace_back(Penalty::AbandonedAnchorPenalty, anchor->peerId);
         }
@@ -505,8 +525,8 @@ auto WorkingChain::process_segment(const Segment& segment, bool is_a_new_block, 
     auto[tip, end] = find_link(segment, start);
 
     if (end == 0) {
-        log::Debug() << "WorkingChain: duplicated segment, bn=" << segment[start]->number << ", hash="
-                     << segment[start]->hash()
+        log::Debug() << "WorkingChain: segment cut&paste error, duplicated segment, bn=" << segment[start]->number
+                     << ", hash=" << segment[start]->hash() << " parent-hash=" << segment[start]->parent_hash
                      << (anchor.has_value() ? ", removing corresponding anchor" : ", corresponding anchor not found");
         // If duplicate segment is extending from the anchor, the anchor needs to be deleted,
         // otherwise it will keep producing requests that will be found duplicate
@@ -634,8 +654,9 @@ auto WorkingChain::find_anchor(std::shared_ptr<Link> link) -> std::optional<std:
 
     auto a = anchors_.find(parent_link->header->parent_hash);
     if (a == anchors_.end()) {
-        log::Error() << "WorkingChain: segment without anchor or persisted attach point, starting bn="
-                     << link->blockHeight;
+        log::Error() << "WorkingChain: segment cut&paste error, segment without anchor or persisted attach point, "
+                     << "starting bn=" << link->blockHeight << " ending bn=" << parent_link->blockHeight << " "
+                     << "parent=" << to_hex(parent_link->header->parent_hash);
         return std::nullopt; // wrong, invariant violation, no anchor but there should be
     }
     return a->second;

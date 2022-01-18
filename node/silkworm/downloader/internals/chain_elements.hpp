@@ -104,7 +104,7 @@ struct Anchor {
         parentHash = header.parent_hash;
         blockHeight = header.number;
         lastLinkHeight = blockHeight;
-        timestamp = std::chrono::system_clock::now();
+        //timestamp = 0;  // ready to get extended
         peerId = std::move(p);
     }
 

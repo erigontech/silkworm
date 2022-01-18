@@ -54,7 +54,7 @@ void HeaderDownloader::execution_loop() {
                       [this](const sentry::InboundMessage& msg) { receive_message(msg); });
 
     while (!is_stopping() && !sentry_.is_stopping()) {
-        log::Trace() << "HeaderDownloader status: " << working_chain_.human_readable_status();
+        log::Trace() << "HeaderDownloader status: " << working_chain_.human_readable_verbose_status();
 
         // pop a message from the queue
         std::shared_ptr<Message> message;

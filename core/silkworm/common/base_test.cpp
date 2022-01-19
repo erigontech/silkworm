@@ -28,11 +28,11 @@ namespace silkworm {
 TEST_CASE("Empty hashes") {
     const ByteView empty_string;
     const ethash::hash256 hash_of_empty_string{keccak256(empty_string)};
-    CHECK(bit_cast<evmc::bytes32>(hash_of_empty_string) == kEmptyHash);
+    CHECK(bit_cast<evmc_bytes32>(hash_of_empty_string) == kEmptyHash);
 
     const Bytes rlp_of_empty_list(1, rlp::kEmptyListCode);
     const ethash::hash256 hash_of_empty_list{keccak256(rlp_of_empty_list)};
-    CHECK(bit_cast<evmc::bytes32>(hash_of_empty_list) == kEmptyListHash);
+    CHECK(bit_cast<evmc_bytes32>(hash_of_empty_list) == kEmptyListHash);
 }
 
 }  // namespace silkworm

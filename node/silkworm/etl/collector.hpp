@@ -68,6 +68,7 @@ class Collector {
     //! \brief Clears contents of collector and reset
     void clear() {
         file_providers_.clear();
+        buffer_.clear();
         size_ = 0;
     }
 

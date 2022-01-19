@@ -105,6 +105,13 @@ int main(int argc, char* argv[]) {
         auto t1{std::chrono::steady_clock::now()};
         while (sync_loop.get_state() != Worker::State::kStopped) {
             std::this_thread::sleep_for(std::chrono::milliseconds(500));
+
+            // Check signals
+            if (SignalHandler::signalled()) {
+                sync_loop.stop(true);
+                continue;
+            }
+
             auto t2{std::chrono::steady_clock::now()};
             if ((t2 - t1) > std::chrono::seconds(60)) {
                 t1 = std::chrono::steady_clock::now();

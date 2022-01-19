@@ -59,6 +59,7 @@ class Senders final : public IStage {
     StageResult unwind(db::RWTxn& txn, BlockNum to) final;
     StageResult prune(db::RWTxn& txn) final;
     std::vector<std::string> get_log_progress() final;
+    void stop() final;
 
   private:
     std::unique_ptr<recovery::RecoveryFarm> farm_{nullptr};
@@ -115,8 +116,8 @@ class HashState final : public IStage {
 
     //! \brief If we haven't done hashstate before (this is first sync), it is possible to just hash values from
     //! plainstates, This is way faster than using changeset because it uses less database reads.
-    void promote_clean_state(db::RWTxn& txn);
-    void promote_clean_code(db::RWTxn& txn);
+    StageResult promote_clean_state(db::RWTxn& txn);
+    StageResult promote_clean_code(db::RWTxn& txn);
 
     //! \brief If we have done hashstate before (this is NOT first sync) we must changesets.
     //! \remarks This is way slower than clean promotion
@@ -161,7 +162,6 @@ enum class HashstateOperation {
 
 
 /* **************************** */
-StageResult stage_hashstate(db::RWTxn& txn, const std::filesystem::path& etl_path, uint64_t prune_from = 0);
 StageResult stage_interhashes(db::RWTxn& txn, const std::filesystem::path& etl_path, uint64_t prune_from = 0);
 StageResult stage_account_history(db::RWTxn& txn, const std::filesystem::path& etl_path, uint64_t prune_from = 0);
 StageResult stage_storage_history(db::RWTxn& txn, const std::filesystem::path& etl_path, uint64_t prune_from = 0);

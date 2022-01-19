@@ -107,79 +107,83 @@ StageResult HashState::prune(db::RWTxn& txn) {
     return StageResult::kUnknownError;
 }
 
-void HashState::promote_clean_state(db::RWTxn& txn) {
-    // TODO(Andrea) Maybe introduce an assertion for target tables to be empty ?
-    etl::Collector account_collector(node_settings_->data_directory->etl().path(), node_settings_->etl_buffer_size);
-    etl::Collector storage_collector(node_settings_->data_directory->etl().path(), node_settings_->etl_buffer_size);
+StageResult HashState::promote_clean_state(db::RWTxn& txn) {
+    try {
+        // TODO(Andrea) Maybe introduce an assertion for target tables to be empty ?
+        etl::Collector account_collector(node_settings_);
+        etl::Collector storage_collector(node_settings_);
 
-    auto source{db::open_cursor(*txn, db::table::kPlainState)};
-    auto data{source.to_first(/*throw_notfound=*/false)};
-    int percent{0};
-    uint8_t next_start_byte{0};
-    while (data) {
-        if (data.key.at(0) >= next_start_byte) {
-            log::Info() << "Progress: " << percent << "%";
-            percent += 10;
-            next_start_byte += 25;
+        auto source{db::open_cursor(*txn, db::table::kPlainState)};
+        auto data{source.to_first(/*throw_notfound=*/false)};
+        while (data) {
+            // Account
+            if (data.key.length() == kAddressLength) {
+                auto hash{keccak256(db::from_slice(data.key))};
+                etl::Entry entry{Bytes(hash.bytes, kHashLength), Bytes{db::from_slice(data.value)}};
+                account_collector.collect(std::move(entry));
+            } else {
+                SILKWORM_ASSERT(data.key.length() ==
+                                db::kPlainStoragePrefixLength);  // plain state key = address + incarnation
+                SILKWORM_ASSERT(data.value.length() >
+                                kHashLength);  // plain state value = unhashed location + zeroless value
+
+                Bytes new_key(kHashLength * 2 + db::kIncarnationLength, '\0');
+
+                size_t new_key_pos{0};
+                std::memcpy(&new_key[new_key_pos], keccak256(db::from_slice(data.key).substr(0, kAddressLength)).bytes,
+                            kHashLength);
+                data.key.remove_prefix(kAddressLength);
+                new_key_pos += kHashLength;
+
+                std::memcpy(&new_key[new_key_pos], data.key.data(), db::kIncarnationLength);
+                new_key_pos += db::kIncarnationLength;
+
+                std::memcpy(&new_key[new_key_pos], keccak256(db::from_slice(data.value).substr(0, kHashLength)).bytes,
+                            kHashLength);
+                data.value.remove_prefix(kHashLength);
+
+                etl::Entry entry{new_key, Bytes{db::from_slice(data.value)}};
+                storage_collector.collect(std::move(entry));
+            }
+
+            data = source.to_next(/*throw_notfound=*/false);
         }
 
-        // Account
-        if (data.key.length() == kAddressLength) {
-            auto hash{keccak256(db::from_slice(data.key))};
-            etl::Entry entry{Bytes(hash.bytes, kHashLength), Bytes{db::from_slice(data.value)}};
-            account_collector.collect(std::move(entry));
-        } else {
-            SILKWORM_ASSERT(data.key.length() ==
-                            db::kPlainStoragePrefixLength);  // plain state key = address + incarnation
-            SILKWORM_ASSERT(data.value.length() >
-                            kHashLength);  // plain state value = unhashed location + zeroless value
+        if (!account_collector.empty()) {
+            auto target{db::open_cursor(*txn, db::table::kHashedAccounts)};
+            account_collector.load(target, nullptr, MDBX_put_flags_t::MDBX_APPEND);
+        }
+        if (!storage_collector.empty()) {
+            auto target = db::open_cursor(*txn, db::table::kHashedStorage);
 
-            Bytes new_key(kHashLength * 2 + db::kIncarnationLength, '\0');
+            // ETL key contains hashed location; for DB put we need to move it from key to value
+            auto load_func = [](const etl::Entry& entry, mdbx::cursor& cursor, MDBX_put_flags_t flags) -> void {
+                assert(entry.key.length() == db::kHashedStoragePrefixLength + kHashLength);
+                Bytes value(kHashLength + entry.value.length(), '\0');
+                std::memcpy(&value[0], &entry.key[db::kHashedStoragePrefixLength], kHashLength);
+                std::memcpy(&value[kHashLength], entry.value.data(), entry.value.length());
 
-            size_t new_key_pos{0};
-            std::memcpy(&new_key[new_key_pos], keccak256(db::from_slice(data.key).substr(0, kAddressLength)).bytes,
-                        kHashLength);
-            data.key.remove_prefix(kAddressLength);
-            new_key_pos += kHashLength;
+                mdbx::slice k{entry.key.data(), db::kHashedStoragePrefixLength};
+                mdbx::slice v{db::to_slice(value)};
+                mdbx::error::success_or_throw(cursor.put(k, &v, flags));
+            };
 
-            std::memcpy(&new_key[new_key_pos], data.key.data(), db::kIncarnationLength);
-            new_key_pos += db::kIncarnationLength;
-
-            std::memcpy(&new_key[new_key_pos], keccak256(db::from_slice(data.value).substr(0, kHashLength)).bytes,
-                        kHashLength);
-            data.value.remove_prefix(kHashLength);
-
-            etl::Entry entry{new_key, Bytes{db::from_slice(data.value)}};
-            storage_collector.collect(std::move(entry));
+            storage_collector.load(target, load_func, MDBX_put_flags_t::MDBX_APPENDDUP);
         }
 
-        data = source.to_next(/*throw_notfound=*/false);
-    }
-
-    if (!account_collector.empty()) {
-        auto target{db::open_cursor(*txn, db::table::kHashedAccounts)};
-        account_collector.load(target, nullptr, MDBX_put_flags_t::MDBX_APPEND);
-    }
-    if (!storage_collector.empty()) {
-        auto target = db::open_cursor(*txn, db::table::kHashedStorage);
-
-        // ETL key contains hashed location; for DB put we need to move it from key to value
-        auto load_func = [](const etl::Entry& entry, mdbx::cursor& cursor, MDBX_put_flags_t flags) -> void {
-            assert(entry.key.length() == db::kHashedStoragePrefixLength + kHashLength);
-            Bytes value(kHashLength + entry.value.length(), '\0');
-            std::memcpy(&value[0], &entry.key[db::kHashedStoragePrefixLength], kHashLength);
-            std::memcpy(&value[kHashLength], entry.value.data(), entry.value.length());
-
-            mdbx::slice k{entry.key.data(), db::kHashedStoragePrefixLength};
-            mdbx::slice v{db::to_slice(value)};
-            mdbx::error::success_or_throw(cursor.put(k, &v, flags));
-        };
-
-        storage_collector.load(target, load_func, MDBX_put_flags_t::MDBX_APPENDDUP);
+    } catch (const mdbx::exception& ex) {
+        log::Error() << "Unexpected db error in " << std::string(__FUNCTION__) << " : " << ex.what();
+        return StageResult::kDbError;
+    } catch (const std::exception& ex) {
+        log::Error() << "Unexpected error in " << std::string(__FUNCTION__) << " : " << ex.what();
+        return StageResult::kUnexpectedError;
+    } catch (...) {
+        log::Error() << "Unexpected unknown error in " << std::string(__FUNCTION__);
+        return StageResult::kUnexpectedError;
     }
 }
 
-void HashState::promote_clean_code(db::RWTxn& txn) {
+StageResult HashState::promote_clean_code(db::RWTxn& txn) {
     // TODO(Andrea) Maybe introduce an assertion for target table to be empty ?
     etl::Collector collector(node_settings_->data_directory->etl().path(), node_settings_->etl_buffer_size);
 
@@ -192,13 +196,20 @@ void HashState::promote_clean_code(db::RWTxn& txn) {
                     db::kIncarnationLength);
         etl::Entry entry{new_key, Bytes{db::from_slice(data.value)}};
         collector.collect(std::move(entry));
+        if (collector.size() % 64 == 0 && is_stopping()) {
+            break;
+        }
         data = source.to_next(/*throw_notfound=*/false);
     }
     source.close();
-    if (!collector.empty()) {
-        source = db::open_cursor(*txn, db::table::kContractCode);
-        collector.load(source, nullptr, MDBX_put_flags_t::MDBX_APPEND);
+    if (!is_stopping()) {
+        if (!collector.empty()) {
+            source = db::open_cursor(*txn, db::table::kContractCode);
+            collector.load(source, nullptr, MDBX_put_flags_t::MDBX_APPEND);
+        }
+        return StageResult::kSuccess;
     }
+    return StageResult::kAborted;
 }
 
 void HashState::promote_incremental(db::RWTxn& txn, OperationType operation) {

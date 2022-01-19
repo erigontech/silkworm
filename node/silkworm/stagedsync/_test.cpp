@@ -314,7 +314,7 @@ TEST_CASE("Sync Stages") {
 
             evmc::bytes32 storage_key0{};
             evmc::bytes32 storage0{buffer2.read_storage(contract_address, kDefaultIncarnation, storage_key0)};
-            CHECK(to_hex(storage0) == "000000000000000000000000000000000000000000000000000000000000003e");
+            CHECK(storage0 == 0x000000000000000000000000000000000000000000000000000000000000003e_bytes32);
         }
 
         SECTION("Execution Prune Default") {

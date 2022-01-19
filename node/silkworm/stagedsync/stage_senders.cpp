@@ -29,10 +29,10 @@ StageResult Senders::forward(db::RWTxn& txn) {
 
     farm_ = std::make_unique<recovery::RecoveryFarm>(txn, node_settings_);
     const auto res{farm_->recover()};
-    farm_.reset();
     if (res == StageResult::kSuccess) {
         txn.commit();
     }
+    farm_.reset();
     return res;
 }
 
@@ -67,6 +67,13 @@ StageResult Senders::prune(db::RWTxn& txn) {
         return StageResult::kUnexpectedError;
     }
 }
+
+void Senders::stop() {
+    if (farm_) {
+        farm_->stop();
+    }
+    IStage::stop();
+};
 
 std::vector<std::string> Senders::get_log_progress() {
     if (!farm_) {

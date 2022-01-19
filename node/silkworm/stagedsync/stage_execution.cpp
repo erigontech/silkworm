@@ -14,13 +14,11 @@
     limitations under the License.
 */
 
-#include <filesystem>
 #include <string>
 
 #include <silkworm/common/endian.hpp>
 #include <silkworm/common/log.hpp>
 #include <silkworm/common/stopwatch.hpp>
-#include <silkworm/concurrency/signal_handler.hpp>
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/buffer.hpp>
 #include <silkworm/db/stages.hpp>
@@ -31,7 +29,9 @@
 namespace silkworm::stagedsync {
 
 StageResult Execution::forward(db::RWTxn& txn) {
-    if (!node_settings_->chain_config.has_value()) {
+    if (is_stopping()) {
+        return StageResult::kAborted;
+    } else if (!node_settings_->chain_config.has_value()) {
         return StageResult::kUnknownChainId;
     } else if (!consensus_engine_) {
         return StageResult::kUnknownConsensusEngine;
@@ -75,23 +75,21 @@ StageResult Execution::forward(db::RWTxn& txn) {
     AnalysisCache analysis_cache;
     ExecutionStatePool state_pool;
 
-    while (block_num_ <= max_block_num) {
+    while (!is_stopping() && block_num_ <= max_block_num) {
         // TODO(Andrea) Prune logic must be amended
         const auto res{execute_batch(txn, max_block_num, 0, analysis_cache, state_pool)};
         if (res != StageResult::kSuccess) {
             return res;
         }
+
         db::stages::write_stage_progress(*txn, db::stages::kExecutionKey, block_num_);
         (void)commit_stopwatch.start(/*with_reset=*/true);
         txn.commit();
         auto [_, duration]{commit_stopwatch.stop()};
         log::Info("Commit time", {"batch", StopWatch::format(duration)});
-        if (SignalHandler::signalled()) {
-            return StageResult::kAborted;
-        }
         block_num_++;
     }
-    return StageResult::kSuccess;
+    return is_stopping() ? StageResult::kAborted : StageResult::kSuccess;
 }
 
 StageResult Execution::execute_batch(db::RWTxn& txn, BlockNum max_block_num, BlockNum prune_from,
@@ -106,7 +104,7 @@ StageResult Execution::execute_batch(db::RWTxn& txn, BlockNum max_block_num, Blo
         }
 
         while (true) {
-            if ((block_num_ % 64 == 0) && SignalHandler::signalled()) {
+            if ((block_num_ % 64 == 0) && is_stopping()) {
                 return StageResult::kAborted;
             }
 
@@ -140,7 +138,7 @@ StageResult Execution::execute_batch(db::RWTxn& txn, BlockNum max_block_num, Blo
                 auto t1{std::chrono::steady_clock::now()};
                 log::Info("Flushed batch",
                           {"size", human_size(buffer.current_batch_size()), "in", StopWatch::format(t1 - t0)});
-                return StageResult::kSuccess;
+                return is_stopping() ? StageResult::kAborted : StageResult::kSuccess;
             }
             block_num_++;
         }

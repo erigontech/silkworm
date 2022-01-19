@@ -103,11 +103,21 @@ class IStage {
     //! \brief This function implementation MUST be thread safe as is called asynchronously from ASIO thread
     [[nodiscard]] virtual std::vector<std::string> get_log_progress() = 0;
 
+    //! \brief Returns the key name of the stage instance
     [[nodiscard]] const char* name() const { return stage_name_; }
+
+    //! \brief Sets a stop request for instance;
+    virtual void stop() { stopping_.store(true); }
+
+    //! \brief Whether a stop request has been issued
+    [[nodiscard]] bool is_stopping() { return stopping_; }
 
   protected:
     const char* stage_name_;
     NodeSettings* node_settings_;
+
+  private:
+    std::atomic_bool stopping_{false};
 };
 
 }  // namespace silkworm::stagedsync

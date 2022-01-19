@@ -14,6 +14,7 @@
 #ifndef SILKWORM_ETL_COLLECTOR_HPP_
 #define SILKWORM_ETL_COLLECTOR_HPP_
 
+#include <silkworm/common/settings.hpp>
 #include <silkworm/db/mdbx.hpp>
 #include <silkworm/etl/buffer.hpp>
 #include <silkworm/etl/file_provider.hpp>
@@ -36,6 +37,10 @@ class Collector {
     Collector(const Collector&) = delete;
     Collector& operator=(const Collector&) = delete;
 
+    explicit Collector(const NodeSettings* node_settings)
+        : work_path_managed_{false},
+          work_path_{set_work_path(node_settings->data_directory->etl().path())},
+          buffer_{node_settings->etl_buffer_size} {};
     explicit Collector(const std::filesystem::path& work_path, size_t optimal_size = kOptimalBufferSize)
         : work_path_managed_{false}, work_path_{set_work_path(work_path)}, buffer_{optimal_size} {}
     explicit Collector(size_t optimal_size = kOptimalBufferSize)

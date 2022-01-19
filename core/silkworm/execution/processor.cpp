@@ -149,8 +149,8 @@ uint64_t ExecutionProcessor::refund_gas(const Transaction& txn, uint64_t gas_lef
 }
 
 ValidationResult ExecutionProcessor::execute_block_no_post_validation(std::vector<Receipt>& receipts) noexcept {
-    receipts.clear();
-    receipts.reserve(evm_.block().transactions.size());
+    const size_t n{evm_.block().transactions.size()};
+    receipts.resize(n);
 
     uint64_t block_num{evm_.block().header.number};
     if (block_num == evm_.config().dao_block) {
@@ -158,12 +158,13 @@ ValidationResult ExecutionProcessor::execute_block_no_post_validation(std::vecto
     }
 
     cumulative_gas_used_ = 0;
-    for (const Transaction& txn : evm_.block().transactions) {
+    for (size_t i{0}; i < n; ++i) {
+        const Transaction& txn{evm_.block().transactions[i]};
         const ValidationResult err{validate_transaction(txn)};
         if (err != ValidationResult::kOk) {
             return err;
         }
-        receipts.push_back(execute_transaction(txn));
+        receipts[i] = execute_transaction(txn);
     }
 
     consensus_engine_.finalize(state_, evm_.block(), evm_.revision());

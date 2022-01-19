@@ -18,6 +18,7 @@
 
 #include <cstring>
 
+#include <silkworm/common/assert.hpp>
 #include <silkworm/common/endian.hpp>
 #include <silkworm/common/rlp_err.hpp>
 #include <silkworm/rlp/encode_vector.hpp>
@@ -25,6 +26,7 @@
 namespace silkworm::db {
 
 Bytes storage_prefix(ByteView address, uint64_t incarnation) {
+    SILKWORM_ASSERT(address.length() == kAddressLength || address.length() == kHashLength);
     Bytes res(address.length() + kIncarnationLength, '\0');
     std::memcpy(&res[0], address.data(), address.length());
     endian::store_big_u64(&res[address.length()], incarnation);
@@ -109,9 +111,10 @@ void upsert_storage_value(mdbx::cursor& state_cursor, ByteView storage_prefix, B
     }
     value = zeroless_view(value);
     if (!value.empty()) {
-        Bytes data{location};
-        data.append(value);
-        state_cursor.upsert(to_slice(storage_prefix), to_slice(data));
+        Bytes db_value(location.length() + value.length(), '\0');
+        std::memcpy(&db_value[0], location.data(), location.length());
+        std::memcpy(&db_value[location.length()], value.data(), value.length());
+        state_cursor.upsert(to_slice(storage_prefix), to_slice(db_value));
     }
 }
 

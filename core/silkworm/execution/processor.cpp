@@ -16,6 +16,7 @@
 
 #include "processor.hpp"
 
+#include <algorithm>
 #include <cassert>
 
 #include <silkworm/chain/dao.hpp>
@@ -66,8 +67,10 @@ ValidationResult ExecutionProcessor::validate_transaction(const Transaction& txn
     return ValidationResult::kOk;
 }
 
-Receipt ExecutionProcessor::execute_transaction(const Transaction& txn) noexcept {
+void ExecutionProcessor::execute_transaction(const Transaction& txn, Receipt& receipt) noexcept {
     assert(validate_transaction(txn) == ValidationResult::kOk);
+
+    std::swap(receipt.logs, state_.logs());
 
     state_.clear_journal_and_substate();
 
@@ -113,16 +116,11 @@ Receipt ExecutionProcessor::execute_transaction(const Transaction& txn) noexcept
 
     cumulative_gas_used_ += gas_used;
 
-    const std::vector<Log> logs{state_.move_logs_out()};
-    const Bloom bloom{logs_bloom(logs)};
-
-    return {
-        txn.type,                       // type
-        vm_res.status == EVMC_SUCCESS,  // success
-        cumulative_gas_used_,           // cumulative_gas_used
-        bloom,                          // bloom
-        logs,                           // logs
-    };
+    receipt.type = txn.type;
+    receipt.success = vm_res.status == EVMC_SUCCESS;
+    receipt.cumulative_gas_used = cumulative_gas_used_;
+    receipt.bloom = logs_bloom(state_.logs());
+    std::swap(receipt.logs, state_.logs());
 }
 
 uint64_t ExecutionProcessor::available_gas() const noexcept {
@@ -165,7 +163,7 @@ ValidationResult ExecutionProcessor::execute_block_no_post_validation(std::vecto
         if (err != ValidationResult::kOk) {
             return err;
         }
-        receipts[i] = execute_transaction(txn);
+        execute_transaction(txn, receipts[i]);
     }
 
     consensus_engine_.finalize(state_, block, evm_.revision());

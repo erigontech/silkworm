@@ -107,8 +107,7 @@ class IntraBlockState {
 
     void add_log(const Log& log) noexcept;
 
-    // Clears the logs and returns their prior value
-    std::vector<Log> move_logs_out() noexcept;
+    std::vector<Log>& logs() noexcept { return logs_; }
 
     void add_refund(uint64_t addend) noexcept;
     void subtract_refund(uint64_t subtrahend) noexcept;

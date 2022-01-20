@@ -43,7 +43,7 @@ class ExecutionProcessor {
 
     // Execute a transaction, but do not write to the DB yet.
     // Precondition: transaction must be valid.
-    Receipt execute_transaction(const Transaction& txn) noexcept;
+    void execute_transaction(const Transaction& txn, Receipt& receipt) noexcept;
 
     //! \brief Execute the block and write the result to the DB.
     //! \remarks Warning: This method does not verify state root; pre-Byzantium receipt root isn't validated either.

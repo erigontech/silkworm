@@ -1,5 +1,5 @@
 /*
-   Copyright 2020-2022 The Silkworm Authors
+   Copyright 2020-2021 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -15,8 +15,6 @@
 */
 
 #include "intra_block_state.hpp"
-
-#include <algorithm>
 
 #include <ethash/keccak.hpp>
 
@@ -373,12 +371,6 @@ void IntraBlockState::clear_journal_and_substate() {
     // EIP-2929
     accessed_addresses_.clear();
     accessed_storage_keys_.clear();
-}
-
-std::vector<Log> IntraBlockState::move_logs_out() noexcept {
-    std::vector<Log> logs;
-    std::swap(logs, logs_);
-    return logs;
 }
 
 void IntraBlockState::add_log(const Log& log) noexcept { logs_.push_back(log); }

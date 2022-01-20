@@ -51,6 +51,8 @@ StageResult HashState::forward(db::RWTxn& txn) {
 
     try {
         if (!previous_progress) {
+            log::Info("Promoting clean state",
+                      {"from", std::to_string(previous_progress), "to", std::to_string(execution_stage_progress)});
             current_key_.clear();
             StageResult result{promote_clean_state(txn)};
             collector_->clear();
@@ -65,20 +67,21 @@ StageResult HashState::forward(db::RWTxn& txn) {
             }
 
         } else {
-            log::Info() << "Starting Account Hashing";
+            if(execution_stage_progress - previous_progress > 16) {
+                log::Info("Promoting incremental state",
+                          {"from", std::to_string(previous_progress), "to", std::to_string(execution_stage_progress)});
+            }
             promote_incremental(txn, DataKind::Account);
-            log::Info() << "Starting Storage Hashing";
             promote_incremental(txn, DataKind::Storage);
-            log::Info() << "Hashing Code Keys";
             promote_incremental(txn, DataKind::Code);
         }
 
         // TODO(Andrea) How can we check all blocks have been processed ?
-//        if (!is_stopping()) {
-//            db::stages::write_stage_progress(*txn, db::stages::kHashStateKey, execution_stage_progress);
-//            txn.commit();
-//            return StageResult::kSuccess;
-//        }
+        //        if (!is_stopping()) {
+        //            db::stages::write_stage_progress(*txn, db::stages::kHashStateKey, execution_stage_progress);
+        //            txn.commit();
+        //            return StageResult::kSuccess;
+        //        }
         return StageResult::kAborted;
 
     } catch (const std::exception& ex) {
@@ -141,7 +144,7 @@ StageResult HashState::promote_clean_state(db::RWTxn& txn) {
         // TODO(Andrea) This is all about hashing. Parallelize !
 
         // Hash accounts
-        current_op_ = "\"PCS Account+Storage\"";
+        current_op_ = "Account+Storage";
         while (data) {
             if (data.key.length() == kAddressLength) {
                 // Hash account
@@ -175,7 +178,6 @@ StageResult HashState::promote_clean_state(db::RWTxn& txn) {
 
                 // Iterate dupkeys only to avoid re-hashing of same address
                 while (data) {
-
                     SILKWORM_ASSERT(data.value.length() >
                                     kHashLength);  // plain state value = unhashed location + zeroless value
 
@@ -208,12 +210,12 @@ StageResult HashState::promote_clean_state(db::RWTxn& txn) {
                 auto storage_target = db::open_cursor(*txn, db::table::kHashedStorage);
 
                 // ETL key contains hashed location; for DB put we need to move it from key to value
-                const etl::LoadFunc load_func = [&storage_target](const etl::Entry& entry, mdbx::cursor& account_target,
+                const etl::LoadFunc load_func = [&storage_target](const etl::Entry& entry, mdbx::cursor& target,
                                                                   MDBX_put_flags_t) -> void {
                     if (entry.key.length() == kHashLength) {
                         mdbx::slice k{db::to_slice(entry.key)};
                         mdbx::slice v{db::to_slice(entry.value)};
-                        account_target.put(k, &v, MDBX_APPEND);
+                        target.put(k, &v, MDBX_APPEND);
                     } else if (entry.key.length() == db::kHashedStoragePrefixLength + kHashLength) {
                         Bytes value(kHashLength + entry.value.length(), '\0');
                         std::memcpy(&value[0], &entry.key[db::kHashedStoragePrefixLength], kHashLength);
@@ -262,6 +264,7 @@ StageResult HashState::promote_clean_code(db::RWTxn& txn) {
 
     try {
         // TODO(Andrea) Maybe introduce an assertion for target table to be empty ?
+        current_op_ = "Code";
         while (data) {
             Bytes new_key(db::kHashedStoragePrefixLength, '\0');
             std::memcpy(&new_key[0], keccak256(db::from_slice(data.key.safe_middle(0, kAddressLength))).bytes,
@@ -271,8 +274,7 @@ StageResult HashState::promote_clean_code(db::RWTxn& txn) {
             etl::Entry entry{new_key, Bytes{db::from_slice(data.value)}};
             collector_->collect(std::move(entry));
             if (collector_->size() % 64 == 0) {
-                current_key_ =
-                    abridge(to_hex(db::from_slice(data.key), /*with_prefix=*/true), kAddressLength * 2 + 2);
+                current_key_ = abridge(to_hex(db::from_slice(data.key), /*with_prefix=*/true), kAddressLength * 2 + 2);
                 if (is_stopping()) {
                     return StageResult::kAborted;
                 }
@@ -511,7 +513,7 @@ std::pair<db::MapConfig, db::MapConfig> HashState::get_operation_tables(DataKind
 
 std::vector<std::string> HashState::get_log_progress() {
     std::string key{loading_ ? abridge(collector_->get_load_key(), kAddressLength * 2 + 2) : current_key_};
-    return {"data", current_op_, "etl", (loading_ ? "loading" : "extracting"), "key", key};
+    return {"data", current_op_, "etl", (loading_ ? "L" : "E+T"), "key", key};
 }
 
 }  // namespace silkworm::stagedsync

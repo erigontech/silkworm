@@ -45,7 +45,7 @@ void FileProvider::flush(Buffer& buffer) {
     file_.open(file_name_, std::ios_base::out | std::ios_base::binary | std::ios_base::trunc);
     if (!file_.is_open()) {
         reset();
-        throw etl_error(strerror(errno));
+        throw etl_error(errno2str(errno));
     }
 
     for (const auto& entry : entries) {
@@ -56,7 +56,7 @@ void FileProvider::flush(Buffer& buffer) {
             !file_.write(byte_ptr_cast(entry.value.data()), static_cast<std::streamsize>(entry.value.size()))) {
             auto err{errno};
             reset();
-            throw etl_error(strerror(err));
+            throw etl_error(errno2str(err));
         }
     }
 
@@ -69,7 +69,7 @@ void FileProvider::flush(Buffer& buffer) {
     if (!file_.is_open()) {
         auto err{errno};
         reset();
-        throw etl_error(strerror(err));
+        throw etl_error(errno2str(err));
     }
 }
 
@@ -90,7 +90,7 @@ std::optional<std::pair<Entry, size_t>> FileProvider::read_entry() {
         !file_.read(byte_ptr_cast(entry.value.data()), head.lengths[1])) {
         auto err{errno};
         reset();
-        throw etl_error(strerror(err));
+        throw etl_error(errno2str(err));
     }
 
     return std::make_pair(entry, id_);

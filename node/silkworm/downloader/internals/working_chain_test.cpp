@@ -33,6 +33,8 @@ class WorkingChain_ForTest : public WorkingChain {
     using WorkingChain::link_queue_;
     using WorkingChain::links_;
     using WorkingChain::WorkingChain;
+    using WorkingChain::reduce_links_to;
+    using WorkingChain::find_anchor;
 
     WorkingChain_ForTest() : WorkingChain(consensus::engine_factory(ChainIdentity::mainnet.chain)) {}
 };
@@ -1207,6 +1209,236 @@ TEST_CASE("WorkingChain - process_segment - (7) invalidating anchor") {
 
     }
 
+}
+
+TEST_CASE("WorkingChain - process_segment - (8) sibling with anchor invalidation and links reduction") {
+    using namespace std;
+
+    WorkingChain_ForTest chain;
+    chain.top_seen_block_height(1'000'000);
+
+    PeerId peerId = "1";
+
+    std::array<BlockHeader, 10> headers;
+
+    for (size_t i = 1; i < headers.size(); i++) {  // skip first header for simplicity
+        headers[i].number = i;
+        headers[i].difficulty = i;  // improve!
+        headers[i].parent_hash = headers[i - 1].hash();
+    }
+
+    BlockHeader h5p;
+    h5p.number = 5;
+    h5p.difficulty = 5;
+    h5p.parent_hash = h5p.hash(); // a wrong hash, h5p hash will also be different
+
+    INFO("a wrong anchor")
+    {
+        auto[penalty, requestMoreHeaders] = chain.accept_headers({h5p}, peerId);
+
+        REQUIRE(penalty == Penalty::NoPenalty);
+        REQUIRE(requestMoreHeaders == true);
+        REQUIRE(chain.anchor_queue_.size() == 1);
+        REQUIRE(chain.anchors_.size() == 1);
+        REQUIRE(chain.link_queue_.size() == 1);
+        REQUIRE(chain.links_.size() == 1);
+
+        auto anchor = chain.anchors_[h5p.parent_hash];
+        REQUIRE(anchor != nullptr);
+        REQUIRE(anchor->parentHash == h5p.parent_hash);
+        REQUIRE(anchor->blockHeight == h5p.number);
+        REQUIRE(anchor->lastLinkHeight == h5p.number);
+        REQUIRE(anchor->peerId == peerId);
+
+        REQUIRE(anchor->links.size() == 1);
+        REQUIRE(anchor->links[0]->hash == h5p.hash());
+        REQUIRE(anchor->links[0]->next.size() == 0);
+    }
+
+    INFO("a segment with a sibling")
+    {
+        // ad a segment terminating with the header[5] that is a sibling of the anchor h5p
+        auto[penalty, requestMoreHeaders] = chain.accept_headers({headers[3], headers[4], headers[5]}, peerId);
+
+        REQUIRE(penalty == Penalty::NoPenalty);
+        REQUIRE(requestMoreHeaders == true);
+        REQUIRE(chain.anchor_queue_.size() == 2);
+        REQUIRE(chain.anchors_.size() == 2);
+        REQUIRE(chain.link_queue_.size() == 4);
+        REQUIRE(chain.links_.size() == 4);
+
+        auto anchor1 = chain.anchors_[h5p.parent_hash];
+        REQUIRE(anchor1 != nullptr);
+        REQUIRE(anchor1->parentHash == h5p.parent_hash);
+        REQUIRE(anchor1->blockHeight == h5p.number);
+        REQUIRE(anchor1->lastLinkHeight == h5p.number);
+        REQUIRE(anchor1->peerId == peerId);
+
+        REQUIRE(anchor1->links.size() == 1);
+        REQUIRE(anchor1->links[0]->hash == h5p.hash());
+        REQUIRE(anchor1->links[0]->next.size() == 0);
+
+        auto link5b = chain.links_[h5p.hash()];
+        REQUIRE(link5b != nullptr);
+        REQUIRE(link5b->blockHeight == 5);
+        REQUIRE(link5b->hash == h5p.hash());
+
+        auto anchor2 = chain.anchors_[headers[3].parent_hash];
+        REQUIRE(anchor2 != nullptr);
+        REQUIRE(anchor2->parentHash == headers[3].parent_hash);
+        REQUIRE(anchor2->blockHeight == headers[3].number);
+        REQUIRE(anchor2->lastLinkHeight == headers[5].number);
+        REQUIRE(anchor2->peerId == peerId);
+
+        REQUIRE(anchor2->links[0]->hash == headers[3].hash());
+        REQUIRE(anchor2->links[0]->next.size() == 1);
+        REQUIRE(anchor2->links[0]->next[0]->hash == headers[4].hash());
+        REQUIRE(anchor2->links[0]->next[0]->next.size() == 1);
+        REQUIRE(anchor2->links[0]->next[0]->next[0]->hash == headers[5].hash());
+        REQUIRE(anchor2->links[0]->next[0]->next[0]->next.size() == 0);
+    }
+
+    INFO("failed extending anchor")
+    {
+        // trying extending h5p get the correct chain, headers[3], headers[4], headers[5], so extending fails
+        auto[penalty, requestMoreHeaders] = chain.accept_headers({headers[3], headers[4], headers[5]}, peerId);
+
+        REQUIRE(penalty == Penalty::NoPenalty);
+        REQUIRE(requestMoreHeaders == false);   // fails to extend
+
+        // following conditions are as before
+
+        REQUIRE(chain.anchor_queue_.size() == 2);
+        REQUIRE(chain.anchors_.size() == 2);
+        REQUIRE(chain.link_queue_.size() == 4);
+        REQUIRE(chain.links_.size() == 4);
+
+        auto anchor1 = chain.anchors_[h5p.parent_hash];
+        REQUIRE(anchor1 != nullptr);
+        REQUIRE(anchor1->parentHash == h5p.parent_hash);
+        REQUIRE(anchor1->blockHeight == h5p.number);
+        REQUIRE(anchor1->lastLinkHeight == h5p.number);
+        REQUIRE(anchor1->peerId == peerId);
+
+        REQUIRE(anchor1->links.size() == 1);
+        REQUIRE(anchor1->links[0]->hash == h5p.hash());
+        REQUIRE(anchor1->links[0]->next.size() == 0);
+
+        auto link5b = chain.links_[h5p.hash()];
+        REQUIRE(link5b != nullptr);
+        REQUIRE(link5b->blockHeight == 5);
+        REQUIRE(link5b->hash == h5p.hash());
+
+        auto anchor2 = chain.anchors_[headers[3].parent_hash];
+        REQUIRE(anchor2 != nullptr);
+        REQUIRE(anchor2->parentHash == headers[3].parent_hash);
+        REQUIRE(anchor2->blockHeight == headers[3].number);
+        REQUIRE(anchor2->lastLinkHeight == headers[5].number);
+        REQUIRE(anchor2->peerId == peerId);
+
+        REQUIRE(anchor2->links[0]->hash == headers[3].hash());
+        REQUIRE(anchor2->links[0]->next.size() == 1);
+        REQUIRE(anchor2->links[0]->next[0]->hash == headers[4].hash());
+        REQUIRE(anchor2->links[0]->next[0]->next.size() == 1);
+        REQUIRE(anchor2->links[0]->next[0]->next[0]->hash == headers[5].hash());
+        REQUIRE(anchor2->links[0]->next[0]->next[0]->next.size() == 0);
+    }
+
+    INFO("invalidating")
+    {
+        using namespace std::literals::chrono_literals;
+
+        time_point_t now = std::chrono::system_clock::now();
+        seconds_t timeout = 5s;
+
+        auto anchor1 = chain.anchors_[h5p.parent_hash];
+        anchor1->timeouts = 10; // this cause invalidation
+        anchor1->timestamp = now - timeout;
+
+        auto anchor2 = chain.anchors_[headers[3].parent_hash];
+        anchor2->timestamp = now + timeout; // avoid extension now
+
+        chain.anchor_queue_.fix();
+
+        auto[packet, penalizations] = chain.request_more_headers(now, timeout); // invalidate (=erase) anchor1
+
+        REQUIRE(packet == std::nullopt);
+        REQUIRE(!penalizations.empty());
+
+        REQUIRE(chain.anchor_queue_.size() == 1); // one less
+        REQUIRE(chain.anchors_.size() == 1); // one less
+        REQUIRE(chain.link_queue_.size() == 3); // one less
+        REQUIRE(chain.links_.size() == 3); // one less
+
+        auto anchor1b_it = chain.anchors_.find(h5p.parent_hash);
+        REQUIRE(anchor1b_it == chain.anchors_.end());
+
+        auto link5b_it = chain.links_.find(h5p.hash());
+        REQUIRE(link5b_it == chain.links_.end());
+
+        // following conditions are as before
+
+        anchor2 = chain.anchors_[headers[3].parent_hash];
+        REQUIRE(anchor2 != nullptr);
+        REQUIRE(anchor2->parentHash == headers[3].parent_hash);
+        REQUIRE(anchor2->blockHeight == headers[3].number);
+        REQUIRE(anchor2->lastLinkHeight == headers[5].number);
+        REQUIRE(anchor2->peerId == peerId);
+
+        REQUIRE(anchor2->links[0]->hash == headers[3].hash());
+        REQUIRE(anchor2->links[0]->next.size() == 1);
+        REQUIRE(anchor2->links[0]->next[0]->hash == headers[4].hash());
+        REQUIRE(anchor2->links[0]->next[0]->next.size() == 1);
+        REQUIRE(anchor2->links[0]->next[0]->next[0]->hash == headers[5].hash());
+        REQUIRE(anchor2->links[0]->next[0]->next[0]->next.size() == 0);
+    }
+
+    INFO("reducing links")
+    {
+        chain.reduce_links_to(2);
+
+        REQUIRE(chain.anchor_queue_.size() == 1);
+        REQUIRE(chain.anchors_.size() == 1);
+        REQUIRE(chain.link_queue_.size() == 2);
+        REQUIRE(chain.links_.size() == 2);
+
+        auto anchor = chain.anchors_[headers[3].parent_hash];
+        REQUIRE(anchor != nullptr);
+        REQUIRE(anchor->parentHash == headers[3].parent_hash);
+        REQUIRE(anchor->blockHeight == headers[3].number);
+        REQUIRE(anchor->lastLinkHeight == headers[5].number);   // this is wrong, change the code of reduce_links_to()
+        REQUIRE(anchor->links.size() == 1);
+
+        auto link5_it = chain.links_.find(headers[5].hash());
+        REQUIRE(link5_it == chain.links_.end());
+
+        REQUIRE(anchor->links[0]->hash == headers[3].hash());
+        REQUIRE(anchor->links[0]->next.size() == 1);
+        REQUIRE(anchor->links[0]->next[0]->hash == headers[4].hash());
+        REQUIRE(anchor->links[0]->next[0]->next.size() == 0);
+
+        auto link4 = chain.links_[headers[4].hash()];
+        auto deepest_anchor = chain.find_anchor(link4);
+        REQUIRE(deepest_anchor == anchor);
+    }
+
+    INFO("connect to evicted link")
+    {
+        auto[penalty, requestMoreHeaders] = chain.accept_headers({headers[5], headers[6], headers[7]}, peerId);
+
+        REQUIRE(penalty == Penalty::NoPenalty);
+        REQUIRE(requestMoreHeaders == false);
+        REQUIRE(chain.anchor_queue_.size() == 1);
+        REQUIRE(chain.anchors_.size() == 1);
+        REQUIRE(chain.link_queue_.size() == 5);
+        REQUIRE(chain.links_.size() == 5);
+
+        auto anchor = chain.anchors_[headers[3].parent_hash];
+        auto link7 = chain.links_[headers[7].hash()];
+        auto deepest_anchor = chain.find_anchor(link7);
+        REQUIRE(deepest_anchor.has_value());
+        REQUIRE(deepest_anchor == anchor);
+    }
 }
 
 }  // namespace silkworm

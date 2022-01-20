@@ -599,11 +599,11 @@ void WorkingChain::reduce_links_to(size_t limit) {
         if (anchor_i != anchors_.end()) {
             anchor_i->second->remove_child(link);
             if (anchor_i->second->links.empty()) {
-                anchors_.erase(anchor_i);
+                remove(anchor_i->second);
             }
-        }
-    }
-}
+        } // todo: choose a different erase policy if we need to keep track of chain bundle height
+    }     // Here we need to update anchor height but using find_anchor() to find the anchor to update is burdensome.
+}         // It is better to impl. a different policy, f.e. choose a chain bundle and erase it (partially or entirely)
 
 // find_anchors tries to find the highest link the in the new segment that can be attached to an existing anchor
 auto WorkingChain::find_anchor(const Segment& segment) -> std::tuple<std::optional<std::shared_ptr<Anchor>>, Start> {

@@ -137,22 +137,27 @@ struct Anchor {
 // Binary relations to use in priority queues
 struct LinkOlderThan : public std::function<bool(std::shared_ptr<Link>, std::shared_ptr<Link>)> {
     bool operator()(const std::shared_ptr<Link>& x, const std::shared_ptr<Link>& y) const {
-        return x->blockHeight < y->blockHeight;
+        return x->blockHeight != y->blockHeight ?
+            x->blockHeight < y->blockHeight :   // cause ordering
+            x < y;                              // preserve identity
     }
 };
 
 struct LinkYoungerThan : public std::function<bool(std::shared_ptr<Link>, std::shared_ptr<Link>)> {
     bool operator()(const std::shared_ptr<Link>& x, const std::shared_ptr<Link>& y) const {
-        return x->blockHeight > y->blockHeight;
+        return x->blockHeight != y->blockHeight ?
+            x->blockHeight > y->blockHeight :   // cause ordering
+            x > y;                              // preserve identity
     }
 };
 
 struct AnchorYoungerThan : public std::function<bool(std::shared_ptr<Link>, std::shared_ptr<Link>)> {
     bool operator()(const std::shared_ptr<Anchor>& x, const std::shared_ptr<Anchor>& y) const {
-        return x->timestamp != y->timestamp
-                   ? x->timestamp > y->timestamp
-                   : x->blockHeight >
-                         y->blockHeight;  // when timestamps are the same, we prioritise low block height anchors
+        return x->timestamp != y->timestamp ?
+                    x->timestamp > y->timestamp :             // prefer smaller timestamp
+                        (x->blockHeight != y->blockHeight ?
+                            x->blockHeight > y->blockHeight : // when timestamps are the same prioritise low blockHeight
+                            x > y);                           // when blockHeight are the same preserve identity
     }
 };
 

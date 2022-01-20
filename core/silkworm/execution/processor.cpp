@@ -156,15 +156,15 @@ ValidationResult ExecutionProcessor::execute_block_no_post_validation(std::vecto
 
     cumulative_gas_used_ = 0;
 
-    const size_t n{block.transactions.size()};
-    receipts.resize(n);
-    for (size_t i{0}; i < n; ++i) {
-        const Transaction& txn{block.transactions[i]};
+    receipts.resize(block.transactions.size());
+    auto receipt_it{receipts.begin()};
+    for (const auto& txn : block.transactions) {
         const ValidationResult err{validate_transaction(txn)};
         if (err != ValidationResult::kOk) {
             return err;
         }
-        execute_transaction(txn, receipts[i]);
+        execute_transaction(txn, *receipt_it);
+        ++receipt_it;
     }
 
     consensus_engine_.finalize(state_, block, evm_.revision());

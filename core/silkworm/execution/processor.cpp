@@ -70,6 +70,7 @@ ValidationResult ExecutionProcessor::validate_transaction(const Transaction& txn
 void ExecutionProcessor::execute_transaction(const Transaction& txn, Receipt& receipt) noexcept {
     assert(validate_transaction(txn) == ValidationResult::kOk);
 
+    // Optimization: since receipt.logs might have some capacity, let's reuse it.
     std::swap(receipt.logs, state_.logs());
 
     state_.clear_journal_and_substate();
@@ -103,7 +104,7 @@ void ExecutionProcessor::execute_transaction(const Transaction& txn, Receipt& re
 
     const uint64_t gas_used{txn.gas_limit - refund_gas(txn, vm_res.gas_left)};
 
-    // award the miner
+    // award the fee recipient
     const intx::uint256 priority_fee_per_gas{txn.priority_fee_per_gas(base_fee_per_gas)};
     state_.add_to_balance(evm_.beneficiary, priority_fee_per_gas * gas_used);
 

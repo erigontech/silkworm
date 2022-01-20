@@ -22,7 +22,6 @@
 namespace silkworm::stagedsync::recovery {
 
 RecoveryWorker::~RecoveryWorker() {
-    Worker::~Worker();
     if (context_) {
         std::free(context_);
     }

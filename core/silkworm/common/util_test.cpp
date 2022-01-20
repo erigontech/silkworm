@@ -1,5 +1,5 @@
 /*
-   Copyright 2020-2021 The Silkworm Authors
+   Copyright 2020-2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -45,7 +45,6 @@ TEST_CASE("Split") {
 }
 
 TEST_CASE("Hex") {
-
     CHECK(decode_hex_digit('g').has_value() == false);
 
     auto parsed_bytes = from_hex("");
@@ -80,15 +79,13 @@ TEST_CASE("Hex") {
 
     std::string src(24, '1');
     Bytes expected(12, 0x11);
-    for (size_t i=0; i<24; ++i)
-    {
+    for (size_t i = 0; i < 24; ++i) {
         auto parsed = from_hex(src);
         CHECK((parsed.has_value() == true && parsed.value() == expected));
         src[i] = 'g';
         CHECK(from_hex(src).has_value() == false);
         src[i] = '1';
     }
-
 }
 
 TEST_CASE("Padding") {
@@ -116,7 +113,7 @@ TEST_CASE("Padding") {
 }
 
 TEST_CASE("Zeroless view") {
-    CHECK(to_hex(zeroless_view(0x0000000000000000000000000000000000000000000000000000000000000000_bytes32)) == "");
+    CHECK(to_hex(zeroless_view(0x0000000000000000000000000000000000000000000000000000000000000000_bytes32)).empty());
     CHECK(to_hex(zeroless_view(0x000000000000000000000000000000000000000000000000000000000004bc00_bytes32)) ==
           "04bc00");
 }
@@ -143,6 +140,14 @@ TEST_CASE("iequals") {
     std::string c{"Hello World "};
     CHECK(iequals(a, b));
     CHECK(!iequals(a, c));
+}
+
+TEST_CASE("abridge") {
+    std::string a{"0x1234567890abcdef"};
+    std::string b{abridge(a, 6)};
+    CHECK(b == "0x1234…");
+    b = abridge(a, a.length() + 1);
+    CHECK(b == a);
 }
 
 TEST_CASE("parse_size") {

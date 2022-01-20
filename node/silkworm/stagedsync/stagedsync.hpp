@@ -100,7 +100,9 @@ class Execution final : public IStage {
 
 class HashState final : public IStage {
   public:
-    explicit HashState(NodeSettings* node_settings) : IStage(db::stages::kHashStateKey, node_settings){};
+    explicit HashState(NodeSettings* node_settings)
+        : IStage(db::stages::kHashStateKey, node_settings),
+          collector_(std::make_unique<etl::Collector>(node_settings)){};
     ~HashState() override = default;
     StageResult forward(db::RWTxn& txn) final;
     StageResult unwind(db::RWTxn& txn, BlockNum to) final;
@@ -108,10 +110,11 @@ class HashState final : public IStage {
     std::vector<std::string> get_log_progress() final;
 
   private:
-    enum class OperationType {
-        HashAccount,  // To generate HashedAccount table
-        HashStorage,  // To generate HashedStorage table
-        Code          // To generate hashed key => code_hash mapping
+    enum class DataKind {
+        None,
+        Account,  // To generate HashedAccount table
+        Storage,  // To generate HashedStorage table
+        Code      // To generate hashed key => code_hash mapping
     };
 
     //! \brief If we haven't done hashstate before (this is first sync), it is possible to just hash values from
@@ -121,13 +124,19 @@ class HashState final : public IStage {
 
     //! \brief If we have done hashstate before (this is NOT first sync) we must changesets.
     //! \remarks This is way slower than clean promotion
-    void promote_incremental(db::RWTxn& txn, OperationType operation);
+    void promote_incremental(db::RWTxn& txn, DataKind kind);
 
-    void demote_incremental(db::RWTxn& txn, BlockNum to, OperationType operation);
+    void demote_incremental(db::RWTxn& txn, BlockNum to, DataKind kind);
 
     //! \brief Retrieve tables configuration pair for incremental promotion
     //! \return A pair where first is the source and second is the target
-    [[nodiscard]] static std::pair<db::MapConfig, db::MapConfig> get_operation_tables(OperationType operation);
+    [[nodiscard]] static std::pair<db::MapConfig, db::MapConfig> get_operation_tables(DataKind kind);
+
+    // Stats
+    std::atomic_bool loading_{false};
+    std::string current_op_;
+    std::string current_key_;
+    std::unique_ptr<etl::Collector> collector_;
 };
 
 typedef StageResult (*StageFunc)(db::RWTxn&, const std::filesystem::path& etl_path, uint64_t prune_from);
@@ -144,21 +153,6 @@ struct Stage {
 // Stage functions
 StageResult stage_headers(db::RWTxn& txn, const std::filesystem::path& etl_path, uint64_t prune_from = 0);
 StageResult stage_bodies(db::RWTxn& txn, const std::filesystem::path& etl_path, uint64_t prune_from = 0);
-
-/* HashState Promotion Functions*/
-
-/*
-    * Operation is used to distinguish what bucket we want to generated
-    * HashAccount is for generating HashedAccountBucket
-    * HashStorage is for generating HashedStorageBucket
-    * Code generates hashed key => code_hash mapping
-
-*/
-enum class HashstateOperation {
-    HashAccount,
-    HashStorage,
-    Code,
-};
 
 
 /* **************************** */

@@ -43,7 +43,7 @@ void Buffer::begin_block(uint64_t block_number) {
 void Buffer::update_account(const evmc::address& address, std::optional<Account> initial,
                             std::optional<Account> current) {
     bool equal{current == initial};
-    bool account_deleted{!current};
+    bool account_deleted{!current.has_value()};
 
     if (equal && !account_deleted && !changed_storage_.contains(address)) {
         // Follows the Erigon logic when to populate account changes.
@@ -57,7 +57,7 @@ void Buffer::update_account(const evmc::address& address, std::optional<Account>
             bool omit_code_hash{!account_deleted};
             encoded_initial = initial->encode_for_storage(omit_code_hash);
         }
-        if (account_changes_[block_number_].insert_or_assign(address, encoded_initial).second) {
+        if (block_account_changes_[block_number_].insert_or_assign(address, encoded_initial).second) {
             bump_batch_size(8, kAddressLength + encoded_initial.length());
         }
     }
@@ -97,7 +97,7 @@ void Buffer::update_storage(const evmc::address& address, uint64_t incarnation, 
     if (block_number_ >= prune_from_) {
         changed_storage_.insert(address);
         ByteView change_val{zeroless_view(initial)};
-        if (storage_changes_[block_number_][address][incarnation].insert_or_assign(location, change_val).second) {
+        if (block_storage_changes_[block_number_][address][incarnation].insert_or_assign(location, change_val).second) {
             bump_batch_size(8 + kPlainStoragePrefixLength, kHashLength + change_val.size());
         }
     }
@@ -119,8 +119,6 @@ void Buffer::write_to_state_table() {
         addresses.insert(x.first);
     }
 
-    std::vector<evmc::bytes32> storage_keys;
-
     for (const auto& address : addresses) {
         if (auto it{accounts_.find(address)}; it != accounts_.end()) {
             auto key{to_slice(address)};
@@ -132,21 +130,17 @@ void Buffer::write_to_state_table() {
         }
 
         if (auto it{storage_.find(address)}; it != storage_.end()) {
-            for (const auto& contract : it->second) {
-                uint64_t incarnation{contract.first};
+            for (const auto& [incarnation, contract_storage] : it->second) {
                 Bytes prefix{storage_prefix(address, incarnation)};
 
-                const auto& contract_storage{contract.second};
-
                 // sort before inserting into the DB
-                storage_keys.clear();
-                for (const auto& x : contract_storage) {
-                    storage_keys.push_back(x.first);
+                std::vector<evmc::bytes32> locations;
+                for (const auto& [location, _] : contract_storage) {
+                    locations.push_back(location);
                 }
-                std::sort(storage_keys.begin(), storage_keys.end());
-
-                for (const auto& k : storage_keys) {
-                    upsert_storage_value(state_table, prefix, k, contract_storage.at(k));
+                std::sort(locations.begin(), locations.end());
+                for (const auto& location : locations) {
+                    upsert_storage_value(state_table, prefix, location, contract_storage.at(location));
                 }
             }
         }
@@ -174,20 +168,20 @@ void Buffer::write_to_db() {
     }
 
     auto account_change_table{db::open_cursor(txn_, table::kAccountChangeSet)};
-    Bytes change_key;
-    for (const auto& block_entry : account_changes_) {
-        uint64_t block_num{block_entry.first};
-        change_key = block_key(block_num);
-        for (const auto& account_entry : block_entry.second) {
-            data = ByteView{account_entry.first};
-            data.append(account_entry.second);
-            auto data_slice{to_slice(data)};
-            account_change_table.put(to_slice(change_key), &data_slice, MDBX_APPENDDUP);
+    Bytes change_key(8, '\0');
+    for (const auto& [block_num, account_changes] : block_account_changes_) {
+        endian::store_big_u64(change_key.data(), block_num);
+        for (const auto& [address, storage_encoded] : account_changes) {
+            Bytes change_value(kAddressLength + storage_encoded.length(), '\0');
+            std::memcpy(&change_value[0], address.bytes, kAddressLength);
+            std::memcpy(&change_value[kAddressLength], storage_encoded.data(), storage_encoded.length());
+            auto change_value_slice{to_slice(change_value)};
+            account_change_table.put(to_slice(change_key), &change_value_slice, MDBX_APPENDDUP);
         }
     }
 
     auto storage_change_table{db::open_cursor(txn_, table::kStorageChangeSet)};
-    for (const auto& block_entry : storage_changes_) {
+    for (const auto& block_entry : block_storage_changes_) {
         uint64_t block_num{block_entry.first};
 
         for (const auto& address_entry : block_entry.second) {

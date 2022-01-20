@@ -104,10 +104,14 @@ class Buffer : public State {
     ///@}
 
     /// Account (backward) changes per block
-    [[nodiscard]] const absl::btree_map<uint64_t, AccountChanges>& account_changes() const { return account_changes_; }
+    [[nodiscard]] const absl::btree_map<uint64_t, AccountChanges>& account_changes() const {
+        return block_account_changes_;
+    }
 
     /// Storage (backward) changes per block
-    [[nodiscard]] const absl::btree_map<uint64_t, StorageChanges>& storage_changes() const { return storage_changes_; }
+    [[nodiscard]] const absl::btree_map<uint64_t, StorageChanges>& storage_changes() const {
+        return block_storage_changes_;
+    }
 
     /** Approximate size of accumulated DB changes in bytes.*/
     [[nodiscard]] size_t current_batch_size() const noexcept { return batch_size_; }
@@ -133,8 +137,8 @@ class Buffer : public State {
     absl::flat_hash_map<evmc::address, absl::btree_map<uint64_t, absl::flat_hash_map<evmc::bytes32, evmc::bytes32>>>
         storage_;
 
-    absl::btree_map<uint64_t, AccountChanges> account_changes_;  // per block
-    absl::btree_map<uint64_t, StorageChanges> storage_changes_;  // per block
+    absl::btree_map<uint64_t, AccountChanges> block_account_changes_;  // per block
+    absl::btree_map<uint64_t, StorageChanges> block_storage_changes_;  // per block
 
     absl::btree_map<evmc::address, uint64_t> incarnations_;
     absl::btree_map<evmc::bytes32, Bytes> hash_to_code_;

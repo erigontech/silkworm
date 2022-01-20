@@ -59,7 +59,10 @@ evmc::bytes32 to_bytes32(ByteView bytes);
 //! \return A new view of the sequence
 ByteView zeroless_view(ByteView data);
 
-std::string to_hex(ByteView bytes);
+std::string to_hex(ByteView bytes, bool with_prefix = false);
+
+//! \brief Abridges a string to given length and eventually adds an ellipsis if input length is gt required length
+std::string abridge(std::string_view input, size_t length);
 
 std::optional<unsigned> decode_hex_digit(char ch) noexcept;
 

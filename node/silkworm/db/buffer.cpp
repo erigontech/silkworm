@@ -177,7 +177,7 @@ void Buffer::write_to_db() {
             std::memcpy(&change_value[0], address.bytes, kAddressLength);
             std::memcpy(&change_value[kAddressLength], storage_encoded.data(), storage_encoded.length());
             auto change_value_slice{to_slice(change_value)};
-            account_change_table.put(to_slice(change_key), &change_value_slice, MDBX_APPENDDUP);
+            mdbx::error::success_or_throw(account_change_table.put(to_slice(change_key), &change_value_slice, MDBX_APPENDDUP));
         }
     }
 
@@ -194,7 +194,7 @@ void Buffer::write_to_db() {
                     data = ByteView{storage_entry.first};
                     data.append(storage_entry.second);
                     auto data_slice{to_slice(data)};
-                    storage_change_table.put(to_slice(change_key), &data_slice, MDBX_APPENDDUP);
+                    mdbx::error::success_or_throw(storage_change_table.put(to_slice(change_key), &data_slice, MDBX_APPENDDUP));
                 }
             }
         }
@@ -204,14 +204,14 @@ void Buffer::write_to_db() {
     for (const auto& [block_key, receipts] : receipts_) {
         auto k{to_slice(block_key)};
         auto v{to_slice(receipts)};
-        receipt_table.put(k, &v, MDBX_APPEND);
+        mdbx::error::success_or_throw(receipt_table.put(k, &v, MDBX_APPEND));
     }
 
     auto log_table{db::open_cursor(txn_, table::kLogs)};
     for (const auto& [log_key, value] : logs_) {
         auto k{to_slice(log_key)};
         auto v{to_slice(value)};
-        log_table.put(k, &v, MDBX_APPEND);
+        mdbx::error::success_or_throw(log_table.put(k, &v, MDBX_APPEND));
     }
 }
 

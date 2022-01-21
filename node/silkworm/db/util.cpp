@@ -94,9 +94,9 @@ std::pair<Bytes, Bytes> change_set_to_plain_state_format(const ByteView key, con
 }
 
 std::optional<ByteView> find_value_suffix(mdbx::cursor& table, ByteView key, ByteView value_prefix) {
-    auto prefix_slice{to_slice(value_prefix)};
-    auto data{table.lower_bound_multivalue(to_slice(key), prefix_slice, /*throw_notfound=*/false)};
-    if (!data || !data.value.starts_with(prefix_slice)) {
+    auto value_prefix_slice{to_slice(value_prefix)};
+    auto data{table.lower_bound_multivalue(to_slice(key), value_prefix_slice, /*throw_notfound=*/false)};
+    if (!data || !data.value.starts_with(value_prefix_slice)) {
         return std::nullopt;
     }
 

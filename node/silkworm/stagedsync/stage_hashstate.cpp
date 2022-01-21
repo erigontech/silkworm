@@ -67,7 +67,7 @@ StageResult HashState::forward(db::RWTxn& txn) {
             }
 
         } else {
-            if(execution_stage_progress - previous_progress > 16) {
+            if (execution_stage_progress - previous_progress > 16) {
                 log::Info("Promoting incremental state",
                           {"from", std::to_string(previous_progress), "to", std::to_string(execution_stage_progress)});
             }
@@ -181,10 +181,11 @@ StageResult HashState::promote_clean_state(db::RWTxn& txn) {
                     SILKWORM_ASSERT(data.value.length() >
                                     kHashLength);  // plain state value = unhashed location + zeroless value
 
+                    auto data_value_view{db::from_slice(data.value)};
                     std::memcpy(&new_key[kHashLength + db::kIncarnationLength],
-                                keccak256(db::from_slice(data.value).substr(0, kHashLength)).bytes, kHashLength);
+                                keccak256(data_value_view.substr(0, kHashLength)).bytes, kHashLength);
                     data.value.remove_prefix(kHashLength);
-                    etl::Entry entry{new_key, Bytes{db::from_slice(data.value)}};
+                    etl::Entry entry{new_key, Bytes{data_value_view}};
                     collector_->collect(std::move(entry));
                     if (collector_->size() % 64 == 0) {
                         current_key_ =

@@ -104,6 +104,14 @@ inline constexpr db::MapConfig kLogAddressIndex{"LogAddressIndex"};
 inline constexpr db::MapConfig kLogTopicIndex{"LogTopicIndex"};
 inline constexpr db::MapConfig kLogs{"TransactionLog"};
 inline constexpr db::MapConfig kMigrations{"Migration"};
+
+//! \details Store contract code hash for given contract address + incarnation
+//! \def "Incarnation" how many times given account was SelfDestruct'ed.
+//! \struct
+//! \verbatim
+//!   key   : contract address (20 bytes) + incarnation (u64 BE)
+//!   value : code hash (32 bytes)
+//! \endverbatim
 inline constexpr db::MapConfig kPlainContractCode{"PlainCodeHash"};
 
 //! \details Store "current" state for accounts and storage and is used for block execution

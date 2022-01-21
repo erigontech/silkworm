@@ -110,7 +110,7 @@ void Buffer::update_storage(const evmc::address& address, uint64_t incarnation, 
 void Buffer::write_to_state_table() {
     auto state_table{db::open_cursor(txn_, table::kPlainState)};
 
-    // sort before inserting into the DB
+    // Extract sorted index of unique addresses before inserting into the DB
     absl::btree_set<evmc::address> addresses;
     for (auto& x : accounts_) {
         addresses.insert(x.first);

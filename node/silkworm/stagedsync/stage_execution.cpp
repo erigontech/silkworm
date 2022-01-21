@@ -332,6 +332,7 @@ void Execution::unwind_state_from_changeset(mdbx::cursor& source, mdbx::cursor& 
                                             mdbx::cursor& plain_code_table, BlockNum unwind_to) {
     auto src_data{source.to_last(/*throw_notfound*/ false)};
     while (src_data) {
+        //TODO(Andrea) Why data -> bytes -> byteview ? One pass is unnecessary
         Bytes key(db::from_slice(src_data.key));
         Bytes value(db::from_slice(src_data.value));
         const BlockNum block_number = endian::load_big_u64(&key[0]);

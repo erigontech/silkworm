@@ -106,6 +106,7 @@ std::optional<ByteView> find_value_suffix(mdbx::cursor& table, ByteView key, Byt
 }
 
 void upsert_storage_value(mdbx::cursor& state_cursor, ByteView storage_prefix, ByteView location, ByteView new_value) {
+    //TODO(Andrea) This can be optimized. Should we find a previous record use put + MDBX_CURRENT instead of upsert.
     if (find_value_suffix(state_cursor, storage_prefix, location)) {
         state_cursor.erase();
     }

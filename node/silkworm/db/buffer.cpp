@@ -122,6 +122,7 @@ void Buffer::write_to_state_table() {
     for (const auto& address : addresses) {
         if (auto it{accounts_.find(address)}; it != accounts_.end()) {
             auto key{to_slice(address)};
+            //TODO(Andrea) This double erase and upsert should not be needed for accounts
             state_table.erase(key, /*whole_multivalue=*/true);  // PlainState is multivalue
             if (it->second.has_value()) {
                 Bytes encoded{it->second->encode_for_storage()};

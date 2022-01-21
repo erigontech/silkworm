@@ -150,12 +150,12 @@ StageResult HashState::promote_clean_state(db::RWTxn& txn) {
                 // Hash account
                 // data.key == Address
                 // data.value == Account encoded for storage
-                auto hash{keccak256(db::from_slice(data.key))};
+                const auto data_key_view{db::from_slice(data.key)};
+                auto hash{keccak256(data_key_view)};
                 etl::Entry entry{Bytes(hash.bytes, kHashLength), Bytes{db::from_slice(data.value)}};
                 collector_->collect(std::move(entry));
                 if (collector_->size() % 64 == 0) {
-                    current_key_ =
-                        abridge(to_hex(db::from_slice(data.key), /*with_prefix=*/true), kAddressLength * 2 + 2);
+                    current_key_ = abridge(to_hex(data_key_view, /*with_prefix=*/true), kAddressLength * 2 + 2);
                     if (is_stopping()) {
                         return StageResult::kAborted;
                     }

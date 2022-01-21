@@ -1,5 +1,5 @@
 /*
-   Copyright 2020-2021 The Silkworm Authors
+   Copyright 2020-2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -33,19 +33,19 @@ inline constexpr const char* kLastHeaderKey{"LastHeader"};
 
 /* Canonical tables */
 
-// block_num_u64 (BE) -> address + previous_account (encoded)
+//! \struct block_num_u64 (BE) -> address + previous_account (encoded)
 inline constexpr db::MapConfig kAccountChangeSet{"AccountChangeSet", mdbx::key_mode::usual, mdbx::value_mode::multi};
 
 inline constexpr db::MapConfig kAccountHistory{"AccountHistory"};
 inline constexpr db::MapConfig kBlockBodies{"BlockBody"};
 
-// block_num_u64 (BE) -> header_hash
+//! \struct block_num_u64 (BE) -> header_hash
 inline constexpr db::MapConfig kCanonicalHashes{"CanonicalHeader"};
 
-// block_num_u64 (BE) + hash -> header (RLP)
+//! \struct block_num_u64 (BE) + hash -> header (RLP)
 inline constexpr db::MapConfig kHeaders{"Header"};
 
-// block_num_u64 (BE) + hash -> total_difficulty (RLP)
+//! \struct block_num_u64 (BE) + hash -> total_difficulty (RLP)
 inline constexpr db::MapConfig kDifficulty{"HeadersTotalDifficulty"};
 
 inline constexpr db::MapConfig kBlockReceipts{"Receipt"};
@@ -60,6 +60,8 @@ inline constexpr db::MapConfig kConfig{"Config"};
 inline constexpr db::MapConfig kContractCode{"HashedCodeHash"};
 inline constexpr db::MapConfig kDatabaseInfo{"DbInfo"};
 inline constexpr db::MapConfig kBlockTransactions{"BlockTransaction"};
+
+//! \struct account hash -> account encoded
 inline constexpr db::MapConfig kHashedAccounts{"HashedAccount"};
 inline constexpr db::MapConfig kHashedStorage{"HashedStorage", mdbx::key_mode::usual, mdbx::value_mode::multi};
 inline constexpr db::MapConfig kHeadBlock{"LastBlock"};
@@ -78,16 +80,18 @@ inline constexpr db::MapConfig kSequence{"Sequence"};
 inline constexpr db::MapConfig kSnapshotInfo{"SnapshotInfo"};
 inline constexpr db::MapConfig kStateSnapshotInfo{"StateSnapshotInfo"};
 
-// block_num_u64 (BE) + address + incarnation_u64 (BE) ->
-// plain_storage_location (32 bytes) + previous_value (no leading zeros)
+//! \struct block_num_u64 (BE) + address + incarnation_u64 (BE) -> plain_storage_location (32 bytes) + previous_value
+//! (no leading zeros)
 inline constexpr db::MapConfig kStorageChangeSet{"StorageChangeSet", mdbx::key_mode::usual, mdbx::value_mode::multi};
 
 inline constexpr db::MapConfig kStorageHistory{"StorageHistory"};
 
-// Progress for stages
+//! \brief Progress for stages
+//! \struct stage name -> block_num_u64 (BE)
 inline constexpr db::MapConfig kSyncStageProgress{"SyncStage"};
 
-// Unwind point for stages
+//! \brief Unwind point for stages
+//! \struct stage name -> block_num_u64 (BE)
 inline constexpr db::MapConfig kSyncStageUnwind{"SyncStageUnwind"};
 
 inline constexpr db::MapConfig kTrieOfAccounts{"TrieAccount"};

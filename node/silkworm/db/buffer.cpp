@@ -152,9 +152,9 @@ void Buffer::write_to_db() {
 
     auto incarnation_table{db::open_cursor(txn_, table::kIncarnationMap)};
     Bytes data(kIncarnationLength, '\0');
-    for (const auto& entry : incarnations_) {
-        endian::store_big_u64(&data[0], entry.second);
-        incarnation_table.upsert(to_slice(entry.first), to_slice(data));
+    for (const auto& [address, incarnation] : incarnations_) {
+        endian::store_big_u64(&data[0], incarnation);
+        incarnation_table.upsert(to_slice(address), to_slice(data));
     }
 
     auto code_table{db::open_cursor(txn_, table::kCode)};

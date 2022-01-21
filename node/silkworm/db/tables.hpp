@@ -33,7 +33,17 @@ inline constexpr const char* kLastHeaderKey{"LastHeader"};
 
 /* Canonical tables */
 
-//! \struct block_num_u64 (BE) -> address + previous_account (encoded)
+//! \details At block N stores value of state of account for block N-1.
+//! \struct
+//! \verbatim
+//!   key   : block_num_u64 (BE)
+//!   value : address + previous_account (encoded)
+//! \endverbatim
+//! \example If block N changed account A from value X to Y. Then:\n
+//! \verbatim
+//!   key   : block_num_u64 (BE)
+//!   value : address + X
+//! \endverbatim
 inline constexpr db::MapConfig kAccountChangeSet{"AccountChangeSet", mdbx::key_mode::usual, mdbx::value_mode::multi};
 
 inline constexpr db::MapConfig kAccountHistory{"AccountHistory"};
@@ -61,33 +71,98 @@ inline constexpr db::MapConfig kContractCode{"HashedCodeHash"};
 inline constexpr db::MapConfig kDatabaseInfo{"DbInfo"};
 inline constexpr db::MapConfig kBlockTransactions{"BlockTransaction"};
 
-//! \struct account hash -> account encoded
+//! \details Store "current" state for accounts
+//! \remarks This table stores the same values for PlainState (Account record type) but with hashed key
+//! \struct
+//! \verbatim
+//!   key   : account address hash (20 bytes)
+//!   value : account encoded for storage
+//! \endverbatim
 inline constexpr db::MapConfig kHashedAccounts{"HashedAccount"};
+
+//! \details Store "current" state for contract storage
+//! \remarks This table stores the same values for PlainState (storage record type) but with hashed key
+//! \struct
+//! \verbatim
+//!   key   : contract address hash (32 bytes) + incarnation (u64 BE)
+//!   value : storage key hash (32 bytes) + storage value (hash 32 bytes)
+//! \endverbatim
 inline constexpr db::MapConfig kHashedStorage{"HashedStorage", mdbx::key_mode::usual, mdbx::value_mode::multi};
 inline constexpr db::MapConfig kHeadBlock{"LastBlock"};
 inline constexpr db::MapConfig kHeadHeader{"LastHeader"};
 inline constexpr db::MapConfig kHeaderNumbers{"HeaderNumber"};
 inline constexpr db::MapConfig kHeadersSnapshotInfo{"HeadersSnapshotInfo"};
+
+//! \details Stores the last incarnation of last contract SelfDestruct
+//! \struct
+//! \verbatim
+//!   key   : contract address (unhashed 20 bytes)
+//!   value : incarnation (u64 BE)
+//! \endverbatim
 inline constexpr db::MapConfig kIncarnationMap{"IncarnationMap"};
 inline constexpr db::MapConfig kLogAddressIndex{"LogAddressIndex"};
 inline constexpr db::MapConfig kLogTopicIndex{"LogTopicIndex"};
 inline constexpr db::MapConfig kLogs{"TransactionLog"};
 inline constexpr db::MapConfig kMigrations{"Migration"};
 inline constexpr db::MapConfig kPlainContractCode{"PlainCodeHash"};
+
+//! \details Store "current" state for accounts and storage and is used for block execution
+//! \def "Incarnation" how many times given account was SelfDestruct'ed.
+//! \struct
+//! \verbatim
+//! Accounts :
+//!   key   : address (20 bytes)
+//!   value : account encoded for storage
+//! Storage :
+//!   key   : address (20 bytes) + incarnation (u64 BE)
+//!   value : storage key (32 bytes) + storage value (hash 32 bytes)
+//! \endverbatim
 inline constexpr db::MapConfig kPlainState{"PlainState", mdbx::key_mode::usual, mdbx::value_mode::multi};
+
+//! \details Store recovered senders' addresses for each transaction in a block
+//! \remarks Senders' addresses are not stored in transactions so they must be recovered from the signature
+//! of the transaction itself
+//! \struct
+//! \verbatim
+//!   key   : block_num (u64 BE)
+//!   value : array of addresses (each 20 bytes)
+//!   The addresses in array are listed in the same order of the transactions of the block
+//! \endverbatim
 inline constexpr db::MapConfig kSenders{"TxSender"};
+
+//! \details Stores sequence values for different keys
+//! \remarks Usually keys are table names
+//! \struct
+//! \verbatim
+//!   key   : a string
+//!   value : last increment generated (u64 BE)
+//! \endverbatim
 inline constexpr db::MapConfig kSequence{"Sequence"};
+
 inline constexpr db::MapConfig kSnapshotInfo{"SnapshotInfo"};
 inline constexpr db::MapConfig kStateSnapshotInfo{"StateSnapshotInfo"};
 
-//! \struct block_num_u64 (BE) + address + incarnation_u64 (BE) -> plain_storage_location (32 bytes) + previous_value
-//! (no leading zeros)
+//! \details At block N stores value of state of storage for block N-1.
+//! \struct
+//! \verbatim
+//!   key   : block_num_u64 (BE) + address + incarnation_u64 (BE)
+//!   value : location (32 bytes) + previous_value (no leading zeros)
+//! \endverbatim
+//! \example If block N changed storage from value X to Y. Then:
+//! \verbatim
+//!   key   : block_num_u64 (BE) + address + incarnation_u64 (BE)
+//!   value : plain_storage_location (32 bytes) + X
+//! \endverbatim
 inline constexpr db::MapConfig kStorageChangeSet{"StorageChangeSet", mdbx::key_mode::usual, mdbx::value_mode::multi};
 
 inline constexpr db::MapConfig kStorageHistory{"StorageHistory"};
 
-//! \brief Progress for stages
-//! \struct stage name -> block_num_u64 (BE)
+//! \details Stores reached progress for each stage
+//! \struct
+//! \verbatim
+//!   key   : stage name
+//!   value : block_num_u64 (BE)
+//! \endverbatim
 inline constexpr db::MapConfig kSyncStageProgress{"SyncStage"};
 
 //! \brief Unwind point for stages

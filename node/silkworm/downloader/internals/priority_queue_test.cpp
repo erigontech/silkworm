@@ -124,6 +124,34 @@ TEST_CASE("Oldest_First_Anchor_Queue") {
     }
 }
 
+TEST_CASE("Oldest_First_Anchor_Queue - siblings handling") {
+    using namespace std::literals::chrono_literals;
+    time_point_t now = std::chrono::system_clock::now();
+
+    BlockHeader dummy_header;
+
+    auto anchor1 = std::make_shared<Anchor>(dummy_header, "dummy-peer-id");
+    anchor1->blockHeight = 1;
+    anchor1->timestamp = now;
+
+    auto anchor2 = std::make_shared<Anchor>(dummy_header, "dummy-peer-id");
+    anchor2->blockHeight = 1;   // same block number, it is a sibling
+    anchor2->timestamp = now;
+
+    OldestFirstAnchorQueue queue;
+
+    queue.push(anchor1);
+
+    queue.push(anchor2);            // add a sibling with different identity
+    queue.erase(anchor2);           // erase only 1 element using identity, not block number
+    REQUIRE(queue.size() == 1);
+
+    queue.push(anchor1);            // add the same object, same identity
+    REQUIRE(queue.size() == 2);     // it should be present
+    queue.erase(anchor1);           // erase 1 element only
+    REQUIRE(queue.size() == 1);     
+}
+
 TEST_CASE("Youngest_First_Link_Queue") {
     using namespace std::literals::chrono_literals;
     BlockHeader dummy_header;

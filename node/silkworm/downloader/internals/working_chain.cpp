@@ -75,12 +75,13 @@ std::string WorkingChain::human_readable_verbose_status() const {
     // dump
     for (auto& a: ordered_anchors) {
         auto anchor = a.second;
-        auto seconds_from_last_req = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now() - anchor->timestamp);
+        auto seconds_from_last_req = std::chrono::duration_cast<std::chrono::seconds>(
+                std::chrono::system_clock::now() - anchor->timestamp);
         std::string anchor_dump = "--**-- anchor " + to_hex(anchor->parentHash) +
                                   ": start=" + std::to_string(anchor->blockHeight) +
                                   ", end=" + std::to_string(anchor->lastLinkHeight) +
                                   ", len=" + std::to_string(anchor->chainLength()) +
-                                  ", ts=" +  std::to_string(seconds_from_last_req.count()) + "secs\n";
+                                  ", ts=" + std::to_string(seconds_from_last_req.count()) + "secs\n";
         verbose_status += anchor_dump;
     }
 
@@ -537,7 +538,7 @@ auto WorkingChain::process_segment(const Segment& segment, bool is_a_new_block, 
     auto highest_header = segment.front();
     auto height = highest_header->number;
     if (height > top_seen_height_ &&
-            (is_a_new_block || seen_announces_.get(Hash(highest_header->hash())) != nullptr)) {
+        (is_a_new_block || seen_announces_.get(Hash(highest_header->hash())) != nullptr)) {
         top_seen_height_ = height;
     }
 
@@ -566,12 +567,12 @@ auto WorkingChain::process_segment(const Segment& segment, bool is_a_new_block, 
             op = "new anchor";
             requestMore = new_anchor(segment_slice, peerId);
         }
-        log::Debug() << "WorkingChain, segment " << op << " start=" << startNum << " (" << segment[start]->hash()
-                     << ") end=" << endNum << " (" << segment[end - 1]->hash() << ") (more=" << requestMore << ")";
+        log::Debug() << "WorkingChain, segment " << op << " up=" << startNum << " (" << segment[start]->hash()
+                     << ") down=" << endNum << " (" << segment[end - 1]->hash() << ") (more=" << requestMore << ")";
     }
     catch (segment_cut_and_paste_error& e) {
-        log::Warning() << "WorkingChain, segment cut&paste error, " << op << " start=" << startNum << " ("
-                       << segment[start]->hash() << ") end=" << endNum << " (" << segment[end - 1]->hash()
+        log::Warning() << "WorkingChain, segment cut&paste error, " << op << " up=" << startNum << " ("
+                       << segment[start]->hash() << ") down=" << endNum << " (" << segment[end - 1]->hash()
                        << ") failed, reason: " << e.what();
         return false;
     }
@@ -618,7 +619,8 @@ auto WorkingChain::find_anchor(const Segment& segment) -> std::tuple<std::option
 }
 
 // find_link find the highest existing link (from start) that the new segment can be attached to
-auto WorkingChain::find_link(const Segment& segment, size_t start) -> std::tuple<std::optional<std::shared_ptr<Link>>, End> {
+auto
+WorkingChain::find_link(const Segment& segment, size_t start) -> std::tuple<std::optional<std::shared_ptr<Link>>, End> {
     auto duplicate_link = get_link(segment[start]->hash());
     if (duplicate_link) return {std::nullopt, 0};
 
@@ -662,7 +664,8 @@ auto WorkingChain::find_anchor(std::shared_ptr<Link> link) -> std::optional<std:
     return a->second;
 }
 
-void WorkingChain::connect(std::shared_ptr<Link> attachment_link, Segment::Slice segment_slice, std::shared_ptr<Anchor> anchor) {
+void WorkingChain::connect(std::shared_ptr<Link> attachment_link, Segment::Slice segment_slice,
+                           std::shared_ptr<Anchor> anchor) {
     // Extend up
 
     // Check for bad headers
@@ -707,8 +710,7 @@ auto WorkingChain::extend_down(Segment::Slice segment_slice, std::shared_ptr<Anc
     // Add or find new anchor
     auto new_anchor_header = *segment_slice.rbegin();  // lowest header
     bool check_limits = false;
-    auto [new_anchor, pre_existing] =
-            add_anchor_if_not_present(*new_anchor_header, anchor->peerId, check_limits);
+    auto[new_anchor, pre_existing] = add_anchor_if_not_present(*new_anchor_header, anchor->peerId, check_limits);
 
     // Remove old anchor
     bool anchor_preverified =
@@ -744,7 +746,8 @@ void WorkingChain::extend_up(std::shared_ptr<Link> attachment_link, Segment::Sli
     if (contains(bad_headers_, attachment_link->hash)) {
         // todo: return penalties
         throw segment_cut_and_paste_error("connection to bad headers, height="
-            + std::to_string(attachment_link->blockHeight) + " hash=" + to_hex(attachment_link->hash));
+                                          + std::to_string(attachment_link->blockHeight) + " hash=" +
+                                          to_hex(attachment_link->hash));
     }
 
     // Iterate over headers backwards (from parents towards children)
@@ -773,8 +776,7 @@ auto WorkingChain::new_anchor(Segment::Slice segment_slice, PeerId peerId) -> Re
     // Add or find anchor
     auto anchor_header = *segment_slice.rbegin();  // lowest header
     bool check_limits = true;
-    auto [anchor, pre_existing] =
-            add_anchor_if_not_present(*anchor_header, peerId, check_limits);
+    auto[anchor, pre_existing] = add_anchor_if_not_present(*anchor_header, peerId, check_limits);
 
     // Iterate over headers backwards (from parents towards children)
     std::shared_ptr<Link> prev_link;
@@ -807,10 +809,11 @@ auto WorkingChain::add_anchor_if_not_present(const BlockHeader& anchor_header, P
     if (check_limits) {
         if (anchor_header.number < highest_in_db_)
             throw segment_cut_and_paste_error("precondition not meet, new anchor too far in the past: " +
-                to_string(anchor_header.number) + ", latest header in db: " + to_string(highest_in_db_));
+                                              to_string(anchor_header.number) + ", latest header in db: " +
+                                              to_string(highest_in_db_));
         if (anchors_.size() >= anchor_limit)
             throw segment_cut_and_paste_error("too many anchors: " + to_string(anchors_.size()) +
-                ", limit: " + to_string(anchor_limit));
+                                              ", limit: " + to_string(anchor_limit));
     }
 
     std::shared_ptr<Anchor> anchor = std::make_shared<Anchor>(anchor_header, peerId);

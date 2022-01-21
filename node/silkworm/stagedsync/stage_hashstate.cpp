@@ -267,11 +267,18 @@ StageResult HashState::promote_clean_code(db::RWTxn& txn) {
         // TODO(Andrea) Maybe introduce an assertion for target table to be empty ?
         current_op_ = "Code";
         while (data) {
+            if (data.key.length() != kAddressLength + db::kIncarnationLength) {
+                std::string what{"Unexpected key len " + std::to_string(data.key.length())};
+                throw std::runtime_error(what);
+            }
+
             Bytes new_key(db::kHashedStoragePrefixLength, '\0');
-            std::memcpy(&new_key[0], keccak256(db::from_slice(data.key.safe_middle(0, kAddressLength))).bytes,
-                        kHashLength);
-            std::memcpy(&new_key[kHashLength], data.key.safe_middle(kAddressLength, db::kIncarnationLength).data(),
-                        db::kIncarnationLength);
+
+            auto data_key_view{db::from_slice(data.key)};
+            std::memcpy(&new_key[kHashLength], &data_key_view[kAddressLength], db::kIncarnationLength);
+            data_key_view.remove_suffix(db::kIncarnationLength);
+            std::memcpy(&new_key[0], keccak256(data_key_view).bytes, kHashLength);
+
             etl::Entry entry{new_key, Bytes{db::from_slice(data.value)}};
             collector_->collect(std::move(entry));
             if (collector_->size() % 64 == 0) {

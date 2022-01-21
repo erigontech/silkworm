@@ -139,7 +139,7 @@ inline ByteView from_slice(const mdbx::slice slice) {
 std::optional<ByteView> find_value_suffix(mdbx::cursor& table, ByteView key, ByteView value_prefix);
 
 // We can't simply call upsert for storage values because they live in mdbx::value_mode::multi tables
-void upsert_storage_value(mdbx::cursor& state_cursor, ByteView storage_prefix, ByteView location, ByteView value);
+void upsert_storage_value(mdbx::cursor& state_cursor, ByteView storage_prefix, ByteView location, ByteView new_value);
 
 namespace detail {
 

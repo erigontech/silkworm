@@ -105,15 +105,15 @@ std::optional<ByteView> find_value_suffix(mdbx::cursor& table, ByteView key, Byt
     return res;
 }
 
-void upsert_storage_value(mdbx::cursor& state_cursor, ByteView storage_prefix, ByteView location, ByteView value) {
+void upsert_storage_value(mdbx::cursor& state_cursor, ByteView storage_prefix, ByteView location, ByteView new_value) {
     if (find_value_suffix(state_cursor, storage_prefix, location)) {
         state_cursor.erase();
     }
-    value = zeroless_view(value);
-    if (!value.empty()) {
-        Bytes db_value(location.length() + value.length(), '\0');
+    new_value = zeroless_view(new_value);
+    if (!new_value.empty()) {
+        Bytes db_value(location.length() + new_value.length(), '\0');
         std::memcpy(&db_value[0], location.data(), location.length());
-        std::memcpy(&db_value[location.length()], value.data(), value.length());
+        std::memcpy(&db_value[location.length()], new_value.data(), new_value.length());
         state_cursor.upsert(to_slice(storage_prefix), to_slice(db_value));
     }
 }

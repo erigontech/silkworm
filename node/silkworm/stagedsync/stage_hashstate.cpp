@@ -184,7 +184,7 @@ StageResult HashState::promote_clean_state(db::RWTxn& txn) {
                     auto data_value_view{db::from_slice(data.value)};
                     std::memcpy(&new_key[kHashLength + db::kIncarnationLength],
                                 keccak256(data_value_view.substr(0, kHashLength)).bytes, kHashLength);
-                    data.value.remove_prefix(kHashLength);
+                    data_value_view.remove_prefix(kHashLength);
                     etl::Entry entry{new_key, Bytes{data_value_view}};
                     collector_->collect(std::move(entry));
                     if (collector_->size() % 64 == 0) {
@@ -216,7 +216,7 @@ StageResult HashState::promote_clean_state(db::RWTxn& txn) {
                     if (entry.key.length() == kHashLength) {
                         mdbx::slice k{db::to_slice(entry.key)};
                         mdbx::slice v{db::to_slice(entry.value)};
-                        target.put(k, &v, MDBX_APPEND);
+                        mdbx::error::success_or_throw(target.put(k, &v, MDBX_APPEND));
                     } else if (entry.key.length() == db::kHashedStoragePrefixLength + kHashLength) {
                         Bytes value(kHashLength + entry.value.length(), '\0');
                         std::memcpy(&value[0], &entry.key[db::kHashedStoragePrefixLength], kHashLength);

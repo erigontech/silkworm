@@ -1,5 +1,5 @@
 /*
-   Copyright 2021 The Silkworm Authors
+   Copyright 2021-2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -50,33 +50,33 @@ int main(int argc, char* argv[]) {
         uint32_t scanned_headers{0};
 
         log::Info() << "Checking Block Hashes...";
-        auto canonica_hashes_data{canonical_hashes_table.to_first(/*throw_notfound*/ false)};
+        auto canonical_hashes_data{canonical_hashes_table.to_first(/*throw_notfound*/ false)};
 
         StopWatch sw{};
         auto start_time{sw.start()};
 
         // Check if each hash has the correct number according to the header table
-        while (canonica_hashes_data) {
-            ByteView hash_data_view{db::from_slice(canonica_hashes_data.value)};  // Canonical Hash
-            auto block_hashes_data{blockhashes_table.find(canonica_hashes_data.value, /*throw_notfound*/ false)};
+        while (canonical_hashes_data) {
+            ByteView hash_data_view{db::from_slice(canonical_hashes_data.value)};  // Canonical Hash
+            auto block_hashes_data{blockhashes_table.find(canonical_hashes_data.value, /*throw_notfound*/ false)};
             if (!block_hashes_data) {
                 uint64_t hash_block_number{
-                    endian::load_big_u64(static_cast<uint8_t*>(canonica_hashes_data.key.iov_base))};
+                    endian::load_big_u64(static_cast<uint8_t*>(canonical_hashes_data.key.data()))};
                 log::Error() << "Hash " << to_hex(hash_data_view) << " (block " << hash_block_number
-                                    << ") not found in " << db::table::kHeaderNumbers.name << " table ";
+                             << ") not found in " << db::table::kHeaderNumbers.name << " table ";
 
-            } else if (block_hashes_data.value != canonica_hashes_data.key) {
-                uint64_t hash_height = endian::load_big_u64(static_cast<uint8_t*>(canonica_hashes_data.key.iov_base));
-                uint64_t block_height = endian::load_big_u64(static_cast<uint8_t*>(block_hashes_data.value.iov_base));
+            } else if (block_hashes_data.value != canonical_hashes_data.key) {
+                uint64_t hash_height = endian::load_big_u64(static_cast<uint8_t*>(canonical_hashes_data.key.data()));
+                uint64_t block_height = endian::load_big_u64(static_cast<uint8_t*>(block_hashes_data.value.data()));
                 log::Error() << "Hash " << to_hex(hash_data_view) << " should match block " << hash_height
-                                    << " but got " << block_height;
+                             << " but got " << block_height;
             }
 
             if (++scanned_headers % 100000 == 0) {
                 auto [_, duration] = sw.lap();
                 log::Info() << "Scanned headers " << scanned_headers << " in " << sw.format(duration);
             }
-            canonica_hashes_data = canonical_hashes_table.to_next(/*throw_notfound*/ false);
+            canonical_hashes_data = canonical_hashes_table.to_next(/*throw_notfound*/ false);
         }
         auto [end_time, _] = sw.lap();
         log::Info() << "Done! " << sw.format(end_time - start_time);

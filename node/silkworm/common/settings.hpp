@@ -30,7 +30,7 @@
 #include <silkworm/common/base.hpp>
 #include <silkworm/common/directories.hpp>
 #include <silkworm/db/mdbx.hpp>
-#include <silkworm/db/storage.hpp>
+#include <silkworm/db/prune_mode.hpp>
 
 namespace silkworm {
 

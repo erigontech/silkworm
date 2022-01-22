@@ -1,5 +1,5 @@
 /*
-    Copyright 2020 The Silkworm Authors
+    Copyright 2020-2022 The Silkworm Authors
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@
 #include <catch2/catch.hpp>
 
 #include <silkworm/chain/genesis.hpp>
+#include <silkworm/common/cast.hpp>
 #include <silkworm/common/test_context.hpp>
 #include <silkworm/db/genesis.hpp>
 
@@ -118,7 +119,7 @@ TEST_CASE("PersistedChain - header persistence") {
         header1b.number = 1;
         header1b.difficulty = 2'000'000;
         header1b.parent_hash = header0_hash;
-        header1b.extra_data = string_to_bytes("I'm different");
+        header1b.extra_data = string_view_to_byte_view("I'm different");
         auto header1b_hash = header1b.hash();
 
         // saving the headers

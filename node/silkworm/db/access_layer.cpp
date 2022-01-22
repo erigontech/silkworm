@@ -196,7 +196,7 @@ std::optional<BlockWithHash> read_block(mdbx::txn& txn, BlockNum block_number, b
     rlp::success_or_throw(rlp::decode(data_view, bh.block.header));
 
     // Read body
-    std::optional<BlockBody> body{read_body(txn, block_number, bh.hash.bytes, read_senders)};
+    std::optional<BlockBody> body{read_body(txn, key, read_senders)};
     if (!body) {
         return std::nullopt;
     }
@@ -209,8 +209,12 @@ std::optional<BlockWithHash> read_block(mdbx::txn& txn, BlockNum block_number, b
 
 std::optional<BlockBody> read_body(mdbx::txn& txn, BlockNum block_number, const uint8_t (&hash)[kHashLength],
                                    bool read_senders) {
-    auto src{db::open_cursor(txn, table::kBlockBodies)};
     auto key{block_key(block_number, hash)};
+    return read_body(txn, key, read_senders);
+}
+
+std::optional<BlockBody> read_body(mdbx::txn& txn, const Bytes& key, bool read_senders) {
+    auto src{db::open_cursor(txn, table::kBlockBodies)};
     auto data{src.find(to_slice(key), false)};
     if (!data) {
         return std::nullopt;
@@ -223,7 +227,7 @@ std::optional<BlockBody> read_body(mdbx::txn& txn, BlockNum block_number, const 
     out.transactions = read_transactions(txn, body.base_txn_id, body.txn_count);
 
     if (!out.transactions.empty() && read_senders) {
-        std::vector<evmc::address> senders{db::read_senders(txn, block_number, hash)};
+        std::vector<evmc::address> senders{db::read_senders(txn, key)};
         // Might be empty due to pruning
         if (!senders.empty()) {
             if (senders.size() != out.transactions.size()) {
@@ -257,10 +261,14 @@ void write_body(mdbx::txn& txn, const BlockBody& body, const uint8_t (&hash)[kHa
 }
 
 std::vector<evmc::address> read_senders(mdbx::txn& txn, BlockNum block_number, const uint8_t (&hash)[kHashLength]) {
+    auto key{block_key(block_number, hash)};
+    return read_senders(txn, key);
+}
+
+std::vector<evmc::address> read_senders(mdbx::txn& txn, const Bytes& key) {
     std::vector<evmc::address> senders{};
 
     auto src{db::open_cursor(txn, table::kSenders)};
-    auto key{block_key(block_number, hash)};
     auto data{src.find(to_slice(key), /*throw_notfound = */ false)};
     if (data) {
         SILKWORM_ASSERT(data.value.length() % kAddressLength == 0);

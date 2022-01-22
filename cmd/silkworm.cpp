@@ -21,6 +21,7 @@
 
 #include <silkworm/common/log.hpp>
 #include <silkworm/common/settings.hpp>
+#include <silkworm/common/stopwatch.hpp>
 #include <silkworm/concurrency/signal_handler.hpp>
 #include <silkworm/db/stages.hpp>
 #include <silkworm/stagedsync/sync_loop.hpp>
@@ -97,6 +98,7 @@ int main(int argc, char* argv[]) {
         }};
 
         // Start sync loop
+        auto start_time{std::chrono::steady_clock::now()};
         stagedsync::SyncLoop sync_loop(&node_settings, &chaindata_env);
         sync_loop.start(/*wait=*/false);
 
@@ -115,11 +117,13 @@ int main(int argc, char* argv[]) {
             auto t2{std::chrono::steady_clock::now()};
             if ((t2 - t1) > std::chrono::seconds(60)) {
                 t1 = std::chrono::steady_clock::now();
+                auto total_duration{t1 - start_time};
                 log::Info("Resource usage",
                           {
                               "mem", human_size(get_mem_usage()),                                     //
                               "chain", human_size(node_settings.data_directory->chaindata().size()),  //
-                              "etl-tmp", human_size(node_settings.data_directory->etl().size())       //
+                              "etl-tmp", human_size(node_settings.data_directory->etl().size()),      //
+                              "uptime", StopWatch::format(total_duration)                             //
                           });
             }
         }

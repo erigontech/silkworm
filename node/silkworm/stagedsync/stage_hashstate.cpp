@@ -44,10 +44,6 @@ StageResult HashState::forward(db::RWTxn& txn) {
         return StageResult::kInvalidProgress;
     }
 
-    if (execution_stage_progress - previous_progress > 16) {
-        log::Info("Begin " + std::string(stage_name_),
-                  {"from", std::to_string(previous_progress), "to", std::to_string(execution_stage_progress)});
-    }
 
     try {
         if (!previous_progress) {

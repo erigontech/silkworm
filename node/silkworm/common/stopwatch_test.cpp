@@ -53,12 +53,12 @@ TEST_CASE("Stop Watch") {
     }
 
     CHECK(!sw1.format(duration3).empty());
-    CHECK(sw1.format(918734032564785ns) == "10d 15h:12m:14.032s");
-    CHECK(sw1.format(432034ms) == "7m:12.034s");
+    CHECK(sw1.format(918734032564785ns) == "10d 15h 12m 14s");
+    CHECK(sw1.format(432034ms) == "7m 12s");
     CHECK(sw1.format(1ms) == "1ms");
-    CHECK(sw1.format(1200ms) == "1.200s");
-    CHECK(sw1.format(1200us) == "1.200ms");
-    CHECK(sw1.format(200us) == "200us");
+    CHECK(sw1.format(1200ms) == "1s 200ms");
+    CHECK(sw1.format(1010us) == "1ms 10μs");
+    CHECK(sw1.format(20us) == "20μs");
 
     (void)sw1.stop();
     (void)sw1.start(/*with_reset=*/true);
@@ -70,8 +70,7 @@ TEST_CASE("Stop Watch") {
     sw1.reset();
     CHECK(sw1.laps().empty());  // No more laps
     CHECK_FALSE(sw1);           // Not started
-
-    CHECK(silkworm::StopWatch::format(918734032564785ns) == "10d 15h:12m:14.032s");
+    
 }
 
 }  // namespace silkworm

@@ -77,18 +77,22 @@ Bytes log_key(BlockNum block_number, uint32_t transaction_id) {
 }
 
 std::pair<Bytes, Bytes> change_set_to_plain_state_format(const ByteView key, const ByteView value) {
-    if (key.size() == 8) {  // AccountChangeSet
+    if (key.size() == 8) {
+        // AccountChangeSet
         const Bytes address{value.substr(0, kAddressLength)};
         const Bytes previous_value{value.substr(kAddressLength)};
         return {address, previous_value};
-    } else if (key.length() == 8 + kPlainStoragePrefixLength) {  // StorageChangeSet
-        // See storage_change_key
-        const ByteView address_with_incarnation{key.substr(8)};
-        const ByteView location{value.substr(0, kHashLength)};
-        Bytes full_key{address_with_incarnation};
-        full_key.append(location);
-        const Bytes previous_value{value.substr(kHashLength)};
-        return {full_key, previous_value};
+    } else if (key.length() == 8 + kPlainStoragePrefixLength) {
+        if (value.length() > kHashLength) {
+            // StorageChangeSet See storage_change_key
+            Bytes full_key(kPlainStoragePrefixLength + kHashLength, '\0');
+            std::memcpy(&full_key[0], &key[8], kPlainStoragePrefixLength);
+            std::memcpy(&full_key[kPlainStoragePrefixLength], &value[0], kHashLength);
+            const Bytes previous_value{value.substr(kHashLength)};
+            return {full_key, previous_value};
+        }
+        throw std::runtime_error("Invalid value length " + std::to_string(value.length()) + " in " +
+                                 std::string(__FUNCTION__));
     }
     throw std::runtime_error("Invalid key length " + std::to_string(key.length()) + " in " + std::string(__FUNCTION__));
 }
@@ -106,7 +110,7 @@ std::optional<ByteView> find_value_suffix(mdbx::cursor& table, ByteView key, Byt
 }
 
 void upsert_storage_value(mdbx::cursor& state_cursor, ByteView storage_prefix, ByteView location, ByteView new_value) {
-    //TODO(Andrea) This can be optimized. Should we find a previous record use put + MDBX_CURRENT instead of upsert.
+    // TODO(Andrea) This can be optimized. Should we find a previous record use put + MDBX_CURRENT instead of upsert.
     if (find_value_suffix(state_cursor, storage_prefix, location)) {
         state_cursor.erase();
     }

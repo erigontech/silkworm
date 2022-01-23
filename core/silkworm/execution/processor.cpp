@@ -16,7 +16,6 @@
 
 #include "processor.hpp"
 
-#include <algorithm>
 #include <cassert>
 
 #include <silkworm/chain/dao.hpp>

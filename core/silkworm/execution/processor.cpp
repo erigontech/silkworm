@@ -1,5 +1,5 @@
 /*
-   Copyright 2020-2021 The Silkworm Authors
+   Copyright 2020-2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -66,8 +66,11 @@ ValidationResult ExecutionProcessor::validate_transaction(const Transaction& txn
     return ValidationResult::kOk;
 }
 
-Receipt ExecutionProcessor::execute_transaction(const Transaction& txn) noexcept {
+void ExecutionProcessor::execute_transaction(const Transaction& txn, Receipt& receipt) noexcept {
     assert(validate_transaction(txn) == ValidationResult::kOk);
+
+    // Optimization: since receipt.logs might have some capacity, let's reuse it.
+    std::swap(receipt.logs, state_.logs());
 
     state_.clear_journal_and_substate();
 
@@ -100,7 +103,7 @@ Receipt ExecutionProcessor::execute_transaction(const Transaction& txn) noexcept
 
     const uint64_t gas_used{txn.gas_limit - refund_gas(txn, vm_res.gas_left)};
 
-    // award the miner
+    // award the fee recipient
     const intx::uint256 priority_fee_per_gas{txn.priority_fee_per_gas(base_fee_per_gas)};
     state_.add_to_balance(evm_.beneficiary, priority_fee_per_gas * gas_used);
 
@@ -113,13 +116,11 @@ Receipt ExecutionProcessor::execute_transaction(const Transaction& txn) noexcept
 
     cumulative_gas_used_ += gas_used;
 
-    return {
-        txn.type,                       // type
-        vm_res.status == EVMC_SUCCESS,  // success
-        cumulative_gas_used_,           // cumulative_gas_used
-        logs_bloom(state_.logs()),      // bloom
-        state_.logs(),                  // logs
-    };
+    receipt.type = txn.type;
+    receipt.success = vm_res.status == EVMC_SUCCESS;
+    receipt.cumulative_gas_used = cumulative_gas_used_;
+    receipt.bloom = logs_bloom(state_.logs());
+    std::swap(receipt.logs, state_.logs());
 }
 
 uint64_t ExecutionProcessor::available_gas() const noexcept {
@@ -146,24 +147,26 @@ uint64_t ExecutionProcessor::refund_gas(const Transaction& txn, uint64_t gas_lef
 }
 
 ValidationResult ExecutionProcessor::execute_block_no_post_validation(std::vector<Receipt>& receipts) noexcept {
-    receipts.clear();
-    receipts.reserve(evm_.block().transactions.size());
+    const Block& block{evm_.block()};
 
-    uint64_t block_num{evm_.block().header.number};
-    if (block_num == evm_.config().dao_block) {
+    if (block.header.number == evm_.config().dao_block) {
         dao::transfer_balances(state_);
     }
 
     cumulative_gas_used_ = 0;
-    for (const Transaction& txn : evm_.block().transactions) {
+
+    receipts.resize(block.transactions.size());
+    auto receipt_it{receipts.begin()};
+    for (const auto& txn : block.transactions) {
         const ValidationResult err{validate_transaction(txn)};
         if (err != ValidationResult::kOk) {
             return err;
         }
-        receipts.push_back(execute_transaction(txn));
+        execute_transaction(txn, *receipt_it);
+        ++receipt_it;
     }
 
-    consensus_engine_.finalize(state_, evm_.block(), evm_.revision());
+    consensus_engine_.finalize(state_, block, evm_.revision());
 
     return ValidationResult::kOk;
 }

@@ -70,7 +70,7 @@ TEST_CASE("Stop Watch") {
     sw1.reset();
     CHECK(sw1.laps().empty());  // No more laps
     CHECK_FALSE(sw1);           // Not started
-    
+
 }
 
 }  // namespace silkworm

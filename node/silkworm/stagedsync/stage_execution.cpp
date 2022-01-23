@@ -328,9 +328,9 @@ void Execution::revert_state(ByteView key, ByteView value, mdbx::cursor& plain_s
     }
 }
 
-void Execution::unwind_state_from_changeset(mdbx::cursor& source, mdbx::cursor& plain_state_table,
+void Execution::unwind_state_from_changeset(mdbx::cursor& source_changeset, mdbx::cursor& plain_state_table,
                                             mdbx::cursor& plain_code_table, BlockNum unwind_to) {
-    auto src_data{source.to_last(/*throw_notfound*/ false)};
+    auto src_data{source_changeset.to_last(/*throw_notfound*/ false)};
     while (src_data) {
         //TODO(Andrea) Why data -> bytes -> byteview ? One pass is unnecessary
         Bytes key(db::from_slice(src_data.key));
@@ -341,8 +341,11 @@ void Execution::unwind_state_from_changeset(mdbx::cursor& source, mdbx::cursor& 
         }
         auto [new_key, new_value]{db::change_set_to_plain_state_format(key, value)};
         revert_state(new_key, new_value, plain_state_table, plain_code_table);
-        src_data = source.to_previous(/*throw_notfound*/ false);
+        src_data = source_changeset.to_previous(/*throw_notfound*/ false);
     }
+
+    //TODO(Andrea) Explain why we need to leave unwound changeset in place
+
 }
 
 }  // namespace silkworm::stagedsync

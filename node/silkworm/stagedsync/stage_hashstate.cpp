@@ -44,7 +44,6 @@ StageResult HashState::forward(db::RWTxn& txn) {
         return StageResult::kInvalidProgress;
     }
 
-
     try {
         if (!previous_progress) {
             log::Info("Promoting clean state",
@@ -139,6 +138,13 @@ StageResult HashState::promote_clean_state(db::RWTxn& txn) {
 
         // TODO(Andrea) This is all about hashing. Parallelize !
 
+        /*
+         * This relies on the assumption previous execution stage has completed correctly
+         * and we do nothing more than hashing keys already present in PlainState either
+         * to HashedAccount or to HashedStorage. We don't need to check an upper block
+         * limit as we don't have it in PlainState
+         */
+
         // Hash accounts
         current_op_ = "Account+Storage";
         while (data) {
@@ -177,6 +183,15 @@ StageResult HashState::promote_clean_state(db::RWTxn& txn) {
                     SILKWORM_ASSERT(data.value.length() >
                                     kHashLength);  // plain state value = unhashed location + zeroless value
 
+                    /*
+                     * NOTE !
+                     * Destination table kHashedStorage is dup-sorted but as Collector implements sorting only on entry
+                     * key here we have to build the entry key as hashed address + incarnation + hashed storage location
+                     * eventually leaving entry value to only hashed storage value. This ensures entries are collected
+                     * and sorted properly and eventually the loader will move back hashed storage location in the value
+                     * part of the db record. This way we can reliably insert records using MDBX_APPENDDUP
+                     */
+
                     auto data_value_view{db::from_slice(data.value)};
                     std::memcpy(&new_key[kHashLength + db::kIncarnationLength],
                                 keccak256(data_value_view.substr(0, kHashLength)).bytes, kHashLength);
@@ -214,11 +229,11 @@ StageResult HashState::promote_clean_state(db::RWTxn& txn) {
                         mdbx::slice v{db::to_slice(entry.value)};
                         mdbx::error::success_or_throw(target.put(k, &v, MDBX_APPEND));
                     } else if (entry.key.length() == db::kHashedStoragePrefixLength + kHashLength) {
-                        Bytes value(kHashLength + entry.value.length(), '\0');
-                        std::memcpy(&value[0], &entry.key[db::kHashedStoragePrefixLength], kHashLength);
-                        std::memcpy(&value[kHashLength], entry.value.data(), entry.value.length());
+                        Bytes new_value(kHashLength + entry.value.length(), '\0');
+                        std::memcpy(&new_value[0], &entry.key[db::kHashedStoragePrefixLength], kHashLength);
+                        std::memcpy(&new_value[kHashLength], entry.value.data(), entry.value.length());
                         mdbx::slice k{entry.key.data(), db::kHashedStoragePrefixLength};
-                        mdbx::slice v{db::to_slice(value)};
+                        mdbx::slice v{db::to_slice(new_value)};
                         mdbx::error::success_or_throw(storage_target.put(k, &v, MDBX_APPENDDUP));
                     } else {
                         std::string what{"Unexpected key length " + std::to_string(entry.key.length())};
@@ -262,13 +277,13 @@ StageResult HashState::promote_clean_code(db::RWTxn& txn) {
     try {
         // TODO(Andrea) Maybe introduce an assertion for target table to be empty ?
         current_op_ = "Code";
+        Bytes new_key(db::kHashedStoragePrefixLength, '\0');
+
         while (data) {
             if (data.key.length() != kAddressLength + db::kIncarnationLength) {
                 std::string what{"Unexpected key len " + std::to_string(data.key.length())};
                 throw std::runtime_error(what);
             }
-
-            Bytes new_key(db::kHashedStoragePrefixLength, '\0');
 
             auto data_key_view{db::from_slice(data.key)};
             std::memcpy(&new_key[kHashLength], &data_key_view[kAddressLength], db::kIncarnationLength);

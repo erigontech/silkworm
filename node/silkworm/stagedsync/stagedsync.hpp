@@ -84,7 +84,7 @@ class Execution final : public IStage {
                               AnalysisCache& analysis_cache, ExecutionStatePool& state_pool);
 
     //! \brief For given changeset cursor/bucket it reverts the changes on states buckets
-    static void unwind_state_from_changeset(mdbx::cursor& source, mdbx::cursor& plain_state_table,
+    static void unwind_state_from_changeset(mdbx::cursor& source_changeset, mdbx::cursor& plain_state_table,
                                             mdbx::cursor& plain_code_table, BlockNum unwind_to);
 
     //! \brief Revert State for given address/storage location
@@ -153,7 +153,6 @@ struct Stage {
 // Stage functions
 StageResult stage_headers(db::RWTxn& txn, const std::filesystem::path& etl_path, uint64_t prune_from = 0);
 StageResult stage_bodies(db::RWTxn& txn, const std::filesystem::path& etl_path, uint64_t prune_from = 0);
-
 
 /* **************************** */
 StageResult stage_interhashes(db::RWTxn& txn, const std::filesystem::path& etl_path, uint64_t prune_from = 0);

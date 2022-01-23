@@ -181,7 +181,7 @@ StageResult Execution::unwind(db::RWTxn& txn, BlockNum to) {
         {
             // Revert states
             auto plain_state_table{db::open_cursor(*txn, db::table::kPlainState)};
-            auto plain_code_table{db::open_cursor(*txn, db::table::kPlainContractCode)};
+            auto plain_code_table{db::open_cursor(*txn, db::table::kPlainContractHash)};
             auto account_changeset_table{db::open_cursor(*txn, db::table::kAccountChangeSet)};
             auto storage_changeset_table{db::open_cursor(*txn, db::table::kStorageChangeSet)};
             unwind_state_from_changeset(account_changeset_table, plain_state_table, plain_code_table, to);
@@ -211,8 +211,8 @@ StageResult Execution::unwind(db::RWTxn& txn, BlockNum to) {
 
 StageResult Execution::prune(db::RWTxn& txn) {
     try {
-        BlockNum execution_progress{db::stages::read_stage_progress(*txn, db::stages::kExecutionKey)};
-        BlockNum prune_progress{db::stages::read_stage_prune_progress(*txn, db::stages::kExecutionKey)};
+        BlockNum execution_progress{db::stages::read_stage_progress(*txn, stage_name_)};
+        BlockNum prune_progress{db::stages::read_stage_prune_progress(*txn, stage_name_)};
         if (prune_progress >= execution_progress || node_settings_->prune_mode == nullptr) {
             return StageResult::kSuccess;
         }
@@ -332,7 +332,7 @@ void Execution::unwind_state_from_changeset(mdbx::cursor& source_changeset, mdbx
                                             mdbx::cursor& plain_code_table, BlockNum unwind_to) {
     auto src_data{source_changeset.to_last(/*throw_notfound*/ false)};
     while (src_data) {
-        //TODO(Andrea) Why data -> bytes -> byteview ? One pass is unnecessary
+        // TODO(Andrea) Why data -> bytes -> byteview ? One pass is unnecessary
         Bytes key(db::from_slice(src_data.key));
         Bytes value(db::from_slice(src_data.value));
         const BlockNum block_number = endian::load_big_u64(&key[0]);
@@ -344,8 +344,7 @@ void Execution::unwind_state_from_changeset(mdbx::cursor& source_changeset, mdbx
         src_data = source_changeset.to_previous(/*throw_notfound*/ false);
     }
 
-    //TODO(Andrea) Explain why we need to leave unwound changeset in place
-
+    // TODO(Andrea) Explain why we need to leave unwound changeset in place
 }
 
 }  // namespace silkworm::stagedsync

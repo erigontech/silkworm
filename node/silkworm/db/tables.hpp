@@ -39,7 +39,7 @@ inline constexpr const char* kLastHeaderKey{"LastHeader"};
 //!   key   : block_num_u64 (BE)
 //!   value : address + previous_account (encoded)
 //! \endverbatim
-//! \example If block N changed account A from value X to Y. Then:\n
+//! \example If block N changed account A from value X to Y. Then:
 //! \verbatim
 //!   key   : block_num_u64 (BE)
 //!   value : address + X
@@ -67,11 +67,10 @@ inline constexpr db::MapConfig kCallToIndex{"CallToIndex"};
 inline constexpr db::MapConfig kCallTraceSet{"CallTraceSet", mdbx::key_mode::usual, mdbx::value_mode::multi};
 inline constexpr db::MapConfig kCode{"Code"};
 inline constexpr db::MapConfig kConfig{"Config"};
-inline constexpr db::MapConfig kContractCode{"HashedCodeHash"};
 inline constexpr db::MapConfig kDatabaseInfo{"DbInfo"};
 inline constexpr db::MapConfig kBlockTransactions{"BlockTransaction"};
 
-//! \details Store "current" state for accounts
+//! \details Store "current" state for accounts with hashed address key
 //! \remarks This table stores the same values for PlainState (Account record type) but with hashed key
 //! \struct
 //! \verbatim
@@ -80,7 +79,17 @@ inline constexpr db::MapConfig kBlockTransactions{"BlockTransaction"};
 //! \endverbatim
 inline constexpr db::MapConfig kHashedAccounts{"HashedAccount"};
 
-//! \details Store "current" state for contract storage
+//! \details Store contract code hash for given contract by key hashed address + incarnation
+//! \remarks This table stores the same values for PlainCodeHash but with hashed key address
+//! \def "Incarnation" how many times given account was SelfDestruct'ed.
+//! \struct
+//! \verbatim
+//!   key   : contract address hash (32 bytes) + incarnation (u64 BE)
+//!   value : code hash (32 bytes)
+//! \endverbatim
+inline constexpr db::MapConfig kHashedCodeHash{"HashedCodeHash"};
+
+//! \details Store "current" state for contract storage with hashed address
 //! \remarks This table stores the same values for PlainState (storage record type) but with hashed key
 //! \struct
 //! \verbatim
@@ -112,7 +121,7 @@ inline constexpr db::MapConfig kMigrations{"Migration"};
 //!   key   : contract address (20 bytes) + incarnation (u64 BE)
 //!   value : code hash (32 bytes)
 //! \endverbatim
-inline constexpr db::MapConfig kPlainContractCode{"PlainCodeHash"};
+inline constexpr db::MapConfig kPlainContractHash{"PlainCodeHash"};
 
 //! \details Store "current" state for accounts and storage and is used for block execution
 //! \def "Incarnation" how many times given account was SelfDestruct'ed.
@@ -197,7 +206,7 @@ inline constexpr db::MapConfig kChainDataTables[]{
     kDifficulty,
     kCode,
     kConfig,
-    kContractCode,
+    kHashedCodeHash,
     kDatabaseInfo,
     kBlockTransactions,
     kHashedAccounts,
@@ -211,7 +220,7 @@ inline constexpr db::MapConfig kChainDataTables[]{
     kLogTopicIndex,
     kLogs,
     kMigrations,
-    kPlainContractCode,
+    kPlainContractHash,
     kPlainState,
     kSenders,
     kSequence,

@@ -117,10 +117,16 @@ class HashState final : public IStage {
         Code      // To generate hashed key => code_hash mapping
     };
 
-    //! \brief If we haven't done hashstate before (this is first sync), it is possible to just hash values from
-    //! plainstates, This is way faster than using changeset because it uses less database reads.
-    StageResult promote_clean_state(db::RWTxn& txn);
-    StageResult promote_clean_code(db::RWTxn& txn);
+    //! \brief Transforms PlainState into HashedAccounts and HashedStorage respectively in one single read pass over PlainState
+    //! \remarks To be used only if this is very first time HashState stage runs forward (i.e. forwarding from 0)
+    StageResult hash_from_plainstate(db::RWTxn& txn);
+
+    //! \brief Transforms PlainCodeHash into HashedCodeHash in one single read pass over PlainCodeHash
+    //! \remarks To be used only if this is very first time HashState stage runs forward (i.e. forwarding from 0)
+    StageResult hash_from_plaincode(db::RWTxn& txn);
+
+    //! \brief Incrementally populates
+    StageResult hash_from_account_changeset(db::RWTxn& txn);
 
     //! \brief If we have done hashstate before (this is NOT first sync) we must changesets.
     //! \remarks This is way slower than clean promotion

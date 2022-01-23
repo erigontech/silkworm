@@ -44,14 +44,15 @@ StageResult HashState::forward(db::RWTxn& txn) {
         return StageResult::kInvalidProgress;
     }
 
+    current_key_.clear();
+    current_source_.clear();
+    current_target_.clear();
+
     try {
         if (!previous_progress) {
             log::Info("Promoting clean state",
                       {"from", std::to_string(previous_progress), "to", std::to_string(execution_stage_progress)});
-            current_key_.clear();
-            current_source_.clear();
-            current_target_.clear();
-            StageResult result{promote_clean_state(txn)};
+            StageResult result{hash_from_plainstate(txn)};
             collector_->clear();
             if (result != StageResult::kSuccess) {
                 return result;
@@ -59,7 +60,7 @@ StageResult HashState::forward(db::RWTxn& txn) {
             current_key_.clear();
             current_source_.clear();
             current_target_.clear();
-            result = promote_clean_code(txn);
+            result = hash_from_plaincode(txn);
             collector_->clear();
             if (result != StageResult::kSuccess) {
                 return result;
@@ -70,9 +71,10 @@ StageResult HashState::forward(db::RWTxn& txn) {
                 log::Info("Promoting incremental state",
                           {"from", std::to_string(previous_progress), "to", std::to_string(execution_stage_progress)});
             }
-            promote_incremental(txn, DataKind::Account);
-            promote_incremental(txn, DataKind::Storage);
-            promote_incremental(txn, DataKind::Code);
+            StageResult result{hash_from_account_changeset(txn)};
+            if(result != StageResult::kSuccess) {
+                return result;
+            }
         }
 
         // TODO(Andrea) How can we check all blocks have been processed ?
@@ -129,7 +131,7 @@ StageResult HashState::prune(db::RWTxn& txn) {
     return StageResult::kUnknownError;
 }
 
-StageResult HashState::promote_clean_state(db::RWTxn& txn) {
+StageResult HashState::hash_from_plainstate(db::RWTxn& txn) {
     try {
         current_source_ = std::string(db::table::kPlainState.name);
         auto source{db::open_cursor(*txn, db::table::kPlainState)};
@@ -230,15 +232,15 @@ StageResult HashState::promote_clean_state(db::RWTxn& txn) {
                 const etl::LoadFunc load_func = [&storage_target](const etl::Entry& entry, mdbx::cursor& target,
                                                                   MDBX_put_flags_t) -> void {
                     if (entry.key.length() == kHashLength) {
-                        mdbx::slice k{db::to_slice(entry.key)};
-                        mdbx::slice v{db::to_slice(entry.value)};
+                        mdbx::slice k{entry.key.data(), entry.key.length()};
+                        mdbx::slice v{entry.value.data(), entry.value.length()};
                         mdbx::error::success_or_throw(target.put(k, &v, MDBX_APPEND));
                     } else if (entry.key.length() == db::kHashedStoragePrefixLength + kHashLength) {
                         Bytes new_value(kHashLength + entry.value.length(), '\0');
                         std::memcpy(&new_value[0], &entry.key[db::kHashedStoragePrefixLength], kHashLength);
                         std::memcpy(&new_value[kHashLength], entry.value.data(), entry.value.length());
                         mdbx::slice k{entry.key.data(), db::kHashedStoragePrefixLength};
-                        mdbx::slice v{db::to_slice(new_value)};
+                        mdbx::slice v{new_value.data(), new_value.length()};
                         mdbx::error::success_or_throw(storage_target.put(k, &v, MDBX_APPENDDUP));
                     } else {
                         std::string what{"Unexpected key length " + std::to_string(entry.key.length())};
@@ -273,8 +275,8 @@ StageResult HashState::promote_clean_state(db::RWTxn& txn) {
     }
 }
 
-StageResult HashState::promote_clean_code(db::RWTxn& txn) {
-    auto source{db::open_cursor(*txn, db::table::kPlainContractCode)};
+StageResult HashState::hash_from_plaincode(db::RWTxn& txn) {
+    auto source{db::open_cursor(*txn, db::table::kPlainContractHash)};
     auto data{source.to_first(/*throw_notfound=*/false)};
     if (!data.done) {
         // Table empty. Nothing to process
@@ -283,7 +285,7 @@ StageResult HashState::promote_clean_code(db::RWTxn& txn) {
 
     try {
         // TODO(Andrea) Maybe introduce an assertion for target table to be empty ?
-        current_source_ = std::string(db::table::kPlainContractCode.name);
+        current_source_ = std::string(db::table::kPlainContractHash.name);
         Bytes new_key(db::kHashedStoragePrefixLength, '\0');
 
         while (data) {
@@ -310,8 +312,8 @@ StageResult HashState::promote_clean_code(db::RWTxn& txn) {
         source.close();
         if (!is_stopping()) {
             if (!collector_->empty()) {
-                source = db::open_cursor(*txn, db::table::kContractCode);
-                current_target_ = std::string(db::table::kContractCode.name);
+                source = db::open_cursor(*txn, db::table::kHashedCodeHash);
+                current_target_ = std::string(db::table::kHashedCodeHash.name);
                 loading_ = true;
                 collector_->load(source, nullptr, MDBX_put_flags_t::MDBX_APPEND);
                 loading_ = false;
@@ -334,12 +336,120 @@ StageResult HashState::promote_clean_code(db::RWTxn& txn) {
     }
 }
 
+StageResult HashState::hash_from_account_changeset(db::RWTxn& txn) {
+    try {
+        BlockNum previous_progress{get_progress(txn)};
+        BlockNum execution_progress{db::stages::read_stage_progress(*txn, db::stages::kExecutionKey)};
+        if (previous_progress == execution_progress) {
+            // Nothing to process
+            return StageResult::kSuccess;
+        } else if (previous_progress > execution_progress) {
+            // Something bad had happened. Not possible hashstate stage is ahead of execution
+            // Maybe we need to unwind ?
+            log::Error() << "Bad progress sequence. HashState stage progress " << previous_progress
+                         << " while Execution stage " << execution_progress;
+            return StageResult::kInvalidProgress;
+        }
+
+        // Read AccountChangeSet from previous progress to eof and collect an index of changed accounts
+        BlockNum reached_blocknum{0};
+        absl::btree_map<evmc::address, std::set<uint64_t>> changed_accounts{};
+
+        auto source_initial_key{db::block_key(previous_progress + 1)};
+        auto source_changeset{db::open_cursor(*txn, db::table::kAccountChangeSet)};
+        auto changeset_data{source_changeset.lower_bound(db::to_slice(source_initial_key), /*throw_notfound=*/true)};
+        auto counter{0};
+        while (changeset_data.done) {
+            reached_blocknum = endian::load_big_u64(db::from_slice(changeset_data.key).data());
+            auto changeset_value_view{db::from_slice(changeset_data.value)};
+            evmc::address address{to_evmc_address(changeset_value_view)};
+            changeset_value_view.remove_prefix(kAddressLength);  // Keep the previous value encoded
+            auto [incarnation, err]{extract_incarnation(changeset_value_view)};
+            rlp::success_or_throw(err);
+            (void)changed_accounts[address].insert(incarnation);
+            source_changeset.to_next(/*throw_notfound=*/false);
+            if (++counter == 32) {
+                counter = 0;
+                current_key_ = std::to_string(reached_blocknum);
+                if (is_stopping()) {
+                    return StageResult::kAborted;
+                }
+            }
+        }
+        source_changeset.close();
+        counter = 0;
+
+        // Iterate the index of accounts and fetch the current value from PlainState
+        // Incarnation tells us if account is EOA or contract
+        auto source_state{db::open_cursor(*txn, db::table::kPlainState)};
+        auto source_code{db::open_cursor(*txn, db::table::kPlainContractHash)};
+        auto target_hashed_accounts{db::open_cursor(*txn, db::table::kHashedAccounts)};
+        auto target_hashed_code{db::open_cursor(*txn, db::table::kHashedCodeHash)};
+
+        Bytes hashed_code_key(kHashLength + db::kIncarnationLength, '\0'); // Allocate only once
+
+        for (const auto& [address, incarnations] : changed_accounts) {
+            auto address_hash{keccak256(address)};
+            for (const auto& incarnation : incarnations) {
+                if (!incarnation) {
+                    // EOA
+                    auto state_data{source_state.find(db::to_slice(address.bytes), /*throw_notfound*/ false)};
+                    if (!state_data) {
+                        std::string what{"EOA Account " + to_hex(address, /*with_prefix=*/true) +
+                                         " not found in PlainState"};
+                        throw std::runtime_error(what);
+                    }
+                    target_hashed_accounts.upsert(db::to_slice(address_hash.bytes), state_data.value);
+                } else {
+                    // Contract
+                    // Retrieve code hash from PlainCodeHash
+                    Bytes plain_key(kAddressLength + db::kIncarnationLength, '\0');
+                    std::memcpy(&plain_key[0], &address.bytes[0], kAddressLength);
+                    endian::store_big_u64(&plain_key[kAddressLength], incarnation);
+                    auto code_data{source_code.find(db::to_slice(plain_key), /*throw_notfound*/ false)};
+                    if (!code_data) {
+                        std::string what{"Contract Account " + to_hex(address, /*with_prefix=*/true) + "." +
+                                         std::to_string(incarnation) + " not found in PlainCodeHash"};
+                        throw std::runtime_error(what);
+                    }
+
+                    // Hash and concatenate everything together
+                    std::memcpy(&hashed_code_key[0], &address_hash.bytes[0], kHashLength);
+                    std::memcpy(&hashed_code_key[kHashLength], &plain_key[kAddressLength], db::kIncarnationLength);
+                    target_hashed_code.upsert(db::to_slice(hashed_code_key), code_data.value);
+                }
+
+                if (++counter == 32) {
+                    counter = 0;
+                    current_key_ = to_hex(address, /*with_prefix=*/true);
+                    if (is_stopping()) {
+                        return StageResult::kAborted;
+                    }
+                }
+
+            }
+        }
+
+    } catch (const mdbx::exception& ex) {
+        log::Error(std::string(stage_name_),
+                   {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
+        return StageResult::kDbError;
+    } catch (const std::exception& ex) {
+        log::Error(std::string(stage_name_),
+                   {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
+        return StageResult::kUnexpectedError;
+    } catch (...) {
+        log::Error(std::string(stage_name_), {"function", std::string(__FUNCTION__), "exception", "undefined"});
+        return StageResult::kUnexpectedError;
+    }
+}
+
 void HashState::promote_incremental(db::RWTxn& txn, DataKind kind) {
     auto [changeset_config, target_config] = HashState::get_operation_tables(kind);
 
     auto changeset_table{db::open_cursor(*txn, changeset_config)};
     auto plainstate_table{db::open_cursor(*txn, db::table::kPlainState)};
-    auto codehash_table{db::open_cursor(*txn, db::table::kPlainContractCode)};
+    auto codehash_table{db::open_cursor(*txn, db::table::kPlainContractHash)};
     auto target_table{db::open_cursor(*txn, target_config)};
 
     auto start_block_number{db::stages::read_stage_progress(*txn, db::stages::kHashStateKey) + 1};
@@ -427,8 +537,8 @@ void HashState::demote_incremental(db::RWTxn& txn, BlockNum to, DataKind kind) {
 
     auto changeset_table{db::open_cursor(*txn, changeset_config)};
     auto target_table{db::open_cursor(*txn, target_config)};
-    auto code_table{db::open_cursor(*txn, db::table::kContractCode)};
-    auto contract_code_table{db::open_cursor(*txn, db::table::kPlainContractCode)};
+    auto code_table{db::open_cursor(*txn, db::table::kHashedCodeHash)};
+    auto contract_code_table{db::open_cursor(*txn, db::table::kPlainContractHash)};
 
     Bytes start_key{db::block_key(to + 1)};
     auto changeset_data{changeset_table.lower_bound(db::to_slice(start_key), /*throw_notfound=*/false)};
@@ -530,7 +640,7 @@ std::pair<db::MapConfig, db::MapConfig> HashState::get_operation_tables(DataKind
         case DataKind::Storage:
             return {db::table::kStorageChangeSet, db::table::kHashedStorage};
         case DataKind::Code:
-            return {db::table::kAccountChangeSet, db::table::kContractCode};
+            return {db::table::kAccountChangeSet, db::table::kHashedCodeHash};
         default:
             std::string error{magic_enum::enum_name<DataKind>(kind)};
             error.append(": unimplemented data kind");

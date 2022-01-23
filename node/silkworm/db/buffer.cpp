@@ -122,7 +122,7 @@ void Buffer::write_to_state_table() {
     for (const auto& address : addresses) {
         if (auto it{accounts_.find(address)}; it != accounts_.end()) {
             auto key{to_slice(address)};
-            //TODO(Andrea) This double erase and upsert should not be needed for accounts
+            // TODO(Andrea) This double erase and upsert should not be needed for accounts
             state_table.erase(key, /*whole_multivalue=*/true);  // PlainState is multivalue
             if (it->second.has_value()) {
                 Bytes encoded{it->second->encode_for_storage()};
@@ -163,7 +163,7 @@ void Buffer::write_to_db() {
         code_table.upsert(to_slice(entry.first), to_slice(entry.second));
     }
 
-    auto code_hash_table{db::open_cursor(txn_, table::kPlainContractCode)};
+    auto code_hash_table{db::open_cursor(txn_, table::kPlainContractHash)};
     for (const auto& entry : storage_prefix_to_code_hash_) {
         code_hash_table.upsert(to_slice(entry.first), to_slice(entry.second));
     }
@@ -177,7 +177,8 @@ void Buffer::write_to_db() {
             std::memcpy(&change_value[0], address.bytes, kAddressLength);
             std::memcpy(&change_value[kAddressLength], storage_encoded.data(), storage_encoded.length());
             auto change_value_slice{to_slice(change_value)};
-            mdbx::error::success_or_throw(account_change_table.put(to_slice(change_key), &change_value_slice, MDBX_APPENDDUP));
+            mdbx::error::success_or_throw(
+                account_change_table.put(to_slice(change_key), &change_value_slice, MDBX_APPENDDUP));
         }
     }
 
@@ -194,7 +195,8 @@ void Buffer::write_to_db() {
                     data = ByteView{storage_entry.first};
                     data.append(storage_entry.second);
                     auto data_slice{to_slice(data)};
-                    mdbx::error::success_or_throw(storage_change_table.put(to_slice(change_key), &data_slice, MDBX_APPENDDUP));
+                    mdbx::error::success_or_throw(
+                        storage_change_table.put(to_slice(change_key), &data_slice, MDBX_APPENDDUP));
                 }
             }
         }

@@ -49,12 +49,16 @@ StageResult HashState::forward(db::RWTxn& txn) {
             log::Info("Promoting clean state",
                       {"from", std::to_string(previous_progress), "to", std::to_string(execution_stage_progress)});
             current_key_.clear();
+            current_source_.clear();
+            current_target_.clear();
             StageResult result{promote_clean_state(txn)};
             collector_->clear();
             if (result != StageResult::kSuccess) {
                 return result;
             }
             current_key_.clear();
+            current_source_.clear();
+            current_target_.clear();
             result = promote_clean_code(txn);
             collector_->clear();
             if (result != StageResult::kSuccess) {
@@ -127,6 +131,7 @@ StageResult HashState::prune(db::RWTxn& txn) {
 
 StageResult HashState::promote_clean_state(db::RWTxn& txn) {
     try {
+        current_source_ = std::string(db::table::kPlainState.name);
         auto source{db::open_cursor(*txn, db::table::kPlainState)};
         auto data{source.to_first(/*throw_notfound=*/false)};
         if (!data.done) {
@@ -146,7 +151,7 @@ StageResult HashState::promote_clean_state(db::RWTxn& txn) {
          */
 
         // Hash accounts
-        current_op_ = "Account+Storage";
+        current_source_ = "Account+Storage";
         while (data) {
             if (data.key.length() == kAddressLength) {
                 // Hash account
@@ -241,6 +246,8 @@ StageResult HashState::promote_clean_state(db::RWTxn& txn) {
                     }
                 };
 
+                current_target_ =
+                    std::string(db::table::kHashedAccounts.name) + "+" + std::string(db::table::kHashedStorage.name);
                 loading_ = true;
                 collector_->load(account_target, load_func, MDBX_put_flags_t::MDBX_APPENDDUP);
                 loading_ = false;
@@ -276,7 +283,7 @@ StageResult HashState::promote_clean_code(db::RWTxn& txn) {
 
     try {
         // TODO(Andrea) Maybe introduce an assertion for target table to be empty ?
-        current_op_ = "Code";
+        current_source_ = std::string(db::table::kPlainContractCode.name);
         Bytes new_key(db::kHashedStoragePrefixLength, '\0');
 
         while (data) {
@@ -304,6 +311,7 @@ StageResult HashState::promote_clean_code(db::RWTxn& txn) {
         if (!is_stopping()) {
             if (!collector_->empty()) {
                 source = db::open_cursor(*txn, db::table::kContractCode);
+                current_target_ = std::string(db::table::kContractCode.name);
                 loading_ = true;
                 collector_->load(source, nullptr, MDBX_put_flags_t::MDBX_APPEND);
                 loading_ = false;
@@ -531,8 +539,12 @@ std::pair<db::MapConfig, db::MapConfig> HashState::get_operation_tables(DataKind
 }
 
 std::vector<std::string> HashState::get_log_progress() {
-    std::string key{loading_ ? abridge(collector_->get_load_key(), kAddressLength * 2 + 2) : current_key_};
-    return {"data", current_op_, "etl", (loading_ ? "L" : "E+T"), "key", key};
+    if (!loading_) {
+        return {"source", current_source_, "etl", "E+T", "key", current_key_};
+    } else {
+        std::string key{abridge(collector_->get_load_key(), kAddressLength * 2 + 2)};
+        return {"target", current_target_, "etl", "L", "key", key};
+    }
 }
 
 }  // namespace silkworm::stagedsync

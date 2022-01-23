@@ -134,7 +134,8 @@ class HashState final : public IStage {
 
     // Stats
     std::atomic_bool loading_{false};
-    std::string current_op_;
+    std::string current_source_;
+    std::string current_target_;
     std::string current_key_;
     std::unique_ptr<etl::Collector> collector_;
 };

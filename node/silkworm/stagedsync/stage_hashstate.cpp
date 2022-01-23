@@ -72,7 +72,7 @@ StageResult HashState::forward(db::RWTxn& txn) {
                           {"from", std::to_string(previous_progress), "to", std::to_string(execution_stage_progress)});
             }
             StageResult result{hash_from_account_changeset(txn)};
-            if(result != StageResult::kSuccess) {
+            if (result != StageResult::kSuccess) {
                 return result;
             }
         }
@@ -355,6 +355,7 @@ StageResult HashState::hash_from_account_changeset(db::RWTxn& txn) {
         BlockNum reached_blocknum{0};
         absl::btree_map<evmc::address, std::set<uint64_t>> changed_accounts{};
 
+        current_source_ = std::string(db::table::kAccountChangeSet.name);
         auto source_initial_key{db::block_key(previous_progress + 1)};
         auto source_changeset{db::open_cursor(*txn, db::table::kAccountChangeSet)};
         auto changeset_data{source_changeset.lower_bound(db::to_slice(source_initial_key), /*throw_notfound=*/true)};
@@ -370,7 +371,7 @@ StageResult HashState::hash_from_account_changeset(db::RWTxn& txn) {
             source_changeset.to_next(/*throw_notfound=*/false);
             if (++counter == 32) {
                 counter = 0;
-                current_key_ = std::to_string(reached_blocknum);
+                current_key_ = intx::hex(reached_blocknum);
                 if (is_stopping()) {
                     return StageResult::kAborted;
                 }
@@ -378,55 +379,43 @@ StageResult HashState::hash_from_account_changeset(db::RWTxn& txn) {
         }
         source_changeset.close();
         counter = 0;
+        if (changed_accounts.empty()) {
+            return StageResult::kSuccess;
+        }
 
-        // Iterate the index of accounts and fetch the current value from PlainState
-        // Incarnation tells us if account is EOA or contract
-        auto source_state{db::open_cursor(*txn, db::table::kPlainState)};
-        auto source_code{db::open_cursor(*txn, db::table::kPlainContractHash)};
+        current_source_ = std::string(db::table::kPlainState.name);
+
+        auto plainstate_table{db::open_cursor(*txn, db::table::kPlainState)};
+        auto plaincode_table{db::open_cursor(*txn, db::table::kPlainContractHash)};
         auto target_hashed_accounts{db::open_cursor(*txn, db::table::kHashedAccounts)};
         auto target_hashed_code{db::open_cursor(*txn, db::table::kHashedCodeHash)};
 
-        Bytes hashed_code_key(kHashLength + db::kIncarnationLength, '\0'); // Allocate only once
+        Bytes plain_code_key(kAddressLength + db::kIncarnationLength, '\0');  // Only one allocation
+        Bytes hashed_code_key(kHashLength + db::kIncarnationLength, '\0');    // Only one allocation
 
         for (const auto& [address, incarnations] : changed_accounts) {
-            auto address_hash{keccak256(address)};
+            auto hashed_address{keccak256(address.bytes)};
+            auto plainstate_data{plainstate_table.find(db::to_slice(address))};
+            if (!plainstate_data) {
+                (void)target_hashed_accounts.erase(db::to_slice(hashed_address.bytes));
+            } else {
+                target_hashed_accounts.upsert(db::to_slice(hashed_address.bytes), plainstate_data.value);
+            }
+
+            std::memcpy(&plain_code_key[0], address.bytes, kAddressLength);
+            std::memcpy(&hashed_code_key[0], hashed_address.bytes, kHashLength);
+
             for (const auto& incarnation : incarnations) {
-                if (!incarnation) {
-                    // EOA
-                    auto state_data{source_state.find(db::to_slice(address.bytes), /*throw_notfound*/ false)};
-                    if (!state_data) {
-                        std::string what{"EOA Account " + to_hex(address, /*with_prefix=*/true) +
-                                         " not found in PlainState"};
-                        throw std::runtime_error(what);
-                    }
-                    target_hashed_accounts.upsert(db::to_slice(address_hash.bytes), state_data.value);
-                } else {
-                    // Contract
-                    // Retrieve code hash from PlainCodeHash
-                    Bytes plain_key(kAddressLength + db::kIncarnationLength, '\0');
-                    std::memcpy(&plain_key[0], &address.bytes[0], kAddressLength);
-                    endian::store_big_u64(&plain_key[kAddressLength], incarnation);
-                    auto code_data{source_code.find(db::to_slice(plain_key), /*throw_notfound*/ false)};
-                    if (!code_data) {
-                        std::string what{"Contract Account " + to_hex(address, /*with_prefix=*/true) + "." +
-                                         std::to_string(incarnation) + " not found in PlainCodeHash"};
-                        throw std::runtime_error(what);
-                    }
-
-                    // Hash and concatenate everything together
-                    std::memcpy(&hashed_code_key[0], &address_hash.bytes[0], kHashLength);
-                    std::memcpy(&hashed_code_key[kHashLength], &plain_key[kAddressLength], db::kIncarnationLength);
-                    target_hashed_code.upsert(db::to_slice(hashed_code_key), code_data.value);
-                }
-
-                if (++counter == 32) {
-                    counter = 0;
-                    current_key_ = to_hex(address, /*with_prefix=*/true);
-                    if (is_stopping()) {
-                        return StageResult::kAborted;
+                if (incarnation) {
+                    endian::store_big_u64(&plain_code_key[kAddressLength], incarnation);
+                    std::memcpy(&hashed_code_key[kHashLength], &plain_code_key[kAddressLength], 8);
+                    auto plaincode_data{plaincode_table.find(db::to_slice(plain_code_key))};
+                    if (!plaincode_data) {
+                        (void)target_hashed_code.erase(db::to_slice(hashed_code_key));
+                    } else {
+                        target_hashed_code.upsert(db::to_slice(hashed_code_key), plaincode_data.value);
                     }
                 }
-
             }
         }
 

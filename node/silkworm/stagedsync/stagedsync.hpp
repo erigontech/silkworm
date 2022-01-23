@@ -125,8 +125,11 @@ class HashState final : public IStage {
     //! \remarks To be used only if this is very first time HashState stage runs forward (i.e. forwarding from 0)
     StageResult hash_from_plaincode(db::RWTxn& txn);
 
-    //! \brief Incrementally populates
+    //! \brief Detects account changes from AccountChangeSet and hashes the changed keys
+    //! \remarks Though it could be used for initial sync only is way slower and builds an index of changed accounts.
     StageResult hash_from_account_changeset(db::RWTxn& txn);
+
+    StageResult hash_from_storage_changeset(db::RWTxn& txn);
 
     //! \brief If we have done hashstate before (this is NOT first sync) we must changesets.
     //! \remarks This is way slower than clean promotion

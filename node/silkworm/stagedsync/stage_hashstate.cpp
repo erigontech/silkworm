@@ -371,7 +371,7 @@ StageResult HashState::hash_from_account_changeset(db::RWTxn& txn) {
             source_changeset.to_next(/*throw_notfound=*/false);
             if (++counter == 32) {
                 counter = 0;
-                current_key_ = intx::hex(reached_blocknum);
+                current_key_ = to_hex(reached_blocknum, true);
                 if (is_stopping()) {
                     return StageResult::kAborted;
                 }
@@ -409,6 +409,13 @@ StageResult HashState::hash_from_account_changeset(db::RWTxn& txn) {
                 if (incarnation) {
                     endian::store_big_u64(&plain_code_key[kAddressLength], incarnation);
                     std::memcpy(&hashed_code_key[kHashLength], &plain_code_key[kAddressLength], 8);
+                    if (!plainstate_data) {
+                        // This should not happen. It means there is a change of account + incarnation
+                        // but is not recorded in PlainState
+                        const std::string what{"Missing account " + to_hex(address.bytes, true) + "." +
+                                               std::to_string(incarnation) + " in PlainState"};
+                        throw std::runtime_error(what);
+                    }
                     auto plaincode_data{plaincode_table.find(db::to_slice(plain_code_key))};
                     if (!plaincode_data) {
                         (void)target_hashed_code.erase(db::to_slice(hashed_code_key));
@@ -418,6 +425,7 @@ StageResult HashState::hash_from_account_changeset(db::RWTxn& txn) {
                 }
             }
         }
+        return StageResult::kSuccess;
 
     } catch (const mdbx::exception& ex) {
         log::Error(std::string(stage_name_),

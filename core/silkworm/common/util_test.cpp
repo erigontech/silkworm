@@ -88,6 +88,33 @@ TEST_CASE("Hex") {
     }
 }
 
+TEST_CASE("Integrals to hex") {
+    uint8_t uint8{10};
+    CHECK(to_hex(uint8, true) == "0x0a");
+    uint8 = 16;
+    CHECK(to_hex(uint8, true) == "0x10");
+    uint8 = UINT8_MAX;
+    CHECK(to_hex(uint8, true) == "0xff");
+    uint8 = 0;
+    CHECK(to_hex(uint8, true) == "0x00");
+
+    uint16_t uint16{256};
+    CHECK(to_hex(uint16, true) == "0x0100");
+    uint16 = 584;
+    CHECK(to_hex(uint16, true) == "0x0248");
+    uint16 = UINT16_MAX;
+    CHECK(to_hex(uint16, true) == "0xffff");
+
+    uint32_t uint32{5642869};
+    CHECK(to_hex(uint32, false) == "561a75");
+    uint32 = UINT32_MAX;
+    CHECK(to_hex(uint32, false) == "ffffffff");
+
+    uint32_t uint64{5642869};
+    CHECK(to_hex(uint64, false) == "561a75");
+
+}
+
 TEST_CASE("Padding") {
     Bytes buffer;
 

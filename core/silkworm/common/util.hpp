@@ -25,6 +25,7 @@
 #include <ethash/keccak.hpp>
 
 #include <silkworm/common/base.hpp>
+#include <silkworm/common/endian.hpp>
 
 namespace silkworm {
 
@@ -62,6 +63,21 @@ ByteView zeroless_view(ByteView data);
 //! \brief Returns a string representing the hex form of provided string of bytes
 std::string to_hex(ByteView bytes, bool with_prefix = false);
 
+//! \brief Returns a string representing the hex form of provided integral
+template <typename T,
+          typename std::enable_if<std::is_integral<T>::value && std::is_unsigned<T>::value, T>::type* = nullptr>
+std::string to_hex(const T& value, bool with_prefix = false) {
+    Bytes bytes(reinterpret_cast<const uint8_t*>(&value), sizeof(T));
+#if SILKWORM_BYTE_ORDER == SILKWORM_LITTLE_ENDIAN
+    std::reverse(bytes.begin(), bytes.end());
+#endif
+    auto hexed{to_hex(zeroless_view(bytes), with_prefix)};
+    if (hexed.length() == (with_prefix ? 2 : 0)) {
+        hexed += "00";
+    }
+    return hexed;
+}
+
 //! \brief Abridges a string to given length and eventually adds an ellipsis if input length is gt required length
 std::string abridge(std::string_view input, size_t length);
 
@@ -92,4 +108,4 @@ std::vector<std::string> split(std::string_view source, std::string_view delimit
 
 }  // namespace silkworm
 
-#endif  // SILKWORM_COMMON_UTIL_HPP_
+#endif  // SILKWORM_COMMON_UTIL_H

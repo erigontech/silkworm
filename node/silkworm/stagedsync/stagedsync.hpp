@@ -127,9 +127,11 @@ class HashState final : public IStage {
 
     //! \brief Detects account changes from AccountChangeSet and hashes the changed keys
     //! \remarks Though it could be used for initial sync only is way slower and builds an index of changed accounts.
-    StageResult hash_from_account_changeset(db::RWTxn& txn);
+    StageResult hash_from_account_changeset(db::RWTxn& txn, BlockNum previous_progress);
 
-    StageResult hash_from_storage_changeset(db::RWTxn& txn);
+    //! \brief Detects storage changes from StorageChangeSet and hashes the changed keys
+    //! \remarks Though it could be used for initial sync only is way slower and builds an index of changed storage locations.
+    StageResult hash_from_storage_changeset(db::RWTxn& txn, BlockNum previous_progress);
 
     //! \brief If we have done hashstate before (this is NOT first sync) we must changesets.
     //! \remarks This is way slower than clean promotion

@@ -76,7 +76,7 @@ Bytes log_key(BlockNum block_number, uint32_t transaction_id) {
     return key;
 }
 
-std::pair<Bytes, Bytes> change_set_to_plain_state_format(const ByteView key, const ByteView value) {
+std::pair<Bytes, Bytes> changeset_to_plainstate_format(const ByteView key, ByteView value) {
     if (key.size() == 8) {
         // AccountChangeSet
         const Bytes address{value.substr(0, kAddressLength)};
@@ -88,8 +88,8 @@ std::pair<Bytes, Bytes> change_set_to_plain_state_format(const ByteView key, con
             Bytes full_key(kPlainStoragePrefixLength + kHashLength, '\0');
             std::memcpy(&full_key[0], &key[8], kPlainStoragePrefixLength);
             std::memcpy(&full_key[kPlainStoragePrefixLength], &value[0], kHashLength);
-            const Bytes previous_value{value.substr(kHashLength)};
-            return {full_key, previous_value};
+            value.remove_prefix(kHashLength);
+            return {full_key, Bytes(value)};
         }
         throw std::runtime_error("Invalid value length " + std::to_string(value.length()) + " in " +
                                  std::string(__FUNCTION__));

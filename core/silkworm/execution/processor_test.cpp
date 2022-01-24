@@ -1,5 +1,5 @@
 /*
-   Copyright 2020-2021 The Silkworm Authors
+   Copyright 2020-2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -59,7 +59,8 @@ TEST_CASE("Zero gas price") {
     CHECK(processor.validate_transaction(txn) == ValidationResult::kMissingSender);
 
     txn.from = sender;
-    Receipt receipt{processor.execute_transaction(txn)};
+    Receipt receipt;
+    processor.execute_transaction(txn, receipt);
     CHECK(receipt.success);
 }
 
@@ -138,7 +139,8 @@ TEST_CASE("No refund on error") {
     processor.evm().state().set_nonce(caller, nonce);
     txn.from = caller;
 
-    Receipt receipt1{processor.execute_transaction(txn)};
+    Receipt receipt1;
+    processor.execute_transaction(txn, receipt1);
     CHECK(receipt1.success);
 
     // Call the newly created contract
@@ -151,7 +153,8 @@ TEST_CASE("No refund on error") {
     // But then there's not enough gas for the BALANCE operation
     txn.gas_limit = fee::kGTransaction + 5'020;
 
-    Receipt receipt2{processor.execute_transaction(txn)};
+    Receipt receipt2;
+    processor.execute_transaction(txn, receipt2);
     CHECK(!receipt2.success);
     CHECK(receipt2.cumulative_gas_used - receipt1.cumulative_gas_used == txn.gas_limit);
 }
@@ -239,7 +242,8 @@ TEST_CASE("Self-destruct") {
     evmc::bytes32 address_as_hash{to_bytes32(suicidal_address)};
     txn.data = ByteView{address_as_hash};
 
-    Receipt receipt1{processor.execute_transaction(txn)};
+    Receipt receipt1;
+    processor.execute_transaction(txn, receipt1);
     CHECK(receipt1.success);
 
     CHECK(!processor.evm().state().exists(suicidal_address));
@@ -249,7 +253,8 @@ TEST_CASE("Self-destruct") {
     txn.to = suicidal_address;
     txn.data.clear();
 
-    Receipt receipt2{processor.execute_transaction(txn)};
+    Receipt receipt2;
+    processor.execute_transaction(txn, receipt2);
     CHECK(receipt2.success);
 
     CHECK(processor.evm().state().exists(suicidal_address));
@@ -373,7 +378,8 @@ TEST_CASE("Out of Gas during account re-creation") {
     ExecutionProcessor processor{block, *engine, state, kMainnetConfig};
     processor.evm().state().add_to_balance(caller, kEther);
 
-    Receipt receipt{processor.execute_transaction(txn)};
+    Receipt receipt;
+    processor.execute_transaction(txn, receipt);
     // out of gas
     CHECK(!receipt.success);
 
@@ -420,7 +426,8 @@ TEST_CASE("Empty suicide beneficiary") {
     ExecutionProcessor processor{block, *engine, state, kMainnetConfig};
     processor.evm().state().add_to_balance(caller, kEther);
 
-    Receipt receipt{processor.execute_transaction(txn)};
+    Receipt receipt;
+    processor.execute_transaction(txn, receipt);
     CHECK(receipt.success);
 
     processor.evm().state().write_to_db(block_number);

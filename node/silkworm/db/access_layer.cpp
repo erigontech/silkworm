@@ -373,9 +373,10 @@ evmc::bytes32 read_storage(mdbx::txn& txn, const evmc::address& address, uint64_
                                     ? historical_storage(txn, address, incarnation, location, block_num.value())
                                     : std::nullopt};
     if (!val.has_value()) {
-        auto src{db::open_cursor(txn, table::kPlainState)};
+        thread_local auto state_cursor{db::open_cursor(txn, table::kPlainState)};
+        state_cursor.renew(txn);
         auto key{storage_prefix(address, incarnation)};
-        val = find_value_suffix(src, key, location);
+        val = find_value_suffix(state_cursor, key, location);
     }
 
     if (!val.has_value()) {

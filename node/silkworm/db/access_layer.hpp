@@ -57,6 +57,7 @@ void write_canonical_header(mdbx::txn& txn, const BlockHeader& header);
 //! \brief Writes the header hash in table::kCanonicalHashes
 void write_canonical_header_hash(mdbx::txn& txn, const uint8_t (&hash)[kHashLength], BlockNum number);
 
+std::optional<BlockBody> read_body(mdbx::txn& txn, const Bytes& key, bool read_senders);
 std::optional<BlockBody> read_body(mdbx::txn& txn, BlockNum block_number, const uint8_t (&hash)[kHashLength],
                                    bool read_senders);
 
@@ -77,6 +78,7 @@ void write_total_difficulty(mdbx::txn& txn, BlockNum block_number, const uint8_t
 std::optional<BlockWithHash> read_block(mdbx::txn& txn, BlockNum block_number, bool read_senders);
 
 // See Erigon ReadSenders
+std::vector<evmc::address> read_senders(mdbx::txn& txn, const Bytes& key);
 std::vector<evmc::address> read_senders(mdbx::txn& txn, BlockNum block_number, const uint8_t (&hash)[kHashLength]);
 
 // See Erigon ReadTransactions

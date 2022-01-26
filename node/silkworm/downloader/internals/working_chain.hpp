@@ -73,12 +73,13 @@ class WorkingChain {
     BlockNum top_seen_block_height() const;
     void top_seen_block_height(BlockNum);
     std::string human_readable_status() const;
-    std::string human_readable_verbose_status() const;
+    std::string dump_chain_bundles() const;
+    std::string dump_orphaned_links() const;
 
     // make an anchor collection (skeleton request) or many anchor extension upon the last execution time
     auto request_headers(time_point_t tp) -> std::tuple<std::vector<GetBlockHeadersPacket66>, std::vector<PeerPenalization>>;
-    // todo: incorpora l'algo che in questo momento e' in OutboundGetBlockHeaders - inoltre decide qui quando fare la skeleton
-    // memorizzando il tempo dell'ultima skeleton fatta e facendo in modo che siano intervallate almeno di 60s
+    // todo: encapsulate the algo that is in OutboundGetBlockHeaders at the moment + decide when to do the skeleton req
+    // notes: for the skeleton req, save the time of the last skeleton and make sure the next will be issued not before 60s
 
 
     // core functionalities: anchor collection
@@ -139,6 +140,7 @@ class WorkingChain {
     void mark_as_preverified(std::shared_ptr<Link>);
     size_t anchors_within_range(BlockNum max);
     BlockNum lowest_anchor_within_range(BlockNum bottom, BlockNum top);
+    std::shared_ptr<Anchor> highest_anchor();
 
     enum VerificationResult { Preverified, Skip, Postpone, Accept };
     VerificationResult verify(const Link& link);

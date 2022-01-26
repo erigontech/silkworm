@@ -55,15 +55,68 @@ bool WorkingChain::in_sync() const {
 }
 
 std::string WorkingChain::human_readable_status() const {
-    return std::to_string(links_.size()) + "/" + std::to_string(link_queue_.size()) + " links (" +
-           std::to_string(persisted_link_queue_.size()) + " persisted), " +
-           std::to_string(anchors_.size()) + "/" + std::to_string(anchor_queue_.size()) + " anchors";
+    auto invariant = links_.size() == (link_queue_.size() + persisted_link_queue_.size());
+
+    std::string output =
+           std::to_string(links_.size()) + + " links (" +
+           std::to_string(link_queue_.size()) + " pending / " +
+           std::to_string(persisted_link_queue_.size()) + " persisted" + (invariant ? "), " : " !),") +
+           std::to_string(anchors_.size()) + "/" + std::to_string(anchor_queue_.size()) + " anchors, " +
+           std::to_string(highest_in_db_) + " highest in db";
+
+    bool verbose = false;
+    if (verbose) { // for debug
+        output += dump_orphaned_links();
+        output += dump_chain_bundles();
+    }
+
+    return output;
 }
 
-std::string WorkingChain::human_readable_verbose_status() const {
-    std::string verbose_status = human_readable_status() + "\n";
+std::string WorkingChain::dump_orphaned_links() const {
+    using std::to_string;
 
-    verbose_status += "--**--\n";
+    std::set<BlockNum> orphaned_links;
+    for (auto& l: links_) {
+        auto link = l.second;
+        bool anchor_found = false;
+        for (auto& a: anchors_) {
+            auto anchor = a.second;
+            if (anchor->blockHeight <= link->blockHeight && link->blockHeight <= anchor->lastLinkHeight) {
+                anchor_found = true;
+                break;
+            }
+        }
+        if (!anchor_found)
+            orphaned_links.insert(link->blockHeight);
+    }
+
+    std::string output = "--@@--\n";
+
+    BlockNum prev = 0;
+    BlockNum len = 1;
+    for (auto curr = orphaned_links.begin(); curr != orphaned_links.end(); curr++) {
+        if (prev == 0) {
+            prev = *curr;
+            len = 1;
+        } else if (*curr == prev + len) {
+            len++;
+        } else {
+            output += "--@@-- " + to_string(prev) + " -> " + to_string(prev+len-1) + "\n";
+            prev = *curr;
+            len = 1;
+        }
+    }
+    output += "--@@-- " + to_string(prev) + " -> " + to_string(prev+len-1) + "\n";
+
+    output += "--@@--";
+
+    return output;
+}
+
+std::string WorkingChain::dump_chain_bundles() const {
+    // anchor list
+    std::string output = "--**--\n";
 
     // order
     std::multimap<BlockNum, std::shared_ptr<Anchor>> ordered_anchors;
@@ -82,12 +135,12 @@ std::string WorkingChain::human_readable_verbose_status() const {
                                   ", end=" + std::to_string(anchor->lastLinkHeight) +
                                   ", len=" + std::to_string(anchor->chainLength()) +
                                   ", ts=" + std::to_string(seconds_from_last_req.count()) + "secs\n";
-        verbose_status += anchor_dump;
+        output += anchor_dump;
     }
 
-    verbose_status += "--**--";
+    output += "--**--";
 
-    return verbose_status;
+    return output;
 }
 
 std::vector<Announce>& WorkingChain::announces_to_do() { return announces_to_do_; }
@@ -295,6 +348,15 @@ BlockNum WorkingChain::lowest_anchor_within_range(BlockNum bottom, BlockNum top)
     return lowest;
 }
 
+std::shared_ptr<Anchor> WorkingChain::highest_anchor() {
+    std::shared_ptr<Anchor> highest_anchor = nullptr;
+    for (const auto& a: anchors_) {
+        if (highest_anchor == nullptr || a.second->blockHeight >= highest_anchor->blockHeight) {
+            highest_anchor = a.second;
+        }
+    }
+    return highest_anchor;
+}
 
 /*
  * Anchor extension query.
@@ -567,7 +629,7 @@ auto WorkingChain::process_segment(const Segment& segment, bool is_a_new_block, 
             op = "new anchor";
             requestMore = new_anchor(segment_slice, peerId);
         }
-        log::Debug() << "WorkingChain, segment " << op << " up=" << startNum << " (" << segment[start]->hash()
+        log::Info() << "WorkingChain, segment " << op << " up=" << startNum << " (" << segment[start]->hash()
                      << ") down=" << endNum << " (" << segment[end - 1]->hash() << ") (more=" << requestMore << ")";
     }
     catch (segment_cut_and_paste_error& e) {
@@ -585,8 +647,20 @@ auto WorkingChain::process_segment(const Segment& segment, bool is_a_new_block, 
 void WorkingChain::reduce_links_to(size_t limit) {
     if (link_queue_.size() <= limit) return;  // does nothing
 
-    log::Debug() << "LinkQueue: too many links, cutting down from " << link_queue_.size() << " to " << link_limit;
+    auto initial_size = link_queue_.size();
 
+    auto victim_anchor = highest_anchor();
+
+    invalidate(victim_anchor);
+
+    log::Debug() << "LinkQueue: too many links, cut down from " << initial_size << " to " << link_queue_.size() <<
+        " (removed chain bundle start=" << victim_anchor->blockHeight << " end=" << victim_anchor->lastLinkHeight << ")";
+
+    /* the old algo (the following code) can break a chain bundle in the middle leaving the upper half of the bundle
+     * without anchor and causing "duplicated segment" errors that can stall the downloader
+     * This can happen for example if the last operation was a connect operation that inserted some links that are now
+     * the last inserted so eligible for eviction but they by design are in the middle of a chain bundle.
+     * Also the following algo make heavy to keep track of the chain bundle height.
     while (link_queue_.size() > limit) {
         auto link = link_queue_.top();
         link_queue_.pop();
@@ -602,9 +676,10 @@ void WorkingChain::reduce_links_to(size_t limit) {
             if (anchor_i->second->links.empty()) {
                 remove(anchor_i->second);
             }
-        } // todo: choose a different erase policy if we need to keep track of chain bundle height
-    }     // Here we need to update anchor height but using find_anchor() to find the anchor to update is burdensome.
-}         // It is better to impl. a different policy, f.e. choose a chain bundle and erase it (partially or entirely)
+        }
+    }
+    */
+}
 
 // find_anchors tries to find the highest link the in the new segment that can be attached to an existing anchor
 auto WorkingChain::find_anchor(const Segment& segment) -> std::tuple<std::optional<std::shared_ptr<Anchor>>, Start> {
@@ -666,6 +741,7 @@ auto WorkingChain::find_anchor(std::shared_ptr<Link> link) -> std::optional<std:
 
 void WorkingChain::connect(std::shared_ptr<Link> attachment_link, Segment::Slice segment_slice,
                            std::shared_ptr<Anchor> anchor) {
+    using std::to_string;
     // Extend up
 
     // Check for bad headers
@@ -703,6 +779,13 @@ void WorkingChain::connect(std::shared_ptr<Link> attachment_link, Segment::Slice
     prev_link->next = std::move(anchor->links);
     if (anchor_preverified) mark_as_preverified(prev_link);  // Mark the entire segment as pre-verified
     remove(anchor);
+
+    log::Debug() << "WorkingChain, segment op: " <<
+        (deep_a.has_value() ? to_string(deep_a.value()->blockHeight) : "X") << " --- " << attachment_link->blockHeight <<
+        " connect " <<
+        segment_slice.rbegin()->operator*().number << " --- " << (segment_slice.rend()-1)->operator*().number <<
+        " connect " <<
+        anchor->blockHeight << " --- " <<  anchor->lastLinkHeight;
 }
 
 auto WorkingChain::extend_down(Segment::Slice segment_slice, std::shared_ptr<Anchor> anchor) -> RequestMoreHeaders {
@@ -737,11 +820,16 @@ auto WorkingChain::extend_down(Segment::Slice segment_slice, std::shared_ptr<Anc
     prev_link->next = std::move(anchor->links);
     if (anchor_preverified) mark_as_preverified(prev_link);  // Mark the entire segment as preverified
 
+    log::Debug() << "WorkingChain, segment op: " <<
+        new_anchor->blockHeight << " --- " << (segment_slice.rend()-1)->operator*().number <<
+        " extend down " <<
+        anchor->blockHeight << " --- " <<  anchor->lastLinkHeight;
+
     return !pre_existing;
 }
 
 void WorkingChain::extend_up(std::shared_ptr<Link> attachment_link, Segment::Slice segment_slice) {
-
+    using std::to_string;
     // Search for bad headers
     if (contains(bad_headers_, attachment_link->hash)) {
         // todo: return penalties
@@ -768,6 +856,11 @@ void WorkingChain::extend_up(std::shared_ptr<Link> attachment_link, Segment::Sli
         auto deepest_anchor = deep_a.value();
         deepest_anchor->lastLinkHeight = std::max(deepest_anchor->lastLinkHeight, prev_link->blockHeight);
     }
+
+    log::Debug() << "WorkingChain, segment op: " <<
+        (deep_a.has_value() ? to_string(deep_a.value()->blockHeight) : "X") << " --- " << attachment_link->blockHeight <<
+        " extend up " <<
+        segment_slice.rbegin()->operator*().number << " --- " << (segment_slice.rend()-1)->operator*().number;
 }
 
 auto WorkingChain::new_anchor(Segment::Slice segment_slice, PeerId peerId) -> RequestMoreHeaders {
@@ -793,6 +886,9 @@ auto WorkingChain::new_anchor(Segment::Slice segment_slice, PeerId peerId) -> Re
     }
 
     anchor->lastLinkHeight = std::max(anchor->lastLinkHeight, prev_link->blockHeight);
+
+    log::Debug() << "WorkingChain, segment op: new anchor " <<
+        anchor->blockHeight << " --- " << anchor->lastLinkHeight;
 
     return !pre_existing;
 }

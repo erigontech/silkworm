@@ -1,5 +1,5 @@
 /*
-   Copyright 2021 The Silkworm Authors
+   Copyright 2021-2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -47,8 +47,8 @@ bool PrefixSet::contains(ByteView prefix) {
         --index_;
     }
 
-    while (true) {
-        if (has_prefix(keys_[index_], prefix)) {
+    for (;; ++index_) {
+        if (keys_[index_].starts_with(prefix)) {
             return true;
         }
         if (keys_[index_] > prefix) {
@@ -57,7 +57,6 @@ bool PrefixSet::contains(ByteView prefix) {
         if (index_ == keys_.size() - 1) {
             return false;
         }
-        ++index_;
     }
 }
 

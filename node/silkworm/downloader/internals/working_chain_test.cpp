@@ -1395,12 +1395,15 @@ TEST_CASE("WorkingChain - process_segment - (8) sibling with anchor invalidation
 
     INFO("reducing links")
     {
-        chain.reduce_links_to(2);
+        // add a new anchor + link
+        chain.accept_headers({headers[7],headers[8]}, peerId);
+
+        chain.reduce_links_to(3);
 
         REQUIRE(chain.anchor_queue_.size() == 1);
         REQUIRE(chain.anchors_.size() == 1);
-        REQUIRE(chain.link_queue_.size() == 2);
-        REQUIRE(chain.links_.size() == 2);
+        REQUIRE(chain.link_queue_.size() == 3);
+        REQUIRE(chain.links_.size() == 3);
 
         auto anchor = chain.anchors_[headers[3].parent_hash];
         REQUIRE(anchor != nullptr);
@@ -1409,13 +1412,17 @@ TEST_CASE("WorkingChain - process_segment - (8) sibling with anchor invalidation
         REQUIRE(anchor->lastLinkHeight == headers[5].number);   // this is wrong, change the code of reduce_links_to()
         REQUIRE(anchor->links.size() == 1);
 
-        auto link5_it = chain.links_.find(headers[5].hash());
-        REQUIRE(link5_it == chain.links_.end());
-
+        auto link7_it = chain.links_.find(headers[7].hash());
+        REQUIRE(link7_it == chain.links_.end());
+        auto link8_it = chain.links_.find(headers[8].hash());
+        REQUIRE(link8_it == chain.links_.end());
+        
         REQUIRE(anchor->links[0]->hash == headers[3].hash());
         REQUIRE(anchor->links[0]->next.size() == 1);
         REQUIRE(anchor->links[0]->next[0]->hash == headers[4].hash());
-        REQUIRE(anchor->links[0]->next[0]->next.size() == 0);
+        REQUIRE(anchor->links[0]->next[0]->next.size() == 1);
+        REQUIRE(anchor->links[0]->next[0]->next[0]->hash == headers[5].hash());
+        REQUIRE(anchor->links[0]->next[0]->next[0]->next.size() == 0);
 
         auto link4 = chain.links_[headers[4].hash()];
         auto deepest_anchor = chain.find_anchor(link4);

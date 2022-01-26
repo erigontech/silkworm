@@ -77,10 +77,10 @@ class WorkingChain {
     std::string dump_orphaned_links() const;
 
     // make an anchor collection (skeleton request) or many anchor extension upon the last execution time
-    auto request_headers(time_point_t tp) -> std::tuple<std::vector<GetBlockHeadersPacket66>, std::vector<PeerPenalization>>;
+    auto request_headers(time_point_t tp)
+        -> std::tuple<std::vector<GetBlockHeadersPacket66>, std::vector<PeerPenalization>>;
     // todo: encapsulate the algo that is in OutboundGetBlockHeaders at the moment + decide when to do the skeleton req
-    // notes: for the skeleton req, save the time of the last skeleton and make sure the next will be issued not before 60s
-
+    // notes: for the skeleton req save the time of last skeleton and make sure the next will be issued not before 60s
 
     // core functionalities: anchor collection
     // to collect anchor more quickly we do a skeleton request i.e. a request of many headers equally distributed in a
@@ -136,7 +136,7 @@ class WorkingChain {
     bool find_bad_header(const std::vector<BlockHeader>&);
     auto add_header_as_link(const BlockHeader& header, bool persisted) -> std::shared_ptr<Link>;
     auto add_anchor_if_not_present(const BlockHeader& header, PeerId, bool check_limits)
-                                                                  -> std::tuple<std::shared_ptr<Anchor>, Pre_Existing>;
+        -> std::tuple<std::shared_ptr<Anchor>, Pre_Existing>;
     void mark_as_preverified(std::shared_ptr<Link>);
     size_t anchors_within_range(BlockNum max);
     BlockNum lowest_anchor_within_range(BlockNum bottom, BlockNum top);

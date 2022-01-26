@@ -31,13 +31,13 @@ class segment_cut_and_paste_error : public std::logic_error {
 };
 
 WorkingChain::WorkingChain(ConsensusEngine engine)
-        : highest_in_db_(0),
-          top_seen_height_(0),
-          preverified_hashes_{&PreverifiedHashes::none},
-          seen_announces_(1000),
-          consensus_engine_{std::move(engine)},
-          chain_state_(
-                  persisted_link_queue_) {  // Erigon reads them from db, we hope to find them all in the persistent queue
+    : highest_in_db_(0),
+      top_seen_height_(0),
+      preverified_hashes_{&PreverifiedHashes::none},
+      seen_announces_(1000),
+      consensus_engine_{std::move(engine)},
+      chain_state_(
+          persisted_link_queue_) {  // Erigon reads them from db, we hope to find them all in the persistent queue
     if (!consensus_engine_) {
         throw std::logic_error("WorkingChain exception, cause: unknown consensus engine");
         // or must the downloader go on and return StageResult::kUnknownConsensusEngine?
@@ -65,7 +65,7 @@ std::string WorkingChain::human_readable_status() const {
            std::to_string(highest_in_db_) + " highest in db";
 
     bool verbose = false;
-    if (verbose) { // for debug
+    if (verbose) {  // for debug
         output += dump_orphaned_links();
         output += dump_chain_bundles();
     }
@@ -77,10 +77,10 @@ std::string WorkingChain::dump_orphaned_links() const {
     using std::to_string;
 
     std::set<BlockNum> orphaned_links;
-    for (auto& l: links_) {
+    for (auto& l : links_) {
         auto link = l.second;
         bool anchor_found = false;
-        for (auto& a: anchors_) {
+        for (auto& a : anchors_) {
             auto anchor = a.second;
             if (anchor->blockHeight <= link->blockHeight && link->blockHeight <= anchor->lastLinkHeight) {
                 anchor_found = true;
@@ -102,12 +102,12 @@ std::string WorkingChain::dump_orphaned_links() const {
         } else if (*curr == prev + len) {
             len++;
         } else {
-            output += "--@@-- " + to_string(prev) + " -> " + to_string(prev+len-1) + "\n";
+            output += "--@@-- " + to_string(prev) + " -> " + to_string(prev + len - 1) + "\n";
             prev = *curr;
             len = 1;
         }
     }
-    output += "--@@-- " + to_string(prev) + " -> " + to_string(prev+len-1) + "\n";
+    output += "--@@-- " + to_string(prev) + " -> " + to_string(prev + len - 1) + "\n";
 
     output += "--@@--";
 
@@ -120,13 +120,13 @@ std::string WorkingChain::dump_chain_bundles() const {
 
     // order
     std::multimap<BlockNum, std::shared_ptr<Anchor>> ordered_anchors;
-    for (auto& a: anchors_) {
+    for (auto& a : anchors_) {
         auto anchor = a.second;
         ordered_anchors.insert({anchor->blockHeight, anchor});
     }
 
     // dump
-    for (auto& a: ordered_anchors) {
+    for (auto& a : ordered_anchors) {
         auto anchor = a.second;
         auto seconds_from_last_req = std::chrono::duration_cast<std::chrono::seconds>(
                 std::chrono::system_clock::now() - anchor->timestamp);
@@ -134,7 +134,7 @@ std::string WorkingChain::dump_chain_bundles() const {
                                   ": start=" + std::to_string(anchor->blockHeight) +
                                   ", end=" + std::to_string(anchor->lastLinkHeight) +
                                   ", len=" + std::to_string(anchor->chainLength()) +
-                                  ", ts=" + std::to_string(seconds_from_last_req.count()) + "secs\n";
+            ", ts=" + std::to_string(seconds_from_last_req.count()) + "secs\n";
         output += anchor_dump;
     }
 
@@ -296,9 +296,8 @@ void WorkingChain::reduce_persisted_links_to(size_t limit) {
  * hole near the bottom. If the lowest hole is not so big we do not need a skeleton query yet.
  */
 std::optional<GetBlockHeadersPacket66> WorkingChain::request_skeleton() {
-
     BlockNum top = top_seen_height_;
-    BlockNum bottom = highest_in_db_ + stride; // warning: this can be inside a chain in memory
+    BlockNum bottom = highest_in_db_ + stride;  // warning: this can be inside a chain in memory
     if (top <= bottom) {
         return std::nullopt;
     }
@@ -335,12 +334,12 @@ std::optional<GetBlockHeadersPacket66> WorkingChain::request_skeleton() {
 
 size_t WorkingChain::anchors_within_range(BlockNum max) {
     return static_cast<size_t>(
-            as_range::count_if(anchors_, [&max](const auto& anchor) { return anchor.second->blockHeight < max; }));
+        as_range::count_if(anchors_, [&max](const auto& anchor) { return anchor.second->blockHeight < max; }));
 }
 
 BlockNum WorkingChain::lowest_anchor_within_range(BlockNum bottom, BlockNum top) {
     BlockNum lowest = top;
-    for (const auto& anchor: anchors_) {
+    for (const auto& anchor : anchors_) {
         if (anchor.second->blockHeight >= bottom && anchor.second->blockHeight < lowest) {
             lowest = anchor.second->blockHeight;
         }
@@ -350,7 +349,7 @@ BlockNum WorkingChain::lowest_anchor_within_range(BlockNum bottom, BlockNum top)
 
 std::shared_ptr<Anchor> WorkingChain::highest_anchor() {
     std::shared_ptr<Anchor> highest_anchor = nullptr;
-    for (const auto& a: anchors_) {
+    for (const auto& a : anchors_) {
         if (highest_anchor == nullptr || a.second->blockHeight >= highest_anchor->blockHeight) {
             highest_anchor = a.second;
         }
@@ -370,7 +369,7 @@ std::shared_ptr<Anchor> WorkingChain::highest_anchor() {
  * was "fake", i.e. it corresponds to a header without existing ancestors.
  */
 auto WorkingChain::request_more_headers(time_point_t time_point, seconds_t timeout)
--> std::tuple<std::optional<GetBlockHeadersPacket66>, std::vector<PeerPenalization>> {
+    -> std::tuple<std::optional<GetBlockHeadersPacket66>, std::vector<PeerPenalization>> {
     using std::nullopt;
 
     if (anchor_queue_.empty()) {
@@ -397,21 +396,21 @@ auto WorkingChain::request_more_headers(time_point_t time_point, seconds_t timeo
             anchor_queue_.fix();  // re-sort
 
             GetBlockHeadersPacket66 packet{
-                    RANDOM_NUMBER.generate_one(),
+                RANDOM_NUMBER.generate_one(),
                     {anchor->blockHeight, max_len, 0, true}
             }; // we use blockHeight in place of parentHash to get also ommers if presents
             // we could request from origin=blockHeight-1 but debugging becomes more difficult
 
-            log::Trace() << "WorkingChain: trying to extend anchor " << anchor->blockHeight <<
-                         " (chain bundle len = " << anchor->chainLength() << ", last link = " << anchor->lastLinkHeight
-                         << " )";
+            log::Trace() << "WorkingChain: trying to extend anchor " << anchor->blockHeight
+                         << " (chain bundle len = " << anchor->chainLength()
+                         << ", last link = " << anchor->lastLinkHeight << " )";
 
             return {packet, penalties};  // try (again) to extend this anchor
         } else {
             // ancestors of this anchor seem to be unavailable, invalidate and move on
             log::Warning() << "WorkingChain: invalidating anchor for suspected unavailability, "
                            << "height=" << anchor->blockHeight;
-            //no need to do anchor_queue_.pop(), implicitly done in the following
+            // no need to do anchor_queue_.pop(), implicitly done in the following
             invalidate(anchor);
             penalties.emplace_back(Penalty::AbandonedAnchorPenalty, anchor->peerId);
         }
@@ -449,7 +448,7 @@ void WorkingChain::request_nack(const GetBlockHeadersPacket66& packet) {
         if (anchor_it != anchors_.end()) anchor = anchor_it->second;
     } else {
         BlockNum bn = std::get<BlockNum>(packet.request.origin);
-        for (const auto& p: anchors_) {
+        for (const auto& p : anchors_) {
             if (p.second->blockHeight == bn) {  // this search it is burdensome but should rarely occur
                 anchor = p.second;
                 break;
@@ -466,7 +465,7 @@ void WorkingChain::request_nack(const GetBlockHeadersPacket66& packet) {
 bool WorkingChain::has_link(Hash hash) { return (links_.find(hash) != links_.end()); }
 
 auto WorkingChain::find_bad_header(const std::vector<BlockHeader>& headers) -> bool {
-    for (auto& header: headers) {
+    for (auto& header : headers) {
         if (is_zero(header.parent_hash) && header.number != 0) {
             log::Warning() << "WorkingChain: received malformed header: " << header.number;
             return true;
@@ -485,18 +484,18 @@ auto WorkingChain::find_bad_header(const std::vector<BlockHeader>& headers) -> b
 }
 
 auto WorkingChain::accept_headers(const std::vector<BlockHeader>& headers, const PeerId& peer_id)
--> std::tuple<Penalty, RequestMoreHeaders> {
+    -> std::tuple<Penalty, RequestMoreHeaders> {
     bool request_more_headers = false;
 
     if (find_bad_header(headers)) return {Penalty::BadBlockPenalty, request_more_headers};
 
     auto header_list = HeaderList::make(headers);
 
-    auto[segments, penalty] = header_list->split_into_segments();  // todo: Erigon here pass also headerRaw
+    auto [segments, penalty] = header_list->split_into_segments();
 
     if (penalty != Penalty::NoPenalty) return {penalty, request_more_headers};
 
-    for (auto& segment: segments) {
+    for (auto& segment : segments) {
         request_more_headers |= process_segment(segment, false, peer_id);
     }
 
@@ -516,8 +515,8 @@ std::tuple<bool, Penalty> HeaderList::childParentValidity(Header_Ref child, Head
 
 std::tuple<bool, Penalty> HeaderList::childrenParentValidity(const std::vector<Header_Ref>& children,
                                                              Header_Ref parent) {
-    for (auto& child: children) {
-        auto[valid, penalty] = childParentValidity(child, parent);
+    for (auto& child : children) {
+        auto [valid, penalty] = childParentValidity(child, parent);
         if (!valid) return {false, penalty};
     }
     return {true, Penalty::NoPenalty};
@@ -547,7 +546,7 @@ auto HeaderList::split_into_segments() -> std::tuple<std::vector<Segment>, Penal
     std::set<Hash> dedupMap;
     size_t segmentIdx = 0;
 
-    for (auto& header: headers) {
+    for (auto& header : headers) {
         Hash header_hash = header->hash();
 
         if (contains(dedupMap, header_hash)) {
@@ -556,7 +555,7 @@ auto HeaderList::split_into_segments() -> std::tuple<std::vector<Segment>, Penal
 
         dedupMap.insert(header_hash);
         auto children = childrenMap[header_hash];
-        auto[valid, penalty] = HeaderList::childrenParentValidity(children, header);
+        auto [valid, penalty] = HeaderList::childrenParentValidity(children, header);
         if (!valid) {
             return {std::vector<Segment>{}, penalty};
         }
@@ -583,9 +582,9 @@ auto HeaderList::split_into_segments() -> std::tuple<std::vector<Segment>, Penal
 }
 
 auto WorkingChain::process_segment(const Segment& segment, bool is_a_new_block, const PeerId& peerId)
--> RequestMoreHeaders {
-    auto[anchor, start] = find_anchor(segment);
-    auto[tip, end] = find_link(segment, start);
+    -> RequestMoreHeaders {
+    auto [anchor, start] = find_anchor(segment);
+    auto [tip, end] = find_link(segment, start);
 
     if (end == 0) {
         log::Debug() << "WorkingChain: segment cut&paste error, duplicated segment, bn=" << segment[start]->number
@@ -630,9 +629,8 @@ auto WorkingChain::process_segment(const Segment& segment, bool is_a_new_block, 
             requestMore = new_anchor(segment_slice, peerId);
         }
         log::Info() << "WorkingChain, segment " << op << " up=" << startNum << " (" << segment[start]->hash()
-                     << ") down=" << endNum << " (" << segment[end - 1]->hash() << ") (more=" << requestMore << ")";
-    }
-    catch (segment_cut_and_paste_error& e) {
+                    << ") down=" << endNum << " (" << segment[end - 1]->hash() << ") (more=" << requestMore << ")";
+    } catch (segment_cut_and_paste_error& e) {
         log::Warning() << "WorkingChain, segment cut&paste error, " << op << " up=" << startNum << " ("
                        << segment[start]->hash() << ") down=" << endNum << " (" << segment[end - 1]->hash()
                        << ") failed, reason: " << e.what();
@@ -653,39 +651,16 @@ void WorkingChain::reduce_links_to(size_t limit) {
 
     invalidate(victim_anchor);
 
-    log::Debug() << "LinkQueue: too many links, cut down from " << initial_size << " to " << link_queue_.size() <<
-        " (removed chain bundle start=" << victim_anchor->blockHeight << " end=" << victim_anchor->lastLinkHeight << ")";
-
-    /* the old algo (the following code) can break a chain bundle in the middle leaving the upper half of the bundle
-     * without anchor and causing "duplicated segment" errors that can stall the downloader
-     * This can happen for example if the last operation was a connect operation that inserted some links that are now
-     * the last inserted so eligible for eviction but they by design are in the middle of a chain bundle.
-     * Also the following algo make heavy to keep track of the chain bundle height.
-    while (link_queue_.size() > limit) {
-        auto link = link_queue_.top();
-        link_queue_.pop();
-        links_.erase(link->hash);
-        // delete not needed, using shared_ptr
-
-        auto parentLink_i = links_.find(link->header->parent_hash);
-        if (parentLink_i != links_.end()) parentLink_i->second->remove_child(link);
-
-        auto anchor_i = anchors_.find(link->header->parent_hash);
-        if (anchor_i != anchors_.end()) {
-            anchor_i->second->remove_child(link);
-            if (anchor_i->second->links.empty()) {
-                remove(anchor_i->second);
-            }
-        }
-    }
-    */
+    log::Debug() << "LinkQueue: too many links, cut down from " << initial_size << " to " << link_queue_.size()
+                 << " (removed chain bundle start=" << victim_anchor->blockHeight
+                 << " end=" << victim_anchor->lastLinkHeight << ")";
 }
 
 // find_anchors tries to find the highest link the in the new segment that can be attached to an existing anchor
 auto WorkingChain::find_anchor(const Segment& segment) -> std::tuple<std::optional<std::shared_ptr<Anchor>>, Start> {
     for (size_t i = 0; i < segment.size(); i++) {
-        auto a = anchors_.find(segment[i]->hash()); // todo: hash() compute the value, save cpu
-        if (a != anchors_.end()) { // segment[i]->hash() == anchor.parent_hash
+        auto a = anchors_.find(segment[i]->hash());  // todo: hash() compute the value, save cpu
+        if (a != anchors_.end()) {                   // segment[i]->hash() == anchor.parent_hash
             return {a->second, i};
         }
     }
@@ -694,8 +669,8 @@ auto WorkingChain::find_anchor(const Segment& segment) -> std::tuple<std::option
 }
 
 // find_link find the highest existing link (from start) that the new segment can be attached to
-auto
-WorkingChain::find_link(const Segment& segment, size_t start) -> std::tuple<std::optional<std::shared_ptr<Link>>, End> {
+auto WorkingChain::find_link(const Segment& segment, size_t start)
+    -> std::tuple<std::optional<std::shared_ptr<Link>>, End> {
     auto duplicate_link = get_link(segment[start]->hash());
     if (duplicate_link) return {std::nullopt, 0};
 
@@ -726,7 +701,7 @@ auto WorkingChain::find_anchor(std::shared_ptr<Link> link) -> std::optional<std:
     } while (it != links_.end() && !parent_link->persisted);
 
     if (parent_link->persisted) {
-        return std::nullopt; // ok, no anchor because the link is in a segment attached to a persisted link
+        return std::nullopt;  // ok, no anchor because the link is in a segment attached to a persisted link
     }
 
     auto a = anchors_.find(parent_link->header->parent_hash);
@@ -734,7 +709,7 @@ auto WorkingChain::find_anchor(std::shared_ptr<Link> link) -> std::optional<std:
         log::Error() << "WorkingChain: segment cut&paste error, segment without anchor or persisted attach point, "
                      << "starting bn=" << link->blockHeight << " ending bn=" << parent_link->blockHeight << " "
                      << "parent=" << to_hex(parent_link->header->parent_hash);
-        return std::nullopt; // wrong, invariant violation, no anchor but there should be
+        return std::nullopt;  // wrong, invariant violation, no anchor but there should be
     }
     return a->second;
 }
@@ -747,10 +722,10 @@ void WorkingChain::connect(std::shared_ptr<Link> attachment_link, Segment::Slice
     // Check for bad headers
     if (contains(bad_headers_, attachment_link->hash)) {
         invalidate(anchor);
-        // todo: return []PenaltyItem := append(penalties, PenaltyItem{Penalty: AbandonedAnchorPenalty, PeerID: anchor.peerID})
+        // todo: return []PenaltyItem := append(penalties, PenaltyItem{Penalty: AbandonedAnchorPenalty, PeerID:
+        // anchor.peerID})
         throw segment_cut_and_paste_error("anchor connected to bad headers, "
-                                          "height=" + std::to_string(anchor->blockHeight) + " parent hash=" +
-                                          to_hex(anchor->parentHash));
+            "height=" + std::to_string(anchor->blockHeight) + " parent hash=" + to_hex(anchor->parentHash));
     }
 
     // Iterate over headers backwards (from parents towards children)
@@ -775,7 +750,7 @@ void WorkingChain::connect(std::shared_ptr<Link> attachment_link, Segment::Slice
     // Extend_down
 
     bool anchor_preverified =
-            as_range::any_of(anchor->links, [](const auto& link) -> bool { return link->preverified; });
+        as_range::any_of(anchor->links, [](const auto& link) -> bool { return link->preverified; });
     prev_link->next = std::move(anchor->links);
     if (anchor_preverified) mark_as_preverified(prev_link);  // Mark the entire segment as pre-verified
     remove(anchor);
@@ -789,15 +764,14 @@ void WorkingChain::connect(std::shared_ptr<Link> attachment_link, Segment::Slice
 }
 
 auto WorkingChain::extend_down(Segment::Slice segment_slice, std::shared_ptr<Anchor> anchor) -> RequestMoreHeaders {
-
     // Add or find new anchor
     auto new_anchor_header = *segment_slice.rbegin();  // lowest header
     bool check_limits = false;
-    auto[new_anchor, pre_existing] = add_anchor_if_not_present(*new_anchor_header, anchor->peerId, check_limits);
+    auto [new_anchor, pre_existing] = add_anchor_if_not_present(*new_anchor_header, anchor->peerId, check_limits);
 
     // Remove old anchor
     bool anchor_preverified =
-            as_range::any_of(anchor->links, [](const auto& link) -> bool { return link->preverified; });
+        as_range::any_of(anchor->links, [](const auto& link) -> bool { return link->preverified; });
     remove(anchor);
 
     // Iterate over headers backwards (from parents towards children)
@@ -833,9 +807,9 @@ void WorkingChain::extend_up(std::shared_ptr<Link> attachment_link, Segment::Sli
     // Search for bad headers
     if (contains(bad_headers_, attachment_link->hash)) {
         // todo: return penalties
-        throw segment_cut_and_paste_error("connection to bad headers, height="
-                                          + std::to_string(attachment_link->blockHeight) + " hash=" +
-                                          to_hex(attachment_link->hash));
+        throw segment_cut_and_paste_error("connection to bad headers,"
+            " height=" + std::to_string(attachment_link->blockHeight) +
+            " hash=" + to_hex(attachment_link->hash));
     }
 
     // Iterate over headers backwards (from parents towards children)
@@ -869,7 +843,7 @@ auto WorkingChain::new_anchor(Segment::Slice segment_slice, PeerId peerId) -> Re
     // Add or find anchor
     auto anchor_header = *segment_slice.rbegin();  // lowest header
     bool check_limits = true;
-    auto[anchor, pre_existing] = add_anchor_if_not_present(*anchor_header, peerId, check_limits);
+    auto [anchor, pre_existing] = add_anchor_if_not_present(*anchor_header, peerId, check_limits);
 
     // Iterate over headers backwards (from parents towards children)
     std::shared_ptr<Link> prev_link;
@@ -894,7 +868,7 @@ auto WorkingChain::new_anchor(Segment::Slice segment_slice, PeerId peerId) -> Re
 }
 
 auto WorkingChain::add_anchor_if_not_present(const BlockHeader& anchor_header, PeerId peerId, bool check_limits)
--> std::tuple<std::shared_ptr<Anchor>, Pre_Existing> {
+    -> std::tuple<std::shared_ptr<Anchor>, Pre_Existing> {
     using std::to_string;
 
     auto a = anchors_.find(anchor_header.parent_hash);
@@ -904,12 +878,12 @@ auto WorkingChain::add_anchor_if_not_present(const BlockHeader& anchor_header, P
 
     if (check_limits) {
         if (anchor_header.number < highest_in_db_)
-            throw segment_cut_and_paste_error("precondition not meet, new anchor too far in the past: " +
-                                              to_string(anchor_header.number) + ", latest header in db: " +
-                                              to_string(highest_in_db_));
+            throw segment_cut_and_paste_error("precondition not meet,"
+                " new anchor too far in the past: " + to_string(anchor_header.number) +
+                ", latest header in db: " + to_string(highest_in_db_));
         if (anchors_.size() >= anchor_limit)
             throw segment_cut_and_paste_error("too many anchors: " + to_string(anchors_.size()) +
-                                              ", limit: " + to_string(anchor_limit));
+                ", limit: " + to_string(anchor_limit));
     }
 
     std::shared_ptr<Anchor> anchor = std::make_shared<Anchor>(anchor_header, peerId);

@@ -1,5 +1,5 @@
 #[[
-   Copyright 2020-2021 The Silkworm Authors
+   Copyright 2020-2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -26,13 +26,6 @@ hunter_config(
   VERSION 0.6.0
   URL https://github.com/chfast/intx/archive/v0.6.0.tar.gz
   SHA1 507827495de07412863349bc8c2a8704c7b0e5d4
-)
-
-hunter_config(
-  Microsoft.GSL
-  VERSION 3.1.0
-  URL https://github.com/microsoft/GSL/archive/v3.1.0.tar.gz
-  SHA1 3f2891a46595806563e7a0e25bb7ecbb30776445
 )
 
 hunter_config(

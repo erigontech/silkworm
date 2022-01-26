@@ -17,8 +17,6 @@
 #ifndef SILKWORM_WORKING_CHAIN_HPP
 #define SILKWORM_WORKING_CHAIN_HPP
 
-#include <gsl/span>
-
 #include <silkworm/common/lru_cache.hpp>
 #include <silkworm/consensus/engine.hpp>
 #include <silkworm/downloader/packets/GetBlockHeadersPacket.hpp>

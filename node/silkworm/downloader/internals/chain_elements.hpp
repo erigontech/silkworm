@@ -1,5 +1,5 @@
 /*
-   Copyright 2021 The Silkworm Authors
+   Copyright 2021-2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@
 #include <map>
 #include <queue>
 #include <set>
+#include <span>
 #include <stack>
 #include <vector>
 
@@ -169,16 +170,18 @@ struct BlockOlderThan : public std::function<bool(BlockNum, BlockNum)> {
 // - get parent header when we need to verify a new one
 // using OldestFirstLinkQueue = std::multimap<BlockNum, std::shared_ptr<Link>, BlockOlderThan>;
 
-} // close namespace to define mbpq_key - I do not like this
+}  // namespace silkworm
+// close namespace to define mbpq_key - I do not like this
+
 template <>
-struct mbpq_key<std::shared_ptr<Link>> {    // extract key type and value
-    using type = BlockNum;   // type of the key
-    static type value(const std::shared_ptr<Link>& l) {return l->blockHeight;} // value of the key
+struct mbpq_key<std::shared_ptr<Link>> {                                          // extract key type and value
+    using type = BlockNum;                                                        // type of the key
+    static type value(const std::shared_ptr<Link>& l) { return l->blockHeight; }  // value of the key
 };
-namespace silkworm { // reopen namespace
+
+namespace silkworm {  // reopen namespace
 
 using OldestFirstLinkQueue = map_based_priority_queue<std::shared_ptr<Link>, BlockOlderThan>;
-
 
 // We need a queue for all links to
 // - store the links
@@ -261,7 +264,7 @@ struct Segment
 
     [[nodiscard]] HeaderList::Header_Ref lowest_header() const { return back(); }
 
-    using Slice = gsl::span<const HeaderList::Header_Ref>;  // a Segment slice
+    using Slice = std::span<const HeaderList::Header_Ref>;  // a Segment slice
 
     [[nodiscard]] Slice slice(size_t start, size_t end) const {
         return Slice(*this).subspan(start, end - start);

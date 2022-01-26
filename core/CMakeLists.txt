@@ -1,5 +1,5 @@
 #[[
-   Copyright 2020-2021 The Silkworm Authors
+   Copyright 2020-2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -14,7 +14,6 @@
    limitations under the License.
 ]]
 
-find_package(Microsoft.GSL CONFIG REQUIRED)
 find_package(nlohmann_json CONFIG REQUIRED)
 
 if(MSVC)
@@ -29,7 +28,7 @@ list(FILTER SILKWORM_CORE_SRC EXCLUDE REGEX "_test\.cpp$")
 add_library(silkworm_core ${SILKWORM_CORE_SRC})
 target_include_directories(silkworm_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
-set(SILKWORM_CORE_PUBLIC_LIBS evmc ethash::ethash intx::intx ff Microsoft.GSL::GSL nlohmann_json secp256k1)
+set(SILKWORM_CORE_PUBLIC_LIBS evmc ethash::ethash intx::intx ff nlohmann_json secp256k1)
 set(SILKWORM_CORE_PRIVATE_LIBS evmone gmp)
 
 if(NOT SILKWORM_WASM_API)

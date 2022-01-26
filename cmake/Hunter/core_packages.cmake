@@ -1,5 +1,5 @@
 #[[
-   Copyright 2020 The Silkworm Authors
+   Copyright 2020-2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -16,6 +16,5 @@
 
 hunter_add_package(Catch)
 hunter_add_package(intx)
-hunter_add_package(Microsoft.GSL)
 hunter_add_package(nlohmann_json)
 hunter_add_package(ethash)

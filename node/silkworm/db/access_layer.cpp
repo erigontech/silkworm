@@ -25,8 +25,7 @@
 namespace silkworm::db {
 
 std::optional<VersionBase> read_schema_version(mdbx::txn& txn) noexcept {
-    thread_local auto src{db::open_cursor(txn, table::kDatabaseInfo)};
-    src.renew(txn);
+    auto src{db::open_cursor(txn, table::kDatabaseInfo)};
     if (!src.seek(mdbx::slice{kDbSchemaVersionKey})) {
         return std::nullopt;
     }
@@ -56,8 +55,7 @@ void write_schema_version(mdbx::txn& txn, const VersionBase& schema_version) {
     endian::store_big_u32(&value[0], schema_version.Major);
     endian::store_big_u32(&value[4], schema_version.Minor);
     endian::store_big_u32(&value[8], schema_version.Patch);
-    thread_local auto src{db::open_cursor(txn, table::kDatabaseInfo)};
-    src.renew(txn);
+    auto src{db::open_cursor(txn, table::kDatabaseInfo)};
     src.upsert(mdbx::slice{kDbSchemaVersionKey}, to_slice(value));
 }
 

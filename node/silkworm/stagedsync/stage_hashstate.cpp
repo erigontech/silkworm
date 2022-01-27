@@ -14,7 +14,6 @@
    limitations under the License.
 */
 
-#include <silkworm/common/assert.hpp>
 #include <silkworm/common/endian.hpp>
 #include <silkworm/common/log.hpp>
 #include <silkworm/db/access_layer.hpp>
@@ -44,14 +43,20 @@ StageResult HashState::forward(db::RWTxn& txn) {
         return StageResult::kInvalidProgress;
     }
 
+    if (execution_stage_progress - previous_progress > 16) {
+        log::Info("Begin " + std::string(stage_name_),
+                  {"from", std::to_string(previous_progress), "to", std::to_string(execution_stage_progress)});
+    }
+
+    unwinding_ = false;
+    loading_ = false;
+    incremental_ = (previous_progress > 0);
     current_key_.clear();
     current_source_.clear();
     current_target_.clear();
 
     try {
-        if (!previous_progress) {
-            log::Info("Promoting clean state",
-                      {"from", std::to_string(previous_progress), "to", std::to_string(execution_stage_progress)});
+        if (!incremental_) {
             StageResult result{hash_from_plainstate(txn)};
             collector_->clear();
             if (result != StageResult::kSuccess) {
@@ -67,10 +72,6 @@ StageResult HashState::forward(db::RWTxn& txn) {
             }
 
         } else {
-            if (execution_stage_progress - previous_progress > 16) {
-                log::Info("Promoting incremental state",
-                          {"from", std::to_string(previous_progress), "to", std::to_string(execution_stage_progress)});
-            }
             StageResult result{hash_from_account_changeset(txn, previous_progress)};
             if (result != StageResult::kSuccess) {
                 return result;
@@ -133,10 +134,9 @@ StageResult HashState::unwind(db::RWTxn& txn, BlockNum to) {
     }
 }
 
-StageResult HashState::prune(db::RWTxn& txn) {
-    // TODO(Andrea) This is yet to be implemented
-    (void)txn;
-    return StageResult::kUnknownError;
+StageResult HashState::prune(db::RWTxn&) {
+    // HashState does not prune
+    return StageResult::kSuccess;
 }
 
 StageResult HashState::hash_from_plainstate(db::RWTxn& txn) {
@@ -178,8 +178,8 @@ StageResult HashState::hash_from_plainstate(db::RWTxn& txn) {
             // Rehash the address only when changes
             if (std::memcmp(data_key_view.data(), last_address.bytes, kAddressLength) != 0) {
                 last_address = to_evmc_address(data_key_view);
-                current_key_ = to_hex(last_address.bytes, /*with_prefix=*/true);
                 address_hash = keccak256(last_address.bytes);
+                current_key_ = to_hex(last_address.bytes, /*with_prefix=*/true);
             }
 
             if (data.key.length() == kAddressLength) {
@@ -193,7 +193,7 @@ StageResult HashState::hash_from_plainstate(db::RWTxn& txn) {
 
                 etl::Entry entry{Bytes(address_hash.bytes, kHashLength), Bytes{db::from_slice(data.value)}};
                 collector_->collect(std::move(entry));
-                if (collector_->size() % 64 == 0 && is_stopping()) {
+                if (collector_->size() % 128 == 0 && is_stopping()) {
                     return StageResult::kAborted;
                 }
             } else if (data.key.length() == db::kPlainStoragePrefixLength) {
@@ -230,7 +230,7 @@ StageResult HashState::hash_from_plainstate(db::RWTxn& txn) {
                     data_value_view.remove_prefix(kHashLength);
                     etl::Entry entry{etl_storage_entry_key, Bytes{data_value_view}};
                     collector_->collect(std::move(entry));
-                    if (collector_->size() % 64 == 0 && is_stopping()) {
+                    if (collector_->size() % 128 == 0 && is_stopping()) {
                         return StageResult::kAborted;
                     }
                     data = source.to_current_next_multi(false);
@@ -308,6 +308,10 @@ StageResult HashState::hash_from_plaincode(db::RWTxn& txn) {
     try {
         // TODO(Andrea) Maybe introduce an assertion for target table to be empty ?
         current_source_ = std::string(db::table::kPlainContractHash.name);
+
+        evmc::address last_address{};
+        current_key_ = to_hex(last_address.bytes, /*with_prefix=*/true);
+
         Bytes new_key(db::kHashedStoragePrefixLength, '\0');
 
         while (data) {
@@ -317,13 +321,21 @@ StageResult HashState::hash_from_plaincode(db::RWTxn& txn) {
             }
 
             auto data_key_view{db::from_slice(data.key)};
+
+            // We're reading PlainCodeHash which keys are ordered by address (always initial 20 bytes of key)
+            // Rehash the address only when changes
+            if (std::memcmp(data_key_view.data(), last_address.bytes, kAddressLength) != 0) {
+                last_address = to_evmc_address(data_key_view);
+                current_key_ = to_hex(last_address.bytes, /*with_prefix=*/true);
+                const auto address_hash{keccak256(last_address.bytes)};
+                std::memcpy(&new_key[0], address_hash.bytes, kHashLength);
+            }
+
             std::memcpy(&new_key[kHashLength], &data_key_view[kAddressLength], db::kIncarnationLength);
-            data_key_view.remove_suffix(db::kIncarnationLength);
-            std::memcpy(&new_key[0], keccak256(data_key_view).bytes, kHashLength);
 
             etl::Entry entry{new_key, Bytes{db::from_slice(data.value)}};
             collector_->collect(std::move(entry));
-            if (collector_->size() % 64 == 0) {
+            if (collector_->size() % 128 == 0) {
                 current_key_ = abridge(to_hex(db::from_slice(data.key), /*with_prefix=*/true), kAddressLength * 2 + 2);
                 if (is_stopping()) {
                     return StageResult::kAborted;
@@ -381,15 +393,16 @@ StageResult HashState::hash_from_account_changeset(db::RWTxn& txn, BlockNum prev
                 auto changeset_value_view{db::from_slice(changeset_data.value)};
                 evmc::address address{to_evmc_address(changeset_value_view)};
                 if (!changed_addresses.contains(address)) {
-                    if (auto plainstate_data{
-                            source_plainstate.find(db::to_slice(address.bytes), /*throw_notfound=*/false)};
-                        plainstate_data.done) {
-                        auto address_hash{to_bytes32(keccak256(address.bytes).bytes)};
+                    auto address_hash{to_bytes32(keccak256(address.bytes).bytes)};
+                    auto plainstate_data{source_plainstate.find(db::to_slice(address.bytes), /*throw_notfound=*/false)};
+                    if (plainstate_data.done) {
                         Bytes current_value{db::from_slice(plainstate_data.value)};
                         changed_addresses[address] = std::make_pair(address_hash, current_value);
+                    } else {
+                        changed_addresses[address] = std::make_pair(address_hash, Bytes());
                     }
                 }
-                if (++counter == 32) {
+                if (++counter == 128) {
                     counter = 0;
                     current_key_ = std::to_string(reached_blocknum);
                     if (is_stopping()) {
@@ -407,7 +420,8 @@ StageResult HashState::hash_from_account_changeset(db::RWTxn& txn, BlockNum prev
             return StageResult::kSuccess;
         }
 
-        current_source_ = "Changed accounts";
+        current_target_ = std::string(db::table::kHashedAccounts.name) + " " + std::string(db::table::kHashedCodeHash.name);
+        loading_ = true;
         current_key_ = to_hex(changed_addresses.begin()->first.bytes, /*with_prefix=*/true);
         auto source_plaincode{db::open_cursor(*txn, db::table::kPlainContractHash)};
         auto target_hashed_accounts{db::open_cursor(*txn, db::table::kHashedAccounts)};
@@ -418,32 +432,37 @@ StageResult HashState::hash_from_account_changeset(db::RWTxn& txn, BlockNum prev
 
         for (const auto& [address, pair] : changed_addresses) {
             auto& [address_hash, current_encoded_value] = pair;
+            if (!current_encoded_value.empty()) {
+                // Update HashedAccounts table
+                target_hashed_accounts.upsert(db::to_slice(address_hash.bytes), db::to_slice(current_encoded_value));
 
-            // Update HashedAccounts table
-            target_hashed_accounts.upsert(db::to_slice(address_hash.bytes), db::to_slice(current_encoded_value));
-
-            // Lookup value in PlainCodeHash for Contract
-            auto [incarnation, err]{extract_incarnation(current_encoded_value)};
-            rlp::success_or_throw(err);
-            if (incarnation) {
-                std::memcpy(&plain_code_key[0], address.bytes, kAddressLength);
-                endian::store_big_u64(&plain_code_key[kAddressLength], incarnation);
-                auto code_data{source_plaincode.find(db::to_slice(plain_code_key), /*throw_notfound=*/false)};
-                if (code_data.done && code_data.value.length()) {
-                    std::memcpy(&hashed_code_key[0], address_hash.bytes, kHashLength);
-                    endian::store_big_u64(&hashed_code_key[kHashLength], incarnation);
-                    target_hashed_code.upsert(db::to_slice(hashed_code_key), code_data.value);
+                // Lookup value in PlainCodeHash for Contract
+                auto [incarnation, err]{extract_incarnation(current_encoded_value)};
+                rlp::success_or_throw(err);
+                if (incarnation) {
+                    std::memcpy(&plain_code_key[0], address.bytes, kAddressLength);
+                    endian::store_big_u64(&plain_code_key[kAddressLength], incarnation);
+                    auto code_data{source_plaincode.find(db::to_slice(plain_code_key), /*throw_notfound=*/false)};
+                    if (code_data.done && code_data.value.length()) {
+                        std::memcpy(&hashed_code_key[0], address_hash.bytes, kHashLength);
+                        endian::store_big_u64(&hashed_code_key[kHashLength], incarnation);
+                        target_hashed_code.upsert(db::to_slice(hashed_code_key), code_data.value);
+                    }
                 }
+            } else {
+                (void)target_hashed_accounts.erase(db::to_slice(address_hash.bytes));
             }
 
-            if (++counter == 32) {
+            if (++counter == 128) {
                 counter = 0;
                 current_key_ = to_hex(address.bytes, true);
                 if (is_stopping()) {
+                    loading_ = false;
                     return StageResult::kAborted;
                 }
             }
         }
+        loading_ = false;
         return StageResult::kSuccess;
 
     } catch (const mdbx::exception& ex) {
@@ -465,43 +484,65 @@ StageResult HashState::hash_from_storage_changeset(db::RWTxn& txn, BlockNum prev
         // Read StorageChangeSet from previous progress to eof and collect an index of changed accounts
         BlockNum reached_blocknum{0};
 
-        current_source_ = std::string(db::table::kStorageChangeSet.name);
+        // Don't rehash same addresses over and over again
+        absl::btree_map<evmc::address, evmc::bytes32> hashed_addresses{};
 
-        auto plainstate_table{db::open_cursor(*txn, db::table::kPlainState)};
-        auto target_hashed_storage{db::open_cursor(*txn, db::table::kHashedStorage)};
+        current_source_ = std::string(db::table::kStorageChangeSet.name);
+        current_key_ = std::to_string(previous_progress + 1);
 
         auto source_changeset{db::open_cursor(*txn, db::table::kStorageChangeSet)};
-        current_source_ = std::string(db::table::kStorageChangeSet.name);
+        auto source_plainstate{db::open_cursor(*txn, db::table::kPlainState)};
+        auto target_hashed_storage{db::open_cursor(*txn, db::table::kHashedStorage)};
+
         auto source_initial_key{db::block_key(previous_progress + 1)};
         auto changeset_data{source_changeset.lower_bound(db::to_slice(source_initial_key), /*throw_notfound=*/true)};
         auto counter{0};
 
-        Bytes hashed_key(db::kHashedStoragePrefixLength, '\0');  // One allocation only
+        Bytes hashed_key(db::kHashedStoragePrefixLength, '\0');              // One allocation only
+        Bytes plain_key(db::kPlainStoragePrefixLength + kHashLength, '\0');  // One allocation only
 
         while (changeset_data.done) {
-            reached_blocknum = endian::load_big_u64(db::from_slice(changeset_data.key).data());
-            auto changeset_key{db::from_slice(changeset_data.key)};
-            auto changeset_value{db::from_slice(changeset_data.value)};
-            auto [plainstate_key, previous_value]{db::changeset_to_plainstate_format(changeset_key, changeset_value)};
-            auto plainstate_data{plainstate_table.find(db::to_slice(plainstate_key), /*throw_notfound=*/false)};
-            if (plainstate_data) {
-                std::memcpy(&hashed_key[0], keccak256(plainstate_key.substr(0, kAddressLength)).bytes, kHashLength);
-                std::memcpy(&hashed_key[kHashLength], &plainstate_key[kAddressLength], db::kIncarnationLength);
+            auto changeset_key_view{db::from_slice(changeset_data.key)};
+            reached_blocknum = endian::load_big_u64(changeset_key_view.data());
+            changeset_key_view.remove_prefix(8);
 
-                auto hashed_location{keccak256(db::from_slice(plainstate_data.value).substr(0, kHashLength))};
-                ByteView value{db::from_slice(plainstate_data.value).substr(kHashLength)};
-                db::upsert_storage_value(target_hashed_storage, hashed_key, hashed_location.bytes, value);
+            evmc::address address{to_evmc_address(changeset_key_view)};
+            std::memcpy(&plain_key[0], &changeset_key_view[0], db::kPlainStoragePrefixLength);
+            changeset_key_view.remove_prefix(kAddressLength);
+
+            if (!hashed_addresses.contains(address)) {
+                hashed_addresses[address] = to_bytes32(keccak256(address.bytes).bytes);
             }
-            if (++counter == 32) {
-                counter = 0;
-                current_key_ = to_hex(reached_blocknum, true);
-                if (is_stopping()) {
-                    return StageResult::kAborted;
+
+            // Prepare hashed key (address hash + incaranation)
+            std::memcpy(&hashed_key[0], hashed_addresses[address].bytes, kHashLength);
+            std::memcpy(&hashed_key[kHashLength], &changeset_key_view[0], db::kIncarnationLength);
+
+            while (changeset_data.done) {
+                // Lookup value in PlainState. If not exist skip
+                // Get location from changeset value
+                auto changeset_value_view{db::from_slice(changeset_data.value)};
+                std::memcpy(&plain_key[db::kPlainStoragePrefixLength], &changeset_value_view[0], kHashLength);
+                auto plain_data{source_plainstate.find(db::to_slice(plain_key), /*throw_notfound=*/false)};
+                if (plain_data) {
+                    auto plain_value_view{db::from_slice(plain_data.value)};
+                    auto hashed_location{keccak256(plain_value_view.substr(0, kHashLength))};
+                    ByteView value{plain_value_view.substr(kHashLength)};
+                    db::upsert_storage_value(target_hashed_storage, hashed_key, hashed_location.bytes, value);
+                }
+
+                changeset_data = source_changeset.to_current_next_multi(/*throw_notfound=*/false);
+                if (++counter == 128) {
+                    counter = 0;
+                    current_key_ = std::to_string(reached_blocknum);
+                    if (is_stopping()) {
+                        return StageResult::kAborted;
+                    }
                 }
             }
+            changeset_data = source_changeset.to_next(/*throw_notfound=*/false);
         }
         return StageResult::kSuccess;
-
     } catch (const mdbx::exception& ex) {
         log::Error(std::string(stage_name_),
                    {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
@@ -513,94 +554,6 @@ StageResult HashState::hash_from_storage_changeset(db::RWTxn& txn, BlockNum prev
     } catch (...) {
         log::Error(std::string(stage_name_), {"function", std::string(__FUNCTION__), "exception", "undefined"});
         return StageResult::kUnexpectedError;
-    }
-}
-
-void HashState::promote_incremental(db::RWTxn& txn, DataKind kind) {
-    auto [changeset_config, target_config] = HashState::get_operation_tables(kind);
-
-    auto changeset_table{db::open_cursor(*txn, changeset_config)};
-    auto plainstate_table{db::open_cursor(*txn, db::table::kPlainState)};
-    auto codehash_table{db::open_cursor(*txn, db::table::kPlainContractHash)};
-    auto target_table{db::open_cursor(*txn, target_config)};
-
-    auto start_block_number{db::stages::read_stage_progress(*txn, db::stages::kHashStateKey) + 1};
-
-    Bytes start_key{db::block_key(start_block_number)};
-    auto changeset_data{changeset_table.lower_bound(db::to_slice(start_key), /*throw_notfound=*/false)};
-
-    while (changeset_data) {
-        Bytes mdb_key_as_bytes{db::from_slice(changeset_data.key)};
-        Bytes mdb_value_as_bytes{db::from_slice(changeset_data.value)};
-        auto [db_key, _]{db::changeset_to_plainstate_format(mdb_key_as_bytes, mdb_value_as_bytes)};
-
-        if (kind == DataKind::Account) {
-            // We get account and hash its key.
-            auto plainstate_data{plainstate_table.find(db::to_slice(db_key), /*throw_notfound=*/false)};
-            if (!plainstate_data) {
-                changeset_data = changeset_table.to_next(/*throw_notfound=*/false);
-                continue;
-            }
-            // Hashing
-            auto hash{keccak256(db_key)};
-            target_table.upsert(db::to_slice(hash.bytes), plainstate_data.value);
-            changeset_data = changeset_table.to_next(false);
-
-        } else if (kind == DataKind::Storage) {
-            auto plainstate_data{plainstate_table.find(db::to_slice(db_key), /*throw_notfound=*/false)};
-            if (!plainstate_data) {
-                changeset_data = changeset_table.to_next(/*throw_notfound=*/false);
-                continue;
-            }
-
-            // plain state key = address + incarnation
-            assert(db_key.length() == db::kPlainStoragePrefixLength);
-
-            Bytes hashed_key(db::kHashedStoragePrefixLength, '\0');
-            std::memcpy(&hashed_key[0], keccak256(db_key.substr(0, kAddressLength)).bytes, kHashLength);
-            std::memcpy(&hashed_key[kHashLength], &db_key[kAddressLength], db::kIncarnationLength);
-
-            // plain state value = unhashed location + zeroless value
-            assert(plainstate_data.value.length() > kHashLength);
-
-            auto hashed_location{keccak256(db::from_slice(plainstate_data.value).substr(0, kHashLength))};
-            ByteView value{db::from_slice(plainstate_data.value).substr(kHashLength)};
-
-            db::upsert_storage_value(target_table, hashed_key, hashed_location.bytes, value);
-
-            changeset_data = changeset_table.to_next(/*throw_notfound=*/false);
-
-        } else {
-            // get incarnation
-            auto encoded_account{plainstate_table.find(db::to_slice(db_key), false)};
-            if (!encoded_account) {
-                changeset_data = changeset_table.to_next(/*throw_notfound=*/false);
-                continue;
-            }
-            auto [incarnation, err]{extract_incarnation(db::from_slice(encoded_account.value))};
-            rlp::success_or_throw(err);
-            if (incarnation == 0) {
-                changeset_data = changeset_table.to_next(/*throw_notfound=*/false);
-                continue;
-            }
-
-            // get code hash
-            Bytes plain_key(kAddressLength + db::kIncarnationLength, '\0');
-            std::memcpy(&plain_key[0], &db_key[0], kAddressLength);
-            endian::store_big_u64(&plain_key[kAddressLength], incarnation);
-            auto code_hash{codehash_table.find(db::to_slice(plain_key), false)};
-            if (!code_hash) {
-                changeset_data = changeset_table.to_next(/*throw_notfound=*/false);
-                continue;
-            }
-
-            // Hash and concatenate everything together
-            Bytes key(kHashLength + db::kIncarnationLength, '\0');
-            std::memcpy(&key[0], keccak256(plain_key.substr(0, kAddressLength)).bytes, kHashLength);
-            std::memcpy(&key[kHashLength], &plain_key[kAddressLength], db::kIncarnationLength);
-            target_table.upsert(db::to_slice(key), code_hash.value);
-            changeset_data = changeset_table.to_next(/*throw_notfound=*/false);
-        }
     }
 }
 
@@ -721,12 +674,17 @@ std::pair<db::MapConfig, db::MapConfig> HashState::get_operation_tables(DataKind
 }
 
 std::vector<std::string> HashState::get_log_progress() {
-    if (!loading_) {
-        return {"source", current_source_, "etl", "E+T", "key", current_key_};
+    std::vector<std::string> ret{};
+    ret.insert(ret.end(), {"mode", (incremental_ ? "incr" : "full")});
+    if (loading_) {
+        if (!incremental_) {
+            current_key_ = abridge(collector_->get_load_key(), kAddressLength * 2 + 2);
+        }
+        ret.insert(ret.end(), {"to", current_target_, "key", current_key_});
     } else {
-        current_key_ = abridge(collector_->get_load_key(), kAddressLength * 2 + 2);
-        return {"target", current_target_, "etl", "L", "key", current_key_};
+        ret.insert(ret.end(), {"from", current_source_, "key", current_key_});
     }
+    return ret;
 }
 
 }  // namespace silkworm::stagedsync

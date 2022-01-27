@@ -117,8 +117,9 @@ class HashState final : public IStage {
         Code      // To generate hashed key => code_hash mapping
     };
 
-    //! \brief Transforms PlainState into HashedAccounts and HashedStorage respectively in one single read pass over PlainState
-    //! \remarks To be used only if this is very first time HashState stage runs forward (i.e. forwarding from 0)
+    //! \brief Transforms PlainState into HashedAccounts and HashedStorage respectively in one single read pass over
+    //! PlainState \remarks To be used only if this is very first time HashState stage runs forward (i.e. forwarding
+    //! from 0)
     StageResult hash_from_plainstate(db::RWTxn& txn);
 
     //! \brief Transforms PlainCodeHash into HashedCodeHash in one single read pass over PlainCodeHash
@@ -130,12 +131,9 @@ class HashState final : public IStage {
     StageResult hash_from_account_changeset(db::RWTxn& txn, BlockNum previous_progress);
 
     //! \brief Detects storage changes from StorageChangeSet and hashes the changed keys
-    //! \remarks Though it could be used for initial sync only is way slower and builds an index of changed storage locations.
+    //! \remarks Though it could be used for initial sync only is way slower and builds an index of changed storage
+    //! locations.
     StageResult hash_from_storage_changeset(db::RWTxn& txn, BlockNum previous_progress);
-
-    //! \brief If we have done hashstate before (this is NOT first sync) we must changesets.
-    //! \remarks This is way slower than clean promotion
-    void promote_incremental(db::RWTxn& txn, DataKind kind);
 
     void demote_incremental(db::RWTxn& txn, BlockNum to, DataKind kind);
 
@@ -143,12 +141,14 @@ class HashState final : public IStage {
     //! \return A pair where first is the source and second is the target
     [[nodiscard]] static std::pair<db::MapConfig, db::MapConfig> get_operation_tables(DataKind kind);
 
-    // Stats
-    std::atomic_bool loading_{false};
-    std::string current_source_;
-    std::string current_target_;
-    std::string current_key_;
-    std::unique_ptr<etl::Collector> collector_;
+    // Logger info
+    std::atomic_bool unwinding_{false};          // Weather we're forwarding or unwinding
+    std::atomic_bool incremental_{false};        // Whether operation is incremental
+    std::atomic_bool loading_{false};            // Whether we're in ETL loading phase
+    std::string current_source_;                 // Current source of data
+    std::string current_target_;                 // Current target of transformed data
+    std::string current_key_;                    // Actual processing key
+    std::unique_ptr<etl::Collector> collector_;  // Collector (used only in !incremental_)
 };
 
 typedef StageResult (*StageFunc)(db::RWTxn&, const std::filesystem::path& etl_path, uint64_t prune_from);

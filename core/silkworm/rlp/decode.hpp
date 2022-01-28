@@ -1,5 +1,5 @@
 /*
-   Copyright 2020-2021 The Silkworm Authors
+   Copyright 2020-2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -46,6 +46,7 @@ enum class [[nodiscard]] DecodingResult{
     kListLengthMismatch,
     kInvalidVInSignature,         // v != 27 && v != 28 && v < 35, see EIP-155
     kUnsupportedTransactionType,  // EIP-2718
+    kInvalidFieldset,
 };
 
 // Consumes RLP header unless it's a single byte in the [0x00, 0x7f] range,

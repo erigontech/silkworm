@@ -88,7 +88,7 @@ std::pair<Account, rlp::DecodingResult> Account::from_encoded_storage(ByteView e
     Account a{};
     if (encoded_payload.empty()) {
         return {a, rlp::DecodingResult::kOk};
-    } else if (encoded_payload.length() == 1) {
+    } else if (encoded_payload[0] && encoded_payload.length() == 1) {
         // Must be at least 2 bytes : field_set + len of payload
         return {a, rlp::DecodingResult::kInputTooShort};
     }
@@ -141,7 +141,7 @@ std::pair<Account, rlp::DecodingResult> Account::from_encoded_storage(ByteView e
 std::pair<uint64_t, rlp::DecodingResult> Account::incarnation_from_encoded_storage(ByteView encoded_payload) noexcept {
     if (encoded_payload.empty()) {
         return {0, rlp::DecodingResult::kOk};
-    } else if (encoded_payload.length() == 1) {
+    } else if (encoded_payload[0] && encoded_payload.length() == 1) {
         // Must be at least 2 bytes : field_set + len of payload
         return {0, rlp::DecodingResult::kInputTooShort};
     }

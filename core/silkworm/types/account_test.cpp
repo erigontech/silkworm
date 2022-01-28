@@ -55,6 +55,18 @@ TEST_CASE("Decode account from storage") {
         CHECK(decoded.incarnation == 0);
     }
 
+    SECTION("One zero byte payload") {
+        Bytes encoded{*from_hex("00")};
+        auto [decoded, err]{Account::from_encoded_storage(encoded)};
+        REQUIRE(err == rlp::DecodingResult::kOk);
+    }
+
+    SECTION("One non-zero byte payload") {
+        Bytes encoded{*from_hex("04")};
+        auto [decoded, err]{Account::from_encoded_storage(encoded)};
+        REQUIRE(err == rlp::DecodingResult::kInputTooShort);
+    }
+
     SECTION("Too short payload") {
         Bytes encoded{*from_hex("0f")};
         auto [decoded, err]{Account::from_encoded_storage(encoded)};

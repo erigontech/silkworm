@@ -286,7 +286,7 @@ void Execution::revert_state(ByteView key, ByteView value, mdbx::cursor& plain_s
                              mdbx::cursor& plain_code_table) {
     if (key.size() == kAddressLength) {
         if (!value.empty()) {
-            auto [account, err1]{decode_account_from_storage(value)};
+            auto [account, err1]{Account::from_encoded_storage(value)};
             rlp::success_or_throw(err1);
             if (account.incarnation > 0 && account.code_hash == kEmptyHash) {
                 Bytes code_hash_key(kAddressLength + db::kIncarnationLength, '\0');
@@ -298,7 +298,8 @@ void Execution::revert_state(ByteView key, ByteView value, mdbx::cursor& plain_s
             // cleaning up contract codes
             auto state_account_encoded{plain_state_table.find(db::to_slice(key), /*throw_notfound=*/false)};
             if (state_account_encoded) {
-                auto [state_incarnation, err2]{extract_incarnation(db::from_slice(state_account_encoded.value))};
+                auto [state_incarnation,
+                      err2]{Account::incarnation_from_encoded_storage(db::from_slice(state_account_encoded.value))};
                 rlp::success_or_throw(err2);
                 // cleanup each code incarnation
                 for (uint64_t i = state_incarnation; i > account.incarnation; --i) {

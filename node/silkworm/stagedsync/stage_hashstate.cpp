@@ -437,7 +437,7 @@ StageResult HashState::hash_from_account_changeset(db::RWTxn& txn, BlockNum prev
                 target_hashed_accounts.upsert(db::to_slice(address_hash.bytes), db::to_slice(current_encoded_value));
 
                 // Lookup value in PlainCodeHash for Contract
-                auto [incarnation, err]{extract_incarnation(current_encoded_value)};
+                auto [incarnation, err]{Account::incarnation_from_encoded_storage(current_encoded_value)};
                 rlp::success_or_throw(err);
                 if (incarnation) {
                     std::memcpy(&plain_code_key[0], address.bytes, kAddressLength);
@@ -585,7 +585,7 @@ void HashState::demote_incremental(db::RWTxn& txn, BlockNum to, DataKind kind) {
                     target_table.erase(new_key);
                     return true;
                 }
-                auto [acc, err]{decode_account_from_storage(db_value)};
+                auto [acc, err]{Account::from_encoded_storage(db_value)};
                 rlp::success_or_throw(err);
 
                 if (acc.incarnation <= 0 || acc.code_hash != kEmptyHash) {
@@ -632,7 +632,7 @@ void HashState::demote_incremental(db::RWTxn& txn, BlockNum to, DataKind kind) {
                 if (db_value.empty()) {
                     return true;
                 }
-                auto [incarnation, err]{extract_incarnation(db_value)};
+                auto [incarnation, err]{Account::incarnation_from_encoded_storage(db_value)};
                 rlp::success_or_throw(err);
                 if (incarnation == 0) {
                     return true;

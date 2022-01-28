@@ -297,7 +297,7 @@ std::optional<BlockBody> Buffer::read_body(uint64_t block_number, const evmc::by
     if (auto it{bodies_.find(key)}; it != bodies_.end()) {
         return it->second;
     }
-    return db::read_body(txn_, block_number, block_hash.bytes, /*read_senders=*/false);
+    return db::read_body(txn_, key, /*read_senders=*/false);
 }
 
 std::optional<Account> Buffer::read_account(const evmc::address& address) const noexcept {

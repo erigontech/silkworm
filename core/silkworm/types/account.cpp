@@ -116,22 +116,24 @@ std::pair<Account, rlp::DecodingResult> Account::from_encoded_storage(ByteView e
             if (encoded_payload.length() < pos + len) {
                 return {a, rlp::DecodingResult::kInputTooShort};
             }
+            const auto encoded_value{encoded_payload.substr(pos, len)};
             switch (i) {
                 case 1: {
-                    const std::optional<uint64_t> nonce{
-                        endian::from_big_compact<uint64_t>(encoded_payload.substr(pos, len))};
+                    const std::optional<uint64_t> nonce{endian::from_big_compact<uint64_t>(encoded_value)};
                     if (nonce == std::nullopt) {
                         return {a, rlp::DecodingResult::kLeadingZero};
                     }
                     a.nonce = *nonce;
                 } break;
-                case 2:
-                    std::memcpy(&as_bytes(a.balance)[32 - len], &encoded_payload[pos], len);
-                    a.balance = bswap(a.balance);
-                    break;
+                case 2: {
+                    const auto balance{endian::from_big_compact<intx::uint256>(encoded_value)};
+                    if (!balance.has_value()) {
+                        return {a, rlp::DecodingResult::kOverflow};
+                    }
+                    a.balance = balance.value();
+                } break;
                 case 4: {
-                    const std::optional<uint64_t> incarnation{
-                        endian::from_big_compact<uint64_t>(encoded_payload.substr(pos, len))};
+                    const std::optional<uint64_t> incarnation{endian::from_big_compact<uint64_t>(encoded_value)};
                     if (incarnation == std::nullopt) {
                         return {a, rlp::DecodingResult::kLeadingZero};
                     }
@@ -141,7 +143,7 @@ std::pair<Account, rlp::DecodingResult> Account::from_encoded_storage(ByteView e
                     if (len != kHashLength) {
                         return {a, rlp::DecodingResult::kUnexpectedLength};
                     }
-                    std::memcpy(a.code_hash.bytes, &encoded_payload[pos], kHashLength);
+                    std::memcpy(a.code_hash.bytes, &encoded_value[0], kHashLength);
                     break;
                 default:
                     len = 0;
@@ -173,8 +175,7 @@ std::pair<uint64_t, rlp::DecodingResult> Account::incarnation_from_encoded_stora
                 case 2:
                     break;
                 case 4: {
-                    const std::optional<uint64_t> incarnation{
-                        endian::from_big_compact<uint64_t>(encoded_payload.substr(pos, len))};
+                    const auto incarnation{endian::from_big_compact<uint64_t>(encoded_payload.substr(pos, len))};
                     if (incarnation == std::nullopt) {
                         return {0, rlp::DecodingResult::kLeadingZero};
                     }

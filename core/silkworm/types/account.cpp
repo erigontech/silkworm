@@ -84,18 +84,32 @@ size_t Account::encoding_length_for_storage() const {
     return len;
 }
 
-std::pair<Account, rlp::DecodingResult> Account::from_encoded_storage(ByteView encoded_payload) noexcept {
-    Account a{};
+static inline std::pair<uint8_t, rlp::DecodingResult> validate_encoded_head(ByteView& encoded_payload) noexcept {
     if (encoded_payload.empty()) {
-        return {a, rlp::DecodingResult::kOk};
-    } else if (encoded_payload[0] && encoded_payload.length() == 1) {
+        return {0, rlp::DecodingResult::kOk};
+    }
+    if (encoded_payload[0] && encoded_payload.length() == 1) {
         // Must be at least 2 bytes : field_set + len of payload
-        return {a, rlp::DecodingResult::kInputTooShort};
+        return {encoded_payload[0], rlp::DecodingResult::kInputTooShort};
+    }
+    if (encoded_payload[0] > 15) {
+        // Can only be at max 1 | 2 | 4 | 8
+        return {encoded_payload[0], rlp::DecodingResult::kInvalidFieldset};
     }
 
-    uint8_t field_set = encoded_payload[0];
-    size_t pos{1};
+    return {encoded_payload[0], rlp::DecodingResult::kOk};
+}
 
+std::pair<Account, rlp::DecodingResult> Account::from_encoded_storage(ByteView encoded_payload) noexcept {
+    Account a{};
+    const auto [field_set, err] = validate_encoded_head(encoded_payload);
+    if (err != rlp::DecodingResult::kOk) {
+        return {a, err};
+    } else if (!field_set) {
+        return {a, rlp::DecodingResult::kOk};
+    }
+
+    size_t pos{1};
     for (int i{1}; i < 16; i *= 2) {
         if (field_set & i) {
             uint8_t len = encoded_payload[pos++];
@@ -104,7 +118,8 @@ std::pair<Account, rlp::DecodingResult> Account::from_encoded_storage(ByteView e
             }
             switch (i) {
                 case 1: {
-                    const std::optional<uint64_t> nonce{endian::from_big_compact<uint64_t>(encoded_payload.substr(pos, len))};
+                    const std::optional<uint64_t> nonce{
+                        endian::from_big_compact<uint64_t>(encoded_payload.substr(pos, len))};
                     if (nonce == std::nullopt) {
                         return {a, rlp::DecodingResult::kLeadingZero};
                     }
@@ -139,16 +154,14 @@ std::pair<Account, rlp::DecodingResult> Account::from_encoded_storage(ByteView e
 }
 
 std::pair<uint64_t, rlp::DecodingResult> Account::incarnation_from_encoded_storage(ByteView encoded_payload) noexcept {
-    if (encoded_payload.empty()) {
+    const auto [field_set, err] = validate_encoded_head(encoded_payload);
+    if (err != rlp::DecodingResult::kOk) {
+        return {0, err};
+    } else if (!field_set || !(field_set & /*incarnation mask*/ 4)) {
         return {0, rlp::DecodingResult::kOk};
-    } else if (encoded_payload[0] && encoded_payload.length() == 1) {
-        // Must be at least 2 bytes : field_set + len of payload
-        return {0, rlp::DecodingResult::kInputTooShort};
     }
 
-    uint8_t field_set = encoded_payload[0];
     size_t pos{1};
-
     for (int i{1}; i < 8; i *= 2) {
         if (field_set & i) {
             uint8_t len = encoded_payload[pos++];

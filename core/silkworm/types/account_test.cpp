@@ -67,6 +67,12 @@ TEST_CASE("Decode account from storage") {
         REQUIRE(err == rlp::DecodingResult::kInputTooShort);
     }
 
+    SECTION("One >15 byte head plus 1byte") {
+        Bytes encoded{*from_hex("1e01")};
+        auto [decoded, err]{Account::from_encoded_storage(encoded)};
+        REQUIRE(err == rlp::DecodingResult::kInvalidFieldset);
+    }
+
     SECTION("Too short payload") {
         Bytes encoded{*from_hex("0f")};
         auto [decoded, err]{Account::from_encoded_storage(encoded)};

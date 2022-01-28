@@ -1,5 +1,5 @@
 /*
-   Copyright 2020-2021 The Silkworm Authors
+   Copyright 2020-2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -129,7 +129,7 @@ TEST_CASE("Stage Hashstate") {
     REQUIRE(hashed_address_table.seek(db::to_slice(sender_keccak.bytes)));
     {
         auto account_encoded{db::from_slice(hashed_address_table.current().value)};
-        auto [acc, _]{decode_account_from_storage(account_encoded)};
+        auto [acc, _]{Account::from_encoded_storage(account_encoded)};
         CHECK(acc.nonce == 3);
         CHECK(acc.balance < kEther);
     }
@@ -172,7 +172,7 @@ TEST_CASE("Stage Hashstate") {
     REQUIRE(hashed_address_table.seek(db::to_slice(address_keccak.bytes)));
     {
         auto account_encoded{db::from_slice(hashed_address_table.current().value)};
-        auto [acc, _]{decode_account_from_storage(account_encoded)};
+        auto [acc, _]{Account::from_encoded_storage(account_encoded)};
         CHECK(acc.nonce == 2);
         CHECK(acc.balance < kEther);  // Slightly less due to fees
         CHECK(db::stages::read_stage_progress(*txn, db::stages::kHashStateKey) == 1);

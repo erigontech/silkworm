@@ -47,7 +47,8 @@ class DelegatingTracer : public evmone::Tracer {
         tracer_.on_execution_start(rev, msg, code);
     }
 
-    void on_instruction_start(uint32_t pc, const evmone::ExecutionState& state) noexcept override {
+    void on_instruction_start(uint32_t pc, const intx::uint256*, int,
+                              const evmone::ExecutionState& state) noexcept override {
         tracer_.on_instruction_start(pc, state, intra_block_state_);
     }
 

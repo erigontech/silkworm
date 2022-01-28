@@ -1,5 +1,5 @@
 /*
-   Copyright 2021 The Silkworm Authors
+   Copyright 2021-2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -215,7 +215,7 @@ void hashstate_promote(mdbx::txn& txn, HashstateOperation operation) {
                 changeset_data = changeset_table.to_next(/*throw_notfound=*/false);
                 continue;
             }
-            auto [incarnation, err]{extract_incarnation(db::from_slice(encoded_account.value))};
+            auto [incarnation, err]{Account::incarnation_from_encoded_storage(db::from_slice(encoded_account.value))};
             rlp::success_or_throw(err);
             if (incarnation == 0) {
                 changeset_data = changeset_table.to_next(/*throw_notfound=*/false);
@@ -298,7 +298,7 @@ static void hashstate_unwind(mdbx::txn& txn, BlockNum unwind_to, HashstateOperat
                     target_table.erase(new_key);
                     return true;
                 }
-                auto [acc, err]{decode_account_from_storage(db_value)};
+                auto [acc, err]{Account::from_encoded_storage(db_value)};
                 rlp::success_or_throw(err);
 
                 if (acc.incarnation <= 0 || acc.code_hash != kEmptyHash) {
@@ -345,7 +345,7 @@ static void hashstate_unwind(mdbx::txn& txn, BlockNum unwind_to, HashstateOperat
                 if (db_value.empty()) {
                     return true;
                 }
-                auto [incarnation, err]{extract_incarnation(db_value)};
+                auto [incarnation, err]{Account::incarnation_from_encoded_storage(db_value)};
                 rlp::success_or_throw(err);
                 if (incarnation == 0) {
                     return true;

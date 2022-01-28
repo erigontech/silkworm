@@ -1,5 +1,5 @@
 /*
-   Copyright 2020-2021 The Silkworm Authors
+   Copyright 2020-2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -35,24 +35,24 @@ struct Account {
     evmc::bytes32 code_hash{kEmptyHash};
     uint64_t incarnation{0};
 
-    // Erigon (*Account)EncodeForStorage
-    Bytes encode_for_storage(bool omit_code_hash = false) const;
+    //! \remarks Erigon's (*Account)EncodeForStorage
+    [[nodiscard]] Bytes encode_for_storage(bool omit_code_hash = false) const;
 
-    // Erigon (*Account)EncodingLengthForStorage
-    size_t encoding_length_for_storage() const;
+    //! \remarks Erigon's (*Account)EncodingLengthForStorage
+    [[nodiscard]] size_t encoding_length_for_storage() const;
 
-    Bytes rlp(const evmc::bytes32& storage_root) const;
+    //! \brief Rlp encodes Account
+    [[nodiscard]] Bytes rlp(const evmc::bytes32& storage_root) const;
+
+    //! \brief Returns an Account from it's encoded representation
+    [[nodiscard]] static std::pair<Account, rlp::DecodingResult> from_encoded_storage(ByteView encoded_payload) noexcept;
+
+    //! \brief Returns an Account Incarnation from it's encoded representation
+    //! \remarks Similar to from_encoded_storage but faster as it parses only incarnation
+    [[nodiscard]] static std::pair<uint64_t, rlp::DecodingResult> incarnation_from_encoded_storage(ByteView encoded_payload) noexcept;
 };
 
 bool operator==(const Account& a, const Account& b);
-
-/*
- * Extract the incarnation from an encoded account object without fully decoding it.
- */
-std::pair<uint64_t, rlp::DecodingResult> extract_incarnation(ByteView);
-
-// Erigon (*Account)DecodeForStorage
-[[nodiscard]] std::pair<Account, rlp::DecodingResult> decode_account_from_storage(ByteView encoded) noexcept;
 
 }  // namespace silkworm
 

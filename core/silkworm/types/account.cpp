@@ -30,21 +30,21 @@ Bytes Account::encode_for_storage(bool omit_code_hash) const {
 
     if (nonce != 0) {
         field_set |= 1;
-        const Bytes be{endian::to_big_compact(nonce)};
+        auto be{endian::to_big_compact(nonce)};
         res.push_back(static_cast<uint8_t>(be.length()));
         res.append(be);
     }
 
     if (balance != 0) {
         field_set |= 2;
-        const Bytes be{endian::to_big_compact(balance)};
+        auto be{endian::to_big_compact(balance)};
         res.push_back(static_cast<uint8_t>(be.length()));
         res.append(be);
     }
 
     if (incarnation != 0) {
         field_set |= 4;
-        const Bytes be{endian::to_big_compact(incarnation)};
+        auto be{endian::to_big_compact(incarnation)};
         res.push_back(static_cast<uint8_t>(be.length()));
         res.append(be);
     }
@@ -63,17 +63,17 @@ size_t Account::encoding_length_for_storage() const {
     size_t len{1};
 
     if (nonce != 0) {
-        const Bytes be{endian::to_big_compact(nonce)};
+        auto be{endian::to_big_compact(nonce)};
         len += 1 + be.length();
     }
 
     if (balance != 0) {
-        const Bytes be{endian::to_big_compact(balance)};
+        auto be{endian::to_big_compact(balance)};
         len += 1 + be.length();
     }
 
     if (incarnation != 0) {
-        const Bytes be{endian::to_big_compact(incarnation)};
+        auto be{endian::to_big_compact(incarnation)};
         len += 1 + be.length();
     }
 

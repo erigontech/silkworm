@@ -169,17 +169,21 @@ inline void store_big_u64(uint8_t* bytes, const uint64_t value) {
 
 //! \brief Transforms a uint64_t stored in memory with native endianness to it's compacted big endian byte form
 //! \param [in] value : the value to be transformed
-//! \return A string of bytes
+//! \return A ByteView (std::string_view) into an internal static buffer (thread specific) of the function
+//! \remarks each function call overwrites the buffer, therefore invalidating a previously returned result
+//! \remarks so each returnd ByteView must be used immediately (before a further call to the same function).
 //! \remarks See Erigon TxIndex value
 //! \remarks A "compact" big endian form strips leftmost bytes valued to zero
-Bytes to_big_compact(uint64_t value);
+ByteView to_big_compact(uint64_t value);
 
 //! \brief Transforms a uint256 stored in memory with native endianness to it's compacted big endian byte form
 //! \param [in] value : the value to be transformed
-//! \return A string of bytes
+//! \return A ByteView (std::string_view) into an internal static buffer (thread specific) of the function
+//! \remarks each function call overwrites the buffer, therefore invalidating a previously returned result
+//! \remarks so each returnd ByteView must be used immediately (before a further call to the same function)
 //! \remarks See Erigon TxIndex value
 //! \remarks A "compact" big endian form strips leftmost bytes valued to zero
-Bytes to_big_compact(const intx::uint256& value);
+ByteView to_big_compact(const intx::uint256& value);
 
 //! \brief Parses unsigned integer from a compacted big endian byte form
 //! \param [in] data : byte view of compacted value. Length must be <= sizeof(UnsignedInteger)

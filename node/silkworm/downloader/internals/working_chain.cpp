@@ -42,6 +42,10 @@ WorkingChain::WorkingChain(ConsensusEngine engine)
         throw std::logic_error("WorkingChain exception, cause: unknown consensus engine");
         // or must the downloader go on and return StageResult::kUnknownConsensusEngine?
     }
+
+    RandomNumber random(100'000'000, 1'000'000'000);
+    request_id_prefix = random.generate_one();
+    log::Trace() << "WorkingChain: request id prefix=" << request_id_prefix;
 }
 
 BlockNum WorkingChain::highest_block_in_db() const { return highest_in_db_; }
@@ -55,27 +59,54 @@ bool WorkingChain::in_sync() const {
 }
 
 std::string WorkingChain::human_readable_status() const {
+    using std::chrono::system_clock, std::chrono::duration_cast, std::chrono::minutes;
+    //static auto last_execution = system_clock::now();
+
     auto invariant = links_.size() == (link_queue_.size() + persisted_link_queue_.size());
 
     std::string output =
            std::to_string(links_.size()) + + " links (" +
            std::to_string(link_queue_.size()) + " pending / " +
-           std::to_string(persisted_link_queue_.size()) + " persisted" + (invariant ? "), " : " !),") +
+           std::to_string(persisted_link_queue_.size()) + " persisting/ed" + (invariant ? "), " : " !),") +
            std::to_string(anchors_.size()) + "/" + std::to_string(anchor_queue_.size()) + " anchors, " +
-           std::to_string(highest_in_db_) + " highest in db";
+           std::to_string(highest_in_db_) + " highest block in db";
 
-    bool verbose = false;
-    if (verbose) {  // for debug
-        output += dump_orphaned_links();
-        output += dump_chain_bundles();
-    }
+    //auto elapsed_minutes = duration_cast<minutes>(system_clock::now() - last_execution).count();
+    //if (elapsed_minutes >= 5) {
+    //    output += "\n";
+    //    output += dump_chain_bundles();
+    //    last_execution = system_clock::now();
+    //}
 
     return output;
 }
 
-std::string WorkingChain::dump_orphaned_links() const {
+void WorkingChain::assure_no_orphaned_links() const {
     using std::to_string;
 
+    std::set<BlockNum> orphaned_links = search_orphaned_links();
+
+    if (!orphaned_links.empty())
+        log::Trace() << dump_orphaned_links(orphaned_links);
+
+    assert(orphaned_links.empty());
+}
+
+std::set<BlockNum> WorkingChain::search_orphaned_links() const {
+    std::set<BlockNum> orphaned_links;
+
+    for (auto& l: links_) {
+        auto link = l.second;
+        auto [anchor, deep_link] = find_anchor(link);
+        if (!anchor && !deep_link->persisted)
+            orphaned_links.insert(link->blockHeight);
+    }
+
+    return orphaned_links;
+}
+
+/*
+std::set<BlockNum> WorkingChain::search_orphaned_links() const {
     std::set<BlockNum> orphaned_links;
     for (auto& l : links_) {
         auto link = l.second;
@@ -91,8 +122,17 @@ std::string WorkingChain::dump_orphaned_links() const {
             orphaned_links.insert(link->blockHeight);
     }
 
+    return orphaned_links;
+}
+*/
+std::string WorkingChain::dump_orphaned_links(std::set<BlockNum>& orphaned_links) const {
+    using std::to_string;
+
+    if (orphaned_links.empty()) return "--@@-- no orphaned links\n";
+
     std::string output = "--@@--\n";
 
+    long count = 0;
     BlockNum prev = 0;
     BlockNum len = 1;
     for (auto curr = orphaned_links.begin(); curr != orphaned_links.end(); curr++) {
@@ -105,11 +145,17 @@ std::string WorkingChain::dump_orphaned_links() const {
             output += "--@@-- " + to_string(prev) + " -> " + to_string(prev + len - 1) + "\n";
             prev = *curr;
             len = 1;
+            count++;
         }
     }
     output += "--@@-- " + to_string(prev) + " -> " + to_string(prev + len - 1) + "\n";
+    count++;
 
     output += "--@@--";
+
+    if (count > 1) {
+        log::Error() << "WorkingChain: INVARIANT NOT HOLDS";
+    }
 
     return output;
 }
@@ -129,12 +175,12 @@ std::string WorkingChain::dump_chain_bundles() const {
     for (auto& a : ordered_anchors) {
         auto anchor = a.second;
         auto seconds_from_last_req = std::chrono::duration_cast<std::chrono::seconds>(
-                std::chrono::system_clock::now() - anchor->timestamp);
+                                                 std::chrono::system_clock::now() - anchor->timestamp);
         std::string anchor_dump = "--**-- anchor " + to_hex(anchor->parentHash) +
                                   ": start=" + std::to_string(anchor->blockHeight) +
                                   ", end=" + std::to_string(anchor->lastLinkHeight) +
                                   ", len=" + std::to_string(anchor->chainLength()) +
-            ", ts=" + std::to_string(seconds_from_last_req.count()) + "secs\n";
+                                  ", ts=" + std::to_string(seconds_from_last_req.count()) + "secs\n";
         output += anchor_dump;
     }
 
@@ -171,7 +217,8 @@ Headers WorkingChain::withdraw_stable_headers() {
     Headers stable_headers;
 
     auto initial_highest_in_db = highest_in_db_;
-    log::Trace() << "WorkingChain: finding headers to persist on top of " << highest_in_db_;
+    log::Trace() << "WorkingChain: finding headers to persist on top of " << highest_in_db_
+                 << " (" << insert_list_.size() << " waiting in queue)";
 
     LinkList links_in_future;  // here we accumulate links that fail validation as "in the future"
 
@@ -181,6 +228,7 @@ Headers WorkingChain::withdraw_stable_headers() {
 
         // If it is in the pre-verified headers range do not verify it, wait for pre-verification
         if (link->blockHeight <= preverified_hashes_->height && !link->preverified) {
+            log::Trace() << "WorkingChain: wait for pre-verification of " << link->blockHeight;
             break;  // header should be pre-verified, but not yet, try again later
         }
 
@@ -201,7 +249,8 @@ Headers WorkingChain::withdraw_stable_headers() {
 
         if (assessment == Skip) {
             links_.erase(link->hash);
-            continue;
+            log::Warning() << "WorkingChain: skipping link at " << link->blockHeight;
+            continue; // todo: do we need to invalidate all the descendants?
         }
 
         // assessment == accept
@@ -230,15 +279,15 @@ Headers WorkingChain::withdraw_stable_headers() {
 
         // Make sure long insertions do not appear as a stuck stage headers
         if (stable_headers.size() % 1000 == 0) {
-            log::Info() << "WorkingChain: " << stable_headers.size() << " headers persisted on top of "
+            log::Trace() << "WorkingChain: " << stable_headers.size() << " headers prepared for persistence on top of "
                         << initial_highest_in_db << " (cont.)";
         }
     }
 
     if (!stable_headers.empty()) {
-        log::Info() << "WorkingChain: " << stable_headers.size() << " headers persisted on top of "
+        log::Info() << "WorkingChain: " << stable_headers.size() << " headers prepared for persistence on top of "
                     << initial_highest_in_db << " (from " << header_at(stable_headers.begin()).number << " to "
-                    << header_at(stable_headers.cbegin()).number << ")";
+                    << header_at(stable_headers.rbegin()).number << ")";
     }
 
     // Save memory
@@ -278,12 +327,19 @@ auto WorkingChain::verify(const Link& link) -> VerificationResult {
 
 // reduce persistedLinksQueue and remove links
 void WorkingChain::reduce_persisted_links_to(size_t limit) {
+    if (persisted_link_queue_.size() <= limit) return;
+
+    auto initial_size = persisted_link_queue_.size();
+
     while (persisted_link_queue_.size() > limit) {
         auto link = persisted_link_queue_.top();
         persisted_link_queue_.pop();
 
         links_.erase(link->hash);
     }
+
+    log::Trace() << "PersistedLinkQueue: too many links, cut down from " << initial_size
+                 << " to " << persisted_link_queue_.size();
 }
 
 // Note: Erigon's HeadersForward is implemented in OutboundGetBlockHeaders message
@@ -323,7 +379,7 @@ std::optional<GetBlockHeadersPacket66> WorkingChain::request_skeleton() {
     }
 
     GetBlockHeadersPacket66 packet;
-    packet.requestId = RANDOM_NUMBER.generate_one();
+    packet.requestId = generate_request_id(); //RANDOM_NUMBER.generate_one();
     packet.request.origin = bottom;
     packet.request.amount = length;
     packet.request.skip = stride - 1;
@@ -396,7 +452,7 @@ auto WorkingChain::request_more_headers(time_point_t time_point, seconds_t timeo
             anchor_queue_.fix();  // re-sort
 
             GetBlockHeadersPacket66 packet{
-                RANDOM_NUMBER.generate_one(),
+                generate_request_id(), //RANDOM_NUMBER.generate_one(),
                     {anchor->blockHeight, max_len, 0, true}
             }; // we use blockHeight in place of parentHash to get also ommers if presents
             // we could request from origin=blockHeight-1 but debugging becomes more difficult
@@ -483,9 +539,17 @@ auto WorkingChain::find_bad_header(const std::vector<BlockHeader>& headers) -> b
     return false;
 }
 
-auto WorkingChain::accept_headers(const std::vector<BlockHeader>& headers, const PeerId& peer_id)
+auto WorkingChain::accept_headers(const std::vector<BlockHeader>& headers, uint64_t requestId, const PeerId& peer_id)
     -> std::tuple<Penalty, RequestMoreHeaders> {
     bool request_more_headers = false;
+
+    if (headers.empty()) return {Penalty::NoPenalty, request_more_headers};
+
+    if (headers.begin()->number < top_seen_height_ &&  // an old header announcement? .
+        !is_valid_request_id(requestId)) {   // anyway is not requested by us..
+        log::Trace() << "Rejecting message with reqId=" << requestId << " and first block=" << headers.begin()->number;
+        return {Penalty::NoPenalty, request_more_headers};
+    }
 
     if (find_bad_header(headers)) return {Penalty::BadBlockPenalty, request_more_headers};
 
@@ -587,12 +651,12 @@ auto WorkingChain::process_segment(const Segment& segment, bool is_a_new_block, 
     auto [tip, end] = find_link(segment, start);
 
     if (end == 0) {
-        log::Debug() << "WorkingChain: segment cut&paste error, duplicated segment, bn=" << segment[start]->number
+        log::Trace() << "WorkingChain: segment cut&paste error, duplicated segment, bn=" << segment[start]->number
                      << ", hash=" << segment[start]->hash() << " parent-hash=" << segment[start]->parent_hash
                      << (anchor.has_value() ? ", removing corresponding anchor" : ", corresponding anchor not found");
         // If duplicate segment is extending from the anchor, the anchor needs to be deleted,
         // otherwise it will keep producing requests that will be found duplicate
-        if (anchor.has_value()) remove(anchor.value());
+        if (anchor.has_value()) invalidate(anchor.value());
         return false;
     }
 
@@ -628,7 +692,7 @@ auto WorkingChain::process_segment(const Segment& segment, bool is_a_new_block, 
             op = "new anchor";
             requestMore = new_anchor(segment_slice, peerId);
         }
-        log::Info() << "WorkingChain, segment " << op << " up=" << startNum << " (" << segment[start]->hash()
+        log::Trace() << "WorkingChain, segment " << op << " up=" << startNum << " (" << segment[start]->hash()
                     << ") down=" << endNum << " (" << segment[end - 1]->hash() << ") (more=" << requestMore << ")";
     } catch (segment_cut_and_paste_error& e) {
         log::Warning() << "WorkingChain, segment cut&paste error, " << op << " up=" << startNum << " ("
@@ -651,13 +715,14 @@ void WorkingChain::reduce_links_to(size_t limit) {
 
     invalidate(victim_anchor);
 
-    log::Debug() << "LinkQueue: too many links, cut down from " << initial_size << " to " << link_queue_.size()
+    log::Info() << "LinkQueue: too many links, cut down from " << initial_size << " to " << link_queue_.size()
                  << " (removed chain bundle start=" << victim_anchor->blockHeight
                  << " end=" << victim_anchor->lastLinkHeight << ")";
 }
 
 // find_anchors tries to find the highest link the in the new segment that can be attached to an existing anchor
-auto WorkingChain::find_anchor(const Segment& segment) -> std::tuple<std::optional<std::shared_ptr<Anchor>>, Start> {
+auto WorkingChain::find_anchor(const Segment& segment) const
+    -> std::tuple<std::optional<std::shared_ptr<Anchor>>, Start> {
     for (size_t i = 0; i < segment.size(); i++) {
         auto a = anchors_.find(segment[i]->hash());  // todo: hash() compute the value, save cpu
         if (a != anchors_.end()) {                   // segment[i]->hash() == anchor.parent_hash
@@ -669,7 +734,7 @@ auto WorkingChain::find_anchor(const Segment& segment) -> std::tuple<std::option
 }
 
 // find_link find the highest existing link (from start) that the new segment can be attached to
-auto WorkingChain::find_link(const Segment& segment, size_t start)
+auto WorkingChain::find_link(const Segment& segment, size_t start) const
     -> std::tuple<std::optional<std::shared_ptr<Link>>, End> {
     auto duplicate_link = get_link(segment[start]->hash());
     if (duplicate_link) return {std::nullopt, 0};
@@ -682,7 +747,7 @@ auto WorkingChain::find_link(const Segment& segment, size_t start)
     return {std::nullopt, segment.size()};
 }
 
-auto WorkingChain::get_link(const Hash& hash) -> std::optional<std::shared_ptr<Link>> {
+auto WorkingChain::get_link(const Hash& hash) const -> std::optional<std::shared_ptr<Link>> {
     if (auto it = links_.find(hash); it != links_.end()) {
         return it->second;
     }
@@ -690,7 +755,8 @@ auto WorkingChain::get_link(const Hash& hash) -> std::optional<std::shared_ptr<L
 }
 
 // find_anchors find the anchor the link is anchored to
-auto WorkingChain::find_anchor(std::shared_ptr<Link> link) -> std::optional<std::shared_ptr<Anchor>> {
+auto WorkingChain::find_anchor(std::shared_ptr<Link> link) const
+    -> std::tuple<std::optional<std::shared_ptr<Anchor>>, DeepLink> {
     auto parent_link = link;
     decltype(links_.begin()) it;
     do {
@@ -701,17 +767,17 @@ auto WorkingChain::find_anchor(std::shared_ptr<Link> link) -> std::optional<std:
     } while (it != links_.end() && !parent_link->persisted);
 
     if (parent_link->persisted) {
-        return std::nullopt;  // ok, no anchor because the link is in a segment attached to a persisted link
-    }
+        return {std::nullopt, parent_link};  // ok, no anchor because the link is in a segment attached to a
+    }                                                // persisted link that we return
 
     auto a = anchors_.find(parent_link->header->parent_hash);
     if (a == anchors_.end()) {
         log::Error() << "WorkingChain: segment cut&paste error, segment without anchor or persisted attach point, "
                      << "starting bn=" << link->blockHeight << " ending bn=" << parent_link->blockHeight << " "
                      << "parent=" << to_hex(parent_link->header->parent_hash);
-        return std::nullopt;  // wrong, invariant violation, no anchor but there should be
+        return {std::nullopt, parent_link};  // wrong, invariant violation, no anchor but there should be
     }
-    return a->second;
+    return {a->second, parent_link};
 }
 
 void WorkingChain::connect(std::shared_ptr<Link> attachment_link, Segment::Slice segment_slice,
@@ -741,10 +807,13 @@ void WorkingChain::connect(std::shared_ptr<Link> attachment_link, Segment::Slice
     }
 
     // Update deepest anchor
-    auto deep_a = find_anchor(attachment_link);
+    auto [deep_a, deep_link] = find_anchor(attachment_link);
     if (deep_a.has_value()) {
         auto deepest_anchor = deep_a.value();
         deepest_anchor->lastLinkHeight = std::max(deepest_anchor->lastLinkHeight, anchor->lastLinkHeight);
+    }
+    else {
+        // todo: log error
     }
 
     // Extend_down
@@ -755,8 +824,11 @@ void WorkingChain::connect(std::shared_ptr<Link> attachment_link, Segment::Slice
     if (anchor_preverified) mark_as_preverified(prev_link);  // Mark the entire segment as pre-verified
     remove(anchor);
 
-    log::Debug() << "WorkingChain, segment op: " <<
-        (deep_a.has_value() ? to_string(deep_a.value()->blockHeight) : "X") << " --- " << attachment_link->blockHeight <<
+    log::Info() << "WorkingChain, segment op: " <<
+        (deep_a.has_value() ?
+                            "A " + to_string(deep_a.value()->blockHeight) :
+                            "X " + to_string(deep_link->blockHeight) + (deep_link->persisted ? " P" : " !P"))
+        << " --- " << attachment_link->blockHeight <<
         " connect " <<
         segment_slice.rbegin()->operator*().number << " --- " << (segment_slice.rend()-1)->operator*().number <<
         " connect " <<
@@ -794,7 +866,7 @@ auto WorkingChain::extend_down(Segment::Slice segment_slice, std::shared_ptr<Anc
     prev_link->next = std::move(anchor->links);
     if (anchor_preverified) mark_as_preverified(prev_link);  // Mark the entire segment as preverified
 
-    log::Debug() << "WorkingChain, segment op: " <<
+    log::Info() << "WorkingChain, segment op: " <<
         new_anchor->blockHeight << " --- " << (segment_slice.rend()-1)->operator*().number <<
         " extend down " <<
         anchor->blockHeight << " --- " <<  anchor->lastLinkHeight;
@@ -825,14 +897,20 @@ void WorkingChain::extend_up(std::shared_ptr<Link> attachment_link, Segment::Sli
     }
 
     // Update deepest anchor
-    auto deep_a = find_anchor(attachment_link);
+    auto [deep_a, deep_link] = find_anchor(attachment_link);
     if (deep_a.has_value()) {
         auto deepest_anchor = deep_a.value();
         deepest_anchor->lastLinkHeight = std::max(deepest_anchor->lastLinkHeight, prev_link->blockHeight);
     }
+    else {
+        // todo: log error
+    }
 
-    log::Debug() << "WorkingChain, segment op: " <<
-        (deep_a.has_value() ? to_string(deep_a.value()->blockHeight) : "X") << " --- " << attachment_link->blockHeight <<
+    log::Info() << "WorkingChain, segment op: " <<
+        (deep_a.has_value() ?
+                            "A " + to_string(deep_a.value()->blockHeight) :
+                            "X " + to_string(deep_link->blockHeight) + (deep_link->persisted ? " P" : " !P"))
+        << " --- " << attachment_link->blockHeight <<
         " extend up " <<
         segment_slice.rbegin()->operator*().number << " --- " << (segment_slice.rend()-1)->operator*().number;
 }
@@ -861,7 +939,7 @@ auto WorkingChain::new_anchor(Segment::Slice segment_slice, PeerId peerId) -> Re
 
     anchor->lastLinkHeight = std::max(anchor->lastLinkHeight, prev_link->blockHeight);
 
-    log::Debug() << "WorkingChain, segment op: new anchor " <<
+    log::Info() << "WorkingChain, segment op: new anchor " <<
         anchor->blockHeight << " --- " << anchor->lastLinkHeight;
 
     return !pre_existing;
@@ -925,6 +1003,17 @@ void WorkingChain::mark_as_preverified(std::shared_ptr<Link> link) {
 
 void WorkingChain::set_preverified_hashes(const PreverifiedHashes* preverifiedHashes) {
     preverified_hashes_ = preverifiedHashes;
+}
+
+uint64_t WorkingChain::generate_request_id() {
+    request_count++;
+    if (request_count >= 10000) request_count = 0;
+    return request_id_prefix * 10000 + request_count;
+}
+
+uint64_t WorkingChain::is_valid_request_id(uint64_t request_id) {
+    uint64_t prefix = request_id / 10000;
+    return request_id_prefix == prefix;
 }
 
 }  // namespace silkworm

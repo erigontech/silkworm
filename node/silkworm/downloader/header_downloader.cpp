@@ -42,7 +42,7 @@ HeaderDownloader::~HeaderDownloader() {
 void HeaderDownloader::receive_message(const sentry::InboundMessage& raw_message) {
     auto message = InboundBlockAnnouncementMessage::make(raw_message, working_chain_, sentry_);
 
-    log::Info() << "HeaderDownloader received message " << *message;
+    log::Trace() << "HeaderDownloader received message " << *message;
 
     messages_.push(message);
 }
@@ -54,7 +54,7 @@ void HeaderDownloader::execution_loop() {
                       [this](const sentry::InboundMessage& msg) { receive_message(msg); });
 
     while (!is_stopping() && !sentry_.is_stopping()) {
-        log::Trace() << "HeaderDownloader status: " << working_chain_.human_readable_status();
+        log::Info() << "HeaderDownloader status: " << working_chain_.human_readable_status();
 
         // pop a message from the queue
         std::shared_ptr<Message> message;
@@ -63,7 +63,7 @@ void HeaderDownloader::execution_loop() {
 
         auto in_message = std::dynamic_pointer_cast<InboundMessage>(message);
         if (in_message) {
-            log::Info() << "HeaderDownloader processing message " << *in_message;
+            log::Trace() << "HeaderDownloader processing message " << *in_message;
         }
 
         // process the message (command pattern)
@@ -71,8 +71,9 @@ void HeaderDownloader::execution_loop() {
 
         auto out_message = std::dynamic_pointer_cast<OutboundMessage>(message);
         if (out_message) {
-            log::Info() << "HeaderDownloader sent message " << *out_message;
+            log::Trace() << "HeaderDownloader sent message " << *out_message;
         }
+
     }
 
     stop();
@@ -116,7 +117,6 @@ auto HeaderDownloader::forward(bool first_sync) -> Stage::Result {
                 // check if it needs to persist some headers
                 auto command = withdraw_stable_headers();
                 auto [stable_headers, in_sync] = command->result().get();  // blocking
-                log::Trace() << "HeaderDownloader persisting " << stable_headers.size() << " headers";
                 persisted_chain_.persist(stable_headers);
 
                 // do announcements
@@ -133,7 +133,7 @@ auto HeaderDownloader::forward(bool first_sync) -> Stage::Result {
                 }
 
                 // todo: log progress - logProgressHeaders(logPrefix, prevProgress, progress)
-                log::Trace() << "HeaderDownloader status: current persisted height="
+                log::Info() << "HeaderDownloader status: current persisted height="
                              << persisted_chain_.highest_height();
             } else {
                 std::this_thread::sleep_for(1s);
@@ -161,7 +161,6 @@ auto HeaderDownloader::forward(bool first_sync) -> Stage::Result {
         result.status = Stage::Result::Error;
     }
 
-    log::Debug() << "HeaderDownloader forward operation clean exit";
     return result;
 }
 
@@ -206,7 +205,7 @@ void HeaderDownloader::send_header_requests() {
 
     auto message = std::make_shared<OutboundGetBlockHeaders>(working_chain_, sentry_);
 
-    log::Info() << "HeaderDownloader sending message " << *message;
+    log::Trace() << "HeaderDownloader sending message " << *message;
 
     messages_.push(message);
 }
@@ -217,7 +216,7 @@ void HeaderDownloader::send_announcements() {
 
     auto message = std::make_shared<OutboundNewBlockHashes>(working_chain_, sentry_);
 
-    log::Info() << "HeaderDownloader sending announcements";
+    log::Trace() << "HeaderDownloader sending announcements";
 
     messages_.push(message);
 }

@@ -1141,15 +1141,20 @@ TEST_CASE("WorkingChain - process_segment - (7) invalidating anchor") {
         headers[i].parent_hash = headers[i - 1].hash();
     }
 
+    BlockHeader h5p;
+    h5p.number = 5;
+    h5p.difficulty = 5;
+    h5p.extra_data = string_view_to_byte_view("I'm different");
+    h5p.parent_hash = headers[4].hash();
     INFO("new_anchor") {
-        auto [penalty, requestMoreHeaders] = chain.accept_headers({headers[5]}, peerId);
+        auto [penalty, requestMoreHeaders] = chain.accept_headers({headers[5], h5p, headers[6], headers[7]}, peerId);
 
         REQUIRE(penalty == Penalty::NoPenalty);
         REQUIRE(requestMoreHeaders == true);
         REQUIRE(chain.anchor_queue_.size() == 1);
         REQUIRE(chain.anchors_.size() == 1);
-        REQUIRE(chain.link_queue_.size() == 1);
-        REQUIRE(chain.links_.size() == 1);
+        REQUIRE(chain.link_queue_.size() == 4);
+        REQUIRE(chain.links_.size() == 4);
 
         auto anchor = chain.anchors_[headers[5].parent_hash];
         REQUIRE(anchor != nullptr);
@@ -1157,9 +1162,11 @@ TEST_CASE("WorkingChain - process_segment - (7) invalidating anchor") {
         REQUIRE(anchor->blockHeight == headers[5].number);
         REQUIRE(anchor->peerId == peerId);
 
-        REQUIRE(anchor->links.size() == 1);
-        REQUIRE(anchor->links[0]->hash == headers[5].hash());
-        REQUIRE(anchor->links[0]->next.size() == 0);
+        REQUIRE(anchor->links.size() == 2);
+        REQUIRE(anchor->has_child(headers[5].hash()));
+        REQUIRE(anchor->has_child(h5p.hash()));
+        auto child1 = *(anchor->find_child(headers[5].hash()));
+        REQUIRE(child1->next[0]->hash == headers[6].hash());
     }
 
     INFO("invalidating") {
@@ -1416,7 +1423,7 @@ TEST_CASE("WorkingChain - process_segment - (8) sibling with anchor invalidation
         REQUIRE(link7_it == chain.links_.end());
         auto link8_it = chain.links_.find(headers[8].hash());
         REQUIRE(link8_it == chain.links_.end());
-        
+
         REQUIRE(anchor->links[0]->hash == headers[3].hash());
         REQUIRE(anchor->links[0]->next.size() == 1);
         REQUIRE(anchor->links[0]->next[0]->hash == headers[4].hash());

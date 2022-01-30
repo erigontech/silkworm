@@ -22,7 +22,7 @@
 #include <silkworm/common/lru_cache.hpp>
 #include <silkworm/consensus/engine.hpp>
 #include <silkworm/downloader/packets/GetBlockHeadersPacket.hpp>
-#include <silkworm/downloader/preverified_hashes.hpp>
+#include "preverified_hashes.hpp"
 
 #include "chain_elements.hpp"
 #include "header_only_state.hpp"
@@ -73,8 +73,11 @@ class WorkingChain {
     BlockNum top_seen_block_height() const;
     void top_seen_block_height(BlockNum);
     std::string human_readable_status() const;
+
     std::string dump_chain_bundles() const;
-    std::string dump_orphaned_links() const;
+    void assure_no_orphaned_links() const;
+    std::set<BlockNum> search_orphaned_links() const;
+    std::string dump_orphaned_links(std::set<BlockNum>&) const;
 
     // make an anchor collection (skeleton request) or many anchor extension upon the last execution time
     auto request_headers(time_point_t tp)
@@ -98,7 +101,7 @@ class WorkingChain {
     // when a remote peer satisfy our request we receive one or more header that will be processed to fill hole in the
     // block chain
     using RequestMoreHeaders = bool;
-    auto accept_headers(const std::vector<BlockHeader>&, const PeerId&) -> std::tuple<Penalty, RequestMoreHeaders>;
+    auto accept_headers(const std::vector<BlockHeader>&, uint64_t requestId, const PeerId&) -> std::tuple<Penalty, RequestMoreHeaders>;
 
     // core functionalities: persist new headers that have persisted parent
     auto withdraw_stable_headers() -> Headers;
@@ -122,10 +125,11 @@ class WorkingChain {
 
     using Start = size_t;
     using End = size_t;
-    auto find_anchor(const Segment&) -> std::tuple<std::optional<std::shared_ptr<Anchor>>, Start>;
-    auto find_link(const Segment&, size_t start) -> std::tuple<std::optional<std::shared_ptr<Link>>, End>;
-    auto get_link(const Hash& hash) -> std::optional<std::shared_ptr<Link>>;
-    auto find_anchor(std::shared_ptr<Link> link) -> std::optional<std::shared_ptr<Anchor>>;
+    auto find_anchor(const Segment&) const -> std::tuple<std::optional<std::shared_ptr<Anchor>>, Start>;
+    auto find_link(const Segment&, size_t start) const -> std::tuple<std::optional<std::shared_ptr<Link>>, End>;
+    auto get_link(const Hash& hash) const -> std::optional<std::shared_ptr<Link>>;
+    using DeepLink = std::shared_ptr<Link>;
+    auto find_anchor(std::shared_ptr<Link> link) const -> std::tuple<std::optional<std::shared_ptr<Anchor>>, DeepLink>;
 
     void reduce_links_to(size_t limit);
     void reduce_persisted_links_to(size_t limit);
@@ -165,6 +169,12 @@ class WorkingChain {
     std::vector<Announce> announces_to_do_;
     ConsensusEngine consensus_engine_;
     CustomHeaderOnlyChainState chain_state_;
+
+    uint64_t generate_request_id();
+    uint64_t is_valid_request_id(uint64_t request_id);
+
+    uint64_t request_id_prefix;
+    uint64_t request_count = 0;
 };
 
 }  // namespace silkworm

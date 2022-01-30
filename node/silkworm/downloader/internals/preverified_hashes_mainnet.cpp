@@ -16,7 +16,7 @@
 
 #include "silkworm/common/base.hpp"
 
-#include "preverified_hashes.hpp"
+#include "silkworm/downloader/internals/preverified_hashes.hpp"
 
 namespace silkworm {
 

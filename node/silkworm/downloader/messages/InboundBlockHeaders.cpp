@@ -46,7 +46,7 @@ void InboundBlockHeaders::execute() {
     }
 
     // Save the headers
-    auto [penalty, requestMoreHeaders] = working_chain_.accept_headers(packet_.request, peerId_);
+    auto [penalty, requestMoreHeaders] = working_chain_.accept_headers(packet_.request, packet_.requestId, peerId_);
 
     // If the working chain need more headers we issue an header request here (header downloader issues this request
     // periodically, but it could not be in a forward phase at this moment)

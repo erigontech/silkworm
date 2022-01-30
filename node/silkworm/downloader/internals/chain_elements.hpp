@@ -76,7 +76,7 @@ struct Link {
         persisted = persisted_;
     }
 
-    void remove_child(std::shared_ptr<Link> child) {
+    void remove_child(const std::shared_ptr<Link>& child) {
         auto to_remove =
                 std::remove_if(next.begin(), next.end(), [child](auto& link) { return (link->hash == child->hash); });
         next.erase(to_remove, next.end());
@@ -110,7 +110,7 @@ struct Anchor {
 
     BlockNum chainLength() { return lastLinkHeight - blockHeight + 1; }
 
-    void remove_child(std::shared_ptr<Link> child) {
+    void remove_child(const std::shared_ptr<Link>& child) {
         auto to_remove =
                 std::remove_if(links.begin(), links.end(), [child](auto& link) { return (link->hash == child->hash); });
         links.erase(to_remove, links.end());

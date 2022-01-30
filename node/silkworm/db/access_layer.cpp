@@ -25,7 +25,8 @@
 namespace silkworm::db {
 
 std::optional<VersionBase> read_schema_version(mdbx::txn& txn) noexcept {
-    auto src{db::open_cursor(txn, table::kDatabaseInfo)};
+    thread_local mdbx::cursor_managed src;
+    src.bind(txn, db::open_map(txn, db::table::kDatabaseInfo));
     if (!src.seek(mdbx::slice{kDbSchemaVersionKey})) {
         return std::nullopt;
     }
@@ -55,13 +56,14 @@ void write_schema_version(mdbx::txn& txn, const VersionBase& schema_version) {
     endian::store_big_u32(&value[0], schema_version.Major);
     endian::store_big_u32(&value[4], schema_version.Minor);
     endian::store_big_u32(&value[8], schema_version.Patch);
-    auto src{db::open_cursor(txn, table::kDatabaseInfo)};
+    thread_local mdbx::cursor_managed src;
+    src.bind(txn, db::open_map(txn, db::table::kDatabaseInfo));
     src.upsert(mdbx::slice{kDbSchemaVersionKey}, to_slice(value));
 }
 
 std::optional<BlockHeader> read_header(mdbx::txn& txn, BlockNum block_number, const uint8_t (&hash)[kHashLength]) {
-    thread_local auto src{db::open_cursor(txn, table::kHeaders)};
-    src.renew(txn);
+    thread_local mdbx::cursor_managed src;
+    src.bind(txn, db::open_map(txn, db::table::kHeaders));
     auto key{block_key(block_number, hash)};
     auto data{src.find(to_slice(key), false)};
     if (!data) {
@@ -79,8 +81,8 @@ void write_header(mdbx::txn& txn, const BlockHeader& header, bool with_header_nu
     rlp::encode(value, header);
     auto header_hash{header.hash()};
     auto key{db::block_key(header.number, header_hash.bytes)};
-    thread_local auto target{db::open_cursor(txn, table::kHeaders)};
-    target.renew(txn);
+    thread_local mdbx::cursor_managed target;
+    target.bind(txn, db::open_map(txn, table::kHeaders));
     target.upsert(to_slice(key), to_slice(value));
     if (with_header_numbers) {
         write_header_number(txn, header_hash.bytes, header.number);
@@ -88,16 +90,16 @@ void write_header(mdbx::txn& txn, const BlockHeader& header, bool with_header_nu
 }
 
 void write_header_number(mdbx::txn& txn, const uint8_t (&hash)[kHashLength], const BlockNum number) {
-    thread_local auto target{db::open_cursor(txn, db::table::kHeaderNumbers)};
-    target.renew(txn);
+    thread_local mdbx::cursor_managed target;
+    target.bind(txn, db::open_map(txn, db::table::kHeaderNumbers));
     auto value{db::block_key(number)};
     target.upsert({hash, kHashLength}, to_slice(value));
 }
 
 std::optional<intx::uint256> read_total_difficulty(mdbx::txn& txn, BlockNum block_number,
                                                    const uint8_t (&hash)[kHashLength]) {
-    thread_local auto src{db::open_cursor(txn, table::kDifficulty)};
-    src.renew(txn);
+    thread_local mdbx::cursor_managed src;
+    src.bind(txn, db::open_map(txn, table::kDifficulty));
     auto key{block_key(block_number, hash)};
     auto data{src.find(to_slice(key), false)};
     if (!data) {
@@ -113,8 +115,8 @@ void write_total_difficulty(mdbx::txn& txn, const Bytes& key, const intx::uint25
     SILKWORM_ASSERT(key.length() == sizeof(BlockNum) + kHashLength);
     Bytes value{};
     rlp::encode(value, total_difficulty);
-    thread_local auto target{db::open_cursor(txn, table::kDifficulty)};
-    target.renew(txn);
+    thread_local mdbx::cursor_managed target;
+    target.bind(txn, db::open_map(txn, table::kDifficulty));
     target.upsert(to_slice(key), to_slice(value));
 }
 
@@ -129,8 +131,8 @@ void write_canonical_header(mdbx::txn& txn, const BlockHeader& header) {
 }
 
 void write_canonical_header_hash(mdbx::txn& txn, const uint8_t (&hash)[kHashLength], BlockNum number) {
-    thread_local auto target{db::open_cursor(txn, table::kCanonicalHashes)};
-    target.renew(txn);
+    thread_local mdbx::cursor_managed target;
+    target.bind(txn, db::open_map(txn, table::kCanonicalHashes));
     auto key{db::block_key(number)};
     target.upsert(to_slice(key), db::to_slice(hash));
 }
@@ -139,8 +141,8 @@ std::vector<Transaction> read_transactions(mdbx::txn& txn, uint64_t base_id, uin
     if (!count) {
         return {};
     }
-    thread_local auto src{db::open_cursor(txn, table::kBlockTransactions)};
-    src.renew(txn);
+    thread_local mdbx::cursor_managed src;
+    src.bind(txn, db::open_map(txn, table::kBlockTransactions));
     return read_transactions(src, base_id, count);
 }
 
@@ -148,8 +150,8 @@ void write_transactions(mdbx::txn& txn, const std::vector<Transaction>& transact
     if (transactions.empty()) {
         return;
     }
-    thread_local auto target{db::open_cursor(txn, table::kBlockTransactions)};
-    target.renew(txn);
+    thread_local mdbx::cursor_managed target;
+    target.bind(txn, db::open_map(txn, table::kBlockTransactions));
     auto key{db::block_key(base_id)};
     for (const auto& transaction : transactions) {
         Bytes value{};
@@ -181,8 +183,8 @@ std::vector<Transaction> read_transactions(mdbx::cursor& txn_table, uint64_t bas
 
 std::optional<BlockWithHash> read_block(mdbx::txn& txn, BlockNum block_number, bool read_senders) {
     // Locate canonical hash
-    thread_local auto canonical_hashes_cursor{db::open_cursor(txn, table::kCanonicalHashes)};
-    canonical_hashes_cursor.renew(txn);
+    thread_local mdbx::cursor_managed canonical_hashes_cursor;
+    canonical_hashes_cursor.bind(txn, db::open_map(txn, table::kCanonicalHashes));
     auto key{block_key(block_number)};
     auto data{canonical_hashes_cursor.find(to_slice(key), false)};
     if (!data) {
@@ -194,8 +196,8 @@ std::optional<BlockWithHash> read_block(mdbx::txn& txn, BlockNum block_number, b
     std::memcpy(bh.hash.bytes, data.value.data(), kHashLength);
 
     // Locate header
-    thread_local auto headers_cursor{db::open_cursor(txn, table::kHeaders)};
-    headers_cursor.renew(txn);
+    thread_local mdbx::cursor_managed headers_cursor;
+    headers_cursor.bind(txn, db::open_map(txn, table::kHeaders));
     key = block_key(block_number, bh.hash.bytes);
     data = headers_cursor.find(to_slice(key), false);
     if (!data) {
@@ -224,8 +226,8 @@ std::optional<BlockBody> read_body(mdbx::txn& txn, BlockNum block_number, const 
 }
 
 std::optional<BlockBody> read_body(mdbx::txn& txn, const Bytes& key, bool read_senders) {
-    thread_local auto src{db::open_cursor(txn, table::kBlockBodies)};
-    src.renew(txn);
+    thread_local mdbx::cursor_managed src;
+    src.bind(txn, db::open_map(txn, table::kBlockBodies));
     auto data{src.find(to_slice(key), false)};
     if (!data) {
         return std::nullopt;
@@ -265,8 +267,8 @@ void write_body(mdbx::txn& txn, const BlockBody& body, const uint8_t (&hash)[kHa
         increment_map_sequence(txn, table::kBlockTransactions.name, body_for_storage.txn_count);
     Bytes value{body_for_storage.encode()};
     auto key{db::block_key(number, hash)};
-    thread_local auto target{db::open_cursor(txn, table::kBlockBodies)};
-    target.renew(txn);
+    thread_local mdbx::cursor_managed target;
+    target.bind(txn, db::open_map(txn, table::kBlockBodies));
     target.upsert(to_slice(key), to_slice(value));
 
     write_transactions(txn, body.transactions, body_for_storage.base_txn_id);
@@ -280,8 +282,8 @@ std::vector<evmc::address> read_senders(mdbx::txn& txn, BlockNum block_number, c
 std::vector<evmc::address> read_senders(mdbx::txn& txn, const Bytes& key) {
     std::vector<evmc::address> senders{};
 
-    thread_local auto src{db::open_cursor(txn, table::kSenders)};
-    src.renew(txn);
+    thread_local mdbx::cursor_managed src;
+    src.bind(txn, db::open_map(txn, table::kSenders));
     auto data{src.find(to_slice(key), /*throw_notfound = */ false)};
     if (data) {
         SILKWORM_ASSERT(data.value.length() % kAddressLength == 0);
@@ -292,8 +294,8 @@ std::vector<evmc::address> read_senders(mdbx::txn& txn, const Bytes& key) {
 }
 
 std::optional<ByteView> read_code(mdbx::txn& txn, const evmc::bytes32& code_hash) {
-    thread_local auto src{db::open_cursor(txn, table::kCode)};
-    src.renew(txn);
+    thread_local mdbx::cursor_managed src;
+    src.bind(txn, db::open_map(txn, table::kCode));
     auto key{to_slice(code_hash)};
     auto data{src.find(key, /*throw_notfound=*/false)};
     if (!data) {
@@ -304,8 +306,8 @@ std::optional<ByteView> read_code(mdbx::txn& txn, const evmc::bytes32& code_hash
 
 // Erigon FindByHistory for account
 static std::optional<ByteView> historical_account(mdbx::txn& txn, const evmc::address& address, BlockNum block_number) {
-    thread_local auto history_table{db::open_cursor(txn, table::kAccountHistory)};
-    history_table.renew(txn);
+    thread_local mdbx::cursor_managed history_table;
+    history_table.bind(txn, db::open_map(txn, table::kAccountHistory));
     const Bytes history_key{account_history_key(address, block_number)};
     const auto data{history_table.lower_bound(to_slice(history_key), /*throw_notfound=*/false)};
     if (!data || !data.key.starts_with(to_slice(address))) {
@@ -318,8 +320,8 @@ static std::optional<ByteView> historical_account(mdbx::txn& txn, const evmc::ad
         return std::nullopt;
     }
 
-    thread_local auto change_set_table{db::open_cursor(txn, table::kAccountChangeSet)};
-    change_set_table.renew(txn);
+    thread_local mdbx::cursor_managed change_set_table;
+    change_set_table.bind(txn, db::open_map(txn, table::kAccountChangeSet));
     const Bytes change_set_key{block_key(*change_block)};
     return find_value_suffix(change_set_table, change_set_key, address);
 }
@@ -327,8 +329,8 @@ static std::optional<ByteView> historical_account(mdbx::txn& txn, const evmc::ad
 // Erigon FindByHistory for storage
 static std::optional<ByteView> historical_storage(mdbx::txn& txn, const evmc::address& address, uint64_t incarnation,
                                                   const evmc::bytes32& location, BlockNum block_number) {
-    thread_local auto history_table{db::open_cursor(txn, table::kStorageHistory)};
-    history_table.renew(txn);
+    thread_local mdbx::cursor_managed history_table;
+    history_table.bind(txn, db::open_map(txn, table::kStorageHistory));
     const Bytes history_key{storage_history_key(address, location, block_number)};
     const auto data{history_table.lower_bound(to_slice(history_key), /*throw_notfound=*/false)};
     if (!data) {
@@ -349,8 +351,8 @@ static std::optional<ByteView> historical_storage(mdbx::txn& txn, const evmc::ad
         return std::nullopt;
     }
 
-    thread_local auto change_set_table{db::open_cursor(txn, table::kStorageChangeSet)};
-    change_set_table.renew(txn);
+    thread_local mdbx::cursor_managed change_set_table;
+    change_set_table.bind(txn, db::open_map(txn, table::kStorageChangeSet));
     const Bytes change_set_key{storage_change_key(*change_block, address, incarnation)};
     return find_value_suffix(change_set_table, change_set_key, location);
 }
@@ -360,8 +362,8 @@ std::optional<Account> read_account(mdbx::txn& txn, const evmc::address& address
                                                           : std::nullopt};
 
     if (!encoded.has_value()) {
-        thread_local auto src{db::open_cursor(txn, table::kPlainState)};
-        src.renew(txn);
+        thread_local mdbx::cursor_managed src;
+        src.bind(txn, db::open_map(txn, table::kPlainState));
         if (auto data{src.find({address.bytes, sizeof(evmc::address)}, false)}; data.done) {
             encoded.emplace(from_slice(data.value));
         }
@@ -375,8 +377,8 @@ std::optional<Account> read_account(mdbx::txn& txn, const evmc::address& address
 
     if (acc.incarnation > 0 && acc.code_hash == kEmptyHash) {
         // restore code hash
-        thread_local auto src{db::open_cursor(txn, table::kPlainContractCode)};
-        src.renew(txn);
+        thread_local mdbx::cursor_managed src;
+        src.bind(txn, db::open_map(txn, table::kPlainContractCode));
         auto key{storage_prefix(address, acc.incarnation)};
         if (auto data{src.find(to_slice(key), /*throw_notfound*/ false)};
             data.done && data.value.length() == kHashLength) {
@@ -393,8 +395,8 @@ evmc::bytes32 read_storage(mdbx::txn& txn, const evmc::address& address, uint64_
                                     ? historical_storage(txn, address, incarnation, location, block_num.value())
                                     : std::nullopt};
     if (!val.has_value()) {
-        thread_local auto src{db::open_cursor(txn, table::kPlainState)};
-        src.renew(txn);
+        thread_local mdbx::cursor_managed src;
+        src.bind(txn, db::open_map(txn, table::kPlainState));
         auto key{storage_prefix(address, incarnation)};
         val = find_value_suffix(src, key, location);
     }
@@ -420,8 +422,8 @@ std::optional<uint64_t> read_previous_incarnation(mdbx::txn& txn, const evmc::ad
         return historical_previous_incarnation();
     }
 
-    thread_local auto src{db::open_cursor(txn, table::kIncarnationMap)};
-    src.renew(txn);
+    thread_local mdbx::cursor_managed src;
+    src.bind(txn, db::open_map(txn, table::kIncarnationMap));
     if (auto data{src.find(to_slice(address), /*throw_notfound=*/false)}; data.done) {
         SILKWORM_ASSERT(data.value.length() == 8);
         return endian::load_big_u64(static_cast<uint8_t*>(data.value.data()));
@@ -432,8 +434,8 @@ std::optional<uint64_t> read_previous_incarnation(mdbx::txn& txn, const evmc::ad
 AccountChanges read_account_changes(mdbx::txn& txn, BlockNum block_num) {
     AccountChanges changes;
 
-    thread_local auto src{db::open_cursor(txn, table::kAccountChangeSet)};
-    src.renew(txn);
+    thread_local mdbx::cursor_managed src;
+    src.bind(txn, db::open_map(txn, table::kAccountChangeSet));
     auto key{block_key(block_num)};
 
     auto data{src.find(to_slice(key), /*throw_notfound=*/false)};
@@ -454,8 +456,8 @@ StorageChanges read_storage_changes(mdbx::txn& txn, BlockNum block_num) {
 
     const Bytes block_prefix{block_key(block_num)};
 
-    thread_local auto src{db::open_cursor(txn, table::kStorageChangeSet)};
-    src.renew(txn);
+    thread_local mdbx::cursor_managed src;
+    src.bind(txn, db::open_map(txn, table::kStorageChangeSet));
 
     auto key_prefix{to_slice(block_prefix)};
     auto data{src.lower_bound(key_prefix, false)};
@@ -485,15 +487,15 @@ StorageChanges read_storage_changes(mdbx::txn& txn, BlockNum block_num) {
 }
 
 std::optional<ChainConfig> read_chain_config(mdbx::txn& txn) {
-    thread_local auto canonical_hashes_cursor{db::open_cursor(txn, table::kCanonicalHashes)};
-    canonical_hashes_cursor.renew(txn);
+    thread_local mdbx::cursor_managed canonical_hashes_cursor;
+    canonical_hashes_cursor.bind(txn, db::open_map(txn, table::kCanonicalHashes));
     auto data{canonical_hashes_cursor.find(to_slice(block_key(0)), /*throw_notfound=*/false)};
     if (!data) {
         return std::nullopt;
     }
 
-    thread_local auto config_cursor{db::open_cursor(txn, table::kConfig)};
-    config_cursor.renew(txn);
+    thread_local mdbx::cursor_managed config_cursor;
+    config_cursor.bind(txn, db::open_map(txn, table::kConfig));
     const auto key{data.value};
     data = config_cursor.find(key, /*throw_notfound=*/false);
     if (!data) {
@@ -506,15 +508,15 @@ std::optional<ChainConfig> read_chain_config(mdbx::txn& txn) {
 }
 
 void write_head_header_hash(mdbx::txn& txn, const uint8_t (&hash)[kHashLength]) {
-    thread_local auto target{db::open_cursor(txn, table::kHeadHeader)};
-    target.renew(txn);
+    thread_local mdbx::cursor_managed target;
+    target.bind(txn, db::open_map(txn, table::kHeadHeader));
     mdbx::slice key(db::table::kLastHeaderKey);
     target.upsert(key, to_slice(hash));
 }
 
 std::optional<evmc::bytes32> read_head_header_hash(mdbx::txn& txn) {
-    thread_local auto source{db::open_cursor(txn, table::kHeadHeader)};
-    source.renew(txn);
+    thread_local mdbx::cursor_managed source;
+    source.bind(txn, db::open_map(txn, table::kHeadHeader));
     mdbx::slice key(db::table::kLastHeaderKey);
     auto data{source.find(key, /*throw_notfound=*/false)};
     if (!data || data.value.length() != sizeof(evmc::bytes32)) {
@@ -526,8 +528,8 @@ std::optional<evmc::bytes32> read_head_header_hash(mdbx::txn& txn) {
 uint64_t increment_map_sequence(mdbx::txn& txn, const char* map_name, uint64_t increment) {
     uint64_t current_value{read_map_sequence(txn, map_name)};
     if (increment) {
-        thread_local auto target{db::open_cursor(txn, table::kSequence)};
-        target.renew(txn);
+        thread_local mdbx::cursor_managed target;
+        target.bind(txn, db::open_map(txn, table::kSequence));
         mdbx::slice key(map_name);
         uint64_t new_value{current_value + increment};  // Note ! May overflow
         Bytes new_data(sizeof(uint64_t), '\0');
@@ -538,8 +540,8 @@ uint64_t increment_map_sequence(mdbx::txn& txn, const char* map_name, uint64_t i
 }
 
 uint64_t read_map_sequence(mdbx::txn& txn, const char* map_name) {
-    thread_local auto target{db::open_cursor(txn, table::kSequence)};
-    target.renew(txn);
+    thread_local mdbx::cursor_managed target;
+    target.bind(txn, db::open_map(txn, table::kSequence));
     mdbx::slice key(map_name);
     auto data{target.find(key, /*throw_notfound=*/false)};
     if (!data.done) {

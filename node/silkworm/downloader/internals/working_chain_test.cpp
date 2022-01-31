@@ -30,11 +30,12 @@ class WorkingChain_ForTest : public WorkingChain {
   public:  // publication of internal members to test methods functioning
     using WorkingChain::anchor_queue_;
     using WorkingChain::anchors_;
+    using WorkingChain::find_anchor;
+    using WorkingChain::generate_request_id;
     using WorkingChain::link_queue_;
     using WorkingChain::links_;
-    using WorkingChain::WorkingChain;
     using WorkingChain::reduce_links_to;
-    using WorkingChain::find_anchor;
+    using WorkingChain::WorkingChain;
 
     WorkingChain_ForTest() : WorkingChain(consensus::engine_factory(ChainIdentity::mainnet.chain)) {}
 };
@@ -329,11 +330,11 @@ TEST_CASE("HeaderList - split_into_segments - Four headers connected") {
     auto [segments, penalty] = headerList->split_into_segments();
 
     REQUIRE(penalty == Penalty::NoPenalty);
-    REQUIRE(segments.size() == 3);     // 3 segment
-    REQUIRE(segments[0].size() == 1);  // segment 0 - 1 headers
-    REQUIRE(segments[1].size() == 1);  // segment 1 - 1 headers
-    REQUIRE(segments[2].size() == 2);  // segment 2 - 2 headers
-    REQUIRE(segments[2][0]->number == header2.number); // segments are ordered from high number to
+    REQUIRE(segments.size() == 3);                      // 3 segment
+    REQUIRE(segments[0].size() == 1);                   // segment 0 - 1 headers
+    REQUIRE(segments[1].size() == 1);                   // segment 1 - 1 headers
+    REQUIRE(segments[2].size() == 2);                   // segment 2 - 2 headers
+    REQUIRE(segments[2][0]->number == header2.number);  // segments are ordered from high number to
     REQUIRE(segments[2][1]->number == header1.number);
     REQUIRE(segments[0][0] != segments[1][0]);
 }
@@ -346,8 +347,8 @@ TEST_CASE("WorkingChain - process_segment - (1) simple chain") {
 
     WorkingChain_ForTest chain;
     chain.top_seen_block_height(1'000'000);
-
-    PeerId peerId = "1";
+    auto request_id = chain.generate_request_id();
+    PeerId peer_id = "1";
 
     std::array<BlockHeader, 10> headers;
 
@@ -367,7 +368,7 @@ TEST_CASE("WorkingChain - process_segment - (1) simple chain") {
      *         1 anchor, 2 links
      */
     INFO("new_anchor") {
-        auto [penalty, requestMoreHeaders] = chain.accept_headers({headers[1], headers[2]}, peerId);
+        auto [penalty, requestMoreHeaders] = chain.accept_headers({headers[1], headers[2]}, request_id, peer_id);
 
         REQUIRE(penalty == Penalty::NoPenalty);
         REQUIRE(requestMoreHeaders == true);
@@ -381,7 +382,7 @@ TEST_CASE("WorkingChain - process_segment - (1) simple chain") {
         REQUIRE(anchor->parentHash == headers[1].parent_hash);
         REQUIRE(anchor->blockHeight == headers[1].number);
         REQUIRE(anchor->lastLinkHeight == headers[2].number);
-        REQUIRE(anchor->peerId == peerId);
+        REQUIRE(anchor->peerId == peer_id);
 
         REQUIRE(anchor->links.size() == 1);
         REQUIRE(anchor->links[0]->hash == headers[1].hash());
@@ -399,7 +400,7 @@ TEST_CASE("WorkingChain - process_segment - (1) simple chain") {
      *         1 anchor, 4 links
      */
     INFO("extend_up") {
-        auto [penalty, requestMoreHeaders] = chain.accept_headers({headers[3], headers[4]}, peerId);
+        auto [penalty, requestMoreHeaders] = chain.accept_headers({headers[3], headers[4]}, request_id, peer_id);
 
         REQUIRE(penalty == Penalty::NoPenalty);
         REQUIRE(requestMoreHeaders == false);
@@ -435,7 +436,7 @@ TEST_CASE("WorkingChain - process_segment - (1) simple chain") {
      *         2 anchor, 6 links
      */
     INFO("new_anchor") {
-        auto [penalty, requestMoreHeaders] = chain.accept_headers({headers[8], headers[9]}, peerId);
+        auto [penalty, requestMoreHeaders] = chain.accept_headers({headers[8], headers[9]}, request_id, peer_id);
 
         REQUIRE(penalty == Penalty::NoPenalty);
         REQUIRE(requestMoreHeaders == true);
@@ -484,7 +485,7 @@ TEST_CASE("WorkingChain - process_segment - (1) simple chain") {
      *         2 anchor, 8 links
      */
     INFO("extend_down") {
-        auto [penalty, requestMoreHeaders] = chain.accept_headers({headers[6], headers[7]}, peerId);
+        auto [penalty, requestMoreHeaders] = chain.accept_headers({headers[6], headers[7]}, request_id, peer_id);
 
         REQUIRE(penalty == Penalty::NoPenalty);
         REQUIRE(requestMoreHeaders == true);
@@ -527,7 +528,7 @@ TEST_CASE("WorkingChain - process_segment - (1) simple chain") {
      *         1 anchor, 9 links
      */
     INFO("connect") {
-        auto [penalty, requestMoreHeaders] = chain.accept_headers({headers[5]}, peerId);
+        auto [penalty, requestMoreHeaders] = chain.accept_headers({headers[5]}, request_id, peer_id);
 
         REQUIRE(penalty == Penalty::NoPenalty);
         REQUIRE(requestMoreHeaders == false);
@@ -545,7 +546,7 @@ TEST_CASE("WorkingChain - process_segment - (1) simple chain") {
 
         size_t i = 1;
         auto* current_links = &(anchor->links);
-        while(current_links->size() > 0) {
+        while (current_links->size() > 0) {
             REQUIRE(current_links->at(0)->hash == headers[i].hash());
             current_links = &(current_links->at(0)->next);
             i++;
@@ -571,8 +572,8 @@ TEST_CASE("WorkingChain - process_segment - (2) extending down with 2 siblings")
 
     WorkingChain_ForTest chain;
     chain.top_seen_block_height(1'000'000);
-
-    PeerId peerId = "1";
+    auto request_id = chain.generate_request_id();
+    PeerId peer_id = "1";
 
     std::array<BlockHeader, 10> headers;
 
@@ -596,9 +597,9 @@ TEST_CASE("WorkingChain - process_segment - (2) extending down with 2 siblings")
     h2b.parent_hash = h1.hash();
     h2b.extra_data = string_view_to_byte_view("h2b");  // so hash(h2) != hash(h2b)
 
-    chain.accept_headers({h2, h2b}, peerId);
+    chain.accept_headers({h2, h2b}, request_id, peer_id);
 
-    chain.accept_headers({h1}, peerId);
+    chain.accept_headers({h1}, request_id, peer_id);
 
     REQUIRE(chain.anchors_.size() == 1);
 
@@ -627,8 +628,8 @@ TEST_CASE("WorkingChain - process_segment - (3) chain with branches") {
 
     WorkingChain_ForTest chain;
     chain.top_seen_block_height(1'000'000);
-
-    PeerId peerId = "1";
+    auto request_id = chain.generate_request_id();
+    PeerId peer_id = "1";
 
     std::array<BlockHeader, 10> headers;
 
@@ -678,7 +679,7 @@ TEST_CASE("WorkingChain - process_segment - (3) chain with branches") {
      *         1 anchor, 1 links -> triggering new_anchor
      */
     INFO("creating first anchor") {
-        auto [penalty, requestMoreHeaders] = chain.accept_headers({headers[1]}, peerId);
+        auto [penalty, requestMoreHeaders] = chain.accept_headers({headers[1]}, request_id, peer_id);
 
         REQUIRE(penalty == Penalty::NoPenalty);
         REQUIRE(requestMoreHeaders == true);
@@ -691,7 +692,7 @@ TEST_CASE("WorkingChain - process_segment - (3) chain with branches") {
         REQUIRE(anchor != nullptr);
         REQUIRE(anchor->parentHash == headers[1].parent_hash);
         REQUIRE(anchor->blockHeight == headers[1].number);
-        REQUIRE(anchor->peerId == peerId);
+        REQUIRE(anchor->peerId == peer_id);
 
         REQUIRE(anchor->links.size() == 1);
         REQUIRE(anchor->links[0]->hash == headers[1].hash());
@@ -710,7 +711,8 @@ TEST_CASE("WorkingChain - process_segment - (3) chain with branches") {
      *         1 anchor, 5 links
      */
     INFO("adding 3 segments") {
-        auto [penalty, requestMoreHeaders] = chain.accept_headers({headers[2], h3a, h4a, headers[3]}, peerId);
+        auto [penalty, requestMoreHeaders] =
+            chain.accept_headers({headers[2], h3a, h4a, headers[3]}, request_id, peer_id);
 
         REQUIRE(penalty == Penalty::NoPenalty);
         REQUIRE(requestMoreHeaders == true);
@@ -723,7 +725,7 @@ TEST_CASE("WorkingChain - process_segment - (3) chain with branches") {
         REQUIRE(anchor != nullptr);
         REQUIRE(anchor->parentHash == headers[1].parent_hash);
         REQUIRE(anchor->blockHeight == headers[1].number);
-        REQUIRE(anchor->peerId == peerId);
+        REQUIRE(anchor->peerId == peer_id);
 
         REQUIRE(anchor->links.size() == 1);
         REQUIRE(anchor->links[0]->hash == headers[1].hash());
@@ -751,7 +753,8 @@ TEST_CASE("WorkingChain - process_segment - (3) chain with branches") {
      *         2 anchor, 8 links
      */
     INFO("adding a disconnected segment") {
-        auto [penalty, requestMoreHeaders] = chain.accept_headers({headers[8], headers[9], headers[7]}, peerId);
+        auto [penalty, requestMoreHeaders] =
+            chain.accept_headers({headers[8], headers[9], headers[7]}, request_id, peer_id);
 
         REQUIRE(penalty == Penalty::NoPenalty);
         REQUIRE(requestMoreHeaders == true);
@@ -764,7 +767,7 @@ TEST_CASE("WorkingChain - process_segment - (3) chain with branches") {
         REQUIRE(anchor != nullptr);
         REQUIRE(anchor->parentHash == headers[7].parent_hash);
         REQUIRE(anchor->blockHeight == headers[7].number);
-        REQUIRE(anchor->peerId == peerId);
+        REQUIRE(anchor->peerId == peer_id);
 
         REQUIRE(anchor->links.size() == 1);
         REQUIRE(anchor->links[0]->hash == headers[7].hash());
@@ -788,7 +791,7 @@ TEST_CASE("WorkingChain - process_segment - (3) chain with branches") {
      */
     INFO("adding 4 segments connecting chain") {
         auto [penalty, requestMoreHeaders] =
-            chain.accept_headers({headers[5], headers[6], h6a, h6b, headers[4], h7b}, peerId);
+            chain.accept_headers({headers[5], headers[6], h6a, h6b, headers[4], h7b}, request_id, peer_id);
 
         REQUIRE(penalty == Penalty::NoPenalty);
         REQUIRE(requestMoreHeaders == true);
@@ -842,8 +845,8 @@ TEST_CASE("WorkingChain - process_segment - (4) pre-verified hashes on canonical
 
     WorkingChain_ForTest chain;
     chain.top_seen_block_height(1'000'000);
-
-    PeerId peerId = "1";
+    auto request_id = chain.generate_request_id();
+    PeerId peer_id = "1";
 
     std::array<BlockHeader, 10> headers;
 
@@ -891,17 +894,17 @@ TEST_CASE("WorkingChain - process_segment - (4) pre-verified hashes on canonical
     chain.set_preverified_hashes(&mynet_preverified_hashes);
 
     // building the first part of the chain
-    chain.accept_headers({headers[1], headers[2], headers[3], h3a, h4a}, peerId);
+    chain.accept_headers({headers[1], headers[2], headers[3], h3a, h4a}, request_id, peer_id);
 
     // adding the third part fo the chain, disconnected from the first, and that contains a pre-verified hash
-    chain.accept_headers({h7b, headers[8], headers[9]}, peerId);
+    chain.accept_headers({h7b, headers[8], headers[9]}, request_id, peer_id);
 
     auto link1 = chain.links_[headers[1].hash()];
     REQUIRE(link1 != nullptr);
     REQUIRE(link1->preverified == false);  // pre-verification can be propagated
 
     // adding the connecting part of the chain - we expect that pre-verification will be propagated
-    chain.accept_headers({headers[4], headers[5], headers[6], h6a, h6b, headers[7]}, peerId);
+    chain.accept_headers({headers[4], headers[5], headers[6], h6a, h6b, headers[7]}, request_id, peer_id);
 
     // a simple test
     REQUIRE(link1->preverified == true);  // verify propagation
@@ -932,8 +935,8 @@ TEST_CASE("WorkingChain - process_segment - (5) pre-verified hashes with canonic
 
     WorkingChain_ForTest chain;
     chain.top_seen_block_height(1'000'000);
-
-    PeerId peerId = "1";
+    auto request_id = chain.generate_request_id();
+    PeerId peer_id = "1";
 
     std::array<BlockHeader, 6> a_headers;
 
@@ -960,10 +963,10 @@ TEST_CASE("WorkingChain - process_segment - (5) pre-verified hashes with canonic
     chain.set_preverified_hashes(&mynet_preverified_hashes);
 
     // building the first branch of the chain
-    chain.accept_headers({a_headers[1], a_headers[2], a_headers[3], a_headers[4], a_headers[5]}, peerId);
+    chain.accept_headers({a_headers[1], a_headers[2], a_headers[3], a_headers[4], a_headers[5]}, request_id, peer_id);
 
     // adding the second branch that becomes canonical
-    chain.accept_headers({b_headers[3], b_headers[4], b_headers[5], b_headers[6]}, peerId);
+    chain.accept_headers({b_headers[3], b_headers[4], b_headers[5], b_headers[6]}, request_id, peer_id);
 
     // verify
     for (size_t i = 1; i < a_headers.size(); i++) {
@@ -981,7 +984,6 @@ TEST_CASE("WorkingChain - process_segment - (5) pre-verified hashes with canonic
     }
 }
 
-
 // Corner cases
 // -----------------------------------------------------------------------------------------------------------------
 
@@ -990,8 +992,8 @@ TEST_CASE("WorkingChain - process_segment - (6) (malicious) siblings") {
 
     WorkingChain_ForTest chain;
     chain.top_seen_block_height(1'000'000);
-
-    PeerId peerId = "1";
+    auto request_id = chain.generate_request_id();
+    PeerId peer_id = "1";
 
     std::array<BlockHeader, 10> headers;
 
@@ -1007,7 +1009,7 @@ TEST_CASE("WorkingChain - process_segment - (6) (malicious) siblings") {
      *         h5
      */
     INFO("new_anchor") {
-        auto [penalty, requestMoreHeaders] = chain.accept_headers({headers[5]}, peerId);
+        auto [penalty, requestMoreHeaders] = chain.accept_headers({headers[5]}, request_id, peer_id);
 
         REQUIRE(penalty == Penalty::NoPenalty);
         REQUIRE(requestMoreHeaders == true);
@@ -1020,7 +1022,7 @@ TEST_CASE("WorkingChain - process_segment - (6) (malicious) siblings") {
         REQUIRE(anchor != nullptr);
         REQUIRE(anchor->parentHash == headers[5].parent_hash);
         REQUIRE(anchor->blockHeight == headers[5].number);
-        REQUIRE(anchor->peerId == peerId);
+        REQUIRE(anchor->peerId == peer_id);
 
         REQUIRE(anchor->links.size() == 1);
         REQUIRE(anchor->links[0]->hash == headers[5].hash());
@@ -1032,7 +1034,7 @@ TEST_CASE("WorkingChain - process_segment - (6) (malicious) siblings") {
      */
     INFO("extend_down overlapping") {
         auto [penalty, requestMoreHeaders] = chain.accept_headers(
-            {headers[5], headers[4], headers[3]}, peerId);  // add a segment that overlap the previous one
+            {headers[5], headers[4], headers[3]}, request_id, peer_id);  // add a segment that overlap the previous one
 
         REQUIRE(penalty == Penalty::NoPenalty);
         REQUIRE(requestMoreHeaders == true);
@@ -1053,7 +1055,6 @@ TEST_CASE("WorkingChain - process_segment - (6) (malicious) siblings") {
         REQUIRE(anchor->links[0]->next[0]->next.size() == 1);
         REQUIRE(anchor->links[0]->next[0]->next[0]->hash == headers[5].hash());
         REQUIRE(anchor->links[0]->next[0]->next[0]->next.size() == 0);
-
     }
 
     /* chain:
@@ -1063,11 +1064,11 @@ TEST_CASE("WorkingChain - process_segment - (6) (malicious) siblings") {
     INFO("extend up with wrong header") {
         BlockHeader h5p;
         h5p.number = 5;
-        h5p.parent_hash = headers[2].hash();    // wrong, it should have number = 3
+        h5p.parent_hash = headers[2].hash();  // wrong, it should have number = 3
         h5p.difficulty = headers[2].difficulty + 1;
 
         // add a segment with a siblings with far parent
-        auto [penalty, requestMoreHeaders] = chain.accept_headers({h5p}, peerId);
+        auto [penalty, requestMoreHeaders] = chain.accept_headers({h5p}, request_id, peer_id);
 
         REQUIRE(penalty == Penalty::NoPenalty);
         REQUIRE(requestMoreHeaders == false);
@@ -1080,7 +1081,7 @@ TEST_CASE("WorkingChain - process_segment - (6) (malicious) siblings") {
         REQUIRE(anchor != nullptr);
         REQUIRE(anchor->parentHash == headers[3].parent_hash);
         REQUIRE(anchor->blockHeight == headers[3].number);
-        REQUIRE(anchor->links.size() == 2); // 2 siblings
+        REQUIRE(anchor->links.size() == 2);  // 2 siblings
 
         REQUIRE(anchor->links[0]->hash == headers[3].hash());
         REQUIRE(anchor->links[0]->next.size() == 1);
@@ -1100,11 +1101,11 @@ TEST_CASE("WorkingChain - process_segment - (6) (malicious) siblings") {
     INFO("new anchor with unknown parent") {
         BlockHeader h5s;
         h5s.number = 5;
-        h5s.parent_hash = h5s.hash(); // a wrong hash
+        h5s.parent_hash = h5s.hash();  // a wrong hash
         h5s.difficulty = 5;
 
         // add a segment with a siblings with far parent
-        auto [penalty, requestMoreHeaders] = chain.accept_headers({h5s}, peerId);
+        auto [penalty, requestMoreHeaders] = chain.accept_headers({h5s}, request_id, peer_id);
 
         REQUIRE(penalty == Penalty::NoPenalty);
         REQUIRE(requestMoreHeaders == true);
@@ -1117,7 +1118,7 @@ TEST_CASE("WorkingChain - process_segment - (6) (malicious) siblings") {
         REQUIRE(anchor != nullptr);
         REQUIRE(anchor->parentHash == headers[3].parent_hash);
         REQUIRE(anchor->blockHeight == headers[3].number);
-        REQUIRE(anchor->links.size() == 2); // 2 siblings
+        REQUIRE(anchor->links.size() == 2);  // 2 siblings
 
         auto anchor2 = chain.anchors_[h5s.parent_hash];
         REQUIRE(anchor2 != nullptr);
@@ -1130,8 +1131,8 @@ TEST_CASE("WorkingChain - process_segment - (7) invalidating anchor") {
 
     WorkingChain_ForTest chain;
     chain.top_seen_block_height(1'000'000);
-
-    PeerId peerId = "1";
+    auto request_id = chain.generate_request_id();
+    PeerId peer_id = "1";
 
     std::array<BlockHeader, 10> headers;
 
@@ -1147,7 +1148,8 @@ TEST_CASE("WorkingChain - process_segment - (7) invalidating anchor") {
     h5p.extra_data = string_view_to_byte_view("I'm different");
     h5p.parent_hash = headers[4].hash();
     INFO("new_anchor") {
-        auto [penalty, requestMoreHeaders] = chain.accept_headers({headers[5], h5p, headers[6], headers[7]}, peerId);
+        auto [penalty, requestMoreHeaders] =
+            chain.accept_headers({headers[5], h5p, headers[6], headers[7]}, request_id, peer_id);
 
         REQUIRE(penalty == Penalty::NoPenalty);
         REQUIRE(requestMoreHeaders == true);
@@ -1160,7 +1162,7 @@ TEST_CASE("WorkingChain - process_segment - (7) invalidating anchor") {
         REQUIRE(anchor != nullptr);
         REQUIRE(anchor->parentHash == headers[5].parent_hash);
         REQUIRE(anchor->blockHeight == headers[5].number);
-        REQUIRE(anchor->peerId == peerId);
+        REQUIRE(anchor->peerId == peer_id);
 
         REQUIRE(anchor->links.size() == 2);
         REQUIRE(anchor->has_child(headers[5].hash()));
@@ -1192,7 +1194,7 @@ TEST_CASE("WorkingChain - process_segment - (7) invalidating anchor") {
 
     INFO("new_anchor again") {
         auto [penalty, requestMoreHeaders] = chain.accept_headers(
-            {headers[5], headers[4], headers[3]}, peerId);  // add a segment that overlap the previous one
+            {headers[5], headers[4], headers[3]}, request_id, peer_id);  // add a segment that overlap the previous one
 
         REQUIRE(penalty == Penalty::NoPenalty);
         REQUIRE(requestMoreHeaders == true);
@@ -1213,9 +1215,7 @@ TEST_CASE("WorkingChain - process_segment - (7) invalidating anchor") {
         REQUIRE(anchor->links[0]->next[0]->next.size() == 1);
         REQUIRE(anchor->links[0]->next[0]->next[0]->hash == headers[5].hash());
         REQUIRE(anchor->links[0]->next[0]->next[0]->next.size() == 0);
-
     }
-
 }
 
 TEST_CASE("WorkingChain - process_segment - (8) sibling with anchor invalidation and links reduction") {
@@ -1223,8 +1223,8 @@ TEST_CASE("WorkingChain - process_segment - (8) sibling with anchor invalidation
 
     WorkingChain_ForTest chain;
     chain.top_seen_block_height(1'000'000);
-
-    PeerId peerId = "1";
+    auto request_id = chain.generate_request_id();
+    PeerId peer_id = "1";
 
     std::array<BlockHeader, 10> headers;
 
@@ -1237,11 +1237,10 @@ TEST_CASE("WorkingChain - process_segment - (8) sibling with anchor invalidation
     BlockHeader h5p;
     h5p.number = 5;
     h5p.difficulty = 5;
-    h5p.parent_hash = h5p.hash(); // a wrong hash, h5p hash will also be different
+    h5p.parent_hash = h5p.hash();  // a wrong hash, h5p hash will also be different
 
-    INFO("a wrong anchor")
-    {
-        auto[penalty, requestMoreHeaders] = chain.accept_headers({h5p}, peerId);
+    INFO("a wrong anchor") {
+        auto [penalty, requestMoreHeaders] = chain.accept_headers({h5p}, request_id, peer_id);
 
         REQUIRE(penalty == Penalty::NoPenalty);
         REQUIRE(requestMoreHeaders == true);
@@ -1255,17 +1254,17 @@ TEST_CASE("WorkingChain - process_segment - (8) sibling with anchor invalidation
         REQUIRE(anchor->parentHash == h5p.parent_hash);
         REQUIRE(anchor->blockHeight == h5p.number);
         REQUIRE(anchor->lastLinkHeight == h5p.number);
-        REQUIRE(anchor->peerId == peerId);
+        REQUIRE(anchor->peerId == peer_id);
 
         REQUIRE(anchor->links.size() == 1);
         REQUIRE(anchor->links[0]->hash == h5p.hash());
         REQUIRE(anchor->links[0]->next.size() == 0);
     }
 
-    INFO("a segment with a sibling")
-    {
+    INFO("a segment with a sibling") {
         // ad a segment terminating with the header[5] that is a sibling of the anchor h5p
-        auto[penalty, requestMoreHeaders] = chain.accept_headers({headers[3], headers[4], headers[5]}, peerId);
+        auto [penalty, requestMoreHeaders] =
+            chain.accept_headers({headers[3], headers[4], headers[5]}, request_id, peer_id);
 
         REQUIRE(penalty == Penalty::NoPenalty);
         REQUIRE(requestMoreHeaders == true);
@@ -1279,7 +1278,7 @@ TEST_CASE("WorkingChain - process_segment - (8) sibling with anchor invalidation
         REQUIRE(anchor1->parentHash == h5p.parent_hash);
         REQUIRE(anchor1->blockHeight == h5p.number);
         REQUIRE(anchor1->lastLinkHeight == h5p.number);
-        REQUIRE(anchor1->peerId == peerId);
+        REQUIRE(anchor1->peerId == peer_id);
 
         REQUIRE(anchor1->links.size() == 1);
         REQUIRE(anchor1->links[0]->hash == h5p.hash());
@@ -1295,7 +1294,7 @@ TEST_CASE("WorkingChain - process_segment - (8) sibling with anchor invalidation
         REQUIRE(anchor2->parentHash == headers[3].parent_hash);
         REQUIRE(anchor2->blockHeight == headers[3].number);
         REQUIRE(anchor2->lastLinkHeight == headers[5].number);
-        REQUIRE(anchor2->peerId == peerId);
+        REQUIRE(anchor2->peerId == peer_id);
 
         REQUIRE(anchor2->links[0]->hash == headers[3].hash());
         REQUIRE(anchor2->links[0]->next.size() == 1);
@@ -1305,13 +1304,13 @@ TEST_CASE("WorkingChain - process_segment - (8) sibling with anchor invalidation
         REQUIRE(anchor2->links[0]->next[0]->next[0]->next.size() == 0);
     }
 
-    INFO("failed extending anchor")
-    {
+    INFO("failed extending anchor") {
         // trying extending h5p get the correct chain, headers[3], headers[4], headers[5], so extending fails
-        auto[penalty, requestMoreHeaders] = chain.accept_headers({headers[3], headers[4], headers[5]}, peerId);
+        auto [penalty, requestMoreHeaders] =
+            chain.accept_headers({headers[3], headers[4], headers[5]}, request_id, peer_id);
 
         REQUIRE(penalty == Penalty::NoPenalty);
-        REQUIRE(requestMoreHeaders == false);   // fails to extend
+        REQUIRE(requestMoreHeaders == false);  // fails to extend
 
         // following conditions are as before
 
@@ -1325,7 +1324,7 @@ TEST_CASE("WorkingChain - process_segment - (8) sibling with anchor invalidation
         REQUIRE(anchor1->parentHash == h5p.parent_hash);
         REQUIRE(anchor1->blockHeight == h5p.number);
         REQUIRE(anchor1->lastLinkHeight == h5p.number);
-        REQUIRE(anchor1->peerId == peerId);
+        REQUIRE(anchor1->peerId == peer_id);
 
         REQUIRE(anchor1->links.size() == 1);
         REQUIRE(anchor1->links[0]->hash == h5p.hash());
@@ -1341,7 +1340,7 @@ TEST_CASE("WorkingChain - process_segment - (8) sibling with anchor invalidation
         REQUIRE(anchor2->parentHash == headers[3].parent_hash);
         REQUIRE(anchor2->blockHeight == headers[3].number);
         REQUIRE(anchor2->lastLinkHeight == headers[5].number);
-        REQUIRE(anchor2->peerId == peerId);
+        REQUIRE(anchor2->peerId == peer_id);
 
         REQUIRE(anchor2->links[0]->hash == headers[3].hash());
         REQUIRE(anchor2->links[0]->next.size() == 1);
@@ -1351,31 +1350,30 @@ TEST_CASE("WorkingChain - process_segment - (8) sibling with anchor invalidation
         REQUIRE(anchor2->links[0]->next[0]->next[0]->next.size() == 0);
     }
 
-    INFO("invalidating")
-    {
+    INFO("invalidating") {
         using namespace std::literals::chrono_literals;
 
         time_point_t now = std::chrono::system_clock::now();
         seconds_t timeout = 5s;
 
         auto anchor1 = chain.anchors_[h5p.parent_hash];
-        anchor1->timeouts = 10; // this cause invalidation
+        anchor1->timeouts = 10;  // this cause invalidation
         anchor1->timestamp = now - timeout;
 
         auto anchor2 = chain.anchors_[headers[3].parent_hash];
-        anchor2->timestamp = now + timeout; // avoid extension now
+        anchor2->timestamp = now + timeout;  // avoid extension now
 
         chain.anchor_queue_.fix();
 
-        auto[packet, penalizations] = chain.request_more_headers(now, timeout); // invalidate (=erase) anchor1
+        auto [packet, penalizations] = chain.request_more_headers(now, timeout);  // invalidate (=erase) anchor1
 
         REQUIRE(packet == std::nullopt);
         REQUIRE(!penalizations.empty());
 
-        REQUIRE(chain.anchor_queue_.size() == 1); // one less
-        REQUIRE(chain.anchors_.size() == 1); // one less
-        REQUIRE(chain.link_queue_.size() == 3); // one less
-        REQUIRE(chain.links_.size() == 3); // one less
+        REQUIRE(chain.anchor_queue_.size() == 1);  // one less
+        REQUIRE(chain.anchors_.size() == 1);       // one less
+        REQUIRE(chain.link_queue_.size() == 3);    // one less
+        REQUIRE(chain.links_.size() == 3);         // one less
 
         auto anchor1b_it = chain.anchors_.find(h5p.parent_hash);
         REQUIRE(anchor1b_it == chain.anchors_.end());
@@ -1390,7 +1388,7 @@ TEST_CASE("WorkingChain - process_segment - (8) sibling with anchor invalidation
         REQUIRE(anchor2->parentHash == headers[3].parent_hash);
         REQUIRE(anchor2->blockHeight == headers[3].number);
         REQUIRE(anchor2->lastLinkHeight == headers[5].number);
-        REQUIRE(anchor2->peerId == peerId);
+        REQUIRE(anchor2->peerId == peer_id);
 
         REQUIRE(anchor2->links[0]->hash == headers[3].hash());
         REQUIRE(anchor2->links[0]->next.size() == 1);
@@ -1400,10 +1398,9 @@ TEST_CASE("WorkingChain - process_segment - (8) sibling with anchor invalidation
         REQUIRE(anchor2->links[0]->next[0]->next[0]->next.size() == 0);
     }
 
-    INFO("reducing links")
-    {
+    INFO("reducing links") {
         // add a new anchor + link
-        chain.accept_headers({headers[7],headers[8]}, peerId);
+        chain.accept_headers({headers[7], headers[8]}, request_id, peer_id);
 
         chain.reduce_links_to(3);
 
@@ -1416,7 +1413,7 @@ TEST_CASE("WorkingChain - process_segment - (8) sibling with anchor invalidation
         REQUIRE(anchor != nullptr);
         REQUIRE(anchor->parentHash == headers[3].parent_hash);
         REQUIRE(anchor->blockHeight == headers[3].number);
-        REQUIRE(anchor->lastLinkHeight == headers[5].number);   // this is wrong, change the code of reduce_links_to()
+        REQUIRE(anchor->lastLinkHeight == headers[5].number);  // this is wrong, change the code of reduce_links_to()
         REQUIRE(anchor->links.size() == 1);
 
         auto link7_it = chain.links_.find(headers[7].hash());
@@ -1432,13 +1429,14 @@ TEST_CASE("WorkingChain - process_segment - (8) sibling with anchor invalidation
         REQUIRE(anchor->links[0]->next[0]->next[0]->next.size() == 0);
 
         auto link4 = chain.links_[headers[4].hash()];
-        auto deepest_anchor = chain.find_anchor(link4);
+        auto [deepest_anchor, deepest_link] = chain.find_anchor(link4);
         REQUIRE(deepest_anchor == anchor);
+        REQUIRE(deepest_link != nullptr);
     }
 
-    INFO("connect to evicted link")
-    {
-        auto[penalty, requestMoreHeaders] = chain.accept_headers({headers[5], headers[6], headers[7]}, peerId);
+    INFO("connect to evicted link") {
+        auto [penalty, requestMoreHeaders] =
+            chain.accept_headers({headers[5], headers[6], headers[7]}, request_id, peer_id);
 
         REQUIRE(penalty == Penalty::NoPenalty);
         REQUIRE(requestMoreHeaders == false);
@@ -1449,9 +1447,10 @@ TEST_CASE("WorkingChain - process_segment - (8) sibling with anchor invalidation
 
         auto anchor = chain.anchors_[headers[3].parent_hash];
         auto link7 = chain.links_[headers[7].hash()];
-        auto deepest_anchor = chain.find_anchor(link7);
+        auto [deepest_anchor, deepest_link] = chain.find_anchor(link7);
         REQUIRE(deepest_anchor.has_value());
         REQUIRE(deepest_anchor == anchor);
+        REQUIRE(deepest_link != nullptr);
     }
 }
 

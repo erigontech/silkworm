@@ -30,6 +30,12 @@
 
 namespace silkworm {
 
+class WorkingChain_ForTest : public WorkingChain {
+  public:  // publication of internal members to test methods functioning
+    using WorkingChain::generate_request_id;
+    using WorkingChain::WorkingChain;
+};
+
 class DummyConsensusEngine : public consensus::IEngine {
   public:
     ValidationResult pre_validate_block(const Block&, const BlockState&) override { return ValidationResult::kOk; }
@@ -69,9 +75,10 @@ TEST_CASE("working/persistent-chain integration test") {
         BlockNum highest_in_db = 0;
 
         // creating the working chain as the downloader does at its construction
-        WorkingChain wc(std::make_unique<DummyConsensusEngine>());
+        WorkingChain_ForTest wc(std::make_unique<DummyConsensusEngine>());
         wc.recover_initial_state(tx);
         wc.sync_current_state(highest_in_db);
+        auto request_id = wc.generate_request_id();
 
         // auto timestamp = header0->timestamp;
 
@@ -102,8 +109,8 @@ TEST_CASE("working/persistent-chain integration test") {
 
         // processing the headers
         std::vector<BlockHeader> headers = {header1, header2, header1b};
-        PeerId peerId = "1";
-        wc.accept_headers(headers, peerId);
+        PeerId peer_id = "1";
+        wc.accept_headers(headers, request_id, peer_id);
 
         // saving headers ready to persist as the header downloader does in the forward() method
         Headers headers_to_persist = wc.withdraw_stable_headers();
@@ -159,9 +166,10 @@ TEST_CASE("working/persistent-chain integration test") {
         BlockNum highest_in_db = 0;
 
         // creating the working chain as the downloader does at its construction
-        WorkingChain wc(std::make_unique<DummyConsensusEngine>());
+        WorkingChain_ForTest wc(std::make_unique<DummyConsensusEngine>());
         wc.recover_initial_state(tx);
         wc.sync_current_state(highest_in_db);
+        auto request_id = wc.generate_request_id();
 
         // receiving 2 headers from a peer
         BlockHeader header1;
@@ -178,8 +186,8 @@ TEST_CASE("working/persistent-chain integration test") {
 
         // processing the headers
         std::vector<BlockHeader> headers = {header1, header2};
-        PeerId peerId = "1";
-        wc.accept_headers(headers, peerId);
+        PeerId peer_id = "1";
+        wc.accept_headers(headers, request_id, peer_id);
 
         // creating the persisted chain as the header downloader does at the beginning of the forward() method
         PersistedChain pc(tx);
@@ -217,8 +225,8 @@ TEST_CASE("working/persistent-chain integration test") {
         auto header1b_hash = header1b.hash();
 
         std::vector<BlockHeader> headers_bis = {header1b};
-        peerId = "2";
-        wc.accept_headers(headers_bis, peerId);
+        peer_id = "2";
+        wc.accept_headers(headers_bis, request_id, peer_id);
 
         // saving headers ready to persist as the header downloader does in the forward() method
         Headers headers_to_persist_bis = wc.withdraw_stable_headers();
@@ -271,9 +279,10 @@ TEST_CASE("working/persistent-chain integration test") {
         BlockNum highest_in_db = 0;
 
         // creating the working chain as the downloader does at its construction
-        WorkingChain wc(std::make_unique<DummyConsensusEngine>());
+        WorkingChain_ForTest wc(std::make_unique<DummyConsensusEngine>());
         wc.recover_initial_state(tx);
         wc.sync_current_state(highest_in_db);
+        auto request_id = wc.generate_request_id();
 
         // receiving 2 headers from a peer
         BlockHeader header1;
@@ -290,8 +299,8 @@ TEST_CASE("working/persistent-chain integration test") {
 
         // processing the headers
         std::vector<BlockHeader> headers = {header1, header2};
-        PeerId peerId = "1";
-        wc.accept_headers(headers, peerId);
+        PeerId peer_id = "1";
+        wc.accept_headers(headers, request_id, peer_id);
 
         // creating the persisted chain as the header downloader does at the beginning of the forward() method
         PersistedChain pc(tx);
@@ -329,8 +338,8 @@ TEST_CASE("working/persistent-chain integration test") {
         auto header1b_hash = header1b.hash();
 
         std::vector<BlockHeader> headers_bis = {header1b};
-        peerId = "2";
-        wc.accept_headers(headers_bis, peerId);
+        peer_id = "2";
+        wc.accept_headers(headers_bis, request_id, peer_id);
 
         // saving headers ready to persist as the header downloader does in the forward() method
         Headers headers_to_persist_bis = wc.withdraw_stable_headers();
@@ -386,9 +395,10 @@ TEST_CASE("working/persistent-chain integration test") {
         BlockNum highest_in_db = 0;
 
         // creating the working chain as the downloader does at its construction
-        WorkingChain wc(std::make_unique<DummyConsensusEngine>());
+        WorkingChain_ForTest wc(std::make_unique<DummyConsensusEngine>());
         wc.recover_initial_state(tx);
         wc.sync_current_state(highest_in_db);
+        auto request_id = wc.generate_request_id();
 
         // receiving 1 header from a peer
         BlockHeader header1b;
@@ -399,8 +409,8 @@ TEST_CASE("working/persistent-chain integration test") {
         auto header1b_hash = header1b.hash();
 
         std::vector<BlockHeader> headers = {header1b};
-        PeerId peerId = "1";
-        wc.accept_headers(headers, peerId);
+        PeerId peer_id = "1";
+        wc.accept_headers(headers, request_id, peer_id);
 
         // creating the persisted chain as the header downloader does at the beginning of the forward() method
         PersistedChain pc(tx);
@@ -441,8 +451,8 @@ TEST_CASE("working/persistent-chain integration test") {
 
         // processing the headers
         std::vector<BlockHeader> headers_bis = {header1, header2};
-        peerId = "2";
-        wc.accept_headers(headers_bis, peerId);
+        peer_id = "2";
+        wc.accept_headers(headers_bis, request_id, peer_id);
 
         // saving headers ready to persist as the header downloader does in the forward() method
         Headers headers_to_persist_bis = wc.withdraw_stable_headers();

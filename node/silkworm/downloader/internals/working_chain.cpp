@@ -813,33 +813,34 @@ void WorkingChain::connect(std::shared_ptr<Link> attachment_link, Segment::Slice
         deepest_anchor->lastLinkHeight = std::max(deepest_anchor->lastLinkHeight, anchor->lastLinkHeight);
     }
     else {
-        // todo: log error
+        // if (!deep_link->persisted) error, else attachment to special anchor
     }
 
     // Extend_down
 
     bool anchor_preverified =
         as_range::any_of(anchor->links, [](const auto& link) -> bool { return link->preverified; });
-    prev_link->next = std::move(anchor->links);
+    prev_link->next = anchor->links;
     if (anchor_preverified) mark_as_preverified(prev_link);  // Mark the entire segment as pre-verified
     remove(anchor);
 
-    log::Info() << "WorkingChain, segment op: " <<
-        (deep_a.has_value() ?
+    log::Info() << "WorkingChain, segment op: "
+        << (deep_a.has_value() ?
                             "A " + to_string(deep_a.value()->blockHeight) :
-                            "X " + to_string(deep_link->blockHeight) + (deep_link->persisted ? " P" : " !P"))
-        << " --- " << attachment_link->blockHeight <<
-        " connect " <<
-        segment_slice.rbegin()->operator*().number << " --- " << (segment_slice.rend()-1)->operator*().number <<
-        " connect " <<
-        anchor->blockHeight << " --- " <<  anchor->lastLinkHeight;
+                            "X " + to_string(deep_link->blockHeight) + (deep_link->persisted ? " (P)" : " (!P)"))
+        << " --- " << attachment_link->blockHeight << (attachment_link->preverified ? " (V)": "    " )
+        << " <-connect-> "
+        << segment_slice.rbegin()->operator*().number << " --- " << prev_link->blockHeight
+        << " <-connect-> "
+        << anchor->blockHeight << " --- " <<  anchor->lastLinkHeight << (anchor_preverified ? " (V)" : "");
 }
 
 auto WorkingChain::extend_down(Segment::Slice segment_slice, std::shared_ptr<Anchor> anchor) -> RequestMoreHeaders {
     // Add or find new anchor
     auto new_anchor_header = *segment_slice.rbegin();  // lowest header
     bool check_limits = false;
-    auto [new_anchor, pre_existing] = add_anchor_if_not_present(*new_anchor_header, anchor->peerId, check_limits);
+    auto [new_anchor, pre_existing] =
+        add_anchor_if_not_present(*new_anchor_header, anchor->peerId, check_limits);
 
     // Remove old anchor
     bool anchor_preverified =
@@ -863,13 +864,16 @@ auto WorkingChain::extend_down(Segment::Slice segment_slice, std::shared_ptr<Anc
 
     new_anchor->lastLinkHeight = std::max(new_anchor->lastLinkHeight, anchor->lastLinkHeight);
 
-    prev_link->next = std::move(anchor->links);
+    prev_link->next = anchor->links;
     if (anchor_preverified) mark_as_preverified(prev_link);  // Mark the entire segment as preverified
 
-    log::Info() << "WorkingChain, segment op: " <<
-        new_anchor->blockHeight << " --- " << (segment_slice.rend()-1)->operator*().number <<
-        " extend down " <<
-        anchor->blockHeight << " --- " <<  anchor->lastLinkHeight;
+    bool newanchor_preverified =
+        as_range::any_of(new_anchor->links, [](const auto& link) -> bool { return link->preverified; });
+
+    log::Info() << "WorkingChain, segment op: "
+        << new_anchor->blockHeight << (newanchor_preverified ? " (V)" : "") << " --- " << prev_link->blockHeight
+        << " <-extend down "
+        << anchor->blockHeight << " --- " <<  anchor->lastLinkHeight << (anchor_preverified ? " (V)" : "");
 
     return !pre_existing;
 }
@@ -903,16 +907,16 @@ void WorkingChain::extend_up(std::shared_ptr<Link> attachment_link, Segment::Sli
         deepest_anchor->lastLinkHeight = std::max(deepest_anchor->lastLinkHeight, prev_link->blockHeight);
     }
     else {
-        // todo: log error
+        // if (!deep_link->persisted) error, else attachment to special anchor
     }
 
-    log::Info() << "WorkingChain, segment op: " <<
-        (deep_a.has_value() ?
+    log::Info() << "WorkingChain, segment op: "
+        << (deep_a.has_value() ?
                             "A " + to_string(deep_a.value()->blockHeight) :
-                            "X " + to_string(deep_link->blockHeight) + (deep_link->persisted ? " P" : " !P"))
-        << " --- " << attachment_link->blockHeight <<
-        " extend up " <<
-        segment_slice.rbegin()->operator*().number << " --- " << (segment_slice.rend()-1)->operator*().number;
+                            "X " + to_string(deep_link->blockHeight) + (deep_link->persisted ? " (P)" : " (!P)"))
+        << " --- " << attachment_link->blockHeight << (attachment_link->preverified ? " (V)": "" )
+        << " extend up-> "
+        << segment_slice.rbegin()->operator*().number << " --- " << (segment_slice.rend()-1)->operator*().number;
 }
 
 auto WorkingChain::new_anchor(Segment::Slice segment_slice, PeerId peerId) -> RequestMoreHeaders {
@@ -921,7 +925,8 @@ auto WorkingChain::new_anchor(Segment::Slice segment_slice, PeerId peerId) -> Re
     // Add or find anchor
     auto anchor_header = *segment_slice.rbegin();  // lowest header
     bool check_limits = true;
-    auto [anchor, pre_existing] = add_anchor_if_not_present(*anchor_header, peerId, check_limits);
+    auto [anchor, pre_existing] =
+        add_anchor_if_not_present(*anchor_header, peerId, check_limits);
 
     // Iterate over headers backwards (from parents towards children)
     std::shared_ptr<Link> prev_link;
@@ -939,8 +944,11 @@ auto WorkingChain::new_anchor(Segment::Slice segment_slice, PeerId peerId) -> Re
 
     anchor->lastLinkHeight = std::max(anchor->lastLinkHeight, prev_link->blockHeight);
 
-    log::Info() << "WorkingChain, segment op: new anchor " <<
-        anchor->blockHeight << " --- " << anchor->lastLinkHeight;
+    bool anchor_preverified =
+        as_range::any_of(anchor->links, [](const auto& link) -> bool { return link->preverified; });
+
+    log::Info() << "WorkingChain, segment op: new anchor "
+        << anchor->blockHeight << " --- " << anchor->lastLinkHeight << (anchor_preverified ? " (V)" : "");
 
     return !pre_existing;
 }

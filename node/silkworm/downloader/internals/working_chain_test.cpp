@@ -925,12 +925,85 @@ TEST_CASE("WorkingChain - process_segment - (4) pre-verified hashes on canonical
 
 /* chain:
  *
+ *       h1 <----- h2 <----- h3 <----- h4 <----- h5 <----- h6 (pre-verified)
+ *
+ */
+TEST_CASE("WorkingChain - process_segment - (5) pre-verified hashes") {
+    using namespace std;
+
+    WorkingChain_ForTest chain;
+    chain.top_seen_block_height(1'000'000);
+    auto request_id = chain.generate_request_id();
+    PeerId peer_id = "1";
+
+    std::array<BlockHeader, 7> headers;
+
+    for (size_t i = 1; i < headers.size(); i++) {  // skip first header for simplicity
+        headers[i].number = i;
+        headers[i].difficulty = i * 100;
+        headers[i].parent_hash = headers[i - 1].hash();
+    }
+
+    PreverifiedHashes mynet_preverified_hashes = {
+        {headers[6].hash()},  // hashes
+        headers[6].number     // height
+    };
+
+    chain.set_preverified_hashes(&mynet_preverified_hashes);
+
+    // building the first chain segment
+    chain.accept_headers({headers[1]}, request_id, peer_id);
+
+    /*
+     *    h1 <-----                                  <----- h6 (pre-verified)
+     */
+    INFO("new anchor") {
+        // adding the last chain segment
+        chain.accept_headers({headers[6]}, request_id, peer_id);
+
+        auto link = chain.links_[headers[6].hash()];
+        REQUIRE(link->preverified == true);
+    }
+
+    /*
+     *    h1 <-----              <----- h4 <----- h5 <----- h6 (pre-verified)
+     */
+    INFO("extend down") {
+        // adding two headers to extend down the anchor
+        chain.accept_headers({headers[5],headers[4]}, request_id, peer_id);
+
+        // check pre-verification propagation
+        auto link5 = chain.links_[headers[5].hash()];
+        REQUIRE(link5->preverified == true);
+        auto link4 = chain.links_[headers[4].hash()];
+        REQUIRE(link4->preverified == true);
+    }
+
+    /*
+     *    h1 <----- h2 <----- h3 <----- h4 <----- h5 <----- h6 (pre-verified)
+     */
+    INFO("connect") {
+        // adding two headers to extend down the anchor
+        chain.accept_headers({headers[2],headers[3]}, request_id, peer_id);
+
+        // check pre-verification propagation
+        auto link1 = chain.links_[headers[1].hash()];
+        REQUIRE(link1->preverified == true);
+        auto link2 = chain.links_[headers[2].hash()];
+        REQUIRE(link2->preverified == true);
+        auto link3 = chain.links_[headers[3].hash()];
+        REQUIRE(link3->preverified == true);
+    }
+}
+
+/* chain:
+ *
  *                         |-- h3a<----- h4a <---- h5b<----- h6b
  *         h1 <----- h2 <----- h3 <----- h4 <----- h5
  *
  *
  */
-TEST_CASE("WorkingChain - process_segment - (5) pre-verified hashes with canonical chain change") {
+TEST_CASE("WorkingChain - process_segment - (5') pre-verified hashes with canonical chain change") {
     using namespace std;
 
     WorkingChain_ForTest chain;

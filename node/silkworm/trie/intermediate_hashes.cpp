@@ -1,5 +1,5 @@
 /*
-   Copyright 2021 The Silkworm Authors
+   Copyright 2021-2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -302,7 +302,7 @@ evmc::bytes32 DbTrieLoader::calculate_root(PrefixSet& changed) {
             if (trie.key().has_value() && trie.key().value() < unpacked_key) {
                 break;
             }
-            const auto [account, err]{decode_account_from_storage(db::from_slice(acc.value))};
+            const auto [account, err]{Account::from_encoded_storage(db::from_slice(acc.value))};
             rlp::success_or_throw(err);
 
             evmc::bytes32 storage_root{kEmptyRoot};

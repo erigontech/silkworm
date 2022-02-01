@@ -351,7 +351,7 @@ std::optional<Account> read_account(mdbx::txn& txn, const evmc::address& address
         return std::nullopt;
     }
 
-    auto [acc, err]{decode_account_from_storage(encoded.value())};
+    auto [acc, err]{Account::from_encoded_storage(encoded.value())};
     rlp::success_or_throw(err);
 
     if (acc.incarnation > 0 && acc.code_hash == kEmptyHash) {

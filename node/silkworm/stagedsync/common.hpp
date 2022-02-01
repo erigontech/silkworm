@@ -1,5 +1,5 @@
 /*
-    Copyright 2021 The Silkworm Authors
+    Copyright 2021-2022 The Silkworm Authors
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -37,7 +37,7 @@ enum class [[nodiscard]] StageResult{
     kInvalidProgress,         //
     kInvalidBlock,            //
     kInvalidTransaction,      //
-    kMissingSenders,          //
+    kInvalidSenders,          //
     kDecodingError,           //
     kUnexpectedError,         //
     kUnknownError,            //
@@ -48,7 +48,7 @@ enum class [[nodiscard]] StageResult{
 //! \brief Stage execution exception
 class StageError : public std::exception {
   public:
-    explicit StageError(StageResult err)
+     explicit StageError(StageResult err)
         : err_{magic_enum::enum_integer<StageResult>(err)},
           message_{"Stage error : " + std::string(magic_enum::enum_name<StageResult>(err))} {};
     [[maybe_unused]] explicit StageError(StageResult err, std::string message)

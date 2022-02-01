@@ -32,7 +32,7 @@
 
 namespace silkworm::db {
 
-class MissingSenders : public std::runtime_error {
+class InvalidSenders : public std::runtime_error {
   public:
     using std::runtime_error::runtime_error;
 };
@@ -58,7 +58,7 @@ void write_canonical_header(mdbx::txn& txn, const BlockHeader& header);
 void write_canonical_header_hash(mdbx::txn& txn, const uint8_t (&hash)[kHashLength], BlockNum number);
 
 // Returns true on success and false on missing block
-// Might throw MissingSenders
+// Might throw InvalidSenders
 [[nodiscard]] bool read_body(mdbx::txn& txn, const Bytes& key, bool read_senders, BlockBody& out);
 [[nodiscard]] bool read_body(mdbx::txn& txn, BlockNum block_number, const uint8_t (&hash)[kHashLength],
                              bool read_senders, BlockBody& out);
@@ -77,7 +77,7 @@ void write_total_difficulty(mdbx::txn& txn, BlockNum block_number, const uint8_t
 
 // See Erigon ReadBlockByNumber
 // Returns true on success and false on missing block
-// Might throw MissingSenders
+// Might throw InvalidSenders
 [[nodiscard]] bool read_block(mdbx::txn& txn, BlockNum block_number, bool read_senders, BlockWithHash& out);
 
 // See Erigon ReadSenders

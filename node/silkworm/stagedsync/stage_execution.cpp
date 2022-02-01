@@ -149,9 +149,9 @@ StageResult Execution::execute_batch(db::RWTxn& txn, BlockNum max_block_num, Blo
     } catch (const mdbx::exception& ex) {
         log::Error("DB Error", {"block", std::to_string(block_num_)}) << " " << ex.what();
         return StageResult::kDbError;
-    } catch (const db::MissingSenders&) {
+    } catch (const db::InvalidSenders&) {
         log::Error("Missing senders", {"block", std::to_string(block_num_)});
-        return StageResult::kMissingSenders;
+        return StageResult::kInvalidSenders;
     } catch (const rlp::DecodingError& ex) {
         log::Error("RLP decoding error", {"block", std::to_string(block_num_)}) << " " << ex.what();
         return StageResult::kDecodingError;

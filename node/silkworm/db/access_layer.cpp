@@ -233,7 +233,7 @@ bool read_body(mdbx::txn& txn, const Bytes& key, bool read_senders, BlockBody& o
         // Might be empty due to pruning
         if (!senders.empty()) {
             if (senders.size() != out.transactions.size()) {
-                throw MissingSenders("senders count does not match transactions count");
+                throw InvalidSenders("senders count does not match transactions count");
             }
             for (size_t i{0}; i < senders.size(); ++i) {
                 out.transactions[i].from = senders[i];

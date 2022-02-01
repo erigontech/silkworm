@@ -459,7 +459,7 @@ namespace db {
             ByteView truncated_senders{full_senders.data(), kAddressLength};
             auto sender_table{db::open_cursor(txn, table::kSenders)};
             sender_table.upsert(to_slice(key), to_slice(truncated_senders));
-            CHECK_THROWS_AS(read_block(txn, block_num, read_senders, bh), MissingSenders);
+            CHECK_THROWS_AS(read_block(txn, block_num, read_senders, bh), InvalidSenders);
 
             sender_table.upsert(to_slice(key), to_slice(full_senders));
             REQUIRE(read_block(txn, block_num, read_senders, bh));

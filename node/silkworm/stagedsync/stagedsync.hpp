@@ -128,12 +128,18 @@ class HashState final : public IStage {
 
     //! \brief Detects account changes from AccountChangeSet and hashes the changed keys
     //! \remarks Though it could be used for initial sync only is way slower and builds an index of changed accounts.
-    StageResult hash_from_account_changeset(db::RWTxn& txn, BlockNum previous_progress);
+    StageResult hash_from_account_changeset(db::RWTxn& txn, BlockNum previous_progress, BlockNum to);
 
     //! \brief Detects storage changes from StorageChangeSet and hashes the changed keys
     //! \remarks Though it could be used for initial sync only is way slower and builds an index of changed storage
     //! locations.
-    StageResult hash_from_storage_changeset(db::RWTxn& txn, BlockNum previous_progress);
+    StageResult hash_from_storage_changeset(db::RWTxn& txn, BlockNum previous_progress, BlockNum to);
+
+    //! \brief Detects account changes from AccountChangeSet and reverts hashed states
+    StageResult unwind_from_account_changeset(db::RWTxn& txn, BlockNum previous_progress, BlockNum to);
+
+    //! \brief Detects storage changes from StorageChangeSet and reverts hashed states
+    StageResult unwind_from_storage_changeset(db::RWTxn& txn, BlockNum previous_progress, BlockNum to);
 
     void demote_incremental(db::RWTxn& txn, BlockNum to, DataKind kind);
 

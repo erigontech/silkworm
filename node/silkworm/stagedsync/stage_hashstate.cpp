@@ -18,6 +18,7 @@
 #include <silkworm/common/log.hpp>
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/stages.hpp>
+#include <silkworm/db/util.hpp>
 #include <silkworm/etl/collector.hpp>
 
 #include "stagedsync.hpp"
@@ -56,6 +57,7 @@ StageResult HashState::forward(db::RWTxn& txn) {
     current_target_.clear();
 
     try {
+
         if (!incremental_) {
             StageResult result{hash_from_plainstate(txn)};
             collector_->clear();
@@ -72,19 +74,17 @@ StageResult HashState::forward(db::RWTxn& txn) {
             }
 
         } else {
-            StageResult result{hash_from_account_changeset(txn, previous_progress)};
+            StageResult result{hash_from_account_changeset(txn, previous_progress, execution_stage_progress)};
             if (result != StageResult::kSuccess) {
                 return result;
             }
             current_key_.clear();
             current_source_.clear();
             current_target_.clear();
-            result = hash_from_storage_changeset(txn, previous_progress);
+            result = hash_from_storage_changeset(txn, previous_progress, execution_stage_progress);
             if (result != StageResult::kSuccess) {
                 return result;
             }
-            log::Info() << "Return on purpose kAborted";
-            result = StageResult::kAborted;
         }
 
         if (!is_stopping()) {
@@ -101,15 +101,28 @@ StageResult HashState::forward(db::RWTxn& txn) {
 }
 
 StageResult HashState::unwind(db::RWTxn& txn, BlockNum to) {
+    if (is_stopping()) {
+        return StageResult::kAborted;
+    }
+
+    auto previous_progress{db::stages::read_stage_progress(*txn, stage_name_)};
+    if (to >= previous_progress) {
+        // Nothing to unwind actually
+        return StageResult::kSuccess;
+    }
+    if (previous_progress - to > 16) {
+        log::Info("Begin " + std::string(stage_name_) + " unwind",
+                  {"from", std::to_string(previous_progress), "to", std::to_string(to)});
+    }
+
+    unwinding_ = true;
+    loading_ = false;
+    incremental_ = true;
+    current_key_.clear();
+    current_source_.clear();
+    current_target_.clear();
+
     try {
-        auto stage_height{db::stages::read_stage_progress(*txn, db::stages::kHashStateKey)};
-        if (to >= stage_height) {
-            log::Error() << "Stage progress is " << stage_height << " which is <= than requested unwind_to";
-            return StageResult::kAborted;
-        }
-
-        log::Info() << "Unwinding HashState from " << stage_height << " to " << to << " ...";
-
         log::Info() << "[1/3] Hashed accounts ... ";
         demote_incremental(txn, to, DataKind::Account);
 
@@ -370,14 +383,18 @@ StageResult HashState::hash_from_plaincode(db::RWTxn& txn) {
     }
 }
 
-StageResult HashState::hash_from_account_changeset(db::RWTxn& txn, BlockNum previous_progress) {
+StageResult HashState::hash_from_account_changeset(db::RWTxn& txn, BlockNum previous_progress, BlockNum to) {
     try {
-        // Read AccountChangeSet from previous progress to eof and collect an index of changed accounts
+        /*
+         * 1) Read AccountChangeSet from previous_progress to 'to'
+         * 2) For each address changed hash it and lookup current value from PlainState
+         * 3) Process the collected list and write values into Hashed tables (Account and Code)
+         */
+
         BlockNum reached_blocknum{0};
 
         // Store already processed addresses to avoid rehashing and multiple lookups
-        // Key = Address
-        // Value Address Hash + Current Value (from PlainState)
+        // Address -> Address Hash -> PlainState value
         absl::btree_map<evmc::address, std::pair<evmc::bytes32, Bytes>> changed_addresses{};
 
         current_source_ = std::string(db::table::kAccountChangeSet.name);
@@ -386,9 +403,12 @@ StageResult HashState::hash_from_account_changeset(db::RWTxn& txn, BlockNum prev
         auto source_changeset{db::open_cursor(*txn, db::table::kAccountChangeSet)};
         auto source_plainstate{db::open_cursor(*txn, db::table::kPlainState)};
         auto changeset_data{source_changeset.lower_bound(db::to_slice(source_initial_key), /*throw_notfound=*/true)};
-        auto counter{0};
+        size_t counter{0};
         while (changeset_data.done) {
             reached_blocknum = endian::load_big_u64(db::from_slice(changeset_data.key).data());
+            if (reached_blocknum > to) {
+                break;
+            }
             while (changeset_data) {
                 auto changeset_value_view{db::from_slice(changeset_data.value)};
                 evmc::address address{to_evmc_address(changeset_value_view)};
@@ -420,7 +440,8 @@ StageResult HashState::hash_from_account_changeset(db::RWTxn& txn, BlockNum prev
             return StageResult::kSuccess;
         }
 
-        current_target_ = std::string(db::table::kHashedAccounts.name) + " " + std::string(db::table::kHashedCodeHash.name);
+        current_target_ =
+            std::string(db::table::kHashedAccounts.name) + " " + std::string(db::table::kHashedCodeHash.name);
         loading_ = true;
         current_key_ = to_hex(changed_addresses.begin()->first.bytes, /*with_prefix=*/true);
         auto source_plaincode{db::open_cursor(*txn, db::table::kPlainContractHash)};
@@ -479,12 +500,17 @@ StageResult HashState::hash_from_account_changeset(db::RWTxn& txn, BlockNum prev
     }
 }
 
-StageResult HashState::hash_from_storage_changeset(db::RWTxn& txn, BlockNum previous_progress) {
+StageResult HashState::hash_from_storage_changeset(db::RWTxn& txn, BlockNum previous_progress, BlockNum to) {
     try {
-        // Read StorageChangeSet from previous progress to eof and collect an index of changed accounts
+        /*
+         * 1) Read StorageChangeSet from previous_progress to 'to'
+         * 2) For each address + incarnation changed hash it and lookup current value from PlainState
+         * 3) Process the collected list and write values into HashedStorage
+         */
+
         BlockNum reached_blocknum{0};
 
-        // Don't rehash same addresses over and over again
+        db::StorageChanges storage{};
         absl::btree_map<evmc::address, evmc::bytes32> hashed_addresses{};
 
         current_source_ = std::string(db::table::kStorageChangeSet.name);
@@ -492,45 +518,37 @@ StageResult HashState::hash_from_storage_changeset(db::RWTxn& txn, BlockNum prev
 
         auto source_changeset{db::open_cursor(*txn, db::table::kStorageChangeSet)};
         auto source_plainstate{db::open_cursor(*txn, db::table::kPlainState)};
-        auto target_hashed_storage{db::open_cursor(*txn, db::table::kHashedStorage)};
 
         auto source_initial_key{db::block_key(previous_progress + 1)};
         auto changeset_data{source_changeset.lower_bound(db::to_slice(source_initial_key), /*throw_notfound=*/true)};
         auto counter{0};
 
-        Bytes hashed_key(db::kHashedStoragePrefixLength, '\0');              // One allocation only
-        Bytes plain_key(db::kPlainStoragePrefixLength + kHashLength, '\0');  // One allocation only
-
         while (changeset_data.done) {
             auto changeset_key_view{db::from_slice(changeset_data.key)};
             reached_blocknum = endian::load_big_u64(changeset_key_view.data());
+            if (reached_blocknum > to) {
+                break;
+            }
             changeset_key_view.remove_prefix(8);
-
             evmc::address address{to_evmc_address(changeset_key_view)};
-            std::memcpy(&plain_key[0], &changeset_key_view[0], db::kPlainStoragePrefixLength);
             changeset_key_view.remove_prefix(kAddressLength);
-
+            const auto incarnation{endian::load_big_u64(changeset_key_view.data())};
+            if (!incarnation) {
+                throw std::runtime_error("Unexpected EOA in StorageChangeset");
+            }
             if (!hashed_addresses.contains(address)) {
                 hashed_addresses[address] = to_bytes32(keccak256(address.bytes).bytes);
             }
-
-            // Prepare hashed key (address hash + incaranation)
-            std::memcpy(&hashed_key[0], hashed_addresses[address].bytes, kHashLength);
-            std::memcpy(&hashed_key[kHashLength], &changeset_key_view[0], db::kIncarnationLength);
+            storage[address].insert_or_assign(incarnation, absl::btree_map<evmc::bytes32, Bytes>());
+            Bytes plain_storage_prefix{db::storage_prefix(address, incarnation)};
 
             while (changeset_data.done) {
-                // Lookup value in PlainState. If not exist skip
-                // Get location from changeset value
                 auto changeset_value_view{db::from_slice(changeset_data.value)};
-                std::memcpy(&plain_key[db::kPlainStoragePrefixLength], &changeset_value_view[0], kHashLength);
-                auto plain_data{source_plainstate.find(db::to_slice(plain_key), /*throw_notfound=*/false)};
-                if (plain_data) {
-                    auto plain_value_view{db::from_slice(plain_data.value)};
-                    auto hashed_location{keccak256(plain_value_view.substr(0, kHashLength))};
-                    ByteView value{plain_value_view.substr(kHashLength)};
-                    db::upsert_storage_value(target_hashed_storage, hashed_key, hashed_location.bytes, value);
+                auto location{to_bytes32(changeset_value_view)};
+                if (!storage[address][incarnation].contains(location)) {
+                    auto plain_state_value{db::find_value_suffix(source_plainstate, plain_storage_prefix, location)};
+                    storage[address][incarnation].insert_or_assign(location, plain_state_value.value_or(Bytes()));
                 }
-
                 changeset_data = source_changeset.to_current_next_multi(/*throw_notfound=*/false);
                 if (++counter == 128) {
                     counter = 0;
@@ -542,7 +560,39 @@ StageResult HashState::hash_from_storage_changeset(db::RWTxn& txn, BlockNum prev
             }
             changeset_data = source_changeset.to_next(/*throw_notfound=*/false);
         }
+
+        // Load data
+        if (!storage.empty()) {
+            auto target_hashed_storage{db::open_cursor(*txn, db::table::kHashedStorage)};
+            loading_ = true;
+            current_target_ = std::string(db::table::kHashedStorage.name);
+            Bytes hashed_storage_prefix(db::kHashedStoragePrefixLength, '\0');  // One allocation only
+            for (const auto& [address, data] : storage) {
+
+                if (++counter == 128) {
+                    counter = 0;
+                    current_key_ = std::to_string(reached_blocknum);
+                    if (is_stopping()) {
+                        return StageResult::kAborted;
+                    }
+                }
+
+                std::memcpy(&hashed_storage_prefix[0], hashed_addresses[address].bytes, kHashLength);
+                current_key_ = to_hex(address, true);
+                for (const auto& [incarnation, data1] : data) {
+                    endian::store_big_u64(&hashed_storage_prefix[kHashLength], incarnation);
+                    for (const auto& [location, value] : data1) {
+                        auto hashed_location{keccak256(location.bytes)};
+                        db::upsert_storage_value(target_hashed_storage, hashed_storage_prefix, hashed_location.bytes,
+                                                 value);
+                    }
+                }
+            }
+        }
+
+        loading_ = false;
         return StageResult::kSuccess;
+
     } catch (const mdbx::exception& ex) {
         log::Error(std::string(stage_name_),
                    {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
@@ -556,6 +606,143 @@ StageResult HashState::hash_from_storage_changeset(db::RWTxn& txn, BlockNum prev
         return StageResult::kUnexpectedError;
     }
 }
+
+StageResult HashState::unwind_from_account_changeset(db::RWTxn& txn, BlockNum previous_progress, BlockNum to) {
+    try {
+        /*
+         * This behaves pretty much similar to hash_from_account_changeset with one major difference:
+         * as AccountChangeset records the state of an account at previous block we take the status
+         * from the changeset itself. Say we need to unwind to block 990 from 1000. We begin from
+         * block 991 (which records a change has been made by block 991 and the value is the one
+         * which was at block 990). See tables kAccountChangeSet for reference
+         *
+         * 1) Read AccountChangeSet from `to+1` to 'previous_progress'
+         * 2) For each address changed hash it and take the value of previous block
+         * 3) Process the collected list and write values into Hashed tables (Account and Code)
+         */
+
+        BlockNum reached_blocknum{0};
+
+        // Store already processed addresses to avoid rehashing and multiple lookups
+        // Address -> Address Hash -> Value
+        absl::btree_map<evmc::address, std::pair<evmc::bytes32, Bytes>> changed_addresses{};
+
+        current_source_ = std::string(db::table::kAccountChangeSet.name);
+        current_key_ = std::to_string(to + 1);
+
+        auto source_changeset{db::open_cursor(*txn, db::table::kAccountChangeSet)};
+
+        // Ensure we have enough history data to fully unwind the segment
+        auto changeset_data(source_changeset.to_first(/*throw_notfound=*/false));
+        if (!changeset_data) {
+            throw std::runtime_error("No Account change history to process.");
+        } else {
+            reached_blocknum = endian::load_big_u64(db::from_slice(changeset_data.key).data());
+            if (reached_blocknum > to) {
+                throw std::runtime_error("Not enough Account change history to process. First available " +
+                                         std::to_string(reached_blocknum));
+            }
+        }
+
+        auto source_initial_key{db::block_key(to + 1)};
+        changeset_data = source_changeset.lower_bound(db::to_slice(source_initial_key), /*throw_notfound=*/false);
+        size_t counter{0};
+        while (changeset_data.done) {
+            reached_blocknum = endian::load_big_u64(db::from_slice(changeset_data.key).data());
+            if (reached_blocknum > previous_progress) {
+                break;
+            }
+            while (changeset_data) {
+                auto changeset_value_view{db::from_slice(changeset_data.value)};
+                evmc::address address{to_evmc_address(changeset_value_view)};
+
+                if (!changed_addresses.contains(address)) {
+                    changeset_value_view.remove_prefix(kAddressLength);
+                    auto address_hash{to_bytes32(keccak256(address.bytes).bytes)};
+                    Bytes current_value(changeset_value_view.data(), changeset_value_view.length());
+                    changed_addresses[address] = std::make_pair(address_hash, current_value);
+                }
+                if (++counter == 128) {
+                    counter = 0;
+                    current_key_ = std::to_string(reached_blocknum);
+                    if (is_stopping()) {
+                        return StageResult::kAborted;
+                    }
+                }
+                changeset_data = source_changeset.to_current_next_multi(/*throw_notfound=*/false);
+            }
+            changeset_data = source_changeset.to_next(/*throw_notfound=*/false);
+        }
+        source_changeset.close();
+        counter = 0;
+        if (changed_addresses.empty()) {
+            return StageResult::kSuccess;
+        }
+
+        current_target_ =
+            std::string(db::table::kHashedAccounts.name) + " " + std::string(db::table::kHashedCodeHash.name);
+        loading_ = true;
+        current_key_ = to_hex(changed_addresses.begin()->first.bytes, /*with_prefix=*/true);
+        auto source_plaincode{db::open_cursor(*txn, db::table::kPlainContractHash)};
+        auto target_hashed_accounts{db::open_cursor(*txn, db::table::kHashedAccounts)};
+        auto target_hashed_code{db::open_cursor(*txn, db::table::kHashedCodeHash)};
+
+        Bytes plain_code_key(kAddressLength + db::kIncarnationLength, '\0');  // Only one allocation
+        Bytes hashed_code_key(kHashLength + db::kIncarnationLength, '\0');    // Only one allocation
+
+        for (const auto& [address, pair] : changed_addresses) {
+            auto& [address_hash, current_encoded_value] = pair;
+            if (!current_encoded_value.empty()) {
+                // Update HashedAccounts table
+                target_hashed_accounts.upsert(db::to_slice(address_hash.bytes), db::to_slice(current_encoded_value));
+
+                // Lookup value in PlainCodeHash for Contract
+                auto [account, err]{Account::from_encoded_storage(current_encoded_value)};
+                rlp::success_or_throw(err);
+                if (account.incarnation && account.code_hash != kEmptyHash) {
+                    std::memcpy(&plain_code_key[0], address.bytes, kAddressLength);
+                    endian::store_big_u64(&plain_code_key[kAddressLength], account.incarnation);
+                    auto code_data{source_plaincode.find(db::to_slice(plain_code_key),
+                                                         /*throw_notfound=*/true)};  // Have to find it
+                    if (code_data.done && code_data.value.length()) {
+                        std::memcpy(&hashed_code_key[0], address_hash.bytes, kHashLength);
+                        endian::store_big_u64(&hashed_code_key[kHashLength], account.incarnation);
+                        target_hashed_code.upsert(db::to_slice(hashed_code_key), code_data.value);
+                    } else {
+                        target_hashed_code.erase(db::to_slice(hashed_code_key));
+                    }
+                }
+            } else {
+                (void)target_hashed_accounts.erase(db::to_slice(address_hash.bytes));
+            }
+
+            if (++counter == 128) {
+                counter = 0;
+                current_key_ = to_hex(address.bytes, true);
+                if (is_stopping()) {
+                    loading_ = false;
+                    return StageResult::kAborted;
+                }
+            }
+        }
+        loading_ = false;
+        return StageResult::kSuccess;
+
+    } catch (const mdbx::exception& ex) {
+        log::Error(std::string(stage_name_),
+                   {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
+        return StageResult::kDbError;
+    } catch (const std::exception& ex) {
+        log::Error(std::string(stage_name_),
+                   {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
+        return StageResult::kUnexpectedError;
+    } catch (...) {
+        log::Error(std::string(stage_name_), {"function", std::string(__FUNCTION__), "exception", "undefined"});
+        return StageResult::kUnexpectedError;
+    }
+}
+
+StageResult HashState::unwind_from_storage_changeset(db::RWTxn& txn, BlockNum previous_progress, BlockNum to) {}
 
 void HashState::demote_incremental(db::RWTxn& txn, BlockNum to, DataKind kind) {
     auto [changeset_config, target_config] = get_operation_tables(kind);

@@ -31,7 +31,7 @@ struct HumanSizeParserValidator : public CLI::Validator {
     template <typename T>
     explicit HumanSizeParserValidator(T min, std::optional<T> max = std::nullopt) {
         std::stringstream out;
-        out << " in [" << min << " - " << (max.has_value() ? max.value() : "∞") << "]";
+        out << " in [" << min << " - " << (max.has_value() ? max.value() : "") << "]";
         description(out.str());
 
         func_ = [min, max](const std::string& value) -> std::string {
@@ -100,8 +100,10 @@ void parse_silkworm_command_line(CLI::App& cli, int argc, char* argv[], log::Set
     std::string batch_size{human_size(node_settings.batch_size)};
     std::string etl_buffer_size{human_size(node_settings.etl_buffer_size)};
     cli.add_option("--datadir", datadir, "Path to data directory", true);
-    cli.add_option("--chaindata.exclusive", node_settings.chaindata_env_config.exclusive,
-                   "Chaindata database opened in exclusive mode", true);
+    cli.add_flag("--chaindata.exclusive", node_settings.chaindata_env_config.exclusive,
+                 "Chaindata database opened in exclusive mode");
+    cli.add_flag("--chaindata.readahead", node_settings.chaindata_env_config.read_ahead,
+                 "Chaindata database enable readahead");
     cli.add_option("--chaindata.growthsize", chaindata_growth_size, "Chaindata database growth size", true)
         ->check(HumanSizeParserValidator("64MB"));
     cli.add_option("--chaindata.maxsize", chaindata_max_size, "Chaindata database max size", true)

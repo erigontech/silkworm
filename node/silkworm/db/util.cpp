@@ -1,5 +1,5 @@
 /*
-   Copyright 2020-2021 The Silkworm Authors
+   Copyright 2020-2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -110,16 +110,28 @@ std::optional<ByteView> find_value_suffix(mdbx::cursor& table, ByteView key, Byt
 }
 
 void upsert_storage_value(mdbx::cursor& state_cursor, ByteView storage_prefix, ByteView location, ByteView new_value) {
-    // TODO(Andrea) This can be optimized. Should we find a previous record use put + MDBX_CURRENT instead of upsert.
-    if (find_value_suffix(state_cursor, storage_prefix, location)) {
-        state_cursor.erase();
-    }
+    static const auto build_db_value = [](const ByteView& location, const ByteView& new_value) -> Bytes {
+        Bytes res(location.length() + new_value.length(), '\0');
+        std::memcpy(&res[0], location.data(), location.length());
+        std::memcpy(&res[location.length()], new_value.data(), new_value.length());
+        return res;
+    };
+
     new_value = zeroless_view(new_value);
-    if (!new_value.empty()) {
-        Bytes db_value(location.length() + new_value.length(), '\0');
-        std::memcpy(&db_value[0], location.data(), location.length());
-        std::memcpy(&db_value[location.length()], new_value.data(), new_value.length());
-        state_cursor.upsert(to_slice(storage_prefix), to_slice(db_value));
+
+    auto old_value{find_value_suffix(state_cursor, storage_prefix, location)};
+    if (old_value.has_value()) {
+        if (new_value.empty()) {
+            state_cursor.erase();
+        } else if (new_value == old_value.value()) {
+            return;
+        } else {
+            auto new_db_value{build_db_value(location, new_value)};
+            state_cursor.update(to_slice(storage_prefix), to_slice(new_db_value));
+        }
+    } else if (!new_value.empty()) {
+        auto new_db_value{build_db_value(location, new_value)};
+        state_cursor.upsert(to_slice(storage_prefix), to_slice(new_db_value));
     }
 }
 

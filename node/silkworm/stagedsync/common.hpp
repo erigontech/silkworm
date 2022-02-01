@@ -48,7 +48,7 @@ enum class [[nodiscard]] StageResult{
 //! \brief Stage execution exception
 class StageError : public std::exception {
   public:
-     explicit StageError(StageResult err)
+    explicit StageError(StageResult err)
         : err_{magic_enum::enum_integer<StageResult>(err)},
           message_{"Stage error : " + std::string(magic_enum::enum_name<StageResult>(err))} {};
     [[maybe_unused]] explicit StageError(StageResult err, std::string message)

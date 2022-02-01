@@ -159,7 +159,7 @@ class WorkingChain {
     LinkMap links_;                              // Links by header hash
     AnchorMap anchors_;                          // Mapping from parentHash to collection of anchors
     OldestFirstLinkQueue persisted_link_queue_;  // Priority queue of persisted links used to limit their number
-    LinkLIFOQueue insert_list_;  // List of non-persisted links that can be inserted (their parent is persisted)
+    OldestFirstLinkQueue2 insert_list_;  // List of non-persisted links that can be inserted (their parent is persisted)
     BlockNum highest_in_db_;
     BlockNum top_seen_height_;
     std::set<Hash> bad_headers_;

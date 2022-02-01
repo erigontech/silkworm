@@ -222,23 +222,27 @@ Headers WorkingChain::withdraw_stable_headers() {
 
     LinkList links_in_future;  // here we accumulate links that fail validation as "in the future"
 
-    while (!insert_list_.empty()) {
+    //OldestFirstLinkQueue2  assessing_list = move(insert_list_);
+    OldestFirstLinkQueue2  assessing_list = insert_list_;
+    insert_list_.clear();
+
+    while (!assessing_list.empty()) {
         // Choose a link at top
-        auto link = insert_list_.top();  // connect or extend-up added one (or some if it has siblings)
+        auto link = assessing_list.top();  // from lower block numbers to higher block numbers
+        assessing_list.pop();
 
         // If it is in the pre-verified headers range do not verify it, wait for pre-verification
         if (link->blockHeight <= preverified_hashes_->height && !link->preverified) {
+            insert_list_.push(link);
             log::Trace() << "WorkingChain: wait for pre-verification of " << link->blockHeight;
-            break;  // header should be pre-verified, but not yet, try again later
+            continue;  // header should be pre-verified, but not yet, try again later
         }
-
-        insert_list_.pop();
 
         // Verify
         VerificationResult assessment = verify(*link);
 
         if (assessment == Postpone) {
-            links_in_future.push_back(link);
+            insert_list_.push(link);
             log::Warning() << "WorkingChain: added future link,"
                            << " hash=" << link->hash << " height=" << link->blockHeight
                            << " timestamp=" << link->header->timestamp << ")";
@@ -274,7 +278,7 @@ Headers WorkingChain::withdraw_stable_headers() {
         // All the headers attached to this can be persisted, let's add them to the queue, this feeds the current loop
         // and cause insertion of headers in ascending order of height
         if (!link->next.empty()) {
-            push_all(insert_list_, link->next);
+            assessing_list.push_all(link->next);
         }
 
         // Make sure long insertions do not appear as a stuck stage headers
@@ -292,12 +296,6 @@ Headers WorkingChain::withdraw_stable_headers() {
 
     // Save memory
     reduce_persisted_links_to(persistent_link_limit);
-
-    // Save for later
-    if (!links_in_future.empty()) {
-        push_all(insert_list_, links_in_future);
-        links_in_future.clear();
-    }
 
     return stable_headers;  // RVO
 }

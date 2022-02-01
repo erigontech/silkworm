@@ -187,6 +187,7 @@ namespace silkworm { // reopen namespace
 
 using OldestFirstLinkQueue = map_based_priority_queue<std::shared_ptr<Link>, BlockOlderThan>;
 
+using OldestFirstLinkQueue2 = set_based_priority_queue<std::shared_ptr<Link>, LinkOlderThan>;
 
 // We need a queue for all links to
 // - store the links

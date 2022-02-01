@@ -34,13 +34,21 @@ class set_based_priority_queue {
     void pop() { elements_.erase(elements_.begin()); }
     void push(const T& element) { elements_.insert(element); }
     void erase(const T& element) { elements_.erase(element); }
+    void clear() { elements_.clear(); }
     [[nodiscard]] size_t size() const { return elements_.size(); }
+    [[nodiscard]] bool empty() const { return elements_.empty(); }
     [[nodiscard]] bool contains(const T& element) { return elements_.template find(element) != elements_.end(); }
+
+    void push_all(const std::vector<T>& source) { for (auto& element: source) push(element); } // bulk insert
 
     typename impl_t::iterator begin() { return elements_.begin(); }
     typename impl_t::iterator end() { return elements_.end(); }
     typename impl_t::const_iterator begin() const { return elements_.begin(); }
     typename impl_t::const_iterator end() const { return elements_.end(); }
+
+    std::pair<typename impl_t::iterator, typename impl_t::iterator> equal_range(const T& element) {
+        return elements_.equal_range(element);
+    };
 };
 
 /*

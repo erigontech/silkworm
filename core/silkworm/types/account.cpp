@@ -1,5 +1,5 @@
 /*
-   Copyright 2020-2021 The Silkworm Authors
+   Copyright 2020-2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -30,21 +30,21 @@ Bytes Account::encode_for_storage(bool omit_code_hash) const {
 
     if (nonce != 0) {
         field_set |= 1;
-        const Bytes be{endian::to_big_compact(nonce)};
+        auto be{endian::to_big_compact(nonce)};
         res.push_back(static_cast<uint8_t>(be.length()));
         res.append(be);
     }
 
     if (balance != 0) {
         field_set |= 2;
-        const Bytes be{endian::to_big_compact(balance)};
+        auto be{endian::to_big_compact(balance)};
         res.push_back(static_cast<uint8_t>(be.length()));
         res.append(be);
     }
 
     if (incarnation != 0) {
         field_set |= 4;
-        const Bytes be{endian::to_big_compact(incarnation)};
+        auto be{endian::to_big_compact(incarnation)};
         res.push_back(static_cast<uint8_t>(be.length()));
         res.append(be);
     }
@@ -63,17 +63,17 @@ size_t Account::encoding_length_for_storage() const {
     size_t len{1};
 
     if (nonce != 0) {
-        const Bytes be{endian::to_big_compact(nonce)};
+        auto be{endian::to_big_compact(nonce)};
         len += 1 + be.length();
     }
 
     if (balance != 0) {
-        const Bytes be{endian::to_big_compact(balance)};
+        auto be{endian::to_big_compact(balance)};
         len += 1 + be.length();
     }
 
     if (incarnation != 0) {
-        const Bytes be{endian::to_big_compact(incarnation)};
+        auto be{endian::to_big_compact(incarnation)};
         len += 1 + be.length();
     }
 
@@ -84,85 +84,110 @@ size_t Account::encoding_length_for_storage() const {
     return len;
 }
 
-std::pair<uint64_t, rlp::DecodingResult> extract_incarnation(ByteView encoded) {
-    uint8_t field_set = encoded[0];
-    size_t pos{1};
+static inline std::pair<uint8_t, rlp::DecodingResult> validate_encoded_head(ByteView& encoded_payload) noexcept {
+    if (encoded_payload.empty()) {
+        return {0, rlp::DecodingResult::kOk};
+    }
+    if (encoded_payload[0] && encoded_payload.length() == 1) {
+        // Must be at least 2 bytes : field_set + len of payload
+        return {encoded_payload[0], rlp::DecodingResult::kInputTooShort};
+    }
+    if (encoded_payload[0] > 15) {
+        // Can only be at max 1 | 2 | 4 | 8
+        return {encoded_payload[0], rlp::DecodingResult::kInvalidFieldset};
+    }
 
-    if (field_set & 1) {
-        pos += encoded[pos++];
-    }
-    if (field_set & 2) {
-        pos += encoded[pos++];
-    }
-    if (field_set & 4) {
-        // Incarnation has been found.
-        uint8_t len = encoded[pos++];
-        const std::optional<uint64_t> incarnation{endian::from_big_compact<uint64_t>(encoded.substr(pos, len))};
-        if (incarnation == std::nullopt) {
-            return {0, rlp::DecodingResult::kOverflow};
-        }
-        return {*incarnation, rlp::DecodingResult::kOk};
-    }
-    return {0, rlp::DecodingResult::kOk};
+    return {encoded_payload[0], rlp::DecodingResult::kOk};
 }
 
-std::pair<Account, rlp::DecodingResult> decode_account_from_storage(ByteView encoded) noexcept {
+std::pair<Account, rlp::DecodingResult> Account::from_encoded_storage(ByteView encoded_payload) noexcept {
     Account a{};
-    if (encoded.empty()) {
+    const auto [field_set, err] = validate_encoded_head(encoded_payload);
+    if (err != rlp::DecodingResult::kOk) {
+        return {a, err};
+    } else if (!field_set) {
         return {a, rlp::DecodingResult::kOk};
     }
 
-    uint8_t field_set = encoded[0];
     size_t pos{1};
-
-    if (field_set & 1) {
-        uint8_t len = encoded[pos++];
-        if (encoded.length() < pos + len) {
-            return {a, rlp::DecodingResult::kInputTooShort};
+    for (int i{1}; i < 16; i *= 2) {
+        if (field_set & i) {
+            uint8_t len = encoded_payload[pos++];
+            if (encoded_payload.length() < pos + len) {
+                return {a, rlp::DecodingResult::kInputTooShort};
+            }
+            const auto encoded_value{encoded_payload.substr(pos, len)};
+            switch (i) {
+                case 1: {
+                    const std::optional<uint64_t> nonce{endian::from_big_compact<uint64_t>(encoded_value)};
+                    if (nonce == std::nullopt) {
+                        return {a, rlp::DecodingResult::kLeadingZero};
+                    }
+                    a.nonce = *nonce;
+                } break;
+                case 2: {
+                    const auto balance{endian::from_big_compact<intx::uint256>(encoded_value)};
+                    if (!balance.has_value()) {
+                        return {a, rlp::DecodingResult::kOverflow};
+                    }
+                    a.balance = balance.value();
+                } break;
+                case 4: {
+                    const std::optional<uint64_t> incarnation{endian::from_big_compact<uint64_t>(encoded_value)};
+                    if (incarnation == std::nullopt) {
+                        return {a, rlp::DecodingResult::kLeadingZero};
+                    }
+                    a.incarnation = *incarnation;
+                } break;
+                case 8:
+                    if (len != kHashLength) {
+                        return {a, rlp::DecodingResult::kUnexpectedLength};
+                    }
+                    std::memcpy(a.code_hash.bytes, &encoded_value[0], kHashLength);
+                    break;
+                default:
+                    len = 0;
+            }
+            pos += len;
         }
-        const std::optional<uint64_t> nonce{endian::from_big_compact<uint64_t>(encoded.substr(pos, len))};
-        if (nonce == std::nullopt) {
-            return {a, rlp::DecodingResult::kOverflow};
-        }
-        a.nonce = *nonce;
-        pos += len;
-    }
-
-    if (field_set & 2) {
-        uint8_t len = encoded[pos++];
-        if (encoded.length() < pos + len) {
-            return {a, rlp::DecodingResult::kInputTooShort};
-        }
-        std::memcpy(&as_bytes(a.balance)[32 - len], &encoded[pos], len);
-        a.balance = bswap(a.balance);
-        pos += len;
-    }
-
-    if (field_set & 4) {
-        uint8_t len = encoded[pos++];
-        if (encoded.length() < pos + len) {
-            return {a, rlp::DecodingResult::kInputTooShort};
-        }
-        const std::optional<uint64_t> incarnation{endian::from_big_compact<uint64_t>(encoded.substr(pos, len))};
-        if (incarnation == std::nullopt) {
-            return {a, rlp::DecodingResult::kOverflow};
-        }
-        a.incarnation = *incarnation;
-        pos += len;
-    }
-
-    if (field_set & 8) {
-        uint8_t len = encoded[pos++];
-        if (len != kHashLength) {
-            return {a, rlp::DecodingResult::kUnexpectedLength};
-        }
-        if (encoded.length() < pos + len) {
-            return {a, rlp::DecodingResult::kInputTooShort};
-        }
-        std::memcpy(a.code_hash.bytes, &encoded[pos], kHashLength);
     }
 
     return {a, rlp::DecodingResult::kOk};
+}
+
+std::pair<uint64_t, rlp::DecodingResult> Account::incarnation_from_encoded_storage(ByteView encoded_payload) noexcept {
+    const auto [field_set, err] = validate_encoded_head(encoded_payload);
+    if (err != rlp::DecodingResult::kOk) {
+        return {0, err};
+    } else if (!field_set || !(field_set & /*incarnation mask*/ 4)) {
+        return {0, rlp::DecodingResult::kOk};
+    }
+
+    size_t pos{1};
+    for (int i{1}; i < 8; i *= 2) {
+        if (field_set & i) {
+            uint8_t len = encoded_payload[pos++];
+            if (encoded_payload.length() < pos + len) {
+                return {0, rlp::DecodingResult::kInputTooShort};
+            }
+            switch (i) {
+                case 1:
+                case 2:
+                    break;
+                case 4: {
+                    const auto incarnation{endian::from_big_compact<uint64_t>(encoded_payload.substr(pos, len))};
+                    if (incarnation == std::nullopt) {
+                        return {0, rlp::DecodingResult::kLeadingZero};
+                    }
+                    return {*incarnation, rlp::DecodingResult::kOk};
+                } break;
+                default:
+                    len = 0;
+            }
+            pos += len;
+        }
+    }
+    return {0, rlp::DecodingResult::kOk};
 }
 
 Bytes Account::rlp(const evmc::bytes32& storage_root) const {

@@ -1,5 +1,5 @@
 /*
-   Copyright 2020-2021 The Silkworm Authors
+   Copyright 2020-2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -82,16 +82,16 @@ int main(int argc, char* argv[]) {
         ExecutionStatePool state_pool;
         std::vector<Receipt> receipts;
         auto engine{consensus::engine_factory(chain_config.value())};
+        BlockWithHash bh;
         for (; block_num < to; ++block_num) {
             txn.renew_reading();
-            std::optional<BlockWithHash> bh{db::read_block(txn, block_num, /*read_senders=*/true)};
-            if (!bh) {
+            if (!db::read_block(txn, block_num, /*read_senders=*/true, bh)) {
                 break;
             }
 
             db::Buffer buffer{txn, block_num};
 
-            ExecutionProcessor processor{bh->block, *engine, buffer, *chain_config};
+            ExecutionProcessor processor{bh.block, *engine, buffer, *chain_config};
             processor.evm().advanced_analysis_cache = &analysis_cache;
             processor.evm().state_pool = &state_pool;
 
@@ -113,9 +113,9 @@ int main(int argc, char* argv[]) {
                         }
                     } else if (Bytes val{calculated_account_changes.at(e.first)}; val != e.second) {
                         log::Error() << "Value mismatch for " << to_hex(e.first) << ":\n"
-                                            << to_hex(val) << "\n"
-                                            << "vs DB\n"
-                                            << to_hex(e.second);
+                                     << to_hex(val) << "\n"
+                                     << "vs DB\n"
+                                     << to_hex(e.second);
                         mismatch = true;
                     }
                 }
@@ -145,8 +145,7 @@ int main(int argc, char* argv[]) {
 
             if (block_num % 1000 == 0) {
                 absl::Time t2{absl::Now()};
-                log::Info() << " Checked blocks ≤ " << block_num << " in " << absl::ToDoubleSeconds(t2 - t1)
-                                   << " s";
+                log::Info() << " Checked blocks ≤ " << block_num << " in " << absl::ToDoubleSeconds(t2 - t1) << " s";
                 t1 = t2;
             }
         }

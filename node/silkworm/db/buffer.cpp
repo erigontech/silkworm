@@ -1,5 +1,5 @@
 /*
-   Copyright 2020-2021 The Silkworm Authors
+   Copyright 2020-2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -300,7 +300,12 @@ std::optional<BlockBody> Buffer::read_body(uint64_t block_number, const evmc::by
     if (auto it{bodies_.find(key)}; it != bodies_.end()) {
         return it->second;
     }
-    return db::read_body(txn_, key, /*read_senders=*/false);
+    BlockBody body;
+    if (db::read_body(txn_, key, /*read_senders=*/false, body)) {
+        return body;
+    } else {
+        return std::nullopt;
+    }
 }
 
 std::optional<Account> Buffer::read_account(const evmc::address& address) const noexcept {

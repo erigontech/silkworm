@@ -181,17 +181,16 @@ std::vector<Transaction> read_transactions(mdbx::cursor& txn_table, uint64_t bas
     return v;
 }
 
-std::optional<BlockWithHash> read_block(mdbx::txn& txn, BlockNum block_number, bool read_senders) {
+bool read_block(mdbx::txn& txn, BlockNum block_number, bool read_senders, BlockWithHash& bh) {
     // Locate canonical hash
     thread_local mdbx::cursor_managed canonical_hashes_cursor;
     canonical_hashes_cursor.bind(txn, db::open_map(txn, table::kCanonicalHashes));
     auto key{block_key(block_number)};
     auto data{canonical_hashes_cursor.find(to_slice(key), false)};
     if (!data) {
-        return std::nullopt;
+        return false;
     }
 
-    BlockWithHash bh{};
     SILKWORM_ASSERT(data.value.length() == kHashLength);
     std::memcpy(bh.hash.bytes, data.value.data(), kHashLength);
 
@@ -201,41 +200,31 @@ std::optional<BlockWithHash> read_block(mdbx::txn& txn, BlockNum block_number, b
     key = block_key(block_number, bh.hash.bytes);
     data = headers_cursor.find(to_slice(key), false);
     if (!data) {
-        return std::nullopt;
+        return false;
     }
 
     ByteView data_view(from_slice(data.value));
     rlp::success_or_throw(rlp::decode(data_view, bh.block.header));
 
-    // Read body
-    std::optional<BlockBody> body{read_body(txn, key, read_senders)};
-    if (!body) {
-        return std::nullopt;
-    }
-
-    std::swap(bh.block.ommers, body->ommers);
-    std::swap(bh.block.transactions, body->transactions);
-
-    return bh;
+    return read_body(txn, key, read_senders, bh.block);
 }
 
-std::optional<BlockBody> read_body(mdbx::txn& txn, BlockNum block_number, const uint8_t (&hash)[kHashLength],
-                                   bool read_senders) {
+bool read_body(mdbx::txn& txn, BlockNum block_number, const uint8_t (&hash)[kHashLength], bool read_senders,
+               BlockBody& out) {
     auto key{block_key(block_number, hash)};
-    return read_body(txn, key, read_senders);
+    return read_body(txn, key, read_senders, out);
 }
 
-std::optional<BlockBody> read_body(mdbx::txn& txn, const Bytes& key, bool read_senders) {
+bool read_body(mdbx::txn& txn, const Bytes& key, bool read_senders, BlockBody& out) {
     thread_local mdbx::cursor_managed src;
     src.bind(txn, db::open_map(txn, table::kBlockBodies));
     auto data{src.find(to_slice(key), false)};
     if (!data) {
-        return std::nullopt;
+        return false;
     }
     ByteView data_view{from_slice(data.value)};
     auto body{detail::decode_stored_block_body(data_view)};
 
-    BlockBody out;
     std::swap(out.ommers, body.ommers);
     out.transactions = read_transactions(txn, body.base_txn_id, body.txn_count);
 
@@ -256,7 +245,7 @@ std::optional<BlockBody> read_body(mdbx::txn& txn, const Bytes& key, bool read_s
         }
     }
 
-    return out;
+    return true;
 }
 
 void write_body(mdbx::txn& txn, const BlockBody& body, const uint8_t (&hash)[kHashLength], const BlockNum number) {

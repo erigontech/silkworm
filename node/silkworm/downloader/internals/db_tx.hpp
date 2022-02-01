@@ -1,5 +1,5 @@
 /*
-   Copyright 2021-2022 The Silkworm Authors
+   Copyright 2021 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -195,12 +195,8 @@ class Db::ReadOnlyAccess::Tx {
         if (!block_num) {
             return std::nullopt;
         }
-        BlockBody body;
-        if (db::read_body(txn, *block_num, h.bytes, /*read_senders=*/false, body)) {
-            return body;
-        } else {
-            return std::nullopt;
-        }
+        bool read_senders = false;
+        return db::read_body(txn, *block_num, h.bytes, read_senders);
     }
 
     std::optional<intx::uint256> read_total_difficulty(BlockNum b, Hash h) {

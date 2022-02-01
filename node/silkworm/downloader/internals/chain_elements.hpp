@@ -185,9 +185,9 @@ struct mbpq_key<std::shared_ptr<Link>> {    // extract key type and value
 };
 namespace silkworm { // reopen namespace
 
-using OldestFirstLinkQueue = map_based_priority_queue<std::shared_ptr<Link>, BlockOlderThan>;
+using OldestFirstLinkMap = map_based_priority_queue<std::shared_ptr<Link>, BlockOlderThan>;
 
-using OldestFirstLinkQueue2 = set_based_priority_queue<std::shared_ptr<Link>, LinkOlderThan>;
+using OldestFirstLinkQueue = set_based_priority_queue<std::shared_ptr<Link>, LinkOlderThan>;
 
 // We need a queue for all links to
 // - store the links

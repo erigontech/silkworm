@@ -220,11 +220,8 @@ Headers WorkingChain::withdraw_stable_headers() {
     log::Trace() << "WorkingChain: finding headers to persist on top of " << highest_in_db_
                  << " (" << insert_list_.size() << " waiting in queue)";
 
-    LinkList links_in_future;  // here we accumulate links that fail validation as "in the future"
-
-    //OldestFirstLinkQueue2  assessing_list = move(insert_list_);
-    OldestFirstLinkQueue2  assessing_list = insert_list_;
-    insert_list_.clear();
+    OldestFirstLinkQueue assessing_list = insert_list_; // use move() operation if it is assured that after the move
+    insert_list_.clear();                               // the container is empty and can be reused
 
     while (!assessing_list.empty()) {
         // Choose a link at top

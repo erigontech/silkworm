@@ -20,7 +20,7 @@ namespace silkworm {
 
 // A Chain_State implementation tied to WorkingChain needs
 
-CustomHeaderOnlyChainState::CustomHeaderOnlyChainState(OldestFirstLinkQueue& persistedLinkQueue)
+CustomHeaderOnlyChainState::CustomHeaderOnlyChainState(OldestFirstLinkMap& persistedLinkQueue)
     : persistedLinkQueue_(persistedLinkQueue) {}
 
 std::optional<BlockHeader> CustomHeaderOnlyChainState::read_header(BlockNum block_number,

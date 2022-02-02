@@ -174,6 +174,10 @@ StageResult HashState::hash_from_plainstate(db::RWTxn& txn) {
             // We're reading PlainState which keys are ordered by address (always initial 20 bytes of key)
             // Rehash the address only when changes
             if (std::memcmp(data_key_view.data(), last_address.bytes, kAddressLength) != 0) {
+                if (is_stopping()) {
+                    collector_->clear();
+                    return StageResult::kAborted;
+                }
                 last_address = to_evmc_address(data_key_view);
                 address_hash = keccak256(last_address.bytes);
                 current_key_ = to_hex(last_address.bytes, /*with_prefix=*/true);
@@ -190,9 +194,7 @@ StageResult HashState::hash_from_plainstate(db::RWTxn& txn) {
 
                 etl::Entry entry{Bytes(address_hash.bytes, kHashLength), Bytes{db::from_slice(data.value)}};
                 collector_->collect(std::move(entry));
-                if (collector_->size() % 128 == 0 && is_stopping()) {
-                    return StageResult::kAborted;
-                }
+
             } else if (data.key.length() == db::kPlainStoragePrefixLength) {
                 // Hash storage
                 // data.key           == Address + Incarnation
@@ -227,9 +229,6 @@ StageResult HashState::hash_from_plainstate(db::RWTxn& txn) {
                     data_value_view.remove_prefix(kHashLength);
                     etl::Entry entry{etl_storage_entry_key, Bytes{data_value_view}};
                     collector_->collect(std::move(entry));
-                    if (collector_->size() % 128 == 0 && is_stopping()) {
-                        return StageResult::kAborted;
-                    }
                     data = source.to_current_next_multi(false);
                 }
 
@@ -804,7 +803,6 @@ StageResult HashState::write_changes_from_changed_storage(
     loading_ = false;
     return StageResult::kSuccess;
 }
-
 
 std::vector<std::string> HashState::get_log_progress() {
     std::vector<std::string> ret{};

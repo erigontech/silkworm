@@ -18,6 +18,7 @@
 #ifndef SILKWORM_STAGEDSYNC_SYNCLOOP_HPP_
 #define SILKWORM_STAGEDSYNC_SYNCLOOP_HPP_
 
+#include <silkworm/common/asio_timer.hpp>
 #include <silkworm/common/settings.hpp>
 #include <silkworm/common/stopwatch.hpp>
 #include <silkworm/concurrency/worker.hpp>
@@ -44,7 +45,7 @@ class SyncLoop final : public Worker {
     void load_stages();                                          // Fills the vector of stages
 
     //! \brief Runs a full sync cycle
-    [[nodiscard]] StageResult run_cycle(db::RWTxn& cycle_txn);
+    [[nodiscard]] StageResult run_cycle(db::RWTxn& cycle_txn, Timer& log_timer);
 
     void throttle_next_cycle(const StopWatch::Duration& cycle_duration);  // Delays (if required) next cycle run
     std::string get_log_prefix() const;  // Returns the current log lines prefix on behalf of current stage

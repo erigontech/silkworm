@@ -18,7 +18,6 @@
 
 #include <boost/format.hpp>
 
-#include <silkworm/common/asio_timer.hpp>
 #include <silkworm/common/log.hpp>
 #include <silkworm/db/stages.hpp>
 #include <silkworm/stagedsync/stagedsync.hpp>
@@ -66,7 +65,7 @@ void SyncLoop::work() {
         cycle_stop_watch.start(/*with_reset=*/true);
 
         // TODO we should get highest seen from header downloader but is not plugged in yet
-        BlockNum highest_seen_header{13'000'000};
+        BlockNum highest_seen_header{14'000'000};
         bool cycle_in_one_tx{!is_first_cycle};
 
         {
@@ -91,7 +90,7 @@ void SyncLoop::work() {
             cycle_txn = std::make_unique<db::RWTxn>(*chaindata_env_);
         }
 
-        if (run_cycle(*cycle_txn) != StageResult::kSuccess) {
+        if (run_cycle(*cycle_txn, log_timer) != StageResult::kSuccess) {
             break;
         }
 
@@ -115,13 +114,15 @@ void SyncLoop::work() {
     log::Info() << "Synchronization loop terminated";
 }
 
-StageResult SyncLoop::run_cycle(db::RWTxn& cycle_txn) {
+StageResult SyncLoop::run_cycle(db::RWTxn& cycle_txn, Timer& log_timer) {
     StopWatch stages_stop_watch;
     (void)stages_stop_watch.start();
     try {
         for (; current_stage_ < stages_.size() && !is_stopping(); ++current_stage_) {
             auto& stage{stages_.at(current_stage_)};
-            if (auto stage_result{stage->forward(cycle_txn)}; stage_result != StageResult::kSuccess) {
+            log_timer.reset();  // Resets the interval for next log line from now
+            const auto stage_result{stage->forward(cycle_txn)};
+            if (stage_result != StageResult::kSuccess) {
                 log::Error(get_log_prefix(), {"return", std::string(magic_enum::enum_name<StageResult>(stage_result))});
                 return stage_result;
             }

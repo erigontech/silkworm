@@ -327,6 +327,10 @@ StageResult HashState::hash_from_plaincode(db::RWTxn& txn) {
             // We're reading PlainCodeHash which keys are ordered by address (always initial 20 bytes of key)
             // Rehash the address only when changes
             if (std::memcmp(data_key_view.data(), last_address.bytes, kAddressLength) != 0) {
+                if (is_stopping()) {
+                    collector_->clear();
+                    return StageResult::kAborted;
+                }
                 last_address = to_evmc_address(data_key_view);
                 current_key_ = to_hex(last_address.bytes, /*with_prefix=*/true);
                 const auto address_hash{keccak256(last_address.bytes)};
@@ -339,9 +343,6 @@ StageResult HashState::hash_from_plaincode(db::RWTxn& txn) {
             collector_->collect(std::move(entry));
             if (collector_->size() % 128 == 0) {
                 current_key_ = abridge(to_hex(db::from_slice(data.key), /*with_prefix=*/true), kAddressLength * 2 + 2);
-                if (is_stopping()) {
-                    return StageResult::kAborted;
-                }
             }
             data = source.to_next(/*throw_notfound=*/false);
         }

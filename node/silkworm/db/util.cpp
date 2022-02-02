@@ -110,10 +110,10 @@ std::optional<ByteView> find_value_suffix(mdbx::cursor& table, ByteView key, Byt
 }
 
 void upsert_storage_value(mdbx::cursor& state_cursor, ByteView storage_prefix, ByteView location, ByteView new_value) {
-    static const auto build_db_value = [](const ByteView& location, const ByteView& new_value) -> Bytes {
-        Bytes res(location.length() + new_value.length(), '\0');
-        std::memcpy(&res[0], location.data(), location.length());
-        std::memcpy(&res[location.length()], new_value.data(), new_value.length());
+    static const auto build_db_value = [](const ByteView& loc, const ByteView& val) -> Bytes {
+        Bytes res(loc.length() + val.length(), '\0');
+        std::memcpy(&res[0], loc.data(), loc.length());
+        std::memcpy(&res[loc.length()], val.data(), val.length());
         return res;
     };
 

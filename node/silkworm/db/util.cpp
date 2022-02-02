@@ -83,16 +83,17 @@ std::pair<Bytes, Bytes> changeset_to_plainstate_format(const ByteView key, ByteV
         const Bytes previous_value{value.substr(kAddressLength)};
         return {address, previous_value};
     } else if (key.length() == 8 + kPlainStoragePrefixLength) {
-        if (value.length() > kHashLength) {
-            // StorageChangeSet See storage_change_key
-            Bytes full_key(kPlainStoragePrefixLength + kHashLength, '\0');
-            std::memcpy(&full_key[0], &key[8], kPlainStoragePrefixLength);
-            std::memcpy(&full_key[kPlainStoragePrefixLength], &value[0], kHashLength);
-            value.remove_prefix(kHashLength);
-            return {full_key, Bytes(value)};
+        if (value.length() < kHashLength) {
+            throw std::runtime_error("Invalid value length " + std::to_string(value.length()) + " in " +
+                                     std::string(__FUNCTION__));
         }
-        throw std::runtime_error("Invalid value length " + std::to_string(value.length()) + " in " +
-                                 std::string(__FUNCTION__));
+
+        // StorageChangeSet See storage_change_key
+        Bytes full_key(kPlainStoragePrefixLength + kHashLength, '\0');
+        std::memcpy(&full_key[0], &key[8], kPlainStoragePrefixLength);
+        std::memcpy(&full_key[kPlainStoragePrefixLength], &value[0], kHashLength);
+        value.remove_prefix(kHashLength);
+        return {full_key, Bytes(value)};
     }
     throw std::runtime_error("Invalid key length " + std::to_string(key.length()) + " in " + std::string(__FUNCTION__));
 }

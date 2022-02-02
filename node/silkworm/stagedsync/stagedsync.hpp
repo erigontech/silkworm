@@ -114,13 +114,6 @@ class HashState final : public IStage {
     //! \struct Address -> Address Hash -> Value
     using ChangedAddresses = absl::btree_map<evmc::address, std::pair<evmc::bytes32, Bytes>>;
 
-    enum class DataKind {
-        None,
-        Account,  // To generate HashedAccount table
-        Storage,  // To generate HashedStorage table
-        Code      // To generate hashed key => code_hash mapping
-    };
-
     //! \brief Transforms PlainState into HashedAccounts and HashedStorage respectively in one single read pass over
     //! PlainState \remarks To be used only if this is very first time HashState stage runs forward (i.e. forwarding
     //! from 0)
@@ -148,11 +141,9 @@ class HashState final : public IStage {
     //! \brief Writes to db the changes collected from account changeset scan either in forward or unwind mode
     StageResult write_changes_from_changed_addresses(db::RWTxn& txn, ChangedAddresses& changed_addresses);
 
-    void demote_incremental(db::RWTxn& txn, BlockNum to, DataKind kind);
-
-    //! \brief Retrieve tables configuration pair for incremental promotion
-    //! \return A pair where first is the source and second is the target
-    [[nodiscard]] static std::pair<db::MapConfig, db::MapConfig> get_operation_tables(DataKind kind);
+    //! \brief Writes to db the changes collected from storage changeset scan either in forward or unwind mode
+    StageResult write_changes_from_changed_storage(db::RWTxn& txn, db::StorageChanges& storage_changes,
+                                                   absl::btree_map<evmc::address, evmc::bytes32>& hashed_addresses);
 
     //! \brief Resets all fields related to log progress tracking
     void reset_log_progress();

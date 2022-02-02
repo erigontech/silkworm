@@ -408,17 +408,18 @@ TEST_CASE("Sync Stages") {
             value = db::from_slice(db_val).substr(kHashLength);
             CHECK(to_hex(value) == "01c9");
 
-            // Unwind the stage
-            actual_stage_result = magic_enum::enum_name<stagedsync::StageResult>(stage.unwind(txn, 1));
+            // Unwind the stage to block 1 (i.e. block 1 *is* applied)
+            BlockNum unwind_to{1};
+            actual_stage_result = magic_enum::enum_name<stagedsync::StageResult>(stage.unwind(txn, unwind_to));
             REQUIRE(expected_stage_result == actual_stage_result);
             hashed_accounts_table = db::open_cursor(*txn, db::table::kHashedAccounts);
             REQUIRE(hashed_accounts_table.seek(db::to_slice(hashed_sender.bytes)));
             {
                 auto account_encoded{db::from_slice(hashed_accounts_table.current().value)};
                 auto [account, _]{Account::from_encoded_storage(account_encoded)};
-                CHECK(account.nonce == 2);
-                CHECK(account.balance < kEther);
-                CHECK(db::stages::read_stage_progress(*txn, db::stages::kHashStateKey) == 1);
+                CHECK(account.nonce == 1);
+                CHECK(account.balance == kEther);
+                CHECK(db::stages::read_stage_progress(*txn, db::stages::kHashStateKey) == unwind_to);
             }
         }
     }

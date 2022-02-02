@@ -110,6 +110,10 @@ class HashState final : public IStage {
     std::vector<std::string> get_log_progress() final;
 
   private:
+    //! \brief Store already processed addresses to avoid rehashing and multiple lookups
+    //! \struct Address -> Address Hash -> Value
+    using ChangedAddresses = absl::btree_map<evmc::address, std::pair<evmc::bytes32, Bytes>>;
+
     enum class DataKind {
         None,
         Account,  // To generate HashedAccount table
@@ -141,14 +145,19 @@ class HashState final : public IStage {
     //! \brief Detects storage changes from StorageChangeSet and reverts hashed states
     StageResult unwind_from_storage_changeset(db::RWTxn& txn, BlockNum previous_progress, BlockNum to);
 
+    //! \brief Writes to db the changes collected from account changeset scan either in forward or unwind mode
+    StageResult write_changes_from_changed_addresses(db::RWTxn& txn, ChangedAddresses& changed_addresses);
+
     void demote_incremental(db::RWTxn& txn, BlockNum to, DataKind kind);
 
     //! \brief Retrieve tables configuration pair for incremental promotion
     //! \return A pair where first is the source and second is the target
     [[nodiscard]] static std::pair<db::MapConfig, db::MapConfig> get_operation_tables(DataKind kind);
 
+    //! \brief Resets all fields related to log progress tracking
+    void reset_log_progress();
+
     // Logger info
-    std::atomic_bool unwinding_{false};          // Weather we're forwarding or unwinding
     std::atomic_bool incremental_{false};        // Whether operation is incremental
     std::atomic_bool loading_{false};            // Whether we're in ETL loading phase
     std::string current_source_;                 // Current source of data

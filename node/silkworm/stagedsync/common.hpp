@@ -74,6 +74,12 @@ inline void success_or_throw(StageResult code) {
 //! prune
 class IStage {
   public:
+    enum class OperationType {
+        None,     // Actually no operation running
+        Forward,  // Executing Forward
+        Unwind,   // Executing Unwind
+        Prune,    // Executing Prune
+    };
     explicit IStage(const char* stage_name, NodeSettings* node_settings)
         : stage_name_{stage_name}, node_settings_{node_settings} {};
     virtual ~IStage() = default;
@@ -115,6 +121,7 @@ class IStage {
   protected:
     const char* stage_name_;
     NodeSettings* node_settings_;
+    std::atomic<OperationType> operation_{OperationType::None};
 
   private:
     std::atomic_bool stopping_{false};

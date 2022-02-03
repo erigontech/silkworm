@@ -108,4 +108,4 @@ std::vector<std::string> split(std::string_view source, std::string_view delimit
 
 }  // namespace silkworm
 
-#endif  // SILKWORM_COMMON_UTIL_H
+#endif  // SILKWORM_COMMON_UTIL_HPP_

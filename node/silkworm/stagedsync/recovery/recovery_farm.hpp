@@ -141,7 +141,7 @@ class RecoveryFarm {
 
     /* Stats */
     uint16_t current_phase_{0};
-    size_t highest_processed_block_{0};
+    size_t total_processed_blocks_{0};
     size_t total_collected_transactions_{0};
 };
 

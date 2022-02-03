@@ -201,7 +201,7 @@ std::vector<std::string> RecoveryFarm::get_log_progress() {
             case 2:
                 return {"phase",        std::to_string(current_phase_) + "/3",  //
                         "blocks",       std::to_string(headers_.size()),        //
-                        "current",      std::to_string(highest_processed_block_),
+                        "current",      std::to_string(total_processed_blocks_),
                         "transactions", std::to_string(total_collected_transactions_),
                         "workers",      std::to_string(workers_in_flight_.load())};
             case 3:
@@ -343,10 +343,10 @@ StageResult RecoveryFarm::transform_and_fill_batch(uint64_t block_num, std::vect
 
         tx_id++;
     }
+    total_processed_blocks_++;
 
     // Do we overflow ?
     if (batch_.size() > batch_size_) {
-        highest_processed_block_ = block_num;
         total_collected_transactions_ += batch_.size();
         if (!dispatch_batch()) {
             return StageResult::kUnexpectedError;

@@ -14,9 +14,9 @@
     limitations under the License.
 */
 
-#include "silkworm/common/base.hpp"
+#include <silkworm/common/base.hpp>
 
-#include "silkworm/downloader/internals/preverified_hashes.hpp"
+#include <silkworm/downloader/internals/preverified_hashes.hpp>
 
 namespace silkworm {
 

@@ -75,9 +75,6 @@ class WorkingChain {
     std::string human_readable_status() const;
 
     std::string dump_chain_bundles() const;
-    void assure_no_orphaned_links() const;
-    std::set<BlockNum> search_orphaned_links() const;
-    std::string dump_orphaned_links(std::set<BlockNum>&) const;
 
     // make an anchor collection (skeleton request) or many anchor extension upon the last execution time
     auto request_headers(time_point_t tp)

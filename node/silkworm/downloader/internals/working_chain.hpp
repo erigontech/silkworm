@@ -131,6 +131,7 @@ class WorkingChain {
     using DeepLink = std::shared_ptr<Link>;
     auto find_anchor(std::shared_ptr<Link> link) const -> std::tuple<std::optional<std::shared_ptr<Anchor>>, DeepLink>;
 
+    size_t pending_links() const;
     void reduce_links_to(size_t limit);
     void reduce_persisted_links_to(size_t limit);
 
@@ -154,7 +155,6 @@ class WorkingChain {
     void extend_up(std::shared_ptr<Link>, Segment::Slice);
     auto new_anchor(Segment::Slice, PeerId) -> RequestMoreHeaders;
 
-    YoungestFirstLinkQueue link_queue_;          // Priority queue of non-persisted links used to limit their number
     OldestFirstAnchorQueue anchor_queue_;        // Priority queue of anchors used to sequence the header requests
     LinkMap links_;                              // Links by header hash
     AnchorMap anchors_;                          // Mapping from parentHash to collection of anchors

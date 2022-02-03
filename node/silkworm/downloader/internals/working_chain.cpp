@@ -58,25 +58,17 @@ bool WorkingChain::in_sync() const {
     return highest_in_db_ >= preverified_hashes_->height && top_seen_height_ > 0 && highest_in_db_ >= top_seen_height_;
 }
 
+size_t WorkingChain::pending_links() const {
+    return links_.size() - persisted_link_queue_.size();
+}
+
 std::string WorkingChain::human_readable_status() const {
-    using std::chrono::system_clock, std::chrono::duration_cast, std::chrono::minutes;
-    //static auto last_execution = system_clock::now();
-
-    auto invariant = links_.size() == (link_queue_.size() + persisted_link_queue_.size());
-
     std::string output =
            std::to_string(links_.size()) + + " links (" +
-           std::to_string(link_queue_.size()) + " pending / " +
-           std::to_string(persisted_link_queue_.size()) + " persisting/ed" + (invariant ? "), " : " !),") +
+           std::to_string(pending_links()) + " pending / " +
+           std::to_string(persisted_link_queue_.size()) + " persisting/ed), " +
            std::to_string(anchors_.size()) + "/" + std::to_string(anchor_queue_.size()) + " anchors, " +
            std::to_string(highest_in_db_) + " highest block in db";
-
-    //auto elapsed_minutes = duration_cast<minutes>(system_clock::now() - last_execution).count();
-    //if (elapsed_minutes >= 5) {
-    //    output += "\n";
-    //    output += dump_chain_bundles();
-    //    last_execution = system_clock::now();
-    //}
 
     return output;
 }
@@ -245,8 +237,6 @@ Headers WorkingChain::withdraw_stable_headers() {
                            << " timestamp=" << link->header->timestamp << ")";
             continue;
         }
-
-        link_queue_.erase(link);
 
         if (assessment == Skip) {
             links_.erase(link->hash);
@@ -478,7 +468,6 @@ void WorkingChain::invalidate(std::shared_ptr<Anchor> anchor) {
         auto removal = link_to_remove.back();
         link_to_remove.pop_back();
         links_.erase(removal->hash);
-        link_queue_.erase(removal);
         move_at_end(link_to_remove, removal->next);
     }
 }
@@ -702,15 +691,15 @@ auto WorkingChain::process_segment(const Segment& segment, bool is_a_new_block, 
 }
 
 void WorkingChain::reduce_links_to(size_t limit) {
-    if (link_queue_.size() <= limit) return;  // does nothing
+    if (pending_links() <= limit) return;  // does nothing
 
-    auto initial_size = link_queue_.size();
+    auto initial_size = pending_links();
 
     auto victim_anchor = highest_anchor();
 
     invalidate(victim_anchor);
 
-    log::Info() << "LinkQueue: too many links, cut down from " << initial_size << " to " << link_queue_.size()
+    log::Info() << "LinkQueue: too many links, cut down from " << initial_size << " to " << pending_links()
                  << " (removed chain bundle start=" << victim_anchor->blockHeight
                  << " end=" << victim_anchor->lastLinkHeight << ")";
 }
@@ -980,8 +969,6 @@ auto WorkingChain::add_header_as_link(const BlockHeader& header, bool persisted)
     links_[link->hash] = link;
     if (persisted)
         persisted_link_queue_.push(link);
-    else
-        link_queue_.push(link);
 
     return link;
 }

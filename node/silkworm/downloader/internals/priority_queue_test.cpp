@@ -271,16 +271,6 @@ TEST_CASE("Oldest_First_Link_Queue") {
         REQUIRE(queue.size() == 5);
         bool link1_present = queue.contains(link1);
         REQUIRE(link1_present == true);
-
-        auto [a, c] = queue.equal_range(link1);
-        REQUIRE(a != queue.end());
-        REQUIRE(c != queue.end());
-        REQUIRE(a != c);
-        auto b = a; b++;
-        REQUIRE(a != b);  // different iterators
-        REQUIRE(*a == *b);  // same identity
-        REQUIRE((*a)->blockHeight == 1);
-        REQUIRE((*b)->blockHeight == 1);
     }
 
     SECTION("siblings, different identity") {
@@ -289,24 +279,18 @@ TEST_CASE("Oldest_First_Link_Queue") {
         auto link1b = std::make_shared<Link>(dummy_header, persisted);
         link1b->blockHeight = 1;
         link1b->persisted = !persisted;
+
+        bool link1b_present = queue.contains(link1b);
+        REQUIRE(link1b_present == false);
+
         queue.push(link1b); // again, different identity
 
         REQUIRE(queue.size() == 5);
         bool link1_present = queue.contains(link1);
         REQUIRE(link1_present == true);
-        bool link1b_present = queue.contains(link1b);
+        link1b_present = queue.contains(link1b);
         REQUIRE(link1b_present == true);
 
-        auto [a, c] = queue.equal_range(link1);
-        REQUIRE(a != queue.end());
-        REQUIRE(c != queue.end());
-        REQUIRE(a != c);
-        auto b = a; b++;
-        REQUIRE(a != b);  // different iterators
-        REQUIRE(*a != *b); // different identity
-        REQUIRE((*a)->blockHeight == 1);
-        REQUIRE((*b)->blockHeight == 1);
-        REQUIRE((*a)->persisted != (*b)->persisted);
     }
 }
 

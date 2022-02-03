@@ -32,8 +32,8 @@ class WorkingChain_ForTest : public WorkingChain {
     using WorkingChain::anchors_;
     using WorkingChain::find_anchor;
     using WorkingChain::generate_request_id;
-    using WorkingChain::link_queue_;
     using WorkingChain::links_;
+    using WorkingChain::pending_links;
     using WorkingChain::reduce_links_to;
     using WorkingChain::WorkingChain;
 
@@ -374,7 +374,7 @@ TEST_CASE("WorkingChain - process_segment - (1) simple chain") {
         REQUIRE(requestMoreHeaders == true);
         REQUIRE(chain.anchor_queue_.size() == 1);
         REQUIRE(chain.anchors_.size() == 1);
-        REQUIRE(chain.link_queue_.size() == 2);
+        REQUIRE(chain.pending_links() == 2);
         REQUIRE(chain.links_.size() == 2);
 
         auto anchor = chain.anchors_[headers[1].parent_hash];
@@ -406,7 +406,7 @@ TEST_CASE("WorkingChain - process_segment - (1) simple chain") {
         REQUIRE(requestMoreHeaders == false);
         REQUIRE(chain.anchor_queue_.size() == 1);
         REQUIRE(chain.anchors_.size() == 1);
-        REQUIRE(chain.link_queue_.size() == 4);
+        REQUIRE(chain.pending_links() == 4);
         REQUIRE(chain.links_.size() == 4);
 
         auto anchor = chain.anchors_[headers[1].parent_hash];
@@ -442,7 +442,7 @@ TEST_CASE("WorkingChain - process_segment - (1) simple chain") {
         REQUIRE(requestMoreHeaders == true);
         REQUIRE(chain.anchor_queue_.size() == 2);
         REQUIRE(chain.anchors_.size() == 2);
-        REQUIRE(chain.link_queue_.size() == 6);
+        REQUIRE(chain.pending_links() == 6);
         REQUIRE(chain.links_.size() == 6);
 
         auto anchor1 = chain.anchors_[headers[1].parent_hash];
@@ -491,7 +491,7 @@ TEST_CASE("WorkingChain - process_segment - (1) simple chain") {
         REQUIRE(requestMoreHeaders == true);
         REQUIRE(chain.anchors_.size() == 2);
         REQUIRE(chain.anchor_queue_.size() == 2);
-        REQUIRE(chain.link_queue_.size() == 8);
+        REQUIRE(chain.pending_links() == 8);
         REQUIRE(chain.links_.size() == 8);
 
         auto anchor1 = chain.anchors_[headers[1].parent_hash];
@@ -534,7 +534,7 @@ TEST_CASE("WorkingChain - process_segment - (1) simple chain") {
         REQUIRE(requestMoreHeaders == false);
         REQUIRE(chain.anchors_.size() == 1);
         REQUIRE(chain.anchor_queue_.size() == 1);
-        REQUIRE(chain.link_queue_.size() == 9);
+        REQUIRE(chain.pending_links() == 9);
         REQUIRE(chain.links_.size() == 9);
 
         auto anchor = chain.anchors_[headers[1].parent_hash];
@@ -685,7 +685,6 @@ TEST_CASE("WorkingChain - process_segment - (3) chain with branches") {
         REQUIRE(requestMoreHeaders == true);
         REQUIRE(chain.anchor_queue_.size() == 1);
         REQUIRE(chain.anchors_.size() == 1);
-        REQUIRE(chain.link_queue_.size() == 1);
         REQUIRE(chain.links_.size() == 1);
 
         auto anchor = chain.anchors_[headers[1].parent_hash];
@@ -718,7 +717,6 @@ TEST_CASE("WorkingChain - process_segment - (3) chain with branches") {
         REQUIRE(requestMoreHeaders == true);
         REQUIRE(chain.anchor_queue_.size() == 1);
         REQUIRE(chain.anchors_.size() == 1);
-        REQUIRE(chain.link_queue_.size() == 5);
         REQUIRE(chain.links_.size() == 5);
 
         auto anchor = chain.anchors_[headers[1].parent_hash];
@@ -760,7 +758,6 @@ TEST_CASE("WorkingChain - process_segment - (3) chain with branches") {
         REQUIRE(requestMoreHeaders == true);
         REQUIRE(chain.anchor_queue_.size() == 2);
         REQUIRE(chain.anchors_.size() == 2);
-        REQUIRE(chain.link_queue_.size() == 8);
         REQUIRE(chain.links_.size() == 8);
 
         auto anchor = chain.anchors_[headers[7].parent_hash];
@@ -797,7 +794,6 @@ TEST_CASE("WorkingChain - process_segment - (3) chain with branches") {
         REQUIRE(requestMoreHeaders == true);
         REQUIRE(chain.anchor_queue_.size() == 1);
         REQUIRE(chain.anchors_.size() == 1);
-        REQUIRE(chain.link_queue_.size() == 14);
         REQUIRE(chain.links_.size() == 14);
 
         auto link3 = chain.links_[headers[3].hash()];
@@ -1088,7 +1084,6 @@ TEST_CASE("WorkingChain - process_segment - (6) (malicious) siblings") {
         REQUIRE(requestMoreHeaders == true);
         REQUIRE(chain.anchor_queue_.size() == 1);
         REQUIRE(chain.anchors_.size() == 1);
-        REQUIRE(chain.link_queue_.size() == 1);
         REQUIRE(chain.links_.size() == 1);
 
         auto anchor = chain.anchors_[headers[5].parent_hash];
@@ -1113,7 +1108,6 @@ TEST_CASE("WorkingChain - process_segment - (6) (malicious) siblings") {
         REQUIRE(requestMoreHeaders == true);
         REQUIRE(chain.anchor_queue_.size() == 1);
         REQUIRE(chain.anchors_.size() == 1);
-        REQUIRE(chain.link_queue_.size() == 3);
         REQUIRE(chain.links_.size() == 3);
 
         auto anchor = chain.anchors_[headers[3].parent_hash];
@@ -1147,7 +1141,6 @@ TEST_CASE("WorkingChain - process_segment - (6) (malicious) siblings") {
         REQUIRE(requestMoreHeaders == false);
         REQUIRE(chain.anchor_queue_.size() == 1);
         REQUIRE(chain.anchors_.size() == 1);
-        REQUIRE(chain.link_queue_.size() == 4);
         REQUIRE(chain.links_.size() == 4);
 
         auto anchor = chain.anchors_[headers[3].parent_hash];
@@ -1184,7 +1177,6 @@ TEST_CASE("WorkingChain - process_segment - (6) (malicious) siblings") {
         REQUIRE(requestMoreHeaders == true);
         REQUIRE(chain.anchor_queue_.size() == 2);
         REQUIRE(chain.anchors_.size() == 2);
-        REQUIRE(chain.link_queue_.size() == 5);
         REQUIRE(chain.links_.size() == 5);
 
         auto anchor = chain.anchors_[headers[3].parent_hash];
@@ -1228,7 +1220,6 @@ TEST_CASE("WorkingChain - process_segment - (7) invalidating anchor") {
         REQUIRE(requestMoreHeaders == true);
         REQUIRE(chain.anchor_queue_.size() == 1);
         REQUIRE(chain.anchors_.size() == 1);
-        REQUIRE(chain.link_queue_.size() == 4);
         REQUIRE(chain.links_.size() == 4);
 
         auto anchor = chain.anchors_[headers[5].parent_hash];
@@ -1261,7 +1252,6 @@ TEST_CASE("WorkingChain - process_segment - (7) invalidating anchor") {
 
         REQUIRE(chain.anchor_queue_.size() == 0);
         REQUIRE(chain.anchors_.size() == 0);
-        REQUIRE(chain.link_queue_.size() == 0);
         REQUIRE(chain.links_.size() == 0);
     }
 
@@ -1273,7 +1263,6 @@ TEST_CASE("WorkingChain - process_segment - (7) invalidating anchor") {
         REQUIRE(requestMoreHeaders == true);
         REQUIRE(chain.anchor_queue_.size() == 1);
         REQUIRE(chain.anchors_.size() == 1);
-        REQUIRE(chain.link_queue_.size() == 3);
         REQUIRE(chain.links_.size() == 3);
 
         auto anchor = chain.anchors_[headers[3].parent_hash];
@@ -1319,7 +1308,6 @@ TEST_CASE("WorkingChain - process_segment - (8) sibling with anchor invalidation
         REQUIRE(requestMoreHeaders == true);
         REQUIRE(chain.anchor_queue_.size() == 1);
         REQUIRE(chain.anchors_.size() == 1);
-        REQUIRE(chain.link_queue_.size() == 1);
         REQUIRE(chain.links_.size() == 1);
 
         auto anchor = chain.anchors_[h5p.parent_hash];
@@ -1343,7 +1331,6 @@ TEST_CASE("WorkingChain - process_segment - (8) sibling with anchor invalidation
         REQUIRE(requestMoreHeaders == true);
         REQUIRE(chain.anchor_queue_.size() == 2);
         REQUIRE(chain.anchors_.size() == 2);
-        REQUIRE(chain.link_queue_.size() == 4);
         REQUIRE(chain.links_.size() == 4);
 
         auto anchor1 = chain.anchors_[h5p.parent_hash];
@@ -1389,7 +1376,6 @@ TEST_CASE("WorkingChain - process_segment - (8) sibling with anchor invalidation
 
         REQUIRE(chain.anchor_queue_.size() == 2);
         REQUIRE(chain.anchors_.size() == 2);
-        REQUIRE(chain.link_queue_.size() == 4);
         REQUIRE(chain.links_.size() == 4);
 
         auto anchor1 = chain.anchors_[h5p.parent_hash];
@@ -1445,7 +1431,6 @@ TEST_CASE("WorkingChain - process_segment - (8) sibling with anchor invalidation
 
         REQUIRE(chain.anchor_queue_.size() == 1);  // one less
         REQUIRE(chain.anchors_.size() == 1);       // one less
-        REQUIRE(chain.link_queue_.size() == 3);    // one less
         REQUIRE(chain.links_.size() == 3);         // one less
 
         auto anchor1b_it = chain.anchors_.find(h5p.parent_hash);
@@ -1479,7 +1464,6 @@ TEST_CASE("WorkingChain - process_segment - (8) sibling with anchor invalidation
 
         REQUIRE(chain.anchor_queue_.size() == 1);
         REQUIRE(chain.anchors_.size() == 1);
-        REQUIRE(chain.link_queue_.size() == 3);
         REQUIRE(chain.links_.size() == 3);
 
         auto anchor = chain.anchors_[headers[3].parent_hash];
@@ -1515,7 +1499,6 @@ TEST_CASE("WorkingChain - process_segment - (8) sibling with anchor invalidation
         REQUIRE(requestMoreHeaders == false);
         REQUIRE(chain.anchor_queue_.size() == 1);
         REQUIRE(chain.anchors_.size() == 1);
-        REQUIRE(chain.link_queue_.size() == 5);
         REQUIRE(chain.links_.size() == 5);
 
         auto anchor = chain.anchors_[headers[3].parent_hash];

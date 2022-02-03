@@ -79,6 +79,8 @@ StageResult RecoveryFarm::recover() {
     auto bodies_table{db::open_cursor(*txn_, db::table::kBlockBodies)};
     auto transactions_table{db::open_cursor(*txn_, db::table::kBlockTransactions)};
 
+    std::vector<Transaction> transactions;
+
     // Set to first block and read all in sequence
     auto bodies_initial_key{db::block_key(expected_block_number, headers_it_1_->block_hash.bytes)};
     auto body_data{bodies_table.find(db::to_slice(bodies_initial_key), false)};
@@ -118,8 +120,7 @@ StageResult RecoveryFarm::recover() {
         auto block_body{db::detail::decode_stored_block_body(body_rlp)};
         if (block_body.txn_count) {
             headers_it_1_->txn_count = block_body.txn_count;
-            std::vector<Transaction> transactions{
-                db::read_transactions(transactions_table, block_body.base_txn_id, block_body.txn_count)};
+            db::read_transactions(transactions_table, block_body.base_txn_id, block_body.txn_count, transactions);
             stage_result = transform_and_fill_batch(reached_block_num, transactions);
             if (stage_result != StageResult::kSuccess) {
                 break;
@@ -289,7 +290,7 @@ bool RecoveryFarm::collect_workers_results() {
     return ret;
 }
 
-StageResult RecoveryFarm::transform_and_fill_batch(uint64_t block_num, std::vector<Transaction>& transactions) {
+StageResult RecoveryFarm::transform_and_fill_batch(uint64_t block_num, const std::vector<Transaction>& transactions) {
     if (is_stopping()) {
         return StageResult::kAborted;
     }
@@ -352,7 +353,7 @@ StageResult RecoveryFarm::transform_and_fill_batch(uint64_t block_num, std::vect
         intx::be::unsafe::store(batch_.back().tx_signature, transaction.r);
         intx::be::unsafe::store(batch_.back().tx_signature + kHashLength, transaction.s);
 
-        tx_id++;
+        ++tx_id;
     }
 
     highest_processed_block_ = block_num;

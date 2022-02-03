@@ -137,13 +137,14 @@ void write_canonical_header_hash(mdbx::txn& txn, const uint8_t (&hash)[kHashLeng
     target.upsert(to_slice(key), db::to_slice(hash));
 }
 
-std::vector<Transaction> read_transactions(mdbx::txn& txn, uint64_t base_id, uint64_t count) {
-    if (!count) {
-        return {};
+void read_transactions(mdbx::txn& txn, uint64_t base_id, uint64_t count, std::vector<Transaction>& out) {
+    if (count == 0) {
+        out.clear();
+        return;
     }
     thread_local mdbx::cursor_managed src;
     src.bind(txn, db::open_map(txn, table::kBlockTransactions));
-    return read_transactions(src, base_id, count);
+    read_transactions(src, base_id, count, out);
 }
 
 void write_transactions(mdbx::txn& txn, const std::vector<Transaction>& transactions, uint64_t base_id) {
@@ -163,12 +164,12 @@ void write_transactions(mdbx::txn& txn, const std::vector<Transaction>& transact
     }
 }
 
-std::vector<Transaction> read_transactions(mdbx::cursor& txn_table, uint64_t base_id, uint64_t count) {
-    std::vector<Transaction> v{};
-    if (count == 0) {
-        return v;
-    }
+void read_transactions(mdbx::cursor& txn_table, uint64_t base_id, uint64_t count, std::vector<Transaction>& v) {
     v.resize(count);
+    if (count == 0) {
+        return;
+    }
+
     auto key{db::block_key(base_id)};
 
     uint64_t i{0};
@@ -178,7 +179,6 @@ std::vector<Transaction> read_transactions(mdbx::cursor& txn_table, uint64_t bas
         rlp::success_or_throw(rlp::decode(data_view, v.at(i)));
     }
     SILKWORM_ASSERT(i == count);
-    return v;
 }
 
 bool read_block(mdbx::txn& txn, BlockNum block_number, bool read_senders, BlockWithHash& bh) {
@@ -226,7 +226,7 @@ bool read_body(mdbx::txn& txn, const Bytes& key, bool read_senders, BlockBody& o
     auto body{detail::decode_stored_block_body(data_view)};
 
     std::swap(out.ommers, body.ommers);
-    out.transactions = read_transactions(txn, body.base_txn_id, body.txn_count);
+    read_transactions(txn, body.base_txn_id, body.txn_count, out.transactions);
 
     if (!out.transactions.empty() && read_senders) {
         std::vector<evmc::address> senders{db::read_senders(txn, key)};

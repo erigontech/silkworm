@@ -85,8 +85,8 @@ std::vector<evmc::address> read_senders(mdbx::txn& txn, const Bytes& key);
 std::vector<evmc::address> read_senders(mdbx::txn& txn, BlockNum block_number, const uint8_t (&hash)[kHashLength]);
 
 // See Erigon ReadTransactions
-std::vector<Transaction> read_transactions(mdbx::txn& txn, uint64_t base_id, uint64_t count);
-std::vector<Transaction> read_transactions(mdbx::cursor& txn_table, uint64_t base_id, uint64_t count);
+void read_transactions(mdbx::txn& txn, uint64_t base_id, uint64_t count, std::vector<Transaction>& out);
+void read_transactions(mdbx::cursor& txn_table, uint64_t base_id, uint64_t count, std::vector<Transaction>& out);
 
 //! \brief Persist transactions into db's bucket table::kBlockTransactions.
 //! The key starts from base_id and is incremented by 1 for each transaction.

@@ -31,7 +31,7 @@ struct HumanSizeParserValidator : public CLI::Validator {
     template <typename T>
     explicit HumanSizeParserValidator(T min, std::optional<T> max = std::nullopt) {
         std::stringstream out;
-        out << " in [" << min << " - " << (max.has_value() ? max.value() : "") << "]";
+        out << " in [" << min << " - " << (max.has_value() ? max.value() : "inf") << "]";
         description(out.str());
 
         func_ = [min, max](const std::string& value) -> std::string {

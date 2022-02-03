@@ -298,7 +298,7 @@ StageResult HashState::hash_from_plainstate(db::RWTxn& txn) {
 }
 
 StageResult HashState::hash_from_plaincode(db::RWTxn& txn) {
-    auto source{db::open_cursor(*txn, db::table::kPlainContractHash)};
+    auto source{db::open_cursor(*txn, db::table::kPlainCodeHash)};
     auto data{source.to_first(/*throw_notfound=*/false)};
     if (!data.done) {
         // Table empty. Nothing to process
@@ -311,7 +311,7 @@ StageResult HashState::hash_from_plaincode(db::RWTxn& txn) {
         evmc::address last_address{};
 
         operation_ = OperationType::Forward;
-        current_source_ = std::string(db::table::kPlainContractHash.name);
+        current_source_ = std::string(db::table::kPlainCodeHash.name);
         current_key_ = to_hex(last_address.bytes, /*with_prefix=*/true);
 
         Bytes new_key(db::kHashedStoragePrefixLength, '\0');
@@ -726,7 +726,7 @@ StageResult HashState::write_changes_from_changed_addresses(db::RWTxn& txn, Chan
     current_target_ = std::string(db::table::kHashedAccounts.name) + " " + std::string(db::table::kHashedCodeHash.name);
     loading_ = true;
     current_key_ = to_hex(changed_addresses.begin()->first.bytes, /*with_prefix=*/true);
-    auto source_plaincode{db::open_cursor(*txn, db::table::kPlainContractHash)};
+    auto source_plaincode{db::open_cursor(*txn, db::table::kPlainCodeHash)};
     auto target_hashed_accounts{db::open_cursor(*txn, db::table::kHashedAccounts)};
     auto target_hashed_code{db::open_cursor(*txn, db::table::kHashedCodeHash)};
 

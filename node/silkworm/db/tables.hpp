@@ -121,7 +121,7 @@ inline constexpr db::MapConfig kMigrations{"Migration"};
 //!   key   : contract address (20 bytes) + incarnation (u64 BE)
 //!   value : code hash (32 bytes)
 //! \endverbatim
-inline constexpr db::MapConfig kPlainContractHash{"PlainCodeHash"};
+inline constexpr db::MapConfig kPlainCodeHash{"PlainCodeHash"};
 
 //! \details Store "current" state for accounts and storage and is used for block execution
 //! \def "Incarnation" how many times given account was SelfDestruct'ed.
@@ -220,7 +220,7 @@ inline constexpr db::MapConfig kChainDataTables[]{
     kLogTopicIndex,
     kLogs,
     kMigrations,
-    kPlainContractHash,
+    kPlainCodeHash,
     kPlainState,
     kSenders,
     kSequence,

@@ -378,7 +378,7 @@ std::optional<Account> read_account(mdbx::txn& txn, const evmc::address& address
     if (acc.incarnation > 0 && acc.code_hash == kEmptyHash) {
         // restore code hash
         thread_local mdbx::cursor_managed src;
-        src.bind(txn, db::open_map(txn, table::kPlainContractHash));
+        src.bind(txn, db::open_map(txn, table::kPlainCodeHash));
         auto key{storage_prefix(address, acc.incarnation)};
         if (auto data{src.find(to_slice(key), /*throw_notfound*/ false)};
             data.done && data.value.length() == kHashLength) {

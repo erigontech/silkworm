@@ -163,7 +163,7 @@ void Buffer::write_to_db() {
         code_table.upsert(to_slice(entry.first), to_slice(entry.second));
     }
 
-    auto code_hash_table{db::open_cursor(txn_, table::kPlainContractHash)};
+    auto code_hash_table{db::open_cursor(txn_, table::kPlainCodeHash)};
     for (const auto& entry : storage_prefix_to_code_hash_) {
         code_hash_table.upsert(to_slice(entry.first), to_slice(entry.second));
     }

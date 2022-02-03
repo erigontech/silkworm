@@ -181,7 +181,7 @@ StageResult Execution::unwind(db::RWTxn& txn, BlockNum to) {
         {
             // Revert states
             auto plain_state_table{db::open_cursor(*txn, db::table::kPlainState)};
-            auto plain_code_table{db::open_cursor(*txn, db::table::kPlainContractHash)};
+            auto plain_code_table{db::open_cursor(*txn, db::table::kPlainCodeHash)};
             auto account_changeset_table{db::open_cursor(*txn, db::table::kAccountChangeSet)};
             auto storage_changeset_table{db::open_cursor(*txn, db::table::kStorageChangeSet)};
             unwind_state_from_changeset(account_changeset_table, plain_state_table, plain_code_table, to);

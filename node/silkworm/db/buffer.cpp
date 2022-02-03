@@ -133,15 +133,8 @@ void Buffer::write_to_state_table() {
         if (auto it{storage_.find(address)}; it != storage_.end()) {
             for (const auto& [incarnation, contract_storage] : it->second) {
                 Bytes prefix{storage_prefix(address, incarnation)};
-
-                // sort before inserting into the DB
-                std::vector<evmc::bytes32> locations;
-                for (const auto& [location, _] : contract_storage) {
-                    locations.push_back(location);
-                }
-                std::sort(locations.begin(), locations.end());
-                for (const auto& location : locations) {
-                    upsert_storage_value(state_table, prefix, location, contract_storage.at(location));
+                for (const auto& [location, value] : contract_storage) {
+                    upsert_storage_value(state_table, prefix, location, value);
                 }
             }
         }

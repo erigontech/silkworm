@@ -68,11 +68,11 @@ StageResult Senders::prune(db::RWTxn& txn) {
     }
 }
 
-void Senders::stop() {
+bool Senders::stop() {
     if (farm_) {
-        farm_->stop();
+        (void)farm_->stop();
     }
-    IStage::stop();
+    return IStage::stop();
 };
 
 std::vector<std::string> Senders::get_log_progress() {

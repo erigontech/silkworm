@@ -21,7 +21,7 @@
 #include <atomic>
 #include <queue>
 
-#include <silkworm/concurrency/signal_handler.hpp>
+#include <silkworm/concurrency/stoppable.hpp>
 #include <silkworm/etl/collector.hpp>
 #include <silkworm/stagedsync/common.hpp>
 #include <silkworm/stagedsync/recovery/recovery_worker.hpp>
@@ -29,7 +29,7 @@
 namespace silkworm::stagedsync::recovery {
 
 //! \brief A class to orchestrate the work of multiple recoverers
-class RecoveryFarm {
+class RecoveryFarm : public Stoppable {
   public:
     RecoveryFarm() = delete;
 
@@ -43,15 +43,13 @@ class RecoveryFarm {
     StageResult recover();
 
     //! \brief Issue an interruption request
-    void stop() {
-        bool expected{false};
-        if (is_stopping_.compare_exchange_strong(expected, true)) {
+    bool stop() final {
+        if (Stoppable::stop()) {
             stop_all_workers(false);
+            return true;
         }
+        return false;
     }
-
-    //! \brief Whether running tasks should stop
-    bool is_stopping() { return is_stopping_.load(); }
 
     //! \brief Unwinds sender's recovery i.e. deletes recovered addresses from storage
     //! \param [in] db_transaction : the database transaction we should work on
@@ -111,14 +109,14 @@ class RecoveryFarm {
     etl::Collector collector_;     // Reserved collector
 
     /* Recovery workers */
-    uint32_t max_workers_{std::thread::hardware_concurrency()};              // Max number of workers/threads
+    uint32_t max_workers_{std::thread::hardware_concurrency()};  // Max number of workers/threads
 
     std::vector<boost::signals2::scoped_connection> workers_connections_{};  // Hold event connections to workers
     std::vector<std::unique_ptr<RecoveryWorker>> workers_{};                 // Actual collection of recoverers
 
-    std::mutex harvest_mutex_;                                               // Guards the harvest queue
-    std::queue<size_t> harvestable_workers_{};                               // Queue of ready to harvest workers
-    std::atomic<uint32_t> workers_in_flight_{0};                             // Counter of grinding workers
+    std::mutex harvest_mutex_;                    // Guards the harvest queue
+    std::queue<size_t> harvestable_workers_{};    // Queue of ready to harvest workers
+    std::atomic<uint32_t> workers_in_flight_{0};  // Counter of grinding workers
 
     std::mutex worker_completed_mtx_{};
     std::condition_variable worker_completed_cv_{};
@@ -136,8 +134,6 @@ class RecoveryFarm {
     /* Batches */
     size_t batch_size_;                   // Max number of transaction to be sent a worker for recovery
     std::vector<RecoveryPackage> batch_;  // Collection of transactions to be sent a worker for recovery
-
-    std::atomic_bool is_stopping_{false};
 
     /* Stats */
     uint16_t current_phase_{0};

@@ -25,7 +25,11 @@ namespace silkworm {
 class Stoppable {
   public:
     //! \brief Sets a stop request for instance;
-    virtual void stop() { stopping_.store(false); }
+    //! \return True if the stop request has been triggered otherwise false (i.e. was already stopping)
+    virtual bool stop() {
+        bool expected{false};
+        return stopping_.compare_exchange_strong(expected, true);
+    }
 
     //! \brief Whether a stop request has been issued
     [[nodiscard]] bool is_stopping() { return stopping_.load(); }

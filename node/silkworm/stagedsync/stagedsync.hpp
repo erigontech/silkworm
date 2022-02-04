@@ -59,7 +59,7 @@ class Senders final : public IStage {
     StageResult unwind(db::RWTxn& txn, BlockNum to) final;
     StageResult prune(db::RWTxn& txn) final;
     std::vector<std::string> get_log_progress() final;
-    void stop() final;
+    bool stop() final;
 
   private:
     std::unique_ptr<recovery::RecoveryFarm> farm_{nullptr};

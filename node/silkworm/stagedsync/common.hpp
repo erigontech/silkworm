@@ -24,6 +24,7 @@
 #include <magic_enum.hpp>
 
 #include <silkworm/common/settings.hpp>
+#include <silkworm/concurrency/stoppable.hpp>
 
 namespace silkworm::stagedsync {
 
@@ -72,7 +73,7 @@ inline void success_or_throw(StageResult code) {
 
 //! \brief Base Stage interface. All stages MUST inherit from this class and MUST override forward / unwind /
 //! prune
-class IStage {
+class IStage : public Stoppable {
   public:
     enum class OperationType {
         None,     // Actually no operation running
@@ -112,19 +113,11 @@ class IStage {
     //! \brief Returns the key name of the stage instance
     [[nodiscard]] const char* name() const { return stage_name_; }
 
-    //! \brief Sets a stop request for instance;
-    virtual void stop() { stopping_.store(true); }
-
-    //! \brief Whether a stop request has been issued
-    [[nodiscard]] bool is_stopping() { return stopping_; }
-
   protected:
     const char* stage_name_;
     NodeSettings* node_settings_;
     std::atomic<OperationType> operation_{OperationType::None};
 
-  private:
-    std::atomic_bool stopping_{false};
 };
 
 }  // namespace silkworm::stagedsync

@@ -123,11 +123,13 @@ void Buffer::write_to_state_table() {
     for (const auto& address : addresses) {
         if (auto it{accounts_.find(address)}; it != accounts_.end()) {
             auto key{to_slice(address)};
+            // We NEED to delete previous key as we want only one record
+            // for address. If using only upsert we fall into the trap
+            // of MDBX creating multiple dup-records for each account variation
+            state_table.erase(key, true);
             if (it->second.has_value()) {
                 Bytes encoded{it->second->encode_for_storage()};
                 state_table.upsert(key, to_slice(encoded));
-            } else {
-                state_table.erase(key);  // No need to delete multivalue as for this key there's only record
             }
         }
 

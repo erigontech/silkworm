@@ -17,6 +17,7 @@
 #include "buffer.hpp"
 
 #include <algorithm>
+#include <iostream>
 
 #include <absl/container/btree_set.h>
 
@@ -163,13 +164,15 @@ void Buffer::write_to_db() {
 
     auto account_change_table{db::open_cursor(txn_, table::kAccountChangeSet)};
     Bytes change_key(8, '\0');
+    Bytes change_value(kAddressLength + 128 /* see comment*/,
+                       '\0');  // Max size of encoded value is 85. We allocate - once - some byte more for safety
+                               // and avoid reallocation or resizing in the loop
     for (const auto& [block_num, account_changes] : block_account_changes_) {
         endian::store_big_u64(change_key.data(), block_num);
         for (const auto& [address, storage_encoded] : account_changes) {
-            Bytes change_value(kAddressLength + storage_encoded.length(), '\0');
             std::memcpy(&change_value[0], address.bytes, kAddressLength);
             std::memcpy(&change_value[kAddressLength], storage_encoded.data(), storage_encoded.length());
-            auto change_value_slice{to_slice(change_value)};
+            mdbx::slice change_value_slice{change_value.data(), kAddressLength + storage_encoded.length()};
             mdbx::error::success_or_throw(
                 account_change_table.put(to_slice(change_key), &change_value_slice, MDBX_APPENDDUP));
         }

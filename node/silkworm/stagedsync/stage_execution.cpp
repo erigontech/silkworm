@@ -120,6 +120,7 @@ StageResult Execution::execute_batch(db::RWTxn& txn, BlockNum max_block_num, Blo
             if (const auto res{processor.execute_and_write_block(receipts)}; res != ValidationResult::kOk) {
                 log::Error("Block Validation Error", {"block", std::to_string(block_num_), "err",
                                                       std::string(magic_enum::enum_name<ValidationResult>(res))});
+                //TODO(Andrea) Set the bad block hash in stage loop context so other stages are aware
                 return StageResult::kInvalidBlock;
             }
 

@@ -51,7 +51,7 @@ void set_verbosity(Level level) { settings_.log_verbosity = level; }
 
 bool test_verbosity(Level level) { return level <= settings_.log_verbosity; }
 
-static inline std::pair<const char*, const char*> get_channel_settings(Level level) {
+static inline std::pair<const char*, const char*> get_level_settings(Level level) {
     switch (level) {
         case Level::kTrace:
             return {"TRACE", kColorCoal};
@@ -73,7 +73,8 @@ static inline std::pair<const char*, const char*> get_channel_settings(Level lev
 BufferBase::BufferBase(Level level) : should_print_(level <= settings_.log_verbosity) {
     if (!should_print_) return;
 
-    auto [prefix, color] = get_channel_settings(level);
+    auto [prefix, color] = get_level_settings(level);
+
     // Prefix
     ss_ << kColorReset << " " << color << prefix << kColorReset << " ";
 

@@ -1,5 +1,5 @@
 /*
-   Copyright 2020-2021 The Silkworm Authors
+   Copyright 2020-2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -107,6 +107,7 @@ class IntraBlockState {
 
     void add_log(const Log& log) noexcept;
 
+    std::vector<Log>& logs() noexcept { return logs_; }
     const std::vector<Log>& logs() const noexcept { return logs_; }
 
     void add_refund(uint64_t addend) noexcept;

@@ -206,8 +206,8 @@ dbFreeInfo get_freeInfo(::mdbx::txn& txn) {
     const auto& collect_func{[&ret, &page_size](const ::mdbx::cursor&, ::mdbx::cursor::move_result& data) -> bool {
         size_t txId;
         std::memcpy(&txId, data.key.data(), sizeof(size_t));
-        size_t pagesCount;
-        std::memcpy(&pagesCount, data.value.data(), sizeof(size_t));
+        uint32_t pagesCount;
+        std::memcpy(&pagesCount, data.value.data(), sizeof(uint32_t));
         size_t pagesSize = pagesCount * page_size;
         ret.pages += pagesCount;
         ret.size += pagesSize;

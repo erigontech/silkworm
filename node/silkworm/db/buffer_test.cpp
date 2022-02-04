@@ -50,6 +50,10 @@ TEST_CASE("Storage update") {
     // Update only location A
     buffer.update_storage(address, kDefaultIncarnation, location_a,
                           /*initial=*/value_a1, /*current=*/value_a2);
+
+    REQUIRE(buffer.storage_changes().empty() == false);
+    REQUIRE(buffer.current_batch_size() != 0);
+
     buffer.write_to_db();
 
     // Location A should have the new value

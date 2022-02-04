@@ -733,7 +733,7 @@ void WorkingChain::connect(std::shared_ptr<Link> attachment_link, Segment::Slice
         << (deep_a.has_value() ?
                             "A " + to_string(deep_a.value()->blockHeight) :
                             "X " + to_string(deep_link->blockHeight) + (deep_link->persisted ? " (P)" : " (!P)"))
-        << " --- " << attachment_link->blockHeight << (attachment_link->preverified ? " (V)": "    " )
+        << " --- " << attachment_link->blockHeight << (attachment_link->preverified ? " (V)": "" )
         << " <-connect-> "
         << segment_slice.rbegin()->operator*().number << " --- " << prev_link->blockHeight
         << " <-connect-> "

@@ -53,7 +53,7 @@ int main(int argc, char* argv[]) {
     log::Settings settings;
     settings.log_threads = true;
     log::init(settings);
-    log::set_verbosity(log::Level::kTrace);
+    log::set_verbosity(log::Level::kInfo);
     log::tee_file(std::filesystem::path("downloader.log"));
     log::Info() << "STARTING";
 

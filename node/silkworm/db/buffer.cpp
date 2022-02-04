@@ -169,10 +169,10 @@ void Buffer::write_to_db() {
                                // and avoid reallocation or resizing in the loop
     for (const auto& [block_num, account_changes] : block_account_changes_) {
         endian::store_big_u64(change_key.data(), block_num);
-        for (const auto& [address, storage_encoded] : account_changes) {
+        for (const auto& [address, account_encoded] : account_changes) {
             std::memcpy(&change_value[0], address.bytes, kAddressLength);
-            std::memcpy(&change_value[kAddressLength], storage_encoded.data(), storage_encoded.length());
-            mdbx::slice change_value_slice{change_value.data(), kAddressLength + storage_encoded.length()};
+            std::memcpy(&change_value[kAddressLength], account_encoded.data(), account_encoded.length());
+            mdbx::slice change_value_slice{change_value.data(), kAddressLength + account_encoded.length()};
             mdbx::error::success_or_throw(
                 account_change_table.put(to_slice(change_key), &change_value_slice, MDBX_APPENDDUP));
         }

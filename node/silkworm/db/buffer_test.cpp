@@ -70,7 +70,7 @@ TEST_CASE("Account update") {
     test::Context context;
     auto& txn{context.txn()};
 
-    SECTION("New account") {
+    SECTION("New EOA account") {
         const auto address{0xbe00000000000000000000000000000000000000_address};
         Account current_account;
         current_account.balance = kEther;
@@ -78,6 +78,7 @@ TEST_CASE("Account update") {
         Buffer buffer{txn, 0};
         buffer.begin_block(1);
         buffer.update_account(address, /*initial=*/std::nullopt, current_account);
+        REQUIRE(buffer.account_changes().empty() == false);
         REQUIRE_NOTHROW(buffer.write_to_db());
 
         auto account_changeset{db::open_cursor(txn, table::kAccountChangeSet)};
@@ -95,7 +96,7 @@ TEST_CASE("Account update") {
         REQUIRE(data_value_view.length() == 0);
     }
 
-    SECTION("Changed account") {
+    SECTION("Changed EOA account") {
         const auto address{0xbe00000000000000000000000000000000000000_address};
         Account initial_account;
         initial_account.nonce = 1;
@@ -108,6 +109,7 @@ TEST_CASE("Account update") {
         Buffer buffer{txn, 0};
         buffer.begin_block(1);
         buffer.update_account(address, /*initial=*/initial_account, current_account);
+        REQUIRE(buffer.account_changes().empty() == false);
         REQUIRE_NOTHROW(buffer.write_to_db());
 
         auto account_changeset{db::open_cursor(txn, table::kAccountChangeSet)};
@@ -132,6 +134,26 @@ TEST_CASE("Account update") {
         REQUIRE(previous_account == initial_account);
     }
 
+    SECTION("Delete Contract account") {
+
+        const auto address{0xbe00000000000000000000000000000000000000_address};
+        Account account;
+        account.incarnation = kDefaultIncarnation;
+        account.code_hash = to_bytes32(keccak256(address.bytes).bytes); // Just a fake hash
+
+        Buffer buffer{txn, 0};
+        buffer.begin_block(1);
+        buffer.update_account(address, /*initial=*/account, std::nullopt);
+        REQUIRE(buffer.account_changes().empty() == false);
+        REQUIRE_NOTHROW(buffer.write_to_db());
+
+        auto incarnations{db::open_cursor(txn, table::kIncarnationMap)};
+        REQUIRE_NOTHROW(incarnations.to_first());
+        auto data{incarnations.current()};
+        REQUIRE(memcmp(data.key.data(), address.bytes, kAddressLength) == 0);
+        REQUIRE(endian::load_big_u64(db::from_slice(data.value).data()) == account.incarnation);
+
+    }
 
 }
 

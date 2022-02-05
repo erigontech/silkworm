@@ -160,13 +160,8 @@ BlockNum PersistedChain::find_forking_point(Db::ReadWriteAccess::Tx& tx, const B
         prev_canon_hash = *cached_prev_hash;
     } else {
         auto persisted_prev_hash = tx.read_canonical_hash(height - 1);  // then look in the db
-        if (!persisted_prev_hash) {
-            std::string error_message =
-                "PersistedChain: error reading canonical hash for height " + std::to_string(height - 1);
-            log::Error() << error_message;
-            throw std::logic_error(error_message);  // unexpected condition, bug?
-        }
-        prev_canon_hash = *persisted_prev_hash;
+        if (persisted_prev_hash)
+            prev_canon_hash = *persisted_prev_hash;
     }
 
     // Most common case: forking point is the height of the parent header
@@ -194,13 +189,7 @@ BlockNum PersistedChain::find_forking_point(Db::ReadWriteAccess::Tx& tx, const B
             ancestor_hash = ancestor->parent_hash;
             ancestor_height--;
         }
-        if (persisted_canon_hash == std::nullopt) {
-            std::string error_message =
-                "PersistedChain: error reading canonical hash for height " + std::to_string(ancestor_height);
-            log::Error() << error_message;
-            throw std::logic_error(error_message);  // unexpected condition, bug?
-        }
-        // loop above terminates when probable_canonical_hash == ancestor_hash, therefore ancestor_height is our forking
+        // loop above terminates when persisted_canon_hash == ancestor_hash, therefore ancestor_height is our forking
         // point
         forking_point = ancestor_height;
     }

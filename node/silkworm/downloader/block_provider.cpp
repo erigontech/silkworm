@@ -38,7 +38,7 @@ BlockProvider::~BlockProvider() {
 void BlockProvider::receive_message(const sentry::InboundMessage& raw_message) {
     auto message = InboundBlockRequestMessage::make(raw_message, db_access_, sentry_);
 
-    log::Trace() << "BlockProvider received message " << *message;
+    SILK_TRACE << "BlockProvider received message " << *message;
 
     messages_.push(message);
 }
@@ -56,7 +56,7 @@ void BlockProvider::execution_loop() {
         if (!present) continue;  // timeout, needed to check exiting_
 
         // process the message (command pattern)
-        log::Trace() << "BlockProvider processing message " << *message;
+        SILK_TRACE << "BlockProvider processing message " << *message;
         message->execute();
     }
 

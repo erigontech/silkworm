@@ -34,7 +34,7 @@ InboundBlockHeaders::InboundBlockHeaders(const sentry::InboundMessage& msg, Work
     ByteView data = string_view_to_byte_view(msg.data());  // copy for consumption
     rlp::success_or_throw(rlp::decode(data, packet_));
 
-    log::Trace() << "Received message " << *this;
+    SILK_TRACE << "Received message " << *this;
 }
 
 void InboundBlockHeaders::execute() {
@@ -57,20 +57,20 @@ void InboundBlockHeaders::execute() {
 
     // Reply
     if (penalty != Penalty::NoPenalty) {
-        log::Trace() << "Replying to " << identify(*this) << " with penalize_peer";
-        log::Trace() << "Penalizing " << PeerPenalization(penalty, peerId_);
+        SILK_TRACE << "Replying to " << identify(*this) << " with penalize_peer";
+        SILK_TRACE << "Penalizing " << PeerPenalization(penalty, peerId_);
         rpc::PenalizePeer penalize_peer(peerId_, penalty);
         penalize_peer.do_not_throw_on_failure();
         sentry_.exec_remotely(penalize_peer);
     }
 
-    log::Trace() << "Replying to " << identify(*this) << " with peer_min_block";
+    SILK_TRACE << "Replying to " << identify(*this) << " with peer_min_block";
     rpc::PeerMinBlock rpc(peerId_, highestBlock);
     rpc.do_not_throw_on_failure();
     sentry_.exec_remotely(rpc);
 
     if (!rpc.status().ok()) {
-        log::Trace() << "Failure of the replay to rpc " << identify(*this) << ": " << rpc.status().error_message();
+        SILK_TRACE << "Failure of the replay to rpc " << identify(*this) << ": " << rpc.status().error_message();
     }
 }
 

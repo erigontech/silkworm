@@ -45,7 +45,7 @@ WorkingChain::WorkingChain(ConsensusEngine engine)
 
     RandomNumber random(100'000'000, 1'000'000'000);
     request_id_prefix = random.generate_one();
-    log::Trace() << "WorkingChain: request id prefix=" << request_id_prefix;
+    SILK_TRACE << "WorkingChain: request id prefix=" << request_id_prefix;
 }
 
 BlockNum WorkingChain::highest_block_in_db() const { return highest_in_db_; }
@@ -130,7 +130,7 @@ Headers WorkingChain::withdraw_stable_headers() {
     Headers stable_headers;
 
     auto initial_highest_in_db = highest_in_db_;
-    log::Trace() << "WorkingChain: finding headers to persist on top of " << highest_in_db_
+    SILK_TRACE << "WorkingChain: finding headers to persist on top of " << highest_in_db_
                  << " (" << insert_list_.size() << " waiting in queue)";
 
     OldestFirstLinkQueue assessing_list = insert_list_; // use move() operation if it is assured that after the move
@@ -144,7 +144,7 @@ Headers WorkingChain::withdraw_stable_headers() {
         // If it is in the pre-verified headers range do not verify it, wait for pre-verification
         if (link->blockHeight <= preverified_hashes_->height && !link->preverified) {
             insert_list_.push(link);
-            log::Trace() << "WorkingChain: wait for pre-verification of " << link->blockHeight;
+            SILK_TRACE << "WorkingChain: wait for pre-verification of " << link->blockHeight;
             continue;  // header should be pre-verified, but not yet, try again later
         }
 
@@ -191,7 +191,7 @@ Headers WorkingChain::withdraw_stable_headers() {
 
         // Make sure long insertions do not appear as a stuck stage headers
         if (stable_headers.size() % 1000 == 0) {
-            log::Trace() << "WorkingChain: " << stable_headers.size() << " headers prepared for persistence on top of "
+            SILK_TRACE << "WorkingChain: " << stable_headers.size() << " headers prepared for persistence on top of "
                         << initial_highest_in_db << " (cont.)";
         }
     }
@@ -244,7 +244,7 @@ void WorkingChain::reduce_persisted_links_to(size_t limit) {
         links_.erase(link->hash);
     }
 
-    log::Trace() << "PersistedLinkQueue: too many links, cut down from " << initial_size
+    SILK_TRACE << "PersistedLinkQueue: too many links, cut down from " << initial_size
                  << " to " << persisted_link_queue_.size();
 }
 
@@ -269,7 +269,7 @@ std::optional<GetBlockHeadersPacket66> WorkingChain::request_skeleton() {
     // bottom we issue a wrong request, f.e. if the anchor=1536 was extended down we would request again origin=1536
 
     if (lowest_anchor <= bottom) {
-        log::Debug() << "WorkingChain, no need for skeleton request (lowest_anchor = " << lowest_anchor
+        log::Trace() << "WorkingChain, no need for skeleton request (lowest_anchor = " << lowest_anchor
                      << ", highest_in_db = " << highest_in_db_ << ")";
         return std::nullopt;
     }
@@ -279,7 +279,7 @@ std::optional<GetBlockHeadersPacket66> WorkingChain::request_skeleton() {
     if (length > max_len) length = max_len;
 
     if (length == 0) {
-        log::Debug() << "WorkingChain, no need for skeleton request (lowest_anchor = " << lowest_anchor
+        log::Trace() << "WorkingChain, no need for skeleton request (lowest_anchor = " << lowest_anchor
                      << ", highest_in_db = " << highest_in_db_ << ")";
         return std::nullopt;
     }
@@ -335,7 +335,7 @@ auto WorkingChain::request_more_headers(time_point_t time_point, seconds_t timeo
     using std::nullopt;
 
     if (anchor_queue_.empty()) {
-        log::Debug() << "WorkingChain, no more headers to request: empty anchor queue";
+        log::Trace() << "WorkingChain, no more headers to request: empty anchor queue";
         return {};
     }
 
@@ -349,7 +349,7 @@ auto WorkingChain::request_more_headers(time_point_t time_point, seconds_t timeo
         }
 
         if (anchor->timestamp > time_point) {
-            log::Trace() << "WorkingChain: no anchor ready for extension yet";
+            SILK_TRACE << "WorkingChain: no anchor ready for extension yet";
             return {nullopt, penalties};  // anchor not ready for "extend" re-request yet
         }
 
@@ -363,7 +363,7 @@ auto WorkingChain::request_more_headers(time_point_t time_point, seconds_t timeo
             }; // we use blockHeight in place of parentHash to get also ommers if presents
             // we could request from origin=blockHeight-1 but debugging becomes more difficult
 
-            log::Trace() << "WorkingChain: trying to extend anchor " << anchor->blockHeight
+            SILK_TRACE << "WorkingChain: trying to extend anchor " << anchor->blockHeight
                          << " (chain bundle len = " << anchor->chainLength()
                          << ", last link = " << anchor->lastLinkHeight << " )";
 
@@ -452,7 +452,7 @@ auto WorkingChain::accept_headers(const std::vector<BlockHeader>& headers, uint6
 
     if (headers.begin()->number < top_seen_height_ &&  // an old header announcement? .
         !is_valid_request_id(requestId)) {   // anyway is not requested by us..
-        log::Trace() << "Rejecting message with reqId=" << requestId << " and first block=" << headers.begin()->number;
+        SILK_TRACE << "Rejecting message with reqId=" << requestId << " and first block=" << headers.begin()->number;
         return {Penalty::NoPenalty, request_more_headers};
     }
 
@@ -556,7 +556,7 @@ auto WorkingChain::process_segment(const Segment& segment, bool is_a_new_block, 
     auto [tip, end] = find_link(segment, start);
 
     if (end == 0) {
-        log::Trace() << "WorkingChain: segment cut&paste error, duplicated segment, bn=" << segment[start]->number
+        SILK_TRACE << "WorkingChain: segment cut&paste error, duplicated segment, bn=" << segment[start]->number
                      << ", hash=" << segment[start]->hash() << " parent-hash=" << segment[start]->parent_hash
                      << (anchor.has_value() ? ", removing corresponding anchor" : ", corresponding anchor not found");
         // If duplicate segment is extending from the anchor, the anchor needs to be deleted,
@@ -597,7 +597,7 @@ auto WorkingChain::process_segment(const Segment& segment, bool is_a_new_block, 
             op = "new anchor";
             requestMore = new_anchor(segment_slice, peerId);
         }
-        log::Trace() << "WorkingChain, segment " << op << " up=" << startNum << " (" << segment[start]->hash()
+        SILK_TRACE << "WorkingChain, segment " << op << " up=" << startNum << " (" << segment[start]->hash()
                     << ") down=" << endNum << " (" << segment[end - 1]->hash() << ") (more=" << requestMore << ")";
     } catch (segment_cut_and_paste_error& e) {
         log::Warning() << "WorkingChain, segment cut&paste error, " << op << " up=" << startNum << " ("

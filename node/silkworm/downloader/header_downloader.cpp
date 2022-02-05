@@ -42,7 +42,7 @@ HeaderDownloader::~HeaderDownloader() {
 void HeaderDownloader::receive_message(const sentry::InboundMessage& raw_message) {
     auto message = InboundBlockAnnouncementMessage::make(raw_message, working_chain_, sentry_);
 
-    log::Trace() << "HeaderDownloader received message " << *message;
+    SILK_TRACE << "HeaderDownloader received message " << *message;
 
     messages_.push(message);
 }
@@ -63,7 +63,7 @@ void HeaderDownloader::execution_loop() {
 
         auto in_message = std::dynamic_pointer_cast<InboundMessage>(message);
         if (in_message) {
-            log::Trace() << "HeaderDownloader processing message " << *in_message;
+            SILK_TRACE << "HeaderDownloader processing message " << *in_message;
         }
 
         // process the message (command pattern)
@@ -71,7 +71,7 @@ void HeaderDownloader::execution_loop() {
 
         auto out_message = std::dynamic_pointer_cast<OutboundMessage>(message);
         if (out_message) {
-            log::Trace() << "HeaderDownloader sent message " << *out_message;
+            SILK_TRACE << "HeaderDownloader sent message " << *out_message;
         }
 
     }
@@ -206,7 +206,7 @@ void HeaderDownloader::send_header_requests() {
 
     auto message = std::make_shared<OutboundGetBlockHeaders>(working_chain_, sentry_);
 
-    log::Trace() << "HeaderDownloader sending message " << *message;
+    SILK_TRACE << "HeaderDownloader sending message " << *message;
 
     messages_.push(message);
 }
@@ -217,7 +217,7 @@ void HeaderDownloader::send_announcements() {
 
     auto message = std::make_shared<OutboundNewBlockHashes>(working_chain_, sentry_);
 
-    log::Trace() << "HeaderDownloader sending announcements";
+    SILK_TRACE << "HeaderDownloader sending announcements";
 
     messages_.push(message);
 }

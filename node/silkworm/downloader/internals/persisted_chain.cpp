@@ -61,7 +61,7 @@ BlockNum PersistedChain::unwind_point() const { return unwind_point_; }
 // Erigon's func (hi *HeaderInserter) FeedHeader
 
 void PersistedChain::persist(const Headers& headers) {
-    log::Trace() << "PersistedChain: persisting " << headers.size() << " headers";
+    SILK_TRACE << "PersistedChain: persisting " << headers.size() << " headers";
     if (headers.empty()) return;
 
     StopWatch measure_curr_scope;                  // only for test
@@ -144,7 +144,7 @@ void PersistedChain::persist(const BlockHeader& header) {  // todo: try to modul
     // Save header
     tx_.write_header(header, true);  // true = with_header_numbers
 
-    // log::Trace() << "PersistedChain: saved header height=" << height << " hash=" << hash;
+    // SILK_TRACE << "PersistedChain: saved header height=" << height << " hash=" << hash;
 
     previous_hash_ = hash;
 }

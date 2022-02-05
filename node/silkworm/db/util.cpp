@@ -78,14 +78,18 @@ Bytes log_key(BlockNum block_number, uint32_t transaction_id) {
 
 std::pair<Bytes, Bytes> changeset_to_plainstate_format(const ByteView key, ByteView value) {
     if (key.size() == 8) {
+        if (value.length() < kAddressLength) {
+            throw std::runtime_error("Invalid value length " + std::to_string(value.length()) +
+                                     " for account changeset in " + std::string(__FUNCTION__));
+        }
         // AccountChangeSet
         const Bytes address{value.substr(0, kAddressLength)};
         const Bytes previous_value{value.substr(kAddressLength)};
         return {address, previous_value};
     } else if (key.length() == 8 + kPlainStoragePrefixLength) {
         if (value.length() < kHashLength) {
-            throw std::runtime_error("Invalid value length " + std::to_string(value.length()) + " in " +
-                                     std::string(__FUNCTION__));
+            throw std::runtime_error("Invalid value length " + std::to_string(value.length()) +
+                                     " for storage changeset in " + std::string(__FUNCTION__));
         }
 
         // StorageChangeSet See storage_change_key

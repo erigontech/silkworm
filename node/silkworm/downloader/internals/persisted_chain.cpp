@@ -154,14 +154,9 @@ BlockNum PersistedChain::find_forking_point(Db::ReadWriteAccess::Tx& tx, const B
     BlockNum forking_point{};
 
     // Read canonical hash at height-1
-    Hash prev_canon_hash;
-    const Hash* cached_prev_hash = canonical_cache_.get(height - 1);  // look in the cache first
-    if (cached_prev_hash) {
-        prev_canon_hash = *cached_prev_hash;
-    } else {
-        auto persisted_prev_hash = tx.read_canonical_hash(height - 1);  // then look in the db
-        if (persisted_prev_hash)
-            prev_canon_hash = *persisted_prev_hash;
+    auto prev_canon_hash = canonical_cache_.get_a_copy(height - 1);  // look in the cache first
+    if (!prev_canon_hash) {
+        prev_canon_hash = tx.read_canonical_hash(height - 1);  // then look in the db
     }
 
     // Most common case: forking point is the height of the parent header
@@ -179,18 +174,17 @@ BlockNum PersistedChain::find_forking_point(Db::ReadWriteAccess::Tx& tx, const B
             auto ancestor = tx.read_header(ancestor_height, ancestor_hash);
             ancestor_hash = ancestor->parent_hash;
             ancestor_height--;
-        }  // todo: if this loop finds a cached_canon_hash the next loop will be executed, is this right?
+        }  // if this loop finds a prev_canon_hash the next loop will be executed, is this right?
 
         // now look in the db
-        std::optional<Hash> persisted_canon_hash;
-        while ((persisted_canon_hash = tx.read_canonical_hash(ancestor_height)) &&
-               persisted_canon_hash != ancestor_hash) {
+        std::optional<Hash> db_canon_hash;
+        while ((db_canon_hash = tx.read_canonical_hash(ancestor_height)) && db_canon_hash != ancestor_hash) {
             auto ancestor = tx.read_header(ancestor_height, ancestor_hash);
             ancestor_hash = ancestor->parent_hash;
             ancestor_height--;
         }
-        // loop above terminates when persisted_canon_hash == ancestor_hash, therefore ancestor_height is our forking
-        // point
+
+        // loop above terminates when prev_canon_hash == ancestor_hash, therefore ancestor_height is our forking point
         forking_point = ancestor_height;
     }
 
@@ -210,9 +204,8 @@ void PersistedChain::update_canonical_chain(BlockNum height, Hash hash) {  // ha
 
         auto ancestor = tx_.read_header(ancestor_height, ancestor_hash);
         if (ancestor == std::nullopt) {
-            std::string msg =
-                "PersistedChain: fix canonical chain failed at ancestor=" + std::to_string(ancestor_height) +
-                " hash=" + ancestor_hash.to_hex();
+            std::string msg = "PersistedChain: fix canonical chain failed at"
+                " ancestor=" + std::to_string(ancestor_height) + " hash=" + ancestor_hash.to_hex();
             log::Error() << msg;
             throw std::logic_error(msg);
         }

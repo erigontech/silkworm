@@ -80,6 +80,12 @@ class lru_cache {
         }
     }
 
+    std::optional<value_t> get_a_copy(const key_t& key) {
+        auto val = get(key);
+        if (val == nullptr) return {};
+        return {*val};
+    }
+
     bool remove(const key_t& key) {
         auto it = _cache_items_map.find(key);
         if (it == _cache_items_map.end())

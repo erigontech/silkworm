@@ -72,7 +72,7 @@ TEST_CASE("links") {
         auto link4_it = link1.find_child(headers[4].hash());
         REQUIRE(link4_it == link1.next.end());
 
-        link1.remove_child(link3);
+        link1.remove_child(*link3);
         REQUIRE(link1.next.size() == 1);
         link3_present = link1.has_child(link3->hash);
         REQUIRE(!link3_present);
@@ -128,7 +128,7 @@ TEST_CASE("anchors") {
         auto link4_it = anchor.find_child(links[4]->hash);
         REQUIRE(link4_it == anchor.links.end());
 
-        anchor.remove_child(links[3]);
+        anchor.remove_child(*links[3]);
         REQUIRE(anchor.links.size() == 2);
         auto link3_present = anchor.has_child(links[3]->hash);
         REQUIRE(!link3_present);

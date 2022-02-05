@@ -82,6 +82,17 @@ TEST_CASE("DiscardStaleElement") {
 
 }
 
+TEST_CASE("GetWithCopy") {
+    lru_cache<int, int> cache_lru(1);
+    cache_lru.put(1, 111);
+    REQUIRE(cache_lru.get(1));
+    REQUIRE(cache_lru.get_a_copy(1));
+    REQUIRE(!cache_lru.get_a_copy(2));
+    CHECK(111 == *cache_lru.get(1));
+    CHECK(111 == cache_lru.get_a_copy(1));
+    CHECK(1 == cache_lru.size());
+}
+
 TEST_CASE("RemoveElement") {
     lru_cache<int, int> cache_lru(3);
     cache_lru.put(1, 111);

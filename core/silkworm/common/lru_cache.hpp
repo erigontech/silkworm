@@ -42,6 +42,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <cstddef>
 #include <list>
 #include <unordered_map>
+#include <optional>
 
 namespace silkworm {
 

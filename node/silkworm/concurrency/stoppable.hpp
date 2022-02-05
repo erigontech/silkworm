@@ -34,6 +34,9 @@ class Stoppable {
     //! \brief Whether a stop request has been issued
     [[nodiscard]] bool is_stopping() { return stopping_.load(); }
 
+  protected:
+    virtual ~Stoppable() = default;
+
   private:
     std::atomic_bool stopping_{false};
 };

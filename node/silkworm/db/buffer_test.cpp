@@ -1,5 +1,5 @@
 /*
-   Copyright 2021 The Silkworm Authors
+   Copyright 2021-2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -14,13 +14,12 @@
    limitations under the License.
 */
 
-#include "buffer.hpp"
-
 #include <catch2/catch.hpp>
+#include <magic_enum.hpp>
 
 #include <silkworm/common/test_context.hpp>
-
-#include "tables.hpp"
+#include <silkworm/db/buffer.hpp>
+#include <silkworm/db/tables.hpp>
 
 namespace silkworm::db {
 
@@ -65,6 +64,75 @@ TEST_CASE("Storage update") {
     const std::optional<ByteView> db_value_b{find_value_suffix(state, key, location_b)};
     REQUIRE(db_value_b.has_value());
     CHECK(db_value_b == zeroless_view(value_b));
+}
+
+TEST_CASE("Account update") {
+    test::Context context;
+    auto& txn{context.txn()};
+
+    SECTION("New account") {
+        const auto address{0xbe00000000000000000000000000000000000000_address};
+        Account current_account;
+        current_account.balance = kEther;
+
+        Buffer buffer{txn, 0};
+        buffer.begin_block(1);
+        buffer.update_account(address, /*initial=*/std::nullopt, current_account);
+        REQUIRE_NOTHROW(buffer.write_to_db());
+
+        auto account_changeset{db::open_cursor(txn, table::kAccountChangeSet)};
+        REQUIRE(txn.get_map_stat(account_changeset.map()).ms_entries == 1);
+        auto data{account_changeset.to_first()};
+        auto data_key_view{db::from_slice(data.key)};
+        auto data_value_view{db::from_slice(data.value)};
+
+        auto changeset_blocknum{endian::load_big_u64(data_key_view.data())};
+        REQUIRE(changeset_blocknum == 1);
+
+        auto changeset_address{to_evmc_address(data_value_view)};
+        REQUIRE(changeset_address == address);
+        data_value_view.remove_prefix(kAddressLength);
+        REQUIRE(data_value_view.length() == 0);
+    }
+
+    SECTION("Changed account") {
+        const auto address{0xbe00000000000000000000000000000000000000_address};
+        Account initial_account;
+        initial_account.nonce = 1;
+        initial_account.balance = 0;
+
+        Account current_account;
+        current_account.nonce = 2;
+        current_account.balance = kEther;
+
+        Buffer buffer{txn, 0};
+        buffer.begin_block(1);
+        buffer.update_account(address, /*initial=*/initial_account, current_account);
+        REQUIRE_NOTHROW(buffer.write_to_db());
+
+        auto account_changeset{db::open_cursor(txn, table::kAccountChangeSet)};
+        REQUIRE(txn.get_map_stat(account_changeset.map()).ms_entries == 1);
+        auto data{account_changeset.to_first()};
+        auto data_key_view{db::from_slice(data.key)};
+        auto data_value_view{db::from_slice(data.value)};
+
+        auto changeset_blocknum{endian::load_big_u64(data_key_view.data())};
+        REQUIRE(changeset_blocknum == 1);
+
+        auto changeset_address{to_evmc_address(data_value_view)};
+        REQUIRE(changeset_address == address);
+        data_value_view.remove_prefix(kAddressLength);
+        REQUIRE(data_value_view.length() != 0);
+
+        auto exp_decoding_result{magic_enum::enum_name<rlp::DecodingResult>(rlp::DecodingResult::kOk)};
+        auto [previous_account, err]{Account::from_encoded_storage(data_value_view)};
+        auto act_decoding_result{magic_enum::enum_name<rlp::DecodingResult>(err)};
+
+        REQUIRE(exp_decoding_result == act_decoding_result);
+        REQUIRE(previous_account == initial_account);
+    }
+
+
 }
 
 }  // namespace silkworm::db

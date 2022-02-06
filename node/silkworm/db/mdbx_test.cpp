@@ -14,13 +14,12 @@
    limitations under the License.
 */
 
-#include "mdbx.hpp"
-
 #include <map>
 
 #include <catch2/catch.hpp>
 
 #include <silkworm/common/directories.hpp>
+#include <silkworm/db/mdbx.hpp>
 
 static const std::map<std::string, std::string> kGeneticCode{
     {"AAA", "Lysine"},        {"AAC", "Asparagine"},    {"AAG", "Lysine"},        {"AAU", "Asparagine"},

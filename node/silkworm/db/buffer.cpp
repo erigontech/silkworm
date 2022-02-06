@@ -22,15 +22,14 @@
 #include <absl/container/btree_set.h>
 
 #include <silkworm/common/endian.hpp>
+#include <silkworm/db/access_layer.hpp>
+#include <silkworm/db/tables.hpp>
 #include <silkworm/types/log_cbor.hpp>
 #include <silkworm/types/receipt_cbor.hpp>
 
-#include "access_layer.hpp"
-#include "tables.hpp"
-
 namespace silkworm::db {
 
-void Buffer::bump_batch_size(size_t key_len, size_t value_len) {
+inline void Buffer::bump_batch_size(size_t key_len, size_t value_len) {
     // Approximately matches Erigon's batch size logic in (m *mutation) Put
     static constexpr size_t kEntryOverhead{8};
     batch_size_ += kEntryOverhead + key_len + value_len;
@@ -43,8 +42,8 @@ void Buffer::begin_block(uint64_t block_number) {
 
 void Buffer::update_account(const evmc::address& address, std::optional<Account> initial,
                             std::optional<Account> current) {
-    bool equal{current == initial};
-    bool account_deleted{!current.has_value()};
+    const bool equal{current == initial};
+    const bool account_deleted{!current.has_value()};
 
     if (equal && !account_deleted && !changed_storage_.contains(address)) {
         // Follows the Erigon logic when to populate account changes.
@@ -123,11 +122,26 @@ void Buffer::write_to_state_table() {
     for (const auto& address : addresses) {
         if (auto it{accounts_.find(address)}; it != accounts_.end()) {
             auto key{to_slice(address)};
-            // We NEED to delete previous key as we want only one record
-            // for address. If using only upsert we fall into the trap
-            // of MDBX creating multiple dup-records for each account variation
-            state_table.erase(key, true);
-            if (it->second.has_value()) {
+
+            /*
+             * Maybe a changed account is reverted to its original state during the batch
+             * so to avoid free page pollution by updating the same value into PlainState
+             * simply check new value differs from old value. The extra memcmp is worth the
+             * savings by MDBX dealing with free pages
+             */
+            auto data{state_table.move(mdbx::cursor::move_operation::find_key, key, false)};
+            if (data.done) {
+                if (it->second.has_value()) {
+                    Bytes new_encoded{it->second->encode_for_storage()};
+                    if (new_encoded.length() != data.value.length() ||
+                        std::memcmp(new_encoded.data(), data.value.data(), new_encoded.length()) != 0) {
+                        auto new_encoded_slice{to_slice(new_encoded)};
+                        ::mdbx::error::success_or_throw(state_table.put(key, &new_encoded_slice, MDBX_CURRENT));
+                    }
+                } else {
+                    state_table.erase(true);
+                }
+            } else if (it->second.has_value()) {
                 Bytes encoded{it->second->encode_for_storage()};
                 state_table.upsert(key, to_slice(encoded));
             }

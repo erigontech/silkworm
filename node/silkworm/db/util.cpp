@@ -1,5 +1,5 @@
 /*
-   Copyright 2020-2021 The Silkworm Authors
+   Copyright 2020-2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@
 
 #include <cstring>
 
+#include <silkworm/common/assert.hpp>
 #include <silkworm/common/endian.hpp>
 #include <silkworm/common/rlp_err.hpp>
 #include <silkworm/rlp/encode_vector.hpp>
@@ -25,6 +26,7 @@
 namespace silkworm::db {
 
 Bytes storage_prefix(ByteView address, uint64_t incarnation) {
+    SILKWORM_ASSERT(address.length() == kAddressLength || address.length() == kHashLength);
     Bytes res(address.length() + kIncarnationLength, '\0');
     std::memcpy(&res[0], address.data(), address.length());
     endian::store_big_u64(&res[address.length()], incarnation);
@@ -74,27 +76,36 @@ Bytes log_key(BlockNum block_number, uint32_t transaction_id) {
     return key;
 }
 
-std::pair<Bytes, Bytes> change_set_to_plain_state_format(const ByteView key, const ByteView value) {
-    if (key.size() == 8) {  // AccountChangeSet
+std::pair<Bytes, Bytes> changeset_to_plainstate_format(const ByteView key, ByteView value) {
+    if (key.size() == 8) {
+        if (value.length() < kAddressLength) {
+            throw std::runtime_error("Invalid value length " + std::to_string(value.length()) +
+                                     " for account changeset in " + std::string(__FUNCTION__));
+        }
+        // AccountChangeSet
         const Bytes address{value.substr(0, kAddressLength)};
         const Bytes previous_value{value.substr(kAddressLength)};
         return {address, previous_value};
-    } else {  // StorageChangeSet
-        assert(key.length() == 8 + kPlainStoragePrefixLength);
-        // See storage_change_key
-        const ByteView address_with_incarnation{key.substr(8)};
-        const ByteView location{value.substr(0, kHashLength)};
-        Bytes full_key{address_with_incarnation};
-        full_key.append(location);
-        const Bytes previous_value{value.substr(kHashLength)};
-        return {full_key, previous_value};
+    } else if (key.length() == 8 + kPlainStoragePrefixLength) {
+        if (value.length() < kHashLength) {
+            throw std::runtime_error("Invalid value length " + std::to_string(value.length()) +
+                                     " for storage changeset in " + std::string(__FUNCTION__));
+        }
+
+        // StorageChangeSet See storage_change_key
+        Bytes full_key(kPlainStoragePrefixLength + kHashLength, '\0');
+        std::memcpy(&full_key[0], &key[8], kPlainStoragePrefixLength);
+        std::memcpy(&full_key[kPlainStoragePrefixLength], &value[0], kHashLength);
+        value.remove_prefix(kHashLength);
+        return {full_key, Bytes(value)};
     }
+    throw std::runtime_error("Invalid key length " + std::to_string(key.length()) + " in " + std::string(__FUNCTION__));
 }
 
 std::optional<ByteView> find_value_suffix(mdbx::cursor& table, ByteView key, ByteView value_prefix) {
-    auto prefix_slice{to_slice(value_prefix)};
-    auto data{table.lower_bound_multivalue(to_slice(key), prefix_slice, /*throw_notfound=*/false)};
-    if (!data || !data.value.starts_with(prefix_slice)) {
+    auto value_prefix_slice{to_slice(value_prefix)};
+    auto data{table.lower_bound_multivalue(to_slice(key), value_prefix_slice, /*throw_notfound=*/false)};
+    if (!data || !data.value.starts_with(value_prefix_slice)) {
         return std::nullopt;
     }
 
@@ -103,15 +114,29 @@ std::optional<ByteView> find_value_suffix(mdbx::cursor& table, ByteView key, Byt
     return res;
 }
 
-void upsert_storage_value(mdbx::cursor& state_cursor, ByteView storage_prefix, ByteView location, ByteView value) {
-    if (find_value_suffix(state_cursor, storage_prefix, location)) {
-        state_cursor.erase();
-    }
-    value = zeroless_view(value);
-    if (!value.empty()) {
-        Bytes data{location};
-        data.append(value);
-        state_cursor.upsert(to_slice(storage_prefix), to_slice(data));
+void upsert_storage_value(mdbx::cursor& state_cursor, ByteView storage_prefix, ByteView location, ByteView new_value) {
+    static const auto build_db_value = [](const ByteView& loc, const ByteView& val) -> Bytes {
+        Bytes res(loc.length() + val.length(), '\0');
+        std::memcpy(&res[0], loc.data(), loc.length());
+        std::memcpy(&res[loc.length()], val.data(), val.length());
+        return res;
+    };
+
+    new_value = zeroless_view(new_value);
+
+    auto old_value{find_value_suffix(state_cursor, storage_prefix, location)};
+    if (old_value.has_value()) {
+        if (new_value.empty()) {
+            state_cursor.erase();
+        } else if (new_value == old_value.value()) {
+            return;
+        } else {
+            auto new_db_value{build_db_value(location, new_value)};
+            state_cursor.update(to_slice(storage_prefix), to_slice(new_db_value));
+        }
+    } else if (!new_value.empty()) {
+        auto new_db_value{build_db_value(location, new_value)};
+        state_cursor.upsert(to_slice(storage_prefix), to_slice(new_db_value));
     }
 }
 

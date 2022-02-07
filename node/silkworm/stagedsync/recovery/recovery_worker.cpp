@@ -25,7 +25,6 @@ RecoveryWorker::~RecoveryWorker() {
     if (context_) {
         std::free(context_);
     }
-    stop(true);
 }
 
 void RecoveryWorker::set_work(std::vector<RecoveryPackage>& farm_batch, bool kick) {
@@ -39,7 +38,6 @@ void RecoveryWorker::work() {
     StopWatch sw;
 
     while (wait_for_kick()) {
-
         if (log::test_verbosity(log::Level::kTrace)) {
             sw.start(true);
         }

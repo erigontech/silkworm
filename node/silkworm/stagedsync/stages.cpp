@@ -1,5 +1,5 @@
 /*
-   Copyright 2021 The Silkworm Authors
+   Copyright 2021-2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -25,7 +25,6 @@ std::vector<Stage> get_archive_node_stages() {
     return {
         {stage_headers,         no_unwind,              no_prune, 1},
         {stage_bodies,          no_unwind,              no_prune, 3},
-        {stage_hashstate,       unwind_hashstate,       no_prune, 6},
         {stage_interhashes,     unwind_interhashes,     no_prune, 7},
         {stage_account_history, unwind_account_history, no_prune, 8},
         {stage_storage_history, unwind_storage_history, no_prune, 9},
@@ -38,7 +37,6 @@ std::vector<Stage> get_pruned_node_stages() {
     return {
         {stage_headers,         no_unwind,              no_prune,              1},
         {stage_bodies,          no_unwind,              no_prune,              3},
-        {stage_hashstate,       unwind_hashstate,       no_prune,              6},
         {stage_interhashes,     unwind_interhashes,     no_prune,              7},
         {stage_account_history, unwind_account_history, prune_account_history, 8},
         {stage_storage_history, unwind_storage_history, prune_storage_history, 9},
@@ -51,7 +49,6 @@ std::vector<Stage> get_miner_mode_stages() {
     return {
         {stage_headers,         no_unwind,              no_prune,        1},
         {stage_bodies,          no_unwind,              no_prune,        3},
-        {stage_hashstate,       unwind_hashstate,       no_prune,        6},
         {stage_interhashes,     unwind_interhashes,     no_prune,        7},
     };
 }

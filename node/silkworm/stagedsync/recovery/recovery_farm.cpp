@@ -31,18 +31,11 @@ namespace silkworm::stagedsync::recovery {
 RecoveryFarm::RecoveryFarm(db::RWTxn& txn, NodeSettings* node_settings)
     : txn_{txn},
       node_settings_{node_settings},
-      collector_(node_settings_->data_directory->etl().path(), node_settings_->etl_buffer_size),
+      collector_(node_settings),
       batch_size_{node_settings->batch_size / std::thread::hardware_concurrency() / sizeof(RecoveryPackage)} {
     workers_.reserve(max_workers_);
+    workers_connections_.reserve(max_workers_ * 2);  // One for task completed event and one for worker completed event
     batch_.reserve(batch_size_);
-}
-
-RecoveryFarm::~RecoveryFarm() {
-    while (!workers_.empty()) {
-        workers_.back()->signal_task_completed.disconnect_all_slots();
-        workers_.back()->signal_worker_stopped.disconnect_all_slots();
-        workers_.pop_back();
-    }
 }
 
 StageResult RecoveryFarm::recover() {
@@ -82,7 +75,7 @@ StageResult RecoveryFarm::recover() {
     // Set to first block and read all in sequence
     auto bodies_initial_key{db::block_key(expected_block_number, headers_it_1_->block_hash.bytes)};
     auto body_data{bodies_table.find(db::to_slice(bodies_initial_key), false)};
-    while (body_data.done && !is_stopping()) {
+    while (body_data.done) {
         auto body_data_key_view{db::from_slice(body_data.key)};
         reached_block_num = endian::load_big_u64(body_data_key_view.data());
         if (reached_block_num < expected_block_number) {
@@ -107,10 +100,9 @@ StageResult RecoveryFarm::recover() {
             continue;
         }
 
-        // Every 10 blocks check the SignalHandler has been triggered
-        if (!(reached_block_num % 16) && SignalHandler::signalled()) {
-            stop();
-            continue;
+        // Every 1024 blocks check the SignalHandler has been triggered
+        if ((reached_block_num % 1024 == 0) && is_stopping()) {
+            break;
         }
 
         // Get the body and its transactions
@@ -135,13 +127,14 @@ StageResult RecoveryFarm::recover() {
         body_data = bodies_table.to_next(false);
     }
 
+    log::Trace("Senders end", {"block", std::to_string(reached_block_num)});
+
     if (!is_stopping()                            // No stop requests
         && stage_result == StageResult::kSuccess  // Previous steps ok
         && dispatch_batch()                       // Residual batch dispatched
     ) {
-        log::Trace() << "Senders end read block bodies ... ";
-        current_phase_ = 3;
         wait_workers_completion();
+        current_phase_ = 3;
 
         // If everything ok from previous steps wait for all workers to complete
         // and collect results
@@ -170,11 +163,12 @@ StageResult RecoveryFarm::recover() {
                 stage_result = StageResult::kUnexpectedError;
             }
         }
-    } else {
-        stop_all_workers(/*wait=*/true);
     }
 
+    stop_all_workers(/*wait=*/true);
     headers_.clear();
+    workers_connections_.clear();
+    workers_.clear();
     return is_stopping() ? StageResult::kAborted : stage_result;
 }
 
@@ -200,26 +194,28 @@ StageResult RecoveryFarm::unwind(mdbx::txn& db_transaction, BlockNum new_height)
 }
 
 std::vector<std::string> RecoveryFarm::get_log_progress() {
-    switch (current_phase_) {
-        case 1:
-            return {"phase", std::to_string(current_phase_) + "/3", "blocks", std::to_string(headers_.size())};
-        case 2:
-            return {"phase",        std::to_string(current_phase_) + "/3",  //
-                    "blocks",       std::to_string(headers_.size()),        //
-                    "current",      std::to_string(highest_processed_block_),
-                    "transactions", std::to_string(total_collected_transactions_),
-                    "workers",      std::to_string(workers_in_flight_.load())};
-        case 3:
-            return {"phase", std::to_string(current_phase_) + "/3", "key", collector_.get_load_key()};
-        default:
-            break;
+    if (!is_stopping()) {
+        switch (current_phase_) {
+            case 1:
+                return {"phase", std::to_string(current_phase_) + "/3", "blocks", std::to_string(headers_.size())};
+            case 2:
+                return {"phase",        std::to_string(current_phase_) + "/3",  //
+                        "blocks",       std::to_string(headers_.size()),        //
+                        "current",      std::to_string(total_processed_blocks_),
+                        "transactions", std::to_string(total_collected_transactions_),
+                        "workers",      std::to_string(workers_in_flight_.load())};
+            case 3:
+                return {"phase", std::to_string(current_phase_) + "/3", "key", collector_.get_load_key()};
+            default:
+                break;
+        }
     }
     return {};
 }
 
 void RecoveryFarm::stop_all_workers(bool wait) {
     for (const auto& worker : workers_) {
-        log::Trace("Stopping recovery worker ...", {"id", std::to_string(worker->get_id())});
+        log::Trace("Stopping recoverer", {"id", std::to_string(worker->get_id())});
         worker->stop(wait);
     }
 }
@@ -294,13 +290,6 @@ StageResult RecoveryFarm::transform_and_fill_batch(uint64_t block_num, std::vect
         return StageResult::kAborted;
     }
 
-    // Do we overflow ?
-    if (batch_.size() + transactions.size() > batch_size_) {
-        if (!dispatch_batch()) {
-            return StageResult::kUnexpectedError;
-        }
-    }
-
     const evmc_revision rev{node_settings_->chain_config->revision(block_num)};
     const bool has_homestead{rev >= EVMC_HOMESTEAD};
     const bool has_spurious_dragon{rev >= EVMC_SPURIOUS_DRAGON};
@@ -354,11 +343,17 @@ StageResult RecoveryFarm::transform_and_fill_batch(uint64_t block_num, std::vect
 
         tx_id++;
     }
+    total_processed_blocks_++;
 
-    highest_processed_block_ = block_num;
-    total_collected_transactions_ += transactions.size();
+    // Do we overflow ?
+    if (batch_.size() > batch_size_) {
+        total_collected_transactions_ += batch_.size();
+        if (!dispatch_batch()) {
+            return StageResult::kUnexpectedError;
+        }
+    }
 
-    return StageResult::kSuccess;
+    return is_stopping() ? StageResult::kAborted : StageResult::kSuccess;
 }
 
 bool RecoveryFarm::dispatch_batch() {
@@ -400,21 +395,23 @@ bool RecoveryFarm::dispatch_batch() {
         }
         std::unique_lock lck(worker_completed_mtx_);
         (void)worker_completed_cv_.wait_for(lck, std::chrono::seconds(5));
-        if (SignalHandler::signalled()) {
-            stop();
-        }
     }
 
     return is_stopping();
 }
 
 bool RecoveryFarm::initialize_new_worker() {
+    if (is_stopping()) {
+        return false;
+    }
     log::Trace("Spawning new Recovery worker", {"id", std::to_string(workers_.size())});
     using namespace std::placeholders;
     try {
         workers_.emplace_back(new RecoveryWorker(workers_.size()));
-        workers_.back()->signal_task_completed.connect(std::bind(&RecoveryFarm::task_completed_handler, this, _1));
-        workers_.back()->signal_worker_stopped.connect(std::bind(&RecoveryFarm::worker_completed_handler, this, _1));
+        workers_connections_.emplace_back(
+            workers_.back()->signal_task_completed.connect(std::bind(&RecoveryFarm::task_completed_handler, this, _1)));
+        workers_connections_.emplace_back(workers_.back()->signal_worker_stopped.connect(
+            std::bind(&RecoveryFarm::worker_completed_handler, this, _1)));
         workers_.back()->start(/*wait=*/true);
         return true;
     } catch (const std::exception& ex) {
@@ -454,8 +451,8 @@ StageResult RecoveryFarm::fill_canonical_headers(BlockNum from, BlockNum to) noe
             data = hashes_table.to_next(false);
 
             // Do we need to abort ?
-            if (!(expected_block_num % 1024) && SignalHandler::signalled()) {
-                throw std::runtime_error("Operation cancelled");
+            if ((expected_block_num % 1024 == 0) && is_stopping()) {
+                return StageResult::kAborted;
             }
         }
 
@@ -467,7 +464,7 @@ StageResult RecoveryFarm::fill_canonical_headers(BlockNum from, BlockNum to) noe
 
         // Initialize iterators
         headers_it_1_ = headers_.begin();
-        return StageResult::kSuccess;
+        return is_stopping() ? StageResult::kAborted : StageResult::kSuccess;
 
     } catch (const mdbx::exception& ex) {
         log::Error() << "Unexpected database error in " << std::string(__FUNCTION__) << " : " << ex.what();

@@ -1,5 +1,5 @@
 /*
-   Copyright 2021 The Silkworm Authors
+   Copyright 2021-2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -17,6 +17,21 @@
 #include "util.hpp"
 
 namespace silkworm::etl {
+
+std::string errno2str(int err_code) {
+    char msg[64];
+#if defined(_WIN32) || defined(_WIN64)
+    if (strerror_s(msg, sizeof(msg), err_code) != 0) {
+        (void)strncpy_s(msg, "Unknown error", _TRUNCATE);
+    }
+#else
+    if (strerror_r(err_code, msg, sizeof(msg)) != 0) {
+        (void)strncpy(msg, "Unknown error", sizeof(msg));
+    }
+#endif
+    msg[sizeof(msg) - 1] = '\0';
+    return {msg};
+}
 
 bool operator<(const Entry& a, const Entry& b) {
     auto diff{a.key.compare(b.key)};

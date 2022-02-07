@@ -392,17 +392,18 @@ static PrefixSet gather_changes(mdbx::txn& txn, BlockNum from) {
 
     auto account_changes{db::open_cursor(txn, db::table::kAccountChangeSet)};
     if (account_changes.lower_bound(db::to_slice(starting_key), /*throw_notfound=*/false)) {
-        db::cursor_for_each(account_changes, [&out](mdbx::cursor&, mdbx::cursor::move_result& entry) {
+        db::WalkFunc account_walk_function = [&out](mdbx::cursor&, mdbx::cursor::move_result& entry) {
             const ByteView address{db::from_slice(entry.value).substr(0, kAddressLength)};
             const auto hashed_address{keccak256(address)};
             out.insert(unpack_nibbles(hashed_address.bytes));
             return true;
-        });
+        };
+        (void)db::cursor_for_each(account_changes, account_walk_function);
     }
 
     auto storage_changes{db::open_cursor(txn, db::table::kStorageChangeSet)};
     if (storage_changes.lower_bound(db::to_slice(starting_key), /*throw_notfound=*/false)) {
-        db::cursor_for_each(storage_changes, [&out](mdbx::cursor&, mdbx::cursor::move_result& entry) {
+        db::WalkFunc storage_walk_func = [&out](mdbx::cursor&, mdbx::cursor::move_result& entry) {
             const ByteView address{db::from_slice(entry.key).substr(sizeof(BlockNum), kAddressLength)};
             const ByteView incarnation{db::from_slice(entry.key).substr(sizeof(BlockNum) + kAddressLength)};
             const ByteView location{db::from_slice(entry.value).substr(0, kHashLength)};
@@ -414,7 +415,8 @@ static PrefixSet gather_changes(mdbx::txn& txn, BlockNum from) {
             hashed_key.append(unpack_nibbles(hashed_location.bytes));
             out.insert(hashed_key);
             return true;
-        });
+        };
+        (void)db::cursor_for_each(storage_changes, storage_walk_func);
     }
 
     return out;

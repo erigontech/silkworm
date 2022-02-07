@@ -96,6 +96,7 @@ auto HeaderDownloader::forward(bool first_sync) -> Stage::Result {
         PersistedChain persisted_chain_(tx);
 
         if (persisted_chain_.unwind_detected()) {
+            tx.commit();
             log::Info() << "HeaderDownloader forward operation cannot start due to unwind detection";
             result.status = Stage::Result::Unknown;  // todo: Erigon does not change stage-state here, what can we do?
             return result;

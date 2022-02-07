@@ -1,5 +1,5 @@
 /*
-   Copyright 2021 The Silkworm Authors
+   Copyright 2021-2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -227,7 +227,7 @@ static evmc::bytes32 setup_storage(mdbx::txn& txn, ByteView storage_key) {
 static std::map<Bytes, Node> read_all_nodes(mdbx::cursor& cursor) {
     cursor.to_first(/*throw_notfound=*/false);
     std::map<Bytes, Node> out;
-    const auto save_nodes{[&out](mdbx::cursor&, mdbx::cursor::move_result& entry) {
+    db::WalkFunc save_nodes{[&out](mdbx::cursor&, mdbx::cursor::move_result& entry) {
         const Node node{*unmarshal_node(db::from_slice(entry.value))};
         out.emplace(db::from_slice(entry.key), node);
         return true;

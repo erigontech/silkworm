@@ -54,8 +54,6 @@ void HeaderDownloader::execution_loop() {
                       [this](const sentry::InboundMessage& msg) { receive_message(msg); });
 
     while (!is_stopping() && !sentry_.is_stopping()) {
-        log::Info() << "HeaderDownloader status: " << working_chain_.human_readable_status();
-
         // pop a message from the queue
         std::shared_ptr<Message> message;
         bool present = messages_.timed_wait_and_pop(message, 1000ms);
@@ -112,6 +110,8 @@ auto HeaderDownloader::forward(bool first_sync) -> Stage::Result {
             // at every minute...
             if (std::chrono::system_clock::now() - last_request > 60s) {
                 last_request = std::chrono::system_clock::now();
+
+                log::Info() << "HeaderDownloader status: " << working_chain_.human_readable_status();
 
                 // make some outbound header requests
                 send_header_requests();

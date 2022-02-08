@@ -68,7 +68,8 @@ std::string WorkingChain::human_readable_status() const {
            std::to_string(pending_links()) + " pending / " +
            std::to_string(persisted_link_queue_.size()) + " persisting/ed), " +
            std::to_string(anchors_.size()) + "/" + std::to_string(anchor_queue_.size()) + " anchors, " +
-           std::to_string(highest_in_db_) + " highest block in db";
+           std::to_string(highest_in_db_) + " highest block in db, " +
+           std::to_string(top_seen_height_) + " top seen height";
 
     return output;
 }
@@ -258,6 +259,13 @@ void WorkingChain::reduce_persisted_links_to(size_t limit) {
  * hole near the bottom. If the lowest hole is not so big we do not need a skeleton query yet.
  */
 std::optional<GetBlockHeadersPacket66> WorkingChain::request_skeleton() {
+    using namespace std::chrono_literals;
+
+    if (std::chrono::system_clock::now() - last_skeleton_request < 60s) {
+        return std::nullopt;
+    }
+    last_skeleton_request = std::chrono::system_clock::now();
+
     BlockNum top = top_seen_height_;
     BlockNum bottom = highest_in_db_ + stride;  // warning: this can be inside a chain in memory
     if (top <= bottom) {

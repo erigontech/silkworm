@@ -18,7 +18,6 @@
 
 #include <boost/format.hpp>
 
-#include <silkworm/common/asio_timer.hpp>
 #include <silkworm/common/log.hpp>
 #include <silkworm/db/stages.hpp>
 #include <silkworm/stagedsync/stagedsync.hpp>
@@ -29,6 +28,16 @@ void SyncLoop::load_stages() {
     stages_.push_back(std::make_unique<stagedsync::BlockHashes>(node_settings_));
     stages_.push_back(std::make_unique<stagedsync::Senders>(node_settings_));
     stages_.push_back(std::make_unique<stagedsync::Execution>(node_settings_));
+    stages_.push_back(std::make_unique<stagedsync::HashState>(node_settings_));
+}
+
+void SyncLoop::stop(bool wait) {
+    for (const auto& stage : stages_) {
+        if (!stage->is_stopping()) {
+            stage->stop();
+        }
+    }
+    Worker::stop(wait);
 }
 
 void SyncLoop::work() {
@@ -38,11 +47,12 @@ void SyncLoop::work() {
     std::unique_ptr<db::RWTxn> cycle_txn{nullptr};
     mdbx::txn_managed external_txn;
 
-    StopWatch stop_watch;
+    StopWatch cycle_stop_watch;
     Timer log_timer(
         node_settings_->asio_context, node_settings_->sync_loop_log_interval_seconds * 1'000,
         [&]() -> bool {
             if (is_stopping()) {
+                log::Info(get_log_prefix()) << "stopping ...";
                 return false;
             }
             log::Info(get_log_prefix(), stages_.at(current_stage_)->get_log_progress());
@@ -52,10 +62,10 @@ void SyncLoop::work() {
 
     while (!is_stopping()) {
         current_stage_ = 0;
-        stop_watch.start(/*with_reset=*/true);
+        cycle_stop_watch.start(/*with_reset=*/true);
 
         // TODO we should get highest seen from header downloader but is not plugged in yet
-        BlockNum highest_seen_header{13'000'000};
+        BlockNum highest_seen_header{14'000'000};
         bool cycle_in_one_tx{!is_first_cycle};
 
         {
@@ -80,16 +90,8 @@ void SyncLoop::work() {
             cycle_txn = std::make_unique<db::RWTxn>(*chaindata_env_);
         }
 
-        while (!is_stopping() && current_stage_ < stages_.size()) {
-            auto& stage{stages_.at(current_stage_)};
-            auto stage_result{stage->forward(*cycle_txn)};
-            stagedsync::success_or_throw(stage_result);
-
-            auto [_, stage_duration] = stop_watch.lap();
-            if (stage_duration > std::chrono::milliseconds(5)) {
-                log::Info(get_log_prefix(), {"done", StopWatch::format(stage_duration)});
-            }
-            ++current_stage_;
+        if (run_cycle(*cycle_txn, log_timer) != StageResult::kSuccess) {
+            break;
         }
 
         if (cycle_in_one_tx) {
@@ -97,25 +99,47 @@ void SyncLoop::work() {
         } else {
             cycle_txn->commit();
         }
+
         cycle_txn.reset();
         is_first_cycle = false;
 
-        if (!is_stopping()) {
-            auto [time_point, _] = stop_watch.lap();
-            auto cycle_duration{stop_watch.since_start(time_point)};
-            log::Info("Cycle completed", {"elapsed", StopWatch::format(cycle_duration)});
-            throttle_next_cycle(cycle_duration);
-        }
+        auto [_, cycle_duration] = cycle_stop_watch.lap();
+        log::Info("Cycle completed", {"elapsed", StopWatch::format(cycle_duration)});
+        throttle_next_cycle(cycle_duration);
 
         break;  // TODO(Andrea) Remove
     }
 
     log_timer.stop();
-    log::Trace() << "Synchronization loop stopped";
+    log::Info() << "Synchronization loop terminated";
+}
+
+StageResult SyncLoop::run_cycle(db::RWTxn& cycle_txn, Timer& log_timer) {
+    StopWatch stages_stop_watch;
+    (void)stages_stop_watch.start();
+    try {
+        for (; current_stage_ < stages_.size() && !is_stopping(); ++current_stage_) {
+            auto& stage{stages_.at(current_stage_)};
+            log_timer.reset();  // Resets the interval for next log line from now
+            const auto stage_result{stage->forward(cycle_txn)};
+            if (stage_result != StageResult::kSuccess) {
+                log::Error(get_log_prefix(), {"return", std::string(magic_enum::enum_name<StageResult>(stage_result))});
+                return stage_result;
+            }
+            auto [_, stage_duration] = stages_stop_watch.lap();
+            if (stage_duration > std::chrono::milliseconds(10)) {
+                log::Info(get_log_prefix(), {"done", StopWatch::format(stage_duration)});
+            }
+        }
+        return is_stopping() ? StageResult::kAborted : StageResult::kSuccess;
+    } catch (const std::exception& ex) {
+        log::Error(get_log_prefix(), {"exception", std::string(ex.what())});
+        return StageResult::kUnexpectedError;
+    }
 }
 
 void SyncLoop::throttle_next_cycle(const StopWatch::Duration& cycle_duration) {
-    if (!node_settings_->sync_loop_throttle_seconds) {
+    if (is_stopping() || !node_settings_->sync_loop_throttle_seconds) {
         return;
     }
 

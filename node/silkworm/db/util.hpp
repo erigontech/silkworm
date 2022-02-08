@@ -125,7 +125,7 @@ Bytes log_key(BlockNum block_number, uint32_t transaction_id);
 //! \return Plain state key + previous value of the account or storage.
 //! \remarks For storage location is returned as the last part of the key,
 //! while technically in PlainState it's the first part of the value.
-std::pair<Bytes, Bytes> change_set_to_plain_state_format(ByteView key, ByteView value);
+std::pair<Bytes, Bytes> changeset_to_plainstate_format(ByteView key, ByteView value);
 
 inline mdbx::slice to_slice(ByteView value) { return {value.data(), value.length()}; }
 
@@ -139,7 +139,7 @@ inline ByteView from_slice(const mdbx::slice slice) {
 std::optional<ByteView> find_value_suffix(mdbx::cursor& table, ByteView key, ByteView value_prefix);
 
 // We can't simply call upsert for storage values because they live in mdbx::value_mode::multi tables
-void upsert_storage_value(mdbx::cursor& state_cursor, ByteView storage_prefix, ByteView location, ByteView value);
+void upsert_storage_value(mdbx::cursor& state_cursor, ByteView storage_prefix, ByteView location, ByteView new_value);
 
 namespace detail {
 

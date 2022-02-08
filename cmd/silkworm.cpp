@@ -19,6 +19,7 @@
 
 #include <CLI/CLI.hpp>
 
+#include <silkworm/buildinfo.h>
 #include <silkworm/common/log.hpp>
 #include <silkworm/common/settings.hpp>
 #include <silkworm/common/stopwatch.hpp>
@@ -84,6 +85,19 @@ int main(int argc, char* argv[]) {
         SignalHandler::init();    // Trap OS signals
         log::init(log_settings);  // Initialize logging with cli settings
 
+        // Output BuildInfo
+        auto build_info{silkworm_get_buildinfo()};
+        log::Message(
+            "Silkworm",
+            {
+                "version", build_info->project_version,  //
+                "build",
+                std::string(build_info->system_name) + "-" + std::string(build_info->system_processor) + " " +
+                    std::string(build_info->build_type),                                                            //
+                "compiler", std::string(build_info->compiler_id) + " " + std::string(build_info->compiler_version)  //
+            });
+
+        // Check db
         cmd::run_preflight_checklist(node_settings);  // Prepare database for takeoff
 
         auto chaindata_env{silkworm::db::open_env(node_settings.chaindata_env_config)};

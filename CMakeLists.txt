@@ -25,6 +25,7 @@ get_directory_property(SILKWORM_HAS_PARENT PARENT_DIRECTORY)
 if(NOT SILKWORM_HAS_PARENT)
   include(evmone/cmake/cable/bootstrap.cmake)
   include(CableBuildType)
+  include(CableBuildInfo)
   cable_set_build_type(DEFAULT Release CONFIGURATION_TYPES Release Debug)
 
   if(NOT CMAKE_TOOLCHAIN_FILE)
@@ -44,7 +45,8 @@ If you want to include Silkworm into your CMake project,
 add the following lines before the project command of your root CMakeLists.txt:
 
 -----------------------------------------------------------------------------------------------------
-
+include(silkworm/evmone/cmake/cable/bootstrap.cmake)
+include(CableBuildInfo)
 include(silkworm/evmone/cmake/cable/HunterGate.cmake)
 HunterGate(
   URL "https://github.com/cpp-pm/hunter/archive/v0.23.317.tar.gz"
@@ -58,6 +60,8 @@ HunterGate(
 ]]
 
 project(silkworm)
+
+cable_add_buildinfo_library(PROJECT_NAME ${PROJECT_NAME})
 
 option(SILKWORM_WASM_API "Build WebAssembly API" OFF)
 option(SILKWORM_CORE_ONLY "Only build Silkworm Core" OFF)

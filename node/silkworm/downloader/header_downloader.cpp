@@ -59,19 +59,8 @@ void HeaderDownloader::execution_loop() {
         bool present = messages_.timed_wait_and_pop(message, 1000ms);
         if (!present) continue;  // timeout, needed to check exiting_
 
-        auto in_message = std::dynamic_pointer_cast<InboundMessage>(message);
-        if (in_message) {
-            SILK_TRACE << "HeaderDownloader processing message " << *in_message;
-        }
-
         // process the message (command pattern)
         message->execute();
-
-        auto out_message = std::dynamic_pointer_cast<OutboundMessage>(message);
-        if (out_message) {
-            SILK_TRACE << "HeaderDownloader sent message " << *out_message;
-        }
-
     }
 
     stop();
@@ -135,8 +124,6 @@ auto HeaderDownloader::forward(bool first_sync) -> Stage::Result {
                 }
 
                 // todo: log progress - logProgressHeaders(logPrefix, prevProgress, progress)
-                log::Info() << "HeaderDownloader status: current persisted height="
-                             << persisted_chain_.highest_height();
             } else {
                 std::this_thread::sleep_for(1s);
             }

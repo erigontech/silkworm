@@ -43,6 +43,8 @@ InboundNewBlockHashes::InboundNewBlockHashes(const sentry::InboundMessage& msg, 
 void InboundNewBlockHashes::execute() {
     using namespace std;
 
+    SILK_TRACE << "Processing message " << *this;
+
     // todo: Erigon apparently processes this message even if it is not in a fetching phase BUT is in request-chaining
     // mode - do we need the same?
 

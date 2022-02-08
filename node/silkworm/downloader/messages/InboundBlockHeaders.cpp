@@ -40,6 +40,8 @@ InboundBlockHeaders::InboundBlockHeaders(const sentry::InboundMessage& msg, Work
 void InboundBlockHeaders::execute() {
     using namespace std;
 
+    SILK_TRACE << "Processing message " << *this;
+
     BlockNum highestBlock = 0;
     for (BlockHeader& header : packet_.request) {
         highestBlock = std::max(highestBlock, header.number);

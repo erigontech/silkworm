@@ -50,6 +50,8 @@ func (p *Peer) ReplyBlockBodiesRLP(id uint64, bodies []rlp.RawValue) error {
 void InboundGetBlockBodies::execute() {
     using namespace std;
 
+    SILK_TRACE << "Processing message " << *this;
+
     BodyRetrieval body_retrieval(db_);
 
     BlockBodiesPacket66 reply;

@@ -42,6 +42,8 @@ InboundGetBlockHeaders::InboundGetBlockHeaders(const sentry::InboundMessage& msg
 void InboundGetBlockHeaders::execute() {
     using namespace std;
 
+    SILK_TRACE << "Processing message " << *this;
+
     HeaderRetrieval header_retrieval(db_);
 
     BlockHeadersPacket66 reply;

@@ -81,9 +81,11 @@ class lru_cache {
         }
     }
 
-    std::optional<value_t> get_a_copy(const key_t& key) {
+    std::optional<value_t> get_as_copy(const key_t& key) {
         auto val = get(key);
-        if (val == nullptr) return std::nullopt;
+        if (val == nullptr) {
+            return std::nullopt;
+        }
         return {*val};
     }
 

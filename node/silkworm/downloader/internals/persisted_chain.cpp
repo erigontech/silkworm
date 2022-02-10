@@ -71,7 +71,7 @@ void PersistedChain::persist(const Headers& headers) {
 
     auto [end_time, _] = measure_curr_scope.lap();  // only for test
 
-    log::Info() << "PersistedChain: saved " << headers.size() << " headers from height "
+    log::Trace() << "[INFO] PersistedChain: saved " << headers.size() << " headers from height "
                  << header_at(headers.begin()).number << " to height " << header_at(headers.rbegin()).number
                  << " (duration=" << measure_curr_scope.format(end_time - start_time) << ")"; // only for test
 }
@@ -154,7 +154,7 @@ BlockNum PersistedChain::find_forking_point(Db::ReadWriteAccess::Tx& tx, const B
     BlockNum forking_point{};
 
     // Read canonical hash at height-1
-    auto prev_canon_hash = canonical_cache_.get_a_copy(height - 1);  // look in the cache first
+    auto prev_canon_hash = canonical_cache_.get_as_copy(height - 1);  // look in the cache first
     if (!prev_canon_hash) {
         prev_canon_hash = tx.read_canonical_hash(height - 1);  // then look in the db
     }

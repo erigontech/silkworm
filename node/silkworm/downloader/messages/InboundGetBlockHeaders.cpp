@@ -58,7 +58,7 @@ void InboundGetBlockHeaders::execute() {
     }
 
     if (reply.request.empty()) {
-        log::Warning() << "Not replying to " << identify(*this) << ", no headers found";
+        log::Trace() << "[WARNING] Not replying to " << identify(*this) << ", no headers found";
         return;
     }
 

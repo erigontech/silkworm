@@ -46,6 +46,10 @@ class StopWatch {
     //! \return A pair of TimePoint and Duration
     std::pair<TimePoint, Duration> lap() noexcept;
 
+    //! \brief Records a lap time
+    //! \return The lap Duration
+    Duration lap_duration() noexcept;
+
     //! \brief Computes the duration amongst the start time and the provided timepoint
     //! \param origin [in] : An origin timepoint
     //! \return  Duration

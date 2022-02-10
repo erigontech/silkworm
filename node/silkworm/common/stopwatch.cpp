@@ -51,6 +51,11 @@ std::pair<StopWatch::TimePoint, StopWatch::Duration> StopWatch::lap() noexcept {
     return laps_.back();
 }
 
+StopWatch::Duration StopWatch::lap_duration() noexcept {
+    auto [tp, duration] = lap();
+    return duration;
+}
+
 StopWatch::Duration StopWatch::since_start(const TimePoint& origin) noexcept {
     if (!started_) {
         return {};

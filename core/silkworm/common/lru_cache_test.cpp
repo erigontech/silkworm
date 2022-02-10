@@ -86,10 +86,10 @@ TEST_CASE("GetWithCopy") {
     lru_cache<int, int> cache_lru(1);
     cache_lru.put(1, 111);
     REQUIRE(cache_lru.get(1));
-    REQUIRE(cache_lru.get_a_copy(1));
-    REQUIRE(!cache_lru.get_a_copy(2));
+    REQUIRE(cache_lru.get_as_copy(1));
+    REQUIRE(!cache_lru.get_as_copy(2));
     CHECK(111 == *cache_lru.get(1));
-    CHECK(111 == cache_lru.get_a_copy(1));
+    CHECK(111 == cache_lru.get_as_copy(1));
     CHECK(1 == cache_lru.size());
 }
 

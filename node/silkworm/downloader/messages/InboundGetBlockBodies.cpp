@@ -59,7 +59,7 @@ void InboundGetBlockBodies::execute() {
     reply.request = body_retrieval.recover(packet_.request);
 
     if (reply.request.empty()) {
-        log::Warning() << "Not replying to " << identify(*this) << ", no blocks found";
+        log::Trace() << "[WARNING] Not replying to " << identify(*this) << ", no blocks found";
         return;
     }
 

@@ -41,20 +41,25 @@ int main(int argc, char* argv[]) {
     string temporary_file_path = ".";
     string sentry_addr = "127.0.0.1:9091";
 
-    app.add_option("--chaindata", db_path, "Path to the chain database", true)->check(CLI::ExistingDirectory);
-    app.add_option("--chain", chain_name, "Network name", true)->needs("--chaindata");
+    log::Settings settings;
+    settings.log_threads = true;
+    settings.log_file = "downloader.log";
+    settings.log_verbosity = log::Level::kInfo;
+
+    app.add_option("--chaindata", db_path, "Path to the chain database", true)
+        ->check(CLI::ExistingDirectory);
+    app.add_option("--chain", chain_name, "Network name", true)
+        ->needs("--chaindata");
     app.add_option("-s,--sentryaddr", sentry_addr, "address:port of sentry", true);
-    //  todo ->check?
+        //  todo ->check?
     app.add_option("-f,--filesdir", temporary_file_path, "Path to a temp files dir", true)
         ->check(CLI::ExistingDirectory);
+    app.add_option("-v,--verbosity", settings.log_verbosity, "Verbosity", true)
+        ->check(CLI::Range(static_cast<uint32_t>(log::Level::kCritical), static_cast<uint32_t>(log::Level::kTrace)));
 
     CLI11_PARSE(app, argc, argv);
 
-    log::Settings settings;
-    settings.log_threads = true;
     log::init(settings);
-    log::set_verbosity(log::Level::kInfo);
-    log::tee_file(std::filesystem::path("downloader.log"));
     log::Info() << "STARTING";
 
     int return_value = 0;

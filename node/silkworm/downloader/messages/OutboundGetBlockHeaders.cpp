@@ -32,7 +32,7 @@ void OutboundGetBlockHeaders::execute() {
 
     time_point_t now = std::chrono::system_clock::now();
     seconds_t timeout = 5s;
-    int max_requests = breadth_ == Wide_Req ? 64 : 1;  // limit the number of requests sent per round
+    int max_requests = breadth_ == Wide_Req ? 128 : 1;  // limit the number of requests sent per round
 
     // anchor extension
     do {
@@ -73,6 +73,8 @@ void OutboundGetBlockHeaders::execute() {
         SILK_TRACE << "Headers skeleton request sent (" << *packet << "), received by " << send_outcome.peers_size()
                      << " peer(s)";
     }
+
+    SILK_TRACE << "Sent message " << *this;
 }
 
 sentry::SentPeers OutboundGetBlockHeaders::send_packet(const GetBlockHeadersPacket66& packet_, seconds_t timeout) {

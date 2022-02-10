@@ -113,7 +113,7 @@ void SentryClient::stats_receiving_loop() {
             active_peers--;
         }
 
-        log::Info() << "SentryClient: peer " << peerId << " " << event << ", active " << active_peers;
+        log::Info() << "Peer " << peerId << " " << event << ", active " << active_peers;
     }
 
     stop();

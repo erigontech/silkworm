@@ -72,8 +72,8 @@ class WorkingChain {
     BlockNum highest_block_in_db() const;
     BlockNum top_seen_block_height() const;
     void top_seen_block_height(BlockNum);
+    size_t pending_links() const;
     std::string human_readable_status() const;
-
     std::string dump_chain_bundles() const;
 
     // make an anchor collection (skeleton request) or many anchor extension upon the last execution time
@@ -128,7 +128,6 @@ class WorkingChain {
     using DeepLink = std::shared_ptr<Link>;
     auto find_anchor(std::shared_ptr<Link> link) const -> std::tuple<std::optional<std::shared_ptr<Anchor>>, DeepLink>;
 
-    size_t pending_links() const;
     void reduce_links_to(size_t limit);
     void reduce_persisted_links_to(size_t limit);
 
@@ -173,6 +172,12 @@ class WorkingChain {
 
     uint64_t request_id_prefix;
     uint64_t request_count = 0;
+
+    class Statistics {
+        uint64_t requested_headers;
+        uint64_t received_headers;
+        uint64_t duplicated_headers;
+    } instance;
 };
 
 }  // namespace silkworm

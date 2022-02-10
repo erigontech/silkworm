@@ -198,7 +198,7 @@ Headers WorkingChain::withdraw_stable_headers() {
     }
 
     if (!stable_headers.empty()) {
-        log::Info() << "WorkingChain: " << stable_headers.size() << " headers prepared for persistence on top of "
+        log::Trace() << "[INFO] WorkingChain: " << stable_headers.size() << " headers prepared for persistence on top of "
                     << initial_highest_in_db << " (from " << header_at(stable_headers.begin()).number << " to "
                     << header_at(stable_headers.rbegin()).number << ")";
     }
@@ -343,7 +343,7 @@ auto WorkingChain::request_more_headers(time_point_t time_point, seconds_t timeo
     using std::nullopt;
 
     if (anchor_queue_.empty()) {
-        log::Trace() << "WorkingChain, no more headers to request: empty anchor queue";
+        log::Trace() << "[INFO] WorkingChain, no more headers to request: empty anchor queue";
         return {};
     }
 
@@ -409,7 +409,7 @@ void WorkingChain::save_external_announce(Hash h) {
 void WorkingChain::request_nack(const GetBlockHeadersPacket66& packet) {
     std::shared_ptr<Anchor> anchor;
 
-    log::Warning() << "WorkingChain: restoring some timestamp due to request nack";
+    log::Trace() << "[WARNING] WorkingChain: restoring timestamp due to request nack, requestId=" << packet.requestId;
 
     if (std::holds_alternative<Hash>(packet.request.origin)) {
         Hash hash = std::get<Hash>(packet.request.origin);
@@ -608,7 +608,7 @@ auto WorkingChain::process_segment(const Segment& segment, bool is_a_new_block, 
         SILK_TRACE << "WorkingChain, segment " << op << " up=" << startNum << " (" << segment[start]->hash()
                     << ") down=" << endNum << " (" << segment[end - 1]->hash() << ") (more=" << requestMore << ")";
     } catch (segment_cut_and_paste_error& e) {
-        log::Warning() << "WorkingChain, segment cut&paste error, " << op << " up=" << startNum << " ("
+        log::Trace() << "[WARNING] WorkingChain, segment cut&paste error, " << op << " up=" << startNum << " ("
                        << segment[start]->hash() << ") down=" << endNum << " (" << segment[end - 1]->hash()
                        << ") failed, reason: " << e.what();
         return false;
@@ -685,7 +685,7 @@ auto WorkingChain::find_anchor(std::shared_ptr<Link> link) const
 
     auto a = anchors_.find(parent_link->header->parent_hash);
     if (a == anchors_.end()) {
-        log::Error() << "WorkingChain: segment cut&paste error, segment without anchor or persisted attach point, "
+        log::Trace() << "[ERROR] WorkingChain: segment cut&paste error, segment without anchor or persisted attach point, "
                      << "starting bn=" << link->blockHeight << " ending bn=" << parent_link->blockHeight << " "
                      << "parent=" << to_hex(parent_link->header->parent_hash);
         return {std::nullopt, parent_link};  // wrong, invariant violation, no anchor but there should be
@@ -737,7 +737,7 @@ void WorkingChain::connect(std::shared_ptr<Link> attachment_link, Segment::Slice
     if (anchor_preverified) mark_as_preverified(prev_link);  // Mark the entire segment as pre-verified
     remove(anchor);
 
-    log::Info() << "WorkingChain, segment op: "
+    log::Trace() << "[INFO] WorkingChain, segment op: "
         << (deep_a.has_value() ?
                             "A " + to_string(deep_a.value()->blockHeight) :
                             "X " + to_string(deep_link->blockHeight) + (deep_link->persisted ? " (P)" : " (!P)"))
@@ -783,7 +783,7 @@ auto WorkingChain::extend_down(Segment::Slice segment_slice, std::shared_ptr<Anc
     bool newanchor_preverified =
         as_range::any_of(new_anchor->links, [](const auto& link) -> bool { return link->preverified; });
 
-    log::Info() << "WorkingChain, segment op: "
+    log::Trace() << "[INFO] WorkingChain, segment op: "
         << new_anchor->blockHeight << (newanchor_preverified ? " (V)" : "") << " --- " << prev_link->blockHeight
         << " <-extend down "
         << anchor->blockHeight << " --- " <<  anchor->lastLinkHeight << (anchor_preverified ? " (V)" : "");
@@ -823,7 +823,7 @@ void WorkingChain::extend_up(std::shared_ptr<Link> attachment_link, Segment::Sli
         // if (!deep_link->persisted) error, else attachment to special anchor
     }
 
-    log::Info() << "WorkingChain, segment op: "
+    log::Trace() << "[INFO] WorkingChain, segment op: "
         << (deep_a.has_value() ?
                             "A " + to_string(deep_a.value()->blockHeight) :
                             "X " + to_string(deep_link->blockHeight) + (deep_link->persisted ? " (P)" : " (!P)"))
@@ -860,7 +860,7 @@ auto WorkingChain::new_anchor(Segment::Slice segment_slice, PeerId peerId) -> Re
     bool anchor_preverified =
         as_range::any_of(anchor->links, [](const auto& link) -> bool { return link->preverified; });
 
-    log::Info() << "WorkingChain, segment op: new anchor "
+    log::Trace() << "[INFO] WorkingChain, segment op: new anchor "
         << anchor->blockHeight << " --- " << anchor->lastLinkHeight << (anchor_preverified ? " (V)" : "");
 
     return !pre_existing;

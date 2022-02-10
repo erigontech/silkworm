@@ -74,6 +74,12 @@ namespace as_range
     {
         std::sort(std::begin(c), std::end(c), std::forward<F>(f));
     }
+
+    template<typename Cont, typename F>
+    void stable_sort(Cont& c,  F&& f)
+    {
+        std::stable_sort(std::begin(c), std::end(c), std::forward<F>(f));
+    }
 }
 
 

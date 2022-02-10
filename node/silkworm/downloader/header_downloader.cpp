@@ -19,10 +19,13 @@
 #include <thread>
 
 #include <silkworm/common/log.hpp>
+#include <silkworm/common/measure.hpp>
+#include <silkworm/common/stopwatch.hpp>
 
 #include "messages/InboundMessage.hpp"
 #include "messages/OutboundGetBlockHeaders.hpp"
 #include "messages/OutboundNewBlockHashes.hpp"
+
 
 namespace silkworm {
 
@@ -42,34 +45,30 @@ HeaderDownloader::~HeaderDownloader() {
 void HeaderDownloader::receive_message(const sentry::InboundMessage& raw_message) {
     auto message = InboundBlockAnnouncementMessage::make(raw_message, working_chain_, sentry_);
 
-    log::Info() << "HeaderDownloader received message " << *message;
+    SILK_TRACE << "HeaderDownloader received message " << *message;
 
     messages_.push(message);
 }
 
 void HeaderDownloader::execution_loop() {
+    using namespace std::chrono;
     using namespace std::chrono_literals;
 
     sentry_.subscribe(SentryClient::Scope::BlockAnnouncements,
                       [this](const sentry::InboundMessage& msg) { receive_message(msg); });
 
     while (!is_stopping() && !sentry_.is_stopping()) {
-        log::Trace() << "HeaderDownloader status: " << working_chain_.human_readable_status();
-
         // pop a message from the queue
         std::shared_ptr<Message> message;
         bool present = messages_.timed_wait_and_pop(message, 1000ms);
         if (!present) continue;  // timeout, needed to check exiting_
 
-        log::Trace() << "HeaderDownloader processing message " << message->name();
-
         // process the message (command pattern)
         message->execute();
 
-        auto out_message = std::dynamic_pointer_cast<OutboundMessage>(message);
-        if (out_message) {
-            log::Info() << "HeaderDownloader sent message " << *out_message;
-        }
+        // log status
+        SILK_TRACE << "HeaderDownloader status: " << working_chain_.human_readable_status() << ", "
+                   << messages_.size() << " messages waiting in queue";
     }
 
     stop();
@@ -79,12 +78,15 @@ void HeaderDownloader::execution_loop() {
 auto HeaderDownloader::forward(bool first_sync) -> Stage::Result {
     using std::shared_ptr;
     using namespace std::chrono_literals;
+    using namespace std::chrono;
 
     Stage::Result result;
     bool new_height_reached = false;
     std::thread message_receiving;
 
-    log::Info() << "HeaderDownloader forward operation started";
+    StopWatch timing; timing.start();
+    log::Info() << "[1/16 Headers] Start";
+    log::Trace() << "[INFO] HeaderDownloader forward operation started";
 
     try {
         Db::ReadWriteAccess::Tx tx = db_access_.start_tx();  // this will start a new tx only if db_access has not
@@ -92,9 +94,16 @@ auto HeaderDownloader::forward(bool first_sync) -> Stage::Result {
         PersistedChain persisted_chain_(tx);
 
         if (persisted_chain_.unwind_detected()) {
-            result.status = Stage::Result::Unknown;  // todo: Erigon does not change stage-state here, what can we do?
+            tx.commit();
+            log::Info() << "[1/16 Headers] End (not started due to unwind detection), duration= "
+                        << timing.format(timing.lap_duration());
+            log::Trace() << "[INFO] HeaderDownloader forward operation cannot start due to unwind detection";
+            result.status = Stage::Result::Unknown;
             return result;
         }
+
+        RepeatedMeasure<BlockNum> height_progress(persisted_chain_.initial_height());
+        log::Info() << "[1/16 Headers] Waiting for headers... from=" << height_progress.get();
 
         // sync status
         auto sync_command = sync_working_chain(persisted_chain_.initial_height());
@@ -104,8 +113,8 @@ auto HeaderDownloader::forward(bool first_sync) -> Stage::Result {
         time_point_t last_request;
         while (!new_height_reached && !sentry_.is_stopping()) {
             // at every minute...
-            if (std::chrono::system_clock::now() - last_request > 60s) {
-                last_request = std::chrono::system_clock::now();
+            if (system_clock::now() - last_request > 60s) {
+                last_request = system_clock::now();
 
                 // make some outbound header requests
                 send_header_requests();
@@ -113,8 +122,17 @@ auto HeaderDownloader::forward(bool first_sync) -> Stage::Result {
                 // check if it needs to persist some headers
                 auto command = withdraw_stable_headers();
                 auto [stable_headers, in_sync] = command->result().get();  // blocking
-                log::Trace() << "HeaderDownloader persisting " << stable_headers.size() << " headers";
-                persisted_chain_.persist(stable_headers);
+                if (!stable_headers.empty()) {
+                    if (stable_headers.size() > 10000) {
+                        log::Info() << "[1/16 Headers] Inserting headers...";
+                    }
+                    StopWatch insertion_timing; insertion_timing.start();
+
+                    persisted_chain_.persist(stable_headers);
+
+                    log::Info() << "[1/16 Headers] Inserted headers tot=" << stable_headers.size()
+                                << " (duration= " << StopWatch::format(insertion_timing.lap_duration()) << "s)";
+                }
 
                 // do announcements
                 send_announcements();
@@ -129,9 +147,13 @@ auto HeaderDownloader::forward(bool first_sync) -> Stage::Result {
                     new_height_reached = persisted_chain_.best_header_changed();
                 }
 
-                // todo: log progress - logProgressHeaders(logPrefix, prevProgress, progress)
-                log::Trace() << "HeaderDownloader status: current persisted height="
-                             << persisted_chain_.highest_height();
+                height_progress.set(persisted_chain_.highest_height());
+
+                log::Info() << "[1/16 Headers] Wrote block headers number=" << height_progress.get()
+                            << " (+" << height_progress.delta() << "), "
+                            << height_progress.throughput() << " headers/secs, "
+                            << working_chain_.pending_links() << " pending headers";
+
             } else {
                 std::this_thread::sleep_for(1s);
             }
@@ -145,27 +167,33 @@ auto HeaderDownloader::forward(bool first_sync) -> Stage::Result {
             result.unwind_point = persisted_chain_.unwind_point();
         }
 
+        log::Info() << "[1/16 Headers] Completed, duration= " << StopWatch::format(timing.lap_duration());
         persisted_chain_.close();
 
         tx.commit();  // this will commit if the tx was started here
 
         // todo: do we need a sentry.set_status() here?
 
-        log::Info() << "HeaderDownloader forward operation completed";
+        log::Info() << "[1/16 Headers] Completed, duration= " << StopWatch::format(timing.lap_duration());
+        log::Trace() << "[INFO] HeaderDownloader forward operation completed";
+
     } catch (const std::exception& e) {
-        log::Error() << "HeaderDownloader forward operation is stopping due to an exception: " << e.what();
+        log::Error() << "[1/16 Headers] Aborted due to exception";
+        log::Trace() << "[ERROR] HeaderDownloader forward operation is stopping due to an exception: " << e.what();
+
         // tx rollback executed automatically if needed
         result.status = Stage::Result::Error;
     }
 
-    log::Debug() << "HeaderDownloader forward operation clean exit";
     return result;
 }
 
 auto HeaderDownloader::unwind_to(BlockNum new_height, Hash bad_block) -> Stage::Result {
     Stage::Result result;
 
-    log::Info() << "HeaderDownloader unwind operation started";
+    StopWatch timing; timing.start();
+    log::Info() << "[1/16 Headers] Unwind start";
+    log::Trace() << "[INFO] HeaderDownloader unwind operation started";
 
     try {
         Db::ReadWriteAccess::Tx tx = db_access_.start_tx();
@@ -187,9 +215,13 @@ auto HeaderDownloader::unwind_to(BlockNum new_height, Hash bad_block) -> Stage::
 
         // todo: do we need a sentry.set_status() here?
 
-        log::Info() << "HeaderDownloader unwind operation completed";
+        log::Info() << "[1/16 Headers] Unwind completed, duration= " << StopWatch::format(timing.lap_duration());
+        log::Trace() << "[INFO] HeaderDownloader unwind operation completed";
+
     } catch (const std::exception& e) {
-        log::Error() << "HeaderDownloader unwind operation is stopping due to an exception: " << e.what();
+        log::Error() << "[1/16 Headers] Unwind aborted due to exception";
+        log::Trace() << "[ERROR] HeaderDownloader unwind operation is stopping due to an exception: " << e.what();
+
         // tx rollback executed automatically if needed
         result.status = Stage::Result::Error;
     }
@@ -203,7 +235,7 @@ void HeaderDownloader::send_header_requests() {
 
     auto message = std::make_shared<OutboundGetBlockHeaders>(working_chain_, sentry_);
 
-    log::Info() << "HeaderDownloader sending message " << *message;
+    SILK_TRACE << "HeaderDownloader sending message " << *message;
 
     messages_.push(message);
 }
@@ -214,7 +246,7 @@ void HeaderDownloader::send_announcements() {
 
     auto message = std::make_shared<OutboundNewBlockHashes>(working_chain_, sentry_);
 
-    log::Info() << "HeaderDownloader sending announcements";
+    SILK_TRACE << "HeaderDownloader sending announcements";
 
     messages_.push(message);
 }

@@ -22,7 +22,7 @@
 #include <silkworm/common/lru_cache.hpp>
 #include <silkworm/consensus/engine.hpp>
 #include <silkworm/downloader/packets/GetBlockHeadersPacket.hpp>
-#include <silkworm/downloader/preverified_hashes.hpp>
+#include "preverified_hashes.hpp"
 
 #include "chain_elements.hpp"
 #include "header_only_state.hpp"
@@ -72,8 +72,15 @@ class WorkingChain {
     BlockNum highest_block_in_db() const;
     BlockNum top_seen_block_height() const;
     void top_seen_block_height(BlockNum);
+    size_t pending_links() const;
     std::string human_readable_status() const;
-    std::string human_readable_verbose_status() const;
+    std::string dump_chain_bundles() const;
+
+    // make an anchor collection (skeleton request) or many anchor extension upon the last execution time
+    auto request_headers(time_point_t tp)
+        -> std::tuple<std::vector<GetBlockHeadersPacket66>, std::vector<PeerPenalization>>;
+    // todo: encapsulate the algo that is in OutboundGetBlockHeaders at the moment + decide when to do the skeleton req
+    // notes: for the skeleton req save the time of last skeleton and make sure the next will be issued not before 60s
 
     // core functionalities: anchor collection
     // to collect anchor more quickly we do a skeleton request i.e. a request of many headers equally distributed in a
@@ -91,7 +98,7 @@ class WorkingChain {
     // when a remote peer satisfy our request we receive one or more header that will be processed to fill hole in the
     // block chain
     using RequestMoreHeaders = bool;
-    auto accept_headers(const std::vector<BlockHeader>&, const PeerId&) -> std::tuple<Penalty, RequestMoreHeaders>;
+    auto accept_headers(const std::vector<BlockHeader>&, uint64_t requestId, const PeerId&) -> std::tuple<Penalty, RequestMoreHeaders>;
 
     // core functionalities: persist new headers that have persisted parent
     auto withdraw_stable_headers() -> Headers;
@@ -113,40 +120,42 @@ class WorkingChain {
 
     auto process_segment(const Segment&, bool is_a_new_block, const PeerId&) -> RequestMoreHeaders;
 
-    using Found = bool;
     using Start = size_t;
     using End = size_t;
-    auto find_anchor(const Segment&) -> std::tuple<Found, Start>;
-    auto find_link(const Segment&, size_t start) -> std::tuple<Found, End>;
-    auto get_link(const Hash& hash) -> std::optional<std::shared_ptr<Link>>;
+    auto find_anchor(const Segment&) const -> std::tuple<std::optional<std::shared_ptr<Anchor>>, Start>;
+    auto find_link(const Segment&, size_t start) const -> std::tuple<std::optional<std::shared_ptr<Link>>, End>;
+    auto get_link(const Hash& hash) const -> std::optional<std::shared_ptr<Link>>;
+    using DeepLink = std::shared_ptr<Link>;
+    auto find_anchor(std::shared_ptr<Link> link) const -> std::tuple<std::optional<std::shared_ptr<Anchor>>, DeepLink>;
 
     void reduce_links_to(size_t limit);
     void reduce_persisted_links_to(size_t limit);
 
-    void invalidate(Anchor&);
-    void remove(Anchor& anchor);
-    void remove_anchor(const Hash& hash);
+    using Pre_Existing = bool;
+    void invalidate(std::shared_ptr<Anchor>);
+    void remove(std::shared_ptr<Anchor>);
     bool find_bad_header(const std::vector<BlockHeader>&);
     auto add_header_as_link(const BlockHeader& header, bool persisted) -> std::shared_ptr<Link>;
+    auto add_anchor_if_not_present(const BlockHeader& header, PeerId, bool check_limits)
+        -> std::tuple<std::shared_ptr<Anchor>, Pre_Existing>;
     void mark_as_preverified(std::shared_ptr<Link>);
     size_t anchors_within_range(BlockNum max);
     BlockNum lowest_anchor_within_range(BlockNum bottom, BlockNum top);
+    std::shared_ptr<Anchor> highest_anchor();
 
     enum VerificationResult { Preverified, Skip, Postpone, Accept };
     VerificationResult verify(const Link& link);
 
-    using Error = int;
-    void connect(Segment::Slice);                                   // throw segment_cut_and_paste_error
-    auto extend_down(Segment::Slice) -> RequestMoreHeaders;         // throw segment_cut_and_paste_error
-    void extend_up(Segment::Slice);                                 // throw segment_cut_and_paste_error
-    auto new_anchor(Segment::Slice, PeerId) -> RequestMoreHeaders;  // throw segment_cut_and_paste_error
+    void connect(std::shared_ptr<Link>, Segment::Slice, std::shared_ptr<Anchor>);
+    auto extend_down(Segment::Slice, std::shared_ptr<Anchor>) -> RequestMoreHeaders;
+    void extend_up(std::shared_ptr<Link>, Segment::Slice);
+    auto new_anchor(Segment::Slice, PeerId) -> RequestMoreHeaders;
 
-    YoungestFirstLinkQueue link_queue_;          // Priority queue of non-persisted links used to limit their number
     OldestFirstAnchorQueue anchor_queue_;        // Priority queue of anchors used to sequence the header requests
     LinkMap links_;                              // Links by header hash
     AnchorMap anchors_;                          // Mapping from parentHash to collection of anchors
-    OldestFirstLinkQueue persisted_link_queue_;  // Priority queue of persisted links used to limit their number
-    LinkLIFOQueue insert_list_;  // List of non-persisted links that can be inserted (their parent is persisted)
+    OldestFirstLinkMap persisted_link_queue_;  // Priority queue of persisted links used to limit their number
+    OldestFirstLinkQueue insert_list_;  // List of non-persisted links that can be inserted (their parent is persisted)
     BlockNum highest_in_db_;
     BlockNum top_seen_height_;
     std::set<Hash> bad_headers_;
@@ -156,6 +165,13 @@ class WorkingChain {
     std::vector<Announce> announces_to_do_;
     ConsensusEngine consensus_engine_;
     CustomHeaderOnlyChainState chain_state_;
+    time_point_t last_skeleton_request;
+
+    uint64_t generate_request_id();
+    uint64_t is_valid_request_id(uint64_t request_id);
+
+    uint64_t request_id_prefix;
+    uint64_t request_count = 0;
 };
 
 }  // namespace silkworm

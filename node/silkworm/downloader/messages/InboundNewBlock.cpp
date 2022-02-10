@@ -37,7 +37,7 @@ InboundNewBlock::InboundNewBlock(const sentry::InboundMessage& msg, WorkingChain
     ByteView data = string_view_to_byte_view(msg.data());  // copy for consumption
     rlp::success_or_throw(rlp::decode(data, packet_));
 
-    log::Trace() << "Received message " << *this;
+    SILK_TRACE << "Received message " << *this;
 }
 
 void InboundNewBlock::execute() {

@@ -85,6 +85,9 @@ namespace detail {
 
     uint32_t flags{MDBX_NOTLS | MDBX_NORDAHEAD | MDBX_COALESCE | MDBX_SYNC_DURABLE};  // Default flags
 
+    if (config.read_ahead) {
+        flags &= ~MDBX_NORDAHEAD;
+    }
     if (config.exclusive && config.shared) {
         throw std::runtime_error("Exclusive conflicts with Shared");
     }

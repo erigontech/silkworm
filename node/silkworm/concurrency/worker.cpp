@@ -40,7 +40,7 @@ void Worker::start(bool wait) {
             try {
                 work();
             } catch (const std::exception& ex) {
-                log::Error() << "Exception thrown in " << name_ << " thread : " << ex.what();
+                log::Error(name_, {"exception", std::string(ex.what())});
                 exception_ptr_ = std::current_exception();
             }
         }

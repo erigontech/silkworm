@@ -1,6 +1,6 @@
 build
 xcode
-.code-workspace
+*.code-workspace
 .idea
 .vscode
 .vs

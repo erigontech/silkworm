@@ -1,5 +1,5 @@
 /*
-   Copyright 2020-2021 The Silkworm Authors
+   Copyright 2020-2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -89,7 +89,7 @@ int main(int argc, char* argv[]) {
                 break;
             }
 
-            db::Buffer buffer{txn, block_num};
+            db::Buffer buffer{txn, /*prune_from=*/0, /*historical_block=*/block_num};
 
             ExecutionProcessor processor{bh->block, *engine, buffer, *chain_config};
             processor.evm().advanced_analysis_cache = &analysis_cache;
@@ -113,9 +113,9 @@ int main(int argc, char* argv[]) {
                         }
                     } else if (Bytes val{calculated_account_changes.at(e.first)}; val != e.second) {
                         log::Error() << "Value mismatch for " << to_hex(e.first) << ":\n"
-                                            << to_hex(val) << "\n"
-                                            << "vs DB\n"
-                                            << to_hex(e.second);
+                                     << to_hex(val) << "\n"
+                                     << "vs DB\n"
+                                     << to_hex(e.second);
                         mismatch = true;
                     }
                 }
@@ -145,8 +145,7 @@ int main(int argc, char* argv[]) {
 
             if (block_num % 1000 == 0) {
                 absl::Time t2{absl::Now()};
-                log::Info() << " Checked blocks ≤ " << block_num << " in " << absl::ToDoubleSeconds(t2 - t1)
-                                   << " s";
+                log::Info() << " Checked blocks ≤ " << block_num << " in " << absl::ToDoubleSeconds(t2 - t1) << " s";
                 t1 = t2;
             }
         }

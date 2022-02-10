@@ -43,7 +43,7 @@ if(NOT SILKWORM_CORE_ONLY)
   target_link_libraries(node_test silkworm_node Catch2::Catch2)
 
   add_executable(silkworm silkworm.cpp common.cpp)
-  target_link_libraries(silkworm PRIVATE silkworm_node CLI11::CLI11 $<$<BOOL:${MSVC}>:Kernel32.lib>)
+  target_link_libraries(silkworm PRIVATE silkworm_node silkworm-buildinfo CLI11::CLI11 $<$<BOOL:${MSVC}>:Kernel32.lib>)
 
   add_executable(check_changes check_changes.cpp)
   target_link_libraries(check_changes PRIVATE silkworm_node CLI11::CLI11 absl::time)
@@ -60,12 +60,6 @@ if(NOT SILKWORM_CORE_ONLY)
   add_executable(genesistool genesistool.cpp)
   target_link_libraries(genesistool PRIVATE CLI11::CLI11)
 
-  add_executable(unwind_execution unwind_execution.cpp)
-  target_link_libraries(unwind_execution PRIVATE silkworm_node CLI11::CLI11)
-
-  add_executable(unwind_hashstate unwind_hashstate.cpp)
-  target_link_libraries(unwind_hashstate PRIVATE silkworm_node CLI11::CLI11)
-
   add_executable(unwind_tx_lookup unwind_tx_lookup.cpp)
   target_link_libraries(unwind_tx_lookup PRIVATE silkworm_node CLI11::CLI11)
 
@@ -74,9 +68,6 @@ if(NOT SILKWORM_CORE_ONLY)
 
   add_executable(unwind_log_index unwind_log_index.cpp)
   target_link_libraries(unwind_log_index PRIVATE silkworm_node CLI11::CLI11)
-
-  add_executable(hashstate hashstate.cpp)
-  target_link_libraries(hashstate PRIVATE silkworm_node CLI11::CLI11)
 
   add_executable(check_hashstate check_hashstate.cpp)
   target_link_libraries(check_hashstate PRIVATE silkworm_node CLI11::CLI11)

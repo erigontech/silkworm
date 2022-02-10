@@ -43,7 +43,7 @@ std::pair<db::MapConfig, db::MapConfig> get_tables_for_checking(Operation operat
         case HashStorage:
             return {db::table::kPlainState, db::table::kHashedStorage};
         default:
-            return {db::table::kPlainContractCode, db::table::kContractCode};
+            return {db::table::kPlainCodeHash, db::table::kHashedCodeHash};
     }
 }
 

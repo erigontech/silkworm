@@ -35,6 +35,10 @@ StageResult BlockHashes::forward(db::RWTxn& txn) {
      *        to HeaderNumber bucket    : HeaderHash  ->  BlockNumber
      */
 
+    if (is_stopping()) {
+        return StageResult::kAborted;
+    }
+
     // Check stage boundaries from previous execution and previous stage execution
     auto previous_progress{db::stages::read_stage_progress(*txn, stage_name_)};
     auto headers_stage_progress{db::stages::read_stage_progress(*txn, db::stages::kHeadersKey)};
@@ -53,7 +57,7 @@ StageResult BlockHashes::forward(db::RWTxn& txn) {
     auto expected_block_number{previous_progress + 1};
     uint64_t headers_count{headers_stage_progress - previous_progress};
     if (headers_count > 16) {
-        log::Info("Collecting headers ...",
+        log::Info("Begin " + std::string(stage_name_),
                   {"from", std::to_string(expected_block_number), "to", std::to_string(headers_stage_progress)});
     }
 
@@ -96,7 +100,7 @@ StageResult BlockHashes::forward(db::RWTxn& txn) {
         txn.commit();
     }
     collector_.reset();
-    return StageResult::kSuccess;
+    return is_stopping() ? StageResult::kAborted : StageResult::kSuccess;
 }
 
 StageResult BlockHashes::unwind(db::RWTxn& txn, BlockNum to) {
@@ -111,16 +115,21 @@ StageResult BlockHashes::unwind(db::RWTxn& txn, BlockNum to) {
      *       where HeaderNumber->HeaderHash == vector.item
      */
 
+    if (is_stopping()) {
+        return StageResult::kAborted;
+    }
+
     auto source{db::open_cursor(*txn, db::table::kCanonicalHashes)};
     auto initial_key{db::block_key(to + 1)};
     auto source_data{source.lower_bound(db::to_slice(initial_key), false)};
 
     std::vector<Bytes> collected_keys;
+    db::WalkFunc walk_func = [&collected_keys](::mdbx::cursor&, ::mdbx::cursor::move_result& data) -> bool {
+        collected_keys.emplace_back(db::from_slice(data.value));
+        return true;
+    };
     if (source_data) {
-        db::cursor_for_each(source, [&collected_keys](::mdbx::cursor&, ::mdbx::cursor::move_result& _data) -> bool {
-            collected_keys.emplace_back(db::from_slice(_data.value));
-            return true;
-        });
+        db::cursor_for_each(source, walk_func);
     }
     source.close();
 
@@ -135,22 +144,26 @@ StageResult BlockHashes::unwind(db::RWTxn& txn, BlockNum to) {
     // Update unwind progress
     // TODO(Andrea) This might be unneeded as unwind is global within the cycle
     db::stages::write_stage_unwind(*txn, stage_name_, to);
-
-    txn.commit();
-    return StageResult::kSuccess;
+    if (!is_stopping()) {
+        txn.commit();
+        return StageResult::kSuccess;
+    }
+    return StageResult::kAborted;
 }
 
 StageResult BlockHashes::prune(db::RWTxn&) { return StageResult::kSuccess; }
 
 std::vector<std::string> BlockHashes::get_log_progress() {
-    switch (current_phase_) {
-        case 1:
-            return {"phase", std::to_string(current_phase_) + "/2", "block", std::to_string(reached_block_num_)};
-        case 2:
-            return {"phase", std::to_string(current_phase_) + "/2", "key",
-                    collector_ ? collector_->get_load_key() : ""};
-        default:
-            break;
+    if (!is_stopping()) {
+        switch (current_phase_) {
+            case 1:
+                return {"phase", std::to_string(current_phase_) + "/2", "block", std::to_string(reached_block_num_)};
+            case 2:
+                return {"phase", std::to_string(current_phase_) + "/2", "key",
+                        collector_ ? collector_->get_load_key() : ""};
+            default:
+                break;
+        }
     }
     return {};
 }

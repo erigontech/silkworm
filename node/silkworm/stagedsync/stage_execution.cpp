@@ -14,13 +14,11 @@
     limitations under the License.
 */
 
-#include <filesystem>
 #include <string>
 
 #include <silkworm/common/endian.hpp>
 #include <silkworm/common/log.hpp>
 #include <silkworm/common/stopwatch.hpp>
-#include <silkworm/concurrency/signal_handler.hpp>
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/buffer.hpp>
 #include <silkworm/db/stages.hpp>
@@ -31,7 +29,9 @@
 namespace silkworm::stagedsync {
 
 StageResult Execution::forward(db::RWTxn& txn) {
-    if (!node_settings_->chain_config.has_value()) {
+    if (is_stopping()) {
+        return StageResult::kAborted;
+    } else if (!node_settings_->chain_config.has_value()) {
         return StageResult::kUnknownChainId;
     } else if (!consensus_engine_) {
         return StageResult::kUnknownConsensusEngine;
@@ -75,23 +75,21 @@ StageResult Execution::forward(db::RWTxn& txn) {
     AnalysisCache analysis_cache;
     ExecutionStatePool state_pool;
 
-    while (block_num_ <= max_block_num) {
+    while (!is_stopping() && block_num_ <= max_block_num) {
         // TODO(Andrea) Prune logic must be amended
         const auto res{execute_batch(txn, max_block_num, 0, analysis_cache, state_pool)};
         if (res != StageResult::kSuccess) {
             return res;
         }
+
         db::stages::write_stage_progress(*txn, db::stages::kExecutionKey, block_num_);
         (void)commit_stopwatch.start(/*with_reset=*/true);
         txn.commit();
         auto [_, duration]{commit_stopwatch.stop()};
         log::Info("Commit time", {"batch", StopWatch::format(duration)});
-        if (SignalHandler::signalled()) {
-            return StageResult::kAborted;
-        }
         block_num_++;
     }
-    return StageResult::kSuccess;
+    return is_stopping() ? StageResult::kAborted : StageResult::kSuccess;
 }
 
 StageResult Execution::execute_batch(db::RWTxn& txn, BlockNum max_block_num, BlockNum prune_from,
@@ -106,7 +104,7 @@ StageResult Execution::execute_batch(db::RWTxn& txn, BlockNum max_block_num, Blo
         }
 
         while (true) {
-            if ((block_num_ % 64 == 0) && SignalHandler::signalled()) {
+            if ((block_num_ % 64 == 0) && is_stopping()) {
                 return StageResult::kAborted;
             }
 
@@ -120,8 +118,11 @@ StageResult Execution::execute_batch(db::RWTxn& txn, BlockNum max_block_num, Blo
             processor.evm().state_pool = &state_pool;
 
             if (const auto res{processor.execute_and_write_block(receipts)}; res != ValidationResult::kOk) {
-                log::Error("Block Validation Error", {"block", std::to_string(block_num_), "err",
-                                                      std::string(magic_enum::enum_name<ValidationResult>(res))});
+                const auto block_hash_hex{to_hex(block_with_hash->hash.bytes, true)};
+                log::Error("Block Validation Error",
+                           {"block", std::to_string(block_num_), "hash", block_hash_hex, "err",
+                            std::string(magic_enum::enum_name<ValidationResult>(res))});
+                // TODO(Andrea) Set the bad block hash in stage loop context so other stages are aware
                 return StageResult::kInvalidBlock;
             }
 
@@ -140,7 +141,7 @@ StageResult Execution::execute_batch(db::RWTxn& txn, BlockNum max_block_num, Blo
                 auto t1{std::chrono::steady_clock::now()};
                 log::Info("Flushed batch",
                           {"size", human_size(buffer.current_batch_size()), "in", StopWatch::format(t1 - t0)});
-                return StageResult::kSuccess;
+                return is_stopping() ? StageResult::kAborted : StageResult::kSuccess;
             }
             block_num_++;
         }
@@ -164,14 +165,103 @@ StageResult Execution::execute_batch(db::RWTxn& txn, BlockNum max_block_num, Blo
 }
 
 StageResult Execution::unwind(db::RWTxn& txn, BlockNum to) {
-    (void)txn;
-    (void)to;
-    throw std::runtime_error("Not yet implemented");
+    BlockNum execution_progress{db::stages::read_stage_progress(*txn, db::stages::kExecutionKey)};
+    if (to >= execution_progress) {
+        return StageResult::kSuccess;
+    }
+
+    log::Info() << "Unwind Execution from " << execution_progress << " to " << to;
+
+    static const db::MapConfig unwind_tables[5] = {
+        db::table::kAccountChangeSet,  //
+        db::table::kStorageChangeSet,  //
+        db::table::kBlockReceipts,     //
+        db::table::kLogs,              //
+        db::table::kCallTraceSet       //
+    };
+
+    try {
+        {
+            // Revert states
+            auto plain_state_table{db::open_cursor(*txn, db::table::kPlainState)};
+            auto plain_code_table{db::open_cursor(*txn, db::table::kPlainCodeHash)};
+            auto account_changeset_table{db::open_cursor(*txn, db::table::kAccountChangeSet)};
+            auto storage_changeset_table{db::open_cursor(*txn, db::table::kStorageChangeSet)};
+            unwind_state_from_changeset(account_changeset_table, plain_state_table, plain_code_table, to);
+            unwind_state_from_changeset(storage_changeset_table, plain_state_table, plain_code_table, to);
+        }
+
+        // Delete records which has keys greater than unwind point
+        // Note erasing forward the start key is included that's why we increase unwind_to by 1
+        Bytes start_key(8, '\0');
+        endian::store_big_u64(&start_key[0], to + 1);
+        for (const auto& map_config : unwind_tables) {
+            auto unwind_cursor{db::open_cursor(*txn, map_config)};
+            auto erased{db::cursor_erase(unwind_cursor, start_key, db::CursorMoveDirection::Forward)};
+            log::Info() << "Erased " << erased << " records from " << map_config.name;
+        }
+        db::stages::write_stage_progress(*txn, db::stages::kExecutionKey, to);
+        txn.commit();
+        return StageResult::kSuccess;
+    } catch (const mdbx::exception& ex) {
+        log::Error() << "Unexpected db error in " << std::string(__FUNCTION__) << " : " << ex.what();
+        return StageResult::kDbError;
+    } catch (...) {
+        log::Error() << "Unexpected unknown error in " << std::string(__FUNCTION__);
+        return StageResult::kUnexpectedError;
+    }
 }
 
 StageResult Execution::prune(db::RWTxn& txn) {
-    (void)txn;
-    throw std::runtime_error("Not yet implemented");
+    try {
+        BlockNum execution_progress{db::stages::read_stage_progress(*txn, stage_name_)};
+        BlockNum prune_progress{db::stages::read_stage_prune_progress(*txn, stage_name_)};
+        if (prune_progress >= execution_progress || node_settings_->prune_mode == nullptr) {
+            return StageResult::kSuccess;
+        }
+
+        if (node_settings_->prune_mode->history().enabled()) {
+            auto prune_from{node_settings_->prune_mode->history().value_from_head(execution_progress)};
+            auto key{db::block_key(prune_from)};
+            auto origin{db::open_cursor(*txn, db::table::kAccountChangeSet)};
+            size_t erased = db::cursor_erase(origin, key, db::CursorMoveDirection::Reverse);
+            log::Info() << "Erased " << erased << " records from " << db::table::kAccountChangeSet.name;
+            origin.close();
+            origin = db::open_cursor(*txn, db::table::kStorageChangeSet);
+            erased = db::cursor_erase(origin, key, db::CursorMoveDirection::Reverse);
+            log::Info() << "Erased " << erased << " records from " << db::table::kStorageChangeSet.name;
+        }
+
+        if (node_settings_->prune_mode->receipts().enabled()) {
+            auto prune_from{node_settings_->prune_mode->receipts().value_from_head(execution_progress)};
+            auto key{db::block_key(prune_from)};
+            auto origin{db::open_cursor(*txn, db::table::kBlockReceipts)};
+            size_t erased = db::cursor_erase(origin, key, db::CursorMoveDirection::Reverse);
+            log::Info() << "Erased " << erased << " records from " << db::table::kBlockReceipts.name;
+            origin.close();
+            origin = db::open_cursor(*txn, db::table::kLogs);
+            erased = db::cursor_erase(origin, key, db::CursorMoveDirection::Reverse);
+            log::Info() << "Erased " << erased << " records from " << db::table::kLogs.name;
+        }
+
+        if (node_settings_->prune_mode->call_traces().enabled()) {
+            auto prune_from{node_settings_->prune_mode->receipts().value_from_head(execution_progress)};
+            auto key{db::block_key(prune_from)};
+            auto origin{db::open_cursor(*txn, db::table::kCallTraceSet)};
+            size_t erased = db::cursor_erase(origin, key, db::CursorMoveDirection::Reverse);
+            log::Info() << "Erased " << erased << " records from " << db::table::kCallTraceSet.name;
+        }
+
+        db::stages::write_stage_prune_progress(*txn, db::stages::kExecutionKey, execution_progress);
+        txn.commit();
+        return StageResult::kSuccess;
+    } catch (const mdbx::exception& ex) {
+        log::Error() << "Unexpected db error in " << std::string(__FUNCTION__) << " : " << ex.what();
+        return StageResult::kDbError;
+    } catch (...) {
+        log::Error() << "Unexpected unknown error in " << std::string(__FUNCTION__);
+        return StageResult::kUnexpectedError;
+    }
 };
 
 std::vector<std::string> Execution::get_log_progress() {
@@ -195,9 +285,8 @@ std::vector<std::string> Execution::get_log_progress() {
             "txns/s", std::to_string(speed_transactions), "Mgas/s",   std::to_string(speed_mgas)};
 }
 
-// Revert State for given address/storage location
-static void revert_state(ByteView key, ByteView value, mdbx::cursor& plain_state_table,
-                         mdbx::cursor& plain_code_table) {
+void Execution::revert_state(ByteView key, ByteView value, mdbx::cursor& plain_state_table,
+                             mdbx::cursor& plain_code_table) {
     if (key.size() == kAddressLength) {
         if (!value.empty()) {
             auto [account, err1]{Account::from_encoded_storage(value)};
@@ -243,98 +332,23 @@ static void revert_state(ByteView key, ByteView value, mdbx::cursor& plain_state
     }
 }
 
-// For given changeset cursor/bucket it reverts the changes on states buckets
-static void unwind_state_from_changeset(mdbx::cursor& source, mdbx::cursor& plain_state_table,
-                                        mdbx::cursor& plain_code_table, BlockNum unwind_to) {
-    auto src_data{source.to_last(/*throw_notfound*/ false)};
+void Execution::unwind_state_from_changeset(mdbx::cursor& source_changeset, mdbx::cursor& plain_state_table,
+                                            mdbx::cursor& plain_code_table, BlockNum unwind_to) {
+    auto src_data{source_changeset.to_last(/*throw_notfound*/ false)};
     while (src_data) {
+        // TODO(Andrea) Why data -> bytes -> byteview ? One pass is unnecessary
         Bytes key(db::from_slice(src_data.key));
         Bytes value(db::from_slice(src_data.value));
         const BlockNum block_number = endian::load_big_u64(&key[0]);
         if (block_number == unwind_to) {
             break;
         }
-        auto [new_key, new_value]{db::change_set_to_plain_state_format(key, value)};
+        auto [new_key, new_value]{db::changeset_to_plainstate_format(key, value)};
         revert_state(new_key, new_value, plain_state_table, plain_code_table);
-        src_data = source.to_previous(/*throw_notfound*/ false);
-    }
-}
-
-StageResult unwind_execution(db::RWTxn& txn, const std::filesystem::path&, uint64_t unwind_to) {
-    BlockNum execution_progress{db::stages::read_stage_progress(*txn, db::stages::kExecutionKey)};
-    if (unwind_to >= execution_progress) {
-        return StageResult::kSuccess;
+        src_data = source_changeset.to_previous(/*throw_notfound*/ false);
     }
 
-    log::Info() << "Unwind Execution from " << execution_progress << " to " << unwind_to;
-
-    static const db::MapConfig unwind_tables[5] = {
-        db::table::kAccountChangeSet,  //
-        db::table::kStorageChangeSet,  //
-        db::table::kBlockReceipts,     //
-        db::table::kLogs,              //
-        db::table::kCallTraceSet       //
-    };
-
-    try {
-        {
-            // Revert states
-            auto plain_state_table{db::open_cursor(*txn, db::table::kPlainState)};
-            auto plain_code_table{db::open_cursor(*txn, db::table::kPlainContractCode)};
-            auto account_changeset_table{db::open_cursor(*txn, db::table::kAccountChangeSet)};
-            auto storage_changeset_table{db::open_cursor(*txn, db::table::kStorageChangeSet)};
-            unwind_state_from_changeset(account_changeset_table, plain_state_table, plain_code_table, unwind_to);
-            unwind_state_from_changeset(storage_changeset_table, plain_state_table, plain_code_table, unwind_to);
-        }
-
-        // Delete records which has keys greater than unwind point
-        // Note erasing forward the start key is included that's why we increase unwind_to by 1
-        Bytes start_key(8, '\0');
-        endian::store_big_u64(&start_key[0], unwind_to + 1);
-        for (const auto& map_config : unwind_tables) {
-            auto unwind_cursor{db::open_cursor(*txn, map_config)};
-            auto erased{db::cursor_erase(unwind_cursor, start_key, db::CursorMoveDirection::Forward)};
-            if (erased > 16) {
-                log::Info() << "Erased " << erased << " records from " << map_config.name;
-            }
-        }
-        txn.commit();
-        return StageResult::kSuccess;
-    } catch (const mdbx::exception& ex) {
-        log::Error() << "Unexpected db error in " << std::string(__FUNCTION__) << " : " << ex.what();
-        return StageResult::kDbError;
-    } catch (...) {
-        log::Error() << "Unexpected unknown error in " << std::string(__FUNCTION__);
-        return StageResult::kUnexpectedError;
-    }
-}
-
-StageResult prune_execution(db::RWTxn& txn, const std::filesystem::path&, uint64_t prune_from) {
-    static const db::MapConfig prune_tables[] = {
-        db::table::kAccountChangeSet,  //
-        db::table::kStorageChangeSet,  //
-        db::table::kBlockReceipts,     //
-        db::table::kCallTraceSet,      //
-        db::table::kLogs               //
-    };
-
-    try {
-        const auto prune_point{db::block_key(prune_from)};
-        for (const auto& prune_table : prune_tables) {
-            auto prune_cursor{db::open_cursor(*txn, prune_table)};
-            auto erased{db::cursor_erase(prune_cursor, prune_point, db::CursorMoveDirection::Reverse)};
-            log::Info() << "Erased " << erased << " records from " << prune_table.name;
-            prune_cursor.close();
-        }
-        txn.commit();  // TODO(Giulio) Should we commit here or at return of stage ?
-        return StageResult::kSuccess;
-    } catch (const mdbx::exception& ex) {
-        log::Error() << "Unexpected db error in " << std::string(__FUNCTION__) << " : " << ex.what();
-        return StageResult::kDbError;
-    } catch (...) {
-        log::Error() << "Unexpected unknown error in " << std::string(__FUNCTION__);
-        return StageResult::kUnexpectedError;
-    }
+    // TODO(Andrea) Explain why we need to leave unwound changeset in place
 }
 
 }  // namespace silkworm::stagedsync

@@ -45,29 +45,30 @@ class Buffer : public State {
     /** @name Readers */
     ///@{
 
-    std::optional<Account> read_account(const evmc::address& address) const noexcept override;
+    [[nodiscard]] std::optional<Account> read_account(const evmc::address& address) const noexcept override;
 
-    ByteView read_code(const evmc::bytes32& code_hash) const noexcept override;
+    [[nodiscard]] ByteView read_code(const evmc::bytes32& code_hash) const noexcept override;
 
-    evmc::bytes32 read_storage(const evmc::address& address, uint64_t incarnation,
-                               const evmc::bytes32& location) const noexcept override;
+    [[nodiscard]] evmc::bytes32 read_storage(const evmc::address& address, uint64_t incarnation,
+                                             const evmc::bytes32& location) const noexcept override;
 
     /** Previous non-zero incarnation of an account; 0 if none exists. */
-    uint64_t previous_incarnation(const evmc::address& address) const noexcept override;
+    [[nodiscard]] uint64_t previous_incarnation(const evmc::address& address) const noexcept override;
 
-    std::optional<BlockHeader> read_header(uint64_t block_number,
-                                           const evmc::bytes32& block_hash) const noexcept override;
+    [[nodiscard]] std::optional<BlockHeader> read_header(uint64_t block_number,
+                                                         const evmc::bytes32& block_hash) const noexcept override;
 
-    std::optional<BlockBody> read_body(uint64_t block_number, const evmc::bytes32& block_hash) const noexcept override;
+    [[nodiscard]] std::optional<BlockBody> read_body(uint64_t block_number,
+                                                     const evmc::bytes32& block_hash) const noexcept override;
 
-    std::optional<intx::uint256> total_difficulty(uint64_t block_number,
-                                                  const evmc::bytes32& block_hash) const noexcept override;
+    [[nodiscard]] std::optional<intx::uint256> total_difficulty(
+        uint64_t block_number, const evmc::bytes32& block_hash) const noexcept override;
 
-    evmc::bytes32 state_root_hash() const override;
+    [[nodiscard]] evmc::bytes32 state_root_hash() const override;
 
-    uint64_t current_canonical_block() const override;
+    [[nodiscard]] uint64_t current_canonical_block() const override;
 
-    std::optional<evmc::bytes32> canonical_hash(uint64_t block_number) const override;
+    [[nodiscard]] std::optional<evmc::bytes32> canonical_hash(uint64_t block_number) const override;
 
     ///@}
 
@@ -103,13 +104,17 @@ class Buffer : public State {
     ///@}
 
     /// Account (backward) changes per block
-    const absl::btree_map<uint64_t, AccountChanges>& account_changes() const { return account_changes_; }
+    [[nodiscard]] const absl::btree_map<uint64_t, AccountChanges>& account_changes() const {
+        return block_account_changes_;
+    }
 
     /// Storage (backward) changes per block
-    const absl::btree_map<uint64_t, StorageChanges>& storage_changes() const { return storage_changes_; }
+    [[nodiscard]] const absl::btree_map<uint64_t, StorageChanges>& storage_changes() const {
+        return block_storage_changes_;
+    }
 
     /** Approximate size of accumulated DB changes in bytes.*/
-    size_t current_batch_size() const noexcept { return batch_size_; }
+    [[nodiscard]] size_t current_batch_size() const noexcept { return batch_size_; }
 
     void write_to_db();
 
@@ -132,8 +137,8 @@ class Buffer : public State {
     absl::flat_hash_map<evmc::address, absl::btree_map<uint64_t, absl::flat_hash_map<evmc::bytes32, evmc::bytes32>>>
         storage_;
 
-    absl::btree_map<uint64_t, AccountChanges> account_changes_;  // per block
-    absl::btree_map<uint64_t, StorageChanges> storage_changes_;  // per block
+    absl::btree_map<uint64_t, AccountChanges> block_account_changes_;  // per block
+    absl::btree_map<uint64_t, StorageChanges> block_storage_changes_;  // per block
 
     absl::btree_map<evmc::address, uint64_t> incarnations_;
     absl::btree_map<evmc::bytes32, Bytes> hash_to_code_;

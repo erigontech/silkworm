@@ -172,12 +172,6 @@ class WorkingChain {
 
     uint64_t request_id_prefix;
     uint64_t request_count = 0;
-
-    class Statistics {
-        uint64_t requested_headers;
-        uint64_t received_headers;
-        uint64_t duplicated_headers;
-    } instance;
 };
 
 }  // namespace silkworm

@@ -119,6 +119,7 @@ void Buffer::write_to_state_table() {
         addresses.insert(x.first);
     }
 
+    Bytes encoded, prefix;
     std::vector<evmc::bytes32> storage_keys;
 
     for (const auto& address : addresses) {
@@ -126,14 +127,14 @@ void Buffer::write_to_state_table() {
             auto key{to_slice(address)};
             state_table.erase(key, /*whole_multivalue=*/true);  // PlainState is multivalue
             if (it->second.has_value()) {
-                Bytes encoded{it->second->encode_for_storage()};
+                encoded = it->second->encode_for_storage();
                 state_table.upsert(key, to_slice(encoded));
             }
         }
 
         if (auto it{storage_.find(address)}; it != storage_.end()) {
             for (const auto& [incarnation, contract_storage] : it->second) {
-                Bytes prefix{storage_prefix(address, incarnation)};
+                prefix = storage_prefix(address, incarnation);
 
                 // sort before inserting into the DB
                 storage_keys.clear();

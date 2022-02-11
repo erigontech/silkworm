@@ -349,7 +349,7 @@ uint64_t Buffer::previous_incarnation(const evmc::address& address) const noexce
         return it->second;
     }
     std::optional<uint64_t> incarnation{db::read_previous_incarnation(txn_, address, historical_block_)};
-    return incarnation ? *incarnation : 0;
+    return incarnation.value_or(0);
 }
 
 void Buffer::unwind_state_changes(uint64_t) {

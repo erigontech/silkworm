@@ -68,6 +68,8 @@ void write_body(mdbx::txn& txn, const BlockBody& body, const uint8_t (&hash)[kHa
 std::optional<intx::uint256> read_total_difficulty(mdbx::txn& txn, BlockNum block_number,
                                                    const uint8_t (&hash)[kHashLength]);
 
+std::optional<intx::uint256> read_total_difficulty(mdbx::txn& txn, ByteView key);
+
 // See Erigon WriteTd
 void write_total_difficulty(mdbx::txn& txn, const Bytes& key, const intx::uint256& total_difficulty);
 void write_total_difficulty(mdbx::txn& txn, BlockNum block_number, const uint8_t (&hash)[kHashLength],

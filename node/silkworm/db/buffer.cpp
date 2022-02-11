@@ -293,7 +293,7 @@ std::optional<intx::uint256> Buffer::total_difficulty(uint64_t block_number,
     if (auto it{difficulty_.find(key)}; it != difficulty_.end()) {
         return it->second;
     }
-    return db::read_total_difficulty(txn_, block_number, block_hash.bytes);
+    return db::read_total_difficulty(txn_, key);
 }
 
 std::optional<BlockHeader> Buffer::read_header(uint64_t block_number, const evmc::bytes32& block_hash) const noexcept {

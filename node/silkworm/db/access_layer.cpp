@@ -98,9 +98,14 @@ void write_header_number(mdbx::txn& txn, const uint8_t (&hash)[kHashLength], con
 
 std::optional<intx::uint256> read_total_difficulty(mdbx::txn& txn, BlockNum block_number,
                                                    const uint8_t (&hash)[kHashLength]) {
+    auto key{block_key(block_number, hash)};
+    return read_total_difficulty(txn, key);
+}
+
+std::optional<intx::uint256> read_total_difficulty(mdbx::txn& txn, ByteView key) {
     thread_local mdbx::cursor_managed src;
     src.bind(txn, db::open_map(txn, table::kDifficulty));
-    auto key{block_key(block_number, hash)};
+
     auto data{src.find(to_slice(key), false)};
     if (!data) {
         return std::nullopt;

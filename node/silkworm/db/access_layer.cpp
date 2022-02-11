@@ -62,9 +62,13 @@ void write_schema_version(mdbx::txn& txn, const VersionBase& schema_version) {
 }
 
 std::optional<BlockHeader> read_header(mdbx::txn& txn, BlockNum block_number, const uint8_t (&hash)[kHashLength]) {
+    auto key{block_key(block_number, hash)};
+    return read_header(txn, key);
+}
+
+std::optional<BlockHeader> read_header(mdbx::txn& txn, ByteView key) {
     thread_local mdbx::cursor_managed src;
     src.bind(txn, db::open_map(txn, db::table::kHeaders));
-    auto key{block_key(block_number, hash)};
     auto data{src.find(to_slice(key), false)};
     if (!data) {
         return std::nullopt;

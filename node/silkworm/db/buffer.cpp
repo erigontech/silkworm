@@ -301,7 +301,7 @@ std::optional<BlockHeader> Buffer::read_header(uint64_t block_number, const evmc
     if (auto it{headers_.find(key)}; it != headers_.end()) {
         return it->second;
     }
-    return db::read_header(txn_, block_number, block_hash.bytes);
+    return db::read_header(txn_, key);
 }
 
 std::optional<BlockBody> Buffer::read_body(uint64_t block_number, const evmc::bytes32& block_hash) const noexcept {

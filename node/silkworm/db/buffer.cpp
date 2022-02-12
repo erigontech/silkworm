@@ -58,7 +58,7 @@ void Buffer::update_account(const evmc::address& address, std::optional<Account>
             encoded_initial = initial->encode_for_storage(omit_code_hash);
         }
         if (block_account_changes_[block_number_].insert_or_assign(address, encoded_initial).second) {
-            bump_batch_size(8, kAddressLength + encoded_initial.length());
+            // bump_batch_size(8, kAddressLength + encoded_initial.length());
         }
     }
 
@@ -98,7 +98,7 @@ void Buffer::update_storage(const evmc::address& address, uint64_t incarnation, 
         changed_storage_.insert(address);
         ByteView change_val{zeroless_view(initial)};
         if (block_storage_changes_[block_number_][address][incarnation].insert_or_assign(location, change_val).second) {
-            bump_batch_size(8 + kPlainStoragePrefixLength, kHashLength + change_val.size());
+            // bump_batch_size(8 + kPlainStoragePrefixLength, kHashLength + change_val.size());
         }
     }
 
@@ -240,7 +240,7 @@ void Buffer::insert_receipts(uint64_t block_number, const std::vector<Receipt>& 
         Bytes value{cbor_encode(receipts[i].logs)};
 
         if (logs_.insert_or_assign(key, value).second) {
-            bump_batch_size(key.size(), value.size());
+            // bump_batch_size(key.size(), value.size());
         }
     }
 
@@ -248,7 +248,7 @@ void Buffer::insert_receipts(uint64_t block_number, const std::vector<Receipt>& 
     Bytes value{cbor_encode(receipts)};
 
     if (receipts_.insert_or_assign(key, value).second) {
-        bump_batch_size(key.size(), value.size());
+        // bump_batch_size(key.size(), value.size());
     }
 }
 

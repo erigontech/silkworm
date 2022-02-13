@@ -97,6 +97,11 @@ int main(int argc, char* argv[]) {
                 "compiler", std::string(build_info->compiler_id) + " " + std::string(build_info->compiler_version)  //
             });
 
+        // Output mdbx build info
+        auto mdbx_ver{mdbx::get_version()};
+        auto mdbx_bld{mdbx::get_build()};
+        log::Message("libmdbx",{"version", mdbx_ver.git.describe, "build", mdbx_bld.target, "compiler", mdbx_bld.compiler});
+
         // Check db
         cmd::run_preflight_checklist(node_settings);  // Prepare database for takeoff
 

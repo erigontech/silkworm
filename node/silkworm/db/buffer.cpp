@@ -223,11 +223,66 @@ void Buffer::write_history_to_db() {
 }
 
 void Buffer::write_state_to_db() {
+
+    /*
+     * ENSURE PlainState updates are Last !!!
+     * Also ensure to clear unneeded memory data ASAP to let the OS cache
+     * to store more database pages for longer
+     */
+
+    size_t written_size{0};
+    size_t total_written_size{0};
+
     bool should_trace{log::test_verbosity(log::Level::kTrace)};
     StopWatch sw;
     sw.start();
 
-    auto state_table{db::open_cursor(txn_, table::kPlainState)};
+    if (!incarnations_.empty()) {
+        auto incarnation_table{db::open_cursor(txn_, table::kIncarnationMap)};
+        Bytes data(kIncarnationLength, '\0');
+        for (const auto& [address, incarnation] : incarnations_) {
+            endian::store_big_u64(&data[0], incarnation);
+            incarnation_table.upsert(to_slice(address), to_slice(data));
+            written_size += kAddressLength + kIncarnationLength;
+        }
+        incarnations_.clear();
+        total_written_size += written_size;
+        if (should_trace) {
+            auto [_, duration]{sw.lap()};
+            log::Trace("Incarnations updated", {"size", human_size(written_size), "in", StopWatch::format(duration)});
+        }
+        written_size = 0;
+    }
+
+    if (!hash_to_code_.empty()) {
+        auto code_table{db::open_cursor(txn_, table::kCode)};
+        for (const auto& entry : hash_to_code_) {
+            code_table.upsert(to_slice(entry.first), to_slice(entry.second));
+            written_size += kHashLength + entry.second.length();
+        }
+        hash_to_code_.clear();
+        total_written_size += written_size;
+        if (should_trace) {
+            auto [_, duration]{sw.lap()};
+            log::Trace("Code updated", {"size", human_size(written_size), "in", StopWatch::format(duration)});
+        }
+        written_size = 0;
+    }
+
+    if (!storage_prefix_to_code_hash_.empty()) {
+        auto code_hash_table{db::open_cursor(txn_, table::kPlainCodeHash)};
+        for (const auto& entry : storage_prefix_to_code_hash_) {
+            code_hash_table.upsert(to_slice(entry.first), to_slice(entry.second));
+            written_size += kAddressLength + kIncarnationLength + kHashLength;
+        }
+        storage_prefix_to_code_hash_.clear();
+        total_written_size += written_size;
+        if (should_trace) {
+            auto [_, duration]{sw.lap()};
+            log::Trace("Code Hashes updated", {"size", human_size(written_size), "in", StopWatch::format(duration)});
+        }
+        written_size = 0;
+    }
 
     // Extract sorted index of unique addresses before inserting into the DB
     absl::btree_set<evmc::address> addresses;
@@ -243,6 +298,7 @@ void Buffer::write_state_to_db() {
         log::Trace("Sorted addresses", {"in", StopWatch::format(duration)});
     }
 
+    auto state_table{db::open_cursor(txn_, table::kPlainState)};
     for (const auto& address : addresses) {
         if (auto it{accounts_.find(address)}; it != accounts_.end()) {
             auto key{to_slice(address)};
@@ -261,6 +317,7 @@ void Buffer::write_state_to_db() {
                         std::memcmp(new_encoded.data(), data.value.data(), new_encoded.length()) != 0) {
                         auto new_encoded_slice{to_slice(new_encoded)};
                         ::mdbx::error::success_or_throw(state_table.put(key, &new_encoded_slice, MDBX_CURRENT));
+                        written_size += kAddressLength + data.value.length();
                     }
                 } else {
                     state_table.erase(true);
@@ -268,7 +325,9 @@ void Buffer::write_state_to_db() {
             } else if (it->second.has_value()) {
                 Bytes encoded{it->second->encode_for_storage()};
                 state_table.upsert(key, to_slice(encoded));
+                written_size += kAddressLength + encoded.length();
             }
+            accounts_.erase(it);
         }
 
         if (auto it{storage_.find(address)}; it != storage_.end()) {
@@ -276,38 +335,27 @@ void Buffer::write_state_to_db() {
                 Bytes prefix{storage_prefix(address, incarnation)};
                 for (const auto& [location, value] : contract_storage) {
                     upsert_storage_value(state_table, prefix, location, value);
+                    written_size += prefix.length() + kLocationLength + kHashLength;
                 }
             }
+            storage_.erase(it);
         }
     }
+    total_written_size += written_size;
     if (should_trace) {
         auto [_, duration]{sw.lap()};
-        log::Trace("Updated accounts and storage", {"in", StopWatch::format(duration)});
+        log::Trace("Updated accounts and storage",
+                   {"size", human_size(written_size), "in", StopWatch::format(duration)});
     }
+    written_size = 0;
 
     auto [time_point, _]{sw.stop()};
-    log::Info("PlainState updated", {"in", StopWatch::format(sw.since_start(time_point))});
+    log::Info("Flushed state",
+              {"size", human_size(total_written_size), "in", StopWatch::format(sw.since_start(time_point))});
 }
 
 void Buffer::write_to_db() {
     write_history_to_db();
-
-    auto incarnation_table{db::open_cursor(txn_, table::kIncarnationMap)};
-    Bytes data(kIncarnationLength, '\0');
-    for (const auto& [address, incarnation] : incarnations_) {
-        endian::store_big_u64(&data[0], incarnation);
-        incarnation_table.upsert(to_slice(address), to_slice(data));
-    }
-
-    auto code_table{db::open_cursor(txn_, table::kCode)};
-    for (const auto& entry : hash_to_code_) {
-        code_table.upsert(to_slice(entry.first), to_slice(entry.second));
-    }
-
-    auto code_hash_table{db::open_cursor(txn_, table::kPlainCodeHash)};
-    for (const auto& entry : storage_prefix_to_code_hash_) {
-        code_hash_table.upsert(to_slice(entry.first), to_slice(entry.second));
-    }
 
     // This should be very last to be written so updated pages
     // have higher chances not to be evicted from RAM

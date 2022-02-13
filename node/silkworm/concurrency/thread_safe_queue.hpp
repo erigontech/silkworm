@@ -42,6 +42,11 @@ class ThreadSafeQueue {
         return queue_.empty();
     }
 
+    size_t size() const {
+        std::unique_lock lock(mutex_);
+        return queue_.size();
+    }
+
     bool try_pop(T& popped_value) {
         std::unique_lock lock(mutex_);
         if (queue_.empty()) {

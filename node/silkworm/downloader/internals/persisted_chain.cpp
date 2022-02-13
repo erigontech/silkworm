@@ -61,6 +61,7 @@ BlockNum PersistedChain::unwind_point() const { return unwind_point_; }
 // Erigon's func (hi *HeaderInserter) FeedHeader
 
 void PersistedChain::persist(const Headers& headers) {
+    SILK_TRACE << "PersistedChain: persisting " << headers.size() << " headers";
     if (headers.empty()) return;
 
     StopWatch measure_curr_scope;                  // only for test
@@ -70,7 +71,7 @@ void PersistedChain::persist(const Headers& headers) {
 
     auto [end_time, _] = measure_curr_scope.lap();  // only for test
 
-    log::Trace() << "PersistedChain: saved " << headers.size() << " headers from height "
+    log::Trace() << "[INFO] PersistedChain: saved " << headers.size() << " headers from height "
                  << header_at(headers.begin()).number << " to height " << header_at(headers.rbegin()).number
                  << " (duration=" << measure_curr_scope.format(end_time - start_time) << ")"; // only for test
 }
@@ -97,7 +98,7 @@ void PersistedChain::persist(const BlockHeader& header) {  // todo: try to modul
     }
     auto parent = tx_.read_header(height - 1, header.parent_hash);
     if (!parent) {
-        std::string error_message = "Could not find parent with hash " + to_hex(header.parent_hash) + " and height " +
+        std::string error_message = "PersistedChain: could not find parent with hash " + to_hex(header.parent_hash) + " and height " +
                                     std::to_string(height - 1) + " for header " + hash.to_hex();
         log::Error() << error_message;
         throw std::logic_error(error_message);
@@ -143,7 +144,7 @@ void PersistedChain::persist(const BlockHeader& header) {  // todo: try to modul
     // Save header
     tx_.write_header(header, true);  // true = with_header_numbers
 
-    // log::Trace() << "PersistedChain: saved header height=" << height << " hash=" << hash;
+    // SILK_TRACE << "PersistedChain: saved header height=" << height << " hash=" << hash;
 
     previous_hash_ = hash;
 }
@@ -153,19 +154,9 @@ BlockNum PersistedChain::find_forking_point(Db::ReadWriteAccess::Tx& tx, const B
     BlockNum forking_point{};
 
     // Read canonical hash at height-1
-    Hash prev_canon_hash;
-    const Hash* cached_prev_hash = canonical_cache_.get(height - 1);  // look in the cache first
-    if (cached_prev_hash) {
-        prev_canon_hash = *cached_prev_hash;
-    } else {
-        auto persisted_prev_hash = tx.read_canonical_hash(height - 1);  // then look in the db
-        if (!persisted_prev_hash) {
-            std::string error_message =
-                "PersistedChain: error reading canonical hash for height " + std::to_string(height - 1);
-            log::Error() << error_message;
-            throw std::logic_error(error_message);  // unexpected condition, bug?
-        }
-        prev_canon_hash = *persisted_prev_hash;
+    auto prev_canon_hash = canonical_cache_.get_as_copy(height - 1);  // look in the cache first
+    if (!prev_canon_hash) {
+        prev_canon_hash = tx.read_canonical_hash(height - 1);  // then look in the db
     }
 
     // Most common case: forking point is the height of the parent header
@@ -183,24 +174,17 @@ BlockNum PersistedChain::find_forking_point(Db::ReadWriteAccess::Tx& tx, const B
             auto ancestor = tx.read_header(ancestor_height, ancestor_hash);
             ancestor_hash = ancestor->parent_hash;
             ancestor_height--;
-        }  // todo: if this loop finds a cached_canon_hash the next loop will be executed, is this right?
+        }  // if this loop finds a prev_canon_hash the next loop will be executed, is this right?
 
         // now look in the db
-        std::optional<Hash> persisted_canon_hash;
-        while ((persisted_canon_hash = tx.read_canonical_hash(ancestor_height)) &&
-               persisted_canon_hash != ancestor_hash) {
+        std::optional<Hash> db_canon_hash;
+        while ((db_canon_hash = tx.read_canonical_hash(ancestor_height)) && db_canon_hash != ancestor_hash) {
             auto ancestor = tx.read_header(ancestor_height, ancestor_hash);
             ancestor_hash = ancestor->parent_hash;
             ancestor_height--;
         }
-        if (persisted_canon_hash == std::nullopt) {
-            std::string error_message =
-                "PersistedChain: error reading canonical hash for height " + std::to_string(ancestor_height);
-            log::Error() << error_message;
-            throw std::logic_error(error_message);  // unexpected condition, bug?
-        }
-        // loop above terminates when probable_canonical_hash == ancestor_hash, therefore ancestor_height is our forking
-        // point
+
+        // loop above terminates when prev_canon_hash == ancestor_hash, therefore ancestor_height is our forking point
         forking_point = ancestor_height;
     }
 
@@ -220,9 +204,8 @@ void PersistedChain::update_canonical_chain(BlockNum height, Hash hash) {  // ha
 
         auto ancestor = tx_.read_header(ancestor_height, ancestor_hash);
         if (ancestor == std::nullopt) {
-            std::string msg =
-                "PersistedChain: fix canonical chain failed at ancestor=" + std::to_string(ancestor_height) +
-                " hash=" + ancestor_hash.to_hex();
+            std::string msg = "PersistedChain: fix canonical chain failed at"
+                " ancestor=" + std::to_string(ancestor_height) + " hash=" + ancestor_hash.to_hex();
             log::Error() << msg;
             throw std::logic_error(msg);
         }

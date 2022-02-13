@@ -55,14 +55,14 @@ void SentryClient::publish(const sentry::InboundMessage& message) {
 void SentryClient::set_status(Hash head_hash, BigInt head_td, const ChainIdentity& chain_identity) {
     rpc::SetStatus set_status{chain_identity, head_hash, head_td};
     exec_remotely(set_status);
-    log::Info() << "SentryClient, set_status sent";
+    SILK_TRACE << "SentryClient, set_status sent";
 }
 
 void SentryClient::hand_shake() {
     rpc::HandShake hand_shake;
     exec_remotely(hand_shake);
 
-    log::Info() << "SentryClient, hand_shake sent";
+    SILK_TRACE << "SentryClient, hand_shake sent";
     sentry::HandShakeReply reply = hand_shake.reply();
 
     sentry::Protocol supported_protocol = reply.protocol();
@@ -82,7 +82,7 @@ void SentryClient::execution_loop() {
     while (!is_stopping() && message_subscription.receive_one_reply()) {
         const auto& message = message_subscription.reply();
 
-        // log::Trace() << "SentryClient received message " << *message;
+        // SILK_TRACE << "SentryClient received message " << *message;
 
         publish(message);
     }
@@ -113,7 +113,7 @@ void SentryClient::stats_receiving_loop() {
             active_peers--;
         }
 
-        log::Trace() << "SentryClient: peer " << peerId << " " << event << ", active " << active_peers;
+        log::Info() << "Peer " << peerId << " " << event << ", active " << active_peers;
     }
 
     stop();

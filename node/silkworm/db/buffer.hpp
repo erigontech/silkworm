@@ -116,10 +116,17 @@ class Buffer : public State {
     /** Approximate size of accumulated DB changes in bytes.*/
     [[nodiscard]] size_t current_batch_size() const noexcept { return batch_size_; }
 
+    //! \brief Persists *all* accrued contents into db
+    //! \remarks write_history_to_db is implicitly called
     void write_to_db();
 
+    //! \brief Persists *history* accrued contents into db
+    void write_history_to_db();
+
   private:
-    void write_to_state_table();
+
+    //! \brief Persists *state* accrued contents into db
+    void write_state_to_db();
 
     void bump_batch_size(size_t key_len, size_t value_len);
 
@@ -131,10 +138,10 @@ class Buffer : public State {
     absl::btree_map<Bytes, BlockBody> bodies_{};
     absl::btree_map<Bytes, intx::uint256> difficulty_{};
 
-    absl::flat_hash_map<evmc::address, std::optional<Account>> accounts_;
+    mutable absl::flat_hash_map<evmc::address, std::optional<Account>> accounts_;
 
     // address -> incarnation -> location -> value
-    absl::flat_hash_map<evmc::address, absl::btree_map<uint64_t, absl::flat_hash_map<evmc::bytes32, evmc::bytes32>>>
+    mutable absl::flat_hash_map<evmc::address, absl::btree_map<uint64_t, absl::flat_hash_map<evmc::bytes32, evmc::bytes32>>>
         storage_;
 
     absl::btree_map<uint64_t, AccountChanges> block_account_changes_;  // per block
@@ -146,7 +153,7 @@ class Buffer : public State {
     absl::btree_map<Bytes, Bytes> receipts_;
     absl::btree_map<Bytes, Bytes> logs_;
 
-    size_t batch_size_{0};
+    mutable size_t batch_size_{0};
 
     // Current block stuff
     uint64_t block_number_{0};

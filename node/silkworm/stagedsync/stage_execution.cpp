@@ -81,7 +81,6 @@ StageResult Execution::forward(db::RWTxn& txn) {
         if (res != StageResult::kSuccess) {
             return res;
         }
-
         db::stages::write_stage_progress(*txn, db::stages::kExecutionKey, block_num_);
         (void)commit_stopwatch.start(/*with_reset=*/true);
         txn.commit();
@@ -97,6 +96,12 @@ StageResult Execution::execute_batch(db::RWTxn& txn, BlockNum max_block_num, Blo
     try {
         db::Buffer buffer(*txn, prune_from);
         std::vector<Receipt> receipts;
+
+        // Transform batch_size limit into Ggas
+        size_t gas_max_history_size{node_settings_->batch_size * 1_Kibi};  // 512MB -> 512Ggas roughly
+        size_t gas_max_batch_size{gas_max_history_size * 10};              // 512Ggas -> 5Tgas roughly
+        size_t gas_history_size{0};
+        size_t gas_batch_size{0};
 
         {
             std::unique_lock progress_lock(progress_mtx_);
@@ -128,23 +133,41 @@ StageResult Execution::execute_batch(db::RWTxn& txn, BlockNum max_block_num, Blo
 
             // TODO(Andrea) implement pruning
             buffer.insert_receipts(block_num_, receipts);
+
+            // Stats
             std::unique_lock progress_lock(progress_mtx_);
             processed_blocks_++;
             processed_transactions_ += block_with_hash->block.transactions.size();
             processed_gas_ += block_with_hash->block.header.gas_used;
+            gas_batch_size += block_with_hash->block.header.gas_used;
+            gas_history_size += block_with_hash->block.header.gas_used;
             progress_lock.unlock();
 
-            const bool overflows{buffer.current_batch_size() >= node_settings_->batch_size};
-            if (overflows || block_num_ >= max_block_num) {
-                auto t0{std::chrono::steady_clock::now()};
-                buffer.write_to_db();
-                auto t1{std::chrono::steady_clock::now()};
-                log::Info("Flushed batch",
-                          {"size", human_size(buffer.current_batch_size()), "in", StopWatch::format(t1 - t0)});
-                return is_stopping() ? StageResult::kAborted : StageResult::kSuccess;
+            // Flush history
+            if (gas_history_size >= gas_max_history_size) {
+                buffer.write_history_to_db();
+                gas_history_size = 0;
             }
+
+            // Flush whole buffer on exit
+            if(gas_batch_size >= gas_max_batch_size || block_num_ >= max_block_num) {
+                buffer.write_to_db();
+                break;
+            }
+
+//            const bool overflows{buffer.current_batch_size() >= node_settings_->batch_size};
+//            if (overflows || block_num_ >= max_block_num) {
+//                auto t0{std::chrono::steady_clock::now()};
+//                buffer.write_to_db();
+//                auto t1{std::chrono::steady_clock::now()};
+//                log::Info("Flushed batch",
+//                          {"size", human_size(buffer.current_batch_size()), "in", StopWatch::format(t1 - t0)});
+//                return is_stopping() ? StageResult::kAborted : StageResult::kSuccess;
+//            }
             block_num_++;
         }
+
+        return is_stopping() ? StageResult::kAborted : StageResult::kSuccess;
 
     } catch (const mdbx::exception& ex) {
         log::Error("DB Error", {"block", std::to_string(block_num_)}) << " " << ex.what();

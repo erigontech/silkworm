@@ -136,7 +136,7 @@ void Buffer::write_history_to_db() {
                 std::memcpy(&change_value[kAddressLength], account_encoded.data(), account_encoded.length());
                 mdbx::slice k{to_slice(change_key)};
                 mdbx::slice v{change_value.data(), kAddressLength + account_encoded.length()};
-                mdbx::error::success_or_throw(account_change_table.put(to_slice(change_key), &v, MDBX_APPENDDUP));
+                mdbx::error::success_or_throw(account_change_table.put(k, &v, MDBX_APPENDDUP));
                 written_size += kAddressLength + account_encoded.length();
             }
         }

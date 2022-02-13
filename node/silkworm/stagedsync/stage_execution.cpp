@@ -119,7 +119,7 @@ StageResult Execution::execute_batch(db::RWTxn& txn, BlockNum max_block_num, Blo
             processor.evm().state_pool = &state_pool;
 
             if (const auto res{processor.execute_and_write_block(receipts)}; res != ValidationResult::kOk) {
-                const auto block_hash_hex{to_hex(block_with_hash->hash.bytes, true)};
+                const auto block_hash_hex{to_hex(block_with_hash.hash.bytes, true)};
                 log::Error("Block Validation Error",
                            {"block", std::to_string(block_num_), "hash", block_hash_hex, "err",
                             std::string(magic_enum::enum_name<ValidationResult>(res))});

@@ -98,8 +98,8 @@ StageResult Execution::execute_batch(db::RWTxn& txn, BlockNum max_block_num, Blo
         std::vector<Receipt> receipts;
 
         // Transform batch_size limit into Ggas
-        size_t gas_max_history_size{node_settings_->batch_size * 1_Kibi};  // 512MB -> 512Ggas roughly
-        size_t gas_max_batch_size{gas_max_history_size * 10};              // 512Ggas -> 5Tgas roughly
+        size_t gas_max_history_size{node_settings_->batch_size * 1_Kibi / 2};  // 512MB -> 256Ggas roughly
+        size_t gas_max_batch_size{gas_max_history_size * 20};                  // 256Ggas -> 5Tgas roughly
         size_t gas_history_size{0};
         size_t gas_batch_size{0};
 
@@ -143,27 +143,16 @@ StageResult Execution::execute_batch(db::RWTxn& txn, BlockNum max_block_num, Blo
             gas_history_size += block_with_hash->block.header.gas_used;
             progress_lock.unlock();
 
-            // Flush history
-            if (gas_history_size >= gas_max_history_size) {
+            // Flush whole buffer if time to
+            if (gas_batch_size >= gas_max_batch_size || block_num_ >= max_block_num) {
+                buffer.write_to_db();
+                break;
+            } else if (gas_history_size >= gas_max_history_size) {
+                // or flush history only if needed
                 buffer.write_history_to_db();
                 gas_history_size = 0;
             }
 
-            // Flush whole buffer on exit
-            if(gas_batch_size >= gas_max_batch_size || block_num_ >= max_block_num) {
-                buffer.write_to_db();
-                break;
-            }
-
-//            const bool overflows{buffer.current_batch_size() >= node_settings_->batch_size};
-//            if (overflows || block_num_ >= max_block_num) {
-//                auto t0{std::chrono::steady_clock::now()};
-//                buffer.write_to_db();
-//                auto t1{std::chrono::steady_clock::now()};
-//                log::Info("Flushed batch",
-//                          {"size", human_size(buffer.current_batch_size()), "in", StopWatch::format(t1 - t0)});
-//                return is_stopping() ? StageResult::kAborted : StageResult::kSuccess;
-//            }
             block_num_++;
         }
 
@@ -294,7 +283,7 @@ std::vector<std::string> Execution::get_log_progress() {
     lap_time_ = now;
     auto elapsed_seconds = static_cast<uint32_t>(std::chrono::duration_cast<std::chrono::seconds>(elapsed).count());
     if (!elapsed_seconds || !processed_blocks_) {
-        return {"block", std::to_string(block_num_)};
+        return {"block", std::to_string(block_num_), "..", "db waiting ..."};
     }
     auto speed_blocks = processed_blocks_ / elapsed_seconds;
     auto speed_transactions = processed_transactions_ / elapsed_seconds;

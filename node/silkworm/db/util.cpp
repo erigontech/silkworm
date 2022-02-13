@@ -120,11 +120,10 @@ void upsert_storage_value(mdbx::cursor& state_cursor, ByteView storage_prefix, B
     }
     new_value = zeroless_view(new_value);
     if (!new_value.empty()) {
-        thread_local Bytes db_value;
-        db_value.resize(location.length() + new_value.length());
-        std::memcpy(&db_value[0], location.data(), location.length());
-        std::memcpy(&db_value[location.length()], new_value.data(), new_value.length());
-        state_cursor.upsert(to_slice(storage_prefix), to_slice(db_value));
+        Bytes new_db_value(location.length() + new_value.length(), '\0');
+        std::memcpy(&new_db_value[0], location.data(), location.length());
+        std::memcpy(&new_db_value[location.length()], new_value.data(), new_value.length());
+        state_cursor.upsert(to_slice(storage_prefix), to_slice(new_db_value));
     }
 }
 

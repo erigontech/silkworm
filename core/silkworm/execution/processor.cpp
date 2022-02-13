@@ -119,7 +119,13 @@ void ExecutionProcessor::execute_transaction(const Transaction& txn, Receipt& re
     receipt.type = txn.type;
     receipt.success = vm_res.status == EVMC_SUCCESS;
     receipt.cumulative_gas_used = cumulative_gas_used_;
-    receipt.bloom = logs_bloom(state_.logs());
+
+    if (bloomer) {
+        receipt.bloom = bloomer->bloom_filter(state_.logs());
+    } else {
+        receipt.bloom = LogsBloomer{}.bloom_filter(state_.logs());
+    }
+
     std::swap(receipt.logs, state_.logs());
 }
 

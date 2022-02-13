@@ -37,7 +37,20 @@ class Bloom : public std::array<uint8_t, kBloomByteLength> {
     void add(const Bloom& addend);
 };
 
-Bloom logs_bloom(const std::vector<Log>& logs);
+class LogsBloomer {
+  public:
+    // Not copyable nor movable
+    LogsBloomer(const LogsBloomer&) = delete;
+    LogsBloomer& operator=(const LogsBloomer&) = delete;
+
+    LogsBloomer() noexcept = default;
+
+    virtual ~LogsBloomer() = default;
+
+    // Bloom filter function, M, to reduce a log entry into a single 256-byte hash.
+    // See YP, Section 4.3.1. "Transaction Receipt"
+    virtual Bloom bloom_filter(const std::vector<Log>& logs);
+};
 
 namespace rlp {
     template <>

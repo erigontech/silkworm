@@ -1,5 +1,5 @@
 /*
-   Copyright 2020-2021 The Silkworm Authors
+   Copyright 2020-2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -36,7 +36,8 @@ TEST_CASE("Hardcoded Bloom") {
             *from_hex("0x2d690516512020171c1ec870f6ff45398cc8609250326be89915fb538e7b"),  // data
         },
     };
-    Bloom bloom{logs_bloom(logs)};
+    LogsBloomer bloomer;
+    Bloom bloom{bloomer.bloom_filter(logs)};
     CHECK(to_hex(bloom) ==
           "000000000000000000810000000000000000000000000000000000020000000000000000000000000000008000"
           "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"

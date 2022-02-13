@@ -1,5 +1,5 @@
 /*
-   Copyright 2020-2021 The Silkworm Authors
+   Copyright 2020-2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -46,8 +46,9 @@ TEST_CASE("Hardcoded root hash") {
                         "000000000000000000000001195387bce41fd4990000000000000000000000000000000000000"
                         "000000000000000000000000000")}}},
     };
+    LogsBloomer bloomer;
     for (auto& r : receipts) {
-        r.bloom = logs_bloom(r.logs);
+        r.bloom = bloomer.bloom_filter(r.logs);
     }
     static constexpr auto kEncoder = [](Bytes& to, const Receipt& r) { rlp::encode(to, r); };
     CHECK(to_hex(root_hash(receipts, kEncoder)) == "7ea023138ee7d80db04eeec9cf436dc35806b00cc5fe8e5f611fb7cf1b35b177");

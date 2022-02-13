@@ -22,6 +22,12 @@
 
 namespace silkworm {
 
+void Bloom::add(const Bloom& addend) {
+    for (size_t i{0}; i < kBloomByteLength; ++i) {
+        (*this)[i] |= addend[i];
+    }
+}
+
 // See Section 4.3.1 "Transaction Receipt" of the Yellow Paper
 static void m3_2048(Bloom& bloom, ByteView x) {
     ethash::hash256 hash{keccak256(x)};
@@ -31,7 +37,7 @@ static void m3_2048(Bloom& bloom, ByteView x) {
     }
 }
 
-Bloom logs_bloom(const std::vector<Log>& logs) {
+Bloom LogsBloomer::bloom_filter(const std::vector<Log>& logs) {
     Bloom bloom{};  // zero initialization
     for (const Log& log : logs) {
         m3_2048(bloom, log.address);
@@ -40,12 +46,6 @@ Bloom logs_bloom(const std::vector<Log>& logs) {
         }
     }
     return bloom;
-}
-
-void Bloom::add(const Bloom& addend) {
-    for (size_t i{0}; i < kBloomByteLength; ++i) {
-        (*this)[i] |= addend[i];
-    }
 }
 
 namespace rlp {

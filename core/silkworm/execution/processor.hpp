@@ -1,5 +1,5 @@
 /*
-   Copyright 2020-2021 The Silkworm Authors
+   Copyright 2020-2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -54,6 +54,8 @@ class ExecutionProcessor {
 
     EVM& evm() noexcept { return evm_; }
     const EVM& evm() const noexcept { return evm_; }
+
+    LogsBloomer* bloomer{nullptr};
 
   private:
     /// Execute the block, but do not write to the DB yet.

@@ -53,9 +53,6 @@ class BaseRpc {
     }
 
   protected:
-    /// This should be called for system level errors when no response is available.
-    virtual bool finish_with_error(const grpc::Status& error) = 0;
-
     /// Hook to signal this RPC is *really* done: each subclass shall override to implement its own cleanup.
     virtual void cleanup() = 0;
 
@@ -171,6 +168,7 @@ class UnaryRpc : public BaseRpc {
     }
 
   protected:
+    /// This should be called for system level errors when no response is available.
     bool finish_with_error(const grpc::Status& error) {
         handle_started(OperationType::kFinish);
         responder_.FinishWithError(error, &finish_processor_);

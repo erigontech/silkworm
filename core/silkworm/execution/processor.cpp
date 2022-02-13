@@ -190,9 +190,9 @@ ValidationResult ExecutionProcessor::execute_and_write_block(std::vector<Receipt
         }
     }
 
-    Bloom bloom{};  // zero initialization
+    Bloom bloom;
     for (const Receipt& receipt : receipts) {
-        join(bloom, receipt.bloom);
+        bloom.add(receipt.bloom);
     }
     if (bloom != header.logs_bloom) {
         return ValidationResult::kWrongLogsBloom;

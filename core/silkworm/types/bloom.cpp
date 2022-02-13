@@ -1,5 +1,5 @@
 /*
-   Copyright 2020-2021 The Silkworm Authors
+   Copyright 2020-2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -41,5 +41,18 @@ Bloom logs_bloom(const std::vector<Log>& logs) {
     }
     return bloom;
 }
+
+void Bloom::add(const Bloom& addend) {
+    for (size_t i{0}; i < kBloomByteLength; ++i) {
+        (*this)[i] |= addend[i];
+    }
+}
+
+namespace rlp {
+    template <>
+    DecodingResult decode(ByteView& from, Bloom& to) noexcept {
+        return decode(from, static_cast<std::array<uint8_t, kBloomByteLength>&>(to));
+    }
+}  // namespace rlp
 
 }  // namespace silkworm

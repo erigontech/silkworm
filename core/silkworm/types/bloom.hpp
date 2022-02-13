@@ -1,5 +1,5 @@
 /*
-   Copyright 2020-2021 The Silkworm Authors
+   Copyright 2020-2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -22,21 +22,27 @@
 #include <cstdint>
 #include <vector>
 
+#include <silkworm/rlp/decode.hpp>
 #include <silkworm/types/log.hpp>
 
 namespace silkworm {
 
 inline constexpr size_t kBloomByteLength{256};
 
-using Bloom = std::array<uint8_t, kBloomByteLength>;
+class Bloom : public std::array<uint8_t, kBloomByteLength> {
+  public:
+    // zero initialization
+    Bloom() noexcept : std::array<uint8_t, kBloomByteLength>{} {}
+
+    void add(const Bloom& addend);
+};
 
 Bloom logs_bloom(const std::vector<Log>& logs);
 
-inline void join(Bloom& sum, const Bloom& addend) {
-    for (size_t i{0}; i < kBloomByteLength; ++i) {
-        sum[i] |= addend[i];
-    }
-}
+namespace rlp {
+    template <>
+    DecodingResult decode(ByteView& from, Bloom& to) noexcept;
+}  // namespace rlp
 
 }  // namespace silkworm
 

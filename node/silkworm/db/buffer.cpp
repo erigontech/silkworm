@@ -116,6 +116,9 @@ void Buffer::update_storage(const evmc::address& address, uint64_t incarnation, 
 
 void Buffer::write_history_to_db() {
     size_t written_size{0};
+    size_t total_written_size{0};
+
+    bool should_trace{log::test_verbosity(log::Level::kTrace)};
     StopWatch sw;
     sw.start();
 
@@ -138,8 +141,11 @@ void Buffer::write_history_to_db() {
             }
         }
         block_account_changes_.clear();
-        auto [_, duration]{sw.lap()};
-        log::Trace("Append history", {"accounts", human_size(written_size), "in", StopWatch::format(duration)});
+        total_written_size += written_size;
+        if (should_trace) {
+            auto [_, duration]{sw.lap()};
+            log::Trace("Append Account Changes", {"size", human_size(written_size), "in", StopWatch::format(duration)});
+        }
         written_size = 0;
     }
 
@@ -169,8 +175,11 @@ void Buffer::write_history_to_db() {
             }
         }
         block_storage_changes_.clear();
-        auto [_, duration]{sw.lap()};
-        log::Trace("Append history", {"storage", human_size(written_size), "in", StopWatch::format(duration)});
+        total_written_size += written_size;
+        if (should_trace) {
+            auto [_, duration]{sw.lap()};
+            log::Trace("Append Storage Changes", {"size", human_size(written_size), "in", StopWatch::format(duration)});
+        }
         written_size = 0;
     }
 
@@ -183,8 +192,11 @@ void Buffer::write_history_to_db() {
             written_size += k.length() + v.length();
         }
         receipts_.clear();
-        auto [_, duration]{sw.lap()};
-        log::Trace("Append history", {"receipts", human_size(written_size), "in", StopWatch::format(duration)});
+        total_written_size += written_size;
+        if (should_trace) {
+            auto [_, duration]{sw.lap()};
+            log::Trace("Append Receipts", {"size", human_size(written_size), "in", StopWatch::format(duration)});
+        }
         written_size = 0;
     }
 
@@ -197,16 +209,24 @@ void Buffer::write_history_to_db() {
             written_size += k.length() + v.length();
         }
         logs_.clear();
-        auto [_, duration]{sw.lap()};
-        log::Trace("Append history", {"receipts", human_size(written_size), "in", StopWatch::format(duration)});
+        total_written_size += written_size;
+        if (should_trace) {
+            auto [_, duration]{sw.lap()};
+            log::Trace("Append Logs", {"size", human_size(written_size), "in", StopWatch::format(duration)});
+        }
         written_size = 0;
     }
 
     auto [finish_time, _]{sw.stop()};
-    log::Info("Flushed history", {"duration", StopWatch::format(sw.since_start(finish_time))});
+    log::Info("Flushed history",
+              {"size", human_size(total_written_size), "in", StopWatch::format(sw.since_start(finish_time))});
 }
 
 void Buffer::write_state_to_db() {
+    bool should_trace{log::test_verbosity(log::Level::kTrace)};
+    StopWatch sw;
+    sw.start();
+
     auto state_table{db::open_cursor(txn_, table::kPlainState)};
 
     // Extract sorted index of unique addresses before inserting into the DB
@@ -216,6 +236,11 @@ void Buffer::write_state_to_db() {
     }
     for (auto& x : storage_) {
         addresses.insert(x.first);
+    }
+
+    if (should_trace) {
+        auto [_, duration]{sw.lap()};
+        log::Trace("Sorted addresses", {"in", StopWatch::format(duration)});
     }
 
     for (const auto& address : addresses) {
@@ -255,11 +280,17 @@ void Buffer::write_state_to_db() {
             }
         }
     }
+    if (should_trace) {
+        auto [_, duration]{sw.lap()};
+        log::Trace("Updated accounts and storage", {"in", StopWatch::format(duration)});
+    }
+
+    auto [time_point, _]{sw.stop()};
+    log::Info("PlainState updated", {"in", StopWatch::format(sw.since_start(time_point))});
 }
 
 void Buffer::write_to_db() {
     write_history_to_db();
-    write_state_to_db();
 
     auto incarnation_table{db::open_cursor(txn_, table::kIncarnationMap)};
     Bytes data(kIncarnationLength, '\0');
@@ -277,6 +308,10 @@ void Buffer::write_to_db() {
     for (const auto& entry : storage_prefix_to_code_hash_) {
         code_hash_table.upsert(to_slice(entry.first), to_slice(entry.second));
     }
+
+    // This should be very last to be written so updated pages
+    // have higher chances not to be evicted from RAM
+    write_state_to_db();
 }
 
 // Erigon WriteReceipts in core/rawdb/accessors_chain.go

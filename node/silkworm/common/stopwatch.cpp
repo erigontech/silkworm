@@ -52,7 +52,7 @@ std::pair<StopWatch::TimePoint, StopWatch::Duration> StopWatch::lap() noexcept {
 }
 
 StopWatch::Duration StopWatch::since_start(const TimePoint& origin) noexcept {
-    if (!started_) {
+    if (start_time_ == TimePoint()) {
         return {};
     }
     return Duration(origin - start_time_);
@@ -111,7 +111,7 @@ std::string StopWatch::format(Duration duration) noexcept {
         os << s.count() << "s";
     }
     if (!(d.count() || h.count() || m.count()) && (ms.count() || us.count())) {
-        if(s.count()) {
+        if (s.count()) {
             os << " ";
         }
         if (ms.count()) {

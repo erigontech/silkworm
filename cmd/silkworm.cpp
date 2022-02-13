@@ -134,7 +134,7 @@ int main(int argc, char* argv[]) {
             }
 
             auto t2{std::chrono::steady_clock::now()};
-            if ((t2 - t1) > std::chrono::seconds(60)) {
+            if ((t2 - t1) > std::chrono::seconds(300)) {
                 t1 = std::chrono::steady_clock::now();
                 auto total_duration{t1 - start_time};
                 log::Info("Resource usage",

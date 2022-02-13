@@ -1,5 +1,5 @@
 /*
-    Copyright 2021 The Silkworm Authors
+    Copyright 2022 The Silkworm Authors
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -14,13 +14,17 @@
     limitations under the License.
 */
 
-#include "worker.hpp"
+#include <csignal>
 
 #include <catch2/catch.hpp>
 
-TEST_CASE("Worker") {
-    using namespace silkworm;
+#include <silkworm/concurrency/signal_handler.hpp>
+#include <silkworm/concurrency/stoppable.hpp>
+#include <silkworm/concurrency/worker.hpp>
 
+namespace silkworm {
+
+TEST_CASE("Worker") {
     class ThreadWorker final : public Worker {
       public:
         explicit ThreadWorker(bool should_throw = false) : should_throw_(should_throw){};
@@ -67,3 +71,21 @@ TEST_CASE("Worker") {
         REQUIRE_THROWS(worker.rethrow());
     }
 }
+
+TEST_CASE("Signal Handler") {
+    SignalHandler::init();
+    std::raise(SIGINT);
+    CHECK(SignalHandler::signalled());
+    SignalHandler::reset();
+    CHECK(SignalHandler::signalled() == false);
+}
+
+TEST_CASE("Stoppable") {
+    silkworm::Stoppable stoppable{};
+    REQUIRE(stoppable.is_stopping() == false);
+    REQUIRE(stoppable.stop() == true);
+    REQUIRE(stoppable.stop() == false);
+    REQUIRE(stoppable.is_stopping() == true);
+}
+
+}  // namespace silkworm

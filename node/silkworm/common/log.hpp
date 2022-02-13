@@ -90,8 +90,8 @@ class BufferBase {
 template <Level level>
 class LogBuffer : public BufferBase {
   public:
-    explicit LogBuffer() : BufferBase(level){};
-    explicit LogBuffer(std::string_view msg, std::vector<std::string> args = {}) : BufferBase(level, msg, args){};
+    explicit LogBuffer() : BufferBase(level) {}
+    explicit LogBuffer(std::string_view msg, std::vector<std::string> args = {}) : BufferBase(level, msg, args) {}
 };
 
 using Trace = LogBuffer<Level::kTrace>;
@@ -103,5 +103,18 @@ using Critical = LogBuffer<Level::kCritical>;
 using Message = LogBuffer<Level::kNone>;
 
 }  // namespace silkworm::log
+
+#define SILK_LOGBUFFER(level_)                    \
+    if (!silkworm::log::test_verbosity(level_)) { \
+    } else                                        \
+        silkworm::log::LogBuffer<level_>()
+
+#define SILK_TRACE SILK_LOGBUFFER(silkworm::log::Level::kTrace)
+#define SILK_DEBUG SILK_LOGBUFFER(silkworm::log::Level::kDebug)
+#define SILK_INFO SILK_LOGBUFFER(silkworm::log::Level::kInfo)
+#define SILK_WARN SILK_LOGBUFFER(silkworm::log::Level::kWarning)
+#define SILK_ERROR SILK_LOGBUFFER(silkworm::log::Level::kError)
+#define SILK_CRIT SILK_LOGBUFFER(silkworm::log::Level::kCritical)
+#define SILK_LOG SILK_LOGBUFFER(silkworm::log::Level::kNone)
 
 #endif  // !SILKWORM_COMMON_LOG_HPP_

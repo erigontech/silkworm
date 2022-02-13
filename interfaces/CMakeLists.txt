@@ -14,16 +14,6 @@
    limitations under the License.
 ]]
 
-#find_package(Protobuf REQUIRED)
-#include_directories(${Protobuf_INCLUDE_DIRS})
-#include_directories(${CMAKE_CURRENT_BINARY_DIR})
-#protobuf_generate_cpp(PROTO_SRCS PROTO_HDRS sentry.proto)
-#protobuf_generate_cpp(PROTO_SRCS PROTO_HDRS EXPORT_MACRO DLL_EXPORT sentry.proto)
-#protobuf_generate_cpp(PROTO_SRCS PROTO_HDRS DESCRIPTORS PROTO_DESCS sentry.proto)
-#protobuf_generate_python(PROTO_PY sentry.proto)
-#add_executable(bar bar.cc ${PROTO_SRCS} ${PROTO_HDRS})
-#target_link_libraries(bar ${Protobuf_LIBRARIES})
-
 # Find Protobuf installation
 set(protobuf_MODULE_COMPATIBLE TRUE)
 find_package(Protobuf CONFIG REQUIRED)
@@ -33,26 +23,31 @@ find_program(PROTOBUF_PROTOC protoc REQUIRED)
 find_package(gRPC CONFIG REQUIRED)
 find_program(GRPC_CPP_PLUGIN_EXECUTABLE grpc_cpp_plugin REQUIRED)
 
-# ---------------------------------------------------------------------------------------------------------------------
-# types proto file
 set(PROTO_PATH "${CMAKE_CURRENT_SOURCE_DIR}/proto")
+
+# ---------------------------------------------------------------------------------------------------------------------
+# Types
+# ---------------------------------------------------------------------------------------------------------------------
+# gRPC protocol interface file
 set(TYPES_PROTO "${PROTO_PATH}/types/types.proto")
 
-# types sources
+# Generate sources
 set(TYPES_PROTO_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/types/types.pb.cc")
 set(TYPES_PROTO_HEADERS "${CMAKE_CURRENT_SOURCE_DIR}/types/types.pb.h")
 
 add_custom_command(
-        OUTPUT "${TYPES_PROTO_SOURCES}" "${TYPES_PROTO_HEADERS}"
-        COMMAND ${PROTOBUF_PROTOC}
-        ARGS --cpp_out "${CMAKE_CURRENT_SOURCE_DIR}"
-          -I "${PROTO_PATH}"
-          "${TYPES_PROTO}"
-        DEPENDS "${TYPES_PROTO}"
+    OUTPUT "${TYPES_PROTO_SOURCES}" "${TYPES_PROTO_HEADERS}"
+    COMMAND ${PROTOBUF_PROTOC}
+    ARGS --cpp_out "${CMAKE_CURRENT_SOURCE_DIR}"
+      -I "${PROTO_PATH}"
+      "${TYPES_PROTO}"
+    DEPENDS "${TYPES_PROTO}"
 )
 
 # ---------------------------------------------------------------------------------------------------------------------
-# gRPC proto file
+# Sentry
+# ---------------------------------------------------------------------------------------------------------------------
+# gRPC protocol interface file
 set(SENTRY_PROTO "${PROTO_PATH}/p2psentry/sentry.proto")
 
 # Generate sources
@@ -75,5 +70,65 @@ add_custom_command(
 add_custom_target(
     generate_sentry_grpc
     DEPENDS "${SENTRY_PROTO_SOURCES}" "${SENTRY_PROTO_HEADERS}" "${SENTRY_GRPC_SOURCES}" "${SENTRY_GRPC_HEADERS}"
+            "${TYPES_PROTO_SOURCES}" "${TYPES_PROTO_HEADERS}"
+)
+
+# ---------------------------------------------------------------------------------------------------------------------
+# KV
+# ---------------------------------------------------------------------------------------------------------------------
+# gRPC protocol interface file
+set(KV_PROTO "${PROTO_PATH}/remote/kv.proto")
+
+# Generate sources
+set(KV_PROTO_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/remote/kv.pb.cc")
+set(KV_PROTO_HEADERS "${CMAKE_CURRENT_SOURCE_DIR}/remote/kv.pb.h")
+set(KV_GRPC_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/remote/kv.grpc.pb.cc")
+set(KV_GRPC_HEADERS "${CMAKE_CURRENT_SOURCE_DIR}/remote/kv.grpc.pb.h")
+
+add_custom_command(
+    OUTPUT "${KV_PROTO_SOURCES}" "${KV_PROTO_HEADERS}" "${KV_GRPC_SOURCES}" "${KV_GRPC_HEADERS}"
+    COMMAND ${PROTOBUF_PROTOC}
+    ARGS --grpc_out generate_mock_code=true:"${CMAKE_CURRENT_SOURCE_DIR}"
+      --cpp_out "${CMAKE_CURRENT_SOURCE_DIR}"
+      -I "${PROTO_PATH}"
+      --plugin=protoc-gen-grpc="${GRPC_CPP_PLUGIN_EXECUTABLE}"
+      "${KV_PROTO}"
+    DEPENDS "${KV_PROTO}"
+    COMMENT "Running C++ gRPC compiler on ${KV_PROTO}"
+)
+
+add_custom_target(
+    generate_kv_grpc
+    DEPENDS "${KV_PROTO_SOURCES}" "${KV_PROTO_HEADERS}" "${KV_GRPC_SOURCES}" "${KV_GRPC_HEADERS}"
+            "${TYPES_PROTO_SOURCES}" "${TYPES_PROTO_HEADERS}"
+)
+
+# ---------------------------------------------------------------------------------------------------------------------
+# ETHBACKEND
+# ---------------------------------------------------------------------------------------------------------------------
+# gRPC protocol interface file
+set(ETHBACKEND_PROTO "${PROTO_PATH}/remote/ethbackend.proto")
+
+# Generate sources
+set(ETHBACKEND_PROTO_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/remote/ethbackend.pb.cc")
+set(ETHBACKEND_PROTO_HEADERS "${CMAKE_CURRENT_SOURCE_DIR}/remote/ethbackend.pb.h")
+set(ETHBACKEND_GRPC_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/remote/ethbackend.grpc.pb.cc")
+set(ETHBACKEND_GRPC_HEADERS "${CMAKE_CURRENT_SOURCE_DIR}/remote/ethbackend.grpc.pb.h")
+
+add_custom_command(
+    OUTPUT "${ETHBACKEND_PROTO_SOURCES}" "${ETHBACKEND_PROTO_HEADERS}" "${ETHBACKEND_GRPC_SOURCES}" "${ETHBACKEND_GRPC_HEADERS}"
+    COMMAND ${PROTOBUF_PROTOC}
+    ARGS --grpc_out generate_mock_code=true:"${CMAKE_CURRENT_SOURCE_DIR}"
+      --cpp_out "${CMAKE_CURRENT_SOURCE_DIR}"
+      -I "${PROTO_PATH}"
+      --plugin=protoc-gen-grpc="${GRPC_CPP_PLUGIN_EXECUTABLE}"
+      "${ETHBACKEND_PROTO}"
+    DEPENDS "${ETHBACKEND_PROTO}"
+    COMMENT "Running C++ gRPC compiler on ${ETHBACKEND_PROTO}"
+)
+
+add_custom_target(
+    generate_ethbackend_grpc
+    DEPENDS "${ETHBACKEND_PROTO_SOURCES}" "${ETHBACKEND_PROTO_HEADERS}" "${ETHBACKEND_GRPC_SOURCES}" "${ETHBACKEND_GRPC_HEADERS}"
             "${TYPES_PROTO_SOURCES}" "${TYPES_PROTO_HEADERS}"
 )

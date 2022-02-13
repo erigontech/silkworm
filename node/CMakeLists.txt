@@ -29,6 +29,14 @@ set(SILKWORM_INTERFACE_SRC
         ${SILKWORM_MAIN_DIR}/interfaces/p2psentry/sentry.grpc.pb.h
         ${SILKWORM_MAIN_DIR}/interfaces/p2psentry/sentry.pb.cc
         ${SILKWORM_MAIN_DIR}/interfaces/p2psentry/sentry.pb.h
+        ${SILKWORM_MAIN_DIR}/interfaces/remote/ethbackend.grpc.pb.cc
+        ${SILKWORM_MAIN_DIR}/interfaces/remote/ethbackend.grpc.pb.h
+        ${SILKWORM_MAIN_DIR}/interfaces/remote/ethbackend.pb.cc
+        ${SILKWORM_MAIN_DIR}/interfaces/remote/ethbackend.pb.h
+        ${SILKWORM_MAIN_DIR}/interfaces/remote/kv.grpc.pb.cc
+        ${SILKWORM_MAIN_DIR}/interfaces/remote/kv.grpc.pb.h
+        ${SILKWORM_MAIN_DIR}/interfaces/remote/kv.pb.cc
+        ${SILKWORM_MAIN_DIR}/interfaces/remote/kv.pb.h
         ${SILKWORM_MAIN_DIR}/interfaces/types/types.pb.cc
         ${SILKWORM_MAIN_DIR}/interfaces/types/types.pb.h)
 

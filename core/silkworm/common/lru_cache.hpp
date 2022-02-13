@@ -42,6 +42,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <cstddef>
 #include <list>
 #include <unordered_map>
+#include <optional>
 
 namespace silkworm {
 
@@ -78,6 +79,14 @@ class lru_cache {
             _cache_items_list.splice(_cache_items_list.begin(), _cache_items_list, it->second);
             return &(it->second->second);
         }
+    }
+
+    std::optional<value_t> get_as_copy(const key_t& key) {
+        auto val = get(key);
+        if (val == nullptr) {
+            return std::nullopt;
+        }
+        return {*val};
     }
 
     bool remove(const key_t& key) {

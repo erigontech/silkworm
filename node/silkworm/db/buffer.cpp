@@ -17,19 +17,19 @@
 #include "buffer.hpp"
 
 #include <algorithm>
+#include <iostream>
 
 #include <absl/container/btree_set.h>
 
 #include <silkworm/common/endian.hpp>
+#include <silkworm/db/access_layer.hpp>
+#include <silkworm/db/tables.hpp>
 #include <silkworm/types/log_cbor.hpp>
 #include <silkworm/types/receipt_cbor.hpp>
 
-#include "access_layer.hpp"
-#include "tables.hpp"
-
 namespace silkworm::db {
 
-void Buffer::bump_batch_size(size_t key_len, size_t value_len) {
+inline void Buffer::bump_batch_size(size_t key_len, size_t value_len) {
     // Approximately matches Erigon's batch size logic in (m *mutation) Put
     static constexpr size_t kEntryOverhead{8};
     batch_size_ += kEntryOverhead + key_len + value_len;
@@ -42,8 +42,8 @@ void Buffer::begin_block(uint64_t block_number) {
 
 void Buffer::update_account(const evmc::address& address, std::optional<Account> initial,
                             std::optional<Account> current) {
-    bool equal{current == initial};
-    bool account_deleted{!current};
+    const bool equal{current == initial};
+    const bool account_deleted{!current.has_value()};
 
     if (equal && !account_deleted && !changed_storage_.contains(address)) {
         // Follows the Erigon logic when to populate account changes.
@@ -57,7 +57,7 @@ void Buffer::update_account(const evmc::address& address, std::optional<Account>
             bool omit_code_hash{!account_deleted};
             encoded_initial = initial->encode_for_storage(omit_code_hash);
         }
-        if (account_changes_[block_number_].insert_or_assign(address, encoded_initial).second) {
+        if (block_account_changes_[block_number_].insert_or_assign(address, encoded_initial).second) {
             bump_batch_size(8, kAddressLength + encoded_initial.length());
         }
     }
@@ -97,7 +97,7 @@ void Buffer::update_storage(const evmc::address& address, uint64_t incarnation, 
     if (block_number_ >= prune_from_) {
         changed_storage_.insert(address);
         ByteView change_val{zeroless_view(initial)};
-        if (storage_changes_[block_number_][address][incarnation].insert_or_assign(location, change_val).second) {
+        if (block_storage_changes_[block_number_][address][incarnation].insert_or_assign(location, change_val).second) {
             bump_batch_size(8 + kPlainStoragePrefixLength, kHashLength + change_val.size());
         }
     }
@@ -110,7 +110,7 @@ void Buffer::update_storage(const evmc::address& address, uint64_t incarnation, 
 void Buffer::write_to_state_table() {
     auto state_table{db::open_cursor(txn_, table::kPlainState)};
 
-    // sort before inserting into the DB
+    // Extract sorted index of unique addresses before inserting into the DB
     absl::btree_set<evmc::address> addresses;
     for (auto& x : accounts_) {
         addresses.insert(x.first);
@@ -119,34 +119,39 @@ void Buffer::write_to_state_table() {
         addresses.insert(x.first);
     }
 
-    std::vector<evmc::bytes32> storage_keys;
-
     for (const auto& address : addresses) {
         if (auto it{accounts_.find(address)}; it != accounts_.end()) {
             auto key{to_slice(address)};
-            state_table.erase(key, /*whole_multivalue=*/true);  // PlainState is multivalue
-            if (it->second.has_value()) {
+
+            /*
+             * Maybe a changed account is reverted to its original state during the batch
+             * so to avoid free page pollution by updating the same value into PlainState
+             * simply check new value differs from old value. The extra memcmp is worth the
+             * savings by MDBX dealing with free pages
+             */
+            auto data{state_table.move(mdbx::cursor::move_operation::find_key, key, false)};
+            if (data.done) {
+                if (it->second.has_value()) {
+                    Bytes new_encoded{it->second->encode_for_storage()};
+                    if (new_encoded.length() != data.value.length() ||
+                        std::memcmp(new_encoded.data(), data.value.data(), new_encoded.length()) != 0) {
+                        auto new_encoded_slice{to_slice(new_encoded)};
+                        ::mdbx::error::success_or_throw(state_table.put(key, &new_encoded_slice, MDBX_CURRENT));
+                    }
+                } else {
+                    state_table.erase(true);
+                }
+            } else if (it->second.has_value()) {
                 Bytes encoded{it->second->encode_for_storage()};
                 state_table.upsert(key, to_slice(encoded));
             }
         }
 
         if (auto it{storage_.find(address)}; it != storage_.end()) {
-            for (const auto& contract : it->second) {
-                uint64_t incarnation{contract.first};
+            for (const auto& [incarnation, contract_storage] : it->second) {
                 Bytes prefix{storage_prefix(address, incarnation)};
-
-                const auto& contract_storage{contract.second};
-
-                // sort before inserting into the DB
-                storage_keys.clear();
-                for (const auto& x : contract_storage) {
-                    storage_keys.push_back(x.first);
-                }
-                std::sort(storage_keys.begin(), storage_keys.end());
-
-                for (const auto& k : storage_keys) {
-                    upsert_storage_value(state_table, prefix, k, contract_storage.at(k));
+                for (const auto& [location, value] : contract_storage) {
+                    upsert_storage_value(state_table, prefix, location, value);
                 }
             }
         }
@@ -158,9 +163,9 @@ void Buffer::write_to_db() {
 
     auto incarnation_table{db::open_cursor(txn_, table::kIncarnationMap)};
     Bytes data(kIncarnationLength, '\0');
-    for (const auto& entry : incarnations_) {
-        endian::store_big_u64(&data[0], entry.second);
-        incarnation_table.upsert(to_slice(entry.first), to_slice(data));
+    for (const auto& [address, incarnation] : incarnations_) {
+        endian::store_big_u64(&data[0], incarnation);
+        incarnation_table.upsert(to_slice(address), to_slice(data));
     }
 
     auto code_table{db::open_cursor(txn_, table::kCode)};
@@ -168,26 +173,29 @@ void Buffer::write_to_db() {
         code_table.upsert(to_slice(entry.first), to_slice(entry.second));
     }
 
-    auto code_hash_table{db::open_cursor(txn_, table::kPlainContractCode)};
+    auto code_hash_table{db::open_cursor(txn_, table::kPlainCodeHash)};
     for (const auto& entry : storage_prefix_to_code_hash_) {
         code_hash_table.upsert(to_slice(entry.first), to_slice(entry.second));
     }
 
     auto account_change_table{db::open_cursor(txn_, table::kAccountChangeSet)};
-    Bytes change_key;
-    for (const auto& block_entry : account_changes_) {
-        uint64_t block_num{block_entry.first};
-        change_key = block_key(block_num);
-        for (const auto& account_entry : block_entry.second) {
-            data = ByteView{account_entry.first};
-            data.append(account_entry.second);
-            auto data_slice{to_slice(data)};
-            account_change_table.put(to_slice(change_key), &data_slice, MDBX_APPENDDUP);
+    Bytes change_key(8, '\0');
+    Bytes change_value(kAddressLength + 128 /* see comment*/,
+                       '\0');  // Max size of encoded value is 85. We allocate - once - some byte more for safety
+                               // and avoid reallocation or resizing in the loop
+    for (const auto& [block_num, account_changes] : block_account_changes_) {
+        endian::store_big_u64(change_key.data(), block_num);
+        for (const auto& [address, account_encoded] : account_changes) {
+            std::memcpy(&change_value[0], address.bytes, kAddressLength);
+            std::memcpy(&change_value[kAddressLength], account_encoded.data(), account_encoded.length());
+            mdbx::slice change_value_slice{change_value.data(), kAddressLength + account_encoded.length()};
+            mdbx::error::success_or_throw(
+                account_change_table.put(to_slice(change_key), &change_value_slice, MDBX_APPENDDUP));
         }
     }
 
     auto storage_change_table{db::open_cursor(txn_, table::kStorageChangeSet)};
-    for (const auto& block_entry : storage_changes_) {
+    for (const auto& block_entry : block_storage_changes_) {
         uint64_t block_num{block_entry.first};
 
         for (const auto& address_entry : block_entry.second) {
@@ -199,7 +207,8 @@ void Buffer::write_to_db() {
                     data = ByteView{storage_entry.first};
                     data.append(storage_entry.second);
                     auto data_slice{to_slice(data)};
-                    storage_change_table.put(to_slice(change_key), &data_slice, MDBX_APPENDDUP);
+                    mdbx::error::success_or_throw(
+                        storage_change_table.put(to_slice(change_key), &data_slice, MDBX_APPENDDUP));
                 }
             }
         }
@@ -209,14 +218,14 @@ void Buffer::write_to_db() {
     for (const auto& [block_key, receipts] : receipts_) {
         auto k{to_slice(block_key)};
         auto v{to_slice(receipts)};
-        receipt_table.put(k, &v, MDBX_APPEND);
+        mdbx::error::success_or_throw(receipt_table.put(k, &v, MDBX_APPEND));
     }
 
     auto log_table{db::open_cursor(txn_, table::kLogs)};
     for (const auto& [log_key, value] : logs_) {
         auto k{to_slice(log_key)};
         auto v{to_slice(value)};
-        log_table.put(k, &v, MDBX_APPEND);
+        mdbx::error::success_or_throw(log_table.put(k, &v, MDBX_APPEND));
     }
 }
 

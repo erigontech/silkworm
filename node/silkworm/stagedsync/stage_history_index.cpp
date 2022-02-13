@@ -67,7 +67,7 @@ static StageResult history_index_stage(db::RWTxn& txn, const std::filesystem::pa
         std::string composite_key;
         auto key{db::from_slice(data.key)};
         auto value{db::from_slice(data.value)};
-        auto [db_key, _]{db::change_set_to_plain_state_format(key, value)};
+        auto [db_key, _]{db::changeset_to_plainstate_format(key, value)};
         // Make the composite key accordingly whether we are dealing with storages or accounts
         if (storage) {
             // Storage: Address + Location

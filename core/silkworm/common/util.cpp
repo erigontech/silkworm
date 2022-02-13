@@ -128,15 +128,26 @@ ByteView zeroless_view(ByteView data) {
         std::distance(data.begin(), as_range::find_if_not(data, [](const auto& b) { return b == 0x0; }))));
 }
 
-std::string to_hex(ByteView bytes) {
+std::string to_hex(ByteView bytes, bool with_prefix) {
     static const char* kHexDigits{"0123456789abcdef"};
-    std::string out(bytes.length() * 2, '\0');
+    std::string out(bytes.length() * 2 + (with_prefix ? 2 : 0), '\0');
     char* dest{&out[0]};
+    if (with_prefix) {
+        *dest++ = '0';
+        *dest++ = 'x';
+    }
     for (const auto& b : bytes) {
         *dest++ = kHexDigits[b >> 4];    // Hi
         *dest++ = kHexDigits[b & 0x0f];  // Lo
     }
     return out;
+}
+
+std::string abridge(std::string_view input, size_t length) {
+    if (input.length() <= length) {
+        return std::string(input);
+    }
+    return std::string(input.substr(0, length)) + "…";
 }
 
 static inline uint8_t unhex_lut(uint8_t x) { return kUnhexTable[x]; }
@@ -183,7 +194,7 @@ std::optional<Bytes> from_hex(std::string_view hex) noexcept {
         auto f{unhex_lut(static_cast<uint8_t>(*src++))};
         auto g{unhex_lut4(static_cast<uint8_t>(*src++))};
         auto h{unhex_lut(static_cast<uint8_t>(*src++))};
-        if ((b | d | f | h) == 0xff || (a | c | e | g) == 0xff ) {
+        if ((b | d | f | h) == 0xff || (a | c | e | g) == 0xff) {
             return std::nullopt;
         }
         *dst++ = a | b;

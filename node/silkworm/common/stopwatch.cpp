@@ -1,5 +1,5 @@
 /*
-   Copyright 2021 The Silkworm Authors
+   Copyright 2021-2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -51,6 +51,11 @@ std::pair<StopWatch::TimePoint, StopWatch::Duration> StopWatch::lap() noexcept {
     return laps_.back();
 }
 
+StopWatch::Duration StopWatch::lap_duration() noexcept {
+    auto [tp, duration] = lap();
+    return duration;
+}
+
 StopWatch::Duration StopWatch::since_start(const TimePoint& origin) noexcept {
     if (!started_) {
         return {};
@@ -96,43 +101,29 @@ std::string StopWatch::format(Duration duration) noexcept {
         }
     }
     if (h.count()) {
-        if (d.count()) {
-            os << std::setw(2) << std::setfill('0');
-        }
         os << h.count() << "h";
         if (m.count() || s.count()) {
-            os << ":";
+            os << " ";
         }
     }
-    if (m.count() || h.count()) {
-        if (h.count()) {
-            os << std::setw(2) << std::setfill('0');
-        }
+    if (m.count()) {
         os << m.count() << "m";
-        if (h.count() || s.count()) {
-            os << ":";
+        if (s.count() || ms.count()) {
+            os << " ";
         }
     }
-    if (s.count() || m.count() || h.count()) {
-        if (h.count() || m.count()) {
-            os << std::setw(2) << std::setfill('0');
-        }
-        os << s.count();
-        if (ms.count()) {
-            os << "." << std::setw(3) << std::setfill('0') << ms.count() << "s";
-        }
+    if (s.count()) {
+        os << s.count() << "s";
     }
-
-    if (!d.count() && !h.count() && !m.count() && !s.count()) {
-        if (ms.count()) {
-            os << ms.count();
-            if (us.count()) {
-                os << "." << std::setw(3) << std::setfill('0') << us.count();
-            }
-            os << "ms";
+    if (!(d.count() || h.count() || m.count()) && (ms.count() || us.count())) {
+        if(s.count()) {
+            os << " ";
         }
-        if (us.count() && !ms.count()) {
-            os << std::setw(3) << std::setfill('0') << us.count() << "us";
+        if (ms.count()) {
+            os << ms.count() << "ms" << (us.count() ? " " : "");
+        }
+        if (us.count()) {
+            os << us.count() << "μs";
         }
     }
 

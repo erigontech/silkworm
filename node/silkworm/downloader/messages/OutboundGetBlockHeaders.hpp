@@ -26,7 +26,9 @@ namespace silkworm {
 
 class OutboundGetBlockHeaders : public OutboundMessage {
   public:
-    OutboundGetBlockHeaders(WorkingChain&, SentryClient&);
+    enum Breadth {Wide_Req, Narrow_Req};
+
+    OutboundGetBlockHeaders(WorkingChain&, SentryClient&, Breadth b = Wide_Req);
 
     std::string name() const override { return "OutboundGetBlockHeaders"; }
     std::string content() const override;
@@ -40,6 +42,7 @@ class OutboundGetBlockHeaders : public OutboundMessage {
     std::string packets_;
     WorkingChain& working_chain_;
     SentryClient& sentry_;
+    Breadth breadth_;
 };
 
 }  // namespace silkworm

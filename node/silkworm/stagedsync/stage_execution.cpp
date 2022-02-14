@@ -283,7 +283,7 @@ std::vector<std::string> Execution::get_log_progress() {
     lap_time_ = now;
     auto elapsed_seconds = static_cast<uint32_t>(std::chrono::duration_cast<std::chrono::seconds>(elapsed).count());
     if (!elapsed_seconds || !processed_blocks_) {
-        return {"block", std::to_string(block_num_), "..", "db waiting ..."};
+        return {"block", std::to_string(block_num_), "db", "waiting ..."};
     }
     auto speed_blocks = processed_blocks_ / elapsed_seconds;
     auto speed_transactions = processed_transactions_ / elapsed_seconds;

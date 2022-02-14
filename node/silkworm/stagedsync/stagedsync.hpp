@@ -80,6 +80,12 @@ class Execution final : public IStage {
   private:
     std::unique_ptr<consensus::IEngine> consensus_engine_;
     BlockNum block_num_{0};
+
+    //! \brief Prefetches blocks for processing
+    std::queue<Block> prefetch_blocks(db::RWTxn& txn, BlockNum from, BlockNum to, size_t max_blocks);
+
+    //! \brief Executes a batch of blocks
+    //! \remarks A batch completes when either max block is reached or buffer dimensions overflow
     StageResult execute_batch(db::RWTxn& txn, BlockNum max_block_num, BlockNum prune_from,
                               AnalysisCache& analysis_cache, ExecutionStatePool& state_pool);
 

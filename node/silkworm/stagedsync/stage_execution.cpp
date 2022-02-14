@@ -91,14 +91,60 @@ StageResult Execution::forward(db::RWTxn& txn) {
     return is_stopping() ? StageResult::kAborted : StageResult::kSuccess;
 }
 
+std::queue<Block> Execution::prefetch_blocks(db::RWTxn& txn, BlockNum from, BlockNum to, size_t max_blocks) {
+
+    StopWatch sw;
+    sw.start();
+
+    std::queue<Block> ret{};
+    BlockNum reached_block_num{0};
+    auto hashes_table{db::open_cursor(*txn, db::table::kCanonicalHashes)};
+    auto key{db::block_key(from)};
+    auto data{hashes_table.find(db::to_slice(key), true)};
+    while (data.done) {
+        reached_block_num = endian::load_big_u64(static_cast<const uint8_t*>(data.key.data()));
+        if (reached_block_num != from) {
+            throw std::runtime_error("Bad canonical header sequence: expected " + std::to_string(from) + " got " +
+                                     std::to_string(reached_block_num));
+        }
+
+        Bytes block_key(8 + kHashLength, '\0');
+        std::memcpy(&block_key[0], data.key.data(), 8);
+        std::memcpy(&block_key[8], data.value.data(), kHashLength);
+
+        Block block{};
+        auto raw_header{db::read_header_raw(*txn, block_key)};
+        if (raw_header.empty()) {
+            throw std::runtime_error("Unable to load block header for block " + std::to_string(from));
+        }
+        ByteView encoded_header{raw_header.data(), raw_header.length()};
+        rlp::success_or_throw(rlp::decode(encoded_header, block.header));
+
+        auto block_body{db::read_body(*txn, block_key, /*read_senders=*/true)};
+        if (!block_body.has_value()) {
+            throw std::runtime_error("Unable to load block body for block " + std::to_string(from));
+        }
+
+        std::swap(block.transactions, block_body->transactions);
+        std::swap(block.ommers, block_body->ommers);
+        ret.push(block);
+
+        if (from == to || ret.size() == (max_blocks ? max_blocks : UINT32_MAX)) {
+            break;
+        }
+        ++from;
+        data = hashes_table.to_next(false);
+    }
+    auto [_, duration]{sw.lap()};
+    log::Trace("Fetched blocks", {"size", std::to_string(ret.size()), "in", StopWatch::format(duration)});
+    return ret;
+}
+
 StageResult Execution::execute_batch(db::RWTxn& txn, BlockNum max_block_num, BlockNum prune_from,
                                      AnalysisCache& analysis_cache, ExecutionStatePool& state_pool) {
     try {
         db::Buffer buffer(*txn, prune_from);
         std::vector<Receipt> receipts;
-
-        size_t max_history_size{node_settings_->batch_size / 4};
-        size_t max_state_size{node_settings_->batch_size - max_history_size};
 
         // Transform batch_size limit into Ggas
         size_t gas_max_history_size{node_settings_->batch_size * 1_Kibi / 2};  // 512MB -> 256Ggas roughly
@@ -111,22 +157,31 @@ StageResult Execution::execute_batch(db::RWTxn& txn, BlockNum max_block_num, Blo
             lap_time_ = std::chrono::steady_clock::now();
         }
 
+        std::queue<Block> prefetched_blocks{prefetch_blocks(txn, block_num_, max_block_num, 10240)};
+
         while (true) {
+            if (prefetched_blocks.empty()) {
+                if (is_stopping()) {
+                    return StageResult::kAborted;
+                }
+                prefetched_blocks = prefetch_blocks(txn, block_num_, max_block_num, 10240);
+            }
+
+            auto block = prefetched_blocks.front();
+            if (block.header.number != block_num_) {
+                throw std::runtime_error("Bad block sequence");
+            }
+
             if ((block_num_ % 64 == 0) && is_stopping()) {
                 return StageResult::kAborted;
             }
 
-            std::optional<BlockWithHash> block_with_hash{db::read_block(*txn, block_num_, /*read_senders=*/true)};
-            if (!block_with_hash.has_value()) {
-                return StageResult::kBadChainSequence;
-            }
-            ExecutionProcessor processor(block_with_hash->block, *consensus_engine_, buffer,
-                                         node_settings_->chain_config.value());
+            ExecutionProcessor processor(block, *consensus_engine_, buffer, node_settings_->chain_config.value());
             processor.evm().advanced_analysis_cache = &analysis_cache;
             processor.evm().state_pool = &state_pool;
 
             if (const auto res{processor.execute_and_write_block(receipts)}; res != ValidationResult::kOk) {
-                const auto block_hash_hex{to_hex(block_with_hash->hash.bytes, true)};
+                const auto block_hash_hex{to_hex(block.header.hash().bytes, true)};
                 log::Error("Block Validation Error",
                            {"block", std::to_string(block_num_), "hash", block_hash_hex, "err",
                             std::string(magic_enum::enum_name<ValidationResult>(res))});
@@ -140,10 +195,10 @@ StageResult Execution::execute_batch(db::RWTxn& txn, BlockNum max_block_num, Blo
             // Stats
             std::unique_lock progress_lock(progress_mtx_);
             processed_blocks_++;
-            processed_transactions_ += block_with_hash->block.transactions.size();
-            processed_gas_ += block_with_hash->block.header.gas_used;
-            gas_batch_size += block_with_hash->block.header.gas_used;
-            gas_history_size += block_with_hash->block.header.gas_used;
+            processed_transactions_ += block.transactions.size();
+            processed_gas_ += block.header.gas_used;
+            gas_batch_size += block.header.gas_used;
+            gas_history_size += block.header.gas_used;
             progress_lock.unlock();
 
             // Flush whole buffer if time to
@@ -158,7 +213,8 @@ StageResult Execution::execute_batch(db::RWTxn& txn, BlockNum max_block_num, Blo
                 gas_history_size = 0;
             }
 
-            block_num_++;
+            ++block_num_;
+            prefetched_blocks.pop();
         }
 
         return is_stopping() ? StageResult::kAborted : StageResult::kSuccess;

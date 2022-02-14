@@ -82,7 +82,7 @@ class Execution final : public IStage {
     BlockNum block_num_{0};
 
     //! \brief Prefetches blocks for processing
-    std::queue<Block> prefetch_blocks(db::RWTxn& txn, BlockNum from, BlockNum to, size_t max_blocks);
+    static std::queue<Block> prefetch_blocks(db::RWTxn& txn, BlockNum from, BlockNum to, size_t max_blocks);
 
     //! \brief Executes a batch of blocks
     //! \remarks A batch completes when either max block is reached or buffer dimensions overflow

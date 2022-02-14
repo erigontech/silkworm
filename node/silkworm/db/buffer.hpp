@@ -113,8 +113,11 @@ class Buffer : public State {
         return block_storage_changes_;
     }
 
-    /** Approximate size of accumulated DB changes in bytes.*/
-    [[nodiscard]] size_t current_batch_size() const noexcept { return batch_size_; }
+    //! \brief Approximate size of accrued state in bytes.
+    [[nodiscard]] size_t current_batch_state_size() const noexcept { return batch_state_size_; }
+
+    //! \brief Approximate size of accrued history in bytes.
+    [[nodiscard]] size_t current_batch_history_size() const noexcept { return batch_history_size_; }
 
     //! \brief Persists *all* accrued contents into db
     //! \remarks write_history_to_db is implicitly called
@@ -124,11 +127,8 @@ class Buffer : public State {
     void write_history_to_db();
 
   private:
-
     //! \brief Persists *state* accrued contents into db
     void write_state_to_db();
-
-    void bump_batch_size(size_t key_len, size_t value_len);
 
     mdbx::txn& txn_;
     uint64_t prune_from_;
@@ -138,22 +138,28 @@ class Buffer : public State {
     absl::btree_map<Bytes, BlockBody> bodies_{};
     absl::btree_map<Bytes, intx::uint256> difficulty_{};
 
+    // State
+
     mutable absl::flat_hash_map<evmc::address, std::optional<Account>> accounts_;
 
     // address -> incarnation -> location -> value
-    mutable absl::flat_hash_map<evmc::address, absl::btree_map<uint64_t, absl::flat_hash_map<evmc::bytes32, evmc::bytes32>>>
+    mutable absl::flat_hash_map<evmc::address,
+                                absl::btree_map<uint64_t, absl::flat_hash_map<evmc::bytes32, evmc::bytes32>>>
         storage_;
-
-    absl::btree_map<uint64_t, AccountChanges> block_account_changes_;  // per block
-    absl::btree_map<uint64_t, StorageChanges> block_storage_changes_;  // per block
 
     absl::btree_map<evmc::address, uint64_t> incarnations_;
     absl::btree_map<evmc::bytes32, Bytes> hash_to_code_;
     absl::btree_map<Bytes, evmc::bytes32> storage_prefix_to_code_hash_;
+
+    // History and changesets
+
+    absl::btree_map<uint64_t, AccountChanges> block_account_changes_;  // per block
+    absl::btree_map<uint64_t, StorageChanges> block_storage_changes_;  // per block
     absl::btree_map<Bytes, Bytes> receipts_;
     absl::btree_map<Bytes, Bytes> logs_;
 
-    mutable size_t batch_size_{0};
+    mutable size_t batch_state_size_{0};    // Accounts in memory data for state
+    mutable size_t batch_history_size_{0};  // Accounts in memory data for history
 
     // Current block stuff
     uint64_t block_number_{0};

@@ -31,12 +31,6 @@
 
 namespace silkworm::db {
 
-inline void Buffer::bump_batch_size(size_t key_len, size_t value_len) {
-    // Approximately matches Erigon's batch size logic in (m *mutation) Put
-    static constexpr size_t kEntryOverhead{8};
-    batch_size_ += kEntryOverhead + key_len + value_len;
-}
-
 void Buffer::begin_block(uint64_t block_number) {
     block_number_ = block_number;
     changed_storage_.clear();
@@ -59,9 +53,12 @@ void Buffer::update_account(const evmc::address& address, std::optional<Account>
             bool omit_code_hash{!account_deleted};
             encoded_initial = initial->encode_for_storage(omit_code_hash);
         }
+
+        size_t payload_size{block_account_changes_.contains(block_number_) ? 0 : sizeof(BlockNum)};
         if (block_account_changes_[block_number_].insert_or_assign(address, encoded_initial).second) {
-            // bump_batch_size(8, kAddressLength + encoded_initial.length());
+            payload_size += kAddressLength + encoded_initial.length();
         }
+        batch_history_size_ += payload_size;
     }
 
     if (equal) {
@@ -70,16 +67,16 @@ void Buffer::update_account(const evmc::address& address, std::optional<Account>
     auto it{accounts_.find(address)};
     if (it != accounts_.end()) {
         accounts_[address] = current;
-        batch_size_ -= it->second.has_value() ? it->second.value().encoding_length_for_storage() : 0;
-        batch_size_ += (current ? current->encoding_length_for_storage() : 0);
+        batch_state_size_ -= it->second.has_value() ? it->second.value().encoding_length_for_storage() : 0;
+        batch_state_size_ += (current ? current->encoding_length_for_storage() : 0);
     } else {
-        batch_size_ += kAddressLength + (current ? current->encoding_length_for_storage() : 0);
+        batch_state_size_ += kAddressLength + (current ? current->encoding_length_for_storage() : 0);
         accounts_[address] = current;
     }
 
     if (account_deleted && initial->incarnation) {
         if (incarnations_.insert_or_assign(address, initial->incarnation).second) {
-            bump_batch_size(kAddressLength, kIncarnationLength);
+            batch_state_size_ += kAddressLength + kIncarnationLength;
         }
     }
 }
@@ -89,10 +86,11 @@ void Buffer::update_account_code(const evmc::address& address, uint64_t incarnat
     // Don't overwrite already existing code so that views of it
     // that were previously returned by read_code() are still valid.
     if (hash_to_code_.try_emplace(code_hash, code).second) {
-        bump_batch_size(kHashLength, code.length());
+        batch_state_size_ += kHashLength + code.length();
     }
+
     if (storage_prefix_to_code_hash_.insert_or_assign(storage_prefix(address, incarnation), code_hash).second) {
-        bump_batch_size(kPlainStoragePrefixLength, kHashLength);
+        batch_state_size_ += kPlainStoragePrefixLength + kHashLength;
     }
 }
 
@@ -103,14 +101,16 @@ void Buffer::update_storage(const evmc::address& address, uint64_t incarnation, 
     }
     if (block_number_ >= prune_from_) {
         changed_storage_.insert(address);
-        ByteView change_val{zeroless_view(initial)};
-        if (block_storage_changes_[block_number_][address][incarnation].insert_or_assign(location, change_val).second) {
-            // bump_batch_size(8 + kPlainStoragePrefixLength, kHashLength + change_val.size());
+        ByteView initial_val{zeroless_view(initial)};
+        if (block_storage_changes_[block_number_][address][incarnation]
+                .insert_or_assign(location, initial_val)
+                .second) {
+            batch_history_size_ += kPlainStoragePrefixLength + kHashLength + initial_val.size();
         }
     }
 
     if (storage_[address][incarnation].insert_or_assign(location, current).second) {
-        bump_batch_size(kPlainStoragePrefixLength, kHashLength + zeroless_view(current).size());
+        batch_state_size_ += kPlainStoragePrefixLength + kHashLength + kHashLength;
     }
 }
 
@@ -217,13 +217,13 @@ void Buffer::write_history_to_db() {
         written_size = 0;
     }
 
+    batch_history_size_ = 0;
     auto [finish_time, _]{sw.stop()};
     log::Info("Flushed history",
               {"size", human_size(total_written_size), "in", StopWatch::format(sw.since_start(finish_time))});
 }
 
 void Buffer::write_state_to_db() {
-
     /*
      * ENSURE PlainState updates are Last !!!
      * Also ensure to clear unneeded memory data ASAP to let the OS cache
@@ -348,6 +348,7 @@ void Buffer::write_state_to_db() {
                    {"size", human_size(written_size), "in", StopWatch::format(duration)});
     }
     written_size = 0;
+    batch_state_size_ = 0;
 
     auto [time_point, _]{sw.stop()};
     log::Info("Flushed state",
@@ -373,16 +374,14 @@ void Buffer::insert_receipts(uint64_t block_number, const std::vector<Receipt>& 
         Bytes value{cbor_encode(receipts[i].logs)};
 
         if (logs_.insert_or_assign(key, value).second) {
-            // bump_batch_size(key.size(), value.size());
+            batch_history_size_ += key.size() + value.size();
         }
     }
 
     Bytes key{block_key(block_number)};
     Bytes value{cbor_encode(receipts)};
-
-    if (receipts_.insert_or_assign(key, value).second) {
-        // bump_batch_size(key.size(), value.size());
-    }
+    receipts_[key] = value;
+    batch_history_size_ += key.size() + value.size();
 }
 
 evmc::bytes32 Buffer::state_root_hash() const {
@@ -451,7 +450,7 @@ std::optional<Account> Buffer::read_account(const evmc::address& address) const 
     }
     auto db_account{db::read_account(txn_, address, historical_block_)};
     accounts_[address] = db_account;
-    batch_size_ += kAddressLength + db_account.value_or(Account()).encoding_length_for_storage();
+    batch_state_size_ += kAddressLength + db_account.value_or(Account()).encoding_length_for_storage();
     return db_account;
 }
 
@@ -469,7 +468,7 @@ ByteView Buffer::read_code(const evmc::bytes32& code_hash) const noexcept {
 
 evmc::bytes32 Buffer::read_storage(const evmc::address& address, uint64_t incarnation,
                                    const evmc::bytes32& location) const noexcept {
-    size_t payload_length{kAddressLength + kIncarnationLength + kLocationLength + sizeof(evmc::bytes32)};
+    size_t payload_length{kAddressLength + kIncarnationLength + kLocationLength + kHashLength};
     if (auto it1{storage_.find(address)}; it1 != storage_.end()) {
         payload_length -= kAddressLength;
         if (auto it2{it1->second.find(incarnation)}; it2 != it1->second.end()) {
@@ -481,7 +480,7 @@ evmc::bytes32 Buffer::read_storage(const evmc::address& address, uint64_t incarn
     }
     auto db_storage{db::read_storage(txn_, address, incarnation, location, historical_block_)};
     storage_[address][incarnation][location] = db_storage;
-    batch_size_ += payload_length;
+    batch_state_size_ += payload_length;
     return db_storage;
 }
 

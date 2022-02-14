@@ -67,17 +67,24 @@ std::optional<BlockHeader> read_header(mdbx::txn& txn, BlockNum block_number, co
 }
 
 std::optional<BlockHeader> read_header(mdbx::txn& txn, ByteView key) {
+    auto raw_header{read_header_raw(txn, key)};
+    if(raw_header.empty()) {
+        return std::nullopt;
+    }
+    BlockHeader header;
+    ByteView encoded_header{raw_header.data(), raw_header.length()};
+    rlp::success_or_throw(rlp::decode(encoded_header, header));
+    return header;
+}
+
+Bytes read_header_raw(mdbx::txn& txn, ByteView key) {
     thread_local mdbx::cursor_managed src;
     src.bind(txn, db::open_map(txn, db::table::kHeaders));
     auto data{src.find(to_slice(key), false)};
     if (!data) {
-        return std::nullopt;
+        return {};
     }
-
-    BlockHeader header;
-    ByteView data_view{from_slice(data.value)};
-    rlp::success_or_throw(rlp::decode(data_view, header));
-    return header;
+    return Bytes{from_slice(data.value)};
 }
 
 void write_header(mdbx::txn& txn, const BlockHeader& header, bool with_header_numbers) {
@@ -204,17 +211,14 @@ std::optional<BlockWithHash> read_block(mdbx::txn& txn, BlockNum block_number, b
     SILKWORM_ASSERT(data.value.length() == kHashLength);
     std::memcpy(bh.hash.bytes, data.value.data(), kHashLength);
 
-    // Locate header
-    thread_local mdbx::cursor_managed headers_cursor;
-    headers_cursor.bind(txn, db::open_map(txn, table::kHeaders));
+    // Read header
     key = block_key(block_number, bh.hash.bytes);
-    data = headers_cursor.find(to_slice(key), false);
-    if (!data) {
+    auto raw_header{read_header_raw(txn, key)};
+    if(raw_header.empty()) {
         return std::nullopt;
     }
-
-    ByteView data_view(from_slice(data.value));
-    rlp::success_or_throw(rlp::decode(data_view, bh.block.header));
+    ByteView raw_header_view{raw_header.data(), raw_header.length()};
+    rlp::success_or_throw(rlp::decode(raw_header_view, bh.block.header));
 
     // Read body
     std::optional<BlockBody> body{read_body(txn, key, read_senders)};

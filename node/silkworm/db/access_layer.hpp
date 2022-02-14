@@ -45,6 +45,7 @@ void write_schema_version(mdbx::txn& txn, const VersionBase& schema_version);
 
 std::optional<BlockHeader> read_header(mdbx::txn& txn, BlockNum block_number, const uint8_t (&hash)[kHashLength]);
 std::optional<BlockHeader> read_header(mdbx::txn& txn, ByteView key);
+Bytes read_header_raw(mdbx::txn& txn, ByteView key);
 
 //! \brief Writes given header to table::kHeaders
 void write_header(mdbx::txn& txn, const BlockHeader& header, bool with_header_numbers = false);

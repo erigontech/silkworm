@@ -34,7 +34,7 @@ InboundGetBlockBodies::InboundGetBlockBodies(const sentry::InboundMessage& msg, 
     ByteView data = string_view_to_byte_view(msg.data());
     rlp::success_or_throw(rlp::decode(data, packet_));
 
-    log::Trace() << "Received message " << *this;
+    SILK_TRACE << "Received message " << *this;
 }
 
 /*
@@ -50,6 +50,8 @@ func (p *Peer) ReplyBlockBodiesRLP(id uint64, bodies []rlp.RawValue) error {
 void InboundGetBlockBodies::execute() {
     using namespace std;
 
+    SILK_TRACE << "Processing message " << *this;
+
     BodyRetrieval body_retrieval(db_);
 
     BlockBodiesPacket66 reply;
@@ -57,7 +59,7 @@ void InboundGetBlockBodies::execute() {
     reply.request = body_retrieval.recover(packet_.request);
 
     if (reply.request.empty()) {
-        log::Warning() << "Not replying to " << identify(*this) << ", no blocks found";
+        log::Trace() << "[WARNING] Not replying to " << identify(*this) << ", no blocks found";
         return;
     }
 
@@ -68,7 +70,7 @@ void InboundGetBlockBodies::execute() {
     msg_reply->set_id(sentry::MessageId::BLOCK_BODIES_66);
     msg_reply->set_data(rlp_encoding.data(), rlp_encoding.length());  // copy
 
-    log::Trace() << "Replying to " << identify(*this) << " using send_message_by_id with "
+    SILK_TRACE << "Replying to " << identify(*this) << " using send_message_by_id with "
                  << reply.request.size() << " bodies";
 
     rpc::SendMessageById rpc(peerId_, std::move(msg_reply));
@@ -77,11 +79,11 @@ void InboundGetBlockBodies::execute() {
 
     if (rpc.status().ok()) {
         sentry::SentPeers peers = rpc.reply();
-        log::Trace() << "Received rpc result of " << identify(*this) << ": "
+        SILK_TRACE << "Received rpc result of " << identify(*this) << ": "
                      << std::to_string(peers.peers_size()) + " peer(s)";
     }
     else {
-        log::Trace() << "Failure of rpc " << identify(*this) << ": "
+        SILK_TRACE << "Failure of rpc " << identify(*this) << ": "
                      << rpc.status().error_message();
     }
 

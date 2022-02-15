@@ -17,6 +17,9 @@
 #ifndef SILKWORM_RPC_COMPLETION_RUNNER_HPP_
 #define SILKWORM_RPC_COMPLETION_RUNNER_HPP_
 
+#include <condition_variable>
+#include <mutex>
+
 #include <boost/asio/io_context.hpp>
 #include <grpcpp/grpcpp.h>
 
@@ -39,8 +42,19 @@ class CompletionRunner {
     void stop();
 
   private:
+    void shutdown(bool ok);
+
     grpc::CompletionQueue& queue_;
     boost::asio::io_context& io_context_;
+
+    //! Mutual exclusion to protect access to internal data.
+    std::mutex mutex_;
+
+    bool started_{false};
+
+    bool stopped_{false};
+
+    std::condition_variable shutdown_completed_;
 };
 
 } // namespace silkworm::rpc

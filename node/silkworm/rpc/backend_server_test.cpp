@@ -71,24 +71,27 @@ constexpr const char* kTestAddressUri = "localhost:12345"; // TODO(canepat): bet
 
 TEST_CASE("BackEndServer::BackEndServer", "[silkworm][node][rpc]") {
     silkworm::log::set_verbosity(silkworm::log::Level::kTrace); // TODO(canepat): kNone
-    std::shared_ptr<grpc::Channel> channel = grpc::CreateChannel(kTestAddressUri, grpc::InsecureChannelCredentials());
+    Grpc2SilkwormLogGuard log_guard;
 
-    SECTION("OK: create and start server", "[silkworm][node][rpc]") {
-        auto stub_ptr = remote::ETHBACKEND::NewStub(channel);
-        BackEndClient client{stub_ptr.get()};
+    SECTION("OK: create/destroy server", "[silkworm][node][rpc]") {
         ServerConfig srv_config;
         srv_config.set_address_uri(kTestAddressUri);
         BackEndServer server{srv_config, kGoerliConfig};
+    }
+
+    SECTION("OK: create/shutdown/destroy server", "[silkworm][node][rpc]") {
+        ServerConfig srv_config;
+        srv_config.set_address_uri(kTestAddressUri);
+        BackEndServer server{srv_config, kGoerliConfig};
+        server.shutdown();
     }
 }
 
 TEST_CASE("BackEndServer::run", "[silkworm][node][rpc]") {
     silkworm::log::set_verbosity(silkworm::log::Level::kTrace); // TODO(canepat): kNone
-    std::shared_ptr<grpc::Channel> channel = grpc::CreateChannel(kTestAddressUri, grpc::InsecureChannelCredentials());
+    Grpc2SilkwormLogGuard log_guard;
 
-    SECTION("OK: run server", "[silkworm][node][rpc]") {
-        auto stub_ptr = remote::ETHBACKEND::NewStub(channel);
-        BackEndClient client{stub_ptr.get()};
+    SECTION("OK: run server in separate thread", "[silkworm][node][rpc]") {
         ServerConfig srv_config;
         srv_config.set_address_uri(kTestAddressUri);
         BackEndServer server{srv_config, kGoerliConfig};
@@ -98,10 +101,50 @@ TEST_CASE("BackEndServer::run", "[silkworm][node][rpc]") {
         server.shutdown();
         server_thread.join();
     }
+
+    SECTION("OK: create/shutdown/run/destroy server", "[silkworm][node][rpc]") {
+        ServerConfig srv_config;
+        srv_config.set_address_uri(kTestAddressUri);
+        BackEndServer server{srv_config, kGoerliConfig};
+        server.shutdown();
+        server.run();
+    }
+}
+
+TEST_CASE("BackEndServer::shutdown", "[silkworm][node][rpc]") {
+    silkworm::log::set_verbosity(silkworm::log::Level::kTrace); // TODO(canepat): kNone
+    Grpc2SilkwormLogGuard log_guard;
+
+    SECTION("OK: shutdown server not running", "[silkworm][node][rpc]") {
+        ServerConfig srv_config;
+        srv_config.set_address_uri(kTestAddressUri);
+        BackEndServer server{srv_config, kGoerliConfig};
+        server.shutdown();
+    }
+
+    SECTION("OK: shutdown twice server not running", "[silkworm][node][rpc]") {
+        ServerConfig srv_config;
+        srv_config.set_address_uri(kTestAddressUri);
+        BackEndServer server{srv_config, kGoerliConfig};
+        server.shutdown();
+        server.shutdown();
+    }
+
+    SECTION("OK: shutdown running server", "[silkworm][node][rpc]") {
+        ServerConfig srv_config;
+        srv_config.set_address_uri(kTestAddressUri);
+        BackEndServer server{srv_config, kGoerliConfig};
+        std::thread shutdown_thread{[&server]() {
+            server.shutdown();
+        }};
+        server.run();
+        shutdown_thread.join();
+    }
 }
 
 TEST_CASE("BackEndServer RPC calls", "[silkworm][node][rpc]") {
     silkworm::log::set_verbosity(silkworm::log::Level::kTrace); // TODO(canepat): kNone
+    Grpc2SilkwormLogGuard log_guard;
     std::shared_ptr<grpc::Channel> channel = grpc::CreateChannel(kTestAddressUri, grpc::InsecureChannelCredentials());
     auto stub_ptr = remote::ETHBACKEND::NewStub(channel);
     BackEndClient client{stub_ptr.get()};

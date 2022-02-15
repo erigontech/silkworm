@@ -79,26 +79,33 @@ void ServerContextPool::add_context(std::unique_ptr<grpc::ServerCompletionQueue>
 void ServerContextPool::run() {
     SILK_TRACE << "ServerContextPool::run START";
 
-    // Create a pool of threads to run all of the contexts (each one having 1+1 threads)
-    boost::asio::detail::thread_group workers{};
-    for (std::size_t i{0}; i < contexts_.size(); ++i) {
-        auto& context = contexts_[i];
-        workers.create_thread([&, i = i]() {
-            SILK_TRACE << "CompletionRunner thread start context[" << i << "].grpc_runner thread_id: " << std::this_thread::get_id();
-            context.grpc_runner->run();
-            SILK_TRACE << "CompletionRunner thread end context[" << i << "].grpc_runner thread_id: " << std::this_thread::get_id();
-        });
-        SILK_DEBUG << "ServerContextPool::run context[" << i << "].grpc_runner started: " << &*context.grpc_runner;
-        workers.create_thread([&, i = i]() {
-            SILK_TRACE << "io_context thread start context[" << i << "].io_context thread_id: " << std::this_thread::get_id();
-            context.io_context->run();
-            SILK_TRACE << "io_context thread end context[" << i << "].io_context thread_id: " << std::this_thread::get_id();
-        });
-        SILK_DEBUG << "ServerContextPool::run context[" << i << "].io_context started: " << &*context.io_context;
-    }
+    {
+        std::unique_lock<std::mutex> lock(mutex_);
+        if (stopped_) return;
 
-    // Wait for all threads in the pool to exit
-    workers.join();
+        // Create a pool of threads to run all of the contexts (each one having 1+1 threads)
+        boost::asio::detail::thread_group workers{};
+        for (std::size_t i{0}; i < contexts_.size(); ++i) {
+            auto& context = contexts_[i];
+            workers.create_thread([&, i = i]() {
+                SILK_TRACE << "CompletionRunner thread start context[" << i << "].grpc_runner thread_id: " << std::this_thread::get_id();
+                context.grpc_runner->run();
+                SILK_TRACE << "CompletionRunner thread end context[" << i << "].grpc_runner thread_id: " << std::this_thread::get_id();
+            });
+            SILK_DEBUG << "ServerContextPool::run context[" << i << "].grpc_runner started: " << &*context.grpc_runner;
+            workers.create_thread([&, i = i]() {
+                SILK_TRACE << "io_context thread start context[" << i << "].io_context thread_id: " << std::this_thread::get_id();
+                context.io_context->run();
+                SILK_TRACE << "io_context thread end context[" << i << "].io_context thread_id: " << std::this_thread::get_id();
+            });
+            SILK_DEBUG << "ServerContextPool::run context[" << i << "].io_context started: " << &*context.io_context;
+        }
+
+        // Wait for all threads in the pool to exit: this blocks so release the lock first.
+        lock.release()->unlock();
+        SILK_DEBUG << "ServerContextPool::run joining...";
+        workers.join();
+    }
 
     SILK_TRACE << "ServerContextPool::run END";
 }
@@ -106,8 +113,10 @@ void ServerContextPool::run() {
 void ServerContextPool::stop() {
     SILK_TRACE << "ServerContextPool::stop START stopped: " << stopped_;
 
-    bool expected_stopped{false};
-    if (stopped_.compare_exchange_strong(expected_stopped, true)) {
+    {
+        std::lock_guard<std::mutex> guard(mutex_);
+        stopped_ = true;
+
         // Explicitly stop all context runnable components
         for (std::size_t i{0}; i < contexts_.size(); ++i) {
             auto& context = contexts_[i];

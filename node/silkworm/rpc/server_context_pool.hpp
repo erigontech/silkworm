@@ -17,11 +17,11 @@
 #ifndef SILKWORM_RPC_SERVER_CONTEXT_POOL_HPP_
 #define SILKWORM_RPC_SERVER_CONTEXT_POOL_HPP_
 
-#include <atomic>
 #include <cstddef>
 #include <ostream>
 #include <list>
 #include <memory>
+#include <mutex>
 #include <vector>
 
 #include <boost/asio/io_context.hpp>
@@ -64,8 +64,10 @@ class ServerContextPool {
     // The next index to use for a context
     std::size_t next_index_;
 
+    std::mutex mutex_;
+
     // Flag indicating if pool has been stopped
-    std::atomic_bool stopped_{false};
+    bool stopped_{false};
 };
 
 } // namespace silkworm::rpc

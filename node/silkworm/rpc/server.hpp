@@ -18,6 +18,7 @@
 #define SILKWORM_RPC_SERVER_HPP_
 
 #include <memory>
+#include <mutex>
 
 #include <grpcpp/grpcpp.h>
 
@@ -30,6 +31,7 @@ namespace silkworm::rpc {
 template <typename ServiceType>
 class Server {
   public:
+    //! Build a ready-to-start RPC server according to specified configuration.
     explicit Server(const ServerConfig& config)
     : service_{std::make_unique<ServiceType>()}, context_pool_{config.num_contexts()} {
         SILK_TRACE << "Server::Server " << this << " START";
@@ -49,26 +51,47 @@ class Server {
         SILK_TRACE << "Server::Server " << this << " END";
     }
 
-    /// No need to explicitly shutdown grpc::Server and/or stop ServerContextPool because their destructors take care.
-    /// Use shutdown() if you want explicit termination control before destruction (again both handle double calls).
-    virtual ~Server() {}
+    /// No need to explicitly shutdown the server because this destructor takes care.
+    /// Use \ref shutdown() if you want explicit control over termination before destruction.
+    virtual ~Server() {
+        SILK_TRACE << "Server::~Server " << this << " START";
+        shutdown();
+        SILK_TRACE << "Server::~Server " << this << " END";
+    }
 
     Server(const Server&) = delete;
     Server& operator=(const Server&) = delete;
 
     void run() {
         SILK_INFO << "Server::run " << this << " START";
-        request_calls();
-        context_pool_.run();
+        {
+            std::unique_lock<std::mutex> lock(mutex_);
+            if (shutdown_) return;
+
+            // gRPC async model requires the server to register one responded call for each RPC in advance.
+            SILK_DEBUG << "Server::run " << this << " registering responded calls";
+            request_calls();
+
+            // Start the server execution: the context pool loop is blocking so release the lock first.
+            lock.release()->unlock();
+            SILK_DEBUG << "Server::run " << this << " starting execution loop";
+            context_pool_.run();
+        }
         SILK_INFO << "Server::run " << this << " END";
     }
 
     void shutdown() {
         SILK_INFO << "Server::shutdown " << this << " START";
-        // Order matters here: 1) shutdown the server
-        server_->Shutdown();
-        // Order matters here: 2) shutdown and drain the queues
-        context_pool_.stop();
+        {
+            std::lock_guard<std::mutex> guard(mutex_);
+            shutdown_ = true;
+
+            // Order matters here: 1) shutdown the server
+            server_->Shutdown();
+
+            // Order matters here: 2) shutdown and drain the queues
+            context_pool_.stop();
+        }
         SILK_INFO << "Server::shutdown " << this << " END";
     }
 
@@ -82,6 +105,10 @@ class Server {
   private:
     std::unique_ptr<grpc::Server> server_;
     ServerContextPool context_pool_;
+
+    std::mutex mutex_;
+
+    bool shutdown_{false};
 };
 
 } // namespace silkworm::rpc

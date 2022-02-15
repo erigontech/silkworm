@@ -36,8 +36,6 @@ and to SILKWORM_LITTLE_ENDIAN for little-endian ones (most current architectures
 
 #ifdef _WIN32
 
-#include <intrin.h>
-
 // On Windows assume little endian
 #define SILKWORM_LITTLE_ENDIAN 1234
 #define SILKWORM_BIG_ENDIAN 4321

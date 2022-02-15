@@ -275,7 +275,7 @@ evmc::result EVM::execute(const evmc_message& msg, ByteView code, std::optional<
 evmc_result EVM::execute_with_baseline_interpreter(evmc_revision rev, const evmc_message& msg, ByteView code) noexcept {
     const auto vm{static_cast<evmone::VM*>(evm1_)};
 
-    const auto analysis{evmone::baseline::analyze(code.data(), code.size())};
+    const auto analysis{evmone::baseline::analyze(code)};
 
     std::unique_ptr<EvmoneExecutionState> state;
     if (state_pool) {
@@ -303,7 +303,7 @@ evmc_result EVM::execute_with_default_interpreter(evmc_revision rev, const evmc_
 
     auto analysis{advanced_analysis_cache->get(code_hash, rev)};
     if (!analysis) {
-        analysis = std::make_shared<EvmoneCodeAnalysis>(evmone::advanced::analyze(rev, code.data(), code.size()));
+        analysis = std::make_shared<EvmoneCodeAnalysis>(evmone::advanced::analyze(rev, code));
         advanced_analysis_cache->put(code_hash, analysis, rev);
     }
 

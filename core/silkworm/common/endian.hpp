@@ -1,5 +1,5 @@
 /*
-   Copyright 2020-2021 The Silkworm Authors
+   Copyright 2020-2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -28,9 +28,6 @@ SILKWORM_BYTE_ORDER
 
 SILKWORM_BYTE_ORDER is equal to SILKWORM_BIG_ENDIAN for big-endian architectures
 and to SILKWORM_LITTLE_ENDIAN for little-endian ones (most current architectures).
-
-In addition, SILKWORM_BSWAP16, SILKWORM_BSWAP32, and SILKWORM_BSWAP64 macros are defined
-as compiler intrinsics to swap bytes in 16-bit, 32-bit, and 64-bit integers respectively.
 */
 
 #include <cstdint>
@@ -41,20 +38,12 @@ as compiler intrinsics to swap bytes in 16-bit, 32-bit, and 64-bit integers resp
 
 #include <intrin.h>
 
-#define SILKWORM_BSWAP16 _byteswap_ushort
-#define SILKWORM_BSWAP32 _byteswap_ulong
-#define SILKWORM_BSWAP64 _byteswap_uint64
-
 // On Windows assume little endian
 #define SILKWORM_LITTLE_ENDIAN 1234
 #define SILKWORM_BIG_ENDIAN 4321
 #define SILKWORM_BYTE_ORDER SILKWORM_LITTLE_ENDIAN
 
 #elif defined(__BYTE_ORDER__) && defined(__ORDER_LITTLE_ENDIAN__) && defined(__ORDER_BIG_ENDIAN__)
-
-#define SILKWORM_BSWAP16 __builtin_bswap16
-#define SILKWORM_BSWAP32 __builtin_bswap32
-#define SILKWORM_BSWAP64 __builtin_bswap64
 
 // https://gcc.gnu.org/onlinedocs/cpp/Common-Predefined-Macros.html
 #define SILKWORM_LITTLE_ENDIAN __ORDER_LITTLE_ENDIAN__
@@ -79,9 +68,9 @@ namespace le {
     }
 }  // namespace le
 namespace be {
-    static inline uint16_t load(uint16_t value) noexcept { return SILKWORM_BSWAP16(value); }
-    static inline uint32_t load(uint32_t value) noexcept { return SILKWORM_BSWAP32(value); }
-    static inline uint64_t load(uint64_t value) noexcept { return SILKWORM_BSWAP64(value); }
+    static inline uint16_t load(uint16_t value) noexcept { return intx::bswap(value); }
+    static inline uint32_t load(uint32_t value) noexcept { return intx::bswap(value); }
+    static inline uint64_t load(uint64_t value) noexcept { return intx::bswap(value); }
 
     template <unsigned N>
     static inline intx::uint<N> load(const intx::uint<N>& value) noexcept {
@@ -91,9 +80,9 @@ namespace be {
 
 #elif SILKWORM_BYTE_ORDER == SILKWORM_BIG_ENDIAN
 namespace le {
-    static inline uint16_t load(uint16_t value) noexcept { return SILKWORM_BSWAP16(value); }
-    static inline uint32_t load(uint32_t value) noexcept { return SILKWORM_BSWAP32(value); }
-    static inline uint64_t load(uint64_t value) noexcept { return SILKWORM_BSWAP64(value); }
+    static inline uint16_t load(uint16_t value) noexcept { return intx::bswap(value); }
+    static inline uint32_t load(uint32_t value) noexcept { return intx::bswap(value); }
+    static inline uint64_t load(uint64_t value) noexcept { return intx::bswap(value); }
     // intx::uint not defined here since its words are little-endian.
     // In any case, Silkworm is currently untested on big-endian plaforms.
 }  // namespace le

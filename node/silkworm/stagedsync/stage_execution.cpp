@@ -92,9 +92,12 @@ StageResult Execution::forward(db::RWTxn& txn) {
 }
 
 std::queue<Block> Execution::prefetch_blocks(db::RWTxn& txn, BlockNum from, BlockNum to, size_t max_blocks) {
-
-    StopWatch sw;
-    sw.start();
+    std::unique_ptr<StopWatch> sw;
+    bool should_trace{log::test_verbosity(log::Level::kTrace)};
+    if (should_trace) {
+        sw = std::make_unique<StopWatch>();
+        sw->start();
+    }
 
     std::queue<Block> ret{};
     BlockNum reached_block_num{0};
@@ -135,8 +138,10 @@ std::queue<Block> Execution::prefetch_blocks(db::RWTxn& txn, BlockNum from, Bloc
         ++from;
         data = hashes_table.to_next(false);
     }
-    auto [_, duration]{sw.lap()};
-    log::Trace("Fetched blocks", {"size", std::to_string(ret.size()), "in", StopWatch::format(duration)});
+    if (sw) {
+        auto [_, duration]{sw->lap()};
+        log::Trace("Fetched blocks", {"size", std::to_string(ret.size()), "in", StopWatch::format(duration)});
+    }
     return ret;
 }
 

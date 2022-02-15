@@ -132,9 +132,10 @@ std::queue<Block> Execution::prefetch_blocks(db::RWTxn& txn, BlockNum from, Bloc
         std::swap(block.ommers, block_body->ommers);
         ret.push(block);
 
-        if (from == to || ret.size() == (max_blocks ? max_blocks : UINT32_MAX)) {
+        if (from == to || ret.size() >= max_blocks) {
             break;
         }
+
         ++from;
         data = hashes_table.to_next(false);
     }

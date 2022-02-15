@@ -82,6 +82,8 @@ class Execution final : public IStage {
     BlockNum block_num_{0};
 
     //! \brief Prefetches blocks for processing
+    //! \remarks The amount of blocks to be fetched is determined by the upper block number (to) or max_blocks collected
+    //! whichever comes first
     static std::queue<Block> prefetch_blocks(db::RWTxn& txn, BlockNum from, BlockNum to, size_t max_blocks);
 
     //! \brief Executes a batch of blocks

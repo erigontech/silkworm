@@ -76,7 +76,7 @@ class Collector {
 
     //! \brief Returns the hex representation of current load key (for progress tracking)
     [[nodiscard]] std::string get_load_key() const {
-        std::unique_lock l(mutex_);
+        std::unique_lock l{mutex_};
         return loading_key_;
     }
 
@@ -85,8 +85,8 @@ class Collector {
 
     void flush_buffer();  // Write buffer to file
 
-    inline void set_loading_key(ByteView key) {
-        std::unique_lock l(mutex_);
+    void set_loading_key(ByteView key) {
+        std::unique_lock l{mutex_};
         loading_key_ = to_hex(key, true);
     }
 
@@ -109,7 +109,7 @@ class Collector {
 
     std::vector<std::unique_ptr<FileProvider>> file_providers_;  // Collection of file providers
     size_t size_{0};                                             // Total collected size
-    std::mutex mutex_;                                           // To sync loading_key_
+    mutable std::mutex mutex_{};                                 // To sync loading_key_
     std::string loading_key_{};                                  // Actual load key (for log purposes)
 };
 

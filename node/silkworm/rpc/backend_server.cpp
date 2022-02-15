@@ -40,10 +40,14 @@ inline types::H160* new_H160_address(const evmc::address& address) {
 void EtherbaseService::create_rpc(remote::ETHBACKEND::AsyncService* service, grpc::ServerCompletionQueue* queue) {
     SILK_TRACE << "EtherbaseService::create_rpc START service: " << service << " queue: " << queue;
 
+    auto create_rpc_handler = [this](auto* svc, auto* cq) { create_rpc(svc, cq); };
+    auto process_rpc_handler = [this](auto& rpc, auto* request) { rpc_processor(rpc, request); };
+    auto delete_rpc_handler = [this](auto& rpc, bool cancelled) { rpc_done(rpc, cancelled); };
+
     EtherbaseUnaryRpc::Handlers handlers{
-        [&](auto* svc, auto* cq) { create_rpc(svc, cq); },
-        [&](auto& rpc, auto* request) { rpc_processor(rpc, request); },
-        [&](auto& rpc, bool cancelled) { rpc_done(rpc, cancelled); },
+        create_rpc_handler,
+        process_rpc_handler,
+        delete_rpc_handler,
         &remote::ETHBACKEND::AsyncService::RequestEtherbase
     };
     auto rpc = new EtherbaseUnaryRpc(service, queue, handlers);
@@ -77,10 +81,14 @@ void EtherbaseService::rpc_done(EtherbaseUnaryRpc& rpc, bool cancelled) {
 void NetVersionService::create_rpc(remote::ETHBACKEND::AsyncService* service, grpc::ServerCompletionQueue* queue) {
     SILK_TRACE << "NetVersionService::create_rpc service: " << service << " queue: " << queue;
 
+    auto create_rpc_handler = [this](auto* svc, auto* cq) { create_rpc(svc, cq); };
+    auto process_rpc_handler = [this](auto& rpc, auto* request) { rpc_processor(rpc, request); };
+    auto delete_rpc_handler = [this](auto& rpc, bool cancelled) { rpc_done(rpc, cancelled); };
+
     NetVersionUnaryRpc::Handlers handlers{
-        [&](auto* svc, auto* cq) { create_rpc(svc, cq); },
-        [&](auto& rpc, auto* request) { rpc_processor(rpc, request); },
-        [&](auto& rpc, bool cancelled) { rpc_done(rpc, cancelled); },
+        create_rpc_handler,
+        process_rpc_handler,
+        delete_rpc_handler,
         &remote::ETHBACKEND::AsyncService::RequestNetVersion
     };
     auto rpc = new NetVersionUnaryRpc(service, queue, handlers);

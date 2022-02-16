@@ -136,10 +136,28 @@ TEST_CASE("BackEndServer::shutdown", "[silkworm][node][rpc]") {
         srv_config.set_address_uri(kTestAddressUri);
         BackEndServer server{srv_config, kGoerliConfig};
         std::thread shutdown_thread{[&server]() {
+            std::this_thread::yield();
             server.shutdown();
         }};
         server.run();
         shutdown_thread.join();
+    }
+
+    SECTION("OK: shutdown twice running server", "[silkworm][node][rpc]") {
+        ServerConfig srv_config;
+        srv_config.set_address_uri(kTestAddressUri);
+        BackEndServer server{srv_config, kGoerliConfig};
+        std::thread shutdown_thread1{[&server]() {
+            std::this_thread::yield();
+            server.shutdown();
+        }};
+        std::thread shutdown_thread2{[&server]() {
+            std::this_thread::yield();
+            server.shutdown();
+        }};
+        server.run();
+        shutdown_thread1.join();
+        shutdown_thread2.join();
     }
 }
 

@@ -17,10 +17,6 @@
 #ifndef SILKWORM_RPC_BACKEND_SERVER_HPP_
 #define SILKWORM_RPC_BACKEND_SERVER_HPP_
 
-#include <cstddef>
-#include <memory>
-#include <unordered_set>
-
 #include <grpcpp/grpcpp.h>
 #include <remote/ethbackend.grpc.pb.h>
 
@@ -31,8 +27,10 @@
 
 namespace silkworm::rpc {
 
+//! Unary RPC for Etherbase method of 'ethbackend' gRPC protocol.
 using EtherbaseUnaryRpc = UnaryRpc<remote::ETHBACKEND::AsyncService, remote::EtherbaseRequest, remote::EtherbaseReply>;
 
+//! Service specialization acting as factory for Etherbase RPCs.
 class EtherbaseService : public RpcService<EtherbaseUnaryRpc> {
   public:
     explicit EtherbaseService(const ChainConfig& /*config*/) : RpcService<EtherbaseUnaryRpc>() {}
@@ -45,8 +43,10 @@ class EtherbaseService : public RpcService<EtherbaseUnaryRpc> {
     evmc::address etherbase_; // TODO(canepat): read from config (field not yet present)
 };
 
+//! Unary RPC for NetVersion method of 'ethbackend' gRPC protocol.
 using NetVersionUnaryRpc = UnaryRpc<remote::ETHBACKEND::AsyncService, remote::NetVersionRequest, remote::NetVersionReply>;
 
+//! Service specialization acting as factory for NetVersion RPCs.
 class NetVersionService : public RpcService<NetVersionUnaryRpc> {
   public:
     explicit NetVersionService(const ChainConfig& config) : RpcService<NetVersionUnaryRpc>(), chain_id_(config.chain_id) {}

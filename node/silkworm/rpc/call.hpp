@@ -110,20 +110,20 @@ class BaseRpc {
 /// incoming RPC on a particular service: that's why createRpc exists.
 template <typename Service, typename Request, typename Response, typename Rpc>
 struct RpcHandlers {
-    using CreateRpc = std::function<void(Service*, grpc::ServerCompletionQueue*)>;
-    using ProcessIncomingRequest = std::function<void(Rpc&, const Request*)>;
-    using Done = std::function<void(Rpc&, bool)>;
+    using CreateRpcFunc = std::function<void(Service*, grpc::ServerCompletionQueue*)>;
+    using ProcessRequestFunc = std::function<void(Rpc&, const Request*)>;
+    using CleanupRpcFunc = std::function<void(Rpc&, bool)>;
 
     /// createRpc is called when an outstanding BaseRpc starts serving an incoming RPC and we need to create the next
     /// RPC of this type to service further incoming RPCs.
-    CreateRpc createRpc;
+    CreateRpcFunc createRpc;
 
-    /// processIncomingRequest is called when a new incoming request from some client has come in for this RPC.
-    /// For streaming RPCs, a request from client can come in multiple times so processIncomingRequest may be called reapeatedly.
-    ProcessIncomingRequest processIncomingRequest;
+    /// processRequest is called when a new incoming request from some client has come in for this RPC.
+    /// For streaming RPCs, a request from client can come in multiple times so processRequest may be called reapeatedly.
+    ProcessRequestFunc processRequest;
 
-    // The gRPC server is done with this RPC. Any necessary clean-up must be performed when done is called.
-    Done done;
+    // The gRPC server is cleanupRpc with this RPC. Any necessary clean-up must be performed when cleanupRpc is called.
+    CleanupRpcFunc cleanupRpc;
 };
 
 //! Represents the RPC handlers for unary RPCs.
@@ -189,7 +189,7 @@ class UnaryRpc : public BaseRpc {
 
         // The incoming request can now be handled so process it.
         if (handle_completed(OperationType::kRequest)) {
-            handlers_.processIncomingRequest(*this, &request_);
+            handlers_.processRequest(*this, &request_);
         }
         SILK_TRACE << "UnaryRpc::process_read END [" << this << "]";
     }
@@ -202,7 +202,7 @@ class UnaryRpc : public BaseRpc {
 
     void cleanup() override {
         SILK_TRACE << "UnaryRpc::cleanup [" << this << "]";
-        handlers_.done(*this, context_.IsCancelled());
+        handlers_.cleanupRpc(*this, context_.IsCancelled());
     }
 
     Service* service_;

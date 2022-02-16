@@ -41,8 +41,8 @@ class EtherbaseService {
     }
 
     void create_rpc(remote::ETHBACKEND::AsyncService* service, grpc::ServerCompletionQueue* queue);
-    void rpc_processor(EtherbaseUnaryRpc& rpc, const remote::EtherbaseRequest* request);
-    void rpc_done(EtherbaseUnaryRpc& rpc, bool cancelled);
+    void process_rpc(EtherbaseUnaryRpc& rpc, const remote::EtherbaseRequest* request);
+    void cleanup_rpc(EtherbaseUnaryRpc& rpc, bool cancelled);
 
   private:
     evmc::address etherbase_; // TODO(canepat): read from config (field not yet present)
@@ -58,8 +58,8 @@ class NetVersionService {
     }
 
     void create_rpc(remote::ETHBACKEND::AsyncService* service, grpc::ServerCompletionQueue* queue);
-    void rpc_processor(NetVersionUnaryRpc& rpc, const remote::NetVersionRequest* request);
-    void rpc_done(NetVersionUnaryRpc& rpc, bool cancelled);
+    void process_rpc(NetVersionUnaryRpc& rpc, const remote::NetVersionRequest* request);
+    void cleanup_rpc(NetVersionUnaryRpc& rpc, bool cancelled);
 
   private:
     uint64_t chain_id_;

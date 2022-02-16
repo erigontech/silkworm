@@ -36,19 +36,29 @@ class Server {
     : service_{std::make_unique<ServiceType>()}, context_pool_{config.num_contexts()} {
         SILK_TRACE << "Server::Server " << this << " START";
         grpc::ServerBuilder builder;
-        int selected_port;
+
+        // Disable SO_REUSEPORT socket option to obtain "address already in use" on Windows.
         builder.AddChannelArgument(GRPC_ARG_ALLOW_REUSEPORT, 0);
+
+        // Add the local endpoint to bind the RPC server to (selected_port will be set *after* BuildAndStart call).
+        int selected_port;
         builder.AddListeningPort(config.address_uri(), config.credentials(), &selected_port);
+
+        // Add one server-side gRPC completion queue for each execution context.
         for (std::size_t i{0}; i < config.num_contexts(); ++i) {
             context_pool_.add_context(builder.AddCompletionQueue());
         }
+
+        // Register the service: it must exist for the lifetime of the server built by builder.
         builder.RegisterService(service_.get());
+
         server_ = builder.BuildAndStart();
-        SILK_DEBUG << "Server::Server server started: " << server_.get() << " selected_port: " << selected_port;
+        SILK_DEBUG << "Server::Server server bound at selected port: " << selected_port;
         if (server_ == nullptr) {
             SILK_ERROR << "Server::Server " << this << ": BuildAndStart failed [" << config.address_uri() << "]";
             throw std::runtime_error("cannot start gRPC server at " + config.address_uri());
         }
+        SILK_INFO << "RPC server started at: " << config.address_uri();
         SILK_TRACE << "Server::Server " << this << " END";
     }
 
@@ -101,6 +111,7 @@ class Server {
 
     ServerContext const& next_context() { return context_pool_.next_context(); }
 
+    /// \warning The service must exist for the lifetime of the server it is registered on.
     std::unique_ptr<ServiceType> service_;
 
   private:

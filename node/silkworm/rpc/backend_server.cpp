@@ -43,9 +43,9 @@ void EtherbaseService::create_rpc(remote::ETHBACKEND::AsyncService* service, grp
     // TODO(canepat): use designated initializers in C++20
     EtherbaseUnaryRpc::Handlers handlers{
         {
-        [&](auto* svc, auto* cq) { create_rpc(svc, cq); },
-        [&](auto& rpc, const auto* request) { rpc_processor(rpc, request); },
-        [&](auto& rpc, bool cancelled) { rpc_done(rpc, cancelled); }
+            [&](auto* svc, auto* cq) { create_rpc(svc, cq); },
+            [&](auto& rpc, const auto* request) { process_rpc(rpc, request); },
+            [&](auto& rpc, bool cancelled) { cleanup_rpc(rpc, cancelled); }
         },
         &remote::ETHBACKEND::AsyncService::RequestEtherbase
     };
@@ -55,26 +55,26 @@ void EtherbaseService::create_rpc(remote::ETHBACKEND::AsyncService* service, grp
     SILK_TRACE << "EtherbaseService::create_rpc END rpc: " << rpc;
 }
 
-void EtherbaseService::rpc_processor(EtherbaseUnaryRpc& rpc, const remote::EtherbaseRequest* request) {
-    SILK_TRACE << "EtherbaseService::rpc_processor START rpc: " << &rpc << " request: " << request;
+void EtherbaseService::process_rpc(EtherbaseUnaryRpc& rpc, const remote::EtherbaseRequest* request) {
+    SILK_TRACE << "EtherbaseService::process_rpc START rpc: " << &rpc << " request: " << request;
 
     remote::EtherbaseReply response;
     const auto h160 = new_H160_address(etherbase_);
     response.set_allocated_address(h160);
     const bool sent = rpc.send_response(response);
 
-    SILK_TRACE << "EtherbaseService::rpc_processor END rsp: " << &response << " etherbase: " << to_hex(etherbase_) << " sent: " << sent;
+    SILK_TRACE << "EtherbaseService::process_rpc END rsp: " << &response << " etherbase: " << to_hex(etherbase_) << " sent: " << sent;
 }
 
-void EtherbaseService::rpc_done(EtherbaseUnaryRpc& rpc, bool cancelled) {
-    SILK_TRACE << "EtherbaseService::rpc_done START rpc: " << &rpc << " cancelled: " << cancelled;
+void EtherbaseService::cleanup_rpc(EtherbaseUnaryRpc& rpc, bool cancelled) {
+    SILK_TRACE << "EtherbaseService::cleanup_rpc START rpc: " << &rpc << " cancelled: " << cancelled;
 
     // Trick necessary because heterogeneous lookup for std::unordered_set requires C++20
     std::unique_ptr<EtherbaseUnaryRpc> dummy_rpc{&rpc};
     requests_.erase(dummy_rpc);
     dummy_rpc.release();
 
-    SILK_TRACE << "EtherbaseService::rpc_done END rpc: " << &rpc;
+    SILK_TRACE << "EtherbaseService::cleanup_rpc END rpc: " << &rpc;
 }
 
 void NetVersionService::create_rpc(remote::ETHBACKEND::AsyncService* service, grpc::ServerCompletionQueue* queue) {
@@ -83,9 +83,9 @@ void NetVersionService::create_rpc(remote::ETHBACKEND::AsyncService* service, gr
     // TODO(canepat): use designated initializers in C++20
     NetVersionUnaryRpc::Handlers handlers{
         {
-        [&](auto* svc, auto* cq) { create_rpc(svc, cq); },
-        [&](auto& rpc, const auto* request) { rpc_processor(rpc, request); },
-        [&](auto& rpc, bool cancelled) { rpc_done(rpc, cancelled); }
+            [&](auto* svc, auto* cq) { create_rpc(svc, cq); },
+            [&](auto& rpc, const auto* request) { process_rpc(rpc, request); },
+            [&](auto& rpc, bool cancelled) { cleanup_rpc(rpc, cancelled); }
         },
         &remote::ETHBACKEND::AsyncService::RequestNetVersion
     };
@@ -95,25 +95,25 @@ void NetVersionService::create_rpc(remote::ETHBACKEND::AsyncService* service, gr
     SILK_TRACE << "NetVersionService::create_rpc END rpc: " << rpc;
 }
 
-void NetVersionService::rpc_processor(NetVersionUnaryRpc& rpc, const remote::NetVersionRequest* request) {
-    SILK_TRACE << "NetVersionService::rpc_processor rpc: " << &rpc << " request: " << request;
+void NetVersionService::process_rpc(NetVersionUnaryRpc& rpc, const remote::NetVersionRequest* request) {
+    SILK_TRACE << "NetVersionService::process_rpc rpc: " << &rpc << " request: " << request;
 
     remote::NetVersionReply response;
     response.set_id(chain_id_);
     const bool sent = rpc.send_response(response);
 
-    SILK_TRACE << "NetVersionService::rpc_processor rsp: " << &response << " chain_id: " << chain_id_ << " sent: " << sent;
+    SILK_TRACE << "NetVersionService::process_rpc rsp: " << &response << " chain_id: " << chain_id_ << " sent: " << sent;
 }
 
-void NetVersionService::rpc_done(NetVersionUnaryRpc& rpc, bool cancelled) {
-    SILK_TRACE << "NetVersionService::rpc_done rpc: " << &rpc << " cancelled: " << cancelled;
+void NetVersionService::cleanup_rpc(NetVersionUnaryRpc& rpc, bool cancelled) {
+    SILK_TRACE << "NetVersionService::cleanup_rpc rpc: " << &rpc << " cancelled: " << cancelled;
 
     // Trick necessary because heterogeneous lookup for std::unordered_set requires C++20
     std::unique_ptr<NetVersionUnaryRpc> dummy_rpc{&rpc};
     requests_.erase(dummy_rpc);
     dummy_rpc.release();
 
-    SILK_TRACE << "NetVersionService::rpc_done END rpc: " << &rpc;
+    SILK_TRACE << "NetVersionService::cleanup_rpc END rpc: " << &rpc;
 }
 
 BackEndServer::BackEndServer(const ServerConfig& srv_config, const ChainConfig& chain_config)

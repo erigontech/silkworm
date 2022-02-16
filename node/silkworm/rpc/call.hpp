@@ -120,10 +120,10 @@ struct RpcHandlers {
 
     /// processIncomingRequest is called when a new incoming request from some client has come in for this RPC.
     /// For streaming RPCs, a request from client can come in multiple times so processIncomingRequest may be called reapeatedly.
-    ProcessIncomingRequest processIncomingRequest; 
+    ProcessIncomingRequest processIncomingRequest;
 
     // The gRPC server is done with this RPC. Any necessary clean-up must be performed when done is called.
-    Done done; 
+    Done done;
 };
 
 //! Represents the RPC handlers for unary RPCs.
@@ -133,7 +133,7 @@ struct UnaryRpcHandlers : public RpcHandlers<Service, Request, Response, Rpc<Ser
     using RequestRpc = std::function<void(Service*, grpc::ServerContext*, Request*, GRPCResponder*, grpc::CompletionQueue*, grpc::ServerCompletionQueue*, void*)>;
 
     // The actual queuing function on the generated service. This is called when an instance of any unary RPC is created.
-    RequestRpc requestRpc; 
+    RequestRpc requestRpc;
 };
 
 //! This represents any unary (i.e. one-client-request, one-server-response model) RPC.

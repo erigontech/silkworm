@@ -26,10 +26,10 @@
 namespace silkworm::rpc {
 
 void CompletionRunner::stop() {
-    SILK_INFO << "CompletionRunner::stop start started: " << started_ << " stopped: " << stopped_;
+    SILK_INFO << "CompletionRunner::stop start started: " << started_ << " shutdown: " << shutdown_requested_;
     std::unique_lock<std::mutex> lock(mutex_);
-    if (!stopped_) {
-        stopped_ = true;
+    if (!shutdown_requested_) {
+        shutdown_requested_ = true;
         if (started_) {
             SILK_INFO << "CompletionRunner::stop set shutdown alarm";
             auto shutdown_alarm = std::make_unique<grpc::Alarm>();

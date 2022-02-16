@@ -40,14 +40,13 @@ inline types::H160* new_H160_address(const evmc::address& address) {
 void EtherbaseService::create_rpc(remote::ETHBACKEND::AsyncService* service, grpc::ServerCompletionQueue* queue) {
     SILK_TRACE << "EtherbaseService::create_rpc START service: " << service << " queue: " << queue;
 
-    auto create_rpc_handler = [this](auto* svc, auto* cq) { create_rpc(svc, cq); };
-    auto process_rpc_handler = [this](auto& rpc, auto* request) { rpc_processor(rpc, request); };
-    auto delete_rpc_handler = [this](auto& rpc, bool cancelled) { rpc_done(rpc, cancelled); };
-
+    // TODO(canepat): use designated initializers in C++20
     EtherbaseUnaryRpc::Handlers handlers{
-        create_rpc_handler,
-        process_rpc_handler,
-        delete_rpc_handler,
+        {
+        [&](auto* svc, auto* cq) { create_rpc(svc, cq); },
+        [&](auto& rpc, const auto* request) { rpc_processor(rpc, request); },
+        [&](auto& rpc, bool cancelled) { rpc_done(rpc, cancelled); }
+        },
         &remote::ETHBACKEND::AsyncService::RequestEtherbase
     };
     auto rpc = new EtherbaseUnaryRpc(service, queue, handlers);
@@ -70,7 +69,7 @@ void EtherbaseService::rpc_processor(EtherbaseUnaryRpc& rpc, const remote::Ether
 void EtherbaseService::rpc_done(EtherbaseUnaryRpc& rpc, bool cancelled) {
     SILK_TRACE << "EtherbaseService::rpc_done START rpc: " << &rpc << " cancelled: " << cancelled;
 
-    // Trick necessary because heterogeneous lookup for unordered_set requires C++20
+    // Trick necessary because heterogeneous lookup for std::unordered_set requires C++20
     std::unique_ptr<EtherbaseUnaryRpc> dummy_rpc{&rpc};
     requests_.erase(dummy_rpc);
     dummy_rpc.release();
@@ -81,14 +80,13 @@ void EtherbaseService::rpc_done(EtherbaseUnaryRpc& rpc, bool cancelled) {
 void NetVersionService::create_rpc(remote::ETHBACKEND::AsyncService* service, grpc::ServerCompletionQueue* queue) {
     SILK_TRACE << "NetVersionService::create_rpc service: " << service << " queue: " << queue;
 
-    auto create_rpc_handler = [this](auto* svc, auto* cq) { create_rpc(svc, cq); };
-    auto process_rpc_handler = [this](auto& rpc, auto* request) { rpc_processor(rpc, request); };
-    auto delete_rpc_handler = [this](auto& rpc, bool cancelled) { rpc_done(rpc, cancelled); };
-
+    // TODO(canepat): use designated initializers in C++20
     NetVersionUnaryRpc::Handlers handlers{
-        create_rpc_handler,
-        process_rpc_handler,
-        delete_rpc_handler,
+        {
+        [&](auto* svc, auto* cq) { create_rpc(svc, cq); },
+        [&](auto& rpc, const auto* request) { rpc_processor(rpc, request); },
+        [&](auto& rpc, bool cancelled) { rpc_done(rpc, cancelled); }
+        },
         &remote::ETHBACKEND::AsyncService::RequestNetVersion
     };
     auto rpc = new NetVersionUnaryRpc(service, queue, handlers);
@@ -110,7 +108,7 @@ void NetVersionService::rpc_processor(NetVersionUnaryRpc& rpc, const remote::Net
 void NetVersionService::rpc_done(NetVersionUnaryRpc& rpc, bool cancelled) {
     SILK_TRACE << "NetVersionService::rpc_done rpc: " << &rpc << " cancelled: " << cancelled;
 
-    // Trick necessary because heterogeneous lookup for unordered_set requires C++20
+    // Trick necessary because heterogeneous lookup for std::unordered_set requires C++20
     std::unique_ptr<NetVersionUnaryRpc> dummy_rpc{&rpc};
     requests_.erase(dummy_rpc);
     dummy_rpc.release();

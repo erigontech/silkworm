@@ -52,7 +52,7 @@ class CompletionRunner {
 
     bool started_{false};
 
-    bool stopped_{false};
+    bool shutdown_requested_{false};
 
     std::condition_variable shutdown_completed_;
 };

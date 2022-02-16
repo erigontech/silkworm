@@ -16,8 +16,8 @@
 
 // Ported from Abseil to Silkworm core.
 
-#ifndef SILKWORM_COMMON_OPTIMIZATION_HPP_
-#define SILKWORM_COMMON_OPTIMIZATION_HPP_
+#ifndef SILKWORM_COMMON_OPTIMIZATION_H_
+#define SILKWORM_COMMON_OPTIMIZATION_H_
 
 #ifdef __has_builtin
 #define SILKWORM_HAVE_BUILTIN(x) __has_builtin(x)
@@ -33,4 +33,4 @@
 #define SILKWORM_PREDICT_TRUE(x) (x)
 #endif
 
-#endif  // SILKWORM_COMMON_OPTIMIZATION_HPP_
+#endif  // SILKWORM_COMMON_OPTIMIZATION_H_

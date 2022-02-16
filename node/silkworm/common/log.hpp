@@ -44,6 +44,7 @@ struct Settings {
     bool log_threads{false};            // Whether to print thread ids in log lines
     Level log_verbosity{Level::kInfo};  // Log verbosity level
     std::string log_file;               // Log to file
+    char log_thousands_sep{0};          // Thousands separator
 };
 
 //! \brief Initializes logging facilities

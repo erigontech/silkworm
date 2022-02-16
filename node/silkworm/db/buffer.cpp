@@ -286,17 +286,13 @@ std::optional<BlockHeader> Buffer::read_header(uint64_t block_number, const evmc
     return db::read_header(txn_, block_number, block_hash.bytes);
 }
 
-std::optional<BlockBody> Buffer::read_body(uint64_t block_number, const evmc::bytes32& block_hash) const noexcept {
+bool Buffer::read_body(uint64_t block_number, const evmc::bytes32& block_hash, BlockBody& body) const noexcept {
     Bytes key{block_key(block_number, block_hash.bytes)};
     if (auto it{bodies_.find(key)}; it != bodies_.end()) {
-        return it->second;
+        body = it->second;
+        return true;
     }
-    BlockBody body;
-    if (db::read_body(txn_, key, /*read_senders=*/false, body)) {
-        return body;
-    } else {
-        return std::nullopt;
-    }
+    return db::read_body(txn_, key, /*read_senders=*/false, body);
 }
 
 std::optional<Account> Buffer::read_account(const evmc::address& address) const noexcept {

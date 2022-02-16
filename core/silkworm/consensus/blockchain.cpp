@@ -1,5 +1,5 @@
 /*
-   Copyright 2021 The Silkworm Authors
+   Copyright 2021-2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -123,15 +123,15 @@ void Blockchain::re_execute_canonical_chain(uint64_t ancestor, uint64_t tip) {
     for (uint64_t block_number{ancestor + 1}; block_number <= tip; ++block_number) {
         std::optional<evmc::bytes32> hash{state_.canonical_hash(block_number)};
         assert(hash != std::nullopt);
-        std::optional<BlockBody> body{state_.read_body(block_number, *hash)};
-        assert(body != std::nullopt);
+        BlockBody body;
+        assert(state_.read_body(block_number, *hash, body));
         std::optional<BlockHeader> header{state_.read_header(block_number, *hash)};
         assert(header != std::nullopt);
 
         Block block;
         block.header = header.value();
-        block.transactions = std::move(body->transactions);
-        block.ommers = std::move(body->ommers);
+        block.transactions = std::move(body.transactions);
+        block.ommers = std::move(body.ommers);
 
         [[maybe_unused]] ValidationResult err{execute_block(block, /*check_state_root=*/false)};
         assert(err == ValidationResult::kOk);
@@ -152,14 +152,14 @@ std::vector<BlockWithHash> Blockchain::intermediate_chain(uint64_t block_number,
     for (; block_number > canonical_ancestor; --block_number) {
         BlockWithHash& x{chain[block_number - canonical_ancestor - 1]};
 
-        std::optional<BlockBody> body{state_.read_body(block_number, hash)};
-        assert(body != std::nullopt);
+        BlockBody body;
+        assert(state_.read_body(block_number, hash, body));
         std::optional<BlockHeader> header{state_.read_header(block_number, hash)};
         assert(header != std::nullopt);
 
         x.block.header = *header;
-        x.block.transactions = std::move(body->transactions);
-        x.block.ommers = std::move(body->ommers);
+        x.block.transactions = std::move(body.transactions);
+        x.block.ommers = std::move(body.ommers);
         x.hash = hash;
 
         hash = header->parent_hash;

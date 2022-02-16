@@ -1,5 +1,5 @@
 /*
-Copyright 2020-2021 The Silkworm Authors
+Copyright 2020-2022 The Silkworm Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -35,7 +35,8 @@ class CustomHeaderOnlyChainState : public BlockState {
     std::optional<BlockHeader> read_header(uint64_t block_number,
                                            const evmc::bytes32& block_hash) const noexcept override;
 
-    std::optional<BlockBody> read_body(BlockNum block_number, const evmc::bytes32& block_hash) const noexcept override;
+    [[nodiscard]] bool read_body(BlockNum block_number, const evmc::bytes32& block_hash,
+                                 BlockBody& out) const noexcept override;
 
     std::optional<intx::uint256> total_difficulty(uint64_t block_number,
                                                   const evmc::bytes32& block_hash) const noexcept override;
@@ -53,7 +54,8 @@ class SimpleHeaderOnlyChainState : public BlockState {
     std::optional<BlockHeader> read_header(uint64_t block_number,
                                            const evmc::bytes32& block_hash) const noexcept override;
 
-    std::optional<BlockBody> read_body(BlockNum block_number, const evmc::bytes32& block_hash) const noexcept override;
+    [[nodiscard]] bool read_body(BlockNum block_number, const evmc::bytes32& block_hash,
+                                 BlockBody& out) const noexcept override;
 
     std::optional<intx::uint256> total_difficulty(uint64_t block_number,
                                                   const evmc::bytes32& block_hash) const noexcept override;

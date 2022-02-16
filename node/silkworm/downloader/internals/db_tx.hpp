@@ -190,17 +190,12 @@ class Db::ReadOnlyAccess::Tx {
         }
     }
 
-    std::optional<BlockBody> read_body(Hash h) {  // todo: add to db::access_layer.hpp?
+    [[nodiscard]] bool read_body(const Hash& h, BlockBody& body) {  // todo: add to db::access_layer.hpp?
         auto block_num = read_block_num(h);
         if (!block_num) {
-            return std::nullopt;
+            return false;
         }
-        BlockBody body;
-        if (db::read_body(txn, *block_num, h.bytes, /*read_senders=*/false, body)) {
-            return body;
-        } else {
-            return std::nullopt;
-        }
+        return db::read_body(txn, *block_num, h.bytes, /*read_senders=*/false, body);
     }
 
     std::optional<intx::uint256> read_total_difficulty(BlockNum b, Hash h) {

@@ -84,6 +84,7 @@ int main(int argc, char* argv[]) {
 
         SignalHandler::init();    // Trap OS signals
         log::init(log_settings);  // Initialize logging with cli settings
+        log::set_thread_name("main");
 
         // Output BuildInfo
         auto build_info{silkworm_get_buildinfo()};
@@ -100,7 +101,8 @@ int main(int argc, char* argv[]) {
         // Output mdbx build info
         auto mdbx_ver{mdbx::get_version()};
         auto mdbx_bld{mdbx::get_build()};
-        log::Message("libmdbx",{"version", mdbx_ver.git.describe, "build", mdbx_bld.target, "compiler", mdbx_bld.compiler});
+        log::Message("libmdbx",
+                     {"version", mdbx_ver.git.describe, "build", mdbx_bld.target, "compiler", mdbx_bld.compiler});
 
         // Check db
         cmd::run_preflight_checklist(node_settings);  // Prepare database for takeoff
@@ -111,6 +113,7 @@ int main(int argc, char* argv[]) {
         using asio_guard_type = boost::asio::executor_work_guard<boost::asio::io_context::executor_type>;
         auto asio_guard = std::make_unique<asio_guard_type>(node_settings.asio_context.get_executor());
         std::thread asio_thread{[&node_settings]() -> void {
+            log::set_thread_name("Asio");
             log::Trace("Boost Asio", {"state", "started"});
             node_settings.asio_context.run();
             log::Trace("Boost Asio", {"state", "stopped"});

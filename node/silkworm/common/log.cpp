@@ -30,6 +30,7 @@ namespace silkworm::log {
 static Settings settings_{};
 static std::mutex out_mtx{};
 static std::unique_ptr<std::fstream> file_{nullptr};
+thread_local std::string thread_name_{};
 
 void init(Settings& settings) {
     settings_ = settings;
@@ -50,6 +51,17 @@ void tee_file(const std::filesystem::path& path) {
 void set_verbosity(Level level) { settings_.log_verbosity = level; }
 
 bool test_verbosity(Level level) { return level <= settings_.log_verbosity; }
+
+void set_thread_name(const char* name) { thread_name_ = std::string(name); }
+
+std::string get_thread_name() {
+    if (thread_name_.empty()) {
+        std::stringstream ss;
+        ss << std::this_thread::get_id();
+        thread_name_ = ss.str();
+    }
+    return thread_name_;
+}
 
 static inline std::pair<const char*, const char*> get_level_settings(Level level) {
     switch (level) {
@@ -85,7 +97,7 @@ BufferBase::BufferBase(Level level) : should_print_(level <= settings_.log_verbo
 
     // ThreadId
     if (settings_.log_threads) {
-        ss_ << "[" << std::this_thread::get_id() << "] ";
+        ss_ << "[" << get_thread_name() << "] ";
     }
 }
 

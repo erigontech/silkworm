@@ -18,8 +18,6 @@
 
 #include <thread>
 
-#include <boost/asio/io_context.hpp>
-#include <boost/asio/ip/tcp.hpp>
 #include <catch2/catch.hpp>
 #include <grpc/grpc.h>
 #include <grpcpp/impl/codegen/service_type.h>
@@ -48,11 +46,9 @@ TEST_CASE("Server::Server", "[silkworm][node][rpc]") {
     SECTION("KO: Address already in use", "[silkworm][node][rpc]") {
         GrpcNoLogGuard guard;
 
-        boost::asio::io_context io_context;
-        boost::asio::ip::tcp::endpoint endpoint{boost::asio::ip::tcp::v4(), 12345};
-        boost::asio::ip::tcp::acceptor acceptor{io_context, endpoint};
         ServerConfig config;
         config.set_address_uri(kTestAddressUri);
+        EmptyServer server(config);
         CHECK_THROWS_AS(EmptyServer(config), std::runtime_error);
     }
 

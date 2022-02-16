@@ -278,11 +278,11 @@ nil                  // db returned nil - means no more keys there, done
 In practice Trie is not full - it means that after account key `{30 zero bytes}0000` may come `{5 zero bytes}01` and
 amount of iterations will not be big.
 */
-evmc::bytes32 DbTrieLoader::calculate_root(PrefixSet& changed) {
+evmc::bytes32 DbTrieLoader::calculate_root(PrefixSet& account_changes, PrefixSet& storage_changes) {
     auto state{db::open_cursor(txn_, db::table::kHashedAccounts)};
     auto trie_db_cursor{db::open_cursor(txn_, db::table::kTrieOfAccounts)};
 
-    for (Cursor trie{trie_db_cursor, changed}; trie.key().has_value();) {
+    for (Cursor trie{trie_db_cursor, account_changes}; trie.key().has_value();) {
         if (trie.can_skip_state()) {
             SILKWORM_ASSERT(trie.hash() != nullptr);
             hb_.add_branch_node(*trie.key(), *trie.hash(), trie.children_are_in_trie());
@@ -309,7 +309,7 @@ evmc::bytes32 DbTrieLoader::calculate_root(PrefixSet& changed) {
 
             if (account.incarnation) {
                 const Bytes key_with_inc{db::storage_prefix(db::from_slice(acc.key), account.incarnation)};
-                storage_root = calculate_storage_root(key_with_inc, changed);
+                storage_root = calculate_storage_root(key_with_inc, storage_changes);
             }
 
             hb_.add_leaf(unpacked_key, account.rlp(storage_root));
@@ -364,11 +364,12 @@ evmc::bytes32 DbTrieLoader::calculate_storage_root(const Bytes& key_with_inc, Pr
 }
 
 static evmc::bytes32 increment_intermediate_hashes(mdbx::txn& txn, const std::filesystem::path& etl_dir,
-                                                   const evmc::bytes32* expected_root, PrefixSet& changed) {
+                                                   const evmc::bytes32* expected_root, PrefixSet& account_changes,
+                                                   PrefixSet& storage_changes) {
     etl::Collector account_collector{etl_dir};
     etl::Collector storage_collector{etl_dir};
     DbTrieLoader loader{txn, account_collector, storage_collector};
-    const evmc::bytes32 root{loader.calculate_root(changed)};
+    const evmc::bytes32 root{loader.calculate_root(account_changes, storage_changes)};
     if (expected_root != nullptr && root != *expected_root) {
         log::Error() << "Wrong trie root: " << to_hex(root) << ", expected: " << to_hex(*expected_root) << "\n";
         throw WrongRoot{};
@@ -385,7 +386,7 @@ static evmc::bytes32 increment_intermediate_hashes(mdbx::txn& txn, const std::fi
 }
 
 // See Erigon (p *HashPromoter) Promote
-static PrefixSet gather_changes(mdbx::txn& txn, BlockNum from) {
+static PrefixSet gather_account_changes(mdbx::txn& txn, BlockNum from) {
     const Bytes starting_key{db::block_key(from + 1)};
 
     PrefixSet out;
@@ -400,6 +401,15 @@ static PrefixSet gather_changes(mdbx::txn& txn, BlockNum from) {
         };
         (void)db::cursor_for_each(account_changes, account_walk_function);
     }
+
+    return out;
+}
+
+// See Erigon (p *HashPromoter) Promote
+static PrefixSet gather_storage_changes(mdbx::txn& txn, BlockNum from) {
+    const Bytes starting_key{db::block_key(from + 1)};
+
+    PrefixSet out;
 
     auto storage_changes{db::open_cursor(txn, db::table::kStorageChangeSet)};
     if (storage_changes.lower_bound(db::to_slice(starting_key), /*throw_notfound=*/false)) {
@@ -424,8 +434,9 @@ static PrefixSet gather_changes(mdbx::txn& txn, BlockNum from) {
 
 evmc::bytes32 increment_intermediate_hashes(mdbx::txn& txn, const std::filesystem::path& etl_dir, BlockNum from,
                                             const evmc::bytes32* expected_root) {
-    PrefixSet changed{gather_changes(txn, from)};
-    return increment_intermediate_hashes(txn, etl_dir, expected_root, changed);
+    PrefixSet account_changes{gather_account_changes(txn, from)};
+    PrefixSet storage_changes{gather_storage_changes(txn, from)};
+    return increment_intermediate_hashes(txn, etl_dir, expected_root, account_changes, storage_changes);
 }
 
 evmc::bytes32 regenerate_intermediate_hashes(mdbx::txn& txn, const std::filesystem::path& etl_dir,
@@ -433,7 +444,8 @@ evmc::bytes32 regenerate_intermediate_hashes(mdbx::txn& txn, const std::filesyst
     txn.clear_map(db::open_map(txn, db::table::kTrieOfAccounts));
     txn.clear_map(db::open_map(txn, db::table::kTrieOfStorage));
     PrefixSet empty;
-    return increment_intermediate_hashes(txn, etl_dir, expected_root, /*changed=*/empty);
+    return increment_intermediate_hashes(txn, etl_dir, expected_root, /*account_changes=*/empty,
+                                         /*storage_changes=*/empty);
 }
 
 std::optional<Bytes> increment_key(ByteView unpacked) {

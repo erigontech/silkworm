@@ -28,12 +28,12 @@
 
 namespace silkworm::rpc {
 
-template <typename ServiceType>
+template <typename Service>
 class Server {
   public:
     //! Build a ready-to-start RPC server according to specified configuration.
     explicit Server(const ServerConfig& config)
-    : service_{std::make_unique<ServiceType>()}, context_pool_{config.num_contexts()} {
+    : service_{std::make_unique<Service>()}, context_pool_{config.num_contexts()} {
         SILK_TRACE << "Server::Server " << this << " START";
         grpc::ServerBuilder builder;
 
@@ -112,7 +112,7 @@ class Server {
     ServerContext const& next_context() { return context_pool_.next_context(); }
 
     /// \warning The service must exist for the lifetime of the server it is registered on.
-    std::unique_ptr<ServiceType> service_;
+    std::unique_ptr<Service> service_;
 
   private:
     std::unique_ptr<grpc::Server> server_;

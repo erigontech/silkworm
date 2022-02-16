@@ -50,7 +50,7 @@ void EtherbaseService::create_rpc(remote::ETHBACKEND::AsyncService* service, grp
         &remote::ETHBACKEND::AsyncService::RequestEtherbase
     };
     auto rpc = new EtherbaseUnaryRpc(service, queue, handlers);
-    requests_.emplace(rpc);
+    add_request(rpc);
 
     SILK_TRACE << "EtherbaseService::create_rpc END rpc: " << rpc;
 }
@@ -69,10 +69,7 @@ void EtherbaseService::process_rpc(EtherbaseUnaryRpc& rpc, const remote::Etherba
 void EtherbaseService::cleanup_rpc(EtherbaseUnaryRpc& rpc, bool cancelled) {
     SILK_TRACE << "EtherbaseService::cleanup_rpc START rpc: " << &rpc << " cancelled: " << cancelled;
 
-    // Trick necessary because heterogeneous lookup for std::unordered_set requires C++20
-    std::unique_ptr<EtherbaseUnaryRpc> dummy_rpc{&rpc};
-    requests_.erase(dummy_rpc);
-    dummy_rpc.release();
+    remove_request(&rpc);
 
     SILK_TRACE << "EtherbaseService::cleanup_rpc END rpc: " << &rpc;
 }
@@ -90,7 +87,7 @@ void NetVersionService::create_rpc(remote::ETHBACKEND::AsyncService* service, gr
         &remote::ETHBACKEND::AsyncService::RequestNetVersion
     };
     auto rpc = new NetVersionUnaryRpc(service, queue, handlers);
-    requests_.emplace(rpc);
+    add_request(rpc);
 
     SILK_TRACE << "NetVersionService::create_rpc END rpc: " << rpc;
 }
@@ -108,10 +105,7 @@ void NetVersionService::process_rpc(NetVersionUnaryRpc& rpc, const remote::NetVe
 void NetVersionService::cleanup_rpc(NetVersionUnaryRpc& rpc, bool cancelled) {
     SILK_TRACE << "NetVersionService::cleanup_rpc rpc: " << &rpc << " cancelled: " << cancelled;
 
-    // Trick necessary because heterogeneous lookup for std::unordered_set requires C++20
-    std::unique_ptr<NetVersionUnaryRpc> dummy_rpc{&rpc};
-    requests_.erase(dummy_rpc);
-    dummy_rpc.release();
+    remove_request(&rpc);
 
     SILK_TRACE << "NetVersionService::cleanup_rpc END rpc: " << &rpc;
 }

@@ -26,19 +26,16 @@
 
 #include <silkworm/chain/config.hpp>
 #include <silkworm/rpc/server.hpp>
+#include <silkworm/rpc/service.hpp>
 #include <silkworm/rpc/call.hpp>
 
 namespace silkworm::rpc {
 
-constexpr std::size_t kRequestsInitialCapacity = 10000;
+using EtherbaseUnaryRpc = UnaryRpc<remote::ETHBACKEND::AsyncService, remote::EtherbaseRequest, remote::EtherbaseReply>;
 
-class EtherbaseService {
-    using EtherbaseUnaryRpc = UnaryRpc<remote::ETHBACKEND::AsyncService, remote::EtherbaseRequest, remote::EtherbaseReply>;
-
+class EtherbaseService : public RpcService<EtherbaseUnaryRpc> {
   public:
-    explicit EtherbaseService(const ChainConfig& /*config*/) {
-        requests_.reserve(kRequestsInitialCapacity);
-    }
+    explicit EtherbaseService(const ChainConfig& /*config*/) : RpcService<EtherbaseUnaryRpc>() {}
 
     void create_rpc(remote::ETHBACKEND::AsyncService* service, grpc::ServerCompletionQueue* queue);
     void process_rpc(EtherbaseUnaryRpc& rpc, const remote::EtherbaseRequest* request);
@@ -46,16 +43,13 @@ class EtherbaseService {
 
   private:
     evmc::address etherbase_; // TODO(canepat): read from config (field not yet present)
-    std::unordered_set<std::unique_ptr<EtherbaseUnaryRpc>> requests_;
 };
 
-class NetVersionService {
-    using NetVersionUnaryRpc = UnaryRpc<remote::ETHBACKEND::AsyncService, remote::NetVersionRequest, remote::NetVersionReply>;
+using NetVersionUnaryRpc = UnaryRpc<remote::ETHBACKEND::AsyncService, remote::NetVersionRequest, remote::NetVersionReply>;
 
+class NetVersionService : public RpcService<NetVersionUnaryRpc> {
   public:
-    explicit NetVersionService(const ChainConfig& config) : chain_id_(config.chain_id) {
-        requests_.reserve(kRequestsInitialCapacity);
-    }
+    explicit NetVersionService(const ChainConfig& config) : RpcService<NetVersionUnaryRpc>(), chain_id_(config.chain_id) {}
 
     void create_rpc(remote::ETHBACKEND::AsyncService* service, grpc::ServerCompletionQueue* queue);
     void process_rpc(NetVersionUnaryRpc& rpc, const remote::NetVersionRequest* request);
@@ -63,7 +57,6 @@ class NetVersionService {
 
   private:
     uint64_t chain_id_;
-    std::unordered_set<std::unique_ptr<NetVersionUnaryRpc>> requests_;
 };
 
 class BackEndServer : public Server<remote::ETHBACKEND::AsyncService> {

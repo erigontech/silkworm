@@ -68,7 +68,7 @@ TEST_CASE("Server::Server", "[silkworm][node][rpc]") {
 }
 
 TEST_CASE("Server::run", "[silkworm][node][rpc]") {
-    silkworm::log::set_verbosity(silkworm::log::Level::kTrace);
+    silkworm::log::set_verbosity(silkworm::log::Level::kNone);
 
     // TODO(canepat): use GMock
     class TestServer : public Server<MockService> {

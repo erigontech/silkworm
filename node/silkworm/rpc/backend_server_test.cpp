@@ -67,10 +67,11 @@ class BackEndClient {
 
 namespace silkworm::rpc {
 
-constexpr const char* kTestAddressUri = "localhost:12345"; // TODO(canepat): better copy grpc_pick_unused_port_or_die
+// TODO(canepat): better copy grpc_pick_unused_port_or_die to generate unused port
+constexpr const char* kTestAddressUri = "localhost:12345";
 
 TEST_CASE("BackEndServer::BackEndServer", "[silkworm][node][rpc]") {
-    silkworm::log::set_verbosity(silkworm::log::Level::kTrace); // TODO(canepat): kNone
+    silkworm::log::set_verbosity(silkworm::log::Level::kNone);
     Grpc2SilkwormLogGuard log_guard;
 
     SECTION("OK: create/destroy server", "[silkworm][node][rpc]") {
@@ -88,7 +89,7 @@ TEST_CASE("BackEndServer::BackEndServer", "[silkworm][node][rpc]") {
 }
 
 TEST_CASE("BackEndServer::run", "[silkworm][node][rpc]") {
-    silkworm::log::set_verbosity(silkworm::log::Level::kTrace); // TODO(canepat): kNone
+    silkworm::log::set_verbosity(silkworm::log::Level::kNone);
     Grpc2SilkwormLogGuard log_guard;
 
     SECTION("OK: run server in separate thread", "[silkworm][node][rpc]") {
@@ -112,7 +113,7 @@ TEST_CASE("BackEndServer::run", "[silkworm][node][rpc]") {
 }
 
 TEST_CASE("BackEndServer::shutdown", "[silkworm][node][rpc]") {
-    silkworm::log::set_verbosity(silkworm::log::Level::kTrace); // TODO(canepat): kNone
+    silkworm::log::set_verbosity(silkworm::log::Level::kNone);
     Grpc2SilkwormLogGuard log_guard;
 
     SECTION("OK: shutdown server not running", "[silkworm][node][rpc]") {
@@ -143,7 +144,7 @@ TEST_CASE("BackEndServer::shutdown", "[silkworm][node][rpc]") {
 }
 
 TEST_CASE("BackEndServer RPC calls", "[silkworm][node][rpc]") {
-    silkworm::log::set_verbosity(silkworm::log::Level::kTrace); // TODO(canepat): kNone
+    silkworm::log::set_verbosity(silkworm::log::Level::kNone);
     Grpc2SilkwormLogGuard log_guard;
     std::shared_ptr<grpc::Channel> channel = grpc::CreateChannel(kTestAddressUri, grpc::InsecureChannelCredentials());
     auto stub_ptr = remote::ETHBACKEND::NewStub(channel);

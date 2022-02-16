@@ -37,6 +37,7 @@ class Server {
         SILK_TRACE << "Server::Server " << this << " START";
         grpc::ServerBuilder builder;
         int selected_port;
+        builder.AddChannelArgument(GRPC_ARG_ALLOW_REUSEPORT, 0);
         builder.AddListeningPort(config.address_uri(), config.credentials(), &selected_port);
         for (std::size_t i{0}; i < config.num_contexts(); ++i) {
             context_pool_.add_context(builder.AddCompletionQueue());

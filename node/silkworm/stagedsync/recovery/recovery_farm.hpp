@@ -82,7 +82,7 @@ class RecoveryFarm : public Stoppable {
     //! \param [in] transactions : a set of transactions to transform
     //! \return A code indicating process status
     //! \remarks If detects a batch overflow it also dispatches
-    StageResult transform_and_fill_batch(BlockNum block_num, std::vector<Transaction>& transactions);
+    StageResult transform_and_fill_batch(BlockNum block_num, const std::vector<Transaction>& transactions);
 
     //! \brief Dispatches the collected batch of recovery packages to first available worker
     //! \returns True if operation succeeds, false otherwise

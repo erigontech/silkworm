@@ -1,5 +1,5 @@
 /*
-   Copyright 2021 The Silkworm Authors
+   Copyright 2021-2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -17,12 +17,12 @@
 #include "assert.hpp"
 
 #include <cstdlib>
-
-#include "log.hpp"
+#include <iostream>
 
 namespace silkworm {
 void abort_due_to_assertion_failure(char const* expr, char const* file, long line) {
-    log::Critical() << "Assert failed: " << expr << " " << "Source: " << file << ", line " << line;
+    std::cerr << "Assert failed: " << expr << " "
+              << "Source: " << file << ", line " << line;
     std::abort();
 }
 }  // namespace silkworm

@@ -1,5 +1,5 @@
 /*
-   Copyright 2020-2021 The Silkworm Authors
+   Copyright 2020-2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -33,8 +33,9 @@ class BlockState {
     virtual std::optional<BlockHeader> read_header(BlockNum block_number,
                                                    const evmc::bytes32& block_hash) const noexcept = 0;
 
-    virtual std::optional<BlockBody> read_body(BlockNum block_number,
-                                               const evmc::bytes32& block_hash) const noexcept = 0;
+    // Returns true on success and false on missing block
+    [[nodiscard]] virtual bool read_body(BlockNum block_number, const evmc::bytes32& block_hash,
+                                         BlockBody& out) const noexcept = 0;
 
     virtual std::optional<intx::uint256> total_difficulty(uint64_t block_number,
                                                           const evmc::bytes32& block_hash) const noexcept = 0;

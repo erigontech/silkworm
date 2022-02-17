@@ -123,13 +123,9 @@ std::queue<Block> Execution::prefetch_blocks(db::RWTxn& txn, BlockNum from, Bloc
         ByteView encoded_header{raw_header.data(), raw_header.length()};
         rlp::success_or_throw(rlp::decode(encoded_header, block.header));
 
-        auto block_body{db::read_body(*txn, block_key, /*read_senders=*/true)};
-        if (!block_body.has_value()) {
+        if (!db::read_body(*txn, block_key, /*read_senders=*/true, block)) {
             throw std::runtime_error("Unable to load block body for block " + std::to_string(from));
         }
-
-        std::swap(block.transactions, block_body->transactions);
-        std::swap(block.ommers, block_body->ommers);
         ret.push(block);
 
         if (from == to || ret.size() >= max_blocks) {

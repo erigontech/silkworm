@@ -230,15 +230,12 @@ bool read_body(mdbx::txn& txn, const Bytes& key, bool read_senders, BlockBody& o
 
     if (!out.transactions.empty() && read_senders) {
         std::vector<evmc::address> senders{db::read_senders(txn, key)};
-        // Might be empty due to pruning
         if (!senders.empty()) {
-            if (senders.size() != out.transactions.size()) {
-                throw InvalidSenders("senders count does not match transactions count");
-            }
+            SILKWORM_ASSERT(senders.size() == out.transactions.size());
             for (size_t i{0}; i < senders.size(); ++i) {
                 out.transactions[i].from = senders[i];
             }
-        } else {
+        } else {  // Might be empty due to pruning
             for (auto& transaction : out.transactions) {
                 transaction.recover_sender();
             }

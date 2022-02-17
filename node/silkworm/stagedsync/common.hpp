@@ -38,7 +38,6 @@ enum class [[nodiscard]] StageResult{
     kInvalidProgress,         //
     kInvalidBlock,            //
     kInvalidTransaction,      //
-    kInvalidSenders,          //
     kDecodingError,           //
     kUnexpectedError,         //
     kUnknownError,            //
@@ -117,7 +116,6 @@ class IStage : public Stoppable {
     const char* stage_name_;
     NodeSettings* node_settings_;
     std::atomic<OperationType> operation_{OperationType::None};
-
 };
 
 }  // namespace silkworm::stagedsync

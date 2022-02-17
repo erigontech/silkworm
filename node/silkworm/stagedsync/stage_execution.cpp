@@ -92,7 +92,7 @@ StageResult Execution::forward(db::RWTxn& txn) {
 }
 
 std::queue<Block> Execution::prefetch_blocks(db::RWTxn& txn, BlockNum from, BlockNum to, size_t max_blocks) {
-    std::unique_ptr<StopWatch> sw;
+    static std::unique_ptr<StopWatch> sw;
     bool should_trace{log::test_verbosity(log::Level::kTrace)};
     if (should_trace) {
         sw = std::make_unique<StopWatch>();

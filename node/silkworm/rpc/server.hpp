@@ -59,7 +59,6 @@ class Server {
             SILK_ERROR << "Server::Server " << this << ": BuildAndStart failed [" << config.address_uri() << "]";
             throw std::runtime_error("cannot start gRPC server at " + config.address_uri());
         }
-        SILK_INFO << "RPC server started at: " << config.address_uri();
         SILK_TRACE << "Server::Server " << this << " END";
     }
 
@@ -93,7 +92,7 @@ class Server {
 
     //! Stop this Server instance forever. Any subsequent call to \ref run() has not effect.
     void shutdown() {
-        SILK_INFO << "Server::shutdown " << this << " START";
+        SILK_TRACE << "Server::shutdown " << this << " START";
         {
             std::lock_guard<std::mutex> guard(mutex_);
             shutdown_ = true;
@@ -104,11 +103,14 @@ class Server {
             // Order matters here: 2) shutdown and drain the queues
             context_pool_.stop();
         }
-        SILK_INFO << "Server::shutdown " << this << " END";
+        SILK_TRACE << "Server::shutdown " << this << " END";
     }
 
     //! Get the next server context in round-robin scheme.
     ServerContext const& next_context() { return context_pool_.next_context(); }
+
+    //! Get the next server scheduler in round-robin scheme.
+    boost::asio::io_context& next_io_context() { return context_pool_.next_io_context(); }
 
   protected:
     //! Subclasses must override this method to register initial server-side RPC requests.

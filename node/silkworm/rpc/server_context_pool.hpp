@@ -52,7 +52,7 @@ class ServerContextPool {
     void stop();
 
     ServerContext const& next_context();
-    boost::asio::io_context const& next_io_context();
+    boost::asio::io_context& next_io_context();
 
   private:
     //! The pool of execution contexts.

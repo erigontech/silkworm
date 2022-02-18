@@ -112,7 +112,7 @@ void NetVersionService::cleanup_rpc(NetVersionUnaryRpc& rpc, bool cancelled) {
 
 BackEndServer::BackEndServer(const ServerConfig& srv_config, const ChainConfig& chain_config)
 : Server(srv_config), etherbase_service_{chain_config}, net_version_service_{chain_config} {
-    SILK_INFO << "BackEndServer started listening on: " << srv_config.address_uri();
+    SILK_INFO << "BackEndServer created listening on: " << srv_config.address_uri();
 }
 
 /// Start server-side RPC requests as required by gRPC async model. One RPC per type is requested in advance.

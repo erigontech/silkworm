@@ -31,7 +31,7 @@ void CompletionRunner::stop() {
     if (!shutdown_requested_) {
         shutdown_requested_ = true;
         if (started_) {
-            SILK_INFO << "CompletionRunner::stop set shutdown alarm";
+            SILK_DEBUG << "CompletionRunner::stop set shutdown alarm";
             auto shutdown_alarm = std::make_unique<grpc::Alarm>();
             TagProcessor shutdown_processor = [this](bool ok) { shutdown(ok); };
             shutdown_alarm->Set(&queue_, gpr_now(GPR_CLOCK_MONOTONIC), reinterpret_cast<void*>(&shutdown_processor));

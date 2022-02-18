@@ -63,12 +63,12 @@ void ServerContextPool::add_context(std::unique_ptr<grpc::ServerCompletionQueue>
 void ServerContextPool::run() {
     SILK_TRACE << "ServerContextPool::run START";
 
+    boost::asio::detail::thread_group workers{};
     {
         std::unique_lock<std::mutex> lock(mutex_);
         if (stopped_) return;
 
         // Create a pool of threads to run all of the contexts (each one having 1+1 threads)
-        boost::asio::detail::thread_group workers{};
         for (std::size_t i{0}; i < contexts_.size(); ++i) {
             auto& context = contexts_[i];
             workers.create_thread([&, i = i]() {
@@ -84,12 +84,10 @@ void ServerContextPool::run() {
             });
             SILK_DEBUG << "ServerContextPool::run context[" << i << "].io_context started: " << &*context.io_context;
         }
-
-        // Wait for all threads in the pool to exit: this blocks so release the lock first.
-        lock.release()->unlock();
-        SILK_DEBUG << "ServerContextPool::run joining...";
-        workers.join();
     }
+    // Wait for all threads in the pool to exit.
+    SILK_DEBUG << "ServerContextPool::run joining...";
+    workers.join();
 
     SILK_TRACE << "ServerContextPool::run END";
 }
@@ -121,7 +119,7 @@ const ServerContext& ServerContextPool::next_context() {
     return context;
 }
 
-const boost::asio::io_context& ServerContextPool::next_io_context() {
+boost::asio::io_context& ServerContextPool::next_io_context() {
     const auto& context = next_context();
     return *context.io_context;
 }

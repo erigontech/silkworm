@@ -57,6 +57,8 @@ void HeaderDownloader::execution_loop() {
     sentry_.subscribe(SentryClient::Scope::BlockAnnouncements,
                       [this](const sentry::InboundMessage& msg) { receive_message(msg); });
 
+    time_point_t last_update = system_clock::now();
+
     while (!is_stopping() && !sentry_.is_stopping()) {
         // pop a message from the queue
         std::shared_ptr<Message> message;
@@ -67,8 +69,31 @@ void HeaderDownloader::execution_loop() {
         message->execute();
 
         // log status
-        SILK_TRACE << "HeaderDownloader status: " << working_chain_.human_readable_status() << ", "
-                   << messages_.size() << " messages waiting in queue";
+        if (silkworm::log::test_verbosity(silkworm::log::Level::kTrace)) {
+            auto out_message = std::dynamic_pointer_cast<OutboundGetBlockHeaders>(message);
+            auto req_set = out_message != nullptr ? out_message->sent_request() : 0;
+            uint64_t rejected_headers =
+                working_chain_.statistics_.received_headers - working_chain_.statistics_.accepted_headers;
+            log::Info() << "HeaderDownloader statistics:" << std::setfill(' ')
+                << " proc: " << message->name().substr(0, 3) << " | req/skel " << std::setw(2) << std::right
+                << req_set << "/" << std::setw(4) << std::left << working_chain_.statistics_.skeleton_condition
+                << " | queue: " << std::setw(3) << std::right << messages_.size()
+                << " | links: " << std::setw(7) << std::right << working_chain_.pending_links()
+                << " | anchors: " << std::setw(3) << std::right << working_chain_.anchors()
+                << " | db: " << std::setw(10) << std::right << working_chain_.highest_block_in_db()
+                << " | rej: " << std::setw(10) << std::right << rejected_headers;
+        }
+
+        if (system_clock::now() - last_update > 30s) {
+            last_update = system_clock::now();
+            log::Info() << "HeaderDownloader statistics: "
+                << messages_.size() << " waiting-msg, "
+                << working_chain_.pending_links() << " links, "
+                << working_chain_.anchors() << " anchors "
+                << "/bn db=" << working_chain_.highest_block_in_db() << ", "
+                << "tip=" << working_chain_.top_seen_block_height() << " "
+                << "/" << working_chain_.statistics_;
+        }
     }
 
     stop();
@@ -109,30 +134,36 @@ auto HeaderDownloader::forward(bool first_sync) -> Stage::Result {
         auto sync_command = sync_working_chain(persisted_chain_.initial_height());
         sync_command->result().get();  // blocking
 
+        // prepare headers, if any
+        auto withdraw_command = withdraw_stable_headers();
+        auto withdraw_result = withdraw_command->result();
+
         // message processing
-        time_point_t last_request;
+        time_point_t last_update = system_clock::now();
         while (!new_height_reached && !sentry_.is_stopping()) {
-            // at every minute...
-            if (system_clock::now() - last_request > 60s) {
-                last_request = system_clock::now();
 
-                // make some outbound header requests
-                send_header_requests();
+            // make some outbound header requests
+            send_header_requests();
 
-                // check if it needs to persist some headers
-                auto command = withdraw_stable_headers();
-                auto [stable_headers, in_sync] = command->result().get();  // blocking
+            // check if it needs to persist some headers
+            if (withdraw_result.wait_for(500ms) == std::future_status::ready) {
+
+                auto [stable_headers, in_sync] = withdraw_result.get();  // blocking
                 if (!stable_headers.empty()) {
-                    if (stable_headers.size() > 10000) {
+                    if (stable_headers.size() > 10000)
                         log::Info() << "[1/16 Headers] Inserting headers...";
-                    }
                     StopWatch insertion_timing; insertion_timing.start();
 
+                    // persist headers
                     persisted_chain_.persist(stable_headers);
 
                     log::Info() << "[1/16 Headers] Inserted headers tot=" << stable_headers.size()
-                                << " (duration= " << StopWatch::format(insertion_timing.lap_duration()) << "s)";
+                        << " (duration= " << StopWatch::format(insertion_timing.lap_duration()) << "s)";
                 }
+
+                // submit another command
+                withdraw_command = withdraw_stable_headers();
+                withdraw_result = withdraw_command->result();
 
                 // do announcements
                 send_announcements();
@@ -146,16 +177,16 @@ auto HeaderDownloader::forward(bool first_sync) -> Stage::Result {
                     // so we need to react quickly when new headers are coming in
                     new_height_reached = persisted_chain_.best_header_changed();
                 }
+            }
+
+            // show progress
+            if (system_clock::now() - last_update > 30s) {
+                last_update = system_clock::now();
 
                 height_progress.set(persisted_chain_.highest_height());
 
-                log::Info() << "[1/16 Headers] Wrote block headers number=" << height_progress.get()
-                            << " (+" << height_progress.delta() << "), "
-                            << height_progress.throughput() << " headers/secs, "
-                            << working_chain_.pending_links() << " pending headers";
-
-            } else {
-                std::this_thread::sleep_for(1s);
+                log::Info() << "[1/16 Headers] Wrote block headers number=" << height_progress.get() << " (+"
+                            << height_progress.delta() << "), " << height_progress.throughput() << " headers/secs";
             }
         }
 
@@ -167,7 +198,8 @@ auto HeaderDownloader::forward(bool first_sync) -> Stage::Result {
             result.unwind_point = persisted_chain_.unwind_point();
         }
 
-        log::Info() << "[1/16 Headers] Completed, duration= " << StopWatch::format(timing.lap_duration());
+        log::Info() << "[1/16 Headers] Download completed, duration= " << StopWatch::format(timing.lap_duration());
+        log::Info() << "[1/16 Headers] Updating canonical chain";
         persisted_chain_.close();
 
         tx.commit();  // this will commit if the tx was started here

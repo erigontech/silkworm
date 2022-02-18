@@ -62,6 +62,10 @@ size_t WorkingChain::pending_links() const {
     return links_.size() - persisted_link_queue_.size();
 }
 
+size_t WorkingChain::anchors() const {
+    return anchors_.size();
+}
+
 std::string WorkingChain::human_readable_status() const {
     std::string output =
            std::to_string(links_.size()) + + " links (" +
@@ -261,14 +265,15 @@ void WorkingChain::reduce_persisted_links_to(size_t limit) {
 std::optional<GetBlockHeadersPacket66> WorkingChain::request_skeleton() {
     using namespace std::chrono_literals;
 
-    if (std::chrono::system_clock::now() - last_skeleton_request < 60s) {
+    if (anchors_.size() > 64) {
+        statistics_.skeleton_condition = "busy";
         return std::nullopt;
     }
-    last_skeleton_request = std::chrono::system_clock::now();
 
     BlockNum top = top_seen_height_;
     BlockNum bottom = highest_in_db_ + stride;  // warning: this can be inside a chain in memory
     if (top <= bottom) {
+        statistics_.skeleton_condition = "end";
         return std::nullopt;
     }
 
@@ -279,6 +284,7 @@ std::optional<GetBlockHeadersPacket66> WorkingChain::request_skeleton() {
     if (lowest_anchor <= bottom) {
         log::Trace() << "WorkingChain, no need for skeleton request (lowest_anchor = " << lowest_anchor
                      << ", highest_in_db = " << highest_in_db_ << ")";
+        statistics_.skeleton_condition = "deep";
         return std::nullopt;
     }
 
@@ -289,6 +295,7 @@ std::optional<GetBlockHeadersPacket66> WorkingChain::request_skeleton() {
     if (length == 0) {
         log::Trace() << "WorkingChain, no need for skeleton request (lowest_anchor = " << lowest_anchor
                      << ", highest_in_db = " << highest_in_db_ << ")";
+        statistics_.skeleton_condition = "low";
         return std::nullopt;
     }
 
@@ -298,6 +305,9 @@ std::optional<GetBlockHeadersPacket66> WorkingChain::request_skeleton() {
     packet.request.amount = length;
     packet.request.skip = stride - 1;
     packet.request.reverse = false;
+
+    statistics_.requested_headers += length;
+    statistics_.skeleton_condition = "ok";
 
     return {packet};
 }
@@ -371,11 +381,13 @@ auto WorkingChain::request_more_headers(time_point_t time_point, seconds_t timeo
             }; // we use blockHeight in place of parentHash to get also ommers if presents
             // we could request from origin=blockHeight-1 but debugging becomes more difficult
 
+            statistics_.requested_headers += max_len;
+
             SILK_TRACE << "WorkingChain: trying to extend anchor " << anchor->blockHeight
                          << " (chain bundle len = " << anchor->chainLength()
                          << ", last link = " << anchor->lastLinkHeight << " )";
 
-            return {packet, penalties};  // try (again) to extend this anchor
+            return {std::move(packet), std::move(penalties)};  // try (again) to extend this anchor
         } else {
             // ancestors of this anchor seem to be unavailable, invalidate and move on
             log::Warning() << "WorkingChain: invalidating anchor for suspected unavailability, "
@@ -409,8 +421,6 @@ void WorkingChain::save_external_announce(Hash h) {
 void WorkingChain::request_nack(const GetBlockHeadersPacket66& packet) {
     std::shared_ptr<Anchor> anchor;
 
-    log::Trace() << "[WARNING] WorkingChain: restoring timestamp due to request nack, requestId=" << packet.requestId;
-
     if (std::holds_alternative<Hash>(packet.request.origin)) {
         Hash hash = std::get<Hash>(packet.request.origin);
         auto anchor_it = anchors_.find(hash);
@@ -425,7 +435,12 @@ void WorkingChain::request_nack(const GetBlockHeadersPacket66& packet) {
         }
     }
 
-    if (anchor == nullptr) return;  // not found
+    if (anchor == nullptr) {
+        log::Trace() << "[WARNING] WorkingChain: failed restoring timestamp due to request nack, requestId=" << packet.requestId;
+        return;  // not found
+    }
+
+    log::Trace() << "[INFO] WorkingChain: restoring timestamp due to request nack, requestId=" << packet.requestId;
 
     anchor->restore_timestamp();
     anchor_queue_.fix();
@@ -457,20 +472,28 @@ auto WorkingChain::accept_headers(const std::vector<BlockHeader>& headers, uint6
     bool request_more_headers = false;
 
     if (headers.empty()) return {Penalty::NoPenalty, request_more_headers};
+    statistics_.received_headers += headers.size();
 
     if (headers.begin()->number < top_seen_height_ &&  // an old header announcement? .
         !is_valid_request_id(requestId)) {   // anyway is not requested by us..
+        statistics_.not_requested_headers += headers.size();
         SILK_TRACE << "Rejecting message with reqId=" << requestId << " and first block=" << headers.begin()->number;
         return {Penalty::NoPenalty, request_more_headers};
     }
 
-    if (find_bad_header(headers)) return {Penalty::BadBlockPenalty, request_more_headers};
+    if (find_bad_header(headers)) {
+        statistics_.bad_headers += headers.size();
+        return {Penalty::BadBlockPenalty, request_more_headers};
+    }
 
     auto header_list = HeaderList::make(headers);
 
     auto [segments, penalty] = header_list->split_into_segments();
 
-    if (penalty != Penalty::NoPenalty) return {penalty, request_more_headers};
+    if (penalty != Penalty::NoPenalty) {
+        statistics_.invalid_headers += headers.size();
+        return {penalty, request_more_headers};
+    }
 
     for (auto& segment : segments) {
         request_more_headers |= process_segment(segment, false, peer_id);
@@ -570,8 +593,12 @@ auto WorkingChain::process_segment(const Segment& segment, bool is_a_new_block, 
         // If duplicate segment is extending from the anchor, the anchor needs to be deleted,
         // otherwise it will keep producing requests that will be found duplicate
         if (anchor.has_value()) invalidate(anchor.value());
+        statistics_.duplicated_headers += segment.size();
         return false;
     }
+
+    statistics_.accepted_headers += end - start;
+    statistics_.duplicated_headers += segment.size() - (end - start);
 
     auto highest_header = segment.front();
     auto height = highest_header->number;
@@ -933,6 +960,27 @@ uint64_t WorkingChain::generate_request_id() {
 uint64_t WorkingChain::is_valid_request_id(uint64_t request_id) {
     uint64_t prefix = request_id / 10000;
     return request_id_prefix == prefix;
+}
+
+std::ostream& operator<<(std::ostream& os, const WorkingChain::Statistics& stats) {
+    uint64_t rejected_headers = stats.received_headers - stats.accepted_headers;
+    uint64_t unknown = rejected_headers - stats.not_requested_headers - stats.duplicated_headers - stats.invalid_headers - stats.bad_headers;
+    long perc_received = stats.requested_headers > 0 ? lround(stats.received_headers * 100.0 / stats.requested_headers) : 0;
+    long perc_accepted = stats.received_headers > 0 ? lround(stats.accepted_headers * 100.0 / stats.received_headers) : 0;
+    long perc_rejected = stats.received_headers > 0 ? lround(rejected_headers * 100.0 / stats.received_headers) : 0;
+    os << "headers: "
+       << "req=" << stats.requested_headers << " "
+       << "rec=" << stats.received_headers << " (" << perc_received << "%) -> "
+       << "acc=" << stats.accepted_headers << " (" << perc_accepted << "%) "
+       << "rej=" << rejected_headers << " (" << perc_rejected << "%); "
+       << "reject reasons: "
+       << "not-req=" << stats.not_requested_headers << ", "
+       << "dup=" << stats.duplicated_headers << ", "
+       << "inv=" << stats.invalid_headers << ", "
+       << "bad=" << stats.bad_headers << ", "
+       << "unk=" << unknown;
+
+    return os;
 }
 
 }  // namespace silkworm

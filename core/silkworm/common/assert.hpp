@@ -1,5 +1,5 @@
 /*
-   Copyright 2021 The Silkworm Authors
+   Copyright 2021-2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -17,15 +17,15 @@
 #ifndef SILKWORM_COMMON_ASSERT_HPP_
 #define SILKWORM_COMMON_ASSERT_HPP_
 
-#include <absl/base/optimization.h>
+#include <silkworm/common/optimization.h>
 
 namespace silkworm {
 void abort_due_to_assertion_failure(char const* expr, char const* file, long line);
 }
 
 // SILKWORM_ASSERT always aborts program execution on assertion failure, even when NDEBUG is defined.
-#define SILKWORM_ASSERT(expr)                         \
-    (ABSL_PREDICT_TRUE((expr)) ? static_cast<void>(0) \
-                               : ::silkworm::abort_due_to_assertion_failure(#expr, __FILE__, __LINE__))
+#define SILKWORM_ASSERT(expr)                             \
+    (SILKWORM_PREDICT_TRUE((expr)) ? static_cast<void>(0) \
+                                   : ::silkworm::abort_due_to_assertion_failure(#expr, __FILE__, __LINE__))
 
 #endif  // SILKWORM_COMMON_ASSERT_HPP_

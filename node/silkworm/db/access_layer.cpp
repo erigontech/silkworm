@@ -137,13 +137,14 @@ void write_canonical_header_hash(mdbx::txn& txn, const uint8_t (&hash)[kHashLeng
     target.upsert(to_slice(key), db::to_slice(hash));
 }
 
-std::vector<Transaction> read_transactions(mdbx::txn& txn, uint64_t base_id, uint64_t count) {
-    if (!count) {
-        return {};
+void read_transactions(mdbx::txn& txn, uint64_t base_id, uint64_t count, std::vector<Transaction>& out) {
+    if (count == 0) {
+        out.clear();
+        return;
     }
     thread_local mdbx::cursor_managed src;
     src.bind(txn, db::open_map(txn, table::kBlockTransactions));
-    return read_transactions(src, base_id, count);
+    read_transactions(src, base_id, count, out);
 }
 
 void write_transactions(mdbx::txn& txn, const std::vector<Transaction>& transactions, uint64_t base_id) {
@@ -163,12 +164,12 @@ void write_transactions(mdbx::txn& txn, const std::vector<Transaction>& transact
     }
 }
 
-std::vector<Transaction> read_transactions(mdbx::cursor& txn_table, uint64_t base_id, uint64_t count) {
-    std::vector<Transaction> v{};
-    if (count == 0) {
-        return v;
-    }
+void read_transactions(mdbx::cursor& txn_table, uint64_t base_id, uint64_t count, std::vector<Transaction>& v) {
     v.resize(count);
+    if (count == 0) {
+        return;
+    }
+
     auto key{db::block_key(base_id)};
 
     uint64_t i{0};
@@ -178,20 +179,18 @@ std::vector<Transaction> read_transactions(mdbx::cursor& txn_table, uint64_t bas
         rlp::success_or_throw(rlp::decode(data_view, v.at(i)));
     }
     SILKWORM_ASSERT(i == count);
-    return v;
 }
 
-std::optional<BlockWithHash> read_block(mdbx::txn& txn, BlockNum block_number, bool read_senders) {
+bool read_block(mdbx::txn& txn, BlockNum block_number, bool read_senders, BlockWithHash& bh) {
     // Locate canonical hash
     thread_local mdbx::cursor_managed canonical_hashes_cursor;
     canonical_hashes_cursor.bind(txn, db::open_map(txn, table::kCanonicalHashes));
     auto key{block_key(block_number)};
     auto data{canonical_hashes_cursor.find(to_slice(key), false)};
     if (!data) {
-        return std::nullopt;
+        return false;
     }
 
-    BlockWithHash bh{};
     SILKWORM_ASSERT(data.value.length() == kHashLength);
     std::memcpy(bh.hash.bytes, data.value.data(), kHashLength);
 
@@ -201,62 +200,49 @@ std::optional<BlockWithHash> read_block(mdbx::txn& txn, BlockNum block_number, b
     key = block_key(block_number, bh.hash.bytes);
     data = headers_cursor.find(to_slice(key), false);
     if (!data) {
-        return std::nullopt;
+        return false;
     }
 
     ByteView data_view(from_slice(data.value));
     rlp::success_or_throw(rlp::decode(data_view, bh.block.header));
 
-    // Read body
-    std::optional<BlockBody> body{read_body(txn, key, read_senders)};
-    if (!body) {
-        return std::nullopt;
-    }
-
-    std::swap(bh.block.ommers, body->ommers);
-    std::swap(bh.block.transactions, body->transactions);
-
-    return bh;
+    return read_body(txn, key, read_senders, bh.block);
 }
 
-std::optional<BlockBody> read_body(mdbx::txn& txn, BlockNum block_number, const uint8_t (&hash)[kHashLength],
-                                   bool read_senders) {
+bool read_body(mdbx::txn& txn, BlockNum block_number, const uint8_t (&hash)[kHashLength], bool read_senders,
+               BlockBody& out) {
     auto key{block_key(block_number, hash)};
-    return read_body(txn, key, read_senders);
+    return read_body(txn, key, read_senders, out);
 }
 
-std::optional<BlockBody> read_body(mdbx::txn& txn, const Bytes& key, bool read_senders) {
+bool read_body(mdbx::txn& txn, const Bytes& key, bool read_senders, BlockBody& out) {
     thread_local mdbx::cursor_managed src;
     src.bind(txn, db::open_map(txn, table::kBlockBodies));
     auto data{src.find(to_slice(key), false)};
     if (!data) {
-        return std::nullopt;
+        return false;
     }
     ByteView data_view{from_slice(data.value)};
     auto body{detail::decode_stored_block_body(data_view)};
 
-    BlockBody out;
     std::swap(out.ommers, body.ommers);
-    out.transactions = read_transactions(txn, body.base_txn_id, body.txn_count);
+    read_transactions(txn, body.base_txn_id, body.txn_count, out.transactions);
 
     if (!out.transactions.empty() && read_senders) {
         std::vector<evmc::address> senders{db::read_senders(txn, key)};
-        // Might be empty due to pruning
         if (!senders.empty()) {
-            if (senders.size() != out.transactions.size()) {
-                throw MissingSenders("senders count does not match transactions count");
-            }
+            SILKWORM_ASSERT(senders.size() == out.transactions.size());
             for (size_t i{0}; i < senders.size(); ++i) {
                 out.transactions[i].from = senders[i];
             }
-        } else {
+        } else {  // Might be empty due to pruning
             for (auto& transaction : out.transactions) {
                 transaction.recover_sender();
             }
         }
     }
 
-    return out;
+    return true;
 }
 
 void write_body(mdbx::txn& txn, const BlockBody& body, const uint8_t (&hash)[kHashLength], const BlockNum number) {

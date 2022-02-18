@@ -103,22 +103,23 @@ StageResult Execution::execute_batch(db::RWTxn& txn, BlockNum max_block_num, Blo
             lap_time_ = std::chrono::steady_clock::now();
         }
 
+        BlockWithHash block_with_hash;
+
         while (true) {
             if ((block_num_ % 64 == 0) && is_stopping()) {
                 return StageResult::kAborted;
             }
 
-            std::optional<BlockWithHash> block_with_hash{db::read_block(*txn, block_num_, /*read_senders=*/true)};
-            if (!block_with_hash.has_value()) {
+            if (!db::read_block(*txn, block_num_, /*read_senders=*/true, block_with_hash)) {
                 return StageResult::kBadChainSequence;
             }
-            ExecutionProcessor processor(block_with_hash->block, *consensus_engine_, buffer,
+            ExecutionProcessor processor(block_with_hash.block, *consensus_engine_, buffer,
                                          node_settings_->chain_config.value());
             processor.evm().advanced_analysis_cache = &analysis_cache;
             processor.evm().state_pool = &state_pool;
 
             if (const auto res{processor.execute_and_write_block(receipts)}; res != ValidationResult::kOk) {
-                const auto block_hash_hex{to_hex(block_with_hash->hash.bytes, true)};
+                const auto block_hash_hex{to_hex(block_with_hash.hash.bytes, true)};
                 log::Error("Block Validation Error",
                            {"block", std::to_string(block_num_), "hash", block_hash_hex, "err",
                             std::string(magic_enum::enum_name<ValidationResult>(res))});
@@ -129,9 +130,9 @@ StageResult Execution::execute_batch(db::RWTxn& txn, BlockNum max_block_num, Blo
             // TODO(Andrea) implement pruning
             buffer.insert_receipts(block_num_, receipts);
             std::unique_lock progress_lock(progress_mtx_);
-            processed_blocks_++;
-            processed_transactions_ += block_with_hash->block.transactions.size();
-            processed_gas_ += block_with_hash->block.header.gas_used;
+            ++processed_blocks_;
+            processed_transactions_ += block_with_hash.block.transactions.size();
+            processed_gas_ += block_with_hash.block.header.gas_used;
             progress_lock.unlock();
 
             const bool overflows{buffer.current_batch_size() >= node_settings_->batch_size};
@@ -143,15 +144,12 @@ StageResult Execution::execute_batch(db::RWTxn& txn, BlockNum max_block_num, Blo
                           {"size", human_size(buffer.current_batch_size()), "in", StopWatch::format(t1 - t0)});
                 return is_stopping() ? StageResult::kAborted : StageResult::kSuccess;
             }
-            block_num_++;
+            ++block_num_;
         }
 
     } catch (const mdbx::exception& ex) {
         log::Error("DB Error", {"block", std::to_string(block_num_)}) << " " << ex.what();
         return StageResult::kDbError;
-    } catch (const db::MissingSenders&) {
-        log::Error("Missing senders", {"block", std::to_string(block_num_)});
-        return StageResult::kMissingSenders;
     } catch (const rlp::DecodingError& ex) {
         log::Error("RLP decoding error", {"block", std::to_string(block_num_)}) << " " << ex.what();
         return StageResult::kDecodingError;

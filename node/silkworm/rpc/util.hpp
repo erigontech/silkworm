@@ -27,11 +27,11 @@
 // The default gRPC logging function
 void gpr_default_log(gpr_log_func_args* args);
 
-// Define an empty gRPC logging function
+//! Define an empty gRPC logging function
 static void gpr_no_log(gpr_log_func_args* /*args*/) {
 }
 
-// Define a gRPC logging function delegating to Silkworm logging.
+//! Define a gRPC logging function delegating to Silkworm logging facility.
 static void gpr_silkworm_log(gpr_log_func_args* args) {
     if (args->severity == GPR_LOG_SEVERITY_ERROR) {
         SILK_ERROR << args->message;

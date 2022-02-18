@@ -33,25 +33,9 @@ ServerContextPool::ServerContextPool(std::size_t pool_size) : next_index_{0} {
     if (pool_size == 0) {
         throw std::logic_error("ServerContextPool::ServerContextPool pool_size is 0");
     }
-    SILK_INFO << "ServerContextPool::ServerContextPool creating pool with size: " << pool_size;
+    SILK_INFO << "Creating server context pool with size: " << pool_size;
 
     contexts_.reserve(pool_size);
-
-    // Create all the io_contexts and give them work to do so that their event loop will not exit until they are explicitly stopped.
-    /*for (std::size_t i{0}; i < pool_size; ++i) {
-        auto io_context = std::make_shared<boost::asio::io_context>();
-        auto grpc_queue = builder.AddCompletionQueue();
-        auto grpc_runner = std::make_unique<CompletionRunner>(*grpc_queue, *io_context);
-        contexts_.push_back({
-            io_context,
-            std::move(grpc_queue),
-            std::move(grpc_runner)
-        });
-        SILK_DEBUG << "ServerContextPool::ServerContextPool context[" << i << "] " << contexts_[i];
-        work_.push_back(boost::asio::require(io_context->get_executor(), boost::asio::execution::outstanding_work.tracked));
-    }*/
-
-    SILK_TRACE << "ServerContextPool::ServerContextPool END " << this;
 }
 
 ServerContextPool::~ServerContextPool() {

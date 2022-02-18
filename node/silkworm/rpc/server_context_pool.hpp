@@ -55,18 +55,19 @@ class ServerContextPool {
     boost::asio::io_context const& next_io_context();
 
   private:
-    // The pool of contexts
+    //! The pool of execution contexts.
     std::vector<ServerContext> contexts_;
 
-    // The work-tracking executors that keep the io_contexts running
+    //! The work-tracking executors that keep the running contexts.
     std::list<boost::asio::execution::any_executor<>> work_;
 
-    // The next index to use for a context
+    //! The index for obtaining next context to use (round-robin).
     std::size_t next_index_;
 
+    //! Mutual exclusion to synchronize run/stop operations.
     std::mutex mutex_;
 
-    // Flag indicating if pool has been stopped
+    //! Flag indicating if pool has been stopped.
     bool stopped_{false};
 };
 

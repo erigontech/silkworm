@@ -28,6 +28,7 @@
 
 namespace silkworm::rpc {
 
+//! Base RPC server able to serve incoming requests for \ref Service.
 template <typename Service>
 class Server {
   public:
@@ -107,6 +108,7 @@ class Server {
     }
 
   protected:
+    //! Subclasses must override to register initial server-side RPC requests.
     virtual void request_calls() = 0;
 
     ServerContext const& next_context() { return context_pool_.next_context(); }
@@ -118,6 +120,7 @@ class Server {
     std::unique_ptr<grpc::Server> server_;
     ServerContextPool context_pool_;
 
+    //! Mutual exclusion to synchronize run/shutdown operations.
     std::mutex mutex_;
 
     bool shutdown_{false};

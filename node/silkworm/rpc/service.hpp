@@ -25,8 +25,11 @@
 
 namespace silkworm::rpc {
 
+//! Default initial capacity for the \ref RpcService registry.
 constexpr std::size_t kRequestsInitialCapacity = 10000;
 
+//! Registry for the \ref Rpc typed requests currently alive.
+/// Keeps track of RPC instances created by subclasses and automatically deletes them.
 template <typename Rpc>
 class RpcService {
   protected:

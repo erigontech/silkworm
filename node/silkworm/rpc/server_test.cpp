@@ -27,6 +27,7 @@
 
 namespace silkworm::rpc {
 
+namespace { // Trick suggested by gRPC team to avoid name clashes in multiple test modules
 class MockService : public grpc::Service {
 };
 
@@ -37,7 +38,9 @@ class EmptyServer : public Server<MockService> {
   protected:
     void request_calls() override {}
 };
+};
 
+// TODO(canepat): better copy grpc_pick_unused_port_or_die to generate unused port
 constexpr const char* kTestAddressUri = "localhost:12345";
 
 TEST_CASE("Server::Server", "[silkworm][node][rpc]") {
@@ -90,7 +93,6 @@ TEST_CASE("Server::run", "[silkworm][node][rpc]") {
         std::thread shutdown_thread{[&server]() {
             std::this_thread::yield();
             server.shutdown();
-            //server.join();
         }};
         server.run();
         CHECK(server.accept_requests_called());

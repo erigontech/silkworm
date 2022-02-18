@@ -60,6 +60,8 @@ TEST_CASE("RpcService::RpcService", "[silkworm][node][rpc]") {
 }
 
 TEST_CASE("RpcService::add_request", "[silkworm][node][rpc]") {
+    CHECK(MockRpc::instance_count() == 0);
+
     SECTION("OK: insert new rpc", "[silkworm][node][rpc]") {
         EmptyService svc;
         auto rpc = new MockRpc();
@@ -68,9 +70,13 @@ TEST_CASE("RpcService::add_request", "[silkworm][node][rpc]") {
         CHECK(inserted);
         CHECK(svc.requests_count() == 1);
     }
+
+    CHECK(MockRpc::instance_count() == 0);
 }
 
 TEST_CASE("RpcService::remove_request", "[silkworm][node][rpc]") {
+    CHECK(MockRpc::instance_count() == 0);
+
     SECTION("KO: remove unexisting rpc", "[silkworm][node][rpc]") {
         EmptyService svc;
         auto rpc1 = new MockRpc();
@@ -88,6 +94,8 @@ TEST_CASE("RpcService::remove_request", "[silkworm][node][rpc]") {
         CHECK(svc.erase_request(rpc) == 1);
         CHECK(svc.requests_count() == 0);
     }
+
+    CHECK(MockRpc::instance_count() == 0);
 }
 
 } // namespace silkworm::rpc

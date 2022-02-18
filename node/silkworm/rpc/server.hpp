@@ -28,13 +28,13 @@
 
 namespace silkworm::rpc {
 
-//! Base RPC server able to serve incoming requests for \ref Service.
-template <typename Service>
+//! Base RPC server able to serve incoming requests for gRPC \ref AsyncService.
+template <typename AsyncService>
 class Server {
   public:
     //! Build a ready-to-start RPC server according to specified configuration.
     explicit Server(const ServerConfig& config)
-    : service_{std::make_unique<Service>()}, context_pool_{config.num_contexts()} {
+    : service_{std::make_unique<AsyncService>()}, context_pool_{config.num_contexts()} {
         SILK_TRACE << "Server::Server " << this << " START";
         grpc::ServerBuilder builder;
 
@@ -113,8 +113,8 @@ class Server {
 
     ServerContext const& next_context() { return context_pool_.next_context(); }
 
-    /// \warning The service must exist for the lifetime of the server it is registered on.
-    std::unique_ptr<Service> service_;
+    /// \warning The gRPC service must exist for the lifetime of the server it is registered on.
+    std::unique_ptr<AsyncService> service_;
 
   private:
     std::unique_ptr<grpc::Server> server_;

@@ -57,8 +57,6 @@ void HeaderDownloader::execution_loop() {
     sentry_.subscribe(SentryClient::Scope::BlockAnnouncements,
                       [this](const sentry::InboundMessage& msg) { receive_message(msg); });
 
-    time_point_t last_update = system_clock::now();
-
     while (!is_stopping() && !sentry_.is_stopping()) {
         // pop a message from the queue
         std::shared_ptr<Message> message;
@@ -84,16 +82,6 @@ void HeaderDownloader::execution_loop() {
                 << " | rej: " << std::setw(10) << std::right << rejected_headers;
         }
 
-        if (system_clock::now() - last_update > 30s) {
-            last_update = system_clock::now();
-            log::Info() << "HeaderDownloader statistics: "
-                << messages_.size() << " waiting-msg, "
-                << working_chain_.pending_links() << " links, "
-                << working_chain_.anchors() << " anchors "
-                << "/bn db=" << working_chain_.highest_block_in_db() << ", "
-                << "tip=" << working_chain_.top_seen_block_height() << " "
-                << "/" << working_chain_.statistics_;
-        }
     }
 
     stop();
@@ -150,15 +138,18 @@ auto HeaderDownloader::forward(bool first_sync) -> Stage::Result {
 
                 auto [stable_headers, in_sync] = withdraw_result.get();  // blocking
                 if (!stable_headers.empty()) {
-                    if (stable_headers.size() > 10000)
+                    if (stable_headers.size() > 100000) {
                         log::Info() << "[1/16 Headers] Inserting headers...";
+                    }
                     StopWatch insertion_timing; insertion_timing.start();
 
                     // persist headers
                     persisted_chain_.persist(stable_headers);
 
-                    log::Info() << "[1/16 Headers] Inserted headers tot=" << stable_headers.size()
-                        << " (duration= " << StopWatch::format(insertion_timing.lap_duration()) << "s)";
+                    if (stable_headers.size() > 100000) {
+                        log::Info() << "[1/16 Headers] Inserted headers tot=" << stable_headers.size()
+                            << " (duration= " << StopWatch::format(insertion_timing.lap_duration()) << "s)";
+                    }
                 }
 
                 // submit another command
@@ -192,13 +183,15 @@ auto HeaderDownloader::forward(bool first_sync) -> Stage::Result {
 
         result.status = Stage::Result::Done;
 
-        // see HeadersForward
         if (persisted_chain_.unwind()) {
             result.status = Result::UnwindNeeded;
             result.unwind_point = persisted_chain_.unwind_point();
         }
 
-        log::Info() << "[1/16 Headers] Download completed, duration= " << StopWatch::format(timing.lap_duration());
+        auto headers_downloaded = persisted_chain_.highest_height() - persisted_chain_.initial_height();
+        log::Info() << "[1/16 Headers] Downloading completed, wrote " << headers_downloaded << " headers, "
+            << "duration= " << StopWatch::format(timing.lap_duration());
+
         log::Info() << "[1/16 Headers] Updating canonical chain";
         persisted_chain_.close();
 
@@ -206,7 +199,7 @@ auto HeaderDownloader::forward(bool first_sync) -> Stage::Result {
 
         // todo: do we need a sentry.set_status() here?
 
-        log::Info() << "[1/16 Headers] Completed, duration= " << StopWatch::format(timing.lap_duration());
+        log::Info() << "[1/16 Headers] DONE, duration= " << StopWatch::format(timing.lap_duration());
         log::Trace() << "[INFO] HeaderDownloader forward operation completed";
 
     } catch (const std::exception& e) {

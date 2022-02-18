@@ -26,23 +26,23 @@ namespace silkworm {
 
 class OutboundGetBlockHeaders : public OutboundMessage {
   public:
-    enum Breadth {Wide_Req, Narrow_Req};
-
-    OutboundGetBlockHeaders(WorkingChain&, SentryClient&, Breadth b = Wide_Req);
+    OutboundGetBlockHeaders(WorkingChain&, SentryClient&);
 
     std::string name() const override { return "OutboundGetBlockHeaders"; }
     std::string content() const override;
 
     void execute() override;  // headers_forward function in Erigon
 
+    int sent_request();
+
   private:
     sentry::SentPeers send_packet(const GetBlockHeadersPacket66&, seconds_t timeout);
     void send_penalization(const PeerPenalization&, seconds_t timeout);
 
+    int sent_reqs_{0};
     std::string packets_;
     WorkingChain& working_chain_;
     SentryClient& sentry_;
-    Breadth breadth_;
 };
 
 }  // namespace silkworm

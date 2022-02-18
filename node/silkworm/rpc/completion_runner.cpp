@@ -26,7 +26,7 @@
 namespace silkworm::rpc {
 
 void CompletionRunner::stop() {
-    SILK_INFO << "CompletionRunner::stop start started: " << started_ << " shutdown: " << shutdown_requested_;
+    SILK_TRACE << "CompletionRunner::stop start started: " << started_ << " shutdown: " << shutdown_requested_;
     std::unique_lock<std::mutex> lock(mutex_);
     if (!shutdown_requested_) {
         shutdown_requested_ = true;
@@ -43,38 +43,39 @@ void CompletionRunner::stop() {
             shutdown(false);
         }
     }
-    SILK_INFO << "CompletionRunner::stop end";
+    SILK_TRACE << "CompletionRunner::stop end";
 }
 
 void CompletionRunner::run() {
-    SILK_INFO << "CompletionRunner::run start";
-    std::unique_lock<std::mutex> lock(mutex_);
-    started_ = true;
-    lock.release()->unlock();
+    SILK_TRACE << "CompletionRunner::run start";
+    {
+        std::unique_lock<std::mutex> lock(mutex_);
+        started_ = true;
+    }
     bool running = true;
     while (running) {
         CompletionTag tag;
         const auto got_event = queue_.Next(reinterpret_cast<void**>(&tag.processor), &tag.ok);
         if (got_event) {
-            SILK_TRACE << "CompletionRunner::run post operation: " << &tag.processor;
+            SILK_DEBUG << "CompletionRunner::run post operation: " << &tag.processor;
             io_context_.post([=]() { (*tag.processor)(tag.ok); });
         } else {
             running = false;
             SILK_DEBUG << "CompletionRunner::run queue shutdown";
         }
     }
-    SILK_INFO << "CompletionRunner::run end";
+    SILK_TRACE << "CompletionRunner::run end";
 }
 
 void CompletionRunner::shutdown(bool ok) {
-    SILK_INFO << "CompletionRunner::shutdown start ok: " << ok;
+    SILK_TRACE << "CompletionRunner::shutdown start ok: " << ok;
     queue_.Shutdown();
     SILK_DEBUG << "CompletionRunner::shutdown draining...";
     void* ignored_tag;
     bool ignored_ok;
     while (queue_.Next(&ignored_tag, &ignored_ok)) {}
     shutdown_completed_.notify_all();
-    SILK_INFO << "CompletionRunner::shutdown end";
+    SILK_TRACE << "CompletionRunner::shutdown end";
 }
 
 } // namespace silkworm::rpc

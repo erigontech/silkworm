@@ -74,8 +74,9 @@ class Server {
     Server(const Server&) = delete;
     Server& operator=(const Server&) = delete;
 
+    //! Run the RPC server execution loop until \ref shutdown() is called on this Server instance.
     void run() {
-        SILK_INFO << "Server::run " << this << " START";
+        SILK_TRACE << "Server::run " << this << " START";
         {
             std::unique_lock<std::mutex> lock(mutex_);
             if (shutdown_) return;
@@ -83,15 +84,14 @@ class Server {
             // gRPC async model requires the server to register one responded call for each RPC in advance.
             SILK_DEBUG << "Server::run " << this << " registering responded calls";
             request_calls();
-
-            // Start the server execution: the context pool loop is blocking so release the lock first.
-            lock.release()->unlock();
-            SILK_DEBUG << "Server::run " << this << " starting execution loop";
-            context_pool_.run();
         }
-        SILK_INFO << "Server::run " << this << " END";
+        // Start the server execution: the context pool loop will block the calling thread.
+        SILK_DEBUG << "Server::run " << this << " starting execution loop";
+        context_pool_.run();
+        SILK_TRACE << "Server::run " << this << " END";
     }
 
+    //! Stop this Server instance forever. Any subsequent call to \ref run() has not effect.
     void shutdown() {
         SILK_INFO << "Server::shutdown " << this << " START";
         {
@@ -107,17 +107,21 @@ class Server {
         SILK_INFO << "Server::shutdown " << this << " END";
     }
 
-  protected:
-    //! Subclasses must override to register initial server-side RPC requests.
-    virtual void request_calls() = 0;
-
+    //! Get the next server context in round-robin scheme.
     ServerContext const& next_context() { return context_pool_.next_context(); }
 
-    /// \warning The gRPC service must exist for the lifetime of the server it is registered on.
+  protected:
+    //! Subclasses must override this method to register initial server-side RPC requests.
+    virtual void request_calls() = 0;
+
+    /// \warning The gRPC service must exist for the lifetime of the gRPC server it is registered on.
     std::unique_ptr<AsyncService> service_;
 
   private:
+    //! gRPC server instance tied to this Server lifetime.
     std::unique_ptr<grpc::Server> server_;
+
+    //! Pool of server schedulers used to run the execution loops.
     ServerContextPool context_pool_;
 
     //! Mutual exclusion to synchronize run/shutdown operations.

@@ -1,5 +1,5 @@
 /*
-   Copyright 2020-2021 The Silkworm Authors
+   Copyright 2020-2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -37,8 +37,8 @@
 #include <silkworm/common/terminal.hpp>
 #include <silkworm/common/test_util.hpp>
 #include <silkworm/concurrency/thread_pool.hpp>
-#include <silkworm/concurrency/thread_safe_state_pool.hpp>
 #include <silkworm/consensus/blockchain.hpp>
+#include <silkworm/execution/thread_safe_state_pool.hpp>
 #include <silkworm/state/in_memory_state.hpp>
 
 // See https://ethereum-tests.readthedocs.io

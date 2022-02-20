@@ -1,5 +1,5 @@
 /*
-   Copyright 2021 The Silkworm Authors
+   Copyright 2021-2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -14,8 +14,8 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_CONCURRENCY_THREAD_SAFE_STATE_POOL_HPP_
-#define SILKWORM_CONCURRENCY_THREAD_SAFE_STATE_POOL_HPP_
+#ifndef SILKWORM_EXECUTION_THREAD_SAFE_STATE_POOL_HPP_
+#define SILKWORM_EXECUTION_THREAD_SAFE_STATE_POOL_HPP_
 
 #include <mutex>
 
@@ -35,4 +35,4 @@ class ThreadSafeExecutionStatePool : public ExecutionStatePool {
 
 }  // namespace silkworm
 
-#endif  // SILKWORM_CONCURRENCY_THREAD_SAFE_STATE_POOL_HPP_
+#endif  // SILKWORM_EXECUTION_THREAD_SAFE_STATE_POOL_HPP_

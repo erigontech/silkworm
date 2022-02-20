@@ -230,7 +230,7 @@ void RecoveryFarm::wait_workers_completion() {
 std::optional<size_t> RecoveryFarm::get_harvestable_worker() {
     std::optional<size_t> ret;
     {
-        std::scoped_lock l(harvest_mutex_);
+        std::scoped_lock lck(workers_mtx_);
         if (!harvestable_workers_.empty()) {
             ret.emplace(harvestable_workers_.front());
             harvestable_workers_.pop();
@@ -394,7 +394,7 @@ bool RecoveryFarm::dispatch_batch() {
             wait_count = 5;
             log::Info() << "Waiting for available worker ...";
         }
-        std::unique_lock lck(worker_completed_mtx_);
+        std::unique_lock lck(workers_mtx_);
         (void)worker_completed_cv_.wait_for(lck, std::chrono::seconds(5));
     }
 
@@ -480,10 +480,9 @@ StageResult RecoveryFarm::fill_canonical_headers(BlockNum from, BlockNum to) noe
 }
 
 void RecoveryFarm::task_completed_handler(RecoveryWorker* sender) {
-    {
-        std::scoped_lock l(harvest_mutex_);
-        harvestable_workers_.push(sender->get_id());
-    }
+
+    std::scoped_lock lck(workers_mtx_);
+    harvestable_workers_.push(sender->get_id());
     if (workers_in_flight_) {
         workers_in_flight_--;
     }
@@ -491,6 +490,8 @@ void RecoveryFarm::task_completed_handler(RecoveryWorker* sender) {
 }
 
 void RecoveryFarm::worker_completed_handler(Worker* sender) {
+
+    std::scoped_lock lck(workers_mtx_);
     if (workers_in_flight_) {
         workers_in_flight_--;
     }

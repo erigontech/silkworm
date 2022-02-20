@@ -70,8 +70,19 @@ static inline std::pair<const char*, const char*> get_level_settings(Level level
     }
 }
 
+struct separate_thousands : std::numpunct<char> {
+    char separator;
+    explicit separate_thousands(char sep): separator(sep) {}
+    char do_thousands_sep() const override { return separator; }
+    string_type do_grouping() const override { return "\3"; } // groups of 3 digit
+};
+
 BufferBase::BufferBase(Level level) : should_print_(level <= settings_.log_verbosity) {
     if (!should_print_) return;
+
+    if (settings_.log_thousands_sep != 0) {
+        ss_.imbue(std::locale(ss_.getloc(), new separate_thousands(settings_.log_thousands_sep)));
+    }
 
     auto [prefix, color] = get_level_settings(level);
 

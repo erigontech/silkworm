@@ -122,26 +122,8 @@ void Buffer::write_to_state_table() {
     for (const auto& address : addresses) {
         if (auto it{accounts_.find(address)}; it != accounts_.end()) {
             auto key{to_slice(address)};
-
-            /*
-             * Maybe a changed account is reverted to its original state during the batch
-             * so to avoid free page pollution by updating the same value into PlainState
-             * simply check new value differs from old value. The extra memcmp is worth the
-             * savings by MDBX dealing with free pages
-             */
-            auto data{state_table.move(mdbx::cursor::move_operation::find_key, key, false)};
-            if (data.done) {
-                if (it->second.has_value()) {
-                    Bytes new_encoded{it->second->encode_for_storage()};
-                    if (new_encoded.length() != data.value.length() ||
-                        std::memcmp(new_encoded.data(), data.value.data(), new_encoded.length()) != 0) {
-                        auto new_encoded_slice{to_slice(new_encoded)};
-                        ::mdbx::error::success_or_throw(state_table.put(key, &new_encoded_slice, MDBX_CURRENT));
-                    }
-                } else {
-                    state_table.erase(true);
-                }
-            } else if (it->second.has_value()) {
+            state_table.erase(key, /*whole_multivalue=*/true);  // PlainState is multivalue
+            if (it->second.has_value()) {
                 Bytes encoded{it->second->encode_for_storage()};
                 state_table.upsert(key, to_slice(encoded));
             }
@@ -304,12 +286,13 @@ std::optional<BlockHeader> Buffer::read_header(uint64_t block_number, const evmc
     return db::read_header(txn_, block_number, block_hash.bytes);
 }
 
-std::optional<BlockBody> Buffer::read_body(uint64_t block_number, const evmc::bytes32& block_hash) const noexcept {
+bool Buffer::read_body(uint64_t block_number, const evmc::bytes32& block_hash, BlockBody& body) const noexcept {
     Bytes key{block_key(block_number, block_hash.bytes)};
     if (auto it{bodies_.find(key)}; it != bodies_.end()) {
-        return it->second;
+        body = it->second;
+        return true;
     }
-    return db::read_body(txn_, key, /*read_senders=*/false);
+    return db::read_body(txn_, key, /*read_senders=*/false, body);
 }
 
 std::optional<Account> Buffer::read_account(const evmc::address& address) const noexcept {

@@ -1,5 +1,5 @@
 /*
-    Copyright 2021 The Silkworm Authors
+    Copyright 2021-2022 The Silkworm Authors
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -38,7 +38,6 @@ enum class [[nodiscard]] StageResult{
     kInvalidProgress,         //
     kInvalidBlock,            //
     kInvalidTransaction,      //
-    kMissingSenders,          //
     kDecodingError,           //
     kUnexpectedError,         //
     kUnknownError,            //
@@ -117,7 +116,6 @@ class IStage : public Stoppable {
     const char* stage_name_;
     NodeSettings* node_settings_;
     std::atomic<OperationType> operation_{OperationType::None};
-
 };
 
 }  // namespace silkworm::stagedsync

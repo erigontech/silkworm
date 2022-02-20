@@ -1,5 +1,5 @@
 /*
-   Copyright 2020-2021 The Silkworm Authors
+   Copyright 2020-2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -21,6 +21,15 @@
 #include <silkworm/common/util.hpp>
 
 namespace silkworm {
+
+const std::vector<AccessListEntry> access_list{
+    {0xde0b295669a9fd93d5f28d9ec85e40f4cb697bae_address,
+     {
+         0x0000000000000000000000000000000000000000000000000000000000000003_bytes32,
+         0x0000000000000000000000000000000000000000000000000000000000000007_bytes32,
+     }},
+    {0xbb9bc244d798123fde783fcc1c72d3bb8c189413_address, {}},
+};
 
 TEST_CASE("Legacy Transaction RLP") {
     Transaction txn{
@@ -47,18 +56,16 @@ TEST_CASE("Legacy Transaction RLP") {
     REQUIRE(rlp::decode<Transaction>(view, decoded) == rlp::DecodingResult::kOk);
     CHECK(view.empty());
     CHECK(decoded == txn);
+
+    // check that access_list is cleared
+    decoded.access_list = access_list;
+    view = encoded;
+    REQUIRE(rlp::decode<Transaction>(view, decoded) == rlp::DecodingResult::kOk);
+    CHECK(view.empty());
+    CHECK(decoded == txn);
 }
 
 TEST_CASE("EIP-2930 Transaction RLP") {
-    std::vector<AccessListEntry> access_list{
-        {0xde0b295669a9fd93d5f28d9ec85e40f4cb697bae_address,
-         {
-             0x0000000000000000000000000000000000000000000000000000000000000003_bytes32,
-             0x0000000000000000000000000000000000000000000000000000000000000007_bytes32,
-         }},
-        {0xbb9bc244d798123fde783fcc1c72d3bb8c189413_address, {}},
-    };
-
     Transaction txn{
         Transaction::Type::kEip2930,                         // type
         7,                                                   // nonce
@@ -86,15 +93,6 @@ TEST_CASE("EIP-2930 Transaction RLP") {
 }
 
 TEST_CASE("EIP-1559 Transaction RLP") {
-    std::vector<AccessListEntry> access_list{
-        {0xde0b295669a9fd93d5f28d9ec85e40f4cb697bae_address,
-         {
-             0x0000000000000000000000000000000000000000000000000000000000000003_bytes32,
-             0x0000000000000000000000000000000000000000000000000000000000000007_bytes32,
-         }},
-        {0xbb9bc244d798123fde783fcc1c72d3bb8c189413_address, {}},
-    };
-
     Transaction txn{
         Transaction::Type::kEip1559,                         // type
         7,                                                   // nonce

@@ -76,7 +76,7 @@ class Collector {
 
     //! \brief Returns the hex representation of current load key (for progress tracking)
     [[nodiscard]] std::string get_load_key() const {
-        std::unique_lock l{mutex_};
+        std::atomic_thread_fence(std::memory_order_acquire);
         return loading_key_;
     }
 
@@ -86,8 +86,8 @@ class Collector {
     void flush_buffer();  // Write buffer to file
 
     void set_loading_key(ByteView key) {
-        std::unique_lock l{mutex_};
         loading_key_ = to_hex(key, true);
+        std::atomic_thread_fence(std::memory_order_release);
     }
 
     bool work_path_managed_;
@@ -109,7 +109,6 @@ class Collector {
 
     std::vector<std::unique_ptr<FileProvider>> file_providers_;  // Collection of file providers
     size_t size_{0};                                             // Total collected size
-    mutable std::mutex mutex_{};                                 // To sync loading_key_
     std::string loading_key_{};                                  // Actual load key (for log purposes)
 };
 

@@ -66,11 +66,11 @@ void Buffer::update_account(const evmc::address& address, std::optional<Account>
     }
     auto it{accounts_.find(address)};
     if (it != accounts_.end()) {
-        accounts_[address] = current;
-        batch_state_size_ -= it->second.has_value() ? it->second.value().encoding_length_for_storage() : 0;
-        batch_state_size_ += (current ? current->encoding_length_for_storage() : 0);
+        batch_state_size_ -= it->second.has_value() ? sizeof(Account) : 0;
+        batch_state_size_ += (current ? sizeof(Account) : 0);
+        it->second = current;
     } else {
-        batch_state_size_ += kAddressLength + (current ? current->encoding_length_for_storage() : 0);
+        batch_state_size_ += kAddressLength + (current ? sizeof(Account) : 0);
         accounts_[address] = current;
     }
 

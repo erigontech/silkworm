@@ -24,6 +24,19 @@ namespace silkworm {
 
 TEST_CASE("DataDirectory") {
     {
+        // Open and create a storage path
+        TemporaryDirectory tmp_dir0;
+        DataDirectory data_dir(/*base_path=*/tmp_dir0.path(), /*create=*/true);
+        REQUIRE(data_dir.exists());
+        REQUIRE_NOTHROW(data_dir.deploy());
+        REQUIRE_THROWS(data_dir.clear());
+
+        // Eventually delete the created paths
+        std::filesystem::remove_all(data_dir.path());
+        REQUIRE(data_dir.exists() == false);
+    }
+
+    {
         // Open datadir from current process running path
         DataDirectory data_dir{std::filesystem::path(), false};
         REQUIRE(data_dir.is_pristine() == false);

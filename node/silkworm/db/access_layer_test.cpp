@@ -430,24 +430,25 @@ namespace db {
         CHECK(*header_from_db == header);
 
         SECTION("read_block") {
+            BlockWithHash bh;
+
             bool read_senders{false};
-            CHECK(!read_block(txn, block_num, read_senders));
+            CHECK(!read_block(txn, block_num, read_senders, bh));
 
             BlockBody body{sample_block_body()};
             CHECK_NOTHROW(write_body(txn, body, hash.bytes, header.number));
 
-            std::optional<BlockWithHash> bh{read_block(txn, block_num, read_senders)};
-            REQUIRE(bh);
-            CHECK(bh->block.header == header);
-            CHECK(bh->block.ommers == body.ommers);
-            CHECK(bh->block.transactions == body.transactions);
-            CHECK(ByteView{bh->hash} == ByteView{hash.bytes});
+            REQUIRE(read_block(txn, block_num, read_senders, bh));
+            CHECK(bh.block.header == header);
+            CHECK(bh.block.ommers == body.ommers);
+            CHECK(bh.block.transactions == body.transactions);
+            CHECK(ByteView{bh.hash} == ByteView{hash.bytes});
 
-            CHECK(!bh->block.transactions[0].from);
-            CHECK(!bh->block.transactions[1].from);
+            CHECK(!bh.block.transactions[0].from);
+            CHECK(!bh.block.transactions[1].from);
 
             read_senders = true;
-            CHECK_NOTHROW(read_block(txn, block_num, read_senders));
+            CHECK_NOTHROW(read_block(txn, block_num, read_senders, bh));
 
             Bytes full_senders{
                 *from_hex("5a0b54d5dc17e0aadc383d2db43b0a0d3e029c4c"
@@ -455,21 +456,16 @@ namespace db {
             REQUIRE(full_senders.length() == 2 * kAddressLength);
 
             Bytes key{block_key(header.number, hash.bytes)};
-            ByteView truncated_senders{full_senders.data(), kAddressLength};
             auto sender_table{db::open_cursor(txn, table::kSenders)};
-            sender_table.upsert(to_slice(key), to_slice(truncated_senders));
-            CHECK_THROWS_AS(read_block(txn, block_num, read_senders), MissingSenders);
-
             sender_table.upsert(to_slice(key), to_slice(full_senders));
-            bh = read_block(txn, block_num, read_senders);
-            REQUIRE(bh);
-            CHECK(bh->block.header == header);
-            CHECK(bh->block.ommers == body.ommers);
-            CHECK(bh->block.transactions == body.transactions);
-            CHECK(ByteView{bh->hash} == ByteView{hash.bytes});
+            REQUIRE(read_block(txn, block_num, read_senders, bh));
+            CHECK(bh.block.header == header);
+            CHECK(bh.block.ommers == body.ommers);
+            CHECK(bh.block.transactions == body.transactions);
+            CHECK(ByteView{bh.hash} == ByteView{hash.bytes});
 
-            CHECK(bh->block.transactions[0].from == 0x5a0b54d5dc17e0aadc383d2db43b0a0d3e029c4c_address);
-            CHECK(bh->block.transactions[1].from == 0x941591b6ca8e8dd05c69efdec02b77c72dac1496_address);
+            CHECK(bh.block.transactions[0].from == 0x5a0b54d5dc17e0aadc383d2db43b0a0d3e029c4c_address);
+            CHECK(bh.block.transactions[1].from == 0x941591b6ca8e8dd05c69efdec02b77c72dac1496_address);
         }
     }
 

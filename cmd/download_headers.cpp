@@ -45,6 +45,7 @@ int main(int argc, char* argv[]) {
     settings.log_threads = true;
     settings.log_file = "downloader.log";
     settings.log_verbosity = log::Level::kInfo;
+    settings.log_thousands_sep = '\'';
 
     app.add_option("--chaindata", db_path, "Path to the chain database", true)
         ->check(CLI::ExistingDirectory);

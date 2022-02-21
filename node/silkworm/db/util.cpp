@@ -115,27 +115,14 @@ std::optional<ByteView> find_value_suffix(mdbx::cursor& table, ByteView key, Byt
 }
 
 void upsert_storage_value(mdbx::cursor& state_cursor, ByteView storage_prefix, ByteView location, ByteView new_value) {
-    static const auto build_db_value = [](const ByteView& loc, const ByteView& val) -> Bytes {
-        Bytes res(loc.length() + val.length(), '\0');
-        std::memcpy(&res[0], loc.data(), loc.length());
-        std::memcpy(&res[loc.length()], val.data(), val.length());
-        return res;
-    };
-
+    if (find_value_suffix(state_cursor, storage_prefix, location)) {
+        state_cursor.erase();
+    }
     new_value = zeroless_view(new_value);
-
-    auto old_value{find_value_suffix(state_cursor, storage_prefix, location)};
-    if (old_value.has_value()) {
-        if (new_value.empty()) {
-            state_cursor.erase();
-        } else if (new_value == old_value.value()) {
-            return;
-        } else {
-            auto new_db_value{build_db_value(location, new_value)};
-            state_cursor.update(to_slice(storage_prefix), to_slice(new_db_value));
-        }
-    } else if (!new_value.empty()) {
-        auto new_db_value{build_db_value(location, new_value)};
+    if (!new_value.empty()) {
+        Bytes new_db_value(location.length() + new_value.length(), '\0');
+        std::memcpy(&new_db_value[0], location.data(), location.length());
+        std::memcpy(&new_db_value[location.length()], new_value.data(), new_value.length());
         state_cursor.upsert(to_slice(storage_prefix), to_slice(new_db_value));
     }
 }

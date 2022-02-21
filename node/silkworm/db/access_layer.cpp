@@ -216,7 +216,7 @@ bool read_block(mdbx::txn& txn, BlockNum block_number, bool read_senders, BlockW
     if (raw_header.empty()) {
         return false;
     }
-    ByteView raw_header_view{raw_header.data(), raw_header.length()};
+    ByteView raw_header_view(raw_header);
     rlp::success_or_throw(rlp::decode(raw_header_view, bh.block.header));
 
     return read_body(txn, key, read_senders, bh.block);

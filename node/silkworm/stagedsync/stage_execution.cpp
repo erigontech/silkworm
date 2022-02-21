@@ -92,7 +92,7 @@ StageResult Execution::forward(db::RWTxn& txn) {
 }
 
 std::queue<Block> Execution::prefetch_blocks(db::RWTxn& txn, BlockNum from, BlockNum to, size_t max_blocks) {
-    static std::unique_ptr<StopWatch> sw;
+    std::unique_ptr<StopWatch> sw;
     bool should_trace{log::test_verbosity(log::Level::kTrace)};
     if (should_trace) {
         sw = std::make_unique<StopWatch>();
@@ -100,12 +100,11 @@ std::queue<Block> Execution::prefetch_blocks(db::RWTxn& txn, BlockNum from, Bloc
     }
 
     std::queue<Block> ret{};
-    BlockNum reached_block_num{0};
     auto hashes_table{db::open_cursor(*txn, db::table::kCanonicalHashes)};
     auto key{db::block_key(from)};
     auto data{hashes_table.find(db::to_slice(key), true)};
     while (data.done) {
-        reached_block_num = endian::load_big_u64(static_cast<const uint8_t*>(data.key.data()));
+        BlockNum reached_block_num{endian::load_big_u64(static_cast<const uint8_t*>(data.key.data()))};
         if (reached_block_num != from) {
             throw std::runtime_error("Bad canonical header sequence: expected " + std::to_string(from) + " got " +
                                      std::to_string(reached_block_num));
@@ -159,14 +158,15 @@ StageResult Execution::execute_batch(db::RWTxn& txn, BlockNum max_block_num, Blo
             lap_time_ = std::chrono::steady_clock::now();
         }
 
-        std::queue<Block> prefetched_blocks{prefetch_blocks(txn, block_num_, max_block_num, 10240)};
+        size_t kDefaultPrefetchWidth{10240};
+        std::queue<Block> prefetched_blocks{prefetch_blocks(txn, block_num_, max_block_num, kDefaultPrefetchWidth)};
 
         while (true) {
             if (prefetched_blocks.empty()) {
                 if (is_stopping()) {
                     return StageResult::kAborted;
                 }
-                prefetched_blocks = prefetch_blocks(txn, block_num_, max_block_num, 10240);
+                prefetched_blocks = prefetch_blocks(txn, block_num_, max_block_num, kDefaultPrefetchWidth);
             }
 
             auto block = prefetched_blocks.front();
@@ -196,7 +196,7 @@ StageResult Execution::execute_batch(db::RWTxn& txn, BlockNum max_block_num, Blo
 
             // Stats
             std::unique_lock progress_lock(progress_mtx_);
-            processed_blocks_++;
+            ++processed_blocks_;
             processed_transactions_ += block.transactions.size();
             processed_gas_ += block.header.gas_used;
             gas_batch_size += block.header.gas_used;

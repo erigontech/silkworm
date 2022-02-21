@@ -81,26 +81,36 @@ void StopWatch::reset() noexcept {
 std::string StopWatch::format(Duration duration) noexcept {
     using namespace std::chrono_literals;
     using days = std::chrono::duration<int, std::ratio<86400>>;
-    auto d = std::chrono::duration_cast<days>(duration);
-    duration -= d;
-    auto h = std::chrono::duration_cast<std::chrono::hours>(duration);
-    duration -= h;
-    auto m = std::chrono::duration_cast<std::chrono::minutes>(duration);
-    duration -= m;
+    //    auto d = std::chrono::duration_cast<days>(duration);
+    //    duration -= d;
+    //    auto h = std::chrono::duration_cast<std::chrono::hours>(duration);
+    //    duration -= h;
+    //    auto m = std::chrono::duration_cast<std::chrono::minutes>(duration);
+    //    duration -= m;
 
     std::ostringstream os;
     char fill = os.fill('0');
 
-    if (d.count() || h.count() || m.count()) {
-        if (d.count()) {
-            os << d.count() << "d ";
+    if (duration >= 60s) {
+        bool need_space{false};
+        if (auto d = std::chrono::duration_cast<days>(duration); d.count()) {
+            os << d.count() << "d";
+            duration -= d;
+            need_space = true;
         }
-        if (d.count() || h.count()) {
-            os << std::setw(d.count() ? 2 : 1) << h.count() << "h ";
+        if (auto h = std::chrono::duration_cast<std::chrono::hours>(duration); h.count()) {
+            os << (need_space ? " " : "") << h.count() << "h";
+            duration -= h;
+            need_space = true;
         }
-        os << std::setw(d.count() || h.count() ? 2 : 1) << m.count() << "m ";
-        auto s = std::chrono::duration_cast<std::chrono::seconds>(duration);
-        os << std::setw(2) << s.count() << "s";
+        if (auto m = std::chrono::duration_cast<std::chrono::minutes>(duration); m.count()) {
+            os << (need_space ? " " : "") << m.count() << "m";
+            duration -= m;
+            need_space = true;
+        }
+        if (auto s = std::chrono::duration_cast<std::chrono::seconds>(duration); s.count()) {
+            os << (need_space ? " " : "") << s.count() << "s";
+        }
     } else {
         if (duration >= 1s) {
             auto s = std::chrono::duration_cast<std::chrono::seconds>(duration);

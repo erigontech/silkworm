@@ -79,6 +79,7 @@ void StopWatch::reset() noexcept {
 }
 
 std::string StopWatch::format(Duration duration) noexcept {
+    using namespace std::chrono_literals;
     using days = std::chrono::duration<int, std::ratio<86400>>;
     auto d = std::chrono::duration_cast<days>(duration);
     duration -= d;
@@ -86,47 +87,46 @@ std::string StopWatch::format(Duration duration) noexcept {
     duration -= h;
     auto m = std::chrono::duration_cast<std::chrono::minutes>(duration);
     duration -= m;
-    auto s = std::chrono::duration_cast<std::chrono::seconds>(duration);
-    duration -= s;
-    auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(duration);
-    duration -= ms;
-    auto us = std::chrono::duration_cast<std::chrono::microseconds>(duration);
-    duration -= us;
 
     std::ostringstream os;
-    if (d.count()) {
-        os << d.count() << "d";
-        if (h.count() || m.count() || s.count()) {
-            os << " ";
+    char fill = os.fill('0');
+
+    if (d.count() || h.count() || m.count()) {
+        if (d.count()) {
+            os << d.count() << "d ";
         }
-    }
-    if (h.count()) {
-        os << h.count() << "h";
-        if (m.count() || s.count()) {
-            os << " ";
+        if (d.count() || h.count()) {
+            os << std::setw(d.count() ? 2 : 1) << h.count() << "h ";
         }
-    }
-    if (m.count()) {
-        os << m.count() << "m";
-        if (s.count() || ms.count()) {
-            os << " ";
-        }
-    }
-    if (s.count()) {
-        os << s.count() << "s";
-    }
-    if (!(d.count() || h.count() || m.count()) && (ms.count() || us.count())) {
-        if (s.count()) {
-            os << " ";
-        }
-        if (ms.count()) {
-            os << ms.count() << "ms" << (us.count() ? " " : "");
-        }
-        if (us.count()) {
-            os << us.count() << "μs";
+        os << std::setw(d.count() || h.count() ? 2 : 1) << m.count() << "m ";
+        auto s = std::chrono::duration_cast<std::chrono::seconds>(duration);
+        os << std::setw(2) << s.count() << "s";
+    } else {
+        if (duration >= 1s) {
+            auto s = std::chrono::duration_cast<std::chrono::seconds>(duration);
+            duration -= s;
+            auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(duration);
+            os << s.count();
+            if (ms.count()) {
+                os << "." << std::setw(3) << ms.count();
+            }
+            os << "s";
+        } else if (duration >= 1ms) {
+            auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(duration);
+            duration -= ms;
+            auto us = std::chrono::duration_cast<std::chrono::microseconds>(duration);
+            os << ms.count();
+            if (us.count()) {
+                os << "." << std::setw(3) << us.count();
+            }
+            os << "ms";
+        } else if (duration >= 1us) {
+            auto us = std::chrono::duration_cast<std::chrono::microseconds>(duration);
+            os << us.count() << "us";
         }
     }
 
+    os.fill(fill);
     return os.str();
 }
 }  // namespace silkworm

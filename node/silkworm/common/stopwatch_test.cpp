@@ -56,9 +56,9 @@ TEST_CASE("Stop Watch") {
     CHECK(sw1.format(918734032564785ns) == "10d 15h 12m 14s");
     CHECK(sw1.format(432034ms) == "7m 12s");
     CHECK(sw1.format(1ms) == "1ms");
-    CHECK(sw1.format(1200ms) == "1s 200ms");
-    CHECK(sw1.format(1010us) == "1ms 10μs");
-    CHECK(sw1.format(20us) == "20μs");
+    CHECK(sw1.format(1200ms) == "1.200s");
+    CHECK(sw1.format(1010us) == "1.010ms");
+    CHECK(sw1.format(20us) == "20us");
 
     (void)sw1.stop();
     (void)sw1.start(/*with_reset=*/true);

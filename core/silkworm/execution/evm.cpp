@@ -286,7 +286,7 @@ evmc_result EVM::execute_with_baseline_interpreter(evmc_revision rev, const evmc
 
     EvmHost host{*this};
 
-    state->reset(msg, rev, host.get_interface(), host.to_context(), code.data(), code.size());
+    state->reset(msg, rev, host.get_interface(), host.to_context(), code);
 
     evmc_result res{evmone::baseline::execute(*vm, *state, analysis)};
 
@@ -316,7 +316,7 @@ evmc_result EVM::execute_with_default_interpreter(evmc_revision rev, const evmc_
 
     EvmHost host{*this};
 
-    state->reset(msg, rev, host.get_interface(), host.to_context(), code.data(), code.size());
+    state->reset(msg, rev, host.get_interface(), host.to_context(), code);
 
     evmc_result res{evmone::advanced::execute(*state, *analysis)};
 

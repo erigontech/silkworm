@@ -203,12 +203,10 @@ StageResult Execution::execute_batch(db::RWTxn& txn, BlockNum max_block_num, Blo
 
             // Flush whole buffer if time to
             if (gas_batch_size >= gas_max_batch_size || block_num_ >= max_block_num) {
-                log::Trace("Buffer State", {"size", human_size(buffer.current_batch_state_size())});
                 buffer.write_to_db();
                 break;
             } else if (gas_history_size >= gas_max_history_size) {
                 // or flush history only if needed
-                log::Trace("Buffer History", {"size", human_size(buffer.current_batch_history_size())});
                 buffer.write_history_to_db();
                 gas_history_size = 0;
             }

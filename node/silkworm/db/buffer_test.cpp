@@ -50,8 +50,7 @@ TEST_CASE("Storage update") {
     buffer.update_storage(address, kDefaultIncarnation, location_a,
                           /*initial=*/value_a1, /*current=*/value_a2);
 
-    REQUIRE(buffer.storage_changes().empty() == false);
-    REQUIRE(buffer.current_batch_history_size() != 0);
+    REQUIRE(!buffer.storage_changes().empty());
 
     buffer.write_to_db();
 
@@ -135,11 +134,10 @@ TEST_CASE("Account update") {
     }
 
     SECTION("Delete Contract account") {
-
         const auto address{0xbe00000000000000000000000000000000000000_address};
         Account account;
         account.incarnation = kDefaultIncarnation;
-        account.code_hash = to_bytes32(keccak256(address.bytes).bytes); // Just a fake hash
+        account.code_hash = to_bytes32(keccak256(address.bytes).bytes);  // Just a fake hash
 
         Buffer buffer{txn, 0};
         buffer.begin_block(1);
@@ -152,9 +150,7 @@ TEST_CASE("Account update") {
         auto data{incarnations.current()};
         REQUIRE(memcmp(data.key.data(), address.bytes, kAddressLength) == 0);
         REQUIRE(endian::load_big_u64(db::from_slice(data.value).data()) == account.incarnation);
-
     }
-
 }
 
 }  // namespace silkworm::db

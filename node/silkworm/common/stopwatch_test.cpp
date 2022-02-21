@@ -24,8 +24,12 @@ namespace silkworm {
 
 TEST_CASE("Stop Watch") {
     using namespace std::chrono_literals;
+
+    silkworm::StopWatch sw_autostart(true);
+    REQUIRE(sw_autostart); // Must be started
+
     silkworm::StopWatch sw1{};
-    CHECK_FALSE(sw1);  // Not started
+    REQUIRE(sw1);  // Not started
 
     auto [lap_time0, duration0] = sw1.lap();
     CHECK(duration0.count() == 0);

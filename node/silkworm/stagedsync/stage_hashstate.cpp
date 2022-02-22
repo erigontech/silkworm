@@ -157,12 +157,10 @@ StageResult HashState::hash_from_plainstate(db::RWTxn& txn) {
         evmc::address last_address{};
         ethash_hash256 address_hash{keccak256(last_address.bytes)};  // We might have all zeroed addresses ?
 
-        {
-            std::unique_lock lck(log_mtx_);
-            operation_ = OperationType::Forward;
-            current_source_ = std::string(db::table::kPlainState.name);
-            current_key_ = to_hex(last_address.bytes, /*with_prefix=*/true);
-        }
+        operation_ = OperationType::Forward;
+        current_source_ = std::string(db::table::kPlainState.name);
+        current_key_ = to_hex(last_address.bytes, /*with_prefix=*/true);
+
         // New Hashed Storage Entry Key (72 bytes)
         // + Address hash  (32 bytes)
         // + Incarnation   ( 8 bytes)
@@ -182,7 +180,6 @@ StageResult HashState::hash_from_plainstate(db::RWTxn& txn) {
                 }
                 last_address = to_evmc_address(data_key_view);
                 address_hash = keccak256(last_address.bytes);
-                std::unique_lock lck(log_mtx_);
                 current_key_ = to_hex(last_address.bytes, /*with_prefix=*/true);
             }
 
@@ -273,12 +270,9 @@ StageResult HashState::hash_from_plainstate(db::RWTxn& txn) {
                     }
                 };
 
-                {
-                    std::unique_lock lck(log_mtx_);
-                    current_target_ = std::string(db::table::kHashedAccounts.name) + "+" +
-                                      std::string(db::table::kHashedStorage.name);
-                    loading_ = true;
-                }
+                current_target_ =
+                    std::string(db::table::kHashedAccounts.name) + "+" + std::string(db::table::kHashedStorage.name);
+                loading_ = true;
                 collector_->load(account_target, load_func, MDBX_put_flags_t::MDBX_APPENDDUP);
                 loading_ = false;
             }
@@ -316,12 +310,10 @@ StageResult HashState::hash_from_plaincode(db::RWTxn& txn) {
 
         evmc::address last_address{};
 
-        {
-            std::unique_lock lck(log_mtx_);
-            operation_ = OperationType::Forward;
-            current_source_ = std::string(db::table::kPlainCodeHash.name);
-            current_key_ = to_hex(last_address.bytes, /*with_prefix=*/true);
-        }
+        operation_ = OperationType::Forward;
+        current_source_ = std::string(db::table::kPlainCodeHash.name);
+        current_key_ = to_hex(last_address.bytes, /*with_prefix=*/true);
+
         Bytes new_key(db::kHashedStoragePrefixLength, '\0');
 
         while (data) {
@@ -340,7 +332,6 @@ StageResult HashState::hash_from_plaincode(db::RWTxn& txn) {
                     return StageResult::kAborted;
                 }
                 last_address = to_evmc_address(data_key_view);
-                std::unique_lock lck(log_mtx_);
                 current_key_ = to_hex(last_address.bytes, /*with_prefix=*/true);
                 const auto address_hash{keccak256(last_address.bytes)};
                 std::memcpy(&new_key[0], address_hash.bytes, kHashLength);
@@ -351,7 +342,6 @@ StageResult HashState::hash_from_plaincode(db::RWTxn& txn) {
             etl::Entry entry{new_key, Bytes{db::from_slice(data.value)}};
             collector_->collect(std::move(entry));
             if (collector_->size() % 128 == 0) {
-                std::unique_lock lck(log_mtx_);
                 current_key_ = abridge(to_hex(db::from_slice(data.key), /*with_prefix=*/true), kAddressLength * 2 + 2);
             }
             data = source.to_next(/*throw_notfound=*/false);
@@ -360,7 +350,6 @@ StageResult HashState::hash_from_plaincode(db::RWTxn& txn) {
         if (!is_stopping()) {
             if (!collector_->empty()) {
                 source = db::open_cursor(*txn, db::table::kHashedCodeHash);
-                std::unique_lock lck(log_mtx_);
                 current_target_ = std::string(db::table::kHashedCodeHash.name);
                 loading_ = true;
                 collector_->load(source, nullptr, MDBX_put_flags_t::MDBX_APPEND);
@@ -396,13 +385,11 @@ StageResult HashState::hash_from_account_changeset(db::RWTxn& txn, BlockNum prev
         BlockNum expected_blocknum{previous_progress + 1};
         ChangedAddresses changed_addresses{};
 
-        {
-            std::unique_lock lck(log_mtx_);
-            operation_ = OperationType::Forward;
-            incremental_ = true;
-            current_source_ = std::string(db::table::kAccountChangeSet.name);
-            current_key_ = std::to_string(expected_blocknum);
-        }
+        operation_ = OperationType::Forward;
+        incremental_ = true;
+        current_source_ = std::string(db::table::kAccountChangeSet.name);
+        current_key_ = std::to_string(expected_blocknum);
+
         auto source_initial_key{db::block_key(expected_blocknum)};
         auto source_changeset{db::open_cursor(*txn, db::table::kAccountChangeSet)};
         auto source_plainstate{db::open_cursor(*txn, db::table::kPlainState)};
@@ -434,7 +421,6 @@ StageResult HashState::hash_from_account_changeset(db::RWTxn& txn, BlockNum prev
                 }
                 if (++counter == 128) {
                     counter = 0;
-                    std::unique_lock lck(log_mtx_);
                     current_key_ = std::to_string(reached_blocknum);
                     if (is_stopping()) {
                         return StageResult::kAborted;
@@ -477,13 +463,11 @@ StageResult HashState::hash_from_storage_changeset(db::RWTxn& txn, BlockNum prev
         db::StorageChanges storage_changes{};
         absl::btree_map<evmc::address, evmc::bytes32> hashed_addresses{};
 
-        {
-            std::unique_lock lck(log_mtx_);
-            operation_ = OperationType::Forward;
-            incremental_ = true;
-            current_source_ = std::string(db::table::kStorageChangeSet.name);
-            current_key_ = std::to_string(previous_progress + 1);
-        }
+        operation_ = OperationType::Forward;
+        incremental_ = true;
+        current_source_ = std::string(db::table::kStorageChangeSet.name);
+        current_key_ = std::to_string(previous_progress + 1);
+
         auto source_changeset{db::open_cursor(*txn, db::table::kStorageChangeSet)};
         auto source_plainstate{db::open_cursor(*txn, db::table::kPlainState)};
 
@@ -522,7 +506,6 @@ StageResult HashState::hash_from_storage_changeset(db::RWTxn& txn, BlockNum prev
                 changeset_data = source_changeset.to_current_next_multi(/*throw_notfound=*/false);
                 if (++counter == 128) {
                     counter = 0;
-                    std::unique_lock lck(log_mtx_);
                     current_key_ = std::to_string(reached_blocknum);
                     if (is_stopping()) {
                         return StageResult::kAborted;
@@ -541,7 +524,6 @@ StageResult HashState::hash_from_storage_changeset(db::RWTxn& txn, BlockNum prev
             for (const auto& [address, data] : storage_changes) {
                 if (++counter == 128) {
                     counter = 0;
-                    std::unique_lock lck(log_mtx_);
                     current_key_ = std::to_string(reached_blocknum);
                     if (is_stopping()) {
                         return StageResult::kAborted;
@@ -596,12 +578,9 @@ StageResult HashState::unwind_from_account_changeset(db::RWTxn& txn, BlockNum pr
         BlockNum expected_blocknum{to + 1};
         ChangedAddresses changed_addresses{};
 
-        {
-            std::unique_lock lck(log_mtx_);
-            operation_ = OperationType::Unwind;
-            current_source_ = std::string(db::table::kAccountChangeSet.name);
-            current_key_ = std::to_string(expected_blocknum);
-        }
+        operation_ = OperationType::Unwind;
+        current_source_ = std::string(db::table::kAccountChangeSet.name);
+        current_key_ = std::to_string(expected_blocknum);
 
         auto source_initial_key{db::block_key(expected_blocknum)};
         auto source_changeset{db::open_cursor(*txn, db::table::kAccountChangeSet)};
@@ -631,7 +610,6 @@ StageResult HashState::unwind_from_account_changeset(db::RWTxn& txn, BlockNum pr
                 }
                 if (++counter == 128) {
                     counter = 0;
-                    std::unique_lock lck(log_mtx_);
                     current_key_ = std::to_string(reached_blocknum);
                     if (is_stopping()) {
                         return StageResult::kAborted;
@@ -679,13 +657,10 @@ StageResult HashState::unwind_from_storage_changeset(db::RWTxn& txn, BlockNum pr
         db::StorageChanges storage_changes{};
         absl::btree_map<evmc::address, evmc::bytes32> hashed_addresses{};
 
-        {
-            std::unique_lock lck(log_mtx_);
-            operation_ = OperationType::Unwind;
-            incremental_ = true;
-            current_source_ = std::string(db::table::kStorageChangeSet.name);
-            current_key_ = std::to_string(to + 1);
-        }
+        operation_ = OperationType::Unwind;
+        incremental_ = true;
+        current_source_ = std::string(db::table::kStorageChangeSet.name);
+        current_key_ = std::to_string(to + 1);
 
         auto source_changeset{db::open_cursor(*txn, db::table::kStorageChangeSet)};
         auto source_initial_key{db::block_key(to + 1)};
@@ -721,7 +696,6 @@ StageResult HashState::unwind_from_storage_changeset(db::RWTxn& txn, BlockNum pr
                 changeset_data = source_changeset.to_current_next_multi(/*throw_notfound=*/false);
                 if (++counter == 128) {
                     counter = 0;
-                    std::unique_lock lck(log_mtx_);
                     current_key_ = std::to_string(reached_blocknum);
                     if (is_stopping()) {
                         return StageResult::kAborted;
@@ -749,13 +723,9 @@ StageResult HashState::unwind_from_storage_changeset(db::RWTxn& txn, BlockNum pr
 
 StageResult HashState::write_changes_from_changed_addresses(db::RWTxn& txn, ChangedAddresses& changed_addresses) {
     size_t counter{0};
-    {
-        std::unique_lock lck(log_mtx_);
-        current_target_ =
-            std::string(db::table::kHashedAccounts.name) + " " + std::string(db::table::kHashedCodeHash.name);
-        loading_ = true;
-        current_key_ = to_hex(changed_addresses.begin()->first.bytes, /*with_prefix=*/true);
-    }
+    current_target_ = std::string(db::table::kHashedAccounts.name) + " " + std::string(db::table::kHashedCodeHash.name);
+    loading_ = true;
+    current_key_ = to_hex(changed_addresses.begin()->first.bytes, /*with_prefix=*/true);
     auto source_plaincode{db::open_cursor(*txn, db::table::kPlainCodeHash)};
     auto target_hashed_accounts{db::open_cursor(*txn, db::table::kHashedAccounts)};
     auto target_hashed_code{db::open_cursor(*txn, db::table::kHashedCodeHash)};
@@ -814,7 +784,6 @@ StageResult HashState::write_changes_from_changed_storage(
     for (const auto& [address, data] : storage_changes) {
         if (++counter == 128) {
             counter = 0;
-            std::unique_lock lck(log_mtx_);
             current_key_ = to_hex(address, true);
             if (is_stopping()) {
                 return StageResult::kAborted;
@@ -838,7 +807,6 @@ StageResult HashState::write_changes_from_changed_storage(
 
 std::vector<std::string> HashState::get_log_progress() {
     std::vector<std::string> ret{};
-    std::unique_lock lck(log_mtx_);
     if (operation_ == OperationType::None) {
         return ret;
     } else if (operation_ != OperationType::Forward) {
@@ -857,7 +825,6 @@ std::vector<std::string> HashState::get_log_progress() {
 }
 
 void HashState::reset_log_progress() {
-    std::unique_lock lck(log_mtx_);
     operation_ = OperationType::None;
     incremental_ = false;
     loading_ = false;

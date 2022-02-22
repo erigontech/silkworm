@@ -157,8 +157,9 @@ class HashState final : public IStage {
     void reset_log_progress();
 
     // Logger info
-    std::atomic_bool incremental_{false};        // Whether operation is incremental
-    std::atomic_bool loading_{false};            // Whether we're in ETL loading phase
+    std::mutex log_mtx_{};                       // Guards access for async logger
+    bool incremental_{false};                    // Whether operation is incremental
+    bool loading_{false};                        // Whether we're in ETL loading phase
     std::string current_source_;                 // Current source of data
     std::string current_target_;                 // Current target of transformed data
     std::string current_key_;                    // Actual processing key

@@ -81,13 +81,7 @@ void StopWatch::reset() noexcept {
 std::string StopWatch::format(Duration duration) noexcept {
     using namespace std::chrono_literals;
     using days = std::chrono::duration<int, std::ratio<86400>>;
-    //    auto d = std::chrono::duration_cast<days>(duration);
-    //    duration -= d;
-    //    auto h = std::chrono::duration_cast<std::chrono::hours>(duration);
-    //    duration -= h;
-    //    auto m = std::chrono::duration_cast<std::chrono::minutes>(duration);
-    //    duration -= m;
-
+    
     std::ostringstream os;
     char fill = os.fill('0');
 

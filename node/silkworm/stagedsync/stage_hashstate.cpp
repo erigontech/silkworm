@@ -360,11 +360,9 @@ StageResult HashState::hash_from_plaincode(db::RWTxn& txn) {
         if (!is_stopping()) {
             if (!collector_->empty()) {
                 source = db::open_cursor(*txn, db::table::kHashedCodeHash);
-                {
-                    std::unique_lock lck(log_mtx_);
-                    current_target_ = std::string(db::table::kHashedCodeHash.name);
-                    loading_ = true;
-                }
+                std::unique_lock lck(log_mtx_);
+                current_target_ = std::string(db::table::kHashedCodeHash.name);
+                loading_ = true;
                 collector_->load(source, nullptr, MDBX_put_flags_t::MDBX_APPEND);
                 loading_ = false;
             }
@@ -537,25 +535,21 @@ StageResult HashState::hash_from_storage_changeset(db::RWTxn& txn, BlockNum prev
         // Load data
         if (!storage_changes.empty()) {
             auto target_hashed_storage{db::open_cursor(*txn, db::table::kHashedStorage)};
-
-            std::unique_lock lck(log_mtx_);
             loading_ = true;
             current_target_ = std::string(db::table::kHashedStorage.name);
-            lck.unlock();
-
             Bytes hashed_storage_prefix(db::kHashedStoragePrefixLength, '\0');  // One allocation only
             for (const auto& [address, data] : storage_changes) {
                 if (++counter == 128) {
                     counter = 0;
-                    lck.lock();
-                    current_key_ = to_hex(address, true);
-                    lck.unlock();
+                    std::unique_lock lck(log_mtx_);
+                    current_key_ = std::to_string(reached_blocknum);
                     if (is_stopping()) {
                         return StageResult::kAborted;
                     }
                 }
 
                 std::memcpy(&hashed_storage_prefix[0], hashed_addresses[address].bytes, kHashLength);
+                current_key_ = to_hex(address, true);
                 for (const auto& [incarnation, data1] : data) {
                     endian::store_big_u64(&hashed_storage_prefix[kHashLength], incarnation);
                     for (const auto& [location, value] : data1) {
@@ -814,23 +808,21 @@ StageResult HashState::write_changes_from_changed_storage(
     size_t counter{0};
 
     auto target_hashed_storage{db::open_cursor(*txn, db::table::kHashedStorage)};
-    std::unique_lock lck(log_mtx_);
     loading_ = true;
     current_target_ = std::string(db::table::kHashedStorage.name);
-    lck.unlock();
     Bytes hashed_storage_prefix(db::kHashedStoragePrefixLength, '\0');  // One allocation only
     for (const auto& [address, data] : storage_changes) {
         if (++counter == 128) {
             counter = 0;
-            lck.lock();
+            std::unique_lock lck(log_mtx_);
             current_key_ = to_hex(address, true);
-            lck.unlock();
             if (is_stopping()) {
                 return StageResult::kAborted;
             }
         }
 
         std::memcpy(&hashed_storage_prefix[0], hashed_addresses[address].bytes, kHashLength);
+        current_key_ = to_hex(address, true);
         for (const auto& [incarnation, data1] : data) {
             endian::store_big_u64(&hashed_storage_prefix[kHashLength], incarnation);
             for (const auto& [location, value] : data1) {

@@ -616,7 +616,7 @@ void do_compact(db::EnvConfig& config, const std::string& work_dir, bool replace
 }
 
 void do_copy(db::EnvConfig& src_config, const std::string& target_dir, bool create, bool noempty,
-             std::vector<std::string>& names, std::vector<std::string>& xnames, bool dry) {
+             std::vector<std::string>& names, std::vector<std::string>& xnames) {
     if (!src_config.exclusive) {
         throw std::runtime_error("Copy tool requires exclusive access to source database");
     }
@@ -740,30 +740,19 @@ void do_copy(db::EnvConfig& src_config, const std::string& target_dir, bool crea
 
         auto src_table_crs{src_txn.open_cursor(src_table_map)};
         auto tgt_table_crs{tgt_txn.open_cursor(tgt_table_map)};
-        MDBX_put_flags_t put_flags{!populated_on_target
+        MDBX_put_flags_t put_flags{populated_on_target
                                        ? MDBX_put_flags_t::MDBX_UPSERT
                                        : ((src_table_info.flags & MDBX_DUPSORT) ? MDBX_put_flags_t::MDBX_APPENDDUP
                                                                                 : MDBX_put_flags_t::MDBX_APPEND)};
 
         auto data{src_table_crs.to_first(/*throw_notfound =*/false)};
         while (data) {
-            tgt_table_crs.put(data.key, &data.value, put_flags);
+            ::mdbx::error::success_or_throw(tgt_table_crs.put(data.key, &data.value, put_flags));
             bytesWritten += (data.key.length() + data.value.length());
             if (bytesWritten >= 2_Gibi) {
-                tgt_table_crs.close();
-                if (!dry) {
-                    tgt_txn.commit();
-                } else {
-                    tgt_txn.abort();
-                }
+                tgt_txn.commit();
                 tgt_txn = tgt_env.start_write();
-                if (dry && !exists_on_target) {
-                    tgt_table_map =
-                        tgt_txn.create_map(src_table.name, src_table_info.key_mode(), src_table_info.value_mode());
-                } else {
-                    tgt_table_map = tgt_txn.open_map(src_table.name);
-                }
-                tgt_table_crs = tgt_txn.open_cursor(tgt_table_map);
+                tgt_table_crs.renew(tgt_txn);
                 batch_committed = true;
                 bytesWritten = 0;
             }
@@ -782,16 +771,14 @@ void do_copy(db::EnvConfig& src_config, const std::string& target_dir, bool crea
         }
 
         // Close all
-        if (!SignalHandler::signalled() && bytesWritten) {
-            if (!dry) {
-                tgt_txn.commit();
-            } else {
-                tgt_txn.abort();
-            }
-            tgt_txn = tgt_env.start_write();
-            batch_committed = true;
-            bytesWritten = 0;
+        if (SignalHandler::signalled()) {
+            break;
         }
+
+        tgt_txn.commit();
+        tgt_txn = tgt_env.start_write();
+        batch_committed = true;
+        bytesWritten = 0;
 
         progress.set_current(src_table.stat.ms_entries);
         std::cout << progress.print_interval(batch_committed ? 'W' : '.') << std::flush;
@@ -801,15 +788,15 @@ void do_copy(db::EnvConfig& src_config, const std::string& target_dir, bool crea
 }
 
 /**
- * \brief Initializes a silkworm db.
- *
- * Can parse a custom genesis file in json format or import data from known chain configs
- *
- * \param DataDir data_dir : hold data directory info about db paths
- * \param json_file : a string representing the path where to load custom json from
- * \param uint32_t chain_id : an identifier for a known chain
- * \param bool dry : whether or not commit data or run in simulation
- *
+* \brief Initializes a silkworm db.
+*
+* Can parse a custom genesis file in json format or import data from known chain configs
+*
+* \param DataDir data_dir : hold data directory info about db paths
+* \param json_file : a string representing the path where to load custom json from
+* \param uint32_t chain_id : an identifier for a known chain
+* \param bool dry : whether or not commit data or run in simulation
+*
  */
 void do_init_genesis(DataDirectory& data_dir, const std::string&& json_file, uint32_t chain_id, bool dry) {
     // Check datadir does not exist
@@ -987,7 +974,7 @@ int main(int argc, char* argv[]) {
     app_main.require_subcommand(1);  // At least 1 subcommand is required
 
     /*
-     * Database options (path required)
+  * Database options (path required)
      */
     auto db_opts = app_main.add_option_group("Db", "Database options");
     db_opts->get_formatter()->column_width(35);
@@ -1001,14 +988,14 @@ int main(int argc, char* argv[]) {
     auto datadir_opt = db_opts_paths->add_option("--datadir", "Path to data directory")->excludes(chaindata_opt);
 
     /*
-     * Common opts and flags
+  * Common opts and flags
      */
 
     auto app_yes_opt = app_main.add_flag("-Y,--yes", "Assume yes to all requests of confirmation");
     auto app_dry_opt = app_main.add_flag("--dry", "Don't commit to db. Only simulate");
 
     /*
-     * Subcommands
+  * Subcommands
      */
 
     // List tables and gives info about storage
@@ -1042,7 +1029,8 @@ int main(int argc, char* argv[]) {
                                      ->needs(cmd_compact_replace_opt);
 
     // Copy database file or subset of tables
-    auto cmd_copy = app_main.add_subcommand("copy", "Copies an entire Silkworm database or subset of tables");
+    auto cmd_copy = app_main.add_subcommand("copy", "Copies an entire Silkworm database or subset of tables")
+                        ->excludes(app_dry_opt);
     auto cmd_copy_targetdir_opt = cmd_copy->add_option("--targetdir", "Target directory")->required();
     auto cmd_copy_target_create_opt = cmd_copy->add_flag("--create", "Create target db if not exists");
     auto cmd_copy_target_noempty_opt = cmd_copy->add_flag("--noempty", "Skip copy of empty tables");
@@ -1089,7 +1077,7 @@ int main(int argc, char* argv[]) {
                                     ->check(CLI::Range(1u, UINT32_MAX));
 
     /*
-     * Parse arguments and validate
+  * Parse arguments and validate
      */
     CLI11_PARSE(app_main, argc, argv);
 
@@ -1146,7 +1134,7 @@ int main(int argc, char* argv[]) {
                        *cmd_compact_nobak_opt);
         } else if (*cmd_copy) {
             do_copy(src_config, cmd_copy_targetdir_opt->as<std::string>(), *cmd_copy_target_create_opt,
-                    *cmd_copy_target_noempty_opt, cmd_copy_names, cmd_copy_xnames, *app_dry_opt);
+                    *cmd_copy_target_noempty_opt, cmd_copy_names, cmd_copy_xnames);
         } else if (*cmd_stageset) {
             do_stage_set(src_config, cmd_stageset_name_opt->as<std::string>(), cmd_stageset_height_opt->as<uint32_t>(),
                          *app_dry_opt);

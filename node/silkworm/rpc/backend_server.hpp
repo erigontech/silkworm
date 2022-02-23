@@ -31,13 +31,22 @@ namespace silkworm::rpc {
 using EtherbaseUnaryRpc = UnaryRpc<remote::ETHBACKEND::AsyncService, remote::EtherbaseRequest, remote::EtherbaseReply>;
 
 //! Service specialization acting as factory for Etherbase RPCs.
-class EtherbaseService : public RpcService<EtherbaseUnaryRpc> {
-  public:
-    explicit EtherbaseService(const ChainConfig& /*config*/) : RpcService<EtherbaseUnaryRpc>() {}
+using EtherbaseRpcService = RpcService<
+    remote::ETHBACKEND::AsyncService,
+    remote::EtherbaseRequest,
+    remote::EtherbaseReply,
+    UnaryRpc
+>;
 
-    void create_rpc(remote::ETHBACKEND::AsyncService* service, grpc::ServerCompletionQueue* queue);
+class EtherbaseService : public EtherbaseRpcService {
+  public:
+    explicit EtherbaseService(const ChainConfig& /*config*/)
+        : EtherbaseRpcService(
+            [&](auto& rpc, const auto* request) { process_rpc(rpc, request); },
+            &remote::ETHBACKEND::AsyncService::RequestEtherbase
+        ) {}
+
     void process_rpc(EtherbaseUnaryRpc& rpc, const remote::EtherbaseRequest* request);
-    void cleanup_rpc(EtherbaseUnaryRpc& rpc, bool cancelled);
 
   private:
     evmc::address etherbase_; // TODO(canepat): read from config (field not yet present)
@@ -47,13 +56,22 @@ class EtherbaseService : public RpcService<EtherbaseUnaryRpc> {
 using NetVersionUnaryRpc = UnaryRpc<remote::ETHBACKEND::AsyncService, remote::NetVersionRequest, remote::NetVersionReply>;
 
 //! Service specialization acting as factory for NetVersion RPCs.
-class NetVersionService : public RpcService<NetVersionUnaryRpc> {
-  public:
-    explicit NetVersionService(const ChainConfig& config) : RpcService<NetVersionUnaryRpc>(), chain_id_(config.chain_id) {}
+using NetVersionRpcService = RpcService<
+    remote::ETHBACKEND::AsyncService,
+    remote::NetVersionRequest,
+    remote::NetVersionReply,
+    UnaryRpc
+>;
 
-    void create_rpc(remote::ETHBACKEND::AsyncService* service, grpc::ServerCompletionQueue* queue);
+class NetVersionService : public NetVersionRpcService {
+  public:
+    explicit NetVersionService(const ChainConfig& config)
+        : NetVersionRpcService(
+            [&](auto& rpc, const auto* request) { process_rpc(rpc, request); },
+            &remote::ETHBACKEND::AsyncService::RequestNetVersion
+        ), chain_id_(config.chain_id) {}
+
     void process_rpc(NetVersionUnaryRpc& rpc, const remote::NetVersionRequest* request);
-    void cleanup_rpc(NetVersionUnaryRpc& rpc, bool cancelled);
 
   private:
     uint64_t chain_id_;

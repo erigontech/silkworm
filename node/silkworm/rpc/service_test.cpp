@@ -23,21 +23,36 @@
 namespace silkworm::rpc {
 
 namespace { // Trick suggested by gRPC team to avoid name clashes in multiple test modules
-class MockRpc {
+class MockAsyncService {};
+class MockRequest {};
+class MockReply {
+    virtual ~MockReply() {}
+};
+
+template <typename Service, typename Request, typename Reply>
+class MockUnaryRpc {
   public:
+    struct Handlers {
+        struct ProcessRequestFunc {};
+        struct RequestRpcFunc {};
+    };
+
     static int instance_count() { return instance_count_; }
 
-    explicit MockRpc() { instance_count_++; }
-    ~MockRpc() { instance_count_--; }
+    explicit MockUnaryRpc() { instance_count_++; }
+    ~MockUnaryRpc() { instance_count_--; }
 
   private:
     inline static int instance_count_{0};
 };
 
-class EmptyService : public RpcService<MockRpc> {
+using MockRpc = MockUnaryRpc<MockAsyncService, MockRequest, MockReply>;
+using EmptyRpcService = RpcService<MockAsyncService, MockRequest, MockReply, MockUnaryRpc>;
+
+class EmptyService : public EmptyRpcService {
   public:
-    EmptyService() {}
-    EmptyService(std::size_t capacity) : RpcService<MockRpc>(capacity) {}
+    EmptyService() : EmptyRpcService(MockRpc::Handlers{}) {}
+    EmptyService(std::size_t capacity) : EmptyRpcService(MockRpc::Handlers{}, capacity) {}
 
     auto insert_request(MockRpc* rpc) { return add_request(rpc); }
     auto erase_request(MockRpc* rpc) { return remove_request(rpc); }

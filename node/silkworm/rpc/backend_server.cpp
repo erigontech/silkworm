@@ -37,24 +37,6 @@ inline types::H160* new_H160_address(const evmc::address& address) {
     return h160;
 }
 
-void EtherbaseService::create_rpc(remote::ETHBACKEND::AsyncService* service, grpc::ServerCompletionQueue* queue) {
-    SILK_TRACE << "EtherbaseService::create_rpc START service: " << service << " queue: " << queue;
-
-    // TODO(canepat): use designated initializers in C++20
-    EtherbaseUnaryRpc::Handlers handlers{
-        {
-            [&](auto* svc, auto* cq) { create_rpc(svc, cq); },
-            [&](auto& rpc, const auto* request) { process_rpc(rpc, request); },
-            [&](auto& rpc, bool cancelled) { cleanup_rpc(rpc, cancelled); }
-        },
-        &remote::ETHBACKEND::AsyncService::RequestEtherbase
-    };
-    auto rpc = new EtherbaseUnaryRpc(service, queue, handlers);
-    add_request(rpc);
-
-    SILK_TRACE << "EtherbaseService::create_rpc END rpc: " << rpc;
-}
-
 void EtherbaseService::process_rpc(EtherbaseUnaryRpc& rpc, const remote::EtherbaseRequest* request) {
     SILK_TRACE << "EtherbaseService::process_rpc START rpc: " << &rpc << " request: " << request;
 
@@ -64,32 +46,6 @@ void EtherbaseService::process_rpc(EtherbaseUnaryRpc& rpc, const remote::Etherba
     const bool sent = rpc.send_response(response);
 
     SILK_TRACE << "EtherbaseService::process_rpc END rsp: " << &response << " etherbase: " << to_hex(etherbase_) << " sent: " << sent;
-}
-
-void EtherbaseService::cleanup_rpc(EtherbaseUnaryRpc& rpc, bool cancelled) {
-    SILK_TRACE << "EtherbaseService::cleanup_rpc START rpc: " << &rpc << " cancelled: " << cancelled;
-
-    remove_request(&rpc);
-
-    SILK_TRACE << "EtherbaseService::cleanup_rpc END rpc: " << &rpc;
-}
-
-void NetVersionService::create_rpc(remote::ETHBACKEND::AsyncService* service, grpc::ServerCompletionQueue* queue) {
-    SILK_TRACE << "NetVersionService::create_rpc service: " << service << " queue: " << queue;
-
-    // TODO(canepat): use designated initializers in C++20
-    NetVersionUnaryRpc::Handlers handlers{
-        {
-            [&](auto* svc, auto* cq) { create_rpc(svc, cq); },
-            [&](auto& rpc, const auto* request) { process_rpc(rpc, request); },
-            [&](auto& rpc, bool cancelled) { cleanup_rpc(rpc, cancelled); }
-        },
-        &remote::ETHBACKEND::AsyncService::RequestNetVersion
-    };
-    auto rpc = new NetVersionUnaryRpc(service, queue, handlers);
-    add_request(rpc);
-
-    SILK_TRACE << "NetVersionService::create_rpc END rpc: " << rpc;
 }
 
 void NetVersionService::process_rpc(NetVersionUnaryRpc& rpc, const remote::NetVersionRequest* request) {
@@ -102,20 +58,12 @@ void NetVersionService::process_rpc(NetVersionUnaryRpc& rpc, const remote::NetVe
     SILK_TRACE << "NetVersionService::process_rpc rsp: " << &response << " chain_id: " << chain_id_ << " sent: " << sent;
 }
 
-void NetVersionService::cleanup_rpc(NetVersionUnaryRpc& rpc, bool cancelled) {
-    SILK_TRACE << "NetVersionService::cleanup_rpc rpc: " << &rpc << " cancelled: " << cancelled;
-
-    remove_request(&rpc);
-
-    SILK_TRACE << "NetVersionService::cleanup_rpc END rpc: " << &rpc;
-}
-
 BackEndServer::BackEndServer(const ServerConfig& srv_config, const ChainConfig& chain_config)
 : Server(srv_config), etherbase_service_{chain_config}, net_version_service_{chain_config} {
     SILK_INFO << "BackEndServer created listening on: " << srv_config.address_uri();
 }
 
-/// Start server-side RPC requests as required by gRPC async model. One RPC per type is requested in advance.
+/// Start server-side RPC requests as required by gRPC async model: one RPC per type is requested in advance.
 void BackEndServer::request_calls() {
     // Grab one context at a time using round-robin scheme and start each server-side RPC request
     auto& context1 = next_context();

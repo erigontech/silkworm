@@ -21,6 +21,7 @@
 #include <functional>
 
 #include <grpcpp/grpcpp.h>
+#include <grpcpp/impl/codegen/async_unary_call.h>
 
 #include <silkworm/common/log.hpp>
 #include <silkworm/rpc/completion_tag.hpp>
@@ -129,11 +130,11 @@ struct RpcHandlers {
 //! Represents the RPC handlers for unary RPCs.
 template <typename Service, typename Request, typename Response, template<typename, typename, typename> typename Rpc>
 struct UnaryRpcHandlers : public RpcHandlers<Service, Request, Response, Rpc<Service, Request, Response>> {
-    using GRPCResponder = grpc::ServerAsyncResponseWriter<Response>;
-    using RequestRpc = std::function<void(Service*, grpc::ServerContext*, Request*, GRPCResponder*, grpc::CompletionQueue*, grpc::ServerCompletionQueue*, void*)>;
+    using Responder = grpc::ServerAsyncResponseWriter<Response>;
+    using RequestRpcFunc = std::function<void(Service*, grpc::ServerContext*, Request*, Responder*, grpc::CompletionQueue*, grpc::ServerCompletionQueue*, void*)>;
 
     // The actual queuing function on the generated service. This is called when an instance of any unary RPC is created.
-    RequestRpc requestRpc;
+    RequestRpcFunc requestRpc;
 };
 
 //! This represents any unary (i.e. one-client-request, one-server-response model) RPC.
@@ -207,7 +208,7 @@ class UnaryRpc : public BaseRpc {
 
     Service* service_;
     grpc::ServerCompletionQueue* queue_;
-    typename Handlers::GRPCResponder responder_;
+    typename Handlers::Responder responder_;
     Handlers handlers_;
     Request request_;
 

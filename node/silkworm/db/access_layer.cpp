@@ -62,18 +62,29 @@ void write_schema_version(mdbx::txn& txn, const VersionBase& schema_version) {
 }
 
 std::optional<BlockHeader> read_header(mdbx::txn& txn, BlockNum block_number, const uint8_t (&hash)[kHashLength]) {
-    thread_local mdbx::cursor_managed src;
-    src.bind(txn, db::open_map(txn, db::table::kHeaders));
     auto key{block_key(block_number, hash)};
-    auto data{src.find(to_slice(key), false)};
-    if (!data) {
+    return read_header(txn, key);
+}
+
+std::optional<BlockHeader> read_header(mdbx::txn& txn, ByteView key) {
+    auto raw_header{read_header_raw(txn, key)};
+    if (raw_header.empty()) {
         return std::nullopt;
     }
-
     BlockHeader header;
-    ByteView data_view{from_slice(data.value)};
-    rlp::success_or_throw(rlp::decode(data_view, header));
+    ByteView encoded_header{raw_header.data(), raw_header.length()};
+    rlp::success_or_throw(rlp::decode(encoded_header, header));
     return header;
+}
+
+Bytes read_header_raw(mdbx::txn& txn, ByteView key) {
+    thread_local mdbx::cursor_managed src;
+    src.bind(txn, db::open_map(txn, db::table::kHeaders));
+    auto data{src.find(to_slice(key), false)};
+    if (!data) {
+        return {};
+    }
+    return Bytes{from_slice(data.value)};
 }
 
 void write_header(mdbx::txn& txn, const BlockHeader& header, bool with_header_numbers) {
@@ -98,9 +109,14 @@ void write_header_number(mdbx::txn& txn, const uint8_t (&hash)[kHashLength], con
 
 std::optional<intx::uint256> read_total_difficulty(mdbx::txn& txn, BlockNum block_number,
                                                    const uint8_t (&hash)[kHashLength]) {
+    auto key{block_key(block_number, hash)};
+    return read_total_difficulty(txn, key);
+}
+
+std::optional<intx::uint256> read_total_difficulty(mdbx::txn& txn, ByteView key) {
     thread_local mdbx::cursor_managed src;
     src.bind(txn, db::open_map(txn, table::kDifficulty));
-    auto key{block_key(block_number, hash)};
+
     auto data{src.find(to_slice(key), false)};
     if (!data) {
         return std::nullopt;
@@ -194,17 +210,14 @@ bool read_block(mdbx::txn& txn, BlockNum block_number, bool read_senders, BlockW
     SILKWORM_ASSERT(data.value.length() == kHashLength);
     std::memcpy(bh.hash.bytes, data.value.data(), kHashLength);
 
-    // Locate header
-    thread_local mdbx::cursor_managed headers_cursor;
-    headers_cursor.bind(txn, db::open_map(txn, table::kHeaders));
+    // Read header
     key = block_key(block_number, bh.hash.bytes);
-    data = headers_cursor.find(to_slice(key), false);
-    if (!data) {
+    auto raw_header{read_header_raw(txn, key)};
+    if (raw_header.empty()) {
         return false;
     }
-
-    ByteView data_view(from_slice(data.value));
-    rlp::success_or_throw(rlp::decode(data_view, bh.block.header));
+    ByteView raw_header_view(raw_header);
+    rlp::success_or_throw(rlp::decode(raw_header_view, bh.block.header));
 
     return read_body(txn, key, read_senders, bh.block);
 }
@@ -227,21 +240,9 @@ bool read_body(mdbx::txn& txn, const Bytes& key, bool read_senders, BlockBody& o
 
     std::swap(out.ommers, body.ommers);
     read_transactions(txn, body.base_txn_id, body.txn_count, out.transactions);
-
     if (!out.transactions.empty() && read_senders) {
-        std::vector<evmc::address> senders{db::read_senders(txn, key)};
-        if (!senders.empty()) {
-            SILKWORM_ASSERT(senders.size() == out.transactions.size());
-            for (size_t i{0}; i < senders.size(); ++i) {
-                out.transactions[i].from = senders[i];
-            }
-        } else {  // Might be empty due to pruning
-            for (auto& transaction : out.transactions) {
-                transaction.recover_sender();
-            }
-        }
+        parse_senders(txn, key, out.transactions);
     }
-
     return true;
 }
 
@@ -260,6 +261,13 @@ void write_body(mdbx::txn& txn, const BlockBody& body, const uint8_t (&hash)[kHa
     write_transactions(txn, body.transactions, body_for_storage.base_txn_id);
 }
 
+static ByteView read_senders_raw(mdbx::txn& txn, const Bytes& key) {
+    thread_local mdbx::cursor_managed src;
+    src.bind(txn, db::open_map(txn, table::kSenders));
+    auto data{src.find(to_slice(key), /*throw_notfound = */ false)};
+    return data ? from_slice(data.value) : ByteView();
+}
+
 std::vector<evmc::address> read_senders(mdbx::txn& txn, BlockNum block_number, const uint8_t (&hash)[kHashLength]) {
     auto key{block_key(block_number, hash)};
     return read_senders(txn, key);
@@ -267,16 +275,34 @@ std::vector<evmc::address> read_senders(mdbx::txn& txn, BlockNum block_number, c
 
 std::vector<evmc::address> read_senders(mdbx::txn& txn, const Bytes& key) {
     std::vector<evmc::address> senders{};
-
-    thread_local mdbx::cursor_managed src;
-    src.bind(txn, db::open_map(txn, table::kSenders));
-    auto data{src.find(to_slice(key), /*throw_notfound = */ false)};
-    if (data) {
-        SILKWORM_ASSERT(data.value.length() % kAddressLength == 0);
-        senders.resize(data.value.length() / kAddressLength);
-        std::memcpy(senders.data(), data.value.data(), data.value.length());
+    auto data_view{read_senders_raw(txn, key)};
+    if (!data_view.empty()) {
+        SILKWORM_ASSERT(data_view.length() % kAddressLength == 0);
+        senders.resize(data_view.length() / kAddressLength);
+        std::memcpy(senders.data(), data_view.data(), data_view.length());
     }
     return senders;
+}
+
+void parse_senders(mdbx::txn& txn, const Bytes& key, std::vector<Transaction>& out) {
+    if (out.empty()) {
+        return;
+    }
+    auto data_view{read_senders_raw(txn, key)};
+    if (!data_view.empty()) {
+        SILKWORM_ASSERT(data_view.length() % kAddressLength == 0);
+        SILKWORM_ASSERT(data_view.length() / kAddressLength == out.size());
+        auto addresses = reinterpret_cast<const evmc::address*>(data_view.data());
+        size_t idx{0};
+        for (auto& transaction : out) {
+            transaction.from.emplace(addresses[idx++]);
+        }
+    } else {
+        // Might be empty due to pruning
+        for (auto& transaction : out) {
+            transaction.recover_sender();
+        }
+    }
 }
 
 std::optional<ByteView> read_code(mdbx::txn& txn, const evmc::bytes32& code_hash) {
@@ -431,7 +457,7 @@ AccountChanges read_account_changes(mdbx::txn& txn, BlockNum block_num) {
         std::memcpy(address.bytes, data.value.data(), kAddressLength);
         data.value.remove_prefix(kAddressLength);
         changes[address] = db::from_slice(data.value);
-        data = src.to_current_next_multi(/*throw_not_found=*/false);
+        data = src.to_current_next_multi(/*throw_notfound=*/false);
     }
 
     return changes;

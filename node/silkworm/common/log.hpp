@@ -55,6 +55,12 @@ void init(Settings& settings);
 //! \note This function is not thread safe as it's meant to be used at start of process and never called again
 void set_verbosity(Level level);
 
+//! \brief Sets the name for this thread when logging traces also threads
+void set_thread_name(const char* name);
+
+//! \brief Returns the currently set name for the thread or the thread id
+std::string get_thread_name();
+
 //! \brief Checks if provided log level will be effectively printed on behalf of current settings
 //! \return True / False
 //! \remarks Some logging operations may implement computations which would be completely wasted if the outcome is not

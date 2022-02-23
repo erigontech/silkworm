@@ -87,7 +87,9 @@ struct VersionBase {
 inline constexpr const char* kDbSchemaVersionKey{"dbVersion"};
 
 inline constexpr size_t kIncarnationLength{8};
+inline constexpr size_t kLocationLength{32};
 static_assert(kIncarnationLength == sizeof(uint64_t));
+static_assert(kLocationLength == sizeof(evmc::bytes32));
 
 inline constexpr size_t kPlainStoragePrefixLength{kAddressLength + kIncarnationLength};
 inline constexpr size_t kHashedStoragePrefixLength{kHashLength + kIncarnationLength};

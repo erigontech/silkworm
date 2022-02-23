@@ -114,12 +114,10 @@ class RecoveryFarm : public Stoppable {
     std::vector<boost::signals2::scoped_connection> workers_connections_{};  // Hold event connections to workers
     std::vector<std::unique_ptr<RecoveryWorker>> workers_{};                 // Actual collection of recoverers
 
-    std::mutex harvest_mutex_;                    // Guards the harvest queue
+    std::mutex workers_mtx_{};  // Synchronize with workers
+    std::condition_variable worker_completed_cv_{};
     std::queue<size_t> harvestable_workers_{};    // Queue of ready to harvest workers
     std::atomic<uint32_t> workers_in_flight_{0};  // Counter of grinding workers
-
-    std::mutex worker_completed_mtx_{};
-    std::condition_variable worker_completed_cv_{};
 
     /* Canonical blocks + headers */
     struct HeaderInfo {

@@ -1,5 +1,5 @@
 /*
-   Copyright 2020-2021 The Silkworm Authors
+   Copyright 2020-2022 The Silkworm Authors
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
    You may obtain a copy of the License at
@@ -13,6 +13,8 @@
 
 #ifndef SILKWORM_ETL_COLLECTOR_HPP_
 #define SILKWORM_ETL_COLLECTOR_HPP_
+
+#include <mutex>
 
 #include <silkworm/common/settings.hpp>
 #include <silkworm/db/mdbx.hpp>
@@ -73,11 +75,20 @@ class Collector {
     }
 
     //! \brief Returns the hex representation of current load key (for progress tracking)
-    [[nodiscard]] std::string get_load_key() const { return loading_key_; }
+    [[nodiscard]] std::string get_load_key() const {
+        std::unique_lock l{mutex_};
+        return loading_key_;
+    }
 
   private:
     static std::filesystem::path set_work_path(const std::optional<std::filesystem::path>& provided_work_path);
+
     void flush_buffer();  // Write buffer to file
+
+    void set_loading_key(ByteView key) {
+        std::unique_lock l{mutex_};
+        loading_key_ = to_hex(key, true);
+    }
 
     bool work_path_managed_;
     std::filesystem::path work_path_;
@@ -98,6 +109,7 @@ class Collector {
 
     std::vector<std::unique_ptr<FileProvider>> file_providers_;  // Collection of file providers
     size_t size_{0};                                             // Total collected size
+    mutable std::mutex mutex_{};                                 // To sync loading_key_
     std::string loading_key_{};                                  // Actual load key (for log purposes)
 };
 

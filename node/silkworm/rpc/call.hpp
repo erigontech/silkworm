@@ -33,13 +33,13 @@ class BaseRpc {
   public:
     static int32_t instance_count() { return instance_count_; }
 
-    BaseRpc() : op_count_(0), done_(false) {
-        instance_count_++;
+    BaseRpc() {
+        ++instance_count_;
         SILK_TRACE << "BaseRpc::BaseRpc [" << this << "] instances: " << instance_count_;
     }
 
     virtual ~BaseRpc() {
-        instance_count_--;
+        --instance_count_;
         SILK_TRACE << "BaseRpc::~BaseRpc [" << this << "] instances: " << instance_count_;
     }
 
@@ -96,22 +96,22 @@ class BaseRpc {
   private:
     /// This counts the number of pending operations in this RPC.
     /// \warning It is used to detect when the RPC is really done in some corner cases (e.g. client abruptly exits).
-    uint32_t op_count_;
+    uint32_t op_count_{0};
 
     /// This flag indicates if DONE tag processor has been called or not.
     /// \warning It is used to handle some corner cases when the completion queue dispatches tags in reverse order
     /// (e.g. client abruptly exits).
-    bool done_;
+    bool done_{false};
 };
 
-//! Contains the callback functions used to customize the RPC handling.
+//! Contains the handling functions used to customize the RPC lifecycle.
 /// Any concrete RPC (unary/mono streaming/bi streaming) shall specialize RpcHandlers because each of them will use
 /// a different response writer to call the gRPC library.
 /// \warning Note that in gRPC async model an application must explicitly ask the gRPC server to start handling an
 /// incoming RPC on a particular service: that's why createRpc exists.
-template <typename Service, typename Request, typename Response, typename Rpc>
+template <typename AsyncService, typename Request, typename Response, typename Rpc>
 struct RpcHandlers {
-    using CreateRpcFunc = std::function<void(Service*, grpc::ServerCompletionQueue*)>;
+    using CreateRpcFunc = std::function<void(AsyncService*, grpc::ServerCompletionQueue*)>;
     using ProcessRequestFunc = std::function<void(Rpc&, const Request*)>;
     using CleanupRpcFunc = std::function<void(Rpc&, bool)>;
 
@@ -120,7 +120,7 @@ struct RpcHandlers {
     CreateRpcFunc createRpc;
 
     /// processRequest is called when a new incoming request from some client has come in for this RPC.
-    /// For streaming RPCs, a request from client can come in multiple times so processRequest may be called reapeatedly.
+    /// For streaming RPCs, a request from client can come in multiple times so processRequest may be called repeatedly.
     ProcessRequestFunc processRequest;
 
     // The gRPC server is cleanupRpc with this RPC. Any necessary clean-up must be performed when cleanupRpc is called.
@@ -128,22 +128,22 @@ struct RpcHandlers {
 };
 
 //! Represents the RPC handlers for unary RPCs.
-template <typename Service, typename Request, typename Response, template<typename, typename, typename> typename Rpc>
-struct UnaryRpcHandlers : public RpcHandlers<Service, Request, Response, Rpc<Service, Request, Response>> {
+template <typename AsyncService, typename Request, typename Response, template<typename, typename, typename> typename Rpc>
+struct UnaryRpcHandlers : public RpcHandlers<AsyncService, Request, Response, Rpc<AsyncService, Request, Response>> {
     using Responder = grpc::ServerAsyncResponseWriter<Response>;
-    using RequestRpcFunc = std::function<void(Service*, grpc::ServerContext*, Request*, Responder*, grpc::CompletionQueue*, grpc::ServerCompletionQueue*, void*)>;
+    using RequestRpcFunc = std::function<void(AsyncService*, grpc::ServerContext*, Request*, Responder*, grpc::CompletionQueue*, grpc::ServerCompletionQueue*, void*)>;
 
     // The actual queuing function on the generated service. This is called when an instance of any unary RPC is created.
     RequestRpcFunc requestRpc;
 };
 
 //! This represents any unary (i.e. one-client-request, one-server-response model) RPC.
-template <typename Service, typename Request, typename Response>
+template <typename AsyncService, typename Request, typename Response>
 class UnaryRpc : public BaseRpc {
   public:
-    using Handlers = UnaryRpcHandlers<Service, Request, Response, UnaryRpc>;
+    using Handlers = UnaryRpcHandlers<AsyncService, Request, Response, UnaryRpc>;
 
-    UnaryRpc(Service* service, grpc::ServerCompletionQueue* queue, Handlers handlers)
+    UnaryRpc(AsyncService* service, grpc::ServerCompletionQueue* queue, Handlers handlers)
     : service_(service), queue_(queue), responder_(&context_), handlers_(handlers) {
         SILK_TRACE << "UnaryRpc::UnaryRpc START [" << this << "]";
 
@@ -206,14 +206,28 @@ class UnaryRpc : public BaseRpc {
         handlers_.cleanupRpc(*this, context_.IsCancelled());
     }
 
-    Service* service_;
+    //! The gRPC generated asynchronous service.
+    AsyncService* service_;
+
+    //! The gRPC server-side completion queue used by this RPC.
     grpc::ServerCompletionQueue* queue_;
+
+    //! The gRPC server-side API for responding back in unary calls.
     typename Handlers::Responder responder_;
+
+    //! The lifecycle handlers for unary calls.
     Handlers handlers_;
+
+    //! The incoming unary RPC request filled after READ tag processing.
     Request request_;
 
+    //! The READ tag processing callback.
     TagProcessor read_processor_;
+
+    //! The FINISH tag processing callback.
     TagProcessor finish_processor_;
+
+    //! The DONE tag processing callback.
     TagProcessor done_processor_;
 };
 

@@ -25,8 +25,8 @@ using TagProcessor = std::function<void(bool)>;
 //! This represents the completion event (better known as TAG in gRPC) of any async operation.
 /// By packing the tag information this way, each tag knows how to process itself.
 struct CompletionTag {
-    TagProcessor* processor; // The function to be called to process incoming event
-    bool ok; // The result of tag processing as indicated by gRPC library (name consistent with gRPC examples)
+    TagProcessor* processor{nullptr}; // The function to be called to process incoming event
+    bool ok{false}; // The result of tag processing as indicated by gRPC library (name consistent with gRPC examples)
 };
 
 } // namespace silkworm::rpc

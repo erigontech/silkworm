@@ -16,7 +16,6 @@
 
 #include "completion_runner.hpp"
 
-#include <functional>
 #include <memory>
 
 #include <grpcpp/alarm.h>

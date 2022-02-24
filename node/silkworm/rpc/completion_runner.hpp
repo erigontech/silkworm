@@ -27,7 +27,7 @@
 
 namespace silkworm::rpc {
 
-//! Execution loop dedicated to 
+//! Execution loop dedicated to read completion notifications from one gRPC completion queue.
 class CompletionRunner {
   public:
     CompletionRunner(grpc::CompletionQueue& queue, boost::asio::io_context& io_context)
@@ -41,6 +41,7 @@ class CompletionRunner {
     //! Run the execution loop reading gRPC completion tags until \ref stop() is called.
     void run();
 
+    //! Stop the execution loop shutting down and draining the gRPC completion queue.
     void stop();
 
   private:
@@ -61,6 +62,7 @@ class CompletionRunner {
     //! Flag indicating if shutdown has been requested.
     bool shutdown_requested_{false};
 
+    //! Condition signalling completion of shutdown.
     std::condition_variable shutdown_completed_;
 };
 

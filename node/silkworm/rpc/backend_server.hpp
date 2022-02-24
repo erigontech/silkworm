@@ -80,7 +80,6 @@ class NetVersionService : public NetVersionRpcService {
 class BackEndServer : public Server<remote::ETHBACKEND::AsyncService> {
   public:
     BackEndServer(const ServerConfig& srv_config, const ChainConfig& chain_config);
-    virtual ~BackEndServer() {}
 
     BackEndServer(const BackEndServer&) = delete;
     BackEndServer& operator=(const BackEndServer&) = delete;

@@ -67,8 +67,8 @@ class BlockAmount {
 class PruneMode {
   public:
     explicit PruneMode() : history_(), receipts_(), tx_index_(), call_traces_(){};
-    explicit PruneMode(BlockAmount& history, BlockAmount& receipts, BlockAmount& senders, BlockAmount& tx_index,
-                       BlockAmount& call_traces)
+    explicit PruneMode(BlockAmount history, BlockAmount receipts, BlockAmount senders, BlockAmount tx_index,
+                       BlockAmount call_traces)
         : history_{std::move(history)},
           receipts_{std::move(receipts)},
           senders_{std::move(senders)},

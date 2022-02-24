@@ -38,7 +38,7 @@ std::pair<Header, DecodingResult> decode_header(ByteView& from) noexcept {
                 return {h, DecodingResult::kInputTooShort};
             }
             if (from[0] < 0x80) {
-                return {h, DecodingResult::kNonCanonicalSingleByte};
+                return {h, DecodingResult::kNonCanonicalSize};
             }
         }
     } else if (b < 0xC0) {

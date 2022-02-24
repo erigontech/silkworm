@@ -50,8 +50,8 @@ class StageError : public std::exception {
   public:
     explicit StageError(StageResult err)
         : err_{magic_enum::enum_integer<StageResult>(err)},
-          message_{"Stage error : " + std::string(magic_enum::enum_name<StageResult>(err))} {};
-    [[maybe_unused]] explicit StageError(StageResult err, std::string message)
+          message_{std::string(magic_enum::enum_name<StageResult>(err))} {};
+    explicit StageError(StageResult err, std::string message)
         : err_{magic_enum::enum_integer<StageResult>(err)}, message_{std::move(message)} {};
     ~StageError() noexcept override = default;
     [[nodiscard]] const char* what() const noexcept override { return message_.c_str(); }
@@ -112,10 +112,16 @@ class IStage : public Stoppable {
     //! \brief Returns the key name of the stage instance
     [[nodiscard]] const char* name() const { return stage_name_; }
 
+    //! \brief Forces an exception if stage has been requested to stop
+    void continue_or_throw() { success_or_throw(is_stopping() ? StageResult::kAborted : StageResult::kSuccess); }
+
   protected:
     const char* stage_name_;
     NodeSettings* node_settings_;
     std::atomic<OperationType> operation_{OperationType::None};
+
+    //! \brief Throws if actual block != expected block
+    void check_block_sequence(BlockNum actual, BlockNum expected);
 };
 
 }  // namespace silkworm::stagedsync

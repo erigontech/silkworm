@@ -147,16 +147,17 @@ class HashState final : public IStage {
     StageResult unwind_from_storage_changeset(db::RWTxn& txn, BlockNum previous_progress, BlockNum to);
 
     //! \brief Writes to db the changes collected from account changeset scan either in forward or unwind mode
-    StageResult write_changes_from_changed_addresses(db::RWTxn& txn, ChangedAddresses& changed_addresses);
+    StageResult write_changes_from_changed_addresses(db::RWTxn& txn, const ChangedAddresses& changed_addresses);
 
     //! \brief Writes to db the changes collected from storage changeset scan either in forward or unwind mode
     StageResult write_changes_from_changed_storage(db::RWTxn& txn, db::StorageChanges& storage_changes,
-                                                   absl::btree_map<evmc::address, evmc::bytes32>& hashed_addresses);
+                                                   const absl::btree_map<evmc::address, evmc::bytes32>& hashed_addresses);
 
     //! \brief Resets all fields related to log progress tracking
     void reset_log_progress();
 
     // Logger info
+    std::mutex log_mtx_{};                       // Guards async logging
     std::atomic_bool incremental_{false};        // Whether operation is incremental
     std::atomic_bool loading_{false};            // Whether we're in ETL loading phase
     std::string current_source_;                 // Current source of data

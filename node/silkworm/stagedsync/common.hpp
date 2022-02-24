@@ -121,7 +121,7 @@ class IStage : public Stoppable {
     std::atomic<OperationType> operation_{OperationType::None};
 
     //! \brief Throws if actual block != expected block
-    void check_block_sequence(BlockNum actual, BlockNum expected);
+    inline static void check_block_sequence(BlockNum actual, BlockNum expected);
 };
 
 }  // namespace silkworm::stagedsync

@@ -22,6 +22,7 @@
 
 #include <array>
 #include <cstring>
+#include <exception>
 #include <utility>
 #include <vector>
 
@@ -133,6 +134,7 @@ inline rlp::DecodingResult big_compact_error_to_decoding_result(endian::BigCompa
         case endian::BigCompactError::LeadingZero:
             return rlp::DecodingResult::kLeadingZero;
     }
+    std::terminate();  // unreachable
 }
 
 }  // namespace silkworm::rlp

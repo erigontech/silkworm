@@ -26,12 +26,12 @@ endif()
 file(GLOB_RECURSE SILKWORM_CORE_SRC CONFIGURE_DEPENDS "*.cpp" "*.hpp" "*.c" "*.h")
 list(FILTER SILKWORM_CORE_SRC EXCLUDE REGEX "_test\.cpp$")
 
-get_filename_component(SILKWORM_MAIN_DIR ../ ABSOLUTE)
+get_filename_component(SILKWORM_THIRD_PARTY_DIR ../third_party ABSOLUTE)
 
 add_library(silkworm_core ${SILKWORM_CORE_SRC})
 target_include_directories(silkworm_core PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}
-        ${SILKWORM_MAIN_DIR}/expected/include)
+        ${SILKWORM_THIRD_PARTY_DIR}/expected/include)
 
 set(SILKWORM_CORE_PUBLIC_LIBS evmc ethash::ethash intx::intx ff Microsoft.GSL::GSL nlohmann_json secp256k1)
 set(SILKWORM_CORE_PRIVATE_LIBS evmone gmp)

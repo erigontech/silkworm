@@ -28,5 +28,5 @@
 	url = https://github.com/ledgerwatch/interfaces.git
 	branch = stable
 [submodule "expected"]
-	path = expected
+	path = third_party/expected
 	url = https://github.com/TartanLlama/expected.git

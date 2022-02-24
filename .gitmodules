@@ -1,27 +1,27 @@
 [submodule "evmone"]
-	path = evmone
+	path = third_party/evmone
 	url = https://github.com/ethereum/evmone.git
 [submodule "secp256k1"]
-	path = secp256k1
+	path = third_party/secp256k1
 	url = https://github.com/bitcoin-core/secp256k1.git
 [submodule "libff"]
-	path = libff
+	path = third_party/libff
 	url = https://github.com/torquem-ch/libff.git
 	branch = win
 [submodule "tests"]
-	path = tests
+	path = third_party/tests
 	url = https://github.com/ethereum/tests.git
 [submodule "cbor-cpp"]
-	path = cbor-cpp
+	path = third_party/cbor-cpp
 	url = https://github.com/torquem-ch/cbor-cpp.git
 [submodule "CRoaring"]
-	path = CRoaring
+	path = third_party/CRoaring
 	url = https://github.com/RoaringBitmap/CRoaring.git
 [submodule "magic_enum"]
-	path = magic_enum
+	path = third_party/magic_enum
 	url = https://github.com/Neargye/magic_enum.git
 [submodule "libmdbx"]
-	path = libmdbx
+	path = third_party/libmdbx
 	url = https://github.com/erthink/libmdbx.git
 [submodule "interfaces/proto"]
 	path = interfaces/proto

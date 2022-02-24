@@ -24,8 +24,12 @@ namespace silkworm {
 
 TEST_CASE("Stop Watch") {
     using namespace std::chrono_literals;
+
+    silkworm::StopWatch sw_autostart(true);
+    REQUIRE(sw_autostart);  // Must be started
+
     silkworm::StopWatch sw1{};
-    CHECK_FALSE(sw1);  // Not started
+    REQUIRE(!sw1);  // Not started
 
     auto [lap_time0, duration0] = sw1.lap();
     CHECK(duration0.count() == 0);
@@ -53,12 +57,14 @@ TEST_CASE("Stop Watch") {
     }
 
     CHECK(!sw1.format(duration3).empty());
-    CHECK(sw1.format(918734032564785ns) == "10d 15h 12m 14s");
-    CHECK(sw1.format(432034ms) == "7m 12s");
+    CHECK(sw1.format(255h + 12min + 14s) == "10d 15h 12m 14s");
+    CHECK(sw1.format(240h) == "10d");
+    CHECK(sw1.format(240h + 14s) == "10d 14s");
+    CHECK(sw1.format(7min + 12s + 120ms) == "7m 12s");
     CHECK(sw1.format(1ms) == "1ms");
-    CHECK(sw1.format(1200ms) == "1s 200ms");
-    CHECK(sw1.format(1010us) == "1ms 10μs");
-    CHECK(sw1.format(20us) == "20μs");
+    CHECK(sw1.format(1200ms) == "1.200s");
+    CHECK(sw1.format(1010us) == "1.010ms");
+    CHECK(sw1.format(20us) == "20us");
 
     (void)sw1.stop();
     (void)sw1.start(/*with_reset=*/true);
@@ -70,7 +76,6 @@ TEST_CASE("Stop Watch") {
     sw1.reset();
     CHECK(sw1.laps().empty());  // No more laps
     CHECK_FALSE(sw1);           // Not started
-
 }
 
 }  // namespace silkworm

@@ -51,7 +51,7 @@ TEST_CASE("Storage update") {
                           /*initial=*/value_a1, /*current=*/value_a2);
 
     REQUIRE(buffer.storage_changes().empty() == false);
-    REQUIRE(buffer.current_batch_size() != 0);
+    REQUIRE(buffer.current_batch_history_size() != 0);
 
     buffer.write_to_db();
 

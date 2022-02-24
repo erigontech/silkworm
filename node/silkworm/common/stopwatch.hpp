@@ -1,5 +1,5 @@
 /*
-   Copyright 2021 The Silkworm Authors
+   Copyright 2021-2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -35,7 +35,9 @@ class StopWatch {
     using Duration = std::chrono::nanoseconds;
 
     //! \brief Creates a new instance
-    StopWatch() = default;
+    explicit StopWatch(bool auto_start = false) {
+        if (auto_start) start();
+    };
     ~StopWatch() = default;
 
     //! \brief Starts the clock

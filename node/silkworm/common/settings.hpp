@@ -47,7 +47,7 @@ struct NodeSettings {
     bool fake_pow{false};                            // Whether to verify Proof-of-Work
     std::unique_ptr<db::PruneMode> prune_mode;       // Prune mode
     uint32_t sync_loop_throttle_seconds{0};          // Minimum interval amongst sync cycle
-    uint32_t sync_loop_log_interval_seconds{10};     // Interval for sync loop to emit logs
+    uint32_t sync_loop_log_interval_seconds{30};     // Interval for sync loop to emit logs
 };
 
 }  // namespace silkworm

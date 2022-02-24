@@ -39,6 +39,8 @@ std::optional<VersionBase> read_schema_version(mdbx::txn& txn) noexcept;
 void write_schema_version(mdbx::txn& txn, const VersionBase& schema_version);
 
 std::optional<BlockHeader> read_header(mdbx::txn& txn, BlockNum block_number, const uint8_t (&hash)[kHashLength]);
+std::optional<BlockHeader> read_header(mdbx::txn& txn, ByteView key);
+Bytes read_header_raw(mdbx::txn& txn, ByteView key);
 
 //! \brief Writes given header to table::kHeaders
 void write_header(mdbx::txn& txn, const BlockHeader& header, bool with_header_numbers = false);
@@ -64,6 +66,8 @@ void write_body(mdbx::txn& txn, const BlockBody& body, const uint8_t (&hash)[kHa
 std::optional<intx::uint256> read_total_difficulty(mdbx::txn& txn, BlockNum block_number,
                                                    const uint8_t (&hash)[kHashLength]);
 
+std::optional<intx::uint256> read_total_difficulty(mdbx::txn& txn, ByteView key);
+
 // See Erigon WriteTd
 void write_total_difficulty(mdbx::txn& txn, const Bytes& key, const intx::uint256& total_difficulty);
 void write_total_difficulty(mdbx::txn& txn, BlockNum block_number, const uint8_t (&hash)[kHashLength],
@@ -76,6 +80,8 @@ void write_total_difficulty(mdbx::txn& txn, BlockNum block_number, const uint8_t
 // See Erigon ReadSenders
 std::vector<evmc::address> read_senders(mdbx::txn& txn, const Bytes& key);
 std::vector<evmc::address> read_senders(mdbx::txn& txn, BlockNum block_number, const uint8_t (&hash)[kHashLength]);
+//! \brief Fills transactions' senders addresses directly in place
+void parse_senders(mdbx::txn& txn, const Bytes& key, std::vector<Transaction>& out);
 
 // See Erigon ReadTransactions
 void read_transactions(mdbx::txn& txn, uint64_t base_id, uint64_t count, std::vector<Transaction>& out);

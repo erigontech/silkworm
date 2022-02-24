@@ -1,5 +1,5 @@
 /*
-   Copyright 2021 The Silkworm Authors
+   Copyright 2021-2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -135,17 +135,17 @@ TEST_CASE("Block as key and compact form") {
         CHECK(from_big_compact<uint64_t>(Bytes()) == 0u);
         // Try retrieve a compacted value from a too large Byte string
         Bytes extra_long_bytes(sizeof(uint64_t) + 1, 0);
-        CHECK(from_big_compact<uint64_t>(extra_long_bytes) == std::nullopt);
+        CHECK(!from_big_compact<uint64_t>(extra_long_bytes));
     }
 }
 
 TEST_CASE("from_big_compact with leading zeros") {
     const Bytes non_compact_be{*from_hex("00AB")};
     const auto x{from_big_compact<uint32_t>(non_compact_be, /*allow_leading_zeros=*/false)};
-    CHECK(x == std::nullopt);
+    CHECK(!x);
     const auto y{from_big_compact<uint32_t>(non_compact_be, /*allow_leading_zeros=*/true)};
-    REQUIRE(y != std::nullopt);
-    CHECK(y == 0xAB);
+    REQUIRE(y);
+    CHECK(*y == 0xAB);
 }
 
 }  // namespace silkworm::endian

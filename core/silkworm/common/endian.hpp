@@ -1,5 +1,5 @@
 /*
-   Copyright 2020-2021 The Silkworm Authors
+   Copyright 2020-2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -66,6 +66,11 @@ as compiler intrinsics to swap bytes in 16-bit, 32-bit, and 64-bit integers resp
 #endif
 
 #include <intx/intx.hpp>
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-parameter"
+#include <tl/expected.hpp>
+#pragma GCC diagnostic pop
 
 #include <silkworm/common/base.hpp>
 
@@ -185,15 +190,21 @@ ByteView to_big_compact(uint64_t value);
 //! \remarks A "compact" big endian form strips leftmost bytes valued to zero
 ByteView to_big_compact(const intx::uint256& value);
 
+enum class BigCompactError {
+    Overflow,
+    LeadingZero,
+};
+
 //! \brief Parses unsigned integer from a compacted big endian byte form
 //! \param [in] data : byte view of compacted value. Length must be <= sizeof(UnsignedInteger)
 //! \param [in] allow_leading_zeros : when false, return std::nullopt if data starts with a 0 byte (i.e. not compact)
 //! \return The corresponding integer with native endianness; std::nullopt if data is invalid
 //! \remarks A "compact" big endian form strips leftmost bytes valued to zero
 template <typename UnsignedInteger>
-static std::optional<UnsignedInteger> from_big_compact(ByteView data, bool allow_leading_zeros = false) {
+static tl::expected<UnsignedInteger, BigCompactError> from_big_compact(ByteView data,
+                                                                       bool allow_leading_zeros = false) {
     if (data.length() > sizeof(UnsignedInteger)) {
-        return std::nullopt;
+        return tl::unexpected(BigCompactError::Overflow);
     }
 
     UnsignedInteger x{0};
@@ -203,7 +214,7 @@ static std::optional<UnsignedInteger> from_big_compact(ByteView data, bool allow
     }
 
     if (data[0] == 0 && !allow_leading_zeros) {
-        return std::nullopt;
+        return tl::unexpected(BigCompactError::LeadingZero);
     }
 
     auto* ptr{reinterpret_cast<uint8_t*>(&x)};

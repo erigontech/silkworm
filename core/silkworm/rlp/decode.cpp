@@ -1,5 +1,5 @@
 /*
-   Copyright 2020-2021 The Silkworm Authors
+   Copyright 2020-2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -18,8 +18,6 @@
 
 #include <cassert>
 #include <tuple>
-
-#include <silkworm/common/endian.hpp>
 
 namespace silkworm::rlp {
 
@@ -50,8 +48,8 @@ std::pair<Header, DecodingResult> decode_header(ByteView& from) noexcept {
             return {h, DecodingResult::kInputTooShort};
         }
         const auto len{endian::from_big_compact<uint64_t>(from.substr(0, len_of_len))};
-        if (len == std::nullopt) {
-            return {h, DecodingResult::kLeadingZero};
+        if (!len) {
+            return {h, big_compact_error_to_decoding_result(len.error())};
         }
         h.payload_length = *len;
         from.remove_prefix(len_of_len);
@@ -70,8 +68,8 @@ std::pair<Header, DecodingResult> decode_header(ByteView& from) noexcept {
             return {h, DecodingResult::kInputTooShort};
         }
         const auto len{endian::from_big_compact<uint64_t>(from.substr(0, len_of_len))};
-        if (len == std::nullopt) {
-            return {h, DecodingResult::kLeadingZero};
+        if (!len) {
+            return {h, big_compact_error_to_decoding_result(len.error())};
         }
         h.payload_length = *len;
         from.remove_prefix(len_of_len);
@@ -128,12 +126,9 @@ static DecodingResult decode_integer(ByteView& from, UnsignedInteger& to) noexce
     if (h.list) {
         return DecodingResult::kUnexpectedList;
     }
-    if (h.payload_length > sizeof(UnsignedInteger)) {
-        return DecodingResult::kOverflow;
-    }
     const auto res{endian::from_big_compact<UnsignedInteger>(from.substr(0, h.payload_length))};
-    if (res == std::nullopt) {
-        return DecodingResult::kLeadingZero;
+    if (!res) {
+        return big_compact_error_to_decoding_result(res.error());
     }
     to = *res;
     from.remove_prefix(h.payload_length);

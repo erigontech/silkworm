@@ -29,6 +29,7 @@
 #include <intx/intx.hpp>
 
 #include <silkworm/common/base.hpp>
+#include <silkworm/common/endian.hpp>
 #include <silkworm/rlp/encode.hpp>
 
 namespace silkworm::rlp {
@@ -123,6 +124,15 @@ DecodingResult decode_vector(ByteView& from, std::vector<T>& to) noexcept {
 
     from.remove_prefix(h.payload_length);
     return DecodingResult::kOk;
+}
+
+inline rlp::DecodingResult big_compact_error_to_decoding_result(endian::BigCompactError err) {
+    switch (err) {
+        case endian::BigCompactError::Overflow:
+            return rlp::DecodingResult::kOverflow;
+        case endian::BigCompactError::LeadingZero:
+            return rlp::DecodingResult::kLeadingZero;
+    }
 }
 
 }  // namespace silkworm::rlp

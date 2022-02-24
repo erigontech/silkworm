@@ -119,23 +119,23 @@ std::pair<Account, rlp::DecodingResult> Account::from_encoded_storage(ByteView e
             const auto encoded_value{encoded_payload.substr(pos, len)};
             switch (i) {
                 case 1: {
-                    const std::optional<uint64_t> nonce{endian::from_big_compact<uint64_t>(encoded_value)};
-                    if (nonce == std::nullopt) {
-                        return {a, rlp::DecodingResult::kLeadingZero};
+                    const auto nonce{endian::from_big_compact<uint64_t>(encoded_value)};
+                    if (!nonce) {
+                        return {a, rlp::big_compact_error_to_decoding_result(nonce.error())};
                     }
                     a.nonce = *nonce;
                 } break;
                 case 2: {
                     const auto balance{endian::from_big_compact<intx::uint256>(encoded_value)};
-                    if (!balance.has_value()) {
-                        return {a, rlp::DecodingResult::kOverflow};
+                    if (!balance) {
+                        return {a, rlp::big_compact_error_to_decoding_result(balance.error())};
                     }
-                    a.balance = balance.value();
+                    a.balance = *balance;
                 } break;
                 case 4: {
-                    const std::optional<uint64_t> incarnation{endian::from_big_compact<uint64_t>(encoded_value)};
-                    if (incarnation == std::nullopt) {
-                        return {a, rlp::DecodingResult::kLeadingZero};
+                    const auto incarnation{endian::from_big_compact<uint64_t>(encoded_value)};
+                    if (!incarnation) {
+                        return {a, rlp::big_compact_error_to_decoding_result(incarnation.error())};
                     }
                     a.incarnation = *incarnation;
                 } break;
@@ -176,8 +176,8 @@ std::pair<uint64_t, rlp::DecodingResult> Account::incarnation_from_encoded_stora
                     break;
                 case 4: {
                     const auto incarnation{endian::from_big_compact<uint64_t>(encoded_payload.substr(pos, len))};
-                    if (incarnation == std::nullopt) {
-                        return {0, rlp::DecodingResult::kLeadingZero};
+                    if (!incarnation) {
+                        return {0, rlp::big_compact_error_to_decoding_result(incarnation.error())};
                     }
                     return {*incarnation, rlp::DecodingResult::kOk};
                 } break;

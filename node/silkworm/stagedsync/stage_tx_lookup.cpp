@@ -16,6 +16,7 @@
 
 #include <filesystem>
 
+#include <silkworm/common/assert.hpp>
 #include <silkworm/common/endian.hpp>
 #include <silkworm/common/log.hpp>
 #include <silkworm/db/stages.hpp>
@@ -181,8 +182,9 @@ StageResult prune_tx_lookup(db::RWTxn& txn, const std::filesystem::path&, uint64
         // Check current lookup block number
         auto block_number_view{db::from_slice(lookup_data.value)};
         auto current_block{endian::from_big_compact<uint64_t>(block_number_view)};
+        SILKWORM_ASSERT(current_block);
         // Filter out all of the lookups with invalid block numbers
-        if (current_block < prune_from) {
+        if (*current_block < prune_from) {
             lookup_table.erase(/*whole_multivalue*/ false);
         }
         lookup_data = lookup_table.to_next(/*throw_notfound*/ false);

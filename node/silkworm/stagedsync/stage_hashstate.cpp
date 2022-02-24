@@ -26,30 +26,30 @@
 namespace silkworm::stagedsync {
 
 StageResult HashState::forward(db::RWTxn& txn) {
-    continue_or_throw();
-
-    // Check stage boundaries from previous execution and previous stage execution
-    auto previous_progress{db::stages::read_stage_progress(*txn, stage_name_)};
-    auto execution_stage_progress{db::stages::read_stage_progress(*txn, db::stages::kExecutionKey)};
-    if (previous_progress == execution_stage_progress) {
-        // Nothing to process
-        return StageResult::kSuccess;
-    } else if (previous_progress > execution_stage_progress) {
-        // Something bad had happened. Not possible execution stage is ahead of bodies
-        // Maybe we need to unwind ?
-        log::Error() << "Bad progress sequence. HashState stage progress " << previous_progress
-                     << " while Execution stage " << execution_stage_progress;
-        return StageResult::kInvalidProgress;
-    }
-
-    if (execution_stage_progress - previous_progress > 16) {
-        log::Info("Begin " + std::string(stage_name_),
-                  {"from", std::to_string(previous_progress), "to", std::to_string(execution_stage_progress)});
-    }
-
-    reset_log_progress();
-
     try {
+        continue_or_throw();
+
+        // Check stage boundaries from previous execution and previous stage execution
+        auto previous_progress{db::stages::read_stage_progress(*txn, stage_name_)};
+        auto execution_stage_progress{db::stages::read_stage_progress(*txn, db::stages::kExecutionKey)};
+        if (previous_progress == execution_stage_progress) {
+            // Nothing to process
+            return StageResult::kSuccess;
+        } else if (previous_progress > execution_stage_progress) {
+            // Something bad had happened. Not possible execution stage is ahead of bodies
+            // Maybe we need to unwind ?
+            log::Error() << "Bad progress sequence. HashState stage progress " << previous_progress
+                         << " while Execution stage " << execution_stage_progress;
+            return StageResult::kInvalidProgress;
+        }
+
+        if (execution_stage_progress - previous_progress > 16) {
+            log::Info("Begin " + std::string(stage_name_),
+                      {"from", std::to_string(previous_progress), "to", std::to_string(execution_stage_progress)});
+        }
+
+        reset_log_progress();
+
         if (!previous_progress) {
             success_or_throw(hash_from_plainstate(txn));
             collector_->clear();
@@ -70,30 +70,34 @@ StageResult HashState::forward(db::RWTxn& txn) {
         continue_or_throw();
         db::stages::write_stage_progress(*txn, db::stages::kHashStateKey, execution_stage_progress);
         txn.commit();
-        return is_stopping() ? StageResult::kAborted : StageResult::kSuccess;
 
+    } catch (const StageError& ex) {
+        log::Error(std::string(stage_name_),
+                   {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
+        return static_cast<StageResult>(ex.err());
     } catch (const std::exception& ex) {
         reset_log_progress();
         collector_->clear();
         log::Error(std::string(stage_name_), {"exception", std::string(ex.what())});
         return StageResult::kUnexpectedError;
     }
+
+    return StageResult::kSuccess;
 }
 
 StageResult HashState::unwind(db::RWTxn& txn, BlockNum to) {
-    continue_or_throw();
-
-    auto previous_progress{db::stages::read_stage_progress(*txn, stage_name_)};
-    if (to >= previous_progress) {
-        // Nothing to unwind actually
-        return StageResult::kSuccess;
-    }
-    if (previous_progress - to > 16) {
-        log::Info("Begin " + std::string(stage_name_) + " unwind",
-                  {"from", std::to_string(previous_progress), "to", std::to_string(to)});
-    }
-
     try {
+        continue_or_throw();
+        auto previous_progress{db::stages::read_stage_progress(*txn, stage_name_)};
+        if (to >= previous_progress) {
+            // Nothing to unwind actually
+            return StageResult::kSuccess;
+        }
+        if (previous_progress - to > 16) {
+            log::Info("Begin " + std::string(stage_name_) + " unwind",
+                      {"from", std::to_string(previous_progress), "to", std::to_string(to)});
+        }
+
         success_or_throw(unwind_from_account_changeset(txn, previous_progress, to));
         reset_log_progress();
 
@@ -103,13 +107,18 @@ StageResult HashState::unwind(db::RWTxn& txn, BlockNum to) {
         continue_or_throw();
         db::stages::write_stage_progress(*txn, db::stages::kHashStateKey, to);
         txn.commit();
-        return is_stopping() ? StageResult::kAborted : StageResult::kSuccess;
 
+    } catch (const StageError& ex) {
+        log::Error(std::string(stage_name_),
+                   {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
+        return static_cast<StageResult>(ex.err());
     } catch (const std::exception& ex) {
         reset_log_progress();
         log::Error(std::string(stage_name_), {"exception", std::string(ex.what())});
         return StageResult::kUnexpectedError;
     }
+
+    return StageResult::kSuccess;
 }
 
 StageResult HashState::prune(db::RWTxn&) {

@@ -38,7 +38,6 @@ enum class [[nodiscard]] DecodingResult{
     kOverflow,
     kLeadingZero,
     kInputTooShort,
-    kNonCanonicalSingleByte,
     kNonCanonicalSize,
     kUnexpectedLength,
     kUnexpectedString,

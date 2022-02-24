@@ -27,3 +27,6 @@
 	path = interfaces/proto
 	url = https://github.com/ledgerwatch/interfaces.git
 	branch = stable
+[submodule "expected"]
+	path = expected
+	url = https://github.com/TartanLlama/expected.git

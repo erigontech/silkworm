@@ -1,5 +1,5 @@
 #[[
-   Copyright 2020-2021 The Silkworm Authors
+   Copyright 2020-2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -17,13 +17,13 @@
 # ethash requires cmake 3.16.2
 cmake_minimum_required(VERSION 3.16.2)
 
-if(NOT EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/evmone/evmc/.git)
+if(NOT EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/third_party/evmone/evmc/.git)
   message(FATAL_ERROR "Git submodules not initialized, execute:\n  git submodule update --init --recursive")
 endif()
 
 get_directory_property(SILKWORM_HAS_PARENT PARENT_DIRECTORY)
 if(NOT SILKWORM_HAS_PARENT)
-  include(evmone/cmake/cable/bootstrap.cmake)
+  include(third_party/evmone/cmake/cable/bootstrap.cmake)
   include(CableBuildType)
   include(CableBuildInfo)
   cable_set_build_type(DEFAULT Release CONFIGURATION_TYPES Release Debug)
@@ -32,7 +32,7 @@ if(NOT SILKWORM_HAS_PARENT)
     set(CMAKE_TOOLCHAIN_FILE ${CMAKE_CURRENT_SOURCE_DIR}/cmake/toolchain/cxx17.cmake CACHE FILEPATH "" FORCE)
   endif()
 
-  include(evmone/cmake/cable/HunterGate.cmake)
+  include(third_party/evmone/cmake/cable/HunterGate.cmake)
   HunterGate(
     URL "https://github.com/cpp-pm/hunter/archive/v0.23.317.tar.gz"
     SHA1 "fbdd94b1966d351384e27b02c8d134915b1131d6"
@@ -45,9 +45,9 @@ If you want to include Silkworm into your CMake project,
 add the following lines before the project command of your root CMakeLists.txt:
 
 -----------------------------------------------------------------------------------------------------
-include(silkworm/evmone/cmake/cable/bootstrap.cmake)
+include(silkworm/third_party/evmone/cmake/cable/bootstrap.cmake)
 include(CableBuildInfo)
-include(silkworm/evmone/cmake/cable/HunterGate.cmake)
+include(silkworm/third_party/evmone/cmake/cable/HunterGate.cmake)
 HunterGate(
   URL "https://github.com/cpp-pm/hunter/archive/v0.23.317.tar.gz"
   SHA1 "fbdd94b1966d351384e27b02c8d134915b1131d6"
@@ -96,7 +96,7 @@ set_target_properties(
 )
 
 # secp256k1
-add_library(secp256k1 secp256k1/src/secp256k1.c)
+add_library(secp256k1 third_party/secp256k1/src/secp256k1.c)
 
 if(MSVC)
 
@@ -115,7 +115,7 @@ endif()
 
 target_compile_definitions(secp256k1 PUBLIC ECMULT_WINDOW_SIZE=15 ECMULT_GEN_PREC_BITS=4 USE_ENDOMORPHISM)
 target_compile_definitions(secp256k1 PUBLIC ENABLE_MODULE_RECOVERY)
-target_include_directories(secp256k1 PRIVATE secp256k1 INTERFACE secp256k1/include)
+target_include_directories(secp256k1 PRIVATE secp256k1 INTERFACE third_party/secp256k1/include)
 
 # libff
 set(CURVE "ALT_BN128" CACHE STRING "" FORCE)
@@ -124,7 +124,7 @@ option(IS_LIBFF_PARENT "" OFF)
 if(MSVC)
   option(MPIR_INSTEAD_OF_GMP "" ON)
 endif()
-add_subdirectory(libff)
+add_subdirectory(third_party/libff)
 
 if(NOT SILKWORM_CORE_ONLY)
 
@@ -135,10 +135,10 @@ if(NOT SILKWORM_CORE_ONLY)
     # Not supported on MSVC
     option(ROARING_LINK_STATIC "Link executables (tests, benchmarks) statically" ON)
   endif()
-  add_subdirectory(CRoaring EXCLUDE_FROM_ALL)
+  add_subdirectory(third_party/CRoaring EXCLUDE_FROM_ALL)
 
   # CBOR
-  add_subdirectory(cbor-cpp)
+  add_subdirectory(third_party/cbor-cpp)
     
 endif()
 
@@ -150,30 +150,30 @@ endif()
 find_package(intx CONFIG REQUIRED)   # Required from here below
 find_package(ethash CONFIG REQUIRED) # Required from here below
 
-add_subdirectory(evmone/evmc)
+add_subdirectory(third_party/evmone/evmc)
 
-add_library(evmone evmone/lib/evmone/analysis.cpp
-                   evmone/lib/evmone/analysis.hpp
-                   evmone/lib/evmone/baseline_instruction_table.cpp
-                   evmone/lib/evmone/baseline_instruction_table.hpp
-                   evmone/lib/evmone/baseline.cpp
-                   evmone/lib/evmone/baseline.hpp
-                   evmone/lib/evmone/execution_state.hpp
-                   evmone/lib/evmone/execution.cpp
-                   evmone/lib/evmone/execution.hpp
-                   evmone/lib/evmone/instruction_traits.hpp
-                   evmone/lib/evmone/instructions_calls.cpp
-                   evmone/lib/evmone/instructions_op2fn.hpp
-                   evmone/lib/evmone/instructions.cpp
-                   evmone/lib/evmone/instructions.hpp
-                   evmone/lib/evmone/limits.hpp
-                   evmone/lib/evmone/opcodes_helpers.h
-                   evmone/lib/evmone/tracing.cpp
-                   evmone/lib/evmone/tracing.hpp
-                   evmone/lib/evmone/vm.cpp
-                   evmone/lib/evmone/vm.hpp)
-set_source_files_properties(evmone/lib/evmone/vm.cpp PROPERTIES COMPILE_DEFINITIONS PROJECT_VERSION="0.9.0-dev")
-target_include_directories(evmone PUBLIC evmone/include evmone/lib)
+add_library(evmone third_party/evmone/lib/evmone/analysis.cpp
+                   third_party/evmone/lib/evmone/analysis.hpp
+                   third_party/evmone/lib/evmone/baseline_instruction_table.cpp
+                   third_party/evmone/lib/evmone/baseline_instruction_table.hpp
+                   third_party/evmone/lib/evmone/baseline.cpp
+                   third_party/evmone/lib/evmone/baseline.hpp
+                   third_party/evmone/lib/evmone/execution_state.hpp
+                   third_party/evmone/lib/evmone/execution.cpp
+                   third_party/evmone/lib/evmone/execution.hpp
+                   third_party/evmone/lib/evmone/instruction_traits.hpp
+                   third_party/evmone/lib/evmone/instructions_calls.cpp
+                   third_party/evmone/lib/evmone/instructions_op2fn.hpp
+                   third_party/evmone/lib/evmone/instructions.cpp
+                   third_party/evmone/lib/evmone/instructions.hpp
+                   third_party/evmone/lib/evmone/limits.hpp
+                   third_party/evmone/lib/evmone/opcodes_helpers.h
+                   third_party/evmone/lib/evmone/tracing.cpp
+                   third_party/evmone/lib/evmone/tracing.hpp
+                   third_party/evmone/lib/evmone/vm.cpp
+                   third_party/evmone/lib/evmone/vm.hpp)
+set_source_files_properties(third_party/evmone/lib/evmone/vm.cpp PROPERTIES COMPILE_DEFINITIONS PROJECT_VERSION="0.9.0-dev")
+target_include_directories(evmone PUBLIC third_party/evmone/include third_party/evmone/lib)
 target_link_libraries(evmone PUBLIC evmc intx::intx PRIVATE evmc::instructions evmc::hex)
 
 if(MSVC)
@@ -185,8 +185,8 @@ endif()
 # MDBX
 if(NOT SILKWORM_CORE_ONLY)
   set(MDBX_ENABLE_TESTS OFF)
-  add_subdirectory(libmdbx)
-  target_include_directories(mdbx-static INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/libmdbx)
+  add_subdirectory(third_party/libmdbx)
+  target_include_directories(mdbx-static INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/third_party/libmdbx)
 endif()
 
 # Compiler enforcements on Silkworm

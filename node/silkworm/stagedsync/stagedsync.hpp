@@ -88,8 +88,9 @@ class Execution final : public IStage {
 
     //! \brief Executes a batch of blocks
     //! \remarks A batch completes when either max block is reached or buffer dimensions overflow
-    StageResult execute_batch(db::RWTxn& txn, BlockNum max_block_num, BlockNum prune_from,
-                              AnalysisCache& analysis_cache, ExecutionStatePool& state_pool);
+    StageResult execute_batch(db::RWTxn& txn, BlockNum max_block_num, AnalysisCache& analysis_cache,
+                              ExecutionStatePool& state_pool, BlockNum prune_history_threshold,
+                              BlockNum prune_receipts_threshold);
 
     //! \brief For given changeset cursor/bucket it reverts the changes on states buckets
     static void unwind_state_from_changeset(mdbx::cursor& source_changeset, mdbx::cursor& plain_state_table,

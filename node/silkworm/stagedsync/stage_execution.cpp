@@ -40,8 +40,12 @@ StageResult Execution::forward(db::RWTxn& txn) {
     StopWatch commit_stopwatch;
     // Check stage boundaries from previous execution and previous stage execution
     auto previous_progress{get_progress(txn)};
+    auto headers_stage_progress{db::stages::read_stage_progress(*txn, db::stages::kHeadersKey)};
     auto bodies_stage_progress{db::stages::read_stage_progress(*txn, db::stages::kBlockBodiesKey)};
     auto senders_stage_progress{db::stages::read_stage_progress(*txn, db::stages::kSendersKey)};
+
+    // This is next stage probably needing full history
+    auto hashstate_stage_progress{db::stages::read_stage_progress(*txn, db::stages::kHashStateKey)};
 
     if (previous_progress == bodies_stage_progress) {
         // Nothing to process
@@ -72,16 +76,30 @@ StageResult Execution::forward(db::RWTxn& txn) {
         log::Info("Begin Execution", {"from", std::to_string(block_num_), "to", std::to_string(bodies_stage_progress)});
     }
 
+    // Determine pruning thresholds on behalf of current db pruning mode and verify next stage does not need
+    // prune-able data
+    BlockNum prune_history{node_settings_->prune_mode->history().value_from_head(headers_stage_progress)};
+    BlockNum prune_receipts{node_settings_->prune_mode->receipts().value_from_head(headers_stage_progress)};
+    if (hashstate_stage_progress) {
+        prune_history = std::min(prune_history, hashstate_stage_progress - 1);
+        prune_receipts = std::min(prune_receipts, hashstate_stage_progress - 1);
+    }
+
     AnalysisCache analysis_cache;
     ExecutionStatePool state_pool;
 
     while (!is_stopping() && block_num_ <= max_block_num) {
-        // TODO(Andrea) Prune logic must be amended
-        const auto res{execute_batch(txn, max_block_num, 0, analysis_cache, state_pool)};
+        const auto res{execute_batch(txn, max_block_num, analysis_cache, state_pool, prune_history, prune_receipts)};
         if (res != StageResult::kSuccess) {
             return res;
         }
+
+        // Persist forward and prune progresses
         db::stages::write_stage_progress(*txn, db::stages::kExecutionKey, block_num_);
+        if (node_settings_->prune_mode->history().enabled() || node_settings_->prune_mode->receipts().enabled()) {
+            db::stages::write_stage_prune_progress(*txn, db::stages::kExecutionKey, block_num_);
+        }
+
         (void)commit_stopwatch.start(/*with_reset=*/true);
         txn.commit();
         auto [_, duration]{commit_stopwatch.stop()};
@@ -139,10 +157,11 @@ std::queue<Block> Execution::prefetch_blocks(db::RWTxn& txn, BlockNum from, Bloc
     return ret;
 }
 
-StageResult Execution::execute_batch(db::RWTxn& txn, BlockNum max_block_num, BlockNum prune_from,
-                                     AnalysisCache& analysis_cache, ExecutionStatePool& state_pool) {
+StageResult Execution::execute_batch(db::RWTxn& txn, BlockNum max_block_num, AnalysisCache& analysis_cache,
+                                     ExecutionStatePool& state_pool, BlockNum prune_history_threshold,
+                                     BlockNum prune_receipts_threshold) {
     try {
-        db::Buffer buffer(*txn, prune_from);
+        db::Buffer buffer(*txn, prune_history_threshold);
         std::vector<Receipt> receipts;
 
         // Transform batch_size limit into Ggas
@@ -180,6 +199,8 @@ StageResult Execution::execute_batch(db::RWTxn& txn, BlockNum max_block_num, Blo
             processor.evm().advanced_analysis_cache = &analysis_cache;
             processor.evm().state_pool = &state_pool;
 
+            // TODO(Andrea) Add Tracer
+
             if (const auto res{processor.execute_and_write_block(receipts)}; res != ValidationResult::kOk) {
                 const auto block_hash_hex{to_hex(block.header.hash().bytes, true)};
                 log::Error("Block Validation Error",
@@ -189,8 +210,9 @@ StageResult Execution::execute_batch(db::RWTxn& txn, BlockNum max_block_num, Blo
                 return StageResult::kInvalidBlock;
             }
 
-            // TODO(Andrea) implement pruning
-            buffer.insert_receipts(block_num_, receipts);
+            if (block_num_ >= prune_receipts_threshold) {
+                buffer.insert_receipts(block_num_, receipts);
+            }
 
             // Stats
             std::unique_lock progress_lock(progress_mtx_);
@@ -286,19 +308,34 @@ StageResult Execution::prune(db::RWTxn& txn) {
     try {
         BlockNum execution_progress{db::stages::read_stage_progress(*txn, stage_name_)};
         BlockNum prune_progress{db::stages::read_stage_prune_progress(*txn, stage_name_)};
-        if (prune_progress >= execution_progress || node_settings_->prune_mode == nullptr) {
+        if (prune_progress >= execution_progress) {
             return StageResult::kSuccess;
         }
 
         if (node_settings_->prune_mode->history().enabled()) {
             auto prune_from{node_settings_->prune_mode->history().value_from_head(execution_progress)};
             auto key{db::block_key(prune_from)};
+            size_t erased{0};
             auto origin{db::open_cursor(*txn, db::table::kAccountChangeSet)};
-            size_t erased = db::cursor_erase(origin, key, db::CursorMoveDirection::Reverse);
+            auto data{origin.lower_bound(db::to_slice(key), /*throw_notfound=*/false)};
+            while (data) {
+                erased += origin.count_multivalue();
+                origin.erase(/*whole_multivalue=*/true);
+                data = origin.to_previous(/*throw_notfound=*/false);
+            }
             log::Info() << "Erased " << erased << " records from " << db::table::kAccountChangeSet.name;
+
             origin.close();
             origin = db::open_cursor(*txn, db::table::kStorageChangeSet);
-            erased = db::cursor_erase(origin, key, db::CursorMoveDirection::Reverse);
+            data = origin.lower_bound(db::to_slice(key), /*throw_notfound=*/false);
+            while (data) {
+                auto data_value_view{db::from_slice(data.value)};
+                if (endian::load_big_u64(data_value_view.data()) < prune_from) {
+                    erased += origin.count_multivalue();
+                    origin.erase(/*whole_multivalue=*/true);
+                }
+                data = origin.to_previous(/*throw_notfound=*/false);
+            }
             log::Info() << "Erased " << erased << " records from " << db::table::kStorageChangeSet.name;
         }
 

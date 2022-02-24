@@ -108,7 +108,7 @@ auto HeaderDownloader::forward(bool first_sync) -> Stage::Result {
 
         if (persisted_chain_.unwind_detected()) {
             tx.commit();
-            log::Info() << "[1/16 Headers] End (not started due to unwind detection), duration= "
+            log::Info() << "[1/16 Headers] End (not started due to unwind detection), duration="
                         << timing.format(timing.lap_duration());
             log::Trace() << "[INFO] HeaderDownloader forward operation cannot start due to unwind detection";
             result.status = Stage::Result::Unknown;
@@ -148,24 +148,23 @@ auto HeaderDownloader::forward(bool first_sync) -> Stage::Result {
 
                     if (stable_headers.size() > 100000) {
                         log::Info() << "[1/16 Headers] Inserted headers tot=" << stable_headers.size()
-                            << " (duration= " << StopWatch::format(insertion_timing.lap_duration()) << "s)";
+                            << " (duration=" << StopWatch::format(insertion_timing.lap_duration()) << "s)";
                     }
                 }
 
-                // submit another command
+                // submit another withdrawal command
                 withdraw_command = withdraw_stable_headers();
                 withdraw_result = withdraw_command->result();
 
                 // do announcements
                 send_announcements();
 
-                // check if finished - todo: improve clarity
-                if (first_sync) {  // first_sync_ = installation time or run time after a long break
-                    // if this is the first sync, we want to make sure we insert as many headers as possible
+                // check if finished
+                if (first_sync) {  // if this is the first sync (installation time or run time after a long break)...
+                    // ... we want to make sure we insert as many headers as possible
                     new_height_reached = in_sync && persisted_chain_.best_header_changed();
-                } else {
-                    // if this is not the first sync, we are working at the tip of the chain,
-                    // so we need to react quickly when new headers are coming in
+                } else { // otherwise, we are working at the tip of the chain so ...
+                    // ... we need to react quickly when new headers are coming in
                     new_height_reached = persisted_chain_.best_header_changed();
                 }
             }
@@ -186,11 +185,13 @@ auto HeaderDownloader::forward(bool first_sync) -> Stage::Result {
         if (persisted_chain_.unwind()) {
             result.status = Result::UnwindNeeded;
             result.unwind_point = persisted_chain_.unwind_point();
+            // no need to set result.bad_block
         }
 
         auto headers_downloaded = persisted_chain_.highest_height() - persisted_chain_.initial_height();
-        log::Info() << "[1/16 Headers] Downloading completed, wrote " << headers_downloaded << " headers, "
-            << "duration= " << StopWatch::format(timing.lap_duration());
+        log::Info() << "[1/16 Headers] Downloading completed, wrote " << headers_downloaded << " headers,"
+            << " last=" << persisted_chain_.highest_height()
+            << " duration=" << StopWatch::format(timing.lap_duration());
 
         log::Info() << "[1/16 Headers] Updating canonical chain";
         persisted_chain_.close();
@@ -199,11 +200,11 @@ auto HeaderDownloader::forward(bool first_sync) -> Stage::Result {
 
         // todo: do we need a sentry.set_status() here?
 
-        log::Info() << "[1/16 Headers] DONE, duration= " << StopWatch::format(timing.lap_duration());
+        log::Info() << "[1/16 Headers] Done, duration= " << StopWatch::format(timing.lap_duration());
         log::Trace() << "[INFO] HeaderDownloader forward operation completed";
 
     } catch (const std::exception& e) {
-        log::Error() << "[1/16 Headers] Aborted due to exception";
+        log::Error() << "[1/16 Headers] Aborted due to exception: " << e.what();
         log::Trace() << "[ERROR] HeaderDownloader forward operation is stopping due to an exception: " << e.what();
 
         // tx rollback executed automatically if needed
@@ -244,7 +245,7 @@ auto HeaderDownloader::unwind_to(BlockNum new_height, Hash bad_block) -> Stage::
         log::Trace() << "[INFO] HeaderDownloader unwind operation completed";
 
     } catch (const std::exception& e) {
-        log::Error() << "[1/16 Headers] Unwind aborted due to exception";
+        log::Error() << "[1/16 Headers] Unwind aborted due to exception: " << e.what();
         log::Trace() << "[ERROR] HeaderDownloader unwind operation is stopping due to an exception: " << e.what();
 
         // tx rollback executed automatically if needed
@@ -260,8 +261,6 @@ void HeaderDownloader::send_header_requests() {
 
     auto message = std::make_shared<OutboundGetBlockHeaders>(working_chain_, sentry_);
 
-    SILK_TRACE << "HeaderDownloader sending message " << *message;
-
     messages_.push(message);
 }
 
@@ -270,8 +269,6 @@ void HeaderDownloader::send_announcements() {
     // if (!sentry_.ready()) return;
 
     auto message = std::make_shared<OutboundNewBlockHashes>(working_chain_, sentry_);
-
-    SILK_TRACE << "HeaderDownloader sending announcements";
 
     messages_.push(message);
 }

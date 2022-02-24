@@ -75,7 +75,9 @@ void OutboundGetBlockHeaders::execute() {
                      << " peer(s)";
     }
 
-    SILK_TRACE << "Sent message " << *this;
+    if (!packets_.empty()) {
+        SILK_TRACE << "Sent message " << *this;
+    }
 }
 
 sentry::SentPeers OutboundGetBlockHeaders::send_packet(const GetBlockHeadersPacket66& packet_, seconds_t timeout) {
@@ -126,7 +128,10 @@ void OutboundGetBlockHeaders::send_penalization(const PeerPenalization& penaliza
 
 std::string OutboundGetBlockHeaders::content() const {
     std::stringstream content;
-    content << "GetBlockHeadersPackets " << packets_;
+    if (!packets_.empty())
+        content << "GetBlockHeadersPackets " << packets_;
+    else
+        content << "-no message-";
     return content.str();
 }
 

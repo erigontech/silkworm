@@ -351,13 +351,15 @@ StageResult Execution::prune(db::RWTxn& txn) {
             log::Info() << "Erased " << erased << " records from " << db::table::kLogs.name;
         }
 
-        if (node_settings_->prune_mode->call_traces().enabled()) {
-            auto prune_from{node_settings_->prune_mode->receipts().value_from_head(execution_progress)};
-            auto key{db::block_key(prune_from)};
-            auto origin{db::open_cursor(*txn, db::table::kCallTraceSet)};
-            size_t erased = db::cursor_erase(origin, key, db::CursorMoveDirection::Reverse);
-            log::Info() << "Erased " << erased << " records from " << db::table::kCallTraceSet.name;
-        }
+        // TODO Re-Enable this when we'll have call traces collection enabled in forward
+
+        //        if (node_settings_->prune_mode->call_traces().enabled()) {
+        //            auto prune_from{node_settings_->prune_mode->receipts().value_from_head(execution_progress)};
+        //            auto key{db::block_key(prune_from)};
+        //            auto origin{db::open_cursor(*txn, db::table::kCallTraceSet)};
+        //            size_t erased = db::cursor_erase(origin, key, db::CursorMoveDirection::Reverse);
+        //            log::Info() << "Erased " << erased << " records from " << db::table::kCallTraceSet.name;
+        //        }
 
         db::stages::write_stage_prune_progress(*txn, db::stages::kExecutionKey, execution_progress);
         txn.commit();

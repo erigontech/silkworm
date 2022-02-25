@@ -42,12 +42,17 @@ set(SILKWORM_INTERFACE_SRC
 
 add_library(silkworm_node ${SILKWORM_NODE_SRC} ${SILKWORM_INTERFACE_SRC})
 
-add_dependencies(silkworm_node generate_sentry_grpc)
+add_dependencies(silkworm_node generate_ethbackend_grpc generate_kv_grpc generate_sentry_grpc)
 
 set_source_files_properties(${SILKWORM_INTERFACE_SRC} PROPERTIES GENERATED TRUE)
 if(NOT MSVC)
   set_source_files_properties(${SILKWORM_INTERFACE_SRC} PROPERTIES COMPILE_FLAGS -Wno-sign-conversion)
 endif(NOT MSVC)
+
+# Suppress ASAN/TSAN in gRPC to avoid ODR violation when building Silkworm with sanitizers
+# See https://github.com/grpc/grpc/issues/19224
+# TODO(canepat) : add check on sanitize flag when available (https://github.com/torquem-ch/silkworm/issues/295)
+target_compile_definitions(silkworm_node PRIVATE GRPC_ASAN_SUPPRESSED GRPC_TSAN_SUPPRESSED)
 
 target_include_directories(silkworm_node PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}

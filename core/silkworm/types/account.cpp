@@ -119,25 +119,24 @@ std::pair<Account, DecodingResult> Account::from_encoded_storage(ByteView encode
             const auto encoded_value{encoded_payload.substr(pos, len)};
             switch (i) {
                 case 1: {
-                    const std::optional<uint64_t> nonce{endian::from_big_compact<uint64_t>(encoded_value)};
-                    if (nonce == std::nullopt) {
-                        return {a, DecodingResult::kLeadingZero};
+                    DecodingResult err{endian::from_big_compact(encoded_value, /*allow_leading_zeros=*/false, a.nonce)};
+                    if (err != DecodingResult::kOk) {
+                        return {a, err};
                     }
-                    a.nonce = *nonce;
                 } break;
                 case 2: {
-                    const auto balance{endian::from_big_compact<intx::uint256>(encoded_value)};
-                    if (!balance.has_value()) {
-                        return {a, DecodingResult::kOverflow};
+                    DecodingResult err{
+                        endian::from_big_compact(encoded_value, /*allow_leading_zeros=*/false, a.balance)};
+                    if (err != DecodingResult::kOk) {
+                        return {a, err};
                     }
-                    a.balance = balance.value();
                 } break;
                 case 4: {
-                    const std::optional<uint64_t> incarnation{endian::from_big_compact<uint64_t>(encoded_value)};
-                    if (incarnation == std::nullopt) {
-                        return {a, DecodingResult::kLeadingZero};
+                    DecodingResult err{
+                        endian::from_big_compact(encoded_value, /*allow_leading_zeros=*/false, a.incarnation)};
+                    if (err != DecodingResult::kOk) {
+                        return {a, err};
                     }
-                    a.incarnation = *incarnation;
                 } break;
                 case 8:
                     if (len != kHashLength) {
@@ -175,11 +174,10 @@ std::pair<uint64_t, DecodingResult> Account::incarnation_from_encoded_storage(By
                 case 2:
                     break;
                 case 4: {
-                    const auto incarnation{endian::from_big_compact<uint64_t>(encoded_payload.substr(pos, len))};
-                    if (incarnation == std::nullopt) {
-                        return {0, DecodingResult::kLeadingZero};
-                    }
-                    return {*incarnation, DecodingResult::kOk};
+                    uint64_t incarnation{0};
+                    DecodingResult res{endian::from_big_compact(encoded_payload.substr(pos, len),
+                                                                /*allow_leading_zeros=*/false, incarnation)};
+                    return {incarnation, res};
                 } break;
                 default:
                     len = 0;

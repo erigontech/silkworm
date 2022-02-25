@@ -30,6 +30,7 @@
 #include <silkworm/chain/difficulty.hpp>
 #include <silkworm/chain/intrinsic_gas.hpp>
 #include <silkworm/common/as_range.hpp>
+#include <silkworm/common/assert.hpp>
 #include <silkworm/common/cast.hpp>
 #include <silkworm/common/endian.hpp>
 #include <silkworm/common/rlp_err.hpp>
@@ -285,8 +286,8 @@ void init_pre_state(const nlohmann::json& pre, State& state) {
         const auto balance{intx::from_string<intx::uint256>(j["balance"].get<std::string>())};
         account.balance = balance;
         const Bytes nonce_str{from_hex(j["nonce"].get<std::string>()).value()};
-        const auto nonce{endian::from_big_compact<uint64_t>(nonce_str, /*allow_leading_zeros=*/true)};
-        account.nonce = *nonce;
+        SILKWORM_ASSERT(endian::from_big_compact(nonce_str, /*allow_leading_zeros=*/true, account.nonce) ==
+                        DecodingResult::kOk);
 
         const Bytes code{from_hex(j["code"].get<std::string>()).value()};
         if (!code.empty()) {

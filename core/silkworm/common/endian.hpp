@@ -1,5 +1,5 @@
 /*
-   Copyright 2020-2021 The Silkworm Authors
+   Copyright 2020-2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -68,6 +68,7 @@ as compiler intrinsics to swap bytes in 16-bit, 32-bit, and 64-bit integers resp
 #include <intx/intx.hpp>
 
 #include <silkworm/common/base.hpp>
+#include <silkworm/common/decoding_result.hpp>
 
 namespace silkworm::endian {
 
@@ -186,30 +187,31 @@ ByteView to_big_compact(uint64_t value);
 ByteView to_big_compact(const intx::uint256& value);
 
 //! \brief Parses unsigned integer from a compacted big endian byte form
-//! \param [in] data : byte view of compacted value. Length must be <= sizeof(UnsignedInteger)
-//! \param [in] allow_leading_zeros : when false, return std::nullopt if data starts with a 0 byte (i.e. not compact)
-//! \return The corresponding integer with native endianness; std::nullopt if data is invalid
+//! \param [in] data : byte view of compacted value.
+// Length must be <= sizeof(UnsignedInteger); otherwise kOverflow is returned
+//! \param [in] allow_leading_zeros : when false, return kLeadingZero if data starts with a 0 byte (i.e. not compact)
+//! \param [out] out: the corresponding integer with native endianness
 //! \remarks A "compact" big endian form strips leftmost bytes valued to zero
 template <typename UnsignedInteger>
-static std::optional<UnsignedInteger> from_big_compact(ByteView data, bool allow_leading_zeros = false) {
+static DecodingResult from_big_compact(ByteView data, bool allow_leading_zeros, UnsignedInteger& out) {
     if (data.length() > sizeof(UnsignedInteger)) {
-        return std::nullopt;
+        return DecodingResult::kOverflow;
     }
 
-    UnsignedInteger x{0};
-
+    out = 0;
     if (data.empty()) {
-        return x;
+        return DecodingResult::kOk;
     }
 
     if (data[0] == 0 && !allow_leading_zeros) {
-        return std::nullopt;
+        return DecodingResult::kLeadingZero;
     }
 
-    auto* ptr{reinterpret_cast<uint8_t*>(&x)};
+    auto* ptr{reinterpret_cast<uint8_t*>(&out)};
     std::memcpy(ptr + (sizeof(UnsignedInteger) - data.length()), &data[0], data.length());
 
-    return be::load(x);
+    out = be::load(out);
+    return DecodingResult::kOk;
 }
 
 }  // namespace silkworm::endian

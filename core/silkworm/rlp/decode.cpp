@@ -1,5 +1,5 @@
 /*
-   Copyright 2020-2021 The Silkworm Authors
+   Copyright 2020-2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -49,11 +49,11 @@ std::pair<Header, DecodingResult> decode_header(ByteView& from) noexcept {
         if (from.length() < len_of_len) {
             return {h, DecodingResult::kInputTooShort};
         }
-        const auto len{endian::from_big_compact<uint64_t>(from.substr(0, len_of_len))};
-        if (len == std::nullopt) {
-            return {h, DecodingResult::kLeadingZero};
+        DecodingResult err{
+            endian::from_big_compact(from.substr(0, len_of_len), /*allow_leading_zeros=*/false, h.payload_length)};
+        if (err != DecodingResult::kOk) {
+            return {h, err};
         }
-        h.payload_length = *len;
         from.remove_prefix(len_of_len);
         if (h.payload_length < 56) {
             return {h, DecodingResult::kNonCanonicalSize};
@@ -69,11 +69,11 @@ std::pair<Header, DecodingResult> decode_header(ByteView& from) noexcept {
         if (from.length() < len_of_len) {
             return {h, DecodingResult::kInputTooShort};
         }
-        const auto len{endian::from_big_compact<uint64_t>(from.substr(0, len_of_len))};
-        if (len == std::nullopt) {
-            return {h, DecodingResult::kLeadingZero};
+        DecodingResult err{
+            endian::from_big_compact(from.substr(0, len_of_len), /*allow_leading_zeros=*/false, h.payload_length)};
+        if (err != DecodingResult::kOk) {
+            return {h, err};
         }
-        h.payload_length = *len;
         from.remove_prefix(len_of_len);
         if (h.payload_length < 56) {
             return {h, DecodingResult::kNonCanonicalSize};
@@ -121,21 +121,17 @@ DecodingResult decode(ByteView& from, bool& to) noexcept {
 
 template <typename UnsignedInteger>
 static DecodingResult decode_integer(ByteView& from, UnsignedInteger& to) noexcept {
-    const auto [h, err]{decode_header(from)};
+    auto [h, err]{decode_header(from)};
     if (err != DecodingResult::kOk) {
         return err;
     }
     if (h.list) {
         return DecodingResult::kUnexpectedList;
     }
-    if (h.payload_length > sizeof(UnsignedInteger)) {
-        return DecodingResult::kOverflow;
+    err = endian::from_big_compact(from.substr(0, h.payload_length), /*allow_leading_zeros=*/false, to);
+    if (err != DecodingResult::kOk) {
+        return err;
     }
-    const auto res{endian::from_big_compact<UnsignedInteger>(from.substr(0, h.payload_length))};
-    if (res == std::nullopt) {
-        return DecodingResult::kLeadingZero;
-    }
-    to = *res;
     from.remove_prefix(h.payload_length);
     return DecodingResult::kOk;
 }

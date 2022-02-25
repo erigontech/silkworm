@@ -83,7 +83,7 @@ jobs:
       TOOLCHAIN: cxx17.cmake
       CLANG_COVERAGE: OFF
       SANITIZE: thread
-    machine:
+    docker:
       image: ethereum/cpp-build-env:17-gcc-11
     resource_class: xlarge
     steps:
@@ -216,7 +216,7 @@ workflows:
   silkworm:
     jobs:
       - linux-gcc-9
-      - linux-gcc-11-sanitizers
+      - linux-gcc-9-sanitizers
       - linux-gcc-11-cpp20
       - linux-clang-10-coverage
       - linux-clang-10-sanitizers

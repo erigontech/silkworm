@@ -73,7 +73,13 @@ inline constexpr db::MapConfig kHeaders{"Header"};
 //! \endverbatim
 inline constexpr db::MapConfig kDifficulty{"HeadersTotalDifficulty"};
 
-
+//! \details Stores the receipts for every canonical block
+//! \remarks Non canonical blocks' receipts are not stored
+//! \struct
+//! \verbatim
+//!   key   : block_num_u64 (BE)
+//!   value : receipts (CBOR Encoded)
+//! \endverbatim
 inline constexpr db::MapConfig kBlockReceipts{"Receipt"};
 inline constexpr db::MapConfig kBloomBitsIndex{"BloomBitsIndex"};
 inline constexpr db::MapConfig kBloomBits{"BloomBits"};
@@ -142,6 +148,14 @@ inline constexpr db::MapConfig kHeadersSnapshotInfo{"HeadersSnapshotInfo"};
 inline constexpr db::MapConfig kIncarnationMap{"IncarnationMap"};
 inline constexpr db::MapConfig kLogAddressIndex{"LogAddressIndex"};
 inline constexpr db::MapConfig kLogTopicIndex{"LogTopicIndex"};
+
+//! \details Stores the logs for every transaction in canonical blocks
+//! \remarks Non canonical blocks' transactions logs are not stored
+//! \struct
+//! \verbatim
+//!   key   : block_num_u64 (BE) + transaction_index_u32 (BE)
+//!   value : logs of transaction
+//! \endverbatim
 inline constexpr db::MapConfig kLogs{"TransactionLog"};
 inline constexpr db::MapConfig kMigrations{"Migration"};
 

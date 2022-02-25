@@ -121,7 +121,7 @@ TEST_CASE("Block as key and compact form") {
         auto block_number_compact_bytes{to_big_compact(block_number)};
         CHECK(to_hex(block_number_compact_bytes) == "5485ffde");
         // Convert back and check
-        uint64_t out64;
+        uint64_t out64{0};
         REQUIRE(from_big_compact(block_number_compact_bytes, out64) == DecodingResult::kOk);
         CHECK(out64 == block_number);
         // Try compact empty bytes
@@ -139,7 +139,7 @@ TEST_CASE("Block as key and compact form") {
         Bytes extra_long_bytes(sizeof(uint64_t) + 1, 0);
         CHECK(from_big_compact(extra_long_bytes, out64) == DecodingResult::kOverflow);
 
-        uint32_t out32;
+        uint32_t out32{0};
         const Bytes non_compact_be{*from_hex("00AB")};
         CHECK(from_big_compact(non_compact_be, out32) == DecodingResult::kLeadingZero);
     }

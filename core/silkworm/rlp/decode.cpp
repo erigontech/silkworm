@@ -49,10 +49,12 @@ std::pair<Header, DecodingResult> decode_header(ByteView& from) noexcept {
         if (from.length() < len_of_len) {
             return {h, DecodingResult::kInputTooShort};
         }
-        DecodingResult err{endian::from_big_compact(from.substr(0, len_of_len), h.payload_length)};
+        uint64_t len{0};
+        DecodingResult err{endian::from_big_compact(from.substr(0, len_of_len), len)};
         if (err != DecodingResult::kOk) {
             return {h, err};
         }
+        h.payload_length = static_cast<size_t>(len);
         from.remove_prefix(len_of_len);
         if (h.payload_length < 56) {
             return {h, DecodingResult::kNonCanonicalSize};
@@ -68,10 +70,12 @@ std::pair<Header, DecodingResult> decode_header(ByteView& from) noexcept {
         if (from.length() < len_of_len) {
             return {h, DecodingResult::kInputTooShort};
         }
-        DecodingResult err{endian::from_big_compact(from.substr(0, len_of_len), h.payload_length)};
+        uint64_t len{0};
+        DecodingResult err{endian::from_big_compact(from.substr(0, len_of_len), len)};
         if (err != DecodingResult::kOk) {
             return {h, err};
         }
+        h.payload_length = static_cast<size_t>(len);
         from.remove_prefix(len_of_len);
         if (h.payload_length < 56) {
             return {h, DecodingResult::kNonCanonicalSize};

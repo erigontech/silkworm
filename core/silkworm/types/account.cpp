@@ -101,8 +101,8 @@ static inline std::pair<uint8_t, DecodingResult> validate_encoded_head(ByteView&
 }
 
 std::pair<Account, DecodingResult> Account::from_encoded_storage(ByteView encoded_payload) noexcept {
-    Account a{};
-    const auto [field_set, err] = validate_encoded_head(encoded_payload);
+    Account a;
+    auto [field_set, err] = validate_encoded_head(encoded_payload);
     if (err != DecodingResult::kOk) {
         return {a, err};
     } else if (!field_set) {
@@ -119,19 +119,19 @@ std::pair<Account, DecodingResult> Account::from_encoded_storage(ByteView encode
             const auto encoded_value{encoded_payload.substr(pos, len)};
             switch (i) {
                 case 1: {
-                    DecodingResult err{endian::from_big_compact(encoded_value, a.nonce)};
+                    err = endian::from_big_compact(encoded_value, a.nonce);
                     if (err != DecodingResult::kOk) {
                         return {a, err};
                     }
                 } break;
                 case 2: {
-                    DecodingResult err{endian::from_big_compact(encoded_value, a.balance)};
+                    err = endian::from_big_compact(encoded_value, a.balance);
                     if (err != DecodingResult::kOk) {
                         return {a, err};
                     }
                 } break;
                 case 4: {
-                    DecodingResult err{endian::from_big_compact(encoded_value, a.incarnation)};
+                    err = endian::from_big_compact(encoded_value, a.incarnation);
                     if (err != DecodingResult::kOk) {
                         return {a, err};
                     }

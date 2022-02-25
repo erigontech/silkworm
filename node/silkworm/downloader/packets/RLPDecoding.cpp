@@ -1,5 +1,5 @@
 /*
-   Copyright 2021 The Silkworm Authors
+   Copyright 2021-2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -33,27 +33,27 @@
 namespace silkworm::rlp {
 
 template <>
-rlp::DecodingResult decode(ByteView& from, Hash& to) noexcept {
+DecodingResult decode(ByteView& from, Hash& to) noexcept {
     return rlp::decode(from, dynamic_cast<evmc::bytes32&>(to));
 }
 
 template <>
-rlp::DecodingResult decode(ByteView& from, BlockBodiesPacket& to) noexcept {
+DecodingResult decode(ByteView& from, BlockBodiesPacket& to) noexcept {
     return rlp::decode_vector(from, to);
 }
 
 template <>
-rlp::DecodingResult decode(ByteView& from, BlockHeadersPacket& to) noexcept {
+DecodingResult decode(ByteView& from, BlockHeadersPacket& to) noexcept {
     return rlp::decode_vector(from, to);
 }
 
 template <>
-rlp::DecodingResult decode(ByteView& from, GetBlockBodiesPacket& to) noexcept {
+DecodingResult decode(ByteView& from, GetBlockBodiesPacket& to) noexcept {
     return rlp::decode_vector(from, to);
 }
 
 template <>
-rlp::DecodingResult decode(ByteView& from, NewBlockHash& to) noexcept {
+DecodingResult decode(ByteView& from, NewBlockHash& to) noexcept {
     auto [rlp_head, err0]{decode_header(from)};
     if (err0 != DecodingResult::kOk) {
         return err0;
@@ -75,12 +75,12 @@ rlp::DecodingResult decode(ByteView& from, NewBlockHash& to) noexcept {
 }
 
 template <>
-rlp::DecodingResult decode(ByteView& from, NewBlockHashesPacket& to) noexcept {
+DecodingResult decode(ByteView& from, NewBlockHashesPacket& to) noexcept {
     return rlp::decode_vector(from, to);
 }
 
 template <>
-rlp::DecodingResult decode(ByteView& from, NewBlockPacket& to) noexcept {
+DecodingResult decode(ByteView& from, NewBlockPacket& to) noexcept {
     auto [rlp_head, err0]{decode_header(from)};
     if (err0 != DecodingResult::kOk) {
         return err0;
@@ -102,27 +102,27 @@ rlp::DecodingResult decode(ByteView& from, NewBlockPacket& to) noexcept {
 }
 
 template <>
-rlp::DecodingResult decode(ByteView& from, GetBlockHeadersPacket66& to) noexcept {
+DecodingResult decode(ByteView& from, GetBlockHeadersPacket66& to) noexcept {
     return rlp::decode_eth66_packet(from, to);
 }
 
 template <>
-rlp::DecodingResult decode(ByteView& from, BlockBodiesPacket66& to) noexcept {
+DecodingResult decode(ByteView& from, BlockBodiesPacket66& to) noexcept {
     return rlp::decode_eth66_packet(from, to);
 }
 
 template <>
-rlp::DecodingResult decode(ByteView& from, BlockHeadersPacket66& to) noexcept {
+DecodingResult decode(ByteView& from, BlockHeadersPacket66& to) noexcept {
     return rlp::decode_eth66_packet(from, to);
 }
 
 template <>
-rlp::DecodingResult decode(ByteView& from, GetBlockBodiesPacket66& to) noexcept {
+DecodingResult decode(ByteView& from, GetBlockBodiesPacket66& to) noexcept {
     return rlp::decode_eth66_packet(from, to);
 }
 
 template <>
-rlp::DecodingResult decode(ByteView& from, GetBlockHeadersPacket& to) noexcept {
+DecodingResult decode(ByteView& from, GetBlockHeadersPacket& to) noexcept {
     using namespace rlp;
 
     auto [rlp_head, err0]{decode_header(from)};

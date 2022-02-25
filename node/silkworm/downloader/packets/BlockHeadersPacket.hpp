@@ -1,5 +1,5 @@
 /*
-   Copyright 2021 The Silkworm Authors
+   Copyright 2021-2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -33,14 +33,14 @@ struct BlockHeadersPacket66 {  // eth/66 version
 namespace rlp {
 
     template <>
-    rlp::DecodingResult decode(ByteView& from, BlockHeadersPacket& to) noexcept;
+    DecodingResult decode(ByteView& from, BlockHeadersPacket& to) noexcept;
 
     size_t length(const BlockHeadersPacket66& from) noexcept;
 
     void encode(Bytes& to, const BlockHeadersPacket66& from);
 
     template <>
-    rlp::DecodingResult decode(ByteView& from, BlockHeadersPacket66& to) noexcept;
+    DecodingResult decode(ByteView& from, BlockHeadersPacket66& to) noexcept;
 
 }  // namespace rlp
 

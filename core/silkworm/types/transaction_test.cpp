@@ -53,14 +53,14 @@ TEST_CASE("Legacy Transaction RLP") {
 
     Transaction decoded;
     ByteView view{encoded};
-    REQUIRE(rlp::decode<Transaction>(view, decoded) == rlp::DecodingResult::kOk);
+    REQUIRE(rlp::decode<Transaction>(view, decoded) == DecodingResult::kOk);
     CHECK(view.empty());
     CHECK(decoded == txn);
 
     // check that access_list is cleared
     decoded.access_list = access_list;
     view = encoded;
-    REQUIRE(rlp::decode<Transaction>(view, decoded) == rlp::DecodingResult::kOk);
+    REQUIRE(rlp::decode<Transaction>(view, decoded) == DecodingResult::kOk);
     CHECK(view.empty());
     CHECK(decoded == txn);
 }
@@ -87,7 +87,7 @@ TEST_CASE("EIP-2930 Transaction RLP") {
 
     Transaction decoded;
     ByteView view{encoded};
-    REQUIRE(rlp::decode<Transaction>(view, decoded) == rlp::DecodingResult::kOk);
+    REQUIRE(rlp::decode<Transaction>(view, decoded) == DecodingResult::kOk);
     CHECK(view.empty());
     CHECK(decoded == txn);
 }
@@ -114,7 +114,7 @@ TEST_CASE("EIP-1559 Transaction RLP") {
 
     Transaction decoded;
     ByteView view{encoded};
-    REQUIRE(rlp::decode<Transaction>(view, decoded) == rlp::DecodingResult::kOk);
+    REQUIRE(rlp::decode<Transaction>(view, decoded) == DecodingResult::kOk);
     CHECK(view.empty());
     CHECK(decoded == txn);
 }

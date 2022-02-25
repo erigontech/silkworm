@@ -1,5 +1,5 @@
 /*
-   Copyright 2020-2021 The Silkworm Authors
+   Copyright 2020-2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -321,7 +321,7 @@ Status run_block(const nlohmann::json& json_block, Blockchain& blockchain) {
 
     Block block;
     ByteView view{*rlp};
-    if (rlp::decode(view, block) != rlp::DecodingResult::kOk || !view.empty()) {
+    if (rlp::decode(view, block) != DecodingResult::kOk || !view.empty()) {
         if (invalid) {
             return Status::kPassed;
         }
@@ -543,7 +543,7 @@ RunResults transaction_test(const nlohmann::json& j) {
     std::optional<Bytes> rlp{from_hex(j["txbytes"].get<std::string>())};
     if (rlp) {
         ByteView view{*rlp};
-        if (rlp::decode(view, txn) == rlp::DecodingResult::kOk) {
+        if (rlp::decode(view, txn) == DecodingResult::kOk) {
             decoded = view.empty();
         }
     }

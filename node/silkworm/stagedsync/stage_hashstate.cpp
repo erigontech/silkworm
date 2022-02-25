@@ -27,7 +27,7 @@ namespace silkworm::stagedsync {
 
 StageResult HashState::forward(db::RWTxn& txn) {
     try {
-        continue_or_throw();
+        throw_if_stopping();
 
         // Check stage boundaries from previous execution and previous stage execution
         auto previous_progress{db::stages::read_stage_progress(*txn, stage_name_)};
@@ -67,7 +67,7 @@ StageResult HashState::forward(db::RWTxn& txn) {
             reset_log_progress();
         }
 
-        continue_or_throw();
+        throw_if_stopping();
         db::stages::write_stage_progress(*txn, db::stages::kHashStateKey, execution_stage_progress);
         txn.commit();
 
@@ -87,7 +87,7 @@ StageResult HashState::forward(db::RWTxn& txn) {
 
 StageResult HashState::unwind(db::RWTxn& txn, BlockNum to) {
     try {
-        continue_or_throw();
+        throw_if_stopping();
         auto previous_progress{db::stages::read_stage_progress(*txn, stage_name_)};
         if (to >= previous_progress) {
             // Nothing to unwind actually
@@ -104,7 +104,7 @@ StageResult HashState::unwind(db::RWTxn& txn, BlockNum to) {
         success_or_throw(unwind_from_storage_changeset(txn, previous_progress, to));
         reset_log_progress();
 
-        continue_or_throw();
+        throw_if_stopping();
         db::stages::write_stage_progress(*txn, db::stages::kHashStateKey, to);
         txn.commit();
 
@@ -163,7 +163,7 @@ StageResult HashState::hash_from_plainstate(db::RWTxn& txn) {
             // We're reading PlainState which keys are ordered by address (always initial 20 bytes of key)
             // Rehash the address only when changes
             if (std::memcmp(data_key_view.data(), last_address.bytes, kAddressLength) != 0) {
-                continue_or_throw();
+                throw_if_stopping();
                 last_address = to_evmc_address(data_key_view);
                 address_hash = keccak256(last_address.bytes);
                 log_lck.lock();
@@ -229,7 +229,7 @@ StageResult HashState::hash_from_plainstate(db::RWTxn& txn) {
         }
 
         source.close();
-        continue_or_throw();
+        throw_if_stopping();
 
         if (!collector_->empty()) {
             auto account_target = db::open_cursor(*txn, db::table::kHashedAccounts);
@@ -315,7 +315,7 @@ StageResult HashState::hash_from_plaincode(db::RWTxn& txn) {
             // We're reading PlainCodeHash which keys are ordered by address (always initial 20 bytes of key)
             // Rehash the address only when changes
             if (std::memcmp(data_key_view.data(), last_address.bytes, kAddressLength) != 0) {
-                continue_or_throw();
+                throw_if_stopping();
                 last_address = to_evmc_address(data_key_view);
                 log_lck.lock();
                 current_key_ = to_hex(last_address.bytes, /*with_prefix=*/true);
@@ -333,7 +333,7 @@ StageResult HashState::hash_from_plaincode(db::RWTxn& txn) {
         }
 
         source.close();
-        continue_or_throw();
+        throw_if_stopping();
 
         if (!collector_->empty()) {
             source = db::open_cursor(*txn, db::table::kHashedCodeHash);
@@ -397,7 +397,7 @@ StageResult HashState::hash_from_account_changeset(db::RWTxn& txn, BlockNum prev
             }
 
             if (reached_blocknum % 32 == 0) {
-                continue_or_throw();
+                throw_if_stopping();
                 log_lck.lock();
                 current_key_ = std::to_string(reached_blocknum);
                 log_lck.unlock();
@@ -480,7 +480,7 @@ StageResult HashState::hash_from_storage_changeset(db::RWTxn& txn, BlockNum prev
             }
 
             if (reached_blocknum % 32 == 0) {
-                continue_or_throw();
+                throw_if_stopping();
                 log_lck.lock();
                 current_key_ = std::to_string(reached_blocknum);
                 log_lck.unlock();
@@ -561,7 +561,7 @@ StageResult HashState::unwind_from_account_changeset(db::RWTxn& txn, BlockNum pr
         current_key_ = std::to_string(expected_blocknum);
         log_lck.unlock();
 
-        continue_or_throw();
+        throw_if_stopping();
         auto source_initial_key{db::block_key(expected_blocknum)};
         auto source_changeset{db::open_cursor(*txn, db::table::kAccountChangeSet)};
         auto changeset_data{source_changeset.lower_bound(db::to_slice(source_initial_key),
@@ -575,7 +575,7 @@ StageResult HashState::unwind_from_account_changeset(db::RWTxn& txn, BlockNum pr
             }
 
             if (reached_blocknum % 32 == 0) {
-                continue_or_throw();
+                throw_if_stopping();
                 log_lck.lock();
                 current_key_ = std::to_string(reached_blocknum);
                 log_lck.unlock();
@@ -661,7 +661,7 @@ StageResult HashState::unwind_from_storage_changeset(db::RWTxn& txn, BlockNum pr
             }
 
             if (reached_blocknum % 32 == 0) {
-                continue_or_throw();
+                throw_if_stopping();
                 log_lck.lock();
                 current_key_ = std::to_string(reached_blocknum);
                 log_lck.unlock();
@@ -715,7 +715,7 @@ StageResult HashState::unwind_from_storage_changeset(db::RWTxn& txn, BlockNum pr
 }
 
 StageResult HashState::write_changes_from_changed_addresses(db::RWTxn& txn, const ChangedAddresses& changed_addresses) {
-    continue_or_throw();
+    throw_if_stopping();
 
     std::unique_lock log_lck(log_mtx_);
     current_target_ = std::string(db::table::kHashedAccounts.name) + " " + std::string(db::table::kHashedCodeHash.name);
@@ -734,7 +734,7 @@ StageResult HashState::write_changes_from_changed_addresses(db::RWTxn& txn, cons
 
     for (const auto& [address, pair] : changed_addresses) {
         if (address != last_address) {
-            continue_or_throw();
+            throw_if_stopping();
             last_address = address;
             log_lck.lock();
             current_key_ = to_hex(address, true);
@@ -773,7 +773,7 @@ StageResult HashState::write_changes_from_changed_addresses(db::RWTxn& txn, cons
 StageResult HashState::write_changes_from_changed_storage(
     db::RWTxn& txn, db::StorageChanges& storage_changes,
     const absl::btree_map<evmc::address, evmc::bytes32>& hashed_addresses) {
-    continue_or_throw();
+    throw_if_stopping();
     auto target_hashed_storage{db::open_cursor(*txn, db::table::kHashedStorage)};
 
     std::unique_lock log_lck(log_mtx_);
@@ -785,7 +785,7 @@ StageResult HashState::write_changes_from_changed_storage(
     Bytes hashed_storage_prefix(db::kHashedStoragePrefixLength, '\0');  // One allocation only
     for (const auto& [address, data] : storage_changes) {
         if (address != last_address) {
-            continue_or_throw();
+            throw_if_stopping();
             last_address = address;
             std::memcpy(&hashed_storage_prefix[0], hashed_addresses.at(last_address).bytes, kHashLength);
 
@@ -807,6 +807,7 @@ StageResult HashState::write_changes_from_changed_storage(
 }
 
 std::vector<std::string> HashState::get_log_progress() {
+    std::unique_lock log_lck(log_mtx_);
     std::vector<std::string> ret{};
     if (operation_ == OperationType::None) {
         return ret;

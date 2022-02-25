@@ -113,7 +113,7 @@ class IStage : public Stoppable {
     [[nodiscard]] const char* name() const { return stage_name_; }
 
     //! \brief Forces an exception if stage has been requested to stop
-    void continue_or_throw() { success_or_throw(is_stopping() ? StageResult::kAborted : StageResult::kSuccess); }
+    void throw_if_stopping() { success_or_throw(is_stopping() ? StageResult::kAborted : StageResult::kSuccess); }
 
   protected:
     const char* stage_name_;

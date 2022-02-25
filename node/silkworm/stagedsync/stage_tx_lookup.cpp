@@ -182,8 +182,7 @@ StageResult prune_tx_lookup(db::RWTxn& txn, const std::filesystem::path&, uint64
         // Check current lookup block number
         auto block_number_view{db::from_slice(lookup_data.value)};
         uint64_t current_block{0};
-        SILKWORM_ASSERT(endian::from_big_compact(block_number_view, /*allow_leading_zeros=*/false, current_block) ==
-                        DecodingResult::kOk);
+        SILKWORM_ASSERT(endian::from_big_compact(block_number_view, current_block) == DecodingResult::kOk);
         // Filter out all of the lookups with invalid block numbers
         if (current_block < prune_from) {
             lookup_table.erase(/*whole_multivalue*/ false);

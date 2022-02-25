@@ -49,8 +49,7 @@ std::pair<Header, DecodingResult> decode_header(ByteView& from) noexcept {
         if (from.length() < len_of_len) {
             return {h, DecodingResult::kInputTooShort};
         }
-        DecodingResult err{
-            endian::from_big_compact(from.substr(0, len_of_len), /*allow_leading_zeros=*/false, h.payload_length)};
+        DecodingResult err{endian::from_big_compact(from.substr(0, len_of_len), h.payload_length)};
         if (err != DecodingResult::kOk) {
             return {h, err};
         }
@@ -69,8 +68,7 @@ std::pair<Header, DecodingResult> decode_header(ByteView& from) noexcept {
         if (from.length() < len_of_len) {
             return {h, DecodingResult::kInputTooShort};
         }
-        DecodingResult err{
-            endian::from_big_compact(from.substr(0, len_of_len), /*allow_leading_zeros=*/false, h.payload_length)};
+        DecodingResult err{endian::from_big_compact(from.substr(0, len_of_len), h.payload_length)};
         if (err != DecodingResult::kOk) {
             return {h, err};
         }
@@ -128,7 +126,7 @@ static DecodingResult decode_integer(ByteView& from, UnsignedInteger& to) noexce
     if (h.list) {
         return DecodingResult::kUnexpectedList;
     }
-    err = endian::from_big_compact(from.substr(0, h.payload_length), /*allow_leading_zeros=*/false, to);
+    err = endian::from_big_compact(from.substr(0, h.payload_length), to);
     if (err != DecodingResult::kOk) {
         return err;
     }

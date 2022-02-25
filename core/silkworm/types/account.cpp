@@ -119,21 +119,19 @@ std::pair<Account, DecodingResult> Account::from_encoded_storage(ByteView encode
             const auto encoded_value{encoded_payload.substr(pos, len)};
             switch (i) {
                 case 1: {
-                    DecodingResult err{endian::from_big_compact(encoded_value, /*allow_leading_zeros=*/false, a.nonce)};
+                    DecodingResult err{endian::from_big_compact(encoded_value, a.nonce)};
                     if (err != DecodingResult::kOk) {
                         return {a, err};
                     }
                 } break;
                 case 2: {
-                    DecodingResult err{
-                        endian::from_big_compact(encoded_value, /*allow_leading_zeros=*/false, a.balance)};
+                    DecodingResult err{endian::from_big_compact(encoded_value, a.balance)};
                     if (err != DecodingResult::kOk) {
                         return {a, err};
                     }
                 } break;
                 case 4: {
-                    DecodingResult err{
-                        endian::from_big_compact(encoded_value, /*allow_leading_zeros=*/false, a.incarnation)};
+                    DecodingResult err{endian::from_big_compact(encoded_value, a.incarnation)};
                     if (err != DecodingResult::kOk) {
                         return {a, err};
                     }
@@ -175,8 +173,7 @@ std::pair<uint64_t, DecodingResult> Account::incarnation_from_encoded_storage(By
                     break;
                 case 4: {
                     uint64_t incarnation{0};
-                    DecodingResult res{endian::from_big_compact(encoded_payload.substr(pos, len),
-                                                                /*allow_leading_zeros=*/false, incarnation)};
+                    DecodingResult res{endian::from_big_compact(encoded_payload.substr(pos, len), incarnation)};
                     return {incarnation, res};
                 } break;
                 default:

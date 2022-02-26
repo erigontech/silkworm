@@ -16,6 +16,8 @@
 
 #include "mdbx.hpp"
 
+#include <silkworm/common/object_pool.hpp>
+
 namespace silkworm::db {
 
 namespace detail {

@@ -30,6 +30,7 @@
 #pragma GCC diagnostic pop
 
 #include <silkworm/common/base.hpp>
+#include <silkworm/common/object_pool.hpp>
 #include <silkworm/common/util.hpp>
 #include <silkworm/db/util.hpp>
 
@@ -130,6 +131,32 @@ struct MapConfig {
 //! \param [in] config : the configuration settings for the underlying map
 //! \return A handle to the opened cursor
 ::mdbx::cursor_managed open_cursor(::mdbx::txn& tx, const MapConfig& config);
+
+//! \brief RAII wrapper around a pooled cursor
+class PooledCursor {
+  public:
+    PooledCursor(::mdbx::txn& tx, const MapConfig& config) {
+        cursor_ = cursors_pool_.acquire();
+        if (!cursor_) {
+            cursor_ = std::make_unique<::mdbx::cursor_managed>();
+        }
+        auto map{open_map(tx, config)};
+        cursor_->bind(tx, map);
+    }
+    ~PooledCursor() { cursors_pool_.add(std::move(cursor_)); }
+
+    ::mdbx::cursor_managed& operator*() const noexcept { return *cursor_; }
+    ::mdbx::cursor_managed* operator->() const noexcept { return cursor_.get(); }
+
+    void bind(::mdbx::txn& tx, const MapConfig& config) {
+        auto map{open_map(tx, config)};
+        cursor_->bind(tx, map);
+    }
+
+  private:
+    std::unique_ptr<::mdbx::cursor_managed> cursor_{nullptr};
+    static inline thread_local ObjectPool<mdbx::cursor_managed> cursors_pool_{};
+};
 
 //! \brief Checks whether a provided map name exists in database
 //! \param [in] tx : a reference to a valid mdbx transaction

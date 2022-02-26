@@ -135,23 +135,13 @@ struct MapConfig {
 //! \brief RAII wrapper around a pooled cursor
 class PooledCursor {
   public:
-    PooledCursor(::mdbx::txn& tx, const MapConfig& config) {
-        cursor_ = cursors_pool_.acquire();
-        if (!cursor_) {
-            cursor_ = std::make_unique<::mdbx::cursor_managed>();
-        }
-        auto map{open_map(tx, config)};
-        cursor_->bind(tx, map);
-    }
+    PooledCursor(::mdbx::txn& tx, const MapConfig& config);
     ~PooledCursor() { cursors_pool_.add(std::move(cursor_)); }
 
     ::mdbx::cursor_managed& operator*() const noexcept { return *cursor_; }
     ::mdbx::cursor_managed* operator->() const noexcept { return cursor_.get(); }
 
-    void bind(::mdbx::txn& tx, const MapConfig& config) {
-        auto map{open_map(tx, config)};
-        cursor_->bind(tx, map);
-    }
+    void bind(::mdbx::txn& tx, const MapConfig& config);
 
   private:
     std::unique_ptr<::mdbx::cursor_managed> cursor_{nullptr};

@@ -30,6 +30,8 @@ static const std::vector<std::pair<std::string, const ChainConfig*>> kKnownChain
 };
 
 constexpr const char* kTerminalTotalDifficulty{"terminalTotalDifficulty"};
+constexpr const char* kTerminalBlockNumber{"terminalBlockNumber"};
+constexpr const char* kTerminalBlockHash{"terminalBlockHash"};
 
 static inline void member_to_json(nlohmann::json& json, const std::string& key, const std::optional<uint64_t>& source) {
     if (source.has_value()) {
@@ -71,12 +73,16 @@ nlohmann::json ChainConfig::to_json() const noexcept {
     member_to_json(ret, "daoForkBlock", dao_block);
     member_to_json(ret, "muirGlacierBlock", muir_glacier_block);
     member_to_json(ret, "arrowGlacierBlock", arrow_glacier_block);
+    member_to_json(ret, kTerminalBlockNumber, terminal_block_number);
 
     if (terminal_total_difficulty.has_value()) {
         // TODO (Andrew) geth probably treats terminalTotalDifficulty as a JSON number
         ret[kTerminalTotalDifficulty] = to_string(*terminal_total_difficulty);
     }
 
+    if (terminal_block_hash.has_value()) {
+        ret[kTerminalBlockHash] = "0x" + to_hex(*terminal_block_hash);
+    }
     return ret;
 }
 
@@ -105,12 +111,18 @@ std::optional<ChainConfig> ChainConfig::from_json(const nlohmann::json& json) no
     read_json_config_member(json, "daoForkBlock", config.dao_block);
     read_json_config_member(json, "muirGlacierBlock", config.muir_glacier_block);
     read_json_config_member(json, "arrowGlacierBlock", config.arrow_glacier_block);
-
+    read_json_config_member(json, kTerminalBlockNumber, config.terminal_block_number);
     if (json.contains(kTerminalTotalDifficulty)) {
         config.terminal_total_difficulty =
             intx::from_string<intx::uint256>(json[kTerminalTotalDifficulty].get<std::string>());
     }
 
+    if (json.contains(kTerminalBlockHash)) {
+        auto terminal_block_hash_bytes{from_hex(json[kTerminalBlockHash].get<std::string>())};
+        if (terminal_block_hash_bytes.has_value()) {
+            config.terminal_block_hash = to_bytes32(*terminal_block_hash_bytes);
+        }
+    }
     return config;
 }
 

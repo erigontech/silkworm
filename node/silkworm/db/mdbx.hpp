@@ -136,12 +136,14 @@ struct MapConfig {
 class PooledCursor {
   public:
     PooledCursor(::mdbx::txn& tx, const MapConfig& config);
-    ~PooledCursor() { cursors_pool_.add(std::move(cursor_)); }
+    ~PooledCursor();
 
     ::mdbx::cursor_managed& operator*() const noexcept { return *cursor_; }
     ::mdbx::cursor_managed* operator->() const noexcept { return cursor_.get(); }
 
     void bind(::mdbx::txn& tx, const MapConfig& config);
+
+    void close();
 
   private:
     std::unique_ptr<::mdbx::cursor_managed> cursor_{nullptr};

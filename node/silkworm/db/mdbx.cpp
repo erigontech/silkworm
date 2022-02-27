@@ -171,6 +171,12 @@ PooledCursor::PooledCursor(::mdbx::txn& tx, const MapConfig& config) {
     bind(tx, config);
 }
 
+PooledCursor::~PooledCursor() {
+    if (cursor_->operator bool()) {
+        cursors_pool_.add(std::move(cursor_));
+    }
+}
+
 void PooledCursor::bind(::mdbx::txn& tx, const MapConfig& config) {
     assert(cursor_);
     const auto& cm{*cursor_};
@@ -185,6 +191,8 @@ void PooledCursor::bind(::mdbx::txn& tx, const MapConfig& config) {
     auto map{open_map(tx, config)};
     cursor_->bind(tx, map);
 }
+
+void PooledCursor::close() { cursor_->close(); }
 
 bool has_map(::mdbx::txn& tx, const char* map_name) {
     try {

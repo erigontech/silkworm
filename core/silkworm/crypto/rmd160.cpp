@@ -1,5 +1,5 @@
 /*
-   Copyright 2020-2021 The Silkworm Authors
+   Copyright 2020-2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -22,7 +22,7 @@
 
 namespace silkworm::crypto {
 
-void calculate_ripemd_160(gsl::span<uint8_t, 20> out, ByteView in) noexcept {
+void calculate_ripemd_160(ByteView in, gsl::span<uint8_t, 20> out) noexcept {
     uint32_t buf[160 / 32];
 
     rmd160_init(buf);

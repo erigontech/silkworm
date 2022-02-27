@@ -1,5 +1,5 @@
 /*
-   Copyright 2020-2021 The Silkworm Authors
+   Copyright 2020-2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -48,7 +48,7 @@ TEST_CASE("BlockBody RLP") {
     ByteView in{rlp_bytes};
     BlockBody bb{};
 
-    REQUIRE(rlp::decode(in, bb) == rlp::DecodingResult::kOk);
+    REQUIRE(rlp::decode(in, bb) == DecodingResult::kOk);
 
     CHECK(bb.transactions.empty());
     REQUIRE(bb.ommers.size() == 1);
@@ -108,7 +108,7 @@ TEST_CASE("BlockBody RLP 2") {
 
     ByteView view{rlp};
     BlockBody decoded{};
-    REQUIRE(rlp::decode(view, decoded) == rlp::DecodingResult::kOk);
+    REQUIRE(rlp::decode(view, decoded) == DecodingResult::kOk);
 
     CHECK(view.empty());
     CHECK(decoded == body);
@@ -134,7 +134,7 @@ TEST_CASE("Invalid Block RLP") {
     ByteView view{rlp_bytes};
     Block block;
 
-    CHECK(rlp::decode(view, block) != rlp::DecodingResult::kOk);
+    CHECK(rlp::decode(view, block) != DecodingResult::kOk);
 }
 
 TEST_CASE("EIP-2718 Block RLP") {
@@ -159,7 +159,7 @@ TEST_CASE("EIP-2718 Block RLP") {
     ByteView view{rlp_bytes};
     Block block;
 
-    REQUIRE(rlp::decode(view, block) == rlp::DecodingResult::kOk);
+    REQUIRE(rlp::decode(view, block) == DecodingResult::kOk);
     CHECK(view.empty());
 
     REQUIRE(block.transactions.size() == 2);
@@ -181,7 +181,7 @@ TEST_CASE("EIP-1559 Header RLP") {
 
     ByteView view{rlp};
     BlockHeader decoded;
-    REQUIRE(rlp::decode(view, decoded) == rlp::DecodingResult::kOk);
+    REQUIRE(rlp::decode(view, decoded) == DecodingResult::kOk);
 
     CHECK(view.empty());
     CHECK(decoded == h);

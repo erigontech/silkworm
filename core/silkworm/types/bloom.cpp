@@ -28,21 +28,19 @@ void Bloom::add(const Bloom& addend) {
     }
 }
 
-// See Section 4.3.1 "Transaction Receipt" of the Yellow Paper
-static void m3_2048(Bloom& bloom, ByteView x) {
-    ethash::hash256 hash{keccak256(x)};
+void Bloom::m3_2048(gsl::span<const uint8_t, kHashLength> hash) {
     for (unsigned i{0}; i < 6; i += 2) {
-        unsigned bit{static_cast<unsigned>(hash.bytes[i + 1] + (hash.bytes[i] << 8)) & 0x7FFu};
-        bloom[kBloomByteLength - 1 - bit / 8] |= 1 << (bit % 8);
+        unsigned bit{static_cast<unsigned>(hash[i + 1] + (hash[i] << 8)) & 0x7FFu};
+        (*this)[kBloomByteLength - 1 - bit / 8] |= 1 << (bit % 8);
     }
 }
 
 Bloom LogsBloomer::bloom_filter(const std::vector<Log>& logs) {
-    Bloom bloom{};  // zero initialization
+    Bloom bloom;
     for (const Log& log : logs) {
-        m3_2048(bloom, log.address);
+        bloom.m3_2048(keccak256(log.address).bytes);
         for (const auto& topic : log.topics) {
-            m3_2048(bloom, topic);
+            bloom.m3_2048(keccak256(topic).bytes);
         }
     }
     return bloom;

@@ -22,6 +22,8 @@
 #include <cstdint>
 #include <vector>
 
+#include <gsl/span>
+
 #include <silkworm/rlp/decode.hpp>
 #include <silkworm/types/log.hpp>
 
@@ -29,12 +31,15 @@ namespace silkworm {
 
 inline constexpr size_t kBloomByteLength{256};
 
+// See Section 4.3.1 "Transaction Receipt" of the Yellow Paper
 class Bloom : public std::array<uint8_t, kBloomByteLength> {
   public:
     // zero initialization
     Bloom() noexcept : std::array<uint8_t, kBloomByteLength>{} {}
 
     void add(const Bloom& addend);
+
+    void m3_2048(gsl::span<const uint8_t, kHashLength> hash);
 };
 
 class LogsBloomer {

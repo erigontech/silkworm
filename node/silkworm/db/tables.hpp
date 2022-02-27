@@ -49,7 +49,6 @@ inline constexpr db::MapConfig kAccountChangeSet{"AccountChangeSet", mdbx::key_m
 inline constexpr db::MapConfig kAccountHistory{"AccountHistory"};
 inline constexpr db::MapConfig kBlockBodies{"BlockBody"};
 
-
 //! \details Stores the binding of *canonical* block number with header hash
 //! \struct
 //! \verbatim
@@ -58,20 +57,52 @@ inline constexpr db::MapConfig kBlockBodies{"BlockBody"};
 //! \endverbatim
 inline constexpr db::MapConfig kCanonicalHashes{"CanonicalHeader"};
 
-//! \struct block_num_u64 (BE) + hash -> header (RLP)
+//! \details Stores the headers downloaded from peers
+//! \struct
+//! \verbatim
+//!   key   : block_num_u64 (BE) + header hash
+//!   value : header RLP encoded
+//! \endverbatim
 inline constexpr db::MapConfig kHeaders{"Header"};
 
-//! \struct block_num_u64 (BE) + hash -> total_difficulty (RLP)
+//! \details Stores the total difficulty accrued at each block height
+//! \struct
+//! \verbatim
+//!   key   : block_num_u64 (BE) + header hash
+//!   value : total difficulty (RLP encoded
+//! \endverbatim
 inline constexpr db::MapConfig kDifficulty{"HeadersTotalDifficulty"};
 
+//! \details Stores the receipts for every canonical block
+//! \remarks Non canonical blocks' receipts are not stored
+//! \struct
+//! \verbatim
+//!   key   : block_num_u64 (BE)
+//!   value : receipts (CBOR Encoded)
+//! \endverbatim
 inline constexpr db::MapConfig kBlockReceipts{"Receipt"};
 inline constexpr db::MapConfig kBloomBitsIndex{"BloomBitsIndex"};
 inline constexpr db::MapConfig kBloomBits{"BloomBits"};
 inline constexpr db::MapConfig kBodiesSnapshotInfo{"BodiesSnapshotInfo"};
+
+//! \details Stores the mapping of block number to the set (sorted) of all accounts touched by call traces.
+//! \struct
+//! \verbatim
+//!   key   : block_num_u64 (BE)
+//!   value : account address + two bits (one for "from" + another for "to")
+//! \endverbatim
+inline constexpr db::MapConfig kCallTraceSet{"CallTraceSet", mdbx::key_mode::usual, mdbx::value_mode::multi};
 inline constexpr db::MapConfig kCallFromIndex{"CallFromIndex"};
 inline constexpr db::MapConfig kCallToIndex{"CallToIndex"};
-inline constexpr db::MapConfig kCallTraceSet{"CallTraceSet", mdbx::key_mode::usual, mdbx::value_mode::multi};
+
+//! \details Stores contract's code
+//! \struct
+//! \verbatim
+//!   key   : contract code hash
+//!   value : contract code
+//! \endverbatim
 inline constexpr db::MapConfig kCode{"Code"};
+
 inline constexpr db::MapConfig kConfig{"Config"};
 inline constexpr db::MapConfig kDatabaseInfo{"DbInfo"};
 inline constexpr db::MapConfig kBlockTransactions{"BlockTransaction"};
@@ -117,6 +148,14 @@ inline constexpr db::MapConfig kHeadersSnapshotInfo{"HeadersSnapshotInfo"};
 inline constexpr db::MapConfig kIncarnationMap{"IncarnationMap"};
 inline constexpr db::MapConfig kLogAddressIndex{"LogAddressIndex"};
 inline constexpr db::MapConfig kLogTopicIndex{"LogTopicIndex"};
+
+//! \details Stores the logs for every transaction in canonical blocks
+//! \remarks Non canonical blocks' transactions logs are not stored
+//! \struct
+//! \verbatim
+//!   key   : block_num_u64 (BE) + transaction_index_u32 (BE)
+//!   value : logs of transaction
+//! \endverbatim
 inline constexpr db::MapConfig kLogs{"TransactionLog"};
 inline constexpr db::MapConfig kMigrations{"Migration"};
 

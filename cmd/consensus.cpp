@@ -60,9 +60,9 @@ static const std::vector<fs::path> kSlowTests{
 };
 
 static const std::vector<fs::path> kFailingTests{
-    // Gas limit >= 2^64 is not supported; see EIP-4803.
+    // Gas limit >= 2^64 is not supported; see EIP-1985.
     // Geth excludes this test as well:
-    // https://github.com/ethereum/go-ethereum/blob/v1.10.16/tests/transaction_test.go#L35
+    // https://github.com/ethereum/go-ethereum/blob/v1.9.25/tests/transaction_test.go#L31
     kTransactionDir / "ttGasLimit" / "TransactionWithGasLimitxPriceOverflow.json",
 };
 

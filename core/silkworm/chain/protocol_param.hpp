@@ -1,5 +1,5 @@
 /*
-   Copyright 2020-2022 The Silkworm Authors
+   Copyright 2020-2021 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -52,10 +52,8 @@ namespace fee {
 
 namespace param {
 
-    inline constexpr size_t kMaxCodeSize{0x6000};  // EIP-170
-
-    inline constexpr uint64_t kMinGasLimit{5000};
-    inline constexpr uint64_t kMaxGasLimit{INT64_MAX};  // EIP-4803
+    // https://eips.ethereum.org/EIPS/eip-170
+    inline constexpr size_t kMaxCodeSize{0x6000};
 
     inline constexpr uint64_t kBlockRewardFrontier{5 * kEther};
     inline constexpr uint64_t kBlockRewardByzantium{3 * kEther};

@@ -1,5 +1,5 @@
 /*
-   Copyright 2020-2022 The Silkworm Authors
+   Copyright 2020-2021 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -523,7 +523,7 @@ evmc_tx_context EvmHost::get_tx_context() const noexcept {
     context.block_number = static_cast<int64_t>(header.number);
     assert(header.timestamp <= INT64_MAX);  // EIP-1985
     context.block_timestamp = static_cast<int64_t>(header.timestamp);
-    assert(header.gas_limit <= INT64_MAX);  // EIP-4803
+    assert(header.gas_limit <= INT64_MAX);  // EIP-1985
     context.block_gas_limit = static_cast<int64_t>(header.gas_limit);
     if (header.difficulty != 0) {
         intx::be::store(context.block_difficulty.bytes, header.difficulty);

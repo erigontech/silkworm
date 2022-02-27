@@ -20,7 +20,6 @@
 
 #include <silkworm/chain/difficulty.hpp>
 #include <silkworm/chain/genesis.hpp>
-#include <silkworm/chain/protocol_param.hpp>
 #include <silkworm/common/cast.hpp>
 #include <silkworm/common/test_context.hpp>
 #include <silkworm/consensus/engine.hpp>
@@ -103,7 +102,7 @@ TEST_CASE("working/persistent-chain integration test") {
         BlockHeader header1b;
         header1b.number = 1;
         header1b.difficulty = 2'000'000;
-        header1b.gas_limit = param::kMinGasLimit;
+        header1b.gas_limit = 5000;
         header1b.parent_hash = header0_hash;
         header1b.extra_data = string_view_to_byte_view("I'm different");
         auto header1b_hash = header1b.hash();

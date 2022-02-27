@@ -37,7 +37,7 @@ class ObjectPool {
         if (!empty()) {
             ptr_t tmp(pool_.top().release());
             pool_.pop();
-            return std::move(tmp);
+            return tmp;
         }
         return {nullptr};
     }

@@ -120,8 +120,8 @@ void ExecutionProcessor::execute_transaction(const Transaction& txn, Receipt& re
     receipt.success = vm_res.status == EVMC_SUCCESS;
     receipt.cumulative_gas_used = cumulative_gas_used_;
 
-    if (bloomer) {
-        receipt.bloom = bloomer->bloom_filter(state_.logs());
+    if (logs_bloomer) {
+        receipt.bloom = logs_bloomer->bloom_filter(state_.logs());
     } else {
         receipt.bloom = LogsBloomer{}.bloom_filter(state_.logs());
     }

@@ -55,7 +55,7 @@ class ExecutionProcessor {
     EVM& evm() noexcept { return evm_; }
     const EVM& evm() const noexcept { return evm_; }
 
-    LogsBloomer* bloomer{nullptr};
+    LogsBloomer* logs_bloomer{nullptr};
 
   private:
     /// Execute the block, but do not write to the DB yet.

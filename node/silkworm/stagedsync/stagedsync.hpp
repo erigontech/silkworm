@@ -29,6 +29,7 @@
 #include <silkworm/execution/state_pool.hpp>
 #include <silkworm/stagedsync/common.hpp>
 #include <silkworm/stagedsync/recovery/recovery_farm.hpp>
+#include <silkworm/types/parallel_bloomer.hpp>
 
 namespace silkworm::stagedsync {
 
@@ -88,8 +89,7 @@ class Execution final : public IStage {
 
     //! \brief Executes a batch of blocks
     //! \remarks A batch completes when either max block is reached or buffer dimensions overflow
-    StageResult execute_batch(db::RWTxn& txn, BlockNum max_block_num, BlockNum prune_from,
-                              AnalysisCache& analysis_cache, ExecutionStatePool& state_pool);
+    StageResult execute_batch(db::RWTxn& txn, BlockNum max_block_num, BlockNum prune_from);
 
     //! \brief For given changeset cursor/bucket it reverts the changes on states buckets
     static void unwind_state_from_changeset(mdbx::cursor& source_changeset, mdbx::cursor& plain_state_table,
@@ -98,6 +98,11 @@ class Execution final : public IStage {
     //! \brief Revert State for given address/storage location
     static void revert_state(ByteView key, ByteView value, mdbx::cursor& plain_state_table,
                              mdbx::cursor& plain_code_table);
+
+    AnalysisCache analysis_cache_;
+    ExecutionStatePool state_pool_;
+    ParallelBloomer logs_bloomer_;
+
     // Stats
     std::mutex progress_mtx_;  // Synchronizes access to progress stats
     std::chrono::time_point<std::chrono::steady_clock> lap_time_{std::chrono::steady_clock::now()};
@@ -150,8 +155,9 @@ class HashState final : public IStage {
     StageResult write_changes_from_changed_addresses(db::RWTxn& txn, const ChangedAddresses& changed_addresses);
 
     //! \brief Writes to db the changes collected from storage changeset scan either in forward or unwind mode
-    StageResult write_changes_from_changed_storage(db::RWTxn& txn, db::StorageChanges& storage_changes,
-                                                   const absl::btree_map<evmc::address, evmc::bytes32>& hashed_addresses);
+    StageResult write_changes_from_changed_storage(
+        db::RWTxn& txn, db::StorageChanges& storage_changes,
+        const absl::btree_map<evmc::address, evmc::bytes32>& hashed_addresses);
 
     //! \brief Resets all fields related to log progress tracking
     void reset_log_progress();

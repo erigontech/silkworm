@@ -72,12 +72,9 @@ StageResult Execution::forward(db::RWTxn& txn) {
         log::Info("Begin Execution", {"from", std::to_string(block_num_), "to", std::to_string(bodies_stage_progress)});
     }
 
-    AnalysisCache analysis_cache;
-    ExecutionStatePool state_pool;
-
     while (!is_stopping() && block_num_ <= max_block_num) {
         // TODO(Andrea) Prune logic must be amended
-        const auto res{execute_batch(txn, max_block_num, 0, analysis_cache, state_pool)};
+        const auto res{execute_batch(txn, max_block_num, 0)};
         if (res != StageResult::kSuccess) {
             return res;
         }
@@ -139,8 +136,7 @@ std::queue<Block> Execution::prefetch_blocks(db::RWTxn& txn, BlockNum from, Bloc
     return ret;
 }
 
-StageResult Execution::execute_batch(db::RWTxn& txn, BlockNum max_block_num, BlockNum prune_from,
-                                     AnalysisCache& analysis_cache, ExecutionStatePool& state_pool) {
+StageResult Execution::execute_batch(db::RWTxn& txn, BlockNum max_block_num, BlockNum prune_from) {
     try {
         db::Buffer buffer(*txn, prune_from);
         std::vector<Receipt> receipts;
@@ -177,8 +173,9 @@ StageResult Execution::execute_batch(db::RWTxn& txn, BlockNum max_block_num, Blo
             }
 
             ExecutionProcessor processor(block, *consensus_engine_, buffer, node_settings_->chain_config.value());
-            processor.evm().advanced_analysis_cache = &analysis_cache;
-            processor.evm().state_pool = &state_pool;
+            processor.evm().advanced_analysis_cache = &analysis_cache_;
+            processor.evm().state_pool = &state_pool_;
+            processor.logs_bloomer = &logs_bloomer_;
 
             if (const auto res{processor.execute_and_write_block(receipts)}; res != ValidationResult::kOk) {
                 const auto block_hash_hex{to_hex(block.header.hash().bytes, true)};

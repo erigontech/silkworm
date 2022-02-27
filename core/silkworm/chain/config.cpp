@@ -81,9 +81,7 @@ nlohmann::json ChainConfig::to_json() const noexcept {
     }
 
     if (terminal_block_hash.has_value()) {
-        Bytes terminal_block_hash_bytes(kHashLength, '\0');
-        std::memcpy(&terminal_block_hash_bytes[0], terminal_block_hash->bytes, kHashLength);
-        ret[kTerminalBlockHash] = "0x" + to_hex(terminal_block_hash_bytes);
+        ret[kTerminalBlockHash] = "0x" + to_hex(*terminal_block_hash);
     }
     return ret;
 }

@@ -24,8 +24,9 @@ namespace silkworm {
 
 TEST_CASE("DataDirectory") {
     {
-        // Open and create default storage path
-        DataDirectory data_dir{/*create = */ true};
+        // Open and create a storage path
+        TemporaryDirectory tmp_dir0;
+        DataDirectory data_dir(/*base_path=*/tmp_dir0.path(), /*create=*/true);
         REQUIRE(data_dir.exists());
         REQUIRE_NOTHROW(data_dir.deploy());
         REQUIRE_THROWS(data_dir.clear());

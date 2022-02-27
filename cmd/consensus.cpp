@@ -284,9 +284,8 @@ void init_pre_state(const nlohmann::json& pre, State& state) {
         Account account;
         const auto balance{intx::from_string<intx::uint256>(j["balance"].get<std::string>())};
         account.balance = balance;
-        const Bytes nonce_str{from_hex(j["nonce"].get<std::string>()).value()};
-        const auto nonce{endian::from_big_compact<uint64_t>(nonce_str, /*allow_leading_zeros=*/true)};
-        account.nonce = *nonce;
+        const auto nonce_str{j["nonce"].get<std::string>()};
+        account.nonce = std::stoull(nonce_str, nullptr, /*base=*/16);
 
         const Bytes code{from_hex(j["code"].get<std::string>()).value()};
         if (!code.empty()) {
@@ -321,7 +320,7 @@ Status run_block(const nlohmann::json& json_block, Blockchain& blockchain) {
 
     Block block;
     ByteView view{*rlp};
-    if (rlp::decode(view, block) != rlp::DecodingResult::kOk || !view.empty()) {
+    if (rlp::decode(view, block) != DecodingResult::kOk || !view.empty()) {
         if (invalid) {
             return Status::kPassed;
         }
@@ -543,7 +542,7 @@ RunResults transaction_test(const nlohmann::json& j) {
     std::optional<Bytes> rlp{from_hex(j["txbytes"].get<std::string>())};
     if (rlp) {
         ByteView view{*rlp};
-        if (rlp::decode(view, txn) == rlp::DecodingResult::kOk) {
+        if (rlp::decode(view, txn) == DecodingResult::kOk) {
             decoded = view.empty();
         }
     }

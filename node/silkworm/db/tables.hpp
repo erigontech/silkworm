@@ -49,7 +49,13 @@ inline constexpr db::MapConfig kAccountChangeSet{"AccountChangeSet", mdbx::key_m
 inline constexpr db::MapConfig kAccountHistory{"AccountHistory"};
 inline constexpr db::MapConfig kBlockBodies{"BlockBody"};
 
-//! \struct block_num_u64 (BE) -> header_hash
+
+//! \details Stores the binding of *canonical* block number with header hash
+//! \struct
+//! \verbatim
+//!   key   : block_num_u64 (BE)
+//!   value : header_hash
+//! \endverbatim
 inline constexpr db::MapConfig kCanonicalHashes{"CanonicalHeader"};
 
 //! \struct block_num_u64 (BE) + hash -> header (RLP)

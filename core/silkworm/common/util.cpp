@@ -147,7 +147,7 @@ std::string abridge(std::string_view input, size_t length) {
     if (input.length() <= length) {
         return std::string(input);
     }
-    return std::string(input.substr(0, length)) + "…";
+    return std::string(input.substr(0, length)) + "...";
 }
 
 static inline uint8_t unhex_lut(uint8_t x) { return kUnhexTable[x]; }

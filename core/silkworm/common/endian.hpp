@@ -199,11 +199,14 @@ static DecodingResult from_big_compact(ByteView data, UnsignedInteger& out) {
         return DecodingResult::kOverflow;
     }
 
-    if (!data.empty() && data[0] == 0) {
-        return DecodingResult::kLeadingZero;
+    out = 0;
+    if (data.empty()) {
+        return DecodingResult::kOk;
     }
 
-    out = 0;
+    if (data[0] == 0) {
+        return DecodingResult::kLeadingZero;
+    }
 
     auto* ptr{reinterpret_cast<uint8_t*>(&out)};
     std::memcpy(ptr + (sizeof(UnsignedInteger) - data.length()), &data[0], data.length());

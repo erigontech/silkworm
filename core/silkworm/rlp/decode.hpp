@@ -29,25 +29,10 @@
 #include <intx/intx.hpp>
 
 #include <silkworm/common/base.hpp>
+#include <silkworm/common/decoding_result.hpp>
 #include <silkworm/rlp/encode.hpp>
 
 namespace silkworm::rlp {
-
-enum class [[nodiscard]] DecodingResult{
-    kOk = 0,
-    kOverflow,
-    kLeadingZero,
-    kInputTooShort,
-    kNonCanonicalSingleByte,
-    kNonCanonicalSize,
-    kUnexpectedLength,
-    kUnexpectedString,
-    kUnexpectedList,
-    kListLengthMismatch,
-    kInvalidVInSignature,         // v != 27 && v != 28 && v < 35, see EIP-155
-    kUnsupportedTransactionType,  // EIP-2718
-    kInvalidFieldset,
-};
 
 // Consumes RLP header unless it's a single byte in the [0x00, 0x7f] range,
 // in which case the byte is put back.

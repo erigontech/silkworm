@@ -1,5 +1,5 @@
 /*
-   Copyright 2021 The Silkworm Authors
+   Copyright 2021-2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -65,10 +65,8 @@ inline size_t length_eth66_packet(const T& from) noexcept {
 }
 
 template <typename T>
-inline rlp::DecodingResult decode_eth66_packet(ByteView& from, T& to) noexcept {
-    using namespace rlp;
-
-    auto [rlp_head, err0]{decode_header(from)};
+inline DecodingResult decode_eth66_packet(ByteView& from, T& to) noexcept {
+    auto [rlp_head, err0]{rlp::decode_header(from)};
     if (err0 != DecodingResult::kOk) {
         return err0;
     }

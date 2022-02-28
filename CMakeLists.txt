@@ -66,6 +66,7 @@ cable_add_buildinfo_library(PROJECT_NAME ${PROJECT_NAME})
 option(SILKWORM_WASM_API "Build WebAssembly API" OFF)
 option(SILKWORM_CORE_ONLY "Only build Silkworm Core" OFF)
 option(SILKWORM_CLANG_COVERAGE "Clang instrumentation for code coverage reports" OFF)
+option(SILKWORM_SANITIZE "Build instrumentation for sanitizers" OFF)
 
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/compiler_settings.cmake)
 

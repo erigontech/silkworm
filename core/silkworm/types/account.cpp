@@ -84,29 +84,29 @@ size_t Account::encoding_length_for_storage() const {
     return len;
 }
 
-static inline std::pair<uint8_t, rlp::DecodingResult> validate_encoded_head(ByteView& encoded_payload) noexcept {
+static inline std::pair<uint8_t, DecodingResult> validate_encoded_head(ByteView& encoded_payload) noexcept {
     if (encoded_payload.empty()) {
-        return {0, rlp::DecodingResult::kOk};
+        return {0, DecodingResult::kOk};
     }
     if (encoded_payload[0] && encoded_payload.length() == 1) {
         // Must be at least 2 bytes : field_set + len of payload
-        return {encoded_payload[0], rlp::DecodingResult::kInputTooShort};
+        return {encoded_payload[0], DecodingResult::kInputTooShort};
     }
     if (encoded_payload[0] > 15) {
         // Can only be at max 1 | 2 | 4 | 8
-        return {encoded_payload[0], rlp::DecodingResult::kInvalidFieldset};
+        return {encoded_payload[0], DecodingResult::kInvalidFieldset};
     }
 
-    return {encoded_payload[0], rlp::DecodingResult::kOk};
+    return {encoded_payload[0], DecodingResult::kOk};
 }
 
-std::pair<Account, rlp::DecodingResult> Account::from_encoded_storage(ByteView encoded_payload) noexcept {
-    Account a{};
-    const auto [field_set, err] = validate_encoded_head(encoded_payload);
-    if (err != rlp::DecodingResult::kOk) {
+std::pair<Account, DecodingResult> Account::from_encoded_storage(ByteView encoded_payload) noexcept {
+    Account a;
+    auto [field_set, err] = validate_encoded_head(encoded_payload);
+    if (err != DecodingResult::kOk) {
         return {a, err};
     } else if (!field_set) {
-        return {a, rlp::DecodingResult::kOk};
+        return {a, DecodingResult::kOk};
     }
 
     size_t pos{1};
@@ -114,34 +114,31 @@ std::pair<Account, rlp::DecodingResult> Account::from_encoded_storage(ByteView e
         if (field_set & i) {
             uint8_t len = encoded_payload[pos++];
             if (encoded_payload.length() < pos + len) {
-                return {a, rlp::DecodingResult::kInputTooShort};
+                return {a, DecodingResult::kInputTooShort};
             }
             const auto encoded_value{encoded_payload.substr(pos, len)};
             switch (i) {
                 case 1: {
-                    const std::optional<uint64_t> nonce{endian::from_big_compact<uint64_t>(encoded_value)};
-                    if (nonce == std::nullopt) {
-                        return {a, rlp::DecodingResult::kLeadingZero};
+                    err = endian::from_big_compact(encoded_value, a.nonce);
+                    if (err != DecodingResult::kOk) {
+                        return {a, err};
                     }
-                    a.nonce = *nonce;
                 } break;
                 case 2: {
-                    const auto balance{endian::from_big_compact<intx::uint256>(encoded_value)};
-                    if (!balance.has_value()) {
-                        return {a, rlp::DecodingResult::kOverflow};
+                    err = endian::from_big_compact(encoded_value, a.balance);
+                    if (err != DecodingResult::kOk) {
+                        return {a, err};
                     }
-                    a.balance = balance.value();
                 } break;
                 case 4: {
-                    const std::optional<uint64_t> incarnation{endian::from_big_compact<uint64_t>(encoded_value)};
-                    if (incarnation == std::nullopt) {
-                        return {a, rlp::DecodingResult::kLeadingZero};
+                    err = endian::from_big_compact(encoded_value, a.incarnation);
+                    if (err != DecodingResult::kOk) {
+                        return {a, err};
                     }
-                    a.incarnation = *incarnation;
                 } break;
                 case 8:
                     if (len != kHashLength) {
-                        return {a, rlp::DecodingResult::kUnexpectedLength};
+                        return {a, DecodingResult::kUnexpectedLength};
                     }
                     std::memcpy(a.code_hash.bytes, &encoded_value[0], kHashLength);
                     break;
@@ -152,15 +149,15 @@ std::pair<Account, rlp::DecodingResult> Account::from_encoded_storage(ByteView e
         }
     }
 
-    return {a, rlp::DecodingResult::kOk};
+    return {a, DecodingResult::kOk};
 }
 
-std::pair<uint64_t, rlp::DecodingResult> Account::incarnation_from_encoded_storage(ByteView encoded_payload) noexcept {
+std::pair<uint64_t, DecodingResult> Account::incarnation_from_encoded_storage(ByteView encoded_payload) noexcept {
     const auto [field_set, err] = validate_encoded_head(encoded_payload);
-    if (err != rlp::DecodingResult::kOk) {
+    if (err != DecodingResult::kOk) {
         return {0, err};
     } else if (!field_set || !(field_set & /*incarnation mask*/ 4)) {
-        return {0, rlp::DecodingResult::kOk};
+        return {0, DecodingResult::kOk};
     }
 
     size_t pos{1};
@@ -168,18 +165,16 @@ std::pair<uint64_t, rlp::DecodingResult> Account::incarnation_from_encoded_stora
         if (field_set & i) {
             uint8_t len = encoded_payload[pos++];
             if (encoded_payload.length() < pos + len) {
-                return {0, rlp::DecodingResult::kInputTooShort};
+                return {0, DecodingResult::kInputTooShort};
             }
             switch (i) {
                 case 1:
                 case 2:
                     break;
                 case 4: {
-                    const auto incarnation{endian::from_big_compact<uint64_t>(encoded_payload.substr(pos, len))};
-                    if (incarnation == std::nullopt) {
-                        return {0, rlp::DecodingResult::kLeadingZero};
-                    }
-                    return {*incarnation, rlp::DecodingResult::kOk};
+                    uint64_t incarnation{0};
+                    DecodingResult res{endian::from_big_compact(encoded_payload.substr(pos, len), incarnation)};
+                    return {incarnation, res};
                 } break;
                 default:
                     len = 0;
@@ -187,7 +182,7 @@ std::pair<uint64_t, rlp::DecodingResult> Account::incarnation_from_encoded_stora
             pos += len;
         }
     }
-    return {0, rlp::DecodingResult::kOk};
+    return {0, DecodingResult::kOk};
 }
 
 Bytes Account::rlp(const evmc::bytes32& storage_root) const {

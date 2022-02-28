@@ -47,7 +47,7 @@ void Buffer::update_account(const evmc::address& address, std::optional<Account>
         return;
     }
 
-    if (block_number_ >= prune_from_) {
+    if (block_number_ >= prune_history_threshold_) {
         Bytes encoded_initial{};
         if (initial) {
             bool omit_code_hash{!account_deleted};
@@ -99,7 +99,7 @@ void Buffer::update_storage(const evmc::address& address, uint64_t incarnation, 
     if (current == initial) {
         return;
     }
-    if (block_number_ >= prune_from_) {
+    if (block_number_ >= prune_history_threshold_) {
         changed_storage_.insert(address);
         ByteView initial_val{zeroless_view(initial)};
         if (block_storage_changes_[block_number_][address][incarnation]

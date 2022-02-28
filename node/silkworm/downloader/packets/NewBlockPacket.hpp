@@ -1,5 +1,5 @@
 /*
-   Copyright 2021 The Silkworm Authors
+   Copyright 2021-2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -33,7 +33,7 @@ namespace rlp {
     size_t length(const NewBlockPacket& from) noexcept;
 
     template <>
-    rlp::DecodingResult decode(ByteView& from, NewBlockPacket& to) noexcept;
+    DecodingResult decode(ByteView& from, NewBlockPacket& to) noexcept;
 
 }  // namespace rlp
 

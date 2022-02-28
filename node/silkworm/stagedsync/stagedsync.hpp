@@ -88,8 +88,9 @@ class Execution final : public IStage {
 
     //! \brief Executes a batch of blocks
     //! \remarks A batch completes when either max block is reached or buffer dimensions overflow
-    StageResult execute_batch(db::RWTxn& txn, BlockNum max_block_num, BlockNum prune_from,
-                              AnalysisCache& analysis_cache, ExecutionStatePool& state_pool);
+    StageResult execute_batch(db::RWTxn& txn, BlockNum max_block_num, AnalysisCache& analysis_cache,
+                              ExecutionStatePool& state_pool, BlockNum prune_history_threshold,
+                              BlockNum prune_receipts_threshold);
 
     //! \brief For given changeset cursor/bucket it reverts the changes on states buckets
     static void unwind_state_from_changeset(mdbx::cursor& source_changeset, mdbx::cursor& plain_state_table,
@@ -147,16 +148,17 @@ class HashState final : public IStage {
     StageResult unwind_from_storage_changeset(db::RWTxn& txn, BlockNum previous_progress, BlockNum to);
 
     //! \brief Writes to db the changes collected from account changeset scan either in forward or unwind mode
-    StageResult write_changes_from_changed_addresses(db::RWTxn& txn, ChangedAddresses& changed_addresses);
+    StageResult write_changes_from_changed_addresses(db::RWTxn& txn, const ChangedAddresses& changed_addresses);
 
     //! \brief Writes to db the changes collected from storage changeset scan either in forward or unwind mode
     StageResult write_changes_from_changed_storage(db::RWTxn& txn, db::StorageChanges& storage_changes,
-                                                   absl::btree_map<evmc::address, evmc::bytes32>& hashed_addresses);
+                                                   const absl::btree_map<evmc::address, evmc::bytes32>& hashed_addresses);
 
     //! \brief Resets all fields related to log progress tracking
     void reset_log_progress();
 
     // Logger info
+    std::mutex log_mtx_{};                       // Guards async logging
     std::atomic_bool incremental_{false};        // Whether operation is incremental
     std::atomic_bool loading_{false};            // Whether we're in ETL loading phase
     std::string current_source_;                 // Current source of data

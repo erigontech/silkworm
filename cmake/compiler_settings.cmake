@@ -69,6 +69,11 @@ if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
 
 elseif("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU")
 
+  if(SILKWORM_SANITIZE)
+    add_compile_options(-fno-omit-frame-pointer -fsanitize=${SILKWORM_SANITIZE})
+    add_link_options(-fno-omit-frame-pointer -fsanitize=${SILKWORM_SANITIZE})
+  endif()
+
   if(CMAKE_BUILD_TYPE STREQUAL "Release")
     add_compile_options(-g1)
   endif()
@@ -78,6 +83,11 @@ elseif("${CMAKE_CXX_COMPILER_ID}" MATCHES ".*Clang$")
   if(SILKWORM_CLANG_COVERAGE)
     add_compile_options(-fprofile-instr-generate -fcoverage-mapping)
     add_link_options(-fprofile-instr-generate -fcoverage-mapping)
+  endif()
+
+  if(SILKWORM_SANITIZE)
+    add_compile_options(-fno-omit-frame-pointer -fsanitize=${SILKWORM_SANITIZE})
+    add_link_options(-fno-omit-frame-pointer -fsanitize=${SILKWORM_SANITIZE})
   endif()
 
   if(CMAKE_BUILD_TYPE STREQUAL "Release")

@@ -146,7 +146,7 @@ namespace detail {
         auto [header, err]{rlp::decode_header(from)};
         rlp::success_or_throw(err);
         if (!header.list) {
-            rlp::success_or_throw(rlp::DecodingResult::kUnexpectedString);
+            rlp::success_or_throw(DecodingResult::kUnexpectedString);
         }
         uint64_t leftover{from.length() - header.payload_length};
 
@@ -156,7 +156,7 @@ namespace detail {
         rlp::success_or_throw(rlp::decode_vector(from, to.ommers));
 
         if (from.length() != leftover) {
-            throw rlp::DecodingError(rlp::DecodingResult::kListLengthMismatch);
+            throw rlp::DecodingError(DecodingResult::kListLengthMismatch);
         }
 
         return to;

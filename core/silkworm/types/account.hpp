@@ -45,11 +45,12 @@ struct Account {
     [[nodiscard]] Bytes rlp(const evmc::bytes32& storage_root) const;
 
     //! \brief Returns an Account from it's encoded representation
-    [[nodiscard]] static std::pair<Account, rlp::DecodingResult> from_encoded_storage(ByteView encoded_payload) noexcept;
+    [[nodiscard]] static std::pair<Account, DecodingResult> from_encoded_storage(ByteView encoded_payload) noexcept;
 
     //! \brief Returns an Account Incarnation from it's encoded representation
     //! \remarks Similar to from_encoded_storage but faster as it parses only incarnation
-    [[nodiscard]] static std::pair<uint64_t, rlp::DecodingResult> incarnation_from_encoded_storage(ByteView encoded_payload) noexcept;
+    [[nodiscard]] static std::pair<uint64_t, DecodingResult> incarnation_from_encoded_storage(
+        ByteView encoded_payload) noexcept;
 };
 
 bool operator==(const Account& a, const Account& b);

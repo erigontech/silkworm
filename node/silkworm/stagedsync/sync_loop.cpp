@@ -18,8 +18,7 @@
 
 #include <boost/format.hpp>
 
-#include <silkworm/common/log.hpp>
-#include <silkworm/db/stages.hpp>
+#include <silkworm/stagedsync/stage_blockhashes.hpp>
 #include <silkworm/stagedsync/stagedsync.hpp>
 
 namespace silkworm::stagedsync {

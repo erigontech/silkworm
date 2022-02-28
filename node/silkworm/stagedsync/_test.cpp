@@ -16,20 +16,18 @@
 
 #include <catch2/catch.hpp>
 
+#include <silkworm/stagedsync/stage_blockhashes.hpp>
+
+#include <silkworm/chain/genesis.hpp>
 #include <silkworm/common/endian.hpp>
-#include <silkworm/common/log.hpp>
-#include <silkworm/common/settings.hpp>
 #include <silkworm/common/test_util.hpp>
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/buffer.hpp>
 #include <silkworm/db/genesis.hpp>
 #include <silkworm/execution/address.hpp>
 #include <silkworm/execution/execution.hpp>
-#include <silkworm/stagedsync/common.hpp>
 #include <silkworm/stagedsync/stagedsync.hpp>
 #include <silkworm/trie/vector_root.hpp>
-
-#include "silkworm/chain/genesis.hpp"
 
 using namespace silkworm;
 using namespace evmc::literals;

@@ -32,24 +32,6 @@
 
 namespace silkworm::stagedsync {
 
-class BlockHashes final : public IStage {
-  public:
-    explicit BlockHashes(NodeSettings* node_settings) : IStage(db::stages::kBlockHashesKey, node_settings){};
-    ~BlockHashes() override = default;
-
-    StageResult forward(db::RWTxn& txn) final;
-    StageResult unwind(db::RWTxn& txn, BlockNum to) final;
-    StageResult prune(db::RWTxn& txn) final;
-    std::vector<std::string> get_log_progress() final;
-
-  private:
-    std::unique_ptr<etl::Collector> collector_{nullptr};
-
-    /* Stats */
-    uint16_t current_phase_{0};
-    BlockNum reached_block_num_{0};
-};
-
 class Senders final : public IStage {
   public:
     explicit Senders(NodeSettings* node_settings) : IStage(db::stages::kSendersKey, node_settings){};

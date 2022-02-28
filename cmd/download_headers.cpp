@@ -108,7 +108,7 @@ int main(int argc, char* argv[]) {
         auto header_processing = std::thread([&header_downloader]() { header_downloader.execution_loop(); });
 
         // Sample stage loop with 1 stage
-        Stage::Result stage_result{Stage::Result::Unknown};
+        Stage::Result stage_result{Stage::Result::Unspecified};
         do {
             if (stage_result.status != Stage::Result::UnwindNeeded) {
                 stage_result = header_downloader.forward(first_sync);

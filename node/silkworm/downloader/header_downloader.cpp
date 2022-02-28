@@ -108,10 +108,10 @@ auto HeaderDownloader::forward(bool first_sync) -> Stage::Result {
 
         if (persisted_chain_.unwind_detected()) {
             tx.commit();
-            log::Info() << "[1/16 Headers] End (not started due to unwind detection), duration="
-                        << timing.format(timing.lap_duration());
-            log::Trace() << "[INFO] HeaderDownloader forward operation cannot start due to unwind detection";
-            result.status = Stage::Result::Unknown;
+            log::Info() << "[1/16 Headers] End (forward skipped due to unwind detection, canonical chain updated), "
+                << "duration=" << timing.format(timing.lap_duration());
+            log::Trace() << "[INFO] HeaderDownloader forward skipped due to unwind detection, canonical chain updated";
+            result.status = Stage::Result::Done;
             return result;
         }
 
@@ -134,8 +134,13 @@ auto HeaderDownloader::forward(bool first_sync) -> Stage::Result {
             send_header_requests();
 
             // check if it needs to persist some headers
-            if (withdraw_result.wait_for(500ms) == std::future_status::ready) {
-
+            if (!withdraw_result.valid()) {
+                // submit a withdrawal command
+                withdraw_command = withdraw_stable_headers();
+                withdraw_result = withdraw_command->result();
+            }
+            else if (withdraw_result.wait_for(500ms) == std::future_status::ready) {
+                // check the result of withdrawal command
                 auto [stable_headers, in_sync] = withdraw_result.get();  // blocking
                 if (!stable_headers.empty()) {
                     if (stable_headers.size() > 100000) {
@@ -151,10 +156,6 @@ auto HeaderDownloader::forward(bool first_sync) -> Stage::Result {
                             << " (duration=" << StopWatch::format(insertion_timing.lap_duration()) << "s)";
                     }
                 }
-
-                // submit another withdrawal command
-                withdraw_command = withdraw_stable_headers();
-                withdraw_result = withdraw_command->result();
 
                 // do announcements
                 send_announcements();

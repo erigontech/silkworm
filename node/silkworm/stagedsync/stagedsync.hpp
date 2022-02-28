@@ -28,7 +28,7 @@
 #include <silkworm/execution/analysis_cache.hpp>
 #include <silkworm/execution/state_pool.hpp>
 #include <silkworm/stagedsync/common.hpp>
-#include <silkworm/stagedsync/recovery/recovery_farm.hpp>
+#include <silkworm/stagedsync/stage_senders/recovery_farm.hpp>
 
 namespace silkworm::stagedsync {
 

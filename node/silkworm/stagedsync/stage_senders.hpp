@@ -18,7 +18,7 @@
 #define SILKWORM_STAGEDSYNC_STAGE_SENDERS_HPP_
 
 #include <silkworm/stagedsync/common.hpp>
-#include <silkworm/stagedsync/recovery/recovery_farm.hpp>
+#include <silkworm/stagedsync/stage_senders/recovery_farm.hpp>
 
 namespace silkworm::stagedsync {
 

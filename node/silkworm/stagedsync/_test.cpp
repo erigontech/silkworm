@@ -355,7 +355,7 @@ TEST_CASE("Sync Stages") {
             auto account_changeset_table{db::open_cursor(*txn, db::table::kAccountChangeSet)};
             auto data{account_changeset_table.to_first(false)};
             REQUIRE(data.done);
-            BlockNum expected_block_num = 1;  // We've pruned history before 2
+            BlockNum expected_block_num = 2;  // We've pruned history *before* 2 so the last is 2
             BlockNum actual_block_num = endian::load_big_u64(db::from_slice(data.key).data());
             REQUIRE(actual_block_num == expected_block_num);
             account_changeset_table.close();

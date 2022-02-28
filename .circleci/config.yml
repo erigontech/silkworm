@@ -1,4 +1,4 @@
-#   Copyright 2020-2021 The Silkworm Authors
+#   Copyright 2020-2022 The Silkworm Authors
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
@@ -37,7 +37,7 @@ commands:
       - run:
           name: "Cmake"
           working_directory: ~/build
-          command: cmake ../project -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DCMAKE_TOOLCHAIN_FILE=$HOME/project/cmake/toolchain/$TOOLCHAIN -DSILKWORM_CLANG_COVERAGE=$CLANG_COVERAGE
+          command: cmake ../project -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DCMAKE_TOOLCHAIN_FILE=$HOME/project/cmake/toolchain/$TOOLCHAIN -DSILKWORM_CLANG_COVERAGE=$CLANG_COVERAGE -DSILKWORM_SANITIZE=$SANITIZE
       - save_cache:
           name: "Save Hunter cache"
           key: *hunter-cache-key
@@ -52,7 +52,9 @@ commands:
       - run:
           name: "Core unit tests"
           working_directory: ~/build
-          command: cmd/core_test
+          command: |
+            ulimit -s unlimited
+            cmd/core_test
       - run:
           name: "Node unit tests"
           working_directory: ~/build
@@ -68,8 +70,23 @@ jobs:
       BUILD_TYPE: Release
       TOOLCHAIN: cxx17.cmake
       CLANG_COVERAGE: OFF
+      SANITIZE: OFF
     machine:
       image: ubuntu-2004:202010-01
+    resource_class: xlarge
+    steps:
+      - checkout_with_submodules
+      - build
+      - test
+
+  linux-gcc-11-thread-sanitizer:
+    environment:
+      BUILD_TYPE: Debug
+      TOOLCHAIN: cxx17.cmake
+      CLANG_COVERAGE: OFF
+      SANITIZE: thread
+    docker:
+      - image: ethereum/cpp-build-env:17-gcc-11
     resource_class: xlarge
     steps:
       - checkout_with_submodules
@@ -81,6 +98,7 @@ jobs:
       BUILD_TYPE: Debug
       TOOLCHAIN: cxx20.cmake
       CLANG_COVERAGE: OFF
+      SANITIZE: OFF
     docker:
       - image: ethereum/cpp-build-env:17-gcc-11
     resource_class: xlarge
@@ -89,11 +107,26 @@ jobs:
       - build
       - test
 
-  linux-clang-coverage:
+  linux-clang-10-address-sanitizer:
+    environment:
+      BUILD_TYPE: Debug
+      TOOLCHAIN: cxx17.cmake
+      CLANG_COVERAGE: OFF
+      SANITIZE: address
+    docker:
+      - image: ethereum/cpp-build-env:14-clang-10
+    resource_class: xlarge
+    steps:
+      - checkout_with_submodules
+      - build
+      - test
+
+  linux-clang-10-coverage:
     environment:
       BUILD_TYPE: Debug
       TOOLCHAIN: cxx17.cmake
       CLANG_COVERAGE: ON
+      SANITIZE: OFF
     docker:
       - image: ethereum/cpp-build-env:14-clang-10
     resource_class: xlarge
@@ -185,6 +218,8 @@ workflows:
   silkworm:
     jobs:
       - linux-gcc-9
+      - linux-gcc-11-thread-sanitizer
       - linux-gcc-11-cpp20
-      - linux-clang-coverage
+      - linux-clang-10-coverage
+      - linux-clang-10-address-sanitizer
       - linux-wasm-build

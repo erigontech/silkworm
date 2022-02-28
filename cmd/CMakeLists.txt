@@ -21,7 +21,7 @@ if(MSVC)
 elseif (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
   add_link_options(-Wl,-stack_size -Wl,0x1000000)
 else()
-  add_link_options(-Wl,-z,stack-size=10000000)
+  add_link_options(-Wl,-z,stack-size=50000000)
 endif()
 
 file(GLOB_RECURSE SILKWORM_CORE_TESTS CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/core/silkworm/*_test.cpp")

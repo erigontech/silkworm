@@ -20,9 +20,9 @@ if(MSVC)
   add_link_options(/STACK:0x1000000)
 elseif (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
   add_link_options(-Wl,-stack_size -Wl,0x1000000)
+else()
+  add_link_options(-Wl,-z,stack-size=16777216)
 endif()
-# -Wl,-z,stack-size=16777216 doesn't seem to work on Linux; use instead
-# ulimit -s unlimited
 
 file(GLOB_RECURSE SILKWORM_CORE_TESTS CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/core/silkworm/*_test.cpp")
 add_executable(core_test unit_test.cpp ${SILKWORM_CORE_TESTS})

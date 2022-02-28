@@ -52,7 +52,9 @@ commands:
       - run:
           name: "Core unit tests"
           working_directory: ~/build
-          command: cmd/core_test
+          command: |
+            ulimit -s unlimited
+            cmd/core_test
       - run:
           name: "Node unit tests"
           working_directory: ~/build
@@ -117,9 +119,6 @@ jobs:
     steps:
       - checkout_with_submodules
       - build
-      - run:
-          name: "Set unlimited stack size"
-          command: ulimit -s unlimited
       - test
 
   linux-clang-10-coverage:

@@ -77,7 +77,7 @@ jobs:
       - build
       - test
 
-  linux-gcc-11-sanitizers:
+  linux-gcc-11-thread-sanitizer:
     environment:
       BUILD_TYPE: Debug
       TOOLCHAIN: cxx17.cmake
@@ -105,7 +105,7 @@ jobs:
       - build
       - test
 
-  linux-clang-10-sanitizers:
+  linux-clang-10-address-sanitizer:
     environment:
       BUILD_TYPE: Debug
       TOOLCHAIN: cxx17.cmake
@@ -216,8 +216,8 @@ workflows:
   silkworm:
     jobs:
       - linux-gcc-9
-      - linux-gcc-11-sanitizers
+      - linux-gcc-11-thread-sanitizer
       - linux-gcc-11-cpp20
       - linux-clang-10-coverage
-      - linux-clang-10-sanitizers
+      - linux-clang-10-address-sanitizer
       - linux-wasm-build

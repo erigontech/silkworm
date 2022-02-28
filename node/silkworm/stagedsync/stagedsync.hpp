@@ -25,50 +25,36 @@
 #include <silkworm/db/stages.hpp>
 #include <silkworm/db/tables.hpp>
 #include <silkworm/stagedsync/common.hpp>
-#include <silkworm/stagedsync/stage_senders/recovery_farm.hpp>
 
 namespace silkworm::stagedsync {
 
 typedef StageResult (*StageFunc)(db::RWTxn&, const std::filesystem::path& etl_path, uint64_t prune_from);
-typedef StageResult (*UnwindFunc)(db::RWTxn&, const std::filesystem::path& etl_path, uint64_t unwind_to);
-typedef StageResult (*PruneFunc)(db::RWTxn&, const std::filesystem::path& etl_path, uint64_t prune_from);
 
 struct Stage {
     StageFunc stage_func;
-    UnwindFunc unwind_func;
-    PruneFunc prune_func;
     uint64_t id;
 };
 
 // Stage functions
 StageResult stage_headers(db::RWTxn& txn, const std::filesystem::path& etl_path, uint64_t prune_from = 0);
-StageResult stage_bodies(db::RWTxn& txn, const std::filesystem::path& etl_path, uint64_t prune_from = 0);
 
 /* **************************** */
-StageResult stage_interhashes(db::RWTxn& txn, const std::filesystem::path& etl_path, uint64_t prune_from = 0);
 StageResult stage_account_history(db::RWTxn& txn, const std::filesystem::path& etl_path, uint64_t prune_from = 0);
 StageResult stage_storage_history(db::RWTxn& txn, const std::filesystem::path& etl_path, uint64_t prune_from = 0);
 StageResult stage_log_index(db::RWTxn& txn, const std::filesystem::path& etl_path, uint64_t prune_from = 0);
 StageResult stage_tx_lookup(db::RWTxn& txn, const std::filesystem::path& etl_path, uint64_t prune_from = 0);
 
 // Unwind functions
-StageResult no_unwind(db::RWTxn& txn, const std::filesystem::path& etl_path, uint64_t unwind_to);
-StageResult unwind_interhashes(db::RWTxn& txn, const std::filesystem::path& etl_path, uint64_t unwind_to);
 StageResult unwind_account_history(db::RWTxn& txn, const std::filesystem::path& etl_path, uint64_t unwind_to);
 StageResult unwind_storage_history(db::RWTxn& txn, const std::filesystem::path& etl_path, uint64_t unwind_to);
 StageResult unwind_log_index(db::RWTxn& txn, const std::filesystem::path& etl_path, uint64_t unwind_to);
 StageResult unwind_tx_lookup(db::RWTxn& txn, const std::filesystem::path& etl_path, uint64_t unwind_to);
 
 // Prune functions
-StageResult no_prune(db::RWTxn& txn, const std::filesystem::path& etl_path, uint64_t prune_from);
 StageResult prune_account_history(db::RWTxn& txn, const std::filesystem::path& etl_path, uint64_t prune_from);
 StageResult prune_storage_history(db::RWTxn& txn, const std::filesystem::path& etl_path, uint64_t prune_from);
-StageResult prune_log_index(db::RWTxn& txn, const std::filesystem::path& etl_path, uint64_t prune_from);
 StageResult prune_tx_lookup(db::RWTxn& txn, const std::filesystem::path& etl_path, uint64_t prune_from);
 
-std::vector<Stage> get_archive_node_stages();
-std::vector<Stage> get_pruned_node_stages();
-std::vector<Stage> get_miner_mode_stages();
 
 }  // namespace silkworm::stagedsync
 

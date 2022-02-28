@@ -378,27 +378,6 @@ void do_stages(db::EnvConfig& config) {
     env.close(config.shared);
 }
 
-void do_prunings(db::EnvConfig& config, uint64_t prune_size) {
-    if (!config.exclusive) {
-        throw std::runtime_error("Pruning tool requires exclusive access to database");
-    }
-
-    auto env{silkworm::db::open_env(config)};
-    db::RWTxn txn{env};
-
-    auto current_progress{db::stages::read_stage_progress(*txn, db::stages::kSendersKey)};
-
-    if (prune_size > current_progress) return;
-    auto prune_from{current_progress - prune_size};
-
-    std::cout << "\n Pruned start, block to be kept: " << prune_size << "\n" << std::endl;
-    auto pruned_node_stages{stagedsync::get_pruned_node_stages()};
-    for (auto stage : pruned_node_stages) {
-        stagedsync::success_or_throw(
-            stage.prune_func(txn, DataDirectory::from_chaindata(config.path).etl().path(), prune_from));
-    }
-}
-
 void do_migrations(db::EnvConfig& config) {
     static std::string fmt_hdr{" %-24s"};
     static std::string fmt_row{" %-24s"};
@@ -1069,12 +1048,6 @@ int main(int argc, char* argv[]) {
     auto cmd_extract_headers_step_opt = cmd_extract_headers->add_option("--step", "Step every this number of blocks")
                                             ->default_val("100000")
                                             ->check(CLI::Range(1u, UINT32_MAX));
-    // Executes database prunings
-    // TODO(Andrea) eventually move to integration tool
-    auto cmd_do_prunings = app_main.add_subcommand("prune", "Prune the node");
-    auto cmd_do_prunings_size = cmd_do_prunings->add_option("--block-to-keep", "How many blocks of history to keep")
-                                    ->default_val("96000")
-                                    ->check(CLI::Range(1u, UINT32_MAX));
 
     /*
   * Parse arguments and validate
@@ -1153,8 +1126,6 @@ int main(int argc, char* argv[]) {
         } else if (*cmd_extract_headers) {
             do_extract_headers(src_config, cmd_extract_headers_file_opt->as<std::string>(),
                                cmd_extract_headers_step_opt->as<uint32_t>());
-        } else if (*cmd_do_prunings) {
-            do_prunings(src_config, cmd_do_prunings_size->as<uint64_t>());
         }
 
         return 0;

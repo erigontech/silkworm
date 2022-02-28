@@ -1,4 +1,4 @@
-#   Copyright 2020-2021 The Silkworm Authors
+#   Copyright 2020-2022 The Silkworm Authors
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
@@ -52,7 +52,9 @@ commands:
       - run:
           name: "Core unit tests"
           working_directory: ~/build
-          command: cmd/core_test
+          command: |
+            ulimit -s unlimited
+            cmd/core_test
       - run:
           name: "Node unit tests"
           working_directory: ~/build

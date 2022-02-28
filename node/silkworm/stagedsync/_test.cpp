@@ -19,6 +19,7 @@
 #include <silkworm/stagedsync/stage_blockhashes.hpp>
 #include <silkworm/stagedsync/stage_senders.hpp>
 #include <silkworm/stagedsync/stage_execution.hpp>
+#include <silkworm/stagedsync/stage_hashstate.hpp>
 
 #include <silkworm/chain/genesis.hpp>
 #include <silkworm/common/endian.hpp>
@@ -28,7 +29,6 @@
 #include <silkworm/db/genesis.hpp>
 #include <silkworm/execution/address.hpp>
 #include <silkworm/execution/execution.hpp>
-#include <silkworm/stagedsync/stagedsync.hpp>
 #include <silkworm/trie/vector_root.hpp>
 
 using namespace silkworm;

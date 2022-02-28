@@ -52,7 +52,9 @@ commands:
       - run:
           name: "Core unit tests"
           working_directory: ~/build
-          command: cmd/core_test
+          command: |
+            ulimit -s unlimited
+            cmd/core_test
       - run:
           name: "Node unit tests"
           working_directory: ~/build

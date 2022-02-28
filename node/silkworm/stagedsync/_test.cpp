@@ -17,6 +17,7 @@
 #include <catch2/catch.hpp>
 
 #include <silkworm/stagedsync/stage_blockhashes.hpp>
+#include <silkworm/stagedsync/stage_senders.hpp>
 
 #include <silkworm/chain/genesis.hpp>
 #include <silkworm/common/endian.hpp>

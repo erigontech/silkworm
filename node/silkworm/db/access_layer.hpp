@@ -46,7 +46,7 @@ Bytes read_header_raw(mdbx::txn& txn, ByteView key);
 void write_header(mdbx::txn& txn, const BlockHeader& header, bool with_header_numbers = false);
 
 //! \brief Writes header hash in table::kHeaderNumbers
-void write_header_number(mdbx::txn& txn, const uint8_t (&hash)[kHashLength], const BlockNum number);
+void write_header_number(mdbx::txn& txn, const uint8_t (&hash)[kHashLength], BlockNum number);
 
 //! \brief Writes the header hash in table::kCanonicalHashes
 void write_canonical_header(mdbx::txn& txn, const BlockHeader& header);
@@ -60,7 +60,7 @@ void write_canonical_header_hash(mdbx::txn& txn, const uint8_t (&hash)[kHashLeng
                              bool read_senders, BlockBody& out);
 
 //! \brief Writes block body in table::kBlockBodies
-void write_body(mdbx::txn& txn, const BlockBody& body, const uint8_t (&hash)[kHashLength], const BlockNum number);
+void write_body(mdbx::txn& txn, const BlockBody& body, const uint8_t (&hash)[kHashLength], BlockNum number);
 
 // See Erigon ReadTd
 std::optional<intx::uint256> read_total_difficulty(mdbx::txn& txn, BlockNum block_number,
@@ -75,7 +75,7 @@ void write_total_difficulty(mdbx::txn& txn, BlockNum block_number, const uint8_t
 
 // See Erigon ReadBlockByNumber
 // Returns true on success and false on missing block
-[[nodiscard]] bool read_block(mdbx::txn& txn, BlockNum block_number, bool read_senders, BlockWithHash& out);
+[[nodiscard]] bool read_block(mdbx::txn& txn, BlockNum block_number, bool read_senders, Block& out);
 
 // See Erigon ReadSenders
 std::vector<evmc::address> read_senders(mdbx::txn& txn, const Bytes& key);

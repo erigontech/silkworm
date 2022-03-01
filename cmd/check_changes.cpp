@@ -82,16 +82,16 @@ int main(int argc, char* argv[]) {
         ExecutionStatePool state_pool;
         std::vector<Receipt> receipts;
         auto engine{consensus::engine_factory(chain_config.value())};
-        BlockWithHash bh;
+        Block block;
         for (; block_num < to; ++block_num) {
             txn.renew_reading();
-            if (!db::read_block(txn, block_num, /*read_senders=*/true, bh)) {
+            if (!db::read_block(txn, block_num, /*read_senders=*/true, block)) {
                 break;
             }
 
-            db::Buffer buffer{txn, /*prune_from=*/0, /*historical_block=*/block_num};
+            db::Buffer buffer{txn, /*prune_history_threshold=*/0, /*historical_block=*/block_num};
 
-            ExecutionProcessor processor{bh.block, *engine, buffer, *chain_config};
+            ExecutionProcessor processor{block, *engine, buffer, *chain_config};
             processor.evm().advanced_analysis_cache = &analysis_cache;
             processor.evm().state_pool = &state_pool;
 
@@ -154,7 +154,6 @@ int main(int argc, char* argv[]) {
         return -5;
     }
 
-    t1 = absl::Now();
     log::Info() << " Blocks [" << from << "; " << block_num << ") have been checked";
     return 0;
 }

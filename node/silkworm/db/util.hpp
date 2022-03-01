@@ -25,6 +25,7 @@ see its package dbutils.
 #include <string>
 
 #include <absl/container/btree_map.h>
+#include <gsl/span>
 
 #include <silkworm/common/base.hpp>
 #include <silkworm/db/mdbx.hpp>
@@ -108,7 +109,7 @@ Bytes storage_prefix(ByteView address, uint64_t incarnation);
 Bytes block_key(BlockNum block_number);
 
 // Erigon HeaderKey & BlockBodyKey
-Bytes block_key(BlockNum block_number, const uint8_t (&hash)[kHashLength]);
+Bytes block_key(BlockNum block_number, gsl::span<const uint8_t, kHashLength> hash);
 
 Bytes storage_change_key(BlockNum block_number, const evmc::address& address, uint64_t incarnation);
 

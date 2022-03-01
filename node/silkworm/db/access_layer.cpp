@@ -197,7 +197,7 @@ void read_transactions(mdbx::cursor& txn_table, uint64_t base_id, uint64_t count
     SILKWORM_ASSERT(i == count);
 }
 
-bool read_block(mdbx::txn& txn, BlockNum block_number, bool read_senders, BlockWithHash& bh) {
+bool read_block(mdbx::txn& txn, BlockNum block_number, bool read_senders, Block& block) {
     // Locate canonical hash
     thread_local mdbx::cursor_managed canonical_hashes_cursor;
     canonical_hashes_cursor.bind(txn, db::open_map(txn, table::kCanonicalHashes));
@@ -208,18 +208,18 @@ bool read_block(mdbx::txn& txn, BlockNum block_number, bool read_senders, BlockW
     }
 
     SILKWORM_ASSERT(data.value.length() == kHashLength);
-    std::memcpy(bh.hash.bytes, data.value.data(), kHashLength);
+    const auto hash_ptr{static_cast<uint8_t*>(data.value.data())};
 
     // Read header
-    key = block_key(block_number, bh.hash.bytes);
+    key = block_key(block_number, gsl::span<const uint8_t, kHashLength>{hash_ptr, kHashLength});
     auto raw_header{read_header_raw(txn, key)};
     if (raw_header.empty()) {
         return false;
     }
     ByteView raw_header_view(raw_header);
-    rlp::success_or_throw(rlp::decode(raw_header_view, bh.block.header));
+    rlp::success_or_throw(rlp::decode(raw_header_view, block.header));
 
-    return read_body(txn, key, read_senders, bh.block);
+    return read_body(txn, key, read_senders, block);
 }
 
 bool read_body(mdbx::txn& txn, BlockNum block_number, const uint8_t (&hash)[kHashLength], bool read_senders,

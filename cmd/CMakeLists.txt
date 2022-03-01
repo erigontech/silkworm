@@ -14,8 +14,6 @@
    limitations under the License.
 ]]
 
-find_package(Catch2 CONFIG REQUIRED)
-
 if(MSVC)
   add_link_options(/STACK:0x1000000)
 elseif (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
@@ -89,10 +87,4 @@ if(NOT SILKWORM_CORE_ONLY)
   # Benchmarks
   add_subdirectory(benchmark)
 
-  # Ethereum Consensus Tests
-  hunter_add_package(CLI11)
-  find_package(CLI11 CONFIG REQUIRED)
-  add_executable(consensus consensus.cpp)
-  target_compile_definitions(consensus PRIVATE SILKWORM_CONSENSUS_TEST_DIR="${CMAKE_SOURCE_DIR}/third_party/tests")
-  target_link_libraries(consensus PRIVATE silkworm_node evmc::loader CLI11::CLI11)
 endif()

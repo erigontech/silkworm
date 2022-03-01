@@ -27,7 +27,7 @@ namespace silkworm {
 OutboundGetBlockHeaders::OutboundGetBlockHeaders(WorkingChain& wc, SentryClient& s)
     : working_chain_(wc), sentry_(s) {}
 
-int OutboundGetBlockHeaders::sent_request() {
+int OutboundGetBlockHeaders::sent_request() const {
     return sent_reqs_;
 }
 
@@ -54,14 +54,14 @@ void OutboundGetBlockHeaders::execute() {
             working_chain_.request_nack(*packet);
             break;
         }
-        sent_reqs_++;
+        ++sent_reqs_;
 
         for (auto& penalization : penalizations) {
             SILK_TRACE << "Penalizing " << penalization;
             send_penalization(penalization, 1s);
         }
 
-        max_requests--;
+        --max_requests;
     } while (max_requests > 0);  // && packet != std::nullopt && receiving_peers != nullptr
 
     // anchor collection

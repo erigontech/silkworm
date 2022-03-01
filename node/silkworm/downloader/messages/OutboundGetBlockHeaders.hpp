@@ -33,7 +33,7 @@ class OutboundGetBlockHeaders : public OutboundMessage {
 
     void execute() override;  // headers_forward function in Erigon
 
-    int sent_request();
+    int sent_request() const;
 
   private:
     sentry::SentPeers send_packet(const GetBlockHeadersPacket66&, seconds_t timeout);

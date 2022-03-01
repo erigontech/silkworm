@@ -965,7 +965,7 @@ uint64_t WorkingChain::is_valid_request_id(uint64_t request_id) {
 std::ostream& operator<<(std::ostream& os, const WorkingChain::Statistics& stats) {
     uint64_t rejected_headers = stats.received_headers - stats.accepted_headers;
     uint64_t unknown = rejected_headers - stats.not_requested_headers - stats.duplicated_headers - stats.invalid_headers - stats.bad_headers;
-    long perc_received = stats.requested_headers > 0 ? lround(stats.received_headers * 100.0 / stats.requested_headers) : 0;
+    uint64_t perc_received = stats.requested_headers > 0 ? stats.received_headers * 100 / stats.requested_headers : 0;
     long perc_accepted = stats.received_headers > 0 ? lround(stats.accepted_headers * 100.0 / stats.received_headers) : 0;
     long perc_rejected = stats.received_headers > 0 ? lround(rejected_headers * 100.0 / stats.received_headers) : 0;
     os << "headers: "

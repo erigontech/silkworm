@@ -24,6 +24,7 @@
 #include <CLI/CLI.hpp>
 #include <magic_enum.hpp>
 
+#include <silkworm/chain/config.hpp>
 #include <silkworm/common/log.hpp>
 #include <silkworm/rpc/backend_server.hpp>
 
@@ -31,16 +32,24 @@ int main(int argc, char* argv[]) {
     const auto pid = boost::this_process::get_id();
     const auto tid = std::this_thread::get_id();
 
-    CLI::App app{"BackEndKvServer"};
+    CLI::App app{"ETHBACKEND & KV servers"};
 
+    std::string chain_id{"goerli"};
     std::string address_uri{"localhost:9090"};
     uint32_t num_contexts{std::thread::hardware_concurrency() / 2};
     std::string level_name;
+    app.add_option("--chain", chain_id, "The chain identifier as string", true);
     app.add_option("--address", address_uri, "The address URI to bind the ETHBACKEND & KV services to", true);
     app.add_option("--numContexts", num_contexts, "The number of running contexts", true);
     app.add_option("--logLevel", level_name, "The log level identifier as string", true);
 
     CLI11_PARSE(app, argc, argv);
+
+    const silkworm::ChainConfig* chain_config = silkworm::lookup_chain_config(chain_id);
+    if (chain_config == nullptr) {
+        SILK_CRIT << "Invalid chain identifier: " << chain_id;
+        return -1;
+    }
 
     silkworm::log::Settings log_settings{};
     log_settings.log_nocolor = true;
@@ -56,7 +65,7 @@ int main(int argc, char* argv[]) {
         srv_config.set_address_uri(address_uri);
         srv_config.set_num_contexts(num_contexts);
 
-        silkworm::rpc::BackEndServer server{srv_config, silkworm::kGoerliConfig};
+        silkworm::rpc::BackEndServer server{srv_config, *chain_config};
 
         boost::asio::io_context& scheduler = server.next_io_context();
         boost::asio::signal_set signals{scheduler, SIGINT, SIGTERM};
@@ -78,9 +87,9 @@ int main(int argc, char* argv[]) {
         return 0;
     } catch (const std::exception& e) {
         SILK_CRIT << "BackEndKvServer exiting due to exception: " << e.what();
-        return -1;
+        return -2;
     } catch (...) {
         SILK_CRIT << "BackEndKvServer exiting due to unexpected exception";
-        return -2;
+        return -3;
     }
 }

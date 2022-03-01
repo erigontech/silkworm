@@ -967,7 +967,7 @@ std::ostream& operator<<(std::ostream& os, const WorkingChain::Statistics& stats
     uint64_t unknown = rejected_headers - stats.not_requested_headers - stats.duplicated_headers - stats.invalid_headers - stats.bad_headers;
     uint64_t perc_received = stats.requested_headers > 0 ? stats.received_headers * 100 / stats.requested_headers : 0;
     uint64_t perc_accepted = stats.received_headers > 0 ? stats.accepted_headers * 100 / stats.received_headers : 0;
-    long perc_rejected = stats.received_headers > 0 ? lround(rejected_headers * 100.0 / stats.received_headers) : 0;
+    uint64_t perc_rejected = stats.received_headers > 0 ? rejected_headers * 100 / stats.received_headers : 0;
     os << "headers: "
        << "req=" << stats.requested_headers << " "
        << "rec=" << stats.received_headers << " (" << perc_received << "%) -> "

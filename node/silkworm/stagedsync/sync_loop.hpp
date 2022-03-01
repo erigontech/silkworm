@@ -19,10 +19,8 @@
 #define SILKWORM_STAGEDSYNC_SYNCLOOP_HPP_
 
 #include <silkworm/common/asio_timer.hpp>
-#include <silkworm/common/settings.hpp>
 #include <silkworm/common/stopwatch.hpp>
 #include <silkworm/concurrency/worker.hpp>
-#include <silkworm/db/mdbx.hpp>
 #include <silkworm/stagedsync/common.hpp>
 
 namespace silkworm::stagedsync {

@@ -14,6 +14,8 @@
    limitations under the License.
 */
 
+#include "stage_blockhashes.hpp"
+
 #include <memory>
 
 #include <silkworm/common/as_range.hpp>
@@ -23,8 +25,6 @@
 #include <silkworm/db/stages.hpp>
 #include <silkworm/db/tables.hpp>
 #include <silkworm/etl/collector.hpp>
-
-#include "stagedsync.hpp"
 
 namespace silkworm::stagedsync {
 
@@ -73,7 +73,7 @@ StageResult BlockHashes::forward(db::RWTxn& txn) {
         // TODO (Andrew) is the value, key order intentional?
         collector_->collect(etl::Entry{Bytes{db::from_slice(data.value)}, Bytes{db::from_slice(data.key)}});
         // Do we need to abort ?
-        if (!(expected_block_number % 1024) && SignalHandler::signalled()) {
+        if (!(expected_block_number % 1024) && is_stopping()) {
             return StageResult::kAborted;
         }
         expected_block_number++;

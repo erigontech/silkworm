@@ -93,7 +93,16 @@ jobs:
     steps:
       - checkout_with_submodules
       - build
-      - test
+      - run:
+          name: "Core unit tests"
+          working_directory: ~/build
+          command: |
+            ulimit -s unlimited
+            cmd/core_test
+      - run:
+          name: "Node unit tests"
+          working_directory: ~/build
+          command: cmd/node_test
 
   linux-gcc-11-cpp20:
     environment:

@@ -441,8 +441,8 @@ evmc::bytes32 increment_intermediate_hashes(mdbx::txn& txn, const std::filesyste
 
 evmc::bytes32 regenerate_intermediate_hashes(mdbx::txn& txn, const std::filesystem::path& etl_dir,
                                              const evmc::bytes32* expected_root) {
-    txn.clear_map(db::open_map(txn, db::table::kTrieOfAccounts));
-    txn.clear_map(db::open_map(txn, db::table::kTrieOfStorage));
+    txn.clear_map(db::table::kTrieOfAccounts.name);
+    txn.clear_map(db::table::kTrieOfStorage.name);
     PrefixSet empty;
     return increment_intermediate_hashes(txn, etl_dir, expected_root, /*account_changes=*/empty,
                                          /*storage_changes=*/empty);

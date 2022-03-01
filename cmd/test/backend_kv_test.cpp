@@ -34,6 +34,8 @@
 #include <silkworm/rpc/util.hpp>
 #include <remote/ethbackend.grpc.pb.h>
 
+using namespace std::literals;
+
 namespace grpc {
 inline bool operator==(const Status& lhs, const Status& rhs) {
     return lhs.error_code() == rhs.error_code() &&
@@ -86,10 +88,13 @@ class AsyncCall {
 
     virtual void handle_completion(bool ok) = 0;
 
+    std::chrono::steady_clock::time_point start_time() const { return start_time_; }
+
   protected:
     grpc::ClientContext client_context_;
     std::shared_ptr<grpc::Channel> channel_;
     grpc::CompletionQueue* queue_;
+    std::chrono::steady_clock::time_point start_time_;
 };
 
 template <typename Reply>
@@ -110,6 +115,7 @@ class AsyncUnaryCall : public AsyncCall {
         auto response_reader_ = (stub_.get()->*PrepareAsync)(&client_context_, Request{}, queue_);
         response_reader_->StartCall();
         response_reader_->Finish(&reply_, &status_, this);
+        start_time_ = std::chrono::steady_clock::now();
         ++unary_stats.started_count;
         SILK_TRACE << "AsyncUnaryCall::start_async END";
     }
@@ -219,7 +225,9 @@ int main(int argc, char* argv[]) {
                     std::unique_ptr<AsyncCall> call{static_cast<AsyncCall*>(tag)};
                     SILK_DEBUG << "Got tag for " << call.get();
                     call->handle_completion(ok);
-                    SILK_DEBUG << "Call " << call.get() << " completed";
+                    const auto end_time = std::chrono::steady_clock::now();
+                    const auto latency = end_time - call->start_time();
+                    SILK_DEBUG << "Call " << call.get() << " completed [latency=" << latency / 1us << " us]";
                 } else {
                     SILK_DEBUG << "Draining queue...";
                     while (queue.Next(&tag, &ok)) {

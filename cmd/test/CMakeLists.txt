@@ -14,7 +14,6 @@
    limitations under the License.
 ]]
 
-find_package(CLI11 CONFIG REQUIRED)
 find_package(Catch2 CONFIG REQUIRED)
 
 # Silkworm Core Tests

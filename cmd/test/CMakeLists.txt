@@ -17,5 +17,20 @@
 find_package(CLI11 CONFIG REQUIRED)
 find_package(Catch2 CONFIG REQUIRED)
 
-add_executable(backend_kv_test backend_kv_test.cpp)
-target_link_libraries(backend_kv_test PRIVATE silkworm_node CLI11::CLI11)
+file(GLOB_RECURSE SILKWORM_CORE_TESTS CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/core/silkworm/*_test.cpp")
+add_executable(core_test unit_test.cpp ${SILKWORM_CORE_TESTS})
+target_link_libraries(core_test silkworm_core Catch2::Catch2 evmone)
+if(MSVC)
+  target_compile_options(core_test PRIVATE /EHa- /EHsc)
+else()
+  target_compile_options(core_test PRIVATE -fno-exceptions)
+endif()
+
+if(NOT SILKWORM_CORE_ONLY)
+  file(GLOB_RECURSE SILKWORM_NODE_TESTS CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/node/silkworm/*_test.cpp")
+  add_executable(node_test unit_test.cpp ${SILKWORM_NODE_TESTS})
+  target_link_libraries(node_test silkworm_node Catch2::Catch2)
+
+  add_executable(backend_kv_test backend_kv_test.cpp)
+  target_link_libraries(backend_kv_test PRIVATE silkworm_node CLI11::CLI11)
+endif()

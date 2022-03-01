@@ -24,23 +24,13 @@ else()
   add_link_options(-Wl,-z,stack-size=16777216)
 endif()
 
-file(GLOB_RECURSE SILKWORM_CORE_TESTS CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/core/silkworm/*_test.cpp")
-add_executable(core_test unit_test.cpp ${SILKWORM_CORE_TESTS})
-target_link_libraries(core_test silkworm_core Catch2::Catch2 evmone)
-if(MSVC)
-  target_compile_options(core_test PRIVATE /EHa- /EHsc)
-else()
-  target_compile_options(core_test PRIVATE -fno-exceptions)
-endif()
+# Tests
+add_subdirectory(test)
 
 if(NOT SILKWORM_CORE_ONLY)
 
   find_package(absl CONFIG REQUIRED)
   find_package(CLI11 CONFIG REQUIRED)
-
-  file(GLOB_RECURSE SILKWORM_NODE_TESTS CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/node/silkworm/*_test.cpp")
-  add_executable(node_test unit_test.cpp ${SILKWORM_NODE_TESTS})
-  target_link_libraries(node_test silkworm_node Catch2::Catch2)
 
   add_executable(silkworm silkworm.cpp common.cpp)
   target_link_libraries(silkworm PRIVATE silkworm_node silkworm-buildinfo CLI11::CLI11 $<$<BOOL:${MSVC}>:Kernel32.lib>)
@@ -98,7 +88,6 @@ if(NOT SILKWORM_CORE_ONLY)
 
   # Benchmarks
   add_subdirectory(benchmark)
-  add_subdirectory(test)
 
   # Ethereum Consensus Tests
   hunter_add_package(CLI11)

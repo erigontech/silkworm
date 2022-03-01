@@ -1,0 +1,86 @@
+/*
+   Copyright 2022 The Silkworm Authors
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+*/
+
+#include <iostream>
+#include <string>
+#include <thread>
+
+#include <boost/asio/io_context.hpp>
+#include <boost/asio/signal_set.hpp>
+#include <boost/process/environment.hpp>
+#include <CLI/CLI.hpp>
+#include <magic_enum.hpp>
+
+#include <silkworm/common/log.hpp>
+#include <silkworm/rpc/backend_server.hpp>
+
+int main(int argc, char* argv[]) {
+    const auto pid = boost::this_process::get_id();
+    const auto tid = std::this_thread::get_id();
+
+    CLI::App app{"BackEndKvServer"};
+
+    std::string address_uri{"localhost:9090"};
+    uint32_t num_contexts{std::thread::hardware_concurrency() / 2};
+    std::string level_name;
+    app.add_option("--address", address_uri, "The address URI to bind the ETHBACKEND & KV services to", true);
+    app.add_option("--numContexts", num_contexts, "The number of running contexts", true);
+    app.add_option("--logLevel", level_name, "The log level identifier as string", true);
+
+    CLI11_PARSE(app, argc, argv);
+
+    silkworm::log::Settings log_settings{};
+    log_settings.log_nocolor = true;
+    log_settings.log_threads = true;
+    const auto log_level = magic_enum::enum_cast<silkworm::log::Level>(level_name);
+    log_settings.log_verbosity = log_level ? log_level.value() : silkworm::log::Level::kNone;
+    silkworm::log::init(log_settings);
+
+    try {
+        SILK_LOG << "BackEndKvServer launched with address: " << address_uri << ", contexts: " << num_contexts;
+
+        silkworm::rpc::ServerConfig srv_config;
+        srv_config.set_address_uri(address_uri);
+        srv_config.set_num_contexts(num_contexts);
+
+        silkworm::rpc::BackEndServer server{srv_config, silkworm::kGoerliConfig};
+
+        boost::asio::io_context& scheduler = server.next_io_context();
+        boost::asio::signal_set signals{scheduler, SIGINT, SIGTERM};
+
+        SILK_DEBUG << "Signals registered on scheduler " << &scheduler;
+        signals.async_wait([&](const boost::system::error_code& error, int signal_number) {
+            std::cout << "\n";
+            SILK_INFO << "Signal caught, error: " << error << " number: " << signal_number;
+            std::thread shutdown_thread{[&server]() {
+                server.shutdown();
+            }};
+            shutdown_thread.detach();
+        });
+
+        SILK_LOG << "BackEndKvServer is now running [pid=" << pid << ", main thread=" << tid << "]";
+        server.run();
+
+        SILK_LOG << "BackEndKvServer exiting [pid=" << pid << ", main thread=" << tid << "]";
+        return 0;
+    } catch (const std::exception& e) {
+        SILK_CRIT << "BackEndKvServer exiting due to exception: " << e.what();
+        return -1;
+    } catch (...) {
+        SILK_CRIT << "BackEndKvServer exiting due to unexpected exception";
+        return -2;
+    }
+}

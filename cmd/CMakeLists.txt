@@ -93,8 +93,12 @@ if(NOT SILKWORM_CORE_ONLY)
   add_executable(download_headers download_headers.cpp)
   target_link_libraries(download_headers PRIVATE silkworm_node CLI11::CLI11)
 
+  add_executable(backend_kv_server backend_kv_server.cpp)
+  target_link_libraries(backend_kv_server PRIVATE silkworm_node CLI11::CLI11)
+
   # Benchmarks
   add_subdirectory(benchmark)
+  add_subdirectory(test)
 
   # Ethereum Consensus Tests
   hunter_add_package(CLI11)

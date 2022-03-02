@@ -44,6 +44,6 @@ build:
 
 test_script:
   - cd Build
-  - cmd\%CONFIGURATION%\test\core_test.exe
-  - cmd\%CONFIGURATION%\test\node_test.exe
-  - IF "%CONFIGURATION%" == "Release" cmd\%CONFIGURATION%\test\consensus.exe
+  - cmd\test\%CONFIGURATION%\core_test.exe
+  - cmd\test\%CONFIGURATION%\node_test.exe
+  - IF "%CONFIGURATION%" == "Release" cmd\test\%CONFIGURATION%\consensus.exe

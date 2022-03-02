@@ -170,21 +170,22 @@ int main(int argc, char* argv[]) {
     CLI::App app{"BE&KV interface test"};
 
     std::string target_uri{"localhost:9090"};
-    std::string level_name;
     int64_t interval_between_calls{100};
     int batch_size{1};
+    silkworm::log::Level log_level{silkworm::log::Level::kCritical};
     app.add_option("--target", target_uri, "The address to connect to the ETHBACKEND & KV services", true);
-    app.add_option("--logLevel", level_name, "The log level identifier as string", true);
     app.add_option("--interval", interval_between_calls, "The interval to wait between successive call batches as milliseconds", true);
     app.add_option("--batch", batch_size, "The number of async calls for each RPC in each batch as integer", true);
+    app.add_option("--logLevel", log_level, "The log level identifier as string", true)
+        ->check(CLI::Range(static_cast<uint32_t>(silkworm::log::Level::kCritical), static_cast<uint32_t>(silkworm::log::Level::kTrace)))
+        ->default_val(std::to_string(static_cast<uint32_t>(log_level)));
 
     CLI11_PARSE(app, argc, argv);
 
     silkworm::log::Settings log_settings{};
     log_settings.log_nocolor = true;
     log_settings.log_threads = true;
-    const auto log_level = magic_enum::enum_cast<silkworm::log::Level>(level_name);
-    log_settings.log_verbosity = log_level ? log_level.value() : silkworm::log::Level::kNone;
+    log_settings.log_verbosity = log_level;
     silkworm::log::init(log_settings);
 
     //TODO(canepat): this could be an option in Silkworm logging facility

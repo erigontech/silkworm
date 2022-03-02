@@ -34,14 +34,16 @@ int main(int argc, char* argv[]) {
 
     CLI::App app{"ETHBACKEND & KV servers"};
 
-    std::string chain_id{"goerli"};
+    std::string chain_id{"mainnet"};
     std::string address_uri{"localhost:9090"};
     uint32_t num_contexts{std::thread::hardware_concurrency() / 2};
-    std::string level_name;
+    silkworm::log::Level log_level{silkworm::log::Level::kCritical};
     app.add_option("--chain", chain_id, "The chain identifier as string", true);
     app.add_option("--address", address_uri, "The address URI to bind the ETHBACKEND & KV services to", true);
     app.add_option("--numContexts", num_contexts, "The number of running contexts", true);
-    app.add_option("--logLevel", level_name, "The log level identifier as string", true);
+    app.add_option("--logLevel", log_level, "The log level identifier as string", true)
+        ->check(CLI::Range(static_cast<uint32_t>(silkworm::log::Level::kCritical), static_cast<uint32_t>(silkworm::log::Level::kTrace)))
+        ->default_val(std::to_string(static_cast<uint32_t>(log_level)));
 
     CLI11_PARSE(app, argc, argv);
 
@@ -54,8 +56,7 @@ int main(int argc, char* argv[]) {
     silkworm::log::Settings log_settings{};
     log_settings.log_nocolor = true;
     log_settings.log_threads = true;
-    const auto log_level = magic_enum::enum_cast<silkworm::log::Level>(level_name);
-    log_settings.log_verbosity = log_level ? log_level.value() : silkworm::log::Level::kNone;
+    log_settings.log_verbosity = log_level;
     silkworm::log::init(log_settings);
 
     try {

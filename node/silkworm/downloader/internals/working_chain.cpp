@@ -957,6 +957,7 @@ void WorkingChain::mark_as_preverified(std::shared_ptr<Link> link) {
 
 void WorkingChain::set_preverified_hashes(std::pair<uint64_t, std::set<evmc::bytes32>> preverified_hashes) {
     preverified_hashes_ = preverified_hashes;
+    log::Info("Preverified Hashes", {"size", std::to_string(preverified_hashes_.second.size())});
 }
 
 uint64_t WorkingChain::generate_request_id() {

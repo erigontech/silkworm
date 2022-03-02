@@ -16,9 +16,9 @@
 
 #include "preverified_hashes.hpp"
 
-extern const evmc::bytes32* preverified_hashes_mainnet_data();
-extern const size_t sizeof_preverified_hashes_mainnet_data();
-extern const uint64_t preverified_hashes_mainnet_height();
+extern const uint64_t* preverified_hashes_mainnet_data();
+extern size_t sizeof_preverified_hashes_mainnet_data();
+extern uint64_t preverified_hashes_mainnet_height();
 
 namespace silkworm {
 
@@ -27,7 +27,7 @@ static std::pair<uint64_t, std::set<evmc::bytes32>> load_preverified_hashes_main
     std::pair<uint64_t, std::set<evmc::bytes32>> ret{0,{}};
     auto data_size{sizeof_preverified_hashes_mainnet_data()};
     if(data_size) {
-        auto data_ptr{preverified_hashes_mainnet_data()};
+        auto data_ptr{reinterpret_cast<const evmc::bytes32*>(preverified_hashes_mainnet_data())};
         auto num_els{data_size / sizeof(evmc::bytes32)};
         for (int i = 0; i < num_els; ++i) {
             ret.second.insert(data_ptr[i]);

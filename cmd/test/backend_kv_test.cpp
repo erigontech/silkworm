@@ -26,7 +26,6 @@
 #include <boost/process/environment.hpp>
 #include <CLI/CLI.hpp>
 #include <grpcpp/grpcpp.h>
-#include <magic_enum.hpp>
 
 #include <silkworm/common/endian.hpp>
 #include <silkworm/common/log.hpp>
@@ -35,35 +34,6 @@
 #include <remote/ethbackend.grpc.pb.h>
 
 using namespace std::literals;
-
-namespace grpc {
-inline bool operator==(const Status& lhs, const Status& rhs) {
-    return lhs.error_code() == rhs.error_code() &&
-        lhs.error_message() == rhs.error_message() &&
-        lhs.error_details() == rhs.error_details();
-}
-
-inline std::ostream& operator<<(std::ostream& out, const Status& status) {
-    out << "status=" << (status.ok() ? "OK" : "KO");
-    if (!status.ok()) {
-        out << " error_code=" << status.error_code()
-            << " error_message=" << status.error_message()
-            << " error_details=" << status.error_details();
-    }
-    return out;
-}
-} // namespace grpc
-
-evmc::address address_from_H160(const types::H160& h160) {
-    uint64_t hi_hi = h160.hi().hi();
-    uint64_t hi_lo = h160.hi().lo();
-    uint32_t lo = h160.lo();
-    evmc::address address{};
-    silkworm::endian::store_big_u64(address.bytes +  0, hi_hi);
-    silkworm::endian::store_big_u64(address.bytes +  8, hi_lo);
-    silkworm::endian::store_big_u32(address.bytes + 16, lo);
-    return address;
-}
 
 struct UnaryStats {
     uint64_t started_count{0};
@@ -82,8 +52,7 @@ UnaryStats unary_stats;
 
 class AsyncCall {
   public:
-    explicit AsyncCall(std::shared_ptr<grpc::Channel> channel, grpc::CompletionQueue* queue)
-    : channel_(channel), queue_(queue) {}
+    explicit AsyncCall(grpc::CompletionQueue* queue) : queue_(queue) {}
     virtual ~AsyncCall() = default;
 
     virtual void handle_completion(bool ok) = 0;
@@ -92,7 +61,6 @@ class AsyncCall {
 
   protected:
     grpc::ClientContext client_context_;
-    std::shared_ptr<grpc::Channel> channel_;
     grpc::CompletionQueue* queue_;
     std::chrono::steady_clock::time_point start_time_;
 };
@@ -108,10 +76,10 @@ template<
 class AsyncUnaryCall : public AsyncCall {
   public:
     explicit AsyncUnaryCall(std::shared_ptr<grpc::Channel> channel, grpc::CompletionQueue* queue)
-    : AsyncCall(channel, queue), stub_(remote::ETHBACKEND::NewStub(channel)) {}
+    : AsyncCall(queue), stub_(remote::ETHBACKEND::NewStub(channel)) {}
 
     void start_async() {
-        SILK_DEBUG << "AsyncUnaryCall::start_async START";
+        SILK_TRACE << "AsyncUnaryCall::start_async START";
         auto response_reader_ = (stub_.get()->*PrepareAsync)(&client_context_, Request{}, queue_);
         response_reader_->StartCall();
         response_reader_->Finish(&reply_, &status_, this);
@@ -127,7 +95,7 @@ class AsyncUnaryCall : public AsyncCall {
 };
 
 class AsyncEtherbaseCall : public AsyncUnaryCall<
-        remote::EtherbaseRequest, remote::EtherbaseReply, &remote::ETHBACKEND::StubInterface::PrepareAsyncEtherbase> {
+    remote::EtherbaseRequest, remote::EtherbaseReply, &remote::ETHBACKEND::StubInterface::PrepareAsyncEtherbase> {
   public:
     explicit AsyncEtherbaseCall(std::shared_ptr<grpc::Channel> channel, grpc::CompletionQueue* queue)
     : AsyncUnaryCall(channel, queue) {}
@@ -138,7 +106,7 @@ class AsyncEtherbaseCall : public AsyncUnaryCall<
         if (ok && status_ == grpc::Status::OK) {
             if (reply_.has_address()) {
                 const auto h160_address = reply_.address();
-                SILK_INFO << "Etherbase reply: " << silkworm::to_hex(address_from_H160(h160_address));
+                SILK_INFO << "Etherbase reply: " << silkworm::to_hex(silkworm::rpc::address_from_H160(h160_address));
             } else {
                 SILK_INFO << "Etherbase reply: no address";
             }
@@ -149,9 +117,8 @@ class AsyncEtherbaseCall : public AsyncUnaryCall<
     }
 };
 
-void start_unary_async(std::atomic_bool& stop, std::shared_ptr<grpc::Channel> channel, grpc::CompletionQueue* queue, int batch_size) {
+void start_async_batch(std::atomic_bool& stop, std::shared_ptr<grpc::Channel> channel, grpc::CompletionQueue* queue, int batch_size) {
     for (auto i{0}; i<batch_size && !stop; i++) {
-        SILK_DEBUG << "New Etherbase async call starting...";
         auto* etherbase = new AsyncEtherbaseCall(channel, queue);
         etherbase->start_async();
         SILK_DEBUG << "New Etherbase async call started: " << etherbase;
@@ -160,14 +127,14 @@ void start_unary_async(std::atomic_bool& stop, std::shared_ptr<grpc::Channel> ch
 }
 
 void print_stats() {
-    SILK_LOG << "BE&KV unary stats: " << unary_stats;
+    SILK_LOG << "Unary stats: " << unary_stats;
 }
 
 int main(int argc, char* argv[]) {
     const auto pid = boost::this_process::get_id();
     const auto tid = std::this_thread::get_id();
 
-    CLI::App app{"BE&KV interface test"};
+    CLI::App app{"ETHBACKEND & KV interface test"};
 
     std::string target_uri{"localhost:9090"};
     int64_t interval_between_calls{100};
@@ -203,20 +170,20 @@ int main(int argc, char* argv[]) {
 
         std::atomic_bool pump_stop{false};
         std::thread pump_thread{[&]() {
-            SILK_DEBUG << "BE&KV pump thread: " << pump_thread.get_id() << " start";
+            SILK_TRACE << "Pump thread: " << pump_thread.get_id() << " start";
             while (!pump_stop) {
-                start_unary_async(pump_stop, channel, &queue, batch_size);
-                SILK_DEBUG << "BE&KV pump thread going to wait for " << interval_between_calls << "ms...";
+                start_async_batch(pump_stop, channel, &queue, batch_size);
+                SILK_DEBUG << "Pump thread going to wait for " << interval_between_calls << "ms...";
                 std::unique_lock<std::mutex> lock{mutex};
                 const auto now = std::chrono::system_clock::now();
                 shutdown_requested.wait_until(lock, now + std::chrono::milliseconds{interval_between_calls});
             }
-            SILK_DEBUG << "BE&KV pump thread: " << pump_thread.get_id() << " end";
+            SILK_TRACE << "Pump thread: " << pump_thread.get_id() << " end";
         }};
 
         std::atomic_bool completion_stop{false};
         std::thread completion_thread{[&]() {
-            SILK_DEBUG << "BE&KV completion thread: " << completion_thread.get_id() << " start";
+            SILK_TRACE << "Completion thread: " << completion_thread.get_id() << " start";
             while (!completion_stop) {
                 SILK_DEBUG << "Reading next tag from queue...";
                 void* tag;
@@ -228,7 +195,7 @@ int main(int argc, char* argv[]) {
                     call->handle_completion(ok);
                     const auto end_time = std::chrono::steady_clock::now();
                     const auto latency = end_time - call->start_time();
-                    SILK_DEBUG << "Call " << call.get() << " completed [latency=" << latency / 1us << " us]";
+                    SILK_DEBUG << "Call " << call.get() << " completed [latency=" << latency / 1ns << " us]";
                 } else {
                     SILK_DEBUG << "Draining queue...";
                     while (queue.Next(&tag, &ok)) {
@@ -237,7 +204,7 @@ int main(int argc, char* argv[]) {
                     SILK_DEBUG << "Queue fully drained";
                 }
             }
-            SILK_DEBUG << "BE&KV completion thread: " << completion_thread.get_id() << " end";
+            SILK_TRACE << "Completion thread: " << completion_thread.get_id() << " end";
         }};
 
         SILK_DEBUG << "Signals registered on scheduler " << &scheduler;
@@ -249,31 +216,32 @@ int main(int argc, char* argv[]) {
             scheduler.stop();
         });
 
-        SILK_LOG << "BE&KV interface test running [pid=" << pid << ", main thread=" << tid << "]";
+        SILK_LOG << "ETHBACKEND & KV interface test running [pid=" << pid << ", main thread=" << tid << "]";
         scheduler.run();
 
+        // Order matters here: 1) wait for pump thread exit 2) shutdown gRPC CQ 3) wait for completion thread exit
         if (pump_thread.joinable()) {
             const auto pump_thread_id = pump_thread.get_id();
-            SILK_DEBUG << "BE&KV joining pump thread: " << pump_thread_id;
+            SILK_DEBUG << "Joining pump thread: " << pump_thread_id;
             pump_thread.join();
-            SILK_DEBUG << "BE&KV pump thread: " << pump_thread_id << " terminated";
+            SILK_DEBUG << "Pump thread: " << pump_thread_id << " terminated";
         }
         queue.Shutdown();
         if (completion_thread.joinable()) {
             const auto completion_thread_id = completion_thread.get_id();
-            SILK_DEBUG << "BE&KV joining completion thread: " << completion_thread_id;
+            SILK_DEBUG << "Joining completion thread: " << completion_thread_id;
             completion_thread.join();
-            SILK_DEBUG << "BE&KV completion thread: " << completion_thread_id << " terminated";
+            SILK_DEBUG << "Completion thread: " << completion_thread_id << " terminated";
         }
 
         print_stats();
-        SILK_LOG << "BE&KV interface test exiting [pid=" << pid << ", main thread=" << tid << "]";
+        SILK_LOG << "ETHBACKEND & KV interface test exiting [pid=" << pid << ", main thread=" << tid << "]";
         return 0;
     } catch (const std::exception& e) {
-        SILK_CRIT << "BE&KV interface test exiting due to exception: " << e.what();
+        SILK_CRIT << "ETHBACKEND & KV interface test exiting due to exception: " << e.what();
         return -1;
     } catch (...) {
-        SILK_CRIT << "BE&KV interface test exiting due to unexpected exception";
+        SILK_CRIT << "ETHBACKEND & KV interface test exiting due to unexpected exception";
         return -2;
     }
 }

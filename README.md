@@ -77,21 +77,33 @@ small amount of RAM. To work around this, either specify `-jn` where `n` is the 
 remove `-j` completely. Typically for Silkworm, each compiler job requires 4GB of RAM. So, if your total RAM is 16GB, for example,
 then `-j4` should be OK, while `-j8` is probably not. It also means that you need a machine with at least 4GB RAM to compile Silkworm._
 
-Now you can run the unit tests
+Now you can run the unit tests. There's one for core and one for node.
 ```
 cmd/core_test
+cmd/node_test
 ```
 or [Ethereum Consensus Tests]
 ```
 cmd/consensus
 ```
 
-You can also execute Ethereum blocks with Silkworm.
-For that, you need an MDBX instance populated with Ethereum blocks,
-which can be produced by running [the first 4 stages](https://github.com/ledgerwatch/erigon/tree/master/eth/stagedsync) of [Erigon] sync, which are before the Execute Blocks Stage.
-Then run
+You can also try run Silkworm to test the stages implemented so far. To do that you need to obtain a primed database by Erigon by forcing it to stop before stage Senders.
+
+On Linux [build Erigon](https://github.com/ledgerwatch/erigon#getting-started) and 
 ```
-cmd/execute -d <path-to-chaindata>
+export STOP_BEFORE_STAGE="Senders"
+./build/bin/erigon --datadir <path-where-to-store-data>
+```
+
+On Windows [build Erigon](https://github.com/ledgerwatch/erigon#windows) and 
+```
+$env:STOP_BEFORE_STAGE="Senders"
+./build/bin/erigon.exe --datadir <path-where-to-store-data>
+```
+
+After those steps launch Silkworm and point it to the same data directory you've used for Erigon
+```
+cmd/silkworm --datadir <same-datadir-path-used-for-erigon>
 ```
 
 <a name="build_on_windows"></a>

@@ -101,7 +101,7 @@ $env:STOP_BEFORE_STAGE="Senders"
 ./build/bin/erigon.exe --datadir <path-where-to-store-data>
 ```
 
-After those steps launch Silkworm and point it to the same data directory you've used for Erigon
+After any of those steps (wait for completion) launch Silkworm and point it to the same data directory you've used for Erigon
 ```
 cmd/silkworm --datadir <same-datadir-path-used-for-erigon>
 ```

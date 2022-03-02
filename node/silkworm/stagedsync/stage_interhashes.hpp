@@ -41,9 +41,10 @@ class InterHashes final : public IStage {
     trie::PrefixSet gather_storage_changes(mdbx::txn& txn, BlockNum from, BlockNum to);
 
     // Logger info
-    std::mutex log_mtx_{};        // Guards async logging
-    std::string current_source_;  // Current source of data
-    std::string current_key_;     // Actual processing key
+    std::mutex log_mtx_{};                 // Guards async logging
+    std::atomic_bool incremental_{false};  // Whether operation is incremental
+    std::string current_source_;           // Current source of data
+    std::string current_key_;              // Actual processing key
 };
 
 }  // namespace silkworm::stagedsync

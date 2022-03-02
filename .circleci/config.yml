@@ -1,4 +1,4 @@
-#   Copyright 2020-2021 The Silkworm Authors
+#   Copyright 2020-2022 The Silkworm Authors
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
@@ -33,7 +33,7 @@ commands:
             sudo apt-get install -y libgmp3-dev
       - restore_cache:
           name: "Restore Hunter cache"
-          key: &hunter-cache-key hunter-{{ .Environment.CIRCLE_JOB }}-{{checksum ".circleci/config.yml"}}-{{checksum "cmake/toolchain/base.cmake"}}-{{checksum "cmake/Hunter/config.cmake"}}-{{checksum "cmake/Hunter/core_packages.cmake"}}-{{checksum "cmake/Hunter/extra_packages.cmake"}}
+          key: &hunter-cache-key hunter-{{ .Environment.CIRCLE_JOB }}-{{checksum "cmake/toolchain/base.cmake"}}-{{checksum "cmake/Hunter/config.cmake"}}-{{checksum "cmake/Hunter/core_packages.cmake"}}-{{checksum "cmake/Hunter/extra_packages.cmake"}}
       - run:
           name: "Cmake"
           working_directory: ~/build
@@ -52,7 +52,9 @@ commands:
       - run:
           name: "Core unit tests"
           working_directory: ~/build
-          command: cmd/core_test
+          command: |
+            ulimit -s unlimited
+            cmd/core_test
       - run:
           name: "Node unit tests"
           working_directory: ~/build
@@ -60,7 +62,9 @@ commands:
       - run:
           name: "Ethereum consensus tests"
           working_directory: ~/build
-          command: cmd/consensus
+          command: |
+            ulimit -s unlimited
+            cmd/consensus
 
 jobs:
   linux-gcc-9:
@@ -89,7 +93,16 @@ jobs:
     steps:
       - checkout_with_submodules
       - build
-      - test
+      - run:
+          name: "Core unit tests"
+          working_directory: ~/build
+          command: |
+            ulimit -s unlimited
+            cmd/core_test
+      - run:
+          name: "Node unit tests"
+          working_directory: ~/build
+          command: cmd/node_test
 
   linux-gcc-11-cpp20:
     environment:

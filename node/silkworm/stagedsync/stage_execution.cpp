@@ -117,7 +117,7 @@ void Execution::prefetch_blocks(db::RWTxn& txn, const BlockNum from, const Block
         sw = std::make_unique<StopWatch>(/*auto_start=*/true);
     }
 
-    const uint64_t n{std::min(to + 1 - from, static_cast<uint64_t>(max_blocks))};
+    const size_t n{std::min(static_cast<size_t>(to - from + 1), max_blocks)};
     prefetched_blocks_.resize(n);
 
     for (size_t i{0}; i < n; ++i) {

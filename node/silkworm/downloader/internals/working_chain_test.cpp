@@ -883,8 +883,7 @@ TEST_CASE("WorkingChain - process_segment - (4) pre-verified hashes on canonical
     h7b.parent_hash = h6b.hash();
     h7b.extra_data = string_view_to_byte_view("h7b");  // so hash(h7b) != hash(h7)
 
-    const std::set<evmc::bytes32> pvf_hashes{headers[8].hash(), headers[9].hash()};
-    const std::pair<uint64_t, const std::set<evmc::bytes32>*> mynet_preverified_hashes{headers[9].number, &pvf_hashes};
+    const std::pair<uint64_t, std::set<evmc::bytes32>> mynet_preverified_hashes{headers[9].number, {headers[8].hash(), headers[9].hash()}};
     chain.set_preverified_hashes(mynet_preverified_hashes);
 
     // building the first part of the chain
@@ -938,8 +937,7 @@ TEST_CASE("WorkingChain - process_segment - (5) pre-verified hashes") {
         headers[i].parent_hash = headers[i - 1].hash();
     }
 
-    const std::set<evmc::bytes32> pvf_hashes{headers[6].hash()};
-    const std::pair<uint64_t, const std::set<evmc::bytes32>*> mynet_preverified_hashes{headers[6].number, &pvf_hashes};
+    const std::pair<uint64_t, std::set<evmc::bytes32>> mynet_preverified_hashes{headers[6].number, {headers[6].hash()}};
     chain.set_preverified_hashes(mynet_preverified_hashes);
 
 
@@ -1020,8 +1018,7 @@ TEST_CASE("WorkingChain - process_segment - (5') pre-verified hashes with canoni
         b_headers[i].extra_data = string_view_to_byte_view("alternate");  // so hash(a_headers[i]) != hash(b_headers[i])
     }
 
-    const std::set<evmc::bytes32> pvf_hashes{b_headers[6].hash()};
-    const std::pair<uint64_t, const std::set<evmc::bytes32>*> mynet_preverified_hashes{b_headers[6].number, &pvf_hashes};
+    const std::pair<uint64_t, std::set<evmc::bytes32>> mynet_preverified_hashes{b_headers[6].number, {b_headers[6].hash()}};
     chain.set_preverified_hashes(mynet_preverified_hashes);
 
     // building the first branch of the chain

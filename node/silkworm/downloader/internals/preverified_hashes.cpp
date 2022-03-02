@@ -29,7 +29,7 @@ static std::pair<uint64_t, std::set<evmc::bytes32>> load_preverified_hashes_main
     if(data_size) {
         auto data_ptr{reinterpret_cast<const evmc::bytes32*>(preverified_hashes_mainnet_data())};
         auto num_els{data_size / sizeof(evmc::bytes32)};
-        for (int i = 0; i < num_els; ++i) {
+        for (uint64_t i = 0; i < num_els; ++i) {
             ret.second.insert(data_ptr[i]);
         }
         ret.first = preverified_hashes_mainnet_height();

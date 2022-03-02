@@ -20,6 +20,7 @@
 
 #include <catch2/catch.hpp>
 
+#include <silkworm/chain/identity.hpp>
 #include <silkworm/common/cast.hpp>
 
 namespace silkworm {
@@ -882,12 +883,9 @@ TEST_CASE("WorkingChain - process_segment - (4) pre-verified hashes on canonical
     h7b.parent_hash = h6b.hash();
     h7b.extra_data = string_view_to_byte_view("h7b");  // so hash(h7b) != hash(h7)
 
-    PreverifiedHashes mynet_preverified_hashes = {
-        {headers[8].hash(), headers[9].hash()},  // hashes
-        headers[9].number                        // height
-    };
-
-    chain.set_preverified_hashes(&mynet_preverified_hashes);
+    const std::set<evmc::bytes32> pvf_hashes{headers[8].hash(), headers[9].hash()};
+    const std::pair<uint64_t, const std::set<evmc::bytes32>*> mynet_preverified_hashes{headers[9].number, &pvf_hashes};
+    chain.set_preverified_hashes(mynet_preverified_hashes);
 
     // building the first part of the chain
     chain.accept_headers({headers[1], headers[2], headers[3], h3a, h4a}, request_id, peer_id);
@@ -940,12 +938,10 @@ TEST_CASE("WorkingChain - process_segment - (5) pre-verified hashes") {
         headers[i].parent_hash = headers[i - 1].hash();
     }
 
-    PreverifiedHashes mynet_preverified_hashes = {
-        {headers[6].hash()},  // hashes
-        headers[6].number     // height
-    };
+    const std::set<evmc::bytes32> pvf_hashes{headers[6].hash()};
+    const std::pair<uint64_t, const std::set<evmc::bytes32>*> mynet_preverified_hashes{headers[6].number, &pvf_hashes};
+    chain.set_preverified_hashes(mynet_preverified_hashes);
 
-    chain.set_preverified_hashes(&mynet_preverified_hashes);
 
     // building the first chain segment
     chain.accept_headers({headers[1]}, request_id, peer_id);
@@ -966,7 +962,7 @@ TEST_CASE("WorkingChain - process_segment - (5) pre-verified hashes") {
      */
     INFO("extend down") {
         // adding two headers to extend down the anchor
-        chain.accept_headers({headers[5],headers[4]}, request_id, peer_id);
+        chain.accept_headers({headers[5], headers[4]}, request_id, peer_id);
 
         // check pre-verification propagation
         auto link5 = chain.links_[headers[5].hash()];
@@ -980,7 +976,7 @@ TEST_CASE("WorkingChain - process_segment - (5) pre-verified hashes") {
      */
     INFO("connect") {
         // adding two headers to extend down the anchor
-        chain.accept_headers({headers[2],headers[3]}, request_id, peer_id);
+        chain.accept_headers({headers[2], headers[3]}, request_id, peer_id);
 
         // check pre-verification propagation
         auto link1 = chain.links_[headers[1].hash()];
@@ -1024,12 +1020,9 @@ TEST_CASE("WorkingChain - process_segment - (5') pre-verified hashes with canoni
         b_headers[i].extra_data = string_view_to_byte_view("alternate");  // so hash(a_headers[i]) != hash(b_headers[i])
     }
 
-    PreverifiedHashes mynet_preverified_hashes = {
-        {b_headers[6].hash()},  // hashes
-        b_headers[6].number     // height
-    };
-
-    chain.set_preverified_hashes(&mynet_preverified_hashes);
+    const std::set<evmc::bytes32> pvf_hashes{b_headers[6].hash()};
+    const std::pair<uint64_t, const std::set<evmc::bytes32>*> mynet_preverified_hashes{b_headers[6].number, &pvf_hashes};
+    chain.set_preverified_hashes(mynet_preverified_hashes);
 
     // building the first branch of the chain
     chain.accept_headers({a_headers[1], a_headers[2], a_headers[3], a_headers[4], a_headers[5]}, request_id, peer_id);

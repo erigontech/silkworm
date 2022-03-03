@@ -102,7 +102,7 @@ jobs:
       - run:
           name: "Node unit tests"
           working_directory: ~/build
-          command: cmd/node_test
+          command: cmd/test/node_test
 
   linux-gcc-11-cpp20:
     environment:

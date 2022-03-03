@@ -23,8 +23,11 @@
 
 #include <magic_enum.hpp>
 
+#include <silkworm/common/log.hpp>
 #include <silkworm/common/settings.hpp>
 #include <silkworm/concurrency/stoppable.hpp>
+#include <silkworm/db/stages.hpp>
+#include <silkworm/etl/collector.hpp>
 
 namespace silkworm::stagedsync {
 

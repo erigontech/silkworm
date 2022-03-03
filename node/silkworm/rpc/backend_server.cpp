@@ -65,15 +65,9 @@ BackEndServer::BackEndServer(const ServerConfig& srv_config, const ChainConfig& 
 
 /// Start server-side RPC requests as required by gRPC async model: one RPC per type is requested in advance.
 void BackEndServer::request_calls() {
-    // Grab one context at a time using round-robin scheme and start each server-side RPC request
-    auto& context1 = next_context();
-    context1.io_context->post([&]() {
-        etherbase_service_.create_rpc(service_.get(), context1.grpc_queue.get());
-    });
-    auto& context2 = next_context();
-    context2.io_context->post([&]() {
-        net_version_service_.create_rpc(service_.get(), context2.grpc_queue.get());
-    });
+    // Start each server-side RPC request grabbing one context at a time using round-robin scheme
+    etherbase_service_.create_rpc(service_.get(), next_context().grpc_queue.get());
+    net_version_service_.create_rpc(service_.get(), next_context().grpc_queue.get());
 }
 
 } // namespace silkworm::rpc

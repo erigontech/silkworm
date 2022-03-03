@@ -171,7 +171,7 @@ PooledCursor::PooledCursor(::mdbx::txn& tx, const MapConfig& config) {
 }
 
 PooledCursor::~PooledCursor() {
-    if (cursor_->operator bool()) {
+    if (*cursor_) {
         cursors_pool_.add(std::move(cursor_));
     }
 }

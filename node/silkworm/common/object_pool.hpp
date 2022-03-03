@@ -31,7 +31,7 @@ class ObjectPool {
     ObjectPool() = default;
     virtual ~ObjectPool() = default;
 
-    void add(std::unique_ptr<T> t) { pool_.push(std::move(t)); }
+    void add(ptr_t t) { pool_.push(std::move(t)); }
 
     ptr_t acquire() {
         if (!empty()) {
@@ -47,7 +47,7 @@ class ObjectPool {
     [[nodiscard]] size_t size() const { return pool_.size(); }
 
   private:
-    std::stack<std::unique_ptr<T>> pool_;
+    std::stack<ptr_t> pool_;
 };
 
 }  // namespace silkworm

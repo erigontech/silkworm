@@ -16,6 +16,8 @@
 
 #include "mdbx.hpp"
 
+#include <silkworm/common/object_pool.hpp>
+
 namespace silkworm::db {
 
 namespace detail {
@@ -159,6 +161,37 @@ namespace detail {
 ::mdbx::cursor_managed open_cursor(::mdbx::txn& tx, const MapConfig& config) {
     return tx.open_cursor(open_map(tx, config));
 }
+
+PooledCursor::PooledCursor(::mdbx::txn& tx, const MapConfig& config) {
+    cursor_ = cursors_pool_.acquire();
+    if (!cursor_) {
+        cursor_ = std::make_unique<::mdbx::cursor_managed>();
+    }
+    bind(tx, config);
+}
+
+PooledCursor::~PooledCursor() {
+    if (*cursor_) {
+        cursors_pool_.add(std::move(cursor_));
+    }
+}
+
+void PooledCursor::bind(::mdbx::txn& tx, const MapConfig& config) {
+    assert(cursor_);
+    const auto& cm{*cursor_};
+    // Check cursor is bound to a live transaction
+    if (auto cm_tx{mdbx_cursor_txn(&(*cm))}; cm_tx) {
+        // If current transaction id does not match cursor's transaction close it
+        // and recreate a new one
+        if (tx.id() != mdbx_txn_id(cm_tx)) {
+            cursor_.reset(new ::mdbx::cursor_managed());  // RAII implement cursor closure
+        }
+    }
+    auto map{open_map(tx, config)};
+    cursor_->bind(tx, map);
+}
+
+void PooledCursor::close() { cursor_->close(); }
 
 bool has_map(::mdbx::txn& tx, const char* map_name) {
     try {

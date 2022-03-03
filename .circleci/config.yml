@@ -98,7 +98,7 @@ jobs:
           working_directory: ~/build
           command: |
             ulimit -s unlimited
-            cmd/core_test
+            cmd/test/core_test
       - run:
           name: "Node unit tests"
           working_directory: ~/build

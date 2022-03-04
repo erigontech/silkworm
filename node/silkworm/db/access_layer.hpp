@@ -33,7 +33,7 @@
 namespace silkworm::db {
 
 // Pulls database schema version
-std::optional<VersionBase> read_schema_version(mdbx::txn& txn) noexcept;
+std::optional<VersionBase> read_schema_version(mdbx::txn& txn);
 
 // Writes database schema version (throws on downgrade)
 void write_schema_version(mdbx::txn& txn, const VersionBase& schema_version);

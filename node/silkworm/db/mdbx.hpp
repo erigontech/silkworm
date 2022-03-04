@@ -139,7 +139,8 @@ public:
     ~PooledCursor();
 
     void bind(::mdbx::txn& tx, const MapConfig& config);
-    void close_all();
+    void close();
+    void clear();
 
 private:
     static inline thread_local std::vector<PooledCursor> cursors_{};

@@ -167,7 +167,7 @@ PooledCursor::PooledCursor(::mdbx::txn& tx, const MapConfig& config) {
     if (cursors_.empty()) {
         handle_ = ::mdbx_cursor_create(nullptr);  // create new cursor
     } else {
-        handle_ = cursors_.back().handle_;  // steal the handle of previously used cursor
+        std::swap(handle_, cursors_.back().handle_);  // steal the handle of previously used cursor
         cursors_.pop_back();
     } 
     bind(tx, config);
@@ -175,7 +175,7 @@ PooledCursor::PooledCursor(::mdbx::txn& tx, const MapConfig& config) {
 
 PooledCursor::~PooledCursor() {
     if (handle_)
-        cursors_.push_back(*this);
+        cursors_.push_back(std::move(*this));
 }
 
 void PooledCursor::bind(::mdbx::txn& tx, const MapConfig& config) {
@@ -194,8 +194,6 @@ void PooledCursor::bind(::mdbx::txn& tx, const MapConfig& config) {
 }
 
 void PooledCursor::close() {
-    if (!handle_)
-        mdbx::error::throw_exception(MDBX_EINVAL);
     ::mdbx_cursor_close(handle_);
     handle_ = nullptr;
 }

@@ -143,6 +143,11 @@ class PooledCursor : public ::mdbx::cursor {
 public:
     PooledCursor(::mdbx::txn& tx, const MapConfig& config);
     ~PooledCursor();
+    PooledCursor(PooledCursor&& o) {
+        std::swap(handle_, o.handle_);
+    }
+    PooledCursor(const PooledCursor&) = delete;
+    PooledCursor& operator=(const PooledCursor&) = delete;
 
     void bind(::mdbx::txn& tx, const MapConfig& config);
     void close();

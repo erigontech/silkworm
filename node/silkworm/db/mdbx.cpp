@@ -199,12 +199,6 @@ void PooledCursor::close() {
     handle_ = nullptr;
 }
 
-void PooledCursor::clear() { 
-    for (auto cursor : cursors_)
-        cursor.close(); 
-    cursors_.clear();
-}
-
 bool has_map(::mdbx::txn& tx, const char* map_name) {
     try {
         ::mdbx::map_handle main_map{1};

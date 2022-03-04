@@ -134,10 +134,10 @@ void SubscribeService::process_rpc(SubscribeRpc& rpc, const remote::SubscribeReq
 }
 
 void NodeInfoService::process_rpc(NodeInfoRpc& rpc, const remote::NodesInfoRequest* request) {
-    SILK_TRACE << "NodeInfoService::process_rpc rpc: " << &rpc << " request: " << request;
+    SILK_TRACE << "NodeInfoService::process_rpc rpc: " << &rpc << " request: " << request << " limit: " << request->limit();
 
     remote::NodesInfoReply response;
-    // TODO(canepat): fill the response using nodes information
+    // TODO(canepat): fill the response using Sentry config client list
     const bool sent = rpc.send_response(response);
 
     SILK_TRACE << "NodeInfoService::process_rpc rsp: " << &response << " sent: " << sent;

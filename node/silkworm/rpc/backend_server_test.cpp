@@ -74,6 +74,11 @@ class BackEndClient {
         return subscribe_reply_reader->Finish();
     }
 
+    grpc::Status node_info(const remote::NodesInfoRequest& request, remote::NodesInfoReply* response) {
+        grpc::ClientContext context;
+        return stub_->NodeInfo(&context, request, response);
+    }
+
   private:
     remote::ETHBACKEND::StubInterface* stub_;
 };
@@ -241,6 +246,15 @@ TEST_CASE("BackEndServer RPC calls", "[silkworm][node][rpc]") {
         const auto status = backend_client.subscribe_and_consume(request, responses);
         CHECK(status == grpc::Status::OK);
         CHECK(responses.size() == 2);
+    }
+
+    SECTION("NodeInfo: return information about nodes", "[silkworm][node][rpc]") {
+        remote::NodesInfoRequest request;
+        request.set_limit(0);
+        remote::NodesInfoReply response;
+        const auto status = backend_client.node_info(request, &response);
+        CHECK(status == grpc::Status::OK);
+        CHECK(response.nodesinfo_size() == 0);
     }
 
     server.shutdown();

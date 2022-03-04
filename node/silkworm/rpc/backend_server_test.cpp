@@ -27,24 +27,6 @@
 #include <silkworm/rpc/util.hpp>
 #include <types/types.pb.h>
 
-// operator== overloading for grpc::Status is *NOT* present in gRPC library
-namespace grpc {
-inline bool operator==(const Status& lhs, const Status& rhs) {
-    return lhs.error_code() == rhs.error_code() &&
-        lhs.error_message() == rhs.error_message() &&
-        lhs.error_details() == rhs.error_details();
-}
-} // namespace grpc
-
-// operator== overloading is *NOT* present in gRPC generated sources
-namespace types {
-inline bool operator==(const H160& lhs, const H160& rhs) {
-    return lhs.hi().hi() == rhs.hi().hi() &&
-        lhs.hi().lo() == rhs.hi().lo() &&
-        lhs.lo() == rhs.lo();
-}
-} // namespace types
-
 namespace { // Trick suggested by gRPC team to avoid name clashes in multiple test modules
 class BackEndClient {
   public:

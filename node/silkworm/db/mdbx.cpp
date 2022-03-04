@@ -162,36 +162,39 @@ namespace detail {
     return tx.open_cursor(open_map(tx, config));
 }
 
+
 PooledCursor::PooledCursor(::mdbx::txn& tx, const MapConfig& config) {
-    cursor_ = cursors_pool_.acquire();
-    if (!cursor_) {
-        cursor_ = std::make_unique<::mdbx::cursor_managed>();
+    if (!cursors_pool_.empty) {
+        (*this) = cursors_.back(); // steal the handle of internal cursor
+        cursors_.pop_back();
+    } else {
+        handle_ = ::mdbx_cursor_create(nullptr);
     }
     bind(tx, config);
 }
 
 PooledCursor::~PooledCursor() {
-    if (*cursor_) {
-        cursors_pool_.add(std::move(cursor_));
-    }
+    cursors_.push_back(*this);
 }
 
 void PooledCursor::bind(::mdbx::txn& tx, const MapConfig& config) {
-    assert(cursor_);
-    const auto& cm{*cursor_};
     // Check cursor is bound to a live transaction
-    if (auto cm_tx{mdbx_cursor_txn(&(*cm))}; cm_tx) {
+    if (auto cm_tx{mdbx_cursor_txn(&(*this))}; cm_tx) {
         // If current transaction id does not match cursor's transaction close it
         // and recreate a new one
         if (tx.id() != mdbx_txn_id(cm_tx)) {
-            cursor_.reset(new ::mdbx::cursor_managed());  // RAII implement cursor closure
+            handle_ = ::mdbx_cursor_create(nullptr);
         }
     }
     auto map{open_map(tx, config)};
-    cursor_->bind(tx, map);
+    bind(tx, map);
 }
 
-void PooledCursor::close() { cursor_->close(); }
+void PooledCursor::close_all() { 
+    for (auto cursor : cursors_)
+        cursor->close(); 
+    cursors_.clear();
+}
 
 bool has_map(::mdbx::txn& tx, const char* map_name) {
     try {

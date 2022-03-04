@@ -27,12 +27,12 @@ namespace {
         if (!is_known_stage(stage_name)) {
             throw std::invalid_argument("Unknown stage name " + std::string(stage_name));
         }
-        auto src{db::open_cursor(txn, domain)};
+        db::PooledCursor src(txn, domain);
         std::string item_key{stage_name};
         if (key_prefix) {
             item_key.insert(0, std::string(key_prefix));
         }
-        auto data{src.find(mdbx::slice(item_key.c_str()), /*throw_notfound*/ false)};
+        auto data{src->find(mdbx::slice(item_key.c_str()), /*throw_notfound*/ false)};
         if (!data) {
             return 0;
         } else if (data.value.size() != sizeof(uint64_t)) {
@@ -53,11 +53,10 @@ namespace {
         }
         Bytes stage_progress(sizeof(block_num), 0);
         endian::store_big_u64(stage_progress.data(), block_num);
-        auto tgt{db::open_cursor(txn, domain)};
+        db::PooledCursor target(txn, domain);
         mdbx::slice key(item_key.c_str());
         mdbx::slice value{db::to_slice(stage_progress)};
-        tgt.upsert(key, value);
-        tgt.close();
+        target->upsert(key, value);
     }
 
 }  // namespace

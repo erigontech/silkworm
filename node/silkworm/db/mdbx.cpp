@@ -174,7 +174,8 @@ PooledCursor::PooledCursor(::mdbx::txn& tx, const MapConfig& config) {
 }
 
 PooledCursor::~PooledCursor() {
-    cursors_.push_back(*this);
+    if (handle_)
+        cursors_.push_back(*this);
 }
 
 void PooledCursor::bind(::mdbx::txn& tx, const MapConfig& config) {

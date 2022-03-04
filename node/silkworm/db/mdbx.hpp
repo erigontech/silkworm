@@ -132,22 +132,17 @@ struct MapConfig {
 //! \return A handle to the opened cursor
 ::mdbx::cursor_managed open_cursor(::mdbx::txn& tx, const MapConfig& config);
 
-//! \brief RAII wrapper around a pooled cursor
-class PooledCursor {
-  public:
+//! \brief unmanaged cursor class to access cursor API, storing in pool when deleted
+class PooledCursor : public ::mdbx::cursor {
+public:
     PooledCursor(::mdbx::txn& tx, const MapConfig& config);
     ~PooledCursor();
 
-    ::mdbx::cursor_managed& operator*() const noexcept { return *cursor_; }
-    ::mdbx::cursor_managed* operator->() const noexcept { return cursor_.get(); }
-
     void bind(::mdbx::txn& tx, const MapConfig& config);
+    void close_all();
 
-    void close();
-
-  private:
-    std::unique_ptr<::mdbx::cursor_managed> cursor_{nullptr};
-    static inline thread_local ObjectPool<mdbx::cursor_managed> cursors_pool_{};
+private:
+    static inline thread_local std::vector<PooledCursor> cursors_{};
 };
 
 //! \brief Checks whether a provided map name exists in database

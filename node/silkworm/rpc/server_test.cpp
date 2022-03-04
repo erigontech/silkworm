@@ -18,6 +18,8 @@
 
 #include <thread>
 
+#include <absl/synchronization/notification.h>
+#include <absl/time/time.h>
 #include <catch2/catch.hpp>
 #include <grpc/grpc.h>
 #include <grpcpp/alarm.h>
@@ -98,13 +100,18 @@ TEST_CASE("Server::run", "[silkworm][node][rpc]") {
     class TestServer : public Server<MockService> {
       public:
         TestServer(const ServerConfig& config) : Server(config) {}
-        bool accept_requests_called() const { return accept_requests_called_; }
+
+        bool wait_initialization_for(int64_t timeout) {
+            return initialization_.WaitForNotificationWithTimeout(absl::Milliseconds(timeout));
+        }
 
       protected:
-        void request_calls() override { accept_requests_called_ = true; }
+        void request_calls() override {
+            initialization_.Notify();
+        }
 
       private:
-        bool accept_requests_called_{false};
+        absl::Notification initialization_;
     };
 
     SECTION("OK: accept requests called", "[silkworm][node][rpc]") {
@@ -112,11 +119,11 @@ TEST_CASE("Server::run", "[silkworm][node][rpc]") {
         config.set_address_uri(kTestAddressUri);
         TestServer server{config};
         std::thread shutdown_thread{[&server]() {
-            std::this_thread::yield();
+            const bool notified = server.wait_initialization_for(5000);
+            CHECK(notified);
             server.shutdown();
         }};
         server.run();
-        CHECK(server.accept_requests_called());
         shutdown_thread.join();
     }
 }

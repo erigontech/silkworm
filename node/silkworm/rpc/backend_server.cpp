@@ -16,8 +16,6 @@
 
 #include "backend_server.hpp"
 
-#include <sstream>
-
 #include <silkworm/common/endian.hpp>
 #include <silkworm/common/log.hpp>
 #include <types/types.pb.h>
@@ -102,17 +100,11 @@ void ProtocolVersionService::process_rpc(ProtocolVersionRpc& rpc, const remote::
     SILK_TRACE << "ProtocolVersionService::process_rpc rsp: " << &response_ << " sent: " << sent;
 }
 
-ClientVersionService::ClientVersionService()
+ClientVersionService::ClientVersionService(const ServerConfig& srv_config)
     : ClientVersionRpcService(
         [&](auto& rpc, const auto* request) { process_rpc(rpc, request); },
         &remote::ETHBACKEND::AsyncService::RequestClientVersion) {
-    /*const auto build_info{backend_kv_server_get_buildinfo()};
-    std::stringstream str_stream;
-    str_stream << "silkworm/" << build_info->project_version << "/"
-        << build_info->system_name << "-" << build_info->system_processor << " " << build_info->build_type << "/"
-        << build_info->compiler_id << "" << build_info->compiler_version;*/
-    std::stringstream str_stream{"silkworm/0.0.0"};
-    response_.set_nodename(str_stream.str());
+    response_.set_nodename(srv_config.node_name());
 }
 
 void ClientVersionService::process_rpc(ClientVersionRpc& rpc, const remote::ClientVersionRequest* request) {
@@ -152,7 +144,7 @@ void NodeInfoService::process_rpc(NodeInfoRpc& rpc, const remote::NodesInfoReque
 }
 
 BackEndServer::BackEndServer(const ServerConfig& srv_config, const ChainConfig& chain_config)
-: Server(srv_config), etherbase_service_{chain_config}, net_version_service_{chain_config}, net_peer_count_service_{} {
+: Server(srv_config), etherbase_service_{chain_config}, net_version_service_{chain_config}, client_version_service_{srv_config} {
     SILK_INFO << "BackEndServer created listening on: " << srv_config.address_uri();
 }
 

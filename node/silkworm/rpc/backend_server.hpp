@@ -173,7 +173,7 @@ using ClientVersionRpcService = RpcService<
 //! Service implementation acting as factory for ClientVersion RPCs.
 class ClientVersionService : public ClientVersionRpcService {
   public:
-    explicit ClientVersionService();
+    explicit ClientVersionService(const ServerConfig& srv_config);
 
     void process_rpc(ClientVersionRpc& rpc, const remote::ClientVersionRequest* request);
 

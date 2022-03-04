@@ -19,6 +19,7 @@
 #include <memory>
 #include <string>
 #include <thread>
+#include <vector>
 
 #include <catch2/catch.hpp>
 #include <grpc/grpc.h>
@@ -40,6 +41,37 @@ class BackEndClient {
     grpc::Status net_version(remote::NetVersionReply* response) {
         grpc::ClientContext context;
         return stub_->NetVersion(&context, remote::NetVersionRequest{}, response);
+    }
+
+    grpc::Status net_peer_count(remote::NetPeerCountReply* response) {
+        grpc::ClientContext context;
+        return stub_->NetPeerCount(&context, remote::NetPeerCountRequest{}, response);
+    }
+
+    grpc::Status version(types::VersionReply* response) {
+        grpc::ClientContext context;
+        return stub_->Version(&context, google::protobuf::Empty{}, response);
+    }
+
+    grpc::Status protocol_version(remote::ProtocolVersionReply* response) {
+        grpc::ClientContext context;
+        return stub_->ProtocolVersion(&context, remote::ProtocolVersionRequest{}, response);
+    }
+
+    grpc::Status client_version(remote::ClientVersionReply* response) {
+        grpc::ClientContext context;
+        return stub_->ClientVersion(&context, remote::ClientVersionRequest{}, response);
+    }
+
+    grpc::Status subscribe_and_consume(const remote::SubscribeRequest& request, std::vector<remote::SubscribeReply>& responses) {
+        grpc::ClientContext context;
+        auto subscribe_reply_reader = stub_->Subscribe(&context, request);
+        bool has_more{true};
+        do {
+            has_more = subscribe_reply_reader->Read(&responses.emplace_back());
+        } while (has_more);
+        responses.pop_back();
+        return subscribe_reply_reader->Finish();
     }
 
   private:
@@ -148,7 +180,7 @@ TEST_CASE("BackEndServer RPC calls", "[silkworm][node][rpc]") {
     Grpc2SilkwormLogGuard log_guard;
     std::shared_ptr<grpc::Channel> channel = grpc::CreateChannel(kTestAddressUri, grpc::InsecureChannelCredentials());
     auto stub_ptr = remote::ETHBACKEND::NewStub(channel);
-    BackEndClient client{stub_ptr.get()};
+    BackEndClient backend_client{stub_ptr.get()};
     ServerConfig srv_config;
     srv_config.set_num_contexts(1);
     srv_config.set_address_uri(kTestAddressUri);
@@ -159,7 +191,7 @@ TEST_CASE("BackEndServer RPC calls", "[silkworm][node][rpc]") {
 
     SECTION("Etherbase: return coinbase address", "[silkworm][node][rpc]") {
         remote::EtherbaseReply response;
-        const auto status = client.etherbase(&response);
+        const auto status = backend_client.etherbase(&response);
         CHECK(status == grpc::Status::OK);
         CHECK(response.has_address());
         CHECK(response.address() == types::H160());
@@ -167,9 +199,48 @@ TEST_CASE("BackEndServer RPC calls", "[silkworm][node][rpc]") {
 
     SECTION("NetVersion: return network ID", "[silkworm][node][rpc]") {
         remote::NetVersionReply response;
-        const auto status = client.net_version(&response);
+        const auto status = backend_client.net_version(&response);
         CHECK(status == grpc::Status::OK);
         CHECK(response.id() == kGoerliConfig.chain_id);
+    }
+
+    SECTION("NetPeerCount: return peer count", "[silkworm][node][rpc]") {
+        remote::NetPeerCountReply response;
+        const auto status = backend_client.net_peer_count(&response);
+        CHECK(status == grpc::Status::OK);
+        CHECK(response.count() == 0);
+    }
+
+    SECTION("Version: return ETHBACKEND version", "[silkworm][node][rpc]") {
+        types::VersionReply response;
+        const auto status = backend_client.version(&response);
+        CHECK(status == grpc::Status::OK);
+        CHECK(response.major() == 2);
+        CHECK(response.minor() == 2);
+        CHECK(response.patch() == 0);
+    }
+
+    SECTION("ProtocolVersion: return ETH protocol version", "[silkworm][node][rpc]") {
+        remote::ProtocolVersionReply response;
+        const auto status = backend_client.protocol_version(&response);
+        CHECK(status == grpc::Status::OK);
+        CHECK(response.id() == kEthDevp2pProtocolVersion);
+    }
+
+    SECTION("ClientVersion: return Silkworm client version", "[silkworm][node][rpc]") {
+        remote::ClientVersionReply response;
+        const auto status = backend_client.client_version(&response);
+        CHECK(status == grpc::Status::OK);
+        CHECK(response.nodename().find("silkworm") != std::string::npos);
+    }
+
+    // TODO(canepat): change using something meaningful when really implemented
+    SECTION("Subscribe: return streamed subscriptions", "[silkworm][node][rpc]") {
+        remote::SubscribeRequest request;
+        std::vector<remote::SubscribeReply> responses;
+        const auto status = backend_client.subscribe_and_consume(request, responses);
+        CHECK(status == grpc::Status::OK);
+        CHECK(responses.size() == 2);
     }
 
     server.shutdown();

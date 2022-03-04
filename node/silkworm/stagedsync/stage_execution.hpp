@@ -30,7 +30,8 @@ class Execution final : public IStage {
   public:
     explicit Execution(NodeSettings* node_settings)
         : IStage(db::stages::kExecutionKey, node_settings),
-          consensus_engine_{consensus::engine_factory(node_settings->chain_config.value())} {};
+          consensus_engine_{consensus::engine_factory(node_settings->chain_config.value())} {}
+
     ~Execution() override = default;
 
     StageResult forward(db::RWTxn& txn) final;
@@ -48,7 +49,7 @@ class Execution final : public IStage {
     //! \param [in] to: the last block to prefetch (inclusive)
     //! \remarks The amount of blocks to be fetched is determined by the upper block number (to) or max_blocks collected
     //! whichever comes first
-    void prefetch_blocks(db::RWTxn& txn, BlockNum from, BlockNum to, size_t max_blocks = 10240);
+    void prefetch_blocks(db::RWTxn& txn, BlockNum from, BlockNum to, size_t max_blocks = 64);
 
     //! \brief Executes a batch of blocks
     //! \remarks A batch completes when either max block is reached or buffer dimensions overflow
@@ -73,4 +74,5 @@ class Execution final : public IStage {
 };
 
 }  // namespace silkworm::stagedsync
+
 #endif  // SILKWORM_STAGEDSYNC_STAGE_EXECUTION_HPP_

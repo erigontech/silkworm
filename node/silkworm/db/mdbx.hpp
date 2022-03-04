@@ -132,6 +132,12 @@ struct MapConfig {
 //! \return A handle to the opened cursor
 ::mdbx::cursor_managed open_cursor(::mdbx::txn& tx, const MapConfig& config);
 
+template<class T>
+class CursorPool : public std::vector<T> {
+public:
+    ~CursorPool() { for (auto& t : (*this)) t.close(); }
+};
+
 //! \brief unmanaged cursor class to access cursor API, storing in pool when deleted
 class PooledCursor : public ::mdbx::cursor {
 public:
@@ -142,7 +148,7 @@ public:
     void close();
 
 private:
-    static inline thread_local std::vector<PooledCursor> cursors_{};
+    static inline thread_local CursorPool<PooledCursor> cursors_{};
 };
 
 //! \brief Checks whether a provided map name exists in database

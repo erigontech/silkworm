@@ -23,10 +23,10 @@
 
 namespace silkworm {
 
-template <class T>
+template <class T, class Deleter = std::default_delete<T>>
 class ObjectPool {
   public:
-    using ptr_t = std::unique_ptr<T>;
+    using ptr_t = std::unique_ptr<T, Deleter>;
 
     ObjectPool() = default;
     virtual ~ObjectPool() = default;
@@ -45,6 +45,12 @@ class ObjectPool {
     [[nodiscard]] bool empty() const { return pool_.empty(); }
 
     [[nodiscard]] size_t size() const { return pool_.size(); }
+
+    void clear() {
+        while (!pool_.empty()) {
+            pool_.pop();
+        }
+    }
 
   private:
     std::stack<ptr_t> pool_;

@@ -164,12 +164,12 @@ namespace detail {
 
 
 PooledCursor::PooledCursor(::mdbx::txn& tx, const MapConfig& config) {
-    if (!cursors_pool_.empty) {
-        (*this) = cursors_.back(); // steal the handle of internal cursor
-        cursors_.pop_back();
+    if (cursors_.empty()) {
+        handle_ = ::mdbx_cursor_create(nullptr);  // create new cursor
     } else {
-        handle_ = ::mdbx_cursor_create(nullptr);
-    }
+        handle_ = cursors_.back().handle_;  // steal the handle of previously used cursor
+        cursors_.pop_back();
+    } 
     bind(tx, config);
 }
 
@@ -179,20 +179,29 @@ PooledCursor::~PooledCursor() {
 
 void PooledCursor::bind(::mdbx::txn& tx, const MapConfig& config) {
     // Check cursor is bound to a live transaction
-    if (auto cm_tx{mdbx_cursor_txn(&(*this))}; cm_tx) {
+    if (auto cm_tx{mdbx_cursor_txn(handle_)}; cm_tx) {
         // If current transaction id does not match cursor's transaction close it
         // and recreate a new one
         if (tx.id() != mdbx_txn_id(cm_tx)) {
+            close();
+            assert(handle_ == nullptr);
             handle_ = ::mdbx_cursor_create(nullptr);
         }
     }
     auto map{open_map(tx, config)};
-    bind(tx, map);
+    ::mdbx::cursor::bind(tx, map);
 }
 
-void PooledCursor::close_all() { 
+void PooledCursor::close() {
+    if (!handle_)
+        mdbx::error::throw_exception(MDBX_EINVAL);
+    ::mdbx_cursor_close(handle_);
+    handle_ = nullptr;
+}
+
+void PooledCursor::clear() { 
     for (auto cursor : cursors_)
-        cursor->close(); 
+        cursor.close(); 
     cursors_.clear();
 }
 

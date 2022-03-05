@@ -30,40 +30,21 @@ class ObjectPool {
 
     ObjectPool() = default;
 
-    [[maybe_unused]] explicit ObjectPool(size_t max_size) : max_size_{max_size} {
-        std::vector<ptr_t> vec;
-        vec.reserve(max_size_);
-        pool_ = std::stack<ptr_t, std::vector<ptr_t>>{std::move(vec)};
-    };
-
     virtual ~ObjectPool() = default;
 
-    bool add(T*& t) {
-        if (max_size_ && pool_.size() >= max_size_) {
-            return false;
-        }
-        auto* tmp = t;
-        t = nullptr;
-        pool_.push(ptr_t(tmp, TDtor()));
-        return true;
+    void add(T*& t) {
+        T* tmp{nullptr};
+        std::swap(tmp, t);
+        pool_.push({tmp, TDtor()});
     }
 
     T* acquire() {
-        if (!empty()) {
-            T* ret(pool_.top().release());
-            pool_.pop();
-            return ret;
+        if (pool_.empty()) {
+            return nullptr;
         }
-        return nullptr;
-    }
-
-    template <class T2>
-    T* acquire_or(T2&& right) {
-        static_assert(std::is_convertible_v<T2, T*>);
-        if (auto t{acquire()}; t) {
-            return t;
-        }
-        return std::forward<T2>(right);
+        T* ret(pool_.top().release());
+        pool_.pop();
+        return ret;
     }
 
     [[nodiscard]] bool empty() const { return pool_.empty(); }
@@ -77,7 +58,6 @@ class ObjectPool {
     }
 
   private:
-    size_t max_size_{0};
     std::stack<ptr_t, std::vector<ptr_t>> pool_{};
 };
 

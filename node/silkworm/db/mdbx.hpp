@@ -39,6 +39,16 @@ namespace silkworm::db {
 inline constexpr std::string_view kDbDataFileName{"mdbx.dat"};
 inline constexpr std::string_view kDbLockFileName{"mdbx.lck"};
 
+namespace detail {
+    struct cursor_handle_deleter {  // default deleter for pooled cursors
+        constexpr cursor_handle_deleter() noexcept = default;
+        void operator()(MDBX_cursor* ptr) const noexcept {
+            static_assert(0 < sizeof(ptr), "can't delete an incomplete type");
+            mdbx_cursor_close(ptr);
+        }
+    };
+}  // namespace detail
+
 //! \brief This class manages mdbx transactions across stages.
 //! It either creates new mdbx transaction as need be or uses an externally provided transaction.
 //! The external transaction mode is handy for running several stages on a handful of blocks atomically.
@@ -149,7 +159,7 @@ class PooledCursor : public ::mdbx::cursor {
 
   private:
     ::mdbx::map_handle map_handle_;
-    static inline thread_local ObjectPool<MDBX_cursor, decltype(&mdbx_cursor_close)> handles_pool_{100};
+    static inline thread_local ObjectPool<MDBX_cursor, detail::cursor_handle_deleter> handles_pool_{};
 };
 
 //! \brief Checks whether a provided map name exists in database

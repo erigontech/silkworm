@@ -163,13 +163,16 @@ namespace detail {
 }
 
 PooledCursor::PooledCursor(::mdbx::txn& txn, const MapConfig& config) {
-    handle_ = handles_pool_.acquire_or(::mdbx_cursor_create(nullptr));
+    handle_ = handles_pool_.acquire();
+    if (!handle_) {
+        handle_ = ::mdbx_cursor_create(nullptr);
+    }
     bind(txn, config);
 }
 
 PooledCursor::~PooledCursor() {
-    if (handle_ && !handles_pool_.add(handle_)) {
-        mdbx_cursor_close(handle_);
+    if (handle_) {
+        handles_pool_.add(handle_);
     }
 }
 

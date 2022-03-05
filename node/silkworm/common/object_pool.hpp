@@ -29,11 +29,23 @@ class ObjectPool {
     using ptr_t = std::unique_ptr<T, Deleter>;
 
     ObjectPool() = default;
+
+    [[maybe_unused]] explicit ObjectPool(size_t max_size) : max_size_{max_size} {
+        std::vector<ptr_t> vec;
+        vec.reserve(max_size_);
+        pool_ = std::stack<ptr_t, std::vector<ptr_t>>{std::move(vec)};
+    };
+
     virtual ~ObjectPool() = default;
 
-    void add(ptr_t t) { pool_.push(std::move(t)); }
+    void add(ptr_t t) {
+        if (max_size_ && pool_.size() >= max_size_) {
+            return;
+        }
+        pool_.push(std::move(t));
+    }
 
-    ptr_t acquire() {
+    virtual ptr_t acquire() {
         if (!empty()) {
             ptr_t tmp(pool_.top().release());
             pool_.pop();
@@ -53,7 +65,8 @@ class ObjectPool {
     }
 
   private:
-    std::stack<ptr_t> pool_;
+    size_t max_size_{0};
+    std::stack<ptr_t, std::vector<ptr_t>> pool_{};
 };
 
 }  // namespace silkworm

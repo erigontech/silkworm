@@ -196,6 +196,7 @@ StageResult Execution::execute_batch(db::RWTxn& txn, BlockNum max_block_num, Ana
 
                 // Flush whole buffer if time to
                 if (gas_batch_size >= gas_max_batch_size || block_num_ >= max_block_num) {
+                    prefetched_blocks_.clear();  // free the memory held by transactions, etc
                     log::Trace("Buffer State", {"size", human_size(buffer.current_batch_state_size())});
                     buffer.write_to_db();
                     return is_stopping() ? StageResult::kAborted : StageResult::kSuccess;

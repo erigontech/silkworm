@@ -165,16 +165,16 @@ namespace detail {
 
 PooledCursor::PooledCursor(::mdbx::txn& tx, const MapConfig& config) {
     if (cursors_.empty()) {
-        handle_ = ::mdbx_cursor_create(nullptr);  // create new cursor
+        handle_ = ::mdbx_cursor_create(nullptr);      // create new cursor
     } else {
         std::swap(handle_, cursors_.back().handle_);  // steal the handle of previously used cursor
-        cursors_.pop_back();
+        cursors_.pop_back();                          // popped cursor will have a nullptr handle_ after the swap
     } 
     bind(tx, config);
 }
 
 PooledCursor::~PooledCursor() {
-    if (handle_)
+    if (handle_)                                      // important check 
         cursors_.push_back(std::move(*this));
 }
 

@@ -135,7 +135,7 @@ struct MapConfig {
 template<class T>
 class CursorPool : public std::vector<T> {
 public:
-    ~CursorPool() { for (auto& t : (*this)) t.close(); }
+    ~CursorPool() { for (auto& t : (*this)) t.close(); } // important: unbind cursors before the vector is destroyed
 };
 
 //! \brief unmanaged cursor class to access cursor API, storing in pool when deleted
@@ -146,6 +146,9 @@ public:
     PooledCursor(PooledCursor&& o) {
         std::swap(handle_, o.handle_);
     }
+
+    // important, disable copying, so two PooledCursor cannot have the same handle_
+    // similar to having a unique_ptr pointing to the ::mdbx::cursor
     PooledCursor(const PooledCursor&) = delete;
     PooledCursor& operator=(const PooledCursor&) = delete;
 

@@ -145,14 +145,14 @@ struct MapConfig {
 //! \brief Managed cursor class to access cursor API
 //! \remarks Unlike ::mdbx::cursor_managed this class withdraws and deposits allocated MDBX_cursor handles in a
 //! thread_local pool for reuse. This helps avoiding multiple mallocs on cursor creation.
-class PooledCursor : public ::mdbx::cursor {
+class Cursor : public ::mdbx::cursor {
   public:
-    explicit PooledCursor(::mdbx::txn& txn, const MapConfig& config);
-    ~PooledCursor();
+    explicit Cursor(::mdbx::txn& txn, const MapConfig& config);
+    ~Cursor();
 
     // Not copyable nor movable
-    PooledCursor(const PooledCursor&) = delete;
-    PooledCursor& operator=(const PooledCursor&) = delete;
+    Cursor(const Cursor&) = delete;
+    Cursor& operator=(const Cursor&) = delete;
 
     void bind(::mdbx::txn& tx, const MapConfig& config);
     void close();

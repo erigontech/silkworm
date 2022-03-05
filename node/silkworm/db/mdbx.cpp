@@ -162,7 +162,7 @@ namespace detail {
     return tx.open_cursor(open_map(tx, config));
 }
 
-PooledCursor::PooledCursor(::mdbx::txn& txn, const MapConfig& config) {
+Cursor::Cursor(::mdbx::txn& txn, const MapConfig& config) {
     handle_ = handles_pool_.acquire();
     if (!handle_) {
         handle_ = ::mdbx_cursor_create(nullptr);
@@ -170,13 +170,13 @@ PooledCursor::PooledCursor(::mdbx::txn& txn, const MapConfig& config) {
     bind(txn, config);
 }
 
-PooledCursor::~PooledCursor() {
+Cursor::~Cursor() {
     if (handle_) {
         handles_pool_.add(handle_);
     }
 }
 
-void PooledCursor::bind(::mdbx::txn& txn, const MapConfig& config) {
+void Cursor::bind(::mdbx::txn& txn, const MapConfig& config) {
     // Check cursor is bound to a live transaction
     if (auto cm_tx{mdbx_cursor_txn(handle_)}; cm_tx) {
         // If current transaction id does not match cursor's transaction close it
@@ -190,7 +190,7 @@ void PooledCursor::bind(::mdbx::txn& txn, const MapConfig& config) {
     ::mdbx::cursor::bind(txn, map_handle_);
 }
 
-void PooledCursor::close() {
+void Cursor::close() {
     ::mdbx_cursor_close(handle_);
     handle_ = nullptr;
 }

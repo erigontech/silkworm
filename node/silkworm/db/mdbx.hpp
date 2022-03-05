@@ -132,28 +132,24 @@ struct MapConfig {
 //! \return A handle to the opened cursor
 ::mdbx::cursor_managed open_cursor(::mdbx::txn& tx, const MapConfig& config);
 
-template<class T>
-class CursorPool : public std::vector<T> {
-public:
-    ~CursorPool() { for (auto& t : (*this)) t.close(); }
-};
-
-//! \brief unmanaged cursor class to access cursor API, storing in pool when deleted
+//! \brief Managed cursor class to access cursor API
+//! \remarks Unlike ::mdbx::cursor_managed this class withdraws and deposits allocated MDBX_cursor handles in a
+//! thread_local pool for reuse. This helps avoiding multiple mallocs on cursor creation.
 class PooledCursor : public ::mdbx::cursor {
-public:
-    PooledCursor(::mdbx::txn& tx, const MapConfig& config);
+  public:
+    explicit PooledCursor(::mdbx::txn& txn, const MapConfig& config);
     ~PooledCursor();
-    PooledCursor(PooledCursor&& o) {
-        std::swap(handle_, o.handle_);
-    }
+
+    // Not copyable nor movable
     PooledCursor(const PooledCursor&) = delete;
     PooledCursor& operator=(const PooledCursor&) = delete;
 
     void bind(::mdbx::txn& tx, const MapConfig& config);
     void close();
 
-private:
-    static inline thread_local CursorPool<PooledCursor> cursors_{};
+  private:
+    ::mdbx::map_handle map_handle_;
+    static inline thread_local ObjectPool<MDBX_cursor, decltype(&mdbx_cursor_close)> handles_pool_{100};
 };
 
 //! \brief Checks whether a provided map name exists in database

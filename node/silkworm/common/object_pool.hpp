@@ -23,10 +23,10 @@
 
 namespace silkworm {
 
-template <class T, class Deleter = std::default_delete<T>>
+template <class T, class TDtor = std::default_delete<T>>
 class ObjectPool {
   public:
-    using ptr_t = std::unique_ptr<T, Deleter>;
+    using ptr_t = std::unique_ptr<T, TDtor>;
 
     ObjectPool() = default;
 
@@ -38,20 +38,32 @@ class ObjectPool {
 
     virtual ~ObjectPool() = default;
 
-    void add(ptr_t t) {
+    bool add(T*& t) {
         if (max_size_ && pool_.size() >= max_size_) {
-            return;
+            return false;
         }
-        pool_.push(std::move(t));
+        auto* tmp = t;
+        t = nullptr;
+        pool_.push(ptr_t(tmp, TDtor()));
+        return true;
     }
 
-    virtual ptr_t acquire() {
+    T* acquire() {
         if (!empty()) {
-            ptr_t tmp(pool_.top().release());
+            T* ret(pool_.top().release());
             pool_.pop();
-            return tmp;
+            return ret;
         }
-        return {nullptr};
+        return nullptr;
+    }
+
+    template <class T2>
+    T* acquire_or(T2&& right) {
+        static_assert(std::is_convertible_v<T2, T*>);
+        if (auto t{acquire()}; t) {
+            return t;
+        }
+        return std::forward<T2>(right);
     }
 
     [[nodiscard]] bool empty() const { return pool_.empty(); }

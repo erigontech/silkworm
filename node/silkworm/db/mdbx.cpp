@@ -16,7 +16,7 @@
 
 #include "mdbx.hpp"
 
-#include <silkworm/common/object_pool.hpp>
+#include <silkworm/common/log.hpp>
 
 namespace silkworm::db {
 
@@ -162,35 +162,29 @@ namespace detail {
     return tx.open_cursor(open_map(tx, config));
 }
 
-
-PooledCursor::PooledCursor(::mdbx::txn& tx, const MapConfig& config) {
-    if (cursors_.empty()) {
-        handle_ = ::mdbx_cursor_create(nullptr);  // create new cursor
-    } else {
-        std::swap(handle_, cursors_.back().handle_);  // steal the handle of previously used cursor
-        cursors_.pop_back();
-    } 
-    bind(tx, config);
+PooledCursor::PooledCursor(::mdbx::txn& txn, const MapConfig& config) {
+    handle_ = handles_pool_.acquire_or(::mdbx_cursor_create(nullptr));
+    bind(txn, config);
 }
 
 PooledCursor::~PooledCursor() {
-    if (handle_)
-        cursors_.push_back(std::move(*this));
+    if (handle_ && !handles_pool_.add(handle_)) {
+        mdbx_cursor_close(handle_);
+    }
 }
 
-void PooledCursor::bind(::mdbx::txn& tx, const MapConfig& config) {
+void PooledCursor::bind(::mdbx::txn& txn, const MapConfig& config) {
     // Check cursor is bound to a live transaction
     if (auto cm_tx{mdbx_cursor_txn(handle_)}; cm_tx) {
         // If current transaction id does not match cursor's transaction close it
         // and recreate a new one
-        if (tx.id() != mdbx_txn_id(cm_tx)) {
+        if (txn.id() != mdbx_txn_id(cm_tx)) {
             close();
-            assert(handle_ == nullptr);
             handle_ = ::mdbx_cursor_create(nullptr);
         }
     }
-    auto map{open_map(tx, config)};
-    ::mdbx::cursor::bind(tx, map);
+    map_handle_ = open_map(txn, config);
+    ::mdbx::cursor::bind(txn, map_handle_);
 }
 
 void PooledCursor::close() {

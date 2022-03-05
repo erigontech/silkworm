@@ -16,10 +16,11 @@
 
 #include "server.hpp"
 
+#include <atomic>
+#include <chrono>
+//#include <mutex>
 #include <thread>
 
-#include <absl/synchronization/notification.h>
-#include <absl/time/time.h>
 #include <catch2/catch.hpp>
 #include <grpc/grpc.h>
 #include <grpcpp/alarm.h>
@@ -96,22 +97,30 @@ TEST_CASE("Server::Server", "[silkworm][node][rpc]") {
 TEST_CASE("Server::run", "[silkworm][node][rpc]") {
     silkworm::log::set_verbosity(silkworm::log::Level::kNone);
 
-    // TODO(canepat): use GMock
     class TestServer : public Server<MockService> {
       public:
         TestServer(const ServerConfig& config) : Server(config) {}
 
-        bool wait_initialization_for(int64_t timeout) {
-            return initialization_.WaitForNotificationWithTimeout(absl::Milliseconds(timeout));
+        bool wait_initialization_for(uint32_t timeout=1000, uint32_t check_interval=10) {
+            if (!notified_) {
+                auto sleep_count = timeout / check_interval;
+                for (uint64_t i=0; i<sleep_count; i++) {
+                    if (notified_) {
+                        break;
+                    }
+                    std::this_thread::sleep_for(std::chrono::milliseconds(check_interval));
+                }
+            }
+            return notified_;
         }
 
       protected:
         void request_calls() override {
-            initialization_.Notify();
+            notified_ = true;
         }
 
       private:
-        absl::Notification initialization_;
+        std::atomic_bool notified_{false};
     };
 
     SECTION("OK: accept requests called", "[silkworm][node][rpc]") {
@@ -119,7 +128,7 @@ TEST_CASE("Server::run", "[silkworm][node][rpc]") {
         config.set_address_uri(kTestAddressUri);
         TestServer server{config};
         std::thread shutdown_thread{[&server]() {
-            const bool notified = server.wait_initialization_for(5000);
+            const bool notified = server.wait_initialization_for();
             CHECK(notified);
             server.shutdown();
         }};

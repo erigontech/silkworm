@@ -60,7 +60,7 @@ void CompletionRunner::run() {
             if (tag == this) {
                 // Shutdown alarm has been triggered, post shutdown on io_context scheduler to avoid races and exit.
                 SILK_DEBUG << "CompletionRunner::run post shutdown this: " << this;
-                io_context_.post([&]() { shutdown(ok); });
+                io_context_.post([this, ok]() { shutdown(ok); });
                 running = false;
                 SILK_DEBUG << "CompletionRunner::run shutdown scheduled";
             } else {
@@ -83,9 +83,10 @@ void CompletionRunner::shutdown(bool ok) {
     SILK_DEBUG << "CompletionRunner::shutdown draining...";
     void* ignored_tag;
     bool ignored_ok;
-    while (queue_.Next(&ignored_tag, &ignored_ok)) {}
+    while (queue_.Next(&ignored_tag, &ignored_ok)) {
+    }
     shutdown_completed_.notify_all();
     SILK_TRACE << "CompletionRunner::shutdown end";
 }
 
-} // namespace silkworm::rpc
+}  // namespace silkworm::rpc

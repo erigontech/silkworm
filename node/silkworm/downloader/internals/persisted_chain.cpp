@@ -39,7 +39,8 @@ PersistedChain::PersistedChain(Db::ReadWriteAccess::Tx& tx) : tx_(tx), canonical
 
     local_td_ = *headers_head_td;
     unwind_point_ = headers_height;
-    initial_height_ = headers_height;  // in Erigon is highest_in_db_
+    initial_in_db_ = headers_height;  // in Erigon is highest_in_db_
+    highest_in_db_ = headers_height;
 }
 
 bool PersistedChain::best_header_changed() const { return new_canonical_; }
@@ -48,9 +49,9 @@ bool PersistedChain::unwind_detected() const { return unwind_detected_; }
 
 bool PersistedChain::unwind() const { return unwind_; }
 
-BlockNum PersistedChain::initial_height() const { return initial_height_; }
+BlockNum PersistedChain::initial_height() const { return initial_in_db_; }
 
-BlockNum PersistedChain::highest_height() const { return highest_bn_; }
+BlockNum PersistedChain::highest_height() const { return highest_in_db_; }
 
 Hash PersistedChain::highest_hash() const { return highest_hash_; }
 
@@ -84,15 +85,6 @@ void PersistedChain::persist(const BlockHeader& header) {  // todo: try to modul
         return;  // skip duplicates
     }
 
-    // Important note: this test is wrong, cause error with certain sequence of headers that are corrects
-    //    if (height < highest_bn_) {    // in Erigon is "height < previous_height_" but previous_height_ is never
-    //    updated so the test fails always
-    //        std::string error_message = "PersistedChain: headers are unexpectedly unsorted, got " +
-    //        std::to_string(height) +
-    //                                    " after " + std::to_string(highest_bn_);
-    //        log::ErrorChannel() << error_message;
-    //        throw std::logic_error(error_message);  // unexpected condition, bug?
-    //    }
     if (tx_.read_header(height, hash).has_value()) {
         return;  // already inserted, skip
     }
@@ -126,7 +118,7 @@ void PersistedChain::persist(const BlockHeader& header) {  // todo: try to modul
         tx_.write_head_header_hash(hash);                           // can throw exception
         tx_.write_stage_progress(db::stages::kHeadersKey, height);  // can throw exception
 
-        highest_bn_ = height;
+        highest_in_db_ = height;
         highest_hash_ = hash;
         // highest_timestamp_ = header.timestamp;
         canonical_cache_.put(height, hash);

@@ -85,6 +85,13 @@ TEST_CASE("Cursor") {
     cursors.clear();
     REQUIRE(db::Cursor::handles_cache().empty() == false);
     REQUIRE(db::Cursor::handles_cache().size() == original_cache_size + 5);
+
+    db::Cursor cursor2(db::Cursor(txn, {"test"}));
+    REQUIRE(cursor2.operator bool() == true);
+    db::Cursor cursor3 = std::move(cursor2);
+    REQUIRE(cursor2.operator bool() == false);
+    REQUIRE(cursor3.operator bool() == true);
+
     txn.commit();
 
     // In another thread cursor cache must be empty
@@ -98,6 +105,7 @@ TEST_CASE("Cursor") {
     });
     t.join();
     REQUIRE(other_thread_size == 1);
+
 }
 
 TEST_CASE("RWTxn") {
@@ -266,7 +274,7 @@ TEST_CASE("Cursor walk") {
         data_map.clear();
 
         // early stop 1
-        const auto save_some_data{[&data_map](::mdbx::cursor, mdbx::cursor::move_result& entry) {
+        const auto save_some_data{[&data_map](::mdbx::cursor&, mdbx::cursor::move_result& entry) {
             if (entry.value == "Threonine") {
                 return false;
             }

@@ -22,6 +22,7 @@
 #include <unordered_set>
 
 #include <grpcpp/grpcpp.h>
+#include <gsl/pointers>
 
 #include <silkworm/common/assert.hpp>
 #include <silkworm/common/log.hpp>
@@ -39,21 +40,22 @@ template <
     typename Reply,
     template<typename, typename, typename> typename Rpc>
 class RpcService {
-    using RpcServiceHandlers = typename Rpc<AsyncService, Request, Reply>::Handlers;
+    using Call = Rpc<AsyncService, Request, Reply>;
+    using RpcServiceHandlers = typename Call::Handlers;
 
   public:
     void create_rpc(AsyncService* service, grpc::ServerCompletionQueue* queue) {
         SILK_TRACE << "RpcService::create_rpc START service: " << service << " queue: " << queue;
 
-        auto rpc = new Rpc<AsyncService, Request, Reply>(service, queue, handlers_);
-        add_request(rpc);
+        auto rpc = new Call(service, queue, handlers_);
+        add_rpc(rpc);
 
         SILK_TRACE << "RpcService::create_rpc END rpc: " << rpc;
     }
 
-    void cleanup_rpc(Rpc<AsyncService, Request, Reply>& rpc, bool cancelled) {
+    void cleanup_rpc(Call& rpc, bool cancelled) {
         SILK_TRACE << "RpcService::cleanup_rpc START rpc: " << &rpc << " cancelled: " << cancelled;
-        remove_request(&rpc);
+        remove_rpc(&rpc);
         SILK_TRACE << "RpcService::cleanup_rpc END rpc: " << &rpc;
     }
 
@@ -83,15 +85,15 @@ class RpcService {
         typename RpcServiceHandlers::RequestRpcFunc request_rpc)
         : RpcService(process_rpc, request_rpc, kRequestsInitialCapacity) {}
 
-    [[maybe_unused]] auto add_request(Rpc<AsyncService, Request, Reply>* rpc) {
+    [[maybe_unused]] auto add_rpc(gsl::owner<Call*> rpc) {
         SILKWORM_ASSERT(rpc != nullptr);
         return requests_.emplace(rpc);
     }
 
-    [[maybe_unused]] auto remove_request(Rpc<AsyncService, Request, Reply>* rpc) {
+    [[maybe_unused]] auto remove_rpc(gsl::owner<Call*> rpc) {
         SILKWORM_ASSERT(rpc != nullptr);
         // Trick necessary because heterogeneous lookup for std::unordered_set requires C++20
-        std::unique_ptr<Rpc<AsyncService, Request, Reply>> stale_rpc{rpc};
+        std::unique_ptr<Call> stale_rpc{rpc};
         auto removed_count = requests_.erase(stale_rpc);
         stale_rpc.release();
         return removed_count;
@@ -103,7 +105,7 @@ class RpcService {
 
   private:
     RpcServiceHandlers handlers_;
-    std::unordered_set<std::unique_ptr<Rpc<AsyncService, Request, Reply>>> requests_;
+    std::unordered_set<std::unique_ptr<Call>> requests_;
 };
 
 } // namespace silkworm::rpc

@@ -1,5 +1,5 @@
 /*
-   Copyright 2021 The Silkworm Authors
+   Copyright 2021-2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -170,6 +170,10 @@ Cursor::Cursor(::mdbx::txn& txn, const MapConfig& config) {
     bind(txn, config);
 }
 
+Cursor::Cursor(Cursor&& other) noexcept { std::swap(handle_, other.handle_); }
+
+Cursor& Cursor::operator=(Cursor&& other) noexcept { std::swap(handle_, other.handle_); }
+
 Cursor::~Cursor() {
     if (handle_) {
         handles_pool_.add(handle_);
@@ -186,13 +190,18 @@ void Cursor::bind(::mdbx::txn& txn, const MapConfig& config) {
             handle_ = ::mdbx_cursor_create(nullptr);
         }
     }
-    map_handle_ = open_map(txn, config);
-    ::mdbx::cursor::bind(txn, map_handle_);
+    ::mdbx::cursor::bind(txn, open_map(txn, config));
 }
 
 void Cursor::close() {
     ::mdbx_cursor_close(handle_);
     handle_ = nullptr;
+}
+MDBX_stat Cursor::get_map_stat() const {
+    if (!handle_) {
+        mdbx::error::success_or_throw(EINVAL);
+    }
+    return txn().get_map_stat(map());
 }
 
 bool has_map(::mdbx::txn& tx, const char* map_name) {

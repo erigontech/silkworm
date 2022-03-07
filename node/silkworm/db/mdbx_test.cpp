@@ -42,18 +42,75 @@ static const std::map<std::string, std::string> kGeneticCode{
 
 namespace silkworm::db {
 
+TEST_CASE("Cursor") {
+    const TemporaryDirectory tmp_dir;
+    db::EnvConfig db_config{tmp_dir.path().string(), /*create*/ true};
+    db_config.inmemory = true;
+    auto env{db::open_env(db_config)};
+    auto txn{env.start_write()};
+    const db::MapConfig map_config{"GeneticCode"};
+
+    // A bit of explanation here:
+    // Cursors cache may get polluted by previous tests or is empty
+    // in case this is the only test being executed. So we can't rely
+    // on empty() property rather we must evaluate deltas.
+    size_t original_cache_size{db::Cursor::handles_cache().size()};
+
+    {
+        db::Cursor cursor1(txn, map_config);
+        if (original_cache_size) {
+            // One handle pulled from cache
+            REQUIRE(db::Cursor::handles_cache().size() == original_cache_size - 1);
+        } else {
+            // A new handle has been created
+            REQUIRE(db::Cursor::handles_cache().size() == original_cache_size);
+        }
+        REQUIRE(cursor1.get_map_stat().ms_entries == 0);
+    }
+
+    // After destruction of previous cursor cache has increased by one if it was originally empty, otherwise it is
+    // restored to its original size
+    if (!original_cache_size) {
+        REQUIRE(db::Cursor::handles_cache().size() == original_cache_size + 1);
+    } else {
+        REQUIRE(db::Cursor::handles_cache().size() == original_cache_size);
+    }
+
+    // Force exceed of cache size
+    std::vector<db::Cursor> cursors;
+    for (size_t i = 0; i < original_cache_size + 5; ++i) {
+        cursors.emplace_back(txn, map_config);
+    }
+    REQUIRE(db::Cursor::handles_cache().empty() == true);
+    cursors.clear();
+    REQUIRE(db::Cursor::handles_cache().empty() == false);
+    REQUIRE(db::Cursor::handles_cache().size() == original_cache_size + 5);
+    txn.commit();
+
+    // In another thread cursor cache must be empty
+    std::atomic<size_t> other_thread_size{0};
+    std::thread t([&other_thread_size, &env]() {
+        {
+            auto txn{env.start_write()};
+            db::Cursor cursor(txn, {"Test"});
+        }
+        other_thread_size = db::Cursor::handles_cache().size();
+    });
+    t.join();
+    REQUIRE(other_thread_size == 1);
+}
+
 TEST_CASE("RWTxn") {
     const TemporaryDirectory tmp_dir;
     db::EnvConfig db_config{tmp_dir.path().string(), /*create*/ true};
     db_config.inmemory = true;
     auto env{db::open_env(db_config)};
+    static const char* table_name{"GeneticCode"};
 
     SECTION("Managed") {
-        static const char* table_name{"GeneticCode"};
         {
             auto tx{db::RWTxn(env)};
-            const auto handle{tx->create_map(table_name, mdbx::key_mode::usual, mdbx::value_mode::single)};
-            auto table_cursor{tx->open_cursor(handle)};
+            db::Cursor table_cursor(*tx, {table_name});
 
             // populate table
             for (const auto& [key, value] : kGeneticCode) {
@@ -70,7 +127,6 @@ TEST_CASE("RWTxn") {
     }
 
     SECTION("External") {
-        static const char* table_name{"GeneticCode"};
         auto ext_tx{env.start_write()};
         {
             auto tx{db::RWTxn(ext_tx)};
@@ -92,8 +148,7 @@ TEST_CASE("Cursor walk") {
 
     static const char* table_name{"GeneticCode"};
 
-    const auto handle{txn.create_map(table_name, mdbx::key_mode::usual, mdbx::value_mode::single)};
-    auto table_cursor{txn.open_cursor(handle)};
+    db::Cursor table_cursor(txn, {table_name});
 
     // A map to collect data
     std::map<std::string, std::string> data_map;
@@ -119,25 +174,23 @@ TEST_CASE("Cursor walk") {
             table_cursor.upsert(mdbx::slice{key}, mdbx::slice{value});
         }
 
-        // Close cursor so at subsequent opening its position is undefined
-        table_cursor.close();
-        table_cursor = txn.open_cursor(handle);
+        // Rebind cursor so its position is undefined
+        table_cursor.bind(txn, {table_name});
+        REQUIRE(table_cursor.eof() == true);
 
         // read entire table forward
         cursor_for_each(table_cursor, save_all_data_map);
         CHECK(data_map == kGeneticCode);
         data_map.clear();
-        table_cursor.close();
-        table_cursor = txn.open_cursor(handle);
 
         // read entire table backwards
+        table_cursor.bind(txn, {table_name});
         cursor_for_each(table_cursor, save_all_data_map, CursorMoveDirection::Reverse);
         CHECK(data_map == kGeneticCode);
         data_map.clear();
-        table_cursor.close();
-        table_cursor = txn.open_cursor(handle);
 
         // Ensure the order is reversed
+        table_cursor.bind(txn, {table_name});
         cursor_for_each(table_cursor, save_all_data_vec, CursorMoveDirection::Reverse);
         CHECK(data_vec.back().second == kGeneticCode.at("AAA"));
 
@@ -243,23 +296,21 @@ TEST_CASE("Cursor walk") {
         for (const auto& [key, value] : kGeneticCode) {
             table_cursor.upsert(mdbx::slice{key}, mdbx::slice{value});
         }
-        table_cursor.close();
-        table_cursor = txn.open_cursor(handle);
 
         // Erase all records in forward order
+        table_cursor.bind(txn, {table_name});
         cursor_erase(table_cursor);
-        REQUIRE(txn.get_map_stat(handle).ms_entries == 0);
+        REQUIRE(txn.get_map_stat(table_cursor.map()).ms_entries == 0);
 
         // populate table
         for (const auto& [key, value] : kGeneticCode) {
             table_cursor.upsert(mdbx::slice{key}, mdbx::slice{value});
         }
-        table_cursor.close();
-        table_cursor = txn.open_cursor(handle);
 
         // Erase all records in reverse order
+        table_cursor.bind(txn, {table_name});
         cursor_erase(table_cursor, CursorMoveDirection::Reverse);
-        REQUIRE(txn.get_map_stat(handle).ms_entries == 0);
+        REQUIRE(txn.get_map_stat(table_cursor.map()).ms_entries == 0);
 
         // populate table
         for (const auto& [key, value] : kGeneticCode) {
@@ -270,7 +321,7 @@ TEST_CASE("Cursor walk") {
         table_cursor.to_first();
         auto erased{cursor_erase(table_cursor, 5)};
         REQUIRE(erased == 5);
-        REQUIRE(txn.get_map_stat(handle).ms_entries == kGeneticCode.size() - erased);
+        REQUIRE(txn.get_map_stat(table_cursor.map()).ms_entries == kGeneticCode.size() - erased);
         cursor_for_each(table_cursor, save_all_data_map);
         REQUIRE(data_map.find("AAA") == data_map.end());
         REQUIRE(data_map.find("AAC") == data_map.end());

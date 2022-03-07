@@ -33,9 +33,8 @@ class ObjectPool {
     virtual ~ObjectPool() = default;
 
     void add(T*& t) {
-        T* tmp{nullptr};
-        std::swap(tmp, t);
-        pool_.push({tmp, TDtor()});
+        pool_.push({t, TDtor()});
+        t = nullptr;
     }
 
     T* acquire() {

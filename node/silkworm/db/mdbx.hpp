@@ -1,5 +1,5 @@
 /*
-   Copyright 2021 The Silkworm Authors
+   Copyright 2021-2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -43,7 +43,6 @@ namespace detail {
     struct cursor_handle_deleter {  // default deleter for pooled cursors
         constexpr cursor_handle_deleter() noexcept = default;
         void operator()(MDBX_cursor* ptr) const noexcept {
-            static_assert(0 < sizeof(ptr), "can't delete an incomplete type");
             mdbx_cursor_close(ptr);
         }
     };
@@ -150,15 +149,26 @@ class Cursor : public ::mdbx::cursor {
     explicit Cursor(::mdbx::txn& txn, const MapConfig& config);
     ~Cursor();
 
-    // Not copyable nor movable
+    Cursor(Cursor&& other) noexcept;
+    Cursor& operator=(Cursor&& other) noexcept;
+
     Cursor(const Cursor&) = delete;
     Cursor& operator=(const Cursor&) = delete;
 
+    //! \brief (re)uses current cursor binding it to provided transaction and map
     void bind(::mdbx::txn& tx, const MapConfig& config);
+
+    //! \brief Closes cursor causing de-allocation of MDBX_cursor handle
+    //! \remarks After this call the cursor is not reusable and the handle does not return to the cache
     void close();
 
+    //! \brief Returns stat info of underlying dbi
+    [[nodiscard]] MDBX_stat get_map_stat() const;
+
+    //! \brief Exposes handles cache
+    static const ObjectPool<MDBX_cursor, detail::cursor_handle_deleter>& handles_cache() { return handles_pool_; }
+
   private:
-    ::mdbx::map_handle map_handle_;
     static inline thread_local ObjectPool<MDBX_cursor, detail::cursor_handle_deleter> handles_pool_{};
 };
 

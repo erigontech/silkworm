@@ -172,7 +172,10 @@ Cursor::Cursor(::mdbx::txn& txn, const MapConfig& config) {
 
 Cursor::Cursor(Cursor&& other) noexcept { std::swap(handle_, other.handle_); }
 
-Cursor& Cursor::operator=(Cursor&& other) noexcept { std::swap(handle_, other.handle_); }
+Cursor& Cursor::operator=(Cursor&& other) noexcept {
+    std::swap(handle_, other.handle_);
+    return *this;
+}
 
 Cursor::~Cursor() {
     if (handle_) {

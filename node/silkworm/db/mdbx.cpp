@@ -46,8 +46,6 @@ namespace detail {
 ::mdbx::env_managed open_env(const EnvConfig& config) {
     namespace fs = std::filesystem;
 
-    std::optional<size_t> db_file_size;
-
     if (config.path.empty()) {
         throw std::invalid_argument("Invalid argument : config.path");
     }
@@ -64,23 +62,18 @@ namespace detail {
     }
 
     fs::path db_file{db::get_datafile_path(db_path)};
-    if (fs::exists(db_file)) {
-        db_file_size.emplace(fs::file_size(db_file));
-    }
+    size_t db_ondisk_file_size{fs::exists(db_file) ? fs::file_size(db_file) : 0};
 
-    if (!config.create && !db_file_size.has_value()) {
+    if (!config.create && !db_ondisk_file_size) {
         throw std::runtime_error("Unable to locate " + db_file.string() + ", which is required to exist");
-    } else if (config.create && db_file_size.has_value()) {
+    } else if (config.create && db_ondisk_file_size) {
         throw std::runtime_error("File " + db_file.string() + " already exists but create was set");
     }
 
     // Prevent mapping a file with a smaller map size than the size on disk.
     // Opening would not fail but only a part of data would be mapped.
-    if (db_file_size.has_value()) {
-        if (db_file_size.value() > config.max_size) {
-            throw std::runtime_error("Database map size is too small. Min required " +
-                                     human_size(db_file_size.value()));
-        }
+    if (db_ondisk_file_size > config.max_size) {
+        throw std::runtime_error("Database map size is too small. Min required " + human_size(db_ondisk_file_size));
     }
 
     uint32_t flags{MDBX_NOTLS | MDBX_NORDAHEAD | MDBX_COALESCE | MDBX_SYNC_DURABLE};  // Default flags

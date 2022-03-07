@@ -16,8 +16,6 @@
 
 #include "mdbx.hpp"
 
-#include <silkworm/common/log.hpp>
-
 namespace silkworm::db {
 
 namespace detail {

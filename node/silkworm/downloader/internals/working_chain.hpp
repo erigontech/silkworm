@@ -28,6 +28,7 @@
 #include "chain_elements.hpp"
 #include "header_only_state.hpp"
 #include "persisted_chain.hpp"
+#include "preverified_hashes.hpp"
 
 namespace silkworm {
 
@@ -105,7 +106,7 @@ class WorkingChain {
     bool has_link(Hash hash);
     std::vector<Announce>& announces_to_do();
     void add_bad_headers(const std::set<Hash>& bads);
-    void set_preverified_hashes(std::pair<uint64_t, std::set<evmc::bytes32>> preverified_hashes);
+    void set_preverified_hashes(const PreverifiedHashes*);
 
   protected:
     static constexpr BlockNum max_len = 192;
@@ -156,9 +157,7 @@ class WorkingChain {
     BlockNum highest_in_db_;
     BlockNum top_seen_height_;
     std::set<Hash> bad_headers_;
-
-    // Set of hashes that are known to belong to canonical chain
-    std::pair<uint64_t, std::set<evmc::bytes32>> preverified_hashes_{0, {}};
+    const PreverifiedHashes* preverified_hashes_;  // Set of hashes that are known to belong to canonical chain
 
     using Ignore = int;
     lru_cache<Hash, Ignore> seen_announces_;

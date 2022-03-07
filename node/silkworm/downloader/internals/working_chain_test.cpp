@@ -41,14 +41,6 @@ class WorkingChain_ForTest : public WorkingChain {
     WorkingChain_ForTest() : WorkingChain(consensus::engine_factory(ChainIdentity::mainnet.chain)) {}
 };
 
-/*
-    long int difficulty(const BlockHeader& header, const BlockHeader& parent) {
-        return static_cast<long int>(parent.difficulty) +
-               static_cast<long int>(parent.difficulty / 2048) * std::max(1 - static_cast<long int>(header.timestamp -
-   parent.timestamp) / 10, -99L)
-               + int(2^((header.number / 100000) - 2));
-    }
-*/
 // TESTs related to HeaderList::split_into_segments
 // ----------------------------------------------------------------------------
 
@@ -883,8 +875,13 @@ TEST_CASE("WorkingChain - process_segment - (4) pre-verified hashes on canonical
     h7b.parent_hash = h6b.hash();
     h7b.extra_data = string_view_to_byte_view("h7b");  // so hash(h7b) != hash(h7)
 
-    const std::pair<uint64_t, std::set<evmc::bytes32>> mynet_preverified_hashes{headers[9].number, {headers[8].hash(), headers[9].hash()}};
-    chain.set_preverified_hashes(mynet_preverified_hashes);
+    PreverifiedHashes mynet_preverified_hashes = {
+        {headers[8].hash(), headers[9].hash()},  // hashes
+        headers[9].number                        // height
+    };
+
+    chain.set_preverified_hashes(&mynet_preverified_hashes);
+
 
     // building the first part of the chain
     chain.accept_headers({headers[1], headers[2], headers[3], h3a, h4a}, request_id, peer_id);
@@ -937,8 +934,12 @@ TEST_CASE("WorkingChain - process_segment - (5) pre-verified hashes") {
         headers[i].parent_hash = headers[i - 1].hash();
     }
 
-    const std::pair<uint64_t, std::set<evmc::bytes32>> mynet_preverified_hashes{headers[6].number, {headers[6].hash()}};
-    chain.set_preverified_hashes(mynet_preverified_hashes);
+    PreverifiedHashes mynet_preverified_hashes = {
+        {headers[6].hash()},  // hashes
+        headers[6].number     // height
+    };
+
+    chain.set_preverified_hashes(&mynet_preverified_hashes);
 
 
     // building the first chain segment
@@ -1018,8 +1019,15 @@ TEST_CASE("WorkingChain - process_segment - (5') pre-verified hashes with canoni
         b_headers[i].extra_data = string_view_to_byte_view("alternate");  // so hash(a_headers[i]) != hash(b_headers[i])
     }
 
-    const std::pair<uint64_t, std::set<evmc::bytes32>> mynet_preverified_hashes{b_headers[6].number, {b_headers[6].hash()}};
-    chain.set_preverified_hashes(mynet_preverified_hashes);
+PreverifiedHashes mynet_preverified_hashes = {
+    {b_headers[6].hash()},  // hashes
+    b_headers[6].number     // height
+};
+
+chain.set_preverified_hashes(&mynet_preverified_hashes);
+
+
+
 
     // building the first branch of the chain
     chain.accept_headers({a_headers[1], a_headers[2], a_headers[3], a_headers[4], a_headers[5]}, request_id, peer_id);

@@ -31,10 +31,12 @@ namespace silkworm {
 
 HeaderDownloader::HeaderDownloader(SentryClient& sentry, const Db::ReadWriteAccess& db_access,
                                    const ChainIdentity& chain_identity)
-    : db_access_{db_access}, sentry_{sentry}, working_chain_(consensus::engine_factory(chain_identity.chain)) {
+    : db_access_{db_access}, sentry_{sentry}, working_chain_(consensus::engine_factory(chain_identity.chain))
+{
     auto tx = db_access_.start_ro_tx();
     working_chain_.recover_initial_state(tx);
-    working_chain_.set_preverified_hashes(get_preverified_hashes(chain_identity.chain.chain_id));
+
+    working_chain_.set_preverified_hashes(&PreverifiedHashes::load(chain_identity.chain.chain_id));
 }
 
 HeaderDownloader::~HeaderDownloader() {

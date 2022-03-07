@@ -17,6 +17,7 @@
 #ifndef SILKWORM_PREVERIFIED_HASHES_HPP
 #define SILKWORM_PREVERIFIED_HASHES_HPP
 
+#include <map>
 #include <set>
 #include <utility>
 
@@ -41,7 +42,21 @@ namespace silkworm {
  *
  */
 
-const std::pair<uint64_t, std::set<evmc::bytes32>> get_preverified_hashes(uint64_t chain_id);
+struct PreverifiedHashes {
+    std::set<evmc::bytes32> hashes;  // Set of hashes of headers that are known to belong to canonical chain
+    uint64_t height{0};              // Block height corresponding to the highest pre-verified header
+
+    [[nodiscard]] bool contains(const evmc::bytes32& hash) const { return hashes.find(hash) != hashes.end(); }
+
+    static PreverifiedHashes none;  // A void set of hashes that can be used to turn-off pre-verified hashes usage and
+                                    // that is useful for  (the default construction of) classes that use this
+                                    // functionality optionally
+
+    static const PreverifiedHashes& load(uint64_t chain_id); // Load a set of pre-verified hashes from low level impl
+
+  private:
+    static std::map<uint64_t, PreverifiedHashes> per_chain;  // chain-id based access to the instances
+};
 
 }  // namespace silkworm
 

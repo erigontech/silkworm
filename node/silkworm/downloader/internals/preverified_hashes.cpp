@@ -16,35 +16,44 @@
 
 #include "preverified_hashes.hpp"
 
+#include "cpp20_backport.hpp"
+
 extern const uint64_t* preverified_hashes_mainnet_data();
 extern size_t sizeof_preverified_hashes_mainnet_data();
 extern uint64_t preverified_hashes_mainnet_height();
 
 namespace silkworm {
 
-static std::pair<uint64_t, std::set<evmc::bytes32>> load_preverified_hashes_mainnet() {
+void load_preverified_hashes(PreverifiedHashes& destination, const uint64_t* (*preverified_hashes_data)(),
+                             size_t (*sizeof_preverified_hashes_data)(), uint64_t (*preverified_hashes_height)()) {
+    auto data_size = sizeof_preverified_hashes_data();
+    if (data_size == 0) return;
 
-    std::pair<uint64_t, std::set<evmc::bytes32>> ret{0,{}};
-    auto data_size{sizeof_preverified_hashes_mainnet_data()};
-    if(data_size) {
-        auto data_ptr{reinterpret_cast<const evmc::bytes32*>(preverified_hashes_mainnet_data())};
-        auto num_els{data_size / sizeof(evmc::bytes32)};
-        for (uint64_t i = 0; i < num_els; ++i) {
-            ret.second.insert(data_ptr[i]);
-        }
-        ret.first = preverified_hashes_mainnet_height();
+    auto data_ptr = reinterpret_cast<const evmc::bytes32*>(preverified_hashes_data());
+    auto num_elements{data_size / sizeof(evmc::bytes32)};
+
+    for (uint64_t i = 0; i < num_elements; ++i) {
+        destination.hashes.insert(data_ptr[i]);
     }
-    return ret;
+
+    destination.height = preverified_hashes_height();
 }
 
-const std::pair<uint64_t, std::set<evmc::bytes32>> get_preverified_hashes(uint64_t chain_id) {
+PreverifiedHashes PreverifiedHashes::none = {{}, 0};
 
-    switch (chain_id) {
-        case 1:
-            return load_preverified_hashes_mainnet();
-        default:
-            return {0, {}};
-    };
+std::map<uint64_t, PreverifiedHashes> PreverifiedHashes::per_chain = {{0, none}};
+
+const PreverifiedHashes& PreverifiedHashes::load(uint64_t chain_id) {
+    PreverifiedHashes& result = per_chain[chain_id];  // insert if not present
+
+    if (chain_id == 1 && result.height == 0) {
+        load_preverified_hashes(result,
+                                preverified_hashes_mainnet_data,
+                                sizeof_preverified_hashes_mainnet_data,
+                                preverified_hashes_mainnet_height);
+    }
+
+    return result;
 }
 
 }  // namespace silkworm

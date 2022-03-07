@@ -100,8 +100,8 @@ TEST_CASE("Cursor") {
     std::atomic<size_t> other_thread_size{0};
     std::thread t([&other_thread_size, &env]() {
         {
-            auto txn{env.start_write()};
-            db::Cursor cursor(txn, {"Test"});
+            auto thread_txn{env.start_write()};
+            db::Cursor cursor(thread_txn, {"Test"});
         }
         other_thread_size = db::Cursor::handles_cache().size();
     });

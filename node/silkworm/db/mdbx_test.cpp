@@ -15,6 +15,7 @@
 */
 
 #include <map>
+#include <thread>
 
 #include <catch2/catch.hpp>
 
@@ -105,7 +106,6 @@ TEST_CASE("Cursor") {
     });
     t.join();
     REQUIRE(other_thread_size == 1);
-
 }
 
 TEST_CASE("RWTxn") {

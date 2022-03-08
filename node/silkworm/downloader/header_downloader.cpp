@@ -31,8 +31,7 @@ namespace silkworm {
 
 HeaderDownloader::HeaderDownloader(SentryClient& sentry, const Db::ReadWriteAccess& db_access,
                                    const ChainIdentity& chain_identity)
-    : db_access_{db_access}, sentry_{sentry}, working_chain_(consensus::engine_factory(chain_identity.chain))
-{
+    : db_access_{db_access}, sentry_{sentry}, working_chain_(consensus::engine_factory(chain_identity.chain)) {
     auto tx = db_access_.start_ro_tx();
     working_chain_.recover_initial_state(tx);
 
@@ -98,8 +97,7 @@ auto HeaderDownloader::forward(bool first_sync) -> Stage::Result {
     bool new_height_reached = false;
     std::thread message_receiving;
 
-    StopWatch timing;
-    timing.start();
+    StopWatch timing(/*auto_start=*/true);
     log::Info() << "[1/16 Headers] Start";
     log::Trace() << "[INFO] HeaderDownloader forward operation started";
 
@@ -111,7 +109,7 @@ auto HeaderDownloader::forward(bool first_sync) -> Stage::Result {
         if (persisted_chain_.unwind_detected()) {
             tx.commit();
             log::Info() << "[1/16 Headers] End (forward skipped due to unwind detection, canonical chain updated), "
-                        << "duration=" << timing.format(timing.lap_duration());
+                << "duration=" << timing.format(timing.lap_duration());
             log::Trace() << "[INFO] HeaderDownloader forward skipped due to unwind detection, canonical chain updated";
             result.status = Stage::Result::Done;
             return result;
@@ -139,22 +137,23 @@ auto HeaderDownloader::forward(bool first_sync) -> Stage::Result {
                 // submit a withdrawal command
                 withdraw_command = withdraw_stable_headers();
                 withdraw_result = withdraw_command->result();
-            } else if (withdraw_result.wait_for(500ms) == std::future_status::ready) {
+            }
+            else if (withdraw_result.wait_for(500ms) == std::future_status::ready) {
                 // check the result of withdrawal command
                 auto [stable_headers, in_sync] = withdraw_result.get();  // blocking
                 if (!stable_headers.empty()) {
                     if (stable_headers.size() > 100000) {
                         log::Info() << "[1/16 Headers] Inserting headers...";
                     }
-                    StopWatch insertion_timing;
-                    insertion_timing.start();
+
+                    StopWatch insertion_timing(/*auto_start=*/ true);
 
                     // persist headers
                     persisted_chain_.persist(stable_headers);
 
                     if (stable_headers.size() > 100000) {
                         log::Info() << "[1/16 Headers] Inserted headers tot=" << stable_headers.size()
-                                    << " (duration=" << StopWatch::format(insertion_timing.lap_duration()) << "s)";
+                            << " (duration=" << StopWatch::format(insertion_timing.lap_duration()) << ")";
                     }
                 }
 
@@ -165,9 +164,8 @@ auto HeaderDownloader::forward(bool first_sync) -> Stage::Result {
                 if (first_sync) {  // if this is the first sync (installation time or run time after a long break)...
                     // ... we want to make sure we insert as many headers as possible
                     new_height_reached = in_sync && persisted_chain_.best_header_changed();
-                } else {  // otherwise, we are working at the tip of the chain so ...
+                } else { // otherwise, we are working at the tip of the chain so ...
                     // ... we need to react quickly when new headers are coming in
-                    new_height_reached = persisted_chain_.best_header_changed();
                 }
             }
 
@@ -219,8 +217,7 @@ auto HeaderDownloader::forward(bool first_sync) -> Stage::Result {
 auto HeaderDownloader::unwind_to(BlockNum new_height, Hash bad_block) -> Stage::Result {
     Stage::Result result;
 
-    StopWatch timing;
-    timing.start();
+    StopWatch timing(/*auto_start=*/ true);
     log::Info() << "[1/16 Headers] Unwind start";
     log::Trace() << "[INFO] HeaderDownloader unwind operation started";
 

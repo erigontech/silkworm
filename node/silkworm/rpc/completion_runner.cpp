@@ -31,9 +31,9 @@ void CompletionRunner::stop() {
         shutdown_requested_ = true;
         if (started_) {
             SILK_DEBUG << "CompletionRunner::stop set shutdown alarm";
+            // The completion runner has been started, so trigger an immediate alarm for shutdown (tag == this).
             auto shutdown_alarm = std::make_unique<grpc::Alarm>();
-            TagProcessor shutdown_processor = [this](bool ok) { shutdown(ok); };
-            shutdown_alarm->Set(&queue_, gpr_now(GPR_CLOCK_MONOTONIC), reinterpret_cast<void*>(&shutdown_processor));
+            shutdown_alarm->Set(&queue_, gpr_now(GPR_CLOCK_MONOTONIC), this);
             SILK_DEBUG << "CompletionRunner::stop waiting for clean up...";
             shutdown_completed_.wait(lock);
         } else {
@@ -53,14 +53,25 @@ void CompletionRunner::run() {
     }
     bool running = true;
     while (running) {
-        CompletionTag tag;
-        const auto got_event = queue_.Next(reinterpret_cast<void**>(&tag.processor), &tag.ok);
+        void* tag{nullptr};
+        bool ok{false};
+        const auto got_event = queue_.Next(&tag, &ok);
         if (got_event) {
-            SILK_DEBUG << "CompletionRunner::run post operation: " << &tag.processor;
-            io_context_.post([=]() { (*tag.processor)(tag.ok); });
+            if (tag == this) {
+                // Shutdown alarm has been triggered, post shutdown on io_context scheduler to avoid races and exit.
+                SILK_DEBUG << "CompletionRunner::run post shutdown this: " << this;
+                io_context_.post([this, ok]() { shutdown(ok); });
+                running = false;
+                SILK_DEBUG << "CompletionRunner::run shutdown scheduled";
+            } else {
+                // Handle the event completion on io_context scheduler.
+                CompletionTag completion_tag{reinterpret_cast<TagProcessor*>(tag), ok};
+                SILK_DEBUG << "CompletionRunner::run post operation: " << completion_tag.processor;
+                io_context_.post([completion_tag]() { (*completion_tag.processor)(completion_tag.ok); });
+            }
         } else {
             running = false;
-            SILK_DEBUG << "CompletionRunner::run queue shutdown";
+            SILK_DEBUG << "CompletionRunner::run queue fully drained and shut down";
         }
     }
     SILK_TRACE << "CompletionRunner::run end";
@@ -72,9 +83,10 @@ void CompletionRunner::shutdown(bool ok) {
     SILK_DEBUG << "CompletionRunner::shutdown draining...";
     void* ignored_tag;
     bool ignored_ok;
-    while (queue_.Next(&ignored_tag, &ignored_ok)) {}
+    while (queue_.Next(&ignored_tag, &ignored_ok)) {
+    }
     shutdown_completed_.notify_all();
     SILK_TRACE << "CompletionRunner::shutdown end";
 }
 
-} // namespace silkworm::rpc
+}  // namespace silkworm::rpc

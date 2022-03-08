@@ -17,8 +17,8 @@
 #include "signal_handler.hpp"
 
 #include <csignal>
-
-#include <silkworm/common/log.hpp>
+#include <cstdio>
+#include <cstdlib>
 
 namespace silkworm {
 
@@ -111,16 +111,25 @@ void SignalHandler::init() {
 void SignalHandler::handle(int sig_code) {
     bool expected{false};
     if (signalled_.compare_exchange_strong(expected, true)) {
-        log::Message() << kColorYellow << "Got " << sig_name(sig_code) << ". Shutting down ...";
+        std::fputs("Got ", stderr);
+        std::fputs(sig_name(sig_code), stderr);
+        std::fputs(". Shutting down ...\n", stderr);
     }
-    if (++sig_count_ >= 10) {
+    uint32_t sig_count = ++sig_count_;
+    if (sig_count >= 10) {
         std::abort();
     }
-    if (sig_count_ > 1) {
-        log::Message() << kColorYellow << "Already shutting down. Interrupt more to panic. " << (10 - sig_count_);
+    if (sig_count > 1) {
+        std::fputs("Already shutting down. Interrupt more to panic. ", stderr);
+        char digit_with_endl[3];
+        digit_with_endl[0] = '0' + (10 - sig_count);
+        digit_with_endl[1] = '\n';
+        digit_with_endl[2] = '\0';
+        std::fputs(digit_with_endl, stderr);
     }
     signal(sig_code, &SignalHandler::handle);  // Re-enable the hook
 }
+
 void SignalHandler::reset() {
     signalled_ = false;
     sig_count_ = 0;

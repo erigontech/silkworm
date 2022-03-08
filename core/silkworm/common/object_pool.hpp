@@ -14,33 +14,31 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_COMMON_OBJECTPOOL_HPP_
-#define SILKWORM_COMMON_OBJECTPOOL_HPP_
+#ifndef SILKWORM_COMMON_OBJECT_POOL_HPP_
+#define SILKWORM_COMMON_OBJECT_POOL_HPP_
 
 #include <memory>
 #include <stack>
+#include <vector>
+
+#include <gsl/pointers>
 
 namespace silkworm {
 
 template <class T, class TDtor = std::default_delete<T>>
 class ObjectPool {
   public:
-    using ptr_t = std::unique_ptr<T, TDtor>;
-
     ObjectPool() = default;
 
     virtual ~ObjectPool() = default;
 
-    void add(T*& t) {
-        pool_.push({t, TDtor()});
-        t = nullptr;
-    }
+    void add(gsl::owner<T*> t) { pool_.push({t, TDtor()}); }
 
-    T* acquire() {
+    gsl::owner<T*> acquire() {
         if (pool_.empty()) {
             return nullptr;
         }
-        T* ret(pool_.top().release());
+        gsl::owner<T*> ret(pool_.top().release());
         pool_.pop();
         return ret;
     }
@@ -49,16 +47,12 @@ class ObjectPool {
 
     [[nodiscard]] size_t size() const { return pool_.size(); }
 
-    void clear() {
-        while (!pool_.empty()) {
-            pool_.pop();
-        }
-    }
-
   private:
-    std::stack<ptr_t, std::vector<ptr_t>> pool_{};
+    using PointerType = std::unique_ptr<T, TDtor>;
+
+    std::stack<PointerType, std::vector<PointerType>> pool_{};
 };
 
 }  // namespace silkworm
 
-#endif  // SILKWORM_COMMON_OBJECTPOOL_HPP_
+#endif  // SILKWORM_COMMON_OBJECT_POOL_HPP_

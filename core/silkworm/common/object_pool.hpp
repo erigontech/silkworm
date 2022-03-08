@@ -34,7 +34,9 @@ class ObjectPool {
   public:
     explicit ObjectPool(bool thread_safe = false) : thread_safe_{thread_safe} {}
 
-    virtual ~ObjectPool() = default;
+    // Not copyable nor movable
+    ObjectPool(const ObjectPool&) = delete;
+    ObjectPool& operator=(const ObjectPool&) = delete;
 
     void add(gsl::owner<T*> t) {
 #ifndef __wasm__

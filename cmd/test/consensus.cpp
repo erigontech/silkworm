@@ -510,6 +510,8 @@ void run_test_file(const fs::path& file_path, RunnerFunc runner) {
     std::ifstream in{file_path.string()};
     nlohmann::json json;
 
+    std::cout << file_path.string() << std::endl;
+
     try {
         in >> json;
     } catch (nlohmann::detail::parse_error& e) {
@@ -702,7 +704,7 @@ int main(int argc, char* argv[]) {
         }
     }
 
-    size_t stack_size{80 * kMebi};
+    size_t stack_size{128 * kMebi};
 #ifdef NDEBUG
     stack_size = 16 * kMebi;
 #endif

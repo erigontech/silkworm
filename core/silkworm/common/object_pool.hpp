@@ -27,6 +27,16 @@
 
 #include <gsl/pointers>
 
+#ifndef __wasm__
+#define SILKWORM_DETAIL_OBJECT_POOL_GUARD            \
+    std::unique_lock<std::mutex> lock;               \
+    if (thread_safe_) {                              \
+        lock = std::unique_lock<std::mutex>{mutex_}; \
+    }
+#else
+#define SILKWORM_DETAIL_OBJECT_POOL_GUARD
+#endif
+
 namespace silkworm {
 
 template <class T, class TDtor = std::default_delete<T>>
@@ -39,22 +49,12 @@ class ObjectPool {
     ObjectPool& operator=(const ObjectPool&) = delete;
 
     void add(gsl::owner<T*> t) {
-#ifndef __wasm__
-        std::unique_lock<std::mutex> lock;
-        if (thread_safe_) {
-            lock = std::unique_lock<std::mutex>{mutex_};
-        }
-#endif
+        SILKWORM_DETAIL_OBJECT_POOL_GUARD
         pool_.push({t, TDtor()});
     }
 
     gsl::owner<T*> acquire() {
-#ifndef __wasm__
-        std::unique_lock<std::mutex> lock;
-        if (thread_safe_) {
-            lock = std::unique_lock<std::mutex>{mutex_};
-        }
-#endif
+        SILKWORM_DETAIL_OBJECT_POOL_GUARD
         if (pool_.empty()) {
             return nullptr;
         }
@@ -64,22 +64,12 @@ class ObjectPool {
     }
 
     [[nodiscard]] bool empty() const {
-#ifndef __wasm__
-        std::unique_lock<std::mutex> lock;
-        if (thread_safe_) {
-            lock = std::unique_lock<std::mutex>{mutex_};
-        }
-#endif
+        SILKWORM_DETAIL_OBJECT_POOL_GUARD
         return pool_.empty();
     }
 
     [[nodiscard]] size_t size() const {
-#ifndef __wasm__
-        std::unique_lock<std::mutex> lock;
-        if (thread_safe_) {
-            lock = std::unique_lock<std::mutex>{mutex_};
-        }
-#endif
+        SILKWORM_DETAIL_OBJECT_POOL_GUARD
         return pool_.size();
     }
 

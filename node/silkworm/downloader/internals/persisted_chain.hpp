@@ -71,10 +71,8 @@ class PersistedChain {
     Db::ReadWriteAccess::Tx& tx_;
     Hash previous_hash_;
     Hash highest_hash_;
-    BlockNum initial_height_{};
-    BlockNum highest_bn_{};
-    // uint64_t highest_timestamp_{};
-    // BlockNum previous_height_{};
+    BlockNum initial_in_db_{};
+    BlockNum highest_in_db_{};
     BigInt local_td_;
     BlockNum unwind_point_{};
     bool unwind_{false};

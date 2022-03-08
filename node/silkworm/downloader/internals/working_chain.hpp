@@ -17,6 +17,8 @@
 #ifndef SILKWORM_WORKING_CHAIN_HPP
 #define SILKWORM_WORKING_CHAIN_HPP
 
+#include <cstdio>
+
 #include <gsl/span>
 
 #include <silkworm/common/lru_cache.hpp>
@@ -73,14 +75,9 @@ class WorkingChain {
     BlockNum top_seen_block_height() const;
     void top_seen_block_height(BlockNum);
     size_t pending_links() const;
+    size_t anchors() const;
     std::string human_readable_status() const;
     std::string dump_chain_bundles() const;
-
-    // make an anchor collection (skeleton request) or many anchor extension upon the last execution time
-    auto request_headers(time_point_t tp)
-        -> std::tuple<std::vector<GetBlockHeadersPacket66>, std::vector<PeerPenalization>>;
-    // todo: encapsulate the algo that is in OutboundGetBlockHeaders at the moment + decide when to do the skeleton req
-    // notes: for the skeleton req save the time of last skeleton and make sure the next will be issued not before 60s
 
     // core functionalities: anchor collection
     // to collect anchor more quickly we do a skeleton request i.e. a request of many headers equally distributed in a
@@ -172,6 +169,23 @@ class WorkingChain {
 
     uint64_t request_id_prefix;
     uint64_t request_count = 0;
+
+  public:
+    struct Statistics {
+        // headers status
+        uint64_t requested_headers = 0;
+        uint64_t received_headers = 0;
+        uint64_t accepted_headers = 0;
+        // not accepted
+        uint64_t not_requested_headers = 0;
+        uint64_t duplicated_headers = 0;
+        uint64_t invalid_headers = 0;
+        uint64_t bad_headers = 0;
+        // skeleton condition
+        std::string skeleton_condition;
+
+        friend std::ostream& operator<<(std::ostream& os, const WorkingChain::Statistics& stats);
+    } statistics_;
 };
 
 }  // namespace silkworm

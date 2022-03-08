@@ -1,5 +1,5 @@
 /*
-   Copyright 2020-2021 The Silkworm Authors
+   Copyright 2020-2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -20,7 +20,7 @@
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wold-style-cast"
-#include <evmone/analysis.hpp>
+#include <evmone/advanced_analysis.hpp>
 #pragma GCC diagnostic pop
 
 namespace silkworm {
@@ -29,17 +29,15 @@ ExecutionStatePool::ExecutionStatePool() = default;
 
 ExecutionStatePool::~ExecutionStatePool() = default;
 
-std::unique_ptr<evmone::AdvancedExecutionState> ExecutionStatePool::acquire() noexcept {
+std::unique_ptr<EvmoneExecutionState> ExecutionStatePool::acquire() noexcept {
     if (pool_.empty()) {
-        return std::make_unique<evmone::AdvancedExecutionState>();
+        return std::make_unique<EvmoneExecutionState>();
     }
-    std::unique_ptr<evmone::AdvancedExecutionState> obj{pool_.top().release()};
+    std::unique_ptr<EvmoneExecutionState> obj{pool_.top().release()};
     pool_.pop();
     return obj;
 }
 
-void ExecutionStatePool::release(std::unique_ptr<evmone::AdvancedExecutionState> obj) noexcept {
-    pool_.push(std::move(obj));
-}
+void ExecutionStatePool::release(std::unique_ptr<EvmoneExecutionState> obj) noexcept { pool_.push(std::move(obj)); }
 
 }  // namespace silkworm

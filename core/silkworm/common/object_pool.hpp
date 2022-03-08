@@ -17,37 +17,46 @@
 #ifndef SILKWORM_COMMON_OBJECTPOOL_HPP_
 #define SILKWORM_COMMON_OBJECTPOOL_HPP_
 
-#include <iostream>
 #include <memory>
 #include <stack>
 
 namespace silkworm {
 
-template <class T>
+template <class T, class TDtor = std::default_delete<T>>
 class ObjectPool {
   public:
-    using ptr_t = std::unique_ptr<T>;
+    using ptr_t = std::unique_ptr<T, TDtor>;
 
     ObjectPool() = default;
+
     virtual ~ObjectPool() = default;
 
-    void add(ptr_t t) { pool_.push(std::move(t)); }
+    void add(T*& t) {
+        pool_.push({t, TDtor()});
+        t = nullptr;
+    }
 
-    ptr_t acquire() {
-        if (!empty()) {
-            ptr_t tmp(pool_.top().release());
-            pool_.pop();
-            return tmp;
+    T* acquire() {
+        if (pool_.empty()) {
+            return nullptr;
         }
-        return {nullptr};
+        T* ret(pool_.top().release());
+        pool_.pop();
+        return ret;
     }
 
     [[nodiscard]] bool empty() const { return pool_.empty(); }
 
     [[nodiscard]] size_t size() const { return pool_.size(); }
 
+    void clear() {
+        while (!pool_.empty()) {
+            pool_.pop();
+        }
+    }
+
   private:
-    std::stack<ptr_t> pool_;
+    std::stack<ptr_t, std::vector<ptr_t>> pool_{};
 };
 
 }  // namespace silkworm

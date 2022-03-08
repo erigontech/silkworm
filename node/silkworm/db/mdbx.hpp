@@ -1,5 +1,5 @@
 /*
-   Copyright 2021 The Silkworm Authors
+   Copyright 2021-2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -38,6 +38,13 @@ namespace silkworm::db {
 
 inline constexpr std::string_view kDbDataFileName{"mdbx.dat"};
 inline constexpr std::string_view kDbLockFileName{"mdbx.lck"};
+
+namespace detail {
+    struct cursor_handle_deleter {  // default deleter for pooled cursors
+        constexpr cursor_handle_deleter() noexcept = default;
+        void operator()(MDBX_cursor* ptr) const noexcept { mdbx_cursor_close(ptr); }
+    };
+}  // namespace detail
 
 //! \brief This class manages mdbx transactions across stages.
 //! It either creates new mdbx transaction as need be or uses an externally provided transaction.
@@ -132,22 +139,35 @@ struct MapConfig {
 //! \return A handle to the opened cursor
 ::mdbx::cursor_managed open_cursor(::mdbx::txn& tx, const MapConfig& config);
 
-//! \brief RAII wrapper around a pooled cursor
-class PooledCursor {
+//! \brief Managed cursor class to access cursor API
+//! \remarks Unlike ::mdbx::cursor_managed this class withdraws and deposits allocated MDBX_cursor handles in a
+//! thread_local pool for reuse. This helps avoiding multiple mallocs on cursor creation.
+class Cursor : public ::mdbx::cursor {
   public:
-    PooledCursor(::mdbx::txn& tx, const MapConfig& config);
-    ~PooledCursor();
+    explicit Cursor(::mdbx::txn& txn, const MapConfig& config);
+    ~Cursor();
 
-    ::mdbx::cursor_managed& operator*() const noexcept { return *cursor_; }
-    ::mdbx::cursor_managed* operator->() const noexcept { return cursor_.get(); }
+    Cursor(Cursor&& other) noexcept;
+    Cursor& operator=(Cursor&& other) noexcept;
 
+    Cursor(const Cursor&) = delete;
+    Cursor& operator=(const Cursor&) = delete;
+
+    //! \brief (re)uses current cursor binding it to provided transaction and map
     void bind(::mdbx::txn& tx, const MapConfig& config);
 
+    //! \brief Closes cursor causing de-allocation of MDBX_cursor handle
+    //! \remarks After this call the cursor is not reusable and the handle does not return to the cache
     void close();
 
+    //! \brief Returns stat info of underlying dbi
+    [[nodiscard]] MDBX_stat get_map_stat() const;
+
+    //! \brief Exposes handles cache
+    static const ObjectPool<MDBX_cursor, detail::cursor_handle_deleter>& handles_cache() { return handles_pool_; }
+
   private:
-    std::unique_ptr<::mdbx::cursor_managed> cursor_{nullptr};
-    static inline thread_local ObjectPool<mdbx::cursor_managed> cursors_pool_{};
+    static inline thread_local ObjectPool<MDBX_cursor, detail::cursor_handle_deleter> handles_pool_{};
 };
 
 //! \brief Checks whether a provided map name exists in database

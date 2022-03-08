@@ -1,5 +1,5 @@
 /*
-   Copyright 2021 The Silkworm Authors
+   Copyright 2021-2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -15,8 +15,6 @@
 */
 
 #include "mdbx.hpp"
-
-#include <silkworm/common/object_pool.hpp>
 
 namespace silkworm::db {
 
@@ -48,8 +46,6 @@ namespace detail {
 ::mdbx::env_managed open_env(const EnvConfig& config) {
     namespace fs = std::filesystem;
 
-    std::optional<size_t> db_file_size;
-
     if (config.path.empty()) {
         throw std::invalid_argument("Invalid argument : config.path");
     }
@@ -66,23 +62,18 @@ namespace detail {
     }
 
     fs::path db_file{db::get_datafile_path(db_path)};
-    if (fs::exists(db_file)) {
-        db_file_size.emplace(fs::file_size(db_file));
-    }
+    size_t db_ondisk_file_size{fs::exists(db_file) ? fs::file_size(db_file) : 0};
 
-    if (!config.create && !db_file_size.has_value()) {
+    if (!config.create && !db_ondisk_file_size) {
         throw std::runtime_error("Unable to locate " + db_file.string() + ", which is required to exist");
-    } else if (config.create && db_file_size.has_value()) {
+    } else if (config.create && db_ondisk_file_size) {
         throw std::runtime_error("File " + db_file.string() + " already exists but create was set");
     }
 
     // Prevent mapping a file with a smaller map size than the size on disk.
     // Opening would not fail but only a part of data would be mapped.
-    if (db_file_size.has_value()) {
-        if (db_file_size.value() > config.max_size) {
-            throw std::runtime_error("Database map size is too small. Min required " +
-                                     human_size(db_file_size.value()));
-        }
+    if (db_ondisk_file_size > config.max_size) {
+        throw std::runtime_error("Database map size is too small. Min required " + human_size(db_ondisk_file_size));
     }
 
     uint32_t flags{MDBX_NOTLS | MDBX_NORDAHEAD | MDBX_COALESCE | MDBX_SYNC_DURABLE};  // Default flags
@@ -162,36 +153,50 @@ namespace detail {
     return tx.open_cursor(open_map(tx, config));
 }
 
-PooledCursor::PooledCursor(::mdbx::txn& tx, const MapConfig& config) {
-    cursor_ = cursors_pool_.acquire();
-    if (!cursor_) {
-        cursor_ = std::make_unique<::mdbx::cursor_managed>();
+Cursor::Cursor(::mdbx::txn& txn, const MapConfig& config) {
+    handle_ = handles_pool_.acquire();
+    if (!handle_) {
+        handle_ = ::mdbx_cursor_create(nullptr);
     }
-    bind(tx, config);
+    bind(txn, config);
 }
 
-PooledCursor::~PooledCursor() {
-    if (*cursor_) {
-        cursors_pool_.add(std::move(cursor_));
+Cursor::Cursor(Cursor&& other) noexcept { std::swap(handle_, other.handle_); }
+
+Cursor& Cursor::operator=(Cursor&& other) noexcept {
+    std::swap(handle_, other.handle_);
+    return *this;
+}
+
+Cursor::~Cursor() {
+    if (handle_) {
+        handles_pool_.add(handle_);
     }
 }
 
-void PooledCursor::bind(::mdbx::txn& tx, const MapConfig& config) {
-    assert(cursor_);
-    const auto& cm{*cursor_};
+void Cursor::bind(::mdbx::txn& txn, const MapConfig& config) {
     // Check cursor is bound to a live transaction
-    if (auto cm_tx{mdbx_cursor_txn(&(*cm))}; cm_tx) {
+    if (auto cm_tx{mdbx_cursor_txn(handle_)}; cm_tx) {
         // If current transaction id does not match cursor's transaction close it
         // and recreate a new one
-        if (tx.id() != mdbx_txn_id(cm_tx)) {
-            cursor_.reset(new ::mdbx::cursor_managed());  // RAII implement cursor closure
+        if (txn.id() != mdbx_txn_id(cm_tx)) {
+            close();
+            handle_ = ::mdbx_cursor_create(nullptr);
         }
     }
-    auto map{open_map(tx, config)};
-    cursor_->bind(tx, map);
+    ::mdbx::cursor::bind(txn, open_map(txn, config));
 }
 
-void PooledCursor::close() { cursor_->close(); }
+void Cursor::close() {
+    ::mdbx_cursor_close(handle_);
+    handle_ = nullptr;
+}
+MDBX_stat Cursor::get_map_stat() const {
+    if (!handle_) {
+        mdbx::error::success_or_throw(EINVAL);
+    }
+    return txn().get_map_stat(map());
+}
 
 bool has_map(::mdbx::txn& tx, const char* map_name) {
     try {

@@ -1,5 +1,5 @@
 /*
-   Copyright 2021 The Silkworm Authors
+   Copyright 2021-2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -20,17 +20,17 @@
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wold-style-cast"
-#include <evmone/analysis.hpp>
+#include <evmone/advanced_analysis.hpp>
 #pragma GCC diagnostic pop
 
 namespace silkworm {
 
-std::unique_ptr<evmone::AdvancedExecutionState> ThreadSafeExecutionStatePool::acquire() noexcept {
+std::unique_ptr<EvmoneExecutionState> ThreadSafeExecutionStatePool::acquire() noexcept {
     const std::lock_guard lock{mutex_};
     return ExecutionStatePool::acquire();
 }
 
-void ThreadSafeExecutionStatePool::release(std::unique_ptr<evmone::AdvancedExecutionState> obj) noexcept {
+void ThreadSafeExecutionStatePool::release(std::unique_ptr<EvmoneExecutionState> obj) noexcept {
     const std::lock_guard lock{mutex_};
     ExecutionStatePool::release(std::move(obj));
 }

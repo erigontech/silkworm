@@ -97,16 +97,22 @@ TEST_CASE("Cursor") {
     txn.commit();
 
     // In another thread cursor cache must be empty
-    std::atomic<size_t> other_thread_size{0};
-    std::thread t([&other_thread_size, &env]() {
-        {
-            auto thread_txn{env.start_write()};
-            db::Cursor cursor(thread_txn, {"Test"});
-        }
-        other_thread_size = db::Cursor::handles_cache().size();
+    std::atomic<size_t> other_thread_size1{0};
+    std::atomic<size_t> other_thread_size2{0};
+    std::thread t([&other_thread_size1, &other_thread_size2, &env]() {
+        auto thread_txn{env.start_write()};
+        { db::Cursor cursor(thread_txn, {"Test"}); }
+        other_thread_size1 = db::Cursor::handles_cache().size();
+
+        // Pull a handle from the pool and close the cursor directly
+        // so is not returned to the pool
+        db::Cursor cursor(thread_txn, {"Test"});
+        cursor.close();
+        other_thread_size2 = db::Cursor::handles_cache().size();
     });
     t.join();
-    REQUIRE(other_thread_size == 1);
+    REQUIRE(other_thread_size1 == 1);
+    REQUIRE(other_thread_size2 == 0);
 }
 
 TEST_CASE("RWTxn") {

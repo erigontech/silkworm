@@ -301,7 +301,7 @@ evmc_result EVM::execute_with_default_interpreter(evmc_revision rev, const evmc_
                                                   const evmc::bytes32& code_hash) noexcept {
     assert(advanced_analysis_cache != nullptr);
 
-    auto analysis{advanced_analysis_cache->get(code_hash, rev)};
+    std::shared_ptr<EvmoneCodeAnalysis> analysis{advanced_analysis_cache->get(code_hash, rev)};
     if (!analysis) {
         analysis = std::make_shared<EvmoneCodeAnalysis>(evmone::advanced::analyze(rev, code));
         advanced_analysis_cache->put(code_hash, analysis, rev);

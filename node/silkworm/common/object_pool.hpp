@@ -17,7 +17,6 @@
 #ifndef SILKWORM_COMMON_OBJECTPOOL_HPP_
 #define SILKWORM_COMMON_OBJECTPOOL_HPP_
 
-#include <iostream>
 #include <memory>
 #include <stack>
 

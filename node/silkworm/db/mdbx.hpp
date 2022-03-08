@@ -42,9 +42,7 @@ inline constexpr std::string_view kDbLockFileName{"mdbx.lck"};
 namespace detail {
     struct cursor_handle_deleter {  // default deleter for pooled cursors
         constexpr cursor_handle_deleter() noexcept = default;
-        void operator()(MDBX_cursor* ptr) const noexcept {
-            mdbx_cursor_close(ptr);
-        }
+        void operator()(MDBX_cursor* ptr) const noexcept { mdbx_cursor_close(ptr); }
     };
 }  // namespace detail
 

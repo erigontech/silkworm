@@ -62,6 +62,7 @@ commands:
       - run:
           name: "Ethereum consensus tests"
           working_directory: ~/build
+          no_output_timeout: 20m
           command: cmd/test/consensus --threads 4 # out of memory with 8 threads under linux-gcc-11-thread-sanitizer 
 
 jobs:

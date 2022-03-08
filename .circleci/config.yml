@@ -62,9 +62,7 @@ commands:
       - run:
           name: "Ethereum consensus tests"
           working_directory: ~/build
-          command: |
-            ulimit -s unlimited
-            cmd/test/consensus --threads 2
+          command: cmd/test/consensus --threads 4 # out of memory with 8 threads under linux-gcc-11-thread-sanitizer 
 
 jobs:
   linux-gcc-9:

@@ -15,6 +15,7 @@
 */
 
 #include "working_chain.hpp"
+#include "silkworm/chain/identity.hpp"
 
 #include <algorithm>
 
@@ -40,14 +41,6 @@ class WorkingChain_ForTest : public WorkingChain {
     WorkingChain_ForTest() : WorkingChain(consensus::engine_factory(ChainIdentity::mainnet.chain)) {}
 };
 
-/*
-    long int difficulty(const BlockHeader& header, const BlockHeader& parent) {
-        return static_cast<long int>(parent.difficulty) +
-               static_cast<long int>(parent.difficulty / 2048) * std::max(1 - static_cast<long int>(header.timestamp -
-   parent.timestamp) / 10, -99L)
-               + int(2^((header.number / 100000) - 2));
-    }
-*/
 // TESTs related to HeaderList::split_into_segments
 // ----------------------------------------------------------------------------
 

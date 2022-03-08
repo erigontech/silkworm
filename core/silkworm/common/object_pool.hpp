@@ -89,7 +89,7 @@ class ObjectPool {
     bool thread_safe_{false};
 
 #ifndef __wasm__
-    std::mutex mutex_;
+    mutable std::mutex mutex_;
 #endif
 };
 

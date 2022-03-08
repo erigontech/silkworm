@@ -19,8 +19,8 @@
 
 #include <map>
 #include <set>
+#include <utility>
 
-#include <silkworm/chain/identity.hpp>
 #include <silkworm/common/base.hpp>
 
 namespace silkworm {
@@ -41,9 +41,10 @@ namespace silkworm {
  * preverified_hashes_mainnet.cpp
  *
  */
+
 struct PreverifiedHashes {
     std::set<evmc::bytes32> hashes;  // Set of hashes of headers that are known to belong to canonical chain
-    uint64_t height{0};              // Block height corresponding to the highest preverified header
+    uint64_t height{0};              // Block height corresponding to the highest pre-verified header
 
     [[nodiscard]] bool contains(const evmc::bytes32& hash) const { return hashes.find(hash) != hashes.end(); }
 
@@ -51,14 +52,11 @@ struct PreverifiedHashes {
                                     // that is useful for  (the default construction of) classes that use this
                                     // functionality optionally
 
-    static PreverifiedHashes mainnet;  // The mainnet set of pre-verified hashes
+    static const PreverifiedHashes& load(uint64_t chain_id); // Load a set of pre-verified hashes from low level impl
 
-    static std::map<uint64_t, const PreverifiedHashes&> per_chain;  // chain-id based access to the instances
+  private:
+    static std::map<uint64_t, PreverifiedHashes> per_chain;  // chain-id based access to the instances
 };
-
-inline PreverifiedHashes PreverifiedHashes::none = {{}, 0};
-
-inline std::map<uint64_t, const PreverifiedHashes&> PreverifiedHashes::per_chain = {{0, none}, {1, mainnet}};
 
 }  // namespace silkworm
 

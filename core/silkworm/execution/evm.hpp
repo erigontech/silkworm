@@ -1,5 +1,5 @@
 /*
-   Copyright 2020-2021 The Silkworm Authors
+   Copyright 2020-2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -29,10 +29,10 @@
 #include <silkworm/state/intra_block_state.hpp>
 #include <silkworm/types/block.hpp>
 
-namespace evmone {
-struct ExecutionState;
-using bytes_view = std::basic_string_view<uint8_t>;
-}
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wold-style-cast"
+#include <evmone/advanced_analysis.hpp>
+#pragma GCC diagnostic pop
 
 namespace silkworm {
 

@@ -23,7 +23,6 @@
 #include <memory>
 
 #include <ethash/keccak.hpp>
-#include <evmone/advanced_analysis.hpp>
 #include <evmone/advanced_execution.hpp>
 #include <evmone/baseline.hpp>
 #include <evmone/evmone.h>

@@ -18,11 +18,6 @@
 
 #include <utility>
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wold-style-cast"
-#include <evmone/advanced_analysis.hpp>
-#pragma GCC diagnostic pop
-
 namespace silkworm {
 
 std::unique_ptr<EvmoneExecutionState> ThreadSafeExecutionStatePool::acquire() noexcept {

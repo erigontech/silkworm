@@ -20,9 +20,10 @@
 #include <memory>
 #include <stack>
 
-namespace evmone::advanced {
-struct AdvancedExecutionState;
-}
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wold-style-cast"
+#include <evmone/advanced_analysis.hpp>
+#pragma GCC diagnostic pop
 
 namespace silkworm {
 

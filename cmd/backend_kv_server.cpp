@@ -24,9 +24,28 @@
 #include <CLI/CLI.hpp>
 #include <magic_enum.hpp>
 
+#include <silkworm/buildinfo.h>
 #include <silkworm/chain/config.hpp>
 #include <silkworm/common/log.hpp>
 #include <silkworm/rpc/backend_server.hpp>
+
+std::string get_node_name_from_build_info() {
+    const auto build_info{silkworm_get_buildinfo()};
+
+    std::string node_name{"silkworm/"};
+    node_name.append(build_info->project_version);
+    node_name.append("/");
+    node_name.append(build_info->system_name);
+    node_name.append("-");
+    node_name.append(build_info->system_processor);
+    node_name.append("_");
+    node_name.append(build_info->build_type);
+    node_name.append("/");
+    node_name.append(build_info->compiler_id);
+    node_name.append("-");
+    node_name.append(build_info->compiler_version);
+    return node_name;
+}
 
 int main(int argc, char* argv[]) {
     const auto pid = boost::this_process::get_id();
@@ -59,10 +78,14 @@ int main(int argc, char* argv[]) {
     log_settings.log_verbosity = log_level;
     silkworm::log::init(log_settings);
 
+    const auto node_name{get_node_name_from_build_info()};
+    SILK_LOG << "BackEndKvServer build info: " << node_name;
+
     try {
         SILK_LOG << "BackEndKvServer launched with address: " << address_uri << ", contexts: " << num_contexts;
 
         silkworm::rpc::ServerConfig srv_config;
+        srv_config.set_node_name(node_name);
         srv_config.set_address_uri(address_uri);
         srv_config.set_num_contexts(num_contexts);
 

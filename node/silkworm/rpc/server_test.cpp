@@ -16,6 +16,9 @@
 
 #include "server.hpp"
 
+#include <atomic>
+#include <chrono>
+//#include <mutex>
 #include <thread>
 
 #include <catch2/catch.hpp>
@@ -94,17 +97,30 @@ TEST_CASE("Server::Server", "[silkworm][node][rpc]") {
 TEST_CASE("Server::run", "[silkworm][node][rpc]") {
     silkworm::log::set_verbosity(silkworm::log::Level::kNone);
 
-    // TODO(canepat): use GMock
     class TestServer : public Server<MockService> {
       public:
         TestServer(const ServerConfig& config) : Server(config) {}
-        bool accept_requests_called() const { return accept_requests_called_; }
+
+        bool wait_initialization_for(uint32_t timeout=1000, uint32_t check_interval=10) {
+            if (!notified_) {
+                auto sleep_count = timeout / check_interval;
+                for (uint64_t i=0; i<sleep_count; i++) {
+                    if (notified_) {
+                        break;
+                    }
+                    std::this_thread::sleep_for(std::chrono::milliseconds(check_interval));
+                }
+            }
+            return notified_;
+        }
 
       protected:
-        void request_calls() override { accept_requests_called_ = true; }
+        void request_calls() override {
+            notified_ = true;
+        }
 
       private:
-        bool accept_requests_called_{false};
+        std::atomic_bool notified_{false};
     };
 
     SECTION("OK: accept requests called", "[silkworm][node][rpc]") {
@@ -112,11 +128,11 @@ TEST_CASE("Server::run", "[silkworm][node][rpc]") {
         config.set_address_uri(kTestAddressUri);
         TestServer server{config};
         std::thread shutdown_thread{[&server]() {
-            std::this_thread::yield();
+            const bool notified = server.wait_initialization_for();
+            CHECK(notified);
             server.shutdown();
         }};
         server.run();
-        CHECK(server.accept_requests_called());
         shutdown_thread.join();
     }
 }

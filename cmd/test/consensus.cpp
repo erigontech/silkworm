@@ -702,7 +702,7 @@ int main(int argc, char* argv[]) {
         }
     }
 
-    thread_pool thread_pool{num_threads, /*stack_size=*/32 * kMebi};
+    thread_pool thread_pool{num_threads, /*stack_size=*/40 * kMebi};
 
     const fs::path root_dir{tests_path};
 

@@ -33,9 +33,10 @@ namespace silkworm {
 class Stage {
   public:
     struct Result {
-        enum Status { Unknown, Done, DoneAndUpdated, UnwindNeeded, SkipTx, Error } status;
-        std::optional<BlockNum> current_point;  // todo: do we need this?
+        enum Status { Unspecified, Done, DoneAndUpdated, UnwindNeeded, SkipTx, Error } status;
+        std::optional<BlockNum> current_point;
         std::optional<BlockNum> unwind_point;
+        std::optional<Hash> bad_block;
     };
 
     virtual Result forward(bool first_sync) = 0;

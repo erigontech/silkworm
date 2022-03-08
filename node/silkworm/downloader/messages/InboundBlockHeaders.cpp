@@ -50,13 +50,6 @@ void InboundBlockHeaders::execute() {
     // Save the headers
     auto [penalty, requestMoreHeaders] = working_chain_.accept_headers(packet_.request, packet_.requestId, peerId_);
 
-    // If the working chain need more headers we issue an header request here (header downloader issues this request
-    // periodically, but it could not be in a forward phase at this moment)
-    if (penalty == Penalty::NoPenalty && requestMoreHeaders) {
-        OutboundGetBlockHeaders message(working_chain_, sentry_, OutboundGetBlockHeaders::Wide_Req);
-        message.execute();
-    }
-
     // Reply
     if (penalty != Penalty::NoPenalty) {
         SILK_TRACE << "Replying to " << identify(*this) << " with penalize_peer";

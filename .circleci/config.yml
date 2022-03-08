@@ -54,17 +54,17 @@ commands:
           working_directory: ~/build
           command: |
             ulimit -s unlimited
-            cmd/core_test
+            cmd/test/core_test
       - run:
           name: "Node unit tests"
           working_directory: ~/build
-          command: cmd/node_test
+          command: cmd/test/node_test
       - run:
           name: "Ethereum consensus tests"
           working_directory: ~/build
           command: |
             ulimit -s unlimited
-            cmd/consensus
+            cmd/test/consensus
 
 jobs:
   linux-gcc-9:
@@ -93,7 +93,16 @@ jobs:
     steps:
       - checkout_with_submodules
       - build
-      - test
+      - run:
+          name: "Core unit tests"
+          working_directory: ~/build
+          command: |
+            ulimit -s unlimited
+            cmd/test/core_test
+      - run:
+          name: "Node unit tests"
+          working_directory: ~/build
+          command: cmd/test/node_test
 
   linux-gcc-11-cpp20:
     environment:
@@ -139,27 +148,27 @@ jobs:
           name: "Core unit tests"
           working_directory: ~/build
           command: |
-            cmd/core_test
+            cmd/test/core_test
             mv default.profraw core_test.profraw
       - run:
           name: "Node unit tests"
           working_directory: ~/build
           command: |
-            cmd/node_test
+            cmd/test/node_test
             mv default.profraw node_test.profraw
       - run:
           name: "Ethereum consensus tests"
           working_directory: ~/build
           no_output_timeout: 20m
           command: |
-            cmd/consensus
+            cmd/test/consensus
             mv default.profraw consensus.profraw
       - run:
           name: "Coverage"
           working_directory: ~/build
           command: |
             llvm-profdata merge *.profraw -o profdata
-            llvm-cov export -instr-profile profdata -format=lcov cmd/node_test -object cmd/consensus > silkworm.lcov
+            llvm-cov export -instr-profile profdata -format=lcov cmd/test/node_test -object cmd/test/consensus > silkworm.lcov
       - run:
           name: "Upload to Codecov"
           command: |
@@ -213,7 +222,7 @@ jobs:
       - run:
           name: "Core unit tests"
           working_directory: ~/build
-          command: wasmer cmd/core_test
+          command: wasmer cmd/test/core_test
 
 workflows:
   version: 2

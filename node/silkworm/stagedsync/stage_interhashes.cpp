@@ -37,8 +37,8 @@ trie::PrefixSet InterHashes::gather_account_changes(mdbx::txn& txn, BlockNum fro
     // Don't rehash same addresses
     absl::btree_set<evmc::address> unique_addresses{};
 
-    db::PooledCursor account_changeset(txn, db::table::kAccountChangeSet);
-    auto changeset_data{account_changeset->lower_bound(db::to_slice(starting_key), /*throw_notfound=*/false)};
+    db::Cursor account_changeset(txn, db::table::kAccountChangeSet);
+    auto changeset_data{account_changeset.lower_bound(db::to_slice(starting_key), /*throw_notfound=*/false)};
 
     while (changeset_data) {
         reached_blocknum = endian::load_big_u64(db::from_slice(changeset_data.key).data());
@@ -62,11 +62,11 @@ trie::PrefixSet InterHashes::gather_account_changes(mdbx::txn& txn, BlockNum fro
                 ret.insert(trie::unpack_nibbles(hashed_address.bytes));
                 unique_addresses.insert(address);
             }
-            changeset_data = account_changeset->to_current_next_multi(/*throw_notfound=*/false);
+            changeset_data = account_changeset.to_current_next_multi(/*throw_notfound=*/false);
         }
 
         ++expected_blocknum;
-        changeset_data = account_changeset->to_next(/*throw_notfound=*/false);
+        changeset_data = account_changeset.to_next(/*throw_notfound=*/false);
     }
 
     return ret;
@@ -88,8 +88,8 @@ trie::PrefixSet InterHashes::gather_storage_changes(mdbx::txn& txn, BlockNum fro
     absl::btree_map<evmc::address, ethash_hash256> hashed_addresses{};
     absl::btree_map<evmc::address, ethash_hash256>::iterator hashed_addresses_it{hashed_addresses.begin()};
 
-    db::PooledCursor storage_changeset(txn, db::table::kStorageChangeSet);
-    auto changeset_data{storage_changeset->lower_bound(db::to_slice(starting_key), /*throw_notfound=*/false)};
+    db::Cursor storage_changeset(txn, db::table::kStorageChangeSet);
+    auto changeset_data{storage_changeset.lower_bound(db::to_slice(starting_key), /*throw_notfound=*/false)};
 
     while (changeset_data) {
         auto changeset_key_view{db::from_slice(changeset_data.key)};
@@ -126,10 +126,10 @@ trie::PrefixSet InterHashes::gather_storage_changes(mdbx::txn& txn, BlockNum fro
             hashed_key.append(incarnation);
             hashed_key.append(trie::unpack_nibbles(hashed_location.bytes));
             ret.insert(hashed_key);
-            changeset_data = storage_changeset->to_current_next_multi(/*throw_notfound=*/false);
+            changeset_data = storage_changeset.to_current_next_multi(/*throw_notfound=*/false);
         }
 
-        changeset_data = storage_changeset->to_next(/*throw_notfound=*/false);
+        changeset_data = storage_changeset.to_next(/*throw_notfound=*/false);
     }
 
     return ret;
@@ -162,10 +162,11 @@ StageResult InterHashes::forward(silkworm::db::RWTxn& txn) {
         reset_log_progress();
 
         if (!previous_progress || segment_width > 100'000) {
+            // Segment is so wide that a full regeneration is more efficient
             txn->clear_map(db::table::kTrieOfAccounts.name);
             txn->clear_map(db::table::kTrieOfStorage.name);
-
         } else {
+            // Incremental update
         }
 
         throw_if_stopping();

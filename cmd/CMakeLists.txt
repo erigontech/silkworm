@@ -82,7 +82,7 @@ if(NOT SILKWORM_CORE_ONLY)
   target_link_libraries(download_headers PRIVATE silkworm_node CLI11::CLI11)
 
   add_executable(backend_kv_server backend_kv_server.cpp)
-  target_link_libraries(backend_kv_server PRIVATE silkworm_node CLI11::CLI11)
+  target_link_libraries(backend_kv_server PRIVATE silkworm_node silkworm-buildinfo CLI11::CLI11)
 
   # Benchmarks
   add_subdirectory(benchmark)

@@ -17,6 +17,7 @@
 #include "service.hpp"
 
 #include <catch2/catch.hpp>
+#include <gsl/pointers>
 
 #include <silkworm/rpc/service.hpp>
 
@@ -54,8 +55,8 @@ class EmptyService : public EmptyRpcService {
     EmptyService() : EmptyRpcService(MockRpc::Handlers{}) {}
     EmptyService(std::size_t capacity) : EmptyRpcService(MockRpc::Handlers{}, capacity) {}
 
-    auto insert_request(MockRpc* rpc) { return add_request(rpc); }
-    auto erase_request(MockRpc* rpc) { return remove_request(rpc); }
+    auto insert_request(gsl::owner<MockRpc*> rpc) { return add_rpc(rpc); }
+    auto erase_request(gsl::owner<MockRpc*> rpc) { return remove_rpc(rpc); }
     auto requests_capacity() const { return requests_bucket_count(); }
     auto requests_count() const { return requests_size(); }
 };

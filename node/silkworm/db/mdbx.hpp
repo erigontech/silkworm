@@ -145,6 +145,7 @@ struct MapConfig {
 class Cursor : public ::mdbx::cursor {
   public:
     explicit Cursor(::mdbx::txn& txn, const MapConfig& config);
+    explicit Cursor(RWTxn& txn, const MapConfig& config) : Cursor(*txn, config){};
     ~Cursor();
 
     Cursor(Cursor&& other) noexcept;

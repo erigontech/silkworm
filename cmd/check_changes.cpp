@@ -79,7 +79,7 @@ int main(int argc, char* argv[]) {
         }
 
         AnalysisCache analysis_cache;
-        ExecutionStatePool state_pool;
+        ObjectPool<EvmoneExecutionState> state_pool;
         std::vector<Receipt> receipts;
         auto engine{consensus::engine_factory(chain_config.value())};
         BlockWithHash bh;

@@ -271,27 +271,36 @@ evmc::result EVM::execute(const evmc_message& msg, ByteView code, std::optional<
     return evmc::result{res};
 }
 
-evmc_result EVM::execute_with_baseline_interpreter(evmc_revision rev, const evmc_message& msg, ByteView code) noexcept {
-    const auto vm{static_cast<evmone::VM*>(evm1_)};
-
-    const auto analysis{evmone::baseline::analyze(code)};
-
-    std::unique_ptr<EvmoneExecutionState> state;
+gsl::owner<EvmoneExecutionState*> EVM::acquire_state() noexcept {
+    gsl::owner<EvmoneExecutionState*> state{nullptr};
     if (state_pool) {
         state = state_pool->acquire();
-    } else {
-        state = std::make_unique<EvmoneExecutionState>();
     }
+    if (!state) {
+        state = new EvmoneExecutionState;
+    }
+    return state;
+}
+
+void EVM::release_state(gsl::owner<EvmoneExecutionState*> state) noexcept {
+    if (state_pool) {
+        state_pool->add(state);
+    } else {
+        delete state;
+    }
+}
+
+evmc_result EVM::execute_with_baseline_interpreter(evmc_revision rev, const evmc_message& msg, ByteView code) noexcept {
+    const auto vm{static_cast<evmone::VM*>(evm1_)};
+    const auto analysis{evmone::baseline::analyze(code)};
 
     EvmHost host{*this};
-
+    gsl::owner<EvmoneExecutionState*> state{acquire_state()};
     state->reset(msg, rev, host.get_interface(), host.to_context(), code);
 
     evmc_result res{evmone::baseline::execute(*vm, *state, analysis)};
 
-    if (state_pool) {
-        state_pool->release(std::move(state));
-    }
+    release_state(state);
 
     return res;
 }
@@ -306,22 +315,13 @@ evmc_result EVM::execute_with_default_interpreter(evmc_revision rev, const evmc_
         advanced_analysis_cache->put(code_hash, analysis, rev);
     }
 
-    std::unique_ptr<EvmoneExecutionState> state;
-    if (state_pool) {
-        state = state_pool->acquire();
-    } else {
-        state = std::make_unique<EvmoneExecutionState>();
-    }
-
     EvmHost host{*this};
-
+    gsl::owner<EvmoneExecutionState*> state{acquire_state()};
     state->reset(msg, rev, host.get_interface(), host.to_context(), code);
 
     evmc_result res{evmone::advanced::execute(*state, *analysis)};
 
-    if (state_pool) {
-        state_pool->release(std::move(state));
-    }
+    release_state(state);
 
     return res;
 }

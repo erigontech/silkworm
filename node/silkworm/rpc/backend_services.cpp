@@ -14,7 +14,7 @@
    limitations under the License.
 */
 
-#include "backend_server.hpp"
+#include "backend_services.hpp"
 
 #include <silkworm/common/endian.hpp>
 #include <silkworm/common/log.hpp>
@@ -68,8 +68,8 @@ void NetPeerCountService::process_rpc(NetPeerCountRpc& rpc, const remote::NetPee
     SILK_TRACE << "NetPeerCountService::process_rpc rsp: " << &response << " sent: " << sent;
 }
 
-VersionService::VersionService()
-    : VersionRpcService(
+BackEndVersionService::BackEndVersionService()
+    : BackEndVersionRpcService(
         [&](auto& rpc, const auto* request) { process_rpc(rpc, request); },
         &remote::ETHBACKEND::AsyncService::RequestVersion) {
     response_.set_major(std::get<0>(kEthBackEndApiVersion));
@@ -77,12 +77,12 @@ VersionService::VersionService()
     response_.set_patch(std::get<2>(kEthBackEndApiVersion));
 }
 
-void VersionService::process_rpc(VersionRpc& rpc, const google::protobuf::Empty* request) {
-    SILK_TRACE << "VersionService::process_rpc rpc: " << &rpc << " request: " << request;
+void BackEndVersionService::process_rpc(BackEndVersionRpc& rpc, const google::protobuf::Empty* request) {
+    SILK_TRACE << "BackEndVersionService::process_rpc rpc: " << &rpc << " request: " << request;
 
     const bool sent = rpc.send_response(response_);
 
-    SILK_TRACE << "VersionService::process_rpc rsp: " << &response_ << " sent: " << sent;
+    SILK_TRACE << "BackEndVersionService::process_rpc rsp: " << &response_ << " sent: " << sent;
 }
 
 ProtocolVersionService::ProtocolVersionService()
@@ -141,24 +141,6 @@ void NodeInfoService::process_rpc(NodeInfoRpc& rpc, const remote::NodesInfoReque
     const bool sent = rpc.send_response(response);
 
     SILK_TRACE << "NodeInfoService::process_rpc rsp: " << &response << " sent: " << sent;
-}
-
-BackEndServer::BackEndServer(const ServerConfig& srv_config, const ChainConfig& chain_config)
-: Server(srv_config), etherbase_service_{chain_config}, net_version_service_{chain_config}, client_version_service_{srv_config} {
-    SILK_INFO << "BackEndServer created listening on: " << srv_config.address_uri();
-}
-
-/// Start server-side RPC requests as required by gRPC async model: one RPC per type is requested in advance.
-void BackEndServer::request_calls() {
-    // Start each server-side RPC request grabbing one context at a time using round-robin scheme
-    etherbase_service_.create_rpc(service_.get(), next_context().grpc_queue.get());
-    net_version_service_.create_rpc(service_.get(), next_context().grpc_queue.get());
-    net_peer_count_service_.create_rpc(service_.get(), next_context().grpc_queue.get());
-    version_service_.create_rpc(service_.get(), next_context().grpc_queue.get());
-    protocol_version_service_.create_rpc(service_.get(), next_context().grpc_queue.get());
-    client_version_service_.create_rpc(service_.get(), next_context().grpc_queue.get());
-    subscribe_service_.create_rpc(service_.get(), next_context().grpc_queue.get());
-    node_info_service_.create_rpc(service_.get(), next_context().grpc_queue.get());
 }
 
 } // namespace silkworm::rpc

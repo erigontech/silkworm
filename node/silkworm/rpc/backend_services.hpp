@@ -14,8 +14,8 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_RPC_BACKEND_SERVER_HPP_
-#define SILKWORM_RPC_BACKEND_SERVER_HPP_
+#ifndef SILKWORM_RPC_BACKEND_SERVICES_HPP_
+#define SILKWORM_RPC_BACKEND_SERVICES_HPP_
 
 #include <tuple>
 
@@ -116,10 +116,10 @@ class NetPeerCountService : public NetPeerCountRpcService {
 };
 
 //! Unary RPC for Version method of 'ethbackend' gRPC protocol.
-using VersionRpc = UnaryRpc<remote::ETHBACKEND::AsyncService, google::protobuf::Empty, types::VersionReply>;
+using BackEndVersionRpc = UnaryRpc<remote::ETHBACKEND::AsyncService, google::protobuf::Empty, types::VersionReply>;
 
 //! Service specialization for Version method.
-using VersionRpcService = RpcService<
+using BackEndVersionRpcService = RpcService<
     remote::ETHBACKEND::AsyncService,
     google::protobuf::Empty,
     types::VersionReply,
@@ -127,11 +127,11 @@ using VersionRpcService = RpcService<
 >;
 
 //! Service implementation acting as factory for Version RPCs.
-class VersionService : public VersionRpcService {
+class BackEndVersionService : public BackEndVersionRpcService {
   public:
-    explicit VersionService();
+    explicit BackEndVersionService();
 
-    void process_rpc(VersionRpc& rpc, const google::protobuf::Empty* request);
+    void process_rpc(BackEndVersionRpc& rpc, const google::protobuf::Empty* request);
 
   private:
     types::VersionReply response_;
@@ -227,27 +227,6 @@ class NodeInfoService : public NodeInfoRpcService {
     void process_rpc(NodeInfoRpc& rpc, const remote::NodesInfoRequest* request);
 };
 
-class BackEndServer : public Server<remote::ETHBACKEND::AsyncService> {
-  public:
-    BackEndServer(const ServerConfig& srv_config, const ChainConfig& chain_config);
-
-    BackEndServer(const BackEndServer&) = delete;
-    BackEndServer& operator=(const BackEndServer&) = delete;
-
-  protected:
-    void request_calls() override;
-
-  private:
-    EtherbaseService etherbase_service_;
-    NetVersionService net_version_service_;
-    NetPeerCountService net_peer_count_service_;
-    VersionService version_service_;
-    ProtocolVersionService protocol_version_service_;
-    ClientVersionService client_version_service_;
-    SubscribeService subscribe_service_;
-    NodeInfoService node_info_service_;
-};
-
 } // namespace silkworm::rpc
 
-#endif // SILKWORM_RPC_BACKEND_SERVER_HPP_
+#endif // SILKWORM_RPC_BACKEND_SERVICES_HPP_

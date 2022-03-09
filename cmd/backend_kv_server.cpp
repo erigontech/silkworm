@@ -27,7 +27,7 @@
 #include <silkworm/buildinfo.h>
 #include <silkworm/chain/config.hpp>
 #include <silkworm/common/log.hpp>
-#include <silkworm/rpc/backend_server.hpp>
+#include <silkworm/rpc/backend_kv_server.hpp>
 
 std::string get_node_name_from_build_info() {
     const auto build_info{silkworm_get_buildinfo()};
@@ -89,7 +89,8 @@ int main(int argc, char* argv[]) {
         srv_config.set_address_uri(address_uri);
         srv_config.set_num_contexts(num_contexts);
 
-        silkworm::rpc::BackEndServer server{srv_config, *chain_config};
+        silkworm::rpc::BackEndKvServer server{srv_config, *chain_config};
+        server.build_and_start();
 
         boost::asio::io_context& scheduler = server.next_io_context();
         boost::asio::signal_set signals{scheduler, SIGINT, SIGTERM};
@@ -105,7 +106,7 @@ int main(int argc, char* argv[]) {
         });
 
         SILK_LOG << "BackEndKvServer is now running [pid=" << pid << ", main thread=" << tid << "]";
-        server.run();
+        server.join();
 
         SILK_LOG << "BackEndKvServer exiting [pid=" << pid << ", main thread=" << tid << "]";
         return 0;

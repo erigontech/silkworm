@@ -48,7 +48,8 @@ class ServerContextPool {
     ServerContextPool& operator=(const ServerContextPool&) = delete;
 
     void add_context(std::unique_ptr<grpc::ServerCompletionQueue> queue) noexcept;
-    void run();
+    void start();
+    void join();
     void stop();
 
     ServerContext const& next_context();
@@ -60,6 +61,9 @@ class ServerContextPool {
 
     //! The work-tracking executors that keep the running contexts.
     std::list<boost::asio::execution::any_executor<>> work_;
+
+    //! The pool of threads running the execution contexts.
+    boost::asio::detail::thread_group context_threads_;
 
     //! The index for obtaining next context to use (round-robin).
     std::size_t next_index_;

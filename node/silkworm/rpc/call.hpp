@@ -19,6 +19,7 @@
 
 #include <atomic>
 #include <functional>
+#include <list>
 
 #include <grpcpp/grpcpp.h>
 #include <grpcpp/impl/codegen/async_unary_call.h>
@@ -157,7 +158,7 @@ struct UnaryRpcHandlers : public RpcHandlers<AsyncService, Request, Response, Rp
     using Responder = grpc::ServerAsyncResponseWriter<Response>;
     using RequestRpcFunc = std::function<void(AsyncService*, grpc::ServerContext*, Request*, Responder*, grpc::CompletionQueue*, grpc::ServerCompletionQueue*, void*)>;
 
-    // The request queuing function on the service. This is called when an instance of any unary RPC is created.
+    // The request queuing function: this is called when an instance of any unary RPC is created.
     RequestRpcFunc requestRpc;
 };
 
@@ -205,7 +206,7 @@ class UnaryRpc : public BaseRpc {
     void process_read(bool ok) {
         SILK_TRACE << "UnaryRpc::process_read START [" << this << "] ok: " << ok;
         if (!ok) {
-            handle_completed(OperationType::kRead);
+            handle_completed(OperationType::kRead); // TODO(canepat): test if correct
             return;
         }
 
@@ -262,7 +263,7 @@ struct ServerStreamingRpcHandlers : public RpcHandlers<AsyncService, Request, Re
     using Responder = grpc::ServerAsyncWriter<Response>;
     using RequestRpcFunc = std::function<void(AsyncService*, grpc::ServerContext*, Request*, Responder*, grpc::CompletionQueue*, grpc::ServerCompletionQueue*, void*)>;
 
-    // The request queuing function on the service. This is called when an instance of any server-streaming RPC is created.
+    // The request queuing function: this is called when an instance of any server-streaming RPC is created.
     RequestRpcFunc requestRpc;
 };
 
@@ -304,7 +305,7 @@ class ServerStreamingRpc : public BaseRpc {
         return false;
     }
 
-    /// Call this to indicate the completion of server side streaming.
+    /// Call this to indicate the completion of server-side streaming.
     bool close() {
         streaming_done_ = true;
 
@@ -318,7 +319,7 @@ class ServerStreamingRpc : public BaseRpc {
     /// Finalize the server-streaming RPC with an application error when no response is available.
     bool finish_with_error(const grpc::Status& error) {
         handle_started(OperationType::kFinish);
-        responder_.Finish(error, &finish_processor_); // FinishWithError?
+        responder_.Finish(error, &finish_processor_);
         return true;
     }
 
@@ -327,7 +328,7 @@ class ServerStreamingRpc : public BaseRpc {
     void process_read(bool ok) {
         SILK_TRACE << "ServerStreamingRpc::process_read START [" << this << "] ok: " << ok;
         if (!ok) {
-            handle_completed(OperationType::kRead);
+            handle_completed(OperationType::kRead); // TODO(canepat): test if correct
             return;
         }
 
@@ -382,8 +383,6 @@ class ServerStreamingRpc : public BaseRpc {
         handlers_.cleanupRpc(*this, context_.IsCancelled());
     }
 
-  private:
-
     //! The gRPC generated asynchronous service.
     AsyncService* service_;
 
@@ -416,6 +415,196 @@ class ServerStreamingRpc : public BaseRpc {
 
     //! Flag indicating if server streaming is finished or not.
     bool streaming_done_{false};
+};
+
+//! Represents the RPC handlers for bidirectional-streaming RPCs.
+template <typename AsyncService, typename Request, typename Response, template<typename, typename, typename> typename Rpc>
+struct BidirectionalStreamingRpcHandlers : public RpcHandlers<AsyncService, Request, Response, Rpc> {
+    using Responder = grpc::ServerAsyncReaderWriter<Response, Request>;
+    using RequestRpcFunc = std::function<void(AsyncService*, grpc::ServerContext*, Responder*, grpc::CompletionQueue*, grpc::ServerCompletionQueue*, void*)>;
+
+    // The request queuing function: this is called when an instance of any bidirectional-streaming RPC is created.
+    RequestRpcFunc requestRpc;
+};
+
+//! This represents any bidirectional-streaming RPC (i.e. many-client-requests, many-server-responses).
+template<typename AsyncService, typename Request, typename Response>
+class BidirectionalStreamingRpc : public BaseRpc {
+  public:
+    using Handlers = BidirectionalStreamingRpcHandlers<AsyncService, Request, Response, BidirectionalStreamingRpc>;
+
+    BidirectionalStreamingRpc(AsyncService* service, grpc::ServerCompletionQueue* queue, Handlers handlers)
+    : service_(service), queue_(queue), responder_(&context_), handlers_(handlers) {
+        SILK_TRACE << "BidirectionalStreamingRpc::BidirectionalStreamingRpc START [" << this << "]";
+
+        // Create START/READ/WRITE/FINISH/DONE tag processors used to interact with gRPC completion queue.
+        start_processor_ = [this](bool ok) { process_start(ok); };
+        read_processor_ = [this](bool ok) { process_read(ok); };
+        write_processor_ = [this](bool ok) { process_write(ok); };
+        finish_processor_ = [this](bool ok) { process_finish(ok); };
+        done_processor_ = [this](bool ok) { process_done(ok); };
+
+        // Set up the registration to inform us when gRPC is done with this RPC.
+        context_.AsyncNotifyWhenDone(&done_processor_);
+
+        // Finally issue the async request needed by gRPC to start handling this RPC.
+        SILK_DEBUG << "BidirectionalStreamingRpc::BidirectionalStreamingRpc issuing new request for service: " << service_;
+        handle_started(OperationType::kRequest);
+        handlers_.requestRpc(service_, &context_, &responder_, queue_, queue_, &start_processor_);
+        SILK_TRACE << "BidirectionalStreamingRpc::BidirectionalStreamingRpc END new request issued [" << this << "]";
+    }
+
+    bool send_response(const Response& response) {
+        response_queue_.push_back(std::move(response));
+
+        if (!write_in_progress()) {
+            write();
+            return true;
+        }
+        return false;
+    }
+
+    /// Call this to indicate the completion of server-side streaming.
+    bool close() {
+        // Disallow the server to finish the RPC before the client has streamed all the requests.
+        SILKWORM_ASSERT(client_streaming_done_);
+
+        server_streaming_done_ = true;
+
+        if (!write_in_progress()) {
+            finish();
+            return true;
+        }
+        return false;
+    }
+
+    /// Finalize the bidirectional-streaming RPC with an application error when no response is available.
+    bool finish_with_error(const grpc::Status& error) {
+        handle_started(OperationType::kFinish);
+        responder_.Finish(error, &finish_processor_);
+        return true;
+    }
+
+  private:
+    /// Tag processor for START event in this RPC coming from gRPC framework.
+    void process_start(bool ok) {
+        SILK_TRACE << "BidirectionalStreamingRpc::process_start START [" << this << "] ok: " << ok;
+        if (!ok) {
+            handle_completed(OperationType::kRead); // TODO(canepat): test if correct
+            return;
+        }
+
+        // A request has just been activated: first create a new RPC to allow the server to handle the next request.
+        handlers_.createRpc(service_, queue_);
+
+        if (handle_completed(OperationType::kRequest)) {
+            // The first incoming message can now be read, so enqueue the first READ operation for this RPC.
+            handle_started(OperationType::kRead);
+            responder_.Read(&request_, &read_processor_);
+        }
+        SILK_TRACE << "BidirectionalStreamingRpc::process_start END [" << this << "]";
+    }
+
+    /// Tag processor for READ event in this RPC coming from gRPC framework.
+    void process_read(bool ok) {
+        SILK_TRACE << "BidirectionalStreamingRpc::process_read START [" << this << "] ok: " << ok;
+        if (handle_completed(OperationType::kRead)) {
+            if (ok) {
+                // The incoming request can now be handled so process it.
+                handlers_.processRequest(*this, &request_);
+                // Enqueue another READ operation for this RPC.
+                handle_started(OperationType::kRead);
+                responder_.Read(&request_, &read_processor_);
+            } else {
+                // Client has closed the stream, so the processing hook of the application layer receives a null request.
+                client_streaming_done_ = true;
+                handlers_.processRequest(*this, nullptr);
+            }
+        }
+        SILK_TRACE << "BidirectionalStreamingRpc::process_read END [" << this << "]";
+    }
+
+    /// Tag processor for WRITE event in this RPC coming from gRPC framework.
+    void process_write(bool ok) {
+        SILK_TRACE << "BidirectionalStreamingRpc::process_write START [" << this << "] ok: " << ok;
+        if (handle_completed(OperationType::kWrite)) {
+            // Get rid of the response that just finished.
+            response_queue_.pop_front();
+
+            if (ok) {
+                if (!response_queue_.empty()) {
+                    // We have more responses waiting to be sent, send first.
+                    write();
+                } else if (server_streaming_done_) {
+                    // Previous write completed, no pending write and streaming finished: we're done.
+                    finish();
+                }
+            }
+        }
+        SILK_TRACE << "BidirectionalStreamingRpc::process_write END [" << this << "]";
+    }
+
+    /// Tag processor for FINISH event in this RPC coming from gRPC framework.
+    void process_finish(bool ok) {
+        SILK_TRACE << "BidirectionalStreamingRpc::process_finish [" << this << "] ok: " << ok;
+        handle_completed(OperationType::kFinish);
+    }
+
+    void write() {
+        SILK_TRACE << "BidirectionalStreamingRpc::write [" << this << "]";
+        handle_started(OperationType::kWrite);
+        responder_.Write(response_queue_.front(), &write_processor_);
+    }
+
+    void finish() {
+        SILK_TRACE << "BidirectionalStreamingRpc::finish [" << this << "]";
+        handle_started(OperationType::kFinish);
+        responder_.Finish(grpc::Status::OK, &finish_processor_);
+    }
+
+    void cleanup() override {
+        SILK_TRACE << "BidirectionalStreamingRpc::cleanup [" << this << "]";
+        handlers_.cleanupRpc(*this, context_.IsCancelled());
+    }
+
+    //! The gRPC generated asynchronous service.
+    AsyncService* service_;
+
+    //! The gRPC server-side completion queue used by this RPC.
+    grpc::ServerCompletionQueue* queue_;
+
+    //! The gRPC server-side API for responding back in bidirectional-streaming calls.
+    typename Handlers::Responder responder_;
+
+    //! The last request coming from the client stream filled after last READ tag processing.
+    Request request_;
+
+    //! The lifecycle handlers for bidirectional-streaming calls.
+    Handlers handlers_;
+
+    //! The START tag processing callback.
+    TagProcessor start_processor_;
+
+    //! The READ tag processing callback.
+    TagProcessor read_processor_;
+
+    //! The WRITE tag processing callback.
+    TagProcessor write_processor_;
+
+    //! The FINISH tag processing callback.
+    TagProcessor finish_processor_;
+
+    //! The DONE tag processing callback.
+    TagProcessor done_processor_;
+
+    //! The list of server streamed responses.
+    std::list<Response> response_queue_;
+
+    //! Flag indicating if server streaming is finished or not.
+    bool server_streaming_done_{false};
+
+    //! Flag indicating if client streaming is finished or not.
+    bool client_streaming_done_{false};
 };
 
 } // namespace silkworm::rpc

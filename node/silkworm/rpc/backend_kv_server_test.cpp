@@ -14,7 +14,7 @@
    limitations under the License.
 */
 
-#include "backend_server.hpp"
+#include "backend_kv_server.hpp"
 
 #include <memory>
 #include <string>
@@ -89,34 +89,35 @@ namespace silkworm::rpc {
 // TODO(canepat): better copy grpc_pick_unused_port_or_die to generate unused port
 constexpr const char* kTestAddressUri = "localhost:12345";
 
-TEST_CASE("BackEndServer::BackEndServer", "[silkworm][node][rpc]") {
+TEST_CASE("BackEndKvServer::BackEndKvServer", "[silkworm][node][rpc]") {
     silkworm::log::set_verbosity(silkworm::log::Level::kNone);
     Grpc2SilkwormLogGuard log_guard;
 
     SECTION("OK: create/destroy server", "[silkworm][node][rpc]") {
         ServerConfig srv_config;
         srv_config.set_address_uri(kTestAddressUri);
-        BackEndServer server{srv_config, kGoerliConfig};
+        BackEndKvServer server{srv_config, kGoerliConfig};
     }
 
     SECTION("OK: create/shutdown/destroy server", "[silkworm][node][rpc]") {
         ServerConfig srv_config;
         srv_config.set_address_uri(kTestAddressUri);
-        BackEndServer server{srv_config, kGoerliConfig};
+        BackEndKvServer server{srv_config, kGoerliConfig};
         server.shutdown();
     }
 }
 
-TEST_CASE("BackEndServer::run", "[silkworm][node][rpc]") {
+TEST_CASE("BackEndKvServer::build_and_start", "[silkworm][node][rpc]") {
     silkworm::log::set_verbosity(silkworm::log::Level::kNone);
     Grpc2SilkwormLogGuard log_guard;
 
     SECTION("OK: run server in separate thread", "[silkworm][node][rpc]") {
         ServerConfig srv_config;
         srv_config.set_address_uri(kTestAddressUri);
-        BackEndServer server{srv_config, kGoerliConfig};
+        BackEndKvServer server{srv_config, kGoerliConfig};
+        server.build_and_start();
         std::thread server_thread{[&server]() {
-            server.run();
+            server.join();
         }};
         server.shutdown();
         server_thread.join();
@@ -125,27 +126,27 @@ TEST_CASE("BackEndServer::run", "[silkworm][node][rpc]") {
     SECTION("OK: create/shutdown/run/destroy server", "[silkworm][node][rpc]") {
         ServerConfig srv_config;
         srv_config.set_address_uri(kTestAddressUri);
-        BackEndServer server{srv_config, kGoerliConfig};
+        BackEndKvServer server{srv_config, kGoerliConfig};
         server.shutdown();
-        server.run();
+        server.build_and_start();
     }
 }
 
-TEST_CASE("BackEndServer::shutdown", "[silkworm][node][rpc]") {
+TEST_CASE("BackEndKvServer::shutdown", "[silkworm][node][rpc]") {
     silkworm::log::set_verbosity(silkworm::log::Level::kNone);
     Grpc2SilkwormLogGuard log_guard;
 
     SECTION("OK: shutdown server not running", "[silkworm][node][rpc]") {
         ServerConfig srv_config;
         srv_config.set_address_uri(kTestAddressUri);
-        BackEndServer server{srv_config, kGoerliConfig};
+        BackEndKvServer server{srv_config, kGoerliConfig};
         server.shutdown();
     }
 
     SECTION("OK: shutdown twice server not running", "[silkworm][node][rpc]") {
         ServerConfig srv_config;
         srv_config.set_address_uri(kTestAddressUri);
-        BackEndServer server{srv_config, kGoerliConfig};
+        BackEndKvServer server{srv_config, kGoerliConfig};
         server.shutdown();
         server.shutdown();
     }
@@ -153,34 +154,39 @@ TEST_CASE("BackEndServer::shutdown", "[silkworm][node][rpc]") {
     SECTION("OK: shutdown running server", "[silkworm][node][rpc]") {
         ServerConfig srv_config;
         srv_config.set_address_uri(kTestAddressUri);
-        BackEndServer server{srv_config, kGoerliConfig};
-        std::thread shutdown_thread{[&server]() {
-            std::this_thread::yield();
-            server.shutdown();
-        }};
-        server.run();
-        shutdown_thread.join();
+        BackEndKvServer server{srv_config, kGoerliConfig};
+        server.build_and_start();
+        server.shutdown();
     }
 
     SECTION("OK: shutdown twice running server", "[silkworm][node][rpc]") {
         ServerConfig srv_config;
         srv_config.set_address_uri(kTestAddressUri);
-        BackEndServer server{srv_config, kGoerliConfig};
-        std::thread shutdown_thread1{[&server]() {
-            std::this_thread::yield();
-            server.shutdown();
-        }};
-        std::thread shutdown_thread2{[&server]() {
-            std::this_thread::yield();
-            server.shutdown();
-        }};
-        server.run();
-        shutdown_thread1.join();
-        shutdown_thread2.join();
+        BackEndKvServer server{srv_config, kGoerliConfig};
+        server.build_and_start();
+        server.shutdown();
+        server.shutdown();
     }
 }
 
-TEST_CASE("BackEndServer RPC calls", "[silkworm][node][rpc]") {
+TEST_CASE("BackEndKvServer::join", "[silkworm][node][rpc]") {
+    silkworm::log::set_verbosity(silkworm::log::Level::kNone);
+    Grpc2SilkwormLogGuard log_guard;
+
+    SECTION("OK: shutdown joined server", "[silkworm][node][rpc]") {
+        ServerConfig srv_config;
+        srv_config.set_address_uri(kTestAddressUri);
+        BackEndKvServer server{srv_config, kGoerliConfig};
+        server.build_and_start();
+        std::thread server_thread{[&server]() {
+            server.join();
+        }};
+        server.shutdown();
+        server_thread.join();
+    }
+}
+
+TEST_CASE("BackEndKvServer RPC calls", "[silkworm][node][rpc]") {
     silkworm::log::set_verbosity(silkworm::log::Level::kNone);
     Grpc2SilkwormLogGuard log_guard;
     std::shared_ptr<grpc::Channel> channel = grpc::CreateChannel(kTestAddressUri, grpc::InsecureChannelCredentials());
@@ -189,10 +195,8 @@ TEST_CASE("BackEndServer RPC calls", "[silkworm][node][rpc]") {
     ServerConfig srv_config;
     srv_config.set_num_contexts(1);
     srv_config.set_address_uri(kTestAddressUri);
-    BackEndServer server{srv_config, kGoerliConfig};
-    std::thread server_thread{[&server]() {
-        server.run();
-    }};
+    BackEndKvServer server{srv_config, kGoerliConfig};
+    server.build_and_start();
 
     SECTION("Etherbase: return coinbase address", "[silkworm][node][rpc]") {
         remote::EtherbaseReply response;
@@ -258,7 +262,6 @@ TEST_CASE("BackEndServer RPC calls", "[silkworm][node][rpc]") {
     }
 
     server.shutdown();
-    server_thread.join();
 }
 
 } // namespace silkworm::rpc

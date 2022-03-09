@@ -79,12 +79,12 @@ then `-j4` should be OK, while `-j8` is probably not. It also means that you nee
 
 Now you can run the unit tests. There's one for core and one for node.
 ```
-cmd/core_test
-cmd/node_test
+cmd/test/core_test
+cmd/test/node_test
 ```
 or [Ethereum Consensus Tests]
 ```
-cmd/consensus
+cmd/test/consensus
 ```
 
 You can also try run Silkworm to test the stages implemented so far. To do that you need to obtain a primed database by Erigon by forcing it to stop before stage Senders.

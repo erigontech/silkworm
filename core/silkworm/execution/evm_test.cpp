@@ -1,5 +1,5 @@
 /*
-   Copyright 2020-2021 The Silkworm Authors
+   Copyright 2020-2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -27,12 +27,6 @@
 #include <silkworm/state/in_memory_state.hpp>
 
 #include "address.hpp"
-
-namespace evmone {
-class Tracer;
-struct ExecutionState;
-using bytes_view = std::basic_string_view<uint8_t>;
-}
 
 namespace silkworm {
 
@@ -408,24 +402,29 @@ TEST_CASE("Tracing smart contract with storage") {
 
     class TestTracer : public EvmTracer {
       public:
-        TestTracer(std::optional<evmc::address> contract_address = std::nullopt, std::optional<evmc::bytes32> key = std::nullopt)
+        TestTracer(std::optional<evmc::address> contract_address = std::nullopt,
+                   std::optional<evmc::bytes32> key = std::nullopt)
             : contract_address_(contract_address), key_(key) {}
 
-        void on_execution_start(evmc_revision /*rev*/, const evmc_message& /*msg*/, evmone::bytes_view bytecode) noexcept override {
+        void on_execution_start(evmc_revision /*rev*/, const evmc_message& /*msg*/,
+                                evmone::bytes_view bytecode) noexcept override {
             bytecode_ = Bytes{bytecode};
         }
-        void on_instruction_start(uint32_t pc, const evmone::ExecutionState& state, const IntraBlockState& intra_block_state) noexcept override {
+        void on_instruction_start(uint32_t pc, const evmone::ExecutionState& state,
+                                  const IntraBlockState& intra_block_state) noexcept override {
             pc_stack_.push_back(pc);
             memory_size_stack_[pc] = state.memory.size();
             if (contract_address_) {
-                storage_stack_[pc] = intra_block_state.get_current_storage(contract_address_.value(), key_.value_or(evmc::bytes32{}));
+                storage_stack_[pc] =
+                    intra_block_state.get_current_storage(contract_address_.value(), key_.value_or(evmc::bytes32{}));
             }
         }
         void on_execution_end(const evmc_result& res, const IntraBlockState& intra_block_state) noexcept override {
             result_ = {res.status_code, static_cast<uint64_t>(res.gas_left), {res.output_data, res.output_size}};
             if (contract_address_) {
                 const auto pc = pc_stack_.back();
-                storage_stack_[pc] = intra_block_state.get_current_storage(contract_address_.value(), key_.value_or(evmc::bytes32{}));
+                storage_stack_[pc] =
+                    intra_block_state.get_current_storage(contract_address_.value(), key_.value_or(evmc::bytes32{}));
             }
         }
 
@@ -471,9 +470,20 @@ TEST_CASE("Tracing smart contract with storage") {
     CHECK(res.data == from_hex("600035600055"));
 
     CHECK(tracer2.bytecode() == code);
-    CHECK(tracer2.pc_stack() == std::vector<uint32_t>{0,2,4,5,8,10,11,13,14,16,18,19,21});
-    CHECK(tracer2.memory_size_stack() == std::map<uint32_t, std::size_t>{
-        {0, 0}, {2, 0}, {4, 0}, {5, 0}, {8, 0}, {10, 0}, {11, 0}, {13, 0}, {14, 0}, {16, 0}, {18, 0}, {19, 32}, {21, 32}});
+    CHECK(tracer2.pc_stack() == std::vector<uint32_t>{0, 2, 4, 5, 8, 10, 11, 13, 14, 16, 18, 19, 21});
+    CHECK(tracer2.memory_size_stack() == std::map<uint32_t, std::size_t>{{0, 0},
+                                                                         {2, 0},
+                                                                         {4, 0},
+                                                                         {5, 0},
+                                                                         {8, 0},
+                                                                         {10, 0},
+                                                                         {11, 0},
+                                                                         {13, 0},
+                                                                         {14, 0},
+                                                                         {16, 0},
+                                                                         {18, 0},
+                                                                         {19, 32},
+                                                                         {21, 32}});
     CHECK(tracer2.result().status == EVMC_SUCCESS);
     CHECK(tracer2.result().gas_left == 9964);
     CHECK(tracer2.result().data == res.data);
@@ -495,12 +505,13 @@ TEST_CASE("Tracing smart contract with storage") {
     CHECK(res.data.empty());
     CHECK(state.get_current_storage(contract_address, key0) == new_val);
     CHECK(tracer3.storage_stack() == std::map<uint32_t, evmc::bytes32>{
-        {0, to_bytes32(*from_hex("2a"))},
-        {2, to_bytes32(*from_hex("2a"))},
-        {3, to_bytes32(*from_hex("2a"))},
-        {5, to_bytes32(*from_hex("f5"))}});
+                                         {0, to_bytes32(*from_hex("2a"))},
+                                         {2, to_bytes32(*from_hex("2a"))},
+                                         {3, to_bytes32(*from_hex("2a"))},
+                                         {5, to_bytes32(*from_hex("f5"))},
+                                     });
 
-    CHECK(tracer3.pc_stack() == std::vector<uint32_t>{0,2,3,5});
+    CHECK(tracer3.pc_stack() == std::vector<uint32_t>{0, 2, 3, 5});
     CHECK(tracer3.memory_size_stack() == std::map<uint32_t, std::size_t>{{0, 0}, {2, 0}, {3, 0}, {5, 0}});
     CHECK(tracer3.result().status == EVMC_SUCCESS);
     CHECK(tracer3.result().gas_left == 49191);

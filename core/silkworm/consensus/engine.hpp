@@ -1,5 +1,5 @@
 /*
-   Copyright 2021 The Silkworm Authors
+   Copyright 2021-2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -17,11 +17,7 @@
 #ifndef SILKWORM_CONSENSUS_ENGINE_HPP_
 #define SILKWORM_CONSENSUS_ENGINE_HPP_
 
-#include <unordered_map>
-#include <vector>
-
 #include <silkworm/consensus/validation.hpp>
-#include <silkworm/execution/state_pool.hpp>
 #include <silkworm/state/intra_block_state.hpp>
 #include <silkworm/state/state.hpp>
 #include <silkworm/types/receipt.hpp>

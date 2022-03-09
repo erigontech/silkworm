@@ -18,8 +18,6 @@
 
 #include <memory>
 
-#include <evmone/advanced_analysis.hpp>
-
 namespace silkworm {
 
 std::shared_ptr<EvmoneCodeAnalysis> AnalysisCache::get(const evmc::bytes32& key, evmc_revision revision) noexcept {

@@ -14,51 +14,77 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_COMMON_OBJECTPOOL_HPP_
-#define SILKWORM_COMMON_OBJECTPOOL_HPP_
+#ifndef SILKWORM_COMMON_OBJECT_POOL_HPP_
+#define SILKWORM_COMMON_OBJECT_POOL_HPP_
 
 #include <memory>
 #include <stack>
+#include <vector>
+
+#ifndef __wasm__
+#include <mutex>
+#endif
+
+#include <gsl/pointers>
+
+#ifndef __wasm__
+#define SILKWORM_DETAIL_OBJECT_POOL_GUARD \
+    std::unique_lock<std::mutex> lock;    \
+    if (thread_safe_) {                   \
+        lock = std::unique_lock{mutex_};  \
+    }
+#else
+#define SILKWORM_DETAIL_OBJECT_POOL_GUARD
+#endif
 
 namespace silkworm {
 
 template <class T, class TDtor = std::default_delete<T>>
 class ObjectPool {
   public:
-    using ptr_t = std::unique_ptr<T, TDtor>;
+    explicit ObjectPool(bool thread_safe = false) : thread_safe_{thread_safe} {}
 
-    ObjectPool() = default;
+    // Not copyable nor movable
+    ObjectPool(const ObjectPool&) = delete;
+    ObjectPool& operator=(const ObjectPool&) = delete;
 
-    virtual ~ObjectPool() = default;
-
-    void add(T*& t) {
+    void add(gsl::owner<T*> t) {
+        SILKWORM_DETAIL_OBJECT_POOL_GUARD
         pool_.push({t, TDtor()});
-        t = nullptr;
     }
 
-    T* acquire() {
+    gsl::owner<T*> acquire() {
+        SILKWORM_DETAIL_OBJECT_POOL_GUARD
         if (pool_.empty()) {
             return nullptr;
         }
-        T* ret(pool_.top().release());
+        gsl::owner<T*> ret(pool_.top().release());
         pool_.pop();
         return ret;
     }
 
-    [[nodiscard]] bool empty() const { return pool_.empty(); }
+    [[nodiscard]] bool empty() const {
+        SILKWORM_DETAIL_OBJECT_POOL_GUARD
+        return pool_.empty();
+    }
 
-    [[nodiscard]] size_t size() const { return pool_.size(); }
-
-    void clear() {
-        while (!pool_.empty()) {
-            pool_.pop();
-        }
+    [[nodiscard]] size_t size() const {
+        SILKWORM_DETAIL_OBJECT_POOL_GUARD
+        return pool_.size();
     }
 
   private:
-    std::stack<ptr_t, std::vector<ptr_t>> pool_{};
+    using PointerType = std::unique_ptr<T, TDtor>;
+
+    std::stack<PointerType, std::vector<PointerType>> pool_{};
+
+    bool thread_safe_{false};
+
+#ifndef __wasm__
+    mutable std::mutex mutex_;
+#endif
 };
 
 }  // namespace silkworm
 
-#endif  // SILKWORM_COMMON_OBJECTPOOL_HPP_
+#endif  // SILKWORM_COMMON_OBJECT_POOL_HPP_

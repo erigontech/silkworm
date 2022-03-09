@@ -85,7 +85,7 @@ StageResult Execution::forward(db::RWTxn& txn) {
     }
 
     AnalysisCache analysis_cache;
-    ExecutionStatePool state_pool;
+    ObjectPool<EvmoneExecutionState> state_pool;
 
     while (!is_stopping() && block_num_ <= max_block_num) {
         const auto res{execute_batch(txn, max_block_num, analysis_cache, state_pool, prune_history, prune_receipts)};
@@ -157,7 +157,7 @@ std::queue<Block> Execution::prefetch_blocks(db::RWTxn& txn, BlockNum from, Bloc
 }
 
 StageResult Execution::execute_batch(db::RWTxn& txn, BlockNum max_block_num, AnalysisCache& analysis_cache,
-                                     ExecutionStatePool& state_pool, BlockNum prune_history_threshold,
+                                     ObjectPool<EvmoneExecutionState>& state_pool, BlockNum prune_history_threshold,
                                      BlockNum prune_receipts_threshold) {
     try {
         db::Buffer buffer(*txn, prune_history_threshold);

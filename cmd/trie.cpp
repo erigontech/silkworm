@@ -53,7 +53,7 @@ int main(int argc, char* argv[]) {
         // TODO
         //evmc::bytes32 state_root{trie::regenerate_intermediate_hashes(txn, data_dir.etl().path().string().c_str())};
         //log::Info() << "State root " << to_hex(state_root);
-        
+
         txn.commit();
 
     } catch (const std::exception& ex) {

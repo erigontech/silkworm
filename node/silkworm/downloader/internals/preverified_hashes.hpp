@@ -48,14 +48,7 @@ struct PreverifiedHashes {
 
     [[nodiscard]] bool contains(const evmc::bytes32& hash) const { return hashes.find(hash) != hashes.end(); }
 
-    static PreverifiedHashes none;  // A void set of hashes that can be used to turn-off pre-verified hashes usage and
-                                    // that is useful for  (the default construction of) classes that use this
-                                    // functionality optionally
-
-    static const PreverifiedHashes& load(uint64_t chain_id); // Load a set of pre-verified hashes from low level impl
-
-  private:
-    static std::map<uint64_t, PreverifiedHashes> per_chain;  // chain-id based access to the instances
+    static PreverifiedHashes load(uint64_t chain_id); // Load a set of pre-verified hashes from low level impl
 };
 
 }  // namespace silkworm

@@ -39,14 +39,10 @@ void load_preverified_hashes(PreverifiedHashes& destination, const uint64_t* (*p
     destination.height = preverified_hashes_height();
 }
 
-PreverifiedHashes PreverifiedHashes::none = {{}, 0};
+PreverifiedHashes PreverifiedHashes::load(uint64_t chain_id) {
+    PreverifiedHashes result{};
 
-std::map<uint64_t, PreverifiedHashes> PreverifiedHashes::per_chain = {{0, none}};
-
-const PreverifiedHashes& PreverifiedHashes::load(uint64_t chain_id) {
-    PreverifiedHashes& result = per_chain[chain_id];  // insert if not present
-
-    if (chain_id == 1 && result.height == 0) {
+    if (chain_id == 1) {
         load_preverified_hashes(result,
                                 preverified_hashes_mainnet_data,
                                 sizeof_preverified_hashes_mainnet_data,

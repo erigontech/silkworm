@@ -18,11 +18,12 @@
 
 #include <absl/container/btree_set.h>
 
+#include <silkworm/stagedsync/stage_interhashes/trie_loader.hpp>
 #include <silkworm/trie/hash_builder.hpp>
 
 namespace silkworm::stagedsync {
 
-trie::PrefixSet InterHashes::gather_account_changes(mdbx::txn& txn, BlockNum from, BlockNum to) {
+trie::PrefixSet InterHashes::gather_account_changes(db::RWTxn& txn, BlockNum from, BlockNum to) {
     BlockNum reached_blocknum{0};
     BlockNum expected_blocknum{from + 1};
 
@@ -72,7 +73,7 @@ trie::PrefixSet InterHashes::gather_account_changes(mdbx::txn& txn, BlockNum fro
     return ret;
 }
 
-trie::PrefixSet InterHashes::gather_storage_changes(mdbx::txn& txn, BlockNum from, BlockNum to) {
+trie::PrefixSet InterHashes::gather_storage_changes(db::RWTxn& txn, BlockNum from, BlockNum to) {
     BlockNum reached_blocknum{0};
     BlockNum expected_blocknum{from + 1};
 
@@ -135,7 +136,7 @@ trie::PrefixSet InterHashes::gather_storage_changes(mdbx::txn& txn, BlockNum fro
     return ret;
 }
 
-StageResult InterHashes::forward(silkworm::db::RWTxn& txn) {
+StageResult InterHashes::forward(db::RWTxn& txn) {
     try {
         throw_if_stopping();
 
@@ -160,11 +161,9 @@ StageResult InterHashes::forward(silkworm::db::RWTxn& txn) {
         }
 
         reset_log_progress();
-
+        evmc::bytes32 state_root;
         if (!previous_progress || segment_width > 100'000) {
-            // Segment is so wide that a full regeneration is more efficient
-            txn->clear_map(db::table::kTrieOfAccounts.name);
-            txn->clear_map(db::table::kTrieOfStorage.name);
+            state_root = regenerate_intermediate_hashes(txn);
         } else {
             // Incremental update
         }
@@ -186,9 +185,50 @@ StageResult InterHashes::forward(silkworm::db::RWTxn& txn) {
     return StageResult::kSuccess;
 }
 
+evmc::bytes32 InterHashes::regenerate_intermediate_hashes(db::RWTxn& txn, const evmc::bytes32* expected_root) {
+    // Clear any data in target tables
+    txn->clear_map(db::table::kTrieOfAccounts.name);
+    txn->clear_map(db::table::kTrieOfStorage.name);
+    trie::PrefixSet empty;
+    return increment_intermediate_hashes(txn, expected_root,  //
+                                         /*account_changes=*/empty,
+                                         /*storage_changes=*/empty);
+}
+
+evmc::bytes32 InterHashes::increment_intermediate_hashes(db::RWTxn& txn, BlockNum from, BlockNum to,
+                                                         const evmc::bytes32* expected_root) {
+    trie::PrefixSet account_changes{gather_account_changes(txn, from, to)};
+    trie::PrefixSet storage_changes{gather_storage_changes(txn, from, to)};
+    return increment_intermediate_hashes(txn, expected_root, account_changes, storage_changes);
+}
+
+evmc::bytes32 InterHashes::increment_intermediate_hashes(db::RWTxn& txn, const evmc::bytes32* expected_root,
+                                                         trie::PrefixSet& account_changes,
+                                                         trie::PrefixSet& storage_changes) {
+    account_collector_ = std::make_unique<etl::Collector>(node_settings_);
+    storage_collector_ = std::make_unique<etl::Collector>(node_settings_);
+
+    trie::DbTrieLoader loader{*txn, *account_collector_, *storage_collector_};
+    const evmc::bytes32 root{loader.calculate_root(account_changes, storage_changes)};
+    if (expected_root != nullptr && root != *expected_root) {
+        std::string what{"Wrong trie root : got " + to_hex(root) + " expected " + to_hex(*expected_root)};
+        throw std::runtime_error(what);
+    }
+    db::Cursor target(txn, db::table::kTrieOfAccounts);
+    account_collector_->load(target);
+    account_collector_.reset();
+
+    target.bind(txn, db::table::kTrieOfStorage);
+    storage_collector_->load(target);
+    storage_collector_.reset();
+
+    return root;
+}
+
 void InterHashes::reset_log_progress() {
     std::unique_lock log_lck(log_mtx_);
     current_source_.clear();
     current_key_.clear();
 }
+
 }  // namespace silkworm::stagedsync

@@ -17,6 +17,7 @@
 #ifndef SILKWORM_STAGEDSYNC_STAGE_INTERHASHES_HPP_
 #define SILKWORM_STAGEDSYNC_STAGE_INTERHASHES_HPP_
 
+#include <silkworm/etl/collector.hpp>
 #include <silkworm/stagedsync/common.hpp>
 #include <silkworm/trie/prefix_set.hpp>
 
@@ -36,9 +37,29 @@ class InterHashes final : public IStage {
     void reset_log_progress();
 
     //! \brief See Erigon (p *HashPromoter) Promote
-    trie::PrefixSet gather_account_changes(mdbx::txn& txn, BlockNum from, BlockNum to);
+    trie::PrefixSet gather_account_changes(db::RWTxn& txn, BlockNum from, BlockNum to);
+
     //! \brief See Erigon (p *HashPromoter) Promote
-    trie::PrefixSet gather_storage_changes(mdbx::txn& txn, BlockNum from, BlockNum to);
+    trie::PrefixSet gather_storage_changes(db::RWTxn& txn, BlockNum from, BlockNum to);
+
+    //! \brief Erigon's RegenerateIntermediateHashes
+    //! \remarks might throw WrongRoot
+    //! \return the state root
+    [[nodiscard]] evmc::bytes32 regenerate_intermediate_hashes(db::RWTxn& txn,
+                                                               const evmc::bytes32* expected_root = nullptr);
+
+    //! \brief Erigon's IncrementIntermediateHashes
+    //! \remarks might throw WrongRoot
+    //! \return the state root
+    [[nodiscard]] evmc::bytes32 increment_intermediate_hashes(db::RWTxn& txn, BlockNum from, BlockNum to,
+                                                              const evmc::bytes32* expected_root = nullptr);
+
+    [[nodiscard]] evmc::bytes32 increment_intermediate_hashes(db::RWTxn& txn, const evmc::bytes32* expected_root,
+                                                              trie::PrefixSet& account_changes,
+                                                              trie::PrefixSet& storage_changes);
+
+    std::unique_ptr<etl::Collector> account_collector_;
+    std::unique_ptr<etl::Collector> storage_collector_;
 
     // Logger info
     std::mutex log_mtx_{};                 // Guards async logging

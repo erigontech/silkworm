@@ -28,10 +28,10 @@
 #include <gsl/pointers>
 
 #ifndef __wasm__
-#define SILKWORM_DETAIL_OBJECT_POOL_GUARD            \
-    std::unique_lock<std::mutex> lock;               \
-    if (thread_safe_) {                              \
-        lock = std::unique_lock<std::mutex>{mutex_}; \
+#define SILKWORM_DETAIL_OBJECT_POOL_GUARD \
+    std::unique_lock<std::mutex> lock;    \
+    if (thread_safe_) {                   \
+        lock = std::unique_lock{mutex_};  \
     }
 #else
 #define SILKWORM_DETAIL_OBJECT_POOL_GUARD

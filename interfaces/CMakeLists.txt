@@ -88,7 +88,7 @@ set(KV_GRPC_HEADERS "${CMAKE_CURRENT_SOURCE_DIR}/remote/kv.grpc.pb.h")
 add_custom_command(
     OUTPUT "${KV_PROTO_SOURCES}" "${KV_PROTO_HEADERS}" "${KV_GRPC_SOURCES}" "${KV_GRPC_HEADERS}"
     COMMAND ${PROTOBUF_PROTOC}
-    ARGS --grpc_out generate_mock_code=true:"${CMAKE_CURRENT_SOURCE_DIR}"
+    ARGS --grpc_out "${CMAKE_CURRENT_SOURCE_DIR}"
       --cpp_out "${CMAKE_CURRENT_SOURCE_DIR}"
       -I "${PROTO_PATH}"
       --plugin=protoc-gen-grpc="${GRPC_CPP_PLUGIN_EXECUTABLE}"
@@ -96,6 +96,18 @@ add_custom_command(
     DEPENDS "${KV_PROTO}"
     COMMENT "Running C++ gRPC compiler on ${KV_PROTO}"
 )
+
+# FIX8497 START - Hack on KV generated header to avoid Protobuf issue https://github.com/protocolbuffers/protobuf/pull/8497
+# 
+file(READ  "${KV_PROTO_HEADERS}" KV_PROTO_HEADER_CONTENT)
+string(REPLACE
+    "#include <google/protobuf/port_def.inc>"
+    "#include <google/protobuf/port_def.inc>\n#undef DELETE"
+    KV_PROTO_HEADER_CONTENT
+    "${KV_PROTO_HEADER_CONTENT}"
+)
+file(WRITE "${KV_PROTO_HEADERS}" "${KV_PROTO_HEADER_CONTENT}")
+# FIX8497 END - Hack on KV generated header to avoid Protobuf issue https://github.com/protocolbuffers/protobuf/pull/8497
 
 add_custom_target(
     generate_kv_grpc
@@ -118,7 +130,7 @@ set(ETHBACKEND_GRPC_HEADERS "${CMAKE_CURRENT_SOURCE_DIR}/remote/ethbackend.grpc.
 add_custom_command(
     OUTPUT "${ETHBACKEND_PROTO_SOURCES}" "${ETHBACKEND_PROTO_HEADERS}" "${ETHBACKEND_GRPC_SOURCES}" "${ETHBACKEND_GRPC_HEADERS}"
     COMMAND ${PROTOBUF_PROTOC}
-    ARGS --grpc_out generate_mock_code=true:"${CMAKE_CURRENT_SOURCE_DIR}"
+    ARGS --grpc_out "${CMAKE_CURRENT_SOURCE_DIR}"
       --cpp_out "${CMAKE_CURRENT_SOURCE_DIR}"
       -I "${PROTO_PATH}"
       --plugin=protoc-gen-grpc="${GRPC_CPP_PLUGIN_EXECUTABLE}"

@@ -50,224 +50,189 @@ ETHBACKEND::Stub::Stub(const std::shared_ptr< ::grpc::ChannelInterface>& channel
   {}
 
 ::grpc::Status ETHBACKEND::Stub::Etherbase(::grpc::ClientContext* context, const ::remote::EtherbaseRequest& request, ::remote::EtherbaseReply* response) {
-  return ::grpc::internal::BlockingUnaryCall(channel_.get(), rpcmethod_Etherbase_, context, request, response);
+  return ::grpc::internal::BlockingUnaryCall< ::remote::EtherbaseRequest, ::remote::EtherbaseReply, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), rpcmethod_Etherbase_, context, request, response);
 }
 
 void ETHBACKEND::Stub::experimental_async::Etherbase(::grpc::ClientContext* context, const ::remote::EtherbaseRequest* request, ::remote::EtherbaseReply* response, std::function<void(::grpc::Status)> f) {
-  ::grpc_impl::internal::CallbackUnaryCall(stub_->channel_.get(), stub_->rpcmethod_Etherbase_, context, request, response, std::move(f));
-}
-
-void ETHBACKEND::Stub::experimental_async::Etherbase(::grpc::ClientContext* context, const ::grpc::ByteBuffer* request, ::remote::EtherbaseReply* response, std::function<void(::grpc::Status)> f) {
-  ::grpc_impl::internal::CallbackUnaryCall(stub_->channel_.get(), stub_->rpcmethod_Etherbase_, context, request, response, std::move(f));
+  ::grpc::internal::CallbackUnaryCall< ::remote::EtherbaseRequest, ::remote::EtherbaseReply, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_Etherbase_, context, request, response, std::move(f));
 }
 
 void ETHBACKEND::Stub::experimental_async::Etherbase(::grpc::ClientContext* context, const ::remote::EtherbaseRequest* request, ::remote::EtherbaseReply* response, ::grpc::experimental::ClientUnaryReactor* reactor) {
-  ::grpc_impl::internal::ClientCallbackUnaryFactory::Create(stub_->channel_.get(), stub_->rpcmethod_Etherbase_, context, request, response, reactor);
-}
-
-void ETHBACKEND::Stub::experimental_async::Etherbase(::grpc::ClientContext* context, const ::grpc::ByteBuffer* request, ::remote::EtherbaseReply* response, ::grpc::experimental::ClientUnaryReactor* reactor) {
-  ::grpc_impl::internal::ClientCallbackUnaryFactory::Create(stub_->channel_.get(), stub_->rpcmethod_Etherbase_, context, request, response, reactor);
-}
-
-::grpc::ClientAsyncResponseReader< ::remote::EtherbaseReply>* ETHBACKEND::Stub::AsyncEtherbaseRaw(::grpc::ClientContext* context, const ::remote::EtherbaseRequest& request, ::grpc::CompletionQueue* cq) {
-  return ::grpc_impl::internal::ClientAsyncResponseReaderFactory< ::remote::EtherbaseReply>::Create(channel_.get(), cq, rpcmethod_Etherbase_, context, request, true);
+  ::grpc::internal::ClientCallbackUnaryFactory::Create< ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_Etherbase_, context, request, response, reactor);
 }
 
 ::grpc::ClientAsyncResponseReader< ::remote::EtherbaseReply>* ETHBACKEND::Stub::PrepareAsyncEtherbaseRaw(::grpc::ClientContext* context, const ::remote::EtherbaseRequest& request, ::grpc::CompletionQueue* cq) {
-  return ::grpc_impl::internal::ClientAsyncResponseReaderFactory< ::remote::EtherbaseReply>::Create(channel_.get(), cq, rpcmethod_Etherbase_, context, request, false);
+  return ::grpc::internal::ClientAsyncResponseReaderHelper::Create< ::remote::EtherbaseReply, ::remote::EtherbaseRequest, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), cq, rpcmethod_Etherbase_, context, request);
+}
+
+::grpc::ClientAsyncResponseReader< ::remote::EtherbaseReply>* ETHBACKEND::Stub::AsyncEtherbaseRaw(::grpc::ClientContext* context, const ::remote::EtherbaseRequest& request, ::grpc::CompletionQueue* cq) {
+  auto* result =
+    this->PrepareAsyncEtherbaseRaw(context, request, cq);
+  result->StartCall();
+  return result;
 }
 
 ::grpc::Status ETHBACKEND::Stub::NetVersion(::grpc::ClientContext* context, const ::remote::NetVersionRequest& request, ::remote::NetVersionReply* response) {
-  return ::grpc::internal::BlockingUnaryCall(channel_.get(), rpcmethod_NetVersion_, context, request, response);
+  return ::grpc::internal::BlockingUnaryCall< ::remote::NetVersionRequest, ::remote::NetVersionReply, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), rpcmethod_NetVersion_, context, request, response);
 }
 
 void ETHBACKEND::Stub::experimental_async::NetVersion(::grpc::ClientContext* context, const ::remote::NetVersionRequest* request, ::remote::NetVersionReply* response, std::function<void(::grpc::Status)> f) {
-  ::grpc_impl::internal::CallbackUnaryCall(stub_->channel_.get(), stub_->rpcmethod_NetVersion_, context, request, response, std::move(f));
-}
-
-void ETHBACKEND::Stub::experimental_async::NetVersion(::grpc::ClientContext* context, const ::grpc::ByteBuffer* request, ::remote::NetVersionReply* response, std::function<void(::grpc::Status)> f) {
-  ::grpc_impl::internal::CallbackUnaryCall(stub_->channel_.get(), stub_->rpcmethod_NetVersion_, context, request, response, std::move(f));
+  ::grpc::internal::CallbackUnaryCall< ::remote::NetVersionRequest, ::remote::NetVersionReply, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_NetVersion_, context, request, response, std::move(f));
 }
 
 void ETHBACKEND::Stub::experimental_async::NetVersion(::grpc::ClientContext* context, const ::remote::NetVersionRequest* request, ::remote::NetVersionReply* response, ::grpc::experimental::ClientUnaryReactor* reactor) {
-  ::grpc_impl::internal::ClientCallbackUnaryFactory::Create(stub_->channel_.get(), stub_->rpcmethod_NetVersion_, context, request, response, reactor);
-}
-
-void ETHBACKEND::Stub::experimental_async::NetVersion(::grpc::ClientContext* context, const ::grpc::ByteBuffer* request, ::remote::NetVersionReply* response, ::grpc::experimental::ClientUnaryReactor* reactor) {
-  ::grpc_impl::internal::ClientCallbackUnaryFactory::Create(stub_->channel_.get(), stub_->rpcmethod_NetVersion_, context, request, response, reactor);
-}
-
-::grpc::ClientAsyncResponseReader< ::remote::NetVersionReply>* ETHBACKEND::Stub::AsyncNetVersionRaw(::grpc::ClientContext* context, const ::remote::NetVersionRequest& request, ::grpc::CompletionQueue* cq) {
-  return ::grpc_impl::internal::ClientAsyncResponseReaderFactory< ::remote::NetVersionReply>::Create(channel_.get(), cq, rpcmethod_NetVersion_, context, request, true);
+  ::grpc::internal::ClientCallbackUnaryFactory::Create< ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_NetVersion_, context, request, response, reactor);
 }
 
 ::grpc::ClientAsyncResponseReader< ::remote::NetVersionReply>* ETHBACKEND::Stub::PrepareAsyncNetVersionRaw(::grpc::ClientContext* context, const ::remote::NetVersionRequest& request, ::grpc::CompletionQueue* cq) {
-  return ::grpc_impl::internal::ClientAsyncResponseReaderFactory< ::remote::NetVersionReply>::Create(channel_.get(), cq, rpcmethod_NetVersion_, context, request, false);
+  return ::grpc::internal::ClientAsyncResponseReaderHelper::Create< ::remote::NetVersionReply, ::remote::NetVersionRequest, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), cq, rpcmethod_NetVersion_, context, request);
+}
+
+::grpc::ClientAsyncResponseReader< ::remote::NetVersionReply>* ETHBACKEND::Stub::AsyncNetVersionRaw(::grpc::ClientContext* context, const ::remote::NetVersionRequest& request, ::grpc::CompletionQueue* cq) {
+  auto* result =
+    this->PrepareAsyncNetVersionRaw(context, request, cq);
+  result->StartCall();
+  return result;
 }
 
 ::grpc::Status ETHBACKEND::Stub::NetPeerCount(::grpc::ClientContext* context, const ::remote::NetPeerCountRequest& request, ::remote::NetPeerCountReply* response) {
-  return ::grpc::internal::BlockingUnaryCall(channel_.get(), rpcmethod_NetPeerCount_, context, request, response);
+  return ::grpc::internal::BlockingUnaryCall< ::remote::NetPeerCountRequest, ::remote::NetPeerCountReply, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), rpcmethod_NetPeerCount_, context, request, response);
 }
 
 void ETHBACKEND::Stub::experimental_async::NetPeerCount(::grpc::ClientContext* context, const ::remote::NetPeerCountRequest* request, ::remote::NetPeerCountReply* response, std::function<void(::grpc::Status)> f) {
-  ::grpc_impl::internal::CallbackUnaryCall(stub_->channel_.get(), stub_->rpcmethod_NetPeerCount_, context, request, response, std::move(f));
-}
-
-void ETHBACKEND::Stub::experimental_async::NetPeerCount(::grpc::ClientContext* context, const ::grpc::ByteBuffer* request, ::remote::NetPeerCountReply* response, std::function<void(::grpc::Status)> f) {
-  ::grpc_impl::internal::CallbackUnaryCall(stub_->channel_.get(), stub_->rpcmethod_NetPeerCount_, context, request, response, std::move(f));
+  ::grpc::internal::CallbackUnaryCall< ::remote::NetPeerCountRequest, ::remote::NetPeerCountReply, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_NetPeerCount_, context, request, response, std::move(f));
 }
 
 void ETHBACKEND::Stub::experimental_async::NetPeerCount(::grpc::ClientContext* context, const ::remote::NetPeerCountRequest* request, ::remote::NetPeerCountReply* response, ::grpc::experimental::ClientUnaryReactor* reactor) {
-  ::grpc_impl::internal::ClientCallbackUnaryFactory::Create(stub_->channel_.get(), stub_->rpcmethod_NetPeerCount_, context, request, response, reactor);
-}
-
-void ETHBACKEND::Stub::experimental_async::NetPeerCount(::grpc::ClientContext* context, const ::grpc::ByteBuffer* request, ::remote::NetPeerCountReply* response, ::grpc::experimental::ClientUnaryReactor* reactor) {
-  ::grpc_impl::internal::ClientCallbackUnaryFactory::Create(stub_->channel_.get(), stub_->rpcmethod_NetPeerCount_, context, request, response, reactor);
-}
-
-::grpc::ClientAsyncResponseReader< ::remote::NetPeerCountReply>* ETHBACKEND::Stub::AsyncNetPeerCountRaw(::grpc::ClientContext* context, const ::remote::NetPeerCountRequest& request, ::grpc::CompletionQueue* cq) {
-  return ::grpc_impl::internal::ClientAsyncResponseReaderFactory< ::remote::NetPeerCountReply>::Create(channel_.get(), cq, rpcmethod_NetPeerCount_, context, request, true);
+  ::grpc::internal::ClientCallbackUnaryFactory::Create< ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_NetPeerCount_, context, request, response, reactor);
 }
 
 ::grpc::ClientAsyncResponseReader< ::remote::NetPeerCountReply>* ETHBACKEND::Stub::PrepareAsyncNetPeerCountRaw(::grpc::ClientContext* context, const ::remote::NetPeerCountRequest& request, ::grpc::CompletionQueue* cq) {
-  return ::grpc_impl::internal::ClientAsyncResponseReaderFactory< ::remote::NetPeerCountReply>::Create(channel_.get(), cq, rpcmethod_NetPeerCount_, context, request, false);
+  return ::grpc::internal::ClientAsyncResponseReaderHelper::Create< ::remote::NetPeerCountReply, ::remote::NetPeerCountRequest, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), cq, rpcmethod_NetPeerCount_, context, request);
+}
+
+::grpc::ClientAsyncResponseReader< ::remote::NetPeerCountReply>* ETHBACKEND::Stub::AsyncNetPeerCountRaw(::grpc::ClientContext* context, const ::remote::NetPeerCountRequest& request, ::grpc::CompletionQueue* cq) {
+  auto* result =
+    this->PrepareAsyncNetPeerCountRaw(context, request, cq);
+  result->StartCall();
+  return result;
 }
 
 ::grpc::Status ETHBACKEND::Stub::Version(::grpc::ClientContext* context, const ::google::protobuf::Empty& request, ::types::VersionReply* response) {
-  return ::grpc::internal::BlockingUnaryCall(channel_.get(), rpcmethod_Version_, context, request, response);
+  return ::grpc::internal::BlockingUnaryCall< ::google::protobuf::Empty, ::types::VersionReply, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), rpcmethod_Version_, context, request, response);
 }
 
 void ETHBACKEND::Stub::experimental_async::Version(::grpc::ClientContext* context, const ::google::protobuf::Empty* request, ::types::VersionReply* response, std::function<void(::grpc::Status)> f) {
-  ::grpc_impl::internal::CallbackUnaryCall(stub_->channel_.get(), stub_->rpcmethod_Version_, context, request, response, std::move(f));
-}
-
-void ETHBACKEND::Stub::experimental_async::Version(::grpc::ClientContext* context, const ::grpc::ByteBuffer* request, ::types::VersionReply* response, std::function<void(::grpc::Status)> f) {
-  ::grpc_impl::internal::CallbackUnaryCall(stub_->channel_.get(), stub_->rpcmethod_Version_, context, request, response, std::move(f));
+  ::grpc::internal::CallbackUnaryCall< ::google::protobuf::Empty, ::types::VersionReply, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_Version_, context, request, response, std::move(f));
 }
 
 void ETHBACKEND::Stub::experimental_async::Version(::grpc::ClientContext* context, const ::google::protobuf::Empty* request, ::types::VersionReply* response, ::grpc::experimental::ClientUnaryReactor* reactor) {
-  ::grpc_impl::internal::ClientCallbackUnaryFactory::Create(stub_->channel_.get(), stub_->rpcmethod_Version_, context, request, response, reactor);
-}
-
-void ETHBACKEND::Stub::experimental_async::Version(::grpc::ClientContext* context, const ::grpc::ByteBuffer* request, ::types::VersionReply* response, ::grpc::experimental::ClientUnaryReactor* reactor) {
-  ::grpc_impl::internal::ClientCallbackUnaryFactory::Create(stub_->channel_.get(), stub_->rpcmethod_Version_, context, request, response, reactor);
-}
-
-::grpc::ClientAsyncResponseReader< ::types::VersionReply>* ETHBACKEND::Stub::AsyncVersionRaw(::grpc::ClientContext* context, const ::google::protobuf::Empty& request, ::grpc::CompletionQueue* cq) {
-  return ::grpc_impl::internal::ClientAsyncResponseReaderFactory< ::types::VersionReply>::Create(channel_.get(), cq, rpcmethod_Version_, context, request, true);
+  ::grpc::internal::ClientCallbackUnaryFactory::Create< ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_Version_, context, request, response, reactor);
 }
 
 ::grpc::ClientAsyncResponseReader< ::types::VersionReply>* ETHBACKEND::Stub::PrepareAsyncVersionRaw(::grpc::ClientContext* context, const ::google::protobuf::Empty& request, ::grpc::CompletionQueue* cq) {
-  return ::grpc_impl::internal::ClientAsyncResponseReaderFactory< ::types::VersionReply>::Create(channel_.get(), cq, rpcmethod_Version_, context, request, false);
+  return ::grpc::internal::ClientAsyncResponseReaderHelper::Create< ::types::VersionReply, ::google::protobuf::Empty, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), cq, rpcmethod_Version_, context, request);
+}
+
+::grpc::ClientAsyncResponseReader< ::types::VersionReply>* ETHBACKEND::Stub::AsyncVersionRaw(::grpc::ClientContext* context, const ::google::protobuf::Empty& request, ::grpc::CompletionQueue* cq) {
+  auto* result =
+    this->PrepareAsyncVersionRaw(context, request, cq);
+  result->StartCall();
+  return result;
 }
 
 ::grpc::Status ETHBACKEND::Stub::ProtocolVersion(::grpc::ClientContext* context, const ::remote::ProtocolVersionRequest& request, ::remote::ProtocolVersionReply* response) {
-  return ::grpc::internal::BlockingUnaryCall(channel_.get(), rpcmethod_ProtocolVersion_, context, request, response);
+  return ::grpc::internal::BlockingUnaryCall< ::remote::ProtocolVersionRequest, ::remote::ProtocolVersionReply, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), rpcmethod_ProtocolVersion_, context, request, response);
 }
 
 void ETHBACKEND::Stub::experimental_async::ProtocolVersion(::grpc::ClientContext* context, const ::remote::ProtocolVersionRequest* request, ::remote::ProtocolVersionReply* response, std::function<void(::grpc::Status)> f) {
-  ::grpc_impl::internal::CallbackUnaryCall(stub_->channel_.get(), stub_->rpcmethod_ProtocolVersion_, context, request, response, std::move(f));
-}
-
-void ETHBACKEND::Stub::experimental_async::ProtocolVersion(::grpc::ClientContext* context, const ::grpc::ByteBuffer* request, ::remote::ProtocolVersionReply* response, std::function<void(::grpc::Status)> f) {
-  ::grpc_impl::internal::CallbackUnaryCall(stub_->channel_.get(), stub_->rpcmethod_ProtocolVersion_, context, request, response, std::move(f));
+  ::grpc::internal::CallbackUnaryCall< ::remote::ProtocolVersionRequest, ::remote::ProtocolVersionReply, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_ProtocolVersion_, context, request, response, std::move(f));
 }
 
 void ETHBACKEND::Stub::experimental_async::ProtocolVersion(::grpc::ClientContext* context, const ::remote::ProtocolVersionRequest* request, ::remote::ProtocolVersionReply* response, ::grpc::experimental::ClientUnaryReactor* reactor) {
-  ::grpc_impl::internal::ClientCallbackUnaryFactory::Create(stub_->channel_.get(), stub_->rpcmethod_ProtocolVersion_, context, request, response, reactor);
-}
-
-void ETHBACKEND::Stub::experimental_async::ProtocolVersion(::grpc::ClientContext* context, const ::grpc::ByteBuffer* request, ::remote::ProtocolVersionReply* response, ::grpc::experimental::ClientUnaryReactor* reactor) {
-  ::grpc_impl::internal::ClientCallbackUnaryFactory::Create(stub_->channel_.get(), stub_->rpcmethod_ProtocolVersion_, context, request, response, reactor);
-}
-
-::grpc::ClientAsyncResponseReader< ::remote::ProtocolVersionReply>* ETHBACKEND::Stub::AsyncProtocolVersionRaw(::grpc::ClientContext* context, const ::remote::ProtocolVersionRequest& request, ::grpc::CompletionQueue* cq) {
-  return ::grpc_impl::internal::ClientAsyncResponseReaderFactory< ::remote::ProtocolVersionReply>::Create(channel_.get(), cq, rpcmethod_ProtocolVersion_, context, request, true);
+  ::grpc::internal::ClientCallbackUnaryFactory::Create< ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_ProtocolVersion_, context, request, response, reactor);
 }
 
 ::grpc::ClientAsyncResponseReader< ::remote::ProtocolVersionReply>* ETHBACKEND::Stub::PrepareAsyncProtocolVersionRaw(::grpc::ClientContext* context, const ::remote::ProtocolVersionRequest& request, ::grpc::CompletionQueue* cq) {
-  return ::grpc_impl::internal::ClientAsyncResponseReaderFactory< ::remote::ProtocolVersionReply>::Create(channel_.get(), cq, rpcmethod_ProtocolVersion_, context, request, false);
+  return ::grpc::internal::ClientAsyncResponseReaderHelper::Create< ::remote::ProtocolVersionReply, ::remote::ProtocolVersionRequest, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), cq, rpcmethod_ProtocolVersion_, context, request);
+}
+
+::grpc::ClientAsyncResponseReader< ::remote::ProtocolVersionReply>* ETHBACKEND::Stub::AsyncProtocolVersionRaw(::grpc::ClientContext* context, const ::remote::ProtocolVersionRequest& request, ::grpc::CompletionQueue* cq) {
+  auto* result =
+    this->PrepareAsyncProtocolVersionRaw(context, request, cq);
+  result->StartCall();
+  return result;
 }
 
 ::grpc::Status ETHBACKEND::Stub::ClientVersion(::grpc::ClientContext* context, const ::remote::ClientVersionRequest& request, ::remote::ClientVersionReply* response) {
-  return ::grpc::internal::BlockingUnaryCall(channel_.get(), rpcmethod_ClientVersion_, context, request, response);
+  return ::grpc::internal::BlockingUnaryCall< ::remote::ClientVersionRequest, ::remote::ClientVersionReply, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), rpcmethod_ClientVersion_, context, request, response);
 }
 
 void ETHBACKEND::Stub::experimental_async::ClientVersion(::grpc::ClientContext* context, const ::remote::ClientVersionRequest* request, ::remote::ClientVersionReply* response, std::function<void(::grpc::Status)> f) {
-  ::grpc_impl::internal::CallbackUnaryCall(stub_->channel_.get(), stub_->rpcmethod_ClientVersion_, context, request, response, std::move(f));
-}
-
-void ETHBACKEND::Stub::experimental_async::ClientVersion(::grpc::ClientContext* context, const ::grpc::ByteBuffer* request, ::remote::ClientVersionReply* response, std::function<void(::grpc::Status)> f) {
-  ::grpc_impl::internal::CallbackUnaryCall(stub_->channel_.get(), stub_->rpcmethod_ClientVersion_, context, request, response, std::move(f));
+  ::grpc::internal::CallbackUnaryCall< ::remote::ClientVersionRequest, ::remote::ClientVersionReply, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_ClientVersion_, context, request, response, std::move(f));
 }
 
 void ETHBACKEND::Stub::experimental_async::ClientVersion(::grpc::ClientContext* context, const ::remote::ClientVersionRequest* request, ::remote::ClientVersionReply* response, ::grpc::experimental::ClientUnaryReactor* reactor) {
-  ::grpc_impl::internal::ClientCallbackUnaryFactory::Create(stub_->channel_.get(), stub_->rpcmethod_ClientVersion_, context, request, response, reactor);
-}
-
-void ETHBACKEND::Stub::experimental_async::ClientVersion(::grpc::ClientContext* context, const ::grpc::ByteBuffer* request, ::remote::ClientVersionReply* response, ::grpc::experimental::ClientUnaryReactor* reactor) {
-  ::grpc_impl::internal::ClientCallbackUnaryFactory::Create(stub_->channel_.get(), stub_->rpcmethod_ClientVersion_, context, request, response, reactor);
-}
-
-::grpc::ClientAsyncResponseReader< ::remote::ClientVersionReply>* ETHBACKEND::Stub::AsyncClientVersionRaw(::grpc::ClientContext* context, const ::remote::ClientVersionRequest& request, ::grpc::CompletionQueue* cq) {
-  return ::grpc_impl::internal::ClientAsyncResponseReaderFactory< ::remote::ClientVersionReply>::Create(channel_.get(), cq, rpcmethod_ClientVersion_, context, request, true);
+  ::grpc::internal::ClientCallbackUnaryFactory::Create< ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_ClientVersion_, context, request, response, reactor);
 }
 
 ::grpc::ClientAsyncResponseReader< ::remote::ClientVersionReply>* ETHBACKEND::Stub::PrepareAsyncClientVersionRaw(::grpc::ClientContext* context, const ::remote::ClientVersionRequest& request, ::grpc::CompletionQueue* cq) {
-  return ::grpc_impl::internal::ClientAsyncResponseReaderFactory< ::remote::ClientVersionReply>::Create(channel_.get(), cq, rpcmethod_ClientVersion_, context, request, false);
+  return ::grpc::internal::ClientAsyncResponseReaderHelper::Create< ::remote::ClientVersionReply, ::remote::ClientVersionRequest, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), cq, rpcmethod_ClientVersion_, context, request);
+}
+
+::grpc::ClientAsyncResponseReader< ::remote::ClientVersionReply>* ETHBACKEND::Stub::AsyncClientVersionRaw(::grpc::ClientContext* context, const ::remote::ClientVersionRequest& request, ::grpc::CompletionQueue* cq) {
+  auto* result =
+    this->PrepareAsyncClientVersionRaw(context, request, cq);
+  result->StartCall();
+  return result;
 }
 
 ::grpc::ClientReader< ::remote::SubscribeReply>* ETHBACKEND::Stub::SubscribeRaw(::grpc::ClientContext* context, const ::remote::SubscribeRequest& request) {
-  return ::grpc_impl::internal::ClientReaderFactory< ::remote::SubscribeReply>::Create(channel_.get(), rpcmethod_Subscribe_, context, request);
+  return ::grpc::internal::ClientReaderFactory< ::remote::SubscribeReply>::Create(channel_.get(), rpcmethod_Subscribe_, context, request);
 }
 
 void ETHBACKEND::Stub::experimental_async::Subscribe(::grpc::ClientContext* context, ::remote::SubscribeRequest* request, ::grpc::experimental::ClientReadReactor< ::remote::SubscribeReply>* reactor) {
-  ::grpc_impl::internal::ClientCallbackReaderFactory< ::remote::SubscribeReply>::Create(stub_->channel_.get(), stub_->rpcmethod_Subscribe_, context, request, reactor);
+  ::grpc::internal::ClientCallbackReaderFactory< ::remote::SubscribeReply>::Create(stub_->channel_.get(), stub_->rpcmethod_Subscribe_, context, request, reactor);
 }
 
 ::grpc::ClientAsyncReader< ::remote::SubscribeReply>* ETHBACKEND::Stub::AsyncSubscribeRaw(::grpc::ClientContext* context, const ::remote::SubscribeRequest& request, ::grpc::CompletionQueue* cq, void* tag) {
-  return ::grpc_impl::internal::ClientAsyncReaderFactory< ::remote::SubscribeReply>::Create(channel_.get(), cq, rpcmethod_Subscribe_, context, request, true, tag);
+  return ::grpc::internal::ClientAsyncReaderFactory< ::remote::SubscribeReply>::Create(channel_.get(), cq, rpcmethod_Subscribe_, context, request, true, tag);
 }
 
 ::grpc::ClientAsyncReader< ::remote::SubscribeReply>* ETHBACKEND::Stub::PrepareAsyncSubscribeRaw(::grpc::ClientContext* context, const ::remote::SubscribeRequest& request, ::grpc::CompletionQueue* cq) {
-  return ::grpc_impl::internal::ClientAsyncReaderFactory< ::remote::SubscribeReply>::Create(channel_.get(), cq, rpcmethod_Subscribe_, context, request, false, nullptr);
+  return ::grpc::internal::ClientAsyncReaderFactory< ::remote::SubscribeReply>::Create(channel_.get(), cq, rpcmethod_Subscribe_, context, request, false, nullptr);
 }
 
 ::grpc::Status ETHBACKEND::Stub::NodeInfo(::grpc::ClientContext* context, const ::remote::NodesInfoRequest& request, ::remote::NodesInfoReply* response) {
-  return ::grpc::internal::BlockingUnaryCall(channel_.get(), rpcmethod_NodeInfo_, context, request, response);
+  return ::grpc::internal::BlockingUnaryCall< ::remote::NodesInfoRequest, ::remote::NodesInfoReply, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), rpcmethod_NodeInfo_, context, request, response);
 }
 
 void ETHBACKEND::Stub::experimental_async::NodeInfo(::grpc::ClientContext* context, const ::remote::NodesInfoRequest* request, ::remote::NodesInfoReply* response, std::function<void(::grpc::Status)> f) {
-  ::grpc_impl::internal::CallbackUnaryCall(stub_->channel_.get(), stub_->rpcmethod_NodeInfo_, context, request, response, std::move(f));
-}
-
-void ETHBACKEND::Stub::experimental_async::NodeInfo(::grpc::ClientContext* context, const ::grpc::ByteBuffer* request, ::remote::NodesInfoReply* response, std::function<void(::grpc::Status)> f) {
-  ::grpc_impl::internal::CallbackUnaryCall(stub_->channel_.get(), stub_->rpcmethod_NodeInfo_, context, request, response, std::move(f));
+  ::grpc::internal::CallbackUnaryCall< ::remote::NodesInfoRequest, ::remote::NodesInfoReply, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_NodeInfo_, context, request, response, std::move(f));
 }
 
 void ETHBACKEND::Stub::experimental_async::NodeInfo(::grpc::ClientContext* context, const ::remote::NodesInfoRequest* request, ::remote::NodesInfoReply* response, ::grpc::experimental::ClientUnaryReactor* reactor) {
-  ::grpc_impl::internal::ClientCallbackUnaryFactory::Create(stub_->channel_.get(), stub_->rpcmethod_NodeInfo_, context, request, response, reactor);
-}
-
-void ETHBACKEND::Stub::experimental_async::NodeInfo(::grpc::ClientContext* context, const ::grpc::ByteBuffer* request, ::remote::NodesInfoReply* response, ::grpc::experimental::ClientUnaryReactor* reactor) {
-  ::grpc_impl::internal::ClientCallbackUnaryFactory::Create(stub_->channel_.get(), stub_->rpcmethod_NodeInfo_, context, request, response, reactor);
-}
-
-::grpc::ClientAsyncResponseReader< ::remote::NodesInfoReply>* ETHBACKEND::Stub::AsyncNodeInfoRaw(::grpc::ClientContext* context, const ::remote::NodesInfoRequest& request, ::grpc::CompletionQueue* cq) {
-  return ::grpc_impl::internal::ClientAsyncResponseReaderFactory< ::remote::NodesInfoReply>::Create(channel_.get(), cq, rpcmethod_NodeInfo_, context, request, true);
+  ::grpc::internal::ClientCallbackUnaryFactory::Create< ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_NodeInfo_, context, request, response, reactor);
 }
 
 ::grpc::ClientAsyncResponseReader< ::remote::NodesInfoReply>* ETHBACKEND::Stub::PrepareAsyncNodeInfoRaw(::grpc::ClientContext* context, const ::remote::NodesInfoRequest& request, ::grpc::CompletionQueue* cq) {
-  return ::grpc_impl::internal::ClientAsyncResponseReaderFactory< ::remote::NodesInfoReply>::Create(channel_.get(), cq, rpcmethod_NodeInfo_, context, request, false);
+  return ::grpc::internal::ClientAsyncResponseReaderHelper::Create< ::remote::NodesInfoReply, ::remote::NodesInfoRequest, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), cq, rpcmethod_NodeInfo_, context, request);
+}
+
+::grpc::ClientAsyncResponseReader< ::remote::NodesInfoReply>* ETHBACKEND::Stub::AsyncNodeInfoRaw(::grpc::ClientContext* context, const ::remote::NodesInfoRequest& request, ::grpc::CompletionQueue* cq) {
+  auto* result =
+    this->PrepareAsyncNodeInfoRaw(context, request, cq);
+  result->StartCall();
+  return result;
 }
 
 ETHBACKEND::Service::Service() {
   AddMethod(new ::grpc::internal::RpcServiceMethod(
       ETHBACKEND_method_names[0],
       ::grpc::internal::RpcMethod::NORMAL_RPC,
-      new ::grpc::internal::RpcMethodHandler< ETHBACKEND::Service, ::remote::EtherbaseRequest, ::remote::EtherbaseReply>(
+      new ::grpc::internal::RpcMethodHandler< ETHBACKEND::Service, ::remote::EtherbaseRequest, ::remote::EtherbaseReply, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
           [](ETHBACKEND::Service* service,
-             ::grpc_impl::ServerContext* ctx,
+             ::grpc::ServerContext* ctx,
              const ::remote::EtherbaseRequest* req,
              ::remote::EtherbaseReply* resp) {
                return service->Etherbase(ctx, req, resp);
@@ -275,9 +240,9 @@ ETHBACKEND::Service::Service() {
   AddMethod(new ::grpc::internal::RpcServiceMethod(
       ETHBACKEND_method_names[1],
       ::grpc::internal::RpcMethod::NORMAL_RPC,
-      new ::grpc::internal::RpcMethodHandler< ETHBACKEND::Service, ::remote::NetVersionRequest, ::remote::NetVersionReply>(
+      new ::grpc::internal::RpcMethodHandler< ETHBACKEND::Service, ::remote::NetVersionRequest, ::remote::NetVersionReply, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
           [](ETHBACKEND::Service* service,
-             ::grpc_impl::ServerContext* ctx,
+             ::grpc::ServerContext* ctx,
              const ::remote::NetVersionRequest* req,
              ::remote::NetVersionReply* resp) {
                return service->NetVersion(ctx, req, resp);
@@ -285,9 +250,9 @@ ETHBACKEND::Service::Service() {
   AddMethod(new ::grpc::internal::RpcServiceMethod(
       ETHBACKEND_method_names[2],
       ::grpc::internal::RpcMethod::NORMAL_RPC,
-      new ::grpc::internal::RpcMethodHandler< ETHBACKEND::Service, ::remote::NetPeerCountRequest, ::remote::NetPeerCountReply>(
+      new ::grpc::internal::RpcMethodHandler< ETHBACKEND::Service, ::remote::NetPeerCountRequest, ::remote::NetPeerCountReply, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
           [](ETHBACKEND::Service* service,
-             ::grpc_impl::ServerContext* ctx,
+             ::grpc::ServerContext* ctx,
              const ::remote::NetPeerCountRequest* req,
              ::remote::NetPeerCountReply* resp) {
                return service->NetPeerCount(ctx, req, resp);
@@ -295,9 +260,9 @@ ETHBACKEND::Service::Service() {
   AddMethod(new ::grpc::internal::RpcServiceMethod(
       ETHBACKEND_method_names[3],
       ::grpc::internal::RpcMethod::NORMAL_RPC,
-      new ::grpc::internal::RpcMethodHandler< ETHBACKEND::Service, ::google::protobuf::Empty, ::types::VersionReply>(
+      new ::grpc::internal::RpcMethodHandler< ETHBACKEND::Service, ::google::protobuf::Empty, ::types::VersionReply, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
           [](ETHBACKEND::Service* service,
-             ::grpc_impl::ServerContext* ctx,
+             ::grpc::ServerContext* ctx,
              const ::google::protobuf::Empty* req,
              ::types::VersionReply* resp) {
                return service->Version(ctx, req, resp);
@@ -305,9 +270,9 @@ ETHBACKEND::Service::Service() {
   AddMethod(new ::grpc::internal::RpcServiceMethod(
       ETHBACKEND_method_names[4],
       ::grpc::internal::RpcMethod::NORMAL_RPC,
-      new ::grpc::internal::RpcMethodHandler< ETHBACKEND::Service, ::remote::ProtocolVersionRequest, ::remote::ProtocolVersionReply>(
+      new ::grpc::internal::RpcMethodHandler< ETHBACKEND::Service, ::remote::ProtocolVersionRequest, ::remote::ProtocolVersionReply, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
           [](ETHBACKEND::Service* service,
-             ::grpc_impl::ServerContext* ctx,
+             ::grpc::ServerContext* ctx,
              const ::remote::ProtocolVersionRequest* req,
              ::remote::ProtocolVersionReply* resp) {
                return service->ProtocolVersion(ctx, req, resp);
@@ -315,9 +280,9 @@ ETHBACKEND::Service::Service() {
   AddMethod(new ::grpc::internal::RpcServiceMethod(
       ETHBACKEND_method_names[5],
       ::grpc::internal::RpcMethod::NORMAL_RPC,
-      new ::grpc::internal::RpcMethodHandler< ETHBACKEND::Service, ::remote::ClientVersionRequest, ::remote::ClientVersionReply>(
+      new ::grpc::internal::RpcMethodHandler< ETHBACKEND::Service, ::remote::ClientVersionRequest, ::remote::ClientVersionReply, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
           [](ETHBACKEND::Service* service,
-             ::grpc_impl::ServerContext* ctx,
+             ::grpc::ServerContext* ctx,
              const ::remote::ClientVersionRequest* req,
              ::remote::ClientVersionReply* resp) {
                return service->ClientVersion(ctx, req, resp);
@@ -327,17 +292,17 @@ ETHBACKEND::Service::Service() {
       ::grpc::internal::RpcMethod::SERVER_STREAMING,
       new ::grpc::internal::ServerStreamingHandler< ETHBACKEND::Service, ::remote::SubscribeRequest, ::remote::SubscribeReply>(
           [](ETHBACKEND::Service* service,
-             ::grpc_impl::ServerContext* ctx,
+             ::grpc::ServerContext* ctx,
              const ::remote::SubscribeRequest* req,
-             ::grpc_impl::ServerWriter<::remote::SubscribeReply>* writer) {
+             ::grpc::ServerWriter<::remote::SubscribeReply>* writer) {
                return service->Subscribe(ctx, req, writer);
              }, this)));
   AddMethod(new ::grpc::internal::RpcServiceMethod(
       ETHBACKEND_method_names[7],
       ::grpc::internal::RpcMethod::NORMAL_RPC,
-      new ::grpc::internal::RpcMethodHandler< ETHBACKEND::Service, ::remote::NodesInfoRequest, ::remote::NodesInfoReply>(
+      new ::grpc::internal::RpcMethodHandler< ETHBACKEND::Service, ::remote::NodesInfoRequest, ::remote::NodesInfoReply, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
           [](ETHBACKEND::Service* service,
-             ::grpc_impl::ServerContext* ctx,
+             ::grpc::ServerContext* ctx,
              const ::remote::NodesInfoRequest* req,
              ::remote::NodesInfoReply* resp) {
                return service->NodeInfo(ctx, req, resp);

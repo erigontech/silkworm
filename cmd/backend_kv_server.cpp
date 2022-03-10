@@ -79,7 +79,7 @@ int main(int argc, char* argv[]) {
     silkworm::log::init(log_settings);
 
     const auto node_name{get_node_name_from_build_info()};
-    SILK_LOG << "BackEndKvServer build info: " << node_name;
+    SILK_LOG << "BackEndKvServer build info: " << node_name << " gRPC version: " << grpc::Version();
 
     try {
         SILK_LOG << "BackEndKvServer launched with address: " << address_uri << ", contexts: " << num_contexts;

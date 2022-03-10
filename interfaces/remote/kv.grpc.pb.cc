@@ -40,72 +40,67 @@ KV::Stub::Stub(const std::shared_ptr< ::grpc::ChannelInterface>& channel)
   {}
 
 ::grpc::Status KV::Stub::Version(::grpc::ClientContext* context, const ::google::protobuf::Empty& request, ::types::VersionReply* response) {
-  return ::grpc::internal::BlockingUnaryCall(channel_.get(), rpcmethod_Version_, context, request, response);
+  return ::grpc::internal::BlockingUnaryCall< ::google::protobuf::Empty, ::types::VersionReply, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), rpcmethod_Version_, context, request, response);
 }
 
 void KV::Stub::experimental_async::Version(::grpc::ClientContext* context, const ::google::protobuf::Empty* request, ::types::VersionReply* response, std::function<void(::grpc::Status)> f) {
-  ::grpc_impl::internal::CallbackUnaryCall(stub_->channel_.get(), stub_->rpcmethod_Version_, context, request, response, std::move(f));
-}
-
-void KV::Stub::experimental_async::Version(::grpc::ClientContext* context, const ::grpc::ByteBuffer* request, ::types::VersionReply* response, std::function<void(::grpc::Status)> f) {
-  ::grpc_impl::internal::CallbackUnaryCall(stub_->channel_.get(), stub_->rpcmethod_Version_, context, request, response, std::move(f));
+  ::grpc::internal::CallbackUnaryCall< ::google::protobuf::Empty, ::types::VersionReply, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_Version_, context, request, response, std::move(f));
 }
 
 void KV::Stub::experimental_async::Version(::grpc::ClientContext* context, const ::google::protobuf::Empty* request, ::types::VersionReply* response, ::grpc::experimental::ClientUnaryReactor* reactor) {
-  ::grpc_impl::internal::ClientCallbackUnaryFactory::Create(stub_->channel_.get(), stub_->rpcmethod_Version_, context, request, response, reactor);
-}
-
-void KV::Stub::experimental_async::Version(::grpc::ClientContext* context, const ::grpc::ByteBuffer* request, ::types::VersionReply* response, ::grpc::experimental::ClientUnaryReactor* reactor) {
-  ::grpc_impl::internal::ClientCallbackUnaryFactory::Create(stub_->channel_.get(), stub_->rpcmethod_Version_, context, request, response, reactor);
-}
-
-::grpc::ClientAsyncResponseReader< ::types::VersionReply>* KV::Stub::AsyncVersionRaw(::grpc::ClientContext* context, const ::google::protobuf::Empty& request, ::grpc::CompletionQueue* cq) {
-  return ::grpc_impl::internal::ClientAsyncResponseReaderFactory< ::types::VersionReply>::Create(channel_.get(), cq, rpcmethod_Version_, context, request, true);
+  ::grpc::internal::ClientCallbackUnaryFactory::Create< ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_Version_, context, request, response, reactor);
 }
 
 ::grpc::ClientAsyncResponseReader< ::types::VersionReply>* KV::Stub::PrepareAsyncVersionRaw(::grpc::ClientContext* context, const ::google::protobuf::Empty& request, ::grpc::CompletionQueue* cq) {
-  return ::grpc_impl::internal::ClientAsyncResponseReaderFactory< ::types::VersionReply>::Create(channel_.get(), cq, rpcmethod_Version_, context, request, false);
+  return ::grpc::internal::ClientAsyncResponseReaderHelper::Create< ::types::VersionReply, ::google::protobuf::Empty, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), cq, rpcmethod_Version_, context, request);
+}
+
+::grpc::ClientAsyncResponseReader< ::types::VersionReply>* KV::Stub::AsyncVersionRaw(::grpc::ClientContext* context, const ::google::protobuf::Empty& request, ::grpc::CompletionQueue* cq) {
+  auto* result =
+    this->PrepareAsyncVersionRaw(context, request, cq);
+  result->StartCall();
+  return result;
 }
 
 ::grpc::ClientReaderWriter< ::remote::Cursor, ::remote::Pair>* KV::Stub::TxRaw(::grpc::ClientContext* context) {
-  return ::grpc_impl::internal::ClientReaderWriterFactory< ::remote::Cursor, ::remote::Pair>::Create(channel_.get(), rpcmethod_Tx_, context);
+  return ::grpc::internal::ClientReaderWriterFactory< ::remote::Cursor, ::remote::Pair>::Create(channel_.get(), rpcmethod_Tx_, context);
 }
 
 void KV::Stub::experimental_async::Tx(::grpc::ClientContext* context, ::grpc::experimental::ClientBidiReactor< ::remote::Cursor,::remote::Pair>* reactor) {
-  ::grpc_impl::internal::ClientCallbackReaderWriterFactory< ::remote::Cursor,::remote::Pair>::Create(stub_->channel_.get(), stub_->rpcmethod_Tx_, context, reactor);
+  ::grpc::internal::ClientCallbackReaderWriterFactory< ::remote::Cursor,::remote::Pair>::Create(stub_->channel_.get(), stub_->rpcmethod_Tx_, context, reactor);
 }
 
 ::grpc::ClientAsyncReaderWriter< ::remote::Cursor, ::remote::Pair>* KV::Stub::AsyncTxRaw(::grpc::ClientContext* context, ::grpc::CompletionQueue* cq, void* tag) {
-  return ::grpc_impl::internal::ClientAsyncReaderWriterFactory< ::remote::Cursor, ::remote::Pair>::Create(channel_.get(), cq, rpcmethod_Tx_, context, true, tag);
+  return ::grpc::internal::ClientAsyncReaderWriterFactory< ::remote::Cursor, ::remote::Pair>::Create(channel_.get(), cq, rpcmethod_Tx_, context, true, tag);
 }
 
 ::grpc::ClientAsyncReaderWriter< ::remote::Cursor, ::remote::Pair>* KV::Stub::PrepareAsyncTxRaw(::grpc::ClientContext* context, ::grpc::CompletionQueue* cq) {
-  return ::grpc_impl::internal::ClientAsyncReaderWriterFactory< ::remote::Cursor, ::remote::Pair>::Create(channel_.get(), cq, rpcmethod_Tx_, context, false, nullptr);
+  return ::grpc::internal::ClientAsyncReaderWriterFactory< ::remote::Cursor, ::remote::Pair>::Create(channel_.get(), cq, rpcmethod_Tx_, context, false, nullptr);
 }
 
 ::grpc::ClientReader< ::remote::StateChangeBatch>* KV::Stub::StateChangesRaw(::grpc::ClientContext* context, const ::remote::StateChangeRequest& request) {
-  return ::grpc_impl::internal::ClientReaderFactory< ::remote::StateChangeBatch>::Create(channel_.get(), rpcmethod_StateChanges_, context, request);
+  return ::grpc::internal::ClientReaderFactory< ::remote::StateChangeBatch>::Create(channel_.get(), rpcmethod_StateChanges_, context, request);
 }
 
 void KV::Stub::experimental_async::StateChanges(::grpc::ClientContext* context, ::remote::StateChangeRequest* request, ::grpc::experimental::ClientReadReactor< ::remote::StateChangeBatch>* reactor) {
-  ::grpc_impl::internal::ClientCallbackReaderFactory< ::remote::StateChangeBatch>::Create(stub_->channel_.get(), stub_->rpcmethod_StateChanges_, context, request, reactor);
+  ::grpc::internal::ClientCallbackReaderFactory< ::remote::StateChangeBatch>::Create(stub_->channel_.get(), stub_->rpcmethod_StateChanges_, context, request, reactor);
 }
 
 ::grpc::ClientAsyncReader< ::remote::StateChangeBatch>* KV::Stub::AsyncStateChangesRaw(::grpc::ClientContext* context, const ::remote::StateChangeRequest& request, ::grpc::CompletionQueue* cq, void* tag) {
-  return ::grpc_impl::internal::ClientAsyncReaderFactory< ::remote::StateChangeBatch>::Create(channel_.get(), cq, rpcmethod_StateChanges_, context, request, true, tag);
+  return ::grpc::internal::ClientAsyncReaderFactory< ::remote::StateChangeBatch>::Create(channel_.get(), cq, rpcmethod_StateChanges_, context, request, true, tag);
 }
 
 ::grpc::ClientAsyncReader< ::remote::StateChangeBatch>* KV::Stub::PrepareAsyncStateChangesRaw(::grpc::ClientContext* context, const ::remote::StateChangeRequest& request, ::grpc::CompletionQueue* cq) {
-  return ::grpc_impl::internal::ClientAsyncReaderFactory< ::remote::StateChangeBatch>::Create(channel_.get(), cq, rpcmethod_StateChanges_, context, request, false, nullptr);
+  return ::grpc::internal::ClientAsyncReaderFactory< ::remote::StateChangeBatch>::Create(channel_.get(), cq, rpcmethod_StateChanges_, context, request, false, nullptr);
 }
 
 KV::Service::Service() {
   AddMethod(new ::grpc::internal::RpcServiceMethod(
       KV_method_names[0],
       ::grpc::internal::RpcMethod::NORMAL_RPC,
-      new ::grpc::internal::RpcMethodHandler< KV::Service, ::google::protobuf::Empty, ::types::VersionReply>(
+      new ::grpc::internal::RpcMethodHandler< KV::Service, ::google::protobuf::Empty, ::types::VersionReply, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
           [](KV::Service* service,
-             ::grpc_impl::ServerContext* ctx,
+             ::grpc::ServerContext* ctx,
              const ::google::protobuf::Empty* req,
              ::types::VersionReply* resp) {
                return service->Version(ctx, req, resp);
@@ -115,8 +110,8 @@ KV::Service::Service() {
       ::grpc::internal::RpcMethod::BIDI_STREAMING,
       new ::grpc::internal::BidiStreamingHandler< KV::Service, ::remote::Cursor, ::remote::Pair>(
           [](KV::Service* service,
-             ::grpc_impl::ServerContext* ctx,
-             ::grpc_impl::ServerReaderWriter<::remote::Pair,
+             ::grpc::ServerContext* ctx,
+             ::grpc::ServerReaderWriter<::remote::Pair,
              ::remote::Cursor>* stream) {
                return service->Tx(ctx, stream);
              }, this)));
@@ -125,9 +120,9 @@ KV::Service::Service() {
       ::grpc::internal::RpcMethod::SERVER_STREAMING,
       new ::grpc::internal::ServerStreamingHandler< KV::Service, ::remote::StateChangeRequest, ::remote::StateChangeBatch>(
           [](KV::Service* service,
-             ::grpc_impl::ServerContext* ctx,
+             ::grpc::ServerContext* ctx,
              const ::remote::StateChangeRequest* req,
-             ::grpc_impl::ServerWriter<::remote::StateChangeBatch>* writer) {
+             ::grpc::ServerWriter<::remote::StateChangeBatch>* writer) {
                return service->StateChanges(ctx, req, writer);
              }, this)));
 }

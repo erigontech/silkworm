@@ -153,6 +153,8 @@ namespace detail {
     return tx.open_cursor(open_map(tx, config));
 }
 
+thread_local ObjectPool<MDBX_cursor, detail::cursor_handle_deleter> Cursor::handles_pool_{};
+
 Cursor::Cursor(::mdbx::txn& txn, const MapConfig& config) {
     handle_ = handles_pool_.acquire();
     if (!handle_) {
@@ -184,7 +186,8 @@ void Cursor::bind(::mdbx::txn& txn, const MapConfig& config) {
             handle_ = ::mdbx_cursor_create(nullptr);
         }
     }
-    ::mdbx::cursor::bind(txn, open_map(txn, config));
+    const auto map{open_map(txn, config)};
+    ::mdbx::cursor::bind(txn, map);
 }
 
 void Cursor::close() {

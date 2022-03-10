@@ -167,7 +167,7 @@ class Cursor : public ::mdbx::cursor {
     static const ObjectPool<MDBX_cursor, detail::cursor_handle_deleter>& handles_cache() { return handles_pool_; }
 
   private:
-    static inline thread_local ObjectPool<MDBX_cursor, detail::cursor_handle_deleter> handles_pool_{};
+    static thread_local ObjectPool<MDBX_cursor, detail::cursor_handle_deleter> handles_pool_;
 };
 
 //! \brief Checks whether a provided map name exists in database

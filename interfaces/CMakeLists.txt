@@ -101,14 +101,14 @@ add_custom_command(
 # Double replace trick is needed to avoid multiple replacements every time the file is regenerated
 file(READ  "${KV_PROTO_HEADERS}" KV_PROTO_HEADER_CONTENT)
 string(REPLACE
-    "#include <google/protobuf/port_def.inc>\n#undef DELETE\n#undef CODE"
+    "#include <google/protobuf/port_def.inc>\n#undef DELETE\n#undef CODE\n#undef STORAGE"
     "#include <google/protobuf/port_def.inc>"
     KV_PROTO_HEADER_CONTENT
     "${KV_PROTO_HEADER_CONTENT}"
 )
 string(REPLACE
     "#include <google/protobuf/port_def.inc>"
-    "#include <google/protobuf/port_def.inc>\n#undef DELETE\n#undef CODE"
+    "#include <google/protobuf/port_def.inc>\n#undef DELETE\n#undef CODE\n#undef STORAGE"
     KV_PROTO_HEADER_CONTENT
     "${KV_PROTO_HEADER_CONTENT}"
 )

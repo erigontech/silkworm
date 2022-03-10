@@ -98,11 +98,17 @@ add_custom_command(
 )
 
 # FIX8497 START - Hack on KV generated header to avoid Protobuf issue https://github.com/protocolbuffers/protobuf/pull/8497
-# 
+# Double replace trick is needed to avoid multiple replacements every time the file is regenerated
 file(READ  "${KV_PROTO_HEADERS}" KV_PROTO_HEADER_CONTENT)
 string(REPLACE
+    "#include <google/protobuf/port_def.inc>\n#undef DELETE\n#undef CODE"
     "#include <google/protobuf/port_def.inc>"
-    "#include <google/protobuf/port_def.inc>\n#undef DELETE"
+    KV_PROTO_HEADER_CONTENT
+    "${KV_PROTO_HEADER_CONTENT}"
+)
+string(REPLACE
+    "#include <google/protobuf/port_def.inc>"
+    "#include <google/protobuf/port_def.inc>\n#undef DELETE\n#undef CODE"
     KV_PROTO_HEADER_CONTENT
     "${KV_PROTO_HEADER_CONTENT}"
 )

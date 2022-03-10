@@ -103,6 +103,9 @@ namespace detail {
     if (config.shared) {
         flags |= MDBX_ACCEDE;
     }
+    if (config.write_map) {
+        flags |= MDBX_WRITEMAP;
+    }
 
     ::mdbx::env_managed::create_parameters cp{};  // Default create parameters
     if (!config.shared) {

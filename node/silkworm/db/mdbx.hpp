@@ -108,6 +108,7 @@ struct EnvConfig {
     bool inmemory{false};        // Whether this db is in memory
     bool shared{false};          // Whether this process opens a db already opened by another process
     bool read_ahead{false};      // Whether to enable mdbx read ahead
+    bool write_map{false};       // Whether to enable mdbx write map
     size_t max_size{3_Tebi};     // Max mdbx map size
     size_t growth_size{2_Gibi};  // Increment size for each extension
     uint32_t max_tables{128};    // Default max number of named tables

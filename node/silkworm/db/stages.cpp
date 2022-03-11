@@ -20,7 +20,7 @@
 
 namespace silkworm::db::stages {
 
-static uint64_t get_stage_data(mdbx::txn& txn, const char* stage_name, const db::MapConfig& domain,
+static BlockNum get_stage_data(mdbx::txn& txn, const char* stage_name, const db::MapConfig& domain,
                                const char* key_prefix = nullptr) {
     if (!is_known_stage(stage_name)) {
         throw std::invalid_argument("Unknown stage name " + std::string(stage_name));

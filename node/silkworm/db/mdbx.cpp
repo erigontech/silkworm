@@ -149,6 +149,9 @@ namespace detail {
 }
 
 ::mdbx::map_handle open_map(::mdbx::txn& tx, const MapConfig& config) {
+    if (tx.is_readonly()) {
+        return tx.open_map(config.name, config.key_mode, config.value_mode);
+    }
     return tx.create_map(config.name, config.key_mode, config.value_mode);
 }
 

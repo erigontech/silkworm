@@ -49,8 +49,16 @@ TEST_CASE("Cursor") {
     db::EnvConfig db_config{tmp_dir.path().string(), /*create*/ true};
     db_config.inmemory = true;
     auto env{db::open_env(db_config)};
-    auto txn{env.start_write()};
+
     const db::MapConfig map_config{"GeneticCode"};
+
+    {
+        auto txnrw{env.start_write()};
+        (void)db::open_map(txnrw, map_config);
+        txnrw.commit();
+    }
+
+    auto txn{env.start_read()};
 
     // A bit of explanation here:
     // Cursors cache may get polluted by previous tests or is empty
@@ -77,6 +85,10 @@ TEST_CASE("Cursor") {
     } else {
         REQUIRE(db::Cursor::handles_cache().size() == original_cache_size);
     }
+
+    txn.abort();
+    txn = env.start_write();
+    db::Cursor broken(txn, {"Test"});
 
     // Force exceed of cache size
     std::vector<db::Cursor> cursors;

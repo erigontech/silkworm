@@ -23,6 +23,100 @@
 
 namespace silkworm::stagedsync {
 
+
+StageResult InterHashes::forward(db::RWTxn& txn) {
+    try {
+        throw_if_stopping();
+
+        // Check stage boundaries from previous execution and previous stage execution
+        auto previous_progress{db::stages::read_stage_progress(*txn, stage_name_)};
+        auto hashstate_stage_progress{db::stages::read_stage_progress(*txn, db::stages::kHashStateKey)};
+        if (previous_progress == hashstate_stage_progress) {
+            // Nothing to process
+            return StageResult::kSuccess;
+        } else if (previous_progress > hashstate_stage_progress) {
+            // Something bad had happened. Not possible execution stage is ahead of bodies
+            // Maybe we need to unwind ?
+            log::Error() << "Bad progress sequence. InterHashes stage progress " << previous_progress
+                         << " while HashState stage " << hashstate_stage_progress;
+            return StageResult::kInvalidProgress;
+        }
+
+        BlockNum segment_width{hashstate_stage_progress - previous_progress};
+        if (segment_width > 16) {
+            log::Info("Begin " + std::string(stage_name_),
+                      {"from", std::to_string(previous_progress), "to", std::to_string(hashstate_stage_progress)});
+        }
+
+        reset_log_progress();
+        evmc::bytes32 state_root;
+        if (!previous_progress || segment_width > 100'000) {
+            state_root = regenerate_intermediate_hashes(txn);
+        } else {
+            // Incremental update
+        }
+
+        throw_if_stopping();
+        db::stages::write_stage_progress(*txn, db::stages::kHashStateKey, hashstate_stage_progress);
+        txn.commit();
+
+    } catch (const StageError& ex) {
+        log::Error(std::string(stage_name_),
+                   {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
+        return static_cast<StageResult>(ex.err());
+    } catch (const std::exception& ex) {
+        reset_log_progress();
+        log::Error(std::string(stage_name_), {"exception", std::string(ex.what())});
+        return StageResult::kUnexpectedError;
+    }
+
+    return StageResult::kSuccess;
+}
+
+StageResult InterHashes::unwind(db::RWTxn& txn, BlockNum to) { return StageResult::kUnknownError; }
+
+StageResult InterHashes::prune(db::RWTxn& txn) { return StageResult::kUnknownError; }
+
+evmc::bytes32 InterHashes::regenerate_intermediate_hashes(db::RWTxn& txn, const evmc::bytes32* expected_root) {
+    // Clear any data in target tables
+    txn->clear_map(db::table::kTrieOfAccounts.name);
+    txn->clear_map(db::table::kTrieOfStorage.name);
+    trie::PrefixSet empty;
+    return increment_intermediate_hashes(txn, expected_root,  //
+                                         /*account_changes=*/empty,
+                                         /*storage_changes=*/empty);
+}
+
+evmc::bytes32 InterHashes::increment_intermediate_hashes(db::RWTxn& txn, BlockNum from, BlockNum to,
+                                                         const evmc::bytes32* expected_root) {
+    trie::PrefixSet account_changes{gather_account_changes(txn, from, to)};
+    trie::PrefixSet storage_changes{gather_storage_changes(txn, from, to)};
+    return increment_intermediate_hashes(txn, expected_root, account_changes, storage_changes);
+}
+
+evmc::bytes32 InterHashes::increment_intermediate_hashes(db::RWTxn& txn, const evmc::bytes32* expected_root,
+                                                         trie::PrefixSet& account_changes,
+                                                         trie::PrefixSet& storage_changes) {
+    account_collector_ = std::make_unique<etl::Collector>(node_settings_);
+    storage_collector_ = std::make_unique<etl::Collector>(node_settings_);
+
+    trie::DbTrieLoader loader{*txn, *account_collector_, *storage_collector_};
+    const evmc::bytes32 root{loader.calculate_root(account_changes, storage_changes)};
+    if (expected_root != nullptr && root != *expected_root) {
+        std::string what{"Wrong trie root : got " + to_hex(root) + " expected " + to_hex(*expected_root)};
+        throw std::runtime_error(what);
+    }
+    db::Cursor target(txn, db::table::kTrieOfAccounts);
+    account_collector_->load(target);
+    account_collector_.reset();
+
+    target.bind(txn, db::table::kTrieOfStorage);
+    storage_collector_->load(target);
+    storage_collector_.reset();
+
+    return root;
+}
+
 trie::PrefixSet InterHashes::gather_account_changes(db::RWTxn& txn, BlockNum from, BlockNum to) {
     BlockNum reached_blocknum{0};
     BlockNum expected_blocknum{from + 1};
@@ -136,99 +230,12 @@ trie::PrefixSet InterHashes::gather_storage_changes(db::RWTxn& txn, BlockNum fro
     return ret;
 }
 
-StageResult InterHashes::forward(db::RWTxn& txn) {
-    try {
-        throw_if_stopping();
-
-        // Check stage boundaries from previous execution and previous stage execution
-        auto previous_progress{db::stages::read_stage_progress(*txn, stage_name_)};
-        auto hashstate_stage_progress{db::stages::read_stage_progress(*txn, db::stages::kHashStateKey)};
-        if (previous_progress == hashstate_stage_progress) {
-            // Nothing to process
-            return StageResult::kSuccess;
-        } else if (previous_progress > hashstate_stage_progress) {
-            // Something bad had happened. Not possible execution stage is ahead of bodies
-            // Maybe we need to unwind ?
-            log::Error() << "Bad progress sequence. InterHashes stage progress " << previous_progress
-                         << " while HashState stage " << hashstate_stage_progress;
-            return StageResult::kInvalidProgress;
-        }
-
-        BlockNum segment_width{hashstate_stage_progress - previous_progress};
-        if (segment_width > 16) {
-            log::Info("Begin " + std::string(stage_name_),
-                      {"from", std::to_string(previous_progress), "to", std::to_string(hashstate_stage_progress)});
-        }
-
-        reset_log_progress();
-        evmc::bytes32 state_root;
-        if (!previous_progress || segment_width > 100'000) {
-            state_root = regenerate_intermediate_hashes(txn);
-        } else {
-            // Incremental update
-        }
-
-        throw_if_stopping();
-        db::stages::write_stage_progress(*txn, db::stages::kHashStateKey, hashstate_stage_progress);
-        txn.commit();
-
-    } catch (const StageError& ex) {
-        log::Error(std::string(stage_name_),
-                   {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
-        return static_cast<StageResult>(ex.err());
-    } catch (const std::exception& ex) {
-        reset_log_progress();
-        log::Error(std::string(stage_name_), {"exception", std::string(ex.what())});
-        return StageResult::kUnexpectedError;
-    }
-
-    return StageResult::kSuccess;
-}
-
-evmc::bytes32 InterHashes::regenerate_intermediate_hashes(db::RWTxn& txn, const evmc::bytes32* expected_root) {
-    // Clear any data in target tables
-    txn->clear_map(db::table::kTrieOfAccounts.name);
-    txn->clear_map(db::table::kTrieOfStorage.name);
-    trie::PrefixSet empty;
-    return increment_intermediate_hashes(txn, expected_root,  //
-                                         /*account_changes=*/empty,
-                                         /*storage_changes=*/empty);
-}
-
-evmc::bytes32 InterHashes::increment_intermediate_hashes(db::RWTxn& txn, BlockNum from, BlockNum to,
-                                                         const evmc::bytes32* expected_root) {
-    trie::PrefixSet account_changes{gather_account_changes(txn, from, to)};
-    trie::PrefixSet storage_changes{gather_storage_changes(txn, from, to)};
-    return increment_intermediate_hashes(txn, expected_root, account_changes, storage_changes);
-}
-
-evmc::bytes32 InterHashes::increment_intermediate_hashes(db::RWTxn& txn, const evmc::bytes32* expected_root,
-                                                         trie::PrefixSet& account_changes,
-                                                         trie::PrefixSet& storage_changes) {
-    account_collector_ = std::make_unique<etl::Collector>(node_settings_);
-    storage_collector_ = std::make_unique<etl::Collector>(node_settings_);
-
-    trie::DbTrieLoader loader{*txn, *account_collector_, *storage_collector_};
-    const evmc::bytes32 root{loader.calculate_root(account_changes, storage_changes)};
-    if (expected_root != nullptr && root != *expected_root) {
-        std::string what{"Wrong trie root : got " + to_hex(root) + " expected " + to_hex(*expected_root)};
-        throw std::runtime_error(what);
-    }
-    db::Cursor target(txn, db::table::kTrieOfAccounts);
-    account_collector_->load(target);
-    account_collector_.reset();
-
-    target.bind(txn, db::table::kTrieOfStorage);
-    storage_collector_->load(target);
-    storage_collector_.reset();
-
-    return root;
-}
-
 void InterHashes::reset_log_progress() {
     std::unique_lock log_lck(log_mtx_);
     current_source_.clear();
     current_key_.clear();
 }
+
+std::vector<std::string> InterHashes::get_log_progress() { return std::vector<std::string>(); }
 
 }  // namespace silkworm::stagedsync

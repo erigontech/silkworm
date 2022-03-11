@@ -196,10 +196,6 @@ void Cursor::bind(::mdbx::txn& txn, const MapConfig& config) {
     ::mdbx::cursor::bind(txn, map);
 }
 
-void Cursor::bind(RWTxn& txn, const MapConfig& config) {
-    bind(*txn, config);
-}
-
 void Cursor::close() {
     ::mdbx_cursor_close(handle_);
     handle_ = nullptr;

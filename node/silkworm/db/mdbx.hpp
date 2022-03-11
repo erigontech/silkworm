@@ -159,7 +159,7 @@ class Cursor : public ::mdbx::cursor {
     void bind(::mdbx::txn& tx, const MapConfig& config);
 
     //! \brief (re)uses current cursor binding it to provided transaction and map
-    void bind(RWTxn& txn, const MapConfig& config) { bind(*tx, config); }
+    void bind(RWTxn& txn, const MapConfig& config) { bind(*txn, config); }
 
     //! \brief Closes cursor causing de-allocation of MDBX_cursor handle
     //! \remarks After this call the cursor is not reusable and the handle does not return to the cache

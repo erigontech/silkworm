@@ -146,6 +146,7 @@ struct MapConfig {
 class Cursor : public ::mdbx::cursor {
   public:
     explicit Cursor(::mdbx::txn& txn, const MapConfig& config);
+    explicit Cursor(RWTxn& txn, const MapConfig& config) : Cursor(*txn, config){};
     ~Cursor();
 
     Cursor(Cursor&& other) noexcept;
@@ -156,6 +157,9 @@ class Cursor : public ::mdbx::cursor {
 
     //! \brief (re)uses current cursor binding it to provided transaction and map
     void bind(::mdbx::txn& tx, const MapConfig& config);
+    
+    //! \brief (re)uses current cursor binding it to provided transaction and map
+    void bind(RWTxn& tx, const MapConfig& config) { bind(*tx, config); }
 
     //! \brief Closes cursor causing de-allocation of MDBX_cursor handle
     //! \remarks After this call the cursor is not reusable and the handle does not return to the cache

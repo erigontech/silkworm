@@ -103,6 +103,9 @@ namespace detail {
     if (config.shared) {
         flags |= MDBX_ACCEDE;
     }
+    if (config.write_map) {
+        flags |= MDBX_WRITEMAP;
+    }
 
     ::mdbx::env_managed::create_parameters cp{};  // Default create parameters
     if (!config.shared) {
@@ -146,12 +149,17 @@ namespace detail {
 }
 
 ::mdbx::map_handle open_map(::mdbx::txn& tx, const MapConfig& config) {
+    if (tx.is_readonly()) {
+        return tx.open_map(config.name, config.key_mode, config.value_mode);
+    }
     return tx.create_map(config.name, config.key_mode, config.value_mode);
 }
 
 ::mdbx::cursor_managed open_cursor(::mdbx::txn& tx, const MapConfig& config) {
     return tx.open_cursor(open_map(tx, config));
 }
+
+thread_local ObjectPool<MDBX_cursor, detail::cursor_handle_deleter> Cursor::handles_pool_{};
 
 Cursor::Cursor(::mdbx::txn& txn, const MapConfig& config) {
     handle_ = handles_pool_.acquire();
@@ -184,7 +192,8 @@ void Cursor::bind(::mdbx::txn& txn, const MapConfig& config) {
             handle_ = ::mdbx_cursor_create(nullptr);
         }
     }
-    ::mdbx::cursor::bind(txn, open_map(txn, config));
+    const auto map{open_map(txn, config)};
+    ::mdbx::cursor::bind(txn, map);
 }
 
 void Cursor::close() {

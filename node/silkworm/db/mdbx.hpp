@@ -108,6 +108,7 @@ struct EnvConfig {
     bool inmemory{false};        // Whether this db is in memory
     bool shared{false};          // Whether this process opens a db already opened by another process
     bool read_ahead{false};      // Whether to enable mdbx read ahead
+    bool write_map{false};       // Whether to enable mdbx write map
     size_t max_size{3_Tebi};     // Max mdbx map size
     size_t growth_size{2_Gibi};  // Increment size for each extension
     uint32_t max_tables{128};    // Default max number of named tables
@@ -155,9 +156,10 @@ class Cursor : public ::mdbx::cursor {
     Cursor& operator=(const Cursor&) = delete;
 
     //! \brief (re)uses current cursor binding it to provided transaction and map
-    void bind(::mdbx::txn& txn, const MapConfig& config);
-    void bind(RWTxn& txn, const MapConfig& config);
+    void bind(::mdbx::txn& tx, const MapConfig& config);
 
+    //! \brief (re)uses current cursor binding it to provided transaction and map
+    void bind(RWTxn& txn, const MapConfig& config) { bind(*tx, config); }
 
     //! \brief Closes cursor causing de-allocation of MDBX_cursor handle
     //! \remarks After this call the cursor is not reusable and the handle does not return to the cache
@@ -170,7 +172,7 @@ class Cursor : public ::mdbx::cursor {
     static const ObjectPool<MDBX_cursor, detail::cursor_handle_deleter>& handles_cache() { return handles_pool_; }
 
   private:
-    static inline thread_local ObjectPool<MDBX_cursor, detail::cursor_handle_deleter> handles_pool_{};
+    static thread_local ObjectPool<MDBX_cursor, detail::cursor_handle_deleter> handles_pool_;
 };
 
 //! \brief Checks whether a provided map name exists in database

@@ -91,7 +91,7 @@ int main(int argc, char* argv[]) {
         log::Message(
             "Silkworm",
             {
-                "version", build_info->project_version,  //
+                "version", std::string(build_info->git_branch) + std::string(build_info->project_version),  //
                 "build",
                 std::string(build_info->system_name) + "-" + std::string(build_info->system_processor) + " " +
                     std::string(build_info->build_type),                                                            //

@@ -117,6 +117,8 @@ void Execution::prefetch_blocks(db::RWTxn& txn, const BlockNum from, const Block
         sw = std::make_unique<StopWatch>(/*auto_start=*/true);
     }
 
+    prefetched_blocks_.clear();  // free the memory held by transactions, etc
+
     const size_t n{std::min(static_cast<size_t>(to - from + 1), max_blocks)};
     prefetched_blocks_.resize(n);
 

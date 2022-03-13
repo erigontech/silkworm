@@ -49,7 +49,7 @@ class Execution final : public IStage {
     //! \param [in] to: the last block to prefetch (inclusive)
     //! \remarks The amount of blocks to be fetched is determined by the upper block number (to) or max_blocks collected
     //! whichever comes first
-    void prefetch_blocks(db::RWTxn& txn, BlockNum from, BlockNum to, size_t max_blocks = 128);
+    void prefetch_blocks(db::RWTxn& txn, BlockNum from, BlockNum to, size_t max_blocks = 10240);
 
     //! \brief Executes a batch of blocks
     //! \remarks A batch completes when either max block is reached or buffer dimensions overflow

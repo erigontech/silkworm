@@ -1,5 +1,5 @@
 /*
-   Copyright 2020-2021 The Silkworm Authors
+   Copyright 2020-2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -23,16 +23,16 @@
 #include <intx/intx.hpp>
 
 #include <silkworm/chain/config.hpp>
+#include <silkworm/common/object_pool.hpp>
 #include <silkworm/common/util.hpp>
 #include <silkworm/execution/analysis_cache.hpp>
-#include <silkworm/execution/state_pool.hpp>
 #include <silkworm/state/intra_block_state.hpp>
 #include <silkworm/types/block.hpp>
 
-namespace evmone {
-struct ExecutionState;
-using bytes_view = std::basic_string_view<uint8_t>;
-}
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wold-style-cast"
+#include <evmone/advanced_analysis.hpp>
+#pragma GCC diagnostic pop
 
 namespace silkworm {
 
@@ -51,6 +51,8 @@ class EvmTracer {
 
     virtual void on_execution_end(const evmc_result& result, const IntraBlockState& intra_block_state) noexcept = 0;
 };
+
+using EvmoneExecutionState = evmone::advanced::AdvancedExecutionState;
 
 class EVM {
   public:
@@ -79,7 +81,7 @@ class EVM {
     // Point to a cache instance in order to enable execution with evmone advanced rather than baseline interpreter
     AnalysisCache* advanced_analysis_cache{nullptr};
 
-    ExecutionStatePool* state_pool{nullptr};  // use for better performance
+    ObjectPool<EvmoneExecutionState>* state_pool{nullptr};  // use for better performance
 
     evmc_vm* exo_evm{nullptr};  // it's possible to use an exogenous EVMC VM
 
@@ -99,6 +101,9 @@ class EVM {
 
     evmc_result execute_with_default_interpreter(evmc_revision rev, const evmc_message& message, ByteView code,
                                                  const evmc::bytes32& code_hash) noexcept;
+
+    gsl::owner<EvmoneExecutionState*> acquire_state() noexcept;
+    void release_state(gsl::owner<EvmoneExecutionState*> state) noexcept;
 
     uint8_t number_of_precompiles() const noexcept;
     bool is_precompiled(const evmc::address& contract) const noexcept;

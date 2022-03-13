@@ -104,6 +104,8 @@ void parse_silkworm_command_line(CLI::App& cli, int argc, char* argv[], log::Set
                  "Chaindata database opened in exclusive mode");
     cli.add_flag("--chaindata.readahead", node_settings.chaindata_env_config.read_ahead,
                  "Chaindata database enable readahead");
+    cli.add_flag("--chaindata.writemap", node_settings.chaindata_env_config.write_map,
+                 "Chaindata database enable writemap");
     cli.add_option("--chaindata.growthsize", chaindata_growth_size, "Chaindata database growth size", true)
         ->check(HumanSizeParserValidator("64MB"));
     cli.add_option("--chaindata.maxsize", chaindata_max_size, "Chaindata database max size", true)

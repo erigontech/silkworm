@@ -1,5 +1,5 @@
 /*
-   Copyright 2021 The Silkworm Authors
+   Copyright 2021-2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -21,7 +21,7 @@
 #include <vector>
 
 #include <silkworm/consensus/engine.hpp>
-#include <silkworm/execution/state_pool.hpp>
+#include <silkworm/execution/evm.hpp>
 #include <silkworm/state/state.hpp>
 #include <silkworm/types/receipt.hpp>
 
@@ -49,7 +49,7 @@ class Blockchain {
 
     ValidationResult insert_block(Block& block, bool check_state_root);
 
-    ExecutionStatePool* state_pool{nullptr};
+    ObjectPool<EvmoneExecutionState>* state_pool{nullptr};
 
     evmc_vm* exo_evm{nullptr};
 

@@ -54,7 +54,7 @@ int main(int argc, char* argv[]) {
     // std::unique_ptr<lmdb::Transaction> txn{env->begin_ro_transaction()};
 
     AnalysisCache analysis_cache;
-    ExecutionStatePool state_pool;
+    ObjectPool<EvmoneExecutionState> state_pool;
     std::vector<Receipt> receipts;
 
     try {

@@ -50,12 +50,28 @@ std::ostream& operator<<(std::ostream& out, const UnaryStats& stats) {
 
 UnaryStats unary_stats;
 
+struct ServerStreamingStats {
+    uint64_t started_count{0};
+    uint64_t received_count{0};
+    uint64_t completed_count{0};
+    uint64_t ok_count{0};
+    uint64_t ko_count{0};
+};
+
+std::ostream& operator<<(std::ostream& out, const ServerStreamingStats& stats) {
+    out << "started=" << stats.started_count << " received=" << stats.received_count << " completed=" << stats.completed_count
+        << " [OK=" << stats.ok_count << " KO=" << stats.ko_count << "]";
+    return out;
+}
+
+ServerStreamingStats server_streaming_stats;
+
 class AsyncCall {
   public:
     explicit AsyncCall(grpc::CompletionQueue* queue) : queue_(queue) {}
     virtual ~AsyncCall() = default;
 
-    virtual void handle_completion(bool ok) = 0;
+    virtual bool handle_completion(bool ok) = 0;
 
     std::chrono::steady_clock::time_point start_time() const { return start_time_; }
 
@@ -78,11 +94,11 @@ class AsyncUnaryCall : public AsyncCall {
     explicit AsyncUnaryCall(std::shared_ptr<grpc::Channel> channel, grpc::CompletionQueue* queue)
     : AsyncCall(queue), stub_(remote::ETHBACKEND::NewStub(channel)) {}
 
-    void start_async() {
+    void start_async(const Request& request) {
         SILK_TRACE << "AsyncUnaryCall::start_async START";
-        auto response_reader_ = (stub_.get()->*PrepareAsync)(&client_context_, Request{}, queue_);
-        response_reader_->StartCall();
-        response_reader_->Finish(&reply_, &status_, this);
+        auto response_reader = (stub_.get()->*PrepareAsync)(&client_context_, request, queue_);
+        response_reader->StartCall();
+        response_reader->Finish(&reply_, &status_, this);
         start_time_ = std::chrono::steady_clock::now();
         ++unary_stats.started_count;
         SILK_TRACE << "AsyncUnaryCall::start_async END";
@@ -94,16 +110,96 @@ class AsyncUnaryCall : public AsyncCall {
     Reply reply_;
 };
 
+template <typename Reply>
+using AsyncReaderPtr = std::unique_ptr<grpc::ClientAsyncReaderInterface<Reply>>;
+
+template<
+    typename Request,
+    typename Reply,
+    AsyncReaderPtr<Reply>(remote::ETHBACKEND::StubInterface::*PrepareAsync)(grpc::ClientContext*, const Request&, grpc::CompletionQueue*)
+>
+class AsyncServerStreamingCall : public AsyncCall {
+  public:
+    explicit AsyncServerStreamingCall(std::shared_ptr<grpc::Channel> channel, grpc::CompletionQueue* queue)
+    : AsyncCall(queue), stub_(remote::ETHBACKEND::NewStub(channel)) {}
+
+    void start_async(const Request& request) {
+        SILK_TRACE << "AsyncServerStreamingCall::start_async START";
+        reader_ = (stub_.get()->*PrepareAsync)(&client_context_, request, queue_);
+        reader_->StartCall(this);
+        start_time_ = std::chrono::steady_clock::now();
+        ++server_streaming_stats.started_count;
+        SILK_TRACE << "AsyncServerStreamingCall::start_async END";
+    }
+
+    void read() {
+        SILK_TRACE << "AsyncServerStreamingCall::read START";
+        reader_->Read(&reply_, this);
+        SILK_TRACE << "AsyncServerStreamingCall::read END";
+    }
+
+    void finish() {
+        SILK_TRACE << "AsyncServerStreamingCall::finish START";
+        reader_->Finish(&status_, this);
+        SILK_TRACE << "AsyncServerStreamingCall::finish END";
+    }
+
+    bool handle_completion(bool ok) override {
+        SILK_DEBUG << "AsyncServerStreamingCall::handle_completion ok: " << ok;
+        if (ok) {
+            if (done_) {
+                handle_finish();
+                ++server_streaming_stats.completed_count;
+                if (status_.ok()) {
+                    ++server_streaming_stats.ok_count;
+                } else {
+                    ++server_streaming_stats.ko_count;
+                }
+                return true;
+            } else {
+                if (started_) {
+                    handle_read();
+                    ++server_streaming_stats.received_count;
+                    SILK_DEBUG << "AsyncServerStreamingCall new message received: " << server_streaming_stats.received_count;
+                } else {
+                    started_ = true;
+                    SILK_DEBUG << "AsyncServerStreamingCall call started";
+                }
+                // Schedule next async READ event.
+                read();
+                SILK_DEBUG << "AsyncServerStreamingCall read scheduled";
+                return false;
+            }
+        } else {
+            SILK_DEBUG << "AsyncServerStreamingCall interrupted started: " << started_;
+            done_ = true;
+            finish();
+            return false;
+        }
+    }
+
+  protected:
+    virtual void handle_read() = 0;
+    virtual void handle_finish() = 0;
+
+    std::unique_ptr<remote::ETHBACKEND::StubInterface> stub_;
+    AsyncReaderPtr<Reply> reader_;
+    grpc::Status status_;
+    Reply reply_;
+    bool started_{false};
+    bool done_{false};
+};
+
 class AsyncEtherbaseCall : public AsyncUnaryCall<
     remote::EtherbaseRequest, remote::EtherbaseReply, &remote::ETHBACKEND::StubInterface::PrepareAsyncEtherbase> {
   public:
     explicit AsyncEtherbaseCall(std::shared_ptr<grpc::Channel> channel, grpc::CompletionQueue* queue)
     : AsyncUnaryCall(channel, queue) {}
 
-    void handle_completion(bool ok) override {
+    bool handle_completion(bool ok) override {
         SILK_DEBUG << "AsyncEtherbaseCall::handle_completion ok: " << ok << " status: " << status_;
         ++unary_stats.completed_count;
-        if (ok && status_ == grpc::Status::OK) {
+        if (ok && status_.ok()) {
             if (reply_.has_address()) {
                 const auto h160_address = reply_.address();
                 SILK_INFO << "Etherbase reply: " << silkworm::to_hex(silkworm::rpc::address_from_H160(h160_address));
@@ -114,20 +210,190 @@ class AsyncEtherbaseCall : public AsyncUnaryCall<
         } else {
             ++unary_stats.ko_count;
         }
+        return true;
     }
 };
 
-void start_async_batch(std::atomic_bool& stop, std::shared_ptr<grpc::Channel> channel, grpc::CompletionQueue* queue, int batch_size) {
-    for (auto i{0}; i<batch_size && !stop; i++) {
-        auto* etherbase = new AsyncEtherbaseCall(channel, queue);
-        etherbase->start_async();
-        SILK_DEBUG << "New Etherbase async call started: " << etherbase;
-        //TODO(canepat): more to come
+class AsyncNetVersionCall : public AsyncUnaryCall<
+    remote::NetVersionRequest, remote::NetVersionReply, &remote::ETHBACKEND::StubInterface::PrepareAsyncNetVersion> {
+  public:
+    explicit AsyncNetVersionCall(std::shared_ptr<grpc::Channel> channel, grpc::CompletionQueue* queue)
+    : AsyncUnaryCall(channel, queue) {}
+
+    bool handle_completion(bool ok) override {
+        SILK_DEBUG << "AsyncNetVersionCall::handle_completion ok: " << ok << " status: " << status_;
+        ++unary_stats.completed_count;
+        if (ok && status_.ok()) {
+            SILK_INFO << "NetVersion reply: id=" << reply_.id();
+            ++unary_stats.ok_count;
+        } else {
+            ++unary_stats.ko_count;
+        }
+        return true;
     }
-}
+};
+
+class AsyncNetPeerCountCall : public AsyncUnaryCall<
+    remote::NetPeerCountRequest, remote::NetPeerCountReply, &remote::ETHBACKEND::StubInterface::PrepareAsyncNetPeerCount> {
+  public:
+    explicit AsyncNetPeerCountCall(std::shared_ptr<grpc::Channel> channel, grpc::CompletionQueue* queue)
+    : AsyncUnaryCall(channel, queue) {}
+
+    bool handle_completion(bool ok) override {
+        SILK_DEBUG << "AsyncNetPeerCountCall::handle_completion ok: " << ok << " status: " << status_;
+        ++unary_stats.completed_count;
+        if (ok && status_.ok()) {
+            SILK_INFO << "NetPeerCount reply: count=" << reply_.count();
+            ++unary_stats.ok_count;
+        } else {
+            ++unary_stats.ko_count;
+        }
+        return true;
+    }
+};
+
+class AsyncVersionCall : public AsyncUnaryCall<
+    google::protobuf::Empty, types::VersionReply, &remote::ETHBACKEND::StubInterface::PrepareAsyncVersion> {
+  public:
+    explicit AsyncVersionCall(std::shared_ptr<grpc::Channel> channel, grpc::CompletionQueue* queue)
+    : AsyncUnaryCall(channel, queue) {}
+
+    bool handle_completion(bool ok) override {
+        SILK_DEBUG << "AsyncVersionCall::handle_completion ok: " << ok << " status: " << status_;
+        ++unary_stats.completed_count;
+        if (ok && status_.ok()) {
+            const auto major = reply_.major();
+            const auto minor = reply_.minor();
+            const auto patch = reply_.patch();
+            SILK_INFO << "Version reply: major=" << major << " minor=" << minor << " patch=" << patch;
+            ++unary_stats.ok_count;
+        } else {
+            ++unary_stats.ko_count;
+        }
+        return true;
+    }
+};
+
+class AsyncProtocolVersionCall : public AsyncUnaryCall<
+    remote::ProtocolVersionRequest, remote::ProtocolVersionReply, &remote::ETHBACKEND::StubInterface::PrepareAsyncProtocolVersion> {
+  public:
+    explicit AsyncProtocolVersionCall(std::shared_ptr<grpc::Channel> channel, grpc::CompletionQueue* queue)
+    : AsyncUnaryCall(channel, queue) {}
+
+    bool handle_completion(bool ok) override {
+        SILK_DEBUG << "AsyncProtocolVersionCall::handle_completion ok: " << ok << " status: " << status_;
+        ++unary_stats.completed_count;
+        if (ok && status_.ok()) {
+            SILK_INFO << "ProtocolVersion reply: id=" << reply_.id();
+            ++unary_stats.ok_count;
+        } else {
+            ++unary_stats.ko_count;
+        }
+        return true;
+    }
+};
+
+class AsyncClientVersionCall : public AsyncUnaryCall<
+    remote::ClientVersionRequest, remote::ClientVersionReply, &remote::ETHBACKEND::StubInterface::PrepareAsyncClientVersion> {
+  public:
+    explicit AsyncClientVersionCall(std::shared_ptr<grpc::Channel> channel, grpc::CompletionQueue* queue)
+    : AsyncUnaryCall(channel, queue) {}
+
+    bool handle_completion(bool ok) override {
+        SILK_DEBUG << "AsyncClientVersionCall::handle_completion ok: " << ok << " status: " << status_;
+        ++unary_stats.completed_count;
+        if (ok && status_.ok()) {
+            SILK_INFO << "ClientVersion reply: nodename=" << reply_.nodename();
+            ++unary_stats.ok_count;
+        } else {
+            ++unary_stats.ko_count;
+        }
+        return true;
+    }
+};
+
+class AsyncSubscribeCall : public AsyncServerStreamingCall<
+    remote::SubscribeRequest, remote::SubscribeReply, &remote::ETHBACKEND::StubInterface::PrepareAsyncSubscribe> {
+  public:
+    explicit AsyncSubscribeCall(std::shared_ptr<grpc::Channel> channel, grpc::CompletionQueue* queue)
+    : AsyncServerStreamingCall(channel, queue) {}
+
+    void handle_read() override {
+        SILK_INFO << "Subscribe reply: type=" << reply_.type() << " data=" << reply_.data();
+    }
+
+    void handle_finish() override {
+        SILK_INFO << "Subscribe completed status: " << status_;
+    }
+};
+
+class AsyncNodeInfoCall : public AsyncUnaryCall<
+    remote::NodesInfoRequest, remote::NodesInfoReply, &remote::ETHBACKEND::StubInterface::PrepareAsyncNodeInfo> {
+  public:
+    explicit AsyncNodeInfoCall(std::shared_ptr<grpc::Channel> channel, grpc::CompletionQueue* queue)
+    : AsyncUnaryCall(channel, queue) {}
+
+    bool handle_completion(bool ok) override {
+        SILK_DEBUG << "AsyncNodeInfoCall::handle_completion ok: " << ok << " status: " << status_;
+        ++unary_stats.completed_count;
+        if (ok && status_.ok()) {
+            SILK_INFO << "NodeInfo reply: nodesinfo_size=" << reply_.nodesinfo_size();
+            ++unary_stats.ok_count;
+        } else {
+            ++unary_stats.ko_count;
+        }
+        return true;
+    }
+};
+
+class AsyncCallFactory {
+  public:
+    AsyncCallFactory(std::shared_ptr<grpc::Channel> channel, grpc::CompletionQueue* queue) : channel_(channel), queue_(queue) {}
+
+    void start_batch(std::atomic_bool& stop, int batch_size) {
+        for (auto i{0}; i<batch_size && !stop; i++) {
+            auto* etherbase = new AsyncEtherbaseCall(channel_, queue_);
+            etherbase->start_async(remote::EtherbaseRequest{});
+            SILK_DEBUG << "New Etherbase async call started: " << etherbase;
+
+            auto* net_version = new AsyncNetVersionCall(channel_, queue_);
+            net_version->start_async(remote::NetVersionRequest{});
+            SILK_DEBUG << "New NetVersion async call started: " << net_version;
+
+            auto* net_peer_count = new AsyncNetPeerCountCall(channel_, queue_);
+            net_peer_count->start_async(remote::NetPeerCountRequest{});
+            SILK_DEBUG << "New NetPeerCount async call started: " << net_version;
+
+            auto* version = new AsyncVersionCall(channel_, queue_);
+            version->start_async(google::protobuf::Empty{});
+            SILK_DEBUG << "New Version async call started: " << version;
+
+            auto* protocol_version = new AsyncProtocolVersionCall(channel_, queue_);
+            protocol_version->start_async(remote::ProtocolVersionRequest{});
+            SILK_DEBUG << "New ProtocolVersion async call started: " << protocol_version;
+
+            auto* client_version = new AsyncClientVersionCall(channel_, queue_);
+            client_version->start_async(remote::ClientVersionRequest{});
+            SILK_DEBUG << "New ClientVersion async call started: " << client_version;
+
+            auto* subscribe = new AsyncSubscribeCall(channel_, queue_);
+            subscribe->start_async(remote::SubscribeRequest{});
+            SILK_DEBUG << "New Subscribe async call started: " << subscribe;
+
+            auto* node_info = new AsyncNodeInfoCall(channel_, queue_);
+            node_info->start_async(remote::NodesInfoRequest{});
+            SILK_DEBUG << "New NodeInfo async call started: " << node_info;
+        }
+    }
+
+  private:
+    std::shared_ptr<grpc::Channel> channel_;
+    grpc::CompletionQueue* queue_;
+};
 
 void print_stats() {
     SILK_LOG << "Unary stats: " << unary_stats;
+    SILK_LOG << "Server streaming stats: " << server_streaming_stats;
 }
 
 int main(int argc, char* argv[]) {
@@ -171,8 +437,9 @@ int main(int argc, char* argv[]) {
         std::atomic_bool pump_stop{false};
         std::thread pump_thread{[&]() {
             SILK_TRACE << "Pump thread: " << pump_thread.get_id() << " start";
+            AsyncCallFactory call_factory{channel, &queue};
             while (!pump_stop) {
-                start_async_batch(pump_stop, channel, &queue, batch_size);
+                call_factory.start_batch(pump_stop, batch_size);
                 SILK_DEBUG << "Pump thread going to wait for " << interval_between_calls << "ms...";
                 std::unique_lock<std::mutex> lock{mutex};
                 const auto now = std::chrono::system_clock::now();
@@ -192,12 +459,16 @@ int main(int argc, char* argv[]) {
                 if (got_event) {
                     std::unique_ptr<AsyncCall> call{static_cast<AsyncCall*>(tag)};
                     SILK_DEBUG << "Got tag for " << call.get();
-                    call->handle_completion(ok);
+                    const bool completed = call->handle_completion(ok);
                     const auto end_time = std::chrono::steady_clock::now();
                     const auto latency = end_time - call->start_time();
-                    SILK_DEBUG << "Call " << call.get() << " completed [latency=" << latency / 1ns << " us]";
+                    if (completed) {
+                        SILK_INFO << "Call " << call.get() << " completed [latency=" << latency / 1ns << " ns]";
+                    } else {
+                        call.release();
+                    }
                 } else {
-                    SILK_DEBUG << "Draining queue...";
+                    SILK_DEBUG << "Got shutdown, draining queue...";
                     while (queue.Next(&tag, &ok)) {
                         std::unique_ptr<AsyncCall> ignored_call{static_cast<AsyncCall*>(tag)};
                     }

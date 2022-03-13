@@ -18,7 +18,15 @@
 
 namespace silkworm::rpc {
 
-ServerConfig::ServerConfig() : address_uri_{kDefaultAddressUri}, credentials_{kDefaultServerCredentials}, num_contexts_{kDefaultNumContexts} {
+ServerConfig::ServerConfig()
+    : node_name_{kDefaultNodeName},
+      address_uri_{kDefaultAddressUri},
+      credentials_{kDefaultServerCredentials},
+      num_contexts_{kDefaultNumContexts} {
+}
+
+void ServerConfig::set_node_name(const std::string& node_name) noexcept {
+    node_name_ = node_name;
 }
 
 void ServerConfig::set_address_uri(const std::string& address_uri) noexcept {

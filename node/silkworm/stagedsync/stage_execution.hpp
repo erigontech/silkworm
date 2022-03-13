@@ -21,7 +21,7 @@
 
 #include <silkworm/consensus/engine.hpp>
 #include <silkworm/execution/analysis_cache.hpp>
-#include <silkworm/execution/state_pool.hpp>
+#include <silkworm/execution/evm.hpp>
 #include <silkworm/stagedsync/common.hpp>
 
 namespace silkworm::stagedsync {
@@ -54,7 +54,7 @@ class Execution final : public IStage {
     //! \brief Executes a batch of blocks
     //! \remarks A batch completes when either max block is reached or buffer dimensions overflow
     StageResult execute_batch(db::RWTxn& txn, BlockNum max_block_num, AnalysisCache& analysis_cache,
-                              ExecutionStatePool& state_pool, BlockNum prune_history_threshold,
+                              ObjectPool<EvmoneExecutionState>& state_pool, BlockNum prune_history_threshold,
                               BlockNum prune_receipts_threshold);
 
     //! \brief For given changeset cursor/bucket it reverts the changes on states buckets

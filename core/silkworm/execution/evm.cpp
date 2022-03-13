@@ -1,5 +1,5 @@
 /*
-   Copyright 2020-2021 The Silkworm Authors
+   Copyright 2020-2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -23,10 +23,9 @@
 #include <memory>
 
 #include <ethash/keccak.hpp>
-#include <evmone/analysis.hpp>
+#include <evmone/advanced_execution.hpp>
 #include <evmone/baseline.hpp>
 #include <evmone/evmone.h>
-#include <evmone/execution.hpp>
 #include <evmone/tracing.hpp>
 #include <evmone/vm.hpp>
 
@@ -47,7 +46,8 @@ class DelegatingTracer : public evmone::Tracer {
         tracer_.on_execution_start(rev, msg, code);
     }
 
-    void on_instruction_start(uint32_t pc, const evmone::ExecutionState& state) noexcept override {
+    void on_instruction_start(uint32_t pc, const intx::uint256*, int,
+                              const evmone::ExecutionState& state) noexcept override {
         tracer_.on_instruction_start(pc, state, intra_block_state_);
     }
 
@@ -271,27 +271,36 @@ evmc::result EVM::execute(const evmc_message& msg, ByteView code, std::optional<
     return evmc::result{res};
 }
 
-evmc_result EVM::execute_with_baseline_interpreter(evmc_revision rev, const evmc_message& msg, ByteView code) noexcept {
-    const auto vm{static_cast<evmone::VM*>(evm1_)};
-
-    const auto analysis{evmone::baseline::analyze(code.data(), code.size())};
-
-    std::unique_ptr<evmone::AdvancedExecutionState> state;
+gsl::owner<EvmoneExecutionState*> EVM::acquire_state() noexcept {
+    gsl::owner<EvmoneExecutionState*> state{nullptr};
     if (state_pool) {
         state = state_pool->acquire();
-    } else {
-        state = std::make_unique<evmone::AdvancedExecutionState>();
     }
+    if (!state) {
+        state = new EvmoneExecutionState;
+    }
+    return state;
+}
+
+void EVM::release_state(gsl::owner<EvmoneExecutionState*> state) noexcept {
+    if (state_pool) {
+        state_pool->add(state);
+    } else {
+        delete state;
+    }
+}
+
+evmc_result EVM::execute_with_baseline_interpreter(evmc_revision rev, const evmc_message& msg, ByteView code) noexcept {
+    const auto vm{static_cast<evmone::VM*>(evm1_)};
+    const auto analysis{evmone::baseline::analyze(code)};
 
     EvmHost host{*this};
-
-    state->reset(msg, rev, host.get_interface(), host.to_context(), code.data(), code.size());
+    gsl::owner<EvmoneExecutionState*> state{acquire_state()};
+    state->reset(msg, rev, host.get_interface(), host.to_context(), code);
 
     evmc_result res{evmone::baseline::execute(*vm, *state, analysis)};
 
-    if (state_pool) {
-        state_pool->release(std::move(state));
-    }
+    release_state(state);
 
     return res;
 }
@@ -300,28 +309,19 @@ evmc_result EVM::execute_with_default_interpreter(evmc_revision rev, const evmc_
                                                   const evmc::bytes32& code_hash) noexcept {
     assert(advanced_analysis_cache != nullptr);
 
-    std::shared_ptr<evmone::AdvancedCodeAnalysis> analysis{advanced_analysis_cache->get(code_hash, rev)};
+    std::shared_ptr<EvmoneCodeAnalysis> analysis{advanced_analysis_cache->get(code_hash, rev)};
     if (!analysis) {
-        analysis = std::make_shared<evmone::AdvancedCodeAnalysis>(evmone::analyze(rev, code.data(), code.size()));
+        analysis = std::make_shared<EvmoneCodeAnalysis>(evmone::advanced::analyze(rev, code));
         advanced_analysis_cache->put(code_hash, analysis, rev);
     }
 
-    std::unique_ptr<evmone::AdvancedExecutionState> state;
-    if (state_pool) {
-        state = state_pool->acquire();
-    } else {
-        state = std::make_unique<evmone::AdvancedExecutionState>();
-    }
-
     EvmHost host{*this};
+    gsl::owner<EvmoneExecutionState*> state{acquire_state()};
+    state->reset(msg, rev, host.get_interface(), host.to_context(), code);
 
-    state->reset(msg, rev, host.get_interface(), host.to_context(), code.data(), code.size());
+    evmc_result res{evmone::advanced::execute(*state, *analysis)};
 
-    evmc_result res{evmone::execute(*state, *analysis)};
-
-    if (state_pool) {
-        state_pool->release(std::move(state));
-    }
+    release_state(state);
 
     return res;
 }

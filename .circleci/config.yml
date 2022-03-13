@@ -62,9 +62,8 @@ commands:
       - run:
           name: "Ethereum consensus tests"
           working_directory: ~/build
-          command: |
-            ulimit -s unlimited
-            cmd/test/consensus
+          no_output_timeout: 20m
+          command: cmd/test/consensus --threads 4 # out of memory with 8 threads under linux-gcc-11-thread-sanitizer 
 
 jobs:
   linux-gcc-9:
@@ -93,16 +92,7 @@ jobs:
     steps:
       - checkout_with_submodules
       - build
-      - run:
-          name: "Core unit tests"
-          working_directory: ~/build
-          command: |
-            ulimit -s unlimited
-            cmd/test/core_test
-      - run:
-          name: "Node unit tests"
-          working_directory: ~/build
-          command: cmd/test/node_test
+      - test
 
   linux-gcc-11-cpp20:
     environment:

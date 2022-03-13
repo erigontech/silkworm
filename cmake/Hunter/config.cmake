@@ -1,5 +1,5 @@
 #[[
-   Copyright 2020-2021 The Silkworm Authors
+   Copyright 2020-2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -23,9 +23,9 @@ hunter_config(
 
 hunter_config(
   intx
-  VERSION 0.6.0
-  URL https://github.com/chfast/intx/archive/v0.6.0.tar.gz
-  SHA1 507827495de07412863349bc8c2a8704c7b0e5d4
+  VERSION 0.7.1
+  URL https://github.com/chfast/intx/archive/v0.7.1.tar.gz
+  SHA1 75f0d5e05df9245c7abc684dae2f4a99764c4ba8
 )
 
 hunter_config(

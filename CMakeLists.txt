@@ -153,21 +153,20 @@ find_package(ethash CONFIG REQUIRED) # Required from here below
 
 add_subdirectory(third_party/evmone/evmc)
 
-add_library(evmone third_party/evmone/lib/evmone/analysis.cpp
-                   third_party/evmone/lib/evmone/analysis.hpp
+add_library(evmone third_party/evmone/lib/evmone/advanced_analysis.cpp
+                   third_party/evmone/lib/evmone/advanced_analysis.hpp
+                   third_party/evmone/lib/evmone/advanced_execution.cpp
+                   third_party/evmone/lib/evmone/advanced_execution.hpp
+                   third_party/evmone/lib/evmone/advanced_instructions.cpp
                    third_party/evmone/lib/evmone/baseline_instruction_table.cpp
                    third_party/evmone/lib/evmone/baseline_instruction_table.hpp
                    third_party/evmone/lib/evmone/baseline.cpp
                    third_party/evmone/lib/evmone/baseline.hpp
                    third_party/evmone/lib/evmone/execution_state.hpp
-                   third_party/evmone/lib/evmone/execution.cpp
-                   third_party/evmone/lib/evmone/execution.hpp
-                   third_party/evmone/lib/evmone/instruction_traits.hpp
                    third_party/evmone/lib/evmone/instructions_calls.cpp
-                   third_party/evmone/lib/evmone/instructions_op2fn.hpp
-                   third_party/evmone/lib/evmone/instructions.cpp
+                   third_party/evmone/lib/evmone/instructions_traits.hpp
+                   third_party/evmone/lib/evmone/instructions_xmacro.hpp
                    third_party/evmone/lib/evmone/instructions.hpp
-                   third_party/evmone/lib/evmone/limits.hpp
                    third_party/evmone/lib/evmone/opcodes_helpers.h
                    third_party/evmone/lib/evmone/tracing.cpp
                    third_party/evmone/lib/evmone/tracing.hpp

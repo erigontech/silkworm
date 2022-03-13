@@ -37,8 +37,8 @@
 #include <silkworm/common/terminal.hpp>
 #include <silkworm/common/test_util.hpp>
 #include <silkworm/concurrency/thread_pool.hpp>
-#include <silkworm/concurrency/thread_safe_state_pool.hpp>
 #include <silkworm/consensus/blockchain.hpp>
+#include <silkworm/execution/evm.hpp>
 #include <silkworm/state/in_memory_state.hpp>
 
 // See https://ethereum-tests.readthedocs.io
@@ -272,7 +272,7 @@ static const std::map<std::string, ChainConfig> kNetworkConfig{
      }},
 };
 
-ThreadSafeExecutionStatePool execution_state_pool;
+ObjectPool<EvmoneExecutionState> execution_state_pool{/*thread_safe=*/true};
 evmc_vm* exo_evm{nullptr};
 
 // https://ethereum-tests.readthedocs.io/en/latest/test_types/blockchain_tests.html#pre-prestate-section
@@ -702,7 +702,11 @@ int main(int argc, char* argv[]) {
         }
     }
 
-    thread_pool thread_pool{num_threads, /*stack_size=*/16 * kMebi};
+    size_t stack_size{40 * kMebi};
+#ifdef NDEBUG
+    stack_size = 16 * kMebi;
+#endif
+    thread_pool thread_pool{num_threads, stack_size};
 
     const fs::path root_dir{tests_path};
 

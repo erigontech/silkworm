@@ -113,7 +113,7 @@ TEST_CASE("Block as key and compact form") {
 #else
         CHECK(block_number_from_key == block_number);
 #endif
-        CHECK(be::load(block_number_from_key) == block_number);
+        CHECK(intx::to_big_endian(block_number_from_key) == block_number);
     }
 
     SECTION("Block number as compact") {

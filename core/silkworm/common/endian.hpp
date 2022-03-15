@@ -59,107 +59,38 @@ and to SILKWORM_LITTLE_ENDIAN for little-endian ones (most current architectures
 
 namespace silkworm::endian {
 
-#if SILKWORM_BYTE_ORDER == SILKWORM_LITTLE_ENDIAN
-namespace le {
-    template <class UnsignedInteger>
-    static inline UnsignedInteger load(UnsignedInteger value) noexcept {
-        return value;
-    }
-}  // namespace le
-namespace be {
-    static inline uint16_t load(uint16_t value) noexcept { return intx::bswap(value); }
-    static inline uint32_t load(uint32_t value) noexcept { return intx::bswap(value); }
-    static inline uint64_t load(uint64_t value) noexcept { return intx::bswap(value); }
-
-    template <unsigned N>
-    static inline intx::uint<N> load(const intx::uint<N>& value) noexcept {
-        return intx::bswap(value);
-    }
-}  // namespace be
-
-#elif SILKWORM_BYTE_ORDER == SILKWORM_BIG_ENDIAN
-namespace le {
-    static inline uint16_t load(uint16_t value) noexcept { return intx::bswap(value); }
-    static inline uint32_t load(uint32_t value) noexcept { return intx::bswap(value); }
-    static inline uint64_t load(uint64_t value) noexcept { return intx::bswap(value); }
-    // intx::uint not defined here since its words are little-endian.
-    // In any case, Silkworm is currently untested on big-endian plaforms.
-}  // namespace le
-namespace be {
-    static inline uint16_t load(uint16_t value) noexcept { return value; }
-    static inline uint32_t load(uint32_t value) noexcept { return value; }
-    static inline uint64_t load(uint64_t value) noexcept { return value; }
-}  // namespace be
-
-#else
-#error "byte order not supported"
-#endif
-
 // Similar to boost::endian::load_big_u16
-inline uint16_t load_big_u16(const uint8_t* bytes) noexcept {
-    uint16_t x;
-    std::memcpy(&x, bytes, sizeof(x));
-    return be::load(x);
-}
+inline uint16_t load_big_u16(const uint8_t* bytes) noexcept { return intx::be::unsafe::load<uint16_t>(bytes); }
 
 // Similar to boost::endian::load_big_u32
-inline uint32_t load_big_u32(const uint8_t* bytes) noexcept {
-    uint32_t x;
-    std::memcpy(&x, bytes, sizeof(x));
-    return be::load(x);
-}
+inline uint32_t load_big_u32(const uint8_t* bytes) noexcept { return intx::be::unsafe::load<uint32_t>(bytes); }
 
 // Similar to boost::endian::load_big_u64
-inline uint64_t load_big_u64(const uint8_t* bytes) noexcept {
-    uint64_t x;
-    std::memcpy(&x, bytes, sizeof(x));
-    return be::load(x);
-}
+inline uint64_t load_big_u64(const uint8_t* bytes) noexcept { return intx::be::unsafe::load<uint64_t>(bytes); }
 
 // Similar to boost::endian::load_little_u16
-inline uint16_t load_little_u16(const uint8_t* bytes) noexcept {
-    uint16_t x;
-    std::memcpy(&x, bytes, sizeof(x));
-    return le::load(x);
-}
+inline uint16_t load_little_u16(const uint8_t* bytes) noexcept { return intx::le::unsafe::load<uint16_t>(bytes); }
 
 // Similar to boost::endian::load_little_u32
-inline uint32_t load_little_u32(const uint8_t* bytes) noexcept {
-    uint32_t x;
-    std::memcpy(&x, bytes, sizeof(x));
-    return le::load(x);
-}
+inline uint32_t load_little_u32(const uint8_t* bytes) noexcept { return intx::le::unsafe::load<uint32_t>(bytes); }
 
 // Similar to boost::endian::load_little_u64
-inline uint64_t load_little_u64(const uint8_t* bytes) noexcept {
-    uint64_t x;
-    std::memcpy(&x, bytes, sizeof(x));
-    return le::load(x);
-}
+inline uint64_t load_little_u64(const uint8_t* bytes) noexcept { return intx::le::unsafe::load<uint64_t>(bytes); }
 
 // Similar to boost::endian::store_big_u16
-inline void store_big_u16(uint8_t* bytes, const uint16_t value) {
-    uint16_t x{be::load(value)};
-    std::memcpy(bytes, &x, sizeof(x));
-}
+inline void store_big_u16(uint8_t* bytes, const uint16_t value) { intx::be::unsafe::store(bytes, value); }
 
 // Similar to boost::endian::store_big_u32
-inline void store_big_u32(uint8_t* bytes, const uint32_t value) {
-    uint32_t x{be::load(value)};
-    std::memcpy(bytes, &x, sizeof(x));
-}
+inline void store_big_u32(uint8_t* bytes, const uint32_t value) { intx::be::unsafe::store(bytes, value); }
 
 // Similar to boost::endian::store_big_u64
-inline void store_big_u64(uint8_t* bytes, const uint64_t value) {
-    uint64_t x{be::load(value)};
-    std::memcpy(bytes, &x, sizeof(x));
-}
+inline void store_big_u64(uint8_t* bytes, const uint64_t value) { intx::be::unsafe::store(bytes, value); }
 
 //! \brief Transforms a uint64_t stored in memory with native endianness to it's compacted big endian byte form
 //! \param [in] value : the value to be transformed
 //! \return A ByteView (std::string_view) into an internal static buffer (thread specific) of the function
 //! \remarks each function call overwrites the buffer, therefore invalidating a previously returned result
-//! \remarks so each returnd ByteView must be used immediately (before a further call to the same function).
+//! \remarks so each returned ByteView must be used immediately (before a further call to the same function).
 //! \remarks See Erigon TxIndex value
 //! \remarks A "compact" big endian form strips leftmost bytes valued to zero
 ByteView to_big_compact(uint64_t value);
@@ -168,7 +99,7 @@ ByteView to_big_compact(uint64_t value);
 //! \param [in] value : the value to be transformed
 //! \return A ByteView (std::string_view) into an internal static buffer (thread specific) of the function
 //! \remarks each function call overwrites the buffer, therefore invalidating a previously returned result
-//! \remarks so each returnd ByteView must be used immediately (before a further call to the same function)
+//! \remarks so each returned ByteView must be used immediately (before a further call to the same function)
 //! \remarks See Erigon TxIndex value
 //! \remarks A "compact" big endian form strips leftmost bytes valued to zero
 ByteView to_big_compact(const intx::uint256& value);
@@ -198,7 +129,7 @@ static DecodingResult from_big_compact(ByteView data, UnsignedInteger& out) {
     auto* ptr{reinterpret_cast<uint8_t*>(&out)};
     std::memcpy(ptr + (sizeof(UnsignedInteger) - data.length()), &data[0], data.length());
 
-    out = be::load(out);
+    out = intx::to_big_endian(out);
     return DecodingResult::kOk;
 }
 

@@ -156,7 +156,7 @@ TEST_CASE("JSON serialization") {
 
     REQUIRE(config2);
     CHECK(config2->terminal_total_difficulty == intx::from_string<intx::uint256>("39387012740608862000000"));
-    CHECK(config2->terminal_block_number == intx::from_string<intx::uint256>("10000"));
+    CHECK(config2->terminal_block_number == 10000);
     CHECK(config2->terminal_block_hash == 0x6dc57fd586f41ee340124c3a005642af7731a9ca7a7b70d989a7e2833e4ab740_bytes32);
 
     CHECK(config2->to_json() == merge_test_json);

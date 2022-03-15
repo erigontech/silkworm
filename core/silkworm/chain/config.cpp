@@ -32,6 +32,7 @@ static const std::vector<std::pair<std::string, const ChainConfig*>> kKnownChain
 constexpr const char* kTerminalTotalDifficulty{"terminalTotalDifficulty"};
 constexpr const char* kTerminalBlockNumber{"terminalBlockNumber"};
 constexpr const char* kTerminalBlockHash{"terminalBlockHash"};
+constexpr const char* kMergeForkBlock{"mergeForkBlock"};
 
 static inline void member_to_json(nlohmann::json& json, const std::string& key, const std::optional<uint64_t>& source) {
     if (source.has_value()) {
@@ -74,6 +75,7 @@ nlohmann::json ChainConfig::to_json() const noexcept {
     member_to_json(ret, "muirGlacierBlock", muir_glacier_block);
     member_to_json(ret, "arrowGlacierBlock", arrow_glacier_block);
     member_to_json(ret, kTerminalBlockNumber, terminal_block_number);
+    member_to_json(ret, kMergeForkBlock, merge_fork_block);
 
     if (terminal_total_difficulty.has_value()) {
         // TODO (Andrew) geth probably treats terminalTotalDifficulty as a JSON number
@@ -112,6 +114,8 @@ std::optional<ChainConfig> ChainConfig::from_json(const nlohmann::json& json) no
     read_json_config_member(json, "muirGlacierBlock", config.muir_glacier_block);
     read_json_config_member(json, "arrowGlacierBlock", config.arrow_glacier_block);
     read_json_config_member(json, kTerminalBlockNumber, config.terminal_block_number);
+    read_json_config_member(json, kMergeForkBlock, config.merge_fork_block);
+    
     if (json.contains(kTerminalTotalDifficulty)) {
         config.terminal_total_difficulty =
             intx::from_string<intx::uint256>(json[kTerminalTotalDifficulty].get<std::string>());

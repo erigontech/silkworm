@@ -148,8 +148,8 @@ TEST_CASE("JSON serialization") {
             "berlinBlock":0,
             "londonBlock":0,
             "terminalTotalDifficulty":"39387012740608862000000",
-            "terminalBlockNumber": 10000,
-            "terminalBlockHash": "0x6dc57fd586f41ee340124c3a005642af7731a9ca7a7b70d989a7e2833e4ab740"
+            "terminalBlockNumber":10000,
+            "terminalBlockHash":"0x6dc57fd586f41ee340124c3a005642af7731a9ca7a7b70d989a7e2833e4ab740"
             "mergeForkBlock":10000,
         })");
 

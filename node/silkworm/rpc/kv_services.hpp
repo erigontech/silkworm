@@ -78,6 +78,9 @@ class TxService : public TxRpcService {
         ) {}
 
     void process_rpc(TxRpc& rpc, const remote::Cursor* request);
+
+  private:
+    void handle_request(TxRpc& rpc, const remote::Cursor* request);
 };
 
 //! Server-streaming RPC for StateChanges method of 'kv' gRPC protocol.

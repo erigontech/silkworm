@@ -47,7 +47,7 @@ class ServerContextPool {
     ServerContextPool(const ServerContextPool&) = delete;
     ServerContextPool& operator=(const ServerContextPool&) = delete;
 
-    void add_context(std::unique_ptr<grpc::ServerCompletionQueue> queue) noexcept;
+    void add_context(std::unique_ptr<grpc::ServerCompletionQueue> queue);
     void start();
     void join();
     void stop();

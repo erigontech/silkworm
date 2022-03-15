@@ -46,7 +46,7 @@ ServerContextPool::~ServerContextPool() {
     SILK_TRACE << "ServerContextPool::~ServerContextPool END " << this;
 }
 
-void ServerContextPool::add_context(std::unique_ptr<grpc::ServerCompletionQueue> queue) noexcept {
+void ServerContextPool::add_context(std::unique_ptr<grpc::ServerCompletionQueue> queue) {
     // Create the io_context and give it work to do so that its event loop will not exit until it is explicitly stopped.
     auto io_context = std::make_shared<boost::asio::io_context>();
     auto runner = std::make_unique<CompletionRunner>(*queue, *io_context);

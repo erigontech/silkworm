@@ -33,22 +33,24 @@ void BackEndKvServer::register_async_services(grpc::ServerBuilder& builder) {
 
 /// Start server-side RPC requests as required by gRPC async model: one RPC per type is requested in advance.
 void BackEndKvServer::register_request_calls() {
-    // Start each server-side RPC request grabbing one context at a time using round-robin scheme
+    // TODO(canepat) Start one server-side RPC request for each available server context
+    const auto& server_context = next_context();
+    const auto context_queue = server_context.grpc_queue.get();
 
     /* 'ethbackend' protocol services */
-    etherbase_service_.create_rpc(&backend_async_service_, next_context().grpc_queue.get());
-    net_version_service_.create_rpc(&backend_async_service_, next_context().grpc_queue.get());
-    net_peer_count_service_.create_rpc(&backend_async_service_, next_context().grpc_queue.get());
-    backend_version_service_.create_rpc(&backend_async_service_, next_context().grpc_queue.get());
-    protocol_version_service_.create_rpc(&backend_async_service_, next_context().grpc_queue.get());
-    client_version_service_.create_rpc(&backend_async_service_, next_context().grpc_queue.get());
-    subscribe_service_.create_rpc(&backend_async_service_, next_context().grpc_queue.get());
-    node_info_service_.create_rpc(&backend_async_service_, next_context().grpc_queue.get());
+    etherbase_service_.create_rpc(&backend_async_service_, context_queue);
+    net_version_service_.create_rpc(&backend_async_service_, context_queue);
+    net_peer_count_service_.create_rpc(&backend_async_service_, context_queue);
+    backend_version_service_.create_rpc(&backend_async_service_, context_queue);
+    protocol_version_service_.create_rpc(&backend_async_service_, context_queue);
+    client_version_service_.create_rpc(&backend_async_service_, context_queue);
+    subscribe_service_.create_rpc(&backend_async_service_, context_queue);
+    node_info_service_.create_rpc(&backend_async_service_, context_queue);
 
     /* 'kv' protocol services */
-    kv_version_service_.create_rpc(&kv_async_service_, next_context().grpc_queue.get());
-    tx_service_.create_rpc(&kv_async_service_, next_context().grpc_queue.get());
-    state_changes_service_.create_rpc(&kv_async_service_, next_context().grpc_queue.get());
+    kv_version_service_.create_rpc(&kv_async_service_, context_queue);
+    tx_service_.create_rpc(&kv_async_service_, context_queue);
+    state_changes_service_.create_rpc(&kv_async_service_, context_queue);
 }
 
 } // namespace silkworm::rpc

@@ -28,11 +28,13 @@
 #include <silkworm/chain/config.hpp>
 #include <silkworm/common/log.hpp>
 #include <silkworm/rpc/backend_kv_server.hpp>
+#include <silkworm/rpc/util.hpp>
 
 std::string get_node_name_from_build_info() {
     const auto build_info{silkworm_get_buildinfo()};
 
     std::string node_name{"silkworm/"};
+    node_name.append(build_info->git_branch);
     node_name.append(build_info->project_version);
     node_name.append("/");
     node_name.append(build_info->system_name);
@@ -77,6 +79,9 @@ int main(int argc, char* argv[]) {
     log_settings.log_threads = true;
     log_settings.log_verbosity = log_level;
     silkworm::log::init(log_settings);
+
+    //TODO(canepat): this could be an option in Silkworm logging facility
+    silkworm::rpc::Grpc2SilkwormLogGuard log_guard;
 
     const auto node_name{get_node_name_from_build_info()};
     SILK_LOG << "BackEndKvServer build info: " << node_name << " gRPC version: " << grpc::Version();

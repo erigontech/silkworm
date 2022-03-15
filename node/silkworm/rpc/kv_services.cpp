@@ -38,17 +38,39 @@ void KvVersionService::process_rpc(KvVersionRpc& rpc, const google::protobuf::Em
 }
 
 void TxService::process_rpc(TxRpc& rpc, const remote::Cursor* request) {
-    SILK_TRACE << "TxService::process_rpc rpc: " << &rpc << " request: " << request;
+    SILK_TRACE << "TxService::process_rpc rpc: " << &rpc << " request: " << request << " START";
 
+    if (request == nullptr) {
+        // The client has closed its stream of requests, we can close too.
+        const bool closed = rpc.close();
+        SILK_TRACE << "TxService::process_rpc " << &rpc << " closed: " << closed;
+    } else {
+        handle_request(rpc, request);
+    }
+
+    SILK_TRACE << "TxService::process_rpc rpc: " << &rpc << " request: " << request << " END";
+}
+
+void TxService::handle_request(TxRpc& rpc, const remote::Cursor* request) {
     // TODO(canepat): remove this example and fill the correct stream responses
-    remote::Pair response1;
-    rpc.send_response(response1);
-    remote::Pair response2;
-    rpc.send_response(response2);
-
-    const bool closed = rpc.close();
-
-    SILK_TRACE << "TxService::process_rpc closed: " << closed;
+    const auto cursor_op = request->op();
+    if (cursor_op == remote::Op::OPEN) {
+        remote::Pair kv_pair;
+        kv_pair.set_txid(1);
+        kv_pair.set_cursorid(1);
+        SILK_INFO << "Tx peer: " << rpc.peer() << " op=" << remote::Op_Name(cursor_op) << " cursor=" << kv_pair.cursorid();
+        const bool sent = rpc.send_response(kv_pair);
+        SILK_TRACE << "TxService::handle_request open cursor: " << kv_pair.cursorid() << " sent: " << sent;
+    } else if (cursor_op == remote::Op::CLOSE) {
+        SILK_INFO << "Tx peer: " << rpc.peer() << " op=" << remote::Op_Name(cursor_op) << " cursor=" << request->cursor();
+        const bool sent = rpc.send_response(remote::Pair{});
+        SILK_TRACE << "TxService::handle_request close cursor: " << request->cursor() << " sent: " << sent;
+    } else {
+        SILK_INFO << "Tx peer: " << rpc.peer() << " op=" << remote::Op_Name(cursor_op) << " cursor=" << request->cursor();
+        remote::Pair kv_pair;
+        const bool sent = rpc.send_response(kv_pair);
+        SILK_TRACE << "TxService::handle_request cursor: " << request->cursor() << " sent: " << sent;
+    }
 }
 
 void StateChangesService::process_rpc(StateChangesRpc& rpc, const remote::StateChangeRequest* request) {

@@ -23,6 +23,7 @@
 
 #include <grpcpp/grpcpp.h>
 #include <grpcpp/impl/codegen/async_unary_call.h>
+#include <magic_enum.hpp>
 
 #include <silkworm/common/log.hpp>
 #include <silkworm/rpc/completion_tag.hpp>
@@ -32,19 +33,31 @@ namespace silkworm::rpc {
 //! This represents the generic gRPC call composed by a sequence of bidirectional operations.
 class BaseRpc {
   public:
-    static int32_t instance_count() { return instance_count_; }
+    //! Returns the number of outstanding RPC instances.
+    static int64_t instance_count() { return instance_count_; }
+
+    //! Returns the number of total RPC instances.
+    static uint64_t total_count() { return total_count_; }
 
     BaseRpc() {
         ++instance_count_;
-        SILK_TRACE << "BaseRpc::BaseRpc [" << this << "] instances: " << instance_count_;
+        ++total_count_;
+        SILK_TRACE << "BaseRpc::BaseRpc [" << this << "] instances: " << instance_count_ << " total: " << total_count_;
     }
 
     virtual ~BaseRpc() {
         --instance_count_;
-        SILK_TRACE << "BaseRpc::~BaseRpc [" << this << "] instances: " << instance_count_;
+        SILK_TRACE << "BaseRpc::~BaseRpc [" << this << "] instances: " << instance_count_ << " total: " << total_count_;
     }
 
-    /// Tag processor for the DONE event in this RPC coming from gRPC framework.
+    //! Try to cancel this RPC from the server side (best-effort, no guarantee).
+    void cancel() { return context_.TryCancel(); }
+
+    //! Returns a unique identifier of the RPC client for this call.
+    std::string peer() const { return context_.peer(); }
+
+  protected:
+    //! Tag processor for the DONE event in this RPC coming from gRPC framework.
     void process_done(bool ok) {
         SILK_TRACE << "BaseRpc::on_done START ok: " << ok << " done_: " << done_ << " op_count_: " << op_count_;
         done_ = true;
@@ -54,12 +67,11 @@ class BaseRpc {
         SILK_TRACE << "BaseRpc::on_done END ok: " << ok << " op_count_: " << op_count_;
     }
 
-  protected:
-    /// Hook to signal this RPC is *really* done: each subclass shall override to implement its own cleanup.
+    //! Hook to signal this RPC is *really* done: each subclass shall override to implement its own cleanup.
     virtual void cleanup() = 0;
 
     //! The 4 different types of bidirectional operations composing a RPC.
-    /// Some operations may occur multiple times during a single RPC lifetime.
+    //! \warning Some operations may occur multiple times during a single RPC lifetime.
     enum class OperationType {
         kRequest,
         kRead,
@@ -70,7 +82,7 @@ class BaseRpc {
     /// Callback to handle the start of the specified async operation.
     void handle_started(OperationType opType) {
         ++op_count_;
-        SILK_TRACE << "BaseRpc::handle_started opType: " << static_cast<int>(opType) << " op_count_: " << op_count_;
+        SILK_TRACE << "BaseRpc::handle_started opType: " << magic_enum::enum_name(opType) << " op_count_: " << op_count_;
 
         if (opType == OperationType::kRead) {
             read_in_progress_ = true;
@@ -83,7 +95,7 @@ class BaseRpc {
     /// \return true if the RPC processing should keep going, false otherwise
     bool handle_completed(OperationType opType) {
         --op_count_;
-        SILK_TRACE << "BaseRpc::handle_completed opType: " << static_cast<int>(opType) << " op_count_: " << op_count_;
+        SILK_TRACE << "BaseRpc::handle_completed opType: " << magic_enum::enum_name(opType) << " op_count_: " << op_count_;
 
         if (opType == OperationType::kRead) {
             read_in_progress_ = false;
@@ -111,6 +123,9 @@ class BaseRpc {
 
     //! Keep track of the total outstanding RPC calls (intentionally signed to spot underflows).
     inline static std::atomic_int64_t instance_count_ = 0;
+
+    //! Keep track of the total RPC calls.
+    inline static std::atomic_uint64_t total_count_ = 0;
 
   private:
     //! This counts the number of pending operations in this RPC.
@@ -215,6 +230,7 @@ class UnaryRpc : public BaseRpc {
 
         // The incoming request can now be handled so process it.
         if (handle_completed(OperationType::kRequest)) {
+            SILK_DEBUG << "UnaryRpc::process_read request received from peer " << peer() << " [" << this << "]";
             handlers_.processRequest(*this, &request_);
         }
         SILK_TRACE << "UnaryRpc::process_read END [" << this << "]";
@@ -299,6 +315,7 @@ class ServerStreamingRpc : public BaseRpc {
         response_queue_.push_back(std::move(response));
 
         if (!write_in_progress()) {
+            SILK_DEBUG << "ServerStreamingRpc::send_response schedule for peer " << peer() << " [" << this << "]";
             write();
             return true;
         }
@@ -310,6 +327,7 @@ class ServerStreamingRpc : public BaseRpc {
         streaming_done_ = true;
 
         if (!write_in_progress()) {
+            SILK_DEBUG << "ServerStreamingRpc::close schedule for peer " << peer() << " [" << this << "]";
             finish();
             return true;
         }
@@ -337,6 +355,7 @@ class ServerStreamingRpc : public BaseRpc {
 
         // The incoming request can now be handled so process it.
         if (handle_completed(OperationType::kRequest)) {
+            SILK_DEBUG << "ServerStreamingRpc::process_read received from peer " << peer() << " [" << this << "]";
             handlers_.processRequest(*this, &request_);
         }
         SILK_TRACE << "ServerStreamingRpc::process_read END [" << this << "]";
@@ -352,9 +371,11 @@ class ServerStreamingRpc : public BaseRpc {
             if (ok) {
                 if (!response_queue_.empty()) {
                     // We have more responses waiting to be sent, send first.
+                    SILK_DEBUG << "ServerStreamingRpc::process_write schedule write for peer " << peer() << " [" << this << "]";
                     write();
                 } else if (streaming_done_) {
                     // Previous write completed, no pending write and streaming finished: we're done.
+                    SILK_DEBUG << "ServerStreamingRpc::process_write schedule finish for peer " << peer() << " [" << this << "]";
                     finish();
                 }
             }
@@ -437,8 +458,8 @@ class BidirectionalStreamingRpc : public BaseRpc {
     : service_(service), queue_(queue), responder_(&context_), handlers_(handlers) {
         SILK_TRACE << "BidirectionalStreamingRpc::BidirectionalStreamingRpc START [" << this << "]";
 
-        // Create START/READ/WRITE/FINISH/DONE tag processors used to interact with gRPC completion queue.
-        start_processor_ = [this](bool ok) { process_start(ok); };
+        // Create REQUEST/READ/WRITE/FINISH/DONE tag processors used to interact with gRPC completion queue.
+        request_processor_ = [this](bool ok) { process_request(ok); };
         read_processor_ = [this](bool ok) { process_read(ok); };
         write_processor_ = [this](bool ok) { process_write(ok); };
         finish_processor_ = [this](bool ok) { process_finish(ok); };
@@ -450,12 +471,13 @@ class BidirectionalStreamingRpc : public BaseRpc {
         // Finally issue the async request needed by gRPC to start handling this RPC.
         SILK_DEBUG << "BidirectionalStreamingRpc::BidirectionalStreamingRpc issuing new request for service: " << service_;
         handle_started(OperationType::kRequest);
-        handlers_.requestRpc(service_, &context_, &responder_, queue_, queue_, &start_processor_);
+        handlers_.requestRpc(service_, &context_, &responder_, queue_, queue_, &request_processor_);
         SILK_TRACE << "BidirectionalStreamingRpc::BidirectionalStreamingRpc END new request issued [" << this << "]";
     }
 
     bool send_response(const Response& response) {
         response_queue_.push_back(std::move(response));
+        SILK_DEBUG << "BidirectionalStreamingRpc::send_response enqueued response [" << this << "]";
 
         if (!write_in_progress()) {
             write();
@@ -466,12 +488,16 @@ class BidirectionalStreamingRpc : public BaseRpc {
 
     /// Call this to indicate the completion of server-side streaming.
     bool close() {
-        // Disallow the server to finish the RPC before the client has streamed all the requests.
-        SILKWORM_ASSERT(client_streaming_done_);
+        SILK_DEBUG << "BidirectionalStreamingRpc::close peer " << peer() << " [" << this << "]";
 
+        // Protect the server from finishing the RPC twice.
+        if (server_streaming_done_) {
+            return true;
+        }
         server_streaming_done_ = true;
 
         if (!write_in_progress()) {
+            SILK_DEBUG << "BidirectionalStreamingRpc::close schedule finish for peer " << peer() << " [" << this << "]";
             finish();
             return true;
         }
@@ -486,23 +512,21 @@ class BidirectionalStreamingRpc : public BaseRpc {
     }
 
   private:
-    /// Tag processor for START event in this RPC coming from gRPC framework.
-    void process_start(bool ok) {
-        SILK_TRACE << "BidirectionalStreamingRpc::process_start START [" << this << "] ok: " << ok;
+    /// Tag processor for REQUEST event in this RPC coming from gRPC framework.
+    void process_request(bool ok) {
+        SILK_TRACE << "BidirectionalStreamingRpc::process_request START [" << this << "] ok: " << ok;
         if (!ok) {
-            handle_completed(OperationType::kRead); // TODO(canepat): test if correct
+            handle_completed(OperationType::kRequest);
             return;
         }
 
         // A request has just been activated: first create a new RPC to allow the server to handle the next request.
         handlers_.createRpc(service_, queue_);
+        handle_completed(OperationType::kRequest);
 
-        if (handle_completed(OperationType::kRequest)) {
-            // The first incoming message can now be read, so enqueue the first READ operation for this RPC.
-            handle_started(OperationType::kRead);
-            responder_.Read(&request_, &read_processor_);
-        }
-        SILK_TRACE << "BidirectionalStreamingRpc::process_start END [" << this << "]";
+        // The first incoming message can now be read, so enqueue the first READ operation for this RPC.
+        read();
+        SILK_TRACE << "BidirectionalStreamingRpc::process_request END [" << this << "]";
     }
 
     /// Tag processor for READ event in this RPC coming from gRPC framework.
@@ -513,10 +537,10 @@ class BidirectionalStreamingRpc : public BaseRpc {
                 // The incoming request can now be handled so process it.
                 handlers_.processRequest(*this, &request_);
                 // Enqueue another READ operation for this RPC.
-                handle_started(OperationType::kRead);
-                responder_.Read(&request_, &read_processor_);
+                read();
             } else {
                 // Client has closed the stream, so the processing hook of the application layer receives a null request.
+                SILK_DEBUG << "BidirectionalStreamingRpc::process_read stream closed by peer " << peer() << " [" << this << "]";
                 client_streaming_done_ = true;
                 handlers_.processRequest(*this, nullptr);
             }
@@ -534,9 +558,11 @@ class BidirectionalStreamingRpc : public BaseRpc {
             if (ok) {
                 if (!response_queue_.empty()) {
                     // We have more responses waiting to be sent, send first.
+                    SILK_DEBUG << "BidirectionalStreamingRpc::process_write schedule write for peer " << peer() << " [" << this << "]";
                     write();
                 } else if (server_streaming_done_) {
                     // Previous write completed, no pending write and streaming finished: we're done.
+                    SILK_DEBUG << "BidirectionalStreamingRpc::process_write schedule finish for peer " << peer() << " [" << this << "]";
                     finish();
                 }
             }
@@ -550,21 +576,28 @@ class BidirectionalStreamingRpc : public BaseRpc {
         handle_completed(OperationType::kFinish);
     }
 
+    void read() {
+        SILK_TRACE << "BidirectionalStreamingRpc::read schedule read for peer " << peer() << " [" << this << "]";
+        handle_started(OperationType::kRead);
+        responder_.Read(&request_, &read_processor_);
+    }
+
     void write() {
-        SILK_TRACE << "BidirectionalStreamingRpc::write [" << this << "]";
+        SILK_TRACE << "BidirectionalStreamingRpc::write schedule write for peer " << peer() << " [" << this << "]";
         handle_started(OperationType::kWrite);
         responder_.Write(response_queue_.front(), &write_processor_);
     }
 
     void finish() {
-        SILK_TRACE << "BidirectionalStreamingRpc::finish [" << this << "]";
         handle_started(OperationType::kFinish);
         responder_.Finish(grpc::Status::OK, &finish_processor_);
+        SILK_DEBUG << "BidirectionalStreamingRpc::finish finished [" << this << "] status=OK";
     }
 
     void cleanup() override {
-        SILK_TRACE << "BidirectionalStreamingRpc::cleanup [" << this << "]";
+        SILK_TRACE << "BidirectionalStreamingRpc::cleanup [" << this << "] START";
         handlers_.cleanupRpc(*this, context_.IsCancelled());
+        SILK_TRACE << "BidirectionalStreamingRpc::cleanup [" << this << "] END";
     }
 
     //! The gRPC generated asynchronous service.
@@ -582,8 +615,8 @@ class BidirectionalStreamingRpc : public BaseRpc {
     //! The lifecycle handlers for bidirectional-streaming calls.
     Handlers handlers_;
 
-    //! The START tag processing callback.
-    TagProcessor start_processor_;
+    //! The REQUEST tag processing callback.
+    TagProcessor request_processor_;
 
     //! The READ tag processing callback.
     TagProcessor read_processor_;

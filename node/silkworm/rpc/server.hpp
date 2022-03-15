@@ -52,6 +52,7 @@ class Server {
         {
             std::unique_lock<std::mutex> lock(mutex_);
             if (shutdown_) {
+                SILK_TRACE << "Server::build_and_start " << this << " already shut down END";
                 return;
             }
 
@@ -97,11 +98,11 @@ class Server {
         {
             std::unique_lock<std::mutex> lock(mutex_);
             if (shutdown_) {
+                SILK_TRACE << "Server::join " << this << " already shut down END";
                 return;
             }
         }
         // Start the server execution: the context pool loop will block the calling thread.
-
         context_pool_.join();
         SILK_TRACE << "Server::join " << this << " END";
     }
@@ -111,12 +112,20 @@ class Server {
         SILK_TRACE << "Server::shutdown " << this << " START";
         {
             std::lock_guard<std::mutex> guard(mutex_);
+            if (shutdown_) {
+                SILK_TRACE << "Server::shutdown " << this << " already shut down END";
+                return;
+            }
             shutdown_ = true;
+
+            SILK_DEBUG << "Server::shutdown " << this << " shutting down server immediately";
 
             // Order matters here: 1) shutdown the server
             if (server_) {
-                server_->Shutdown();
+                server_->Shutdown(gpr_time_0(GPR_CLOCK_REALTIME));
             }
+
+            SILK_DEBUG << "Server::shutdown " << this << " stopping context pool";
 
             // Order matters here: 2) shutdown and drain the queues
             context_pool_.stop();

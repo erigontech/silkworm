@@ -43,9 +43,7 @@ TEST_CASE("print grpc::Status", "[silkworm][rpc][util]") {
     CHECK_NOTHROW(null_stream() << grpc::Status::CANCELLED);
 }
 
-const char* FILE_NAME{"file.cpp"};
-const int LINE_NUMBER{10};
-
+// Necesary at namespace level for TEST_CASE GrpcLogGuard
 static bool gpr_test_log_reached{false};
 static void gpr_test_log(gpr_log_func_args* /*args*/) {
     gpr_test_log_reached = true;
@@ -60,6 +58,8 @@ TEST_CASE("GrpcLogGuard", "[silkworm][rpc][util]") {
 
 TEST_CASE("gpr_silkworm_log", "[silkworm][rpc][util]") {
     silkworm::log::set_verbosity(silkworm::log::Level::kNone);
+    const char* FILE_NAME{"file.cpp"};
+    const int LINE_NUMBER{10};
     Grpc2SilkwormLogGuard log_guard;
     CHECK_NOTHROW(gpr_log(FILE_NAME, LINE_NUMBER, GPR_LOG_SEVERITY_ERROR, "error message"));
     CHECK_NOTHROW(gpr_log(FILE_NAME, LINE_NUMBER, GPR_LOG_SEVERITY_INFO, "info message"));

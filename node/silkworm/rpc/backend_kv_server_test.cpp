@@ -82,6 +82,44 @@ class BackEndClient {
   private:
     remote::ETHBACKEND::StubInterface* stub_;
 };
+
+class KvClient {
+  public:
+    explicit KvClient(remote::KV::StubInterface* stub) : stub_(stub) {}
+
+    grpc::Status version(types::VersionReply* response) {
+        grpc::ClientContext context;
+        return stub_->Version(&context, google::protobuf::Empty{}, response);
+    }
+
+    grpc::Status tx(std::vector<remote::Cursor>& requests, std::vector<remote::Pair>& responses) {
+        grpc::ClientContext context;
+        auto tx_reader_writer = stub_->Tx(&context);
+        uint32_t cursor_id{0};
+        for (auto& req : requests) {
+            req.set_cursor(cursor_id);
+            tx_reader_writer->Write(req);
+            tx_reader_writer->Read(&responses.emplace_back());
+            cursor_id = responses.back().cursorid();
+        }
+        tx_reader_writer->WritesDone();
+        return tx_reader_writer->Finish();
+    }
+
+    grpc::Status statechanges_and_consume(const remote::StateChangeRequest& request, std::vector<remote::StateChangeBatch>& responses) {
+        grpc::ClientContext context;
+        auto subscribe_reply_reader = stub_->StateChanges(&context, request);
+        bool has_more{true};
+        do {
+            has_more = subscribe_reply_reader->Read(&responses.emplace_back());
+        } while (has_more);
+        responses.pop_back();
+        return subscribe_reply_reader->Finish();
+    }
+
+  private:
+    remote::KV::StubInterface* stub_;
+};
 };
 
 namespace silkworm::rpc {
@@ -190,8 +228,10 @@ TEST_CASE("BackEndKvServer RPC calls", "[silkworm][node][rpc]") {
     silkworm::log::set_verbosity(silkworm::log::Level::kNone);
     Grpc2SilkwormLogGuard log_guard;
     std::shared_ptr<grpc::Channel> channel = grpc::CreateChannel(kTestAddressUri, grpc::InsecureChannelCredentials());
-    auto stub_ptr = remote::ETHBACKEND::NewStub(channel);
-    BackEndClient backend_client{stub_ptr.get()};
+    auto ethbackend_stub_ptr = remote::ETHBACKEND::NewStub(channel);
+    BackEndClient backend_client{ethbackend_stub_ptr.get()};
+    auto kv_stub_ptr = remote::KV::NewStub(channel);
+    KvClient kv_client{kv_stub_ptr.get()};
     ServerConfig srv_config;
     srv_config.set_num_contexts(1);
     srv_config.set_address_uri(kTestAddressUri);
@@ -259,6 +299,41 @@ TEST_CASE("BackEndKvServer RPC calls", "[silkworm][node][rpc]") {
         const auto status = backend_client.node_info(request, &response);
         CHECK(status == grpc::Status::OK);
         CHECK(response.nodesinfo_size() == 0);
+    }
+
+    SECTION("Version: return KV version", "[silkworm][node][rpc]") {
+        types::VersionReply response;
+        const auto status = kv_client.version(&response);
+        CHECK(status == grpc::Status::OK);
+        CHECK(response.major() == 5);
+        CHECK(response.minor() == 1);
+        CHECK(response.patch() == 0);
+    }
+
+    // TODO(canepat): change using something meaningful when really implemented
+    SECTION("Tx: return streamed pairs", "[silkworm][node][rpc]") {
+        remote::SubscribeRequest request;
+        remote::Cursor open;
+        open.set_op(remote::Op::OPEN);
+        open.set_bucketname("TestTable");
+        remote::Cursor next;
+        next.set_op(remote::Op::NEXT);
+        remote::Cursor close;
+        close.set_op(remote::Op::CLOSE);
+        std::vector<remote::Cursor> requests{open, next, close};
+        std::vector<remote::Pair> responses;
+        const auto status = kv_client.tx(requests, responses);
+        CHECK(status == grpc::Status::OK);
+        CHECK(responses.size() == 3);
+    }
+
+    // TODO(canepat): change using something meaningful when really implemented
+    SECTION("StateChanges: return streamed state changes", "[silkworm][node][rpc]") {
+        remote::StateChangeRequest request;
+        std::vector<remote::StateChangeBatch> responses;
+        const auto status = kv_client.statechanges_and_consume(request, responses);
+        CHECK(status == grpc::Status::OK);
+        CHECK(responses.size() == 2);
     }
 
     server.shutdown();

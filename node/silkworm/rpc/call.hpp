@@ -22,6 +22,7 @@
 #include <list>
 
 #include <grpcpp/grpcpp.h>
+#include <grpcpp/impl/codegen/async_stream.h>
 #include <grpcpp/impl/codegen/async_unary_call.h>
 #include <magic_enum.hpp>
 

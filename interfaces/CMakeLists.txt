@@ -97,24 +97,6 @@ add_custom_command(
     COMMENT "Running C++ gRPC compiler on ${KV_PROTO}"
 )
 
-# FIX8497 START - Hack on KV generated header to avoid Protobuf issue https://github.com/protocolbuffers/protobuf/pull/8497
-# Double replace trick is needed to avoid multiple replacements every time the file is regenerated
-file(READ  "${KV_PROTO_HEADERS}" KV_PROTO_HEADER_CONTENT)
-string(REPLACE
-    "#include <google/protobuf/port_def.inc>\n#undef DELETE\n#undef CODE\n#undef STORAGE"
-    "#include <google/protobuf/port_def.inc>"
-    KV_PROTO_HEADER_CONTENT
-    "${KV_PROTO_HEADER_CONTENT}"
-)
-string(REPLACE
-    "#include <google/protobuf/port_def.inc>"
-    "#include <google/protobuf/port_def.inc>\n#undef DELETE\n#undef CODE\n#undef STORAGE"
-    KV_PROTO_HEADER_CONTENT
-    "${KV_PROTO_HEADER_CONTENT}"
-)
-file(WRITE "${KV_PROTO_HEADERS}" "${KV_PROTO_HEADER_CONTENT}")
-# FIX8497 END - Hack on KV generated header to avoid Protobuf issue https://github.com/protocolbuffers/protobuf/pull/8497
-
 add_custom_target(
     generate_kv_grpc
     DEPENDS "${KV_PROTO_SOURCES}" "${KV_PROTO_HEADERS}" "${KV_GRPC_SOURCES}" "${KV_GRPC_HEADERS}"

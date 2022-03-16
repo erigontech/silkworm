@@ -24,16 +24,10 @@
 namespace silkworm::trie {
 DbTrieLoader::DbTrieLoader(mdbx::txn& txn, etl::Collector& account_collector, etl::Collector& storage_collector)
     : txn_{txn}, storage_collector_{storage_collector} {
-    hb_.node_collector = [&account_collector](ByteView unpacked_key, const Node& node) {
-        if (unpacked_key.empty()) {
-            return;
+    hash_builder_.node_collector = [&account_collector](ByteView unpacked_key, const Node& node) {
+        if (!unpacked_key.empty()) {
+            account_collector.collect({Bytes(unpacked_key), marshal_node(node)});
         }
-
-        etl::Entry e;
-        e.key = unpacked_key;
-        e.value = marshal_node(node);
-
-        account_collector.collect(std::move(e));
     };
 }
 
@@ -78,13 +72,14 @@ In practice Trie is not full - it means that after account key `{30 zero bytes}0
 amount of iterations will not be big.
 */
 evmc::bytes32 DbTrieLoader::calculate_root(PrefixSet& account_changes, PrefixSet& storage_changes) {
-    auto state{db::open_cursor(txn_, db::table::kHashedAccounts)};
-    auto trie_db_cursor{db::open_cursor(txn_, db::table::kTrieOfAccounts)};
+    db::Cursor hashed_accounts(txn_, db::table::kHashedAccounts);
+    db::Cursor trie_accounts(txn_, db::table::kTrieOfAccounts);
 
-    for (Cursor trie{trie_db_cursor, account_changes}; trie.key().has_value();) {
+    trie::Cursor trie{trie_accounts, account_changes};
+    while (trie.key().has_value()) {
         if (trie.can_skip_state()) {
             SILKWORM_ASSERT(trie.hash() != nullptr);
-            hb_.add_branch_node(*trie.key(), *trie.hash(), trie.children_are_in_trie());
+            hash_builder_.add_branch_node(*trie.key(), *trie.hash(), trie.children_are_in_trie());
         }
 
         const std::optional<Bytes> uncovered{trie.first_uncovered_prefix()};
@@ -94,33 +89,32 @@ evmc::bytes32 DbTrieLoader::calculate_root(PrefixSet& account_changes, PrefixSet
         }
 
         trie.next();
-
-        for (auto acc{state.lower_bound(db::to_slice(*uncovered), /*throw_notfound=*/false)}; acc;
-             acc = state.to_next(/*throw_notfound=*/false)) {
-            const Bytes unpacked_key{unpack_nibbles(db::from_slice(acc.key))};
+        auto account_data{hashed_accounts.lower_bound(db::to_slice(*uncovered), /*throw_notfound=*/false)};
+        while (account_data) {
+            const Bytes unpacked_key{unpack_nibbles(db::from_slice(account_data.key))};
             if (trie.key().has_value() && trie.key().value() < unpacked_key) {
                 break;
             }
-            const auto [account, err]{Account::from_encoded_storage(db::from_slice(acc.value))};
+            const auto [account, err]{Account::from_encoded_storage(db::from_slice(account_data.value))};
             rlp::success_or_throw(err);
 
             evmc::bytes32 storage_root{kEmptyRoot};
-
             if (account.incarnation) {
-                const Bytes key_with_inc{db::storage_prefix(db::from_slice(acc.key), account.incarnation)};
+                const Bytes key_with_inc{db::storage_prefix(db::from_slice(account_data.key), account.incarnation)};
                 storage_root = calculate_storage_root(key_with_inc, storage_changes);
             }
 
-            hb_.add_leaf(unpacked_key, account.rlp(storage_root));
+            hash_builder_.add_leaf(unpacked_key, account.rlp(storage_root));
+            account_data = hashed_accounts.to_next(/*throw_notfound=*/false);
         }
     }
 
-    return hb_.root_hash();
+    return hash_builder_.root_hash();
 }
 
 evmc::bytes32 DbTrieLoader::calculate_storage_root(const Bytes& key_with_inc, PrefixSet& changed) {
-    auto state{db::open_cursor(txn_, db::table::kHashedStorage)};
-    auto trie_db_cursor{db::open_cursor(txn_, db::table::kTrieOfStorage)};
+    db::Cursor hashed_storage(txn_, db::table::kHashedStorage);
+    db::Cursor trie_storage(txn_, db::table::kTrieOfStorage);
 
     HashBuilder hb;
     hb.node_collector = [&](ByteView unpacked_storage_key, const Node& node) {
@@ -129,7 +123,7 @@ evmc::bytes32 DbTrieLoader::calculate_storage_root(const Bytes& key_with_inc, Pr
         storage_collector_.collect(std::move(e));
     };
 
-    for (Cursor trie{trie_db_cursor, changed, key_with_inc}; trie.key().has_value();) {
+    for (Cursor trie{trie_storage, changed, key_with_inc}; trie.key().has_value();) {
         if (trie.can_skip_state()) {
             SILKWORM_ASSERT(trie.hash() != nullptr);
             hb.add_branch_node(*trie.key(), *trie.hash(), trie.children_are_in_trie());
@@ -144,9 +138,9 @@ evmc::bytes32 DbTrieLoader::calculate_storage_root(const Bytes& key_with_inc, Pr
         trie.next();
 
         // TODO (Andrew) consider replacing with cursor_for_each(_multi?)
-        for (auto storage{state.lower_bound_multivalue(db::to_slice(key_with_inc), db::to_slice(*uncovered),
-                                                       /*throw_notfound=*/false)};
-             storage; storage = state.to_current_next_multi(/*throw_notfound=*/false)) {
+        for (auto storage{hashed_storage.lower_bound_multivalue(db::to_slice(key_with_inc), db::to_slice(*uncovered),
+                                                                /*throw_notfound=*/false)};
+             storage; storage = hashed_storage.to_current_next_multi(/*throw_notfound=*/false)) {
             const Bytes unpacked_loc{unpack_nibbles(db::from_slice(storage.value).substr(0, kHashLength))};
             if (trie.key().has_value() && trie.key().value() < unpacked_loc) {
                 break;

@@ -35,7 +35,7 @@ void Cursor::consume_node(ByteView to, bool exact) {
 
     if (!entry && !exact) {
         // end-of-tree
-        stack_.clear();
+        subnodes_.clear();
         return;
     }
 
@@ -43,7 +43,7 @@ void Cursor::consume_node(ByteView to, bool exact) {
     if (!exact) {
         key = db::from_slice(entry.key);
         if (!has_prefix(key, prefix_)) {
-            stack_.clear();
+            subnodes_.clear();
             return;
         }
         key.remove_prefix(prefix_.length());
@@ -65,12 +65,12 @@ void Cursor::consume_node(ByteView to, bool exact) {
         }
     }
 
-    if (!key.empty() && !stack_.empty()) {
+    if (!key.empty() && !subnodes_.empty()) {
         // the root might have nullopt node and thus no state bits, so we rely on the DB
-        stack_[0].nibble = key[0];
+        subnodes_[0].nibble = key[0];
     }
 
-    stack_.push_back(SubNode{Bytes{key}, node, nibble});
+    subnodes_.push_back(SubNode{Bytes{key}, node, nibble});
 
     update_skip_state();
 
@@ -81,14 +81,14 @@ void Cursor::consume_node(ByteView to, bool exact) {
 }
 
 void Cursor::next() {
-    if (stack_.empty()) {
+    if (subnodes_.empty()) {
         // end-of-tree
         return;
     }
 
     if (!can_skip_state_ && children_are_in_trie()) {
         // go to the child node
-        SubNode& sn{stack_.back()};
+        SubNode& sn{subnodes_.back()};
         if (sn.nibble < 0) {
             move_to_next_sibling(/*allow_root_to_child_nibble_within_subnode=*/true);
         } else {
@@ -106,21 +106,21 @@ void Cursor::update_skip_state() {
     if (k == std::nullopt || changed_.contains(prefix_ + *k)) {
         can_skip_state_ = false;
     } else {
-        can_skip_state_ = stack_.back().hash_flag();
+        can_skip_state_ = subnodes_.back().hash_flag();
     }
 }
 
 void Cursor::move_to_next_sibling(bool allow_root_to_child_nibble_within_subnode) {
-    if (stack_.empty()) {
+    if (subnodes_.empty()) {
         // end-of-tree
         return;
     }
 
-    SubNode& sn{stack_.back()};
+    SubNode& sn{subnodes_.back()};
 
     if (sn.nibble >= 15 || (sn.nibble < 0 && !allow_root_to_child_nibble_within_subnode)) {
         // this node is fully traversed
-        stack_.pop_back();
+        subnodes_.pop_back();
         move_to_next_sibling(false);  // on parent
         return;
     }
@@ -140,7 +140,7 @@ void Cursor::move_to_next_sibling(bool allow_root_to_child_nibble_within_subnode
     }
 
     // this node is fully traversed
-    stack_.pop_back();
+    subnodes_.pop_back();
     move_to_next_sibling(false);  // on parent
 }
 
@@ -190,24 +190,24 @@ const evmc::bytes32* Cursor::SubNode::hash() const {
 }
 
 std::optional<Bytes> Cursor::key() const {
-    if (stack_.empty()) {
+    if (subnodes_.empty()) {
         return std::nullopt;
     }
-    return stack_.back().full_key();
+    return subnodes_.back().full_key();
 }
 
 const evmc::bytes32* Cursor::hash() const {
-    if (stack_.empty()) {
+    if (subnodes_.empty()) {
         return nullptr;
     }
-    return stack_.back().hash();
+    return subnodes_.back().hash();
 }
 
 bool Cursor::children_are_in_trie() const {
-    if (stack_.empty()) {
+    if (subnodes_.empty()) {
         return false;
     }
-    return stack_.back().tree_flag();
+    return subnodes_.back().tree_flag();
 }
 
 std::optional<Bytes> increment_key(ByteView unpacked) {

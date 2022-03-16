@@ -38,7 +38,7 @@ class DbTrieLoader {
     evmc::bytes32 calculate_storage_root(const Bytes& key_with_inc, PrefixSet& changed);
 
     mdbx::txn& txn_;
-    HashBuilder hb_;
+    HashBuilder hash_builder_;
     etl::Collector& storage_collector_;
     Bytes rlp_;
 };

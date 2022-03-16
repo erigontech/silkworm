@@ -79,7 +79,7 @@ class Cursor {
 
     Bytes prefix_;
 
-    std::vector<SubNode> stack_;
+    std::vector<SubNode> subnodes_;
 
     bool can_skip_state_{false};
 };

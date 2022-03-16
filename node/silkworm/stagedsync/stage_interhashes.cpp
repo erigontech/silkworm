@@ -18,24 +18,24 @@
 
 #include <absl/container/btree_set.h>
 
+#include <silkworm/common/endian.hpp>
 #include <silkworm/stagedsync/stage_interhashes/trie_loader.hpp>
 #include <silkworm/trie/hash_builder.hpp>
 
 namespace silkworm::stagedsync {
-
 
 StageResult InterHashes::forward(db::RWTxn& txn) {
     try {
         throw_if_stopping();
 
         // Check stage boundaries from previous execution and previous stage execution
-        auto previous_progress{db::stages::read_stage_progress(*txn, stage_name_)};
+        auto previous_progress{get_progress(txn)};
         auto hashstate_stage_progress{db::stages::read_stage_progress(*txn, db::stages::kHashStateKey)};
         if (previous_progress == hashstate_stage_progress) {
             // Nothing to process
             return StageResult::kSuccess;
         } else if (previous_progress > hashstate_stage_progress) {
-            // Something bad had happened. Not possible execution stage is ahead of bodies
+            // Something bad had happened. Not possible hashstate stage is ahead of bodies
             // Maybe we need to unwind ?
             log::Error() << "Bad progress sequence. InterHashes stage progress " << previous_progress
                          << " while HashState stage " << hashstate_stage_progress;
@@ -57,7 +57,7 @@ StageResult InterHashes::forward(db::RWTxn& txn) {
         }
 
         throw_if_stopping();
-        db::stages::write_stage_progress(*txn, db::stages::kHashStateKey, hashstate_stage_progress);
+        // db::stages::write_stage_progress(*txn, db::stages::kIntermediateHashesKey, hashstate_stage_progress);
         txn.commit();
 
     } catch (const StageError& ex) {
@@ -75,7 +75,7 @@ StageResult InterHashes::forward(db::RWTxn& txn) {
 
 StageResult InterHashes::unwind(db::RWTxn& txn, BlockNum to) { return StageResult::kUnknownError; }
 
-StageResult InterHashes::prune(db::RWTxn& txn) { return StageResult::kUnknownError; }
+StageResult InterHashes::prune(db::RWTxn& txn) { return StageResult::kSuccess; }
 
 evmc::bytes32 InterHashes::regenerate_intermediate_hashes(db::RWTxn& txn, const evmc::bytes32* expected_root) {
     // Clear any data in target tables
@@ -89,8 +89,18 @@ evmc::bytes32 InterHashes::regenerate_intermediate_hashes(db::RWTxn& txn, const 
 
 evmc::bytes32 InterHashes::increment_intermediate_hashes(db::RWTxn& txn, BlockNum from, BlockNum to,
                                                          const evmc::bytes32* expected_root) {
+    std::unique_lock log_lck(log_mtx_);
+    incremental_ = true;
+    log_lck.unlock();
+
     trie::PrefixSet account_changes{gather_account_changes(txn, from, to)};
     trie::PrefixSet storage_changes{gather_storage_changes(txn, from, to)};
+
+    log_lck.lock();
+    current_source_.clear();
+    current_key_.clear();
+    log_lck.unlock();
+
     return increment_intermediate_hashes(txn, expected_root, account_changes, storage_changes);
 }
 
@@ -106,6 +116,7 @@ evmc::bytes32 InterHashes::increment_intermediate_hashes(db::RWTxn& txn, const e
         std::string what{"Wrong trie root : got " + to_hex(root) + " expected " + to_hex(*expected_root)};
         throw std::runtime_error(what);
     }
+
     db::Cursor target(txn, db::table::kTrieOfAccounts);
     account_collector_->load(target);
     account_collector_.reset();
@@ -140,9 +151,7 @@ trie::PrefixSet InterHashes::gather_account_changes(db::RWTxn& txn, BlockNum fro
         check_block_sequence(reached_blocknum, expected_blocknum);
         if (reached_blocknum > to) {
             break;
-        }
-
-        if (reached_blocknum % 32 == 0) {
+        } else if (reached_blocknum % 32 == 0) {
             throw_if_stopping();
             log_lck.lock();
             current_key_ = std::to_string(reached_blocknum);
@@ -189,18 +198,17 @@ trie::PrefixSet InterHashes::gather_storage_changes(db::RWTxn& txn, BlockNum fro
     while (changeset_data) {
         auto changeset_key_view{db::from_slice(changeset_data.key)};
         reached_blocknum = endian::load_big_u64(changeset_key_view.data());
+
         if (reached_blocknum > to) {
             break;
-        }
-
-        if (reached_blocknum % 16 == 0) {
+        } else if (reached_blocknum % 16 == 0) {
             throw_if_stopping();
             log_lck.lock();
             current_key_ = std::to_string(reached_blocknum);
             log_lck.unlock();
         }
 
-        changeset_key_view.remove_prefix(8);
+        changeset_key_view.remove_prefix(sizeof(BlockNum));
 
         const evmc::address address{to_evmc_address(changeset_key_view)};
         hashed_addresses_it = hashed_addresses.find(address);
@@ -236,6 +244,12 @@ void InterHashes::reset_log_progress() {
     current_key_.clear();
 }
 
-std::vector<std::string> InterHashes::get_log_progress() { return std::vector<std::string>(); }
+std::vector<std::string> InterHashes::get_log_progress() {
+    std::unique_lock log_lck(log_mtx_);
+    std::vector<std::string> ret{};
+    ret.insert(ret.end(), {"mode", (incremental_ ? "incr" : "full")});
+    ret.insert(ret.end(), {"from", current_source_, "key", current_key_});
+    return ret;
+}
 
 }  // namespace silkworm::stagedsync

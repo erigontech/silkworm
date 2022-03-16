@@ -27,10 +27,12 @@ namespace silkworm::trie {
 // Erigon FlatDBTrieLoader
 class DbTrieLoader {
   public:
+
+    explicit DbTrieLoader(mdbx::txn& txn, etl::Collector& account_collector, etl::Collector& storage_collector);
+
+    // Not movable nor copyable
     DbTrieLoader(const DbTrieLoader&) = delete;
     DbTrieLoader& operator=(const DbTrieLoader&) = delete;
-
-    DbTrieLoader(mdbx::txn& txn, etl::Collector& account_collector, etl::Collector& storage_collector);
 
     evmc::bytes32 calculate_root(PrefixSet& account_changes, PrefixSet& storage_changes);
 

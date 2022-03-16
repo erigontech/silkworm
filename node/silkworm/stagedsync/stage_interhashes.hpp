@@ -25,7 +25,7 @@ namespace silkworm::stagedsync {
 
 class InterHashes final : public IStage {
   public:
-    explicit InterHashes(NodeSettings* node_settings) : IStage(db::stages::kHashStateKey, node_settings){};
+    explicit InterHashes(NodeSettings* node_settings) : IStage(db::stages::kIntermediateHashesKey, node_settings){};
     ~InterHashes() override = default;
     StageResult forward(db::RWTxn& txn) final;
     StageResult unwind(db::RWTxn& txn, BlockNum to) final;

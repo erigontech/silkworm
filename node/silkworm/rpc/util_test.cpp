@@ -21,6 +21,7 @@
 #include <catch2/catch.hpp>
 
 #include <silkworm/common/base.hpp>
+#include <silkworm/common/log.hpp>
 
 namespace silkworm::rpc {
 
@@ -40,6 +41,29 @@ using namespace evmc::literals;
 TEST_CASE("print grpc::Status", "[silkworm][rpc][util]") {
     CHECK_NOTHROW(null_stream() << grpc::Status::OK);
     CHECK_NOTHROW(null_stream() << grpc::Status::CANCELLED);
+}
+
+const char* FILE_NAME{"file.cpp"};
+const int LINE_NUMBER{10};
+
+static bool gpr_test_log_reached{false};
+static void gpr_test_log(gpr_log_func_args* /*args*/) {
+    gpr_test_log_reached = true;
+}
+
+TEST_CASE("GrpcLogGuard", "[silkworm][rpc][util]") {
+    REQUIRE(!gpr_test_log_reached);
+    GrpcLogGuard<gpr_test_log> log_guard;
+    gpr_log(GPR_ERROR, "error message");
+    REQUIRE(gpr_test_log_reached);
+}
+
+TEST_CASE("gpr_silkworm_log", "[silkworm][rpc][util]") {
+    silkworm::log::set_verbosity(silkworm::log::Level::kNone);
+    Grpc2SilkwormLogGuard log_guard;
+    CHECK_NOTHROW(gpr_log(FILE_NAME, LINE_NUMBER, GPR_LOG_SEVERITY_ERROR, "error message"));
+    CHECK_NOTHROW(gpr_log(FILE_NAME, LINE_NUMBER, GPR_LOG_SEVERITY_INFO, "info message"));
+    CHECK_NOTHROW(gpr_log(FILE_NAME, LINE_NUMBER, GPR_LOG_SEVERITY_DEBUG, "debug message"));
 }
 
 TEST_CASE("address_from_H160", "[silkworm][rpc][util]") {

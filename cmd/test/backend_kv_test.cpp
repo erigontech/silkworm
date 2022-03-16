@@ -647,6 +647,27 @@ class AsyncTxCall : public AsyncBidirectionalStreamingCall<
     uint32_t cursor_id_{kInvalidCursorId};
 };
 
+class AsyncStateChangesCall : public AsyncServerStreamingCall<
+    remote::StateChangeRequest,
+    remote::StateChangeBatch,
+    remote::KV::StubInterface,
+    remote::KV::Stub,
+    &remote::KV::StubInterface::PrepareAsyncStateChanges> {
+  public:
+    explicit AsyncStateChangesCall(std::shared_ptr<grpc::Channel> channel, grpc::CompletionQueue* queue)
+    : AsyncServerStreamingCall(channel, queue, &remote::KV::NewStub) {}
+
+    void handle_read() override {
+        SILK_INFO << "StateChanges batch: changebatch_size=" << reply_.changebatch_size()
+            << " databaseviewid=" << reply_.databaseviewid() << " pendingblockbasefee=" << reply_.pendingblockbasefee()
+            << " blockgaslimit=" << reply_.blockgaslimit();
+    }
+
+    void handle_finish() override {
+        SILK_INFO << "StateChanges completed status: " << status_;
+    }
+};
+
 class AsyncCallFactory {
   public:
     AsyncCallFactory(std::shared_ptr<grpc::Channel> channel, grpc::CompletionQueue* queue) : channel_(channel), queue_(queue) {}
@@ -692,6 +713,10 @@ class AsyncCallFactory {
             auto* tx = new AsyncTxCall(channel_, queue_);
             tx->start_async();
             SILK_DEBUG << "New Tx async call started: " << tx;
+
+            auto* state_changes = new AsyncStateChangesCall(channel_, queue_);
+            state_changes->start_async(remote::StateChangeRequest{});
+            SILK_DEBUG << "New StateChanges async call started: " << state_changes;
         }
     }
 

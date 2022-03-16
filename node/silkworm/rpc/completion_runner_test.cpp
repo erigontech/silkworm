@@ -31,101 +31,6 @@ namespace silkworm::rpc {
 
 using Catch::Matchers::Message;
 
-int64_t g_fixture_slowdown_factor = 1;
-int64_t g_poller_slowdown_factor = 1;
-
-bool built_under_valgrind() {
-#ifdef RUNNING_ON_VALGRIND
-  return true;
-#else
-  return false;
-#endif
-}
-
-bool built_under_tsan() {
-#if defined(__has_feature)
-#if __has_feature(thread_sanitizer)
-  return true;
-#else
-  return false;
-#endif
-#else
-#ifdef THREAD_SANITIZER
-  return true;
-#else
-  return false;
-#endif
-#endif
-}
-
-bool built_under_asan() {
-#if defined(__has_feature)
-#if __has_feature(address_sanitizer)
-  return true;
-#else
-  return false;
-#endif
-#else
-#ifdef ADDRESS_SANITIZER
-  return true;
-#else
-  return false;
-#endif
-#endif
-}
-
-bool built_under_msan() {
-#if defined(__has_feature)
-#if __has_feature(memory_sanitizer)
-  return true;
-#else
-  return false;
-#endif
-#else
-#ifdef MEMORY_SANITIZER
-  return true;
-#else
-  return false;
-#endif
-#endif
-}
-
-bool built_under_ubsan() {
-#ifdef GRPC_UBSAN
-  return true;
-#else
-  return false;
-#endif
-}
-
-int64_t grpc_test_sanitizer_slowdown_factor() {
-    int64_t sanitizer_multiplier = 1;
-    if (built_under_valgrind()) {
-        sanitizer_multiplier = 20;
-    } else if (built_under_tsan()) {
-        sanitizer_multiplier = 5;
-    } else if (built_under_asan()) {
-        sanitizer_multiplier = 3;
-    } else if (built_under_msan()) {
-        sanitizer_multiplier = 4;
-    } else if (built_under_ubsan()) {
-        sanitizer_multiplier = 5;
-    }
-    return sanitizer_multiplier;
-}
-
-int64_t grpc_test_slowdown_factor() {
-    return grpc_test_sanitizer_slowdown_factor() * g_fixture_slowdown_factor * g_poller_slowdown_factor;
-}
-
-gpr_timespec grpc_timeout_milliseconds_to_deadline(int64_t time_ms) {
-    return gpr_time_add(
-        gpr_now(GPR_CLOCK_MONOTONIC),
-        gpr_time_from_micros(
-            grpc_test_slowdown_factor() * static_cast<int64_t>(1e3) * time_ms,
-            GPR_TIMESPAN));
-}
-
 TEST_CASE("CompletionRunner", "[silkworm][rpc][completion_runner]") {
     silkworm::log::set_verbosity(silkworm::log::Level::kNone);
 
@@ -158,8 +63,9 @@ TEST_CASE("CompletionRunner", "[silkworm][rpc][completion_runner]") {
         };
         AsyncCompletionHandler handler{p};
         TagProcessor tag_processor = handler;
+        auto alarm_deadline = gpr_time_add(gpr_now(GPR_CLOCK_MONOTONIC), gpr_time_from_millis(50, GPR_TIMESPAN));
         grpc::Alarm alarm;
-        alarm.Set(&queue, grpc_timeout_milliseconds_to_deadline(10), &tag_processor);
+        alarm.Set(&queue, alarm_deadline, &tag_processor);
         f.get();
         completion_runner.stop();
         io_context.stop();

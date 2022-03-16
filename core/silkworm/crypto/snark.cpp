@@ -1,5 +1,5 @@
 /*
-   Copyright 2020-2021 The Silkworm Authors
+   Copyright 2020-2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -20,10 +20,9 @@
 #include <cassert>
 #include <cstring>
 
+#include <intx/intx.hpp>
 #include <libff/algebra/curves/alt_bn128/alt_bn128_pp.hpp>
 #include <libff/common/profiling.hpp>
-
-#include <silkworm/common/endian.hpp>
 
 namespace silkworm::snark {
 
@@ -132,7 +131,7 @@ Bytes encode_g1_element(libff::alt_bn128_G1 p) noexcept {
     auto y{p.Y.as_bigint()};
 
     // Here we convert little-endian data to big-endian output
-    static_assert(SILKWORM_BYTE_ORDER == SILKWORM_LITTLE_ENDIAN);
+    static_assert(intx::byte_order_is_little_endian);
     static_assert(sizeof(x.data) == 32);
 
     std::memcpy(&out[0], y.data, 32);

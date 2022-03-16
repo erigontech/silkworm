@@ -20,37 +20,10 @@
 /*
 Facilities to deal with byte order/endianness
 See https://en.wikipedia.org/wiki/Endianness
-
-The following macros are defined:
-SILKWORM_LITTLE_ENDIAN
-SILKWORM_BIG_ENDIAN
-SILKWORM_BYTE_ORDER
-
-SILKWORM_BYTE_ORDER is equal to SILKWORM_BIG_ENDIAN for big-endian architectures
-and to SILKWORM_LITTLE_ENDIAN for little-endian ones (most current architectures).
 */
 
 #include <cstdint>
 #include <cstring>
-#include <optional>
-
-#ifdef _WIN32
-
-// On Windows assume little endian
-#define SILKWORM_LITTLE_ENDIAN 1234
-#define SILKWORM_BIG_ENDIAN 4321
-#define SILKWORM_BYTE_ORDER SILKWORM_LITTLE_ENDIAN
-
-#elif defined(__BYTE_ORDER__) && defined(__ORDER_LITTLE_ENDIAN__) && defined(__ORDER_BIG_ENDIAN__)
-
-// https://gcc.gnu.org/onlinedocs/cpp/Common-Predefined-Macros.html
-#define SILKWORM_LITTLE_ENDIAN __ORDER_LITTLE_ENDIAN__
-#define SILKWORM_BIG_ENDIAN __ORDER_BIG_ENDIAN__
-#define SILKWORM_BYTE_ORDER __BYTE_ORDER__
-
-#else
-#error "endianness detection failure"
-#endif
 
 #include <intx/intx.hpp>
 

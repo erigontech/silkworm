@@ -33,31 +33,31 @@ See https://en.wikipedia.org/wiki/Endianness
 namespace silkworm::endian {
 
 // Similar to boost::endian::load_big_u16
-inline uint16_t load_big_u16(const uint8_t* bytes) noexcept { return intx::be::unsafe::load<uint16_t>(bytes); }
+const auto load_big_u16 = intx::be::unsafe::load<uint16_t>;
 
 // Similar to boost::endian::load_big_u32
-inline uint32_t load_big_u32(const uint8_t* bytes) noexcept { return intx::be::unsafe::load<uint32_t>(bytes); }
+const auto load_big_u32 = intx::be::unsafe::load<uint32_t>;
 
 // Similar to boost::endian::load_big_u64
-inline uint64_t load_big_u64(const uint8_t* bytes) noexcept { return intx::be::unsafe::load<uint64_t>(bytes); }
+const auto load_big_u64 = intx::be::unsafe::load<uint64_t>;
 
 // Similar to boost::endian::load_little_u16
-inline uint16_t load_little_u16(const uint8_t* bytes) noexcept { return intx::le::unsafe::load<uint16_t>(bytes); }
+const auto load_little_u16 = intx::le::unsafe::load<uint16_t>;
 
 // Similar to boost::endian::load_little_u32
-inline uint32_t load_little_u32(const uint8_t* bytes) noexcept { return intx::le::unsafe::load<uint32_t>(bytes); }
+const auto load_little_u32 = intx::le::unsafe::load<uint32_t>;
 
 // Similar to boost::endian::load_little_u64
-inline uint64_t load_little_u64(const uint8_t* bytes) noexcept { return intx::le::unsafe::load<uint64_t>(bytes); }
+const auto load_little_u64 = intx::le::unsafe::load<uint64_t>;
 
 // Similar to boost::endian::store_big_u16
-inline void store_big_u16(uint8_t* bytes, const uint16_t value) { intx::be::unsafe::store(bytes, value); }
+const auto store_big_u16 = intx::be::unsafe::store<uint16_t>;
 
 // Similar to boost::endian::store_big_u32
-inline void store_big_u32(uint8_t* bytes, const uint32_t value) { intx::be::unsafe::store(bytes, value); }
+const auto store_big_u32 = intx::be::unsafe::store<uint32_t>;
 
 // Similar to boost::endian::store_big_u64
-inline void store_big_u64(uint8_t* bytes, const uint64_t value) { intx::be::unsafe::store(bytes, value); }
+const auto store_big_u64 = intx::be::unsafe::store<uint64_t>;
 
 //! \brief Transforms a uint64_t stored in memory with native endianness to it's compacted big endian byte form
 //! \param [in] value : the value to be transformed

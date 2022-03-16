@@ -1,5 +1,5 @@
 /*
-   Copyright 2020-2021 The Silkworm Authors
+   Copyright 2020-2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -354,7 +354,7 @@ std::optional<Bytes> blake2_f_run(ByteView input) noexcept {
         state.f[0] = std::numeric_limits<uint64_t>::max();
     }
 
-    static_assert(SILKWORM_BYTE_ORDER == SILKWORM_LITTLE_ENDIAN);
+    static_assert(intx::byte_order_is_little_endian);
     static_assert(sizeof(state.h) == 8 * 8);
     std::memcpy(&state.h, input.data() + 4, 8 * 8);
 

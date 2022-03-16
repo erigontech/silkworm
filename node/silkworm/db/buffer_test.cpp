@@ -17,6 +17,7 @@
 #include <catch2/catch.hpp>
 #include <magic_enum.hpp>
 
+#include <silkworm/common/endian.hpp>
 #include <silkworm/common/test_context.hpp>
 #include <silkworm/db/buffer.hpp>
 #include <silkworm/db/tables.hpp>

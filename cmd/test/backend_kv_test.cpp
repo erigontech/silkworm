@@ -241,8 +241,8 @@ class AsyncBidirectionalStreamingCall : public AsyncCall {
     void start_async() {
         SILK_TRACE << "AsyncBidirectionalStreamingCall::start_async START";
         stream_ = (stub_.get()->*PrepareAsyncBidirectionalStreaming)(&client_context_, queue_);
-        stream_->StartCall(this);
         state_ = State::kStarted;
+        stream_->StartCall(this);
         start_time_ = std::chrono::steady_clock::now();
         ++bidi_streaming_stats.started_count;
         SILK_TRACE << "AsyncBidirectionalStreamingCall::start_async END";

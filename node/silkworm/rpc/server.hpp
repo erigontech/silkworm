@@ -133,6 +133,9 @@ class Server {
         SILK_TRACE << "Server::shutdown " << this << " END";
     }
 
+    //! Returns the number of server contexts.
+    std::size_t num_contexts() const { return context_pool_.num_contexts(); }
+
     //! Get the next server context in round-robin scheme.
     ServerContext const& next_context() { return context_pool_.next_context(); }
 

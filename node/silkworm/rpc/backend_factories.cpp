@@ -174,4 +174,8 @@ void NodeInfoFactory::process_rpc(NodeInfoRpc& rpc, const remote::NodesInfoReque
     SILK_TRACE << "NodeInfoFactory::process_rpc rsp: " << &response << " sent: " << sent;
 }
 
+BackEndFactoryGroup::BackEndFactoryGroup(const ServerConfig& srv_config, const ChainConfig& chain_config)
+    : etherbase_factory{chain_config}, net_version_factory{chain_config}, client_version_factory{srv_config} {
+}
+
 } // namespace silkworm::rpc

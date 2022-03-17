@@ -207,6 +207,20 @@ class NodeInfoFactory : public NodeInfoRpcFactory {
     void process_rpc(NodeInfoRpc& rpc, const remote::NodesInfoRequest* request);
 };
 
+//! The ETHBACKEND protocol factory aggregration.
+struct BackEndFactoryGroup {
+    EtherbaseFactory etherbase_factory;
+    NetVersionFactory net_version_factory;
+    NetPeerCountFactory net_peer_count_factory;
+    BackEndVersionFactory backend_version_factory;
+    ProtocolVersionFactory protocol_version_factory;
+    ClientVersionFactory client_version_factory;
+    SubscribeFactory subscribe_factory;
+    NodeInfoFactory node_info_factory;
+
+    explicit BackEndFactoryGroup(const ServerConfig& srv_config, const ChainConfig& chain_config);
+};
+
 } // namespace silkworm::rpc
 
 #endif // SILKWORM_RPC_BACKEND_FACTORIES_HPP_

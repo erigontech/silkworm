@@ -52,6 +52,8 @@ class ServerContextPool {
     void join();
     void stop();
 
+    std::size_t num_contexts() const { return contexts_.size(); }
+
     ServerContext const& next_context();
     boost::asio::io_context& next_io_context();
 

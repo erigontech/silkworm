@@ -17,6 +17,9 @@
 #ifndef SILKWORM_RPC_BACKEND_SERVER_HPP_
 #define SILKWORM_RPC_BACKEND_SERVER_HPP_
 
+#include <memory>
+#include <vector>
+
 #include <remote/ethbackend.grpc.pb.h>
 #include <remote/kv.grpc.pb.h>
 
@@ -26,6 +29,11 @@
 #include <silkworm/rpc/kv_factories.hpp>
 
 namespace silkworm::rpc {
+
+struct BackEndKvFactoryGroup : BackEndFactoryGroup, KvFactoryGroup {
+    explicit BackEndKvFactoryGroup(const ServerConfig& srv_config, const ChainConfig& chain_config)
+    : BackEndFactoryGroup(srv_config, chain_config) {}
+};
 
 class BackEndKvServer : public Server {
   public:
@@ -59,6 +67,8 @@ class BackEndKvServer : public Server {
     KvVersionFactory kv_version_factory_;
     TxFactory tx_factory_;
     StateChangesFactory state_changes_factory_;
+
+    std::vector<std::unique_ptr<BackEndKvFactoryGroup>> factory_groups_;
 };
 
 } // namespace silkworm::rpc

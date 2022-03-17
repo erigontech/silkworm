@@ -98,6 +98,13 @@ class StateChangesFactory : public StateChangesRpcFactory {
     void process_rpc(StateChangesRpc& rpc, const remote::StateChangeRequest* request);
 };
 
+//! The KV protocol factory aggregration.
+struct KvFactoryGroup {
+    KvVersionFactory kv_version_factory;
+    TxFactory tx_factory;
+    StateChangesFactory state_changes_factory;
+};
+
 } // namespace silkworm::rpc
 
 #endif // SILKWORM_RPC_KV_FACTORIES_HPP_

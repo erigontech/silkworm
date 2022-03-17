@@ -22,8 +22,8 @@
 
 #include <silkworm/chain/config.hpp>
 #include <silkworm/rpc/server.hpp>
-#include <silkworm/rpc/backend_services.hpp>
-#include <silkworm/rpc/kv_services.hpp>
+#include <silkworm/rpc/backend_factories.hpp>
+#include <silkworm/rpc/kv_factories.hpp>
 
 namespace silkworm::rpc {
 
@@ -45,20 +45,20 @@ class BackEndKvServer : public Server {
     /// \warning The gRPC service must exist for the lifetime of the gRPC server it is registered on.
     remote::KV::AsyncService kv_async_service_;
 
-    /* 'ethbackend' protocol services */
-    EtherbaseService etherbase_service_;
-    NetVersionService net_version_service_;
-    NetPeerCountService net_peer_count_service_;
-    BackEndVersionService backend_version_service_;
-    ProtocolVersionService protocol_version_service_;
-    ClientVersionService client_version_service_;
-    SubscribeService subscribe_service_;
-    NodeInfoService node_info_service_;
+    /* 'ethbackend' protocol factories */
+    EtherbaseFactory etherbase_factory_;
+    NetVersionFactory net_version_factory_;
+    NetPeerCountFactory net_peer_count_factory_;
+    BackEndVersionFactory backend_version_factory_;
+    ProtocolVersionFactory protocol_version_factory_;
+    ClientVersionFactory client_version_factory_;
+    SubscribeFactory subscribe_factory_;
+    NodeInfoFactory node_info_factory_;
 
-    /* 'kv' protocol services */
-    KvVersionService kv_version_service_;
-    TxService tx_service_;
-    StateChangesService state_changes_service_;
+    /* 'kv' protocol factories */
+    KvVersionFactory kv_version_factory_;
+    TxFactory tx_factory_;
+    StateChangesFactory state_changes_factory_;
 };
 
 } // namespace silkworm::rpc

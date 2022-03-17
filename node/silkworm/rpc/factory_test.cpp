@@ -14,12 +14,10 @@
    limitations under the License.
 */
 
-#include "service.hpp"
+#include "factory.hpp"
 
 #include <catch2/catch.hpp>
 #include <gsl/pointers>
-
-#include <silkworm/rpc/service.hpp>
 
 namespace silkworm::rpc {
 
@@ -30,7 +28,7 @@ class MockReply {
     virtual ~MockReply() {}
 };
 
-template <typename Service, typename Request, typename Reply>
+template <typename AsyncService, typename Request, typename Reply>
 class MockUnaryRpc {
   public:
     struct Handlers {
@@ -48,12 +46,12 @@ class MockUnaryRpc {
 };
 
 using MockRpc = MockUnaryRpc<MockAsyncService, MockRequest, MockReply>;
-using EmptyRpcService = RpcService<MockAsyncService, MockRequest, MockReply, MockUnaryRpc>;
+using MockRpcFactory = Factory<MockAsyncService, MockRequest, MockReply, MockUnaryRpc>;
 
-class EmptyService : public EmptyRpcService {
+class MockFactory : public MockRpcFactory {
   public:
-    EmptyService() : EmptyRpcService(MockRpc::Handlers{}) {}
-    EmptyService(std::size_t capacity) : EmptyRpcService(MockRpc::Handlers{}, capacity) {}
+    MockFactory() : MockRpcFactory(MockRpc::Handlers{}) {}
+    MockFactory(std::size_t capacity) : MockRpcFactory(MockRpc::Handlers{}, capacity) {}
 
     auto insert_request(gsl::owner<MockRpc*> rpc) { return add_rpc(rpc); }
     auto erase_request(gsl::owner<MockRpc*> rpc) { return remove_rpc(rpc); }
@@ -62,53 +60,53 @@ class EmptyService : public EmptyRpcService {
 };
 };
 
-TEST_CASE("RpcService::RpcService", "[silkworm][node][rpc]") {
+TEST_CASE("Factory::Factory", "[silkworm][node][rpc]") {
     SECTION("OK: has default capacity for requests", "[silkworm][node][rpc]") {
-        EmptyService svc;
-        CHECK(svc.requests_capacity() >= kRequestsInitialCapacity);
+        MockFactory factory;
+        CHECK(factory.requests_capacity() >= kRequestsInitialCapacity);
     }
 
     SECTION("OK: has specified capacity for requests", "[silkworm][node][rpc]") {
         const std::size_t capacity{100};
-        EmptyService svc{capacity};
-        CHECK(svc.requests_capacity() >= capacity);
+        MockFactory factory{capacity};
+        CHECK(factory.requests_capacity() >= capacity);
     }
 }
 
-TEST_CASE("RpcService::add_request", "[silkworm][node][rpc]") {
+TEST_CASE("Factory::add_rpc", "[silkworm][node][rpc]") {
     CHECK(MockRpc::instance_count() == 0);
 
     SECTION("OK: insert new rpc", "[silkworm][node][rpc]") {
-        EmptyService svc;
+        MockFactory factory;
         auto rpc = new MockRpc();
-        auto [it, inserted] = svc.insert_request(rpc);
+        auto [it, inserted] = factory.insert_request(rpc);
         CHECK(it->get() == rpc);
         CHECK(inserted);
-        CHECK(svc.requests_count() == 1);
+        CHECK(factory.requests_count() == 1);
     }
 
     CHECK(MockRpc::instance_count() == 0);
 }
 
-TEST_CASE("RpcService::remove_request", "[silkworm][node][rpc]") {
+TEST_CASE("Factory::remove_rpc", "[silkworm][node][rpc]") {
     CHECK(MockRpc::instance_count() == 0);
 
     SECTION("KO: remove unexisting rpc", "[silkworm][node][rpc]") {
-        EmptyService svc;
+        MockFactory factory;
         auto rpc1 = new MockRpc();
-        svc.insert_request(rpc1);
+        factory.insert_request(rpc1);
         auto rpc2 = new MockRpc();
-        CHECK(svc.erase_request(rpc2) == 0);
-        CHECK(svc.requests_count() == 1);
+        CHECK(factory.erase_request(rpc2) == 0);
+        CHECK(factory.requests_count() == 1);
         delete rpc2;
     }
 
     SECTION("OK: remove existing rpc", "[silkworm][node][rpc]") {
-        EmptyService svc;
+        MockFactory factory;
         auto rpc = new MockRpc();
-        svc.insert_request(rpc);
-        CHECK(svc.erase_request(rpc) == 1);
-        CHECK(svc.requests_count() == 0);
+        factory.insert_request(rpc);
+        CHECK(factory.erase_request(rpc) == 1);
+        CHECK(factory.requests_count() == 0);
     }
 
     CHECK(MockRpc::instance_count() == 0);

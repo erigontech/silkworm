@@ -14,8 +14,8 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_RPC_SERVICE_HPP_
-#define SILKWORM_RPC_SERVICE_HPP_
+#ifndef SILKWORM_RPC_FACTORY_HPP_
+#define SILKWORM_RPC_FACTORY_HPP_
 
 #include <cstddef>
 #include <memory>
@@ -29,7 +29,7 @@
 
 namespace silkworm::rpc {
 
-//! Default initial capacity for the \ref RpcService registry.
+//! Default initial capacity for the \ref Factory registry.
 constexpr std::size_t kRequestsInitialCapacity = 10000;
 
 //! Registry for the \ref Rpc typed requests currently alive.
@@ -39,36 +39,36 @@ template <
     typename Request,
     typename Reply,
     template<typename, typename, typename> typename Rpc>
-class RpcService {
+class Factory {
     using Call = Rpc<AsyncService, Request, Reply>;
-    using RpcServiceHandlers = typename Call::Handlers;
+    using CallHandlers = typename Call::Handlers;
 
   public:
     void create_rpc(AsyncService* service, grpc::ServerCompletionQueue* queue) {
-        SILK_TRACE << "RpcService::create_rpc START service: " << service << " queue: " << queue;
+        SILK_TRACE << "Factory::create_rpc START service: " << service << " queue: " << queue;
 
         auto rpc = new Call(service, queue, handlers_);
         add_rpc(rpc);
 
-        SILK_TRACE << "RpcService::create_rpc END rpc: " << rpc;
+        SILK_TRACE << "Factory::create_rpc END rpc: " << rpc;
     }
 
     void cleanup_rpc(Call& rpc, bool cancelled) {
-        SILK_TRACE << "RpcService::cleanup_rpc START rpc: " << &rpc << " cancelled: " << cancelled;
+        SILK_TRACE << "Factory::cleanup_rpc START rpc: " << &rpc << " cancelled: " << cancelled;
         remove_rpc(&rpc);
-        SILK_TRACE << "RpcService::cleanup_rpc END rpc: " << &rpc;
+        SILK_TRACE << "Factory::cleanup_rpc END rpc: " << &rpc;
     }
 
   protected:
-    RpcService(RpcServiceHandlers handlers, std::size_t requestsInitialCapacity) : handlers_(handlers) {
+    Factory(CallHandlers handlers, std::size_t requestsInitialCapacity) : handlers_(handlers) {
         requests_.reserve(requestsInitialCapacity);
     }
 
-    RpcService(RpcServiceHandlers handlers) : RpcService(handlers, kRequestsInitialCapacity) {}
+    Factory(CallHandlers handlers) : Factory(handlers, kRequestsInitialCapacity) {}
 
-    RpcService(
-        typename RpcServiceHandlers::ProcessRequestFunc process_rpc,
-        typename RpcServiceHandlers::RequestRpcFunc request_rpc,
+    Factory(
+        typename CallHandlers::ProcessRequestFunc process_rpc,
+        typename CallHandlers::RequestRpcFunc request_rpc,
         std::size_t requestsInitialCapacity) : handlers_{
             {
                 [&](auto* svc, auto* cq) { create_rpc(svc, cq); },
@@ -80,10 +80,10 @@ class RpcService {
         requests_.reserve(requestsInitialCapacity);
     }
 
-    RpcService(
-        typename RpcServiceHandlers::ProcessRequestFunc process_rpc,
-        typename RpcServiceHandlers::RequestRpcFunc request_rpc)
-        : RpcService(process_rpc, request_rpc, kRequestsInitialCapacity) {}
+    Factory(
+        typename CallHandlers::ProcessRequestFunc process_rpc,
+        typename CallHandlers::RequestRpcFunc request_rpc)
+        : Factory(process_rpc, request_rpc, kRequestsInitialCapacity) {}
 
     [[maybe_unused]] auto add_rpc(gsl::owner<Call*> rpc) {
         SILKWORM_ASSERT(rpc != nullptr);
@@ -104,10 +104,10 @@ class RpcService {
     auto requests_size() const { return requests_.size(); }
 
   private:
-    RpcServiceHandlers handlers_;
+    CallHandlers handlers_;
     std::unordered_set<std::unique_ptr<Call>> requests_;
 };
 
 } // namespace silkworm::rpc
 
-#endif // SILKWORM_RPC_SERVICE_HPP_
+#endif // SILKWORM_RPC_FACTORY_HPP_

@@ -21,7 +21,7 @@
 namespace silkworm::rpc {
 
 BackEndKvServer::BackEndKvServer(const ServerConfig& srv_config, const ChainConfig& chain_config)
-: Server(srv_config), etherbase_service_{chain_config}, net_version_service_{chain_config}, client_version_service_{srv_config} {
+: Server(srv_config), etherbase_factory_{chain_config}, net_version_factory_{chain_config}, client_version_factory_{srv_config} {
     SILK_INFO << "BackEndKvServer created listening on: " << srv_config.address_uri();
 }
 
@@ -37,20 +37,20 @@ void BackEndKvServer::register_request_calls() {
     const auto& server_context = next_context();
     const auto context_queue = server_context.grpc_queue.get();
 
-    /* 'ethbackend' protocol services */
-    etherbase_service_.create_rpc(&backend_async_service_, context_queue);
-    net_version_service_.create_rpc(&backend_async_service_, context_queue);
-    net_peer_count_service_.create_rpc(&backend_async_service_, context_queue);
-    backend_version_service_.create_rpc(&backend_async_service_, context_queue);
-    protocol_version_service_.create_rpc(&backend_async_service_, context_queue);
-    client_version_service_.create_rpc(&backend_async_service_, context_queue);
-    subscribe_service_.create_rpc(&backend_async_service_, context_queue);
-    node_info_service_.create_rpc(&backend_async_service_, context_queue);
+    /* 'ethbackend' protocol factories */
+    etherbase_factory_.create_rpc(&backend_async_service_, context_queue);
+    net_version_factory_.create_rpc(&backend_async_service_, context_queue);
+    net_peer_count_factory_.create_rpc(&backend_async_service_, context_queue);
+    backend_version_factory_.create_rpc(&backend_async_service_, context_queue);
+    protocol_version_factory_.create_rpc(&backend_async_service_, context_queue);
+    client_version_factory_.create_rpc(&backend_async_service_, context_queue);
+    subscribe_factory_.create_rpc(&backend_async_service_, context_queue);
+    node_info_factory_.create_rpc(&backend_async_service_, context_queue);
 
-    /* 'kv' protocol services */
-    kv_version_service_.create_rpc(&kv_async_service_, context_queue);
-    tx_service_.create_rpc(&kv_async_service_, context_queue);
-    state_changes_service_.create_rpc(&kv_async_service_, context_queue);
+    /* 'kv' protocol factories */
+    kv_version_factory_.create_rpc(&kv_async_service_, context_queue);
+    tx_factory_.create_rpc(&kv_async_service_, context_queue);
+    state_changes_factory_.create_rpc(&kv_async_service_, context_queue);
 }
 
 } // namespace silkworm::rpc

@@ -14,8 +14,8 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_RPC_KV_SERVICES_HPP_
-#define SILKWORM_RPC_KV_SERVICES_HPP_
+#ifndef SILKWORM_RPC_KV_FACTORIES_HPP_
+#define SILKWORM_RPC_KV_FACTORIES_HPP_
 
 #include <tuple>
 
@@ -23,8 +23,8 @@
 #include <remote/kv.grpc.pb.h>
 
 #include <silkworm/chain/config.hpp>
+#include <silkworm/rpc/factory.hpp>
 #include <silkworm/rpc/server.hpp>
-#include <silkworm/rpc/service.hpp>
 #include <silkworm/rpc/call.hpp>
 
 // KV API protocol versions
@@ -38,18 +38,18 @@ constexpr auto kKvApiVersion = std::make_tuple<uint32_t, uint32_t, uint32_t>(5, 
 //! Unary RPC for Version method of 'ethbackend' gRPC protocol.
 using KvVersionRpc = UnaryRpc<remote::KV::AsyncService, google::protobuf::Empty, types::VersionReply>;
 
-//! Service specialization for Version method.
-using KvVersionRpcService = RpcService<
+//! Factory specialization for Version method.
+using KvVersionRpcFactory = Factory<
     remote::KV::AsyncService,
     google::protobuf::Empty,
     types::VersionReply,
     UnaryRpc
 >;
 
-//! Service implementation acting as factory for Version RPCs.
-class KvVersionService : public KvVersionRpcService {
+//! Implementation acting as factory for Version RPCs.
+class KvVersionFactory : public KvVersionRpcFactory {
   public:
-    explicit KvVersionService();
+    explicit KvVersionFactory();
 
     void process_rpc(KvVersionRpc& rpc, const google::protobuf::Empty* request);
 
@@ -60,22 +60,18 @@ class KvVersionService : public KvVersionRpcService {
 //! Bidirectional-streaming RPC for Tx method of 'kv' gRPC protocol.
 using TxRpc = BidirectionalStreamingRpc<remote::KV::AsyncService, remote::Cursor, remote::Pair>;
 
-//! Service specialization for Tx method.
-using TxRpcService = RpcService<
+//! Factory specialization for Tx method.
+using TxRpcFactory = Factory<
     remote::KV::AsyncService,
     remote::Cursor,
     remote::Pair,
     BidirectionalStreamingRpc
 >;
 
-//! Service implementation acting as factory for Tx RPCs.
-class TxService : public TxRpcService {
+//! Implementation acting as factory for Tx RPCs.
+class TxFactory : public TxRpcFactory {
   public:
-    explicit TxService()
-        : TxRpcService(
-            [&](auto& rpc, const auto* request) { process_rpc(rpc, request); },
-            &remote::KV::AsyncService::RequestTx
-        ) {}
+    explicit TxFactory();
 
     void process_rpc(TxRpc& rpc, const remote::Cursor* request);
 
@@ -86,26 +82,22 @@ class TxService : public TxRpcService {
 //! Server-streaming RPC for StateChanges method of 'kv' gRPC protocol.
 using StateChangesRpc = ServerStreamingRpc<remote::KV::AsyncService, remote::StateChangeRequest, remote::StateChangeBatch>;
 
-//! Service specialization for StateChanges method.
-using StateChangesRpcService = RpcService<
+//! Factory specialization for StateChanges method.
+using StateChangesRpcFactory = Factory<
     remote::KV::AsyncService,
     remote::StateChangeRequest,
     remote::StateChangeBatch,
     ServerStreamingRpc
 >;
 
-//! Service implementation acting as factory for StateChanges RPCs.
-class StateChangesService : public StateChangesRpcService {
+//! Implementation acting as factory for StateChanges RPCs.
+class StateChangesFactory : public StateChangesRpcFactory {
   public:
-    explicit StateChangesService()
-        : StateChangesRpcService(
-            [&](auto& rpc, const auto* request) { process_rpc(rpc, request); },
-            &remote::KV::AsyncService::RequestStateChanges
-        ) {}
+    explicit StateChangesFactory();
 
     void process_rpc(StateChangesRpc& rpc, const remote::StateChangeRequest* request);
 };
 
 } // namespace silkworm::rpc
 
-#endif // SILKWORM_RPC_KV_SERVICES_HPP_
+#endif // SILKWORM_RPC_KV_FACTORIES_HPP_

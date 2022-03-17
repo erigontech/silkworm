@@ -117,12 +117,19 @@ evmc::bytes32 InterHashes::increment_intermediate_hashes(db::RWTxn& txn, const e
         throw std::runtime_error(what);
     }
 
+    std::unique_lock log_lck(log_mtx_);
+    loading_ = true;
+    log_lck.unlock();
+
     db::Cursor target(txn, db::table::kTrieOfAccounts);
-    account_collector_->load(target);
+    MDBX_put_flags_t flags{target.get_map_stat().ms_entries ? MDBX_put_flags_t::MDBX_UPSERT
+                                                            : MDBX_put_flags_t::MDBX_APPEND};
+    account_collector_->load(target, nullptr, flags);
     account_collector_.reset();
 
     target.bind(txn, db::table::kTrieOfStorage);
-    storage_collector_->load(target);
+    flags = target.get_map_stat().ms_entries ? MDBX_put_flags_t::MDBX_UPSERT : MDBX_put_flags_t::MDBX_APPEND;
+    storage_collector_->load(target, nullptr, flags);
     storage_collector_.reset();
 
     return root;

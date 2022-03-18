@@ -16,6 +16,8 @@
 
 #include "stage_interhashes.hpp"
 
+#include <utility>
+
 #include <absl/container/btree_set.h>
 
 #include <silkworm/common/endian.hpp>
@@ -107,11 +109,13 @@ evmc::bytes32 InterHashes::increment_intermediate_hashes(db::RWTxn& txn, BlockNu
 evmc::bytes32 InterHashes::increment_intermediate_hashes(db::RWTxn& txn, const evmc::bytes32* expected_root,
                                                          trie::PrefixSet& account_changes,
                                                          trie::PrefixSet& storage_changes) {
+
     account_collector_ = std::make_unique<etl::Collector>(node_settings_);
     storage_collector_ = std::make_unique<etl::Collector>(node_settings_);
 
     trie::DbTrieLoader loader{*txn, *account_collector_, *storage_collector_};
     const evmc::bytes32 root{loader.calculate_root(account_changes, storage_changes)};
+
     if (expected_root != nullptr && root != *expected_root) {
         std::string what{"Wrong trie root : got " + to_hex(root) + " expected " + to_hex(*expected_root)};
         throw std::runtime_error(what);
@@ -119,18 +123,29 @@ evmc::bytes32 InterHashes::increment_intermediate_hashes(db::RWTxn& txn, const e
 
     std::unique_lock log_lck(log_mtx_);
     loading_ = true;
+    loading_collector_ = std::move(account_collector_);
+    current_target_ = std::string(db::table::kTrieOfAccounts.name);
     log_lck.unlock();
 
     db::Cursor target(txn, db::table::kTrieOfAccounts);
     MDBX_put_flags_t flags{target.get_map_stat().ms_entries ? MDBX_put_flags_t::MDBX_UPSERT
                                                             : MDBX_put_flags_t::MDBX_APPEND};
-    account_collector_->load(target, nullptr, flags);
-    account_collector_.reset();
+    loading_collector_->load(target, nullptr, flags);
+
+    log_lck.lock();
+    loading_collector_ = std::move(storage_collector_);
+    current_target_ = std::string(db::table::kTrieOfStorage.name);
+    log_lck.unlock();
 
     target.bind(txn, db::table::kTrieOfStorage);
     flags = target.get_map_stat().ms_entries ? MDBX_put_flags_t::MDBX_UPSERT : MDBX_put_flags_t::MDBX_APPEND;
-    storage_collector_->load(target, nullptr, flags);
-    storage_collector_.reset();
+    loading_collector_->load(target, nullptr, flags);
+
+    log_lck.lock();
+    current_target_.clear();
+    loading_ = false;
+    loading_collector_.reset();
+    log_lck.unlock();
 
     return root;
 }
@@ -255,7 +270,12 @@ std::vector<std::string> InterHashes::get_log_progress() {
     std::unique_lock log_lck(log_mtx_);
     std::vector<std::string> ret{};
     ret.insert(ret.end(), {"mode", (incremental_ ? "incr" : "full")});
-    ret.insert(ret.end(), {"from", current_source_, "key", current_key_});
+    if (loading_ && loading_collector_) {
+        current_key_ = abridge(loading_collector_->get_load_key(), kAddressLength * 2 + 2);
+        ret.insert(ret.end(), {"to", current_target_, "key", current_key_});
+    } else {
+        ret.insert(ret.end(), {"from", current_source_, "key", current_key_});
+    }
     return ret;
 }
 

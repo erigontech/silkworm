@@ -60,11 +60,14 @@ class InterHashes final : public IStage {
 
     std::unique_ptr<etl::Collector> account_collector_;
     std::unique_ptr<etl::Collector> storage_collector_;
+    std::unique_ptr<etl::Collector> loading_collector_;
 
     // Logger info
     std::mutex log_mtx_{};                 // Guards async logging
     std::atomic_bool incremental_{false};  // Whether operation is incremental
+    std::atomic_bool loading_{false};      // Whether we're etl loading
     std::string current_source_;           // Current source of data
+    std::string current_target_;           // Current target of data
     std::string current_key_;              // Actual processing key
 };
 

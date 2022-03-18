@@ -36,7 +36,7 @@ class Cursor {
     // Ignores DB entries whose keys don't start with the prefix
     explicit Cursor(mdbx::cursor& cursor, PrefixSet& changed, ByteView prefix = {});
 
-    // Not copyable nor moveable
+    // Not copyable nor movable
     Cursor(const Cursor&) = delete;
     Cursor& operator=(const Cursor&) = delete;
 

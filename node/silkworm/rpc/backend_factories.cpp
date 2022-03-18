@@ -16,8 +16,11 @@
 
 #include "backend_factories.hpp"
 
+#include <evmc/evmc.hpp>
+
 #include <silkworm/common/endian.hpp>
 #include <silkworm/common/log.hpp>
+#include <silkworm/rpc/util.hpp>
 #include <types/types.pb.h>
 
 namespace silkworm::rpc {
@@ -37,28 +40,35 @@ inline static types::H160* new_H160_address(const evmc::address& address) {
     return h160;
 }
 
-EtherbaseFactory::EtherbaseFactory(const ChainConfig& /*config*/)
+EtherbaseFactory::EtherbaseFactory(const EthereumBackEnd& backend)
     : EtherbaseRpcFactory(
         [&](auto& rpc, const auto* request) { process_rpc(rpc, request); },
         &remote::ETHBACKEND::AsyncService::RequestEtherbase) {
+    const auto etherbase = backend.etherbase();
+    if (etherbase.has_value()) {
+        const auto h160 = new_H160_address(etherbase.value());
+        response_.set_allocated_address(h160);
+    }
 }
 
 void EtherbaseFactory::process_rpc(EtherbaseRpc& rpc, const remote::EtherbaseRequest* request) {
     SILK_TRACE << "EtherbaseFactory::process_rpc START rpc: " << &rpc << " request: " << request;
 
-    remote::EtherbaseReply response;
-    const auto h160 = new_H160_address(etherbase_);
-    response.set_allocated_address(h160);
-    const bool sent = rpc.send_response(response);
-
-    SILK_TRACE << "EtherbaseFactory::process_rpc END rsp: " << &response << " etherbase: " << to_hex(etherbase_) << " sent: " << sent;
+    if (response_.has_address()) {
+        const bool sent = rpc.send_response(response_);
+        SILK_TRACE << "EtherbaseFactory::process_rpc END etherbase: " << to_hex(address_from_H160(response_.address())) << " sent: " << sent;
+    } else {
+        const grpc::Status error{grpc::StatusCode::INTERNAL, "etherbase must be explicitly specified"};
+        rpc.finish_with_error(error);
+        SILK_TRACE << "EtherbaseFactory::process_rpc END error: " << error;
+    }
 }
 
-NetVersionFactory::NetVersionFactory(const ChainConfig& config)
+NetVersionFactory::NetVersionFactory(const EthereumBackEnd& backend)
     : NetVersionRpcFactory(
         [&](auto& rpc, const auto* request) { process_rpc(rpc, request); },
         &remote::ETHBACKEND::AsyncService::RequestNetVersion),
-    chain_id_(config.chain_id) {
+    chain_id_(backend.chain_id()) {
 }
 
 void NetVersionFactory::process_rpc(NetVersionRpc& rpc, const remote::NetVersionRequest* request) {
@@ -119,11 +129,11 @@ void ProtocolVersionFactory::process_rpc(ProtocolVersionRpc& rpc, const remote::
     SILK_TRACE << "ProtocolVersionFactory::process_rpc rsp: " << &response_ << " sent: " << sent;
 }
 
-ClientVersionFactory::ClientVersionFactory(const ServerConfig& srv_config)
+ClientVersionFactory::ClientVersionFactory(const EthereumBackEnd& backend)
     : ClientVersionRpcFactory(
         [&](auto& rpc, const auto* request) { process_rpc(rpc, request); },
         &remote::ETHBACKEND::AsyncService::RequestClientVersion) {
-    response_.set_nodename(srv_config.node_name());
+    response_.set_nodename(backend.node_name());
 }
 
 void ClientVersionFactory::process_rpc(ClientVersionRpc& rpc, const remote::ClientVersionRequest* request) {
@@ -174,8 +184,8 @@ void NodeInfoFactory::process_rpc(NodeInfoRpc& rpc, const remote::NodesInfoReque
     SILK_TRACE << "NodeInfoFactory::process_rpc rsp: " << &response << " sent: " << sent;
 }
 
-BackEndFactoryGroup::BackEndFactoryGroup(const ServerConfig& srv_config, const ChainConfig& chain_config)
-    : etherbase_factory{chain_config}, net_version_factory{chain_config}, client_version_factory{srv_config} {
+BackEndFactoryGroup::BackEndFactoryGroup(const EthereumBackEnd& backend)
+    : etherbase_factory{backend}, net_version_factory{backend}, client_version_factory{backend} {
 }
 
 } // namespace silkworm::rpc

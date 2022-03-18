@@ -20,10 +20,10 @@
 
 namespace silkworm::rpc {
 
-BackEndKvServer::BackEndKvServer(const ServerConfig& srv_config, const ChainConfig& chain_config) : Server(srv_config) {
+BackEndKvServer::BackEndKvServer(const ServerConfig& srv_config, const EthereumBackEnd& backend) : Server(srv_config) {
     factory_groups_.reserve(srv_config.num_contexts());
     for (std::size_t i{0}; i<srv_config.num_contexts(); i++) {
-        factory_groups_.emplace_back(std::make_unique<BackEndKvFactoryGroup>(srv_config, chain_config));
+        factory_groups_.emplace_back(std::make_unique<BackEndKvFactoryGroup>(backend));
     }
     SILK_INFO << "BackEndKvServer created listening on: " << srv_config.address_uri();
 }

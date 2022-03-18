@@ -130,17 +130,16 @@ constexpr const char* kTestAddressUri = "localhost:12345";
 TEST_CASE("BackEndKvServer::BackEndKvServer", "[silkworm][node][rpc]") {
     silkworm::log::set_verbosity(silkworm::log::Level::kNone);
     Grpc2SilkwormLogGuard log_guard;
+    ServerConfig srv_config;
+    srv_config.set_address_uri(kTestAddressUri);
+    EthereumBackEnd backend;
 
     SECTION("OK: create/destroy server", "[silkworm][node][rpc]") {
-        ServerConfig srv_config;
-        srv_config.set_address_uri(kTestAddressUri);
-        BackEndKvServer server{srv_config, kGoerliConfig};
+        BackEndKvServer server{srv_config, backend};
     }
 
     SECTION("OK: create/shutdown/destroy server", "[silkworm][node][rpc]") {
-        ServerConfig srv_config;
-        srv_config.set_address_uri(kTestAddressUri);
-        BackEndKvServer server{srv_config, kGoerliConfig};
+        BackEndKvServer server{srv_config, backend};
         server.shutdown();
     }
 }
@@ -148,11 +147,12 @@ TEST_CASE("BackEndKvServer::BackEndKvServer", "[silkworm][node][rpc]") {
 TEST_CASE("BackEndKvServer::build_and_start", "[silkworm][node][rpc]") {
     silkworm::log::set_verbosity(silkworm::log::Level::kNone);
     Grpc2SilkwormLogGuard log_guard;
+    ServerConfig srv_config;
+    srv_config.set_address_uri(kTestAddressUri);
+    EthereumBackEnd backend;
 
     SECTION("OK: run server in separate thread", "[silkworm][node][rpc]") {
-        ServerConfig srv_config;
-        srv_config.set_address_uri(kTestAddressUri);
-        BackEndKvServer server{srv_config, kGoerliConfig};
+        BackEndKvServer server{srv_config, backend};
         server.build_and_start();
         std::thread server_thread{[&server]() {
             server.join();
@@ -162,9 +162,7 @@ TEST_CASE("BackEndKvServer::build_and_start", "[silkworm][node][rpc]") {
     }
 
     SECTION("OK: create/shutdown/run/destroy server", "[silkworm][node][rpc]") {
-        ServerConfig srv_config;
-        srv_config.set_address_uri(kTestAddressUri);
-        BackEndKvServer server{srv_config, kGoerliConfig};
+        BackEndKvServer server{srv_config, backend};
         server.shutdown();
         server.build_and_start();
     }
@@ -173,34 +171,29 @@ TEST_CASE("BackEndKvServer::build_and_start", "[silkworm][node][rpc]") {
 TEST_CASE("BackEndKvServer::shutdown", "[silkworm][node][rpc]") {
     silkworm::log::set_verbosity(silkworm::log::Level::kNone);
     Grpc2SilkwormLogGuard log_guard;
+    ServerConfig srv_config;
+    srv_config.set_address_uri(kTestAddressUri);
+    EthereumBackEnd backend;
 
     SECTION("OK: shutdown server not running", "[silkworm][node][rpc]") {
-        ServerConfig srv_config;
-        srv_config.set_address_uri(kTestAddressUri);
-        BackEndKvServer server{srv_config, kGoerliConfig};
+        BackEndKvServer server{srv_config, backend};
         server.shutdown();
     }
 
     SECTION("OK: shutdown twice server not running", "[silkworm][node][rpc]") {
-        ServerConfig srv_config;
-        srv_config.set_address_uri(kTestAddressUri);
-        BackEndKvServer server{srv_config, kGoerliConfig};
+        BackEndKvServer server{srv_config, backend};
         server.shutdown();
         server.shutdown();
     }
 
     SECTION("OK: shutdown running server", "[silkworm][node][rpc]") {
-        ServerConfig srv_config;
-        srv_config.set_address_uri(kTestAddressUri);
-        BackEndKvServer server{srv_config, kGoerliConfig};
+        BackEndKvServer server{srv_config, backend};
         server.build_and_start();
         server.shutdown();
     }
 
     SECTION("OK: shutdown twice running server", "[silkworm][node][rpc]") {
-        ServerConfig srv_config;
-        srv_config.set_address_uri(kTestAddressUri);
-        BackEndKvServer server{srv_config, kGoerliConfig};
+        BackEndKvServer server{srv_config, backend};
         server.build_and_start();
         server.shutdown();
         server.shutdown();
@@ -210,11 +203,12 @@ TEST_CASE("BackEndKvServer::shutdown", "[silkworm][node][rpc]") {
 TEST_CASE("BackEndKvServer::join", "[silkworm][node][rpc]") {
     silkworm::log::set_verbosity(silkworm::log::Level::kNone);
     Grpc2SilkwormLogGuard log_guard;
+    ServerConfig srv_config;
+    srv_config.set_address_uri(kTestAddressUri);
+    EthereumBackEnd backend;
 
     SECTION("OK: shutdown joined server", "[silkworm][node][rpc]") {
-        ServerConfig srv_config;
-        srv_config.set_address_uri(kTestAddressUri);
-        BackEndKvServer server{srv_config, kGoerliConfig};
+        BackEndKvServer server{srv_config, backend};
         server.build_and_start();
         std::thread server_thread{[&server]() {
             server.join();
@@ -224,7 +218,7 @@ TEST_CASE("BackEndKvServer::join", "[silkworm][node][rpc]") {
     }
 }
 
-TEST_CASE("BackEndKvServer RPC calls", "[silkworm][node][rpc]") {
+TEST_CASE("BackEndKvServer: RPC basic config", "[silkworm][node][rpc]") {
     silkworm::log::set_verbosity(silkworm::log::Level::kNone);
     Grpc2SilkwormLogGuard log_guard;
     std::shared_ptr<grpc::Channel> channel = grpc::CreateChannel(kTestAddressUri, grpc::InsecureChannelCredentials());
@@ -235,35 +229,37 @@ TEST_CASE("BackEndKvServer RPC calls", "[silkworm][node][rpc]") {
     ServerConfig srv_config;
     srv_config.set_num_contexts(1);
     srv_config.set_address_uri(kTestAddressUri);
-    BackEndKvServer server{srv_config, kGoerliConfig};
+    EthereumBackEnd backend;
+    BackEndKvServer server{srv_config, backend};
     server.build_and_start();
 
-    SECTION("Etherbase: return coinbase address", "[silkworm][node][rpc]") {
+    SECTION("Etherbase: return missing coinbase error", "[silkworm][node][rpc]") {
         remote::EtherbaseReply response;
         const auto status = backend_client.etherbase(&response);
-        CHECK(status == grpc::Status::OK);
-        CHECK(response.has_address());
-        CHECK(response.address() == types::H160());
+        CHECK(!status.ok());
+        CHECK(status.error_code() == grpc::StatusCode::INTERNAL);
+        CHECK(status.error_message() == "etherbase must be explicitly specified");
+        CHECK(!response.has_address());
     }
 
     SECTION("NetVersion: return network ID", "[silkworm][node][rpc]") {
         remote::NetVersionReply response;
         const auto status = backend_client.net_version(&response);
-        CHECK(status == grpc::Status::OK);
-        CHECK(response.id() == kGoerliConfig.chain_id);
+        CHECK(status.ok());
+        CHECK(response.id() == kMainnetConfig.chain_id);
     }
 
     SECTION("NetPeerCount: return peer count", "[silkworm][node][rpc]") {
         remote::NetPeerCountReply response;
         const auto status = backend_client.net_peer_count(&response);
-        CHECK(status == grpc::Status::OK);
+        CHECK(status.ok());
         CHECK(response.count() == 0);
     }
 
     SECTION("Version: return ETHBACKEND version", "[silkworm][node][rpc]") {
         types::VersionReply response;
         const auto status = backend_client.version(&response);
-        CHECK(status == grpc::Status::OK);
+        CHECK(status.ok());
         CHECK(response.major() == 2);
         CHECK(response.minor() == 2);
         CHECK(response.patch() == 0);
@@ -272,14 +268,14 @@ TEST_CASE("BackEndKvServer RPC calls", "[silkworm][node][rpc]") {
     SECTION("ProtocolVersion: return ETH protocol version", "[silkworm][node][rpc]") {
         remote::ProtocolVersionReply response;
         const auto status = backend_client.protocol_version(&response);
-        CHECK(status == grpc::Status::OK);
+        CHECK(status.ok());
         CHECK(response.id() == kEthDevp2pProtocolVersion);
     }
 
     SECTION("ClientVersion: return Silkworm client version", "[silkworm][node][rpc]") {
         remote::ClientVersionReply response;
         const auto status = backend_client.client_version(&response);
-        CHECK(status == grpc::Status::OK);
+        CHECK(status.ok());
         CHECK(response.nodename().find("silkworm") != std::string::npos);
     }
 
@@ -288,7 +284,7 @@ TEST_CASE("BackEndKvServer RPC calls", "[silkworm][node][rpc]") {
         remote::SubscribeRequest request;
         std::vector<remote::SubscribeReply> responses;
         const auto status = backend_client.subscribe_and_consume(request, responses);
-        CHECK(status == grpc::Status::OK);
+        CHECK(status.ok());
         CHECK(responses.size() == 2);
     }
 
@@ -297,14 +293,14 @@ TEST_CASE("BackEndKvServer RPC calls", "[silkworm][node][rpc]") {
         request.set_limit(0);
         remote::NodesInfoReply response;
         const auto status = backend_client.node_info(request, &response);
-        CHECK(status == grpc::Status::OK);
+        CHECK(status.ok());
         CHECK(response.nodesinfo_size() == 0);
     }
 
     SECTION("Version: return KV version", "[silkworm][node][rpc]") {
         types::VersionReply response;
         const auto status = kv_client.version(&response);
-        CHECK(status == grpc::Status::OK);
+        CHECK(status.ok());
         CHECK(response.major() == 5);
         CHECK(response.minor() == 1);
         CHECK(response.patch() == 0);
@@ -323,7 +319,7 @@ TEST_CASE("BackEndKvServer RPC calls", "[silkworm][node][rpc]") {
         std::vector<remote::Cursor> requests{open, next, close};
         std::vector<remote::Pair> responses;
         const auto status = kv_client.tx(requests, responses);
-        CHECK(status == grpc::Status::OK);
+        CHECK(status.ok());
         CHECK(responses.size() == 3);
     }
 
@@ -332,8 +328,35 @@ TEST_CASE("BackEndKvServer RPC calls", "[silkworm][node][rpc]") {
         remote::StateChangeRequest request;
         std::vector<remote::StateChangeBatch> responses;
         const auto status = kv_client.statechanges_and_consume(request, responses);
-        CHECK(status == grpc::Status::OK);
+        CHECK(status.ok());
         CHECK(responses.size() == 2);
+    }
+
+    server.shutdown();
+}
+
+TEST_CASE("BackEndKvServer: RPC custom config", "[silkworm][node][rpc]") {
+    silkworm::log::set_verbosity(silkworm::log::Level::kNone);
+    Grpc2SilkwormLogGuard log_guard;
+    std::shared_ptr<grpc::Channel> channel = grpc::CreateChannel(kTestAddressUri, grpc::InsecureChannelCredentials());
+    auto ethbackend_stub_ptr = remote::ETHBACKEND::NewStub(channel);
+    BackEndClient backend_client{ethbackend_stub_ptr.get()};
+    auto kv_stub_ptr = remote::KV::NewStub(channel);
+    KvClient kv_client{kv_stub_ptr.get()};
+    ServerConfig srv_config;
+    srv_config.set_num_contexts(1);
+    srv_config.set_address_uri(kTestAddressUri);
+    EthereumBackEnd backend;
+    backend.set_etherbase(evmc::address{});
+    BackEndKvServer server{srv_config, backend};
+    server.build_and_start();
+
+    SECTION("Etherbase: return coinbase address", "[silkworm][node][rpc]") {
+        remote::EtherbaseReply response;
+        const auto status = backend_client.etherbase(&response);
+        CHECK(status.ok());
+        CHECK(response.has_address());
+        CHECK(response.address() == types::H160());
     }
 
     server.shutdown();

@@ -14,26 +14,19 @@
    limitations under the License.
 */
 
-#include "server_config.hpp"
+#include "ethereum_backend.hpp"
 
-namespace silkworm::rpc {
+namespace silkworm {
 
-ServerConfig::ServerConfig()
-    : address_uri_{kDefaultAddressUri},
-      credentials_{kDefaultServerCredentials},
-      num_contexts_{kDefaultNumContexts} {
+EthereumBackEnd::EthereumBackEnd(const ChainConfig& chain_config) : chain_config_(chain_config) {
 }
 
-void ServerConfig::set_address_uri(const std::string& address_uri) noexcept {
-    address_uri_ = address_uri;
+void EthereumBackEnd::set_node_name(const std::string& node_name) noexcept {
+    node_name_ = node_name;
 }
 
-void ServerConfig::set_credentials(std::shared_ptr<grpc::ServerCredentials> credentials) noexcept {
-    credentials_ = credentials;
+void EthereumBackEnd::set_etherbase(const evmc::address& etherbase) noexcept {
+    etherbase_ = etherbase;
 }
 
-void ServerConfig::set_num_contexts(uint32_t num_contexts) noexcept {
-    num_contexts_ = num_contexts;
-}
-
-} // namespace silkworm::rpc
+} // namespace silkworm

@@ -20,8 +20,10 @@
 #include <tuple>
 
 #include <grpcpp/grpcpp.h>
+#include <remote/ethbackend.pb.h>
 #include <remote/ethbackend.grpc.pb.h>
 
+#include <silkworm/backend/ethereum_backend.hpp>
 #include <silkworm/chain/config.hpp>
 #include <silkworm/rpc/factory.hpp>
 #include <silkworm/rpc/server.hpp>
@@ -52,12 +54,12 @@ using EtherbaseRpcFactory = Factory<
 //! Implementation acting as factory for Etherbase RPCs.
 class EtherbaseFactory : public EtherbaseRpcFactory {
   public:
-    explicit EtherbaseFactory(const ChainConfig& /*config*/);
+    explicit EtherbaseFactory(const EthereumBackEnd& backend);
 
     void process_rpc(EtherbaseRpc& rpc, const remote::EtherbaseRequest* request);
 
   private:
-    evmc::address etherbase_; // TODO(canepat): read from config (field not yet present)
+    remote::EtherbaseReply response_;
 };
 
 //! Unary RPC for NetVersion method of 'ethbackend' gRPC protocol.
@@ -74,7 +76,7 @@ using NetVersionRpcFactory = Factory<
 //! Implementation acting as factory for NetVersion RPCs.
 class NetVersionFactory : public NetVersionRpcFactory {
   public:
-    explicit NetVersionFactory(const ChainConfig& config);
+    explicit NetVersionFactory(const EthereumBackEnd& backend);
 
     void process_rpc(NetVersionRpc& rpc, const remote::NetVersionRequest* request);
 
@@ -161,7 +163,7 @@ using ClientVersionRpcFactory = Factory<
 //! Implementation acting as factory for ClientVersion RPCs.
 class ClientVersionFactory : public ClientVersionRpcFactory {
   public:
-    explicit ClientVersionFactory(const ServerConfig& srv_config);
+    explicit ClientVersionFactory(const EthereumBackEnd& backend);
 
     void process_rpc(ClientVersionRpc& rpc, const remote::ClientVersionRequest* request);
 
@@ -218,7 +220,7 @@ struct BackEndFactoryGroup {
     SubscribeFactory subscribe_factory;
     NodeInfoFactory node_info_factory;
 
-    explicit BackEndFactoryGroup(const ServerConfig& srv_config, const ChainConfig& chain_config);
+    explicit BackEndFactoryGroup(const EthereumBackEnd& backend);
 };
 
 } // namespace silkworm::rpc

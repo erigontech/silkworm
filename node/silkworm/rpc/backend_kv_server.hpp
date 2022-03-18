@@ -31,13 +31,13 @@
 namespace silkworm::rpc {
 
 struct BackEndKvFactoryGroup : BackEndFactoryGroup, KvFactoryGroup {
-    explicit BackEndKvFactoryGroup(const ServerConfig& srv_config, const ChainConfig& chain_config)
-    : BackEndFactoryGroup(srv_config, chain_config) {}
+    explicit BackEndKvFactoryGroup(const EthereumBackEnd& backend)
+    : BackEndFactoryGroup(backend) {}
 };
 
 class BackEndKvServer : public Server {
   public:
-    BackEndKvServer(const ServerConfig& srv_config, const ChainConfig& chain_config);
+    BackEndKvServer(const ServerConfig& srv_config, const EthereumBackEnd& backend);
 
     BackEndKvServer(const BackEndKvServer&) = delete;
     BackEndKvServer& operator=(const BackEndKvServer&) = delete;

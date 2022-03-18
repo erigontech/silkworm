@@ -77,6 +77,7 @@ struct ChainConfig {
     std::optional<intx::uint256> terminal_total_difficulty{std::nullopt};
     std::optional<uint64_t> terminal_block_number{std::nullopt};
     std::optional<evmc::bytes32> terminal_block_hash{std::nullopt};
+    std::optional<uint64_t> merge_fork_block{std::nullopt};
     // Returns the revision level at given block number
     // In other words, on behalf of Json chain config data
     // returns whether specific HF have occurred

@@ -67,18 +67,16 @@ void EtherbaseFactory::process_rpc(EtherbaseRpc& rpc, const remote::EtherbaseReq
 NetVersionFactory::NetVersionFactory(const EthereumBackEnd& backend)
     : NetVersionRpcFactory(
         [&](auto& rpc, const auto* request) { process_rpc(rpc, request); },
-        &remote::ETHBACKEND::AsyncService::RequestNetVersion),
-    chain_id_(backend.chain_id()) {
+        &remote::ETHBACKEND::AsyncService::RequestNetVersion) {
+    response_.set_id(backend.chain_id());
 }
 
 void NetVersionFactory::process_rpc(NetVersionRpc& rpc, const remote::NetVersionRequest* request) {
     SILK_TRACE << "NetVersionFactory::process_rpc rpc: " << &rpc << " request: " << request;
 
-    remote::NetVersionReply response;
-    response.set_id(chain_id_);
-    const bool sent = rpc.send_response(response);
+    const bool sent = rpc.send_response(response_);
 
-    SILK_TRACE << "NetVersionFactory::process_rpc rsp: " << &response << " chain_id: " << chain_id_ << " sent: " << sent;
+    SILK_TRACE << "NetVersionFactory::process_rpc chain_id: " << response_.id() << " sent: " << sent;
 }
 
 NetPeerCountFactory::NetPeerCountFactory()

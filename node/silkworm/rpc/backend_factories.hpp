@@ -81,7 +81,7 @@ class NetVersionFactory : public NetVersionRpcFactory {
     void process_rpc(NetVersionRpc& rpc, const remote::NetVersionRequest* request);
 
   private:
-    uint64_t chain_id_;
+    remote::NetVersionReply response_;
 };
 
 //! Unary RPC for NetPeerCount method of 'ethbackend' gRPC protocol.

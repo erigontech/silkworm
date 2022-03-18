@@ -53,21 +53,7 @@ class BackEndKvServer : public Server {
     /// \warning The gRPC service must exist for the lifetime of the gRPC server it is registered on.
     remote::KV::AsyncService kv_async_service_;
 
-    /* 'ethbackend' protocol factories */
-    EtherbaseFactory etherbase_factory_;
-    NetVersionFactory net_version_factory_;
-    NetPeerCountFactory net_peer_count_factory_;
-    BackEndVersionFactory backend_version_factory_;
-    ProtocolVersionFactory protocol_version_factory_;
-    ClientVersionFactory client_version_factory_;
-    SubscribeFactory subscribe_factory_;
-    NodeInfoFactory node_info_factory_;
-
-    /* 'kv' protocol factories */
-    KvVersionFactory kv_version_factory_;
-    TxFactory tx_factory_;
-    StateChangesFactory state_changes_factory_;
-
+    //! The sequence of \ref Factory groups, one for each \ref ServerContext.
     std::vector<std::unique_ptr<BackEndKvFactoryGroup>> factory_groups_;
 };
 

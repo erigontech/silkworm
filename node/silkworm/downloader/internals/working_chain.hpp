@@ -105,7 +105,7 @@ class WorkingChain {
     bool has_link(Hash hash);
     std::vector<Announce>& announces_to_do();
     void add_bad_headers(const std::set<Hash>& bads);
-    void set_preverified_hashes(const PreverifiedHashes*);
+    void set_preverified_hashes(PreverifiedHashes);
 
   protected:
     static constexpr BlockNum max_len = 192;
@@ -151,12 +151,12 @@ class WorkingChain {
     OldestFirstAnchorQueue anchor_queue_;        // Priority queue of anchors used to sequence the header requests
     LinkMap links_;                              // Links by header hash
     AnchorMap anchors_;                          // Mapping from parentHash to collection of anchors
-    OldestFirstLinkMap persisted_link_queue_;  // Priority queue of persisted links used to limit their number
+    OldestFirstLinkMap persisted_link_queue_;    // Priority queue of persisted links used to limit their number
     OldestFirstLinkQueue insert_list_;  // List of non-persisted links that can be inserted (their parent is persisted)
     BlockNum highest_in_db_;
     BlockNum top_seen_height_;
     std::set<Hash> bad_headers_;
-    const PreverifiedHashes* preverified_hashes_;  // Set of hashes that are known to belong to canonical chain
+    PreverifiedHashes preverified_hashes_;      // Set of hashes that are known to belong to canonical chain
     using Ignore = int;
     lru_cache<Hash, Ignore> seen_announces_;
     std::vector<Announce> announces_to_do_;

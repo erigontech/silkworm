@@ -94,13 +94,13 @@ TEST_CASE("Block as key and compact form") {
         // Check the sequence of bytes in memory
         ByteView block_number_view(reinterpret_cast<uint8_t*>(&block_number), sizeof(uint64_t));
 
-#if SILKWORM_BYTE_ORDER == SILKWORM_LITTLE_ENDIAN
-        // Check we've switched to native endianness
-        CHECK(to_hex(block_number_view) == block_number_hex_rev);
-#else
-        // Check our hex form matches input form
-        CHECK(to_hex(block_number_view) == block_number_hex);
-#endif
+        if constexpr (intx::byte_order_is_little_endian) {
+            // Check we've switched to native endianness
+            CHECK(to_hex(block_number_view) == block_number_hex_rev);
+        } else {
+            // Check our hex form matches input form
+            CHECK(to_hex(block_number_view) == block_number_hex);
+        }
 
         alignas(uint64_t) uint8_t block_number_as_key[8];
         store_big_u64(&block_number_as_key[0], block_number);
@@ -108,12 +108,12 @@ TEST_CASE("Block as key and compact form") {
         // Check data value is byte swapped if endianness requires
         auto block_number_from_key{*reinterpret_cast<uint64_t*>(block_number_as_key)};
 
-#if SILKWORM_BYTE_ORDER == SILKWORM_LITTLE_ENDIAN
-        CHECK(block_number_from_key != block_number);
-#else
-        CHECK(block_number_from_key == block_number);
-#endif
-        CHECK(be::load(block_number_from_key) == block_number);
+        if constexpr (intx::byte_order_is_little_endian) {
+            CHECK(block_number_from_key != block_number);
+        } else {
+            CHECK(block_number_from_key == block_number);
+        }
+        CHECK(intx::to_big_endian(block_number_from_key) == block_number);
     }
 
     SECTION("Block number as compact") {

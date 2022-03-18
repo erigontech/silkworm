@@ -23,9 +23,9 @@ hunter_config(
 
 hunter_config(
   intx
-  VERSION 0.7.1
-  URL https://github.com/chfast/intx/archive/v0.7.1.tar.gz
-  SHA1 75f0d5e05df9245c7abc684dae2f4a99764c4ba8
+  VERSION 0.8.0
+  URL https://github.com/chfast/intx/archive/v0.8.0.tar.gz
+  SHA1 612c46d636d9e381a8288d96c70b132190a79ca8
 )
 
 hunter_config(
@@ -55,6 +55,13 @@ hunter_config(
   VERSION 1.1.1l
   URL https://github.com/openssl/openssl/archive/OpenSSL_1_1_1l.tar.gz
   SHA1 8ef8e71af7f07e2dfe204ce298ac0ff224205f1c
+)
+
+hunter_config(
+  benchmark
+  VERSION 1.6.1
+  URL https://github.com/google/benchmark/archive/refs/tags/v1.6.1.tar.gz
+  SHA1 1faaa54195824bbe151c1ebee31623232477d075
 )
 
 hunter_config(

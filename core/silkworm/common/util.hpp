@@ -1,5 +1,5 @@
 /*
-   Copyright 2020-2021 The Silkworm Authors
+   Copyright 2020-2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -23,9 +23,9 @@
 #include <vector>
 
 #include <ethash/keccak.hpp>
+#include <intx/intx.hpp>
 
 #include <silkworm/common/base.hpp>
-#include <silkworm/common/endian.hpp>
 
 namespace silkworm {
 
@@ -64,14 +64,11 @@ ByteView zeroless_view(ByteView data);
 std::string to_hex(ByteView bytes, bool with_prefix = false);
 
 //! \brief Returns a string representing the hex form of provided integral
-template <typename T,
-          typename std::enable_if<std::is_integral<T>::value && std::is_unsigned<T>::value, T>::type* = nullptr>
-std::string to_hex(const T& value, bool with_prefix = false) {
-    Bytes bytes(reinterpret_cast<const uint8_t*>(&value), sizeof(T));
-#if SILKWORM_BYTE_ORDER == SILKWORM_LITTLE_ENDIAN
-    std::reverse(bytes.begin(), bytes.end());
-#endif
-    auto hexed{to_hex(zeroless_view(bytes), with_prefix)};
+template <typename T, typename = std::enable_if_t<std::is_integral_v<T> && std::is_unsigned_v<T>>>
+std::string to_hex(T value, bool with_prefix = false) {
+    uint8_t bytes[sizeof(T)];
+    intx::be::store(bytes, value);
+    std::string hexed{to_hex(zeroless_view(bytes), with_prefix)};
     if (hexed.length() == (with_prefix ? 2 : 0)) {
         hexed += "00";
     }

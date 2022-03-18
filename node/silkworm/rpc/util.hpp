@@ -18,6 +18,7 @@
 #define SILKWORM_RPC_UTIL_HPP_
 
 #include <memory>
+#include <string>
 
 #include <grpcpp/grpcpp.h>
 #include <grpc/support/log.h>
@@ -65,12 +66,18 @@ static void gpr_no_log(gpr_log_func_args* /*args*/) {
 
 //! Define a gRPC logging function delegating to Silkworm logging facility.
 static void gpr_silkworm_log(gpr_log_func_args* args) {
+    std::string log_message{"gRPC: "};
+    log_message.append(args->message);
     if (args->severity == GPR_LOG_SEVERITY_ERROR) {
-        SILK_ERROR << args->message;
+        log_message.append(" ");
+        log_message.append(args->file);
+        log_message.append(":");
+        log_message.append(std::to_string(args->line));
+        SILK_ERROR << log_message;
     } else if (args->severity == GPR_LOG_SEVERITY_INFO) {
-        SILK_INFO << args->message;
+        SILK_INFO << log_message;
     } else { // args->severity == GPR_LOG_SEVERITY_DEBUG
-        SILK_DEBUG << args->message;
+        SILK_DEBUG << log_message;
     }
 }
 

@@ -14,8 +14,8 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_RPC_BACKEND_SERVER_HPP_
-#define SILKWORM_RPC_BACKEND_SERVER_HPP_
+#ifndef SILKWORM_RPC_BACKEND_FACTORIES_HPP_
+#define SILKWORM_RPC_BACKEND_FACTORIES_HPP_
 
 #include <tuple>
 
@@ -23,8 +23,8 @@
 #include <remote/ethbackend.grpc.pb.h>
 
 #include <silkworm/chain/config.hpp>
+#include <silkworm/rpc/factory.hpp>
 #include <silkworm/rpc/server.hpp>
-#include <silkworm/rpc/service.hpp>
 #include <silkworm/rpc/call.hpp>
 
 // ETHBACKEND API protocol versions
@@ -41,22 +41,18 @@ constexpr auto kEthBackEndApiVersion = std::make_tuple<uint32_t, uint32_t, uint3
 //! Unary RPC for Etherbase method of 'ethbackend' gRPC protocol.
 using EtherbaseRpc = UnaryRpc<remote::ETHBACKEND::AsyncService, remote::EtherbaseRequest, remote::EtherbaseReply>;
 
-//! Service specialization for Etherbase method.
-using EtherbaseRpcService = RpcService<
+//! Factory specialization for Etherbase method.
+using EtherbaseRpcFactory = Factory<
     remote::ETHBACKEND::AsyncService,
     remote::EtherbaseRequest,
     remote::EtherbaseReply,
     UnaryRpc
 >;
 
-//! Service implementation acting as factory for Etherbase RPCs.
-class EtherbaseService : public EtherbaseRpcService {
+//! Implementation acting as factory for Etherbase RPCs.
+class EtherbaseFactory : public EtherbaseRpcFactory {
   public:
-    explicit EtherbaseService(const ChainConfig& /*config*/)
-        : EtherbaseRpcService(
-            [&](auto& rpc, const auto* request) { process_rpc(rpc, request); },
-            &remote::ETHBACKEND::AsyncService::RequestEtherbase
-        ) {}
+    explicit EtherbaseFactory(const ChainConfig& /*config*/);
 
     void process_rpc(EtherbaseRpc& rpc, const remote::EtherbaseRequest* request);
 
@@ -67,22 +63,18 @@ class EtherbaseService : public EtherbaseRpcService {
 //! Unary RPC for NetVersion method of 'ethbackend' gRPC protocol.
 using NetVersionRpc = UnaryRpc<remote::ETHBACKEND::AsyncService, remote::NetVersionRequest, remote::NetVersionReply>;
 
-//! Service specialization for NetVersion method.
-using NetVersionRpcService = RpcService<
+//! Factory specialization for NetVersion method.
+using NetVersionRpcFactory = Factory<
     remote::ETHBACKEND::AsyncService,
     remote::NetVersionRequest,
     remote::NetVersionReply,
     UnaryRpc
 >;
 
-//! Service implementation acting as factory for NetVersion RPCs.
-class NetVersionService : public NetVersionRpcService {
+//! Implementation acting as factory for NetVersion RPCs.
+class NetVersionFactory : public NetVersionRpcFactory {
   public:
-    explicit NetVersionService(const ChainConfig& config)
-        : NetVersionRpcService(
-            [&](auto& rpc, const auto* request) { process_rpc(rpc, request); },
-            &remote::ETHBACKEND::AsyncService::RequestNetVersion
-        ), chain_id_(config.chain_id) {}
+    explicit NetVersionFactory(const ChainConfig& config);
 
     void process_rpc(NetVersionRpc& rpc, const remote::NetVersionRequest* request);
 
@@ -93,22 +85,18 @@ class NetVersionService : public NetVersionRpcService {
 //! Unary RPC for NetPeerCount method of 'ethbackend' gRPC protocol.
 using NetPeerCountRpc = UnaryRpc<remote::ETHBACKEND::AsyncService, remote::NetPeerCountRequest, remote::NetPeerCountReply>;
 
-//! Service specialization for NetPeerCount method.
-using NetPeerCountRpcService = RpcService<
+//! Factory specialization for NetPeerCount method.
+using NetPeerCountRpcFactory = Factory<
     remote::ETHBACKEND::AsyncService,
     remote::NetPeerCountRequest,
     remote::NetPeerCountReply,
     UnaryRpc
 >;
 
-//! Service implementation acting as factory for NetPeerCount RPCs.
-class NetPeerCountService : public NetPeerCountRpcService {
+//! Implementation acting as factory for NetPeerCount RPCs.
+class NetPeerCountFactory : public NetPeerCountRpcFactory {
   public:
-    explicit NetPeerCountService()
-        : NetPeerCountRpcService(
-            [&](auto& rpc, const auto* request) { process_rpc(rpc, request); },
-            &remote::ETHBACKEND::AsyncService::RequestNetPeerCount
-        ) {}
+    explicit NetPeerCountFactory();
 
     void process_rpc(NetPeerCountRpc& rpc, const remote::NetPeerCountRequest* request);
 
@@ -116,22 +104,22 @@ class NetPeerCountService : public NetPeerCountRpcService {
 };
 
 //! Unary RPC for Version method of 'ethbackend' gRPC protocol.
-using VersionRpc = UnaryRpc<remote::ETHBACKEND::AsyncService, google::protobuf::Empty, types::VersionReply>;
+using BackEndVersionRpc = UnaryRpc<remote::ETHBACKEND::AsyncService, google::protobuf::Empty, types::VersionReply>;
 
-//! Service specialization for Version method.
-using VersionRpcService = RpcService<
+//! Factory specialization for Version method.
+using BackEndVersionRpcFactory = Factory<
     remote::ETHBACKEND::AsyncService,
     google::protobuf::Empty,
     types::VersionReply,
     UnaryRpc
 >;
 
-//! Service implementation acting as factory for Version RPCs.
-class VersionService : public VersionRpcService {
+//! Implementation acting as factory for Version RPCs.
+class BackEndVersionFactory : public BackEndVersionRpcFactory {
   public:
-    explicit VersionService();
+    explicit BackEndVersionFactory();
 
-    void process_rpc(VersionRpc& rpc, const google::protobuf::Empty* request);
+    void process_rpc(BackEndVersionRpc& rpc, const google::protobuf::Empty* request);
 
   private:
     types::VersionReply response_;
@@ -140,18 +128,18 @@ class VersionService : public VersionRpcService {
 //! Unary RPC for ProtocolVersion method of 'ethbackend' gRPC protocol.
 using ProtocolVersionRpc = UnaryRpc<remote::ETHBACKEND::AsyncService, remote::ProtocolVersionRequest, remote::ProtocolVersionReply>;
 
-//! Service specialization for ProtocolVersion method.
-using ProtocolVersionRpcService = RpcService<
+//! Factory specialization for ProtocolVersion method.
+using ProtocolVersionRpcFactory = Factory<
     remote::ETHBACKEND::AsyncService,
     remote::ProtocolVersionRequest,
     remote::ProtocolVersionReply,
     UnaryRpc
 >;
 
-//! Service implementation acting as factory for ProtocolVersion RPCs.
-class ProtocolVersionService : public ProtocolVersionRpcService {
+//! Implementation acting as factory for ProtocolVersion RPCs.
+class ProtocolVersionFactory : public ProtocolVersionRpcFactory {
   public:
-    explicit ProtocolVersionService();
+    explicit ProtocolVersionFactory();
 
     void process_rpc(ProtocolVersionRpc& rpc, const remote::ProtocolVersionRequest* request);
 
@@ -162,18 +150,18 @@ class ProtocolVersionService : public ProtocolVersionRpcService {
 //! Unary RPC for ClientVersion method of 'ethbackend' gRPC protocol.
 using ClientVersionRpc = UnaryRpc<remote::ETHBACKEND::AsyncService, remote::ClientVersionRequest, remote::ClientVersionReply>;
 
-//! Service specialization for ClientVersion method.
-using ClientVersionRpcService = RpcService<
+//! Factory specialization for ClientVersion method.
+using ClientVersionRpcFactory = Factory<
     remote::ETHBACKEND::AsyncService,
     remote::ClientVersionRequest,
     remote::ClientVersionReply,
     UnaryRpc
 >;
 
-//! Service implementation acting as factory for ClientVersion RPCs.
-class ClientVersionService : public ClientVersionRpcService {
+//! Implementation acting as factory for ClientVersion RPCs.
+class ClientVersionFactory : public ClientVersionRpcFactory {
   public:
-    explicit ClientVersionService(const ServerConfig& srv_config);
+    explicit ClientVersionFactory(const ServerConfig& srv_config);
 
     void process_rpc(ClientVersionRpc& rpc, const remote::ClientVersionRequest* request);
 
@@ -184,22 +172,18 @@ class ClientVersionService : public ClientVersionRpcService {
 //! Server-streaming RPC for Subscribe method of 'ethbackend' gRPC protocol.
 using SubscribeRpc = ServerStreamingRpc<remote::ETHBACKEND::AsyncService, remote::SubscribeRequest, remote::SubscribeReply>;
 
-//! Service specialization for Subscribe method.
-using SubscribeRpcService = RpcService<
+//! Factory specialization for Subscribe method.
+using SubscribeRpcFactory = Factory<
     remote::ETHBACKEND::AsyncService,
     remote::SubscribeRequest,
     remote::SubscribeReply,
     ServerStreamingRpc
 >;
 
-//! Service implementation acting as factory for Subscribe RPCs.
-class SubscribeService : public SubscribeRpcService {
+//! Implementation acting as factory for Subscribe RPCs.
+class SubscribeFactory : public SubscribeRpcFactory {
   public:
-    explicit SubscribeService()
-        : SubscribeRpcService(
-            [&](auto& rpc, const auto* request) { process_rpc(rpc, request); },
-            &remote::ETHBACKEND::AsyncService::RequestSubscribe
-        ) {}
+    explicit SubscribeFactory();
 
     void process_rpc(SubscribeRpc& rpc, const remote::SubscribeRequest* request);
 };
@@ -207,47 +191,36 @@ class SubscribeService : public SubscribeRpcService {
 //! Unary RPC for NodeInfo method of 'ethbackend' gRPC protocol.
 using NodeInfoRpc = UnaryRpc<remote::ETHBACKEND::AsyncService, remote::NodesInfoRequest, remote::NodesInfoReply>;
 
-//! Service specialization for NodeInfo method.
-using NodeInfoRpcService = RpcService<
+//! Factory specialization for NodeInfo method.
+using NodeInfoRpcFactory = Factory<
     remote::ETHBACKEND::AsyncService,
     remote::NodesInfoRequest,
     remote::NodesInfoReply,
     UnaryRpc
 >;
 
-//! Service implementation acting as factory for NodeInfo RPCs.
-class NodeInfoService : public NodeInfoRpcService {
+//! Implementation acting as factory for NodeInfo RPCs.
+class NodeInfoFactory : public NodeInfoRpcFactory {
   public:
-    explicit NodeInfoService()
-        : NodeInfoRpcService(
-            [&](auto& rpc, const auto* request) { process_rpc(rpc, request); },
-            &remote::ETHBACKEND::AsyncService::RequestNodeInfo
-        ) {}
+    explicit NodeInfoFactory();
 
     void process_rpc(NodeInfoRpc& rpc, const remote::NodesInfoRequest* request);
 };
 
-class BackEndServer : public Server<remote::ETHBACKEND::AsyncService> {
-  public:
-    BackEndServer(const ServerConfig& srv_config, const ChainConfig& chain_config);
+//! The ETHBACKEND protocol factory aggregration.
+struct BackEndFactoryGroup {
+    EtherbaseFactory etherbase_factory;
+    NetVersionFactory net_version_factory;
+    NetPeerCountFactory net_peer_count_factory;
+    BackEndVersionFactory backend_version_factory;
+    ProtocolVersionFactory protocol_version_factory;
+    ClientVersionFactory client_version_factory;
+    SubscribeFactory subscribe_factory;
+    NodeInfoFactory node_info_factory;
 
-    BackEndServer(const BackEndServer&) = delete;
-    BackEndServer& operator=(const BackEndServer&) = delete;
-
-  protected:
-    void request_calls() override;
-
-  private:
-    EtherbaseService etherbase_service_;
-    NetVersionService net_version_service_;
-    NetPeerCountService net_peer_count_service_;
-    VersionService version_service_;
-    ProtocolVersionService protocol_version_service_;
-    ClientVersionService client_version_service_;
-    SubscribeService subscribe_service_;
-    NodeInfoService node_info_service_;
+    explicit BackEndFactoryGroup(const ServerConfig& srv_config, const ChainConfig& chain_config);
 };
 
 } // namespace silkworm::rpc
 
-#endif // SILKWORM_RPC_BACKEND_SERVER_HPP_
+#endif // SILKWORM_RPC_BACKEND_FACTORIES_HPP_

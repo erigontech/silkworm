@@ -16,7 +16,6 @@
 
 #include "hash_builder.hpp"
 
-#include <algorithm>
 #include <bitset>
 #include <cassert>
 #include <cstring>

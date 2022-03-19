@@ -23,6 +23,7 @@
 #include <silkworm/common/assert.hpp>
 #include <silkworm/common/endian.hpp>
 #include <silkworm/common/rlp_err.hpp>
+#include <silkworm/db/access_layer.hpp>
 #include <silkworm/stagedsync/stage_interhashes/trie_cursor.hpp>
 #include <silkworm/trie/hash_builder.hpp>
 
@@ -54,15 +55,26 @@ StageResult InterHashes::forward(db::RWTxn& txn) {
                       {"from", std::to_string(previous_progress), "to", std::to_string(hashstate_stage_progress)});
         }
 
+        auto header_hash{db::read_canonical_header_hash(*txn, hashstate_stage_progress)};
+        SILKWORM_ASSERT(header_hash.has_value());
+        auto header{db::read_header(*txn, hashstate_stage_progress, header_hash->bytes)};
+        SILKWORM_ASSERT(header.has_value());
+        auto expected_state_root{header->state_root};
+
         reset_log_progress();
         evmc::bytes32 state_root;
         if (!previous_progress || segment_width > 100'000) {
-            state_root = regenerate_intermediate_hashes(txn);
+            // Full regeneration
+            state_root = regenerate_intermediate_hashes(txn, &expected_state_root);
         } else {
             // Incremental update
+            state_root =
+                increment_intermediate_hashes(txn, previous_progress, hashstate_stage_progress, &expected_state_root);
+
         }
 
         throw_if_stopping();
+        return StageResult::kAborted;
         // db::stages::write_stage_progress(*txn, db::stages::kIntermediateHashesKey, hashstate_stage_progress);
         // txn.commit();
 
@@ -228,6 +240,8 @@ evmc::bytes32 InterHashes::increment_intermediate_hashes(db::RWTxn& txn, const e
 
     const evmc::bytes32 root{calculate_root(txn, account_changes, storage_changes)};
     if (expected_root != nullptr && root != *expected_root) {
+        account_collector_.reset();
+        storage_collector_.reset();
         std::string what{"Wrong trie root : got " + to_hex(root) + " expected " + to_hex(*expected_root)};
         throw std::runtime_error(what);
     }

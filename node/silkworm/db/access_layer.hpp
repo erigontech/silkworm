@@ -51,6 +51,9 @@ void write_header_number(mdbx::txn& txn, const uint8_t (&hash)[kHashLength], con
 //! \brief Writes the header hash in table::kCanonicalHashes
 void write_canonical_header(mdbx::txn& txn, const BlockHeader& header);
 
+//! \brief Reads the header hash in table::kCanonicalHashes
+std::optional<evmc::bytes32> read_canonical_header_hash(mdbx::txn& txn, BlockNum number);
+
 //! \brief Writes the header hash in table::kCanonicalHashes
 void write_canonical_header_hash(mdbx::txn& txn, const uint8_t (&hash)[kHashLength], BlockNum number);
 

@@ -35,14 +35,14 @@ class Hash : public evmc::bytes32 {
     using evmc::bytes32::bytes32;
 
     Hash() = default;
-    Hash(ByteView bv) {
+    explicit Hash(ByteView bv) {
         std::memcpy(bytes, bv.data(), length());
         SILKWORM_ASSERT(bv.length() == length());
     }
 
     static constexpr size_t length() { return sizeof(evmc::bytes32); }
 
-    std::string to_hex() { return silkworm::to_hex(*this); }
+    std::string to_hex(bool with_prefix = false) { return silkworm::to_hex(*this, with_prefix); }
     static Hash from_hex(const std::string& hex) { return {evmc::literals::internal::from_hex<bytes32>(hex.c_str())}; }
 
     // conversion to ByteView is handled in ByteView class,

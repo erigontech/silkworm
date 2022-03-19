@@ -137,6 +137,18 @@ void write_total_difficulty(mdbx::txn& txn, BlockNum block_number, const uint8_t
     write_total_difficulty(txn, key, total_difficulty);
 }
 
+std::optional<evmc::bytes32> read_canonical_header_hash(mdbx::txn& txn, BlockNum number) {
+    Cursor source(txn, table::kCanonicalHashes);
+    auto key{db::block_key(number)};
+    auto data{source.find(to_slice(key), /*throw_notfound=*/false)};
+    if (!data) {
+        return std::nullopt;
+    }
+    evmc::bytes32 ret{};
+    std::memcpy(ret.bytes, data.value.data(), kHashLength);
+    return ret;
+}
+
 void write_canonical_header(mdbx::txn& txn, const BlockHeader& header) {
     write_canonical_header_hash(txn, header.hash().bytes, header.number);
 }

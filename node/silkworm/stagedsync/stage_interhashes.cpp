@@ -32,6 +32,8 @@
 namespace silkworm::stagedsync {
 
 StageResult InterHashes::forward(db::RWTxn& txn) {
+    StageResult ret{StageResult::kSuccess};
+
     try {
         throw_if_stopping();
 
@@ -63,21 +65,25 @@ StageResult InterHashes::forward(db::RWTxn& txn) {
 
         reset_log_progress();
         evmc::bytes32 state_root;
+
         if (!previous_progress || segment_width > 100'000) {
             // Full regeneration
-            state_root = regenerate_intermediate_hashes(txn, &expected_state_root);
+            ret = regenerate_intermediate_hashes(txn, &expected_state_root);
         } else {
             // Incremental update
-            state_root =
-                increment_intermediate_hashes(txn, previous_progress, hashstate_stage_progress, &expected_state_root);
-
+            ret = increment_intermediate_hashes(txn, previous_progress, hashstate_stage_progress, &expected_state_root);
         }
 
-        throw_if_stopping();
-        return StageResult::kAborted;
-        // db::stages::write_stage_progress(*txn, db::stages::kIntermediateHashesKey, hashstate_stage_progress);
-        // txn.commit();
+        if (ret == StageResult::kSuccess) {
+            throw_if_stopping();
+            db::stages::write_stage_progress(*txn, db::stages::kIntermediateHashesKey, hashstate_stage_progress);
+            txn.commit();
+        }
 
+    } catch (const mdbx::exception& ex) {
+        log::Error(std::string(stage_name_),
+                   {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
+        ret = StageResult::kDbError;
     } catch (const StageError& ex) {
         log::Error(std::string(stage_name_),
                    {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
@@ -88,12 +94,16 @@ StageResult InterHashes::forward(db::RWTxn& txn) {
         return StageResult::kUnexpectedError;
     }
 
-    return StageResult::kSuccess;
+    return ret;
 }
 
-StageResult InterHashes::unwind(db::RWTxn& txn, BlockNum to) { return StageResult::kUnknownError; }
+StageResult InterHashes::unwind(db::RWTxn& txn, BlockNum to) {
+    (void)txn;
+    (void)to;
+    return StageResult::kUnknownError;
+}
 
-StageResult InterHashes::prune(db::RWTxn& txn) { return StageResult::kSuccess; }
+StageResult InterHashes::prune(db::RWTxn&) { return StageResult::kSuccess; }
 
 trie::PrefixSet InterHashes::gather_account_changes(db::RWTxn& txn, BlockNum from, BlockNum to) {
     BlockNum reached_blocknum{0};
@@ -205,36 +215,77 @@ trie::PrefixSet InterHashes::gather_storage_changes(db::RWTxn& txn, BlockNum fro
     return ret;
 }
 
-evmc::bytes32 InterHashes::regenerate_intermediate_hashes(db::RWTxn& txn, const evmc::bytes32* expected_root) {
-    // Clear any data in target tables
-    txn->clear_map(db::table::kTrieOfAccounts.name);
-    txn->clear_map(db::table::kTrieOfStorage.name);
-    trie::PrefixSet empty;
-    return increment_intermediate_hashes(txn, expected_root,  //
-                                         /*account_changes=*/empty,
-                                         /*storage_changes=*/empty);
+StageResult InterHashes::regenerate_intermediate_hashes(db::RWTxn& txn, const evmc::bytes32* expected_root) {
+    StageResult ret{StageResult::kSuccess};
+    try {
+        // Clear any data in target tables
+        txn->clear_map(db::table::kTrieOfAccounts.name);
+        txn->clear_map(db::table::kTrieOfStorage.name);
+        trie::PrefixSet empty;
+        ret = increment_intermediate_hashes(txn, expected_root,  //
+                                            /*account_changes=*/empty,
+                                            /*storage_changes=*/empty);
+    } catch (const mdbx::exception& ex) {
+        log::Error(std::string(stage_name_),
+                   {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
+        ret = StageResult::kDbError;
+    } catch (const StageError& ex) {
+        log::Error(std::string(stage_name_),
+                   {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
+        ret = static_cast<StageResult>(ex.err());
+    } catch (const std::exception& ex) {
+        log::Error(std::string(stage_name_),
+                   {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
+        ret = StageResult::kUnexpectedError;
+    } catch (...) {
+        log::Error(std::string(stage_name_), {"function", std::string(__FUNCTION__), "exception", "undefined"});
+        ret = StageResult::kUnexpectedError;
+    }
+
+    return ret;
 }
 
-evmc::bytes32 InterHashes::increment_intermediate_hashes(db::RWTxn& txn, BlockNum from, BlockNum to,
-                                                         const evmc::bytes32* expected_root) {
+StageResult InterHashes::increment_intermediate_hashes(db::RWTxn& txn, BlockNum from, BlockNum to,
+                                                       const evmc::bytes32* expected_root) {
     std::unique_lock log_lck(log_mtx_);
     incremental_ = true;
     log_lck.unlock();
+    StageResult ret{StageResult::kSuccess};
 
-    trie::PrefixSet account_changes{gather_account_changes(txn, from, to)};
-    trie::PrefixSet storage_changes{gather_storage_changes(txn, from, to)};
+    try {
+        trie::PrefixSet account_changes{gather_account_changes(txn, from, to)};
+        trie::PrefixSet storage_changes{gather_storage_changes(txn, from, to)};
 
-    log_lck.lock();
-    current_source_.clear();
-    current_key_.clear();
-    log_lck.unlock();
+        log_lck.lock();
+        current_source_.clear();
+        current_key_.clear();
+        log_lck.unlock();
 
-    return increment_intermediate_hashes(txn, expected_root, account_changes, storage_changes);
+        ret = increment_intermediate_hashes(txn, expected_root, account_changes, storage_changes);
+
+    } catch (const mdbx::exception& ex) {
+        log::Error(std::string(stage_name_),
+                   {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
+        ret = StageResult::kDbError;
+    } catch (const StageError& ex) {
+        log::Error(std::string(stage_name_),
+                   {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
+        ret = static_cast<StageResult>(ex.err());
+    } catch (const std::exception& ex) {
+        log::Error(std::string(stage_name_),
+                   {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
+        ret = StageResult::kUnexpectedError;
+    } catch (...) {
+        log::Error(std::string(stage_name_), {"function", std::string(__FUNCTION__), "exception", "undefined"});
+        ret = StageResult::kUnexpectedError;
+    }
+
+    return ret;
 }
 
-evmc::bytes32 InterHashes::increment_intermediate_hashes(db::RWTxn& txn, const evmc::bytes32* expected_root,
-                                                         trie::PrefixSet& account_changes,
-                                                         trie::PrefixSet& storage_changes) {
+StageResult InterHashes::increment_intermediate_hashes(db::RWTxn& txn, const evmc::bytes32* expected_root,
+                                                       trie::PrefixSet& account_changes,
+                                                       trie::PrefixSet& storage_changes) {
     account_collector_ = std::make_unique<etl::Collector>(node_settings_);
     storage_collector_ = std::make_unique<etl::Collector>(node_settings_);
 
@@ -242,8 +293,8 @@ evmc::bytes32 InterHashes::increment_intermediate_hashes(db::RWTxn& txn, const e
     if (expected_root != nullptr && root != *expected_root) {
         account_collector_.reset();
         storage_collector_.reset();
-        std::string what{"Wrong trie root : got " + to_hex(root) + " expected " + to_hex(*expected_root)};
-        throw std::runtime_error(what);
+        log::Error("Wrong trie root", {"expected", to_hex(*expected_root, true), "got", to_hex(root, true)});
+        return StageResult::kWrongStateRoot;
     }
 
     std::unique_lock log_lck(log_mtx_);
@@ -272,7 +323,7 @@ evmc::bytes32 InterHashes::increment_intermediate_hashes(db::RWTxn& txn, const e
     loading_collector_.reset();
     log_lck.unlock();
 
-    return root;
+    return StageResult::kSuccess;
 }
 
 evmc::bytes32 InterHashes::calculate_root(db::RWTxn& txn, trie::PrefixSet& account_changes,
@@ -394,9 +445,14 @@ std::vector<std::string> InterHashes::get_log_progress() {
     std::unique_lock log_lck(log_mtx_);
     std::vector<std::string> ret{};
     ret.insert(ret.end(), {"mode", (incremental_ ? "incr" : "full")});
-    if (loading_ && loading_collector_) {
-        current_key_ = abridge(loading_collector_->get_load_key(), kAddressLength * 2 + 2);
-        ret.insert(ret.end(), {"to", current_target_, "key", current_key_});
+    if (loading_) {
+        ret.insert(ret.end(), {"to", current_target_});
+        if (loading_collector_) {
+            current_key_ = abridge(loading_collector_->get_load_key(), kAddressLength * 2 + 2);
+            ret.insert(ret.end(), {"key", current_key_});
+        } else {
+            current_key_.clear();
+        }
     } else {
         ret.insert(ret.end(), {"from", current_source_, "key", current_key_});
     }

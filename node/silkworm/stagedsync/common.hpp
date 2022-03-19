@@ -42,6 +42,7 @@ enum class [[nodiscard]] StageResult{
     kInvalidBlock,            //
     kInvalidTransaction,      //
     kDecodingError,           //
+    kWrongStateRoot,          //
     kUnexpectedError,         //
     kUnknownError,            //
     kDbError,                 //

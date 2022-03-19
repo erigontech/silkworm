@@ -64,7 +64,6 @@ StageResult InterHashes::forward(db::RWTxn& txn) {
         auto expected_state_root{header->state_root};
 
         reset_log_progress();
-        evmc::bytes32 state_root;
 
         if (!previous_progress || segment_width > 100'000) {
             // Full regeneration
@@ -74,11 +73,10 @@ StageResult InterHashes::forward(db::RWTxn& txn) {
             ret = increment_intermediate_hashes(txn, previous_progress, hashstate_stage_progress, &expected_state_root);
         }
 
-        if (ret == StageResult::kSuccess) {
-            throw_if_stopping();
-            db::stages::write_stage_progress(*txn, db::stages::kIntermediateHashesKey, hashstate_stage_progress);
-            txn.commit();
-        }
+        success_or_throw(ret);
+        throw_if_stopping();
+        db::stages::write_stage_progress(*txn, db::stages::kIntermediateHashesKey, hashstate_stage_progress);
+        txn.commit();
 
     } catch (const mdbx::exception& ex) {
         log::Error(std::string(stage_name_),
@@ -199,7 +197,7 @@ trie::PrefixSet InterHashes::gather_storage_changes(db::RWTxn& txn, BlockNum fro
 
         while (changeset_data) {
             auto changeset_value_view{db::from_slice(changeset_data.value)};
-            const ByteView location{db::from_slice(changeset_data.value).substr(0, kHashLength)};
+            const ByteView location{changeset_value_view.substr(0, kHashLength)};
             const auto hashed_location{keccak256(location)};
 
             Bytes hashed_key{ByteView{hashed_addresses_it->second.bytes}};

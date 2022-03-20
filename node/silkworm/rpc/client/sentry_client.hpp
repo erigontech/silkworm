@@ -64,12 +64,16 @@ using NodeInfoCallback = std::function<void(grpc::Status, const types::NodeInfoR
 
 class SentryClient {
   public:
+    virtual ~SentryClient() = default;
+
     virtual void peer_count(PeerCountCallback callback) = 0;
     virtual void node_info(NodeInfoCallback callback) = 0;
 };
 
 class SentryClientFactory {
   public:
+    virtual ~SentryClientFactory() = default;
+
     virtual std::unique_ptr<SentryClient> make_sentry_client(const std::string& address_uri) = 0;
 };
 

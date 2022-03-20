@@ -20,13 +20,9 @@
 #include <stack>
 #include <vector>
 
+#include <evmone/advanced_analysis.hpp>
 #include <evmone/baseline.hpp>
 #include <intx/intx.hpp>
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wold-style-cast"
-#include <evmone/advanced_analysis.hpp>
-#pragma GCC diagnostic pop
 
 #include <silkworm/chain/config.hpp>
 #include <silkworm/common/object_pool.hpp>

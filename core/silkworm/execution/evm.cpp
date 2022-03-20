@@ -262,7 +262,7 @@ evmc::result EVM::execute(const evmc_message& msg, ByteView code, std::optional<
         EvmHost host{*this};
         res = exo_evm->execute(exo_evm, &host.get_interface(), host.to_context(), rev, &msg, code.data(), code.size());
     } else if (code_hash != std::nullopt && advanced_analysis_cache != nullptr) {
-        res = execute_with_default_interpreter(rev, msg, code, *code_hash);
+        res = execute_with_advanced_interpreter(rev, msg, code, *code_hash);
     } else {
         // for one-off execution baseline interpreter is generally faster
         res = execute_with_baseline_interpreter(rev, msg, code);
@@ -305,13 +305,13 @@ evmc_result EVM::execute_with_baseline_interpreter(evmc_revision rev, const evmc
     return res;
 }
 
-evmc_result EVM::execute_with_default_interpreter(evmc_revision rev, const evmc_message& msg, ByteView code,
-                                                  const evmc::bytes32& code_hash) noexcept {
+evmc_result EVM::execute_with_advanced_interpreter(evmc_revision rev, const evmc_message& msg, ByteView code,
+                                                   const evmc::bytes32& code_hash) noexcept {
     assert(advanced_analysis_cache != nullptr);
 
-    std::shared_ptr<EvmoneCodeAnalysis> analysis{advanced_analysis_cache->get(code_hash, rev)};
+    std::shared_ptr<evmone::advanced::AdvancedCodeAnalysis> analysis{advanced_analysis_cache->get(code_hash, rev)};
     if (!analysis) {
-        analysis = std::make_shared<EvmoneCodeAnalysis>(evmone::advanced::analyze(rev, code));
+        analysis = std::make_shared<evmone::advanced::AdvancedCodeAnalysis>(evmone::advanced::analyze(rev, code));
         advanced_analysis_cache->put(code_hash, analysis, rev);
     }
 

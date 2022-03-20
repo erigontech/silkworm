@@ -168,7 +168,7 @@ TEST_CASE("Maximum call depth") {
 
     EVM evm{block, state, kMainnetConfig};
 
-    AnalysisCache analysis_cache{/*maxSize=*/16};
+    AdvancedAnalysisCache analysis_cache{/*maxSize=*/16};
     evm.advanced_analysis_cache = &analysis_cache;
 
     Transaction txn{};

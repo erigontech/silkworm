@@ -84,11 +84,12 @@ StageResult Execution::forward(db::RWTxn& txn) {
         prune_receipts = std::min(prune_receipts, hashstate_stage_progress - 1);
     }
 
-    //  AnalysisCache analysis_cache;
+    static constexpr size_t kCacheSize{5'000};
+    lru_cache<evmc::bytes32, std::shared_ptr<evmone::baseline::CodeAnalysis>> analysis_cache{kCacheSize};
     ObjectPool<EvmoneExecutionState> state_pool;
 
     while (!is_stopping() && block_num_ <= max_block_num) {
-        const auto res{execute_batch(txn, max_block_num, state_pool, prune_history, prune_receipts)};
+        const auto res{execute_batch(txn, max_block_num, analysis_cache, state_pool, prune_history, prune_receipts)};
         if (res != StageResult::kSuccess) {
             return res;
         }
@@ -156,9 +157,10 @@ std::queue<Block> Execution::prefetch_blocks(db::RWTxn& txn, BlockNum from, Bloc
     return ret;
 }
 
-StageResult Execution::execute_batch(db::RWTxn& txn, BlockNum max_block_num,  // AnalysisCache& analysis_cache,
-                                     ObjectPool<EvmoneExecutionState>& state_pool, BlockNum prune_history_threshold,
-                                     BlockNum prune_receipts_threshold) {
+StageResult Execution::execute_batch(
+    db::RWTxn& txn, BlockNum max_block_num,
+    lru_cache<evmc::bytes32, std::shared_ptr<evmone::baseline::CodeAnalysis>>& analysis_cache,
+    ObjectPool<EvmoneExecutionState>& state_pool, BlockNum prune_history_threshold, BlockNum prune_receipts_threshold) {
     try {
         db::Buffer buffer(*txn, prune_history_threshold);
         std::vector<Receipt> receipts;
@@ -195,7 +197,7 @@ StageResult Execution::execute_batch(db::RWTxn& txn, BlockNum max_block_num,  //
             }
 
             ExecutionProcessor processor(block, *consensus_engine_, buffer, node_settings_->chain_config.value());
-            // processor.evm().advanced_analysis_cache = &analysis_cache;
+            processor.evm().baseline_analysis_cache = &analysis_cache;
             processor.evm().state_pool = &state_pool;
 
             // TODO(Andrea) Add Tracer

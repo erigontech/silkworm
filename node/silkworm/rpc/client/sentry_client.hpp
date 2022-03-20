@@ -68,6 +68,11 @@ class SentryClient {
     virtual void node_info(NodeInfoCallback callback) = 0;
 };
 
+class SentryClientFactory {
+  public:
+    virtual std::unique_ptr<SentryClient> make_sentry_client(const std::string& address_uri) = 0;
+};
+
 class RemoteSentryClient : public SentryClient {
   public:
     explicit RemoteSentryClient(grpc::CompletionQueue* queue, std::shared_ptr<grpc::Channel> channel);
@@ -96,6 +101,16 @@ class RemoteSentryClient : public SentryClient {
     grpc::CompletionQueue* queue_;
     SentryStubPtr stub_;
     std::unordered_set<std::unique_ptr<AsyncCall>> requests_;
+};
+
+class RemoteSentryClientFactory : public SentryClientFactory {
+  public:
+    explicit RemoteSentryClientFactory(grpc::CompletionQueue* queue) : queue_(queue) {}
+
+    std::unique_ptr<SentryClient> make_sentry_client(const std::string& address_uri) override;
+
+  private:
+    grpc::CompletionQueue* queue_;
 };
 
 } // namespace silkworm::rpc

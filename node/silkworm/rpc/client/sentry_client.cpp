@@ -20,6 +20,8 @@
 
 namespace silkworm::rpc {
 
+UnaryStats AsyncCall::unary_stats_;
+
 AsyncPeerCountCall::AsyncPeerCountCall(grpc::CompletionQueue* queue, CompletionFunc completion_handler, SentryStubPtr& stub)
 : AsyncUnaryCall(queue, completion_handler, stub) {
 }
@@ -72,6 +74,11 @@ void RemoteSentryClient::node_info(NodeInfoCallback callback) {
     }, stub_);
     add_rpc(rpc);
     rpc->start(google::protobuf::Empty{});
+}
+
+std::unique_ptr<SentryClient> RemoteSentryClientFactory::make_sentry_client(const std::string& address_uri) {
+    auto channel = grpc::CreateChannel(address_uri, grpc::InsecureChannelCredentials());
+    return std::make_unique<RemoteSentryClient>(queue_, channel);
 }
 
 } // namespace silkworm::rpc

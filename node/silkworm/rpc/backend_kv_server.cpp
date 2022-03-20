@@ -17,10 +17,12 @@
 #include "backend_kv_server.hpp"
 
 #include <silkworm/common/log.hpp>
+#include <silkworm/rpc/client/sentry_client.hpp>
 
 namespace silkworm::rpc {
 
-BackEndKvServer::BackEndKvServer(const ServerConfig& srv_config, const EthereumBackEnd& backend) : Server(srv_config) {
+BackEndKvServer::BackEndKvServer(const ServerConfig& srv_config, const EthereumBackEnd& backend)
+: Server(srv_config), backend_(backend) {
     factory_groups_.reserve(srv_config.num_contexts());
     for (std::size_t i{0}; i<srv_config.num_contexts(); i++) {
         factory_groups_.emplace_back(std::make_unique<BackEndKvFactoryGroup>(backend));
@@ -40,6 +42,13 @@ void BackEndKvServer::register_request_calls() {
     for (auto& factory_group : factory_groups_) {
         const auto& server_context = next_context();
         const auto server_queue = server_context.server_queue.get();
+        const auto client_queue = server_context.client_queue.get();
+
+        // Complete the service initialization
+        RemoteSentryClientFactory sentry_factory{client_queue};
+        for (const auto& sentry_address : backend_.sentry_addresses()) {
+            factory_group->add_sentry(sentry_factory.make_sentry_client(sentry_address));
+        }
 
         /* 'ethbackend' protocol factories */
         factory_group->etherbase_factory.create_rpc(&backend_async_service_, server_queue);

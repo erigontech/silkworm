@@ -47,6 +47,9 @@ class BackEndKvServer : public Server {
     void register_request_calls() override;
 
   private:
+    //! The Ethereum full node service.
+    const EthereumBackEnd& backend_;
+
     /// \warning The gRPC service must exist for the lifetime of the gRPC server it is registered on.
     remote::ETHBACKEND::AsyncService backend_async_service_;
 

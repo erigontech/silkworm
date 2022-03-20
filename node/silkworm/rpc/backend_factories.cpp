@@ -79,7 +79,7 @@ void NetVersionFactory::process_rpc(NetVersionRpc& rpc, const remote::NetVersion
     SILK_TRACE << "NetVersionFactory::process_rpc chain_id: " << response_.id() << " sent: " << sent;
 }
 
-NetPeerCountFactory::NetPeerCountFactory(const std::vector<std::shared_ptr<SentryClient>>& sentries)
+NetPeerCountFactory::NetPeerCountFactory(const std::vector<std::unique_ptr<SentryClient>>& sentries)
     : NetPeerCountRpcFactory(
         [&](auto& rpc, const auto* request) { process_rpc(rpc, request); },
         &remote::ETHBACKEND::AsyncService::RequestNetPeerCount),
@@ -196,7 +196,7 @@ void SubscribeFactory::process_rpc(SubscribeRpc& rpc, const remote::SubscribeReq
     SILK_TRACE << "SubscribeFactory::process_rpc closed: " << closed;
 }
 
-NodeInfoFactory::NodeInfoFactory(const std::vector<std::shared_ptr<SentryClient>>& sentries)
+NodeInfoFactory::NodeInfoFactory(const std::vector<std::unique_ptr<SentryClient>>& sentries)
     : NodeInfoRpcFactory(
         [&](auto& rpc, const auto* request) { process_rpc(rpc, request); },
         &remote::ETHBACKEND::AsyncService::RequestNodeInfo),
@@ -221,8 +221,8 @@ void NodeInfoFactory::process_rpc(NodeInfoRpc& rpc, const remote::NodesInfoReque
             static remote::NodesInfoReply response;
             static grpc::Status result_status = grpc::Status::OK;
             if (status.ok()) {
-                auto node_info = response.add_nodesinfo();
-                node_info->set_id(reply.id());
+                types::NodeInfoReply* nodes_info = response.add_nodesinfo();
+                *nodes_info = reply;
             } else {
                 result_status = status;
             }
@@ -248,8 +248,8 @@ BackEndFactoryGroup::BackEndFactoryGroup(const EthereumBackEnd& backend)
     node_info_factory{sentries_} {
 }
 
-void BackEndFactoryGroup::add_sentry(std::shared_ptr<SentryClient> sentry) {
-    sentries_.push_back(sentry);
+void BackEndFactoryGroup::add_sentry(std::unique_ptr<SentryClient>&& sentry) {
+    sentries_.push_back(std::move(sentry));
 }
 
 } // namespace silkworm::rpc

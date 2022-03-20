@@ -101,12 +101,12 @@ using NetPeerCountRpcFactory = Factory<
 //! Implementation acting as factory for NetPeerCount RPCs.
 class NetPeerCountFactory : public NetPeerCountRpcFactory {
   public:
-    explicit NetPeerCountFactory(const std::vector<std::shared_ptr<SentryClient>>& sentries);
+    explicit NetPeerCountFactory(const std::vector<std::unique_ptr<SentryClient>>& sentries);
 
     void process_rpc(NetPeerCountRpc& rpc, const remote::NetPeerCountRequest* request);
 
   private:
-    const std::vector<std::shared_ptr<SentryClient>>& sentries_;
+    const std::vector<std::unique_ptr<SentryClient>>& sentries_;
 };
 
 //! Unary RPC for Version method of 'ethbackend' gRPC protocol.
@@ -208,12 +208,12 @@ using NodeInfoRpcFactory = Factory<
 //! Implementation acting as factory for NodeInfo RPCs.
 class NodeInfoFactory : public NodeInfoRpcFactory {
   public:
-    explicit NodeInfoFactory(const std::vector<std::shared_ptr<SentryClient>>& sentries);
+    explicit NodeInfoFactory(const std::vector<std::unique_ptr<SentryClient>>& sentries);
 
     void process_rpc(NodeInfoRpc& rpc, const remote::NodesInfoRequest* request);
 
   private:
-    const std::vector<std::shared_ptr<SentryClient>>& sentries_;
+    const std::vector<std::unique_ptr<SentryClient>>& sentries_;
 };
 
 //! The ETHBACKEND protocol factory aggregration.
@@ -229,10 +229,10 @@ struct BackEndFactoryGroup {
 
     explicit BackEndFactoryGroup(const EthereumBackEnd& backend);
 
-    void add_sentry(std::shared_ptr<SentryClient> sentry);
+    void add_sentry(std::unique_ptr<SentryClient>&& sentry);
 
   private:
-    std::vector<std::shared_ptr<SentryClient>> sentries_;
+    std::vector<std::unique_ptr<SentryClient>> sentries_;
 };
 
 } // namespace silkworm::rpc

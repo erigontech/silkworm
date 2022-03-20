@@ -17,7 +17,9 @@
 #ifndef SILKWORM_RPC_BACKEND_FACTORIES_HPP_
 #define SILKWORM_RPC_BACKEND_FACTORIES_HPP_
 
+#include <memory>
 #include <tuple>
+#include <vector>
 
 #include <grpcpp/grpcpp.h>
 #include <remote/ethbackend.pb.h>
@@ -28,6 +30,7 @@
 #include <silkworm/rpc/factory.hpp>
 #include <silkworm/rpc/server.hpp>
 #include <silkworm/rpc/call.hpp>
+#include <silkworm/rpc/client/sentry_client.hpp>
 
 // ETHBACKEND API protocol versions
 // 2.2.0 - first issue
@@ -98,11 +101,12 @@ using NetPeerCountRpcFactory = Factory<
 //! Implementation acting as factory for NetPeerCount RPCs.
 class NetPeerCountFactory : public NetPeerCountRpcFactory {
   public:
-    explicit NetPeerCountFactory();
+    explicit NetPeerCountFactory(const std::vector<std::shared_ptr<SentryClient>>& sentries);
 
     void process_rpc(NetPeerCountRpc& rpc, const remote::NetPeerCountRequest* request);
 
-    // TODO(canepat): use Sentry config client list built from config (not present yet)
+  private:
+    const std::vector<std::shared_ptr<SentryClient>>& sentries_;
 };
 
 //! Unary RPC for Version method of 'ethbackend' gRPC protocol.
@@ -204,9 +208,12 @@ using NodeInfoRpcFactory = Factory<
 //! Implementation acting as factory for NodeInfo RPCs.
 class NodeInfoFactory : public NodeInfoRpcFactory {
   public:
-    explicit NodeInfoFactory();
+    explicit NodeInfoFactory(const std::vector<std::shared_ptr<SentryClient>>& sentries);
 
     void process_rpc(NodeInfoRpc& rpc, const remote::NodesInfoRequest* request);
+
+  private:
+    const std::vector<std::shared_ptr<SentryClient>>& sentries_;
 };
 
 //! The ETHBACKEND protocol factory aggregration.
@@ -221,6 +228,11 @@ struct BackEndFactoryGroup {
     NodeInfoFactory node_info_factory;
 
     explicit BackEndFactoryGroup(const EthereumBackEnd& backend);
+
+    void add_sentry(std::shared_ptr<SentryClient> sentry);
+
+  private:
+    std::vector<std::shared_ptr<SentryClient>> sentries_;
 };
 
 } // namespace silkworm::rpc

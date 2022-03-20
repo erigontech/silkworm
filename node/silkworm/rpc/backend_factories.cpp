@@ -79,20 +79,50 @@ void NetVersionFactory::process_rpc(NetVersionRpc& rpc, const remote::NetVersion
     SILK_TRACE << "NetVersionFactory::process_rpc chain_id: " << response_.id() << " sent: " << sent;
 }
 
-NetPeerCountFactory::NetPeerCountFactory()
+NetPeerCountFactory::NetPeerCountFactory(const std::vector<std::shared_ptr<SentryClient>>& sentries)
     : NetPeerCountRpcFactory(
         [&](auto& rpc, const auto* request) { process_rpc(rpc, request); },
-        &remote::ETHBACKEND::AsyncService::RequestNetPeerCount) {
+        &remote::ETHBACKEND::AsyncService::RequestNetPeerCount),
+    sentries_(sentries) {
 }
 
 void NetPeerCountFactory::process_rpc(NetPeerCountRpc& rpc, const remote::NetPeerCountRequest* request) {
     SILK_TRACE << "NetPeerCountFactory::process_rpc rpc: " << &rpc << " request: " << request;
 
-    remote::NetPeerCountReply response;
-    // TODO(canepat): fill the response using Sentry config client list
-    const bool sent = rpc.send_response(response);
+    if (sentries_.size() == 0) {
+        remote::NetPeerCountReply response;
+        const bool sent = rpc.send_response(response);
+        SILK_TRACE << "NetPeerCountFactory::process_rpc END count: 0 sent: " << sent;
+        return;
+    }
 
-    SILK_TRACE << "NetPeerCountFactory::process_rpc rsp: " << &response << " sent: " << sent;
+    for (const auto& sentry : sentries_) {
+        sentry->peer_count([&](const grpc::Status status, const sentry::PeerCountReply& reply) {
+            static std::size_t expected_responses = sentries_.size();
+            --expected_responses;
+
+            static uint64_t total_count = 0;
+            static grpc::Status result_status = grpc::Status::OK;
+            if (status.ok()) {
+                uint64_t count = reply.count();
+                total_count += count;
+            } else {
+                result_status = status;
+            }
+
+            if (expected_responses == 0) {
+                if (result_status.ok()) {
+                    remote::NetPeerCountReply response;
+                    response.set_count(total_count);
+                    const bool sent = rpc.send_response(response);
+                    SILK_TRACE << "NetPeerCountFactory::process_rpc END count: " << total_count << " sent: " << sent;
+                } else {
+                    rpc.finish_with_error(result_status);
+                    SILK_TRACE << "NetPeerCountFactory::process_rpc END error: " << result_status;
+                }
+            }
+        });
+    }
 }
 
 BackEndVersionFactory::BackEndVersionFactory()
@@ -166,24 +196,60 @@ void SubscribeFactory::process_rpc(SubscribeRpc& rpc, const remote::SubscribeReq
     SILK_TRACE << "SubscribeFactory::process_rpc closed: " << closed;
 }
 
-NodeInfoFactory::NodeInfoFactory()
+NodeInfoFactory::NodeInfoFactory(const std::vector<std::shared_ptr<SentryClient>>& sentries)
     : NodeInfoRpcFactory(
         [&](auto& rpc, const auto* request) { process_rpc(rpc, request); },
-        &remote::ETHBACKEND::AsyncService::RequestNodeInfo) {
+        &remote::ETHBACKEND::AsyncService::RequestNodeInfo),
+    sentries_(sentries) {
 }
 
 void NodeInfoFactory::process_rpc(NodeInfoRpc& rpc, const remote::NodesInfoRequest* request) {
     SILK_TRACE << "NodeInfoFactory::process_rpc rpc: " << &rpc << " request: " << request << " limit: " << request->limit();
 
-    remote::NodesInfoReply response;
-    // TODO(canepat): fill the response using Sentry config client list
-    const bool sent = rpc.send_response(response);
+    if (sentries_.size() == 0) {
+        remote::NodesInfoReply response;
+        const bool sent = rpc.send_response(response);
+        SILK_TRACE << "NodeInfoFactory::process_rpc END #nodes: 0 sent: " << sent;
+        return;
+    }
 
-    SILK_TRACE << "NodeInfoFactory::process_rpc rsp: " << &response << " sent: " << sent;
+    for (const auto& sentry : sentries_) {
+        sentry->node_info([&](const grpc::Status status, const types::NodeInfoReply& reply) {
+            static std::size_t expected_responses = sentries_.size();
+            --expected_responses;
+
+            static remote::NodesInfoReply response;
+            static grpc::Status result_status = grpc::Status::OK;
+            if (status.ok()) {
+                auto node_info = response.add_nodesinfo();
+                node_info->set_id(reply.id());
+            } else {
+                result_status = status;
+            }
+
+            if (expected_responses == 0) {
+                if (result_status.ok()) {
+                    const bool sent = rpc.send_response(response);
+                    SILK_TRACE << "NodeInfoFactory::process_rpc END #nodes: " << response.nodesinfo_size() << " sent: " << sent;
+                } else {
+                    rpc.finish_with_error(result_status);
+                    SILK_TRACE << "NodeInfoFactory::process_rpc END error: " << result_status;
+                }
+            }
+        });
+    }
 }
 
 BackEndFactoryGroup::BackEndFactoryGroup(const EthereumBackEnd& backend)
-    : etherbase_factory{backend}, net_version_factory{backend}, client_version_factory{backend} {
+    : etherbase_factory{backend},
+    net_version_factory{backend},
+    net_peer_count_factory{sentries_},
+    client_version_factory{backend},
+    node_info_factory{sentries_} {
+}
+
+void BackEndFactoryGroup::add_sentry(std::shared_ptr<SentryClient> sentry) {
+    sentries_.push_back(sentry);
 }
 
 } // namespace silkworm::rpc

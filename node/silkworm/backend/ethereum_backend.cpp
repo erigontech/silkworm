@@ -29,4 +29,8 @@ void EthereumBackEnd::set_etherbase(const evmc::address& etherbase) noexcept {
     etherbase_ = etherbase;
 }
 
+void EthereumBackEnd::add_sentry_address(const std::string& address_uri) noexcept {
+    sentry_addresses_.push_back(address_uri);
+}
+
 } // namespace silkworm

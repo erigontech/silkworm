@@ -28,6 +28,7 @@ TEST_CASE("EthereumBackEnd::EthereumBackEnd", "[silkworm][backend][ethereum_back
     EthereumBackEnd backend{};
     CHECK(backend.node_name() == kDefaultNodeName);
     CHECK(!backend.etherbase());
+    CHECK(backend.sentry_addresses().empty());
 }
 
 TEST_CASE("ServerConfig::set_node_name", "[silkworm][backend][ethereum_backend]") {
@@ -42,6 +43,17 @@ TEST_CASE("ServerConfig::set_etherbase", "[silkworm][backend][ethereum_backend]"
     EthereumBackEnd backend;
     backend.set_etherbase(etherbase);
     CHECK(backend.etherbase() == 0xd4fe7bc31cedb7bfb8a345f31e668033056b2728_address);
+}
+
+TEST_CASE("ServerConfig::add_sentry_address", "[silkworm][backend][ethereum_backend]") {
+    const std::string address_uri1{"127.0.0.1:112233"};
+    const std::string address_uri2{"127.0.0.1:332211"};
+    EthereumBackEnd backend;
+    REQUIRE(backend.sentry_addresses().empty());
+    backend.add_sentry_address(address_uri1);
+    CHECK(backend.sentry_addresses() == std::vector<std::string>{address_uri1});
+    backend.add_sentry_address(address_uri2);
+    CHECK(backend.sentry_addresses() == std::vector<std::string>{address_uri1, address_uri2});
 }
 
 } // namespace silkworm

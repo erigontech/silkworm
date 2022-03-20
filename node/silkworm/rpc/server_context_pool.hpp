@@ -33,8 +33,10 @@ namespace silkworm::rpc {
 
 struct ServerContext {
     std::shared_ptr<boost::asio::io_context> io_context;
-    std::unique_ptr<grpc::ServerCompletionQueue> grpc_queue;
-    std::unique_ptr<CompletionRunner> grpc_runner;
+    std::unique_ptr<grpc::ServerCompletionQueue> server_queue;
+    std::unique_ptr<CompletionRunner> server_runner;
+    std::unique_ptr<grpc::CompletionQueue> client_queue;
+    std::unique_ptr<CompletionRunner> client_runner;
 };
 
 std::ostream& operator<<(std::ostream& out, const ServerContext& c);

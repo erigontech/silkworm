@@ -18,6 +18,8 @@
 #define SILKWORM_BACKEND_ETHEREUM_BACKEND_HPP_
 
 #include <optional>
+#include <string>
+#include <vector>
 
 #include <silkworm/common/base.hpp>
 #include <silkworm/chain/config.hpp>
@@ -36,14 +38,17 @@ class EthereumBackEnd {
     const std::string& node_name() const noexcept { return node_name_; }
     uint64_t chain_id() const noexcept { return chain_config_.chain_id; }
     std::optional<evmc::address> etherbase() const noexcept { return etherbase_; }
+    std::vector<std::string> sentry_addresses() const noexcept { return sentry_addresses_; }
 
     void set_node_name(const std::string& node_name) noexcept;
     void set_etherbase(const evmc::address& etherbase) noexcept;
+    void add_sentry_address(const std::string& address_uri) noexcept;
 
   private:
     const ChainConfig& chain_config_;
     std::string node_name_{kDefaultNodeName};
     std::optional<evmc::address> etherbase_{std::nullopt};
+    std::vector<std::string> sentry_addresses_;
 };
 
 } // namespace silkworm

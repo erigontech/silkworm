@@ -25,7 +25,8 @@
 namespace silkworm::rpc {
 
 std::ostream& operator<<(std::ostream& out, const ServerContext& c) {
-    out << "io_context: " << &*c.io_context << " grpc_queue: " << &*c.grpc_queue << " grpc_runner: " << &*c.grpc_runner;
+    out << "io_context: " << &*c.io_context << " server_queue: " << &*c.server_queue << " server_runner: " << &*c.server_runner
+        << " client_queue: " << &*c.client_queue << " client_runner: " << &*c.client_runner;
     return out;
 }
 
@@ -46,15 +47,19 @@ ServerContextPool::~ServerContextPool() {
     SILK_TRACE << "ServerContextPool::~ServerContextPool END " << this;
 }
 
-void ServerContextPool::add_context(std::unique_ptr<grpc::ServerCompletionQueue> queue) {
+void ServerContextPool::add_context(std::unique_ptr<grpc::ServerCompletionQueue> server_queue) {
     // Create the io_context and give it work to do so that its event loop will not exit until it is explicitly stopped.
     auto io_context = std::make_shared<boost::asio::io_context>();
-    auto runner = std::make_unique<CompletionRunner>(*queue, *io_context);
+    auto server_runner = std::make_unique<CompletionRunner>(*server_queue, *io_context);
+    auto client_queue = std::make_unique<grpc::CompletionQueue>();
+    auto client_runner = std::make_unique<CompletionRunner>(*client_queue, *io_context);
     const auto num_contexts = contexts_.size();
     contexts_.push_back({
         io_context,
-        std::move(queue),
-        std::move(runner)
+        std::move(server_queue),
+        std::move(server_runner),
+        std::move(client_queue),
+        std::move(client_runner)
     });
     SILK_DEBUG << "ServerContextPool::add_context context[" << num_contexts << "] " << contexts_[num_contexts];
     work_.push_back(boost::asio::require(io_context->get_executor(), boost::asio::execution::outstanding_work.tracked));
@@ -71,11 +76,16 @@ void ServerContextPool::start() {
         for (std::size_t i{0}; i < contexts_.size(); ++i) {
             auto& context = contexts_[i];
             context_threads_.create_thread([&, i = i]() {
-                SILK_TRACE << "CompletionRunner thread start context[" << i << "].grpc_runner thread_id: " << std::this_thread::get_id();
-                context.grpc_runner->run();
-                SILK_TRACE << "CompletionRunner thread end context[" << i << "].grpc_runner thread_id: " << std::this_thread::get_id();
+                SILK_TRACE << "CompletionRunner thread start context[" << i << "].server_runner thread_id: " << std::this_thread::get_id();
+                context.server_runner->run();
+                SILK_TRACE << "CompletionRunner thread end context[" << i << "].server_runner thread_id: " << std::this_thread::get_id();
             });
-            SILK_DEBUG << "ServerContextPool::start context[" << i << "].grpc_runner started: " << &*context.grpc_runner;
+            context_threads_.create_thread([&, i = i]() {
+                SILK_TRACE << "CompletionRunner thread start context[" << i << "].client_runner thread_id: " << std::this_thread::get_id();
+                context.client_runner->run();
+                SILK_TRACE << "CompletionRunner thread end context[" << i << "].client_runner thread_id: " << std::this_thread::get_id();
+            });
+            SILK_DEBUG << "ServerContextPool::start context[" << i << "].server_runner started: " << &*context.server_runner;
             context_threads_.create_thread([&, i = i]() {
                 SILK_TRACE << "io_context thread start context[" << i << "].io_context thread_id: " << std::this_thread::get_id();
                 context.io_context->run();
@@ -112,8 +122,10 @@ void ServerContextPool::stop() {
         // Explicitly stop all context runnable components
         for (std::size_t i{0}; i < contexts_.size(); ++i) {
             auto& context = contexts_[i];
-            context.grpc_runner->stop();
-            SILK_DEBUG << "ServerContextPool::stop context[" << i << "].grpc_runner stopped: " << &*context.grpc_runner;
+            context.server_runner->stop();
+            SILK_DEBUG << "ServerContextPool::stop context[" << i << "].server_runner stopped: " << &*context.server_runner;
+            context.client_runner->stop();
+            SILK_DEBUG << "ServerContextPool::stop context[" << i << "].client_runner stopped: " << &*context.client_runner;
             context.io_context->stop();
             SILK_DEBUG << "ServerContextPool::stop context[" << i << "].io_context stopped: " << &*context.io_context;
         }

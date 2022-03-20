@@ -39,22 +39,22 @@ void BackEndKvServer::register_request_calls() {
     // Start one server-side RPC request for each available server context
     for (auto& factory_group : factory_groups_) {
         const auto& server_context = next_context();
-        const auto context_queue = server_context.grpc_queue.get();
+        const auto server_queue = server_context.server_queue.get();
 
         /* 'ethbackend' protocol factories */
-        factory_group->etherbase_factory.create_rpc(&backend_async_service_, context_queue);
-        factory_group->net_version_factory.create_rpc(&backend_async_service_, context_queue);
-        factory_group->net_peer_count_factory.create_rpc(&backend_async_service_, context_queue);
-        factory_group->backend_version_factory.create_rpc(&backend_async_service_, context_queue);
-        factory_group->protocol_version_factory.create_rpc(&backend_async_service_, context_queue);
-        factory_group->client_version_factory.create_rpc(&backend_async_service_, context_queue);
-        factory_group->subscribe_factory.create_rpc(&backend_async_service_, context_queue);
-        factory_group->node_info_factory.create_rpc(&backend_async_service_, context_queue);
+        factory_group->etherbase_factory.create_rpc(&backend_async_service_, server_queue);
+        factory_group->net_version_factory.create_rpc(&backend_async_service_, server_queue);
+        factory_group->net_peer_count_factory.create_rpc(&backend_async_service_, server_queue);
+        factory_group->backend_version_factory.create_rpc(&backend_async_service_, server_queue);
+        factory_group->protocol_version_factory.create_rpc(&backend_async_service_, server_queue);
+        factory_group->client_version_factory.create_rpc(&backend_async_service_, server_queue);
+        factory_group->subscribe_factory.create_rpc(&backend_async_service_, server_queue);
+        factory_group->node_info_factory.create_rpc(&backend_async_service_, server_queue);
 
         /* 'kv' protocol factories */
-        factory_group->kv_version_factory.create_rpc(&kv_async_service_, context_queue);
-        factory_group->tx_factory.create_rpc(&kv_async_service_, context_queue);
-        factory_group->state_changes_factory.create_rpc(&kv_async_service_, context_queue);
+        factory_group->kv_version_factory.create_rpc(&kv_async_service_, server_queue);
+        factory_group->tx_factory.create_rpc(&kv_async_service_, server_queue);
+        factory_group->state_changes_factory.create_rpc(&kv_async_service_, server_queue);
     }
 }
 

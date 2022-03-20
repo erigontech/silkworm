@@ -40,6 +40,7 @@ class AdvancedAnalysisCache {
 
     explicit AdvancedAnalysisCache(size_t maxSize = kDefaultMaxSize) : cache_{maxSize} {}
 
+    // Not copyable nor movable
     AdvancedAnalysisCache(const AdvancedAnalysisCache&) = delete;
     AdvancedAnalysisCache& operator=(const AdvancedAnalysisCache&) = delete;
 

@@ -20,7 +20,13 @@
 #include <stack>
 #include <vector>
 
+#include <evmone/baseline.hpp>
 #include <intx/intx.hpp>
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wold-style-cast"
+#include <evmone/advanced_analysis.hpp>
+#pragma GCC diagnostic pop
 
 #include <silkworm/chain/config.hpp>
 #include <silkworm/common/object_pool.hpp>
@@ -28,11 +34,6 @@
 #include <silkworm/execution/analysis_cache.hpp>
 #include <silkworm/state/intra_block_state.hpp>
 #include <silkworm/types/block.hpp>
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wold-style-cast"
-#include <evmone/advanced_analysis.hpp>
-#pragma GCC diagnostic pop
 
 namespace silkworm {
 
@@ -78,6 +79,9 @@ class EVM {
 
     void add_tracer(EvmTracer& tracer) noexcept;
 
+    // Use for better performance with evmone baseline interpreter
+    lru_cache<evmc::bytes32, std::shared_ptr<evmone::baseline::CodeAnalysis>>* baseline_analysis_cache{nullptr};
+
     // Point to a cache instance in order to enable execution with evmone advanced rather than baseline interpreter
     AdvancedAnalysisCache* advanced_analysis_cache{nullptr};
 
@@ -94,10 +98,10 @@ class EVM {
 
     evmc::result call(const evmc_message& message) noexcept;
 
-    evmc::result execute(const evmc_message& message, ByteView code, std::optional<evmc::bytes32> code_hash) noexcept;
+    evmc::result execute(const evmc_message& message, ByteView code, const evmc::bytes32* code_hash) noexcept;
 
-    evmc_result execute_with_baseline_interpreter(evmc_revision rev, const evmc_message& message,
-                                                  ByteView code) noexcept;
+    evmc_result execute_with_baseline_interpreter(evmc_revision rev, const evmc_message& message, ByteView code,
+                                                  const evmc::bytes32* code_hash) noexcept;
 
     evmc_result execute_with_advanced_interpreter(evmc_revision rev, const evmc_message& message, ByteView code,
                                                   const evmc::bytes32& code_hash) noexcept;

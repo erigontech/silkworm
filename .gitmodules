@@ -1,7 +1,6 @@
 [submodule "evmone"]
 	path = third_party/evmone
-	url = https://github.com/torquem-ch/evmone.git
-	branch = move_analysis
+	url = https://github.com/ethereum/evmone.git
 [submodule "secp256k1"]
 	path = third_party/secp256k1
 	url = https://github.com/bitcoin-core/secp256k1.git

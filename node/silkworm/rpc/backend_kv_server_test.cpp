@@ -333,6 +333,7 @@ TEST_CASE("BackEndKvServer: RPC basic config", "[silkworm][node][rpc]") {
     }
 
     server.shutdown();
+    server.join();
 }
 
 namespace {
@@ -422,9 +423,12 @@ TEST_CASE("BackEndKvServer: RPC custom config", "[silkworm][node][rpc]") {
         }
     }
 
-    server.shutdown();
     sentry_server1->Shutdown();
+    sentry_server1->Wait();
     sentry_server2->Shutdown();
+    sentry_server2->Wait();
+    server.shutdown();
+    server.join();
 }
 
 } // namespace silkworm::rpc

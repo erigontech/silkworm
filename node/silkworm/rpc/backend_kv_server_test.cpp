@@ -120,7 +120,7 @@ class KvClient {
   private:
     remote::KV::StubInterface* stub_;
 };
-};
+} // namespace anonymous
 
 namespace silkworm::rpc {
 
@@ -249,7 +249,7 @@ TEST_CASE("BackEndKvServer: RPC basic config", "[silkworm][node][rpc]") {
         CHECK(response.id() == kMainnetConfig.chain_id);
     }
 
-    SECTION("NetPeerCount: return peer count", "[silkworm][node][rpc]") {
+    SECTION("NetPeerCount: return zero peer count", "[silkworm][node][rpc]") {
         remote::NetPeerCountReply response;
         const auto status = backend_client.net_peer_count(&response);
         CHECK(status.ok());
@@ -288,7 +288,7 @@ TEST_CASE("BackEndKvServer: RPC basic config", "[silkworm][node][rpc]") {
         CHECK(responses.size() == 2);
     }
 
-    SECTION("NodeInfo: return information about nodes", "[silkworm][node][rpc]") {
+    SECTION("NodeInfo: return information about zero nodes", "[silkworm][node][rpc]") {
         remote::NodesInfoRequest request;
         request.set_limit(0);
         remote::NodesInfoReply response;
@@ -335,6 +335,40 @@ TEST_CASE("BackEndKvServer: RPC basic config", "[silkworm][node][rpc]") {
     server.shutdown();
 }
 
+namespace {
+const uint64_t kTestSentryPeerCount{10};
+constexpr const char* kTestSentryPeerId{"peer_id"};
+constexpr const char* kTestSentryPeerName{"peer_name"};
+
+class SentryService : public sentry::Sentry::Service {
+  public:
+    explicit SentryService(grpc::Status status) : status_(status) {}
+
+    std::unique_ptr<grpc::Server> build_and_start(const std::string& server_address) {
+        grpc::ServerBuilder builder;
+        builder.AddListeningPort(server_address, grpc::InsecureServerCredentials());
+        builder.RegisterService(this);
+        return builder.BuildAndStart();
+    }
+
+    grpc::Status PeerCount(::grpc::ServerContext* /*context*/, const ::sentry::PeerCountRequest* /*request*/, ::sentry::PeerCountReply* response) override {
+        if (status_.ok()) {
+            response->set_count(kTestSentryPeerCount);
+        }
+        return status_;
+    }
+
+    grpc::Status NodeInfo(::grpc::ServerContext* /*context*/, const ::google::protobuf::Empty* /*request*/, ::types::NodeInfoReply* response) override {
+        response->set_id(kTestSentryPeerId);
+        response->set_name(kTestSentryPeerName);
+        return status_;
+    }
+
+  private:
+    grpc::Status status_;
+};
+} // namespace anonymous
+
 TEST_CASE("BackEndKvServer: RPC custom config", "[silkworm][node][rpc]") {
     silkworm::log::set_verbosity(silkworm::log::Level::kNone);
     Grpc2SilkwormLogGuard log_guard;
@@ -346,8 +380,16 @@ TEST_CASE("BackEndKvServer: RPC custom config", "[silkworm][node][rpc]") {
     ServerConfig srv_config;
     srv_config.set_num_contexts(1);
     srv_config.set_address_uri(kTestAddressUri);
+    constexpr const char* kTestSentry1AddressUri = "localhost:54321";
+    constexpr const char* kTestSentry2AddressUri = "localhost:54322";
+    SentryService sentry_service1{grpc::Status::OK};
+    auto sentry_server1 = sentry_service1.build_and_start(kTestSentry1AddressUri);
+    SentryService sentry_service2{grpc::Status::OK};
+    auto sentry_server2 = sentry_service2.build_and_start(kTestSentry2AddressUri);
     EthereumBackEnd backend;
     backend.set_etherbase(evmc::address{});
+    backend.add_sentry_address(kTestSentry1AddressUri);
+    backend.add_sentry_address(kTestSentry2AddressUri);
     BackEndKvServer server{srv_config, backend};
     server.build_and_start();
 
@@ -359,7 +401,30 @@ TEST_CASE("BackEndKvServer: RPC custom config", "[silkworm][node][rpc]") {
         CHECK(response.address() == types::H160());
     }
 
+    SECTION("NetPeerCount: return peer count", "[silkworm][node][rpc]") {
+        remote::NetPeerCountReply response;
+        const auto status = backend_client.net_peer_count(&response);
+        CHECK(status.ok());
+        CHECK(response.count() == 2 * kTestSentryPeerCount);
+    }
+
+    SECTION("NodeInfo: return information about nodes", "[silkworm][node][rpc]") {
+        remote::NodesInfoRequest request;
+        request.set_limit(0);
+        remote::NodesInfoReply response;
+        const auto status = backend_client.node_info(request, &response);
+        CHECK(status.ok());
+        CHECK(response.nodesinfo_size() == 2);
+        for (int i{0}; i<response.nodesinfo_size(); i++) {
+            const types::NodeInfoReply& nodes_info = response.nodesinfo(i);
+            CHECK(nodes_info.id() == kTestSentryPeerId);
+            CHECK(nodes_info.name() == kTestSentryPeerName);
+        }
+    }
+
     server.shutdown();
+    sentry_server1->Shutdown();
+    sentry_server2->Shutdown();
 }
 
 } // namespace silkworm::rpc

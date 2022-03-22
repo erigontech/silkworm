@@ -63,7 +63,7 @@ RemoteSentryClient::RemoteSentryClient(grpc::CompletionQueue* queue, std::shared
 void RemoteSentryClient::peer_count(PeerCountCallback callback) {
     const auto rpc = new AsyncPeerCountCall(queue_, [this, callback](auto* call) {
         callback(call->status(), call->reply());
-        //remove_rpc(call);
+        remove_rpc(call);
     }, stub_);
     add_rpc(rpc);
     rpc->start(sentry::PeerCountRequest{});
@@ -72,7 +72,7 @@ void RemoteSentryClient::peer_count(PeerCountCallback callback) {
 void RemoteSentryClient::node_info(NodeInfoCallback callback) {
     const auto rpc = new AsyncNodeInfoCall(queue_, [this, callback](auto* call) {
         callback(call->status(), call->reply());
-        //remove_rpc(call);
+        remove_rpc(call);
     }, stub_);
     add_rpc(rpc);
     rpc->start(google::protobuf::Empty{});

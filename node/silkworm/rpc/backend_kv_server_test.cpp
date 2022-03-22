@@ -394,11 +394,8 @@ class SentryService : public sentry::Sentry::Service {
 TEST_CASE("BackEndKvServer: RPC custom config OK", "[silkworm][node][rpc]") {
     silkworm::log::set_verbosity(silkworm::log::Level::kNone);
     Grpc2SilkwormLogGuard log_guard;
-    std::shared_ptr<grpc::Channel> channel = grpc::CreateChannel(kTestAddressUri, grpc::InsecureChannelCredentials());
-    auto ethbackend_stub_ptr = remote::ETHBACKEND::NewStub(channel);
-    BackEndClient backend_client{ethbackend_stub_ptr.get()};
-    auto kv_stub_ptr = remote::KV::NewStub(channel);
-    KvClient kv_client{kv_stub_ptr.get()};
+    //auto kv_stub_ptr = remote::KV::NewStub(channel);
+    //KvClient kv_client{kv_stub_ptr.get()};
     ServerConfig srv_config;
     srv_config.set_num_contexts(1);
     srv_config.set_address_uri(kTestAddressUri);
@@ -416,6 +413,9 @@ TEST_CASE("BackEndKvServer: RPC custom config OK", "[silkworm][node][rpc]") {
     server.build_and_start();
 
     SECTION("Etherbase: return coinbase address", "[silkworm][node][rpc]") {
+        std::shared_ptr<grpc::Channel> channel = grpc::CreateChannel(kTestAddressUri, grpc::InsecureChannelCredentials());
+        auto ethbackend_stub_ptr = remote::ETHBACKEND::NewStub(channel);
+        BackEndClient backend_client{ethbackend_stub_ptr.get()};
         remote::EtherbaseReply response;
         const auto status = backend_client.etherbase(&response);
         CHECK(status.ok());
@@ -424,6 +424,9 @@ TEST_CASE("BackEndKvServer: RPC custom config OK", "[silkworm][node][rpc]") {
     }
 
     SECTION("NetPeerCount: return peer count", "[silkworm][node][rpc]") {
+        std::shared_ptr<grpc::Channel> channel = grpc::CreateChannel(kTestAddressUri, grpc::InsecureChannelCredentials());
+        auto ethbackend_stub_ptr = remote::ETHBACKEND::NewStub(channel);
+        BackEndClient backend_client{ethbackend_stub_ptr.get()};
         remote::NetPeerCountReply response;
         const auto status = backend_client.net_peer_count(&response);
         CHECK(status.ok());

@@ -33,37 +33,21 @@ class CompletionRunner {
     CompletionRunner(grpc::CompletionQueue& queue, boost::asio::io_context& io_context)
     : queue_(queue), io_context_(io_context) {}
 
-    ~CompletionRunner() { stop(); }
-
     CompletionRunner(const CompletionRunner&) = delete;
     CompletionRunner& operator=(const CompletionRunner&) = delete;
 
-    //! Run the execution loop reading gRPC completion tags until \ref stop() is called.
-    void run();
+    //! Run at most one execution cycle polling gRPC completion queue for one event.
+    int poll_one();
 
-    //! Stop the execution loop shutting down and draining the gRPC completion queue.
-    void stop();
+    //! Shutdown and drain the gRPC completion queue.
+    void shutdown();
 
   private:
-    void shutdown(bool ok);
-
     //! The gRPC completion queue to read async completion notifications from.
     grpc::CompletionQueue& queue_;
 
     //! The scheduler to post completion handlers to.
     boost::asio::io_context& io_context_;
-
-    //! Mutual exclusion to protect access to internal data.
-    std::mutex mutex_;
-
-    //! Flag indicating if \ref run() has been called.
-    bool started_{false};
-
-    //! Flag indicating if shutdown has been requested.
-    bool shutdown_requested_{false};
-
-    //! Condition signalling completion of shutdown.
-    std::condition_variable shutdown_completed_;
 };
 
 } // namespace silkworm::rpc

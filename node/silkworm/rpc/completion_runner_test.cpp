@@ -16,6 +16,7 @@
 
 #include "completion_runner.hpp"
 
+#include <chrono>
 #include <future>
 #include <thread>
 
@@ -30,6 +31,7 @@
 namespace silkworm::rpc {
 
 using Catch::Matchers::Message;
+using namespace std::chrono_literals;
 
 TEST_CASE("CompletionRunner", "[silkworm][rpc][completion_runner]") {
     silkworm::log::set_verbosity(silkworm::log::Level::kNone);
@@ -38,9 +40,13 @@ TEST_CASE("CompletionRunner", "[silkworm][rpc][completion_runner]") {
         grpc::CompletionQueue queue;
         boost::asio::io_context io_context;
         CompletionRunner completion_runner{queue, io_context};
-        auto completion_runner_thread = std::thread([&]() { completion_runner.run(); });
+        auto completion_runner_thread = std::thread([&]() {
+            while (completion_runner.poll_one() >= 0) {
+                std::this_thread::sleep_for(100us);
+            }
+        });
         std::this_thread::yield();
-        completion_runner.stop();
+        completion_runner.shutdown();
         CHECK_NOTHROW(completion_runner_thread.join());
     }
 
@@ -50,7 +56,11 @@ TEST_CASE("CompletionRunner", "[silkworm][rpc][completion_runner]") {
         boost::asio::io_context::work work{io_context};
         CompletionRunner completion_runner{queue, io_context};
         auto io_context_thread = std::thread([&]() { io_context.run(); });
-        auto completion_runner_thread = std::thread([&]() { completion_runner.run(); });
+        auto completion_runner_thread = std::thread([&]() {
+            while (completion_runner.poll_one() >= 0) {
+                std::this_thread::sleep_for(100us);
+            }
+        });
         std::this_thread::yield();
         std::promise<void> p;
         std::future<void> f = p.get_future();
@@ -67,7 +77,7 @@ TEST_CASE("CompletionRunner", "[silkworm][rpc][completion_runner]") {
         grpc::Alarm alarm;
         alarm.Set(&queue, alarm_deadline, &tag_processor);
         f.get();
-        completion_runner.stop();
+        completion_runner.shutdown();
         io_context.stop();
         CHECK_NOTHROW(io_context_thread.join());
         CHECK_NOTHROW(completion_runner_thread.join());
@@ -77,8 +87,12 @@ TEST_CASE("CompletionRunner", "[silkworm][rpc][completion_runner]") {
         grpc::CompletionQueue queue;
         boost::asio::io_context io_context;
         CompletionRunner completion_runner{queue, io_context};
-        completion_runner.stop();
-        auto completion_runner_thread = std::thread([&]() { completion_runner.run(); });
+        completion_runner.shutdown();
+        auto completion_runner_thread = std::thread([&]() {
+            while (completion_runner.poll_one() >= 0) {
+                std::this_thread::sleep_for(100us);
+            }
+        });
         std::this_thread::yield();
         CHECK_NOTHROW(completion_runner_thread.join());
     }
@@ -87,11 +101,15 @@ TEST_CASE("CompletionRunner", "[silkworm][rpc][completion_runner]") {
         grpc::CompletionQueue queue;
         boost::asio::io_context io_context;
         CompletionRunner completion_runner{queue, io_context};
-        auto completion_runner_thread = std::thread([&]() { completion_runner.run(); });
+        auto completion_runner_thread = std::thread([&]() {
+            while (completion_runner.poll_one() >= 0) {
+                std::this_thread::sleep_for(100us);
+            }
+        });
         std::this_thread::yield();
-        completion_runner.stop();
+        completion_runner.shutdown();
         CHECK_NOTHROW(completion_runner_thread.join());
-        CHECK_NOTHROW(completion_runner.stop());
+        CHECK_NOTHROW(completion_runner.shutdown());
     }
 }
 

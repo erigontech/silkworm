@@ -95,19 +95,11 @@ class Server {
     //! Join the RPC server execution loop and block until \ref shutdown() is called on this Server instance.
     void join() {
         SILK_TRACE << "Server::join " << this << " START";
-        {
-            std::unique_lock<std::mutex> lock(mutex_);
-            if (shutdown_) {
-                SILK_TRACE << "Server::join " << this << " already shut down END";
-                return;
-            }
-        }
-        // Start the server execution: the context pool loop will block the calling thread.
         context_pool_.join();
         SILK_TRACE << "Server::join " << this << " END";
     }
 
-    //! Stop this Server instance forever. Any subsequent call to \ref run() has not effect.
+    //! Stop this Server instance forever. Any subsequent call to \ref build_and_start() has not effect.
     void shutdown() {
         SILK_TRACE << "Server::shutdown " << this << " START";
         {
@@ -120,7 +112,7 @@ class Server {
 
             SILK_DEBUG << "Server::shutdown " << this << " shutting down server immediately";
 
-            // Order matters here: 1) shutdown the server
+            // Order matters here: 1) shutdown the server (immediate deadline)
             if (server_) {
                 server_->Shutdown(gpr_time_0(GPR_CLOCK_REALTIME));
             }

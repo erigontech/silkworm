@@ -41,9 +41,7 @@ ServerContextPool::ServerContextPool(std::size_t pool_size) : next_index_{0} {
 
 ServerContextPool::~ServerContextPool() {
     SILK_TRACE << "ServerContextPool::~ServerContextPool START " << this;
-    if (!stopped_) {
-        stop();
-    }
+    stop();
     SILK_TRACE << "ServerContextPool::~ServerContextPool END " << this;
 }
 
@@ -75,20 +73,18 @@ void ServerContextPool::start() {
         // Create a pool of threads to run all of the contexts (each one having 1+1 threads)
         for (std::size_t i{0}; i < contexts_.size(); ++i) {
             auto& context = contexts_[i];
-            context_threads_.create_thread([&, i = i]() {
-                SILK_TRACE << "CompletionRunner thread start context[" << i << "].server_runner thread_id: " << std::this_thread::get_id();
-                context.server_runner->run();
-                SILK_TRACE << "CompletionRunner thread end context[" << i << "].server_runner thread_id: " << std::this_thread::get_id();
-            });
-            context_threads_.create_thread([&, i = i]() {
-                SILK_TRACE << "CompletionRunner thread start context[" << i << "].client_runner thread_id: " << std::this_thread::get_id();
-                context.client_runner->run();
-                SILK_TRACE << "CompletionRunner thread end context[" << i << "].client_runner thread_id: " << std::this_thread::get_id();
-            });
             SILK_DEBUG << "ServerContextPool::start context[" << i << "].server_runner started: " << &*context.server_runner;
             context_threads_.create_thread([&, i = i]() {
                 SILK_TRACE << "io_context thread start context[" << i << "].io_context thread_id: " << std::this_thread::get_id();
-                context.io_context->run();
+                //TODO(canepat): add counter for served tasks and plug some wait strategy
+                while (!context.io_context->stopped()) {
+                    context.server_runner->poll_one();
+                    context.io_context->poll_one();
+                    context.client_runner->poll_one();
+                    context.io_context->poll_one();
+                }
+                context.server_runner->shutdown();
+                context.client_runner->shutdown();
                 SILK_TRACE << "io_context thread end context[" << i << "].io_context thread_id: " << std::this_thread::get_id();
             });
             SILK_DEBUG << "ServerContextPool::start context[" << i << "].io_context started: " << &*context.io_context;
@@ -101,10 +97,6 @@ void ServerContextPool::start() {
 void ServerContextPool::join() {
     SILK_TRACE << "ServerContextPool::join START";
 
-    {
-        std::unique_lock<std::mutex> lock(mutex_);
-        if (stopped_) return;
-    }
     // Wait for all threads in the pool to exit.
     SILK_DEBUG << "ServerContextPool::join joining...";
     context_threads_.join();
@@ -113,25 +105,25 @@ void ServerContextPool::join() {
 }
 
 void ServerContextPool::stop() {
-    SILK_TRACE << "ServerContextPool::stop START stopped: " << stopped_;
+    SILK_TRACE << "ServerContextPool::stop START";
 
     {
         std::lock_guard<std::mutex> guard(mutex_);
+        if (stopped_) {
+            SILK_TRACE << "ServerContextPool::stop already stopped END";
+            return;
+        }
         stopped_ = true;
 
         // Explicitly stop all context runnable components
         for (std::size_t i{0}; i < contexts_.size(); ++i) {
             auto& context = contexts_[i];
-            context.server_runner->stop();
-            SILK_DEBUG << "ServerContextPool::stop context[" << i << "].server_runner stopped: " << &*context.server_runner;
-            context.client_runner->stop();
-            SILK_DEBUG << "ServerContextPool::stop context[" << i << "].client_runner stopped: " << &*context.client_runner;
             context.io_context->stop();
             SILK_DEBUG << "ServerContextPool::stop context[" << i << "].io_context stopped: " << &*context.io_context;
         }
     }
 
-    SILK_TRACE << "ServerContextPool::stop END stopped: " << stopped_;
+    SILK_TRACE << "ServerContextPool::stop END";
 }
 
 const ServerContext& ServerContextPool::next_context() {

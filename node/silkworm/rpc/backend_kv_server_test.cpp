@@ -190,12 +190,22 @@ TEST_CASE("BackEndKvServer::shutdown", "[silkworm][node][rpc]") {
         BackEndKvServer server{srv_config, backend};
         server.build_and_start();
         server.shutdown();
+        server.join();
     }
 
     SECTION("OK: shutdown twice running server", "[silkworm][node][rpc]") {
         BackEndKvServer server{srv_config, backend};
         server.build_and_start();
         server.shutdown();
+        server.shutdown();
+        server.join();
+    }
+
+    SECTION("OK: shutdown running server again after join", "[silkworm][node][rpc]") {
+        BackEndKvServer server{srv_config, backend};
+        server.build_and_start();
+        server.shutdown();
+        server.join();
         server.shutdown();
     }
 }
@@ -215,6 +225,17 @@ TEST_CASE("BackEndKvServer::join", "[silkworm][node][rpc]") {
         }};
         server.shutdown();
         server_thread.join();
+    }
+
+    SECTION("OK: shutdown joined server and join again", "[silkworm][node][rpc]") {
+        BackEndKvServer server{srv_config, backend};
+        server.build_and_start();
+        std::thread server_thread{[&server]() {
+            server.join();
+        }};
+        server.shutdown();
+        server_thread.join();
+        server.join(); // cannot move before server_thread.join() due to data race in boost::asio::detail::posix_thread
     }
 }
 

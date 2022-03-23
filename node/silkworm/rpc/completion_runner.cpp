@@ -24,69 +24,37 @@
 
 namespace silkworm::rpc {
 
-void CompletionRunner::stop() {
-    SILK_TRACE << "CompletionRunner::stop start started: " << started_ << " shutdown: " << shutdown_requested_;
-    std::unique_lock<std::mutex> lock(mutex_);
-    if (!shutdown_requested_) {
-        shutdown_requested_ = true;
-        if (started_) {
-            SILK_DEBUG << "CompletionRunner::stop set shutdown alarm";
-            // The completion runner has been started, so trigger an immediate alarm for shutdown (tag == this).
-            auto shutdown_alarm = std::make_unique<grpc::Alarm>();
-            shutdown_alarm->Set(&queue_, gpr_now(GPR_CLOCK_MONOTONIC), this);
-            SILK_DEBUG << "CompletionRunner::stop waiting for clean up...";
-            shutdown_completed_.wait(lock);
-        } else {
-            // The completion runner has not been started, so no chance to ask the scheduler to shutdown.
-            // Just shutdown and drain queue on the calling thread is fine.
-            shutdown(false);
-        }
+int CompletionRunner::poll_one() {
+    SILK_TRACE << "CompletionRunner::poll_one START";
+
+    int num_completed{0}; // returned when next_status == grpc::CompletionQueue::TIMEOUT
+
+    void* tag{nullptr};
+    bool ok{false};
+    const auto next_status = queue_.AsyncNext(&tag, &ok, gpr_time_0(GPR_CLOCK_MONOTONIC));
+    if (next_status == grpc::CompletionQueue::GOT_EVENT) {
+        num_completed = 1;
+        // Handle the event completion on io_context scheduler.
+        CompletionTag completion_tag{reinterpret_cast<TagProcessor*>(tag), ok};
+        SILK_DEBUG << "CompletionRunner::poll_one post operation: " << completion_tag.processor;
+        io_context_.post([ct = std::move(completion_tag)]() { (*ct.processor)(ct.ok); });
+    } else if (next_status == grpc::CompletionQueue::SHUTDOWN) {
+        num_completed = -1;
     }
-    SILK_TRACE << "CompletionRunner::stop end";
+
+    SILK_TRACE << "CompletionRunner::poll_one next_status=" << next_status << "END";
+    return num_completed;
 }
 
-void CompletionRunner::run() {
-    SILK_TRACE << "CompletionRunner::run start";
-    {
-        std::unique_lock<std::mutex> lock(mutex_);
-        started_ = true;
-    }
-    bool running = true;
-    while (running) {
-        void* tag{nullptr};
-        bool ok{false};
-        const auto got_event = queue_.Next(&tag, &ok);
-        if (got_event) {
-            if (tag == this) {
-                // Shutdown alarm has been triggered, post shutdown on io_context scheduler to avoid races and exit.
-                SILK_DEBUG << "CompletionRunner::run post shutdown this: " << this;
-                io_context_.post([this, ok]() { shutdown(ok); });
-                running = false;
-                SILK_DEBUG << "CompletionRunner::run shutdown scheduled";
-            } else {
-                // Handle the event completion on io_context scheduler.
-                CompletionTag completion_tag{reinterpret_cast<TagProcessor*>(tag), ok};
-                SILK_DEBUG << "CompletionRunner::run post operation: " << completion_tag.processor;
-                io_context_.post([completion_tag]() { (*completion_tag.processor)(completion_tag.ok); });
-            }
-        } else {
-            running = false;
-            SILK_DEBUG << "CompletionRunner::run queue fully drained and shut down";
-        }
-    }
-    SILK_TRACE << "CompletionRunner::run end";
-}
-
-void CompletionRunner::shutdown(bool ok) {
-    SILK_TRACE << "CompletionRunner::shutdown start ok: " << ok;
+void CompletionRunner::shutdown() {
+    SILK_TRACE << "CompletionRunner::shutdown START";
     queue_.Shutdown();
     SILK_DEBUG << "CompletionRunner::shutdown draining...";
     void* ignored_tag;
     bool ignored_ok;
     while (queue_.Next(&ignored_tag, &ignored_ok)) {
     }
-    shutdown_completed_.notify_all();
-    SILK_TRACE << "CompletionRunner::shutdown end";
+    SILK_TRACE << "CompletionRunner::shutdown END";
 }
 
 }  // namespace silkworm::rpc

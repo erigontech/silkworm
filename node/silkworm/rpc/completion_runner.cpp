@@ -42,7 +42,7 @@ int CompletionRunner::poll_one() {
         num_completed = -1;
     }
 
-    SILK_TRACE << "CompletionRunner::poll_one next_status=" << next_status << "END";
+    SILK_TRACE << "CompletionRunner::poll_one next_status=" << next_status << " END";
     return num_completed;
 }
 

@@ -33,6 +33,7 @@ bool AsyncPeerCountCall::proceed(bool ok) {
         SILK_INFO << "PeerCount reply: count=" << reply_.count();
         ++unary_stats_.ok_count;
     } else {
+        SILK_INFO << "PeerCount " << status_;
         ++unary_stats_.ko_count;
     }
     return true;
@@ -49,6 +50,7 @@ bool AsyncNodeInfoCall::proceed(bool ok) {
         SILK_INFO << "NodeInfo reply: id=" << reply_.id() << " name=" << reply_.name() << " enode=" << reply_.enode();
         ++unary_stats_.ok_count;
     } else {
+        SILK_INFO << "NodeInfo " << status_;
         ++unary_stats_.ko_count;
     }
     return true;

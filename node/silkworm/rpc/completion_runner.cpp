@@ -20,6 +20,7 @@
 
 #include <grpcpp/alarm.h>
 
+#include <silkworm/common/log.hpp>
 #include <silkworm/rpc/completion_tag.hpp>
 
 namespace silkworm::rpc {
@@ -34,10 +35,10 @@ int CompletionRunner::poll_one() {
     const auto next_status = queue_.AsyncNext(&tag, &ok, gpr_time_0(GPR_CLOCK_MONOTONIC));
     if (next_status == grpc::CompletionQueue::GOT_EVENT) {
         num_completed = 1;
-        // Handle the event completion on io_context scheduler.
+        // Handle the event completion on the calling thread (*must* be the io_context scheduler).
         CompletionTag completion_tag{reinterpret_cast<TagProcessor*>(tag), ok};
         SILK_DEBUG << "CompletionRunner::poll_one post operation: " << completion_tag.processor;
-        io_context_.post([ct = std::move(completion_tag)]() { (*ct.processor)(ct.ok); });
+        (*completion_tag.processor)(completion_tag.ok);
     } else if (next_status == grpc::CompletionQueue::SHUTDOWN) {
         num_completed = -1;
     }

@@ -20,83 +20,91 @@
 
 namespace silkworm::rpc {
 
-KvVersionFactory::KvVersionFactory()
-    : KvVersionRpcFactory(
-        [&](auto& rpc, const auto* request) { process_rpc(rpc, request); },
-        &remote::KV::AsyncService::RequestVersion) {
-    response_.set_major(std::get<0>(kKvApiVersion));
-    response_.set_minor(std::get<1>(kKvApiVersion));
-    response_.set_patch(std::get<2>(kKvApiVersion));
+types::VersionReply KvVersionCall::response_;
+
+void KvVersionCall::fill_predefined_reply() {
+    KvVersionCall::response_.set_major(std::get<0>(kKvApiVersion));
+    KvVersionCall::response_.set_minor(std::get<1>(kKvApiVersion));
+    KvVersionCall::response_.set_patch(std::get<2>(kKvApiVersion));
 }
 
-void KvVersionFactory::process_rpc(KvVersionRpc& rpc, const google::protobuf::Empty* request) {
-    SILK_TRACE << "KvVersionFactory::process_rpc rpc: " << &rpc << " request: " << request;
-
-    const bool sent = rpc.send_response(response_);
-
-    SILK_TRACE << "KvVersionFactory::process_rpc rsp: " << &response_ << " sent: " << sent;
+KvVersionCall::KvVersionCall(remote::KV::AsyncService* service, grpc::ServerCompletionQueue* queue, Handlers handlers)
+    : UnaryRpc<remote::KV::AsyncService, google::protobuf::Empty, types::VersionReply>(service, queue, handlers) {
 }
 
-TxFactory::TxFactory()
-    : TxRpcFactory(
-        [&](auto& rpc, const auto* request) { process_rpc(rpc, request); },
-        &remote::KV::AsyncService::RequestTx) {
+void KvVersionCall::process(const google::protobuf::Empty* request) {
+    SILK_TRACE << "KvVersionCall::process " << this << " request: " << request;
+
+    const bool sent = send_response(response_);
+
+    SILK_TRACE << "KvVersionCall::process " << this << " rsp: " << &response_ << " sent: " << sent;
 }
 
-void TxFactory::process_rpc(TxRpc& rpc, const remote::Cursor* request) {
-    SILK_TRACE << "TxFactory::process_rpc rpc: " << &rpc << " request: " << request << " START";
+KvVersionCallFactory::KvVersionCallFactory()
+    : Factory<remote::KV::AsyncService, KvVersionCall>(&remote::KV::AsyncService::RequestVersion) {
+    KvVersionCall::fill_predefined_reply();
+}
+
+TxCall::TxCall(remote::KV::AsyncService* service, grpc::ServerCompletionQueue* queue, Handlers handlers)
+    : BidirectionalStreamingRpc<remote::KV::AsyncService, remote::Cursor, remote::Pair>(service, queue, handlers) {
+}
+
+void TxCall::process(const remote::Cursor* request) {
+    SILK_TRACE << "TxCall::process " << this << " request: " << request << " START";
 
     if (request == nullptr) {
         // The client has closed its stream of requests, we can close too.
-        const bool closed = rpc.close();
-        SILK_TRACE << "TxFactory::process_rpc " << &rpc << " closed: " << closed;
+        const bool closed = close();
+        SILK_TRACE << "TxCall::process " << this << " closed: " << closed;
     } else {
-        handle_request(rpc, request);
+        // TODO(canepat): remove this example and fill the correct stream responses
+        const auto cursor_op = request->op();
+        if (cursor_op == remote::Op::OPEN) {
+            remote::Pair kv_pair;
+            kv_pair.set_txid(1);
+            kv_pair.set_cursorid(1);
+            SILK_INFO << "Tx peer: " << peer() << " op=" << remote::Op_Name(cursor_op) << " cursor=" << kv_pair.cursorid();
+            const bool sent = send_response(kv_pair);
+            SILK_TRACE << "TxFactory::process " << this << " open cursor: " << kv_pair.cursorid() << " sent: " << sent;
+        } else if (cursor_op == remote::Op::CLOSE) {
+            SILK_INFO << "Tx peer: " << peer() << " op=" << remote::Op_Name(cursor_op) << " cursor=" << request->cursor();
+            const bool sent = send_response(remote::Pair{});
+            SILK_TRACE << "TxFactory::process " << this << " close cursor: " << request->cursor() << " sent: " << sent;
+        } else {
+            SILK_INFO << "Tx peer: " << peer() << " op=" << remote::Op_Name(cursor_op) << " cursor=" << request->cursor();
+            remote::Pair kv_pair;
+            const bool sent = send_response(kv_pair);
+            SILK_TRACE << "TxFactory::process " << this << " cursor: " << request->cursor() << " sent: " << sent;
+        }
     }
 
-    SILK_TRACE << "TxFactory::process_rpc rpc: " << &rpc << " request: " << request << " END";
+    SILK_TRACE << "TxCall::process " << this << " request: " << request << " END";
 }
 
-void TxFactory::handle_request(TxRpc& rpc, const remote::Cursor* request) {
-    // TODO(canepat): remove this example and fill the correct stream responses
-    const auto cursor_op = request->op();
-    if (cursor_op == remote::Op::OPEN) {
-        remote::Pair kv_pair;
-        kv_pair.set_txid(1);
-        kv_pair.set_cursorid(1);
-        SILK_INFO << "Tx peer: " << rpc.peer() << " op=" << remote::Op_Name(cursor_op) << " cursor=" << kv_pair.cursorid();
-        const bool sent = rpc.send_response(kv_pair);
-        SILK_TRACE << "TxFactory::handle_request open cursor: " << kv_pair.cursorid() << " sent: " << sent;
-    } else if (cursor_op == remote::Op::CLOSE) {
-        SILK_INFO << "Tx peer: " << rpc.peer() << " op=" << remote::Op_Name(cursor_op) << " cursor=" << request->cursor();
-        const bool sent = rpc.send_response(remote::Pair{});
-        SILK_TRACE << "TxFactory::handle_request close cursor: " << request->cursor() << " sent: " << sent;
-    } else {
-        SILK_INFO << "Tx peer: " << rpc.peer() << " op=" << remote::Op_Name(cursor_op) << " cursor=" << request->cursor();
-        remote::Pair kv_pair;
-        const bool sent = rpc.send_response(kv_pair);
-        SILK_TRACE << "TxFactory::handle_request cursor: " << request->cursor() << " sent: " << sent;
-    }
+TxCallFactory::TxCallFactory()
+    : Factory<remote::KV::AsyncService, TxCall>(&remote::KV::AsyncService::RequestTx) {
 }
 
-StateChangesFactory::StateChangesFactory()
-    : StateChangesRpcFactory(
-        [&](auto& rpc, const auto* request) { process_rpc(rpc, request); },
-        &remote::KV::AsyncService::RequestStateChanges) {
+StateChangesCall::StateChangesCall(remote::KV::AsyncService* service, grpc::ServerCompletionQueue* queue, Handlers handlers)
+    : ServerStreamingRpc<remote::KV::AsyncService, remote::StateChangeRequest, remote::StateChangeBatch>(service, queue, handlers) {
 }
 
-void StateChangesFactory::process_rpc(StateChangesRpc& rpc, const remote::StateChangeRequest* request) {
-    SILK_TRACE << "StateChangesFactory::process_rpc rpc: " << &rpc << " request: " << request;
+void StateChangesCall::process(const remote::StateChangeRequest* request) {
+    SILK_TRACE << "StateChangesCall::process " << this << " request: " << request;
 
     // TODO(canepat): remove this example and fill the correct stream responses
     remote::StateChangeBatch response1;
-    rpc.send_response(response1);
+    send_response(response1);
     remote::StateChangeBatch response2;
-    rpc.send_response(response2);
+    send_response(response2);
 
-    const bool closed = rpc.close();
+    const bool closed = close();
 
-    SILK_TRACE << "StateChangesFactory::process_rpc closed: " << closed;
+    SILK_TRACE << "StateChangesCall::process " << this << " closed: " << closed;
+}
+
+StateChangesCallFactory::StateChangesCallFactory()
+    : Factory<remote::KV::AsyncService, StateChangesCall>(&remote::KV::AsyncService::RequestStateChanges) {
 }
 
 } // namespace silkworm::rpc

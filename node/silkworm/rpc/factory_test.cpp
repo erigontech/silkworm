@@ -29,7 +29,7 @@ class MockReply {
 };
 
 template <typename AsyncService, typename Request, typename Reply>
-class MockUnaryRpc {
+class MockUnaryRpc : public BaseRpc {
   public:
     struct Handlers {
         struct ProcessRequestFunc {};
@@ -41,12 +41,14 @@ class MockUnaryRpc {
     explicit MockUnaryRpc() { instance_count_++; }
     ~MockUnaryRpc() { instance_count_--; }
 
+    void cleanup() override {}
+
   private:
     inline static int instance_count_{0};
 };
 
 using MockRpc = MockUnaryRpc<MockAsyncService, MockRequest, MockReply>;
-using MockRpcFactory = Factory<MockAsyncService, MockRequest, MockReply, MockUnaryRpc>;
+using MockRpcFactory = Factory<MockAsyncService, MockRpc>;
 
 class MockFactory : public MockRpcFactory {
   public:

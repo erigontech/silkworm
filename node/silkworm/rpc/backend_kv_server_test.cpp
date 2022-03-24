@@ -391,7 +391,7 @@ class SentryService : public sentry::Sentry::Service {
 };
 } // namespace anonymous
 
-TEST_CASE("BackEndKvServer: RPC custom config", "[silkworm][node][rpc]") {
+TEST_CASE("BackEndKvServer: RPC custom config OK", "[silkworm][node][rpc]") {
     silkworm::log::set_verbosity(silkworm::log::Level::kNone);
     Grpc2SilkwormLogGuard log_guard;
     std::shared_ptr<grpc::Channel> channel = grpc::CreateChannel(kTestAddressUri, grpc::InsecureChannelCredentials());
@@ -442,6 +442,52 @@ TEST_CASE("BackEndKvServer: RPC custom config", "[silkworm][node][rpc]") {
             CHECK(nodes_info.id() == kTestSentryPeerId);
             CHECK(nodes_info.name() == kTestSentryPeerName);
         }
+    }
+
+    sentry_server1->Shutdown();
+    sentry_server1->Wait();
+    sentry_server2->Shutdown();
+    sentry_server2->Wait();
+    server.shutdown();
+    server.join();
+}
+
+TEST_CASE("BackEndKvServer: RPC custom config KO", "[silkworm][node][rpc]") {
+    silkworm::log::set_verbosity(silkworm::log::Level::kNone);
+    Grpc2SilkwormLogGuard log_guard;
+    std::shared_ptr<grpc::Channel> channel = grpc::CreateChannel(kTestAddressUri, grpc::InsecureChannelCredentials());
+    auto ethbackend_stub_ptr = remote::ETHBACKEND::NewStub(channel);
+    BackEndClient backend_client{ethbackend_stub_ptr.get()};
+    auto kv_stub_ptr = remote::KV::NewStub(channel);
+    KvClient kv_client{kv_stub_ptr.get()};
+    ServerConfig srv_config;
+    srv_config.set_num_contexts(1);
+    srv_config.set_address_uri(kTestAddressUri);
+    constexpr const char* kTestSentry1AddressUri = "localhost:54321";
+    constexpr const char* kTestSentry2AddressUri = "localhost:54322";
+    SentryService sentry_service1{grpc::Status::OK};
+    auto sentry_server1 = sentry_service1.build_and_start(kTestSentry1AddressUri);
+    SentryService sentry_service2{grpc::Status::CANCELLED};
+    auto sentry_server2 = sentry_service2.build_and_start(kTestSentry2AddressUri);
+    EthereumBackEnd backend;
+    backend.set_etherbase(evmc::address{});
+    backend.add_sentry_address(kTestSentry1AddressUri);
+    backend.add_sentry_address(kTestSentry2AddressUri);
+    BackEndKvServer server{srv_config, backend};
+    server.build_and_start();
+
+    SECTION("NetPeerCount: return expected status error", "[silkworm][node][rpc]") {
+        remote::NetPeerCountReply response;
+        const auto status = backend_client.net_peer_count(&response);
+        CHECK(status == grpc::Status::CANCELLED);
+    }
+
+    SECTION("NodeInfo: return expected status error", "[silkworm][node][rpc]") {
+        remote::NodesInfoRequest request;
+        request.set_limit(0);
+        remote::NodesInfoReply response;
+        const auto status = backend_client.node_info(request, &response);
+        CHECK(status == grpc::Status::CANCELLED);
     }
 
     sentry_server1->Shutdown();

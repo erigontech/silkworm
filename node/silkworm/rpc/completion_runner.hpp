@@ -17,21 +17,14 @@
 #ifndef SILKWORM_RPC_COMPLETION_RUNNER_HPP_
 #define SILKWORM_RPC_COMPLETION_RUNNER_HPP_
 
-#include <condition_variable>
-#include <mutex>
-
-#include <boost/asio/io_context.hpp>
 #include <grpcpp/grpcpp.h>
-
-#include <silkworm/common/log.hpp>
 
 namespace silkworm::rpc {
 
 //! Execution loop dedicated to read completion notifications from one gRPC completion queue.
 class CompletionRunner {
   public:
-    CompletionRunner(grpc::CompletionQueue& queue, boost::asio::io_context& io_context)
-    : queue_(queue), io_context_(io_context) {}
+    CompletionRunner(grpc::CompletionQueue& queue) : queue_(queue) {}
 
     CompletionRunner(const CompletionRunner&) = delete;
     CompletionRunner& operator=(const CompletionRunner&) = delete;
@@ -45,9 +38,6 @@ class CompletionRunner {
   private:
     //! The gRPC completion queue to read async completion notifications from.
     grpc::CompletionQueue& queue_;
-
-    //! The scheduler to post completion handlers to.
-    boost::asio::io_context& io_context_;
 };
 
 } // namespace silkworm::rpc

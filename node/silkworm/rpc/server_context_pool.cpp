@@ -48,9 +48,9 @@ ServerContextPool::~ServerContextPool() {
 void ServerContextPool::add_context(std::unique_ptr<grpc::ServerCompletionQueue> server_queue) {
     // Create the io_context and give it work to do so that its event loop will not exit until it is explicitly stopped.
     auto io_context = std::make_shared<boost::asio::io_context>();
-    auto server_runner = std::make_unique<CompletionRunner>(*server_queue, *io_context);
+    auto server_runner = std::make_unique<CompletionRunner>(*server_queue);
     auto client_queue = std::make_unique<grpc::CompletionQueue>();
-    auto client_runner = std::make_unique<CompletionRunner>(*client_queue, *io_context);
+    auto client_runner = std::make_unique<CompletionRunner>(*client_queue);
     const auto num_contexts = contexts_.size();
     contexts_.push_back({
         io_context,
@@ -79,7 +79,6 @@ void ServerContextPool::start() {
                 //TODO(canepat): add counter for served tasks and plug some wait strategy
                 while (!context.io_context->stopped()) {
                     context.server_runner->poll_one();
-                    context.io_context->poll_one();
                     context.client_runner->poll_one();
                     context.io_context->poll_one();
                 }

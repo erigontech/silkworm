@@ -20,7 +20,6 @@
 #include <future>
 #include <thread>
 
-#include <boost/asio/io_context.hpp>
 #include <catch2/catch.hpp>
 #include <grpcpp/alarm.h>
 #include <grpcpp/support/time.h>
@@ -38,8 +37,7 @@ TEST_CASE("CompletionRunner", "[silkworm][rpc][completion_runner]") {
 
     SECTION("waiting on empty completion queue") {
         grpc::CompletionQueue queue;
-        boost::asio::io_context io_context;
-        CompletionRunner completion_runner{queue, io_context};
+        CompletionRunner completion_runner{queue};
         auto completion_runner_thread = std::thread([&]() {
             while (completion_runner.poll_one() >= 0) {
                 std::this_thread::sleep_for(100us);
@@ -52,10 +50,7 @@ TEST_CASE("CompletionRunner", "[silkworm][rpc][completion_runner]") {
 
     SECTION("posting handler completion to I/O execution context") {
         grpc::CompletionQueue queue;
-        boost::asio::io_context io_context;
-        boost::asio::io_context::work work{io_context};
-        CompletionRunner completion_runner{queue, io_context};
-        auto io_context_thread = std::thread([&]() { io_context.run(); });
+        CompletionRunner completion_runner{queue};
         auto completion_runner_thread = std::thread([&]() {
             while (completion_runner.poll_one() >= 0) {
                 std::this_thread::sleep_for(100us);
@@ -78,15 +73,12 @@ TEST_CASE("CompletionRunner", "[silkworm][rpc][completion_runner]") {
         alarm.Set(&queue, alarm_deadline, &tag_processor);
         f.get();
         completion_runner.shutdown();
-        io_context.stop();
-        CHECK_NOTHROW(io_context_thread.join());
         CHECK_NOTHROW(completion_runner_thread.join());
     }
 
     SECTION("exiting on completion queue already shutdown") {
         grpc::CompletionQueue queue;
-        boost::asio::io_context io_context;
-        CompletionRunner completion_runner{queue, io_context};
+        CompletionRunner completion_runner{queue};
         completion_runner.shutdown();
         auto completion_runner_thread = std::thread([&]() {
             while (completion_runner.poll_one() >= 0) {
@@ -99,8 +91,7 @@ TEST_CASE("CompletionRunner", "[silkworm][rpc][completion_runner]") {
 
     SECTION("stopping again after already stopped") {
         grpc::CompletionQueue queue;
-        boost::asio::io_context io_context;
-        CompletionRunner completion_runner{queue, io_context};
+        CompletionRunner completion_runner{queue};
         auto completion_runner_thread = std::thread([&]() {
             while (completion_runner.poll_one() >= 0) {
                 std::this_thread::sleep_for(100us);

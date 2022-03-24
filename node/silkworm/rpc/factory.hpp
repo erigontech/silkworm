@@ -26,21 +26,17 @@
 
 #include <silkworm/common/assert.hpp>
 #include <silkworm/common/log.hpp>
+#include <silkworm/rpc/call.hpp>
 
 namespace silkworm::rpc {
 
 //! Default initial capacity for the \ref Factory registry.
 constexpr std::size_t kRequestsInitialCapacity = 10000;
 
-//! Registry for the \ref Rpc typed requests currently alive.
+//! Registry for the \ref Call typed requests currently alive.
 /// Keeps track of RPC instances created by subclasses and automatically deletes them.
-template <
-    typename AsyncService,
-    typename Request,
-    typename Reply,
-    template<typename, typename, typename> typename Rpc>
+template <typename AsyncService, typename Call>
 class Factory {
-    using Call = Rpc<AsyncService, Request, Reply>;
     using CallHandlers = typename Call::Handlers;
 
   public:
@@ -53,7 +49,7 @@ class Factory {
         SILK_TRACE << "Factory::create_rpc END rpc: " << rpc;
     }
 
-    void cleanup_rpc(Call& rpc, bool cancelled) {
+    void cleanup_rpc(BaseRpc& rpc, bool cancelled) {
         SILK_TRACE << "Factory::cleanup_rpc START rpc: " << &rpc << " cancelled: " << cancelled;
         remove_rpc(&rpc);
         SILK_TRACE << "Factory::cleanup_rpc END rpc: " << &rpc;
@@ -66,13 +62,10 @@ class Factory {
 
     Factory(CallHandlers handlers) : Factory(handlers, kRequestsInitialCapacity) {}
 
-    Factory(
-        typename CallHandlers::ProcessRequestFunc process_rpc,
-        typename CallHandlers::RequestRpcFunc request_rpc,
-        std::size_t requestsInitialCapacity) : handlers_{
+    Factory(typename CallHandlers::RequestRpcFunc request_rpc, std::size_t requestsInitialCapacity)
+        : handlers_{
             {
                 [&](auto* svc, auto* cq) { create_rpc(svc, cq); },
-                process_rpc,
                 [&](auto& rpc, bool cancelled) { cleanup_rpc(rpc, cancelled); }
             },
             request_rpc
@@ -80,20 +73,18 @@ class Factory {
         requests_.reserve(requestsInitialCapacity);
     }
 
-    Factory(
-        typename CallHandlers::ProcessRequestFunc process_rpc,
-        typename CallHandlers::RequestRpcFunc request_rpc)
-        : Factory(process_rpc, request_rpc, kRequestsInitialCapacity) {}
+    Factory(typename CallHandlers::RequestRpcFunc request_rpc)
+        : Factory(request_rpc, kRequestsInitialCapacity) {}
 
-    [[maybe_unused]] auto add_rpc(gsl::owner<Call*> rpc) {
+    [[maybe_unused]] auto add_rpc(gsl::owner<BaseRpc*> rpc) {
         SILKWORM_ASSERT(rpc != nullptr);
         return requests_.emplace(rpc);
     }
 
-    [[maybe_unused]] auto remove_rpc(gsl::owner<Call*> rpc) {
+    [[maybe_unused]] auto remove_rpc(gsl::owner<BaseRpc*> rpc) {
         SILKWORM_ASSERT(rpc != nullptr);
         // Trick necessary because heterogeneous lookup for std::unordered_set requires C++20
-        std::unique_ptr<Call> stale_rpc{rpc};
+        std::unique_ptr<BaseRpc> stale_rpc{rpc};
         auto removed_count = requests_.erase(stale_rpc);
         stale_rpc.release();
         return removed_count;
@@ -105,7 +96,7 @@ class Factory {
 
   private:
     CallHandlers handlers_;
-    std::unordered_set<std::unique_ptr<Call>> requests_;
+    std::unordered_set<std::unique_ptr<BaseRpc>> requests_;
 };
 
 } // namespace silkworm::rpc

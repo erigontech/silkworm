@@ -193,7 +193,6 @@ trie::PrefixSet InterHashes::gather_storage_changes(db::RWTxn& txn, BlockNum fro
         }
 
         changeset_key_view.remove_prefix(kAddressLength);
-        const Bytes incarnation{changeset_key_view};
 
         while (changeset_data) {
             auto changeset_value_view{db::from_slice(changeset_data.value)};
@@ -201,7 +200,7 @@ trie::PrefixSet InterHashes::gather_storage_changes(db::RWTxn& txn, BlockNum fro
             const auto hashed_location{keccak256(location)};
 
             Bytes hashed_key{ByteView{hashed_addresses_it->second.bytes}};
-            hashed_key.append(incarnation);
+            hashed_key.append(changeset_key_view);
             hashed_key.append(trie::unpack_nibbles(hashed_location.bytes));
             ret.insert(hashed_key);
             changeset_data = storage_changeset.to_current_next_multi(/*throw_notfound=*/false);
@@ -386,7 +385,7 @@ evmc::bytes32 InterHashes::calculate_root(db::RWTxn& txn, trie::PrefixSet& accou
 }
 
 evmc::bytes32 InterHashes::calculate_storage_root(db::RWTxn& txn, const Bytes& db_storage_prefix,
-                                                  trie::PrefixSet& changed) {
+                                                  trie::PrefixSet& storage_changes) {
     static Bytes rlp{};
     db::Cursor hashed_storage(txn, db::table::kHashedStorage);
     db::Cursor trie_storage(txn, db::table::kTrieOfStorage);
@@ -398,7 +397,7 @@ evmc::bytes32 InterHashes::calculate_storage_root(db::RWTxn& txn, const Bytes& d
         storage_collector_->collect(std::move(entry));
     };
 
-    trie::Cursor trie_cursor{trie_storage, changed, db_storage_prefix};
+    trie::Cursor trie_cursor{trie_storage, storage_changes, db_storage_prefix};
     while (trie_cursor.key().has_value()) {
         if (trie_cursor.can_skip_state()) {
             SILKWORM_ASSERT(trie_cursor.hash() != nullptr);

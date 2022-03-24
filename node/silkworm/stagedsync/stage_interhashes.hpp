@@ -106,7 +106,7 @@ class InterHashes final : public IStage {
     evmc::bytes32 calculate_root(db::RWTxn& txn, trie::PrefixSet& account_changes, trie::PrefixSet& storage_changes);
 
     //! \see Erigon's FlatDBTrieLoader
-    evmc::bytes32 calculate_storage_root(db::RWTxn& txn, const Bytes& db_storage_prefix, trie::PrefixSet& changed);
+    evmc::bytes32 calculate_storage_root(db::RWTxn& txn, const Bytes& db_storage_prefix, trie::PrefixSet& storage_changes);
 
     std::unique_ptr<etl::Collector> account_collector_;  // To accumulate new records for kTrieOfAccounts
     std::unique_ptr<etl::Collector> storage_collector_;  // To accumulate new records for kTrieOfStorage

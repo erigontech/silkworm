@@ -68,7 +68,7 @@ void EtherbaseCall::process(const remote::EtherbaseRequest* request) {
 }
 
 EtherbaseCallFactory::EtherbaseCallFactory(const EthereumBackEnd& backend)
-    : Factory<remote::ETHBACKEND::AsyncService, EtherbaseCall>(&remote::ETHBACKEND::AsyncService::RequestEtherbase) {
+    : CallFactory<remote::ETHBACKEND::AsyncService, EtherbaseCall>(&remote::ETHBACKEND::AsyncService::RequestEtherbase) {
     EtherbaseCall::fill_predefined_reply(backend);
 }
 
@@ -91,7 +91,7 @@ void NetVersionCall::process(const remote::NetVersionRequest* request) {
 }
 
 NetVersionCallFactory::NetVersionCallFactory(const EthereumBackEnd& backend)
-    : Factory<remote::ETHBACKEND::AsyncService, NetVersionCall>(&remote::ETHBACKEND::AsyncService::RequestNetVersion) {
+    : CallFactory<remote::ETHBACKEND::AsyncService, NetVersionCall>(&remote::ETHBACKEND::AsyncService::RequestNetVersion) {
     NetVersionCall::fill_predefined_reply(backend);
 }
 
@@ -154,7 +154,7 @@ void NetPeerCountCall::process(const remote::NetPeerCountRequest* request) {
 }
 
 NetPeerCountCallFactory::NetPeerCountCallFactory()
-    : Factory<remote::ETHBACKEND::AsyncService, NetPeerCountCall>(&remote::ETHBACKEND::AsyncService::RequestNetPeerCount) {
+    : CallFactory<remote::ETHBACKEND::AsyncService, NetPeerCountCall>(&remote::ETHBACKEND::AsyncService::RequestNetPeerCount) {
 }
 
 types::VersionReply BackEndVersionCall::response_;
@@ -178,7 +178,7 @@ void BackEndVersionCall::process(const google::protobuf::Empty* request) {
 }
 
 BackEndVersionCallFactory::BackEndVersionCallFactory()
-    : Factory<remote::ETHBACKEND::AsyncService, BackEndVersionCall>(&remote::ETHBACKEND::AsyncService::RequestVersion) {
+    : CallFactory<remote::ETHBACKEND::AsyncService, BackEndVersionCall>(&remote::ETHBACKEND::AsyncService::RequestVersion) {
     BackEndVersionCall::fill_predefined_reply();
 }
 
@@ -201,7 +201,7 @@ void ProtocolVersionCall::process(const remote::ProtocolVersionRequest* request)
 }
 
 ProtocolVersionCallFactory::ProtocolVersionCallFactory()
-    : Factory<remote::ETHBACKEND::AsyncService, ProtocolVersionCall>(&remote::ETHBACKEND::AsyncService::RequestProtocolVersion) {
+    : CallFactory<remote::ETHBACKEND::AsyncService, ProtocolVersionCall>(&remote::ETHBACKEND::AsyncService::RequestProtocolVersion) {
     ProtocolVersionCall::fill_predefined_reply();
 }
 
@@ -224,7 +224,7 @@ void ClientVersionCall::process(const remote::ClientVersionRequest* request) {
 }
 
 ClientVersionCallFactory::ClientVersionCallFactory(const EthereumBackEnd& backend)
-    : Factory<remote::ETHBACKEND::AsyncService, ClientVersionCall>(&remote::ETHBACKEND::AsyncService::RequestClientVersion) {
+    : CallFactory<remote::ETHBACKEND::AsyncService, ClientVersionCall>(&remote::ETHBACKEND::AsyncService::RequestClientVersion) {
     ClientVersionCall::fill_predefined_reply(backend);
 }
 
@@ -251,7 +251,7 @@ void SubscribeCall::process(const remote::SubscribeRequest* request) {
 }
 
 SubscribeCallFactory::SubscribeCallFactory()
-    : Factory<remote::ETHBACKEND::AsyncService, SubscribeCall>(&remote::ETHBACKEND::AsyncService::RequestSubscribe) {
+    : CallFactory<remote::ETHBACKEND::AsyncService, SubscribeCall>(&remote::ETHBACKEND::AsyncService::RequestSubscribe) {
 }
 
 std::set<SentryClient*> NodeInfoCall::sentries_;
@@ -305,20 +305,20 @@ void NodeInfoCall::process(const remote::NodesInfoRequest* request) {
 }
 
 NodeInfoCallFactory::NodeInfoCallFactory()
-    : Factory<remote::ETHBACKEND::AsyncService, NodeInfoCall>(&remote::ETHBACKEND::AsyncService::RequestNodeInfo) {
+    : CallFactory<remote::ETHBACKEND::AsyncService, NodeInfoCall>(&remote::ETHBACKEND::AsyncService::RequestNodeInfo) {
 }
 
-BackEndFactoryGroup::BackEndFactoryGroup(const EthereumBackEnd& backend)
+BackEndService::BackEndService(const EthereumBackEnd& backend)
     : etherbase_factory{backend}, net_version_factory{backend}, client_version_factory{backend} {
 }
 
-void BackEndFactoryGroup::add_sentry(std::unique_ptr<SentryClient>&& sentry) {
+void BackEndService::add_sentry(std::unique_ptr<SentryClient>&& sentry) {
     NetPeerCountCall::add_sentry(sentry.get());
     NodeInfoCall::add_sentry(sentry.get());
     sentries_.push_back(std::move(sentry));
 }
 
-BackEndFactoryGroup::~BackEndFactoryGroup() {
+BackEndService::~BackEndService() {
     for (const auto& sentry : sentries_) {
         NetPeerCountCall::remove_sentry(sentry.get());
         NodeInfoCall::remove_sentry(sentry.get());

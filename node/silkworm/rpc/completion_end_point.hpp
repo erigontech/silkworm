@@ -14,20 +14,20 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_RPC_COMPLETION_RUNNER_HPP_
-#define SILKWORM_RPC_COMPLETION_RUNNER_HPP_
+#ifndef SILKWORM_RPC_COMPLETION_END_POINT_HPP_
+#define SILKWORM_RPC_COMPLETION_END_POINT_HPP_
 
 #include <grpcpp/grpcpp.h>
 
 namespace silkworm::rpc {
 
-//! Execution loop dedicated to read completion notifications from one gRPC completion queue.
-class CompletionRunner {
+//! Application end-point dedicated to read completion notifications from one gRPC completion queue.
+class CompletionEndPoint {
   public:
-    CompletionRunner(grpc::CompletionQueue& queue) : queue_(queue) {}
+    CompletionEndPoint(grpc::CompletionQueue& queue) : queue_(queue) {}
 
-    CompletionRunner(const CompletionRunner&) = delete;
-    CompletionRunner& operator=(const CompletionRunner&) = delete;
+    CompletionEndPoint(const CompletionEndPoint&) = delete;
+    CompletionEndPoint& operator=(const CompletionEndPoint&) = delete;
 
     //! Run at most one execution cycle polling gRPC completion queue for one event.
     int poll_one();
@@ -42,4 +42,4 @@ class CompletionRunner {
 
 } // namespace silkworm::rpc
 
-#endif  // SILKWORM_RPC_COMPLETION_RUNNER_HPP_
+#endif  // SILKWORM_RPC_COMPLETION_END_POINT_HPP_

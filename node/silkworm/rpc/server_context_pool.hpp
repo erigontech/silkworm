@@ -27,16 +27,16 @@
 #include <boost/asio/io_context.hpp>
 #include <grpcpp/grpcpp.h>
 
-#include <silkworm/rpc/completion_runner.hpp>
+#include <silkworm/rpc/completion_end_point.hpp>
 
 namespace silkworm::rpc {
 
 struct ServerContext {
     std::shared_ptr<boost::asio::io_context> io_context;
     std::unique_ptr<grpc::ServerCompletionQueue> server_queue;
-    std::unique_ptr<CompletionRunner> server_runner;
+    std::unique_ptr<CompletionEndPoint> server_end_point;
     std::unique_ptr<grpc::CompletionQueue> client_queue;
-    std::unique_ptr<CompletionRunner> client_runner;
+    std::unique_ptr<CompletionEndPoint> client_end_point;
 };
 
 std::ostream& operator<<(std::ostream& out, const ServerContext& c);

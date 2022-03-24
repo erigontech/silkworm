@@ -28,10 +28,10 @@
 
 #include <silkworm/backend/ethereum_backend.hpp>
 #include <silkworm/chain/config.hpp>
-#include <silkworm/rpc/factory.hpp>
-#include <silkworm/rpc/server.hpp>
 #include <silkworm/rpc/call.hpp>
+#include <silkworm/rpc/call_factory.hpp>
 #include <silkworm/rpc/client/sentry_client.hpp>
+#include <silkworm/rpc/server.hpp>
 
 // ETHBACKEND API protocol versions
 // 2.2.0 - first issue
@@ -58,7 +58,7 @@ class EtherbaseCall : public UnaryRpc<remote::ETHBACKEND::AsyncService, remote::
 };
 
 //! Factory specialization for Etherbase method.
-class EtherbaseCallFactory : public Factory<remote::ETHBACKEND::AsyncService, EtherbaseCall> {
+class EtherbaseCallFactory : public CallFactory<remote::ETHBACKEND::AsyncService, EtherbaseCall> {
   public:
     explicit EtherbaseCallFactory(const EthereumBackEnd& backend);
 };
@@ -77,7 +77,7 @@ class NetVersionCall : public UnaryRpc<remote::ETHBACKEND::AsyncService, remote:
 };
 
 //! Factory specialization for NetVersion method.
-class NetVersionCallFactory : public Factory<remote::ETHBACKEND::AsyncService, NetVersionCall> {
+class NetVersionCallFactory : public CallFactory<remote::ETHBACKEND::AsyncService, NetVersionCall> {
   public:
     explicit NetVersionCallFactory(const EthereumBackEnd& backend);
 };
@@ -101,7 +101,7 @@ class NetPeerCountCall : public UnaryRpc<remote::ETHBACKEND::AsyncService, remot
 };
 
 //! Factory specialization for NetPeerCount method.
-class NetPeerCountCallFactory : public Factory<remote::ETHBACKEND::AsyncService, NetPeerCountCall> {
+class NetPeerCountCallFactory : public CallFactory<remote::ETHBACKEND::AsyncService, NetPeerCountCall> {
   public:
     explicit NetPeerCountCallFactory();
 };
@@ -120,7 +120,7 @@ class BackEndVersionCall : public UnaryRpc<remote::ETHBACKEND::AsyncService, goo
 };
 
 //! Factory specialization for Version method.
-class BackEndVersionCallFactory : public Factory<remote::ETHBACKEND::AsyncService, BackEndVersionCall> {
+class BackEndVersionCallFactory : public CallFactory<remote::ETHBACKEND::AsyncService, BackEndVersionCall> {
   public:
     explicit BackEndVersionCallFactory();
 };
@@ -139,7 +139,7 @@ class ProtocolVersionCall : public UnaryRpc<remote::ETHBACKEND::AsyncService, re
 };
 
 //! Factory specialization for ProtocolVersion method.
-class ProtocolVersionCallFactory : public Factory<remote::ETHBACKEND::AsyncService, ProtocolVersionCall> {
+class ProtocolVersionCallFactory : public CallFactory<remote::ETHBACKEND::AsyncService, ProtocolVersionCall> {
   public:
     explicit ProtocolVersionCallFactory();
 };
@@ -158,7 +158,7 @@ class ClientVersionCall : public UnaryRpc<remote::ETHBACKEND::AsyncService, remo
 };
 
 //! Factory specialization for ClientVersion method.
-class ClientVersionCallFactory : public Factory<remote::ETHBACKEND::AsyncService, ClientVersionCall> {
+class ClientVersionCallFactory : public CallFactory<remote::ETHBACKEND::AsyncService, ClientVersionCall> {
   public:
     explicit ClientVersionCallFactory(const EthereumBackEnd& backend);
 };
@@ -172,7 +172,7 @@ class SubscribeCall : public ServerStreamingRpc<remote::ETHBACKEND::AsyncService
 };
 
 //! Factory specialization for Subscribe method.
-class SubscribeCallFactory : public Factory<remote::ETHBACKEND::AsyncService, SubscribeCall> {
+class SubscribeCallFactory : public CallFactory<remote::ETHBACKEND::AsyncService, SubscribeCall> {
   public:
     explicit SubscribeCallFactory();
 };
@@ -196,13 +196,13 @@ class NodeInfoCall : public UnaryRpc<remote::ETHBACKEND::AsyncService, remote::N
 };
 
 //! Factory specialization for NodeInfo method.
-class NodeInfoCallFactory : public Factory<remote::ETHBACKEND::AsyncService, NodeInfoCall> {
+class NodeInfoCallFactory : public CallFactory<remote::ETHBACKEND::AsyncService, NodeInfoCall> {
   public:
     explicit NodeInfoCallFactory();
 };
 
-//! The ETHBACKEND protocol factory aggregration.
-struct BackEndFactoryGroup {
+//! The ETHBACKEND service implementation.
+struct BackEndService {
     EtherbaseCallFactory etherbase_factory;
     NetVersionCallFactory net_version_factory;
     NetPeerCountCallFactory net_peer_count_factory;
@@ -212,8 +212,8 @@ struct BackEndFactoryGroup {
     SubscribeCallFactory subscribe_factory;
     NodeInfoCallFactory node_info_factory;
 
-    explicit BackEndFactoryGroup(const EthereumBackEnd& backend);
-    ~BackEndFactoryGroup();
+    explicit BackEndService(const EthereumBackEnd& backend);
+    ~BackEndService();
 
     void add_sentry(std::unique_ptr<SentryClient>&& sentry);
 

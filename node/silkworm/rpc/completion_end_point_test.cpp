@@ -14,7 +14,7 @@
    limitations under the License.
 */
 
-#include "completion_runner.hpp"
+#include "completion_end_point.hpp"
 
 #include <chrono>
 #include <future>
@@ -32,27 +32,27 @@ namespace silkworm::rpc {
 using Catch::Matchers::Message;
 using namespace std::chrono_literals;
 
-TEST_CASE("CompletionRunner", "[silkworm][rpc][completion_runner]") {
+TEST_CASE("CompletionEndPoint", "[silkworm][rpc][completion_end_point]") {
     silkworm::log::set_verbosity(silkworm::log::Level::kNone);
 
     SECTION("waiting on empty completion queue") {
         grpc::CompletionQueue queue;
-        CompletionRunner completion_runner{queue};
-        auto completion_runner_thread = std::thread([&]() {
-            while (completion_runner.poll_one() >= 0) {
+        CompletionEndPoint completion_end_point{queue};
+        auto completion_end_point_thread = std::thread([&]() {
+            while (completion_end_point.poll_one() >= 0) {
                 std::this_thread::sleep_for(100us);
             }
         });
         std::this_thread::yield();
-        completion_runner.shutdown();
-        CHECK_NOTHROW(completion_runner_thread.join());
+        completion_end_point.shutdown();
+        CHECK_NOTHROW(completion_end_point_thread.join());
     }
 
     SECTION("posting handler completion to I/O execution context") {
         grpc::CompletionQueue queue;
-        CompletionRunner completion_runner{queue};
-        auto completion_runner_thread = std::thread([&]() {
-            while (completion_runner.poll_one() >= 0) {
+        CompletionEndPoint completion_end_point{queue};
+        auto completion_end_point_thread = std::thread([&]() {
+            while (completion_end_point.poll_one() >= 0) {
                 std::this_thread::sleep_for(100us);
             }
         });
@@ -72,35 +72,35 @@ TEST_CASE("CompletionRunner", "[silkworm][rpc][completion_runner]") {
         grpc::Alarm alarm;
         alarm.Set(&queue, alarm_deadline, &tag_processor);
         f.get();
-        completion_runner.shutdown();
-        CHECK_NOTHROW(completion_runner_thread.join());
+        completion_end_point.shutdown();
+        CHECK_NOTHROW(completion_end_point_thread.join());
     }
 
     SECTION("exiting on completion queue already shutdown") {
         grpc::CompletionQueue queue;
-        CompletionRunner completion_runner{queue};
-        completion_runner.shutdown();
-        auto completion_runner_thread = std::thread([&]() {
-            while (completion_runner.poll_one() >= 0) {
+        CompletionEndPoint completion_end_point{queue};
+        completion_end_point.shutdown();
+        auto completion_end_point_thread = std::thread([&]() {
+            while (completion_end_point.poll_one() >= 0) {
                 std::this_thread::sleep_for(100us);
             }
         });
         std::this_thread::yield();
-        CHECK_NOTHROW(completion_runner_thread.join());
+        CHECK_NOTHROW(completion_end_point_thread.join());
     }
 
     SECTION("stopping again after already stopped") {
         grpc::CompletionQueue queue;
-        CompletionRunner completion_runner{queue};
-        auto completion_runner_thread = std::thread([&]() {
-            while (completion_runner.poll_one() >= 0) {
+        CompletionEndPoint completion_end_point{queue};
+        auto completion_end_point_thread = std::thread([&]() {
+            while (completion_end_point.poll_one() >= 0) {
                 std::this_thread::sleep_for(100us);
             }
         });
         std::this_thread::yield();
-        completion_runner.shutdown();
-        CHECK_NOTHROW(completion_runner_thread.join());
-        CHECK_NOTHROW(completion_runner.shutdown());
+        completion_end_point.shutdown();
+        CHECK_NOTHROW(completion_end_point_thread.join());
+        CHECK_NOTHROW(completion_end_point.shutdown());
     }
 }
 

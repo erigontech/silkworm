@@ -41,7 +41,7 @@ void KvVersionCall::process(const google::protobuf::Empty* request) {
 }
 
 KvVersionCallFactory::KvVersionCallFactory()
-    : Factory<remote::KV::AsyncService, KvVersionCall>(&remote::KV::AsyncService::RequestVersion) {
+    : CallFactory<remote::KV::AsyncService, KvVersionCall>(&remote::KV::AsyncService::RequestVersion) {
     KvVersionCall::fill_predefined_reply();
 }
 
@@ -82,7 +82,7 @@ void TxCall::process(const remote::Cursor* request) {
 }
 
 TxCallFactory::TxCallFactory()
-    : Factory<remote::KV::AsyncService, TxCall>(&remote::KV::AsyncService::RequestTx) {
+    : CallFactory<remote::KV::AsyncService, TxCall>(&remote::KV::AsyncService::RequestTx) {
 }
 
 StateChangesCall::StateChangesCall(remote::KV::AsyncService* service, grpc::ServerCompletionQueue* queue, Handlers handlers)
@@ -104,7 +104,7 @@ void StateChangesCall::process(const remote::StateChangeRequest* request) {
 }
 
 StateChangesCallFactory::StateChangesCallFactory()
-    : Factory<remote::KV::AsyncService, StateChangesCall>(&remote::KV::AsyncService::RequestStateChanges) {
+    : CallFactory<remote::KV::AsyncService, StateChangesCall>(&remote::KV::AsyncService::RequestStateChanges) {
 }
 
 } // namespace silkworm::rpc

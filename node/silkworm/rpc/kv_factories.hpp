@@ -23,9 +23,9 @@
 #include <remote/kv.grpc.pb.h>
 
 #include <silkworm/chain/config.hpp>
-#include <silkworm/rpc/factory.hpp>
-#include <silkworm/rpc/server.hpp>
 #include <silkworm/rpc/call.hpp>
+#include <silkworm/rpc/call_factory.hpp>
+#include <silkworm/rpc/server.hpp>
 
 // KV API protocol versions
 // 5.1.0 - first issue
@@ -49,7 +49,7 @@ class KvVersionCall : public UnaryRpc<remote::KV::AsyncService, google::protobuf
 };
 
 //! Factory specialization for Version method.
-class KvVersionCallFactory : public Factory<remote::KV::AsyncService, KvVersionCall> {
+class KvVersionCallFactory : public CallFactory<remote::KV::AsyncService, KvVersionCall> {
   public:
     explicit KvVersionCallFactory();
 };
@@ -63,7 +63,7 @@ class TxCall : public BidirectionalStreamingRpc<remote::KV::AsyncService, remote
 };
 
 //! Factory specialization for Tx method.
-class TxCallFactory : public Factory<remote::KV::AsyncService, TxCall> {
+class TxCallFactory : public CallFactory<remote::KV::AsyncService, TxCall> {
   public:
     explicit TxCallFactory();
 };
@@ -77,13 +77,13 @@ class StateChangesCall : public ServerStreamingRpc<remote::KV::AsyncService, rem
 };
 
 //! Factory specialization for StateChanges method.
-class StateChangesCallFactory : public Factory<remote::KV::AsyncService, StateChangesCall> {
+class StateChangesCallFactory : public CallFactory<remote::KV::AsyncService, StateChangesCall> {
   public:
     explicit StateChangesCallFactory();
 };
 
-//! The KV protocol factory aggregration.
-struct KvFactoryGroup {
+//! The KV service implementation.
+struct KvService {
     KvVersionCallFactory kv_version_factory;
     TxCallFactory tx_factory;
     StateChangesCallFactory state_changes_factory;

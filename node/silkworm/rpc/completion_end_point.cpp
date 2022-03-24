@@ -14,7 +14,7 @@
    limitations under the License.
 */
 
-#include "completion_runner.hpp"
+#include "completion_end_point.hpp"
 
 #include <memory>
 
@@ -25,8 +25,8 @@
 
 namespace silkworm::rpc {
 
-int CompletionRunner::poll_one() {
-    SILK_TRACE << "CompletionRunner::poll_one START";
+int CompletionEndPoint::poll_one() {
+    SILK_TRACE << "CompletionEndPoint::poll_one START";
 
     int num_completed{0}; // returned when next_status == grpc::CompletionQueue::TIMEOUT
 
@@ -37,25 +37,25 @@ int CompletionRunner::poll_one() {
         num_completed = 1;
         // Handle the event completion on the calling thread (*must* be the io_context scheduler).
         CompletionTag completion_tag{reinterpret_cast<TagProcessor*>(tag), ok};
-        SILK_DEBUG << "CompletionRunner::poll_one post operation: " << completion_tag.processor;
+        SILK_DEBUG << "CompletionEndPoint::poll_one post operation: " << completion_tag.processor;
         (*completion_tag.processor)(completion_tag.ok);
     } else if (next_status == grpc::CompletionQueue::SHUTDOWN) {
         num_completed = -1;
     }
 
-    SILK_TRACE << "CompletionRunner::poll_one next_status=" << next_status << " END";
+    SILK_TRACE << "CompletionEndPoint::poll_one next_status=" << next_status << " END";
     return num_completed;
 }
 
-void CompletionRunner::shutdown() {
-    SILK_TRACE << "CompletionRunner::shutdown START";
+void CompletionEndPoint::shutdown() {
+    SILK_TRACE << "CompletionEndPoint::shutdown START";
     queue_.Shutdown();
-    SILK_DEBUG << "CompletionRunner::shutdown draining...";
+    SILK_DEBUG << "CompletionEndPoint::shutdown draining...";
     void* ignored_tag;
     bool ignored_ok;
     while (queue_.Next(&ignored_tag, &ignored_ok)) {
     }
-    SILK_TRACE << "CompletionRunner::shutdown END";
+    SILK_TRACE << "CompletionEndPoint::shutdown END";
 }
 
 }  // namespace silkworm::rpc

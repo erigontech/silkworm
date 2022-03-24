@@ -25,8 +25,9 @@
 namespace silkworm::rpc {
 
 std::ostream& operator<<(std::ostream& out, const ServerContext& c) {
-    out << "io_context: " << &*c.io_context << " server_queue: " << &*c.server_queue << " server_runner: " << &*c.server_runner
-        << " client_queue: " << &*c.client_queue << " client_runner: " << &*c.client_runner;
+    out << "io_context: " << &*c.io_context
+        << " server_queue: " << &*c.server_queue << " server_end_point: " << &*c.server_end_point
+        << " client_queue: " << &*c.client_queue << " client_end_point: " << &*c.client_end_point;
     return out;
 }
 
@@ -48,16 +49,16 @@ ServerContextPool::~ServerContextPool() {
 void ServerContextPool::add_context(std::unique_ptr<grpc::ServerCompletionQueue> server_queue) {
     // Create the io_context and give it work to do so that its event loop will not exit until it is explicitly stopped.
     auto io_context = std::make_shared<boost::asio::io_context>();
-    auto server_runner = std::make_unique<CompletionRunner>(*server_queue);
+    auto server_end_point = std::make_unique<CompletionEndPoint>(*server_queue);
     auto client_queue = std::make_unique<grpc::CompletionQueue>();
-    auto client_runner = std::make_unique<CompletionRunner>(*client_queue);
+    auto client_end_point = std::make_unique<CompletionEndPoint>(*client_queue);
     const auto num_contexts = contexts_.size();
     contexts_.push_back({
         io_context,
         std::move(server_queue),
-        std::move(server_runner),
+        std::move(server_end_point),
         std::move(client_queue),
-        std::move(client_runner)
+        std::move(client_end_point)
     });
     SILK_DEBUG << "ServerContextPool::add_context context[" << num_contexts << "] " << contexts_[num_contexts];
     work_.push_back(boost::asio::require(io_context->get_executor(), boost::asio::execution::outstanding_work.tracked));
@@ -73,17 +74,16 @@ void ServerContextPool::start() {
         // Create a pool of threads to run all of the contexts (each one having 1+1 threads)
         for (std::size_t i{0}; i < contexts_.size(); ++i) {
             auto& context = contexts_[i];
-            SILK_DEBUG << "ServerContextPool::start context[" << i << "].server_runner started: " << &*context.server_runner;
             context_threads_.create_thread([&, i = i]() {
                 SILK_TRACE << "io_context thread start context[" << i << "].io_context thread_id: " << std::this_thread::get_id();
                 //TODO(canepat): add counter for served tasks and plug some wait strategy
                 while (!context.io_context->stopped()) {
-                    context.server_runner->poll_one();
-                    context.client_runner->poll_one();
+                    context.server_end_point->poll_one();
+                    context.client_end_point->poll_one();
                     context.io_context->poll_one();
                 }
-                context.server_runner->shutdown();
-                context.client_runner->shutdown();
+                context.server_end_point->shutdown();
+                context.client_end_point->shutdown();
                 SILK_TRACE << "io_context thread end context[" << i << "].io_context thread_id: " << std::this_thread::get_id();
             });
             SILK_DEBUG << "ServerContextPool::start context[" << i << "].io_context started: " << &*context.io_context;

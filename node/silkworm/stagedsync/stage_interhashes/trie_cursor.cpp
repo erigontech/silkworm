@@ -23,25 +23,23 @@
 
 namespace silkworm::trie {
 
-Cursor::Cursor(mdbx::cursor& cursor, PrefixSet& changed, ByteView prefix)
-    : cursor_{cursor}, changed_{changed}, prefix_{prefix} {
+Cursor::Cursor(mdbx::cursor& db_cursor, PrefixSet& changed, ByteView prefix)
+    : db_cursor_{db_cursor}, changed_{changed}, prefix_{prefix} {
     consume_node(/*key=*/{}, /*exact=*/true);
 }
 
-void Cursor::consume_node(ByteView to, bool exact) {
-    const Bytes db_key{prefix_ + Bytes{to}};
-    const auto entry{exact ? cursor_.find(db::to_slice(db_key), /*throw_notfound=*/false)
-                           : cursor_.lower_bound(db::to_slice(db_key), /*throw_notfound=*/false)};
+void Cursor::consume_node(ByteView key, bool exact) {
+    const Bytes db_key{prefix_ + Bytes{key}};
+    const auto db_data{exact ? db_cursor_.find(db::to_slice(db_key), /*throw_notfound=*/false)
+                             : db_cursor_.lower_bound(db::to_slice(db_key), /*throw_notfound=*/false)};
 
-    if (!entry && !exact) {
-        // end-of-tree
-        subnodes_.clear();
-        return;
-    }
-
-    ByteView key = to;
     if (!exact) {
-        key = db::from_slice(entry.key);
+        if (!db_data) {
+            // end-of-tree
+            subnodes_.clear();
+            return;
+        }
+        key = db::from_slice(db_data.key);
         if (!has_prefix(key, prefix_)) {
             subnodes_.clear();
             return;
@@ -50,8 +48,8 @@ void Cursor::consume_node(ByteView to, bool exact) {
     }
 
     std::optional<Node> node{std::nullopt};
-    if (entry) {
-        node = unmarshal_node(db::from_slice(entry.value));
+    if (db_data) {
+        node = unmarshal_node(db::from_slice(db_data.value));
         SILKWORM_ASSERT(node.has_value());
         SILKWORM_ASSERT(node->state_mask() != 0);
     }
@@ -75,8 +73,8 @@ void Cursor::consume_node(ByteView to, bool exact) {
     update_skip_state();
 
     // don't erase nodes with valid root hashes
-    if (entry && (!can_skip_state_ || nibble != -1)) {
-        cursor_.erase();
+    if (db_data && (!can_skip_state_ || nibble != -1)) {
+        db_cursor_.erase();
     }
 }
 
@@ -103,7 +101,7 @@ void Cursor::next() {
 
 void Cursor::update_skip_state() {
     const std::optional<Bytes> k{key()};
-    if (k == std::nullopt || changed_.contains(prefix_ + *k)) {
+    if (!k.has_value() || changed_.contains(prefix_ + k.value())) {
         can_skip_state_ = false;
     } else {
         can_skip_state_ = subnodes_.back().hash_flag();
@@ -116,27 +114,28 @@ void Cursor::move_to_next_sibling(bool allow_root_to_child_nibble_within_subnode
         return;
     }
 
-    SubNode& sn{subnodes_.back()};
+    SubNode& sub_node{subnodes_.back()};
 
-    if (sn.nibble >= 15 || (sn.nibble < 0 && !allow_root_to_child_nibble_within_subnode)) {
+    if (sub_node.nibble >= 15 || (sub_node.nibble < 0 && !allow_root_to_child_nibble_within_subnode)) {
         // this node is fully traversed
         subnodes_.pop_back();
         move_to_next_sibling(false);  // on parent
         return;
     }
 
-    ++sn.nibble;
+    sub_node.nibble++;
 
-    if (!sn.node.has_value()) {
+    if (!sub_node.node.has_value()) {
         // we can't rely on the state flag, so search in the DB
         consume_node(*key(), /*exact=*/false);
         return;
     }
 
-    for (; sn.nibble < 16; ++sn.nibble) {
-        if (sn.state_flag()) {
+    while (sub_node.nibble < 16) {
+        if (sub_node.state_flag()) {
             return;
         }
+        sub_node.nibble++;
     }
 
     // this node is fully traversed

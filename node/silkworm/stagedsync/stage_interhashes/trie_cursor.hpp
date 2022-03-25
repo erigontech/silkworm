@@ -34,7 +34,7 @@ class Cursor {
   public:
 
     // Ignores DB entries whose keys don't start with the prefix
-    explicit Cursor(mdbx::cursor& cursor, PrefixSet& changed, ByteView prefix = {});
+    explicit Cursor(mdbx::cursor& db_cursor, PrefixSet& changed, ByteView prefix = {});
 
     // Not copyable nor movable
     Cursor(const Cursor&) = delete;
@@ -73,7 +73,7 @@ class Cursor {
 
     void update_skip_state();
 
-    mdbx::cursor cursor_;
+    mdbx::cursor db_cursor_;
 
     PrefixSet& changed_;
 
@@ -85,11 +85,13 @@ class Cursor {
 };
 
 //! \brief Produces the next key of the same length. \n
-//! It's essentially +1 in the hexadecimal (base 16) numeral system. \n
-//! For example: \n
-//! increment_key(120) = 121, \n
-//! increment_key(12e) = 12f, \n
-//! increment_key(12f) = 130. \n
+//! \details It's essentially +1 in the hexadecimal (base 16) numeral system. \n
+//! \example
+//! \verbatim
+//! increment_key(120) = 121
+//! increment_key(12e) = 12f
+//! increment_key(12f) = 130
+//! \endverbatim
 //! \return std::optional if the key is the largest key of its length,
 //! i.e. consists only of 0xF nibbles.
 std::optional<Bytes> increment_key(ByteView unpacked);

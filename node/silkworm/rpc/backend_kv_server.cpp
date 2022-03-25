@@ -41,8 +41,8 @@ void BackEndKvServer::register_request_calls() {
     // Start one server-side RPC request for each available server context
     for (auto& backend_kv_svc : backend_kv_services_) {
         const auto& server_context = next_context();
-        const auto server_queue = server_context.server_queue.get();
-        const auto client_queue = server_context.client_queue.get();
+        const auto server_queue = server_context.server_queue();
+        const auto client_queue = server_context.client_queue();
 
         // Complete the service initialization
         RemoteSentryClientFactory sentry_factory{client_queue};

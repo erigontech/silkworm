@@ -111,7 +111,7 @@ inline int popcount_16(uint16_t value) {
 #ifdef _MSC_VER
     return __popcnt16(value);
 #else
-    return __builtin_popcount(x);
+    return __builtin_popcount(value);
 #endif
 }
 

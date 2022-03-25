@@ -85,7 +85,7 @@ StageResult Execution::forward(db::RWTxn& txn) {
     }
 
     static constexpr size_t kCacheSize{5'000};
-    lru_cache<evmc::bytes32, std::shared_ptr<evmone::baseline::CodeAnalysis>> analysis_cache{kCacheSize};
+    BaselineAnalysisCache analysis_cache{kCacheSize};
     ObjectPool<EvmoneExecutionState> state_pool;
 
     while (!is_stopping() && block_num_ <= max_block_num) {
@@ -157,10 +157,9 @@ std::queue<Block> Execution::prefetch_blocks(db::RWTxn& txn, BlockNum from, Bloc
     return ret;
 }
 
-StageResult Execution::execute_batch(
-    db::RWTxn& txn, BlockNum max_block_num,
-    lru_cache<evmc::bytes32, std::shared_ptr<evmone::baseline::CodeAnalysis>>& analysis_cache,
-    ObjectPool<EvmoneExecutionState>& state_pool, BlockNum prune_history_threshold, BlockNum prune_receipts_threshold) {
+StageResult Execution::execute_batch(db::RWTxn& txn, BlockNum max_block_num, BaselineAnalysisCache& analysis_cache,
+                                     ObjectPool<EvmoneExecutionState>& state_pool, BlockNum prune_history_threshold,
+                                     BlockNum prune_receipts_threshold) {
     try {
         db::Buffer buffer(*txn, prune_history_threshold);
         std::vector<Receipt> receipts;

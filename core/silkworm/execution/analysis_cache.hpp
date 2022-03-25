@@ -20,11 +20,15 @@
 #include <memory>
 
 #include <evmone/advanced_analysis.hpp>
+#include <evmone/baseline.hpp>
 
 #include <silkworm/common/base.hpp>
 #include <silkworm/common/lru_cache.hpp>
 
 namespace silkworm {
+
+// Cache of EVM baseline analyses.
+using BaselineAnalysisCache = lru_cache<evmc::bytes32, std::shared_ptr<evmone::baseline::CodeAnalysis>>;
 
 /** @brief Cache of EVM advanced analyses.
  *

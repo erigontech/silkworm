@@ -20,8 +20,6 @@
 #include <stack>
 #include <vector>
 
-#include <evmone/advanced_analysis.hpp>
-#include <evmone/baseline.hpp>
 #include <intx/intx.hpp>
 
 #include <silkworm/chain/config.hpp>
@@ -76,7 +74,7 @@ class EVM {
     void add_tracer(EvmTracer& tracer) noexcept;
 
     // Use for better performance with evmone baseline interpreter
-    lru_cache<evmc::bytes32, std::shared_ptr<evmone::baseline::CodeAnalysis>>* baseline_analysis_cache{nullptr};
+    BaselineAnalysisCache* baseline_analysis_cache{nullptr};
 
     // Point to a cache instance in order to enable execution with evmone advanced rather than baseline interpreter
     AdvancedAnalysisCache* advanced_analysis_cache{nullptr};

@@ -30,7 +30,7 @@ Node::Node(uint16_t state_mask, uint16_t tree_mask, uint16_t hash_mask, std::vec
       root_hash_{root_hash} {
     assert_subset(tree_mask_, state_mask_);
     assert_subset(hash_mask_, state_mask_);
-    assert(std::bitset<16>(hash_mask_).count() == hashes_.size());
+    assert(popcount_16(hash_mask_) == hashes_.size());
 }
 
 void Node::set_root_hash(const std::optional<evmc::bytes32>& root_hash) { root_hash_ = root_hash; }

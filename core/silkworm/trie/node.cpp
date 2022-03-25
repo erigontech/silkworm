@@ -30,7 +30,7 @@ Node::Node(uint16_t state_mask, uint16_t tree_mask, uint16_t hash_mask, std::vec
       root_hash_{root_hash} {
     assert_subset(tree_mask_, state_mask_);
     assert_subset(hash_mask_, state_mask_);
-    assert(static_cast<size_t>(popcount_16(hash_mask_)) == hashes_.size());
+    assert(popcount_16(hash_mask_) == hashes_.size());
 }
 
 void Node::set_root_hash(const std::optional<evmc::bytes32>& root_hash) { root_hash_ = root_hash; }
@@ -89,7 +89,7 @@ std::optional<Node> unmarshal_node(ByteView v) {
     v.remove_prefix(2);
 
     std::optional<evmc::bytes32> root_hash{std::nullopt};
-    if (static_cast<size_t>(popcount_16(hash_mask)) + 1u == v.length() / kHashLength) {
+    if (popcount_16(hash_mask) + 1u == v.length() / kHashLength) {
         root_hash = evmc::bytes32{};
         std::memcpy(root_hash->bytes, v.data(), kHashLength);
         v.remove_prefix(kHashLength);

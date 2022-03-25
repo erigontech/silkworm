@@ -26,9 +26,9 @@
 
 namespace silkworm {
 
-/** @brief Cache of EVM analyses.
+/** @brief Cache of EVM advanced analyses.
  *
- * Analyses performed for different EVM revisions do not coexist in the cache
+ * Adavanced interpreter analyses performed for different EVM revisions do not coexist in the cache
  * and all other revisions are evicted on revision update.
  */
 class AdvancedAnalysisCache {

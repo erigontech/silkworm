@@ -29,11 +29,6 @@
 #include <silkworm/state/intra_block_state.hpp>
 #include <silkworm/types/block.hpp>
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wold-style-cast"
-#include <evmone/advanced_analysis.hpp>
-#pragma GCC diagnostic pop
-
 namespace silkworm {
 
 struct CallResult {
@@ -78,8 +73,11 @@ class EVM {
 
     void add_tracer(EvmTracer& tracer) noexcept;
 
+    // Use for better performance with evmone baseline interpreter
+    BaselineAnalysisCache* baseline_analysis_cache{nullptr};
+
     // Point to a cache instance in order to enable execution with evmone advanced rather than baseline interpreter
-    AnalysisCache* advanced_analysis_cache{nullptr};
+    AdvancedAnalysisCache* advanced_analysis_cache{nullptr};
 
     ObjectPool<EvmoneExecutionState>* state_pool{nullptr};  // use for better performance
 
@@ -94,13 +92,13 @@ class EVM {
 
     evmc::result call(const evmc_message& message) noexcept;
 
-    evmc::result execute(const evmc_message& message, ByteView code, std::optional<evmc::bytes32> code_hash) noexcept;
+    evmc::result execute(const evmc_message& message, ByteView code, const evmc::bytes32* code_hash) noexcept;
 
-    evmc_result execute_with_baseline_interpreter(evmc_revision rev, const evmc_message& message,
-                                                  ByteView code) noexcept;
+    evmc_result execute_with_baseline_interpreter(evmc_revision rev, const evmc_message& message, ByteView code,
+                                                  const evmc::bytes32* code_hash) noexcept;
 
-    evmc_result execute_with_default_interpreter(evmc_revision rev, const evmc_message& message, ByteView code,
-                                                 const evmc::bytes32& code_hash) noexcept;
+    evmc_result execute_with_advanced_interpreter(evmc_revision rev, const evmc_message& message, ByteView code,
+                                                  const evmc::bytes32& code_hash) noexcept;
 
     gsl::owner<EvmoneExecutionState*> acquire_state() noexcept;
     void release_state(gsl::owner<EvmoneExecutionState*> state) noexcept;

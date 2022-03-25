@@ -1,5 +1,5 @@
 /*
-   Copyright 2021 The Silkworm Authors
+   Copyright 2021-2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -159,7 +159,7 @@ TEST_CASE("JSON serialization") {
     CHECK(config2->terminal_total_difficulty == intx::from_string<intx::uint256>("39387012740608862000000"));
     CHECK(config2->terminal_block_number == 10000);
     CHECK(config2->terminal_block_hash == 0x6dc57fd586f41ee340124c3a005642af7731a9ca7a7b70d989a7e2833e4ab740_bytes32);
-    CHECK(config2->merge_fork_block == 10000);
+    CHECK(config2->revision_block(EVMC_PARIS) == 10000);
 
     CHECK(config2->to_json() == merge_test_json);
 }

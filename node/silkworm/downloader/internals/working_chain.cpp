@@ -33,7 +33,6 @@ class segment_cut_and_paste_error : public std::logic_error {
 WorkingChain::WorkingChain(ConsensusEngine engine)
     : highest_in_db_(0),
       top_seen_height_(0),
-      preverified_hashes_{&PreverifiedHashes::none},
       seen_announces_(1000),
       consensus_engine_{std::move(engine)},
       chain_state_(
@@ -55,7 +54,7 @@ void WorkingChain::top_seen_block_height(BlockNum n) { top_seen_height_ = n; }
 BlockNum WorkingChain::top_seen_block_height() const { return top_seen_height_; }
 
 bool WorkingChain::in_sync() const {
-    return highest_in_db_ >= preverified_hashes_->height && top_seen_height_ > 0 && highest_in_db_ >= top_seen_height_;
+    return highest_in_db_ >= preverified_hashes_.height && top_seen_height_ > 0 && highest_in_db_ >= top_seen_height_;
 }
 
 size_t WorkingChain::pending_links() const {
@@ -113,7 +112,6 @@ void WorkingChain::add_bad_headers(const std::set<Hash>& bads) {
     bad_headers_.insert(bads.begin(), bads.end());  // todo: use set_union or merge?
 }
 
-// See Erigon RecoverFromDb - todo: check if this method (& persisted_link_queue_) is really useful
 void WorkingChain::recover_initial_state(Db::ReadOnlyAccess::Tx& tx) {
     reduce_persisted_links_to(0);  // drain persistedLinksQueue and remove links
 
@@ -147,7 +145,7 @@ Headers WorkingChain::withdraw_stable_headers() {
         assessing_list.pop();
 
         // If it is in the pre-verified headers range do not verify it, wait for pre-verification
-        if (link->blockHeight <= preverified_hashes_->height && !link->preverified) {
+        if (link->blockHeight <= preverified_hashes_.height && !link->preverified) {
             insert_list_.push(link);
             SILK_TRACE << "WorkingChain: wait for pre-verification of " << link->blockHeight;
             continue;  // header should be pre-verified, but not yet, try again later
@@ -743,7 +741,7 @@ void WorkingChain::connect(std::shared_ptr<Link> attachment_link, Segment::Slice
         if (prev_link->persisted) insert_list_.push(link);
         prev_link->next.push_back(link);  // add link as next of the preceding
         prev_link = link;
-        if (preverified_hashes_->contains(link->hash)) mark_as_preverified(link);
+        if (preverified_hashes_.contains(link->hash)) mark_as_preverified(link);
     }
 
     // Update deepest anchor
@@ -799,7 +797,7 @@ auto WorkingChain::extend_down(Segment::Slice segment_slice, std::shared_ptr<Anc
         else
             prev_link->next.push_back(link);  // add link as next of the preceding
         prev_link = link;
-        if (preverified_hashes_->contains(link->hash)) mark_as_preverified(link);
+        if (preverified_hashes_.contains(link->hash)) mark_as_preverified(link);
     }
 
     new_anchor->lastLinkHeight = std::max(new_anchor->lastLinkHeight, anchor->lastLinkHeight);
@@ -837,7 +835,7 @@ void WorkingChain::extend_up(std::shared_ptr<Link> attachment_link, Segment::Sli
         if (prev_link->persisted) insert_list_.push(link);
         prev_link->next.push_back(link);  // add link as next of the preceding
         prev_link = link;
-        if (preverified_hashes_->contains(link->hash)) mark_as_preverified(link);
+        if (preverified_hashes_.contains(link->hash)) mark_as_preverified(link);
     }
 
     // Update deepest anchor
@@ -879,7 +877,7 @@ auto WorkingChain::new_anchor(Segment::Slice segment_slice, PeerId peerId) -> Re
         else
             prev_link->next.push_back(link);  // add link as next of the preceding
         prev_link = link;
-        if (preverified_hashes_->contains(link->hash)) mark_as_preverified(link);
+        if (preverified_hashes_.contains(link->hash)) mark_as_preverified(link);
     }
 
     anchor->lastLinkHeight = std::max(anchor->lastLinkHeight, prev_link->blockHeight);
@@ -947,8 +945,8 @@ void WorkingChain::mark_as_preverified(std::shared_ptr<Link> link) {
     }
 }
 
-void WorkingChain::set_preverified_hashes(const PreverifiedHashes* preverifiedHashes) {
-    preverified_hashes_ = preverifiedHashes;
+void WorkingChain::set_preverified_hashes(PreverifiedHashes preverifiedHashes) {
+    preverified_hashes_ = std::move(preverifiedHashes);
 }
 
 uint64_t WorkingChain::generate_request_id() {

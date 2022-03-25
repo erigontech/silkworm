@@ -53,7 +53,7 @@ int main(int argc, char* argv[]) {
     // running on the same machine.
     // std::unique_ptr<lmdb::Transaction> txn{env->begin_ro_transaction()};
 
-    AnalysisCache analysis_cache;
+    AdvancedAnalysisCache analysis_cache;
     ObjectPool<EvmoneExecutionState> state_pool;
     std::vector<Receipt> receipts;
 

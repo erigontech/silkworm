@@ -196,6 +196,7 @@ const ::PROTOBUF_NAMESPACE_ID::uint32 TableStruct_remote_2fkv_2eproto::offsets[]
   PROTOBUF_FIELD_OFFSET(::remote::StateChangeBatch, databaseviewid_),
   PROTOBUF_FIELD_OFFSET(::remote::StateChangeBatch, changebatch_),
   PROTOBUF_FIELD_OFFSET(::remote::StateChangeBatch, pendingblockbasefee_),
+  PROTOBUF_FIELD_OFFSET(::remote::StateChangeBatch, blockgaslimit_),
   ~0u,  // no _has_bits_
   PROTOBUF_FIELD_OFFSET(::remote::StateChange, _internal_metadata_),
   ~0u,  // no _extensions_
@@ -220,8 +221,8 @@ static const ::PROTOBUF_NAMESPACE_ID::internal::MigrationSchema schemas[] PROTOB
   { 19, -1, sizeof(::remote::StorageChange)},
   { 26, -1, sizeof(::remote::AccountChange)},
   { 37, -1, sizeof(::remote::StateChangeBatch)},
-  { 45, -1, sizeof(::remote::StateChange)},
-  { 55, -1, sizeof(::remote::StateChangeRequest)},
+  { 46, -1, sizeof(::remote::StateChange)},
+  { 56, -1, sizeof(::remote::StateChangeRequest)},
 };
 
 static ::PROTOBUF_NAMESPACE_ID::Message const * const file_default_instances[] = {
@@ -246,29 +247,30 @@ const char descriptor_table_protodef_remote_2fkv_2eproto[] PROTOBUF_SECTION_VARI
   " \001(\0132\013.types.H160\022\023\n\013incarnation\030\002 \001(\004\022\036"
   "\n\006action\030\003 \001(\0162\016.remote.Action\022\014\n\004data\030\004"
   " \001(\014\022\014\n\004code\030\005 \001(\014\022-\n\016storageChanges\030\006 \003"
-  "(\0132\025.remote.StorageChange\"q\n\020StateChange"
-  "Batch\022\026\n\016databaseViewID\030\001 \001(\004\022(\n\013changeB"
-  "atch\030\002 \003(\0132\023.remote.StateChange\022\033\n\023pendi"
-  "ngBlockBaseFee\030\003 \001(\004\"\235\001\n\013StateChange\022$\n\t"
-  "direction\030\001 \001(\0162\021.remote.Direction\022\023\n\013bl"
-  "ockHeight\030\002 \001(\004\022\036\n\tblockHash\030\003 \001(\0132\013.typ"
-  "es.H256\022&\n\007changes\030\004 \003(\0132\025.remote.Accoun"
-  "tChange\022\013\n\003txs\030\005 \003(\014\"C\n\022StateChangeReque"
-  "st\022\023\n\013withStorage\030\001 \001(\010\022\030\n\020withTransacti"
-  "ons\030\002 \001(\010*\350\001\n\002Op\022\t\n\005FIRST\020\000\022\r\n\tFIRST_DUP"
-  "\020\001\022\010\n\004SEEK\020\002\022\r\n\tSEEK_BOTH\020\003\022\013\n\007CURRENT\020\004"
-  "\022\010\n\004LAST\020\006\022\014\n\010LAST_DUP\020\007\022\010\n\004NEXT\020\010\022\014\n\010NE"
-  "XT_DUP\020\t\022\017\n\013NEXT_NO_DUP\020\013\022\010\n\004PREV\020\014\022\014\n\010P"
-  "REV_DUP\020\r\022\017\n\013PREV_NO_DUP\020\016\022\016\n\nSEEK_EXACT"
-  "\020\017\022\023\n\017SEEK_BOTH_EXACT\020\020\022\010\n\004OPEN\020\036\022\t\n\005CLO"
-  "SE\020\037*H\n\006Action\022\013\n\007STORAGE\020\000\022\n\n\006UPSERT\020\001\022"
-  "\010\n\004CODE\020\002\022\017\n\013UPSERT_CODE\020\003\022\n\n\006DELETE\020\004*$"
-  "\n\tDirection\022\013\n\007FORWARD\020\000\022\n\n\006UNWIND\020\0012\254\001\n"
-  "\002KV\0226\n\007Version\022\026.google.protobuf.Empty\032\023"
-  ".types.VersionReply\022&\n\002Tx\022\016.remote.Curso"
-  "r\032\014.remote.Pair(\0010\001\022F\n\014StateChanges\022\032.re"
-  "mote.StateChangeRequest\032\030.remote.StateCh"
-  "angeBatch0\001B\021Z\017./remote;remoteb\006proto3"
+  "(\0132\025.remote.StorageChange\"\210\001\n\020StateChang"
+  "eBatch\022\026\n\016databaseViewID\030\001 \001(\004\022(\n\013change"
+  "Batch\030\002 \003(\0132\023.remote.StateChange\022\033\n\023pend"
+  "ingBlockBaseFee\030\003 \001(\004\022\025\n\rblockGasLimit\030\004"
+  " \001(\004\"\235\001\n\013StateChange\022$\n\tdirection\030\001 \001(\0162"
+  "\021.remote.Direction\022\023\n\013blockHeight\030\002 \001(\004\022"
+  "\036\n\tblockHash\030\003 \001(\0132\013.types.H256\022&\n\007chang"
+  "es\030\004 \003(\0132\025.remote.AccountChange\022\013\n\003txs\030\005"
+  " \003(\014\"C\n\022StateChangeRequest\022\023\n\013withStorag"
+  "e\030\001 \001(\010\022\030\n\020withTransactions\030\002 \001(\010*\350\001\n\002Op"
+  "\022\t\n\005FIRST\020\000\022\r\n\tFIRST_DUP\020\001\022\010\n\004SEEK\020\002\022\r\n\t"
+  "SEEK_BOTH\020\003\022\013\n\007CURRENT\020\004\022\010\n\004LAST\020\006\022\014\n\010LA"
+  "ST_DUP\020\007\022\010\n\004NEXT\020\010\022\014\n\010NEXT_DUP\020\t\022\017\n\013NEXT"
+  "_NO_DUP\020\013\022\010\n\004PREV\020\014\022\014\n\010PREV_DUP\020\r\022\017\n\013PRE"
+  "V_NO_DUP\020\016\022\016\n\nSEEK_EXACT\020\017\022\023\n\017SEEK_BOTH_"
+  "EXACT\020\020\022\010\n\004OPEN\020\036\022\t\n\005CLOSE\020\037*H\n\006Action\022\013"
+  "\n\007STORAGE\020\000\022\n\n\006UPSERT\020\001\022\010\n\004CODE\020\002\022\017\n\013UPS"
+  "ERT_CODE\020\003\022\n\n\006REMOVE\020\004*$\n\tDirection\022\013\n\007F"
+  "ORWARD\020\000\022\n\n\006UNWIND\020\0012\254\001\n\002KV\0226\n\007Version\022\026"
+  ".google.protobuf.Empty\032\023.types.VersionRe"
+  "ply\022&\n\002Tx\022\016.remote.Cursor\032\014.remote.Pair("
+  "\0010\001\022F\n\014StateChanges\022\032.remote.StateChange"
+  "Request\032\030.remote.StateChangeBatch0\001B\021Z\017."
+  "/remote;remoteb\006proto3"
   ;
 static const ::PROTOBUF_NAMESPACE_ID::internal::DescriptorTable*const descriptor_table_remote_2fkv_2eproto_deps[2] = {
   &::descriptor_table_google_2fprotobuf_2fempty_2eproto,
@@ -285,7 +287,7 @@ static ::PROTOBUF_NAMESPACE_ID::internal::SCCInfoBase*const descriptor_table_rem
 };
 static ::PROTOBUF_NAMESPACE_ID::internal::once_flag descriptor_table_remote_2fkv_2eproto_once;
 const ::PROTOBUF_NAMESPACE_ID::internal::DescriptorTable descriptor_table_remote_2fkv_2eproto = {
-  false, false, descriptor_table_protodef_remote_2fkv_2eproto, "remote/kv.proto", 1358,
+  false, false, descriptor_table_protodef_remote_2fkv_2eproto, "remote/kv.proto", 1382,
   &descriptor_table_remote_2fkv_2eproto_once, descriptor_table_remote_2fkv_2eproto_sccs, descriptor_table_remote_2fkv_2eproto_deps, 7, 2,
   schemas, file_default_instances, TableStruct_remote_2fkv_2eproto::offsets,
   file_level_metadata_remote_2fkv_2eproto, 7, file_level_enum_descriptors_remote_2fkv_2eproto, file_level_service_descriptors_remote_2fkv_2eproto,
@@ -1628,8 +1630,8 @@ StateChangeBatch::StateChangeBatch(const StateChangeBatch& from)
       changebatch_(from.changebatch_) {
   _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
   ::memcpy(&databaseviewid_, &from.databaseviewid_,
-    static_cast<size_t>(reinterpret_cast<char*>(&pendingblockbasefee_) -
-    reinterpret_cast<char*>(&databaseviewid_)) + sizeof(pendingblockbasefee_));
+    static_cast<size_t>(reinterpret_cast<char*>(&blockgaslimit_) -
+    reinterpret_cast<char*>(&databaseviewid_)) + sizeof(blockgaslimit_));
   // @@protoc_insertion_point(copy_constructor:remote.StateChangeBatch)
 }
 
@@ -1637,8 +1639,8 @@ void StateChangeBatch::SharedCtor() {
   ::PROTOBUF_NAMESPACE_ID::internal::InitSCC(&scc_info_StateChangeBatch_remote_2fkv_2eproto.base);
   ::memset(reinterpret_cast<char*>(this) + static_cast<size_t>(
       reinterpret_cast<char*>(&databaseviewid_) - reinterpret_cast<char*>(this)),
-      0, static_cast<size_t>(reinterpret_cast<char*>(&pendingblockbasefee_) -
-      reinterpret_cast<char*>(&databaseviewid_)) + sizeof(pendingblockbasefee_));
+      0, static_cast<size_t>(reinterpret_cast<char*>(&blockgaslimit_) -
+      reinterpret_cast<char*>(&databaseviewid_)) + sizeof(blockgaslimit_));
 }
 
 StateChangeBatch::~StateChangeBatch() {
@@ -1674,8 +1676,8 @@ void StateChangeBatch::Clear() {
 
   changebatch_.Clear();
   ::memset(&databaseviewid_, 0, static_cast<size_t>(
-      reinterpret_cast<char*>(&pendingblockbasefee_) -
-      reinterpret_cast<char*>(&databaseviewid_)) + sizeof(pendingblockbasefee_));
+      reinterpret_cast<char*>(&blockgaslimit_) -
+      reinterpret_cast<char*>(&databaseviewid_)) + sizeof(blockgaslimit_));
   _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
 }
 
@@ -1709,6 +1711,13 @@ const char* StateChangeBatch::_InternalParse(const char* ptr, ::PROTOBUF_NAMESPA
       case 3:
         if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 24)) {
           pendingblockbasefee_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
+          CHK_(ptr);
+        } else goto handle_unusual;
+        continue;
+      // uint64 blockGasLimit = 4;
+      case 4:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 32)) {
+          blockgaslimit_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
           CHK_(ptr);
         } else goto handle_unusual;
         continue;
@@ -1760,6 +1769,12 @@ failure:
     target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteUInt64ToArray(3, this->_internal_pendingblockbasefee(), target);
   }
 
+  // uint64 blockGasLimit = 4;
+  if (this->blockgaslimit() != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteUInt64ToArray(4, this->_internal_blockgaslimit(), target);
+  }
+
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
     target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormat::InternalSerializeUnknownFieldsToArray(
         _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
@@ -1795,6 +1810,13 @@ size_t StateChangeBatch::ByteSizeLong() const {
     total_size += 1 +
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::UInt64Size(
         this->_internal_pendingblockbasefee());
+  }
+
+  // uint64 blockGasLimit = 4;
+  if (this->blockgaslimit() != 0) {
+    total_size += 1 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::UInt64Size(
+        this->_internal_blockgaslimit());
   }
 
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
@@ -1835,6 +1857,9 @@ void StateChangeBatch::MergeFrom(const StateChangeBatch& from) {
   if (from.pendingblockbasefee() != 0) {
     _internal_set_pendingblockbasefee(from._internal_pendingblockbasefee());
   }
+  if (from.blockgaslimit() != 0) {
+    _internal_set_blockgaslimit(from._internal_blockgaslimit());
+  }
 }
 
 void StateChangeBatch::CopyFrom(const ::PROTOBUF_NAMESPACE_ID::Message& from) {
@@ -1860,8 +1885,8 @@ void StateChangeBatch::InternalSwap(StateChangeBatch* other) {
   _internal_metadata_.Swap<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(&other->_internal_metadata_);
   changebatch_.InternalSwap(&other->changebatch_);
   ::PROTOBUF_NAMESPACE_ID::internal::memswap<
-      PROTOBUF_FIELD_OFFSET(StateChangeBatch, pendingblockbasefee_)
-      + sizeof(StateChangeBatch::pendingblockbasefee_)
+      PROTOBUF_FIELD_OFFSET(StateChangeBatch, blockgaslimit_)
+      + sizeof(StateChangeBatch::blockgaslimit_)
       - PROTOBUF_FIELD_OFFSET(StateChangeBatch, databaseviewid_)>(
           reinterpret_cast<char*>(&databaseviewid_),
           reinterpret_cast<char*>(&other->databaseviewid_));

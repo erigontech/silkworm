@@ -1,5 +1,5 @@
 /*
-   Copyright 2020-2021 The Silkworm Authors
+   Copyright 2020-2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -51,7 +51,9 @@ struct ChainConfig {
         "berlinBlock",  // EVMC_BERLIN
         "londonBlock",  // EVMC_LONDON
         // there's no evmc_revision for arrowGlacierBlock
-        "shanghaiBlock",  // EVMC_SHANGHAI
+        "mergeForkBlock",  // EVMC_PARIS, corresponds to FORK_NEXT_VALUE of EIP-3675
+        "shanghaiBlock",   // EVMC_SHANGHAI
+        "cancunBlock",     // EVMC_CANCUN
     };
 
     static_assert(std::size(kJsonForkNames) == EVMC_MAX_REVISION);
@@ -77,6 +79,7 @@ struct ChainConfig {
     std::optional<intx::uint256> terminal_total_difficulty{std::nullopt};
     std::optional<uint64_t> terminal_block_number{std::nullopt};
     std::optional<evmc::bytes32> terminal_block_hash{std::nullopt};
+
     // Returns the revision level at given block number
     // In other words, on behalf of Json chain config data
     // returns whether specific HF have occurred

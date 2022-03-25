@@ -135,13 +135,13 @@ enum Action : int {
   UPSERT = 1,
   CODE = 2,
   UPSERT_CODE = 3,
-  DELETE = 4,
+  REMOVE = 4,
   Action_INT_MIN_SENTINEL_DO_NOT_USE_ = std::numeric_limits<::PROTOBUF_NAMESPACE_ID::int32>::min(),
   Action_INT_MAX_SENTINEL_DO_NOT_USE_ = std::numeric_limits<::PROTOBUF_NAMESPACE_ID::int32>::max()
 };
 bool Action_IsValid(int value);
 constexpr Action Action_MIN = STORAGE;
-constexpr Action Action_MAX = DELETE;
+constexpr Action Action_MAX = REMOVE;
 constexpr int Action_ARRAYSIZE = Action_MAX + 1;
 
 const ::PROTOBUF_NAMESPACE_ID::EnumDescriptor* Action_descriptor();
@@ -1070,6 +1070,7 @@ class StateChangeBatch PROTOBUF_FINAL :
     kChangeBatchFieldNumber = 2,
     kDatabaseViewIDFieldNumber = 1,
     kPendingBlockBaseFeeFieldNumber = 3,
+    kBlockGasLimitFieldNumber = 4,
   };
   // repeated .remote.StateChange changeBatch = 2;
   int changebatch_size() const;
@@ -1107,6 +1108,15 @@ class StateChangeBatch PROTOBUF_FINAL :
   void _internal_set_pendingblockbasefee(::PROTOBUF_NAMESPACE_ID::uint64 value);
   public:
 
+  // uint64 blockGasLimit = 4;
+  void clear_blockgaslimit();
+  ::PROTOBUF_NAMESPACE_ID::uint64 blockgaslimit() const;
+  void set_blockgaslimit(::PROTOBUF_NAMESPACE_ID::uint64 value);
+  private:
+  ::PROTOBUF_NAMESPACE_ID::uint64 _internal_blockgaslimit() const;
+  void _internal_set_blockgaslimit(::PROTOBUF_NAMESPACE_ID::uint64 value);
+  public:
+
   // @@protoc_insertion_point(class_scope:remote.StateChangeBatch)
  private:
   class _Internal;
@@ -1117,6 +1127,7 @@ class StateChangeBatch PROTOBUF_FINAL :
   ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::remote::StateChange > changebatch_;
   ::PROTOBUF_NAMESPACE_ID::uint64 databaseviewid_;
   ::PROTOBUF_NAMESPACE_ID::uint64 pendingblockbasefee_;
+  ::PROTOBUF_NAMESPACE_ID::uint64 blockgaslimit_;
   mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   friend struct ::TableStruct_remote_2fkv_2eproto;
 };
@@ -2385,6 +2396,26 @@ inline void StateChangeBatch::_internal_set_pendingblockbasefee(::PROTOBUF_NAMES
 inline void StateChangeBatch::set_pendingblockbasefee(::PROTOBUF_NAMESPACE_ID::uint64 value) {
   _internal_set_pendingblockbasefee(value);
   // @@protoc_insertion_point(field_set:remote.StateChangeBatch.pendingBlockBaseFee)
+}
+
+// uint64 blockGasLimit = 4;
+inline void StateChangeBatch::clear_blockgaslimit() {
+  blockgaslimit_ = PROTOBUF_ULONGLONG(0);
+}
+inline ::PROTOBUF_NAMESPACE_ID::uint64 StateChangeBatch::_internal_blockgaslimit() const {
+  return blockgaslimit_;
+}
+inline ::PROTOBUF_NAMESPACE_ID::uint64 StateChangeBatch::blockgaslimit() const {
+  // @@protoc_insertion_point(field_get:remote.StateChangeBatch.blockGasLimit)
+  return _internal_blockgaslimit();
+}
+inline void StateChangeBatch::_internal_set_blockgaslimit(::PROTOBUF_NAMESPACE_ID::uint64 value) {
+  
+  blockgaslimit_ = value;
+}
+inline void StateChangeBatch::set_blockgaslimit(::PROTOBUF_NAMESPACE_ID::uint64 value) {
+  _internal_set_blockgaslimit(value);
+  // @@protoc_insertion_point(field_set:remote.StateChangeBatch.blockGasLimit)
 }
 
 // -------------------------------------------------------------------

@@ -78,7 +78,7 @@ int main(int argc, char* argv[]) {
             throw std::runtime_error("Unable to retrieve chain config");
         }
 
-        AnalysisCache analysis_cache;
+        AdvancedAnalysisCache analysis_cache;
         ObjectPool<EvmoneExecutionState> state_pool;
         std::vector<Receipt> receipts;
         auto engine{consensus::engine_factory(chain_config.value())};

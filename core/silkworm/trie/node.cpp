@@ -16,9 +16,8 @@
 
 #include "node.hpp"
 
-#include <bitset>
-
 #include <silkworm/common/endian.hpp>
+#include <silkworm/common/util.hpp>
 
 namespace silkworm::trie {
 
@@ -90,7 +89,7 @@ std::optional<Node> unmarshal_node(ByteView v) {
     v.remove_prefix(2);
 
     std::optional<evmc::bytes32> root_hash{std::nullopt};
-    if (std::bitset<16>(hash_mask).count() + 1 == v.length() / kHashLength) {
+    if (popcount_16(hash_mask) + 1 == v.length() / kHashLength) {
         root_hash = evmc::bytes32{};
         std::memcpy(root_hash->bytes, v.data(), kHashLength);
         v.remove_prefix(kHashLength);

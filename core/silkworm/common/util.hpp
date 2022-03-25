@@ -27,6 +27,10 @@
 
 #include <silkworm/common/base.hpp>
 
+#ifdef _MSC_VER
+#include <intrin.h>
+#endif
+
 namespace silkworm {
 
 // If a given string is shorter than min_size,
@@ -102,6 +106,14 @@ inline ethash::hash256 keccak256(ByteView view) { return ethash::keccak256(view.
 
 // Splits a string by delimiter and returns a vector of tokens
 std::vector<std::string> split(std::string_view source, std::string_view delimiter);
+
+inline int popcount_16(uint16_t value) {
+#ifdef _MSC_VER
+    return __popcnt16(value);
+#else
+    return __builtin_popcount(x);
+#endif
+}
 
 }  // namespace silkworm
 

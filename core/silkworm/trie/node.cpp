@@ -97,10 +97,7 @@ std::optional<Node> unmarshal_node(ByteView v) {
 
     const size_t num_hashes{v.length() / kHashLength};
     std::vector<evmc::bytes32> hashes(num_hashes);
-    for (size_t i{0}; i < num_hashes; ++i) {
-        std::memcpy(hashes[i].bytes, v.data(), kHashLength);
-        v.remove_prefix(kHashLength);
-    }
+    std::memcpy(hashes.data(), v.data(), kHashLength * num_hashes);
 
     return Node{state_mask, tree_mask, hash_mask, hashes, root_hash};
 }

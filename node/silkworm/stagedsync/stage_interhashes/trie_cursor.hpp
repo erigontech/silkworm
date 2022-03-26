@@ -84,15 +84,15 @@ class Cursor {
     bool can_skip_state_{false};
 };
 
-//! \brief Produces the next key of the same length. \n
-//! \details It's essentially +1 in the hexadecimal (base 16) numeral system. \n
+//! \brief Produces the next key of the same length.
+//! \details It's essentially +1 in the hexadecimal (base 16) numeral system.
 //! \example
 //! \verbatim
 //! increment_key(120) = 121
 //! increment_key(12e) = 12f
 //! increment_key(12f) = 130
 //! \endverbatim
-//! \return std::optional if the key is the largest key of its length,
+//! \return The incremented value or std::nullopt if the key is the largest key of its length,
 //! i.e. consists only of 0xF nibbles.
 std::optional<Bytes> increment_key(ByteView unpacked);
 

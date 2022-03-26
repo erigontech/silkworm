@@ -211,6 +211,7 @@ bool Cursor::children_are_in_trie() const {
 
 std::optional<Bytes> increment_key(ByteView unpacked) {
     Bytes out{unpacked};
+
     for (size_t i{out.size()}; i > 0; --i) {
         uint8_t& nibble{out[i - 1]};
         SILKWORM_ASSERT(nibble < 0x10);
@@ -227,7 +228,7 @@ std::optional<Bytes> increment_key(ByteView unpacked) {
 
 std::optional<Bytes> Cursor::first_uncovered_prefix() const {
     std::optional<Bytes> k{key()};
-    if (can_skip_state_ && k != std::nullopt) {
+    if (can_skip_state_ && k.has_value()) {
         k = increment_key(*k);
     }
     if (k == std::nullopt) {

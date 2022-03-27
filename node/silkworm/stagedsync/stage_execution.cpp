@@ -121,10 +121,9 @@ void Execution::prefetch_blocks(db::RWTxn& txn, const BlockNum from, const Block
     const size_t n{std::min(static_cast<size_t>(to - from + 1), max_blocks)};
     prefetched_blocks_.resize(n);
 
-    for (size_t i{0}; i < n; ++i) {
-        if (!db::read_block(*txn, from + i, /*read_senders=*/true, prefetched_blocks_[i])) {
-            throw std::runtime_error("Bad canonical header sequence: missing block " + std::to_string(from + i));
-        }
+    const size_t num_read{db::read_blocks(*txn, from, /*read_senders=*/true, {prefetched_blocks_.data(), n})};
+    if (num_read != n) {
+        throw std::runtime_error("Bad canonical header sequence: missing block " + std::to_string(from + num_read));
     }
 
     if (sw) {

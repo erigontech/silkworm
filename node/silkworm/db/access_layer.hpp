@@ -23,6 +23,8 @@
 #include <optional>
 #include <vector>
 
+#include <gsl/span>
+
 #include <silkworm/chain/config.hpp>
 #include <silkworm/common/rlp_err.hpp>
 #include <silkworm/db/mdbx.hpp>
@@ -73,9 +75,13 @@ void write_total_difficulty(mdbx::txn& txn, const Bytes& key, const intx::uint25
 void write_total_difficulty(mdbx::txn& txn, BlockNum block_number, const uint8_t (&hash)[kHashLength],
                             const intx::uint256& total_difficulty);
 
-// See Erigon ReadBlockByNumber
-// Returns true on success and false on missing block
+// Reads canonical block; see Erigon ReadBlockByNumber.
+// Returns true on success and false on missing block.
 [[nodiscard]] bool read_block(mdbx::txn& txn, BlockNum block_number, bool read_senders, Block& out);
+
+// Reads contiguous canonical blocks.
+// Returns the number of blocks read.
+[[nodiscard]] size_t read_blocks(mdbx::txn& txn, BlockNum from, bool read_senders, gsl::span<Block> out);
 
 // See Erigon ReadSenders
 std::vector<evmc::address> read_senders(mdbx::txn& txn, const Bytes& key);

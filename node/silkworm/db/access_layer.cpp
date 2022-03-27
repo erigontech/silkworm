@@ -191,28 +191,41 @@ void read_transactions(mdbx::cursor& txn_table, uint64_t base_id, uint64_t count
 }
 
 bool read_block(mdbx::txn& txn, BlockNum block_number, bool read_senders, Block& block) {
-    // Locate canonical hash
+    return read_blocks(txn, block_number, read_senders, {&block, 1}) == 1;
+}
 
+size_t read_blocks(mdbx::txn& txn, const BlockNum from, const bool read_senders, gsl::span<Block> out) {
+    Bytes key;
     Cursor canonical_hashes_cursor(txn, table::kCanonicalHashes);
-    auto key{block_key(block_number)};
-    auto data{canonical_hashes_cursor.find(to_slice(key), false)};
-    if (!data) {
-        return false;
+
+    for (size_t i{0}; i < out.size(); ++i) {
+        const BlockNum block_number{from + i};
+        Block& block{out[i]};
+
+        key = block_key(block_number);
+        auto data{canonical_hashes_cursor.find(to_slice(key), false)};
+        if (!data) {
+            return i;
+        }
+
+        SILKWORM_ASSERT(data.value.length() == kHashLength);
+        const auto hash_ptr{static_cast<uint8_t*>(data.value.data())};
+
+        // Read header
+        key = block_key(block_number, gsl::span<const uint8_t, kHashLength>{hash_ptr, kHashLength});
+        auto raw_header{read_header_raw(txn, key)};
+        if (raw_header.empty()) {
+            return i;
+        }
+        ByteView raw_header_view(raw_header);
+        rlp::success_or_throw(rlp::decode(raw_header_view, block.header));
+
+        if (!read_body(txn, key, read_senders, block)) {
+            return i;
+        }
     }
 
-    SILKWORM_ASSERT(data.value.length() == kHashLength);
-    const auto hash_ptr{static_cast<uint8_t*>(data.value.data())};
-
-    // Read header
-    key = block_key(block_number, gsl::span<const uint8_t, kHashLength>{hash_ptr, kHashLength});
-    auto raw_header{read_header_raw(txn, key)};
-    if (raw_header.empty()) {
-        return false;
-    }
-    ByteView raw_header_view(raw_header);
-    rlp::success_or_throw(rlp::decode(raw_header_view, block.header));
-
-    return read_body(txn, key, read_senders, block);
+    return out.size();
 }
 
 bool read_body(mdbx::txn& txn, BlockNum block_number, const uint8_t (&hash)[kHashLength], bool read_senders,

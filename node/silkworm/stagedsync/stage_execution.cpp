@@ -111,8 +111,6 @@ StageResult Execution::forward(db::RWTxn& txn) {
 }
 
 void Execution::prefetch_blocks(db::RWTxn& txn, const BlockNum from, const BlockNum to, const size_t max_blocks) {
-    SILKWORM_ASSERT(from <= to);
-
     std::unique_ptr<StopWatch> sw;
     if (log::test_verbosity(log::Level::kTrace)) {
         sw = std::make_unique<StopWatch>(/*auto_start=*/true);

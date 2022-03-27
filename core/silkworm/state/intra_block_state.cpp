@@ -311,12 +311,7 @@ void IntraBlockState::write_to_db(uint64_t block_number) {
 
         for (const auto& [key, val] : storage.committed) {
             const uint64_t incarnation{obj.current->incarnation};
-            evmc::bytes32 initial;
-            auto it2{storage.initial.find(key)};
-            if (it2 != storage.initial.end()) {
-                initial = it2->second;
-            }
-            db_.update_storage(address, incarnation, key, initial, val);
+            db_.update_storage(address, incarnation, key, storage.initial.at(key), val);
         }
     }
 

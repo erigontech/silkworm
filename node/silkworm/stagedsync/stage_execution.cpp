@@ -18,7 +18,6 @@
 
 #include <string>
 
-#include <silkworm/common/assert.hpp>
 #include <silkworm/common/endian.hpp>
 #include <silkworm/common/log.hpp>
 #include <silkworm/common/stopwatch.hpp>

@@ -40,6 +40,7 @@ inline constexpr ChainConfig kShanghaiConfig{
     {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
     std::nullopt,  // dao_block
     0,             // muir_glacier_block
+    0,             // arrow_glacier_block
 };
 
 static_assert(kShanghaiConfig.revision(0) == EVMC_SHANGHAI);

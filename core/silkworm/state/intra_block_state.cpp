@@ -1,5 +1,5 @@
 /*
-   Copyright 2020-2021 The Silkworm Authors
+   Copyright 2020-2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -270,22 +270,19 @@ evmc::bytes32 IntraBlockState::get_storage(const evmc::address& address, const e
         }
     }
 
-    auto it{storage.committed.find(key)};
-    if (it != storage.committed.end()) {
-        return it->second.original;
+    auto it1{storage.committed.find(key)};
+    if (it1 != storage.committed.end()) {
+        return it1->second;
     }
 
-    uint64_t incarnation{obj->current->incarnation};
-    if (!obj->initial || obj->initial->incarnation != incarnation) {
-        return evmc::bytes32{};
+    auto it2{storage.initial.find(key)};
+    if (it2 != storage.initial.end()) {
+        return it2->second;
     }
 
+    const uint64_t incarnation{obj->current->incarnation};
     evmc::bytes32 val{db_.read_storage(address, incarnation, key)};
-
-    state::CommittedValue& entry{storage_[address].committed[key]};
-    entry.initial = val;
-    entry.original = val;
-
+    storage_[address].initial[key] = val;
     return val;
 }
 
@@ -313,8 +310,13 @@ void IntraBlockState::write_to_db(uint64_t block_number) {
         }
 
         for (const auto& [key, val] : storage.committed) {
-            uint64_t incarnation{obj.current->incarnation};
-            db_.update_storage(address, incarnation, key, val.initial, val.original);
+            const uint64_t incarnation{obj.current->incarnation};
+            evmc::bytes32 initial;
+            auto it2{storage.initial.find(key)};
+            if (it2 != storage.initial.end()) {
+                initial = it2->second;
+            }
+            db_.update_storage(address, incarnation, key, initial, val);
         }
     }
 
@@ -353,10 +355,9 @@ void IntraBlockState::revert_to_snapshot(const IntraBlockState::Snapshot& snapsh
 void IntraBlockState::finalize_transaction() {
     for (auto& x : storage_) {
         state::Storage& storage{x.second};
-        for (const auto& [key, val] : storage.current) {
-            storage.committed[key].original = val;
-        }
-        storage.current.clear();
+        storage.current.merge(storage.committed);
+        storage.committed.clear();
+        std::swap(storage.current, storage.committed);
     }
 }
 

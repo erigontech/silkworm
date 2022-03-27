@@ -1,5 +1,5 @@
 /*
-   Copyright 2020-2021 The Silkworm Authors
+   Copyright 2020-2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -19,7 +19,8 @@
 
 #include <optional>
 
-#include <silkworm/common/base.hpp>
+#include <evmc/evmc.hpp>
+
 #include <silkworm/common/hash_maps.hpp>
 #include <silkworm/types/account.hpp>
 
@@ -30,13 +31,14 @@ struct Object {
     std::optional<Account> current;
 };
 
-struct CommittedValue {
-    evmc::bytes32 initial{};   // value at the beginning of the block
-    evmc::bytes32 original{};  // value at the beginning of the transaction; see EIP-2200
-};
-
 struct Storage {
-    FlatHashMap<evmc::bytes32, CommittedValue> committed;
+    // values at the beginning of the block
+    FlatHashMap<evmc::bytes32, evmc::bytes32> initial;
+
+    // values at the beginning of the transaction; "original" in EIP-2200
+    FlatHashMap<evmc::bytes32, evmc::bytes32> committed;
+
+    // current values
     FlatHashMap<evmc::bytes32, evmc::bytes32> current;
 };
 

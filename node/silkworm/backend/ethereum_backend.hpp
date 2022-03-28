@@ -28,6 +28,7 @@
 namespace silkworm {
 
 constexpr const char* kDefaultNodeName{"silkworm"};
+constexpr const char kSentryAddressDelimiter{','};
 
 class EthereumBackEnd {
   public:

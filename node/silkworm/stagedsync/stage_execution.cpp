@@ -118,11 +118,12 @@ void Execution::prefetch_blocks(db::RWTxn& txn, BlockNum from, const BlockNum to
 
     assert(prefetched_blocks_.empty());
 
-    const size_t n{std::min(static_cast<size_t>(to - from + 1), kMaxPrefetchedBlocks)};
+    const size_t count{std::min(static_cast<size_t>(to - from + 1), kMaxPrefetchedBlocks)};
     size_t num_read{0};
 
-    db::Cursor canonical_hashes_cursor(txn, db::table::kCanonicalHashes);
-    if (canonical_hashes_cursor.seek(db::to_slice(db::block_key(from)))) {
+    db::Cursor hashes_table(txn, db::table::kCanonicalHashes);
+    auto key{db::block_key(from)};
+    if (hashes_table.seek(db::to_slice(key))) {
         db::WalkFunc walk_function{[&](mdbx::cursor&, mdbx::cursor::move_result& data) {
             BlockNum reached_block_num{endian::load_big_u64(static_cast<const uint8_t*>(data.key.data()))};
             if (reached_block_num != from) {
@@ -139,16 +140,16 @@ void Execution::prefetch_blocks(db::RWTxn& txn, BlockNum from, const BlockNum to
             ++from;
             return true;
         }};
-        num_read = db::cursor_for_count(canonical_hashes_cursor, walk_function, n);
+        num_read = db::cursor_for_count(hashes_table, walk_function, count);
     }
 
-    if (num_read != n) {
+    if (num_read != count) {
         throw std::runtime_error("Missing block " + std::to_string(from + num_read));
     }
 
     if (sw) {
         auto [_, duration]{sw->lap()};
-        log::Trace("Fetched blocks", {"size", std::to_string(n), "in", StopWatch::format(duration)});
+        log::Trace("Fetched blocks", {"size", std::to_string(num_read), "in", StopWatch::format(duration)});
     }
 }
 

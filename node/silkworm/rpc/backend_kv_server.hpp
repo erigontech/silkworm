@@ -30,14 +30,14 @@
 
 namespace silkworm::rpc {
 
-struct BackEndKvFactoryGroup : BackEndFactoryGroup, KvFactoryGroup {
-    explicit BackEndKvFactoryGroup(const ServerConfig& srv_config, const ChainConfig& chain_config)
-    : BackEndFactoryGroup(srv_config, chain_config) {}
+struct BackEndKvService : BackEndService, KvService {
+    explicit BackEndKvService(const EthereumBackEnd& backend)
+        : BackEndService(backend) {}
 };
 
 class BackEndKvServer : public Server {
   public:
-    BackEndKvServer(const ServerConfig& srv_config, const ChainConfig& chain_config);
+    BackEndKvServer(const ServerConfig& srv_config, const EthereumBackEnd& backend);
 
     BackEndKvServer(const BackEndKvServer&) = delete;
     BackEndKvServer& operator=(const BackEndKvServer&) = delete;
@@ -47,14 +47,17 @@ class BackEndKvServer : public Server {
     void register_request_calls() override;
 
   private:
+    //! The Ethereum full node service.
+    const EthereumBackEnd& backend_;
+
     /// \warning The gRPC service must exist for the lifetime of the gRPC server it is registered on.
     remote::ETHBACKEND::AsyncService backend_async_service_;
 
     /// \warning The gRPC service must exist for the lifetime of the gRPC server it is registered on.
     remote::KV::AsyncService kv_async_service_;
 
-    //! The sequence of \ref Factory groups, one for each \ref ServerContext.
-    std::vector<std::unique_ptr<BackEndKvFactoryGroup>> factory_groups_;
+    //! The sequence of \ref BackEndKvService instance, one for each \ref ServerContext.
+    std::vector<std::unique_ptr<BackEndKvService>> backend_kv_services_;
 };
 
 } // namespace silkworm::rpc

@@ -25,6 +25,7 @@
 #include <magic_enum.hpp>
 
 #include <silkworm/buildinfo.h>
+#include <silkworm/backend/ethereum_backend.hpp>
 #include <silkworm/chain/config.hpp>
 #include <silkworm/common/log.hpp>
 #include <silkworm/rpc/backend_kv_server.hpp>
@@ -55,12 +56,14 @@ int main(int argc, char* argv[]) {
 
     CLI::App app{"ETHBACKEND & KV servers"};
 
-    std::string chain_id{"mainnet"};
     std::string address_uri{"localhost:9090"};
+    std::string chain_id{"mainnet"};
+    std::string etherbase_address{""};
     uint32_t num_contexts{std::thread::hardware_concurrency() / 2};
     silkworm::log::Level log_level{silkworm::log::Level::kCritical};
-    app.add_option("--chain", chain_id, "The chain identifier as string", true);
     app.add_option("--address", address_uri, "The address URI to bind the ETHBACKEND & KV services to", true);
+    app.add_option("--chain", chain_id, "The chain identifier as string", true);
+    app.add_option("--etherbase", etherbase_address, "The chain identifier as string", true);
     app.add_option("--numContexts", num_contexts, "The number of running contexts", true);
     app.add_option("--logLevel", log_level, "The log level identifier as string", true)
         ->check(CLI::Range(static_cast<uint32_t>(silkworm::log::Level::kCritical), static_cast<uint32_t>(silkworm::log::Level::kTrace)))
@@ -71,6 +74,11 @@ int main(int argc, char* argv[]) {
     const silkworm::ChainConfig* chain_config = silkworm::lookup_chain_config(chain_id);
     if (chain_config == nullptr) {
         SILK_CRIT << "Invalid chain identifier: " << chain_id;
+        return -1;
+    }
+    const auto etherbase = silkworm::from_hex(etherbase_address);
+    if (!etherbase) {
+        SILK_CRIT << "Invalid etherbase address: " << etherbase_address;
         return -1;
     }
 
@@ -89,12 +97,15 @@ int main(int argc, char* argv[]) {
     try {
         SILK_LOG << "BackEndKvServer launched with address: " << address_uri << ", contexts: " << num_contexts;
 
+        silkworm::EthereumBackEnd backend{*chain_config};
+        backend.set_node_name(node_name);
+        backend.set_etherbase(silkworm::to_evmc_address(etherbase.value()));
+
         silkworm::rpc::ServerConfig srv_config;
-        srv_config.set_node_name(node_name);
         srv_config.set_address_uri(address_uri);
         srv_config.set_num_contexts(num_contexts);
 
-        silkworm::rpc::BackEndKvServer server{srv_config, *chain_config};
+        silkworm::rpc::BackEndKvServer server{srv_config, backend};
         server.build_and_start();
 
         boost::asio::io_context& scheduler = server.next_io_context();

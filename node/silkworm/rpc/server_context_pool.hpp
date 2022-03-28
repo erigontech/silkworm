@@ -27,14 +27,29 @@
 #include <boost/asio/io_context.hpp>
 #include <grpcpp/grpcpp.h>
 
-#include <silkworm/rpc/completion_runner.hpp>
+#include <silkworm/rpc/completion_end_point.hpp>
 
 namespace silkworm::rpc {
 
-struct ServerContext {
-    std::shared_ptr<boost::asio::io_context> io_context;
-    std::unique_ptr<grpc::ServerCompletionQueue> grpc_queue;
-    std::unique_ptr<CompletionRunner> grpc_runner;
+class ServerContext {
+  public:
+    explicit ServerContext(std::unique_ptr<grpc::ServerCompletionQueue> server_queue);
+
+    boost::asio::io_context* io_context() const noexcept { return io_context_.get(); }
+    grpc::ServerCompletionQueue* server_queue() const noexcept { return server_queue_.get(); }
+    CompletionEndPoint* server_end_point() const noexcept { return server_end_point_.get(); }
+    grpc::CompletionQueue* client_queue() const noexcept { return client_queue_.get(); }
+    CompletionEndPoint* client_end_point() const noexcept { return client_end_point_.get(); }
+
+    void execution_loop();
+    void stop();
+
+  private:
+    std::shared_ptr<boost::asio::io_context> io_context_;
+    std::unique_ptr<grpc::ServerCompletionQueue> server_queue_;
+    std::unique_ptr<CompletionEndPoint> server_end_point_;
+    std::unique_ptr<grpc::CompletionQueue> client_queue_;
+    std::unique_ptr<CompletionEndPoint> client_end_point_;
 };
 
 std::ostream& operator<<(std::ostream& out, const ServerContext& c);
@@ -48,6 +63,7 @@ class ServerContextPool {
     ServerContextPool& operator=(const ServerContextPool&) = delete;
 
     void add_context(std::unique_ptr<grpc::ServerCompletionQueue> queue);
+
     void start();
     void join();
     void stop();

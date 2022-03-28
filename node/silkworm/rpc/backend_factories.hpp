@@ -17,15 +17,21 @@
 #ifndef SILKWORM_RPC_BACKEND_FACTORIES_HPP_
 #define SILKWORM_RPC_BACKEND_FACTORIES_HPP_
 
+#include <memory>
+#include <set>
 #include <tuple>
+#include <vector>
 
 #include <grpcpp/grpcpp.h>
+#include <remote/ethbackend.pb.h>
 #include <remote/ethbackend.grpc.pb.h>
 
+#include <silkworm/backend/ethereum_backend.hpp>
 #include <silkworm/chain/config.hpp>
-#include <silkworm/rpc/factory.hpp>
-#include <silkworm/rpc/server.hpp>
 #include <silkworm/rpc/call.hpp>
+#include <silkworm/rpc/call_factory.hpp>
+#include <silkworm/rpc/client/sentry_client.hpp>
+#include <silkworm/rpc/server.hpp>
 
 // ETHBACKEND API protocol versions
 // 2.2.0 - first issue
@@ -39,186 +45,180 @@ constexpr uint64_t kEthDevp2pProtocolVersion = 66;
 constexpr auto kEthBackEndApiVersion = std::make_tuple<uint32_t, uint32_t, uint32_t>(2, 2, 0);
 
 //! Unary RPC for Etherbase method of 'ethbackend' gRPC protocol.
-using EtherbaseRpc = UnaryRpc<remote::ETHBACKEND::AsyncService, remote::EtherbaseRequest, remote::EtherbaseReply>;
-
-//! Factory specialization for Etherbase method.
-using EtherbaseRpcFactory = Factory<
-    remote::ETHBACKEND::AsyncService,
-    remote::EtherbaseRequest,
-    remote::EtherbaseReply,
-    UnaryRpc
->;
-
-//! Implementation acting as factory for Etherbase RPCs.
-class EtherbaseFactory : public EtherbaseRpcFactory {
+class EtherbaseCall : public UnaryRpc<remote::ETHBACKEND::AsyncService, remote::EtherbaseRequest, remote::EtherbaseReply> {
   public:
-    explicit EtherbaseFactory(const ChainConfig& /*config*/);
+    static void fill_predefined_reply(const EthereumBackEnd& backend);
 
-    void process_rpc(EtherbaseRpc& rpc, const remote::EtherbaseRequest* request);
+    EtherbaseCall(remote::ETHBACKEND::AsyncService* service, grpc::ServerCompletionQueue* queue, Handlers handlers);
+
+    void process(const remote::EtherbaseRequest* request) override;
 
   private:
-    evmc::address etherbase_; // TODO(canepat): read from config (field not yet present)
+    static remote::EtherbaseReply response_;
+};
+
+//! Factory specialization for Etherbase method.
+class EtherbaseCallFactory : public CallFactory<remote::ETHBACKEND::AsyncService, EtherbaseCall> {
+  public:
+    explicit EtherbaseCallFactory(const EthereumBackEnd& backend);
 };
 
 //! Unary RPC for NetVersion method of 'ethbackend' gRPC protocol.
-using NetVersionRpc = UnaryRpc<remote::ETHBACKEND::AsyncService, remote::NetVersionRequest, remote::NetVersionReply>;
-
-//! Factory specialization for NetVersion method.
-using NetVersionRpcFactory = Factory<
-    remote::ETHBACKEND::AsyncService,
-    remote::NetVersionRequest,
-    remote::NetVersionReply,
-    UnaryRpc
->;
-
-//! Implementation acting as factory for NetVersion RPCs.
-class NetVersionFactory : public NetVersionRpcFactory {
+class NetVersionCall : public UnaryRpc<remote::ETHBACKEND::AsyncService, remote::NetVersionRequest, remote::NetVersionReply> {
   public:
-    explicit NetVersionFactory(const ChainConfig& config);
+    static void fill_predefined_reply(const EthereumBackEnd& backend);
 
-    void process_rpc(NetVersionRpc& rpc, const remote::NetVersionRequest* request);
+    NetVersionCall(remote::ETHBACKEND::AsyncService* service, grpc::ServerCompletionQueue* queue, Handlers handlers);
+
+    void process(const remote::NetVersionRequest* request) override;
 
   private:
-    uint64_t chain_id_;
+    static remote::NetVersionReply response_;
+};
+
+//! Factory specialization for NetVersion method.
+class NetVersionCallFactory : public CallFactory<remote::ETHBACKEND::AsyncService, NetVersionCall> {
+  public:
+    explicit NetVersionCallFactory(const EthereumBackEnd& backend);
 };
 
 //! Unary RPC for NetPeerCount method of 'ethbackend' gRPC protocol.
-using NetPeerCountRpc = UnaryRpc<remote::ETHBACKEND::AsyncService, remote::NetPeerCountRequest, remote::NetPeerCountReply>;
+class NetPeerCountCall : public UnaryRpc<remote::ETHBACKEND::AsyncService, remote::NetPeerCountRequest, remote::NetPeerCountReply> {
+  public:
+    static void add_sentry(SentryClient* sentry);
+    static void remove_sentry(SentryClient* sentry);
+
+    NetPeerCountCall(remote::ETHBACKEND::AsyncService* service, grpc::ServerCompletionQueue* queue, Handlers handlers);
+
+    void process(const remote::NetPeerCountRequest* request) override;
+
+  private:
+    static std::set<SentryClient*> sentries_;
+
+    std::size_t expected_responses_{0};
+    uint64_t total_count_{0};
+    grpc::Status result_status_{grpc::Status::OK};
+};
 
 //! Factory specialization for NetPeerCount method.
-using NetPeerCountRpcFactory = Factory<
-    remote::ETHBACKEND::AsyncService,
-    remote::NetPeerCountRequest,
-    remote::NetPeerCountReply,
-    UnaryRpc
->;
-
-//! Implementation acting as factory for NetPeerCount RPCs.
-class NetPeerCountFactory : public NetPeerCountRpcFactory {
+class NetPeerCountCallFactory : public CallFactory<remote::ETHBACKEND::AsyncService, NetPeerCountCall> {
   public:
-    explicit NetPeerCountFactory();
-
-    void process_rpc(NetPeerCountRpc& rpc, const remote::NetPeerCountRequest* request);
-
-    // TODO(canepat): use Sentry config client list built from config (not present yet)
+    explicit NetPeerCountCallFactory();
 };
 
 //! Unary RPC for Version method of 'ethbackend' gRPC protocol.
-using BackEndVersionRpc = UnaryRpc<remote::ETHBACKEND::AsyncService, google::protobuf::Empty, types::VersionReply>;
-
-//! Factory specialization for Version method.
-using BackEndVersionRpcFactory = Factory<
-    remote::ETHBACKEND::AsyncService,
-    google::protobuf::Empty,
-    types::VersionReply,
-    UnaryRpc
->;
-
-//! Implementation acting as factory for Version RPCs.
-class BackEndVersionFactory : public BackEndVersionRpcFactory {
+class BackEndVersionCall : public UnaryRpc<remote::ETHBACKEND::AsyncService, google::protobuf::Empty, types::VersionReply> {
   public:
-    explicit BackEndVersionFactory();
+    static void fill_predefined_reply();
 
-    void process_rpc(BackEndVersionRpc& rpc, const google::protobuf::Empty* request);
+    BackEndVersionCall(remote::ETHBACKEND::AsyncService* service, grpc::ServerCompletionQueue* queue, Handlers handlers);
+
+    void process(const google::protobuf::Empty* request) override;
 
   private:
-    types::VersionReply response_;
+    static types::VersionReply response_;
+};
+
+//! Factory specialization for Version method.
+class BackEndVersionCallFactory : public CallFactory<remote::ETHBACKEND::AsyncService, BackEndVersionCall> {
+  public:
+    explicit BackEndVersionCallFactory();
 };
 
 //! Unary RPC for ProtocolVersion method of 'ethbackend' gRPC protocol.
-using ProtocolVersionRpc = UnaryRpc<remote::ETHBACKEND::AsyncService, remote::ProtocolVersionRequest, remote::ProtocolVersionReply>;
-
-//! Factory specialization for ProtocolVersion method.
-using ProtocolVersionRpcFactory = Factory<
-    remote::ETHBACKEND::AsyncService,
-    remote::ProtocolVersionRequest,
-    remote::ProtocolVersionReply,
-    UnaryRpc
->;
-
-//! Implementation acting as factory for ProtocolVersion RPCs.
-class ProtocolVersionFactory : public ProtocolVersionRpcFactory {
+class ProtocolVersionCall : public UnaryRpc<remote::ETHBACKEND::AsyncService, remote::ProtocolVersionRequest, remote::ProtocolVersionReply> {
   public:
-    explicit ProtocolVersionFactory();
+    static void fill_predefined_reply();
 
-    void process_rpc(ProtocolVersionRpc& rpc, const remote::ProtocolVersionRequest* request);
+    ProtocolVersionCall(remote::ETHBACKEND::AsyncService* service, grpc::ServerCompletionQueue* queue, Handlers handlers);
+
+    void process(const remote::ProtocolVersionRequest* request) override;
 
   private:
-    remote::ProtocolVersionReply response_;
+    static remote::ProtocolVersionReply response_;
+};
+
+//! Factory specialization for ProtocolVersion method.
+class ProtocolVersionCallFactory : public CallFactory<remote::ETHBACKEND::AsyncService, ProtocolVersionCall> {
+  public:
+    explicit ProtocolVersionCallFactory();
 };
 
 //! Unary RPC for ClientVersion method of 'ethbackend' gRPC protocol.
-using ClientVersionRpc = UnaryRpc<remote::ETHBACKEND::AsyncService, remote::ClientVersionRequest, remote::ClientVersionReply>;
-
-//! Factory specialization for ClientVersion method.
-using ClientVersionRpcFactory = Factory<
-    remote::ETHBACKEND::AsyncService,
-    remote::ClientVersionRequest,
-    remote::ClientVersionReply,
-    UnaryRpc
->;
-
-//! Implementation acting as factory for ClientVersion RPCs.
-class ClientVersionFactory : public ClientVersionRpcFactory {
+class ClientVersionCall : public UnaryRpc<remote::ETHBACKEND::AsyncService, remote::ClientVersionRequest, remote::ClientVersionReply> {
   public:
-    explicit ClientVersionFactory(const ServerConfig& srv_config);
+    static void fill_predefined_reply(const EthereumBackEnd& backend);
 
-    void process_rpc(ClientVersionRpc& rpc, const remote::ClientVersionRequest* request);
+    ClientVersionCall(remote::ETHBACKEND::AsyncService* service, grpc::ServerCompletionQueue* queue, Handlers handlers);
+
+    void process(const remote::ClientVersionRequest* request) override;
 
   private:
-    remote::ClientVersionReply response_;
+    static remote::ClientVersionReply response_;
+};
+
+//! Factory specialization for ClientVersion method.
+class ClientVersionCallFactory : public CallFactory<remote::ETHBACKEND::AsyncService, ClientVersionCall> {
+  public:
+    explicit ClientVersionCallFactory(const EthereumBackEnd& backend);
 };
 
 //! Server-streaming RPC for Subscribe method of 'ethbackend' gRPC protocol.
-using SubscribeRpc = ServerStreamingRpc<remote::ETHBACKEND::AsyncService, remote::SubscribeRequest, remote::SubscribeReply>;
+class SubscribeCall : public ServerStreamingRpc<remote::ETHBACKEND::AsyncService, remote::SubscribeRequest, remote::SubscribeReply> {
+  public:
+    SubscribeCall(remote::ETHBACKEND::AsyncService* service, grpc::ServerCompletionQueue* queue, Handlers handlers);
+
+    void process(const remote::SubscribeRequest* request) override;
+};
 
 //! Factory specialization for Subscribe method.
-using SubscribeRpcFactory = Factory<
-    remote::ETHBACKEND::AsyncService,
-    remote::SubscribeRequest,
-    remote::SubscribeReply,
-    ServerStreamingRpc
->;
-
-//! Implementation acting as factory for Subscribe RPCs.
-class SubscribeFactory : public SubscribeRpcFactory {
+class SubscribeCallFactory : public CallFactory<remote::ETHBACKEND::AsyncService, SubscribeCall> {
   public:
-    explicit SubscribeFactory();
-
-    void process_rpc(SubscribeRpc& rpc, const remote::SubscribeRequest* request);
+    explicit SubscribeCallFactory();
 };
 
 //! Unary RPC for NodeInfo method of 'ethbackend' gRPC protocol.
-using NodeInfoRpc = UnaryRpc<remote::ETHBACKEND::AsyncService, remote::NodesInfoRequest, remote::NodesInfoReply>;
-
-//! Factory specialization for NodeInfo method.
-using NodeInfoRpcFactory = Factory<
-    remote::ETHBACKEND::AsyncService,
-    remote::NodesInfoRequest,
-    remote::NodesInfoReply,
-    UnaryRpc
->;
-
-//! Implementation acting as factory for NodeInfo RPCs.
-class NodeInfoFactory : public NodeInfoRpcFactory {
+class NodeInfoCall : public UnaryRpc<remote::ETHBACKEND::AsyncService, remote::NodesInfoRequest, remote::NodesInfoReply> {
   public:
-    explicit NodeInfoFactory();
+    static void add_sentry(SentryClient* sentry);
+    static void remove_sentry(SentryClient* sentry);
 
-    void process_rpc(NodeInfoRpc& rpc, const remote::NodesInfoRequest* request);
+    NodeInfoCall(remote::ETHBACKEND::AsyncService* service, grpc::ServerCompletionQueue* queue, Handlers handlers);
+
+    void process(const remote::NodesInfoRequest* request) override;
+
+  private:
+    static std::set<SentryClient*> sentries_;
+
+    std::size_t expected_responses_{0};
+    remote::NodesInfoReply response_;
+    grpc::Status result_status_{grpc::Status::OK};
 };
 
-//! The ETHBACKEND protocol factory aggregration.
-struct BackEndFactoryGroup {
-    EtherbaseFactory etherbase_factory;
-    NetVersionFactory net_version_factory;
-    NetPeerCountFactory net_peer_count_factory;
-    BackEndVersionFactory backend_version_factory;
-    ProtocolVersionFactory protocol_version_factory;
-    ClientVersionFactory client_version_factory;
-    SubscribeFactory subscribe_factory;
-    NodeInfoFactory node_info_factory;
+//! Factory specialization for NodeInfo method.
+class NodeInfoCallFactory : public CallFactory<remote::ETHBACKEND::AsyncService, NodeInfoCall> {
+  public:
+    explicit NodeInfoCallFactory();
+};
 
-    explicit BackEndFactoryGroup(const ServerConfig& srv_config, const ChainConfig& chain_config);
+//! The ETHBACKEND service implementation.
+struct BackEndService {
+    EtherbaseCallFactory etherbase_factory;
+    NetVersionCallFactory net_version_factory;
+    NetPeerCountCallFactory net_peer_count_factory;
+    BackEndVersionCallFactory backend_version_factory;
+    ProtocolVersionCallFactory protocol_version_factory;
+    ClientVersionCallFactory client_version_factory;
+    SubscribeCallFactory subscribe_factory;
+    NodeInfoCallFactory node_info_factory;
+
+    explicit BackEndService(const EthereumBackEnd& backend);
+    ~BackEndService();
+
+    void add_sentry(std::unique_ptr<SentryClient>&& sentry);
+
+  private:
+    std::vector<std::unique_ptr<SentryClient>> sentries_;
 };
 
 } // namespace silkworm::rpc

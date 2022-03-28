@@ -16,8 +16,11 @@
 
 #include "backend_factories.hpp"
 
+#include <evmc/evmc.hpp>
+
 #include <silkworm/common/endian.hpp>
 #include <silkworm/common/log.hpp>
+#include <silkworm/rpc/util.hpp>
 #include <types/types.pb.h>
 
 namespace silkworm::rpc {
@@ -37,145 +40,289 @@ inline static types::H160* new_H160_address(const evmc::address& address) {
     return h160;
 }
 
-EtherbaseFactory::EtherbaseFactory(const ChainConfig& /*config*/)
-    : EtherbaseRpcFactory(
-        [&](auto& rpc, const auto* request) { process_rpc(rpc, request); },
-        &remote::ETHBACKEND::AsyncService::RequestEtherbase) {
+remote::EtherbaseReply EtherbaseCall::response_;
+
+void EtherbaseCall::fill_predefined_reply(const EthereumBackEnd& backend) {
+    const auto etherbase = backend.etherbase();
+    if (etherbase.has_value()) {
+        const auto h160 = new_H160_address(etherbase.value());
+        EtherbaseCall::response_.set_allocated_address(h160);
+    }
 }
 
-void EtherbaseFactory::process_rpc(EtherbaseRpc& rpc, const remote::EtherbaseRequest* request) {
-    SILK_TRACE << "EtherbaseFactory::process_rpc START rpc: " << &rpc << " request: " << request;
-
-    remote::EtherbaseReply response;
-    const auto h160 = new_H160_address(etherbase_);
-    response.set_allocated_address(h160);
-    const bool sent = rpc.send_response(response);
-
-    SILK_TRACE << "EtherbaseFactory::process_rpc END rsp: " << &response << " etherbase: " << to_hex(etherbase_) << " sent: " << sent;
+EtherbaseCall::EtherbaseCall(remote::ETHBACKEND::AsyncService* service, grpc::ServerCompletionQueue* queue, Handlers handlers)
+    : UnaryRpc<remote::ETHBACKEND::AsyncService, remote::EtherbaseRequest, remote::EtherbaseReply>(service, queue, handlers) {
 }
 
-NetVersionFactory::NetVersionFactory(const ChainConfig& config)
-    : NetVersionRpcFactory(
-        [&](auto& rpc, const auto* request) { process_rpc(rpc, request); },
-        &remote::ETHBACKEND::AsyncService::RequestNetVersion),
-    chain_id_(config.chain_id) {
+void EtherbaseCall::process(const remote::EtherbaseRequest* request) {
+    SILK_TRACE << "EtherbaseCall::process START request: " << request;
+
+    if (response_.has_address()) {
+        const bool sent = send_response(response_);
+        SILK_TRACE << "EtherbaseCall::process END etherbase: " << to_hex(address_from_H160(response_.address())) << " sent: " << sent;
+    } else {
+        const grpc::Status error{grpc::StatusCode::INTERNAL, "etherbase must be explicitly specified"};
+        finish_with_error(error);
+        SILK_TRACE << "EtherbaseCall::process END error: " << error;
+    }
 }
 
-void NetVersionFactory::process_rpc(NetVersionRpc& rpc, const remote::NetVersionRequest* request) {
-    SILK_TRACE << "NetVersionFactory::process_rpc rpc: " << &rpc << " request: " << request;
-
-    remote::NetVersionReply response;
-    response.set_id(chain_id_);
-    const bool sent = rpc.send_response(response);
-
-    SILK_TRACE << "NetVersionFactory::process_rpc rsp: " << &response << " chain_id: " << chain_id_ << " sent: " << sent;
+EtherbaseCallFactory::EtherbaseCallFactory(const EthereumBackEnd& backend)
+    : CallFactory<remote::ETHBACKEND::AsyncService, EtherbaseCall>(&remote::ETHBACKEND::AsyncService::RequestEtherbase) {
+    EtherbaseCall::fill_predefined_reply(backend);
 }
 
-NetPeerCountFactory::NetPeerCountFactory()
-    : NetPeerCountRpcFactory(
-        [&](auto& rpc, const auto* request) { process_rpc(rpc, request); },
-        &remote::ETHBACKEND::AsyncService::RequestNetPeerCount) {
+remote::NetVersionReply NetVersionCall::response_;
+
+void NetVersionCall::fill_predefined_reply(const EthereumBackEnd& backend) {
+    NetVersionCall::response_.set_id(backend.chain_id());
 }
 
-void NetPeerCountFactory::process_rpc(NetPeerCountRpc& rpc, const remote::NetPeerCountRequest* request) {
-    SILK_TRACE << "NetPeerCountFactory::process_rpc rpc: " << &rpc << " request: " << request;
-
-    remote::NetPeerCountReply response;
-    // TODO(canepat): fill the response using Sentry config client list
-    const bool sent = rpc.send_response(response);
-
-    SILK_TRACE << "NetPeerCountFactory::process_rpc rsp: " << &response << " sent: " << sent;
+NetVersionCall::NetVersionCall(remote::ETHBACKEND::AsyncService* service, grpc::ServerCompletionQueue* queue, Handlers handlers)
+    : UnaryRpc<remote::ETHBACKEND::AsyncService, remote::NetVersionRequest, remote::NetVersionReply>(service, queue, handlers) {
 }
 
-BackEndVersionFactory::BackEndVersionFactory()
-    : BackEndVersionRpcFactory(
-        [&](auto& rpc, const auto* request) { process_rpc(rpc, request); },
-        &remote::ETHBACKEND::AsyncService::RequestVersion) {
-    response_.set_major(std::get<0>(kEthBackEndApiVersion));
-    response_.set_minor(std::get<1>(kEthBackEndApiVersion));
-    response_.set_patch(std::get<2>(kEthBackEndApiVersion));
+void NetVersionCall::process(const remote::NetVersionRequest* request) {
+    SILK_TRACE << "NetVersionCall::process request: " << request;
+
+    const bool sent = send_response(response_);
+
+    SILK_TRACE << "NetVersionCall::process chain_id: " << response_.id() << " sent: " << sent;
 }
 
-void BackEndVersionFactory::process_rpc(BackEndVersionRpc& rpc, const google::protobuf::Empty* request) {
-    SILK_TRACE << "BackEndVersionFactory::process_rpc rpc: " << &rpc << " request: " << request;
-
-    const bool sent = rpc.send_response(response_);
-
-    SILK_TRACE << "BackEndVersionFactory::process_rpc rsp: " << &response_ << " sent: " << sent;
+NetVersionCallFactory::NetVersionCallFactory(const EthereumBackEnd& backend)
+    : CallFactory<remote::ETHBACKEND::AsyncService, NetVersionCall>(&remote::ETHBACKEND::AsyncService::RequestNetVersion) {
+    NetVersionCall::fill_predefined_reply(backend);
 }
 
-ProtocolVersionFactory::ProtocolVersionFactory()
-    : ProtocolVersionRpcFactory(
-        [&](auto& rpc, const auto* request) { process_rpc(rpc, request); },
-        &remote::ETHBACKEND::AsyncService::RequestProtocolVersion) {
-    response_.set_id(kEthDevp2pProtocolVersion);
+std::set<SentryClient*> NetPeerCountCall::sentries_;
+
+void NetPeerCountCall::add_sentry(SentryClient* sentry) {
+    NetPeerCountCall::sentries_.insert(sentry);
 }
 
-void ProtocolVersionFactory::process_rpc(ProtocolVersionRpc& rpc, const remote::ProtocolVersionRequest* request) {
-    SILK_TRACE << "ProtocolVersionFactory::process_rpc rpc: " << &rpc << " request: " << request;
-
-    const bool sent = rpc.send_response(response_);
-
-    SILK_TRACE << "ProtocolVersionFactory::process_rpc rsp: " << &response_ << " sent: " << sent;
+void NetPeerCountCall::remove_sentry(SentryClient* sentry) {
+    NetPeerCountCall::sentries_.erase(sentry);
 }
 
-ClientVersionFactory::ClientVersionFactory(const ServerConfig& srv_config)
-    : ClientVersionRpcFactory(
-        [&](auto& rpc, const auto* request) { process_rpc(rpc, request); },
-        &remote::ETHBACKEND::AsyncService::RequestClientVersion) {
-    response_.set_nodename(srv_config.node_name());
+NetPeerCountCall::NetPeerCountCall(remote::ETHBACKEND::AsyncService* service, grpc::ServerCompletionQueue* queue, Handlers handlers)
+    : UnaryRpc<remote::ETHBACKEND::AsyncService, remote::NetPeerCountRequest, remote::NetPeerCountReply>(service, queue, handlers) {
 }
 
-void ClientVersionFactory::process_rpc(ClientVersionRpc& rpc, const remote::ClientVersionRequest* request) {
-    SILK_TRACE << "ClientVersionFactory::process_rpc rpc: " << &rpc << " request: " << request;
+void NetPeerCountCall::process(const remote::NetPeerCountRequest* request) {
+    SILK_TRACE << "NetPeerCountCall::process START request: " << request;
 
-    const bool sent = rpc.send_response(response_);
+    if (sentries_.size() == 0) {
+        remote::NetPeerCountReply response;
+        const bool sent = send_response(response);
+        SILK_TRACE << "NetPeerCountCall::process END count: 0 sent: " << sent;
+        return;
+    }
 
-    SILK_TRACE << "ClientVersionFactory::process_rpc rsp: " << &response_ << " sent: " << sent;
+    SILK_DEBUG << "NetPeerCountCall::process num sentries: " << sentries_.size();
+
+    expected_responses_ = sentries_.size();
+
+    for (const auto& sentry : sentries_) {
+        sentry->peer_count([&](const grpc::Status status, const sentry::PeerCountReply& reply) {
+            --expected_responses_;
+
+            SILK_DEBUG << "Peer count replies: [" << (sentries_.size()-expected_responses_) << "/" << sentries_.size() << "]";
+
+            if (status.ok()) {
+                uint64_t count = reply.count();
+                total_count_ += count;
+                SILK_DEBUG << "Reply OK peer count: partial=" << count << " total=" << total_count_;
+            } else {
+                result_status_ = status;
+                SILK_DEBUG << "Reply KO result: " << result_status_;
+            }
+
+            if (expected_responses_ == 0) {
+                if (result_status_.ok()) {
+                    remote::NetPeerCountReply response;
+                    response.set_count(total_count_);
+                    const bool sent = send_response(response);
+                    SILK_TRACE << "NetPeerCountCall::process END count: " << total_count_ << " sent: " << sent;
+                } else {
+                    finish_with_error(result_status_);
+                    SILK_TRACE << "NetPeerCountCall::process END error: " << result_status_;
+                }
+            }
+        });
+    }
 }
 
-SubscribeFactory::SubscribeFactory()
-    : SubscribeRpcFactory(
-        [&](auto& rpc, const auto* request) { process_rpc(rpc, request); },
-        &remote::ETHBACKEND::AsyncService::RequestSubscribe) {
+NetPeerCountCallFactory::NetPeerCountCallFactory()
+    : CallFactory<remote::ETHBACKEND::AsyncService, NetPeerCountCall>(&remote::ETHBACKEND::AsyncService::RequestNetPeerCount) {
 }
 
-void SubscribeFactory::process_rpc(SubscribeRpc& rpc, const remote::SubscribeRequest* request) {
-    SILK_TRACE << "SubscribeFactory::process_rpc rpc: " << &rpc << " request: " << request;
+types::VersionReply BackEndVersionCall::response_;
+
+void BackEndVersionCall::fill_predefined_reply() {
+    BackEndVersionCall::response_.set_major(std::get<0>(kEthBackEndApiVersion));
+    BackEndVersionCall::response_.set_minor(std::get<1>(kEthBackEndApiVersion));
+    BackEndVersionCall::response_.set_patch(std::get<2>(kEthBackEndApiVersion));
+}
+
+BackEndVersionCall::BackEndVersionCall(remote::ETHBACKEND::AsyncService* service, grpc::ServerCompletionQueue* queue, Handlers handlers)
+    : UnaryRpc<remote::ETHBACKEND::AsyncService, google::protobuf::Empty, types::VersionReply>(service, queue, handlers) {
+}
+
+void BackEndVersionCall::process(const google::protobuf::Empty* request) {
+    SILK_TRACE << "BackEndVersionCall::process request: " << request;
+
+    const bool sent = send_response(response_);
+
+    SILK_TRACE << "BackEndVersionCall::process rsp: " << &response_ << " sent: " << sent;
+}
+
+BackEndVersionCallFactory::BackEndVersionCallFactory()
+    : CallFactory<remote::ETHBACKEND::AsyncService, BackEndVersionCall>(&remote::ETHBACKEND::AsyncService::RequestVersion) {
+    BackEndVersionCall::fill_predefined_reply();
+}
+
+remote::ProtocolVersionReply ProtocolVersionCall::response_;
+
+void ProtocolVersionCall::fill_predefined_reply() {
+    ProtocolVersionCall::response_.set_id(kEthDevp2pProtocolVersion);
+}
+
+ProtocolVersionCall::ProtocolVersionCall(remote::ETHBACKEND::AsyncService* service, grpc::ServerCompletionQueue* queue, Handlers handlers)
+    : UnaryRpc<remote::ETHBACKEND::AsyncService, remote::ProtocolVersionRequest, remote::ProtocolVersionReply>(service, queue, handlers) {
+}
+
+void ProtocolVersionCall::process(const remote::ProtocolVersionRequest* request) {
+    SILK_TRACE << "ProtocolVersionCall::process request: " << request;
+
+    const bool sent = send_response(response_);
+
+    SILK_TRACE << "ProtocolVersionCall::process rsp: " << &response_ << " sent: " << sent;
+}
+
+ProtocolVersionCallFactory::ProtocolVersionCallFactory()
+    : CallFactory<remote::ETHBACKEND::AsyncService, ProtocolVersionCall>(&remote::ETHBACKEND::AsyncService::RequestProtocolVersion) {
+    ProtocolVersionCall::fill_predefined_reply();
+}
+
+remote::ClientVersionReply ClientVersionCall::response_;
+
+void ClientVersionCall::fill_predefined_reply(const EthereumBackEnd& backend) {
+    ClientVersionCall::response_.set_nodename(backend.node_name());
+}
+
+ClientVersionCall::ClientVersionCall(remote::ETHBACKEND::AsyncService* service, grpc::ServerCompletionQueue* queue, Handlers handlers)
+    : UnaryRpc<remote::ETHBACKEND::AsyncService, remote::ClientVersionRequest, remote::ClientVersionReply>(service, queue, handlers) {
+}
+
+void ClientVersionCall::process(const remote::ClientVersionRequest* request) {
+    SILK_TRACE << "ClientVersionCall::process request: " << request;
+
+    const bool sent = send_response(response_);
+
+    SILK_TRACE << "ClientVersionCall::process rsp: " << &response_ << " sent: " << sent;
+}
+
+ClientVersionCallFactory::ClientVersionCallFactory(const EthereumBackEnd& backend)
+    : CallFactory<remote::ETHBACKEND::AsyncService, ClientVersionCall>(&remote::ETHBACKEND::AsyncService::RequestClientVersion) {
+    ClientVersionCall::fill_predefined_reply(backend);
+}
+
+SubscribeCall::SubscribeCall(remote::ETHBACKEND::AsyncService* service, grpc::ServerCompletionQueue* queue, Handlers handlers)
+    : ServerStreamingRpc<remote::ETHBACKEND::AsyncService, remote::SubscribeRequest, remote::SubscribeReply>(service, queue, handlers) {
+}
+
+void SubscribeCall::process(const remote::SubscribeRequest* request) {
+    SILK_TRACE << "SubscribeCall::process request: " << request;
 
     // TODO(canepat): remove this example and fill the correct stream responses
     remote::SubscribeReply response1;
     response1.set_type(remote::Event::PENDING_BLOCK);
     response1.set_data("001122");
-    rpc.send_response(response1);
+    send_response(response1);
     remote::SubscribeReply response2;
     response2.set_type(remote::Event::PENDING_LOGS);
     response2.set_data("334455");
-    rpc.send_response(response2);
+    send_response(response2);
 
-    const bool closed = rpc.close();
+    const bool closed = close();
 
-    SILK_TRACE << "SubscribeFactory::process_rpc closed: " << closed;
+    SILK_TRACE << "SubscribeCall::process closed: " << closed;
 }
 
-NodeInfoFactory::NodeInfoFactory()
-    : NodeInfoRpcFactory(
-        [&](auto& rpc, const auto* request) { process_rpc(rpc, request); },
-        &remote::ETHBACKEND::AsyncService::RequestNodeInfo) {
+SubscribeCallFactory::SubscribeCallFactory()
+    : CallFactory<remote::ETHBACKEND::AsyncService, SubscribeCall>(&remote::ETHBACKEND::AsyncService::RequestSubscribe) {
 }
 
-void NodeInfoFactory::process_rpc(NodeInfoRpc& rpc, const remote::NodesInfoRequest* request) {
-    SILK_TRACE << "NodeInfoFactory::process_rpc rpc: " << &rpc << " request: " << request << " limit: " << request->limit();
+std::set<SentryClient*> NodeInfoCall::sentries_;
 
-    remote::NodesInfoReply response;
-    // TODO(canepat): fill the response using Sentry config client list
-    const bool sent = rpc.send_response(response);
-
-    SILK_TRACE << "NodeInfoFactory::process_rpc rsp: " << &response << " sent: " << sent;
+void NodeInfoCall::add_sentry(SentryClient* sentry) {
+    NodeInfoCall::sentries_.insert(sentry);
 }
 
-BackEndFactoryGroup::BackEndFactoryGroup(const ServerConfig& srv_config, const ChainConfig& chain_config)
-    : etherbase_factory{chain_config}, net_version_factory{chain_config}, client_version_factory{srv_config} {
+void NodeInfoCall::remove_sentry(SentryClient* sentry) {
+    NodeInfoCall::sentries_.erase(sentry);
+}
+
+NodeInfoCall::NodeInfoCall(remote::ETHBACKEND::AsyncService* service, grpc::ServerCompletionQueue* queue, Handlers handlers)
+    : UnaryRpc<remote::ETHBACKEND::AsyncService, remote::NodesInfoRequest, remote::NodesInfoReply>(service, queue, handlers) {
+}
+
+void NodeInfoCall::process(const remote::NodesInfoRequest* request) {
+    SILK_TRACE << "NodeInfoCall::process request: " << request << " limit: " << request->limit();
+
+    if (sentries_.size() == 0) {
+        remote::NodesInfoReply response;
+        const bool sent = send_response(response);
+        SILK_TRACE << "NodeInfoCall::process END #nodes: 0 sent: " << sent;
+        return;
+    }
+
+    expected_responses_ = sentries_.size();
+
+    for (const auto& sentry : sentries_) {
+        sentry->node_info([&](const grpc::Status status, const types::NodeInfoReply& reply) {
+            --expected_responses_;
+
+            if (status.ok()) {
+                types::NodeInfoReply* nodes_info = response_.add_nodesinfo();
+                *nodes_info = reply;
+            } else {
+                result_status_ = status;
+            }
+
+            if (expected_responses_ == 0) {
+                if (result_status_.ok()) {
+                    const bool sent = send_response(response_);
+                    SILK_TRACE << "NodeInfoCall::process END #nodes: " << response_.nodesinfo_size() << " sent: " << sent;
+                } else {
+                    finish_with_error(result_status_);
+                    SILK_TRACE << "NodeInfoCall::process END error: " << result_status_;
+                }
+            }
+        });
+    }
+}
+
+NodeInfoCallFactory::NodeInfoCallFactory()
+    : CallFactory<remote::ETHBACKEND::AsyncService, NodeInfoCall>(&remote::ETHBACKEND::AsyncService::RequestNodeInfo) {
+}
+
+BackEndService::BackEndService(const EthereumBackEnd& backend)
+    : etherbase_factory{backend}, net_version_factory{backend}, client_version_factory{backend} {
+}
+
+void BackEndService::add_sentry(std::unique_ptr<SentryClient>&& sentry) {
+    NetPeerCountCall::add_sentry(sentry.get());
+    NodeInfoCall::add_sentry(sentry.get());
+    sentries_.push_back(std::move(sentry));
+}
+
+BackEndService::~BackEndService() {
+    for (const auto& sentry : sentries_) {
+        NetPeerCountCall::remove_sentry(sentry.get());
+        NodeInfoCall::remove_sentry(sentry.get());
+    }
 }
 
 } // namespace silkworm::rpc

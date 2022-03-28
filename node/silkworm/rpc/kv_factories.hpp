@@ -23,9 +23,9 @@
 #include <remote/kv.grpc.pb.h>
 
 #include <silkworm/chain/config.hpp>
-#include <silkworm/rpc/factory.hpp>
-#include <silkworm/rpc/server.hpp>
 #include <silkworm/rpc/call.hpp>
+#include <silkworm/rpc/call_factory.hpp>
+#include <silkworm/rpc/server.hpp>
 
 // KV API protocol versions
 // 5.1.0 - first issue
@@ -36,73 +36,57 @@ namespace silkworm::rpc {
 constexpr auto kKvApiVersion = std::make_tuple<uint32_t, uint32_t, uint32_t>(5, 1, 0);
 
 //! Unary RPC for Version method of 'ethbackend' gRPC protocol.
-using KvVersionRpc = UnaryRpc<remote::KV::AsyncService, google::protobuf::Empty, types::VersionReply>;
-
-//! Factory specialization for Version method.
-using KvVersionRpcFactory = Factory<
-    remote::KV::AsyncService,
-    google::protobuf::Empty,
-    types::VersionReply,
-    UnaryRpc
->;
-
-//! Implementation acting as factory for Version RPCs.
-class KvVersionFactory : public KvVersionRpcFactory {
+class KvVersionCall : public UnaryRpc<remote::KV::AsyncService, google::protobuf::Empty, types::VersionReply> {
   public:
-    explicit KvVersionFactory();
+    static void fill_predefined_reply();
 
-    void process_rpc(KvVersionRpc& rpc, const google::protobuf::Empty* request);
+    KvVersionCall(remote::KV::AsyncService* service, grpc::ServerCompletionQueue* queue, Handlers handlers);
+
+    void process(const google::protobuf::Empty* request) override;
 
   private:
-    types::VersionReply response_;
+    static types::VersionReply response_;
+};
+
+//! Factory specialization for Version method.
+class KvVersionCallFactory : public CallFactory<remote::KV::AsyncService, KvVersionCall> {
+  public:
+    explicit KvVersionCallFactory();
 };
 
 //! Bidirectional-streaming RPC for Tx method of 'kv' gRPC protocol.
-using TxRpc = BidirectionalStreamingRpc<remote::KV::AsyncService, remote::Cursor, remote::Pair>;
+class TxCall : public BidirectionalStreamingRpc<remote::KV::AsyncService, remote::Cursor, remote::Pair> {
+  public:
+    TxCall(remote::KV::AsyncService* service, grpc::ServerCompletionQueue* queue, Handlers handlers);
+
+    void process(const remote::Cursor* request) override;
+};
 
 //! Factory specialization for Tx method.
-using TxRpcFactory = Factory<
-    remote::KV::AsyncService,
-    remote::Cursor,
-    remote::Pair,
-    BidirectionalStreamingRpc
->;
-
-//! Implementation acting as factory for Tx RPCs.
-class TxFactory : public TxRpcFactory {
+class TxCallFactory : public CallFactory<remote::KV::AsyncService, TxCall> {
   public:
-    explicit TxFactory();
-
-    void process_rpc(TxRpc& rpc, const remote::Cursor* request);
-
-  private:
-    void handle_request(TxRpc& rpc, const remote::Cursor* request);
+    explicit TxCallFactory();
 };
 
 //! Server-streaming RPC for StateChanges method of 'kv' gRPC protocol.
-using StateChangesRpc = ServerStreamingRpc<remote::KV::AsyncService, remote::StateChangeRequest, remote::StateChangeBatch>;
-
-//! Factory specialization for StateChanges method.
-using StateChangesRpcFactory = Factory<
-    remote::KV::AsyncService,
-    remote::StateChangeRequest,
-    remote::StateChangeBatch,
-    ServerStreamingRpc
->;
-
-//! Implementation acting as factory for StateChanges RPCs.
-class StateChangesFactory : public StateChangesRpcFactory {
+class StateChangesCall : public ServerStreamingRpc<remote::KV::AsyncService, remote::StateChangeRequest, remote::StateChangeBatch> {
   public:
-    explicit StateChangesFactory();
+    StateChangesCall(remote::KV::AsyncService* service, grpc::ServerCompletionQueue* queue, Handlers handlers);
 
-    void process_rpc(StateChangesRpc& rpc, const remote::StateChangeRequest* request);
+    void process(const remote::StateChangeRequest* request) override;
 };
 
-//! The KV protocol factory aggregration.
-struct KvFactoryGroup {
-    KvVersionFactory kv_version_factory;
-    TxFactory tx_factory;
-    StateChangesFactory state_changes_factory;
+//! Factory specialization for StateChanges method.
+class StateChangesCallFactory : public CallFactory<remote::KV::AsyncService, StateChangesCall> {
+  public:
+    explicit StateChangesCallFactory();
+};
+
+//! The KV service implementation.
+struct KvService {
+    KvVersionCallFactory kv_version_factory;
+    TxCallFactory tx_factory;
+    StateChangesCallFactory state_changes_factory;
 };
 
 } // namespace silkworm::rpc

@@ -17,7 +17,7 @@
 #ifndef SILKWORM_STAGEDSYNC_STAGE_EXECUTION_HPP_
 #define SILKWORM_STAGEDSYNC_STAGE_EXECUTION_HPP_
 
-#include <vector>
+#include <boost/circular_buffer.hpp>
 
 #include <silkworm/consensus/engine.hpp>
 #include <silkworm/execution/analysis_cache.hpp>
@@ -44,7 +44,7 @@ class Execution final : public IStage {
 
     std::unique_ptr<consensus::IEngine> consensus_engine_;
     BlockNum block_num_{0};
-    std::vector<Block> prefetched_blocks_;
+    boost::circular_buffer<Block> prefetched_blocks_{/*buffer_capacity=*/kMaxPrefetchedBlocks};
 
     //! \brief Prefetches blocks for processing
     //! \param [in] from: the first block to prefetch (inclusive)

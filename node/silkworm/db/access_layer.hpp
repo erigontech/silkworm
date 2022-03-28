@@ -84,11 +84,6 @@ void write_total_difficulty(mdbx::txn& txn, BlockNum block_number, const uint8_t
 [[nodiscard]] bool read_block(mdbx::txn& txn, gsl::span<const uint8_t, kHashLength> hash, BlockNum number,
                               bool read_senders, Block& out);
 
-// Reads contiguous canonical blocks.
-// Returns the number of blocks read.
-// TODO(yperbasis) remove
-[[nodiscard]] size_t read_blocks(mdbx::txn& txn, BlockNum from, bool read_senders, gsl::span<Block> out);
-
 // See Erigon ReadSenders
 std::vector<evmc::address> read_senders(mdbx::txn& txn, const Bytes& key);
 std::vector<evmc::address> read_senders(mdbx::txn& txn, BlockNum block_number, const uint8_t (&hash)[kHashLength]);

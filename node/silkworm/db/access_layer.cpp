@@ -216,11 +216,6 @@ bool read_block(mdbx::txn& txn, gsl::span<const uint8_t, kHashLength> hash, Bloc
     return read_body(txn, key, read_senders, block);
 }
 
-size_t read_blocks(mdbx::txn&, const BlockNum, const bool, gsl::span<Block>) {
-    // TODO(yperbasis): remove
-    return 0;
-}
-
 bool read_body(mdbx::txn& txn, BlockNum block_number, const uint8_t (&hash)[kHashLength], bool read_senders,
                BlockBody& out) {
     auto key{block_key(block_number, hash)};

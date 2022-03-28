@@ -18,6 +18,7 @@
 
 #include <string>
 
+#include <silkworm/common/assert.hpp>
 #include <silkworm/common/endian.hpp>
 #include <silkworm/common/log.hpp>
 #include <silkworm/common/stopwatch.hpp>
@@ -109,20 +110,41 @@ StageResult Execution::forward(db::RWTxn& txn) {
     return is_stopping() ? StageResult::kAborted : StageResult::kSuccess;
 }
 
-void Execution::prefetch_blocks(db::RWTxn& txn, const BlockNum from, const BlockNum to) {
+void Execution::prefetch_blocks(db::RWTxn& txn, BlockNum from, const BlockNum to) {
     std::unique_ptr<StopWatch> sw;
     if (log::test_verbosity(log::Level::kTrace)) {
         sw = std::make_unique<StopWatch>(/*auto_start=*/true);
     }
 
+    // TODO(yperbasis): don't clear
     prefetched_blocks_.clear();  // free the memory held by transactions, etc
 
     const size_t n{std::min(static_cast<size_t>(to - from + 1), kMaxPrefetchedBlocks)};
-    prefetched_blocks_.resize(n);
+    size_t num_read{0};
 
-    const size_t num_read{db::read_blocks(*txn, from, /*read_senders=*/true, {prefetched_blocks_.data(), n})};
+    db::Cursor canonical_hashes_cursor(txn, db::table::kCanonicalHashes);
+    if (canonical_hashes_cursor.seek(db::to_slice(db::block_key(from)))) {
+        db::WalkFunc walk_function{[&](mdbx::cursor&, mdbx::cursor::move_result& data) {
+            BlockNum reached_block_num{endian::load_big_u64(static_cast<const uint8_t*>(data.key.data()))};
+            if (reached_block_num != from) {
+                throw std::runtime_error("Bad canonical header sequence: expected " + std::to_string(from) + " got " +
+                                         std::to_string(reached_block_num));
+            }
+            SILKWORM_ASSERT(data.value.length() == kHashLength);
+            const auto hash_ptr{static_cast<const uint8_t*>(data.value.data())};
+            prefetched_blocks_.push_back();
+            if (!db::read_block(*txn, gsl::span<const uint8_t, kHashLength>{hash_ptr, kHashLength}, from,
+                                /*read_senders=*/true, prefetched_blocks_.back())) {
+                throw std::runtime_error("Unable to read block " + std::to_string(from));
+            }
+            ++from;
+            return true;
+        }};
+        num_read = db::cursor_for_count(canonical_hashes_cursor, walk_function, n);
+    }
+
     if (num_read != n) {
-        throw std::runtime_error("Bad canonical header sequence: missing block " + std::to_string(from + num_read));
+        throw std::runtime_error("Missing block " + std::to_string(from + num_read));
     }
 
     if (sw) {

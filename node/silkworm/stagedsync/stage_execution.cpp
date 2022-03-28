@@ -109,7 +109,7 @@ StageResult Execution::forward(db::RWTxn& txn) {
     return is_stopping() ? StageResult::kAborted : StageResult::kSuccess;
 }
 
-void Execution::prefetch_blocks(db::RWTxn& txn, const BlockNum from, const BlockNum to, const size_t max_blocks) {
+void Execution::prefetch_blocks(db::RWTxn& txn, const BlockNum from, const BlockNum to) {
     std::unique_ptr<StopWatch> sw;
     if (log::test_verbosity(log::Level::kTrace)) {
         sw = std::make_unique<StopWatch>(/*auto_start=*/true);
@@ -117,7 +117,7 @@ void Execution::prefetch_blocks(db::RWTxn& txn, const BlockNum from, const Block
 
     prefetched_blocks_.clear();  // free the memory held by transactions, etc
 
-    const size_t n{std::min(static_cast<size_t>(to - from + 1), max_blocks)};
+    const size_t n{std::min(static_cast<size_t>(to - from + 1), kMaxPrefetchedBlocks)};
     prefetched_blocks_.resize(n);
 
     const size_t num_read{db::read_blocks(*txn, from, /*read_senders=*/true, {prefetched_blocks_.data(), n})};

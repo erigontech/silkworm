@@ -40,6 +40,8 @@ class Execution final : public IStage {
     std::vector<std::string> get_log_progress() final;
 
   private:
+    static constexpr size_t kMaxPrefetchedBlocks{10240};
+
     std::unique_ptr<consensus::IEngine> consensus_engine_;
     BlockNum block_num_{0};
     std::vector<Block> prefetched_blocks_;
@@ -49,7 +51,7 @@ class Execution final : public IStage {
     //! \param [in] to: the last block to prefetch (inclusive)
     //! \remarks The amount of blocks to be fetched is determined by the upper block number (to) or max_blocks collected
     //! whichever comes first
-    void prefetch_blocks(db::RWTxn& txn, BlockNum from, BlockNum to, size_t max_blocks = 10240);
+    void prefetch_blocks(db::RWTxn& txn, BlockNum from, BlockNum to);
 
     //! \brief Executes a batch of blocks
     //! \remarks A batch completes when either max block is reached or buffer dimensions overflow

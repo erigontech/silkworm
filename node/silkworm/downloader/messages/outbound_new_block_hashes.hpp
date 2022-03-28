@@ -1,5 +1,5 @@
 /*
-Copyright 2021 The Silkworm Authors
+Copyright 2021-2022 The Silkworm Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,13 +14,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-#ifndef SILKWORM_OUTBOUNDNEWBLOCKHASHES_HPP
-#define SILKWORM_OUTBOUNDNEWBLOCKHASHES_HPP
+#ifndef SILKWORM_OUTBOUND_NEW_BLOCK_HASHES_HPP
+#define SILKWORM_OUTBOUND_NEW_BLOCK_HASHES_HPP
 
 #include <silkworm/downloader/internals/working_chain.hpp>
-#include <silkworm/downloader/packets/NewBlockHashesPacket.hpp>
+#include <silkworm/downloader/packets/new_block_hashes_packet.hpp>
 
-#include "OutboundMessage.hpp"
+#include "outbound_message.hpp"
 
 namespace silkworm {
 
@@ -40,4 +40,4 @@ class OutboundNewBlockHashes : public OutboundMessage {
 };
 
 }  // namespace silkworm
-#endif  // SILKWORM_OUTBOUNDNEWBLOCKHASHES_HPP
+#endif  // SILKWORM_OUTBOUND_NEW_BLOCK_HASHES_HPP

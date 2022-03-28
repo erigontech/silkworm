@@ -21,7 +21,7 @@
 #include <silkworm/concurrency/containers.hpp>
 #include <silkworm/downloader/internals/db_tx.hpp>
 #include <silkworm/downloader/internals/types.hpp>
-#include <silkworm/downloader/messages/InboundMessage.hpp>
+#include <silkworm/downloader/messages/inbound_message.hpp>
 #include <silkworm/downloader/sentry_client.hpp>
 
 namespace silkworm {

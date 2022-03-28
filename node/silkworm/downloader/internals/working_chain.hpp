@@ -23,7 +23,7 @@
 
 #include <silkworm/common/lru_cache.hpp>
 #include <silkworm/consensus/engine.hpp>
-#include <silkworm/downloader/packets/GetBlockHeadersPacket.hpp>
+#include <silkworm/downloader/packets/get_block_headers_packet.hpp>
 #include "preverified_hashes.hpp"
 
 #include "chain_elements.hpp"

@@ -22,7 +22,7 @@
 #include <silkworm/common/log.hpp>
 
 #include "internals/header_retrieval.hpp"
-#include "messages/InboundMessage.hpp"
+#include "messages/inbound_message.hpp"
 #include "rpc/receive_messages.hpp"
 
 namespace silkworm {

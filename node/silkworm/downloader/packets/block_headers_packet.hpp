@@ -14,8 +14,8 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_BLOCKHEADERSPACKET_HPP
-#define SILKWORM_BLOCKHEADERSPACKET_HPP
+#ifndef SILKWORM_BLOCK_HEADERS_PACKET_HPP
+#define SILKWORM_BLOCK_HEADERS_PACKET_HPP
 
 #include <algorithm>
 
@@ -59,4 +59,4 @@ inline std::ostream& operator<<(std::ostream& os, const BlockHeadersPacket66& pa
 
 }  // namespace silkworm
 
-#endif  // SILKWORM_BLOCKHEADERSPACKET_HPP
+#endif  // SILKWORM_BLOCK_HEADERS_PACKET_HPP

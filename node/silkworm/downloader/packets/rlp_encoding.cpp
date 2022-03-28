@@ -17,17 +17,17 @@
 // types
 #include <silkworm/downloader/internals/types.hpp>
 
-#include "BlockBodiesPacket.hpp"
-#include "BlockHeadersPacket.hpp"
-#include "GetBlockBodiesPacket.hpp"
-#include "GetBlockHeadersPacket.hpp"
-#include "NewBlockHashesPacket.hpp"
-#include "NewBlockPacket.hpp"
+#include "block_bodies_packet.hpp"
+#include "block_headers_packet.hpp"
+#include "get_block_bodies_packet.hpp"
+#include "get_block_headers_packet.hpp"
+#include "new_block_hashes_packet.hpp"
+#include "new_block_packet.hpp"
 
 // generic implementations (must follow types)
 #include <silkworm/rlp/encode_vector.hpp>
 
-#include "RLPEth66PacketCoding.hpp"
+#include "rlp_eth66_packet_coding.hpp"
 
 namespace silkworm::rlp {
 

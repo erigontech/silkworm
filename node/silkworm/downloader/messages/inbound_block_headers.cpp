@@ -1,5 +1,5 @@
 /*
-   Copyright 2021 The Silkworm Authors
+   Copyright 2021-2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -14,11 +14,11 @@
    limitations under the License.
 */
 
-#include "InboundBlockHeaders.hpp"
+#include "inbound_block_headers.hpp"
 
 #include <silkworm/common/cast.hpp>
 #include <silkworm/common/log.hpp>
-#include <silkworm/downloader/messages/OutboundGetBlockHeaders.hpp>
+#include <silkworm/downloader/messages/outbound_get_block_headers.hpp>
 #include <silkworm/downloader/rpc/peer_min_block.hpp>
 #include <silkworm/downloader/rpc/penalize_peer.hpp>
 

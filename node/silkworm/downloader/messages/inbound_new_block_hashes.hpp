@@ -1,5 +1,5 @@
 /*
-   Copyright 2021 The Silkworm Authors
+   Copyright 2021-2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -14,20 +14,20 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_INBOUNDNEWBLOCK_HPP
-#define SILKWORM_INBOUNDNEWBLOCK_HPP
+#ifndef SILKWORM_INBOUND_NEW_BLOCK_HASHES_HPP
+#define SILKWORM_INBOUND_NEW_BLOCK_HASHES_HPP
 
-#include <silkworm/downloader/packets/NewBlockPacket.hpp>
+#include <silkworm/downloader/packets/new_block_hashes_packet.hpp>
 
-#include "InboundMessage.hpp"
+#include "inbound_message.hpp"
 
 namespace silkworm {
 
-class InboundNewBlock : public InboundMessage {
+class InboundNewBlockHashes : public InboundMessage {
   public:
-    InboundNewBlock(const sentry::InboundMessage& msg, WorkingChain& wc, SentryClient& s);
+    InboundNewBlockHashes(const sentry::InboundMessage&, WorkingChain&, SentryClient&);
 
-    std::string name() const override { return "InboundNewBlock"; }
+    std::string name() const override { return "InboundNewBlockHashes"; }
     std::string content() const override;
     uint64_t reqId() const override;
 
@@ -35,12 +35,12 @@ class InboundNewBlock : public InboundMessage {
 
   private:
     std::string peerId_;
-    NewBlockPacket packet_;
+    NewBlockHashesPacket packet_;
     uint64_t reqId_;
-    [[maybe_unused]] WorkingChain& working_chain_;
-    [[maybe_unused]] SentryClient& sentry_;
+    WorkingChain& working_chain_;
+    SentryClient& sentry_;
 };
 
 }  // namespace silkworm
 
-#endif  // SILKWORM_INBOUNDNEWBLOCK_HPP
+#endif  // SILKWORM_INBOUND_NEW_BLOCK_HASHES_HPP

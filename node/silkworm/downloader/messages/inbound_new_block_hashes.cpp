@@ -1,5 +1,5 @@
 /*
-   Copyright 2021 The Silkworm Authors
+   Copyright 2021-2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -14,13 +14,13 @@
    limitations under the License.
 */
 
-#include "InboundNewBlockHashes.hpp"
+#include "inbound_new_block_hashes.hpp"
 
 #include <algorithm>
 
 #include <silkworm/common/log.hpp>
 #include <silkworm/downloader/internals/random_number.hpp>
-#include <silkworm/downloader/packets/RLPEth66PacketCoding.hpp>
+#include <silkworm/downloader/packets/rlp_eth66_packet_coding.hpp>
 #include <silkworm/downloader/rpc/send_message_by_id.hpp>
 
 namespace silkworm {

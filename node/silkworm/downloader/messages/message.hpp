@@ -1,5 +1,5 @@
 /*
-   Copyright 2021 The Silkworm Authors
+   Copyright 2021-2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -13,25 +13,23 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 */
-#ifndef SILKWORM_OUTBOUNDMESSAGE_HPP
-#define SILKWORM_OUTBOUNDMESSAGE_HPP
 
-#include "Message.hpp"
-#include <silkworm/downloader/sentry_client.hpp>
+#ifndef SILKWORM_MESSAGE_HPP
+#define SILKWORM_MESSAGE_HPP
+
+#include <silkworm/downloader/internals/types.hpp>
 
 namespace silkworm {
 
-class OutboundMessage : public Message {
+class Message {
   public:
-    void execute() override = 0;
+    virtual std::string name() const = 0;
 
-    virtual std::string content() const = 0;
+    virtual void execute() = 0;  // inbound message send a reply, outbound message send a request
+
+    virtual ~Message() = default;
 };
 
-inline std::ostream& operator<<(std::ostream& os, const silkworm::OutboundMessage& msg) {
-    os << msg.name() << " content: " << msg.content();
-    return os;
-}
-
 }  // namespace silkworm
-#endif  // SILKWORM_OUTBOUNDMESSAGE_HPP
+
+#endif  // SILKWORM_MESSAGE_HPP

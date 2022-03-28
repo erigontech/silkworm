@@ -1,5 +1,5 @@
 /*
-   Copyright 2021 The Silkworm Authors
+   Copyright 2021-2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -14,17 +14,17 @@
    limitations under the License.
 */
 
-#include "InboundMessage.hpp"
+#include "inbound_message.hpp"
 
 #include <iostream>
 
 #include <silkworm/common/log.hpp>
 
-#include "InboundBlockHeaders.hpp"
-#include "InboundGetBlockBodies.hpp"
-#include "InboundGetBlockHeaders.hpp"
-#include "InboundNewBlock.hpp"
-#include "InboundNewBlockHashes.hpp"
+#include "inbound_block_headers.hpp"
+#include "inbound_get_block_bodies.hpp"
+#include "inbound_get_block_headers.hpp"
+#include "inbound_new_block.hpp"
+#include "inbound_new_block_hashes.hpp"
 
 namespace silkworm {
 

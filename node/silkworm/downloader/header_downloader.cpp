@@ -22,10 +22,9 @@
 #include <silkworm/common/measure.hpp>
 #include <silkworm/common/stopwatch.hpp>
 
-#include "messages/InboundMessage.hpp"
-#include "messages/OutboundGetBlockHeaders.hpp"
-#include "messages/OutboundNewBlockHashes.hpp"
-
+#include "messages/inbound_message.hpp"
+#include "messages/outbound_get_block_headers.hpp"
+#include "messages/outbound_new_block_hashes.hpp"
 
 namespace silkworm {
 

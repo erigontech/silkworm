@@ -14,10 +14,10 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_GETBLOCKHEADERSPACKET_HPP
-#define SILKWORM_GETBLOCKHEADERSPACKET_HPP
+#ifndef SILKWORM_GET_BLOCK_HEADERS_PACKET_HPP
+#define SILKWORM_GET_BLOCK_HEADERS_PACKET_HPP
 
-#include "HashOrNumber.hpp"
+#include "hash_or_number.hpp"
 
 namespace silkworm {
 
@@ -59,4 +59,4 @@ inline std::ostream& operator<<(std::ostream& os, const GetBlockHeadersPacket66&
 
 }  // namespace silkworm
 
-#endif  // SILKWORM_GETBLOCKHEADERSPACKET_HPP
+#endif  // SILKWORM_GET_BLOCK_HEADERS_PACKET_HPP

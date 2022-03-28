@@ -1,5 +1,5 @@
 /*
-   Copyright 2021 The Silkworm Authors
+   Copyright 2021-2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -14,20 +14,20 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_INBOUNDGETBLOCKHEADERS_HPP
-#define SILKWORM_INBOUNDGETBLOCKHEADERS_HPP
+#ifndef SILKWORM_INBOUND_GET_BLOCK_BODIES_HPP
+#define SILKWORM_INBOUND_GET_BLOCK_BODIES_HPP
 
-#include <silkworm/downloader/packets/GetBlockHeadersPacket.hpp>
+#include <silkworm/downloader/packets/get_block_bodies_packet.hpp>
 
-#include "InboundMessage.hpp"
+#include "inbound_message.hpp"
 
 namespace silkworm {
 
-class InboundGetBlockHeaders : public InboundMessage {
+class InboundGetBlockBodies : public InboundMessage {
   public:
-    InboundGetBlockHeaders(const sentry::InboundMessage& msg, Db::ReadOnlyAccess db, SentryClient& sentry);
+    InboundGetBlockBodies(const sentry::InboundMessage& msg, Db::ReadOnlyAccess db, SentryClient& s);
 
-    std::string name() const override { return "InboundGetBlockHeaders"; }
+    std::string name() const override { return "InboundGetBlockBodies"; }
     std::string content() const override;
     uint64_t reqId() const override;
 
@@ -35,10 +35,10 @@ class InboundGetBlockHeaders : public InboundMessage {
 
   private:
     std::string peerId_;
-    GetBlockHeadersPacket66 packet_;
+    GetBlockBodiesPacket66 packet_;
     Db::ReadOnlyAccess db_;
     SentryClient& sentry_;
 };
 
 }  // namespace silkworm
-#endif  // SILKWORM_INBOUNDGETBLOCKHEADERS_HPP
+#endif  // SILKWORM_INBOUND_GET_BLOCK_BODIES_HPP

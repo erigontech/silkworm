@@ -13,35 +13,25 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 */
+#ifndef SILKWORM_OUTBOUND_MESSAGE_HPP
+#define SILKWORM_OUTBOUND_MESSAGE_HPP
 
-#ifndef SILKWORM_NEWBLOCKPACKET_HPP
-#define SILKWORM_NEWBLOCKPACKET_HPP
-
-#include <silkworm/downloader/internals/types.hpp>
+#include "Message.hpp"
+#include <silkworm/downloader/sentry_client.hpp>
 
 namespace silkworm {
 
-struct NewBlockPacket {
-    Block block;
-    BigInt td;  // total difficulty
+class OutboundMessage : public Message {
+  public:
+    void execute() override = 0;
+
+    virtual std::string content() const = 0;
 };
 
-namespace rlp {
-
-    void encode(Bytes& to, const NewBlockPacket& from) noexcept;
-
-    size_t length(const NewBlockPacket& from) noexcept;
-
-    template <>
-    DecodingResult decode(ByteView& from, NewBlockPacket& to) noexcept;
-
-}  // namespace rlp
-
-inline std::ostream& operator<<(std::ostream& os, const NewBlockPacket& packet) {
-    os << "block num " << packet.block.header.number;
+inline std::ostream& operator<<(std::ostream& os, const silkworm::OutboundMessage& msg) {
+    os << msg.name() << " content: " << msg.content();
     return os;
 }
 
 }  // namespace silkworm
-
-#endif  // SILKWORM_NEWBLOCKPACKET_HPP
+#endif  // SILKWORM_OUTBOUND_MESSAGE_HPP

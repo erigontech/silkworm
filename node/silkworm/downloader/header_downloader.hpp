@@ -24,24 +24,11 @@
 #include <silkworm/downloader/internals/db_tx.hpp>
 #include <silkworm/downloader/internals/types.hpp>
 #include <silkworm/downloader/internals/working_chain.hpp>
-#include <silkworm/downloader/messages/InternalMessage.hpp>
+#include <silkworm/downloader/messages/internal_message.hpp>
 #include <silkworm/downloader/sentry_client.hpp>
+#include "stage.h"
 
 namespace silkworm {
-
-// (proposed) abstract interface for all stages
-class Stage {
-  public:
-    struct Result {
-        enum Status { Unspecified, Done, DoneAndUpdated, UnwindNeeded, SkipTx, Error } status;
-        std::optional<BlockNum> current_point;
-        std::optional<BlockNum> unwind_point;
-        std::optional<Hash> bad_block;
-    };
-
-    virtual Result forward(bool first_sync) = 0;
-    virtual Result unwind_to(BlockNum new_height, Hash bad_block) = 0;
-};
 
 /*
  * HeaderDownloader implement the header downloading stage.

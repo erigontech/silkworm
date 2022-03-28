@@ -1,5 +1,5 @@
 /*
-Copyright 2021 The Silkworm Authors
+Copyright 2021-2022 The Silkworm Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,8 +14,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-#ifndef SILKWORM_INTERNALMESSAGE_HPP
-#define SILKWORM_INTERNALMESSAGE_HPP
+#ifndef SILKWORM_INTERNAL_MESSAGE_HPP
+#define SILKWORM_INTERNAL_MESSAGE_HPP
 
 #include <future>
 
@@ -64,4 +64,4 @@ inline void InternalMessage<void>::execute() {
 }
 
 }  // namespace silkworm
-#endif  // SILKWORM_INTERNALMESSAGE_HPP
+#endif  // SILKWORM_INTERNAL_MESSAGE_HPP

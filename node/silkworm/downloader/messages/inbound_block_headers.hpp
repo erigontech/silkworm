@@ -1,5 +1,5 @@
 /*
-   Copyright 2021 The Silkworm Authors
+   Copyright 2021-2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -14,12 +14,12 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_INBOUNDBLOCKHEADERS_HPP
-#define SILKWORM_INBOUNDBLOCKHEADERS_HPP
+#ifndef SILKWORM_INBOUND_BLOCK_HEADERS_HPP
+#define SILKWORM_INBOUND_BLOCK_HEADERS_HPP
 
-#include <silkworm/downloader/packets/BlockHeadersPacket.hpp>
+#include <silkworm/downloader/packets/block_headers_packet.hpp>
 
-#include "InboundMessage.hpp"
+#include "inbound_message.hpp"
 
 namespace silkworm {
 
@@ -42,4 +42,4 @@ class InboundBlockHeaders : public InboundMessage {
 
 }  // namespace silkworm
 
-#endif  // SILKWORM_INBOUNDBLOCKHEADERS_HPP
+#endif  // SILKWORM_INBOUND_BLOCK_HEADERS_HPP

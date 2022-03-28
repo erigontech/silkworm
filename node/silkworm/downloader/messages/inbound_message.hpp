@@ -1,5 +1,5 @@
 /*
-   Copyright 2021 The Silkworm Authors
+   Copyright 2021-2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -14,8 +14,8 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_INBOUNDMESSAGE_HPP
-#define SILKWORM_INBOUNDMESSAGE_HPP
+#ifndef SILKWORM_INBOUND_MESSAGE_HPP
+#define SILKWORM_INBOUND_MESSAGE_HPP
 
 #include <memory>
 
@@ -52,4 +52,4 @@ struct InboundBlockAnnouncementMessage : public InboundMessage {
 
 }  // namespace silkworm
 
-#endif  // SILKWORM_INBOUNDMESSAGE_HPP
+#endif  // SILKWORM_INBOUND_MESSAGE_HPP

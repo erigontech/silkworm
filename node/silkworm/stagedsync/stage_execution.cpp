@@ -116,8 +116,7 @@ void Execution::prefetch_blocks(db::RWTxn& txn, BlockNum from, const BlockNum to
         sw = std::make_unique<StopWatch>(/*auto_start=*/true);
     }
 
-    // TODO(yperbasis): don't clear
-    prefetched_blocks_.clear();  // free the memory held by transactions, etc
+    assert(prefetched_blocks_.empty());
 
     const size_t n{std::min(static_cast<size_t>(to - from + 1), kMaxPrefetchedBlocks)};
     size_t num_read{0};
@@ -172,65 +171,68 @@ StageResult Execution::execute_batch(db::RWTxn& txn, BlockNum max_block_num, Bas
         }
 
         while (true) {
-            if (is_stopping()) {
-                return StageResult::kAborted;
-            }
-
-            prefetch_blocks(txn, block_num_, max_block_num);
-
-            for (const auto& block : prefetched_blocks_) {
-                if (block.header.number != block_num_) {
-                    throw std::runtime_error("Bad block sequence");
-                }
-
-                if ((block_num_ % 64 == 0) && is_stopping()) {
+            if (prefetched_blocks_.empty()) {
+                if (is_stopping()) {
                     return StageResult::kAborted;
                 }
 
-                ExecutionProcessor processor(block, *consensus_engine_, buffer, node_settings_->chain_config.value());
-                processor.evm().baseline_analysis_cache = &analysis_cache;
-                processor.evm().state_pool = &state_pool;
-
-                // TODO(Andrea) Add Tracer
-
-                if (const auto res{processor.execute_and_write_block(receipts)}; res != ValidationResult::kOk) {
-                    const auto block_hash_hex{to_hex(block.header.hash().bytes, true)};
-                    log::Error("Block Validation Error",
-                               {"block", std::to_string(block_num_), "hash", block_hash_hex, "err",
-                                std::string(magic_enum::enum_name<ValidationResult>(res))});
-                    // TODO(Andrea) Set the bad block hash in stage loop context so other stages are aware
-                    return StageResult::kInvalidBlock;
-                }
-
-                if (block_num_ >= prune_receipts_threshold) {
-                    buffer.insert_receipts(block_num_, receipts);
-                }
-
-                // Stats
-                std::unique_lock progress_lock(progress_mtx_);
-                ++processed_blocks_;
-                processed_transactions_ += block.transactions.size();
-                processed_gas_ += block.header.gas_used;
-                gas_batch_size += block.header.gas_used;
-                gas_history_size += block.header.gas_used;
-                progress_lock.unlock();
-
-                // Flush whole buffer if time to
-                if (gas_batch_size >= gas_max_batch_size || block_num_ >= max_block_num) {
-                    prefetched_blocks_.clear();  // free the memory held by transactions, etc
-                    log::Trace("Buffer State", {"size", human_size(buffer.current_batch_state_size())});
-                    buffer.write_to_db();
-                    return is_stopping() ? StageResult::kAborted : StageResult::kSuccess;
-                } else if (gas_history_size >= gas_max_history_size) {
-                    // or flush history only if needed
-                    log::Trace("Buffer History", {"size", human_size(buffer.current_batch_history_size())});
-                    buffer.write_history_to_db();
-                    gas_history_size = 0;
-                }
-
-                ++block_num_;
+                prefetch_blocks(txn, block_num_, max_block_num);
             }
+
+            const auto block = prefetched_blocks_.front();
+
+            if (block.header.number != block_num_) {
+                throw std::runtime_error("Bad block sequence");
+            }
+
+            if ((block_num_ % 64 == 0) && is_stopping()) {
+                return StageResult::kAborted;
+            }
+
+            ExecutionProcessor processor(block, *consensus_engine_, buffer, node_settings_->chain_config.value());
+            processor.evm().baseline_analysis_cache = &analysis_cache;
+            processor.evm().state_pool = &state_pool;
+
+            // TODO(Andrea) Add Tracer
+
+            if (const auto res{processor.execute_and_write_block(receipts)}; res != ValidationResult::kOk) {
+                const auto block_hash_hex{to_hex(block.header.hash().bytes, true)};
+                log::Error("Block Validation Error",
+                           {"block", std::to_string(block_num_), "hash", block_hash_hex, "err",
+                            std::string(magic_enum::enum_name<ValidationResult>(res))});
+                // TODO(Andrea) Set the bad block hash in stage loop context so other stages are aware
+                return StageResult::kInvalidBlock;
+            }
+
+            if (block_num_ >= prune_receipts_threshold) {
+                buffer.insert_receipts(block_num_, receipts);
+            }
+
+            // Stats
+            std::unique_lock progress_lock(progress_mtx_);
+            ++processed_blocks_;
+            processed_transactions_ += block.transactions.size();
+            processed_gas_ += block.header.gas_used;
+            gas_batch_size += block.header.gas_used;
+            gas_history_size += block.header.gas_used;
+            progress_lock.unlock();
+
+            // Flush whole buffer if time to
+            if (gas_batch_size >= gas_max_batch_size || block_num_ >= max_block_num) {
+                log::Trace("Buffer State", {"size", human_size(buffer.current_batch_state_size())});
+                buffer.write_to_db();
+            } else if (gas_history_size >= gas_max_history_size) {
+                // or flush history only if needed
+                log::Trace("Buffer History", {"size", human_size(buffer.current_batch_history_size())});
+                buffer.write_history_to_db();
+                gas_history_size = 0;
+            }
+
+            ++block_num_;
+            prefetched_blocks_.pop_front();
         }
+
+        return is_stopping() ? StageResult::kAborted : StageResult::kSuccess;
 
     } catch (const mdbx::exception& ex) {
         log::Error("DB Error", {"block", std::to_string(block_num_)}) << " " << ex.what();

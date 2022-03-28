@@ -429,16 +429,16 @@ namespace db {
         REQUIRE(header_from_db.has_value());
         CHECK(*header_from_db == header);
 
-        SECTION("read_block") {
+        SECTION("read_block_by_number") {
             Block block;
 
             bool read_senders{false};
-            CHECK(!read_block(txn, block_num, read_senders, block));
+            CHECK(!read_block_by_number(txn, block_num, read_senders, block));
 
             BlockBody body{sample_block_body()};
             CHECK_NOTHROW(write_body(txn, body, hash.bytes, header.number));
 
-            REQUIRE(read_block(txn, block_num, read_senders, block));
+            REQUIRE(read_block_by_number(txn, block_num, read_senders, block));
             CHECK(block.header == header);
             CHECK(block.ommers == body.ommers);
             CHECK(block.transactions == body.transactions);
@@ -447,7 +447,7 @@ namespace db {
             CHECK(!block.transactions[1].from);
 
             read_senders = true;
-            CHECK_NOTHROW(read_block(txn, block_num, read_senders, block));
+            CHECK_NOTHROW(read_block_by_number(txn, block_num, read_senders, block));
 
             Bytes full_senders{
                 *from_hex("5a0b54d5dc17e0aadc383d2db43b0a0d3e029c4c"
@@ -457,7 +457,7 @@ namespace db {
             Bytes key{block_key(header.number, hash.bytes)};
             auto sender_table{db::open_cursor(txn, table::kSenders)};
             sender_table.upsert(to_slice(key), to_slice(full_senders));
-            REQUIRE(read_block(txn, block_num, read_senders, block));
+            REQUIRE(read_block_by_number(txn, block_num, read_senders, block));
             CHECK(block.header == header);
             CHECK(block.ommers == body.ommers);
             CHECK(block.transactions == body.transactions);

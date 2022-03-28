@@ -77,10 +77,11 @@ void write_total_difficulty(mdbx::txn& txn, BlockNum block_number, const uint8_t
 
 // Reads canonical block; see Erigon ReadBlockByNumber.
 // Returns true on success and false on missing block.
-[[nodiscard]] bool read_block(mdbx::txn& txn, BlockNum block_number, bool read_senders, Block& out);
+[[nodiscard]] bool read_block_by_number(mdbx::txn& txn, BlockNum block_number, bool read_senders, Block& out);
 
 // Reads contiguous canonical blocks.
 // Returns the number of blocks read.
+// TODO(yperbasis) remove
 [[nodiscard]] size_t read_blocks(mdbx::txn& txn, BlockNum from, bool read_senders, gsl::span<Block> out);
 
 // See Erigon ReadSenders

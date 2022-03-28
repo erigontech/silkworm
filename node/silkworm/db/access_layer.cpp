@@ -190,7 +190,7 @@ void read_transactions(mdbx::cursor& txn_table, uint64_t base_id, uint64_t count
     SILKWORM_ASSERT(i == count);
 }
 
-bool read_block(mdbx::txn& txn, BlockNum block_number, bool read_senders, Block& block) {
+bool read_block_by_number(mdbx::txn& txn, BlockNum block_number, bool read_senders, Block& block) {
     return read_blocks(txn, block_number, read_senders, {&block, 1}) == 1;
 }
 

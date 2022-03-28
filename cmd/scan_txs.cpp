@@ -83,7 +83,7 @@ int main(int argc, char* argv[]) {
             txn.renew_reading();
 
             // Read the block
-            if (!db::read_block(txn, block_num, /*read_senders=*/true, block)) {
+            if (!db::read_block_by_number(txn, block_num, /*read_senders=*/true, block)) {
                 break;
             }
 

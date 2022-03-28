@@ -85,7 +85,7 @@ int main(int argc, char* argv[]) {
         Block block;
         for (; block_num < to; ++block_num) {
             txn.renew_reading();
-            if (!db::read_block(txn, block_num, /*read_senders=*/true, block)) {
+            if (!db::read_block_by_number(txn, block_num, /*read_senders=*/true, block)) {
                 break;
             }
 

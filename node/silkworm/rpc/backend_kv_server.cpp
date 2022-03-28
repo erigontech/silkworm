@@ -21,6 +21,10 @@
 
 namespace silkworm::rpc {
 
+BackEndKvService::BackEndKvService(const EthereumBackEnd& backend)
+    : BackEndService(backend), KvService(backend) {
+}
+
 BackEndKvServer::BackEndKvServer(const ServerConfig& srv_config, const EthereumBackEnd& backend)
 : Server(srv_config), backend_(backend) {
     backend_kv_services_.reserve(srv_config.num_contexts());
@@ -50,20 +54,9 @@ void BackEndKvServer::register_request_calls() {
             backend_kv_svc->add_sentry(sentry_factory.make_sentry_client(sentry_address));
         }
 
-        /* 'ethbackend' protocol factories */
-        backend_kv_svc->etherbase_factory.create_rpc(&backend_async_service_, server_queue);
-        backend_kv_svc->net_version_factory.create_rpc(&backend_async_service_, server_queue);
-        backend_kv_svc->net_peer_count_factory.create_rpc(&backend_async_service_, server_queue);
-        backend_kv_svc->backend_version_factory.create_rpc(&backend_async_service_, server_queue);
-        backend_kv_svc->protocol_version_factory.create_rpc(&backend_async_service_, server_queue);
-        backend_kv_svc->client_version_factory.create_rpc(&backend_async_service_, server_queue);
-        backend_kv_svc->subscribe_factory.create_rpc(&backend_async_service_, server_queue);
-        backend_kv_svc->node_info_factory.create_rpc(&backend_async_service_, server_queue);
-
-        /* 'kv' protocol factories */
-        backend_kv_svc->kv_version_factory.create_rpc(&kv_async_service_, server_queue);
-        backend_kv_svc->tx_factory.create_rpc(&kv_async_service_, server_queue);
-        backend_kv_svc->state_changes_factory.create_rpc(&kv_async_service_, server_queue);
+        // Register initial requested calls for ETHBACKEND and KV services
+        backend_kv_svc->register_backend_request_calls(&backend_async_service_, server_queue);
+        backend_kv_svc->register_kv_request_calls(&kv_async_service_, server_queue);
     }
 }
 

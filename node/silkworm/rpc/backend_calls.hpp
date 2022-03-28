@@ -203,21 +203,23 @@ class NodeInfoCallFactory : public CallFactory<remote::ETHBACKEND::AsyncService,
 
 //! The ETHBACKEND service implementation.
 struct BackEndService {
-    EtherbaseCallFactory etherbase_factory;
-    NetVersionCallFactory net_version_factory;
-    NetPeerCountCallFactory net_peer_count_factory;
-    BackEndVersionCallFactory backend_version_factory;
-    ProtocolVersionCallFactory protocol_version_factory;
-    ClientVersionCallFactory client_version_factory;
-    SubscribeCallFactory subscribe_factory;
-    NodeInfoCallFactory node_info_factory;
-
+  public:
     explicit BackEndService(const EthereumBackEnd& backend);
     ~BackEndService();
+
+    void register_backend_request_calls(remote::ETHBACKEND::AsyncService* async_service, grpc::ServerCompletionQueue* queue);
 
     void add_sentry(std::unique_ptr<SentryClient>&& sentry);
 
   private:
+    EtherbaseCallFactory etherbase_factory_;
+    NetVersionCallFactory net_version_factory_;
+    NetPeerCountCallFactory net_peer_count_factory_;
+    BackEndVersionCallFactory backend_version_factory_;
+    ProtocolVersionCallFactory protocol_version_factory_;
+    ClientVersionCallFactory client_version_factory_;
+    SubscribeCallFactory subscribe_factory_;
+    NodeInfoCallFactory node_info_factory_;
     std::vector<std::unique_ptr<SentryClient>> sentries_;
 };
 

@@ -22,6 +22,7 @@
 #include <vector>
 
 #include <silkworm/common/base.hpp>
+#include <silkworm/common/settings.hpp>
 #include <silkworm/chain/config.hpp>
 
 namespace silkworm {
@@ -30,24 +31,24 @@ constexpr const char* kDefaultNodeName{"silkworm"};
 
 class EthereumBackEnd {
   public:
-    explicit EthereumBackEnd(const ChainConfig& chain_config = kMainnetConfig);
+    explicit EthereumBackEnd(const NodeSettings& node_settings, mdbx::env_managed* chaindata_env);
 
     EthereumBackEnd(const EthereumBackEnd&) = delete;
     EthereumBackEnd& operator=(const EthereumBackEnd&) = delete;
 
+    mdbx::env_managed* chaindata_env() const noexcept { return chaindata_env_; }
     const std::string& node_name() const noexcept { return node_name_; }
-    uint64_t chain_id() const noexcept { return chain_config_.chain_id; }
-    std::optional<evmc::address> etherbase() const noexcept { return etherbase_; }
+    std::optional<uint64_t> chain_id() const noexcept { return chain_id_; }
+    std::optional<evmc::address> etherbase() const noexcept { return node_settings_.etherbase; }
     std::vector<std::string> sentry_addresses() const noexcept { return sentry_addresses_; }
 
     void set_node_name(const std::string& node_name) noexcept;
-    void set_etherbase(const evmc::address& etherbase) noexcept;
-    void add_sentry_address(const std::string& address_uri) noexcept;
 
   private:
-    const ChainConfig& chain_config_;
+    const NodeSettings& node_settings_;
+    mdbx::env_managed* chaindata_env_;
     std::string node_name_{kDefaultNodeName};
-    std::optional<evmc::address> etherbase_{std::nullopt};
+    std::optional<uint64_t> chain_id_{std::nullopt};
     std::vector<std::string> sentry_addresses_;
 };
 

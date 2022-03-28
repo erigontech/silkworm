@@ -14,7 +14,7 @@
    limitations under the License.
 */
 
-#include "kv_factories.hpp"
+#include "kv_calls.hpp"
 
 #include <silkworm/common/log.hpp>
 
@@ -22,10 +22,31 @@ namespace silkworm::rpc {
 
 types::VersionReply KvVersionCall::response_;
 
+static auto max_schema_vs_api_version() {
+    uint32_t db_schema_major = std::get<0>(kDbSchemaVersion);
+    uint32_t db_schema_minor = std::get<1>(kDbSchemaVersion);
+    uint32_t kv_api_major = std::get<0>(kKvApiVersion);
+    uint32_t kv_api_minor = std::get<1>(kKvApiVersion);
+    if (kv_api_major > db_schema_major) {
+        return kKvApiVersion;
+    }
+    if (db_schema_major > kv_api_major) {
+        return kDbSchemaVersion;
+    }
+    if (kv_api_minor > db_schema_minor) {
+        return kKvApiVersion;
+    }
+    if (db_schema_minor > kv_api_minor) {
+        return kDbSchemaVersion;
+    }
+    return kDbSchemaVersion;
+}
+
 void KvVersionCall::fill_predefined_reply() {
-    KvVersionCall::response_.set_major(std::get<0>(kKvApiVersion));
-    KvVersionCall::response_.set_minor(std::get<1>(kKvApiVersion));
-    KvVersionCall::response_.set_patch(std::get<2>(kKvApiVersion));
+    const auto max_version = max_schema_vs_api_version();
+    KvVersionCall::response_.set_major(std::get<0>(max_version));
+    KvVersionCall::response_.set_minor(std::get<1>(max_version));
+    KvVersionCall::response_.set_patch(std::get<2>(max_version));
 }
 
 KvVersionCall::KvVersionCall(remote::KV::AsyncService* service, grpc::ServerCompletionQueue* queue, Handlers handlers)
@@ -81,8 +102,9 @@ void TxCall::process(const remote::Cursor* request) {
     SILK_TRACE << "TxCall::process " << this << " request: " << request << " END";
 }
 
-TxCallFactory::TxCallFactory()
-    : CallFactory<remote::KV::AsyncService, TxCall>(&remote::KV::AsyncService::RequestTx) {
+TxCallFactory::TxCallFactory(const EthereumBackEnd& backend)
+    : CallFactory<remote::KV::AsyncService, TxCall>(&remote::KV::AsyncService::RequestTx),
+    chaindata_env_(backend.chaindata_env()) {
 }
 
 StateChangesCall::StateChangesCall(remote::KV::AsyncService* service, grpc::ServerCompletionQueue* queue, Handlers handlers)
@@ -105,6 +127,16 @@ void StateChangesCall::process(const remote::StateChangeRequest* request) {
 
 StateChangesCallFactory::StateChangesCallFactory()
     : CallFactory<remote::KV::AsyncService, StateChangesCall>(&remote::KV::AsyncService::RequestStateChanges) {
+}
+
+KvService::KvService(const EthereumBackEnd& backend) : tx_factory_{backend} {
+}
+
+void KvService::register_kv_request_calls(remote::KV::AsyncService* async_service, grpc::ServerCompletionQueue* queue) {
+    // Register one requested call for each RPC factory
+    kv_version_factory_.create_rpc(async_service, queue);
+    tx_factory_.create_rpc(async_service, queue);
+    state_changes_factory_.create_rpc(async_service, queue);
 }
 
 } // namespace silkworm::rpc

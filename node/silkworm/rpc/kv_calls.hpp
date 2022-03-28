@@ -22,7 +22,9 @@
 #include <grpcpp/grpcpp.h>
 #include <remote/kv.grpc.pb.h>
 
+#include <silkworm/backend/ethereum_backend.hpp>
 #include <silkworm/chain/config.hpp>
+#include <silkworm/db/mdbx.hpp>
 #include <silkworm/rpc/call.hpp>
 #include <silkworm/rpc/call_factory.hpp>
 #include <silkworm/rpc/server.hpp>
@@ -31,6 +33,9 @@
 // 5.1.0 - first issue
 
 namespace silkworm::rpc {
+
+//! Current DB schema version.
+constexpr auto kDbSchemaVersion = std::make_tuple<uint32_t, uint32_t, uint32_t>(3, 0, 0);
 
 //! Current KV API protocol version.
 constexpr auto kKvApiVersion = std::make_tuple<uint32_t, uint32_t, uint32_t>(5, 1, 0);
@@ -65,7 +70,10 @@ class TxCall : public BidirectionalStreamingRpc<remote::KV::AsyncService, remote
 //! Factory specialization for Tx method.
 class TxCallFactory : public CallFactory<remote::KV::AsyncService, TxCall> {
   public:
-    explicit TxCallFactory();
+    explicit TxCallFactory(const EthereumBackEnd& backend);
+
+  private:
+    mdbx::env_managed* chaindata_env_;
 };
 
 //! Server-streaming RPC for StateChanges method of 'kv' gRPC protocol.
@@ -83,10 +91,16 @@ class StateChangesCallFactory : public CallFactory<remote::KV::AsyncService, Sta
 };
 
 //! The KV service implementation.
-struct KvService {
-    KvVersionCallFactory kv_version_factory;
-    TxCallFactory tx_factory;
-    StateChangesCallFactory state_changes_factory;
+class KvService {
+  public:
+    explicit KvService(const EthereumBackEnd& backend);
+
+    void register_kv_request_calls(remote::KV::AsyncService* async_service, grpc::ServerCompletionQueue* queue);
+
+  private:
+    KvVersionCallFactory kv_version_factory_;
+    TxCallFactory tx_factory_;
+    StateChangesCallFactory state_changes_factory_;
 };
 
 } // namespace silkworm::rpc

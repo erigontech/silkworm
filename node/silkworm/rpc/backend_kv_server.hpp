@@ -25,14 +25,14 @@
 
 #include <silkworm/chain/config.hpp>
 #include <silkworm/rpc/server.hpp>
-#include <silkworm/rpc/backend_factories.hpp>
-#include <silkworm/rpc/kv_factories.hpp>
+#include <silkworm/rpc/backend_calls.hpp>
+#include <silkworm/rpc/kv_calls.hpp>
 
 namespace silkworm::rpc {
 
-struct BackEndKvService : BackEndService, KvService {
-    explicit BackEndKvService(const EthereumBackEnd& backend)
-        : BackEndService(backend) {}
+class BackEndKvService : public BackEndService, public KvService {
+  public:
+    explicit BackEndKvService(const EthereumBackEnd& backend);
 };
 
 class BackEndKvServer : public Server {

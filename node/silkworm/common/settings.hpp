@@ -19,6 +19,7 @@
 #define SILKWORM_COMMON_SETTINGS_HPP_
 
 #include <memory>
+#include <optional>
 
 #ifdef __APPLE__
 // otherwise <boost/asio/detail/socket_types.hpp> dependency doesn't compile
@@ -45,6 +46,7 @@ struct NodeSettings {
     std::string private_api_addr{"127.0.0.1:9090"};  // Default API listener
     std::string sentry_api_addr{};                   // Default address(es) of sentry
     bool fake_pow{false};                            // Whether to verify Proof-of-Work
+    std::optional<evmc::address> etherbase{std::nullopt};
     std::unique_ptr<db::PruneMode> prune_mode;       // Prune mode
     uint32_t sync_loop_throttle_seconds{0};          // Minimum interval amongst sync cycle
     uint32_t sync_loop_log_interval_seconds{30};     // Interval for sync loop to emit logs

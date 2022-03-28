@@ -25,6 +25,8 @@
 #include <grpc/grpc.h>
 
 #include <silkworm/common/log.hpp>
+#include <silkworm/common/directories.hpp>
+#include <silkworm/db/mdbx.hpp>
 #include <silkworm/rpc/util.hpp>
 #include <types/types.pb.h>
 
@@ -127,31 +129,31 @@ namespace silkworm::rpc {
 // TODO(canepat): better copy grpc_pick_unused_port_or_die to generate unused port
 constexpr const char* kTestAddressUri = "localhost:12345";
 
-TEST_CASE("BackEndKvServer::BackEndKvServer", "[silkworm][node][rpc]") {
+TEST_CASE("BackEndKvServer", "[silkworm][node][rpc]") {
     silkworm::log::set_verbosity(silkworm::log::Level::kNone);
     Grpc2SilkwormLogGuard log_guard;
     ServerConfig srv_config;
     srv_config.set_address_uri(kTestAddressUri);
-    EthereumBackEnd backend;
+    TemporaryDirectory tmp_dir;
+    DataDirectory data_dir{tmp_dir.path()};
+    REQUIRE_NOTHROW(data_dir.deploy());
+    db::EnvConfig db_config{data_dir.chaindata().path().string()};
+    db_config.create = true;
+    db_config.inmemory = true;
+    auto database_env = db::open_env(db_config);
+    NodeSettings node_settings;
+    EthereumBackEnd backend{node_settings, &database_env};
 
-    SECTION("OK: create/destroy server", "[silkworm][node][rpc]") {
+    SECTION("BackEndKvServer::BackEndKvServer OK: create/destroy server", "[silkworm][node][rpc]") {
         BackEndKvServer server{srv_config, backend};
     }
 
-    SECTION("OK: create/shutdown/destroy server", "[silkworm][node][rpc]") {
+    SECTION("BackEndKvServer::BackEndKvServer OK: create/shutdown/destroy server", "[silkworm][node][rpc]") {
         BackEndKvServer server{srv_config, backend};
         server.shutdown();
     }
-}
 
-TEST_CASE("BackEndKvServer::build_and_start", "[silkworm][node][rpc]") {
-    silkworm::log::set_verbosity(silkworm::log::Level::kNone);
-    Grpc2SilkwormLogGuard log_guard;
-    ServerConfig srv_config;
-    srv_config.set_address_uri(kTestAddressUri);
-    EthereumBackEnd backend;
-
-    SECTION("OK: run server in separate thread", "[silkworm][node][rpc]") {
+    SECTION("BackEndKvServer::build_and_start OK: run server in separate thread", "[silkworm][node][rpc]") {
         BackEndKvServer server{srv_config, backend};
         server.build_and_start();
         std::thread server_thread{[&server]() {
@@ -161,39 +163,31 @@ TEST_CASE("BackEndKvServer::build_and_start", "[silkworm][node][rpc]") {
         server_thread.join();
     }
 
-    SECTION("OK: create/shutdown/run/destroy server", "[silkworm][node][rpc]") {
+    SECTION("BackEndKvServer::build_and_start OK: create/shutdown/run/destroy server", "[silkworm][node][rpc]") {
         BackEndKvServer server{srv_config, backend};
         server.shutdown();
         server.build_and_start();
     }
-}
 
-TEST_CASE("BackEndKvServer::shutdown", "[silkworm][node][rpc]") {
-    silkworm::log::set_verbosity(silkworm::log::Level::kNone);
-    Grpc2SilkwormLogGuard log_guard;
-    ServerConfig srv_config;
-    srv_config.set_address_uri(kTestAddressUri);
-    EthereumBackEnd backend;
-
-    SECTION("OK: shutdown server not running", "[silkworm][node][rpc]") {
+    SECTION("BackEndKvServer::shutdown OK: shutdown server not running", "[silkworm][node][rpc]") {
         BackEndKvServer server{srv_config, backend};
         server.shutdown();
     }
 
-    SECTION("OK: shutdown twice server not running", "[silkworm][node][rpc]") {
+    SECTION("BackEndKvServer::shutdown OK: shutdown twice server not running", "[silkworm][node][rpc]") {
         BackEndKvServer server{srv_config, backend};
         server.shutdown();
         server.shutdown();
     }
 
-    SECTION("OK: shutdown running server", "[silkworm][node][rpc]") {
+    SECTION("BackEndKvServer::shutdown OK: shutdown running server", "[silkworm][node][rpc]") {
         BackEndKvServer server{srv_config, backend};
         server.build_and_start();
         server.shutdown();
         server.join();
     }
 
-    SECTION("OK: shutdown twice running server", "[silkworm][node][rpc]") {
+    SECTION("BackEndKvServer::shutdown OK: shutdown twice running server", "[silkworm][node][rpc]") {
         BackEndKvServer server{srv_config, backend};
         server.build_and_start();
         server.shutdown();
@@ -201,23 +195,15 @@ TEST_CASE("BackEndKvServer::shutdown", "[silkworm][node][rpc]") {
         server.join();
     }
 
-    SECTION("OK: shutdown running server again after join", "[silkworm][node][rpc]") {
+    SECTION("BackEndKvServer::shutdown OK: shutdown running server again after join", "[silkworm][node][rpc]") {
         BackEndKvServer server{srv_config, backend};
         server.build_and_start();
         server.shutdown();
         server.join();
         server.shutdown();
     }
-}
 
-TEST_CASE("BackEndKvServer::join", "[silkworm][node][rpc]") {
-    silkworm::log::set_verbosity(silkworm::log::Level::kNone);
-    Grpc2SilkwormLogGuard log_guard;
-    ServerConfig srv_config;
-    srv_config.set_address_uri(kTestAddressUri);
-    EthereumBackEnd backend;
-
-    SECTION("OK: shutdown joined server", "[silkworm][node][rpc]") {
+    SECTION("BackEndKvServer::join OK: shutdown joined server", "[silkworm][node][rpc]") {
         BackEndKvServer server{srv_config, backend};
         server.build_and_start();
         std::thread server_thread{[&server]() {
@@ -227,7 +213,7 @@ TEST_CASE("BackEndKvServer::join", "[silkworm][node][rpc]") {
         server_thread.join();
     }
 
-    SECTION("OK: shutdown joined server and join again", "[silkworm][node][rpc]") {
+    SECTION("BackEndKvServer::join OK: shutdown joined server and join again", "[silkworm][node][rpc]") {
         BackEndKvServer server{srv_config, backend};
         server.build_and_start();
         std::thread server_thread{[&server]() {
@@ -250,7 +236,15 @@ TEST_CASE("BackEndKvServer: RPC basic config", "[silkworm][node][rpc]") {
     ServerConfig srv_config;
     srv_config.set_num_contexts(1);
     srv_config.set_address_uri(kTestAddressUri);
-    EthereumBackEnd backend;
+    TemporaryDirectory tmp_dir;
+    DataDirectory data_dir{tmp_dir.path()};
+    REQUIRE_NOTHROW(data_dir.deploy());
+    db::EnvConfig db_config{data_dir.chaindata().path().string()};
+    db_config.create = true;
+    db_config.inmemory = true;
+    auto database_env = db::open_env(db_config);
+    NodeSettings node_settings;
+    EthereumBackEnd backend{node_settings, &database_env};
     BackEndKvServer server{srv_config, backend};
     server.build_and_start();
 
@@ -263,11 +257,11 @@ TEST_CASE("BackEndKvServer: RPC basic config", "[silkworm][node][rpc]") {
         CHECK(!response.has_address());
     }
 
-    SECTION("NetVersion: return network ID", "[silkworm][node][rpc]") {
+    SECTION("NetVersion: return out-of-range network ID", "[silkworm][node][rpc]") {
         remote::NetVersionReply response;
         const auto status = backend_client.net_version(&response);
         CHECK(status.ok());
-        CHECK(response.id() == kMainnetConfig.chain_id);
+        CHECK(response.id() == 0);
     }
 
     SECTION("NetPeerCount: return zero peer count", "[silkworm][node][rpc]") {
@@ -391,6 +385,9 @@ class SentryService : public sentry::Sentry::Service {
 };
 } // namespace anonymous
 
+static const std::string kTestSentryAddress1{"localhost:54321"};
+static const std::string kTestSentryAddress2{"localhost:54322"};
+
 TEST_CASE("BackEndKvServer: RPC custom config OK", "[silkworm][node][rpc]") {
     silkworm::log::set_verbosity(silkworm::log::Level::kNone);
     Grpc2SilkwormLogGuard log_guard;
@@ -402,16 +399,22 @@ TEST_CASE("BackEndKvServer: RPC custom config OK", "[silkworm][node][rpc]") {
     ServerConfig srv_config;
     srv_config.set_num_contexts(1);
     srv_config.set_address_uri(kTestAddressUri);
-    constexpr const char* kTestSentry1AddressUri = "localhost:54321";
-    constexpr const char* kTestSentry2AddressUri = "localhost:54322";
     SentryService sentry_service1{grpc::Status::OK};
-    auto sentry_server1 = sentry_service1.build_and_start(kTestSentry1AddressUri);
+    auto sentry_server1 = sentry_service1.build_and_start(kTestSentryAddress1);
     SentryService sentry_service2{grpc::Status::OK};
-    auto sentry_server2 = sentry_service2.build_and_start(kTestSentry2AddressUri);
-    EthereumBackEnd backend;
-    backend.set_etherbase(evmc::address{});
-    backend.add_sentry_address(kTestSentry1AddressUri);
-    backend.add_sentry_address(kTestSentry2AddressUri);
+    auto sentry_server2 = sentry_service2.build_and_start(kTestSentryAddress2);
+    TemporaryDirectory tmp_dir;
+    DataDirectory data_dir{tmp_dir.path()};
+    REQUIRE_NOTHROW(data_dir.deploy());
+    db::EnvConfig db_config{data_dir.chaindata().path().string()};
+    db_config.create = true;
+    db_config.inmemory = true;
+    auto database_env = db::open_env(db_config);
+    NodeSettings node_settings;
+    node_settings.chain_config = *silkworm::lookup_chain_config("mainnet");
+    node_settings.etherbase = evmc::address{};
+    node_settings.sentry_api_addr = kTestSentryAddress1 + "," + kTestSentryAddress2;
+    EthereumBackEnd backend{node_settings, &database_env};
     BackEndKvServer server{srv_config, backend};
     server.build_and_start();
 
@@ -421,6 +424,13 @@ TEST_CASE("BackEndKvServer: RPC custom config OK", "[silkworm][node][rpc]") {
         CHECK(status.ok());
         CHECK(response.has_address());
         CHECK(response.address() == types::H160());
+    }
+
+    SECTION("NetVersion: return network ID", "[silkworm][node][rpc]") {
+        remote::NetVersionReply response;
+        const auto status = backend_client.net_version(&response);
+        CHECK(status.ok());
+        CHECK(response.id() == kMainnetConfig.chain_id);
     }
 
     SECTION("NetPeerCount: return peer count", "[silkworm][node][rpc]") {
@@ -463,16 +473,21 @@ TEST_CASE("BackEndKvServer: RPC custom config KO", "[silkworm][node][rpc]") {
     ServerConfig srv_config;
     srv_config.set_num_contexts(1);
     srv_config.set_address_uri(kTestAddressUri);
-    constexpr const char* kTestSentry1AddressUri = "localhost:54321";
-    constexpr const char* kTestSentry2AddressUri = "localhost:54322";
     SentryService sentry_service1{grpc::Status::OK};
-    auto sentry_server1 = sentry_service1.build_and_start(kTestSentry1AddressUri);
+    auto sentry_server1 = sentry_service1.build_and_start(kTestSentryAddress1);
     SentryService sentry_service2{grpc::Status::CANCELLED};
-    auto sentry_server2 = sentry_service2.build_and_start(kTestSentry2AddressUri);
-    EthereumBackEnd backend;
-    backend.set_etherbase(evmc::address{});
-    backend.add_sentry_address(kTestSentry1AddressUri);
-    backend.add_sentry_address(kTestSentry2AddressUri);
+    auto sentry_server2 = sentry_service2.build_and_start(kTestSentryAddress2);
+    TemporaryDirectory tmp_dir;
+    DataDirectory data_dir{tmp_dir.path()};
+    REQUIRE_NOTHROW(data_dir.deploy());
+    db::EnvConfig db_config{data_dir.chaindata().path().string()};
+    db_config.create = true;
+    db_config.inmemory = true;
+    auto database_env = db::open_env(db_config);
+    NodeSettings node_settings;
+    node_settings.etherbase = evmc::address{};
+    node_settings.sentry_api_addr = kTestSentryAddress1 + "," + kTestSentryAddress2;
+    EthereumBackEnd backend{node_settings, &database_env};
     BackEndKvServer server{srv_config, backend};
     server.build_and_start();
 

@@ -175,12 +175,10 @@ StageResult Execution::execute_batch(db::RWTxn& txn, BlockNum max_block_num, Bas
                 if (is_stopping()) {
                     return StageResult::kAborted;
                 }
-
                 prefetch_blocks(txn, block_num_, max_block_num);
             }
 
             const auto block = prefetched_blocks_.front();
-
             if (block.header.number != block_num_) {
                 throw std::runtime_error("Bad block sequence");
             }
@@ -221,6 +219,7 @@ StageResult Execution::execute_batch(db::RWTxn& txn, BlockNum max_block_num, Bas
             if (gas_batch_size >= gas_max_batch_size || block_num_ >= max_block_num) {
                 log::Trace("Buffer State", {"size", human_size(buffer.current_batch_state_size())});
                 buffer.write_to_db();
+                break;
             } else if (gas_history_size >= gas_max_history_size) {
                 // or flush history only if needed
                 log::Trace("Buffer History", {"size", human_size(buffer.current_batch_history_size())});

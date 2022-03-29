@@ -350,9 +350,10 @@ void IntraBlockState::revert_to_snapshot(const IntraBlockState::Snapshot& snapsh
 void IntraBlockState::finalize_transaction() {
     for (auto& x : storage_) {
         state::Storage& storage{x.second};
-        storage.current.merge(storage.committed);
-        storage.committed.clear();
-        std::swap(storage.current, storage.committed);
+        for (const auto& [key, val] : storage.current) {
+            storage.committed[key] = val;
+        }
+        storage.current.clear();
     }
 }
 

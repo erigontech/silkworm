@@ -33,6 +33,7 @@
 #include <silkworm/rpc/backend_kv_server.hpp>
 #include <silkworm/rpc/util.hpp>
 
+//! Assemble the full node name using the Cable build information
 std::string get_node_name_from_build_info() {
     const auto build_info{silkworm_get_buildinfo()};
 
@@ -52,6 +53,7 @@ std::string get_node_name_from_build_info() {
     return node_name;
 }
 
+//! Assemble the relevant library version information
 std::string get_library_versions() {
     std::string library_versions{"gRPC: "};
     library_versions.append(grpc::Version());
@@ -60,12 +62,14 @@ std::string get_library_versions() {
     return library_versions;
 }
 
+//! The overall settings for the BackEnd and KV standalone server
 struct BackEndKvSettings {
     silkworm::log::Settings log_settings;
     silkworm::NodeSettings node_settings;
     silkworm::rpc::ServerConfig server_settings;
 };
 
+//! Parse the command-line arguments into the BackEnd and KV server setttings
 int parse_command_line(int argc, char* argv[], BackEndKvSettings& settings) {
     CLI::App app{"ETHBACKEND & KV servers"};
 
@@ -167,7 +171,7 @@ int main(int argc, char* argv[]) {
     auto& node_settings = settings.node_settings;
     auto& server_settings = settings.server_settings;
 
-    // Initialize logging settings
+    // Initialize logging with custom settings
     silkworm::log::init(log_settings);
 
     //TODO(canepat): this could be an option in Silkworm logging facility

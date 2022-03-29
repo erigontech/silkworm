@@ -31,6 +31,7 @@
 
 namespace silkworm::rpc {
 
+//! Asynchronous server scheduler running an execution loop.
 class ServerContext {
   public:
     explicit ServerContext(std::unique_ptr<grpc::ServerCompletionQueue> server_queue);
@@ -41,7 +42,10 @@ class ServerContext {
     grpc::CompletionQueue* client_queue() const noexcept { return client_queue_.get(); }
     CompletionEndPoint* client_end_point() const noexcept { return client_end_point_.get(); }
 
+    //! Execute the scheduler loop until stopped.
     void execution_loop();
+
+    //! Stop the execution loop.
     void stop();
 
   private:
@@ -54,6 +58,7 @@ class ServerContext {
 
 std::ostream& operator<<(std::ostream& out, const ServerContext& c);
 
+//! Pool of \ref ServerContext instances running as separate reactive schedulers.
 class ServerContextPool {
   public:
     explicit ServerContextPool(std::size_t pool_size);
@@ -62,10 +67,16 @@ class ServerContextPool {
     ServerContextPool(const ServerContextPool&) = delete;
     ServerContextPool& operator=(const ServerContextPool&) = delete;
 
+    //! Add a new \ref ServerContext to the pool.
     void add_context(std::unique_ptr<grpc::ServerCompletionQueue> queue);
 
+    //! Start one execution thread for each server context.
     void start();
+
+    //! Wait for termination of all execution threads. This will block until \ref stop() is called.
     void join();
+
+    //! Stop all execution threads. This does *NOT* wait for termination: use \ref join() for that.
     void stop();
 
     std::size_t num_contexts() const { return contexts_.size(); }

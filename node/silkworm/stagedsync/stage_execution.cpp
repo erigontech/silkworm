@@ -89,6 +89,8 @@ StageResult Execution::forward(db::RWTxn& txn) {
     BaselineAnalysisCache analysis_cache{kCacheSize};
     ObjectPool<EvmoneExecutionState> state_pool;
 
+    prefetched_blocks_.clear();
+
     while (!is_stopping() && block_num_ <= max_block_num) {
         const auto res{execute_batch(txn, max_block_num, analysis_cache, state_pool, prune_history, prune_receipts)};
         if (res != StageResult::kSuccess) {
@@ -179,7 +181,7 @@ StageResult Execution::execute_batch(db::RWTxn& txn, BlockNum max_block_num, Bas
                 prefetch_blocks(txn, block_num_, max_block_num);
             }
 
-            const auto block = prefetched_blocks_.front();
+            const Block& block{prefetched_blocks_.front()};
             if (block.header.number != block_num_) {
                 throw std::runtime_error("Bad block sequence");
             }
@@ -216,6 +218,8 @@ StageResult Execution::execute_batch(db::RWTxn& txn, BlockNum max_block_num, Bas
             gas_history_size += block.header.gas_used;
             progress_lock.unlock();
 
+            prefetched_blocks_.pop_front();
+
             // Flush whole buffer if time to
             if (gas_batch_size >= gas_max_batch_size || block_num_ >= max_block_num) {
                 log::Trace("Buffer State", {"size", human_size(buffer.current_batch_state_size())});
@@ -229,7 +233,6 @@ StageResult Execution::execute_batch(db::RWTxn& txn, BlockNum max_block_num, Bas
             }
 
             ++block_num_;
-            prefetched_blocks_.pop_front();
         }
 
         return is_stopping() ? StageResult::kAborted : StageResult::kSuccess;

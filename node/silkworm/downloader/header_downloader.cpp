@@ -105,11 +105,11 @@ auto HeaderDownloader::forward(bool first_sync) -> Stage::Result {
                                                              // an active tx
         PersistedChain persisted_chain_(tx);
 
-        if (persisted_chain_.unwind_detected()) {
+        if (persisted_chain_.unwind_needed()) {
             tx.commit();
-            log::Info() << "[1/16 Headers] End (forward skipped due to unwind detection, canonical chain updated), "
+            log::Info() << "[1/16 Headers] End (forward skipped due to unwind_needed detection, canonical chain updated), "
                 << "duration=" << timing.format(timing.lap_duration());
-            log::Trace() << "[INFO] HeaderDownloader forward skipped due to unwind detection, canonical chain updated";
+            log::Trace() << "[INFO] HeaderDownloader forward skipped due to unwind_needed detection, canonical chain updated";
             result.status = Stage::Result::Done;
             return result;
         }
@@ -182,7 +182,7 @@ auto HeaderDownloader::forward(bool first_sync) -> Stage::Result {
 
         result.status = Stage::Result::Done;
 
-        if (persisted_chain_.unwind()) {
+        if (persisted_chain_.unwind_needed()) {
             result.status = Result::UnwindNeeded;
             result.unwind_point = persisted_chain_.unwind_point();
             // no need to set result.bad_block
@@ -219,7 +219,7 @@ auto HeaderDownloader::unwind_to(BlockNum new_height, Hash bad_block) -> Stage::
 
     StopWatch timing; timing.start();
     log::Info() << "[1/16 Headers] Unwind start";
-    log::Trace() << "[INFO] HeaderDownloader unwind operation started";
+    log::Trace() << "[INFO] HeaderDownloader unwind_needed operation started";
 
     try {
         Db::ReadWriteAccess::Tx tx = db_access_.start_tx();
@@ -242,11 +242,11 @@ auto HeaderDownloader::unwind_to(BlockNum new_height, Hash bad_block) -> Stage::
         // todo: do we need a sentry.set_status() here?
 
         log::Info() << "[1/16 Headers] Unwind completed, duration= " << StopWatch::format(timing.lap_duration());
-        log::Trace() << "[INFO] HeaderDownloader unwind operation completed";
+        log::Trace() << "[INFO] HeaderDownloader unwind_needed operation completed";
 
     } catch (const std::exception& e) {
         log::Error() << "[1/16 Headers] Unwind aborted due to exception: " << e.what();
-        log::Trace() << "[ERROR] HeaderDownloader unwind operation is stopping due to an exception: " << e.what();
+        log::Trace() << "[ERROR] HeaderDownloader unwind_needed operation is stopping due to an exception: " << e.what();
 
         // tx rollback executed automatically if needed
         result.status = Stage::Result::Error;

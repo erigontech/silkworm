@@ -135,7 +135,7 @@ TEST_CASE("PersistedChain - header persistence") {
         REQUIRE(pc.best_header_changed() == true);
         REQUIRE(pc.highest_height() == 2);
         REQUIRE(pc.highest_hash() == header2_hash);
-        REQUIRE(pc.unwind() == false);
+        REQUIRE(pc.unwind_needed() == false);
 
         // check db content
         REQUIRE(tx.read_head_header_hash() == header2_hash);

@@ -28,7 +28,7 @@ PersistedChain::PersistedChain(Db::ReadWriteAccess::Tx& tx) : tx_(tx), canonical
     auto headers_head_hash = tx.read_canonical_hash(headers_height);
     if (!headers_head_hash) {
         update_canonical_chain(headers_height, *tx.read_head_header_hash());
-        unwind_detected_ = true;
+        unwind_needed_ = true;
         return;
     }
 
@@ -45,9 +45,7 @@ PersistedChain::PersistedChain(Db::ReadWriteAccess::Tx& tx) : tx_(tx), canonical
 
 bool PersistedChain::best_header_changed() const { return new_canonical_; }
 
-bool PersistedChain::unwind_detected() const { return unwind_detected_; }
-
-bool PersistedChain::unwind() const { return unwind_; }
+bool PersistedChain::unwind_needed() const { return unwind_needed_; }
 
 BlockNum PersistedChain::initial_height() const { return initial_in_db_; }
 
@@ -126,7 +124,7 @@ void PersistedChain::persist(const BlockHeader& header) {  // todo: try to modul
 
         if (forking_point < unwind_point_) {  // See if the forking point affects the unwind-point (the block number to
             unwind_point_ = forking_point;    // which other stages will need to unwind before the new canonical chain
-            unwind_ = true;                   // is applied
+            unwind_needed_ = true;                   // is applied
         }
     }
 
@@ -212,7 +210,7 @@ void PersistedChain::update_canonical_chain(BlockNum height, Hash hash) {  // ha
 void PersistedChain::close() {
     if (closed_) return;
 
-    if (unwind()) return;
+    if (unwind_needed()) return;
 
     if (highest_height() != 0) {
         update_canonical_chain(highest_height(), highest_hash());

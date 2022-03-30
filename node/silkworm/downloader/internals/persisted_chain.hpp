@@ -54,8 +54,7 @@ class PersistedChain {
                                          std::optional<BlockNum>& new_max_block_num, Db::ReadWriteAccess::Tx& tx);
 
     bool best_header_changed() const;
-    bool unwind_detected() const;  // todo: do we need both unwind() & unwind_detected() ?
-    bool unwind() const;
+    bool unwind_needed() const;
 
     BlockNum unwind_point() const;
     BlockNum initial_height() const;
@@ -66,7 +65,7 @@ class PersistedChain {
   private:
     BlockNum find_forking_point(Db::ReadWriteAccess::Tx&, const BlockHeader& header, BlockNum height,
                                 const BlockHeader& parent);
-    void update_canonical_chain(BlockNum heigth, Hash hash);
+    void update_canonical_chain(BlockNum height, Hash hash);
 
     Db::ReadWriteAccess::Tx& tx_;
     Hash previous_hash_;
@@ -75,8 +74,7 @@ class PersistedChain {
     BlockNum highest_in_db_{};
     BigInt local_td_;
     BlockNum unwind_point_{};
-    bool unwind_{false};
-    bool unwind_detected_{false};
+    bool unwind_needed_{false};
     bool new_canonical_{false};
     lru_cache<BlockNum, Hash> canonical_cache_;
     bool closed_{false};

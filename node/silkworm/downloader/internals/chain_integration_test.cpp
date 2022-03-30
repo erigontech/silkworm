@@ -125,7 +125,7 @@ TEST_CASE("working/persistent-chain integration test") {
         REQUIRE(pc.best_header_changed() == true);
         REQUIRE(pc.highest_height() == 2);
         REQUIRE(pc.highest_hash() == header2_hash);
-        REQUIRE(pc.unwind() == false);
+        REQUIRE(pc.unwind_needed() == false);
 
         // check db content
         REQUIRE(tx.read_head_header_hash() == header2_hash);
@@ -203,7 +203,7 @@ TEST_CASE("working/persistent-chain integration test") {
         REQUIRE(pc.best_header_changed() == true);
         REQUIRE(pc.highest_height() == 2);
         REQUIRE(pc.highest_hash() == header2_hash);
-        REQUIRE(pc.unwind() == false);
+        REQUIRE(pc.unwind_needed() == false);
 
         // check db content
         REQUIRE(tx.read_head_header_hash() == header2_hash);
@@ -241,7 +241,7 @@ TEST_CASE("working/persistent-chain integration test") {
         REQUIRE(pc.best_header_changed() == true);
         REQUIRE(pc.highest_height() == 2);
         REQUIRE(pc.highest_hash() == header2_hash);
-        REQUIRE(pc.unwind() == false);
+        REQUIRE(pc.unwind_needed() == false);
 
         REQUIRE(tx.read_head_header_hash() == header2_hash);
         REQUIRE(tx.read_total_difficulty(2, header2.hash()) == expected_td);
@@ -316,7 +316,7 @@ TEST_CASE("working/persistent-chain integration test") {
         REQUIRE(pc.best_header_changed() == true);
         REQUIRE(pc.highest_height() == 2);
         REQUIRE(pc.highest_hash() == header2_hash);
-        REQUIRE(pc.unwind() == false);
+        REQUIRE(pc.unwind_needed() == false);
 
         // check db content
         REQUIRE(tx.read_head_header_hash() == header2_hash);
@@ -356,7 +356,7 @@ TEST_CASE("working/persistent-chain integration test") {
         REQUIRE(pc.best_header_changed() == true);
         REQUIRE(pc.highest_height() == 1);  // <-- NOTE! 1 not 2
         REQUIRE(pc.highest_hash() == header1b_hash);
-        REQUIRE(pc.unwind() == false);  // because the prev canonical was not persisted
+        REQUIRE(pc.unwind_needed() == false);  // because the prev canonical was not persisted
 
         REQUIRE(tx.read_head_header_hash() == header1b_hash);
         REQUIRE(tx.read_total_difficulty(1, header1b.hash()) == expected_td_bis);
@@ -426,7 +426,7 @@ TEST_CASE("working/persistent-chain integration test") {
         REQUIRE(pc.best_header_changed() == true);
         REQUIRE(pc.highest_height() == 1);
         REQUIRE(pc.highest_hash() == header1b_hash);
-        REQUIRE(pc.unwind() == false);
+        REQUIRE(pc.unwind_needed() == false);
 
         // check db content
         REQUIRE(tx.read_head_header_hash() == header1b_hash);
@@ -465,7 +465,7 @@ TEST_CASE("working/persistent-chain integration test") {
         REQUIRE(pc.best_header_changed() == true);
         REQUIRE(pc.highest_height() == 2);
         REQUIRE(pc.highest_hash() == header2_hash);
-        REQUIRE(pc.unwind() == false);
+        REQUIRE(pc.unwind_needed() == false);
 
         // check db
         REQUIRE(tx.read_head_header_hash() == header2_hash);

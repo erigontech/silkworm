@@ -25,7 +25,7 @@
 #include <silkworm/rlp/decode.hpp>
 #include <silkworm/rlp/encode.hpp>
 
-#include "Message.hpp"
+#include "message.hpp"
 
 namespace silkworm {
 

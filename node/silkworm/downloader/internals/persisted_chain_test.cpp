@@ -57,7 +57,7 @@ TEST_CASE("PersistedChain - header persistence") {
         PersistedChain pc(tx);  // is correct but here FAILS at the moment because initialize_genesis() write total
                                 // difficulty without rlp encoding
 
-        REQUIRE(pc.unwind_detected() == false);
+        REQUIRE(pc.unwind_needed() == false);
         REQUIRE(pc.initial_height() == 0);
 
         BlockHeader header1;

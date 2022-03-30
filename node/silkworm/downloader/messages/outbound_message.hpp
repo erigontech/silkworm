@@ -16,7 +16,7 @@
 #ifndef SILKWORM_OUTBOUND_MESSAGE_HPP
 #define SILKWORM_OUTBOUND_MESSAGE_HPP
 
-#include "Message.hpp"
+#include "message.hpp"
 #include <silkworm/downloader/sentry_client.hpp>
 
 namespace silkworm {

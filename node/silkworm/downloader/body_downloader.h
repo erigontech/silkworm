@@ -22,7 +22,7 @@ limitations under the License.
 #include <silkworm/concurrency/containers.hpp>
 #include <silkworm/downloader/internals/db_tx.hpp>
 #include <silkworm/downloader/internals/types.hpp>
-#include <silkworm/downloader/messages/Message.hpp>
+#include <silkworm/downloader/messages/message.hpp>
 #include <silkworm/downloader/sentry_client.hpp>
 #include "stage.h"
 

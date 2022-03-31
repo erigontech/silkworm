@@ -97,6 +97,7 @@ using GrpcNoLogGuard = GrpcLogGuard<gpr_no_log>;
 //! Utility class to map gRPC logging to Silkworm logging for an instance lifetime.
 using Grpc2SilkwormLogGuard = GrpcLogGuard<gpr_silkworm_log>;
 
+//! Convert internal RPC H160 type instance to evmc::address.
 inline evmc::address address_from_H160(const types::H160& h160) {
     uint64_t hi_hi = h160.hi().hi();
     uint64_t hi_lo = h160.hi().lo();

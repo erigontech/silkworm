@@ -153,16 +153,11 @@ class BaseRpc {
 template <typename AsyncService, typename Request, typename Response, template<typename, typename, typename> typename Rpc>
 struct RpcHandlers {
     using CreateRpcFunc = std::function<void(AsyncService*, grpc::ServerCompletionQueue*)>;
-    using ProcessRequestFunc = std::function<void(Rpc<AsyncService, Request, Response>&, const Request*)>;
     using CleanupRpcFunc = std::function<void(Rpc<AsyncService, Request, Response>&, bool)>;
 
     /// createRpc is called when an outstanding BaseRpc starts serving an incoming RPC and we need to create the next
     /// RPC of this type to service further incoming RPCs.
     CreateRpcFunc createRpc;
-
-    /// processRequest is called when a new incoming request from some client has come in for this RPC.
-    /// For streaming RPCs, a request from client can come in multiple times so processRequest may be called repeatedly.
-    ProcessRequestFunc processRequest;
 
     // The gRPC server is cleanupRpc with this RPC. Any necessary clean-up must be performed when cleanupRpc is called.
     CleanupRpcFunc cleanupRpc;
@@ -203,6 +198,10 @@ class UnaryRpc : public BaseRpc {
         SILK_TRACE << "UnaryRpc::UnaryRpc END new request issued [" << this << "]";
     }
 
+    //! Hook called when a new incoming request from some client has come in for this RPC.
+    /// @param request the incoming request
+    virtual void process(const Request* request) = 0;
+
     /// Send specified message as response and finalize the unary RPC.
     bool send_response(const Response& response) {
         handle_started(OperationType::kFinish);
@@ -232,7 +231,7 @@ class UnaryRpc : public BaseRpc {
         // The incoming request can now be handled so process it.
         if (handle_completed(OperationType::kRequest)) {
             SILK_DEBUG << "UnaryRpc::process_read request received from peer " << peer() << " [" << this << "]";
-            handlers_.processRequest(*this, &request_);
+            process(&request_);
         }
         SILK_TRACE << "UnaryRpc::process_read END [" << this << "]";
     }
@@ -310,6 +309,10 @@ class ServerStreamingRpc : public BaseRpc {
         SILK_TRACE << "ServerStreamingRpc::ServerStreamingRpc END new request issued [" << this << "]";
     }
 
+    //! Hook called when a new incoming request from some client has come in for this RPC.
+    /// @param request the incoming request
+    virtual void process(const Request* request) = 0;
+
     // gRPC can only do one async write at a time but that is very inconvenient from the application point of view.
     // So we buffer the response below in a queue if gRPC library is not ready for it.
     bool send_response(const Response& response) {
@@ -357,7 +360,7 @@ class ServerStreamingRpc : public BaseRpc {
         // The incoming request can now be handled so process it.
         if (handle_completed(OperationType::kRequest)) {
             SILK_DEBUG << "ServerStreamingRpc::process_read received from peer " << peer() << " [" << this << "]";
-            handlers_.processRequest(*this, &request_);
+            process(&request_);
         }
         SILK_TRACE << "ServerStreamingRpc::process_read END [" << this << "]";
     }
@@ -476,6 +479,12 @@ class BidirectionalStreamingRpc : public BaseRpc {
         SILK_TRACE << "BidirectionalStreamingRpc::BidirectionalStreamingRpc END new request issued [" << this << "]";
     }
 
+    //! Hook called when a new incoming request from some client has come in for this RPC.
+    /// For client-streaming and bidirectional streaming RPCs, a request from client can come in multiple times so
+    /// \ref process() may be called repeatedly.
+    /// @param request the incoming request or nullptr to indicate end-of-stream for client stream
+    virtual void process(const Request* request) = 0;
+
     bool send_response(const Response& response) {
         response_queue_.push_back(std::move(response));
         SILK_DEBUG << "BidirectionalStreamingRpc::send_response enqueued response [" << this << "]";
@@ -536,14 +545,14 @@ class BidirectionalStreamingRpc : public BaseRpc {
         if (handle_completed(OperationType::kRead)) {
             if (ok) {
                 // The incoming request can now be handled so process it.
-                handlers_.processRequest(*this, &request_);
+                process(&request_);
                 // Enqueue another READ operation for this RPC.
                 read();
             } else {
                 // Client has closed the stream, so the processing hook of the application layer receives a null request.
                 SILK_DEBUG << "BidirectionalStreamingRpc::process_read stream closed by peer " << peer() << " [" << this << "]";
                 client_streaming_done_ = true;
-                handlers_.processRequest(*this, nullptr);
+                process(nullptr);
             }
         }
         SILK_TRACE << "BidirectionalStreamingRpc::process_read END [" << this << "]";

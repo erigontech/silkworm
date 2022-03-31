@@ -16,21 +16,27 @@
 
 #include "ethereum_backend.hpp"
 
+#include <sstream>
+
 namespace silkworm {
 
-EthereumBackEnd::EthereumBackEnd(const ChainConfig& chain_config) : chain_config_(chain_config) {
+EthereumBackEnd::EthereumBackEnd(const NodeSettings& node_settings, mdbx::env_managed* chaindata_env)
+    : node_settings_(node_settings), chaindata_env_(chaindata_env) {
+    // Get the numeric chain identifier from node settings
+    if (node_settings_.chain_config) {
+        chain_id_ = (*node_settings_.chain_config).chain_id;
+    }
+
+    // Get the list of Sentry client addresses from node settings
+    std::stringstream sentry_list_stream{node_settings_.sentry_api_addr};
+    std::string sentry_address;
+    while (std::getline(sentry_list_stream, sentry_address, kSentryAddressDelimiter)) {
+        sentry_addresses_.push_back(sentry_address);
+    }
 }
 
 void EthereumBackEnd::set_node_name(const std::string& node_name) noexcept {
     node_name_ = node_name;
-}
-
-void EthereumBackEnd::set_etherbase(const evmc::address& etherbase) noexcept {
-    etherbase_ = etherbase;
-}
-
-void EthereumBackEnd::add_sentry_address(const std::string& address_uri) noexcept {
-    sentry_addresses_.push_back(address_uri);
 }
 
 } // namespace silkworm

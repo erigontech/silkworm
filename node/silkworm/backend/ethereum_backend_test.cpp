@@ -19,41 +19,62 @@
 #include <catch2/catch.hpp>
 
 #include <silkworm/common/base.hpp>
+#include <silkworm/common/directories.hpp>
+#include <silkworm/db/mdbx.hpp>
 
 namespace silkworm {
 
 using namespace evmc::literals;
 
-TEST_CASE("EthereumBackEnd::EthereumBackEnd", "[silkworm][backend][ethereum_backend]") {
-    EthereumBackEnd backend{};
-    CHECK(backend.node_name() == kDefaultNodeName);
-    CHECK(!backend.etherbase());
-    CHECK(backend.sentry_addresses().empty());
-}
+TEST_CASE("EthereumBackEnd", "[silkworm][backend][ethereum_backend]") {
+    const std::string kTestSentryAddress1{"127.0.0.1:112233"};
+    const std::string kTestSentryAddress2{"127.0.0.1:332211"};
 
-TEST_CASE("ServerConfig::set_node_name", "[silkworm][backend][ethereum_backend]") {
-    const std::string node_name{"server_name"};
-    EthereumBackEnd backend;
-    backend.set_node_name(node_name);
-    CHECK(backend.node_name() == node_name);
-}
+    TemporaryDirectory tmp_dir;
+    DataDirectory data_dir{tmp_dir.path()};
+    REQUIRE_NOTHROW(data_dir.deploy());
+    db::EnvConfig db_config{data_dir.chaindata().path().string()};
+    db_config.create = true;
+    db_config.inmemory = true;
+    auto database_env = db::open_env(db_config);
+    NodeSettings node_settings;
 
-TEST_CASE("ServerConfig::set_etherbase", "[silkworm][backend][ethereum_backend]") {
-    const evmc::address etherbase{0xd4fe7bc31cedb7bfb8a345f31e668033056b2728_address};
-    EthereumBackEnd backend;
-    backend.set_etherbase(etherbase);
-    CHECK(backend.etherbase() == 0xd4fe7bc31cedb7bfb8a345f31e668033056b2728_address);
-}
+    SECTION("EthereumBackEnd::EthereumBackEnd", "[silkworm][backend][ethereum_backend]") {
+        EthereumBackEnd backend{node_settings, &database_env};
+        CHECK(backend.node_name() == kDefaultNodeName);
+        CHECK(!backend.etherbase());
+        CHECK(backend.sentry_addresses().empty());
+    }
 
-TEST_CASE("ServerConfig::add_sentry_address", "[silkworm][backend][ethereum_backend]") {
-    const std::string address_uri1{"127.0.0.1:112233"};
-    const std::string address_uri2{"127.0.0.1:332211"};
-    EthereumBackEnd backend;
-    REQUIRE(backend.sentry_addresses().empty());
-    backend.add_sentry_address(address_uri1);
-    CHECK(backend.sentry_addresses() == std::vector<std::string>{address_uri1});
-    backend.add_sentry_address(address_uri2);
-    CHECK(backend.sentry_addresses() == std::vector<std::string>{address_uri1, address_uri2});
+    SECTION("EthereumBackEnd::set_node_name", "[silkworm][backend][ethereum_backend]") {
+        const std::string node_name{"server_name"};
+        EthereumBackEnd backend{node_settings, &database_env};
+        backend.set_node_name(node_name);
+        CHECK(backend.node_name() == node_name);
+    }
+
+    SECTION("EthereumBackEnd::etherbase", "[silkworm][backend][ethereum_backend]") {
+        node_settings.etherbase = 0xd4fe7bc31cedb7bfb8a345f31e668033056b2728_address;
+        EthereumBackEnd backend{node_settings, &database_env};
+        CHECK(backend.etherbase() == 0xd4fe7bc31cedb7bfb8a345f31e668033056b2728_address);
+    }
+
+    SECTION("EthereumBackEnd::sentry_addresses zero", "[silkworm][backend][ethereum_backend]") {
+        EthereumBackEnd backend{node_settings, &database_env};
+        CHECK(backend.sentry_addresses().empty());
+    }
+
+    SECTION("EthereumBackEnd::sentry_addresses one", "[silkworm][backend][ethereum_backend]") {
+        node_settings.sentry_api_addr = kTestSentryAddress1;
+        EthereumBackEnd backend{node_settings, &database_env};
+        CHECK(backend.sentry_addresses() == std::vector<std::string>{kTestSentryAddress1});
+    }
+
+    SECTION("EthereumBackEnd::sentry_addresses two", "[silkworm][backend][ethereum_backend]") {
+        node_settings.sentry_api_addr = kTestSentryAddress1 + "," + kTestSentryAddress2;
+        EthereumBackEnd backend{node_settings, &database_env};
+        CHECK(backend.sentry_addresses() == std::vector<std::string>{kTestSentryAddress1, kTestSentryAddress2});
+    }
 }
 
 } // namespace silkworm

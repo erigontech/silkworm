@@ -14,7 +14,7 @@
    limitations under the License.
 */
 
-#include "backend_factories.hpp"
+#include "backend_calls.hpp"
 
 #include <evmc/evmc.hpp>
 
@@ -75,7 +75,11 @@ EtherbaseCallFactory::EtherbaseCallFactory(const EthereumBackEnd& backend)
 remote::NetVersionReply NetVersionCall::response_;
 
 void NetVersionCall::fill_predefined_reply(const EthereumBackEnd& backend) {
-    NetVersionCall::response_.set_id(backend.chain_id());
+    if (backend.chain_id()) {
+        NetVersionCall::response_.set_id(*backend.chain_id());
+    } else {
+        NetVersionCall::response_.set_id(0); // unused chain ID
+    }
 }
 
 NetVersionCall::NetVersionCall(remote::ETHBACKEND::AsyncService* service, grpc::ServerCompletionQueue* queue, Handlers handlers)
@@ -309,7 +313,19 @@ NodeInfoCallFactory::NodeInfoCallFactory()
 }
 
 BackEndService::BackEndService(const EthereumBackEnd& backend)
-    : etherbase_factory{backend}, net_version_factory{backend}, client_version_factory{backend} {
+    : etherbase_factory_{backend}, net_version_factory_{backend}, client_version_factory_{backend} {
+}
+
+void BackEndService::register_backend_request_calls(remote::ETHBACKEND::AsyncService* async_service, grpc::ServerCompletionQueue* queue) {
+    // Register one requested call for each RPC factory
+    etherbase_factory_.create_rpc(async_service, queue);
+    net_version_factory_.create_rpc(async_service, queue);
+    net_peer_count_factory_.create_rpc(async_service, queue);
+    backend_version_factory_.create_rpc(async_service, queue);
+    protocol_version_factory_.create_rpc(async_service, queue);
+    client_version_factory_.create_rpc(async_service, queue);
+    subscribe_factory_.create_rpc(async_service, queue);
+    node_info_factory_.create_rpc(async_service, queue);
 }
 
 void BackEndService::add_sentry(std::unique_ptr<SentryClient>&& sentry) {

@@ -49,8 +49,8 @@ class Execution final : public IStage {
     //! \brief Prefetches blocks for processing
     //! \param [in] from: the first block to prefetch (inclusive)
     //! \param [in] to: the last block to prefetch (inclusive)
-    //! \remarks The amount of blocks to be fetched is determined by the upper block number (to) or kMaxPrefetchedBlocks
-    //! whichever comes first
+    //! \remarks The amount of blocks to be fetched is determined by the upper block number (to)
+    //! or kMaxPrefetchedBlocks collected, whichever comes first
     void prefetch_blocks(db::RWTxn& txn, BlockNum from, BlockNum to);
 
     //! \brief Executes a batch of blocks

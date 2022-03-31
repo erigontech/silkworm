@@ -18,6 +18,7 @@
 
 #include <string>
 
+#include <silkworm/common/assert.hpp>
 #include <silkworm/common/endian.hpp>
 #include <silkworm/common/log.hpp>
 #include <silkworm/common/stopwatch.hpp>
@@ -88,6 +89,8 @@ StageResult Execution::forward(db::RWTxn& txn) {
     BaselineAnalysisCache analysis_cache{kCacheSize};
     ObjectPool<EvmoneExecutionState> state_pool;
 
+    prefetched_blocks_.clear();
+
     while (!is_stopping() && block_num_ <= max_block_num) {
         const auto res{execute_batch(txn, max_block_num, analysis_cache, state_pool, prune_history, prune_receipts)};
         if (res != StageResult::kSuccess) {
@@ -109,52 +112,48 @@ StageResult Execution::forward(db::RWTxn& txn) {
     return is_stopping() ? StageResult::kAborted : StageResult::kSuccess;
 }
 
-std::queue<Block> Execution::prefetch_blocks(db::RWTxn& txn, BlockNum from, BlockNum to, size_t max_blocks) {
+void Execution::prefetch_blocks(db::RWTxn& txn, const BlockNum from, const BlockNum to) {
     std::unique_ptr<StopWatch> sw;
     if (log::test_verbosity(log::Level::kTrace)) {
         sw = std::make_unique<StopWatch>(/*auto_start=*/true);
     }
 
-    std::queue<Block> ret{};
-    auto hashes_table{db::open_cursor(*txn, db::table::kCanonicalHashes)};
+    assert(prefetched_blocks_.empty());
+
+    const size_t count{std::min(static_cast<size_t>(to - from + 1), kMaxPrefetchedBlocks)};
+    size_t num_read{0};
+
+    db::Cursor hashes_table(txn, db::table::kCanonicalHashes);
     auto key{db::block_key(from)};
-    auto data{hashes_table.find(db::to_slice(key), true)};
-    while (data.done) {
-        BlockNum reached_block_num{endian::load_big_u64(static_cast<const uint8_t*>(data.key.data()))};
-        if (reached_block_num != from) {
-            throw std::runtime_error("Bad canonical header sequence: expected " + std::to_string(from) + " got " +
-                                     std::to_string(reached_block_num));
-        }
-
-        Bytes block_key(8 + kHashLength, '\0');
-        std::memcpy(&block_key[0], data.key.data(), 8);
-        std::memcpy(&block_key[8], data.value.data(), kHashLength);
-
-        Block block{};
-        auto raw_header{db::read_header_raw(*txn, block_key)};
-        if (raw_header.empty()) {
-            throw std::runtime_error("Unable to load block header for block " + std::to_string(from));
-        }
-        ByteView encoded_header{raw_header.data(), raw_header.length()};
-        rlp::success_or_throw(rlp::decode(encoded_header, block.header));
-
-        if (!db::read_body(*txn, block_key, /*read_senders=*/true, block)) {
-            throw std::runtime_error("Unable to load block body for block " + std::to_string(from));
-        }
-        ret.push(block);
-
-        if (from == to || ret.size() >= max_blocks) {
-            break;
-        }
-
-        ++from;
-        data = hashes_table.to_next(false);
+    if (hashes_table.seek(db::to_slice(key))) {
+        BlockNum block_num{from};
+        db::WalkFunc walk_function{[&](mdbx::cursor&, mdbx::cursor::move_result& data) {
+            BlockNum reached_block_num{endian::load_big_u64(static_cast<const uint8_t*>(data.key.data()))};
+            if (reached_block_num != block_num) {
+                throw std::runtime_error("Bad canonical header sequence: expected " + std::to_string(block_num) +
+                                         " got " + std::to_string(reached_block_num));
+            }
+            SILKWORM_ASSERT(data.value.length() == kHashLength);
+            const auto hash_ptr{static_cast<const uint8_t*>(data.value.data())};
+            prefetched_blocks_.push_back();
+            if (!db::read_block(*txn, gsl::span<const uint8_t, kHashLength>{hash_ptr, kHashLength}, block_num,
+                                /*read_senders=*/true, prefetched_blocks_.back())) {
+                throw std::runtime_error("Unable to read block " + std::to_string(block_num));
+            }
+            ++block_num;
+            return true;
+        }};
+        num_read = db::cursor_for_count(hashes_table, walk_function, count);
     }
+
+    if (num_read != count) {
+        throw std::runtime_error("Missing block " + std::to_string(from + num_read));
+    }
+
     if (sw) {
         auto [_, duration]{sw->lap()};
-        log::Trace("Fetched blocks", {"size", std::to_string(ret.size()), "in", StopWatch::format(duration)});
+        log::Trace("Fetched blocks", {"size", std::to_string(num_read), "in", StopWatch::format(duration)});
     }
-    return ret;
 }
 
 StageResult Execution::execute_batch(db::RWTxn& txn, BlockNum max_block_num, BaselineAnalysisCache& analysis_cache,
@@ -175,18 +174,15 @@ StageResult Execution::execute_batch(db::RWTxn& txn, BlockNum max_block_num, Bas
             lap_time_ = std::chrono::steady_clock::now();
         }
 
-        size_t kDefaultPrefetchWidth{10240};
-        std::queue<Block> prefetched_blocks{prefetch_blocks(txn, block_num_, max_block_num, kDefaultPrefetchWidth)};
-
         while (true) {
-            if (prefetched_blocks.empty()) {
+            if (prefetched_blocks_.empty()) {
                 if (is_stopping()) {
                     return StageResult::kAborted;
                 }
-                prefetched_blocks = prefetch_blocks(txn, block_num_, max_block_num, kDefaultPrefetchWidth);
+                prefetch_blocks(txn, block_num_, max_block_num);
             }
 
-            auto block = prefetched_blocks.front();
+            const Block& block{prefetched_blocks_.front()};
             if (block.header.number != block_num_) {
                 throw std::runtime_error("Bad block sequence");
             }
@@ -223,6 +219,8 @@ StageResult Execution::execute_batch(db::RWTxn& txn, BlockNum max_block_num, Bas
             gas_history_size += block.header.gas_used;
             progress_lock.unlock();
 
+            prefetched_blocks_.pop_front();
+
             // Flush whole buffer if time to
             if (gas_batch_size >= gas_max_batch_size || block_num_ >= max_block_num) {
                 log::Trace("Buffer State", {"size", human_size(buffer.current_batch_state_size())});
@@ -236,7 +234,6 @@ StageResult Execution::execute_batch(db::RWTxn& txn, BlockNum max_block_num, Bas
             }
 
             ++block_num_;
-            prefetched_blocks.pop();
         }
 
         return is_stopping() ? StageResult::kAborted : StageResult::kSuccess;
@@ -371,7 +368,7 @@ StageResult Execution::prune(db::RWTxn& txn) {
         log::Error() << "Unexpected unknown error in " << std::string(__FUNCTION__);
         return StageResult::kUnexpectedError;
     }
-};
+}
 
 std::vector<std::string> Execution::get_log_progress() {
     std::unique_lock progress_lock(progress_mtx_);

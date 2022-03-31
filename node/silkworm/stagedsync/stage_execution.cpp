@@ -112,7 +112,7 @@ StageResult Execution::forward(db::RWTxn& txn) {
     return is_stopping() ? StageResult::kAborted : StageResult::kSuccess;
 }
 
-void Execution::prefetch_blocks(db::RWTxn& txn, BlockNum from, const BlockNum to) {
+void Execution::prefetch_blocks(db::RWTxn& txn, const BlockNum from, const BlockNum to) {
     std::unique_ptr<StopWatch> sw;
     if (log::test_verbosity(log::Level::kTrace)) {
         sw = std::make_unique<StopWatch>(/*auto_start=*/true);
@@ -126,20 +126,21 @@ void Execution::prefetch_blocks(db::RWTxn& txn, BlockNum from, const BlockNum to
     db::Cursor hashes_table(txn, db::table::kCanonicalHashes);
     auto key{db::block_key(from)};
     if (hashes_table.seek(db::to_slice(key))) {
+        BlockNum block_num{from};
         db::WalkFunc walk_function{[&](mdbx::cursor&, mdbx::cursor::move_result& data) {
             BlockNum reached_block_num{endian::load_big_u64(static_cast<const uint8_t*>(data.key.data()))};
-            if (reached_block_num != from) {
-                throw std::runtime_error("Bad canonical header sequence: expected " + std::to_string(from) + " got " +
-                                         std::to_string(reached_block_num));
+            if (reached_block_num != block_num) {
+                throw std::runtime_error("Bad canonical header sequence: expected " + std::to_string(block_num) +
+                                         " got " + std::to_string(reached_block_num));
             }
             SILKWORM_ASSERT(data.value.length() == kHashLength);
             const auto hash_ptr{static_cast<const uint8_t*>(data.value.data())};
             prefetched_blocks_.push_back();
-            if (!db::read_block(*txn, gsl::span<const uint8_t, kHashLength>{hash_ptr, kHashLength}, from,
+            if (!db::read_block(*txn, gsl::span<const uint8_t, kHashLength>{hash_ptr, kHashLength}, block_num,
                                 /*read_senders=*/true, prefetched_blocks_.back())) {
-                throw std::runtime_error("Unable to read block " + std::to_string(from));
+                throw std::runtime_error("Unable to read block " + std::to_string(block_num));
             }
-            ++from;
+            ++block_num;
             return true;
         }};
         num_read = db::cursor_for_count(hashes_table, walk_function, count);

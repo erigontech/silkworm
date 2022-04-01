@@ -106,7 +106,12 @@ class TxCall : public BidirectionalStreamingRpc<remote::KV::AsyncService, remote
     void handle_first(const remote::Cursor* request, db::Cursor& cursor);
     void handle_first_dup(const remote::Cursor* request, db::Cursor& cursor);
     void handle_seek(const remote::Cursor* request, db::Cursor& cursor);
+    void handle_current(const remote::Cursor* request, db::Cursor& cursor);
+    void handle_last(const remote::Cursor* request, db::Cursor& cursor);
+    void handle_last_dup(const remote::Cursor* request, db::Cursor& cursor);
     void handle_next(const remote::Cursor* request, db::Cursor& cursor);
+    void handle_next_dup(const remote::Cursor* request, db::Cursor& cursor);
+    void handle_next_no_dup(const remote::Cursor* request, db::Cursor& cursor);
     void handle_prev(const remote::Cursor* request, db::Cursor& cursor);
 
     bool send_response_pair(const mdbx::cursor::move_result& result);

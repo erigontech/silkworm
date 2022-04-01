@@ -205,12 +205,15 @@ void TxCall::handle_operation(const remote::Cursor* request, db::Cursor& cursor)
         }
         break;
         case remote::Op::CURRENT: {
+            handle_current(request, cursor);
         }
         break;
         case remote::Op::LAST: {
+            handle_last(request, cursor);
         }
         break;
         case remote::Op::LAST_DUP: {
+            handle_last_dup(request, cursor);
         }
         break;
         case remote::Op::NEXT: {
@@ -218,9 +221,11 @@ void TxCall::handle_operation(const remote::Cursor* request, db::Cursor& cursor)
         }
         break;
         case remote::Op::NEXT_DUP: {
+            handle_next_dup(request, cursor);
         }
         break;
         case remote::Op::NEXT_NO_DUP: {
+            handle_next_no_dup(request, cursor);
         }
         break;
         case remote::Op::PREV: {
@@ -354,6 +359,42 @@ void TxCall::handle_seek(const remote::Cursor* request, db::Cursor& cursor) {
     }
 }
 
+void TxCall::handle_current(const remote::Cursor* request, db::Cursor& cursor) {
+    SILK_TRACE << "TxCall::handle_current " << this << " START";
+    const mdbx::cursor::move_result result = cursor.to_next_first_multi(/*throw_notfound=*/false);
+    if (result) {
+        const bool sent = send_response_pair(result);
+        SILK_TRACE << "TxCall::handle_current " << this << " sent: " << sent << " END";
+    } else {
+        finish_with_internal_error(request);
+        SILK_TRACE << "TxCall::handle_current " << this << " END";
+    }
+}
+
+void TxCall::handle_last(const remote::Cursor* request, db::Cursor& cursor) {
+    SILK_TRACE << "TxCall::handle_last " << this << " START";
+    const mdbx::cursor::move_result result = cursor.to_last(/*throw_notfound=*/false);
+    if (result) {
+        const bool sent = send_response_pair(result);
+        SILK_TRACE << "TxCall::handle_last " << this << " sent: " << sent << " END";
+    } else {
+        finish_with_internal_error(request);
+        SILK_TRACE << "TxCall::handle_last " << this << " END";
+    }
+}
+
+void TxCall::handle_last_dup(const remote::Cursor* request, db::Cursor& cursor) {
+    SILK_TRACE << "TxCall::handle_last_dup " << this << " START";
+    const mdbx::cursor::move_result result = cursor.to_current_last_multi(/*throw_notfound=*/false);
+    if (result) {
+        const bool sent = send_response_pair(result);
+        SILK_TRACE << "TxCall::handle_last_dup " << this << " sent: " << sent << " END";
+    } else {
+        finish_with_internal_error(request);
+        SILK_TRACE << "TxCall::handle_last_dup " << this << " END";
+    }
+}
+
 void TxCall::handle_next(const remote::Cursor* request, db::Cursor& cursor) {
     SILK_TRACE << "TxCall::handle_next " << this << " START";
     const mdbx::cursor::move_result result = cursor.to_next(/*throw_notfound=*/false);
@@ -363,6 +404,30 @@ void TxCall::handle_next(const remote::Cursor* request, db::Cursor& cursor) {
     } else {
         finish_with_internal_error(request);
         SILK_TRACE << "TxCall::handle_next " << this << " END";
+    }
+}
+
+void TxCall::handle_next_dup(const remote::Cursor* request, db::Cursor& cursor) {
+    SILK_TRACE << "TxCall::handle_next_dup " << this << " START";
+    const mdbx::cursor::move_result result = cursor.to_current_next_multi(/*throw_notfound=*/false);
+    if (result) {
+        const bool sent = send_response_pair(result);
+        SILK_TRACE << "TxCall::handle_next_dup " << this << " sent: " << sent << " END";
+    } else {
+        finish_with_internal_error(request);
+        SILK_TRACE << "TxCall::handle_next_dup " << this << " END";
+    }
+}
+
+void TxCall::handle_next_no_dup(const remote::Cursor* request, db::Cursor& cursor) {
+    SILK_TRACE << "TxCall::handle_next_no_dup " << this << " START";
+    const mdbx::cursor::move_result result = cursor.to_next_first_multi(/*throw_notfound=*/false);
+    if (result) {
+        const bool sent = send_response_pair(result);
+        SILK_TRACE << "TxCall::handle_next_no_dup " << this << " sent: " << sent << " END";
+    } else {
+        finish_with_internal_error(request);
+        SILK_TRACE << "TxCall::handle_next_no_dup " << this << " END";
     }
 }
 

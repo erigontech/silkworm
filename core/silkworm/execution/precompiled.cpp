@@ -23,6 +23,9 @@
 #include <limits>
 
 #include <ethash/keccak.hpp>
+#include <silkpre/blake2b.h>
+#include <silkpre/rmd160.h>
+#include <silkpre/sha256.h>
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wold-style-cast"
@@ -34,10 +37,7 @@
 #include <silkworm/chain/protocol_param.hpp>
 #include <silkworm/common/endian.hpp>
 #include <silkworm/common/util.hpp>
-#include <silkworm/crypto/blake2.h>
 #include <silkworm/crypto/ecdsa.hpp>
-#include <silkworm/crypto/rmd160.hpp>
-#include <silkworm/crypto/sha-256.h>
 #include <silkworm/crypto/snark.hpp>
 
 namespace silkworm::precompiled {
@@ -89,7 +89,7 @@ uint64_t sha256_gas(ByteView input, evmc_revision) noexcept { return 60 + 12 * (
 
 std::optional<Bytes> sha256_run(ByteView input) noexcept {
     Bytes out(32, '\0');
-    calc_sha_256(out.data(), input.data(), input.length(), /*use_cpu_extensions=*/true);
+    silkpre_sha256(out.data(), input.data(), input.length(), /*use_cpu_extensions=*/true);
     return out;
 }
 
@@ -97,7 +97,7 @@ uint64_t rip160_gas(ByteView input, evmc_revision) noexcept { return 600 + 120 *
 
 std::optional<Bytes> rip160_run(ByteView input) noexcept {
     Bytes out(32, '\0');
-    crypto::calculate_ripemd_160(gsl::span<uint8_t, 20>{&out[12], 20}, input);
+    silkpre_rmd160(&out[12], input.data(), input.length());
     return out;
 }
 
@@ -349,7 +349,7 @@ std::optional<Bytes> blake2_f_run(ByteView input) noexcept {
         return std::nullopt;
     }
 
-    blake2b_state state{};
+    SilkpreBlake2bState state{};
     if (f) {
         state.f[0] = std::numeric_limits<uint64_t>::max();
     }
@@ -358,13 +358,13 @@ std::optional<Bytes> blake2_f_run(ByteView input) noexcept {
     static_assert(sizeof(state.h) == 8 * 8);
     std::memcpy(&state.h, input.data() + 4, 8 * 8);
 
-    uint8_t block[BLAKE2B_BLOCKBYTES];
-    std::memcpy(block, input.data() + 68, BLAKE2B_BLOCKBYTES);
+    uint8_t block[SILKPRE_BLAKE2B_BLOCKBYTES];
+    std::memcpy(block, input.data() + 68, SILKPRE_BLAKE2B_BLOCKBYTES);
 
     std::memcpy(&state.t, input.data() + 196, 8 * 2);
 
     uint32_t r{endian::load_big_u32(input.data())};
-    blake2b_compress(&state, block, r);
+    silkpre_blake2b_compress(&state, block, r);
 
     Bytes out(8 * 8, '\0');
     std::memcpy(&out[0], &state.h[0], 8 * 8);

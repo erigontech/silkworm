@@ -204,6 +204,8 @@ if(NOT MSVC)
   endif()
 endif()
 
+add_subdirectory(third_party/silkpre)
+
 # Silkworm itself
 add_subdirectory(core)
 

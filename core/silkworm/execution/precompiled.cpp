@@ -26,6 +26,7 @@
 #include <silkpre/blake2b.h>
 #include <silkpre/rmd160.h>
 #include <silkpre/sha256.h>
+#include <silkpre/snark.hpp>
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wold-style-cast"
@@ -38,7 +39,6 @@
 #include <silkworm/common/endian.hpp>
 #include <silkworm/common/util.hpp>
 #include <silkworm/crypto/ecdsa.hpp>
-#include <silkworm/crypto/snark.hpp>
 
 namespace silkworm::precompiled {
 

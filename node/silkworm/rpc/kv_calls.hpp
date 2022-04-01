@@ -95,13 +95,22 @@ class TxCall : public BidirectionalStreamingRpc<remote::KV::AsyncService, remote
 
     void handle_cursor_close(const remote::Cursor* request);
 
-    void handle_operation(const remote::Cursor* request, const db::Cursor& cursor);
+    void handle_operation(const remote::Cursor* request, db::Cursor& cursor);
 
     void handle_max_ttl_timer_expired(const boost::system::error_code& ec);
 
     bool save_cursors(std::vector<CursorPosition>& positions);
 
     bool restore_cursors(std::vector<CursorPosition>& positions);
+
+    void handle_first(const remote::Cursor* request, db::Cursor& cursor);
+    void handle_first_dup(const remote::Cursor* request, db::Cursor& cursor);
+    void handle_seek(const remote::Cursor* request, db::Cursor& cursor);
+    void handle_next(const remote::Cursor* request, db::Cursor& cursor);
+    void handle_prev(const remote::Cursor* request, db::Cursor& cursor);
+
+    bool send_response_pair(const mdbx::cursor::move_result& result);
+    void finish_with_internal_error(const remote::Cursor* request);
 
     static mdbx::env_managed* chaindata_env_;
     static uint32_t next_cursor_id_;

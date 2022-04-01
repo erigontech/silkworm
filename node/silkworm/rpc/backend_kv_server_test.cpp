@@ -110,7 +110,9 @@ class KvClient {
                 responses.pop_back();
                 break;
             }
-            cursor_id = responses.back().cursorid();
+            if (cursor_id == 0) {
+                cursor_id = responses.back().cursorid();
+            }
         }
         tx_reader_writer->WritesDone();
         return tx_reader_writer->Finish();
@@ -333,7 +335,7 @@ TEST_CASE("BackEndKvServer: RPC basic config", "[silkworm][node][rpc]") {
         CHECK(response.patch() == 0);
     }
 
-    SECTION("Tx: empty table name", "[silkworm][node][rpc]") {
+    SECTION("Tx KO: empty table name", "[silkworm][node][rpc]") {
         remote::SubscribeRequest request;
         remote::Cursor open;
         open.set_op(remote::Op::OPEN);
@@ -347,7 +349,7 @@ TEST_CASE("BackEndKvServer: RPC basic config", "[silkworm][node][rpc]") {
         CHECK(responses[0].txid() != 0);
     }
 
-    SECTION("Tx: invalid table name", "[silkworm][node][rpc]") {
+    SECTION("Tx KO: invalid table name", "[silkworm][node][rpc]") {
         remote::SubscribeRequest request;
         remote::Cursor open;
         open.set_op(remote::Op::OPEN);
@@ -362,7 +364,7 @@ TEST_CASE("BackEndKvServer: RPC basic config", "[silkworm][node][rpc]") {
         CHECK(responses[0].txid() != 0);
     }
 
-    SECTION("Tx: missing operation", "[silkworm][node][rpc]") {
+    SECTION("Tx KO: missing operation", "[silkworm][node][rpc]") {
         remote::SubscribeRequest request;
         remote::Cursor open;
         open.set_bucketname("TestTable");
@@ -376,7 +378,7 @@ TEST_CASE("BackEndKvServer: RPC basic config", "[silkworm][node][rpc]") {
         CHECK(responses[0].txid() != 0);
     }
 
-    SECTION("Tx: cursor opened", "[silkworm][node][rpc]") {
+    SECTION("Tx OK: cursor opened", "[silkworm][node][rpc]") {
         remote::SubscribeRequest request;
         remote::Cursor open;
         open.set_op(remote::Op::OPEN);
@@ -387,23 +389,78 @@ TEST_CASE("BackEndKvServer: RPC basic config", "[silkworm][node][rpc]") {
         CHECK(status.ok());
         CHECK(responses.size() == 2);
         CHECK(responses[0].txid() != 0);
-        CHECK(responses[1].cursorid() == 1);
+        CHECK(responses[1].cursorid() != 0);
     }
 
-    /*SECTION("Tx: return streamed pairs", "[silkworm][node][rpc]") {
+    SECTION("Tx OK: cursor opened then closed", "[silkworm][node][rpc]") {
+        remote::SubscribeRequest request;
+        remote::Cursor open;
+        open.set_op(remote::Op::OPEN);
+        open.set_bucketname("TestTable");
+        remote::Cursor close;
+        close.set_op(remote::Op::CLOSE);
+        std::vector<remote::Cursor> requests{open, close};
+        std::vector<remote::Pair> responses;
+        const auto status = kv_client.tx(requests, responses);
+        CHECK(status.ok());
+        CHECK(responses.size() == 3);
+        CHECK(responses[0].txid() != 0);
+        CHECK(responses[1].cursorid() != 0);
+        CHECK(responses[2].cursorid() == 0);
+    }
+
+    SECTION("Tx KO: cursor first in empty table", "[silkworm][node][rpc]") {
+        remote::SubscribeRequest request;
+        remote::Cursor open;
+        open.set_op(remote::Op::OPEN);
+        open.set_bucketname("TestTable");
+        remote::Cursor first;
+        first.set_op(remote::Op::FIRST);
+        std::vector<remote::Cursor> requests{open, first};
+        std::vector<remote::Pair> responses;
+        const auto status = kv_client.tx(requests, responses);
+        CHECK(!status.ok());
+        CHECK(responses.size() == 2);
+        CHECK(responses[0].txid() != 0);
+        CHECK(responses[1].cursorid() != 0);
+    }
+
+    SECTION("Tx KO: cursor next in empty table", "[silkworm][node][rpc]") {
         remote::SubscribeRequest request;
         remote::Cursor open;
         open.set_op(remote::Op::OPEN);
         open.set_bucketname("TestTable");
         remote::Cursor next;
         next.set_op(remote::Op::NEXT);
-        remote::Cursor close;
-        close.set_op(remote::Op::CLOSE);
-        std::vector<remote::Cursor> requests{open, next, close};
+        std::vector<remote::Cursor> requests{open, next};
         std::vector<remote::Pair> responses;
         const auto status = kv_client.tx(requests, responses);
+        CHECK(!status.ok());
+        CHECK(responses.size() == 2);
+        CHECK(responses[0].txid() != 0);
+        CHECK(responses[1].cursorid() != 0);
+    }
+
+    /*SECTION("Tx OK: cursor first", "[silkworm][node][rpc]") {
+        remote::SubscribeRequest request;
+        remote::Cursor open;
+        open.set_op(remote::Op::OPEN);
+        open.set_bucketname("TestTable");
+        remote::Cursor first;
+        first.set_op(remote::Op::FIRST);
+        remote::Cursor close;
+        close.set_op(remote::Op::CLOSE);
+        std::vector<remote::Cursor> requests{open, first, close};
+        std::vector<remote::Pair> responses;
+        const auto status = kv_client.tx(requests, responses);
+        std::cout << "status: " << status << "\n";
         CHECK(status.ok());
-        CHECK(responses.size() == 3);
+        CHECK(responses.size() == 4);
+        CHECK(responses[0].txid() != 0);
+        CHECK(responses[1].cursorid() != 0);
+        CHECK(!responses[2].k().empty());
+        CHECK(!responses[2].v().empty());
+        CHECK(responses[3].cursorid() == 0);
     }*/
 
     // TODO(canepat): change using something meaningful when really implemented

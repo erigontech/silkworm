@@ -647,8 +647,9 @@ class BidirectionalStreamingRpc : public BaseRpc {
     void handle_idle_timer_expired(const boost::system::error_code& ec) {
         SILK_TRACE << "BidirectionalStreamingRpc::handle_idle_timer_expired " << this << " ec: " << ec << " START";
         if (!ec) {
-            SILK_DEBUG << "BidirectionalStreamingRpc::handle_idle_timer_expired " << this << " close stream for peer " << peer();
-            close();
+            const std::string error_message{"call idle, no incoming request from peer: " + peer()};
+            SILK_ERROR << "Idle timer expired " << this << " " << error_message;
+            finish_with_error(grpc::Status{grpc::StatusCode::DEADLINE_EXCEEDED, error_message});
         }
         SILK_TRACE << "BidirectionalStreamingRpc::handle_idle_timer_expired " << this << " ec: " << ec << " END";
     }

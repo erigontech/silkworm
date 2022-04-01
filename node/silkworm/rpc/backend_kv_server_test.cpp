@@ -97,11 +97,19 @@ class KvClient {
     grpc::Status tx(std::vector<remote::Cursor>& requests, std::vector<remote::Pair>& responses) {
         grpc::ClientContext context;
         auto tx_reader_writer = stub_->Tx(&context);
+        tx_reader_writer->Read(&responses.emplace_back());
         uint32_t cursor_id{0};
         for (auto& req : requests) {
             req.set_cursor(cursor_id);
-            tx_reader_writer->Write(req);
-            tx_reader_writer->Read(&responses.emplace_back());
+            const bool write_ok = tx_reader_writer->Write(req);
+            if (!write_ok) {
+                break;
+            }
+            const bool read_ok = tx_reader_writer->Read(&responses.emplace_back());
+            if (!read_ok) {
+                responses.pop_back();
+                break;
+            }
             cursor_id = responses.back().cursorid();
         }
         tx_reader_writer->WritesDone();
@@ -243,6 +251,10 @@ TEST_CASE("BackEndKvServer: RPC basic config", "[silkworm][node][rpc]") {
     db_config.create = true;
     db_config.inmemory = true;
     auto database_env = db::open_env(db_config);
+    const db::MapConfig test_map_config{"TestTable"};
+    auto rw_txn{database_env.start_write()};
+    db::open_map(rw_txn, test_map_config);
+    rw_txn.commit();
     NodeSettings node_settings;
     EthereumBackEnd backend{node_settings, &database_env};
     BackEndKvServer server{srv_config, backend};
@@ -321,8 +333,64 @@ TEST_CASE("BackEndKvServer: RPC basic config", "[silkworm][node][rpc]") {
         CHECK(response.patch() == 0);
     }
 
-    // TODO(canepat): change using something meaningful when really implemented
-    SECTION("Tx: return streamed pairs", "[silkworm][node][rpc]") {
+    SECTION("Tx: empty table name", "[silkworm][node][rpc]") {
+        remote::SubscribeRequest request;
+        remote::Cursor open;
+        open.set_op(remote::Op::OPEN);
+        std::vector<remote::Cursor> requests{open};
+        std::vector<remote::Pair> responses;
+        const auto status = kv_client.tx(requests, responses);
+        CHECK(!status.ok());
+        CHECK(status.error_code() == grpc::StatusCode::INVALID_ARGUMENT);
+        CHECK(status.error_message().find("unknown bucket") != std::string::npos);
+        CHECK(responses.size() == 1);
+        CHECK(responses[0].txid() != 0);
+    }
+
+    SECTION("Tx: invalid table name", "[silkworm][node][rpc]") {
+        remote::SubscribeRequest request;
+        remote::Cursor open;
+        open.set_op(remote::Op::OPEN);
+        open.set_bucketname("UnexistentTable");
+        std::vector<remote::Cursor> requests{open};
+        std::vector<remote::Pair> responses;
+        const auto status = kv_client.tx(requests, responses);
+        CHECK(!status.ok());
+        CHECK(status.error_code() == grpc::StatusCode::INVALID_ARGUMENT);
+        CHECK(status.error_message().find("unknown bucket") != std::string::npos);
+        CHECK(responses.size() == 1);
+        CHECK(responses[0].txid() != 0);
+    }
+
+    SECTION("Tx: missing operation", "[silkworm][node][rpc]") {
+        remote::SubscribeRequest request;
+        remote::Cursor open;
+        open.set_bucketname("TestTable");
+        std::vector<remote::Cursor> requests{open};
+        std::vector<remote::Pair> responses;
+        const auto status = kv_client.tx(requests, responses);
+        CHECK(!status.ok());
+        CHECK(status.error_code() == grpc::StatusCode::INVALID_ARGUMENT);
+        CHECK(status.error_message().find("unknown cursor") != std::string::npos);
+        CHECK(responses.size() == 1);
+        CHECK(responses[0].txid() != 0);
+    }
+
+    SECTION("Tx: cursor opened", "[silkworm][node][rpc]") {
+        remote::SubscribeRequest request;
+        remote::Cursor open;
+        open.set_op(remote::Op::OPEN);
+        open.set_bucketname("TestTable");
+        std::vector<remote::Cursor> requests{open};
+        std::vector<remote::Pair> responses;
+        const auto status = kv_client.tx(requests, responses);
+        CHECK(status.ok());
+        CHECK(responses.size() == 2);
+        CHECK(responses[0].txid() != 0);
+        CHECK(responses[1].cursorid() == 1);
+    }
+
+    /*SECTION("Tx: return streamed pairs", "[silkworm][node][rpc]") {
         remote::SubscribeRequest request;
         remote::Cursor open;
         open.set_op(remote::Op::OPEN);
@@ -336,7 +404,7 @@ TEST_CASE("BackEndKvServer: RPC basic config", "[silkworm][node][rpc]") {
         const auto status = kv_client.tx(requests, responses);
         CHECK(status.ok());
         CHECK(responses.size() == 3);
-    }
+    }*/
 
     // TODO(canepat): change using something meaningful when really implemented
     SECTION("StateChanges: return streamed state changes", "[silkworm][node][rpc]") {

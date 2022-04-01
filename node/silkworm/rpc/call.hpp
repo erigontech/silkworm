@@ -21,6 +21,9 @@
 #include <functional>
 #include <list>
 
+#include <boost/asio/deadline_timer.hpp>
+#include <boost/asio/io_context.hpp>
+#include <boost/date_time/posix_time/posix_time_io.hpp>
 #include <grpcpp/grpcpp.h>
 #include <grpcpp/impl/codegen/async_stream.h>
 #include <grpcpp/impl/codegen/async_unary_call.h>
@@ -31,6 +34,9 @@
 
 namespace silkworm::rpc {
 
+//! The max idle interval to protect from clients which don't send any requests.
+constexpr uint32_t kMaxIdleDuration{30'000}; // milliseconds
+
 //! This represents the generic gRPC call composed by a sequence of bidirectional operations.
 class BaseRpc {
   public:
@@ -40,7 +46,7 @@ class BaseRpc {
     //! Returns the number of total RPC instances.
     static uint64_t total_count() { return total_count_; }
 
-    BaseRpc() {
+    BaseRpc(boost::asio::io_context& scheduler) : scheduler_(scheduler) {
         ++instance_count_;
         ++total_count_;
         SILK_TRACE << "BaseRpc::BaseRpc [" << this << "] instances: " << instance_count_ << " total: " << total_count_;
@@ -119,6 +125,8 @@ class BaseRpc {
     /// Returns if one in-progress write operation exists or not.
     bool write_in_progress() const { return write_in_progress_; }
 
+    boost::asio::io_context& scheduler_;
+
     //! Used to access the options and current status of the RPC.
     grpc::ServerContext context_;
 
@@ -152,7 +160,7 @@ class BaseRpc {
 /// incoming RPC on a particular service: that's why createRpc exists.
 template <typename AsyncService, typename Request, typename Response, template<typename, typename, typename> typename Rpc>
 struct RpcHandlers {
-    using CreateRpcFunc = std::function<void(AsyncService*, grpc::ServerCompletionQueue*)>;
+    using CreateRpcFunc = std::function<void(boost::asio::io_context&, AsyncService*, grpc::ServerCompletionQueue*)>;
     using CleanupRpcFunc = std::function<void(Rpc<AsyncService, Request, Response>&, bool)>;
 
     /// createRpc is called when an outstanding BaseRpc starts serving an incoming RPC and we need to create the next
@@ -179,8 +187,8 @@ class UnaryRpc : public BaseRpc {
   public:
     using Handlers = UnaryRpcHandlers<AsyncService, Request, Response, UnaryRpc>;
 
-    UnaryRpc(AsyncService* service, grpc::ServerCompletionQueue* queue, Handlers handlers)
-    : service_(service), queue_(queue), responder_(&context_), handlers_(handlers) {
+    UnaryRpc(boost::asio::io_context& scheduler, AsyncService* service, grpc::ServerCompletionQueue* queue, Handlers handlers)
+    : BaseRpc(scheduler), service_(service), queue_(queue), responder_(&context_), handlers_(handlers) {
         SILK_TRACE << "UnaryRpc::UnaryRpc START [" << this << "]";
 
         // Create READ/FINISH/DONE tag processors used to interact with gRPC completion queue.
@@ -226,7 +234,7 @@ class UnaryRpc : public BaseRpc {
         }
 
         // A request has just been activated: first create a new RPC to allow the server to handle the next request.
-        handlers_.createRpc(service_, queue_);
+        handlers_.createRpc(scheduler_, service_, queue_);
 
         // The incoming request can now be handled so process it.
         if (handle_completed(OperationType::kRequest)) {
@@ -289,8 +297,8 @@ class ServerStreamingRpc : public BaseRpc {
   public:
     using Handlers = ServerStreamingRpcHandlers<AsyncService, Request, Response, ServerStreamingRpc>;
 
-    ServerStreamingRpc(AsyncService* service, grpc::ServerCompletionQueue* queue, Handlers handlers)
-    : service_(service), queue_(queue), responder_(&context_), handlers_(handlers) {
+    ServerStreamingRpc(boost::asio::io_context& scheduler, AsyncService* service, grpc::ServerCompletionQueue* queue, Handlers handlers)
+    : BaseRpc(scheduler), service_(service), queue_(queue), responder_(&context_), handlers_(handlers) {
         SILK_TRACE << "ServerStreamingRpc::ServerStreamingRpc START [" << this << "]";
 
         // Create READ/WRITE/FINISH/DONE tag processors used to interact with gRPC completion queue.
@@ -355,7 +363,7 @@ class ServerStreamingRpc : public BaseRpc {
         }
 
         // A request has just been activated: first create a new RPC to allow the server to handle the next request.
-        handlers_.createRpc(service_, queue_);
+        handlers_.createRpc(scheduler_, service_, queue_);
 
         // The incoming request can now be handled so process it.
         if (handle_completed(OperationType::kRequest)) {
@@ -458,8 +466,8 @@ class BidirectionalStreamingRpc : public BaseRpc {
   public:
     using Handlers = BidirectionalStreamingRpcHandlers<AsyncService, Request, Response, BidirectionalStreamingRpc>;
 
-    BidirectionalStreamingRpc(AsyncService* service, grpc::ServerCompletionQueue* queue, Handlers handlers)
-    : service_(service), queue_(queue), responder_(&context_), handlers_(handlers) {
+    BidirectionalStreamingRpc(boost::asio::io_context& scheduler, AsyncService* service, grpc::ServerCompletionQueue* queue, Handlers handlers)
+    : BaseRpc(scheduler), service_(service), queue_(queue), responder_(&context_), handlers_(handlers), idle_timer_{scheduler} {
         SILK_TRACE << "BidirectionalStreamingRpc::BidirectionalStreamingRpc START [" << this << "]";
 
         // Create REQUEST/READ/WRITE/FINISH/DONE tag processors used to interact with gRPC completion queue.
@@ -479,11 +487,15 @@ class BidirectionalStreamingRpc : public BaseRpc {
         SILK_TRACE << "BidirectionalStreamingRpc::BidirectionalStreamingRpc END new request issued [" << this << "]";
     }
 
+    virtual void start() = 0;
+
     //! Hook called when a new incoming request from some client has come in for this RPC.
     /// For client-streaming and bidirectional streaming RPCs, a request from client can come in multiple times so
     /// \ref process() may be called repeatedly.
     /// @param request the incoming request or nullptr to indicate end-of-stream for client stream
     virtual void process(const Request* request) = 0;
+
+    virtual void end() = 0;
 
     bool send_response(const Response& response) {
         response_queue_.push_back(std::move(response));
@@ -516,6 +528,9 @@ class BidirectionalStreamingRpc : public BaseRpc {
 
     /// Finalize the bidirectional-streaming RPC with an application error when no response is available.
     bool finish_with_error(const grpc::Status& error) {
+        // Stop the idle guard timer.
+        idle_timer_.cancel();
+
         handle_started(OperationType::kFinish);
         responder_.Finish(error, &finish_processor_);
         return true;
@@ -531,11 +546,18 @@ class BidirectionalStreamingRpc : public BaseRpc {
         }
 
         // A request has just been activated: first create a new RPC to allow the server to handle the next request.
-        handlers_.createRpc(service_, queue_);
+        handlers_.createRpc(scheduler_, service_, queue_);
         handle_completed(OperationType::kRequest);
+
+        // The call has just started so let the application layer know it.
+        start();
 
         // The first incoming message can now be read, so enqueue the first READ operation for this RPC.
         read();
+
+        // Start the idle guard timer to protect against clients which don't send any (more) requests.
+        idle_timer_.expires_from_now(boost::posix_time::milliseconds(kMaxIdleDuration));
+        idle_timer_.async_wait([&](const auto& ec) { handle_idle_timer_expired(ec); });
         SILK_TRACE << "BidirectionalStreamingRpc::process_request END [" << this << "]";
     }
 
@@ -546,13 +568,25 @@ class BidirectionalStreamingRpc : public BaseRpc {
             if (ok) {
                 // The incoming request can now be handled so process it.
                 process(&request_);
+
                 // Enqueue another READ operation for this RPC.
                 read();
+
+                // Restart the idle guard timer.
+                idle_timer_.cancel();
+                idle_timer_.expires_from_now(boost::posix_time::milliseconds(kMaxIdleDuration));
+                idle_timer_.async_wait([&](const auto& ec) { handle_idle_timer_expired(ec); });
+                SILK_DEBUG << "BidirectionalStreamingRpc::process_read peer: " << peer() << " idle timer expires at: " << idle_timer_.expires_at();
             } else {
-                // Client has closed the stream, so the processing hook of the application layer receives a null request.
+                // Client has closed the stream, so let the application layer know it.
                 SILK_DEBUG << "BidirectionalStreamingRpc::process_read stream closed by peer " << peer() << " [" << this << "]";
                 client_streaming_done_ = true;
-                process(nullptr);
+                end();
+
+                // Stop the idle guard timer.
+                idle_timer_.cancel();
+
+                close();
             }
         }
         SILK_TRACE << "BidirectionalStreamingRpc::process_read END [" << this << "]";
@@ -610,6 +644,15 @@ class BidirectionalStreamingRpc : public BaseRpc {
         SILK_TRACE << "BidirectionalStreamingRpc::cleanup [" << this << "] END";
     }
 
+    void handle_idle_timer_expired(const boost::system::error_code& ec) {
+        SILK_TRACE << "BidirectionalStreamingRpc::handle_idle_timer_expired " << this << " ec: " << ec << " START";
+        if (!ec) {
+            SILK_DEBUG << "BidirectionalStreamingRpc::handle_idle_timer_expired " << this << " close stream for peer " << peer();
+            close();
+        }
+        SILK_TRACE << "BidirectionalStreamingRpc::handle_idle_timer_expired " << this << " ec: " << ec << " END";
+    }
+
     //! The gRPC generated asynchronous service.
     AsyncService* service_;
 
@@ -642,6 +685,9 @@ class BidirectionalStreamingRpc : public BaseRpc {
 
     //! The list of server streamed responses.
     std::list<Response> response_queue_;
+
+    //! The one-shot timer to protect from clients which don't send any requests.
+    boost::asio::deadline_timer idle_timer_;
 
     //! Flag indicating if server streaming is finished or not.
     bool server_streaming_done_{false};

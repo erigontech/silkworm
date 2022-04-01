@@ -38,7 +38,7 @@ class MockUnaryRpc : public BaseRpc {
 
     static int instance_count() { return instance_count_; }
 
-    explicit MockUnaryRpc() { instance_count_++; }
+    explicit MockUnaryRpc(boost::asio::io_context& scheduler) : BaseRpc(scheduler) { instance_count_++; }
     ~MockUnaryRpc() { instance_count_--; }
 
     void cleanup() override {}
@@ -78,9 +78,11 @@ TEST_CASE("CallFactory::CallFactory", "[silkworm][node][rpc]") {
 TEST_CASE("CallFactory::add_rpc", "[silkworm][node][rpc]") {
     CHECK(MockRpc::instance_count() == 0);
 
+    boost::asio::io_context scheduler;
+
     SECTION("OK: insert new rpc", "[silkworm][node][rpc]") {
         MockFactory factory;
-        auto rpc = new MockRpc();
+        auto rpc = new MockRpc{scheduler};
         auto [it, inserted] = factory.insert_request(rpc);
         CHECK(it->get() == rpc);
         CHECK(inserted);
@@ -93,11 +95,13 @@ TEST_CASE("CallFactory::add_rpc", "[silkworm][node][rpc]") {
 TEST_CASE("CallFactory::remove_rpc", "[silkworm][node][rpc]") {
     CHECK(MockRpc::instance_count() == 0);
 
+    boost::asio::io_context scheduler;
+
     SECTION("KO: remove unexisting rpc", "[silkworm][node][rpc]") {
         MockFactory factory;
-        auto rpc1 = new MockRpc();
+        auto rpc1 = new MockRpc{scheduler};
         factory.insert_request(rpc1);
-        auto rpc2 = new MockRpc();
+        auto rpc2 = new MockRpc{scheduler};
         CHECK(factory.erase_request(rpc2) == 0);
         CHECK(factory.requests_count() == 1);
         delete rpc2;
@@ -105,7 +109,7 @@ TEST_CASE("CallFactory::remove_rpc", "[silkworm][node][rpc]") {
 
     SECTION("OK: remove existing rpc", "[silkworm][node][rpc]") {
         MockFactory factory;
-        auto rpc = new MockRpc();
+        auto rpc = new MockRpc{scheduler};
         factory.insert_request(rpc);
         CHECK(factory.erase_request(rpc) == 1);
         CHECK(factory.requests_count() == 0);

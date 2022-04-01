@@ -43,7 +43,7 @@ int CompletionEndPoint::poll_one() {
         num_completed = -1;
     }
 
-    SILK_TRACE << "CompletionEndPoint::poll_one next_status=" << next_status << " END";
+    SILK_TRACE << "CompletionEndPoint::poll_one num_completed=" << num_completed << " END";
     return num_completed;
 }
 

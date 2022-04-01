@@ -40,10 +40,10 @@ class CallFactory {
     using CallHandlers = typename Call::Handlers;
 
   public:
-    void create_rpc(AsyncService* service, grpc::ServerCompletionQueue* queue) {
+    void create_rpc(boost::asio::io_context& scheduler, AsyncService* service, grpc::ServerCompletionQueue* queue) {
         SILK_TRACE << "CallFactory::create_rpc START service: " << service << " queue: " << queue;
 
-        auto rpc = new Call(service, queue, handlers_);
+        auto rpc = new Call(scheduler, service, queue, handlers_);
         add_rpc(rpc);
 
         SILK_TRACE << "CallFactory::create_rpc END rpc: " << rpc;
@@ -65,7 +65,7 @@ class CallFactory {
     CallFactory(typename CallHandlers::RequestRpcFunc request_rpc, std::size_t requestsInitialCapacity)
         : handlers_{
             {
-                [&](auto* svc, auto* cq) { create_rpc(svc, cq); },
+                [&](auto& scheduler, auto* svc, auto* cq) { create_rpc(scheduler, svc, cq); },
                 [&](auto& rpc, bool cancelled) { cleanup_rpc(rpc, cancelled); }
             },
             request_rpc

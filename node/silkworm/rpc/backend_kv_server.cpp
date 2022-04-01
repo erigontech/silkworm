@@ -45,7 +45,6 @@ void BackEndKvServer::register_request_calls() {
     // Start one server-side RPC request for each available server context
     for (auto& backend_kv_svc : backend_kv_services_) {
         const auto& server_context = next_context();
-        const auto server_queue = server_context.server_queue();
         const auto client_queue = server_context.client_queue();
 
         // Complete the service initialization
@@ -55,8 +54,10 @@ void BackEndKvServer::register_request_calls() {
         }
 
         // Register initial requested calls for ETHBACKEND and KV services
-        backend_kv_svc->register_backend_request_calls(&backend_async_service_, server_queue);
-        backend_kv_svc->register_kv_request_calls(&kv_async_service_, server_queue);
+        const auto io_context = server_context.io_context();
+        const auto server_queue = server_context.server_queue();
+        backend_kv_svc->register_backend_request_calls(*io_context, &backend_async_service_, server_queue);
+        backend_kv_svc->register_kv_request_calls(*io_context, &kv_async_service_, server_queue);
     }
 }
 

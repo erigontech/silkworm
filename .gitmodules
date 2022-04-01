@@ -27,3 +27,6 @@
 	path = interfaces/proto
 	url = https://github.com/ledgerwatch/interfaces.git
 	branch = stable
+[submodule "silkpre"]
+	path = third_party/silkpre
+	url = https://github.com/torquem-ch/silkpre.git

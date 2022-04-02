@@ -1,5 +1,5 @@
 /*
-   Copyright 2020-2021 The Silkworm Authors
+   Copyright 2020-2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -32,6 +32,18 @@ inline constexpr ChainConfig kLondonConfig{
 };
 
 static_assert(kLondonConfig.revision(0) == EVMC_LONDON);
+
+/// Enables Shanghai from genesis.
+inline constexpr ChainConfig kShanghaiConfig{
+    1,  // chain_id
+    SealEngineType::kNoProof,
+    {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+    std::nullopt,  // dao_block
+    0,             // muir_glacier_block
+    0,             // arrow_glacier_block
+};
+
+static_assert(kShanghaiConfig.revision(0) == EVMC_SHANGHAI);
 
 std::vector<Transaction> sample_transactions();
 std::vector<Receipt> sample_receipts();

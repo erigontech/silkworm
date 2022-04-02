@@ -14,7 +14,7 @@
    limitations under the License.
 */
 
-#include "factory.hpp"
+#include "call_factory.hpp"
 
 #include <catch2/catch.hpp>
 #include <gsl/pointers>
@@ -29,7 +29,7 @@ class MockReply {
 };
 
 template <typename AsyncService, typename Request, typename Reply>
-class MockUnaryRpc {
+class MockUnaryRpc : public BaseRpc {
   public:
     struct Handlers {
         struct ProcessRequestFunc {};
@@ -41,12 +41,14 @@ class MockUnaryRpc {
     explicit MockUnaryRpc() { instance_count_++; }
     ~MockUnaryRpc() { instance_count_--; }
 
+    void cleanup() override {}
+
   private:
     inline static int instance_count_{0};
 };
 
 using MockRpc = MockUnaryRpc<MockAsyncService, MockRequest, MockReply>;
-using MockRpcFactory = Factory<MockAsyncService, MockRequest, MockReply, MockUnaryRpc>;
+using MockRpcFactory = CallFactory<MockAsyncService, MockRpc>;
 
 class MockFactory : public MockRpcFactory {
   public:
@@ -60,7 +62,7 @@ class MockFactory : public MockRpcFactory {
 };
 };
 
-TEST_CASE("Factory::Factory", "[silkworm][node][rpc]") {
+TEST_CASE("CallFactory::CallFactory", "[silkworm][node][rpc]") {
     SECTION("OK: has default capacity for requests", "[silkworm][node][rpc]") {
         MockFactory factory;
         CHECK(factory.requests_capacity() >= kRequestsInitialCapacity);
@@ -73,7 +75,7 @@ TEST_CASE("Factory::Factory", "[silkworm][node][rpc]") {
     }
 }
 
-TEST_CASE("Factory::add_rpc", "[silkworm][node][rpc]") {
+TEST_CASE("CallFactory::add_rpc", "[silkworm][node][rpc]") {
     CHECK(MockRpc::instance_count() == 0);
 
     SECTION("OK: insert new rpc", "[silkworm][node][rpc]") {
@@ -88,7 +90,7 @@ TEST_CASE("Factory::add_rpc", "[silkworm][node][rpc]") {
     CHECK(MockRpc::instance_count() == 0);
 }
 
-TEST_CASE("Factory::remove_rpc", "[silkworm][node][rpc]") {
+TEST_CASE("CallFactory::remove_rpc", "[silkworm][node][rpc]") {
     CHECK(MockRpc::instance_count() == 0);
 
     SECTION("KO: remove unexisting rpc", "[silkworm][node][rpc]") {

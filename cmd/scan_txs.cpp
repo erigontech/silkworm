@@ -14,7 +14,6 @@
    limitations under the License.
 */
 
-#include <filesystem>
 #include <iostream>
 
 #include <CLI/CLI.hpp>
@@ -76,7 +75,7 @@ int main(int argc, char* argv[]) {
         // counters
         uint64_t nTxs{0}, nErrors{0};
 
-        BlockWithHash bh;
+        Block block;
         for (uint64_t block_num{from}; block_num < to; ++block_num) {
             // Note: See the comment above. You may uncomment that line and comment the next line if you're certain
             // that Erigon is not syncing on the same machine. If you use a long-running transaction by doing this, and
@@ -84,13 +83,13 @@ int main(int argc, char* argv[]) {
             txn.renew_reading();
 
             // Read the block
-            if (!db::read_block(txn, block_num, /*read_senders=*/true, bh)) {
+            if (!db::read_block_by_number(txn, block_num, /*read_senders=*/true, block)) {
                 break;
             }
 
-            db::Buffer buffer{txn, /*prune_from=*/0, /*historical_block=*/block_num};
+            db::Buffer buffer{txn, /*prune_history_threshold=*/0, /*historical_block=*/block_num};
 
-            ExecutionProcessor processor{bh.block, *engine, buffer, *chain_config};
+            ExecutionProcessor processor{block, *engine, buffer, *chain_config};
             processor.evm().advanced_analysis_cache = &analysis_cache;
             processor.evm().state_pool = &state_pool;
 
@@ -100,11 +99,11 @@ int main(int argc, char* argv[]) {
             }
 
             // There is one receipt per transaction
-            assert(bh.block.transactions.size() == receipts.size());
+            assert(block.transactions.size() == receipts.size());
 
             // Erigon returns success in the receipt even for pre-Byzantium txs.
-            for (auto receipt : receipts) {
-                nTxs++;
+            for (const auto& receipt : receipts) {
+                ++nTxs;
                 nErrors += (!receipt.success);
             }
 

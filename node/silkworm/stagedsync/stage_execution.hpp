@@ -17,7 +17,7 @@
 #ifndef SILKWORM_STAGEDSYNC_STAGE_EXECUTION_HPP_
 #define SILKWORM_STAGEDSYNC_STAGE_EXECUTION_HPP_
 
-#include <queue>
+#include <boost/circular_buffer.hpp>
 
 #include <silkworm/consensus/engine.hpp>
 #include <silkworm/execution/analysis_cache.hpp>
@@ -30,7 +30,8 @@ class Execution final : public IStage {
   public:
     explicit Execution(NodeSettings* node_settings)
         : IStage(db::stages::kExecutionKey, node_settings),
-          consensus_engine_{consensus::engine_factory(node_settings->chain_config.value())} {};
+          consensus_engine_{consensus::engine_factory(node_settings->chain_config.value())} {}
+
     ~Execution() override = default;
 
     StageResult forward(db::RWTxn& txn) final;
@@ -39,13 +40,18 @@ class Execution final : public IStage {
     std::vector<std::string> get_log_progress() final;
 
   private:
+    static constexpr size_t kMaxPrefetchedBlocks{10240};
+
     std::unique_ptr<consensus::IEngine> consensus_engine_;
     BlockNum block_num_{0};
+    boost::circular_buffer<Block> prefetched_blocks_{/*buffer_capacity=*/kMaxPrefetchedBlocks};
 
     //! \brief Prefetches blocks for processing
-    //! \remarks The amount of blocks to be fetched is determined by the upper block number (to) or max_blocks collected
-    //! whichever comes first
-    static std::queue<Block> prefetch_blocks(db::RWTxn& txn, BlockNum from, BlockNum to, size_t max_blocks);
+    //! \param [in] from: the first block to prefetch (inclusive)
+    //! \param [in] to: the last block to prefetch (inclusive)
+    //! \remarks The amount of blocks to be fetched is determined by the upper block number (to)
+    //! or kMaxPrefetchedBlocks collected, whichever comes first
+    void prefetch_blocks(db::RWTxn& txn, BlockNum from, BlockNum to);
 
     //! \brief Executes a batch of blocks
     //! \remarks A batch completes when either max block is reached or buffer dimensions overflow
@@ -60,6 +66,7 @@ class Execution final : public IStage {
     //! \brief Revert State for given address/storage location
     static void revert_state(ByteView key, ByteView value, mdbx::cursor& plain_state_table,
                              mdbx::cursor& plain_code_table);
+
     // Stats
     std::mutex progress_mtx_;  // Synchronizes access to progress stats
     std::chrono::time_point<std::chrono::steady_clock> lap_time_{std::chrono::steady_clock::now()};

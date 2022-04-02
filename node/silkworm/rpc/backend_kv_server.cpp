@@ -17,13 +17,19 @@
 #include "backend_kv_server.hpp"
 
 #include <silkworm/common/log.hpp>
+#include <silkworm/rpc/client/sentry_client.hpp>
 
 namespace silkworm::rpc {
 
-BackEndKvServer::BackEndKvServer(const ServerConfig& srv_config, const ChainConfig& chain_config) : Server(srv_config) {
-    factory_groups_.reserve(srv_config.num_contexts());
+BackEndKvService::BackEndKvService(const EthereumBackEnd& backend)
+    : BackEndService(backend), KvService(backend) {
+}
+
+BackEndKvServer::BackEndKvServer(const ServerConfig& srv_config, const EthereumBackEnd& backend)
+: Server(srv_config), backend_(backend) {
+    backend_kv_services_.reserve(srv_config.num_contexts());
     for (std::size_t i{0}; i<srv_config.num_contexts(); i++) {
-        factory_groups_.emplace_back(std::make_unique<BackEndKvFactoryGroup>(srv_config, chain_config));
+        backend_kv_services_.emplace_back(std::make_unique<BackEndKvService>(backend));
     }
     SILK_INFO << "BackEndKvServer created listening on: " << srv_config.address_uri();
 }
@@ -37,24 +43,20 @@ void BackEndKvServer::register_async_services(grpc::ServerBuilder& builder) {
 /// Start server-side RPC requests as required by gRPC async model: one RPC per type is requested in advance.
 void BackEndKvServer::register_request_calls() {
     // Start one server-side RPC request for each available server context
-    for (auto& factory_group : factory_groups_) {
+    for (auto& backend_kv_svc : backend_kv_services_) {
         const auto& server_context = next_context();
-        const auto context_queue = server_context.grpc_queue.get();
+        const auto server_queue = server_context.server_queue();
+        const auto client_queue = server_context.client_queue();
 
-        /* 'ethbackend' protocol factories */
-        factory_group->etherbase_factory.create_rpc(&backend_async_service_, context_queue);
-        factory_group->net_version_factory.create_rpc(&backend_async_service_, context_queue);
-        factory_group->net_peer_count_factory.create_rpc(&backend_async_service_, context_queue);
-        factory_group->backend_version_factory.create_rpc(&backend_async_service_, context_queue);
-        factory_group->protocol_version_factory.create_rpc(&backend_async_service_, context_queue);
-        factory_group->client_version_factory.create_rpc(&backend_async_service_, context_queue);
-        factory_group->subscribe_factory.create_rpc(&backend_async_service_, context_queue);
-        factory_group->node_info_factory.create_rpc(&backend_async_service_, context_queue);
+        // Complete the service initialization
+        RemoteSentryClientFactory sentry_factory{client_queue};
+        for (const auto& sentry_address : backend_.sentry_addresses()) {
+            backend_kv_svc->add_sentry(sentry_factory.make_sentry_client(sentry_address));
+        }
 
-        /* 'kv' protocol factories */
-        factory_group->kv_version_factory.create_rpc(&kv_async_service_, context_queue);
-        factory_group->tx_factory.create_rpc(&kv_async_service_, context_queue);
-        factory_group->state_changes_factory.create_rpc(&kv_async_service_, context_queue);
+        // Register initial requested calls for ETHBACKEND and KV services
+        backend_kv_svc->register_backend_request_calls(&backend_async_service_, server_queue);
+        backend_kv_svc->register_kv_request_calls(&kv_async_service_, server_queue);
     }
 }
 

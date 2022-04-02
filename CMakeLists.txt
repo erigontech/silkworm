@@ -180,6 +180,8 @@ if(NOT SILKWORM_CORE_ONLY)
   target_include_directories(mdbx-static INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/third_party/libmdbx)
 endif()
 
+add_subdirectory(third_party/silkpre)
+
 # Compiler enforcements on Silkworm
 if(NOT MSVC)
   add_compile_options(-Werror -Wall -Wextra)
@@ -194,8 +196,6 @@ if(NOT MSVC)
     add_compile_options(-Wthread-safety)
   endif()
 endif()
-
-add_subdirectory(third_party/silkpre)
 
 # Silkworm itself
 add_subdirectory(core)

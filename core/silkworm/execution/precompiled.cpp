@@ -254,20 +254,20 @@ std::optional<Bytes> bn_add_run(ByteView input) noexcept {
     Bytes buffer;
     input = right_pad(input, 128, buffer);
 
-    snark::init_libff();
+    silkpre::init_libff();
 
-    std::optional<libff::alt_bn128_G1> x{snark::decode_g1_element(input.substr(0, 64))};
+    std::optional<libff::alt_bn128_G1> x{silkpre::decode_g1_element(input.substr(0, 64))};
     if (!x) {
         return std::nullopt;
     }
 
-    std::optional<libff::alt_bn128_G1> y{snark::decode_g1_element(input.substr(64, 64))};
+    std::optional<libff::alt_bn128_G1> y{silkpre::decode_g1_element(input.substr(64, 64))};
     if (!y) {
         return std::nullopt;
     }
 
     libff::alt_bn128_G1 sum{*x + *y};
-    return snark::encode_g1_element(sum);
+    return silkpre::encode_g1_element(sum);
 }
 
 uint64_t bn_mul_gas(ByteView, evmc_revision rev) noexcept { return rev >= EVMC_ISTANBUL ? 6'000 : 40'000; }
@@ -276,17 +276,17 @@ std::optional<Bytes> bn_mul_run(ByteView input) noexcept {
     Bytes buffer;
     input = right_pad(input, 96, buffer);
 
-    snark::init_libff();
+    silkpre::init_libff();
 
-    std::optional<libff::alt_bn128_G1> x{snark::decode_g1_element(input.substr(0, 64))};
+    std::optional<libff::alt_bn128_G1> x{silkpre::decode_g1_element(input.substr(0, 64))};
     if (!x) {
         return std::nullopt;
     }
 
-    snark::Scalar n{snark::to_scalar(input.substr(64, 32))};
+    silkpre::Scalar n{silkpre::to_scalar(input.substr(64, 32))};
 
     libff::alt_bn128_G1 product{n * *x};
-    return snark::encode_g1_element(product);
+    return silkpre::encode_g1_element(product);
 }
 
 static constexpr size_t kSnarkvStride{192};
@@ -302,18 +302,18 @@ std::optional<Bytes> snarkv_run(ByteView input) noexcept {
     }
     size_t k{input.size() / kSnarkvStride};
 
-    snark::init_libff();
+    silkpre::init_libff();
     using namespace libff;
 
     static const auto one{alt_bn128_Fq12::one()};
     auto accumulator{one};
 
     for (size_t i{0}; i < k; ++i) {
-        std::optional<alt_bn128_G1> a{snark::decode_g1_element(input.substr(i * kSnarkvStride, 64))};
+        std::optional<alt_bn128_G1> a{silkpre::decode_g1_element(input.substr(i * kSnarkvStride, 64))};
         if (!a) {
             return std::nullopt;
         }
-        std::optional<alt_bn128_G2> b{snark::decode_g2_element(input.substr(i * kSnarkvStride + 64, 128))};
+        std::optional<alt_bn128_G2> b{silkpre::decode_g2_element(input.substr(i * kSnarkvStride + 64, 128))};
         if (!b) {
             return std::nullopt;
         }

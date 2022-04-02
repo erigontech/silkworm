@@ -221,11 +221,11 @@ evmc::result EVM::call(const evmc_message& message) noexcept {
         const uint8_t num{message.code_address.bytes[kAddressLength - 1]};
         precompiled::Contract contract{precompiled::kContracts[num - 1]};
         const ByteView input{message.input_data, message.input_size};
-        const int64_t gas{static_cast<int64_t>(contract.gas(input, revision()))};
+        const int64_t gas{static_cast<int64_t>(contract.gas(input.data(), input.length(), revision()))};
         if (gas < 0 || gas > message.gas) {
             res.status_code = EVMC_OUT_OF_GAS;
         } else {
-            const std::optional<Bytes> output{contract.run(input)};
+            const std::optional<Bytes> output{contract.run(input.data(), input.length())};
             if (output) {
                 res = {EVMC_SUCCESS, message.gas - gas, output->data(), output->size()};
             } else {

@@ -42,11 +42,11 @@
 
 namespace silkworm::precompiled {
 
-uint64_t ecrec_gas(ByteView, evmc_revision) noexcept { return 3'000; }
+uint64_t ecrec_gas(const uint8_t*, size_t, evmc_revision) noexcept { return 3'000; }
 
-std::optional<Bytes> ecrec_run(ByteView input) noexcept {
+std::optional<Bytes> ecrec_run(const uint8_t* input, size_t len) noexcept {
     static constexpr size_t kInputLen{128};
-    Bytes d{input};
+    Bytes d(input, len);
     if (d.length() < kInputLen) {
         d.resize(kInputLen, '\0');
     }
@@ -85,25 +85,25 @@ std::optional<Bytes> ecrec_run(ByteView input) noexcept {
     return Bytes{};
 }
 
-uint64_t sha256_gas(ByteView input, evmc_revision) noexcept { return 60 + 12 * ((input.length() + 31) / 32); }
+uint64_t sha256_gas(const uint8_t*, size_t len, evmc_revision) noexcept { return 60 + 12 * ((len + 31) / 32); }
 
-std::optional<Bytes> sha256_run(ByteView input) noexcept {
+std::optional<Bytes> sha256_run(const uint8_t* input, size_t len) noexcept {
     Bytes out(32, '\0');
-    silkpre_sha256(out.data(), input.data(), input.length(), /*use_cpu_extensions=*/true);
+    silkpre_sha256(out.data(), input, len, /*use_cpu_extensions=*/true);
     return out;
 }
 
-uint64_t rip160_gas(ByteView input, evmc_revision) noexcept { return 600 + 120 * ((input.length() + 31) / 32); }
+uint64_t rip160_gas(const uint8_t*, size_t len, evmc_revision) noexcept { return 600 + 120 * ((len + 31) / 32); }
 
-std::optional<Bytes> rip160_run(ByteView input) noexcept {
+std::optional<Bytes> rip160_run(const uint8_t* input, size_t len) noexcept {
     Bytes out(32, '\0');
-    silkpre_rmd160(&out[12], input.data(), input.length());
+    silkpre_rmd160(&out[12], input, len);
     return out;
 }
 
-uint64_t id_gas(ByteView input, evmc_revision) noexcept { return 15 + 3 * ((input.length() + 31) / 32); }
+uint64_t id_gas(const uint8_t*, size_t len, evmc_revision) noexcept { return 15 + 3 * ((len + 31) / 32); }
 
-std::optional<Bytes> id_run(ByteView input) noexcept { return Bytes{input}; }
+std::optional<Bytes> id_run(const uint8_t* input, size_t len) noexcept { return Bytes(input, len); }
 
 static intx::uint256 mult_complexity_eip198(const intx::uint256& x) noexcept {
     const intx::uint256 x_squared{x * x};
@@ -121,10 +121,11 @@ static intx::uint256 mult_complexity_eip2565(const intx::uint256& max_length) no
     return words * words;
 }
 
-uint64_t expmod_gas(ByteView input, evmc_revision rev) noexcept {
+uint64_t expmod_gas(const uint8_t* ptr, size_t len, evmc_revision rev) noexcept {
     const uint64_t min_gas{rev < EVMC_BERLIN ? 0 : 200u};
 
     Bytes buffer;
+    ByteView input{ptr, len};
     input = right_pad(input, 3 * 32, buffer);
 
     intx::uint256 base_len256{intx::be::unsafe::load<intx::uint256>(&input[0])};
@@ -184,8 +185,9 @@ uint64_t expmod_gas(ByteView input, evmc_revision rev) noexcept {
     }
 }
 
-std::optional<Bytes> expmod_run(ByteView input) noexcept {
+std::optional<Bytes> expmod_run(const uint8_t* ptr, size_t len) noexcept {
     Bytes buffer;
+    ByteView input{ptr, len};
     input = right_pad(input, 3 * 32, buffer);
 
     uint64_t base_len{endian::load_big_u64(&input[24])};
@@ -248,20 +250,21 @@ std::optional<Bytes> expmod_run(ByteView input) noexcept {
     return out;
 }
 
-uint64_t bn_add_gas(ByteView, evmc_revision rev) noexcept { return rev >= EVMC_ISTANBUL ? 150 : 500; }
+uint64_t bn_add_gas(const uint8_t*, size_t, evmc_revision rev) noexcept { return rev >= EVMC_ISTANBUL ? 150 : 500; }
 
-std::optional<Bytes> bn_add_run(ByteView input) noexcept {
+std::optional<Bytes> bn_add_run(const uint8_t* ptr, size_t len) noexcept {
     Bytes buffer;
+    ByteView input{ptr, len};
     input = right_pad(input, 128, buffer);
 
     silkpre::init_libff();
 
-    std::optional<libff::alt_bn128_G1> x{silkpre::decode_g1_element(input.substr(0, 64))};
+    std::optional<libff::alt_bn128_G1> x{silkpre::decode_g1_element(input.data())};
     if (!x) {
         return std::nullopt;
     }
 
-    std::optional<libff::alt_bn128_G1> y{silkpre::decode_g1_element(input.substr(64, 64))};
+    std::optional<libff::alt_bn128_G1> y{silkpre::decode_g1_element(&input[64])};
     if (!y) {
         return std::nullopt;
     }
@@ -270,20 +273,23 @@ std::optional<Bytes> bn_add_run(ByteView input) noexcept {
     return silkpre::encode_g1_element(sum);
 }
 
-uint64_t bn_mul_gas(ByteView, evmc_revision rev) noexcept { return rev >= EVMC_ISTANBUL ? 6'000 : 40'000; }
+uint64_t bn_mul_gas(const uint8_t*, size_t, evmc_revision rev) noexcept {
+    return rev >= EVMC_ISTANBUL ? 6'000 : 40'000;
+}
 
-std::optional<Bytes> bn_mul_run(ByteView input) noexcept {
+std::optional<Bytes> bn_mul_run(const uint8_t* ptr, size_t len) noexcept {
     Bytes buffer;
+    ByteView input{ptr, len};
     input = right_pad(input, 96, buffer);
 
     silkpre::init_libff();
 
-    std::optional<libff::alt_bn128_G1> x{silkpre::decode_g1_element(input.substr(0, 64))};
+    std::optional<libff::alt_bn128_G1> x{silkpre::decode_g1_element(input.data())};
     if (!x) {
         return std::nullopt;
     }
 
-    silkpre::Scalar n{silkpre::to_scalar(input.substr(64, 32))};
+    silkpre::Scalar n{silkpre::to_scalar(&input[64])};
 
     libff::alt_bn128_G1 product{n * *x};
     return silkpre::encode_g1_element(product);
@@ -291,16 +297,16 @@ std::optional<Bytes> bn_mul_run(ByteView input) noexcept {
 
 static constexpr size_t kSnarkvStride{192};
 
-uint64_t snarkv_gas(ByteView input, evmc_revision rev) noexcept {
-    uint64_t k{input.length() / kSnarkvStride};
+uint64_t snarkv_gas(const uint8_t*, size_t len, evmc_revision rev) noexcept {
+    uint64_t k{len / kSnarkvStride};
     return rev >= EVMC_ISTANBUL ? 34'000 * k + 45'000 : 80'000 * k + 100'000;
 }
 
-std::optional<Bytes> snarkv_run(ByteView input) noexcept {
-    if (input.size() % kSnarkvStride != 0) {
+std::optional<Bytes> snarkv_run(const uint8_t* input, size_t len) noexcept {
+    if (len % kSnarkvStride != 0) {
         return std::nullopt;
     }
-    size_t k{input.size() / kSnarkvStride};
+    size_t k{len / kSnarkvStride};
 
     silkpre::init_libff();
     using namespace libff;
@@ -309,11 +315,11 @@ std::optional<Bytes> snarkv_run(ByteView input) noexcept {
     auto accumulator{one};
 
     for (size_t i{0}; i < k; ++i) {
-        std::optional<alt_bn128_G1> a{silkpre::decode_g1_element(input.substr(i * kSnarkvStride, 64))};
+        std::optional<alt_bn128_G1> a{silkpre::decode_g1_element(&input[i * kSnarkvStride])};
         if (!a) {
             return std::nullopt;
         }
-        std::optional<alt_bn128_G2> b{silkpre::decode_g2_element(input.substr(i * kSnarkvStride + 64, 128))};
+        std::optional<alt_bn128_G2> b{silkpre::decode_g2_element(&input[i * kSnarkvStride + 64])};
         if (!b) {
             return std::nullopt;
         }
@@ -332,16 +338,16 @@ std::optional<Bytes> snarkv_run(ByteView input) noexcept {
     return out;
 }
 
-uint64_t blake2_f_gas(ByteView input, evmc_revision) noexcept {
-    if (input.length() < 4) {
+uint64_t blake2_f_gas(const uint8_t* input, size_t len, evmc_revision) noexcept {
+    if (len < 4) {
         // blake2_f_run will fail anyway
         return 0;
     }
-    return endian::load_big_u32(input.data());
+    return endian::load_big_u32(input);
 }
 
-std::optional<Bytes> blake2_f_run(ByteView input) noexcept {
-    if (input.size() != 213) {
+std::optional<Bytes> blake2_f_run(const uint8_t* input, size_t len) noexcept {
+    if (len != 213) {
         return std::nullopt;
     }
     uint8_t f{input[212]};
@@ -356,14 +362,14 @@ std::optional<Bytes> blake2_f_run(ByteView input) noexcept {
 
     static_assert(intx::byte_order_is_little_endian);
     static_assert(sizeof(state.h) == 8 * 8);
-    std::memcpy(&state.h, input.data() + 4, 8 * 8);
+    std::memcpy(&state.h, input + 4, 8 * 8);
 
     uint8_t block[SILKPRE_BLAKE2B_BLOCKBYTES];
-    std::memcpy(block, input.data() + 68, SILKPRE_BLAKE2B_BLOCKBYTES);
+    std::memcpy(block, input + 68, SILKPRE_BLAKE2B_BLOCKBYTES);
 
-    std::memcpy(&state.t, input.data() + 196, 8 * 2);
+    std::memcpy(&state.t, input + 196, 8 * 2);
 
-    uint32_t r{endian::load_big_u32(input.data())};
+    uint32_t r{endian::load_big_u32(input)};
     silkpre_blake2b_compress(&state, block, r);
 
     Bytes out(8 * 8, '\0');

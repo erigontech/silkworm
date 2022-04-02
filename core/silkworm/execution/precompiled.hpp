@@ -1,5 +1,5 @@
 /*
-   Copyright 2020-2021 The Silkworm Authors
+   Copyright 2020-2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -17,6 +17,9 @@
 #ifndef SILKWORM_EXECUTION_PRECOMPILED_HPP_
 #define SILKWORM_EXECUTION_PRECOMPILED_HPP_
 
+#include <stddef.h>
+#include <stdint.h>
+
 #include <optional>
 
 #include <evmc/evmc.h>
@@ -26,46 +29,46 @@
 // See Yellow Paper, Appendix E "Precompiled Contracts"
 namespace silkworm::precompiled {
 
-using GasFunction = uint64_t (*)(ByteView input, evmc_revision) noexcept;
-using RunFunction = std::optional<Bytes> (*)(ByteView input) noexcept;
+using GasFunction = uint64_t (*)(const uint8_t* input, size_t len, evmc_revision) noexcept;
+using RunFunction = std::optional<Bytes> (*)(const uint8_t* input, size_t len) noexcept;
 
 struct Contract {
     GasFunction gas;
     RunFunction run;
 };
 
-uint64_t ecrec_gas(ByteView input, evmc_revision) noexcept;
-std::optional<Bytes> ecrec_run(ByteView input) noexcept;
+uint64_t ecrec_gas(const uint8_t* input, size_t len, evmc_revision) noexcept;
+std::optional<Bytes> ecrec_run(const uint8_t* input, size_t len) noexcept;
 
-uint64_t sha256_gas(ByteView input, evmc_revision) noexcept;
-std::optional<Bytes> sha256_run(ByteView input) noexcept;
+uint64_t sha256_gas(const uint8_t* input, size_t len, evmc_revision) noexcept;
+std::optional<Bytes> sha256_run(const uint8_t* input, size_t len) noexcept;
 
-uint64_t rip160_gas(ByteView input, evmc_revision) noexcept;
-std::optional<Bytes> rip160_run(ByteView input) noexcept;
+uint64_t rip160_gas(const uint8_t* input, size_t len, evmc_revision) noexcept;
+std::optional<Bytes> rip160_run(const uint8_t* input, size_t len) noexcept;
 
-uint64_t id_gas(ByteView input, evmc_revision) noexcept;
-std::optional<Bytes> id_run(ByteView input) noexcept;
+uint64_t id_gas(const uint8_t* input, size_t len, evmc_revision) noexcept;
+std::optional<Bytes> id_run(const uint8_t* input, size_t len) noexcept;
 
 // https://eips.ethereum.org/EIPS/eip-2565
-uint64_t expmod_gas(ByteView input, evmc_revision) noexcept;
+uint64_t expmod_gas(const uint8_t* input, size_t len, evmc_revision) noexcept;
 // https://eips.ethereum.org/EIPS/eip-198
-std::optional<Bytes> expmod_run(ByteView input) noexcept;
+std::optional<Bytes> expmod_run(const uint8_t* input, size_t len) noexcept;
 
 // https://eips.ethereum.org/EIPS/eip-196
-uint64_t bn_add_gas(ByteView input, evmc_revision) noexcept;
-std::optional<Bytes> bn_add_run(ByteView input) noexcept;
+uint64_t bn_add_gas(const uint8_t* input, size_t len, evmc_revision) noexcept;
+std::optional<Bytes> bn_add_run(const uint8_t* input, size_t len) noexcept;
 
 // https://eips.ethereum.org/EIPS/eip-196
-uint64_t bn_mul_gas(ByteView input, evmc_revision) noexcept;
-std::optional<Bytes> bn_mul_run(ByteView input) noexcept;
+uint64_t bn_mul_gas(const uint8_t* input, size_t len, evmc_revision) noexcept;
+std::optional<Bytes> bn_mul_run(const uint8_t* input, size_t len) noexcept;
 
 // https://eips.ethereum.org/EIPS/eip-197
-uint64_t snarkv_gas(ByteView input, evmc_revision) noexcept;
-std::optional<Bytes> snarkv_run(ByteView input) noexcept;
+uint64_t snarkv_gas(const uint8_t* input, size_t len, evmc_revision) noexcept;
+std::optional<Bytes> snarkv_run(const uint8_t* input, size_t len) noexcept;
 
 // https://eips.ethereum.org/EIPS/eip-152
-uint64_t blake2_f_gas(ByteView input, evmc_revision) noexcept;
-std::optional<Bytes> blake2_f_run(ByteView input) noexcept;
+uint64_t blake2_f_gas(const uint8_t* input, size_t len, evmc_revision) noexcept;
+std::optional<Bytes> blake2_f_run(const uint8_t* input, size_t len) noexcept;
 
 inline constexpr Contract kContracts[]{
     {ecrec_gas, ecrec_run},   {sha256_gas, sha256_run}, {rip160_gas, rip160_run},

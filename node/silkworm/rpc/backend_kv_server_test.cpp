@@ -24,8 +24,8 @@
 #include <catch2/catch.hpp>
 #include <grpc/grpc.h>
 
-#include <silkworm/common/log.hpp>
 #include <silkworm/common/directories.hpp>
+#include <silkworm/common/log.hpp>
 #include <silkworm/db/mdbx.hpp>
 #include <silkworm/rpc/util.hpp>
 #include <types/types.pb.h>
@@ -441,7 +441,12 @@ TEST_CASE("BackEndKvServer: RPC basic config", "[silkworm][node][rpc]") {
         CHECK(responses[1].cursorid() != 0);
     }
 
-    /*SECTION("Tx OK: cursor first", "[silkworm][node][rpc]") {
+    SECTION("Tx cursor first: OK", "[silkworm][node][rpc]") {
+        rw_txn = database_env.start_write();
+        db::Cursor rw_cursor{rw_txn, test_map_config};
+        rw_cursor.upsert(mdbx::slice{"00"}, mdbx::slice{"11"});
+        rw_txn.commit();
+
         remote::SubscribeRequest request;
         remote::Cursor open;
         open.set_op(remote::Op::OPEN);
@@ -453,15 +458,15 @@ TEST_CASE("BackEndKvServer: RPC basic config", "[silkworm][node][rpc]") {
         std::vector<remote::Cursor> requests{open, first, close};
         std::vector<remote::Pair> responses;
         const auto status = kv_client.tx(requests, responses);
-        std::cout << "status: " << status << "\n";
         CHECK(status.ok());
+        CHECK(status.error_message().empty());
         CHECK(responses.size() == 4);
         CHECK(responses[0].txid() != 0);
         CHECK(responses[1].cursorid() != 0);
-        CHECK(!responses[2].k().empty());
-        CHECK(!responses[2].v().empty());
+        CHECK(responses[2].k() == "00");
+        CHECK(responses[2].v() == "11");
         CHECK(responses[3].cursorid() == 0);
-    }*/
+    }
 
     // TODO(canepat): change using something meaningful when really implemented
     SECTION("StateChanges: return streamed state changes", "[silkworm][node][rpc]") {

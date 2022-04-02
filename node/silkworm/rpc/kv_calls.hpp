@@ -68,7 +68,7 @@ class KvVersionCallFactory : public CallFactory<remote::KV::AsyncService, KvVers
 //! Bidirectional-streaming RPC for Tx method of 'kv' gRPC protocol.
 class TxCall : public BidirectionalStreamingRpc<remote::KV::AsyncService, remote::Cursor, remote::Pair> {
   public:
-    static void set_chaindata_env(mdbx::env_managed* chaindata_env);
+    static void set_chaindata_env(mdbx::env* chaindata_env);
 
     TxCall(boost::asio::io_context& scheduler, remote::KV::AsyncService* service, grpc::ServerCompletionQueue* queue, Handlers handlers);
 
@@ -117,7 +117,7 @@ class TxCall : public BidirectionalStreamingRpc<remote::KV::AsyncService, remote
     bool send_response_pair(const mdbx::cursor::move_result& result);
     void finish_with_internal_error(const remote::Cursor* request);
 
-    static mdbx::env_managed* chaindata_env_;
+    static mdbx::env* chaindata_env_;
     static uint32_t next_cursor_id_;
 
     mdbx::txn_managed read_only_txn_;

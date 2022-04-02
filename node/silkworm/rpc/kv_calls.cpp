@@ -69,10 +69,10 @@ KvVersionCallFactory::KvVersionCallFactory()
     KvVersionCall::fill_predefined_reply();
 }
 
-mdbx::env_managed* TxCall::chaindata_env_{nullptr};
+mdbx::env* TxCall::chaindata_env_{nullptr};
 uint32_t TxCall::next_cursor_id_{0};
 
-void TxCall::set_chaindata_env(mdbx::env_managed* chaindata_env) {
+void TxCall::set_chaindata_env(mdbx::env* chaindata_env) {
     TxCall::chaindata_env_ = chaindata_env;
 }
 

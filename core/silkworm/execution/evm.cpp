@@ -155,7 +155,8 @@ evmc::result EVM::create(const evmc_message& message) noexcept {
         message.value,   // value
     };
 
-    res = execute(deploy_message, ByteView{message.input_data, message.input_size}, /*code_hash=*/nullptr);
+    res =
+        evmc::result{execute(deploy_message, ByteView{message.input_data, message.input_size}, /*code_hash=*/nullptr)};
 
     if (res.status_code == EVMC_SUCCESS) {
         const size_t code_len{res.output_size};
@@ -188,12 +189,12 @@ evmc::result EVM::create(const evmc_message& message) noexcept {
 }
 
 evmc::result EVM::call(const evmc_message& message) noexcept {
-    evmc::result res{EVMC_SUCCESS, message.gas, nullptr, 0};
+    evmc_result res{evmc_make_result(EVMC_SUCCESS, message.gas, nullptr, 0)};
 
     const auto value{intx::be::load<intx::uint256>(message.value)};
     if (message.kind != EVMC_DELEGATECALL && state_.get_balance(message.sender) < value) {
         res.status_code = EVMC_INSUFFICIENT_BALANCE;
-        return res;
+        return evmc::result{res};
     }
 
     const bool precompiled{is_precompiled(message.code_address)};
@@ -201,7 +202,7 @@ evmc::result EVM::call(const evmc_message& message) noexcept {
 
     // https://eips.ethereum.org/EIPS/eip-161
     if (value == 0 && rev >= EVMC_SPURIOUS_DRAGON && !precompiled && !state_.exists(message.code_address)) {
-        return res;
+        return evmc::result{res};
     }
 
     const auto snapshot{state_.take_snapshot()};
@@ -225,9 +226,12 @@ evmc::result EVM::call(const evmc_message& message) noexcept {
         if (gas < 0 || gas > message.gas) {
             res.status_code = EVMC_OUT_OF_GAS;
         } else {
-            const std::optional<Bytes> output{contract.run(input.data(), input.length())};
-            if (output) {
-                res = {EVMC_SUCCESS, message.gas - gas, output->data(), output->size()};
+            precompiled::Output output{contract.run(input.data(), input.length())};
+            if (output.data) {
+                res.gas_left -= gas;
+                res.output_size = output.size;
+                res.output_data = output.data;
+                res.release = evmc_free_result_memory;
             } else {
                 res.status_code = EVMC_PRECOMPILE_FAILURE;
             }
@@ -235,7 +239,7 @@ evmc::result EVM::call(const evmc_message& message) noexcept {
     } else {
         const ByteView code{state_.get_code(message.code_address)};
         if (code.empty()) {
-            return res;
+            return evmc::result{res};
         }
 
         const evmc::bytes32 code_hash{state_.get_code_hash(message.code_address)};
@@ -249,24 +253,21 @@ evmc::result EVM::call(const evmc_message& message) noexcept {
         }
     }
 
-    return res;
+    return evmc::result{res};
 }
 
-evmc::result EVM::execute(const evmc_message& msg, ByteView code, const evmc::bytes32* code_hash) noexcept {
+evmc_result EVM::execute(const evmc_message& msg, ByteView code, const evmc::bytes32* code_hash) noexcept {
     const evmc_revision rev{revision()};
 
-    evmc_result res;
     if (exo_evm) {
         EvmHost host{*this};
-        res = exo_evm->execute(exo_evm, &host.get_interface(), host.to_context(), rev, &msg, code.data(), code.size());
+        return exo_evm->execute(exo_evm, &host.get_interface(), host.to_context(), rev, &msg, code.data(), code.size());
     } else if (code_hash && advanced_analysis_cache) {
-        res = execute_with_advanced_interpreter(rev, msg, code, *code_hash);
+        return execute_with_advanced_interpreter(rev, msg, code, *code_hash);
     } else {
         // for one-off execution baseline interpreter is generally faster
-        res = execute_with_baseline_interpreter(rev, msg, code, code_hash);
+        return execute_with_baseline_interpreter(rev, msg, code, code_hash);
     }
-
-    return evmc::result{res};
 }
 
 gsl::owner<EvmoneExecutionState*> EVM::acquire_state() noexcept {

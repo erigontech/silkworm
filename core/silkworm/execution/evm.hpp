@@ -92,7 +92,7 @@ class EVM {
 
     evmc::result call(const evmc_message& message) noexcept;
 
-    evmc::result execute(const evmc_message& message, ByteView code, const evmc::bytes32* code_hash) noexcept;
+    evmc_result execute(const evmc_message& message, ByteView code, const evmc::bytes32* code_hash) noexcept;
 
     evmc_result execute_with_baseline_interpreter(evmc_revision rev, const evmc_message& message, ByteView code,
                                                   const evmc::bytes32* code_hash) noexcept;

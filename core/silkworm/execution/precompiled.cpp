@@ -44,7 +44,9 @@ namespace silkworm::precompiled {
 
 uint64_t ecrec_gas(const uint8_t*, size_t, evmc_revision) noexcept { return 3'000; }
 
-std::optional<Bytes> ecrec_run(const uint8_t* input, size_t len) noexcept {
+Output ecrec_run(const uint8_t* input, size_t len) noexcept {
+    uint8_t* out{static_cast<uint8_t*>(std::malloc(32))};
+
     static constexpr size_t kInputLen{128};
     Bytes d(input, len);
     if (d.length() < kInputLen) {
@@ -57,12 +59,12 @@ std::optional<Bytes> ecrec_run(const uint8_t* input, size_t len) noexcept {
 
     const bool homestead{false};  // See EIP-2
     if (!ecdsa::is_valid_signature(r, s, homestead)) {
-        return Bytes{};
+        return {out, 0};
     }
 
     const std::optional<ecdsa::YParityAndChainId> parity_and_id{ecdsa::v_to_y_parity_and_chain_id(v)};
     if (parity_and_id == std::nullopt || parity_and_id->chain_id != std::nullopt) {
-        return Bytes{};
+        return {out, 0};
     }
 
     /*
@@ -75,35 +77,41 @@ std::optional<Bytes> ecrec_run(const uint8_t* input, size_t len) noexcept {
     // TODO (yperbasis) : check why is necessary to return a Byte[32] while actually the first 12 bytes are zeroes
 
     const std::optional<Bytes> key{ecdsa::recover(d.substr(0, 32), d.substr(64, 64), parity_and_id->odd)};
-    if (key.has_value() && key->at(0) == 4u) {
-        // Ignore the first byte of the public key
-        const ethash::hash256 hash{ethash::keccak256(key->data() + 1, key->length() - 1)};
-        Bytes out(32, '\0');
-        std::memcpy(&out[12], &hash.bytes[12], 32 - 12);
-        return out;
+    if (!key || key->at(0) != 4u) {
+        return {out, 0};
     }
-    return Bytes{};
+
+    // Ignore the first byte of the public key
+    const ethash::hash256 hash{ethash::keccak256(key->data() + 1, key->length() - 1)};
+    std::memset(out, 0, 12);
+    std::memcpy(&out[12], &hash.bytes[12], 32 - 12);
+    return {out, 32};
 }
 
 uint64_t sha256_gas(const uint8_t*, size_t len, evmc_revision) noexcept { return 60 + 12 * ((len + 31) / 32); }
 
-std::optional<Bytes> sha256_run(const uint8_t* input, size_t len) noexcept {
-    Bytes out(32, '\0');
-    silkpre_sha256(out.data(), input, len, /*use_cpu_extensions=*/true);
-    return out;
+Output sha256_run(const uint8_t* input, size_t len) noexcept {
+    uint8_t* out{static_cast<uint8_t*>(std::malloc(32))};
+    silkpre_sha256(out, input, len, /*use_cpu_extensions=*/true);
+    return {out, 32};
 }
 
 uint64_t rip160_gas(const uint8_t*, size_t len, evmc_revision) noexcept { return 600 + 120 * ((len + 31) / 32); }
 
-std::optional<Bytes> rip160_run(const uint8_t* input, size_t len) noexcept {
-    Bytes out(32, '\0');
+Output rip160_run(const uint8_t* input, size_t len) noexcept {
+    uint8_t* out{static_cast<uint8_t*>(std::malloc(32))};
+    std::memset(out, 0, 12);
     silkpre_rmd160(&out[12], input, len);
-    return out;
+    return {out, 32};
 }
 
 uint64_t id_gas(const uint8_t*, size_t len, evmc_revision) noexcept { return 15 + 3 * ((len + 31) / 32); }
 
-std::optional<Bytes> id_run(const uint8_t* input, size_t len) noexcept { return Bytes(input, len); }
+Output id_run(const uint8_t* input, size_t len) noexcept {
+    uint8_t* out{static_cast<uint8_t*>(std::malloc(len))};
+    std::memcpy(out, input, len);
+    return {out, len};
+}
 
 static intx::uint256 mult_complexity_eip198(const intx::uint256& x) noexcept {
     const intx::uint256 x_squared{x * x};
@@ -185,22 +193,23 @@ uint64_t expmod_gas(const uint8_t* ptr, size_t len, evmc_revision rev) noexcept 
     }
 }
 
-std::optional<Bytes> expmod_run(const uint8_t* ptr, size_t len) noexcept {
+Output expmod_run(const uint8_t* ptr, size_t len) noexcept {
     Bytes buffer;
     ByteView input{ptr, len};
     input = right_pad(input, 3 * 32, buffer);
 
-    uint64_t base_len{endian::load_big_u64(&input[24])};
+    const uint64_t base_len{endian::load_big_u64(&input[24])};
     input.remove_prefix(32);
 
-    uint64_t exponent_len{endian::load_big_u64(&input[24])};
+    const uint64_t exponent_len{endian::load_big_u64(&input[24])};
     input.remove_prefix(32);
 
-    uint64_t modulus_len{endian::load_big_u64(&input[24])};
+    const uint64_t modulus_len{endian::load_big_u64(&input[24])};
     input.remove_prefix(32);
 
     if (modulus_len == 0) {
-        return Bytes{};
+        uint8_t* out{static_cast<uint8_t*>(std::malloc(1))};
+        return {out, 0};
     }
 
     input = right_pad(input, base_len + exponent_len + modulus_len, buffer);
@@ -223,12 +232,15 @@ std::optional<Bytes> expmod_run(const uint8_t* ptr, size_t len) noexcept {
     mpz_init(modulus);
     mpz_import(modulus, modulus_len, 1, 1, 0, 0, input.data());
 
+    uint8_t* out{static_cast<uint8_t*>(std::malloc(modulus_len))};
+    std::memset(out, 0, modulus_len);
+
     if (mpz_sgn(modulus) == 0) {
         mpz_clear(modulus);
         mpz_clear(exponent);
         mpz_clear(base);
 
-        return Bytes(modulus_len, '\0');
+        return {out, modulus_len};
     }
 
     mpz_t result;
@@ -236,23 +248,22 @@ std::optional<Bytes> expmod_run(const uint8_t* ptr, size_t len) noexcept {
 
     mpz_powm(result, base, exponent, modulus);
 
-    Bytes out(modulus_len, '\0');
     // export as little-endian
-    mpz_export(out.data(), nullptr, -1, 1, 0, 0, result);
+    mpz_export(out, nullptr, -1, 1, 0, 0, result);
     // and convert to big-endian
-    std::reverse(out.begin(), out.end());
+    std::reverse(out, out + modulus_len);
 
     mpz_clear(result);
     mpz_clear(modulus);
     mpz_clear(exponent);
     mpz_clear(base);
 
-    return out;
+    return {out, modulus_len};
 }
 
 uint64_t bn_add_gas(const uint8_t*, size_t, evmc_revision rev) noexcept { return rev >= EVMC_ISTANBUL ? 150 : 500; }
 
-std::optional<Bytes> bn_add_run(const uint8_t* ptr, size_t len) noexcept {
+Output bn_add_run(const uint8_t* ptr, size_t len) noexcept {
     Bytes buffer;
     ByteView input{ptr, len};
     input = right_pad(input, 128, buffer);
@@ -261,23 +272,27 @@ std::optional<Bytes> bn_add_run(const uint8_t* ptr, size_t len) noexcept {
 
     std::optional<libff::alt_bn128_G1> x{silkpre::decode_g1_element(input.data())};
     if (!x) {
-        return std::nullopt;
+        return {nullptr, 0};
     }
 
     std::optional<libff::alt_bn128_G1> y{silkpre::decode_g1_element(&input[64])};
     if (!y) {
-        return std::nullopt;
+        return {nullptr, 0};
     }
 
     libff::alt_bn128_G1 sum{*x + *y};
-    return silkpre::encode_g1_element(sum);
+    const std::basic_string<uint8_t> res{silkpre::encode_g1_element(sum)};
+
+    uint8_t* out{static_cast<uint8_t*>(std::malloc(res.length()))};
+    std::memcpy(out, res.data(), res.length());
+    return {out, res.length()};
 }
 
 uint64_t bn_mul_gas(const uint8_t*, size_t, evmc_revision rev) noexcept {
     return rev >= EVMC_ISTANBUL ? 6'000 : 40'000;
 }
 
-std::optional<Bytes> bn_mul_run(const uint8_t* ptr, size_t len) noexcept {
+Output bn_mul_run(const uint8_t* ptr, size_t len) noexcept {
     Bytes buffer;
     ByteView input{ptr, len};
     input = right_pad(input, 96, buffer);
@@ -286,13 +301,17 @@ std::optional<Bytes> bn_mul_run(const uint8_t* ptr, size_t len) noexcept {
 
     std::optional<libff::alt_bn128_G1> x{silkpre::decode_g1_element(input.data())};
     if (!x) {
-        return std::nullopt;
+        return {nullptr, 0};
     }
 
     silkpre::Scalar n{silkpre::to_scalar(&input[64])};
 
     libff::alt_bn128_G1 product{n * *x};
-    return silkpre::encode_g1_element(product);
+    const std::basic_string<uint8_t> res{silkpre::encode_g1_element(product)};
+
+    uint8_t* out{static_cast<uint8_t*>(std::malloc(res.length()))};
+    std::memcpy(out, res.data(), res.length());
+    return {out, res.length()};
 }
 
 static constexpr size_t kSnarkvStride{192};
@@ -302,9 +321,9 @@ uint64_t snarkv_gas(const uint8_t*, size_t len, evmc_revision rev) noexcept {
     return rev >= EVMC_ISTANBUL ? 34'000 * k + 45'000 : 80'000 * k + 100'000;
 }
 
-std::optional<Bytes> snarkv_run(const uint8_t* input, size_t len) noexcept {
+Output snarkv_run(const uint8_t* input, size_t len) noexcept {
     if (len % kSnarkvStride != 0) {
-        return std::nullopt;
+        return {nullptr, 0};
     }
     size_t k{len / kSnarkvStride};
 
@@ -317,11 +336,11 @@ std::optional<Bytes> snarkv_run(const uint8_t* input, size_t len) noexcept {
     for (size_t i{0}; i < k; ++i) {
         std::optional<alt_bn128_G1> a{silkpre::decode_g1_element(&input[i * kSnarkvStride])};
         if (!a) {
-            return std::nullopt;
+            return {nullptr, 0};
         }
         std::optional<alt_bn128_G2> b{silkpre::decode_g2_element(&input[i * kSnarkvStride + 64])};
         if (!b) {
-            return std::nullopt;
+            return {nullptr, 0};
         }
 
         if (a->is_zero() || b->is_zero()) {
@@ -331,11 +350,12 @@ std::optional<Bytes> snarkv_run(const uint8_t* input, size_t len) noexcept {
         accumulator = accumulator * alt_bn128_miller_loop(alt_bn128_precompute_G1(*a), alt_bn128_precompute_G2(*b));
     }
 
-    Bytes out(32, '\0');
+    uint8_t* out{static_cast<uint8_t*>(std::malloc(32))};
+    std::memset(out, 0, 32);
     if (alt_bn128_final_exponentiation(accumulator) == one) {
         out[31] = 1;
     }
-    return out;
+    return {out, 32};
 }
 
 uint64_t blake2_f_gas(const uint8_t* input, size_t len, evmc_revision) noexcept {
@@ -346,13 +366,13 @@ uint64_t blake2_f_gas(const uint8_t* input, size_t len, evmc_revision) noexcept 
     return endian::load_big_u32(input);
 }
 
-std::optional<Bytes> blake2_f_run(const uint8_t* input, size_t len) noexcept {
+Output blake2_f_run(const uint8_t* input, size_t len) noexcept {
     if (len != 213) {
-        return std::nullopt;
+        return {nullptr, 0};
     }
     uint8_t f{input[212]};
     if (f != 0 && f != 1) {
-        return std::nullopt;
+        return {nullptr, 0};
     }
 
     SilkpreBlake2bState state{};
@@ -372,9 +392,9 @@ std::optional<Bytes> blake2_f_run(const uint8_t* input, size_t len) noexcept {
     uint32_t r{endian::load_big_u32(input)};
     silkpre_blake2b_compress(&state, block, r);
 
-    Bytes out(8 * 8, '\0');
+    uint8_t* out{static_cast<uint8_t*>(std::malloc(64))};
     std::memcpy(&out[0], &state.h[0], 8 * 8);
-    return out;
+    return {out, 64};
 }
 
 }  // namespace silkworm::precompiled

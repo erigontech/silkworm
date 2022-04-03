@@ -16,10 +16,21 @@
 
 #include "recovery_worker.hpp"
 
+#include <silkpre/ecdsa.h>
+
 #include <silkworm/common/log.hpp>
 #include <silkworm/common/stopwatch.hpp>
 
 namespace silkworm::stagedsync::recovery {
+
+RecoveryWorker::RecoveryWorker(uint32_t id)
+    : Worker("Address recoverer #" + std::to_string(id)),
+      id_(id),
+      context_{secp256k1_context_create(SILKPRE_SECP256K1_CONTEXT_FLAGS)} {
+    if (!context_) {
+        throw std::runtime_error("Could not create elliptic curve context");
+    }
+}
 
 RecoveryWorker::~RecoveryWorker() {
     if (context_) {
@@ -51,8 +62,8 @@ void RecoveryWorker::work() {
                 throw std::runtime_error("Operation cancelled");
             }
 
-            if (!ecdsa::recover_address(package.tx_from.bytes, package.tx_hash.bytes, package.tx_signature,
-                                        package.odd_y_parity, context_)) {
+            if (!silkpre_recover_address(package.tx_from.bytes, package.tx_hash.bytes, package.tx_signature,
+                                         package.odd_y_parity, context_)) {
                 throw std::runtime_error("Unable to recover from address in block " + std::to_string(block_num));
             }
             ++processed;

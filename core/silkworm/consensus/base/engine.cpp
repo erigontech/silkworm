@@ -18,7 +18,6 @@
 
 #include <silkworm/chain/protocol_param.hpp>
 #include <silkworm/common/as_range.hpp>
-#include <silkworm/crypto/ecdsa.hpp>
 #include <silkworm/rlp/encode_vector.hpp>
 #include <silkworm/trie/vector_root.hpp>
 

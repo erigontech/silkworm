@@ -96,28 +96,6 @@ set_target_properties(
   INTERFACE_INCLUDE_DIRECTORIES ${GMP_INCLUDE_DIR}
 )
 
-# secp256k1
-add_library(secp256k1 third_party/secp256k1/src/secp256k1.c)
-
-if(MSVC)
-
-  target_link_libraries(secp256k1 PRIVATE gmp)
-  target_compile_definitions(secp256k1 PUBLIC USE_NUM_GMP USE_FIELD_INV_NUM USE_SCALAR_INV_NUM)
-  target_compile_definitions(secp256k1 PUBLIC USE_FIELD_10X26 USE_SCALAR_8X32)
-
-  target_compile_options(secp256k1 PRIVATE /w) # Not much we can do about warnings
-
-else()
-
-  target_compile_definitions(secp256k1 PUBLIC USE_NUM_NONE USE_FIELD_INV_BUILTIN USE_SCALAR_INV_BUILTIN)
-  target_compile_definitions(secp256k1 PUBLIC USE_FIELD_5X52 USE_SCALAR_4X64 HAVE___INT128)
-
-endif()
-
-target_compile_definitions(secp256k1 PUBLIC ECMULT_WINDOW_SIZE=15 ECMULT_GEN_PREC_BITS=4 USE_ENDOMORPHISM)
-target_compile_definitions(secp256k1 PUBLIC ENABLE_MODULE_RECOVERY)
-target_include_directories(secp256k1 PRIVATE secp256k1 INTERFACE third_party/secp256k1/include)
-
 if(NOT SILKWORM_CORE_ONLY)
 
   # Roaring Bitmaps

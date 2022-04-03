@@ -20,10 +20,10 @@
 #include <cstring>
 
 #include <ethash/keccak.hpp>
+#include <silkpre/ecdsa.h>
 #include <silkpre/y_parity_and_chain_id.hpp>
 
 #include <silkworm/common/util.hpp>
-#include <silkworm/crypto/ecdsa.hpp>
 #include <silkworm/rlp/encode_vector.hpp>
 
 namespace silkworm {
@@ -390,7 +390,8 @@ void Transaction::recover_sender() {
     intx::be::unsafe::store(signature + kHashLength, s);
 
     from = evmc::address{};
-    if (!ecdsa::recover_address(from->bytes, hash.bytes, signature, odd_y_parity)) {
+    thread_local auto context{secp256k1_context_create(SILKPRE_SECP256K1_CONTEXT_FLAGS)};
+    if (!silkpre_recover_address(from->bytes, hash.bytes, signature, odd_y_parity, context)) {
         from = std::nullopt;
     }
 }

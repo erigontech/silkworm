@@ -22,7 +22,6 @@
 #include <silkworm/consensus/ethash/engine.hpp>
 #include <silkworm/consensus/merge/engine.hpp>
 #include <silkworm/consensus/noproof/engine.hpp>
-#include <silkworm/crypto/ecdsa.hpp>
 
 namespace silkworm::consensus {
 

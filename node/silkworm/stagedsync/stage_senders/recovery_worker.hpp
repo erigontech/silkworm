@@ -1,5 +1,5 @@
 /*
-   Copyright 2020-2021 The Silkworm Authors
+   Copyright 2020-2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -18,6 +18,8 @@
 #ifndef SILKWORM_STAGEDSYNC_RECOVERY_WORKER_HPP_
 #define SILKWORM_STAGEDSYNC_RECOVERY_WORKER_HPP_
 
+#include <secp256k1.h>
+
 #include <atomic>
 #include <csignal>
 #include <string>
@@ -26,7 +28,6 @@
 #include <ethash/keccak.hpp>
 
 #include <silkworm/concurrency/worker.hpp>
-#include <silkworm/crypto/ecdsa.hpp>
 #include <silkworm/db/util.hpp>
 
 namespace silkworm::stagedsync::recovery {
@@ -47,12 +48,8 @@ class RecoveryWorker final : public silkworm::Worker {
     //! \brief Creates an instance of recovery worker
     //! \param [in] id : unique identifier for this instance
     //! \remarks data_size is expressed as number of transactions to recover per batch times address size
-    explicit RecoveryWorker(uint32_t id)
-        : Worker("Address recoverer #" + std::to_string(id)), id_(id), context_{ecdsa::create_context()} {
-        if (!context_) {
-            throw std::runtime_error("Could not create elliptic curve context");
-        }
-    };
+    explicit RecoveryWorker(uint32_t id);
+
     ~RecoveryWorker() final;
 
     //! \brief Feed the worker with a new set of data to process

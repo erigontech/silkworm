@@ -565,12 +565,11 @@ TEST_CASE("BackEndKvServer E2E: empty node settings", "[silkworm][node][rpc]") {
     }
 }
 
-TEST_CASE("BackEndKvServer: RPC custom config OK", "[silkworm][node][rpc]") {
+TEST_CASE("BackEndKvServer E2E: mainnet chain, etherbase set", "[silkworm][node][rpc]") {
     NodeSettings node_settings;
     node_settings.chain_config = *silkworm::lookup_chain_config("mainnet");
     node_settings.etherbase = evmc::address{};
-    node_settings.sentry_api_addr = kTestSentryAddress1 + "," + kTestSentryAddress2;
-    BackEndKvE2eTest test{silkworm::log::Level::kNone, node_settings, {grpc::Status::OK, grpc::Status::OK}};
+    BackEndKvE2eTest test{silkworm::log::Level::kNone, node_settings};
     auto backend_client = *test.backend_client;
 
     SECTION("Etherbase: return coinbase address", "[silkworm][node][rpc]") {
@@ -587,6 +586,60 @@ TEST_CASE("BackEndKvServer: RPC custom config OK", "[silkworm][node][rpc]") {
         CHECK(status.ok());
         CHECK(response.id() == kMainnetConfig.chain_id);
     }
+}
+
+TEST_CASE("BackEndKvServer E2E: one Sentry, status OK", "[silkworm][node][rpc]") {
+    NodeSettings node_settings;
+    node_settings.sentry_api_addr = kTestSentryAddress1;
+    BackEndKvE2eTest test{silkworm::log::Level::kNone, node_settings, {grpc::Status::OK}};
+    auto backend_client = *test.backend_client;
+
+    SECTION("NetPeerCount: return peer count", "[silkworm][node][rpc]") {
+        remote::NetPeerCountReply response;
+        const auto status = backend_client.net_peer_count(&response);
+        CHECK(status.ok());
+        CHECK(response.count() == kTestSentryPeerCount);
+    }
+
+    SECTION("NodeInfo: return information about nodes", "[silkworm][node][rpc]") {
+        remote::NodesInfoRequest request;
+        request.set_limit(0);
+        remote::NodesInfoReply response;
+        const auto status = backend_client.node_info(request, &response);
+        CHECK(status.ok());
+        CHECK(response.nodesinfo_size() == 1);
+        CHECK(response.nodesinfo(0).id() == kTestSentryPeerId);
+        CHECK(response.nodesinfo(0).name() == kTestSentryPeerName);
+    }
+}
+
+TEST_CASE("BackEndKvServer E2E: one Sentry, status KO", "[silkworm][node][rpc]") {
+    NodeSettings node_settings;
+    node_settings.sentry_api_addr = kTestSentryAddress1;
+    grpc::Status DEADLINE_EXCEEDED_ERROR{grpc::StatusCode::DEADLINE_EXCEEDED, "timeout"};
+    BackEndKvE2eTest test{silkworm::log::Level::kNone, node_settings, {DEADLINE_EXCEEDED_ERROR}};
+    auto backend_client = *test.backend_client;
+
+    SECTION("NetPeerCount: return expected status error", "[silkworm][node][rpc]") {
+        remote::NetPeerCountReply response;
+        const auto status = backend_client.net_peer_count(&response);
+        CHECK(status == DEADLINE_EXCEEDED_ERROR);
+    }
+
+    SECTION("NodeInfo: return expected status error", "[silkworm][node][rpc]") {
+        remote::NodesInfoRequest request;
+        request.set_limit(0);
+        remote::NodesInfoReply response;
+        const auto status = backend_client.node_info(request, &response);
+        CHECK(status == DEADLINE_EXCEEDED_ERROR);
+    }
+}
+
+TEST_CASE("BackEndKvServer E2E: more than one Sentry, all status OK", "[silkworm][node][rpc]") {
+    NodeSettings node_settings;
+    node_settings.sentry_api_addr = kTestSentryAddress1 + "," + kTestSentryAddress2;
+    BackEndKvE2eTest test{silkworm::log::Level::kNone, node_settings, {grpc::Status::OK, grpc::Status::OK}};
+    auto backend_client = *test.backend_client;
 
     SECTION("NetPeerCount: return peer count", "[silkworm][node][rpc]") {
         remote::NetPeerCountReply response;
@@ -610,10 +663,8 @@ TEST_CASE("BackEndKvServer: RPC custom config OK", "[silkworm][node][rpc]") {
     }
 }
 
-TEST_CASE("BackEndKvServer: RPC custom config KO", "[silkworm][node][rpc]") {
+TEST_CASE("BackEndKvServer E2E: more than one Sentry, at least one status KO", "[silkworm][node][rpc]") {
     NodeSettings node_settings;
-    node_settings.chain_config = *silkworm::lookup_chain_config("mainnet");
-    node_settings.etherbase = evmc::address{};
     node_settings.sentry_api_addr = kTestSentryAddress1 + "," + kTestSentryAddress2;
     BackEndKvE2eTest test{silkworm::log::Level::kNone, node_settings, {grpc::Status::OK, grpc::Status::CANCELLED}};
     auto backend_client = *test.backend_client;
@@ -630,6 +681,29 @@ TEST_CASE("BackEndKvServer: RPC custom config KO", "[silkworm][node][rpc]") {
         remote::NodesInfoReply response;
         const auto status = backend_client.node_info(request, &response);
         CHECK(status == grpc::Status::CANCELLED);
+    }
+}
+
+TEST_CASE("BackEndKvServer E2E: more than one Sentry, all status KO", "[silkworm][node][rpc]") {
+    NodeSettings node_settings;
+    node_settings.sentry_api_addr = kTestSentryAddress1 + "," + kTestSentryAddress2;
+    grpc::Status INTERNAL_ERROR{grpc::StatusCode::INTERNAL, "internal error"};
+    grpc::Status DEADLINE_EXCEEDED_ERROR{grpc::StatusCode::DEADLINE_EXCEEDED, "timeout"};
+    BackEndKvE2eTest test{silkworm::log::Level::kNone, node_settings, {INTERNAL_ERROR, DEADLINE_EXCEEDED_ERROR}};
+    auto backend_client = *test.backend_client;
+
+    SECTION("NetPeerCount: return expected status error", "[silkworm][node][rpc]") {
+        remote::NetPeerCountReply response;
+        const auto status = backend_client.net_peer_count(&response);
+        CHECK((status == INTERNAL_ERROR || status == DEADLINE_EXCEEDED_ERROR));
+    }
+
+    SECTION("NodeInfo: return expected status error", "[silkworm][node][rpc]") {
+        remote::NodesInfoRequest request;
+        request.set_limit(0);
+        remote::NodesInfoReply response;
+        const auto status = backend_client.node_info(request, &response);
+        CHECK((status == INTERNAL_ERROR || status == DEADLINE_EXCEEDED_ERROR));
     }
 }
 

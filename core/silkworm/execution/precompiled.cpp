@@ -226,7 +226,7 @@ Output expmod_run(const uint8_t* ptr, size_t len) noexcept {
         mpz_clear(exponent);
         mpz_clear(base);
 
-        return {out, modulus_len};
+        return {out, static_cast<size_t>(modulus_len)};
     }
 
     mpz_t result;
@@ -244,7 +244,7 @@ Output expmod_run(const uint8_t* ptr, size_t len) noexcept {
     mpz_clear(exponent);
     mpz_clear(base);
 
-    return {out, modulus_len};
+    return {out, static_cast<size_t>(modulus_len)};
 }
 
 uint64_t bn_add_gas(const uint8_t*, size_t, evmc_revision rev) noexcept { return rev >= EVMC_ISTANBUL ? 150 : 500; }

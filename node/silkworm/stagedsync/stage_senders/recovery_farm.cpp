@@ -19,6 +19,8 @@
 #include <functional>
 #include <mutex>
 
+#include <silkpre/y_parity_and_chain_id.hpp>
+
 #include <silkworm/common/as_range.hpp>
 #include <silkworm/common/assert.hpp>
 #include <silkworm/common/endian.hpp>
@@ -318,7 +320,7 @@ StageResult RecoveryFarm::transform_and_fill_batch(uint64_t block_num, const std
                 break;
         }
 
-        if (!silkworm::ecdsa::is_valid_signature(transaction.r, transaction.s, has_homestead)) {
+        if (!silkpre::is_valid_signature(transaction.r, transaction.s, has_homestead)) {
             log::Error() << "Got invalid signature for transaction #" << tx_id << " in block #" << block_num;
             return StageResult::kInvalidTransaction;
         }
@@ -480,7 +482,6 @@ StageResult RecoveryFarm::fill_canonical_headers(BlockNum from, BlockNum to) noe
 }
 
 void RecoveryFarm::task_completed_handler(RecoveryWorker* sender) {
-
     std::scoped_lock lck(workers_mtx_);
     harvestable_workers_.push(sender->get_id());
     if (workers_in_flight_) {
@@ -490,7 +491,6 @@ void RecoveryFarm::task_completed_handler(RecoveryWorker* sender) {
 }
 
 void RecoveryFarm::worker_completed_handler(Worker* sender) {
-
     std::scoped_lock lck(workers_mtx_);
     if (workers_in_flight_) {
         workers_in_flight_--;

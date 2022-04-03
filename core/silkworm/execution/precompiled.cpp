@@ -27,6 +27,7 @@
 #include <silkpre/rmd160.h>
 #include <silkpre/sha256.h>
 #include <silkpre/snark.hpp>
+#include <silkpre/y_parity_and_chain_id.hpp>
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wold-style-cast"
@@ -58,11 +59,11 @@ Output ecrec_run(const uint8_t* input, size_t len) noexcept {
     const auto s{intx::be::unsafe::load<intx::uint256>(&d[96])};
 
     const bool homestead{false};  // See EIP-2
-    if (!ecdsa::is_valid_signature(r, s, homestead)) {
+    if (!silkpre::is_valid_signature(r, s, homestead)) {
         return {out, 0};
     }
 
-    const std::optional<ecdsa::YParityAndChainId> parity_and_id{ecdsa::v_to_y_parity_and_chain_id(v)};
+    const std::optional<silkpre::YParityAndChainId> parity_and_id{silkpre::v_to_y_parity_and_chain_id(v)};
     if (parity_and_id == std::nullopt || parity_and_id->chain_id != std::nullopt) {
         return {out, 0};
     }

@@ -21,41 +21,11 @@
 
 #include <optional>
 
-#include <intx/intx.hpp>
 #include <secp256k1_recovery.h>
 
 #include <silkworm/common/base.hpp>
 
 namespace silkworm::ecdsa {
-
-inline constexpr auto kSecp256k1n{
-    intx::from_string<intx::uint256>("0xfffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141")};
-
-inline constexpr auto kSecp256k1Halfn{kSecp256k1n >> 1};
-
-struct YParityAndChainId {
-    bool odd{false};
-    std::optional<intx::uint256> chain_id{std::nullopt};  // EIP-155
-};
-
-//! \brief Calculates Y parity from signature's V.
-//! \param [in] v : signature V
-//! \return Y parity and eventually chain Id
-//! \remarks chain_id is always returned unless v ∈ {27, 28}
-//! \see https://eips.ethereum.org/EIPS/eip-155.
-std::optional<YParityAndChainId> v_to_y_parity_and_chain_id(const intx::uint256& v) noexcept;
-
-//! \see https://eips.ethereum.org/EIPS/eip-155
-intx::uint256 y_parity_and_chain_id_to_v(bool odd, const std::optional<intx::uint256>& chain_id) noexcept;
-
-// Verifies whether the signature values are valid with
-// the given chain rules.
-//! Verifies whether the signature values are valid with the provided chain rules
-//! \param [in] r : signature's r
-//! \param [in] s : signature's s
-//! \param [in] homestead : whether the chain has homestead rules
-//! \return True or false
-bool is_valid_signature(const intx::uint256& r, const intx::uint256& s, bool homestead) noexcept;
 
 //! \brief Creates a secp2561 context
 //! \param [in] flags : creation flags

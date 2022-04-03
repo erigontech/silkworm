@@ -1,5 +1,5 @@
 /*
-   Copyright 2020-2021 The Silkworm Authors
+   Copyright 2020-2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -51,15 +51,11 @@ void RecoveryWorker::work() {
                 throw std::runtime_error("Operation cancelled");
             }
 
-            std::optional<evmc::address> recovered_address{
-                ecdsa::recover_address(package.tx_hash.bytes, package.tx_signature, package.odd_y_parity, context_)};
-
-            if (recovered_address.has_value()) {
-                memcpy(package.tx_from.bytes, recovered_address.value().bytes, sizeof(evmc::address));
-            } else {
+            if (!ecdsa::recover_address(package.tx_from.bytes, package.tx_hash.bytes, package.tx_signature,
+                                        package.odd_y_parity, context_)) {
                 throw std::runtime_error("Unable to recover from address in block " + std::to_string(block_num));
             }
-            processed++;
+            ++processed;
         }
 
         // Some measurements
@@ -75,4 +71,5 @@ void RecoveryWorker::work() {
         signal_task_completed(this);
     }
 }
+
 }  // namespace silkworm::stagedsync::recovery

@@ -93,19 +93,23 @@ std::optional<Bytes> recover(ByteView message, ByteView signature, bool odd_y_pa
     return out;
 }
 
-std::optional<evmc::address> public_key_to_address(const Bytes& public_key) noexcept {
+//! Tries extract address from recovered public key
+//! \param [in] public_key: The recovered public key
+//! \return Whether the recovery has succeeded.
+static bool public_key_to_address(uint8_t* out, const Bytes& public_key) noexcept {
     if (public_key.length() != 65 || public_key[0] != 4u) {
-        return std::nullopt;
+        return false;
     }
     // Ignore first byte of public key
     const auto key_hash{ethash::keccak256(public_key.data() + 1, 64)};
-    return evmc::address(*reinterpret_cast<const evmc_address*>(&key_hash.bytes[12]));
+    std::memcpy(out, &key_hash.bytes[12], 20);
+    return true;
 }
 
-std::optional<evmc::address> recover_address(ByteView message, ByteView signature, bool odd_y_parity,
-                                             secp256k1_context* context) noexcept {
+bool recover_address(uint8_t* out, ByteView message, ByteView signature, bool odd_y_parity,
+                     secp256k1_context* context) noexcept {
     const auto recovered_public_key{recover(message, signature, odd_y_parity, context)};
-    return public_key_to_address(recovered_public_key.value_or(Bytes{}));
+    return public_key_to_address(out, recovered_public_key.value_or(Bytes{}));
 }
 
 }  // namespace silkworm::ecdsa

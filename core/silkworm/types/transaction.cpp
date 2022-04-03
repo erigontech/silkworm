@@ -388,8 +388,10 @@ void Transaction::recover_sender() {
     intx::be::unsafe::store(signature, r);
     intx::be::unsafe::store(signature + kHashLength, s);
 
-    // Might still return std::nullopt if the recovery fails
-    from = ecdsa::recover_address(hash.bytes, signature, odd_y_parity);
+    from = evmc::address{};
+    if (!ecdsa::recover_address(from->bytes, hash.bytes, signature, odd_y_parity)) {
+        from = std::nullopt;
+    }
 }
 
 intx::uint256 Transaction::priority_fee_per_gas(const intx::uint256& base_fee_per_gas) const {

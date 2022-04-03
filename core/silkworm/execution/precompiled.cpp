@@ -69,7 +69,7 @@ Output ecrec_run(const uint8_t* input, size_t len) noexcept {
     }
 
     std::memset(out, 0, 12);
-    if (!ecdsa::recover_address(out + 12, d.substr(0, 32), d.substr(64, 64), parity_and_id->odd)) {
+    if (!ecdsa::recover_address(out + 12, &d[0], &d[64], parity_and_id->odd)) {
         return {out, 0};
     }
     return {out, 32};

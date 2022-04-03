@@ -16,23 +16,26 @@
 
 #include "ecdsa.hpp"
 
+#include <optional>
+
 #include <ethash/hash_types.hpp>
 #include <ethash/keccak.hpp>
 #include <secp256k1_recovery.h>
+
+#include <silkworm/common/base.hpp>
 
 namespace silkworm::ecdsa {
 
 secp256k1_context* create_context(uint32_t flags) { return secp256k1_context_create(flags); }
 
-std::optional<Bytes> recover(ByteView message, ByteView signature, bool odd_y_parity,
+//! \brief Tries recover public key used for message signing.
+//! \return An optional Bytes. Should it has no value the recovery has failed
+//! This is different from recover_address as the whole 64 bytes are returned.
+std::optional<Bytes> recover(const uint8_t message[32], const uint8_t signature[64], bool odd_y_parity,
                              secp256k1_context* context) noexcept {
     static secp256k1_context* static_context{create_context()};
     if (!context) {
         context = static_context;
-    }
-
-    if (message.length() != 32 || signature.length() != 64) {
-        return std::nullopt;
     }
 
     secp256k1_ecdsa_recoverable_signature sig;
@@ -64,7 +67,7 @@ static bool public_key_to_address(uint8_t* out, const Bytes& public_key) noexcep
     return true;
 }
 
-bool recover_address(uint8_t* out, ByteView message, ByteView signature, bool odd_y_parity,
+bool recover_address(uint8_t* out, const uint8_t message[32], const uint8_t signature[64], bool odd_y_parity,
                      secp256k1_context* context) noexcept {
     const auto recovered_public_key{recover(message, signature, odd_y_parity, context)};
     return public_key_to_address(out, recovered_public_key.value_or(Bytes{}));

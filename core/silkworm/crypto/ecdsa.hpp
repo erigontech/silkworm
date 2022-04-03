@@ -19,11 +19,10 @@
 
 // See Yellow Paper, Appendix F "Signing Transactions"
 
-#include <optional>
+#include <stddef.h>
+#include <stdint.h>
 
 #include <secp256k1_recovery.h>
-
-#include <silkworm/common/base.hpp>
 
 namespace silkworm::ecdsa {
 
@@ -33,24 +32,14 @@ namespace silkworm::ecdsa {
 //! \remarks Each thread should have its own context
 secp256k1_context* create_context(uint32_t flags = SECP256K1_CONTEXT_SIGN | SECP256K1_CONTEXT_VERIFY);
 
-//! \brief Tries recover public key used for message signing.
-//! \param [in] message : the signed message
-//! \param [in] signature : the signature
-//! \param [in] odd_y_parity : whether y parity is odd
-//! \param [in] context : a pointer to an existing context. Should it be nullptr a default context is used
-//! \return An optional Bytes. Should it has no value the recovery has failed
-//! This is different from recover_address as the whole 64 bytes are returned.
-std::optional<Bytes> recover(ByteView message, ByteView signature, bool odd_y_parity,
-                             secp256k1_context* context = nullptr) noexcept;
-
 //! \brief Tries recover the address used for message signing
 //! \param [in] message : the signed message
 //! \param [in] signature : the signature
 //! \param [in] odd_y_parity : whether y parity is odd
-//! \param [in] context : a pointer to an existing context. Should it be nullptr a default context is used
+//! \param [in] context: a pointer to an existing context. Should it be nullptr a default context is used
 //! \return Whether the recovery has succeeded.
-[[nodiscard]] bool recover_address(uint8_t* out, ByteView message, ByteView signature, bool odd_y_parity,
-                                   secp256k1_context* context = nullptr) noexcept;
+[[nodiscard]] bool recover_address(uint8_t* out, const uint8_t message[32], const uint8_t signature[64],
+                                   bool odd_y_parity, secp256k1_context* context = nullptr) noexcept;
 
 }  // namespace silkworm::ecdsa
 

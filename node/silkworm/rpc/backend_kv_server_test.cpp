@@ -18,6 +18,7 @@
 
 #include <memory>
 #include <string>
+#include <sstream>
 #include <thread>
 #include <vector>
 
@@ -132,12 +133,123 @@ class KvClient {
   private:
     remote::KV::StubInterface* stub_;
 };
+
+const uint64_t kTestSentryPeerCount{10};
+constexpr const char* kTestSentryPeerId{"peer_id"};
+constexpr const char* kTestSentryPeerName{"peer_name"};
+
+class SentryService : public sentry::Sentry::Service {
+  public:
+    explicit SentryService(grpc::Status status) : status_(status) {}
+
+    std::unique_ptr<grpc::Server> build_and_start(const std::string& server_address) {
+        grpc::ServerBuilder builder;
+        builder.AddListeningPort(server_address, grpc::InsecureServerCredentials());
+        builder.RegisterService(this);
+        return builder.BuildAndStart();
+    }
+
+    grpc::Status PeerCount(::grpc::ServerContext* /*context*/, const ::sentry::PeerCountRequest* /*request*/, ::sentry::PeerCountReply* response) override {
+        if (status_.ok()) {
+            response->set_count(kTestSentryPeerCount);
+        }
+        return status_;
+    }
+
+    grpc::Status NodeInfo(::grpc::ServerContext* /*context*/, const ::google::protobuf::Empty* /*request*/, ::types::NodeInfoReply* response) override {
+        response->set_id(kTestSentryPeerId);
+        response->set_name(kTestSentryPeerName);
+        return status_;
+    }
+
+  private:
+    grpc::Status status_;
+};
+
+// TODO(canepat): better copy grpc_pick_unused_port_or_die to generate unused port
+static const std::string kTestAddressUri{"localhost:12345"};
+
+static const std::string kTestSentryAddress1{"localhost:54321"};
+static const std::string kTestSentryAddress2{"localhost:54322"};
+
+using namespace silkworm;
+
+struct BackEndKvE2eTest {
+    BackEndKvE2eTest(silkworm::log::Level log_verbosity, const NodeSettings& options = {}, std::vector<grpc::Status> statuses = {})
+        : node_settings(options) {
+        silkworm::log::set_verbosity(log_verbosity);
+        std::shared_ptr<grpc::Channel> channel = grpc::CreateChannel(kTestAddressUri, grpc::InsecureChannelCredentials());
+        ethbackend_stub = remote::ETHBACKEND::NewStub(channel);
+        backend_client = std::make_unique<BackEndClient>(ethbackend_stub.get());
+        kv_stub = remote::KV::NewStub(channel);
+        kv_client = std::make_unique<KvClient>(kv_stub.get());
+
+        srv_config.set_num_contexts(1);
+        srv_config.set_address_uri(kTestAddressUri);
+
+        DataDirectory data_dir{tmp_dir.path()};
+        REQUIRE_NOTHROW(data_dir.deploy());
+        db_config = std::make_unique<db::EnvConfig>();
+        db_config->path = data_dir.chaindata().path().string();
+        db_config->create = true;
+        db_config->inmemory = true;
+        database_env = db::open_env(*db_config);
+        auto rw_txn{database_env.start_write()};
+        db::open_map(rw_txn, test_map_config);
+        rw_txn.commit();
+
+        backend = std::make_unique<EthereumBackEnd>(node_settings, &database_env);
+        server = std::make_unique<rpc::BackEndKvServer>(srv_config, *backend);
+        server->build_and_start();
+
+        std::stringstream sentry_list_stream{node_settings.sentry_api_addr};
+        std::string sentry_address;
+        std::size_t i{0};
+        while (std::getline(sentry_list_stream, sentry_address, kSentryAddressDelimiter)) {
+            SILKWORM_ASSERT(i < statuses.size());
+            auto sentry_service = std::make_unique<SentryService>(statuses[i]);
+            auto sentry_server = sentry_service->build_and_start(sentry_address);
+            sentry_services.push_back(std::move(sentry_service));
+            sentry_servers.push_back(std::move(sentry_server));
+            ++i;
+        }
+    }
+
+    void fill_test_table() {
+        auto rw_txn = database_env.start_write();
+        db::Cursor rw_cursor{rw_txn, test_map_config};
+        rw_cursor.upsert(mdbx::slice{"00"}, mdbx::slice{"11"});
+        rw_txn.commit();
+    }
+
+    ~BackEndKvE2eTest() {
+        server->shutdown();
+        server->join();
+        for (auto& sentry_server : sentry_servers) {
+            sentry_server->Shutdown();
+            sentry_server->Wait();
+        }
+    }
+
+    rpc::Grpc2SilkwormLogGuard log_guard;
+    std::unique_ptr<remote::ETHBACKEND::Stub> ethbackend_stub;
+    std::unique_ptr<BackEndClient> backend_client;
+    std::unique_ptr<remote::KV::Stub> kv_stub;
+    std::unique_ptr<KvClient> kv_client;
+    rpc::ServerConfig srv_config;
+    TemporaryDirectory tmp_dir;
+    std::unique_ptr<db::EnvConfig> db_config;
+    mdbx::env_managed database_env;
+    const db::MapConfig test_map_config{"TestTable"};
+    const NodeSettings& node_settings;
+    std::unique_ptr<EthereumBackEnd> backend;
+    std::unique_ptr<rpc::BackEndKvServer> server;
+    std::vector<std::unique_ptr<SentryService>> sentry_services;
+    std::vector<std::unique_ptr<grpc::Server>> sentry_servers;
+};
 } // namespace anonymous
 
 namespace silkworm::rpc {
-
-// TODO(canepat): better copy grpc_pick_unused_port_or_die to generate unused port
-constexpr const char* kTestAddressUri = "localhost:12345";
 
 TEST_CASE("BackEndKvServer", "[silkworm][node][rpc]") {
     silkworm::log::set_verbosity(silkworm::log::Level::kNone);
@@ -235,32 +347,10 @@ TEST_CASE("BackEndKvServer", "[silkworm][node][rpc]") {
     }
 }
 
-TEST_CASE("BackEndKvServer: RPC basic config", "[silkworm][node][rpc]") {
-    silkworm::log::set_verbosity(silkworm::log::Level::kNone);
-    Grpc2SilkwormLogGuard log_guard;
-    std::shared_ptr<grpc::Channel> channel = grpc::CreateChannel(kTestAddressUri, grpc::InsecureChannelCredentials());
-    auto ethbackend_stub_ptr = remote::ETHBACKEND::NewStub(channel);
-    BackEndClient backend_client{ethbackend_stub_ptr.get()};
-    auto kv_stub_ptr = remote::KV::NewStub(channel);
-    KvClient kv_client{kv_stub_ptr.get()};
-    ServerConfig srv_config;
-    srv_config.set_num_contexts(1);
-    srv_config.set_address_uri(kTestAddressUri);
-    TemporaryDirectory tmp_dir;
-    DataDirectory data_dir{tmp_dir.path()};
-    REQUIRE_NOTHROW(data_dir.deploy());
-    db::EnvConfig db_config{data_dir.chaindata().path().string()};
-    db_config.create = true;
-    db_config.inmemory = true;
-    auto database_env = db::open_env(db_config);
-    const db::MapConfig test_map_config{"TestTable"};
-    auto rw_txn{database_env.start_write()};
-    db::open_map(rw_txn, test_map_config);
-    rw_txn.commit();
-    NodeSettings node_settings;
-    EthereumBackEnd backend{node_settings, &database_env};
-    BackEndKvServer server{srv_config, backend};
-    server.build_and_start();
+TEST_CASE("BackEndKvServer E2E: empty node settings", "[silkworm][node][rpc]") {
+    BackEndKvE2eTest test{silkworm::log::Level::kNone};
+    auto backend_client = *test.backend_client;
+    auto kv_client = *test.kv_client;
 
     SECTION("Etherbase: return missing coinbase error", "[silkworm][node][rpc]") {
         remote::EtherbaseReply response;
@@ -442,10 +532,7 @@ TEST_CASE("BackEndKvServer: RPC basic config", "[silkworm][node][rpc]") {
     }
 
     SECTION("Tx cursor first: OK", "[silkworm][node][rpc]") {
-        rw_txn = database_env.start_write();
-        db::Cursor rw_cursor{rw_txn, test_map_config};
-        rw_cursor.upsert(mdbx::slice{"00"}, mdbx::slice{"11"});
-        rw_txn.commit();
+        test.fill_test_table();
 
         remote::SubscribeRequest request;
         remote::Cursor open;
@@ -476,77 +563,15 @@ TEST_CASE("BackEndKvServer: RPC basic config", "[silkworm][node][rpc]") {
         CHECK(status.ok());
         CHECK(responses.size() == 2);
     }
-
-    server.shutdown();
-    server.join();
 }
 
-namespace {
-const uint64_t kTestSentryPeerCount{10};
-constexpr const char* kTestSentryPeerId{"peer_id"};
-constexpr const char* kTestSentryPeerName{"peer_name"};
-
-class SentryService : public sentry::Sentry::Service {
-  public:
-    explicit SentryService(grpc::Status status) : status_(status) {}
-
-    std::unique_ptr<grpc::Server> build_and_start(const std::string& server_address) {
-        grpc::ServerBuilder builder;
-        builder.AddListeningPort(server_address, grpc::InsecureServerCredentials());
-        builder.RegisterService(this);
-        return builder.BuildAndStart();
-    }
-
-    grpc::Status PeerCount(::grpc::ServerContext* /*context*/, const ::sentry::PeerCountRequest* /*request*/, ::sentry::PeerCountReply* response) override {
-        if (status_.ok()) {
-            response->set_count(kTestSentryPeerCount);
-        }
-        return status_;
-    }
-
-    grpc::Status NodeInfo(::grpc::ServerContext* /*context*/, const ::google::protobuf::Empty* /*request*/, ::types::NodeInfoReply* response) override {
-        response->set_id(kTestSentryPeerId);
-        response->set_name(kTestSentryPeerName);
-        return status_;
-    }
-
-  private:
-    grpc::Status status_;
-};
-} // namespace anonymous
-
-static const std::string kTestSentryAddress1{"localhost:54321"};
-static const std::string kTestSentryAddress2{"localhost:54322"};
-
 TEST_CASE("BackEndKvServer: RPC custom config OK", "[silkworm][node][rpc]") {
-    silkworm::log::set_verbosity(silkworm::log::Level::kNone);
-    Grpc2SilkwormLogGuard log_guard;
-    std::shared_ptr<grpc::Channel> channel = grpc::CreateChannel(kTestAddressUri, grpc::InsecureChannelCredentials());
-    auto ethbackend_stub_ptr = remote::ETHBACKEND::NewStub(channel);
-    BackEndClient backend_client{ethbackend_stub_ptr.get()};
-    auto kv_stub_ptr = remote::KV::NewStub(channel);
-    KvClient kv_client{kv_stub_ptr.get()};
-    ServerConfig srv_config;
-    srv_config.set_num_contexts(1);
-    srv_config.set_address_uri(kTestAddressUri);
-    SentryService sentry_service1{grpc::Status::OK};
-    auto sentry_server1 = sentry_service1.build_and_start(kTestSentryAddress1);
-    SentryService sentry_service2{grpc::Status::OK};
-    auto sentry_server2 = sentry_service2.build_and_start(kTestSentryAddress2);
-    TemporaryDirectory tmp_dir;
-    DataDirectory data_dir{tmp_dir.path()};
-    REQUIRE_NOTHROW(data_dir.deploy());
-    db::EnvConfig db_config{data_dir.chaindata().path().string()};
-    db_config.create = true;
-    db_config.inmemory = true;
-    auto database_env = db::open_env(db_config);
     NodeSettings node_settings;
     node_settings.chain_config = *silkworm::lookup_chain_config("mainnet");
     node_settings.etherbase = evmc::address{};
     node_settings.sentry_api_addr = kTestSentryAddress1 + "," + kTestSentryAddress2;
-    EthereumBackEnd backend{node_settings, &database_env};
-    BackEndKvServer server{srv_config, backend};
-    server.build_and_start();
+    BackEndKvE2eTest test{silkworm::log::Level::kNone, node_settings, {grpc::Status::OK, grpc::Status::OK}};
+    auto backend_client = *test.backend_client;
 
     SECTION("Etherbase: return coinbase address", "[silkworm][node][rpc]") {
         remote::EtherbaseReply response;
@@ -583,43 +608,15 @@ TEST_CASE("BackEndKvServer: RPC custom config OK", "[silkworm][node][rpc]") {
             CHECK(nodes_info.name() == kTestSentryPeerName);
         }
     }
-
-    sentry_server1->Shutdown();
-    sentry_server1->Wait();
-    sentry_server2->Shutdown();
-    sentry_server2->Wait();
-    server.shutdown();
-    server.join();
 }
 
 TEST_CASE("BackEndKvServer: RPC custom config KO", "[silkworm][node][rpc]") {
-    silkworm::log::set_verbosity(silkworm::log::Level::kNone);
-    Grpc2SilkwormLogGuard log_guard;
-    std::shared_ptr<grpc::Channel> channel = grpc::CreateChannel(kTestAddressUri, grpc::InsecureChannelCredentials());
-    auto ethbackend_stub_ptr = remote::ETHBACKEND::NewStub(channel);
-    BackEndClient backend_client{ethbackend_stub_ptr.get()};
-    auto kv_stub_ptr = remote::KV::NewStub(channel);
-    KvClient kv_client{kv_stub_ptr.get()};
-    ServerConfig srv_config;
-    srv_config.set_num_contexts(1);
-    srv_config.set_address_uri(kTestAddressUri);
-    SentryService sentry_service1{grpc::Status::OK};
-    auto sentry_server1 = sentry_service1.build_and_start(kTestSentryAddress1);
-    SentryService sentry_service2{grpc::Status::CANCELLED};
-    auto sentry_server2 = sentry_service2.build_and_start(kTestSentryAddress2);
-    TemporaryDirectory tmp_dir;
-    DataDirectory data_dir{tmp_dir.path()};
-    REQUIRE_NOTHROW(data_dir.deploy());
-    db::EnvConfig db_config{data_dir.chaindata().path().string()};
-    db_config.create = true;
-    db_config.inmemory = true;
-    auto database_env = db::open_env(db_config);
     NodeSettings node_settings;
+    node_settings.chain_config = *silkworm::lookup_chain_config("mainnet");
     node_settings.etherbase = evmc::address{};
     node_settings.sentry_api_addr = kTestSentryAddress1 + "," + kTestSentryAddress2;
-    EthereumBackEnd backend{node_settings, &database_env};
-    BackEndKvServer server{srv_config, backend};
-    server.build_and_start();
+    BackEndKvE2eTest test{silkworm::log::Level::kNone, node_settings, {grpc::Status::OK, grpc::Status::CANCELLED}};
+    auto backend_client = *test.backend_client;
 
     SECTION("NetPeerCount: return expected status error", "[silkworm][node][rpc]") {
         remote::NetPeerCountReply response;
@@ -634,13 +631,6 @@ TEST_CASE("BackEndKvServer: RPC custom config KO", "[silkworm][node][rpc]") {
         const auto status = backend_client.node_info(request, &response);
         CHECK(status == grpc::Status::CANCELLED);
     }
-
-    sentry_server1->Shutdown();
-    sentry_server1->Wait();
-    sentry_server2->Shutdown();
-    sentry_server2->Wait();
-    server.shutdown();
-    server.join();
 }
 
 } // namespace silkworm::rpc

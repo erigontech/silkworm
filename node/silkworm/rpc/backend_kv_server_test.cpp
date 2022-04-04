@@ -700,8 +700,8 @@ TEST_CASE("BackEndKvServer E2E: more than one Sentry, all status KO", "[silkworm
         remote::NodesInfoRequest request;
         request.set_limit(0);
         remote::NodesInfoReply response;
-        /*const auto status =*/ backend_client.node_info(request, &response);
-        //CHECK((status == INTERNAL_ERROR || status == DEADLINE_EXCEEDED_ERROR));
+        const auto status = backend_client.node_info(request, &response);
+        CHECK((status == INTERNAL_ERROR || status == DEADLINE_EXCEEDED_ERROR));
     }
 }
 

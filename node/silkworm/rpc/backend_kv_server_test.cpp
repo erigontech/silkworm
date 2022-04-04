@@ -682,15 +682,15 @@ TEST_CASE("BackEndKvServer E2E: more than one Sentry, at least one status KO", "
     }
 }
 
-/*TEST_CASE("BackEndKvServer E2E: more than one Sentry, all status KO", "[silkworm][node][rpc]") {
+TEST_CASE("BackEndKvServer E2E: more than one Sentry, all status KO", "[silkworm][node][rpc]") {
     NodeSettings node_settings;
     node_settings.sentry_api_addr = kTestSentryAddress1 + "," + kTestSentryAddress2;
     grpc::Status INTERNAL_ERROR{grpc::StatusCode::INTERNAL, "internal error"};
     grpc::Status DEADLINE_EXCEEDED_ERROR{grpc::StatusCode::DEADLINE_EXCEEDED, "timeout"};
     BackEndKvE2eTest test{silkworm::log::Level::kNone, node_settings, {INTERNAL_ERROR, DEADLINE_EXCEEDED_ERROR}};
-    auto backend_client = *test.backend_client;
+    /*auto backend_client =*/ *test.backend_client;
 
-    SECTION("NetPeerCount: return expected status error", "[silkworm][node][rpc]") {
+    /*SECTION("NetPeerCount: return expected status error", "[silkworm][node][rpc]") {
         remote::NetPeerCountReply response;
         const auto status = backend_client.net_peer_count(&response);
         CHECK((status == INTERNAL_ERROR || status == DEADLINE_EXCEEDED_ERROR));
@@ -702,7 +702,7 @@ TEST_CASE("BackEndKvServer E2E: more than one Sentry, at least one status KO", "
         remote::NodesInfoReply response;
         const auto status = backend_client.node_info(request, &response);
         CHECK((status == INTERNAL_ERROR || status == DEADLINE_EXCEEDED_ERROR));
-    }
-}*/
+    }*/
+}
 
 } // namespace silkworm::rpc

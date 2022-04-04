@@ -692,8 +692,8 @@ TEST_CASE("BackEndKvServer E2E: more than one Sentry, all status KO", "[silkworm
 
     SECTION("NetPeerCount: return expected status error", "[silkworm][node][rpc]") {
         remote::NetPeerCountReply response;
-        /*const auto status =*/ backend_client.net_peer_count(&response);
-        //CHECK((status == INTERNAL_ERROR || status == DEADLINE_EXCEEDED_ERROR));
+        const auto status = backend_client.net_peer_count(&response);
+        CHECK((status == INTERNAL_ERROR || status == DEADLINE_EXCEEDED_ERROR));
     }
 
     /*SECTION("NodeInfo: return expected status error", "[silkworm][node][rpc]") {

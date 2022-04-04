@@ -207,10 +207,8 @@ struct BackEndKvE2eTest {
         std::size_t i{0};
         while (std::getline(sentry_list_stream, sentry_address, kSentryAddressDelimiter)) {
             SILKWORM_ASSERT(i < statuses.size());
-            auto sentry_service = std::make_unique<SentryService>(statuses[i]);
-            auto sentry_server = sentry_service->build_and_start(sentry_address);
-            sentry_services.push_back(std::move(sentry_service));
-            sentry_servers.push_back(std::move(sentry_server));
+            sentry_services.emplace_back(std::make_unique<SentryService>(statuses[i]));
+            sentry_servers.emplace_back(sentry_services.back()->build_and_start(sentry_address));
             ++i;
         }
     }
@@ -223,12 +221,12 @@ struct BackEndKvE2eTest {
     }
 
     ~BackEndKvE2eTest() {
-        server->shutdown();
-        server->join();
         for (auto& sentry_server : sentry_servers) {
             sentry_server->Shutdown();
             sentry_server->Wait();
         }
+        server->shutdown();
+        server->join();
     }
 
     rpc::Grpc2SilkwormLogGuard log_guard;

@@ -696,13 +696,13 @@ TEST_CASE("BackEndKvServer E2E: more than one Sentry, all status KO", "[silkworm
         CHECK((status == INTERNAL_ERROR || status == DEADLINE_EXCEEDED_ERROR));
     }
 
-    /*SECTION("NodeInfo: return expected status error", "[silkworm][node][rpc]") {
+    SECTION("NodeInfo: return expected status error", "[silkworm][node][rpc]") {
         remote::NodesInfoRequest request;
         request.set_limit(0);
         remote::NodesInfoReply response;
-        const auto status = backend_client.node_info(request, &response);
-        CHECK((status == INTERNAL_ERROR || status == DEADLINE_EXCEEDED_ERROR));
-    }*/
+        /*const auto status =*/ backend_client.node_info(request, &response);
+        //CHECK((status == INTERNAL_ERROR || status == DEADLINE_EXCEEDED_ERROR));
+    }
 }
 
 } // namespace silkworm::rpc

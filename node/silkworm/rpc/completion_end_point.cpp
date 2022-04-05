@@ -26,8 +26,6 @@
 namespace silkworm::rpc {
 
 int CompletionEndPoint::poll_one() {
-    SILK_TRACE << "CompletionEndPoint::poll_one START";
-
     int num_completed{0}; // returned when next_status == grpc::CompletionQueue::TIMEOUT
 
     void* tag{nullptr};
@@ -43,7 +41,6 @@ int CompletionEndPoint::poll_one() {
         num_completed = -1;
     }
 
-    SILK_TRACE << "CompletionEndPoint::poll_one num_completed=" << num_completed << " END";
     return num_completed;
 }
 

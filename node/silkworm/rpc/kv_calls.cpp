@@ -82,22 +82,30 @@ TxCall::TxCall(boost::asio::io_context& scheduler, remote::KV::AsyncService* ser
 }
 
 void TxCall::start() {
-    SILKWORM_ASSERT(!read_only_txn_);
+    try {
+        SILKWORM_ASSERT(!read_only_txn_);
 
-    // Create a new read-only transaction.
-    read_only_txn_ = chaindata_env_->start_read();
-    SILK_INFO << "Tx peer: " << peer() << " started tx: " << read_only_txn_.id();
+        SILK_DEBUG << "TxCall::start MDBX info: " << chaindata_env_->get_info().mi_numreaders;
 
-    // Send an unsolicited message containing the transaction ID.
-    remote::Pair kv_pair;
-    kv_pair.set_txid(read_only_txn_.id());
-    const bool sent = send_response(kv_pair);
-    SILK_DEBUG << "TxCall::process message with txid=" << read_only_txn_.id() << " sent: " << sent;
+        // Create a new read-only transaction.
+        read_only_txn_ = chaindata_env_->start_read();
+        SILK_INFO << "Tx peer: " << peer() << " started tx: " << read_only_txn_.id();
 
-    // Start a guard timer for closing and reopening to avoid long-lived transactions.
-    max_ttl_timer_.expires_from_now(boost::posix_time::milliseconds(kMaxTxDuration));
-    max_ttl_timer_.async_wait([&](const auto& ec) { handle_max_ttl_timer_expired(ec); });
-    SILK_DEBUG << "Tx peer: " << peer() << " max TTL timer expires at: " << max_ttl_timer_.expires_at();
+        // Send an unsolicited message containing the transaction ID.
+        remote::Pair kv_pair;
+        kv_pair.set_txid(read_only_txn_.id());
+        const bool sent = send_response(kv_pair);
+        SILK_DEBUG << "TxCall::start message with txid=" << read_only_txn_.id() << " sent: " << sent;
+
+        // Start a guard timer for closing and reopening to avoid long-lived transactions.
+        max_ttl_timer_.expires_from_now(boost::posix_time::milliseconds(kMaxTxDuration));
+        max_ttl_timer_.async_wait([&](const auto& ec) { handle_max_ttl_timer_expired(ec); });
+        SILK_DEBUG << "Tx peer: " << peer() << " max TTL timer expires at: " << max_ttl_timer_.expires_at();
+    } catch (const mdbx::exception& e) {
+        const auto error_message = "start tx failed: " + std::string{e.what()};
+        SILK_ERROR << "Tx peer: " << peer() << " " << error_message;
+        close_with_error(grpc::Status{grpc::StatusCode::RESOURCE_EXHAUSTED, error_message});
+    }
 }
 
 void TxCall::process(const remote::Cursor* request) {
@@ -135,7 +143,7 @@ void TxCall::handle_cursor_open(const remote::Cursor* request) {
     if (!db::has_map(read_only_txn_, bucket_name.c_str())) {
         const auto error_message = "unknown bucket: " + request->bucketname();
         SILK_ERROR << "Tx peer: " << peer() << " op=" << remote::Op_Name(request->op()) << " " << error_message;
-        finish_with_error(grpc::Status{grpc::StatusCode::INVALID_ARGUMENT, error_message});
+        close_with_error(grpc::Status{grpc::StatusCode::INVALID_ARGUMENT, error_message});
         return;
     }
 
@@ -157,7 +165,7 @@ void TxCall::handle_cursor_operation(const remote::Cursor* request) {
     if (cursor_it == cursors_.end()) {
         const auto error_message = "unknown cursor: " + std::to_string(request->cursor());
         SILK_ERROR << "Tx peer: " << peer() << " op=" << remote::Op_Name(request->op()) << " " << error_message;
-        finish_with_error(grpc::Status{grpc::StatusCode::INVALID_ARGUMENT, error_message});
+        close_with_error(grpc::Status{grpc::StatusCode::INVALID_ARGUMENT, error_message});
         return;
     }
     db::Cursor& cursor = cursor_it->second.cursor;
@@ -170,7 +178,7 @@ void TxCall::handle_cursor_close(const remote::Cursor* request) {
     if (cursor_it == cursors_.end()) {
         const auto error_message = "unknown cursor: " + std::to_string(request->cursor());
         SILK_ERROR << "Tx peer: " << peer() << " op=" << remote::Op_Name(request->op()) << " " << error_message;
-        finish_with_error(grpc::Status{grpc::StatusCode::INVALID_ARGUMENT, error_message});
+        close_with_error(grpc::Status{grpc::StatusCode::INVALID_ARGUMENT, error_message});
         return;
     }
     cursors_.erase(cursor_it);
@@ -246,9 +254,8 @@ void TxCall::handle_max_ttl_timer_expired(const boost::system::error_code& ec) {
         std::vector<CursorPosition> positions{cursors_.size()};
         const bool save_success = save_cursors(positions);
         if (!save_success) {
-            const auto error_message = "cannot save state of cursors";
-            SILK_ERROR << "Tx peer: " << peer() << " " << error_message;
-            finish_with_error(grpc::Status{grpc::StatusCode::INTERNAL, error_message});
+            finish_with_internal_error("cannot save state of cursors");
+            return;
         }
         SILK_DEBUG << "Tx peer: " << peer() << " #cursors: " << cursors_.size() << " saved";
 
@@ -257,9 +264,8 @@ void TxCall::handle_max_ttl_timer_expired(const boost::system::error_code& ec) {
 
         const bool restore_success = restore_cursors(positions);
         if (!restore_success) {
-            const auto error_message = "cannot restore state of cursors";
-            SILK_ERROR << "Tx peer: " << peer() << " " << error_message;
-            finish_with_error(grpc::Status{grpc::StatusCode::INTERNAL, error_message});
+            finish_with_internal_error("cannot restore state of cursors");
+            return;
         }
         SILK_DEBUG << "Tx peer: " << peer() << " #cursors: " << cursors_.size() << " restored";
 
@@ -451,9 +457,12 @@ bool TxCall::send_response_pair(const mdbx::cursor::move_result& result) {
 }
 
 void TxCall::finish_with_internal_error(const remote::Cursor* request) {
-    const auto error_message = "cannot execute " + remote::Op_Name(request->op()) + " on cursor: " + std::to_string(request->cursor());
+    finish_with_internal_error("cannot execute " + remote::Op_Name(request->op()) + " on cursor: " + std::to_string(request->cursor()));
+}
+
+void TxCall::finish_with_internal_error(const std::string& error_message) {
     SILK_ERROR << "Tx peer: " << peer() << " " << error_message;
-    finish_with_error(grpc::Status{grpc::StatusCode::INTERNAL, error_message});
+    close_with_error(grpc::Status{grpc::StatusCode::INTERNAL, error_message});
 }
 
 TxCallFactory::TxCallFactory(const EthereumBackEnd& backend)

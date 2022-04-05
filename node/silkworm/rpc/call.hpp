@@ -125,6 +125,7 @@ class BaseRpc {
     /// Returns if one in-progress write operation exists or not.
     bool write_in_progress() const { return write_in_progress_; }
 
+    //! The single-threaded scheduler used to process this RPC asynchronously.
     boost::asio::io_context& scheduler_;
 
     //! Used to access the options and current status of the RPC.
@@ -527,13 +528,26 @@ class BidirectionalStreamingRpc : public BaseRpc {
     }
 
     /// Finalize the bidirectional-streaming RPC with an application error when no response is available.
-    bool finish_with_error(const grpc::Status& error) {
+    bool close_with_error(const grpc::Status& error) {
+        SILK_DEBUG << "BidirectionalStreamingRpc::close_with_error error: " << error.error_code() << " [" << this << "]";
+
+        // Protect the server from finishing the RPC twice.
+        if (server_streaming_done_) {
+            return true;
+        }
+        server_streaming_done_ = true;
+
         // Stop the idle guard timer.
         idle_timer_.cancel();
 
-        handle_started(OperationType::kFinish);
-        responder_.Finish(error, &finish_processor_);
-        return true;
+        status_ = error;
+
+        if (!write_in_progress()) {
+            SILK_DEBUG << "BidirectionalStreamingRpc::close_with_error schedule finish with error: " << error.error_code() << " [" << this << "]";
+            finish_with_error(error);
+            return true;
+        }
+        return false;
     }
 
   private:
@@ -552,6 +566,11 @@ class BidirectionalStreamingRpc : public BaseRpc {
         // The call has just started so let the application layer know it.
         start();
 
+        // We are done if starting finished with any error.
+        if (server_streaming_done_) {
+            return;
+        }
+
         // The first incoming message can now be read, so enqueue the first READ operation for this RPC.
         read();
 
@@ -568,6 +587,11 @@ class BidirectionalStreamingRpc : public BaseRpc {
             if (ok) {
                 // The incoming request can now be handled so process it.
                 process(&request_);
+
+                // We are done if processing finished with any error.
+                if (server_streaming_done_) {
+                    return;
+                }
 
                 // Enqueue another READ operation for this RPC.
                 read();
@@ -606,9 +630,17 @@ class BidirectionalStreamingRpc : public BaseRpc {
                     write();
                 } else if (server_streaming_done_) {
                     // Previous write completed, no pending write and streaming finished: we're done.
-                    SILK_DEBUG << "BidirectionalStreamingRpc::process_write schedule finish for peer " << peer() << " [" << this << "]";
-                    finish();
+                    if (status_.ok()) {
+                        SILK_DEBUG << "BidirectionalStreamingRpc::process_write schedule finish for peer " << peer() << " [" << this << "]";
+                        finish();
+                    } else {
+                        SILK_DEBUG << "BidirectionalStreamingRpc::process_write schedule finish with error for peer " << peer() << " [" << this << "]";
+                        finish_with_error(status_);
+                    }
                 }
+            } else {
+                // TODO(canepat) test this path
+                SILK_ERROR << "BidirectionalStreamingRpc::process_write peer " << peer() << " ok: false [" << this << "]";
             }
         }
         SILK_TRACE << "BidirectionalStreamingRpc::process_write END [" << this << "]";
@@ -635,7 +667,13 @@ class BidirectionalStreamingRpc : public BaseRpc {
     void finish() {
         handle_started(OperationType::kFinish);
         responder_.Finish(grpc::Status::OK, &finish_processor_);
-        SILK_DEBUG << "BidirectionalStreamingRpc::finish finished [" << this << "] status=OK";
+        SILK_DEBUG << "BidirectionalStreamingRpc::finish finished status=OK [" << this << "]";
+    }
+
+    void finish_with_error(const grpc::Status& error) {
+        handle_started(OperationType::kFinish);
+        responder_.Finish(error, &finish_processor_);
+        SILK_DEBUG << "BidirectionalStreamingRpc::finish_with_error finished error_code=" <<  error.error_code() << " [" << this << "]";
     }
 
     void cleanup() override {
@@ -649,7 +687,7 @@ class BidirectionalStreamingRpc : public BaseRpc {
         if (!ec) {
             const std::string error_message{"call idle, no incoming request from peer: " + peer()};
             SILK_ERROR << "Idle timer expired " << this << " " << error_message;
-            finish_with_error(grpc::Status{grpc::StatusCode::DEADLINE_EXCEEDED, error_message});
+            close_with_error(grpc::Status{grpc::StatusCode::DEADLINE_EXCEEDED, error_message});
         }
         SILK_TRACE << "BidirectionalStreamingRpc::handle_idle_timer_expired " << this << " ec: " << ec << " END";
     }
@@ -689,6 +727,9 @@ class BidirectionalStreamingRpc : public BaseRpc {
 
     //! The one-shot timer to protect from clients which don't send any requests.
     boost::asio::deadline_timer idle_timer_;
+
+    //! The bidirectional-streaming call result.
+    grpc::Status status_{grpc::Status::OK};
 
     //! Flag indicating if server streaming is finished or not.
     bool server_streaming_done_{false};

@@ -116,6 +116,7 @@ class TxCall : public BidirectionalStreamingRpc<remote::KV::AsyncService, remote
 
     bool send_response_pair(const mdbx::cursor::move_result& result);
     void finish_with_internal_error(const remote::Cursor* request);
+    void finish_with_internal_error(const std::string& error_message);
 
     static mdbx::env* chaindata_env_;
     static uint32_t next_cursor_id_;

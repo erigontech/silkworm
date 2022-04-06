@@ -112,7 +112,7 @@ trie::PrefixSet InterHashes::gather_account_changes(db::RWTxn& txn, BlockNum fro
 
     BlockNum reached_blocknum{0};
     BlockNum expected_blocknum{from + 1};
-    absl::btree_set<ethash_hash256> deleted_hashes{};
+    absl::btree_set<Bytes> deleted_hashes{};
 
     std::unique_lock log_lck(log_mtx_);
     current_source_ = std::string(db::table::kAccountChangeSet.name);
@@ -155,15 +155,16 @@ trie::PrefixSet InterHashes::gather_account_changes(db::RWTxn& txn, BlockNum fro
                     if (previous_account.incarnation > 0) {
                         // Lookup current
                         auto plainstate_data{plain_state.find(db::to_slice(address.bytes),
-                                                              /*throw_notfound=*/true)};  // <- Must exist in PlainState
-                        if (plainstate_data.value.empty()) {
-                            (void)deleted_hashes.insert(hashed_address);
+                                                              /*throw_notfound=*/false)};
+                        if (!plainstate_data || plainstate_data.value.empty()) {
+                            // Self destructed
+                            (void)deleted_hashes.insert(hashed_address.bytes);
                         } else {
                             auto [current_account,
                                   rlp_err2]{Account::from_encoded_storage(db::from_slice(plainstate_data.value))};
                             rlp::success_or_throw(rlp_err2);
                             if (current_account.incarnation < previous_account.incarnation) {
-                                (void)deleted_hashes.insert(hashed_address);
+                                (void)deleted_hashes.insert(hashed_address.bytes);
                             }
                         }
                     }
@@ -182,14 +183,15 @@ trie::PrefixSet InterHashes::gather_account_changes(db::RWTxn& txn, BlockNum fro
     if (!deleted_hashes.empty()) {
         db::Cursor trie_storage(txn, db::table::kTrieOfStorage);
         for (const auto& hash : deleted_hashes) {
-            auto hash_slice{db::to_slice(hash.bytes)};
+            auto hash_slice{db::to_slice(hash)};
             auto data{trie_storage.lower_bound(hash_slice, /*throw_notfound=*/false)};
             while (data) {
                 if (data.key.starts_with(hash_slice)) {
                     trie_storage.erase();
-                } else {
-                    break;
+                    data = trie_storage.to_next(/*throw_notfound=*/false);
+                    continue;
                 }
+                break;
             }
         }
     }

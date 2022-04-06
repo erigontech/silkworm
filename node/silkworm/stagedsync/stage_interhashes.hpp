@@ -37,10 +37,12 @@ class InterHashes final : public IStage {
     void reset_log_progress();
 
     //! \brief See Erigon (p *HashPromoter) Promote
-    trie::PrefixSet gather_account_changes(db::RWTxn& txn, BlockNum from, BlockNum to);
+    trie::PrefixSet gather_account_changes(db::RWTxn& txn, BlockNum from, BlockNum to,
+                                           absl::btree_map<evmc::address, ethash_hash256>& hashed_addresses);
 
     //! \brief See Erigon (p *HashPromoter) Promote
-    trie::PrefixSet gather_storage_changes(db::RWTxn& txn, BlockNum from, BlockNum to);
+    trie::PrefixSet gather_storage_changes(db::RWTxn& txn, BlockNum from, BlockNum to,
+                                           absl::btree_map<evmc::address, ethash_hash256>& hashed_addresses);
 
     //! \brief Erigon's RegenerateIntermediateHashes
     //! \remarks might throw WrongRoot
@@ -106,7 +108,8 @@ class InterHashes final : public IStage {
     evmc::bytes32 calculate_root(db::RWTxn& txn, trie::PrefixSet& account_changes, trie::PrefixSet& storage_changes);
 
     //! \see Erigon's FlatDBTrieLoader
-    evmc::bytes32 calculate_storage_root(db::RWTxn& txn, const Bytes& db_storage_prefix, trie::PrefixSet& storage_changes);
+    evmc::bytes32 calculate_storage_root(db::RWTxn& txn, const Bytes& db_storage_prefix,
+                                         trie::PrefixSet& storage_changes);
 
     std::unique_ptr<etl::Collector> account_collector_;  // To accumulate new records for kTrieOfAccounts
     std::unique_ptr<etl::Collector> storage_collector_;  // To accumulate new records for kTrieOfStorage

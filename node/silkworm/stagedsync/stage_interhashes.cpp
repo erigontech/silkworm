@@ -103,7 +103,8 @@ StageResult InterHashes::unwind(db::RWTxn& txn, BlockNum to) {
 
 StageResult InterHashes::prune(db::RWTxn&) { return StageResult::kSuccess; }
 
-trie::PrefixSet InterHashes::gather_account_changes(db::RWTxn& txn, BlockNum from, BlockNum to) {
+trie::PrefixSet InterHashes::gather_account_changes(db::RWTxn& txn, BlockNum from, BlockNum to,
+                                                    absl::btree_map<evmc::address, ethash_hash256>& hashed_addresses) {
     BlockNum reached_blocknum{0};
     BlockNum expected_blocknum{from + 1};
 
@@ -114,9 +115,6 @@ trie::PrefixSet InterHashes::gather_account_changes(db::RWTxn& txn, BlockNum fro
 
     const Bytes starting_key{db::block_key(expected_blocknum)};
     trie::PrefixSet ret;
-
-    // Don't rehash same addresses
-    absl::btree_set<evmc::address> unique_addresses{};
 
     db::Cursor account_changeset(txn, db::table::kAccountChangeSet);
     auto changeset_data{account_changeset.lower_bound(db::to_slice(starting_key), /*throw_notfound=*/false)};
@@ -136,10 +134,10 @@ trie::PrefixSet InterHashes::gather_account_changes(db::RWTxn& txn, BlockNum fro
         while (changeset_data) {
             auto changeset_value_view{db::from_slice(changeset_data.value)};
             evmc::address address{to_evmc_address(changeset_value_view)};
-            if (!unique_addresses.contains(address)) {
+            if (!hashed_addresses.contains(address)) {
                 const auto hashed_address{keccak256(address)};
+                hashed_addresses[address] = hashed_address;
                 ret.insert(trie::unpack_nibbles(hashed_address.bytes));
-                unique_addresses.insert(address);
             }
             changeset_data = account_changeset.to_current_next_multi(/*throw_notfound=*/false);
         }
@@ -151,7 +149,8 @@ trie::PrefixSet InterHashes::gather_account_changes(db::RWTxn& txn, BlockNum fro
     return ret;
 }
 
-trie::PrefixSet InterHashes::gather_storage_changes(db::RWTxn& txn, BlockNum from, BlockNum to) {
+trie::PrefixSet InterHashes::gather_storage_changes(db::RWTxn& txn, BlockNum from, BlockNum to,
+                                                    absl::btree_map<evmc::address, ethash_hash256>& hashed_addresses) {
     BlockNum reached_blocknum{0};
     BlockNum expected_blocknum{from + 1};
 
@@ -164,7 +163,6 @@ trie::PrefixSet InterHashes::gather_storage_changes(db::RWTxn& txn, BlockNum fro
     trie::PrefixSet ret;
 
     // Don't rehash same addresses
-    absl::btree_map<evmc::address, ethash_hash256> hashed_addresses{};
     absl::btree_map<evmc::address, ethash_hash256>::iterator hashed_addresses_it{hashed_addresses.begin()};
 
     db::Cursor storage_changeset(txn, db::table::kStorageChangeSet);
@@ -200,7 +198,7 @@ trie::PrefixSet InterHashes::gather_storage_changes(db::RWTxn& txn, BlockNum fro
             const auto hashed_location{keccak256(location)};
 
             Bytes hashed_key{ByteView{hashed_addresses_it->second.bytes}};
-            hashed_key.append(changeset_key_view);
+            hashed_key.append(changeset_key_view);  // <- Incarnation BE
             hashed_key.append(trie::unpack_nibbles(hashed_location.bytes));
             ret.insert(hashed_key);
             changeset_data = storage_changeset.to_current_next_multi(/*throw_notfound=*/false);
@@ -250,8 +248,11 @@ StageResult InterHashes::increment_intermediate_hashes(db::RWTxn& txn, BlockNum 
     StageResult ret{StageResult::kSuccess};
 
     try {
-        trie::PrefixSet account_changes{gather_account_changes(txn, from, to)};
-        trie::PrefixSet storage_changes{gather_storage_changes(txn, from, to)};
+        // Cache of hashed addresses
+        absl::btree_map<evmc::address, ethash_hash256> hashed_addresses{};
+        trie::PrefixSet account_changes{gather_account_changes(txn, from, to, hashed_addresses)};
+        trie::PrefixSet storage_changes{gather_storage_changes(txn, from, to, hashed_addresses)};
+        hashed_addresses.clear();
 
         log_lck.lock();
         current_source_.clear();

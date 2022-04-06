@@ -101,7 +101,9 @@ class KvClient {
         tx_reader_writer->Read(&responses.emplace_back());
         uint32_t cursor_id{0};
         for (auto& req : requests) {
-            req.set_cursor(cursor_id);
+            if (req.cursor() == 0) {
+                req.set_cursor(cursor_id);
+            }
             const bool write_ok = tx_reader_writer->Write(req);
             if (!write_ok) {
                 break;
@@ -230,6 +232,8 @@ static const std::string kTestAddressUri{"localhost:12345"};
 static const std::string kTestSentryAddress1{"localhost:54321"};
 static const std::string kTestSentryAddress2{"localhost:54322"};
 
+static const silkworm::db::MapConfig kTestMapConfig{"TestTable"};
+
 using namespace silkworm;
 
 struct BackEndKvE2eTest {
@@ -253,7 +257,7 @@ struct BackEndKvE2eTest {
         db_config->inmemory = true;
         database_env = db::open_env(*db_config);
         auto rw_txn{database_env.start_write()};
-        db::open_map(rw_txn, test_map_config);
+        db::open_map(rw_txn, kTestMapConfig);
         rw_txn.commit();
 
         backend = std::make_unique<EthereumBackEnd>(node_settings, &database_env);
@@ -273,7 +277,7 @@ struct BackEndKvE2eTest {
 
     void fill_test_table() {
         auto rw_txn = database_env.start_write();
-        db::Cursor rw_cursor{rw_txn, test_map_config};
+        db::Cursor rw_cursor{rw_txn, kTestMapConfig};
         rw_cursor.upsert(mdbx::slice{"00"}, mdbx::slice{"11"});
         rw_txn.commit();
     }
@@ -295,7 +299,6 @@ struct BackEndKvE2eTest {
     TemporaryDirectory tmp_dir;
     std::unique_ptr<db::EnvConfig> db_config;
     mdbx::env_managed database_env;
-    const db::MapConfig test_map_config{"TestTable"};
     const NodeSettings& node_settings;
     std::unique_ptr<EthereumBackEnd> backend;
     std::unique_ptr<rpc::BackEndKvServer> server;
@@ -543,6 +546,7 @@ TEST_CASE("BackEndKvServer E2E: empty node settings", "[silkworm][node][rpc]") {
         open.set_bucketname("TestTable");
         remote::Cursor close;
         close.set_op(remote::Op::CLOSE);
+        close.set_cursor(0);
         std::vector<remote::Cursor> requests{open, close};
         std::vector<remote::Pair> responses;
         const auto status = kv_client.tx(requests, responses);
@@ -553,6 +557,25 @@ TEST_CASE("BackEndKvServer E2E: empty node settings", "[silkworm][node][rpc]") {
         CHECK(responses[2].cursorid() == 0);
     }
 
+    SECTION("Tx KO: cursor opened then unknown", "[silkworm][node][rpc]") {
+        remote::SubscribeRequest request;
+        remote::Cursor open;
+        open.set_op(remote::Op::OPEN);
+        open.set_bucketname(kTestMapConfig.name);
+        remote::Cursor close;
+        close.set_op(remote::Op::CLOSE);
+        close.set_cursor(12345);
+        std::vector<remote::Cursor> requests{open, close};
+        std::vector<remote::Pair> responses;
+        const auto status = kv_client.tx(requests, responses);
+        CHECK(!status.ok());
+        CHECK(status.error_code() == grpc::StatusCode::INVALID_ARGUMENT);
+        CHECK(status.error_message().find("unknown cursor") != std::string::npos);
+        CHECK(responses.size() == 2);
+        CHECK(responses[0].txid() != 0);
+        CHECK(responses[1].cursorid() != 0);
+    }
+
     SECTION("Tx KO: cursor first in empty table", "[silkworm][node][rpc]") {
         remote::SubscribeRequest request;
         remote::Cursor open;
@@ -560,10 +583,13 @@ TEST_CASE("BackEndKvServer E2E: empty node settings", "[silkworm][node][rpc]") {
         open.set_bucketname("TestTable");
         remote::Cursor first;
         first.set_op(remote::Op::FIRST);
+        first.set_cursor(0);
         std::vector<remote::Cursor> requests{open, first};
         std::vector<remote::Pair> responses;
         const auto status = kv_client.tx(requests, responses);
         CHECK(!status.ok());
+        CHECK(status.error_code() == grpc::StatusCode::INTERNAL);
+        CHECK(status.error_message().find("cannot execute FIRST on cursor") != std::string::npos);
         CHECK(responses.size() == 2);
         CHECK(responses[0].txid() != 0);
         CHECK(responses[1].cursorid() != 0);
@@ -576,10 +602,13 @@ TEST_CASE("BackEndKvServer E2E: empty node settings", "[silkworm][node][rpc]") {
         open.set_bucketname("TestTable");
         remote::Cursor next;
         next.set_op(remote::Op::NEXT);
+        next.set_cursor(0);
         std::vector<remote::Cursor> requests{open, next};
         std::vector<remote::Pair> responses;
         const auto status = kv_client.tx(requests, responses);
         CHECK(!status.ok());
+        CHECK(status.error_code() == grpc::StatusCode::INTERNAL);
+        CHECK(status.error_message().find("cannot execute NEXT on cursor") != std::string::npos);
         CHECK(responses.size() == 2);
         CHECK(responses[0].txid() != 0);
         CHECK(responses[1].cursorid() != 0);
@@ -594,8 +623,10 @@ TEST_CASE("BackEndKvServer E2E: empty node settings", "[silkworm][node][rpc]") {
         open.set_bucketname("TestTable");
         remote::Cursor first;
         first.set_op(remote::Op::FIRST);
+        first.set_cursor(0);
         remote::Cursor close;
         close.set_op(remote::Op::CLOSE);
+        close.set_cursor(0);
         std::vector<remote::Cursor> requests{open, first, close};
         std::vector<remote::Pair> responses;
         const auto status = kv_client.tx(requests, responses);
@@ -619,7 +650,7 @@ TEST_CASE("BackEndKvServer E2E: empty node settings", "[silkworm][node][rpc]") {
     }
 }
 
-TEST_CASE("BackEndKvServer E2E: mainnet chain etherbase set", "[silkworm][node][rpc]") {
+TEST_CASE("BackEndKvServer E2E: mainnet chain with zero etherbase", "[silkworm][node][rpc]") {
     NodeSettings node_settings;
     node_settings.chain_config = *silkworm::lookup_chain_config("mainnet");
     node_settings.etherbase = evmc::address{};

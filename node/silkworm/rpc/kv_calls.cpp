@@ -204,12 +204,15 @@ void TxCall::handle_operation(const remote::Cursor* request, db::Cursor& cursor)
         }
         break;
         case remote::Op::SEEK_BOTH: {
+            handle_seek_both(request, cursor);
         }
         break;
         case remote::Op::SEEK_EXACT: {
+            handle_seek_exact(request, cursor);
         }
         break;
         case remote::Op::SEEK_BOTH_EXACT: {
+            handle_seek_both_exact(request, cursor);
         }
         break;
         case remote::Op::CURRENT: {
@@ -328,7 +331,9 @@ bool TxCall::restore_cursors(std::vector<CursorPosition>& positions) {
 
 void TxCall::handle_first(const remote::Cursor* request, db::Cursor& cursor) {
     SILK_TRACE << "TxCall::handle_first " << this << " START";
+
     const mdbx::cursor::move_result result = cursor.to_first(/*throw_notfound=*/false);
+
     if (result) {
         const bool sent = send_response_pair(result);
         SILK_TRACE << "TxCall::handle_first " << this << " sent: " << sent << " END";
@@ -340,7 +345,9 @@ void TxCall::handle_first(const remote::Cursor* request, db::Cursor& cursor) {
 
 void TxCall::handle_first_dup(const remote::Cursor* request, db::Cursor& cursor) {
     SILK_TRACE << "TxCall::handle_first_dup " << this << " START";
+
     const mdbx::cursor::move_result result = cursor.to_current_first_multi(/*throw_notfound=*/false);
+
     if (result) {
         const bool sent = send_response_pair(result);
         SILK_TRACE << "TxCall::handle_first_dup " << this << " sent: " << sent << " END";
@@ -352,12 +359,14 @@ void TxCall::handle_first_dup(const remote::Cursor* request, db::Cursor& cursor)
 
 void TxCall::handle_seek(const remote::Cursor* request, db::Cursor& cursor) {
     SILK_TRACE << "TxCall::handle_seek " << this << " START";
-    mdbx::slice key_slice{request->k()};
-    bool found = cursor.seek(key_slice);
-    if (found) {
-        remote::Pair kv_pair;
-        kv_pair.set_k(request->k());
-        const bool sent = send_response(kv_pair);
+    mdbx::slice key{request->k()};
+
+    const mdbx::cursor::move_result result = (key.length() == 0) ?
+        cursor.to_first(/*throw_notfound=*/false) :
+        cursor.lower_bound(key, /*throw_notfound=*/false);
+
+    if (result) {
+        const bool sent = send_response_pair(result);
         SILK_TRACE << "TxCall::handle_seek " << this << " sent: " << sent << " END";
     } else {
         finish_with_internal_error(request);
@@ -365,9 +374,65 @@ void TxCall::handle_seek(const remote::Cursor* request, db::Cursor& cursor) {
     }
 }
 
+void TxCall::handle_seek_both(const remote::Cursor* request, db::Cursor& cursor) {
+    SILK_TRACE << "TxCall::handle_seek_both " << this << " START";
+    mdbx::slice key{request->k()};
+    mdbx::slice value{request->v()};
+
+    const mdbx::cursor::move_result result = cursor.lower_bound_multivalue(key, value, /*throw_notfound=*/false);
+
+    if (result) {
+        remote::Pair kv_pair;
+        kv_pair.set_v(result.value.as_string());
+        const bool sent = send_response(kv_pair);
+        SILK_TRACE << "TxCall::handle_seek_both " << this << " sent: " << sent << " END";
+    } else {
+        finish_with_internal_error(request);
+        SILK_TRACE << "TxCall::handle_seek_both " << this << " END";
+    }
+}
+
+void TxCall::handle_seek_exact(const remote::Cursor* request, db::Cursor& cursor) {
+    SILK_TRACE << "TxCall::handle_seek_exact " << this << " START";
+    mdbx::slice key{request->k()};
+
+    bool found = cursor.seek(key);
+
+    if (found) {
+        remote::Pair kv_pair;
+        kv_pair.set_k(request->k());
+        const bool sent = send_response(kv_pair);
+        SILK_TRACE << "TxCall::handle_seek_exact " << this << " sent: " << sent << " END";
+    } else {
+        finish_with_internal_error(request);
+        SILK_TRACE << "TxCall::handle_seek_exact " << this << " END";
+    }
+}
+
+void TxCall::handle_seek_both_exact(const remote::Cursor* request, db::Cursor& cursor) {
+    SILK_TRACE << "TxCall::handle_seek_both_exact " << this << " START";
+    mdbx::slice key{request->k()};
+    mdbx::slice value{request->v()};
+
+    const mdbx::cursor::move_result result = cursor.find_multivalue(key, value, /*throw_notfound=*/false);
+
+    if (result) {
+        remote::Pair kv_pair;
+        kv_pair.set_k(request->k());
+        kv_pair.set_v(result.value.as_string());
+        const bool sent = send_response(kv_pair);
+        SILK_TRACE << "TxCall::handle_seek_both_exact " << this << " sent: " << sent << " END";
+    } else {
+        finish_with_internal_error(request);
+        SILK_TRACE << "TxCall::handle_seek_both_exact " << this << " END";
+    }
+}
+
 void TxCall::handle_current(const remote::Cursor* request, db::Cursor& cursor) {
     SILK_TRACE << "TxCall::handle_current " << this << " START";
+
     const mdbx::cursor::move_result result = cursor.to_next_first_multi(/*throw_notfound=*/false);
+
     if (result) {
         const bool sent = send_response_pair(result);
         SILK_TRACE << "TxCall::handle_current " << this << " sent: " << sent << " END";
@@ -379,7 +444,9 @@ void TxCall::handle_current(const remote::Cursor* request, db::Cursor& cursor) {
 
 void TxCall::handle_last(const remote::Cursor* request, db::Cursor& cursor) {
     SILK_TRACE << "TxCall::handle_last " << this << " START";
+
     const mdbx::cursor::move_result result = cursor.to_last(/*throw_notfound=*/false);
+
     if (result) {
         const bool sent = send_response_pair(result);
         SILK_TRACE << "TxCall::handle_last " << this << " sent: " << sent << " END";
@@ -391,7 +458,9 @@ void TxCall::handle_last(const remote::Cursor* request, db::Cursor& cursor) {
 
 void TxCall::handle_last_dup(const remote::Cursor* request, db::Cursor& cursor) {
     SILK_TRACE << "TxCall::handle_last_dup " << this << " START";
+
     const mdbx::cursor::move_result result = cursor.to_current_last_multi(/*throw_notfound=*/false);
+
     if (result) {
         const bool sent = send_response_pair(result);
         SILK_TRACE << "TxCall::handle_last_dup " << this << " sent: " << sent << " END";
@@ -403,7 +472,9 @@ void TxCall::handle_last_dup(const remote::Cursor* request, db::Cursor& cursor) 
 
 void TxCall::handle_next(const remote::Cursor* request, db::Cursor& cursor) {
     SILK_TRACE << "TxCall::handle_next " << this << " START";
+
     const mdbx::cursor::move_result result = cursor.to_next(/*throw_notfound=*/false);
+
     if (result) {
         const bool sent = send_response_pair(result);
         SILK_TRACE << "TxCall::handle_next " << this << " sent: " << sent << " END";
@@ -415,7 +486,9 @@ void TxCall::handle_next(const remote::Cursor* request, db::Cursor& cursor) {
 
 void TxCall::handle_next_dup(const remote::Cursor* request, db::Cursor& cursor) {
     SILK_TRACE << "TxCall::handle_next_dup " << this << " START";
+
     const mdbx::cursor::move_result result = cursor.to_current_next_multi(/*throw_notfound=*/false);
+
     if (result) {
         const bool sent = send_response_pair(result);
         SILK_TRACE << "TxCall::handle_next_dup " << this << " sent: " << sent << " END";
@@ -427,7 +500,9 @@ void TxCall::handle_next_dup(const remote::Cursor* request, db::Cursor& cursor) 
 
 void TxCall::handle_next_no_dup(const remote::Cursor* request, db::Cursor& cursor) {
     SILK_TRACE << "TxCall::handle_next_no_dup " << this << " START";
+
     const mdbx::cursor::move_result result = cursor.to_next_first_multi(/*throw_notfound=*/false);
+
     if (result) {
         const bool sent = send_response_pair(result);
         SILK_TRACE << "TxCall::handle_next_no_dup " << this << " sent: " << sent << " END";
@@ -439,7 +514,9 @@ void TxCall::handle_next_no_dup(const remote::Cursor* request, db::Cursor& curso
 
 void TxCall::handle_prev(const remote::Cursor* request, db::Cursor& cursor) {
     SILK_TRACE << "TxCall::handle_prev " << this << " START";
+
     const mdbx::cursor::move_result result = cursor.to_previous(/*throw_notfound=*/false);
+
     if (result) {
         const bool sent = send_response_pair(result);
         SILK_TRACE << "TxCall::handle_prev " << this << " sent: " << sent << " END";

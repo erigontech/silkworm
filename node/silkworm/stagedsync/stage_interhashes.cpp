@@ -23,11 +23,11 @@
 #include <silkworm/common/assert.hpp>
 #include <silkworm/common/endian.hpp>
 #include <silkworm/common/rlp_err.hpp>
+#include <silkworm/common/stopwatch.hpp>
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/stagedsync/stage_interhashes/trie_cursor.hpp>
 #include <silkworm/trie/hash_builder.hpp>
-
-#include "silkworm/types/account.hpp"
+#include <silkworm/types/account.hpp>
 
 namespace silkworm::stagedsync {
 
@@ -105,6 +105,11 @@ StageResult InterHashes::prune(db::RWTxn&) { return StageResult::kSuccess; }
 
 trie::PrefixSet InterHashes::gather_account_changes(db::RWTxn& txn, BlockNum from, BlockNum to,
                                                     absl::btree_map<evmc::address, ethash_hash256>& hashed_addresses) {
+    std::unique_ptr<StopWatch> sw;
+    if (log::test_verbosity(log::Level::kTrace)) {
+        sw = std::make_unique<StopWatch>(/*auto_start=*/true);
+    }
+
     BlockNum reached_blocknum{0};
     BlockNum expected_blocknum{from + 1};
 
@@ -146,11 +151,21 @@ trie::PrefixSet InterHashes::gather_account_changes(db::RWTxn& txn, BlockNum fro
         changeset_data = account_changeset.to_next(/*throw_notfound=*/false);
     }
 
+    if (sw) {
+        const auto [_, duration]{sw->stop()};
+        log::Trace("Gather Account Changes", {"in", StopWatch::format(duration)});
+    }
     return ret;
 }
 
 trie::PrefixSet InterHashes::gather_storage_changes(db::RWTxn& txn, BlockNum from, BlockNum to,
                                                     absl::btree_map<evmc::address, ethash_hash256>& hashed_addresses) {
+
+    std::unique_ptr<StopWatch> sw;
+    if (log::test_verbosity(log::Level::kTrace)) {
+        sw = std::make_unique<StopWatch>(/*auto_start=*/true);
+    }
+
     BlockNum reached_blocknum{0};
     BlockNum expected_blocknum{from + 1};
 
@@ -205,6 +220,11 @@ trie::PrefixSet InterHashes::gather_storage_changes(db::RWTxn& txn, BlockNum fro
         }
 
         changeset_data = storage_changeset.to_next(/*throw_notfound=*/false);
+    }
+
+    if (sw) {
+        const auto [_, duration]{sw->stop()};
+        log::Trace("Gather Storage Changes", {"in", StopWatch::format(duration)});
     }
 
     return ret;

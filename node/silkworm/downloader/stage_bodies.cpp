@@ -100,6 +100,10 @@ BodyStage::BodyStage(const Db::ReadWriteAccess& db_access, BlockDownloader& bd)
     : db_access_{db_access}, block_downloader_{bd} {
 }
 
+BodyStage::~BodyStage() {
+    // todo: implement
+}
+
 Stage::Result BodyStage::forward([[maybe_unused]] bool first_sync) {
     using std::shared_ptr;
     using namespace std::chrono_literals;
@@ -180,6 +184,22 @@ Stage::Result BodyStage::forward([[maybe_unused]] bool first_sync) {
     }
 
     return result;
+}
+
+Stage::Result BodyStage::unwind_to(BlockNum, Hash) {
+    // todo: implement
+
+    return Stage::Result();
+}
+
+void BodyStage::send_body_requests() {
+    // todo: implement
+}
+
+auto BodyStage::withdraw_ready_bodies() -> std::shared_ptr<InternalMessage<std::vector<BlockBody>>> {
+    // todo: implement
+
+    return std::shared_ptr<InternalMessage<std::vector<BlockBody>>>();
 }
 
 }  // namespace silkworm

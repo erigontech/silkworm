@@ -18,4 +18,26 @@ limitations under the License.
 
 namespace silkworm {
 
+BodyPersistence::BodyPersistence(Db::ReadWriteAccess::Tx& tx): tx_{tx} {
+    // todo: implement
+}
+
+void BodyPersistence::persist(const BlockBody&) {
+    // todo: implement
+}
+void BodyPersistence::persist(const std::vector<BlockBody>& bodies) {
+    for(auto& body: bodies) {
+        persist(body);
+    }
+}
+void BodyPersistence::close() {
+    // todo: implement
+}
+
+// todo: implement
+bool BodyPersistence::unwind_needed() const { return false; }
+BlockNum BodyPersistence::unwind_point() const { return 0; }
+BlockNum BodyPersistence::initial_height() const { return 0; }
+BlockNum BodyPersistence::highest_height() const { return 0; }
+
 }

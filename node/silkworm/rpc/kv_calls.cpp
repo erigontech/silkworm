@@ -25,28 +25,30 @@ namespace silkworm::rpc {
 
 types::VersionReply KvVersionCall::response_;
 
-static auto max_schema_vs_api_version() {
-    uint32_t db_schema_major = std::get<0>(kDbSchemaVersion);
-    uint32_t db_schema_minor = std::get<1>(kDbSchemaVersion);
-    uint32_t kv_api_major = std::get<0>(kKvApiVersion);
-    uint32_t kv_api_minor = std::get<1>(kKvApiVersion);
-    if (kv_api_major > db_schema_major) {
-        return kKvApiVersion;
+using Version = std::tuple<uint32_t, uint32_t, uint32_t>;
+
+static auto higher_version(Version lhs, Version rhs) {
+    uint32_t lhs_major = std::get<0>(lhs);
+    uint32_t lhs_minor = std::get<1>(lhs);
+    uint32_t rhs_major = std::get<0>(rhs);
+    uint32_t rhs_minor = std::get<1>(rhs);
+    if (rhs_major > lhs_major) {
+        return rhs;
     }
-    if (db_schema_major > kv_api_major) {
-        return kDbSchemaVersion;
+    if (lhs_major > rhs_major) {
+        return lhs;
     }
-    if (kv_api_minor > db_schema_minor) {
-        return kKvApiVersion;
+    if (rhs_minor > lhs_minor) {
+        return rhs;
     }
-    if (db_schema_minor > kv_api_minor) {
-        return kDbSchemaVersion;
+    if (lhs_minor > rhs_minor) {
+        return lhs;
     }
-    return kDbSchemaVersion;
+    return lhs;
 }
 
 void KvVersionCall::fill_predefined_reply() {
-    const auto max_version = max_schema_vs_api_version();
+    const auto max_version = higher_version(kDbSchemaVersion, kKvApiVersion);
     KvVersionCall::response_.set_major(std::get<0>(max_version));
     KvVersionCall::response_.set_minor(std::get<1>(max_version));
     KvVersionCall::response_.set_patch(std::get<2>(max_version));

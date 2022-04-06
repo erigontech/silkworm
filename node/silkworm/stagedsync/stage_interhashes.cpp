@@ -160,7 +160,6 @@ trie::PrefixSet InterHashes::gather_account_changes(db::RWTxn& txn, BlockNum fro
 
 trie::PrefixSet InterHashes::gather_storage_changes(db::RWTxn& txn, BlockNum from, BlockNum to,
                                                     absl::btree_map<evmc::address, ethash_hash256>& hashed_addresses) {
-
     std::unique_ptr<StopWatch> sw;
     if (log::test_verbosity(log::Level::kTrace)) {
         sw = std::make_unique<StopWatch>(/*auto_start=*/true);
@@ -207,15 +206,20 @@ trie::PrefixSet InterHashes::gather_storage_changes(db::RWTxn& txn, BlockNum fro
 
         changeset_key_view.remove_prefix(kAddressLength);
 
+        // Reserve 104 bytes for kHashLength (32) + db::kIncarnationLength (8) + 2*kHashLength (unpacked nibbles)
+        Bytes hashed_key(104, '\0');
+        const size_t hashed_key_prefix_len{kHashLength + db::kIncarnationLength};
+        std::memcpy(&hashed_key[0], hashed_addresses_it->second.bytes, kHashLength);
+        std::memcpy(&hashed_key[kHashLength], changeset_key_view.data(), db::kIncarnationLength);
+
         while (changeset_data) {
             auto changeset_value_view{db::from_slice(changeset_data.value)};
             const ByteView location{changeset_value_view.substr(0, kHashLength)};
             const auto hashed_location{keccak256(location)};
 
-            Bytes hashed_key{ByteView{hashed_addresses_it->second.bytes}};
-            hashed_key.append(changeset_key_view);  // <- Incarnation BE
-            hashed_key.append(trie::unpack_nibbles(hashed_location.bytes));
-            ret.insert(hashed_key);
+            auto unpacked_location{trie::unpack_nibbles(hashed_location.bytes)};
+            std::memcpy(&hashed_key[hashed_key_prefix_len], unpacked_location.data(), unpacked_location.length());
+            ret.insert(ByteView(hashed_key.data(), hashed_key_prefix_len + unpacked_location.length()));
             changeset_data = storage_changeset.to_current_next_multi(/*throw_notfound=*/false);
         }
 

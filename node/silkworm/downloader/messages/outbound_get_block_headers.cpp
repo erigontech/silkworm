@@ -24,14 +24,13 @@
 
 namespace silkworm {
 
-OutboundGetBlockHeaders::OutboundGetBlockHeaders(WorkingChain& wc, SentryClient& s)
-    : working_chain_(wc), sentry_(s) {}
+OutboundGetBlockHeaders::OutboundGetBlockHeaders() {}
 
 int OutboundGetBlockHeaders::sent_request() const {
     return sent_reqs_;
 }
 
-void OutboundGetBlockHeaders::execute() {
+void OutboundGetBlockHeaders::execute(Db::ReadOnlyAccess, HeaderChain& hc, BodySequence&, SentryClient& sentry) {
     using namespace std::literals::chrono_literals;
 
     time_point_t now = std::chrono::system_clock::now();
@@ -40,35 +39,35 @@ void OutboundGetBlockHeaders::execute() {
 
     // anchor extension
     do {
-        auto [packet, penalizations] = working_chain_.request_more_headers(now, timeout);
+        auto [packet, penalizations] = hc.request_more_headers(now, timeout);
 
         if (packet == std::nullopt) break;
 
-        auto send_outcome = send_packet(*packet, timeout);
+        auto send_outcome = send_packet(sentry, *packet, timeout);
 
         packets_ += "o=" + std::to_string(std::get<BlockNum>(packet->request.origin)) + ",";  // todo: log level?
         SILK_TRACE << "Headers request sent (" << *packet << "), received by " << send_outcome.peers_size()
                      << " peer(s)";
 
         if (send_outcome.peers_size() == 0) {
-            working_chain_.request_nack(*packet);
+            hc.request_nack(*packet);
             break;
         }
         ++sent_reqs_;
 
         for (auto& penalization : penalizations) {
             SILK_TRACE << "Penalizing " << penalization;
-            send_penalization(penalization, 1s);
+            send_penalization(sentry, penalization, 1s);
         }
 
         --max_requests;
     } while (max_requests > 0);  // && packet != std::nullopt && receiving_peers != nullptr
 
     // anchor collection
-    auto packet = working_chain_.request_skeleton();
+    auto packet = hc.request_skeleton();
 
     if (packet != std::nullopt) {
-        auto send_outcome = send_packet(*packet, timeout);
+        auto send_outcome = send_packet(sentry, *packet, timeout);
         sent_reqs_++;
         packets_ += "SK o=" + std::to_string(std::get<BlockNum>(packet->request.origin)) + ",";  // todo: log level?
         SILK_TRACE << "Headers skeleton request sent (" << *packet << "), received by " << send_outcome.peers_size()
@@ -80,9 +79,8 @@ void OutboundGetBlockHeaders::execute() {
     }
 }
 
-sentry::SentPeers OutboundGetBlockHeaders::send_packet(const GetBlockHeadersPacket66& packet_, seconds_t timeout) {
-    // packet_ = packet;
-
+sentry::SentPeers OutboundGetBlockHeaders::send_packet(SentryClient& sentry,
+                                                       const GetBlockHeadersPacket66& packet_, seconds_t timeout) {
     if (std::holds_alternative<Hash>(packet_.request.origin))
         throw std::logic_error("OutboundGetBlockHeaders expects block number not hash");
 
@@ -104,7 +102,7 @@ sentry::SentPeers OutboundGetBlockHeaders::send_packet(const GetBlockHeadersPack
     rpc.timeout(timeout);
     rpc.do_not_throw_on_failure();
 
-    sentry_.exec_remotely(rpc);
+    sentry.exec_remotely(rpc);
 
     if (!rpc.status().ok()) {
         SILK_TRACE << "Failure of rpc OutboundNewBlockHashes " << packet_ << ": " << rpc.status().error_message();
@@ -118,12 +116,12 @@ sentry::SentPeers OutboundGetBlockHeaders::send_packet(const GetBlockHeadersPack
     return peers;
 }
 
-void OutboundGetBlockHeaders::send_penalization(const PeerPenalization& penalization, seconds_t timeout) {
+void OutboundGetBlockHeaders::send_penalization(SentryClient& sentry, const PeerPenalization& penalization, seconds_t timeout) {
     rpc::PenalizePeer rpc{penalization.peerId, penalization.penalty};
 
     rpc.timeout(timeout);
 
-    sentry_.exec_remotely(rpc);
+    sentry.exec_remotely(rpc);
 }
 
 std::string OutboundGetBlockHeaders::content() const {

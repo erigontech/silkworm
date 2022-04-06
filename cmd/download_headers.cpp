@@ -22,9 +22,9 @@
 
 #include <silkworm/common/directories.hpp>
 #include <silkworm/common/log.hpp>
-#include <silkworm/downloader/block_provider.hpp>
 #include <silkworm/downloader/header_downloader.hpp>
 #include <silkworm/downloader/internals/header_retrieval.hpp>
+#include "silkworm/downloader/body_downloader.h"
 
 using namespace silkworm;
 
@@ -98,36 +98,35 @@ int main(int argc, char* argv[]) {
         auto message_receiving = std::thread([&sentry]() { sentry.execution_loop(); });
         auto stats_receiving = std::thread([&sentry]() { sentry.stats_receiving_loop(); });
 
-        // Block provider - provides headers and bodies to external peers
-        BlockProvider block_provider{sentry, Db::ReadOnlyAccess{db}};
-        auto block_request_processing = std::thread([&block_provider]() { block_provider.execution_loop(); });
+        // BlockDownloader - download headers and bodies from remote peers using the sentry
+        BlockDownloader block_downloader{sentry, Db::ReadOnlyAccess{db}, chain_identity};
+        auto block_downloading = std::thread([&block_downloader]() { block_downloader.execution_loop(); });
 
         // Stage1 - Header downloader - example code
         bool first_sync = true;  // = starting up silkworm
-        HeaderDownloader header_downloader{sentry, Db::ReadWriteAccess{db}, chain_identity};
-        auto header_processing = std::thread([&header_downloader]() { header_downloader.execution_loop(); });
+        HeaderStage header_stage{Db::ReadWriteAccess{db}, block_downloader};
+        BodyStage body_stage{Db::ReadWriteAccess{db}, block_downloader};
 
+        // Sample stage loop with 1 stage
         // Sample stage loop with 1 stage
         Stage::Result stage_result{Stage::Result::Unspecified};
         do {
             if (stage_result.status != Stage::Result::UnwindNeeded) {
-                stage_result = header_downloader.forward(first_sync);
+                stage_result = header_stage.forward(first_sync);
             } else {
-                stage_result = header_downloader.unwind_to(*stage_result.unwind_point, *stage_result.bad_block);
+                stage_result = header_stage.unwind_to(*stage_result.unwind_point, *stage_result.bad_block);
             }
             first_sync = false;
         } while (stage_result.status != Stage::Result::Error);
 
         // Wait for user termination request
         std::cin.get();            // wait for user press "enter"
-        block_provider.stop();     // signal exiting
-        header_downloader.stop();  // signal exiting
+        block_downloader.stop();     // signal exiting
 
         // wait threads termination
         message_receiving.join();
         stats_receiving.join();
-        block_request_processing.join();
-        header_processing.join();
+        block_downloading.join();
     } catch (std::exception& e) {
         cerr << "Exception: " << e.what() << "\n";
         return_value = 1;

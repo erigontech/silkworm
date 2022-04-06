@@ -25,19 +25,17 @@ namespace silkworm {
 
 class InboundBlockHeaders : public InboundMessage {
   public:
-    InboundBlockHeaders(const sentry::InboundMessage& msg, WorkingChain&, SentryClient&);
+    InboundBlockHeaders(const sentry::InboundMessage& msg);
 
     std::string name() const override { return "InboundBlockHeaders"; }
     std::string content() const override;
     uint64_t reqId() const override;
 
-    void execute() override;
+    void execute(Db::ReadOnlyAccess, HeaderChain&, BodySequence&, SentryClient&) override;
 
   private:
     PeerId peerId_;
     BlockHeadersPacket66 packet_;
-    WorkingChain& working_chain_;
-    SentryClient& sentry_;
 };
 
 }  // namespace silkworm

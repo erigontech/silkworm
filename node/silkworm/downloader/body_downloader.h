@@ -17,38 +17,36 @@ limitations under the License.
 #ifndef SILKWORM_BODY_DOWNLOADER_H
 #define SILKWORM_BODY_DOWNLOADER_H
 
-#include <silkworm/chain/identity.hpp>
-#include <silkworm/concurrency/active_component.hpp>
 #include <silkworm/concurrency/containers.hpp>
 #include <silkworm/downloader/internals/db_tx.hpp>
 #include <silkworm/downloader/internals/types.hpp>
-#include <silkworm/downloader/messages/message.hpp>
-#include <silkworm/downloader/sentry_client.hpp>
+#include <silkworm/downloader/internals/working_chain.hpp>
+#include <silkworm/downloader/messages/internal_message.hpp>
+
+#include "block_downloader.hpp"
 #include "stage.h"
 
 namespace silkworm {
 
-class BodyDownloader : public Stage, public ActiveComponent {
-    Db::ReadWriteAccess db_access_;
-    SentryClient& sentry_;
-
+class BodyStage : public Stage {
   public:
-    BodyDownloader(SentryClient& sentry, const Db::ReadWriteAccess& db_access, const ChainIdentity& chain_identity);
-    BodyDownloader(const BodyDownloader&) = delete;  // not copyable
-    BodyDownloader(BodyDownloader&&) = delete;       // nor movable
-    ~BodyDownloader();
+    BodyStage(const Db::ReadWriteAccess&, BlockDownloader&);
+    BodyStage(const BodyStage&) = delete;  // not copyable
+    BodyStage(BodyStage&&) = delete;       // nor movable
+    ~BodyStage();
 
     Stage::Result forward(bool first_sync) override;  // go forward, downloading headers
     Stage::Result unwind_to(BlockNum new_height,
                             Hash bad_block) override;  // go backward, unwinding headers to new_height
 
-    /*[[long_running]]*/ void execution_loop() override;  // process messages popping them from the queue
-
   private:
-    using MessageQueue = ConcurrentQueue<std::shared_ptr<Message>>;  // used internally to store new messages
+    void send_body_requests();  // send requests for more bodies
+    auto withdraw_ready_bodies() -> std::shared_ptr<InternalMessage<std::vector<BlockBody>>>;
 
+    Db::ReadWriteAccess db_access_;
+    BlockDownloader& block_downloader_;
 };
 
-}
+}  // namespace silkworm
 
 #endif  // SILKWORM_BODY_DOWNLOADER_H

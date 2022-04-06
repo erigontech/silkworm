@@ -23,8 +23,7 @@
 
 namespace silkworm {
 
-InboundGetBlockBodies::InboundGetBlockBodies(const sentry::InboundMessage& msg, Db::ReadOnlyAccess db, SentryClient& s)
-    : InboundMessage(), db_(db), sentry_(s) {
+InboundGetBlockBodies::InboundGetBlockBodies(const sentry::InboundMessage& msg) {
     if (msg.id() != sentry::MessageId::GET_BLOCK_BODIES_66) {
         throw std::logic_error("InboundGetBlockBodies received wrong InboundMessage");
     }
@@ -47,12 +46,15 @@ func (p *Peer) ReplyBlockBodiesRLP(id uint64, bodies []rlp.RawValue) error {
         })
 }
  */
-void InboundGetBlockBodies::execute() {
+void InboundGetBlockBodies::execute(Db::ReadOnlyAccess db, HeaderChain&, BodySequence& bs, SentryClient& sentry) {
     using namespace std;
 
     SILK_TRACE << "Processing message " << *this;
 
-    BodyRetrieval body_retrieval(db_);
+    if (bs.highest_block_in_db() == 0)
+        return;
+
+    BodyRetrieval body_retrieval(db);
 
     BlockBodiesPacket66 reply;
     reply.requestId = packet_.requestId;
@@ -75,7 +77,7 @@ void InboundGetBlockBodies::execute() {
 
     rpc::SendMessageById rpc(peerId_, std::move(msg_reply));
     rpc.do_not_throw_on_failure();
-    sentry_.exec_remotely(rpc);
+    sentry.exec_remotely(rpc);
 
     if (rpc.status().ok()) {
         sentry::SentPeers peers = rpc.reply();

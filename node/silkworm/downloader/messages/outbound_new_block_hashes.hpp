@@ -26,17 +26,15 @@ namespace silkworm {
 
 class OutboundNewBlockHashes : public OutboundMessage {
   public:
-    OutboundNewBlockHashes(WorkingChain&, SentryClient&);
+    OutboundNewBlockHashes();
 
     std::string name() const override { return "OutboundNewBlockHashes"; }
     std::string content() const override;
 
-    void execute() override;
+    void execute(Db::ReadOnlyAccess, HeaderChain&, BodySequence&, SentryClient&) override;
 
   private:
     NewBlockHashesPacket packet_;
-    WorkingChain& working_chain_;
-    SentryClient& sentry_;
 };
 
 }  // namespace silkworm

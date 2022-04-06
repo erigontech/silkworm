@@ -25,20 +25,18 @@ namespace silkworm {
 
 class InboundNewBlock : public InboundMessage {
   public:
-    InboundNewBlock(const sentry::InboundMessage& msg, WorkingChain& wc, SentryClient& s);
+    InboundNewBlock(const sentry::InboundMessage& msg);
 
     std::string name() const override { return "InboundNewBlock"; }
     std::string content() const override;
     uint64_t reqId() const override;
 
-    void execute() override;
+    void execute(Db::ReadOnlyAccess, HeaderChain&, BodySequence&, SentryClient&) override;
 
   private:
     std::string peerId_;
     NewBlockPacket packet_;
     uint64_t reqId_;
-    [[maybe_unused]] WorkingChain& working_chain_;
-    [[maybe_unused]] SentryClient& sentry_;
 };
 
 }  // namespace silkworm

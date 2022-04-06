@@ -25,20 +25,18 @@ namespace silkworm {
 
 class InboundNewBlockHashes : public InboundMessage {
   public:
-    InboundNewBlockHashes(const sentry::InboundMessage&, WorkingChain&, SentryClient&);
+    InboundNewBlockHashes(const sentry::InboundMessage&);
 
     std::string name() const override { return "InboundNewBlockHashes"; }
     std::string content() const override;
     uint64_t reqId() const override;
 
-    void execute() override;
+    void execute(Db::ReadOnlyAccess, HeaderChain&, BodySequence&, SentryClient&) override;
 
   private:
     std::string peerId_;
     NewBlockHashesPacket packet_;
     uint64_t reqId_;
-    WorkingChain& working_chain_;
-    SentryClient& sentry_;
 };
 
 }  // namespace silkworm

@@ -29,38 +29,40 @@ namespace silkworm {
 template <class R>
 class InternalMessage : public Message {
   public:
-    using ExecutionFunc = std::function<R(WorkingChain&)>;
+    using ExecutionFunc = std::function<R(HeaderChain&, BodySequence&)>;
 
-    InternalMessage(WorkingChain&, ExecutionFunc);
+    InternalMessage(ExecutionFunc);
 
     std::string name() const override { return "InternalMessage"; }
 
-    void execute() override;
+    void execute(Db::ReadOnlyAccess, HeaderChain&, BodySequence&, SentryClient&) override;
 
-    std::future<R> result() { return result_.get_future(); }
+    std::future<R>& result() { return result_out_; }
+
+    bool completed_and_read() { return !result_out_.valid(); }   // result arrived and was read
 
   private:
-    WorkingChain& working_chain_;
     ExecutionFunc execution_impl_;
-
-    std::promise<R> result_;
+    std::promise<R> result_in_;
+    std::future<R> result_out_;
 };
 
 template <class R>
-InternalMessage<R>::InternalMessage(WorkingChain& wc, ExecutionFunc exec) : working_chain_(wc), execution_impl_(exec) {}
+InternalMessage<R>::InternalMessage(ExecutionFunc exec)
+    : execution_impl_{exec}, result_in_{}, result_out_{result_in_.get_future()} {}
 
 template <class R>
-void InternalMessage<R>::execute() {
-    R local_result = execution_impl_(working_chain_);
+void InternalMessage<R>::execute(Db::ReadOnlyAccess, HeaderChain& hc, BodySequence& bs, SentryClient&) {
+    R local_result = execution_impl_(hc, bs);
 
-    result_.set_value(local_result);
+    result_in_.set_value(local_result);
 }
 
 template <>
-inline void InternalMessage<void>::execute() {
-    execution_impl_(working_chain_);
+inline void InternalMessage<void>::execute(Db::ReadOnlyAccess, HeaderChain& hc, BodySequence& bs, SentryClient&) {
+    execution_impl_(hc, bs);
 
-    result_.set_value();
+    result_in_.set_value();
 }
 
 }  // namespace silkworm

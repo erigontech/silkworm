@@ -25,8 +25,7 @@
 
 namespace silkworm {
 
-InboundNewBlockHashes::InboundNewBlockHashes(const sentry::InboundMessage& msg, WorkingChain& wc, SentryClient& s)
-    : InboundMessage(), working_chain_(wc), sentry_(s) {
+InboundNewBlockHashes::InboundNewBlockHashes(const sentry::InboundMessage& msg) {
     if (msg.id() != sentry::MessageId::NEW_BLOCK_HASHES_66)
         throw std::logic_error("InboundNewBlockHashes received wrong InboundMessage");
 
@@ -40,7 +39,7 @@ InboundNewBlockHashes::InboundNewBlockHashes(const sentry::InboundMessage& msg, 
     SILK_TRACE << "Received message " << *this;
 }
 
-void InboundNewBlockHashes::execute() {
+void InboundNewBlockHashes::execute(Db::ReadOnlyAccess, HeaderChain& hc, BodySequence&, SentryClient& sentry) {
     using namespace std;
 
     SILK_TRACE << "Processing message " << *this;
@@ -48,14 +47,14 @@ void InboundNewBlockHashes::execute() {
     // todo: Erigon apparently processes this message even if it is not in a fetching phase BUT is in request-chaining
     // mode - do we need the same?
 
-    BlockNum max = working_chain_.top_seen_block_height();
+    BlockNum max = hc.top_seen_block_height();
 
     for (size_t i = 0; i < packet_.size(); i++) {
         Hash hash = packet_[i].hash;
 
         // save announcement
-        working_chain_.save_external_announce(hash);
-        if (working_chain_.has_link(hash)) continue;
+        hc.save_external_announce(hash);
+        if (hc.has_link(hash)) continue;
 
         // request header
         GetBlockHeadersPacket66 reply;
@@ -77,7 +76,7 @@ void InboundNewBlockHashes::execute() {
         rpc::SendMessageById rpc(peerId_, std::move(msg_reply));
         rpc.do_not_throw_on_failure();
 
-        sentry_.exec_remotely(rpc);
+        sentry.exec_remotely(rpc);
 
         [[maybe_unused]] sentry::SentPeers peers = rpc.reply();
         SILK_TRACE << "Received rpc result of " << identify(*this) << ": "
@@ -87,7 +86,7 @@ void InboundNewBlockHashes::execute() {
         max = std::max(max, packet_[i].number);
     }
 
-    working_chain_.top_seen_block_height(max);
+    hc.top_seen_block_height(max);
 }
 
 uint64_t InboundNewBlockHashes::reqId() const { return reqId_; }

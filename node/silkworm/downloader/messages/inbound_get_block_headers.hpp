@@ -25,19 +25,17 @@ namespace silkworm {
 
 class InboundGetBlockHeaders : public InboundMessage {
   public:
-    InboundGetBlockHeaders(const sentry::InboundMessage& msg, Db::ReadOnlyAccess db, SentryClient& sentry);
+    InboundGetBlockHeaders(const sentry::InboundMessage& msg);
 
     std::string name() const override { return "InboundGetBlockHeaders"; }
     std::string content() const override;
     uint64_t reqId() const override;
 
-    void execute() override;
+    void execute(Db::ReadOnlyAccess, HeaderChain&, BodySequence&, SentryClient&) override;
 
   private:
     std::string peerId_;
     GetBlockHeadersPacket66 packet_;
-    Db::ReadOnlyAccess db_;
-    SentryClient& sentry_;
 };
 
 }  // namespace silkworm

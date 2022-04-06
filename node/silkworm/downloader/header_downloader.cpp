@@ -28,66 +28,14 @@
 
 namespace silkworm {
 
-HeaderDownloader::HeaderDownloader(SentryClient& sentry, const Db::ReadWriteAccess& db_access,
-                                   const ChainIdentity& chain_identity)
-    : db_access_{db_access}, sentry_{sentry}, working_chain_(consensus::engine_factory(chain_identity.chain)) {
-    auto tx = db_access_.start_ro_tx();
-    working_chain_.recover_initial_state(tx);
-    working_chain_.set_preverified_hashes(PreverifiedHashes::load(chain_identity.chain.chain_id));
+HeaderStage::HeaderStage(const Db::ReadWriteAccess& dba, BlockDownloader& bd)
+    : db_access_{dba}, block_downloader_(bd) {
 }
 
-HeaderDownloader::~HeaderDownloader() {
-    stop();
-    log::Error() << "HeaderDownloader destroyed";
+HeaderStage::~HeaderStage() {
 }
 
-void HeaderDownloader::receive_message(const sentry::InboundMessage& raw_message) {
-    auto message = InboundBlockAnnouncementMessage::make(raw_message, working_chain_, sentry_);
-
-    SILK_TRACE << "HeaderDownloader received message " << *message;
-
-    messages_.push(message);
-}
-
-void HeaderDownloader::execution_loop() {
-    using namespace std::chrono;
-    using namespace std::chrono_literals;
-
-    sentry_.subscribe(SentryClient::Scope::BlockAnnouncements,
-                      [this](const sentry::InboundMessage& msg) { receive_message(msg); });
-
-    while (!is_stopping() && !sentry_.is_stopping()) {
-        // pop a message from the queue
-        std::shared_ptr<Message> message;
-        bool present = messages_.timed_wait_and_pop(message, 1000ms);
-        if (!present) continue;  // timeout, needed to check exiting_
-
-        // process the message (command pattern)
-        message->execute();
-
-        // log status
-        if (silkworm::log::test_verbosity(silkworm::log::Level::kTrace)) {
-            auto out_message = std::dynamic_pointer_cast<OutboundGetBlockHeaders>(message);
-            auto req_set = out_message != nullptr ? out_message->sent_request() : 0;
-            uint64_t rejected_headers =
-                working_chain_.statistics_.received_headers - working_chain_.statistics_.accepted_headers;
-            log::Info() << "HeaderDownloader statistics:" << std::setfill(' ')
-                << " proc: " << message->name().substr(0, 3) << " | req/skel " << std::setw(2) << std::right
-                << req_set << "/" << std::setw(4) << std::left << working_chain_.statistics_.skeleton_condition
-                << " | queue: " << std::setw(3) << std::right << messages_.size()
-                << " | links: " << std::setw(7) << std::right << working_chain_.pending_links()
-                << " | anchors: " << std::setw(3) << std::right << working_chain_.anchors()
-                << " | db: " << std::setw(10) << std::right << working_chain_.highest_block_in_db()
-                << " | rej: " << std::setw(10) << std::right << rejected_headers;
-        }
-
-    }
-
-    stop();
-    log::Warning() << "HeaderDownloader execution_loop is stopping...";
-}
-
-auto HeaderDownloader::forward(bool first_sync) -> Stage::Result {
+auto HeaderStage::forward(bool first_sync) -> Stage::Result {
     using std::shared_ptr;
     using namespace std::chrono_literals;
     using namespace std::chrono;
@@ -101,11 +49,10 @@ auto HeaderDownloader::forward(bool first_sync) -> Stage::Result {
     log::Trace() << "[INFO] HeaderDownloader forward operation started";
 
     try {
-        Db::ReadWriteAccess::Tx tx = db_access_.start_tx();  // this will start a new tx only if db_access has not
-                                                             // an active tx
-        PersistedChain persisted_chain_(tx);
+        Db::ReadWriteAccess::Tx tx = db_access_.start_tx();  // start a new tx only if db_access has not an active tx
+        PersistedChain persisted_chain(tx);
 
-        if (persisted_chain_.unwind_needed()) {
+        if (persisted_chain.unwind_needed()) {
             tx.commit();
             log::Info() << "[1/16 Headers] End (forward skipped due to unwind_needed detection, canonical chain updated), "
                 << "duration=" << timing.format(timing.lap_duration());
@@ -114,33 +61,31 @@ auto HeaderDownloader::forward(bool first_sync) -> Stage::Result {
             return result;
         }
 
-        RepeatedMeasure<BlockNum> height_progress(persisted_chain_.initial_height());
+        RepeatedMeasure<BlockNum> height_progress(persisted_chain.initial_height());
         log::Info() << "[1/16 Headers] Waiting for headers... from=" << height_progress.get();
 
         // sync status
-        auto sync_command = sync_working_chain(persisted_chain_.initial_height());
+        auto sync_command = sync_working_chain(persisted_chain.initial_height());
         sync_command->result().get();  // blocking
 
         // prepare headers, if any
         auto withdraw_command = withdraw_stable_headers();
-        auto withdraw_result = withdraw_command->result();
 
-        // message processing
+        // header processing
         time_point_t last_update = system_clock::now();
-        while (!new_height_reached && !sentry_.is_stopping()) {
+        while (!new_height_reached && !block_downloader_.is_stopping()) {
 
             // make some outbound header requests
             send_header_requests();
 
             // check if it needs to persist some headers
-            if (!withdraw_result.valid()) {
-                // submit a withdrawal command
+            if (withdraw_command->completed_and_read()) {
+                // submit another withdrawal command
                 withdraw_command = withdraw_stable_headers();
-                withdraw_result = withdraw_command->result();
             }
-            else if (withdraw_result.wait_for(500ms) == std::future_status::ready) {
+            else if (withdraw_command->result().wait_for(500ms) == std::future_status::ready) {
                 // check the result of withdrawal command
-                auto [stable_headers, in_sync] = withdraw_result.get();  // blocking
+                auto [stable_headers, in_sync] = withdraw_command->result().get();  // blocking
                 if (!stable_headers.empty()) {
                     if (stable_headers.size() > 100000) {
                         log::Info() << "[1/16 Headers] Inserting headers...";
@@ -148,7 +93,7 @@ auto HeaderDownloader::forward(bool first_sync) -> Stage::Result {
                     StopWatch insertion_timing; insertion_timing.start();
 
                     // persist headers
-                    persisted_chain_.persist(stable_headers);
+                    persisted_chain.persist(stable_headers);
 
                     if (stable_headers.size() > 100000) {
                         log::Info() << "[1/16 Headers] Inserted headers tot=" << stable_headers.size()
@@ -162,10 +107,10 @@ auto HeaderDownloader::forward(bool first_sync) -> Stage::Result {
                 // check if finished
                 if (first_sync) {  // if this is the first sync (installation time or run time after a long break)...
                     // ... we want to make sure we insert as many headers as possible
-                    new_height_reached = in_sync && persisted_chain_.best_header_changed();
+                    new_height_reached = in_sync && persisted_chain.best_header_changed();
                 } else { // otherwise, we are working at the tip of the chain so ...
                     // ... we need to react quickly when new headers are coming in
-                    new_height_reached = persisted_chain_.best_header_changed();
+                    new_height_reached = persisted_chain.best_header_changed();
                 }
             }
 
@@ -173,7 +118,7 @@ auto HeaderDownloader::forward(bool first_sync) -> Stage::Result {
             if (system_clock::now() - last_update > 30s) {
                 last_update = system_clock::now();
 
-                height_progress.set(persisted_chain_.highest_height());
+                height_progress.set(persisted_chain.highest_height());
 
                 log::Info() << "[1/16 Headers] Wrote block headers number=" << height_progress.get() << " (+"
                             << height_progress.delta() << "), " << height_progress.throughput() << " headers/secs";
@@ -182,19 +127,19 @@ auto HeaderDownloader::forward(bool first_sync) -> Stage::Result {
 
         result.status = Stage::Result::Done;
 
-        if (persisted_chain_.unwind_needed()) {
+        if (persisted_chain.unwind_needed()) {
             result.status = Result::UnwindNeeded;
-            result.unwind_point = persisted_chain_.unwind_point();
+            result.unwind_point = persisted_chain.unwind_point();
             // no need to set result.bad_block
         }
 
-        auto headers_downloaded = persisted_chain_.highest_height() - persisted_chain_.initial_height();
+        auto headers_downloaded = persisted_chain.highest_height() - persisted_chain.initial_height();
         log::Info() << "[1/16 Headers] Downloading completed, wrote " << headers_downloaded << " headers,"
-            << " last=" << persisted_chain_.highest_height()
+            << " last=" << persisted_chain.highest_height()
             << " duration=" << StopWatch::format(timing.lap_duration());
 
         log::Info() << "[1/16 Headers] Updating canonical chain";
-        persisted_chain_.close();
+        persisted_chain.close();
 
         tx.commit();  // this will commit if the tx was started here
 
@@ -214,7 +159,7 @@ auto HeaderDownloader::forward(bool first_sync) -> Stage::Result {
     return result;
 }
 
-auto HeaderDownloader::unwind_to(BlockNum new_height, Hash bad_block) -> Stage::Result {
+auto HeaderStage::unwind_to(BlockNum new_height, Hash bad_block) -> Stage::Result {
     Stage::Result result;
 
     StopWatch timing; timing.start();
@@ -256,51 +201,51 @@ auto HeaderDownloader::unwind_to(BlockNum new_height, Hash bad_block) -> Stage::
 }
 
 // Request new headers from peers
-void HeaderDownloader::send_header_requests() {
+void HeaderStage::send_header_requests() {
     // if (!sentry_.ready()) return;
 
-    auto message = std::make_shared<OutboundGetBlockHeaders>(working_chain_, sentry_);
+    auto message = std::make_shared<OutboundGetBlockHeaders>();
 
-    messages_.push(message);
+    block_downloader_.accept(message);
 }
 
 // New block hash announcements propagation
-void HeaderDownloader::send_announcements() {
+void HeaderStage::send_announcements() {
     // if (!sentry_.ready()) return;
 
-    auto message = std::make_shared<OutboundNewBlockHashes>(working_chain_, sentry_);
+    auto message = std::make_shared<OutboundNewBlockHashes>();
 
-    messages_.push(message);
+    block_downloader_.accept(message);
 }
 
-auto HeaderDownloader::sync_working_chain(BlockNum highest_in_db) -> std::shared_ptr<InternalMessage<void>> {
+auto HeaderStage::sync_working_chain(BlockNum highest_in_db) -> std::shared_ptr<InternalMessage<void>> {
     auto message = std::make_shared<InternalMessage<void>>(
-        working_chain_, [highest_in_db](WorkingChain& wc) { wc.sync_current_state(highest_in_db); });
+        [highest_in_db](HeaderChain& wc, BodySequence&) { wc.sync_current_state(highest_in_db); });
 
-    messages_.push(message);
+    block_downloader_.accept(message);
 
     return message;
 }
 
-auto HeaderDownloader::withdraw_stable_headers() -> std::shared_ptr<InternalMessage<std::tuple<Headers, bool>>> {
+auto HeaderStage::withdraw_stable_headers() -> std::shared_ptr<InternalMessage<std::tuple<Headers, bool>>> {
     using result_t = std::tuple<Headers, bool>;
 
-    auto message = std::make_shared<InternalMessage<result_t>>(working_chain_, [](WorkingChain& wc) {
+    auto message = std::make_shared<InternalMessage<result_t>>([](HeaderChain& wc, BodySequence&) {
         Headers headers = wc.withdraw_stable_headers();
         bool in_sync = wc.in_sync();
         return result_t{std::move(headers), in_sync};
     });
 
-    messages_.push(message);
+    block_downloader_.accept(message);
 
     return message;
 }
 
-auto HeaderDownloader::update_bad_headers(std::set<Hash> bad_headers) -> std::shared_ptr<InternalMessage<void>> {
+auto HeaderStage::update_bad_headers(std::set<Hash> bad_headers) -> std::shared_ptr<InternalMessage<void>> {
     auto message = std::make_shared<InternalMessage<void>>(
-        working_chain_, [bads = std::move(bad_headers)](WorkingChain& wc) { wc.add_bad_headers(bads); });
+        [bads = std::move(bad_headers)](HeaderChain& wc, BodySequence&) { wc.add_bad_headers(bads); });
 
-    messages_.push(message);
+    block_downloader_.accept(message);
 
     return message;
 }

@@ -17,7 +17,11 @@
 #ifndef SILKWORM_MESSAGE_HPP
 #define SILKWORM_MESSAGE_HPP
 
+#include <silkworm/downloader/internals/body_sequence.hpp>
+#include <silkworm/downloader/internals/db_tx.hpp>
 #include <silkworm/downloader/internals/types.hpp>
+#include <silkworm/downloader/internals/working_chain.hpp>
+#include <silkworm/downloader/sentry_client.hpp>
 
 namespace silkworm {
 
@@ -25,7 +29,8 @@ class Message {
   public:
     virtual std::string name() const = 0;
 
-    virtual void execute() = 0;  // inbound message send a reply, outbound message send a request
+    // execute: inbound message send a reply, outbound message send a request
+    virtual void execute(Db::ReadOnlyAccess, HeaderChain&, BodySequence&, SentryClient&) = 0;
 
     virtual ~Message() = default;
 };

@@ -22,12 +22,12 @@ limitations under the License.
 
 namespace silkworm {
 
-OutboundNewBlockHashes::OutboundNewBlockHashes(WorkingChain& wc, SentryClient& s) : working_chain_(wc), sentry_(s) {}
+OutboundNewBlockHashes::OutboundNewBlockHashes() {}
 
-void OutboundNewBlockHashes::execute() {
+void OutboundNewBlockHashes::execute(Db::ReadOnlyAccess, HeaderChain& hc, BodySequence&, SentryClient& sentry) {
     using namespace std::literals::chrono_literals;
 
-    auto& announces_to_do = working_chain_.announces_to_do();
+    auto& announces_to_do = hc.announces_to_do();
 
     if (announces_to_do.empty()) {
         SILK_TRACE << "No OutboundNewBlockHashes (announcements) message to send";
@@ -56,7 +56,7 @@ void OutboundNewBlockHashes::execute() {
     rpc.timeout(timeout);
     rpc.do_not_throw_on_failure();
 
-    sentry_.exec_remotely(rpc);
+    sentry.exec_remotely(rpc);
 
     if (!rpc.status().ok()) {
         SILK_TRACE << "Failure of rpc OutboundNewBlockHashes " << packet_ << ": " << rpc.status().error_message();

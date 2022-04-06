@@ -30,10 +30,10 @@
 
 namespace silkworm {
 
-class WorkingChain_ForTest : public WorkingChain {
+class WorkingChain_ForTest : public HeaderChain {
   public:  // publication of internal members to test methods functioning
-    using WorkingChain::generate_request_id;
-    using WorkingChain::WorkingChain;
+    using HeaderChain::generate_request_id;
+    using HeaderChain::HeaderChain;
 };
 
 class DummyConsensusEngine : public consensus::IEngine {

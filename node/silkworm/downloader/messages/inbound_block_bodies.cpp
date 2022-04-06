@@ -20,8 +20,7 @@
 
 namespace silkworm {
 
-InboundBlockBodies::InboundBlockBodies(const sentry::InboundMessage& msg, WorkingChain& wc, SentryClient& s)
-    : InboundMessage(), working_chain_(wc), sentry_(s) {
+InboundBlockBodies::InboundBlockBodies(const sentry::InboundMessage& msg) {
     if (msg.id() != sentry::MessageId::BLOCK_BODIES_66)
         throw std::logic_error("InboundBlockBodies received wrong InboundMessage");
 
@@ -33,7 +32,7 @@ InboundBlockBodies::InboundBlockBodies(const sentry::InboundMessage& msg, Workin
     SILK_TRACE << "Received message " << *this;
 }
 
-void InboundBlockBodies::execute() {
+void InboundBlockBodies::execute(Db::ReadOnlyAccess, HeaderChain&, BodySequence&, SentryClient&) {
     using namespace std;
 
     SILK_TRACE << "Processing message " << *this;

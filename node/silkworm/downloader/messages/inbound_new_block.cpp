@@ -25,8 +25,7 @@
 
 namespace silkworm {
 
-InboundNewBlock::InboundNewBlock(const sentry::InboundMessage& msg, WorkingChain& wc, SentryClient& s)
-    : InboundMessage(), working_chain_(wc), sentry_(s) {
+InboundNewBlock::InboundNewBlock(const sentry::InboundMessage& msg) {
     if (msg.id() != sentry::MessageId::NEW_BLOCK_66)
         throw std::logic_error("InboundNewBlock received wrong InboundMessage");
 
@@ -40,7 +39,7 @@ InboundNewBlock::InboundNewBlock(const sentry::InboundMessage& msg, WorkingChain
     SILK_TRACE << "Received message " << *this;
 }
 
-void InboundNewBlock::execute() {
+void InboundNewBlock::execute(Db::ReadOnlyAccess, HeaderChain&, BodySequence&, SentryClient&) {
     // todo: Erigon header-downloader apparently processes this message even if it is not in a fetching phase - do we
     // need the same?
 

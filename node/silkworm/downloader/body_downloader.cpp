@@ -16,6 +16,15 @@ limitations under the License.
 
 #include "body_downloader.h"
 
+#include <chrono>
+#include <thread>
+
+#include <silkworm/common/log.hpp>
+#include <silkworm/common/measure.hpp>
+#include <silkworm/common/stopwatch.hpp>
+
+#include <silkworm/downloader/internals/body_persistence.hpp>
+
 namespace silkworm {
 
 /*
@@ -87,6 +96,90 @@ namespace silkworm {
     4. returns (headers,bodies)
 
  */
-
-
+BodyStage::BodyStage(const Db::ReadWriteAccess& db_access, BlockDownloader& bd)
+    : db_access_{db_access}, block_downloader_{bd} {
 }
+
+Stage::Result BodyStage::forward([[maybe_unused]] bool first_sync) {
+    using std::shared_ptr;
+    using namespace std::chrono_literals;
+    using namespace std::chrono;
+
+    Stage::Result result;
+
+    StopWatch timing; timing.start();
+    log::Info() << "[2/16 Bodies] Start";
+    log::Trace() << "[INFO] BodyDownloader forward operation started";
+
+    try {
+        Db::ReadWriteAccess::Tx tx = db_access_.start_tx();  // start a new tx only if db_access has not an active tx
+        auto headers_stage_height = tx.read_stage_progress(db::stages::kBlockBodiesKey);
+
+        BodyPersistence body_persistence(tx);
+
+        RepeatedMeasure<BlockNum> height_progress(body_persistence.initial_height());
+        log::Info() << "[2/16 Headers] Waiting for bodies... from=" << height_progress.get();
+
+        auto withdraw_command = withdraw_ready_bodies();
+
+        // block processing
+        time_point_t last_update = system_clock::now();
+        while (body_persistence.highest_height() < headers_stage_height && !block_downloader_.is_stopping()) {
+
+            send_body_requests();
+
+            if (!withdraw_command->completed_and_read()) {
+                // renew request
+                withdraw_command = withdraw_ready_bodies();
+            }
+            else if (withdraw_command->result().wait_for(1000ms) == std::future_status::ready) {
+                // read response
+                auto bodies = withdraw_command->result().get();
+                // persist bodies
+                body_persistence.persist(bodies);
+                // check unwind condition
+                if (body_persistence.unwind_needed()) {
+                    result.status = Result::UnwindNeeded;
+                    result.unwind_point = body_persistence.unwind_point();
+                    break;
+                } else {
+                    result.status = Stage::Result::Done;
+                }
+            }
+
+            // show progress
+            if (system_clock::now() - last_update > 30s) {
+                last_update = system_clock::now();
+
+                height_progress.set(body_persistence.highest_height());
+
+                log::Info() << "[1/16 Headers] Wrote block headers number=" << height_progress.get() << " (+"
+                            << height_progress.delta() << "), " << height_progress.throughput() << " headers/secs";
+            }
+        }
+
+        auto bodies_downloaded = body_persistence.highest_height() - body_persistence.initial_height();
+        log::Info() << "[2/16 Bodies] Downloading completed, wrote " << bodies_downloaded << " bodies,"
+                    << " last=" << body_persistence.highest_height()
+                    << " duration=" << StopWatch::format(timing.lap_duration());
+
+        //log::Info() << "[2/16 Bodies] Updating canonical chain";
+        body_persistence.close();
+
+        tx.commit();  // this will commit if the tx was started here
+
+        log::Info() << "[2/16 Bodies] Done, duration= " << StopWatch::format(timing.lap_duration());
+        log::Trace() << "[INFO] BodyDownloader forward operation completed";
+
+    } catch (const std::exception& e) {
+        log::Error() << "[2/16 Bodies] Aborted due to exception: " << e.what();
+        log::Trace() << "[ERROR] BodyDownloader forward operation is stopping due to an exception: " << e.what();
+
+        // tx rollback executed automatically if needed
+        result.status = Stage::Result::Error;
+    }
+
+    return result;
+}
+
+}  // namespace silkworm

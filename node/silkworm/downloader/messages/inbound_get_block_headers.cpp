@@ -24,9 +24,7 @@
 
 namespace silkworm {
 
-InboundGetBlockHeaders::InboundGetBlockHeaders(const sentry::InboundMessage& msg, Db::ReadOnlyAccess db,
-                                               SentryClient& sentry)
-    : InboundMessage(), db_(db), sentry_(sentry) {
+InboundGetBlockHeaders::InboundGetBlockHeaders(const sentry::InboundMessage& msg) {
     if (msg.id() != sentry::MessageId::GET_BLOCK_HEADERS_66) {
         throw std::logic_error("InboundGetBlockHeaders received wrong InboundMessage");
     }
@@ -39,12 +37,15 @@ InboundGetBlockHeaders::InboundGetBlockHeaders(const sentry::InboundMessage& msg
     SILK_TRACE << "Received message " << *this;
 }
 
-void InboundGetBlockHeaders::execute() {
+void InboundGetBlockHeaders::execute(Db::ReadOnlyAccess db, HeaderChain&, BodySequence& bs, SentryClient& sentry) {
     using namespace std;
 
     SILK_TRACE << "Processing message " << *this;
 
-    HeaderRetrieval header_retrieval(db_);
+    if (bs.highest_block_in_db() == 0) // skip requests in the first sync even if we already saved some headers
+        return;
+
+    HeaderRetrieval header_retrieval(db);
 
     BlockHeadersPacket66 reply;
     reply.requestId = packet_.requestId;
@@ -74,7 +75,7 @@ void InboundGetBlockHeaders::execute() {
 
     rpc::SendMessageById rpc{peerId_, std::move(msg_reply)};
     rpc.do_not_throw_on_failure();
-    sentry_.exec_remotely(rpc);
+    sentry.exec_remotely(rpc);
 
     if (rpc.status().ok()) {
         sentry::SentPeers peers = rpc.reply();

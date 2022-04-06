@@ -27,18 +27,18 @@ namespace silkworm {
 // Useful definitions
 // ----------------------------------------------------------------------------
 
-class WorkingChain_ForTest : public WorkingChain {
+class WorkingChain_ForTest : public HeaderChain {
   public:  // publication of internal members to test methods functioning
-    using WorkingChain::anchor_queue_;
-    using WorkingChain::anchors_;
-    using WorkingChain::find_anchor;
-    using WorkingChain::generate_request_id;
-    using WorkingChain::links_;
-    using WorkingChain::pending_links;
-    using WorkingChain::reduce_links_to;
-    using WorkingChain::WorkingChain;
+    using HeaderChain::anchor_queue_;
+    using HeaderChain::anchors_;
+    using HeaderChain::find_anchor;
+    using HeaderChain::generate_request_id;
+    using HeaderChain::links_;
+    using HeaderChain::pending_links;
+    using HeaderChain::reduce_links_to;
+    using HeaderChain::HeaderChain;
 
-    WorkingChain_ForTest() : WorkingChain(consensus::engine_factory(ChainIdentity::mainnet.chain)) {}
+    WorkingChain_ForTest() : HeaderChain(consensus::engine_factory(ChainIdentity::mainnet.chain)) {}
 };
 
 // TESTs related to HeaderList::split_into_segments

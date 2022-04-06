@@ -112,6 +112,7 @@ trie::PrefixSet InterHashes::gather_account_changes(db::RWTxn& txn, BlockNum fro
 
     BlockNum reached_blocknum{0};
     BlockNum expected_blocknum{from + 1};
+    absl::btree_set<ethash_hash256> deleted_hashes{};
 
     std::unique_lock log_lck(log_mtx_);
     current_source_ = std::string(db::table::kAccountChangeSet.name);
@@ -122,6 +123,8 @@ trie::PrefixSet InterHashes::gather_account_changes(db::RWTxn& txn, BlockNum fro
     trie::PrefixSet ret;
 
     db::Cursor account_changeset(txn, db::table::kAccountChangeSet);
+    db::Cursor plain_state(txn, db::table::kPlainState);
+
     auto changeset_data{account_changeset.lower_bound(db::to_slice(starting_key), /*throw_notfound=*/false)};
 
     while (changeset_data) {
@@ -139,9 +142,33 @@ trie::PrefixSet InterHashes::gather_account_changes(db::RWTxn& txn, BlockNum fro
         while (changeset_data) {
             auto changeset_value_view{db::from_slice(changeset_data.value)};
             evmc::address address{to_evmc_address(changeset_value_view)};
+            changeset_value_view.remove_prefix(kAddressLength);
+
             if (!hashed_addresses.contains(address)) {
                 const auto hashed_address{keccak256(address)};
                 hashed_addresses[address] = hashed_address;
+
+                if (!changeset_value_view.empty()) {
+                    auto [previous_account, rlp_err]{Account::from_encoded_storage(changeset_value_view)};
+                    rlp::success_or_throw(rlp_err);
+
+                    if (previous_account.incarnation > 0) {
+                        // Lookup current
+                        auto plainstate_data{plain_state.find(db::to_slice(address.bytes),
+                                                              /*throw_notfound=*/true)};  // <- Must exist in PlainState
+                        if (plainstate_data.value.empty()) {
+                            (void)deleted_hashes.insert(hashed_address);
+                        } else {
+                            auto [current_account,
+                                  rlp_err2]{Account::from_encoded_storage(db::from_slice(plainstate_data.value))};
+                            rlp::success_or_throw(rlp_err2);
+                            if (current_account.incarnation < previous_account.incarnation) {
+                                (void)deleted_hashes.insert(hashed_address);
+                            }
+                        }
+                    }
+                }
+
                 ret.insert(trie::unpack_nibbles(hashed_address.bytes));
             }
             changeset_data = account_changeset.to_current_next_multi(/*throw_notfound=*/false);
@@ -149,6 +176,22 @@ trie::PrefixSet InterHashes::gather_account_changes(db::RWTxn& txn, BlockNum fro
 
         ++expected_blocknum;
         changeset_data = account_changeset.to_next(/*throw_notfound=*/false);
+    }
+
+    // Eventually delete intermediate hashes for deleted accounts
+    if (!deleted_hashes.empty()) {
+        db::Cursor trie_storage(txn, db::table::kTrieOfStorage);
+        for (const auto& hash : deleted_hashes) {
+            auto hash_slice{db::to_slice(hash.bytes)};
+            auto data{trie_storage.lower_bound(hash_slice, /*throw_notfound=*/false)};
+            while (data) {
+                if (data.key.starts_with(hash_slice)) {
+                    trie_storage.erase();
+                } else {
+                    break;
+                }
+            }
+        }
     }
 
     if (sw) {

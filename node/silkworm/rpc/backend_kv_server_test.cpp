@@ -138,32 +138,90 @@ const uint64_t kTestSentryPeerCount{10};
 constexpr const char* kTestSentryPeerId{"peer_id"};
 constexpr const char* kTestSentryPeerName{"peer_name"};
 
-class SentryService : public sentry::Sentry::Service {
+class SentryServer {
   public:
-    explicit SentryService(grpc::Status status) : status_(status) {}
+    explicit SentryServer(grpc::Status status) : status_(status) {}
 
-    std::unique_ptr<grpc::Server> build_and_start(const std::string& server_address) {
+    void build_and_start(const std::string& server_address) {
         grpc::ServerBuilder builder;
         builder.AddListeningPort(server_address, grpc::InsecureServerCredentials());
-        builder.RegisterService(this);
-        return builder.BuildAndStart();
+        builder.RegisterService(&service_);
+        cq_ = builder.AddCompletionQueue();
+        server_ = builder.BuildAndStart();
+        server_thread_ = std::thread{[&]() { run(); }};
     }
 
-    grpc::Status PeerCount(::grpc::ServerContext* /*context*/, const ::sentry::PeerCountRequest* /*request*/, ::sentry::PeerCountReply* response) override {
-        if (status_.ok()) {
-            response->set_count(kTestSentryPeerCount);
+    void stop() {
+        server_->Shutdown();
+        server_->Wait();
+        cq_->Shutdown();
+        void* tag{nullptr};
+        bool ok{false};
+        while (cq_->Next(&tag, &ok)) {
         }
-        return status_;
-    }
-
-    grpc::Status NodeInfo(::grpc::ServerContext* /*context*/, const ::google::protobuf::Empty* /*request*/, ::types::NodeInfoReply* response) override {
-        response->set_id(kTestSentryPeerId);
-        response->set_name(kTestSentryPeerName);
-        return status_;
+        server_thread_.join();
     }
 
   private:
+    void run() {
+        grpc::ServerContext pc_context;
+        sentry::PeerCountRequest pc_request;
+        grpc::ServerAsyncResponseWriter<sentry::PeerCountReply> pc_responder{&pc_context};
+        service_.RequestPeerCount(&pc_context, &pc_request, &pc_responder, cq_.get(), cq_.get(), PEER_COUNT_REQUEST_TAG);
+        grpc::ServerContext ni_context;
+        google::protobuf::Empty ni_request;
+        grpc::ServerAsyncResponseWriter<types::NodeInfoReply> ni_responder{&ni_context};
+        service_.RequestNodeInfo(&ni_context, &ni_request, &ni_responder, cq_.get(), cq_.get(), NODE_INFO_REQUEST_TAG);
+        bool has_work{true};
+        while (has_work) {
+            void* tag{nullptr};
+            bool ok{false};
+            const bool got_event = cq_->Next(&tag, &ok);
+            if (!got_event) {
+                has_work = false;
+                continue;
+            }
+            if (ok && tag == PEER_COUNT_REQUEST_TAG) {
+                if (status_.ok()) {
+                    sentry::PeerCountReply pc_reply;
+                    if (status_.ok()) {
+                        pc_reply.set_count(kTestSentryPeerCount);
+                    }
+                    pc_responder.Finish(pc_reply, status_, PEER_COUNT_FINISH_TAG);
+                } else {
+                    pc_responder.FinishWithError(status_, PEER_COUNT_FINISH_TAG);
+                }
+            }
+            if (ok && tag == PEER_COUNT_FINISH_TAG) {
+                continue;
+            }
+            if (ok && tag == NODE_INFO_REQUEST_TAG) {
+                if (status_.ok()) {
+                    types::NodeInfoReply ni_reply;
+                    ni_reply.set_id(kTestSentryPeerId);
+                    ni_reply.set_name(kTestSentryPeerName);
+                    ni_responder.Finish(ni_reply, status_, NODE_INFO_FINISH_TAG);
+                } else {
+                    ni_responder.FinishWithError(status_, NODE_INFO_FINISH_TAG);
+                }
+            }
+            if (ok && tag == NODE_INFO_FINISH_TAG) {
+                continue;
+            }
+        }
+    }
+
+    inline static void* PEER_COUNT_REQUEST_TAG = reinterpret_cast<void*>(1);
+    inline static void* PEER_COUNT_FINISH_TAG = reinterpret_cast<void*>(2);
+
+    inline static void* NODE_INFO_REQUEST_TAG = reinterpret_cast<void*>(3);
+    inline static void* NODE_INFO_FINISH_TAG = reinterpret_cast<void*>(4);
+
     grpc::Status status_;
+    sentry::Sentry::AsyncService service_;
+    std::unique_ptr<grpc::ServerCompletionQueue> cq_;
+    std::unique_ptr<grpc::Server> server_;
+    std::thread server_thread_;
 };
 
 // TODO(canepat): better copy grpc_pick_unused_port_or_die to generate unused port
@@ -207,8 +265,8 @@ struct BackEndKvE2eTest {
         std::size_t i{0};
         while (std::getline(sentry_list_stream, sentry_address, kSentryAddressDelimiter)) {
             SILKWORM_ASSERT(i < statuses.size());
-            sentry_services.emplace_back(std::make_unique<SentryService>(statuses[i]));
-            sentry_servers.emplace_back(sentry_services.back()->build_and_start(sentry_address));
+            sentry_servers.emplace_back(std::make_unique<SentryServer>(statuses[i]));
+            sentry_servers.back()->build_and_start(sentry_address);
             ++i;
         }
     }
@@ -224,8 +282,7 @@ struct BackEndKvE2eTest {
         server->shutdown();
         server->join();
         for (auto& sentry_server : sentry_servers) {
-            sentry_server->Shutdown();
-            sentry_server->Wait();
+            sentry_server->stop();
         }
     }
 
@@ -242,8 +299,7 @@ struct BackEndKvE2eTest {
     const NodeSettings& node_settings;
     std::unique_ptr<EthereumBackEnd> backend;
     std::unique_ptr<rpc::BackEndKvServer> server;
-    std::vector<std::unique_ptr<SentryService>> sentry_services;
-    std::vector<std::unique_ptr<grpc::Server>> sentry_servers;
+    std::vector<std::unique_ptr<SentryServer>> sentry_servers;
 };
 } // namespace anonymous
 
@@ -563,7 +619,7 @@ TEST_CASE("BackEndKvServer E2E: empty node settings", "[silkworm][node][rpc]") {
     }
 }
 
-TEST_CASE("BackEndKvServer E2E: mainnet chain, etherbase set", "[silkworm][node][rpc]") {
+TEST_CASE("BackEndKvServer E2E: mainnet chain etherbase set", "[silkworm][node][rpc]") {
     NodeSettings node_settings;
     node_settings.chain_config = *silkworm::lookup_chain_config("mainnet");
     node_settings.etherbase = evmc::address{};
@@ -586,7 +642,7 @@ TEST_CASE("BackEndKvServer E2E: mainnet chain, etherbase set", "[silkworm][node]
     }
 }
 
-TEST_CASE("BackEndKvServer E2E: one Sentry, status OK", "[silkworm][node][rpc]") {
+TEST_CASE("BackEndKvServer E2E: one Sentry status OK", "[silkworm][node][rpc]") {
     NodeSettings node_settings;
     node_settings.sentry_api_addr = kTestSentryAddress1;
     BackEndKvE2eTest test{silkworm::log::Level::kNone, node_settings, {grpc::Status::OK}};
@@ -611,7 +667,7 @@ TEST_CASE("BackEndKvServer E2E: one Sentry, status OK", "[silkworm][node][rpc]")
     }
 }
 
-TEST_CASE("BackEndKvServer E2E: one Sentry, status KO", "[silkworm][node][rpc]") {
+TEST_CASE("BackEndKvServer E2E: one Sentry status KO", "[silkworm][node][rpc]") {
     NodeSettings node_settings;
     node_settings.sentry_api_addr = kTestSentryAddress1;
     grpc::Status DEADLINE_EXCEEDED_ERROR{grpc::StatusCode::DEADLINE_EXCEEDED, "timeout"};
@@ -633,7 +689,7 @@ TEST_CASE("BackEndKvServer E2E: one Sentry, status KO", "[silkworm][node][rpc]")
     }
 }
 
-TEST_CASE("BackEndKvServer E2E: more than one Sentry, all status OK", "[silkworm][node][rpc]") {
+TEST_CASE("BackEndKvServer E2E: more than one Sentry all status OK", "[silkworm][node][rpc]") {
     NodeSettings node_settings;
     node_settings.sentry_api_addr = kTestSentryAddress1 + "," + kTestSentryAddress2;
     BackEndKvE2eTest test{silkworm::log::Level::kNone, node_settings, {grpc::Status::OK, grpc::Status::OK}};
@@ -661,7 +717,7 @@ TEST_CASE("BackEndKvServer E2E: more than one Sentry, all status OK", "[silkworm
     }
 }
 
-TEST_CASE("BackEndKvServer E2E: more than one Sentry, at least one status KO", "[silkworm][node][rpc]") {
+TEST_CASE("BackEndKvServer E2E: more than one Sentry at least one status KO", "[silkworm][node][rpc]") {
     NodeSettings node_settings;
     node_settings.sentry_api_addr = kTestSentryAddress1 + "," + kTestSentryAddress2;
     BackEndKvE2eTest test{silkworm::log::Level::kNone, node_settings, {grpc::Status::OK, grpc::Status::CANCELLED}};
@@ -682,7 +738,7 @@ TEST_CASE("BackEndKvServer E2E: more than one Sentry, at least one status KO", "
     }
 }
 
-TEST_CASE("BackEndKvServer E2E: more than one Sentry, all status KO", "[silkworm][node][rpc]") {
+TEST_CASE("BackEndKvServer E2E: more than one Sentry all status KO", "[silkworm][node][rpc]") {
     NodeSettings node_settings;
     node_settings.sentry_api_addr = kTestSentryAddress1 + "," + kTestSentryAddress2;
     grpc::Status INTERNAL_ERROR{grpc::StatusCode::INTERNAL, "internal error"};

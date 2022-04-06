@@ -25,8 +25,8 @@
 #include <silkworm/consensus/engine.hpp>
 #include <silkworm/db/genesis.hpp>
 
-#include "persisted_chain.hpp"
-#include "working_chain.hpp"
+#include "header_persistence.hpp"
+#include "header_chain.hpp"
 
 namespace silkworm {
 
@@ -114,7 +114,7 @@ TEST_CASE("working/persistent-chain integration test") {
 
         // saving headers ready to persist as the header downloader does in the forward() method
         Headers headers_to_persist = wc.withdraw_stable_headers();
-        PersistedChain pc(tx);
+        HeaderPersistence pc(tx);
         pc.persist(headers_to_persist);
 
         // check internal status
@@ -190,7 +190,7 @@ TEST_CASE("working/persistent-chain integration test") {
         wc.accept_headers(headers, request_id, peer_id);
 
         // creating the persisted chain as the header downloader does at the beginning of the forward() method
-        PersistedChain pc(tx);
+        HeaderPersistence pc(tx);
 
         // saving headers ready to persist as the header downloader does in the forward() method
         Headers headers_to_persist = wc.withdraw_stable_headers();
@@ -303,7 +303,7 @@ TEST_CASE("working/persistent-chain integration test") {
         wc.accept_headers(headers, request_id, peer_id);
 
         // creating the persisted chain as the header downloader does at the beginning of the forward() method
-        PersistedChain pc(tx);
+        HeaderPersistence pc(tx);
 
         // saving headers ready to persist as the header downloader does in the forward() method
         Headers headers_to_persist = wc.withdraw_stable_headers();
@@ -413,7 +413,7 @@ TEST_CASE("working/persistent-chain integration test") {
         wc.accept_headers(headers, request_id, peer_id);
 
         // creating the persisted chain as the header downloader does at the beginning of the forward() method
-        PersistedChain pc(tx);
+        HeaderPersistence pc(tx);
 
         // saving headers ready to persist as the header downloader does in the forward() method
         Headers headers_to_persist = wc.withdraw_stable_headers();

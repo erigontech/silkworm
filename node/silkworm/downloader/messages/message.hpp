@@ -20,7 +20,7 @@
 #include <silkworm/downloader/internals/body_sequence.hpp>
 #include <silkworm/downloader/internals/db_tx.hpp>
 #include <silkworm/downloader/internals/types.hpp>
-#include <silkworm/downloader/internals/working_chain.hpp>
+#include <silkworm/downloader/internals/header_chain.hpp>
 #include <silkworm/downloader/sentry_client.hpp>
 
 namespace silkworm {

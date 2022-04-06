@@ -17,7 +17,7 @@
 #ifndef SILKWORM_OUTBOUND_GET_BLOCK_HEADERS_HPP
 #define SILKWORM_OUTBOUND_GET_BLOCK_HEADERS_HPP
 
-#include <silkworm/downloader/internals/working_chain.hpp>
+#include <silkworm/downloader/internals/header_chain.hpp>
 #include <silkworm/downloader/packets/get_block_headers_packet.hpp>
 
 #include "outbound_message.hpp"

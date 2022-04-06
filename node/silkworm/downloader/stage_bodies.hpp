@@ -20,7 +20,6 @@ limitations under the License.
 #include <silkworm/concurrency/containers.hpp>
 #include <silkworm/downloader/internals/db_tx.hpp>
 #include <silkworm/downloader/internals/types.hpp>
-#include <silkworm/downloader/internals/working_chain.hpp>
 #include <silkworm/downloader/messages/internal_message.hpp>
 
 #include "block_downloader.hpp"

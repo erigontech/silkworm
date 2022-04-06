@@ -14,17 +14,17 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-#include "block_downloader.hpp"
-
 #include <chrono>
 #include <thread>
 
 #include <silkworm/common/log.hpp>
 
-#include "silkworm/consensus/engine.hpp"
-#include "silkworm/downloader/internals/preverified_hashes.hpp"
-#include "silkworm/downloader/messages/outbound_get_block_headers.hpp"
-#include "silkworm/downloader/messages/inbound_message.hpp"
+#include <silkworm/consensus/engine.hpp>
+#include <silkworm/downloader/internals/preverified_hashes.hpp>
+#include <silkworm/downloader/messages/outbound_get_block_headers.hpp>
+#include <silkworm/downloader/messages/inbound_message.hpp>
+
+#include "block_downloader.hpp"
 
 namespace silkworm {
 

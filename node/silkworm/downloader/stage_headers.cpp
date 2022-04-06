@@ -13,7 +13,7 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 */
-#include "header_downloader.hpp"
+#include "stage_headers.hpp"
 
 #include <chrono>
 #include <thread>
@@ -22,9 +22,9 @@
 #include <silkworm/common/measure.hpp>
 #include <silkworm/common/stopwatch.hpp>
 
-#include "messages/inbound_message.hpp"
-#include "messages/outbound_get_block_headers.hpp"
-#include "messages/outbound_new_block_hashes.hpp"
+#include <silkworm/downloader/messages/inbound_message.hpp>
+#include <silkworm/downloader/messages/outbound_get_block_headers.hpp>
+#include <silkworm/downloader/messages/outbound_new_block_hashes.hpp>
 
 namespace silkworm {
 
@@ -50,9 +50,9 @@ auto HeaderStage::forward(bool first_sync) -> Stage::Result {
 
     try {
         Db::ReadWriteAccess::Tx tx = db_access_.start_tx();  // start a new tx only if db_access has not an active tx
-        PersistedChain persisted_chain(tx);
+        HeaderPersistence header_persistence(tx);
 
-        if (persisted_chain.unwind_needed()) {
+        if (header_persistence.unwind_needed()) {
             tx.commit();
             log::Info() << "[1/16 Headers] End (forward skipped due to unwind_needed detection, canonical chain updated), "
                 << "duration=" << timing.format(timing.lap_duration());
@@ -61,11 +61,11 @@ auto HeaderStage::forward(bool first_sync) -> Stage::Result {
             return result;
         }
 
-        RepeatedMeasure<BlockNum> height_progress(persisted_chain.initial_height());
+        RepeatedMeasure<BlockNum> height_progress(header_persistence.initial_height());
         log::Info() << "[1/16 Headers] Waiting for headers... from=" << height_progress.get();
 
         // sync status
-        auto sync_command = sync_working_chain(persisted_chain.initial_height());
+        auto sync_command = sync_header_chain(header_persistence.initial_height());
         sync_command->result().get();  // blocking
 
         // prepare headers, if any
@@ -93,7 +93,7 @@ auto HeaderStage::forward(bool first_sync) -> Stage::Result {
                     StopWatch insertion_timing; insertion_timing.start();
 
                     // persist headers
-                    persisted_chain.persist(stable_headers);
+                    header_persistence.persist(stable_headers);
 
                     if (stable_headers.size() > 100000) {
                         log::Info() << "[1/16 Headers] Inserted headers tot=" << stable_headers.size()
@@ -107,10 +107,10 @@ auto HeaderStage::forward(bool first_sync) -> Stage::Result {
                 // check if finished
                 if (first_sync) {  // if this is the first sync (installation time or run time after a long break)...
                     // ... we want to make sure we insert as many headers as possible
-                    new_height_reached = in_sync && persisted_chain.best_header_changed();
+                    new_height_reached = in_sync && header_persistence.best_header_changed();
                 } else { // otherwise, we are working at the tip of the chain so ...
                     // ... we need to react quickly when new headers are coming in
-                    new_height_reached = persisted_chain.best_header_changed();
+                    new_height_reached = header_persistence.best_header_changed();
                 }
             }
 
@@ -118,7 +118,7 @@ auto HeaderStage::forward(bool first_sync) -> Stage::Result {
             if (system_clock::now() - last_update > 30s) {
                 last_update = system_clock::now();
 
-                height_progress.set(persisted_chain.highest_height());
+                height_progress.set(header_persistence.highest_height());
 
                 log::Info() << "[1/16 Headers] Wrote block headers number=" << height_progress.get() << " (+"
                             << height_progress.delta() << "), " << height_progress.throughput() << " headers/secs";
@@ -127,19 +127,19 @@ auto HeaderStage::forward(bool first_sync) -> Stage::Result {
 
         result.status = Stage::Result::Done;
 
-        if (persisted_chain.unwind_needed()) {
+        if (header_persistence.unwind_needed()) {
             result.status = Result::UnwindNeeded;
-            result.unwind_point = persisted_chain.unwind_point();
+            result.unwind_point = header_persistence.unwind_point();
             // no need to set result.bad_block
         }
 
-        auto headers_downloaded = persisted_chain.highest_height() - persisted_chain.initial_height();
+        auto headers_downloaded = header_persistence.highest_height() - header_persistence.initial_height();
         log::Info() << "[1/16 Headers] Downloading completed, wrote " << headers_downloaded << " headers,"
-            << " last=" << persisted_chain.highest_height()
+            << " last=" << header_persistence.highest_height()
             << " duration=" << StopWatch::format(timing.lap_duration());
 
         log::Info() << "[1/16 Headers] Updating canonical chain";
-        persisted_chain.close();
+        header_persistence.close();
 
         tx.commit();  // this will commit if the tx was started here
 
@@ -170,7 +170,7 @@ auto HeaderStage::unwind_to(BlockNum new_height, Hash bad_block) -> Stage::Resul
         Db::ReadWriteAccess::Tx tx = db_access_.start_tx();
 
         std::optional<BlockNum> new_max_block_num;
-        std::set<Hash> bad_headers = PersistedChain::remove_headers(new_height, bad_block, new_max_block_num, tx);
+        std::set<Hash> bad_headers = HeaderPersistence::remove_headers(new_height, bad_block, new_max_block_num, tx);
         // todo: do we need to save bad_headers in the state and pass old bad headers here?
 
         if (new_max_block_num.has_value()) {  // happens when bad_block has value
@@ -218,7 +218,7 @@ void HeaderStage::send_announcements() {
     block_downloader_.accept(message);
 }
 
-auto HeaderStage::sync_working_chain(BlockNum highest_in_db) -> std::shared_ptr<InternalMessage<void>> {
+auto HeaderStage::sync_header_chain(BlockNum highest_in_db) -> std::shared_ptr<InternalMessage<void>> {
     auto message = std::make_shared<InternalMessage<void>>(
         [highest_in_db](HeaderChain& wc, BodySequence&) { wc.sync_current_state(highest_in_db); });
 

@@ -17,7 +17,7 @@ limitations under the License.
 #ifndef SILKWORM_OUTBOUND_NEW_BLOCK_HASHES_HPP
 #define SILKWORM_OUTBOUND_NEW_BLOCK_HASHES_HPP
 
-#include <silkworm/downloader/internals/working_chain.hpp>
+#include <silkworm/downloader/internals/header_chain.hpp>
 #include <silkworm/downloader/packets/new_block_hashes_packet.hpp>
 
 #include "outbound_message.hpp"

@@ -21,8 +21,8 @@
 #include <silkworm/chain/identity.hpp>
 #include <silkworm/downloader/internals/db_tx.hpp>
 #include <silkworm/downloader/internals/types.hpp>
-#include <silkworm/downloader/internals/working_chain.hpp>
 #include <silkworm/downloader/messages/internal_message.hpp>
+
 #include "stage.h"
 #include "block_downloader.hpp"
 
@@ -77,7 +77,7 @@ class HeaderStage : public Stage {
   private:
     void send_header_requests();  // send requests for more headers
     void send_announcements();
-    auto sync_working_chain(BlockNum highest_in_db) -> std::shared_ptr<InternalMessage<void>>;
+    auto sync_header_chain(BlockNum highest_in_db) -> std::shared_ptr<InternalMessage<void>>;
     auto withdraw_stable_headers() -> std::shared_ptr<InternalMessage<std::tuple<Headers, bool>>>;
     auto update_bad_headers(std::set<Hash>) -> std::shared_ptr<InternalMessage<void>>;
     void receive_message(const sentry::InboundMessage&);

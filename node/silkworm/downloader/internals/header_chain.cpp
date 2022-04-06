@@ -14,7 +14,7 @@
    limitations under the License.
 */
 
-#include "working_chain.hpp"
+#include "header_chain.hpp"
 
 #include <silkworm/common/as_range.hpp>
 #include <silkworm/common/log.hpp>
@@ -177,7 +177,7 @@ Headers HeaderChain::withdraw_stable_headers() {
         }
 
         // Insert in the list of headers to persist
-        stable_headers.push_back(link->header);  // will be persisted by PersistedChain
+        stable_headers.push_back(link->header);  // will be persisted by HeaderPersistence
 
         // Update persisted height, and state
         if (link->blockHeight > highest_in_db_) {

@@ -14,7 +14,7 @@
     limitations under the License.
 */
 
-#include "persisted_chain.hpp"
+#include "header_persistence.hpp"
 
 #include <silkworm/common/as_range.hpp>
 #include <silkworm/common/log.hpp>
@@ -23,7 +23,7 @@
 
 namespace silkworm {
 
-PersistedChain::PersistedChain(Db::ReadWriteAccess::Tx& tx) : tx_(tx), canonical_cache_(1000) {
+HeaderPersistence::HeaderPersistence(Db::ReadWriteAccess::Tx& tx) : tx_(tx), canonical_cache_(1000) {
     BlockNum headers_height = tx.read_stage_progress(db::stages::kHeadersKey);
     auto headers_head_hash = tx.read_canonical_hash(headers_height);
     if (!headers_head_hash) {
@@ -43,24 +43,24 @@ PersistedChain::PersistedChain(Db::ReadWriteAccess::Tx& tx) : tx_(tx), canonical
     highest_in_db_ = headers_height;
 }
 
-bool PersistedChain::best_header_changed() const { return new_canonical_; }
+bool HeaderPersistence::best_header_changed() const { return new_canonical_; }
 
-bool PersistedChain::unwind_needed() const { return unwind_needed_; }
+bool HeaderPersistence::unwind_needed() const { return unwind_needed_; }
 
-BlockNum PersistedChain::initial_height() const { return initial_in_db_; }
+BlockNum HeaderPersistence::initial_height() const { return initial_in_db_; }
 
-BlockNum PersistedChain::highest_height() const { return highest_in_db_; }
+BlockNum HeaderPersistence::highest_height() const { return highest_in_db_; }
 
-Hash PersistedChain::highest_hash() const { return highest_hash_; }
+Hash HeaderPersistence::highest_hash() const { return highest_hash_; }
 
-BigInt PersistedChain::total_difficulty() const { return local_td_; }
+BigInt HeaderPersistence::total_difficulty() const { return local_td_; }
 
-BlockNum PersistedChain::unwind_point() const { return unwind_point_; }
+BlockNum HeaderPersistence::unwind_point() const { return unwind_point_; }
 
 // Erigon's func (hi *HeaderInserter) FeedHeader
 
-void PersistedChain::persist(const Headers& headers) {
-    SILK_TRACE << "PersistedChain: persisting " << headers.size() << " headers";
+void HeaderPersistence::persist(const Headers& headers) {
+    SILK_TRACE << "HeaderPersistence: persisting " << headers.size() << " headers";
     if (headers.empty()) return;
 
     StopWatch measure_curr_scope;                  // only for test
@@ -70,12 +70,12 @@ void PersistedChain::persist(const Headers& headers) {
 
     auto [end_time, _] = measure_curr_scope.lap();  // only for test
 
-    log::Trace() << "[INFO] PersistedChain: saved " << headers.size() << " headers from height "
+    log::Trace() << "[INFO] HeaderPersistence: saved " << headers.size() << " headers from height "
                  << header_at(headers.begin()).number << " to height " << header_at(headers.rbegin()).number
                  << " (duration=" << measure_curr_scope.format(end_time - start_time) << ")"; // only for test
 }
 
-void PersistedChain::persist(const BlockHeader& header) {  // todo: try to modularize
+void HeaderPersistence::persist(const BlockHeader& header) {  // todo: try to modularize
     // Admittance conditions
     auto height = header.number;
     Hash hash = header.hash();
@@ -88,7 +88,7 @@ void PersistedChain::persist(const BlockHeader& header) {  // todo: try to modul
     }
     auto parent = tx_.read_header(height - 1, header.parent_hash);
     if (!parent) {
-        std::string error_message = "PersistedChain: could not find parent with hash " + to_hex(header.parent_hash) + " and height " +
+        std::string error_message = "HeaderPersistence: could not find parent with hash " + to_hex(header.parent_hash) + " and height " +
                                     std::to_string(height - 1) + " for header " + hash.to_hex();
         log::Error() << error_message;
         throw std::logic_error(error_message);
@@ -97,7 +97,7 @@ void PersistedChain::persist(const BlockHeader& header) {  // todo: try to modul
     // Calculate total difficulty
     auto parent_td = tx_.read_total_difficulty(height - 1, header.parent_hash);
     if (!parent_td) {
-        std::string error_message = "PersistedChain: parent's total difficulty not found with hash " +
+        std::string error_message = "HeaderPersistence: parent's total difficulty not found with hash " +
                                     to_hex(header.parent_hash) + " and height " + std::to_string(height - 1) +
                                     " for header " + hash.to_hex();
         log::Error() << error_message;
@@ -134,12 +134,12 @@ void PersistedChain::persist(const BlockHeader& header) {  // todo: try to modul
     // Save header
     tx_.write_header(header, true);  // true = with_header_numbers
 
-    // SILK_TRACE << "PersistedChain: saved header height=" << height << " hash=" << hash;
+    // SILK_TRACE << "HeaderPersistence: saved header height=" << height << " hash=" << hash;
 
     previous_hash_ = hash;
 }
 
-BlockNum PersistedChain::find_forking_point(Db::ReadWriteAccess::Tx& tx, const BlockHeader& header, BlockNum height,
+BlockNum HeaderPersistence::find_forking_point(Db::ReadWriteAccess::Tx& tx, const BlockHeader& header, BlockNum height,
                                             const BlockHeader& parent) {
     BlockNum forking_point{};
 
@@ -182,7 +182,7 @@ BlockNum PersistedChain::find_forking_point(Db::ReadWriteAccess::Tx& tx, const B
 }
 
 // On Erigon is fixCanonicalChain
-void PersistedChain::update_canonical_chain(BlockNum height, Hash hash) {  // hash can be empty
+void HeaderPersistence::update_canonical_chain(BlockNum height, Hash hash) {  // hash can be empty
     if (height == 0) return;
 
     auto ancestor_hash = hash;
@@ -194,7 +194,7 @@ void PersistedChain::update_canonical_chain(BlockNum height, Hash hash) {  // ha
 
         auto ancestor = tx_.read_header(ancestor_height, ancestor_hash);
         if (ancestor == std::nullopt) {
-            std::string msg = "PersistedChain: fix canonical chain failed at"
+            std::string msg = "HeaderPersistence: fix canonical chain failed at"
                 " ancestor=" + std::to_string(ancestor_height) + " hash=" + ancestor_hash.to_hex();
             log::Error() << msg;
             throw std::logic_error(msg);
@@ -207,7 +207,7 @@ void PersistedChain::update_canonical_chain(BlockNum height, Hash hash) {  // ha
     }
 }
 
-void PersistedChain::close() {
+void HeaderPersistence::close() {
     if (closed_) return;
 
     if (unwind_needed()) return;
@@ -219,7 +219,7 @@ void PersistedChain::close() {
     closed_ = true;
 }
 
-std::set<Hash> PersistedChain::remove_headers(BlockNum unwind_point, Hash bad_block,
+std::set<Hash> HeaderPersistence::remove_headers(BlockNum unwind_point, Hash bad_block,
                                               std::optional<BlockNum>& max_block_num_ok, Db::ReadWriteAccess::Tx& tx) {
     std::set<Hash> bad_headers;
     max_block_num_ok.reset();

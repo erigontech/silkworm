@@ -14,8 +14,8 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_WORKING_CHAIN_HPP
-#define SILKWORM_WORKING_CHAIN_HPP
+#ifndef SILKWORM_HEADER_CHAIN_HPP
+#define SILKWORM_HEADER_CHAIN_HPP
 
 #include <cstdio>
 
@@ -24,11 +24,10 @@
 #include <silkworm/common/lru_cache.hpp>
 #include <silkworm/consensus/engine.hpp>
 #include <silkworm/downloader/packets/get_block_headers_packet.hpp>
-#include "preverified_hashes.hpp"
 
+#include "preverified_hashes.hpp"
 #include "chain_elements.hpp"
 #include "header_only_state.hpp"
-#include "persisted_chain.hpp"
 
 namespace silkworm {
 
@@ -46,7 +45,7 @@ namespace silkworm {
  * headers to the HeaderChain (see accept_headers()). Also, the downloader periodically must call
  * withdraw_stable_headers() to see if the HeaderChain has headers ready to persist. This happens when it has headers
  * that: 1) are verified or pre-verified and 2) are connected with headers already persisted, so we are ready to extend
- * the chain that is persisted on the db. The alter ego of WorkingChain is the PersistedChain.
+ * the chain that is persisted on the db. The alter ego of WorkingChain is the HeaderPersistence.
  *
  * HeaderChain organizes headers in memory as collection of "chain bundles". Each chain bundle consists of one anchor
  * and some chain links. Each link corresponds to a block header. Links are connected to each other by ParentHash
@@ -189,4 +188,4 @@ class HeaderChain {
 
 }  // namespace silkworm
 
-#endif  // SILKWORM_WORKING_CHAIN_HPP
+#endif  // SILKWORM_HEADER_CHAIN_HPP

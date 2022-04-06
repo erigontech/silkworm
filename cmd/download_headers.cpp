@@ -22,9 +22,9 @@
 
 #include <silkworm/common/directories.hpp>
 #include <silkworm/common/log.hpp>
-#include <silkworm/downloader/header_downloader.hpp>
 #include <silkworm/downloader/internals/header_retrieval.hpp>
-#include "silkworm/downloader/body_downloader.h"
+#include <silkworm/downloader/stage_headers.hpp>
+#include "silkworm/downloader/stage_bodies.hpp"
 
 using namespace silkworm;
 

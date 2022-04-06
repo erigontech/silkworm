@@ -14,7 +14,7 @@
    limitations under the License.
 */
 
-#include "working_chain.hpp"
+#include "header_chain.hpp"
 #include "silkworm/chain/identity.hpp"
 
 #include <algorithm>

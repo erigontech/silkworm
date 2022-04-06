@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-#include "body_downloader.h"
+#include "stage_bodies.hpp"
 
 #include <chrono>
 #include <thread>

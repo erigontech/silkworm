@@ -14,7 +14,7 @@
     limitations under the License.
 */
 
-#include "persisted_chain.hpp"
+#include "header_persistence.hpp"
 
 #include <algorithm>
 
@@ -25,11 +25,11 @@
 #include <silkworm/common/test_context.hpp>
 #include <silkworm/db/genesis.hpp>
 
-#include "working_chain.hpp"
+#include "header_chain.hpp"
 
 namespace silkworm {
 
-TEST_CASE("PersistedChain - header persistence") {
+TEST_CASE("HeaderPersistence - header persistence") {
     test::Context context;
     auto& txn{context.txn()};
 
@@ -54,7 +54,7 @@ TEST_CASE("PersistedChain - header persistence") {
         auto header0 = tx.read_canonical_header(0);
         REQUIRE(header0.has_value());
 
-        PersistedChain pc(tx);  // is correct but here FAILS at the moment because initialize_genesis() write total
+        HeaderPersistence pc(tx);  // is correct but here FAILS at the moment because initialize_genesis() write total
                                 // difficulty without rlp encoding
 
         REQUIRE(pc.unwind_needed() == false);
@@ -123,7 +123,7 @@ TEST_CASE("PersistedChain - header persistence") {
         auto header1b_hash = header1b.hash();
 
         // saving the headers
-        PersistedChain pc(tx);
+        HeaderPersistence pc(tx);
         pc.persist(header1);
         pc.persist(header2);
         pc.persist(header1b);  // suppose it arrives after header2

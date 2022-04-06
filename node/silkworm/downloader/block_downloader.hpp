@@ -21,7 +21,7 @@ limitations under the License.
 #include <silkworm/concurrency/active_component.hpp>
 #include <silkworm/concurrency/containers.hpp>
 #include <silkworm/downloader/internals/db_tx.hpp>
-#include <silkworm/downloader/internals/working_chain.hpp>
+#include <silkworm/downloader/internals/header_chain.hpp>
 #include <silkworm/downloader/internals/body_sequence.hpp>
 #include <silkworm/downloader/messages/message.hpp>
 #include <silkworm/downloader/sentry_client.hpp>

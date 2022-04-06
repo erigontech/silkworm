@@ -19,8 +19,8 @@ limitations under the License.
 
 #include <future>
 
-#include <silkworm/downloader/internals/persisted_chain.hpp>
-#include <silkworm/downloader/internals/working_chain.hpp>
+#include <silkworm/downloader/internals/header_persistence.hpp>
+#include <silkworm/downloader/internals/header_chain.hpp>
 
 #include "message.hpp"
 

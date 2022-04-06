@@ -14,8 +14,8 @@
     limitations under the License.
 */
 
-#ifndef SILKWORM_PERSISTED_CHAIN_HPP
-#define SILKWORM_PERSISTED_CHAIN_HPP
+#ifndef SILKWORM_HEADER_PERSISTENCE_HPP
+#define SILKWORM_HEADER_PERSISTENCE_HPP
 
 #include <silkworm/common/lru_cache.hpp>
 
@@ -25,8 +25,7 @@
 
 namespace silkworm {
 
-/*
- * PersistedChain represents the chain on the db; it has these responsibilities:
+/** HeaderPersistence save headers on the db. It has these responsibilities:
  *    - persist headers on the db
  *    - update canonical chain
  *    - detect unwind point
@@ -34,17 +33,17 @@ namespace silkworm {
  *    - signal (to other stages) to do an unwind operation
  * It is the counterpart of Erigon's HeaderInserter. Ideally it has to encapsulate all the details of the db
  * organization, but in practice this is not possible completely. Header downloader uses an instance of this class for
- * each forward() operation. When it receives headers from WorkingChain, that are ready to persist, the downloader call
- * persist() on PersistedChain. Conversely, in the unwind() operation the downloader call the PersistedChain's
+ * each forward() operation. When it receives headers from HeaderChain, that are ready to persist, the downloader call
+ * persist() on HeaderPersistence. Conversely, in the unwind() operation the downloader call the HeaderPersistence's
  * remove_headers() method.
  *
- * PersistedChain has also the responsibility to detect a change in the canonical chain that is already persisted. In
- * this case the method unwind_point() reports the point to which we must return.
+ * HeaderPersistence has also the responsibility to detect a change in the canonical chain that is already persisted.
+ * In this case the method unwind_point() reports the point to which we must return.
  */
 
-class PersistedChain {
+class HeaderPersistence {
   public:
-    explicit PersistedChain(Db::ReadWriteAccess::Tx& tx);
+    explicit HeaderPersistence(Db::ReadWriteAccess::Tx& tx);
 
     void persist(const Headers&);
     void persist(const BlockHeader&);
@@ -82,4 +81,4 @@ class PersistedChain {
 
 }  // namespace silkworm
 
-#endif  // SILKWORM_PERSISTED_CHAIN_HPP
+#endif  // SILKWORM_HEADER_PERSISTENCE_HPP

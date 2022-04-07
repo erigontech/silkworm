@@ -121,6 +121,10 @@ class KvClient {
         return tx_reader_writer->Finish();
     }
 
+    auto tx_start(grpc::ClientContext* context) {
+        return stub_->Tx(context);
+    }
+
     grpc::Status statechanges_and_consume(const remote::StateChangeRequest& request, std::vector<remote::StateChangeBatch>& responses) {
         grpc::ClientContext context;
         auto subscribe_reply_reader = stub_->StateChanges(&context, request);
@@ -483,7 +487,6 @@ TEST_CASE("BackEndKvServer E2E: empty node settings", "[silkworm][node][rpc]") {
     }
 
     SECTION("Tx KO: empty table name", "[silkworm][node][rpc]") {
-        remote::SubscribeRequest request;
         remote::Cursor open;
         open.set_op(remote::Op::OPEN);
         std::vector<remote::Cursor> requests{open};
@@ -497,7 +500,6 @@ TEST_CASE("BackEndKvServer E2E: empty node settings", "[silkworm][node][rpc]") {
     }
 
     SECTION("Tx KO: invalid table name", "[silkworm][node][rpc]") {
-        remote::SubscribeRequest request;
         remote::Cursor open;
         open.set_op(remote::Op::OPEN);
         open.set_bucketname("UnexistentTable");
@@ -512,9 +514,8 @@ TEST_CASE("BackEndKvServer E2E: empty node settings", "[silkworm][node][rpc]") {
     }
 
     SECTION("Tx KO: missing operation", "[silkworm][node][rpc]") {
-        remote::SubscribeRequest request;
         remote::Cursor open;
-        open.set_bucketname("TestTable");
+        open.set_bucketname(kTestMapConfig.name);
         std::vector<remote::Cursor> requests{open};
         std::vector<remote::Pair> responses;
         const auto status = kv_client.tx(requests, responses);
@@ -525,11 +526,19 @@ TEST_CASE("BackEndKvServer E2E: empty node settings", "[silkworm][node][rpc]") {
         CHECK(responses[0].txid() != 0);
     }
 
+    SECTION("Tx OK: just start then finish", "[silkworm][node][rpc]") {
+        std::vector<remote::Cursor> requests{};
+        std::vector<remote::Pair> responses;
+        const auto status = kv_client.tx(requests, responses);
+        CHECK(status.ok());
+        CHECK(responses.size() == 1);
+        CHECK(responses[0].txid() != 0);
+    }
+
     SECTION("Tx OK: cursor opened", "[silkworm][node][rpc]") {
-        remote::SubscribeRequest request;
         remote::Cursor open;
         open.set_op(remote::Op::OPEN);
-        open.set_bucketname("TestTable");
+        open.set_bucketname(kTestMapConfig.name);
         std::vector<remote::Cursor> requests{open};
         std::vector<remote::Pair> responses;
         const auto status = kv_client.tx(requests, responses);
@@ -540,10 +549,9 @@ TEST_CASE("BackEndKvServer E2E: empty node settings", "[silkworm][node][rpc]") {
     }
 
     SECTION("Tx OK: cursor opened then closed", "[silkworm][node][rpc]") {
-        remote::SubscribeRequest request;
         remote::Cursor open;
         open.set_op(remote::Op::OPEN);
-        open.set_bucketname("TestTable");
+        open.set_bucketname(kTestMapConfig.name);
         remote::Cursor close;
         close.set_op(remote::Op::CLOSE);
         close.set_cursor(0);
@@ -558,7 +566,6 @@ TEST_CASE("BackEndKvServer E2E: empty node settings", "[silkworm][node][rpc]") {
     }
 
     SECTION("Tx KO: cursor opened then unknown", "[silkworm][node][rpc]") {
-        remote::SubscribeRequest request;
         remote::Cursor open;
         open.set_op(remote::Op::OPEN);
         open.set_bucketname(kTestMapConfig.name);
@@ -577,10 +584,9 @@ TEST_CASE("BackEndKvServer E2E: empty node settings", "[silkworm][node][rpc]") {
     }
 
     SECTION("Tx KO: cursor first in empty table", "[silkworm][node][rpc]") {
-        remote::SubscribeRequest request;
         remote::Cursor open;
         open.set_op(remote::Op::OPEN);
-        open.set_bucketname("TestTable");
+        open.set_bucketname(kTestMapConfig.name);
         remote::Cursor first;
         first.set_op(remote::Op::FIRST);
         first.set_cursor(0);
@@ -596,10 +602,9 @@ TEST_CASE("BackEndKvServer E2E: empty node settings", "[silkworm][node][rpc]") {
     }
 
     SECTION("Tx KO: cursor next in empty table", "[silkworm][node][rpc]") {
-        remote::SubscribeRequest request;
         remote::Cursor open;
         open.set_op(remote::Op::OPEN);
-        open.set_bucketname("TestTable");
+        open.set_bucketname(kTestMapConfig.name);
         remote::Cursor next;
         next.set_op(remote::Op::NEXT);
         next.set_cursor(0);
@@ -617,10 +622,9 @@ TEST_CASE("BackEndKvServer E2E: empty node settings", "[silkworm][node][rpc]") {
     SECTION("Tx cursor first: OK", "[silkworm][node][rpc]") {
         test.fill_test_table();
 
-        remote::SubscribeRequest request;
         remote::Cursor open;
         open.set_op(remote::Op::OPEN);
-        open.set_bucketname("TestTable");
+        open.set_bucketname(kTestMapConfig.name);
         remote::Cursor first;
         first.set_op(remote::Op::FIRST);
         first.set_cursor(0);
@@ -773,14 +777,14 @@ TEST_CASE("BackEndKvServer E2E: more than one Sentry all status KO", "[silkworm]
     NodeSettings node_settings;
     node_settings.sentry_api_addr = kTestSentryAddress1 + "," + kTestSentryAddress2;
     grpc::Status INTERNAL_ERROR{grpc::StatusCode::INTERNAL, "internal error"};
-    grpc::Status DEADLINE_EXCEEDED_ERROR{grpc::StatusCode::DEADLINE_EXCEEDED, "timeout"};
-    BackEndKvE2eTest test{silkworm::log::Level::kNone, node_settings, {INTERNAL_ERROR, DEADLINE_EXCEEDED_ERROR}};
+    grpc::Status INVALID_ARGUMENT_ERROR{grpc::StatusCode::INVALID_ARGUMENT, "invalid"};
+    BackEndKvE2eTest test{silkworm::log::Level::kNone, node_settings, {INTERNAL_ERROR, INVALID_ARGUMENT_ERROR}};
     auto backend_client = *test.backend_client;
 
     SECTION("NetPeerCount: return expected status error", "[silkworm][node][rpc]") {
         remote::NetPeerCountReply response;
         const auto status = backend_client.net_peer_count(&response);
-        CHECK((status == INTERNAL_ERROR || status == DEADLINE_EXCEEDED_ERROR));
+        CHECK((status == INTERNAL_ERROR || status == INVALID_ARGUMENT_ERROR));
     }
 
     SECTION("NodeInfo: return expected status error", "[silkworm][node][rpc]") {
@@ -788,7 +792,71 @@ TEST_CASE("BackEndKvServer E2E: more than one Sentry all status KO", "[silkworm]
         request.set_limit(0);
         remote::NodesInfoReply response;
         const auto status = backend_client.node_info(request, &response);
-        CHECK((status == INTERNAL_ERROR || status == DEADLINE_EXCEEDED_ERROR));
+        CHECK((status == INTERNAL_ERROR || status == INVALID_ARGUMENT_ERROR));
+    }
+}
+
+class TxIdleTimeoutGuard {
+  public:
+    explicit TxIdleTimeoutGuard(uint8_t t) {
+        TxCall::set_max_idle_duration(boost::posix_time::milliseconds{t});
+    }
+    ~TxIdleTimeoutGuard() {
+        TxCall::set_max_idle_duration(kMaxIdleDuration);
+    }
+};
+
+TEST_CASE("BackEndKvServer E2E: bidirectional idle timeout", "[silkworm][node][rpc]") {
+    TxIdleTimeoutGuard timeout_guard{10};
+    NodeSettings node_settings;
+    BackEndKvE2eTest test{silkworm::log::Level::kNone, node_settings};
+    auto kv_client = *test.kv_client;
+
+    SECTION("Tx: immediate finish", "[silkworm][node][rpc]") {
+        test.fill_test_table();
+
+        grpc::ClientContext context;
+        const auto tx_reader_writer = kv_client.tx_start(&context);
+        auto status = tx_reader_writer->Finish();
+        CHECK(!status.ok());
+        CHECK(status.error_code() == grpc::StatusCode::DEADLINE_EXCEEDED);
+        CHECK(status.error_message().find("call idle, no incoming request") != std::string::npos);
+    }
+
+    SECTION("Tx: finish after first read", "[silkworm][node][rpc]") {
+        test.fill_test_table();
+
+        grpc::ClientContext context;
+        const auto tx_reader_writer = kv_client.tx_start(&context);
+        remote::Pair response;
+        tx_reader_writer->Read(&response);
+        CHECK(response.txid() != 0);
+        auto status = tx_reader_writer->Finish();
+        CHECK(!status.ok());
+        CHECK(status.error_code() == grpc::StatusCode::DEADLINE_EXCEEDED);
+        CHECK(status.error_message().find("call idle, no incoming request") != std::string::npos);
+    }
+
+    SECTION("Tx: finish after first read and one write/read", "[silkworm][node][rpc]") {
+        test.fill_test_table();
+
+        grpc::ClientContext context;
+        const auto tx_reader_writer = kv_client.tx_start(&context);
+        remote::Pair response;
+        tx_reader_writer->Read(&response);
+        CHECK(response.txid() != 0);
+        remote::Cursor open;
+        open.set_op(remote::Op::OPEN);
+        open.set_bucketname(kTestMapConfig.name);
+        const bool write_ok = tx_reader_writer->Write(open);
+        CHECK(write_ok);
+        response.clear_txid();
+        tx_reader_writer->Read(&response);
+        CHECK(response.cursorid() != 0);
+        auto status = tx_reader_writer->Finish();
+        CHECK(!status.ok());
+        CHECK(status.error_code() == grpc::StatusCode::DEADLINE_EXCEEDED);
+        CHECK(status.error_message().find("call idle, no incoming request") != std::string::npos);
     }
 }
 

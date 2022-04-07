@@ -35,7 +35,7 @@
 namespace silkworm::rpc {
 
 //! The max idle interval to protect from clients which don't send any requests.
-constexpr uint32_t kMaxIdleDuration{30'000}; // milliseconds
+constexpr boost::posix_time::milliseconds kMaxIdleDuration{30'000};
 
 //! This represents the generic gRPC call composed by a sequence of bidirectional operations.
 class BaseRpc {
@@ -462,6 +462,10 @@ struct BidirectionalStreamingRpcHandlers : public RpcHandlers<AsyncService, Requ
 template<typename AsyncService, typename Request, typename Response>
 class BidirectionalStreamingRpc : public BaseRpc {
   public:
+    static void set_max_idle_duration(const boost::posix_time::milliseconds& max_idle_duration) {
+        max_idle_duration_ = max_idle_duration;
+    }
+
     using Handlers = BidirectionalStreamingRpcHandlers<AsyncService, Request, Response, BidirectionalStreamingRpc>;
 
     BidirectionalStreamingRpc(boost::asio::io_context& scheduler, AsyncService* service, grpc::ServerCompletionQueue* queue, Handlers handlers)
@@ -572,7 +576,7 @@ class BidirectionalStreamingRpc : public BaseRpc {
         read();
 
         // Start the idle guard timer to protect against clients which don't send any (more) requests.
-        idle_timer_.expires_from_now(boost::posix_time::milliseconds(kMaxIdleDuration));
+        idle_timer_.expires_from_now(max_idle_duration_);
         idle_timer_.async_wait([&](const auto& ec) { handle_idle_timer_expired(ec); });
         SILK_TRACE << "BidirectionalStreamingRpc::process_request END [" << this << "]";
     }
@@ -595,7 +599,7 @@ class BidirectionalStreamingRpc : public BaseRpc {
 
                 // Restart the idle guard timer.
                 idle_timer_.cancel();
-                idle_timer_.expires_from_now(boost::posix_time::milliseconds(kMaxIdleDuration));
+                idle_timer_.expires_from_now(max_idle_duration_);
                 idle_timer_.async_wait([&](const auto& ec) { handle_idle_timer_expired(ec); });
                 SILK_DEBUG << "BidirectionalStreamingRpc::process_read peer: " << peer() << " idle timer expires at: " << idle_timer_.expires_at();
             } else {
@@ -688,6 +692,8 @@ class BidirectionalStreamingRpc : public BaseRpc {
         }
         SILK_TRACE << "BidirectionalStreamingRpc::handle_idle_timer_expired " << this << " ec: " << ec << " END";
     }
+
+    inline static boost::posix_time::milliseconds max_idle_duration_{kMaxIdleDuration};
 
     //! The gRPC generated asynchronous service.
     AsyncService* service_;

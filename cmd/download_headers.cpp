@@ -104,10 +104,22 @@ int main(int argc, char* argv[]) {
 
         // Stage1 - Header downloader - example code
         bool first_sync = true;  // = starting up silkworm
-        HeaderStage header_stage{Db::ReadWriteAccess{db}, block_downloader};
-        BodyStage body_stage{Db::ReadWriteAccess{db}, block_downloader};
+        HeadersStage header_stage{Db::ReadWriteAccess{db}, block_downloader};
+        BodiesStage body_stage{Db::ReadWriteAccess{db}, block_downloader};
 
         // Sample stage loop with 1 stage
+        Stage::Result stage_result{Stage::Result::Unspecified};
+        do {
+            forward(stages)
+            if (stage_result.status != Stage::Result::UnwindNeeded) {
+                stage_result = header_stage.forward(first_sync);
+            } else {
+                stage_result = header_stage.unwind_to(*stage_result.unwind_point, *stage_result.bad_block);
+            }
+            first_sync = false;
+        } while (stage_result.status != Stage::Result::Error);
+
+
         // Sample stage loop with 1 stage
         Stage::Result stage_result{Stage::Result::Unspecified};
         do {

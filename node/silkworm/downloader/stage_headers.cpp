@@ -28,14 +28,14 @@
 
 namespace silkworm {
 
-HeaderStage::HeaderStage(const Db::ReadWriteAccess& dba, BlockDownloader& bd)
+HeadersStage::HeadersStage(const Db::ReadWriteAccess& dba, BlockDownloader& bd)
     : db_access_{dba}, block_downloader_(bd) {
 }
 
-HeaderStage::~HeaderStage() {
+HeadersStage::~HeadersStage() {
 }
 
-auto HeaderStage::forward(bool first_sync) -> Stage::Result {
+auto HeadersStage::forward(bool first_sync) -> Stage::Result {
     using std::shared_ptr;
     using namespace std::chrono_literals;
     using namespace std::chrono;
@@ -159,7 +159,7 @@ auto HeaderStage::forward(bool first_sync) -> Stage::Result {
     return result;
 }
 
-auto HeaderStage::unwind_to(BlockNum new_height, Hash bad_block) -> Stage::Result {
+auto HeadersStage::unwind_to(BlockNum new_height, Hash bad_block) -> Stage::Result {
     Stage::Result result;
 
     StopWatch timing; timing.start();
@@ -201,7 +201,7 @@ auto HeaderStage::unwind_to(BlockNum new_height, Hash bad_block) -> Stage::Resul
 }
 
 // Request new headers from peers
-void HeaderStage::send_header_requests() {
+void HeadersStage::send_header_requests() {
     // if (!sentry_.ready()) return;
 
     auto message = std::make_shared<OutboundGetBlockHeaders>();
@@ -210,7 +210,7 @@ void HeaderStage::send_header_requests() {
 }
 
 // New block hash announcements propagation
-void HeaderStage::send_announcements() {
+void HeadersStage::send_announcements() {
     // if (!sentry_.ready()) return;
 
     auto message = std::make_shared<OutboundNewBlockHashes>();
@@ -218,7 +218,7 @@ void HeaderStage::send_announcements() {
     block_downloader_.accept(message);
 }
 
-auto HeaderStage::sync_header_chain(BlockNum highest_in_db) -> std::shared_ptr<InternalMessage<void>> {
+auto HeadersStage::sync_header_chain(BlockNum highest_in_db) -> std::shared_ptr<InternalMessage<void>> {
     auto message = std::make_shared<InternalMessage<void>>(
         [highest_in_db](HeaderChain& wc, BodySequence&) { wc.sync_current_state(highest_in_db); });
 
@@ -227,7 +227,7 @@ auto HeaderStage::sync_header_chain(BlockNum highest_in_db) -> std::shared_ptr<I
     return message;
 }
 
-auto HeaderStage::withdraw_stable_headers() -> std::shared_ptr<InternalMessage<std::tuple<Headers, bool>>> {
+auto HeadersStage::withdraw_stable_headers() -> std::shared_ptr<InternalMessage<std::tuple<Headers, bool>>> {
     using result_t = std::tuple<Headers, bool>;
 
     auto message = std::make_shared<InternalMessage<result_t>>([](HeaderChain& wc, BodySequence&) {
@@ -241,7 +241,7 @@ auto HeaderStage::withdraw_stable_headers() -> std::shared_ptr<InternalMessage<s
     return message;
 }
 
-auto HeaderStage::update_bad_headers(std::set<Hash> bad_headers) -> std::shared_ptr<InternalMessage<void>> {
+auto HeadersStage::update_bad_headers(std::set<Hash> bad_headers) -> std::shared_ptr<InternalMessage<void>> {
     auto message = std::make_shared<InternalMessage<void>>(
         [bads = std::move(bad_headers)](HeaderChain& wc, BodySequence&) { wc.add_bad_headers(bads); });
 

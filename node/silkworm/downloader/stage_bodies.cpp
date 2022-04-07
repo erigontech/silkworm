@@ -96,15 +96,15 @@ namespace silkworm {
     4. returns (headers,bodies)
 
  */
-BodyStage::BodyStage(const Db::ReadWriteAccess& db_access, BlockDownloader& bd)
+BodiesStage::BodiesStage(const Db::ReadWriteAccess& db_access, BlockDownloader& bd)
     : db_access_{db_access}, block_downloader_{bd} {
 }
 
-BodyStage::~BodyStage() {
+BodiesStage::~BodiesStage() {
     // todo: implement
 }
 
-Stage::Result BodyStage::forward([[maybe_unused]] bool first_sync) {
+Stage::Result BodiesStage::forward([[maybe_unused]] bool first_sync) {
     using std::shared_ptr;
     using namespace std::chrono_literals;
     using namespace std::chrono;
@@ -186,17 +186,17 @@ Stage::Result BodyStage::forward([[maybe_unused]] bool first_sync) {
     return result;
 }
 
-Stage::Result BodyStage::unwind_to(BlockNum, Hash) {
+Stage::Result BodiesStage::unwind_to(BlockNum, Hash) {
     // todo: implement
 
     return Stage::Result();
 }
 
-void BodyStage::send_body_requests() {
+void BodiesStage::send_body_requests() {
     // todo: implement
 }
 
-auto BodyStage::withdraw_ready_bodies() -> std::shared_ptr<InternalMessage<std::vector<BlockBody>>> {
+auto BodiesStage::withdraw_ready_bodies() -> std::shared_ptr<InternalMessage<std::vector<BlockBody>>> {
     // todo: implement
 
     return std::shared_ptr<InternalMessage<std::vector<BlockBody>>>();

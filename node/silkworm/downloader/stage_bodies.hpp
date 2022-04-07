@@ -27,12 +27,12 @@ limitations under the License.
 
 namespace silkworm {
 
-class BodyStage : public Stage {
+class BodiesStage : public Stage {
   public:
-    BodyStage(const Db::ReadWriteAccess&, BlockDownloader&);
-    BodyStage(const BodyStage&) = delete;  // not copyable
-    BodyStage(BodyStage&&) = delete;       // nor movable
-    ~BodyStage();
+    BodiesStage(const Db::ReadWriteAccess&, BlockDownloader&);
+    BodiesStage(const BodiesStage&) = delete;  // not copyable
+    BodiesStage(BodiesStage&&) = delete;       // nor movable
+    ~BodiesStage();
 
     Stage::Result forward(bool first_sync) override;  // go forward, downloading headers
     Stage::Result unwind_to(BlockNum new_height,

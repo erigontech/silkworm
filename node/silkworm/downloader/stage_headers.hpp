@@ -29,15 +29,15 @@
 namespace silkworm {
 
 /*
- * HeaderStage implement the header downloading stage.
+ * HeadersStage implement the header downloading stage.
  * Like the other stages it has two methods, one to go forward and one to go backwards (unwind) in the chain.
  * It is the counterpart of Erigon's HeaderForward and HeadersUnwind.
  *
- * HeaderStage internally uses HeaderChain and HeaderPersistence. The first represent the growing chain in memory
+ * HeadersStage internally uses HeaderChain and HeaderPersistence. The first represent the growing chain in memory
  * the second represent the growing chain on db. When headers are ready to be persisted they are withdrawn from
  * HeaderChain and transferred to the HeaderPersistence that write them on the db.
  *
- * HeaderStage has:
+ * HeadersStage has:
  *    - an execution loop
  *    - a forward/unwind method pair
  *
@@ -57,18 +57,18 @@ namespace silkworm {
  *  The unwind method do headers unwind down to an unwind point.
  *
  *  Since the execution loop runs in its thread and the forward/unwind methods runs in the stage loop thread a
- *  synchronisation is needed. So the HeaderStage is partitioned in 2 half: one half runs the execution loop, the
+ *  synchronisation is needed. So the HeadersStage is partitioned in 2 half: one half runs the execution loop, the
  *  other half runs the forward/unwind methods; the two half communicate only by a MessageQueue that is a thread safe
  *  queue. Thus, HeaderChain is used only in the first half and not need lock protection, whereas HeaderPersistence is
  *  used in the other thread and also do not need lock protection.
  *
  */
-class HeaderStage : public Stage {
+class HeadersStage : public Stage {
   public:
-    HeaderStage(const Db::ReadWriteAccess&, BlockDownloader&);
-    HeaderStage(const HeaderStage&) = delete;  // not copyable
-    HeaderStage(HeaderStage&&) = delete;       // nor movable
-    ~HeaderStage();
+    HeadersStage(const Db::ReadWriteAccess&, BlockDownloader&);
+    HeadersStage(const HeadersStage&) = delete;  // not copyable
+    HeadersStage(HeadersStage&&) = delete;       // nor movable
+    ~HeadersStage();
 
     Stage::Result forward(bool first_sync) override;  // go forward, downloading headers
     Stage::Result unwind_to(BlockNum new_height,

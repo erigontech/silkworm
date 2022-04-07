@@ -50,6 +50,11 @@ TEST_CASE("BaseRpc", "[silkworm][rpc][call]") {
         FakeRpc rpc{scheduler};
         CHECK(BaseRpc::total_count() > 0);
     }
+
+    SECTION("peer") {
+        FakeRpc rpc{scheduler};
+        CHECK(rpc.peer().empty());
+    }
 }
 
 } // namespace silkworm::rpc

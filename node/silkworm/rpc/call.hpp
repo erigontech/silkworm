@@ -57,9 +57,6 @@ class BaseRpc {
         SILK_TRACE << "BaseRpc::~BaseRpc [" << this << "] instances: " << instance_count_ << " total: " << total_count_;
     }
 
-    //! Try to cancel this RPC from the server side (best-effort, no guarantee).
-    void cancel() { return context_.TryCancel(); }
-
     //! Returns a unique identifier of the RPC client for this call.
     std::string peer() const { return context_.peer(); }
 

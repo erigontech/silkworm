@@ -14,48 +14,46 @@
    limitations under the License.
 */
 
-#include "kv_calls.cpp"
+#include "kv_calls.hpp"
 
 #include <catch2/catch.hpp>
-
-#include <silkworm/common/base.hpp>
 
 namespace silkworm::rpc {
 
 TEST_CASE("higher_version", "[silkworm][rpc][kv_calls]") {
     SECTION("lhs.major > rhs.major") {
-        Version lhs{2, 0, 0};
-        Version rhs{1, 0, 0};
+        KvVersion lhs{2, 0, 0};
+        KvVersion rhs{1, 0, 0};
         CHECK(higher_version(lhs, rhs) == lhs);
     }
 
     SECTION("rhs.major > lhs.major") {
-        Version lhs{2, 0, 0};
-        Version rhs{3, 0, 0};
+        KvVersion lhs{2, 0, 0};
+        KvVersion rhs{3, 0, 0};
         CHECK(higher_version(lhs, rhs) == rhs);
     }
 
     SECTION("lhs.minor > rhs.minor") {
-        Version lhs{2, 5, 0};
-        Version rhs{2, 2, 0};
+        KvVersion lhs{2, 5, 0};
+        KvVersion rhs{2, 2, 0};
         CHECK(higher_version(lhs, rhs) == lhs);
     }
 
     SECTION("rhs.minor > lhs.minor") {
-        Version lhs{2, 5, 0};
-        Version rhs{2, 6, 0};
+        KvVersion lhs{2, 5, 0};
+        KvVersion rhs{2, 6, 0};
         CHECK(higher_version(lhs, rhs) == rhs);
     }
 
     SECTION("patch not relevant") {
-        Version lhs1{2, 5, 0};
-        Version rhs1{2, 5, 0};
+        KvVersion lhs1{2, 5, 0};
+        KvVersion rhs1{2, 5, 0};
         CHECK(higher_version(lhs1, rhs1) == lhs1);
-        Version lhs2{2, 5, 1};
-        Version rhs2{2, 5, 0};
+        KvVersion lhs2{2, 5, 1};
+        KvVersion rhs2{2, 5, 0};
         CHECK(higher_version(lhs2, rhs2) == lhs2);
-        Version lhs3{2, 5, 0};
-        Version rhs3{2, 5, 1};
+        KvVersion lhs3{2, 5, 0};
+        KvVersion rhs3{2, 5, 1};
         CHECK(higher_version(lhs3, rhs3) == lhs3);
     }
 }

@@ -37,11 +37,15 @@
 
 namespace silkworm::rpc {
 
+using KvVersion = std::tuple<uint32_t, uint32_t, uint32_t>;
+
+KvVersion higher_version(KvVersion lhs, KvVersion rhs);
+
 //! Current DB schema version.
-constexpr auto kDbSchemaVersion = std::make_tuple<uint32_t, uint32_t, uint32_t>(3, 0, 0);
+constexpr auto kDbSchemaVersion = KvVersion{3, 0, 0};
 
 //! Current KV API protocol version.
-constexpr auto kKvApiVersion = std::make_tuple<uint32_t, uint32_t, uint32_t>(5, 1, 0);
+constexpr auto kKvApiVersion = KvVersion{5, 1, 0};
 
 //! The max life duration for MDBX transactions (long-lived transactions are discouraged).
 constexpr uint32_t kMaxTxDuration{60'000}; // milliseconds

@@ -22,7 +22,7 @@ namespace silkworm::rpc {
 
 UnaryStats AsyncCall::unary_stats_;
 
-AsyncPeerCountCall::AsyncPeerCountCall(grpc::CompletionQueue* queue, CompletionFunc completion_handler, SentryStubPtr& stub)
+AsyncPeerCountCall::AsyncPeerCountCall(grpc::CompletionQueue* queue, CompletionFunc completion_handler, sentry::Sentry::StubInterface* stub)
 : AsyncUnaryCall(queue, completion_handler, stub) {
 }
 
@@ -39,7 +39,7 @@ bool AsyncPeerCountCall::proceed(bool ok) {
     return true;
 }
 
-AsyncNodeInfoCall::AsyncNodeInfoCall(grpc::CompletionQueue* queue, CompletionFunc completion_handler, SentryStubPtr& stub)
+AsyncNodeInfoCall::AsyncNodeInfoCall(grpc::CompletionQueue* queue, CompletionFunc completion_handler, sentry::Sentry::StubInterface* stub)
 : AsyncUnaryCall(queue, completion_handler, stub) {
 }
 
@@ -64,7 +64,7 @@ void RemoteSentryClient::peer_count(PeerCountCallback callback) {
     const auto rpc = new AsyncPeerCountCall(queue_, [this, callback](auto* call) {
         callback(call->status(), call->reply());
         remove_rpc(call);
-    }, stub_);
+    }, stub_.get());
     add_rpc(rpc);
     rpc->start(sentry::PeerCountRequest{});
 }
@@ -73,7 +73,7 @@ void RemoteSentryClient::node_info(NodeInfoCallback callback) {
     const auto rpc = new AsyncNodeInfoCall(queue_, [this, callback](auto* call) {
         callback(call->status(), call->reply());
         remove_rpc(call);
-    }, stub_);
+    }, stub_.get());
     add_rpc(rpc);
     rpc->start(google::protobuf::Empty{});
 }

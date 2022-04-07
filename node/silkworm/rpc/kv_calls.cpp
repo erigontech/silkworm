@@ -25,9 +25,7 @@ namespace silkworm::rpc {
 
 types::VersionReply KvVersionCall::response_;
 
-using Version = std::tuple<uint32_t, uint32_t, uint32_t>;
-
-static auto higher_version(Version lhs, Version rhs) {
+KvVersion higher_version(KvVersion lhs, KvVersion rhs) {
     uint32_t lhs_major = std::get<0>(lhs);
     uint32_t lhs_minor = std::get<1>(lhs);
     uint32_t rhs_major = std::get<0>(rhs);

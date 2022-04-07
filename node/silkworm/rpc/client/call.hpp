@@ -79,14 +79,13 @@ template<
     typename Request,
     typename Reply,
     typename StubInterface,
-    typename Stub,
     AsyncResponseReaderPtr<Reply>(StubInterface::*PrepareAsyncUnary)(grpc::ClientContext*, const Request&, grpc::CompletionQueue*)
 >
 class AsyncUnaryCall : public AsyncCall {
   public:
-    using CompletionFunc = std::function<void(AsyncUnaryCall<Request, Reply, StubInterface, Stub, PrepareAsyncUnary>*)>;
+    using CompletionFunc = std::function<void(AsyncUnaryCall<Request, Reply, StubInterface, PrepareAsyncUnary>*)>;
 
-    explicit AsyncUnaryCall(grpc::CompletionQueue* queue, CompletionFunc completion_handler, std::unique_ptr<Stub>& stub)
+    explicit AsyncUnaryCall(grpc::CompletionQueue* queue, CompletionFunc completion_handler, StubInterface* stub)
     : AsyncCall(queue), stub_(stub), completion_handler_(completion_handler) {
         process_proceed_ = [&](bool ok) {
             proceed(ok); // no need to check return value, unary calls always complete in one step
@@ -96,7 +95,7 @@ class AsyncUnaryCall : public AsyncCall {
 
     void start(const Request& request) {
         SILK_TRACE << "AsyncUnaryCall::start_async START";
-        auto response_reader = (stub_.get()->*PrepareAsyncUnary)(&client_context_, request, queue_);
+        auto response_reader = (stub_->*PrepareAsyncUnary)(&client_context_, request, queue_);
         response_reader->StartCall();
         response_reader->Finish(&reply_, &status_, &process_proceed_);
         start_time_ = std::chrono::steady_clock::now();
@@ -107,7 +106,7 @@ class AsyncUnaryCall : public AsyncCall {
     Reply reply() const { return reply_; }
 
   protected:
-    std::unique_ptr<Stub>& stub_;
+    StubInterface* stub_;
     Reply reply_;
     TagProcessor process_proceed_;
     CompletionFunc completion_handler_;

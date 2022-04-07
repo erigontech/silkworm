@@ -28,6 +28,38 @@
 
 using namespace silkworm;
 
+// stage-loop, forwarding phase
+using LastStage = size_t;
+template <size_t N>
+std::tuple<Stage::Result, LastStage> forward(std::array<Stage*, N> stages, bool first_sync) {
+    using Status = Stage::Result;
+    Stage::Result result;
+
+    for(size_t i = 0; i < N; i++) {
+        result = stages[i]->forward(first_sync);
+        if (result.status == Status::UnwindNeeded) {
+            return {result, i};
+        }
+    }
+    return {result, N-1};
+}
+
+// stage-loop, unwinding phase
+template <size_t N>
+Stage::Result unwind(std::array<Stage*, N> stages, BlockNum unwind_point, Hash bad_block, LastStage last_stage) {
+    using Status = Stage::Result;
+    Stage::Result result;
+
+    for(size_t i = last_stage; i <= 0; i--) { // reverse loop
+        result = stages[i]->unwind_to(unwind_point, bad_block);
+        if (result.status == Status::Error) {
+            break;
+        }
+    }
+
+    return result;
+}
+
 // Main
 int main(int argc, char* argv[]) {
     using std::string, std::cout, std::cerr, std::optional;
@@ -107,16 +139,22 @@ int main(int argc, char* argv[]) {
         HeadersStage header_stage{Db::ReadWriteAccess{db}, block_downloader};
         BodiesStage body_stage{Db::ReadWriteAccess{db}, block_downloader};
 
-        // Sample stage loop with 1 stage
-        Stage::Result stage_result{Stage::Result::Unspecified};
+        // Sample stage loop with 2 stages
+        std::array<Stage*, 2> stages = {&header_stage, &body_stage};
+
+        using Status = Stage::Result;
+        Stage::Result result{Status::Unspecified};
+        size_t last_stage = 0;
+
         do {
-            if (stage_result.status != Stage::Result::UnwindNeeded) {
-                stage_result = header_stage.forward(first_sync);
-            } else {
-                stage_result = header_stage.unwind_to(*stage_result.unwind_point, *stage_result.bad_block);
+            std::tie(result, last_stage) = forward(stages, first_sync);
+
+            if (result.status == Status::UnwindNeeded) {
+                result = unwind(stages, *result.unwind_point, *result.bad_block, last_stage);
             }
+
             first_sync = false;
-        } while (stage_result.status != Stage::Result::Error);
+        } while (result.status != Status::Error);
 
         // Wait for user termination request
         std::cin.get();            // wait for user press "enter"

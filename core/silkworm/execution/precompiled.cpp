@@ -37,7 +37,6 @@
 #include <libff/algebra/curves/alt_bn128/alt_bn128_pairing.hpp>
 #pragma GCC diagnostic pop
 
-#include <silkworm/chain/protocol_param.hpp>
 #include <silkworm/common/endian.hpp>
 #include <silkworm/common/util.hpp>
 
@@ -169,9 +168,9 @@ uint64_t expmod_gas(const uint8_t* ptr, size_t len, evmc_revision rev) noexcept 
 
     intx::uint256 gas;
     if (rev < EVMC_BERLIN) {
-        gas = mult_complexity_eip198(max_length) * adjusted_exponent_len / param::kGQuadDivisorByzantium;
+        gas = mult_complexity_eip198(max_length) * adjusted_exponent_len / 20;
     } else {
-        gas = mult_complexity_eip2565(max_length) * adjusted_exponent_len / param::kGQuadDivisorBerlin;
+        gas = mult_complexity_eip2565(max_length) * adjusted_exponent_len / 3;
     }
 
     if (intx::count_significant_words(gas) > 1) {

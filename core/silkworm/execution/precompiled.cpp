@@ -38,20 +38,22 @@
 #pragma GCC diagnostic pop
 
 #include <silkworm/common/endian.hpp>
-#include <silkworm/common/util.hpp>
 
 namespace silkworm::precompiled {
+
+static void right_pad(Bytes& str, const size_t min_size) {
+    if (str.length() < min_size) {
+        str.resize(min_size, '\0');
+    }
+}
 
 uint64_t ecrec_gas(const uint8_t*, size_t, evmc_revision) noexcept { return 3'000; }
 
 Output ecrec_run(const uint8_t* input, size_t len) noexcept {
     uint8_t* out{static_cast<uint8_t*>(std::malloc(32))};
 
-    static constexpr size_t kInputLen{128};
     Bytes d(input, len);
-    if (d.length() < kInputLen) {
-        d.resize(kInputLen, '\0');
-    }
+    right_pad(d, 128);
 
     const auto v{intx::be::unsafe::load<intx::uint256>(&d[32])};
     const auto r{intx::be::unsafe::load<intx::uint256>(&d[64])};
@@ -119,9 +121,8 @@ static intx::uint256 mult_complexity_eip2565(const intx::uint256& max_length) no
 uint64_t expmod_gas(const uint8_t* ptr, size_t len, evmc_revision rev) noexcept {
     const uint64_t min_gas{rev < EVMC_BERLIN ? 0 : 200u};
 
-    Bytes buffer;
-    ByteView input{ptr, len};
-    input = right_pad(input, 3 * 32, buffer);
+    Bytes input(ptr, len);
+    right_pad(input, 3 * 32);
 
     intx::uint256 base_len256{intx::be::unsafe::load<intx::uint256>(&input[0])};
     intx::uint256 exp_len256{intx::be::unsafe::load<intx::uint256>(&input[32])};
@@ -139,16 +140,17 @@ uint64_t expmod_gas(const uint8_t* ptr, size_t len, evmc_revision rev) noexcept 
     uint64_t base_len64{static_cast<uint64_t>(base_len256)};
     uint64_t exp_len64{static_cast<uint64_t>(exp_len256)};
 
-    input.remove_prefix(3 * 32);
+    input.erase(0, 3 * 32);
 
     intx::uint256 exp_head{0};  // first 32 bytes of the exponent
     if (input.length() > base_len64) {
-        ByteView exp_input{right_pad(input.substr(base_len64), 32, buffer)};
+        input.erase(0, base_len64);
+        right_pad(input, 3 * 32);
         if (exp_len64 < 32) {
-            exp_input = exp_input.substr(0, exp_len64);
-            exp_input = left_pad(exp_input, 32, buffer);
+            input.erase(exp_len64);
+            input.insert(0, 32 - exp_len64, '\0');
         }
-        exp_head = intx::be::unsafe::load<intx::uint256>(exp_input.data());
+        exp_head = intx::be::unsafe::load<intx::uint256>(input.data());
     }
     unsigned bit_len{256 - clz(exp_head)};
 
@@ -181,38 +183,37 @@ uint64_t expmod_gas(const uint8_t* ptr, size_t len, evmc_revision rev) noexcept 
 }
 
 Output expmod_run(const uint8_t* ptr, size_t len) noexcept {
-    Bytes buffer;
-    ByteView input{ptr, len};
-    input = right_pad(input, 3 * 32, buffer);
+    Bytes input(ptr, len);
+    right_pad(input, 3 * 32);
 
     const uint64_t base_len{endian::load_big_u64(&input[24])};
-    input.remove_prefix(32);
+    input.erase(0, 32);
 
     const uint64_t exponent_len{endian::load_big_u64(&input[24])};
-    input.remove_prefix(32);
+    input.erase(0, 32);
 
     const uint64_t modulus_len{endian::load_big_u64(&input[24])};
-    input.remove_prefix(32);
+    input.erase(0, 32);
 
     if (modulus_len == 0) {
         uint8_t* out{static_cast<uint8_t*>(std::malloc(1))};
         return {out, 0};
     }
 
-    input = right_pad(input, base_len + exponent_len + modulus_len, buffer);
+    right_pad(input, base_len + exponent_len + modulus_len);
 
     mpz_t base;
     mpz_init(base);
     if (base_len) {
         mpz_import(base, base_len, 1, 1, 0, 0, input.data());
-        input.remove_prefix(base_len);
+        input.erase(0, base_len);
     }
 
     mpz_t exponent;
     mpz_init(exponent);
     if (exponent_len) {
         mpz_import(exponent, exponent_len, 1, 1, 0, 0, input.data());
-        input.remove_prefix(exponent_len);
+        input.erase(0, exponent_len);
     }
 
     mpz_t modulus;
@@ -251,9 +252,8 @@ Output expmod_run(const uint8_t* ptr, size_t len) noexcept {
 uint64_t bn_add_gas(const uint8_t*, size_t, evmc_revision rev) noexcept { return rev >= EVMC_ISTANBUL ? 150 : 500; }
 
 Output bn_add_run(const uint8_t* ptr, size_t len) noexcept {
-    Bytes buffer;
-    ByteView input{ptr, len};
-    input = right_pad(input, 128, buffer);
+    Bytes input(ptr, len);
+    right_pad(input, 128);
 
     silkpre::init_libff();
 
@@ -280,9 +280,8 @@ uint64_t bn_mul_gas(const uint8_t*, size_t, evmc_revision rev) noexcept {
 }
 
 Output bn_mul_run(const uint8_t* ptr, size_t len) noexcept {
-    Bytes buffer;
-    ByteView input{ptr, len};
-    input = right_pad(input, 96, buffer);
+    Bytes input(ptr, len);
+    right_pad(input, 96);
 
     silkpre::init_libff();
 

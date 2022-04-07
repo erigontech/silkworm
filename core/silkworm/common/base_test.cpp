@@ -30,13 +30,13 @@ TEST_CASE("Empty hashes") {
     const ethash::hash256 hash_of_empty_string{keccak256(empty_string)};
     CHECK(bit_cast<evmc_bytes32>(hash_of_empty_string) == kEmptyHash);
 
-    const Bytes rlp_of_empty_list(1, rlp::kEmptyListCode);
-    const ethash::hash256 hash_of_empty_list_rlp{keccak256(rlp_of_empty_list)};
+    const Bytes empty_list_rlp(1, rlp::kEmptyListCode);
+    const ethash::hash256 hash_of_empty_list_rlp{keccak256(empty_list_rlp)};
     CHECK(bit_cast<evmc_bytes32>(hash_of_empty_list_rlp) == kEmptyListHash);
 
     // See https://github.com/ethereum/yellowpaper/pull/852
-    const Bytes rlp_of_empty_string(1, rlp::kEmptyStringCode);
-    const ethash::hash256 hash_of_empty_string_rlp{keccak256(rlp_of_empty_string)};
+    const Bytes empty_string_rlp(1, rlp::kEmptyStringCode);
+    const ethash::hash256 hash_of_empty_string_rlp{keccak256(empty_string_rlp)};
     CHECK(bit_cast<evmc_bytes32>(hash_of_empty_string_rlp) == kEmptyRoot);
 }
 

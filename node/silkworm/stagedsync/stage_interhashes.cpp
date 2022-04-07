@@ -103,8 +103,8 @@ StageResult InterHashes::unwind(db::RWTxn& txn, BlockNum to) {
 
 StageResult InterHashes::prune(db::RWTxn&) { return StageResult::kSuccess; }
 
-trie::PrefixSet InterHashes::gather_account_changes(db::RWTxn& txn, BlockNum from, BlockNum to,
-                                                    absl::btree_map<evmc::address, ethash_hash256>& hashed_addresses) {
+trie::PrefixSet InterHashes::gather_forward_account_changes(
+    db::RWTxn& txn, BlockNum from, BlockNum to, absl::btree_map<evmc::address, ethash_hash256>& hashed_addresses) {
     std::unique_ptr<StopWatch> sw;
     if (log::test_verbosity(log::Level::kTrace)) {
         sw = std::make_unique<StopWatch>(/*auto_start=*/true);
@@ -198,13 +198,13 @@ trie::PrefixSet InterHashes::gather_account_changes(db::RWTxn& txn, BlockNum fro
 
     if (sw) {
         const auto [_, duration]{sw->stop()};
-        log::Trace("Gather Account Changes", {"in", StopWatch::format(duration)});
+        log::Trace("Gathered Forward Account Changes", {"in", StopWatch::format(duration)});
     }
     return ret;
 }
 
-trie::PrefixSet InterHashes::gather_storage_changes(db::RWTxn& txn, BlockNum from, BlockNum to,
-                                                    absl::btree_map<evmc::address, ethash_hash256>& hashed_addresses) {
+trie::PrefixSet InterHashes::gather_forward_storage_changes(
+    db::RWTxn& txn, BlockNum from, BlockNum to, absl::btree_map<evmc::address, ethash_hash256>& hashed_addresses) {
     std::unique_ptr<StopWatch> sw;
     if (log::test_verbosity(log::Level::kTrace)) {
         sw = std::make_unique<StopWatch>(/*auto_start=*/true);
@@ -273,7 +273,7 @@ trie::PrefixSet InterHashes::gather_storage_changes(db::RWTxn& txn, BlockNum fro
 
     if (sw) {
         const auto [_, duration]{sw->stop()};
-        log::Trace("Gather Storage Changes", {"in", StopWatch::format(duration)});
+        log::Trace("Gathered Forward Storage Changes", {"in", StopWatch::format(duration)});
     }
 
     return ret;
@@ -319,8 +319,8 @@ StageResult InterHashes::increment_intermediate_hashes(db::RWTxn& txn, BlockNum 
     try {
         // Cache of hashed addresses
         absl::btree_map<evmc::address, ethash_hash256> hashed_addresses{};
-        trie::PrefixSet account_changes{gather_account_changes(txn, from, to, hashed_addresses)};
-        trie::PrefixSet storage_changes{gather_storage_changes(txn, from, to, hashed_addresses)};
+        trie::PrefixSet account_changes{gather_forward_account_changes(txn, from, to, hashed_addresses)};
+        trie::PrefixSet storage_changes{gather_forward_storage_changes(txn, from, to, hashed_addresses)};
         hashed_addresses.clear();
 
         log_lck.lock();

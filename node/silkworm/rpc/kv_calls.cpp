@@ -70,10 +70,15 @@ KvVersionCallFactory::KvVersionCallFactory()
 }
 
 mdbx::env* TxCall::chaindata_env_{nullptr};
+boost::posix_time::milliseconds TxCall::max_ttl_duration_{kMaxTxDuration};
 uint32_t TxCall::next_cursor_id_{0};
 
 void TxCall::set_chaindata_env(mdbx::env* chaindata_env) {
     TxCall::chaindata_env_ = chaindata_env;
+}
+
+void TxCall::set_max_ttl_duration(const boost::posix_time::milliseconds& max_ttl_duration) {
+    TxCall::max_ttl_duration_ = max_ttl_duration;
 }
 
 TxCall::TxCall(boost::asio::io_context& scheduler, remote::KV::AsyncService* service, grpc::ServerCompletionQueue* queue, Handlers handlers)
@@ -98,7 +103,7 @@ void TxCall::start() {
         SILK_DEBUG << "TxCall::start message with txid=" << read_only_txn_.id() << " sent: " << sent;
 
         // Start a guard timer for closing and reopening to avoid long-lived transactions.
-        max_ttl_timer_.expires_from_now(boost::posix_time::milliseconds(kMaxTxDuration));
+        max_ttl_timer_.expires_from_now(max_ttl_duration_);
         max_ttl_timer_.async_wait([&](const auto& ec) { handle_max_ttl_timer_expired(ec); });
         SILK_DEBUG << "Tx peer: " << peer() << " max TTL timer expires at: " << max_ttl_timer_.expires_at();
     } catch (const mdbx::exception& e) {
@@ -272,7 +277,7 @@ void TxCall::handle_max_ttl_timer_expired(const boost::system::error_code& ec) {
         }
         SILK_DEBUG << "Tx peer: " << peer() << " #cursors: " << cursors_.size() << " restored";
 
-        max_ttl_timer_.expires_from_now(boost::posix_time::milliseconds(kMaxTxDuration));
+        max_ttl_timer_.expires_from_now(max_ttl_duration_);
         max_ttl_timer_.async_wait([&](const auto& error_code) { handle_max_ttl_timer_expired(error_code); });
         SILK_DEBUG << "Tx peer: " << peer() << " max TTL timer expires at: " << max_ttl_timer_.expires_at();
     }

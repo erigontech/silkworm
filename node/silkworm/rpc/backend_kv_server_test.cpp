@@ -16,6 +16,7 @@
 
 #include "backend_kv_server.hpp"
 
+#include <chrono>
 #include <memory>
 #include <string>
 #include <sstream>
@@ -115,6 +116,9 @@ class KvClient {
             }
             if (cursor_id == 0) {
                 cursor_id = responses.back().cursorid();
+            }
+            if (req.op() == remote::Op::CLOSE) {
+                cursor_id = 0;
             }
         }
         tx_reader_writer->WritesDone();
@@ -283,6 +287,7 @@ struct BackEndKvE2eTest {
         auto rw_txn = database_env.start_write();
         db::Cursor rw_cursor{rw_txn, kTestMapConfig};
         rw_cursor.upsert(mdbx::slice{"00"}, mdbx::slice{"11"});
+        rw_cursor.upsert(mdbx::slice{"22"}, mdbx::slice{"33"});
         rw_txn.commit();
     }
 
@@ -619,31 +624,6 @@ TEST_CASE("BackEndKvServer E2E: empty node settings", "[silkworm][node][rpc]") {
         CHECK(responses[1].cursorid() != 0);
     }
 
-    SECTION("Tx cursor first: OK", "[silkworm][node][rpc]") {
-        test.fill_test_table();
-
-        remote::Cursor open;
-        open.set_op(remote::Op::OPEN);
-        open.set_bucketname(kTestMapConfig.name);
-        remote::Cursor first;
-        first.set_op(remote::Op::FIRST);
-        first.set_cursor(0);
-        remote::Cursor close;
-        close.set_op(remote::Op::CLOSE);
-        close.set_cursor(0);
-        std::vector<remote::Cursor> requests{open, first, close};
-        std::vector<remote::Pair> responses;
-        const auto status = kv_client.tx(requests, responses);
-        CHECK(status.ok());
-        CHECK(status.error_message().empty());
-        CHECK(responses.size() == 4);
-        CHECK(responses[0].txid() != 0);
-        CHECK(responses[1].cursorid() != 0);
-        CHECK(responses[2].k() == "00");
-        CHECK(responses[2].v() == "11");
-        CHECK(responses[3].cursorid() == 0);
-    }
-
     // TODO(canepat): change using something meaningful when really implemented
     SECTION("StateChanges: return streamed state changes", "[silkworm][node][rpc]") {
         remote::StateChangeRequest request;
@@ -812,7 +792,7 @@ TEST_CASE("BackEndKvServer E2E: bidirectional idle timeout", "[silkworm][node][r
     BackEndKvE2eTest test{silkworm::log::Level::kNone, node_settings};
     auto kv_client = *test.kv_client;
 
-    SECTION("Tx: immediate finish", "[silkworm][node][rpc]") {
+    SECTION("Tx KO: immediate finish", "[silkworm][node][rpc]") {
         test.fill_test_table();
 
         grpc::ClientContext context;
@@ -823,7 +803,7 @@ TEST_CASE("BackEndKvServer E2E: bidirectional idle timeout", "[silkworm][node][r
         CHECK(status.error_message().find("call idle, no incoming request") != std::string::npos);
     }
 
-    SECTION("Tx: finish after first read", "[silkworm][node][rpc]") {
+    SECTION("Tx KO: finish after first read", "[silkworm][node][rpc]") {
         test.fill_test_table();
 
         grpc::ClientContext context;
@@ -837,7 +817,7 @@ TEST_CASE("BackEndKvServer E2E: bidirectional idle timeout", "[silkworm][node][r
         CHECK(status.error_message().find("call idle, no incoming request") != std::string::npos);
     }
 
-    SECTION("Tx: finish after first read and one write/read", "[silkworm][node][rpc]") {
+    SECTION("Tx KO: finish after first read and one write/read", "[silkworm][node][rpc]") {
         test.fill_test_table();
 
         grpc::ClientContext context;
@@ -857,6 +837,215 @@ TEST_CASE("BackEndKvServer E2E: bidirectional idle timeout", "[silkworm][node][r
         CHECK(!status.ok());
         CHECK(status.error_code() == grpc::StatusCode::DEADLINE_EXCEEDED);
         CHECK(status.error_message().find("call idle, no incoming request") != std::string::npos);
+    }
+}
+
+TEST_CASE("BackEndKvServer E2E: Tx cursor operations", "[silkworm][node][rpc]") {
+    BackEndKvE2eTest test{silkworm::log::Level::kNone};
+    auto kv_client = *test.kv_client;
+
+    SECTION("Tx OK: one FIRST operation", "[silkworm][node][rpc]") {
+        test.fill_test_table();
+
+        remote::Cursor open;
+        open.set_op(remote::Op::OPEN);
+        open.set_bucketname(kTestMapConfig.name);
+        remote::Cursor first;
+        first.set_op(remote::Op::FIRST);
+        first.set_cursor(0); // automatically assigned by KvClient::tx
+        remote::Cursor close;
+        close.set_op(remote::Op::CLOSE);
+        close.set_cursor(0); // automatically assigned by KvClient::tx
+        std::vector<remote::Cursor> requests{open, first, close};
+        std::vector<remote::Pair> responses;
+        const auto status = kv_client.tx(requests, responses);
+        CHECK(status.ok());
+        CHECK(status.error_message().empty());
+        CHECK(responses.size() == 4);
+        CHECK(responses[0].txid() != 0);
+        CHECK(responses[1].cursorid() != 0);
+        CHECK(responses[2].k() == "00");
+        CHECK(responses[2].v() == "11");
+        CHECK(responses[3].cursorid() == 0);
+    }
+
+    SECTION("Tx OK: two FIRST operations", "[silkworm][node][rpc]") {
+        test.fill_test_table();
+
+        remote::Cursor open;
+        open.set_op(remote::Op::OPEN);
+        open.set_bucketname(kTestMapConfig.name);
+        remote::Cursor first1;
+        first1.set_op(remote::Op::FIRST);
+        first1.set_cursor(0); // automatically assigned by KvClient::tx
+        remote::Cursor first2;
+        first2.set_op(remote::Op::FIRST);
+        first2.set_cursor(0); // automatically assigned by KvClient::tx
+        remote::Cursor close;
+        close.set_op(remote::Op::CLOSE);
+        close.set_cursor(0); // automatically assigned by KvClient::tx
+        std::vector<remote::Cursor> requests{open, first1, first2, close};
+        std::vector<remote::Pair> responses;
+        const auto status = kv_client.tx(requests, responses);
+        CHECK(status.ok());
+        CHECK(status.error_message().empty());
+        CHECK(responses.size() == 5);
+        CHECK(responses[0].txid() != 0);
+        CHECK(responses[1].cursorid() != 0);
+        CHECK(responses[2].k() == "00");
+        CHECK(responses[2].v() == "11");
+        CHECK(responses[3].k() == "00");
+        CHECK(responses[3].v() == "11");
+        CHECK(responses[4].cursorid() == 0);
+    }
+
+    SECTION("Tx OK: one NEXT operation", "[silkworm][node][rpc]") {
+        test.fill_test_table();
+
+        remote::Cursor open;
+        open.set_op(remote::Op::OPEN);
+        open.set_bucketname(kTestMapConfig.name);
+        remote::Cursor next;
+        next.set_op(remote::Op::NEXT);
+        next.set_cursor(0); // automatically assigned by KvClient::tx
+        remote::Cursor close;
+        close.set_op(remote::Op::CLOSE);
+        close.set_cursor(0); // automatically assigned by KvClient::tx
+        std::vector<remote::Cursor> requests{open, next, close};
+        std::vector<remote::Pair> responses;
+        const auto status = kv_client.tx(requests, responses);
+        CHECK(status.ok());
+        CHECK(status.error_message().empty());
+        CHECK(responses.size() == 4);
+        CHECK(responses[0].txid() != 0);
+        CHECK(responses[1].cursorid() != 0);
+        CHECK(responses[2].k() == "00");
+        CHECK(responses[2].v() == "11");
+        CHECK(responses[3].cursorid() == 0);
+    }
+
+    SECTION("Tx OK: two NEXT operations", "[silkworm][node][rpc]") {
+        test.fill_test_table();
+
+        remote::Cursor open;
+        open.set_op(remote::Op::OPEN);
+        open.set_bucketname(kTestMapConfig.name);
+        remote::Cursor next1;
+        next1.set_op(remote::Op::NEXT);
+        next1.set_cursor(0); // automatically assigned by KvClient::tx
+        remote::Cursor next2;
+        next2.set_op(remote::Op::NEXT);
+        next2.set_cursor(0); // automatically assigned by KvClient::tx
+        remote::Cursor close;
+        close.set_op(remote::Op::CLOSE);
+        close.set_cursor(0); // automatically assigned by KvClient::tx
+        std::vector<remote::Cursor> requests{open, next1, next2, close};
+        std::vector<remote::Pair> responses;
+        const auto status = kv_client.tx(requests, responses);
+        CHECK(status.ok());
+        CHECK(status.error_message().empty());
+        CHECK(responses.size() == 5);
+        CHECK(responses[0].txid() != 0);
+        CHECK(responses[1].cursorid() != 0);
+        CHECK(responses[2].k() == "00");
+        CHECK(responses[2].v() == "11");
+        CHECK(responses[3].k() == "22");
+        CHECK(responses[3].v() == "33");
+        CHECK(responses[4].cursorid() == 0);
+    }
+
+    SECTION("Tx OK: two NEXT operations using different cursors", "[silkworm][node][rpc]") {
+        test.fill_test_table();
+
+        remote::Cursor open1;
+        open1.set_op(remote::Op::OPEN);
+        open1.set_bucketname(kTestMapConfig.name);
+        remote::Cursor next1;
+        next1.set_op(remote::Op::NEXT);
+        next1.set_cursor(0); // automatically assigned by KvClient::tx
+        remote::Cursor close1;
+        close1.set_op(remote::Op::CLOSE);
+        close1.set_cursor(0); // automatically assigned by KvClient::tx
+        remote::Cursor open2;
+        open2.set_op(remote::Op::OPEN);
+        open2.set_bucketname(kTestMapConfig.name);
+        remote::Cursor next2;
+        next2.set_op(remote::Op::NEXT);
+        next2.set_cursor(0); // automatically assigned by KvClient::tx
+        remote::Cursor close2;
+        close2.set_op(remote::Op::CLOSE);
+        close2.set_cursor(0); // automatically assigned by KvClient::tx
+        std::vector<remote::Cursor> requests{open1, next1, close1, open2, next2, close2};
+        std::vector<remote::Pair> responses;
+        const auto status = kv_client.tx(requests, responses);
+        CHECK(status.ok());
+        CHECK(status.error_message().empty());
+        CHECK(responses.size() == 7);
+        CHECK(responses[0].txid() != 0);
+        CHECK(responses[1].cursorid() != 0);
+        CHECK(responses[2].k() == "00");
+        CHECK(responses[2].v() == "11");
+        CHECK(responses[3].cursorid() == 0);
+        CHECK(responses[4].cursorid() != 0);
+        CHECK(responses[5].k() == "00");
+        CHECK(responses[5].v() == "11");
+        CHECK(responses[6].cursorid() == 0);
+    }
+}
+
+class TxMaxTimeToLiveGuard {
+  public:
+    explicit TxMaxTimeToLiveGuard(uint8_t t) {
+        TxCall::set_max_ttl_duration(boost::posix_time::milliseconds{t});
+    }
+    ~TxMaxTimeToLiveGuard() {
+        TxCall::set_max_ttl_duration(kMaxTxDuration);
+    }
+};
+
+TEST_CASE("BackEndKvServer E2E: bidirectional max TTL duration", "[silkworm][node][rpc]") {
+    constexpr uint8_t kCustomMaxTimeToLive{50};
+    TxMaxTimeToLiveGuard ttl_guard{kCustomMaxTimeToLive};
+    NodeSettings node_settings;
+    BackEndKvE2eTest test{silkworm::log::Level::kNone, node_settings};
+    auto kv_client = *test.kv_client;
+
+    SECTION("Tx: cursor NEXT ops across renew are consecutive", "[silkworm][node][rpc]") {
+        test.fill_test_table();
+
+        grpc::ClientContext context;
+        const auto tx_reader_writer = kv_client.tx_start(&context);
+        remote::Pair response;
+        tx_reader_writer->Read(&response);
+        CHECK(response.txid() != 0);
+        remote::Cursor open;
+        open.set_op(remote::Op::OPEN);
+        open.set_bucketname(kTestMapConfig.name);
+        CHECK(tx_reader_writer->Write(open));
+        response.clear_txid();
+        tx_reader_writer->Read(&response);
+        const auto cursor_id = response.cursorid();
+        CHECK(cursor_id != 0);
+        remote::Cursor next1;
+        next1.set_op(remote::Op::NEXT);
+        next1.set_cursor(cursor_id);
+        CHECK(tx_reader_writer->Write(next1));
+        response.clear_cursorid();
+        tx_reader_writer->Read(&response);
+        CHECK(response.k() == "00");
+        CHECK(response.v() == "11");
+        std::this_thread::sleep_for(std::chrono::milliseconds{4 * kCustomMaxTimeToLive});
+        remote::Cursor next2;
+        next2.set_op(remote::Op::NEXT);
+        next2.set_cursor(cursor_id);
+        CHECK(tx_reader_writer->Write(next2));
+        response.clear_cursorid();
+        tx_reader_writer->Read(&response);
+        CHECK(response.k() == "22");
+        CHECK(response.v() == "33");
+        tx_reader_writer->WritesDone();
+        auto status = tx_reader_writer->Finish();
+        CHECK(status.ok());
     }
 }
 

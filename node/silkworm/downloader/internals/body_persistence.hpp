@@ -36,7 +36,7 @@ class BodyPersistence {
     BlockNum initial_height() const;
     BlockNum highest_height() const;
   private:
-    Db::ReadWriteAccess::Tx& tx_;
+    [[maybe_unused]] Db::ReadWriteAccess::Tx& tx_;
 };
 
 }

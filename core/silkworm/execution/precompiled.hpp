@@ -20,71 +20,70 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include <array>
+
 #include <evmc/evmc.h>
 
-#include <silkworm/common/base.hpp>
-
 // See Yellow Paper, Appendix E "Precompiled Contracts"
-namespace silkworm::precompiled {
 
-struct Output {
+#define SILKPRE_NUMBER_OF_FRONTIER_CONTRACTS 4
+#define SILKPRE_NUMBER_OF_BYZANTIUM_CONTRACTS 8
+#define SILKPRE_NUMBER_OF_ISTANBUL_CONTRACTS 9
+
+struct SilkpreOutput {
     uint8_t* data;  // Has to be freed if not NULL!!!
     size_t size;
 };
 
-using GasFunction = uint64_t (*)(const uint8_t* input, size_t len, evmc_revision) noexcept;
-using RunFunction = Output (*)(const uint8_t* input, size_t len) noexcept;
+using SilkpreGasFunction = uint64_t (*)(const uint8_t* input, size_t len, evmc_revision) noexcept;
+using SilkpreRunFunction = SilkpreOutput (*)(const uint8_t* input, size_t len) noexcept;
 
-struct Contract {
-    GasFunction gas;
-    RunFunction run;
+struct SilkpreContract {
+    SilkpreGasFunction gas;
+    SilkpreRunFunction run;
 };
 
-uint64_t ecrec_gas(const uint8_t* input, size_t len, evmc_revision) noexcept;
-Output ecrec_run(const uint8_t* input, size_t len) noexcept;
+uint64_t silkpre_ecrec_gas(const uint8_t* input, size_t len, evmc_revision) noexcept;
+SilkpreOutput silkpre_ecrec_run(const uint8_t* input, size_t len) noexcept;
 
-uint64_t sha256_gas(const uint8_t* input, size_t len, evmc_revision) noexcept;
-Output sha256_run(const uint8_t* input, size_t len) noexcept;
+uint64_t silkpre_sha256_gas(const uint8_t* input, size_t len, evmc_revision) noexcept;
+SilkpreOutput silkpre_sha256_run(const uint8_t* input, size_t len) noexcept;
 
-uint64_t rip160_gas(const uint8_t* input, size_t len, evmc_revision) noexcept;
-Output rip160_run(const uint8_t* input, size_t len) noexcept;
+uint64_t silkpre_rip160_gas(const uint8_t* input, size_t len, evmc_revision) noexcept;
+SilkpreOutput silkpre_rip160_run(const uint8_t* input, size_t len) noexcept;
 
-uint64_t id_gas(const uint8_t* input, size_t len, evmc_revision) noexcept;
-Output id_run(const uint8_t* input, size_t len) noexcept;
+uint64_t silkpre_id_gas(const uint8_t* input, size_t len, evmc_revision) noexcept;
+SilkpreOutput silkpre_id_run(const uint8_t* input, size_t len) noexcept;
 
 // https://eips.ethereum.org/EIPS/eip-2565
-uint64_t expmod_gas(const uint8_t* input, size_t len, evmc_revision) noexcept;
+uint64_t silkpre_expmod_gas(const uint8_t* input, size_t len, evmc_revision) noexcept;
 // https://eips.ethereum.org/EIPS/eip-198
-Output expmod_run(const uint8_t* input, size_t len) noexcept;
+SilkpreOutput silkpre_expmod_run(const uint8_t* input, size_t len) noexcept;
 
 // https://eips.ethereum.org/EIPS/eip-196
-uint64_t bn_add_gas(const uint8_t* input, size_t len, evmc_revision) noexcept;
-Output bn_add_run(const uint8_t* input, size_t len) noexcept;
+uint64_t silkpre_bn_add_gas(const uint8_t* input, size_t len, evmc_revision) noexcept;
+SilkpreOutput silkpre_bn_add_run(const uint8_t* input, size_t len) noexcept;
 
 // https://eips.ethereum.org/EIPS/eip-196
-uint64_t bn_mul_gas(const uint8_t* input, size_t len, evmc_revision) noexcept;
-Output bn_mul_run(const uint8_t* input, size_t len) noexcept;
+uint64_t silkpre_bn_mul_gas(const uint8_t* input, size_t len, evmc_revision) noexcept;
+SilkpreOutput silkpre_bn_mul_run(const uint8_t* input, size_t len) noexcept;
 
 // https://eips.ethereum.org/EIPS/eip-197
-uint64_t snarkv_gas(const uint8_t* input, size_t len, evmc_revision) noexcept;
-Output snarkv_run(const uint8_t* input, size_t len) noexcept;
+uint64_t silkpre_snarkv_gas(const uint8_t* input, size_t len, evmc_revision) noexcept;
+SilkpreOutput silkpre_snarkv_run(const uint8_t* input, size_t len) noexcept;
 
 // https://eips.ethereum.org/EIPS/eip-152
-uint64_t blake2_f_gas(const uint8_t* input, size_t len, evmc_revision) noexcept;
-Output blake2_f_run(const uint8_t* input, size_t len) noexcept;
+uint64_t silkpre_blake2_f_gas(const uint8_t* input, size_t len, evmc_revision) noexcept;
+SilkpreOutput silkpre_blake2_f_run(const uint8_t* input, size_t len) noexcept;
 
-inline constexpr Contract kContracts[]{
-    {ecrec_gas, ecrec_run},   {sha256_gas, sha256_run}, {rip160_gas, rip160_run},
-    {id_gas, id_run},         {expmod_gas, expmod_run}, {bn_add_gas, bn_add_run},
-    {bn_mul_gas, bn_mul_run}, {snarkv_gas, snarkv_run}, {blake2_f_gas, blake2_f_run},
+inline constexpr SilkpreContract kSilkpreContracts[]{
+    {silkpre_ecrec_gas, silkpre_ecrec_run},       {silkpre_sha256_gas, silkpre_sha256_run},
+    {silkpre_rip160_gas, silkpre_rip160_run},     {silkpre_id_gas, silkpre_id_run},
+    {silkpre_expmod_gas, silkpre_expmod_run},     {silkpre_bn_add_gas, silkpre_bn_add_run},
+    {silkpre_bn_mul_gas, silkpre_bn_mul_run},     {silkpre_snarkv_gas, silkpre_snarkv_run},
+    {silkpre_blake2_f_gas, silkpre_blake2_f_run},
 };
 
-inline constexpr size_t kNumOfFrontierContracts{4};
-inline constexpr size_t kNumOfByzantiumContracts{8};
-inline constexpr size_t kNumOfIstanbulContracts{9};
-
-static_assert(std::size(kContracts) == kNumOfIstanbulContracts);
-
-}  // namespace silkworm::precompiled
+static_assert(std::size(kSilkpreContracts) == SILKPRE_NUMBER_OF_ISTANBUL_CONTRACTS);
 
 #endif  // SILKWORM_EXECUTION_PRECOMPILED_HPP_

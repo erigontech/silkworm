@@ -220,13 +220,13 @@ evmc::result EVM::call(const evmc_message& message) noexcept {
 
     if (precompiled) {
         const uint8_t num{message.code_address.bytes[kAddressLength - 1]};
-        precompiled::Contract contract{precompiled::kContracts[num - 1]};
+        SilkpreContract contract{kSilkpreContracts[num - 1]};
         const ByteView input{message.input_data, message.input_size};
         const int64_t gas{static_cast<int64_t>(contract.gas(input.data(), input.length(), revision()))};
         if (gas < 0 || gas > message.gas) {
             res.status_code = EVMC_OUT_OF_GAS;
         } else {
-            precompiled::Output output{contract.run(input.data(), input.length())};
+            SilkpreOutput output{contract.run(input.data(), input.length())};
             if (output.data) {
                 res.gas_left -= gas;
                 res.output_size = output.size;
@@ -352,11 +352,11 @@ uint8_t EVM::number_of_precompiles() const noexcept {
     const evmc_revision rev{revision()};
 
     if (rev >= EVMC_ISTANBUL) {
-        return precompiled::kNumOfIstanbulContracts;
+        return SILKPRE_NUMBER_OF_ISTANBUL_CONTRACTS;
     } else if (rev >= EVMC_BYZANTIUM) {
-        return precompiled::kNumOfByzantiumContracts;
+        return SILKPRE_NUMBER_OF_BYZANTIUM_CONTRACTS;
     } else {
-        return precompiled::kNumOfFrontierContracts;
+        return SILKPRE_NUMBER_OF_FRONTIER_CONTRACTS;
     }
 }
 

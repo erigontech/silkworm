@@ -39,7 +39,7 @@
 
 #include <silkworm/common/endian.hpp>
 
-namespace silkworm::precompiled {
+using namespace silkworm;
 
 static void right_pad(Bytes& str, const size_t min_size) {
     if (str.length() < min_size) {
@@ -47,9 +47,9 @@ static void right_pad(Bytes& str, const size_t min_size) {
     }
 }
 
-uint64_t ecrec_gas(const uint8_t*, size_t, evmc_revision) noexcept { return 3'000; }
+uint64_t silkpre_ecrec_gas(const uint8_t*, size_t, evmc_revision) noexcept { return 3'000; }
 
-Output ecrec_run(const uint8_t* input, size_t len) noexcept {
+SilkpreOutput silkpre_ecrec_run(const uint8_t* input, size_t len) noexcept {
     uint8_t* out{static_cast<uint8_t*>(std::malloc(32))};
 
     Bytes d(input, len);
@@ -77,26 +77,28 @@ Output ecrec_run(const uint8_t* input, size_t len) noexcept {
     return {out, 32};
 }
 
-uint64_t sha256_gas(const uint8_t*, size_t len, evmc_revision) noexcept { return 60 + 12 * ((len + 31) / 32); }
+uint64_t silkpre_sha256_gas(const uint8_t*, size_t len, evmc_revision) noexcept { return 60 + 12 * ((len + 31) / 32); }
 
-Output sha256_run(const uint8_t* input, size_t len) noexcept {
+SilkpreOutput silkpre_sha256_run(const uint8_t* input, size_t len) noexcept {
     uint8_t* out{static_cast<uint8_t*>(std::malloc(32))};
     silkpre_sha256(out, input, len, /*use_cpu_extensions=*/true);
     return {out, 32};
 }
 
-uint64_t rip160_gas(const uint8_t*, size_t len, evmc_revision) noexcept { return 600 + 120 * ((len + 31) / 32); }
+uint64_t silkpre_rip160_gas(const uint8_t*, size_t len, evmc_revision) noexcept {
+    return 600 + 120 * ((len + 31) / 32);
+}
 
-Output rip160_run(const uint8_t* input, size_t len) noexcept {
+SilkpreOutput silkpre_rip160_run(const uint8_t* input, size_t len) noexcept {
     uint8_t* out{static_cast<uint8_t*>(std::malloc(32))};
     std::memset(out, 0, 12);
     silkpre_rmd160(&out[12], input, len);
     return {out, 32};
 }
 
-uint64_t id_gas(const uint8_t*, size_t len, evmc_revision) noexcept { return 15 + 3 * ((len + 31) / 32); }
+uint64_t silkpre_id_gas(const uint8_t*, size_t len, evmc_revision) noexcept { return 15 + 3 * ((len + 31) / 32); }
 
-Output id_run(const uint8_t* input, size_t len) noexcept {
+SilkpreOutput silkpre_id_run(const uint8_t* input, size_t len) noexcept {
     uint8_t* out{static_cast<uint8_t*>(std::malloc(len))};
     std::memcpy(out, input, len);
     return {out, len};
@@ -118,7 +120,7 @@ static intx::uint256 mult_complexity_eip2565(const intx::uint256& max_length) no
     return words * words;
 }
 
-uint64_t expmod_gas(const uint8_t* ptr, size_t len, evmc_revision rev) noexcept {
+uint64_t silkpre_expmod_gas(const uint8_t* ptr, size_t len, evmc_revision rev) noexcept {
     const uint64_t min_gas{rev < EVMC_BERLIN ? 0 : 200u};
 
     Bytes input(ptr, len);
@@ -182,7 +184,7 @@ uint64_t expmod_gas(const uint8_t* ptr, size_t len, evmc_revision rev) noexcept 
     }
 }
 
-Output expmod_run(const uint8_t* ptr, size_t len) noexcept {
+SilkpreOutput silkpre_expmod_run(const uint8_t* ptr, size_t len) noexcept {
     Bytes input(ptr, len);
     right_pad(input, 3 * 32);
 
@@ -249,9 +251,11 @@ Output expmod_run(const uint8_t* ptr, size_t len) noexcept {
     return {out, static_cast<size_t>(modulus_len)};
 }
 
-uint64_t bn_add_gas(const uint8_t*, size_t, evmc_revision rev) noexcept { return rev >= EVMC_ISTANBUL ? 150 : 500; }
+uint64_t silkpre_bn_add_gas(const uint8_t*, size_t, evmc_revision rev) noexcept {
+    return rev >= EVMC_ISTANBUL ? 150 : 500;
+}
 
-Output bn_add_run(const uint8_t* ptr, size_t len) noexcept {
+SilkpreOutput silkpre_bn_add_run(const uint8_t* ptr, size_t len) noexcept {
     Bytes input(ptr, len);
     right_pad(input, 128);
 
@@ -275,11 +279,11 @@ Output bn_add_run(const uint8_t* ptr, size_t len) noexcept {
     return {out, res.length()};
 }
 
-uint64_t bn_mul_gas(const uint8_t*, size_t, evmc_revision rev) noexcept {
+uint64_t silkpre_bn_mul_gas(const uint8_t*, size_t, evmc_revision rev) noexcept {
     return rev >= EVMC_ISTANBUL ? 6'000 : 40'000;
 }
 
-Output bn_mul_run(const uint8_t* ptr, size_t len) noexcept {
+SilkpreOutput silkpre_bn_mul_run(const uint8_t* ptr, size_t len) noexcept {
     Bytes input(ptr, len);
     right_pad(input, 96);
 
@@ -302,12 +306,12 @@ Output bn_mul_run(const uint8_t* ptr, size_t len) noexcept {
 
 static constexpr size_t kSnarkvStride{192};
 
-uint64_t snarkv_gas(const uint8_t*, size_t len, evmc_revision rev) noexcept {
+uint64_t silkpre_snarkv_gas(const uint8_t*, size_t len, evmc_revision rev) noexcept {
     uint64_t k{len / kSnarkvStride};
     return rev >= EVMC_ISTANBUL ? 34'000 * k + 45'000 : 80'000 * k + 100'000;
 }
 
-Output snarkv_run(const uint8_t* input, size_t len) noexcept {
+SilkpreOutput silkpre_snarkv_run(const uint8_t* input, size_t len) noexcept {
     if (len % kSnarkvStride != 0) {
         return {nullptr, 0};
     }
@@ -344,7 +348,7 @@ Output snarkv_run(const uint8_t* input, size_t len) noexcept {
     return {out, 32};
 }
 
-uint64_t blake2_f_gas(const uint8_t* input, size_t len, evmc_revision) noexcept {
+uint64_t silkpre_blake2_f_gas(const uint8_t* input, size_t len, evmc_revision) noexcept {
     if (len < 4) {
         // blake2_f_run will fail anyway
         return 0;
@@ -352,7 +356,7 @@ uint64_t blake2_f_gas(const uint8_t* input, size_t len, evmc_revision) noexcept 
     return endian::load_big_u32(input);
 }
 
-Output blake2_f_run(const uint8_t* input, size_t len) noexcept {
+SilkpreOutput silkpre_blake2_f_run(const uint8_t* input, size_t len) noexcept {
     if (len != 213) {
         return {nullptr, 0};
     }
@@ -382,5 +386,3 @@ Output blake2_f_run(const uint8_t* input, size_t len) noexcept {
     std::memcpy(&out[0], &state.h[0], 8 * 8);
     return {out, 64};
 }
-
-}  // namespace silkworm::precompiled

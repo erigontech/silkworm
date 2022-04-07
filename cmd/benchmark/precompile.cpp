@@ -15,9 +15,9 @@
 */
 
 #include <benchmark/benchmark.h>
+#include <silkpre/precompile.h>
 
 #include <silkworm/common/util.hpp>
-#include <silkworm/execution/precompiled.hpp>
 
 static void ec_recovery(benchmark::State& state) {
     using namespace silkworm;

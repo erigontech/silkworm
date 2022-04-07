@@ -27,11 +27,11 @@
 #include <evmone/evmone.h>
 #include <evmone/tracing.hpp>
 #include <evmone/vm.hpp>
+#include <silkpre/precompile.h>
 
 #include <silkworm/chain/protocol_param.hpp>
 
 #include "address.hpp"
-#include "precompiled.hpp"
 
 namespace silkworm {
 

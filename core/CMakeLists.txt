@@ -30,7 +30,7 @@ add_library(silkworm_core ${SILKWORM_CORE_SRC})
 target_include_directories(silkworm_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 set(SILKWORM_CORE_PUBLIC_LIBS ethash::ethash evmc evmone intx::intx Microsoft.GSL::GSL nlohmann_json silkpre)
-set(SILKWORM_CORE_PRIVATE_LIBS gmp)
+set(SILKWORM_CORE_PRIVATE_LIBS "")
 
 if(NOT SILKWORM_WASM_API)
   hunter_add_package(abseil)

@@ -70,7 +70,7 @@ Output ecrec_run(const uint8_t* input, size_t len) noexcept {
     }
 
     std::memset(out, 0, 12);
-    thread_local auto context{secp256k1_context_create(SILKPRE_SECP256K1_CONTEXT_FLAGS)};
+    static secp256k1_context* context{secp256k1_context_create(SILKPRE_SECP256K1_CONTEXT_FLAGS)};
     if (!silkpre_recover_address(out + 12, &d[0], &d[64], parity_and_id->odd, context)) {
         return {out, 0};
     }

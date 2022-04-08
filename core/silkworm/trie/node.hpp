@@ -61,7 +61,7 @@ class Node {
 bool operator==(const Node& a, const Node& b);
 
 // Erigon MarshalTrieNode
-Bytes marshal_node(const Node& n);
+Bytes marshal_node(const Node& node);
 
 // Erigon UnmarshalTrieNode
 std::optional<Node> unmarshal_node(ByteView v);

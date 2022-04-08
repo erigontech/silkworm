@@ -40,38 +40,33 @@ bool operator==(const Node& a, const Node& b) {
            a.hashes() == b.hashes() && a.root_hash() == b.root_hash();
 }
 
-Bytes marshal_node(const Node& n) {
+Bytes marshal_node(const Node& node) {
     size_t buf_size{/* 3 masks state/tree/hash 2 bytes each */ 6 +
-                    /* root hash */ (n.root_hash().has_value() ? kHashLength : 0u) +
-                    /* hashes */ n.hashes().size() * kHashLength};
+                    /* root hash */ (node.root_hash().has_value() ? kHashLength : 0u) +
+                    /* hashes */ node.hashes().size() * kHashLength};
 
     Bytes buf(buf_size, '\0');
     size_t pos{0};
 
-    endian::store_big_u16(&buf[pos], n.state_mask());
+    endian::store_big_u16(&buf[pos], node.state_mask());
     pos += 2;
 
-    endian::store_big_u16(&buf[pos], n.tree_mask());
+    endian::store_big_u16(&buf[pos], node.tree_mask());
     pos += 2;
 
-    endian::store_big_u16(&buf[pos], n.hash_mask());
+    endian::store_big_u16(&buf[pos], node.hash_mask());
     pos += 2;
 
-    if (n.root_hash().has_value()) {
-        std::memcpy(&buf[pos], n.root_hash()->bytes, kHashLength);
+    if (node.root_hash().has_value()) {
+        std::memcpy(&buf[pos], node.root_hash()->bytes, kHashLength);
         pos += kHashLength;
     }
 
-    for (const auto& hash : n.hashes()) {
-        std::memcpy(&buf[pos], hash.bytes, kHashLength);
-        pos += kHashLength;
-    }
-
+    std::memcpy(&buf[pos], node.hashes().data(), node.hashes().size() * kHashLength);
     return buf;
 }
 
 std::optional<Node> unmarshal_node(ByteView v) {
-
     // At least state/tree/hash masks need to be present
     if (v.length() < 6) {
         return std::nullopt;

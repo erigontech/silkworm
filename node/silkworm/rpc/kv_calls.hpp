@@ -17,6 +17,7 @@
 #ifndef SILKWORM_RPC_KV_FACTORIES_HPP_
 #define SILKWORM_RPC_KV_FACTORIES_HPP_
 
+#include <exception>
 #include <map>
 #include <tuple>
 #include <vector>
@@ -123,8 +124,7 @@ class TxCall : public BidirectionalStreamingRpc<remote::KV::AsyncService, remote
     void handle_next_no_dup(const remote::Cursor* request, db::Cursor& cursor);
     void handle_prev(const remote::Cursor* request, db::Cursor& cursor);
 
-    bool send_response_pair(const mdbx::cursor::move_result& result);
-    void finish_with_internal_error(const remote::Cursor* request);
+    void finish_with_internal_error(const remote::Cursor* request, const std::exception& exc);
     void finish_with_internal_error(const std::string& error_message);
 
     static mdbx::env* chaindata_env_;

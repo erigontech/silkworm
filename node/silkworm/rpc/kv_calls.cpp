@@ -335,211 +335,267 @@ bool TxCall::restore_cursors(std::vector<CursorPosition>& positions) {
 }
 
 void TxCall::handle_first(const remote::Cursor* request, db::Cursor& cursor) {
-    SILK_TRACE << "TxCall::handle_first " << this << " START";
+    try {
+        SILK_TRACE << "TxCall::handle_first " << this << " START";
 
-    const mdbx::cursor::move_result result = cursor.to_first(/*throw_notfound=*/false);
+        const auto result = cursor.to_first(/*throw_notfound=*/false);
 
-    if (result) {
-        const bool sent = send_response_pair(result);
+        remote::Pair kv_pair;
+        if (result) {
+            kv_pair.set_k(result.key.as_string());
+            kv_pair.set_v(result.value.as_string());
+        }
+
+        const bool sent = send_response(kv_pair);
         SILK_TRACE << "TxCall::handle_first " << this << " sent: " << sent << " END";
-    } else {
-        finish_with_internal_error(request);
-        SILK_TRACE << "TxCall::handle_first " << this << " END";
+    } catch (const std::exception& exc) {
+        finish_with_internal_error(request, exc);
     }
 }
 
 void TxCall::handle_first_dup(const remote::Cursor* request, db::Cursor& cursor) {
-    SILK_TRACE << "TxCall::handle_first_dup " << this << " START";
+    try {
+        SILK_TRACE << "TxCall::handle_first_dup " << this << " START";
+        remote::Pair kv_pair;
 
-    const mdbx::cursor::move_result result = cursor.to_current_first_multi(/*throw_notfound=*/false);
+        const auto first_result = cursor.to_first(/*throw_notfound=*/false);
+        if (first_result) {
+            const auto first_dup_result = cursor.to_current_first_multi(/*throw_notfound=*/false);
+            if (first_dup_result) {
+                kv_pair.set_v(first_dup_result.value.as_string());
+            }
+        }
 
-    if (result) {
-        const bool sent = send_response_pair(result);
+        const bool sent = send_response(kv_pair);
         SILK_TRACE << "TxCall::handle_first_dup " << this << " sent: " << sent << " END";
-    } else {
-        finish_with_internal_error(request);
-        SILK_TRACE << "TxCall::handle_first_dup " << this << " END";
+    } catch (const std::exception& exc) {
+        finish_with_internal_error(request, exc);
     }
 }
 
 void TxCall::handle_seek(const remote::Cursor* request, db::Cursor& cursor) {
-    SILK_TRACE << "TxCall::handle_seek " << this << " START";
-    mdbx::slice key{request->k()};
+    try {
+        SILK_TRACE << "TxCall::handle_seek " << this << " START";
+        mdbx::slice key{request->k()};
 
-    const mdbx::cursor::move_result result = (key.length() == 0) ?
-        cursor.to_first(/*throw_notfound=*/false) :
-        cursor.lower_bound(key, /*throw_notfound=*/false);
+        const auto result = (key.length() == 0) ?
+            cursor.to_first(/*throw_notfound=*/false) :
+            cursor.lower_bound(key, /*throw_notfound=*/false);
 
-    if (result) {
-        const bool sent = send_response_pair(result);
+        remote::Pair kv_pair;
+        if (result) {
+            kv_pair.set_k(result.key.as_string());
+            kv_pair.set_v(result.value.as_string());
+        }
+
+        const bool sent = send_response(kv_pair);
         SILK_TRACE << "TxCall::handle_seek " << this << " sent: " << sent << " END";
-    } else {
-        finish_with_internal_error(request);
-        SILK_TRACE << "TxCall::handle_seek " << this << " END";
+    } catch (const std::exception& exc) {
+        finish_with_internal_error(request, exc);
     }
 }
 
 void TxCall::handle_seek_both(const remote::Cursor* request, db::Cursor& cursor) {
-    SILK_TRACE << "TxCall::handle_seek_both " << this << " START";
-    mdbx::slice key{request->k()};
-    mdbx::slice value{request->v()};
+    try {
+        SILK_TRACE << "TxCall::handle_seek_both " << this << " START";
+        mdbx::slice key{request->k()};
+        mdbx::slice value{request->v()};
 
-    const mdbx::cursor::move_result result = cursor.lower_bound_multivalue(key, value, /*throw_notfound=*/false);
+        const auto result = cursor.lower_bound_multivalue(key, value, /*throw_notfound=*/false);
 
-    if (result) {
         remote::Pair kv_pair;
-        kv_pair.set_v(result.value.as_string());
+        if (result) {
+            kv_pair.set_v(result.value.as_string());
+        }
+
         const bool sent = send_response(kv_pair);
         SILK_TRACE << "TxCall::handle_seek_both " << this << " sent: " << sent << " END";
-    } else {
-        finish_with_internal_error(request);
-        SILK_TRACE << "TxCall::handle_seek_both " << this << " END";
+    } catch (const std::exception& exc) {
+        finish_with_internal_error(request, exc);
     }
 }
 
 void TxCall::handle_seek_exact(const remote::Cursor* request, db::Cursor& cursor) {
-    SILK_TRACE << "TxCall::handle_seek_exact " << this << " START";
-    mdbx::slice key{request->k()};
+    try {
+        SILK_TRACE << "TxCall::handle_seek_exact " << this << " START";
+        mdbx::slice key{request->k()};
 
-    bool found = cursor.seek(key);
+        const bool found = cursor.seek(key);
 
-    if (found) {
         remote::Pair kv_pair;
-        kv_pair.set_k(request->k());
+        if (found) {
+            kv_pair.set_k(request->k());
+        }
+
         const bool sent = send_response(kv_pair);
         SILK_TRACE << "TxCall::handle_seek_exact " << this << " sent: " << sent << " END";
-    } else {
-        finish_with_internal_error(request);
-        SILK_TRACE << "TxCall::handle_seek_exact " << this << " END";
+    } catch (const std::exception& exc) {
+        finish_with_internal_error(request, exc);
     }
 }
 
 void TxCall::handle_seek_both_exact(const remote::Cursor* request, db::Cursor& cursor) {
-    SILK_TRACE << "TxCall::handle_seek_both_exact " << this << " START";
-    mdbx::slice key{request->k()};
-    mdbx::slice value{request->v()};
+    try {
+        SILK_TRACE << "TxCall::handle_seek_both_exact " << this << " START";
+        mdbx::slice key{request->k()};
+        mdbx::slice value{request->v()};
 
-    const mdbx::cursor::move_result result = cursor.find_multivalue(key, value, /*throw_notfound=*/false);
+        const auto result = cursor.find_multivalue(key, value, /*throw_notfound=*/false);
 
-    if (result) {
         remote::Pair kv_pair;
-        kv_pair.set_k(request->k());
-        kv_pair.set_v(result.value.as_string());
+        if (result) {
+            kv_pair.set_k(request->k());
+            kv_pair.set_v(result.value.as_string());
+        }
+
         const bool sent = send_response(kv_pair);
         SILK_TRACE << "TxCall::handle_seek_both_exact " << this << " sent: " << sent << " END";
-    } else {
-        finish_with_internal_error(request);
-        SILK_TRACE << "TxCall::handle_seek_both_exact " << this << " END";
+    } catch (const std::exception& exc) {
+        finish_with_internal_error(request, exc);
     }
 }
 
 void TxCall::handle_current(const remote::Cursor* request, db::Cursor& cursor) {
-    SILK_TRACE << "TxCall::handle_current " << this << " START";
+    try {
+        SILK_TRACE << "TxCall::handle_current " << this << " START";
 
-    const mdbx::cursor::move_result result = cursor.to_next_first_multi(/*throw_notfound=*/false);
+        const auto result = cursor.current(/*throw_notfound=*/false);
 
-    if (result) {
-        const bool sent = send_response_pair(result);
+        remote::Pair kv_pair;
+        if (result) {
+            kv_pair.set_k(result.key.as_string());
+            kv_pair.set_v(result.value.as_string());
+        }
+
+        const bool sent = send_response(kv_pair);
         SILK_TRACE << "TxCall::handle_current " << this << " sent: " << sent << " END";
-    } else {
-        finish_with_internal_error(request);
-        SILK_TRACE << "TxCall::handle_current " << this << " END";
+    } catch (const std::exception& exc) {
+        finish_with_internal_error(request, exc);
     }
 }
 
 void TxCall::handle_last(const remote::Cursor* request, db::Cursor& cursor) {
-    SILK_TRACE << "TxCall::handle_last " << this << " START";
+    try {
+        SILK_TRACE << "TxCall::handle_last " << this << " START";
 
-    const mdbx::cursor::move_result result = cursor.to_last(/*throw_notfound=*/false);
+        const auto result = cursor.to_last(/*throw_notfound=*/false);
 
-    if (result) {
-        const bool sent = send_response_pair(result);
+        remote::Pair kv_pair;
+        if (result) {
+            kv_pair.set_k(result.key.as_string());
+            kv_pair.set_v(result.value.as_string());
+        }
+
+        const bool sent = send_response(kv_pair);
         SILK_TRACE << "TxCall::handle_last " << this << " sent: " << sent << " END";
-    } else {
-        finish_with_internal_error(request);
-        SILK_TRACE << "TxCall::handle_last " << this << " END";
+    } catch (const std::exception& exc) {
+        finish_with_internal_error(request, exc);
     }
 }
 
 void TxCall::handle_last_dup(const remote::Cursor* request, db::Cursor& cursor) {
-    SILK_TRACE << "TxCall::handle_last_dup " << this << " START";
+    try {
+        SILK_TRACE << "TxCall::handle_last_dup " << this << " START";
 
-    const mdbx::cursor::move_result result = cursor.to_current_last_multi(/*throw_notfound=*/false);
+        const auto result = cursor.to_current_last_multi(/*throw_notfound=*/false);
 
-    if (result) {
-        const bool sent = send_response_pair(result);
+        remote::Pair kv_pair;
+        if (result) {
+            kv_pair.set_k(result.key.as_string());
+            kv_pair.set_v(result.value.as_string());
+        }
+
+        const bool sent = send_response(kv_pair);
         SILK_TRACE << "TxCall::handle_last_dup " << this << " sent: " << sent << " END";
-    } else {
-        finish_with_internal_error(request);
-        SILK_TRACE << "TxCall::handle_last_dup " << this << " END";
+    } catch (const std::exception& exc) {
+        finish_with_internal_error(request, exc);
     }
 }
 
 void TxCall::handle_next(const remote::Cursor* request, db::Cursor& cursor) {
-    SILK_TRACE << "TxCall::handle_next " << this << " START";
+    try {
+        SILK_TRACE << "TxCall::handle_next " << this << " START";
 
-    const mdbx::cursor::move_result result = cursor.to_next(/*throw_notfound=*/false);
+        const auto result = cursor.to_next(/*throw_notfound=*/false);
 
-    if (result) {
-        const bool sent = send_response_pair(result);
+        remote::Pair kv_pair;
+        if (result) {
+            kv_pair.set_k(result.key.as_string());
+            kv_pair.set_v(result.value.as_string());
+        }
+
+        const bool sent = send_response(kv_pair);
         SILK_TRACE << "TxCall::handle_next " << this << " sent: " << sent << " END";
-    } else {
-        finish_with_internal_error(request);
-        SILK_TRACE << "TxCall::handle_next " << this << " END";
+    } catch (const std::exception& exc) {
+        finish_with_internal_error(request, exc);
     }
 }
 
 void TxCall::handle_next_dup(const remote::Cursor* request, db::Cursor& cursor) {
-    SILK_TRACE << "TxCall::handle_next_dup " << this << " START";
+    try {
+        SILK_TRACE << "TxCall::handle_next_dup " << this << " START";
 
-    const mdbx::cursor::move_result result = cursor.to_current_next_multi(/*throw_notfound=*/false);
+        const auto result = cursor.to_current_next_multi(/*throw_notfound=*/false);
 
-    if (result) {
-        const bool sent = send_response_pair(result);
+        remote::Pair kv_pair;
+        if (result) {
+            kv_pair.set_k(result.key.as_string());
+            kv_pair.set_v(result.value.as_string());
+        }
+
+        const bool sent = send_response(kv_pair);
         SILK_TRACE << "TxCall::handle_next_dup " << this << " sent: " << sent << " END";
-    } else {
-        finish_with_internal_error(request);
-        SILK_TRACE << "TxCall::handle_next_dup " << this << " END";
+    } catch (const std::exception& exc) {
+        finish_with_internal_error(request, exc);
     }
 }
 
 void TxCall::handle_next_no_dup(const remote::Cursor* request, db::Cursor& cursor) {
-    SILK_TRACE << "TxCall::handle_next_no_dup " << this << " START";
+    try {
+        SILK_TRACE << "TxCall::handle_next_no_dup " << this << " START";
 
-    const mdbx::cursor::move_result result = cursor.to_next_first_multi(/*throw_notfound=*/false);
+        const auto result = cursor.to_next_first_multi(/*throw_notfound=*/false);
 
-    if (result) {
-        const bool sent = send_response_pair(result);
+        remote::Pair kv_pair;
+        if (result) {
+            kv_pair.set_k(result.key.as_string());
+            kv_pair.set_v(result.value.as_string());
+        }
+
+        const bool sent = send_response(kv_pair);
         SILK_TRACE << "TxCall::handle_next_no_dup " << this << " sent: " << sent << " END";
-    } else {
-        finish_with_internal_error(request);
-        SILK_TRACE << "TxCall::handle_next_no_dup " << this << " END";
+    } catch (const std::exception& exc) {
+        finish_with_internal_error(request, exc);
     }
 }
 
 void TxCall::handle_prev(const remote::Cursor* request, db::Cursor& cursor) {
-    SILK_TRACE << "TxCall::handle_prev " << this << " START";
+    try {
+        SILK_TRACE << "TxCall::handle_prev " << this << " START";
 
-    const mdbx::cursor::move_result result = cursor.to_previous(/*throw_notfound=*/false);
+        const auto result = cursor.to_previous(/*throw_notfound=*/false);
 
-    if (result) {
-        const bool sent = send_response_pair(result);
+        remote::Pair kv_pair;
+        if (result) {
+            kv_pair.set_k(result.key.as_string());
+            kv_pair.set_v(result.value.as_string());
+        }
+
+        const bool sent = send_response(kv_pair);
         SILK_TRACE << "TxCall::handle_prev " << this << " sent: " << sent << " END";
-    } else {
-        finish_with_internal_error(request);
-        SILK_TRACE << "TxCall::handle_prev " << this << " END";
+    } catch (const std::exception& exc) {
+        finish_with_internal_error(request, exc);
     }
 }
 
-bool TxCall::send_response_pair(const mdbx::cursor::move_result& result) {
-    remote::Pair kv_pair;
-    kv_pair.set_k(result.key.as_string());
-    kv_pair.set_v(result.value.as_string());
-    return send_response(kv_pair);
-}
-
-void TxCall::finish_with_internal_error(const remote::Cursor* request) {
-    finish_with_internal_error("cannot execute " + remote::Op_Name(request->op()) + " on cursor: " + std::to_string(request->cursor()));
+void TxCall::finish_with_internal_error(const remote::Cursor* request, const std::exception& exc) {
+    std::string error_message{"exception: "};
+    error_message.append(exc.what());
+    error_message.append(" in ");
+    error_message.append(remote::Op_Name(request->op()));
+    error_message.append(" on cursor: ");
+    error_message.append(std::to_string(request->cursor()));
+    finish_with_internal_error(error_message);
 }
 
 void TxCall::finish_with_internal_error(const std::string& error_message) {

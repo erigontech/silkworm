@@ -71,14 +71,14 @@ Bytes marshal_node(const Node& n) {
 }
 
 std::optional<Node> unmarshal_node(ByteView v) {
+
+    // At least state/tree/hash masks need to be present
     if (v.length() < 6) {
-        // At least state/tree/hash masks need to be present
         return std::nullopt;
-    } else {
-        // Beyond the 6th byte the length must be a multiple of kHashLength
-        if ((v.length() - 6) % kHashLength != 0) {
-            return std::nullopt;
-        }
+    }
+    // Beyond the 6th byte the length must be a multiple of kHashLength
+    if ((v.length() - 6) % kHashLength != 0) {
+        return std::nullopt;
     }
 
     const auto state_mask{endian::load_big_u16(v.data())};

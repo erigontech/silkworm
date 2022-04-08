@@ -89,13 +89,14 @@ std::optional<Node> unmarshal_node(ByteView v) {
     v.remove_prefix(2);
 
     std::optional<evmc::bytes32> root_hash{std::nullopt};
-    if (popcount_16(hash_mask) + 1u == v.length() / kHashLength) {
+    size_t num_hashes{v.length() / kHashLength};
+    if (popcount_16(hash_mask) + 1u == num_hashes) {
         root_hash = evmc::bytes32{};
         std::memcpy(root_hash->bytes, v.data(), kHashLength);
         v.remove_prefix(kHashLength);
+        --num_hashes;
     }
 
-    const size_t num_hashes{v.length() / kHashLength};
     std::vector<evmc::bytes32> hashes(num_hashes);
     std::memcpy(hashes.data(), v.data(), v.length());
 

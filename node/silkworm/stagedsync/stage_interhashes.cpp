@@ -399,13 +399,16 @@ evmc::bytes32 InterHashes::calculate_root(db::RWTxn& txn, trie::PrefixSet& accou
     db::Cursor trie_accounts(txn, db::table::kTrieOfAccounts);
 
     trie::HashBuilder hash_builder;
-    hash_builder.node_collector = [&](ByteView unpacked_key, const trie::Node& node) {
+    auto collector = account_collector_.get();
+    hash_builder.node_collector = [collector](ByteView unpacked_key, const trie::Node& node) {
         if (!unpacked_key.empty()) {
-            account_collector_->collect({Bytes(unpacked_key), marshal_node(node)});
+            collector->collect({Bytes(unpacked_key), marshal_node(node)});
         }
     };
 
     trie::Cursor trie_cursor{trie_accounts, account_changes};
+    size_t log_trigger_counter{1};
+
     while (trie_cursor.key().has_value()) {
         if (trie_cursor.can_skip_state()) {
             SILKWORM_ASSERT(trie_cursor.hash() != nullptr);
@@ -420,7 +423,7 @@ evmc::bytes32 InterHashes::calculate_root(db::RWTxn& txn, trie::PrefixSet& accou
 
         trie_cursor.next();
         auto hashed_account_data{hashed_accounts.lower_bound(db::to_slice(*uncovered), /*throw_notfound=*/false)};
-        size_t log_trigger_counter{1};
+
         while (hashed_account_data) {
             const auto data_key_view{db::from_slice(hashed_account_data.key)};
 
@@ -461,10 +464,12 @@ evmc::bytes32 InterHashes::calculate_storage_root(db::RWTxn& txn, const Bytes& d
     db::Cursor trie_storage(txn, db::table::kTrieOfStorage);
 
     trie::HashBuilder hash_builder;
-    hash_builder.node_collector = [&](ByteView unpacked_storage_key, const trie::Node& node) {
+    auto collector = storage_collector_.get();
+    hash_builder.node_collector = [collector, db_storage_prefix](ByteView unpacked_storage_key,
+                                                                 const trie::Node& node) {
         etl::Entry entry{db_storage_prefix, marshal_node(node)};
         entry.key.append(unpacked_storage_key);
-        storage_collector_->collect(std::move(entry));
+        collector->collect(std::move(entry));
     };
 
     trie::Cursor trie_cursor{trie_storage, storage_changes, db_storage_prefix};

@@ -997,7 +997,7 @@ TEST_CASE("BackEndKvServer E2E: Tx cursor valid operations", "[silkworm][node][r
         CHECK(responses[6].cursorid() == 0);
     }
 
-    SECTION("Tx OK: one FIRST_DUP operation w/o key on multi table", "[silkworm][node][rpc]") {
+    /*SECTION("Tx OK: one FIRST_DUP operation w/o key on multi-value table", "[silkworm][node][rpc]") {
         test.fill_test_table();
 
         remote::Cursor open;
@@ -1021,7 +1021,7 @@ TEST_CASE("BackEndKvServer E2E: Tx cursor valid operations", "[silkworm][node][r
         CHECK(responses[3].cursorid() == 0);
     }
 
-    SECTION("Tx OK: one FIRST_DUP operation on multi table", "[silkworm][node][rpc]") {
+    SECTION("Tx OK: one FIRST_DUP operation on multi-value table", "[silkworm][node][rpc]") {
         test.fill_test_table();
 
         remote::Cursor open;
@@ -1045,13 +1045,61 @@ TEST_CASE("BackEndKvServer E2E: Tx cursor valid operations", "[silkworm][node][r
         CHECK(responses[2].v() == "00");
         CHECK(responses[3].cursorid() == 0);
     }
+
+    SECTION("Tx OK: one NEXT_DUP operation on single-value table", "[silkworm][node][rpc]") {
+        test.fill_test_table();
+
+        remote::Cursor open;
+        open.set_op(remote::Op::OPEN);
+        open.set_bucketname(kTestMap.name);
+        remote::Cursor next_dup;
+        next_dup.set_op(remote::Op::NEXT_DUP);
+        next_dup.set_cursor(0); // automatically assigned by KvClient::tx
+        remote::Cursor close;
+        close.set_op(remote::Op::CLOSE);
+        close.set_cursor(0); // automatically assigned by KvClient::tx
+        std::vector<remote::Cursor> requests{open, next_dup, close};
+        std::vector<remote::Pair> responses;
+        const auto status = kv_client.tx(requests, responses);
+        CHECK(status.ok());
+        CHECK(responses.size() == 4);
+        CHECK(responses[0].txid() != 0);
+        CHECK(responses[1].cursorid() != 0);
+        CHECK(responses[2].k() == "AA");
+        CHECK(responses[2].v() == "00");
+        CHECK(responses[3].cursorid() == 0);
+    }
+
+    SECTION("Tx OK: one NEXT_DUP operation on multi-value table", "[silkworm][node][rpc]") {
+        test.fill_test_table();
+
+        remote::Cursor open;
+        open.set_op(remote::Op::OPEN);
+        open.set_bucketname(kTestMultiMap.name);
+        remote::Cursor next_dup;
+        next_dup.set_op(remote::Op::NEXT_DUP);
+        next_dup.set_cursor(0); // automatically assigned by KvClient::tx
+        remote::Cursor close;
+        close.set_op(remote::Op::CLOSE);
+        close.set_cursor(0); // automatically assigned by KvClient::tx
+        std::vector<remote::Cursor> requests{open, next_dup, close};
+        std::vector<remote::Pair> responses;
+        const auto status = kv_client.tx(requests, responses);
+        CHECK(status.ok());
+        CHECK(responses.size() == 4);
+        CHECK(responses[0].txid() != 0);
+        CHECK(responses[1].cursorid() != 0);
+        CHECK(responses[2].k() == "AA");
+        CHECK(responses[2].v() == "00");
+        CHECK(responses[3].cursorid() == 0);
+    }*/
 }
 
 TEST_CASE("BackEndKvServer E2E: Tx cursor invalid operations", "[silkworm][node][rpc]") {
     BackEndKvE2eTest test{silkworm::log::Level::kNone};
     auto kv_client = *test.kv_client;
 
-    SECTION("Tx KO: FIRST_DUP operation on non-dupsort table", "[silkworm][node][rpc]") {
+    SECTION("Tx KO: FIRST_DUP operation on single-value table", "[silkworm][node][rpc]") {
         test.fill_test_table();
 
         remote::Cursor open;
@@ -1068,7 +1116,29 @@ TEST_CASE("BackEndKvServer E2E: Tx cursor invalid operations", "[silkworm][node]
         const auto status = kv_client.tx(requests, responses);
         CHECK(!status.ok());
         CHECK(status.error_code() == grpc::StatusCode::INTERNAL);
-        CHECK(status.error_message().find("MDBX_INCOMPATIBLE") != std::string::npos);
+        CHECK(status.error_message().find("exception: MDBX_INCOMPATIBLE") != std::string::npos);
+        CHECK(responses.size() == 2);
+        CHECK(responses[0].txid() != 0);
+    }
+
+    SECTION("Tx KO: LAST_DUP operation on single-value table", "[silkworm][node][rpc]") {
+        test.fill_test_table();
+
+        remote::Cursor open;
+        open.set_op(remote::Op::OPEN);
+        open.set_bucketname(kTestMap.name);
+        remote::Cursor last_dup;
+        last_dup.set_op(remote::Op::LAST_DUP);
+        last_dup.set_cursor(0); // automatically assigned by KvClient::tx
+        remote::Cursor close;
+        close.set_op(remote::Op::CLOSE);
+        close.set_cursor(0); // automatically assigned by KvClient::tx
+        std::vector<remote::Cursor> requests{open, last_dup, close};
+        std::vector<remote::Pair> responses;
+        const auto status = kv_client.tx(requests, responses);
+        CHECK(!status.ok());
+        CHECK(status.error_code() == grpc::StatusCode::INTERNAL);
+        CHECK(status.error_message().find("exception: mdbx") != std::string::npos);
         CHECK(responses.size() == 2);
         CHECK(responses[0].txid() != 0);
     }

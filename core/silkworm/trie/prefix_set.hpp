@@ -36,6 +36,7 @@ class PrefixSet {
     PrefixSet& operator=(const PrefixSet& other) = default;
 
     void insert(ByteView key);
+    void insert(Bytes&& key);
 
     // Doesn't change the set logically, but is not marked const since it's not safe to call this method concurrently.
     bool contains(ByteView prefix);

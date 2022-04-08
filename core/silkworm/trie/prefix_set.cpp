@@ -28,6 +28,11 @@ void PrefixSet::insert(ByteView key) {
     sorted_ = false;
 }
 
+void PrefixSet::insert(Bytes&& key) {
+    keys_.push_back(key);
+    sorted_ = false;
+}
+
 bool PrefixSet::contains(ByteView prefix) {
     if (keys_.empty()) {
         return false;

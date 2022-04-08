@@ -1185,7 +1185,7 @@ TEST_CASE("BackEndKvServer E2E: bidirectional max TTL duration", "[silkworm][nod
         tx_reader_writer->Read(&response);
         CHECK(response.k() == "AA");
         CHECK(response.v() == "00");
-        //std::this_thread::sleep_for(std::chrono::milliseconds{kCustomMaxTimeToLive});
+        std::this_thread::sleep_for(std::chrono::milliseconds{kCustomMaxTimeToLive});
         remote::Cursor next2;
         next2.set_op(remote::Op::NEXT);
         next2.set_cursor(cursor_id);
@@ -1197,6 +1197,9 @@ TEST_CASE("BackEndKvServer E2E: bidirectional max TTL duration", "[silkworm][nod
         tx_reader_writer->WritesDone();
         auto status = tx_reader_writer->Finish();
         CHECK(status.ok());
+        if (!status.ok()){
+            std::cout << "status.error_message(): " << status.error_message() << "\n";
+        }
     }
 }
 

@@ -1,5 +1,5 @@
 /*
-   Copyright 2021 The Silkworm Authors
+   Copyright 2021-2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -50,6 +50,12 @@ class Node {
 
     void set_root_hash(const std::optional<evmc::bytes32>& root_hash);
 
+    //! \see Erigon's MarshalTrieNodeTyped
+    [[nodiscard]] Bytes encode_for_storage() const;
+
+    //! \see Erigon's UnmarshalTrieNodeTyped
+    [[nodiscard]] static std::optional<Node> from_encoded_storage(ByteView raw);
+
   private:
     uint16_t state_mask_{0};
     uint16_t tree_mask_{0};
@@ -59,12 +65,6 @@ class Node {
 };
 
 bool operator==(const Node& a, const Node& b);
-
-// Erigon MarshalTrieNode
-Bytes marshal_node(const Node& node);
-
-// Erigon UnmarshalTrieNode
-std::optional<Node> unmarshal_node(ByteView v);
 
 inline void assert_subset(uint16_t sub, uint16_t sup) {
     auto intersection{sub & sup};

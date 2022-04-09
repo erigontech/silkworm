@@ -1,5 +1,5 @@
 /*
-   Copyright 2021 The Silkworm Authors
+   Copyright 2021-2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -35,9 +35,10 @@ TEST_CASE("Node marshalling") {
 
     REQUIRE(std::bitset<16>(n.hash_mask()).count() == n.hashes().size());
 
-    Bytes b{marshal_node(n)};
-
-    CHECK(unmarshal_node(b) == n);
+    Bytes raw{n.encode_for_storage()};
+    std::optional<Node> from_raw{Node::from_encoded_storage(raw)};
+    REQUIRE(from_raw.has_value());
+    REQUIRE(*from_raw == n);
 }
 
 }  // namespace silkworm::trie

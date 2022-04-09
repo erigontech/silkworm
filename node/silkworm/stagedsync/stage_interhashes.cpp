@@ -402,7 +402,7 @@ evmc::bytes32 InterHashes::calculate_root(db::RWTxn& txn, trie::PrefixSet& accou
     auto collector = account_collector_.get();
     hash_builder.node_collector = [collector](ByteView unpacked_key, const trie::Node& node) {
         if (!unpacked_key.empty()) {
-            collector->collect({Bytes(unpacked_key), marshal_node(node)});
+            collector->collect({Bytes(unpacked_key), node.encode_for_storage()});
         }
     };
 
@@ -467,7 +467,7 @@ evmc::bytes32 InterHashes::calculate_storage_root(db::RWTxn& txn, const Bytes& d
     auto collector = storage_collector_.get();
     hash_builder.node_collector = [collector, db_storage_prefix](ByteView unpacked_storage_key,
                                                                  const trie::Node& node) {
-        etl::Entry entry{db_storage_prefix, marshal_node(node)};
+        etl::Entry entry{db_storage_prefix, node.encode_for_storage()};
         entry.key.append(unpacked_storage_key);
         collector->collect(std::move(entry));
     };

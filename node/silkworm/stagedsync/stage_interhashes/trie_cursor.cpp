@@ -49,7 +49,7 @@ void Cursor::consume_node(ByteView key, bool exact) {
 
     std::optional<Node> node{std::nullopt};
     if (db_data) {
-        node = unmarshal_node(db::from_slice(db_data.value));
+        node = Node::from_encoded_storage(db::from_slice(db_data.value));
         SILKWORM_ASSERT(node.has_value());
         SILKWORM_ASSERT(node->state_mask() != 0);
     }

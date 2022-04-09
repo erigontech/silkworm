@@ -46,17 +46,12 @@ Bytes marshal_node(const Node& node) {
                     /* hashes */ node.hashes().size() * kHashLength};
 
     Bytes buf(buf_size, '\0');
-    size_t pos{0};
 
-    endian::store_big_u16(&buf[pos], node.state_mask());
-    pos += 2;
-
-    endian::store_big_u16(&buf[pos], node.tree_mask());
-    pos += 2;
-
-    endian::store_big_u16(&buf[pos], node.hash_mask());
-    pos += 2;
-
+    endian::store_big_u16(&buf[0], node.state_mask());
+    endian::store_big_u16(&buf[2], node.tree_mask());
+    endian::store_big_u16(&buf[4], node.hash_mask());
+    
+    size_t pos{6};
     if (node.root_hash().has_value()) {
         std::memcpy(&buf[pos], node.root_hash()->bytes, kHashLength);
         pos += kHashLength;
@@ -76,12 +71,10 @@ std::optional<Node> unmarshal_node(ByteView v) {
         return std::nullopt;
     }
 
-    const auto state_mask{endian::load_big_u16(v.data())};
-    v.remove_prefix(2);
-    const auto tree_mask{endian::load_big_u16(v.data())};
-    v.remove_prefix(2);
-    const auto hash_mask{endian::load_big_u16(v.data())};
-    v.remove_prefix(2);
+    const auto state_mask{endian::load_big_u16(&v.data()[0])};
+    const auto tree_mask{endian::load_big_u16(&v.data()[2])};
+    const auto hash_mask{endian::load_big_u16(&v.data()[4])};
+    v.remove_prefix(6);
 
     std::optional<evmc::bytes32> root_hash{std::nullopt};
     size_t num_hashes{v.length() / kHashLength};

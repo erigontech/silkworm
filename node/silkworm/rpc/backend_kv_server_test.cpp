@@ -1021,7 +1021,7 @@ TEST_CASE("BackEndKvServer E2E: Tx cursor valid operations", "[silkworm][node][r
         CHECK(responses[3].cursorid() == 0);
     }
 
-    /*SECTION("Tx OK: one FIRST_DUP operation on multi-value table", "[silkworm][node][rpc]") {
+    SECTION("Tx OK: one FIRST_DUP operation on multi-value table", "[silkworm][node][rpc]") {
         test.fill_test_table();
 
         remote::Cursor open;
@@ -1046,7 +1046,7 @@ TEST_CASE("BackEndKvServer E2E: Tx cursor valid operations", "[silkworm][node][r
         CHECK(responses[3].cursorid() == 0);
     }
 
-    SECTION("Tx OK: one NEXT_DUP operation on single-value table", "[silkworm][node][rpc]") {
+    /*SECTION("Tx OK: one NEXT_DUP operation on single-value table", "[silkworm][node][rpc]") {
         test.fill_test_table();
 
         remote::Cursor open;
@@ -1197,9 +1197,6 @@ TEST_CASE("BackEndKvServer E2E: bidirectional max TTL duration", "[silkworm][nod
         tx_reader_writer->WritesDone();
         auto status = tx_reader_writer->Finish();
         CHECK(status.ok());
-        if (!status.ok()){
-            std::cout << "status.error_message(): " << status.error_message() << "\n";
-        }
     }
 }
 

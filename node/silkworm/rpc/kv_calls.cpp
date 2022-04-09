@@ -289,7 +289,7 @@ void TxCall::handle_max_ttl_timer_expired(const boost::system::error_code& ec) {
 bool TxCall::save_cursors(std::vector<CursorPosition>& positions) {
     for (const auto& [_, tx_cursor]: cursors_) {
         const auto result = tx_cursor.cursor.current(/*throw_notfound=*/false);
-        SILK_LOG << "TxCall::save_cursors result: " << result;
+        SILK_LOG << "TxCall::save_cursors result: d=" << result.done << " b(k)=" << bool(result.key) << " b(v)=" << bool(result.value);
         if (!result) {
             return false;
         }
@@ -314,14 +314,14 @@ bool TxCall::restore_cursors(std::vector<CursorPosition>& positions) {
         if (cursor.txn().get_handle_info(cursor.map()).flags & MDBX_DUPSORT) {
             mdbx::slice value_slice{value.c_str()};
             const auto lbm_result = cursor.lower_bound_multivalue(key_slice, value_slice, /*throw_notfound=*/false);
-            SILK_LOG << "TxCall::restore_cursors lbm_result: " << lbm_result;
+            SILK_LOG << "TxCall::restore_cursors lbm_result: d=" << lbm_result.done << " b(k)=" << bool(lbm_result.key) << " b(v)=" << bool(lbm_result.value);
             if (!lbm_result) {
                 return false;
             }
             // It may happen that key where we stopped disappeared after transaction reopen, then just move to next key
             if (!lbm_result.value) {
                 const auto next_result = cursor.to_next(/*throw_notfound=*/false);
-                SILK_LOG << "TxCall::restore_cursors next_result: " << next_result;
+                SILK_LOG << "TxCall::restore_cursors next_result: d=" << next_result.done << " b(k)=" << bool(next_result.key) << " b(v)=" << bool(next_result.value);
                 if (!next_result) {
                     return false;
                 }
@@ -365,10 +365,10 @@ void TxCall::handle_first_dup(const remote::Cursor* request, db::Cursor& cursor)
         remote::Pair kv_pair;
 
         const auto first_result = cursor.to_first(/*throw_notfound=*/false);
-        SILK_LOG << "TxCall::handle_first_dup first_result: " << first_result;
+        SILK_LOG << "TxCall::handle_first_dup first_result: d=" << first_result.done << " b(k)=" << bool(first_result.key) << " b(v)=" << bool(first_result.value);
         if (first_result) {
             const auto first_dup_result = cursor.to_current_first_multi(/*throw_notfound=*/false);
-            SILK_LOG << "TxCall::handle_first_dup first_dup_result: " << first_dup_result;
+            SILK_LOG << "TxCall::handle_first_dup first_dup_result: d=" << first_dup_result.done << " b(k)=" << bool(first_dup_result.key) << " b(v)=" << bool(first_dup_result.value);
             if (first_dup_result) {
                 kv_pair.set_v(first_dup_result.value.as_string());
             }

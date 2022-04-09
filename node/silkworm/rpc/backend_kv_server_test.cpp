@@ -997,7 +997,7 @@ TEST_CASE("BackEndKvServer E2E: Tx cursor valid operations", "[silkworm][node][r
         CHECK(responses[6].cursorid() == 0);
     }
 
-    /*SECTION("Tx OK: one FIRST_DUP operation w/o key on multi-value table", "[silkworm][node][rpc]") {
+    SECTION("Tx OK: one FIRST_DUP operation w/o key on multi-value table", "[silkworm][node][rpc]") {
         test.fill_test_table();
 
         remote::Cursor open;
@@ -1021,7 +1021,7 @@ TEST_CASE("BackEndKvServer E2E: Tx cursor valid operations", "[silkworm][node][r
         CHECK(responses[3].cursorid() == 0);
     }
 
-    SECTION("Tx OK: one FIRST_DUP operation on multi-value table", "[silkworm][node][rpc]") {
+    /*SECTION("Tx OK: one FIRST_DUP operation on multi-value table", "[silkworm][node][rpc]") {
         test.fill_test_table();
 
         remote::Cursor open;

@@ -306,14 +306,14 @@ bool TxCall::restore_cursors(std::vector<CursorPosition>& positions) {
         const db::MapConfig map_config{tx_cursor.bucket_name.c_str()};
         db::Cursor cursor{read_only_txn_, map_config};
 
-        const auto& [key, value] = positions.back();
+        const auto& [current_key, current_value] = positions.back();
         positions.pop_back();
-        mdbx::slice key_slice{key.c_str()};
+        mdbx::slice key{current_key.c_str()};
 
         //TODO(canepat): change db::Cursor and replace with: cursor.map_flags() & MDBX_DUPSORT
         if (cursor.txn().get_handle_info(cursor.map()).flags & MDBX_DUPSORT) {
-            mdbx::slice value_slice{value.c_str()};
-            const auto lbm_result = cursor.lower_bound_multivalue(key_slice, value_slice, /*throw_notfound=*/false);
+            mdbx::slice value{current_value.c_str()};
+            const auto lbm_result = cursor.lower_bound_multivalue(key, value, /*throw_notfound=*/false);
             SILK_LOG << "TxCall::restore_cursors lbm_result: d=" << lbm_result.done << " b(k)=" << bool(lbm_result.key) << " b(v)=" << bool(lbm_result.value);
             if (!lbm_result) {
                 return false;
@@ -327,9 +327,11 @@ bool TxCall::restore_cursors(std::vector<CursorPosition>& positions) {
                 }
             }
         } else {
-            const bool found = cursor.seek(key_slice);
-            SILK_LOG << "TxCall::restore_cursors found: " << found;
-            if (!found) {
+            const auto result = (key.length() == 0) ?
+                cursor.to_first(/*throw_notfound=*/false) :
+                cursor.lower_bound(key, /*throw_notfound=*/false);
+            SILK_LOG << "TxCall::restore_cursors result: d=" << result.done << " b(k)=" << bool(result.key) << " b(v)=" << bool(result.value);
+            if (!result) {
                 return false;
             }
         }

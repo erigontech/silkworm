@@ -157,7 +157,7 @@ trie::PrefixSet InterHashes::gather_forward_account_changes(
                         auto plainstate_data{plain_state.find(db::to_slice(address.bytes),
                                                               /*throw_notfound=*/false)};
                         if (!plainstate_data || plainstate_data.value.empty()) {
-                            // Self destructed
+                            // Self-destructed
                             (void)deleted_hashes.insert(hashed_address.bytes);
                         } else {
                             auto [current_account,

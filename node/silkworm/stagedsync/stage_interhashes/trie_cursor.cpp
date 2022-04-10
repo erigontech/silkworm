@@ -210,18 +210,16 @@ bool Cursor::children_are_in_trie() const {
 }
 
 std::optional<Bytes> increment_key(ByteView unpacked) {
-    Bytes out{unpacked};
+    Bytes out(unpacked);
 
-    for (size_t i{out.size()}; i > 0; --i) {
-        uint8_t& nibble{out[i - 1]};
+    for (auto it = out.rbegin(); it != out.rend(); ++it) {
+        auto& nibble{*it};
         SILKWORM_ASSERT(nibble < 0x10);
         if (nibble < 0xF) {
             ++nibble;
             return out;
-        } else {
-            nibble = 0;
-            // carry over
         }
+        nibble = 0;  // Carry over
     }
     return std::nullopt;
 }

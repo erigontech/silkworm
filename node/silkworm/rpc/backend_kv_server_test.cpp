@@ -1068,7 +1068,7 @@ TEST_CASE("BackEndKvServer E2E: Tx cursor valid operations", "[silkworm][node][r
         CHECK(responses[2].k() == "AA");
         CHECK(responses[2].v() == "00");
         CHECK(responses[3].cursorid() == 0);
-    }
+    }*/
 
     SECTION("Tx OK: one NEXT_DUP operation on multi-value table", "[silkworm][node][rpc]") {
         test.fill_test_table();
@@ -1092,7 +1092,7 @@ TEST_CASE("BackEndKvServer E2E: Tx cursor valid operations", "[silkworm][node][r
         CHECK(responses[2].k() == "AA");
         CHECK(responses[2].v() == "00");
         CHECK(responses[3].cursorid() == 0);
-    }*/
+    }
 }
 
 TEST_CASE("BackEndKvServer E2E: Tx cursor invalid operations", "[silkworm][node][rpc]") {

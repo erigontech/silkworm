@@ -16,14 +16,26 @@
 
 #include "kv_calls.hpp"
 
-#include <ostream>
-
 #include <boost/date_time/posix_time/posix_time_io.hpp>
 
 #include <silkworm/common/assert.hpp>
 #include <silkworm/common/log.hpp>
 
 namespace silkworm::rpc {
+
+namespace detail {
+
+inline std::string dump_mdbx_result(const mdbx::cursor::move_result& result) {
+    std::string dump{"done="};
+    dump.append(std::to_string(result.done));
+    dump.append(" bool(key)=");
+    dump.append(std::to_string(bool(result.key)));
+    dump.append(" bool(value)=");
+    dump.append(std::to_string(bool(result.value)));
+    return dump;
+}
+
+} // namespace detail
 
 types::VersionReply KvVersionCall::response_;
 
@@ -287,9 +299,9 @@ void TxCall::handle_max_ttl_timer_expired(const boost::system::error_code& ec) {
 }
 
 bool TxCall::save_cursors(std::vector<CursorPosition>& positions) {
-    for (const auto& [_, tx_cursor]: cursors_) {
+    for (const auto& [cursor_id, tx_cursor]: cursors_) {
         const auto result = tx_cursor.cursor.current(/*throw_notfound=*/false);
-        SILK_LOG << "TxCall::save_cursors result: d=" << result.done << " b(k)=" << bool(result.key) << " b(v)=" << bool(result.value);
+        SILK_LOG << "Tx save cursor: " << cursor_id << " result: " << detail::dump_mdbx_result(result);
         if (!result) {
             return false;
         }
@@ -302,8 +314,9 @@ bool TxCall::save_cursors(std::vector<CursorPosition>& positions) {
 }
 
 bool TxCall::restore_cursors(std::vector<CursorPosition>& positions) {
-    for (auto& [_, tx_cursor]: cursors_) {
-        const db::MapConfig map_config{tx_cursor.bucket_name.c_str()};
+    for (auto& [cursor_id, tx_cursor]: cursors_) {
+        const std::string& bucket_name = tx_cursor.bucket_name;
+        const db::MapConfig map_config{bucket_name.c_str()};
         db::Cursor cursor{read_only_txn_, map_config};
 
         const auto& [current_key, current_value] = positions.back();
@@ -314,14 +327,14 @@ bool TxCall::restore_cursors(std::vector<CursorPosition>& positions) {
         if (cursor.txn().get_handle_info(cursor.map()).flags & MDBX_DUPSORT) {
             mdbx::slice value{current_value.c_str()};
             const auto lbm_result = cursor.lower_bound_multivalue(key, value, /*throw_notfound=*/false);
-            SILK_LOG << "TxCall::restore_cursors lbm_result: d=" << lbm_result.done << " b(k)=" << bool(lbm_result.key) << " b(v)=" << bool(lbm_result.value);
+            SILK_LOG << "Tx restore cursor " << cursor_id << " for: " << bucket_name << " lbm_result: " << detail::dump_mdbx_result(lbm_result);
             if (!lbm_result) {
                 return false;
             }
             // It may happen that key where we stopped disappeared after transaction reopen, then just move to next key
             if (!lbm_result.value) {
                 const auto next_result = cursor.to_next(/*throw_notfound=*/false);
-                SILK_LOG << "TxCall::restore_cursors next_result: d=" << next_result.done << " b(k)=" << bool(next_result.key) << " b(v)=" << bool(next_result.value);
+                SILK_LOG << "Tx restore cursor " << cursor_id << " for: " << bucket_name << " next_result: " << detail::dump_mdbx_result(next_result);
                 if (!next_result) {
                     return false;
                 }
@@ -330,7 +343,7 @@ bool TxCall::restore_cursors(std::vector<CursorPosition>& positions) {
             const auto result = (key.length() == 0) ?
                 cursor.to_first(/*throw_notfound=*/false) :
                 cursor.lower_bound(key, /*throw_notfound=*/false);
-            SILK_LOG << "TxCall::restore_cursors result: d=" << result.done << " b(k)=" << bool(result.key) << " b(v)=" << bool(result.value);
+            SILK_LOG << "Tx restore cursor " << cursor_id << " for: " << bucket_name << " result: " << detail::dump_mdbx_result(result);
             if (!result) {
                 return false;
             }
@@ -367,10 +380,10 @@ void TxCall::handle_first_dup(const remote::Cursor* request, db::Cursor& cursor)
         remote::Pair kv_pair;
 
         const auto first_result = cursor.to_first(/*throw_notfound=*/false);
-        SILK_LOG << "TxCall::handle_first_dup first_result: d=" << first_result.done << " b(k)=" << bool(first_result.key) << " b(v)=" << bool(first_result.value);
+        SILK_LOG << "Tx FIRST_DUP first_result: " << detail::dump_mdbx_result(first_result);
         if (first_result) {
             const auto first_dup_result = cursor.to_current_first_multi(/*throw_notfound=*/false);
-            SILK_LOG << "TxCall::handle_first_dup first_dup_result: d=" << first_dup_result.done << " b(k)=" << bool(first_dup_result.key) << " b(v)=" << bool(first_dup_result.value);
+            SILK_LOG << "Tx FIRST_DUP first_dup_result: " << detail::dump_mdbx_result(first_dup_result);
             if (first_dup_result) {
                 kv_pair.set_v(first_dup_result.value.as_string());
             }

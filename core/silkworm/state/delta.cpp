@@ -1,5 +1,5 @@
 /*
-   Copyright 2020-2021 The Silkworm Authors
+   Copyright 2020-2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 
 #include "delta.hpp"
 
+#include <memory>
 #include <utility>
 
 #include "intra_block_state.hpp"
@@ -50,7 +51,9 @@ StorageChangeDelta::StorageChangeDelta(const evmc::address& address, const evmc:
                                        const evmc::bytes32& previous) noexcept
     : address_{address}, key_{key}, previous_{previous} {}
 
-void StorageChangeDelta::revert(IntraBlockState& state) noexcept { state.storage_[address_].current[key_] = previous_; }
+void StorageChangeDelta::revert(IntraBlockState& state) noexcept {
+    state.storage_[address_].current[key_] = std::make_unique<evmc::bytes32>(previous_);
+}
 
 StorageWipeDelta::StorageWipeDelta(const evmc::address& address, Storage storage) noexcept
     : address_{address}, storage_{std::move(storage)} {}

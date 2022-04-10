@@ -16,6 +16,8 @@
 
 #include "intra_block_state.hpp"
 
+#include <memory>
+
 #include <ethash/keccak.hpp>
 
 #include <silkworm/common/cast.hpp>
@@ -266,13 +268,13 @@ evmc::bytes32 IntraBlockState::get_storage(const evmc::address& address, const e
     if (!original) {
         auto it{storage.current.find(key)};
         if (it != storage.current.end()) {
-            return it->second;
+            return *(it->second);
         }
     }
 
     auto it1{storage.committed.find(key)};
     if (it1 != storage.committed.end()) {
-        return it1->second;
+        return *(it1->second);
     }
 
     auto it2{storage.initial.find(key)};
@@ -292,7 +294,7 @@ void IntraBlockState::set_storage(const evmc::address& address, const evmc::byte
     if (prev == value) {
         return;
     }
-    storage_[address].current[key] = value;
+    storage_[address].current[key] = std::make_unique<evmc::bytes32>(value);
     journal_.emplace_back(new state::StorageChangeDelta{address, key, prev});
 }
 
@@ -311,7 +313,7 @@ void IntraBlockState::write_to_db(uint64_t block_number) {
 
         for (const auto& [key, val] : storage.committed) {
             const uint64_t incarnation{obj.current->incarnation};
-            db_.update_storage(address, incarnation, key, storage.initial.at(key), val);
+            db_.update_storage(address, incarnation, key, storage.initial.at(key), *val);
         }
     }
 
@@ -350,8 +352,8 @@ void IntraBlockState::revert_to_snapshot(const IntraBlockState::Snapshot& snapsh
 void IntraBlockState::finalize_transaction() {
     for (auto& x : storage_) {
         state::Storage& storage{x.second};
-        for (const auto& [key, val] : storage.current) {
-            storage.committed[key] = val;
+        for (auto& [key, val] : storage.current) {
+            storage.committed[key] = std::move(val);
         }
         storage.current.clear();
     }

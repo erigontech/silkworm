@@ -17,6 +17,7 @@
 #ifndef SILKWORM_STATE_OBJECT_HPP_
 #define SILKWORM_STATE_OBJECT_HPP_
 
+#include <memory>
 #include <optional>
 
 #include <evmc/evmc.hpp>
@@ -36,10 +37,10 @@ struct Storage {
     FlatHashMap<evmc::bytes32, evmc::bytes32> initial;
 
     // values at the beginning of the transaction; "original" in EIP-2200
-    FlatHashMap<evmc::bytes32, evmc::bytes32> committed;
+    FlatHashMap<evmc::bytes32, std::unique_ptr<evmc::bytes32>> committed;
 
     // current values
-    FlatHashMap<evmc::bytes32, evmc::bytes32> current;
+    FlatHashMap<evmc::bytes32, std::unique_ptr<evmc::bytes32>> current;
 };
 
 }  // namespace silkworm::state

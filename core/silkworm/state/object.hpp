@@ -37,8 +37,8 @@ class Storage {
     Storage() = default;
 
     // move only
-    Storage(Storage&& Storage) = default;
-    Storage& operator=(Storage&& other) = default;
+    Storage(Storage&&) = default;
+    Storage& operator=(Storage&&) = default;
 
     // values at the beginning of the block
     FlatHashMap<evmc::bytes32, evmc::bytes32> initial;

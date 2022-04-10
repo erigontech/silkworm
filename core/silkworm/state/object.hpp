@@ -34,6 +34,8 @@ struct Object {
 
 class Storage {
   public:
+    Storage() = default;
+
     // move only
     Storage(Storage&& Storage) = default;
     Storage& operator=(Storage&& other) = default;

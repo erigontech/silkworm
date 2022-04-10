@@ -106,8 +106,8 @@ void IntraBlockState::create_contract(const evmc::address& address) noexcept {
     if (it == storage_.end()) {
         journal_.emplace_back(new state::StorageCreateDelta{address});
     } else {
-        journal_.emplace_back(new state::StorageWipeDelta{address, it->second});
-        storage_.erase(address);
+        journal_.emplace_back(new state::StorageWipeDelta{address, std::move(it->second)});
+        storage_.erase(it);
     }
 }
 

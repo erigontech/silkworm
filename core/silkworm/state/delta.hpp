@@ -1,5 +1,5 @@
 /*
-   Copyright 2020-2021 The Silkworm Authors
+   Copyright 2020-2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -115,7 +115,7 @@ namespace state {
     // Entire storage deleted.
     class StorageWipeDelta : public Delta {
       public:
-        StorageWipeDelta(const evmc::address& address, Storage storage) noexcept;
+        StorageWipeDelta(const evmc::address& address, Storage&& storage) noexcept;
 
         void revert(IntraBlockState& state) noexcept override;
 

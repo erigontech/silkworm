@@ -55,10 +55,10 @@ void StorageChangeDelta::revert(IntraBlockState& state) noexcept {
     state.storage_[address_].current[key_] = std::make_unique<evmc::bytes32>(previous_);
 }
 
-StorageWipeDelta::StorageWipeDelta(const evmc::address& address, Storage storage) noexcept
+StorageWipeDelta::StorageWipeDelta(const evmc::address& address, Storage&& storage) noexcept
     : address_{address}, storage_{std::move(storage)} {}
 
-void StorageWipeDelta::revert(IntraBlockState& state) noexcept { state.storage_[address_] = storage_; }
+void StorageWipeDelta::revert(IntraBlockState& state) noexcept { state.storage_[address_] = std::move(storage_); }
 
 StorageCreateDelta::StorageCreateDelta(const evmc::address& address) noexcept : address_{address} {}
 

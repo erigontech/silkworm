@@ -32,7 +32,12 @@ struct Object {
     std::optional<Account> current;
 };
 
-struct Storage {
+class Storage {
+  public:
+    // move only
+    Storage(Storage&& Storage) = default;
+    Storage& operator=(Storage&& other) = default;
+
     // values at the beginning of the block
     FlatHashMap<evmc::bytes32, evmc::bytes32> initial;
 

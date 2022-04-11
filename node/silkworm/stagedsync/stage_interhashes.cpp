@@ -422,6 +422,7 @@ evmc::bytes32 InterHashes::calculate_root(db::RWTxn& txn, trie::PrefixSet& accou
         }
 
         trie_cursor.next();
+        const Bytes trie_cursor_key{trie_cursor.key().value_or(Bytes{})};
         auto hashed_account_data{hashed_accounts.lower_bound(db::to_slice(*uncovered), /*throw_notfound=*/false)};
 
         while (hashed_account_data) {
@@ -437,9 +438,10 @@ evmc::bytes32 InterHashes::calculate_root(db::RWTxn& txn, trie::PrefixSet& accou
             }
 
             const Bytes unpacked_key{trie::unpack_nibbles(data_key_view)};
-            if (trie_cursor.key().has_value() && trie_cursor.key().value() < unpacked_key) {
+            if (trie_cursor_key < unpacked_key) {
                 break;
             }
+            
             const auto [account, err]{Account::from_encoded_storage(db::from_slice(hashed_account_data.value))};
             rlp::success_or_throw(err);
 

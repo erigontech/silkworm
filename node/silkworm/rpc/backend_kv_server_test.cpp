@@ -1259,7 +1259,7 @@ TEST_CASE("BackEndKvServer E2E: bidirectional max TTL duration", "[silkworm][nod
         CHECK(status.ok());
     }
 
-    SECTION("Tx: cursor NEXT_DUP ops across renew are consecutive", "[silkworm][node][rpc]") {
+    /*SECTION("Tx: cursor NEXT_DUP ops across renew are consecutive", "[silkworm][node][rpc]") {
         test.fill_test_table();
 
         grpc::ClientContext context;
@@ -1295,7 +1295,7 @@ TEST_CASE("BackEndKvServer E2E: bidirectional max TTL duration", "[silkworm][nod
         tx_reader_writer->WritesDone();
         auto status = tx_reader_writer->Finish();
         CHECK(status.ok());
-    }
+    }*/
 }
 
 } // namespace silkworm::rpc

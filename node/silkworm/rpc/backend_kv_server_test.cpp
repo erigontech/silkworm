@@ -1285,7 +1285,7 @@ TEST_CASE("BackEndKvServer E2E: bidirectional max TTL duration", "[silkworm][nod
         CHECK(response.v() == "00");
         std::this_thread::sleep_for(std::chrono::milliseconds{kCustomMaxTimeToLive});
         remote::Cursor next_dup2;
-        next_dup2.set_op(remote::Op::NEXT);
+        next_dup2.set_op(remote::Op::NEXT_DUP);
         next_dup2.set_cursor(cursor_id);
         CHECK(tx_reader_writer->Write(next_dup2));
         response.clear_cursorid();

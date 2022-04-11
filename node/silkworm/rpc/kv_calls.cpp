@@ -273,23 +273,27 @@ void TxCall::handle_operation(const remote::Cursor* request, db::Cursor& cursor)
 void TxCall::handle_max_ttl_timer_expired(const boost::system::error_code& ec) {
     SILK_TRACE << "TxCall::handle_max_ttl_timer_expired " << this << " ec: " << ec << " START";
     if (!ec) {
-        std::vector<CursorPosition> positions{cursors_.size()};
-        const bool save_success = save_cursors(positions);
-        if (!save_success) {
-            finish_with_internal_error("cannot save state of cursors");
-            return;
-        }
-        SILK_DEBUG << "Tx peer: " << peer() << " #cursors: " << cursors_.size() << " saved";
+        try {
+            std::vector<CursorPosition> positions{cursors_.size()};
+            const bool save_success = save_cursors(positions);
+            if (!save_success) {
+                finish_with_internal_error("cannot save state of cursors");
+                return;
+            }
+            SILK_DEBUG << "Tx peer: " << peer() << " #cursors: " << cursors_.size() << " saved";
 
-        read_only_txn_.abort();
-        read_only_txn_ = chaindata_env_->start_read();
+            read_only_txn_.abort();
+            read_only_txn_ = chaindata_env_->start_read();
 
-        const bool restore_success = restore_cursors(positions);
-        if (!restore_success) {
-            finish_with_internal_error("cannot restore state of cursors");
-            return;
+            const bool restore_success = restore_cursors(positions);
+            if (!restore_success) {
+                finish_with_internal_error("cannot restore state of cursors");
+                return;
+            }
+            SILK_DEBUG << "Tx peer: " << peer() << " #cursors: " << cursors_.size() << " restored";
+        } catch (const std::exception& exc) {
+            SILK_ERROR << "Tx peer: " << peer() << " exception: " << exc.what() << " in save and restore";
         }
-        SILK_DEBUG << "Tx peer: " << peer() << " #cursors: " << cursors_.size() << " restored";
 
         max_ttl_timer_.expires_from_now(max_ttl_duration_);
         max_ttl_timer_.async_wait([&](const auto& error_code) { handle_max_ttl_timer_expired(error_code); });

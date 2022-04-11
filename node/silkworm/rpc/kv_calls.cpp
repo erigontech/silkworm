@@ -377,16 +377,14 @@ void TxCall::handle_first(const remote::Cursor* request, db::Cursor& cursor) {
 void TxCall::handle_first_dup(const remote::Cursor* request, db::Cursor& cursor) {
     try {
         SILK_TRACE << "TxCall::handle_first_dup " << this << " START";
-        remote::Pair kv_pair;
 
-        const auto first_result = cursor.to_first(/*throw_notfound=*/false);
-        SILK_LOG << "Tx FIRST_DUP first_result: " << detail::dump_mdbx_result(first_result);
-        if (first_result) {
-            const auto first_dup_result = cursor.to_current_first_multi(/*throw_notfound=*/false);
-            SILK_LOG << "Tx FIRST_DUP first_dup_result: " << detail::dump_mdbx_result(first_dup_result);
-            if (first_dup_result) {
-                kv_pair.set_v(first_dup_result.value.as_string());
-            }
+        const auto result = cursor.to_current_first_multi(/*throw_notfound=*/false);
+        SILK_LOG << "Tx FIRST_DUP result: " << detail::dump_mdbx_result(result);
+
+        remote::Pair kv_pair;
+        // Do not use `operator bool(result)` to avoid MDBX Assertion `!done || (bool(key) && bool(value))' failed
+        if (result.done && result.value) {
+            kv_pair.set_v(result.value.as_string());
         }
 
         const bool sent = send_response(kv_pair);
@@ -521,6 +519,7 @@ void TxCall::handle_last_dup(const remote::Cursor* request, db::Cursor& cursor) 
         SILK_TRACE << "TxCall::handle_last_dup " << this << " START";
 
         const auto result = cursor.to_current_last_multi(/*throw_notfound=*/false);
+        SILK_LOG << "Tx LAST_DUP result: " << detail::dump_mdbx_result(result);
 
         remote::Pair kv_pair;
         if (result) {
@@ -559,6 +558,7 @@ void TxCall::handle_next_dup(const remote::Cursor* request, db::Cursor& cursor) 
         SILK_TRACE << "TxCall::handle_next_dup " << this << " START";
 
         const auto result = cursor.to_current_next_multi(/*throw_notfound=*/false);
+        SILK_LOG << "Tx NEXT_DUP result: " << detail::dump_mdbx_result(result);
 
         remote::Pair kv_pair;
         if (result) {

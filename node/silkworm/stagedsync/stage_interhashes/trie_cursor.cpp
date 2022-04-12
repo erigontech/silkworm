@@ -219,7 +219,9 @@ std::optional<Bytes> increment_key(ByteView unpacked) {
             ++nibble;
             return out;
         }
-        nibble = 0;  // Carry over
+
+        // make it shorter, because in tries after 11ff goes 12, but not 1200
+        out.erase(--(it.base()));
     }
     return std::nullopt;
 }

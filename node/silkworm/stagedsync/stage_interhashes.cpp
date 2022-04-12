@@ -434,14 +434,15 @@ evmc::bytes32 InterHashes::calculate_root(db::RWTxn& txn, trie::PrefixSet& accou
                 current_key_ = abridge(to_hex(data_key_view, true), 16);
                 log_lck.unlock();
                 throw_if_stopping();
-                log_trigger_counter = 32;
+                log_trigger_counter = 128;
+                //log::Trace("Trie", {"uncovered", to_hex(*uncovered, true)});
             }
 
             const Bytes unpacked_key{trie::unpack_nibbles(data_key_view)};
             if (trie_cursor_key < unpacked_key) {
                 break;
             }
-            
+
             const auto [account, err]{Account::from_encoded_storage(db::from_slice(hashed_account_data.value))};
             rlp::success_or_throw(err);
 

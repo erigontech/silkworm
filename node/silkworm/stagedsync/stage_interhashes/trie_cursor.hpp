@@ -32,7 +32,6 @@ namespace silkworm::trie {
 
 class Cursor {
   public:
-
     // Ignores DB entries whose keys don't start with the prefix
     explicit Cursor(mdbx::cursor& db_cursor, PrefixSet& changed, ByteView prefix = {});
 
@@ -90,10 +89,11 @@ class Cursor {
 //! \verbatim
 //! increment_key(120) = 121
 //! increment_key(12e) = 12f
-//! increment_key(12f) = 130
+//! increment_key(12f) = 13
 //! \endverbatim
 //! \return The incremented value or std::nullopt if the key is the largest key of its length,
 //! i.e. consists only of 0xF nibbles.
+//! \remarks Being a prefix of nibbles trailing zeroes must be erased
 std::optional<Bytes> increment_key(ByteView unpacked);
 
 }  // namespace silkworm::trie

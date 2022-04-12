@@ -110,22 +110,39 @@ class TxCall : public BidirectionalStreamingRpc<remote::KV::AsyncService, remote
 
     bool restore_cursors(std::vector<CursorPosition>& positions);
 
-    void handle_first(const remote::Cursor* request, db::Cursor& cursor);
-    void handle_first_dup(const remote::Cursor* request, db::Cursor& cursor);
-    void handle_seek(const remote::Cursor* request, db::Cursor& cursor);
-    void handle_seek_both(const remote::Cursor* request, db::Cursor& cursor);
-    void handle_seek_exact(const remote::Cursor* request, db::Cursor& cursor);
-    void handle_seek_both_exact(const remote::Cursor* request, db::Cursor& cursor);
-    void handle_current(const remote::Cursor* request, db::Cursor& cursor);
-    void handle_last(const remote::Cursor* request, db::Cursor& cursor);
-    void handle_last_dup(const remote::Cursor* request, db::Cursor& cursor);
-    void handle_next(const remote::Cursor* request, db::Cursor& cursor);
-    void handle_next_dup(const remote::Cursor* request, db::Cursor& cursor);
-    void handle_next_no_dup(const remote::Cursor* request, db::Cursor& cursor);
-    void handle_prev(const remote::Cursor* request, db::Cursor& cursor);
+    void handle_first(db::Cursor& cursor);
 
-    void finish_with_internal_error(const remote::Cursor* request, const std::exception& exc);
-    void finish_with_internal_error(const std::string& error_message);
+    void handle_first_dup(db::Cursor& cursor);
+
+    void handle_seek(const remote::Cursor* request, db::Cursor& cursor);
+
+    void handle_seek_both(const remote::Cursor* request, db::Cursor& cursor);
+
+    void handle_seek_exact(const remote::Cursor* request, db::Cursor& cursor);
+
+    void handle_seek_both_exact(const remote::Cursor* request, db::Cursor& cursor);
+
+    void handle_current(db::Cursor& cursor);
+
+    void handle_last(db::Cursor& cursor);
+
+    void handle_last_dup(db::Cursor& cursor);
+
+    void handle_next(db::Cursor& cursor);
+
+    void handle_next_dup(db::Cursor& cursor);
+
+    void handle_next_no_dup(db::Cursor& cursor);
+
+    void handle_prev(db::Cursor& cursor);
+
+    void handle_prev_dup(db::Cursor& cursor);
+
+    void handle_prev_no_dup(db::Cursor& cursor);
+
+    void close_with_internal_error(const remote::Cursor* request, const std::exception& exc);
+
+    void close_with_internal_error(const std::string& error_message);
 
     static mdbx::env* chaindata_env_;
     static boost::posix_time::milliseconds max_ttl_duration_;

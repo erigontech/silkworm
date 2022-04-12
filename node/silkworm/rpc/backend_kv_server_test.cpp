@@ -284,7 +284,7 @@ struct BackEndKvE2eTest {
         }
     }
 
-    void fill_test_table() {
+    void fill_tables() {
         auto rw_txn = database_env.start_write();
         db::Cursor rw_cursor1{rw_txn, kTestMap};
         rw_cursor1.upsert(mdbx::slice{"AA"}, mdbx::slice{"00"});
@@ -292,6 +292,7 @@ struct BackEndKvE2eTest {
         db::Cursor rw_cursor2{rw_txn, kTestMultiMap};
         rw_cursor2.upsert(mdbx::slice{"AA"}, mdbx::slice{"00"});
         rw_cursor2.upsert(mdbx::slice{"AA"}, mdbx::slice{"11"});
+        rw_cursor2.upsert(mdbx::slice{"AA"}, mdbx::slice{"22"});
         rw_cursor2.upsert(mdbx::slice{"BB"}, mdbx::slice{"22"});
         rw_txn.commit();
     }
@@ -795,11 +796,10 @@ TEST_CASE("BackEndKvServer E2E: bidirectional idle timeout", "[silkworm][node][r
     TxIdleTimeoutGuard timeout_guard{10};
     NodeSettings node_settings;
     BackEndKvE2eTest test{silkworm::log::Level::kNone, node_settings};
+    test.fill_tables();
     auto kv_client = *test.kv_client;
 
     SECTION("Tx KO: immediate finish", "[silkworm][node][rpc]") {
-        test.fill_test_table();
-
         grpc::ClientContext context;
         const auto tx_reader_writer = kv_client.tx_start(&context);
         auto status = tx_reader_writer->Finish();
@@ -809,8 +809,6 @@ TEST_CASE("BackEndKvServer E2E: bidirectional idle timeout", "[silkworm][node][r
     }
 
     SECTION("Tx KO: finish after first read", "[silkworm][node][rpc]") {
-        test.fill_test_table();
-
         grpc::ClientContext context;
         const auto tx_reader_writer = kv_client.tx_start(&context);
         remote::Pair response;
@@ -823,8 +821,6 @@ TEST_CASE("BackEndKvServer E2E: bidirectional idle timeout", "[silkworm][node][r
     }
 
     SECTION("Tx KO: finish after first read and one write/read", "[silkworm][node][rpc]") {
-        test.fill_test_table();
-
         grpc::ClientContext context;
         const auto tx_reader_writer = kv_client.tx_start(&context);
         remote::Pair response;
@@ -847,11 +843,10 @@ TEST_CASE("BackEndKvServer E2E: bidirectional idle timeout", "[silkworm][node][r
 
 TEST_CASE("BackEndKvServer E2E: Tx cursor valid operations", "[silkworm][node][rpc]") {
     BackEndKvE2eTest test{silkworm::log::Level::kNone};
+    test.fill_tables();
     auto kv_client = *test.kv_client;
 
     SECTION("Tx OK: one FIRST operation", "[silkworm][node][rpc]") {
-        test.fill_test_table();
-
         remote::Cursor open;
         open.set_op(remote::Op::OPEN);
         open.set_bucketname(kTestMap.name);
@@ -875,8 +870,6 @@ TEST_CASE("BackEndKvServer E2E: Tx cursor valid operations", "[silkworm][node][r
     }
 
     SECTION("Tx OK: two FIRST operations", "[silkworm][node][rpc]") {
-        test.fill_test_table();
-
         remote::Cursor open;
         open.set_op(remote::Op::OPEN);
         open.set_bucketname(kTestMap.name);
@@ -904,9 +897,58 @@ TEST_CASE("BackEndKvServer E2E: Tx cursor valid operations", "[silkworm][node][r
         CHECK(responses[4].cursorid() == 0);
     }
 
-    SECTION("Tx OK: one NEXT operation", "[silkworm][node][rpc]") {
-        test.fill_test_table();
+    SECTION("Tx OK: one LAST operation", "[silkworm][node][rpc]") {
+        remote::Cursor open;
+        open.set_op(remote::Op::OPEN);
+        open.set_bucketname(kTestMap.name);
+        remote::Cursor last;
+        last.set_op(remote::Op::LAST);
+        last.set_cursor(0); // automatically assigned by KvClient::tx
+        remote::Cursor close;
+        close.set_op(remote::Op::CLOSE);
+        close.set_cursor(0); // automatically assigned by KvClient::tx
+        std::vector<remote::Cursor> requests{open, last, close};
+        std::vector<remote::Pair> responses;
+        const auto status = kv_client.tx(requests, responses);
+        CHECK(status.ok());
+        CHECK(status.error_message().empty());
+        CHECK(responses.size() == 4);
+        CHECK(responses[0].txid() != 0);
+        CHECK(responses[1].cursorid() != 0);
+        CHECK(responses[2].k() == "BB");
+        CHECK(responses[2].v() == "11");
+        CHECK(responses[3].cursorid() == 0);
+    }
 
+    SECTION("Tx OK: two LAST operations", "[silkworm][node][rpc]") {
+        remote::Cursor open;
+        open.set_op(remote::Op::OPEN);
+        open.set_bucketname(kTestMap.name);
+        remote::Cursor last1;
+        last1.set_op(remote::Op::LAST);
+        last1.set_cursor(0); // automatically assigned by KvClient::tx
+        remote::Cursor last2;
+        last2.set_op(remote::Op::LAST);
+        last2.set_cursor(0); // automatically assigned by KvClient::tx
+        remote::Cursor close;
+        close.set_op(remote::Op::CLOSE);
+        close.set_cursor(0); // automatically assigned by KvClient::tx
+        std::vector<remote::Cursor> requests{open, last1, last2, close};
+        std::vector<remote::Pair> responses;
+        const auto status = kv_client.tx(requests, responses);
+        CHECK(status.ok());
+        CHECK(status.error_message().empty());
+        CHECK(responses.size() == 5);
+        CHECK(responses[0].txid() != 0);
+        CHECK(responses[1].cursorid() != 0);
+        CHECK(responses[2].k() == "BB");
+        CHECK(responses[2].v() == "11");
+        CHECK(responses[3].k() == "BB");
+        CHECK(responses[3].v() == "11");
+        CHECK(responses[4].cursorid() == 0);
+    }
+
+    SECTION("Tx OK: one NEXT operation", "[silkworm][node][rpc]") {
         remote::Cursor open;
         open.set_op(remote::Op::OPEN);
         open.set_bucketname(kTestMap.name);
@@ -930,8 +972,6 @@ TEST_CASE("BackEndKvServer E2E: Tx cursor valid operations", "[silkworm][node][r
     }
 
     SECTION("Tx OK: two NEXT operations", "[silkworm][node][rpc]") {
-        test.fill_test_table();
-
         remote::Cursor open;
         open.set_op(remote::Op::OPEN);
         open.set_bucketname(kTestMap.name);
@@ -960,8 +1000,6 @@ TEST_CASE("BackEndKvServer E2E: Tx cursor valid operations", "[silkworm][node][r
     }
 
     SECTION("Tx OK: two NEXT operations using different cursors", "[silkworm][node][rpc]") {
-        test.fill_test_table();
-
         remote::Cursor open1;
         open1.set_op(remote::Op::OPEN);
         open1.set_bucketname(kTestMap.name);
@@ -997,9 +1035,94 @@ TEST_CASE("BackEndKvServer E2E: Tx cursor valid operations", "[silkworm][node][r
         CHECK(responses[6].cursorid() == 0);
     }
 
-    SECTION("Tx OK: FIRST + FIRST_DUP operations on multi-value table", "[silkworm][node][rpc]") {
-        test.fill_test_table();
+    SECTION("Tx OK: one PREV operation", "[silkworm][node][rpc]") {
+        remote::Cursor open;
+        open.set_op(remote::Op::OPEN);
+        open.set_bucketname(kTestMap.name);
+        remote::Cursor prev;
+        prev.set_op(remote::Op::PREV);
+        prev.set_cursor(0); // automatically assigned by KvClient::tx
+        remote::Cursor close;
+        close.set_op(remote::Op::CLOSE);
+        close.set_cursor(0); // automatically assigned by KvClient::tx
+        std::vector<remote::Cursor> requests{open, prev, close};
+        std::vector<remote::Pair> responses;
+        const auto status = kv_client.tx(requests, responses);
+        CHECK(status.ok());
+        CHECK(status.error_message().empty());
+        CHECK(responses.size() == 4);
+        CHECK(responses[0].txid() != 0);
+        CHECK(responses[1].cursorid() != 0);
+        CHECK(responses[2].k() == "BB");
+        CHECK(responses[2].v() == "11");
+        CHECK(responses[3].cursorid() == 0);
+    }
 
+    SECTION("Tx OK: two PREV operations", "[silkworm][node][rpc]") {
+        remote::Cursor open;
+        open.set_op(remote::Op::OPEN);
+        open.set_bucketname(kTestMap.name);
+        remote::Cursor prev1;
+        prev1.set_op(remote::Op::PREV);
+        prev1.set_cursor(0); // automatically assigned by KvClient::tx
+        remote::Cursor prev2;
+        prev2.set_op(remote::Op::PREV);
+        prev2.set_cursor(0); // automatically assigned by KvClient::tx
+        remote::Cursor close;
+        close.set_op(remote::Op::CLOSE);
+        close.set_cursor(0); // automatically assigned by KvClient::tx
+        std::vector<remote::Cursor> requests{open, prev1, prev2, close};
+        std::vector<remote::Pair> responses;
+        const auto status = kv_client.tx(requests, responses);
+        CHECK(status.ok());
+        CHECK(status.error_message().empty());
+        CHECK(responses.size() == 5);
+        CHECK(responses[0].txid() != 0);
+        CHECK(responses[1].cursorid() != 0);
+        CHECK(responses[2].k() == "BB");
+        CHECK(responses[2].v() == "11");
+        CHECK(responses[3].k() == "AA");
+        CHECK(responses[3].v() == "00");
+        CHECK(responses[4].cursorid() == 0);
+    }
+
+    SECTION("Tx OK: two PREV operations using different cursors", "[silkworm][node][rpc]") {
+        remote::Cursor open1;
+        open1.set_op(remote::Op::OPEN);
+        open1.set_bucketname(kTestMap.name);
+        remote::Cursor prev1;
+        prev1.set_op(remote::Op::PREV);
+        prev1.set_cursor(0); // automatically assigned by KvClient::tx
+        remote::Cursor close1;
+        close1.set_op(remote::Op::CLOSE);
+        close1.set_cursor(0); // automatically assigned by KvClient::tx
+        remote::Cursor open2;
+        open2.set_op(remote::Op::OPEN);
+        open2.set_bucketname(kTestMap.name);
+        remote::Cursor prev2;
+        prev2.set_op(remote::Op::PREV);
+        prev2.set_cursor(0); // automatically assigned by KvClient::tx
+        remote::Cursor close2;
+        close2.set_op(remote::Op::CLOSE);
+        close2.set_cursor(0); // automatically assigned by KvClient::tx
+        std::vector<remote::Cursor> requests{open1, prev1, close1, open2, prev2, close2};
+        std::vector<remote::Pair> responses;
+        const auto status = kv_client.tx(requests, responses);
+        CHECK(status.ok());
+        CHECK(status.error_message().empty());
+        CHECK(responses.size() == 7);
+        CHECK(responses[0].txid() != 0);
+        CHECK(responses[1].cursorid() != 0);
+        CHECK(responses[2].k() == "BB");
+        CHECK(responses[2].v() == "11");
+        CHECK(responses[3].cursorid() == 0);
+        CHECK(responses[4].cursorid() != 0);
+        CHECK(responses[5].k() == "BB");
+        CHECK(responses[5].v() == "11");
+        CHECK(responses[6].cursorid() == 0);
+    }
+
+    SECTION("Tx OK: FIRST + FIRST_DUP operations on multi-value table", "[silkworm][node][rpc]") {
         remote::Cursor open;
         open.set_op(remote::Op::OPEN);
         open.set_bucketname(kTestMultiMap.name);
@@ -1020,14 +1143,13 @@ TEST_CASE("BackEndKvServer E2E: Tx cursor valid operations", "[silkworm][node][r
         CHECK(responses[0].txid() != 0);
         CHECK(responses[1].cursorid() != 0);
         CHECK(responses[2].k() == "AA");
+        CHECK(responses[2].v() == "00");
         CHECK(responses[3].k().empty());
         CHECK(responses[3].v() == "00");
         CHECK(responses[4].cursorid() == 0);
     }
 
     SECTION("Tx OK: LAST + FIRST_DUP operations on multi-value table", "[silkworm][node][rpc]") {
-        test.fill_test_table();
-
         remote::Cursor open;
         open.set_op(remote::Op::OPEN);
         open.set_bucketname(kTestMultiMap.name);
@@ -1049,38 +1171,45 @@ TEST_CASE("BackEndKvServer E2E: Tx cursor valid operations", "[silkworm][node][r
         CHECK(responses[0].txid() != 0);
         CHECK(responses[1].cursorid() != 0);
         CHECK(responses[2].k() == "BB");
+        CHECK(responses[2].v() == "22");
         CHECK(responses[3].k().empty());
         CHECK(responses[3].v() == "22");
         CHECK(responses[4].cursorid() == 0);
     }
 
-    /*SECTION("Tx OK: one NEXT_DUP operation on single-value table", "[silkworm][node][rpc]") {
-        test.fill_test_table();
-
+    SECTION("Tx OK: one FIRST + two NEXT_DUP operations on multi-value table", "[silkworm][node][rpc]") {
         remote::Cursor open;
         open.set_op(remote::Op::OPEN);
-        open.set_bucketname(kTestMap.name);
-        remote::Cursor next_dup;
-        next_dup.set_op(remote::Op::NEXT_DUP);
-        next_dup.set_cursor(0); // automatically assigned by KvClient::tx
+        open.set_bucketname(kTestMultiMap.name);
+        remote::Cursor first;
+        first.set_op(remote::Op::FIRST);
+        first.set_cursor(0); // automatically assigned by KvClient::tx
+        remote::Cursor next_dup1;
+        next_dup1.set_op(remote::Op::NEXT_DUP);
+        next_dup1.set_cursor(0); // automatically assigned by KvClient::tx
+        remote::Cursor next_dup2;
+        next_dup2.set_op(remote::Op::NEXT_DUP);
+        next_dup2.set_cursor(0); // automatically assigned by KvClient::tx
         remote::Cursor close;
         close.set_op(remote::Op::CLOSE);
         close.set_cursor(0); // automatically assigned by KvClient::tx
-        std::vector<remote::Cursor> requests{open, next_dup, close};
+        std::vector<remote::Cursor> requests{open, first, next_dup1, next_dup2, close};
         std::vector<remote::Pair> responses;
         const auto status = kv_client.tx(requests, responses);
         CHECK(status.ok());
-        CHECK(responses.size() == 4);
+        CHECK(responses.size() == 6);
         CHECK(responses[0].txid() != 0);
         CHECK(responses[1].cursorid() != 0);
         CHECK(responses[2].k() == "AA");
         CHECK(responses[2].v() == "00");
-        CHECK(responses[3].cursorid() == 0);
-    }*/
+        CHECK(responses[3].k() == "AA");
+        CHECK(responses[3].v() == "11");
+        CHECK(responses[4].k() == "AA");
+        CHECK(responses[4].v() == "22");
+        CHECK(responses[5].cursorid() == 0);
+    }
 
     SECTION("Tx OK: one NEXT_DUP operation on multi-value table", "[silkworm][node][rpc]") {
-        test.fill_test_table();
-
         remote::Cursor open;
         open.set_op(remote::Op::OPEN);
         open.set_bucketname(kTestMultiMap.name);
@@ -1101,15 +1230,90 @@ TEST_CASE("BackEndKvServer E2E: Tx cursor valid operations", "[silkworm][node][r
         CHECK(responses[2].v() == "00");
         CHECK(responses[3].cursorid() == 0);
     }
+
+    SECTION("Tx OK: one PREV_DUP operation on multi-value table", "[silkworm][node][rpc]") {
+        remote::Cursor open;
+        open.set_op(remote::Op::OPEN);
+        open.set_bucketname(kTestMultiMap.name);
+        remote::Cursor prev_dup;
+        prev_dup.set_op(remote::Op::PREV_DUP);
+        prev_dup.set_cursor(0); // automatically assigned by KvClient::tx
+        remote::Cursor close;
+        close.set_op(remote::Op::CLOSE);
+        close.set_cursor(0); // automatically assigned by KvClient::tx
+        std::vector<remote::Cursor> requests{open, prev_dup, close};
+        std::vector<remote::Pair> responses;
+        const auto status = kv_client.tx(requests, responses);
+        CHECK(status.ok());
+        CHECK(responses.size() == 4);
+        CHECK(responses[0].txid() != 0);
+        CHECK(responses[1].cursorid() != 0);
+        CHECK(responses[2].k() == "BB");
+        CHECK(responses[2].v() == "22");
+        CHECK(responses[3].cursorid() == 0);
+    }
+
+    SECTION("Tx OK: one FIRST + one LAST_DUP operation on multi-value table", "[silkworm][node][rpc]") {
+        remote::Cursor open;
+        open.set_op(remote::Op::OPEN);
+        open.set_bucketname(kTestMultiMap.name);
+        remote::Cursor first;
+        first.set_op(remote::Op::FIRST);
+        first.set_cursor(0); // automatically assigned by KvClient::tx
+        remote::Cursor last_dup;
+        last_dup.set_op(remote::Op::LAST_DUP);
+        last_dup.set_cursor(0); // automatically assigned by KvClient::tx
+        remote::Cursor close;
+        close.set_op(remote::Op::CLOSE);
+        close.set_cursor(0); // automatically assigned by KvClient::tx
+        std::vector<remote::Cursor> requests{open, first, last_dup, close};
+        std::vector<remote::Pair> responses;
+        const auto status = kv_client.tx(requests, responses);
+        CHECK(status.ok());
+        CHECK(responses.size() == 5);
+        CHECK(responses[0].txid() != 0);
+        CHECK(responses[1].cursorid() != 0);
+        CHECK(responses[2].k() == "AA");
+        CHECK(responses[2].v() == "00");
+        CHECK(responses[3].k().empty());
+        CHECK(responses[3].v() == "22");
+        CHECK(responses[4].cursorid() == 0);
+    }
+
+    SECTION("Tx OK: one LAST + one LAST_DUP operation on multi-value table", "[silkworm][node][rpc]") {
+        remote::Cursor open;
+        open.set_op(remote::Op::OPEN);
+        open.set_bucketname(kTestMultiMap.name);
+        remote::Cursor last;
+        last.set_op(remote::Op::LAST);
+        last.set_cursor(0); // automatically assigned by KvClient::tx
+        remote::Cursor last_dup;
+        last_dup.set_op(remote::Op::LAST_DUP);
+        last_dup.set_cursor(0); // automatically assigned by KvClient::tx
+        remote::Cursor close;
+        close.set_op(remote::Op::CLOSE);
+        close.set_cursor(0); // automatically assigned by KvClient::tx
+        std::vector<remote::Cursor> requests{open, last, last_dup, close};
+        std::vector<remote::Pair> responses;
+        const auto status = kv_client.tx(requests, responses);
+        CHECK(status.ok());
+        CHECK(responses.size() == 5);
+        CHECK(responses[0].txid() != 0);
+        CHECK(responses[1].cursorid() != 0);
+        CHECK(responses[2].k() == "BB");
+        CHECK(responses[2].v() == "22");
+        CHECK(responses[3].k().empty());
+        CHECK(responses[3].v() == "22");
+        CHECK(responses[4].cursorid() == 0);
+    }
 }
 
 TEST_CASE("BackEndKvServer E2E: Tx cursor invalid operations", "[silkworm][node][rpc]") {
     BackEndKvE2eTest test{silkworm::log::Level::kNone};
+    test.fill_tables();
     auto kv_client = *test.kv_client;
 
     SECTION("Tx KO: FIRST_DUP operation on single-value table", "[silkworm][node][rpc]") {
-        test.fill_test_table();
-
         remote::Cursor open;
         open.set_op(remote::Op::OPEN);
         open.set_bucketname(kTestMap.name);
@@ -1134,8 +1338,6 @@ TEST_CASE("BackEndKvServer E2E: Tx cursor invalid operations", "[silkworm][node]
     }
 
     SECTION("Tx KO: LAST_DUP operation on single-value table", "[silkworm][node][rpc]") {
-        test.fill_test_table();
-
         remote::Cursor open;
         open.set_op(remote::Op::OPEN);
         open.set_bucketname(kTestMap.name);
@@ -1160,8 +1362,6 @@ TEST_CASE("BackEndKvServer E2E: Tx cursor invalid operations", "[silkworm][node]
     }
 
     SECTION("Tx KO: FIRST_DUP operation w/o positioned key", "[silkworm][node][rpc]") {
-        test.fill_test_table();
-
         remote::Cursor open;
         open.set_op(remote::Op::OPEN);
         open.set_bucketname(kTestMultiMap.name);
@@ -1182,8 +1382,6 @@ TEST_CASE("BackEndKvServer E2E: Tx cursor invalid operations", "[silkworm][node]
     }
 
     SECTION("Tx KO: LAST_DUP operation w/o positioned key", "[silkworm][node][rpc]") {
-        test.fill_test_table();
-
         remote::Cursor open;
         open.set_op(remote::Op::OPEN);
         open.set_bucketname(kTestMultiMap.name);
@@ -1219,11 +1417,10 @@ TEST_CASE("BackEndKvServer E2E: bidirectional max TTL duration", "[silkworm][nod
     TxMaxTimeToLiveGuard ttl_guard{kCustomMaxTimeToLive};
     NodeSettings node_settings;
     BackEndKvE2eTest test{silkworm::log::Level::kNone, node_settings};
+    test.fill_tables();
     auto kv_client = *test.kv_client;
 
     SECTION("Tx: cursor NEXT ops across renew are consecutive", "[silkworm][node][rpc]") {
-        test.fill_test_table();
-
         grpc::ClientContext context;
         const auto tx_reader_writer = kv_client.tx_start(&context);
         remote::Pair response;
@@ -1260,8 +1457,6 @@ TEST_CASE("BackEndKvServer E2E: bidirectional max TTL duration", "[silkworm][nod
     }
 
     SECTION("Tx: cursor NEXT_DUP ops across renew are consecutive", "[silkworm][node][rpc]") {
-        test.fill_test_table();
-
         grpc::ClientContext context;
         const auto tx_reader_writer = kv_client.tx_start(&context);
         remote::Pair response;

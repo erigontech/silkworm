@@ -19,7 +19,7 @@
 #include <bitset>
 
 #include <silkworm/common/assert.hpp>
-#include <silkworm/trie/hash_builder.hpp>
+#include <silkworm/trie/nibbles.hpp>
 
 namespace silkworm::trie {
 
@@ -234,7 +234,7 @@ std::optional<Bytes> Cursor::first_uncovered_prefix() const {
     if (k == std::nullopt) {
         return std::nullopt;
     }
-    return pack_nibbles(*k);
+    return from_nibbles(*k);
 }
 
 }  // namespace silkworm::trie

@@ -1,5 +1,5 @@
 /*
-    Copyright 2021 The Silkworm Authors
+    Copyright 2021-2022 The Silkworm Authors
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@
 
 #include <silkworm/state/in_memory_state.hpp>
 #include <silkworm/trie/hash_builder.hpp>
+#include <silkworm/trie/nibbles.hpp>
 
 #include "tables.hpp"
 
@@ -170,7 +171,7 @@ bool initialize_genesis(mdbx::txn& txn, const nlohmann::json& genesis_json, bool
 
             trie::HashBuilder hb;
             for (const auto& [hash, rlp] : account_rlp) {
-                hb.add_leaf(trie::unpack_nibbles(hash), rlp);
+                hb.add_leaf(trie::to_nibbles(hash), rlp);
             }
             state_root_hash = hb.root_hash();
         }

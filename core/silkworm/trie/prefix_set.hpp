@@ -23,7 +23,7 @@
 
 namespace silkworm::trie {
 
-/// A set of byte strings with the following property:
+//! \brief A set of "nibbled" byte strings with the following property:
 /// If x ∈ S and x starts with y, then y ∈ S.
 /// Corresponds to RetainList in Erigon.
 class PrefixSet {

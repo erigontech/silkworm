@@ -1,5 +1,5 @@
 /*
-   Copyright 2020-2021 The Silkworm Authors
+   Copyright 2020-2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -14,9 +14,7 @@
    limitations under the License.
 */
 
-#include "hash_builder.hpp"
 
-#include <algorithm>
 #include <iterator>
 
 #include <catch2/catch.hpp>
@@ -24,6 +22,8 @@
 
 #include <silkworm/common/util.hpp>
 #include <silkworm/rlp/encode.hpp>
+#include <silkworm/trie/hash_builder.hpp>
+#include <silkworm/trie/nibbles.hpp>
 
 namespace silkworm::trie {
 
@@ -40,8 +40,8 @@ TEST_CASE("HashBuilder1") {
     const auto val2{*from_hex("02")};
 
     HashBuilder hb;
-    hb.add_leaf(unpack_nibbles(key1), val1);
-    hb.add_leaf(unpack_nibbles(key2), val2);
+    hb.add_leaf(to_nibbles(key1), val1);
+    hb.add_leaf(to_nibbles(key2), val2);
 
     // even terminating
     const Bytes encoded_empty_terminating_path{*from_hex("20")};
@@ -96,7 +96,7 @@ TEST_CASE("HashBuilder2") {
     ethash::hash256 hash0{keccak256(rlp0)};
 
     HashBuilder hb0;
-    hb0.add_leaf(unpack_nibbles(key0), val0);
+    hb0.add_leaf(to_nibbles(key0), val0);
     CHECK(to_hex(hb0.root_hash()) == to_hex(hash0.bytes));
 
     // ------------------------------------------------------------------------------------------
@@ -125,8 +125,8 @@ TEST_CASE("HashBuilder2") {
     ethash::hash256 hash1{keccak256(rlp1)};
 
     HashBuilder hb1;
-    hb1.add_leaf(unpack_nibbles(key0), val0);
-    hb1.add_leaf(unpack_nibbles(key1), val1);
+    hb1.add_leaf(to_nibbles(key0), val0);
+    hb1.add_leaf(to_nibbles(key1), val1);
     CHECK(to_hex(hb1.root_hash()) == to_hex(hash1.bytes));
 
     // ------------------------------------------------------------------------------------------
@@ -143,13 +143,13 @@ TEST_CASE("Known root hash") {
     CHECK(to_hex(hb.root_hash()) == to_hex(root_hash.bytes));
 }
 
-TEST_CASE("pack_nibbles") {
-    CHECK(pack_nibbles({}).empty());
-    CHECK(to_hex(pack_nibbles(*from_hex("0a"))) == "a0");
-    CHECK(to_hex(pack_nibbles(*from_hex("0a0b"))) == "ab");
-    CHECK(to_hex(pack_nibbles(*from_hex("0a0b02"))) == "ab20");
-    CHECK(to_hex(pack_nibbles(*from_hex("0a0b0200"))) == "ab20");
-    CHECK(to_hex(pack_nibbles(*from_hex("0a0b0207"))) == "ab27");
+TEST_CASE("from_nibbles") {
+    CHECK(from_nibbles({}).empty());
+    CHECK(to_hex(from_nibbles(*from_hex("0a"))) == "a0");
+    CHECK(to_hex(from_nibbles(*from_hex("0a0b"))) == "ab");
+    CHECK(to_hex(from_nibbles(*from_hex("0a0b02"))) == "ab20");
+    CHECK(to_hex(from_nibbles(*from_hex("0a0b0200"))) == "ab20");
+    CHECK(to_hex(from_nibbles(*from_hex("0a0b0207"))) == "ab27");
 }
 
 }  // namespace silkworm::trie

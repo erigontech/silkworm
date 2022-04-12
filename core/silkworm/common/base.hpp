@@ -60,6 +60,7 @@ class ByteView : public std::basic_string_view<uint8_t> {
 };
 
 using BlockNum = uint64_t;
+using Nibble = int8_t;  // In range [-1...16)
 
 inline constexpr size_t kAddressLength{20};
 

@@ -29,37 +29,6 @@
 
 namespace silkworm::trie {
 
-Bytes pack_nibbles(ByteView nibbles) {
-    const size_t n{(nibbles.length() + 1) / 2};
-    Bytes out(n, '\0');
-    if (n == 0) {
-        return out;
-    }
-
-    auto out_it{out.begin()};
-    while (!nibbles.empty()) {
-        *out_it = nibbles[0] << 4;
-        nibbles.remove_prefix(1);
-        if (!nibbles.empty()) {
-            *out_it += nibbles[0];
-            nibbles.remove_prefix(1);
-            std::advance(out_it, 1);
-        }
-    }
-
-    return out;
-}
-
-Bytes unpack_nibbles(ByteView packed) {
-    Bytes out(2 * packed.length(), '\0');
-    auto out_it{out.begin()};
-    for (const auto& b : packed) {
-        *out_it++ = b >> 4;
-        *out_it++ = b & 0xF;
-    }
-    return out;
-}
-
 // See "Specification: Compact encoding of hex sequence with optional terminator"
 // at https://eth.wiki/fundamentals/patricia-tree
 static Bytes encode_path(ByteView nibbles, bool terminating) {

@@ -27,6 +27,7 @@
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/stagedsync/stage_interhashes/trie_cursor.hpp>
 #include <silkworm/trie/hash_builder.hpp>
+#include <silkworm/trie/nibbles.hpp>
 #include <silkworm/types/account.hpp>
 
 namespace silkworm::stagedsync {
@@ -170,7 +171,7 @@ trie::PrefixSet InterHashes::gather_forward_account_changes(
                     }
                 }
 
-                ret.insert(trie::unpack_nibbles(hashed_address.bytes));
+                ret.insert(trie::to_nibbles(hashed_address.bytes));
             }
             changeset_data = account_changeset.to_current_next_multi(/*throw_notfound=*/false);
         }
@@ -262,7 +263,7 @@ trie::PrefixSet InterHashes::gather_forward_storage_changes(
             const ByteView location{changeset_value_view.substr(0, kHashLength)};
             const auto hashed_location{keccak256(location)};
 
-            auto unpacked_location{trie::unpack_nibbles(hashed_location.bytes)};
+            auto unpacked_location{trie::to_nibbles(hashed_location.bytes)};
             std::memcpy(&hashed_key[hashed_key_prefix_len], unpacked_location.data(), unpacked_location.length());
             ret.insert(ByteView(hashed_key.data(), hashed_key_prefix_len + unpacked_location.length()));
             changeset_data = storage_changeset.to_current_next_multi(/*throw_notfound=*/false);
@@ -435,10 +436,9 @@ evmc::bytes32 InterHashes::calculate_root(db::RWTxn& txn, trie::PrefixSet& accou
                 log_lck.unlock();
                 throw_if_stopping();
                 log_trigger_counter = 128;
-                //log::Trace("Trie", {"uncovered", to_hex(*uncovered, true)});
             }
 
-            const Bytes unpacked_key{trie::unpack_nibbles(data_key_view)};
+            const Bytes unpacked_key{trie::to_nibbles(data_key_view)};
             if (trie_cursor_key < unpacked_key) {
                 break;
             }
@@ -494,7 +494,7 @@ evmc::bytes32 InterHashes::calculate_storage_root(db::RWTxn& txn, const Bytes& d
                                                                        /*throw_notfound=*/false)};
         while (hashed_storage_data) {
             const ByteView data_value_view{db::from_slice(hashed_storage_data.value)};
-            const Bytes unpacked_location{trie::unpack_nibbles(data_value_view.substr(0, kHashLength))};
+            const Bytes unpacked_location{trie::to_nibbles(data_value_view.substr(0, kHashLength))};
             if (trie_cursor.key().has_value() && trie_cursor.key().value() < unpacked_location) {
                 break;
             }

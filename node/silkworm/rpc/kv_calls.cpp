@@ -334,12 +334,14 @@ bool TxCall::restore_cursors(std::vector<CursorPosition>& positions) {
             SILK_LOG << "Tx restore cursor " << cursor_id << " for: " << bucket_name << " lbm_result: " << detail::dump_mdbx_result(lbm_result);
             // It may happen that key where we stopped disappeared after transaction reopen, then just move to next key
             if (!lbm_result) {
+                SILK_LOG << "Tx restore cursor " << cursor_id << " before to_next";
                 const auto next_result = cursor.to_next(/*throw_notfound=*/false);
                 SILK_LOG << "Tx restore cursor " << cursor_id << " for: " << bucket_name << " next_result: " << detail::dump_mdbx_result(next_result);
                 if (!next_result) {
                     return false;
                 }
             }
+            SILK_LOG << "Tx restore cursor " << cursor_id << " completed";
         } else {
             const auto result = (key.length() == 0) ?
                 cursor.to_first(/*throw_notfound=*/false) :

@@ -56,7 +56,7 @@ TEST_CASE("increment_key") {
 
     for (auto& [source, expected] : tests) {
         auto unpacked{nibbles_from_hex(source)};
-        auto unpacked_incremented{increment_key(unpacked)};
+        auto unpacked_incremented{increment_nibbled_key(unpacked)};
         if (expected == "null") {
             REQUIRE(unpacked_incremented.has_value() == false);
         } else {

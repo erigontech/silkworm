@@ -324,6 +324,7 @@ bool TxCall::restore_cursors(std::vector<CursorPosition>& positions) {
         db::Cursor cursor{read_only_txn_, map_config};
 
         const auto& [current_key, current_value] = positions.back();
+        SILK_LOG << "Tx restore cursor " << cursor_id << " current_key: " << current_key << " current_value: " << current_value;
         positions.pop_back();
         mdbx::slice key{current_key.c_str()};
 
@@ -525,8 +526,8 @@ void TxCall::handle_last_dup(const remote::Cursor* request, db::Cursor& cursor) 
         SILK_LOG << "Tx LAST_DUP result: " << detail::dump_mdbx_result(result);
 
         remote::Pair kv_pair;
-        if (result) {
-            kv_pair.set_k(result.key.as_string());
+        // Do not use `operator bool(result)` to avoid MDBX Assertion `!done || (bool(key) && bool(value))' failed
+        if (result.done && result.value) {
             kv_pair.set_v(result.value.as_string());
         }
 

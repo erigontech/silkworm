@@ -209,7 +209,7 @@ bool Cursor::children_are_in_trie() const {
     return subnodes_.back().tree_flag();
 }
 
-std::optional<Bytes> increment_key(ByteView unpacked) {
+std::optional<Bytes> increment_nibbled_key(ByteView unpacked) {
     Bytes out(unpacked);
 
     for (auto it = out.rbegin(); it != out.rend(); ++it) {
@@ -229,7 +229,7 @@ std::optional<Bytes> increment_key(ByteView unpacked) {
 std::optional<Bytes> Cursor::first_uncovered_prefix() const {
     std::optional<Bytes> k{key()};
     if (can_skip_state_ && k.has_value()) {
-        k = increment_key(*k);
+        k = increment_nibbled_key(*k);
     }
     if (k == std::nullopt) {
         return std::nullopt;

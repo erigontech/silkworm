@@ -94,7 +94,7 @@ class Cursor {
 //! \return The incremented value or std::nullopt if the key is the largest key of its length,
 //! i.e. consists only of 0xF nibbles.
 //! \remarks Being a prefix of nibbles trailing zeroes must be erased
-std::optional<Bytes> increment_key(ByteView unpacked);
+std::optional<Bytes> increment_nibbled_key(ByteView unpacked);
 
 }  // namespace silkworm::trie
 

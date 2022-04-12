@@ -342,15 +342,20 @@ bool TxCall::restore_cursors(std::vector<CursorPosition>& positions) {
     for (auto& [cursor_id, tx_cursor]: cursors_) {
         const std::string& bucket_name = tx_cursor.bucket_name;
         const db::MapConfig map_config{bucket_name.c_str()};
-        db::Cursor cursor{read_only_txn_, map_config};
+
+        // Bind each cursor to the renewed transaction.
+        db::Cursor& cursor = tx_cursor.cursor;
+        cursor.bind(read_only_txn_, map_config);
 
         const auto& [current_key, current_value] = *position_iterator;
         ++position_iterator;
         SILK_LOG << "Tx restore cursor " << cursor_id << " current_key: " << current_key << " current_value: " << current_value;
         mdbx::slice key{current_key.c_str()};
 
+        // Restore each cursor saved position.
         //TODO(canepat): change db::Cursor and replace with: cursor.map_flags() & MDBX_DUPSORT
         if (cursor.txn().get_handle_info(cursor.map()).flags & MDBX_DUPSORT) {
+            /* multi-value table */
             mdbx::slice value{current_value.c_str()};
             const auto lbm_result = cursor.lower_bound_multivalue(key, value, /*throw_notfound=*/false);
             SILK_LOG << "Tx restore cursor " << cursor_id << " for: " << bucket_name << " lbm_result: " << detail::dump_mdbx_result(lbm_result);
@@ -365,6 +370,7 @@ bool TxCall::restore_cursors(std::vector<CursorPosition>& positions) {
             }
             SILK_LOG << "Tx restore cursor " << cursor_id << " completed";
         } else {
+            /* single-value table */
             const auto result = (key.length() == 0) ?
                 cursor.to_first(/*throw_notfound=*/false) :
                 cursor.lower_bound(key, /*throw_notfound=*/false);
@@ -373,8 +379,6 @@ bool TxCall::restore_cursors(std::vector<CursorPosition>& positions) {
                 return false;
             }
         }
-
-        tx_cursor.cursor = std::move(cursor);
     }
 
     return true;

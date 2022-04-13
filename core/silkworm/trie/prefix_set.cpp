@@ -38,7 +38,6 @@ bool PrefixSet::contains(ByteView prefix) {
         return true;
     }
 
-    bool ret{false};
     ensure_sorted();
     const size_t max_index{nibbled_keys_.size() - 1};
 
@@ -52,27 +51,21 @@ bool PrefixSet::contains(ByteView prefix) {
     // - all nibbled keys have same length as, in trie, are all "nibblified" hashes -> 32*2 == 64bytes
     // - all prefixes inquired for have always a shorter len than keys
 
-    // Adjust "GT" index if necessary
-    bool gt_adjusted{false};
-    while (lte_index_ < max_index && nibbled_keys_[lte_index_] <= prefix) {
-        ++lte_index_;
-        gt_adjusted = true;
+    while (lte_index_ > 0 && nibbled_keys_[lte_index_] > prefix) {
+        --lte_index_;
     }
-
-    // Adjust "LTE" if necessary (normally will not be necessary)
-    if (!gt_adjusted) {
-        while (lte_index_ > 0 && nibbled_keys_[lte_index_] > prefix) {
-            --lte_index_;
+    while (true) {
+        if (has_prefix(nibbled_keys_[lte_index_], prefix)) {
+            return true;
         }
+        if (nibbled_keys_[lte_index_] > prefix) {
+            return false;
+        }
+        if (lte_index_ == max_index) {
+            return false;
+        }
+        ++lte_index_;
     }
-
-    if (lte_index_ < nibbled_keys_.size() && has_prefix(nibbled_keys_[lte_index_], prefix)) {
-        ret = true;
-    } else if (lte_index_ < max_index && has_prefix(nibbled_keys_[lte_index_ + 1], prefix)) {
-        ret = true;
-    }
-    return ret;
-
 }
 
 void PrefixSet::ensure_sorted() {

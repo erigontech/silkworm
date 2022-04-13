@@ -403,7 +403,11 @@ evmc::bytes32 InterHashes::calculate_root(db::RWTxn& txn, trie::PrefixSet& accou
     auto collector = account_collector_.get();
     hash_builder.node_collector = [collector](ByteView unpacked_key, const trie::Node& node) {
         if (!unpacked_key.empty()) {
-            collector->collect({Bytes(unpacked_key), node.encode_for_storage()});
+            etl::Entry entry{Bytes(unpacked_key), {}};
+            if (node.state_mask() != 0) {
+                entry.value = node.encode_for_storage();
+            }
+            collector->collect(std::move(entry));
         }
     };
 
@@ -470,9 +474,18 @@ evmc::bytes32 InterHashes::calculate_storage_root(db::RWTxn& txn, const Bytes& d
     auto collector = storage_collector_.get();
     hash_builder.node_collector = [collector, db_storage_prefix](ByteView unpacked_storage_key,
                                                                  const trie::Node& node) {
-        etl::Entry entry{db_storage_prefix, node.encode_for_storage()};
-        entry.key.append(unpacked_storage_key);
-        collector->collect(std::move(entry));
+        Bytes key{db_storage_prefix};
+        Bytes value{};
+        key.append(unpacked_storage_key);
+        if (node.state_mask() == 0) {
+            collector->collect({key, value});
+            return;
+        }
+        if (!unpacked_storage_key.empty() && node.hash_mask() == 0 && node.tree_mask() == 0) {
+            return;
+        }
+        value = node.encode_for_storage();
+        collector->collect({key, value});
     };
 
     trie::Cursor trie_cursor{trie_storage, storage_changes, db_storage_prefix};

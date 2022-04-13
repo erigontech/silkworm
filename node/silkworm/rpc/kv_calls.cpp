@@ -104,7 +104,7 @@ void TxCall::start() {
     try {
         SILKWORM_ASSERT(!read_only_txn_);
 
-        SILK_DEBUG << "TxCall::start MDBX info: " << chaindata_env_->get_info().mi_numreaders;
+        SILK_DEBUG << "TxCall::start MDBX readers: " << chaindata_env_->get_info().mi_numreaders;
 
         // Create a new read-only transaction.
         read_only_txn_ = chaindata_env_->start_read();

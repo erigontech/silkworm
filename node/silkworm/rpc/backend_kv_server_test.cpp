@@ -246,8 +246,7 @@ static const silkworm::db::MapConfig kTestMultiMap{"TestMultiTable", mdbx::key_m
 using namespace silkworm;
 
 struct BackEndKvE2eTest {
-    BackEndKvE2eTest(silkworm::log::Level log_verbosity, const NodeSettings& options = {}, std::vector<grpc::Status> statuses = {})
-        : node_settings(options) {
+    BackEndKvE2eTest(silkworm::log::Level log_verbosity, const NodeSettings& options = {}, std::vector<grpc::Status> statuses = {}) {
         silkworm::log::set_verbosity(log_verbosity);
         std::shared_ptr<grpc::Channel> channel = grpc::CreateChannel(kTestAddressUri, grpc::InsecureChannelCredentials());
         ethbackend_stub = remote::ETHBACKEND::NewStub(channel);
@@ -261,6 +260,7 @@ struct BackEndKvE2eTest {
         DataDirectory data_dir{tmp_dir.path()};
         REQUIRE_NOTHROW(data_dir.deploy());
         db_config = std::make_unique<db::EnvConfig>();
+        db_config->max_readers = options.chaindata_env_config.max_readers;
         db_config->path = data_dir.chaindata().path().string();
         db_config->create = true;
         db_config->inmemory = true;
@@ -269,11 +269,11 @@ struct BackEndKvE2eTest {
         db::open_map(rw_txn, kTestMap);
         rw_txn.commit();
 
-        backend = std::make_unique<EthereumBackEnd>(node_settings, &database_env);
+        backend = std::make_unique<EthereumBackEnd>(options, &database_env);
         server = std::make_unique<rpc::BackEndKvServer>(srv_config, *backend);
         server->build_and_start();
 
-        std::stringstream sentry_list_stream{node_settings.sentry_api_addr};
+        std::stringstream sentry_list_stream{options.sentry_api_addr};
         std::string sentry_address;
         std::size_t i{0};
         while (std::getline(sentry_list_stream, sentry_address, kSentryAddressDelimiter)) {
@@ -314,7 +314,6 @@ struct BackEndKvE2eTest {
     TemporaryDirectory tmp_dir;
     std::unique_ptr<db::EnvConfig> db_config;
     mdbx::env_managed database_env;
-    const NodeSettings& node_settings;
     std::unique_ptr<EthereumBackEnd> backend;
     std::unique_ptr<rpc::BackEndKvServer> server;
     std::vector<std::unique_ptr<SentryServer>> sentry_servers;
@@ -779,6 +778,42 @@ TEST_CASE("BackEndKvServer E2E: more than one Sentry all status KO", "[silkworm]
         remote::NodesInfoReply response;
         const auto status = backend_client.node_info(request, &response);
         CHECK((status == INTERNAL_ERROR || status == INVALID_ARGUMENT_ERROR));
+    }
+}
+
+TEST_CASE("BackEndKvServer E2E: exceed max simultaneous readers", "[silkworm][node][rpc]") {
+    NodeSettings node_settings;
+    BackEndKvE2eTest test{silkworm::log::Level::kNone, node_settings};
+    test.fill_tables();
+    auto kv_client = *test.kv_client;
+
+    // Start and keep open as many Tx calls as the maximum number of readers.
+    using TxStreamPtr = std::unique_ptr<grpc::ClientReaderWriterInterface<remote::Cursor, remote::Pair>>;
+    std::vector<std::unique_ptr<grpc::ClientContext>> client_contexts;
+    std::vector<TxStreamPtr> tx_streams;
+    for (uint32_t i{0}; i<test.database_env.get_info().mi_maxreaders; i++) {
+        auto& context = client_contexts.emplace_back(std::make_unique<grpc::ClientContext>());
+        auto tx_stream = kv_client.tx_start(context.get());
+        // You must read at least the first unsolicited incoming message (TxID announcement).
+        remote::Pair response;
+        CHECK(tx_stream->Read(&response));
+        CHECK(response.txid() != 0);
+        tx_streams.push_back(std::move(tx_stream));
+    }
+
+    // Now trying to start another Tx call will exceed the maximum number of readers.
+    grpc::ClientContext context;
+    const auto failing_tx_stream = kv_client.tx_start(&context);
+    auto status2 = failing_tx_stream->Finish();
+    CHECK(!status2.ok());
+    CHECK(status2.error_code() == grpc::StatusCode::RESOURCE_EXHAUSTED);
+    CHECK(status2.error_message().find("start tx failed") != std::string::npos);
+
+    // Dispose all the opened Tx calls.
+    for (const auto& tx_stream : tx_streams) {
+        CHECK(tx_stream->WritesDone());
+        auto status = tx_stream->Finish();
+        CHECK(status.ok());
     }
 }
 

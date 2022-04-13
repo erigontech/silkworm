@@ -1,5 +1,5 @@
 /*
-   Copyright 2020-2021 The Silkworm Authors
+   Copyright 2020-2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -44,7 +44,7 @@ static Bytes encode_path(ByteView nibbles, bool terminating) {
         assert(nibbles.length() % 2 == 0);
     }
 
-    for (auto it{std::next(res.begin(), 1)}; it != res.end(); std::advance(it, 1)) {
+    for (auto it{std::next(res.begin(), 1)}, end{res.end()}; it != end; ++it) {
         *it = (nibbles[0] << 4) + nibbles[1];
         nibbles.remove_prefix(2);
     }

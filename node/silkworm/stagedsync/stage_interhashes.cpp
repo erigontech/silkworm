@@ -252,7 +252,7 @@ trie::PrefixSet InterHashes::gather_forward_storage_changes(
 
         changeset_key_view.remove_prefix(kAddressLength);
 
-        // Reserve 104 bytes for kHashLength (32) + db::kIncarnationLength (8) + 2*kHashLength (unpacked nibbles)
+        // Reserve 104 bytes for kHashLength (32) + db::kIncarnationLength (8) + 2*kHashLength (nibbled hashed location)
         Bytes hashed_key(104, '\0');
         const size_t hashed_key_prefix_len{kHashLength + db::kIncarnationLength};
         std::memcpy(&hashed_key[0], hashed_addresses_it->second.bytes, kHashLength);

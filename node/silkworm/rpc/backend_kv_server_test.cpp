@@ -1186,6 +1186,60 @@ TEST_CASE("BackEndKvServer E2E: Tx cursor valid operations", "[silkworm][node][r
         CHECK(responses[6].cursorid() == 0);
     }
 
+    SECTION("Tx OK: FIRST + CURRENT operations on multi-value table", "[silkworm][node][rpc]") {
+        remote::Cursor open;
+        open.set_op(remote::Op::OPEN);
+        open.set_bucketname(kTestMultiMap.name);
+        remote::Cursor first;
+        first.set_op(remote::Op::FIRST);
+        first.set_cursor(0); // automatically assigned by KvClient::tx
+        remote::Cursor current;
+        current.set_op(remote::Op::CURRENT);
+        current.set_cursor(0); // automatically assigned by KvClient::tx
+        remote::Cursor close;
+        close.set_op(remote::Op::CLOSE);
+        close.set_cursor(0); // automatically assigned by KvClient::tx
+        std::vector<remote::Cursor> requests{open, first, current, close};
+        std::vector<remote::Pair> responses;
+        const auto status = kv_client.tx(requests, responses);
+        CHECK(status.ok());
+        CHECK(responses.size() == 5);
+        CHECK(responses[0].txid() != 0);
+        CHECK(responses[1].cursorid() != 0);
+        CHECK(responses[2].k() == "AA");
+        CHECK(responses[2].v() == "00");
+        CHECK(responses[3].k() == "AA");
+        CHECK(responses[3].v() == "00");
+        CHECK(responses[4].cursorid() == 0);
+    }
+
+    SECTION("Tx OK: LAST + CURRENT operations on multi-value table", "[silkworm][node][rpc]") {
+        remote::Cursor open;
+        open.set_op(remote::Op::OPEN);
+        open.set_bucketname(kTestMultiMap.name);
+        remote::Cursor last;
+        last.set_op(remote::Op::LAST);
+        last.set_cursor(0); // automatically assigned by KvClient::tx
+        remote::Cursor current;
+        current.set_op(remote::Op::CURRENT);
+        current.set_cursor(0); // automatically assigned by KvClient::tx
+        remote::Cursor close;
+        close.set_op(remote::Op::CLOSE);
+        close.set_cursor(0); // automatically assigned by KvClient::tx
+        std::vector<remote::Cursor> requests{open, last, current, close};
+        std::vector<remote::Pair> responses;
+        const auto status = kv_client.tx(requests, responses);
+        CHECK(status.ok());
+        CHECK(responses.size() == 5);
+        CHECK(responses[0].txid() != 0);
+        CHECK(responses[1].cursorid() != 0);
+        CHECK(responses[2].k() == "BB");
+        CHECK(responses[2].v() == "22");
+        CHECK(responses[3].k() == "BB");
+        CHECK(responses[3].v() == "22");
+        CHECK(responses[4].cursorid() == 0);
+    }
+
     SECTION("Tx OK: FIRST + FIRST_DUP operations on multi-value table", "[silkworm][node][rpc]") {
         remote::Cursor open;
         open.set_op(remote::Op::OPEN);
@@ -1376,6 +1430,27 @@ TEST_CASE("BackEndKvServer E2E: Tx cursor invalid operations", "[silkworm][node]
     BackEndKvE2eTest test{silkworm::log::Level::kNone};
     test.fill_tables();
     auto kv_client = *test.kv_client;
+
+    SECTION("Tx KO: CURRENT operation", "[silkworm][node][rpc]") {
+        remote::Cursor open;
+        open.set_op(remote::Op::OPEN);
+        open.set_bucketname(kTestMap.name);
+        remote::Cursor current;
+        current.set_op(remote::Op::CURRENT);
+        current.set_cursor(0); // automatically assigned by KvClient::tx
+        remote::Cursor close;
+        close.set_op(remote::Op::CLOSE);
+        close.set_cursor(0); // automatically assigned by KvClient::tx
+        std::vector<remote::Cursor> requests{open, current, close};
+        std::vector<remote::Pair> responses;
+        const auto status = kv_client.tx(requests, responses);
+        CHECK(!status.ok());
+        CHECK(status.error_code() == grpc::StatusCode::INTERNAL);
+        CHECK(status.error_message().find("exception: MDBX_ENODATA") != std::string::npos);
+        CHECK(responses.size() == 2);
+        CHECK(responses[0].txid() != 0);
+        CHECK(responses[1].cursorid() != 0);
+    }
 
     SECTION("Tx KO: FIRST_DUP operation on single-value table", "[silkworm][node][rpc]") {
         remote::Cursor open;

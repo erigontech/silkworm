@@ -87,6 +87,8 @@ class BackEndClient {
     remote::ETHBACKEND::StubInterface* stub_;
 };
 
+using TxStreamPtr = std::unique_ptr<grpc::ClientReaderWriterInterface<remote::Cursor, remote::Pair>>;
+
 class KvClient {
   public:
     explicit KvClient(remote::KV::StubInterface* stub) : stub_(stub) {}
@@ -781,6 +783,34 @@ TEST_CASE("BackEndKvServer E2E: more than one Sentry all status KO", "[silkworm]
     }
 }
 
+TEST_CASE("BackEndKvServer E2E: trigger server-side write error", "[silkworm][node][rpc]") {
+    {
+        const uint32_t kNumTxs{10};
+        NodeSettings node_settings;
+        BackEndKvE2eTest test{silkworm::log::Level::kNone, node_settings};
+        test.fill_tables();
+        auto kv_client = *test.kv_client;
+
+        // Start and keep open some Tx calls w/o reading responses after writing requests.
+        std::vector<TxStreamPtr> tx_streams;
+        for (uint32_t i{0}; i<kNumTxs; i++) {
+            grpc::ClientContext context;
+            auto tx_stream = kv_client.tx_start(&context);
+            remote::Pair response;
+            CHECK(tx_stream->Read(&response));
+            CHECK(response.txid() != 0);
+            remote::Cursor open;
+            open.set_op(remote::Op::OPEN);
+            open.set_bucketname(kTestMap.name);
+            CHECK(tx_stream->Write(open));
+            // Make each Tx call outlive its own context: this triggers write errors.
+            tx_streams.push_back(std::move(tx_stream));
+        }
+    }
+    // Server-side lifecyle of Tx calls must be OK.
+    CHECK(true);
+}
+
 TEST_CASE("BackEndKvServer E2E: exceed max simultaneous readers", "[silkworm][node][rpc]") {
     NodeSettings node_settings;
     BackEndKvE2eTest test{silkworm::log::Level::kNone, node_settings};
@@ -788,7 +818,6 @@ TEST_CASE("BackEndKvServer E2E: exceed max simultaneous readers", "[silkworm][no
     auto kv_client = *test.kv_client;
 
     // Start and keep open as many Tx calls as the maximum number of readers.
-    using TxStreamPtr = std::unique_ptr<grpc::ClientReaderWriterInterface<remote::Cursor, remote::Pair>>;
     std::vector<std::unique_ptr<grpc::ClientContext>> client_contexts;
     std::vector<TxStreamPtr> tx_streams;
     for (uint32_t i{0}; i<test.database_env.get_info().mi_maxreaders; i++) {

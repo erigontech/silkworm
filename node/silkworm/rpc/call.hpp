@@ -642,6 +642,13 @@ class BidirectionalStreamingRpc : public BaseRpc {
             } else {
                 // TODO(canepat) test this path
                 SILK_ERROR << "BidirectionalStreamingRpc::process_write peer " << peer() << " ok: false [" << this << "]";
+                client_streaming_done_ = true;
+                end();
+
+                // Stop the idle guard timer.
+                idle_timer_.cancel();
+
+                close();
             }
         }
         SILK_TRACE << "BidirectionalStreamingRpc::process_write END [" << this << "]";

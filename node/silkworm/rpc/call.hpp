@@ -642,7 +642,7 @@ class BidirectionalStreamingRpc : public BaseRpc {
                     }
                 }
             } else {
-                SILK_ERROR << "BidirectionalStreamingRpc::process_write peer " << peer() << " ok: false [" << this << "]";
+                SILK_DEBUG << "BidirectionalStreamingRpc::process_write peer " << peer() << " ok: false [" << this << "]";
                 client_streaming_done_ = true;
 
                 // The call has just ended so let the application layer know it.

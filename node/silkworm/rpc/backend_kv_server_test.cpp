@@ -1579,6 +1579,74 @@ TEST_CASE("BackEndKvServer E2E: Tx cursor valid operations", "[silkworm][node][r
         CHECK(responses[2].v().empty());
         CHECK(responses[3].cursorid() == 0);
     }
+
+    SECTION("Tx OK: SEEK_EXACT operation w/o key on single-value table", "[silkworm][node][rpc]") {
+        remote::Cursor open;
+        open.set_op(remote::Op::OPEN);
+        open.set_bucketname(kTestMap.name);
+        remote::Cursor seek_exact;
+        seek_exact.set_op(remote::Op::SEEK_EXACT);
+        seek_exact.set_cursor(0); // automatically assigned by KvClient::tx
+        remote::Cursor close;
+        close.set_op(remote::Op::CLOSE);
+        close.set_cursor(0); // automatically assigned by KvClient::tx
+        std::vector<remote::Cursor> requests{open, seek_exact, close};
+        std::vector<remote::Pair> responses;
+        const auto status = kv_client.tx(requests, responses);
+        CHECK(status.ok());
+        CHECK(responses.size() == 4);
+        CHECK(responses[0].txid() != 0);
+        CHECK(responses[1].cursorid() != 0);
+        CHECK(responses[2].k().empty());
+        CHECK(responses[2].v().empty());
+        CHECK(responses[3].cursorid() == 0);
+    }
+
+    SECTION("Tx OK: SEEK_EXACT operation w/ existent key on single-value table", "[silkworm][node][rpc]") {
+        remote::Cursor open;
+        open.set_op(remote::Op::OPEN);
+        open.set_bucketname(kTestMap.name);
+        remote::Cursor seek_exact;
+        seek_exact.set_op(remote::Op::SEEK_EXACT);
+        seek_exact.set_cursor(0); // automatically assigned by KvClient::tx
+        seek_exact.set_k("BB");
+        remote::Cursor close;
+        close.set_op(remote::Op::CLOSE);
+        close.set_cursor(0); // automatically assigned by KvClient::tx
+        std::vector<remote::Cursor> requests{open, seek_exact, close};
+        std::vector<remote::Pair> responses;
+        const auto status = kv_client.tx(requests, responses);
+        CHECK(status.ok());
+        CHECK(responses.size() == 4);
+        CHECK(responses[0].txid() != 0);
+        CHECK(responses[1].cursorid() != 0);
+        CHECK(responses[2].k() == "BB");
+        CHECK(responses[2].v().empty());
+        CHECK(responses[3].cursorid() == 0);
+    }
+
+    SECTION("Tx OK: SEEK_EXACT operation w/ unexistent key on single-value table", "[silkworm][node][rpc]") {
+        remote::Cursor open;
+        open.set_op(remote::Op::OPEN);
+        open.set_bucketname(kTestMap.name);
+        remote::Cursor seek_exact;
+        seek_exact.set_op(remote::Op::SEEK_EXACT);
+        seek_exact.set_cursor(0); // automatically assigned by KvClient::tx
+        seek_exact.set_k("ZZ");
+        remote::Cursor close;
+        close.set_op(remote::Op::CLOSE);
+        close.set_cursor(0); // automatically assigned by KvClient::tx
+        std::vector<remote::Cursor> requests{open, seek_exact, close};
+        std::vector<remote::Pair> responses;
+        const auto status = kv_client.tx(requests, responses);
+        CHECK(status.ok());
+        CHECK(responses.size() == 4);
+        CHECK(responses[0].txid() != 0);
+        CHECK(responses[1].cursorid() != 0);
+        CHECK(responses[2].k().empty());
+        CHECK(responses[2].v().empty());
+        CHECK(responses[3].cursorid() == 0);
+    }
 }
 
 TEST_CASE("BackEndKvServer E2E: Tx cursor invalid operations", "[silkworm][node][rpc]") {

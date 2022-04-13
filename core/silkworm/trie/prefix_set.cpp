@@ -23,46 +23,64 @@
 
 namespace silkworm::trie {
 
-void PrefixSet::insert(ByteView key) {
-    keys_.emplace_back(key);
-    sorted_ = false;
-}
+void PrefixSet::insert(ByteView key) { insert(Bytes(key)); }
 
 void PrefixSet::insert(Bytes&& key) {
-    keys_.push_back(key);
+    nibbled_keys_.push_back(std::move(key));
     sorted_ = false;
 }
 
 bool PrefixSet::contains(ByteView prefix) {
-    if (keys_.empty()) {
+    if (nibbled_keys_.empty()) {
         return false;
     }
-
-    if (!sorted_) {
-        std::sort(keys_.begin(), keys_.end());
-        keys_.erase(std::unique(keys_.begin(), keys_.end()), keys_.end());
-        sorted_ = true;
+    if (prefix.empty()) {
+        return true;
     }
 
-    // We optimize for the case when contains() inquires are made with increasing prefixes,
+    bool ret{false};
+    ensure_sorted();
+    const size_t max_index{nibbled_keys_.size() - 1};
+
+    // We optimize for the most common case when contains() inquires are made with increasing prefixes,
     // e.g. contains("00"), contains("04"), contains("0b"), contains("0b05"), contains("0c"), contains("0f"), ...
     // instead of some random order.
-    assert(index_ < keys_.size());
-    while (index_ > 0 && keys_[index_] > prefix) {
-        --index_;
+    // A note on string-viewish lexicographic comparators:
+    // 1) A comparison amongst max common prefix length is performed. _Traits::compare(_Left, _Right, (_STD
+    // min)(_Left_size, _Right_size)); 2) If the above does not return equality the shorter element is the lower
+    // Due to the above we must consider:
+    // - all nibbled keys have same length as, in trie, are all "nibblified" hashes -> 32*2 == 64bytes
+    // - all prefixes inquired for have always a shorter len than keys
+
+    // Adjust "GT" index if necessary
+    bool gt_adjusted{false};
+    while (lte_index_ < max_index && nibbled_keys_[lte_index_] <= prefix) {
+        ++lte_index_;
+        gt_adjusted = true;
     }
 
-    while (true) {
-        if (has_prefix(keys_[index_], prefix)) {
-            return true;
+    // Adjust "LTE" if necessary (normally will not be necessary)
+    if (!gt_adjusted) {
+        while (lte_index_ > 0 && nibbled_keys_[lte_index_] > prefix) {
+            --lte_index_;
         }
-        if (keys_[index_] > prefix) {
-            return false;
-        }
-        if (index_ == keys_.size() - 1) {
-            return false;
-        }
-        ++index_;
+    }
+
+    if (lte_index_ < nibbled_keys_.size() && has_prefix(nibbled_keys_[lte_index_], prefix)) {
+        ret = true;
+    } else if (lte_index_ < max_index && has_prefix(nibbled_keys_[lte_index_ + 1], prefix)) {
+        ret = true;
+    }
+    return ret;
+
+}
+
+void PrefixSet::ensure_sorted() {
+    if (!sorted_) {
+        std::sort(nibbled_keys_.begin(), nibbled_keys_.end());
+        nibbled_keys_.erase(std::unique(nibbled_keys_.begin(), nibbled_keys_.end()), nibbled_keys_.end());
+        lte_index_ = std::min(nibbled_keys_.size() - 1, lte_index_);
+        sorted_ = true;
     }
 }
 

@@ -42,9 +42,12 @@ class PrefixSet {
     bool contains(ByteView prefix);
 
   private:
-    std::vector<Bytes> keys_;
+
+    void ensure_sorted();
+
+    std::vector<Bytes> nibbled_keys_;
     bool sorted_{false};
-    size_t index_{0};
+    size_t lte_index_{0}; // Index of the "LTE (<=)" key in the keys slice. Next one is "GT (>)"
 };
 
 }  // namespace silkworm::trie

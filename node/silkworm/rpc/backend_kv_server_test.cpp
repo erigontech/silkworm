@@ -783,7 +783,8 @@ TEST_CASE("BackEndKvServer E2E: more than one Sentry all status KO", "[silkworm]
     }
 }
 
-TEST_CASE("BackEndKvServer E2E: trigger server-side write error", "[silkworm][node][rpc]") {
+// Unfortunately this test triggers some data races within gRPC library.
+/*TEST_CASE("BackEndKvServer E2E: trigger server-side write error", "[silkworm][node][rpc]") {
     {
         const uint32_t kNumTxs{10};
         NodeSettings node_settings;
@@ -808,8 +809,7 @@ TEST_CASE("BackEndKvServer E2E: trigger server-side write error", "[silkworm][no
         }
     }
     // Server-side lifecyle of Tx calls must be OK.
-    CHECK(true);
-}
+}*/
 
 TEST_CASE("BackEndKvServer E2E: exceed max simultaneous readers", "[silkworm][node][rpc]") {
     NodeSettings node_settings;

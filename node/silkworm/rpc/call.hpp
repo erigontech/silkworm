@@ -606,6 +606,8 @@ class BidirectionalStreamingRpc : public BaseRpc {
                 // Client has closed the stream, so let the application layer know it.
                 SILK_DEBUG << "BidirectionalStreamingRpc::process_read stream closed by peer " << peer() << " [" << this << "]";
                 client_streaming_done_ = true;
+
+                // The call has just ended so let the application layer know it.
                 end();
 
                 // Stop the idle guard timer.
@@ -640,9 +642,10 @@ class BidirectionalStreamingRpc : public BaseRpc {
                     }
                 }
             } else {
-                // TODO(canepat) test this path
                 SILK_ERROR << "BidirectionalStreamingRpc::process_write peer " << peer() << " ok: false [" << this << "]";
                 client_streaming_done_ = true;
+
+                // The call has just ended so let the application layer know it.
                 end();
 
                 // Stop the idle guard timer.

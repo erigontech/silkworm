@@ -783,17 +783,15 @@ TEST_CASE("BackEndKvServer E2E: more than one Sentry all status KO", "[silkworm]
     }
 }
 
-// Unfortunately this test triggers some data races within gRPC library.
-/*TEST_CASE("BackEndKvServer E2E: trigger server-side write error", "[silkworm][node][rpc]") {
+TEST_CASE("BackEndKvServer E2E: trigger server-side write error", "[silkworm][node][rpc]") {
     {
-        const uint32_t kNumTxs{10};
+        const uint32_t kNumTxs{1000};
         NodeSettings node_settings;
-        BackEndKvE2eTest test{silkworm::log::Level::kNone, node_settings};
+        BackEndKvE2eTest test{silkworm::log::Level::kError, node_settings};
         test.fill_tables();
         auto kv_client = *test.kv_client;
 
-        // Start and keep open some Tx calls w/o reading responses after writing requests.
-        std::vector<TxStreamPtr> tx_streams;
+        // Start many Tx calls w/o reading responses after writing requests.
         for (uint32_t i{0}; i<kNumTxs; i++) {
             grpc::ClientContext context;
             auto tx_stream = kv_client.tx_start(&context);
@@ -804,12 +802,10 @@ TEST_CASE("BackEndKvServer E2E: more than one Sentry all status KO", "[silkworm]
             open.set_op(remote::Op::OPEN);
             open.set_bucketname(kTestMap.name);
             CHECK(tx_stream->Write(open));
-            // Make each Tx call outlive its own context: this triggers write errors.
-            tx_streams.push_back(std::move(tx_stream));
         }
     }
     // Server-side lifecyle of Tx calls must be OK.
-}*/
+}
 
 TEST_CASE("BackEndKvServer E2E: exceed max simultaneous readers", "[silkworm][node][rpc]") {
     NodeSettings node_settings;

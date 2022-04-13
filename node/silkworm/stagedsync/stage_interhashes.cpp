@@ -401,9 +401,9 @@ evmc::bytes32 InterHashes::calculate_root(db::RWTxn& txn, trie::PrefixSet& accou
 
     trie::HashBuilder hash_builder;
     auto collector = account_collector_.get();
-    hash_builder.node_collector = [collector](ByteView unpacked_key, const trie::Node& node) {
-        if (!unpacked_key.empty()) {
-            etl::Entry entry{Bytes(unpacked_key), {}};
+    hash_builder.node_collector = [collector](ByteView nibbled_key, const trie::Node& node) {
+        if (!nibbled_key.empty()) {
+            etl::Entry entry{Bytes(nibbled_key), {}};
             if (node.state_mask() != 0) {
                 entry.value = node.encode_for_storage();
             }
@@ -442,8 +442,8 @@ evmc::bytes32 InterHashes::calculate_root(db::RWTxn& txn, trie::PrefixSet& accou
                 log_trigger_counter = 128;
             }
 
-            const Bytes unpacked_key{trie::to_nibbles(data_key_view)};
-            if (trie_cursor_key < unpacked_key) {
+            const Bytes nibbled_key{trie::to_nibbles(data_key_view)};
+            if (trie_cursor_key < nibbled_key) {
                 break;
             }
 
@@ -456,7 +456,7 @@ evmc::bytes32 InterHashes::calculate_root(db::RWTxn& txn, trie::PrefixSet& accou
                 storage_root = calculate_storage_root(txn, key_with_incarnation, storage_changes);
             }
 
-            hash_builder.add_leaf(unpacked_key, account.rlp(storage_root));
+            hash_builder.add_leaf(nibbled_key, account.rlp(storage_root));
             hashed_account_data = hashed_accounts.to_next(/*throw_notfound=*/false);
         }
     }

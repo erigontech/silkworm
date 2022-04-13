@@ -322,7 +322,7 @@ void TxCall::handle_max_ttl_timer_expired(const boost::system::error_code& ec) {
 bool TxCall::save_cursors(std::vector<CursorPosition>& positions) {
     for (const auto& [cursor_id, tx_cursor]: cursors_) {
         const auto result = tx_cursor.cursor.current(/*throw_notfound=*/false);
-        SILK_LOG << "Tx save cursor: " << cursor_id << " result: " << detail::dump_mdbx_result(result);
+        SILK_DEBUG << "Tx save cursor: " << cursor_id << " result: " << detail::dump_mdbx_result(result);
         if (!result) {
             return false;
         }
@@ -349,7 +349,7 @@ bool TxCall::restore_cursors(std::vector<CursorPosition>& positions) {
 
         const auto& [current_key, current_value] = *position_iterator;
         ++position_iterator;
-        SILK_LOG << "Tx restore cursor " << cursor_id << " current_key: " << current_key << " current_value: " << current_value;
+        SILK_DEBUG << "Tx restore cursor " << cursor_id << " current_key: " << current_key << " current_value: " << current_value;
         mdbx::slice key{current_key.c_str()};
 
         // Restore each cursor saved position.
@@ -358,23 +358,21 @@ bool TxCall::restore_cursors(std::vector<CursorPosition>& positions) {
             /* multi-value table */
             mdbx::slice value{current_value.c_str()};
             const auto lbm_result = cursor.lower_bound_multivalue(key, value, /*throw_notfound=*/false);
-            SILK_LOG << "Tx restore cursor " << cursor_id << " for: " << bucket_name << " lbm_result: " << detail::dump_mdbx_result(lbm_result);
+            SILK_DEBUG << "Tx restore cursor " << cursor_id << " for: " << bucket_name << " lbm_result: " << detail::dump_mdbx_result(lbm_result);
             // It may happen that key where we stopped disappeared after transaction reopen, then just move to next key
             if (!lbm_result) {
-                SILK_LOG << "Tx restore cursor " << cursor_id << " before to_next";
                 const auto next_result = cursor.to_next(/*throw_notfound=*/false);
-                SILK_LOG << "Tx restore cursor " << cursor_id << " for: " << bucket_name << " next_result: " << detail::dump_mdbx_result(next_result);
+                SILK_DEBUG << "Tx restore cursor " << cursor_id << " for: " << bucket_name << " next_result: " << detail::dump_mdbx_result(next_result);
                 if (!next_result) {
                     return false;
                 }
             }
-            SILK_LOG << "Tx restore cursor " << cursor_id << " completed";
         } else {
             /* single-value table */
             const auto result = (key.length() == 0) ?
                 cursor.to_first(/*throw_notfound=*/false) :
                 cursor.lower_bound(key, /*throw_notfound=*/false);
-            SILK_LOG << "Tx restore cursor " << cursor_id << " for: " << bucket_name << " result: " << detail::dump_mdbx_result(result);
+            SILK_DEBUG << "Tx restore cursor " << cursor_id << " for: " << bucket_name << " result: " << detail::dump_mdbx_result(result);
             if (!result) {
                 return false;
             }
@@ -403,7 +401,7 @@ void TxCall::handle_first_dup(db::Cursor& cursor) {
     SILK_TRACE << "TxCall::handle_first_dup " << this << " START";
 
     const auto result = cursor.to_current_first_multi(/*throw_notfound=*/false);
-    SILK_LOG << "Tx FIRST_DUP result: " << detail::dump_mdbx_result(result);
+    SILK_DEBUG << "Tx FIRST_DUP result: " << detail::dump_mdbx_result(result);
 
     remote::Pair kv_pair;
     // Do not use `operator bool(result)` to avoid MDBX Assertion `!done || (bool(key) && bool(value))' failed
@@ -515,7 +513,7 @@ void TxCall::handle_last_dup(db::Cursor& cursor) {
     SILK_TRACE << "TxCall::handle_last_dup " << this << " START";
 
     const auto result = cursor.to_current_last_multi(/*throw_notfound=*/false);
-    SILK_LOG << "Tx LAST_DUP result: " << detail::dump_mdbx_result(result);
+    SILK_DEBUG << "Tx LAST_DUP result: " << detail::dump_mdbx_result(result);
 
     remote::Pair kv_pair;
     // Do not use `operator bool(result)` to avoid MDBX Assertion `!done || (bool(key) && bool(value))' failed
@@ -546,7 +544,7 @@ void TxCall::handle_next_dup(db::Cursor& cursor) {
     SILK_TRACE << "TxCall::handle_next_dup " << this << " START";
 
     const auto result = cursor.to_current_next_multi(/*throw_notfound=*/false);
-    SILK_LOG << "Tx NEXT_DUP result: " << detail::dump_mdbx_result(result);
+    SILK_DEBUG << "Tx NEXT_DUP result: " << detail::dump_mdbx_result(result);
 
     remote::Pair kv_pair;
     if (result) {
@@ -592,7 +590,7 @@ void TxCall::handle_prev_dup(db::Cursor& cursor) {
     SILK_TRACE << "TxCall::handle_prev_dup " << this << " START";
 
     const auto result = cursor.to_current_prev_multi(/*throw_notfound=*/false);
-    SILK_LOG << "Tx PREV_DUP result: " << detail::dump_mdbx_result(result);
+    SILK_DEBUG << "Tx PREV_DUP result: " << detail::dump_mdbx_result(result);
 
     remote::Pair kv_pair;
     if (result) {

@@ -221,11 +221,11 @@ TEST_CASE("human_size") {
 }
 
 TEST_CASE("bitlen") {
-    REQUIRE(bitlen_16_lut(0) == 0);
-    REQUIRE(bitlen_16_lut(1) == 1);
-    REQUIRE(bitlen_16_lut(0b10) == 2);
-    REQUIRE(bitlen_16_lut(UINT8_MAX) == 8);
-    REQUIRE(bitlen_16_lut(1 << 8) == 9);
+    REQUIRE(bitlen_16(0) == 0);
+    REQUIRE(bitlen_16(1) == 1);
+    REQUIRE(bitlen_16(0b10) == 2);
+    REQUIRE(bitlen_16(UINT8_MAX) == 8);
+    REQUIRE(bitlen_16(1 << 8) == 9);
 }
 
 }  // namespace silkworm

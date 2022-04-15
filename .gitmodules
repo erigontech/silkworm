@@ -22,7 +22,7 @@
 	url = https://github.com/Neargye/magic_enum.git
 [submodule "libmdbx"]
 	path = third_party/libmdbx
-	url = https://github.com/erthink/libmdbx.git
+	url = https://gitflic.ru/project/erthink/libmdbx.git
 [submodule "interfaces/proto"]
 	path = interfaces/proto
 	url = https://github.com/ledgerwatch/interfaces.git

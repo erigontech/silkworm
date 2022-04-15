@@ -196,14 +196,6 @@ evmc::result EVM::call(const evmc_message& message) noexcept {
         return res;
     }
 
-    const bool precompiled{is_precompiled(message.code_address)};
-    const evmc_revision rev{revision()};
-
-    // https://eips.ethereum.org/EIPS/eip-161
-    if (value == 0 && rev >= EVMC_SPURIOUS_DRAGON && !precompiled && !state_.exists(message.code_address)) {
-        return res;
-    }
-
     const auto snapshot{state_.take_snapshot()};
 
     if (message.kind == EVMC_CALL) {
@@ -217,7 +209,7 @@ evmc::result EVM::call(const evmc_message& message) noexcept {
         }
     }
 
-    if (precompiled) {
+    if (is_precompiled(message.code_address)) {
         const uint8_t num{message.code_address.bytes[kAddressLength - 1]};
         precompiled::Contract contract{precompiled::kContracts[num - 1]};
         const ByteView input{message.input_data, message.input_size};

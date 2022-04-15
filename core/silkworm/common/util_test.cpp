@@ -112,7 +112,6 @@ TEST_CASE("Integrals to hex") {
 
     uint32_t uint64{5642869};
     CHECK(to_hex(uint64, false) == "561a75");
-
 }
 
 TEST_CASE("Padding") {
@@ -219,6 +218,14 @@ TEST_CASE("human_size") {
 
     val = kKibi;
     CHECK(human_size(val) == "1.00 KB");
+}
+
+TEST_CASE("bitlen") {
+    REQUIRE(bitlen_16_lut(0) == 0);
+    REQUIRE(bitlen_16_lut(1) == 1);
+    REQUIRE(bitlen_16_lut(0b10) == 2);
+    REQUIRE(bitlen_16_lut(UINT8_MAX) == 8);
+    REQUIRE(bitlen_16_lut(1 << 8) == 9);
 }
 
 }  // namespace silkworm

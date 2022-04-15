@@ -237,4 +237,6 @@ std::optional<Bytes> Cursor::first_uncovered_prefix() const {
     return from_nibbles(*k);
 }
 
+AccCursor::AccCursor(mdbx::cursor& db_cursor) : db_cursor_(db_cursor) {}
+
 }  // namespace silkworm::trie

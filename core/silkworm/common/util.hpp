@@ -115,6 +115,11 @@ inline unsigned int popcount_16(uint16_t value) {
 #endif
 }
 
+//! \brief returns the minimum number of bits required to represent `value`; the result is 0 for value == 0.
+unsigned int bitlen_16(uint16_t value);
+
+unsigned int bitlen_16_lut(uint16_t value);
+
 }  // namespace silkworm
 
 #endif  // SILKWORM_COMMON_UTIL_HPP_

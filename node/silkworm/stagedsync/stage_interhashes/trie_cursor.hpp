@@ -83,6 +83,24 @@ class Cursor {
     bool can_skip_state_{false};
 };
 
+class AccCursor {
+  public:
+    explicit AccCursor(mdbx::cursor& db_cursor);
+
+  private:
+
+
+
+    mdbx::cursor db_cursor_;
+
+    int level_{0};
+
+    Bytes prefix_{};  // Cursor will never return records without this prefix
+    Bytes prev_{};
+    Bytes curr_{};
+    Bytes next_{};
+};
+
 //! \brief Produces the next key of the same length.
 //! \details It's essentially +1 in the hexadecimal (base 16) numeral system.
 //! \example

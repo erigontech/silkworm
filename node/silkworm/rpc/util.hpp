@@ -20,6 +20,7 @@
 #include <memory>
 #include <string>
 
+#include <evmc/evmc.hpp>
 #include <grpcpp/grpcpp.h>
 #include <grpc/support/log.h>
 
@@ -103,10 +104,41 @@ inline evmc::address address_from_H160(const types::H160& h160) {
     uint64_t hi_lo = h160.hi().lo();
     uint32_t lo = h160.lo();
     evmc::address address{};
-    silkworm::endian::store_big_u64(address.bytes +  0, hi_hi);
-    silkworm::endian::store_big_u64(address.bytes +  8, hi_lo);
-    silkworm::endian::store_big_u32(address.bytes + 16, lo);
+    endian::store_big_u64(address.bytes +  0, hi_hi);
+    endian::store_big_u64(address.bytes +  8, hi_lo);
+    endian::store_big_u32(address.bytes + 16, lo);
     return address;
+}
+
+inline types::H128* new_H128_from_bytes(const uint8_t* bytes) {
+    types::H128* h128 = new types::H128{};
+    h128->set_hi(endian::load_big_u64(bytes));
+    h128->set_lo(endian::load_big_u64(bytes + 8));
+    return h128;
+}
+
+//! Convert evmc::address to internal RPC H160 type instance.
+inline types::H160* new_H160_from_address(const evmc::address& address) {
+    types::H160* h160 = new types::H160{};
+    types::H128* hi = new_H128_from_bytes(address.bytes);
+    h160->set_allocated_hi(hi); // takes ownership
+    h160->set_lo(endian::load_big_u32(address.bytes + 16));
+    return h160;
+}
+
+//! Convert evmc::bytes32 to internal RPC H256 type instance.
+inline types::H256* new_H256_from_hash(const evmc::bytes32& hash) {
+    types::H128* hi = new types::H128{};
+    types::H128* lo = new types::H128{};
+    hi->set_hi(endian::load_big_u64(hash.bytes + 0));
+    hi->set_lo(endian::load_big_u64(hash.bytes + 8));
+    lo->set_hi(endian::load_big_u64(hash.bytes + 16));
+    lo->set_lo(endian::load_big_u64(hash.bytes + 24));
+
+    types::H256* h256 = new types::H256{};
+    h256->set_allocated_hi(hi); // takes ownership
+    h256->set_allocated_lo(lo); // takes ownership
+    return h256;
 }
 
 } // namespace silkworm::rpc

@@ -25,13 +25,6 @@
 
 namespace silkworm::rpc {
 
-inline static types::H128* new_H128_from_bytes(const uint8_t* bytes) {
-    auto h128{new types::H128()};
-    h128->set_hi(endian::load_big_u64(bytes));
-    h128->set_lo(endian::load_big_u64(bytes + 8));
-    return h128;
-}
-
 inline static types::H160* new_H160_address(const evmc::address& address) {
     auto h160{new types::H160()};
     auto hi{new_H128_from_bytes(address.bytes)};

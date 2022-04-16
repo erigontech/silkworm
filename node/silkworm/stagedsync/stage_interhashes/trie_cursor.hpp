@@ -18,6 +18,7 @@
 #define SILKWORM_STAGEDSYNC_STAGE_INTERHASHES_CURSOR_HPP_
 
 #include <silkworm/db/mdbx.hpp>
+#include <silkworm/etl/collector.hpp>
 #include <silkworm/trie/node.hpp>
 #include <silkworm/trie/prefix_set.hpp>
 
@@ -85,20 +86,44 @@ class Cursor {
 
 class AccCursor {
   public:
-    explicit AccCursor(mdbx::cursor& db_cursor);
+    explicit AccCursor(mdbx::cursor& db_cursor, PrefixSet& changed, ByteView prefix = {},
+                       etl::Collector* collector = nullptr);
 
   private:
+    // TrieAccount(TrieStorage) node with a particular nibble selected
+    struct SubNode {
+        ByteView key{};
+        ByteView value{};
+        uint16_t has_state{};
+        uint16_t has_tree{};
+        uint16_t has_hash{};
+        int8_t child_id{0};
+        int8_t hash_id{0};
+        bool deleted{false};
+    };
 
+    mdbx::cursor& db_cursor_;  // MDBX Cursor to TrieAccounts
+    PrefixSet& changed_;
+    etl::Collector* collector_{nullptr};  // To queue deleted records
 
+    std::vector<SubNode> sub_nodes_;
+    bool skip_state_{false};
+    size_t level_{0};
 
-    mdbx::cursor db_cursor_;
-
-    int level_{0};
-
-    Bytes prefix_{};  // Cursor will never return records without this prefix
+    Bytes prefix_{};  // global prefix - cursor will never return keys without this prefix
     Bytes prev_{};
     Bytes curr_{};
     Bytes next_{};
+
+    bool has_state();
+    bool has_tree();
+    bool has_hash();
+
+    void delete_current();
+
+    //! \brief Partially parses node
+    //! \remarks We don't need to copy all
+    void unmarshal_node_light(ByteView key, ByteView value);
 };
 
 //! \brief Produces the next key of the same length.

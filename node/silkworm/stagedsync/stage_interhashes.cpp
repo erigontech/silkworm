@@ -456,7 +456,7 @@ evmc::bytes32 InterHashes::calculate_root(db::RWTxn& txn, trie::PrefixSet& accou
                 storage_root = calculate_storage_root(txn, key_with_incarnation, storage_changes);
             }
 
-            hash_builder.add_leaf(nibbled_key, account.rlp(storage_root));
+            //hash_builder.add_leaf(nibbled_key, account.rlp(storage_root));
             hashed_account_data = hashed_accounts.to_next(/*throw_notfound=*/false);
         }
     }
@@ -514,8 +514,7 @@ evmc::bytes32 InterHashes::calculate_storage_root(db::RWTxn& txn, const Bytes& d
             const ByteView value{data_value_view.substr(kHashLength)};
             rlp.clear();
             rlp::encode(rlp, value);
-            hash_builder.add_leaf(unpacked_location, rlp);
-
+            //hash_builder.add_leaf(unpacked_location, rlp);
             hashed_storage_data = hashed_storage.to_current_next_multi(/*throw_notfound=*/false);
         }
     }

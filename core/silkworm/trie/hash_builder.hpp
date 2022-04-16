@@ -35,10 +35,11 @@ using NodeCollector = std::function<void(ByteView nibbled_key, const Node&)>;
 // and https://eth.wiki/fundamentals/patricia-tree
 class HashBuilder {
   public:
+    HashBuilder() = default;
+
+    // Not copyable nor movable
     HashBuilder(const HashBuilder&) = delete;
     HashBuilder& operator=(const HashBuilder&) = delete;
-
-    HashBuilder() = default;
 
     // Entries (leaves, nodes) must be added in the strictly increasing lexicographic order (by key).
     // Consequently, duplicate keys are not allowed.

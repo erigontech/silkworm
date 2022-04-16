@@ -119,6 +119,9 @@ inline unsigned int popcount_16(uint16_t value) {
 //! \remarks In Erigon GO performs the same operation with bit shifting and a LUT
 unsigned int bitlen_16(uint16_t value);
 
+//! \brief returns the number of trailing zero bits in x; the result is 16 for x == 0.
+int trailing_zeroes_16(uint16_t value);
+
 }  // namespace silkworm
 
 #endif  // SILKWORM_COMMON_UTIL_HPP_

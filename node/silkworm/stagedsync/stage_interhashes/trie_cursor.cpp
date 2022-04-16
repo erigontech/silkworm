@@ -19,12 +19,14 @@
 #include <bitset>
 
 #include <silkworm/common/assert.hpp>
+#include <silkworm/common/endian.hpp>
 #include <silkworm/trie/nibbles.hpp>
 
 namespace silkworm::trie {
 
 Cursor::Cursor(mdbx::cursor& db_cursor, PrefixSet& changed, ByteView prefix)
     : db_cursor_{db_cursor}, changed_{changed}, prefix_{prefix} {
+    subnodes_.reserve(64);
     consume_node(/*key=*/{}, /*exact=*/true);
 }
 
@@ -123,7 +125,7 @@ void Cursor::move_to_next_sibling(bool allow_root_to_child_nibble_within_subnode
         return;
     }
 
-    sub_node.nibble++;
+    ++sub_node.nibble;
 
     if (!sub_node.node.has_value()) {
         // we can't rely on the state flag, so search in the DB
@@ -168,7 +170,9 @@ bool Cursor::SubNode::tree_flag() const {
 bool Cursor::SubNode::hash_flag() const {
     if (!node.has_value()) {
         return false;
-    } else if (nibble < 0) {
+    }
+
+    if (nibble < 0) {
         return node->root_hash().has_value();
     }
     return node->hash_mask() & (1u << nibble);
@@ -209,23 +213,6 @@ bool Cursor::children_are_in_trie() const {
     return subnodes_.back().tree_flag();
 }
 
-std::optional<Bytes> increment_nibbled_key(ByteView unpacked) {
-    Bytes out(unpacked);
-
-    for (auto it = out.rbegin(); it != out.rend(); ++it) {
-        auto& nibble{*it};
-        SILKWORM_ASSERT(nibble < 0x10);
-        if (nibble < 0xF) {
-            ++nibble;
-            return out;
-        }
-
-        // make it shorter, because in tries after 11ff goes 12, but not 1200
-        out.erase(--(it.base()));
-    }
-    return std::nullopt;
-}
-
 std::optional<Bytes> Cursor::first_uncovered_prefix() const {
     std::optional<Bytes> k{key()};
     if (can_skip_state_ && k.has_value()) {
@@ -237,6 +224,93 @@ std::optional<Bytes> Cursor::first_uncovered_prefix() const {
     return from_nibbles(*k);
 }
 
-AccCursor::AccCursor(mdbx::cursor& db_cursor) : db_cursor_(db_cursor) {}
+std::optional<Bytes> increment_nibbled_key(ByteView unpacked) {
+    Bytes out(unpacked);
+
+    for (auto it = out.rbegin(), end{out.rend()}; it != end; ++it) {
+        auto& nibble{*it};
+        assert(nibble < 0x10);
+        if (nibble < 0xF) {
+            ++nibble;
+            return out;
+        }
+
+        // make it shorter, because in tries after 11ff goes 12, but not 1200
+        out.erase(--(it.base()));
+    }
+    return std::nullopt;
+}
+
+AccCursor::AccCursor(mdbx::cursor& db_cursor, PrefixSet& changed, ByteView prefix, etl::Collector* collector)
+    : db_cursor_{db_cursor}, changed_{changed}, collector_{collector}, sub_nodes_(64, SubNode{}) {
+    prefix_.reserve(64);
+    prev_.reserve(64);
+    curr_.reserve(64);
+    next_.reserve(64);
+
+    prefix_.assign(prefix);
+}
+
+bool AccCursor::has_state() {
+    auto& sub_node{sub_nodes_[level_]};
+    return ((1 << sub_node.child_id) & sub_node.has_state) != 0;
+}
+
+bool AccCursor::has_tree() {
+    auto& sub_node{sub_nodes_[level_]};
+    return ((1 << sub_node.child_id) & sub_node.has_tree) != 0;
+}
+
+bool AccCursor::has_hash() {
+    auto& sub_node{sub_nodes_[level_]};
+    return ((1 << sub_node.child_id) & sub_node.has_hash) != 0;
+}
+
+void AccCursor::delete_current() {
+    auto& sub_node{sub_nodes_[level_]};
+    if (!sub_node.deleted) {
+        if (collector_) {
+            collector_->collect({Bytes{sub_node.key}, Bytes{}});
+        }
+        sub_node.deleted = true;
+    }
+}
+void AccCursor::unmarshal_node_light(ByteView key, ByteView value) {
+    // At least state/tree/hash masks need to be present
+    if (value.length() < 6) {
+        throw std::invalid_argument("Wrong node raw length: expected >= 6 got " + std::to_string(value.length()));
+    }
+    // Beyond the 6th byte the length must be a multiple of kHashLength
+    if ((value.length() - 6) % kHashLength != 0) {
+        throw std::invalid_argument("Wrong node raw hashes length: not a multiple of " + std::to_string(kHashLength));
+    }
+
+    size_t from{level_ + 1};
+    size_t to{key.length()};
+    if (level_ >= key.length()) {
+        from = key.length() + 1;
+        to = level_ + 2;
+    }
+    for (size_t i{from}; i < to; ++i) {
+        auto& sub_node{sub_nodes_.at(i)};
+        sub_node.key = ByteView();
+        sub_node.value = ByteView();
+        sub_node.has_state = 0;
+        sub_node.has_tree = 0;
+        sub_node.has_hash = 0;
+        sub_node.hash_id = 0;
+        sub_node.child_id = 0;
+        sub_node.deleted = false;
+    }
+
+    level_ = key.length();
+    auto& sub_node{sub_nodes_.at(level_)};
+    sub_node.deleted = false;
+    sub_node.has_state = endian::load_big_u16(&value.data()[0]);
+    sub_node.has_tree = endian::load_big_u16(&value.data()[2]);
+    sub_node.has_hash = endian::load_big_u16(&value.data()[4]);
+    sub_node.hash_id = -1;
+
+}
 
 }  // namespace silkworm::trie

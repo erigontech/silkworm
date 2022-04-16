@@ -316,5 +316,11 @@ unsigned int bitlen_16(uint16_t value) {
     return static_cast<unsigned int>(32 - __builtin_clz(value));
 #endif
 }
+int trailing_zeroes_16(uint16_t value) {
+    if (!value) {
+        return 16;
+    }
+
+}
 
 }  // namespace silkworm

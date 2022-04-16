@@ -29,7 +29,7 @@
 
 namespace silkworm::rpc {
 
-using StateChangeBatchCallback = std::function<void(const remote::StateChangeBatch&)>;
+using StateChangeBatchConsumer = std::function<void(const remote::StateChangeBatch&)>;
 
 class StateChangeCollection {
   public:
@@ -47,7 +47,7 @@ class StateChangeCollection {
 
     void change_storage(const evmc::address& address, uint64_t incarnation, const evmc::bytes32& location, const Bytes& data);
 
-    void register_consumer(StateChangeBatchCallback consumer);
+    void register_consumer(StateChangeBatchConsumer consumer);
 
     void notify_batch(uint64_t pending_base_fee, uint64_t gas_limit);
 
@@ -59,7 +59,7 @@ class StateChangeCollection {
     remote::StateChange* latest_change_{nullptr};
     std::map<evmc::address, std::size_t> account_change_index_;
     std::map<evmc::address, std::map<evmc::bytes32, std::size_t>> storage_change_index_;
-    std::vector<StateChangeBatchCallback> batch_consumers_;
+    std::vector<StateChangeBatchConsumer> batch_consumers_;
 };
 
 } // namespace silkworm::rpc

@@ -103,24 +103,33 @@ inline evmc::address address_from_H160(const types::H160& h160) {
     uint64_t hi_hi = h160.hi().hi();
     uint64_t hi_lo = h160.hi().lo();
     uint32_t lo = h160.lo();
-    evmc::address address{};
+    evmc::address address;
     endian::store_big_u64(address.bytes +  0, hi_hi);
     endian::store_big_u64(address.bytes +  8, hi_lo);
     endian::store_big_u32(address.bytes + 16, lo);
     return address;
 }
 
-inline types::H128* new_H128_from_bytes(const uint8_t* bytes) {
-    types::H128* h128 = new types::H128{};
-    h128->set_hi(endian::load_big_u64(bytes));
-    h128->set_lo(endian::load_big_u64(bytes + 8));
-    return h128;
+//! Convert internal RPC H256 type instance to evmc::bytes32.
+inline evmc::bytes32 bytes32_from_H256(const types::H256& h256) {
+    uint64_t hi_hi = h256.hi().hi();
+    uint64_t hi_lo = h256.hi().lo();
+    uint64_t lo_hi = h256.lo().hi();
+    uint64_t lo_lo = h256.lo().lo();
+    evmc::bytes32 b32;
+    endian::store_big_u64(b32.bytes + 0, hi_hi);
+    endian::store_big_u64(b32.bytes + 8, hi_lo);
+    endian::store_big_u64(b32.bytes + 16, lo_hi);
+    endian::store_big_u64(b32.bytes + 24, lo_lo);
+    return b32;
 }
 
 //! Convert evmc::address to internal RPC H160 type instance.
 inline types::H160* new_H160_from_address(const evmc::address& address) {
     types::H160* h160 = new types::H160{};
-    types::H128* hi = new_H128_from_bytes(address.bytes);
+    types::H128* hi = new types::H128{};
+    hi->set_hi(endian::load_big_u64(address.bytes));
+    hi->set_lo(endian::load_big_u64(address.bytes + 8));
     h160->set_allocated_hi(hi); // takes ownership
     h160->set_lo(endian::load_big_u32(address.bytes + 16));
     return h160;

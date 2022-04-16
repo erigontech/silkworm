@@ -22,6 +22,9 @@
 #include <evmc/evmc.hpp>
 
 #include <silkworm/common/base.hpp>
+#include <silkworm/common/test_util.hpp>
+#include <silkworm/rpc/util.hpp>
+#include <silkworm/types/transaction.hpp>
 
 namespace silkworm::rpc {
 
@@ -33,6 +36,17 @@ constexpr uint64_t kTestDatabaseViewId{55};
 
 constexpr auto kTestBlockNumber{1'000'000};
 constexpr auto kTestBlockHash{0x8e38b4dbf6b11fcc3b9dee84fb7986e29ca0a02cecd8977c161ff7333329681e_bytes32};
+
+inline std::vector<Bytes> sample_rlp_buffers() {
+    auto transactions = test::sample_transactions();
+    std::vector<Bytes> tx_rlps;
+    for (auto& tx : transactions) {
+        Bytes rlp;
+        rlp::encode(rlp, tx);
+        tx_rlps.push_back(rlp);
+    }
+    return tx_rlps;
+}
 
 TEST_CASE("StateChangeCollection::StateChangeCollection", "[silkworm][rpc][state_change_collection]") {
     StateChangeCollection scc;
@@ -103,19 +117,46 @@ TEST_CASE("StateChangeCollection::reset", "[silkworm][rpc][state_change_collecti
 TEST_CASE("StateChangeCollection::start_new_block", "[silkworm][rpc][state_change_collection]") {
     StateChangeCollection scc;
 
-    SECTION("OK: new block in FORWARD direction") {
+    SECTION("OK: one new block in FORWARD direction") {
         scc.start_new_block(kTestBlockNumber, kTestBlockHash, std::vector<silkworm::Bytes>{}, /*unwind=*/false);
         scc.register_consumer([&](const remote::StateChangeBatch& batch) {
             CHECK(batch.pendingblockbasefee() == kTestPendingBaseFee);
             CHECK(batch.blockgaslimit() == kTestGasLimit);
             CHECK(batch.databaseviewid() == 0);
             CHECK(batch.changebatch_size() == 1);
-            for (int i{0}; i < batch.changebatch_size(); i++) {
-                const remote::StateChange& state_change = batch.changebatch(i);
-                CHECK(state_change.blockheight() == kTestBlockNumber);
-                CHECK(state_change.has_blockhash());
-            }
+            const remote::StateChange& state_change = batch.changebatch(0);
+            CHECK(state_change.direction() == remote::Direction::FORWARD);
+            CHECK(state_change.blockheight() == kTestBlockNumber);
+            CHECK(bytes32_from_H256(state_change.blockhash()) == kTestBlockHash);
         });
+        scc.notify_batch(kTestPendingBaseFee, kTestGasLimit);
+    }
+
+    SECTION("OK: two new blocks in FORWARD and UNWIND directions") {
+        scc.start_new_block(kTestBlockNumber, kTestBlockHash, sample_rlp_buffers(), /*unwind=*/false);
+        scc.register_consumer([&](const remote::StateChangeBatch& batch) {
+            CHECK(batch.pendingblockbasefee() == kTestPendingBaseFee);
+            CHECK(batch.blockgaslimit() == kTestGasLimit);
+            CHECK(batch.changebatch_size() == 1);
+            const remote::StateChange& state_change = batch.changebatch(0);
+            CHECK(state_change.blockheight() == kTestBlockNumber);
+            CHECK(bytes32_from_H256(state_change.blockhash()) == kTestBlockHash);
+            CHECK(state_change.txs_size() == 2);
+            static int notifications{0};
+            if (notifications == 0) {
+                CHECK(batch.databaseviewid() == 0);
+                CHECK(state_change.direction() == remote::Direction::FORWARD);
+            } else if (notifications == 1) {
+                CHECK(batch.databaseviewid() == kTestDatabaseViewId);
+                CHECK(state_change.direction() == remote::Direction::UNWIND);
+            } else {
+                CHECK(false); // too many notifications
+            }
+            notifications++;
+        });
+        scc.notify_batch(kTestPendingBaseFee, kTestGasLimit);
+        scc.reset(kTestDatabaseViewId);
+        scc.start_new_block(kTestBlockNumber, kTestBlockHash, sample_rlp_buffers(), /*unwind=*/true);
         scc.notify_batch(kTestPendingBaseFee, kTestGasLimit);
     }
 }

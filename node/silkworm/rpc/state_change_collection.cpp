@@ -166,7 +166,7 @@ void StateChangeCollection::change_storage(const evmc::address& address, uint64_
     storage_change->set_data(to_hex(data));
 }
 
-void StateChangeCollection::register_consumer(StateChangeBatchCallback consumer) {
+void StateChangeCollection::register_consumer(StateChangeBatchConsumer consumer) {
     batch_consumers_.push_back(consumer);
 }
 

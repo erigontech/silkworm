@@ -37,6 +37,11 @@ constexpr uint64_t kTestDatabaseViewId{55};
 constexpr auto kTestBlockNumber{1'000'000};
 constexpr auto kTestBlockHash{0x8e38b4dbf6b11fcc3b9dee84fb7986e29ca0a02cecd8977c161ff7333329681e_bytes32};
 
+constexpr auto kTestAddress{0x0a6bb546b9208cfab9e8fa2b9b2c042b18df7030_address};
+constexpr uint64_t kTestIncarnation{3};
+const Bytes kTestData1{*from_hex("600035600055")};
+const Bytes kTestData2{*from_hex("6000356000550055")};
+
 inline std::vector<Bytes> sample_rlp_buffers() {
     auto transactions = test::sample_transactions();
     std::vector<Bytes> tx_rlps;
@@ -157,6 +162,68 @@ TEST_CASE("StateChangeCollection::start_new_block", "[silkworm][rpc][state_chang
         scc.notify_batch(kTestPendingBaseFee, kTestGasLimit);
         scc.reset(kTestDatabaseViewId);
         scc.start_new_block(kTestBlockNumber, kTestBlockHash, sample_rlp_buffers(), /*unwind=*/true);
+        scc.notify_batch(kTestPendingBaseFee, kTestGasLimit);
+    }
+}
+
+TEST_CASE("StateChangeCollection::change_account", "[silkworm][rpc][state_change_collection]") {
+    StateChangeCollection scc;
+
+    SECTION("OK: change one account once") {
+        scc.register_consumer([&](const remote::StateChangeBatch& batch) {
+            CHECK(batch.pendingblockbasefee() == kTestPendingBaseFee);
+            CHECK(batch.blockgaslimit() == kTestGasLimit);
+            CHECK(batch.changebatch_size() == 1);
+            const remote::StateChange& state_change = batch.changebatch(0);
+            CHECK(state_change.blockheight() == kTestBlockNumber);
+            CHECK(bytes32_from_H256(state_change.blockhash()) == kTestBlockHash);
+            CHECK(state_change.txs_size() == 2);
+            CHECK(batch.databaseviewid() == 0);
+            CHECK(state_change.direction() == remote::Direction::FORWARD);
+            CHECK(state_change.changes_size() == 1);
+            const remote::AccountChange& account_change = state_change.changes(0);
+            CHECK(account_change.storagechanges_size() == 0);
+            CHECK(account_change.data() == to_hex(kTestData1));
+            CHECK(account_change.code().empty());
+            CHECK(address_from_H160(account_change.address()) == kTestAddress);
+            CHECK(account_change.incarnation() == kTestIncarnation);
+            CHECK(account_change.action() == remote::Action::UPSERT);
+        });
+        scc.start_new_block(kTestBlockNumber, kTestBlockHash, sample_rlp_buffers(), /*unwind=*/false);
+        scc.change_account(kTestAddress, kTestIncarnation, kTestData1);
+        scc.notify_batch(kTestPendingBaseFee, kTestGasLimit);
+    }
+
+    SECTION("OK: change one account twice") {
+        scc.register_consumer([&](const remote::StateChangeBatch& batch) {
+            CHECK(batch.pendingblockbasefee() == kTestPendingBaseFee);
+            CHECK(batch.blockgaslimit() == kTestGasLimit);
+            CHECK(batch.changebatch_size() == 1);
+            const remote::StateChange& state_change = batch.changebatch(0);
+            CHECK(state_change.blockheight() == kTestBlockNumber);
+            CHECK(bytes32_from_H256(state_change.blockhash()) == kTestBlockHash);
+            CHECK(state_change.txs_size() == 2);
+            CHECK(batch.databaseviewid() == 0);
+            CHECK(state_change.direction() == remote::Direction::FORWARD);
+            CHECK(state_change.changes_size() == 2);
+            const remote::AccountChange& account_change0 = state_change.changes(0);
+            CHECK(account_change0.storagechanges_size() == 0);
+            CHECK(account_change0.data() == to_hex(kTestData1));
+            CHECK(account_change0.code().empty());
+            CHECK(address_from_H160(account_change0.address()) == kTestAddress);
+            CHECK(account_change0.incarnation() == kTestIncarnation);
+            CHECK(account_change0.action() == remote::Action::UPSERT);
+            const remote::AccountChange& account_change1 = state_change.changes(1);
+            CHECK(account_change1.storagechanges_size() == 0);
+            CHECK(account_change1.data() == to_hex(kTestData2));
+            CHECK(account_change1.code().empty());
+            CHECK(address_from_H160(account_change1.address()) == kTestAddress);
+            CHECK(account_change1.incarnation() == kTestIncarnation + 1);
+            CHECK(account_change1.action() == remote::Action::UPSERT);
+        });
+        scc.start_new_block(kTestBlockNumber, kTestBlockHash, sample_rlp_buffers(), /*unwind=*/false);
+        scc.change_account(kTestAddress, kTestIncarnation, kTestData1);
+        scc.change_account(kTestAddress, kTestIncarnation + 1, kTestData2);
         scc.notify_batch(kTestPendingBaseFee, kTestGasLimit);
     }
 }

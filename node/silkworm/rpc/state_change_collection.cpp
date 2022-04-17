@@ -163,7 +163,7 @@ void StateChangeCollection::delete_account(const evmc::address& address) {
     }
 
     remote::AccountChange* account_change = latest_change_->mutable_changes(index.value());
-    //SILKWORM_ASSERT(account_change->action() == remote::Action::STORAGE);
+    SILKWORM_ASSERT(account_change->action() == remote::Action::STORAGE); // TODO(canepat) check Erigon
     account_change->set_action(remote::Action::REMOVE);
     account_change->clear_code();
     account_change->clear_data();

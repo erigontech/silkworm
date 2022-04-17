@@ -49,7 +49,6 @@ static const Bytes kTestCode2{*from_hex("602a5f556101c960015560048060135f395ff35
 
 static const auto kTestHashedLocation1{0x6677907ab33937e392b9be983b30818f29d594039c9e1e7490bf7b3698888fb1_bytes32};
 static const auto kTestHashedLocation2{0xe046602dcccb1a2f1d176718c8e709a42bba57af2da2379ba7130e2f916c95cd_bytes32};
-static const auto kTestHashedLocation3{0x557a78fdd8ab1091755e7e8bbd349de04f0be94d473b7ae1306628a7f3616c82_bytes32};
 
 static const Bytes kTestValue1{*from_hex("0xABCD")};
 static const Bytes kTestValue2{*from_hex("0x4321")};
@@ -367,6 +366,34 @@ TEST_CASE("StateChangeCollection::change_storage", "[silkworm][rpc][state_change
         scc.start_new_block(kTestBlockNumber, kTestBlockHash, sample_rlp_buffers(), /*unwind=*/false);
         scc.change_storage(kTestAddress, kTestIncarnation, kTestHashedLocation1, kTestData1);
         scc.change_storage(kTestAddress, kTestIncarnation + 1, kTestHashedLocation2, kTestData2);
+        scc.notify_batch(kTestPendingBaseFee, kTestGasLimit);
+    }
+}
+
+TEST_CASE("StateChangeCollection::delete_account", "[silkworm][rpc][state_change_collection]") {
+    StateChangeCollection scc;
+
+    SECTION("OK: delete one account once in forward direction") {
+        scc.register_consumer([&](const remote::StateChangeBatch& batch) {
+            CHECK(batch.pendingblockbasefee() == kTestPendingBaseFee);
+            CHECK(batch.blockgaslimit() == kTestGasLimit);
+            CHECK(batch.databaseviewid() == 0);
+            CHECK(batch.changebatch_size() == 1);
+            const remote::StateChange& state_change = batch.changebatch(0);
+            CHECK(state_change.direction() == remote::Direction::FORWARD);
+            CHECK(state_change.blockheight() == kTestBlockNumber);
+            CHECK(bytes32_from_H256(state_change.blockhash()) == kTestBlockHash);
+            CHECK(state_change.changes_size() == 1);
+            const remote::AccountChange& account_change = state_change.changes(0);
+            CHECK(account_change.data().empty());
+            CHECK(account_change.code().empty());
+            CHECK(address_from_H160(account_change.address()) == kTestAddress);
+            CHECK(account_change.incarnation() == 0);
+            CHECK(account_change.action() == remote::Action::REMOVE);
+            CHECK(account_change.storagechanges_size() == 0);
+        });
+        scc.start_new_block(kTestBlockNumber, kTestBlockHash, sample_rlp_buffers(), /*unwind=*/false);
+        scc.delete_account(kTestAddress);
         scc.notify_batch(kTestPendingBaseFee, kTestGasLimit);
     }
 }

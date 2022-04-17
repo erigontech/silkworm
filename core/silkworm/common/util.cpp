@@ -308,19 +308,4 @@ std::vector<std::string> split(std::string_view source, std::string_view delimit
     return res;
 }
 
-unsigned int bitlen_16(uint16_t value) {
-#ifdef _MSC_VER
-    static unsigned long ret{0};
-    return static_cast<unsigned int>(_BitScanReverse(&ret, static_cast<uint32_t>(value)) ? ret + 1 : 0);
-#else
-    return static_cast<unsigned int>(32 - __builtin_clz(value));
-#endif
-}
-int trailing_zeroes_16(uint16_t value) {
-    if (!value) {
-        return 16;
-    }
-
-}
-
 }  // namespace silkworm

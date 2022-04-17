@@ -107,21 +107,6 @@ inline ethash::hash256 keccak256(ByteView view) { return ethash::keccak256(view.
 // Splits a string by delimiter and returns a vector of tokens
 std::vector<std::string> split(std::string_view source, std::string_view delimiter);
 
-inline unsigned int popcount_16(uint16_t value) {
-#ifdef _MSC_VER
-    return __popcnt16(value);
-#else
-    return static_cast<unsigned int>(__builtin_popcount(value));
-#endif
-}
-
-//! \brief returns the minimum number of bits required to represent `value`; the result is 0 for value == 0.
-//! \remarks In Erigon GO performs the same operation with bit shifting and a LUT
-unsigned int bitlen_16(uint16_t value);
-
-//! \brief returns the number of trailing zero bits in x; the result is 16 for x == 0.
-int trailing_zeroes_16(uint16_t value);
-
 }  // namespace silkworm
 
 #endif  // SILKWORM_COMMON_UTIL_HPP_

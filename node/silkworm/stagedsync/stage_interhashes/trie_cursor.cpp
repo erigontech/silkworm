@@ -19,6 +19,7 @@
 #include <bitset>
 
 #include <silkworm/common/assert.hpp>
+#include <silkworm/common/bits.hpp>
 #include <silkworm/common/endian.hpp>
 #include <silkworm/trie/nibbles.hpp>
 
@@ -310,7 +311,7 @@ void AccCursor::unmarshal_node_light(ByteView key, ByteView value) {
     sub_node.has_tree = endian::load_big_u16(&value.data()[2]);
     sub_node.has_hash = endian::load_big_u16(&value.data()[4]);
     sub_node.hash_id = -1;
-
+    sub_node.child_id = static_cast<int8_t>(ctz_16(sub_node.has_state) - 1);
 }
 
 }  // namespace silkworm::trie

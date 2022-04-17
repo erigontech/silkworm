@@ -16,8 +16,8 @@
 
 #include "node.hpp"
 
+#include <silkworm/common/bits.hpp>
 #include <silkworm/common/endian.hpp>
-#include <silkworm/common/util.hpp>
 
 namespace silkworm::trie {
 
@@ -88,6 +88,5 @@ bool operator==(const Node& a, const Node& b) {
     return a.state_mask() == b.state_mask() && a.tree_mask() == b.tree_mask() && a.hash_mask() == b.hash_mask() &&
            a.hashes() == b.hashes() && a.root_hash() == b.root_hash();
 }
-
 
 }  // namespace silkworm::trie

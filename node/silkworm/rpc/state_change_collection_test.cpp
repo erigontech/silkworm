@@ -23,6 +23,7 @@
 
 #include <silkworm/common/base.hpp>
 #include <silkworm/common/test_util.hpp>
+#include <silkworm/common/util.hpp>
 #include <silkworm/rpc/util.hpp>
 #include <silkworm/types/transaction.hpp>
 
@@ -30,17 +31,29 @@ namespace silkworm::rpc {
 
 using namespace evmc::literals;
 
-constexpr uint64_t kTestPendingBaseFee{10'000};
-constexpr uint64_t kTestGasLimit{10'000'000};
-constexpr uint64_t kTestDatabaseViewId{55};
+static constexpr uint64_t kTestPendingBaseFee{10'000};
+static constexpr uint64_t kTestGasLimit{10'000'000};
+static constexpr uint64_t kTestDatabaseViewId{55};
 
-constexpr auto kTestBlockNumber{1'000'000};
-constexpr auto kTestBlockHash{0x8e38b4dbf6b11fcc3b9dee84fb7986e29ca0a02cecd8977c161ff7333329681e_bytes32};
+static constexpr auto kTestBlockNumber{1'000'000};
+static constexpr auto kTestBlockHash{0x8e38b4dbf6b11fcc3b9dee84fb7986e29ca0a02cecd8977c161ff7333329681e_bytes32};
 
-constexpr auto kTestAddress{0x0a6bb546b9208cfab9e8fa2b9b2c042b18df7030_address};
-constexpr uint64_t kTestIncarnation{3};
-const Bytes kTestData1{*from_hex("600035600055")};
-const Bytes kTestData2{*from_hex("6000356000550055")};
+static constexpr auto kTestAddress{0x0a6bb546b9208cfab9e8fa2b9b2c042b18df7030_address};
+static constexpr uint64_t kTestIncarnation{3};
+
+static const Bytes kTestData1{*from_hex("600035600055")};
+static const Bytes kTestData2{*from_hex("6000356000550055")};
+
+static const Bytes kTestCode1{*from_hex("602a6000556101c960015560068060166000396000f3600035600055")};
+static const Bytes kTestCode2{*from_hex("602a5f556101c960015560048060135f395ff35f355f55")};
+
+static const auto kTestHashedLocation1{0x6677907ab33937e392b9be983b30818f29d594039c9e1e7490bf7b3698888fb1_bytes32};
+static const auto kTestHashedLocation2{0xe046602dcccb1a2f1d176718c8e709a42bba57af2da2379ba7130e2f916c95cd_bytes32};
+static const auto kTestHashedLocation3{0x557a78fdd8ab1091755e7e8bbd349de04f0be94d473b7ae1306628a7f3616c82_bytes32};
+
+static const Bytes kTestValue1{*from_hex("0xABCD")};
+static const Bytes kTestValue2{*from_hex("0x4321")};
+static const Bytes kTestValue3{*from_hex("0x4444")};
 
 inline std::vector<Bytes> sample_rlp_buffers() {
     auto transactions = test::sample_transactions();
@@ -224,6 +237,136 @@ TEST_CASE("StateChangeCollection::change_account", "[silkworm][rpc][state_change
         scc.start_new_block(kTestBlockNumber, kTestBlockHash, sample_rlp_buffers(), /*unwind=*/false);
         scc.change_account(kTestAddress, kTestIncarnation, kTestData1);
         scc.change_account(kTestAddress, kTestIncarnation + 1, kTestData2);
+        scc.notify_batch(kTestPendingBaseFee, kTestGasLimit);
+    }
+}
+
+TEST_CASE("StateChangeCollection::change_code", "[silkworm][rpc][state_change_collection]") {
+    StateChangeCollection scc;
+
+    SECTION("OK: change code of one account once") {
+        scc.register_consumer([&](const remote::StateChangeBatch& batch) {
+            CHECK(batch.pendingblockbasefee() == kTestPendingBaseFee);
+            CHECK(batch.blockgaslimit() == kTestGasLimit);
+            CHECK(batch.changebatch_size() == 1);
+            const remote::StateChange& state_change = batch.changebatch(0);
+            CHECK(state_change.blockheight() == kTestBlockNumber);
+            CHECK(bytes32_from_H256(state_change.blockhash()) == kTestBlockHash);
+            CHECK(state_change.txs_size() == 2);
+            CHECK(batch.databaseviewid() == 0);
+            CHECK(state_change.direction() == remote::Direction::FORWARD);
+            CHECK(state_change.changes_size() == 1);
+            const remote::AccountChange& account_change = state_change.changes(0);
+            CHECK(account_change.storagechanges_size() == 0);
+            CHECK(account_change.data().empty());
+            CHECK(account_change.code() == to_hex(kTestCode1));
+            CHECK(address_from_H160(account_change.address()) == kTestAddress);
+            CHECK(account_change.incarnation() == kTestIncarnation);
+            CHECK(account_change.action() == remote::Action::CODE);
+        });
+        scc.start_new_block(kTestBlockNumber, kTestBlockHash, sample_rlp_buffers(), /*unwind=*/false);
+        scc.change_code(kTestAddress, kTestIncarnation, kTestCode1);
+        scc.notify_batch(kTestPendingBaseFee, kTestGasLimit);
+    }
+
+    SECTION("OK: change code of one account twice") {
+        scc.register_consumer([&](const remote::StateChangeBatch& batch) {
+            CHECK(batch.pendingblockbasefee() == kTestPendingBaseFee);
+            CHECK(batch.blockgaslimit() == kTestGasLimit);
+            CHECK(batch.changebatch_size() == 1);
+            const remote::StateChange& state_change = batch.changebatch(0);
+            CHECK(state_change.blockheight() == kTestBlockNumber);
+            CHECK(bytes32_from_H256(state_change.blockhash()) == kTestBlockHash);
+            CHECK(state_change.txs_size() == 2);
+            CHECK(batch.databaseviewid() == 0);
+            CHECK(state_change.direction() == remote::Direction::FORWARD);
+            CHECK(state_change.changes_size() == 2);
+            const remote::AccountChange& account_change0 = state_change.changes(0);
+            CHECK(account_change0.storagechanges_size() == 0);
+            CHECK(account_change0.data().empty());
+            CHECK(account_change0.code() == to_hex(kTestCode1));
+            CHECK(address_from_H160(account_change0.address()) == kTestAddress);
+            CHECK(account_change0.incarnation() == kTestIncarnation);
+            CHECK(account_change0.action() == remote::Action::CODE);
+            const remote::AccountChange& account_change1 = state_change.changes(1);
+            CHECK(account_change1.storagechanges_size() == 0);
+            CHECK(account_change1.data().empty());
+            CHECK(account_change1.code() == to_hex(kTestCode2));
+            CHECK(address_from_H160(account_change1.address()) == kTestAddress);
+            CHECK(account_change1.incarnation() == kTestIncarnation + 1);
+            CHECK(account_change1.action() == remote::Action::CODE);
+        });
+        scc.start_new_block(kTestBlockNumber, kTestBlockHash, sample_rlp_buffers(), /*unwind=*/false);
+        scc.change_code(kTestAddress, kTestIncarnation, kTestCode1);
+        scc.change_code(kTestAddress, kTestIncarnation + 1, kTestCode2);
+        scc.notify_batch(kTestPendingBaseFee, kTestGasLimit);
+    }
+}
+
+TEST_CASE("StateChangeCollection::change_storage", "[silkworm][rpc][state_change_collection]") {
+    StateChangeCollection scc;
+
+    SECTION("OK: change storage of one account once") {
+        scc.register_consumer([&](const remote::StateChangeBatch& batch) {
+            CHECK(batch.pendingblockbasefee() == kTestPendingBaseFee);
+            CHECK(batch.blockgaslimit() == kTestGasLimit);
+            CHECK(batch.changebatch_size() == 1);
+            const remote::StateChange& state_change = batch.changebatch(0);
+            CHECK(state_change.blockheight() == kTestBlockNumber);
+            CHECK(bytes32_from_H256(state_change.blockhash()) == kTestBlockHash);
+            CHECK(state_change.txs_size() == 2);
+            CHECK(batch.databaseviewid() == 0);
+            CHECK(state_change.direction() == remote::Direction::FORWARD);
+            CHECK(state_change.changes_size() == 1);
+            const remote::AccountChange& account_change = state_change.changes(0);
+            CHECK(account_change.data().empty());
+            CHECK(account_change.code().empty());
+            CHECK(address_from_H160(account_change.address()) == kTestAddress);
+            CHECK(account_change.incarnation() == kTestIncarnation);
+            CHECK(account_change.action() == remote::Action::STORAGE);
+            CHECK(account_change.storagechanges_size() == 1);
+            const remote::StorageChange& storage_change = account_change.storagechanges(0);
+            CHECK(bytes32_from_H256(storage_change.location()) == kTestHashedLocation1);
+        });
+        scc.start_new_block(kTestBlockNumber, kTestBlockHash, sample_rlp_buffers(), /*unwind=*/false);
+        scc.change_storage(kTestAddress, kTestIncarnation, kTestHashedLocation1, kTestData1);
+        scc.notify_batch(kTestPendingBaseFee, kTestGasLimit);
+    }
+
+    SECTION("OK: change storage of one account twice") {
+        scc.register_consumer([&](const remote::StateChangeBatch& batch) {
+            CHECK(batch.pendingblockbasefee() == kTestPendingBaseFee);
+            CHECK(batch.blockgaslimit() == kTestGasLimit);
+            CHECK(batch.changebatch_size() == 1);
+            const remote::StateChange& state_change = batch.changebatch(0);
+            CHECK(state_change.blockheight() == kTestBlockNumber);
+            CHECK(bytes32_from_H256(state_change.blockhash()) == kTestBlockHash);
+            CHECK(state_change.txs_size() == 2);
+            CHECK(batch.databaseviewid() == 0);
+            CHECK(state_change.direction() == remote::Direction::FORWARD);
+            CHECK(state_change.changes_size() == 2);
+            const remote::AccountChange& account_change0 = state_change.changes(0);
+            CHECK(account_change0.data().empty());
+            CHECK(account_change0.code().empty());
+            CHECK(address_from_H160(account_change0.address()) == kTestAddress);
+            CHECK(account_change0.incarnation() == kTestIncarnation);
+            CHECK(account_change0.action() == remote::Action::STORAGE);
+            CHECK(account_change0.storagechanges_size() == 1);
+            const remote::StorageChange& storage_change00 = account_change0.storagechanges(0);
+            CHECK(bytes32_from_H256(storage_change00.location()) == kTestHashedLocation1);
+            const remote::AccountChange& account_change1 = state_change.changes(1);
+            CHECK(account_change1.data().empty());
+            CHECK(account_change1.code().empty());
+            CHECK(address_from_H160(account_change1.address()) == kTestAddress);
+            CHECK(account_change1.incarnation() == kTestIncarnation + 1);
+            CHECK(account_change1.action() == remote::Action::STORAGE);
+            CHECK(account_change1.storagechanges_size() == 1);
+            const remote::StorageChange& storage_change10 = account_change1.storagechanges(0);
+            CHECK(bytes32_from_H256(storage_change10.location()) == kTestHashedLocation2);
+        });
+        scc.start_new_block(kTestBlockNumber, kTestBlockHash, sample_rlp_buffers(), /*unwind=*/false);
+        scc.change_storage(kTestAddress, kTestIncarnation, kTestHashedLocation1, kTestData1);
+        scc.change_storage(kTestAddress, kTestIncarnation + 1, kTestHashedLocation2, kTestData2);
         scc.notify_batch(kTestPendingBaseFee, kTestGasLimit);
     }
 }

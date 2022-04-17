@@ -35,23 +35,23 @@ class StateChangeCollection {
   public:
     explicit StateChangeCollection() = default;
 
+    uint64_t tx_id() const { return tx_id_; }
+
+    void register_consumer(StateChangeBatchConsumer consumer);
+
     void reset(uint64_t tx_id);
 
     void start_new_block(BlockNum block_height, const evmc::bytes32& block_hash, const std::vector<Bytes>&& tx_rlps, bool unwind);
 
     void change_account(const evmc::address& address, uint64_t incarnation, const Bytes& data);
 
-    void delete_account(const evmc::address& address);
-
     void change_code(const evmc::address& address, uint64_t incarnation, const Bytes& code);
 
     void change_storage(const evmc::address& address, uint64_t incarnation, const evmc::bytes32& location, const Bytes& data);
 
-    void register_consumer(StateChangeBatchConsumer consumer);
+    void delete_account(const evmc::address& address);
 
     void notify_batch(uint64_t pending_base_fee, uint64_t gas_limit);
-
-    uint64_t tx_id() const { return tx_id_; }
 
   private:
     uint64_t tx_id_{0};

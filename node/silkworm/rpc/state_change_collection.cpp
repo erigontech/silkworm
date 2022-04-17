@@ -23,6 +23,10 @@
 
 namespace silkworm::rpc {
 
+void StateChangeCollection::register_consumer(StateChangeBatchConsumer consumer) {
+    batch_consumers_.push_back(consumer);
+}
+
 void StateChangeCollection::reset(uint64_t tx_id) {
     tx_id_ = tx_id;
     state_changes_.clear_changebatch();
@@ -72,26 +76,6 @@ void StateChangeCollection::change_account(const evmc::address& address, uint64_
     }
     account_change->set_incarnation(incarnation);
     account_change->set_data(to_hex(data));
-}
-
-void StateChangeCollection::delete_account(const evmc::address& address) {
-    SILKWORM_ASSERT(latest_change_ != nullptr);
-
-    const auto& ac_it = account_change_index_.find(address);
-    auto index{ac_it != account_change_index_.end() ? std::make_optional(ac_it->second) : std::nullopt};
-
-    if (!index.has_value()) {
-        index = latest_change_->changes_size();
-        latest_change_->add_changes()->set_allocated_address(new_H160_from_address(address)); // takes ownership
-        account_change_index_[address] = index.value();
-    }
-
-    remote::AccountChange* account_change = latest_change_->mutable_changes(index.value());
-    //SILKWORM_ASSERT(account_change->action() == remote::Action::STORAGE);
-    account_change->set_action(remote::Action::REMOVE);
-    account_change->clear_code();
-    account_change->clear_data();
-    account_change->clear_storagechanges();
 }
 
 void StateChangeCollection::change_code(const evmc::address& address, uint64_t incarnation, const Bytes& code) {
@@ -166,8 +150,24 @@ void StateChangeCollection::change_storage(const evmc::address& address, uint64_
     storage_change->set_data(to_hex(data));
 }
 
-void StateChangeCollection::register_consumer(StateChangeBatchConsumer consumer) {
-    batch_consumers_.push_back(consumer);
+void StateChangeCollection::delete_account(const evmc::address& address) {
+    SILKWORM_ASSERT(latest_change_ != nullptr);
+
+    const auto& ac_it = account_change_index_.find(address);
+    auto index{ac_it != account_change_index_.end() ? std::make_optional(ac_it->second) : std::nullopt};
+
+    if (!index.has_value()) {
+        index = latest_change_->changes_size();
+        latest_change_->add_changes()->set_allocated_address(new_H160_from_address(address)); // takes ownership
+        account_change_index_[address] = index.value();
+    }
+
+    remote::AccountChange* account_change = latest_change_->mutable_changes(index.value());
+    //SILKWORM_ASSERT(account_change->action() == remote::Action::STORAGE);
+    account_change->set_action(remote::Action::REMOVE);
+    account_change->clear_code();
+    account_change->clear_data();
+    account_change->clear_storagechanges();
 }
 
 void StateChangeCollection::notify_batch(uint64_t pending_base_fee, uint64_t gas_limit) {

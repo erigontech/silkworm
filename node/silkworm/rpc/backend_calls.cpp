@@ -20,6 +20,7 @@
 
 #include <silkworm/common/endian.hpp>
 #include <silkworm/common/log.hpp>
+#include <silkworm/rpc/conversion.hpp>
 #include <silkworm/rpc/util.hpp>
 #include <types/types.pb.h>
 

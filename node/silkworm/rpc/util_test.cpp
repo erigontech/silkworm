@@ -16,8 +16,6 @@
 
 #include "util.hpp"
 
-#include <memory>
-
 #include <catch2/catch.hpp>
 
 #include <silkworm/common/base.hpp>
@@ -35,8 +33,6 @@ std::ostream& null_stream() {
     } null_strm;
     return null_strm;
 }
-
-using namespace evmc::literals;
 
 TEST_CASE("print grpc::Status", "[silkworm][rpc][util]") {
     CHECK_NOTHROW(null_stream() << grpc::Status::OK);
@@ -87,21 +83,6 @@ TEST_CASE("gpr_silkworm_log", "[silkworm][rpc][util]") {
     SECTION("GPR_LOG_SEVERITY_DEBUG") {
         gpr_set_log_verbosity(GPR_LOG_SEVERITY_DEBUG);
         CHECK_NOTHROW(gpr_log(FILE_NAME, LINE_NUMBER, GPR_LOG_SEVERITY_DEBUG, "debug message"));
-    }
-}
-
-TEST_CASE("address_from_H160", "[silkworm][rpc][util]") {
-    SECTION("empty H160", "[silkworm][rpc][util]") {
-        CHECK_NOTHROW(address_from_H160(types::H160{}) == evmc::address{});
-    }
-
-    SECTION("non-empty H160", "[silkworm][rpc][util]") {
-        auto h128_ptr = new types::H128();
-        h128_ptr->set_hi(0x7F);
-        auto h160_ptr = std::make_unique<types::H160>();
-        h160_ptr->set_lo(0xFF);
-        h160_ptr->set_allocated_hi(h128_ptr);
-        CHECK(address_from_H160(*h160_ptr) == 0x000000000000007F0000000000000000000000FF_address);
     }
 }
 

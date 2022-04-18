@@ -19,6 +19,7 @@
 #include <silkworm/common/assert.hpp>
 #include <silkworm/common/base.hpp>
 #include <silkworm/common/log.hpp>
+#include <silkworm/rpc/conversion.hpp>
 #include <silkworm/rpc/util.hpp>
 
 namespace silkworm::rpc {
@@ -40,7 +41,7 @@ void StateChangeCollection::start_new_block(BlockNum block_height, const evmc::b
 
     latest_change_ = state_changes_.add_changebatch();
     latest_change_->set_blockheight(block_height);
-    latest_change_->set_allocated_blockhash(new_H256_from_hash(block_hash));
+    latest_change_->set_allocated_blockhash(new_H256_from_bytes32(block_hash));
     latest_change_->set_direction(unwind ? remote::Direction::UNWIND : remote::Direction::FORWARD);
     for (auto& tx_rlp : tx_rlps) {
         latest_change_->add_txs(to_hex(tx_rlp));
@@ -146,7 +147,7 @@ void StateChangeCollection::change_storage(const evmc::address& address, uint64_
     }
 
     remote::StorageChange* storage_change = account_change->mutable_storagechanges(loc_index.value());
-    storage_change->set_allocated_location(new_H256_from_hash(location)); // takes ownership
+    storage_change->set_allocated_location(new_H256_from_bytes32(location)); // takes ownership
     storage_change->set_data(to_hex(data));
 }
 

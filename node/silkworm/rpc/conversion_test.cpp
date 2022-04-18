@@ -50,7 +50,7 @@ TEST_CASE("string_from_H512", "[silkworm][rpc][util]") {
         hi->set_allocated_lo(hi_lo);
         lo->set_allocated_hi(lo_hi);
         lo->set_allocated_lo(lo_lo);
-        auto h512 = new types::H512{};
+        auto h512 = std::make_unique<types::H512>();
         h512->set_allocated_hi(hi);
         h512->set_allocated_lo(lo);
         const std::string& s = string_from_H512(*h512);

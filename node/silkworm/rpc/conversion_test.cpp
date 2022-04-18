@@ -32,10 +32,10 @@ TEST_CASE("string_from_H512", "[silkworm][rpc][util]") {
     }
 
     SECTION("non-empty H512", "[silkworm][rpc][util]") {
-        auto hi_hi = new types::H128();
-        auto hi_lo = new types::H128();
-        auto lo_hi = new types::H128();
-        auto lo_lo = new types::H128();
+        types::H128* hi_hi = new types::H128();
+        types::H128* hi_lo = new types::H128();
+        types::H128* lo_hi = new types::H128();
+        types::H128* lo_lo = new types::H128();
         hi_hi->set_hi(0x7F);
         hi_hi->set_lo(0x07);
         hi_lo->set_hi(0x6F);
@@ -44,16 +44,16 @@ TEST_CASE("string_from_H512", "[silkworm][rpc][util]") {
         lo_hi->set_lo(0x02);
         lo_lo->set_hi(0x1F);
         lo_lo->set_lo(0x01);
-        auto hi = new types::H256{};
-        auto lo = new types::H256{};
+        types::H256* hi = new types::H256{};
+        types::H256* lo = new types::H256{};
         hi->set_allocated_hi(hi_hi);
         hi->set_allocated_lo(hi_lo);
         lo->set_allocated_hi(lo_hi);
         lo->set_allocated_lo(lo_lo);
-        auto h512 = std::make_unique<types::H512>();
-        h512->set_allocated_hi(hi);
-        h512->set_allocated_lo(lo);
-        const std::string& s = string_from_H512(*h512);
+        auto h512_ptr = std::make_unique<types::H512>();
+        h512_ptr->set_allocated_hi(hi);
+        h512_ptr->set_allocated_lo(lo);
+        const std::string& s = string_from_H512(*h512_ptr);
         CHECK(s.size() == 64);
     }
 }
@@ -64,21 +64,22 @@ TEST_CASE("address_from_H160", "[silkworm][rpc][util]") {
     }
 
     SECTION("non-empty H160", "[silkworm][rpc][util]") {
-        auto h128_ptr = new types::H128();
-        h128_ptr->set_hi(0x7F);
+        types::H128* hi = new types::H128();
+        hi->set_lo(0x07);
+        hi->set_hi(0x7F);
         auto h160_ptr = std::make_unique<types::H160>();
         h160_ptr->set_lo(0xFF);
-        h160_ptr->set_allocated_hi(h128_ptr);
-        CHECK(address_from_H160(*h160_ptr) == 0x000000000000007F0000000000000000000000FF_address);
+        h160_ptr->set_allocated_hi(hi);
+        CHECK(address_from_H160(*h160_ptr) == 0x000000000000007f0000000000000007000000ff_address);
     }
 }
 
 TEST_CASE("invertibility", "[silkworm][rpc][util]") {
     SECTION("H512<->string", "[silkworm][rpc][util]") {
-        auto hi_hi = new types::H128();
-        auto hi_lo = new types::H128();
-        auto lo_hi = new types::H128();
-        auto lo_lo = new types::H128();
+        types::H128* hi_hi = new types::H128();
+        types::H128* hi_lo = new types::H128();
+        types::H128* lo_hi = new types::H128();
+        types::H128* lo_lo = new types::H128();
         hi_hi->set_hi(0x7F);
         hi_hi->set_lo(0x07);
         hi_lo->set_hi(0x6F);
@@ -87,8 +88,8 @@ TEST_CASE("invertibility", "[silkworm][rpc][util]") {
         lo_hi->set_lo(0x02);
         lo_lo->set_hi(0x1F);
         lo_lo->set_lo(0x01);
-        auto hi = new types::H256{};
-        auto lo = new types::H256{};
+        types::H256* hi = new types::H256{};
+        types::H256* lo = new types::H256{};
         hi->set_allocated_hi(hi_hi);
         hi->set_allocated_lo(hi_lo);
         lo->set_allocated_hi(lo_hi);
@@ -96,8 +97,10 @@ TEST_CASE("invertibility", "[silkworm][rpc][util]") {
         auto h512_ptr1 = std::make_unique<types::H512>();
         h512_ptr1->set_allocated_hi(hi);
         h512_ptr1->set_allocated_lo(lo);
+
         const std::string& s1 = string_from_H512(*h512_ptr1);
         auto h512_ptr2 = std::unique_ptr<types::H512>{new_H512_from_string(s1)};
+
         CHECK(h512_ptr2->lo().lo().lo() == 0x01);
         CHECK(h512_ptr2->lo().lo().hi() == 0x1F);
         CHECK(h512_ptr2->lo().hi().lo() == 0x02);
@@ -110,19 +113,42 @@ TEST_CASE("invertibility", "[silkworm][rpc][util]") {
         CHECK(s1 == s2);
     }
 
+    SECTION("H256<->bytes32", "[silkworm][rpc][util]") {
+        types::H128* hi = new types::H128();
+        types::H128* lo = new types::H128();
+        hi->set_hi(0x7F);
+        hi->set_lo(0x07);
+        lo->set_hi(0x6F);
+        lo->set_lo(0x06);
+        auto h256_ptr1 = std::make_unique<types::H256>();
+        h256_ptr1->set_allocated_hi(hi);
+        h256_ptr1->set_allocated_lo(lo);
+
+        const auto& hash1 = bytes32_from_H256(*h256_ptr1);
+        auto h256_ptr2 = std::unique_ptr<types::H256>{new_H256_from_bytes32(hash1)};
+
+        CHECK(h256_ptr2->lo().lo() == 0x06);
+        CHECK(h256_ptr2->lo().hi() == 0x6F);
+        CHECK(h256_ptr2->hi().lo() == 0x07);
+        CHECK(h256_ptr2->hi().hi() == 0x7F);
+        const auto& hash2 = bytes32_from_H256(*h256_ptr2);
+        CHECK(hash1 == hash2);
+    }
+
     SECTION("H160<->address", "[silkworm][rpc][util]") {
-        auto h128_ptr1 = new types::H128();
-        h128_ptr1->set_hi(0x7F);
+        types::H128* hi = new types::H128();
+        hi->set_hi(0x7F);
         auto h160_ptr1 = std::make_unique<types::H160>();
         h160_ptr1->set_lo(0xFF);
-        h160_ptr1->set_allocated_hi(h128_ptr1);
-        const auto address1 = address_from_H160(*h160_ptr1);
+        h160_ptr1->set_allocated_hi(hi);
+
+        const auto& address1 = address_from_H160(*h160_ptr1);
         auto h160_ptr2 = std::unique_ptr<types::H160>{new_H160_from_address(address1)};
-        auto h128_ptr2 = h160_ptr2->hi();
+
         CHECK(h160_ptr2->lo() == 0xFF);
-        CHECK(h128_ptr1->lo() == 0x00);
-        CHECK(h128_ptr1->hi() == 0x7F);
-        const auto address2 = address_from_H160(*h160_ptr2);
+        CHECK(h160_ptr2->hi().lo() == 0x00);
+        CHECK(h160_ptr2->hi().hi() == 0x7F);
+        const auto& address2 = address_from_H160(*h160_ptr2);
         CHECK(address1 == address2);
     }
 }

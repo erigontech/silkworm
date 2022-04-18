@@ -102,18 +102,6 @@ types::H512* new_H512_from_string(const std::string& orig) {
     return dest;
 }
 
-types::H160* new_H160_from_address(const evmc::address& orig) {
-    types::H128* hi = new types::H128{};
-    hi->set_hi(endian::load_big_u64(orig.bytes));
-    hi->set_lo(endian::load_big_u64(orig.bytes + 8));
-
-    types::H160* dest = new types::H160{};
-    dest->set_allocated_hi(hi); // takes ownership
-    dest->set_lo(endian::load_big_u32(orig.bytes + 16));
-
-    return dest;
-}
-
 types::H256* new_H256_from_bytes32(const evmc::bytes32& orig) {
     types::H128* hi = new types::H128{};
     types::H128* lo = new types::H128{};
@@ -125,6 +113,18 @@ types::H256* new_H256_from_bytes32(const evmc::bytes32& orig) {
     types::H256* dest = new types::H256{};
     dest->set_allocated_hi(hi); // takes ownership
     dest->set_allocated_lo(lo); // takes ownership
+
+    return dest;
+}
+
+types::H160* new_H160_from_address(const evmc::address& orig) {
+    types::H128* hi = new types::H128{};
+    hi->set_hi(endian::load_big_u64(orig.bytes));
+    hi->set_lo(endian::load_big_u64(orig.bytes + 8));
+
+    types::H160* dest = new types::H160{};
+    dest->set_allocated_hi(hi); // takes ownership
+    dest->set_lo(endian::load_big_u32(orig.bytes + 16));
 
     return dest;
 }

@@ -50,11 +50,11 @@ evmc::address address_from_H160(const types::H160& orig);
 //! Convert evmc::address to internal RPC H160 type instance.
 types::H512* new_H512_from_string(const std::string& orig);
 
-//! Convert evmc::address to internal RPC H160 type instance.
-types::H160* new_H160_from_address(const evmc::address& orig);
-
 //! Convert evmc::bytes32 to internal RPC H256 type instance.
 types::H256* new_H256_from_bytes32(const evmc::bytes32& orig);
+
+//! Convert evmc::address to internal RPC H160 type instance.
+types::H160* new_H160_from_address(const evmc::address& orig);
 
 } // namespace silkworm::rpc
 

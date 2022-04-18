@@ -16,6 +16,27 @@
 
 #include "conversion.hpp"
 
+// operator== overloading is *NOT* present in gRPC generated sources
+namespace types {
+
+bool operator==(const H512& lhs, const H512& rhs) {
+    return lhs.hi() == rhs.hi() && lhs.lo() == rhs.lo();
+}
+
+bool operator==(const H256& lhs, const H256& rhs) {
+    return lhs.hi() == rhs.hi() && lhs.lo() == rhs.lo();
+}
+
+bool operator==(const H160& lhs, const H160& rhs) {
+    return lhs.hi() == rhs.hi() && lhs.lo() == rhs.lo();
+}
+
+bool operator==(const H128& lhs, const H128& rhs) {
+    return lhs.hi() == rhs.hi() && lhs.lo() == rhs.lo();
+}
+
+} // namespace types
+
 namespace silkworm::rpc {
 
 std::string string_from_H512(const types::H512& orig) {

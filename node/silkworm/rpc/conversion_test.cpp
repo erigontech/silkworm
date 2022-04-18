@@ -22,6 +22,27 @@
 
 #include <silkworm/common/util.hpp>
 
+// operator== overloading is *NOT* present in gRPC generated sources
+namespace types {
+
+TEST_CASE("H512::operator==", "[silkworm][rpc][util]") {
+    CHECK(types::H512{} == types::H512{});
+}
+
+TEST_CASE("H256::operator==", "[silkworm][rpc][util]") {
+    CHECK(types::H256{} == types::H256{});
+}
+
+TEST_CASE("H160::operator==", "[silkworm][rpc][util]") {
+    CHECK(types::H160{} == types::H160{});
+}
+
+TEST_CASE("H128::operator==", "[silkworm][rpc][util]") {
+    CHECK(types::H128{} == types::H128{});
+}
+
+} // namespace types
+
 namespace silkworm::rpc {
 
 using namespace evmc::literals;
@@ -55,6 +76,25 @@ TEST_CASE("string_from_H512", "[silkworm][rpc][util]") {
         h512_ptr->set_allocated_lo(lo);
         const std::string& s = string_from_H512(*h512_ptr);
         CHECK(s.size() == 64);
+    }
+}
+
+TEST_CASE("bytes32_from_H256", "[silkworm][rpc][util]") {
+    SECTION("empty H256", "[silkworm][rpc][util]") {
+        CHECK_NOTHROW(bytes32_from_H256(types::H256{}) == evmc::bytes32{});
+    }
+
+    SECTION("non-empty H256", "[silkworm][rpc][util]") {
+        types::H128* hi = new types::H128();
+        types::H128* lo = new types::H128();
+        hi->set_hi(0x7F);
+        hi->set_lo(0x07);
+        lo->set_hi(0x6F);
+        lo->set_lo(0x06);
+        auto h256_ptr = std::make_unique<types::H256>();
+        h256_ptr->set_allocated_hi(hi);
+        h256_ptr->set_allocated_lo(lo);
+        CHECK(bytes32_from_H256(*h256_ptr) == 0x000000000000007f0000000000000007000000000000006f0000000000000006_bytes32);
     }
 }
 

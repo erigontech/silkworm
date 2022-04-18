@@ -28,11 +28,10 @@
 // operator== overloading is *NOT* present in gRPC generated sources
 namespace types {
 
-inline bool operator==(const H160& lhs, const H160& rhs) {
-    return lhs.hi().hi() == rhs.hi().hi() &&
-        lhs.hi().lo() == rhs.hi().lo() &&
-        lhs.lo() == rhs.lo();
-}
+bool operator==(const H512& lhs, const H512& rhs);
+bool operator==(const H256& lhs, const H256& rhs);
+bool operator==(const H160& lhs, const H160& rhs);
+bool operator==(const H128& lhs, const H128& rhs);
 
 } // namespace types
 

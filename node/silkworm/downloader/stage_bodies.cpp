@@ -111,8 +111,8 @@ Stage::Result BodiesStage::forward([[maybe_unused]] bool first_sync) {
 
     Stage::Result result;
 
-    auto constexpr short_interval = 1000ms;
-    auto constexpr progress_update_interval = 30s;
+    auto constexpr KShortInterval = 1000ms;
+    auto constexpr kProgressUpdateInterval = 30s;
 
     StopWatch timing; timing.start();
     log::Info() << "[2/16 Bodies] Start";
@@ -139,7 +139,7 @@ Stage::Result BodiesStage::forward([[maybe_unused]] bool first_sync) {
                 // renew request
                 withdraw_command = withdraw_ready_bodies();
             }
-            else if (withdraw_command->result().wait_for(short_interval) == std::future_status::ready) {
+            else if (withdraw_command->result().wait_for(KShortInterval) == std::future_status::ready) {
                 // read response
                 auto bodies = withdraw_command->result().get();
                 // persist bodies
@@ -155,7 +155,7 @@ Stage::Result BodiesStage::forward([[maybe_unused]] bool first_sync) {
             }
 
             // show progress
-            if (system_clock::now() - last_update > progress_update_interval) {
+            if (system_clock::now() - last_update > kProgressUpdateInterval) {
                 last_update = system_clock::now();
 
                 height_progress.set(body_persistence.highest_height());

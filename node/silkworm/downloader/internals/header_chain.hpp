@@ -19,6 +19,7 @@
 
 #include <cstdio>
 
+#include <silkworm/chain/identity.hpp>
 #include <silkworm/common/lru_cache.hpp>
 #include <silkworm/consensus/engine.hpp>
 #include <silkworm/downloader/packets/get_block_headers_packet.hpp>
@@ -56,9 +57,7 @@ namespace silkworm {
  */
 class HeaderChain {
   public:
-    using ConsensusEngine = std::unique_ptr<consensus::IEngine>;
-
-    explicit HeaderChain(ConsensusEngine);
+    explicit HeaderChain(const ChainIdentity&);
 
     // load initial state from db - this must be done at creation time
     void recover_initial_state(Db::ReadOnlyAccess::Tx&);
@@ -144,6 +143,8 @@ class HeaderChain {
     void extend_up(std::shared_ptr<Link>, Segment::Slice);
     auto new_anchor(Segment::Slice, PeerId) -> RequestMoreHeaders;
 
+    using ConsensusEnginePtr = std::unique_ptr<consensus::IEngine>;
+
     OldestFirstAnchorQueue anchor_queue_;        // Priority queue of anchors used to sequence the header requests
     LinkMap links_;                              // Links by header hash
     AnchorMap anchors_;                          // Mapping from parentHash to collection of anchors
@@ -156,7 +157,7 @@ class HeaderChain {
     using Ignore = int;
     lru_cache<Hash, Ignore> seen_announces_;
     std::vector<Announce> announces_to_do_;
-    ConsensusEngine consensus_engine_;
+    ConsensusEnginePtr consensus_engine_;
     CustomHeaderOnlyChainState chain_state_;
     time_point_t last_skeleton_request;
 

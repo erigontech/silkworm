@@ -14,22 +14,25 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+#include "block_downloader.hpp"
+
 #include <chrono>
 #include <thread>
 
 #include <silkworm/common/log.hpp>
-
 #include <silkworm/consensus/engine.hpp>
 #include <silkworm/downloader/internals/preverified_hashes.hpp>
-#include <silkworm/downloader/messages/outbound_get_block_headers.hpp>
 #include <silkworm/downloader/messages/inbound_message.hpp>
-
-#include "block_downloader.hpp"
+#include <silkworm/downloader/messages/outbound_get_block_headers.hpp>
 
 namespace silkworm {
 
 BlockDownloader::BlockDownloader(SentryClient& sentry, const Db::ReadOnlyAccess& dba, const ChainIdentity& ci)
-    : db_access_{dba}, sentry_{sentry}, header_chain_(consensus::engine_factory(ci.chain)), body_sequence_() {
+    : db_access_{dba},
+      sentry_{sentry},
+      chain_identity_{ci},
+      header_chain_{ci},
+      body_sequence_{dba, ci} {
     auto tx = db_access_.start_ro_tx();
     header_chain_.recover_initial_state(tx);
     header_chain_.set_preverified_hashes(PreverifiedHashes::load(ci.chain.chain_id));
@@ -38,6 +41,10 @@ BlockDownloader::BlockDownloader(SentryClient& sentry, const Db::ReadOnlyAccess&
 BlockDownloader::~BlockDownloader() {
     stop();
     log::Error() << "BlockDownloader destroyed";
+}
+
+const ChainIdentity& BlockDownloader::chain_identity() {
+    return chain_identity_;
 }
 
 void BlockDownloader::accept(std::shared_ptr<Message> message) { messages_.push(message); }

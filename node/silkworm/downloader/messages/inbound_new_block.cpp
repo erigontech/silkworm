@@ -39,11 +39,11 @@ InboundNewBlock::InboundNewBlock(const sentry::InboundMessage& msg) {
     SILK_TRACE << "Received message " << *this;
 }
 
-void InboundNewBlock::execute(Db::ReadOnlyAccess, HeaderChain&, BodySequence&, SentryClient&) {
-    // todo: Erigon header-downloader apparently processes this message even if it is not in a fetching phase - do we
-    // need the same?
+void InboundNewBlock::execute(Db::ReadOnlyAccess, HeaderChain& hc, BodySequence& bs, SentryClient&) {
+    SILK_TRACE << "Processing message " << *this;
 
-    // todo: implement in the block-downloader
+    hc.accept_header(packet_.block); // process as single header segment
+    bs.accept_body(packet_.block); // add to prefetched bodies
 }
 
 uint64_t InboundNewBlock::reqId() const { return reqId_; }

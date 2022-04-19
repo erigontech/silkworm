@@ -27,7 +27,7 @@ namespace silkworm {
 // Useful definitions
 // ----------------------------------------------------------------------------
 
-class WorkingChain_ForTest : public HeaderChain {
+class HeaderChain_ForTest : public HeaderChain {
   public:  // publication of internal members to test methods functioning
     using HeaderChain::anchor_queue_;
     using HeaderChain::anchors_;
@@ -38,7 +38,7 @@ class WorkingChain_ForTest : public HeaderChain {
     using HeaderChain::reduce_links_to;
     using HeaderChain::HeaderChain;
 
-    WorkingChain_ForTest() : HeaderChain(consensus::engine_factory(ChainIdentity::mainnet.chain)) {}
+    HeaderChain_ForTest() : HeaderChain(consensus::engine_factory(ChainIdentity::mainnet.chain)) {}
 };
 
 // TESTs related to HeaderList::split_into_segments
@@ -332,13 +332,13 @@ TEST_CASE("HeaderList - split_into_segments - Four headers connected") {
     REQUIRE(segments[0][0] != segments[1][0]);
 }
 
-// TESTs related to WorkingChain::accept_headers (segment manipulation: connect, extend_down, extend_up, new_anchor)
+// TESTs related to HeaderChain::accept_headers (segment manipulation: connect, extend_down, extend_up, new_anchor)
 // -----------------------------------------------------------------------------------------------------------------
 
-TEST_CASE("WorkingChain - process_segment - (1) simple chain") {
+TEST_CASE("HeaderChain - process_segment - (1) simple chain") {
     using namespace std;
 
-    WorkingChain_ForTest chain;
+    HeaderChain_ForTest chain;
     chain.top_seen_block_height(1'000'000);
     auto request_id = chain.generate_request_id();
     PeerId peer_id = "1";
@@ -548,7 +548,7 @@ TEST_CASE("WorkingChain - process_segment - (1) simple chain") {
     }
 }
 
-// TESTs related to WorkingChain in some tricky cases
+// TESTs related to HeaderChain in some tricky cases
 // --------------------------------------------------
 
 /* chain:
@@ -560,10 +560,10 @@ TEST_CASE("WorkingChain - process_segment - (1) simple chain") {
  *         2nd iteration: receive {h1} -> extend_down(h2/h2b) => one anchor(h1) with a link to h1 with 2 links
  *                                                                                                (h2 and h2b)
  */
-TEST_CASE("WorkingChain - process_segment - (2) extending down with 2 siblings") {
+TEST_CASE("HeaderChain - process_segment - (2) extending down with 2 siblings") {
     using namespace std;
 
-    WorkingChain_ForTest chain;
+    HeaderChain_ForTest chain;
     chain.top_seen_block_height(1'000'000);
     auto request_id = chain.generate_request_id();
     PeerId peer_id = "1";
@@ -606,7 +606,7 @@ TEST_CASE("WorkingChain - process_segment - (2) extending down with 2 siblings")
     REQUIRE(anchor->links[0]->has_child(h2b.hash()));
 }
 
-// TESTs related to WorkingChain::accept_headers (segment manipulation with branches)
+// TESTs related to HeaderChain::accept_headers (segment manipulation with branches)
 // ---------------------------------------------------------------------------------
 
 /* chain:
@@ -616,10 +616,10 @@ TEST_CASE("WorkingChain - process_segment - (2) extending down with 2 siblings")
  *                                                       |-- h6b<----- h7b
  *
  */
-TEST_CASE("WorkingChain - process_segment - (3) chain with branches") {
+TEST_CASE("HeaderChain - process_segment - (3) chain with branches") {
     using namespace std;
 
-    WorkingChain_ForTest chain;
+    HeaderChain_ForTest chain;
     chain.top_seen_block_height(1'000'000);
     auto request_id = chain.generate_request_id();
     PeerId peer_id = "1";
@@ -819,7 +819,7 @@ TEST_CASE("WorkingChain - process_segment - (3) chain with branches") {
     }
 }
 
-// TESTs related to WorkingChain::accept_headers (pre-verified hashes)
+// TESTs related to HeaderChain::accept_headers (pre-verified hashes)
 // -------------------------------------------------------------------
 
 /* chain:
@@ -829,10 +829,10 @@ TEST_CASE("WorkingChain - process_segment - (3) chain with branches") {
  *                                                       |-- h6b<----- h7b
  *
  */
-TEST_CASE("WorkingChain - process_segment - (4) pre-verified hashes on canonical chain") {
+TEST_CASE("HeaderChain - process_segment - (4) pre-verified hashes on canonical chain") {
     using namespace std;
 
-    WorkingChain_ForTest chain;
+    HeaderChain_ForTest chain;
     chain.top_seen_block_height(1'000'000);
     auto request_id = chain.generate_request_id();
     PeerId peer_id = "1";
@@ -917,10 +917,10 @@ TEST_CASE("WorkingChain - process_segment - (4) pre-verified hashes on canonical
  *       h1 <----- h2 <----- h3 <----- h4 <----- h5 <----- h6 (pre-verified)
  *
  */
-TEST_CASE("WorkingChain - process_segment - (5) pre-verified hashes") {
+TEST_CASE("HeaderChain - process_segment - (5) pre-verified hashes") {
     using namespace std;
 
-    WorkingChain_ForTest chain;
+    HeaderChain_ForTest chain;
     chain.top_seen_block_height(1'000'000);
     auto request_id = chain.generate_request_id();
     PeerId peer_id = "1";
@@ -992,10 +992,10 @@ TEST_CASE("WorkingChain - process_segment - (5) pre-verified hashes") {
  *
  *
  */
-TEST_CASE("WorkingChain - process_segment - (5') pre-verified hashes with canonical chain change") {
+TEST_CASE("HeaderChain - process_segment - (5') pre-verified hashes with canonical chain change") {
     using namespace std;
 
-    WorkingChain_ForTest chain;
+    HeaderChain_ForTest chain;
     chain.top_seen_block_height(1'000'000);
     auto request_id = chain.generate_request_id();
     PeerId peer_id = "1";
@@ -1049,10 +1049,10 @@ TEST_CASE("WorkingChain - process_segment - (5') pre-verified hashes with canoni
 // Corner cases
 // -----------------------------------------------------------------------------------------------------------------
 
-TEST_CASE("WorkingChain - process_segment - (6) (malicious) siblings") {
+TEST_CASE("HeaderChain - process_segment - (6) (malicious) siblings") {
     using namespace std;
 
-    WorkingChain_ForTest chain;
+    HeaderChain_ForTest chain;
     chain.top_seen_block_height(1'000'000);
     auto request_id = chain.generate_request_id();
     PeerId peer_id = "1";
@@ -1184,10 +1184,10 @@ TEST_CASE("WorkingChain - process_segment - (6) (malicious) siblings") {
     }
 }
 
-TEST_CASE("WorkingChain - process_segment - (7) invalidating anchor") {
+TEST_CASE("HeaderChain - process_segment - (7) invalidating anchor") {
     using namespace std;
 
-    WorkingChain_ForTest chain;
+    HeaderChain_ForTest chain;
     chain.top_seen_block_height(1'000'000);
     auto request_id = chain.generate_request_id();
     PeerId peer_id = "1";
@@ -1273,10 +1273,10 @@ TEST_CASE("WorkingChain - process_segment - (7) invalidating anchor") {
     }
 }
 
-TEST_CASE("WorkingChain - process_segment - (8) sibling with anchor invalidation and links reduction") {
+TEST_CASE("HeaderChain - process_segment - (8) sibling with anchor invalidation and links reduction") {
     using namespace std;
 
-    WorkingChain_ForTest chain;
+    HeaderChain_ForTest chain;
     chain.top_seen_block_height(1'000'000);
     auto request_id = chain.generate_request_id();
     PeerId peer_id = "1";

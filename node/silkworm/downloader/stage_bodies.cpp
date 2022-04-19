@@ -122,11 +122,16 @@ Stage::Result BodiesStage::forward([[maybe_unused]] bool first_sync) {
         Db::ReadWriteAccess::Tx tx = db_access_.start_tx();  // start a new tx only if db_access has not an active tx
         auto headers_stage_height = tx.read_stage_progress(db::stages::kBlockBodiesKey);
 
-        BodyPersistence body_persistence(tx);
+        BodyPersistence body_persistence(tx, block_downloader_.chain_identity());
 
         RepeatedMeasure<BlockNum> height_progress(body_persistence.initial_height());
         log::Info() << "[2/16 Headers] Waiting for bodies... from=" << height_progress.get();
 
+        // sync status
+        auto sync_command = sync_body_sequence(body_persistence.initial_height());
+        sync_command->result().get();  // blocking
+
+        // prepare bodies, if any
         auto withdraw_command = withdraw_ready_bodies();
 
         // block processing
@@ -160,8 +165,8 @@ Stage::Result BodiesStage::forward([[maybe_unused]] bool first_sync) {
 
                 height_progress.set(body_persistence.highest_height());
 
-                log::Info() << "[1/16 Headers] Wrote block headers number=" << height_progress.get() << " (+"
-                            << height_progress.delta() << "), " << height_progress.throughput() << " headers/secs";
+                log::Info() << "[2/16 Bodies] Wrote block bodies number=" << height_progress.get() << " (+"
+                            << height_progress.delta() << "), " << height_progress.throughput() << " bodies/secs";
             }
         }
 
@@ -199,10 +204,19 @@ void BodiesStage::send_body_requests() {
     // todo: implement
 }
 
-auto BodiesStage::withdraw_ready_bodies() -> std::shared_ptr<InternalMessage<std::vector<BlockBody>>> {
+auto BodiesStage::sync_body_sequence(BlockNum highest_in_db) -> std::shared_ptr<InternalMessage<void>> {
+    auto message = std::make_shared<InternalMessage<void>>(
+        [highest_in_db](HeaderChain&, BodySequence& bs) { bs.sync_current_state(highest_in_db); });
+
+    block_downloader_.accept(message);
+
+    return message;
+}
+
+auto BodiesStage::withdraw_ready_bodies() -> std::shared_ptr<InternalMessage<std::vector<Block>>> {
     // todo: implement
 
-    return std::shared_ptr<InternalMessage<std::vector<BlockBody>>>();
+    return std::shared_ptr<InternalMessage<std::vector<Block>>>();
 }
 
 }  // namespace silkworm

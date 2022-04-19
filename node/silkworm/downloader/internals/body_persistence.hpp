@@ -17,6 +17,10 @@ limitations under the License.
 #ifndef SILKWORM_BODY_PERSISTENCE_H
 #define SILKWORM_BODY_PERSISTENCE_H
 
+#include <silkworm/chain/identity.hpp>
+#include <silkworm/db/buffer.hpp>
+#include <silkworm/consensus/engine.hpp>
+
 #include "db_tx.hpp"
 #include "types.hpp"
 
@@ -24,10 +28,10 @@ namespace silkworm {
 
 class BodyPersistence {
   public:
-    BodyPersistence(Db::ReadWriteAccess::Tx&);
+    BodyPersistence(Db::ReadWriteAccess::Tx&, const ChainIdentity&);
 
-    void persist(const BlockBody&);
-    void persist(const std::vector<BlockBody>&);
+    void persist(const Block&);
+    void persist(const std::vector<Block>&);
     void close();
 
     bool unwind_needed() const;
@@ -35,8 +39,21 @@ class BodyPersistence {
     BlockNum unwind_point() const;
     BlockNum initial_height() const;
     BlockNum highest_height() const;
+    Hash bad_block() const;
+
   private:
+    using ConsensusEnginePtr = std::unique_ptr<consensus::IEngine>;
+
     [[maybe_unused]] Db::ReadWriteAccess::Tx& tx_;
+    [[maybe_unused]] ConsensusEnginePtr consensus_engine_;
+    db::Buffer chain_state_;
+
+    BlockNum initial_height_{0};
+    BlockNum highest_height_{0};
+
+    BlockNum unwind_point_;
+    bool unwind_needed_{false};
+    Hash bad_block_;
 };
 
 }

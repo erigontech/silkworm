@@ -35,7 +35,9 @@ class BlockDownloader : public ActiveComponent {
     ~BlockDownloader();
 
     void accept(std::shared_ptr<Message>); /*[[thread_safe]]*/
-    void execution_loop();                 /*[[long_running]]*/
+    void execution_loop() override;        /*[[long_running]]*/
+
+    const ChainIdentity& chain_identity();
 
   private:
     using MessageQueue = ConcurrentQueue<std::shared_ptr<Message>>;  // used internally to store new messages
@@ -44,6 +46,7 @@ class BlockDownloader : public ActiveComponent {
 
     Db::ReadOnlyAccess db_access_;
     SentryClient& sentry_;
+    const ChainIdentity& chain_identity_;
     HeaderChain header_chain_;
     BodySequence body_sequence_;
     MessageQueue messages_{};  // thread safe queue where to receive messages from sentry

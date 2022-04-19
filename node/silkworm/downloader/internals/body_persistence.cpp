@@ -18,26 +18,51 @@ limitations under the License.
 
 namespace silkworm {
 
-BodyPersistence::BodyPersistence(Db::ReadWriteAccess::Tx& tx): tx_{tx} {
-    // todo: implement
+BodyPersistence::BodyPersistence(Db::ReadWriteAccess::Tx& tx, const ChainIdentity& ci)
+    : tx_{tx},
+      consensus_engine_{consensus::engine_factory(ci.chain)},
+      chain_state_{tx.raw(), /*prune_from=*/0, /*historical_block=null*/} {
+
+    // todo: implement initial state read
+    initial_height_ = 0;
+    highest_height_ = 0;
 }
 
-void BodyPersistence::persist(const BlockBody&) {
-    // todo: implement
+BlockNum BodyPersistence::initial_height() const { return initial_height_; }
+BlockNum BodyPersistence::highest_height() const { return highest_height_; }
+bool BodyPersistence::unwind_needed() const { return unwind_needed_; }
+BlockNum BodyPersistence::unwind_point() const { return unwind_point_; }
+Hash BodyPersistence::bad_block() const { return bad_block_; }
+
+void BodyPersistence::persist(const Block& block) {
+
+    auto validation_result = consensus_engine_->pre_validate_block(block, chain_state_);   // todo: is the correct validation?
+
+    if (validation_result != ValidationResult::kOk) {
+        // todo: distinguish error or unwind condition
+        // ...
+
+        unwind_needed_ = true;
+        unwind_point_ = block.header.number - 1;
+        bad_block_ = block.header.hash();
+        return;
+    }
+
+    // todo: complete implementation writing block.body on db and updating state
+
+    //if (!tx_.has_body(block))
+    //    tx_.write_body(block);
+
 }
-void BodyPersistence::persist(const std::vector<BlockBody>& bodies) {
-    for(auto& body: bodies) {
-        persist(body);
+
+void BodyPersistence::persist(const std::vector<Block>& blocks) {
+    for(auto& block: blocks) {
+        persist(block);
     }
 }
+
 void BodyPersistence::close() {
     // todo: implement
 }
-
-// todo: implement
-bool BodyPersistence::unwind_needed() const { return false; }
-BlockNum BodyPersistence::unwind_point() const { return 0; }
-BlockNum BodyPersistence::initial_height() const { return 0; }
-BlockNum BodyPersistence::highest_height() const { return 0; }
 
 }

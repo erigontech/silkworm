@@ -17,6 +17,12 @@ limitations under the License.
 #ifndef SILKWORM_BODY_SEQUENCE_HPP
 #define SILKWORM_BODY_SEQUENCE_HPP
 
+#include <silkworm/chain/identity.hpp>
+
+#include <silkworm/downloader/packets/new_block_packet.hpp>
+#include <silkworm/downloader/packets/get_block_bodies_packet.hpp>
+
+#include "db_tx.hpp"
 #include "types.hpp"
 
 namespace silkworm {
@@ -29,12 +35,66 @@ namespace silkworm {
  */
 class BodySequence {
   public:
-    // todo: implement
+    BodySequence(const Db::ReadOnlyAccess&, const ChainIdentity&);
+    ~BodySequence();
+
+    // sync current state - this must be done at body forward
+    void sync_current_state(BlockNum highest_in_db);
+
+    //! core functionalities: trigger the internal algorithms to decide what bodies we miss
+    auto request_more_bodies(time_point_t tp, seconds_t timeout)
+        -> std::tuple<std::optional<GetBlockBodiesPacket66>, std::vector<PeerPenalization>>;
+
+    //! it needs to know if the request issued was not delivered
+    void request_nack(const GetBlockBodiesPacket66& packet);
+
+    //! core functionalities: process received bodies
+    using RequestMoreBodies = bool;
+    auto accept_bodies(const std::vector<BlockBody>&, uint64_t request_id, const PeerId&) -> std::tuple<Penalty, RequestMoreBodies>;
+
+    //! core functionalities: returns bodies that are ready to be persisted
+    auto withdraw_ready_bodies() -> std::vector<Block>;
 
     BlockNum highest_block_in_db();
 
   private:
+    void recover_initial_state();
+    void make_new_requests(GetBlockBodiesPacket66& packet, time_point_t tp, seconds_t timeout);
+    auto renew_stale_requests(GetBlockBodiesPacket66& packet, time_point_t tp, seconds_t timeout)
+        -> std::vector<PeerPenalization>;
+    void add_to_announcements(BlockHeader header, BlockBody body);
+
+    static bool is_valid_body(const BlockHeader&, const BlockBody&);
+
+    static constexpr BlockNum max_blocks_per_message = 128;
+
+    struct PendingBodyRequest {
+        Hash block_hash;
+        BlockNum block_height{0};
+        BlockHeader header;
+        BlockBody body;
+        time_point_t request_time;
+        bool ready{false};
+    };
+
+    struct AnnouncedBlocks {
+        void add(Block block);
+        std::optional<BlockBody> remove(BlockNum bn);
+      private:
+        std::map<BlockNum, Block> blocks_;
+    };
+
+    using IncreasingHeightOrderedMap = std::map<BlockNum, PendingBodyRequest>; // default ordering: less<BlockNum>
+
+    IncreasingHeightOrderedMap body_requests_;
+    AnnouncedBlocks announced_blocks_;
+    std::vector<NewBlockPacket> announcements_to_do_;
+
+    Db::ReadOnlyAccess db_access_;
+    const ChainIdentity& chain_identity_;
+
     BlockNum highest_block_in_db_{0};
+    BlockNum top_seen_height_{0};
 };
 
 }

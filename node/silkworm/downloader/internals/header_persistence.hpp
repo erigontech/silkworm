@@ -62,7 +62,7 @@ class HeaderPersistence {
     BigInt total_difficulty() const;
 
   private:
-    static constexpr size_t canonical_cache_size = 1000;
+    static constexpr size_t kCanonicalCacheSize = 1000;
 
     BlockNum find_forking_point(Db::ReadWriteAccess::Tx&, const BlockHeader& header, BlockNum height,
                                 const BlockHeader& parent);

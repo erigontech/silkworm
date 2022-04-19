@@ -113,7 +113,7 @@ void TxCall::start() {
         // Send an unsolicited message containing the transaction ID.
         remote::Pair kv_pair;
         kv_pair.set_txid(read_only_txn_.id());
-        const bool sent = send_response(std::move(kv_pair));
+        const bool sent = send_response(kv_pair);
         SILK_DEBUG << "TxCall::start message with txid=" << read_only_txn_.id() << " sent: " << sent;
 
         // Start a guard timer for closing and reopening to avoid long-lived transactions.
@@ -175,7 +175,7 @@ void TxCall::handle_cursor_open(const remote::Cursor* request) {
     remote::Pair kv_pair;
     kv_pair.set_cursorid(cursor_it->first);
     SILK_INFO << "Tx peer: " << peer() << " opened cursor: " << kv_pair.cursorid();
-    const bool sent = send_response(std::move(kv_pair));
+    const bool sent = send_response(kv_pair);
     SILK_TRACE << "TxCall::handle_cursor_open " << this << " sent: " << sent;
 }
 
@@ -393,7 +393,7 @@ void TxCall::handle_first(db::Cursor& cursor) {
         kv_pair.set_v(result.value.as_string());
     }
 
-    const bool sent = send_response(std::move(kv_pair));
+    const bool sent = send_response(kv_pair);
     SILK_TRACE << "TxCall::handle_first " << this << " sent: " << sent << " END";
 }
 
@@ -409,7 +409,7 @@ void TxCall::handle_first_dup(db::Cursor& cursor) {
         kv_pair.set_v(result.value.as_string());
     }
 
-    const bool sent = send_response(std::move(kv_pair));
+    const bool sent = send_response(kv_pair);
     SILK_TRACE << "TxCall::handle_first_dup " << this << " sent: " << sent << " END";
 }
 
@@ -427,7 +427,7 @@ void TxCall::handle_seek(const remote::Cursor* request, db::Cursor& cursor) {
         kv_pair.set_v(result.value.as_string());
     }
 
-    const bool sent = send_response(std::move(kv_pair));
+    const bool sent = send_response(kv_pair);
     SILK_TRACE << "TxCall::handle_seek " << this << " sent: " << sent << " END";
 }
 
@@ -443,7 +443,7 @@ void TxCall::handle_seek_both(const remote::Cursor* request, db::Cursor& cursor)
         kv_pair.set_v(result.value.as_string());
     }
 
-    const bool sent = send_response(std::move(kv_pair));
+    const bool sent = send_response(kv_pair);
     SILK_TRACE << "TxCall::handle_seek_both " << this << " sent: " << sent << " END";
 }
 
@@ -458,7 +458,7 @@ void TxCall::handle_seek_exact(const remote::Cursor* request, db::Cursor& cursor
         kv_pair.set_k(request->k());
     }
 
-    const bool sent = send_response(std::move(kv_pair));
+    const bool sent = send_response(kv_pair);
     SILK_TRACE << "TxCall::handle_seek_exact " << this << " sent: " << sent << " END";
 }
 
@@ -475,7 +475,7 @@ void TxCall::handle_seek_both_exact(const remote::Cursor* request, db::Cursor& c
         kv_pair.set_v(result.value.as_string());
     }
 
-    const bool sent = send_response(std::move(kv_pair));
+    const bool sent = send_response(kv_pair);
     SILK_TRACE << "TxCall::handle_seek_both_exact " << this << " sent: " << sent << " END";
 }
 
@@ -490,7 +490,7 @@ void TxCall::handle_current(db::Cursor& cursor) {
         kv_pair.set_v(result.value.as_string());
     }
 
-    const bool sent = send_response(std::move(kv_pair));
+    const bool sent = send_response(kv_pair);
     SILK_TRACE << "TxCall::handle_current " << this << " sent: " << sent << " END";
 }
 
@@ -505,7 +505,7 @@ void TxCall::handle_last(db::Cursor& cursor) {
         kv_pair.set_v(result.value.as_string());
     }
 
-    const bool sent = send_response(std::move(kv_pair));
+    const bool sent = send_response(kv_pair);
     SILK_TRACE << "TxCall::handle_last " << this << " sent: " << sent << " END";
 }
 
@@ -521,7 +521,7 @@ void TxCall::handle_last_dup(db::Cursor& cursor) {
         kv_pair.set_v(result.value.as_string());
     }
 
-    const bool sent = send_response(std::move(kv_pair));
+    const bool sent = send_response(kv_pair);
     SILK_TRACE << "TxCall::handle_last_dup " << this << " sent: " << sent << " END";
 }
 
@@ -536,7 +536,7 @@ void TxCall::handle_next(db::Cursor& cursor) {
         kv_pair.set_v(result.value.as_string());
     }
 
-    const bool sent = send_response(std::move(kv_pair));
+    const bool sent = send_response(kv_pair);
     SILK_TRACE << "TxCall::handle_next " << this << " sent: " << sent << " END";
 }
 
@@ -552,7 +552,7 @@ void TxCall::handle_next_dup(db::Cursor& cursor) {
         kv_pair.set_v(result.value.as_string());
     }
 
-    const bool sent = send_response(std::move(kv_pair));
+    const bool sent = send_response(kv_pair);
     SILK_TRACE << "TxCall::handle_next_dup " << this << " sent: " << sent << " END";
 }
 
@@ -567,7 +567,7 @@ void TxCall::handle_next_no_dup(db::Cursor& cursor) {
         kv_pair.set_v(result.value.as_string());
     }
 
-    const bool sent = send_response(std::move(kv_pair));
+    const bool sent = send_response(kv_pair);
     SILK_TRACE << "TxCall::handle_next_no_dup " << this << " sent: " << sent << " END";
 }
 
@@ -582,7 +582,7 @@ void TxCall::handle_prev(db::Cursor& cursor) {
         kv_pair.set_v(result.value.as_string());
     }
 
-    const bool sent = send_response(std::move(kv_pair));
+    const bool sent = send_response(kv_pair);
     SILK_TRACE << "TxCall::handle_prev " << this << " sent: " << sent << " END";
 }
 
@@ -598,7 +598,7 @@ void TxCall::handle_prev_dup(db::Cursor& cursor) {
         kv_pair.set_v(result.value.as_string());
     }
 
-    const bool sent = send_response(std::move(kv_pair));
+    const bool sent = send_response(kv_pair);
     SILK_TRACE << "TxCall::handle_prev_dup " << this << " sent: " << sent << " END";
 }
 
@@ -613,7 +613,7 @@ void TxCall::handle_prev_no_dup(db::Cursor& cursor) {
         kv_pair.set_v(result.value.as_string());
     }
 
-    const bool sent = send_response(std::move(kv_pair));
+    const bool sent = send_response(kv_pair);
     SILK_TRACE << "TxCall::handle_prev_no_dup " << this << " sent: " << sent << " END";
 }
 

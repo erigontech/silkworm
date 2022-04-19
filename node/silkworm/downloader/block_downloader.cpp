@@ -59,10 +59,12 @@ void BlockDownloader::execution_loop() {
     sentry_.subscribe(SentryClient::Scope::BlockRequests,
                       [this](const sentry::InboundMessage& msg) { receive_message(msg); });
 
+    auto constexpr short_interval = 1000ms;
+
     while (!is_stopping() && !sentry_.is_stopping()) {
         // pop a message from the queue
         std::shared_ptr<Message> message;
-        bool present = messages_.timed_wait_and_pop(message, 1000ms);
+        bool present = messages_.timed_wait_and_pop(message, short_interval);
         if (!present) continue;  // timeout, needed to check exiting_
 
         // process the message (command pattern)

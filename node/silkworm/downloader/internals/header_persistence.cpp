@@ -23,7 +23,7 @@
 
 namespace silkworm {
 
-HeaderPersistence::HeaderPersistence(Db::ReadWriteAccess::Tx& tx) : tx_(tx), canonical_cache_(1000) {
+HeaderPersistence::HeaderPersistence(Db::ReadWriteAccess::Tx& tx) : tx_(tx), canonical_cache_(canonical_cache_size) {
     BlockNum headers_height = tx.read_stage_progress(db::stages::kHeadersKey);
     auto headers_head_hash = tx.read_canonical_hash(headers_height);
     if (!headers_head_hash) {

@@ -16,9 +16,7 @@
 
 #include "server.hpp"
 
-#include <atomic>
 #include <chrono>
-//#include <mutex>
 #include <thread>
 
 #include <catch2/catch.hpp>
@@ -35,12 +33,18 @@ namespace { // Trick suggested by gRPC team to avoid name clashes in multiple te
 class MockService : public grpc::Service {
 };
 
-class EmptyServer : public Server<MockService> {
+class EmptyServer : public Server {
   public:
     EmptyServer(const ServerConfig& config) : Server(config) {}
 
   protected:
-    void request_calls() override {}
+    void register_async_services(grpc::ServerBuilder& builder) override {
+        builder.RegisterService(&mock_async_service_);
+    }
+    void register_request_calls() override {}
+
+  private:
+    MockService mock_async_service_;
 };
 };
 
@@ -70,13 +74,53 @@ TEST_CASE("Barebone gRPC Server", "[silkworm][node][rpc]") {
 TEST_CASE("Server::Server", "[silkworm][node][rpc]") {
     silkworm::log::set_verbosity(silkworm::log::Level::kNone);
 
+    SECTION("OK: create an empty Server", "[silkworm][node][rpc]") {
+        ServerConfig config;
+        config.set_address_uri(kTestAddressUri);
+        EmptyServer server{config};
+    }
+}
+
+TEST_CASE("Server::build_and_start", "[silkworm][node][rpc]") {
+    silkworm::log::set_verbosity(silkworm::log::Level::kNone);
+
+    // TODO(canepat): use GMock
+    class TestServer : public EmptyServer {
+      public:
+        TestServer(const ServerConfig& config) : EmptyServer(config) {}
+
+        bool register_async_services_called() const {
+            return register_async_services_called_;
+        }
+
+        bool register_request_calls_called() const {
+            return register_request_calls_called_;
+        }
+
+      protected:
+        void register_async_services(grpc::ServerBuilder& /*builder*/) override {
+            register_async_services_called_ = true;
+        }
+
+        void register_request_calls() override {
+            register_request_calls_called_ = true;
+        }
+
+      private:
+        bool register_async_services_called_{false};
+        bool register_request_calls_called_{false};
+    };
+
     SECTION("KO: Address already in use", "[silkworm][node][rpc]") {
         GrpcNoLogGuard guard;
 
         ServerConfig config;
         config.set_address_uri(kTestAddressUri);
-        EmptyServer server(config);
-        CHECK_THROWS_AS(EmptyServer(config), std::runtime_error);
+        TestServer server1{config};
+        server1.build_and_start();
+        TestServer server2{config};
+        CHECK_THROWS_AS(server2.build_and_start(), std::runtime_error);
+        server1.shutdown();
     }
 
     SECTION("KO: Name or service not known", "[silkworm][node][rpc]") {
@@ -84,75 +128,67 @@ TEST_CASE("Server::Server", "[silkworm][node][rpc]") {
 
         ServerConfig config;
         config.set_address_uri("localhost@12345");
-        CHECK_THROWS_AS(EmptyServer(config), std::runtime_error);
-    }
-
-    SECTION("OK: create and start Server", "[silkworm][node][rpc]") {
-        ServerConfig config;
-        config.set_address_uri(kTestAddressUri);
         EmptyServer server{config};
+        CHECK_THROWS_AS(server.build_and_start(), std::runtime_error);
     }
-}
-
-TEST_CASE("Server::run", "[silkworm][node][rpc]") {
-    silkworm::log::set_verbosity(silkworm::log::Level::kNone);
-
-    class TestServer : public Server<MockService> {
-      public:
-        TestServer(const ServerConfig& config) : Server(config) {}
-
-        bool wait_initialization_for(uint32_t timeout=1000, uint32_t check_interval=10) {
-            if (!notified_) {
-                auto sleep_count = timeout / check_interval;
-                for (uint64_t i=0; i<sleep_count; i++) {
-                    if (notified_) {
-                        break;
-                    }
-                    std::this_thread::sleep_for(std::chrono::milliseconds(check_interval));
-                }
-            }
-            return notified_;
-        }
-
-      protected:
-        void request_calls() override {
-            notified_ = true;
-        }
-
-      private:
-        std::atomic_bool notified_{false};
-    };
 
     SECTION("OK: accept requests called", "[silkworm][node][rpc]") {
         ServerConfig config;
         config.set_address_uri(kTestAddressUri);
         TestServer server{config};
-        std::thread shutdown_thread{[&server]() {
-            const bool notified = server.wait_initialization_for();
-            CHECK(notified);
-            server.shutdown();
-        }};
-        server.run();
-        shutdown_thread.join();
+        CHECK_NOTHROW(server.build_and_start());
+        CHECK(server.register_async_services_called());
+        CHECK(server.register_request_calls_called());
     }
 }
 
 TEST_CASE("Server::shutdown", "[silkworm][node][rpc]") {
     silkworm::log::set_verbosity(silkworm::log::Level::kNone);
 
-    SECTION("OK: single call", "[silkworm][node][rpc]") {
+    SECTION("OK: build_and_start/shutdown", "[silkworm][node][rpc]") {
         ServerConfig config;
         config.set_address_uri(kTestAddressUri);
         EmptyServer server{config};
+        server.build_and_start();
         CHECK_NOTHROW(server.shutdown());
     }
 
-    SECTION("OK: double call", "[silkworm][node][rpc]") {
+    SECTION("OK: build_and_start/shutdown/shutdown", "[silkworm][node][rpc]") {
         ServerConfig config;
         config.set_address_uri(kTestAddressUri);
         EmptyServer server{config};
-        server.shutdown();
+        server.build_and_start();
         CHECK_NOTHROW(server.shutdown());
+        CHECK_NOTHROW(server.shutdown());
+    }
+}
+
+TEST_CASE("Server::join", "[silkworm][node][rpc]") {
+    silkworm::log::set_verbosity(silkworm::log::Level::kNone);
+
+    SECTION("OK: build_and_start/join/shutdown", "[silkworm][node][rpc]") {
+        ServerConfig config;
+        config.set_address_uri(kTestAddressUri);
+        EmptyServer server{config};
+        server.build_and_start();
+        std::thread server_thread{[&server]() {
+            server.join();
+        }};
+        CHECK_NOTHROW(server.shutdown());
+        server_thread.join();
+    }
+
+    SECTION("OK: build_and_start/join/shutdown/shutdown", "[silkworm][node][rpc]") {
+        ServerConfig config;
+        config.set_address_uri(kTestAddressUri);
+        EmptyServer server{config};
+        server.build_and_start();
+        std::thread server_thread{[&server]() {
+            server.join();
+        }};
+        CHECK_NOTHROW(server.shutdown());
+        CHECK_NOTHROW(server.shutdown());
+        server_thread.join();
     }
 }
 

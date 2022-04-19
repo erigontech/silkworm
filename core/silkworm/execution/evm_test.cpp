@@ -23,6 +23,7 @@
 #include <evmone/execution_state.hpp>
 
 #include <silkworm/chain/protocol_param.hpp>
+#include <silkworm/common/test_util.hpp>
 #include <silkworm/common/util.hpp>
 #include <silkworm/state/in_memory_state.hpp>
 
@@ -66,35 +67,35 @@ TEST_CASE("Value transfer") {
 
 TEST_CASE("Smart contract with storage") {
     Block block{};
-    block.header.number = 10'336'006;
+    block.header.number = 1;
     evmc::address caller{0x0a6bb546b9208cfab9e8fa2b9b2c042b18df7030_address};
 
     // This contract initially sets its 0th storage to 0x2a
     // and its 1st storage to 0x01c9.
     // When called, it updates the 0th storage to the input provided.
-    Bytes code{*from_hex("602a6000556101c960015560068060166000396000f3600035600055")};
-    // https://github.com/CoinCulture/evm-tools
-    // 0      PUSH1  => 2a
-    // 2      PUSH1  => 00
-    // 4      SSTORE         // storage[0] = 0x2a
-    // 5      PUSH2  => 01c9
-    // 8      PUSH1  => 01
-    // 10     SSTORE         // storage[1] = 0x01c9
-    // 11     PUSH1  => 06   // deploy begin
-    // 13     DUP1
-    // 14     PUSH1  => 16
-    // 16     PUSH1  => 00
-    // 18     CODECOPY
-    // 19     PUSH1  => 00
-    // 21     RETURN         // deploy end
-    // 22     PUSH1  => 00   // contract code
-    // 24     CALLDATALOAD
-    // 25     PUSH1  => 00
-    // 27     SSTORE         // storage[0] = input[0]
+    Bytes code{*from_hex("602a5f556101c960015560048060135f395ff35f355f55")};
+    // https://github.com/CoinCulture/evm-tools/blob/master/analysis/guide.md#contracts
+    // 0x00     PUSH1  => 2a
+    // 0x02     PUSH0
+    // 0x03     SSTORE         // storage[0] = 0x2a
+    // 0x04     PUSH2  => 01c9
+    // 0x07     PUSH1  => 01
+    // 0x09     SSTORE         // storage[1] = 0x01c9
+    // 0x0a     PUSH1  => 04   // deploy begin
+    // 0x0c     DUP1
+    // 0x0d     PUSH1  => 13
+    // 0x0f     PUSH0
+    // 0x10     CODECOPY
+    // 0x11     PUSH0
+    // 0x12     RETURN         // deploy end
+    // 0x13     PUSH0          // contract code
+    // 0x14     CALLDATALOAD
+    // 0x15     PUSH0
+    // 0x16     SSTORE         // storage[0] = input[0]
 
     InMemoryState db;
     IntraBlockState state{db};
-    EVM evm{block, state, kMainnetConfig};
+    EVM evm{block, state, test::kShanghaiConfig};
 
     Transaction txn{};
     txn.from = caller;
@@ -108,7 +109,7 @@ TEST_CASE("Smart contract with storage") {
     gas = 50'000;
     res = evm.execute(txn, gas);
     CHECK(res.status == EVMC_SUCCESS);
-    CHECK(res.data == silkworm::from_hex("600035600055"));
+    CHECK(to_hex(res.data) == "5f355f55");
 
     evmc::address contract_address{create_address(caller, /*nonce=*/1)};
     evmc::bytes32 key0{};
@@ -168,7 +169,7 @@ TEST_CASE("Maximum call depth") {
 
     EVM evm{block, state, kMainnetConfig};
 
-    AnalysisCache analysis_cache{/*maxSize=*/16};
+    AdvancedAnalysisCache analysis_cache{/*maxSize=*/16};
     evm.advanced_analysis_cache = &analysis_cache;
 
     Transaction txn{};
@@ -410,8 +411,8 @@ TEST_CASE("Tracing smart contract with storage") {
                                 evmone::bytes_view bytecode) noexcept override {
             bytecode_ = Bytes{bytecode};
         }
-        void on_instruction_start(uint32_t pc, const evmone::ExecutionState& state,
-                                  const IntraBlockState& intra_block_state) noexcept override {
+        void on_instruction_start(uint32_t pc, const intx::uint256* /*stack_top*/, int /*stack_height*/, 
+            const evmone::ExecutionState& state, const IntraBlockState& intra_block_state) noexcept override {
             pc_stack_.push_back(pc);
             memory_size_stack_[pc] = state.memory.size();
             if (contract_address_) {

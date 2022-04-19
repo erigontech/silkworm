@@ -51,8 +51,9 @@ endif(NOT MSVC)
 
 # Suppress ASAN/TSAN in gRPC to avoid ODR violation when building Silkworm with sanitizers
 # See https://github.com/grpc/grpc/issues/19224
-# TODO(canepat) : add check on sanitize flag when available (https://github.com/torquem-ch/silkworm/issues/295)
-target_compile_definitions(silkworm_node PRIVATE GRPC_ASAN_SUPPRESSED GRPC_TSAN_SUPPRESSED)
+if(SILKWORM_SANITIZE)
+  target_compile_definitions(silkworm_node PRIVATE GRPC_ASAN_SUPPRESSED GRPC_TSAN_SUPPRESSED)
+endif()
 
 target_include_directories(silkworm_node PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}

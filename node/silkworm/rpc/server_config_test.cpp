@@ -26,16 +26,8 @@ namespace silkworm::rpc {
 
 TEST_CASE("ServerConfig::ServerConfig", "[silkworm][rpc][server_config]") {
     ServerConfig config;
-    CHECK(config.node_name() == kDefaultNodeName);
     CHECK(config.address_uri() == kDefaultAddressUri);
     CHECK(config.num_contexts() == kDefaultNumContexts);
-}
-
-TEST_CASE("ServerConfig::set_node_name", "[silkworm][rpc][server_config]") {
-    const std::string node_name{"server_name"};
-    ServerConfig config;
-    config.set_node_name(node_name);
-    CHECK(config.node_name() == node_name);
 }
 
 TEST_CASE("ServerConfig::set_address_uri", "[silkworm][rpc][server_config]") {

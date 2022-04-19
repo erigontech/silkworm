@@ -25,8 +25,33 @@
 namespace silkworm::rpc {
 
 std::ostream& operator<<(std::ostream& out, const ServerContext& c) {
-    out << "io_context: " << &*c.io_context << " grpc_queue: " << &*c.grpc_queue << " grpc_runner: " << &*c.grpc_runner;
+    out << "io_context: " << c.io_context()
+        << " server_queue: " << c.server_queue() << " server_end_point: " << c.server_end_point()
+        << " client_queue: " << c.client_queue() << " client_end_point: " << c.client_end_point();
     return out;
+}
+
+ServerContext::ServerContext(std::unique_ptr<grpc::ServerCompletionQueue> queue)
+    : io_context_{std::make_shared<boost::asio::io_context>()},
+    server_queue_{std::move(queue)},
+    server_end_point_{std::make_unique<CompletionEndPoint>(*server_queue_)},
+    client_queue_{std::make_unique<grpc::CompletionQueue>()},
+    client_end_point_{std::make_unique<CompletionEndPoint>(*client_queue_)} {
+}
+
+void ServerContext::execution_loop() {
+    //TODO(canepat): add counter for served tasks and plug some wait strategy
+    while (!io_context_->stopped()) {
+        server_end_point_->poll_one();
+        client_end_point_->poll_one();
+        io_context_->poll_one();
+    }
+    server_end_point_->shutdown();
+    client_end_point_->shutdown();
+}
+
+void ServerContext::stop() {
+    io_context_->stop();
 }
 
 ServerContextPool::ServerContextPool(std::size_t pool_size) : next_index_{0} {
@@ -40,76 +65,66 @@ ServerContextPool::ServerContextPool(std::size_t pool_size) : next_index_{0} {
 
 ServerContextPool::~ServerContextPool() {
     SILK_TRACE << "ServerContextPool::~ServerContextPool START " << this;
-    if (!stopped_) {
-        stop();
-    }
+    stop();
     SILK_TRACE << "ServerContextPool::~ServerContextPool END " << this;
 }
 
-void ServerContextPool::add_context(std::unique_ptr<grpc::ServerCompletionQueue> queue) noexcept {
-    // Create the io_context and give it work to do so that its event loop will not exit until it is explicitly stopped.
-    auto io_context = std::make_shared<boost::asio::io_context>();
-    auto runner = std::make_unique<CompletionRunner>(*queue, *io_context);
+void ServerContextPool::add_context(std::unique_ptr<grpc::ServerCompletionQueue> server_queue) {
+    ServerContext server_context{std::move(server_queue)};
+
+    // Give the io_context work to do so that its event loop will not exit until it is explicitly stopped.
+    work_.push_back(boost::asio::require(server_context.io_context()->get_executor(), boost::asio::execution::outstanding_work.tracked));
+
     const auto num_contexts = contexts_.size();
-    contexts_.push_back({
-        io_context,
-        std::move(queue),
-        std::move(runner)
-    });
+    contexts_.push_back(std::move(server_context));
     SILK_DEBUG << "ServerContextPool::add_context context[" << num_contexts << "] " << contexts_[num_contexts];
-    work_.push_back(boost::asio::require(io_context->get_executor(), boost::asio::execution::outstanding_work.tracked));
 }
 
-void ServerContextPool::run() {
-    SILK_TRACE << "ServerContextPool::run START";
+void ServerContextPool::start() {
+    SILK_TRACE << "ServerContextPool::start START";
 
-    boost::asio::detail::thread_group workers{};
-    {
-        std::unique_lock<std::mutex> lock(mutex_);
-        if (stopped_) return;
-
-        // Create a pool of threads to run all of the contexts (each one having 1+1 threads)
+    std::unique_lock<std::mutex> lock(mutex_);
+    if (!stopped_) {
+        // Create a pool of threads to run all the contexts (each context having 1 thread)
         for (std::size_t i{0}; i < contexts_.size(); ++i) {
             auto& context = contexts_[i];
-            workers.create_thread([&, i = i]() {
-                SILK_TRACE << "CompletionRunner thread start context[" << i << "].grpc_runner thread_id: " << std::this_thread::get_id();
-                context.grpc_runner->run();
-                SILK_TRACE << "CompletionRunner thread end context[" << i << "].grpc_runner thread_id: " << std::this_thread::get_id();
+            context_threads_.create_thread([&, i = i]() {
+                SILK_TRACE << "thread start context[" << i << "] thread_id: " << std::this_thread::get_id();
+                context.execution_loop();
+                SILK_TRACE << "thread end context[" << i << "] thread_id: " << std::this_thread::get_id();
             });
-            SILK_DEBUG << "ServerContextPool::run context[" << i << "].grpc_runner started: " << &*context.grpc_runner;
-            workers.create_thread([&, i = i]() {
-                SILK_TRACE << "io_context thread start context[" << i << "].io_context thread_id: " << std::this_thread::get_id();
-                context.io_context->run();
-                SILK_TRACE << "io_context thread end context[" << i << "].io_context thread_id: " << std::this_thread::get_id();
-            });
-            SILK_DEBUG << "ServerContextPool::run context[" << i << "].io_context started: " << &*context.io_context;
+            SILK_DEBUG << "ServerContextPool::start context[" << i << "] started: " << context.io_context();
         }
     }
-    // Wait for all threads in the pool to exit.
-    SILK_DEBUG << "ServerContextPool::run joining...";
-    workers.join();
 
-    SILK_TRACE << "ServerContextPool::run END";
+    SILK_TRACE << "ServerContextPool::start END";
+}
+
+void ServerContextPool::join() {
+    SILK_TRACE << "ServerContextPool::join START";
+
+    // Wait for all threads in the pool to exit.
+    SILK_DEBUG << "ServerContextPool::join joining...";
+    context_threads_.join();
+
+    SILK_TRACE << "ServerContextPool::join END";
 }
 
 void ServerContextPool::stop() {
-    SILK_TRACE << "ServerContextPool::stop START stopped: " << stopped_;
+    SILK_TRACE << "ServerContextPool::stop START";
 
-    {
-        std::lock_guard<std::mutex> guard(mutex_);
-        stopped_ = true;
-
+    std::lock_guard<std::mutex> guard(mutex_);
+    if (!stopped_) {
         // Explicitly stop all context runnable components
         for (std::size_t i{0}; i < contexts_.size(); ++i) {
-            auto& context = contexts_[i];
-            context.grpc_runner->stop();
-            SILK_DEBUG << "ServerContextPool::stop context[" << i << "].grpc_runner stopped: " << &*context.grpc_runner;
-            context.io_context->stop();
-            SILK_DEBUG << "ServerContextPool::stop context[" << i << "].io_context stopped: " << &*context.io_context;
+            contexts_[i].stop();
+            SILK_DEBUG << "ServerContextPool::stop context[" << i << "] stopped: " << contexts_[i].io_context();
         }
+
+        stopped_ = true;
     }
 
-    SILK_TRACE << "ServerContextPool::stop END stopped: " << stopped_;
+    SILK_TRACE << "ServerContextPool::stop END";
 }
 
 const ServerContext& ServerContextPool::next_context() {
@@ -121,7 +136,7 @@ const ServerContext& ServerContextPool::next_context() {
 
 boost::asio::io_context& ServerContextPool::next_io_context() {
     const auto& context = next_context();
-    return *context.io_context;
+    return *context.io_context();
 }
 
 } // namespace silkworm::rpc

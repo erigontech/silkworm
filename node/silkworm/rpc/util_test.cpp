@@ -21,6 +21,7 @@
 #include <catch2/catch.hpp>
 
 #include <silkworm/common/base.hpp>
+#include <silkworm/common/log.hpp>
 
 namespace silkworm::rpc {
 
@@ -40,6 +41,53 @@ using namespace evmc::literals;
 TEST_CASE("print grpc::Status", "[silkworm][rpc][util]") {
     CHECK_NOTHROW(null_stream() << grpc::Status::OK);
     CHECK_NOTHROW(null_stream() << grpc::Status::CANCELLED);
+}
+
+TEST_CASE("compare grpc::Status", "[silkworm][rpc][util]") {
+    CHECK(grpc::Status::OK == grpc::Status::OK);
+    CHECK(!(grpc::Status::OK == grpc::Status::CANCELLED));
+
+    grpc::Status status1{grpc::StatusCode::INTERNAL, "error"};
+    grpc::Status status2{grpc::StatusCode::INTERNAL, "err"};
+    CHECK(!(status1 == status2));
+
+    grpc::Status status3{grpc::StatusCode::INTERNAL, "error", "details"};
+    grpc::Status status4{grpc::StatusCode::INTERNAL, "error", ""};
+    CHECK(!(status3 == status4));
+}
+
+// Necesary at namespace level for TEST_CASE GrpcLogGuard
+static bool gpr_test_log_reached{false};
+static void gpr_test_log(gpr_log_func_args* /*args*/) {
+    gpr_test_log_reached = true;
+}
+
+TEST_CASE("GrpcLogGuard", "[silkworm][rpc][util]") {
+    REQUIRE(!gpr_test_log_reached);
+    GrpcLogGuard<gpr_test_log> log_guard;
+    gpr_log(GPR_ERROR, "error message");
+    REQUIRE(gpr_test_log_reached);
+}
+
+TEST_CASE("gpr_silkworm_log", "[silkworm][rpc][util]") {
+    silkworm::log::set_verbosity(silkworm::log::Level::kNone);
+    const char* FILE_NAME{"file.cpp"};
+    const int LINE_NUMBER{10};
+    Grpc2SilkwormLogGuard log_guard;
+
+    SECTION("GPR_LOG_SEVERITY_ERROR") {
+        CHECK_NOTHROW(gpr_log(FILE_NAME, LINE_NUMBER, GPR_LOG_SEVERITY_ERROR, "error message"));
+    }
+
+    SECTION("GPR_LOG_SEVERITY_INFO") {
+        gpr_set_log_verbosity(GPR_LOG_SEVERITY_INFO);
+        CHECK_NOTHROW(gpr_log(FILE_NAME, LINE_NUMBER, GPR_LOG_SEVERITY_INFO, "info message"));
+    }
+
+    SECTION("GPR_LOG_SEVERITY_DEBUG") {
+        gpr_set_log_verbosity(GPR_LOG_SEVERITY_DEBUG);
+        CHECK_NOTHROW(gpr_log(FILE_NAME, LINE_NUMBER, GPR_LOG_SEVERITY_DEBUG, "debug message"));
+    }
 }
 
 TEST_CASE("address_from_H160", "[silkworm][rpc][util]") {

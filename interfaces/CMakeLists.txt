@@ -88,7 +88,7 @@ set(KV_GRPC_HEADERS "${CMAKE_CURRENT_SOURCE_DIR}/remote/kv.grpc.pb.h")
 add_custom_command(
     OUTPUT "${KV_PROTO_SOURCES}" "${KV_PROTO_HEADERS}" "${KV_GRPC_SOURCES}" "${KV_GRPC_HEADERS}"
     COMMAND ${PROTOBUF_PROTOC}
-    ARGS --grpc_out generate_mock_code=true:"${CMAKE_CURRENT_SOURCE_DIR}"
+    ARGS --grpc_out "${CMAKE_CURRENT_SOURCE_DIR}"
       --cpp_out "${CMAKE_CURRENT_SOURCE_DIR}"
       -I "${PROTO_PATH}"
       --plugin=protoc-gen-grpc="${GRPC_CPP_PLUGIN_EXECUTABLE}"
@@ -118,7 +118,7 @@ set(ETHBACKEND_GRPC_HEADERS "${CMAKE_CURRENT_SOURCE_DIR}/remote/ethbackend.grpc.
 add_custom_command(
     OUTPUT "${ETHBACKEND_PROTO_SOURCES}" "${ETHBACKEND_PROTO_HEADERS}" "${ETHBACKEND_GRPC_SOURCES}" "${ETHBACKEND_GRPC_HEADERS}"
     COMMAND ${PROTOBUF_PROTOC}
-    ARGS --grpc_out generate_mock_code=true:"${CMAKE_CURRENT_SOURCE_DIR}"
+    ARGS --grpc_out "${CMAKE_CURRENT_SOURCE_DIR}"
       --cpp_out "${CMAKE_CURRENT_SOURCE_DIR}"
       -I "${PROTO_PATH}"
       --plugin=protoc-gen-grpc="${GRPC_CPP_PLUGIN_EXECUTABLE}"

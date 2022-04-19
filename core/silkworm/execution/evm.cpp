@@ -24,7 +24,6 @@
 
 #include <ethash/keccak.hpp>
 #include <evmone/advanced_execution.hpp>
-#include <evmone/baseline.hpp>
 #include <evmone/evmone.h>
 #include <evmone/tracing.hpp>
 #include <evmone/vm.hpp>
@@ -46,9 +45,9 @@ class DelegatingTracer : public evmone::Tracer {
         tracer_.on_execution_start(rev, msg, code);
     }
 
-    void on_instruction_start(uint32_t pc, const intx::uint256*, int,
+    void on_instruction_start(uint32_t pc, const intx::uint256* stack_top, int stack_height,
                               const evmone::ExecutionState& state) noexcept override {
-        tracer_.on_instruction_start(pc, state, intra_block_state_);
+        tracer_.on_instruction_start(pc, stack_top, stack_height, state, intra_block_state_);
     }
 
     void on_execution_end(const evmc_result& result) noexcept override {
@@ -156,7 +155,7 @@ evmc::result EVM::create(const evmc_message& message) noexcept {
         message.value,   // value
     };
 
-    res = execute(deploy_message, ByteView{message.input_data, message.input_size}, /*code_hash=*/std::nullopt);
+    res = execute(deploy_message, ByteView{message.input_data, message.input_size}, /*code_hash=*/nullptr);
 
     if (res.status_code == EVMC_SUCCESS) {
         const size_t code_len{res.output_size};
@@ -197,14 +196,6 @@ evmc::result EVM::call(const evmc_message& message) noexcept {
         return res;
     }
 
-    const bool precompiled{is_precompiled(message.code_address)};
-    const evmc_revision rev{revision()};
-
-    // https://eips.ethereum.org/EIPS/eip-161
-    if (value == 0 && rev >= EVMC_SPURIOUS_DRAGON && !precompiled && !state_.exists(message.code_address)) {
-        return res;
-    }
-
     const auto snapshot{state_.take_snapshot()};
 
     if (message.kind == EVMC_CALL) {
@@ -218,7 +209,7 @@ evmc::result EVM::call(const evmc_message& message) noexcept {
         }
     }
 
-    if (precompiled) {
+    if (is_precompiled(message.code_address)) {
         const uint8_t num{message.code_address.bytes[kAddressLength - 1]};
         precompiled::Contract contract{precompiled::kContracts[num - 1]};
         const ByteView input{message.input_data, message.input_size};
@@ -240,8 +231,7 @@ evmc::result EVM::call(const evmc_message& message) noexcept {
         }
 
         const evmc::bytes32 code_hash{state_.get_code_hash(message.code_address)};
-
-        res = execute(message, code, code_hash);
+        res = execute(message, code, &code_hash);
     }
 
     if (res.status_code != EVMC_SUCCESS) {
@@ -254,18 +244,18 @@ evmc::result EVM::call(const evmc_message& message) noexcept {
     return res;
 }
 
-evmc::result EVM::execute(const evmc_message& msg, ByteView code, std::optional<evmc::bytes32> code_hash) noexcept {
+evmc::result EVM::execute(const evmc_message& msg, ByteView code, const evmc::bytes32* code_hash) noexcept {
     const evmc_revision rev{revision()};
 
     evmc_result res;
     if (exo_evm) {
         EvmHost host{*this};
         res = exo_evm->execute(exo_evm, &host.get_interface(), host.to_context(), rev, &msg, code.data(), code.size());
-    } else if (code_hash != std::nullopt && advanced_analysis_cache != nullptr) {
-        res = execute_with_default_interpreter(rev, msg, code, *code_hash);
+    } else if (code_hash && advanced_analysis_cache) {
+        res = execute_with_advanced_interpreter(rev, msg, code, *code_hash);
     } else {
         // for one-off execution baseline interpreter is generally faster
-        res = execute_with_baseline_interpreter(rev, msg, code);
+        res = execute_with_baseline_interpreter(rev, msg, code, code_hash);
     }
 
     return evmc::result{res};
@@ -290,28 +280,42 @@ void EVM::release_state(gsl::owner<EvmoneExecutionState*> state) noexcept {
     }
 }
 
-evmc_result EVM::execute_with_baseline_interpreter(evmc_revision rev, const evmc_message& msg, ByteView code) noexcept {
-    const auto vm{static_cast<evmone::VM*>(evm1_)};
-    const auto analysis{evmone::baseline::analyze(code)};
+evmc_result EVM::execute_with_baseline_interpreter(evmc_revision rev, const evmc_message& msg, ByteView code,
+                                                   const evmc::bytes32* code_hash) noexcept {
+    std::shared_ptr<evmone::baseline::CodeAnalysis> analysis;
+    const bool use_cache{code_hash && baseline_analysis_cache};
+    if (use_cache) {
+        const auto* ptr{baseline_analysis_cache->get(*code_hash)};
+        if (ptr) {
+            analysis = *ptr;
+        }
+    }
+    if (!analysis) {
+        analysis = std::make_shared<evmone::baseline::CodeAnalysis>(evmone::baseline::analyze(code));
+        if (use_cache) {
+            baseline_analysis_cache->put(*code_hash, analysis);
+        }
+    }
 
     EvmHost host{*this};
     gsl::owner<EvmoneExecutionState*> state{acquire_state()};
     state->reset(msg, rev, host.get_interface(), host.to_context(), code);
 
-    evmc_result res{evmone::baseline::execute(*vm, *state, analysis)};
+    const auto vm{static_cast<evmone::VM*>(evm1_)};
+    evmc_result res{evmone::baseline::execute(*vm, *state, *analysis)};
 
     release_state(state);
 
     return res;
 }
 
-evmc_result EVM::execute_with_default_interpreter(evmc_revision rev, const evmc_message& msg, ByteView code,
-                                                  const evmc::bytes32& code_hash) noexcept {
+evmc_result EVM::execute_with_advanced_interpreter(evmc_revision rev, const evmc_message& msg, ByteView code,
+                                                   const evmc::bytes32& code_hash) noexcept {
     assert(advanced_analysis_cache != nullptr);
 
-    std::shared_ptr<EvmoneCodeAnalysis> analysis{advanced_analysis_cache->get(code_hash, rev)};
+    std::shared_ptr<evmone::advanced::AdvancedCodeAnalysis> analysis{advanced_analysis_cache->get(code_hash, rev)};
     if (!analysis) {
-        analysis = std::make_shared<EvmoneCodeAnalysis>(evmone::advanced::analyze(rev, code));
+        analysis = std::make_shared<evmone::advanced::AdvancedCodeAnalysis>(evmone::advanced::analyze(rev, code));
         advanced_analysis_cache->put(code_hash, analysis, rev);
     }
 

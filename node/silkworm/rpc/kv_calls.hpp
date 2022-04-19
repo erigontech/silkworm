@@ -41,7 +41,7 @@ namespace silkworm::rpc {
 
 using KvVersion = std::tuple<uint32_t, uint32_t, uint32_t>;
 
-KvVersion higher_version(KvVersion lhs, KvVersion rhs);
+KvVersion higher_version_ignoring_patch(KvVersion lhs, KvVersion rhs);
 
 //! Current DB schema version.
 constexpr auto kDbSchemaVersion = KvVersion{3, 0, 0};

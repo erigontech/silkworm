@@ -20,41 +20,41 @@
 
 namespace silkworm::rpc {
 
-TEST_CASE("higher_version", "[silkworm][rpc][kv_calls]") {
+TEST_CASE("higher_version_ignoring_patch", "[silkworm][rpc][kv_calls]") {
     SECTION("lhs.major > rhs.major") {
         KvVersion lhs{2, 0, 0};
         KvVersion rhs{1, 0, 0};
-        CHECK(higher_version(lhs, rhs) == lhs);
+        CHECK(higher_version_ignoring_patch(lhs, rhs) == lhs);
     }
 
     SECTION("rhs.major > lhs.major") {
         KvVersion lhs{2, 0, 0};
         KvVersion rhs{3, 0, 0};
-        CHECK(higher_version(lhs, rhs) == rhs);
+        CHECK(higher_version_ignoring_patch(lhs, rhs) == rhs);
     }
 
     SECTION("lhs.minor > rhs.minor") {
         KvVersion lhs{2, 5, 0};
         KvVersion rhs{2, 2, 0};
-        CHECK(higher_version(lhs, rhs) == lhs);
+        CHECK(higher_version_ignoring_patch(lhs, rhs) == lhs);
     }
 
     SECTION("rhs.minor > lhs.minor") {
         KvVersion lhs{2, 5, 0};
         KvVersion rhs{2, 6, 0};
-        CHECK(higher_version(lhs, rhs) == rhs);
+        CHECK(higher_version_ignoring_patch(lhs, rhs) == rhs);
     }
 
     SECTION("patch not relevant") {
         KvVersion lhs1{2, 5, 0};
         KvVersion rhs1{2, 5, 0};
-        CHECK(higher_version(lhs1, rhs1) == lhs1);
+        CHECK(higher_version_ignoring_patch(lhs1, rhs1) == lhs1);
         KvVersion lhs2{2, 5, 1};
         KvVersion rhs2{2, 5, 0};
-        CHECK(higher_version(lhs2, rhs2) == lhs2);
+        CHECK(higher_version_ignoring_patch(lhs2, rhs2) == lhs2);
         KvVersion lhs3{2, 5, 0};
         KvVersion rhs3{2, 5, 1};
-        CHECK(higher_version(lhs3, rhs3) == lhs3);
+        CHECK(higher_version_ignoring_patch(lhs3, rhs3) == lhs3);
     }
 }
 

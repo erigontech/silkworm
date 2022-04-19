@@ -306,12 +306,15 @@ void AccCursor::unmarshal_node_light(ByteView key, ByteView value) {
 
     level_ = key.length();
     auto& sub_node{sub_nodes_.at(level_)};
+    sub_node.key = key;
+    sub_node.value = value;
     sub_node.deleted = false;
     sub_node.has_state = endian::load_big_u16(&value.data()[0]);
     sub_node.has_tree = endian::load_big_u16(&value.data()[2]);
     sub_node.has_hash = endian::load_big_u16(&value.data()[4]);
     sub_node.hash_id = -1;
     sub_node.child_id = static_cast<int8_t>(ctz_16(sub_node.has_state) - 1);
+
 }
 
 }  // namespace silkworm::trie

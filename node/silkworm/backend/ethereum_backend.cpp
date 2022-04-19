@@ -20,7 +20,7 @@
 
 namespace silkworm {
 
-EthereumBackEnd::EthereumBackEnd(const NodeSettings& node_settings, mdbx::env_managed* chaindata_env)
+EthereumBackEnd::EthereumBackEnd(const NodeSettings& node_settings, mdbx::env* chaindata_env)
     : node_settings_(node_settings), chaindata_env_(chaindata_env) {
     // Get the numeric chain identifier from node settings
     if (node_settings_.chain_config) {

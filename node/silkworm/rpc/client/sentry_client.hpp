@@ -33,16 +33,15 @@
 
 namespace silkworm::rpc {
 
-using SentryStubPtr = std::unique_ptr<sentry::Sentry::Stub>;
+using SentryStubPtr = sentry::Sentry::StubInterface*;
 
 class AsyncPeerCountCall : public AsyncUnaryCall<
     sentry::PeerCountRequest,
     sentry::PeerCountReply,
     sentry::Sentry::StubInterface,
-    sentry::Sentry::Stub,
     &sentry::Sentry::StubInterface::PrepareAsyncPeerCount> {
   public:
-    explicit AsyncPeerCountCall(grpc::CompletionQueue* queue, CompletionFunc completion_handler, SentryStubPtr& stub);
+    explicit AsyncPeerCountCall(grpc::CompletionQueue* queue, CompletionFunc completion_handler, sentry::Sentry::StubInterface* stub);
 
     bool proceed(bool ok) override;
 };
@@ -51,10 +50,9 @@ class AsyncNodeInfoCall : public AsyncUnaryCall<
     google::protobuf::Empty,
     types::NodeInfoReply,
     sentry::Sentry::StubInterface,
-    sentry::Sentry::Stub,
     &sentry::Sentry::StubInterface::PrepareAsyncNodeInfo> {
   public:
-    explicit AsyncNodeInfoCall(grpc::CompletionQueue* queue, CompletionFunc completion_handler, SentryStubPtr& stub);
+    explicit AsyncNodeInfoCall(grpc::CompletionQueue* queue, CompletionFunc completion_handler, sentry::Sentry::StubInterface* stub);
 
     bool proceed(bool ok) override;
 };
@@ -103,7 +101,7 @@ class RemoteSentryClient : public SentryClient {
     }
 
     grpc::CompletionQueue* queue_;
-    SentryStubPtr stub_;
+    std::unique_ptr<sentry::Sentry::Stub> stub_;
     std::unordered_set<std::unique_ptr<AsyncCall>> requests_;
 };
 

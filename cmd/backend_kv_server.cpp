@@ -81,10 +81,13 @@ int parse_command_line(int argc, char* argv[], BackEndKvSettings& settings) {
         std::string data_dir{silkworm::DataDirectory::get_default_storage_path().string()};
         std::string etherbase_address{""};
         uint32_t num_contexts{std::thread::hardware_concurrency() / 2};
+        uint32_t max_readers{silkworm::db::EnvConfig{}.max_readers};
         app.add_option("--datadir", data_dir, "The path to data directory", true);
         app.add_option("--etherbase", etherbase_address, "The chain identifier as string", true);
         // TODO(canepat) add check on etherbase using EthAddressValidator [TBD]
-        app.add_option("--numContexts", num_contexts, "The number of running contexts", true);
+        app.add_option("--contexts", num_contexts, "The number of running contexts", true);
+        app.add_option("--mdbx.max.readers", max_readers, "The maximum number of MDBX readers", true)
+            ->check(CLI::Range(1, 32767));
 
         // RPC Server options
         app.add_option("--private.api.addr", node_settings.private_api_addr,
@@ -147,6 +150,7 @@ int parse_command_line(int argc, char* argv[], BackEndKvSettings& settings) {
             /*create=*/false,
             /*readonly=*/true
         };
+        node_settings.chaindata_env_config.max_readers = max_readers;
 
         server_settings.set_address_uri(node_settings.private_api_addr);
         server_settings.set_num_contexts(num_contexts);
@@ -186,6 +190,8 @@ int main(int argc, char* argv[]) {
         auto database_env = silkworm::db::open_env(node_settings.chaindata_env_config);
         silkworm::EthereumBackEnd backend{node_settings, &database_env};
         backend.set_node_name(node_name);
+
+        SILK_INFO << "BackEndKvServer MDBX max readers: " << database_env.max_readers();
 
         silkworm::rpc::BackEndKvServer server{server_settings, backend};
         server.build_and_start();

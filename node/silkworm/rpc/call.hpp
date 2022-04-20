@@ -510,17 +510,6 @@ class BidirectionalStreamingRpc : public BaseRpc {
         return false;
     }
 
-    /*bool send_response(Response&& response) {
-        response_queue_.push_back(std::move(response));
-        SILK_DEBUG << "BidirectionalStreamingRpc::send_response enqueued response [" << this << "]";
-
-        if (!write_in_progress()) {
-            write();
-            return true;
-        }
-        return false;
-    }*/
-
     /// Call this to indicate the completion of server-side streaming.
     bool close() {
         SILK_DEBUG << "BidirectionalStreamingRpc::close peer " << peer() << " [" << this << "]";

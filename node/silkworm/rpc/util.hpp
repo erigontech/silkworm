@@ -17,18 +17,17 @@
 #ifndef SILKWORM_RPC_UTIL_HPP_
 #define SILKWORM_RPC_UTIL_HPP_
 
-#include <memory>
+#include <ostream>
 #include <string>
 
 #include <grpcpp/grpcpp.h>
 #include <grpc/support/log.h>
 
 #include <silkworm/common/base.hpp>
-#include <silkworm/common/endian.hpp>
 #include <silkworm/common/log.hpp>
-#include <types/types.pb.h>
 
 namespace grpc {
+
 // operator== overloading for grpc::Status is *NOT* present in gRPC library
 inline bool operator==(const Status& lhs, const Status& rhs) {
     return lhs.error_code() == rhs.error_code() &&
@@ -46,16 +45,8 @@ inline std::ostream& operator<<(std::ostream& out, const Status& status) {
     }
     return out;
 }
-} // namespace grpc
 
-// operator== overloading is *NOT* present in gRPC generated sources
-namespace types {
-inline bool operator==(const H160& lhs, const H160& rhs) {
-    return lhs.hi().hi() == rhs.hi().hi() &&
-        lhs.hi().lo() == rhs.hi().lo() &&
-        lhs.lo() == rhs.lo();
-}
-} // namespace types
+} // namespace grpc
 
 // The default gRPC logging function
 void gpr_default_log(gpr_log_func_args* args);
@@ -96,18 +87,6 @@ using GrpcNoLogGuard = GrpcLogGuard<gpr_no_log>;
 
 //! Utility class to map gRPC logging to Silkworm logging for an instance lifetime.
 using Grpc2SilkwormLogGuard = GrpcLogGuard<gpr_silkworm_log>;
-
-//! Convert internal RPC H160 type instance to evmc::address.
-inline evmc::address address_from_H160(const types::H160& h160) {
-    uint64_t hi_hi = h160.hi().hi();
-    uint64_t hi_lo = h160.hi().lo();
-    uint32_t lo = h160.lo();
-    evmc::address address{};
-    silkworm::endian::store_big_u64(address.bytes +  0, hi_hi);
-    silkworm::endian::store_big_u64(address.bytes +  8, hi_lo);
-    silkworm::endian::store_big_u32(address.bytes + 16, lo);
-    return address;
-}
 
 } // namespace silkworm::rpc
 

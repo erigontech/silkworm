@@ -34,6 +34,7 @@
 #include <silkworm/common/endian.hpp>
 #include <silkworm/common/log.hpp>
 #include <silkworm/common/util.hpp>
+#include <silkworm/rpc/conversion.hpp>
 #include <silkworm/rpc/util.hpp>
 #include <remote/ethbackend.grpc.pb.h>
 #include <remote/kv.grpc.pb.h>

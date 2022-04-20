@@ -29,6 +29,7 @@
 #include <silkworm/common/directories.hpp>
 #include <silkworm/common/log.hpp>
 #include <silkworm/db/mdbx.hpp>
+#include <silkworm/rpc/conversion.hpp>
 #include <silkworm/rpc/util.hpp>
 #include <types/types.pb.h>
 

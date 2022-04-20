@@ -20,32 +20,18 @@
 
 #include <silkworm/common/endian.hpp>
 #include <silkworm/common/log.hpp>
+#include <silkworm/rpc/conversion.hpp>
 #include <silkworm/rpc/util.hpp>
 #include <types/types.pb.h>
 
 namespace silkworm::rpc {
-
-inline static types::H128* new_H128_from_bytes(const uint8_t* bytes) {
-    auto h128{new types::H128()};
-    h128->set_hi(endian::load_big_u64(bytes));
-    h128->set_lo(endian::load_big_u64(bytes + 8));
-    return h128;
-}
-
-inline static types::H160* new_H160_address(const evmc::address& address) {
-    auto h160{new types::H160()};
-    auto hi{new_H128_from_bytes(address.bytes)};
-    h160->set_allocated_hi(hi);
-    h160->set_lo(endian::load_big_u32(address.bytes + 16));
-    return h160;
-}
 
 remote::EtherbaseReply EtherbaseCall::response_;
 
 void EtherbaseCall::fill_predefined_reply(const EthereumBackEnd& backend) {
     const auto etherbase = backend.etherbase();
     if (etherbase.has_value()) {
-        const auto h160 = new_H160_address(etherbase.value());
+        const auto h160 = H160_from_address(etherbase.value()).release();
         EtherbaseCall::response_.set_allocated_address(h160);
     }
 }

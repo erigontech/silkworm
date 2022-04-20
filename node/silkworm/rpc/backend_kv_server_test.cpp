@@ -784,6 +784,7 @@ TEST_CASE("BackEndKvServer E2E: more than one Sentry all status KO", "[silkworm]
     }
 }
 
+#ifndef SILKWORM_SANITIZE
 TEST_CASE("BackEndKvServer E2E: trigger server-side write error", "[silkworm][node][rpc]") {
     {
         const uint32_t kNumTxs{1000};
@@ -807,6 +808,7 @@ TEST_CASE("BackEndKvServer E2E: trigger server-side write error", "[silkworm][no
     }
     // Server-side lifecyle of Tx calls must be OK.
 }
+#endif // SILKWORM_SANITIZE
 
 TEST_CASE("BackEndKvServer E2E: exceed max simultaneous readers", "[silkworm][node][rpc]") {
     NodeSettings node_settings;

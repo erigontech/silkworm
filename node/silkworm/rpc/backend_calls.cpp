@@ -31,7 +31,7 @@ remote::EtherbaseReply EtherbaseCall::response_;
 void EtherbaseCall::fill_predefined_reply(const EthereumBackEnd& backend) {
     const auto etherbase = backend.etherbase();
     if (etherbase.has_value()) {
-        const auto h160 = new_H160_from_address(etherbase.value());
+        const auto h160 = H160_from_address(etherbase.value()).release();
         EtherbaseCall::response_.set_allocated_address(h160);
     }
 }

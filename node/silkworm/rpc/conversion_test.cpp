@@ -139,7 +139,7 @@ TEST_CASE("invertibility", "[silkworm][rpc][util]") {
         h512_ptr1->set_allocated_lo(lo);
 
         const std::string& s1 = string_from_H512(*h512_ptr1);
-        auto h512_ptr2 = std::unique_ptr<types::H512>{new_H512_from_string(s1)};
+        auto h512_ptr2 = H512_from_string(s1);
 
         CHECK(*h512_ptr1 == *h512_ptr2);
         const auto& s2 = string_from_H512(*h512_ptr2);
@@ -158,7 +158,7 @@ TEST_CASE("invertibility", "[silkworm][rpc][util]") {
         h256_ptr1->set_allocated_lo(lo);
 
         const auto& hash1 = bytes32_from_H256(*h256_ptr1);
-        auto h256_ptr2 = std::unique_ptr<types::H256>{new_H256_from_bytes32(hash1)};
+        auto h256_ptr2 = H256_from_bytes32(hash1);
 
         CHECK(*h256_ptr1 == *h256_ptr2);
         const auto& hash2 = bytes32_from_H256(*h256_ptr2);
@@ -173,7 +173,7 @@ TEST_CASE("invertibility", "[silkworm][rpc][util]") {
         h160_ptr1->set_allocated_hi(hi);
 
         const auto& address1 = address_from_H160(*h160_ptr1);
-        auto h160_ptr2 = std::unique_ptr<types::H160>{new_H160_from_address(address1)};
+        auto h160_ptr2 = H160_from_address(address1);
 
         CHECK(*h160_ptr1 == *h160_ptr2);
         const auto& address2 = address_from_H160(*h160_ptr2);

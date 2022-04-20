@@ -17,6 +17,7 @@
 #ifndef SILKWORM_RPC_CONVERSION_HPP_
 #define SILKWORM_RPC_CONVERSION_HPP_
 
+#include <memory>
 #include <string>
 
 #include <evmc/evmc.hpp>
@@ -47,13 +48,13 @@ evmc::bytes32 bytes32_from_H256(const types::H256& orig);
 evmc::address address_from_H160(const types::H160& orig);
 
 //! Convert evmc::address to internal RPC H160 type instance.
-types::H512* new_H512_from_string(const std::string& orig);
+std::unique_ptr<types::H512> H512_from_string(const std::string& orig);
 
 //! Convert evmc::bytes32 to internal RPC H256 type instance.
-types::H256* new_H256_from_bytes32(const evmc::bytes32& orig);
+std::unique_ptr<types::H256> H256_from_bytes32(const evmc::bytes32& orig);
 
 //! Convert evmc::address to internal RPC H160 type instance.
-types::H160* new_H160_from_address(const evmc::address& orig);
+std::unique_ptr<types::H160> H160_from_address(const evmc::address& orig);
 
 } // namespace silkworm::rpc
 

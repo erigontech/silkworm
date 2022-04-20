@@ -41,7 +41,7 @@ void StateChangeCollection::start_new_block(BlockNum block_height, const evmc::b
 
     latest_change_ = state_changes_.add_changebatch();
     latest_change_->set_blockheight(block_height);
-    latest_change_->set_allocated_blockhash(new_H256_from_bytes32(block_hash));
+    latest_change_->set_allocated_blockhash(H256_from_bytes32(block_hash).release());
     latest_change_->set_direction(unwind ? remote::Direction::UNWIND : remote::Direction::FORWARD);
     for (auto& tx_rlp : tx_rlps) {
         latest_change_->add_txs(to_hex(tx_rlp));
@@ -56,7 +56,7 @@ void StateChangeCollection::change_account(const evmc::address& address, uint64_
 
     if (!index.has_value() || incarnation > latest_change_->changes(index.value()).incarnation()) {
         index = latest_change_->changes_size();
-        latest_change_->add_changes()->set_allocated_address(new_H160_from_address(address)); // takes ownership
+        latest_change_->add_changes()->set_allocated_address(H160_from_address(address).release()); // takes ownership
         account_change_index_[address] = index.value();
     }
 
@@ -88,7 +88,7 @@ void StateChangeCollection::change_code(const evmc::address& address, uint64_t i
     if (!index.has_value() || incarnation > latest_change_->changes(index.value()).incarnation()) {
         index = latest_change_->changes_size();
         remote::AccountChange* account_change = latest_change_->add_changes();
-        account_change->set_allocated_address(new_H160_from_address(address)); // takes ownership
+        account_change->set_allocated_address(H160_from_address(address).release()); // takes ownership
         account_change->set_action(remote::Action::CODE);
         account_change_index_[address] = index.value();
     }
@@ -121,7 +121,7 @@ void StateChangeCollection::change_storage(const evmc::address& address, uint64_
     if (!ac_index || incarnation > latest_change_->changes(ac_index.value()).incarnation()) {
         ac_index = latest_change_->changes_size();
         remote::AccountChange* account_change = latest_change_->add_changes();
-        account_change->set_allocated_address(new_H160_from_address(address)); // takes ownership
+        account_change->set_allocated_address(H160_from_address(address).release()); // takes ownership
         account_change->set_action(remote::Action::STORAGE);
         account_change_index_[address] = ac_index.value();
     }
@@ -147,7 +147,7 @@ void StateChangeCollection::change_storage(const evmc::address& address, uint64_
     }
 
     remote::StorageChange* storage_change = account_change->mutable_storagechanges(loc_index.value());
-    storage_change->set_allocated_location(new_H256_from_bytes32(location)); // takes ownership
+    storage_change->set_allocated_location(H256_from_bytes32(location).release()); // takes ownership
     storage_change->set_data(to_hex(data));
 }
 
@@ -159,7 +159,7 @@ void StateChangeCollection::delete_account(const evmc::address& address) {
 
     if (!index.has_value()) {
         index = latest_change_->changes_size();
-        latest_change_->add_changes()->set_allocated_address(new_H160_from_address(address)); // takes ownership
+        latest_change_->add_changes()->set_allocated_address(H160_from_address(address).release()); // takes ownership
         account_change_index_[address] = index.value();
     }
 

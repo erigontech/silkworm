@@ -185,7 +185,10 @@ void read_transactions(mdbx::cursor& txn_table, uint64_t base_id, uint64_t count
     for (auto data{txn_table.find(to_slice(key), false)}; data.done && i < count;
          data = txn_table.to_next(/*throw_notfound = */ false), ++i) {
         ByteView data_view{from_slice(data.value)};
-        rlp::success_or_throw(rlp::decode(data_view, v.at(i)));
+
+        Transaction& transaction = v.at(i);
+        transaction.from.reset();  // rlp decode is not touching this field, so make sure it is empty
+        rlp::success_or_throw(rlp::decode(data_view, transaction));
     }
     SILKWORM_ASSERT(i == count);
 }

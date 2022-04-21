@@ -432,10 +432,6 @@ namespace db {
         SECTION("read_block_by_number") {
             Block block;
 
-            // Make sure the from field is reset
-            block.transactions.resize(1);
-            block.transactions[0].from.emplace(0x0000000000000000000000000000000000000000_address);
-
             bool read_senders{false};
             CHECK(!read_block_by_number(txn, block_num, read_senders, block));
 
@@ -451,17 +447,7 @@ namespace db {
             CHECK(!block.transactions[1].from);
 
             read_senders = true;
-            // Make sure the from field is reset
-            block.transactions[0].from.emplace(0x0000000000000000000000000000000000000000_address);
             CHECK_NOTHROW(read_block_by_number(txn, block_num, read_senders, block));
-
-            CHECK(block.header == header);
-            CHECK(block.ommers == body.ommers);
-            CHECK(block.transactions == body.transactions);
-
-            // The senders are not stored and we use signatures to recover them
-            CHECK(block.transactions[0].from == 0xc15eb501c014515ad0ecb4ecbf75cc597110b060_address);
-            CHECK(block.transactions[1].from == 0x26abd0a0526c76f1f0d099484eba92b57c826870_address);
 
             Bytes full_senders{
                 *from_hex("5a0b54d5dc17e0aadc383d2db43b0a0d3e029c4c"
@@ -471,7 +457,6 @@ namespace db {
             Bytes key{block_key(header.number, hash.bytes)};
             auto sender_table{db::open_cursor(txn, table::kSenders)};
             sender_table.upsert(to_slice(key), to_slice(full_senders));
-            block.transactions[0].from.emplace(0x0000000000000000000000000000000000000000_address);
             REQUIRE(read_block_by_number(txn, block_num, read_senders, block));
             CHECK(block.header == header);
             CHECK(block.ommers == body.ommers);

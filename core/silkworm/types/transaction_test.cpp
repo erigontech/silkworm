@@ -57,12 +57,14 @@ TEST_CASE("Legacy Transaction RLP") {
     CHECK(view.empty());
     CHECK(decoded == txn);
 
-    // check that access_list is cleared
+    // check that access_list and from is cleared
     decoded.access_list = access_list;
+    decoded.from.emplace(0x811a752c8cd697e3cb27279c330ed1ada745a8d7_address);
     view = encoded;
     REQUIRE(rlp::decode<Transaction>(view, decoded) == DecodingResult::kOk);
     CHECK(view.empty());
     CHECK(decoded == txn);
+    CHECK_FALSE(decoded.from.has_value());
 }
 
 TEST_CASE("EIP-2930 Transaction RLP") {

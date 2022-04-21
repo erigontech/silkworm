@@ -403,6 +403,18 @@ namespace db {
         CHECK(stages::read_stage_prune_progress(txn, stages::kBlockBodiesKey) == 0);
     }
 
+    TEST_CASE("read_difficulty") {
+        test::Context context;
+        auto& txn{context.txn()};
+
+        BlockNum block_num{10};
+        uint8_t hash[kHashLength]{};
+        intx::uint256 difficulty{10};
+
+        write_total_difficulty(txn, block_num, hash, difficulty);
+        CHECK(read_total_difficulty(txn, block_num, hash) == difficulty);
+    }
+
     TEST_CASE("read_header") {
         test::Context context;
         auto& txn{context.txn()};

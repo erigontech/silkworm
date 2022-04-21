@@ -120,9 +120,9 @@ Stage::Result BodiesStage::forward([[maybe_unused]] bool first_sync) {
 
     try {
         Db::ReadWriteAccess::Tx tx = db_access_.start_tx();  // start a new tx only if db_access has not an active tx
-        auto headers_stage_height = tx.read_stage_progress(db::stages::kBlockBodiesKey);
 
         BodyPersistence body_persistence(tx, block_downloader_.chain_identity());
+        auto bodies_stage_height = body_persistence.initial_height();
 
         RepeatedMeasure<BlockNum> height_progress(body_persistence.initial_height());
         log::Info() << "[2/16 Headers] Waiting for bodies... from=" << height_progress.get();
@@ -136,7 +136,7 @@ Stage::Result BodiesStage::forward([[maybe_unused]] bool first_sync) {
 
         // block processing
         time_point_t last_update = system_clock::now();
-        while (body_persistence.highest_height() < headers_stage_height && !block_downloader_.is_stopping()) {
+        while (body_persistence.highest_height() < bodies_stage_height && !block_downloader_.is_stopping()) {
 
             send_body_requests();
 
@@ -175,7 +175,6 @@ Stage::Result BodiesStage::forward([[maybe_unused]] bool first_sync) {
                     << " last=" << body_persistence.highest_height()
                     << " duration=" << StopWatch::format(timing.lap_duration());
 
-        //log::Info() << "[2/16 Bodies] Updating canonical chain";
         body_persistence.close();
 
         tx.commit();  // this will commit if the tx was started here

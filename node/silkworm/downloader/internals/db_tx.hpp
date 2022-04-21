@@ -190,7 +190,15 @@ class Db::ReadOnlyAccess::Tx {
         }
     }
 
-    [[nodiscard]] bool read_body(const Hash& h, BlockBody& body) {  // todo: add to db::access_layer.hpp?
+    [[nodiscard]] bool has_body(const Hash& h, BlockNum bn) {
+        return db::has_body(txn, bn, h.bytes);
+    }
+
+    [[nodiscard]] bool read_body(const Hash& h, BlockNum bn, BlockBody& body) {
+        return db::read_body(txn, bn, h.bytes, /*read_senders=*/false, body);
+    }
+
+    [[nodiscard]] bool read_body(const Hash& h, BlockBody& body) {
         auto block_num = read_block_num(h);
         if (!block_num) {
             return false;
@@ -267,6 +275,10 @@ class Db::ReadWriteAccess::Tx : public Db::ReadOnlyAccess::Tx {
         if (with_header_numbers) {
             db::write_header_number(txn, header_hash.bytes, header.number);
         }
+    }
+
+    void write_body(const BlockBody& body, Hash h, BlockNum bn) {
+        db::write_body(txn, body, h.bytes, bn);
     }
 
     void write_head_header_hash(Hash h) {

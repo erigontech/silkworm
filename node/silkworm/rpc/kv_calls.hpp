@@ -79,7 +79,6 @@ class TxCall : public BidirectionalStreamingRpc<remote::KV::AsyncService, remote
   public:
     static void set_chaindata_env(mdbx::env* chaindata_env);
     static void set_max_ttl_duration(const boost::posix_time::milliseconds& max_ttl_duration);
-    static void set_max_cursor_id(uint32_t max_cursor_id);
 
     TxCall(boost::asio::io_context& scheduler, remote::KV::AsyncService* service, grpc::ServerCompletionQueue* queue, Handlers handlers);
 
@@ -150,12 +149,11 @@ class TxCall : public BidirectionalStreamingRpc<remote::KV::AsyncService, remote
 
     static mdbx::env* chaindata_env_;
     static boost::posix_time::milliseconds max_ttl_duration_;
-    static uint32_t next_cursor_id_;
-    static uint32_t max_cursor_id_;
 
     mdbx::txn_managed read_only_txn_;
     boost::asio::deadline_timer max_ttl_timer_;
     std::map<uint32_t, TxCursor> cursors_;
+    uint32_t last_cursor_id_{0};
 };
 
 //! Factory specialization for Tx method.

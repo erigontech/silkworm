@@ -884,57 +884,6 @@ TEST_CASE("BackEndKvServer E2E: Tx max opened cursors exceeded", "[silkworm][nod
     CHECK(status.error_message().find("maximum cursors per txn") != std::string::npos);
 }
 
-class TxMaxCursorIdGuard {
-  public:
-    explicit TxMaxCursorIdGuard(uint32_t max_cursor_id) {
-        TxCall::set_max_cursor_id(max_cursor_id);
-    }
-    ~TxMaxCursorIdGuard() {
-        TxCall::set_max_cursor_id(std::numeric_limits<uint32_t>::max());
-    }
-};
-
-TEST_CASE("BackEndKvServer E2E: Tx cursor ID already in use", "[silkworm][node][rpc]") {
-    const uint32_t kMaxCursorId{10};
-    TxMaxCursorIdGuard max_cursor_id_guard{kMaxCursorId};
-    NodeSettings node_settings;
-    BackEndKvE2eTest test{silkworm::log::Level::kNone, node_settings};
-    test.fill_tables();
-    auto kv_client = *test.kv_client;
-
-    grpc::ClientContext context;
-    const auto tx_stream = kv_client.tx_start(&context);
-    // You must read at least the first unsolicited incoming message (TxID announcement).
-    remote::Pair response;
-    REQUIRE(tx_stream->Read(&response));
-    REQUIRE(response.txid() != 0);
-    response.clear_txid();
-    // Open kMaxCursorId cursors expecting successful result and keep'em opened.
-    for (uint32_t i{0}; i<kMaxCursorId; i++) {
-        remote::Cursor open;
-        open.set_op(remote::Op::OPEN);
-        open.set_bucketname(kTestMap.name);
-        REQUIRE(tx_stream->Write(open));
-        response.clear_cursorid();
-        REQUIRE(tx_stream->Read(&response));
-        REQUIRE(response.cursorid() != 0);
-    }
-    // Open one more cursor expecting response error.
-    remote::Cursor open;
-    open.set_op(remote::Op::OPEN);
-    open.set_bucketname(kTestMap.name);
-    CHECK(tx_stream->Write(open));
-    response.clear_cursorid();
-    REQUIRE(!tx_stream->Read(&response));
-    REQUIRE(response.cursorid() == 0);
-    // Half-close the stream and complete the call checking expected failure.
-    REQUIRE(tx_stream->WritesDone());
-    auto status= tx_stream->Finish();
-    CHECK(!status.ok());
-    CHECK(status.error_code() == grpc::StatusCode::ALREADY_EXISTS);
-    CHECK(status.error_message().find("cursor ID already in use") != std::string::npos);
-}
-
 class TxIdleTimeoutGuard {
   public:
     explicit TxIdleTimeoutGuard(uint8_t t) {

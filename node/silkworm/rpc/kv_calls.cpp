@@ -16,8 +16,6 @@
 
 #include "kv_calls.hpp"
 
-#include <limits>
-
 #include <boost/date_time/posix_time/posix_time_io.hpp>
 
 #include <silkworm/common/assert.hpp>
@@ -87,8 +85,6 @@ KvVersionCallFactory::KvVersionCallFactory()
 
 mdbx::env* TxCall::chaindata_env_{nullptr};
 boost::posix_time::milliseconds TxCall::max_ttl_duration_{kMaxTxDuration};
-uint32_t TxCall::next_cursor_id_{0};
-uint32_t TxCall::max_cursor_id_{std::numeric_limits<uint32_t>::max()};
 
 void TxCall::set_chaindata_env(mdbx::env* chaindata_env) {
     TxCall::chaindata_env_ = chaindata_env;
@@ -96,11 +92,6 @@ void TxCall::set_chaindata_env(mdbx::env* chaindata_env) {
 
 void TxCall::set_max_ttl_duration(const boost::posix_time::milliseconds& max_ttl_duration) {
     TxCall::max_ttl_duration_ = max_ttl_duration;
-}
-
-void TxCall::set_max_cursor_id(uint32_t max_cursor_id) {
-    TxCall::max_cursor_id_ = max_cursor_id;
-    TxCall::next_cursor_id_ = 0;
 }
 
 TxCall::TxCall(boost::asio::io_context& scheduler, remote::KV::AsyncService* service, grpc::ServerCompletionQueue* queue, Handlers handlers)
@@ -185,16 +176,10 @@ void TxCall::handle_cursor_open(const remote::Cursor* request) {
     // Create a new database cursor tracking also bucket name (needed for reopening).
     const db::MapConfig map_config{bucket_name.c_str()};
     db::Cursor cursor{read_only_txn_, map_config};
-    next_cursor_id_ = next_cursor_id_ % max_cursor_id_ + 1;
-    const auto [cursor_it, inserted] = cursors_.insert({next_cursor_id_, TxCursor{std::move(cursor), bucket_name}});
+    const auto [cursor_it, inserted] = cursors_.insert({++last_cursor_id_, TxCursor{std::move(cursor), bucket_name}});
 
-    // The assigned cursor ID shall not be already in use (after cursor ID wrapping).
-    if (!inserted) {
-        const auto error_message = "assigned cursor ID already in use: " + std::to_string(next_cursor_id_);
-        SILK_ERROR << "Tx peer: " << peer() << " op=" << remote::Op_Name(request->op()) << " " << error_message;
-        close_with_error(grpc::Status{grpc::StatusCode::ALREADY_EXISTS, error_message});
-        return;
-    }
+    SILKWORM_ASSERT(cursor_it->first == last_cursor_id_);
+    SILKWORM_ASSERT(inserted);
 
     // Send the assigned cursor ID back to the client.
     remote::Pair kv_pair;

@@ -179,7 +179,14 @@ void TxCall::handle_cursor_open(const remote::Cursor* request) {
     const auto [cursor_it, inserted] = cursors_.insert({++last_cursor_id_, TxCursor{std::move(cursor), bucket_name}});
 
     SILKWORM_ASSERT(cursor_it->first == last_cursor_id_);
-    SILKWORM_ASSERT(inserted);
+
+    // The assigned cursor ID shall not be already in use (after cursor ID wrapping).
+    if (!inserted) {
+        const auto error_message = "assigned cursor ID already in use: " + std::to_string(last_cursor_id_);
+        SILK_ERROR << "Tx peer: " << peer() << " op=" << remote::Op_Name(request->op()) << " " << error_message;
+        close_with_error(grpc::Status{grpc::StatusCode::ALREADY_EXISTS, error_message});
+        return;
+    }
 
     // Send the assigned cursor ID back to the client.
     remote::Pair kv_pair;

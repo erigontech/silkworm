@@ -84,4 +84,16 @@ TEST_CASE("ServerContext", "[silkworm][rpc][server_context]") {
     }
 }
 
+TEST_CASE("ServerContextPool", "[silkworm][rpc][server_context]") {
+    grpc::ServerBuilder builder;
+    ServerContextPool server_context_pool{2};
+
+    SECTION("ServerContextPool") {
+        REQUIRE(server_context_pool.num_contexts() == 0);
+        server_context_pool.add_context(builder.AddCompletionQueue());
+        server_context_pool.add_context(builder.AddCompletionQueue());
+        CHECK(server_context_pool.num_contexts() == 2);
+    }
+}
+
 } // namespace silkworm::rpc

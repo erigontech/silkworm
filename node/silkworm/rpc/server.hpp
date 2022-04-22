@@ -18,7 +18,6 @@
 #define SILKWORM_RPC_SERVER_HPP_
 
 #include <memory>
-#include <mutex>
 #include <vector>
 
 #include <grpcpp/grpcpp.h>
@@ -49,46 +48,45 @@ class Server {
     //! Build the RPC server according to its configuration.
     void build_and_start() {
         SILK_TRACE << "Server::build_and_start " << this << " START";
-        {
-            std::unique_lock<std::mutex> lock(mutex_);
-            if (shutdown_) {
-                SILK_TRACE << "Server::build_and_start " << this << " already shut down END";
-                return;
-            }
 
-            grpc::ServerBuilder builder;
-
-            // Disable SO_REUSEPORT socket option to obtain "address already in use" on Windows.
-            builder.AddChannelArgument(GRPC_ARG_ALLOW_REUSEPORT, 0);
-
-            // Add the local endpoint to bind the RPC server to (selected_port will be set *after* BuildAndStart call).
-            int selected_port;
-            builder.AddListeningPort(config_.address_uri(), config_.credentials(), &selected_port);
-
-            // Add one server-side gRPC completion queue for each execution context.
-            for (std::size_t i{0}; i < config_.num_contexts(); ++i) {
-                context_pool_.add_context(builder.AddCompletionQueue());
-            }
-
-            // gRPC async model requires the server to register one responded call for each RPC in advance.
-            SILK_DEBUG << "Server " << this << " registering async services";
-            register_async_services(builder);
-
-            server_ = builder.BuildAndStart();
-            SILK_DEBUG << "Server " << this << " bound at selected port: " << selected_port;
-            if (server_ == nullptr) {
-                SILK_ERROR << "Server " << this << " BuildAndStart failed [" << config_.address_uri() << "]";
-                throw std::runtime_error("cannot start gRPC server at " + config_.address_uri());
-            }
-
-            // gRPC async model requires the server to register one request call for each RPC in advance.
-            SILK_DEBUG << "Server " << this << " registering request calls";
-            register_request_calls();
-
-            // Start the server execution: the context pool will spawn the context threads.
-            SILK_DEBUG << "Server " << this << " starting execution loop";
-            context_pool_.start();
+        if (shutdown_) {
+            SILK_TRACE << "Server::build_and_start " << this << " already shut down END";
+            return;
         }
+
+        grpc::ServerBuilder builder;
+
+        // Disable SO_REUSEPORT socket option to obtain "address already in use" on Windows.
+        builder.AddChannelArgument(GRPC_ARG_ALLOW_REUSEPORT, 0);
+
+        // Add the local endpoint to bind the RPC server to (selected_port will be set *after* BuildAndStart call).
+        int selected_port;
+        builder.AddListeningPort(config_.address_uri(), config_.credentials(), &selected_port);
+
+        // Add one server-side gRPC completion queue for each execution context.
+        for (std::size_t i{0}; i < config_.num_contexts(); ++i) {
+            context_pool_.add_context(builder.AddCompletionQueue());
+        }
+
+        // gRPC async model requires the server to register one responded call for each RPC in advance.
+        SILK_DEBUG << "Server " << this << " registering async services";
+        register_async_services(builder);
+
+        server_ = builder.BuildAndStart();
+        SILK_DEBUG << "Server " << this << " bound at selected port: " << selected_port;
+        if (server_ == nullptr) {
+            SILK_ERROR << "Server " << this << " BuildAndStart failed [" << config_.address_uri() << "]";
+            throw std::runtime_error("cannot start gRPC server at " + config_.address_uri());
+        }
+
+        // gRPC async model requires the server to register one request call for each RPC in advance.
+        SILK_DEBUG << "Server " << this << " registering request calls";
+        register_request_calls();
+
+        // Start the server execution: the context pool will spawn the context threads.
+        SILK_DEBUG << "Server " << this << " starting execution loop";
+        context_pool_.start();
+
         SILK_TRACE << "Server::build_and_start " << this << " END";
     }
 
@@ -102,26 +100,25 @@ class Server {
     //! Stop this Server instance forever. Any subsequent call to \ref build_and_start() has not effect.
     void shutdown() {
         SILK_TRACE << "Server::shutdown " << this << " START";
-        {
-            std::lock_guard<std::mutex> guard(mutex_);
-            if (shutdown_) {
-                SILK_TRACE << "Server::shutdown " << this << " already shut down END";
-                return;
-            }
-            shutdown_ = true;
 
-            SILK_DEBUG << "Server::shutdown " << this << " shutting down server immediately";
-
-            // Order matters here: 1) shutdown the server (immediate deadline)
-            if (server_) {
-                server_->Shutdown(gpr_time_0(GPR_CLOCK_REALTIME));
-            }
-
-            SILK_DEBUG << "Server::shutdown " << this << " stopping context pool";
-
-            // Order matters here: 2) shutdown and drain the queues
-            context_pool_.stop();
+        if (shutdown_) {
+            SILK_TRACE << "Server::shutdown " << this << " already shut down END";
+            return;
         }
+        shutdown_ = true;
+
+        SILK_DEBUG << "Server::shutdown " << this << " shutting down server immediately";
+
+        // Order matters here: 1) shutdown the server (immediate deadline)
+        if (server_) {
+            server_->Shutdown(gpr_time_0(GPR_CLOCK_REALTIME));
+        }
+
+        SILK_DEBUG << "Server::shutdown " << this << " stopping context pool";
+
+        // Order matters here: 2) shutdown and drain the queues
+        context_pool_.stop();
+
         SILK_TRACE << "Server::shutdown " << this << " END";
     }
 
@@ -150,9 +147,6 @@ class Server {
 
     //! Pool of server schedulers used to run the execution loops.
     ServerContextPool context_pool_;
-
-    //! Mutual exclusion to synchronize run/shutdown operations.
-    std::mutex mutex_;
 
     bool shutdown_{false};
 };

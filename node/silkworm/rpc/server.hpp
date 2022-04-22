@@ -112,6 +112,7 @@ class Server {
         // Order matters here: 1) shutdown the server (immediate deadline)
         if (server_) {
             server_->Shutdown(gpr_time_0(GPR_CLOCK_REALTIME));
+            server_->Wait();
         }
 
         SILK_DEBUG << "Server::shutdown " << this << " stopping context pool";

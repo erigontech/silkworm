@@ -52,6 +52,9 @@ constexpr auto kKvApiVersion = KvVersion{5, 1, 0};
 //! The max life duration for MDBX transactions (long-lived transactions are discouraged).
 constexpr boost::posix_time::milliseconds kMaxTxDuration{60'000};
 
+//! The max number of opened cursors for each remote transaction (arbitrary limit on this KV implementation).
+constexpr std::size_t kMaxTxCursors{100};
+
 //! Unary RPC for Version method of 'ethbackend' gRPC protocol.
 class KvVersionCall : public UnaryRpc<remote::KV::AsyncService, google::protobuf::Empty, types::VersionReply> {
   public:
@@ -76,6 +79,7 @@ class TxCall : public BidirectionalStreamingRpc<remote::KV::AsyncService, remote
   public:
     static void set_chaindata_env(mdbx::env* chaindata_env);
     static void set_max_ttl_duration(const boost::posix_time::milliseconds& max_ttl_duration);
+    static void set_max_cursor_id(uint32_t max_cursor_id);
 
     TxCall(boost::asio::io_context& scheduler, remote::KV::AsyncService* service, grpc::ServerCompletionQueue* queue, Handlers handlers);
 
@@ -147,6 +151,7 @@ class TxCall : public BidirectionalStreamingRpc<remote::KV::AsyncService, remote
     static mdbx::env* chaindata_env_;
     static boost::posix_time::milliseconds max_ttl_duration_;
     static uint32_t next_cursor_id_;
+    static uint32_t max_cursor_id_;
 
     mdbx::txn_managed read_only_txn_;
     boost::asio::deadline_timer max_ttl_timer_;

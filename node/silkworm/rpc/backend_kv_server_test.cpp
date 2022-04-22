@@ -810,7 +810,7 @@ TEST_CASE("BackEndKvServer E2E: trigger server-side write error", "[silkworm][no
 }
 #endif // SILKWORM_SANITIZE
 
-TEST_CASE("BackEndKvServer E2E: exceed max simultaneous readers", "[silkworm][node][rpc]") {
+TEST_CASE("BackEndKvServer E2E: Tx max simultaneous readers exceeded", "[silkworm][node][rpc]") {
     NodeSettings node_settings;
     BackEndKvE2eTest test{silkworm::log::Level::kNone, node_settings};
     test.fill_tables();
@@ -824,8 +824,8 @@ TEST_CASE("BackEndKvServer E2E: exceed max simultaneous readers", "[silkworm][no
         auto tx_stream = kv_client.tx_start(context.get());
         // You must read at least the first unsolicited incoming message (TxID announcement).
         remote::Pair response;
-        CHECK(tx_stream->Read(&response));
-        CHECK(response.txid() != 0);
+        REQUIRE(tx_stream->Read(&response));
+        REQUIRE(response.txid() != 0);
         tx_streams.push_back(std::move(tx_stream));
     }
 
@@ -839,10 +839,100 @@ TEST_CASE("BackEndKvServer E2E: exceed max simultaneous readers", "[silkworm][no
 
     // Dispose all the opened Tx calls.
     for (const auto& tx_stream : tx_streams) {
-        CHECK(tx_stream->WritesDone());
+        REQUIRE(tx_stream->WritesDone());
         auto status = tx_stream->Finish();
-        CHECK(status.ok());
+        REQUIRE(status.ok());
     }
+}
+
+TEST_CASE("BackEndKvServer E2E: Tx max opened cursors exceeded", "[silkworm][node][rpc]") {
+    NodeSettings node_settings;
+    BackEndKvE2eTest test{silkworm::log::Level::kNone, node_settings};
+    test.fill_tables();
+    auto kv_client = *test.kv_client;
+
+    grpc::ClientContext context;
+    const auto tx_stream = kv_client.tx_start(&context);
+    // You must read at least the first unsolicited incoming message (TxID announcement).
+    remote::Pair response;
+    REQUIRE(tx_stream->Read(&response));
+    REQUIRE(response.txid() != 0);
+    response.clear_txid();
+    // Open as many cursors as possible expecting successful result.
+    for (uint32_t i{0}; i<kMaxTxCursors; i++) {
+        remote::Cursor open;
+        open.set_op(remote::Op::OPEN);
+        open.set_bucketname(kTestMap.name);
+        REQUIRE(tx_stream->Write(open));
+        response.clear_cursorid();
+        REQUIRE(tx_stream->Read(&response));
+        REQUIRE(response.cursorid() != 0);
+    }
+    // Try to open one more and get failure from server-side on the stream.
+    remote::Cursor open;
+    open.set_op(remote::Op::OPEN);
+    open.set_bucketname(kTestMap.name);
+    REQUIRE(tx_stream->Write(open));
+    response.clear_cursorid();
+    REQUIRE(!tx_stream->Read(&response));
+    REQUIRE(response.cursorid() == 0);
+    // Half-close the stream and complete the call checking expected failure.
+    REQUIRE(tx_stream->WritesDone());
+    auto status= tx_stream->Finish();
+    CHECK(!status.ok());
+    CHECK(status.error_code() == grpc::StatusCode::RESOURCE_EXHAUSTED);
+    CHECK(status.error_message().find("maximum cursors per txn") != std::string::npos);
+}
+
+class TxMaxCursorIdGuard {
+  public:
+    explicit TxMaxCursorIdGuard(uint32_t max_cursor_id) {
+        TxCall::set_max_cursor_id(max_cursor_id);
+    }
+    ~TxMaxCursorIdGuard() {
+        TxCall::set_max_cursor_id(std::numeric_limits<uint32_t>::max());
+    }
+};
+
+TEST_CASE("BackEndKvServer E2E: Tx cursor ID already in use", "[silkworm][node][rpc]") {
+    const uint32_t kMaxCursorId{10};
+    TxMaxCursorIdGuard max_cursor_id_guard{kMaxCursorId};
+    NodeSettings node_settings;
+    BackEndKvE2eTest test{silkworm::log::Level::kNone, node_settings};
+    test.fill_tables();
+    auto kv_client = *test.kv_client;
+
+    grpc::ClientContext context;
+    const auto tx_stream = kv_client.tx_start(&context);
+    // You must read at least the first unsolicited incoming message (TxID announcement).
+    remote::Pair response;
+    REQUIRE(tx_stream->Read(&response));
+    REQUIRE(response.txid() != 0);
+    response.clear_txid();
+    // Open kMaxCursorId cursors expecting successful result and keep'em opened.
+    for (uint32_t i{0}; i<kMaxCursorId; i++) {
+        remote::Cursor open;
+        open.set_op(remote::Op::OPEN);
+        open.set_bucketname(kTestMap.name);
+        REQUIRE(tx_stream->Write(open));
+        response.clear_cursorid();
+        REQUIRE(tx_stream->Read(&response));
+        REQUIRE(response.cursorid() != 0);
+    }
+    // Open one more cursor expecting response error.
+    remote::Cursor open;
+    open.set_op(remote::Op::OPEN);
+    open.set_bucketname(kTestMap.name);
+    CHECK(tx_stream->Write(open));
+    response.clear_cursorid();
+    REQUIRE(!tx_stream->Read(&response));
+    REQUIRE(response.cursorid() == 0);
+    // Half-close the stream and complete the call checking expected failure.
+    REQUIRE(tx_stream->WritesDone());
+    auto status= tx_stream->Finish();
+    CHECK(!status.ok());
+    CHECK(status.error_code() == grpc::StatusCode::ALREADY_EXISTS);
+    CHECK(status.error_message().find("cursor ID already in use") != std::string::npos);
 }
 
 class TxIdleTimeoutGuard {

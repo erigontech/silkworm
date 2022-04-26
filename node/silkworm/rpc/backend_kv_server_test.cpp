@@ -515,7 +515,7 @@ TEST_CASE("BackEndKvServer E2E: empty node settings", "[silkworm][node][rpc]") {
     SECTION("Tx KO: invalid table name", "[silkworm][node][rpc]") {
         remote::Cursor open;
         open.set_op(remote::Op::OPEN);
-        open.set_bucketname("UnexistentTable");
+        open.set_bucketname("NonexistentTable");
         std::vector<remote::Cursor> requests{open};
         std::vector<remote::Pair> responses;
         const auto status = kv_client.tx(requests, responses);
@@ -1599,7 +1599,7 @@ TEST_CASE("BackEndKvServer E2E: Tx cursor valid operations", "[silkworm][node][r
         CHECK(responses[3].cursorid() == 0);
     }
 
-    SECTION("Tx OK: SEEK operation w/ unexistent key on single-value table", "[silkworm][node][rpc]") {
+    SECTION("Tx OK: SEEK operation w/ unexisting key on single-value table", "[silkworm][node][rpc]") {
         remote::Cursor open;
         open.set_op(remote::Op::OPEN);
         open.set_bucketname(kTestMap.name);
@@ -1667,7 +1667,7 @@ TEST_CASE("BackEndKvServer E2E: Tx cursor valid operations", "[silkworm][node][r
         CHECK(responses[3].cursorid() == 0);
     }
 
-    SECTION("Tx OK: SEEK_EXACT operation w/ unexistent key on single-value table", "[silkworm][node][rpc]") {
+    SECTION("Tx OK: SEEK_EXACT operation w/ nonexistent key on single-value table", "[silkworm][node][rpc]") {
         remote::Cursor open;
         open.set_op(remote::Op::OPEN);
         open.set_bucketname(kTestMap.name);
@@ -1687,6 +1687,190 @@ TEST_CASE("BackEndKvServer E2E: Tx cursor valid operations", "[silkworm][node][r
         CHECK(responses[1].cursorid() != 0);
         CHECK(responses[2].k().empty());
         CHECK(responses[2].v().empty());
+        CHECK(responses[3].cursorid() == 0);
+    }
+
+    SECTION("Tx OK: one SEEK_BOTH w/o key operation on multi-value table", "[silkworm][node][rpc]") {
+        remote::Cursor open;
+        open.set_op(remote::Op::OPEN);
+        open.set_bucketname(kTestMultiMap.name);
+        remote::Cursor seek_both;
+        seek_both.set_op(remote::Op::SEEK_BOTH);
+        seek_both.set_cursor(0); // automatically assigned by KvClient::tx
+        remote::Cursor close;
+        close.set_op(remote::Op::CLOSE);
+        close.set_cursor(0); // automatically assigned by KvClient::tx
+        std::vector<remote::Cursor> requests{open, seek_both, close};
+        std::vector<remote::Pair> responses;
+        const auto status = kv_client.tx(requests, responses);
+        CHECK(status.ok());
+        CHECK(responses.size() == 4);
+        CHECK(responses[0].txid() != 0);
+        CHECK(responses[1].cursorid() != 0);
+        CHECK(responses[2].k().empty());
+        CHECK(responses[2].v().empty());
+        CHECK(responses[3].cursorid() == 0);
+    }
+
+    SECTION("Tx OK: one SEEK_BOTH w/ nonexistent key operation on multi-value table", "[silkworm][node][rpc]") {
+        remote::Cursor open;
+        open.set_op(remote::Op::OPEN);
+        open.set_bucketname(kTestMultiMap.name);
+        remote::Cursor seek_both;
+        seek_both.set_op(remote::Op::SEEK_BOTH);
+        seek_both.set_cursor(0); // automatically assigned by KvClient::tx
+        seek_both.set_k("CC");
+        remote::Cursor close;
+        close.set_op(remote::Op::CLOSE);
+        close.set_cursor(0); // automatically assigned by KvClient::tx
+        std::vector<remote::Cursor> requests{open, seek_both, close};
+        std::vector<remote::Pair> responses;
+        const auto status = kv_client.tx(requests, responses);
+        CHECK(status.ok());
+        CHECK(responses.size() == 4);
+        CHECK(responses[0].txid() != 0);
+        CHECK(responses[1].cursorid() != 0);
+        CHECK(responses[2].k().empty());
+        CHECK(responses[2].v().empty());
+        CHECK(responses[3].cursorid() == 0);
+    }
+
+    SECTION("Tx OK: one SEEK_BOTH w/ existent key operation on multi-value table", "[silkworm][node][rpc]") {
+        remote::Cursor open;
+        open.set_op(remote::Op::OPEN);
+        open.set_bucketname(kTestMultiMap.name);
+        remote::Cursor seek_both;
+        seek_both.set_op(remote::Op::SEEK_BOTH);
+        seek_both.set_cursor(0); // automatically assigned by KvClient::tx
+        seek_both.set_k("AA");
+        remote::Cursor close;
+        close.set_op(remote::Op::CLOSE);
+        close.set_cursor(0); // automatically assigned by KvClient::tx
+        std::vector<remote::Cursor> requests{open, seek_both, close};
+        std::vector<remote::Pair> responses;
+        const auto status = kv_client.tx(requests, responses);
+        CHECK(status.ok());
+        CHECK(responses.size() == 4);
+        CHECK(responses[0].txid() != 0);
+        CHECK(responses[1].cursorid() != 0);
+        CHECK(responses[2].k().empty());
+        CHECK(responses[2].v() == "00");
+        CHECK(responses[3].cursorid() == 0);
+    }
+
+    SECTION("Tx OK: one SEEK_BOTH w/ existent key+value operation on multi-value table", "[silkworm][node][rpc]") {
+        remote::Cursor open;
+        open.set_op(remote::Op::OPEN);
+        open.set_bucketname(kTestMultiMap.name);
+        remote::Cursor seek_both;
+        seek_both.set_op(remote::Op::SEEK_BOTH);
+        seek_both.set_cursor(0); // automatically assigned by KvClient::tx
+        seek_both.set_k("AA");
+        seek_both.set_v("22");
+        remote::Cursor close;
+        close.set_op(remote::Op::CLOSE);
+        close.set_cursor(0); // automatically assigned by KvClient::tx
+        std::vector<remote::Cursor> requests{open, seek_both, close};
+        std::vector<remote::Pair> responses;
+        const auto status = kv_client.tx(requests, responses);
+        CHECK(status.ok());
+        CHECK(responses.size() == 4);
+        CHECK(responses[0].txid() != 0);
+        CHECK(responses[1].cursorid() != 0);
+        CHECK(responses[2].k().empty());
+        CHECK(responses[2].v() == "22");
+        CHECK(responses[3].cursorid() == 0);
+    }
+
+    SECTION("Tx OK: one SEEK_BOTH_EXACT w/o key operation on multi-value table", "[silkworm][node][rpc]") {
+        remote::Cursor open;
+        open.set_op(remote::Op::OPEN);
+        open.set_bucketname(kTestMultiMap.name);
+        remote::Cursor seek_both_exact;
+        seek_both_exact.set_op(remote::Op::SEEK_BOTH_EXACT);
+        seek_both_exact.set_cursor(0); // automatically assigned by KvClient::tx
+        remote::Cursor close;
+        close.set_op(remote::Op::CLOSE);
+        close.set_cursor(0); // automatically assigned by KvClient::tx
+        std::vector<remote::Cursor> requests{open, seek_both_exact, close};
+        std::vector<remote::Pair> responses;
+        const auto status = kv_client.tx(requests, responses);
+        CHECK(status.ok());
+        CHECK(responses.size() == 4);
+        CHECK(responses[0].txid() != 0);
+        CHECK(responses[1].cursorid() != 0);
+        CHECK(responses[2].k().empty());
+        CHECK(responses[2].v().empty());
+        CHECK(responses[3].cursorid() == 0);
+    }
+
+    SECTION("Tx OK: one SEEK_BOTH_EXACT w/ nonexistent key operation on multi-value table", "[silkworm][node][rpc]") {
+        remote::Cursor open;
+        open.set_op(remote::Op::OPEN);
+        open.set_bucketname(kTestMultiMap.name);
+        remote::Cursor seek_both_exact;
+        seek_both_exact.set_op(remote::Op::SEEK_BOTH_EXACT);
+        seek_both_exact.set_cursor(0); // automatically assigned by KvClient::tx
+        seek_both_exact.set_k("CC");
+        remote::Cursor close;
+        close.set_op(remote::Op::CLOSE);
+        close.set_cursor(0); // automatically assigned by KvClient::tx
+        std::vector<remote::Cursor> requests{open, seek_both_exact, close};
+        std::vector<remote::Pair> responses;
+        const auto status = kv_client.tx(requests, responses);
+        CHECK(status.ok());
+        CHECK(responses.size() == 4);
+        CHECK(responses[0].txid() != 0);
+        CHECK(responses[1].cursorid() != 0);
+        CHECK(responses[2].k().empty());
+        CHECK(responses[2].v().empty());
+        CHECK(responses[3].cursorid() == 0);
+    }
+
+    SECTION("Tx OK: one SEEK_BOTH_EXACT w/ existent key operation on multi-value table", "[silkworm][node][rpc]") {
+        remote::Cursor open;
+        open.set_op(remote::Op::OPEN);
+        open.set_bucketname(kTestMultiMap.name);
+        remote::Cursor seek_both_exact;
+        seek_both_exact.set_op(remote::Op::SEEK_BOTH_EXACT);
+        seek_both_exact.set_cursor(0); // automatically assigned by KvClient::tx
+        seek_both_exact.set_k("AA");
+        remote::Cursor close;
+        close.set_op(remote::Op::CLOSE);
+        close.set_cursor(0); // automatically assigned by KvClient::tx
+        std::vector<remote::Cursor> requests{open, seek_both_exact, close};
+        std::vector<remote::Pair> responses;
+        const auto status = kv_client.tx(requests, responses);
+        CHECK(status.ok());
+        CHECK(responses.size() == 4);
+        CHECK(responses[0].txid() != 0);
+        CHECK(responses[1].cursorid() != 0);
+        CHECK(responses[2].k().empty());
+        CHECK(responses[2].v().empty());
+        CHECK(responses[3].cursorid() == 0);
+    }
+
+    SECTION("Tx OK: one SEEK_BOTH_EXACT w/ existent key+value operation on multi-value table", "[silkworm][node][rpc]") {
+        remote::Cursor open;
+        open.set_op(remote::Op::OPEN);
+        open.set_bucketname(kTestMultiMap.name);
+        remote::Cursor seek_both_exact;
+        seek_both_exact.set_op(remote::Op::SEEK_BOTH_EXACT);
+        seek_both_exact.set_cursor(0); // automatically assigned by KvClient::tx
+        seek_both_exact.set_k("AA");
+        seek_both_exact.set_v("22");
+        remote::Cursor close;
+        close.set_op(remote::Op::CLOSE);
+        close.set_cursor(0); // automatically assigned by KvClient::tx
+        std::vector<remote::Cursor> requests{open, seek_both_exact, close};
+        std::vector<remote::Pair> responses;
+        const auto status = kv_client.tx(requests, responses);
+        CHECK(status.ok());
+        CHECK(responses.size() == 4);
+        CHECK(responses[0].txid() != 0);
+        CHECK(responses[1].cursorid() != 0);
+        CHECK(responses[2].k() == "AA");
+        CHECK(responses[2].v() == "22");
         CHECK(responses[3].cursorid() == 0);
     }
 }
@@ -1801,6 +1985,46 @@ TEST_CASE("BackEndKvServer E2E: Tx cursor invalid operations", "[silkworm][node]
         CHECK(!status.ok());
         CHECK(status.error_code() == grpc::StatusCode::INTERNAL);
         CHECK(status.error_message().find("exception: mdbx") != std::string::npos);
+        CHECK(responses.size() == 2);
+        CHECK(responses[0].txid() != 0);
+    }
+
+    SECTION("Tx KO: SEEK_BOTH operation on single-value table", "[silkworm][node][rpc]") {
+        remote::Cursor open;
+        open.set_op(remote::Op::OPEN);
+        open.set_bucketname(kTestMap.name);
+        remote::Cursor seek_both;
+        seek_both.set_op(remote::Op::SEEK_BOTH);
+        seek_both.set_cursor(0); // automatically assigned by KvClient::tx
+        remote::Cursor close;
+        close.set_op(remote::Op::CLOSE);
+        close.set_cursor(0); // automatically assigned by KvClient::tx
+        std::vector<remote::Cursor> requests{open, seek_both, close};
+        std::vector<remote::Pair> responses;
+        const auto status = kv_client.tx(requests, responses);
+        CHECK(!status.ok());
+        CHECK(status.error_code() == grpc::StatusCode::INTERNAL);
+        CHECK(status.error_message().find("MDBX_INCOMPATIBLE") != std::string::npos);
+        CHECK(responses.size() == 2);
+        CHECK(responses[0].txid() != 0);
+    }
+
+    SECTION("Tx KO: SEEK_BOTH_EXACT operation on single-value table", "[silkworm][node][rpc]") {
+        remote::Cursor open;
+        open.set_op(remote::Op::OPEN);
+        open.set_bucketname(kTestMap.name);
+        remote::Cursor seek_both_exact;
+        seek_both_exact.set_op(remote::Op::SEEK_BOTH_EXACT);
+        seek_both_exact.set_cursor(0); // automatically assigned by KvClient::tx
+        remote::Cursor close;
+        close.set_op(remote::Op::CLOSE);
+        close.set_cursor(0); // automatically assigned by KvClient::tx
+        std::vector<remote::Cursor> requests{open, seek_both_exact, close};
+        std::vector<remote::Pair> responses;
+        const auto status = kv_client.tx(requests, responses);
+        CHECK(!status.ok());
+        CHECK(status.error_code() == grpc::StatusCode::INTERNAL);
+        CHECK(status.error_message().find("MDBX_INCOMPATIBLE") != std::string::npos);
         CHECK(responses.size() == 2);
         CHECK(responses[0].txid() != 0);
     }

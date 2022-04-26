@@ -20,38 +20,24 @@
 
 #include <silkworm/common/endian.hpp>
 #include <silkworm/common/log.hpp>
+#include <silkworm/rpc/conversion.hpp>
 #include <silkworm/rpc/util.hpp>
 #include <types/types.pb.h>
 
 namespace silkworm::rpc {
-
-inline static types::H128* new_H128_from_bytes(const uint8_t* bytes) {
-    auto h128{new types::H128()};
-    h128->set_hi(endian::load_big_u64(bytes));
-    h128->set_lo(endian::load_big_u64(bytes + 8));
-    return h128;
-}
-
-inline static types::H160* new_H160_address(const evmc::address& address) {
-    auto h160{new types::H160()};
-    auto hi{new_H128_from_bytes(address.bytes)};
-    h160->set_allocated_hi(hi);
-    h160->set_lo(endian::load_big_u32(address.bytes + 16));
-    return h160;
-}
 
 remote::EtherbaseReply EtherbaseCall::response_;
 
 void EtherbaseCall::fill_predefined_reply(const EthereumBackEnd& backend) {
     const auto etherbase = backend.etherbase();
     if (etherbase.has_value()) {
-        const auto h160 = new_H160_address(etherbase.value());
+        const auto h160 = H160_from_address(etherbase.value()).release();
         EtherbaseCall::response_.set_allocated_address(h160);
     }
 }
 
-EtherbaseCall::EtherbaseCall(remote::ETHBACKEND::AsyncService* service, grpc::ServerCompletionQueue* queue, Handlers handlers)
-    : UnaryRpc<remote::ETHBACKEND::AsyncService, remote::EtherbaseRequest, remote::EtherbaseReply>(service, queue, handlers) {
+EtherbaseCall::EtherbaseCall(boost::asio::io_context& scheduler, remote::ETHBACKEND::AsyncService* service, grpc::ServerCompletionQueue* queue, Handlers handlers)
+    : UnaryRpc<remote::ETHBACKEND::AsyncService, remote::EtherbaseRequest, remote::EtherbaseReply>(scheduler, service, queue, handlers) {
 }
 
 void EtherbaseCall::process(const remote::EtherbaseRequest* request) {
@@ -82,8 +68,8 @@ void NetVersionCall::fill_predefined_reply(const EthereumBackEnd& backend) {
     }
 }
 
-NetVersionCall::NetVersionCall(remote::ETHBACKEND::AsyncService* service, grpc::ServerCompletionQueue* queue, Handlers handlers)
-    : UnaryRpc<remote::ETHBACKEND::AsyncService, remote::NetVersionRequest, remote::NetVersionReply>(service, queue, handlers) {
+NetVersionCall::NetVersionCall(boost::asio::io_context& scheduler, remote::ETHBACKEND::AsyncService* service, grpc::ServerCompletionQueue* queue, Handlers handlers)
+    : UnaryRpc<remote::ETHBACKEND::AsyncService, remote::NetVersionRequest, remote::NetVersionReply>(scheduler, service, queue, handlers) {
 }
 
 void NetVersionCall::process(const remote::NetVersionRequest* request) {
@@ -109,8 +95,8 @@ void NetPeerCountCall::remove_sentry(SentryClient* sentry) {
     NetPeerCountCall::sentries_.erase(sentry);
 }
 
-NetPeerCountCall::NetPeerCountCall(remote::ETHBACKEND::AsyncService* service, grpc::ServerCompletionQueue* queue, Handlers handlers)
-    : UnaryRpc<remote::ETHBACKEND::AsyncService, remote::NetPeerCountRequest, remote::NetPeerCountReply>(service, queue, handlers) {
+NetPeerCountCall::NetPeerCountCall(boost::asio::io_context& scheduler, remote::ETHBACKEND::AsyncService* service, grpc::ServerCompletionQueue* queue, Handlers handlers)
+    : UnaryRpc<remote::ETHBACKEND::AsyncService, remote::NetPeerCountRequest, remote::NetPeerCountReply>(scheduler, service, queue, handlers) {
 }
 
 void NetPeerCountCall::process(const remote::NetPeerCountRequest* request) {
@@ -169,8 +155,8 @@ void BackEndVersionCall::fill_predefined_reply() {
     BackEndVersionCall::response_.set_patch(std::get<2>(kEthBackEndApiVersion));
 }
 
-BackEndVersionCall::BackEndVersionCall(remote::ETHBACKEND::AsyncService* service, grpc::ServerCompletionQueue* queue, Handlers handlers)
-    : UnaryRpc<remote::ETHBACKEND::AsyncService, google::protobuf::Empty, types::VersionReply>(service, queue, handlers) {
+BackEndVersionCall::BackEndVersionCall(boost::asio::io_context& scheduler, remote::ETHBACKEND::AsyncService* service, grpc::ServerCompletionQueue* queue, Handlers handlers)
+    : UnaryRpc<remote::ETHBACKEND::AsyncService, google::protobuf::Empty, types::VersionReply>(scheduler, service, queue, handlers) {
 }
 
 void BackEndVersionCall::process(const google::protobuf::Empty* request) {
@@ -192,8 +178,8 @@ void ProtocolVersionCall::fill_predefined_reply() {
     ProtocolVersionCall::response_.set_id(kEthDevp2pProtocolVersion);
 }
 
-ProtocolVersionCall::ProtocolVersionCall(remote::ETHBACKEND::AsyncService* service, grpc::ServerCompletionQueue* queue, Handlers handlers)
-    : UnaryRpc<remote::ETHBACKEND::AsyncService, remote::ProtocolVersionRequest, remote::ProtocolVersionReply>(service, queue, handlers) {
+ProtocolVersionCall::ProtocolVersionCall(boost::asio::io_context& scheduler, remote::ETHBACKEND::AsyncService* service, grpc::ServerCompletionQueue* queue, Handlers handlers)
+    : UnaryRpc<remote::ETHBACKEND::AsyncService, remote::ProtocolVersionRequest, remote::ProtocolVersionReply>(scheduler, service, queue, handlers) {
 }
 
 void ProtocolVersionCall::process(const remote::ProtocolVersionRequest* request) {
@@ -215,8 +201,8 @@ void ClientVersionCall::fill_predefined_reply(const EthereumBackEnd& backend) {
     ClientVersionCall::response_.set_nodename(backend.node_name());
 }
 
-ClientVersionCall::ClientVersionCall(remote::ETHBACKEND::AsyncService* service, grpc::ServerCompletionQueue* queue, Handlers handlers)
-    : UnaryRpc<remote::ETHBACKEND::AsyncService, remote::ClientVersionRequest, remote::ClientVersionReply>(service, queue, handlers) {
+ClientVersionCall::ClientVersionCall(boost::asio::io_context& scheduler, remote::ETHBACKEND::AsyncService* service, grpc::ServerCompletionQueue* queue, Handlers handlers)
+    : UnaryRpc<remote::ETHBACKEND::AsyncService, remote::ClientVersionRequest, remote::ClientVersionReply>(scheduler, service, queue, handlers) {
 }
 
 void ClientVersionCall::process(const remote::ClientVersionRequest* request) {
@@ -232,8 +218,8 @@ ClientVersionCallFactory::ClientVersionCallFactory(const EthereumBackEnd& backen
     ClientVersionCall::fill_predefined_reply(backend);
 }
 
-SubscribeCall::SubscribeCall(remote::ETHBACKEND::AsyncService* service, grpc::ServerCompletionQueue* queue, Handlers handlers)
-    : ServerStreamingRpc<remote::ETHBACKEND::AsyncService, remote::SubscribeRequest, remote::SubscribeReply>(service, queue, handlers) {
+SubscribeCall::SubscribeCall(boost::asio::io_context& scheduler, remote::ETHBACKEND::AsyncService* service, grpc::ServerCompletionQueue* queue, Handlers handlers)
+    : ServerStreamingRpc<remote::ETHBACKEND::AsyncService, remote::SubscribeRequest, remote::SubscribeReply>(scheduler, service, queue, handlers) {
 }
 
 void SubscribeCall::process(const remote::SubscribeRequest* request) {
@@ -268,8 +254,8 @@ void NodeInfoCall::remove_sentry(SentryClient* sentry) {
     NodeInfoCall::sentries_.erase(sentry);
 }
 
-NodeInfoCall::NodeInfoCall(remote::ETHBACKEND::AsyncService* service, grpc::ServerCompletionQueue* queue, Handlers handlers)
-    : UnaryRpc<remote::ETHBACKEND::AsyncService, remote::NodesInfoRequest, remote::NodesInfoReply>(service, queue, handlers) {
+NodeInfoCall::NodeInfoCall(boost::asio::io_context& scheduler, remote::ETHBACKEND::AsyncService* service, grpc::ServerCompletionQueue* queue, Handlers handlers)
+    : UnaryRpc<remote::ETHBACKEND::AsyncService, remote::NodesInfoRequest, remote::NodesInfoReply>(scheduler, service, queue, handlers) {
 }
 
 void NodeInfoCall::process(const remote::NodesInfoRequest* request) {
@@ -316,16 +302,16 @@ BackEndService::BackEndService(const EthereumBackEnd& backend)
     : etherbase_factory_{backend}, net_version_factory_{backend}, client_version_factory_{backend} {
 }
 
-void BackEndService::register_backend_request_calls(remote::ETHBACKEND::AsyncService* async_service, grpc::ServerCompletionQueue* queue) {
+void BackEndService::register_backend_request_calls(boost::asio::io_context& scheduler, remote::ETHBACKEND::AsyncService* async_service, grpc::ServerCompletionQueue* queue) {
     // Register one requested call for each RPC factory
-    etherbase_factory_.create_rpc(async_service, queue);
-    net_version_factory_.create_rpc(async_service, queue);
-    net_peer_count_factory_.create_rpc(async_service, queue);
-    backend_version_factory_.create_rpc(async_service, queue);
-    protocol_version_factory_.create_rpc(async_service, queue);
-    client_version_factory_.create_rpc(async_service, queue);
-    subscribe_factory_.create_rpc(async_service, queue);
-    node_info_factory_.create_rpc(async_service, queue);
+    etherbase_factory_.create_rpc(scheduler, async_service, queue);
+    net_version_factory_.create_rpc(scheduler, async_service, queue);
+    net_peer_count_factory_.create_rpc(scheduler, async_service, queue);
+    backend_version_factory_.create_rpc(scheduler, async_service, queue);
+    protocol_version_factory_.create_rpc(scheduler, async_service, queue);
+    client_version_factory_.create_rpc(scheduler, async_service, queue);
+    subscribe_factory_.create_rpc(scheduler, async_service, queue);
+    node_info_factory_.create_rpc(scheduler, async_service, queue);
 }
 
 void BackEndService::add_sentry(std::unique_ptr<SentryClient>&& sentry) {

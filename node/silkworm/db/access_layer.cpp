@@ -132,7 +132,7 @@ void write_total_difficulty(mdbx::txn& txn, const Bytes& key, const intx::uint25
 }
 
 void write_total_difficulty(mdbx::txn& txn, BlockNum block_number, const uint8_t (&hash)[kHashLength],
-                            intx::uint256& total_difficulty) {
+                            const intx::uint256& total_difficulty) {
     auto key{block_key(block_number, hash)};
     write_total_difficulty(txn, key, total_difficulty);
 }

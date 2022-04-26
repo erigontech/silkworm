@@ -32,12 +32,12 @@ constexpr const char kSentryAddressDelimiter{','};
 
 class EthereumBackEnd {
   public:
-    explicit EthereumBackEnd(const NodeSettings& node_settings, mdbx::env_managed* chaindata_env);
+    explicit EthereumBackEnd(const NodeSettings& node_settings, mdbx::env* chaindata_env);
 
     EthereumBackEnd(const EthereumBackEnd&) = delete;
     EthereumBackEnd& operator=(const EthereumBackEnd&) = delete;
 
-    mdbx::env_managed* chaindata_env() const noexcept { return chaindata_env_; }
+    mdbx::env* chaindata_env() const noexcept { return chaindata_env_; }
     const std::string& node_name() const noexcept { return node_name_; }
     std::optional<uint64_t> chain_id() const noexcept { return chain_id_; }
     std::optional<evmc::address> etherbase() const noexcept { return node_settings_.etherbase; }
@@ -47,7 +47,7 @@ class EthereumBackEnd {
 
   private:
     const NodeSettings& node_settings_;
-    mdbx::env_managed* chaindata_env_;
+    mdbx::env* chaindata_env_;
     std::string node_name_{kDefaultNodeName};
     std::optional<uint64_t> chain_id_{std::nullopt};
     std::vector<std::string> sentry_addresses_;

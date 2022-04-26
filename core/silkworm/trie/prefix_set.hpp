@@ -35,8 +35,8 @@ class PrefixSet {
     PrefixSet(const PrefixSet& other) = default;
     PrefixSet& operator=(const PrefixSet& other) = default;
 
-    void insert(ByteView key);
-    void insert(Bytes&& key);
+    void insert(ByteView key, bool marker = false);
+    void insert(Bytes&& key, bool marker = false);
 
     // Doesn't change the set logically, but is not marked const since it's not safe to call this method concurrently.
     bool contains(ByteView prefix);
@@ -45,7 +45,7 @@ class PrefixSet {
 
     void ensure_sorted();
 
-    std::vector<Bytes> nibbled_keys_;
+    std::vector<std::pair<Bytes, bool>> nibbled_keys_;
     bool sorted_{false};
     size_t lte_index_{0}; // Index of the "LTE (<=)" key in the keys slice. Next one is "GT (>)"
 };

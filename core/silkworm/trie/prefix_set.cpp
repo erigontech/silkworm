@@ -23,10 +23,10 @@
 
 namespace silkworm::trie {
 
-void PrefixSet::insert(ByteView key) { insert(Bytes(key)); }
+void PrefixSet::insert(ByteView key, bool marker) { insert(Bytes(key), marker); }
 
-void PrefixSet::insert(Bytes&& key) {
-    nibbled_keys_.push_back(std::move(key));
+void PrefixSet::insert(Bytes&& key, bool marker) {
+    nibbled_keys_.emplace_back(key, marker);
     sorted_ = false;
 }
 
@@ -51,14 +51,14 @@ bool PrefixSet::contains(ByteView prefix) {
     // - all nibbled keys have same length as, in trie, are all "nibblified" hashes -> 32*2 == 64bytes
     // - all prefixes inquired for have always a shorter len than keys
 
-    while (lte_index_ > 0 && nibbled_keys_[lte_index_] > prefix) {
+    while (lte_index_ > 0 && nibbled_keys_[lte_index_].first > prefix) {
         --lte_index_;
     }
     while (true) {
-        if (has_prefix(nibbled_keys_[lte_index_], prefix)) {
+        if (has_prefix(nibbled_keys_[lte_index_].first, prefix)) {
             return true;
         }
-        if (nibbled_keys_[lte_index_] > prefix) {
+        if (nibbled_keys_[lte_index_].first > prefix) {
             return false;
         }
         if (lte_index_ == max_index) {

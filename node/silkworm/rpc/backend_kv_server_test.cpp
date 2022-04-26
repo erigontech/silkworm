@@ -454,7 +454,7 @@ TEST_CASE("BackEndKvServer E2E: empty node settings", "[silkworm][node][rpc]") {
         const auto status = backend_client.version(&response);
         CHECK(status.ok());
         CHECK(response.major() == 2);
-        CHECK(response.minor() == 2);
+        CHECK(response.minor() == 3);
         CHECK(response.patch() == 0);
     }
 
@@ -494,7 +494,7 @@ TEST_CASE("BackEndKvServer E2E: empty node settings", "[silkworm][node][rpc]") {
         types::VersionReply response;
         const auto status = kv_client.version(&response);
         CHECK(status.ok());
-        CHECK(response.major() == 5);
+        CHECK(response.major() == 4);
         CHECK(response.minor() == 1);
         CHECK(response.patch() == 0);
     }

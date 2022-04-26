@@ -47,7 +47,7 @@ KvVersion higher_version_ignoring_patch(KvVersion lhs, KvVersion rhs);
 constexpr auto kDbSchemaVersion = KvVersion{3, 0, 0};
 
 //! Current KV API protocol version.
-constexpr auto kKvApiVersion = KvVersion{5, 1, 0};
+constexpr auto kKvApiVersion = KvVersion{4, 1, 0};
 
 //! The max life duration for MDBX transactions (long-lived transactions are discouraged).
 constexpr boost::posix_time::milliseconds kMaxTxDuration{60'000};

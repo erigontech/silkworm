@@ -203,10 +203,7 @@ int main(int argc, char* argv[]) {
         signals.async_wait([&](const boost::system::error_code& error, int signal_number) {
             std::cout << "\n";
             SILK_INFO << "Signal caught, error: " << error << " number: " << signal_number;
-            std::thread shutdown_thread{[&server]() {
-                server.shutdown();
-            }};
-            shutdown_thread.detach();
+            server.shutdown();
         });
 
         SILK_LOG << "BackEndKvServer is now running [pid=" << pid << ", main thread=" << tid << "]";

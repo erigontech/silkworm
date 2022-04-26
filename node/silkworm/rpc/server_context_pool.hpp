@@ -21,7 +21,6 @@
 #include <ostream>
 #include <list>
 #include <memory>
-#include <mutex>
 #include <vector>
 
 #include <boost/asio/io_context.hpp>
@@ -96,9 +95,6 @@ class ServerContextPool {
 
     //! The index for obtaining next context to use (round-robin).
     std::size_t next_index_;
-
-    //! Mutual exclusion to synchronize run/stop operations.
-    std::mutex mutex_;
 
     //! Flag indicating if pool has been stopped.
     bool stopped_{false};

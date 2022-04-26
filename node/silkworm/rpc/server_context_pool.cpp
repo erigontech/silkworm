@@ -83,7 +83,6 @@ void ServerContextPool::add_context(std::unique_ptr<grpc::ServerCompletionQueue>
 void ServerContextPool::start() {
     SILK_TRACE << "ServerContextPool::start START";
 
-    std::unique_lock<std::mutex> lock(mutex_);
     if (!stopped_) {
         // Create a pool of threads to run all the contexts (each context having 1 thread)
         for (std::size_t i{0}; i < contexts_.size(); ++i) {
@@ -113,7 +112,6 @@ void ServerContextPool::join() {
 void ServerContextPool::stop() {
     SILK_TRACE << "ServerContextPool::stop START";
 
-    std::lock_guard<std::mutex> guard(mutex_);
     if (!stopped_) {
         // Explicitly stop all context runnable components
         for (std::size_t i{0}; i < contexts_.size(); ++i) {

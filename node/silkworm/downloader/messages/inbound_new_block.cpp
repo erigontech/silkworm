@@ -39,11 +39,15 @@ InboundNewBlock::InboundNewBlock(const sentry::InboundMessage& msg) {
     SILK_TRACE << "Received message " << *this;
 }
 
-void InboundNewBlock::execute(Db::ReadOnlyAccess, HeaderChain& hc, BodySequence& bs, SentryClient&) {
+void InboundNewBlock::execute(Db::ReadOnlyAccess, HeaderChain&, BodySequence& bs, SentryClient&) {
     SILK_TRACE << "Processing message " << *this;
 
-    hc.accept_header(packet_.block); // process as single header segment
-    bs.accept_body(packet_.block); // add to prefetched bodies
+    // todo: complete implementation
+    /*
+    // use packet_.td ?
+    hc.accept_header(packet_.block.header); // process as single header segment
+    */
+    bs.accept_new_block(packet_.block, peerId_); // add to prefetched bodies
 }
 
 uint64_t InboundNewBlock::reqId() const { return reqId_; }

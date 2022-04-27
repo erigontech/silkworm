@@ -32,12 +32,12 @@ InboundBlockBodies::InboundBlockBodies(const sentry::InboundMessage& msg) {
     SILK_TRACE << "Received message " << *this;
 }
 
-void InboundBlockBodies::execute(Db::ReadOnlyAccess, HeaderChain&, BodySequence&, SentryClient&) {
-    using namespace std;
+void InboundBlockBodies::execute(Db::ReadOnlyAccess, HeaderChain&, BodySequence& bs, SentryClient&) {
 
     SILK_TRACE << "Processing message " << *this;
 
-    // todo: implement
+    bs.accept_requested_bodies(packet_.request, packet_.requestId, peerId_);
+    // note: we are ignoring penalizations as Erigon does
 }
 
 uint64_t InboundBlockBodies::reqId() const { return packet_.requestId; }

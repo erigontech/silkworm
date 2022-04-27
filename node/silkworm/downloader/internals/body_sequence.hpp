@@ -39,34 +39,45 @@ class BodySequence {
     ~BodySequence();
 
     // sync current state - this must be done at body forward
-    void sync_current_state(BlockNum highest_in_db);
+    void sync_current_state(BlockNum highest_body_in_db, BlockNum highest_header_in_db);
 
     //! core functionalities: trigger the internal algorithms to decide what bodies we miss
+    using MinBlock = BlockNum;
     auto request_more_bodies(time_point_t tp, seconds_t timeout)
-        -> std::tuple<std::optional<GetBlockBodiesPacket66>, std::vector<PeerPenalization>>;
+        -> std::tuple<std::vector<Hash>, std::vector<PeerPenalization>, MinBlock>;
 
     //! it needs to know if the request issued was not delivered
-    void request_nack(const GetBlockBodiesPacket66& packet);
+    void request_nack(const std::vector<Hash>&, seconds_t timeout);
 
     //! core functionalities: process received bodies
     using RequestMoreBodies = bool;
-    auto accept_bodies(const std::vector<BlockBody>&, uint64_t request_id, const PeerId&) -> std::tuple<Penalty, RequestMoreBodies>;
+    Penalty accept_requested_bodies(const std::vector<BlockBody>&, uint64_t request_id, const PeerId&);
+
+    //! core functionalities: process received block announcement
+    Penalty accept_new_block(const Block&, const PeerId&);
 
     //! core functionalities: returns bodies that are ready to be persisted
     auto withdraw_ready_bodies() -> std::vector<Block>;
+
+    // minor functionalities
+    std::vector<NewBlockPacket>& announces_to_do();
 
     BlockNum highest_block_in_db();
 
   private:
     void recover_initial_state();
-    void make_new_requests(GetBlockBodiesPacket66& packet, time_point_t tp, seconds_t timeout);
-    auto renew_stale_requests(GetBlockBodiesPacket66& packet, time_point_t tp, seconds_t timeout)
+    void make_new_requests(std::vector<Hash>&, MinBlock&, time_point_t tp, seconds_t timeout);
+    auto renew_stale_requests(std::vector<Hash>&, MinBlock&, time_point_t tp, seconds_t timeout)
         -> std::vector<PeerPenalization>;
     void add_to_announcements(BlockHeader header, BlockBody body);
+
+    size_t outstanding_requests();
 
     static bool is_valid_body(const BlockHeader&, const BlockBody&);
 
     static constexpr BlockNum max_blocks_per_message = 128;
+    static constexpr BlockNum max_outstanding_requests = 128;
+    static constexpr BlockNum max_announced_blocks = 10000;
 
     struct PendingBodyRequest {
         Hash block_hash;
@@ -93,8 +104,8 @@ class BodySequence {
     Db::ReadOnlyAccess db_access_;
     const ChainIdentity& chain_identity_;
 
-    BlockNum highest_block_in_db_{0};
-    BlockNum top_seen_height_{0};
+    BlockNum highest_body_in_db_{0};
+    BlockNum headers_stage_height_{0};
 };
 
 }

@@ -40,8 +40,9 @@ class BodiesStage : public Stage {
 
   private:
     void send_body_requests();  // send requests for more bodies
-    auto sync_body_sequence(BlockNum highest_in_db) -> std::shared_ptr<InternalMessage<void>>;
+    auto sync_body_sequence(BlockNum highest_body, BlockNum highest_header) -> std::shared_ptr<InternalMessage<void>>;
     auto withdraw_ready_bodies() -> std::shared_ptr<InternalMessage<std::vector<Block>>>;
+    void send_announcements();
 
     Db::ReadWriteAccess db_access_;
     BlockDownloader& block_downloader_;

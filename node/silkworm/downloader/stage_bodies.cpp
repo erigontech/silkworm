@@ -22,7 +22,7 @@ limitations under the License.
 #include <silkworm/common/log.hpp>
 #include <silkworm/common/measure.hpp>
 #include <silkworm/common/stopwatch.hpp>
-
+#include <silkworm/downloader/messages/outbound_get_block_bodies.hpp>
 #include <silkworm/downloader/internals/body_persistence.hpp>
 
 namespace silkworm {
@@ -128,7 +128,8 @@ Stage::Result BodiesStage::forward([[maybe_unused]] bool first_sync) {
         log::Info() << "[2/16 Headers] Waiting for bodies... from=" << height_progress.get();
 
         // sync status
-        auto sync_command = sync_body_sequence(body_persistence.initial_height());
+        BlockNum headers_stage_height = tx.read_stage_progress(db::stages::kHeadersKey);
+        auto sync_command = sync_body_sequence(body_persistence.initial_height(), headers_stage_height);
         sync_command->result().get();  // blocking
 
         // prepare bodies, if any
@@ -157,6 +158,9 @@ Stage::Result BodiesStage::forward([[maybe_unused]] bool first_sync) {
                 } else {
                     result.status = Stage::Result::Done;
                 }
+
+                // do announcements
+                send_announcements();
             }
 
             // show progress
@@ -200,12 +204,18 @@ Stage::Result BodiesStage::unwind_to(BlockNum, Hash) {
 }
 
 void BodiesStage::send_body_requests() {
-    // todo: implement
+    auto message = std::make_shared<OutboundGetBlockBodies>();
+
+    block_downloader_.accept(message);
 }
 
-auto BodiesStage::sync_body_sequence(BlockNum highest_in_db) -> std::shared_ptr<InternalMessage<void>> {
+auto BodiesStage::sync_body_sequence(BlockNum highest_body, BlockNum highest_header)
+    -> std::shared_ptr<InternalMessage<void>> {
+
     auto message = std::make_shared<InternalMessage<void>>(
-        [highest_in_db](HeaderChain&, BodySequence& bs) { bs.sync_current_state(highest_in_db); });
+        [highest_body, highest_header](HeaderChain&, BodySequence& bs) {
+            bs.sync_current_state(highest_body, highest_header);
+        });
 
     block_downloader_.accept(message);
 
@@ -213,9 +223,24 @@ auto BodiesStage::sync_body_sequence(BlockNum highest_in_db) -> std::shared_ptr<
 }
 
 auto BodiesStage::withdraw_ready_bodies() -> std::shared_ptr<InternalMessage<std::vector<Block>>> {
-    // todo: implement
+    using result_t = std::vector<Block>;
 
-    return std::shared_ptr<InternalMessage<std::vector<Block>>>();
+    auto message = std::make_shared<InternalMessage<result_t>>([](HeaderChain&, BodySequence& bs) {
+        return bs.withdraw_ready_bodies();
+    });
+
+    block_downloader_.accept(message);
+
+    return message;
+}
+
+// New block announcements propagation
+void BodiesStage::send_announcements() {
+    // todo: implement
+    /*
+    auto message = std::make_shared<OutboundNewBlock>();
+    block_downloader_.accept(message);
+    */
 }
 
 }  // namespace silkworm

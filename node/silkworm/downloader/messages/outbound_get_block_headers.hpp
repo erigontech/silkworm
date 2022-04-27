@@ -17,7 +17,6 @@
 #ifndef SILKWORM_OUTBOUND_GET_BLOCK_HEADERS_HPP
 #define SILKWORM_OUTBOUND_GET_BLOCK_HEADERS_HPP
 
-#include <silkworm/downloader/internals/header_chain.hpp>
 #include <silkworm/downloader/packets/get_block_headers_packet.hpp>
 
 #include "outbound_message.hpp"
@@ -31,7 +30,7 @@ class OutboundGetBlockHeaders : public OutboundMessage {
     std::string name() const override { return "OutboundGetBlockHeaders"; }
     std::string content() const override;
 
-    void execute(Db::ReadOnlyAccess, HeaderChain&, BodySequence&, SentryClient&) override;  // headers_forward function in Erigon
+    void execute(Db::ReadOnlyAccess, HeaderChain&, BodySequence&, SentryClient&) override;
 
     int sent_request() const;
 

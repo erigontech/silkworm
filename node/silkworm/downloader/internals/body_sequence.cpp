@@ -18,7 +18,6 @@ limitations under the License.
 #include <silkworm/consensus/base/engine.hpp>
 
 #include "body_sequence.hpp"
-#include "body_elements.hpp"
 
 namespace silkworm {
 
@@ -31,23 +30,43 @@ BodySequence::~BodySequence() {
 
 }
 
-BlockNum BodySequence::highest_block_in_db() { return highest_block_in_db_; }
-
-void BodySequence::sync_current_state(BlockNum highest_in_db) {
-    highest_block_in_db_ = highest_in_db;
+void BodySequence::recover_initial_state() {
+    // does nothing
 }
 
-auto BodySequence::accept_bodies(const std::vector<BlockBody>& bodies, [[maybe_unused]] uint64_t req_id, const PeerId&)
-    -> std::tuple<Penalty, RequestMoreBodies> {
+BlockNum BodySequence::highest_block_in_db() { return highest_body_in_db_; }
+
+void BodySequence::sync_current_state(BlockNum highest_body_in_db, BlockNum highest_header_in_db) {
+    highest_body_in_db_ = highest_body_in_db;
+    headers_stage_height_ = highest_header_in_db;
+}
+
+size_t BodySequence::outstanding_requests() {
+    size_t outstanding_requests{0};
+
+    for (auto& br: body_requests_) {
+        PendingBodyRequest& past_request = br.second;
+        if (!past_request.ready)
+            outstanding_requests++;
+    }
+
+    return outstanding_requests;
+}
+
+std::vector<NewBlockPacket>& BodySequence::announces_to_do() {
+    return announcements_to_do_;
+}
+
+Penalty BodySequence::accept_requested_bodies(const std::vector<BlockBody>& bodies, uint64_t, const PeerId&) {
 
     Penalty penalty = NoPenalty;
-    bool request_more_bodies = false;
 
     for (auto& body: bodies) {
         Hash oh = consensus::EngineBase::compute_ommers_hash(body);
         Hash tr = consensus::EngineBase::compute_transaction_root(body);
 
-        auto r = std::find_if(body_requests_.begin(), body_requests_.end(), [&oh, &tr](const PendingBodyRequest& request) {
+        auto r = std::find_if(body_requests_.begin(), body_requests_.end(), [&oh, &tr](const auto& elem) {
+            const PendingBodyRequest& request = elem.second;
             return (request.header.ommers_hash == oh && request.header.transactions_root == tr);
         }); // todo: can we use request_id to do the match here to speed the check?
 
@@ -61,22 +80,34 @@ auto BodySequence::accept_bodies(const std::vector<BlockBody>& bodies, [[maybe_u
         request.ready = true;
     }
 
-    return {penalty, request_more_bodies};
+    return penalty;
+}
+
+Penalty BodySequence::accept_new_block(const Block& block, const PeerId&) {
+
+    // save for later usage
+    announced_blocks_.add(block);
+
+    return Penalty::NoPenalty;
 }
 
 auto BodySequence::request_more_bodies(time_point_t tp, seconds_t timeout)
-    -> std::tuple<std::optional<GetBlockBodiesPacket66>, std::vector<PeerPenalization>> {
-    GetBlockBodiesPacket66 packet;
+    -> std::tuple<std::vector<Hash>, std::vector<PeerPenalization>, MinBlock> {
+    std::vector<Hash> hashes;
+    BlockNum min_block{0};
 
-    auto penalizations = renew_stale_requests(packet, tp, timeout);
+    if (outstanding_requests() > max_outstanding_requests)
+        return {};
 
-    if (packet.request.size() < max_blocks_per_message) make_new_requests(packet, tp, timeout);
+    auto penalizations = renew_stale_requests(hashes, min_block, tp, timeout);
 
-    return {packet, penalizations};
+    if (hashes.size() < max_blocks_per_message) make_new_requests(hashes, min_block, tp, timeout);
+
+    return {hashes, penalizations, min_block};
 }
 
 //! Re-evaluate past (stale) requests
-auto BodySequence::renew_stale_requests(GetBlockBodiesPacket66& packet, time_point_t tp, seconds_t timeout)
+auto BodySequence::renew_stale_requests(std::vector<Hash>& hashes, BlockNum& min_block, time_point_t tp, seconds_t timeout)
     -> std::vector<PeerPenalization> {
 
     std::vector<PeerPenalization> penalizations;
@@ -88,27 +119,29 @@ auto BodySequence::renew_stale_requests(GetBlockBodiesPacket66& packet, time_poi
             continue;
 
         // retry body request, todo: Erigon delete the request here, but will it retry?
-        packet.request.push_back(past_request.block_hash);
+        hashes.push_back(past_request.block_hash);
         past_request.request_time = tp;
 
         // todo: Erigon increment a penalization counter for the peer but it doesn't use it
         //penalizations.emplace_back({Penalty::BadBlockPenalty, }); // todo: find/create a more precise penalization
 
-        if (packet.request.size() >= max_blocks_per_message) break;
+        min_block = std::max(min_block, past_request.block_height);
+
+        if (hashes.size() >= max_blocks_per_message) break;
     }
 
     return penalizations;
 }
 
 //! Make requests of new bodies to get progress
-void BodySequence::make_new_requests(GetBlockBodiesPacket66& packet, time_point_t tp, seconds_t) {
+void BodySequence::make_new_requests(std::vector<Hash>& hashes, BlockNum& min_block, time_point_t tp, seconds_t) {
     auto tx = db_access_.start_ro_tx();
 
-    BlockNum last_requested_block = highest_block_in_db_;
+    BlockNum last_requested_block = highest_body_in_db_;
     if (!body_requests_.empty())
         last_requested_block = body_requests_.rbegin()->second.block_height; // the last requested
 
-    while (packet.request.size() <= max_blocks_per_message && last_requested_block < top_seen_height_) {
+    while (hashes.size() <= max_blocks_per_message && last_requested_block <= headers_stage_height_) {
         BlockNum bn = last_requested_block + 1;
 
         auto new_request = body_requests_[bn]; // insert the new request
@@ -133,12 +166,22 @@ void BodySequence::make_new_requests(GetBlockBodiesPacket66& packet, time_point_
             new_request.ready = true;
         }
         else {
-            packet.request.push_back(new_request.block_hash);
+            hashes.push_back(new_request.block_hash);
+
+            min_block = std::max(min_block, new_request.block_height);
         }
 
         ++last_requested_block;
     }
 
+}
+
+void BodySequence::request_nack(const std::vector<Hash>& hashes, seconds_t timeout) {
+    for (auto& br: body_requests_) {
+        PendingBodyRequest& past_request = br.second;
+        if (contains(hashes, past_request.block_hash))
+            past_request.request_time -= timeout;
+    }
 }
 
 bool BodySequence::is_valid_body(const BlockHeader& header, const BlockBody& body) {
@@ -158,7 +201,9 @@ auto BodySequence::withdraw_ready_bodies() -> std::vector<Block> {
         if (!past_request.ready)
             break; // it needs to return the first range of consecutive blocks, so it stops at the first non ready
 
+        highest_body_in_db_ = std::max(highest_body_in_db_, past_request.block_height);
         ready_bodies.push_back({std::move(past_request.body), std::move(past_request.header)});
+
         curr_req = body_requests_.erase(curr_req);  // erase curr_req and update curr_req to point to the next request
     }
 
@@ -188,6 +233,10 @@ void BodySequence::add_to_announcements(BlockHeader header, BlockBody body) {
 }
 
 void BodySequence::AnnouncedBlocks::add(Block block) {
+    if (blocks_.size() >= max_announced_blocks) {
+        return;
+    }
+
     blocks_.emplace(block.header.number, std::move(block));
 }
 

@@ -25,7 +25,7 @@ namespace silkworm::rpc {
 
 namespace detail {
 
-inline std::string dump_mdbx_result(const mdbx::cursor::move_result& result) {
+std::string dump_mdbx_result(const mdbx::cursor::move_result& result) {
     std::string dump{"done="};
     dump.append(std::to_string(result.done));
     dump.append(" bool(key)=");
@@ -85,7 +85,6 @@ KvVersionCallFactory::KvVersionCallFactory()
 
 mdbx::env* TxCall::chaindata_env_{nullptr};
 boost::posix_time::milliseconds TxCall::max_ttl_duration_{kMaxTxDuration};
-uint32_t TxCall::next_cursor_id_{0};
 
 void TxCall::set_chaindata_env(mdbx::env* chaindata_env) {
     TxCall::chaindata_env_ = chaindata_env;
@@ -166,10 +165,28 @@ void TxCall::handle_cursor_open(const remote::Cursor* request) {
         return;
     }
 
+    // The number of opened cursors shall not exceed the maximum threshold.
+    if (cursors_.size() == kMaxTxCursors) {
+        const auto error_message = "maximum cursors per txn reached: " + std::to_string(cursors_.size());
+        SILK_ERROR << "Tx peer: " << peer() << " op=" << remote::Op_Name(request->op()) << " " << error_message;
+        close_with_error(grpc::Status{grpc::StatusCode::RESOURCE_EXHAUSTED, error_message});
+        return;
+    }
+
     // Create a new database cursor tracking also bucket name (needed for reopening).
     const db::MapConfig map_config{bucket_name.c_str()};
     db::Cursor cursor{read_only_txn_, map_config};
-    const auto [cursor_it, inserted] = cursors_.insert({++next_cursor_id_, TxCursor{std::move(cursor), bucket_name}});
+    const auto [cursor_it, inserted] = cursors_.insert({++last_cursor_id_, TxCursor{std::move(cursor), bucket_name}});
+
+    SILKWORM_ASSERT(cursor_it->first == last_cursor_id_);
+
+    // The assigned cursor ID shall not be already in use (after cursor ID wrapping).
+    if (!inserted) {
+        const auto error_message = "assigned cursor ID already in use: " + std::to_string(last_cursor_id_);
+        SILK_ERROR << "Tx peer: " << peer() << " op=" << remote::Op_Name(request->op()) << " " << error_message;
+        close_with_error(grpc::Status{grpc::StatusCode::ALREADY_EXISTS, error_message});
+        return;
+    }
 
     // Send the assigned cursor ID back to the client.
     remote::Pair kv_pair;

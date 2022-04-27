@@ -22,7 +22,6 @@
 #include <boost/asio/signal_set.hpp>
 #include <boost/process/environment.hpp>
 #include <CLI/CLI.hpp>
-#include <magic_enum.hpp>
 
 #include <silkworm/buildinfo.h>
 #include <silkworm/backend/ethereum_backend.hpp>

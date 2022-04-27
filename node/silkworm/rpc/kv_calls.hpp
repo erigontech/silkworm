@@ -47,10 +47,13 @@ KvVersion higher_version_ignoring_patch(KvVersion lhs, KvVersion rhs);
 constexpr auto kDbSchemaVersion = KvVersion{3, 0, 0};
 
 //! Current KV API protocol version.
-constexpr auto kKvApiVersion = KvVersion{5, 1, 0};
+constexpr auto kKvApiVersion = KvVersion{4, 1, 0};
 
 //! The max life duration for MDBX transactions (long-lived transactions are discouraged).
 constexpr boost::posix_time::milliseconds kMaxTxDuration{60'000};
+
+//! The max number of opened cursors for each remote transaction (arbitrary limit on this KV implementation).
+constexpr std::size_t kMaxTxCursors{100};
 
 //! Unary RPC for Version method of 'ethbackend' gRPC protocol.
 class KvVersionCall : public UnaryRpc<remote::KV::AsyncService, google::protobuf::Empty, types::VersionReply> {
@@ -146,11 +149,11 @@ class TxCall : public BidirectionalStreamingRpc<remote::KV::AsyncService, remote
 
     static mdbx::env* chaindata_env_;
     static boost::posix_time::milliseconds max_ttl_duration_;
-    static uint32_t next_cursor_id_;
 
     mdbx::txn_managed read_only_txn_;
     boost::asio::deadline_timer max_ttl_timer_;
     std::map<uint32_t, TxCursor> cursors_;
+    uint32_t last_cursor_id_{0};
 };
 
 //! Factory specialization for Tx method.
@@ -185,6 +188,12 @@ class KvService {
     TxCallFactory tx_factory_;
     StateChangesCallFactory state_changes_factory_;
 };
+
+namespace detail {
+
+std::string dump_mdbx_result(const mdbx::cursor::move_result& result);
+
+} // namespace detail
 
 } // namespace silkworm::rpc
 

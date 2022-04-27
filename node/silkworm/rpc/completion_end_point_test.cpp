@@ -17,7 +17,6 @@
 #include "completion_end_point.hpp"
 
 #include <chrono>
-#include <future>
 #include <thread>
 
 #include <catch2/catch.hpp>
@@ -43,38 +42,29 @@ TEST_CASE("CompletionEndPoint", "[silkworm][rpc][completion_end_point]") {
                 std::this_thread::sleep_for(100us);
             }
         });
-        std::this_thread::yield();
         completion_end_point.shutdown();
         CHECK_NOTHROW(completion_end_point_thread.join());
     }
 
-    SECTION("posting handler completion to I/O execution context") {
+// Exclude gRPC test from sanitizer builds due to data race warnings
+#ifndef SILKWORM_SANITIZE
+    SECTION("executing completion handler") {
         grpc::CompletionQueue queue;
         CompletionEndPoint completion_end_point{queue};
-        auto completion_end_point_thread = std::thread([&]() {
-            while (completion_end_point.poll_one() >= 0) {
-                std::this_thread::sleep_for(100us);
-            }
-        });
-        std::this_thread::yield();
-        std::promise<void> p;
-        std::future<void> f = p.get_future();
-        class AsyncCompletionHandler {
-        public:
-            explicit AsyncCompletionHandler(std::promise<void>& p) : p_(p) {}
-            void operator()(bool /*ok*/) { p_.set_value(); };
-        private:
-            std::promise<void>& p_;
+        bool executed{false};
+        TagProcessor tag_processor = [&completion_end_point, &executed](bool) {
+            executed = true;
+            completion_end_point.shutdown();
         };
-        AsyncCompletionHandler handler{p};
-        TagProcessor tag_processor = handler;
         auto alarm_deadline = gpr_time_add(gpr_now(GPR_CLOCK_MONOTONIC), gpr_time_from_millis(50, GPR_TIMESPAN));
         grpc::Alarm alarm;
         alarm.Set(&queue, alarm_deadline, &tag_processor);
-        f.get();
-        completion_end_point.shutdown();
-        CHECK_NOTHROW(completion_end_point_thread.join());
+        while (completion_end_point.poll_one() >= 0) {
+            std::this_thread::sleep_for(100us);
+        }
+        CHECK(executed);
     }
+#endif // SILKWORM_SANITIZE
 
     SECTION("exiting on completion queue already shutdown") {
         grpc::CompletionQueue queue;
@@ -85,7 +75,6 @@ TEST_CASE("CompletionEndPoint", "[silkworm][rpc][completion_end_point]") {
                 std::this_thread::sleep_for(100us);
             }
         });
-        std::this_thread::yield();
         CHECK_NOTHROW(completion_end_point_thread.join());
     }
 
@@ -97,7 +86,6 @@ TEST_CASE("CompletionEndPoint", "[silkworm][rpc][completion_end_point]") {
                 std::this_thread::sleep_for(100us);
             }
         });
-        std::this_thread::yield();
         completion_end_point.shutdown();
         CHECK_NOTHROW(completion_end_point_thread.join());
         CHECK_NOTHROW(completion_end_point.shutdown());

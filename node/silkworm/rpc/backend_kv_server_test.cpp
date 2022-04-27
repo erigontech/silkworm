@@ -325,6 +325,8 @@ struct BackEndKvE2eTest {
 
 namespace silkworm::rpc {
 
+// Exclude gRPC tests from sanitizer builds due to data race warnings
+#ifndef SILKWORM_SANITIZE
 TEST_CASE("BackEndKvServer", "[silkworm][node][rpc]") {
     silkworm::log::set_verbosity(silkworm::log::Level::kNone);
     Grpc2SilkwormLogGuard log_guard;
@@ -784,7 +786,7 @@ TEST_CASE("BackEndKvServer E2E: more than one Sentry all status KO", "[silkworm]
     }
 }
 
-#ifndef SILKWORM_SANITIZE
+
 TEST_CASE("BackEndKvServer E2E: trigger server-side write error", "[silkworm][node][rpc]") {
     {
         const uint32_t kNumTxs{1000};
@@ -808,7 +810,6 @@ TEST_CASE("BackEndKvServer E2E: trigger server-side write error", "[silkworm][no
     }
     // Server-side lifecyle of Tx calls must be OK.
 }
-#endif // SILKWORM_SANITIZE
 
 TEST_CASE("BackEndKvServer E2E: Tx max simultaneous readers exceeded", "[silkworm][node][rpc]") {
     NodeSettings node_settings;
@@ -2120,5 +2121,6 @@ TEST_CASE("BackEndKvServer E2E: bidirectional max TTL duration", "[silkworm][nod
         CHECK(status.ok());
     }
 }
+#endif // SILKWORM_SANITIZE
 
 } // namespace silkworm::rpc

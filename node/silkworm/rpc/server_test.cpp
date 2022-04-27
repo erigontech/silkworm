@@ -49,8 +49,10 @@ class EmptyServer : public Server {
 };
 
 // TODO(canepat): better copy grpc_pick_unused_port_or_die to generate unused port
-constexpr const char* kTestAddressUri = "localhost:12345";
+static const std::string kTestAddressUri{"localhost:12345"};
 
+// Exclude gRPC tests from sanitizer builds due to data race warnings
+#ifndef SILKWORM_SANITIZE
 TEST_CASE("Barebone gRPC Server", "[silkworm][node][rpc]") {
     grpc::ServerBuilder builder;
     // Add *at least one non-empty* ServerCompletionQueue (otherwise: ASAN SEGV error in Shutdown)
@@ -191,5 +193,6 @@ TEST_CASE("Server::join", "[silkworm][node][rpc]") {
         server_thread.join();
     }
 }
+#endif // SILKWORM_SANITIZE
 
 } // namespace silkworm::rpc

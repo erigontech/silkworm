@@ -39,6 +39,8 @@ inline std::ostream& null_stream() {
 
 namespace silkworm::rpc {
 
+// Exclude gRPC tests from sanitizer builds due to data race warnings
+#ifndef SILKWORM_SANITIZE
 TEST_CASE("ServerContext", "[silkworm][rpc][server_context]") {
     grpc::ServerBuilder builder;
     std::unique_ptr<grpc::ServerCompletionQueue> scq = builder.AddCompletionQueue();
@@ -95,5 +97,6 @@ TEST_CASE("ServerContextPool", "[silkworm][rpc][server_context]") {
         CHECK(server_context_pool.num_contexts() == 2);
     }
 }
+#endif // SILKWORM_SANITIZE
 
 } // namespace silkworm::rpc

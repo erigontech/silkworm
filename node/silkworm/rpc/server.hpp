@@ -109,9 +109,9 @@ class Server {
 
         SILK_DEBUG << "Server::shutdown " << this << " shutting down server immediately";
 
-        // Order matters here: 1) shutdown the server
+        // Order matters here: 1) shutdown the server (immediate deadline)
         if (server_) {
-            server_->Shutdown();
+            server_->Shutdown(gpr_time_0(GPR_CLOCK_REALTIME));
             server_->Wait();
         }
 

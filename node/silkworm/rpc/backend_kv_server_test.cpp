@@ -845,7 +845,7 @@ TEST_CASE("BackEndKvServer E2E: Tx max simultaneous readers exceeded", "[silkwor
     }
 }
 
-TEST_CASE("BackEndKvServer E2E: Tx max opened cursors exceeded", "[silkworm][node][rpc]") {
+/*TEST_CASE("BackEndKvServer E2E: Tx max opened cursors exceeded", "[silkworm][node][rpc]") {
     NodeSettings node_settings;
     BackEndKvE2eTest test{silkworm::log::Level::kNone, node_settings};
     test.fill_tables();
@@ -882,7 +882,7 @@ TEST_CASE("BackEndKvServer E2E: Tx max opened cursors exceeded", "[silkworm][nod
     CHECK(!status.ok());
     CHECK(status.error_code() == grpc::StatusCode::RESOURCE_EXHAUSTED);
     CHECK(status.error_message().find("maximum cursors per txn") != std::string::npos);
-}
+}*/
 
 class TxIdleTimeoutGuard {
   public:

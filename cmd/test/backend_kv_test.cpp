@@ -18,7 +18,6 @@
 #include <condition_variable>
 #include <functional>
 #include <iostream>
-#include <limits>
 #include <memory>
 #include <mutex>
 #include <thread>
@@ -641,7 +640,7 @@ class AsyncTxCall : public AsyncBidirectionalStreamingCall<
     }
 
   private:
-    inline static const uint32_t kInvalidCursorId{std::numeric_limits<uint32_t>::max()};
+    inline static const uint32_t kInvalidCursorId{0};
 
     std::string table_name_{"TestTable"};
     uint32_t query_count_{5};
@@ -669,55 +668,102 @@ class AsyncStateChangesCall : public AsyncServerStreamingCall<
     }
 };
 
+enum class Rpc {
+    etherbase,
+    net_version,
+    net_peer_count,
+    backend_version,
+    protocol_version,
+    client_version,
+    subscribe,
+    nodes_info,
+    kv_version,
+    tx,
+    state_changes
+};
+
+struct BatchOptions {
+    int batch_size{1};
+    std::unordered_set<Rpc> configured_calls;
+    int64_t interval_between_calls{100};
+
+    // Replace with std::unordered_set::contains at call site after C++20
+    bool contains_call(Rpc call) const {
+        return configured_calls.find(call) != configured_calls.end();
+    }
+};
+
 class AsyncCallFactory {
   public:
     AsyncCallFactory(std::shared_ptr<grpc::Channel> channel, grpc::CompletionQueue* queue) : channel_(channel), queue_(queue) {}
 
-    void start_batch(std::atomic_bool& stop, int batch_size) {
-        for (auto i{0}; i<batch_size && !stop; i++) {
-            auto* etherbase = new AsyncEtherbaseCall(channel_, queue_);
-            etherbase->start_async(remote::EtherbaseRequest{});
-            SILK_DEBUG << "New Etherbase async call started: " << etherbase;
+    void start_batch(std::atomic_bool& stop, const BatchOptions& batch_options) {
+        for (auto i{0}; i<batch_options.batch_size && !stop; i++) {
+            if (batch_options.contains_call(Rpc::etherbase)) {
+                auto* etherbase = new AsyncEtherbaseCall(channel_, queue_);
+                etherbase->start_async(remote::EtherbaseRequest{});
+                SILK_DEBUG << "New Etherbase async call started: " << etherbase;
+            }
 
-            auto* net_version = new AsyncNetVersionCall(channel_, queue_);
-            net_version->start_async(remote::NetVersionRequest{});
-            SILK_DEBUG << "New NetVersion async call started: " << net_version;
+            if (batch_options.contains_call(Rpc::net_version)) {
+                auto* net_version = new AsyncNetVersionCall(channel_, queue_);
+                net_version->start_async(remote::NetVersionRequest{});
+                SILK_DEBUG << "New NetVersion async call started: " << net_version;
+            }
 
-            auto* net_peer_count = new AsyncNetPeerCountCall(channel_, queue_);
-            net_peer_count->start_async(remote::NetPeerCountRequest{});
-            SILK_DEBUG << "New NetPeerCount async call started: " << net_version;
+            if (batch_options.contains_call(Rpc::net_peer_count)) {
+                auto* net_peer_count = new AsyncNetPeerCountCall(channel_, queue_);
+                net_peer_count->start_async(remote::NetPeerCountRequest{});
+                SILK_DEBUG << "New NetPeerCount async call started: " << net_peer_count;
+            }
 
-            auto* backend_version = new AsyncBackEndVersionCall(channel_, queue_);
-            backend_version->start_async(google::protobuf::Empty{});
-            SILK_DEBUG << "New ETHBACKEND Version async call started: " << backend_version;
+            if (batch_options.contains_call(Rpc::backend_version)) {
+                auto* backend_version = new AsyncBackEndVersionCall(channel_, queue_);
+                backend_version->start_async(google::protobuf::Empty{});
+                SILK_DEBUG << "New ETHBACKEND Version async call started: " << backend_version;
+            }
 
-            auto* protocol_version = new AsyncProtocolVersionCall(channel_, queue_);
-            protocol_version->start_async(remote::ProtocolVersionRequest{});
-            SILK_DEBUG << "New ProtocolVersion async call started: " << protocol_version;
+            if (batch_options.contains_call(Rpc::protocol_version)) {
+                auto* protocol_version = new AsyncProtocolVersionCall(channel_, queue_);
+                protocol_version->start_async(remote::ProtocolVersionRequest{});
+                SILK_DEBUG << "New ProtocolVersion async call started: " << protocol_version;
+            }
 
-            auto* client_version = new AsyncClientVersionCall(channel_, queue_);
-            client_version->start_async(remote::ClientVersionRequest{});
-            SILK_DEBUG << "New ClientVersion async call started: " << client_version;
+            if (batch_options.contains_call(Rpc::client_version)) {
+                auto* client_version = new AsyncClientVersionCall(channel_, queue_);
+                client_version->start_async(remote::ClientVersionRequest{});
+                SILK_DEBUG << "New ClientVersion async call started: " << client_version;
+            }
 
-            auto* subscribe = new AsyncSubscribeCall(channel_, queue_);
-            subscribe->start_async(remote::SubscribeRequest{});
-            SILK_DEBUG << "New Subscribe async call started: " << subscribe;
+            if (batch_options.contains_call(Rpc::subscribe)) {
+                auto* subscribe = new AsyncSubscribeCall(channel_, queue_);
+                subscribe->start_async(remote::SubscribeRequest{});
+                SILK_DEBUG << "New Subscribe async call started: " << subscribe;
+            }
 
-            auto* node_info = new AsyncNodeInfoCall(channel_, queue_);
-            node_info->start_async(remote::NodesInfoRequest{});
-            SILK_DEBUG << "New NodeInfo async call started: " << node_info;
+            if (batch_options.contains_call(Rpc::nodes_info)) {
+                auto* node_info = new AsyncNodeInfoCall(channel_, queue_);
+                node_info->start_async(remote::NodesInfoRequest{});
+                SILK_DEBUG << "New NodeInfo async call started: " << node_info;
+            }
 
-            auto* kv_version = new AsyncKvVersionCall(channel_, queue_);
-            kv_version->start_async(google::protobuf::Empty{});
-            SILK_DEBUG << "New KV Version async call started: " << kv_version;
+            if (batch_options.contains_call(Rpc::kv_version)) {
+                auto* kv_version = new AsyncKvVersionCall(channel_, queue_);
+                kv_version->start_async(google::protobuf::Empty{});
+                SILK_DEBUG << "New KV Version async call started: " << kv_version;
+            }
 
-            auto* tx = new AsyncTxCall(channel_, queue_);
-            tx->start_async();
-            SILK_DEBUG << "New Tx async call started: " << tx;
+            if (batch_options.contains_call(Rpc::tx)) {
+                auto* tx = new AsyncTxCall(channel_, queue_);
+                tx->start_async();
+                SILK_DEBUG << "New Tx async call started: " << tx;
+            }
 
-            auto* state_changes = new AsyncStateChangesCall(channel_, queue_);
-            state_changes->start_async(remote::StateChangeRequest{});
-            SILK_DEBUG << "New StateChanges async call started: " << state_changes;
+            if (batch_options.contains_call(Rpc::state_changes)) {
+                auto* state_changes = new AsyncStateChangesCall(channel_, queue_);
+                state_changes->start_async(remote::StateChangeRequest{});
+                SILK_DEBUG << "New StateChanges async call started: " << state_changes;
+            }
         }
     }
 
@@ -739,12 +785,11 @@ int main(int argc, char* argv[]) {
     CLI::App app{"ETHBACKEND & KV interface test"};
 
     std::string target_uri{"localhost:9090"};
-    int64_t interval_between_calls{100};
-    int batch_size{1};
+    BatchOptions batch_options;
     silkworm::log::Level log_level{silkworm::log::Level::kCritical};
     app.add_option("--target", target_uri, "The address to connect to the ETHBACKEND & KV services", true);
-    app.add_option("--interval", interval_between_calls, "The interval to wait between successive call batches as milliseconds", true);
-    app.add_option("--batch", batch_size, "The number of async calls for each RPC in each batch as integer", true);
+    app.add_option("--interval", batch_options.interval_between_calls, "The interval to wait between successive call batches as milliseconds", true);
+    app.add_option("--batch", batch_options.batch_size, "The number of async calls for each RPC in each batch as integer", true);
     app.add_option("--logLevel", log_level, "The log level identifier as string", true)
         ->check(CLI::Range(static_cast<uint32_t>(silkworm::log::Level::kCritical), static_cast<uint32_t>(silkworm::log::Level::kTrace)))
         ->default_val(std::to_string(static_cast<uint32_t>(log_level)));
@@ -776,11 +821,11 @@ int main(int argc, char* argv[]) {
             SILK_TRACE << "Pump thread: " << pump_thread.get_id() << " start";
             AsyncCallFactory call_factory{channel, &queue};
             while (!pump_stop) {
-                call_factory.start_batch(pump_stop, batch_size);
-                SILK_DEBUG << "Pump thread going to wait for " << interval_between_calls << "ms...";
+                call_factory.start_batch(pump_stop, batch_options);
+                SILK_DEBUG << "Pump thread going to wait for " << batch_options.interval_between_calls << "ms...";
                 std::unique_lock<std::mutex> lock{mutex};
                 const auto now = std::chrono::system_clock::now();
-                shutdown_requested.wait_until(lock, now + std::chrono::milliseconds{interval_between_calls});
+                shutdown_requested.wait_until(lock, now + std::chrono::milliseconds{batch_options.interval_between_calls});
             }
             SILK_TRACE << "Pump thread: " << pump_thread.get_id() << " end";
         }};

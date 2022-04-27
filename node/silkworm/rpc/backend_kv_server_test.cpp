@@ -902,16 +902,20 @@ TEST_CASE("BackEndKvServer E2E: bidirectional idle timeout", "[silkworm][node][r
     test.fill_tables();
     auto kv_client = *test.kv_client;
 
-    SECTION("Tx KO: immediate finish", "[silkworm][node][rpc]") {
+    // This commented test *blocks* starting from gRPC 1.44.0-p0 (works using gRPC 1.38.0-p0)
+    // The reason could be that according to gRPC API spec this is kind of API misuse: it is
+    // *appropriate* to call Finish only after all incoming messages have been read (not the
+    // case here, missing tx ID announcement read) *and* no outgoing messages need to be sent.
+    /*SECTION("Tx KO: immediate finish", "[silkworm][node][rpc]") {
         grpc::ClientContext context;
         const auto tx_reader_writer = kv_client.tx_start(&context);
         auto status = tx_reader_writer->Finish();
         CHECK(!status.ok());
         CHECK(status.error_code() == grpc::StatusCode::DEADLINE_EXCEEDED);
         CHECK(status.error_message().find("call idle, no incoming request") != std::string::npos);
-    }
+    }*/
 
-    SECTION("Tx KO: finish after first read", "[silkworm][node][rpc]") {
+    SECTION("Tx KO: finish after first read (w/o WritesDone)", "[silkworm][node][rpc]") {
         grpc::ClientContext context;
         const auto tx_reader_writer = kv_client.tx_start(&context);
         remote::Pair response;
@@ -923,7 +927,7 @@ TEST_CASE("BackEndKvServer E2E: bidirectional idle timeout", "[silkworm][node][r
         CHECK(status.error_message().find("call idle, no incoming request") != std::string::npos);
     }
 
-    SECTION("Tx KO: finish after first read and one write/read", "[silkworm][node][rpc]") {
+    SECTION("Tx KO: finish after first read and one write/read (w/o WritesDone)", "[silkworm][node][rpc]") {
         grpc::ClientContext context;
         const auto tx_reader_writer = kv_client.tx_start(&context);
         remote::Pair response;

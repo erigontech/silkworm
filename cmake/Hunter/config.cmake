@@ -65,7 +65,12 @@ hunter_config(
 )
 
 hunter_config(
+  Protobuf
+  VERSION 3.19.4-p0
+)
+
+hunter_config(
   gRPC
-  VERSION 1.31.0-p0
+  VERSION 1.44.0-p0
   CMAKE_ARGS gRPC_BUILD_TESTS=OFF gRPC_BUILD_CODEGEN=ON gRPC_BUILD_CSHARP_EXT=OFF
 )

@@ -59,6 +59,9 @@ class HeaderChain {
   public:
     explicit HeaderChain(const ChainIdentity&);
 
+    using ConsensusEnginePtr = std::unique_ptr<consensus::IEngine>;
+    explicit HeaderChain(ConsensusEnginePtr); // alternative constructor
+
     // load initial state from db - this must be done at creation time
     void recover_initial_state(Db::ReadOnlyAccess::Tx&);
 
@@ -142,8 +145,6 @@ class HeaderChain {
     auto extend_down(Segment::Slice, std::shared_ptr<Anchor>) -> RequestMoreHeaders;
     void extend_up(std::shared_ptr<Link>, Segment::Slice);
     auto new_anchor(Segment::Slice, PeerId) -> RequestMoreHeaders;
-
-    using ConsensusEnginePtr = std::unique_ptr<consensus::IEngine>;
 
     OldestFirstAnchorQueue anchor_queue_;        // Priority queue of anchors used to sequence the header requests
     LinkMap links_;                              // Links by header hash

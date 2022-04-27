@@ -31,13 +31,14 @@ class segment_cut_and_paste_error : public std::logic_error {
     explicit segment_cut_and_paste_error(const std::string& reason) : std::logic_error(reason) {}
 };
 
-HeaderChain::HeaderChain(const ChainIdentity& ci)
+HeaderChain::HeaderChain(const ChainIdentity& ci): HeaderChain(consensus::engine_factory(ci.chain)) {}
+
+HeaderChain::HeaderChain(ConsensusEnginePtr consensus_engine)
     : highest_in_db_(0),
       top_seen_height_(0),
       seen_announces_(1000),
-      consensus_engine_{consensus::engine_factory(ci.chain)},
-      chain_state_(
-          persisted_link_queue_) {  // Erigon reads them from db, we hope to find them all in the persistent queue
+      consensus_engine_{std::move(consensus_engine)},
+      chain_state_(persisted_link_queue_) {  // Erigon reads past headers from db, we hope to find them from this queue
     if (!consensus_engine_) {
         throw std::logic_error("HeaderChain exception, cause: unknown consensus engine");
         // or must the downloader go on and return StageResult::kUnknownConsensusEngine?

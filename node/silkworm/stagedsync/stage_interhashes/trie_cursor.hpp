@@ -114,6 +114,10 @@ class AccCursor {
     Bytes prev_{};
     Bytes curr_{};
     Bytes next_{};
+    Bytes buff_{};
+
+    Bytes next_created_{};
+    Bytes first_uncovered_{};
 
     bool has_state();
     bool has_tree();
@@ -122,11 +126,23 @@ class AccCursor {
     void delete_current();
 
     //! \brief Partially parses node
-    //! \remarks We don't need to copy all
+    //! \remarks We don't need to copy all hashes
     void unmarshal_node_light(ByteView key, ByteView value);
+
+    void next_sibling_in_db();
+
+    bool next_sibling_in_mem();
+
+    void seek_in_db();
+
+    bool consume();
+
+    //! \brief Kinda normal lexicographic comparator with the difference empty keys are last
+    bool key_is_before(ByteView k1, ByteView k2);
+
 };
 
-//! \brief Produces the next key of the same length.
+//! \brief Produces the next key in sequence from provided nibbled key
 //! \details It's essentially +1 in the hexadecimal (base 16) numeral system.
 //! \example
 //! \verbatim
@@ -134,10 +150,12 @@ class AccCursor {
 //! increment_key(12e) = 12f
 //! increment_key(12f) = 13
 //! \endverbatim
-//! \return The incremented value or std::nullopt if the key is the largest key of its length,
-//! i.e. consists only of 0xF nibbles.
+//! \return The incremented (and eventually shortened) sequence of 0xF nibbles,
 //! \remarks Being a prefix of nibbles trailing zeroes must be erased
-std::optional<Bytes> increment_nibbled_key(ByteView unpacked);
+Bytes increment_nibbled_key(ByteView nibbles);
+
+//! \brief Computes the next uncovered (by trie cursor) prefix
+std::optional<Bytes> compute_next_uncovered_prefix(ByteView previous, ByteView prefix);
 
 }  // namespace silkworm::trie
 

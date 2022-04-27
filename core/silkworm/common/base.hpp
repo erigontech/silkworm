@@ -57,10 +57,12 @@ class ByteView : public std::basic_string_view<uint8_t> {
     constexpr ByteView(const evmc::address& address) noexcept : ByteView{address.bytes} {}
 
     constexpr ByteView(const evmc::bytes32& hash) noexcept : ByteView{hash.bytes} {}
+
+    [[nodiscard]] bool is_null() const noexcept { return data() == nullptr; }
+
 };
 
 using BlockNum = uint64_t;
-using Nibble = int8_t;  // In range [-1...16)
 
 inline constexpr size_t kAddressLength{20};
 

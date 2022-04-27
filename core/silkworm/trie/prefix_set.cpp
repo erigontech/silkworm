@@ -31,15 +31,11 @@ void PrefixSet::insert(Bytes&& key, bool marker) {
 }
 
 bool PrefixSet::contains(ByteView prefix) {
+    // Applies uniqueness and sorting
+    ensure_sorted();
     if (nibbled_keys_.empty()) {
         return false;
     }
-    if (prefix.empty()) {
-        return true;
-    }
-
-    ensure_sorted();
-    const size_t max_index{nibbled_keys_.size() - 1};
 
     // We optimize for the most common case when contains() inquires are made with increasing prefixes,
     // e.g. contains("00"), contains("04"), contains("0b"), contains("0b05"), contains("0c"), contains("0f"), ...
@@ -51,9 +47,12 @@ bool PrefixSet::contains(ByteView prefix) {
     // - all nibbled keys have same length as, in trie, are all "nibblified" hashes -> 32*2 == 64bytes
     // - all prefixes inquired for have always a shorter len than keys
 
-    while (lte_index_ > 0 && nibbled_keys_[lte_index_].first > prefix) {
+    // Find very first item where nibbled key is lower-than-equal prefix
+    while (lte_index_ > 0 && lte_index_ <= max_index_ && nibbled_keys_[lte_index_].first > prefix) {
         --lte_index_;
     }
+
+    // Step by one to find the item containing prefix (if any)
     while (true) {
         if (has_prefix(nibbled_keys_[lte_index_].first, prefix)) {
             return true;
@@ -61,18 +60,30 @@ bool PrefixSet::contains(ByteView prefix) {
         if (nibbled_keys_[lte_index_].first > prefix) {
             return false;
         }
-        if (lte_index_ == max_index) {
+        if (lte_index_ == max_index_) {
             return false;
         }
         ++lte_index_;
     }
 }
 
+std::pair<bool, ByteView> PrefixSet::contains_and_next_marked(ByteView prefix) {
+    bool left{contains(prefix)};  // After this we're sure the lte_index has been moved
+    ByteView right{};
+    for (size_t i{lte_index_ + 1}; !nibbled_keys_.empty() && i <= max_index_; ++i) {
+        if (nibbled_keys_[i].second) {
+            right = ByteView(nibbled_keys_[i].first);
+        }
+    }
+    return {left, right};
+}
+
 void PrefixSet::ensure_sorted() {
     if (!sorted_) {
         std::sort(nibbled_keys_.begin(), nibbled_keys_.end());
         nibbled_keys_.erase(std::unique(nibbled_keys_.begin(), nibbled_keys_.end()), nibbled_keys_.end());
-        lte_index_ = std::min(nibbled_keys_.size() - 1, lte_index_);
+        lte_index_ = 0;
+        max_index_ = nibbled_keys_.empty() ? 0 : nibbled_keys_.size() - 1;
         sorted_ = true;
     }
 }

@@ -225,21 +225,30 @@ std::optional<Bytes> Cursor::first_uncovered_prefix() const {
     return from_nibbles(*k);
 }
 
-std::optional<Bytes> increment_nibbled_key(ByteView unpacked) {
-    Bytes out(unpacked);
-
-    for (auto it = out.rbegin(), end{out.rend()}; it != end; ++it) {
-        auto& nibble{*it};
-        assert(nibble < 0x10);
-        if (nibble < 0xF) {
-            ++nibble;
-            return out;
+Bytes increment_nibbled_key(ByteView nibbles) {
+    Bytes ret;
+    if (!nibbles.empty()) {
+        auto rit{std::find_if(nibbles.rbegin(), nibbles.rend(), [](uint8_t nibble) { return nibble < 0xf; })};
+        if (rit != nibbles.rend()) {
+            auto count{std::distance(nibbles.begin(), rit.base())};
+            ret.assign(nibbles.substr(0, count));
+            ++ret.back();
         }
-
-        // make it shorter, because in tries after 11ff goes 12, but not 1200
-        out.erase(--(it.base()));
     }
-    return std::nullopt;
+    return ret;
+}
+
+std::optional<Bytes> compute_next_uncovered_prefix(ByteView previous, ByteView prefix) {
+    Bytes ret;
+    if (!previous.empty()) {
+        ret = increment_nibbled_key(previous);
+    } else {
+        ret.assign(prefix);
+    }
+    if (ret.size() & 1) {
+        ret.append({'\0'});
+    }
+    return from_nibbles(ret);
 }
 
 AccCursor::AccCursor(mdbx::cursor& db_cursor, PrefixSet& changed, ByteView prefix, etl::Collector* collector)
@@ -248,6 +257,7 @@ AccCursor::AccCursor(mdbx::cursor& db_cursor, PrefixSet& changed, ByteView prefi
     prev_.reserve(64);
     curr_.reserve(64);
     next_.reserve(64);
+    buff_.reserve(64);
 
     prefix_.assign(prefix);
 }
@@ -314,7 +324,74 @@ void AccCursor::unmarshal_node_light(ByteView key, ByteView value) {
     sub_node.has_hash = endian::load_big_u16(&value.data()[4]);
     sub_node.hash_id = -1;
     sub_node.child_id = static_cast<int8_t>(ctz_16(sub_node.has_state) - 1);
+}
 
+void AccCursor::next_sibling_in_db() {
+    auto& sub_node{sub_nodes_[level_]};
+    auto incremented_key{increment_nibbled_key(sub_node.key)};
+    if (incremented_key.empty()) {
+        sub_node.key = ByteView();
+        return;
+    }
+    next_.assign(incremented_key);
+    seek_in_db();
+}
+
+bool AccCursor::next_sibling_in_mem() {
+    auto& sub_node{sub_nodes_[level_]};
+    while (sub_node.child_id < static_cast<int8_t>(bitlen_16(sub_node.has_state))) {
+        ++sub_node.child_id;
+        if (has_hash()) {
+            ++sub_node.hash_id;
+            return true;
+        }
+        if (has_tree()) {
+            return true;
+        }
+        if (has_state()) {
+            skip_state_ = false;
+        }
+    }
+    return false;
+}
+
+void AccCursor::seek_in_db() {
+    auto& sub_node{sub_nodes_[level_]};
+    const auto data{next_.empty() ? db_cursor_.to_first(false) : db_cursor_.lower_bound(db::to_slice(next_), false)};
+    if (!data || !has_prefix(db::from_slice(data.key), prefix_)) {
+        sub_node.key = ByteView();
+        sub_node.value = ByteView();
+        return;
+    }
+    unmarshal_node_light(db::from_slice(data.key), db::from_slice(data.value));
+    next_sibling_in_mem();
+}
+
+bool AccCursor::consume() {
+    if (has_hash()) {
+        auto& sub_node{sub_nodes_[level_]};
+        buff_.assign(sub_node.key);
+        buff_.append({static_cast<uint8_t>(sub_node.child_id)});
+        auto [contains, next_created]{changed_.contains_and_next_marked(buff_)};
+        if (!contains) {
+            skip_state_ = skip_state_ && key_is_before(buff_, next_created);
+            next_created_ = next_created;
+            curr_.assign(buff_);
+            return true;
+        }
+    }
+    delete_current();
+    return false;
+}
+
+bool AccCursor::key_is_before(ByteView k1, ByteView k2) {
+    if (k1.empty()) {
+        return false;
+    }
+    if (k2.empty()) {
+        return true;
+    }
+    return k1 < k2;
 }
 
 }  // namespace silkworm::trie

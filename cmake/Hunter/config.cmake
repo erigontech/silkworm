@@ -29,6 +29,12 @@ hunter_config(
 )
 
 hunter_config(
+  ethash
+  VERSION 0.9.0
+  CMAKE_ARGS ETHASH_BUILD_ETHASH=ON ETHASH_BUILD_GLOBAL_CONTEXT=NO ETHASH_BUILD_TESTS=OFF
+)
+
+hunter_config(
   re2
   VERSION 2021.11.01
   URL https://github.com/google/re2/archive/2021-11-01.tar.gz

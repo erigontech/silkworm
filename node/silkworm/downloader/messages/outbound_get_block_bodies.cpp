@@ -70,7 +70,7 @@ sentry::SentPeers OutboundGetBlockBodies::send_packet(SentryClient& sentry, cons
                                                       BlockNum min_block, seconds_t timeout) {
     auto request = std::make_unique<sentry::OutboundMessageData>();  // create header request
 
-    request->set_id(sentry::MessageId::GET_BLOCK_HEADERS_66);
+    request->set_id(sentry::MessageId::GET_BLOCK_BODIES_66);
 
     Bytes rlp_encoding;
     rlp::encode(rlp_encoding, packet_);

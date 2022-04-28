@@ -18,6 +18,7 @@
 
 #include <atomic>
 #include <memory>
+#include <stdexcept>
 #include <thread>
 
 #include <catch2/catch.hpp>
@@ -87,14 +88,58 @@ TEST_CASE("ServerContext", "[silkworm][rpc][server_context]") {
 }
 
 TEST_CASE("ServerContextPool", "[silkworm][rpc][server_context]") {
+    silkworm::log::set_verbosity(silkworm::log::Level::kNone);
     grpc::ServerBuilder builder;
-    ServerContextPool server_context_pool{2};
 
-    SECTION("ServerContextPool") {
+    SECTION("ServerContextPool OK") {
+        ServerContextPool server_context_pool{2};
+        CHECK(server_context_pool.num_contexts() == 0);
+    }
+
+    SECTION("ServerContextPool KO") {
+        CHECK_THROWS_AS(ServerContextPool{0}, std::logic_error);
+    }
+
+    SECTION("add_context") {
+        ServerContextPool server_context_pool{2};
         REQUIRE(server_context_pool.num_contexts() == 0);
         server_context_pool.add_context(builder.AddCompletionQueue());
         server_context_pool.add_context(builder.AddCompletionQueue());
         CHECK(server_context_pool.num_contexts() == 2);
+    }
+
+    SECTION("start/stop w/o contexts") {
+        ServerContextPool server_context_pool{2};
+        REQUIRE(server_context_pool.num_contexts() == 0);
+        CHECK_NOTHROW(server_context_pool.start());
+        CHECK_NOTHROW(server_context_pool.stop());
+    }
+
+    SECTION("start/stop w/ contexts") {
+        ServerContextPool server_context_pool{2};
+        server_context_pool.add_context(builder.AddCompletionQueue());
+        server_context_pool.add_context(builder.AddCompletionQueue());
+        CHECK_NOTHROW(server_context_pool.start());
+        CHECK_NOTHROW(server_context_pool.stop());
+    }
+
+    SECTION("join") {
+        ServerContextPool server_context_pool{2};
+        server_context_pool.add_context(builder.AddCompletionQueue());
+        server_context_pool.add_context(builder.AddCompletionQueue());
+        server_context_pool.start();
+        std::thread joining_thread{[&]() { server_context_pool.join(); }};
+        server_context_pool.stop();
+        CHECK_NOTHROW(joining_thread.join());
+    }
+
+    SECTION("join after stop") {
+        ServerContextPool server_context_pool{2};
+        server_context_pool.add_context(builder.AddCompletionQueue());
+        server_context_pool.add_context(builder.AddCompletionQueue());
+        server_context_pool.start();
+        server_context_pool.stop();
+        CHECK_NOTHROW(server_context_pool.join());
     }
 }
 #endif // SILKWORM_SANITIZE

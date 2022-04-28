@@ -1089,8 +1089,8 @@ int main(int argc, char* argv[]) {
         }
 
         db::EnvConfig src_config{data_dir.chaindata().path().string()};
-        src_config.shared = *shared_opt;
-        src_config.exclusive = *exclusive_opt;
+        src_config.shared = static_cast<bool>(*shared_opt);
+        src_config.exclusive = static_cast<bool>(*exclusive_opt);
 
         // Execute subcommand actions
         if (*cmd_tables) {
@@ -1100,7 +1100,7 @@ int main(int argc, char* argv[]) {
                 do_tables(src_config);
             }
         } else if (*cmd_freelist) {
-            do_freelist(src_config, *freelist_detail_opt);
+            do_freelist(src_config, static_cast<bool>(*freelist_detail_opt));
         } else if (*cmd_schema) {
             do_schema(src_config);
         } else if (*cmd_stages) {
@@ -1108,19 +1108,22 @@ int main(int argc, char* argv[]) {
         } else if (*cmd_migrations) {
             do_migrations(src_config);
         } else if (*cmd_clear) {
-            do_clear(src_config, *app_dry_opt, *app_yes_opt, cmd_clear_names, *cmd_clear_drop_opt);
+            do_clear(src_config, static_cast<bool>(*app_dry_opt), static_cast<bool>(*app_yes_opt), cmd_clear_names,
+                     static_cast<bool>(*cmd_clear_drop_opt));
         } else if (*cmd_compact) {
-            do_compact(src_config, cmd_compact_workdir_opt->as<std::string>(), *cmd_compact_replace_opt,
-                       *cmd_compact_nobak_opt);
+            do_compact(src_config, cmd_compact_workdir_opt->as<std::string>(),
+                       static_cast<bool>(*cmd_compact_replace_opt), static_cast<bool>(*cmd_compact_nobak_opt));
         } else if (*cmd_copy) {
-            do_copy(src_config, cmd_copy_targetdir_opt->as<std::string>(), *cmd_copy_target_create_opt,
-                    *cmd_copy_target_noempty_opt, cmd_copy_names, cmd_copy_xnames);
+            do_copy(src_config, cmd_copy_targetdir_opt->as<std::string>(),
+                    static_cast<bool>(*cmd_copy_target_create_opt), static_cast<bool>(*cmd_copy_target_noempty_opt),
+                    cmd_copy_names, cmd_copy_xnames);
         } else if (*cmd_stageset) {
             do_stage_set(src_config, cmd_stageset_name_opt->as<std::string>(), cmd_stageset_height_opt->as<uint32_t>(),
-                         *app_dry_opt);
+                         static_cast<bool>(*app_dry_opt));
         } else if (*cmd_initgenesis) {
             do_init_genesis(data_dir, cmd_initgenesis_json_opt->as<std::string>(),
-                            *cmd_initgenesis_chain_opt ? cmd_initgenesis_chain_opt->as<uint32_t>() : 0u, *app_dry_opt);
+                            *cmd_initgenesis_chain_opt ? cmd_initgenesis_chain_opt->as<uint32_t>() : 0u,
+                            static_cast<bool>(*app_dry_opt));
             if (*app_dry_opt) {
                 std::cout << "\nGenesis initialization succeeded. Due to --dry flag no data is persisted\n"
                           << std::endl;

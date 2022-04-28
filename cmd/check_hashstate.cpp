@@ -1,5 +1,5 @@
 /*
-   Copyright 2021 The Silkworm Authors
+   Copyright 2021-2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -72,7 +72,7 @@ void check(mdbx::txn& txn, Operation operation) {
             }
             if (actual_value.value != data.value) {
                 log::Error() << "Expected: " << to_hex(db::from_slice(data.value)) << ", Actual: << "
-                                    << to_hex(db::from_slice(actual_value.value));
+                             << to_hex(db::from_slice(actual_value.value));
                 return;
             }
             data = source_table.to_next(false);
@@ -114,7 +114,7 @@ void check(mdbx::txn& txn, Operation operation) {
             }
             if (actual_value.value != data.value) {
                 log::Error() << "Expected: " << to_hex(db::from_slice(data.value)) << ", Actual: << "
-                                    << to_hex(db::from_slice(actual_value.value));
+                             << to_hex(db::from_slice(actual_value.value));
                 return;
             }
             data = source_table.to_next(false);
@@ -126,7 +126,8 @@ int main(int argc, char* argv[]) {
     CLI::App app{"Check Hashed state"};
 
     std::string chaindata{DataDirectory{}.chaindata().path().string()};
-    app.add_option("--chaindata", chaindata, "Path to a database populated by Erigon", true)
+    app.add_option("--chaindata", chaindata, "Path to a database populated by Erigon")
+        ->capture_default_str()
         ->check(CLI::ExistingDirectory);
     CLI11_PARSE(app, argc, argv);
     log::Info() << "Checking HashState";

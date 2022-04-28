@@ -1,5 +1,5 @@
 /*
-   Copyright 2021-2022 The Silkworm Authors
+   Copyright 2021 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -23,8 +23,8 @@
 #include <silkworm/common/directories.hpp>
 #include <silkworm/common/log.hpp>
 #include <silkworm/downloader/internals/header_retrieval.hpp>
-#include <silkworm/downloader/stage_bodies.hpp>
 #include <silkworm/downloader/stage_headers.hpp>
+#include "silkworm/downloader/stage_bodies.hpp"
 
 using namespace silkworm;
 
@@ -47,17 +47,15 @@ int main(int argc, char* argv[]) {
     settings.log_verbosity = log::Level::kInfo;
     settings.log_thousands_sep = '\'';
 
-    app.add_option("--chaindata", db_path, "Path to the chain database")
-        ->capture_default_str()
+    app.add_option("--chaindata", db_path, "Path to the chain database", true)
         ->check(CLI::ExistingDirectory);
-    app.add_option("--chain", chain_name, "Network name")->capture_default_str()->needs("--chaindata");
-    app.add_option("-s,--sentryaddr", sentry_addr, "address:port of sentry")->capture_default_str();
-    //  todo ->check?
-    app.add_option("-f,--filesdir", temporary_file_path, "Path to a temp files dir")
-        ->capture_default_str()
+    app.add_option("--chain", chain_name, "Network name", true)
+        ->needs("--chaindata");
+    app.add_option("-s,--sentryaddr", sentry_addr, "address:port of sentry", true);
+        //  todo ->check?
+    app.add_option("-f,--filesdir", temporary_file_path, "Path to a temp files dir", true)
         ->check(CLI::ExistingDirectory);
-    app.add_option("-v,--verbosity", settings.log_verbosity, "Verbosity")
-        ->capture_default_str()
+    app.add_option("-v,--verbosity", settings.log_verbosity, "Verbosity", true)
         ->check(CLI::Range(static_cast<uint32_t>(log::Level::kCritical), static_cast<uint32_t>(log::Level::kTrace)));
 
     CLI11_PARSE(app, argc, argv);
@@ -121,8 +119,8 @@ int main(int argc, char* argv[]) {
         } while (stage_result.status != Stage::Result::Error);
 
         // Wait for user termination request
-        std::cin.get();           // wait for user press "enter"
-        block_downloader.stop();  // signal exiting
+        std::cin.get();            // wait for user press "enter"
+        block_downloader.stop();     // signal exiting
 
         // wait threads termination
         message_receiving.join();

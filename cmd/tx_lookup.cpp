@@ -1,5 +1,5 @@
 /*
-   Copyright 2021-2022 The Silkworm Authors
+   Copyright 2021 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -33,8 +33,7 @@ int main(int argc, char* argv[]) {
 
     std::string chaindata{DataDirectory{}.chaindata().path().string()};
     bool full{false};
-    app.add_option("--chaindata", chaindata, "Path to a database populated by Erigon")
-        ->capture_default_str()
+    app.add_option("--chaindata", chaindata, "Path to a database populated by Erigon", true)
         ->check(CLI::ExistingDirectory);
 
     app.add_flag("--full", full, "Start making lookups from block 0");

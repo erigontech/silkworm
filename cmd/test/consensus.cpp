@@ -684,9 +684,9 @@ int main(int argc, char* argv[]) {
     std::string evm_path{};
     app.add_option("--evm", evm_path, "Path to EVMC-compliant VM");
     std::string tests_path{SILKWORM_CONSENSUS_TEST_DIR};
-    app.add_option("--tests", tests_path, "Path to consensus tests")->capture_default_str()->check(CLI::ExistingDirectory);
+    app.add_option("--tests", tests_path, "Path to consensus tests", /*defaulted=*/true)->check(CLI::ExistingDirectory);
     unsigned num_threads{std::thread::hardware_concurrency()};
-    app.add_option("--threads", num_threads, "Number of parallel threads")->capture_default_str();
+    app.add_option("--threads", num_threads, "Number of parallel threads", /*defaulted=*/true);
     bool include_slow_tests{false};
     app.add_flag("--slow", include_slow_tests, "Run slow tests");
 

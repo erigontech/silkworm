@@ -935,19 +935,18 @@ void do_extract_headers(db::EnvConfig& config, const std::string& file_name, uin
         const uint64_t* chuncks{reinterpret_cast<const uint64_t*>(db::from_slice(data.value).data())};
         out_stream << "   ";
         for (int i = 0; i < 4; ++i) {
-            std::string hex{to_hex(chuncks[i], true)};
+            std::string hex{ to_hex(chuncks[i], true)};
             out_stream << hex << ",";
         }
         out_stream << std::endl;
         max_height = block_num;
     }
 
-    out_stream
-        << "};\n"
-        << "const uint64_t* preverified_hashes_mainnet_data(){return &preverified_hashes_mainnet_internal[0];}\n"
-        << "size_t sizeof_preverified_hashes_mainnet_data(){return sizeof(preverified_hashes_mainnet_internal);}\n"
-        << "uint64_t preverified_hashes_mainnet_height(){return " << max_height << "ull;}\n"
-        << std::endl;
+    out_stream << "};\n"
+               << "const uint64_t* preverified_hashes_mainnet_data(){return &preverified_hashes_mainnet_internal[0];}\n"
+               << "size_t sizeof_preverified_hashes_mainnet_data(){return sizeof(preverified_hashes_mainnet_internal);}\n"
+               << "uint64_t preverified_hashes_mainnet_height(){return " << max_height << "ull;}\n"
+               << std::endl;
     out_stream.close();
 }
 
@@ -1019,10 +1018,8 @@ int main(int argc, char* argv[]) {
     auto cmd_copy_target_create_opt = cmd_copy->add_flag("--create", "Create target db if not exists");
     auto cmd_copy_target_noempty_opt = cmd_copy->add_flag("--noempty", "Skip copy of empty tables");
     std::vector<std::string> cmd_copy_names, cmd_copy_xnames;
-    cmd_copy->add_option("--tables", cmd_copy_names, "Copy only tables matching this list of names")
-        ->capture_default_str();
-    cmd_copy->add_option("--xtables", cmd_copy_xnames, "Don't copy tables matching this list of names")
-        ->capture_default_str();
+    cmd_copy->add_option("--tables", cmd_copy_names, "Copy only tables matching this list of names", true);
+    cmd_copy->add_option("--xtables", cmd_copy_xnames, "Don't copy tables matching this list of names", true);
 
     // Stages tool
     auto cmd_stageset = app_main.add_subcommand("stage-set", "Sets a stage to a new height");

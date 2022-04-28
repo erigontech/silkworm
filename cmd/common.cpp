@@ -99,44 +99,37 @@ void parse_silkworm_command_line(CLI::App& cli, int argc, char* argv[], log::Set
     std::string chaindata_growth_size{human_size(node_settings.chaindata_env_config.growth_size)};
     std::string batch_size{human_size(node_settings.batch_size)};
     std::string etl_buffer_size{human_size(node_settings.etl_buffer_size)};
-    cli.add_option("--datadir", datadir, "Path to data directory")->capture_default_str();
+    cli.add_option("--datadir", datadir, "Path to data directory", true);
     cli.add_flag("--chaindata.exclusive", node_settings.chaindata_env_config.exclusive,
                  "Chaindata database opened in exclusive mode");
     cli.add_flag("--chaindata.readahead", node_settings.chaindata_env_config.read_ahead,
                  "Chaindata database enable readahead");
     cli.add_flag("--chaindata.writemap", node_settings.chaindata_env_config.write_map,
                  "Chaindata database enable writemap");
-    cli.add_option("--chaindata.growthsize", chaindata_growth_size, "Chaindata database growth size")
-        ->capture_default_str()
+    cli.add_option("--chaindata.growthsize", chaindata_growth_size, "Chaindata database growth size", true)
         ->check(HumanSizeParserValidator("64MB"));
-    cli.add_option("--chaindata.maxsize", chaindata_max_size, "Chaindata database max size")
-        ->capture_default_str()
+    cli.add_option("--chaindata.maxsize", chaindata_max_size, "Chaindata database max size", true)
         ->check(HumanSizeParserValidator("64MB", {"4TB"}));
-    cli.add_option("--batchsize", batch_size, "Batch size for stage execution")
-        ->capture_default_str()
+    cli.add_option("--batchsize", batch_size, "Batch size for stage execution", true)
         ->check(HumanSizeParserValidator("64MB", {"16GB"}));
-    cli.add_option("--etl.buffersize", etl_buffer_size, "Buffer size for ETL operations")
-        ->capture_default_str()
+    cli.add_option("--etl.buffersize", etl_buffer_size, "Buffer size for ETL operations", true)
         ->check(HumanSizeParserValidator("64MB", {"1GB"}));
     cli.add_option("--private.api.addr", node_settings.private_api_addr,
                    "Private API network address to serve remote database interface\n"
                    "An empty string means to not start the listener\n"
                    "Use the endpoint form i.e. ip-address:port\n"
-                   "DO NOT EXPOSE TO THE INTERNET")
-        ->capture_default_str()
+                   "DO NOT EXPOSE TO THE INTERNET",
+                   true)
         ->check(IPEndPointValidator(/*allow_empty=*/false));
 
-    cli.add_option("--sentry.api.addr", node_settings.sentry_api_addr, "Sentry api endpoint")
-        ->capture_default_str()
+    cli.add_option("--sentry.api.addr", node_settings.sentry_api_addr, "Sentry api endpoint", true)
         ->check(IPEndPointValidator(/*allow_empty=*/true));
 
     cli.add_option("--sync.loop.throttle", node_settings.sync_loop_throttle_seconds,
-                   "Sets the minimum time between sync loop starts (in seconds)")
-        ->capture_default_str();
+                   "Sets the minimum time between sync loop starts (in seconds)", true);
 
     cli.add_option("--sync.loop.log.interval", node_settings.sync_loop_log_interval_seconds,
-                   "Sets the minimum time between sync loop logs (in seconds)")
-        ->capture_default_str()
+                   "Sets the minimum time between sync loop logs (in seconds)", true)
         ->check(CLI::Range(5u, 600u));
 
     cli.add_flag("--fakepow", node_settings.fake_pow, "Disables proof-of-work verification");
@@ -148,8 +141,8 @@ void parse_silkworm_command_line(CLI::App& cli, int argc, char* argv[], log::Set
     chain_opts
         .add_option("--networkid", node_settings.network_id,
                     "Explicitly set network id\n"
-                    "For known networks: use --chain <testnet_name> instead")
-        ->capture_default_str()
+                    "For known networks: use --chain <testnet_name> instead",
+                    true)
         ->excludes(chain_opts_chain_name);
 
     // Prune options
@@ -165,8 +158,8 @@ void parse_silkworm_command_line(CLI::App& cli, int argc, char* argv[], log::Set
                     "t - prune transaction by it's hash index\n"
                     "c - prune call traces (used by trace_* methods)\n"
                     "If item is NOT in the list - means NO pruning for this data.\n"
-                    "Example: --prune=hrtc (default: none)")
-        ->capture_default_str()
+                    "Example: --prune=hrtc (default: none)",
+                    true)
         ->check(PruneModeValidator());
 
     prune_opts.add_option("--prune.h.older", "Override default 90k blocks of history to prune")
@@ -192,8 +185,7 @@ void parse_silkworm_command_line(CLI::App& cli, int argc, char* argv[], log::Set
 
     // Logging options
     auto& log_opts = *cli.add_option_group("Log", "Logging options");
-    log_opts.add_option("--log.verbosity", log_settings.log_verbosity, "Sets log verbosity")
-        ->capture_default_str()
+    log_opts.add_option("--log.verbosity", log_settings.log_verbosity, "Sets log verbosity", true)
         ->check(CLI::Range(static_cast<uint32_t>(log::Level::kCritical), static_cast<uint32_t>(log::Level::kTrace)))
         ->default_val(std::to_string(static_cast<uint32_t>(log_settings.log_verbosity)));
     log_opts.add_flag("--log.stdout", log_settings.log_std_out, "Outputs to std::out instead of std::err");

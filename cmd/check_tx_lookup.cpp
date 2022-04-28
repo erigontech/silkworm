@@ -39,11 +39,9 @@ int main(int argc, char* argv[]) {
 
     std::string chaindata{DataDirectory{}.chaindata().path().string()};
     size_t block_from;
-    app.add_option("--chaindata", chaindata, "Path to a database populated by Erigon")
-        ->capture_default_str()
+    app.add_option("--chaindata", chaindata, "Path to a database populated by Erigon", true)
         ->check(CLI::ExistingDirectory);
-    app.add_option("--from", block_from, "Initial block number to process (inclusive)")
-        ->capture_default_str()
+    app.add_option("--from", block_from, "Initial block number to process (inclusive)", true)
         ->check(CLI::Range(1u, UINT32_MAX));
 
     CLI11_PARSE(app, argc, argv);

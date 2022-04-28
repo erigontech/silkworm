@@ -1,5 +1,5 @@
 /*
-   Copyright 2020-2022 The Silkworm Authors
+   Copyright 2020-2021 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -84,10 +84,10 @@ int main(int argc, char* argv[]) {
     std::string output_dir{};
     bool overwrite{false};
 
-    app_main.add_option("-i,--input", input_dir, "Input directory for genesis json files")
+    app_main.add_option("-i,--input", input_dir, "Input directory for genesis json files", false)
         ->required()
         ->check(CLI::ExistingDirectory);
-    app_main.add_option("-o,--output", output_dir, "Output directory for generated cpp byte arrays")
+    app_main.add_option("-o,--output", output_dir, "Output directory for generated cpp byte arrays", false)
         ->required()
         ->check(CLI::ExistingDirectory);
 

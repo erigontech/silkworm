@@ -46,15 +46,11 @@ int main(int argc, char* argv[]) {
     options.datadir = DataDirectory{}.chaindata().path().string();  // Default chain data db path
 
     // Command line arguments
-    app.add_option("--chaindata", options.datadir, "Path to chain db")
-        ->capture_default_str()
-        ->check(CLI::ExistingDirectory);
+    app.add_option("--chaindata", options.datadir, "Path to chain db", true)->check(CLI::ExistingDirectory);
 
-    app.add_option("--from", options.block_from, "Initial block number to process (inclusive)")
-        ->capture_default_str()
+    app.add_option("--from", options.block_from, "Initial block number to process (inclusive)", true)
         ->check(CLI::Range(1u, UINT32_MAX));
-    app.add_option("--to", options.block_to, "Final block number to process (inclusive)")
-        ->capture_default_str()
+    app.add_option("--to", options.block_to, "Final block number to process (inclusive)", true)
         ->check(CLI::Range(1u, UINT32_MAX));
 
     app.add_flag("--debug", options.debug, "May print some debug/trace info.");

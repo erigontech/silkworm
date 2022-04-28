@@ -29,8 +29,7 @@ int main(int argc, char* argv[]) {
     using namespace silkworm;
 
     std::string chaindata{DataDirectory{}.chaindata().path().string()};
-    app.add_option("--chaindata", chaindata, "Path to a database populated by Erigon")
-        ->capture_default_str()
+    app.add_option("--chaindata", chaindata, "Path to a database populated by Erigon", true)
         ->check(CLI::ExistingDirectory);
 
     uint64_t from{1};

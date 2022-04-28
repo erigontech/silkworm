@@ -89,6 +89,9 @@ class AccCursor {
     explicit AccCursor(mdbx::cursor& db_cursor, PrefixSet& changed, ByteView prefix = {},
                        etl::Collector* collector = nullptr);
 
+    bool seek(ByteView prefix);  // Returns whether node is found
+    bool move_next();            // Returns whether node is found
+
   private:
     // TrieAccount(TrieStorage) node with a particular nibble selected
     struct SubNode {
@@ -123,23 +126,26 @@ class AccCursor {
     bool has_tree();
     bool has_hash();
 
+    bool next();
+    void preorder_traversal_step();
+    void preorder_traversal_step_no_indepth();
     void delete_current();
 
     //! \brief Partially parses node
-    //! \remarks We don't need to copy all hashes
-    void unmarshal_node_light(ByteView key, ByteView value);
+    //! \remarks We don't need to copy all hashes for trie::Node
+    //! \see Erigon's _unmarshal
+    void parse_subnode(ByteView key, ByteView value);
 
     void next_sibling_in_db();
-
     bool next_sibling_in_mem();
+    bool next_sibling_of_parent_in_mem();
 
-    void seek_in_db();
+    bool seek_in_db(ByteView within_prefix = {});
 
     bool consume();
 
     //! \brief Kinda normal lexicographic comparator with the difference empty keys are last
     bool key_is_before(ByteView k1, ByteView k2);
-
 };
 
 //! \brief Produces the next key in sequence from provided nibbled key

@@ -262,6 +262,43 @@ AccCursor::AccCursor(mdbx::cursor& db_cursor, PrefixSet& changed, ByteView prefi
     prefix_.assign(prefix);
 }
 
+bool AccCursor::seek(ByteView prefix) {
+    skip_state_ = true;
+    auto [_, next_created]{changed_.contains_and_next_marked({})};
+    next_created_ = next_created;
+    prev_.assign(curr_);
+    prefix_.assign(prefix);
+
+    if (!seek_in_db()) {
+        curr_.clear();
+        skip_state_ = false;
+        return false;
+    }
+
+    if (consume()) {
+        return true;
+    }
+    return next();
+}
+
+bool AccCursor::move_next() {
+    skip_state_ = true;
+    prev_.assign(curr_);
+    preorder_traversal_step_no_indepth();
+
+    if (sub_nodes_[level_].key.empty()) {
+        curr_.clear();
+        skip_state_ = skip_state_ && increment_nibbled_key(prev_).empty();
+        return false;
+    }
+
+    if (consume()) {
+        return has_tree();
+    }
+
+    return next();
+}
+
 bool AccCursor::has_state() {
     auto& sub_node{sub_nodes_[level_]};
     return ((1 << sub_node.child_id) & sub_node.has_state) != 0;
@@ -277,16 +314,51 @@ bool AccCursor::has_hash() {
     return ((1 << sub_node.child_id) & sub_node.has_hash) != 0;
 }
 
+bool AccCursor::next() {
+    skip_state_ = skip_state_ && has_tree();
+    preorder_traversal_step();
+    while (true) {
+        if (sub_nodes_[level_].key.empty()) {
+            curr_.clear();
+            skip_state_ = skip_state_ && increment_nibbled_key(prev_).empty();
+            return false;
+        }
+        if (consume()) {
+            return has_tree();
+        }
+        skip_state_ = skip_state_ && has_tree();
+        preorder_traversal_step();
+    }
+}
+
+void AccCursor::preorder_traversal_step() {
+    if (has_tree()) {
+        next_.assign(sub_nodes_[level_].key);
+        next_.append({static_cast<uint8_t>(sub_nodes_[level_].child_id)});
+        if (seek_in_db(next_)) {
+            return;
+        }
+    }
+    preorder_traversal_step_no_indepth();
+}
+
+void AccCursor::preorder_traversal_step_no_indepth() {
+    if (next_sibling_in_mem() || next_sibling_of_parent_in_mem()) {
+        return;
+    }
+    next_sibling_in_db();
+}
+
 void AccCursor::delete_current() {
     auto& sub_node{sub_nodes_[level_]};
-    if (!sub_node.deleted) {
+    if (!sub_node.deleted && !sub_node.key.empty()) {
         if (collector_) {
             collector_->collect({Bytes{sub_node.key}, Bytes{}});
         }
         sub_node.deleted = true;
     }
 }
-void AccCursor::unmarshal_node_light(ByteView key, ByteView value) {
+void AccCursor::parse_subnode(ByteView key, ByteView value) {
     // At least state/tree/hash masks need to be present
     if (value.length() < 6) {
         throw std::invalid_argument("Wrong node raw length: expected >= 6 got " + std::to_string(value.length()));
@@ -315,7 +387,7 @@ void AccCursor::unmarshal_node_light(ByteView key, ByteView value) {
     }
 
     level_ = key.length();
-    auto& sub_node{sub_nodes_.at(level_)};
+    auto& sub_node{sub_nodes_[level_]};
     sub_node.key = key;
     sub_node.value = value;
     sub_node.deleted = false;
@@ -334,7 +406,7 @@ void AccCursor::next_sibling_in_db() {
         return;
     }
     next_.assign(incremented_key);
-    seek_in_db();
+    (void)seek_in_db();
 }
 
 bool AccCursor::next_sibling_in_mem() {
@@ -355,16 +427,48 @@ bool AccCursor::next_sibling_in_mem() {
     return false;
 }
 
-void AccCursor::seek_in_db() {
+bool AccCursor::next_sibling_of_parent_in_mem() {
+    while (level_ > 1) {
+        if (sub_nodes_[level_].key.empty()) {
+            size_t up_level{level_ - 1};
+            while (sub_nodes_[up_level].key.empty() && up_level > 1) {
+                --up_level;
+            }
+            next_.assign(sub_nodes_[level_].key);
+            next_.append({static_cast<uint8_t>(sub_nodes_[level_].child_id)});
+            buff_.assign(sub_nodes_[up_level].key);
+            buff_.append({static_cast<uint8_t>(sub_nodes_[up_level].child_id)});
+            if (seek_in_db(buff_)) {
+                return true;
+            }
+            level_ = up_level + 1;
+            continue;
+        }
+        --level_;
+        if (next_sibling_in_mem()) {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool AccCursor::seek_in_db(ByteView within_prefix) {
     auto& sub_node{sub_nodes_[level_]};
     const auto data{next_.empty() ? db_cursor_.to_first(false) : db_cursor_.lower_bound(db::to_slice(next_), false)};
-    if (!data || !has_prefix(db::from_slice(data.key), prefix_)) {
-        sub_node.key = ByteView();
-        sub_node.value = ByteView();
-        return;
+    if (!within_prefix.empty()) {
+        if (!data || !has_prefix(db::from_slice(data.key), within_prefix)) {
+            return false;
+        }
+    } else {
+        if (!data || !has_prefix(db::from_slice(data.key), prefix_)) {
+            sub_node.key = ByteView();
+            sub_node.value = ByteView();
+            return false;
+        }
     }
-    unmarshal_node_light(db::from_slice(data.key), db::from_slice(data.value));
+    parse_subnode(db::from_slice(data.key), db::from_slice(data.value));
     next_sibling_in_mem();
+    return true;
 }
 
 bool AccCursor::consume() {

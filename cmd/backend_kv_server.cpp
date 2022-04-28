@@ -29,7 +29,7 @@
 #include <silkworm/common/directories.hpp>
 #include <silkworm/common/log.hpp>
 #include <silkworm/common/settings.hpp>
-#include <silkworm/rpc/backend_kv_server.hpp>
+#include <silkworm/rpc/server/backend_kv_server.hpp>
 #include <silkworm/rpc/util.hpp>
 
 //! Assemble the full node name using the Cable build information

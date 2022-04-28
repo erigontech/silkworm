@@ -42,15 +42,15 @@ void BodySequence::sync_current_state(BlockNum highest_body_in_db, BlockNum high
 }
 
 size_t BodySequence::outstanding_requests() {
-    size_t outstanding_requests{0};
+    size_t requested_bodies{0};
 
     for (auto& br: body_requests_) {
         PendingBodyRequest& past_request = br.second;
         if (!past_request.ready)
-            outstanding_requests++;
+            requested_bodies++;
     }
 
-    return outstanding_requests;
+    return requested_bodies / max_blocks_per_message;
 }
 
 std::vector<NewBlockPacket>& BodySequence::announces_to_do() {
@@ -141,7 +141,7 @@ void BodySequence::make_new_requests(std::vector<Hash>& hashes, BlockNum& min_bl
     if (!body_requests_.empty())
         last_requested_block = body_requests_.rbegin()->second.block_height; // the last requested
 
-    while (hashes.size() <= max_blocks_per_message && last_requested_block <= headers_stage_height_) {
+    while (hashes.size() < max_blocks_per_message && last_requested_block <= headers_stage_height_) {
         BlockNum bn = last_requested_block + 1;
 
         auto new_request = body_requests_[bn]; // insert the new request

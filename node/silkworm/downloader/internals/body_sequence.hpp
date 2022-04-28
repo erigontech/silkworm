@@ -102,7 +102,7 @@ class BodySequence {
     std::vector<NewBlockPacket> announcements_to_do_;
 
     Db::ReadOnlyAccess db_access_;
-    const ChainIdentity& chain_identity_;
+    [[maybe_unused]] const ChainIdentity& chain_identity_;
 
     BlockNum highest_body_in_db_{0};
     BlockNum headers_stage_height_{0};

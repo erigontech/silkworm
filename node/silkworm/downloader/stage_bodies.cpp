@@ -137,7 +137,7 @@ Stage::Result BodiesStage::forward([[maybe_unused]] bool first_sync) {
 
         // block processing
         time_point_t last_update = system_clock::now();
-        while (body_persistence.highest_height() < bodies_stage_height && !block_downloader_.is_stopping()) {
+        while (body_persistence.highest_height() <= bodies_stage_height && !block_downloader_.is_stopping()) {
 
             send_body_requests();
 

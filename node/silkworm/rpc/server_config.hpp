@@ -26,12 +26,11 @@
 namespace silkworm::rpc {
 
 constexpr const char* kDefaultAddressUri{"localhost:9090"};
-const std::shared_ptr<grpc::ServerCredentials> kDefaultServerCredentials{grpc::InsecureServerCredentials()};
 const uint32_t kDefaultNumContexts{std::thread::hardware_concurrency()};
 
 class ServerConfig {
   public:
-    ServerConfig();
+    ServerConfig(std::shared_ptr<grpc::ServerCredentials> credentials = grpc::InsecureServerCredentials());
     virtual ~ServerConfig() {}
 
     void set_address_uri(const std::string& address_uri) noexcept;

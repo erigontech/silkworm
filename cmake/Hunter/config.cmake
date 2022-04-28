@@ -64,8 +64,15 @@ hunter_config(
   SHA1 1faaa54195824bbe151c1ebee31623232477d075
 )
 
+# Downgrade Protobuf version due to a CMake error in 3.19.4-p0
+# (protobuf-module.cmake.in: _protobuf_find_threads)
+hunter_config(
+  Protobuf
+  VERSION 3.14.0-4a09d77-p0
+)
+
 hunter_config(
   gRPC
-  VERSION 1.31.0-p0
+  VERSION 1.44.0-p0
   CMAKE_ARGS gRPC_BUILD_TESTS=OFF gRPC_BUILD_CODEGEN=ON gRPC_BUILD_CSHARP_EXT=OFF
 )

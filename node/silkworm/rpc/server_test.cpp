@@ -129,7 +129,7 @@ TEST_CASE("Server::build_and_start", "[silkworm][node][rpc]") {
         GrpcNoLogGuard guard;
 
         ServerConfig config;
-        config.set_address_uri("localhost@12345");
+        config.set_address_uri("local:12345"); // "localhost@12345" core dumped in gRPC 1.44.0-p0 (SIGSEGV)
         EmptyServer server{config};
         CHECK_THROWS_AS(server.build_and_start(), std::runtime_error);
     }

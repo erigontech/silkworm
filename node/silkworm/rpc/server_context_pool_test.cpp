@@ -108,6 +108,36 @@ TEST_CASE("ServerContextPool", "[silkworm][rpc][server_context]") {
         CHECK(server_context_pool.num_contexts() == 2);
     }
 
+    SECTION("next_context") {
+        ServerContextPool server_context_pool{2};
+        REQUIRE(server_context_pool.num_contexts() == 0);
+        auto queue_ptr1 = builder.AddCompletionQueue();
+        auto queue_raw_ptr1 = queue_ptr1.get();
+        auto queue_ptr2 = builder.AddCompletionQueue();
+        auto queue_raw_ptr2 = queue_ptr2.get();
+        server_context_pool.add_context(std::move(queue_ptr1));
+        server_context_pool.add_context(std::move(queue_ptr2));
+        CHECK(server_context_pool.num_contexts() == 2);
+        auto& context1 = server_context_pool.next_context();
+        CHECK(context1.server_queue() == queue_raw_ptr1);
+        CHECK(context1.io_context() != nullptr);
+        auto& context2 = server_context_pool.next_context();
+        CHECK(context2.server_queue() == queue_raw_ptr2);
+        CHECK(context2.io_context() != nullptr);
+    }
+
+    SECTION("next_io_context") {
+        ServerContextPool server_context_pool{2};
+        REQUIRE(server_context_pool.num_contexts() == 0);
+        server_context_pool.add_context(builder.AddCompletionQueue());
+        server_context_pool.add_context(builder.AddCompletionQueue());
+        CHECK(server_context_pool.num_contexts() == 2);
+        auto& context1 = server_context_pool.next_context();
+        auto& context2 = server_context_pool.next_context();
+        CHECK(&server_context_pool.next_io_context() == context1.io_context());
+        CHECK(&server_context_pool.next_io_context() == context2.io_context());
+    }
+
     SECTION("start/stop w/o contexts") {
         ServerContextPool server_context_pool{2};
         REQUIRE(server_context_pool.num_contexts() == 0);

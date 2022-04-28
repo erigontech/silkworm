@@ -136,6 +136,7 @@ inline constexpr ChainConfig kMainnetConfig{
         9'069'000,   // Istanbul
         12'244'000,  // Berlin
         12'965'000,  // London
+        13'773'000,  // Arrow Glacier
     },
 
     1'920'000,   // dao_block

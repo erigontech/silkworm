@@ -301,17 +301,17 @@ bool AccCursor::move_next() {
 
 bool AccCursor::has_state() {
     auto& sub_node{sub_nodes_[level_]};
-    return ((1 << sub_node.child_id) & sub_node.has_state) != 0;
+    return ((1 << sub_node.child_id) & sub_node.state_mask) != 0;
 }
 
 bool AccCursor::has_tree() {
     auto& sub_node{sub_nodes_[level_]};
-    return ((1 << sub_node.child_id) & sub_node.has_tree) != 0;
+    return ((1 << sub_node.child_id) & sub_node.tree_mask) != 0;
 }
 
 bool AccCursor::has_hash() {
     auto& sub_node{sub_nodes_[level_]};
-    return ((1 << sub_node.child_id) & sub_node.has_hash) != 0;
+    return ((1 << sub_node.child_id) & sub_node.hash_mask) != 0;
 }
 
 bool AccCursor::next() {
@@ -374,28 +374,13 @@ void AccCursor::parse_subnode(ByteView key, ByteView value) {
         from = key.length() + 1;
         to = level_ + 2;
     }
+
     for (size_t i{from}; i < to; ++i) {
-        auto& sub_node{sub_nodes_.at(i)};
-        sub_node.key = ByteView();
-        sub_node.value = ByteView();
-        sub_node.has_state = 0;
-        sub_node.has_tree = 0;
-        sub_node.has_hash = 0;
-        sub_node.hash_id = 0;
-        sub_node.child_id = 0;
-        sub_node.deleted = false;
+        sub_nodes_[i].reset();
     }
 
     level_ = key.length();
-    auto& sub_node{sub_nodes_[level_]};
-    sub_node.key = key;
-    sub_node.value = value;
-    sub_node.deleted = false;
-    sub_node.has_state = endian::load_big_u16(&value.data()[0]);
-    sub_node.has_tree = endian::load_big_u16(&value.data()[2]);
-    sub_node.has_hash = endian::load_big_u16(&value.data()[4]);
-    sub_node.hash_id = -1;
-    sub_node.child_id = static_cast<int8_t>(ctz_16(sub_node.has_state) - 1);
+    sub_nodes_[level_].parse(key, value);
 }
 
 void AccCursor::next_sibling_in_db() {
@@ -411,7 +396,7 @@ void AccCursor::next_sibling_in_db() {
 
 bool AccCursor::next_sibling_in_mem() {
     auto& sub_node{sub_nodes_[level_]};
-    while (sub_node.child_id < static_cast<int8_t>(bitlen_16(sub_node.has_state))) {
+    while (sub_node.child_id < static_cast<int8_t>(bitlen_16(sub_node.state_mask))) {
         ++sub_node.child_id;
         if (has_hash()) {
             ++sub_node.hash_id;
@@ -479,7 +464,7 @@ bool AccCursor::consume() {
         auto [contains, next_created]{changed_.contains_and_next_marked(buff_)};
         if (!contains) {
             skip_state_ = skip_state_ && key_is_before(buff_, next_created);
-            next_created_ = next_created;
+            next_created_.assign(next_created);
             curr_.assign(buff_);
             return true;
         }
@@ -496,6 +481,28 @@ bool AccCursor::key_is_before(ByteView k1, ByteView k2) {
         return true;
     }
     return k1 < k2;
+}
+
+void AccCursor::SubNode::reset() {
+    key = ByteView();
+    value = ByteView();
+    state_mask = 0;
+    tree_mask = 0;
+    hash_mask = 0;
+    hash_id = 0;
+    child_id = 0;
+    deleted = false;
+}
+
+void AccCursor::SubNode::parse(ByteView k, ByteView v) {
+    key = k;
+    value = v;
+    deleted = false;
+    state_mask = endian::load_big_u16(&v.data()[0]);
+    tree_mask = endian::load_big_u16(&v.data()[2]);
+    hash_mask = endian::load_big_u16(&v.data()[4]);
+    hash_id = -1;
+    child_id = static_cast<int8_t>(ctz_16(state_mask) - 1);
 }
 
 }  // namespace silkworm::trie

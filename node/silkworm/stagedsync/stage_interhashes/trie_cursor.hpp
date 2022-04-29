@@ -97,12 +97,15 @@ class AccCursor {
     struct SubNode {
         ByteView key{};
         ByteView value{};
-        uint16_t has_state{};
-        uint16_t has_tree{};
-        uint16_t has_hash{};
+        uint16_t state_mask{};
+        uint16_t tree_mask{};
+        uint16_t hash_mask{};
         int8_t child_id{0};
         int8_t hash_id{0};
         bool deleted{false};
+
+        void reset();
+        void parse(ByteView k, ByteView v);
     };
 
     mdbx::cursor& db_cursor_;  // MDBX Cursor to TrieAccounts

@@ -53,3 +53,10 @@ hunter_config(
   VERSION 1.44.0-p0
   CMAKE_ARGS gRPC_BUILD_TESTS=OFF gRPC_BUILD_CODEGEN=ON gRPC_BUILD_CSHARP_EXT=OFF
 )
+
+hunter_config(
+  CLI11
+  VERSION 2.2.0
+  URL https://github.com/CLIUtils/CLI11/archive/v2.2.0.tar.gz
+  SHA1 8ff2b5ef3436d73ce7f9db0bd94a912e305f0967
+)

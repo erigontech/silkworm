@@ -30,9 +30,9 @@
 #include <silkworm/backend/ethereum_backend.hpp>
 #include <silkworm/chain/config.hpp>
 #include <silkworm/db/mdbx.hpp>
-#include <silkworm/rpc/call.hpp>
-#include <silkworm/rpc/call_factory.hpp>
-#include <silkworm/rpc/server.hpp>
+#include <silkworm/rpc/server/call.hpp>
+#include <silkworm/rpc/server/call_factory.hpp>
+#include <silkworm/rpc/server/server.hpp>
 
 // KV API protocol versions
 // 5.1.0 - first issue

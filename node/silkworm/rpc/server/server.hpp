@@ -23,8 +23,8 @@
 #include <grpcpp/grpcpp.h>
 
 #include <silkworm/common/log.hpp>
-#include <silkworm/rpc/server_config.hpp>
-#include <silkworm/rpc/server_context_pool.hpp>
+#include <silkworm/rpc/server/server_config.hpp>
+#include <silkworm/rpc/server/server_context_pool.hpp>
 
 namespace silkworm::rpc {
 

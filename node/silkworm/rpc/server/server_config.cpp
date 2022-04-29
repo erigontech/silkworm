@@ -18,9 +18,9 @@
 
 namespace silkworm::rpc {
 
-ServerConfig::ServerConfig()
+ServerConfig::ServerConfig(std::shared_ptr<grpc::ServerCredentials> credentials)
     : address_uri_{kDefaultAddressUri},
-      credentials_{kDefaultServerCredentials},
+      credentials_(credentials),
       num_contexts_{kDefaultNumContexts} {
 }
 

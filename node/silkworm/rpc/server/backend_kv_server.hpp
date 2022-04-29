@@ -24,9 +24,9 @@
 #include <remote/kv.grpc.pb.h>
 
 #include <silkworm/chain/config.hpp>
-#include <silkworm/rpc/server.hpp>
-#include <silkworm/rpc/backend_calls.hpp>
-#include <silkworm/rpc/kv_calls.hpp>
+#include <silkworm/rpc/server/server.hpp>
+#include <silkworm/rpc/server/backend_calls.hpp>
+#include <silkworm/rpc/server/kv_calls.hpp>
 
 namespace silkworm::rpc {
 

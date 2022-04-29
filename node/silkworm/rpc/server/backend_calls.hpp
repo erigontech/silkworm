@@ -28,10 +28,10 @@
 
 #include <silkworm/backend/ethereum_backend.hpp>
 #include <silkworm/chain/config.hpp>
-#include <silkworm/rpc/call.hpp>
-#include <silkworm/rpc/call_factory.hpp>
+#include <silkworm/rpc/server/call.hpp>
+#include <silkworm/rpc/server/call_factory.hpp>
 #include <silkworm/rpc/client/sentry_client.hpp>
-#include <silkworm/rpc/server.hpp>
+#include <silkworm/rpc/server/server.hpp>
 
 // ETHBACKEND API protocol versions
 // 2.2.0 - first issue

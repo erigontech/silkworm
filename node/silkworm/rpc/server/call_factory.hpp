@@ -26,7 +26,7 @@
 
 #include <silkworm/common/assert.hpp>
 #include <silkworm/common/log.hpp>
-#include <silkworm/rpc/call.hpp>
+#include <silkworm/rpc/server/call.hpp>
 
 namespace silkworm::rpc {
 

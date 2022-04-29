@@ -1,5 +1,5 @@
 /*
-   Copyright 2021 The Silkworm Authors
+   Copyright 2021-2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -34,7 +34,8 @@ int main(int argc, char* argv[]) {
     std::string chaindata{DataDirectory{}.chaindata().path().string()};
     bool storage{false};
     uint64_t unwind_to{0};
-    app.add_option("--chaindata", chaindata, "Path to a database populated by Erigon", true)
+    app.add_option("--chaindata", chaindata, "Path to a database populated by Erigon")
+        ->capture_default_str()
         ->check(CLI::ExistingDirectory);
     app.add_option("--unwind-to", unwind_to, "Unwind to");
     app.add_flag("--storage", storage, "Do history of storages");

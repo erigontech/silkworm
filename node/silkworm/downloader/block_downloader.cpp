@@ -50,11 +50,17 @@ const ChainIdentity& BlockDownloader::chain_identity() {
 void BlockDownloader::accept(std::shared_ptr<Message> message) { messages_.push(message); }
 
 void BlockDownloader::receive_message(const sentry::InboundMessage& raw_message) {
-    auto message = InboundMessage::make(raw_message);
+    try {
+        auto message = InboundMessage::make(raw_message);
 
-    SILK_TRACE << "BlockDownloader received message " << *message;
+        SILK_TRACE << "BlockDownloader received message " << *message;
 
-    messages_.push(message);
+        messages_.push(message);
+    }
+    catch(rlp::DecodingError& error) {
+        log::Warning() << "BlockDownloader received and ignored a malformed message, "
+                          "id=" << raw_message.id() << "/" << sentry::MessageId_Name(raw_message.id());
+    }
 }
 
 void BlockDownloader::execution_loop() {
@@ -78,6 +84,7 @@ void BlockDownloader::execution_loop() {
         message->execute(db_access_, header_chain_, body_sequence_, sentry_);
 
         // log status
+        /*
         if (silkworm::log::test_verbosity(silkworm::log::Level::kTrace)) {
             auto out_message = std::dynamic_pointer_cast<OutboundGetBlockHeaders>(message);
             auto reqs = out_message != nullptr ? out_message->sent_request() : 0;
@@ -92,6 +99,7 @@ void BlockDownloader::execution_loop() {
                         << " | db: " << std::setw(10) << std::right << header_chain_.highest_block_in_db()
                         << " | rej: " << std::setw(10) << std::right << rejected_headers;
         }
+        */
     }
 
     stop();

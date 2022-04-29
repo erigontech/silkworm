@@ -22,13 +22,6 @@ hunter_config(
 )
 
 hunter_config(
-  intx
-  VERSION 0.8.0
-  URL https://github.com/chfast/intx/archive/v0.8.0.tar.gz
-  SHA1 612c46d636d9e381a8288d96c70b132190a79ca8
-)
-
-hunter_config(
   Microsoft.GSL
   VERSION 3.1.0
   URL https://github.com/microsoft/GSL/archive/v3.1.0.tar.gz
@@ -37,9 +30,7 @@ hunter_config(
 
 hunter_config(
   ethash
-  VERSION 0.8.0
-  URL https://github.com/chfast/ethash/archive/refs/tags/v0.8.0.tar.gz
-  SHA1 41fd440f70b6a8dfc3fd29b20f471dcbd1345ad0
+  VERSION 0.9.0
   CMAKE_ARGS ETHASH_BUILD_ETHASH=ON ETHASH_BUILD_GLOBAL_CONTEXT=NO ETHASH_BUILD_TESTS=OFF
 )
 
@@ -48,20 +39,6 @@ hunter_config(
   VERSION 2021.11.01
   URL https://github.com/google/re2/archive/2021-11-01.tar.gz
   SHA1 4c18662f103ef53f106f8f98d7b46b723615e14f
-)
-
-hunter_config(
-  OpenSSL
-  VERSION 1.1.1l
-  URL https://github.com/openssl/openssl/archive/OpenSSL_1_1_1l.tar.gz
-  SHA1 8ef8e71af7f07e2dfe204ce298ac0ff224205f1c
-)
-
-hunter_config(
-  benchmark
-  VERSION 1.6.1
-  URL https://github.com/google/benchmark/archive/refs/tags/v1.6.1.tar.gz
-  SHA1 1faaa54195824bbe151c1ebee31623232477d075
 )
 
 # Downgrade Protobuf version due to a CMake error in 3.19.4-p0
@@ -75,4 +52,11 @@ hunter_config(
   gRPC
   VERSION 1.44.0-p0
   CMAKE_ARGS gRPC_BUILD_TESTS=OFF gRPC_BUILD_CODEGEN=ON gRPC_BUILD_CSHARP_EXT=OFF
+)
+
+hunter_config(
+  CLI11
+  VERSION 2.2.0
+  URL https://github.com/CLIUtils/CLI11/archive/v2.2.0.tar.gz
+  SHA1 8ff2b5ef3436d73ce7f9db0bd94a912e305f0967
 )

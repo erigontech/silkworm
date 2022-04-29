@@ -34,7 +34,8 @@ int main(int argc, char* argv[]) {
     CLI::App app{"Check Blockhashes => BlockNumber mapping in database"};
 
     std::string chaindata{DataDirectory{}.chaindata().path().string()};
-    app.add_option("--chaindata", chaindata, "Path to a database populated by Erigon", true)
+    app.add_option("--chaindata", chaindata, "Path to a database populated by Erigon")
+        ->capture_default_str()
         ->check(CLI::ExistingDirectory);
     CLI11_PARSE(app, argc, argv);
 

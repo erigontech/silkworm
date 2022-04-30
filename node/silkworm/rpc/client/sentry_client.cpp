@@ -16,45 +16,11 @@
 
 #include "sentry_client.hpp"
 
+#include <silkworm/common/log.hpp>
 #include <silkworm/rpc/util.hpp>
+#include <silkworm/rpc/client/sentry_calls.hpp>
 
 namespace silkworm::rpc {
-
-UnaryStats AsyncCall::unary_stats_;
-
-AsyncPeerCountCall::AsyncPeerCountCall(grpc::CompletionQueue* queue, CompletionFunc completion_handler, sentry::Sentry::StubInterface* stub)
-: AsyncUnaryCall(queue, completion_handler, stub) {
-}
-
-bool AsyncPeerCountCall::proceed(bool ok) {
-    SILK_DEBUG << "AsyncPeerCountCall::proceed ok: " << ok << " status: " << status_;
-    ++unary_stats_.completed_count;
-    if (ok && status_.ok()) {
-        SILK_INFO << "PeerCount reply: count=" << reply_.count();
-        ++unary_stats_.ok_count;
-    } else {
-        SILK_INFO << "PeerCount " << status_;
-        ++unary_stats_.ko_count;
-    }
-    return true;
-}
-
-AsyncNodeInfoCall::AsyncNodeInfoCall(grpc::CompletionQueue* queue, CompletionFunc completion_handler, sentry::Sentry::StubInterface* stub)
-: AsyncUnaryCall(queue, completion_handler, stub) {
-}
-
-bool AsyncNodeInfoCall::proceed(bool ok) {
-    SILK_DEBUG << "AsyncNodeInfoCall::proceed ok: " << ok << " status: " << status_;
-    ++unary_stats_.completed_count;
-    if (ok && status_.ok()) {
-        SILK_INFO << "NodeInfo reply: id=" << reply_.id() << " name=" << reply_.name() << " enode=" << reply_.enode();
-        ++unary_stats_.ok_count;
-    } else {
-        SILK_INFO << "NodeInfo " << status_;
-        ++unary_stats_.ko_count;
-    }
-    return true;
-}
 
 RemoteSentryClient::RemoteSentryClient(grpc::CompletionQueue* queue, std::shared_ptr<grpc::Channel> channel)
 : queue_(queue), stub_(sentry::Sentry::NewStub(channel)) {

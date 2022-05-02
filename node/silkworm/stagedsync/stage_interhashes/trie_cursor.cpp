@@ -61,9 +61,10 @@ void Cursor::consume_node(ByteView key, bool exact) {
     if (!node.has_value() || node->root_hash().has_value()) {
         nibble = -1;
     } else {
-        while ((node->state_mask() & (1u << nibble)) == 0) {
-            ++nibble;
-        }
+        nibble = ctz_16(node->state_mask()) - 1;
+//        while ((node->state_mask() & (1u << nibble)) == 0) {
+//            ++nibble;
+//        }
     }
 
     if (!key.empty() && !subnodes_.empty()) {
@@ -225,284 +226,298 @@ std::optional<Bytes> Cursor::first_uncovered_prefix() const {
     return from_nibbles(*k);
 }
 
-Bytes increment_nibbled_key(ByteView nibbles) {
-    Bytes ret;
-    if (!nibbles.empty()) {
-        auto rit{std::find_if(nibbles.rbegin(), nibbles.rend(), [](uint8_t nibble) { return nibble < 0xf; })};
-        if (rit != nibbles.rend()) {
-            auto count{std::distance(nibbles.begin(), rit.base())};
-            ret.assign(nibbles.substr(0, count));
-            ++ret.back();
-        }
+std::optional<Bytes> increment_nibbled_key(ByteView nibbles) {
+    if (nibbles.empty()) {
+        return std::nullopt;
     }
+
+    auto rit{std::find_if(nibbles.rbegin(), nibbles.rend(), [](uint8_t nibble) { return nibble < 0xf; })};
+    if (rit == nibbles.rend()) {
+        return std::nullopt;
+    }
+
+    auto count{std::distance(nibbles.begin(), rit.base())};
+    Bytes ret{nibbles.substr(0, count)};
+    ++ret.back();
     return ret;
+
+    //    Bytes ret;
+    //    if (!nibbles.empty()) {
+    //        auto rit{std::find_if(nibbles.rbegin(), nibbles.rend(), [](uint8_t nibble) { return nibble < 0xf; })};
+    //        if (rit != nibbles.rend()) {
+    //            auto count{std::distance(nibbles.begin(), rit.base())};
+    //            ret.assign(nibbles.substr(0, count));
+    //            ++ret.back();
+    //        }
+    //    }
+    //    return ret;
 }
-
-std::optional<Bytes> compute_next_uncovered_prefix(ByteView previous, ByteView prefix) {
-    Bytes ret;
-    if (!previous.empty()) {
-        ret = increment_nibbled_key(previous);
-    } else {
-        ret.assign(prefix);
-    }
-    if (ret.size() & 1) {
-        ret.append({'\0'});
-    }
-    return from_nibbles(ret);
-}
-
-AccCursor::AccCursor(mdbx::cursor& db_cursor, PrefixSet& changed, ByteView prefix, etl::Collector* collector)
-    : db_cursor_{db_cursor}, changed_{changed}, collector_{collector}, sub_nodes_(64, SubNode{}) {
-    prefix_.reserve(64);
-    prev_.reserve(64);
-    curr_.reserve(64);
-    next_.reserve(64);
-    buff_.reserve(64);
-
-    prefix_.assign(prefix);
-}
-
-bool AccCursor::seek(ByteView prefix) {
-    skip_state_ = true;
-    auto [_, next_created]{changed_.contains_and_next_marked({})};
-    next_created_ = next_created;
-    prev_.assign(curr_);
-    prefix_.assign(prefix);
-
-    if (!seek_in_db()) {
-        curr_.clear();
-        skip_state_ = false;
-        return false;
-    }
-
-    if (consume()) {
-        return true;
-    }
-    return next();
-}
-
-bool AccCursor::move_next() {
-    skip_state_ = true;
-    prev_.assign(curr_);
-    preorder_traversal_step_no_indepth();
-
-    if (sub_nodes_[level_].key.empty()) {
-        curr_.clear();
-        skip_state_ = skip_state_ && increment_nibbled_key(prev_).empty();
-        return false;
-    }
-
-    if (consume()) {
-        return has_tree();
-    }
-
-    return next();
-}
-
-bool AccCursor::has_state() {
-    auto& sub_node{sub_nodes_[level_]};
-    return ((1 << sub_node.child_id) & sub_node.state_mask) != 0;
-}
-
-bool AccCursor::has_tree() {
-    auto& sub_node{sub_nodes_[level_]};
-    return ((1 << sub_node.child_id) & sub_node.tree_mask) != 0;
-}
-
-bool AccCursor::has_hash() {
-    auto& sub_node{sub_nodes_[level_]};
-    return ((1 << sub_node.child_id) & sub_node.hash_mask) != 0;
-}
-
-bool AccCursor::next() {
-    skip_state_ = skip_state_ && has_tree();
-    preorder_traversal_step();
-    while (true) {
-        if (sub_nodes_[level_].key.empty()) {
-            curr_.clear();
-            skip_state_ = skip_state_ && increment_nibbled_key(prev_).empty();
-            return false;
-        }
-        if (consume()) {
-            return has_tree();
-        }
-        skip_state_ = skip_state_ && has_tree();
-        preorder_traversal_step();
-    }
-}
-
-void AccCursor::preorder_traversal_step() {
-    if (has_tree()) {
-        next_.assign(sub_nodes_[level_].key);
-        next_.append({static_cast<uint8_t>(sub_nodes_[level_].child_id)});
-        if (seek_in_db(next_)) {
-            return;
-        }
-    }
-    preorder_traversal_step_no_indepth();
-}
-
-void AccCursor::preorder_traversal_step_no_indepth() {
-    if (next_sibling_in_mem() || next_sibling_of_parent_in_mem()) {
-        return;
-    }
-    next_sibling_in_db();
-}
-
-void AccCursor::delete_current() {
-    auto& sub_node{sub_nodes_[level_]};
-    if (!sub_node.deleted && !sub_node.key.empty()) {
-        if (collector_) {
-            collector_->collect({Bytes{sub_node.key}, Bytes{}});
-        }
-        sub_node.deleted = true;
-    }
-}
-void AccCursor::parse_subnode(ByteView key, ByteView value) {
-    // At least state/tree/hash masks need to be present
-    if (value.length() < 6) {
-        throw std::invalid_argument("Wrong node raw length: expected >= 6 got " + std::to_string(value.length()));
-    }
-    // Beyond the 6th byte the length must be a multiple of kHashLength
-    if ((value.length() - 6) % kHashLength != 0) {
-        throw std::invalid_argument("Wrong node raw hashes length: not a multiple of " + std::to_string(kHashLength));
-    }
-
-    size_t from{level_ + 1};
-    size_t to{key.length()};
-    if (level_ >= key.length()) {
-        from = key.length() + 1;
-        to = level_ + 2;
-    }
-
-    for (size_t i{from}; i < to; ++i) {
-        sub_nodes_[i].reset();
-    }
-
-    level_ = key.length();
-    sub_nodes_[level_].parse(key, value);
-}
-
-void AccCursor::next_sibling_in_db() {
-    auto& sub_node{sub_nodes_[level_]};
-    auto incremented_key{increment_nibbled_key(sub_node.key)};
-    if (incremented_key.empty()) {
-        sub_node.key = ByteView();
-        return;
-    }
-    next_.assign(incremented_key);
-    (void)seek_in_db();
-}
-
-bool AccCursor::next_sibling_in_mem() {
-    auto& sub_node{sub_nodes_[level_]};
-    while (sub_node.child_id < static_cast<int8_t>(bitlen_16(sub_node.state_mask))) {
-        ++sub_node.child_id;
-        if (has_hash()) {
-            ++sub_node.hash_id;
-            return true;
-        }
-        if (has_tree()) {
-            return true;
-        }
-        if (has_state()) {
-            skip_state_ = false;
-        }
-    }
-    return false;
-}
-
-bool AccCursor::next_sibling_of_parent_in_mem() {
-    while (level_ > 1) {
-        if (sub_nodes_[level_].key.empty()) {
-            size_t up_level{level_ - 1};
-            while (sub_nodes_[up_level].key.empty() && up_level > 1) {
-                --up_level;
-            }
-            next_.assign(sub_nodes_[level_].key);
-            next_.append({static_cast<uint8_t>(sub_nodes_[level_].child_id)});
-            buff_.assign(sub_nodes_[up_level].key);
-            buff_.append({static_cast<uint8_t>(sub_nodes_[up_level].child_id)});
-            if (seek_in_db(buff_)) {
-                return true;
-            }
-            level_ = up_level + 1;
-            continue;
-        }
-        --level_;
-        if (next_sibling_in_mem()) {
-            return true;
-        }
-    }
-    return false;
-}
-
-bool AccCursor::seek_in_db(ByteView within_prefix) {
-    auto& sub_node{sub_nodes_[level_]};
-    const auto data{next_.empty() ? db_cursor_.to_first(false) : db_cursor_.lower_bound(db::to_slice(next_), false)};
-    if (!within_prefix.empty()) {
-        if (!data || !has_prefix(db::from_slice(data.key), within_prefix)) {
-            return false;
-        }
-    } else {
-        if (!data || !has_prefix(db::from_slice(data.key), prefix_)) {
-            sub_node.key = ByteView();
-            sub_node.value = ByteView();
-            return false;
-        }
-    }
-    parse_subnode(db::from_slice(data.key), db::from_slice(data.value));
-    next_sibling_in_mem();
-    return true;
-}
-
-bool AccCursor::consume() {
-    if (has_hash()) {
-        auto& sub_node{sub_nodes_[level_]};
-        buff_.assign(sub_node.key);
-        buff_.append({static_cast<uint8_t>(sub_node.child_id)});
-        auto [contains, next_created]{changed_.contains_and_next_marked(buff_)};
-        if (!contains) {
-            skip_state_ = skip_state_ && key_is_before(buff_, next_created);
-            next_created_.assign(next_created);
-            curr_.assign(buff_);
-            return true;
-        }
-    }
-    delete_current();
-    return false;
-}
-
-bool AccCursor::key_is_before(ByteView k1, ByteView k2) {
-    if (k1.empty()) {
-        return false;
-    }
-    if (k2.empty()) {
-        return true;
-    }
-    return k1 < k2;
-}
-
-void AccCursor::SubNode::reset() {
-    key = ByteView();
-    value = ByteView();
-    state_mask = 0;
-    tree_mask = 0;
-    hash_mask = 0;
-    hash_id = 0;
-    child_id = 0;
-    deleted = false;
-}
-
-void AccCursor::SubNode::parse(ByteView k, ByteView v) {
-    key = k;
-    value = v;
-    deleted = false;
-    state_mask = endian::load_big_u16(&v.data()[0]);
-    tree_mask = endian::load_big_u16(&v.data()[2]);
-    hash_mask = endian::load_big_u16(&v.data()[4]);
-    hash_id = -1;
-    child_id = static_cast<int8_t>(ctz_16(state_mask) - 1);
-}
+//
+// std::optional<Bytes> compute_next_uncovered_prefix(ByteView previous, ByteView prefix) {
+//    Bytes ret;
+//    if (!previous.empty()) {
+//        ret = *increment_nibbled_key(previous);
+//    } else {
+//        ret.assign(prefix);
+//    }
+//    if (ret.size() & 1) {
+//        ret.append({'\0'});
+//    }
+//    return from_nibbles(ret);
+//}
+//
+// AccCursor::AccCursor(mdbx::cursor& db_cursor, PrefixSet& changed, ByteView prefix, etl::Collector* collector)
+//    : db_cursor_{db_cursor}, changed_{changed}, collector_{collector}, sub_nodes_(64, SubNode{}) {
+//    prefix_.reserve(64);
+//    prev_.reserve(64);
+//    curr_.reserve(64);
+//    next_.reserve(64);
+//    buff_.reserve(64);
+//
+//    prefix_.assign(prefix);
+//}
+//
+// bool AccCursor::seek(ByteView prefix) {
+//    skip_state_ = true;
+//    auto [_, next_created]{changed_.contains_and_next_marked({})};
+//    next_created_ = next_created;
+//    prev_.assign(curr_);
+//    prefix_.assign(prefix);
+//
+//    if (!seek_in_db()) {
+//        curr_.clear();
+//        skip_state_ = false;
+//        return false;
+//    }
+//
+//    if (consume()) {
+//        return true;
+//    }
+//    return next();
+//}
+//
+// bool AccCursor::move_next() {
+//    skip_state_ = true;
+//    prev_.assign(curr_);
+//    preorder_traversal_step_no_indepth();
+//
+//    if (sub_nodes_[level_].key.empty()) {
+//        curr_.clear();
+//        skip_state_ = skip_state_ && increment_nibbled_key(prev_).empty();
+//        return false;
+//    }
+//
+//    if (consume()) {
+//        return has_tree();
+//    }
+//
+//    return next();
+//}
+//
+// bool AccCursor::has_state() {
+//    auto& sub_node{sub_nodes_[level_]};
+//    return ((1 << sub_node.child_id) & sub_node.state_mask) != 0;
+//}
+//
+// bool AccCursor::has_tree() {
+//    auto& sub_node{sub_nodes_[level_]};
+//    return ((1 << sub_node.child_id) & sub_node.tree_mask) != 0;
+//}
+//
+// bool AccCursor::has_hash() {
+//    auto& sub_node{sub_nodes_[level_]};
+//    return ((1 << sub_node.child_id) & sub_node.hash_mask) != 0;
+//}
+//
+// bool AccCursor::next() {
+//    skip_state_ = skip_state_ && has_tree();
+//    preorder_traversal_step();
+//    while (true) {
+//        if (sub_nodes_[level_].key.empty()) {
+//            curr_.clear();
+//            skip_state_ = skip_state_ && increment_nibbled_key(prev_).empty();
+//            return false;
+//        }
+//        if (consume()) {
+//            return has_tree();
+//        }
+//        skip_state_ = skip_state_ && has_tree();
+//        preorder_traversal_step();
+//    }
+//}
+//
+// void AccCursor::preorder_traversal_step() {
+//    if (has_tree()) {
+//        next_.assign(sub_nodes_[level_].key);
+//        next_.append({static_cast<uint8_t>(sub_nodes_[level_].child_id)});
+//        if (seek_in_db(next_)) {
+//            return;
+//        }
+//    }
+//    preorder_traversal_step_no_indepth();
+//}
+//
+// void AccCursor::preorder_traversal_step_no_indepth() {
+//    if (next_sibling_in_mem() || next_sibling_of_parent_in_mem()) {
+//        return;
+//    }
+//    next_sibling_in_db();
+//}
+//
+// void AccCursor::delete_current() {
+//    auto& sub_node{sub_nodes_[level_]};
+//    if (!sub_node.deleted && !sub_node.key.empty()) {
+//        if (collector_) {
+//            collector_->collect({Bytes{sub_node.key}, Bytes{}});
+//        }
+//        sub_node.deleted = true;
+//    }
+//}
+// void AccCursor::parse_subnode(ByteView key, ByteView value) {
+//    // At least state/tree/hash masks need to be present
+//    if (value.length() < 6) {
+//        throw std::invalid_argument("Wrong node raw length: expected >= 6 got " + std::to_string(value.length()));
+//    }
+//    // Beyond the 6th byte the length must be a multiple of kHashLength
+//    if ((value.length() - 6) % kHashLength != 0) {
+//        throw std::invalid_argument("Wrong node raw hashes length: not a multiple of " + std::to_string(kHashLength));
+//    }
+//
+//    size_t from{level_ + 1};
+//    size_t to{key.length()};
+//    if (level_ >= key.length()) {
+//        from = key.length() + 1;
+//        to = level_ + 2;
+//    }
+//
+//    for (size_t i{from}; i < to; ++i) {
+//        sub_nodes_[i].reset();
+//    }
+//
+//    level_ = key.length();
+//    sub_nodes_[level_].parse(key, value);
+//}
+//
+// void AccCursor::next_sibling_in_db() {
+//    auto& sub_node{sub_nodes_[level_]};
+//    auto incremented_key{increment_nibbled_key(sub_node.key)};
+//    if (incremented_key.empty()) {
+//        sub_node.key = ByteView();
+//        return;
+//    }
+//    next_.assign(incremented_key);
+//    (void)seek_in_db();
+//}
+//
+// bool AccCursor::next_sibling_in_mem() {
+//    auto& sub_node{sub_nodes_[level_]};
+//    while (sub_node.child_id < static_cast<int8_t>(bitlen_16(sub_node.state_mask))) {
+//        ++sub_node.child_id;
+//        if (has_hash()) {
+//            ++sub_node.hash_id;
+//            return true;
+//        }
+//        if (has_tree()) {
+//            return true;
+//        }
+//        if (has_state()) {
+//            skip_state_ = false;
+//        }
+//    }
+//    return false;
+//}
+//
+// bool AccCursor::next_sibling_of_parent_in_mem() {
+//    while (level_ > 1) {
+//        if (sub_nodes_[level_].key.empty()) {
+//            size_t up_level{level_ - 1};
+//            while (sub_nodes_[up_level].key.empty() && up_level > 1) {
+//                --up_level;
+//            }
+//            next_.assign(sub_nodes_[level_].key);
+//            next_.append({static_cast<uint8_t>(sub_nodes_[level_].child_id)});
+//            buff_.assign(sub_nodes_[up_level].key);
+//            buff_.append({static_cast<uint8_t>(sub_nodes_[up_level].child_id)});
+//            if (seek_in_db(buff_)) {
+//                return true;
+//            }
+//            level_ = up_level + 1;
+//            continue;
+//        }
+//        --level_;
+//        if (next_sibling_in_mem()) {
+//            return true;
+//        }
+//    }
+//    return false;
+//}
+//
+// bool AccCursor::seek_in_db(ByteView within_prefix) {
+//    auto& sub_node{sub_nodes_[level_]};
+//    const auto data{next_.empty() ? db_cursor_.to_first(false) : db_cursor_.lower_bound(db::to_slice(next_), false)};
+//    if (!within_prefix.empty()) {
+//        if (!data || !has_prefix(db::from_slice(data.key), within_prefix)) {
+//            return false;
+//        }
+//    } else {
+//        if (!data || !has_prefix(db::from_slice(data.key), prefix_)) {
+//            sub_node.key = ByteView();
+//            sub_node.value = ByteView();
+//            return false;
+//        }
+//    }
+//    parse_subnode(db::from_slice(data.key), db::from_slice(data.value));
+//    next_sibling_in_mem();
+//    return true;
+//}
+//
+// bool AccCursor::consume() {
+//    if (has_hash()) {
+//        auto& sub_node{sub_nodes_[level_]};
+//        buff_.assign(sub_node.key);
+//        buff_.append({static_cast<uint8_t>(sub_node.child_id)});
+//        auto [contains, next_created]{changed_.contains_and_next_marked(buff_)};
+//        if (!contains) {
+//            skip_state_ = skip_state_ && key_is_before(buff_, next_created);
+//            next_created_.assign(next_created);
+//            curr_.assign(buff_);
+//            return true;
+//        }
+//    }
+//    delete_current();
+//    return false;
+//}
+//
+// bool AccCursor::key_is_before(ByteView k1, ByteView k2) {
+//    if (k1.empty()) {
+//        return false;
+//    }
+//    if (k2.empty()) {
+//        return true;
+//    }
+//    return k1 < k2;
+//}
+//
+// void AccCursor::SubNode::reset() {
+//    key = ByteView();
+//    value = ByteView();
+//    state_mask = 0;
+//    tree_mask = 0;
+//    hash_mask = 0;
+//    hash_id = 0;
+//    child_id = 0;
+//    deleted = false;
+//}
+//
+// void AccCursor::SubNode::parse(ByteView k, ByteView v) {
+//    key = k;
+//    value = v;
+//    deleted = false;
+//    state_mask = endian::load_big_u16(&v.data()[0]);
+//    tree_mask = endian::load_big_u16(&v.data()[2]);
+//    hash_mask = endian::load_big_u16(&v.data()[4]);
+//    hash_id = -1;
+//    child_id = static_cast<int8_t>(ctz_16(state_mask) - 1);
+//}
 
 }  // namespace silkworm::trie

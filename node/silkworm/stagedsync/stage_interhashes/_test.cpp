@@ -58,9 +58,9 @@ TEST_CASE("increment_key") {
         auto unpacked{nibbles_from_hex(source)};
         auto unpacked_incremented{increment_nibbled_key(unpacked)};
         if (expected == "null") {
-            REQUIRE(unpacked_incremented.empty());
+            REQUIRE_FALSE(unpacked_incremented.has_value());
         } else {
-            REQUIRE(expected == nibbles_to_hex(unpacked_incremented));
+            REQUIRE(expected == nibbles_to_hex(*unpacked_incremented));
         }
     }
 }

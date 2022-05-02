@@ -62,9 +62,6 @@ void Cursor::consume_node(ByteView key, bool exact) {
         nibble = -1;
     } else {
         nibble = ctz_16(node->state_mask()) - 1;
-//        while ((node->state_mask() & (1u << nibble)) == 0) {
-//            ++nibble;
-//        }
     }
 
     if (!key.empty() && !subnodes_.empty()) {

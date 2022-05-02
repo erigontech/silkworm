@@ -418,8 +418,6 @@ evmc::bytes32 InterHashes::calculate_root(db::RWTxn& txn, trie::PrefixSet& accou
         if (trie_cursor.can_skip_state()) {
             SILKWORM_ASSERT(trie_cursor.hash() != nullptr);
             hash_builder.add_branch_node(*trie_cursor.key(), *trie_cursor.hash(), trie_cursor.children_are_in_trie());
-            trie_cursor.next();
-            continue;
         }
 
         const std::optional<Bytes> uncovered{trie_cursor.first_uncovered_prefix()};

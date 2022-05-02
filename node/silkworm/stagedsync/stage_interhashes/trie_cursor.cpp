@@ -16,8 +16,6 @@
 
 #include "trie_cursor.hpp"
 
-#include <bitset>
-
 #include <silkworm/common/assert.hpp>
 #include <silkworm/common/bits.hpp>
 #include <silkworm/common/endian.hpp>
@@ -187,7 +185,7 @@ const evmc::bytes32* Cursor::SubNode::hash() const {
     }
 
     const unsigned first_nibbles_mask{(1u << nibble) - 1};
-    const size_t hash_idx{std::bitset<16>(node->hash_mask() & first_nibbles_mask).count()};
+    const size_t hash_idx{popcount_16(node->hash_mask() & first_nibbles_mask)};
     return &node->hashes()[hash_idx];
 }
 

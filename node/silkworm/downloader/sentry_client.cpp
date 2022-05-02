@@ -18,10 +18,10 @@
 
 #include <silkworm/common/log.hpp>
 
-#include "rpc/hand_shake.hpp"
-#include "rpc/receive_messages.hpp"
-#include "rpc/receive_peer_stats.hpp"
-#include "rpc/set_status.hpp"
+#include <silkworm/downloader/rpc/hand_shake.hpp>
+#include <silkworm/downloader/rpc/receive_messages.hpp>
+#include <silkworm/downloader/rpc/receive_peer_stats.hpp>
+#include <silkworm/downloader/rpc/set_status.hpp>
 
 namespace silkworm {
 

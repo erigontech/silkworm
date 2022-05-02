@@ -20,7 +20,8 @@
 
 namespace silkworm {
 
-std::shared_ptr<EvmoneCodeAnalysis> AnalysisCache::get(const evmc::bytes32& key, evmc_revision revision) noexcept {
+std::shared_ptr<evmone::advanced::AdvancedCodeAnalysis> AdvancedAnalysisCache::get(const evmc::bytes32& key,
+                                                                                   evmc_revision revision) noexcept {
     if (revision_ == revision) {
         const auto* ptr{cache_.get(key)};
         return ptr ? *ptr : nullptr;
@@ -29,8 +30,9 @@ std::shared_ptr<EvmoneCodeAnalysis> AnalysisCache::get(const evmc::bytes32& key,
     }
 }
 
-void AnalysisCache::put(const evmc::bytes32& key, const std::shared_ptr<EvmoneCodeAnalysis>& analysis,
-                        evmc_revision revision) noexcept {
+void AdvancedAnalysisCache::put(const evmc::bytes32& key,
+                                const std::shared_ptr<evmone::advanced::AdvancedCodeAnalysis>& analysis,
+                                evmc_revision revision) noexcept {
     if (revision_ != revision) {
         // multiple revisions are not supported
         cache_.clear();

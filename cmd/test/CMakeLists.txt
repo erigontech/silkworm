@@ -30,6 +30,9 @@ if(NOT SILKWORM_CORE_ONLY)
   # Silkworm Node Tests
   file(GLOB_RECURSE SILKWORM_NODE_TESTS CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/node/silkworm/*_test.cpp")
   add_executable(node_test unit_test.cpp ${SILKWORM_NODE_TESTS})
+  if(SILKWORM_SANITIZE)
+    target_compile_definitions(node_test PRIVATE GRPC_ASAN_SUPPRESSED GRPC_TSAN_SUPPRESSED)
+  endif()
   target_link_libraries(node_test silkworm_node Catch2::Catch2)
 
   # Ethereum Consensus Tests

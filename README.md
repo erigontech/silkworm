@@ -87,7 +87,7 @@ or [Ethereum Consensus Tests]
 cmd/test/consensus
 ```
 
-You can also try run Silkworm to test the stages implemented so far. To do that you need to obtain a primed database by Erigon by forcing it to stop before stage Senders.
+You can also try run Silkworm to test the stages implemented so far. To do that you need to obtain a primed database by Erigon (strictly from `stable` branch) by forcing it to stop before stage Senders.
 
 On Linux [build Erigon](https://github.com/ledgerwatch/erigon#getting-started) and 
 ```

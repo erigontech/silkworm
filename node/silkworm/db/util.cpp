@@ -39,10 +39,10 @@ Bytes block_key(BlockNum block_number) {
     return key;
 }
 
-Bytes block_key(BlockNum block_number, const uint8_t (&hash)[kHashLength]) {
+Bytes block_key(BlockNum block_number, gsl::span<const uint8_t, kHashLength> hash) {
     Bytes key(8 + kHashLength, '\0');
     endian::store_big_u64(&key[0], block_number);
-    std::memcpy(&key[8], hash, kHashLength);
+    std::memcpy(&key[8], hash.data(), kHashLength);
     return key;
 }
 

@@ -18,7 +18,7 @@
 
 #include <catch2/catch.hpp>
 
-#include "working_chain.hpp"
+#include "header_chain.hpp"
 
 namespace silkworm {
 

@@ -340,6 +340,8 @@ namespace rlp {
             return err0;
         }
 
+        to.from.reset();
+
         if (h.list) {
             to.type = Transaction::Type::kLegacy;
             uint64_t leftover{from.length() - h.payload_length};

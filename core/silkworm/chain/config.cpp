@@ -1,5 +1,5 @@
 /*
-   Copyright 2021 The Silkworm Authors
+   Copyright 2021-2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -112,6 +112,7 @@ std::optional<ChainConfig> ChainConfig::from_json(const nlohmann::json& json) no
     read_json_config_member(json, "muirGlacierBlock", config.muir_glacier_block);
     read_json_config_member(json, "arrowGlacierBlock", config.arrow_glacier_block);
     read_json_config_member(json, kTerminalBlockNumber, config.terminal_block_number);
+
     if (json.contains(kTerminalTotalDifficulty)) {
         config.terminal_total_difficulty =
             intx::from_string<intx::uint256>(json[kTerminalTotalDifficulty].get<std::string>());

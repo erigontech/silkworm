@@ -21,6 +21,7 @@
 #include <memory>
 #include <mutex>
 #include <thread>
+#include <vector>
 
 #include <CLI/CLI.hpp>
 #include <boost/asio/io_context.hpp>
@@ -35,6 +36,7 @@
 #include <silkworm/common/endian.hpp>
 #include <silkworm/common/log.hpp>
 #include <silkworm/common/util.hpp>
+#include <silkworm/db/tables.hpp>
 #include <silkworm/rpc/conversion.hpp>
 #include <silkworm/rpc/util.hpp>
 
@@ -269,12 +271,20 @@ class AsyncBidirectionalStreamingCall : public AsyncCall {
         if (ok) {
             switch (state_) {
                 case State::kStarted: {
-                    handle_start();
-                    // Schedule first async WRITE event.
-                    state_ = State::kWriting;
-                    write();
-                    SILK_DEBUG << "AsyncBidirectionalStreamingCall schedule write state: "
-                               << magic_enum::enum_name(state_);
+                    const bool request_read = handle_start();
+                    if (request_read) {
+                        // Schedule first async READ event.
+                        state_ = State::kReading;
+                        read();
+                        SILK_DEBUG << "AsyncBidirectionalStreamingCall schedule read state: "
+                                   << magic_enum::enum_name(state_);
+                    } else {
+                        // Schedule first async WRITE event.
+                        state_ = State::kWriting;
+                        write();
+                        SILK_DEBUG << "AsyncBidirectionalStreamingCall schedule write state: "
+                                   << magic_enum::enum_name(state_);
+                    }
                     return false;
                 }
                 case State::kWriting: {
@@ -346,7 +356,7 @@ class AsyncBidirectionalStreamingCall : public AsyncCall {
     }
 
   protected:
-    virtual void handle_start() = 0;
+    virtual bool handle_start() = 0;
     virtual bool handle_read() = 0;
     virtual bool handle_write() = 0;
     virtual void handle_finish() = 0;
@@ -562,13 +572,20 @@ class AsyncTxCall
     explicit AsyncTxCall(std::shared_ptr<grpc::Channel> channel, grpc::CompletionQueue* queue)
         : AsyncBidirectionalStreamingCall(channel, queue, &remote::KV::NewStub) {}
 
-    void handle_start() override {
-        SILK_INFO << "Tx started: opening cursor";
-        request_.set_op(remote::Op::OPEN);
-        request_.set_bucketname(table_name_);
+    bool handle_start() override {
+        SILK_INFO << "Tx started: reading database view";
+        return true;
     }
 
     bool handle_read() override {
+        if (view_id_ == kInvalidViewId) {
+            SILK_INFO << "Tx database view: txid=" << reply_.txid();
+            view_id_ = reply_.txid();
+            SILK_INFO << "Tx announced: opening cursor";
+            request_.set_op(remote::Op::OPEN);
+            request_.set_bucketname(table_name_);
+            return false;
+        }
         if (query_count_ == 0) {
             if (cursor_id_ == kInvalidCursorId) {
                 SILK_DEBUG << "Tx cursor closed, closing tx";
@@ -604,9 +621,11 @@ class AsyncTxCall
     void handle_finish() override { SILK_INFO << "Tx completed: status: " << status_; }
 
   private:
+    inline static const uint32_t kInvalidViewId{0};
     inline static const uint32_t kInvalidCursorId{0};
 
-    std::string table_name_{"TestTable"};
+    uint32_t view_id_{kInvalidViewId};
+    std::string table_name_{silkworm::db::table::kStorageHistory.name};
     uint32_t query_count_{5};
     uint32_t cursor_id_{kInvalidCursorId};
 };
@@ -644,12 +663,16 @@ enum class Rpc {
 
 struct BatchOptions {
     int batch_size{1};
-    std::unordered_set<Rpc> configured_calls;
+    std::vector<Rpc> configured_calls;
     int64_t interval_between_calls{100};
 
-    // Replace with std::unordered_set::contains at call site after C++20
+    bool is_configured(Rpc call) const {
+        return configured_calls.empty() || contains_call(call);
+    }
+
+  private:
     bool contains_call(Rpc call) const {
-        return configured_calls.find(call) != configured_calls.end();
+        return std::find(configured_calls.begin(), configured_calls.end(), call) != configured_calls.end();
     }
 };
 
@@ -659,68 +682,68 @@ class AsyncCallFactory {
         : channel_(channel), queue_(queue) {}
 
     void start_batch(std::atomic_bool& stop, const BatchOptions& batch_options) {
-        for (auto i{0}; i < batch_options.batch_size && !stop; ++i) {
-            if (batch_options.contains_call(Rpc::etherbase)) {
+        for (auto i{0}; i<batch_options.batch_size && !stop; i++) {
+            if (batch_options.is_configured(Rpc::etherbase)) {
                 auto* etherbase = new AsyncEtherbaseCall(channel_, queue_);
                 etherbase->start_async(remote::EtherbaseRequest{});
                 SILK_DEBUG << "New Etherbase async call started: " << etherbase;
             }
 
-            if (batch_options.contains_call(Rpc::net_version)) {
+            if (batch_options.is_configured(Rpc::net_version)) {
                 auto* net_version = new AsyncNetVersionCall(channel_, queue_);
                 net_version->start_async(remote::NetVersionRequest{});
                 SILK_DEBUG << "New NetVersion async call started: " << net_version;
             }
 
-            if (batch_options.contains_call(Rpc::net_peer_count)) {
+            if (batch_options.is_configured(Rpc::net_peer_count)) {
                 auto* net_peer_count = new AsyncNetPeerCountCall(channel_, queue_);
                 net_peer_count->start_async(remote::NetPeerCountRequest{});
                 SILK_DEBUG << "New NetPeerCount async call started: " << net_peer_count;
             }
 
-            if (batch_options.contains_call(Rpc::backend_version)) {
+            if (batch_options.is_configured(Rpc::backend_version)) {
                 auto* backend_version = new AsyncBackEndVersionCall(channel_, queue_);
                 backend_version->start_async(google::protobuf::Empty{});
                 SILK_DEBUG << "New ETHBACKEND Version async call started: " << backend_version;
             }
 
-            if (batch_options.contains_call(Rpc::protocol_version)) {
+            if (batch_options.is_configured(Rpc::protocol_version)) {
                 auto* protocol_version = new AsyncProtocolVersionCall(channel_, queue_);
                 protocol_version->start_async(remote::ProtocolVersionRequest{});
                 SILK_DEBUG << "New ProtocolVersion async call started: " << protocol_version;
             }
 
-            if (batch_options.contains_call(Rpc::client_version)) {
+            if (batch_options.is_configured(Rpc::client_version)) {
                 auto* client_version = new AsyncClientVersionCall(channel_, queue_);
                 client_version->start_async(remote::ClientVersionRequest{});
                 SILK_DEBUG << "New ClientVersion async call started: " << client_version;
             }
 
-            if (batch_options.contains_call(Rpc::subscribe)) {
+            if (batch_options.is_configured(Rpc::subscribe)) {
                 auto* subscribe = new AsyncSubscribeCall(channel_, queue_);
                 subscribe->start_async(remote::SubscribeRequest{});
                 SILK_DEBUG << "New Subscribe async call started: " << subscribe;
             }
 
-            if (batch_options.contains_call(Rpc::nodes_info)) {
+            if (batch_options.is_configured(Rpc::nodes_info)) {
                 auto* node_info = new AsyncNodeInfoCall(channel_, queue_);
                 node_info->start_async(remote::NodesInfoRequest{});
                 SILK_DEBUG << "New NodeInfo async call started: " << node_info;
             }
 
-            if (batch_options.contains_call(Rpc::kv_version)) {
+            if (batch_options.is_configured(Rpc::kv_version)) {
                 auto* kv_version = new AsyncKvVersionCall(channel_, queue_);
                 kv_version->start_async(google::protobuf::Empty{});
                 SILK_DEBUG << "New KV Version async call started: " << kv_version;
             }
 
-            if (batch_options.contains_call(Rpc::tx)) {
+            if (batch_options.is_configured(Rpc::tx)) {
                 auto* tx = new AsyncTxCall(channel_, queue_);
                 tx->start_async();
                 SILK_DEBUG << "New Tx async call started: " << tx;
             }
 
-            if (batch_options.contains_call(Rpc::state_changes)) {
+            if (batch_options.is_configured(Rpc::state_changes)) {
                 auto* state_changes = new AsyncStateChangesCall(channel_, queue_);
                 state_changes->start_async(remote::StateChangeRequest{});
                 SILK_DEBUG << "New StateChanges async call started: " << state_changes;
@@ -755,6 +778,8 @@ int main(int argc, char* argv[]) {
         ->capture_default_str();
     app.add_option("--batch", batch_options.batch_size, "The number of async calls for each RPC in each batch as integer")
         ->capture_default_str();
+    app.add_option("--calls", batch_options.configured_calls, "The list of RPC call types to use as integers")
+        ->capture_default_str();
     app.add_option("--logLevel", log_level, "The log level identifier as string")
         ->capture_default_str()
         ->check(CLI::Range(static_cast<uint32_t>(silkworm::log::Level::kCritical),
@@ -777,7 +802,6 @@ int main(int argc, char* argv[]) {
         boost::asio::signal_set signals{scheduler, SIGINT, SIGTERM};
 
         auto channel = grpc::CreateChannel(target_uri, grpc::InsecureChannelCredentials());
-        // TODO(canepat): create list of channels for round-robin batch pump
         grpc::CompletionQueue queue;
 
         std::mutex mutex;

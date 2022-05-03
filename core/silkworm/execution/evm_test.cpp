@@ -63,6 +63,8 @@ TEST_CASE("Value transfer") {
 
     CHECK(state.get_balance(from) == kEther - value);
     CHECK(state.get_balance(to) == value);
+    CHECK(state.touched().count(from) == 1);
+    CHECK(state.touched().count(to) == 1);
 }
 
 TEST_CASE("Smart contract with storage") {

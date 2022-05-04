@@ -411,7 +411,7 @@ evmc::bytes32 InterHashes::calculate_root(db::RWTxn& txn, trie::PrefixSet& accou
         }
     };
 
-    trie::Cursor trie_cursor{trie_accounts, account_changes};
+    trie::Cursor trie_cursor{trie_accounts, account_changes, account_collector_.get()};
     size_t log_trigger_counter{1};
 
     while (trie_cursor.key().has_value()) {
@@ -488,7 +488,7 @@ evmc::bytes32 InterHashes::calculate_storage_root(db::RWTxn& txn, const Bytes& d
         collector->collect({key, value});
     };
 
-    trie::Cursor trie_cursor{trie_storage, storage_changes, db_storage_prefix};
+    trie::Cursor trie_cursor{trie_storage, storage_changes, storage_collector_.get(), db_storage_prefix};
     while (trie_cursor.key().has_value()) {
         if (trie_cursor.can_skip_state()) {
             SILKWORM_ASSERT(trie_cursor.hash() != nullptr);

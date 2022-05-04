@@ -34,7 +34,7 @@ namespace silkworm::trie {
 class Cursor {
   public:
     // Ignores DB entries whose keys don't start with the prefix
-    explicit Cursor(mdbx::cursor& db_cursor, PrefixSet& changed, ByteView prefix = {});
+    explicit Cursor(mdbx::cursor& db_cursor, PrefixSet& changed, etl::Collector* collector, ByteView prefix = {});
 
     // Not copyable nor movable
     Cursor(const Cursor&) = delete;
@@ -77,6 +77,8 @@ class Cursor {
 
     PrefixSet& changed_;
 
+    etl::Collector* collector_;  // To queue deleted records and postpone deletion
+
     Bytes prefix_;
 
     std::vector<SubNode> subnodes_;
@@ -84,72 +86,72 @@ class Cursor {
     bool can_skip_state_{false};
 };
 
-//class AccCursor {
-//  public:
-//    explicit AccCursor(mdbx::cursor& db_cursor, PrefixSet& changed, ByteView prefix = {},
-//                       etl::Collector* collector = nullptr);
+// class AccCursor {
+//   public:
+//     explicit AccCursor(mdbx::cursor& db_cursor, PrefixSet& changed, ByteView prefix = {},
+//                        etl::Collector* collector = nullptr);
 //
-//    bool seek(ByteView prefix);  // Returns whether node is found
-//    bool move_next();            // Returns whether node is found
+//     bool seek(ByteView prefix);  // Returns whether node is found
+//     bool move_next();            // Returns whether node is found
 //
-//  private:
-//    // TrieAccount(TrieStorage) node with a particular nibble selected
-//    struct SubNode {
-//        ByteView key{};
-//        ByteView value{};
-//        uint16_t state_mask{};
-//        uint16_t tree_mask{};
-//        uint16_t hash_mask{};
-//        int8_t child_id{0};
-//        int8_t hash_id{0};
-//        bool deleted{false};
+//   private:
+//     // TrieAccount(TrieStorage) node with a particular nibble selected
+//     struct SubNode {
+//         ByteView key{};
+//         ByteView value{};
+//         uint16_t state_mask{};
+//         uint16_t tree_mask{};
+//         uint16_t hash_mask{};
+//         int8_t child_id{0};
+//         int8_t hash_id{0};
+//         bool deleted{false};
 //
-//        void reset();
-//        void parse(ByteView k, ByteView v);
-//    };
+//         void reset();
+//         void parse(ByteView k, ByteView v);
+//     };
 //
-//    mdbx::cursor& db_cursor_;  // MDBX Cursor to TrieAccounts
-//    PrefixSet& changed_;
-//    etl::Collector* collector_{nullptr};  // To queue deleted records
+//     mdbx::cursor& db_cursor_;  // MDBX Cursor to TrieAccounts
+//     PrefixSet& changed_;
+//     etl::Collector* collector_{nullptr};  // To queue deleted records
 //
-//    std::vector<SubNode> sub_nodes_;
-//    bool skip_state_{false};
-//    size_t level_{0};
+//     std::vector<SubNode> sub_nodes_;
+//     bool skip_state_{false};
+//     size_t level_{0};
 //
-//    Bytes prefix_{};  // global prefix - cursor will never return keys without this prefix
-//    Bytes prev_{};
-//    Bytes curr_{};
-//    Bytes next_{};
-//    Bytes buff_{};
+//     Bytes prefix_{};  // global prefix - cursor will never return keys without this prefix
+//     Bytes prev_{};
+//     Bytes curr_{};
+//     Bytes next_{};
+//     Bytes buff_{};
 //
-//    Bytes next_created_{};
-//    Bytes first_uncovered_{};
+//     Bytes next_created_{};
+//     Bytes first_uncovered_{};
 //
-//    bool has_state();
-//    bool has_tree();
-//    bool has_hash();
+//     bool has_state();
+//     bool has_tree();
+//     bool has_hash();
 //
-//    bool next();
-//    void preorder_traversal_step();
-//    void preorder_traversal_step_no_indepth();
-//    void delete_current();
+//     bool next();
+//     void preorder_traversal_step();
+//     void preorder_traversal_step_no_indepth();
+//     void delete_current();
 //
-//    //! \brief Partially parses node
-//    //! \remarks We don't need to copy all hashes for trie::Node
-//    //! \see Erigon's _unmarshal
-//    void parse_subnode(ByteView key, ByteView value);
+//     //! \brief Partially parses node
+//     //! \remarks We don't need to copy all hashes for trie::Node
+//     //! \see Erigon's _unmarshal
+//     void parse_subnode(ByteView key, ByteView value);
 //
-//    void next_sibling_in_db();
-//    bool next_sibling_in_mem();
-//    bool next_sibling_of_parent_in_mem();
+//     void next_sibling_in_db();
+//     bool next_sibling_in_mem();
+//     bool next_sibling_of_parent_in_mem();
 //
-//    bool seek_in_db(ByteView within_prefix = {});
+//     bool seek_in_db(ByteView within_prefix = {});
 //
-//    bool consume();
+//     bool consume();
 //
-//    //! \brief Kinda normal lexicographic comparator with the difference empty keys are last
-//    bool key_is_before(ByteView k1, ByteView k2);
-//};
+//     //! \brief Kinda normal lexicographic comparator with the difference empty keys are last
+//     bool key_is_before(ByteView k1, ByteView k2);
+// };
 
 //! \brief Produces the next key in sequence from provided nibbled key
 //! \details It's essentially +1 in the hexadecimal (base 16) numeral system.
@@ -164,7 +166,7 @@ class Cursor {
 std::optional<Bytes> increment_nibbled_key(ByteView nibbles);
 
 ////! \brief Computes the next uncovered (by trie cursor) prefix
-//std::optional<Bytes> compute_next_uncovered_prefix(ByteView previous, ByteView prefix);
+// std::optional<Bytes> compute_next_uncovered_prefix(ByteView previous, ByteView prefix);
 
 }  // namespace silkworm::trie
 

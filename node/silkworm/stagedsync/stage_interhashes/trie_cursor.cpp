@@ -23,8 +23,8 @@
 
 namespace silkworm::trie {
 
-Cursor::Cursor(mdbx::cursor& db_cursor, PrefixSet& changed, ByteView prefix)
-    : db_cursor_{db_cursor}, changed_{changed}, prefix_{prefix} {
+Cursor::Cursor(mdbx::cursor& db_cursor, PrefixSet& changed, etl::Collector* collector, ByteView prefix)
+    : db_cursor_{db_cursor}, changed_{changed}, collector_{collector}, prefix_{prefix} {
     subnodes_.reserve(64);
     consume_node(/*key=*/{}, /*exact=*/true);
 }
@@ -73,7 +73,8 @@ void Cursor::consume_node(ByteView key, bool exact) {
 
     // don't erase nodes with valid root hashes
     if (db_data && (!can_skip_state_ || nibble != -1)) {
-        db_cursor_.erase();
+        collector_->collect({Bytes{db::from_slice(db_data.key)}, Bytes{}});
+        // db_cursor_.erase();
     }
 }
 
@@ -236,16 +237,6 @@ std::optional<Bytes> increment_nibbled_key(ByteView nibbles) {
     ++ret.back();
     return ret;
 
-    //    Bytes ret;
-    //    if (!nibbles.empty()) {
-    //        auto rit{std::find_if(nibbles.rbegin(), nibbles.rend(), [](uint8_t nibble) { return nibble < 0xf; })};
-    //        if (rit != nibbles.rend()) {
-    //            auto count{std::distance(nibbles.begin(), rit.base())};
-    //            ret.assign(nibbles.substr(0, count));
-    //            ++ret.back();
-    //        }
-    //    }
-    //    return ret;
 }
 //
 // std::optional<Bytes> compute_next_uncovered_prefix(ByteView previous, ByteView prefix) {

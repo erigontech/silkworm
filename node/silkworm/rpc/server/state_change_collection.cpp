@@ -24,8 +24,15 @@
 
 namespace silkworm::rpc {
 
-void StateChangeCollection::register_consumer(StateChangeBatchConsumer consumer) {
-    batch_consumers_.push_back(consumer);
+std::optional<StateChangeToken> StateChangeCollection::subscribe(StateChangeConsumer consumer, StateChangeFilter /*filter*/) {
+    StateChangeToken token = ++next_token_;
+    const auto [_, inserted] = consumers_.insert({token, consumer});
+    return inserted ? std::make_optional(token) : std::nullopt;
+}
+
+bool StateChangeCollection::unsubscribe(StateChangeToken token) {
+    const auto consumer_it = consumers_.erase(token);
+    return consumer_it != 0;
 }
 
 void StateChangeCollection::reset(uint64_t tx_id) {
@@ -36,7 +43,9 @@ void StateChangeCollection::reset(uint64_t tx_id) {
     storage_change_index_.clear();
 }
 
-void StateChangeCollection::start_new_block(BlockNum block_height, const evmc::bytes32& block_hash, const std::vector<Bytes>&& tx_rlps, bool unwind) {
+void StateChangeCollection::start_new_batch(BlockNum block_height, const evmc::bytes32& block_hash, const std::vector<Bytes>&& tx_rlps, bool unwind) {
+    SILK_TRACE << "StateChangeCollection::start_new_batch " << this << " block: " << block_height << " unwind:" << unwind << " START";
+
     SILKWORM_ASSERT(latest_change_ == nullptr);
 
     latest_change_ = state_changes_.add_changebatch();
@@ -46,6 +55,8 @@ void StateChangeCollection::start_new_block(BlockNum block_height, const evmc::b
     for (auto& tx_rlp : tx_rlps) {
         latest_change_->add_txs(to_hex(tx_rlp));
     }
+
+    SILK_TRACE << "StateChangeCollection::start_new_batch " << this << " END";
 }
 
 void StateChangeCollection::change_account(const evmc::address& address, uint64_t incarnation, const Bytes& data) {
@@ -172,13 +183,30 @@ void StateChangeCollection::delete_account(const evmc::address& address) {
 }
 
 void StateChangeCollection::notify_batch(uint64_t pending_base_fee, uint64_t gas_limit) {
+    SILK_TRACE << "StateChangeCollection::notify_batch " << this << " pending_base_fee: " << pending_base_fee << " gas_limit:" << gas_limit << " START";
+
     state_changes_.set_pendingblockbasefee(pending_base_fee);
     state_changes_.set_blockgaslimit(gas_limit);
     state_changes_.set_databaseviewid(tx_id_);
-    for (auto& batch_callback : batch_consumers_) {
-        batch_callback(state_changes_);
+    for (const auto& [_, batch_callback] : consumers_) {
+        SILK_DEBUG << "Notify callback=" << &batch_callback << " state_changes=" << &state_changes_;
+        batch_callback(&state_changes_);
+        SILK_DEBUG << "Notify callback=" << &batch_callback << " done";
     }
     reset(0);
+
+    SILK_TRACE << "StateChangeCollection::notify_batch " << this << " END";
+}
+
+void StateChangeCollection::close() {
+    notify_consumers(nullptr);
+    reset(0);
+}
+
+void StateChangeCollection::notify_consumers(const remote::StateChangeBatch* batch) {
+    for (const auto& [_, batch_callback] : consumers_) {
+        batch_callback(batch);
+    }
 }
 
 } // namespace silkworm::rpc

@@ -654,29 +654,53 @@ TxCallFactory::TxCallFactory(const EthereumBackEnd& backend)
     TxCall::set_chaindata_env(backend.chaindata_env());
 }
 
+StateChangeSource* StateChangesCall::source_{nullptr};
+
+void StateChangesCall::set_source(StateChangeSource* source) {
+    StateChangesCall::source_ = source;
+}
+
 StateChangesCall::StateChangesCall(boost::asio::io_context& scheduler, remote::KV::AsyncService* service, grpc::ServerCompletionQueue* queue, Handlers handlers)
     : ServerStreamingRpc<remote::KV::AsyncService, remote::StateChangeRequest, remote::StateChangeBatch>(scheduler, service, queue, handlers) {
 }
 
+StateChangesCall::~StateChangesCall() {
+    if (token_) {
+        source_->unsubscribe(*token_);
+    }
+}
+
 void StateChangesCall::process(const remote::StateChangeRequest* request) {
-    SILK_TRACE << "StateChangesCall::process " << this << " request: " << request;
+    SILK_TRACE << "StateChangesCall::process " << this << " request: " << request << " START";
 
-    // TODO(canepat): remove this example and fill the correct stream responses
-    remote::StateChangeBatch response1;
-    send_response(response1);
-    remote::StateChangeBatch response2;
-    send_response(response2);
+    StateChangeFilter filter{request->withstorage(), request->withtransactions()};
+    token_ = source_->subscribe([&](const remote::StateChangeBatch* batch) {
+        if (batch == nullptr) {
+            const bool sent = close();
+            SILK_DEBUG << "State change stream closed sent: " << sent;
+        } else {
+            const bool sent = send_response(*batch);
+            SILK_DEBUG << "State change stream batch: " << batch << " sent: " << sent;
+        }
+    }, filter);
 
-    const bool closed = close();
+    // The assigned token ID must be valid.
+    if (!token_) {
+        const auto error_message = "assigned consumer token already in use: " + std::to_string(source_->last_token());
+        SILK_ERROR << "StateChanges peer: " << peer() << " subscription failed " << error_message;
+        close_with_error(grpc::Status{grpc::StatusCode::ALREADY_EXISTS, error_message});
+        return;
+    }
 
-    SILK_TRACE << "StateChangesCall::process " << this << " closed: " << closed;
+    SILK_TRACE << "StateChangesCall::process " << this << " END";
 }
 
-StateChangesCallFactory::StateChangesCallFactory()
+StateChangesCallFactory::StateChangesCallFactory(const EthereumBackEnd& backend)
     : CallFactory<remote::KV::AsyncService, StateChangesCall>(&remote::KV::AsyncService::RequestStateChanges) {
+    StateChangesCall::set_source(backend.state_change_source());
 }
 
-KvService::KvService(const EthereumBackEnd& backend) : tx_factory_{backend} {
+KvService::KvService(const EthereumBackEnd& backend) : tx_factory_{backend}, state_changes_factory_{backend} {
 }
 
 void KvService::register_kv_request_calls(boost::asio::io_context& scheduler, remote::KV::AsyncService* async_service, grpc::ServerCompletionQueue* queue) {

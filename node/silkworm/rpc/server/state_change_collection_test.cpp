@@ -72,9 +72,9 @@ TEST_CASE("StateChangeCollection::StateChangeCollection", "[silkworm][rpc][state
     CHECK_NOTHROW(scc.notify_batch(kTestPendingBaseFee, kTestGasLimit));
 }
 
-TEST_CASE("StateChangeCollection::register_consumer", "[silkworm][rpc][state_change_collection]") {
+TEST_CASE("StateChangeCollection::subscribe", "[silkworm][rpc][state_change_collection]") {
     StateChangeCollection scc;
-    CHECK_NOTHROW(scc.register_consumer([&](auto& /*batch*/) {}));
+    CHECK_NOTHROW(scc.subscribe([&](const auto* /*batch*/) {}, StateChangeFilter{}));
 }
 
 TEST_CASE("StateChangeCollection::notify_batch", "[silkworm][rpc][state_change_collection]") {
@@ -82,33 +82,33 @@ TEST_CASE("StateChangeCollection::notify_batch", "[silkworm][rpc][state_change_c
 
     SECTION("OK: notifies batch w/o changes to single consumer") {
         uint32_t notification_count{0};
-        scc.register_consumer([&](const remote::StateChangeBatch& batch) {
-            CHECK(batch.pendingblockbasefee() == kTestPendingBaseFee);
-            CHECK(batch.blockgaslimit() == kTestGasLimit);
-            CHECK(batch.databaseviewid() == 0);
-            CHECK(batch.changebatch_size() == 0);
+        scc.subscribe([&](const remote::StateChangeBatch* batch) {
+            CHECK(batch->pendingblockbasefee() == kTestPendingBaseFee);
+            CHECK(batch->blockgaslimit() == kTestGasLimit);
+            CHECK(batch->databaseviewid() == 0);
+            CHECK(batch->changebatch_size() == 0);
             ++notification_count;
-        });
+        }, StateChangeFilter{});
         scc.notify_batch(kTestPendingBaseFee, kTestGasLimit);
         CHECK(notification_count == 1);
     }
 
     SECTION("OK: notifies batch w/o changes to multiple consumers") {
         uint32_t notification_count1{0}, notification_count2{0};
-        scc.register_consumer([&](const remote::StateChangeBatch& batch) {
-            CHECK(batch.pendingblockbasefee() == kTestPendingBaseFee);
-            CHECK(batch.blockgaslimit() == kTestGasLimit);
-            CHECK(batch.databaseviewid() == 0);
-            CHECK(batch.changebatch_size() == 0);
+        scc.subscribe([&](const remote::StateChangeBatch* batch) {
+            CHECK(batch->pendingblockbasefee() == kTestPendingBaseFee);
+            CHECK(batch->blockgaslimit() == kTestGasLimit);
+            CHECK(batch->databaseviewid() == 0);
+            CHECK(batch->changebatch_size() == 0);
             ++notification_count1;
-        });
-        scc.register_consumer([&](const remote::StateChangeBatch& batch) {
-            CHECK(batch.pendingblockbasefee() == kTestPendingBaseFee);
-            CHECK(batch.blockgaslimit() == kTestGasLimit);
-            CHECK(batch.databaseviewid() == 0);
-            CHECK(batch.changebatch_size() == 0);
+        }, StateChangeFilter{});
+        scc.subscribe([&](const remote::StateChangeBatch* batch) {
+            CHECK(batch->pendingblockbasefee() == kTestPendingBaseFee);
+            CHECK(batch->blockgaslimit() == kTestGasLimit);
+            CHECK(batch->databaseviewid() == 0);
+            CHECK(batch->changebatch_size() == 0);
             ++notification_count2;
-        });
+        }, StateChangeFilter{});
         scc.notify_batch(kTestPendingBaseFee, kTestGasLimit);
         CHECK((notification_count1 == 1 && notification_count2 == 1));
     }
@@ -119,62 +119,62 @@ TEST_CASE("StateChangeCollection::reset", "[silkworm][rpc][state_change_collecti
 
     SECTION("OK: notifies batch w/o changes with expected transaction ID") {
         REQUIRE(scc.tx_id() == 0);
-        scc.register_consumer([&](const remote::StateChangeBatch& batch) {
-            CHECK(batch.databaseviewid() == scc.tx_id());
-        });
+        scc.subscribe([&](const remote::StateChangeBatch* batch) {
+            CHECK(batch->databaseviewid() == scc.tx_id());
+        }, StateChangeFilter{});
         scc.notify_batch(kTestPendingBaseFee, kTestGasLimit);
         scc.reset(kTestDatabaseViewId);
         CHECK(scc.tx_id() == kTestDatabaseViewId);
-        scc.register_consumer([&](const remote::StateChangeBatch& batch) {
-            CHECK(batch.databaseviewid() == scc.tx_id());
-        });
+        scc.subscribe([&](const remote::StateChangeBatch* batch) {
+            CHECK(batch->databaseviewid() == scc.tx_id());
+        }, StateChangeFilter{});
         scc.notify_batch(kTestPendingBaseFee, kTestGasLimit);
     }
 }
 
-TEST_CASE("StateChangeCollection::start_new_block", "[silkworm][rpc][state_change_collection]") {
+TEST_CASE("StateChangeCollection::start_new_batch", "[silkworm][rpc][state_change_collection]") {
     StateChangeCollection scc;
 
-    SECTION("OK: one new block in FORWARD direction") {
-        scc.start_new_block(kTestBlockNumber, kTestBlockHash, std::vector<silkworm::Bytes>{}, /*unwind=*/false);
-        scc.register_consumer([&](const remote::StateChangeBatch& batch) {
-            CHECK(batch.pendingblockbasefee() == kTestPendingBaseFee);
-            CHECK(batch.blockgaslimit() == kTestGasLimit);
-            CHECK(batch.databaseviewid() == 0);
-            CHECK(batch.changebatch_size() == 1);
-            const remote::StateChange& state_change = batch.changebatch(0);
+    SECTION("OK: one new batch in FORWARD direction") {
+        scc.start_new_batch(kTestBlockNumber, kTestBlockHash, std::vector<silkworm::Bytes>{}, /*unwind=*/false);
+        scc.subscribe([&](const remote::StateChangeBatch* batch) {
+            CHECK(batch->pendingblockbasefee() == kTestPendingBaseFee);
+            CHECK(batch->blockgaslimit() == kTestGasLimit);
+            CHECK(batch->databaseviewid() == 0);
+            CHECK(batch->changebatch_size() == 1);
+            const remote::StateChange& state_change = batch->changebatch(0);
             CHECK(state_change.direction() == remote::Direction::FORWARD);
             CHECK(state_change.blockheight() == kTestBlockNumber);
             CHECK(bytes32_from_H256(state_change.blockhash()) == kTestBlockHash);
-        });
+        }, StateChangeFilter{});
         scc.notify_batch(kTestPendingBaseFee, kTestGasLimit);
     }
 
-    SECTION("OK: two new blocks in FORWARD and UNWIND directions") {
-        scc.start_new_block(kTestBlockNumber, kTestBlockHash, sample_rlp_buffers(), /*unwind=*/false);
-        scc.register_consumer([&](const remote::StateChangeBatch& batch) {
-            CHECK(batch.pendingblockbasefee() == kTestPendingBaseFee);
-            CHECK(batch.blockgaslimit() == kTestGasLimit);
-            CHECK(batch.changebatch_size() == 1);
-            const remote::StateChange& state_change = batch.changebatch(0);
+    SECTION("OK: two new batches in FORWARD and UNWIND directions") {
+        scc.start_new_batch(kTestBlockNumber, kTestBlockHash, sample_rlp_buffers(), /*unwind=*/false);
+        scc.subscribe([&](const remote::StateChangeBatch* batch) {
+            CHECK(batch->pendingblockbasefee() == kTestPendingBaseFee);
+            CHECK(batch->blockgaslimit() == kTestGasLimit);
+            CHECK(batch->changebatch_size() == 1);
+            const remote::StateChange& state_change = batch->changebatch(0);
             CHECK(state_change.blockheight() == kTestBlockNumber);
             CHECK(bytes32_from_H256(state_change.blockhash()) == kTestBlockHash);
             CHECK(state_change.txs_size() == 2);
             static int notifications{0};
             if (notifications == 0) {
-                CHECK(batch.databaseviewid() == 0);
+                CHECK(batch->databaseviewid() == 0);
                 CHECK(state_change.direction() == remote::Direction::FORWARD);
             } else if (notifications == 1) {
-                CHECK(batch.databaseviewid() == kTestDatabaseViewId);
+                CHECK(batch->databaseviewid() == kTestDatabaseViewId);
                 CHECK(state_change.direction() == remote::Direction::UNWIND);
             } else {
                 CHECK(false); // too many notifications
             }
             notifications++;
-        });
+        }, StateChangeFilter{});
         scc.notify_batch(kTestPendingBaseFee, kTestGasLimit);
         scc.reset(kTestDatabaseViewId);
-        scc.start_new_block(kTestBlockNumber, kTestBlockHash, sample_rlp_buffers(), /*unwind=*/true);
+        scc.start_new_batch(kTestBlockNumber, kTestBlockHash, sample_rlp_buffers(), /*unwind=*/true);
         scc.notify_batch(kTestPendingBaseFee, kTestGasLimit);
     }
 }
@@ -183,15 +183,15 @@ TEST_CASE("StateChangeCollection::change_account", "[silkworm][rpc][state_change
     StateChangeCollection scc;
 
     SECTION("OK: change one account once") {
-        scc.register_consumer([&](const remote::StateChangeBatch& batch) {
-            CHECK(batch.pendingblockbasefee() == kTestPendingBaseFee);
-            CHECK(batch.blockgaslimit() == kTestGasLimit);
-            CHECK(batch.changebatch_size() == 1);
-            const remote::StateChange& state_change = batch.changebatch(0);
+        scc.subscribe([&](const remote::StateChangeBatch* batch) {
+            CHECK(batch->pendingblockbasefee() == kTestPendingBaseFee);
+            CHECK(batch->blockgaslimit() == kTestGasLimit);
+            CHECK(batch->changebatch_size() == 1);
+            const remote::StateChange& state_change = batch->changebatch(0);
             CHECK(state_change.blockheight() == kTestBlockNumber);
             CHECK(bytes32_from_H256(state_change.blockhash()) == kTestBlockHash);
             CHECK(state_change.txs_size() == 2);
-            CHECK(batch.databaseviewid() == 0);
+            CHECK(batch->databaseviewid() == 0);
             CHECK(state_change.direction() == remote::Direction::FORWARD);
             CHECK(state_change.changes_size() == 1);
             const remote::AccountChange& account_change = state_change.changes(0);
@@ -201,22 +201,22 @@ TEST_CASE("StateChangeCollection::change_account", "[silkworm][rpc][state_change
             CHECK(address_from_H160(account_change.address()) == kTestAddress);
             CHECK(account_change.incarnation() == kTestIncarnation);
             CHECK(account_change.action() == remote::Action::UPSERT);
-        });
-        scc.start_new_block(kTestBlockNumber, kTestBlockHash, sample_rlp_buffers(), /*unwind=*/false);
+        }, StateChangeFilter{});
+        scc.start_new_batch(kTestBlockNumber, kTestBlockHash, sample_rlp_buffers(), /*unwind=*/false);
         scc.change_account(kTestAddress, kTestIncarnation, kTestData1);
         scc.notify_batch(kTestPendingBaseFee, kTestGasLimit);
     }
 
     SECTION("OK: change one account twice") {
-        scc.register_consumer([&](const remote::StateChangeBatch& batch) {
-            CHECK(batch.pendingblockbasefee() == kTestPendingBaseFee);
-            CHECK(batch.blockgaslimit() == kTestGasLimit);
-            CHECK(batch.changebatch_size() == 1);
-            const remote::StateChange& state_change = batch.changebatch(0);
+        scc.subscribe([&](const remote::StateChangeBatch* batch) {
+            CHECK(batch->pendingblockbasefee() == kTestPendingBaseFee);
+            CHECK(batch->blockgaslimit() == kTestGasLimit);
+            CHECK(batch->changebatch_size() == 1);
+            const remote::StateChange& state_change = batch->changebatch(0);
             CHECK(state_change.blockheight() == kTestBlockNumber);
             CHECK(bytes32_from_H256(state_change.blockhash()) == kTestBlockHash);
             CHECK(state_change.txs_size() == 2);
-            CHECK(batch.databaseviewid() == 0);
+            CHECK(batch->databaseviewid() == 0);
             CHECK(state_change.direction() == remote::Direction::FORWARD);
             CHECK(state_change.changes_size() == 2);
             const remote::AccountChange& account_change0 = state_change.changes(0);
@@ -233,23 +233,23 @@ TEST_CASE("StateChangeCollection::change_account", "[silkworm][rpc][state_change
             CHECK(address_from_H160(account_change1.address()) == kTestAddress);
             CHECK(account_change1.incarnation() == kTestIncarnation + 1);
             CHECK(account_change1.action() == remote::Action::UPSERT);
-        });
-        scc.start_new_block(kTestBlockNumber, kTestBlockHash, sample_rlp_buffers(), /*unwind=*/false);
+        }, StateChangeFilter{});
+        scc.start_new_batch(kTestBlockNumber, kTestBlockHash, sample_rlp_buffers(), /*unwind=*/false);
         scc.change_account(kTestAddress, kTestIncarnation, kTestData1);
         scc.change_account(kTestAddress, kTestIncarnation + 1, kTestData2);
         scc.notify_batch(kTestPendingBaseFee, kTestGasLimit);
     }
 
     SECTION("OK: change account after changing code") {
-        scc.register_consumer([&](const remote::StateChangeBatch& batch) {
-            CHECK(batch.pendingblockbasefee() == kTestPendingBaseFee);
-            CHECK(batch.blockgaslimit() == kTestGasLimit);
-            CHECK(batch.changebatch_size() == 1);
-            const remote::StateChange& state_change = batch.changebatch(0);
+        scc.subscribe([&](const remote::StateChangeBatch* batch) {
+            CHECK(batch->pendingblockbasefee() == kTestPendingBaseFee);
+            CHECK(batch->blockgaslimit() == kTestGasLimit);
+            CHECK(batch->changebatch_size() == 1);
+            const remote::StateChange& state_change = batch->changebatch(0);
             CHECK(state_change.blockheight() == kTestBlockNumber);
             CHECK(bytes32_from_H256(state_change.blockhash()) == kTestBlockHash);
             CHECK(state_change.txs_size() == 2);
-            CHECK(batch.databaseviewid() == 0);
+            CHECK(batch->databaseviewid() == 0);
             CHECK(state_change.direction() == remote::Direction::FORWARD);
             CHECK(state_change.changes_size() == 1);
             const remote::AccountChange& account_change = state_change.changes(0);
@@ -259,8 +259,8 @@ TEST_CASE("StateChangeCollection::change_account", "[silkworm][rpc][state_change
             CHECK(address_from_H160(account_change.address()) == kTestAddress);
             CHECK(account_change.incarnation() == kTestIncarnation);
             CHECK(account_change.action() == remote::Action::UPSERT_CODE);
-        });
-        scc.start_new_block(kTestBlockNumber, kTestBlockHash, sample_rlp_buffers(), /*unwind=*/false);
+        }, StateChangeFilter{});
+        scc.start_new_batch(kTestBlockNumber, kTestBlockHash, sample_rlp_buffers(), /*unwind=*/false);
         scc.change_code(kTestAddress, kTestIncarnation, kTestCode1);
         scc.change_account(kTestAddress, kTestIncarnation, kTestData1);
         scc.notify_batch(kTestPendingBaseFee, kTestGasLimit);
@@ -271,15 +271,15 @@ TEST_CASE("StateChangeCollection::change_code", "[silkworm][rpc][state_change_co
     StateChangeCollection scc;
 
     SECTION("OK: change code of one account once") {
-        scc.register_consumer([&](const remote::StateChangeBatch& batch) {
-            CHECK(batch.pendingblockbasefee() == kTestPendingBaseFee);
-            CHECK(batch.blockgaslimit() == kTestGasLimit);
-            CHECK(batch.changebatch_size() == 1);
-            const remote::StateChange& state_change = batch.changebatch(0);
+        scc.subscribe([&](const remote::StateChangeBatch* batch) {
+            CHECK(batch->pendingblockbasefee() == kTestPendingBaseFee);
+            CHECK(batch->blockgaslimit() == kTestGasLimit);
+            CHECK(batch->changebatch_size() == 1);
+            const remote::StateChange& state_change = batch->changebatch(0);
             CHECK(state_change.blockheight() == kTestBlockNumber);
             CHECK(bytes32_from_H256(state_change.blockhash()) == kTestBlockHash);
             CHECK(state_change.txs_size() == 2);
-            CHECK(batch.databaseviewid() == 0);
+            CHECK(batch->databaseviewid() == 0);
             CHECK(state_change.direction() == remote::Direction::FORWARD);
             CHECK(state_change.changes_size() == 1);
             const remote::AccountChange& account_change = state_change.changes(0);
@@ -289,22 +289,22 @@ TEST_CASE("StateChangeCollection::change_code", "[silkworm][rpc][state_change_co
             CHECK(address_from_H160(account_change.address()) == kTestAddress);
             CHECK(account_change.incarnation() == kTestIncarnation);
             CHECK(account_change.action() == remote::Action::CODE);
-        });
-        scc.start_new_block(kTestBlockNumber, kTestBlockHash, sample_rlp_buffers(), /*unwind=*/false);
+        }, StateChangeFilter{});
+        scc.start_new_batch(kTestBlockNumber, kTestBlockHash, sample_rlp_buffers(), /*unwind=*/false);
         scc.change_code(kTestAddress, kTestIncarnation, kTestCode1);
         scc.notify_batch(kTestPendingBaseFee, kTestGasLimit);
     }
 
     SECTION("OK: change code of one account twice") {
-        scc.register_consumer([&](const remote::StateChangeBatch& batch) {
-            CHECK(batch.pendingblockbasefee() == kTestPendingBaseFee);
-            CHECK(batch.blockgaslimit() == kTestGasLimit);
-            CHECK(batch.changebatch_size() == 1);
-            const remote::StateChange& state_change = batch.changebatch(0);
+        scc.subscribe([&](const remote::StateChangeBatch* batch) {
+            CHECK(batch->pendingblockbasefee() == kTestPendingBaseFee);
+            CHECK(batch->blockgaslimit() == kTestGasLimit);
+            CHECK(batch->changebatch_size() == 1);
+            const remote::StateChange& state_change = batch->changebatch(0);
             CHECK(state_change.blockheight() == kTestBlockNumber);
             CHECK(bytes32_from_H256(state_change.blockhash()) == kTestBlockHash);
             CHECK(state_change.txs_size() == 2);
-            CHECK(batch.databaseviewid() == 0);
+            CHECK(batch->databaseviewid() == 0);
             CHECK(state_change.direction() == remote::Direction::FORWARD);
             CHECK(state_change.changes_size() == 2);
             const remote::AccountChange& account_change0 = state_change.changes(0);
@@ -321,23 +321,23 @@ TEST_CASE("StateChangeCollection::change_code", "[silkworm][rpc][state_change_co
             CHECK(address_from_H160(account_change1.address()) == kTestAddress);
             CHECK(account_change1.incarnation() == kTestIncarnation + 1);
             CHECK(account_change1.action() == remote::Action::CODE);
-        });
-        scc.start_new_block(kTestBlockNumber, kTestBlockHash, sample_rlp_buffers(), /*unwind=*/false);
+        }, StateChangeFilter{});
+        scc.start_new_batch(kTestBlockNumber, kTestBlockHash, sample_rlp_buffers(), /*unwind=*/false);
         scc.change_code(kTestAddress, kTestIncarnation, kTestCode1);
         scc.change_code(kTestAddress, kTestIncarnation + 1, kTestCode2);
         scc.notify_batch(kTestPendingBaseFee, kTestGasLimit);
     }
 
     SECTION("OK: change code after changing storage") {
-        scc.register_consumer([&](const remote::StateChangeBatch& batch) {
-            CHECK(batch.pendingblockbasefee() == kTestPendingBaseFee);
-            CHECK(batch.blockgaslimit() == kTestGasLimit);
-            CHECK(batch.changebatch_size() == 1);
-            const remote::StateChange& state_change = batch.changebatch(0);
+        scc.subscribe([&](const remote::StateChangeBatch* batch) {
+            CHECK(batch->pendingblockbasefee() == kTestPendingBaseFee);
+            CHECK(batch->blockgaslimit() == kTestGasLimit);
+            CHECK(batch->changebatch_size() == 1);
+            const remote::StateChange& state_change = batch->changebatch(0);
             CHECK(state_change.blockheight() == kTestBlockNumber);
             CHECK(bytes32_from_H256(state_change.blockhash()) == kTestBlockHash);
             CHECK(state_change.txs_size() == 2);
-            CHECK(batch.databaseviewid() == 0);
+            CHECK(batch->databaseviewid() == 0);
             CHECK(state_change.direction() == remote::Direction::FORWARD);
             CHECK(state_change.changes_size() == 2);
             const remote::AccountChange& account_change0 = state_change.changes(0);
@@ -357,23 +357,23 @@ TEST_CASE("StateChangeCollection::change_code", "[silkworm][rpc][state_change_co
             CHECK(account_change1.incarnation() == kTestIncarnation + 1);
             CHECK(account_change1.action() == remote::Action::CODE);
             CHECK(account_change1.storagechanges_size() == 0);
-        });
-        scc.start_new_block(kTestBlockNumber, kTestBlockHash, sample_rlp_buffers(), /*unwind=*/false);
+        }, StateChangeFilter{});
+        scc.start_new_batch(kTestBlockNumber, kTestBlockHash, sample_rlp_buffers(), /*unwind=*/false);
         scc.change_storage(kTestAddress, kTestIncarnation, kTestHashedLocation1, kTestData1);
         scc.change_code(kTestAddress, kTestIncarnation + 1, kTestCode1);
         scc.notify_batch(kTestPendingBaseFee, kTestGasLimit);
     }
 
     SECTION("OK: change code after changing account") {
-        scc.register_consumer([&](const remote::StateChangeBatch& batch) {
-            CHECK(batch.pendingblockbasefee() == kTestPendingBaseFee);
-            CHECK(batch.blockgaslimit() == kTestGasLimit);
-            CHECK(batch.changebatch_size() == 1);
-            const remote::StateChange& state_change = batch.changebatch(0);
+        scc.subscribe([&](const remote::StateChangeBatch* batch) {
+            CHECK(batch->pendingblockbasefee() == kTestPendingBaseFee);
+            CHECK(batch->blockgaslimit() == kTestGasLimit);
+            CHECK(batch->changebatch_size() == 1);
+            const remote::StateChange& state_change = batch->changebatch(0);
             CHECK(state_change.blockheight() == kTestBlockNumber);
             CHECK(bytes32_from_H256(state_change.blockhash()) == kTestBlockHash);
             CHECK(state_change.txs_size() == 2);
-            CHECK(batch.databaseviewid() == 0);
+            CHECK(batch->databaseviewid() == 0);
             CHECK(state_change.direction() == remote::Direction::FORWARD);
             CHECK(state_change.changes_size() == 2);
             const remote::AccountChange& account_change0 = state_change.changes(0);
@@ -391,8 +391,8 @@ TEST_CASE("StateChangeCollection::change_code", "[silkworm][rpc][state_change_co
             CHECK(account_change1.incarnation() == kTestIncarnation + 1);
             CHECK(account_change1.action() == remote::Action::CODE);
             CHECK(account_change1.storagechanges_size() == 0);
-        });
-        scc.start_new_block(kTestBlockNumber, kTestBlockHash, sample_rlp_buffers(), /*unwind=*/false);
+        }, StateChangeFilter{});
+        scc.start_new_batch(kTestBlockNumber, kTestBlockHash, sample_rlp_buffers(), /*unwind=*/false);
         scc.change_account(kTestAddress, kTestIncarnation, kTestData1);
         scc.change_code(kTestAddress, kTestIncarnation + 1, kTestCode1);
         scc.notify_batch(kTestPendingBaseFee, kTestGasLimit);
@@ -403,15 +403,15 @@ TEST_CASE("StateChangeCollection::change_storage", "[silkworm][rpc][state_change
     StateChangeCollection scc;
 
     SECTION("OK: change storage of one account once") {
-        scc.register_consumer([&](const remote::StateChangeBatch& batch) {
-            CHECK(batch.pendingblockbasefee() == kTestPendingBaseFee);
-            CHECK(batch.blockgaslimit() == kTestGasLimit);
-            CHECK(batch.changebatch_size() == 1);
-            const remote::StateChange& state_change = batch.changebatch(0);
+        scc.subscribe([&](const remote::StateChangeBatch* batch) {
+            CHECK(batch->pendingblockbasefee() == kTestPendingBaseFee);
+            CHECK(batch->blockgaslimit() == kTestGasLimit);
+            CHECK(batch->changebatch_size() == 1);
+            const remote::StateChange& state_change = batch->changebatch(0);
             CHECK(state_change.blockheight() == kTestBlockNumber);
             CHECK(bytes32_from_H256(state_change.blockhash()) == kTestBlockHash);
             CHECK(state_change.txs_size() == 2);
-            CHECK(batch.databaseviewid() == 0);
+            CHECK(batch->databaseviewid() == 0);
             CHECK(state_change.direction() == remote::Direction::FORWARD);
             CHECK(state_change.changes_size() == 1);
             const remote::AccountChange& account_change = state_change.changes(0);
@@ -424,22 +424,22 @@ TEST_CASE("StateChangeCollection::change_storage", "[silkworm][rpc][state_change
             const remote::StorageChange& storage_change = account_change.storagechanges(0);
             CHECK(bytes32_from_H256(storage_change.location()) == kTestHashedLocation1);
             CHECK(*from_hex(storage_change.data()) == kTestData1);
-        });
-        scc.start_new_block(kTestBlockNumber, kTestBlockHash, sample_rlp_buffers(), /*unwind=*/false);
+        }, StateChangeFilter{});
+        scc.start_new_batch(kTestBlockNumber, kTestBlockHash, sample_rlp_buffers(), /*unwind=*/false);
         scc.change_storage(kTestAddress, kTestIncarnation, kTestHashedLocation1, kTestData1);
         scc.notify_batch(kTestPendingBaseFee, kTestGasLimit);
     }
 
     SECTION("OK: change storage of one account twice") {
-        scc.register_consumer([&](const remote::StateChangeBatch& batch) {
-            CHECK(batch.pendingblockbasefee() == kTestPendingBaseFee);
-            CHECK(batch.blockgaslimit() == kTestGasLimit);
-            CHECK(batch.changebatch_size() == 1);
-            const remote::StateChange& state_change = batch.changebatch(0);
+        scc.subscribe([&](const remote::StateChangeBatch* batch) {
+            CHECK(batch->pendingblockbasefee() == kTestPendingBaseFee);
+            CHECK(batch->blockgaslimit() == kTestGasLimit);
+            CHECK(batch->changebatch_size() == 1);
+            const remote::StateChange& state_change = batch->changebatch(0);
             CHECK(state_change.blockheight() == kTestBlockNumber);
             CHECK(bytes32_from_H256(state_change.blockhash()) == kTestBlockHash);
             CHECK(state_change.txs_size() == 2);
-            CHECK(batch.databaseviewid() == 0);
+            CHECK(batch->databaseviewid() == 0);
             CHECK(state_change.direction() == remote::Direction::FORWARD);
             CHECK(state_change.changes_size() == 2);
             const remote::AccountChange& account_change0 = state_change.changes(0);
@@ -462,8 +462,8 @@ TEST_CASE("StateChangeCollection::change_storage", "[silkworm][rpc][state_change
             const remote::StorageChange& storage_change10 = account_change1.storagechanges(0);
             CHECK(bytes32_from_H256(storage_change10.location()) == kTestHashedLocation2);
             CHECK(*from_hex(storage_change10.data()) == kTestData2);
-        });
-        scc.start_new_block(kTestBlockNumber, kTestBlockHash, sample_rlp_buffers(), /*unwind=*/false);
+        }, StateChangeFilter{});
+        scc.start_new_batch(kTestBlockNumber, kTestBlockHash, sample_rlp_buffers(), /*unwind=*/false);
         scc.change_storage(kTestAddress, kTestIncarnation, kTestHashedLocation1, kTestData1);
         scc.change_storage(kTestAddress, kTestIncarnation + 1, kTestHashedLocation2, kTestData2);
         scc.notify_batch(kTestPendingBaseFee, kTestGasLimit);
@@ -474,12 +474,12 @@ TEST_CASE("StateChangeCollection::delete_account", "[silkworm][rpc][state_change
     StateChangeCollection scc;
 
     SECTION("OK: delete one account once in forward direction") {
-        scc.register_consumer([&](const remote::StateChangeBatch& batch) {
-            CHECK(batch.pendingblockbasefee() == kTestPendingBaseFee);
-            CHECK(batch.blockgaslimit() == kTestGasLimit);
-            CHECK(batch.databaseviewid() == 0);
-            CHECK(batch.changebatch_size() == 1);
-            const remote::StateChange& state_change = batch.changebatch(0);
+        scc.subscribe([&](const remote::StateChangeBatch* batch) {
+            CHECK(batch->pendingblockbasefee() == kTestPendingBaseFee);
+            CHECK(batch->blockgaslimit() == kTestGasLimit);
+            CHECK(batch->databaseviewid() == 0);
+            CHECK(batch->changebatch_size() == 1);
+            const remote::StateChange& state_change = batch->changebatch(0);
             CHECK(state_change.direction() == remote::Direction::FORWARD);
             CHECK(state_change.blockheight() == kTestBlockNumber);
             CHECK(bytes32_from_H256(state_change.blockhash()) == kTestBlockHash);
@@ -491,8 +491,8 @@ TEST_CASE("StateChangeCollection::delete_account", "[silkworm][rpc][state_change
             CHECK(account_change.incarnation() == 0);
             CHECK(account_change.action() == remote::Action::REMOVE);
             CHECK(account_change.storagechanges_size() == 0);
-        });
-        scc.start_new_block(kTestBlockNumber, kTestBlockHash, sample_rlp_buffers(), /*unwind=*/false);
+        }, StateChangeFilter{});
+        scc.start_new_batch(kTestBlockNumber, kTestBlockHash, sample_rlp_buffers(), /*unwind=*/false);
         scc.delete_account(kTestAddress);
         scc.notify_batch(kTestPendingBaseFee, kTestGasLimit);
     }

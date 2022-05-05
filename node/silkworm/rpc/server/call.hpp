@@ -334,6 +334,12 @@ class ServerStreamingRpc : public BaseRpc {
 
     /// Call this to indicate the completion of server-side streaming.
     bool close() {
+        SILK_DEBUG << "ServerStreamingRpc::close response queue size: " << response_queue_.size() << " [" << this << "]";
+
+        // Protect the server from finishing the RPC twice.
+        if (streaming_done_) {
+            return true;
+        }
         streaming_done_ = true;
 
         if (!write_in_progress()) {
@@ -344,11 +350,24 @@ class ServerStreamingRpc : public BaseRpc {
         return false;
     }
 
-    /// Finalize the server-streaming RPC with an application error when no response is available.
-    bool finish_with_error(const grpc::Status& error) {
-        handle_started(OperationType::kFinish);
-        responder_.Finish(error, &finish_processor_);
-        return true;
+    /// Finalize the bidirectional-streaming RPC with an application error when no response is available.
+    bool close_with_error(const grpc::Status& error) {
+        SILK_DEBUG << "ServerStreamingRpc::close_with_error error: " << error.error_code() << " [" << this << "]";
+
+        // Protect the server from finishing the RPC twice.
+        if (streaming_done_) {
+            return true;
+        }
+        streaming_done_ = true;
+
+        status_ = error;
+
+        if (!write_in_progress()) {
+            SILK_DEBUG << "ServerStreamingRpc::close_with_error schedule finish with error: " << error.error_code() << " [" << this << "]";
+            finish_with_error(error);
+            return true;
+        }
+        return false;
     }
 
   private:
@@ -385,8 +404,13 @@ class ServerStreamingRpc : public BaseRpc {
                     write();
                 } else if (streaming_done_) {
                     // Previous write completed, no pending write and streaming finished: we're done.
-                    SILK_DEBUG << "ServerStreamingRpc::process_write schedule finish for peer " << peer() << " [" << this << "]";
-                    finish();
+                    if (status_.ok()) {
+                        SILK_DEBUG << "ServerStreamingRpc::process_write schedule finish for peer " << peer() << " [" << this << "]";
+                        finish();
+                    } else {
+                        SILK_DEBUG << "ServerStreamingRpc::process_write schedule finish with error for peer " << peer() << " [" << this << "]";
+                        finish_with_error(status_);
+                    }
                 }
             }
         }
@@ -407,12 +431,23 @@ class ServerStreamingRpc : public BaseRpc {
     void finish() {
         handle_started(OperationType::kFinish);
         responder_.Finish(grpc::Status::OK, &finish_processor_);
+        SILK_DEBUG << "ServerStreamingRpc::finish finished status=OK [" << this << "]";
+    }
+
+    /// Finalize the server-streaming RPC with an application error when no response is available.
+    void finish_with_error(const grpc::Status& error) {
+        handle_started(OperationType::kFinish);
+        responder_.Finish(error, &finish_processor_);
+        SILK_DEBUG << "ServerStreamingRpc::finish_with_error finished error_code=" <<  error.error_code() << " [" << this << "]";
     }
 
     void cleanup() override {
-        SILK_TRACE << "ServerStreamingRpc::cleanup [" << this << "]";
+        SILK_TRACE << "ServerStreamingRpc::cleanup [" << this << "] START";
         handlers_.cleanupRpc(*this, context_.IsCancelled());
+        SILK_TRACE << "ServerStreamingRpc::cleanup [" << this << "] END";
     }
+
+    inline static boost::posix_time::milliseconds max_idle_duration_{kMaxIdleDuration};
 
     //! The gRPC generated asynchronous service.
     AsyncService* service_;
@@ -443,6 +478,9 @@ class ServerStreamingRpc : public BaseRpc {
 
     //! The list of server streamed responses.
     std::list<Response> response_queue_;
+
+    //! The bidirectional-streaming call result.
+    grpc::Status status_{grpc::Status::OK};
 
     //! Flag indicating if server streaming is finished or not.
     bool streaming_done_{false};

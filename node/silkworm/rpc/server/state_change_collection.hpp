@@ -19,7 +19,7 @@
 
 #include <functional>
 #include <map>
-#include <vector>
+#include <optional>
 
 #include <evmc/evmc.hpp>
 #include <gsl/pointers>
@@ -29,19 +29,41 @@
 
 namespace silkworm::rpc {
 
-using StateChangeBatchConsumer = std::function<void(const remote::StateChangeBatch&)>;
+using StateChangeConsumer = std::function<void(const remote::StateChangeBatch*)>;
 
-class StateChangeCollection {
+struct StateChangeFilter {
+    bool with_storage{false};
+    bool with_transactions{false};
+};
+
+using StateChangeToken = uint32_t;
+
+class StateChangeSource {
+  public:
+    virtual ~StateChangeSource() = default;
+
+    virtual StateChangeToken last_token() const noexcept = 0;
+
+    virtual std::optional<StateChangeToken> subscribe(StateChangeConsumer consumer, StateChangeFilter filter) = 0;
+
+    virtual bool unsubscribe(StateChangeToken token) = 0;
+};
+
+class StateChangeCollection : public StateChangeSource {
   public:
     explicit StateChangeCollection() = default;
 
     uint64_t tx_id() const { return tx_id_; }
 
-    void register_consumer(StateChangeBatchConsumer consumer);
+    StateChangeToken last_token() const noexcept override { return next_token_ - 1; }
+
+    std::optional<StateChangeToken> subscribe(StateChangeConsumer consumer, StateChangeFilter filter) override;
+
+    bool unsubscribe(StateChangeToken token) override;
 
     void reset(uint64_t tx_id);
 
-    void start_new_block(BlockNum block_height, const evmc::bytes32& block_hash, const std::vector<Bytes>&& tx_rlps, bool unwind);
+    void start_new_batch(BlockNum block_height, const evmc::bytes32& block_hash, const std::vector<Bytes>&& tx_rlps, bool unwind);
 
     void change_account(const evmc::address& address, uint64_t incarnation, const Bytes& data);
 
@@ -53,13 +75,18 @@ class StateChangeCollection {
 
     void notify_batch(uint64_t pending_base_fee, uint64_t gas_limit);
 
+    void close();
+
   private:
+    void notify_consumers(const remote::StateChangeBatch* batch);
+
     uint64_t tx_id_{0};
     remote::StateChangeBatch state_changes_;
     remote::StateChange* latest_change_{nullptr};
     std::map<evmc::address, std::size_t> account_change_index_;
     std::map<evmc::address, std::map<evmc::bytes32, std::size_t>> storage_change_index_;
-    std::vector<StateChangeBatchConsumer> batch_consumers_;
+    std::map<StateChangeToken, StateChangeConsumer> consumers_;
+    StateChangeToken next_token_{0};
 };
 
 } // namespace silkworm::rpc

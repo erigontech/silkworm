@@ -16,6 +16,7 @@
 
 #include "backend_kv_server.hpp"
 
+#include <atomic>
 #include <chrono>
 #include <memory>
 #include <string>
@@ -23,9 +24,11 @@
 #include <thread>
 #include <vector>
 
+#include <boost/asio/post.hpp>
 #include <catch2/catch.hpp>
 #include <grpc/grpc.h>
 
+#include <silkworm/common/base.hpp>
 #include <silkworm/common/directories.hpp>
 #include <silkworm/common/log.hpp>
 #include <silkworm/db/mdbx.hpp>
@@ -132,15 +135,8 @@ class KvClient {
         return stub_->Tx(context);
     }
 
-    grpc::Status statechanges_and_consume(const remote::StateChangeRequest& request, std::vector<remote::StateChangeBatch>& responses) {
-        grpc::ClientContext context;
-        auto subscribe_reply_reader = stub_->StateChanges(&context, request);
-        bool has_more{true};
-        do {
-            has_more = subscribe_reply_reader->Read(&responses.emplace_back());
-        } while (has_more);
-        responses.pop_back();
-        return subscribe_reply_reader->Finish();
+    auto statechanges_start(grpc::ClientContext* context, const remote::StateChangeRequest& request) {
+        return stub_->StateChanges(context, request);
     }
 
   private:
@@ -246,7 +242,30 @@ static const std::string kTestSentryAddress2{"localhost:54322"};
 static const silkworm::db::MapConfig kTestMap{"TestTable"};
 static const silkworm::db::MapConfig kTestMultiMap{"TestMultiTable", mdbx::key_mode::usual, mdbx::value_mode::multi};
 
+static constexpr uint64_t kTestPendingBaseFee{10'000};
+static constexpr uint64_t kTestGasLimit{10'000'000};
+
 using namespace silkworm;
+
+using StateChangeTokenObserver = std::function<void(rpc::StateChangeToken)>;
+
+class ObservableStateChangeCollection : public rpc::StateChangeCollection {
+  public:
+    void register_observer(StateChangeTokenObserver observer) {
+        observer_ = observer;
+    }
+
+    std::optional<rpc::StateChangeToken> subscribe(rpc::StateChangeConsumer consumer, rpc::StateChangeFilter filter) override {
+        const auto token = rpc::StateChangeCollection::subscribe(consumer, filter);
+        if (token) {
+            observer_(*token);
+        }
+        return token;
+    }
+
+  private:
+    StateChangeTokenObserver observer_;
+};
 
 struct BackEndKvE2eTest {
     BackEndKvE2eTest(silkworm::log::Level log_verbosity, const NodeSettings& options = {}, std::vector<grpc::Status> statuses = {}) {
@@ -634,13 +653,47 @@ TEST_CASE("BackEndKvServer E2E: empty node settings", "[silkworm][node][rpc]") {
         CHECK(responses[1].v().empty());
     }
 
-    // TODO(canepat): change using something meaningful when really implemented
     SECTION("StateChanges: return streamed state changes", "[silkworm][node][rpc]") {
+        static constexpr uint kTestBatches{10};
+        auto* state_change_source = test.backend->state_change_source();
+
+        grpc::ClientContext context;
         remote::StateChangeRequest request;
+        auto subscribe_reply_reader = kv_client.statechanges_start(&context, request);
+
+        std::atomic_bool subscribed{false};
         std::vector<remote::StateChangeBatch> responses;
-        const auto status = kv_client.statechanges_and_consume(request, responses);
+        std::thread consumer_thread{[&]() {
+            bool has_more{true};
+            do {
+                has_more = subscribe_reply_reader->Read(&responses.emplace_back());
+                subscribed = true;
+            } while (has_more);
+            // Last response read is void so discard it
+            responses.pop_back();
+        }};
+
+        BlockNum block_number{0};
+        for (uint i{0}; i < kTestBatches || !subscribed; ++i) {
+            if (i < kTestBatches) {
+                for (uint k{0}; k < test.server->num_contexts(); ++k) {
+                    boost::asio::post(test.server->next_io_context(), [&]() {
+                        state_change_source->start_new_batch(block_number++, kEmptyHash, std::vector<Bytes>{}, /*unwind=*/false);
+                        state_change_source->notify_batch(kTestPendingBaseFee, kTestGasLimit);
+                    });
+                }
+            }
+        }
+        for (uint k{0}; k < test.server->num_contexts(); ++k) {
+            boost::asio::post(test.server->next_io_context(), [&]() {
+                state_change_source->close();
+            });
+        }
+
+        consumer_thread.join();
+        const auto status = subscribe_reply_reader->Finish();
         CHECK(status.ok());
-        CHECK(responses.size() == 2);
+        CHECK(responses.size() == kTestBatches);
     }
 }
 

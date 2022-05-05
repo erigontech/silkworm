@@ -19,6 +19,7 @@
 
 #include <exception>
 #include <map>
+#include <optional>
 #include <tuple>
 #include <vector>
 
@@ -33,6 +34,7 @@
 #include <silkworm/rpc/server/call.hpp>
 #include <silkworm/rpc/server/call_factory.hpp>
 #include <silkworm/rpc/server/server.hpp>
+#include <silkworm/rpc/server/state_change_collection.hpp>
 
 // KV API protocol versions
 // 5.1.0 - first issue
@@ -165,15 +167,23 @@ class TxCallFactory : public CallFactory<remote::KV::AsyncService, TxCall> {
 //! Server-streaming RPC for StateChanges method of 'kv' gRPC protocol.
 class StateChangesCall : public ServerStreamingRpc<remote::KV::AsyncService, remote::StateChangeRequest, remote::StateChangeBatch> {
   public:
+    static void set_source(StateChangeSource* source);
+
     StateChangesCall(boost::asio::io_context& scheduler, remote::KV::AsyncService* service, grpc::ServerCompletionQueue* queue, Handlers handlers);
+    ~StateChangesCall();
 
     void process(const remote::StateChangeRequest* request) override;
+
+  private:
+    static StateChangeSource* source_;
+
+    std::optional<StateChangeToken> token_;
 };
 
 //! Factory specialization for StateChanges method.
 class StateChangesCallFactory : public CallFactory<remote::KV::AsyncService, StateChangesCall> {
   public:
-    explicit StateChangesCallFactory();
+    explicit StateChangesCallFactory(const EthereumBackEnd& backend);
 };
 
 //! The KV service implementation.

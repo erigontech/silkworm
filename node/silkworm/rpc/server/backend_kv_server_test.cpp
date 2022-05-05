@@ -242,9 +242,6 @@ static const std::string kTestSentryAddress2{"localhost:54322"};
 static const silkworm::db::MapConfig kTestMap{"TestTable"};
 static const silkworm::db::MapConfig kTestMultiMap{"TestMultiTable", mdbx::key_mode::usual, mdbx::value_mode::multi};
 
-static constexpr uint64_t kTestPendingBaseFee{10'000};
-static constexpr uint64_t kTestGasLimit{10'000'000};
-
 using namespace silkworm;
 
 using StateChangeTokenObserver = std::function<void(rpc::StateChangeToken)>;
@@ -654,6 +651,8 @@ TEST_CASE("BackEndKvServer E2E: empty node settings", "[silkworm][node][rpc]") {
     }
 
     SECTION("StateChanges: return streamed state changes", "[silkworm][node][rpc]") {
+        static constexpr uint64_t kTestPendingBaseFee{10'000};
+        static constexpr uint64_t kTestGasLimit{10'000'000};
         static constexpr uint kTestBatches{10};
         auto* state_change_source = test.backend->state_change_source();
 

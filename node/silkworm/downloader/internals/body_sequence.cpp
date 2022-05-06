@@ -15,9 +15,11 @@ limitations under the License.
 */
 
 #include <silkworm/chain/difficulty.hpp>
+#include <silkworm/common/log.hpp>
 #include <silkworm/consensus/base/engine.hpp>
 
 #include "body_sequence.hpp"
+#include "random_number.hpp"
 
 namespace silkworm {
 
@@ -57,27 +59,49 @@ std::vector<NewBlockPacket>& BodySequence::announces_to_do() {
     return announcements_to_do_;
 }
 
-Penalty BodySequence::accept_requested_bodies(const std::vector<BlockBody>& bodies, uint64_t, const PeerId&) {
-
+Penalty BodySequence::accept_requested_bodies(const BlockBodiesPacket66& packet, const PeerId&) {
     Penalty penalty = NoPenalty;
 
-    for (auto& body: bodies) {
+    auto matching_requests = body_requests_.find_by_request_id(packet.requestId);
+
+    for (auto& body: packet.request) {
         Hash oh = consensus::EngineBase::compute_ommers_hash(body);
         Hash tr = consensus::EngineBase::compute_transaction_root(body);
 
-        auto r = std::find_if(body_requests_.begin(), body_requests_.end(), [&oh, &tr](const auto& elem) {
-            const PendingBodyRequest& request = elem.second;
+        auto exact_request = body_requests_.end(); // = no request
+
+        auto r = std::find_if(matching_requests.begin(), matching_requests.end(), [&oh, &tr](const auto& elem) {
+            const PendingBodyRequest& request = elem->second;
             return (request.header.ommers_hash == oh && request.header.transactions_root == tr);
-        }); // todo: can we use request_id to do the match here to speed the check?
+        });
 
-        if (r == body_requests_.end()) {
-            penalty = BadBlockPenalty;
-            continue;
+        if (r == matching_requests.end()) {
+            // can be a "past" response?
+            exact_request = body_requests_.find_by_hash(oh, tr);
+
+            if (exact_request == body_requests_.end()) {
+                penalty = BadBlockPenalty;
+                log::Warning() << "*** Block rejected, no matching requests";
+                continue;
+            }
         }
+        else
+            exact_request = *r;
 
-        PendingBodyRequest& request = r->second;
+        PendingBodyRequest& request = exact_request->second;
         request.body = std::move(body);
         request.ready = true;
+
+        log::Info() << "*** Block accepted, block_num=" << request.block_height;
+
+        matching_requests.erase(r);
+    }
+
+    for(auto& elem: matching_requests) {
+        PendingBodyRequest& request = elem->second;
+        // todo: process remaining elements in matching_requests invalidating corresponding PendingBodyRequest
+        request.request_id = 0;
+        request.request_time = time_point_t();
     }
 
     return penalty;
@@ -92,22 +116,27 @@ Penalty BodySequence::accept_new_block(const Block& block, const PeerId&) {
 }
 
 auto BodySequence::request_more_bodies(time_point_t tp, seconds_t timeout)
-    -> std::tuple<std::vector<Hash>, std::vector<PeerPenalization>, MinBlock> {
-    std::vector<Hash> hashes;
+    -> std::tuple<GetBlockBodiesPacket66, std::vector<PeerPenalization>, MinBlock> {
+    GetBlockBodiesPacket66 packet;
+    packet.requestId = RANDOM_NUMBER.generate_one();
+
     BlockNum min_block{0};
+
+    if (tp - last_nack < timeout)
+        return {};
 
     if (outstanding_requests() > max_outstanding_requests)
         return {};
 
-    auto penalizations = renew_stale_requests(hashes, min_block, tp, timeout);
+    auto penalizations = renew_stale_requests(packet, min_block, tp, timeout);
 
-    if (hashes.size() < max_blocks_per_message) make_new_requests(hashes, min_block, tp, timeout);
+    if (packet.request.size() < max_blocks_per_message) make_new_requests(packet, min_block, tp, timeout);
 
-    return {hashes, penalizations, min_block};
+    return {std::move(packet), std::move(penalizations), min_block};
 }
 
 //! Re-evaluate past (stale) requests
-auto BodySequence::renew_stale_requests(std::vector<Hash>& hashes, BlockNum& min_block, time_point_t tp, seconds_t timeout)
+auto BodySequence::renew_stale_requests(GetBlockBodiesPacket66& packet, BlockNum& min_block, time_point_t tp, seconds_t timeout)
     -> std::vector<PeerPenalization> {
 
     std::vector<PeerPenalization> penalizations;
@@ -119,33 +148,32 @@ auto BodySequence::renew_stale_requests(std::vector<Hash>& hashes, BlockNum& min
             continue;
 
         // retry body request, todo: Erigon delete the request here, but will it retry?
-        hashes.push_back(past_request.block_hash);
+        packet.request.push_back(past_request.block_hash);
         past_request.request_time = tp;
-
+        past_request.request_id = packet.requestId; // todo: it is possible that the response to the old request is arriving, in this way we will ignore it
         // todo: Erigon increment a penalization counter for the peer but it doesn't use it
         //penalizations.emplace_back({Penalty::BadBlockPenalty, }); // todo: find/create a more precise penalization
 
+        log::Info() << "*** Renewed request block num= " << past_request.block_height << ", hash= " << past_request.block_hash;
+
         min_block = std::max(min_block, past_request.block_height);
 
-        if (hashes.size() >= max_blocks_per_message) break;
+        if (packet.request.size() >= max_blocks_per_message) break;
     }
 
     return penalizations;
 }
 
 //! Make requests of new bodies to get progress
-void BodySequence::make_new_requests(std::vector<Hash>& hashes, BlockNum& min_block, time_point_t tp, seconds_t) {
+void BodySequence::make_new_requests(GetBlockBodiesPacket66& packet, BlockNum& min_block, time_point_t tp, seconds_t) {
     auto tx = db_access_.start_ro_tx();
 
     BlockNum last_requested_block = highest_body_in_db_;
     if (!body_requests_.empty())
         last_requested_block = body_requests_.rbegin()->second.block_height; // the last requested
 
-    while (hashes.size() < max_blocks_per_message && last_requested_block <= headers_stage_height_) {
+    while (packet.request.size() < max_blocks_per_message && last_requested_block <= headers_stage_height_) {
         BlockNum bn = last_requested_block + 1;
-
-        auto new_request = body_requests_[bn]; // insert the new request
-        new_request.block_height = bn;
 
         auto header = tx.read_canonical_header(bn);
         if (!header) {
@@ -154,8 +182,10 @@ void BodySequence::make_new_requests(std::vector<Hash>& hashes, BlockNum& min_bl
                 "cause: block " + std::to_string(bn) + " expected in db");
         }
 
+        PendingBodyRequest new_request;
+        new_request.block_height = bn;
+        new_request.request_id = packet.requestId;
         new_request.block_hash = header->hash();
-        new_request.header = std::move(*header);
         new_request.request_time = tp;
 
         std::optional<BlockBody> announced_body = announced_blocks_.remove(bn);
@@ -166,22 +196,27 @@ void BodySequence::make_new_requests(std::vector<Hash>& hashes, BlockNum& min_bl
             new_request.ready = true;
         }
         else {
-            hashes.push_back(new_request.block_hash);
-
+            packet.request.push_back(new_request.block_hash);
+            log::Info() << "*** Requested block num= " << new_request.block_height << ", hash= " << new_request.block_hash;
             min_block = std::max(min_block, new_request.block_height);
         }
+
+        new_request.header = std::move(*header);
+
+        body_requests_.emplace(bn, std::move(new_request));
 
         ++last_requested_block;
     }
 
 }
 
-void BodySequence::request_nack(const std::vector<Hash>& hashes, seconds_t timeout) {
+void BodySequence::request_nack(const std::vector<Hash>& hashes, time_point_t tp, seconds_t timeout) {
     for (auto& br: body_requests_) {
         PendingBodyRequest& past_request = br.second;
         if (contains(hashes, past_request.block_hash))
             past_request.request_time -= timeout;
     }
+    last_nack = tp;
 }
 
 bool BodySequence::is_valid_body(const BlockHeader& header, const BlockBody& body) {
@@ -248,6 +283,24 @@ std::optional<BlockBody> BodySequence::AnnouncedBlocks::remove(BlockNum bn) {
     std::optional<BlockBody> body = std::move(b->second);
     blocks_.erase(b);
     return body;
+}
+
+auto BodySequence::IncreasingHeightOrderedRequestContainer::find_by_request_id(uint64_t request_id) -> std::list<Iter> {
+    std::list<Impl::iterator> matching_requests;
+    for (auto elem = begin(); elem != end(); elem++) {
+        const PendingBodyRequest& request = elem->second;
+        if (request.request_id == request_id) matching_requests.push_back(elem);
+    }
+    return matching_requests;
+}
+
+auto BodySequence::IncreasingHeightOrderedRequestContainer::find_by_hash(Hash oh, Hash tr) -> Iter {
+    auto r = std::find_if(begin(), end(), [&oh, &tr](const auto& elem) {
+        const PendingBodyRequest& request = elem.second;
+        return (request.header.ommers_hash == oh && request.header.transactions_root == tr);
+    });
+
+    return r;
 }
 
 }

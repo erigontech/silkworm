@@ -17,9 +17,12 @@ limitations under the License.
 #ifndef SILKWORM_BODY_SEQUENCE_HPP
 #define SILKWORM_BODY_SEQUENCE_HPP
 
+#include <list>
+
 #include <silkworm/chain/identity.hpp>
 
 #include <silkworm/downloader/packets/new_block_packet.hpp>
+#include <silkworm/downloader/packets/block_bodies_packet.hpp>
 #include <silkworm/downloader/packets/get_block_bodies_packet.hpp>
 
 #include "db_tx.hpp"
@@ -44,14 +47,14 @@ class BodySequence {
     //! core functionalities: trigger the internal algorithms to decide what bodies we miss
     using MinBlock = BlockNum;
     auto request_more_bodies(time_point_t tp, seconds_t timeout)
-        -> std::tuple<std::vector<Hash>, std::vector<PeerPenalization>, MinBlock>;
+        -> std::tuple<GetBlockBodiesPacket66, std::vector<PeerPenalization>, MinBlock>;
 
     //! it needs to know if the request issued was not delivered
-    void request_nack(const std::vector<Hash>&, seconds_t timeout);
+    void request_nack(const std::vector<Hash>&, time_point_t tp, seconds_t timeout);
 
     //! core functionalities: process received bodies
     using RequestMoreBodies = bool;
-    Penalty accept_requested_bodies(const std::vector<BlockBody>&, uint64_t request_id, const PeerId&);
+    Penalty accept_requested_bodies(const BlockBodiesPacket66&, const PeerId&);
 
     //! core functionalities: process received block announcement
     Penalty accept_new_block(const Block&, const PeerId&);
@@ -66,8 +69,8 @@ class BodySequence {
 
   private:
     void recover_initial_state();
-    void make_new_requests(std::vector<Hash>&, MinBlock&, time_point_t tp, seconds_t timeout);
-    auto renew_stale_requests(std::vector<Hash>&, MinBlock&, time_point_t tp, seconds_t timeout)
+    void make_new_requests(GetBlockBodiesPacket66&, MinBlock&, time_point_t tp, seconds_t timeout);
+    auto renew_stale_requests(GetBlockBodiesPacket66&, MinBlock&, time_point_t tp, seconds_t timeout)
         -> std::vector<PeerPenalization>;
     void add_to_announcements(BlockHeader header, BlockBody body);
 
@@ -75,11 +78,12 @@ class BodySequence {
 
     static bool is_valid_body(const BlockHeader&, const BlockBody&);
 
-    static constexpr BlockNum max_blocks_per_message = 128;
-    static constexpr BlockNum max_outstanding_requests = 128;
+    static constexpr BlockNum max_blocks_per_message = 1;
+    static constexpr BlockNum max_outstanding_requests = 1;
     static constexpr BlockNum max_announced_blocks = 10000;
 
     struct PendingBodyRequest {
+        uint64_t request_id;
         Hash block_hash;
         BlockNum block_height{0};
         BlockHeader header;
@@ -95,9 +99,16 @@ class BodySequence {
         std::map<BlockNum, Block> blocks_;
     };
 
-    using IncreasingHeightOrderedMap = std::map<BlockNum, PendingBodyRequest>; // default ordering: less<BlockNum>
+    //using IncreasingHeightOrderedMap = std::map<BlockNum, PendingBodyRequest>; // default ordering: less<BlockNum>
+    struct IncreasingHeightOrderedRequestContainer: public std::map<BlockNum, PendingBodyRequest> {
+        using Impl = std::map<BlockNum, PendingBodyRequest>;
+        using Iter = Impl::iterator;
 
-    IncreasingHeightOrderedMap body_requests_;
+        std::list<Iter> find_by_request_id(uint64_t request_id);
+        Iter find_by_hash(Hash oh, Hash tr);
+    };
+
+    IncreasingHeightOrderedRequestContainer body_requests_;
     AnnouncedBlocks announced_blocks_;
     std::vector<NewBlockPacket> announcements_to_do_;
 
@@ -106,6 +117,7 @@ class BodySequence {
 
     BlockNum highest_body_in_db_{0};
     BlockNum headers_stage_height_{0};
+    time_point_t last_nack;
 };
 
 }

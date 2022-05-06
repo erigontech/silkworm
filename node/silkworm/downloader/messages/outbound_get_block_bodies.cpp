@@ -19,7 +19,6 @@ limitations under the License.
 #include <sstream>
 
 #include <silkworm/common/log.hpp>
-#include <silkworm/downloader/internals/random_number.hpp>
 #include <silkworm/downloader/rpc/penalize_peer.hpp>
 #include <silkworm/downloader/rpc/send_message_by_min_block.hpp>
 
@@ -37,20 +36,16 @@ void OutboundGetBlockBodies::execute(Db::ReadOnlyAccess, HeaderChain&, BodySeque
     int max_requests = 64;  // limit the number of requests sent per round
 
     do {
-        auto [hashes, penalizations, min_block] = bs.request_more_bodies(now, timeout);
+        auto [packet, penalizations, min_block] = bs.request_more_bodies(now, timeout);
 
-        if (hashes.empty()) break;
-
-        GetBlockBodiesPacket66 packet;
-        packet.requestId = RANDOM_NUMBER.generate_one();
-        packet.request = std::move(hashes);  // maybe it is more safe to use tie()
+        if (packet.request.empty()) break;
 
         auto send_outcome = send_packet(sentry, packet, min_block, timeout);
 
-        SILK_TRACE << "Bodies request sent (" << packet << "), received by " << send_outcome.peers_size() << " peer(s)";
+        log::Info() << "Bodies request sent (" << packet << "), received by " << send_outcome.peers_size() << " peer(s)";
 
         if (send_outcome.peers_size() == 0) {
-            bs.request_nack(packet.request, timeout);
+            bs.request_nack(packet.request, now, timeout);
             break;
         }
 

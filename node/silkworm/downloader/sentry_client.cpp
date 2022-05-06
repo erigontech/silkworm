@@ -26,7 +26,9 @@
 namespace silkworm {
 
 SentryClient::SentryClient(const std::string& sentry_addr)
-    : base_t(grpc::CreateChannel(sentry_addr, grpc::InsecureChannelCredentials())) {}
+    : base_t(grpc::CreateChannel(sentry_addr, grpc::InsecureChannelCredentials())) {
+    log::Info() << "SentryClient, connecting to remote sentry...";
+}
 
 SentryClient::Scope SentryClient::scope(const sentry::InboundMessage& message) {
     switch (message.id()) {

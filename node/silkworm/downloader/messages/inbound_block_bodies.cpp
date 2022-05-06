@@ -34,9 +34,9 @@ InboundBlockBodies::InboundBlockBodies(const sentry::InboundMessage& msg) {
 
 void InboundBlockBodies::execute(Db::ReadOnlyAccess, HeaderChain&, BodySequence& bs, SentryClient&) {
 
-    SILK_TRACE << "Processing message " << *this;
+    log::Info() << "Processing message " << *this;
 
-    bs.accept_requested_bodies(packet_.request, packet_.requestId, peerId_);
+    bs.accept_requested_bodies(packet_, peerId_);
     // note: we are ignoring penalizations as Erigon does
 }
 

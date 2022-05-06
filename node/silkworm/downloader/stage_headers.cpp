@@ -131,6 +131,7 @@ auto HeadersStage::forward(bool first_sync) -> Stage::Result {
             result.status = Result::UnwindNeeded;
             result.unwind_point = header_persistence.unwind_point();
             // no need to set result.bad_block
+            log::Info() << "[1/16 Headers] Unwind needed";
         }
 
         auto headers_downloaded = header_persistence.highest_height() - header_persistence.initial_height();

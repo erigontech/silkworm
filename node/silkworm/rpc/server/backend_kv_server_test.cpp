@@ -246,26 +246,6 @@ static const silkworm::db::MapConfig kTestMultiMap{"TestMultiTable", mdbx::key_m
 using namespace std::chrono_literals;
 using namespace silkworm;
 
-using StateChangeTokenObserver = std::function<void(rpc::StateChangeToken)>;
-
-class ObservableStateChangeCollection : public rpc::StateChangeCollection {
-  public:
-    void register_observer(StateChangeTokenObserver observer) {
-        observer_ = observer;
-    }
-
-    std::optional<rpc::StateChangeToken> subscribe(rpc::StateChangeConsumer consumer, rpc::StateChangeFilter filter) override {
-        const auto token = rpc::StateChangeCollection::subscribe(consumer, filter);
-        if (token) {
-            observer_(*token);
-        }
-        return token;
-    }
-
-  private:
-    StateChangeTokenObserver observer_;
-};
-
 struct BackEndKvE2eTest {
     BackEndKvE2eTest(silkworm::log::Level log_verbosity, const NodeSettings& options = {}, std::vector<grpc::Status> statuses = {}) {
         silkworm::log::set_verbosity(log_verbosity);

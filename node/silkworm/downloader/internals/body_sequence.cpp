@@ -75,8 +75,14 @@ Penalty BodySequence::accept_requested_bodies(const BlockBodiesPacket66& packet,
             return (request.header.ommers_hash == oh && request.header.transactions_root == tr);
         });
 
-        if (r == matching_requests.end()) {
-            // can be a "past" response?
+        if (r != matching_requests.end()) {
+            // found
+            exact_request = *r;
+
+            matching_requests.erase(r);
+        }
+        else {
+            // not found, can be a response to "past" request upon same bodies?
             exact_request = body_requests_.find_by_hash(oh, tr);
 
             if (exact_request == body_requests_.end()) {
@@ -85,16 +91,13 @@ Penalty BodySequence::accept_requested_bodies(const BlockBodiesPacket66& packet,
                 continue;
             }
         }
-        else
-            exact_request = *r;
 
         PendingBodyRequest& request = exact_request->second;
         request.body = std::move(body);
         request.ready = true;
 
         log::Info() << "*** Block accepted, block_num=" << request.block_height;
-
-        matching_requests.erase(r);
+        
     }
 
     for(auto& elem: matching_requests) {

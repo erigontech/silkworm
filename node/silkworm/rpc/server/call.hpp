@@ -322,7 +322,7 @@ class ServerStreamingRpc : public BaseRpc {
     // gRPC can only do one async write at a time but that is very inconvenient from the application point of view.
     // So we buffer the response below in a queue if gRPC library is not ready for it.
     bool send_response(const Response& response) {
-        response_queue_.push_back(std::move(response));
+        response_queue_.push_back(response);
 
         if (!write_in_progress()) {
             SILK_DEBUG << "ServerStreamingRpc::send_response schedule for peer " << peer() << " [" << this << "]";

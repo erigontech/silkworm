@@ -188,9 +188,12 @@ void StateChangeCollection::notify_batch(uint64_t pending_base_fee, uint64_t gas
     state_changes_.set_pendingblockbasefee(pending_base_fee);
     state_changes_.set_blockgaslimit(gas_limit);
     state_changes_.set_databaseviewid(tx_id_);
+
     for (const auto& [_, batch_callback] : consumers_) {
-        SILK_DEBUG << "Notify callback=" << &batch_callback << " state_changes=" << &state_changes_;
-        batch_callback(&state_changes_);
+        // Make a copy of state change batch for every consumer because lifecycle is independent
+        const std::optional<remote::StateChangeBatch> frozen_batch = state_changes_;
+        SILK_DEBUG << "Notify callback=" << &batch_callback << " batch=" << &frozen_batch;
+        batch_callback(frozen_batch);
         SILK_DEBUG << "Notify callback=" << &batch_callback << " done";
     }
     reset(0);
@@ -199,14 +202,12 @@ void StateChangeCollection::notify_batch(uint64_t pending_base_fee, uint64_t gas
 }
 
 void StateChangeCollection::close() {
-    notify_consumers(nullptr);
-    reset(0);
-}
-
-void StateChangeCollection::notify_consumers(const remote::StateChangeBatch* batch) {
     for (const auto& [_, batch_callback] : consumers_) {
-        batch_callback(batch);
+        SILK_DEBUG << "Notify close to callback=" << &batch_callback;
+        batch_callback(std::nullopt);
+        SILK_DEBUG << "Notify close to callback=" << &batch_callback << " done";
     }
+    reset(0);
 }
 
 } // namespace silkworm::rpc

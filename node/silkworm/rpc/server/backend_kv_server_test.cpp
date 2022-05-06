@@ -16,9 +16,10 @@
 
 #include "backend_kv_server.hpp"
 
-#include <atomic>
 #include <chrono>
+#include <condition_variable>
 #include <memory>
+#include <mutex>
 #include <string>
 #include <sstream>
 #include <thread>
@@ -242,6 +243,7 @@ static const std::string kTestSentryAddress2{"localhost:54322"};
 static const silkworm::db::MapConfig kTestMap{"TestTable"};
 static const silkworm::db::MapConfig kTestMultiMap{"TestMultiTable", mdbx::key_mode::usual, mdbx::value_mode::multi};
 
+using namespace std::chrono_literals;
 using namespace silkworm;
 
 using StateChangeTokenObserver = std::function<void(rpc::StateChangeToken)>;
@@ -653,46 +655,53 @@ TEST_CASE("BackEndKvServer E2E: empty node settings", "[silkworm][node][rpc]") {
     SECTION("StateChanges: return streamed state changes", "[silkworm][node][rpc]") {
         static constexpr uint64_t kTestPendingBaseFee{10'000};
         static constexpr uint64_t kTestGasLimit{10'000'000};
-        static constexpr uint kTestBatches{10};
         auto* state_change_source = test.backend->state_change_source();
 
+        // Start StateChanges server-streaming call on Catch2 thread
         grpc::ClientContext context;
         remote::StateChangeRequest request;
         auto subscribe_reply_reader = kv_client.statechanges_start(&context, request);
 
-        std::atomic_bool subscribed{false};
+        // We need a dedicated thread to consume the incoming messages because only one (blocking)
+        // Read completion will tell us that server-side subscription really happened. This machinery
+        // is needed just in this all-in-one test
+        std::mutex subscribed_mutex;
+        std::condition_variable subscribed_condition;
+        bool subscribed{false};
         std::vector<remote::StateChangeBatch> responses;
         std::thread consumer_thread{[&]() {
             bool has_more{true};
             do {
                 has_more = subscribe_reply_reader->Read(&responses.emplace_back());
-                subscribed = true;
+                // As soon as the first Read has completed, we know for sure that subscription has occurred
+                std::unique_lock subscribed_lock{subscribed_mutex};
+                if (!subscribed) {
+                    subscribed = true;
+                    subscribed_lock.unlock();
+                    subscribed_condition.notify_one();
+                }
             } while (has_more);
             // Last response read is void so discard it
             responses.pop_back();
         }};
 
+        // Keep publishing state changes using the Catch2 thread until at least one has been received
         BlockNum block_number{0};
-        for (uint i{0}; i < kTestBatches || !subscribed; ++i) {
-            if (i < kTestBatches) {
-                for (uint k{0}; k < test.server->num_contexts(); ++k) {
-                    boost::asio::post(test.server->next_io_context(), [&]() {
-                        state_change_source->start_new_batch(block_number++, kEmptyHash, std::vector<Bytes>{}, /*unwind=*/false);
-                        state_change_source->notify_batch(kTestPendingBaseFee, kTestGasLimit);
-                    });
-                }
-            }
+        bool publishing{true};
+        while (publishing) {
+            state_change_source->start_new_batch(++block_number, kEmptyHash, std::vector<Bytes>{}, /*unwind=*/false);
+            state_change_source->notify_batch(kTestPendingBaseFee, kTestGasLimit);
+            std::unique_lock subscribed_lock{subscribed_mutex};
+            publishing = !subscribed_condition.wait_for(subscribed_lock, 1ms, [&]{ return subscribed; });
         }
-        for (uint k{0}; k < test.server->num_contexts(); ++k) {
-            boost::asio::post(test.server->next_io_context(), [&]() {
-                state_change_source->close();
-            });
-        }
+        // After at least one state change has been received, close the server-side RPC stream
+        state_change_source->close();
 
+        // then wait for consumer thread termination and get the client-side RPC result
         consumer_thread.join();
         const auto status = subscribe_reply_reader->Finish();
         CHECK(status.ok());
-        CHECK(responses.size() == kTestBatches);
+        CHECK(responses.size() > 0);
     }
 }
 

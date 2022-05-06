@@ -74,7 +74,7 @@ TEST_CASE("StateChangeCollection::StateChangeCollection", "[silkworm][rpc][state
 
 TEST_CASE("StateChangeCollection::subscribe", "[silkworm][rpc][state_change_collection]") {
     StateChangeCollection scc;
-    CHECK_NOTHROW(scc.subscribe([&](const auto* /*batch*/) {}, StateChangeFilter{}));
+    CHECK_NOTHROW(scc.subscribe([&](const auto /*batch*/) {}, StateChangeFilter{}));
 }
 
 TEST_CASE("StateChangeCollection::notify_batch", "[silkworm][rpc][state_change_collection]") {
@@ -82,7 +82,7 @@ TEST_CASE("StateChangeCollection::notify_batch", "[silkworm][rpc][state_change_c
 
     SECTION("OK: notifies batch w/o changes to single consumer") {
         uint32_t notification_count{0};
-        scc.subscribe([&](const remote::StateChangeBatch* batch) {
+        scc.subscribe([&](std::optional<remote::StateChangeBatch> batch) {
             CHECK(batch->pendingblockbasefee() == kTestPendingBaseFee);
             CHECK(batch->blockgaslimit() == kTestGasLimit);
             CHECK(batch->databaseviewid() == 0);
@@ -95,14 +95,14 @@ TEST_CASE("StateChangeCollection::notify_batch", "[silkworm][rpc][state_change_c
 
     SECTION("OK: notifies batch w/o changes to multiple consumers") {
         uint32_t notification_count1{0}, notification_count2{0};
-        scc.subscribe([&](const remote::StateChangeBatch* batch) {
+        scc.subscribe([&](std::optional<remote::StateChangeBatch> batch) {
             CHECK(batch->pendingblockbasefee() == kTestPendingBaseFee);
             CHECK(batch->blockgaslimit() == kTestGasLimit);
             CHECK(batch->databaseviewid() == 0);
             CHECK(batch->changebatch_size() == 0);
             ++notification_count1;
         }, StateChangeFilter{});
-        scc.subscribe([&](const remote::StateChangeBatch* batch) {
+        scc.subscribe([&](std::optional<remote::StateChangeBatch> batch) {
             CHECK(batch->pendingblockbasefee() == kTestPendingBaseFee);
             CHECK(batch->blockgaslimit() == kTestGasLimit);
             CHECK(batch->databaseviewid() == 0);
@@ -119,13 +119,13 @@ TEST_CASE("StateChangeCollection::reset", "[silkworm][rpc][state_change_collecti
 
     SECTION("OK: notifies batch w/o changes with expected transaction ID") {
         REQUIRE(scc.tx_id() == 0);
-        scc.subscribe([&](const remote::StateChangeBatch* batch) {
+        scc.subscribe([&](std::optional<remote::StateChangeBatch> batch) {
             CHECK(batch->databaseviewid() == scc.tx_id());
         }, StateChangeFilter{});
         scc.notify_batch(kTestPendingBaseFee, kTestGasLimit);
         scc.reset(kTestDatabaseViewId);
         CHECK(scc.tx_id() == kTestDatabaseViewId);
-        scc.subscribe([&](const remote::StateChangeBatch* batch) {
+        scc.subscribe([&](std::optional<remote::StateChangeBatch> batch) {
             CHECK(batch->databaseviewid() == scc.tx_id());
         }, StateChangeFilter{});
         scc.notify_batch(kTestPendingBaseFee, kTestGasLimit);
@@ -137,7 +137,7 @@ TEST_CASE("StateChangeCollection::start_new_batch", "[silkworm][rpc][state_chang
 
     SECTION("OK: one new batch in FORWARD direction") {
         scc.start_new_batch(kTestBlockNumber, kTestBlockHash, std::vector<silkworm::Bytes>{}, /*unwind=*/false);
-        scc.subscribe([&](const remote::StateChangeBatch* batch) {
+        scc.subscribe([&](std::optional<remote::StateChangeBatch> batch) {
             CHECK(batch->pendingblockbasefee() == kTestPendingBaseFee);
             CHECK(batch->blockgaslimit() == kTestGasLimit);
             CHECK(batch->databaseviewid() == 0);
@@ -152,7 +152,7 @@ TEST_CASE("StateChangeCollection::start_new_batch", "[silkworm][rpc][state_chang
 
     SECTION("OK: two new batches in FORWARD and UNWIND directions") {
         scc.start_new_batch(kTestBlockNumber, kTestBlockHash, sample_rlp_buffers(), /*unwind=*/false);
-        scc.subscribe([&](const remote::StateChangeBatch* batch) {
+        scc.subscribe([&](std::optional<remote::StateChangeBatch> batch) {
             CHECK(batch->pendingblockbasefee() == kTestPendingBaseFee);
             CHECK(batch->blockgaslimit() == kTestGasLimit);
             CHECK(batch->changebatch_size() == 1);
@@ -183,7 +183,7 @@ TEST_CASE("StateChangeCollection::change_account", "[silkworm][rpc][state_change
     StateChangeCollection scc;
 
     SECTION("OK: change one account once") {
-        scc.subscribe([&](const remote::StateChangeBatch* batch) {
+        scc.subscribe([&](std::optional<remote::StateChangeBatch> batch) {
             CHECK(batch->pendingblockbasefee() == kTestPendingBaseFee);
             CHECK(batch->blockgaslimit() == kTestGasLimit);
             CHECK(batch->changebatch_size() == 1);
@@ -208,7 +208,7 @@ TEST_CASE("StateChangeCollection::change_account", "[silkworm][rpc][state_change
     }
 
     SECTION("OK: change one account twice") {
-        scc.subscribe([&](const remote::StateChangeBatch* batch) {
+        scc.subscribe([&](std::optional<remote::StateChangeBatch> batch) {
             CHECK(batch->pendingblockbasefee() == kTestPendingBaseFee);
             CHECK(batch->blockgaslimit() == kTestGasLimit);
             CHECK(batch->changebatch_size() == 1);
@@ -241,7 +241,7 @@ TEST_CASE("StateChangeCollection::change_account", "[silkworm][rpc][state_change
     }
 
     SECTION("OK: change account after changing code") {
-        scc.subscribe([&](const remote::StateChangeBatch* batch) {
+        scc.subscribe([&](std::optional<remote::StateChangeBatch> batch) {
             CHECK(batch->pendingblockbasefee() == kTestPendingBaseFee);
             CHECK(batch->blockgaslimit() == kTestGasLimit);
             CHECK(batch->changebatch_size() == 1);
@@ -271,7 +271,7 @@ TEST_CASE("StateChangeCollection::change_code", "[silkworm][rpc][state_change_co
     StateChangeCollection scc;
 
     SECTION("OK: change code of one account once") {
-        scc.subscribe([&](const remote::StateChangeBatch* batch) {
+        scc.subscribe([&](std::optional<remote::StateChangeBatch> batch) {
             CHECK(batch->pendingblockbasefee() == kTestPendingBaseFee);
             CHECK(batch->blockgaslimit() == kTestGasLimit);
             CHECK(batch->changebatch_size() == 1);
@@ -296,7 +296,7 @@ TEST_CASE("StateChangeCollection::change_code", "[silkworm][rpc][state_change_co
     }
 
     SECTION("OK: change code of one account twice") {
-        scc.subscribe([&](const remote::StateChangeBatch* batch) {
+        scc.subscribe([&](std::optional<remote::StateChangeBatch> batch) {
             CHECK(batch->pendingblockbasefee() == kTestPendingBaseFee);
             CHECK(batch->blockgaslimit() == kTestGasLimit);
             CHECK(batch->changebatch_size() == 1);
@@ -329,7 +329,7 @@ TEST_CASE("StateChangeCollection::change_code", "[silkworm][rpc][state_change_co
     }
 
     SECTION("OK: change code after changing storage") {
-        scc.subscribe([&](const remote::StateChangeBatch* batch) {
+        scc.subscribe([&](std::optional<remote::StateChangeBatch> batch) {
             CHECK(batch->pendingblockbasefee() == kTestPendingBaseFee);
             CHECK(batch->blockgaslimit() == kTestGasLimit);
             CHECK(batch->changebatch_size() == 1);
@@ -365,7 +365,7 @@ TEST_CASE("StateChangeCollection::change_code", "[silkworm][rpc][state_change_co
     }
 
     SECTION("OK: change code after changing account") {
-        scc.subscribe([&](const remote::StateChangeBatch* batch) {
+        scc.subscribe([&](std::optional<remote::StateChangeBatch> batch) {
             CHECK(batch->pendingblockbasefee() == kTestPendingBaseFee);
             CHECK(batch->blockgaslimit() == kTestGasLimit);
             CHECK(batch->changebatch_size() == 1);
@@ -403,7 +403,7 @@ TEST_CASE("StateChangeCollection::change_storage", "[silkworm][rpc][state_change
     StateChangeCollection scc;
 
     SECTION("OK: change storage of one account once") {
-        scc.subscribe([&](const remote::StateChangeBatch* batch) {
+        scc.subscribe([&](std::optional<remote::StateChangeBatch> batch) {
             CHECK(batch->pendingblockbasefee() == kTestPendingBaseFee);
             CHECK(batch->blockgaslimit() == kTestGasLimit);
             CHECK(batch->changebatch_size() == 1);
@@ -431,7 +431,7 @@ TEST_CASE("StateChangeCollection::change_storage", "[silkworm][rpc][state_change
     }
 
     SECTION("OK: change storage of one account twice") {
-        scc.subscribe([&](const remote::StateChangeBatch* batch) {
+        scc.subscribe([&](std::optional<remote::StateChangeBatch> batch) {
             CHECK(batch->pendingblockbasefee() == kTestPendingBaseFee);
             CHECK(batch->blockgaslimit() == kTestGasLimit);
             CHECK(batch->changebatch_size() == 1);
@@ -474,7 +474,7 @@ TEST_CASE("StateChangeCollection::delete_account", "[silkworm][rpc][state_change
     StateChangeCollection scc;
 
     SECTION("OK: delete one account once in forward direction") {
-        scc.subscribe([&](const remote::StateChangeBatch* batch) {
+        scc.subscribe([&](std::optional<remote::StateChangeBatch> batch) {
             CHECK(batch->pendingblockbasefee() == kTestPendingBaseFee);
             CHECK(batch->blockgaslimit() == kTestGasLimit);
             CHECK(batch->databaseviewid() == 0);

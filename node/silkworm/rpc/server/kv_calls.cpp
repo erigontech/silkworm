@@ -16,6 +16,7 @@
 
 #include "kv_calls.hpp"
 
+#include <boost/asio/post.hpp>
 #include <boost/date_time/posix_time/posix_time_io.hpp>
 
 #include <silkworm/common/assert.hpp>
@@ -674,14 +675,18 @@ void StateChangesCall::process(const remote::StateChangeRequest* request) {
     SILK_TRACE << "StateChangesCall::process " << this << " request: " << request << " START";
 
     StateChangeFilter filter{request->withstorage(), request->withtransactions()};
-    token_ = source_->subscribe([&](const remote::StateChangeBatch* batch) {
-        if (batch == nullptr) {
-            const bool sent = close();
-            SILK_DEBUG << "State change stream closed sent: " << sent;
-        } else {
-            const bool sent = send_response(*batch);
-            SILK_DEBUG << "State change stream batch: " << batch << " sent: " << sent;
-        }
+    token_ = source_->subscribe([&](std::optional<remote::StateChangeBatch> batch) {
+        // Make the batch handling logic execute on the scheduler associated to the RPC
+        boost::asio::post(scheduler_, [&, batch = std::move(batch)]() {
+            if (batch) {
+                const auto block_height = batch->changebatch(0).blockheight();
+                const bool sent = send_response(*batch);
+                SILK_DEBUG << "State change batch block: " << block_height << " sent: " << sent;
+            } else {
+                const bool sent = close();
+                SILK_DEBUG << "State change stream closed sent: " << sent;
+            }
+        });
     }, filter);
 
     // The assigned token ID must be valid.

@@ -19,6 +19,7 @@
 
 #include <functional>
 #include <map>
+#include <memory>
 #include <optional>
 
 #include <evmc/evmc.hpp>
@@ -29,7 +30,7 @@
 
 namespace silkworm::rpc {
 
-using StateChangeConsumer = std::function<void(const remote::StateChangeBatch*)>;
+using StateChangeConsumer = std::function<void(std::optional<remote::StateChangeBatch>)>;
 
 struct StateChangeFilter {
     bool with_storage{false};
@@ -76,9 +77,6 @@ class StateChangeCollection : public StateChangeSource {
     void notify_batch(uint64_t pending_base_fee, uint64_t gas_limit);
 
     void close();
-
-  private:
-    void notify_consumers(const remote::StateChangeBatch* batch);
 
     uint64_t tx_id_{0};
     remote::StateChangeBatch state_changes_;

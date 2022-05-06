@@ -69,12 +69,31 @@ inline std::vector<Bytes> sample_rlp_buffers() {
 TEST_CASE("StateChangeCollection::StateChangeCollection", "[silkworm][rpc][state_change_collection]") {
     StateChangeCollection scc;
     CHECK(scc.tx_id() == 0);
+    CHECK(scc.last_token() + 1 == 0);
     CHECK_NOTHROW(scc.notify_batch(kTestPendingBaseFee, kTestGasLimit));
 }
 
 TEST_CASE("StateChangeCollection::subscribe", "[silkworm][rpc][state_change_collection]") {
-    StateChangeCollection scc;
-    CHECK_NOTHROW(scc.subscribe([&](const auto /*batch*/) {}, StateChangeFilter{}));
+    SECTION("OK: register do-nothing consumer") {
+        StateChangeCollection scc;
+        CHECK_NOTHROW(scc.subscribe([&](const auto /*batch*/) {}, StateChangeFilter{}));
+    }
+
+    SECTION("KO: token already in use") {
+        class ObservableStateChangeCollection : public StateChangeCollection {
+        public:
+            void set_token(StateChangeToken next_token) {
+                next_token_ = next_token;
+            }
+        };
+        ObservableStateChangeCollection oscc;
+
+        const auto token1 = oscc.subscribe([&](const auto /*batch*/) {}, StateChangeFilter{});
+        CHECK(token1);
+        oscc.set_token(0);
+        const auto token2 = oscc.subscribe([&](const auto /*batch*/) {}, StateChangeFilter{});
+        CHECK(!token2);
+    }
 }
 
 TEST_CASE("StateChangeCollection::notify_batch", "[silkworm][rpc][state_change_collection]") {

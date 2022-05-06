@@ -78,12 +78,26 @@ class StateChangeCollection : public StateChangeSource {
 
     void close();
 
+  protected:
+    //! The database transaction ID associated with the state changes.
     uint64_t tx_id_{0};
+
+    //! The current batch of state changes.
     remote::StateChangeBatch state_changes_;
+
+    //! The latest state change in the batch.
     remote::StateChange* latest_change_{nullptr};
+
+    //! The mapping between accounts and their change indexes.
     std::map<evmc::address, std::size_t> account_change_index_;
+
+    //! The mapping between account storage locations and their change indexes.
     std::map<evmc::address, std::map<evmc::bytes32, std::size_t>> storage_change_index_;
+
+    //! The registered batch consumers.
     std::map<StateChangeToken, StateChangeConsumer> consumers_;
+
+    //! The token number for the next subscription.
     StateChangeToken next_token_{0};
 };
 

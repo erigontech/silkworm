@@ -68,15 +68,15 @@ size_t HeaderChain::anchors() const {
 }
 
 std::string HeaderChain::human_readable_status() const {
-    std::string output =
-           std::to_string(links_.size()) + + " links (" +
-           std::to_string(pending_links()) + " pending / " +
-           std::to_string(persisted_link_queue_.size()) + " persisting/ed), " +
-           std::to_string(anchors_.size()) + "/" + std::to_string(anchor_queue_.size()) + " anchors, " +
-           std::to_string(highest_in_db_) + " highest block in db, " +
-           std::to_string(top_seen_height_) + " top seen height";
+    std::ostringstream output;
 
-    return output;
+    output << std::setfill(' ')
+           << "links: " << std::setw(7) << std::right << pending_links()
+           << ", anchors: " << std::setw(3) << std::right << anchors()
+           << ", db-height: " << std::setw(10) << std::right << highest_block_in_db()
+           << ", net-height: " << std::setw(10) << std::right << top_seen_block_height();
+
+    return output.str();
 }
 
 std::string HeaderChain::dump_chain_bundles() const {
@@ -353,7 +353,7 @@ auto HeaderChain::request_more_headers(time_point_t time_point, seconds_t timeou
     using std::nullopt;
 
     if (anchor_queue_.empty()) {
-        log::Trace() << "[INFO] HeaderChain, no more headers to request: empty anchor queue";
+        SILK_TRACE << "HeaderChain, no more headers to request: empty anchor queue";
         return {};
     }
 
@@ -968,13 +968,13 @@ std::ostream& operator<<(std::ostream& os, const HeaderChain::Statistics& stats)
     uint64_t perc_received = stats.requested_headers > 0 ? stats.received_headers * 100 / stats.requested_headers : 0;
     uint64_t perc_accepted = stats.received_headers > 0 ? stats.accepted_headers * 100 / stats.received_headers : 0;
     uint64_t perc_rejected = stats.received_headers > 0 ? rejected_headers * 100 / stats.received_headers : 0;
-    os << "headers: "
+    os << "-req/res: "
        << "req=" << stats.requested_headers << " "
        << "rec=" << stats.received_headers << " (" << perc_received << "%) -> "
        << "acc=" << stats.accepted_headers << " (" << perc_accepted << "%) "
        << "rej=" << rejected_headers << " (" << perc_rejected << "%); "
-       << "reject reasons: "
-       << "not-req=" << stats.not_requested_headers << ", "
+       << "-reject reasons: "
+       << "unr=" << stats.not_requested_headers << ", "
        << "dup=" << stats.duplicated_headers << ", "
        << "inv=" << stats.invalid_headers << ", "
        << "bad=" << stats.bad_headers << ", "

@@ -65,8 +65,9 @@ class BodySequence {
     // minor functionalities
     std::vector<NewBlockPacket>& announces_to_do();
 
-    BlockNum highest_block_in_db();
+    BlockNum highest_block_in_db() const;
 
+    std::string human_readable_status() const;
   private:
     void recover_initial_state();
     void make_new_requests(GetBlockBodiesPacket66&, MinBlock&, time_point_t tp, seconds_t timeout);
@@ -74,7 +75,7 @@ class BodySequence {
         -> std::vector<PeerPenalization>;
     void add_to_announcements(BlockHeader header, BlockBody body);
 
-    size_t outstanding_requests();
+    size_t outstanding_requests() const;
 
     static bool is_valid_body(const BlockHeader&, const BlockBody&);
 

@@ -36,18 +36,18 @@ void BodySequence::recover_initial_state() {
     // does nothing
 }
 
-BlockNum BodySequence::highest_block_in_db() { return highest_body_in_db_; }
+BlockNum BodySequence::highest_block_in_db() const { return highest_body_in_db_; }
 
 void BodySequence::sync_current_state(BlockNum highest_body_in_db, BlockNum highest_header_in_db) {
     highest_body_in_db_ = highest_body_in_db;
     headers_stage_height_ = highest_header_in_db;
 }
 
-size_t BodySequence::outstanding_requests() {
+size_t BodySequence::outstanding_requests() const {
     size_t requested_bodies{0};
 
     for (auto& br: body_requests_) {
-        PendingBodyRequest& past_request = br.second;
+        const PendingBodyRequest& past_request = br.second;
         if (!past_request.ready)
             requested_bodies++;
     }
@@ -304,6 +304,17 @@ auto BodySequence::IncreasingHeightOrderedRequestContainer::find_by_hash(Hash oh
     });
 
     return r;
+}
+
+std::string BodySequence::human_readable_status() const {
+    std::ostringstream output;
+
+    output << std::setfill(' ')
+           << "reqs: " << std::setw(7) << std::right << outstanding_requests()
+           << ", db-height: " << std::setw(10) << std::right << highest_body_in_db_
+           << ", net-height: " << std::setw(10) << std::right << headers_stage_height_;
+
+    return output.str();
 }
 
 }

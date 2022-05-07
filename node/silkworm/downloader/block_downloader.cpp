@@ -20,10 +20,8 @@ limitations under the License.
 #include <thread>
 
 #include <silkworm/common/log.hpp>
-#include <silkworm/consensus/engine.hpp>
 #include <silkworm/downloader/internals/preverified_hashes.hpp>
 #include <silkworm/downloader/messages/inbound_message.hpp>
-#include <silkworm/downloader/messages/outbound_get_block_headers.hpp>
 
 namespace silkworm {
 
@@ -73,6 +71,7 @@ void BlockDownloader::execution_loop() {
                       [this](const sentry::InboundMessage& msg) { receive_message(msg); });
 
     auto constexpr kShortInterval = 1000ms;
+    time_point_t last_update = system_clock::now();
 
     while (!is_stopping() && !sentry_.is_stopping()) {
         // pop a message from the queue
@@ -84,22 +83,17 @@ void BlockDownloader::execution_loop() {
         message->execute(db_access_, header_chain_, body_sequence_, sentry_);
 
         // log status
-        /*
-        if (silkworm::log::test_verbosity(silkworm::log::Level::kTrace)) {
-            auto out_message = std::dynamic_pointer_cast<OutboundGetBlockHeaders>(message);
-            auto reqs = out_message != nullptr ? out_message->sent_request() : 0;
-            uint64_t rejected_headers =
-                header_chain_.statistics_.received_headers - header_chain_.statistics_.accepted_headers;
-            log::Info() << "BlockDownloader statistics:" << std::setfill(' ')
-                        << " proc: " << message->name().substr(0, 3) << " | req/skel " << std::setw(2) << std::right
-                        << reqs << "/" << std::setw(4) << std::left << header_chain_.statistics_.skeleton_condition
-                        << " | queue: " << std::setw(3) << std::right << messages_.size()
-                        << " | links: " << std::setw(7) << std::right << header_chain_.pending_links()
-                        << " | anchors: " << std::setw(3) << std::right << header_chain_.anchors()
-                        << " | db: " << std::setw(10) << std::right << header_chain_.highest_block_in_db()
-                        << " | rej: " << std::setw(10) << std::right << rejected_headers;
+        if (system_clock::now() - last_update > 30s) {
+            last_update = system_clock::now();
+            if (silkworm::log::test_verbosity(silkworm::log::Level::kDebug)) {
+                log::Trace () << "BlockDownloader statistics:" << std::setfill(' ')
+                             << " messages: " << std::setw(3) << std::right << messages_.size()
+                             << " | headers: " << header_chain_.human_readable_status()
+                             << " | h-stats: " << header_chain_.statistics_
+                             << " | bodies: " << body_sequence_.human_readable_status();
+            }
         }
-        */
+
     }
 
     stop();

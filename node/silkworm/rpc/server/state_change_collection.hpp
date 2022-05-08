@@ -79,6 +79,10 @@ class StateChangeCollection : public StateChangeSource {
     void close();
 
   protected:
+    //! The token number for the next subscription.
+    StateChangeToken next_token_{0};
+
+  private:
     //! The database transaction ID associated with the state changes.
     uint64_t tx_id_{0};
 
@@ -96,9 +100,6 @@ class StateChangeCollection : public StateChangeSource {
 
     //! The registered batch consumers.
     std::map<StateChangeToken, StateChangeConsumer> consumers_;
-
-    //! The token number for the next subscription.
-    StateChangeToken next_token_{0};
 };
 
 } // namespace silkworm::rpc

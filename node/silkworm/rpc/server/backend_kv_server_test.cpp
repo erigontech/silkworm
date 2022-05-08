@@ -18,6 +18,7 @@
 
 #include <chrono>
 #include <condition_variable>
+#include <functional>
 #include <memory>
 #include <mutex>
 #include <string>
@@ -33,8 +34,10 @@
 #include <silkworm/common/directories.hpp>
 #include <silkworm/common/log.hpp>
 #include <silkworm/db/mdbx.hpp>
+#include <silkworm/backend/ethereum_backend.hpp>
 #include <silkworm/rpc/conversion.hpp>
 #include <silkworm/rpc/util.hpp>
+#include <silkworm/rpc/server/state_change_collection.hpp>
 #include <types/types.pb.h>
 
 namespace { // Trick suggested by gRPC team to avoid name clashes in multiple test modules
@@ -246,6 +249,39 @@ static const silkworm::db::MapConfig kTestMultiMap{"TestMultiTable", mdbx::key_m
 using namespace std::chrono_literals;
 using namespace silkworm;
 
+using StateChangeTokenObserver = std::function<void(std::optional<rpc::StateChangeToken>)>;
+
+struct TestableStateChangeCollection : public rpc::StateChangeCollection {
+    std::optional<rpc::StateChangeToken> subscribe(rpc::StateChangeConsumer consumer, rpc::StateChangeFilter filter) override {
+        const auto token = rpc::StateChangeCollection::subscribe(consumer, filter);
+        if (token_observer_) {
+            token_observer_(token);
+        }
+        return token;
+    }
+
+    void set_token(rpc::StateChangeToken next_token) {
+        next_token_ = next_token;
+    }
+
+    void register_token_observer(StateChangeTokenObserver token_observer) {
+        token_observer_ = token_observer;
+    }
+
+    StateChangeTokenObserver token_observer_;
+};
+
+class TestableEthereumBackEnd : public EthereumBackEnd {
+  public:
+    TestableEthereumBackEnd(const NodeSettings& node_settings, mdbx::env* chaindata_env)
+        : EthereumBackEnd(node_settings, chaindata_env, std::make_unique<TestableStateChangeCollection>()) {
+    }
+
+    TestableStateChangeCollection* state_change_source() const noexcept {
+        return dynamic_cast<TestableStateChangeCollection*>(EthereumBackEnd::state_change_source());
+    }
+};
+
 struct BackEndKvE2eTest {
     BackEndKvE2eTest(silkworm::log::Level log_verbosity, const NodeSettings& options = {}, std::vector<grpc::Status> statuses = {}) {
         silkworm::log::set_verbosity(log_verbosity);
@@ -270,7 +306,7 @@ struct BackEndKvE2eTest {
         db::open_map(rw_txn, kTestMap);
         rw_txn.commit();
 
-        backend = std::make_unique<EthereumBackEnd>(options, &database_env);
+        backend = std::make_unique<TestableEthereumBackEnd>(options, &database_env);
         server = std::make_unique<rpc::BackEndKvServer>(srv_config, *backend);
         server->build_and_start();
 
@@ -315,7 +351,7 @@ struct BackEndKvE2eTest {
     TemporaryDirectory tmp_dir;
     std::unique_ptr<db::EnvConfig> db_config;
     mdbx::env_managed database_env;
-    std::unique_ptr<EthereumBackEnd> backend;
+    std::unique_ptr<TestableEthereumBackEnd> backend;
     std::unique_ptr<rpc::BackEndKvServer> server;
     std::vector<std::unique_ptr<SentryServer>> sentry_servers;
 };
@@ -682,6 +718,50 @@ TEST_CASE("BackEndKvServer E2E: empty node settings", "[silkworm][node][rpc]") {
         const auto status = subscribe_reply_reader->Finish();
         CHECK(status.ok());
         CHECK(responses.size() > 0);
+    }
+
+    SECTION("StateChanges KO: token already in use", "[silkworm][node][rpc]") {
+        auto* state_change_source = test.backend->state_change_source();
+
+        std::mutex token_reset_mutex;
+        std::condition_variable token_reset_condition;
+        bool token_reset{false};
+        state_change_source->register_token_observer([&](std::optional<rpc::StateChangeToken> token) {
+            if (token) {
+                // Purposely reset the subscription token
+                state_change_source->set_token(0);
+
+                std::unique_lock token_reset_lock{token_reset_mutex};
+                token_reset = true;
+                token_reset_lock.unlock();
+                token_reset_condition.notify_one();
+            }
+        });
+
+        // Start a StateChanges server-streaming call
+        grpc::ClientContext context1;
+        remote::StateChangeRequest request1;
+        auto subscribe_reply_reader1 = kv_client.statechanges_start(&context1, request1);
+
+        // Wait for token reset condition to happen
+        std::unique_lock token_reset_lock{token_reset_mutex};
+        token_reset_condition.wait(token_reset_lock, [&]{ return token_reset; });
+
+        // Start another StateChanges server-streaming call and check it fails
+        grpc::ClientContext context2;
+        remote::StateChangeRequest request2;
+        auto subscribe_reply_reader2 = kv_client.statechanges_start(&context2, request2);
+
+        const auto status2 = subscribe_reply_reader2->Finish();
+        CHECK(!status2.ok());
+        CHECK(status2.error_code() == grpc::StatusCode::ALREADY_EXISTS);
+        CHECK(status2.error_message().find("assigned consumer token already in use") != std::string::npos);
+
+        // Close the server-side RPC stream and check first call completes successfully
+        state_change_source->close();
+
+        const auto status1 = subscribe_reply_reader1->Finish();
+        CHECK(status1.ok());
     }
 }
 

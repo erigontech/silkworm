@@ -48,6 +48,13 @@ class EthereumBackEnd {
 
     void set_node_name(const std::string& node_name) noexcept;
 
+  protected:
+    //! Constructor for testability
+    EthereumBackEnd(
+        const NodeSettings& node_settings,
+        mdbx::env* chaindata_env,
+        std::unique_ptr<rpc::StateChangeCollection> state_change_collection);
+
   private:
     const NodeSettings& node_settings_;
     mdbx::env* chaindata_env_;

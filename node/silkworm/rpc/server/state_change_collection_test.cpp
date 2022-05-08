@@ -80,18 +80,18 @@ TEST_CASE("StateChangeCollection::subscribe", "[silkworm][rpc][state_change_coll
     }
 
     SECTION("KO: token already in use") {
-        class ObservableStateChangeCollection : public StateChangeCollection {
+        class TestableStateChangeCollection : public StateChangeCollection {
         public:
             void set_token(StateChangeToken next_token) {
                 next_token_ = next_token;
             }
         };
-        ObservableStateChangeCollection oscc;
+        TestableStateChangeCollection collection;
 
-        const auto token1 = oscc.subscribe([&](const auto /*batch*/) {}, StateChangeFilter{});
+        const auto token1 = collection.subscribe([&](const auto /*batch*/) {}, StateChangeFilter{});
         CHECK(token1);
-        oscc.set_token(0);
-        const auto token2 = oscc.subscribe([&](const auto /*batch*/) {}, StateChangeFilter{});
+        collection.set_token(0);
+        const auto token2 = collection.subscribe([&](const auto /*batch*/) {}, StateChangeFilter{});
         CHECK(!token2);
     }
 }

@@ -62,7 +62,8 @@ void write_canonical_header_hash(mdbx::txn& txn, const uint8_t (&hash)[kHashLeng
                              bool read_senders, BlockBody& out);
 
 //! \brief Writes block body in table::kBlockBodies
-void write_body(mdbx::txn& txn, const BlockBody& body, const uint8_t (&hash)[kHashLength], BlockNum number);
+void write_body(mdbx::txn& txn, const BlockBody& body, const uint8_t (&hash)[kHashLength], BlockNum number,
+                bool save_senders = false);
 
 // See Erigon ReadTd
 std::optional<intx::uint256> read_total_difficulty(mdbx::txn& txn, BlockNum block_number,
@@ -89,6 +90,7 @@ std::vector<evmc::address> read_senders(mdbx::txn& txn, const Bytes& key);
 std::vector<evmc::address> read_senders(mdbx::txn& txn, BlockNum block_number, const uint8_t (&hash)[kHashLength]);
 //! \brief Fills transactions' senders addresses directly in place
 void parse_senders(mdbx::txn& txn, const Bytes& key, std::vector<Transaction>& out);
+void write_senders(mdbx::txn& txn, const Bytes& key, const std::vector<Transaction>& transactions);
 
 // See Erigon ReadTransactions
 void read_transactions(mdbx::txn& txn, uint64_t base_id, uint64_t count, std::vector<Transaction>& out);

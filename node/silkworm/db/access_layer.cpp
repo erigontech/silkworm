@@ -239,7 +239,8 @@ bool read_body(mdbx::txn& txn, const Bytes& key, bool read_senders, BlockBody& o
     return true;
 }
 
-void write_body(mdbx::txn& txn, const BlockBody& body, const uint8_t (&hash)[kHashLength], const BlockNum number) {
+void write_body(mdbx::txn& txn, const BlockBody& body, const uint8_t (&hash)[kHashLength], const BlockNum number,
+                bool save_senders) {
     detail::BlockBodyForStorage body_for_storage{};
     body_for_storage.ommers = body.ommers;
     body_for_storage.txn_count = body.transactions.size();
@@ -252,12 +253,21 @@ void write_body(mdbx::txn& txn, const BlockBody& body, const uint8_t (&hash)[kHa
     target.upsert(to_slice(key), to_slice(value));
 
     write_transactions(txn, body.transactions, body_for_storage.base_txn_id);
+    if (save_senders) {
+        write_senders(txn, key, body.transactions);
+    }
 }
 
 static ByteView read_senders_raw(mdbx::txn& txn, const Bytes& key) {
     Cursor src(txn, table::kSenders);
     auto data{src.find(to_slice(key), /*throw_notfound = */ false)};
     return data ? from_slice(data.value) : ByteView();
+}
+
+static void write_senders_raw(mdbx::txn& txn, const Bytes& key, const std::vector<evmc::address>& buffer) {
+    Cursor target(txn, table::kSenders);
+    mdbx::slice data(buffer.data(), buffer.size() * sizeof(evmc::address));
+    target.insert(to_slice(key), data);
 }
 
 std::vector<evmc::address> read_senders(mdbx::txn& txn, BlockNum block_number, const uint8_t (&hash)[kHashLength]) {
@@ -295,6 +305,15 @@ void parse_senders(mdbx::txn& txn, const Bytes& key, std::vector<Transaction>& o
             transaction.recover_sender();
         }
     }
+}
+
+void write_senders(mdbx::txn& txn, const Bytes& key, const std::vector<Transaction>& transactions) {
+    std::vector<evmc::address> buffer;
+    for (const auto& transaction : transactions) {
+        SILKWORM_ASSERT(transaction.from);
+        buffer.push_back(*transaction.from);
+    }
+    write_senders_raw(txn, key, buffer);
 }
 
 std::optional<ByteView> read_code(mdbx::txn& txn, const evmc::bytes32& code_hash) {

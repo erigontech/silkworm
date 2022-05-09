@@ -477,6 +477,23 @@ namespace db {
             CHECK(block.transactions[0].from == 0x5a0b54d5dc17e0aadc383d2db43b0a0d3e029c4c_address);
             CHECK(block.transactions[1].from == 0x941591b6ca8e8dd05c69efdec02b77c72dac1496_address);
         }
+
+        SECTION("read_block_body_and_recover_senders_from_db") {
+            Block block;
+            block.transactions.resize(2);
+
+            // Verify that we can write and recover senders from the db cache
+            evmc::address one = 0x00000000dc17e0aadc383d2db43b0a0d3e029c4c_address;
+            evmc::address two = 0x00000000ca8e8dd05c69efdec02b77c72dac1496_address;
+            block.transactions[0].from = one;
+            block.transactions[1].from = two;
+            CHECK_NOTHROW(write_body(txn, block, hash.bytes, header.number, true));
+            block.transactions.clear();
+            CHECK_NOTHROW(read_block_by_number(txn, block_num, true, block));
+
+            CHECK(block.transactions[0].from == one);
+            CHECK(block.transactions[1].from == two);
+        }
     }
 
     TEST_CASE("read_account") {

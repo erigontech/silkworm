@@ -68,14 +68,14 @@ class BodySequence {
     BlockNum highest_block_in_db() const;
 
     std::string human_readable_status() const;
-  private:
+  protected:
     void recover_initial_state();
     void make_new_requests(GetBlockBodiesPacket66&, MinBlock&, time_point_t tp, seconds_t timeout);
     auto renew_stale_requests(GetBlockBodiesPacket66&, MinBlock&, time_point_t tp, seconds_t timeout)
         -> std::vector<PeerPenalization>;
     void add_to_announcements(BlockHeader header, BlockBody body);
 
-    size_t outstanding_requests() const;
+    size_t outstanding_requests(time_point_t tp, seconds_t timeout) const;
 
     static bool is_valid_body(const BlockHeader&, const BlockBody&);
 

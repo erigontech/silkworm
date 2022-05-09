@@ -56,7 +56,7 @@ class Db::ReadOnlyAccess {
     class Tx;
 
     ReadOnlyAccess(Db& db) : env_{db.env_} {}
-    ReadOnlyAccess(mdbx::env_managed& env) : env_{env} {}  // low level construction, more silkworm friendly
+    ReadOnlyAccess(mdbx::env& env) : env_{env} {}  // low level construction, more silkworm friendly
     ReadOnlyAccess(const ReadOnlyAccess& copy) : env_{copy.env_} {}
 
     Tx start_ro_tx();
@@ -67,7 +67,7 @@ class Db::ReadOnlyAccess {
     // auto abort(mdbx::txn_managed& txn) {return txn.abort();};
     // auto commit(mdbx::txn_managed& txn) {return txn.commit();};
 
-    mdbx::env_managed& env_;
+    mdbx::env& env_;
 };
 
 // A read-write access to database - used to enforce in some method signatures the type of access
@@ -76,7 +76,7 @@ class Db::ReadWriteAccess : public Db::ReadOnlyAccess {
     class Tx;
 
     ReadWriteAccess(Db& db) : Db::ReadOnlyAccess{db} {}
-    ReadWriteAccess(mdbx::env_managed& env)
+    ReadWriteAccess(mdbx::env& env)
         : Db::ReadOnlyAccess{env} {}  // low level construction, more silkworm friendly
     ReadWriteAccess(const ReadWriteAccess& copy) : Db::ReadOnlyAccess{copy} {}
 

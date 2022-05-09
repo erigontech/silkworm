@@ -51,7 +51,7 @@ class BodyPersistence {
     BlockNum initial_height_{0};
     BlockNum highest_height_{0};
 
-    BlockNum unwind_point_;
+    BlockNum unwind_point_{0};
     bool unwind_needed_{false};
     Hash bad_block_;
 };

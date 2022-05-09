@@ -43,12 +43,13 @@ void BodySequence::sync_current_state(BlockNum highest_body_in_db, BlockNum high
     headers_stage_height_ = highest_header_in_db;
 }
 
-size_t BodySequence::outstanding_requests() const {
+size_t BodySequence::outstanding_requests(time_point_t tp, seconds_t timeout) const {
     size_t requested_bodies{0};
 
     for (auto& br: body_requests_) {
         const PendingBodyRequest& past_request = br.second;
-        if (!past_request.ready)
+        if (!past_request.ready &&
+            (tp - past_request.request_time < timeout))
             requested_bodies++;
     }
 
@@ -128,7 +129,7 @@ auto BodySequence::request_more_bodies(time_point_t tp, seconds_t timeout)
     if (tp - last_nack < timeout)
         return {};
 
-    if (outstanding_requests() > max_outstanding_requests)
+    if (outstanding_requests(tp, timeout) > max_outstanding_requests)
         return {};
 
     auto penalizations = renew_stale_requests(packet, min_block, tp, timeout);
@@ -153,7 +154,7 @@ auto BodySequence::renew_stale_requests(GetBlockBodiesPacket66& packet, BlockNum
         // retry body request, todo: Erigon delete the request here, but will it retry?
         packet.request.push_back(past_request.block_hash);
         past_request.request_time = tp;
-        past_request.request_id = packet.requestId; // todo: it is possible that the response to the old request is arriving, in this way we will ignore it
+        past_request.request_id = packet.requestId;
         // todo: Erigon increment a penalization counter for the peer but it doesn't use it
         //penalizations.emplace_back({Penalty::BadBlockPenalty, }); // todo: find/create a more precise penalization
 
@@ -182,7 +183,7 @@ void BodySequence::make_new_requests(GetBlockBodiesPacket66& packet, BlockNum& m
         if (!header) {
             body_requests_.erase(bn);
             throw std::logic_error("BodySequence exception, "
-                "cause: block " + std::to_string(bn) + " expected in db");
+                "cause: header of block " + std::to_string(bn) + " expected in db");
         }
 
         PendingBodyRequest new_request;
@@ -307,10 +308,11 @@ auto BodySequence::IncreasingHeightOrderedRequestContainer::find_by_hash(Hash oh
 }
 
 std::string BodySequence::human_readable_status() const {
+    using namespace std::chrono_literals;
     std::ostringstream output;
 
     output << std::setfill(' ')
-           << "reqs: " << std::setw(7) << std::right << outstanding_requests()
+           << "reqs: " << std::setw(7) << std::right << outstanding_requests(std::chrono::system_clock::now(), 1min)
            << ", db-height: " << std::setw(10) << std::right << highest_body_in_db_
            << ", net-height: " << std::setw(10) << std::right << headers_stage_height_;
 

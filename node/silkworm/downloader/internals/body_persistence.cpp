@@ -52,8 +52,10 @@ void BodyPersistence::persist(const Block& block) {
     if (!tx_.has_body(block_hash, block_num))
         tx_.write_body(block, block_hash, block_num);
 
-    if (block_num > highest_height_)
+    if (block_num > highest_height_) {
         highest_height_ = block_num;
+        tx_.write_stage_progress(db::stages::kBlockBodiesKey, block_num);
+    }
 }
 
 void BodyPersistence::persist(const std::vector<Block>& blocks) {

@@ -29,7 +29,7 @@
 
 namespace silkworm {
 
-TEST_CASE("HeaderPersistence - header persistence") {
+TEST_CASE("header persistence", "[silkworm][downloader][HeaderPersistence]") {
     test::Context context;
     auto& txn{context.txn()};
 
@@ -54,8 +54,7 @@ TEST_CASE("HeaderPersistence - header persistence") {
         auto header0 = tx.read_canonical_header(0);
         REQUIRE(header0.has_value());
 
-        HeaderPersistence pc(tx);  // is correct but here FAILS at the moment because initialize_genesis() write total
-                                // difficulty without rlp encoding
+        HeaderPersistence pc(tx);
 
         REQUIRE(pc.unwind_needed() == false);
         REQUIRE(pc.initial_height() == 0);

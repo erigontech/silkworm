@@ -44,6 +44,7 @@ TEST_CASE("EthereumBackEnd", "[silkworm][backend][ethereum_backend]") {
         CHECK(backend.node_name() == kDefaultNodeName);
         CHECK(!backend.etherbase());
         CHECK(backend.sentry_addresses().empty());
+        CHECK(backend.state_change_source() != nullptr);
     }
 
     SECTION("EthereumBackEnd::set_node_name", "[silkworm][backend][ethereum_backend]") {

@@ -21,7 +21,16 @@
 namespace silkworm {
 
 EthereumBackEnd::EthereumBackEnd(const NodeSettings& node_settings, mdbx::env* chaindata_env)
-    : node_settings_(node_settings), chaindata_env_(chaindata_env) {
+    : EthereumBackEnd(node_settings, chaindata_env, std::make_unique<rpc::StateChangeCollection>()) {
+}
+
+EthereumBackEnd::EthereumBackEnd(
+    const NodeSettings& node_settings,
+    mdbx::env* chaindata_env,
+    std::unique_ptr<rpc::StateChangeCollection> state_change_collection)
+    : node_settings_(node_settings),
+      chaindata_env_(chaindata_env),
+      state_change_collection_(std::move(state_change_collection)) {
     // Get the numeric chain identifier from node settings
     if (node_settings_.chain_config) {
         chain_id_ = (*node_settings_.chain_config).chain_id;

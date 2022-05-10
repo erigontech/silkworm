@@ -155,14 +155,14 @@ class ThreadedKvClient {
     std::vector<remote::StateChangeBatch> responses() const { return responses_; }
 
     void start_and_consume_statechanges(KvClient client) {
+        // Start StateChanges server-streaming call on calling thread
+        remote::StateChangeRequest request;
+        statechangebatch_reader_ = client.statechanges_start(&context_, request);
+
         // We need a dedicated thread to consume the incoming messages because only one (blocking)
         // Read completion will tell us that server-side subscription really happened. This machinery
         // is needed just in these all-in-one tests
         consumer_thread_ = std::thread{[&]() {
-            // Start StateChanges server-streaming call on calling thread
-            remote::StateChangeRequest request;
-            statechangebatch_reader_ = client.statechanges_start(&context_, request);
-
             bool has_more{true};
             do {
                 has_more = statechangebatch_reader_->Read(&responses_.emplace_back());

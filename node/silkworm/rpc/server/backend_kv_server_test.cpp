@@ -40,6 +40,8 @@
 #include <silkworm/rpc/server/state_change_collection.hpp>
 #include <types/types.pb.h>
 
+using namespace std::chrono_literals;
+
 namespace { // Trick suggested by gRPC team to avoid name clashes in multiple test modules
 class BackEndClient {
   public:
@@ -147,6 +149,56 @@ class KvClient {
     remote::KV::StubInterface* stub_;
 };
 
+class ThreadedKvClient {
+  public:
+    //! It is safe to call this method *only after* join_and_finish() has been called
+    std::vector<remote::StateChangeBatch> responses() const { return responses_; }
+
+    void start_and_consume_statechanges(KvClient client) {
+        // We need a dedicated thread to consume the incoming messages because only one (blocking)
+        // Read completion will tell us that server-side subscription really happened. This machinery
+        // is needed just in these all-in-one tests
+        consumer_thread_ = std::thread{[&]() {
+            // Start StateChanges server-streaming call on calling thread
+            remote::StateChangeRequest request;
+            statechangebatch_reader_ = client.statechanges_start(&context_, request);
+
+            bool has_more{true};
+            do {
+                has_more = statechangebatch_reader_->Read(&responses_.emplace_back());
+                // As soon as the first Read has completed, we know for sure that subscription has occurred
+                std::unique_lock subscribed_lock{subscribed_mutex_};
+                if (!subscribed_) {
+                    subscribed_ = true;
+                    subscribed_lock.unlock();
+                    subscribed_condition_.notify_one();
+                }
+            } while (has_more);
+            // Last response read is void so discard it
+            responses_.pop_back();
+        }};
+    }
+
+    bool wait_one_milli_for_subscription() {
+        std::unique_lock subscribed_lock{subscribed_mutex_};
+        return subscribed_condition_.wait_for(subscribed_lock, 1ms, [&]{ return subscribed_; });
+    }
+
+    grpc::Status join_and_finish() {
+        consumer_thread_.join();
+        return statechangebatch_reader_->Finish();
+    }
+
+  private:
+    grpc::ClientContext context_;
+    std::unique_ptr<grpc::ClientReaderInterface<remote::StateChangeBatch>> statechangebatch_reader_;
+    std::thread consumer_thread_;
+    std::mutex subscribed_mutex_;
+    std::condition_variable subscribed_condition_;
+    bool subscribed_{false};
+    std::vector<remote::StateChangeBatch> responses_;
+};
+
 const uint64_t kTestSentryPeerCount{10};
 constexpr const char* kTestSentryPeerId{"peer_id"};
 constexpr const char* kTestSentryPeerName{"peer_name"};
@@ -246,7 +298,6 @@ static const std::string kTestSentryAddress2{"localhost:54322"};
 static const silkworm::db::MapConfig kTestMap{"TestTable"};
 static const silkworm::db::MapConfig kTestMultiMap{"TestMultiTable", mdbx::key_mode::usual, mdbx::value_mode::multi};
 
-using namespace std::chrono_literals;
 using namespace silkworm;
 
 using StateChangeTokenObserver = std::function<void(std::optional<rpc::StateChangeToken>)>;
@@ -460,7 +511,6 @@ TEST_CASE("BackEndKvServer", "[silkworm][node][rpc]") {
 TEST_CASE("BackEndKvServer E2E: empty node settings", "[silkworm][node][rpc]") {
     BackEndKvE2eTest test{silkworm::log::Level::kNone};
     auto backend_client = *test.backend_client;
-    auto kv_client = *test.kv_client;
 
     SECTION("Etherbase: return missing coinbase error", "[silkworm][node][rpc]") {
         remote::EtherbaseReply response;
@@ -525,6 +575,11 @@ TEST_CASE("BackEndKvServer E2E: empty node settings", "[silkworm][node][rpc]") {
         CHECK(status.ok());
         CHECK(response.nodesinfo_size() == 0);
     }
+}
+
+TEST_CASE("BackEndKvServer E2E: KV", "[silkworm][node][rpc]") {
+    BackEndKvE2eTest test{silkworm::log::Level::kNone};
+    auto kv_client = *test.kv_client;
 
     SECTION("Version: return KV version", "[silkworm][node][rpc]") {
         types::VersionReply response;
@@ -668,38 +723,15 @@ TEST_CASE("BackEndKvServer E2E: empty node settings", "[silkworm][node][rpc]") {
         CHECK(responses[1].v().empty());
     }
 
-    SECTION("StateChanges: return streamed state changes", "[silkworm][node][rpc]") {
+    SECTION("StateChanges OK: receive streamed state changes", "[silkworm][node][rpc]") {
         static constexpr uint64_t kTestPendingBaseFee{10'000};
         static constexpr uint64_t kTestGasLimit{10'000'000};
         auto* state_change_source = test.backend->state_change_source();
 
-        // Start StateChanges server-streaming call on Catch2 thread
-        grpc::ClientContext context;
-        remote::StateChangeRequest request;
-        auto subscribe_reply_reader = kv_client.statechanges_start(&context, request);
+        ThreadedKvClient threaded_kv_client;
 
-        // We need a dedicated thread to consume the incoming messages because only one (blocking)
-        // Read completion will tell us that server-side subscription really happened. This machinery
-        // is needed just in this all-in-one test
-        std::mutex subscribed_mutex;
-        std::condition_variable subscribed_condition;
-        bool subscribed{false};
-        std::vector<remote::StateChangeBatch> responses;
-        std::thread consumer_thread{[&]() {
-            bool has_more{true};
-            do {
-                has_more = subscribe_reply_reader->Read(&responses.emplace_back());
-                // As soon as the first Read has completed, we know for sure that subscription has occurred
-                std::unique_lock subscribed_lock{subscribed_mutex};
-                if (!subscribed) {
-                    subscribed = true;
-                    subscribed_lock.unlock();
-                    subscribed_condition.notify_one();
-                }
-            } while (has_more);
-            // Last response read is void so discard it
-            responses.pop_back();
-        }};
+        // Start StateChanges server-streaming call and consume incoming messages on dedicated thread
+        threaded_kv_client.start_and_consume_statechanges(kv_client);
 
         // Keep publishing state changes using the Catch2 thread until at least one has been received
         BlockNum block_number{0};
@@ -707,17 +739,50 @@ TEST_CASE("BackEndKvServer E2E: empty node settings", "[silkworm][node][rpc]") {
         while (publishing) {
             state_change_source->start_new_batch(++block_number, kEmptyHash, std::vector<Bytes>{}, /*unwind=*/false);
             state_change_source->notify_batch(kTestPendingBaseFee, kTestGasLimit);
-            std::unique_lock subscribed_lock{subscribed_mutex};
-            publishing = !subscribed_condition.wait_for(subscribed_lock, 1ms, [&]{ return subscribed; });
+
+            publishing = !threaded_kv_client.wait_one_milli_for_subscription();
         }
         // After at least one state change has been received, close the server-side RPC stream
         state_change_source->close();
 
         // then wait for consumer thread termination and get the client-side RPC result
-        consumer_thread.join();
-        const auto status = subscribe_reply_reader->Finish();
+        const auto status = threaded_kv_client.join_and_finish();
+
         CHECK(status.ok());
-        CHECK(responses.size() > 0);
+        CHECK(threaded_kv_client.responses().size() > 0);
+    }
+
+    SECTION("StateChanges OK: multiple concurrent subscriptions", "[silkworm][node][rpc]") {
+        static constexpr uint64_t kTestPendingBaseFee{10'000};
+        static constexpr uint64_t kTestGasLimit{10'000'000};
+        auto* state_change_source = test.backend->state_change_source();
+
+        ThreadedKvClient threaded_kv_client1, threaded_kv_client2;
+
+        // Start StateChanges server-streaming call and consume incoming messages on dedicated thread
+        threaded_kv_client1.start_and_consume_statechanges(kv_client);
+        threaded_kv_client2.start_and_consume_statechanges(kv_client);
+
+        // Keep publishing state changes using the Catch2 thread until at least one has been received
+        BlockNum block_number{0};
+        bool publishing{true};
+        while (publishing) {
+            state_change_source->start_new_batch(++block_number, kEmptyHash, std::vector<Bytes>{}, /*unwind=*/false);
+            state_change_source->notify_batch(kTestPendingBaseFee, kTestGasLimit);
+
+            publishing = !(threaded_kv_client1.wait_one_milli_for_subscription() && threaded_kv_client2.wait_one_milli_for_subscription());
+        }
+        // After at least one state change has been received, close the server-side RPC stream
+        state_change_source->close();
+
+        // then wait for consumer thread termination and get the client-side RPC result
+        const auto status1 = threaded_kv_client1.join_and_finish();
+        const auto status2 = threaded_kv_client2.join_and_finish();
+
+        CHECK(status1.ok());
+        CHECK(status2.ok());
+        CHECK(threaded_kv_client1.responses().size() > 0);
+        CHECK(threaded_kv_client2.responses().size() > 0);
     }
 
     SECTION("StateChanges KO: token already in use", "[silkworm][node][rpc]") {

@@ -25,12 +25,14 @@
 namespace silkworm::rpc {
 
 std::optional<StateChangeToken> StateChangeCollection::subscribe(StateChangeConsumer consumer, StateChangeFilter /*filter*/) {
+    std::unique_lock subscribed_lock{consumers_mutex_};
     StateChangeToken token = ++next_token_;
     const auto [_, inserted] = consumers_.insert({token, consumer});
     return inserted ? std::make_optional(token) : std::nullopt;
 }
 
 bool StateChangeCollection::unsubscribe(StateChangeToken token) {
+    std::unique_lock subscribed_lock{consumers_mutex_};
     const auto consumer_it = consumers_.erase(token);
     return consumer_it != 0;
 }
@@ -183,6 +185,7 @@ void StateChangeCollection::delete_account(const evmc::address& address) {
 }
 
 void StateChangeCollection::notify_batch(uint64_t pending_base_fee, uint64_t gas_limit) {
+    std::unique_lock subscribed_lock{consumers_mutex_};
     SILK_TRACE << "StateChangeCollection::notify_batch " << this << " pending_base_fee: " << pending_base_fee << " gas_limit:" << gas_limit << " START";
 
     state_changes_.set_pendingblockbasefee(pending_base_fee);
@@ -202,6 +205,7 @@ void StateChangeCollection::notify_batch(uint64_t pending_base_fee, uint64_t gas
 }
 
 void StateChangeCollection::close() {
+    std::unique_lock subscribed_lock{consumers_mutex_};
     for (const auto& [_, batch_callback] : consumers_) {
         SILK_DEBUG << "Notify close to callback=" << &batch_callback;
         batch_callback(std::nullopt);

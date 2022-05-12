@@ -79,9 +79,9 @@ class BodySequence {
 
     static bool is_valid_body(const BlockHeader&, const BlockBody&);
 
-    static constexpr BlockNum max_blocks_per_message = 1;
-    static constexpr BlockNum max_outstanding_requests = 1;
-    static constexpr BlockNum max_announced_blocks = 10000;
+    static constexpr BlockNum kMaxBlocksPerMessage = 1;
+    static constexpr BlockNum kMaxOutstandingRequests = 1;
+    static constexpr BlockNum kMaxAnnouncedBlocks = 10000;
 
     struct PendingBodyRequest {
         uint64_t request_id;

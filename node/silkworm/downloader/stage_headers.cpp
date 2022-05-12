@@ -28,7 +28,7 @@
 
 namespace silkworm {
 
-HeadersStage::HeadersStage(const Db::ReadWriteAccess& dba, BlockDownloader& bd)
+HeadersStage::HeadersStage(const Db::ReadWriteAccess& dba, BlockExchange& bd)
     : db_access_{dba}, block_downloader_(bd) {
 }
 

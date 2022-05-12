@@ -76,7 +76,7 @@ int main(int argc, char* argv[]) {
     log::Settings settings;
     settings.log_threads = true;
     settings.log_file = "downloader.log";
-    settings.log_verbosity = log::Level::kInfo;
+    settings.log_verbosity = log::Level::kDebug;
     settings.log_thousands_sep = '\'';
 
     app.add_option("--chaindata", db_path, "Path to the chain database")
@@ -132,14 +132,14 @@ int main(int argc, char* argv[]) {
         auto message_receiving = std::thread([&sentry]() { sentry.execution_loop(); });
         auto stats_receiving = std::thread([&sentry]() { sentry.stats_receiving_loop(); });
 
-        // BlockDownloader - download headers and bodies from remote peers using the sentry
-        BlockDownloader block_downloader{sentry, Db::ReadOnlyAccess{db}, chain_identity};
-        auto block_downloading = std::thread([&block_downloader]() { block_downloader.execution_loop(); });
+        // BlockExchange - download headers and bodies from remote peers using the sentry
+        BlockExchange block_exchange{sentry, Db::ReadOnlyAccess{db}, chain_identity};
+        auto block_downloading = std::thread([&block_exchange]() { block_exchange.execution_loop(); });
 
         // Stage1 - Header downloader - example code
         bool first_sync = true;  // = starting up silkworm
-        HeadersStage header_stage{Db::ReadWriteAccess{db}, block_downloader};
-        BodiesStage body_stage{Db::ReadWriteAccess{db}, block_downloader};
+        HeadersStage header_stage{Db::ReadWriteAccess{db}, block_exchange};
+        BodiesStage body_stage{Db::ReadWriteAccess{db}, block_exchange};
 
         // Sample stage loop with 2 stages
         std::array<Stage*, 2> stages = {&header_stage, &body_stage};
@@ -159,8 +159,8 @@ int main(int argc, char* argv[]) {
         } while (result.status != Status::Error);
 
         // Wait for user termination request
-        std::cin.get();           // wait for user press "enter"
-        block_downloader.stop();  // signal exiting
+        std::cin.get();            // wait for user press "enter"
+        block_exchange.stop();     // signal exiting
 
         // wait threads termination
         message_receiving.join();

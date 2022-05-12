@@ -96,7 +96,7 @@ namespace silkworm {
     4. returns (headers,bodies)
 
  */
-BodiesStage::BodiesStage(const Db::ReadWriteAccess& db_access, BlockDownloader& bd)
+BodiesStage::BodiesStage(const Db::ReadWriteAccess& db_access, BlockExchange& bd)
     : db_access_{db_access}, block_downloader_{bd} {
 }
 

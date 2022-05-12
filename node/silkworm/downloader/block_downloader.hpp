@@ -29,10 +29,10 @@ limitations under the License.
 namespace silkworm {
 
 //! \brief Implement the logic needed to download headers and bodies
-class BlockDownloader : public ActiveComponent {
+class BlockExchange : public ActiveComponent {
   public:
-    BlockDownloader(SentryClient&, const Db::ReadOnlyAccess&, const ChainIdentity&);
-    ~BlockDownloader();
+    BlockExchange(SentryClient&, const Db::ReadOnlyAccess&, const ChainIdentity&);
+    ~BlockExchange();
 
     void accept(std::shared_ptr<Message>); /*[[thread_safe]]*/
     void execution_loop() override;        /*[[long_running]]*/

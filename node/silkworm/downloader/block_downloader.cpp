@@ -25,7 +25,7 @@ limitations under the License.
 
 namespace silkworm {
 
-BlockDownloader::BlockDownloader(SentryClient& sentry, const Db::ReadOnlyAccess& dba, const ChainIdentity& ci)
+BlockExchange::BlockExchange(SentryClient& sentry, const Db::ReadOnlyAccess& dba, const ChainIdentity& ci)
     : db_access_{dba},
       sentry_{sentry},
       chain_identity_{ci},
@@ -36,32 +36,32 @@ BlockDownloader::BlockDownloader(SentryClient& sentry, const Db::ReadOnlyAccess&
     header_chain_.set_preverified_hashes(PreverifiedHashes::load(ci.chain.chain_id));
 }
 
-BlockDownloader::~BlockDownloader() {
+BlockExchange::~BlockExchange() {
     stop();
-    log::Error() << "BlockDownloader destroyed";
+    log::Error() << "BlockExchange destroyed";
 }
 
-const ChainIdentity& BlockDownloader::chain_identity() {
+const ChainIdentity& BlockExchange::chain_identity() {
     return chain_identity_;
 }
 
-void BlockDownloader::accept(std::shared_ptr<Message> message) { messages_.push(message); }
+void BlockExchange::accept(std::shared_ptr<Message> message) { messages_.push(message); }
 
-void BlockDownloader::receive_message(const sentry::InboundMessage& raw_message) {
+void BlockExchange::receive_message(const sentry::InboundMessage& raw_message) {
     try {
         auto message = InboundMessage::make(raw_message);
 
-        SILK_TRACE << "BlockDownloader received message " << *message;
+        SILK_TRACE << "BlockExchange received message " << *message;
 
         messages_.push(message);
     }
     catch(rlp::DecodingError& error) {
-        log::Warning() << "BlockDownloader received and ignored a malformed message, "
+        log::Warning() << "BlockExchange received and ignored a malformed message, "
                           "id=" << raw_message.id() << "/" << sentry::MessageId_Name(raw_message.id());
     }
 }
 
-void BlockDownloader::execution_loop() {
+void BlockExchange::execution_loop() {
     using namespace std::chrono;
     using namespace std::chrono_literals;
 
@@ -86,7 +86,7 @@ void BlockDownloader::execution_loop() {
         if (system_clock::now() - last_update > 30s) {
             last_update = system_clock::now();
             if (silkworm::log::test_verbosity(silkworm::log::Level::kDebug)) {
-                log::Trace () << "BlockDownloader statistics:" << std::setfill(' ')
+                log::Trace () << "BlockExchange statistics:" << std::setfill(' ')
                              << " messages: " << std::setw(3) << std::right << messages_.size()
                              << " | headers: " << header_chain_.human_readable_status()
                              << " | h-stats: " << header_chain_.statistics_
@@ -97,7 +97,7 @@ void BlockDownloader::execution_loop() {
     }
 
     stop();
-    log::Warning() << "BlockDownloader execution_loop is stopping...";
+    log::Warning() << "BlockExchange execution_loop is stopping...";
 }
 
 }  // namespace silkworm

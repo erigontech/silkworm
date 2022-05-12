@@ -53,7 +53,7 @@ size_t BodySequence::outstanding_requests(time_point_t tp, seconds_t timeout) co
             requested_bodies++;
     }
 
-    return requested_bodies / max_blocks_per_message;
+    return requested_bodies / kMaxBlocksPerMessage;
 }
 
 std::vector<NewBlockPacket>& BodySequence::announces_to_do() {
@@ -129,12 +129,12 @@ auto BodySequence::request_more_bodies(time_point_t tp, seconds_t timeout)
     if (tp - last_nack < timeout)
         return {};
 
-    if (outstanding_requests(tp, timeout) > max_outstanding_requests)
+    if (outstanding_requests(tp, timeout) > kMaxOutstandingRequests)
         return {};
 
     auto penalizations = renew_stale_requests(packet, min_block, tp, timeout);
 
-    if (packet.request.size() < max_blocks_per_message) make_new_requests(packet, min_block, tp, timeout);
+    if (packet.request.size() < kMaxBlocksPerMessage) make_new_requests(packet, min_block, tp, timeout);
 
     return {std::move(packet), std::move(penalizations), min_block};
 }
@@ -162,7 +162,7 @@ auto BodySequence::renew_stale_requests(GetBlockBodiesPacket66& packet, BlockNum
 
         min_block = std::max(min_block, past_request.block_height);
 
-        if (packet.request.size() >= max_blocks_per_message) break;
+        if (packet.request.size() >= kMaxBlocksPerMessage) break;
     }
 
     return penalizations;
@@ -176,7 +176,7 @@ void BodySequence::make_new_requests(GetBlockBodiesPacket66& packet, BlockNum& m
     if (!body_requests_.empty())
         last_requested_block = body_requests_.rbegin()->second.block_height; // the last requested
 
-    while (packet.request.size() < max_blocks_per_message && last_requested_block <= headers_stage_height_) {
+    while (packet.request.size() < kMaxBlocksPerMessage && last_requested_block <= headers_stage_height_) {
         BlockNum bn = last_requested_block + 1;
 
         auto header = tx.read_canonical_header(bn);
@@ -272,7 +272,7 @@ void BodySequence::add_to_announcements(BlockHeader header, BlockBody body) {
 }
 
 void BodySequence::AnnouncedBlocks::add(Block block) {
-    if (blocks_.size() >= max_announced_blocks) {
+    if (blocks_.size() >= kMaxAnnouncedBlocks) {
         return;
     }
 

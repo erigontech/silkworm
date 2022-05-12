@@ -29,7 +29,7 @@ namespace silkworm {
 
 class BodiesStage : public Stage {
   public:
-    BodiesStage(const Db::ReadWriteAccess&, BlockDownloader&);
+    BodiesStage(const Db::ReadWriteAccess&, BlockExchange&);
     BodiesStage(const BodiesStage&) = delete;  // not copyable
     BodiesStage(BodiesStage&&) = delete;       // nor movable
     ~BodiesStage();
@@ -45,7 +45,7 @@ class BodiesStage : public Stage {
     void send_announcements();
 
     Db::ReadWriteAccess db_access_;
-    BlockDownloader& block_downloader_;
+    BlockExchange& block_downloader_;
 };
 
 }  // namespace silkworm

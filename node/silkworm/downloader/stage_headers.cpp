@@ -56,7 +56,6 @@ auto HeadersStage::forward(bool first_sync) -> Stage::Result {
             tx.commit();
             log::Info() << "[1/16 Headers] End (forward skipped due to unwind_needed detection, canonical chain updated), "
                 << "duration=" << timing.format(timing.lap_duration());
-            log::Trace() << "[INFO] HeaderDownloader forward skipped due to unwind_needed detection, canonical chain updated";
             result.status = Stage::Result::Done;
             return result;
         }
@@ -147,11 +146,9 @@ auto HeadersStage::forward(bool first_sync) -> Stage::Result {
         // todo: do we need a sentry.set_status() here?
 
         log::Info() << "[1/16 Headers] Done, duration= " << StopWatch::format(timing.lap_duration());
-        log::Trace() << "[INFO] HeaderDownloader forward operation completed";
 
     } catch (const std::exception& e) {
         log::Error() << "[1/16 Headers] Aborted due to exception: " << e.what();
-        log::Trace() << "[ERROR] HeaderDownloader forward operation is stopping due to an exception: " << e.what();
 
         // tx rollback executed automatically if needed
         result.status = Stage::Result::Error;
@@ -165,7 +162,6 @@ auto HeadersStage::unwind_to(BlockNum new_height, Hash bad_block) -> Stage::Resu
 
     StopWatch timing; timing.start();
     log::Info() << "[1/16 Headers] Unwind start";
-    log::Trace() << "[INFO] HeaderDownloader unwind_needed operation started";
 
     try {
         Db::ReadWriteAccess::Tx tx = db_access_.start_tx();
@@ -188,11 +184,9 @@ auto HeadersStage::unwind_to(BlockNum new_height, Hash bad_block) -> Stage::Resu
         // todo: do we need a sentry.set_status() here?
 
         log::Info() << "[1/16 Headers] Unwind completed, duration= " << StopWatch::format(timing.lap_duration());
-        log::Trace() << "[INFO] HeaderDownloader unwind_needed operation completed";
 
     } catch (const std::exception& e) {
         log::Error() << "[1/16 Headers] Unwind aborted due to exception: " << e.what();
-        log::Trace() << "[ERROR] HeaderDownloader unwind_needed operation is stopping due to an exception: " << e.what();
 
         // tx rollback executed automatically if needed
         result.status = Stage::Result::Error;

@@ -63,7 +63,7 @@ class BodySequence {
     auto withdraw_ready_bodies() -> std::vector<Block>;
 
     // minor functionalities
-    std::vector<NewBlockPacket>& announces_to_do();
+    std::list<NewBlockPacket>& announces_to_do();
 
     BlockNum highest_block_in_db() const;
 
@@ -73,7 +73,7 @@ class BodySequence {
     void make_new_requests(GetBlockBodiesPacket66&, MinBlock&, time_point_t tp, seconds_t timeout);
     auto renew_stale_requests(GetBlockBodiesPacket66&, MinBlock&, time_point_t tp, seconds_t timeout)
         -> std::vector<PeerPenalization>;
-    void add_to_announcements(BlockHeader header, BlockBody body);
+    void add_to_announcements(BlockHeader, BlockBody, Db::ReadOnlyAccess::Tx&);
 
     size_t outstanding_requests(time_point_t tp, seconds_t timeout) const;
 
@@ -111,7 +111,7 @@ class BodySequence {
 
     IncreasingHeightOrderedRequestContainer body_requests_;
     AnnouncedBlocks announced_blocks_;
-    std::vector<NewBlockPacket> announcements_to_do_;
+    std::list<NewBlockPacket> announcements_to_do_;
 
     Db::ReadOnlyAccess db_access_;
     [[maybe_unused]] const ChainIdentity& chain_identity_;

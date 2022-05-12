@@ -34,6 +34,8 @@ class BodyPersistence {
     void persist(const std::vector<Block>&);
     void close();
 
+    static void remove_bodies(BlockNum new_height, Hash bad_block, Db::ReadWriteAccess::Tx& tx);
+
     bool unwind_needed() const;
 
     BlockNum unwind_point() const;

@@ -65,7 +65,12 @@ void BodyPersistence::persist(const std::vector<Block>& blocks) {
 }
 
 void BodyPersistence::close() {
+    // does nothing
+}
 
+void BodyPersistence::remove_bodies(BlockNum new_height, Hash, Db::ReadWriteAccess::Tx& tx) {
+    // like Erigon, we do not erase "wrong" blocks, only update stage progress...
+    tx.write_stage_progress(db::stages::kBlockBodiesKey, new_height);
 }
 
 }

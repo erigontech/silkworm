@@ -56,13 +56,14 @@ size_t BodySequence::outstanding_requests(time_point_t tp, seconds_t timeout) co
     return requested_bodies / kMaxBlocksPerMessage;
 }
 
-std::vector<NewBlockPacket>& BodySequence::announces_to_do() {
+std::list<NewBlockPacket>& BodySequence::announces_to_do() {
     return announcements_to_do_;
 }
 
 Penalty BodySequence::accept_requested_bodies(const BlockBodiesPacket66& packet, const PeerId&) {
     Penalty penalty = NoPenalty;
 
+    // Find matching requests and completing PendingBodyRequest
     auto matching_requests = body_requests_.find_by_request_id(packet.requestId);
 
     for (auto& body: packet.request) {
@@ -101,9 +102,9 @@ Penalty BodySequence::accept_requested_bodies(const BlockBodiesPacket66& packet,
         
     }
 
+    // Process remaining elements in matching_requests invalidating corresponding PendingBodyRequest
     for(auto& elem: matching_requests) {
         PendingBodyRequest& request = elem->second;
-        // todo: process remaining elements in matching_requests invalidating corresponding PendingBodyRequest
         request.request_id = 0;
         request.request_time = time_point_t();
     }
@@ -194,7 +195,7 @@ void BodySequence::make_new_requests(GetBlockBodiesPacket66& packet, BlockNum& m
 
         std::optional<BlockBody> announced_body = announced_blocks_.remove(bn);
         if (announced_body && is_valid_body(*header, *announced_body)) {
-            add_to_announcements(*header, *announced_body);
+            add_to_announcements(*header, *announced_body, tx);
 
             new_request.body = std::move(*announced_body);
             new_request.ready = true;
@@ -249,25 +250,24 @@ auto BodySequence::withdraw_ready_bodies() -> std::vector<Block> {
     return ready_bodies;
 }
 
-void BodySequence::add_to_announcements(BlockHeader header, BlockBody body) {
-/*
-    todo: check that we do not need this code here
+void BodySequence::add_to_announcements(BlockHeader header, BlockBody body, Db::ReadOnlyAccess::Tx& tx) {
 
-    // calculate total difficulty of the block (it's not imported yet, so block.Td is not valid)
-    auto parent_td = tx.read_total_difficulty(block.header.number -1, block.header.parent_hash);
+    // calculate total difficulty of the block
+    auto parent_td = tx.read_total_difficulty(header.number -1, header.parent_hash);
     if (!parent_td) {
-        log::Trace() << "[WARN] BodySequence: dangling block " << std::to_string(block.header.number);
-        return;
+        log::Warning() << "BodySequence: dangling block " << std::to_string(header.number);
+        return; // non inserted in announcement list
     }
-    auto td = parent_td + canonical_difficulty(block.header.number, block.header.timestamp,
-                                               parent_td, parent_ts, parent_has_uncle, chain_config_);
-    // add to list
-    announcements_to_do_.emplace_back({std::move(block), td});
-*/
 
-    BigInt td = header.difficulty;
+    auto td = *parent_td + header.difficulty;    
+
+    // todo: ok or we need this?
+    //auto td = parent_td + canonical_difficulty(header.number, header.timestamp,
+    //                                           parent_td, parent_ts, parent_has_uncle, chain_config_);
+
     NewBlockPacket packet{{std::move(body), std::move(header)}, td};
 
+    // add to list
     announcements_to_do_.push_back(std::move(packet));
 }
 

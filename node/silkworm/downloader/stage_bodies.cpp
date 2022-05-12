@@ -23,6 +23,7 @@ limitations under the License.
 #include <silkworm/common/measure.hpp>
 #include <silkworm/common/stopwatch.hpp>
 #include <silkworm/downloader/messages/outbound_get_block_bodies.hpp>
+#include <silkworm/downloader/messages/outbound_new_block.hpp>
 #include <silkworm/downloader/internals/body_persistence.hpp>
 
 namespace silkworm {
@@ -116,7 +117,6 @@ Stage::Result BodiesStage::forward([[maybe_unused]] bool first_sync) {
 
     StopWatch timing; timing.start();
     log::Info() << "[2/16 Bodies] Start";
-    log::Trace() << "[INFO] BodyDownloader forward operation started";
 
     try {
         Db::ReadWriteAccess::Tx tx = db_access_.start_tx();  // start a new tx only if db_access has not an active tx
@@ -183,11 +183,9 @@ Stage::Result BodiesStage::forward([[maybe_unused]] bool first_sync) {
         tx.commit();  // this will commit if the tx was started here
 
         log::Info() << "[2/16 Bodies] Done, duration= " << StopWatch::format(timing.lap_duration());
-        log::Trace() << "[INFO] BodyDownloader forward operation completed";
 
     } catch (const std::exception& e) {
         log::Error() << "[2/16 Bodies] Aborted due to exception: " << e.what();
-        log::Trace() << "[ERROR] BodyDownloader forward operation is stopping due to an exception: " << e.what();
 
         // tx rollback executed automatically if needed
         result.status = Stage::Result::Error;
@@ -196,10 +194,29 @@ Stage::Result BodiesStage::forward([[maybe_unused]] bool first_sync) {
     return result;
 }
 
-Stage::Result BodiesStage::unwind_to(BlockNum, Hash) {
-    // todo: implement
+Stage::Result BodiesStage::unwind_to(BlockNum new_height, Hash bad_block) {
+    Stage::Result result;
 
-    return Stage::Result();
+    StopWatch timing; timing.start();
+    log::Info() << "[2/16 Bodies] Unwind start";
+
+    try {
+        Db::ReadWriteAccess::Tx tx = db_access_.start_tx();
+
+        BodyPersistence::remove_bodies(new_height, bad_block, tx);
+
+        tx.commit();
+
+        log::Info() << "[1/16 Bodies] Unwind completed, duration= " << StopWatch::format(timing.lap_duration());
+
+    } catch (const std::exception& e) {
+        log::Error() << "[1/16 Bodies] Unwind aborted due to exception: " << e.what();
+
+        // tx rollback executed automatically if needed
+        result.status = Stage::Result::Error;
+    }
+
+    return result;
 }
 
 void BodiesStage::send_body_requests() {
@@ -235,11 +252,10 @@ auto BodiesStage::withdraw_ready_bodies() -> std::shared_ptr<InternalMessage<std
 
 // New block announcements propagation
 void BodiesStage::send_announcements() {
-    // todo: implement
-    /*
+
     auto message = std::make_shared<OutboundNewBlock>();
+
     block_downloader_.accept(message);
-    */
 }
 
 }  // namespace silkworm

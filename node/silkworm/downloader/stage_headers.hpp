@@ -24,7 +24,7 @@
 #include <silkworm/downloader/messages/internal_message.hpp>
 
 #include "stage.h"
-#include "block_downloader.hpp"
+#include "block_exchange.hpp"
 
 namespace silkworm {
 

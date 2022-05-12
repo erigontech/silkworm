@@ -22,7 +22,7 @@ limitations under the License.
 #include <silkworm/downloader/internals/types.hpp>
 #include <silkworm/downloader/messages/internal_message.hpp>
 
-#include "block_downloader.hpp"
+#include "block_exchange.hpp"
 #include "stage.h"
 
 namespace silkworm {

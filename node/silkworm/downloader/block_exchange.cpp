@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-#include "block_downloader.hpp"
+#include "block_exchange.hpp"
 
 #include <chrono>
 #include <thread>

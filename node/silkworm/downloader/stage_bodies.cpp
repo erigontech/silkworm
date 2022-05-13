@@ -124,7 +124,7 @@ Stage::Result BodiesStage::forward([[maybe_unused]] bool first_sync) {
         BodyPersistence body_persistence(tx, block_downloader_.chain_identity());
 
         RepeatedMeasure<BlockNum> height_progress(body_persistence.initial_height());
-        log::Info() << "[2/16 Headers] Waiting for bodies... from=" << height_progress.get();
+        log::Info() << "[2/16 Bodies] Waiting for bodies... from=" << height_progress.get();
 
         // sync status
         BlockNum headers_stage_height = tx.read_stage_progress(db::stages::kHeadersKey);

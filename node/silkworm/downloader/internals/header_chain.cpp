@@ -70,11 +70,11 @@ size_t HeaderChain::anchors() const {
 std::string HeaderChain::human_readable_status() const {
     std::ostringstream output;
 
-    output << std::setfill(' ')
-           << "links: " << std::setw(7) << std::right << pending_links()
-           << ", anchors: " << std::setw(3) << std::right << anchors()
-           << ", db-height: " << std::setw(10) << std::right << highest_block_in_db()
-           << ", net-height: " << std::setw(10) << std::right << top_seen_block_height();
+    output << std::setfill('_')
+           << "links= " << std::setw(7) << std::right << pending_links()
+           << ", anchors= " << std::setw(3) << std::right << anchors()
+           << ", db-height= " << std::setw(10) << std::right << highest_block_in_db()
+           << ", net-height= " << std::setw(10) << std::right << top_seen_block_height();
 
     return output.str();
 }
@@ -126,6 +126,8 @@ void HeaderChain::recover_initial_state(Db::ReadOnlyAccess::Tx& tx) {
 
 void HeaderChain::sync_current_state(BlockNum highest_in_db) {
     highest_in_db_ = highest_in_db;
+
+    statistics_ = {}; // reset statistics
 
     // we also need here all the headers with height == highest_in_db to init chain_state_
     // currently chain_state_ find them in persisted_link_queue_ but it is not clear if it will find them all
@@ -962,25 +964,29 @@ uint64_t HeaderChain::is_valid_request_id(uint64_t request_id) {
     return request_id_prefix == prefix;
 }
 
-std::ostream& operator<<(std::ostream& os, const HeaderChain::Statistics& stats) {
-    uint64_t rejected_headers = stats.received_headers - stats.accepted_headers;
-    uint64_t unknown = rejected_headers - stats.not_requested_headers - stats.duplicated_headers - stats.invalid_headers - stats.bad_headers;
-    uint64_t perc_received = stats.requested_headers > 0 ? stats.received_headers * 100 / stats.requested_headers : 0;
-    uint64_t perc_accepted = stats.received_headers > 0 ? stats.accepted_headers * 100 / stats.received_headers : 0;
-    uint64_t perc_rejected = stats.received_headers > 0 ? rejected_headers * 100 / stats.received_headers : 0;
-    os << "-req/res: "
-       << "req=" << stats.requested_headers << " "
-       << "rec=" << stats.received_headers << " (" << perc_received << "%) -> "
-       << "acc=" << stats.accepted_headers << " (" << perc_accepted << "%) "
-       << "rej=" << rejected_headers << " (" << perc_rejected << "%); "
-       << "-reject reasons: "
-       << "unr=" << stats.not_requested_headers << ", "
-       << "dup=" << stats.duplicated_headers << ", "
-       << "inv=" << stats.invalid_headers << ", "
-       << "bad=" << stats.bad_headers << ", "
-       << "unk=" << unknown;
+std::string HeaderChain::human_readable_stats() const {
+    return statistics_.human_readable_report();
+}
 
-    return os;
+std::string HeaderChain::Statistics::human_readable_report() const {
+    std::ostringstream os;
+    uint64_t rejected_headers = received_headers - accepted_headers;
+    uint64_t unknown = rejected_headers - not_requested_headers - duplicated_headers - invalid_headers - bad_headers;
+    uint64_t perc_received = requested_headers > 0 ? received_headers * 100 / requested_headers : 0;
+    uint64_t perc_accepted = received_headers > 0 ? accepted_headers * 100 / received_headers : 0;
+    uint64_t perc_rejected = received_headers > 0 ? rejected_headers * 100 / received_headers : 0;
+    os << "req=" << requested_headers << " "
+       << "rec=" << received_headers << " (" << perc_received << "%) -> "
+       << "acc=" << accepted_headers << " (" << perc_accepted << "%) "
+       << "rej=" << rejected_headers << " (" << perc_rejected << "%, "
+       << "reasons: "
+       << "unr=" << not_requested_headers << ", "
+       << "dup=" << duplicated_headers << ", "
+       << "inv=" << invalid_headers << ", "
+       << "bad=" << bad_headers << ", "
+       << "unk=" << unknown << ")";
+
+    return os.str();
 }
 
 }  // namespace silkworm

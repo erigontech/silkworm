@@ -68,6 +68,7 @@ class BodySequence {
     BlockNum highest_block_in_db() const;
 
     std::string human_readable_status() const;
+    std::string human_readable_stats() const;
   protected:
     void recover_initial_state();
     void make_new_requests(GetBlockBodiesPacket66&, MinBlock&, time_point_t tp, seconds_t timeout);
@@ -79,8 +80,8 @@ class BodySequence {
 
     static bool is_valid_body(const BlockHeader&, const BlockBody&);
 
-    static constexpr BlockNum kMaxBlocksPerMessage = 1;
-    static constexpr BlockNum kMaxOutstandingRequests = 1;
+    static constexpr BlockNum kMaxBlocksPerMessage = 128;
+    static constexpr BlockNum kMaxOutstandingRequests = 128;
     static constexpr BlockNum kMaxAnnouncedBlocks = 10000;
 
     struct PendingBodyRequest {
@@ -119,6 +120,15 @@ class BodySequence {
     BlockNum highest_body_in_db_{0};
     BlockNum headers_stage_height_{0};
     time_point_t last_nack;
+
+    struct Statistics {
+        // headers status
+        uint64_t requested_bodies = 0;
+        uint64_t received_bodies = 0;
+        uint64_t accepted_bodies = 0;
+
+        std::string human_readable_report() const;
+    } statistics_;
 };
 
 }

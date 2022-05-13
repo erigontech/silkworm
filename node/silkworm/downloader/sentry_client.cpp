@@ -19,6 +19,7 @@
 #include <silkworm/common/log.hpp>
 
 #include <silkworm/downloader/rpc/hand_shake.hpp>
+#include <silkworm/downloader/rpc/peer_count.hpp>
 #include <silkworm/downloader/rpc/receive_messages.hpp>
 #include <silkworm/downloader/rpc/receive_peer_stats.hpp>
 #include <silkworm/downloader/rpc/set_status.hpp>
@@ -96,12 +97,15 @@ void SentryClient::execution_loop() {
 }
 
 void SentryClient::stats_receiving_loop() {
+    // ask the remote sentry about the current active peers
+    auto peers = active_peers();
+    log::Info() << "SentryClient, " << peers << " active peers";
+
     // send a stats subscription
     rpc::ReceivePeerStats receive_peer_stats;
     exec_remotely(receive_peer_stats);
 
     // receive stats
-    int active_peers = 0;
     while (!is_stopping() && receive_peer_stats.receive_one_reply()) {
         const sentry::PeersReply& stat = receive_peer_stats.reply();
 
@@ -109,17 +113,35 @@ void SentryClient::stats_receiving_loop() {
         const char* event = "";
         if (stat.event() == sentry::PeersReply::Connect) {
             event = "connected";
-            active_peers++;
+            peers++;
         } else {
             event = "disconnected";
-            active_peers--;
+            peers--;
         }
 
-        log::Info() << "Peer " << peerId << " " << event << ", active " << active_peers << " (+/-)";
+        log::Info() << "Peer " << peerId << " " << event << ", active " << peers;
     }
 
     stop();
     log::Warning() << "SentryClient stats loop is stopping...";
+}
+
+uint64_t SentryClient::active_peers() {
+    using namespace std::chrono_literals;
+    rpc::PeerCount rpc;
+
+    rpc.timeout(1s);
+    rpc.do_not_throw_on_failure();
+
+    exec_remotely(rpc);
+
+    if (!rpc.status().ok()) {
+        SILK_TRACE << "Failure of rpc PeerCount: " << rpc.status().error_message();
+        return 0;
+    }
+
+    sentry::PeerCountReply peers = rpc.reply();
+    return peers.count();
 }
 
 }  // namespace silkworm

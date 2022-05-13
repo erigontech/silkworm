@@ -86,11 +86,12 @@ void BlockExchange::execution_loop() {
         if (system_clock::now() - last_update > 30s) {
             last_update = system_clock::now();
             if (silkworm::log::test_verbosity(silkworm::log::Level::kDebug)) {
-                log::Trace () << "BlockExchange statistics:" << std::setfill(' ')
-                             << " messages: " << std::setw(3) << std::right << messages_.size()
-                             << " | headers: " << header_chain_.human_readable_status()
-                             << " | h-stats: " << header_chain_.statistics_
-                             << " | bodies: " << body_sequence_.human_readable_status();
+                log::Debug() << "BlockExchange headers | " << std::setfill(' ')
+                             << "status: " << header_chain_.human_readable_status() << " | "
+                             << "stats: " << header_chain_.human_readable_stats();
+                log::Debug() << "BlockExchange bodies | " << std::setfill(' ')
+                             << "status: " << body_sequence_.human_readable_status() << " | "
+                             << "stats: " << body_sequence_.human_readable_stats();
             }
         }
 

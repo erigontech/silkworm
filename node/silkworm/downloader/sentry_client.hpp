@@ -48,6 +48,7 @@ class SentryClient : public rpc::Client<sentry::Sentry>, public ActiveComponent 
 
     void set_status(Hash head_hash, BigInt head_td, const ChainIdentity&);  // init the remote sentry
     void hand_shake();  // needed by the remote sentry, also check the protocol version
+    uint64_t active_peers(); // ask the remote sentry for active peers
 
     using base_t::exec_remotely;  // exec_remotely(SentryRpc& rpc) sends a rpc request to the remote sentry
 

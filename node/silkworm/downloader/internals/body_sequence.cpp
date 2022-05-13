@@ -41,6 +41,8 @@ BlockNum BodySequence::highest_block_in_db() const { return highest_body_in_db_;
 void BodySequence::sync_current_state(BlockNum highest_body_in_db, BlockNum highest_header_in_db) {
     highest_body_in_db_ = highest_body_in_db;
     headers_stage_height_ = highest_header_in_db;
+
+    statistics_ = {}; // reset statistics
 }
 
 size_t BodySequence::outstanding_requests(time_point_t tp, seconds_t timeout) const {
@@ -62,6 +64,8 @@ std::list<NewBlockPacket>& BodySequence::announces_to_do() {
 
 Penalty BodySequence::accept_requested_bodies(const BlockBodiesPacket66& packet, const PeerId&) {
     Penalty penalty = NoPenalty;
+
+    statistics_.received_bodies += packet.request.size();
 
     // Find matching requests and completing PendingBodyRequest
     auto matching_requests = body_requests_.find_by_request_id(packet.requestId);
@@ -89,7 +93,7 @@ Penalty BodySequence::accept_requested_bodies(const BlockBodiesPacket66& packet,
 
             if (exact_request == body_requests_.end()) {
                 penalty = BadBlockPenalty;
-                log::Warning() << "*** Block rejected, no matching requests";
+                SILK_TRACE << "BodySequence: body rejected, no matching requests";
                 continue;
             }
         }
@@ -98,8 +102,8 @@ Penalty BodySequence::accept_requested_bodies(const BlockBodiesPacket66& packet,
         request.body = std::move(body);
         request.ready = true;
 
-        log::Info() << "*** Block accepted, block_num=" << request.block_height;
-        
+        SILK_TRACE << "BodySequence: body accepted, block_num=" << request.block_height;
+        statistics_.accepted_bodies += 1;
     }
 
     // Process remaining elements in matching_requests invalidating corresponding PendingBodyRequest
@@ -137,6 +141,8 @@ auto BodySequence::request_more_bodies(time_point_t tp, seconds_t timeout)
 
     if (packet.request.size() < kMaxBlocksPerMessage) make_new_requests(packet, min_block, tp, timeout);
 
+    statistics_.requested_bodies += packet.request.size();
+
     return {std::move(packet), std::move(penalizations), min_block};
 }
 
@@ -159,7 +165,8 @@ auto BodySequence::renew_stale_requests(GetBlockBodiesPacket66& packet, BlockNum
         // todo: Erigon increment a penalization counter for the peer but it doesn't use it
         //penalizations.emplace_back({Penalty::BadBlockPenalty, }); // todo: find/create a more precise penalization
 
-        log::Info() << "*** Renewed request block num= " << past_request.block_height << ", hash= " << past_request.block_hash;
+        SILK_TRACE << "BodySequence: renewed request block num= " << past_request.block_height
+                   << ", hash= " << past_request.block_hash;
 
         min_block = std::max(min_block, past_request.block_height);
 
@@ -202,7 +209,8 @@ void BodySequence::make_new_requests(GetBlockBodiesPacket66& packet, BlockNum& m
         }
         else {
             packet.request.push_back(new_request.block_hash);
-            log::Info() << "*** Requested block num= " << new_request.block_height << ", hash= " << new_request.block_hash;
+            SILK_TRACE << "BodySequence: requested body block-num= " << new_request.block_height
+                       << ", hash= " << new_request.block_hash;
             min_block = std::max(min_block, new_request.block_height);
         }
 
@@ -259,9 +267,8 @@ void BodySequence::add_to_announcements(BlockHeader header, BlockBody body, Db::
         return; // non inserted in announcement list
     }
 
-    auto td = *parent_td + header.difficulty;    
+    auto td = *parent_td + header.difficulty;
 
-    // todo: ok or we need this?
     //auto td = parent_td + canonical_difficulty(header.number, header.timestamp,
     //                                           parent_td, parent_ts, parent_has_uncle, chain_config_);
 
@@ -311,12 +318,29 @@ std::string BodySequence::human_readable_status() const {
     using namespace std::chrono_literals;
     std::ostringstream output;
 
-    output << std::setfill(' ')
-           << "reqs: " << std::setw(7) << std::right << outstanding_requests(std::chrono::system_clock::now(), 1min)
-           << ", db-height: " << std::setw(10) << std::right << highest_body_in_db_
-           << ", net-height: " << std::setw(10) << std::right << headers_stage_height_;
+    output << std::setfill('_')
+           << "reqs= " << std::setw(7) << std::right << outstanding_requests(std::chrono::system_clock::now(), 1min)
+           << ", db-height= " << std::setw(10) << std::right << highest_body_in_db_
+           << ", net-height= " << std::setw(10) << std::right << headers_stage_height_;
 
     return output.str();
+}
+
+std::string BodySequence::human_readable_stats() const {
+    return statistics_.human_readable_report();
+}
+
+std::string BodySequence::Statistics::human_readable_report() const {
+    std::ostringstream os;
+    uint64_t rejected_bodies = received_bodies - accepted_bodies;
+    uint64_t perc_received = requested_bodies > 0 ? received_bodies * 100 / requested_bodies : 0;
+    uint64_t perc_accepted = received_bodies > 0 ? accepted_bodies * 100 / received_bodies : 0;
+    uint64_t perc_rejected = received_bodies > 0 ? rejected_bodies * 100 / received_bodies : 0;
+    os << "req=" << requested_bodies << " "
+       << "rec=" << received_bodies << " (" << perc_received << "%) -> "
+       << "acc=" << accepted_bodies << " (" << perc_accepted << "%) "
+       << "rej=" << rejected_bodies << " (" << perc_rejected << "%)";
+    return os.str();
 }
 
 }

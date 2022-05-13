@@ -48,6 +48,8 @@ class EthereumBackEnd {
 
     void set_node_name(const std::string& node_name) noexcept;
 
+    void close();
+
   protected:
     //! Constructor for testability
     EthereumBackEnd(

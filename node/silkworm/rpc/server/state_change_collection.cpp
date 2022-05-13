@@ -25,12 +25,14 @@
 namespace silkworm::rpc {
 
 std::optional<StateChangeToken> StateChangeCollection::subscribe(StateChangeConsumer consumer, StateChangeFilter /*filter*/) {
+    std::unique_lock consumers_lock{consumers_mutex_};
     StateChangeToken token = ++next_token_;
     const auto [_, inserted] = consumers_.insert({token, consumer});
     return inserted ? std::make_optional(token) : std::nullopt;
 }
 
 bool StateChangeCollection::unsubscribe(StateChangeToken token) {
+    std::unique_lock consumers_lock{consumers_mutex_};
     const auto consumer_it = consumers_.erase(token);
     return consumer_it != 0;
 }
@@ -189,6 +191,7 @@ void StateChangeCollection::notify_batch(uint64_t pending_base_fee, uint64_t gas
     state_changes_.set_blockgaslimit(gas_limit);
     state_changes_.set_databaseviewid(tx_id_);
 
+    std::unique_lock consumers_lock{consumers_mutex_};
     for (const auto& [_, batch_callback] : consumers_) {
         // Make a copy of state change batch for every consumer because lifecycle is independent
         const std::optional<remote::StateChangeBatch> frozen_batch = state_changes_;
@@ -202,6 +205,7 @@ void StateChangeCollection::notify_batch(uint64_t pending_base_fee, uint64_t gas
 }
 
 void StateChangeCollection::close() {
+    std::unique_lock consumers_lock{consumers_mutex_};
     for (const auto& [_, batch_callback] : consumers_) {
         SILK_DEBUG << "Notify close to callback=" << &batch_callback;
         batch_callback(std::nullopt);

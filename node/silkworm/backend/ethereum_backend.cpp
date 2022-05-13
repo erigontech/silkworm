@@ -48,4 +48,8 @@ void EthereumBackEnd::set_node_name(const std::string& node_name) noexcept {
     node_name_ = node_name;
 }
 
+void EthereumBackEnd::close() {
+    state_change_collection_->close();
+}
+
 } // namespace silkworm

@@ -20,6 +20,7 @@
 #include <functional>
 #include <map>
 #include <memory>
+#include <mutex>
 #include <optional>
 
 #include <evmc/evmc.hpp>
@@ -100,6 +101,9 @@ class StateChangeCollection : public StateChangeSource {
 
     //! The registered batch consumers.
     std::map<StateChangeToken, StateChangeConsumer> consumers_;
+
+    //! The mutual exclusion protecting access to the registered consumers.
+    std::mutex consumers_mutex_;
 };
 
 } // namespace silkworm::rpc

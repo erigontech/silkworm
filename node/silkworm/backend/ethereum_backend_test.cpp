@@ -76,6 +76,11 @@ TEST_CASE("EthereumBackEnd", "[silkworm][backend][ethereum_backend]") {
         EthereumBackEnd backend{node_settings, &database_env};
         CHECK(backend.sentry_addresses() == std::vector<std::string>{kTestSentryAddress1, kTestSentryAddress2});
     }
+
+    SECTION("EthereumBackEnd::close", "[silkworm][backend][ethereum_backend]") {
+        EthereumBackEnd backend{node_settings, &database_env};
+        CHECK_NOTHROW(backend.close());
+    }
 }
 
 } // namespace silkworm

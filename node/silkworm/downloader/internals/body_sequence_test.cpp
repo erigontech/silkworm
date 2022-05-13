@@ -37,6 +37,7 @@ class BodySequence_ForTest : public BodySequence {
     // publication of internal members to test methods functioning
     using BodySequence::body_requests_;
     using BodySequence::PendingBodyRequest;
+    using BodySequence::outstanding_requests;
 };
 
 TEST_CASE("body downloading", "[silkworm][downloader][BodySequence]") {
@@ -108,6 +109,7 @@ TEST_CASE("body downloading", "[silkworm][downloader][BodySequence]") {
 
         std::vector<Hash>& block_requested = packet.request;
         REQUIRE(!block_requested.empty());
+        REQUIRE(bs.outstanding_requests(tp, timeout) > 0);
 
         Hash mainnet_block1_hash = Hash::from_hex("88e96d4537bea4d9c05d12549907b32561d3bf31f45aae734cdc119f13406cb6");
 

@@ -86,12 +86,19 @@ void BlockExchange::execution_loop() {
         if (system_clock::now() - last_update > 30s) {
             last_update = system_clock::now();
             if (silkworm::log::test_verbosity(silkworm::log::Level::kDebug)) {
-                log::Debug() << "BlockExchange headers | " << std::setfill(' ')
-                             << "status: " << header_chain_.human_readable_status() << " | "
-                             << "stats: " << header_chain_.human_readable_stats();
-                log::Debug() << "BlockExchange bodies | " << std::setfill(' ')
-                             << "status: " << body_sequence_.human_readable_status() << " | "
-                             << "stats: " << body_sequence_.human_readable_stats();
+                log::Debug() << "BlockExchange headers " << std::setfill('_')
+                             << "links= " << std::setw(7) << std::right << header_chain_.pending_links()
+                             << ", anchors= " << std::setw(3) << std::right << header_chain_.anchors()
+                             << ", db-height= " << std::setw(10) << std::right << header_chain_.highest_block_in_db()
+                             << ", net-height= " << std::setw(10) << std::right << header_chain_.top_seen_block_height()
+                             << "; stats: " << header_chain_.statistics();
+
+                log::Debug() << "BlockExchange bodies " << std::setfill('_')
+                             << "outstanding_requests= " << std::setw(7) << std::right
+                             << body_sequence_.outstanding_requests(std::chrono::system_clock::now(), 1min)
+                             << ", db-height= " << std::setw(10) << std::right << body_sequence_.highest_block_in_db()
+                             << ", net-height= " << std::setw(10) << std::right << body_sequence_.target_height()
+                             << "; stats: " << body_sequence_.statistics();
             }
         }
 

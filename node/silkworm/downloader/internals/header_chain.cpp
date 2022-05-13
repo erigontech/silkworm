@@ -67,47 +67,6 @@ size_t HeaderChain::anchors() const {
     return anchors_.size();
 }
 
-std::string HeaderChain::human_readable_status() const {
-    std::ostringstream output;
-
-    output << std::setfill('_')
-           << "links= " << std::setw(7) << std::right << pending_links()
-           << ", anchors= " << std::setw(3) << std::right << anchors()
-           << ", db-height= " << std::setw(10) << std::right << highest_block_in_db()
-           << ", net-height= " << std::setw(10) << std::right << top_seen_block_height();
-
-    return output.str();
-}
-
-std::string HeaderChain::dump_chain_bundles() const {
-    // anchor list
-    std::string output = "--**--\n";
-
-    // order
-    std::multimap<BlockNum, std::shared_ptr<Anchor>> ordered_anchors;
-    for (auto& a : anchors_) {
-        auto anchor = a.second;
-        ordered_anchors.insert({anchor->blockHeight, anchor});
-    }
-
-    // dump
-    for (auto& a : ordered_anchors) {
-        auto anchor = a.second;
-        auto seconds_from_last_req = std::chrono::duration_cast<std::chrono::seconds>(
-                                                 std::chrono::system_clock::now() - anchor->timestamp);
-        std::string anchor_dump = "--**-- anchor " + to_hex(anchor->parentHash) +
-                                  ": start=" + std::to_string(anchor->blockHeight) +
-                                  ", end=" + std::to_string(anchor->lastLinkHeight) +
-                                  ", len=" + std::to_string(anchor->chainLength()) +
-                                  ", ts=" + std::to_string(seconds_from_last_req.count()) + "secs\n";
-        output += anchor_dump;
-    }
-
-    output += "--**--";
-
-    return output;
-}
-
 std::vector<Announce>& HeaderChain::announces_to_do() { return announces_to_do_; }
 
 void HeaderChain::add_bad_headers(const std::set<Hash>& bads) {
@@ -268,14 +227,14 @@ std::optional<GetBlockHeadersPacket66> HeaderChain::request_skeleton() {
     using namespace std::chrono_literals;
 
     if (anchors_.size() > 64) {
-        statistics_.skeleton_condition = "busy";
+        skeleton_condition_ = "busy";
         return std::nullopt;
     }
 
     BlockNum top = top_seen_height_;
     BlockNum bottom = highest_in_db_ + stride;  // warning: this can be inside a chain in memory
     if (top <= bottom) {
-        statistics_.skeleton_condition = "end";
+        skeleton_condition_ = "end";
         return std::nullopt;
     }
 
@@ -286,7 +245,7 @@ std::optional<GetBlockHeadersPacket66> HeaderChain::request_skeleton() {
     if (lowest_anchor <= bottom) {
         log::Trace() << "HeaderChain, no need for skeleton request (lowest_anchor = " << lowest_anchor
                      << ", highest_in_db = " << highest_in_db_ << ")";
-        statistics_.skeleton_condition = "deep";
+        skeleton_condition_ = "deep";
         return std::nullopt;
     }
 
@@ -297,7 +256,7 @@ std::optional<GetBlockHeadersPacket66> HeaderChain::request_skeleton() {
     if (length == 0) {
         log::Trace() << "HeaderChain, no need for skeleton request (lowest_anchor = " << lowest_anchor
                      << ", highest_in_db = " << highest_in_db_ << ")";
-        statistics_.skeleton_condition = "low";
+        skeleton_condition_ = "low";
         return std::nullopt;
     }
 
@@ -308,8 +267,8 @@ std::optional<GetBlockHeadersPacket66> HeaderChain::request_skeleton() {
     packet.request.skip = stride - 1;
     packet.request.reverse = false;
 
-    statistics_.requested_headers += length;
-    statistics_.skeleton_condition = "ok";
+    statistics_.requested_items += length;
+    skeleton_condition_ = "ok";
 
     return {packet};
 }
@@ -383,7 +342,7 @@ auto HeaderChain::request_more_headers(time_point_t time_point, seconds_t timeou
             }; // we use blockHeight in place of parentHash to get also ommers if presents
             // we could request from origin=blockHeight-1 but debugging becomes more difficult
 
-            statistics_.requested_headers += max_len;
+            statistics_.requested_items += max_len;
 
             SILK_TRACE << "HeaderChain: trying to extend anchor " << anchor->blockHeight
                          << " (chain bundle len = " << anchor->chainLength()
@@ -474,17 +433,17 @@ auto HeaderChain::accept_headers(const std::vector<BlockHeader>& headers, uint64
     bool request_more_headers = false;
 
     if (headers.empty()) return {Penalty::NoPenalty, request_more_headers};
-    statistics_.received_headers += headers.size();
+    statistics_.received_items += headers.size();
 
     if (headers.begin()->number < top_seen_height_ &&  // an old header announcement? .
         !is_valid_request_id(requestId)) {   // anyway is not requested by us..
-        statistics_.not_requested_headers += headers.size();
+        statistics_.reject_causes.not_requested += headers.size();
         SILK_TRACE << "Rejecting message with reqId=" << requestId << " and first block=" << headers.begin()->number;
         return {Penalty::NoPenalty, request_more_headers};
     }
 
     if (find_bad_header(headers)) {
-        statistics_.bad_headers += headers.size();
+        statistics_.reject_causes.bad += headers.size();
         return {Penalty::BadBlockPenalty, request_more_headers};
     }
 
@@ -493,7 +452,7 @@ auto HeaderChain::accept_headers(const std::vector<BlockHeader>& headers, uint64
     auto [segments, penalty] = header_list->split_into_segments();
 
     if (penalty != Penalty::NoPenalty) {
-        statistics_.invalid_headers += headers.size();
+        statistics_.reject_causes.invalid += headers.size();
         return {penalty, request_more_headers};
     }
 
@@ -595,12 +554,12 @@ auto HeaderChain::process_segment(const Segment& segment, bool is_a_new_block, c
         // If duplicate segment is extending from the anchor, the anchor needs to be deleted,
         // otherwise it will keep producing requests that will be found duplicate
         if (anchor.has_value()) invalidate(anchor.value());
-        statistics_.duplicated_headers += segment.size();
+        statistics_.reject_causes.duplicated += segment.size();
         return false;
     }
 
-    statistics_.accepted_headers += end - start;
-    statistics_.duplicated_headers += segment.size() - (end - start);
+    statistics_.accepted_items += end - start;
+    statistics_.reject_causes.duplicated += segment.size() - (end - start);
 
     auto highest_header = segment.front();
     auto height = highest_header->number;
@@ -964,29 +923,38 @@ uint64_t HeaderChain::is_valid_request_id(uint64_t request_id) {
     return request_id_prefix == prefix;
 }
 
-std::string HeaderChain::human_readable_stats() const {
-    return statistics_.human_readable_report();
+const Download_Statistics& HeaderChain::statistics() const {
+    return statistics_;
 }
+/*
+std::string HeaderChain::dump_chain_bundles() const {
+    // anchor list
+    std::string output = "--**--\n";
 
-std::string HeaderChain::Statistics::human_readable_report() const {
-    std::ostringstream os;
-    uint64_t rejected_headers = received_headers - accepted_headers;
-    uint64_t unknown = rejected_headers - not_requested_headers - duplicated_headers - invalid_headers - bad_headers;
-    uint64_t perc_received = requested_headers > 0 ? received_headers * 100 / requested_headers : 0;
-    uint64_t perc_accepted = received_headers > 0 ? accepted_headers * 100 / received_headers : 0;
-    uint64_t perc_rejected = received_headers > 0 ? rejected_headers * 100 / received_headers : 0;
-    os << "req=" << requested_headers << " "
-       << "rec=" << received_headers << " (" << perc_received << "%) -> "
-       << "acc=" << accepted_headers << " (" << perc_accepted << "%) "
-       << "rej=" << rejected_headers << " (" << perc_rejected << "%, "
-       << "reasons: "
-       << "unr=" << not_requested_headers << ", "
-       << "dup=" << duplicated_headers << ", "
-       << "inv=" << invalid_headers << ", "
-       << "bad=" << bad_headers << ", "
-       << "unk=" << unknown << ")";
+    // order
+    std::multimap<BlockNum, std::shared_ptr<Anchor>> ordered_anchors;
+    for (auto& a : anchors_) {
+        auto anchor = a.second;
+        ordered_anchors.insert({anchor->blockHeight, anchor});
+    }
 
-    return os.str();
+    // dump
+    for (auto& a : ordered_anchors) {
+        auto anchor = a.second;
+        auto seconds_from_last_req = std::chrono::duration_cast<std::chrono::seconds>(
+            std::chrono::system_clock::now() - anchor->timestamp);
+        std::string anchor_dump = "--**-- anchor " + to_hex(anchor->parentHash) +
+                                  ": start=" + std::to_string(anchor->blockHeight) +
+                                  ", end=" + std::to_string(anchor->lastLinkHeight) +
+                                  ", len=" + std::to_string(anchor->chainLength()) +
+                                  ", ts=" + std::to_string(seconds_from_last_req.count()) + "secs\n";
+        output += anchor_dump;
+    }
+
+    output += "--**--";
+
+    return output;
 }
+*/
 
 }  // namespace silkworm

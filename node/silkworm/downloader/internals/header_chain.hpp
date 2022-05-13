@@ -27,6 +27,7 @@
 #include "preverified_hashes.hpp"
 #include "chain_elements.hpp"
 #include "header_only_state.hpp"
+#include "statistics.hpp"
 
 namespace silkworm {
 
@@ -75,11 +76,9 @@ class HeaderChain {
     void top_seen_block_height(BlockNum);
     size_t pending_links() const;
     size_t anchors() const;
-    std::string human_readable_status() const;
-    std::string human_readable_stats() const;
-    std::string dump_chain_bundles() const;
+    const Download_Statistics& statistics() const;
 
-    // core functionalities: anchor collection
+        // core functionalities: anchor collection
     // to collect anchor more quickly we do a skeleton request i.e. a request of many headers equally distributed in a
     // given range of block chain that we want to fill
     auto request_skeleton() -> std::optional<GetBlockHeadersPacket66>;
@@ -169,21 +168,8 @@ class HeaderChain {
     uint64_t request_id_prefix;
     uint64_t request_count = 0;
 
-    struct Statistics {
-        // headers status
-        uint64_t requested_headers = 0;
-        uint64_t received_headers = 0;
-        uint64_t accepted_headers = 0;
-        // not accepted
-        uint64_t not_requested_headers = 0;
-        uint64_t duplicated_headers = 0;
-        uint64_t invalid_headers = 0;
-        uint64_t bad_headers = 0;
-        // skeleton condition
-        std::string skeleton_condition;
-
-        std::string human_readable_report() const;
-    } statistics_;
+    Download_Statistics statistics_;
+    std::string skeleton_condition_;
 };
 
 }  // namespace silkworm

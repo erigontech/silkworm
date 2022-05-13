@@ -26,6 +26,7 @@ limitations under the License.
 #include <silkworm/downloader/packets/get_block_bodies_packet.hpp>
 
 #include "db_tx.hpp"
+#include "statistics.hpp"
 #include "types.hpp"
 
 namespace silkworm {
@@ -66,17 +67,17 @@ class BodySequence {
     std::list<NewBlockPacket>& announces_to_do();
 
     BlockNum highest_block_in_db() const;
+    BlockNum target_height() const;
+    size_t outstanding_requests(time_point_t tp, seconds_t timeout) const;
 
-    std::string human_readable_status() const;
-    std::string human_readable_stats() const;
+    const Download_Statistics& statistics() const;
+
   protected:
     void recover_initial_state();
     void make_new_requests(GetBlockBodiesPacket66&, MinBlock&, time_point_t tp, seconds_t timeout);
     auto renew_stale_requests(GetBlockBodiesPacket66&, MinBlock&, time_point_t tp, seconds_t timeout)
         -> std::vector<PeerPenalization>;
     void add_to_announcements(BlockHeader, BlockBody, Db::ReadOnlyAccess::Tx&);
-
-    size_t outstanding_requests(time_point_t tp, seconds_t timeout) const;
 
     static bool is_valid_body(const BlockHeader&, const BlockBody&);
 
@@ -120,15 +121,7 @@ class BodySequence {
     BlockNum highest_body_in_db_{0};
     BlockNum headers_stage_height_{0};
     time_point_t last_nack;
-
-    struct Statistics {
-        // headers status
-        uint64_t requested_bodies = 0;
-        uint64_t received_bodies = 0;
-        uint64_t accepted_bodies = 0;
-
-        std::string human_readable_report() const;
-    } statistics_;
+    Download_Statistics statistics_;
 };
 
 }

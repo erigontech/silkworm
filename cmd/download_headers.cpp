@@ -66,7 +66,7 @@ int main(int argc, char* argv[]) {
     using namespace std::chrono;
 
     // Command line parsing
-    CLI::App app{"Download Headers. Connect to p2p sentry and start header downloading process (stage 1)"};
+    CLI::App app{"Downloader. Connect to p2p sentry and start header/body downloading process (stages 1 and 2)"};
 
     string chain_name = ChainIdentity::mainnet.name;
     string db_path = DataDirectory{}.chaindata().path().string();
@@ -109,7 +109,7 @@ int main(int argc, char* argv[]) {
         else
             throw std::logic_error(chain_name + " not supported");
 
-        cout << "Download Headers - Silkworm\n"
+        cout << "Downloader - Silkworm\n"
              << "   chain-id: " << chain_identity.chain.chain_id << "\n"
              << "   genesis-hash: " << chain_identity.genesis_hash << "\n"
              << "   hard-forks: " << chain_identity.distinct_fork_numbers().size() << "\n";
@@ -157,6 +157,8 @@ int main(int argc, char* argv[]) {
 
             first_sync = false;
         } while (result.status != Status::Error);
+
+        cout << "Downloader stage-loop ended\n";
 
         // Wait for user termination request
         std::cin.get();            // wait for user press "enter"

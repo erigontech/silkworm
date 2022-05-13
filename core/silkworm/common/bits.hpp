@@ -24,12 +24,6 @@
 
 namespace silkworm {
 
-//! \brief Returns the minimum number of bits required to represent x; the result is 0 for x == 0.
-// int bitlen_16(uint16_t x);
-
-//! \brief Returns the number of trailing zero bits in x; the result is 16 for x == 0.
-// int ctz_16(uint16_t x);
-
 //! \brief Returns the number of one bits in x.
 inline uint16_t popcount_16(uint16_t x) {
 #ifdef _MSC_VER

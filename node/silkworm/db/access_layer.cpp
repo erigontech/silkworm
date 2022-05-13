@@ -264,10 +264,10 @@ static ByteView read_senders_raw(mdbx::txn& txn, const Bytes& key) {
     return data ? from_slice(data.value) : ByteView();
 }
 
-static void write_senders_raw(mdbx::txn& txn, const Bytes& key, const std::vector<evmc::address>& buffer) {
+static void write_senders_raw(mdbx::txn& txn, const Bytes& key, const Bytes& value) {
     Cursor target(txn, table::kSenders);
-    mdbx::slice data(buffer.data(), buffer.size() * sizeof(evmc::address));
-    target.insert(to_slice(key), data);
+    mdbx::slice value_slice{value.data(), value.length()};
+    mdbx::error::success_or_throw(target.put(to_slice(key), &value_slice, MDBX_APPEND));
 }
 
 std::vector<evmc::address> read_senders(mdbx::txn& txn, BlockNum block_number, const uint8_t (&hash)[kHashLength]) {
@@ -308,12 +308,17 @@ void parse_senders(mdbx::txn& txn, const Bytes& key, std::vector<Transaction>& o
 }
 
 void write_senders(mdbx::txn& txn, const Bytes& key, const std::vector<Transaction>& transactions) {
-    std::vector<evmc::address> buffer;
-    for (const auto& transaction : transactions) {
-        SILKWORM_ASSERT(transaction.from);
-        buffer.push_back(*transaction.from);
+    if (transactions.empty()) {
+        return;
     }
-    write_senders_raw(txn, key, buffer);
+    Bytes data(transactions.size() * kAddressLength, '\0');
+    size_t data_offset{0};
+    for (auto& transaction : transactions) {
+        SILKWORM_ASSERT(transaction.from.has_value());
+        std::memcpy(&data[data_offset], transaction.from.value().bytes, kAddressLength);
+        data_offset += kAddressLength;
+    }
+    write_senders_raw(txn, key, data);
 }
 
 std::optional<ByteView> read_code(mdbx::txn& txn, const evmc::bytes32& code_hash) {

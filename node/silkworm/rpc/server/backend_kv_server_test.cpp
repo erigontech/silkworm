@@ -37,7 +37,7 @@
 #include <silkworm/backend/ethereum_backend.hpp>
 #include <silkworm/rpc/conversion.hpp>
 #include <silkworm/rpc/util.hpp>
-#include <silkworm/rpc/server/state_change_collection.hpp>
+#include <silkworm/backend/state_change_collection.hpp>
 #include <types/types.pb.h>
 
 using namespace std::chrono_literals;
@@ -300,18 +300,18 @@ static const silkworm::db::MapConfig kTestMultiMap{"TestMultiTable", mdbx::key_m
 
 using namespace silkworm;
 
-using StateChangeTokenObserver = std::function<void(std::optional<rpc::StateChangeToken>)>;
+using StateChangeTokenObserver = std::function<void(std::optional<StateChangeToken>)>;
 
-struct TestableStateChangeCollection : public rpc::StateChangeCollection {
-    std::optional<rpc::StateChangeToken> subscribe(rpc::StateChangeConsumer consumer, rpc::StateChangeFilter filter) override {
-        const auto token = rpc::StateChangeCollection::subscribe(consumer, filter);
+struct TestableStateChangeCollection : public StateChangeCollection {
+    std::optional<StateChangeToken> subscribe(StateChangeConsumer consumer, StateChangeFilter filter) override {
+        const auto token = StateChangeCollection::subscribe(consumer, filter);
         if (token_observer_) {
             token_observer_(token);
         }
         return token;
     }
 
-    void set_token(rpc::StateChangeToken next_token) {
+    void set_token(StateChangeToken next_token) {
         next_token_ = next_token;
     }
 
@@ -791,7 +791,7 @@ TEST_CASE("BackEndKvServer E2E: KV", "[silkworm][node][rpc]") {
         std::mutex token_reset_mutex;
         std::condition_variable token_reset_condition;
         bool token_reset{false};
-        state_change_source->register_token_observer([&](std::optional<rpc::StateChangeToken> token) {
+        state_change_source->register_token_observer([&](std::optional<StateChangeToken> token) {
             if (token) {
                 // Purposely reset the subscription token
                 state_change_source->set_token(0);

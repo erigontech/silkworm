@@ -22,10 +22,10 @@
 #include <string>
 #include <vector>
 
+#include <silkworm/backend/state_change_collection.hpp>
 #include <silkworm/common/base.hpp>
 #include <silkworm/common/settings.hpp>
 #include <silkworm/chain/config.hpp>
-#include <silkworm/rpc/server/state_change_collection.hpp>
 
 namespace silkworm {
 
@@ -44,7 +44,7 @@ class EthereumBackEnd {
     std::optional<uint64_t> chain_id() const noexcept { return chain_id_; }
     std::optional<evmc::address> etherbase() const noexcept { return node_settings_.etherbase; }
     std::vector<std::string> sentry_addresses() const noexcept { return sentry_addresses_; }
-    rpc::StateChangeCollection* state_change_source() const noexcept { return state_change_collection_.get(); }
+    StateChangeCollection* state_change_source() const noexcept { return state_change_collection_.get(); }
 
     void set_node_name(const std::string& node_name) noexcept;
 
@@ -55,7 +55,7 @@ class EthereumBackEnd {
     EthereumBackEnd(
         const NodeSettings& node_settings,
         mdbx::env* chaindata_env,
-        std::unique_ptr<rpc::StateChangeCollection> state_change_collection);
+        std::unique_ptr<StateChangeCollection> state_change_collection);
 
   private:
     const NodeSettings& node_settings_;
@@ -63,7 +63,7 @@ class EthereumBackEnd {
     std::string node_name_{kDefaultNodeName};
     std::optional<uint64_t> chain_id_{std::nullopt};
     std::vector<std::string> sentry_addresses_;
-    std::unique_ptr<rpc::StateChangeCollection> state_change_collection_;
+    std::unique_ptr<StateChangeCollection> state_change_collection_;
 };
 
 } // namespace silkworm

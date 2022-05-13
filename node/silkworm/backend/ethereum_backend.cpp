@@ -21,13 +21,13 @@
 namespace silkworm {
 
 EthereumBackEnd::EthereumBackEnd(const NodeSettings& node_settings, mdbx::env* chaindata_env)
-    : EthereumBackEnd(node_settings, chaindata_env, std::make_unique<rpc::StateChangeCollection>()) {
+    : EthereumBackEnd(node_settings, chaindata_env, std::make_unique<StateChangeCollection>()) {
 }
 
 EthereumBackEnd::EthereumBackEnd(
     const NodeSettings& node_settings,
     mdbx::env* chaindata_env,
-    std::unique_ptr<rpc::StateChangeCollection> state_change_collection)
+    std::unique_ptr<StateChangeCollection> state_change_collection)
     : node_settings_(node_settings),
       chaindata_env_(chaindata_env),
       state_change_collection_(std::move(state_change_collection)) {

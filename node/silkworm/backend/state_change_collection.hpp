@@ -14,8 +14,8 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_RPC_STATE_CHANGE_COLLECTION_HPP_
-#define SILKWORM_RPC_STATE_CHANGE_COLLECTION_HPP_
+#ifndef SILKWORM_BACKEND_STATE_CHANGE_COLLECTION_HPP_
+#define SILKWORM_BACKEND_STATE_CHANGE_COLLECTION_HPP_
 
 #include <functional>
 #include <map>
@@ -29,7 +29,7 @@
 #include <remote/kv.pb.h>
 #include <silkworm/common/util.hpp>
 
-namespace silkworm::rpc {
+namespace silkworm {
 
 using StateChangeConsumer = std::function<void(std::optional<remote::StateChangeBatch>)>;
 
@@ -106,6 +106,6 @@ class StateChangeCollection : public StateChangeSource {
     std::mutex consumers_mutex_;
 };
 
-} // namespace silkworm::rpc
+} // namespace silkworm
 
-#endif // SILKWORM_RPC_STATE_CHANGE_COLLECTION_HPP_
+#endif // SILKWORM_BACKEND_STATE_CHANGE_COLLECTION_HPP_

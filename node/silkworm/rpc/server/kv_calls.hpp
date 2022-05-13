@@ -34,7 +34,7 @@
 #include <silkworm/rpc/server/call.hpp>
 #include <silkworm/rpc/server/call_factory.hpp>
 #include <silkworm/rpc/server/server.hpp>
-#include <silkworm/rpc/server/state_change_collection.hpp>
+#include <silkworm/backend/state_change_collection.hpp>
 
 // KV API protocol versions
 // 5.1.0 - first issue

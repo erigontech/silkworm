@@ -19,32 +19,32 @@
 namespace silkworm::trie {
 
 Bytes from_nibbles(ByteView data) {
-    const size_t count{(data.length() + 1) / 2};
-    Bytes out(count, '\0');
-    if (count == 0) {
-        return out;
+    if (data.empty()) {
+        return {};
+    }
+
+    size_t pos{data.length() & 1};
+    Bytes out((data.length() + pos) / 2, '\0');
+    if (pos) {
+        out.back() = data.back() << 4;
+        data.remove_suffix(1);
     }
 
     auto out_it{out.begin()};
     while (!data.empty()) {
-        *out_it = data[0] << 4;
-        data.remove_prefix(1);
-        if (!data.empty()) {
-            *out_it += data[0];
-            data.remove_prefix(1);
-            std::advance(out_it, 1);
-        }
+        *out_it++ = (data[0] << 4) + data[1];
+        data.remove_prefix(2);
     }
+
     return out;
 }
 
 Bytes to_nibbles(ByteView data) {
-    const size_t count{2 * data.length()};
-    Bytes out(2 * data.length(), '\0');
-    if (count == 0) {
-        return out;
+    if (data.empty()) {
+        return {};
     }
 
+    Bytes out(2 * data.length(), '\0');
     auto out_it{out.begin()};
     for (const auto& b : data) {
         *out_it++ = b >> 4;

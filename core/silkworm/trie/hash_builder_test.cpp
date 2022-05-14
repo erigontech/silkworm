@@ -145,11 +145,13 @@ TEST_CASE("Known root hash") {
 
 TEST_CASE("from_nibbles") {
     CHECK(from_nibbles({}).empty());
+    CHECK(to_hex(from_nibbles(*from_hex("0"))) == "00");
     CHECK(to_hex(from_nibbles(*from_hex("0a"))) == "a0");
     CHECK(to_hex(from_nibbles(*from_hex("0a0b"))) == "ab");
     CHECK(to_hex(from_nibbles(*from_hex("0a0b02"))) == "ab20");
     CHECK(to_hex(from_nibbles(*from_hex("0a0b0200"))) == "ab20");
     CHECK(to_hex(from_nibbles(*from_hex("0a0b0207"))) == "ab27");
+    CHECK(to_hex(from_nibbles(*from_hex("0a0b02075"))) == "a02050");
 }
 
 }  // namespace silkworm::trie

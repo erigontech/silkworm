@@ -16,6 +16,8 @@
 
 #include "nibbles.hpp"
 
+#include <cassert>
+
 namespace silkworm::trie {
 
 Bytes from_nibbles(ByteView data) {
@@ -25,17 +27,16 @@ Bytes from_nibbles(ByteView data) {
 
     size_t pos{data.length() & 1};
     Bytes out((data.length() + pos) / 2, '\0');
-    if (pos) {
-        out.back() = data.back() << 4;
-        data.remove_suffix(1);
-    }
-
     auto out_it{out.begin()};
-    while (!data.empty()) {
+    while (data.size() > pos) {
         *out_it++ = (data[0] << 4) + data[1];
         data.remove_prefix(2);
     }
-
+    if (pos) {
+        *out_it = data[0] << 4;
+        data.remove_prefix(1);
+    }
+    assert(data.empty());  // Ensure consumed
     return out;
 }
 
@@ -45,10 +46,11 @@ Bytes to_nibbles(ByteView data) {
     }
 
     Bytes out(2 * data.length(), '\0');
-    auto out_it{out.begin()};
+    size_t offset{0};
     for (const auto& b : data) {
-        *out_it++ = b >> 4;
-        *out_it++ = b & 0xF;
+        out[offset] = b >> 4;
+        out[offset + 1] = b & 0xF;
+        offset += 2;
     }
     return out;
 }

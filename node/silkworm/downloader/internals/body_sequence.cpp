@@ -38,6 +38,9 @@ void BodySequence::recover_initial_state() {
 
 BlockNum BodySequence::highest_block_in_db() const { return highest_body_in_db_; }
 BlockNum BodySequence::target_height() const { return headers_stage_height_; }
+BlockNum BodySequence::highest_block_in_memory() const { return body_requests_.highest_block(); }
+BlockNum BodySequence::lowest_block_in_memory() const { return body_requests_.lowest_block(); }
+
 
 void BodySequence::sync_current_state(BlockNum highest_body_in_db, BlockNum highest_header_in_db) {
     highest_body_in_db_ = highest_body_in_db;
@@ -136,12 +139,12 @@ auto BodySequence::request_more_bodies(time_point_t tp, seconds_t timeout)
     if (tp - last_nack < timeout)
         return {};
 
-    if (outstanding_requests(tp, timeout) > kMaxOutstandingRequests * kMaxBlocksPerMessage)
-        return {};
-
     auto penalizations = renew_stale_requests(packet, min_block, tp, timeout);
 
-    if (packet.request.size() < kMaxBlocksPerMessage) make_new_requests(packet, min_block, tp, timeout);
+    if (outstanding_requests(tp, timeout) < kMaxOutstandingRequests * kMaxBlocksPerMessage &&
+        packet.request.size() < kMaxBlocksPerMessage) {
+        make_new_requests(packet, min_block, tp, timeout);
+    }
 
     statistics_.requested_items += packet.request.size();
 
@@ -314,6 +317,16 @@ auto BodySequence::IncreasingHeightOrderedRequestContainer::find_by_hash(Hash oh
     });
 
     return r;
+}
+
+BlockNum BodySequence::IncreasingHeightOrderedRequestContainer::lowest_block() const {
+    if (empty()) return 0;
+    return begin()->first;
+}
+
+BlockNum BodySequence::IncreasingHeightOrderedRequestContainer::highest_block() const {
+    if (empty()) return 0;
+    return rbegin()->first;
 }
 
 const Download_Statistics& BodySequence::statistics() const {

@@ -67,6 +67,8 @@ class BodySequence {
     std::list<NewBlockPacket>& announces_to_do();
 
     BlockNum highest_block_in_db() const;
+    BlockNum highest_block_in_memory() const;
+    BlockNum lowest_block_in_memory() const;
     BlockNum target_height() const;
     size_t outstanding_requests(time_point_t tp, seconds_t timeout) const;
 
@@ -109,6 +111,9 @@ class BodySequence {
 
         std::list<Iter> find_by_request_id(uint64_t request_id);
         Iter find_by_hash(Hash oh, Hash tr);
+
+        BlockNum lowest_block() const;
+        BlockNum highest_block() const;
     };
 
     IncreasingHeightOrderedRequestContainer body_requests_;

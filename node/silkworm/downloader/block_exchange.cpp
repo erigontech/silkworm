@@ -87,18 +87,20 @@ void BlockExchange::execution_loop() {
             last_update = system_clock::now();
             if (silkworm::log::test_verbosity(silkworm::log::Level::kDebug)) {
                 log::Debug() << "BlockExchange headers " << std::setfill('_')
-                             << "links= " << std::setw(7) << std::right << header_chain_.pending_links()
-                             << ", anchors= " << std::setw(3) << std::right << header_chain_.anchors()
-                             << ", db-height= " << std::setw(10) << std::right << header_chain_.highest_block_in_db()
-                             << ", net-height= " << std::setw(10) << std::right << header_chain_.top_seen_block_height()
-                             << "; stats: " << header_chain_.statistics();
+                     << "links= " << std::setw(7) << std::right << header_chain_.pending_links()
+                     << ", anchors= " << std::setw(3) << std::right << header_chain_.anchors()
+                     << ", db-height= " << std::setw(10) << std::right << header_chain_.highest_block_in_db()
+                     << ", net-height= " << std::setw(10) << std::right << header_chain_.top_seen_block_height()
+                     << "; stats: " << header_chain_.statistics();
 
                 log::Debug() << "BlockExchange bodies " << std::setfill('_')
-                             << "outstanding_requests= " << std::setw(7) << std::right
-                             << body_sequence_.outstanding_requests(std::chrono::system_clock::now(), 1min)
-                             << ", db-height= " << std::setw(10) << std::right << body_sequence_.highest_block_in_db()
-                             << ", net-height= " << std::setw(10) << std::right << body_sequence_.target_height()
-                             << "; stats: " << body_sequence_.statistics();
+                     << "outstanding_requests= " << std::setw(7) << std::right
+                     << body_sequence_.outstanding_requests(std::chrono::system_clock::now(), 1min)
+                     << ", db-height= " << std::setw(10) << std::right << body_sequence_.highest_block_in_db()
+                     << ", mem-height= " << std::setw(10) << std::right << body_sequence_.lowest_block_in_memory()
+                                  << "-" << std::setw(10) << std::right << body_sequence_.highest_block_in_memory()
+                     << ", net-height= " << std::setw(10) << std::right << body_sequence_.target_height()
+                     << "; stats: " << body_sequence_.statistics();
             }
         }
 

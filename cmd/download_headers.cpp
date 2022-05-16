@@ -169,7 +169,7 @@ int main(int argc, char* argv[]) {
         stats_receiving.join();
         block_downloading.join();
     } catch (std::exception& e) {
-        cerr << "Exception: " << e.what() << "\n";
+        cerr << "Exception (type " << typeid(e).name() << "): " << e.what() << "\n";
         return_value = 1;
     }
 

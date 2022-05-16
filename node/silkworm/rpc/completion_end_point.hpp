@@ -17,6 +17,7 @@
 #ifndef SILKWORM_RPC_COMPLETION_END_POINT_HPP_
 #define SILKWORM_RPC_COMPLETION_END_POINT_HPP_
 
+#include <boost/asio/io_context.hpp>
 #include <grpcpp/grpcpp.h>
 
 namespace silkworm::rpc {
@@ -31,6 +32,9 @@ class CompletionEndPoint {
 
     //! Run at most one execution cycle polling gRPC completion queue for one event.
     int poll_one();
+
+    //! Post to scheduler at most one execution task polling gRPC completion queue for one event.
+    bool post_one(boost::asio::io_context& scheduler);
 
     //! Shutdown and drain the gRPC completion queue.
     void shutdown();

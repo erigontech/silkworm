@@ -55,6 +55,17 @@ void HeaderChain::top_seen_block_height(BlockNum n) { top_seen_height_ = n; }
 
 BlockNum HeaderChain::top_seen_block_height() const { return top_seen_height_; }
 
+std::pair<BlockNum,BlockNum> HeaderChain::anchor_height_range() const {
+    if (anchors_.empty()) return {0,0};
+    BlockNum min{std::numeric_limits<BlockNum>::max()}, max{0};
+    for (auto& a : anchors_) {
+        auto& anchor = a.second;
+        min = std::min(min, anchor->blockHeight);
+        max = std::max(max, anchor->blockHeight);
+    }
+    return {min, max};
+}
+
 bool HeaderChain::in_sync() const {
     return highest_in_db_ >= preverified_hashes_.height && top_seen_height_ > 0 && highest_in_db_ >= top_seen_height_;
 }

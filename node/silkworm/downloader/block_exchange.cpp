@@ -83,25 +83,27 @@ void BlockExchange::execution_loop() {
         message->execute(db_access_, header_chain_, body_sequence_, sentry_);
 
         // log status
-        if (system_clock::now() - last_update > 30s) {
+        if (silkworm::log::test_verbosity(silkworm::log::Level::kDebug) && system_clock::now() - last_update > 10s) {
             last_update = system_clock::now();
-            if (silkworm::log::test_verbosity(silkworm::log::Level::kDebug)) {
-                log::Debug() << "BlockExchange headers " << std::setfill('_')
-                     << "links= " << std::setw(7) << std::right << header_chain_.pending_links()
-                     << ", anchors= " << std::setw(3) << std::right << header_chain_.anchors()
-                     << ", db-height= " << std::setw(10) << std::right << header_chain_.highest_block_in_db()
-                     << ", net-height= " << std::setw(10) << std::right << header_chain_.top_seen_block_height()
-                     << "; stats: " << header_chain_.statistics();
 
-                log::Debug() << "BlockExchange bodies " << std::setfill('_')
-                     << "outstanding_requests= " << std::setw(7) << std::right
-                     << body_sequence_.outstanding_requests(std::chrono::system_clock::now(), 1min)
-                     << ", db-height= " << std::setw(10) << std::right << body_sequence_.highest_block_in_db()
-                     << ", mem-height= " << std::setw(10) << std::right << body_sequence_.lowest_block_in_memory()
-                                  << "-" << std::setw(10) << std::right << body_sequence_.highest_block_in_memory()
-                     << ", net-height= " << std::setw(10) << std::right << body_sequence_.target_height()
-                     << "; stats: " << body_sequence_.statistics();
-            }
+            auto [min_anchor_height, max_anchor_height] = header_chain_.anchor_height_range();
+            log::Debug() << "BlockExchange headers: " << std::setfill('_')
+                 << "links= " << std::setw(7) << std::right << header_chain_.pending_links()
+                 << ", anchors= " << std::setw(3) << std::right << header_chain_.anchors()
+                 << ", db-height= " << std::setw(10) << std::right << header_chain_.highest_block_in_db()
+                 << ", mem-height= " << std::setw(10) << std::right << min_anchor_height
+                              << "~" << std::setw(10) << std::right << max_anchor_height
+                 << ", net-height= " << std::setw(10) << std::right << header_chain_.top_seen_block_height()
+                 << "; stats: " << header_chain_.statistics();
+
+            log::Debug() << "BlockExchange bodies:  " << std::setfill('_')
+                 << "outstanding bodies= " << std::setw(6) << std::right
+                 << body_sequence_.outstanding_bodies(std::chrono::system_clock::now(), 1min) << "  "
+                 << ", db-height= " << std::setw(10) << std::right << body_sequence_.highest_block_in_db()
+                 << ", mem-height= " << std::setw(10) << std::right << body_sequence_.lowest_block_in_memory()
+                              << "~" << std::setw(10) << std::right << body_sequence_.highest_block_in_memory()
+                 << ", net-height= " << std::setw(10) << std::right << body_sequence_.target_height()
+                 << "; stats: " << body_sequence_.statistics();
         }
 
     }

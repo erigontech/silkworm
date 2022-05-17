@@ -74,6 +74,7 @@ class HeaderChain {
     BlockNum highest_block_in_db() const;
     BlockNum top_seen_block_height() const;
     void top_seen_block_height(BlockNum);
+    std::pair<BlockNum,BlockNum> anchor_height_range() const;
     size_t pending_links() const;
     size_t anchors() const;
     const Download_Statistics& statistics() const;

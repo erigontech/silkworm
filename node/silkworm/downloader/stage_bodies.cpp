@@ -112,7 +112,7 @@ Stage::Result BodiesStage::forward([[maybe_unused]] bool first_sync) {
 
     Stage::Result result;
 
-    auto constexpr KShortInterval = 1000ms;
+    auto constexpr KShortInterval = 200ms;
     auto constexpr kProgressUpdateInterval = 30s;
 
     StopWatch timing; timing.start();

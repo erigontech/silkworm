@@ -47,7 +47,7 @@ class BodySequence {
 
     //! core functionalities: trigger the internal algorithms to decide what bodies we miss
     using MinBlock = BlockNum;
-    auto request_more_bodies(time_point_t tp, seconds_t timeout)
+    auto request_more_bodies(time_point_t tp, seconds_t timeout, uint64_t active_peers)
         -> std::tuple<GetBlockBodiesPacket66, std::vector<PeerPenalization>, MinBlock>;
 
     //! it needs to know if the request issued was not delivered
@@ -70,9 +70,11 @@ class BodySequence {
     BlockNum highest_block_in_memory() const;
     BlockNum lowest_block_in_memory() const;
     BlockNum target_height() const;
-    size_t outstanding_requests(time_point_t tp, seconds_t timeout) const;
+    size_t outstanding_bodies(time_point_t tp, seconds_t timeout) const;
 
     const Download_Statistics& statistics() const;
+
+    static constexpr seconds_t kTimeout = std::chrono::seconds(10);
 
   protected:
     void recover_initial_state();
@@ -83,8 +85,8 @@ class BodySequence {
 
     static bool is_valid_body(const BlockHeader&, const BlockBody&);
 
-    static constexpr BlockNum kMaxBlocksPerMessage = 128;
-    static constexpr BlockNum kMaxOutstandingRequests = 128;
+    static constexpr BlockNum kMaxBlocksPerMessage = 64;
+    static constexpr BlockNum kPerPeerMaxOutstandingRequests = 1; // -> 512
     static constexpr BlockNum kMaxAnnouncedBlocks = 10000;
 
     struct PendingBodyRequest {

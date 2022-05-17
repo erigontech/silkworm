@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+#include <iomanip>
 #include "statistics.hpp"
 
 namespace silkworm {
@@ -24,10 +25,11 @@ std::ostream& operator<<(std::ostream& os, const Download_Statistics& stats) {
     uint64_t perc_rejected = stats.received_items > 0 ? stats.rejected_items() * 100 / stats.received_items : 0;
     uint64_t unknown = stats.rejected_items() - stats.reject_causes.not_requested - stats.reject_causes.duplicated
                        - stats.reject_causes.invalid - stats.reject_causes.bad;
-    os << "req=" << stats.requested_items << ", "
-       << "rec=" << stats.received_items << " (" << perc_received << "%) -> "
-       << "acc=" << stats.accepted_items << " (" << perc_accepted << "%), "
-       << "rej=" << stats.rejected_items() << " (" << perc_rejected << "%";
+    os << std::setfill('_')
+       << "req=" << std::setw(7) << std::right << stats.requested_items << ", "
+       << "rec=" << std::setw(7) << std::right << stats.received_items << " (" << perc_received << "%) -> "
+       << "acc=" << std::setw(7) << std::right << stats.accepted_items << " (" << perc_accepted << "%), "
+       << "rej=" << std::setw(7) << std::right << stats.rejected_items() << " (" << perc_rejected << "%";
 
     if (!stats.reduced)
         os << ", reasons: "

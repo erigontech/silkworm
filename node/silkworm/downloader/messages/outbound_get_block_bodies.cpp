@@ -32,11 +32,11 @@ void OutboundGetBlockBodies::execute(Db::ReadOnlyAccess, HeaderChain&, BodySeque
     using namespace std::literals::chrono_literals;
 
     time_point_t now = std::chrono::system_clock::now();
-    seconds_t timeout = 5s;
+    seconds_t timeout = BodySequence::kTimeout;
     int max_requests = 64;  // limit the number of requests sent per round
 
     do {
-        auto [packet, penalizations, min_block] = bs.request_more_bodies(now, timeout);
+        auto [packet, penalizations, min_block] = bs.request_more_bodies(now, timeout, sentry.active_peers());
 
         if (packet.request.empty()) break;
 

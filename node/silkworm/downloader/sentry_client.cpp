@@ -97,13 +97,13 @@ void SentryClient::execution_loop() {
 }
 
 void SentryClient::stats_receiving_loop() {
-    // ask the remote sentry about the current active peers
-    auto peers = active_peers();
-    log::Info() << "SentryClient, " << peers << " active peers";
-
     // send a stats subscription
     rpc::ReceivePeerStats receive_peer_stats;
     exec_remotely(receive_peer_stats);
+
+    // ask the remote sentry about the current active peers
+    count_active_peers();
+    log::Info() << "SentryClient, " << active_peers_ << " active peers";
 
     // receive stats
     while (!is_stopping() && receive_peer_stats.receive_one_reply()) {
@@ -113,20 +113,20 @@ void SentryClient::stats_receiving_loop() {
         const char* event = "";
         if (stat.event() == sentry::PeersReply::Connect) {
             event = "connected";
-            peers++;
+            active_peers_++;
         } else {
             event = "disconnected";
-            peers--;
-        }
+            if (active_peers_ > 0) active_peers_--; // workaround, to fix this we need to improve the interface
+        }                                           // or issue a count_active_peers()
 
-        log::Info() << "Peer " << peerId << " " << event << ", active " << peers;
+        log::Info() << "Peer " << peerId << " " << event << ", active " << active_peers_;
     }
 
     stop();
     log::Warning() << "SentryClient stats loop is stopping...";
 }
 
-uint64_t SentryClient::active_peers() {
+uint64_t SentryClient::count_active_peers() {
     using namespace std::chrono_literals;
     rpc::PeerCount rpc;
 
@@ -141,7 +141,13 @@ uint64_t SentryClient::active_peers() {
     }
 
     sentry::PeerCountReply peers = rpc.reply();
+    active_peers_.store(peers.count());
+
     return peers.count();
+}
+
+uint64_t SentryClient::active_peers() {
+    return active_peers_.load();
 }
 
 }  // namespace silkworm

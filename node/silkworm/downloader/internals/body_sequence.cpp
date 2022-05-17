@@ -26,6 +26,7 @@ namespace silkworm {
 BodySequence::BodySequence(const Db::ReadOnlyAccess& dba, const ChainIdentity& ci)
     : db_access_(dba), chain_identity_(ci) {
     recover_initial_state();
+    statistics_.reduced = true;
 }
 
 BodySequence::~BodySequence() {
@@ -50,7 +51,7 @@ void BodySequence::sync_current_state(BlockNum highest_body_in_db, BlockNum high
     statistics_.reduced = true;
 }
 
-size_t BodySequence::outstanding_requests(time_point_t tp, seconds_t timeout) const {
+size_t BodySequence::outstanding_bodies(time_point_t tp, seconds_t timeout) const {
     size_t requested_bodies{0};
 
     for (auto& br: body_requests_) {
@@ -129,7 +130,7 @@ Penalty BodySequence::accept_new_block(const Block& block, const PeerId&) {
     return Penalty::NoPenalty;
 }
 
-auto BodySequence::request_more_bodies(time_point_t tp, seconds_t timeout)
+auto BodySequence::request_more_bodies(time_point_t tp, seconds_t timeout, uint64_t active_peers)
     -> std::tuple<GetBlockBodiesPacket66, std::vector<PeerPenalization>, MinBlock> {
     GetBlockBodiesPacket66 packet;
     packet.requestId = RANDOM_NUMBER.generate_one();
@@ -141,7 +142,7 @@ auto BodySequence::request_more_bodies(time_point_t tp, seconds_t timeout)
 
     auto penalizations = renew_stale_requests(packet, min_block, tp, timeout);
 
-    if (outstanding_requests(tp, timeout) < kMaxOutstandingRequests * kMaxBlocksPerMessage &&
+    if (outstanding_bodies(tp, timeout) < kPerPeerMaxOutstandingRequests * active_peers * kMaxBlocksPerMessage &&
         packet.request.size() < kMaxBlocksPerMessage) {
         make_new_requests(packet, min_block, tp, timeout);
     }

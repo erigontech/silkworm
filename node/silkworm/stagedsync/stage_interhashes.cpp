@@ -171,7 +171,7 @@ trie::PrefixSet InterHashes::gather_forward_account_changes(
                     }
                 }
 
-                ret.insert(trie::to_nibbles(hashed_address.bytes), changeset_value_view.empty());
+                ret.insert(trie::unpack_nibbles(hashed_address.bytes), changeset_value_view.empty());
             }
             changeset_data = account_changeset.to_current_next_multi(/*throw_notfound=*/false);
         }
@@ -263,7 +263,7 @@ trie::PrefixSet InterHashes::gather_forward_storage_changes(
             const ByteView location{changeset_value_view.substr(0, kHashLength)};
             const auto hashed_location{keccak256(location)};
 
-            auto unpacked_location{trie::to_nibbles(hashed_location.bytes)};
+            auto unpacked_location{trie::unpack_nibbles(hashed_location.bytes)};
             std::memcpy(&hashed_key[hashed_key_prefix_len], unpacked_location.data(), unpacked_location.length());
             ret.insert(ByteView(hashed_key.data(), hashed_key_prefix_len + unpacked_location.length()));
             changeset_data = storage_changeset.to_current_next_multi(/*throw_notfound=*/false);
@@ -411,6 +411,11 @@ evmc::bytes32 InterHashes::calculate_root(db::RWTxn& txn, trie::PrefixSet& accou
         }
     };
 
+    /*
+        trie::AccCursor trie_cursor(trie_accounts,account_changes,{}, account_collector_.get());
+        trie_cursor.seek({});
+    */
+
     trie::Cursor trie_cursor{trie_accounts, account_changes, account_collector_.get()};
     size_t log_trigger_counter{1};
 
@@ -427,7 +432,7 @@ evmc::bytes32 InterHashes::calculate_root(db::RWTxn& txn, trie::PrefixSet& accou
         }
 
         trie_cursor.next();
-        const Bytes trie_cursor_key{trie_cursor.key().value_or(Bytes{})};
+        const auto trie_cursor_key{trie_cursor.key()};
         auto hashed_account_data{hashed_accounts.lower_bound(db::to_slice(*uncovered), /*throw_notfound=*/false)};
 
         while (hashed_account_data) {
@@ -442,8 +447,8 @@ evmc::bytes32 InterHashes::calculate_root(db::RWTxn& txn, trie::PrefixSet& accou
                 log_trigger_counter = 128;
             }
 
-            const Bytes nibbled_key{trie::to_nibbles(data_key_view)};
-            if (trie_cursor_key < nibbled_key) {
+            const Bytes nibbled_key{trie::unpack_nibbles(data_key_view)};
+            if (trie_cursor_key.has_value() && trie_cursor_key.value() < nibbled_key) {
                 break;
             }
 
@@ -502,19 +507,20 @@ evmc::bytes32 InterHashes::calculate_storage_root(db::RWTxn& txn, const Bytes& d
         }
 
         trie_cursor.next();
+        const auto trie_cursor_key{trie_cursor.key()};
         auto hashed_storage_data{hashed_storage.lower_bound_multivalue(db::to_slice(db_storage_prefix),
                                                                        db::to_slice(*uncovered),
                                                                        /*throw_notfound=*/false)};
         while (hashed_storage_data) {
             const ByteView data_value_view{db::from_slice(hashed_storage_data.value)};
-            const Bytes unpacked_location{trie::to_nibbles(data_value_view.substr(0, kHashLength))};
-            if (trie_cursor.key().has_value() && trie_cursor.key().value() < unpacked_location) {
+            const Bytes nibbled_location{trie::unpack_nibbles(data_value_view.substr(0, kHashLength))};
+            if (trie_cursor_key.has_value() && trie_cursor_key.value() < nibbled_location) {
                 break;
             }
             const ByteView value{data_value_view.substr(kHashLength)};
             rlp.clear();
             rlp::encode(rlp, value);
-            hash_builder.add_leaf(unpacked_location, rlp);
+            hash_builder.add_leaf(nibbled_location, rlp);
             hashed_storage_data = hashed_storage.to_current_next_multi(/*throw_notfound=*/false);
         }
     }

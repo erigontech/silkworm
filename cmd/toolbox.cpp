@@ -951,6 +951,59 @@ void do_extract_headers(db::EnvConfig& config, const std::string& file_name, uin
     out_stream.close();
 }
 
+void do_scan_trie(db::EnvConfig& config, bool del) {
+    auto env{silkworm::db::open_env(config)};
+    auto txn{env.start_write()};
+    std::vector<db::MapConfig> tables{db::table::kTrieOfAccounts, db::table::kTrieOfStorage};
+    size_t counter{1};
+
+    for (const auto& map_config : tables) {
+        if (SignalHandler::signalled()) {
+            break;
+        }
+        db::Cursor cursor(txn, map_config);
+        std::cout << " Scanning " << map_config.name << std::endl;
+        auto data{cursor.to_first(false)};
+        while (data) {
+            if (data.value.empty()) {
+                std::cout << "Empty value at key " << to_hex(db::from_slice(data.key), true) << std::endl;
+                if (del) {
+                    cursor.erase();
+                }
+            }
+            data = cursor.to_next(false);
+            if (!--counter) {
+                counter = 128;
+                if (SignalHandler::signalled()) {
+                    break;
+                }
+            }
+        }
+    }
+    if (!SignalHandler::signalled()) {
+        txn.commit();
+    }
+    std::cout << "\n" << std::endl;
+}
+
+void do_reset_trie(db::EnvConfig& config) {
+
+    if (!config.exclusive) {
+        throw std::runtime_error("Reset trie tool requires exclusive access to database");
+    }
+
+    auto env{silkworm::db::open_env(config)};
+    auto txn{env.start_write()};
+    std::cout << "Clearing " << db::table::kTrieOfAccounts.name << std::endl;
+    txn.clear_map(db::table::kTrieOfAccounts.name);
+    std::cout << "Clearing " << db::table::kTrieOfStorage.name << std::endl;
+    txn.clear_map(db::table::kTrieOfStorage.name);
+    db::stages::write_stage_progress(txn, db::stages::kIntermediateHashesKey, 0);
+    std::cout << "Committing " << std::endl;
+    txn.commit();
+
+}
+
 int main(int argc, char* argv[]) {
     SignalHandler::init();
 
@@ -1056,6 +1109,14 @@ int main(int argc, char* argv[]) {
                                             ->default_val("100000")
                                             ->check(CLI::Range(1u, UINT32_MAX));
 
+    // Scan tries
+    auto cmd_scantrie = app_main.add_subcommand("scan-trie", "Scans tries for empty values");
+    auto cmd_scantrie_delete_opt = cmd_scantrie->add_flag("--delete", "Delete");
+
+    // Reset tries
+    auto cmd_resettrie = app_main.add_subcommand("reset-trie", "Resets stage_interhashes");
+
+
     /*
      * Parse arguments and validate
      */
@@ -1136,6 +1197,10 @@ int main(int argc, char* argv[]) {
         } else if (*cmd_extract_headers) {
             do_extract_headers(src_config, cmd_extract_headers_file_opt->as<std::string>(),
                                cmd_extract_headers_step_opt->as<uint32_t>());
+        } else if (*cmd_scantrie) {
+            do_scan_trie(src_config, static_cast<bool>(*cmd_scantrie_delete_opt));
+        } else if (*cmd_resettrie) {
+            do_reset_trie(src_config);
         }
 
         return 0;

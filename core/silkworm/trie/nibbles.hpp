@@ -21,15 +21,16 @@
 
 namespace silkworm::trie {
 
-//! \brief Transforms a string of of bytes into a string of Nibbles
-//! \def A Nibble's value is [0..16)
-//! \see Erigon's CompressNibbles
-Bytes to_nibbles(ByteView data);
-
 //! \brief Transforms a string of of Nibbles into a string of Bytes
 //! \def A Nibble's value is [0..16)
+//! \see Erigon's CompressNibbles
+Bytes pack_nibbles(ByteView unpacked);
+
+//! \brief Transforms a string of of bytes into a string of Nibbles
+//! \def A Nibble's value is [0..16)
 //! \see Erigon's DecompressNibbles
-Bytes from_nibbles(ByteView data);
+Bytes unpack_nibbles(ByteView data);
+
 
 }  // namespace silkworm::trie
 

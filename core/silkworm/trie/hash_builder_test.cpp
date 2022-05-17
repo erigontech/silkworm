@@ -14,7 +14,6 @@
    limitations under the License.
 */
 
-
 #include <iterator>
 
 #include <catch2/catch.hpp>
@@ -40,8 +39,8 @@ TEST_CASE("HashBuilder1") {
     const auto val2{*from_hex("02")};
 
     HashBuilder hb;
-    hb.add_leaf(to_nibbles(key1), val1);
-    hb.add_leaf(to_nibbles(key2), val2);
+    hb.add_leaf(unpack_nibbles(key1), val1);
+    hb.add_leaf(unpack_nibbles(key2), val2);
 
     // even terminating
     const Bytes encoded_empty_terminating_path{*from_hex("20")};
@@ -96,7 +95,7 @@ TEST_CASE("HashBuilder2") {
     ethash::hash256 hash0{keccak256(rlp0)};
 
     HashBuilder hb0;
-    hb0.add_leaf(to_nibbles(key0), val0);
+    hb0.add_leaf(unpack_nibbles(key0), val0);
     CHECK(to_hex(hb0.root_hash()) == to_hex(hash0.bytes));
 
     // ------------------------------------------------------------------------------------------
@@ -125,8 +124,8 @@ TEST_CASE("HashBuilder2") {
     ethash::hash256 hash1{keccak256(rlp1)};
 
     HashBuilder hb1;
-    hb1.add_leaf(to_nibbles(key0), val0);
-    hb1.add_leaf(to_nibbles(key1), val1);
+    hb1.add_leaf(unpack_nibbles(key0), val0);
+    hb1.add_leaf(unpack_nibbles(key1), val1);
     CHECK(to_hex(hb1.root_hash()) == to_hex(hash1.bytes));
 
     // ------------------------------------------------------------------------------------------
@@ -143,15 +142,34 @@ TEST_CASE("Known root hash") {
     CHECK(to_hex(hb.root_hash()) == to_hex(root_hash.bytes));
 }
 
-TEST_CASE("from_nibbles") {
-    CHECK(from_nibbles({}).empty());
-    CHECK(to_hex(from_nibbles(*from_hex("0"))) == "00");
-    CHECK(to_hex(from_nibbles(*from_hex("0a"))) == "a0");
-    CHECK(to_hex(from_nibbles(*from_hex("0a0b"))) == "ab");
-    CHECK(to_hex(from_nibbles(*from_hex("0a0b02"))) == "ab20");
-    CHECK(to_hex(from_nibbles(*from_hex("0a0b0200"))) == "ab20");
-    CHECK(to_hex(from_nibbles(*from_hex("0a0b0207"))) == "ab27");
-    CHECK(to_hex(from_nibbles(*from_hex("0a0b02075"))) == "a02050");
+TEST_CASE("Nibbles") {
+    std::vector<std::pair<std::string, std::string>> test_cases = {
+        // Bytes -> Nibbles
+        {"00", "0000"},                                            //
+        {"01", "0001"},                                            //
+        {"0f", "000f"},                                            //
+        {"f011", "0f000101"},                                      //
+        {"f111", "0f010101"},                                      //
+        {"123456789a", "0102030405060708090a"},                    //
+        {"123456789f", "0102030405060708090f"},                    //
+        {"12345678aa", "01020304050607080a0a"},                    //
+        {"123456789abcdeff", "0102030405060708090a0b0c0d0e0f0f"},  //
+    };
+
+    for (const auto& test_case : test_cases) {
+        if (test_case.first.empty()) {
+            auto packed{pack_nibbles({})};
+            REQUIRE(packed.empty());
+            REQUIRE(unpack_nibbles(packed).empty());
+            continue;
+        }
+
+        const auto packed{from_hex(test_case.first)};
+        const auto unpacked{from_hex(test_case.second)};
+        REQUIRE((packed.has_value() && unpacked.has_value()));
+        REQUIRE(to_hex(unpack_nibbles(*packed)) == test_case.second);
+        REQUIRE(to_hex(pack_nibbles(*unpacked)) == test_case.first);
+    }
 }
 
 }  // namespace silkworm::trie

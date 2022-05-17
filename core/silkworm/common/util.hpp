@@ -27,12 +27,6 @@
 
 #include <silkworm/common/base.hpp>
 
-/*
-#ifdef _MSC_VER
-#include <intrin.h>
-#endif
-*/
-
 namespace silkworm {
 
 // If a given string is shorter than min_size,

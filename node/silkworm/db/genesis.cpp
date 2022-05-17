@@ -171,7 +171,7 @@ bool initialize_genesis(mdbx::txn& txn, const nlohmann::json& genesis_json, bool
 
             trie::HashBuilder hb;
             for (const auto& [hash, rlp] : account_rlp) {
-                hb.add_leaf(trie::to_nibbles(hash), rlp);
+                hb.add_leaf(trie::unpack_nibbles(hash), rlp);
             }
             state_root_hash = hb.root_hash();
         }

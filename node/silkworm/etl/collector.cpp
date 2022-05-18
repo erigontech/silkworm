@@ -142,8 +142,12 @@ void Collector::load(mdbx::cursor& target, const LoadFunc& load_func, MDBX_put_f
             load_func(etl_entry, target, flags);
         } else {
             mdbx::slice k{db::to_slice(etl_entry.key)};
-            mdbx::slice v{db::to_slice(etl_entry.value)};
-            mdbx::error::success_or_throw(target.put(k, &v, flags));
+            if (etl_entry.value.empty()) {
+                target.erase(k);
+            } else {
+                mdbx::slice v{db::to_slice(etl_entry.value)};
+                mdbx::error::success_or_throw(target.put(k, &v, flags));
+            }
         }
 
         // From the provider which has served the current key

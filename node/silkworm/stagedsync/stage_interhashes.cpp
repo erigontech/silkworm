@@ -142,7 +142,7 @@ trie::PrefixSet InterHashes::gather_forward_account_changes(
 
         while (changeset_data) {
             auto changeset_value_view{db::from_slice(changeset_data.value)};
-            evmc::address address{to_evmc_address(changeset_value_view)};
+            const evmc::address address{to_evmc_address(changeset_value_view)};
             changeset_value_view.remove_prefix(kAddressLength);
 
             if (!hashed_addresses.contains(address)) {
@@ -186,13 +186,9 @@ trie::PrefixSet InterHashes::gather_forward_account_changes(
         for (const auto& hash : deleted_hashes) {
             auto hash_slice{db::to_slice(hash)};
             auto data{trie_storage.lower_bound(hash_slice, /*throw_notfound=*/false)};
-            while (data) {
-                if (data.key.starts_with(hash_slice)) {
-                    trie_storage.erase();
-                    data = trie_storage.to_next(/*throw_notfound=*/false);
-                    continue;
-                }
-                break;
+            while (data && data.key.starts_with(hash_slice)) {
+                trie_storage.erase();
+                data = trie_storage.to_next(/*throw_notfound=*/false);
             }
         }
     }
@@ -494,10 +490,12 @@ evmc::bytes32 InterHashes::calculate_storage_root(db::RWTxn& txn, const Bytes& d
     };
 
     trie::Cursor trie_cursor{trie_storage, storage_changes, storage_collector_.get(), db_storage_prefix};
-    while (trie_cursor.key().has_value()) {
+    auto trie_cursor_key{trie_cursor.key()};
+
+    while (trie_cursor_key.has_value()) {
         if (trie_cursor.can_skip_state()) {
             SILKWORM_ASSERT(trie_cursor.hash() != nullptr);
-            hash_builder.add_branch_node(*trie_cursor.key(), *trie_cursor.hash(), trie_cursor.children_are_in_trie());
+            hash_builder.add_branch_node(*trie_cursor_key, *trie_cursor.hash(), trie_cursor.children_are_in_trie());
         }
 
         const std::optional<Bytes> uncovered{trie_cursor.first_uncovered_prefix()};
@@ -507,7 +505,8 @@ evmc::bytes32 InterHashes::calculate_storage_root(db::RWTxn& txn, const Bytes& d
         }
 
         trie_cursor.next();
-        const auto trie_cursor_key{trie_cursor.key()};
+        trie_cursor_key = trie_cursor.key();
+
         auto hashed_storage_data{hashed_storage.lower_bound_multivalue(db::to_slice(db_storage_prefix),
                                                                        db::to_slice(*uncovered),
                                                                        /*throw_notfound=*/false)};

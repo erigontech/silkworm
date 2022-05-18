@@ -124,6 +124,15 @@ cmd/silkworm --datadir <same-datadir-path-used-for-erigon>
 * To build simply `CTRL+Shift+B`
 * Binaries are written to `%USERPROFILE%\CMakeBuilds\silkworm\build` If you want to change this path simply edit `CMakeSettings.json` file.
 
+**Note ! Memory compression on Windows 10/11**
+
+Windows 10/11 provide a _memory compression_ feature which makes available more RAM than what physically mounted at cost of extra CPU cycles to compress/decompress while accessing data. As MDBX is a memory mapped file this feature may impact overall performances. Is advisable to have memory compression off.
+
+Use the following steps to detect/enable/disable memory compression:
+* Open a PowerShell prompt with Admin privileges
+* Run `Get-MMAgent` (check whether memory compression is enabled)
+* To disable memory compression : `Disable-MMAgent -mc` and reboot
+* To enable memory compression : `Enable-MMAgent -mc` and reboot
 
 ## Codemap
 

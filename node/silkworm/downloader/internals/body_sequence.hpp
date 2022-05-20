@@ -74,7 +74,7 @@ class BodySequence {
 
     const Download_Statistics& statistics() const;
 
-    static constexpr seconds_t kTimeout = std::chrono::seconds(10);
+    static constexpr seconds_t kTimeout = std::chrono::seconds(5);
 
   protected:
     void recover_initial_state();

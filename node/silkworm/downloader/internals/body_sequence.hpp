@@ -85,8 +85,8 @@ class BodySequence {
 
     static bool is_valid_body(const BlockHeader&, const BlockBody&);
 
-    static constexpr BlockNum kMaxBlocksPerMessage = 64;
-    static constexpr BlockNum kPerPeerMaxOutstandingRequests = 1; // -> 512
+    static constexpr BlockNum kMaxBlocksPerMessage = 32; // geth acceptance limit
+    static constexpr BlockNum kPerPeerMaxOutstandingRequests = 2; // higher values lead to missed responses
     static constexpr BlockNum kMaxAnnouncedBlocks = 10000;
 
     struct PendingBodyRequest {

@@ -98,10 +98,11 @@ TEST_CASE("body downloading", "[silkworm][downloader][BodySequence]") {
 
     time_point_t tp = std::chrono::system_clock::now();
     seconds_t timeout = 1min;
+    uint64_t active_peers = 1;
 
     SECTION("should request block 1 & should accept it") {
         // requesting
-        auto [packet, penalizations, min_block] = bs.request_more_bodies(tp, timeout);
+        auto [packet, penalizations, min_block] = bs.request_more_bodies(tp, timeout, active_peers);
 
         REQUIRE(penalizations.empty());
         REQUIRE(min_block > 0);

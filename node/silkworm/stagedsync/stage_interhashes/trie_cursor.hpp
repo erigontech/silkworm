@@ -91,11 +91,18 @@ class AccCursor {
     explicit AccCursor(mdbx::cursor& db_cursor, PrefixSet& changed, ByteView prefix = {},
                        etl::Collector* collector = nullptr);
 
-    void seek(ByteView prefix);  // See Erigon's AtPrefix
-    bool to_next();              // See Erigon's Next (capital N)
+    struct move_operation_result {
+        ByteView k{};
+        ByteView v{};
+        bool has_tree{false};
+    };
+
+    move_operation_result at_prefix(ByteView prefix);     // See Erigon's AtPrefix
+    move_operation_result to_next();                      // See Erigon's Next (capital N)
+    std::optional<Bytes> first_uncovered_prefix() const;  // Next prefix (packed) not covered in subtree
+    [[nodiscard]] bool can_skip_state() const { return skip_state_; }
 
   private:
-    // TrieAccount(TrieStorage) node with a particular nibble selected
     struct SubNode {
         ByteView key{};
         ByteView value{};
@@ -114,8 +121,8 @@ class AccCursor {
         void parse(ByteView k, ByteView v);
     };
 
-    mdbx::cursor& db_cursor_;  // MDBX Cursor to TrieAccounts
-    PrefixSet& changed_;
+    mdbx::cursor& db_cursor_;             // MDBX Cursor to TrieAccounts
+    PrefixSet& changed_;                  // List of changed addresses for incremental promotion
     etl::Collector* collector_{nullptr};  // To queue deleted records
 
     std::vector<SubNode> sub_nodes_{64, SubNode{}};
@@ -131,11 +138,12 @@ class AccCursor {
     Bytes next_created_{};
     Bytes first_uncovered_{};
 
+    ByteView hash(int8_t id);
     bool has_state();
     bool has_tree();
     bool has_hash();
 
-    bool next();
+    move_operation_result next();
     void preorder_traversal_step();
     void preorder_traversal_step_no_indepth();
     void delete_current();
@@ -165,9 +173,6 @@ class AccCursor {
 //! \return The incremented (and eventually shortened) sequence of 0xF nibbles,
 //! \remarks Being a prefix of nibbles trailing zeroes must be erased
 std::optional<Bytes> increment_nibbled_key(ByteView nibbles);
-
-//! \brief Computes the next uncovered (by trie cursor) prefix
-std::optional<Bytes> compute_next_uncovered_prefix(ByteView previous, ByteView prefix);
 
 //! \brief Kinda normal lexicographic comparator with the difference empty keys are last
 bool key_is_before(ByteView k1, ByteView k2);

@@ -41,25 +41,24 @@ void Cursor::consume_node(ByteView key, bool exact) {
             return;
         }
         key = db::from_slice(db_data.key);
-        if (!has_prefix(key, prefix_)) {
-            subnodes_.clear();
-            return;
+        if (!prefix_.empty()) {
+            if (!has_prefix(key, prefix_)) {
+                subnodes_.clear();
+                return;
+            }
+            key.remove_prefix(prefix_.length());
         }
-        key.remove_prefix(prefix_.length());
     }
 
     std::optional<Node> node{std::nullopt};
+    int nibble{0};
     if (db_data) {
         node = Node::from_encoded_storage(db::from_slice(db_data.value));
         SILKWORM_ASSERT(node.has_value());
         SILKWORM_ASSERT(node->state_mask() != 0);
-    }
-
-    int nibble{0};
-    if (!node.has_value() || node->root_hash().has_value()) {
-        nibble = -1;
+        nibble = node->root_hash().has_value() ? -1 : ctz_16(node->state_mask()) - 1;
     } else {
-        nibble = ctz_16(node->state_mask()) - 1;
+        nibble = -1;
     }
 
     if (!key.empty() && !subnodes_.empty()) {
@@ -90,6 +89,7 @@ void Cursor::next() {
             move_to_next_sibling(/*allow_root_to_child_nibble_within_subnode=*/true);
         } else {
             consume_node(sub_node.full_key(), /*exact=*/false);
+            return;  // ^^ Already updates skip_state
         }
     } else {
         move_to_next_sibling(/*allow_root_to_child_nibble_within_subnode=*/false);
@@ -131,8 +131,8 @@ void Cursor::move_to_next_sibling(bool allow_root_to_child_nibble_within_subnode
     }
 
     while (sub_node.nibble < 16) {
-        if(sub_node.node->state_mask() & (1u << sub_node.nibble)) {
-            return ;
+        if (sub_node.node->state_mask() & (1u << sub_node.nibble)) {
+            return;
         }
         ++sub_node.nibble;
     }
@@ -214,7 +214,7 @@ std::optional<Bytes> Cursor::first_uncovered_prefix() const {
     if (can_skip_state_ && k.has_value()) {
         k = increment_nibbled_key(*k);
     }
-    if (k == std::nullopt) {
+    if (!k.has_value()) {
         return std::nullopt;
     }
     return pack_nibbles(*k);
@@ -236,19 +236,6 @@ std::optional<Bytes> increment_nibbled_key(ByteView nibbles) {
     return ret;
 }
 
-std::optional<Bytes> compute_next_uncovered_prefix(ByteView previous, ByteView prefix) {
-    Bytes ret;
-    if (!previous.empty()) {
-        ret = *increment_nibbled_key(previous);
-    } else {
-        ret.assign(prefix);
-    }
-    if (ret.size() & 1) {
-        ret.append({'\0'});
-    }
-    return pack_nibbles(ret);
-}
-
 AccCursor::AccCursor(mdbx::cursor& db_cursor, PrefixSet& changed, ByteView prefix, etl::Collector* collector)
     : db_cursor_{db_cursor}, changed_{changed}, collector_{collector} {
     prefix_.reserve(64);
@@ -258,9 +245,9 @@ AccCursor::AccCursor(mdbx::cursor& db_cursor, PrefixSet& changed, ByteView prefi
     buff_.reserve(64);
 }
 
-void AccCursor::seek(ByteView prefix) {
-    prefix_.assign(prefix);
+AccCursor::move_operation_result AccCursor::at_prefix(ByteView prefix) {
     skip_state_ = true;
+    prefix_.assign(prefix);
 
     auto [_, next_created]{changed_.contains_and_next_marked({})};
     next_created_ = next_created;
@@ -269,15 +256,15 @@ void AccCursor::seek(ByteView prefix) {
     if (!seek_in_db(prefix, {})) {
         curr_.clear();
         skip_state_ = false;
-        return;
+        return {};
     }
-
     if (consume()) {
-        (void)next();
+        return {{curr_}, hash(sub_nodes_[level_].hash_id), has_tree()};
     }
+    return next();
 }
 
-bool AccCursor::to_next() {
+AccCursor::move_operation_result AccCursor::to_next() {
     skip_state_ = true;
     prev_.assign(curr_);
     preorder_traversal_step_no_indepth();
@@ -285,34 +272,51 @@ bool AccCursor::to_next() {
     if (sub_nodes_[level_].key.empty()) {
         curr_.clear();
         skip_state_ = skip_state_ && !increment_nibbled_key(prev_).has_value();
-        return false;
+        return {};
     }
 
     if (consume()) {
-        return has_tree();
+        return {{curr_}, hash(sub_nodes_[level_].hash_id), has_tree()};
     }
     return next();
 }
 
+std::optional<Bytes> AccCursor::first_uncovered_prefix() const {
+    std::optional<Bytes> ret;
+    if (!prev_.empty()) {
+        ret = increment_nibbled_key(prev_);
+    } else {
+        ret.emplace(prefix_);
+    }
+
+    if (!ret.has_value()) {
+        return ret;
+    }
+    return pack_nibbles(ret.value());
+}
+
+ByteView AccCursor::hash(int8_t id) {
+    return sub_nodes_[level_].value.substr(kHashLength * static_cast<int>(id), kHashLength);
+}
 bool AccCursor::has_state() { return sub_nodes_[level_].has_state(); }
 bool AccCursor::has_tree() { return sub_nodes_[level_].has_tree(); }
 bool AccCursor::has_hash() { return sub_nodes_[level_].has_hash(); }
 
-bool AccCursor::next() {
+AccCursor::move_operation_result AccCursor::next() {
     skip_state_ = skip_state_ && has_tree();
     preorder_traversal_step();
-    while (true) {
-        if (sub_nodes_[level_].key.empty()) {
-            curr_.clear();
-            skip_state_ = skip_state_ && !increment_nibbled_key(prev_).has_value();
-            return false;
-        }
+
+    while (!sub_nodes_[level_].key.empty()) {
         if (consume()) {
-            return has_tree();
+            return {{curr_}, hash(sub_nodes_[level_].hash_id), has_tree()};
         }
         skip_state_ = skip_state_ && has_tree();
         preorder_traversal_step();
     }
+
+    curr_.clear();
+    skip_state_ = skip_state_ && !increment_nibbled_key(prev_).has_value();
+    return {};
 }
 
 void AccCursor::preorder_traversal_step() {
@@ -487,11 +491,11 @@ void AccCursor::SubNode::reset() {
 
 void AccCursor::SubNode::parse(ByteView k, ByteView v) {
     key = k;
-    value = v;
+    value = v.substr(6);
     deleted = false;
-    state_mask = endian::load_big_u16(&v.data()[0]);
-    tree_mask = endian::load_big_u16(&v.data()[2]);
-    hash_mask = endian::load_big_u16(&v.data()[4]);
+    state_mask = endian::load_big_u16(&v[0]);
+    tree_mask = endian::load_big_u16(&v[2]);
+    hash_mask = endian::load_big_u16(&v[4]);
     hash_id = -1;
     child_id = static_cast<int8_t>(ctz_16(state_mask) - 1);
 }

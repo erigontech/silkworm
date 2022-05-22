@@ -89,7 +89,6 @@ void Cursor::next() {
             move_to_next_sibling(/*allow_root_to_child_nibble_within_subnode=*/true);
         } else {
             consume_node(sub_node.full_key(), /*exact=*/false);
-            return;  // ^^ Already updates skip_state
         }
     } else {
         move_to_next_sibling(/*allow_root_to_child_nibble_within_subnode=*/false);
@@ -108,38 +107,35 @@ void Cursor::update_skip_state() {
 }
 
 void Cursor::move_to_next_sibling(bool allow_root_to_child_nibble_within_subnode) {
-    if (subnodes_.empty()) {
-        // end-of-tree
-        return;
-    }
+    while (!subnodes_.empty()) {
+        SubNode& sub_node{subnodes_.back()};
 
-    SubNode& sub_node{subnodes_.back()};
+        if (sub_node.nibble >= 0xF || (sub_node.nibble < 0 && !allow_root_to_child_nibble_within_subnode)) {
+            // this node is fully traversed
+            subnodes_.pop_back();
+            allow_root_to_child_nibble_within_subnode = false;
+            continue;
+        }
 
-    if (sub_node.nibble >= 15 || (sub_node.nibble < 0 && !allow_root_to_child_nibble_within_subnode)) {
-        // this node is fully traversed
-        subnodes_.pop_back();
-        move_to_next_sibling(false);  // on parent
-        return;
-    }
+        ++sub_node.nibble;
 
-    ++sub_node.nibble;
-
-    if (!sub_node.node.has_value()) {
-        // we can't rely on the state flag, so search in the DB
-        consume_node(sub_node.full_key(), /*exact=*/false);
-        return;
-    }
-
-    while (sub_node.nibble < 16) {
-        if (sub_node.node->state_mask() & (1u << sub_node.nibble)) {
+        if (!sub_node.node.has_value()) {
+            // we can't rely on the state flag, so search in the DB
+            consume_node(sub_node.full_key(), /*exact=*/false);
             return;
         }
-        ++sub_node.nibble;
-    }
 
-    // this node is fully traversed
-    subnodes_.pop_back();
-    move_to_next_sibling(false);  // on parent
+        while (sub_node.nibble <= 0xF) {
+            if (sub_node.node->state_mask() & (1u << sub_node.nibble)) {
+                return;
+            }
+            ++sub_node.nibble;
+        }
+
+        // this node is fully traversed
+        subnodes_.pop_back();
+        allow_root_to_child_nibble_within_subnode = false;
+    }
 }
 
 Bytes Cursor::SubNode::full_key() const {

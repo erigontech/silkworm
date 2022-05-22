@@ -89,6 +89,7 @@ void Cursor::next() {
             move_to_next_sibling(/*allow_root_to_child_nibble_within_subnode=*/true);
         } else {
             consume_node(sub_node.full_key(), /*exact=*/false);
+            return;  // ^^ already updates skip state
         }
     } else {
         move_to_next_sibling(/*allow_root_to_child_nibble_within_subnode=*/false);

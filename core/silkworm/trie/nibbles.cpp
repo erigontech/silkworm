@@ -36,7 +36,7 @@ Bytes pack_nibbles(ByteView unpacked) {
         *out_it = unpacked[0] << 4;
         unpacked.remove_prefix(1);
     }
-    assert(data.empty());  // Ensure consumed
+    assert(unpacked.empty());  // Ensure consumed
     return out;
 }
 

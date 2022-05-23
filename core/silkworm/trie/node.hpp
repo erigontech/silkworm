@@ -66,10 +66,8 @@ class Node {
 
 bool operator==(const Node& a, const Node& b);
 
-inline void assert_subset(uint16_t sub, uint16_t sup) {
-    auto intersection{sub & sup};
-    assert(intersection == sub);
-    (void)intersection;
+inline bool is_subset(uint16_t sub, uint16_t sup) {
+    return (sub & sup) == sub;
 }
 
 }  // namespace silkworm::trie

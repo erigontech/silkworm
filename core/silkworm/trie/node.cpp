@@ -28,8 +28,8 @@ Node::Node(uint16_t state_mask, uint16_t tree_mask, uint16_t hash_mask, std::vec
       hash_mask_{hash_mask},
       hashes_{std::move(hashes)},
       root_hash_{root_hash} {
-    assert_subset(tree_mask_, state_mask_);
-    assert_subset(hash_mask_, state_mask_);
+    assert(is_subset(tree_mask, state_mask));
+    assert(is_subset(hash_mask, state_mask));
     assert(popcount_16(hash_mask_) == hashes_.size());
 }
 
@@ -64,9 +64,9 @@ std::optional<Node> Node::from_encoded_storage(ByteView raw) {
         return std::nullopt;
     }
 
-    const auto state_mask{endian::load_big_u16(&raw.data()[0])};
-    const auto tree_mask{endian::load_big_u16(&raw.data()[2])};
-    const auto hash_mask{endian::load_big_u16(&raw.data()[4])};
+    const auto state_mask{endian::load_big_u16(&raw[0])};
+    const auto tree_mask{endian::load_big_u16(&raw[2])};
+    const auto hash_mask{endian::load_big_u16(&raw[4])};
     raw.remove_prefix(6);
 
     std::optional<evmc::bytes32> root_hash{std::nullopt};

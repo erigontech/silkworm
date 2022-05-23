@@ -71,15 +71,24 @@ std::optional<Node> Node::from_encoded_storage(ByteView raw) {
     raw.remove_prefix(6);
 
     std::optional<evmc::bytes32> root_hash{std::nullopt};
-    size_t num_hashes{raw.length() / kHashLength};
-    if (popcount_16(hash_mask) + 1u == num_hashes) {
+    size_t expected_num_hashes{popcount_16(hash_mask)};
+    size_t effective_num_hashes{raw.length() / kHashLength};
+
+    if (effective_num_hashes < expected_num_hashes) {
+        return std::nullopt;
+    }
+
+    size_t delta{effective_num_hashes - expected_num_hashes};
+    if (delta > 1) {
+        return std::nullopt;
+    } else if (delta == 1) {
         root_hash = evmc::bytes32{};
         std::memcpy(root_hash->bytes, raw.data(), kHashLength);
         raw.remove_prefix(kHashLength);
-        --num_hashes;
+        --effective_num_hashes;
     }
 
-    std::vector<evmc::bytes32> hashes(num_hashes);
+    std::vector<evmc::bytes32> hashes(effective_num_hashes);
     std::memcpy(hashes.data(), raw.data(), raw.length());
 
     return Node{state_mask, tree_mask, hash_mask, hashes, root_hash};

@@ -1138,7 +1138,7 @@ void do_trie_integrity(db::EnvConfig config, bool with_state_coverage) {
     std::cout << " Integrity check successful" << std::endl;
 }
 
-void do_reset_trie(db::EnvConfig& config) {
+void do_trie_reset(db::EnvConfig& config) {
     if (!config.exclusive) {
         throw std::runtime_error("Reset trie tool requires exclusive access to database");
     }
@@ -1260,11 +1260,11 @@ int main(int argc, char* argv[]) {
                                             ->check(CLI::Range(1u, UINT32_MAX));
 
     // Scan tries
-    auto cmd_scantrie = app_main.add_subcommand("scan-trie", "Scans tries for empty values");
-    auto cmd_scantrie_delete_opt = cmd_scantrie->add_flag("--delete", "Delete");
+    auto cmd_trie_scan = app_main.add_subcommand("trie-scan", "Scans tries for empty values");
+    auto cmd_trie_scan_delete_opt = cmd_trie_scan->add_flag("--delete", "Delete");
 
     // Reset tries
-    auto cmd_resettrie = app_main.add_subcommand("reset-trie", "Resets stage_interhashes");
+    auto cmd_trie_reset = app_main.add_subcommand("trie-reset", "Resets stage_interhashes");
 
     // Trie integrity
     auto cmd_trie_integrity = app_main.add_subcommand("trie-integrity", "Checks trie integrity");
@@ -1350,10 +1350,10 @@ int main(int argc, char* argv[]) {
         } else if (*cmd_extract_headers) {
             do_extract_headers(src_config, cmd_extract_headers_file_opt->as<std::string>(),
                                cmd_extract_headers_step_opt->as<uint32_t>());
-        } else if (*cmd_scantrie) {
-            do_scan_trie(src_config, static_cast<bool>(*cmd_scantrie_delete_opt));
-        } else if (*cmd_resettrie) {
-            do_reset_trie(src_config);
+        } else if (*cmd_trie_scan) {
+            do_scan_trie(src_config, static_cast<bool>(*cmd_trie_scan_delete_opt));
+        } else if (*cmd_trie_reset) {
+            do_trie_reset(src_config);
         } else if (*cmd_trie_integrity) {
             do_trie_integrity(src_config, static_cast<bool>(*cmd_trie_integrity_state_opt));
         }

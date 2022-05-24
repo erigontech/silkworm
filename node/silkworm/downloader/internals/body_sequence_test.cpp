@@ -139,6 +139,29 @@ TEST_CASE("body downloading", "[silkworm][downloader][BodySequence]") {
         REQUIRE(request_status.block_hash == mainnet_block1_hash); // same as before
         REQUIRE(request_status.header == header1); // same as before
     }
+
+    SECTION("should renew the request of block 1") {
+        // requesting
+        auto [packet1, penalizations1, min_block1] = bs.request_more_bodies(tp, timeout, active_peers);
+
+        BodySequence_ForTest::PendingBodyRequest& request_status1 = bs.body_requests_[1];
+
+        REQUIRE(request_status1.block_height == 1);
+        REQUIRE(request_status1.request_time == tp);
+        REQUIRE(request_status1.ready == false);
+
+        request_status1.request_time -= timeout; // make request stale
+
+        // make another request
+        auto [packet2, penalizations2, min_block2] = bs.request_more_bodies(tp, timeout, active_peers);
+
+        BodySequence_ForTest::PendingBodyRequest& request_status2 = bs.body_requests_[1];
+
+        // should renew the previous request
+        REQUIRE(request_status2.block_height == 1);
+        REQUIRE(request_status2.request_time == tp);
+        REQUIRE(request_status2.ready == false);
+    }
 }
 
 }  // namespace silkworm

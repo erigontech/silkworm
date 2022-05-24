@@ -36,8 +36,6 @@ struct Download_Statistics {
         uint64_t invalid{0};
         uint64_t bad{0};
     } reject_causes;
-
-    bool reduced{false};
 };
 
 std::ostream& operator<<(std::ostream& os, const Download_Statistics& stats);

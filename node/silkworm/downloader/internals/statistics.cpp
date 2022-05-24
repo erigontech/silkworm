@@ -31,15 +31,12 @@ std::ostream& operator<<(std::ostream& os, const Download_Statistics& stats) {
        << "acc=" << std::setw(7) << std::right << stats.accepted_items << " (" << perc_accepted << "%), "
        << "rej=" << std::setw(7) << std::right << stats.rejected_items() << " (" << perc_rejected << "%";
 
-    if (!stats.reduced)
-        os << ", reasons: "
-           << "unr=" << stats.reject_causes.not_requested << ", "
-           << "dup=" << stats.reject_causes.duplicated << ", "
-           << "inv=" << stats.reject_causes.invalid << ", "
-           << "bad=" << stats.reject_causes.bad << ", "
-           << "unk=" << unknown << ")";
-    else
-        os << ")";
+    os << ", reasons: "
+       << "unr=" << stats.reject_causes.not_requested << ", "
+       << "dup=" << stats.reject_causes.duplicated << ", "
+       << "inv=" << stats.reject_causes.invalid << ", "
+       << "bad=" << stats.reject_causes.bad << ", "
+       << "unk=" << unknown << ")";
 
     return os;
 }

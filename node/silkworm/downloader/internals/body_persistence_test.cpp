@@ -146,6 +146,24 @@ TEST_CASE("BodyPersistence - body persistence") {
 
         // close
         bp.close();
+
+        // re-opening
+        BodyPersistence bp2(tx, chain_identity);
+
+        // check internal status
+        REQUIRE(bp2.initial_height() == 1);
+        REQUIRE(bp2.highest_height() == 1);
+
+        // close
+        bp2.close();
+
+        // removing a block
+        BodyPersistence::remove_bodies(0, block1.header.hash(), tx);
+
+        // check internal status
+        BodyPersistence bp3(tx, chain_identity);
+        REQUIRE(bp3.initial_height() == 0);
+        REQUIRE(bp3.highest_height() == 0);
     }
 }
 

@@ -26,7 +26,6 @@ namespace silkworm {
 BodySequence::BodySequence(const Db::ReadOnlyAccess& dba, const ChainIdentity& ci)
     : db_access_(dba), chain_identity_(ci) {
     recover_initial_state();
-    statistics_.reduced = true;
 }
 
 BodySequence::~BodySequence() {
@@ -48,7 +47,6 @@ void BodySequence::sync_current_state(BlockNum highest_body_in_db, BlockNum high
     headers_stage_height_ = highest_header_in_db;
 
     statistics_ = {}; // reset statistics
-    statistics_.reduced = true;
 }
 
 size_t BodySequence::outstanding_bodies(time_point_t tp, seconds_t timeout) const {
@@ -100,16 +98,22 @@ Penalty BodySequence::accept_requested_bodies(const BlockBodiesPacket66& packet,
             if (exact_request == body_requests_.end()) {
                 penalty = BadBlockPenalty;
                 SILK_TRACE << "BodySequence: body rejected, no matching requests";
+                statistics_.reject_causes.not_requested += 1;
                 continue;
             }
         }
 
         PendingBodyRequest& request = exact_request->second;
-        request.body = std::move(body);
-        request.ready = true;
+        if (!request.ready) {
+            request.body = std::move(body);
+            request.ready = true;
+            statistics_.accepted_items += 1;
+            SILK_TRACE << "BodySequence: body accepted, block_num=" << request.block_height;
+        }
+        else {
+            statistics_.reject_causes.duplicated += 1;
+        }
 
-        SILK_TRACE << "BodySequence: body accepted, block_num=" << request.block_height;
-        statistics_.accepted_items += 1;
     }
 
     // Process remaining elements in matching_requests invalidating corresponding PendingBodyRequest

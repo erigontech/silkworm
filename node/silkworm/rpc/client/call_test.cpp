@@ -18,6 +18,8 @@
 
 #include <catch2/catch.hpp>
 
+#include <remote/ethbackend.grpc.pb.h>
+
 namespace silkworm::rpc {
 
 TEST_CASE("AsyncCall", "[silkworm][rpc][client][call]") {
@@ -32,6 +34,42 @@ TEST_CASE("AsyncCall", "[silkworm][rpc][client][call]") {
 
     SECTION("AsyncCall::AsyncCall") {
         FakeCall call{&queue};
+        CHECK(call.peer().empty());
+        CHECK(call.start_time() <= std::chrono::steady_clock::now());
+        CHECK(call.status().ok());
+        CHECK_NOTHROW(call.cancel());
+    }
+}
+
+static const std::string kTestAddressUri{"localhost:12345"};
+
+TEST_CASE("AsyncUnaryCall", "[silkworm][rpc][client][call]") {
+    class FakeUnaryCall : public AsyncUnaryCall<
+        remote::NetVersionRequest,
+        remote::NetVersionReply,
+        remote::ETHBACKEND::StubInterface,
+        &remote::ETHBACKEND::StubInterface::PrepareAsyncNetVersion> {
+      public:
+        explicit FakeUnaryCall(grpc::CompletionQueue* queue, remote::ETHBACKEND::StubInterface* stub, CompletionFunc func = {})
+            : AsyncUnaryCall(queue, stub, func) {}
+      protected:
+        bool proceed(bool /*ok*/) override { return false; }
+    };
+
+    grpc::CompletionQueue queue;
+    auto channel = grpc::CreateChannel(kTestAddressUri, grpc::InsecureChannelCredentials());
+    auto stub_ptr = remote::ETHBACKEND::NewStub(channel, grpc::StubOptions{});
+
+    SECTION("AsyncUnaryCall::AsyncUnaryCall 1") {
+        FakeUnaryCall call{&queue, stub_ptr.get(), [](auto* /*call*/) {}};
+        CHECK(call.peer().empty());
+        CHECK(call.start_time() <= std::chrono::steady_clock::now());
+        CHECK(call.status().ok());
+        CHECK_NOTHROW(call.cancel());
+    }
+
+    SECTION("AsyncUnaryCall::AsyncUnaryCall 2") {
+        FakeUnaryCall call{&queue, stub_ptr.get()};
         CHECK(call.peer().empty());
         CHECK(call.start_time() <= std::chrono::steady_clock::now());
         CHECK(call.status().ok());

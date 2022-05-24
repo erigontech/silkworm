@@ -85,11 +85,13 @@ class AsyncUnaryCall : public AsyncCall {
   public:
     using CompletionFunc = std::function<void(AsyncUnaryCall<Request, Reply, StubInterface, PrepareAsyncUnary>*)>;
 
-    explicit AsyncUnaryCall(grpc::CompletionQueue* queue, CompletionFunc completion_handler, StubInterface* stub)
+    explicit AsyncUnaryCall(grpc::CompletionQueue* queue, StubInterface* stub, CompletionFunc completion_handler = {})
     : AsyncCall(queue), stub_(stub), completion_handler_(completion_handler) {
         process_proceed_ = [&](bool ok) {
             proceed(ok); // no need to check return value, unary calls always complete in one step
-            completion_handler_(this);
+            if (completion_handler_) {
+                completion_handler_(this);
+            }
         };
     }
 

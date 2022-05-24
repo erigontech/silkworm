@@ -30,7 +30,7 @@ class AsyncPeerCountCall : public AsyncUnaryCall<
     sentry::Sentry::StubInterface,
     &sentry::Sentry::StubInterface::PrepareAsyncPeerCount> {
   public:
-    explicit AsyncPeerCountCall(grpc::CompletionQueue* queue, CompletionFunc completion_handler, sentry::Sentry::StubInterface* stub);
+    explicit AsyncPeerCountCall(grpc::CompletionQueue* queue, sentry::Sentry::StubInterface* stub, CompletionFunc completion_handler);
 
     bool proceed(bool ok) override;
 };
@@ -41,7 +41,7 @@ class AsyncNodeInfoCall : public AsyncUnaryCall<
     sentry::Sentry::StubInterface,
     &sentry::Sentry::StubInterface::PrepareAsyncNodeInfo> {
   public:
-    explicit AsyncNodeInfoCall(grpc::CompletionQueue* queue, CompletionFunc completion_handler, sentry::Sentry::StubInterface* stub);
+    explicit AsyncNodeInfoCall(grpc::CompletionQueue* queue, sentry::Sentry::StubInterface* stub, CompletionFunc completion_handler);
 
     bool proceed(bool ok) override;
 };

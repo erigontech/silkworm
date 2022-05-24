@@ -23,8 +23,8 @@ namespace silkworm::rpc {
 
 UnaryStats AsyncCall::unary_stats_;
 
-AsyncPeerCountCall::AsyncPeerCountCall(grpc::CompletionQueue* queue, CompletionFunc completion_handler, sentry::Sentry::StubInterface* stub)
-: AsyncUnaryCall(queue, completion_handler, stub) {
+AsyncPeerCountCall::AsyncPeerCountCall(grpc::CompletionQueue* queue, sentry::Sentry::StubInterface* stub, CompletionFunc completion_handler)
+: AsyncUnaryCall(queue, stub, completion_handler) {
 }
 
 bool AsyncPeerCountCall::proceed(bool ok) {
@@ -40,8 +40,8 @@ bool AsyncPeerCountCall::proceed(bool ok) {
     return true;
 }
 
-AsyncNodeInfoCall::AsyncNodeInfoCall(grpc::CompletionQueue* queue, CompletionFunc completion_handler, sentry::Sentry::StubInterface* stub)
-: AsyncUnaryCall(queue, completion_handler, stub) {
+AsyncNodeInfoCall::AsyncNodeInfoCall(grpc::CompletionQueue* queue, sentry::Sentry::StubInterface* stub, CompletionFunc completion_handler)
+: AsyncUnaryCall(queue, stub, completion_handler) {
 }
 
 bool AsyncNodeInfoCall::proceed(bool ok) {

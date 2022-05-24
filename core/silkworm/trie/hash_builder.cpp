@@ -258,7 +258,7 @@ void HashBuilder::gen_struct_step(ByteView current, const ByteView succeeding) {
 
 // Takes children from the stack and replaces them with branch node ref.
 std::vector<Bytes> HashBuilder::branch_ref(uint16_t state_mask, uint16_t hash_mask) {
-    assert_subset(hash_mask, state_mask);
+    assert(is_subset(hash_mask, state_mask));
     std::vector<Bytes> child_hashes;
     child_hashes.reserve(popcount_16(hash_mask));
 

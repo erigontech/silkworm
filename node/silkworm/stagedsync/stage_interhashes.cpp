@@ -467,6 +467,18 @@ evmc::bytes32 InterHashes::calculate_root(db::RWTxn& txn, trie::PrefixSet& accou
         auto trie_cursor_key{trie_cursor.key()};
 
         while (trie_cursor_key.has_value()) {
+
+            if (!--log_trigger_counter) {
+                std::unique_lock<std::mutex> log_lck(log_mtx_);
+                current_source_ = "HashedState";
+                current_key_ = to_hex(trie_cursor_key.value(), true);
+                log_lck.unlock();
+                throw_if_stopping();
+                log_trigger_counter = 128;
+            }
+
+
+
             if (trie_cursor.can_skip_state()) {
                 auto trie_cursor_hash{trie_cursor.hash()};
                 SILKWORM_ASSERT(trie_cursor_hash != nullptr);
@@ -482,19 +494,12 @@ evmc::bytes32 InterHashes::calculate_root(db::RWTxn& txn, trie::PrefixSet& accou
 
             trie_cursor.next();
             trie_cursor_key = trie_cursor.key();
+
             auto data{hashed_accounts.lower_bound(db::to_slice(*uncovered), /*throw_notfound=*/false)};
 
             while (data) {
                 const auto data_key_view{db::from_slice(data.key)};
 
-                if (!--log_trigger_counter) {
-                    std::unique_lock<std::mutex> log_lck(log_mtx_);
-                    current_source_ = "HashedState";
-                    current_key_ = abridge(to_hex(data_key_view, true), 16);
-                    log_lck.unlock();
-                    throw_if_stopping();
-                    log_trigger_counter = 128;
-                }
 
                 const Bytes nibbled_key{trie::unpack_nibbles(data_key_view)};
                 if (trie_cursor_key.has_value() && trie_cursor_key.value() < nibbled_key) {

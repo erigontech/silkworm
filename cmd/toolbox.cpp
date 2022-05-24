@@ -1088,10 +1088,10 @@ void do_trie_integrity(db::EnvConfig config, bool with_state_coverage) {
                 buffer.back() = static_cast<uint8_t>(i);
                 auto bits_to_match{buffer.length() * 4};
 
-                // >>> See Erigon's ByteMask
+                // >>> See Erigon's /ethdb/kv_util.go::BytesMask
                 uint8_t mask{0xff};
                 auto fixed_bytes{(bits_to_match + 7) / 8};
-                auto shift_bits{fixed_bytes & 7};
+                auto shift_bits{bits_to_match & 7};
                 if (shift_bits != 0) {
                     mask <<= (8 - shift_bits);
                 }
@@ -1103,15 +1103,9 @@ void do_trie_integrity(db::EnvConfig config, bool with_state_coverage) {
                     auto data3_k{db::from_slice(data3.key)};
                     if (data3_k.length() >= fixed_bytes) {
                         if (bits_to_match == 0 ||
-                            data3_k.substr(0, fixed_bytes - 1) == seek.substr(0, fixed_bytes - 1) /*&&
-                                (data3_k[fixed_bytes - 1] & mask) == (seek[fixed_bytes - 1] & mask)*/) {
+                            data3_k.substr(0, fixed_bytes - 1) == seek.substr(0, fixed_bytes - 1) &&
+                                (data3_k[fixed_bytes - 1] & mask) == (seek[fixed_bytes - 1] & mask)) {
                             found = true;
-                        } else {
-                            std::cout << "Fixed bytes=" << std::to_string(fixed_bytes) << " "
-                                      << to_hex(data3_k.substr(0, fixed_bytes - 1), true) << " "
-                                      << to_hex(seek.substr(0, fixed_bytes - 1), true) << std::endl;
-                            std::cout << "Mask " << std::hex << mask << " " << std::hex << (data3_k[fixed_bytes - 1]) << "->" << std::hex << (data3_k[fixed_bytes - 1] & mask) << " " << std::hex
-                                      << (seek[fixed_bytes - 1] & mask) << std::endl;
                         }
                     }
                 }
@@ -1140,6 +1134,8 @@ void do_trie_integrity(db::EnvConfig config, bool with_state_coverage) {
             throw std::runtime_error("Interrupted");
         }
     }
+
+    std::cout << " Integrity check successful" << std::endl;
 }
 
 void do_reset_trie(db::EnvConfig& config) {

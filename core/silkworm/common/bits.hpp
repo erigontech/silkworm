@@ -42,7 +42,10 @@ inline uint16_t clz_16(uint16_t x) {
     }
     return static_cast<uint16_t>(31u - (index + 16));
 #else
-    return static_cast<uint16_t>(x ? 31u - static_cast<uint16_t>(__builtin_clz(static_cast<uint32_t>(x)) + 16) : 16u);
+    if (!x) {
+        return 16;
+    }
+    return static_cast<uint16_t>(__builtin_clz(x)) - 16u;
 #endif
 }
 
@@ -55,7 +58,10 @@ inline uint16_t ctz_16(uint16_t x) {
     }
     return static_cast<uint16_t>(index);
 #else
-    return x ? static_cast<uint16_t>(__builtin_ctz(static_cast<uint32_t>(x))) : 16u;
+    if (!x) {
+        return 16;
+    }
+    return static_cast<uint16_t>(__builtin_clz(x));
 #endif
 }
 

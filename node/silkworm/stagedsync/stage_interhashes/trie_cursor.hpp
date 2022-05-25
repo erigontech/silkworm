@@ -88,7 +88,7 @@ class Cursor {
 
 class AccCursor {
   public:
-    explicit AccCursor(mdbx::cursor& db_cursor, PrefixSet& changed, ByteView prefix = {},
+    explicit AccCursor(mdbx::cursor& db_cursor, PrefixSet& changed,
                        etl::Collector* collector = nullptr);
 
     struct move_operation_result {

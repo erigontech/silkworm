@@ -227,13 +227,13 @@ std::optional<Bytes> increment_nibbled_key(ByteView nibbles) {
         return std::nullopt;
     }
 
-    auto count{std::distance(nibbles.begin(), rit.base())};
+    auto count{static_cast<size_t>(std::distance(nibbles.begin(), rit.base()))};
     Bytes ret{nibbles.substr(0, count)};
     ++ret.back();
     return ret;
 }
 
-AccCursor::AccCursor(mdbx::cursor& db_cursor, PrefixSet& changed, ByteView prefix, etl::Collector* collector)
+AccCursor::AccCursor(mdbx::cursor& db_cursor, PrefixSet& changed, etl::Collector* collector)
     : db_cursor_{db_cursor}, changed_{changed}, collector_{collector} {
     prefix_.reserve(64);
     prev_.reserve(64);

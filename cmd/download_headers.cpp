@@ -160,11 +160,8 @@ int main(int argc, char* argv[]) {
 
         cout << "Downloader stage-loop ended\n";
 
-        // Wait for user termination request
-        std::cin.get();            // wait for user press "enter"
+        // Wait threads termination
         block_exchange.stop();     // signal exiting
-
-        // wait threads termination
         message_receiving.join();
         stats_receiving.join();
         block_downloading.join();

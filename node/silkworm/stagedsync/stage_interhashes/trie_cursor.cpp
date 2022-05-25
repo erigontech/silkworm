@@ -293,7 +293,7 @@ std::optional<Bytes> AccCursor::first_uncovered_prefix() const {
 }
 
 ByteView AccCursor::hash(int8_t id) {
-    return sub_nodes_[level_].value.substr(kHashLength * static_cast<int>(id), kHashLength);
+    return sub_nodes_[level_].value.substr(kHashLength * static_cast<uint16_t>(id), kHashLength);
 }
 bool AccCursor::has_state() { return sub_nodes_[level_].has_state(); }
 bool AccCursor::has_tree() { return sub_nodes_[level_].has_tree(); }

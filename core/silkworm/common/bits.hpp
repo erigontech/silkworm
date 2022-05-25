@@ -61,7 +61,7 @@ inline uint16_t ctz_16(uint16_t x) {
     if (!x) {
         return 16;
     }
-    return static_cast<uint16_t>(__builtin_clz(x));
+    return static_cast<uint16_t>(__builtin_ctz(x));
 #endif
 }
 

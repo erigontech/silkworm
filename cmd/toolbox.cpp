@@ -1103,8 +1103,8 @@ void do_trie_integrity(db::EnvConfig config, bool with_state_coverage) {
                     auto data3_k{db::from_slice(data3.key)};
                     if (data3_k.length() >= fixed_bytes) {
                         if (bits_to_match == 0 ||
-                            data3_k.substr(0, fixed_bytes - 1) == seek.substr(0, fixed_bytes - 1) &&
-                                (data3_k[fixed_bytes - 1] & mask) == (seek[fixed_bytes - 1] & mask)) {
+                            ((data3_k.substr(0, fixed_bytes - 1) == seek.substr(0, fixed_bytes - 1)) &&
+                             ((data3_k[fixed_bytes - 1] & mask) == (seek[fixed_bytes - 1] & mask)))) {
                             found = true;
                         }
                     }

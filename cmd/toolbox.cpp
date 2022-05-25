@@ -1019,7 +1019,7 @@ void do_trie_integrity(db::EnvConfig config, bool with_state_coverage) {
 
         std::optional<trie::Node> node{trie::Node::from_encoded_storage(db::from_slice(data1.value))};
         if (!node.has_value()) {
-            throw std::runtime_error("Unable to unmarshal node");
+            throw std::runtime_error("At key " + to_hex(data1_k, true) + " invalid data value. Unable to decode node");
         }
 
         bool found{false};

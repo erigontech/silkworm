@@ -954,7 +954,7 @@ void do_extract_headers(db::EnvConfig& config, const std::string& file_name, uin
     out_stream.close();
 }
 
-void do_scan_trie(db::EnvConfig& config, bool del) {
+void do_trie_scan(db::EnvConfig& config, bool del) {
     auto env{silkworm::db::open_env(config)};
     auto txn{env.start_write()};
     std::vector<db::MapConfig> tables{db::table::kTrieOfAccounts, db::table::kTrieOfStorage};
@@ -1351,7 +1351,7 @@ int main(int argc, char* argv[]) {
             do_extract_headers(src_config, cmd_extract_headers_file_opt->as<std::string>(),
                                cmd_extract_headers_step_opt->as<uint32_t>());
         } else if (*cmd_trie_scan) {
-            do_scan_trie(src_config, static_cast<bool>(*cmd_trie_scan_delete_opt));
+            do_trie_scan(src_config, static_cast<bool>(*cmd_trie_scan_delete_opt));
         } else if (*cmd_trie_reset) {
             do_trie_reset(src_config);
         } else if (*cmd_trie_integrity) {

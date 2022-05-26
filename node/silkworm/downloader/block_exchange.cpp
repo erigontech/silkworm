@@ -98,7 +98,7 @@ void BlockExchange::execution_loop() {
 
             log::Debug() << "BlockExchange bodies:  " << std::setfill('_')
                  << "outstanding bodies= " << std::setw(6) << std::right
-                 << body_sequence_.outstanding_bodies(std::chrono::system_clock::now(), 1min) << "  "
+                 << body_sequence_.outstanding_bodies(std::chrono::system_clock::now()) << "  "
                  << ", db-height= " << std::setw(10) << std::right << body_sequence_.highest_block_in_db()
                  << ", mem-height= " << std::setw(10) << std::right << body_sequence_.lowest_block_in_memory()
                               << "~" << std::setw(10) << std::right << body_sequence_.highest_block_in_memory()

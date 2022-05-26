@@ -31,12 +31,13 @@ int OutboundGetBlockBodies::sent_request() const { return sent_reqs_; }
 void OutboundGetBlockBodies::execute(Db::ReadOnlyAccess, HeaderChain&, BodySequence& bs, SentryClient& sentry) {
     using namespace std::literals::chrono_literals;
 
-    time_point_t now = std::chrono::system_clock::now();
-    seconds_t timeout = BodySequence::kTimeout;
+    seconds_t timeout = 1s;
     int max_requests = 64;  // limit the number of requests sent per round
 
     do {
-        auto [packet, penalizations, min_block] = bs.request_more_bodies(now, timeout, sentry.active_peers());
+        time_point_t now = std::chrono::system_clock::now();
+
+        auto [packet, penalizations, min_block] = bs.request_more_bodies(now, sentry.active_peers());
 
         if (packet.request.empty()) break;
 
@@ -45,7 +46,7 @@ void OutboundGetBlockBodies::execute(Db::ReadOnlyAccess, HeaderChain&, BodySeque
         SILK_TRACE << "Bodies request sent (" << packet << "), received by " << send_outcome.peers_size() << " peer(s)";
 
         if (send_outcome.peers_size() == 0) {
-            bs.request_nack(packet.request, now, timeout);
+            bs.request_nack(packet);
             break;
         }
 

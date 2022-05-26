@@ -47,14 +47,13 @@ class BodySequence {
 
     //! core functionalities: trigger the internal algorithms to decide what bodies we miss
     using MinBlock = BlockNum;
-    auto request_more_bodies(time_point_t tp, seconds_t timeout, uint64_t active_peers)
+    auto request_more_bodies(time_point_t tp, uint64_t active_peers)
         -> std::tuple<GetBlockBodiesPacket66, std::vector<PeerPenalization>, MinBlock>;
 
     //! it needs to know if the request issued was not delivered
-    void request_nack(const std::vector<Hash>&, time_point_t tp, seconds_t timeout);
+    void request_nack(const GetBlockBodiesPacket66&);
 
     //! core functionalities: process received bodies
-    using RequestMoreBodies = bool;
     Penalty accept_requested_bodies(const BlockBodiesPacket66&, const PeerId&);
 
     //! core functionalities: process received block announcement
@@ -63,18 +62,22 @@ class BodySequence {
     //! core functionalities: returns bodies that are ready to be persisted
     auto withdraw_ready_bodies() -> std::vector<Block>;
 
-    // minor functionalities
+    //! minor functionalities
     std::list<NewBlockPacket>& announces_to_do();
 
-    BlockNum highest_block_in_db() const;
-    BlockNum highest_block_in_memory() const;
-    BlockNum lowest_block_in_memory() const;
-    BlockNum target_height() const;
-    size_t outstanding_bodies(time_point_t tp, seconds_t timeout) const;
+    [[nodiscard]] BlockNum highest_block_in_db() const;
+    [[nodiscard]] BlockNum highest_block_in_memory() const;
+    [[nodiscard]] BlockNum lowest_block_in_memory() const;
+    [[nodiscard]] BlockNum target_height() const;
+    [[nodiscard]] size_t outstanding_bodies(time_point_t tp) const;
 
-    const Download_Statistics& statistics() const;
+    [[nodiscard]] const Download_Statistics& statistics() const;
 
-    static constexpr seconds_t kTimeout = std::chrono::seconds(5);
+    // downloading process tuning parameters
+    static constexpr seconds_t kRequestTimeout = std::chrono::seconds(30); // timeout before assuming a response as lost
+    static constexpr BlockNum kMaxBlocksPerMessage = 32; // go-ethereum client acceptance limit
+    static constexpr BlockNum kPerPeerMaxOutstandingRequests = 4; // related to Sentry's maxPermitsPerPeer
+    static constexpr BlockNum kMaxAnnouncedBlocks = 10000;
 
   protected:
     void recover_initial_state();
@@ -85,12 +88,8 @@ class BodySequence {
 
     static bool is_valid_body(const BlockHeader&, const BlockBody&);
 
-    static constexpr BlockNum kMaxBlocksPerMessage = 32; // geth acceptance limit
-    static constexpr BlockNum kPerPeerMaxOutstandingRequests = 1; // higher values lead to missed responses
-    static constexpr BlockNum kMaxAnnouncedBlocks = 10000;
-
     struct PendingBodyRequest {
-        uint64_t request_id;
+        uint64_t request_id{0};
         Hash block_hash;
         BlockNum block_height{0};
         BlockHeader header;
@@ -102,6 +101,7 @@ class BodySequence {
     struct AnnouncedBlocks {
         void add(Block block);
         std::optional<BlockBody> remove(BlockNum bn);
+        size_t size();
       private:
         std::map<BlockNum, Block> blocks_;
     };
@@ -114,8 +114,8 @@ class BodySequence {
         std::list<Iter> find_by_request_id(uint64_t request_id);
         Iter find_by_hash(Hash oh, Hash tr);
 
-        BlockNum lowest_block() const;
-        BlockNum highest_block() const;
+        [[nodiscard]] BlockNum lowest_block() const;
+        [[nodiscard]] BlockNum highest_block() const;
     };
 
     IncreasingHeightOrderedRequestContainer body_requests_;

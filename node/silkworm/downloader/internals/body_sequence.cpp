@@ -49,13 +49,13 @@ void BodySequence::sync_current_state(BlockNum highest_body_in_db, BlockNum high
     statistics_ = {}; // reset statistics
 }
 
-size_t BodySequence::outstanding_bodies(time_point_t tp, seconds_t timeout) const {
+size_t BodySequence::outstanding_bodies(time_point_t tp) const {
     size_t requested_bodies{0};
 
     for (auto& br: body_requests_) {
         const PendingBodyRequest& past_request = br.second;
         if (!past_request.ready &&
-            (tp - past_request.request_time < timeout))
+            (tp - past_request.request_time < kRequestTimeout))
             requested_bodies++;
     }
 
@@ -134,10 +134,12 @@ Penalty BodySequence::accept_new_block(const Block& block, const PeerId&) {
     return Penalty::NoPenalty;
 }
 
-auto BodySequence::request_more_bodies(time_point_t tp, seconds_t timeout, uint64_t active_peers)
+auto BodySequence::request_more_bodies(time_point_t tp, uint64_t active_peers)
     -> std::tuple<GetBlockBodiesPacket66, std::vector<PeerPenalization>, MinBlock> {
     GetBlockBodiesPacket66 packet;
     packet.requestId = RANDOM_NUMBER.generate_one();
+
+    seconds_t timeout = BodySequence::kRequestTimeout;
 
     BlockNum min_block{0};
 
@@ -146,7 +148,7 @@ auto BodySequence::request_more_bodies(time_point_t tp, seconds_t timeout, uint6
 
     auto penalizations = renew_stale_requests(packet, min_block, tp, timeout);
 
-    if (outstanding_bodies(tp, timeout) < kPerPeerMaxOutstandingRequests * active_peers * kMaxBlocksPerMessage &&
+    if (outstanding_bodies(tp) < kPerPeerMaxOutstandingRequests * active_peers * kMaxBlocksPerMessage &&
         packet.request.size() < kMaxBlocksPerMessage) {
         make_new_requests(packet, min_block, tp, timeout);
     }
@@ -165,7 +167,7 @@ auto BodySequence::renew_stale_requests(GetBlockBodiesPacket66& packet, BlockNum
     for (auto& br: body_requests_) {
         PendingBodyRequest& past_request = br.second;
 
-        if (tp - past_request.request_time < timeout)
+        if (past_request.ready || tp - past_request.request_time < timeout)
             continue;
 
         // retry body request, todo: Erigon delete the request here, but will it retry?
@@ -194,7 +196,7 @@ void BodySequence::make_new_requests(GetBlockBodiesPacket66& packet, BlockNum& m
     if (!body_requests_.empty())
         last_requested_block = body_requests_.rbegin()->second.block_height; // the last requested
 
-    while (packet.request.size() < kMaxBlocksPerMessage && last_requested_block <= headers_stage_height_) {
+    while (packet.request.size() < kMaxBlocksPerMessage && last_requested_block < headers_stage_height_) {
         BlockNum bn = last_requested_block + 1;
 
         auto header = tx.read_canonical_header(bn);
@@ -233,13 +235,14 @@ void BodySequence::make_new_requests(GetBlockBodiesPacket66& packet, BlockNum& m
 
 }
 
-void BodySequence::request_nack(const std::vector<Hash>& hashes, time_point_t tp, seconds_t timeout) {
+void BodySequence::request_nack(const GetBlockBodiesPacket66& packet) {
+    seconds_t timeout = BodySequence::kRequestTimeout;
     for (auto& br: body_requests_) {
         PendingBodyRequest& past_request = br.second;
-        if (contains(hashes, past_request.block_hash))
+        if (past_request.request_id == packet.requestId)
             past_request.request_time -= timeout;
     }
-    last_nack = tp;
+    last_nack = std::chrono::system_clock::now();
 }
 
 bool BodySequence::is_valid_body(const BlockHeader& header, const BlockBody& body) {
@@ -304,6 +307,10 @@ std::optional<BlockBody> BodySequence::AnnouncedBlocks::remove(BlockNum bn) {
     std::optional<BlockBody> body = std::move(b->second);
     blocks_.erase(b);
     return body;
+}
+
+size_t BodySequence::AnnouncedBlocks::size() {
+    return blocks_.size();
 }
 
 auto BodySequence::IncreasingHeightOrderedRequestContainer::find_by_request_id(uint64_t request_id) -> std::list<Iter> {

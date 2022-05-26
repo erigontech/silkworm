@@ -21,40 +21,30 @@
 
 namespace silkworm::rpc {
 
-UnaryStats AsyncCall::unary_stats_;
-
 AsyncPeerCountCall::AsyncPeerCountCall(grpc::CompletionQueue* queue, sentry::Sentry::StubInterface* stub, CompletionFunc completion_handler)
 : AsyncUnaryCall(queue, stub, completion_handler) {
 }
 
-bool AsyncPeerCountCall::proceed(bool ok) {
-    SILK_DEBUG << "AsyncPeerCountCall::proceed ok: " << ok << " status: " << status_;
-    ++unary_stats_.completed_count;
+void AsyncPeerCountCall::handle_finish(bool ok) {
+    SILK_DEBUG << "AsyncPeerCountCall::handle_finish ok: " << ok << " status: " << status_;
     if (ok && status_.ok()) {
         SILK_INFO << "PeerCount reply: count=" << reply_.count();
-        ++unary_stats_.ok_count;
     } else {
-        SILK_INFO << "PeerCount " << status_;
-        ++unary_stats_.ko_count;
+        SILK_WARN << "PeerCount failed: " << status_;
     }
-    return true;
 }
 
 AsyncNodeInfoCall::AsyncNodeInfoCall(grpc::CompletionQueue* queue, sentry::Sentry::StubInterface* stub, CompletionFunc completion_handler)
 : AsyncUnaryCall(queue, stub, completion_handler) {
 }
 
-bool AsyncNodeInfoCall::proceed(bool ok) {
-    SILK_DEBUG << "AsyncNodeInfoCall::proceed ok: " << ok << " status: " << status_;
-    ++unary_stats_.completed_count;
+void AsyncNodeInfoCall::handle_finish(bool ok) {
+    SILK_DEBUG << "AsyncNodeInfoCall::handle_finish ok: " << ok << " status: " << status_;
     if (ok && status_.ok()) {
         SILK_INFO << "NodeInfo reply: id=" << reply_.id() << " name=" << reply_.name() << " enode=" << reply_.enode();
-        ++unary_stats_.ok_count;
     } else {
-        SILK_INFO << "NodeInfo " << status_;
-        ++unary_stats_.ko_count;
+        SILK_WARN << "NodeInfo failed: " << status_;
     }
-    return true;
 }
 
 } // namespace silkworm::rpc

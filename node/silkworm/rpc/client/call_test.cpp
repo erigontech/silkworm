@@ -26,8 +26,6 @@ TEST_CASE("AsyncCall", "[silkworm][rpc][client][call]") {
     class FakeCall : public AsyncCall {
       public:
         explicit FakeCall(grpc::CompletionQueue* queue) : AsyncCall(queue) {}
-      protected:
-        bool proceed(bool /*ok*/) override { return false; }
     };
 
     grpc::CompletionQueue queue;
@@ -53,7 +51,7 @@ TEST_CASE("AsyncUnaryCall", "[silkworm][rpc][client][call]") {
         explicit FakeUnaryCall(grpc::CompletionQueue* queue, remote::ETHBACKEND::StubInterface* stub, CompletionFunc func = {})
             : AsyncUnaryCall(queue, stub, func) {}
       protected:
-        bool proceed(bool /*ok*/) override { return false; }
+        void handle_finish(bool /*ok*/) override {}
     };
 
     grpc::CompletionQueue queue;

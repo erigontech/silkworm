@@ -21,9 +21,13 @@ limitations under the License.
 #include <ostream>
 #include <string>
 
+#include "types.hpp"
+
 namespace silkworm {
 
 struct Download_Statistics {
+    time_point_t start_tp{std::chrono::system_clock::now()};
+    duration_t elapsed() const;
 
     uint64_t requested_items{0};
     uint64_t received_items{0};

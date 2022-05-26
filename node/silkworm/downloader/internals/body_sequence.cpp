@@ -143,7 +143,7 @@ auto BodySequence::request_more_bodies(time_point_t tp, uint64_t active_peers)
 
     BlockNum min_block{0};
 
-    if (tp - last_nack < timeout)
+    if (tp - last_nack < kNoPeerDelay)
         return {};
 
     auto penalizations = renew_stale_requests(packet, min_block, tp, timeout);

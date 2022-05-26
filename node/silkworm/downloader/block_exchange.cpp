@@ -72,6 +72,7 @@ void BlockExchange::execution_loop() {
 
     auto constexpr kShortInterval = 1000ms;
     time_point_t last_update = system_clock::now();
+//    time_point_t last_request = system_clock::now();
 
     while (!is_stopping() && !sentry_.is_stopping()) {
         // pop a message from the queue
@@ -82,8 +83,18 @@ void BlockExchange::execution_loop() {
         // process the message (command pattern)
         message->execute(db_access_, header_chain_, body_sequence_, sentry_);
 
+        auto now = system_clock::now();
+
+//        if (now - last_request > 1s) {
+//            if (downloading_status == BODY_DOWNLOADING) {
+//                auto request_message = std::make_shared<OutboundGetBlockBodies>();
+//                accept(request_message);
+//            }
+//            last_request = system_clock::now();
+//        }
+
         // log status
-        if (silkworm::log::test_verbosity(silkworm::log::Level::kDebug) && system_clock::now() - last_update > 10s) {
+        if (silkworm::log::test_verbosity(silkworm::log::Level::kDebug) && now - last_update > 30s) {
             last_update = system_clock::now();
 
             auto [min_anchor_height, max_anchor_height] = header_chain_.anchor_height_range();

@@ -75,6 +75,8 @@ class BodySequence {
 
     // downloading process tuning parameters
     static constexpr seconds_t kRequestTimeout = std::chrono::seconds(30); // timeout before assuming a response as lost
+                                                                           // related to Sentry's peerDeadline
+    static constexpr seconds_t kNoPeerDelay = std::chrono::seconds(1); // delay when no peer accepted the last request
     static constexpr BlockNum kMaxBlocksPerMessage = 32; // go-ethereum client acceptance limit
     static constexpr BlockNum kPerPeerMaxOutstandingRequests = 4; // related to Sentry's maxPermitsPerPeer
     static constexpr BlockNum kMaxAnnouncedBlocks = 10000;

@@ -41,7 +41,8 @@ class Db {
     explicit Db(std::string db_path) {
         db::EnvConfig db_config{db_path};
         // db_config.readonly = false;
-        db_config.shared = true;
+        //db_config.shared = true;
+        db_config.growth_size = 10_Tebi;
         env_ = db::open_env(db_config);
     }
 

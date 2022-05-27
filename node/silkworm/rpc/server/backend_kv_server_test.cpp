@@ -1082,7 +1082,7 @@ class TxIdleTimeoutGuard {
 };
 
 TEST_CASE("BackEndKvServer E2E: bidirectional idle timeout", "[silkworm][node][rpc]") {
-    TxIdleTimeoutGuard timeout_guard{10};
+    TxIdleTimeoutGuard timeout_guard{100};
     NodeSettings node_settings;
     BackEndKvE2eTest test{silkworm::log::Level::kNone, node_settings};
     test.fill_tables();
@@ -1105,7 +1105,7 @@ TEST_CASE("BackEndKvServer E2E: bidirectional idle timeout", "[silkworm][node][r
         grpc::ClientContext context;
         const auto tx_reader_writer = kv_client.tx_start(&context);
         remote::Pair response;
-        tx_reader_writer->Read(&response);
+        CHECK(tx_reader_writer->Read(&response));
         CHECK(response.txid() != 0);
         auto status = tx_reader_writer->Finish();
         CHECK(!status.ok());
@@ -1117,15 +1117,14 @@ TEST_CASE("BackEndKvServer E2E: bidirectional idle timeout", "[silkworm][node][r
         grpc::ClientContext context;
         const auto tx_reader_writer = kv_client.tx_start(&context);
         remote::Pair response;
-        tx_reader_writer->Read(&response);
+        CHECK(tx_reader_writer->Read(&response));
         CHECK(response.txid() != 0);
         remote::Cursor open;
         open.set_op(remote::Op::OPEN);
         open.set_bucketname(kTestMap.name);
-        const bool write_ok = tx_reader_writer->Write(open);
-        CHECK(write_ok);
+        CHECK(tx_reader_writer->Write(open));
         response.clear_txid();
-        tx_reader_writer->Read(&response);
+        CHECK(tx_reader_writer->Read(&response));
         CHECK(response.cursorid() != 0);
         auto status = tx_reader_writer->Finish();
         CHECK(!status.ok());
@@ -2243,14 +2242,14 @@ TEST_CASE("BackEndKvServer E2E: bidirectional max TTL duration", "[silkworm][nod
         grpc::ClientContext context;
         const auto tx_reader_writer = kv_client.tx_start(&context);
         remote::Pair response;
-        tx_reader_writer->Read(&response);
+        CHECK(tx_reader_writer->Read(&response));
         CHECK(response.txid() != 0);
         remote::Cursor open;
         open.set_op(remote::Op::OPEN);
         open.set_bucketname(kTestMap.name);
         CHECK(tx_reader_writer->Write(open));
         response.clear_txid();
-        tx_reader_writer->Read(&response);
+        CHECK(tx_reader_writer->Read(&response));
         const auto cursor_id = response.cursorid();
         CHECK(cursor_id != 0);
         remote::Cursor next1;
@@ -2258,7 +2257,7 @@ TEST_CASE("BackEndKvServer E2E: bidirectional max TTL duration", "[silkworm][nod
         next1.set_cursor(cursor_id);
         CHECK(tx_reader_writer->Write(next1));
         response.clear_cursorid();
-        tx_reader_writer->Read(&response);
+        CHECK(tx_reader_writer->Read(&response));
         CHECK(response.k() == "AA");
         CHECK(response.v() == "00");
         std::this_thread::sleep_for(std::chrono::milliseconds{kCustomMaxTimeToLive});
@@ -2267,7 +2266,7 @@ TEST_CASE("BackEndKvServer E2E: bidirectional max TTL duration", "[silkworm][nod
         next2.set_cursor(cursor_id);
         CHECK(tx_reader_writer->Write(next2));
         response.clear_cursorid();
-        tx_reader_writer->Read(&response);
+        CHECK(tx_reader_writer->Read(&response));
         CHECK(response.k() == "BB");
         CHECK(response.v() == "11");
         tx_reader_writer->WritesDone();
@@ -2279,14 +2278,14 @@ TEST_CASE("BackEndKvServer E2E: bidirectional max TTL duration", "[silkworm][nod
         grpc::ClientContext context;
         const auto tx_reader_writer = kv_client.tx_start(&context);
         remote::Pair response;
-        tx_reader_writer->Read(&response);
+        CHECK(tx_reader_writer->Read(&response));
         CHECK(response.txid() != 0);
         remote::Cursor open;
         open.set_op(remote::Op::OPEN);
         open.set_bucketname(kTestMultiMap.name);
         CHECK(tx_reader_writer->Write(open));
         response.clear_txid();
-        tx_reader_writer->Read(&response);
+        CHECK(tx_reader_writer->Read(&response));
         const auto cursor_id = response.cursorid();
         CHECK(cursor_id != 0);
         remote::Cursor next_dup1;
@@ -2294,7 +2293,7 @@ TEST_CASE("BackEndKvServer E2E: bidirectional max TTL duration", "[silkworm][nod
         next_dup1.set_cursor(cursor_id);
         CHECK(tx_reader_writer->Write(next_dup1));
         response.clear_cursorid();
-        tx_reader_writer->Read(&response);
+        CHECK(tx_reader_writer->Read(&response));
         CHECK(response.k() == "AA");
         CHECK(response.v() == "00");
         std::this_thread::sleep_for(std::chrono::milliseconds{kCustomMaxTimeToLive});
@@ -2303,7 +2302,7 @@ TEST_CASE("BackEndKvServer E2E: bidirectional max TTL duration", "[silkworm][nod
         next_dup2.set_cursor(cursor_id);
         CHECK(tx_reader_writer->Write(next_dup2));
         response.clear_cursorid();
-        tx_reader_writer->Read(&response);
+        CHECK(tx_reader_writer->Read(&response));
         CHECK(response.k() == "AA");
         CHECK(response.v() == "11");
         tx_reader_writer->WritesDone();

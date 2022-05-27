@@ -41,6 +41,8 @@ TEST_CASE("AsyncCall", "[silkworm][rpc][client][call]") {
 
 static const std::string kTestAddressUri{"localhost:12345"};
 
+// Exclude gRPC tests from sanitizer builds due to data race warnings
+#ifndef SILKWORM_SANITIZE
 TEST_CASE("AsyncUnaryCall", "[silkworm][rpc][client][call]") {
     class FakeUnaryCall : public AsyncUnaryCall<
         remote::NetVersionRequest,
@@ -74,5 +76,6 @@ TEST_CASE("AsyncUnaryCall", "[silkworm][rpc][client][call]") {
         CHECK_NOTHROW(call.cancel());
     }
 }
+#endif // SILKWORM_SANITIZE
 
 } // namespace silkworm::rpc

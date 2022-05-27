@@ -122,10 +122,81 @@ TEST_CASE("AsyncServerStreamingCall", "[silkworm][rpc][client][call]") {
         explicit FakeServerStreamingCall(grpc::CompletionQueue* queue, remote::KV::StubInterface* stub)
             : AsyncServerStreamingCall(queue, stub) {}
 
-        void handle_read() override {}
+        bool read_called() const { return read_called_; }
 
-        void handle_finish() override {}
+        bool read_completed() const { return read_completed_; }
+
+        bool finish_called() const { return finish_called_; }
+
+        bool finished() const { return finished_; }
+
+        void trigger_start(bool ok) {
+            start_processor_(ok);
+        }
+
+        void trigger_read(bool ok) {
+            read_processor_(ok);
+        }
+
+        void trigger_finish(bool ok) {
+            finish_processor_(ok);
+        }
+
+      protected:
+        void read() override {
+            read_called_ = true;
+        }
+
+        void finish() override {
+            finish_called_ = true;
+        }
+
+        void handle_read() override {
+            read_completed_ = true;
+        }
+
+        void handle_finish() override {
+            finished_ = true;
+        }
+
+      private:
+        bool read_called_{false};
+        bool read_completed_{false};
+        bool finish_called_{false};
+        bool finished_{false};
     };
+
+    grpc::CompletionQueue queue;
+    auto channel = grpc::CreateChannel(kTestAddressUri, grpc::InsecureChannelCredentials());
+    auto stub_ptr = remote::KV::NewStub(channel, grpc::StubOptions{});
+
+    SECTION("AsyncServerStreamingCall::process_start OK") {
+        FakeServerStreamingCall call{&queue, stub_ptr.get()};
+        CHECK(!call.read_called());
+        CHECK_NOTHROW(call.trigger_start(true));
+        CHECK(call.read_called());
+    }
+
+    SECTION("AsyncServerStreamingCall::process_start KO") {
+        FakeServerStreamingCall call{&queue, stub_ptr.get()};
+        CHECK(!call.finish_called());
+        CHECK_NOTHROW(call.trigger_start(false));
+        CHECK(call.finish_called());
+    }
+
+    SECTION("AsyncServerStreamingCall::handle_read") {
+        FakeServerStreamingCall call{&queue, stub_ptr.get()};
+        CHECK(!call.read_completed());
+        CHECK_NOTHROW(call.trigger_read(true));
+        CHECK(call.read_completed());
+    }
+
+    SECTION("AsyncServerStreamingCall::handle_finish") {
+        FakeServerStreamingCall call{&queue, stub_ptr.get()};
+        CHECK(!call.finished());
+        CHECK_NOTHROW(call.trigger_finish(true));
+        CHECK(call.finished());
+    }
 
     SECTION("print ServerStreamingStats") {
         CHECK_NOTHROW(null_stream() <<  FakeServerStreamingCall::stats());

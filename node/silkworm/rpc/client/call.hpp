@@ -181,13 +181,13 @@ class AsyncServerStreamingCall : public AsyncCall {
     }
 
   protected:
-    void read() {
+    virtual void read() {
         SILK_TRACE << "AsyncServerStreamingCall::read START";
         reader_->Read(&reply_, &read_processor_);
         SILK_TRACE << "AsyncServerStreamingCall::read END";
     }
 
-    void finish() {
+    virtual void finish() {
         SILK_TRACE << "AsyncServerStreamingCall::finish START";
         reader_->Finish(&status_, &finish_processor_);
         SILK_TRACE << "AsyncServerStreamingCall::finish END";

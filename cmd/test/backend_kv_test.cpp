@@ -533,18 +533,15 @@ class AsyncStateChangesCall
     static std::size_t num_pending_calls() { return pending_calls_.size(); }
 
     static void add_pending_call(AsyncStateChangesCall* call) {
-        //std::unique_lock lock{pending_calls_mutex_};
         pending_calls_.push_back(call);
     }
 
     static void remove_pending_call(AsyncStateChangesCall* call) {
-        //std::unique_lock lock{pending_calls_mutex_};
         pending_calls_.erase(std::find(pending_calls_.begin(), pending_calls_.end(), call));
         std::unique_ptr<AsyncStateChangesCall> call_ptr{call};
     }
 
     static void cancel_pending_calls() {
-        //std::unique_lock lock{pending_calls_mutex_};
         for (AsyncStateChangesCall* call : pending_calls_) {
             std::unique_ptr<AsyncStateChangesCall> call_ptr{call};
             call_ptr->cancel();
@@ -572,7 +569,6 @@ class AsyncStateChangesCall
     }
 
   private:
-    //inline static std::mutex pending_calls_mutex_;
     inline static std::vector<AsyncStateChangesCall*> pending_calls_;
 };
 

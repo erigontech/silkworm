@@ -19,6 +19,7 @@
 #include <ostream>
 
 #include <catch2/catch.hpp>
+#include <grpc/grpc.h>
 
 #include <remote/ethbackend.grpc.pb.h>
 #include <remote/kv.grpc.pb.h>
@@ -76,7 +77,8 @@ TEST_CASE("AsyncUnaryCall", "[silkworm][rpc][client][call]") {
         }
 
       protected:
-        void handle_finish(bool /*ok*/) override {
+        void handle_finish(bool ok) override {
+            AsyncUnaryCall::handle_finish(ok);
             finished_ = true;
         }
 
@@ -184,11 +186,18 @@ TEST_CASE("AsyncServerStreamingCall", "[silkworm][rpc][client][call]") {
         CHECK(call.finish_called());
     }
 
-    SECTION("AsyncServerStreamingCall::handle_read") {
+    SECTION("AsyncServerStreamingCall::handle_read OK") {
         FakeServerStreamingCall call{&queue, stub_ptr.get()};
         CHECK(!call.read_completed());
         CHECK_NOTHROW(call.trigger_read(true));
         CHECK(call.read_completed());
+    }
+
+    SECTION("AsyncServerStreamingCall::handle_read KO") {
+        FakeServerStreamingCall call{&queue, stub_ptr.get()};
+        CHECK(!call.finish_called());
+        CHECK_NOTHROW(call.trigger_read(false));
+        CHECK(call.finish_called());
     }
 
     SECTION("AsyncServerStreamingCall::handle_finish") {

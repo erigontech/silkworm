@@ -24,7 +24,7 @@
 namespace silkworm::rpc {
 
 // Factory function creating one null output stream (all characters are discarded)
-std::ostream& null_stream() {
+inline std::ostream& null_stream() {
     static struct null_buf : public std::streambuf {
         int overflow(int c) override { return c; }
     } null_buf;

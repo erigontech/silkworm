@@ -1053,7 +1053,7 @@ void do_trie_integrity(db::EnvConfig& config, bool with_state_coverage) {
             auto expected_hashes_count{popcount_16(node_hash_mask)};
             auto effective_hashes_count{data1_v.length() / kHashLength};
             if (!(effective_hashes_count == expected_hashes_count ||
-                  effective_hashes_count == expected_hashes_count + 1)) {
+                  effective_hashes_count == expected_hashes_count + 1u)) {
                 throw std::runtime_error("At key " + to_hex(data1_k, true) + " invalid hashes count " +
                                          std::to_string(effective_hashes_count) + ". Expected " +
                                          std::to_string(expected_hashes_count) + " from mask " +

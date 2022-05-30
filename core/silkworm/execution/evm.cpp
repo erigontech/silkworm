@@ -51,7 +51,9 @@ class DelegatingTracer : public evmone::Tracer {
     }
 
     void on_execution_end(const evmc_result& result) noexcept override {
-        tracer_.on_execution_end(result, intra_block_state_);
+        evmc::result res{result};
+        tracer_.on_execution_end(res, intra_block_state_);
+        res.release_raw();
     }
 
     friend class EVM;
@@ -224,9 +226,12 @@ evmc::result EVM::call(const evmc_message& message) noexcept {
                 res.status_code = EVMC_PRECOMPILE_FAILURE;
             }
         }
+        for (auto tracer : tracers()) {
+            tracer.get().on_precompiled_run(res, static_cast<uint64_t>(message.gas), state_);
+        }
     } else {
         const ByteView code{state_.get_code(message.code_address)};
-        if (code.empty()) {
+        if (code.empty() && tracers_.size() == 0) {
             return res;
         }
 
@@ -337,6 +342,7 @@ void EVM::add_tracer(EvmTracer& tracer) noexcept {
 
     const auto vm{static_cast<evmone::VM*>(evm1_)};
     vm->add_tracer(std::make_unique<DelegatingTracer>(tracer, state_));
+    tracers_.push_back(std::ref(tracer));
 }
 
 uint8_t EVM::number_of_precompiles() const noexcept {

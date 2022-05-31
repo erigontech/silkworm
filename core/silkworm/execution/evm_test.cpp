@@ -389,16 +389,16 @@ class TestTracer : public EvmTracer {
                 intra_block_state.get_current_storage(contract_address_.value(), key_.value_or(evmc::bytes32{}));
         }
     }
-    void on_execution_end(const evmc::result& res, const IntraBlockState& intra_block_state) noexcept override {
+    void on_execution_end(const CallResult& result, const IntraBlockState& intra_block_state) noexcept override {
         execution_end_called_ = true;
-        result_ = {res.status_code, static_cast<uint64_t>(res.gas_left), {res.output_data, res.output_size}};
+        result_ = result;
         if (contract_address_ && pc_stack_.size() > 0) {
             const auto pc = pc_stack_.back();
             storage_stack_[pc] =
                 intra_block_state.get_current_storage(contract_address_.value(), key_.value_or(evmc::bytes32{}));
         }
     }
-    void on_precompiled_run(const evmc::result& /*res*/, std::uint64_t /*gas*/,
+    void on_precompiled_run(const CallResult& /*res*/, std::uint64_t /*gas*/,
         const IntraBlockState& /*intra_block_state*/) noexcept override {
     }
     void on_reward_granted(const CallResult& /*result*/,

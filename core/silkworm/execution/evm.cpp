@@ -50,10 +50,9 @@ class DelegatingTracer : public evmone::Tracer {
         tracer_.on_instruction_start(pc, stack_top, stack_height, state, intra_block_state_);
     }
 
-    void on_execution_end(const evmc_result& result) noexcept override {
-        evmc::result res{result};
-        tracer_.on_execution_end(res, intra_block_state_);
-        res.release_raw();
+    void on_execution_end(const evmc_result& res) noexcept override {
+        CallResult result{res.status_code, static_cast<uint64_t>(res.gas_left), {res.output_data, res.output_size}};
+        tracer_.on_execution_end(result, intra_block_state_);
     }
 
     friend class EVM;
@@ -226,12 +225,18 @@ evmc::result EVM::call(const evmc_message& message) noexcept {
                 res.status_code = EVMC_PRECOMPILE_FAILURE;
             }
         }
-        for (auto tracer : tracers()) {
-            tracer.get().on_precompiled_run(res, static_cast<uint64_t>(message.gas), state_);
+        // Explicitly notify registered tracers (if any)
+        if (tracers_.size() > 0) {
+            uint64_t gas_left{static_cast<uint64_t>(res.gas_left)};
+            Bytes data{res.output_data, res.output_size};
+            CallResult result{res.status_code, gas_left, data};
+            for (auto tracer : tracers_) {
+                tracer.get().on_precompiled_run(result, static_cast<uint64_t>(message.gas), state_);
+            }
         }
     } else {
         const ByteView code{state_.get_code(message.code_address)};
-        if (code.empty() && tracers_.size() == 0) {
+        if (code.empty() && tracers_.size() == 0) { // Do not skip execution if there are any tracers
             return res;
         }
 

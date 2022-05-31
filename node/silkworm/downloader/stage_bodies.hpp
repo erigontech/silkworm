@@ -39,8 +39,8 @@ class BodiesStage : public Stage {
                             Hash bad_block) override;  // go backward, unwinding headers to new_height
 
   private:
-    void send_body_requests();  // send requests for more bodies
-    auto sync_body_sequence(BlockNum highest_body, BlockNum highest_header) -> std::shared_ptr<InternalMessage<void>>;
+    auto start_bodies_downloading(BlockNum highest_body, BlockNum highest_header) -> std::shared_ptr<InternalMessage<void>>;
+    auto stop_bodies_downloading() -> std::shared_ptr<InternalMessage<void>>;
     auto withdraw_ready_bodies() -> std::shared_ptr<InternalMessage<std::vector<Block>>>;
     void send_announcements();
 

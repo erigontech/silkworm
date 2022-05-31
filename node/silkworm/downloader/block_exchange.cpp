@@ -22,6 +22,7 @@ limitations under the License.
 #include <silkworm/common/log.hpp>
 #include <silkworm/downloader/internals/preverified_hashes.hpp>
 #include <silkworm/downloader/messages/inbound_message.hpp>
+#include <silkworm/downloader/messages/outbound_get_block_bodies.hpp>
 
 namespace silkworm {
 
@@ -72,7 +73,6 @@ void BlockExchange::execution_loop() {
 
     auto constexpr kShortInterval = 1000ms;
     time_point_t last_update = system_clock::now();
-//    time_point_t last_request = system_clock::now();
 
     while (!is_stopping() && !sentry_.is_stopping()) {
         // pop a message from the queue
@@ -85,13 +85,10 @@ void BlockExchange::execution_loop() {
 
         auto now = system_clock::now();
 
-//        if (now - last_request > 1s) {
-//            if (downloading_status == BODY_DOWNLOADING) {
-//                auto request_message = std::make_shared<OutboundGetBlockBodies>();
-//                accept(request_message);
-//            }
-//            last_request = system_clock::now();
-//        }
+        if (body_sequence_.has_bodies_to_request(now)) {
+            auto request_message = std::make_shared<OutboundGetBlockBodies>();
+            request_message->execute(db_access_, header_chain_, body_sequence_, sentry_);
+        }
 
         // log status
         if (silkworm::log::test_verbosity(silkworm::log::Level::kDebug) && now - last_update > 30s) {

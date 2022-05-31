@@ -43,18 +43,19 @@ class BodySequence {
     ~BodySequence();
 
     // sync current state - this must be done at body forward
-    void sync_current_state(BlockNum highest_body_in_db, BlockNum highest_header_in_db);
+    void start_bodies_downloading(BlockNum highest_body_in_db, BlockNum highest_header_in_db);
+    void stop_bodies_downloading();
 
     //! core functionalities: trigger the internal algorithms to decide what bodies we miss
     using MinBlock = BlockNum;
-    auto request_more_bodies(time_point_t tp, uint64_t active_peers)
+    auto request_more_bodies(time_point_t tp)
         -> std::tuple<GetBlockBodiesPacket66, std::vector<PeerPenalization>, MinBlock>;
 
     //! it needs to know if the request issued was not delivered
     void request_nack(const GetBlockBodiesPacket66&);
 
     //! core functionalities: process received bodies
-    Penalty accept_requested_bodies(const BlockBodiesPacket66&, const PeerId&);
+    Penalty accept_requested_bodies(BlockBodiesPacket66&, const PeerId&);
 
     //! core functionalities: process received block announcement
     Penalty accept_new_block(const Block&, const PeerId&);
@@ -70,15 +71,15 @@ class BodySequence {
     [[nodiscard]] BlockNum lowest_block_in_memory() const;
     [[nodiscard]] BlockNum target_height() const;
     [[nodiscard]] size_t outstanding_bodies(time_point_t tp) const;
+    [[nodiscard]] bool has_bodies_to_request(time_point_t tp) const;
 
     [[nodiscard]] const Download_Statistics& statistics() const;
 
     // downloading process tuning parameters
-    static constexpr seconds_t kRequestTimeout = std::chrono::seconds(30); // timeout before assuming a response as lost
-                                                                           // related to Sentry's peerDeadline
-    static constexpr seconds_t kNoPeerDelay = std::chrono::seconds(1); // delay when no peer accepted the last request
-    static constexpr BlockNum kMaxBlocksPerMessage = 32; // go-ethereum client acceptance limit
-    static constexpr BlockNum kPerPeerMaxOutstandingRequests = 4; // related to Sentry's maxPermitsPerPeer
+    static /*constexpr*/ seconds_t kRequestDeadline; // = std::chrono::seconds(30);
+                                    // after this a response is considered lost it is related to Sentry's peerDeadline
+    static constexpr milliseconds_t kNoPeerDelay = std::chrono::milliseconds(100); // delay when no peer accepted the last request
+    static /*constexpr*/ BlockNum kMaxBlocksPerMessage; // = 128; // go-ethereum client acceptance limit
     static constexpr BlockNum kMaxAnnouncedBlocks = 10000;
 
   protected:
@@ -90,7 +91,7 @@ class BodySequence {
 
     static bool is_valid_body(const BlockHeader&, const BlockBody&);
 
-    struct PendingBodyRequest {
+    struct BodyRequest {
         uint64_t request_id{0};
         Hash block_hash;
         BlockNum block_height{0};
@@ -108,9 +109,9 @@ class BodySequence {
         std::map<BlockNum, Block> blocks_;
     };
 
-    //using IncreasingHeightOrderedMap = std::map<BlockNum, PendingBodyRequest>; // default ordering: less<BlockNum>
-    struct IncreasingHeightOrderedRequestContainer: public std::map<BlockNum, PendingBodyRequest> {
-        using Impl = std::map<BlockNum, PendingBodyRequest>;
+    //using IncreasingHeightOrderedMap = std::map<BlockNum, BodyRequest>; // default ordering: less<BlockNum>
+    struct IncreasingHeightOrderedRequestContainer: public std::map<BlockNum, BodyRequest> {
+        using Impl = std::map<BlockNum, BodyRequest>;
         using Iter = Impl::iterator;
 
         std::list<Iter> find_by_request_id(uint64_t request_id);
@@ -127,9 +128,10 @@ class BodySequence {
     Db::ReadOnlyAccess db_access_;
     [[maybe_unused]] const ChainIdentity& chain_identity_;
 
+    bool in_downloading_{false};
     BlockNum highest_body_in_db_{0};
     BlockNum headers_stage_height_{0};
-    time_point_t last_nack;
+    time_point_t last_nack_;
     Download_Statistics statistics_;
 };
 

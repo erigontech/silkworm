@@ -13,7 +13,7 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 */
-#include <filesystem>
+
 #include <iostream>
 #include <string>
 #include <thread>
@@ -70,7 +70,6 @@ int main(int argc, char* argv[]) {
 
     string chain_name = ChainIdentity::mainnet.name;
     string db_path = DataDirectory{}.chaindata().path().string();
-    string temporary_file_path = ".";
     string sentry_addr = "127.0.0.1:9091";
 
     log::Settings settings;
@@ -82,15 +81,25 @@ int main(int argc, char* argv[]) {
     app.add_option("--chaindata", db_path, "Path to the chain database")
         ->capture_default_str()
         ->check(CLI::ExistingDirectory);
-    app.add_option("--chain", chain_name, "Network name")->capture_default_str()->needs("--chaindata");
-    app.add_option("-s,--sentryaddr", sentry_addr, "address:port of sentry")->capture_default_str();
-    //  todo ->check?
-    app.add_option("-f,--filesdir", temporary_file_path, "Path to a temp files dir")
-        ->capture_default_str()
-        ->check(CLI::ExistingDirectory);
+    app.add_option("--chain", chain_name, "Network name", true)
+        ->needs("--chaindata");
+    app.add_option("-s,--sentryaddr", sentry_addr, "address:port of sentry", true);
+        //  todo ->check?
     app.add_option("-v,--verbosity", settings.log_verbosity, "Verbosity")
         ->capture_default_str()
         ->check(CLI::Range(static_cast<uint32_t>(log::Level::kCritical), static_cast<uint32_t>(log::Level::kTrace)));
+
+    // test & measurement only parameters [to remove]
+    BodySequence::kMaxBlocksPerMessage = 128;
+    int requestDeadlineSeconds = 30; //BodySequence::kRequestDeadline = std::chrono::seconds(30);
+
+    app.add_option("--max_blocks_per_req", BodySequence::kMaxBlocksPerMessage,
+                   "Max number of blocks requested to peers in a single request", true);
+    app.add_option("--request_deadline", requestDeadlineSeconds,
+                   "Time after which a response is considered lost and will be re-tried", true);
+
+    BodySequence::kRequestDeadline = std::chrono::seconds(requestDeadlineSeconds);
+    // test & measurement only parameters end
 
     CLI11_PARSE(app, argc, argv);
 

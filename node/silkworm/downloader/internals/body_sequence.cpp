@@ -23,6 +23,9 @@ limitations under the License.
 
 namespace silkworm {
 
+seconds_t BodySequence::kRequestDeadline;
+BlockNum BodySequence::kMaxBlocksPerMessage;
+
 BodySequence::BodySequence(const Db::ReadOnlyAccess& dba, const ChainIdentity& ci)
     : db_access_(dba), chain_identity_(ci) {
     recover_initial_state();
@@ -42,20 +45,24 @@ BlockNum BodySequence::highest_block_in_memory() const { return body_requests_.h
 BlockNum BodySequence::lowest_block_in_memory() const { return body_requests_.lowest_block(); }
 
 
-void BodySequence::sync_current_state(BlockNum highest_body_in_db, BlockNum highest_header_in_db) {
+void BodySequence::start_bodies_downloading(BlockNum highest_body_in_db, BlockNum highest_header_in_db) {
     highest_body_in_db_ = highest_body_in_db;
     headers_stage_height_ = highest_header_in_db;
-
+    in_downloading_ = true;
     statistics_ = {}; // reset statistics
+}
+
+void BodySequence::stop_bodies_downloading() {
+    in_downloading_ = false;
 }
 
 size_t BodySequence::outstanding_bodies(time_point_t tp) const {
     size_t requested_bodies{0};
 
     for (auto& br: body_requests_) {
-        const PendingBodyRequest& past_request = br.second;
+        const BodyRequest& past_request = br.second;
         if (!past_request.ready &&
-            (tp - past_request.request_time < kRequestTimeout))
+            (tp - past_request.request_time < kRequestDeadline))
             requested_bodies++;
     }
 
@@ -66,12 +73,12 @@ std::list<NewBlockPacket>& BodySequence::announces_to_do() {
     return announcements_to_do_;
 }
 
-Penalty BodySequence::accept_requested_bodies(const BlockBodiesPacket66& packet, const PeerId&) {
+Penalty BodySequence::accept_requested_bodies(BlockBodiesPacket66& packet, const PeerId&) {
     Penalty penalty = NoPenalty;
 
     statistics_.received_items += packet.request.size();
 
-    // Find matching requests and completing PendingBodyRequest
+    // Find matching requests and completing BodyRequest
     auto matching_requests = body_requests_.find_by_request_id(packet.requestId);
 
     for (auto& body: packet.request) {
@@ -81,7 +88,7 @@ Penalty BodySequence::accept_requested_bodies(const BlockBodiesPacket66& packet,
         auto exact_request = body_requests_.end(); // = no request
 
         auto r = std::find_if(matching_requests.begin(), matching_requests.end(), [&oh, &tr](const auto& elem) {
-            const PendingBodyRequest& request = elem->second;
+            const BodyRequest& request = elem->second;
             return (request.header.ommers_hash == oh && request.header.transactions_root == tr);
         });
 
@@ -103,7 +110,7 @@ Penalty BodySequence::accept_requested_bodies(const BlockBodiesPacket66& packet,
             }
         }
 
-        PendingBodyRequest& request = exact_request->second;
+        BodyRequest& request = exact_request->second;
         if (!request.ready) {
             request.body = std::move(body);
             request.ready = true;
@@ -116,9 +123,9 @@ Penalty BodySequence::accept_requested_bodies(const BlockBodiesPacket66& packet,
 
     }
 
-    // Process remaining elements in matching_requests invalidating corresponding PendingBodyRequest
+    // Process remaining elements in matching_requests invalidating corresponding BodyRequest
     for(auto& elem: matching_requests) {
-        PendingBodyRequest& request = elem->second;
+        BodyRequest& request = elem->second;
         request.request_id = 0;
         request.request_time = time_point_t();
     }
@@ -134,22 +141,27 @@ Penalty BodySequence::accept_new_block(const Block& block, const PeerId&) {
     return Penalty::NoPenalty;
 }
 
-auto BodySequence::request_more_bodies(time_point_t tp, uint64_t active_peers)
+bool BodySequence::has_bodies_to_request(time_point_t tp) const {
+    return in_downloading_ && (tp - last_nack_ >= kNoPeerDelay);
+}
+
+auto BodySequence::request_more_bodies(time_point_t tp)
     -> std::tuple<GetBlockBodiesPacket66, std::vector<PeerPenalization>, MinBlock> {
     GetBlockBodiesPacket66 packet;
     packet.requestId = RANDOM_NUMBER.generate_one();
 
-    seconds_t timeout = BodySequence::kRequestTimeout;
+    seconds_t timeout = BodySequence::kRequestDeadline;
 
     BlockNum min_block{0};
 
-    if (tp - last_nack < kNoPeerDelay)
+    if (!has_bodies_to_request(tp))
         return {};
 
     auto penalizations = renew_stale_requests(packet, min_block, tp, timeout);
 
-    if (outstanding_bodies(tp) < kPerPeerMaxOutstandingRequests * active_peers * kMaxBlocksPerMessage &&
-        packet.request.size() < kMaxBlocksPerMessage) {
+    // we do not check that outstanding_bodies < kPerPeerMaxOutstandingRequests * active_peers * kMaxBlocksPerMessage
+    // but we relay on Sentry check of this limits
+    if (packet.request.size() < kMaxBlocksPerMessage) {
         make_new_requests(packet, min_block, tp, timeout);
     }
 
@@ -159,13 +171,12 @@ auto BodySequence::request_more_bodies(time_point_t tp, uint64_t active_peers)
 }
 
 //! Re-evaluate past (stale) requests
-auto BodySequence::renew_stale_requests(GetBlockBodiesPacket66& packet, BlockNum& min_block, time_point_t tp, seconds_t timeout)
-    -> std::vector<PeerPenalization> {
-
+auto BodySequence::renew_stale_requests(GetBlockBodiesPacket66& packet, BlockNum& min_block,
+                                        time_point_t tp, seconds_t timeout) -> std::vector<PeerPenalization> {
     std::vector<PeerPenalization> penalizations;
 
     for (auto& br: body_requests_) {
-        PendingBodyRequest& past_request = br.second;
+        BodyRequest& past_request = br.second;
 
         if (past_request.ready || tp - past_request.request_time < timeout)
             continue;
@@ -206,7 +217,7 @@ void BodySequence::make_new_requests(GetBlockBodiesPacket66& packet, BlockNum& m
                 "cause: header of block " + std::to_string(bn) + " expected in db");
         }
 
-        PendingBodyRequest new_request;
+        BodyRequest new_request;
         new_request.block_height = bn;
         new_request.request_id = packet.requestId;
         new_request.block_hash = header->hash();
@@ -221,6 +232,7 @@ void BodySequence::make_new_requests(GetBlockBodiesPacket66& packet, BlockNum& m
         }
         else {
             packet.request.push_back(new_request.block_hash);
+
             SILK_TRACE << "BodySequence: requested body block-num= " << new_request.block_height
                        << ", hash= " << new_request.block_hash;
             min_block = std::max(min_block, new_request.block_height);
@@ -236,13 +248,13 @@ void BodySequence::make_new_requests(GetBlockBodiesPacket66& packet, BlockNum& m
 }
 
 void BodySequence::request_nack(const GetBlockBodiesPacket66& packet) {
-    seconds_t timeout = BodySequence::kRequestTimeout;
+    seconds_t timeout = BodySequence::kRequestDeadline;
     for (auto& br: body_requests_) {
-        PendingBodyRequest& past_request = br.second;
+        BodyRequest& past_request = br.second;
         if (past_request.request_id == packet.requestId)
             past_request.request_time -= timeout;
     }
-    last_nack = std::chrono::system_clock::now();
+    last_nack_ = std::chrono::system_clock::now();
 }
 
 bool BodySequence::is_valid_body(const BlockHeader& header, const BlockBody& body) {
@@ -258,7 +270,7 @@ auto BodySequence::withdraw_ready_bodies() -> std::vector<Block> {
 
     auto curr_req = body_requests_.begin();
     while (curr_req != body_requests_.end()) {
-        PendingBodyRequest& past_request = curr_req->second;
+        BodyRequest& past_request = curr_req->second;
         if (!past_request.ready)
             break; // it needs to return the first range of consecutive blocks, so it stops at the first non ready
 
@@ -267,7 +279,7 @@ auto BodySequence::withdraw_ready_bodies() -> std::vector<Block> {
 
         curr_req = body_requests_.erase(curr_req);  // erase curr_req and update curr_req to point to the next request
     }
-
+    
     return ready_bodies;
 }
 
@@ -316,7 +328,7 @@ size_t BodySequence::AnnouncedBlocks::size() {
 auto BodySequence::IncreasingHeightOrderedRequestContainer::find_by_request_id(uint64_t request_id) -> std::list<Iter> {
     std::list<Impl::iterator> matching_requests;
     for (auto elem = begin(); elem != end(); elem++) {
-        const PendingBodyRequest& request = elem->second;
+        const BodyRequest& request = elem->second;
         if (request.request_id == request_id) matching_requests.push_back(elem);
     }
     return matching_requests;
@@ -324,7 +336,7 @@ auto BodySequence::IncreasingHeightOrderedRequestContainer::find_by_request_id(u
 
 auto BodySequence::IncreasingHeightOrderedRequestContainer::find_by_hash(Hash oh, Hash tr) -> Iter {
     auto r = std::find_if(begin(), end(), [&oh, &tr](const auto& elem) {
-        const PendingBodyRequest& request = elem.second;
+        const BodyRequest& request = elem.second;
         return (request.header.ommers_hash == oh && request.header.transactions_root == tr);
     });
 

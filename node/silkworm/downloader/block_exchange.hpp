@@ -43,6 +43,7 @@ class BlockExchange : public ActiveComponent {
     using MessageQueue = ConcurrentQueue<std::shared_ptr<Message>>;  // used internally to store new messages
 
     void receive_message(const sentry::InboundMessage& raw_message);
+    void log_status();
 
     Db::ReadOnlyAccess db_access_;
     SentryClient& sentry_;

@@ -25,6 +25,8 @@ namespace silkworm {
 
 seconds_t BodySequence::kRequestDeadline;
 BlockNum BodySequence::kMaxBlocksPerMessage;
+size_t BodySequence::kPerPeerMaxOutstandingRequests;
+milliseconds_t BodySequence::kNoPeerDelay;
 
 BodySequence::BodySequence(const Db::ReadOnlyAccess& dba, const ChainIdentity& ci)
     : db_access_(dba), chain_identity_(ci) {
@@ -114,6 +116,7 @@ Penalty BodySequence::accept_requested_bodies(BlockBodiesPacket66& packet, const
         if (!request.ready) {
             request.body = std::move(body);
             request.ready = true;
+            ready_bodies_ += 1;
             statistics_.accepted_items += 1;
             SILK_TRACE << "BodySequence: body accepted, block_num=" << request.block_height;
         }
@@ -145,7 +148,7 @@ bool BodySequence::has_bodies_to_request(time_point_t tp) const {
     return in_downloading_ && (tp - last_nack_ >= kNoPeerDelay);
 }
 
-auto BodySequence::request_more_bodies(time_point_t tp)
+auto BodySequence::request_more_bodies(time_point_t tp, uint64_t active_peers)
     -> std::tuple<GetBlockBodiesPacket66, std::vector<PeerPenalization>, MinBlock> {
     GetBlockBodiesPacket66 packet;
     packet.requestId = RANDOM_NUMBER.generate_one();
@@ -159,9 +162,11 @@ auto BodySequence::request_more_bodies(time_point_t tp)
 
     auto penalizations = renew_stale_requests(packet, min_block, tp, timeout);
 
-    // we do not check that outstanding_bodies < kPerPeerMaxOutstandingRequests * active_peers * kMaxBlocksPerMessage
-    // but we relay on Sentry check of this limits
-    if (packet.request.size() < kMaxBlocksPerMessage) {
+    size_t stale_requests = 0; // see below
+    auto outstanding_bodies = body_requests_.size() - ready_bodies_ - stale_requests;
+
+    if (packet.request.size() < kMaxBlocksPerMessage &&   // if this condition is true stale_requests == 0
+        outstanding_bodies < kPerPeerMaxOutstandingRequests * active_peers * kMaxBlocksPerMessage) {
         make_new_requests(packet, min_block, tp, timeout);
     }
 
@@ -229,6 +234,7 @@ void BodySequence::make_new_requests(GetBlockBodiesPacket66& packet, BlockNum& m
 
             new_request.body = std::move(*announced_body);
             new_request.ready = true;
+            ready_bodies_ += 1; 
         }
         else {
             packet.request.push_back(new_request.block_hash);
@@ -255,6 +261,7 @@ void BodySequence::request_nack(const GetBlockBodiesPacket66& packet) {
             past_request.request_time -= timeout;
     }
     last_nack_ = std::chrono::system_clock::now();
+    statistics_.requested_items -= packet.request.size();
 }
 
 bool BodySequence::is_valid_body(const BlockHeader& header, const BlockBody& body) {
@@ -280,6 +287,7 @@ auto BodySequence::withdraw_ready_bodies() -> std::vector<Block> {
         curr_req = body_requests_.erase(curr_req);  // erase curr_req and update curr_req to point to the next request
     }
     
+    ready_bodies_ -= ready_bodies.size();
     return ready_bodies;
 }
 

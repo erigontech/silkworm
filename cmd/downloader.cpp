@@ -1,5 +1,5 @@
 /*
-   Copyright 2021-2022 The Silkworm Authors
+   Copyright 2021 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -20,11 +20,15 @@
 
 #include <CLI/CLI.hpp>
 
+#include <silkworm/common/settings.hpp>
 #include <silkworm/common/directories.hpp>
 #include <silkworm/common/log.hpp>
 #include <silkworm/downloader/internals/header_retrieval.hpp>
-#include <silkworm/downloader/stage_bodies.hpp>
+#include <silkworm/downloader/internals/body_sequence.hpp>
 #include <silkworm/downloader/stage_headers.hpp>
+#include "silkworm/downloader/stage_bodies.hpp"
+
+#include "common.hpp"
 
 using namespace silkworm;
 
@@ -65,66 +69,72 @@ int main(int argc, char* argv[]) {
     using std::string, std::cout, std::cerr, std::optional;
     using namespace std::chrono;
 
-    // Command line parsing
+    // Default values
     CLI::App app{"Downloader. Connect to p2p sentry and start header/body downloading process (stages 1 and 2)"};
 
-    string chain_name = ChainIdentity::mainnet.name;
-    string db_path = DataDirectory{}.chaindata().path().string();
-    string sentry_addr = "127.0.0.1:9091";
+    NodeSettings node_settings{};
+    node_settings.sentry_api_addr = "127.0.0.1:9091";
 
-    log::Settings settings;
-    settings.log_threads = true;
-    settings.log_file = "downloader.log";
-    settings.log_verbosity = log::Level::kDebug;
-    settings.log_thousands_sep = '\'';
-
-    app.add_option("--chaindata", db_path, "Path to the chain database")
-        ->capture_default_str()
-        ->check(CLI::ExistingDirectory);
-    app.add_option("--chain", chain_name, "Network name", true)
-        ->needs("--chaindata");
-    app.add_option("-s,--sentryaddr", sentry_addr, "address:port of sentry", true);
-        //  todo ->check?
-    app.add_option("-v,--verbosity", settings.log_verbosity, "Verbosity")
-        ->capture_default_str()
-        ->check(CLI::Range(static_cast<uint32_t>(log::Level::kCritical), static_cast<uint32_t>(log::Level::kTrace)));
+    log::Settings log_settings;
+    log_settings.log_threads = true;
+    log_settings.log_file = "downloader.log";
+    log_settings.log_verbosity = log::Level::kDebug;
+    log_settings.log_thousands_sep = '\'';
 
     // test & measurement only parameters [to remove]
-    BodySequence::kMaxBlocksPerMessage = 128;
-    int requestDeadlineSeconds = 30; //BodySequence::kRequestDeadline = std::chrono::seconds(30);
+    BodySequence::kMaxBlocksPerMessage = 32;
+    BodySequence::kPerPeerMaxOutstandingRequests = 4;
+    int requestDeadlineSeconds = 30; // BodySequence::kRequestDeadline = std::chrono::seconds(30);
+    int noPeerDelayMilliseconds = 1000;  // BodySequence::kNoPeerDelay = std::chrono::milliseconds(1000)
 
     app.add_option("--max_blocks_per_req", BodySequence::kMaxBlocksPerMessage,
                    "Max number of blocks requested to peers in a single request", true);
-    app.add_option("--request_deadline", requestDeadlineSeconds,
-                   "Time after which a response is considered lost and will be re-tried", true);
+    app.add_option("--max_requests_per_peer", BodySequence::kPerPeerMaxOutstandingRequests,
+                   "Max number of pending request made to each peer", true);
+    app.add_option("--request_deadline_s", requestDeadlineSeconds,
+                   "Time (secs) after which a response is considered lost and will be re-tried", true);
+    app.add_option("--no_peer_delay_ms", noPeerDelayMilliseconds,
+                   "Time (msecs) to wait before making a new request when no peer accepted the last", true);
 
     BodySequence::kRequestDeadline = std::chrono::seconds(requestDeadlineSeconds);
+    BodySequence::kNoPeerDelay = std::chrono::milliseconds(noPeerDelayMilliseconds);
     // test & measurement only parameters end
 
-    CLI11_PARSE(app, argc, argv);
+    // Command line parsing
+    cmd::parse_silkworm_command_line(app, argc, argv, log_settings, node_settings);
 
-    log::init(settings);
-    log::Info() << "STARTING";
+    log::init(log_settings);
+    log::set_thread_name("stage-loop    ");
+    log::Info() << "SILKWORM DOWNLOADER STARTING";
+
+    cout << "BlockExchange parameters:\n";
+    cout << "    --max_blocks_per_req: " << BodySequence::kMaxBlocksPerMessage << "\n";
+    cout << "    --max_requests_per_peer: " << BodySequence::kPerPeerMaxOutstandingRequests << "\n";
+    cout << "    --request_deadline_s: " << requestDeadlineSeconds << " secs\n";
+    cout << "    --no_peer_delay_ms: " << noPeerDelayMilliseconds << " milli-secs\n";
 
     int return_value = 0;
 
     try {
+        // Prepare database
+        cmd::run_preflight_checklist(node_settings);
+
         // EIP-2124 based chain identity scheme (networkId + genesis + forks)
         ChainIdentity chain_identity;
-        if (chain_name == ChainIdentity::mainnet.name)
+        if (node_settings.chain_config->chain_id == ChainIdentity::mainnet.chain.chain_id)
             chain_identity = ChainIdentity::mainnet;
-        else if (chain_name == ChainIdentity::goerli.name)
+        else if (node_settings.chain_config->chain_id == ChainIdentity::goerli.chain.chain_id)
             chain_identity = ChainIdentity::goerli;
         else
-            throw std::logic_error(chain_name + " not supported");
+            throw std::logic_error("Chain id=" + std::to_string(node_settings.chain_config->chain_id) + " not supported");
 
-        cout << "Downloader - Silkworm\n"
+        cout << "Chain/db status:\n"
              << "   chain-id: " << chain_identity.chain.chain_id << "\n"
              << "   genesis-hash: " << chain_identity.genesis_hash << "\n"
              << "   hard-forks: " << chain_identity.distinct_fork_numbers().size() << "\n";
 
         // Database access
-        Db db{db_path};
+        Db db{node_settings.chaindata_env_config};
 
         // Node current status
         HeaderRetrieval headers(Db::ReadOnlyAccess{db});
@@ -135,7 +145,7 @@ int main(int argc, char* argv[]) {
         cout << "   head height = " << head_height << "\n\n" << std::flush;
 
         // Sentry client - connects to sentry
-        SentryClient sentry{sentry_addr};
+        SentryClient sentry{node_settings.sentry_api_addr};
         sentry.set_status(head_hash, head_td, chain_identity);
         sentry.hand_shake();
         auto message_receiving = std::thread([&sentry]() { sentry.execution_loop(); });

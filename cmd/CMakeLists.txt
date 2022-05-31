@@ -78,7 +78,7 @@ if(NOT SILKWORM_CORE_ONLY)
   add_executable(trie trie.cpp)
   target_link_libraries(trie PRIVATE silkworm_node CLI11::CLI11)
 
-  add_executable(downloader downloader.cpp)
+  add_executable(downloader downloader.cpp common.cpp)
   target_link_libraries(downloader PRIVATE silkworm_node CLI11::CLI11)
 
   add_executable(backend_kv_server backend_kv_server.cpp)

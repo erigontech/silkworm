@@ -77,6 +77,8 @@ void SentryClient::hand_shake() {
 }
 
 void SentryClient::execution_loop() {
+    log::set_thread_name("sentry-recv   ");
+
     // send a message subscription
     rpc::ReceiveMessages message_subscription(Scope::BlockAnnouncements | Scope::BlockRequests);
     exec_remotely(message_subscription);
@@ -97,6 +99,8 @@ void SentryClient::execution_loop() {
 }
 
 void SentryClient::stats_receiving_loop() {
+    log::set_thread_name("sentry-stats  ");
+
     // send a stats subscription
     rpc::ReceivePeerStats receive_peer_stats;
     exec_remotely(receive_peer_stats);

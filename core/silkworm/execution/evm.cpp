@@ -226,7 +226,7 @@ evmc::result EVM::call(const evmc_message& message) noexcept {
             }
         }
         // Explicitly notify registered tracers (if any)
-        if (tracers_.size() > 0) {
+        if (!tracers_.empty()) {
             uint64_t gas_left{static_cast<uint64_t>(res.gas_left)};
             Bytes data{res.output_data, res.output_size};
             CallResult result{res.status_code, gas_left, data};
@@ -236,7 +236,7 @@ evmc::result EVM::call(const evmc_message& message) noexcept {
         }
     } else {
         const ByteView code{state_.get_code(message.code_address)};
-        if (code.empty() && tracers_.size() == 0) { // Do not skip execution if there are any tracers
+        if (code.empty() && tracers_.empty()) { // Do not skip execution if there are any tracers
             return res;
         }
 

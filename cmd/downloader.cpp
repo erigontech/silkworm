@@ -78,8 +78,9 @@ int main(int argc, char* argv[]) {
     log::Settings log_settings;
     log_settings.log_threads = true;
     log_settings.log_file = "downloader.log";
-    log_settings.log_verbosity = log::Level::kDebug;
+    log_settings.log_verbosity = log::Level::kInfo;
     log_settings.log_thousands_sep = '\'';
+    log_settings.log_nocolor = true;
 
     // test & measurement only parameters [to remove]
     BodySequence::kMaxBlocksPerMessage = 32;

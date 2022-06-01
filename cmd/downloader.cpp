@@ -83,7 +83,7 @@ int main(int argc, char* argv[]) {
     log_settings.log_nocolor = true;
 
     // test & measurement only parameters [to remove]
-    BodySequence::kMaxBlocksPerMessage = 32;
+    BodySequence::kMaxBlocksPerMessage = 128;
     BodySequence::kPerPeerMaxOutstandingRequests = 4;
     int requestDeadlineSeconds = 30; // BodySequence::kRequestDeadline = std::chrono::seconds(30);
     int noPeerDelayMilliseconds = 1000;  // BodySequence::kNoPeerDelay = std::chrono::milliseconds(1000)

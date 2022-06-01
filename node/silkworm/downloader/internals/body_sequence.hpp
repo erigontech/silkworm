@@ -43,8 +43,7 @@ class BodySequence {
     ~BodySequence();
 
     // sync current state - this must be done at body forward
-    void start_bodies_downloading(BlockNum highest_body_in_db, BlockNum highest_header_in_db);
-    void stop_bodies_downloading();
+    void sync_current_state(BlockNum highest_body_in_db, BlockNum highest_header_in_db);
 
     //! core functionalities: trigger the internal algorithms to decide what bodies we miss
     using MinBlock = BlockNum;
@@ -71,7 +70,6 @@ class BodySequence {
     [[nodiscard]] BlockNum lowest_block_in_memory() const;
     [[nodiscard]] BlockNum target_height() const;
     [[nodiscard]] size_t outstanding_bodies(time_point_t tp) const;
-    [[nodiscard]] bool has_bodies_to_request(time_point_t tp) const;
 
     [[nodiscard]] const Download_Statistics& statistics() const;
 
@@ -130,11 +128,10 @@ class BodySequence {
     Db::ReadOnlyAccess db_access_;
     [[maybe_unused]] const ChainIdentity& chain_identity_;
 
-    bool in_downloading_{false};
-    size_t ready_bodies_{0};
     BlockNum highest_body_in_db_{0};
     BlockNum headers_stage_height_{0};
     time_point_t last_nack_;
+    size_t ready_bodies_{0};
     Download_Statistics statistics_;
 };
 

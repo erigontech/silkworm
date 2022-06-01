@@ -112,7 +112,7 @@ Stage::Result BodiesStage::forward([[maybe_unused]] bool first_sync) {
 
     Stage::Result result;
 
-    auto constexpr KShortInterval = 1s;
+    auto constexpr KShortInterval = 200ms;
     auto constexpr kProgressUpdateInterval = 30s;
 
     StopWatch timing; timing.start();
@@ -128,7 +128,7 @@ Stage::Result BodiesStage::forward([[maybe_unused]] bool first_sync) {
 
         // sync status
         BlockNum headers_stage_height = tx.read_stage_progress(db::stages::kHeadersKey);
-        auto sync_command = start_bodies_downloading(body_persistence.initial_height(), headers_stage_height);
+        auto sync_command = sync_body_sequence(body_persistence.initial_height(), headers_stage_height);
         sync_command->result().get();  // blocking
 
         // prepare bodies, if any
@@ -137,6 +137,8 @@ Stage::Result BodiesStage::forward([[maybe_unused]] bool first_sync) {
         // block processing
         time_point_t last_update = system_clock::now();
         while (body_persistence.highest_height() < headers_stage_height && !block_downloader_.is_stopping()) {
+
+            send_body_requests();
 
             if (withdraw_command->completed_and_read()) {
                 // renew request
@@ -170,8 +172,6 @@ Stage::Result BodiesStage::forward([[maybe_unused]] bool first_sync) {
                             << height_progress.delta() << "), " << height_progress.throughput() << " bodies/secs";
             }
         }
-
-        stop_bodies_downloading();
 
         auto bodies_downloaded = body_persistence.highest_height() - body_persistence.initial_height();
         log::Info() << "[2/16 Bodies] Downloading completed, wrote " << bodies_downloaded << " bodies,"
@@ -219,25 +219,18 @@ Stage::Result BodiesStage::unwind_to(BlockNum new_height, Hash bad_block) {
     return result;
 }
 
-auto BodiesStage::start_bodies_downloading(BlockNum highest_body, BlockNum highest_header)
+void BodiesStage::send_body_requests() {
+    auto message = std::make_shared<OutboundGetBlockBodies>();
+
+    block_downloader_.accept(message);
+}
+
+auto BodiesStage::sync_body_sequence(BlockNum highest_body, BlockNum highest_header)
     -> std::shared_ptr<InternalMessage<void>> {
 
     auto message = std::make_shared<InternalMessage<void>>(
         [highest_body, highest_header](HeaderChain&, BodySequence& bs) {
-            bs.start_bodies_downloading(highest_body, highest_header);
-        });
-
-    block_downloader_.accept(message);
-
-    return message;
-}
-
-auto BodiesStage::stop_bodies_downloading()
-    -> std::shared_ptr<InternalMessage<void>> {
-
-    auto message = std::make_shared<InternalMessage<void>>(
-        [](HeaderChain&, BodySequence& bs) {
-            bs.stop_bodies_downloading();
+            bs.sync_current_state(highest_body, highest_header);
         });
 
     block_downloader_.accept(message);

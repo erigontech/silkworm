@@ -47,15 +47,11 @@ BlockNum BodySequence::highest_block_in_memory() const { return body_requests_.h
 BlockNum BodySequence::lowest_block_in_memory() const { return body_requests_.lowest_block(); }
 
 
-void BodySequence::start_bodies_downloading(BlockNum highest_body_in_db, BlockNum highest_header_in_db) {
+void BodySequence::sync_current_state(BlockNum highest_body_in_db, BlockNum highest_header_in_db) {
     highest_body_in_db_ = highest_body_in_db;
     headers_stage_height_ = highest_header_in_db;
-    in_downloading_ = true;
-    statistics_ = {}; // reset statistics
-}
 
-void BodySequence::stop_bodies_downloading() {
-    in_downloading_ = false;
+    statistics_ = {}; // reset statistics
 }
 
 size_t BodySequence::outstanding_bodies(time_point_t tp) const {
@@ -144,10 +140,6 @@ Penalty BodySequence::accept_new_block(const Block& block, const PeerId&) {
     return Penalty::NoPenalty;
 }
 
-bool BodySequence::has_bodies_to_request(time_point_t tp) const {
-    return in_downloading_ && (tp - last_nack_ >= kNoPeerDelay);
-}
-
 auto BodySequence::request_more_bodies(time_point_t tp, uint64_t active_peers)
     -> std::tuple<GetBlockBodiesPacket66, std::vector<PeerPenalization>, MinBlock> {
     GetBlockBodiesPacket66 packet;
@@ -157,7 +149,7 @@ auto BodySequence::request_more_bodies(time_point_t tp, uint64_t active_peers)
 
     BlockNum min_block{0};
 
-    if (!has_bodies_to_request(tp))
+    if (tp - last_nack_ < kNoPeerDelay)
         return {};
 
     auto penalizations = renew_stale_requests(packet, min_block, tp, timeout);

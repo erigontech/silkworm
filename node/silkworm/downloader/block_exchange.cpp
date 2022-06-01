@@ -72,31 +72,21 @@ void BlockExchange::execution_loop() {
     sentry_.subscribe(SentryClient::Scope::BlockRequests,
                       [this](const sentry::InboundMessage& msg) { receive_message(msg); });
 
-    auto constexpr kShortInterval = 100ms;
+    auto constexpr kShortInterval = 1000ms;
     time_point_t last_update = system_clock::now();
 
     while (!is_stopping() && !sentry_.is_stopping()) {
         // pop a message from the queue
         std::shared_ptr<Message> message;
         bool present = messages_.timed_wait_and_pop(message, kShortInterval);
+        if (!present) continue;  // timeout, needed to check exiting_
 
         // process the message (command pattern)
-        if (present) {
-            message->execute(db_access_, header_chain_, body_sequence_, sentry_);
-        }
-
-        auto now = system_clock::now();
-
-        // request headers: to do
-
-        // request bodies
-        if (body_sequence_.has_bodies_to_request(now)) {
-            auto request_message = std::make_shared<OutboundGetBlockBodies>();
-            request_message->execute(db_access_, header_chain_, body_sequence_, sentry_);
-        }
+        message->execute(db_access_, header_chain_, body_sequence_, sentry_);
 
         // log status
-        if (silkworm::log::test_verbosity(silkworm::log::Level::kDebug) && now - last_update > 60s) {
+        auto now = system_clock::now();
+        if (silkworm::log::test_verbosity(silkworm::log::Level::kDebug) && now - last_update > 30s) {
             log_status();
             last_update = now;
         }

@@ -45,9 +45,9 @@ class EvmTracer {
     virtual void on_instruction_start(uint32_t pc, const intx::uint256* stack_top, int stack_height, const evmone::ExecutionState& state,
                                       const IntraBlockState& intra_block_state) noexcept = 0;
 
-    virtual void on_execution_end(const CallResult& result, const IntraBlockState& intra_block_state) noexcept = 0;
+    virtual void on_execution_end(const evmc_result& result, const IntraBlockState& intra_block_state) noexcept = 0;
 
-    virtual void on_precompiled_run(const CallResult& result, std::uint64_t gas, const IntraBlockState& intra_block_state) noexcept = 0;
+    virtual void on_precompiled_run(const evmc::result& result, int64_t gas, const IntraBlockState& intra_block_state) noexcept = 0;
 
     virtual void on_reward_granted(const CallResult& result, const IntraBlockState& intra_block_state) noexcept = 0;
 };

@@ -25,6 +25,7 @@
 #include <silkworm/chain/protocol_param.hpp>
 #include <silkworm/common/test_util.hpp>
 #include <silkworm/common/util.hpp>
+#include <silkworm/execution/precompiled.hpp>
 #include <silkworm/state/in_memory_state.hpp>
 
 #include "address.hpp"
@@ -389,16 +390,16 @@ class TestTracer : public EvmTracer {
                 intra_block_state.get_current_storage(contract_address_.value(), key_.value_or(evmc::bytes32{}));
         }
     }
-    void on_execution_end(const CallResult& result, const IntraBlockState& intra_block_state) noexcept override {
+    void on_execution_end(const evmc_result& res, const IntraBlockState& intra_block_state) noexcept override {
         execution_end_called_ = true;
-        result_ = result;
+        result_ = {res.status_code, static_cast<uint64_t>(res.gas_left), {res.output_data, res.output_size}};
         if (contract_address_ && pc_stack_.size() > 0) {
             const auto pc = pc_stack_.back();
             storage_stack_[pc] =
                 intra_block_state.get_current_storage(contract_address_.value(), key_.value_or(evmc::bytes32{}));
         }
     }
-    void on_precompiled_run(const CallResult& /*res*/, std::uint64_t /*gas*/,
+    void on_precompiled_run(const evmc::result& /*result*/, int64_t /*gas*/,
         const IntraBlockState& /*intra_block_state*/) noexcept override {
     }
     void on_reward_granted(const CallResult& /*result*/,
@@ -621,6 +622,34 @@ TEST_CASE("Tracing smart contract w/o code") {
     CHECK(tracer2.result().status == EVMC_SUCCESS);
     CHECK(tracer2.result().gas_left == gas);
     CHECK(tracer2.result().data == Bytes{});
+}
+
+TEST_CASE("Tracing precompiled contract failure") {
+    Block block{};
+    block.header.number = 10'336'006;
+
+    InMemoryState db;
+    IntraBlockState state{db};
+    EVM evm{block, state, kMainnetConfig};
+    CHECK(evm.tracers().empty());
+
+    TestTracer tracer1;
+    evm.add_tracer(tracer1);
+    CHECK(evm.tracers().size() == 1);
+
+    // Execute transaction Deploy contract without code
+    evmc::address caller{0x0a6bb546b9208cfab9e8fa2b9b2c042b18df7030_address};
+
+    evmc::address max_precompiled{};
+    max_precompiled.bytes[kAddressLength - 1] = precompiled::kNumOfIstanbulContracts;
+
+    Transaction txn{};
+    txn.from = caller;
+    txn.to = max_precompiled;
+    uint64_t gas{50'000};
+
+    CallResult res{evm.execute(txn, gas)};
+    CHECK(res.status == EVMC_PRECOMPILE_FAILURE);
 }
 
 }  // namespace silkworm

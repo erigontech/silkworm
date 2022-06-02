@@ -50,8 +50,7 @@ class DelegatingTracer : public evmone::Tracer {
         tracer_.on_instruction_start(pc, stack_top, stack_height, state, intra_block_state_);
     }
 
-    void on_execution_end(const evmc_result& res) noexcept override {
-        CallResult result{res.status_code, static_cast<uint64_t>(res.gas_left), {res.output_data, res.output_size}};
+    void on_execution_end(const evmc_result& result) noexcept override {
         tracer_.on_execution_end(result, intra_block_state_);
     }
 
@@ -227,11 +226,8 @@ evmc::result EVM::call(const evmc_message& message) noexcept {
         }
         // Explicitly notify registered tracers (if any)
         if (!tracers_.empty()) {
-            uint64_t gas_left{static_cast<uint64_t>(res.gas_left)};
-            Bytes data{res.output_data, res.output_size};
-            CallResult result{res.status_code, gas_left, data};
             for (auto tracer : tracers_) {
-                tracer.get().on_precompiled_run(result, static_cast<uint64_t>(message.gas), state_);
+                tracer.get().on_precompiled_run(res, message.gas, state_);
             }
         }
     } else {

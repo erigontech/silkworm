@@ -15,10 +15,12 @@
 
 #include <filesystem>
 #include <set>
+#include <thread>
 
 #include <catch2/catch.hpp>
 
 #include <silkworm/common/endian.hpp>
+#include <silkworm/common/log.hpp>
 #include <silkworm/common/test_context.hpp>
 #include <silkworm/db/tables.hpp>
 
@@ -75,11 +77,21 @@ void run_collector_test(LoadFunc load_func, bool do_copy = true) {
     // Check whether temporary files were generated
     CHECK(std::distance(fs::directory_iterator{context.dir().etl().path()}, fs::directory_iterator{}) == 10);
 
-    // Load data
+    // Load data while reading loading key from another thread
+    auto key_reader_thread = std::thread([&collector]() -> void {
+        size_t max_tries{10};
+        while (--max_tries) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(10));
+            const auto read_key = collector.get_load_key();
+            log::Info("Loading ...", {"key", read_key});
+        }
+    });
+
     auto to{db::open_cursor(context.txn(), db::table::kHeaderNumbers)};
     collector.load(to, load_func);
     // Check whether temporary files were cleaned
     CHECK(std::distance(fs::directory_iterator{context.dir().etl().path()}, fs::directory_iterator{}) == 0);
+    key_reader_thread.join();
 }
 
 TEST_CASE("collect_and_default_load") { run_collector_test(nullptr); }

@@ -43,9 +43,9 @@ class Worker {
 
     virtual ~Worker();
 
-    void start(bool wait = true);  // Start worker thread (by default waits for status)
-    void stop(bool wait = false);  // Stops worker thread (optionally wait for complete stop)
-    void kick();                   // Kicks worker thread if waiting
+    void start(bool wait = true);          // Start worker thread (by default waits for status)
+    virtual void stop(bool wait = false);  // Stops worker thread (optionally wait for complete stop)
+    void kick();                           // Kicks worker thread if waiting
 
     //! \brief Whether this worker/thread has received a stop request
     bool is_stopping() const { return state_.load() == State::kStopping; }

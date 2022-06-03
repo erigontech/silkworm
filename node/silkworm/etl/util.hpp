@@ -1,5 +1,5 @@
 /*
-   Copyright 2020-2021 The Silkworm Authors
+   Copyright 2020-2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -22,6 +22,10 @@
 #include <silkworm/common/base.hpp>
 
 namespace silkworm::etl {
+
+//! \brief Converts a system error code into its message
+//! \remarks Removes the deprecation strerror
+std::string errno2str(int err_code);
 
 class etl_error : public std::runtime_error {
   public:

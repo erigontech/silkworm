@@ -67,9 +67,10 @@ void Collector::collect(Entry&& entry) {
     }
 }
 
-void Collector::load(mdbx::cursor& target, LoadFunc load_func, MDBX_put_flags_t flags) {
-    size_t counter{10};  // Every 10 entry we track the key being loaded
-    loading_key_.clear();
+void Collector::load(mdbx::cursor& target, const LoadFunc& load_func, MDBX_put_flags_t flags) {
+    size_t counter{32};  // Every 32 entry we track the key being loaded
+    set_loading_key({});
+
     if (empty()) {
         return;
     }
@@ -82,8 +83,8 @@ void Collector::load(mdbx::cursor& target, LoadFunc load_func, MDBX_put_flags_t 
                 if (SignalHandler::signalled()) {
                     throw std::runtime_error("Operation cancelled");
                 }
-                counter = 10;
-                loading_key_ = to_hex(etl_entry.key);
+                counter = 32;
+                set_loading_key(etl_entry.key);
             }
             if (load_func) {
                 load_func(etl_entry, target, flags);
@@ -132,8 +133,8 @@ void Collector::load(mdbx::cursor& target, LoadFunc load_func, MDBX_put_flags_t 
             if (SignalHandler::signalled()) {
                 throw std::runtime_error("Operation cancelled");
             }
-            counter = 10;
-            loading_key_ = to_hex(etl_entry.key);
+            counter = 32;
+            set_loading_key(etl_entry.key);
         }
 
         // Process linked pairs

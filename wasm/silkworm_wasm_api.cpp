@@ -1,5 +1,5 @@
 /*
-   Copyright 2021 The Silkworm Authors
+   Copyright 2021-2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -76,7 +76,7 @@ void difficulty(intx::uint256* in_out, uint64_t block_number, uint64_t block_tim
 Transaction* new_transaction(const Bytes* rlp) {
     ByteView view{*rlp};
     auto txn{new Transaction};
-    if (rlp::decode(view, *txn) == rlp::DecodingResult::kOk && view.empty()) {
+    if (rlp::decode(view, *txn) == DecodingResult::kOk && view.empty()) {
         return txn;
     } else {
         delete txn;
@@ -121,7 +121,7 @@ uint8_t* account_code_hash(Account* a) { return a->code_hash.bytes; }
 Block* new_block(const Bytes* rlp) {
     ByteView view{*rlp};
     auto block{new Block};
-    if (rlp::decode(view, *block) == rlp::DecodingResult::kOk && view.empty()) {
+    if (rlp::decode(view, *block) == DecodingResult::kOk && view.empty()) {
         return block;
     } else {
         delete block;

@@ -1,5 +1,5 @@
 /*
-   Copyright 2020-2021 The Silkworm Authors
+   Copyright 2020-2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -19,42 +19,46 @@
 
 #include <memory>
 
+#include <evmone/advanced_analysis.hpp>
+#include <evmone/baseline.hpp>
+
 #include <silkworm/common/base.hpp>
 #include <silkworm/common/lru_cache.hpp>
 
-namespace evmone {
-struct AdvancedCodeAnalysis;
-}
-
 namespace silkworm {
 
-/** @brief Cache of EVM analyses.
+// Cache of EVM baseline analyses.
+using BaselineAnalysisCache = lru_cache<evmc::bytes32, std::shared_ptr<evmone::baseline::CodeAnalysis>>;
+
+/** @brief Cache of EVM advanced analyses.
  *
- * Analyses performed for different EVM revisions do not coexist in the cache
+ * Adavanced interpreter analyses performed for different EVM revisions do not coexist in the cache
  * and all other revisions are evicted on revision update.
  */
-class AnalysisCache {
+class AdvancedAnalysisCache {
   public:
     static constexpr size_t kDefaultMaxSize{5'000};
 
-    explicit AnalysisCache(size_t maxSize = kDefaultMaxSize) : cache_{maxSize} {}
+    explicit AdvancedAnalysisCache(size_t maxSize = kDefaultMaxSize) : cache_{maxSize} {}
 
-    AnalysisCache(const AnalysisCache&) = delete;
-    AnalysisCache& operator=(const AnalysisCache&) = delete;
+    // Not copyable nor movable
+    AdvancedAnalysisCache(const AdvancedAnalysisCache&) = delete;
+    AdvancedAnalysisCache& operator=(const AdvancedAnalysisCache&) = delete;
 
     /** @brief Gets an EVM analysis from the cache.
      * A nullptr is returned if there's nothing in the cache for this key & revision.
      */
-    std::shared_ptr<evmone::AdvancedCodeAnalysis> get(const evmc::bytes32& key, evmc_revision revision) noexcept;
+    std::shared_ptr<evmone::advanced::AdvancedCodeAnalysis> get(const evmc::bytes32& key,
+                                                                evmc_revision revision) noexcept;
 
     /** @brief Puts an EVM analysis into the cache.
      * All cache entries for other EVM revisions are evicted.
      */
-    void put(const evmc::bytes32& key, const std::shared_ptr<evmone::AdvancedCodeAnalysis>& analysis,
+    void put(const evmc::bytes32& key, const std::shared_ptr<evmone::advanced::AdvancedCodeAnalysis>& analysis,
              evmc_revision revision) noexcept;
 
   private:
-    lru_cache<evmc::bytes32, std::shared_ptr<evmone::AdvancedCodeAnalysis>> cache_;
+    lru_cache<evmc::bytes32, std::shared_ptr<evmone::advanced::AdvancedCodeAnalysis>> cache_;
     evmc_revision revision_{EVMC_MAX_REVISION};
 };
 

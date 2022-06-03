@@ -25,10 +25,16 @@
 #include <silkworm/consensus/engine.hpp>
 #include <silkworm/db/genesis.hpp>
 
-#include "persisted_chain.hpp"
-#include "working_chain.hpp"
+#include "header_persistence.hpp"
+#include "header_chain.hpp"
 
 namespace silkworm {
+
+class WorkingChain_ForTest : public HeaderChain {
+  public:  // publication of internal members to test methods functioning
+    using HeaderChain::generate_request_id;
+    using HeaderChain::HeaderChain;
+};
 
 class DummyConsensusEngine : public consensus::IEngine {
   public:
@@ -69,9 +75,10 @@ TEST_CASE("working/persistent-chain integration test") {
         BlockNum highest_in_db = 0;
 
         // creating the working chain as the downloader does at its construction
-        WorkingChain wc(std::make_unique<DummyConsensusEngine>());
+        WorkingChain_ForTest wc(std::make_unique<DummyConsensusEngine>());
         wc.recover_initial_state(tx);
         wc.sync_current_state(highest_in_db);
+        auto request_id = wc.generate_request_id();
 
         // auto timestamp = header0->timestamp;
 
@@ -102,22 +109,23 @@ TEST_CASE("working/persistent-chain integration test") {
 
         // processing the headers
         std::vector<BlockHeader> headers = {header1, header2, header1b};
-        PeerId peerId = "1";
-        wc.accept_headers(headers, peerId);
+        PeerId peer_id = "1";
+        wc.accept_headers(headers, request_id, peer_id);
 
-        // saving headers ready to persists as the header downloader does in the forward() method
+        // saving headers ready to persist as the header downloader does in the forward() method
         Headers headers_to_persist = wc.withdraw_stable_headers();
-        PersistedChain pc(tx);
+        HeaderPersistence pc(tx);
         pc.persist(headers_to_persist);
 
         // check internal status
         BigInt expected_td = header0->difficulty + header1.difficulty + header2.difficulty;
 
+        REQUIRE(headers_to_persist.size() == 3);
         REQUIRE(pc.total_difficulty() == expected_td);
         REQUIRE(pc.best_header_changed() == true);
         REQUIRE(pc.highest_height() == 2);
         REQUIRE(pc.highest_hash() == header2_hash);
-        REQUIRE(pc.unwind() == false);
+        REQUIRE(pc.unwind_needed() == false);
 
         // check db content
         REQUIRE(tx.read_head_header_hash() == header2_hash);
@@ -158,9 +166,10 @@ TEST_CASE("working/persistent-chain integration test") {
         BlockNum highest_in_db = 0;
 
         // creating the working chain as the downloader does at its construction
-        WorkingChain wc(std::make_unique<DummyConsensusEngine>());
+        WorkingChain_ForTest wc(std::make_unique<DummyConsensusEngine>());
         wc.recover_initial_state(tx);
         wc.sync_current_state(highest_in_db);
+        auto request_id = wc.generate_request_id();
 
         // receiving 2 headers from a peer
         BlockHeader header1;
@@ -177,11 +186,11 @@ TEST_CASE("working/persistent-chain integration test") {
 
         // processing the headers
         std::vector<BlockHeader> headers = {header1, header2};
-        PeerId peerId = "1";
-        wc.accept_headers(headers, peerId);
+        PeerId peer_id = "1";
+        wc.accept_headers(headers, request_id, peer_id);
 
         // creating the persisted chain as the header downloader does at the beginning of the forward() method
-        PersistedChain pc(tx);
+        HeaderPersistence pc(tx);
 
         // saving headers ready to persist as the header downloader does in the forward() method
         Headers headers_to_persist = wc.withdraw_stable_headers();
@@ -194,7 +203,7 @@ TEST_CASE("working/persistent-chain integration test") {
         REQUIRE(pc.best_header_changed() == true);
         REQUIRE(pc.highest_height() == 2);
         REQUIRE(pc.highest_hash() == header2_hash);
-        REQUIRE(pc.unwind() == false);
+        REQUIRE(pc.unwind_needed() == false);
 
         // check db content
         REQUIRE(tx.read_head_header_hash() == header2_hash);
@@ -216,8 +225,8 @@ TEST_CASE("working/persistent-chain integration test") {
         auto header1b_hash = header1b.hash();
 
         std::vector<BlockHeader> headers_bis = {header1b};
-        peerId = "2";
-        wc.accept_headers(headers_bis, peerId);
+        peer_id = "2";
+        wc.accept_headers(headers_bis, request_id, peer_id);
 
         // saving headers ready to persist as the header downloader does in the forward() method
         Headers headers_to_persist_bis = wc.withdraw_stable_headers();
@@ -232,7 +241,7 @@ TEST_CASE("working/persistent-chain integration test") {
         REQUIRE(pc.best_header_changed() == true);
         REQUIRE(pc.highest_height() == 2);
         REQUIRE(pc.highest_hash() == header2_hash);
-        REQUIRE(pc.unwind() == false);
+        REQUIRE(pc.unwind_needed() == false);
 
         REQUIRE(tx.read_head_header_hash() == header2_hash);
         REQUIRE(tx.read_total_difficulty(2, header2.hash()) == expected_td);
@@ -270,9 +279,10 @@ TEST_CASE("working/persistent-chain integration test") {
         BlockNum highest_in_db = 0;
 
         // creating the working chain as the downloader does at its construction
-        WorkingChain wc(std::make_unique<DummyConsensusEngine>());
+        WorkingChain_ForTest wc(std::make_unique<DummyConsensusEngine>());
         wc.recover_initial_state(tx);
         wc.sync_current_state(highest_in_db);
+        auto request_id = wc.generate_request_id();
 
         // receiving 2 headers from a peer
         BlockHeader header1;
@@ -289,11 +299,11 @@ TEST_CASE("working/persistent-chain integration test") {
 
         // processing the headers
         std::vector<BlockHeader> headers = {header1, header2};
-        PeerId peerId = "1";
-        wc.accept_headers(headers, peerId);
+        PeerId peer_id = "1";
+        wc.accept_headers(headers, request_id, peer_id);
 
         // creating the persisted chain as the header downloader does at the beginning of the forward() method
-        PersistedChain pc(tx);
+        HeaderPersistence pc(tx);
 
         // saving headers ready to persist as the header downloader does in the forward() method
         Headers headers_to_persist = wc.withdraw_stable_headers();
@@ -306,7 +316,7 @@ TEST_CASE("working/persistent-chain integration test") {
         REQUIRE(pc.best_header_changed() == true);
         REQUIRE(pc.highest_height() == 2);
         REQUIRE(pc.highest_hash() == header2_hash);
-        REQUIRE(pc.unwind() == false);
+        REQUIRE(pc.unwind_needed() == false);
 
         // check db content
         REQUIRE(tx.read_head_header_hash() == header2_hash);
@@ -328,8 +338,8 @@ TEST_CASE("working/persistent-chain integration test") {
         auto header1b_hash = header1b.hash();
 
         std::vector<BlockHeader> headers_bis = {header1b};
-        peerId = "2";
-        wc.accept_headers(headers_bis, peerId);
+        peer_id = "2";
+        wc.accept_headers(headers_bis, request_id, peer_id);
 
         // saving headers ready to persist as the header downloader does in the forward() method
         Headers headers_to_persist_bis = wc.withdraw_stable_headers();
@@ -346,7 +356,7 @@ TEST_CASE("working/persistent-chain integration test") {
         REQUIRE(pc.best_header_changed() == true);
         REQUIRE(pc.highest_height() == 1);  // <-- NOTE! 1 not 2
         REQUIRE(pc.highest_hash() == header1b_hash);
-        REQUIRE(pc.unwind() == false);  // because the prev canonical was not persisted
+        REQUIRE(pc.unwind_needed() == false);  // because the prev canonical was not persisted
 
         REQUIRE(tx.read_head_header_hash() == header1b_hash);
         REQUIRE(tx.read_total_difficulty(1, header1b.hash()) == expected_td_bis);
@@ -385,9 +395,10 @@ TEST_CASE("working/persistent-chain integration test") {
         BlockNum highest_in_db = 0;
 
         // creating the working chain as the downloader does at its construction
-        WorkingChain wc(std::make_unique<DummyConsensusEngine>());
+        WorkingChain_ForTest wc(std::make_unique<DummyConsensusEngine>());
         wc.recover_initial_state(tx);
         wc.sync_current_state(highest_in_db);
+        auto request_id = wc.generate_request_id();
 
         // receiving 1 header from a peer
         BlockHeader header1b;
@@ -398,11 +409,11 @@ TEST_CASE("working/persistent-chain integration test") {
         auto header1b_hash = header1b.hash();
 
         std::vector<BlockHeader> headers = {header1b};
-        PeerId peerId = "1";
-        wc.accept_headers(headers, peerId);
+        PeerId peer_id = "1";
+        wc.accept_headers(headers, request_id, peer_id);
 
         // creating the persisted chain as the header downloader does at the beginning of the forward() method
-        PersistedChain pc(tx);
+        HeaderPersistence pc(tx);
 
         // saving headers ready to persist as the header downloader does in the forward() method
         Headers headers_to_persist = wc.withdraw_stable_headers();
@@ -415,7 +426,7 @@ TEST_CASE("working/persistent-chain integration test") {
         REQUIRE(pc.best_header_changed() == true);
         REQUIRE(pc.highest_height() == 1);
         REQUIRE(pc.highest_hash() == header1b_hash);
-        REQUIRE(pc.unwind() == false);
+        REQUIRE(pc.unwind_needed() == false);
 
         // check db content
         REQUIRE(tx.read_head_header_hash() == header1b_hash);
@@ -440,8 +451,8 @@ TEST_CASE("working/persistent-chain integration test") {
 
         // processing the headers
         std::vector<BlockHeader> headers_bis = {header1, header2};
-        peerId = "2";
-        wc.accept_headers(headers_bis, peerId);
+        peer_id = "2";
+        wc.accept_headers(headers_bis, request_id, peer_id);
 
         // saving headers ready to persist as the header downloader does in the forward() method
         Headers headers_to_persist_bis = wc.withdraw_stable_headers();
@@ -454,7 +465,7 @@ TEST_CASE("working/persistent-chain integration test") {
         REQUIRE(pc.best_header_changed() == true);
         REQUIRE(pc.highest_height() == 2);
         REQUIRE(pc.highest_hash() == header2_hash);
-        REQUIRE(pc.unwind() == false);
+        REQUIRE(pc.unwind_needed() == false);
 
         // check db
         REQUIRE(tx.read_head_header_hash() == header2_hash);

@@ -1,5 +1,5 @@
 /*
-   Copyright 2020-2021 The Silkworm Authors
+   Copyright 2020-2022 The Silkworm Authors
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
    You may obtain a copy of the License at
@@ -14,6 +14,9 @@
 #ifndef SILKWORM_ETL_COLLECTOR_HPP_
 #define SILKWORM_ETL_COLLECTOR_HPP_
 
+#include <mutex>
+
+#include <silkworm/common/settings.hpp>
 #include <silkworm/db/mdbx.hpp>
 #include <silkworm/etl/buffer.hpp>
 #include <silkworm/etl/file_provider.hpp>
@@ -27,7 +30,7 @@ namespace silkworm::etl {
 inline constexpr size_t kOptimalBufferSize = 256_Mebi;
 
 // Function pointer to process Load on before Load data into tables
-typedef void (*LoadFunc)(const Entry&, mdbx::cursor&, MDBX_put_flags_t);
+using LoadFunc = std::function<void(const Entry&, mdbx::cursor&, MDBX_put_flags_t)>;
 
 // Collects data Extracted from db
 class Collector {
@@ -36,6 +39,10 @@ class Collector {
     Collector(const Collector&) = delete;
     Collector& operator=(const Collector&) = delete;
 
+    explicit Collector(const NodeSettings* node_settings)
+        : work_path_managed_{false},
+          work_path_{set_work_path(node_settings->data_directory->etl().path())},
+          buffer_{node_settings->etl_buffer_size} {};
     explicit Collector(const std::filesystem::path& work_path, size_t optimal_size = kOptimalBufferSize)
         : work_path_managed_{false}, work_path_{set_work_path(work_path)}, buffer_{optimal_size} {}
     explicit Collector(size_t optimal_size = kOptimalBufferSize)
@@ -51,7 +58,7 @@ class Collector {
     //! \param [in] load_func : Pointer to function transforming collected entries. If NULL no transform is executed
     //! \param [in] flags : Optional put flags for append or upsert (default)
     //! items
-    void load(mdbx::cursor& target, LoadFunc load_func = nullptr,
+    void load(mdbx::cursor& target, const LoadFunc& load_func = {},
               MDBX_put_flags_t flags = MDBX_put_flags_t::MDBX_UPSERT);
 
     //! \brief Returns the number of actually collected items
@@ -63,15 +70,25 @@ class Collector {
     //! \brief Clears contents of collector and reset
     void clear() {
         file_providers_.clear();
+        buffer_.clear();
         size_ = 0;
     }
 
     //! \brief Returns the hex representation of current load key (for progress tracking)
-    [[nodiscard]] std::string get_load_key() const { return loading_key_; }
+    [[nodiscard]] std::string get_load_key() const {
+        std::unique_lock l{mutex_};
+        return loading_key_;
+    }
 
   private:
     static std::filesystem::path set_work_path(const std::optional<std::filesystem::path>& provided_work_path);
+
     void flush_buffer();  // Write buffer to file
+
+    void set_loading_key(ByteView key) {
+        std::unique_lock l{mutex_};
+        loading_key_ = to_hex(key, true);
+    }
 
     bool work_path_managed_;
     std::filesystem::path work_path_;
@@ -92,6 +109,7 @@ class Collector {
 
     std::vector<std::unique_ptr<FileProvider>> file_providers_;  // Collection of file providers
     size_t size_{0};                                             // Total collected size
+    mutable std::mutex mutex_{};                                 // To sync loading_key_
     std::string loading_key_{};                                  // Actual load key (for log purposes)
 };
 

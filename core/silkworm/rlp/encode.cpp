@@ -25,7 +25,7 @@ void encode_header(Bytes& to, Header header) {
         const uint8_t code{header.list ? kEmptyListCode : kEmptyStringCode};
         to.push_back(static_cast<uint8_t>(code + header.payload_length));
     } else {
-        const Bytes len_be{endian::to_big_compact(header.payload_length)};
+        auto len_be{endian::to_big_compact(header.payload_length)};
         const uint8_t code = header.list ? 0xF7 : 0xB7;
         to.push_back(static_cast<uint8_t>(code + len_be.length()));
         to.append(len_be);
@@ -61,7 +61,7 @@ void encode(Bytes& to, uint64_t n) {
     } else if (n < kEmptyStringCode) {
         to.push_back(static_cast<uint8_t>(n));
     } else {
-        const Bytes be{endian::to_big_compact(n)};
+        auto be{endian::to_big_compact(n)};
         to.push_back(static_cast<uint8_t>(kEmptyStringCode + be.length()));
         to.append(be);
     }
@@ -81,7 +81,7 @@ void encode(Bytes& to, const intx::uint256& n) {
     } else if (n < kEmptyStringCode) {
         to.push_back(static_cast<uint8_t>(n));
     } else {
-        const Bytes be{endian::to_big_compact(n)};
+        auto be{endian::to_big_compact(n)};
         to.push_back(static_cast<uint8_t>(kEmptyStringCode + be.length()));
         to.append(be);
     }

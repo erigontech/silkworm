@@ -1,5 +1,5 @@
 /*
-   Copyright 2020-2021 The Silkworm Authors
+   Copyright 2020-2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -77,16 +77,16 @@ std::optional<BlockHeader> InMemoryState::read_header(uint64_t block_number,
     return std::nullopt;
 }
 
-std::optional<BlockBody> InMemoryState::read_body(uint64_t block_number,
-                                                  const evmc::bytes32& block_hash) const noexcept {
+bool InMemoryState::read_body(uint64_t block_number, const evmc::bytes32& block_hash, BlockBody& out) const noexcept {
     const auto it1{bodies_.find(block_number)};
     if (it1 != bodies_.end()) {
         const auto it2{it1->second.find(block_hash)};
         if (it2 != it1->second.end()) {
-            return it2->second;
+            out = it2->second;
+            return true;
         }
     }
-    return std::nullopt;
+    return false;
 }
 
 std::optional<intx::uint256> InMemoryState::total_difficulty(uint64_t block_number,
@@ -211,7 +211,6 @@ size_t InMemoryState::storage_size(const evmc::address& address, uint64_t incarn
 
 // https://eth.wiki/fundamentals/patricia-tree#storage-trie
 evmc::bytes32 InMemoryState::account_storage_root(const evmc::address& address, uint64_t incarnation) const {
-
     auto it1{storage_.find(address)};
     if (it1 == storage_.end()) {
         return kEmptyRoot;

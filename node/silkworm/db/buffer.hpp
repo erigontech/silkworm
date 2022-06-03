@@ -1,5 +1,5 @@
 /*
-   Copyright 2020-2021 The Silkworm Authors
+   Copyright 2020-2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -37,37 +37,39 @@ namespace silkworm::db {
 class Buffer : public State {
   public:
     // txn must be valid (its handle != nullptr)
-    explicit Buffer(mdbx::txn& txn, uint64_t prune_from, std::optional<uint64_t> historical_block = std::nullopt)
-        : txn_{txn}, prune_from_{prune_from}, historical_block_{historical_block} {
+    explicit Buffer(mdbx::txn& txn, BlockNum prune_history_threshold,
+                    std::optional<BlockNum> historical_block = std::nullopt)
+        : txn_{txn}, prune_history_threshold_{prune_history_threshold}, historical_block_{historical_block} {
         assert(txn_);
     }
 
     /** @name Readers */
     ///@{
 
-    std::optional<Account> read_account(const evmc::address& address) const noexcept override;
+    [[nodiscard]] std::optional<Account> read_account(const evmc::address& address) const noexcept override;
 
-    ByteView read_code(const evmc::bytes32& code_hash) const noexcept override;
+    [[nodiscard]] ByteView read_code(const evmc::bytes32& code_hash) const noexcept override;
 
-    evmc::bytes32 read_storage(const evmc::address& address, uint64_t incarnation,
-                               const evmc::bytes32& location) const noexcept override;
+    [[nodiscard]] evmc::bytes32 read_storage(const evmc::address& address, uint64_t incarnation,
+                                             const evmc::bytes32& location) const noexcept override;
 
     /** Previous non-zero incarnation of an account; 0 if none exists. */
-    uint64_t previous_incarnation(const evmc::address& address) const noexcept override;
+    [[nodiscard]] uint64_t previous_incarnation(const evmc::address& address) const noexcept override;
 
-    std::optional<BlockHeader> read_header(uint64_t block_number,
-                                           const evmc::bytes32& block_hash) const noexcept override;
+    [[nodiscard]] std::optional<BlockHeader> read_header(uint64_t block_number,
+                                                         const evmc::bytes32& block_hash) const noexcept override;
 
-    std::optional<BlockBody> read_body(uint64_t block_number, const evmc::bytes32& block_hash) const noexcept override;
+    [[nodiscard]] bool read_body(uint64_t block_number, const evmc::bytes32& block_hash,
+                                 BlockBody& out) const noexcept override;
 
-    std::optional<intx::uint256> total_difficulty(uint64_t block_number,
-                                                  const evmc::bytes32& block_hash) const noexcept override;
+    [[nodiscard]] std::optional<intx::uint256> total_difficulty(
+        uint64_t block_number, const evmc::bytes32& block_hash) const noexcept override;
 
-    evmc::bytes32 state_root_hash() const override;
+    [[nodiscard]] evmc::bytes32 state_root_hash() const override;
 
-    uint64_t current_canonical_block() const override;
+    [[nodiscard]] uint64_t current_canonical_block() const override;
 
-    std::optional<evmc::bytes32> canonical_hash(uint64_t block_number) const override;
+    [[nodiscard]] std::optional<evmc::bytes32> canonical_hash(uint64_t block_number) const override;
 
     ///@}
 
@@ -103,45 +105,62 @@ class Buffer : public State {
     ///@}
 
     /// Account (backward) changes per block
-    const absl::btree_map<uint64_t, AccountChanges>& account_changes() const { return account_changes_; }
+    [[nodiscard]] const absl::btree_map<uint64_t, AccountChanges>& account_changes() const {
+        return block_account_changes_;
+    }
 
     /// Storage (backward) changes per block
-    const absl::btree_map<uint64_t, StorageChanges>& storage_changes() const { return storage_changes_; }
+    [[nodiscard]] const absl::btree_map<uint64_t, StorageChanges>& storage_changes() const {
+        return block_storage_changes_;
+    }
 
-    /** Approximate size of accumulated DB changes in bytes.*/
-    size_t current_batch_size() const noexcept { return batch_size_; }
+    //! \brief Approximate size of accrued state in bytes.
+    [[nodiscard]] size_t current_batch_state_size() const noexcept { return batch_state_size_; }
 
+    //! \brief Approximate size of accrued history in bytes.
+    [[nodiscard]] size_t current_batch_history_size() const noexcept { return batch_history_size_; }
+
+    //! \brief Persists *all* accrued contents into db
+    //! \remarks write_history_to_db is implicitly called
     void write_to_db();
 
-  private:
-    void write_to_state_table();
+    //! \brief Persists *history* accrued contents into db
+    void write_history_to_db();
 
-    void bump_batch_size(size_t key_len, size_t value_len);
+  private:
+    //! \brief Persists *state* accrued contents into db
+    void write_state_to_db();
 
     mdbx::txn& txn_;
-    uint64_t prune_from_;
+    uint64_t prune_history_threshold_;
     std::optional<uint64_t> historical_block_{};
 
     absl::btree_map<Bytes, BlockHeader> headers_{};
     absl::btree_map<Bytes, BlockBody> bodies_{};
     absl::btree_map<Bytes, intx::uint256> difficulty_{};
 
-    absl::flat_hash_map<evmc::address, std::optional<Account>> accounts_;
+    // State
+
+    mutable absl::flat_hash_map<evmc::address, std::optional<Account>> accounts_;
 
     // address -> incarnation -> location -> value
-    absl::flat_hash_map<evmc::address, absl::btree_map<uint64_t, absl::flat_hash_map<evmc::bytes32, evmc::bytes32>>>
+    mutable absl::flat_hash_map<evmc::address,
+                                absl::btree_map<uint64_t, absl::flat_hash_map<evmc::bytes32, evmc::bytes32>>>
         storage_;
-
-    absl::btree_map<uint64_t, AccountChanges> account_changes_;  // per block
-    absl::btree_map<uint64_t, StorageChanges> storage_changes_;  // per block
 
     absl::btree_map<evmc::address, uint64_t> incarnations_;
     absl::btree_map<evmc::bytes32, Bytes> hash_to_code_;
     absl::btree_map<Bytes, evmc::bytes32> storage_prefix_to_code_hash_;
+
+    // History and changesets
+
+    absl::btree_map<uint64_t, AccountChanges> block_account_changes_;  // per block
+    absl::btree_map<uint64_t, StorageChanges> block_storage_changes_;  // per block
     absl::btree_map<Bytes, Bytes> receipts_;
     absl::btree_map<Bytes, Bytes> logs_;
 
-    size_t batch_size_{0};
+    mutable size_t batch_state_size_{0};    // Accounts in memory data for state
+    mutable size_t batch_history_size_{0};  // Accounts in memory data for history
 
     // Current block stuff
     uint64_t block_number_{0};

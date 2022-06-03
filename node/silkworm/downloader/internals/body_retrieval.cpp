@@ -1,5 +1,5 @@
 /*
-   Copyright 2021 The Silkworm Authors
+   Copyright 2021-2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -27,11 +27,15 @@ std::vector<BlockBody> BodyRetrieval::recover(std::vector<Hash> request) {
     size_t bytes = 0;
     for (size_t i = 0; i <= request.size(); ++i) {
         Hash& hash = request[i];
-        auto body = db_tx_.read_body(hash);
-        if (!body) continue;
-        response.push_back(*body);
-        bytes += rlp::length(*body);
-        if (bytes >= soft_response_limit || response.size() >= max_bodies_serve || i >= 2 * max_bodies_serve) break;
+        BlockBody body;
+        if (!db_tx_.read_body(hash, body)) {
+            continue;
+        }
+        response.push_back(body);
+        bytes += rlp::length(body);
+        if (bytes >= soft_response_limit || response.size() >= max_bodies_serve || i >= 2 * max_bodies_serve) {
+            break;
+        }
     }
     return response;
 }

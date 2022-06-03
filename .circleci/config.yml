@@ -1,4 +1,4 @@
-#   Copyright 2020-2021 The Silkworm Authors
+#   Copyright 2020-2022 The Silkworm Authors
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
@@ -33,11 +33,11 @@ commands:
             sudo apt-get install -y libgmp3-dev
       - restore_cache:
           name: "Restore Hunter cache"
-          key: &hunter-cache-key hunter-{{ .Environment.CIRCLE_JOB }}-{{checksum ".circleci/config.yml"}}-{{checksum "cmake/toolchain/base.cmake"}}-{{checksum "cmake/Hunter/config.cmake"}}-{{checksum "cmake/Hunter/core_packages.cmake"}}-{{checksum "cmake/Hunter/extra_packages.cmake"}}
+          key: &hunter-cache-key hunter-{{ .Environment.CIRCLE_JOB }}-{{checksum "cmake/toolchain/base.cmake"}}-{{checksum "cmake/Hunter/config.cmake"}}-{{checksum "cmake/Hunter/core_packages.cmake"}}-{{checksum "cmake/Hunter/extra_packages.cmake"}}
       - run:
           name: "Cmake"
           working_directory: ~/build
-          command: cmake ../project -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DCMAKE_TOOLCHAIN_FILE=$HOME/project/cmake/toolchain/$TOOLCHAIN -DSILKWORM_CLANG_COVERAGE=$CLANG_COVERAGE
+          command: cmake ../project -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DCMAKE_TOOLCHAIN_FILE=$HOME/project/cmake/toolchain/$TOOLCHAIN -DSILKWORM_CLANG_COVERAGE=$CLANG_COVERAGE -DSILKWORM_SANITIZE=$SANITIZE
       - save_cache:
           name: "Save Hunter cache"
           key: *hunter-cache-key
@@ -52,35 +52,26 @@ commands:
       - run:
           name: "Core unit tests"
           working_directory: ~/build
-          command: cmd/core_test
+          command: |
+            ulimit -s unlimited
+            cmd/test/core_test
       - run:
           name: "Node unit tests"
           working_directory: ~/build
-          command: cmd/node_test
+          command: cmd/test/node_test
       - run:
           name: "Ethereum consensus tests"
           working_directory: ~/build
-          command: cmd/consensus
+          no_output_timeout: 20m
+          command: cmd/test/consensus --threads 4 # out of memory with 8 threads under linux-gcc-11-thread-sanitizer 
 
 jobs:
-  linux-gcc-9:
-    environment:
-      BUILD_TYPE: Release
-      TOOLCHAIN: cxx17.cmake
-      CLANG_COVERAGE: OFF
-    machine:
-      image: ubuntu-2004:202010-01
-    resource_class: xlarge
-    steps:
-      - checkout_with_submodules
-      - build
-      - test
-
-  linux-gcc-11-cpp20:
+  linux-gcc-11-thread-sanitizer:
     environment:
       BUILD_TYPE: Debug
       TOOLCHAIN: cxx20.cmake
       CLANG_COVERAGE: OFF
+      SANITIZE: thread
     docker:
       - image: ethereum/cpp-build-env:17-gcc-11
     resource_class: xlarge
@@ -89,11 +80,40 @@ jobs:
       - build
       - test
 
-  linux-clang-coverage:
+  linux-gcc-11:
     environment:
       BUILD_TYPE: Debug
-      TOOLCHAIN: cxx17.cmake
+      TOOLCHAIN: cxx20.cmake
+      CLANG_COVERAGE: OFF
+      SANITIZE: OFF
+    docker:
+      - image: ethereum/cpp-build-env:17-gcc-11
+    resource_class: xlarge
+    steps:
+      - checkout_with_submodules
+      - build
+      - test
+
+  linux-clang-10-address-sanitizer:
+    environment:
+      BUILD_TYPE: Debug
+      TOOLCHAIN: cxx20.cmake
+      CLANG_COVERAGE: OFF
+      SANITIZE: address
+    docker:
+      - image: ethereum/cpp-build-env:14-clang-10
+    resource_class: xlarge
+    steps:
+      - checkout_with_submodules
+      - build
+      - test
+
+  linux-clang-10-coverage:
+    environment:
+      BUILD_TYPE: Debug
+      TOOLCHAIN: cxx20.cmake
       CLANG_COVERAGE: ON
+      SANITIZE: OFF
     docker:
       - image: ethereum/cpp-build-env:14-clang-10
     resource_class: xlarge
@@ -104,27 +124,27 @@ jobs:
           name: "Core unit tests"
           working_directory: ~/build
           command: |
-            cmd/core_test
+            cmd/test/core_test
             mv default.profraw core_test.profraw
       - run:
           name: "Node unit tests"
           working_directory: ~/build
           command: |
-            cmd/node_test
+            cmd/test/node_test
             mv default.profraw node_test.profraw
       - run:
           name: "Ethereum consensus tests"
           working_directory: ~/build
           no_output_timeout: 20m
           command: |
-            cmd/consensus
+            cmd/test/consensus
             mv default.profraw consensus.profraw
       - run:
           name: "Coverage"
           working_directory: ~/build
           command: |
             llvm-profdata merge *.profraw -o profdata
-            llvm-cov export -instr-profile profdata -format=lcov cmd/node_test -object cmd/consensus > silkworm.lcov
+            llvm-cov export -instr-profile profdata -format=lcov cmd/test/node_test -object cmd/test/consensus > silkworm.lcov
       - run:
           name: "Upload to Codecov"
           command: |
@@ -178,13 +198,14 @@ jobs:
       - run:
           name: "Core unit tests"
           working_directory: ~/build
-          command: wasmer cmd/core_test
+          command: wasmer cmd/test/core_test
 
 workflows:
   version: 2
   silkworm:
     jobs:
-      - linux-gcc-9
-      - linux-gcc-11-cpp20
-      - linux-clang-coverage
+      - linux-gcc-11-thread-sanitizer
+      - linux-gcc-11
+      - linux-clang-10-coverage
+      - linux-clang-10-address-sanitizer
       - linux-wasm-build

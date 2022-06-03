@@ -1,5 +1,5 @@
 /*
-   Copyright 2020-2021 The Silkworm Authors
+   Copyright 2020-2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -18,12 +18,10 @@
 
 #include <memory>
 
-#include <evmone/analysis.hpp>
-
 namespace silkworm {
 
-std::shared_ptr<evmone::AdvancedCodeAnalysis> AnalysisCache::get(const evmc::bytes32& key,
-                                                                 evmc_revision revision) noexcept {
+std::shared_ptr<evmone::advanced::AdvancedCodeAnalysis> AdvancedAnalysisCache::get(const evmc::bytes32& key,
+                                                                                   evmc_revision revision) noexcept {
     if (revision_ == revision) {
         const auto* ptr{cache_.get(key)};
         return ptr ? *ptr : nullptr;
@@ -32,8 +30,9 @@ std::shared_ptr<evmone::AdvancedCodeAnalysis> AnalysisCache::get(const evmc::byt
     }
 }
 
-void AnalysisCache::put(const evmc::bytes32& key, const std::shared_ptr<evmone::AdvancedCodeAnalysis>& analysis,
-                        evmc_revision revision) noexcept {
+void AdvancedAnalysisCache::put(const evmc::bytes32& key,
+                                const std::shared_ptr<evmone::advanced::AdvancedCodeAnalysis>& analysis,
+                                evmc_revision revision) noexcept {
     if (revision_ != revision) {
         // multiple revisions are not supported
         cache_.clear();

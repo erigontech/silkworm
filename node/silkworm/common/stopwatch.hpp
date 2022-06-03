@@ -1,5 +1,5 @@
 /*
-   Copyright 2021 The Silkworm Authors
+   Copyright 2021-2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -35,7 +35,9 @@ class StopWatch {
     using Duration = std::chrono::nanoseconds;
 
     //! \brief Creates a new instance
-    StopWatch() = default;
+    explicit StopWatch(bool auto_start = false) {
+        if (auto_start) start();
+    };
     ~StopWatch() = default;
 
     //! \brief Starts the clock
@@ -45,6 +47,10 @@ class StopWatch {
     //! \brief Records a lap time
     //! \return A pair of TimePoint and Duration
     std::pair<TimePoint, Duration> lap() noexcept;
+
+    //! \brief Records a lap time
+    //! \return The lap Duration
+    Duration lap_duration() noexcept;
 
     //! \brief Computes the duration amongst the start time and the provided timepoint
     //! \param origin [in] : An origin timepoint

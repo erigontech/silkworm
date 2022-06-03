@@ -1,5 +1,5 @@
 /*
-   Copyright 2020-2021 The Silkworm Authors
+   Copyright 2020-2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -66,7 +66,7 @@ TEST_CASE("RLP decoding") {
 
         CHECK(decode_failure<uint64_t>("C0") == DecodingResult::kUnexpectedList);
         CHECK(decode_failure<uint64_t>("00") == DecodingResult::kLeadingZero);
-        CHECK(decode_failure<uint64_t>("8105") == DecodingResult::kNonCanonicalSingleByte);
+        CHECK(decode_failure<uint64_t>("8105") == DecodingResult::kNonCanonicalSize);
         CHECK(decode_failure<uint64_t>("8200F4") == DecodingResult::kLeadingZero);
         CHECK(decode_failure<uint64_t>("B8020004") == DecodingResult::kNonCanonicalSize);
         CHECK(decode_failure<uint64_t>("8AFFFFFFFFFFFFFFFFFF7C") == DecodingResult::kOverflow);
@@ -83,7 +83,7 @@ TEST_CASE("RLP decoding") {
         CHECK(decode_failure<intx::uint256>("8BFFFFFFFFFFFFFFFFFF7C") == DecodingResult::kInputTooShort);
         CHECK(decode_failure<intx::uint256>("C0") == DecodingResult::kUnexpectedList);
         CHECK(decode_failure<intx::uint256>("00") == DecodingResult::kLeadingZero);
-        CHECK(decode_failure<intx::uint256>("8105") == DecodingResult::kNonCanonicalSingleByte);
+        CHECK(decode_failure<intx::uint256>("8105") == DecodingResult::kNonCanonicalSize);
         CHECK(decode_failure<intx::uint256>("8200F4") == DecodingResult::kLeadingZero);
         CHECK(decode_failure<intx::uint256>("B8020004") == DecodingResult::kNonCanonicalSize);
         CHECK(decode_failure<intx::uint256>("A101000000000000000000000000000000000000008B000000000000000000000000") ==

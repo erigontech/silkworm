@@ -19,8 +19,10 @@
 
 #include <CLI/CLI.hpp>
 
+#include <silkworm/buildinfo.h>
 #include <silkworm/common/log.hpp>
 #include <silkworm/common/settings.hpp>
+#include <silkworm/common/stopwatch.hpp>
 #include <silkworm/concurrency/signal_handler.hpp>
 #include <silkworm/db/stages.hpp>
 #include <silkworm/stagedsync/sync_loop.hpp>
@@ -82,7 +84,27 @@ int main(int argc, char* argv[]) {
 
         SignalHandler::init();    // Trap OS signals
         log::init(log_settings);  // Initialize logging with cli settings
+        log::set_thread_name("main");
 
+        // Output BuildInfo
+        auto build_info{silkworm_get_buildinfo()};
+        log::Message(
+            "Silkworm",
+            {
+                "version", std::string(build_info->git_branch) + std::string(build_info->project_version),  //
+                "build",
+                std::string(build_info->system_name) + "-" + std::string(build_info->system_processor) + " " +
+                    std::string(build_info->build_type),                                                            //
+                "compiler", std::string(build_info->compiler_id) + " " + std::string(build_info->compiler_version)  //
+            });
+
+        // Output mdbx build info
+        auto mdbx_ver{mdbx::get_version()};
+        auto mdbx_bld{mdbx::get_build()};
+        log::Message("libmdbx",
+                     {"version", mdbx_ver.git.describe, "build", mdbx_bld.target, "compiler", mdbx_bld.compiler});
+
+        // Check db
         cmd::run_preflight_checklist(node_settings);  // Prepare database for takeoff
 
         auto chaindata_env{silkworm::db::open_env(node_settings.chaindata_env_config)};
@@ -91,12 +113,14 @@ int main(int argc, char* argv[]) {
         using asio_guard_type = boost::asio::executor_work_guard<boost::asio::io_context::executor_type>;
         auto asio_guard = std::make_unique<asio_guard_type>(node_settings.asio_context.get_executor());
         std::thread asio_thread{[&node_settings]() -> void {
+            log::set_thread_name("Asio");
             log::Trace("Boost Asio", {"state", "started"});
             node_settings.asio_context.run();
             log::Trace("Boost Asio", {"state", "stopped"});
         }};
 
         // Start sync loop
+        auto start_time{std::chrono::steady_clock::now()};
         stagedsync::SyncLoop sync_loop(&node_settings, &chaindata_env);
         sync_loop.start(/*wait=*/false);
 
@@ -105,14 +129,23 @@ int main(int argc, char* argv[]) {
         auto t1{std::chrono::steady_clock::now()};
         while (sync_loop.get_state() != Worker::State::kStopped) {
             std::this_thread::sleep_for(std::chrono::milliseconds(500));
+
+            // Check signals
+            if (SignalHandler::signalled()) {
+                sync_loop.stop(true);
+                continue;
+            }
+
             auto t2{std::chrono::steady_clock::now()};
-            if ((t2 - t1) > std::chrono::seconds(60)) {
+            if ((t2 - t1) > std::chrono::seconds(300)) {
                 t1 = std::chrono::steady_clock::now();
+                auto total_duration{t1 - start_time};
                 log::Info("Resource usage",
                           {
                               "mem", human_size(get_mem_usage()),                                     //
                               "chain", human_size(node_settings.data_directory->chaindata().size()),  //
-                              "etl-tmp", human_size(node_settings.data_directory->etl().size())       //
+                              "etl-tmp", human_size(node_settings.data_directory->etl().size()),      //
+                              "uptime", StopWatch::format(total_duration)                             //
                           });
             }
         }

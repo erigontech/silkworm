@@ -1,5 +1,5 @@
 /*
-   Copyright 2020 - 2021 The Silkworm Authors
+   Copyright 2020-2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -34,13 +34,14 @@ void Worker::start(bool wait) {
     kicked_.store(false);
 
     thread_ = std::make_unique<std::thread>([&]() {
+        log::set_thread_name(name_.c_str());
         State expected_starting{State::kStarting};
         if (state_.compare_exchange_strong(expected_starting, State::kStarted)) {
             signal_worker_started(this);
             try {
                 work();
             } catch (const std::exception& ex) {
-                log::Error() << "Exception thrown in " << name_ << " thread : " << ex.what();
+                log::Error(name_, {"exception", std::string(ex.what())});
                 exception_ptr_ = std::current_exception();
             }
         }

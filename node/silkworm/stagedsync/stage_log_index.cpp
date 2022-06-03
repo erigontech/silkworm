@@ -21,11 +21,10 @@
 #include <silkworm/common/cast.hpp>
 #include <silkworm/common/endian.hpp>
 #include <silkworm/common/log.hpp>
-#include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/bitmap.hpp>
 #include <silkworm/db/stages.hpp>
 #include <silkworm/etl/collector.hpp>
-#include <silkworm/stagedsync/listener_log_index.hpp>
+#include <silkworm/stagedsync/stage_logindex/listener_log_index.hpp>
 
 #include "stagedsync.hpp"
 

@@ -1,5 +1,5 @@
 /*
-   Copyright 2021 The Silkworm Authors
+   Copyright 2021-2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -94,13 +94,13 @@ TEST_CASE("Block as key and compact form") {
         // Check the sequence of bytes in memory
         ByteView block_number_view(reinterpret_cast<uint8_t*>(&block_number), sizeof(uint64_t));
 
-#if SILKWORM_BYTE_ORDER == SILKWORM_LITTLE_ENDIAN
-        // Check we've switched to native endianness
-        CHECK(to_hex(block_number_view) == block_number_hex_rev);
-#else
-        // Check our hex form matches input form
-        CHECK(to_hex(block_number_view) == block_number_hex);
-#endif
+        if constexpr (intx::byte_order_is_little_endian) {
+            // Check we've switched to native endianness
+            CHECK(to_hex(block_number_view) == block_number_hex_rev);
+        } else {
+            // Check our hex form matches input form
+            CHECK(to_hex(block_number_view) == block_number_hex);
+        }
 
         alignas(uint64_t) uint8_t block_number_as_key[8];
         store_big_u64(&block_number_as_key[0], block_number);
@@ -108,12 +108,12 @@ TEST_CASE("Block as key and compact form") {
         // Check data value is byte swapped if endianness requires
         auto block_number_from_key{*reinterpret_cast<uint64_t*>(block_number_as_key)};
 
-#if SILKWORM_BYTE_ORDER == SILKWORM_LITTLE_ENDIAN
-        CHECK(block_number_from_key != block_number);
-#else
-        CHECK(block_number_from_key == block_number);
-#endif
-        CHECK(be::load(block_number_from_key) == block_number);
+        if constexpr (intx::byte_order_is_little_endian) {
+            CHECK(block_number_from_key != block_number);
+        } else {
+            CHECK(block_number_from_key == block_number);
+        }
+        CHECK(intx::to_big_endian(block_number_from_key) == block_number);
     }
 
     SECTION("Block number as compact") {
@@ -121,8 +121,9 @@ TEST_CASE("Block as key and compact form") {
         auto block_number_compact_bytes{to_big_compact(block_number)};
         CHECK(to_hex(block_number_compact_bytes) == "5485ffde");
         // Convert back and check
-        auto block_number_from_compact{from_big_compact<uint64_t>(block_number_compact_bytes)};
-        CHECK(block_number_from_compact == block_number);
+        uint64_t out64{0};
+        REQUIRE(from_big_compact(block_number_compact_bytes, out64) == DecodingResult::kOk);
+        CHECK(out64 == block_number);
         // Try compact empty bytes
         Bytes empty_bytes{};
         CHECK(zeroless_view(empty_bytes).empty());
@@ -132,20 +133,16 @@ TEST_CASE("Block as key and compact form") {
         // Compact block == 0
         CHECK(to_big_compact(0).empty());
         // Try retrieve a compacted value from an empty Byte string
-        CHECK(from_big_compact<uint64_t>(Bytes()) == 0u);
+        REQUIRE(from_big_compact(Bytes{}, out64) == DecodingResult::kOk);
+        CHECK(out64 == 0u);
         // Try retrieve a compacted value from a too large Byte string
         Bytes extra_long_bytes(sizeof(uint64_t) + 1, 0);
-        CHECK(from_big_compact<uint64_t>(extra_long_bytes) == std::nullopt);
-    }
-}
+        CHECK(from_big_compact(extra_long_bytes, out64) == DecodingResult::kOverflow);
 
-TEST_CASE("from_big_compact with leading zeros") {
-    const Bytes non_compact_be{*from_hex("00AB")};
-    const auto x{from_big_compact<uint32_t>(non_compact_be, /*allow_leading_zeros=*/false)};
-    CHECK(x == std::nullopt);
-    const auto y{from_big_compact<uint32_t>(non_compact_be, /*allow_leading_zeros=*/true)};
-    REQUIRE(y != std::nullopt);
-    CHECK(y == 0xAB);
+        uint32_t out32{0};
+        const Bytes non_compact_be{*from_hex("00AB")};
+        CHECK(from_big_compact(non_compact_be, out32) == DecodingResult::kLeadingZero);
+    }
 }
 
 }  // namespace silkworm::endian

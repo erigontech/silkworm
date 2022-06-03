@@ -1,5 +1,5 @@
 /*
-   Copyright 2021 The Silkworm Authors
+   Copyright 2021-2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -22,9 +22,9 @@
 
 #include <silkworm/common/directories.hpp>
 #include <silkworm/common/log.hpp>
-#include <silkworm/downloader/block_provider.hpp>
-#include <silkworm/downloader/header_downloader.hpp>
 #include <silkworm/downloader/internals/header_retrieval.hpp>
+#include <silkworm/downloader/stage_bodies.hpp>
+#include <silkworm/downloader/stage_headers.hpp>
 
 using namespace silkworm;
 
@@ -41,17 +41,28 @@ int main(int argc, char* argv[]) {
     string temporary_file_path = ".";
     string sentry_addr = "127.0.0.1:9091";
 
-    app.add_option("--chaindata", db_path, "Path to the chain database", true)->check(CLI::ExistingDirectory);
-    app.add_option("--chain", chain_name, "Network name", true)->needs("--chaindata");
-    app.add_option("-s,--sentryaddr", sentry_addr, "address:port of sentry", true);
-    //  todo ->check?
-    app.add_option("-f,--filesdir", temporary_file_path, "Path to a temp files dir", true)
+    log::Settings settings;
+    settings.log_threads = true;
+    settings.log_file = "downloader.log";
+    settings.log_verbosity = log::Level::kInfo;
+    settings.log_thousands_sep = '\'';
+
+    app.add_option("--chaindata", db_path, "Path to the chain database")
+        ->capture_default_str()
         ->check(CLI::ExistingDirectory);
+    app.add_option("--chain", chain_name, "Network name")->capture_default_str()->needs("--chaindata");
+    app.add_option("-s,--sentryaddr", sentry_addr, "address:port of sentry")->capture_default_str();
+    //  todo ->check?
+    app.add_option("-f,--filesdir", temporary_file_path, "Path to a temp files dir")
+        ->capture_default_str()
+        ->check(CLI::ExistingDirectory);
+    app.add_option("-v,--verbosity", settings.log_verbosity, "Verbosity")
+        ->capture_default_str()
+        ->check(CLI::Range(static_cast<uint32_t>(log::Level::kCritical), static_cast<uint32_t>(log::Level::kTrace)));
 
     CLI11_PARSE(app, argc, argv);
 
-    log::set_verbosity(log::Level::kTrace);
-    log::tee_file(std::filesystem::path("downloader.log"));
+    log::init(settings);
     log::Info() << "STARTING";
 
     int return_value = 0;
@@ -89,35 +100,34 @@ int main(int argc, char* argv[]) {
         auto message_receiving = std::thread([&sentry]() { sentry.execution_loop(); });
         auto stats_receiving = std::thread([&sentry]() { sentry.stats_receiving_loop(); });
 
-        // Block provider - provides headers and bodies to external peers
-        BlockProvider block_provider{sentry, Db::ReadOnlyAccess{db}};
-        auto block_request_processing = std::thread([&block_provider]() { block_provider.execution_loop(); });
+        // BlockDownloader - download headers and bodies from remote peers using the sentry
+        BlockDownloader block_downloader{sentry, Db::ReadOnlyAccess{db}, chain_identity};
+        auto block_downloading = std::thread([&block_downloader]() { block_downloader.execution_loop(); });
 
         // Stage1 - Header downloader - example code
         bool first_sync = true;  // = starting up silkworm
-        HeaderDownloader header_downloader{sentry, Db::ReadWriteAccess{db}, chain_identity};
-        auto header_processing = std::thread([&header_downloader]() { header_downloader.execution_loop(); });
+        HeadersStage header_stage{Db::ReadWriteAccess{db}, block_downloader};
+        BodiesStage body_stage{Db::ReadWriteAccess{db}, block_downloader};
 
         // Sample stage loop with 1 stage
-        Stage::Result stage_result{Stage::Result::Unknown};
+        Stage::Result stage_result{Stage::Result::Unspecified};
         do {
             if (stage_result.status != Stage::Result::UnwindNeeded) {
-                stage_result = header_downloader.forward(first_sync);
+                stage_result = header_stage.forward(first_sync);
             } else {
-                stage_result = header_downloader.unwind_to(*stage_result.unwind_point, /*bad_block=*/{});
+                stage_result = header_stage.unwind_to(*stage_result.unwind_point, *stage_result.bad_block);
             }
+            first_sync = false;
         } while (stage_result.status != Stage::Result::Error);
 
         // Wait for user termination request
-        std::cin.get();            // wait for user press "enter"
-        block_provider.stop();     // signal exiting
-        header_downloader.stop();  // signal exiting
+        std::cin.get();           // wait for user press "enter"
+        block_downloader.stop();  // signal exiting
 
         // wait threads termination
         message_receiving.join();
         stats_receiving.join();
-        block_request_processing.join();
-        header_processing.join();
+        block_downloading.join();
     } catch (std::exception& e) {
         cerr << "Exception: " << e.what() << "\n";
         return_value = 1;

@@ -1,5 +1,5 @@
 /*
-   Copyright 2021 The Silkworm Authors
+   Copyright 2021-2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -142,7 +142,7 @@ class DbTrieLoader {
 
     DbTrieLoader(mdbx::txn& txn, etl::Collector& account_collector, etl::Collector& storage_collector);
 
-    evmc::bytes32 calculate_root(PrefixSet& changed);
+    evmc::bytes32 calculate_root(PrefixSet& account_changes, PrefixSet& storage_changes);
 
   private:
     evmc::bytes32 calculate_storage_root(const Bytes& key_with_inc, PrefixSet& changed);

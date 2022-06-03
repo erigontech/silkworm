@@ -1,5 +1,5 @@
 /*
-    Copyright 2021 The Silkworm Authors
+    Copyright 2021-2022 The Silkworm Authors
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -23,7 +23,11 @@
 
 #include <magic_enum.hpp>
 
+#include <silkworm/common/log.hpp>
 #include <silkworm/common/settings.hpp>
+#include <silkworm/concurrency/stoppable.hpp>
+#include <silkworm/db/stages.hpp>
+#include <silkworm/etl/collector.hpp>
 
 namespace silkworm::stagedsync {
 
@@ -37,7 +41,6 @@ enum class [[nodiscard]] StageResult{
     kInvalidProgress,         //
     kInvalidBlock,            //
     kInvalidTransaction,      //
-    kMissingSenders,          //
     kDecodingError,           //
     kUnexpectedError,         //
     kUnknownError,            //
@@ -50,8 +53,8 @@ class StageError : public std::exception {
   public:
     explicit StageError(StageResult err)
         : err_{magic_enum::enum_integer<StageResult>(err)},
-          message_{"Stage error : " + std::string(magic_enum::enum_name<StageResult>(err))} {};
-    [[maybe_unused]] explicit StageError(StageResult err, std::string message)
+          message_{std::string(magic_enum::enum_name<StageResult>(err))} {};
+    explicit StageError(StageResult err, std::string message)
         : err_{magic_enum::enum_integer<StageResult>(err)}, message_{std::move(message)} {};
     ~StageError() noexcept override = default;
     [[nodiscard]] const char* what() const noexcept override { return message_.c_str(); }
@@ -72,8 +75,14 @@ inline void success_or_throw(StageResult code) {
 
 //! \brief Base Stage interface. All stages MUST inherit from this class and MUST override forward / unwind /
 //! prune
-class IStage {
+class IStage : public Stoppable {
   public:
+    enum class OperationType {
+        None,     // Actually no operation running
+        Forward,  // Executing Forward
+        Unwind,   // Executing Unwind
+        Prune,    // Executing Prune
+    };
     explicit IStage(const char* stage_name, NodeSettings* node_settings)
         : stage_name_{stage_name}, node_settings_{node_settings} {};
     virtual ~IStage() = default;
@@ -103,11 +112,19 @@ class IStage {
     //! \brief This function implementation MUST be thread safe as is called asynchronously from ASIO thread
     [[nodiscard]] virtual std::vector<std::string> get_log_progress() = 0;
 
+    //! \brief Returns the key name of the stage instance
     [[nodiscard]] const char* name() const { return stage_name_; }
+
+    //! \brief Forces an exception if stage has been requested to stop
+    void throw_if_stopping() { success_or_throw(is_stopping() ? StageResult::kAborted : StageResult::kSuccess); }
 
   protected:
     const char* stage_name_;
     NodeSettings* node_settings_;
+    std::atomic<OperationType> operation_{OperationType::None};
+
+    //! \brief Throws if actual block != expected block
+    static void check_block_sequence(BlockNum actual, BlockNum expected);
 };
 
 }  // namespace silkworm::stagedsync

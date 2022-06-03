@@ -1,37 +1,37 @@
 /*
-    Copyright 2020-2022 The Silkworm Authors
+   Copyright 2020-2022 The Silkworm Authors
 
-    Licensed under the Apache License, Version 2.0 (the "License");
-    you may not use this file except in compliance with the License.
-    You may obtain a copy of the License at
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
 
-        http://www.apache.org/licenses/LICENSE-2.0
+       http://www.apache.org/licenses/LICENSE-2.0
 
-    Unless required by applicable law or agreed to in writing, software
-    distributed under the License is distributed on an "AS IS" BASIS,
-    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-    See the License for the specific language governing permissions and
-    limitations under the License.
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
 */
 
-#include <filesystem>
+#include "stage_execution.hpp"
+
 #include <string>
 
+#include <silkworm/common/assert.hpp>
 #include <silkworm/common/endian.hpp>
 #include <silkworm/common/log.hpp>
 #include <silkworm/common/stopwatch.hpp>
-#include <silkworm/concurrency/signal_handler.hpp>
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/buffer.hpp>
-#include <silkworm/db/stages.hpp>
 #include <silkworm/execution/processor.hpp>
-
-#include "stagedsync.hpp"
 
 namespace silkworm::stagedsync {
 
 StageResult Execution::forward(db::RWTxn& txn) {
-    if (!node_settings_->chain_config.has_value()) {
+    if (is_stopping()) {
+        return StageResult::kAborted;
+    } else if (!node_settings_->chain_config.has_value()) {
         return StageResult::kUnknownChainId;
     } else if (!consensus_engine_) {
         return StageResult::kUnknownConsensusEngine;
@@ -40,8 +40,12 @@ StageResult Execution::forward(db::RWTxn& txn) {
     StopWatch commit_stopwatch;
     // Check stage boundaries from previous execution and previous stage execution
     auto previous_progress{get_progress(txn)};
+    auto headers_stage_progress{db::stages::read_stage_progress(*txn, db::stages::kHeadersKey)};
     auto bodies_stage_progress{db::stages::read_stage_progress(*txn, db::stages::kBlockBodiesKey)};
     auto senders_stage_progress{db::stages::read_stage_progress(*txn, db::stages::kSendersKey)};
+
+    // This is next stage probably needing full history
+    auto hashstate_stage_progress{db::stages::read_stage_progress(*txn, db::stages::kHashStateKey)};
 
     if (previous_progress == bodies_stage_progress) {
         // Nothing to process
@@ -72,33 +76,98 @@ StageResult Execution::forward(db::RWTxn& txn) {
         log::Info("Begin Execution", {"from", std::to_string(block_num_), "to", std::to_string(bodies_stage_progress)});
     }
 
-    AnalysisCache analysis_cache;
-    ExecutionStatePool state_pool;
+    // Determine pruning thresholds on behalf of current db pruning mode and verify next stage does not need
+    // prune-able data
+    BlockNum prune_history{node_settings_->prune_mode->history().value_from_head(headers_stage_progress)};
+    BlockNum prune_receipts{node_settings_->prune_mode->receipts().value_from_head(headers_stage_progress)};
+    if (hashstate_stage_progress) {
+        prune_history = std::min(prune_history, hashstate_stage_progress - 1);
+        prune_receipts = std::min(prune_receipts, hashstate_stage_progress - 1);
+    }
 
-    while (block_num_ <= max_block_num) {
-        // TODO(Andrea) Prune logic must be amended
-        const auto res{execute_batch(txn, max_block_num, 0, analysis_cache, state_pool)};
+    static constexpr size_t kCacheSize{5'000};
+    BaselineAnalysisCache analysis_cache{kCacheSize};
+    ObjectPool<EvmoneExecutionState> state_pool;
+
+    prefetched_blocks_.clear();
+
+    while (!is_stopping() && block_num_ <= max_block_num) {
+        const auto res{execute_batch(txn, max_block_num, analysis_cache, state_pool, prune_history, prune_receipts)};
         if (res != StageResult::kSuccess) {
             return res;
         }
+
+        // Persist forward and prune progresses
         db::stages::write_stage_progress(*txn, db::stages::kExecutionKey, block_num_);
+        if (node_settings_->prune_mode->history().enabled() || node_settings_->prune_mode->receipts().enabled()) {
+            db::stages::write_stage_prune_progress(*txn, db::stages::kExecutionKey, block_num_);
+        }
+
         (void)commit_stopwatch.start(/*with_reset=*/true);
         txn.commit();
         auto [_, duration]{commit_stopwatch.stop()};
         log::Info("Commit time", {"batch", StopWatch::format(duration)});
-        if (SignalHandler::signalled()) {
-            return StageResult::kAborted;
-        }
         block_num_++;
     }
-    return StageResult::kSuccess;
+    return is_stopping() ? StageResult::kAborted : StageResult::kSuccess;
 }
 
-StageResult Execution::execute_batch(db::RWTxn& txn, BlockNum max_block_num, BlockNum prune_from,
-                                     AnalysisCache& analysis_cache, ExecutionStatePool& state_pool) {
+void Execution::prefetch_blocks(db::RWTxn& txn, const BlockNum from, const BlockNum to) {
+    std::unique_ptr<StopWatch> sw;
+    if (log::test_verbosity(log::Level::kTrace)) {
+        sw = std::make_unique<StopWatch>(/*auto_start=*/true);
+    }
+
+    assert(prefetched_blocks_.empty());
+
+    const size_t count{std::min(static_cast<size_t>(to - from + 1), kMaxPrefetchedBlocks)};
+    size_t num_read{0};
+
+    db::Cursor hashes_table(txn, db::table::kCanonicalHashes);
+    auto key{db::block_key(from)};
+    if (hashes_table.seek(db::to_slice(key))) {
+        BlockNum block_num{from};
+        db::WalkFunc walk_function{[&](mdbx::cursor&, mdbx::cursor::move_result& data) {
+            BlockNum reached_block_num{endian::load_big_u64(static_cast<const uint8_t*>(data.key.data()))};
+            if (reached_block_num != block_num) {
+                throw std::runtime_error("Bad canonical header sequence: expected " + std::to_string(block_num) +
+                                         " got " + std::to_string(reached_block_num));
+            }
+            SILKWORM_ASSERT(data.value.length() == kHashLength);
+            const auto hash_ptr{static_cast<const uint8_t*>(data.value.data())};
+            prefetched_blocks_.push_back();
+            if (!db::read_block(*txn, gsl::span<const uint8_t, kHashLength>{hash_ptr, kHashLength}, block_num,
+                                /*read_senders=*/true, prefetched_blocks_.back())) {
+                throw std::runtime_error("Unable to read block " + std::to_string(block_num));
+            }
+            ++block_num;
+            return true;
+        }};
+        num_read = db::cursor_for_count(hashes_table, walk_function, count);
+    }
+
+    if (num_read != count) {
+        throw std::runtime_error("Missing block " + std::to_string(from + num_read));
+    }
+
+    if (sw) {
+        auto [_, duration]{sw->lap()};
+        log::Trace("Fetched blocks", {"size", std::to_string(num_read), "in", StopWatch::format(duration)});
+    }
+}
+
+StageResult Execution::execute_batch(db::RWTxn& txn, BlockNum max_block_num, BaselineAnalysisCache& analysis_cache,
+                                     ObjectPool<EvmoneExecutionState>& state_pool, BlockNum prune_history_threshold,
+                                     BlockNum prune_receipts_threshold) {
     try {
-        db::Buffer buffer(*txn, prune_from);
+        db::Buffer buffer(*txn, prune_history_threshold);
         std::vector<Receipt> receipts;
+
+        // Transform batch_size limit into Ggas
+        size_t gas_max_history_size{node_settings_->batch_size * 1_Kibi / 2};  // 512MB -> 256Ggas roughly
+        size_t gas_max_batch_size{gas_max_history_size * 20};                  // 256Ggas -> 5Tgas roughly
+        size_t gas_history_size{0};
+        size_t gas_batch_size{0};
 
         {
             std::unique_lock progress_lock(progress_mtx_);
@@ -106,51 +175,72 @@ StageResult Execution::execute_batch(db::RWTxn& txn, BlockNum max_block_num, Blo
         }
 
         while (true) {
-            if ((block_num_ % 64 == 0) && SignalHandler::signalled()) {
+            if (prefetched_blocks_.empty()) {
+                if (is_stopping()) {
+                    return StageResult::kAborted;
+                }
+                prefetch_blocks(txn, block_num_, max_block_num);
+            }
+
+            const Block& block{prefetched_blocks_.front()};
+            if (block.header.number != block_num_) {
+                throw std::runtime_error("Bad block sequence");
+            }
+
+            if ((block_num_ % 64 == 0) && is_stopping()) {
                 return StageResult::kAborted;
             }
 
-            std::optional<BlockWithHash> block_with_hash{db::read_block(*txn, block_num_, /*read_senders=*/true)};
-            if (!block_with_hash.has_value()) {
-                return StageResult::kBadChainSequence;
-            }
-            ExecutionProcessor processor(block_with_hash->block, *consensus_engine_, buffer,
-                                         node_settings_->chain_config.value());
-            processor.evm().advanced_analysis_cache = &analysis_cache;
+            ExecutionProcessor processor(block, *consensus_engine_, buffer, node_settings_->chain_config.value());
+            processor.evm().baseline_analysis_cache = &analysis_cache;
             processor.evm().state_pool = &state_pool;
 
+            // TODO(Andrea) Add Tracer
+
             if (const auto res{processor.execute_and_write_block(receipts)}; res != ValidationResult::kOk) {
-                log::Error("Block Validation Error", {"block", std::to_string(block_num_), "err",
-                                                      std::string(magic_enum::enum_name<ValidationResult>(res))});
+                const auto block_hash_hex{to_hex(block.header.hash().bytes, true)};
+                log::Error("Block Validation Error",
+                           {"block", std::to_string(block_num_), "hash", block_hash_hex, "err",
+                            std::string(magic_enum::enum_name<ValidationResult>(res))});
+                // TODO(Andrea) Set the bad block hash in stage loop context so other stages are aware
                 return StageResult::kInvalidBlock;
             }
 
-            // TODO(Andrea) implement pruning
-            buffer.insert_receipts(block_num_, receipts);
+            if (block_num_ >= prune_receipts_threshold) {
+                buffer.insert_receipts(block_num_, receipts);
+            }
+
+            // Stats
             std::unique_lock progress_lock(progress_mtx_);
-            processed_blocks_++;
-            processed_transactions_ += block_with_hash->block.transactions.size();
-            processed_gas_ += block_with_hash->block.header.gas_used;
+            ++processed_blocks_;
+            processed_transactions_ += block.transactions.size();
+            processed_gas_ += block.header.gas_used;
+            gas_batch_size += block.header.gas_used;
+            gas_history_size += block.header.gas_used;
             progress_lock.unlock();
 
-            const bool overflows{buffer.current_batch_size() >= node_settings_->batch_size};
-            if (overflows || block_num_ >= max_block_num) {
-                auto t0{std::chrono::steady_clock::now()};
+            prefetched_blocks_.pop_front();
+
+            // Flush whole buffer if time to
+            if (gas_batch_size >= gas_max_batch_size || block_num_ >= max_block_num) {
+                log::Trace("Buffer State", {"size", human_size(buffer.current_batch_state_size())});
                 buffer.write_to_db();
-                auto t1{std::chrono::steady_clock::now()};
-                log::Info("Flushed batch",
-                          {"size", human_size(buffer.current_batch_size()), "in", StopWatch::format(t1 - t0)});
-                return StageResult::kSuccess;
+                break;
+            } else if (gas_history_size >= gas_max_history_size) {
+                // or flush history only if needed
+                log::Trace("Buffer History", {"size", human_size(buffer.current_batch_history_size())});
+                buffer.write_history_to_db();
+                gas_history_size = 0;
             }
-            block_num_++;
+
+            ++block_num_;
         }
+
+        return is_stopping() ? StageResult::kAborted : StageResult::kSuccess;
 
     } catch (const mdbx::exception& ex) {
         log::Error("DB Error", {"block", std::to_string(block_num_)}) << " " << ex.what();
         return StageResult::kDbError;
-    } catch (const db::MissingSenders&) {
-        log::Error("Missing senders", {"block", std::to_string(block_num_)});
-        return StageResult::kMissingSenders;
     } catch (const rlp::DecodingError& ex) {
         log::Error("RLP decoding error", {"block", std::to_string(block_num_)}) << " " << ex.what();
         return StageResult::kDecodingError;
@@ -164,15 +254,121 @@ StageResult Execution::execute_batch(db::RWTxn& txn, BlockNum max_block_num, Blo
 }
 
 StageResult Execution::unwind(db::RWTxn& txn, BlockNum to) {
-    (void)txn;
-    (void)to;
-    throw std::runtime_error("Not yet implemented");
+    BlockNum execution_progress{db::stages::read_stage_progress(*txn, db::stages::kExecutionKey)};
+    if (to >= execution_progress) {
+        return StageResult::kSuccess;
+    }
+
+    log::Info() << "Unwind Execution from " << execution_progress << " to " << to;
+
+    static const db::MapConfig unwind_tables[5] = {
+        db::table::kAccountChangeSet,  //
+        db::table::kStorageChangeSet,  //
+        db::table::kBlockReceipts,     //
+        db::table::kLogs,              //
+        db::table::kCallTraceSet       //
+    };
+
+    try {
+        {
+            // Revert states
+            auto plain_state_table{db::open_cursor(*txn, db::table::kPlainState)};
+            auto plain_code_table{db::open_cursor(*txn, db::table::kPlainCodeHash)};
+            auto account_changeset_table{db::open_cursor(*txn, db::table::kAccountChangeSet)};
+            auto storage_changeset_table{db::open_cursor(*txn, db::table::kStorageChangeSet)};
+            unwind_state_from_changeset(account_changeset_table, plain_state_table, plain_code_table, to);
+            unwind_state_from_changeset(storage_changeset_table, plain_state_table, plain_code_table, to);
+        }
+
+        // Delete records which has keys greater than unwind point
+        // Note erasing forward the start key is included that's why we increase unwind_to by 1
+        Bytes start_key(8, '\0');
+        endian::store_big_u64(&start_key[0], to + 1);
+        for (const auto& map_config : unwind_tables) {
+            auto unwind_cursor{db::open_cursor(*txn, map_config)};
+            auto erased{db::cursor_erase(unwind_cursor, start_key, db::CursorMoveDirection::Forward)};
+            log::Info() << "Erased " << erased << " records from " << map_config.name;
+        }
+        db::stages::write_stage_progress(*txn, db::stages::kExecutionKey, to);
+        txn.commit();
+        return StageResult::kSuccess;
+    } catch (const mdbx::exception& ex) {
+        log::Error() << "Unexpected db error in " << std::string(__FUNCTION__) << " : " << ex.what();
+        return StageResult::kDbError;
+    } catch (...) {
+        log::Error() << "Unexpected unknown error in " << std::string(__FUNCTION__);
+        return StageResult::kUnexpectedError;
+    }
 }
 
 StageResult Execution::prune(db::RWTxn& txn) {
-    (void)txn;
-    throw std::runtime_error("Not yet implemented");
-};
+    try {
+        BlockNum execution_progress{db::stages::read_stage_progress(*txn, stage_name_)};
+        BlockNum prune_progress{db::stages::read_stage_prune_progress(*txn, stage_name_)};
+        if (prune_progress >= execution_progress) {
+            return StageResult::kSuccess;
+        }
+
+        if (node_settings_->prune_mode->history().enabled()) {
+            auto prune_from{node_settings_->prune_mode->history().value_from_head(execution_progress)};
+            auto key{db::block_key(prune_from)};
+            size_t erased{0};
+            auto origin{db::open_cursor(*txn, db::table::kAccountChangeSet)};
+            auto data{origin.lower_bound(db::to_slice(key), /*throw_notfound=*/false)};
+            while (data) {
+                erased += origin.count_multivalue();
+                origin.erase(/*whole_multivalue=*/true);
+                data = origin.to_previous(/*throw_notfound=*/false);
+            }
+            log::Info() << "Erased " << erased << " records from " << db::table::kAccountChangeSet.name;
+
+            origin.close();
+            origin = db::open_cursor(*txn, db::table::kStorageChangeSet);
+            data = origin.lower_bound(db::to_slice(key), /*throw_notfound=*/false);
+            while (data) {
+                auto data_value_view{db::from_slice(data.value)};
+                if (endian::load_big_u64(data_value_view.data()) < prune_from) {
+                    erased += origin.count_multivalue();
+                    origin.erase(/*whole_multivalue=*/true);
+                }
+                data = origin.to_previous(/*throw_notfound=*/false);
+            }
+            log::Info() << "Erased " << erased << " records from " << db::table::kStorageChangeSet.name;
+        }
+
+        if (node_settings_->prune_mode->receipts().enabled()) {
+            auto prune_from{node_settings_->prune_mode->receipts().value_from_head(execution_progress)};
+            auto key{db::block_key(prune_from)};
+            auto origin{db::open_cursor(*txn, db::table::kBlockReceipts)};
+            size_t erased = db::cursor_erase(origin, key, db::CursorMoveDirection::Reverse);
+            log::Info() << "Erased " << erased << " records from " << db::table::kBlockReceipts.name;
+            origin.close();
+            origin = db::open_cursor(*txn, db::table::kLogs);
+            erased = db::cursor_erase(origin, key, db::CursorMoveDirection::Reverse);
+            log::Info() << "Erased " << erased << " records from " << db::table::kLogs.name;
+        }
+
+        // TODO Re-Enable this when we'll have call traces collection enabled in forward
+
+        //        if (node_settings_->prune_mode->call_traces().enabled()) {
+        //            auto prune_from{node_settings_->prune_mode->receipts().value_from_head(execution_progress)};
+        //            auto key{db::block_key(prune_from)};
+        //            auto origin{db::open_cursor(*txn, db::table::kCallTraceSet)};
+        //            size_t erased = db::cursor_erase(origin, key, db::CursorMoveDirection::Reverse);
+        //            log::Info() << "Erased " << erased << " records from " << db::table::kCallTraceSet.name;
+        //        }
+
+        db::stages::write_stage_prune_progress(*txn, db::stages::kExecutionKey, execution_progress);
+        txn.commit();
+        return StageResult::kSuccess;
+    } catch (const mdbx::exception& ex) {
+        log::Error() << "Unexpected db error in " << std::string(__FUNCTION__) << " : " << ex.what();
+        return StageResult::kDbError;
+    } catch (...) {
+        log::Error() << "Unexpected unknown error in " << std::string(__FUNCTION__);
+        return StageResult::kUnexpectedError;
+    }
+}
 
 std::vector<std::string> Execution::get_log_progress() {
     std::unique_lock progress_lock(progress_mtx_);
@@ -181,7 +377,7 @@ std::vector<std::string> Execution::get_log_progress() {
     lap_time_ = now;
     auto elapsed_seconds = static_cast<uint32_t>(std::chrono::duration_cast<std::chrono::seconds>(elapsed).count());
     if (!elapsed_seconds || !processed_blocks_) {
-        return {"block", std::to_string(block_num_)};
+        return {"block", std::to_string(block_num_), "db", "waiting ..."};
     }
     auto speed_blocks = processed_blocks_ / elapsed_seconds;
     auto speed_transactions = processed_transactions_ / elapsed_seconds;
@@ -195,12 +391,11 @@ std::vector<std::string> Execution::get_log_progress() {
             "txns/s", std::to_string(speed_transactions), "Mgas/s",   std::to_string(speed_mgas)};
 }
 
-// Revert State for given address/storage location
-static void revert_state(ByteView key, ByteView value, mdbx::cursor& plain_state_table,
-                         mdbx::cursor& plain_code_table) {
+void Execution::revert_state(ByteView key, ByteView value, mdbx::cursor& plain_state_table,
+                             mdbx::cursor& plain_code_table) {
     if (key.size() == kAddressLength) {
         if (!value.empty()) {
-            auto [account, err1]{decode_account_from_storage(value)};
+            auto [account, err1]{Account::from_encoded_storage(value)};
             rlp::success_or_throw(err1);
             if (account.incarnation > 0 && account.code_hash == kEmptyHash) {
                 Bytes code_hash_key(kAddressLength + db::kIncarnationLength, '\0');
@@ -212,7 +407,8 @@ static void revert_state(ByteView key, ByteView value, mdbx::cursor& plain_state
             // cleaning up contract codes
             auto state_account_encoded{plain_state_table.find(db::to_slice(key), /*throw_notfound=*/false)};
             if (state_account_encoded) {
-                auto [state_incarnation, err2]{extract_incarnation(db::from_slice(state_account_encoded.value))};
+                auto [state_incarnation,
+                      err2]{Account::incarnation_from_encoded_storage(db::from_slice(state_account_encoded.value))};
                 rlp::success_or_throw(err2);
                 // cleanup each code incarnation
                 for (uint64_t i = state_incarnation; i > account.incarnation; --i) {
@@ -242,98 +438,22 @@ static void revert_state(ByteView key, ByteView value, mdbx::cursor& plain_state
     }
 }
 
-// For given changeset cursor/bucket it reverts the changes on states buckets
-static void unwind_state_from_changeset(mdbx::cursor& source, mdbx::cursor& plain_state_table,
-                                        mdbx::cursor& plain_code_table, BlockNum unwind_to) {
-    auto src_data{source.to_last(/*throw_notfound*/ false)};
+void Execution::unwind_state_from_changeset(mdbx::cursor& source_changeset, mdbx::cursor& plain_state_table,
+                                            mdbx::cursor& plain_code_table, BlockNum unwind_to) {
+    auto src_data{source_changeset.to_last(/*throw_notfound*/ false)};
     while (src_data) {
-        Bytes key(db::from_slice(src_data.key));
-        Bytes value(db::from_slice(src_data.value));
+        auto key(db::from_slice(src_data.key));
+        auto value(db::from_slice(src_data.value));
         const BlockNum block_number = endian::load_big_u64(&key[0]);
-        if (block_number == unwind_to) {
+        if (block_number <= unwind_to) {
             break;
         }
-        auto [new_key, new_value]{db::change_set_to_plain_state_format(key, value)};
+        auto [new_key, new_value]{db::changeset_to_plainstate_format(key, value)};
         revert_state(new_key, new_value, plain_state_table, plain_code_table);
-        src_data = source.to_previous(/*throw_notfound*/ false);
-    }
-}
-
-StageResult unwind_execution(db::RWTxn& txn, const std::filesystem::path&, uint64_t unwind_to) {
-    BlockNum execution_progress{db::stages::read_stage_progress(*txn, db::stages::kExecutionKey)};
-    if (unwind_to >= execution_progress) {
-        return StageResult::kSuccess;
+        src_data = source_changeset.to_previous(/*throw_notfound*/ false);
     }
 
-    log::Info() << "Unwind Execution from " << execution_progress << " to " << unwind_to;
-
-    static const db::MapConfig unwind_tables[5] = {
-        db::table::kAccountChangeSet,  //
-        db::table::kStorageChangeSet,  //
-        db::table::kBlockReceipts,     //
-        db::table::kLogs,              //
-        db::table::kCallTraceSet       //
-    };
-
-    try {
-        {
-            // Revert states
-            auto plain_state_table{db::open_cursor(*txn, db::table::kPlainState)};
-            auto plain_code_table{db::open_cursor(*txn, db::table::kPlainContractCode)};
-            auto account_changeset_table{db::open_cursor(*txn, db::table::kAccountChangeSet)};
-            auto storage_changeset_table{db::open_cursor(*txn, db::table::kStorageChangeSet)};
-            unwind_state_from_changeset(account_changeset_table, plain_state_table, plain_code_table, unwind_to);
-            unwind_state_from_changeset(storage_changeset_table, plain_state_table, plain_code_table, unwind_to);
-        }
-
-        // Delete records which has keys greater than unwind point
-        // Note erasing forward the start key is included that's why we increase unwind_to by 1
-        Bytes start_key(8, '\0');
-        endian::store_big_u64(&start_key[0], unwind_to + 1);
-        for (const auto& map_config : unwind_tables) {
-            auto unwind_cursor{db::open_cursor(*txn, map_config)};
-            auto erased{db::cursor_erase(unwind_cursor, start_key, db::CursorMoveDirection::Forward)};
-            if (erased > 16) {
-                log::Info() << "Erased " << erased << " records from " << map_config.name;
-            }
-        }
-        txn.commit();
-        return StageResult::kSuccess;
-    } catch (const mdbx::exception& ex) {
-        log::Error() << "Unexpected db error in " << std::string(__FUNCTION__) << " : " << ex.what();
-        return StageResult::kDbError;
-    } catch (...) {
-        log::Error() << "Unexpected unknown error in " << std::string(__FUNCTION__);
-        return StageResult::kUnexpectedError;
-    }
-}
-
-StageResult prune_execution(db::RWTxn& txn, const std::filesystem::path&, uint64_t prune_from) {
-    static const db::MapConfig prune_tables[] = {
-        db::table::kAccountChangeSet,  //
-        db::table::kStorageChangeSet,  //
-        db::table::kBlockReceipts,     //
-        db::table::kCallTraceSet,      //
-        db::table::kLogs               //
-    };
-
-    try {
-        const auto prune_point{db::block_key(prune_from)};
-        for (const auto& prune_table : prune_tables) {
-            auto prune_cursor{db::open_cursor(*txn, prune_table)};
-            auto erased{db::cursor_erase(prune_cursor, prune_point, db::CursorMoveDirection::Reverse)};
-            log::Info() << "Erased " << erased << " records from " << prune_table.name;
-            prune_cursor.close();
-        }
-        txn.commit();  // TODO(Giulio) Should we commit here or at return of stage ?
-        return StageResult::kSuccess;
-    } catch (const mdbx::exception& ex) {
-        log::Error() << "Unexpected db error in " << std::string(__FUNCTION__) << " : " << ex.what();
-        return StageResult::kDbError;
-    } catch (...) {
-        log::Error() << "Unexpected unknown error in " << std::string(__FUNCTION__);
-        return StageResult::kUnexpectedError;
-    }
+    // TODO(Andrea) Explain why we need to leave unwound changeset in place
 }
 
 }  // namespace silkworm::stagedsync

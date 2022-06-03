@@ -1,5 +1,5 @@
 /*
-   Copyright 2020-2021 The Silkworm Authors
+   Copyright 2020-2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -17,22 +17,18 @@
 #ifndef SILKWORM_EXECUTION_EVM_HPP_
 #define SILKWORM_EXECUTION_EVM_HPP_
 
+#include <functional>
 #include <stack>
 #include <vector>
 
 #include <intx/intx.hpp>
 
 #include <silkworm/chain/config.hpp>
+#include <silkworm/common/object_pool.hpp>
 #include <silkworm/common/util.hpp>
 #include <silkworm/execution/analysis_cache.hpp>
-#include <silkworm/execution/state_pool.hpp>
 #include <silkworm/state/intra_block_state.hpp>
 #include <silkworm/types/block.hpp>
-
-namespace evmone {
-struct ExecutionState;
-using bytes_view = std::basic_string_view<uint8_t>;
-}
 
 namespace silkworm {
 
@@ -46,11 +42,17 @@ class EvmTracer {
   public:
     virtual void on_execution_start(evmc_revision rev, const evmc_message& msg, evmone::bytes_view code) noexcept = 0;
 
-    virtual void on_instruction_start(uint32_t pc, const evmone::ExecutionState& state,
+    virtual void on_instruction_start(uint32_t pc, const intx::uint256* stack_top, int stack_height, const evmone::ExecutionState& state,
                                       const IntraBlockState& intra_block_state) noexcept = 0;
 
     virtual void on_execution_end(const evmc_result& result, const IntraBlockState& intra_block_state) noexcept = 0;
+
+    virtual void on_precompiled_run(const evmc::result& result, int64_t gas, const IntraBlockState& intra_block_state) noexcept = 0;
+
+    virtual void on_reward_granted(const CallResult& result, const IntraBlockState& intra_block_state) noexcept = 0;
 };
+
+using EvmoneExecutionState = evmone::advanced::AdvancedExecutionState;
 
 class EVM {
   public:
@@ -75,11 +77,15 @@ class EVM {
     evmc_revision revision() const noexcept;
 
     void add_tracer(EvmTracer& tracer) noexcept;
+    const std::vector<std::reference_wrapper<EvmTracer>>& tracers() const noexcept {return tracers_;};
+
+    // Use for better performance with evmone baseline interpreter
+    BaselineAnalysisCache* baseline_analysis_cache{nullptr};
 
     // Point to a cache instance in order to enable execution with evmone advanced rather than baseline interpreter
-    AnalysisCache* advanced_analysis_cache{nullptr};
+    AdvancedAnalysisCache* advanced_analysis_cache{nullptr};
 
-    ExecutionStatePool* state_pool{nullptr};  // use for better performance
+    ObjectPool<EvmoneExecutionState>* state_pool{nullptr};  // use for better performance
 
     evmc_vm* exo_evm{nullptr};  // it's possible to use an exogenous EVMC VM
 
@@ -92,13 +98,16 @@ class EVM {
 
     evmc::result call(const evmc_message& message) noexcept;
 
-    evmc::result execute(const evmc_message& message, ByteView code, std::optional<evmc::bytes32> code_hash) noexcept;
+    evmc::result execute(const evmc_message& message, ByteView code, const evmc::bytes32* code_hash) noexcept;
 
-    evmc_result execute_with_baseline_interpreter(evmc_revision rev, const evmc_message& message,
-                                                  ByteView code) noexcept;
+    evmc_result execute_with_baseline_interpreter(evmc_revision rev, const evmc_message& message, ByteView code,
+                                                  const evmc::bytes32* code_hash) noexcept;
 
-    evmc_result execute_with_default_interpreter(evmc_revision rev, const evmc_message& message, ByteView code,
-                                                 const evmc::bytes32& code_hash) noexcept;
+    evmc_result execute_with_advanced_interpreter(evmc_revision rev, const evmc_message& message, ByteView code,
+                                                  const evmc::bytes32& code_hash) noexcept;
+
+    gsl::owner<EvmoneExecutionState*> acquire_state() noexcept;
+    void release_state(gsl::owner<EvmoneExecutionState*> state) noexcept;
 
     uint8_t number_of_precompiles() const noexcept;
     bool is_precompiled(const evmc::address& contract) const noexcept;
@@ -108,6 +117,7 @@ class EVM {
     const ChainConfig& config_;
     const Transaction* txn_{nullptr};
     std::vector<evmc::bytes32> block_hashes_{};
+    std::vector<std::reference_wrapper<EvmTracer>> tracers_;
 
     evmc_vm* evm1_{nullptr};
 };

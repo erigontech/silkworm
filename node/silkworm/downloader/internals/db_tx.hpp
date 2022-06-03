@@ -1,5 +1,5 @@
 /*
-   Copyright 2021 The Silkworm Authors
+   Copyright 2021-2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -190,13 +190,12 @@ class Db::ReadOnlyAccess::Tx {
         }
     }
 
-    std::optional<BlockBody> read_body(Hash h) {  // todo: add to db::access_layer.hpp?
+    [[nodiscard]] bool read_body(const Hash& h, BlockBody& body) {  // todo: add to db::access_layer.hpp?
         auto block_num = read_block_num(h);
         if (!block_num) {
-            return std::nullopt;
+            return false;
         }
-        bool read_senders = false;
-        return db::read_body(txn, *block_num, h.bytes, read_senders);
+        return db::read_body(txn, *block_num, h.bytes, /*read_senders=*/false, body);
     }
 
     std::optional<intx::uint256> read_total_difficulty(BlockNum b, Hash h) {
@@ -213,8 +212,8 @@ class Db::ReadOnlyAccess::Tx {
 
         auto td_cursor = db::open_cursor(txn, db::table::kDifficulty);
 
-        auto find_max = [bad_headers, &max_block_num, &max_hash, &max_td](mdbx::cursor&,
-                                                                          mdbx::cursor::move_result& result) -> bool {
+        db::WalkFunc find_max = [bad_headers, &max_block_num, &max_hash, &max_td](
+                                    const ::mdbx::cursor&, const ::mdbx::cursor::move_result& result) -> bool {
             ByteView key = db::from_slice(result.key);
             ByteView value = db::from_slice(result.value);
 

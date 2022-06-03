@@ -55,23 +55,16 @@ class Timer {
 
     ~Timer() { stop(); }
 
+    //! \brief Starts timer and waits for interval to expire. Eventually call back action is executed and timer
+    //! resubmitted for another interval
     void start() {
         bool expected_running{false};
-        if (!is_running.compare_exchange_strong(expected_running, true)) {
-            return;
+        if (is_running.compare_exchange_strong(expected_running, true)) {
+            launch();
         }
-        timer_.expires_from_now(boost::posix_time::milliseconds(interval_));
-        (void)timer_.async_wait([&, this](const boost::system::error_code& ec) {
-            bool expected{true};
-            if (!is_running.compare_exchange_strong(expected, false)) {
-                return;
-            }
-            if (!ec && call_back_()) {
-                start();
-            }
-        });
     }
 
+    //! \brief Stops timer and cancels pending execution. No callback is executed and no resubmission
     void stop() {
         bool expected_running{true};
         if (is_running.compare_exchange_strong(expected_running, false)) {
@@ -79,7 +72,23 @@ class Timer {
         }
     }
 
+    //! \brief Cancels execution of awaiting callback and, if still in running state, submits timer for a new interval
+    void reset() { (void)timer_.cancel(); }
+
   private:
+    //! \brief Launches async timer
+    void launch() {
+        timer_.expires_from_now(boost::posix_time::milliseconds(interval_));
+        (void)timer_.async_wait([&, this](const boost::system::error_code& ec) {
+            if (!ec && call_back_) {
+                call_back_();
+            }
+            if (is_running.load()) {
+                launch();
+            }
+        });
+    }
+
     std::atomic_bool is_running{false};
     const uint32_t interval_;
     boost::asio::deadline_timer timer_;

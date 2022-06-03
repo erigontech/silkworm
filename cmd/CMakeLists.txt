@@ -14,36 +14,24 @@
    limitations under the License.
 ]]
 
-find_package(Catch2 CONFIG REQUIRED)
-
 if(MSVC)
   add_link_options(/STACK:0x1000000)
 elseif (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
   add_link_options(-Wl,-stack_size -Wl,0x1000000)
 else()
-  add_link_options(-Wl,-z,stack-size=10000000)
+  add_link_options(-Wl,-z,stack-size=0x1000000)
 endif()
 
-file(GLOB_RECURSE SILKWORM_CORE_TESTS CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/core/silkworm/*_test.cpp")
-add_executable(core_test unit_test.cpp ${SILKWORM_CORE_TESTS})
-target_link_libraries(core_test silkworm_core Catch2::Catch2 evmone)
-if(MSVC)
-  target_compile_options(core_test PRIVATE /EHa- /EHsc)
-else()
-  target_compile_options(core_test PRIVATE -fno-exceptions)
-endif()
+# Tests
+add_subdirectory(test)
 
 if(NOT SILKWORM_CORE_ONLY)
 
   find_package(absl CONFIG REQUIRED)
   find_package(CLI11 CONFIG REQUIRED)
 
-  file(GLOB_RECURSE SILKWORM_NODE_TESTS CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/node/silkworm/*_test.cpp")
-  add_executable(node_test unit_test.cpp ${SILKWORM_NODE_TESTS})
-  target_link_libraries(node_test silkworm_node Catch2::Catch2)
-
   add_executable(silkworm silkworm.cpp common.cpp)
-  target_link_libraries(silkworm PRIVATE silkworm_node CLI11::CLI11 $<$<BOOL:${MSVC}>:Kernel32.lib>)
+  target_link_libraries(silkworm PRIVATE silkworm_node silkworm-buildinfo CLI11::CLI11 $<$<BOOL:${MSVC}>:Kernel32.lib>)
 
   add_executable(check_changes check_changes.cpp)
   target_link_libraries(check_changes PRIVATE silkworm_node CLI11::CLI11 absl::time)
@@ -60,12 +48,6 @@ if(NOT SILKWORM_CORE_ONLY)
   add_executable(genesistool genesistool.cpp)
   target_link_libraries(genesistool PRIVATE CLI11::CLI11)
 
-  add_executable(unwind_execution unwind_execution.cpp)
-  target_link_libraries(unwind_execution PRIVATE silkworm_node CLI11::CLI11)
-
-  add_executable(unwind_hashstate unwind_hashstate.cpp)
-  target_link_libraries(unwind_hashstate PRIVATE silkworm_node CLI11::CLI11)
-
   add_executable(unwind_tx_lookup unwind_tx_lookup.cpp)
   target_link_libraries(unwind_tx_lookup PRIVATE silkworm_node CLI11::CLI11)
 
@@ -74,9 +56,6 @@ if(NOT SILKWORM_CORE_ONLY)
 
   add_executable(unwind_log_index unwind_log_index.cpp)
   target_link_libraries(unwind_log_index PRIVATE silkworm_node CLI11::CLI11)
-
-  add_executable(hashstate hashstate.cpp)
-  target_link_libraries(hashstate PRIVATE silkworm_node CLI11::CLI11)
 
   add_executable(check_hashstate check_hashstate.cpp)
   target_link_libraries(check_hashstate PRIVATE silkworm_node CLI11::CLI11)
@@ -102,13 +81,10 @@ if(NOT SILKWORM_CORE_ONLY)
   add_executable(download_headers download_headers.cpp)
   target_link_libraries(download_headers PRIVATE silkworm_node CLI11::CLI11)
 
+  add_executable(backend_kv_server backend_kv_server.cpp)
+  target_link_libraries(backend_kv_server PRIVATE silkworm_node silkworm-buildinfo CLI11::CLI11)
+
   # Benchmarks
   add_subdirectory(benchmark)
 
-  # Ethereum Consensus Tests
-  hunter_add_package(CLI11)
-  find_package(CLI11 CONFIG REQUIRED)
-  add_executable(consensus consensus.cpp)
-  target_compile_definitions(consensus PRIVATE SILKWORM_CONSENSUS_TEST_DIR="${CMAKE_SOURCE_DIR}/tests")
-  target_link_libraries(consensus PRIVATE silkworm_node evmc::loader CLI11::CLI11)
 endif()

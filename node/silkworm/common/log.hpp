@@ -44,6 +44,7 @@ struct Settings {
     bool log_threads{false};            // Whether to print thread ids in log lines
     Level log_verbosity{Level::kInfo};  // Log verbosity level
     std::string log_file;               // Log to file
+    char log_thousands_sep{0};          // Thousands separator
 };
 
 //! \brief Initializes logging facilities
@@ -53,6 +54,12 @@ void init(Settings& settings);
 //! \brief Sets logging verbosity
 //! \note This function is not thread safe as it's meant to be used at start of process and never called again
 void set_verbosity(Level level);
+
+//! \brief Sets the name for this thread when logging traces also threads
+void set_thread_name(const char* name);
+
+//! \brief Returns the currently set name for the thread or the thread id
+std::string get_thread_name();
 
 //! \brief Checks if provided log level will be effectively printed on behalf of current settings
 //! \return True / False
@@ -90,8 +97,8 @@ class BufferBase {
 template <Level level>
 class LogBuffer : public BufferBase {
   public:
-    explicit LogBuffer() : BufferBase(level){};
-    explicit LogBuffer(std::string_view msg, std::vector<std::string> args = {}) : BufferBase(level, msg, args){};
+    explicit LogBuffer() : BufferBase(level) {}
+    explicit LogBuffer(std::string_view msg, std::vector<std::string> args = {}) : BufferBase(level, msg, args) {}
 };
 
 using Trace = LogBuffer<Level::kTrace>;
@@ -103,5 +110,18 @@ using Critical = LogBuffer<Level::kCritical>;
 using Message = LogBuffer<Level::kNone>;
 
 }  // namespace silkworm::log
+
+#define SILK_LOGBUFFER(level_)                    \
+    if (!silkworm::log::test_verbosity(level_)) { \
+    } else                                        \
+        silkworm::log::LogBuffer<level_>()
+
+#define SILK_TRACE SILK_LOGBUFFER(silkworm::log::Level::kTrace)
+#define SILK_DEBUG SILK_LOGBUFFER(silkworm::log::Level::kDebug)
+#define SILK_INFO SILK_LOGBUFFER(silkworm::log::Level::kInfo)
+#define SILK_WARN SILK_LOGBUFFER(silkworm::log::Level::kWarning)
+#define SILK_ERROR SILK_LOGBUFFER(silkworm::log::Level::kError)
+#define SILK_CRIT SILK_LOGBUFFER(silkworm::log::Level::kCritical)
+#define SILK_LOG SILK_LOGBUFFER(silkworm::log::Level::kNone)
 
 #endif  // !SILKWORM_COMMON_LOG_HPP_

@@ -1,5 +1,5 @@
 /*
-   Copyright 2021 The Silkworm Authors
+   Copyright 2021-2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -19,6 +19,8 @@
 
 #include <atomic>
 
+#include <silkworm/concurrency/stoppable.hpp>
+
 namespace silkworm {
 
 /*
@@ -28,16 +30,9 @@ namespace silkworm {
  * Here we prefer not to provide a thread facility and let the user provide one more suitable to the context,
  * so perhaps a better name is LongRunningComponent.
  */
-class ActiveComponent {
+class ActiveComponent : public Stoppable {
   public:
     virtual void execution_loop() = 0;
-
-    void stop() { stopping_.store(true); }
-
-    bool is_stopping() const { return stopping_.load(); }
-
-  protected:
-    std::atomic<bool> stopping_{false};
 };
 
 }  // namespace silkworm

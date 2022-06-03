@@ -32,6 +32,11 @@ class RandomNumber {
         generator_.seed(rd());  // init generator_ with a random seed
     }
 
+    RandomNumber(uint64_t a, uint64_t b): distr_(a,b) {
+        std::random_device rd;
+        generator_.seed(rd());  // init generator_ with a random seed
+    }
+
     uint64_t generate_one() { return distr_(generator_); }
 };
 

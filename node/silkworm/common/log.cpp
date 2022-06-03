@@ -30,6 +30,7 @@ namespace silkworm::log {
 static Settings settings_{};
 static std::mutex out_mtx{};
 static std::unique_ptr<std::fstream> file_{nullptr};
+thread_local std::string thread_name_{};
 
 void init(Settings& settings) {
     settings_ = settings;
@@ -51,7 +52,18 @@ void set_verbosity(Level level) { settings_.log_verbosity = level; }
 
 bool test_verbosity(Level level) { return level <= settings_.log_verbosity; }
 
-static inline std::pair<const char*, const char*> get_channel_settings(Level level) {
+void set_thread_name(const char* name) { thread_name_ = std::string(name); }
+
+std::string get_thread_name() {
+    if (thread_name_.empty()) {
+        std::stringstream ss;
+        ss << std::this_thread::get_id();
+        thread_name_ = ss.str();
+    }
+    return thread_name_;
+}
+
+static inline std::pair<const char*, const char*> get_level_settings(Level level) {
     switch (level) {
         case Level::kTrace:
             return {"TRACE", kColorCoal};
@@ -70,10 +82,22 @@ static inline std::pair<const char*, const char*> get_channel_settings(Level lev
     }
 }
 
+struct separate_thousands : std::numpunct<char> {
+    char separator;
+    explicit separate_thousands(char sep): separator(sep) {}
+    char do_thousands_sep() const override { return separator; }
+    string_type do_grouping() const override { return "\3"; } // groups of 3 digit
+};
+
 BufferBase::BufferBase(Level level) : should_print_(level <= settings_.log_verbosity) {
     if (!should_print_) return;
 
-    auto [prefix, color] = get_channel_settings(level);
+    if (settings_.log_thousands_sep != 0) {
+        ss_.imbue(std::locale(ss_.getloc(), new separate_thousands(settings_.log_thousands_sep)));
+    }
+
+    auto [prefix, color] = get_level_settings(level);
+
     // Prefix
     ss_ << kColorReset << " " << color << prefix << kColorReset << " ";
 
@@ -84,7 +108,7 @@ BufferBase::BufferBase(Level level) : should_print_(level <= settings_.log_verbo
 
     // ThreadId
     if (settings_.log_threads) {
-        ss_ << "[" << std::this_thread::get_id() << "] ";
+        ss_ << "[" << get_thread_name() << "] ";
     }
 }
 

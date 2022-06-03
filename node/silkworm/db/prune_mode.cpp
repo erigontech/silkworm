@@ -210,8 +210,7 @@ std::unique_ptr<PruneMode> parse_prune_mode(const std::string& mode, const Prune
     if (!tx_index) tx_index = std::make_unique<BlockAmount>();
     if (!call_traces) call_traces = std::make_unique<BlockAmount>();
 
-    return std::make_unique<PruneMode>(*history.release(), *receipts.release(), *senders.release(), *tx_index.release(),
-                                       *call_traces.release());
+    return std::make_unique<PruneMode>(*history, *receipts, *senders, *tx_index, *call_traces);
 }
 
 }  // namespace silkworm::db

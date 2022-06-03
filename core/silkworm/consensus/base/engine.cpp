@@ -1,5 +1,5 @@
 /*
-    Copyright 2021 The Silkworm Authors
+    Copyright 2021-2022 The Silkworm Authors
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -174,12 +174,12 @@ bool EngineBase::is_kin(const BlockHeader& branch_header, const BlockHeader& mai
         return false;
     }
 
-    std::optional<BlockBody> mainline_body{state.read_body(mainline_header.number, mainline_hash)};
-    if (!mainline_body) {
+    BlockBody mainline_body;
+    if (!state.read_body(mainline_header.number, mainline_hash, mainline_body)) {
         return false;
     }
 
-    old_ommers.insert(old_ommers.end(), mainline_body->ommers.begin(), mainline_body->ommers.end());
+    old_ommers.insert(old_ommers.end(), mainline_body.ommers.begin(), mainline_body.ommers.end());
 
     std::optional<BlockHeader> mainline_parent{get_parent_header(state, mainline_header)};
     if (!mainline_parent) {

@@ -20,14 +20,14 @@
 
 namespace silkworm::db::stages {
 
-namespace {
+static BlockNum get_stage_data(mdbx::txn& txn, const char* stage_name, const db::MapConfig& domain,
+                               const char* key_prefix = nullptr) {
+    if (!is_known_stage(stage_name)) {
+        throw std::invalid_argument("Unknown stage name " + std::string(stage_name));
+    }
 
-    uint64_t get_stage_data(mdbx::txn& txn, const char* stage_name, const db::MapConfig& domain,
-                            const char* key_prefix = nullptr) {
-        if (!is_known_stage(stage_name)) {
-            throw std::invalid_argument("Unknown stage name " + std::string(stage_name));
-        }
-        auto src{db::open_cursor(txn, domain)};
+    try {
+        db::Cursor src(txn, domain);
         std::string item_key{stage_name};
         if (key_prefix) {
             item_key.insert(0, std::string(key_prefix));
@@ -39,28 +39,34 @@ namespace {
             throw std::length_error("Expected 8 bytes of data got " + std::to_string(data.value.size()));
         }
         return endian::load_big_u64(static_cast<uint8_t*>(data.value.data()));
+    } catch (const mdbx::exception& ex) {
+        std::string what("Error in " + std::string(__FUNCTION__) + " " + std::string(ex.what()));
+        throw std::runtime_error(what);
+    }
+}
+
+static void set_stage_data(mdbx::txn& txn, const char* stage_name, uint64_t block_num, const db::MapConfig& domain,
+                           const char* key_prefix = nullptr) {
+    if (!is_known_stage(stage_name)) {
+        throw std::invalid_argument("Unknown stage name");
     }
 
-    void set_stage_data(mdbx::txn& txn, const char* stage_name, uint64_t block_num, const db::MapConfig& domain,
-                        const char* key_prefix = nullptr) {
-        if (!is_known_stage(stage_name)) {
-            throw std::invalid_argument("Unknown stage name");
-        }
-
+    try {
         std::string item_key{stage_name};
         if (key_prefix) {
             item_key.insert(0, std::string(key_prefix));
         }
         Bytes stage_progress(sizeof(block_num), 0);
         endian::store_big_u64(stage_progress.data(), block_num);
-        auto tgt{db::open_cursor(txn, domain)};
+        db::Cursor target(txn, domain);
         mdbx::slice key(item_key.c_str());
         mdbx::slice value{db::to_slice(stage_progress)};
-        tgt.upsert(key, value);
-        tgt.close();
+        target.upsert(key, value);
+    } catch (const mdbx::exception& ex) {
+        std::string what("Error in " + std::string(__FUNCTION__) + " " + std::string(ex.what()));
+        throw std::runtime_error(what);
     }
-
-}  // namespace
+}
 
 BlockNum read_stage_progress(mdbx::txn& txn, const char* stage_name) {
     return get_stage_data(txn, stage_name, silkworm::db::table::kSyncStageProgress);

@@ -14,6 +14,7 @@
    limitations under the License.
 ]]
 
+find_package(Microsoft.GSL CONFIG REQUIRED)
 find_package(nlohmann_json CONFIG REQUIRED)
 
 if(MSVC)

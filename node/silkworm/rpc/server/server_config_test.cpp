@@ -24,7 +24,7 @@
 
 namespace silkworm::rpc {
 
-// Exclude gRPC tests from sanitizer builds due to data race warnings
+// Exclude gRPC tests from sanitizer builds due to data race warnings inside gRPC library
 #ifndef SILKWORM_SANITIZE
 TEST_CASE("ServerConfig::ServerConfig", "[silkworm][rpc][server_config]") {
     ServerConfig config;

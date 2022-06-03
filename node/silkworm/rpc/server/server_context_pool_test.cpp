@@ -40,7 +40,7 @@ inline std::ostream& null_stream() {
 
 namespace silkworm::rpc {
 
-// Exclude gRPC tests from sanitizer builds due to data race warnings
+// Exclude gRPC tests from sanitizer builds due to data race warnings inside gRPC library
 #ifndef SILKWORM_SANITIZE
 TEST_CASE("ServerContext", "[silkworm][rpc][server_context]") {
     grpc::ServerBuilder builder;

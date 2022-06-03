@@ -24,6 +24,8 @@
 
 namespace silkworm::rpc {
 
+// Exclude gRPC tests from sanitizer builds due to data race warnings
+#ifndef SILKWORM_SANITIZE
 TEST_CASE("ServerConfig::ServerConfig", "[silkworm][rpc][server_config]") {
     ServerConfig config;
     CHECK(config.address_uri() == kDefaultAddressUri);
@@ -53,5 +55,6 @@ TEST_CASE("ServerConfig::set_credentials", "[silkworm][rpc][server_config]") {
     config.set_credentials(server_credentials);
     CHECK(config.credentials() == server_credentials);
 }
+#endif // SILKWORM_SANITIZE
 
 } // namespace silkworm::rpc

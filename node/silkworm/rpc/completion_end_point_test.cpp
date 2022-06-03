@@ -31,6 +31,8 @@ namespace silkworm::rpc {
 using Catch::Matchers::Message;
 using namespace std::chrono_literals;
 
+// Exclude gRPC test from sanitizer builds due to data race warnings
+#ifndef SILKWORM_SANITIZE
 TEST_CASE("CompletionEndPoint::poll_one", "[silkworm][rpc][completion_end_point]") {
     silkworm::log::set_verbosity(silkworm::log::Level::kNone);
     grpc::CompletionQueue queue;
@@ -46,8 +48,6 @@ TEST_CASE("CompletionEndPoint::poll_one", "[silkworm][rpc][completion_end_point]
         CHECK_NOTHROW(completion_end_point_thread.join());
     }
 
-// Exclude gRPC test from sanitizer builds due to data race warnings
-#ifndef SILKWORM_SANITIZE
     SECTION("executing completion handler") {
         bool executed{false};
         TagProcessor tag_processor = [&completion_end_point, &executed](bool) {
@@ -62,7 +62,6 @@ TEST_CASE("CompletionEndPoint::poll_one", "[silkworm][rpc][completion_end_point]
         }
         CHECK(executed);
     }
-#endif // SILKWORM_SANITIZE
 
     SECTION("exiting on completion queue already shutdown") {
         completion_end_point.shutdown();
@@ -104,8 +103,6 @@ TEST_CASE("CompletionEndPoint::post_one", "[silkworm][rpc][completion_end_point]
         CHECK_NOTHROW(completion_runner_thread.join());
     }
 
-// Exclude gRPC test from sanitizer builds due to data race warnings
-#ifndef SILKWORM_SANITIZE
     SECTION("executing completion handler") {
         bool executed{false};
 
@@ -133,7 +130,6 @@ TEST_CASE("CompletionEndPoint::post_one", "[silkworm][rpc][completion_end_point]
         CHECK_NOTHROW(completion_runner_thread.join());
         CHECK(executed);
     }
-#endif // SILKWORM_SANITIZE
 
     SECTION("exiting on completion queue already shutdown") {
         completion_end_point.shutdown();
@@ -158,5 +154,6 @@ TEST_CASE("CompletionEndPoint::post_one", "[silkworm][rpc][completion_end_point]
         CHECK_NOTHROW(completion_end_point.shutdown());
     }
 }
+#endif // SILKWORM_SANITIZE
 
 } // namespace silkworm::rpc

@@ -410,7 +410,7 @@ struct BackEndKvE2eTest {
 
 namespace silkworm::rpc {
 
-// Exclude gRPC tests from sanitizer builds due to data race warnings
+// Exclude gRPC tests from sanitizer builds due to data race warnings inside gRPC library
 #ifndef SILKWORM_SANITIZE
 TEST_CASE("BackEndKvServer", "[silkworm][node][rpc]") {
     silkworm::log::set_verbosity(silkworm::log::Level::kNone);

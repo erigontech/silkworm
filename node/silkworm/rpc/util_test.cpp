@@ -23,6 +23,9 @@
 
 namespace silkworm::rpc {
 
+// Exclude gRPC tests from sanitizer builds due to data race warnings inside gRPC library
+#ifndef SILKWORM_SANITIZE
+
 // Factory function creating one null output stream (all characters are discarded)
 inline std::ostream& null_stream() {
     static struct null_buf : public std::streambuf {
@@ -60,6 +63,9 @@ static void gpr_test_log(gpr_log_func_args* /*args*/) {
 
 TEST_CASE("GrpcLogGuard", "[silkworm][rpc][util]") {
     REQUIRE(!gpr_test_log_reached);
+    // Creating at least one gRPC object is needed to trigger gRPC library initialization phase,
+    // otherwise gpr_log seems not working (i.e. log function not called at all)
+    grpc::CompletionQueue queue;
     GrpcLogGuard<gpr_test_log> log_guard;
     gpr_log(GPR_ERROR, "error message");
     REQUIRE(gpr_test_log_reached);
@@ -85,5 +91,6 @@ TEST_CASE("gpr_silkworm_log", "[silkworm][rpc][util]") {
         CHECK_NOTHROW(gpr_log(FILE_NAME, LINE_NUMBER, GPR_LOG_SEVERITY_DEBUG, "debug message"));
     }
 }
+#endif // SILKWORM_SANITIZE
 
 } // namespace silkworm::rpc

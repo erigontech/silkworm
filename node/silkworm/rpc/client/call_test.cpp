@@ -37,7 +37,7 @@ inline std::ostream& null_stream() {
     return null_strm;
 }
 
-// Exclude gRPC tests from sanitizer builds due to data race warnings
+// Exclude gRPC tests from sanitizer builds due to data race warnings inside gRPC library
 #ifndef SILKWORM_SANITIZE
 TEST_CASE("AsyncCall", "[silkworm][rpc][client][call]") {
     class FakeCall : public AsyncCall {

@@ -31,7 +31,7 @@ namespace silkworm::rpc {
 using Catch::Matchers::Message;
 using namespace std::chrono_literals;
 
-// Exclude gRPC test from sanitizer builds due to data race warnings
+// Exclude gRPC tests from sanitizer builds due to data race warnings inside gRPC library
 #ifndef SILKWORM_SANITIZE
 TEST_CASE("CompletionEndPoint::poll_one", "[silkworm][rpc][completion_end_point]") {
     silkworm::log::set_verbosity(silkworm::log::Level::kNone);

@@ -652,4 +652,25 @@ TEST_CASE("Tracing precompiled contract failure") {
     CHECK(res.status == EVMC_PRECOMPILE_FAILURE);
 }
 
+TEST_CASE("Smart contract creation w/ insufficient balance") {
+    Block block{};
+    block.header.number = 1;
+    evmc::address caller{0x0a6bb546b9208cfab9e8fa2b9b2c042b18df7030_address};
+
+    Bytes code{*from_hex("602a5f556101c960015560048060135f395ff35f355f55")};
+
+    InMemoryState db;
+    IntraBlockState state{db};
+    EVM evm{block, state, test::kShanghaiConfig};
+
+    Transaction txn{};
+    txn.from = caller;
+    txn.data = code;
+    txn.value = intx::uint256{1};
+
+    uint64_t gas = 50'000;
+    CallResult res = evm.execute(txn, gas);
+    CHECK(res.status == EVMC_INSUFFICIENT_BALANCE);
+}
+
 }  // namespace silkworm

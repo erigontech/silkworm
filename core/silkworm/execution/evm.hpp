@@ -17,6 +17,7 @@
 #ifndef SILKWORM_EXECUTION_EVM_HPP_
 #define SILKWORM_EXECUTION_EVM_HPP_
 
+#include <functional>
 #include <stack>
 #include <vector>
 
@@ -45,6 +46,10 @@ class EvmTracer {
                                       const IntraBlockState& intra_block_state) noexcept = 0;
 
     virtual void on_execution_end(const evmc_result& result, const IntraBlockState& intra_block_state) noexcept = 0;
+
+    virtual void on_precompiled_run(const evmc::result& result, int64_t gas, const IntraBlockState& intra_block_state) noexcept = 0;
+
+    virtual void on_reward_granted(const CallResult& result, const IntraBlockState& intra_block_state) noexcept = 0;
 };
 
 using EvmoneExecutionState = evmone::advanced::AdvancedExecutionState;
@@ -72,6 +77,7 @@ class EVM {
     evmc_revision revision() const noexcept;
 
     void add_tracer(EvmTracer& tracer) noexcept;
+    const std::vector<std::reference_wrapper<EvmTracer>>& tracers() const noexcept {return tracers_;};
 
     // Use for better performance with evmone baseline interpreter
     BaselineAnalysisCache* baseline_analysis_cache{nullptr};
@@ -111,6 +117,7 @@ class EVM {
     const ChainConfig& config_;
     const Transaction* txn_{nullptr};
     std::vector<evmc::bytes32> block_hashes_{};
+    std::vector<std::reference_wrapper<EvmTracer>> tracers_;
 
     evmc_vm* evm1_{nullptr};
 };

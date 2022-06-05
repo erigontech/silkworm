@@ -44,7 +44,7 @@ void Cursor::consume_node(ByteView to, bool exact) {
     ByteView key = to;
     if (!exact) {
         key = db::from_slice(entry.key);
-        if (!has_prefix(key, prefix_)) {
+        if (!key.starts_with(prefix_)) {
             stack_.clear();
             return;
         }

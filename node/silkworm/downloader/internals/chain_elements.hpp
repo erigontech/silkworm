@@ -1,5 +1,5 @@
 /*
-   Copyright 2021 The Silkworm Authors
+   Copyright 2021-2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@
 #include <map>
 #include <queue>
 #include <set>
+#include <span>
 #include <stack>
 #include <vector>
 
@@ -243,7 +244,7 @@ struct Segment
 
     [[nodiscard]] HeaderList::Header_Ref lowest_header() const { return back(); }
 
-    using Slice = gsl::span<const HeaderList::Header_Ref>;  // a Segment slice
+    using Slice = std::span<const HeaderList::Header_Ref>;  // a Segment slice
 
     [[nodiscard]] Slice slice(size_t start, size_t end) const {
         return Slice(*this).subspan(start, end - start);

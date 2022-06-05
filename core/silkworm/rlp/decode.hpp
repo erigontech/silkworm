@@ -22,10 +22,10 @@
 
 #include <array>
 #include <cstring>
+#include <span>
 #include <utility>
 #include <vector>
 
-#include <gsl/span>
 #include <intx/intx.hpp>
 
 #include <silkworm/common/base.hpp>
@@ -57,8 +57,8 @@ template <>
 DecodingResult decode(ByteView& from, intx::uint256& to) noexcept;
 
 template <size_t N>
-DecodingResult decode(ByteView& from, gsl::span<uint8_t, N> to) noexcept {
-    static_assert(N != gsl::dynamic_extent);
+DecodingResult decode(ByteView& from, std::span<uint8_t, N> to) noexcept {
+    static_assert(N != std::dynamic_extent);
 
     auto [h, err]{decode_header(from)};
     if (err != DecodingResult::kOk) {
@@ -78,12 +78,12 @@ DecodingResult decode(ByteView& from, gsl::span<uint8_t, N> to) noexcept {
 
 template <size_t N>
 DecodingResult decode(ByteView& from, uint8_t (&to)[N]) noexcept {
-    return decode<N>(from, gsl::span<uint8_t, N>{to});
+    return decode<N>(from, std::span<uint8_t, N>{to});
 }
 
 template <size_t N>
 DecodingResult decode(ByteView& from, std::array<uint8_t, N>& to) noexcept {
-    return decode<N>(from, gsl::span<uint8_t, N>{to});
+    return decode<N>(from, std::span<uint8_t, N>{to});
 }
 
 template <class T>

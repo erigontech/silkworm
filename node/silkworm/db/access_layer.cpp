@@ -199,10 +199,10 @@ bool read_block_by_number(mdbx::txn& txn, BlockNum number, bool read_senders, Bl
     }
     SILKWORM_ASSERT(data.value.length() == kHashLength);
     const auto hash_ptr{static_cast<const uint8_t*>(data.value.data())};
-    return read_block(txn, gsl::span<const uint8_t, kHashLength>{hash_ptr, kHashLength}, number, read_senders, block);
+    return read_block(txn, std::span<const uint8_t, kHashLength>{hash_ptr, kHashLength}, number, read_senders, block);
 }
 
-bool read_block(mdbx::txn& txn, gsl::span<const uint8_t, kHashLength> hash, BlockNum number, bool read_senders,
+bool read_block(mdbx::txn& txn, std::span<const uint8_t, kHashLength> hash, BlockNum number, bool read_senders,
                 Block& block) {
     // Read header
     const Bytes key{block_key(number, hash)};

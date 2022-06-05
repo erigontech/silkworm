@@ -115,7 +115,7 @@ jobs:
       CLANG_COVERAGE: ON
       SANITIZE: OFF
     docker:
-      - image: ethereum/cpp-build-env:16-clang-10
+      - image: ethereum/cpp-build-env:15-clang-10
     resource_class: xlarge
     steps:
       - checkout_with_submodules

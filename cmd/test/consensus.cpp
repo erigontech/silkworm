@@ -62,7 +62,7 @@ static const std::vector<fs::path> kSlowTests{
 static const std::vector<fs::path> kFailingTests{
     // Gas limit >= 2^64 is not supported; see EIP-1985.
     // Geth excludes this test as well:
-    // https://github.com/ethereum/go-ethereum/blob/v1.9.25/tests/transaction_test.go#L31
+    // https://github.com/ethereum/go-ethereum/blob/v1.10.18/tests/transaction_test.go#L31
     kTransactionDir / "ttGasLimit" / "TransactionWithGasLimitxPriceOverflow.json",
 };
 
@@ -596,6 +596,18 @@ RunResults transaction_test(const nlohmann::json& j) {
             err != ValidationResult::kOk) {
             if (should_be_valid) {
                 std::cout << "Validation error " << magic_enum::enum_name<ValidationResult>(err) << std::endl;
+                return Status::kFailed;
+            } else {
+                continue;
+            }
+        }
+
+        const intx::uint512 max_gas_cost{intx::umul(intx::uint256{txn.gas_limit}, txn.max_fee_per_gas)};
+        // A corollary check of the following assertion from EIP-1559:
+        // signer.balance >= transaction.gas_limit * transaction.max_fee_per_gas
+        if (intx::count_significant_bytes(max_gas_cost) > 32) {
+            if (should_be_valid) {
+                std::cout << "gas_limit * max_fee_per_gas overflow\n";
                 return Status::kFailed;
             } else {
                 continue;

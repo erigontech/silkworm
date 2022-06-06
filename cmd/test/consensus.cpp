@@ -169,6 +169,27 @@ static const std::map<std::string, ChainConfig> kNetworkConfig{
          0,             // muir_glacier_block
      }},
     {"London", test::kLondonConfig},
+    {"Merge",
+     {
+         1,  // chain_id
+         SealEngineType::kNoProof,
+         {
+             0,  // homestead_block
+             0,  // tangerine_whistle_block
+             0,  // spurious_dragon_block
+             0,  // byzantium_block
+             0,  // constantinople_block
+             0,  // petersburg_block
+             0,  // istanbul_block
+             0,  // berlin_block
+             0,  // london_block
+             0,  // FORK_NEXT_VALUE (EIP-3675)
+         },
+         std::nullopt,  // dao_block
+         0,             // muir_glacier_block
+         0,             // arrow_glacier_block
+         0,             // terminal_total_difficulty
+     }},
     {"FrontierToHomesteadAt5",
      {
          1,  // chain_id
@@ -542,7 +563,7 @@ RunResults transaction_test(const nlohmann::json& j) {
     std::optional<Bytes> rlp{from_hex(j["txbytes"].get<std::string>())};
     if (rlp) {
         ByteView view{*rlp};
-        if (rlp::decode(view, txn) == DecodingResult::kOk) {
+        if (rlp::decode_transaction(view, txn, rlp::Eip2718Wrapping::kNone) == DecodingResult::kOk) {
             decoded = view.empty();
         }
     }
@@ -684,7 +705,9 @@ int main(int argc, char* argv[]) {
     std::string evm_path{};
     app.add_option("--evm", evm_path, "Path to EVMC-compliant VM");
     std::string tests_path{SILKWORM_CONSENSUS_TEST_DIR};
-    app.add_option("--tests", tests_path, "Path to consensus tests")->capture_default_str()->check(CLI::ExistingDirectory);
+    app.add_option("--tests", tests_path, "Path to consensus tests")
+        ->capture_default_str()
+        ->check(CLI::ExistingDirectory);
     unsigned num_threads{std::thread::hardware_concurrency()};
     app.add_option("--threads", num_threads, "Number of parallel threads")->capture_default_str();
     bool include_slow_tests{false};

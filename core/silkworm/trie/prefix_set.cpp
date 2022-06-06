@@ -47,16 +47,17 @@ bool PrefixSet::contains(ByteView prefix) {
         --index_;
     }
 
-    for (; index_ < keys_.size(); ++index_) {
+    for (;; ++index_) {
         if (keys_[index_].starts_with(prefix)) {
             return true;
         }
         if (keys_[index_] > prefix) {
             return false;
         }
+        if (index_ == keys_.size() - 1) {
+            return false;
+        }
     }
-
-    return false;
 }
 
 }  // namespace silkworm::trie

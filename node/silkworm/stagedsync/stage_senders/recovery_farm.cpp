@@ -335,7 +335,7 @@ StageResult RecoveryFarm::transform_and_fill_batch(uint64_t block_num, const std
         }
 
         Bytes rlp{};
-        rlp::encode(rlp, transaction, /*for_signing=*/true, /*wrap_eip2718_into_array=*/false);
+        rlp::encode(rlp, transaction, /*for_signing=*/true, /*wrap_eip2718_into_string=*/false);
 
         auto tx_hash{keccak256(rlp)};
         batch_.push_back(RecoveryPackage{block_num, tx_hash, transaction.odd_y_parity});
@@ -480,7 +480,6 @@ StageResult RecoveryFarm::fill_canonical_headers(BlockNum from, BlockNum to) noe
 }
 
 void RecoveryFarm::task_completed_handler(RecoveryWorker* sender) {
-
     std::scoped_lock lck(workers_mtx_);
     harvestable_workers_.push(sender->get_id());
     if (workers_in_flight_) {
@@ -490,7 +489,6 @@ void RecoveryFarm::task_completed_handler(RecoveryWorker* sender) {
 }
 
 void RecoveryFarm::worker_completed_handler(Worker* sender) {
-
     std::scoped_lock lck(workers_mtx_);
     if (workers_in_flight_) {
         workers_in_flight_--;

@@ -1,5 +1,5 @@
 /*
-   Copyright 2020-2021 The Silkworm Authors
+   Copyright 2020-2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -26,7 +26,7 @@ namespace silkworm::trie {
 
 TEST_CASE("Empty root hash") {
     static constexpr auto kEncoder = [](Bytes& to, const Transaction& txn) {
-        rlp::encode(to, txn, /*for_signing=*/false, /*wrap_eip2718_into_array=*/false);
+        rlp::encode(to, txn, /*for_signing=*/false, /*wrap_eip2718_into_string=*/false);
     };
     CHECK(root_hash(std::vector<Transaction>{}, kEncoder) == kEmptyRoot);
 }

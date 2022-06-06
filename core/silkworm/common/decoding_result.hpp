@@ -33,6 +33,7 @@ enum class [[nodiscard]] DecodingResult{
     kInvalidVInSignature,         // v != 27 && v != 28 && v < 35, see EIP-155
     kUnsupportedTransactionType,  // EIP-2718
     kInvalidFieldset,
+    kUnexpectedEip2718Serialization,
 };
 
 }  // namespace silkworm

@@ -1,5 +1,5 @@
 /*
-   Copyright 2020-2021 The Silkworm Authors
+   Copyright 2020-2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -20,9 +20,9 @@
 #include <bitset>
 #include <cassert>
 #include <cstring>
+#include <span>
 
 #include <ethash/keccak.hpp>
-#include <gsl/span>
 
 #include <silkworm/common/cast.hpp>
 #include <silkworm/common/util.hpp>
@@ -104,7 +104,7 @@ ByteView HashBuilder::extension_node_rlp(ByteView path, ByteView child_ref) {
     return rlp_buffer_;
 }
 
-static Bytes wrap_hash(gsl::span<const uint8_t, kHashLength> hash) {
+static Bytes wrap_hash(std::span<const uint8_t, kHashLength> hash) {
     Bytes wrapped(kHashLength + 1, '\0');
     wrapped[0] = rlp::kEmptyStringCode + kHashLength;
     std::memcpy(&wrapped[1], &hash[0], kHashLength);

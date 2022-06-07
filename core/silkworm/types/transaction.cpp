@@ -204,16 +204,12 @@ namespace rlp {
         }
     }
 
-    void encode(Bytes& to, const Transaction& txn, bool for_signing, bool wrap_eip2718_into_array) {
+    void encode(Bytes& to, const Transaction& txn, bool for_signing, bool wrap_eip2718_into_string) {
         if (txn.type == Transaction::Type::kLegacy) {
             legacy_encode(to, txn, for_signing);
         } else {
-            eip2718_encode(to, txn, for_signing, wrap_eip2718_into_array);
+            eip2718_encode(to, txn, for_signing, wrap_eip2718_into_string);
         }
-    }
-
-    void encode(Bytes& to, const Transaction& txn) {
-        encode(to, txn, /*for_signing=*/false, /*wrap_eip2718_into_array=*/true);
     }
 
     static DecodingResult legacy_decode(ByteView& from, Transaction& to) noexcept {
@@ -268,7 +264,9 @@ namespace rlp {
     }
 
     static DecodingResult eip2718_decode(ByteView& from, Transaction& to) noexcept {
-        assert(to.type == Transaction::Type::kEip2930 || to.type == Transaction::Type::kEip1559);
+        if (to.type != Transaction::Type::kEip2930 && to.type != Transaction::Type::kEip1559) {
+            return DecodingResult::kUnsupportedTransactionType;
+        }
 
         auto [h, err0]{decode_header(from)};
         if (err0 != DecodingResult::kOk) {
@@ -333,16 +331,30 @@ namespace rlp {
         return DecodingResult::kOk;
     }
 
-    template <>
-    DecodingResult decode(ByteView& from, Transaction& to) noexcept {
+    DecodingResult decode_transaction(ByteView& from, Transaction& to, Eip2718Wrapping allowed) noexcept {
+        to.from.reset();
+
+        if (from.empty()) {
+            return DecodingResult::kInputTooShort;
+        }
+
+        if (0 < from[0] && from[0] < kEmptyStringCode) {  // Raw serialization of a typed transaction
+            if (allowed == Eip2718Wrapping::kString) {
+                return DecodingResult::kUnexpectedEip2718Serialization;
+            }
+
+            to.type = static_cast<Transaction::Type>(from[0]);
+            from.remove_prefix(1);
+
+            return eip2718_decode(from, to);
+        }
+
         auto [h, err0]{decode_header(from)};
         if (err0 != DecodingResult::kOk) {
             return err0;
         }
 
-        to.from.reset();
-
-        if (h.list) {
+        if (h.list) {  // Legacy transaction
             to.type = Transaction::Type::kLegacy;
             uint64_t leftover{from.length() - h.payload_length};
             if (DecodingResult err{legacy_decode(from, to)}; err != DecodingResult::kOk) {
@@ -351,16 +363,18 @@ namespace rlp {
             return from.length() == leftover ? DecodingResult::kOk : DecodingResult::kListLengthMismatch;
         }
 
+        // String-wrapped typed transaction
+
+        if (allowed == Eip2718Wrapping::kNone) {
+            return DecodingResult::kUnexpectedEip2718Serialization;
+        }
+
         if (h.payload_length == 0) {
             return DecodingResult::kInputTooShort;
         }
 
         to.type = static_cast<Transaction::Type>(from[0]);
         from.remove_prefix(1);
-
-        if (to.type != Transaction::Type::kEip2930 && to.type != Transaction::Type::kEip1559) {
-            return DecodingResult::kUnsupportedTransactionType;
-        }
 
         ByteView eip2718_view{from.substr(0, h.payload_length - 1)};
 
@@ -383,7 +397,7 @@ void Transaction::recover_sender() {
         return;
     }
     Bytes rlp{};
-    rlp::encode(rlp, *this, /*for_signing=*/true, /*wrap_eip2718_into_array=*/false);
+    rlp::encode(rlp, *this, /*for_signing=*/true, /*wrap_eip2718_into_string=*/false);
     ethash::hash256 hash{keccak256(rlp)};
 
     uint8_t signature[kHashLength * 2];

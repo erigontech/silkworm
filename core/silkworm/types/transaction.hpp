@@ -1,5 +1,5 @@
 /*
-   Copyright 2020-2021 The Silkworm Authors
+   Copyright 2020-2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -85,20 +85,35 @@ namespace rlp {
     size_t length(const Transaction&);
 
     void encode(Bytes& to, const AccessListEntry&);
-    void encode(Bytes& to, const Transaction&);
 
     // According to EIP-2718, serialized transactions are prepended with 1 byte containing the type
-    // (0x01 for EIP-2930 transactions); the same goes for receipts. This is true for signing and
+    // (0x02 for EIP-1559 transactions); the same goes for receipts. This is true for signing and
     // transaction root calculation. However, in block body RLP serialized EIP-2718 transactions
-    // are additionally wrapped into RLP byte array. (Refer to geth implementation;
+    // are additionally wrapped into an RLP byte array (=string). (Refer to the geth implementation;
     // EIP-2718 is mute on block RLP.)
-    void encode(Bytes& to, const Transaction& txn, bool for_signing, bool wrap_eip2718_into_array);
+    void encode(Bytes& to, const Transaction& txn, bool for_signing, bool wrap_eip2718_into_string);
+
+    inline void encode(Bytes& to, const Transaction& txn) {
+        encode(to, txn, /*for_signing=*/false, /*wrap_eip2718_into_string=*/true);
+    }
 
     template <>
     DecodingResult decode(ByteView& from, AccessListEntry& to) noexcept;
 
+    enum class Eip2718Wrapping {
+        kNone,    // Serialized typed transactions must start with its type byte, e.g. 0x02
+        kString,  // Serialized typed transactions must be additionally wrapped into an RLP string (=byte array)
+        kBoth,    // Both options above are accepted
+    };
+
+    DecodingResult decode_transaction(ByteView& from, Transaction& to,
+                                      Eip2718Wrapping accepted_typed_txn_wrapping) noexcept;
+
     template <>
-    DecodingResult decode(ByteView& from, Transaction& to) noexcept;
+    inline DecodingResult decode(ByteView& from, Transaction& to) noexcept {
+        return decode_transaction(from, to, Eip2718Wrapping::kString);
+    }
+
 }  // namespace rlp
 
 }  // namespace silkworm

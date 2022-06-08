@@ -1,5 +1,5 @@
 /*
-   Copyright 2021 The Silkworm Authors
+   Copyright 2021-2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -36,23 +36,19 @@ class PrefixSet {
     PrefixSet(const PrefixSet& other) = default;
     PrefixSet& operator=(const PrefixSet& other) = default;
 
-    void insert(ByteView key, bool marker = false);
-    void insert(Bytes&& key, bool marker = false);
+    void insert(ByteView key);
+    void insert(Bytes&& key);
 
     //! \brief Returns whether or not provided prefix is contained in any of the owned keys
     //! \remarks Doesn't change the set logically, but is not marked const since it's not safe to call this method concurrently.
     //! \see Erigon's RetainList::Retain
     bool contains(ByteView prefix);
 
-    //! \brief Returns the next key with marker==true in the list
-    //! \see Erigon's RetainList::RetainWithMarker
-    std::pair<bool, ByteView> contains_and_next_marked(ByteView prefix);
-
   private:
 
     void ensure_sorted();
 
-    std::vector<std::pair<Bytes, bool>> nibbled_keys_;
+    std::vector<Bytes> nibbled_keys_;
     bool sorted_{false};
     size_t lte_index_{0}; // Index of the "LTE (<=)" key in the keys slice. Next one is "GT (>)"
     size_t max_index_{0}; // Maximum settable index (to avoid recompute vector.size();

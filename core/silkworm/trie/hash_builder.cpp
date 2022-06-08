@@ -16,12 +16,12 @@
 
 #include "hash_builder.hpp"
 
-#include <cassert>
 #include <cstring>
 
 #include <ethash/keccak.hpp>
 #include <gsl/span>
 
+#include <silkworm/common/assert.hpp>
 #include <silkworm/common/bits.hpp>
 #include <silkworm/common/cast.hpp>
 #include <silkworm/common/util.hpp>
@@ -41,7 +41,7 @@ static Bytes encode_path(ByteView nibbles, bool terminating) {
     if (odd) {
         res[0] |= nibbles[0];
         nibbles.remove_prefix(1);
-        assert(nibbles.length() % 2 == 0);
+        SILKWORM_ASSERT((nibbles.length() & 1u) == 0);
     }
 
     for (auto it{std::next(res.begin(), 1)}, end{res.end()}; it != end; ++it) {
@@ -88,7 +88,7 @@ static Bytes node_ref(ByteView rlp) {
 }
 
 void HashBuilder::add_leaf(Bytes key, ByteView value) {
-    assert(key > key_);
+    SILKWORM_ASSERT(key > key_);
     if (!key_.empty()) {
         gen_struct_step(key_, key);
     }
@@ -97,7 +97,7 @@ void HashBuilder::add_leaf(Bytes key, ByteView value) {
 }
 
 void HashBuilder::add_branch_node(Bytes key, const evmc::bytes32& value, bool is_in_db_trie) {
-    assert(key > key_ || (key_.empty() && key.empty()));
+    SILKWORM_ASSERT(key > key_ || (key_.empty() && key.empty()));
     if (!key_.empty()) {
         gen_struct_step(key_, key);
     } else if (key.empty()) {
@@ -147,7 +147,7 @@ void HashBuilder::gen_struct_step(ByteView current, const ByteView succeeding) {
         const size_t preceding_len{groups_.empty() ? 0 : groups_.size() - 1};
         const size_t common_prefix_len{prefix_length(succeeding, current)};
         const size_t len{std::max(preceding_len, common_prefix_len)};
-        assert(len < current.length());
+        SILKWORM_ASSERT(len < current.length());
 
         // Add the digit immediately following the max common prefix
         const uint8_t extra_digit{current[len]};
@@ -227,7 +227,7 @@ void HashBuilder::gen_struct_step(ByteView current, const ByteView succeeding) {
 
                     std::vector<evmc::bytes32> hashes(child_hashes.size());
                     for (size_t i{0}; i < child_hashes.size(); ++i) {
-                        assert(child_hashes[i].size() == kHashLength + 1);
+                        SILKWORM_ASSERT(child_hashes[i].size() == kHashLength + 1);
                         std::memcpy(hashes[i].bytes, &child_hashes[i][1], kHashLength);
                     }
                     Node n{groups_[len], tree_masks_[len], hash_masks_[len], hashes};
@@ -258,7 +258,7 @@ void HashBuilder::gen_struct_step(ByteView current, const ByteView succeeding) {
 
 // Takes children from the stack and replaces them with branch node ref.
 std::vector<Bytes> HashBuilder::branch_ref(uint16_t state_mask, uint16_t hash_mask) {
-    assert(is_subset(hash_mask, state_mask));
+    SILKWORM_ASSERT(is_subset(hash_mask, state_mask));
     std::vector<Bytes> child_hashes;
     child_hashes.reserve(popcount_16(hash_mask));
 

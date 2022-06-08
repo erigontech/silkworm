@@ -1032,6 +1032,7 @@ void do_trie_integrity(db::EnvConfig& config, bool with_state_coverage) {
         log::Info("Checking ...", {"source", source, "state", (with_state_coverage ? "true" : "false")});
 
         auto data1{trie_cursor1.to_first(false)};
+
         while (data1) {
             auto data1_k{db::from_slice(data1.key)};
             auto data1_v{db::from_slice(data1.value)};
@@ -1046,9 +1047,21 @@ void do_trie_integrity(db::EnvConfig& config, bool with_state_coverage) {
                                          std::to_string(kHashLength));
             }
 
-            auto node_state_mask{endian::load_big_u16(&data1_v[0])};
-            auto node_tree_mask{endian::load_big_u16(&data1_v[2])};
-            auto node_hash_mask{endian::load_big_u16(&data1_v[4])};
+            const auto node_state_mask{endian::load_big_u16(&data1_v[0])};
+            const auto node_tree_mask{endian::load_big_u16(&data1_v[2])};
+            const auto node_hash_mask{endian::load_big_u16(&data1_v[4])};
+
+            if (!trie::is_subset(node_tree_mask, node_state_mask)) {
+                throw std::runtime_error("At key " + to_hex(data1_k, true) + " tree mask " +
+                                         std::bitset<16>(node_tree_mask).to_string() + " is not subset of state mask " +
+                                         std::bitset<16>(node_state_mask).to_string());
+            }
+            if (!trie::is_subset(node_hash_mask, node_state_mask)) {
+                throw std::runtime_error("At key " + to_hex(data1_k, true) + " hash mask " +
+                                         std::bitset<16>(node_hash_mask).to_string() + " is not subset of state mask " +
+                                         std::bitset<16>(node_state_mask).to_string());
+            }
+
             data1_v.remove_prefix(6);
             auto expected_hashes_count{popcount_16(node_hash_mask)};
             auto effective_hashes_count{data1_v.length() / kHashLength};
@@ -1060,10 +1073,30 @@ void do_trie_integrity(db::EnvConfig& config, bool with_state_coverage) {
                                          std::bitset<16>(node_hash_mask).to_string());
             }
 
+            // Please don't remove this commented block ... useful for debugging
+            //            static size_t loop{0};
+            //            if (++loop > 16) {
+            //                throw std::runtime_error("Interrupted");
+            //            }
+            //            std::cout << to_hex(data1_k) << " state=" << std::bitset<16>(node_state_mask).to_string() << "
+            //            tree=" << std::bitset<16>(node_tree_mask).to_string() << " hash="
+            //                      << std::bitset<16>(node_hash_mask).to_string() << " root="
+            //                      << ((effective_hashes_count == expected_hashes_count + 1) ? "true" : "false") <<
+            //                      std::endl;
+
             bool found{false};
             Bytes parent_key;
 
-            // must have parent with right hasTree bit
+            /*
+             * Check parents
+             * Whether node key length > 1 then at least one parent with a key length shorter than this one must exist
+             * Note : length is expressed in nibbles count
+             * Example:
+             * When node key : 01020304
+             * Must find one key in list {010203, 0102, 01}
+             * Remarks :
+             * One nibble keys don't have a parent
+             */
             for (size_t i{data1_k.length() - 1}, end{prefix_len ? prefix_len - 1 : prefix_len};
                  i > end && found == false; --i) {
                 parent_key.assign(data1_k.substr(0, i));
@@ -1072,17 +1105,31 @@ void do_trie_integrity(db::EnvConfig& config, bool with_state_coverage) {
                     continue;
                 }
                 found = true;
+
+                /*
+                 * Check parent's tree mask has a bit set which points to current child
+                 * Example :
+                 * Child  key  : 010203
+                 * On first loop i == 2
+                 * Parent key  : 0102
+                 * Nibble == child_key[2] == 3
+                 * The bit at index 3 of parent mask must be set
+                 * If parent mask : 0b0000000000000000 -> wrong
+                 * If parent mask : 0b0000000000001000 -> right
+                 */
+
                 if (data2.value.length() < 6) {
                     throw std::runtime_error("At key" + to_hex(data1_k, true) + " : Parent key " +
                                              to_hex(parent_key, true) + " has invalid value");
                 }
-                auto data2_v{db::from_slice(data2.value)};
-                auto parent_tree_mask{endian::load_big_u16(&data2_v[2])};
-                auto parent_has_bit{((1 << static_cast<uint16_t>(data1_k[i])) & parent_tree_mask) != 0};
-                if (!parent_has_bit) {
-                    throw std::runtime_error(
-                        "At key " + to_hex(data1_k, true) + " found parent key " + to_hex(parent_key, true) +
-                        " but has no branch bit : " + std::bitset<16>(parent_tree_mask).to_string());
+                const auto data2_v{db::from_slice(data2.value)};
+                const auto parent_tree_mask{endian::load_big_u16(&data2_v[2])};
+                const auto parent_has_tree_bit{((1 << static_cast<uint16_t>(data1_k[i])) & parent_tree_mask) != 0};
+                if (!parent_has_tree_bit) {
+                    throw std::runtime_error("At key " + to_hex(data1_k, true) + " found parent key " +
+                                             to_hex(parent_key, true) +
+                                             " with tree mask : " + std::bitset<16>(parent_tree_mask).to_string() +
+                                             " and no bit set at position " + std::to_string(i));
                 }
             }
 
@@ -1090,33 +1137,59 @@ void do_trie_integrity(db::EnvConfig& config, bool with_state_coverage) {
                 throw std::runtime_error("At key " + to_hex(data1_k, true) + " no parent found");
             }
 
-            // must have all children in tree mask
-            buffer.assign(data1_k);
-            buffer.push_back('\0');
-            for (uint16_t i{ctz_16(node_tree_mask)}; i < 16; ++i) {
-                if (((1 << i) & node_tree_mask) == 0) {
-                    continue;
-                }
-                buffer.back() = static_cast<uint8_t>(i);
-                auto data2{trie_cursor2.lower_bound(db::to_slice(buffer), false)};
-                if (!data2) {
-                    throw std::runtime_error("At key " + to_hex(data1_k, true) + " tree mask is " +
-                                             std::bitset<16>(node_tree_mask).to_string() + " but there is no child " +
-                                             std::to_string(i) + " in db. LTE found is : null");
-                } else {
-                    auto data2_k{db::from_slice(data2.key)};
-                    if (!has_prefix(data2_k, buffer)) {
+            /*
+             * Check children (if any)
+             * Each bit set in tree_mask must point to an existing child
+             * Example :
+             * Current key       : 010203
+             * Current tree_mask : 0b0000000000000100
+             * Children key      : 01020302 must exist
+             *
+             * Current key       : 010203
+             * Current tree_mask : 0b0000000000100000
+             * Children key      : 01020305 must exist
+             */
+
+            if (node_tree_mask) {
+                buffer.assign(data1_k);
+                buffer.push_back('\0');
+                for (uint16_t i{ctz_16(node_tree_mask)}; i < 16; ++i) {
+                    if (((1 << i) & node_tree_mask) == 0) {
+                        continue;
+                    }
+                    buffer.back() = static_cast<uint8_t>(i);
+                    auto data2{trie_cursor2.lower_bound(db::to_slice(buffer), false)};
+                    if (!data2) {
                         throw std::runtime_error("At key " + to_hex(data1_k, true) + " tree mask is " +
                                                  std::bitset<16>(node_tree_mask).to_string() +
                                                  " but there is no child " + std::to_string(i) +
-                                                 " in db. LTE found is : " + to_hex(data2_k, true));
+                                                 " in db. LTE found is : null");
+                    } else {
+                        auto data2_k{db::from_slice(data2.key)};
+                        if (!has_prefix(data2_k, buffer)) {
+                            throw std::runtime_error("At key " + to_hex(data1_k, true) + " tree mask is " +
+                                                     std::bitset<16>(node_tree_mask).to_string() +
+                                                     " but there is no child " + std::to_string(i) +
+                                                     " in db. LTE found is : " + to_hex(data2_k, true));
+                        }
                     }
                 }
             }
 
-            // Slow checks
-            // each AccTrie must cover some state
-            if (with_state_coverage) {
+            /*
+             * Slow check for state coverage
+             * Whether the node has any hash_state bit set then we must ensure the bits point to
+             * an existing hashed state (either account or storage)
+             *
+             * Example:
+             * Current key        : 010203
+             * Current state_mask : 0b0000000000000001
+             * New Nibbled key    : 01020300
+             * Packed key         : 1230
+             * A state with prefix in range [1230 ... 1231) must exist
+             */
+
+            if (with_state_coverage && node_state_mask) {
                 // Buffer is used to build seek key
                 buffer.assign(data1_k.substr(prefix_len));
                 buffer.push_back('\0');
@@ -1190,7 +1263,7 @@ void do_trie_integrity(db::EnvConfig& config, bool with_state_coverage) {
                 }
             }
 
-            if (std::chrono::time_point now{std::chrono::steady_clock::now()}; now - start > 10s) {
+            if (std::chrono::time_point now{std::chrono::steady_clock::now()}; now - start >= 10s) {
                 if (SignalHandler::signalled()) {
                     throw std::runtime_error("Interrupted");
                 }

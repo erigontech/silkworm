@@ -409,65 +409,11 @@ evmc::bytes32 InterHashes::calculate_root(db::RWTxn& txn, trie::PrefixSet& accou
 
     size_t log_trigger_counter{1};
 
-    //    trie::AccCursor trie_cursor(trie_accounts, account_changes, {}, account_collector_.get());
-    //    auto trie_data{trie_cursor.at_prefix({})};
-    //    while (trie_data.k.empty() == false) {
-    //
-    //        if (!--log_trigger_counter) {
-    //            //            log::Trace("Trie", {"k", to_hex(trie_data.k), "v", to_hex(trie_data.v), "skip",
-    //            //                                (trie_cursor.can_skip_state() ? "true" : "false")});
-    //
-    //            std::unique_lock<std::mutex> log_lck(log_mtx_);
-    //            current_source_ = "HashedState";
-    //            current_key_ = to_hex(trie_data.k, true);
-    //            log_lck.unlock();
-    //            throw_if_stopping();
-    //            log_trigger_counter = 256;
-    //        }
-    //
-    //
-    //
-    //        if (trie_cursor.can_skip_state()) {
-    //            SILKWORM_ASSERT(trie_data.v.length() == kHashLength);
-    //            hash_builder.add_branch_node(
-    //                Bytes(trie_data.k), *reinterpret_cast<const evmc::bytes32*>(trie_data.v.data()),
-    //                trie_data.has_tree);
-    //        } else {
-    //            const std::optional<Bytes> uncovered{trie_cursor.first_uncovered_prefix()};
-    //            if (!uncovered.has_value()) {
-    //                log::Trace() << "No more uncovered prefixes";
-    //                break;
-    //            }
-    //
-    //            auto data{hashed_accounts.lower_bound(db::to_slice(*uncovered), /*throw_notfound=*/false)};
-    //            while (data) {
-    //                const auto data_key_view{db::from_slice(data.key)};
-    //                const Bytes nibbled_key{trie::unpack_nibbles(data_key_view)};
-    //                if (trie::key_is_before(trie_data.k, nibbled_key)) {
-    //                    break;
-    //                }
-    //
-    //                const auto [account, err]{Account::from_encoded_storage(db::from_slice(data.value))};
-    //                rlp::success_or_throw(err);
-    //
-    //                evmc::bytes32 storage_root{kEmptyRoot};
-    //                if (account.incarnation) {
-    //                    const Bytes key_with_incarnation{db::storage_prefix(data_key_view, account.incarnation)};
-    //                    storage_root = calculate_storage_root(txn, key_with_incarnation, storage_changes);
-    //                }
-    //
-    //                hash_builder.add_leaf(nibbled_key, account.rlp(storage_root));
-    //                data = hashed_accounts.to_next(/*throw_notfound=*/false);
-    //            }
-    //        }
-    //
-    //        trie_data = trie_cursor.to_next();
-    //    }
-
     trie::Cursor trie_cursor{trie_accounts, account_changes, collector};
     auto trie_cursor_key{trie_cursor.key()};
 
     while (trie_cursor_key.has_value()) {
+
         if (trie_cursor.can_skip_state()) {
             auto trie_cursor_hash{trie_cursor.hash()};
             SILKWORM_ASSERT(trie_cursor_hash != nullptr);
@@ -482,10 +428,17 @@ evmc::bytes32 InterHashes::calculate_root(db::RWTxn& txn, trie::PrefixSet& accou
         }
 
         trie_cursor.next();
-        trie_cursor_key = trie_cursor.key();
 
-        auto data{hashed_accounts.lower_bound(db::to_slice(*uncovered), /*throw_notfound=*/false)};
+        // This is a dirty hack to work around an issue I could not address (call me dumb) on
+        // trie cursor which, when traversing trie, returns twice the same key
+        auto trie_cursor_next_key = trie_cursor.key();
+        while (trie_cursor_next_key == trie_cursor_key) {
+            trie_cursor.next();
+            trie_cursor_next_key = trie_cursor.key();
+        }
+        std::swap(trie_cursor_key, trie_cursor_next_key);
 
+        auto data{hashed_accounts.lower_bound(db::to_slice(*uncovered), false)};
         while (data) {
             const auto data_key_view{db::from_slice(data.key)};
 
@@ -513,7 +466,7 @@ evmc::bytes32 InterHashes::calculate_root(db::RWTxn& txn, trie::PrefixSet& accou
             }
 
             hash_builder.add_leaf(nibbled_key, account.rlp(storage_root));
-            data = hashed_accounts.to_next(/*throw_notfound=*/false);
+            data = hashed_accounts.to_next(false);
         }
     }
 

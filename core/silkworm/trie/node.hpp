@@ -56,8 +56,8 @@ class Node {
     [[nodiscard]] static std::optional<Node> from_encoded_storage(ByteView raw);
 
   private:
-    uint16_t state_mask_{0};
-    uint16_t tree_mask_{0};
+    uint16_t state_mask_{0};  // Each bit set indicates parenting of a hashed state
+    uint16_t tree_mask_{0};   // Each bit set indicates parenting of a child
     uint16_t hash_mask_{0};
     std::vector<evmc::bytes32> hashes_{};
     std::optional<evmc::bytes32> root_hash_{std::nullopt};
@@ -65,9 +65,7 @@ class Node {
 
 bool operator==(const Node& a, const Node& b);
 
-inline bool is_subset(uint16_t sub, uint16_t sup) {
-    return (sub & sup) == sub;
-}
+inline bool is_subset(uint16_t sub, uint16_t sup) { return (sub & sup) == sub; }
 
 }  // namespace silkworm::trie
 

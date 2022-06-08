@@ -53,6 +53,8 @@ class Cursor {
 
     [[nodiscard]] std::optional<Bytes> first_uncovered_prefix() const;
 
+    [[nodiscard]] size_t level() const { return subnodes_.size(); }
+
   private:
     // TrieAccount(TrieStorage) node with a particular nibble selected
     struct SubNode {
@@ -84,82 +86,6 @@ class Cursor {
     std::vector<SubNode> subnodes_;
 
     bool can_skip_state_{false};
-};
-
-class AccCursor {
-  public:
-    explicit AccCursor(mdbx::cursor& db_cursor, PrefixSet& changed,
-                       etl::Collector* collector = nullptr);
-
-    struct move_operation_result {
-        ByteView k{};
-        ByteView v{};
-        bool has_tree{false};
-    };
-
-    move_operation_result at_prefix(ByteView prefix);     // See Erigon's AtPrefix
-    move_operation_result to_next();                      // See Erigon's Next (capital N)
-    std::optional<Bytes> first_uncovered_prefix() const;  // Next prefix (packed) not covered in subtree
-    [[nodiscard]] bool can_skip_state() const { return skip_state_; }
-
-  private:
-    struct SubNode {
-        ByteView key{};
-        ByteView value{};
-        uint16_t state_mask{};
-        uint16_t tree_mask{};
-        uint16_t hash_mask{};
-        int8_t child_id{0};
-        int8_t hash_id{0};
-        bool deleted{false};
-
-        [[nodiscard]] bool has_state() const;
-        [[nodiscard]] bool has_tree() const;
-        [[nodiscard]] bool has_hash() const;
-
-        void reset();
-        void parse(ByteView k, ByteView v);
-    };
-
-    mdbx::cursor& db_cursor_;             // MDBX Cursor to TrieAccounts
-    PrefixSet& changed_;                  // List of changed addresses for incremental promotion
-    etl::Collector* collector_{nullptr};  // To queue deleted records
-
-    std::vector<SubNode> sub_nodes_{64, SubNode{}};
-    bool skip_state_{false};
-    size_t level_{0};
-
-    Bytes prefix_{};  // global prefix - cursor will never return keys without this prefix
-    Bytes prev_{};
-    Bytes curr_{};
-    Bytes next_{};
-    Bytes buff_{};
-
-    Bytes next_created_{};
-    Bytes first_uncovered_{};
-
-    ByteView hash(int8_t id);
-    bool has_state();
-    bool has_tree();
-    bool has_hash();
-
-    move_operation_result next();
-    void preorder_traversal_step();
-    void preorder_traversal_step_no_indepth();
-    void delete_current();
-
-    //! \brief Partially parses node
-    //! \remarks We don't need to copy all hashes for trie::Node
-    //! \see Erigon's _unmarshal
-    void parse_subnode(ByteView key, ByteView value);
-
-    void next_sibling_in_db();
-    bool next_sibling_in_mem();
-    bool next_sibling_of_parent_in_mem();
-
-    bool seek_in_db(ByteView key, ByteView within_prefix = {});
-
-    bool consume();
 };
 
 //! \brief Produces the next key in sequence from provided nibbled key

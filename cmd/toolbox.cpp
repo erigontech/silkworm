@@ -512,7 +512,8 @@ void do_freelist(db::EnvConfig& config, bool detail) {
             std::cout << (boost::format(fmt_row) % item.id % item.pages % human_size(item.size)) << std::endl;
         }
     }
-    std::cout << "\n Free pages count     : " << boost::format("%13u") % dbFreeInfo.pages << "\n"
+    std::cout << "\n Record count         : " << boost::format("%13u") % dbFreeInfo.entries.size() << "\n"
+              << " Free pages count     : " << boost::format("%13u") % dbFreeInfo.pages << "\n"
               << " Free pages size      : " << boost::format("%13s") % human_size(dbFreeInfo.size) << "\n"
               << std::endl;
 

@@ -153,7 +153,7 @@ trie::PrefixSet InterHashes::gather_forward_account_changes(
                     auto [previous_account, rlp_err]{Account::from_encoded_storage(changeset_value_view)};
                     rlp::success_or_throw(rlp_err);
 
-                    if (previous_account.incarnation > 0) {
+                    if (previous_account.incarnation /* not an EOA */) {
                         // Lookup current
                         auto plainstate_data{plain_state.find(db::to_slice(address.bytes),
                                                               /*throw_notfound=*/false)};
@@ -180,7 +180,7 @@ trie::PrefixSet InterHashes::gather_forward_account_changes(
         changeset_data = account_changeset.to_next(/*throw_notfound=*/false);
     }
 
-    // Eventually delete intermediate hashes for deleted accounts
+    // Eventually delete nodes from trie for deleted accounts
     if (!deleted_hashes.empty()) {
         db::Cursor trie_storage(txn, db::table::kTrieOfStorage);
         for (const auto& hash : deleted_hashes) {

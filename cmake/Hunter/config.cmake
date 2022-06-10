@@ -16,15 +16,15 @@
 
 hunter_config(
   Microsoft.GSL
-  VERSION 3.1.0
-  URL https://github.com/microsoft/GSL/archive/v3.1.0.tar.gz
-  SHA1 3f2891a46595806563e7a0e25bb7ecbb30776445
+  VERSION 4.0.0
+  URL https://github.com/microsoft/GSL/archive/v4.0.0.tar.gz
+  SHA1 909c9540a76fe4b4f71dbbd24126cab3925fb78e
 )
 
 hunter_config(
   ethash
   VERSION 0.9.0
-  CMAKE_ARGS ETHASH_BUILD_ETHASH=ON ETHASH_BUILD_GLOBAL_CONTEXT=NO ETHASH_BUILD_TESTS=OFF
+  CMAKE_ARGS ETHASH_BUILD_ETHASH=ON ETHASH_BUILD_GLOBAL_CONTEXT=OFF ETHASH_BUILD_TESTS=OFF
 )
 
 # Downgrade Protobuf version due to a CMake error in 3.19.4-p0

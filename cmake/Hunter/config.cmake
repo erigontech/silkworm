@@ -15,13 +15,6 @@
 ]]
 
 hunter_config(
-  Catch
-  VERSION 2.13.7
-  URL https://github.com/catchorg/Catch2/archive/v2.13.7.tar.gz
-  SHA1 fa8f14ccf852413d3c6d3999145ada934d37d773
-)
-
-hunter_config(
   Microsoft.GSL
   VERSION 3.1.0
   URL https://github.com/microsoft/GSL/archive/v3.1.0.tar.gz
@@ -32,13 +25,6 @@ hunter_config(
   ethash
   VERSION 0.9.0
   CMAKE_ARGS ETHASH_BUILD_ETHASH=ON ETHASH_BUILD_GLOBAL_CONTEXT=NO ETHASH_BUILD_TESTS=OFF
-)
-
-hunter_config(
-  re2
-  VERSION 2021.11.01
-  URL https://github.com/google/re2/archive/2021-11-01.tar.gz
-  SHA1 4c18662f103ef53f106f8f98d7b46b723615e14f
 )
 
 # Downgrade Protobuf version due to a CMake error in 3.19.4-p0
@@ -52,11 +38,4 @@ hunter_config(
   gRPC
   VERSION 1.44.0-p0
   CMAKE_ARGS gRPC_BUILD_TESTS=OFF gRPC_BUILD_CODEGEN=ON gRPC_BUILD_CSHARP_EXT=OFF
-)
-
-hunter_config(
-  CLI11
-  VERSION 2.2.0
-  URL https://github.com/CLIUtils/CLI11/archive/v2.2.0.tar.gz
-  SHA1 8ff2b5ef3436d73ce7f9db0bd94a912e305f0967
 )

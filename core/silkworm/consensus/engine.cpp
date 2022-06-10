@@ -16,7 +16,7 @@
 
 #include "engine.hpp"
 
-#include <silkpre/y_parity_and_chain_id.hpp>
+#include <silkpre/secp256k1n.hpp>
 
 #include <silkworm/chain/intrinsic_gas.hpp>
 #include <silkworm/consensus/ethash/engine.hpp>

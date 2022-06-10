@@ -19,7 +19,7 @@
 #include <functional>
 #include <mutex>
 
-#include <silkpre/y_parity_and_chain_id.hpp>
+#include <silkpre/secp256k1n.hpp>
 
 #include <silkworm/common/as_range.hpp>
 #include <silkworm/common/assert.hpp>

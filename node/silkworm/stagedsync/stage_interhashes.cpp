@@ -184,7 +184,7 @@ trie::PrefixSet InterHashes::gather_forward_account_changes(
     if (!deleted_hashes.empty()) {
         db::Cursor trie_storage(txn, db::table::kTrieOfStorage);
         for (const auto& hash : deleted_hashes) {
-            auto hash_slice{db::to_slice(hash)};
+            const auto hash_slice{db::to_slice(hash)};
             auto data{trie_storage.lower_bound(hash_slice, /*throw_notfound=*/false)};
             while (data && data.key.starts_with(hash_slice)) {
                 trie_storage.erase();

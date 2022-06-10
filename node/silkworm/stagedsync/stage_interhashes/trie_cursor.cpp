@@ -146,13 +146,6 @@ Bytes Cursor::SubNode::full_key() const {
     return out;
 }
 
-bool Cursor::SubNode::state_flag() const {
-    if (nibble < 0 || !node.has_value()) {
-        return true;
-    }
-    return node->state_mask() & (1u << nibble);
-}
-
 bool Cursor::SubNode::tree_flag() const {
     if (nibble < 0 || !node.has_value()) {
         return true;
@@ -230,16 +223,6 @@ std::optional<Bytes> increment_nibbled_key(ByteView nibbles) {
     Bytes ret{nibbles.substr(0, count)};
     ++ret.back();
     return ret;
-}
-
-bool key_is_before(ByteView k1, ByteView k2) {
-    if (k1.empty()) {
-        return false;
-    }
-    if (k2.empty()) {
-        return true;
-    }
-    return k1 < k2;
 }
 
 }  // namespace silkworm::trie

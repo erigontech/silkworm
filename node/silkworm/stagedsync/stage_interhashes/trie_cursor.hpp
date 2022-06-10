@@ -63,7 +63,6 @@ class Cursor {
         int nibble{-1};  // -1 points to the node itself instead of a nibble
 
         [[nodiscard]] Bytes full_key() const;
-        [[nodiscard]] bool state_flag() const;
         [[nodiscard]] bool tree_flag() const;
         [[nodiscard]] bool hash_flag() const;
         [[nodiscard]] const evmc::bytes32* hash() const;
@@ -99,9 +98,6 @@ class Cursor {
 //! \return The incremented (and eventually shortened) sequence of 0xF nibbles,
 //! \remarks Being a prefix of nibbles trailing zeroes must be erased
 std::optional<Bytes> increment_nibbled_key(ByteView nibbles);
-
-//! \brief Kinda normal lexicographic comparator with the difference empty keys are last
-bool key_is_before(ByteView k1, ByteView k2);
 
 }  // namespace silkworm::trie
 

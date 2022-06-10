@@ -21,10 +21,11 @@
 
 #include <ethash/keccak.hpp>
 #include <silkpre/ecdsa.h>
-#include <silkpre/y_parity_and_chain_id.hpp>
 
 #include <silkworm/common/util.hpp>
 #include <silkworm/rlp/encode_vector.hpp>
+
+#include "y_parity_and_chain_id.hpp"
 
 namespace silkworm {
 
@@ -41,11 +42,11 @@ bool operator==(const Transaction& a, const Transaction& b) {
 }
 
 // https://eips.ethereum.org/EIPS/eip-155
-intx::uint256 Transaction::v() const { return silkpre::y_parity_and_chain_id_to_v(odd_y_parity, chain_id); }
+intx::uint256 Transaction::v() const { return y_parity_and_chain_id_to_v(odd_y_parity, chain_id); }
 
 // https://eips.ethereum.org/EIPS/eip-155
 bool Transaction::set_v(const intx::uint256& v) {
-    const std::optional<silkpre::YParityAndChainId> parity_and_id{silkpre::v_to_y_parity_and_chain_id(v)};
+    const std::optional<YParityAndChainId> parity_and_id{v_to_y_parity_and_chain_id(v)};
     if (parity_and_id == std::nullopt) {
         return false;
     }

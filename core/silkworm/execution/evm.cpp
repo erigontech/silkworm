@@ -224,9 +224,15 @@ evmc::result EVM::call(const evmc_message& message) noexcept {
                 res.status_code = EVMC_PRECOMPILE_FAILURE;
             }
         }
+        // Explicitly notify registered tracers (if any)
+        if (!tracers_.empty()) {
+            for (auto tracer : tracers_) {
+                tracer.get().on_precompiled_run(res, message.gas, state_);
+            }
+        }
     } else {
         const ByteView code{state_.get_code(message.code_address)};
-        if (code.empty()) {
+        if (code.empty() && tracers_.empty()) { // Do not skip execution if there are any tracers
             return res;
         }
 
@@ -337,6 +343,7 @@ void EVM::add_tracer(EvmTracer& tracer) noexcept {
 
     const auto vm{static_cast<evmone::VM*>(evm1_)};
     vm->add_tracer(std::make_unique<DelegatingTracer>(tracer, state_));
+    tracers_.push_back(std::ref(tracer));
 }
 
 uint8_t EVM::number_of_precompiles() const noexcept {

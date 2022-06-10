@@ -336,7 +336,7 @@ StageResult RecoveryFarm::transform_and_fill_batch(uint64_t block_num, const std
         }
 
         Bytes rlp{};
-        rlp::encode(rlp, transaction, /*for_signing=*/true, /*wrap_eip2718_into_array=*/false);
+        rlp::encode(rlp, transaction, /*for_signing=*/true, /*wrap_eip2718_into_string=*/false);
 
         auto tx_hash{keccak256(rlp)};
         batch_.push_back(RecoveryPackage{block_num, tx_hash, transaction.odd_y_parity});

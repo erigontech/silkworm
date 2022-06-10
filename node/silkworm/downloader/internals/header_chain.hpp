@@ -19,8 +19,6 @@
 
 #include <cstdio>
 
-#include <gsl/span>
-
 #include <silkworm/common/lru_cache.hpp>
 #include <silkworm/consensus/engine.hpp>
 #include <silkworm/downloader/packets/get_block_headers_packet.hpp>

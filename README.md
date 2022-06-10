@@ -55,7 +55,7 @@ git submodule update --init --recursive
 ## Building on Linux & macOS
 
 Building Silkworm requires:
-* C++17 compiler (GCC >= 9 or Clang)
+* C++20 compiler: [GCC](https://www.gnu.org/software/gcc/) >= 10.2.0 or [Clang](https://clang.llvm.org/) >= 10.0.0
 * [CMake]
 * [GMP] (`sudo apt-get install libgmp3-dev` or `brew install gmp` or https://gmplib.org/manual/Installing-GMP)
 
@@ -124,6 +124,15 @@ cmd/silkworm --datadir <same-datadir-path-used-for-erigon>
 * To build simply `CTRL+Shift+B`
 * Binaries are written to `%USERPROFILE%\CMakeBuilds\silkworm\build` If you want to change this path simply edit `CMakeSettings.json` file.
 
+**Note ! Memory compression on Windows 10/11**
+
+Windows 10/11 provide a _memory compression_ feature which makes available more RAM than what physically mounted at cost of extra CPU cycles to compress/decompress while accessing data. As MDBX is a memory mapped file this feature may impact overall performances. Is advisable to have memory compression off.
+
+Use the following steps to detect/enable/disable memory compression:
+* Open a PowerShell prompt with Admin privileges
+* Run `Get-MMAgent` (check whether memory compression is enabled)
+* To disable memory compression : `Disable-MMAgent -mc` and reboot
+* To enable memory compression : `Enable-MMAgent -mc` and reboot
 
 ## Codemap
 
@@ -141,9 +150,10 @@ Apart from the submodules and some auxiliary directories, Silkworm contains the 
 <a name="guide"></a>
 ## Style Guide
 
-We use the standard C++17 programming language.
+We use the standard C++20 programming language.
 We adhere to [Google's C++ Style Guide] with the following differences:
 
+* C++20 rather than C++17.
 * `snake_case()` for function names.
 * .cpp & .hpp file extensions for C++; .c & .h are reserved for C.
 * `using namespace foo` is allowed inside .cpp files, but not inside headers.

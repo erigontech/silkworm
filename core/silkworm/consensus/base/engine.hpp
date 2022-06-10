@@ -55,6 +55,12 @@ class EngineBase : public IEngine {
     //! \brief Returns parent header (if any) of provided header
     static std::optional<BlockHeader> get_parent_header(const BlockState& state, const BlockHeader& header);
 
+    //! \brief Calculate the transaction root of a block body
+    static evmc::bytes32 compute_transaction_root(const BlockBody& body);
+
+    //! \brief Calculate the hash of ommers of a block body
+    static evmc::bytes32 compute_ommers_hash(const BlockBody& body);
+
   protected:
     const ChainConfig& chain_config_;
     bool prohibit_ommers_{false};

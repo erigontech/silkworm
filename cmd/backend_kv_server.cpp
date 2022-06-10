@@ -207,6 +207,7 @@ int main(int argc, char* argv[]) {
         signals.async_wait([&](const boost::system::error_code& error, int signal_number) {
             std::cout << "\n";
             SILK_INFO << "Signal caught, error: " << error << " number: " << signal_number;
+            backend.close();
             server.shutdown();
         });
 

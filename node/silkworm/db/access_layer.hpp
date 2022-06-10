@@ -21,9 +21,8 @@
 // See Erigon core/rawdb/accessors_chain.go
 
 #include <optional>
+#include <span>
 #include <vector>
-
-#include <gsl/span>
 
 #include <silkworm/chain/config.hpp>
 #include <silkworm/common/rlp_err.hpp>
@@ -84,7 +83,7 @@ void write_total_difficulty(mdbx::txn& txn, BlockNum block_number, const uint8_t
 
 // Reads a block; see Erigon ReadBlock.
 // Returns true on success and false on missing block.
-[[nodiscard]] bool read_block(mdbx::txn& txn, gsl::span<const uint8_t, kHashLength> hash, BlockNum number,
+[[nodiscard]] bool read_block(mdbx::txn& txn, std::span<const uint8_t, kHashLength> hash, BlockNum number,
                               bool read_senders, Block& out);
 
 // See Erigon ReadSenders

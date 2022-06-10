@@ -17,21 +17,30 @@
 #include "backend_kv_server.hpp"
 
 #include <chrono>
+#include <condition_variable>
+#include <functional>
 #include <memory>
+#include <mutex>
 #include <string>
 #include <sstream>
 #include <thread>
 #include <vector>
 
+#include <boost/asio/post.hpp>
 #include <catch2/catch.hpp>
 #include <grpc/grpc.h>
 
+#include <silkworm/common/base.hpp>
 #include <silkworm/common/directories.hpp>
 #include <silkworm/common/log.hpp>
 #include <silkworm/db/mdbx.hpp>
+#include <silkworm/backend/ethereum_backend.hpp>
 #include <silkworm/rpc/conversion.hpp>
 #include <silkworm/rpc/util.hpp>
+#include <silkworm/backend/state_change_collection.hpp>
 #include <types/types.pb.h>
+
+using namespace std::chrono_literals;
 
 namespace { // Trick suggested by gRPC team to avoid name clashes in multiple test modules
 class BackEndClient {
@@ -132,19 +141,62 @@ class KvClient {
         return stub_->Tx(context);
     }
 
-    grpc::Status statechanges_and_consume(const remote::StateChangeRequest& request, std::vector<remote::StateChangeBatch>& responses) {
-        grpc::ClientContext context;
-        auto subscribe_reply_reader = stub_->StateChanges(&context, request);
-        bool has_more{true};
-        do {
-            has_more = subscribe_reply_reader->Read(&responses.emplace_back());
-        } while (has_more);
-        responses.pop_back();
-        return subscribe_reply_reader->Finish();
+    auto statechanges_start(grpc::ClientContext* context, const remote::StateChangeRequest& request) {
+        return stub_->StateChanges(context, request);
     }
 
   private:
     remote::KV::StubInterface* stub_;
+};
+
+class ThreadedKvClient {
+  public:
+    //! It is safe to call this method *only after* join_and_finish() has been called
+    std::vector<remote::StateChangeBatch> responses() const { return responses_; }
+
+    void start_and_consume_statechanges(KvClient client) {
+        // Start StateChanges server-streaming call on calling thread
+        remote::StateChangeRequest request;
+        statechangebatch_reader_ = client.statechanges_start(&context_, request);
+
+        // We need a dedicated thread to consume the incoming messages because only one (blocking)
+        // Read completion will tell us that server-side subscription really happened. This machinery
+        // is needed just in these all-in-one tests
+        consumer_thread_ = std::thread{[&]() {
+            bool has_more{true};
+            do {
+                has_more = statechangebatch_reader_->Read(&responses_.emplace_back());
+                // As soon as the first Read has completed, we know for sure that subscription has occurred
+                std::unique_lock subscribed_lock{subscribed_mutex_};
+                if (!subscribed_) {
+                    subscribed_ = true;
+                    subscribed_lock.unlock();
+                    subscribed_condition_.notify_one();
+                }
+            } while (has_more);
+            // Last response read is void so discard it
+            responses_.pop_back();
+        }};
+    }
+
+    bool wait_one_milli_for_subscription() {
+        std::unique_lock subscribed_lock{subscribed_mutex_};
+        return subscribed_condition_.wait_for(subscribed_lock, 1ms, [&]{ return subscribed_; });
+    }
+
+    grpc::Status join_and_finish() {
+        consumer_thread_.join();
+        return statechangebatch_reader_->Finish();
+    }
+
+  private:
+    grpc::ClientContext context_;
+    std::unique_ptr<grpc::ClientReaderInterface<remote::StateChangeBatch>> statechangebatch_reader_;
+    std::thread consumer_thread_;
+    std::mutex subscribed_mutex_;
+    std::condition_variable subscribed_condition_;
+    bool subscribed_{false};
+    std::vector<remote::StateChangeBatch> responses_;
 };
 
 const uint64_t kTestSentryPeerCount{10};
@@ -248,6 +300,39 @@ static const silkworm::db::MapConfig kTestMultiMap{"TestMultiTable", mdbx::key_m
 
 using namespace silkworm;
 
+using StateChangeTokenObserver = std::function<void(std::optional<StateChangeToken>)>;
+
+struct TestableStateChangeCollection : public StateChangeCollection {
+    std::optional<StateChangeToken> subscribe(StateChangeConsumer consumer, StateChangeFilter filter) override {
+        const auto token = StateChangeCollection::subscribe(consumer, filter);
+        if (token_observer_) {
+            token_observer_(token);
+        }
+        return token;
+    }
+
+    void set_token(StateChangeToken next_token) {
+        next_token_ = next_token;
+    }
+
+    void register_token_observer(StateChangeTokenObserver token_observer) {
+        token_observer_ = token_observer;
+    }
+
+    StateChangeTokenObserver token_observer_;
+};
+
+class TestableEthereumBackEnd : public EthereumBackEnd {
+  public:
+    TestableEthereumBackEnd(const NodeSettings& node_settings, mdbx::env* chaindata_env)
+        : EthereumBackEnd(node_settings, chaindata_env, std::make_unique<TestableStateChangeCollection>()) {
+    }
+
+    TestableStateChangeCollection* state_change_source() const noexcept {
+        return dynamic_cast<TestableStateChangeCollection*>(EthereumBackEnd::state_change_source());
+    }
+};
+
 struct BackEndKvE2eTest {
     BackEndKvE2eTest(silkworm::log::Level log_verbosity, const NodeSettings& options = {}, std::vector<grpc::Status> statuses = {}) {
         silkworm::log::set_verbosity(log_verbosity);
@@ -272,7 +357,7 @@ struct BackEndKvE2eTest {
         db::open_map(rw_txn, kTestMap);
         rw_txn.commit();
 
-        backend = std::make_unique<EthereumBackEnd>(options, &database_env);
+        backend = std::make_unique<TestableEthereumBackEnd>(options, &database_env);
         server = std::make_unique<rpc::BackEndKvServer>(srv_config, *backend);
         server->build_and_start();
 
@@ -317,7 +402,7 @@ struct BackEndKvE2eTest {
     TemporaryDirectory tmp_dir;
     std::unique_ptr<db::EnvConfig> db_config;
     mdbx::env_managed database_env;
-    std::unique_ptr<EthereumBackEnd> backend;
+    std::unique_ptr<TestableEthereumBackEnd> backend;
     std::unique_ptr<rpc::BackEndKvServer> server;
     std::vector<std::unique_ptr<SentryServer>> sentry_servers;
 };
@@ -325,7 +410,7 @@ struct BackEndKvE2eTest {
 
 namespace silkworm::rpc {
 
-// Exclude gRPC tests from sanitizer builds due to data race warnings
+// Exclude gRPC tests from sanitizer builds due to data race warnings inside gRPC library
 #ifndef SILKWORM_SANITIZE
 TEST_CASE("BackEndKvServer", "[silkworm][node][rpc]") {
     silkworm::log::set_verbosity(silkworm::log::Level::kNone);
@@ -426,7 +511,6 @@ TEST_CASE("BackEndKvServer", "[silkworm][node][rpc]") {
 TEST_CASE("BackEndKvServer E2E: empty node settings", "[silkworm][node][rpc]") {
     BackEndKvE2eTest test{silkworm::log::Level::kNone};
     auto backend_client = *test.backend_client;
-    auto kv_client = *test.kv_client;
 
     SECTION("Etherbase: return missing coinbase error", "[silkworm][node][rpc]") {
         remote::EtherbaseReply response;
@@ -491,6 +575,11 @@ TEST_CASE("BackEndKvServer E2E: empty node settings", "[silkworm][node][rpc]") {
         CHECK(status.ok());
         CHECK(response.nodesinfo_size() == 0);
     }
+}
+
+TEST_CASE("BackEndKvServer E2E: KV", "[silkworm][node][rpc]") {
+    BackEndKvE2eTest test{silkworm::log::Level::kNone};
+    auto kv_client = *test.kv_client;
 
     SECTION("Version: return KV version", "[silkworm][node][rpc]") {
         types::VersionReply response;
@@ -634,13 +723,110 @@ TEST_CASE("BackEndKvServer E2E: empty node settings", "[silkworm][node][rpc]") {
         CHECK(responses[1].v().empty());
     }
 
-    // TODO(canepat): change using something meaningful when really implemented
-    SECTION("StateChanges: return streamed state changes", "[silkworm][node][rpc]") {
-        remote::StateChangeRequest request;
-        std::vector<remote::StateChangeBatch> responses;
-        const auto status = kv_client.statechanges_and_consume(request, responses);
+    SECTION("StateChanges OK: receive streamed state changes", "[silkworm][node][rpc]") {
+        static constexpr uint64_t kTestPendingBaseFee{10'000};
+        static constexpr uint64_t kTestGasLimit{10'000'000};
+        auto* state_change_source = test.backend->state_change_source();
+
+        ThreadedKvClient threaded_kv_client;
+
+        // Start StateChanges server-streaming call and consume incoming messages on dedicated thread
+        threaded_kv_client.start_and_consume_statechanges(kv_client);
+
+        // Keep publishing state changes using the Catch2 thread until at least one has been received
+        BlockNum block_number{0};
+        bool publishing{true};
+        while (publishing) {
+            state_change_source->start_new_batch(++block_number, kEmptyHash, std::vector<Bytes>{}, /*unwind=*/false);
+            state_change_source->notify_batch(kTestPendingBaseFee, kTestGasLimit);
+
+            publishing = !threaded_kv_client.wait_one_milli_for_subscription();
+        }
+        // After at least one state change has been received, close the server-side RPC stream
+        state_change_source->close();
+
+        // then wait for consumer thread termination and get the client-side RPC result
+        const auto status = threaded_kv_client.join_and_finish();
+
         CHECK(status.ok());
-        CHECK(responses.size() == 2);
+        CHECK(threaded_kv_client.responses().size() > 0);
+    }
+
+    SECTION("StateChanges OK: multiple concurrent subscriptions", "[silkworm][node][rpc]") {
+        static constexpr uint64_t kTestPendingBaseFee{10'000};
+        static constexpr uint64_t kTestGasLimit{10'000'000};
+        auto* state_change_source = test.backend->state_change_source();
+
+        ThreadedKvClient threaded_kv_client1, threaded_kv_client2;
+
+        // Start StateChanges server-streaming call and consume incoming messages on dedicated thread
+        threaded_kv_client1.start_and_consume_statechanges(kv_client);
+        threaded_kv_client2.start_and_consume_statechanges(kv_client);
+
+        // Keep publishing state changes using the Catch2 thread until at least one has been received
+        BlockNum block_number{0};
+        bool publishing{true};
+        while (publishing) {
+            state_change_source->start_new_batch(++block_number, kEmptyHash, std::vector<Bytes>{}, /*unwind=*/false);
+            state_change_source->notify_batch(kTestPendingBaseFee, kTestGasLimit);
+
+            publishing = !(threaded_kv_client1.wait_one_milli_for_subscription() && threaded_kv_client2.wait_one_milli_for_subscription());
+        }
+        // After at least one state change has been received, close the server-side RPC stream
+        state_change_source->close();
+
+        // then wait for consumer thread termination and get the client-side RPC result
+        const auto status1 = threaded_kv_client1.join_and_finish();
+        const auto status2 = threaded_kv_client2.join_and_finish();
+
+        CHECK(status1.ok());
+        CHECK(status2.ok());
+        CHECK(threaded_kv_client1.responses().size() > 0);
+        CHECK(threaded_kv_client2.responses().size() > 0);
+    }
+
+    SECTION("StateChanges KO: token already in use", "[silkworm][node][rpc]") {
+        auto* state_change_source = test.backend->state_change_source();
+
+        std::mutex token_reset_mutex;
+        std::condition_variable token_reset_condition;
+        bool token_reset{false};
+        state_change_source->register_token_observer([&](std::optional<StateChangeToken> token) {
+            if (token) {
+                // Purposely reset the subscription token
+                state_change_source->set_token(0);
+
+                std::unique_lock token_reset_lock{token_reset_mutex};
+                token_reset = true;
+                token_reset_lock.unlock();
+                token_reset_condition.notify_one();
+            }
+        });
+
+        // Start a StateChanges server-streaming call
+        grpc::ClientContext context1;
+        remote::StateChangeRequest request1;
+        auto subscribe_reply_reader1 = kv_client.statechanges_start(&context1, request1);
+
+        // Wait for token reset condition to happen
+        std::unique_lock token_reset_lock{token_reset_mutex};
+        token_reset_condition.wait(token_reset_lock, [&]{ return token_reset; });
+
+        // Start another StateChanges server-streaming call and check it fails
+        grpc::ClientContext context2;
+        remote::StateChangeRequest request2;
+        auto subscribe_reply_reader2 = kv_client.statechanges_start(&context2, request2);
+
+        const auto status2 = subscribe_reply_reader2->Finish();
+        CHECK(!status2.ok());
+        CHECK(status2.error_code() == grpc::StatusCode::ALREADY_EXISTS);
+        CHECK(status2.error_message().find("assigned consumer token already in use") != std::string::npos);
+
+        // Close the server-side RPC stream and check first call completes successfully
+        state_change_source->close();
+
+        const auto status1 = subscribe_reply_reader1->Finish();
+        CHECK(status1.ok());
     }
 }
 
@@ -896,7 +1082,7 @@ class TxIdleTimeoutGuard {
 };
 
 TEST_CASE("BackEndKvServer E2E: bidirectional idle timeout", "[silkworm][node][rpc]") {
-    TxIdleTimeoutGuard timeout_guard{10};
+    TxIdleTimeoutGuard timeout_guard{100};
     NodeSettings node_settings;
     BackEndKvE2eTest test{silkworm::log::Level::kNone, node_settings};
     test.fill_tables();
@@ -919,7 +1105,7 @@ TEST_CASE("BackEndKvServer E2E: bidirectional idle timeout", "[silkworm][node][r
         grpc::ClientContext context;
         const auto tx_reader_writer = kv_client.tx_start(&context);
         remote::Pair response;
-        tx_reader_writer->Read(&response);
+        CHECK(tx_reader_writer->Read(&response));
         CHECK(response.txid() != 0);
         auto status = tx_reader_writer->Finish();
         CHECK(!status.ok());
@@ -931,15 +1117,14 @@ TEST_CASE("BackEndKvServer E2E: bidirectional idle timeout", "[silkworm][node][r
         grpc::ClientContext context;
         const auto tx_reader_writer = kv_client.tx_start(&context);
         remote::Pair response;
-        tx_reader_writer->Read(&response);
+        CHECK(tx_reader_writer->Read(&response));
         CHECK(response.txid() != 0);
         remote::Cursor open;
         open.set_op(remote::Op::OPEN);
         open.set_bucketname(kTestMap.name);
-        const bool write_ok = tx_reader_writer->Write(open);
-        CHECK(write_ok);
+        CHECK(tx_reader_writer->Write(open));
         response.clear_txid();
-        tx_reader_writer->Read(&response);
+        CHECK(tx_reader_writer->Read(&response));
         CHECK(response.cursorid() != 0);
         auto status = tx_reader_writer->Finish();
         CHECK(!status.ok());
@@ -2057,14 +2242,14 @@ TEST_CASE("BackEndKvServer E2E: bidirectional max TTL duration", "[silkworm][nod
         grpc::ClientContext context;
         const auto tx_reader_writer = kv_client.tx_start(&context);
         remote::Pair response;
-        tx_reader_writer->Read(&response);
+        CHECK(tx_reader_writer->Read(&response));
         CHECK(response.txid() != 0);
         remote::Cursor open;
         open.set_op(remote::Op::OPEN);
         open.set_bucketname(kTestMap.name);
         CHECK(tx_reader_writer->Write(open));
         response.clear_txid();
-        tx_reader_writer->Read(&response);
+        CHECK(tx_reader_writer->Read(&response));
         const auto cursor_id = response.cursorid();
         CHECK(cursor_id != 0);
         remote::Cursor next1;
@@ -2072,7 +2257,7 @@ TEST_CASE("BackEndKvServer E2E: bidirectional max TTL duration", "[silkworm][nod
         next1.set_cursor(cursor_id);
         CHECK(tx_reader_writer->Write(next1));
         response.clear_cursorid();
-        tx_reader_writer->Read(&response);
+        CHECK(tx_reader_writer->Read(&response));
         CHECK(response.k() == "AA");
         CHECK(response.v() == "00");
         std::this_thread::sleep_for(std::chrono::milliseconds{kCustomMaxTimeToLive});
@@ -2081,7 +2266,7 @@ TEST_CASE("BackEndKvServer E2E: bidirectional max TTL duration", "[silkworm][nod
         next2.set_cursor(cursor_id);
         CHECK(tx_reader_writer->Write(next2));
         response.clear_cursorid();
-        tx_reader_writer->Read(&response);
+        CHECK(tx_reader_writer->Read(&response));
         CHECK(response.k() == "BB");
         CHECK(response.v() == "11");
         tx_reader_writer->WritesDone();
@@ -2093,14 +2278,14 @@ TEST_CASE("BackEndKvServer E2E: bidirectional max TTL duration", "[silkworm][nod
         grpc::ClientContext context;
         const auto tx_reader_writer = kv_client.tx_start(&context);
         remote::Pair response;
-        tx_reader_writer->Read(&response);
+        CHECK(tx_reader_writer->Read(&response));
         CHECK(response.txid() != 0);
         remote::Cursor open;
         open.set_op(remote::Op::OPEN);
         open.set_bucketname(kTestMultiMap.name);
         CHECK(tx_reader_writer->Write(open));
         response.clear_txid();
-        tx_reader_writer->Read(&response);
+        CHECK(tx_reader_writer->Read(&response));
         const auto cursor_id = response.cursorid();
         CHECK(cursor_id != 0);
         remote::Cursor next_dup1;
@@ -2108,7 +2293,7 @@ TEST_CASE("BackEndKvServer E2E: bidirectional max TTL duration", "[silkworm][nod
         next_dup1.set_cursor(cursor_id);
         CHECK(tx_reader_writer->Write(next_dup1));
         response.clear_cursorid();
-        tx_reader_writer->Read(&response);
+        CHECK(tx_reader_writer->Read(&response));
         CHECK(response.k() == "AA");
         CHECK(response.v() == "00");
         std::this_thread::sleep_for(std::chrono::milliseconds{kCustomMaxTimeToLive});
@@ -2117,7 +2302,7 @@ TEST_CASE("BackEndKvServer E2E: bidirectional max TTL duration", "[silkworm][nod
         next_dup2.set_cursor(cursor_id);
         CHECK(tx_reader_writer->Write(next_dup2));
         response.clear_cursorid();
-        tx_reader_writer->Read(&response);
+        CHECK(tx_reader_writer->Read(&response));
         CHECK(response.k() == "AA");
         CHECK(response.v() == "11");
         tx_reader_writer->WritesDone();

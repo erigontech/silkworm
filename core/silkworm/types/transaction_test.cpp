@@ -84,12 +84,40 @@ TEST_CASE("EIP-2930 Transaction RLP") {
         access_list,
     };
 
-    Bytes encoded{};
-    rlp::encode(encoded, txn);
+    // Raw serialization
+    Bytes encoded_raw;
+    rlp::encode(encoded_raw, txn, /*for_signing=*/false, /*wrap_eip2718_into_string=*/false);
 
     Transaction decoded;
-    ByteView view{encoded};
-    REQUIRE(rlp::decode<Transaction>(view, decoded) == DecodingResult::kOk);
+    ByteView view{encoded_raw};
+    REQUIRE(rlp::decode_transaction(view, decoded, rlp::Eip2718Wrapping::kNone) == DecodingResult::kOk);
+    CHECK(view.empty());
+    CHECK(decoded == txn);
+
+    view = encoded_raw;
+    CHECK(rlp::decode_transaction(view, decoded, rlp::Eip2718Wrapping::kString) ==
+          DecodingResult::kUnexpectedEip2718Serialization);
+
+    view = encoded_raw;
+    REQUIRE(rlp::decode_transaction(view, decoded, rlp::Eip2718Wrapping::kBoth) == DecodingResult::kOk);
+    CHECK(view.empty());
+    CHECK(decoded == txn);
+
+    // Wrap into an RLP string
+    Bytes encoded_wrapped;
+    rlp::encode(encoded_wrapped, txn, /*for_signing=*/false, /*wrap_eip2718_into_string=*/true);
+
+    view = encoded_wrapped;
+    CHECK(rlp::decode_transaction(view, decoded, rlp::Eip2718Wrapping::kNone) ==
+          DecodingResult::kUnexpectedEip2718Serialization);
+
+    view = encoded_wrapped;
+    REQUIRE(rlp::decode_transaction(view, decoded, rlp::Eip2718Wrapping::kString) == DecodingResult::kOk);
+    CHECK(view.empty());
+    CHECK(decoded == txn);
+
+    view = encoded_wrapped;
+    REQUIRE(rlp::decode_transaction(view, decoded, rlp::Eip2718Wrapping::kBoth) == DecodingResult::kOk);
     CHECK(view.empty());
     CHECK(decoded == txn);
 }

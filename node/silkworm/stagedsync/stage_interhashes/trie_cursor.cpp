@@ -25,7 +25,41 @@ namespace silkworm::trie {
 Cursor::Cursor(mdbx::cursor& db_cursor, PrefixSet& changed, etl::Collector* collector, ByteView prefix)
     : db_cursor_{db_cursor}, changed_{changed}, collector_{collector}, prefix_{prefix} {
     subnodes_.reserve(64);
+    prefetch_data(true);
     consume_node(/*key=*/{}, /*exact=*/true);
+}
+
+void Cursor::prefetch_data(bool init) {
+    if (!prefetched_data_.empty()) {
+        return;
+    }
+
+    if (db_cursor_.eof()) {
+        if (!init) {
+            return;  // We've already loaded all nodes in Trie
+        }
+        if (prefix_.empty()) {
+            (void)db_cursor_.to_first(false);
+        } else {
+            (void)db_cursor_.lower_bound(db::to_slice(prefix_), false);
+        }
+    }
+    if (db_cursor_.eof()) {
+        return;
+    }
+
+    const auto prefix_slice{db::to_slice(prefix_)};
+    auto data{db_cursor_.current(false)};
+    while (data) {
+        if (!prefix_.empty() && !data.key.starts_with(prefix_slice)) {
+            break;
+        }
+        prefetched_data_.emplace_back(Bytes{db::from_slice(data.key)}, Bytes{db::from_slice(data.value)});
+        data = db_cursor_.to_next(false);
+        if (prefetched_data_.size() >= 10240) {
+            break;
+        }
+    }
 }
 
 void Cursor::consume_node(ByteView key, bool exact) {

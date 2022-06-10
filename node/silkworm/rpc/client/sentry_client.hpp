@@ -20,44 +20,16 @@
 #include <chrono>
 #include <functional>
 #include <memory>
-#include <system_error>
 #include <unordered_set>
 
 #include <grpcpp/grpcpp.h>
 #include <gsl/pointers>
 
 #include <silkworm/common/assert.hpp>
-#include <silkworm/common/log.hpp>
 #include <silkworm/rpc/client/call.hpp>
 #include <p2psentry/sentry.grpc.pb.h>
 
 namespace silkworm::rpc {
-
-using SentryStubPtr = std::unique_ptr<sentry::Sentry::Stub>;
-
-class AsyncPeerCountCall : public AsyncUnaryCall<
-    sentry::PeerCountRequest,
-    sentry::PeerCountReply,
-    sentry::Sentry::StubInterface,
-    sentry::Sentry::Stub,
-    &sentry::Sentry::StubInterface::PrepareAsyncPeerCount> {
-  public:
-    explicit AsyncPeerCountCall(grpc::CompletionQueue* queue, CompletionFunc completion_handler, SentryStubPtr& stub);
-
-    bool proceed(bool ok) override;
-};
-
-class AsyncNodeInfoCall : public AsyncUnaryCall<
-    google::protobuf::Empty,
-    types::NodeInfoReply,
-    sentry::Sentry::StubInterface,
-    sentry::Sentry::Stub,
-    &sentry::Sentry::StubInterface::PrepareAsyncNodeInfo> {
-  public:
-    explicit AsyncNodeInfoCall(grpc::CompletionQueue* queue, CompletionFunc completion_handler, SentryStubPtr& stub);
-
-    bool proceed(bool ok) override;
-};
 
 using PeerCountCallback = std::function<void(grpc::Status, const sentry::PeerCountReply&)>;
 using NodeInfoCallback = std::function<void(grpc::Status, const types::NodeInfoReply&)>;
@@ -103,7 +75,7 @@ class RemoteSentryClient : public SentryClient {
     }
 
     grpc::CompletionQueue* queue_;
-    SentryStubPtr stub_;
+    std::unique_ptr<sentry::Sentry::Stub> stub_;
     std::unordered_set<std::unique_ptr<AsyncCall>> requests_;
 };
 

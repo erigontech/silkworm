@@ -29,13 +29,13 @@ if(NOT SILKWORM_HAS_PARENT)
   cable_set_build_type(DEFAULT Release CONFIGURATION_TYPES Release Debug)
 
   if(NOT CMAKE_TOOLCHAIN_FILE)
-    set(CMAKE_TOOLCHAIN_FILE ${CMAKE_CURRENT_SOURCE_DIR}/cmake/toolchain/cxx17.cmake CACHE FILEPATH "" FORCE)
+    set(CMAKE_TOOLCHAIN_FILE ${CMAKE_CURRENT_SOURCE_DIR}/cmake/toolchain/cxx20.cmake CACHE FILEPATH "" FORCE)
   endif()
 
   include(third_party/evmone/cmake/cable/HunterGate.cmake)
   HunterGate(
-    URL "https://github.com/cpp-pm/hunter/archive/v0.23.317.tar.gz"
-    SHA1 "fbdd94b1966d351384e27b02c8d134915b1131d6"
+    URL "https://github.com/cpp-pm/hunter/archive/v0.24.1.tar.gz"
+    SHA1 "4942227a6e6f5e64414c55b97ef98609de199d18"
     LOCAL
     )
 endif()
@@ -49,8 +49,8 @@ include(silkworm/third_party/evmone/cmake/cable/bootstrap.cmake)
 include(CableBuildInfo)
 include(silkworm/third_party/evmone/cmake/cable/HunterGate.cmake)
 HunterGate(
-  URL "https://github.com/cpp-pm/hunter/archive/v0.23.317.tar.gz"
-  SHA1 "fbdd94b1966d351384e27b02c8d134915b1131d6"
+  URL "https://github.com/cpp-pm/hunter/archive/v0.24.1.tar.gz"
+  SHA1 "4942227a6e6f5e64414c55b97ef98609de199d18"
   FILEPATH "${CMAKE_SOURCE_DIR}/silkworm/cmake/Hunter/config.cmake"
 )
 

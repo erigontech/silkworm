@@ -22,10 +22,10 @@ Part of the compatibility layer with the Erigon DB format;
 see its package dbutils.
 */
 
+#include <span>
 #include <string>
 
 #include <absl/container/btree_map.h>
-#include <gsl/span>
 
 #include <silkworm/common/base.hpp>
 #include <silkworm/db/mdbx.hpp>
@@ -109,7 +109,7 @@ Bytes storage_prefix(ByteView address, uint64_t incarnation);
 Bytes block_key(BlockNum block_number);
 
 // Erigon HeaderKey & BlockBodyKey
-Bytes block_key(BlockNum block_number, gsl::span<const uint8_t, kHashLength> hash);
+Bytes block_key(BlockNum block_number, std::span<const uint8_t, kHashLength> hash);
 
 Bytes storage_change_key(BlockNum block_number, const evmc::address& address, uint64_t incarnation);
 

@@ -115,6 +115,8 @@ class IntraBlockState {
 
     uint64_t get_refund() const noexcept { return refund_; }
 
+    const FlatHashSet<evmc::address>& touched() const noexcept { return touched_; }
+
   private:
     friend class state::CreateDelta;
     friend class state::UpdateDelta;

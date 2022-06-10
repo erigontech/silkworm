@@ -45,9 +45,9 @@ class DelegatingTracer : public evmone::Tracer {
         tracer_.on_execution_start(rev, msg, code);
     }
 
-    void on_instruction_start(uint32_t pc, const intx::uint256*, int,
+    void on_instruction_start(uint32_t pc, const intx::uint256* stack_top, int stack_height,
                               const evmone::ExecutionState& state) noexcept override {
-        tracer_.on_instruction_start(pc, state, intra_block_state_);
+        tracer_.on_instruction_start(pc, stack_top, stack_height, state, intra_block_state_);
     }
 
     void on_execution_end(const evmc_result& result) noexcept override {
@@ -197,14 +197,6 @@ evmc::result EVM::call(const evmc_message& message) noexcept {
         return evmc::result{res};
     }
 
-    const bool precompiled{is_precompiled(message.code_address)};
-    const evmc_revision rev{revision()};
-
-    // https://eips.ethereum.org/EIPS/eip-161
-    if (value == 0 && rev >= EVMC_SPURIOUS_DRAGON && !precompiled && !state_.exists(message.code_address)) {
-        return evmc::result{res};
-    }
-
     const auto snapshot{state_.take_snapshot()};
 
     if (message.kind == EVMC_CALL) {
@@ -218,7 +210,7 @@ evmc::result EVM::call(const evmc_message& message) noexcept {
         }
     }
 
-    if (precompiled) {
+    if (is_precompiled(message.code_address)) {
         const uint8_t num{message.code_address.bytes[kAddressLength - 1]};
         SilkpreContract contract{kSilkpreContracts[num - 1]};
         const ByteView input{message.input_data, message.input_size};
@@ -236,9 +228,15 @@ evmc::result EVM::call(const evmc_message& message) noexcept {
                 res.status_code = EVMC_PRECOMPILE_FAILURE;
             }
         }
+        // Explicitly notify registered tracers (if any)
+        if (!tracers_.empty()) {
+            for (auto tracer : tracers_) {
+                tracer.get().on_precompiled_run(res, message.gas, state_);
+            }
+        }
     } else {
         const ByteView code{state_.get_code(message.code_address)};
-        if (code.empty()) {
+        if (code.empty() && tracers_.empty()) {  // Do not skip execution if there are any tracers
             return evmc::result{res};
         }
 
@@ -346,6 +344,7 @@ void EVM::add_tracer(EvmTracer& tracer) noexcept {
 
     const auto vm{static_cast<evmone::VM*>(evm1_)};
     vm->add_tracer(std::make_unique<DelegatingTracer>(tracer, state_));
+    tracers_.push_back(std::ref(tracer));
 }
 
 uint8_t EVM::number_of_precompiles() const noexcept {

@@ -17,20 +17,19 @@
 #include <string>
 #include <thread>
 
+#include <CLI/CLI.hpp>
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/ip/address.hpp>
 #include <boost/asio/signal_set.hpp>
 #include <boost/process/environment.hpp>
-#include <CLI/CLI.hpp>
-#include <magic_enum.hpp>
 
-#include <silkworm/buildinfo.h>
 #include <silkworm/backend/ethereum_backend.hpp>
+#include <silkworm/buildinfo.h>
 #include <silkworm/chain/config.hpp>
 #include <silkworm/common/directories.hpp>
 #include <silkworm/common/log.hpp>
 #include <silkworm/common/settings.hpp>
-#include <silkworm/rpc/backend_kv_server.hpp>
+#include <silkworm/rpc/server/backend_kv_server.hpp>
 #include <silkworm/rpc/util.hpp>
 
 //! Assemble the full node name using the Cable build information
@@ -81,36 +80,44 @@ int parse_command_line(int argc, char* argv[], BackEndKvSettings& settings) {
         std::string data_dir{silkworm::DataDirectory::get_default_storage_path().string()};
         std::string etherbase_address{""};
         uint32_t num_contexts{std::thread::hardware_concurrency() / 2};
-        app.add_option("--datadir", data_dir, "The path to data directory", true);
-        app.add_option("--etherbase", etherbase_address, "The chain identifier as string", true);
+        uint32_t max_readers{silkworm::db::EnvConfig{}.max_readers};
+        app.add_option("--datadir", data_dir, "The path to data directory")->capture_default_str();
+        app.add_option("--etherbase", etherbase_address, "The chain identifier as string")->capture_default_str();
         // TODO(canepat) add check on etherbase using EthAddressValidator [TBD]
-        app.add_option("--numContexts", num_contexts, "The number of running contexts", true);
+        app.add_option("--contexts", num_contexts, "The number of running contexts")->capture_default_str();
+        app.add_option("--mdbx.max.readers", max_readers, "The maximum number of MDBX readers")
+            ->capture_default_str()
+            ->check(CLI::Range(1, 32767));
 
         // RPC Server options
         app.add_option("--private.api.addr", node_settings.private_api_addr,
-            "Private API network address to serve remote database interface\n"
-            "An empty string means to not start the listener\n"
-            "Use the endpoint form i.e. ip-address:port\n"
-            "DO NOT EXPOSE TO THE INTERNET",
-            true);
+                       "Private API network address to serve remote database interface\n"
+                       "An empty string means to not start the listener\n"
+                       "Use the endpoint form i.e. ip-address:port\n"
+                       "DO NOT EXPOSE TO THE INTERNET")
+            ->capture_default_str();
         // TODO(canepat) add check on private.api.addr using IPEndPointValidator
-        app.add_option("--sentry.api.addr", node_settings.sentry_api_addr, "Sentry api endpoint", true);
+        app.add_option("--sentry.api.addr", node_settings.sentry_api_addr, "Sentry api endpoint")
+            ->capture_default_str();
         // TODO(canepat) add check on sentry_api_addr using IPEndPointValidator
 
         // Chain options
         auto& chain_opts = *app.add_option_group("Chain", "Chain selection options");
         auto chain_name = chain_opts.add_option("--chain", "Name of the network to join (default: \"mainnet\")")
-            ->transform(CLI::Transformer(silkworm::get_known_chains_map(), CLI::ignore_case));
-        chain_opts.add_option("--networkid", node_settings.network_id,
-            "Explicitly set network id\n"
-            "For known networks: use --chain <testnet_name> instead",
-            true)
+                              ->transform(CLI::Transformer(silkworm::get_known_chains_map(), CLI::ignore_case));
+        chain_opts
+            .add_option("--networkid", node_settings.network_id,
+                        "Explicitly set network id\n"
+                        "For known networks: use --chain <testnet_name> instead")
+            ->capture_default_str()
             ->excludes(chain_name);
 
         // Logging options
         auto& log_opts = *app.add_option_group("Log", "Logging options");
-        log_opts.add_option("--log.verbosity", log_settings.log_verbosity, "Sets log verbosity", true)
-            ->check(CLI::Range(static_cast<uint32_t>(silkworm::log::Level::kCritical), static_cast<uint32_t>(silkworm::log::Level::kTrace)))
+        log_opts.add_option("--log.verbosity", log_settings.log_verbosity, "Sets log verbosity")
+            ->capture_default_str()
+            ->check(CLI::Range(static_cast<uint32_t>(silkworm::log::Level::kCritical),
+                               static_cast<uint32_t>(silkworm::log::Level::kTrace)))
             ->default_val(std::to_string(static_cast<uint32_t>(silkworm::log::Level::kCritical)));
         log_opts.add_flag("--log.stdout", log_settings.log_std_out, "Outputs to std::out instead of std::err");
         log_opts.add_flag("--log.nocolor", log_settings.log_nocolor, "Disable colors on log lines")
@@ -142,17 +149,17 @@ int parse_command_line(int argc, char* argv[], BackEndKvSettings& settings) {
         }
 
         node_settings.data_directory = std::make_unique<silkworm::DataDirectory>(data_dir, /*create=*/false);
-        node_settings.chaindata_env_config = silkworm::db::EnvConfig{
-            node_settings.data_directory->chaindata().path().string(),
-            /*create=*/false,
-            /*readonly=*/true
-        };
+        node_settings.chaindata_env_config =
+            silkworm::db::EnvConfig{node_settings.data_directory->chaindata().path().string(),
+                                    /*create=*/false,
+                                    /*readonly=*/true};
+        node_settings.chaindata_env_config.max_readers = max_readers;
 
         server_settings.set_address_uri(node_settings.private_api_addr);
         server_settings.set_num_contexts(num_contexts);
 
         return 0;
-    } catch (const CLI::ParseError &pe) {
+    } catch (const CLI::ParseError& pe) {
         return app.exit(pe);
     }
 }
@@ -174,18 +181,21 @@ int main(int argc, char* argv[]) {
     // Initialize logging with custom settings
     silkworm::log::init(log_settings);
 
-    //TODO(canepat): this could be an option in Silkworm logging facility
+    // TODO(canepat): this could be an option in Silkworm logging facility
     silkworm::rpc::Grpc2SilkwormLogGuard log_guard;
 
     const auto node_name{get_node_name_from_build_info()};
     SILK_LOG << "BackEndKvServer build info: " << node_name << " " << get_library_versions();
 
     try {
-        SILK_LOG << "BackEndKvServer launched with address: " << server_settings.address_uri() << ", contexts: " << server_settings.num_contexts();
+        SILK_LOG << "BackEndKvServer launched with address: " << server_settings.address_uri()
+                 << ", contexts: " << server_settings.num_contexts();
 
         auto database_env = silkworm::db::open_env(node_settings.chaindata_env_config);
         silkworm::EthereumBackEnd backend{node_settings, &database_env};
         backend.set_node_name(node_name);
+
+        SILK_INFO << "BackEndKvServer MDBX max readers: " << database_env.max_readers();
 
         silkworm::rpc::BackEndKvServer server{server_settings, backend};
         server.build_and_start();
@@ -197,10 +207,8 @@ int main(int argc, char* argv[]) {
         signals.async_wait([&](const boost::system::error_code& error, int signal_number) {
             std::cout << "\n";
             SILK_INFO << "Signal caught, error: " << error << " number: " << signal_number;
-            std::thread shutdown_thread{[&server]() {
-                server.shutdown();
-            }};
-            shutdown_thread.detach();
+            backend.close();
+            server.shutdown();
         });
 
         SILK_LOG << "BackEndKvServer is now running [pid=" << pid << ", main thread=" << tid << "]";

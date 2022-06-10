@@ -44,6 +44,7 @@ TEST_CASE("EthereumBackEnd", "[silkworm][backend][ethereum_backend]") {
         CHECK(backend.node_name() == kDefaultNodeName);
         CHECK(!backend.etherbase());
         CHECK(backend.sentry_addresses().empty());
+        CHECK(backend.state_change_source() != nullptr);
     }
 
     SECTION("EthereumBackEnd::set_node_name", "[silkworm][backend][ethereum_backend]") {
@@ -74,6 +75,11 @@ TEST_CASE("EthereumBackEnd", "[silkworm][backend][ethereum_backend]") {
         node_settings.sentry_api_addr = kTestSentryAddress1 + "," + kTestSentryAddress2;
         EthereumBackEnd backend{node_settings, &database_env};
         CHECK(backend.sentry_addresses() == std::vector<std::string>{kTestSentryAddress1, kTestSentryAddress2});
+    }
+
+    SECTION("EthereumBackEnd::close", "[silkworm][backend][ethereum_backend]") {
+        EthereumBackEnd backend{node_settings, &database_env};
+        CHECK_NOTHROW(backend.close());
     }
 }
 

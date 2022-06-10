@@ -26,8 +26,6 @@
 namespace silkworm::rpc {
 
 int CompletionEndPoint::poll_one() {
-    SILK_TRACE << "CompletionEndPoint::poll_one START";
-
     int num_completed{0}; // returned when next_status == grpc::CompletionQueue::TIMEOUT
 
     void* tag{nullptr};
@@ -43,8 +41,26 @@ int CompletionEndPoint::poll_one() {
         num_completed = -1;
     }
 
-    SILK_TRACE << "CompletionEndPoint::poll_one next_status=" << next_status << " END";
     return num_completed;
+}
+
+bool CompletionEndPoint::post_one(boost::asio::io_context& scheduler) {
+    SILK_TRACE << "CompletionEndPoint::post_one START";
+    void* tag{nullptr};
+    bool ok{false};
+    const auto got_event = queue_.Next(&tag, &ok);
+    if (got_event) {
+        // Post the event completion on the passed io_context scheduler.
+        CompletionTag completion_tag{reinterpret_cast<TagProcessor*>(tag), ok};
+        SILK_DEBUG << "CompletionEndPoint::post_one post operation: " << completion_tag.processor;
+        scheduler.post([completion_tag]() {
+            (*completion_tag.processor)(completion_tag.ok);
+        });
+    } else {
+        SILK_DEBUG << "CompletionEndPoint::run shutdown";
+    }
+    SILK_TRACE << "CompletionEndPoint::post_one got_event=" << got_event << " END";
+    return !got_event;
 }
 
 void CompletionEndPoint::shutdown() {

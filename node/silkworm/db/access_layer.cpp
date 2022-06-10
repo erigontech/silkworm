@@ -132,7 +132,7 @@ void write_total_difficulty(mdbx::txn& txn, const Bytes& key, const intx::uint25
 }
 
 void write_total_difficulty(mdbx::txn& txn, BlockNum block_number, const uint8_t (&hash)[kHashLength],
-                            intx::uint256& total_difficulty) {
+                            const intx::uint256& total_difficulty) {
     auto key{block_key(block_number, hash)};
     write_total_difficulty(txn, key, total_difficulty);
 }
@@ -199,10 +199,10 @@ bool read_block_by_number(mdbx::txn& txn, BlockNum number, bool read_senders, Bl
     }
     SILKWORM_ASSERT(data.value.length() == kHashLength);
     const auto hash_ptr{static_cast<const uint8_t*>(data.value.data())};
-    return read_block(txn, gsl::span<const uint8_t, kHashLength>{hash_ptr, kHashLength}, number, read_senders, block);
+    return read_block(txn, std::span<const uint8_t, kHashLength>{hash_ptr, kHashLength}, number, read_senders, block);
 }
 
-bool read_block(mdbx::txn& txn, gsl::span<const uint8_t, kHashLength> hash, BlockNum number, bool read_senders,
+bool read_block(mdbx::txn& txn, std::span<const uint8_t, kHashLength> hash, BlockNum number, bool read_senders,
                 Block& block) {
     // Read header
     const Bytes key{block_key(number, hash)};

@@ -171,7 +171,7 @@ trie::PrefixSet InterHashes::gather_forward_account_changes(
                     }
                 }
 
-                ret.insert(trie::unpack_nibbles(hashed_address.bytes), changeset_value_view.empty());
+                ret.insert(trie::unpack_nibbles(hashed_address.bytes));
             }
             changeset_data = account_changeset.to_current_next_multi(/*throw_notfound=*/false);
         }
@@ -413,7 +413,6 @@ evmc::bytes32 InterHashes::calculate_root(db::RWTxn& txn, trie::PrefixSet& accou
     auto trie_cursor_key{trie_cursor.key()};
 
     while (trie_cursor_key.has_value()) {
-
         if (trie_cursor.can_skip_state()) {
             auto trie_cursor_hash{trie_cursor.hash()};
             SILKWORM_ASSERT(trie_cursor_hash != nullptr);

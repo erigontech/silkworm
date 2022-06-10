@@ -17,16 +17,15 @@
 #include "prefix_set.hpp"
 
 #include <algorithm>
-#include <cassert>
 
 #include <silkworm/common/util.hpp>
 
 namespace silkworm::trie {
 
-void PrefixSet::insert(ByteView key, bool marker) { insert(Bytes(key), marker); }
+void PrefixSet::insert(ByteView key) { insert(Bytes(key)); }
 
-void PrefixSet::insert(Bytes&& key, bool marker) {
-    nibbled_keys_.emplace_back(key, marker);
+void PrefixSet::insert(Bytes&& key) {
+    nibbled_keys_.emplace_back(key);
     sorted_ = false;
 }
 
@@ -48,16 +47,16 @@ bool PrefixSet::contains(ByteView prefix) {
     // - all prefixes inquired for have always a shorter len than keys
 
     // Find very first item where nibbled key is lower-than-equal prefix
-    while (lte_index_ > 0 && lte_index_ <= max_index_ && nibbled_keys_[lte_index_].first > prefix) {
+    while (lte_index_ > 0 && lte_index_ <= max_index_ && nibbled_keys_[lte_index_] > prefix) {
         --lte_index_;
     }
 
     // Step by one to find the item containing prefix (if any)
     while (true) {
-        if (has_prefix(nibbled_keys_[lte_index_].first, prefix)) {
+        if (has_prefix(nibbled_keys_[lte_index_], prefix)) {
             return true;
         }
-        if (nibbled_keys_[lte_index_].first > prefix) {
+        if (nibbled_keys_[lte_index_] > prefix) {
             return false;
         }
         if (lte_index_ == max_index_) {
@@ -65,17 +64,6 @@ bool PrefixSet::contains(ByteView prefix) {
         }
         ++lte_index_;
     }
-}
-
-std::pair<bool, ByteView> PrefixSet::contains_and_next_marked(ByteView prefix) {
-    bool left{contains(prefix)};  // After this we're sure the lte_index has been moved
-    ByteView right{};
-    for (size_t i{lte_index_ + 1}; !nibbled_keys_.empty() && i <= max_index_; ++i) {
-        if (nibbled_keys_[i].second) {
-            right = ByteView(nibbled_keys_[i].first);
-        }
-    }
-    return {left, right};
 }
 
 void PrefixSet::ensure_sorted() {

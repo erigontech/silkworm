@@ -32,46 +32,47 @@ void PrefixSet::insert(Bytes&& key) {
 bool PrefixSet::contains(ByteView prefix) {
     // Applies uniqueness and sorting
     ensure_sorted();
-    if (nibbled_keys_.empty()) {
-        return false;
-    }
 
     // We optimize for the most common case when contains() inquires are made with increasing prefixes,
     // e.g. contains("00"), contains("04"), contains("0b"), contains("0b05"), contains("0c"), contains("0f"), ...
     // instead of some random order.
-    // A note on string-viewish lexicographic comparators:
-    // 1) A comparison amongst max common prefix length is performed. _Traits::compare(_Left, _Right, (_STD
-    // min)(_Left_size, _Right_size)); 2) If the above does not return equality the shorter element is the lower
-    // Due to the above we must consider:
-    // - all nibbled keys have same length as, in trie, are all "nibblified" hashes -> 32*2 == 64bytes
-    // - all prefixes inquired for have always a shorter len than keys
 
-    // Find very first item where nibbled key is lower-than-equal prefix
-    while (lte_index_ > 0 && lte_index_ <= max_index_ && nibbled_keys_[lte_index_] > prefix) {
-        --lte_index_;
+    if (nibbled_keys_.empty()) {
+        return false;  // There are no keys starting with prefix
+    } else if (prefix.empty()) {
+        nibbled_keys_it_ = nibbled_keys_.begin();  // Any string starts with an empty string
+        return true;
     }
 
-    // Step by one to find the item containing prefix (if any)
-    while (true) {
-        if (has_prefix(nibbled_keys_[lte_index_], prefix)) {
-            return true;
+    // Should inquired prefix be already contained in last found key
+    // then return early
+    if (has_prefix(*nibbled_keys_it_, prefix)) {
+        return true;
+    } else {
+        // This should rarely or not happen: it means current query prefix is < than prev query prefix
+        // We need to reposition backwards
+        while (*nibbled_keys_it_ > prefix && nibbled_keys_it_ != nibbled_keys_.begin()) {
+            --nibbled_keys_it_;
         }
-        if (nibbled_keys_[lte_index_] > prefix) {
-            return false;
-        }
-        if (lte_index_ == max_index_) {
-            return false;
-        }
-        ++lte_index_;
     }
+
+    // Search for a new item containing prefix i.e. GTE than prefix
+    auto tmp_it{std::lower_bound(nibbled_keys_it_, nibbled_keys_.end(), prefix)};
+    if (tmp_it == nibbled_keys_.end() || !has_prefix(*tmp_it, prefix)) {
+        nibbled_keys_it_ = --nibbled_keys_.end();  // Position to very last key
+        return false;
+    }
+
+    // Found a matching item. Mark the new starting point for next search (assuming next prefix > current prefix)
+    std::swap(nibbled_keys_it_, tmp_it);
+    return true;
 }
 
 void PrefixSet::ensure_sorted() {
     if (!sorted_) {
         std::sort(nibbled_keys_.begin(), nibbled_keys_.end());
         nibbled_keys_.erase(std::unique(nibbled_keys_.begin(), nibbled_keys_.end()), nibbled_keys_.end());
-        lte_index_ = 0;
-        max_index_ = nibbled_keys_.empty() ? 0 : nibbled_keys_.size() - 1;
+        nibbled_keys_it_ = nibbled_keys_.begin();
         sorted_ = true;
     }
 }

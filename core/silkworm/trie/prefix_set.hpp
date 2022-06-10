@@ -27,10 +27,9 @@ namespace silkworm::trie {
 /// If x ∈ S and x starts with y, then y ∈ S.
 /// Corresponds to RetainList in Erigon.
 class PrefixSet {
-
   public:
     //! \brief Constructs an empty set.
-    PrefixSet() = default;
+    PrefixSet() : nibbled_keys_it_{nibbled_keys_.begin()} {};
 
     // copyable
     PrefixSet(const PrefixSet& other) = default;
@@ -40,18 +39,16 @@ class PrefixSet {
     void insert(Bytes&& key);
 
     //! \brief Returns whether or not provided prefix is contained in any of the owned keys
-    //! \remarks Doesn't change the set logically, but is not marked const since it's not safe to call this method concurrently.
-    //! \see Erigon's RetainList::Retain
+    //! \remarks Doesn't change the set logically, but is not marked const since it's not safe to call this method
+    //! concurrently. \see Erigon's RetainList::Retain
     bool contains(ByteView prefix);
 
   private:
-
     void ensure_sorted();
 
-    std::vector<Bytes> nibbled_keys_;
-    bool sorted_{false};
-    size_t lte_index_{0}; // Index of the "LTE (<=)" key in the keys slice. Next one is "GT (>)"
-    size_t max_index_{0}; // Maximum settable index (to avoid recompute vector.size();
+    std::vector<Bytes> nibbled_keys_;               // Collection of nibbled keys
+    std::vector<Bytes>::iterator nibbled_keys_it_;  // Points to last found key in nibbled_keys_
+    bool sorted_{false};                            // Whether nibbled_keys_ has been unique-ed and sorted
 };
 
 }  // namespace silkworm::trie

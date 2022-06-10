@@ -20,6 +20,7 @@
 
 #include <CLI/CLI.hpp>
 
+#include <silkworm/buildinfo.h>
 #include <silkworm/common/settings.hpp>
 #include <silkworm/common/directories.hpp>
 #include <silkworm/common/log.hpp>
@@ -66,12 +67,14 @@ Stage::Result unwind(std::array<Stage*, N> stages, BlockNum unwind_point, Hash b
 
 // Main
 int main(int argc, char* argv[]) {
-    using std::string, std::cout, std::cerr, std::optional;
+    using std::string, std::cout, std::cerr, std::optional, std::to_string;
     using namespace std::chrono;
 
     // Default values
     CLI::App app{"Downloader. Connect to p2p sentry and start header/body downloading process (stages 1 and 2)"};
+    int return_value = 0;
 
+    try {
     NodeSettings node_settings{};
     node_settings.sentry_api_addr = "127.0.0.1:9091";
 
@@ -80,7 +83,6 @@ int main(int argc, char* argv[]) {
     log_settings.log_file = "downloader.log";
     log_settings.log_verbosity = log::Level::kInfo;
     log_settings.log_thousands_sep = '\'';
-    log_settings.log_nocolor = true;
 
     // test & measurement only parameters [to remove]
     BodySequence::kMaxBlocksPerMessage = 128;
@@ -89,13 +91,17 @@ int main(int argc, char* argv[]) {
     int noPeerDelayMilliseconds = 1000;  // BodySequence::kNoPeerDelay = std::chrono::milliseconds(1000)
 
     app.add_option("--max_blocks_per_req", BodySequence::kMaxBlocksPerMessage,
-                   "Max number of blocks requested to peers in a single request", true);
+                       "Max number of blocks requested to peers in a single request")
+            ->capture_default_str();
     app.add_option("--max_requests_per_peer", BodySequence::kPerPeerMaxOutstandingRequests,
-                   "Max number of pending request made to each peer", true);
+                       "Max number of pending request made to each peer")
+            ->capture_default_str();
     app.add_option("--request_deadline_s", requestDeadlineSeconds,
-                   "Time (secs) after which a response is considered lost and will be re-tried", true);
+                       "Time (secs) after which a response is considered lost and will be re-tried")
+            ->capture_default_str();
     app.add_option("--no_peer_delay_ms", noPeerDelayMilliseconds,
-                   "Time (msecs) to wait before making a new request when no peer accepted the last", true);
+                       "Time (msecs) to wait before making a new request when no peer accepted the last")
+            ->capture_default_str();
 
     BodySequence::kRequestDeadline = std::chrono::seconds(requestDeadlineSeconds);
     BodySequence::kNoPeerDelay = std::chrono::milliseconds(noPeerDelayMilliseconds);
@@ -106,17 +112,20 @@ int main(int argc, char* argv[]) {
 
     log::init(log_settings);
     log::set_thread_name("stage-loop    ");
-    log::Info() << "SILKWORM DOWNLOADER STARTING";
 
-    cout << "BlockExchange parameters:\n";
-    cout << "    --max_blocks_per_req: " << BodySequence::kMaxBlocksPerMessage << "\n";
-    cout << "    --max_requests_per_peer: " << BodySequence::kPerPeerMaxOutstandingRequests << "\n";
-    cout << "    --request_deadline_s: " << requestDeadlineSeconds << " secs\n";
-    cout << "    --no_peer_delay_ms: " << noPeerDelayMilliseconds << " milli-secs\n";
+        // Output BuildInfo
+        auto build_info{silkworm_get_buildinfo()};
+        log::Message("SILKWORM DOWNLOADER", {
+            "version", std::string(build_info->git_branch) + std::string(build_info->project_version),
+            "build", std::string(build_info->system_name) + "-" + std::string(build_info->system_processor)
+                             + " " + std::string(build_info->build_type),
+            "compiler", std::string(build_info->compiler_id) + " " + std::string(build_info->compiler_version)});
 
-    int return_value = 0;
+        log::Message("BlockExchange parameter", {"--max_blocks_per_req", to_string(BodySequence::kMaxBlocksPerMessage)});
+        log::Message("BlockExchange parameter", {"--max_requests_per_peer", to_string(BodySequence::kPerPeerMaxOutstandingRequests)});
+        log::Message("BlockExchange parameter", {"--request_deadline_s", to_string(requestDeadlineSeconds)});
+        log::Message("BlockExchange parameter", {"--no_peer_delay_ms", to_string(noPeerDelayMilliseconds)});
 
-    try {
         // Prepare database
         cmd::run_preflight_checklist(node_settings);
 
@@ -124,15 +133,12 @@ int main(int argc, char* argv[]) {
         ChainIdentity chain_identity;
         if (node_settings.chain_config->chain_id == ChainIdentity::mainnet.chain.chain_id)
             chain_identity = ChainIdentity::mainnet;
-        else if (node_settings.chain_config->chain_id == ChainIdentity::goerli.chain.chain_id)
-            chain_identity = ChainIdentity::goerli;
-        else
+        else // for Rinkey & Goerli we have not implemented the consensus engine yet; for Ropsten we lack genesis json file
             throw std::logic_error("Chain id=" + std::to_string(node_settings.chain_config->chain_id) + " not supported");
 
-        cout << "Chain/db status:\n"
-             << "   chain-id: " << chain_identity.chain.chain_id << "\n"
-             << "   genesis-hash: " << chain_identity.genesis_hash << "\n"
-             << "   hard-forks: " << chain_identity.distinct_fork_numbers().size() << "\n";
+        log::Message("Chain/db status", {"chain-id", to_string(chain_identity.chain.chain_id)});
+        log::Message("Chain/db status", {"genesis_hash", to_hex(chain_identity.genesis_hash)});
+        log::Message("Chain/db status", {"hard-forks", to_string(chain_identity.distinct_fork_numbers().size())});
 
         // Database access
         Db db{node_settings.chaindata_env_config};
@@ -141,9 +147,10 @@ int main(int argc, char* argv[]) {
         HeaderRetrieval headers(Db::ReadOnlyAccess{db});
         auto [head_hash, head_td] = headers.head_hash_and_total_difficulty();
         auto head_height = headers.head_height();
-        cout << "   head hash   = " << head_hash.to_hex() << "\n";
-        cout << "   head td     = " << intx::to_string(head_td) << "\n";
-        cout << "   head height = " << head_height << "\n\n" << std::flush;
+
+        log::Message("Chain/db status", {"head hash", head_hash.to_hex()});
+        log::Message("Chain/db status", {"head td", intx::to_string(head_td)});
+        log::Message("Chain/db status", {"head height", to_string(head_height)});
 
         // Sentry client - connects to sentry
         SentryClient sentry{node_settings.sentry_api_addr};
@@ -185,7 +192,11 @@ int main(int argc, char* argv[]) {
         message_receiving.join();
         stats_receiving.join();
         block_downloading.join();
-    } catch (std::exception& e) {
+    }
+    catch (const CLI::ParseError& ex) {
+        return_value = app.exit(ex);
+    }
+    catch (std::exception& e) {
         cerr << "Exception (type " << typeid(e).name() << "): " << e.what() << "\n";
         return_value = 1;
     }

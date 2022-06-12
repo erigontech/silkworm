@@ -31,23 +31,70 @@ std::ostream& operator<<(std::ostream& out, const ServerContext& c) {
     return out;
 }
 
-ServerContext::ServerContext(std::unique_ptr<grpc::ServerCompletionQueue> queue)
+ServerContext::ServerContext(std::unique_ptr<grpc::ServerCompletionQueue> queue, WaitMode wait_mode)
     : io_context_{std::make_shared<boost::asio::io_context>()},
-    server_queue_{std::move(queue)},
-    server_end_point_{std::make_unique<CompletionEndPoint>(*server_queue_)},
-    client_queue_{std::make_unique<grpc::CompletionQueue>()},
-    client_end_point_{std::make_unique<CompletionEndPoint>(*client_queue_)} {
+      work_{boost::asio::require(io_context_->get_executor(), boost::asio::execution::outstanding_work.tracked)},
+      server_queue_{std::move(queue)},
+      server_end_point_{std::make_unique<CompletionEndPoint>(*server_queue_)},
+      client_queue_{std::make_unique<grpc::CompletionQueue>()},
+      client_end_point_{std::make_unique<CompletionEndPoint>(*client_queue_)},
+      wait_mode_(wait_mode) {
 }
 
-void ServerContext::execution_loop() {
-    //TODO(canepat): add counter for served tasks and plug some wait strategy
+template <typename WaitStrategy>
+void ServerContext::execute_loop_single_threaded(WaitStrategy&& wait_strategy) {
+    SILK_INFO << "Single-thread execution loop start [" << this << "]";
     while (!io_context_->stopped()) {
-        server_end_point_->poll_one();
-        client_end_point_->poll_one();
-        io_context_->poll_one();
+        std::size_t work_count = server_end_point_->poll_one();
+        work_count += client_end_point_->poll_one();
+        work_count += io_context_->poll_one();
+        wait_strategy.idle(work_count);
     }
     server_end_point_->shutdown();
     client_end_point_->shutdown();
+    SILK_INFO << "Single-thread execution loop end [" << this << "]";
+}
+
+void ServerContext::execute_loop_multi_threaded() {
+    SILK_INFO << "Multi-thread execution loop start [" << this << "]";
+    std::thread server_ep_completion_runner{[&]() {
+        bool stopped{false};
+        while (!stopped) {
+            stopped = server_end_point_->post_one(*io_context_);
+        }
+    }};
+    std::thread client_ep_completion_runner{[&]() {
+        bool stopped{false};
+        while (!stopped) {
+            stopped = client_end_point_->post_one(*io_context_);
+        }
+    }};
+    io_context_->run();
+    server_end_point_->shutdown();
+    client_end_point_->shutdown();
+    server_ep_completion_runner.join();
+    client_ep_completion_runner.join();
+    SILK_INFO << "Multi-thread execution loop end [" << this << "]";
+}
+
+void ServerContext::execute_loop() {
+    switch (wait_mode_) {
+        case WaitMode::blocking:
+            execute_loop_multi_threaded();
+        break;
+        case WaitMode::yielding:
+            execute_loop_single_threaded(YieldingWaitStrategy{});
+        break;
+        case WaitMode::sleeping:
+            execute_loop_single_threaded(SleepingWaitStrategy{});
+        break;
+        case WaitMode::spin_wait:
+            execute_loop_single_threaded(SpinWaitWaitStrategy{});
+        break;
+        case WaitMode::busy_spin:
+            execute_loop_single_threaded(BusySpinWaitStrategy{});
+        break;
+    }
 }
 
 void ServerContext::stop() {
@@ -69,11 +116,8 @@ ServerContextPool::~ServerContextPool() {
     SILK_TRACE << "ServerContextPool::~ServerContextPool END " << this;
 }
 
-void ServerContextPool::add_context(std::unique_ptr<grpc::ServerCompletionQueue> server_queue) {
-    ServerContext server_context{std::move(server_queue)};
-
-    // Give the io_context work to do so that its event loop will not exit until it is explicitly stopped.
-    work_.push_back(boost::asio::require(server_context.io_context()->get_executor(), boost::asio::execution::outstanding_work.tracked));
+void ServerContextPool::add_context(std::unique_ptr<grpc::ServerCompletionQueue> server_queue, WaitMode wait_mode) {
+    ServerContext server_context{std::move(server_queue), wait_mode};
 
     const auto num_contexts = contexts_.size();
     contexts_.push_back(std::move(server_context));
@@ -89,7 +133,7 @@ void ServerContextPool::start() {
             auto& context = contexts_[i];
             context_threads_.create_thread([&, i = i]() {
                 SILK_TRACE << "thread start context[" << i << "] thread_id: " << std::this_thread::get_id();
-                context.execution_loop();
+                context.execute_loop();
                 SILK_TRACE << "thread end context[" << i << "] thread_id: " << std::this_thread::get_id();
             });
             SILK_DEBUG << "ServerContextPool::start context[" << i << "] started: " << context.io_context();
@@ -123,6 +167,11 @@ void ServerContextPool::stop() {
     }
 
     SILK_TRACE << "ServerContextPool::stop END";
+}
+
+void ServerContextPool::run() {
+    start();
+    join();
 }
 
 const ServerContext& ServerContextPool::next_context() {

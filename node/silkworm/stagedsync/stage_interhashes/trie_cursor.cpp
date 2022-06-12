@@ -75,7 +75,7 @@ void Cursor::consume_node(ByteView key, bool exact) {
         }
         key = db::from_slice(db_data.key);
         if (!prefix_.empty()) {
-            if (!has_prefix(key, prefix_)) {
+            if (!key.starts_with(prefix_)) {
                 subnodes_.clear();
                 return;
             }

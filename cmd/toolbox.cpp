@@ -1167,7 +1167,7 @@ void do_trie_integrity(db::EnvConfig& config, bool with_state_coverage) {
                                                  " in db. LTE found is : null");
                     } else {
                         auto data2_k{db::from_slice(data2.key)};
-                        if (!has_prefix(data2_k, buffer)) {
+                        if (!data2_k.starts_with(buffer)) {
                             throw std::runtime_error("At key " + to_hex(data1_k, true) + " tree mask is " +
                                                      std::bitset<16>(node_tree_mask).to_string() +
                                                      " but there is no child " + std::to_string(i) +

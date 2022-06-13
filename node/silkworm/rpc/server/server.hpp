@@ -65,7 +65,7 @@ class Server {
 
         // Add one server-side gRPC completion queue for each execution context.
         for (std::size_t i{0}; i < config_.num_contexts(); ++i) {
-            context_pool_.add_context(builder.AddCompletionQueue());
+            context_pool_.add_context(builder.AddCompletionQueue(), config_.wait_mode());
         }
 
         // gRPC async model requires the server to register one responded call for each RPC in advance.

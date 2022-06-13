@@ -19,7 +19,6 @@
 
 #include <cstddef>
 #include <ostream>
-#include <list>
 #include <memory>
 #include <vector>
 
@@ -27,13 +26,14 @@
 #include <grpcpp/grpcpp.h>
 
 #include <silkworm/rpc/completion_end_point.hpp>
+#include <silkworm/rpc/server/wait_strategy.hpp>
 
 namespace silkworm::rpc {
 
 //! Asynchronous server scheduler running an execution loop.
 class ServerContext {
   public:
-    explicit ServerContext(std::unique_ptr<grpc::ServerCompletionQueue> server_queue);
+    explicit ServerContext(std::unique_ptr<grpc::ServerCompletionQueue> server_queue, WaitMode wait_mode = WaitMode::blocking);
 
     boost::asio::io_context* io_context() const noexcept { return io_context_.get(); }
     grpc::ServerCompletionQueue* server_queue() const noexcept { return server_queue_.get(); }
@@ -42,17 +42,32 @@ class ServerContext {
     CompletionEndPoint* client_end_point() const noexcept { return client_end_point_.get(); }
 
     //! Execute the scheduler loop until stopped.
-    void execution_loop();
+    void execute_loop();
 
     //! Stop the execution loop.
     void stop();
 
   private:
+    //! Execute single-threaded loop until stopped.
+    template <typename WaitStrategy>
+    void execute_loop_single_threaded(WaitStrategy&& wait_strategy);
+
+    //! Execute multi-threaded loop until stopped.
+    void execute_loop_multi_threaded();
+
+    //! The asynchronous event loop scheduler.
     std::shared_ptr<boost::asio::io_context> io_context_;
+
+    //! The work-tracking executor that keep the scheduler running.
+    boost::asio::execution::any_executor<> work_;
+
     std::unique_ptr<grpc::ServerCompletionQueue> server_queue_;
     std::unique_ptr<CompletionEndPoint> server_end_point_;
     std::unique_ptr<grpc::CompletionQueue> client_queue_;
     std::unique_ptr<CompletionEndPoint> client_end_point_;
+
+    //! The waiting mode used by execution loops during idle cycles.
+    WaitMode wait_mode_;
 };
 
 std::ostream& operator<<(std::ostream& out, const ServerContext& c);
@@ -67,7 +82,7 @@ class ServerContextPool {
     ServerContextPool& operator=(const ServerContextPool&) = delete;
 
     //! Add a new \ref ServerContext to the pool.
-    void add_context(std::unique_ptr<grpc::ServerCompletionQueue> queue);
+    void add_context(std::unique_ptr<grpc::ServerCompletionQueue> queue, WaitMode wait_mode);
 
     //! Start one execution thread for each server context.
     void start();
@@ -78,17 +93,17 @@ class ServerContextPool {
     //! Stop all execution threads. This does *NOT* wait for termination: use \ref join() for that.
     void stop();
 
+    void run();
+
     std::size_t num_contexts() const { return contexts_.size(); }
 
     ServerContext const& next_context();
+
     boost::asio::io_context& next_io_context();
 
   private:
     //! The pool of execution contexts.
     std::vector<ServerContext> contexts_;
-
-    //! The work-tracking executors that keep the running contexts.
-    std::list<boost::asio::execution::any_executor<>> work_;
 
     //! The pool of threads running the execution contexts.
     boost::asio::detail::thread_group context_threads_;

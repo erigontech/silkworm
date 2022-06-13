@@ -34,13 +34,12 @@ using Catch::Matchers::Message;
 
 TEST_CASE("parse wait mode", "[silkrpc][common][log]") {
     std::vector<absl::string_view> input_texts{
-        "blocking", "sleeping", "yielding", "spin_wait", "busy_spin"
+        "blocking", "sleeping", "yielding", "busy_spin"
     };
     std::vector<WaitMode> expected_wait_modes{
         WaitMode::blocking,
         WaitMode::sleeping,
         WaitMode::yielding,
-        WaitMode::spin_wait,
         WaitMode::busy_spin,
     };
     for (std::size_t i{0}; i < input_texts.size(); i++) {
@@ -66,11 +65,10 @@ TEST_CASE("unparse wait mode", "[silkrpc][common][log]") {
         WaitMode::blocking,
         WaitMode::sleeping,
         WaitMode::yielding,
-        WaitMode::spin_wait,
         WaitMode::busy_spin,
     };
     std::vector<absl::string_view> expected_texts{
-        "blocking", "sleeping", "yielding", "spin_wait", "busy_spin"
+        "blocking", "sleeping", "yielding", "busy_spin"
     };
     for (std::size_t i{0}; i < input_wait_modes.size(); i++) {
         const auto text{AbslUnparseFlag(input_wait_modes[i])};
@@ -85,7 +83,7 @@ inline void sleep_then_check_wait(W& w, const std::chrono::duration<R, P>& t, in
 }
 
 TEST_CASE("SleepingWaitStrategy", "[silkrpc][context_pool]") {
-    SleepingWaitStrategy wait_strategy;
+    SleepingWaitStrategy wait_strategy{1ms};
     sleep_then_check_wait(wait_strategy, 10ms, 1);
     sleep_then_check_wait(wait_strategy, 20ms, 0);
     sleep_then_check_wait(wait_strategy, 20ms, 0);
@@ -94,14 +92,6 @@ TEST_CASE("SleepingWaitStrategy", "[silkrpc][context_pool]") {
 
 TEST_CASE("YieldingWaitStrategy", "[silkrpc][context_pool]") {
     YieldingWaitStrategy wait_strategy;
-    sleep_then_check_wait(wait_strategy, 10ms, 1);
-    sleep_then_check_wait(wait_strategy, 20ms, 0);
-    sleep_then_check_wait(wait_strategy, 20ms, 0);
-    sleep_then_check_wait(wait_strategy, 10ms, 1);
-}
-
-TEST_CASE("SpinWaitWaitStrategy", "[silkrpc][context_pool]") {
-    SpinWaitWaitStrategy wait_strategy;
     sleep_then_check_wait(wait_strategy, 10ms, 1);
     sleep_then_check_wait(wait_strategy, 20ms, 0);
     sleep_then_check_wait(wait_strategy, 20ms, 0);

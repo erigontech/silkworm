@@ -26,8 +26,8 @@ namespace silkworm::rpc {
 
 std::ostream& operator<<(std::ostream& out, const ServerContext& c) {
     out << "io_context: " << c.io_context()
-        << " server_queue: " << c.server_queue() << " server_end_point: " << c.server_end_point()
-        << " client_queue: " << c.client_queue() << " client_end_point: " << c.client_end_point();
+        << " server_queue: " << c.server_queue()
+        << " client_queue: " << c.client_queue();
     return out;
 }
 
@@ -43,7 +43,7 @@ ServerContext::ServerContext(std::unique_ptr<grpc::ServerCompletionQueue> queue,
 
 template <typename WaitStrategy>
 void ServerContext::execute_loop_single_threaded(WaitStrategy&& wait_strategy) {
-    SILK_INFO << "Single-thread execution loop start [" << this << "]";
+    SILK_DEBUG << "Single-thread execution loop start [" << std::this_thread::get_id() << "]";
     while (!io_context_->stopped()) {
         std::size_t work_count = server_end_point_->poll_one();
         work_count += client_end_point_->poll_one();
@@ -52,29 +52,33 @@ void ServerContext::execute_loop_single_threaded(WaitStrategy&& wait_strategy) {
     }
     server_end_point_->shutdown();
     client_end_point_->shutdown();
-    SILK_INFO << "Single-thread execution loop end [" << this << "]";
+    SILK_DEBUG << "Single-thread execution loop end [" << std::this_thread::get_id() << "]";
 }
 
 void ServerContext::execute_loop_multi_threaded() {
-    SILK_INFO << "Multi-thread execution loop start [" << this << "]";
+    SILK_DEBUG << "Multi-thread execution loop start [t1=" << std::this_thread::get_id() << "]";
     std::thread server_ep_completion_runner{[&]() {
+        SILK_DEBUG << "Server end-point runner start [t2=" << std::this_thread::get_id() << "]";
         bool stopped{false};
         while (!stopped) {
             stopped = server_end_point_->post_one(*io_context_);
         }
+        SILK_DEBUG << "Server end-point runner end [t2=" << std::this_thread::get_id() << "]";
     }};
     std::thread client_ep_completion_runner{[&]() {
+        SILK_DEBUG << "Client end-point runner start [t3=" << std::this_thread::get_id() << "]";
         bool stopped{false};
         while (!stopped) {
             stopped = client_end_point_->post_one(*io_context_);
         }
+        SILK_DEBUG << "Client end-point runner end [t3=" << std::this_thread::get_id() << "]";
     }};
     io_context_->run();
     server_end_point_->shutdown();
     client_end_point_->shutdown();
     server_ep_completion_runner.join();
     client_ep_completion_runner.join();
-    SILK_INFO << "Multi-thread execution loop end [" << this << "]";
+    SILK_DEBUG << "Multi-thread execution loop end [t1=" << std::this_thread::get_id() << "]";
 }
 
 void ServerContext::execute_loop() {
@@ -87,9 +91,6 @@ void ServerContext::execute_loop() {
         break;
         case WaitMode::sleeping:
             execute_loop_single_threaded(SleepingWaitStrategy{});
-        break;
-        case WaitMode::spin_wait:
-            execute_loop_single_threaded(SpinWaitWaitStrategy{});
         break;
         case WaitMode::busy_spin:
             execute_loop_single_threaded(BusySpinWaitStrategy{});

@@ -35,10 +35,6 @@ bool AbslParseFlag(absl::string_view text, WaitMode* wait_mode, std::string* err
         *wait_mode = WaitMode::yielding;
         return true;
     }
-    if (text == "spin_wait") {
-        *wait_mode = WaitMode::spin_wait;
-        return true;
-    }
     if (text == "busy_spin") {
         *wait_mode = WaitMode::busy_spin;
         return true;
@@ -52,7 +48,6 @@ std::string AbslUnparseFlag(WaitMode wait_mode) {
         case WaitMode::blocking: return "blocking";
         case WaitMode::sleeping: return "sleeping";
         case WaitMode::yielding: return "yielding";
-        case WaitMode::spin_wait: return "spin_wait";
         case WaitMode::busy_spin: return "busy_spin";
         default: return absl::StrCat(wait_mode);
     }

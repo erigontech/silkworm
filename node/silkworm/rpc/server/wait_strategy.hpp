@@ -14,7 +14,7 @@
    limitations under the License.
 */
 
-// Portions of the following code are inspired by Aeron [https://github.com/real-logic/aeron]
+// Portions of the following code are based on Aeron [https://github.com/real-logic/aeron]
 
 /*
  * Copyright 2014-2022 Real Logic Limited.
@@ -32,8 +32,6 @@
  * limitations under the License.
  */
 
-// Portions of the following code are based on Disruptor-cpp [https://github.com/Abc-Arbitrage/Disruptor-cpp]
-
 #ifndef SILKWORM_RPC_SERVER_WAIT_STRATEGY_HPP_
 #define SILKWORM_RPC_SERVER_WAIT_STRATEGY_HPP_
 
@@ -46,8 +44,6 @@
 #include <absl/strings/string_view.h>
 
 namespace silkworm::rpc {
-
-// These wait strategies are experimental for performance tests and not yet production-ready.
 
 using namespace std::chrono_literals; // NOLINT(build/namespaces)
 

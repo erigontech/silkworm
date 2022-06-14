@@ -67,7 +67,7 @@ nlohmann::json ChainConfig::to_json() const noexcept {
     }
 
     for (size_t i{0}; i < EVMC_MAX_REVISION; ++i) {
-        member_to_json(ret, kJsonForkNames[i], fork_blocks[i]);
+        member_to_json(ret, kJsonForkNames[i], evmc_fork_blocks[i]);
     }
 
     member_to_json(ret, "daoForkBlock", dao_block);
@@ -105,7 +105,7 @@ std::optional<ChainConfig> ChainConfig::from_json(const nlohmann::json& json) no
     }
 
     for (size_t i{0}; i < EVMC_MAX_REVISION; ++i) {
-        read_json_config_member(json, kJsonForkNames[i], config.fork_blocks[i]);
+        read_json_config_member(json, kJsonForkNames[i], config.evmc_fork_blocks[i]);
     }
 
     read_json_config_member(json, "daoForkBlock", config.dao_block);
@@ -132,12 +132,12 @@ std::optional<uint64_t> ChainConfig::revision_block(evmc_revision rev) const noe
         return 0;
     }
     size_t i{static_cast<size_t>(rev) - 1};
-    return fork_blocks.at(i);
+    return evmc_fork_blocks.at(i);
 }
 
 void ChainConfig::set_revision_block(evmc_revision rev, std::optional<uint64_t> block) {
     if (rev > 0) {  // Frontier block is always 0
-        fork_blocks[static_cast<size_t>(rev) - 1] = block;
+        evmc_fork_blocks[static_cast<size_t>(rev) - 1] = block;
     }
 }
 

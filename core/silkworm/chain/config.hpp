@@ -64,7 +64,7 @@ struct ChainConfig {
     SealEngineType seal_engine{SealEngineType::kNoProof};
 
     // Block numbers of forks that have an evmc_revision value
-    std::array<std::optional<uint64_t>, EVMC_MAX_REVISION> fork_blocks{};
+    std::array<std::optional<uint64_t>, EVMC_MAX_REVISION> evmc_fork_blocks{};
 
     // https://eips.ethereum.org/EIPS/eip-779
     std::optional<uint64_t> dao_block{std::nullopt};
@@ -85,7 +85,7 @@ struct ChainConfig {
     // returns whether specific HF have occurred
     [[nodiscard]] constexpr evmc_revision revision(uint64_t block_number) const noexcept {
         for (size_t i{EVMC_MAX_REVISION}; i > 0; --i) {
-            if (fork_blocks[i - 1].has_value() && block_number >= fork_blocks[i - 1].value()) {
+            if (evmc_fork_blocks[i - 1].has_value() && block_number >= evmc_fork_blocks[i - 1].value()) {
                 return static_cast<evmc_revision>(i);
             }
         }

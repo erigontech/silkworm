@@ -159,6 +159,7 @@ inline constexpr ChainConfig kRopstenConfig{
             10'499'401,  // London
         },
     .muir_glacier_block = 7'117'117,
+    .terminal_total_difficulty = 50000000000000000,
 };
 
 inline constexpr ChainConfig kRinkebyConfig{

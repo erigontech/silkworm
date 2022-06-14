@@ -16,6 +16,9 @@
 
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
 
+  message("MSVC_VERSION = ${MSVC_VERSION}")
+  message("MSVC_CXX_ARCHITECTURE_ID = ${MSVC_CXX_ARCHITECTURE_ID}")
+
   add_definitions(-D_WIN32_WINNT=0x0602)  # Min Windows 8
   add_definitions(-DVC_EXTRALEAN)         # Process windows headers faster ...
   add_definitions(-DWIN32_LEAN_AND_MEAN)  # ... and prevent winsock mismatch with Boost's

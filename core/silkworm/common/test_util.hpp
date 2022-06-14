@@ -24,23 +24,21 @@ namespace silkworm::test {
 
 /// Enables London from genesis.
 inline constexpr ChainConfig kLondonConfig{
-    1,  // chain_id
-    SealEngineType::kNoProof,
-    {0, 0, 0, 0, 0, 0, 0, 0, 0},
-    std::nullopt,  // dao_block
-    0,             // muir_glacier_block
+    .chain_id = 1,
+    .seal_engine = SealEngineType::kNoProof,
+    .evmc_fork_blocks = {0, 0, 0, 0, 0, 0, 0, 0, 0},
+    .muir_glacier_block = 0,
 };
 
 static_assert(kLondonConfig.revision(0) == EVMC_LONDON);
 
 /// Enables Shanghai from genesis.
 inline constexpr ChainConfig kShanghaiConfig{
-    1,  // chain_id
-    SealEngineType::kNoProof,
-    {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-    std::nullopt,  // dao_block
-    0,             // muir_glacier_block
-    0,             // arrow_glacier_block
+    .chain_id = 1,
+    .seal_engine = SealEngineType::kNoProof,
+    .evmc_fork_blocks = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+    .muir_glacier_block = 0,
+    .arrow_glacier_block = 0,
 };
 
 static_assert(kShanghaiConfig.revision(0) == EVMC_SHANGHAI);

@@ -124,74 +124,75 @@ bool operator==(const ChainConfig& a, const ChainConfig& b);
 std::ostream& operator<<(std::ostream& out, const ChainConfig& obj);
 
 inline constexpr ChainConfig kMainnetConfig{
-    1,  // chain_id
-    SealEngineType::kEthash,
-    {
-        1'150'000,   // Homestead
-        2'463'000,   // Tangerine Whistle
-        2'675'000,   // Spurious Dragon
-        4'370'000,   // Byzantium
-        7'280'000,   // Constantinople
-        7'280'000,   // Petersburg
-        9'069'000,   // Istanbul
-        12'244'000,  // Berlin
-        12'965'000,  // London
-    },
-
-    1'920'000,   // dao_block
-    9'200'000,   // muir_glacier_block
-    13'773'000,  // arrow_glacier_block
+    .chain_id = 1,
+    .seal_engine = SealEngineType::kEthash,
+    .evmc_fork_blocks =
+        {
+            1'150'000,   // Homestead
+            2'463'000,   // Tangerine Whistle
+            2'675'000,   // Spurious Dragon
+            4'370'000,   // Byzantium
+            7'280'000,   // Constantinople
+            7'280'000,   // Petersburg
+            9'069'000,   // Istanbul
+            12'244'000,  // Berlin
+            12'965'000,  // London
+        },
+    .dao_block = 1'920'000,
+    .muir_glacier_block = 9'200'000,
+    .arrow_glacier_block = 13'773'000,
 };
 
 inline constexpr ChainConfig kRopstenConfig{
-    3,  // chain_id
-    SealEngineType::kEthash,
-    {
-        0,           // Homestead
-        0,           // Tangerine Whistle
-        10,          // Spurious Dragon
-        1'700'000,   // Byzantium
-        4'230'000,   // Constantinople
-        4'939'394,   // Petersburg
-        6'485'846,   // Istanbul
-        9'812'189,   // Berlin
-        10'499'401,  // London
-    },
-
-    std::nullopt,  // dao_block
-    7'117'117,     // muir_glacier_block
+    .chain_id = 3,
+    .seal_engine = SealEngineType::kEthash,
+    .evmc_fork_blocks =
+        {
+            0,           // Homestead
+            0,           // Tangerine Whistle
+            10,          // Spurious Dragon
+            1'700'000,   // Byzantium
+            4'230'000,   // Constantinople
+            4'939'394,   // Petersburg
+            6'485'846,   // Istanbul
+            9'812'189,   // Berlin
+            10'499'401,  // London
+        },
+    .muir_glacier_block = 7'117'117,
 };
 
 inline constexpr ChainConfig kRinkebyConfig{
-    4,  // chain_id
-    SealEngineType::kClique,
-    {
-        1,          // Homestead
-        2,          // Tangerine Whistle
-        3,          // Spurious Dragon
-        1'035'301,  // Byzantium
-        3'660'663,  // Constantinople
-        4'321'234,  // Petersburg
-        5'435'345,  // Istanbul
-        8'290'928,  // Berlin
-        8'897'988,  // London
-    },
+    .chain_id = 4,
+    .seal_engine = SealEngineType::kClique,
+    .evmc_fork_blocks =
+        {
+            1,          // Homestead
+            2,          // Tangerine Whistle
+            3,          // Spurious Dragon
+            1'035'301,  // Byzantium
+            3'660'663,  // Constantinople
+            4'321'234,  // Petersburg
+            5'435'345,  // Istanbul
+            8'290'928,  // Berlin
+            8'897'988,  // London
+        },
 };
 
 inline constexpr ChainConfig kGoerliConfig{
-    5,  // chain_id
-    SealEngineType::kClique,
-    {
-        0,          // Homestead
-        0,          // Tangerine Whistle
-        0,          // Spurious Dragon
-        0,          // Byzantium
-        0,          // Constantinople
-        0,          // Petersburg
-        1'561'651,  // Istanbul
-        4'460'644,  // Berlin
-        5'062'605,  // London
-    },
+    .chain_id = 5,
+    .seal_engine = SealEngineType::kClique,
+    .evmc_fork_blocks =
+        {
+            0,          // Homestead
+            0,          // Tangerine Whistle
+            0,          // Spurious Dragon
+            0,          // Byzantium
+            0,          // Constantinople
+            0,          // Petersburg
+            1'561'651,  // Istanbul
+            4'460'644,  // Berlin
+            5'062'605,  // London
+        },
 };
 
 //! \brief Looksup a chain config provided its network id or its common name

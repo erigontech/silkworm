@@ -61,7 +61,6 @@ class Cursor {
         [[nodiscard]] const evmc::bytes32* hash() const;
     };
 
-    void prefetch_data(bool init = false); // Preloads a batch of nodes from Trie table
     void consume_node(ByteView key, bool exact);
     void move_to_next_sibling(bool allow_root_to_child_nibble_within_subnode);
     void update_skip_state();
@@ -73,7 +72,6 @@ class Cursor {
     std::vector<SubNode> subnodes_;  // Sub-nodes being traversed
     bool can_skip_state_{false};     // Whether or not actual node can be accepted by HashBuilder as is
 
-    std::vector<std::pair<Bytes, Bytes>> prefetched_data_;  // Hold pre-fetched nodes from underlying db cursor
 };
 
 //! \brief Produces the next key in sequence from provided nibbled key

@@ -120,9 +120,9 @@ struct ChainConfig {
     }
     */
     static std::optional<ChainConfig> from_json(const nlohmann::json& json) noexcept;
-};
 
-bool operator==(const ChainConfig& a, const ChainConfig& b);
+    bool operator==(const ChainConfig&) const = default;
+};
 
 std::ostream& operator<<(std::ostream& out, const ChainConfig& obj);
 

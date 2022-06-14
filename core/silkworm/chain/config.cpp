@@ -143,8 +143,6 @@ void ChainConfig::set_revision_block(evmc_revision rev, std::optional<uint64_t> 
     }
 }
 
-bool operator==(const ChainConfig& a, const ChainConfig& b) { return a.to_json() == b.to_json(); }
-
 std::ostream& operator<<(std::ostream& out, const ChainConfig& obj) { return out << obj.to_json(); }
 
 const ChainConfig* lookup_chain_config(std::variant<uint64_t, std::string> identifier) noexcept {

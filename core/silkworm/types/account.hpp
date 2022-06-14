@@ -51,9 +51,9 @@ struct Account {
     //! \remarks Similar to from_encoded_storage but faster as it parses only incarnation
     [[nodiscard]] static std::pair<uint64_t, DecodingResult> incarnation_from_encoded_storage(
         ByteView encoded_payload) noexcept;
-};
 
-bool operator==(const Account& a, const Account& b);
+    bool operator==(const Account&) const = default;
+};
 
 }  // namespace silkworm
 

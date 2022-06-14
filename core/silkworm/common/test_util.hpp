@@ -39,6 +39,8 @@ inline constexpr ChainConfig kShanghaiConfig{
     .evmc_fork_blocks = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
     .muir_glacier_block = 0,
     .arrow_glacier_block = 0,
+    .gray_glacier_block = 0,
+    .terminal_total_difficulty = 0,
 };
 
 static_assert(kShanghaiConfig.revision(0) == EVMC_SHANGHAI);

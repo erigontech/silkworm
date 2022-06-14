@@ -73,6 +73,7 @@ nlohmann::json ChainConfig::to_json() const noexcept {
     member_to_json(ret, "daoForkBlock", dao_block);
     member_to_json(ret, "muirGlacierBlock", muir_glacier_block);
     member_to_json(ret, "arrowGlacierBlock", arrow_glacier_block);
+    member_to_json(ret, "grayGlacierBlock", gray_glacier_block);
     member_to_json(ret, kTerminalBlockNumber, terminal_block_number);
 
     if (terminal_total_difficulty.has_value()) {
@@ -111,6 +112,7 @@ std::optional<ChainConfig> ChainConfig::from_json(const nlohmann::json& json) no
     read_json_config_member(json, "daoForkBlock", config.dao_block);
     read_json_config_member(json, "muirGlacierBlock", config.muir_glacier_block);
     read_json_config_member(json, "arrowGlacierBlock", config.arrow_glacier_block);
+    read_json_config_member(json, "grayGlacierBlock", config.gray_glacier_block);
     read_json_config_member(json, kTerminalBlockNumber, config.terminal_block_number);
 
     if (json.contains(kTerminalTotalDifficulty)) {

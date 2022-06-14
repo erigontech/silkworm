@@ -50,7 +50,7 @@ struct ChainConfig {
         // there's no evmc_revision for muirGlacierBlock
         "berlinBlock",  // EVMC_BERLIN
         "londonBlock",  // EVMC_LONDON
-        // there's no evmc_revision for arrowGlacierBlock
+        // there's no evmc_revision for arrowGlacierBlock, nor for grayGlacierBlock
         "mergeForkBlock",  // EVMC_PARIS, corresponds to FORK_NEXT_VALUE of EIP-3675
         "shanghaiBlock",   // EVMC_SHANGHAI
         "cancunBlock",     // EVMC_CANCUN
@@ -74,6 +74,9 @@ struct ChainConfig {
 
     // https://github.com/ethereum/execution-specs/blob/master/network-upgrades/mainnet-upgrades/arrow-glacier.md
     std::optional<uint64_t> arrow_glacier_block{std::nullopt};
+
+    // https://github.com/ethereum/execution-specs/blob/master/network-upgrades/mainnet-upgrades/gray-glacier.md
+    std::optional<uint64_t> gray_glacier_block{std::nullopt};
 
     // PoW to PoS switch; see EIP-3675
     std::optional<intx::uint256> terminal_total_difficulty{std::nullopt};
@@ -141,6 +144,7 @@ inline constexpr ChainConfig kMainnetConfig{
     .dao_block = 1'920'000,
     .muir_glacier_block = 9'200'000,
     .arrow_glacier_block = 13'773'000,
+    .gray_glacier_block = 15'050'000,
 };
 
 inline constexpr ChainConfig kRopstenConfig{

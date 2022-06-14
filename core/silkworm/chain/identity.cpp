@@ -37,6 +37,9 @@ std::vector<BlockNum> ChainIdentity::distinct_fork_numbers() const {
     if (chain.arrow_glacier_block) {
         forks.push_back(*chain.arrow_glacier_block);
     }
+    if (chain.gray_glacier_block) {
+        forks.push_back(*chain.gray_glacier_block);
+    }
 
     sort(forks.begin(), forks.end());                              // block list must be ordered
     forks.erase(unique(forks.begin(), forks.end()), forks.end());  // do not repeat block if 2 forks overlap

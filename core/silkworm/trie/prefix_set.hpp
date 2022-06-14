@@ -29,7 +29,7 @@ namespace silkworm::trie {
 class PrefixSet {
   public:
     //! \brief Constructs an empty set.
-    PrefixSet() : nibbled_keys_it_{nibbled_keys_.begin()} {};
+    PrefixSet() = default;
 
     // copyable
     PrefixSet(const PrefixSet& other) = default;
@@ -46,9 +46,9 @@ class PrefixSet {
   private:
     void ensure_sorted();
 
-    std::vector<Bytes> nibbled_keys_;               // Collection of nibbled keys
-    std::vector<Bytes>::iterator nibbled_keys_it_;  // Points to last found key in nibbled_keys_
-    bool sorted_{false};                            // Whether nibbled_keys_ has been unique-ed and sorted
+    std::vector<Bytes> nibbled_keys_;  // Collection of nibbled keys
+    size_t index_{0};                  // Index of last compared key
+    bool sorted_{false};               // Whether nibbled_keys_ has been unique-ed and sorted
 };
 
 }  // namespace silkworm::trie

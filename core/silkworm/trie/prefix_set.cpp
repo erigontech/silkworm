@@ -46,7 +46,7 @@ bool PrefixSet::contains(ByteView prefix) {
 
     // Should inquired prefix be already contained in last found key
     // then return early
-    if ((*nibbled_keys_it_).starts_with(prefix)) {
+    if (nibbled_keys_it_->starts_with(prefix)) {
         return true;
     } else {
         // This should rarely or not happen: it means current query prefix is < than prev query prefix
@@ -58,7 +58,7 @@ bool PrefixSet::contains(ByteView prefix) {
 
     // Search for a new item containing prefix i.e. GTE than prefix
     auto tmp_it{std::lower_bound(nibbled_keys_it_, nibbled_keys_.end(), prefix)};
-    if (tmp_it == nibbled_keys_.end() || !(*tmp_it).starts_with(prefix)) {
+    if (tmp_it == nibbled_keys_.end() || !tmp_it->starts_with(prefix)) {
         nibbled_keys_it_ = --nibbled_keys_.end();  // Position to very last key
         return false;
     }

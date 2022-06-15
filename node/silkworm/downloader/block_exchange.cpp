@@ -39,7 +39,7 @@ BlockExchange::BlockExchange(SentryClient& sentry, const Db::ReadOnlyAccess& dba
 
 BlockExchange::~BlockExchange() {
     stop();
-    log::Error() << "BlockExchange destroyed";
+    log::Info() << "BlockExchange destroyed";
 }
 
 const ChainIdentity& BlockExchange::chain_identity() {

@@ -60,7 +60,7 @@ void write_canonical_header_hash(mdbx::txn& txn, const uint8_t (&hash)[kHashLeng
 [[nodiscard]] bool read_body(mdbx::txn& txn, BlockNum block_number, const uint8_t (&hash)[kHashLength],
                              bool read_senders, BlockBody& out);
 
-//! \brief Check the presence of a block body using block numer and hash
+//! \brief Check the presence of a block body using block number and hash
 [[nodiscard]] bool has_body(mdbx::txn& txn, BlockNum block_number, const uint8_t (&hash)[kHashLength]);
 
 //! \brief Writes block body in table::kBlockBodies

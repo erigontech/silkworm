@@ -43,8 +43,9 @@ class BlockAmount {
         kOlder,  // Prune Data Older than (moving window)
         kBefore  // Prune data before (fixed)
     };
-    explicit BlockAmount() : value_{std::nullopt}, enabled_{false}, type_{Type::kOlder} {};
-    explicit BlockAmount(Type type, BlockNum value) : value_{value}, enabled_{true}, type_{type} {};
+
+    explicit BlockAmount() : value_{std::nullopt}, enabled_{false}, type_{Type::kOlder} {}
+    explicit BlockAmount(Type type, BlockNum value) : value_{value}, enabled_{true}, type_{type} {}
 
     [[nodiscard]] bool enabled() const { return enabled_; }
     [[nodiscard]] Type type() const { return type_; };
@@ -53,10 +54,7 @@ class BlockAmount {
 
     void to_string(std::string& short_form, std::string& long_form, char prefix) const;
 
-    bool operator==(const BlockAmount& other) const {
-        return enabled_ == other.enabled_ && type_ == other.type_ && value_ == other.value_;
-    }
-    bool operator!=(const BlockAmount& other) const { return !(this->operator==(other)); }
+    friend bool operator==(const BlockAmount&, const BlockAmount&) = default;
 
   private:
     const std::optional<BlockNum> value_;
@@ -66,14 +64,14 @@ class BlockAmount {
 
 class PruneMode {
   public:
-    explicit PruneMode() : history_(), receipts_(), tx_index_(), call_traces_(){};
+    explicit PruneMode() : history_(), receipts_(), tx_index_(), call_traces_() {}
     explicit PruneMode(BlockAmount history, BlockAmount receipts, BlockAmount senders, BlockAmount tx_index,
                        BlockAmount call_traces)
         : history_{std::move(history)},
           receipts_{std::move(receipts)},
           senders_{std::move(senders)},
           tx_index_{std::move(tx_index)},
-          call_traces_{std::move(call_traces)} {};
+          call_traces_{std::move(call_traces)} {}
 
     [[nodiscard]] const BlockAmount& history() const { return history_; }
     [[nodiscard]] const BlockAmount& receipts() const { return receipts_; }
@@ -83,11 +81,7 @@ class PruneMode {
 
     [[nodiscard]] std::string to_string() const;
 
-    bool operator==(const PruneMode& other) const {
-        return history_ == other.history_ && receipts_ == other.receipts_ && senders_ == other.senders_ &&
-               tx_index_ == other.tx_index_ && call_traces_ == other.call_traces_;
-    }
-    bool operator!=(const PruneMode& other) const { return !(this->operator==(other)); }
+    friend bool operator==(const PruneMode&, const PruneMode&) = default;
 
   private:
     BlockAmount history_;      // Holds the pruning threshold for history

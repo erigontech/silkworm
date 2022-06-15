@@ -108,14 +108,14 @@ jobs:
       - build
       - test
 
-  linux-clang-10-coverage:
+  linux-clang-13-coverage:
     environment:
       BUILD_TYPE: Debug
       TOOLCHAIN: cxx20.cmake
       CLANG_COVERAGE: ON
       SANITIZE: OFF
     docker:
-      - image: ethereum/cpp-build-env:15-clang-10
+      - image: ethereum/cpp-build-env:17-clang-13
     resource_class: xlarge
     steps:
       - checkout_with_submodules
@@ -206,6 +206,6 @@ workflows:
     jobs:
       - linux-gcc-11-thread-sanitizer
       - linux-gcc-11
-      - linux-clang-10-coverage
+      - linux-clang-13-coverage
       - linux-clang-10-address-sanitizer
       - linux-wasm-build

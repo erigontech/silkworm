@@ -38,9 +38,10 @@
 #include <silkworm/db/genesis.hpp>
 #include <silkworm/db/prune_mode.hpp>
 #include <silkworm/db/stages.hpp>
-#include <silkworm/stagedsync/stagedsync.hpp>
+#include <silkworm/stagedsync/stage_interhashes/trie_cursor.hpp>
 #include <silkworm/trie/hash_builder.hpp>
 #include <silkworm/trie/nibbles.hpp>
+#include <silkworm/trie/prefix_set.hpp>
 
 namespace fs = std::filesystem;
 using namespace silkworm;
@@ -964,6 +965,54 @@ void do_extract_headers(db::EnvConfig& config, const std::string& file_name, uin
     out_stream.close();
 }
 
+void do_trie_account_analysis(db::EnvConfig& config) {
+    static std::string fmt_hdr{" %-24s %=50s "};
+
+    if (!config.exclusive) {
+        throw std::runtime_error("Function requires exclusive access to database");
+    }
+
+    auto env{silkworm::db::open_env(config)};
+    auto txn{env.start_read()};
+
+    std::cout << "\n"
+              << (boost::format(fmt_hdr) % "Table name" % "%") << "\n"
+              << (boost::format(fmt_hdr) % std::string(24, '-') % std::string(50, '-')) << "\n"
+              << (boost::format(" %-24s ") % db::table::kTrieOfAccounts.name) << std::flush;
+
+    std::map<size_t, size_t> histogram;
+    auto code_cursor{db::open_cursor(txn, db::table::kTrieOfAccounts)};
+
+    Progress progress{50};
+    size_t total_entries{txn.get_map_stat(code_cursor.map()).ms_entries};
+    progress.set_task_count(total_entries);
+    size_t batch_size{progress.get_increment_count()};
+
+    code_cursor.to_first();
+    db::cursor_for_each(code_cursor,
+                        [&histogram, &batch_size, &progress](const ::mdbx::cursor&, mdbx::cursor::move_result& entry) {
+                            ++histogram[entry.key.length()];
+                            if (!--batch_size) {
+                                progress.set_current(progress.get_current() + progress.get_increment_count());
+                                std::cout << progress.print_interval('.') << std::flush;
+                                batch_size = progress.get_increment_count();
+                            }
+                            return true;
+                        });
+
+    progress.set_current(total_entries);
+    std::cout << progress.print_interval('.') << std::endl;
+
+    if (!histogram.empty()) {
+        std::cout << (boost::format(" %-4s %8s") % "Size" % "Count") << "\n"
+                  << (boost::format(" %-4s %8s") % std::string(4, '-') % std::string(8, '-')) << std::endl;
+        for (const auto& [size, usage_count] : histogram) {
+            std::cout << (boost::format(" %4u %8u") % size % usage_count) << std::endl;
+        }
+    }
+    std::cout << "\n" << std::endl;
+}
+
 void do_trie_scan(db::EnvConfig& config, bool del) {
     auto env{silkworm::db::open_env(config)};
     auto txn{env.start_write()};
@@ -1085,9 +1134,6 @@ void do_trie_integrity(db::EnvConfig& config, bool with_state_coverage) {
             //                      << ((effective_hashes_count == expected_hashes_count + 1) ? "true" : "false") <<
             //                      std::endl;
 
-            bool found{false};
-            Bytes parent_key;
-
             /*
              * Check parents
              * Whether node key length > 1 then at least one parent with a key length shorter than this one must exist
@@ -1098,6 +1144,9 @@ void do_trie_integrity(db::EnvConfig& config, bool with_state_coverage) {
              * Remarks :
              * One nibble keys don't have a parent
              */
+
+            bool found{false};
+            Bytes parent_key;
             for (size_t i{data1_k.length() - 1}, end{prefix_len ? prefix_len - 1 : prefix_len};
                  i > end && found == false; --i) {
                 parent_key.assign(data1_k.substr(0, i));
@@ -1307,6 +1356,75 @@ void do_trie_reset(db::EnvConfig& config, bool always_yes) {
     env.close();
 }
 
+void do_trie_root(db::EnvConfig& config) {
+    if (!config.exclusive) {
+        throw std::runtime_error("Function requires exclusive access to database");
+    }
+
+    using namespace std::chrono_literals;
+    std::chrono::time_point start{std::chrono::steady_clock::now()};
+
+    auto env{silkworm::db::open_env(config)};
+    auto txn{env.start_read()};
+    db::Cursor trie_accounts(txn, db::table::kTrieOfAccounts);
+    std::string source{db::table::kTrieOfAccounts.name};
+
+    // Retrieve expected state root
+    auto hashstate_stage_progress{db::stages::read_stage_progress(txn, db::stages::kHashStateKey)};
+    auto intermediate_hashes_stage_progress{db::stages::read_stage_progress(txn, db::stages::kIntermediateHashesKey)};
+    if (hashstate_stage_progress != intermediate_hashes_stage_progress) {
+        throw std::runtime_error("HashState and Intermediate hashes stage progresses do not match");
+    }
+    auto header_hash{db::read_canonical_header_hash(txn, hashstate_stage_progress)};
+    auto header{db::read_header(txn, hashstate_stage_progress, header_hash->bytes)};
+    auto expected_state_root{header->state_root};
+
+    trie::PrefixSet empty_changes{};
+    trie::HashBuilder hash_builder;
+    etl::Collector collector{};
+    hash_builder.node_collector = [&collector](ByteView nibbled_key, const trie::Node& node) {
+        if (!nibbled_key.empty()) {
+            etl::Entry entry{Bytes(nibbled_key), {}};
+            if (node.state_mask() != 0) {
+                entry.value = node.encode_for_storage();
+            }
+            collector.collect(std::move(entry));
+        }
+    };
+
+    trie::Cursor trie_cursor{trie_accounts, empty_changes, &collector};
+    auto trie_cursor_key{trie_cursor.key()};
+    while (trie_cursor_key.has_value()) {
+        if (trie_cursor.can_skip_state()) {
+            auto trie_cursor_hash{trie_cursor.hash()};
+            if (!trie_cursor_hash) {
+                throw std::runtime_error("Invalid node hash for key" + to_hex(trie_cursor_key.value(), true));
+            }
+            hash_builder.add_branch_node(trie_cursor_key.value(), *trie_cursor_hash,
+                                         trie_cursor.children_are_in_trie());
+        }
+
+        if (std::chrono::time_point now{std::chrono::steady_clock::now()}; now - start >= 10s) {
+            if (SignalHandler::signalled()) {
+                throw std::runtime_error("Interrupted");
+            }
+            std::swap(start, now);
+            log::Info("Checking ...", {"source", source, "key", to_hex(trie_cursor_key.value(), true)});
+        }
+
+        trie_cursor.next();
+        trie_cursor_key = trie_cursor.key();
+    }
+
+    auto computed_state_root{hash_builder.root_hash()};
+    if (computed_state_root != expected_state_root) {
+        log::Error("State root",
+                   {"expected", to_hex(expected_state_root, true), "got", to_hex(hash_builder.root_hash(), true)});
+    } else {
+        log::Info("State root " + to_hex(computed_state_root, true));
+    }
+}
+
 int main(int argc, char* argv[]) {
     SignalHandler::init();
 
@@ -1425,6 +1543,13 @@ int main(int argc, char* argv[]) {
     auto cmd_trie_integrity = app_main.add_subcommand("trie-integrity", "Checks trie integrity");
     auto cmd_trie_integrity_state_opt = cmd_trie_integrity->add_flag("--with-state", "Checks covered states (slower)");
 
+    // Trie account analysis
+    auto cmd_trie_account_analysis =
+        app_main.add_subcommand("trie-account-analysis", "Trie account key sizes analysis");
+
+    // Trie root rebuild and check
+    auto cmd_trie_root = app_main.add_subcommand("trie-root", "Compute trie root");
+
     /*
      * Parse arguments and validate
      */
@@ -1511,6 +1636,10 @@ int main(int argc, char* argv[]) {
             do_trie_reset(src_config, static_cast<bool>(*app_yes_opt));
         } else if (*cmd_trie_integrity) {
             do_trie_integrity(src_config, static_cast<bool>(*cmd_trie_integrity_state_opt));
+        } else if (*cmd_trie_account_analysis) {
+            do_trie_account_analysis(src_config);
+        } else if (*cmd_trie_root) {
+            do_trie_root(src_config);
         }
 
         return 0;

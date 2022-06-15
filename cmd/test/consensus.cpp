@@ -71,225 +71,238 @@ static constexpr size_t kColumnWidth{80};
 static const std::map<std::string, ChainConfig> kNetworkConfig{
     {"Frontier",
      {
-         1,  // chain_id
-         SealEngineType::kNoProof,
+         .chain_id = 1,
+         .seal_engine = SealEngineType::kNoProof,
      }},
     {"Homestead",
      {
-         1,  // chain_id
-         SealEngineType::kNoProof,
-         {
-             0,  // homestead_block
-         },
+         .chain_id = 1,
+         .seal_engine = SealEngineType::kNoProof,
+         .evmc_fork_blocks =
+             {
+                 0,  // Homestead
+             },
      }},
     {"EIP150",
      {
-         1,  // chain_id
-         SealEngineType::kNoProof,
-         {
-             0,  // homestead_block
-             0,  // tangerine_whistle_block
-         },
+         .chain_id = 1,
+         .seal_engine = SealEngineType::kNoProof,
+         .evmc_fork_blocks =
+             {
+                 0,  // Homestead
+                 0,  // Tangerine Whistle
+             },
      }},
     {"EIP158",
      {
-         1,  // chain_id
-         SealEngineType::kNoProof,
-         {
-             0,  // homestead_block
-             0,  // tangerine_whistle_block
-             0,  // spurious_dragon_block
-         },
+         .chain_id = 1,
+         .seal_engine = SealEngineType::kNoProof,
+         .evmc_fork_blocks =
+             {
+                 0,  // Homestead
+                 0,  // Tangerine Whistle
+                 0,  // Spurious Dragon
+             },
      }},
     {"Byzantium",
      {
-         1,  // chain_id
-         SealEngineType::kNoProof,
-         {
-             0,  // homestead_block
-             0,  // tangerine_whistle_block
-             0,  // spurious_dragon_block
-             0,  // byzantium_block
-         },
+         .chain_id = 1,
+         .seal_engine = SealEngineType::kNoProof,
+         .evmc_fork_blocks =
+             {
+                 0,  // Homestead
+                 0,  // Tangerine Whistle
+                 0,  // Spurious Dragon
+                 0,  // Byzantium
+             },
      }},
     {"Constantinople",
      {
-         1,  // chain_id
-         SealEngineType::kNoProof,
-         {
-             0,  // homestead_block
-             0,  // tangerine_whistle_block
-             0,  // spurious_dragon_block
-             0,  // byzantium_block
-             0,  // constantinople_block
-         },
+         .chain_id = 1,
+         .seal_engine = SealEngineType::kNoProof,
+         .evmc_fork_blocks =
+             {
+                 0,  // Homestead
+                 0,  // Tangerine Whistle
+                 0,  // Spurious Dragon
+                 0,  // Byzantium
+                 0,  // Constantinople
+             },
      }},
     {"ConstantinopleFix",
      {
-         1,  // chain_id
-         SealEngineType::kNoProof,
-         {
-             0,  // homestead_block
-             0,  // tangerine_whistle_block
-             0,  // spurious_dragon_block
-             0,  // byzantium_block
-             0,  // constantinople_block
-             0,  // petersburg_block
-         },
+         .chain_id = 1,
+         .seal_engine = SealEngineType::kNoProof,
+         .evmc_fork_blocks =
+             {
+                 0,  // Homestead
+                 0,  // Tangerine Whistle
+                 0,  // Spurious Dragon
+                 0,  // Byzantium
+                 0,  // Constantinople
+                 0,  // Petersburg
+             },
      }},
     {"Istanbul",
      {
-         1,  // chain_id
-         SealEngineType::kNoProof,
-         {
-             0,  // homestead_block
-             0,  // tangerine_whistle_block
-             0,  // spurious_dragon_block
-             0,  // byzantium_block
-             0,  // constantinople_block
-             0,  // petersburg_block
-             0,  // istanbul_block
-         },
+         .chain_id = 1,
+         .seal_engine = SealEngineType::kNoProof,
+         .evmc_fork_blocks =
+             {
+                 0,  // Homestead
+                 0,  // Tangerine Whistle
+                 0,  // Spurious Dragon
+                 0,  // Byzantium
+                 0,  // Constantinople
+                 0,  // Petersburg
+                 0,  // Istanbul
+             },
      }},
     {"Berlin",
      {
-         1,  // chain_id
-         SealEngineType::kNoProof,
-         {
-             0,  // homestead_block
-             0,  // tangerine_whistle_block
-             0,  // spurious_dragon_block
-             0,  // byzantium_block
-             0,  // constantinople_block
-             0,  // petersburg_block
-             0,  // istanbul_block
-             0,  // berlin_block
-         },
-         std::nullopt,  // dao_block
-         0,             // muir_glacier_block
+         .chain_id = 1,
+         .seal_engine = SealEngineType::kNoProof,
+         .evmc_fork_blocks =
+             {
+                 0,  // Homestead
+                 0,  // Tangerine Whistle
+                 0,  // Spurious Dragon
+                 0,  // Byzantium
+                 0,  // Constantinople
+                 0,  // Petersburg
+                 0,  // Istanbul
+                 0,  // Berlin
+             },
+         .muir_glacier_block = 0,
      }},
     {"London", test::kLondonConfig},
     {"Merge",
      {
-         1,  // chain_id
-         SealEngineType::kNoProof,
-         {
-             0,  // homestead_block
-             0,  // tangerine_whistle_block
-             0,  // spurious_dragon_block
-             0,  // byzantium_block
-             0,  // constantinople_block
-             0,  // petersburg_block
-             0,  // istanbul_block
-             0,  // berlin_block
-             0,  // london_block
-             0,  // FORK_NEXT_VALUE (EIP-3675)
-         },
-         std::nullopt,  // dao_block
-         0,             // muir_glacier_block
-         0,             // arrow_glacier_block
-         0,             // terminal_total_difficulty
+         .chain_id = 1,
+         .seal_engine = SealEngineType::kNoProof,
+         .evmc_fork_blocks =
+             {
+                 0,  // Homestead
+                 0,  // Tangerine Whistle
+                 0,  // Spurious Dragon
+                 0,  // Byzantium
+                 0,  // Constantinople
+                 0,  // Petersburg
+                 0,  // Istanbul
+                 0,  // Berlin
+                 0,  // London
+                 0,  // FORK_NEXT_VALUE (EIP-3675)
+             },
+         .muir_glacier_block = 0,
+         .arrow_glacier_block = 0,
+         .terminal_total_difficulty = 0,
      }},
     {"FrontierToHomesteadAt5",
      {
-         1,  // chain_id
-         SealEngineType::kNoProof,
-         {
-             5,  // homestead_block
-         },
+         .chain_id = 1,
+         .seal_engine = SealEngineType::kNoProof,
+         .evmc_fork_blocks =
+             {
+                 5,  // Homestead
+             },
      }},
     {"HomesteadToEIP150At5",
      {
-         1,  // chain_id
-         SealEngineType::kNoProof,
-         {
-             0,  // homestead_block
-             5,  // tangerine_whistle_block
-         },
+         .chain_id = 1,
+         .seal_engine = SealEngineType::kNoProof,
+         .evmc_fork_blocks =
+             {
+                 0,  // Homestead
+                 5,  // Tangerine Whistle
+             },
      }},
     {"HomesteadToDaoAt5",
      {
-         1,  // chain_id
-         SealEngineType::kNoProof,
-         {
-             0,  // homestead_block
-         },
-         5,  // dao_block
+         .chain_id = 1,
+         .seal_engine = SealEngineType::kNoProof,
+         .evmc_fork_blocks =
+             {
+                 0,  // Homestead
+             },
+         .dao_block = 5,
      }},
     {"EIP158ToByzantiumAt5",
      {
-         1,  // chain_id
-         SealEngineType::kNoProof,
-         {
-             0,  // homestead_block
-             0,  // tangerine_whistle_block
-             0,  // spurious_dragon_block
-             5,  // byzantium_block
-         },
+         .chain_id = 1,
+         .seal_engine = SealEngineType::kNoProof,
+         .evmc_fork_blocks =
+             {
+                 0,  // Homestead
+                 0,  // Tangerine Whistle
+                 0,  // Spurious Dragon
+                 5,  // Byzantium
+             },
      }},
     {"ByzantiumToConstantinopleFixAt5",
      {
-         1,  // chain_id
-         SealEngineType::kNoProof,
-         {
-             0,  // homestead_block
-             0,  // tangerine_whistle_block
-             0,  // spurious_dragon_block
-             0,  // byzantium_block
-             5,  // constantinople_block
-             5,  // petersburg_block
-         },
+         .chain_id = 1,
+         .seal_engine = SealEngineType::kNoProof,
+         .evmc_fork_blocks =
+             {
+                 0,  // Homestead
+                 0,  // Tangerine Whistle
+                 0,  // Spurious Dragon
+                 0,  // Byzantium
+                 5,  // Constantinople
+                 5,  // Petersburg
+             },
      }},
     {"BerlinToLondonAt5",
      {
-         1,  // chain_id
-         SealEngineType::kNoProof,
-         {
-             0,  // homestead_block
-             0,  // tangerine_whistle_block
-             0,  // spurious_dragon_block
-             0,  // byzantium_block
-             0,  // constantinople_block
-             0,  // petersburg_block
-             0,  // istanbul_block
-             0,  // berlin_block
-             5,  // london_block
-         },
+         .chain_id = 1,
+         .seal_engine = SealEngineType::kNoProof,
+         .evmc_fork_blocks =
+             {
+                 0,  // Homestead
+                 0,  // Tangerine Whistle
+                 0,  // Spurious Dragon
+                 0,  // Byzantium
+                 0,  // Constantinople
+                 0,  // Petersburg
+                 0,  // Istanbul
+                 0,  // Berlin
+                 5,  // London
+             },
      }},
     {"EIP2384",
      {
-         1,  // chain_id
-         SealEngineType::kNoProof,
-         {
-             0,  // homestead_block
-             0,  // tangerine_whistle_block
-             0,  // spurious_dragon_block
-             0,  // byzantium_block
-             0,  // constantinople_block
-             0,  // petersburg_block
-             0,  // istanbul_block
-         },
-         std::nullopt,  // dao_block
-         0,             // muir_glacier_block
+         .chain_id = 1,
+         .seal_engine = SealEngineType::kNoProof,
+         .evmc_fork_blocks =
+             {
+                 0,  // Homestead
+                 0,  // Tangerine Whistle
+                 0,  // Spurious Dragon
+                 0,  // Byzantium
+                 0,  // Constantinople
+                 0,  // Petersburg
+                 0,  // Istanbul
+             },
+         .muir_glacier_block = 0,
      }},
     {"ArrowGlacier",
      {
-         1,  // chain_id
-         SealEngineType::kNoProof,
-         {
-             0,  // homestead_block
-             0,  // tangerine_whistle_block
-             0,  // spurious_dragon_block
-             0,  // byzantium_block
-             0,  // constantinople_block
-             0,  // petersburg_block
-             0,  // istanbul_block
-             0,  // berlin_block
-             0,  // london_block
-         },
-         std::nullopt,  // dao_block
-         0,             // muir_glacier_block
-         0,             // arrow_glacier_block
+         .chain_id = 1,
+         .seal_engine = SealEngineType::kNoProof,
+         .evmc_fork_blocks =
+             {
+                 0,  // Homestead
+                 0,  // Tangerine Whistle
+                 0,  // Spurious Dragon
+                 0,  // Byzantium
+                 0,  // Constantinople
+                 0,  // Petersburg
+                 0,  // Istanbul
+                 0,  // Berlin
+                 0,  // London
+             },
+         .muir_glacier_block = 0,
+         .arrow_glacier_block = 0,
      }},
 };
 

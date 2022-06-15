@@ -231,11 +231,12 @@ std::optional<intx::uint256> EngineBase::expected_base_fee_per_gas(const BlockHe
 }
 
 evmc::bytes32 EngineBase::compute_transaction_root(const BlockBody& body) {
-    if (body.transactions.empty())
+    if (body.transactions.empty()) {
         return kEmptyRoot;
+    }
 
     static constexpr auto kEncoder = [](Bytes& to, const Transaction& txn) {
-        rlp::encode(to, txn, /*for_signing=*/false, /*wrap_eip2718_into_array=*/false);
+        rlp::encode(to, txn, /*for_signing=*/false, /*wrap_eip2718_into_string=*/false);
     };
 
     evmc::bytes32 txn_root{trie::root_hash(body.transactions, kEncoder)};
@@ -247,6 +248,7 @@ evmc::bytes32 EngineBase::compute_ommers_hash(const BlockBody& body) {
     if (body.ommers.empty()) {
         return kEmptyListHash;
     }
+
     Bytes ommers_rlp;
     rlp::encode(ommers_rlp, body.ommers);
     return bit_cast<evmc_bytes32>(keccak256(ommers_rlp));

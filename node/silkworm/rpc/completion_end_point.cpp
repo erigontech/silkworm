@@ -25,8 +25,8 @@
 
 namespace silkworm::rpc {
 
-int CompletionEndPoint::poll_one() {
-    int num_completed{0}; // returned when next_status == grpc::CompletionQueue::TIMEOUT
+std::size_t CompletionEndPoint::poll_one() {
+    std::size_t num_completed{0};
 
     void* tag{nullptr};
     bool ok{false};
@@ -38,7 +38,8 @@ int CompletionEndPoint::poll_one() {
         SILK_DEBUG << "CompletionEndPoint::poll_one post operation: " << completion_tag.processor;
         (*completion_tag.processor)(completion_tag.ok);
     } else if (next_status == grpc::CompletionQueue::SHUTDOWN) {
-        num_completed = -1;
+        closed_ = true;
+        SILK_DEBUG << "CompletionEndPoint::poll_one shutdown";
     }
 
     return num_completed;

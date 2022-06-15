@@ -31,9 +31,9 @@ namespace silkworm {
 struct AccessListEntry {
     evmc::address account{};
     std::vector<evmc::bytes32> storage_keys{};
-};
 
-bool operator==(const AccessListEntry& a, const AccessListEntry& b);
+    friend bool operator==(const AccessListEntry&, const AccessListEntry&) = default;
+};
 
 struct Transaction {
     // EIP-2718 transaction type

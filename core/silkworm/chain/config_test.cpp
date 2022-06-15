@@ -127,6 +127,7 @@ TEST_CASE("JSON serialization") {
             "berlinBlock":12244000,
             "londonBlock":12965000,
             "arrowGlacierBlock":13773000,
+            "grayGlacierBlock":15050000,
             "ethash":{}
         })");
 

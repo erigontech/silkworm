@@ -18,6 +18,7 @@
 #define SILKWORM_DB_TX_HPP
 
 #include <functional>
+#include <set>
 
 #include <silkworm/common/assert.hpp>
 #include <silkworm/common/cast.hpp>
@@ -27,7 +28,6 @@
 #include <silkworm/db/tables.hpp>
 #include <silkworm/db/util.hpp>
 
-#include "cpp20_backport.hpp"
 #include "types.hpp"
 
 using namespace silkworm;
@@ -38,9 +38,15 @@ class Db {
     class ReadOnlyAccess;
     class ReadWriteAccess;
 
+    explicit Db(db::EnvConfig db_config) {
+        // db_config.readonly = false;
+        // db_config.shared = true;
+        // db_config.growth_size = 10_Tebi;
+        env_ = db::open_env(db_config);
+    }
+
     explicit Db(std::string db_path) {
         db::EnvConfig db_config{db_path};
-        // db_config.readonly = false;
         env_ = db::open_env(db_config);
     }
 
@@ -56,7 +62,7 @@ class Db::ReadOnlyAccess {
     class Tx;
 
     ReadOnlyAccess(Db& db) : env_{db.env_} {}
-    ReadOnlyAccess(mdbx::env_managed& env) : env_{env} {}  // low level construction, more silkworm friendly
+    ReadOnlyAccess(mdbx::env& env) : env_{env} {}  // low level construction, more silkworm friendly
     ReadOnlyAccess(const ReadOnlyAccess& copy) : env_{copy.env_} {}
 
     Tx start_ro_tx();
@@ -67,7 +73,7 @@ class Db::ReadOnlyAccess {
     // auto abort(mdbx::txn_managed& txn) {return txn.abort();};
     // auto commit(mdbx::txn_managed& txn) {return txn.commit();};
 
-    mdbx::env_managed& env_;
+    mdbx::env& env_;
 };
 
 // A read-write access to database - used to enforce in some method signatures the type of access
@@ -76,8 +82,7 @@ class Db::ReadWriteAccess : public Db::ReadOnlyAccess {
     class Tx;
 
     ReadWriteAccess(Db& db) : Db::ReadOnlyAccess{db} {}
-    ReadWriteAccess(mdbx::env_managed& env)
-        : Db::ReadOnlyAccess{env} {}  // low level construction, more silkworm friendly
+    ReadWriteAccess(mdbx::env& env) : Db::ReadOnlyAccess{env} {}  // low level construction, more silkworm friendly
     ReadWriteAccess(const ReadWriteAccess& copy) : Db::ReadOnlyAccess{copy} {}
 
     Tx start_tx();
@@ -190,7 +195,13 @@ class Db::ReadOnlyAccess::Tx {
         }
     }
 
-    [[nodiscard]] bool read_body(const Hash& h, BlockBody& body) {  // todo: add to db::access_layer.hpp?
+    [[nodiscard]] bool has_body(const Hash& h, BlockNum bn) { return db::has_body(txn, bn, h.bytes); }
+
+    [[nodiscard]] bool read_body(const Hash& h, BlockNum bn, BlockBody& body) {
+        return db::read_body(txn, bn, h.bytes, /*read_senders=*/false, body);
+    }
+
+    [[nodiscard]] bool read_body(const Hash& h, BlockBody& body) {
         auto block_num = read_block_num(h);
         if (!block_num) {
             return false;
@@ -222,7 +233,9 @@ class Db::ReadOnlyAccess::Tx {
             Hash hash{key.substr(sizeof(BlockNum))};
             ByteView block_num = key.substr(0, sizeof(BlockNum));
 
-            if (bad_headers && contains(*bad_headers, hash)) return true;  // = continue loop
+            if (bad_headers && bad_headers->contains(hash)) {
+                return true;  // = continue loop
+            }
 
             BigInt td = 0;
             rlp::success_or_throw(rlp::decode(value, td));
@@ -268,6 +281,8 @@ class Db::ReadWriteAccess::Tx : public Db::ReadOnlyAccess::Tx {
             db::write_header_number(txn, header_hash.bytes, header.number);
         }
     }
+
+    void write_body(const BlockBody& body, Hash h, BlockNum bn) { db::write_body(txn, body, h.bytes, bn); }
 
     void write_head_header_hash(Hash h) {
         Bytes key = head_header_key();

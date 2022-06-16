@@ -19,6 +19,7 @@
 
 #include <cstdio>
 
+#include <silkworm/chain/identity.hpp>
 #include <silkworm/common/lru_cache.hpp>
 #include <silkworm/consensus/engine.hpp>
 #include <silkworm/downloader/packets/get_block_headers_packet.hpp>
@@ -26,6 +27,7 @@
 #include "preverified_hashes.hpp"
 #include "chain_elements.hpp"
 #include "header_only_state.hpp"
+#include "statistics.hpp"
 
 namespace silkworm {
 
@@ -56,9 +58,10 @@ namespace silkworm {
  */
 class HeaderChain {
   public:
-    using ConsensusEngine = std::unique_ptr<consensus::IEngine>;
+    explicit HeaderChain(const ChainIdentity&);
 
-    explicit HeaderChain(ConsensusEngine);
+    using ConsensusEnginePtr = std::unique_ptr<consensus::IEngine>;
+    explicit HeaderChain(ConsensusEnginePtr); // alternative constructor
 
     // load initial state from db - this must be done at creation time
     void recover_initial_state(Db::ReadOnlyAccess::Tx&);
@@ -71,12 +74,12 @@ class HeaderChain {
     BlockNum highest_block_in_db() const;
     BlockNum top_seen_block_height() const;
     void top_seen_block_height(BlockNum);
+    std::pair<BlockNum,BlockNum> anchor_height_range() const;
     size_t pending_links() const;
     size_t anchors() const;
-    std::string human_readable_status() const;
-    std::string dump_chain_bundles() const;
+    const Download_Statistics& statistics() const;
 
-    // core functionalities: anchor collection
+        // core functionalities: anchor collection
     // to collect anchor more quickly we do a skeleton request i.e. a request of many headers equally distributed in a
     // given range of block chain that we want to fill
     auto request_skeleton() -> std::optional<GetBlockHeadersPacket66>;
@@ -156,7 +159,7 @@ class HeaderChain {
     using Ignore = int;
     lru_cache<Hash, Ignore> seen_announces_;
     std::vector<Announce> announces_to_do_;
-    ConsensusEngine consensus_engine_;
+    ConsensusEnginePtr consensus_engine_;
     CustomHeaderOnlyChainState chain_state_;
     time_point_t last_skeleton_request;
 
@@ -166,22 +169,8 @@ class HeaderChain {
     uint64_t request_id_prefix;
     uint64_t request_count = 0;
 
-  public:
-    struct Statistics {
-        // headers status
-        uint64_t requested_headers = 0;
-        uint64_t received_headers = 0;
-        uint64_t accepted_headers = 0;
-        // not accepted
-        uint64_t not_requested_headers = 0;
-        uint64_t duplicated_headers = 0;
-        uint64_t invalid_headers = 0;
-        uint64_t bad_headers = 0;
-        // skeleton condition
-        std::string skeleton_condition;
-
-        friend std::ostream& operator<<(std::ostream& os, const HeaderChain::Statistics& stats);
-    } statistics_;
+    Download_Statistics statistics_;
+    std::string skeleton_condition_;
 };
 
 }  // namespace silkworm

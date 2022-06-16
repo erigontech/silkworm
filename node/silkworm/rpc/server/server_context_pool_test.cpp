@@ -55,12 +55,12 @@ TEST_CASE("ServerContext", "[silkworm][rpc][server_context]") {
         CHECK(server_context.client_end_point() != nullptr);
     }
 
-    SECTION("execution_loop") {
+    SECTION("execute_loop") {
         boost::asio::io_context::work work{*server_context.io_context()};
         std::atomic_bool context_thread_failed{false};
         std::thread context_thread{[&]() {
             try {
-                server_context.execution_loop();
+                server_context.execute_loop();
             } catch (...) {
                 context_thread_failed = true;
             }
@@ -72,7 +72,7 @@ TEST_CASE("ServerContext", "[silkworm][rpc][server_context]") {
 
     SECTION("stop") {
         boost::asio::io_context::work work{*server_context.io_context()};
-        std::thread context_thread{[&]() { server_context.execution_loop(); }};
+        std::thread context_thread{[&]() { server_context.execute_loop(); }};
         CHECK(!server_context.io_context()->stopped());
         server_context.stop();
         CHECK(server_context.io_context()->stopped());
@@ -103,8 +103,8 @@ TEST_CASE("ServerContextPool", "[silkworm][rpc][server_context]") {
     SECTION("add_context") {
         ServerContextPool server_context_pool{2};
         REQUIRE(server_context_pool.num_contexts() == 0);
-        server_context_pool.add_context(builder.AddCompletionQueue());
-        server_context_pool.add_context(builder.AddCompletionQueue());
+        server_context_pool.add_context(builder.AddCompletionQueue(), WaitMode::blocking);
+        server_context_pool.add_context(builder.AddCompletionQueue(), WaitMode::blocking);
         CHECK(server_context_pool.num_contexts() == 2);
     }
 
@@ -115,8 +115,8 @@ TEST_CASE("ServerContextPool", "[silkworm][rpc][server_context]") {
         auto queue_raw_ptr1 = queue_ptr1.get();
         auto queue_ptr2 = builder.AddCompletionQueue();
         auto queue_raw_ptr2 = queue_ptr2.get();
-        server_context_pool.add_context(std::move(queue_ptr1));
-        server_context_pool.add_context(std::move(queue_ptr2));
+        server_context_pool.add_context(std::move(queue_ptr1), WaitMode::blocking);
+        server_context_pool.add_context(std::move(queue_ptr2), WaitMode::blocking);
         CHECK(server_context_pool.num_contexts() == 2);
         auto& context1 = server_context_pool.next_context();
         CHECK(context1.server_queue() == queue_raw_ptr1);
@@ -129,8 +129,8 @@ TEST_CASE("ServerContextPool", "[silkworm][rpc][server_context]") {
     SECTION("next_io_context") {
         ServerContextPool server_context_pool{2};
         REQUIRE(server_context_pool.num_contexts() == 0);
-        server_context_pool.add_context(builder.AddCompletionQueue());
-        server_context_pool.add_context(builder.AddCompletionQueue());
+        server_context_pool.add_context(builder.AddCompletionQueue(), WaitMode::blocking);
+        server_context_pool.add_context(builder.AddCompletionQueue(), WaitMode::blocking);
         CHECK(server_context_pool.num_contexts() == 2);
         auto& context1 = server_context_pool.next_context();
         auto& context2 = server_context_pool.next_context();
@@ -147,16 +147,16 @@ TEST_CASE("ServerContextPool", "[silkworm][rpc][server_context]") {
 
     SECTION("start/stop w/ contexts") {
         ServerContextPool server_context_pool{2};
-        server_context_pool.add_context(builder.AddCompletionQueue());
-        server_context_pool.add_context(builder.AddCompletionQueue());
+        server_context_pool.add_context(builder.AddCompletionQueue(), WaitMode::blocking);
+        server_context_pool.add_context(builder.AddCompletionQueue(), WaitMode::blocking);
         CHECK_NOTHROW(server_context_pool.start());
         CHECK_NOTHROW(server_context_pool.stop());
     }
 
     SECTION("join") {
         ServerContextPool server_context_pool{2};
-        server_context_pool.add_context(builder.AddCompletionQueue());
-        server_context_pool.add_context(builder.AddCompletionQueue());
+        server_context_pool.add_context(builder.AddCompletionQueue(), WaitMode::blocking);
+        server_context_pool.add_context(builder.AddCompletionQueue(), WaitMode::blocking);
         server_context_pool.start();
         std::thread joining_thread{[&]() { server_context_pool.join(); }};
         server_context_pool.stop();
@@ -165,8 +165,8 @@ TEST_CASE("ServerContextPool", "[silkworm][rpc][server_context]") {
 
     SECTION("join after stop") {
         ServerContextPool server_context_pool{2};
-        server_context_pool.add_context(builder.AddCompletionQueue());
-        server_context_pool.add_context(builder.AddCompletionQueue());
+        server_context_pool.add_context(builder.AddCompletionQueue(), WaitMode::blocking);
+        server_context_pool.add_context(builder.AddCompletionQueue(), WaitMode::blocking);
         server_context_pool.start();
         server_context_pool.stop();
         CHECK_NOTHROW(server_context_pool.join());

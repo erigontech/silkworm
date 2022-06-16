@@ -71,7 +71,7 @@ void OutboundNewBlockHashes::execute(Db::ReadOnlyAccess, HeaderChain& hc, BodySe
 }
 
 std::string OutboundNewBlockHashes::content() const {
-    if (packet_.empty()) return "- no announcements to do, not sent -";
+    if (packet_.empty()) return "- no block hash announcements to do, not sent -";
     std::stringstream content;
     content << packet_;
     return content.str();

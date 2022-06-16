@@ -1,5 +1,5 @@
 /*
-   Copyright 2020 The Silkworm Authors
+   Copyright 2020-2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -52,7 +52,10 @@ intx::uint256 canonical_difficulty(uint64_t block_number, const uint64_t block_t
     }
 
     uint64_t bomb_delay{0};
-    if (config.arrow_glacier_block.has_value() && block_number >= config.arrow_glacier_block) {
+    if (config.gray_glacier_block.has_value() && block_number >= config.gray_glacier_block) {
+        // https://eips.ethereum.org/EIPS/eip-5133
+        bomb_delay = 11'400'000;
+    } else if (config.arrow_glacier_block.has_value() && block_number >= config.arrow_glacier_block) {
         // https://eips.ethereum.org/EIPS/eip-4345
         bomb_delay = 10'700'000;
     } else if (rev >= EVMC_LONDON) {

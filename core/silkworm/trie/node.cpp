@@ -1,5 +1,5 @@
 /*
-   Copyright 2021 The Silkworm Authors
+   Copyright 2021-2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -35,11 +35,6 @@ Node::Node(uint16_t state_mask, uint16_t tree_mask, uint16_t hash_mask, std::vec
 }
 
 void Node::set_root_hash(const std::optional<evmc::bytes32>& root_hash) { root_hash_ = root_hash; }
-
-bool operator==(const Node& a, const Node& b) {
-    return a.state_mask() == b.state_mask() && a.tree_mask() == b.tree_mask() && a.hash_mask() == b.hash_mask() &&
-           a.hashes() == b.hashes() && a.root_hash() == b.root_hash();
-}
 
 Bytes marshal_node(const Node& n) {
     size_t buf_size{/* 3 masks state/tree/hash 2 bytes each */ 6 +

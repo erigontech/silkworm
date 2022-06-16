@@ -1,5 +1,5 @@
 /*
-   Copyright 2021 The Silkworm Authors
+   Copyright 2021-2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -50,6 +50,8 @@ class Node {
 
     void set_root_hash(const std::optional<evmc::bytes32>& root_hash);
 
+    friend bool operator==(const Node&, const Node&) = default;
+
   private:
     uint16_t state_mask_{0};
     uint16_t tree_mask_{0};
@@ -57,8 +59,6 @@ class Node {
     std::vector<evmc::bytes32> hashes_{};
     std::optional<evmc::bytes32> root_hash_{std::nullopt};
 };
-
-bool operator==(const Node& a, const Node& b);
 
 // Erigon MarshalTrieNode
 Bytes marshal_node(const Node& n);

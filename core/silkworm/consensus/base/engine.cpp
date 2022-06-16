@@ -15,6 +15,7 @@
 */
 
 #include "engine.hpp"
+#include "silkworm/common/cast.hpp"
 
 #include <silkworm/chain/protocol_param.hpp>
 #include <silkworm/common/as_range.hpp>
@@ -31,11 +32,7 @@ ValidationResult EngineBase::pre_validate_block(const Block& block, const BlockS
         return err;
     }
 
-    static constexpr auto kEncoder = [](Bytes& to, const Transaction& txn) {
-        rlp::encode(to, txn, /*for_signing=*/false, /*wrap_eip2718_into_string=*/false);
-    };
-
-    evmc::bytes32 txn_root{trie::root_hash(block.transactions, kEncoder)};
+    evmc::bytes32 txn_root = compute_transaction_root(block);
     if (txn_root != header.transactions_root) {
         return ValidationResult::kWrongTransactionsRoot;
     }
@@ -53,9 +50,7 @@ ValidationResult EngineBase::pre_validate_block(const Block& block, const BlockS
         return ValidationResult::kTooManyOmmers;
     }
 
-    Bytes ommers_rlp;
-    rlp::encode(ommers_rlp, block.ommers);
-    ethash::hash256 ommers_hash{keccak256(ommers_rlp)};
+    evmc::bytes32 ommers_hash = compute_ommers_hash(block);
     if (ByteView{ommers_hash.bytes} != ByteView{header.ommers_hash}) {
         return ValidationResult::kWrongOmmersHash;
     }
@@ -232,6 +227,30 @@ std::optional<intx::uint256> EngineBase::expected_base_fee_per_gas(const BlockHe
             return 0;
         }
     }
+}
+
+evmc::bytes32 EngineBase::compute_transaction_root(const BlockBody& body) {
+    if (body.transactions.empty()) {
+        return kEmptyRoot;
+    }
+
+    static constexpr auto kEncoder = [](Bytes& to, const Transaction& txn) {
+        rlp::encode(to, txn, /*for_signing=*/false, /*wrap_eip2718_into_string=*/false);
+    };
+
+    evmc::bytes32 txn_root{trie::root_hash(body.transactions, kEncoder)};
+
+    return txn_root;
+}
+
+evmc::bytes32 EngineBase::compute_ommers_hash(const BlockBody& body) {
+    if (body.ommers.empty()) {
+        return kEmptyListHash;
+    }
+
+    Bytes ommers_rlp;
+    rlp::encode(ommers_rlp, body.ommers);
+    return bit_cast<evmc_bytes32>(keccak256(ommers_rlp));
 }
 
 }  // namespace silkworm::consensus

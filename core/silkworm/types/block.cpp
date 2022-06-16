@@ -1,5 +1,5 @@
 /*
-   Copyright 2020-2021 The Silkworm Authors
+   Copyright 2020-2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -33,19 +33,6 @@ ethash::hash256 BlockHeader::boundary() const {
     auto result{difficulty > 1u ? intx::uint256{dividend / difficulty}
                                 : 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff_u256};
     return intx::be::store<ethash::hash256>(result);
-}
-
-bool operator==(const BlockHeader& a, const BlockHeader& b) {
-    return a.parent_hash == b.parent_hash && a.ommers_hash == b.ommers_hash && a.beneficiary == b.beneficiary &&
-           a.state_root == b.state_root && a.transactions_root == b.transactions_root &&
-           a.receipts_root == b.receipts_root && a.logs_bloom == b.logs_bloom && a.difficulty == b.difficulty &&
-           a.number == b.number && a.gas_limit == b.gas_limit && a.gas_used == b.gas_used &&
-           a.timestamp == b.timestamp && a.extra_data == b.extra_data && a.mix_hash == b.mix_hash &&
-           a.nonce == b.nonce && a.base_fee_per_gas == b.base_fee_per_gas;
-}
-
-bool operator==(const BlockBody& a, const BlockBody& b) {
-    return a.transactions == b.transactions && a.ommers == b.ommers;
 }
 
 //! \brief Recover transaction senders for each block.

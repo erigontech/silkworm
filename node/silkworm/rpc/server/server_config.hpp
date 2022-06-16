@@ -23,6 +23,8 @@
 
 #include <grpcpp/grpcpp.h>
 
+#include <silkworm/rpc/server/wait_strategy.hpp>
+
 namespace silkworm::rpc {
 
 constexpr const char* kDefaultAddressUri{"localhost:9090"};
@@ -36,15 +38,20 @@ class ServerConfig {
     void set_address_uri(const std::string& address_uri) noexcept;
     void set_credentials(std::shared_ptr<grpc::ServerCredentials> credentials) noexcept;
     void set_num_contexts(uint32_t num_contexts) noexcept;
+    void set_wait_mode(WaitMode wait_mode) noexcept;
 
     const std::string& address_uri() const noexcept { return address_uri_; }
     std::shared_ptr<grpc::ServerCredentials> credentials() const noexcept { return credentials_; }
     uint32_t num_contexts() const noexcept { return num_contexts_; }
+    WaitMode wait_mode() const noexcept { return wait_mode_; }
 
   private:
     std::string address_uri_;
     std::shared_ptr<grpc::ServerCredentials> credentials_;
     uint32_t num_contexts_;
+
+    //! The waiting mode used by execution loops during idle cycles.
+    WaitMode wait_mode_;
 };
 
 } // namespace silkworm::rpc

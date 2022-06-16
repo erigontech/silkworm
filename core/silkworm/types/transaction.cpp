@@ -29,10 +29,6 @@
 
 namespace silkworm {
 
-bool operator==(const AccessListEntry& a, const AccessListEntry& b) {
-    return a.account == b.account && a.storage_keys == b.storage_keys;
-}
-
 bool operator==(const Transaction& a, const Transaction& b) {
     // from is omitted since it's derived from the signature
     return a.type == b.type && a.nonce == b.nonce && a.max_priority_fee_per_gas == b.max_priority_fee_per_gas &&

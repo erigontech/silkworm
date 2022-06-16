@@ -39,6 +39,10 @@ class Context {
 
     [[nodiscard]] mdbx::env& env() { return env_; }
 
+    void commit_txn() {
+        txn_.commit();
+    }
+
     void commit_and_renew_txn() {
         txn_.commit();
         txn_ = env_.start_write();

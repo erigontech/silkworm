@@ -239,6 +239,12 @@ bool read_body(mdbx::txn& txn, const Bytes& key, bool read_senders, BlockBody& o
     return true;
 }
 
+bool has_body(mdbx::txn& txn, BlockNum block_number, const uint8_t (&hash)[kHashLength]) {
+    auto key{block_key(block_number, hash)};
+    Cursor src(txn, table::kBlockBodies);
+    return src.find(to_slice(key), false);
+}
+
 void write_body(mdbx::txn& txn, const BlockBody& body, const uint8_t (&hash)[kHashLength], const BlockNum number) {
     detail::BlockBodyForStorage body_for_storage{};
     body_for_storage.ommers = body.ommers;

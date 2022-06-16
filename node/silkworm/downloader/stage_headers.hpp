@@ -24,7 +24,7 @@
 #include <silkworm/downloader/messages/internal_message.hpp>
 
 #include "stage.h"
-#include "block_downloader.hpp"
+#include "block_exchange.hpp"
 
 namespace silkworm {
 
@@ -65,7 +65,7 @@ namespace silkworm {
  */
 class HeadersStage : public Stage {
   public:
-    HeadersStage(const Db::ReadWriteAccess&, BlockDownloader&);
+    HeadersStage(const Db::ReadWriteAccess&, BlockExchange&);
     HeadersStage(const HeadersStage&) = delete;  // not copyable
     HeadersStage(HeadersStage&&) = delete;       // nor movable
     ~HeadersStage();
@@ -83,7 +83,7 @@ class HeadersStage : public Stage {
     void receive_message(const sentry::InboundMessage&);
 
     Db::ReadWriteAccess db_access_;
-    BlockDownloader& block_downloader_;
+    BlockExchange& block_downloader_;
 };
 
 }  // namespace silkworm

@@ -42,6 +42,12 @@ auto move_at_end(std::vector<T>& destination, std::vector<T>& source) {
                        std::make_move_iterator(source.end()));
 }
 
+// check if a vector contains an element - replace with set::contains() if c++20 is available
+template <typename T>
+inline bool contains(const std::vector<T>& c, const T& e) {
+    return find(c.begin(), c.end(), e) != c.end();
+}
+
 #include <stack>
 
 // bulk insert for stacks

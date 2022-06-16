@@ -18,26 +18,59 @@ limitations under the License.
 
 namespace silkworm {
 
-BodyPersistence::BodyPersistence(Db::ReadWriteAccess::Tx& tx): tx_{tx} {
-    // todo: implement
+BodyPersistence::BodyPersistence(Db::ReadWriteAccess::Tx& tx, const ChainIdentity& ci)
+    : tx_{tx},
+      consensus_engine_{consensus::engine_factory(ci.chain)},
+      chain_state_{tx.raw(), /*prune_from=*/0, /*historical_block=null*/} {
+
+    auto bodies_stage_height = tx.read_stage_progress(db::stages::kBlockBodiesKey);
+
+    initial_height_ = bodies_stage_height;
+    highest_height_ = bodies_stage_height;
 }
 
-void BodyPersistence::persist(const BlockBody&) {
-    // todo: implement
-}
-void BodyPersistence::persist(const std::vector<BlockBody>& bodies) {
-    for(auto& body: bodies) {
-        persist(body);
+BlockNum BodyPersistence::initial_height() const { return initial_height_; }
+BlockNum BodyPersistence::highest_height() const { return highest_height_; }
+bool BodyPersistence::unwind_needed() const { return unwind_needed_; }
+BlockNum BodyPersistence::unwind_point() const { return unwind_point_; }
+Hash BodyPersistence::bad_block() const { return bad_block_; }
+
+void BodyPersistence::persist(const Block& block) {
+    Hash block_hash = block.header.hash(); // save cpu
+    BlockNum block_num = block.header.number;
+
+    // todo: ask! (pre_validate_block() is more strong than Erigon does, but it seems more aligned with the yellow paper)
+    auto validation_result = consensus_engine_->pre_validate_block(block, chain_state_);
+
+    if (validation_result != ValidationResult::kOk) {
+        unwind_needed_ = true;
+        unwind_point_ = block_num - 1;
+        bad_block_ = block_hash;
+        return;
+    }
+
+    if (!tx_.has_body(block_hash, block_num))
+        tx_.write_body(block, block_hash, block_num);
+
+    if (block_num > highest_height_) {
+        highest_height_ = block_num;
+        tx_.write_stage_progress(db::stages::kBlockBodiesKey, block_num);
     }
 }
-void BodyPersistence::close() {
-    // todo: implement
+
+void BodyPersistence::persist(const std::vector<Block>& blocks) {
+    for(auto& block: blocks) {
+        persist(block);
+    }
 }
 
-// todo: implement
-bool BodyPersistence::unwind_needed() const { return false; }
-BlockNum BodyPersistence::unwind_point() const { return 0; }
-BlockNum BodyPersistence::initial_height() const { return 0; }
-BlockNum BodyPersistence::highest_height() const { return 0; }
+void BodyPersistence::close() {
+    // does nothing
+}
+
+void BodyPersistence::remove_bodies(BlockNum new_height, Hash, Db::ReadWriteAccess::Tx& tx) {
+    // like Erigon, we do not erase "wrong" blocks, only update stage progress...
+    tx.write_stage_progress(db::stages::kBlockBodiesKey, new_height);
+}
 
 }

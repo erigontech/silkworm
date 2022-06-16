@@ -30,7 +30,7 @@
 
 namespace silkworm {
 
-class WorkingChain_ForTest : public HeaderChain {
+class HeaderChain_ForTest : public HeaderChain {
   public:  // publication of internal members to test methods functioning
     using HeaderChain::generate_request_id;
     using HeaderChain::HeaderChain;
@@ -75,7 +75,7 @@ TEST_CASE("working/persistent-chain integration test") {
         BlockNum highest_in_db = 0;
 
         // creating the working chain as the downloader does at its construction
-        WorkingChain_ForTest wc(std::make_unique<DummyConsensusEngine>());
+        HeaderChain_ForTest wc(std::make_unique<DummyConsensusEngine>());
         wc.recover_initial_state(tx);
         wc.sync_current_state(highest_in_db);
         auto request_id = wc.generate_request_id();
@@ -166,7 +166,7 @@ TEST_CASE("working/persistent-chain integration test") {
         BlockNum highest_in_db = 0;
 
         // creating the working chain as the downloader does at its construction
-        WorkingChain_ForTest wc(std::make_unique<DummyConsensusEngine>());
+        HeaderChain_ForTest wc(std::make_unique<DummyConsensusEngine>());
         wc.recover_initial_state(tx);
         wc.sync_current_state(highest_in_db);
         auto request_id = wc.generate_request_id();
@@ -279,7 +279,7 @@ TEST_CASE("working/persistent-chain integration test") {
         BlockNum highest_in_db = 0;
 
         // creating the working chain as the downloader does at its construction
-        WorkingChain_ForTest wc(std::make_unique<DummyConsensusEngine>());
+        HeaderChain_ForTest wc(std::make_unique<DummyConsensusEngine>());
         wc.recover_initial_state(tx);
         wc.sync_current_state(highest_in_db);
         auto request_id = wc.generate_request_id();
@@ -395,7 +395,7 @@ TEST_CASE("working/persistent-chain integration test") {
         BlockNum highest_in_db = 0;
 
         // creating the working chain as the downloader does at its construction
-        WorkingChain_ForTest wc(std::make_unique<DummyConsensusEngine>());
+        HeaderChain_ForTest wc(std::make_unique<DummyConsensusEngine>());
         wc.recover_initial_state(tx);
         wc.sync_current_state(highest_in_db);
         auto request_id = wc.generate_request_id();

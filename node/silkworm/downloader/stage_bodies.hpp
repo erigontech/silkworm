@@ -22,14 +22,14 @@ limitations under the License.
 #include <silkworm/downloader/internals/types.hpp>
 #include <silkworm/downloader/messages/internal_message.hpp>
 
-#include "block_downloader.hpp"
+#include "block_exchange.hpp"
 #include "stage.h"
 
 namespace silkworm {
 
 class BodiesStage : public Stage {
   public:
-    BodiesStage(const Db::ReadWriteAccess&, BlockDownloader&);
+    BodiesStage(const Db::ReadWriteAccess&, BlockExchange&);
     BodiesStage(const BodiesStage&) = delete;  // not copyable
     BodiesStage(BodiesStage&&) = delete;       // nor movable
     ~BodiesStage();
@@ -40,10 +40,12 @@ class BodiesStage : public Stage {
 
   private:
     void send_body_requests();  // send requests for more bodies
-    auto withdraw_ready_bodies() -> std::shared_ptr<InternalMessage<std::vector<BlockBody>>>;
+    auto sync_body_sequence(BlockNum highest_body, BlockNum highest_header) -> std::shared_ptr<InternalMessage<void>>;
+    auto withdraw_ready_bodies() -> std::shared_ptr<InternalMessage<std::vector<Block>>>;
+    void send_announcements();
 
     Db::ReadWriteAccess db_access_;
-    BlockDownloader& block_downloader_;
+    BlockExchange& block_downloader_;
 };
 
 }  // namespace silkworm

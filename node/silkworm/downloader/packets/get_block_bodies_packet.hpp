@@ -43,12 +43,12 @@ namespace rlp {
 }  // namespace rlp
 
 inline std::ostream& operator<<(std::ostream& os, const GetBlockBodiesPacket66& packet) {
-    os << " reqId=" << packet.requestId;
+    os << "reqId=" << packet.requestId;
 
     if (packet.request.size() == 1)
         os << " hash=" << to_hex(packet.request[0]);
     else
-        os << " hash=" << packet.request.size() << " block hashes";
+        os << " requested=" << packet.request.size() << " block hashes";
 
     return os;
 }

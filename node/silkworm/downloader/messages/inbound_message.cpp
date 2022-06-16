@@ -21,6 +21,7 @@
 #include <silkworm/common/log.hpp>
 
 #include "inbound_block_headers.hpp"
+#include "inbound_block_bodies.hpp"
 #include "inbound_get_block_bodies.hpp"
 #include "inbound_get_block_headers.hpp"
 #include "inbound_new_block.hpp"
@@ -40,6 +41,8 @@ std::shared_ptr<InboundMessage> InboundMessage::make(const sentry::InboundMessag
         message = std::make_shared<InboundNewBlock>(raw_message);
     else if (raw_message.id() == sentry::MessageId::BLOCK_HEADERS_66)
         message = std::make_shared<InboundBlockHeaders>(raw_message);
+    else if (raw_message.id() == sentry::MessageId::BLOCK_BODIES_66)
+        message = std::make_shared<InboundBlockBodies>(raw_message);
     else
         log::Warning() << "InboundMessage " << sentry::MessageId_Name(raw_message.id())
                        << " received but ignored";

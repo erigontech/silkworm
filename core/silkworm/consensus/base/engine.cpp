@@ -69,14 +69,14 @@ ValidationResult EngineBase::validate_ommers(const Block& block, const BlockStat
         return ValidationResult::kDuplicateOmmer;
     }
 
-    std::__1::optional<BlockHeader> parent{get_parent_header(state, header)};
+    std::optional<BlockHeader> parent{get_parent_header(state, header)};
 
     for (const BlockHeader& ommer : block.ommers) {
         if (ValidationResult err{validate_block_header(ommer, state, /*with_future_timestamp_check=*/false)};
             err != ValidationResult::kOk) {
             return ValidationResult::kInvalidOmmerHeader;
         }
-        std::__1::vector<BlockHeader> old_ommers;
+        std::vector<BlockHeader> old_ommers;
         if (!is_kin(ommer, *parent, header.parent_hash, 6, state, old_ommers)) {
             return ValidationResult::kNotAnOmmer;
         }

@@ -21,39 +21,12 @@ limitations under the License.
 namespace silkworm {
 
 TEST_CASE("cpp20 backport") {
-    SECTION("contains on vectors") {
-        std::vector<int> v = {1, 2, 3};
-
-        REQUIRE(!contains(v, 0));
-        REQUIRE(contains(v, 1));
-        REQUIRE(contains(v, 2));
-        REQUIRE(contains(v, 3));
-    }
-
-    SECTION("contains on sets") {
-        std::set<int> v = {1, 2, 3};
-
-        REQUIRE(!contains(v, 0));
-        REQUIRE(contains(v, 1));
-        REQUIRE(contains(v, 2));
-        REQUIRE(contains(v, 3));
-    }
-
-    SECTION("contains on maps") {
-        std::map<int, std::string> m = {{1, "aaa"}, {2, "bbb"}, {3, "ccc"}};
-
-        REQUIRE(!contains(m, 0));
-        REQUIRE(contains(m, 1));
-        REQUIRE(contains(m, 2));
-        REQUIRE(contains(m, 3));
-    }
-
     SECTION("move_at_end on vectors") {
         std::vector<int> source = {4, 5, 6};
         std::vector<int> destination = {1, 2, 3};
 
         move_at_end(destination, source);
-        REQUIRE(source.size() == 3); // source has elements but moved
+        REQUIRE(source.size() == 3);  // source has elements but moved
         REQUIRE(destination.size() == 6);
         REQUIRE(destination == std::vector({1, 2, 3, 4, 5, 6}));
     }
@@ -67,7 +40,6 @@ TEST_CASE("cpp20 backport") {
         REQUIRE(destination.size() == 6);
         REQUIRE(destination == std::stack<int>({1, 2, 3, 4, 5, 6}));
     }
-
 }
 
 }  // namespace silkworm

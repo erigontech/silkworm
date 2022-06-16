@@ -97,4 +97,8 @@ void MergeEngine::finalize(IntraBlockState& state, const Block& block, evmc_revi
 
 evmc::address MergeEngine::get_beneficiary(const BlockHeader& header) { return header.beneficiary; }
 
+ValidationResult MergeEngine::validate_ommers(const Block&, const BlockState&) {
+    return ValidationResult::kOk;
+}
+
 }  // namespace silkworm::consensus

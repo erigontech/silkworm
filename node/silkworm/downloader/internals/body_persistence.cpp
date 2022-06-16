@@ -40,7 +40,7 @@ void BodyPersistence::persist(const Block& block) {
     BlockNum block_num = block.header.number;
 
     // todo: ask! (pre_validate_block() is more strong than Erigon does, but it seems more aligned with the yellow paper)
-    auto validation_result = consensus_engine_->pre_validate_block(block, chain_state_);
+    auto validation_result = consensus_engine_->validate_ommers(block, chain_state_);
 
     if (validation_result != ValidationResult::kOk) {
         unwind_needed_ = true;

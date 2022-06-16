@@ -20,7 +20,7 @@
 #include <silkworm/common/as_range.hpp>
 #include <silkworm/common/log.hpp>
 
-#include "cpp20_backport.hpp"
+#include "algorithm.hpp"
 #include "random_number.hpp"
 
 namespace silkworm {

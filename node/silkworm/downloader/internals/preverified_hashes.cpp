@@ -16,8 +16,6 @@
 
 #include "preverified_hashes.hpp"
 
-#include "cpp20_backport.hpp"
-
 extern const uint64_t* preverified_hashes_mainnet_data();
 extern size_t sizeof_preverified_hashes_mainnet_data();
 extern uint64_t preverified_hashes_mainnet_height();
@@ -43,9 +41,7 @@ PreverifiedHashes PreverifiedHashes::load(uint64_t chain_id) {
     PreverifiedHashes result{};
 
     if (chain_id == 1) {
-        load_preverified_hashes(result,
-                                preverified_hashes_mainnet_data,
-                                sizeof_preverified_hashes_mainnet_data,
+        load_preverified_hashes(result, preverified_hashes_mainnet_data, sizeof_preverified_hashes_mainnet_data,
                                 preverified_hashes_mainnet_height);
     }
 

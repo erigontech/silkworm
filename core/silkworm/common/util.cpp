@@ -1,5 +1,5 @@
 /*
-   Copyright 2020-2021 The Silkworm Authors
+   Copyright 2020-2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -56,54 +56,6 @@ static constexpr uint8_t kUnhexTable4[256] = {
     0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
     0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
     0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
-
-ByteView left_pad(ByteView view, size_t min_size, Bytes& buffer) {
-    if (view.size() >= min_size) {
-        return view;
-    }
-
-    if (buffer.size() < min_size) {
-        buffer.resize(min_size);
-    } else {
-        // view & buffer might overlap in memory,
-        // so we avoid shrinking the buffer prior to the memmove
-    }
-
-    assert(view.size() < min_size);
-    size_t prefix_len{min_size - view.size()};
-
-    // view & buffer might overlap in memory,
-    // thus memmove instead of memcpy
-    std::memmove(buffer.data() + prefix_len, view.data(), view.size());
-
-    buffer.resize(min_size);
-    std::memset(buffer.data(), 0, prefix_len);
-
-    return buffer;
-}
-
-ByteView right_pad(ByteView view, size_t min_size, Bytes& buffer) {
-    if (view.size() >= min_size) {
-        return view;
-    }
-
-    if (buffer.size() < view.size()) {
-        buffer.resize(view.size());
-    } else {
-        // view & buffer might overlap in memory,
-        // so we avoid shrinking the buffer prior to the memmove
-    }
-
-    // view & buffer might overlap in memory,
-    // thus memmove instead of memcpy
-    std::memmove(buffer.data(), view.data(), view.size());
-
-    assert(view.size() < min_size);
-    buffer.resize(view.size());
-    buffer.resize(min_size);
-
-    return buffer;
-}
 
 evmc::address to_evmc_address(ByteView bytes) {
     evmc::address out;

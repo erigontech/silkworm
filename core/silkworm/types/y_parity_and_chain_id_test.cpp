@@ -1,5 +1,5 @@
 /*
-   Copyright 2021 The Silkworm Authors
+   Copyright 2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -14,11 +14,11 @@
    limitations under the License.
 */
 
-#include "ecdsa.hpp"
+#include "y_parity_and_chain_id.hpp"
 
 #include <catch2/catch.hpp>
 
-namespace silkworm::ecdsa {
+namespace silkworm {
 
 TEST_CASE("EIP-155 v to y parity & chain id ") {
     CHECK(v_to_y_parity_and_chain_id(0) == std::nullopt);
@@ -54,4 +54,4 @@ TEST_CASE("EIP-155 v to y parity & chain id ") {
     CHECK(y_parity_and_chain_id_to_v(true, 1) == 38);
 }
 
-}  // namespace silkworm::ecdsa
+}  // namespace silkworm

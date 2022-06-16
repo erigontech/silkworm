@@ -1,5 +1,5 @@
 /*
-   Copyright 2020-2021 The Silkworm Authors
+   Copyright 2020-2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -58,9 +58,6 @@ namespace param {
     inline constexpr uint64_t kBlockRewardFrontier{5 * kEther};
     inline constexpr uint64_t kBlockRewardByzantium{3 * kEther};
     inline constexpr uint64_t kBlockRewardConstantinople{2 * kEther};
-
-    inline constexpr uint64_t kGQuadDivisorByzantium{20};  // EIP-198
-    inline constexpr uint64_t kGQuadDivisorBerlin{3};      // EIP-2565
 
     // https://eips.ethereum.org/EIPS/eip-3529
     inline constexpr uint64_t kMaxRefundQuotientFrontier{2};

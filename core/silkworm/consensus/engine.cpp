@@ -1,5 +1,5 @@
 /*
-   Copyright 2021 The Silkworm Authors
+   Copyright 2021-2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -16,11 +16,12 @@
 
 #include "engine.hpp"
 
+#include <silkpre/secp256k1n.hpp>
+
 #include <silkworm/chain/intrinsic_gas.hpp>
 #include <silkworm/consensus/ethash/engine.hpp>
 #include <silkworm/consensus/merge/engine.hpp>
 #include <silkworm/consensus/noproof/engine.hpp>
-#include <silkworm/crypto/ecdsa.hpp>
 
 namespace silkworm::consensus {
 
@@ -59,7 +60,7 @@ ValidationResult pre_validate_transaction(const Transaction& txn, uint64_t block
 
     /* Should the sender already be present it means the validation of signature already occurred */
     if (!txn.from.has_value()) {
-        if (!ecdsa::is_valid_signature(txn.r, txn.s, rev >= EVMC_HOMESTEAD)) {
+        if (!silkpre::is_valid_signature(txn.r, txn.s, rev >= EVMC_HOMESTEAD)) {
             return ValidationResult::kInvalidSignature;
         }
     }

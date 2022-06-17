@@ -97,8 +97,12 @@ void MergeEngine::finalize(IntraBlockState& state, const Block& block, evmc_revi
 
 evmc::address MergeEngine::get_beneficiary(const BlockHeader& header) { return header.beneficiary; }
 
-ValidationResult MergeEngine::validate_ommers(const Block&, const BlockState&) {
-    return ValidationResult::kOk;
+ValidationResult MergeEngine::validate_ommers(const Block& block, const BlockState& state) {
+    if (block.header.difficulty != 0) {
+        return ethash_engine_.validate_ommers(block, state);
+    } else {
+        return pos_engine_.validate_ommers(block, state);
+    }
 }
 
 }  // namespace silkworm::consensus

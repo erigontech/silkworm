@@ -63,7 +63,7 @@ TEST_CASE("BodyPersistence - body persistence") {
         block1.header.difficulty = 17'171'480'576;  // a random value
         block1.header.parent_hash = *header0_hash;
         auto header1_hash = block1.header.hash();
-        // block is incomplete, so it is not valid, this is desired here
+        block1.ommers.push_back(BlockHeader{}); // generate error InvalidOmmerHeader
 
         BodyPersistence bp(tx, chain_identity);
 

@@ -35,20 +35,24 @@ class PrefixSet {
     PrefixSet(const PrefixSet& other) = default;
     PrefixSet& operator=(const PrefixSet& other) = default;
 
-    void insert(ByteView key);
-    void insert(Bytes&& key);
+    void insert(ByteView key, bool marker = false);
+    void insert(Bytes&& key, bool marker = false);
 
     //! \brief Returns whether or not provided prefix is contained in any of the owned keys
     //! \remarks Doesn't change the set logically, but is not marked const since it's not safe to call this method
     //! concurrently. \see Erigon's RetainList::Retain
     bool contains(ByteView prefix);
 
+    //! \brief Returns the next key with marker==true in the list
+    //! \see Erigon's RetainList::RetainWithMarker
+    std::pair<bool, ByteView> contains_and_next_marked(ByteView prefix);
+
   private:
     void ensure_sorted();
 
-    std::vector<Bytes> nibbled_keys_;  // Collection of nibbled keys
-    size_t index_{0};                  // Index of last compared key
-    bool sorted_{false};               // Whether nibbled_keys_ has been unique-ed and sorted
+    std::vector<std::pair<Bytes, bool>> nibbled_keys_;  // Collection of nibbled keys with marker of newly created
+    size_t index_{0};                                   // Index of last compared key
+    bool sorted_{false};                                // Whether nibbled_keys_ has been unique-ed and sorted
 };
 
 }  // namespace silkworm::trie

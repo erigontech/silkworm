@@ -22,10 +22,10 @@
 
 namespace silkworm::trie {
 
-void PrefixSet::insert(ByteView key) { insert(Bytes(key)); }
+void PrefixSet::insert(ByteView key, bool marker) { insert(Bytes(key), marker); }
 
-void PrefixSet::insert(Bytes&& key) {
-    nibbled_keys_.emplace_back(key);
+void PrefixSet::insert(Bytes&& key, bool marker) {
+    nibbled_keys_.emplace_back(key, marker);
     sorted_ = false;
 }
 
@@ -40,22 +40,31 @@ bool PrefixSet::contains(ByteView prefix) {
     // We optimize for the case when contains() inquires are made with increasing prefixes,
     // e.g. contains("00"), contains("04"), contains("0b"), contains("0b05"), contains("0c"), contains("0f"), ...
     // instead of some random order.
-    while (index_ > 0 && nibbled_keys_[index_] > prefix) {
+    while (index_ > 0 && nibbled_keys_[index_].first > prefix) {
         --index_;
     }
 
     for (size_t max_index{nibbled_keys_.size() - 1};; ++index_) {
-        const auto& key{nibbled_keys_[index_]};
+        const auto& [key, _]{nibbled_keys_[index_]};
         if (key.starts_with(prefix)) {
             return true;
         }
-        if (key > prefix) {
-            return false;
-        }
-        if (index_ == max_index) {
+        if (key > prefix || index_ == max_index) {
             return false;
         }
     }
+}
+
+std::pair<bool, ByteView> PrefixSet::contains_and_next_marked(ByteView prefix) {
+    if (!contains(prefix)) {
+        return {false, {}};
+    }
+    for (size_t i{index_ + 1}, e{nibbled_keys_.size() - 1}; i <= e; ++i) {
+        if (nibbled_keys_[i].second) {
+            return {true, ByteView(nibbled_keys_[i].first)};
+        }
+    }
+    return {true, {}};  // There is no newly created account after this prefix
 }
 
 void PrefixSet::ensure_sorted() {

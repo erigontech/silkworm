@@ -29,7 +29,9 @@ TEST_CASE("Prefix set") {
 
     ps.insert(string_view_to_byte_view("abc"));
     ps.insert(string_view_to_byte_view("fg"));
-    ps.insert(string_view_to_byte_view("abc"));  // duplicate
+    ps.insert(string_view_to_byte_view("abc"));        // duplicate
+    ps.insert(string_view_to_byte_view("abd"), true);  // next marked as created
+    ps.insert(string_view_to_byte_view("abc"));        // duplicate
 
     ps.insert(string_view_to_byte_view("ab"));
 
@@ -38,6 +40,10 @@ TEST_CASE("Prefix set") {
     CHECK(!ps.contains(string_view_to_byte_view("aac")));
     CHECK(ps.contains(string_view_to_byte_view("ab")));
     CHECK(ps.contains(string_view_to_byte_view("abc")));
+
+    auto [contains, next_created]{ps.contains_and_next_marked(string_view_to_byte_view("abc"))};
+    CHECK(contains);
+    CHECK(next_created == string_view_to_byte_view("abd"));
 
     CHECK(!ps.contains(string_view_to_byte_view("abcd")));
     CHECK(!ps.contains(string_view_to_byte_view("b")));

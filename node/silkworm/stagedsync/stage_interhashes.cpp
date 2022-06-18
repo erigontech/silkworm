@@ -171,7 +171,7 @@ trie::PrefixSet InterHashes::gather_forward_account_changes(
                     }
                 }
 
-                ret.insert(trie::unpack_nibbles(hashed_address.bytes));
+                ret.insert(trie::unpack_nibbles(hashed_address.bytes), changeset_value_view.empty());
             }
             changeset_data = account_changeset.to_current_next_multi(/*throw_notfound=*/false);
         }

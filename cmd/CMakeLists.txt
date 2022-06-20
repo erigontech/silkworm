@@ -14,17 +14,27 @@
    limitations under the License.
 ]]
 
+# each command links with these libraries
+set(COMMON_LIBS
+  CLI11::CLI11
+  silkworm_node
+)
+
+# Adds a command build target
+# Usage:
+# cmd(my_tool)
+# - produces a my_tool binary from my_tool.cpp and links with COMMON_LIBS
+# cmd(my_tool SRC file1.cpp file2.cpp)
+# - to add extra sources
+# cmd(my_tool LIBS lib1 lib2)
+# - to add extra libs
 function(cmd name)
-  cmake_parse_arguments(PARSE_ARGV 1 ARG "NO_NODE_LIB" "" "SRC;LIBS")
+  cmake_parse_arguments(PARSE_ARGV 1 ARG "" "" "SRC;LIBS")
 
   list(APPEND ARG_SRC ${name}.cpp)
   add_executable(${name} ${ARG_SRC})
 
-  list(PREPEND ARG_LIBS CLI11::CLI11)
-  if(NOT ARG_NO_NODE_LIB)
-    list(APPEND ARG_LIBS silkworm_node)
-  endif()
-
+  list(PREPEND ARG_LIBS ${COMMON_LIBS})
   target_link_libraries(${name} PRIVATE ${ARG_LIBS})
 endfunction()
 
@@ -59,7 +69,7 @@ if(NOT SILKWORM_CORE_ONLY)
   cmd(check_pow)
   cmd(check_tx_lookup)
   cmd(downloader SRC common.cpp LIBS silkworm-buildinfo)
-  cmd(genesistool NO_NODE_LIB)
+  cmd(genesistool)
   cmd(history_index)
   cmd(log_index LIBS cborcpp)
   cmd(scan_txs LIBS absl::time)

@@ -36,5 +36,8 @@ struct IPEndPointValidator : public CLI::Validator {
     explicit IPEndPointValidator(bool allow_empty = false);
 };
 
+//! \brief Sets up logging options to populate log_settings after cli.parse()
+void add_logging_options(CLI::App& cli, log::Settings& log_settings);
+
 } // namespace silkworm::cmd
 #endif  // SILKWORM_CMD_COMMON_HPP_

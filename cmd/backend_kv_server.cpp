@@ -31,6 +31,7 @@
 #include <silkworm/common/settings.hpp>
 #include <silkworm/rpc/server/backend_kv_server.hpp>
 #include <silkworm/rpc/util.hpp>
+#include "common.hpp"
 
 //! Assemble the full node name using the Cable build information
 std::string get_node_name_from_build_info() {
@@ -115,20 +116,7 @@ int parse_command_line(int argc, char* argv[], CLI::App& app, BackEndKvSettings&
         ->capture_default_str()
         ->excludes(chain_name);
 
-    // Logging options
-    auto& log_opts = *app.add_option_group("Log", "Logging options");
-    log_opts.add_option("--log.verbosity", log_settings.log_verbosity, "Sets log verbosity")
-        ->capture_default_str()
-        ->check(CLI::Range(static_cast<uint32_t>(silkworm::log::Level::kCritical),
-                            static_cast<uint32_t>(silkworm::log::Level::kTrace)))
-        ->default_val(std::to_string(static_cast<uint32_t>(silkworm::log::Level::kCritical)));
-    log_opts.add_flag("--log.stdout", log_settings.log_std_out, "Outputs to std::out instead of std::err");
-    log_opts.add_flag("--log.nocolor", log_settings.log_nocolor, "Disable colors on log lines")
-        ->default_val(std::to_string(true));
-    log_opts.add_flag("--log.utc", log_settings.log_utc, "Prints log timings in UTC");
-    log_opts.add_flag("--log.threads", log_settings.log_threads, "Prints thread ids")
-        ->default_val(std::to_string(true));
-    log_opts.add_option("--log.file", log_settings.log_file, "Tee all log lines to given file name");
+    silkworm::cmd::add_logging_options(app, log_settings);
 
     app.parse(argc, argv);
 

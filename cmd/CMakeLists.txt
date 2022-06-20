@@ -81,6 +81,6 @@ if(NOT SILKWORM_CORE_ONLY)
   add_executable(downloader downloader.cpp common.cpp)
   target_link_libraries(downloader PRIVATE silkworm_node silkworm-buildinfo CLI11::CLI11)
 
-  add_executable(backend_kv_server backend_kv_server.cpp)
+  add_executable(backend_kv_server backend_kv_server.cpp common.cpp)
   target_link_libraries(backend_kv_server PRIVATE silkworm_node silkworm-buildinfo CLI11::CLI11)
 endif()

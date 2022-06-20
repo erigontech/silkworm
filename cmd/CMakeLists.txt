@@ -14,6 +14,20 @@
    limitations under the License.
 ]]
 
+function(cmd name)
+  cmake_parse_arguments(PARSE_ARGV 1 ARG "NO_NODE_LIB" "" "SRC;LIBS")
+
+  list(APPEND ARG_SRC ${name}.cpp)
+  add_executable(${name} ${ARG_SRC})
+
+  list(PREPEND ARG_LIBS CLI11::CLI11)
+  if(NOT ARG_NO_NODE_LIB)
+    list(APPEND ARG_LIBS silkworm_node)
+  endif()
+
+  target_link_libraries(${name} PRIVATE ${ARG_LIBS})
+endfunction()
+
 if(MSVC)
   add_link_options(/STACK:0x1000000)
 elseif (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
@@ -30,57 +44,30 @@ if(NOT SILKWORM_CORE_ONLY)
   find_package(absl CONFIG REQUIRED)
   find_package(CLI11 CONFIG REQUIRED)
 
-  add_executable(silkworm silkworm.cpp common.cpp)
-  target_link_libraries(silkworm PRIVATE silkworm_node silkworm-buildinfo CLI11::CLI11 $<$<BOOL:${MSVC}>:Kernel32.lib>)
+  # silkworm binary
+  set(silkworm_libs silkworm-buildinfo)
+  if(MSVC)
+    list(APPEND silkworm_libs Kernel32.lib)
+  endif()
+  cmd(silkworm SRC common.cpp LIBS ${silkworm_libs})
 
-  add_executable(check_changes check_changes.cpp)
-  target_link_libraries(check_changes PRIVATE silkworm_node CLI11::CLI11 absl::time)
+  # commands
+  cmd(backend_kv_server LIBS silkworm-buildinfo)
+  cmd(check_blockhashes)
+  cmd(check_changes LIBS absl::time)
+  cmd(check_hashstate)
+  cmd(check_pow)
+  cmd(check_tx_lookup)
+  cmd(downloader SRC common.cpp LIBS silkworm-buildinfo)
+  cmd(genesistool NO_NODE_LIB)
+  cmd(history_index)
+  cmd(log_index LIBS cborcpp)
+  cmd(scan_txs LIBS absl::time)
+  cmd(toolbox)
+  cmd(trie)
+  cmd(tx_lookup)
+  cmd(unwind_history_index)
+  cmd(unwind_log_index)
+  cmd(unwind_tx_lookup)
 
-  add_executable(scan_txs scan_txs.cpp)
-  target_link_libraries(scan_txs PRIVATE silkworm_node CLI11::CLI11 absl::time)
-
-  add_executable(check_pow check_pow.cpp)
-  target_link_libraries(check_pow PRIVATE silkworm_node CLI11::CLI11)
-
-  add_executable(toolbox toolbox.cpp)
-  target_link_libraries(toolbox PRIVATE silkworm_node CLI11::CLI11)
-
-  add_executable(genesistool genesistool.cpp)
-  target_link_libraries(genesistool PRIVATE CLI11::CLI11)
-
-  add_executable(unwind_tx_lookup unwind_tx_lookup.cpp)
-  target_link_libraries(unwind_tx_lookup PRIVATE silkworm_node CLI11::CLI11)
-
-  add_executable(unwind_history_index unwind_history_index.cpp)
-  target_link_libraries(unwind_history_index PRIVATE silkworm_node CLI11::CLI11)
-
-  add_executable(unwind_log_index unwind_log_index.cpp)
-  target_link_libraries(unwind_log_index PRIVATE silkworm_node CLI11::CLI11)
-
-  add_executable(check_hashstate check_hashstate.cpp)
-  target_link_libraries(check_hashstate PRIVATE silkworm_node CLI11::CLI11)
-
-  add_executable(tx_lookup tx_lookup.cpp)
-  target_link_libraries(tx_lookup PRIVATE silkworm_node CLI11::CLI11)
-
-  add_executable(check_tx_lookup check_tx_lookup.cpp)
-  target_link_libraries(check_tx_lookup PRIVATE silkworm_node CLI11::CLI11)
-
-  add_executable(history_index history_index.cpp)
-  target_link_libraries(history_index PRIVATE silkworm_node CLI11::CLI11)
-
-  add_executable(check_blockhashes check_blockhashes.cpp)
-  target_link_libraries(check_blockhashes PRIVATE silkworm_node CLI11::CLI11)
-
-  add_executable(log_index log_index.cpp)
-  target_link_libraries(log_index PRIVATE silkworm_node cborcpp CLI11::CLI11)
-
-  add_executable(trie trie.cpp)
-  target_link_libraries(trie PRIVATE silkworm_node CLI11::CLI11)
-
-  add_executable(downloader downloader.cpp common.cpp)
-  target_link_libraries(downloader PRIVATE silkworm_node silkworm-buildinfo CLI11::CLI11)
-
-  add_executable(backend_kv_server backend_kv_server.cpp)
-  target_link_libraries(backend_kv_server PRIVATE silkworm_node silkworm-buildinfo CLI11::CLI11)
 endif()

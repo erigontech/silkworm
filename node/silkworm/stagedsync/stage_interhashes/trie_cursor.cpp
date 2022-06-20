@@ -18,6 +18,7 @@
 
 #include <silkworm/common/assert.hpp>
 #include <silkworm/common/bits.hpp>
+#include <silkworm/common/endian.hpp>
 #include <silkworm/trie/nibbles.hpp>
 
 namespace silkworm::trie {
@@ -223,6 +224,348 @@ std::optional<Bytes> increment_nibbled_key(ByteView nibbles) {
     Bytes ret{nibbles.substr(0, count)};
     ++ret.back();
     return ret;
+}
+
+AccCursor::AccCursor(mdbx::cursor& db_cursor, PrefixSet& changed, etl::Collector* collector)
+    : db_cursor_{db_cursor}, changed_{changed}, collector_{collector} {
+    prefix_.reserve(64);
+    prev_.reserve(64);
+    curr_.reserve(64);
+    next_.reserve(64);
+    buff_.reserve(64);
+}
+
+AccCursor::move_operation_result AccCursor::to_prefix(ByteView prefix) {
+    // 0 bytes for TrieAccounts
+    // 40 bytes (hashed address + incarnation) for TrieStorage
+    if (size_t len{prefix.length()}; len != 0 && len != 40) {
+        throw std::invalid_argument("Invalid prefix len : expected 0 || 40 got" + std::to_string(len));
+    }
+
+    skip_state_ = true;
+    prev_.assign(curr_);
+    first_uncovered_ = increment_nibbled_key(prev_);
+    prefix_.assign(prefix);  // Store prefix (all db searches will account that)
+
+    // We query for root node (len == 0) in changed list
+    // Even if counter-intuitive this tells which is the next nibbled key being created
+    auto [in_changed_list, next_created]{changed_.contains_and_next_marked({})};
+    next_created_ = next_created;
+
+    // We look for root (len = 0) into db
+    // prefix is taken into account in db:seek
+    if (!db_seek({}, {})) {
+        curr_.clear();
+        skip_state_ = false;
+        return {};
+    }
+
+    // For TrieStorage we might find storage root
+    if (auto& sub_node{sub_nodes_[level_]}; sub_node.root_hash.empty() == false) {
+        if (!in_changed_list) {
+            skip_state_ = true;
+            curr_.assign(sub_node.key);
+            return {curr_, Bytes(sub_node.root_hash), false};
+        }
+        delete_current();
+        preorder_traversal_step_no_indepth();
+        return {Bytes{}, std::nullopt, false};
+    }
+
+    if (consume()) {
+        return {curr_, Bytes(hash(sub_nodes_[level_].hash_id)), has_tree()};
+    }
+    return next_sibling();
+}
+
+AccCursor::move_operation_result AccCursor::to_next() {
+    skip_state_ = true;
+    prev_.assign(curr_);
+    first_uncovered_ = increment_nibbled_key(prev_);
+
+    preorder_traversal_step_no_indepth();
+
+    if (sub_nodes_[level_].key.is_null() || sub_nodes_[level_].key.empty()) {
+        curr_.clear();
+        skip_state_ = skip_state_ && !first_uncovered_.has_value();
+        return {};
+    }
+
+    if (consume()) {
+        return {curr_, Bytes(hash(sub_nodes_[level_].hash_id)), has_tree()};
+    }
+    return next_sibling();
+}
+
+std::optional<Bytes> AccCursor::first_uncovered_prefix() const {
+    if (!first_uncovered_.has_value()) {
+        return std::nullopt;
+    }
+    return pack_nibbles(first_uncovered_.value());
+}
+
+ByteView AccCursor::hash(int8_t id) {
+    return sub_nodes_[level_].hashes.substr(kHashLength * static_cast<uint16_t>(id), kHashLength);
+}
+bool AccCursor::has_tree() { return sub_nodes_[level_].has_tree(); }
+
+AccCursor::move_operation_result AccCursor::next_sibling() {
+    skip_state_ = skip_state_ && has_tree();
+    preorder_traversal_step();
+
+    while (!sub_nodes_[level_].key.empty()) {
+        if (consume()) {
+            return {curr_, Bytes(hash(sub_nodes_[level_].hash_id)), has_tree()};
+        }
+        skip_state_ = skip_state_ && has_tree();
+        preorder_traversal_step();
+    }
+
+    curr_.clear();
+    skip_state_ = skip_state_ && !first_uncovered_.has_value();
+    return {};
+}
+
+void AccCursor::preorder_traversal_step() {
+    auto& sub_node{sub_nodes_[level_]};
+    if (sub_node.has_tree()) {
+        sub_node.assign_full_key(next_);
+        if (db_seek(next_)) {
+            return;
+        }
+    }
+    preorder_traversal_step_no_indepth();
+}
+
+void AccCursor::preorder_traversal_step_no_indepth() {
+    if (next_sibling_in_mem() || next_sibling_of_parent_in_mem()) {
+        return;
+    }
+    next_sibling_in_db();
+}
+
+void AccCursor::delete_current() {
+    auto& sub_node{sub_nodes_[level_]};
+    if (!sub_node.deleted && !sub_node.key.empty()) {
+        if (collector_) {
+            collector_->collect({Bytes{sub_node.key}, Bytes{}});
+        }
+        sub_node.deleted = true;
+    }
+}
+void AccCursor::parse_subnode(ByteView key, ByteView value) {
+    // Reset all nodes from current level
+    // to length of key
+    size_t from{level_ + 1};
+    size_t to{key.length()};
+    if (level_ >= key.length()) {
+        from = key.length() + 1;
+        to = level_ + 2;
+    }
+    for (size_t i{from}; i < to; ++i) {
+        sub_nodes_[i].reset();
+    }
+
+    level_ = key.length();  // We're that deep
+    sub_nodes_[level_].parse(key, value);
+}
+
+void AccCursor::next_sibling_in_db() {
+    auto& sub_node{sub_nodes_[level_]};
+    auto incremented_key{increment_nibbled_key(sub_node.key)};
+    if (!incremented_key.has_value()) {
+        sub_node.key = ByteView();
+        return;
+    }
+    next_.assign(*incremented_key);
+    (void)db_seek(next_);
+}
+
+bool AccCursor::next_sibling_in_mem() {
+    auto& sub_node{sub_nodes_[level_]};
+    const int8_t max{static_cast<int8_t>(bitlen_16(sub_node.state_mask))};
+    while (sub_node.child_id < max) {
+        ++sub_node.child_id;
+        if (sub_node.has_hash()) {
+            ++sub_node.hash_id;
+            return true;
+        }
+        if (sub_node.has_tree()) {
+            return true;
+        }
+        if (sub_node.has_state()) {
+            skip_state_ = false;
+        }
+    }
+    return false;
+}
+
+bool AccCursor::next_sibling_of_parent_in_mem() {
+    while (level_ > 1) {
+        size_t non_null_level{level_ - 1};
+        if (sub_nodes_[non_null_level].key.empty()) {
+            while (sub_nodes_[non_null_level].key.empty() && non_null_level > 1) {
+                --non_null_level;
+            }
+            sub_nodes_[level_].assign_full_key(next_);
+            sub_nodes_[non_null_level].assign_full_key(buff_);
+            if (db_seek(next_, buff_)) {
+                return true;
+            }
+            level_ = non_null_level + 1;
+            continue;
+        }
+        --level_;
+        if (next_sibling_in_mem()) {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool AccCursor::db_seek(ByteView seek_key, ByteView within_prefix) {
+
+    // Actually db key is prefixed with hashed_account+incarnation for TrieStorage
+    // For TrieAccount instead there is no prefix
+    Bytes seek_full_key(prefix_.length() + seek_key.length(), '\0');
+    std::memcpy(&seek_full_key[0], prefix_.data(), prefix_.length());
+    std::memcpy(&seek_full_key[prefix_.length()], seek_key.data(), seek_key.length());
+
+    auto data{seek_full_key.empty() ? db_cursor_.to_first(false)
+                                    : db_cursor_.lower_bound(db::to_slice(seek_full_key), false)};
+
+    // Ensure we cover the right prefix (makes sense only for TrieStorage)
+    if(data && !prefix_.empty() && !data.key.starts_with(db::to_slice(prefix_))) {
+        data.done = false;
+    }
+
+    // Ensure we're in the boundaries of requested keys
+    auto subnode_key{db::from_slice(data.key)};
+    auto subnode_val{db::from_slice(data.value)};
+    subnode_key.remove_prefix(prefix_.length());  // Remove db prefix for TrieStorage
+    const auto boundary{within_prefix.empty() ? prefix_ : within_prefix};
+    if (data && !subnode_key.starts_with(boundary)) {
+        data.done = false;
+    }
+
+    if (!data) {
+        if (within_prefix.empty()) {
+            sub_nodes_[level_].key = ByteView();  // It'll terminate the loop
+        }
+        return false;
+    }
+
+    //    // Ensure retrieved data (if any) is within boundaries
+    //    if (!within_prefix.empty()) {
+    //        if (!data || !db::from_slice(data.key).starts_with(within_prefix)) {
+    //            return false;
+    //        }
+    //    } else {
+    //        if (!data || !db::from_slice(data.key).starts_with(prefix_)) {
+    //            auto& sub_node{sub_nodes_[level_]};
+    //            sub_node.key = ByteView();
+    //            return false;
+    //        }
+    //    }
+
+    try {
+        parse_subnode(subnode_key, subnode_val);  // and load data into slot (may throw)
+    } catch (const std::exception& ex) {
+        // Needed to keep notion of original db key
+        std::string what{"Trie key " + to_hex(db::from_slice(data.key), true) + " "};
+        what.append(ex.what());
+        throw std::invalid_argument(what);
+    }
+
+    if (level_) {
+        (void)next_sibling_in_mem();
+    }
+    return true;
+}
+
+bool AccCursor::key_is_before(ByteView k1, ByteView k2) {
+    if (k1.is_null() || k1.empty()) {
+        return false;
+    }
+    if (k2.is_null() || k2.empty()) {
+        return true;
+    }
+    return k1 < k2;
+}
+
+bool AccCursor::consume() {
+    auto& sub_node{sub_nodes_[level_]};
+    if (sub_node.has_hash()) {
+        buff_.assign(sub_node.key);
+        buff_.append({static_cast<uint8_t>(sub_node.child_id)});
+        auto [in_changed_list, next_created]{changed_.contains_and_next_marked(buff_)};
+        if (!in_changed_list) {
+            skip_state_ = skip_state_ && key_is_before(buff_, next_created_);
+            next_created_.assign(next_created);
+            curr_.assign(buff_);
+            return true;
+        }
+    }
+    delete_current();
+    return false;
+}
+
+bool AccCursor::SubNode::has_state() const { return ((1 << child_id) & state_mask) != 0; }
+bool AccCursor::SubNode::has_tree() const { return ((1 << child_id) & tree_mask) != 0; }
+bool AccCursor::SubNode::has_hash() const { return ((1 << child_id) & hash_mask) != 0; }
+
+void AccCursor::SubNode::reset() {
+    key = ByteView();
+    root_hash = ByteView();
+    hashes = ByteView();
+    state_mask = 0;
+    tree_mask = 0;
+    hash_mask = 0;
+    hash_id = 0;
+    child_id = 0;
+    deleted = false;
+}
+
+void AccCursor::SubNode::parse(ByteView k, ByteView v) {
+    // At least state/tree/hash masks need to be present
+    if (v.length() < 6) {
+        throw std::invalid_argument("wrong node raw length: expected >= 6 got " + std::to_string(v.length()));
+    }
+    // Beyond the 6th byte the length must be a multiple of kHashLength
+    if ((v.length() - 6) % kHashLength != 0) {
+        throw std::invalid_argument("wrong node raw hashes length: not a multiple of " + std::to_string(kHashLength));
+    }
+
+    key = k;
+    hashes = v.substr(6);
+    deleted = false;
+    state_mask = endian::load_big_u16(&v[0]);
+    tree_mask = endian::load_big_u16(&v[2]);
+    hash_mask = endian::load_big_u16(&v[4]);
+
+    if (!is_subset(tree_mask, state_mask)) {
+        throw std::invalid_argument("tree mask not subset of state mask");
+    }
+    if (!is_subset(hash_mask, state_mask)) {
+        throw std::invalid_argument("hash mask not subset of state mask");
+    }
+
+    auto expected_hashes_count{popcount_16(hash_mask)};
+    auto effective_hashes_count{hashes.length() / kHashLength};
+    if (effective_hashes_count == (expected_hashes_count + 1)) {
+        root_hash = hashes.substr(0, kHashLength);
+        hashes.remove_prefix(kHashLength);
+    } else {
+        root_hash = ByteView();
+    }
+
+    hash_id = -1;
+    child_id = static_cast<int8_t>(ctz_16(state_mask) - 1);
+}
+
+void AccCursor::SubNode::assign_full_key(Bytes& buffer) {
+    buffer.assign(key);
+    buffer.push_back(static_cast<uint8_t>(child_id));
 }
 
 }  // namespace silkworm::trie

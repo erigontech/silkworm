@@ -60,8 +60,8 @@ struct PruneModeValidator : public CLI::Validator {
     }
 };
 
-struct IPEndPointValidator : public CLI::Validator {
-    explicit IPEndPointValidator(bool allow_empty = false) {
+IPEndPointValidator::IPEndPointValidator(bool allow_empty) {
+    {
         func_ = [&allow_empty](const std::string& value) -> std::string {
             if (value.empty() && allow_empty) {
                 return {};
@@ -89,7 +89,7 @@ struct IPEndPointValidator : public CLI::Validator {
             return {};
         };
     }
-};
+}
 
 void parse_silkworm_command_line(CLI::App& cli, int argc, char* argv[], log::Settings& log_settings,
                                  NodeSettings& node_settings) {

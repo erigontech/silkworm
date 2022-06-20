@@ -32,6 +32,9 @@ void parse_silkworm_command_line(CLI::App& cli, int argc, char* argv[], log::Set
 //! \brief Ensures database is ready for take off and consistent with command line arguments
 void run_preflight_checklist(NodeSettings& node_settings);
 
+struct IPEndPointValidator : public CLI::Validator {
+    explicit IPEndPointValidator(bool allow_empty = false);
+};
 
 } // namespace silkworm::cmd
 #endif  // SILKWORM_CMD_COMMON_HPP_

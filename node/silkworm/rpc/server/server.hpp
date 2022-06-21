@@ -141,7 +141,7 @@ class Server {
 
   private:
     //! The server configuration options.
-    const ServerConfig& config_;
+    ServerConfig config_;
 
     //! The gRPC server instance tied to this Server lifetime.
     std::unique_ptr<grpc::Server> server_;

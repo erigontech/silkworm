@@ -104,6 +104,18 @@ void add_logging_options(CLI::App& cli, log::Settings& log_settings) {
     log_opts.add_option("--log.file", log_settings.log_file, "Tee all log lines to given file name");
 }
 
+void add_option_num_contexts(CLI::App& cli, uint32_t& num_contexts) {
+    cli.add_option("--contexts", num_contexts, "The number of running contexts")->capture_default_str();
+}
+
+void add_option_wait_mode(CLI::App& cli, silkworm::rpc::WaitMode& wait_mode) {
+    cli.add_option("--wait.mode", wait_mode, "The waiting mode for execution loops during idle cycles")
+        ->capture_default_str()
+        ->check(CLI::Range(static_cast<uint32_t>(silkworm::rpc::WaitMode::blocking),
+                           static_cast<uint32_t>(silkworm::rpc::WaitMode::busy_spin)))
+        ->default_val(std::to_string(static_cast<uint32_t>(silkworm::rpc::WaitMode::blocking)));
+}
+
 void parse_silkworm_command_line(CLI::App& cli, int argc, char* argv[], log::Settings& log_settings,
                                  NodeSettings& node_settings) {
     // Node settings

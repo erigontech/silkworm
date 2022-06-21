@@ -78,17 +78,13 @@ int parse_command_line(int argc, char* argv[], CLI::App& app, BackEndKvSettings&
     std::string data_dir{silkworm::DataDirectory::get_default_storage_path().string()};
     std::string etherbase_address{""};
     uint32_t num_contexts{std::thread::hardware_concurrency() / 2};
-    silkworm::rpc::WaitMode wait_mode;
+    silkworm::rpc::WaitMode wait_mode{silkworm::rpc::WaitMode::blocking};
     uint32_t max_readers{silkworm::db::EnvConfig{}.max_readers};
     app.add_option("--datadir", data_dir, "The path to data directory")->capture_default_str();
     app.add_option("--etherbase", etherbase_address, "The coinbase address as string")->capture_default_str();
     // TODO(canepat) add check on etherbase using EthAddressValidator [TBD]
-    app.add_option("--contexts", num_contexts, "The number of running contexts")->capture_default_str();
-    app.add_option("--wait.mode", wait_mode, "The waiting mode for execution loops during idle cycles")
-        ->capture_default_str()
-        ->check(CLI::Range(static_cast<uint32_t>(silkworm::rpc::WaitMode::blocking),
-                            static_cast<uint32_t>(silkworm::rpc::WaitMode::busy_spin)))
-        ->default_val(std::to_string(static_cast<uint32_t>(silkworm::rpc::WaitMode::blocking)));
+    silkworm::cmd::add_option_num_contexts(app, num_contexts);
+    silkworm::cmd::add_option_wait_mode(app, wait_mode);
     app.add_option("--mdbx.max.readers", max_readers, "The maximum number of MDBX readers")
         ->capture_default_str()
         ->check(CLI::Range(1, 32767));

@@ -21,6 +21,7 @@
 #include <CLI/CLI.hpp>
 #include <silkworm/common/log.hpp>
 #include <silkworm/common/settings.hpp>
+#include <silkworm/rpc/server/wait_strategy.hpp>
 
 namespace silkworm::cmd {
 
@@ -38,6 +39,12 @@ struct IPEndPointValidator : public CLI::Validator {
 
 //! \brief Sets up logging options to populate log_settings after cli.parse()
 void add_logging_options(CLI::App& cli, log::Settings& log_settings);
+
+//! \brief Sets up parsing of num_contexts
+void add_option_num_contexts(CLI::App& cli, uint32_t& num_contexts);
+
+//! \brief Sets up parsing of wait_mode
+void add_option_wait_mode(CLI::App& cli, silkworm::rpc::WaitMode& wait_mode);
 
 } // namespace silkworm::cmd
 #endif  // SILKWORM_CMD_COMMON_HPP_

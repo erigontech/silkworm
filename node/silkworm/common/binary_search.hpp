@@ -1,5 +1,5 @@
 /*
-   Copyright 2021 The Silkworm Authors
+   Copyright 2021-2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -16,6 +16,10 @@
 
 #ifndef SILKWORM_COMMON_BINARY_SEARCH_HPP_
 #define SILKWORM_COMMON_BINARY_SEARCH_HPP_
+
+#include <cstddef>
+
+#include <absl/functional/function_ref.h>
 
 namespace silkworm {
 
@@ -34,21 +38,7 @@ namespace silkworm {
 // binary_find_if(vec.size(), [&](size_t i) { return vec[i] > value;});
 //
 // N.B. Also similar to golang sort.Search.
-template <class SizeType, class UnaryPredicate>
-SizeType binary_find_if(SizeType n, UnaryPredicate f) {
-    SizeType i{0};
-    SizeType j{n};
-    while (j > i) {
-        const auto count{j - i};
-        const auto m{i + count / 2};
-        if (f(m)) {
-            j = m;
-        } else {
-            i = m + 1;
-        }
-    }
-    return i;
-}
+std::size_t binary_find_if(std::size_t n, absl::FunctionRef<bool(std::size_t)> f);
 
 }  // namespace silkworm
 

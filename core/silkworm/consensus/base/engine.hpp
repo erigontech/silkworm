@@ -42,6 +42,12 @@ class EngineBase : public IEngine {
     ValidationResult validate_block_header(const BlockHeader& header, const BlockState& state,
                                            bool with_future_timestamp_check) override;
 
+    //! \brief Performs validation of block ommers only.
+    //! \brief See [YP] Sections 11.1 "Ommer Validation".
+    //! \param [in] block: block to validate.
+    //! \param [in] state: current state.
+    ValidationResult validate_ommers(const Block& block, const BlockState& state) override;
+
     //! \brief See [YP] Section 11.3 "Reward Application".
     //! \param [in] header: Current block to get beneficiary from
     evmc::address get_beneficiary(const BlockHeader& header) override;

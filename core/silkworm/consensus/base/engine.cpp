@@ -55,6 +55,12 @@ ValidationResult EngineBase::pre_validate_block(const Block& block, const BlockS
         return ValidationResult::kWrongOmmersHash;
     }
 
+    return validate_ommers(block, state);
+}
+
+ValidationResult EngineBase::validate_ommers(const Block& block, const BlockState& state) {
+    const BlockHeader& header{block.header};
+
     if (block.ommers.size() > 2) {
         return ValidationResult::kTooManyOmmers;
     }

@@ -242,6 +242,11 @@ AccCursor::move_operation_result AccCursor::to_prefix(ByteView prefix) {
         throw std::invalid_argument("Invalid prefix len : expected 0 || 40 got" + std::to_string(len));
     }
 
+    // Reset every subnode
+    for (auto& sub_node : sub_nodes_) {
+        sub_node.reset();
+    }
+
     skip_state_ = true;
     prev_.assign(curr_);
     first_uncovered_ = increment_nibbled_key(prev_);
@@ -249,8 +254,10 @@ AccCursor::move_operation_result AccCursor::to_prefix(ByteView prefix) {
 
     // We query for root node (len == 0) in changed list
     // Even if counter-intuitive this tells which is the next nibbled key being created
-    auto [in_changed_list, next_created]{changed_.contains_and_next_marked({})};
-    next_created_ = next_created;
+    // Changed list contains the FULL db key
+    buff_.assign(prefix_);
+    auto [in_changed_list, next_created]{changed_.contains_and_next_marked(buff_)};
+    next_created_.assign(next_created.substr(prefix.length()));
 
     // We look for root (len = 0) into db
     // prefix is taken into account in db:seek
@@ -329,7 +336,7 @@ AccCursor::move_operation_result AccCursor::next_sibling() {
 void AccCursor::preorder_traversal_step() {
     auto& sub_node{sub_nodes_[level_]};
     if (sub_node.has_tree()) {
-        sub_node.assign_full_key(next_);
+        next_.assign(sub_node.key_and_nibble());
         if (db_seek(next_)) {
             return;
         }
@@ -407,8 +414,8 @@ bool AccCursor::next_sibling_of_parent_in_mem() {
             while (sub_nodes_[non_null_level].key.empty() && non_null_level > 1) {
                 --non_null_level;
             }
-            sub_nodes_[level_].assign_full_key(next_);
-            sub_nodes_[non_null_level].assign_full_key(buff_);
+            next_.assign(sub_nodes_[level_].key_and_nibble());
+            buff_.assign(sub_nodes_[non_null_level].key_and_nibble());
             if (db_seek(next_, buff_)) {
                 return true;
             }
@@ -424,7 +431,6 @@ bool AccCursor::next_sibling_of_parent_in_mem() {
 }
 
 bool AccCursor::db_seek(ByteView seek_key, ByteView within_prefix) {
-
     // Actually db key is prefixed with hashed_account+incarnation for TrieStorage
     // For TrieAccount instead there is no prefix
     Bytes seek_full_key(prefix_.length() + seek_key.length(), '\0');
@@ -435,7 +441,7 @@ bool AccCursor::db_seek(ByteView seek_key, ByteView within_prefix) {
                                     : db_cursor_.lower_bound(db::to_slice(seek_full_key), false)};
 
     // Ensure we cover the right prefix (makes sense only for TrieStorage)
-    if(data && !prefix_.empty() && !data.key.starts_with(db::to_slice(prefix_))) {
+    if (data && !prefix_.empty() && !data.key.starts_with(db::to_slice(prefix_))) {
         data.done = false;
     }
 
@@ -496,18 +502,28 @@ bool AccCursor::key_is_before(ByteView k1, ByteView k2) {
 bool AccCursor::consume() {
     auto& sub_node{sub_nodes_[level_]};
     if (sub_node.has_hash()) {
-        buff_.assign(sub_node.key);
-        buff_.append({static_cast<uint8_t>(sub_node.child_id)});
+        // Changed list contains the FULL db key
+        const auto sub_node_full_key{sub_node.key_and_nibble()};
+        buff_.assign(prefix_);
+        buff_.append(sub_node_full_key);
+
         auto [in_changed_list, next_created]{changed_.contains_and_next_marked(buff_)};
         if (!in_changed_list) {
-            skip_state_ = skip_state_ && key_is_before(buff_, next_created_);
+            next_created.remove_prefix(prefix_.length());
+            skip_state_ = skip_state_ && key_is_before(sub_node_full_key, next_created_);
             next_created_.assign(next_created);
-            curr_.assign(buff_);
+            curr_.assign(sub_node_full_key);
             return true;
         }
     }
     delete_current();
     return false;
+}
+
+Bytes AccCursor::SubNode::key_and_nibble() const {
+    Bytes ret{key};
+    ret.push_back(static_cast<uint8_t>(child_id));
+    return ret;
 }
 
 bool AccCursor::SubNode::has_state() const { return ((1 << child_id) & state_mask) != 0; }
@@ -561,11 +577,6 @@ void AccCursor::SubNode::parse(ByteView k, ByteView v) {
 
     hash_id = -1;
     child_id = static_cast<int8_t>(ctz_16(state_mask) - 1);
-}
-
-void AccCursor::SubNode::assign_full_key(Bytes& buffer) {
-    buffer.assign(key);
-    buffer.push_back(static_cast<uint8_t>(child_id));
 }
 
 }  // namespace silkworm::trie

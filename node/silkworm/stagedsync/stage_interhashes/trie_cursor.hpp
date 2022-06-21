@@ -133,9 +133,9 @@ class AccCursor {
         [[nodiscard]] bool has_tree() const;   // Whether current child_id has bit set in tree mask
         [[nodiscard]] bool has_hash() const;   // Whether current child_id has bit set in hash mask
 
-        void reset();                         // Resets node to default values
-        void parse(ByteView k, ByteView v);   // Parses node data contents from db (may throw)
-        void assign_full_key(Bytes& buffer);  // Returns full key to node (i.e. key + child_id)
+        void reset();                                // Resets node to default values
+        void parse(ByteView k, ByteView v);          // Parses node data contents from db (may throw)
+        [[nodiscard]] Bytes key_and_nibble() const;  // Returns full key to node (i.e. key + child_id)
     };
 
     mdbx::cursor& db_cursor_;             // MDBX Cursor to TrieAccounts

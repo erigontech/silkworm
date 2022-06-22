@@ -104,7 +104,7 @@ class HeaderChain {
     bool has_link(Hash hash);
     std::vector<Announce>& announces_to_do();
     void add_bad_headers(const std::set<Hash>& bads);
-    void set_preverified_hashes(PreverifiedHashes);
+    void set_preverified_hashes(const PreverifiedHashes*);
 
   protected:
     static constexpr BlockNum max_len = 192;
@@ -155,7 +155,7 @@ class HeaderChain {
     BlockNum highest_in_db_;
     BlockNum top_seen_height_;
     std::set<Hash> bad_headers_;
-    PreverifiedHashes preverified_hashes_;      // Set of hashes that are known to belong to canonical chain
+    const PreverifiedHashes* preverified_hashes_; // Set of hashes that are known to belong to canonical chain
     using Ignore = int;
     lru_cache<Hash, Ignore> seen_announces_;
     std::vector<Announce> announces_to_do_;

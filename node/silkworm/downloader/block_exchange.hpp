@@ -37,8 +37,8 @@ class BlockExchange : public ActiveComponent {
     void accept(std::shared_ptr<Message>); /*[[thread_safe]]*/
     void execution_loop() override;        /*[[long_running]]*/
 
-    const ChainIdentity& chain_identity();
-
+    const ChainIdentity& chain_identity() const;
+    const PreverifiedHashes& preverified_hashes() const;
   private:
     using MessageQueue = ConcurrentQueue<std::shared_ptr<Message>>;  // used internally to store new messages
 
@@ -48,6 +48,7 @@ class BlockExchange : public ActiveComponent {
     Db::ReadOnlyAccess db_access_;
     SentryClient& sentry_;
     const ChainIdentity& chain_identity_;
+    PreverifiedHashes preverified_hashes_;
     HeaderChain header_chain_;
     BodySequence body_sequence_;
     MessageQueue messages_{};  // thread safe queue where to receive messages from sentry

@@ -43,6 +43,7 @@ class BodyPersistence {
     BlockNum highest_height() const;
     Hash bad_block() const;
 
+    void set_preverified_height(BlockNum height);
   private:
     using ConsensusEnginePtr = std::unique_ptr<consensus::IEngine>;
 
@@ -52,6 +53,8 @@ class BodyPersistence {
 
     BlockNum initial_height_{0};
     BlockNum highest_height_{0};
+
+    BlockNum preverified_height_{0};
 
     BlockNum unwind_point_{0};
     bool unwind_needed_{false};

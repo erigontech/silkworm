@@ -122,6 +122,7 @@ Stage::Result BodiesStage::forward([[maybe_unused]] bool first_sync) {
         Db::ReadWriteAccess::Tx tx = db_access_.start_tx();  // start a new tx only if db_access has not an active tx
 
         BodyPersistence body_persistence(tx, block_downloader_.chain_identity());
+        body_persistence.set_preverified_height(block_downloader_.preverified_hashes().height);
 
         RepeatedMeasure<BlockNum> height_progress(body_persistence.initial_height());
         log::Info() << "[2/16 Bodies] Waiting for bodies... from=" << height_progress.get();

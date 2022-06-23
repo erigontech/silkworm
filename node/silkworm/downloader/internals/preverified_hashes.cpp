@@ -22,6 +22,8 @@ extern uint64_t preverified_hashes_mainnet_height();
 
 namespace silkworm {
 
+PreverifiedHashes PreverifiedHashes::none = {};
+
 void load_preverified_hashes(PreverifiedHashes& destination, const uint64_t* (*preverified_hashes_data)(),
                              size_t (*sizeof_preverified_hashes_data)(), uint64_t (*preverified_hashes_height)()) {
     auto data_size = sizeof_preverified_hashes_data();

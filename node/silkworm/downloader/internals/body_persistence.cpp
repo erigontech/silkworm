@@ -34,13 +34,20 @@ BlockNum BodyPersistence::highest_height() const { return highest_height_; }
 bool BodyPersistence::unwind_needed() const { return unwind_needed_; }
 BlockNum BodyPersistence::unwind_point() const { return unwind_point_; }
 Hash BodyPersistence::bad_block() const { return bad_block_; }
+void BodyPersistence::set_preverified_height(BlockNum height) { preverified_height_ = height; }
 
 void BodyPersistence::persist(const Block& block) {
     Hash block_hash = block.header.hash(); // save cpu
     BlockNum block_num = block.header.number;
 
-    // todo: ask! (pre_validate_block() is more strong than Erigon does, but it seems more aligned with the yellow paper)
-    auto validation_result = consensus_engine_->validate_ommers(block, chain_state_);
+    auto validation_result = ValidationResult::kOk;
+    if (block_num > preverified_height_) {
+        validation_result = consensus_engine_->validate_ommers(block, chain_state_);
+    }
+    // there is no need to validate a body if its header is on the chain of the pre-verified hashes;
+    // note that here we expect:
+    //    1) only bodies on the canonical chain
+    //    2) only bodies whose ommers hashes and transaction root hashes were checked against those of the headers
 
     if (validation_result != ValidationResult::kOk) {
         unwind_needed_ = true;

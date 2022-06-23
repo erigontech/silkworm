@@ -17,6 +17,7 @@
 #include "inbound_block_bodies.hpp"
 
 #include <silkworm/common/log.hpp>
+#include <silkworm/downloader/rpc/penalize_peer.hpp>
 
 namespace silkworm {
 
@@ -32,12 +33,19 @@ InboundBlockBodies::InboundBlockBodies(const sentry::InboundMessage& msg) {
     SILK_TRACE << "Received message " << *this;
 }
 
-void InboundBlockBodies::execute(Db::ReadOnlyAccess, HeaderChain&, BodySequence& bs, SentryClient&) {
+void InboundBlockBodies::execute(Db::ReadOnlyAccess, HeaderChain&, BodySequence& bs, SentryClient& sentry) {
 
     SILK_TRACE << "Processing message " << *this;
 
-    bs.accept_requested_bodies(packet_, peerId_);
-    // note: we are ignoring penalizations as Erigon does
+    Penalty penalty = bs.accept_requested_bodies(packet_, peerId_);
+
+    if (penalty != Penalty::NoPenalty) {
+        SILK_TRACE << "Replying to " << identify(*this) << " with penalize_peer";
+        SILK_TRACE << "Penalizing " << PeerPenalization(penalty, peerId_);
+        rpc::PenalizePeer penalize_peer(peerId_, penalty);
+        penalize_peer.do_not_throw_on_failure();
+        sentry.exec_remotely(penalize_peer);
+    }
 }
 
 uint64_t InboundBlockBodies::reqId() const { return packet_.requestId; }

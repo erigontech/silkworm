@@ -23,6 +23,7 @@ limitations under the License.
 #include <silkworm/downloader/internals/preverified_hashes.hpp>
 #include <silkworm/downloader/messages/inbound_message.hpp>
 #include <silkworm/downloader/messages/outbound_get_block_bodies.hpp>
+#include <silkworm/downloader/rpc/penalize_peer.hpp>
 
 namespace silkworm {
 
@@ -57,8 +58,11 @@ void BlockExchange::receive_message(const sentry::InboundMessage& raw_message) {
         messages_.push(message);
     }
     catch(rlp::DecodingError& error) {
-        log::Warning() << "BlockExchange received and ignored a malformed message, "
-                          "id=" << raw_message.id() << "/" << sentry::MessageId_Name(raw_message.id());
+        PeerId peer_id = string_from_H512(raw_message.peer_id());
+        log::Warning() << "BlockExchange received and ignored a malformed message, peer= " << peer_id <<
+                          ", msg-id= " << raw_message.id() << "/" << sentry::MessageId_Name(raw_message.id()) <<
+                          " - " << error.what();
+        send_penalization(peer_id, BadBlockPenalty);
     }
 }
 
@@ -119,6 +123,14 @@ void BlockExchange::log_status() {
                  << "~" << std::setw(10) << std::right << body_sequence_.highest_block_in_memory()
                  << ", net-height= " << std::setw(10) << std::right << body_sequence_.target_height()
                  << "; stats: " << body_sequence_.statistics();
+}
+
+void BlockExchange::send_penalization(PeerId id, Penalty p) noexcept {
+    using namespace std::chrono_literals;
+    rpc::PenalizePeer penalize_peer(id, p);
+    penalize_peer.do_not_throw_on_failure();
+    penalize_peer.timeout(1s);
+    sentry_.exec_remotely(penalize_peer);
 }
 
 }  // namespace silkworm

@@ -32,21 +32,20 @@ const std::vector<AccessListEntry> access_list{
 };
 
 TEST_CASE("Legacy Transaction RLP") {
-    Transaction txn{
-        Transaction::Type::kLegacy,                          // type
-        12,                                                  // nonce
-        20000000000,                                         // max_priority_fee_per_gas
-        20000000000,                                         // max_fee_per_gas
-        21000,                                               // gas_limit
-        0x727fc6a68321b754475c668a6abfb6e9e71c169a_address,  // to
-        10 * kEther,                                         // value
-        *from_hex("a9059cbb000000000213ed0f886efd100b67c7e4ec0a85a7d20dc9716000000000000000000"
-                  "00015af1d78b58c4000"),  // data
-        true,                              // odd_y_parity
-        1,                                 // chain_id
-        intx::from_string<intx::uint256>("0xbe67e0a07db67da8d446f76add590e54b6e92cb6b8f9835aeb67540579a27717"),  // r
-        intx::from_string<intx::uint256>("0x2d690516512020171c1ec870f6ff45398cc8609250326be89915fb538e7bd718"),  // s
-    };
+    Transaction txn;
+    txn.type = Transaction::Type::kLegacy;
+    txn.nonce = 12;
+    txn.max_priority_fee_per_gas = 20000000000;
+    txn.max_fee_per_gas = 20000000000;
+    txn.gas_limit = 21000;
+    txn.to = 0x727fc6a68321b754475c668a6abfb6e9e71c169a_address;
+    txn.value = 10 * kEther;
+    txn.data =
+        *from_hex("a9059cbb000000000213ed0f886efd100b67c7e4ec0a85a7d20dc971600000000000000000000015af1d78b58c4000");
+    txn.odd_y_parity = true;
+    txn.chain_id = 1;
+    txn.r = intx::from_string<intx::uint256>("0xbe67e0a07db67da8d446f76add590e54b6e92cb6b8f9835aeb67540579a27717");
+    txn.s = intx::from_string<intx::uint256>("0x2d690516512020171c1ec870f6ff45398cc8609250326be89915fb538e7bd718");
 
     Bytes encoded{};
     rlp::encode(encoded, txn);
@@ -68,21 +67,20 @@ TEST_CASE("Legacy Transaction RLP") {
 }
 
 TEST_CASE("EIP-2930 Transaction RLP") {
-    Transaction txn{
-        Transaction::Type::kEip2930,                         // type
-        7,                                                   // nonce
-        30000000000,                                         // max_priority_fee_per_gas
-        30000000000,                                         // max_fee_per_gas
-        5748100,                                             // gas_limit
-        0x811a752c8cd697e3cb27279c330ed1ada745a8d7_address,  // to
-        2 * kEther,                                          // value
-        *from_hex("6ebaf477f83e051589c1188bcc6ddccd"),       // data
-        false,                                               // odd_y_parity
-        5,                                                   // chain_id
-        intx::from_string<intx::uint256>("0x36b241b061a36a32ab7fe86c7aa9eb592dd59018cd0443adc0903590c16b02b0"),  // r
-        intx::from_string<intx::uint256>("0x5edcc541b4741c5cc6dd347c5ed9577ef293a62787b4510465fadbfe39ee4094"),  // s
-        access_list,
-    };
+    Transaction txn;
+    txn.type = Transaction::Type::kEip2930;
+    txn.nonce = 7;
+    txn.max_priority_fee_per_gas = 30000000000;
+    txn.max_fee_per_gas = 30000000000;
+    txn.gas_limit = 5748100;
+    txn.to = 0x811a752c8cd697e3cb27279c330ed1ada745a8d7_address;
+    txn.value = 2 * kEther;
+    txn.data = *from_hex("6ebaf477f83e051589c1188bcc6ddccd");
+    txn.odd_y_parity = false;
+    txn.chain_id = 5;
+    txn.r = intx::from_string<intx::uint256>("0x36b241b061a36a32ab7fe86c7aa9eb592dd59018cd0443adc0903590c16b02b0");
+    txn.s = intx::from_string<intx::uint256>("0x5edcc541b4741c5cc6dd347c5ed9577ef293a62787b4510465fadbfe39ee4094");
+    txn.access_list = access_list;
 
     // Raw serialization
     Bytes encoded_raw;

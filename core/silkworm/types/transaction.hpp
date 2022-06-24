@@ -35,7 +35,24 @@ struct AccessListEntry {
     friend bool operator==(const AccessListEntry&, const AccessListEntry&) = default;
 };
 
-struct Transaction {
+struct TransactionBase {
+    uint64_t nonce{0};
+    intx::uint256 max_priority_fee_per_gas{0};
+    intx::uint256 max_fee_per_gas{0};
+    uint64_t gas_limit{0};
+    std::optional<evmc::address> to{std::nullopt};
+    intx::uint256 value{0};
+    Bytes data{};
+
+    std::vector<AccessListEntry> access_list{};  // EIP-2930
+
+    [[nodiscard]] intx::uint256 priority_fee_per_gas(const intx::uint256& base_fee_per_gas) const;  // EIP-1559
+    [[nodiscard]] intx::uint256 effective_gas_price(const intx::uint256& base_fee_per_gas) const;   // EIP-1559
+};
+
+// TODO(yperbasis): RecoveredTransaction, Transaction -> SignedTransaction
+
+struct Transaction : public TransactionBase {
     // EIP-2718 transaction type
     // https://github.com/ethereum/eth1.0-specs/tree/master/lists/signature-types
     enum class Type : uint8_t {
@@ -46,19 +63,9 @@ struct Transaction {
 
     Type type{Type::kLegacy};
 
-    uint64_t nonce{0};
-    intx::uint256 max_priority_fee_per_gas{0};
-    intx::uint256 max_fee_per_gas{0};
-    uint64_t gas_limit{0};
-    std::optional<evmc::address> to{std::nullopt};
-    intx::uint256 value{0};
-    Bytes data{};
-
     bool odd_y_parity{false};                             // EIP-155
     std::optional<intx::uint256> chain_id{std::nullopt};  // EIP-155
     intx::uint256 r{0}, s{0};                             // signature
-
-    std::vector<AccessListEntry> access_list{};  // EIP-2930
 
     std::optional<evmc::address> from{std::nullopt};  // sender recovered from the signature
 
@@ -73,9 +80,6 @@ struct Transaction {
     //! https://eips.ethereum.org/EIPS/eip-155.
     //! If recovery fails the from field is set to null.
     void recover_sender();
-
-    [[nodiscard]] intx::uint256 priority_fee_per_gas(const intx::uint256& base_fee_per_gas) const;  // EIP-1559
-    [[nodiscard]] intx::uint256 effective_gas_price(const intx::uint256& base_fee_per_gas) const;   // EIP-1559
 };
 
 bool operator==(const Transaction& a, const Transaction& b);

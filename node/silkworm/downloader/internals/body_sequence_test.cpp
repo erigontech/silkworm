@@ -223,7 +223,7 @@ TEST_CASE("body downloading", "[silkworm][downloader][BodySequence]") {
 
         auto penalty = bs.accept_requested_bodies(response_packet, peer_id);
 
-        REQUIRE(penalty == BadBlockPenalty);
+        //REQUIRE(penalty == BadBlockPenalty); // for now we choose to not penalize the peer
         REQUIRE(!request_status.ready);
         REQUIRE(request_status.block_height == 1); // same as before
         REQUIRE(request_status.block_hash == header1_hash); // same as before

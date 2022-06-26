@@ -37,7 +37,7 @@ commands:
       - run:
           name: "Cmake"
           working_directory: ~/build
-          command: cmake ../project -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DCMAKE_TOOLCHAIN_FILE=$HOME/project/cmake/toolchain/$TOOLCHAIN -DSILKWORM_CLANG_COVERAGE=$CLANG_COVERAGE -DSILKWORM_SANITIZE=$SANITIZE
+          command: cmake ../project -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DSILKWORM_CLANG_COVERAGE=$CLANG_COVERAGE -DSILKWORM_SANITIZE=$SANITIZE
       - save_cache:
           name: "Save Hunter cache"
           key: *hunter-cache-key
@@ -69,7 +69,6 @@ jobs:
   linux-gcc-11-thread-sanitizer:
     environment:
       BUILD_TYPE: Debug
-      TOOLCHAIN: cxx20.cmake
       CLANG_COVERAGE: OFF
       SANITIZE: thread
     docker:
@@ -83,7 +82,6 @@ jobs:
   linux-gcc-11:
     environment:
       BUILD_TYPE: Debug
-      TOOLCHAIN: cxx20.cmake
       CLANG_COVERAGE: OFF
       SANITIZE: OFF
     docker:
@@ -94,14 +92,13 @@ jobs:
       - build
       - test
 
-  linux-clang-10-address-sanitizer:
+  linux-clang-12-address-sanitizer:
     environment:
       BUILD_TYPE: Debug
-      TOOLCHAIN: cxx20.cmake
       CLANG_COVERAGE: OFF
       SANITIZE: address
     docker:
-      - image: ethereum/cpp-build-env:15-clang-10
+      - image: ethereum/cpp-build-env:17-clang-12
     resource_class: xlarge
     steps:
       - checkout_with_submodules
@@ -111,7 +108,6 @@ jobs:
   linux-clang-13-coverage:
     environment:
       BUILD_TYPE: Debug
-      TOOLCHAIN: cxx20.cmake
       CLANG_COVERAGE: ON
       SANITIZE: OFF
     docker:
@@ -158,6 +154,8 @@ jobs:
             done
 
   linux-wasm-build:
+    environment:
+      WASI_SDK_VERSION: 14
     machine:
       image: ubuntu-2004:202010-01
     steps:
@@ -166,9 +164,9 @@ jobs:
           name: "Install WASI SDK"
           working_directory: ~/tmp1
           command: |
-            wget https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-12/wasi-sdk-12.0-linux.tar.gz
-            tar xvf wasi-sdk-12.0-linux.tar.gz
-            sudo mv wasi-sdk-12.0 /opt/wasi-sdk
+            wget https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-$WASI_SDK_VERSION/wasi-sdk-$WASI_SDK_VERSION.0-linux.tar.gz
+            tar xvf wasi-sdk-$WASI_SDK_VERSION.0-linux.tar.gz
+            sudo mv wasi-sdk-$WASI_SDK_VERSION.0 /opt/wasi-sdk
       - run:
           name: "Install dependencies"
           command: |
@@ -207,5 +205,5 @@ workflows:
       - linux-gcc-11-thread-sanitizer
       - linux-gcc-11
       - linux-clang-13-coverage
-      - linux-clang-10-address-sanitizer
+      - linux-clang-12-address-sanitizer
       - linux-wasm-build

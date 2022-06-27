@@ -101,7 +101,8 @@ Penalty BodySequence::accept_requested_bodies(BlockBodiesPacket66& packet, const
             exact_request = body_requests_.find_by_hash(oh, tr);
 
             if (exact_request == body_requests_.end()) {
-                penalty = BadBlockPenalty;
+                //penalty = BadBlockPenalty; // Erigon doesn't penalize the peer maybe because can be a late response but
+                // todo: here we are sure it is not a late response, should we penalize the peer?
                 SILK_TRACE << "BodySequence: body rejected, no matching requests";
                 statistics_.reject_causes.not_requested += 1;
                 continue;
@@ -178,12 +179,12 @@ auto BodySequence::renew_stale_requests(GetBlockBodiesPacket66& packet, BlockNum
         if (past_request.ready || tp - past_request.request_time < timeout)
             continue;
 
-        // retry body request, todo: Erigon delete the request here, but will it retry?
         packet.request.push_back(past_request.block_hash);
         past_request.request_time = tp;
         past_request.request_id = packet.requestId;
-        // todo: Erigon increment a penalization counter for the peer but it doesn't use it
-        //penalizations.emplace_back({Penalty::BadBlockPenalty, }); // todo: find/create a more precise penalization
+
+        // Erigon increment a penalization counter for the peer, but it doesn't use it
+        //penalizations.emplace_back({Penalty::BadBlockPenalty, });
 
         SILK_TRACE << "BodySequence: renewed request block num= " << past_request.block_height
                    << ", hash= " << past_request.block_hash;

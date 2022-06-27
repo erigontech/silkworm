@@ -221,9 +221,9 @@ TEST_CASE("body downloading", "[silkworm][downloader][BodySequence]") {
         response_packet.requestId = packet.requestId; // correct request-id
         response_packet.request.push_back(block1tampered); // wrong body
 
-        auto penalty = bs.accept_requested_bodies(response_packet, peer_id);
+        [[maybe_unused]] auto penalty = bs.accept_requested_bodies(response_packet, peer_id);
 
-        REQUIRE(penalty == BadBlockPenalty);
+        //REQUIRE(penalty == BadBlockPenalty); // for now we choose to not penalize the peer
         REQUIRE(!request_status.ready);
         REQUIRE(request_status.block_height == 1); // same as before
         REQUIRE(request_status.block_hash == header1_hash); // same as before

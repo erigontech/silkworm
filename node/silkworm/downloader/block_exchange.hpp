@@ -43,8 +43,11 @@ class BlockExchange : public ActiveComponent {
     using MessageQueue = ConcurrentQueue<std::shared_ptr<Message>>;  // used internally to store new messages
 
     void receive_message(const sentry::InboundMessage& raw_message);
+    void send_penalization(PeerId id, Penalty p) noexcept;
     void log_status();
 
+    static constexpr seconds_t kRpcTimeout = std::chrono::seconds(1);
+    
     Db::ReadOnlyAccess db_access_;
     SentryClient& sentry_;
     const ChainIdentity& chain_identity_;

@@ -46,6 +46,8 @@ class BlockExchange : public ActiveComponent {
     void send_penalization(PeerId id, Penalty p) noexcept;
     void log_status();
 
+    static constexpr seconds_t kRpcTimeout = std::chrono::seconds(1);
+    
     Db::ReadOnlyAccess db_access_;
     SentryClient& sentry_;
     const ChainIdentity& chain_identity_;

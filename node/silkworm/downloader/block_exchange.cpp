@@ -126,10 +126,10 @@ void BlockExchange::log_status() {
 }
 
 void BlockExchange::send_penalization(PeerId id, Penalty p) noexcept {
-    using namespace std::chrono_literals;
     rpc::PenalizePeer penalize_peer(id, p);
     penalize_peer.do_not_throw_on_failure();
-    penalize_peer.timeout(1s);
+    penalize_peer.timeout(kRpcTimeout);
+
     sentry_.exec_remotely(penalize_peer);
 }
 

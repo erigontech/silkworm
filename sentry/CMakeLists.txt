@@ -29,6 +29,8 @@ list(FILTER SRC EXCLUDE REGEX "_test\\.cpp$")
 set(GRPC_SRC "")
 set(GRPC_SRC_DIR "${MAIN_DIR}/interfaces/p2psentry")
 file(GLOB GRPC_SRC CONFIGURE_DEPENDS "${GRPC_SRC_DIR}/*.h" "${GRPC_SRC_DIR}/*.cc")
+list(PREPEND GRPC_SRC "${MAIN_DIR}/interfaces/types/types.pb.cc")
+list(PREPEND GRPC_SRC "${MAIN_DIR}/interfaces/types/types.pb.h")
 list(PREPEND SRC ${GRPC_SRC})
 
 add_library(${TARGET} ${SRC})

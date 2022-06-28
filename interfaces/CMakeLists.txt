@@ -28,6 +28,7 @@ set(PROTO_PATH "${CMAKE_CURRENT_SOURCE_DIR}/proto")
 set(PROTOC_ARGS
     --cpp_out "${CMAKE_CURRENT_SOURCE_DIR}"
     -I "${PROTO_PATH}"
+    --experimental_allow_proto3_optional
 )
 set(PROTOC_ARGS_GRPC
     ${PROTOC_ARGS}

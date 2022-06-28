@@ -49,7 +49,7 @@ struct TableStruct_p2psentry_2fsentry_2eproto {
     PROTOBUF_SECTION_VARIABLE(protodesc_cold);
   static const ::PROTOBUF_NAMESPACE_ID::internal::AuxiliaryParseTableField aux[]
     PROTOBUF_SECTION_VARIABLE(protodesc_cold);
-  static const ::PROTOBUF_NAMESPACE_ID::internal::ParseTable schema[17]
+  static const ::PROTOBUF_NAMESPACE_ID::internal::ParseTable schema[20]
     PROTOBUF_SECTION_VARIABLE(protodesc_cold);
   static const ::PROTOBUF_NAMESPACE_ID::internal::FieldMetadata field_metadata[];
   static const ::PROTOBUF_NAMESPACE_ID::internal::SerializationTable serialization_table[];
@@ -72,21 +72,30 @@ extern MessagesRequestDefaultTypeInternal _MessagesRequest_default_instance_;
 class OutboundMessageData;
 class OutboundMessageDataDefaultTypeInternal;
 extern OutboundMessageDataDefaultTypeInternal _OutboundMessageData_default_instance_;
+class PeerByIdReply;
+class PeerByIdReplyDefaultTypeInternal;
+extern PeerByIdReplyDefaultTypeInternal _PeerByIdReply_default_instance_;
+class PeerByIdRequest;
+class PeerByIdRequestDefaultTypeInternal;
+extern PeerByIdRequestDefaultTypeInternal _PeerByIdRequest_default_instance_;
 class PeerCountReply;
 class PeerCountReplyDefaultTypeInternal;
 extern PeerCountReplyDefaultTypeInternal _PeerCountReply_default_instance_;
 class PeerCountRequest;
 class PeerCountRequestDefaultTypeInternal;
 extern PeerCountRequestDefaultTypeInternal _PeerCountRequest_default_instance_;
+class PeerEvent;
+class PeerEventDefaultTypeInternal;
+extern PeerEventDefaultTypeInternal _PeerEvent_default_instance_;
+class PeerEventsRequest;
+class PeerEventsRequestDefaultTypeInternal;
+extern PeerEventsRequestDefaultTypeInternal _PeerEventsRequest_default_instance_;
 class PeerMinBlockRequest;
 class PeerMinBlockRequestDefaultTypeInternal;
 extern PeerMinBlockRequestDefaultTypeInternal _PeerMinBlockRequest_default_instance_;
 class PeersReply;
 class PeersReplyDefaultTypeInternal;
 extern PeersReplyDefaultTypeInternal _PeersReply_default_instance_;
-class PeersRequest;
-class PeersRequestDefaultTypeInternal;
-extern PeersRequestDefaultTypeInternal _PeersRequest_default_instance_;
 class PenalizePeerRequest;
 class PenalizePeerRequestDefaultTypeInternal;
 extern PenalizePeerRequestDefaultTypeInternal _PenalizePeerRequest_default_instance_;
@@ -115,11 +124,14 @@ template<> ::sentry::HandShakeReply* Arena::CreateMaybeMessage<::sentry::HandSha
 template<> ::sentry::InboundMessage* Arena::CreateMaybeMessage<::sentry::InboundMessage>(Arena*);
 template<> ::sentry::MessagesRequest* Arena::CreateMaybeMessage<::sentry::MessagesRequest>(Arena*);
 template<> ::sentry::OutboundMessageData* Arena::CreateMaybeMessage<::sentry::OutboundMessageData>(Arena*);
+template<> ::sentry::PeerByIdReply* Arena::CreateMaybeMessage<::sentry::PeerByIdReply>(Arena*);
+template<> ::sentry::PeerByIdRequest* Arena::CreateMaybeMessage<::sentry::PeerByIdRequest>(Arena*);
 template<> ::sentry::PeerCountReply* Arena::CreateMaybeMessage<::sentry::PeerCountReply>(Arena*);
 template<> ::sentry::PeerCountRequest* Arena::CreateMaybeMessage<::sentry::PeerCountRequest>(Arena*);
+template<> ::sentry::PeerEvent* Arena::CreateMaybeMessage<::sentry::PeerEvent>(Arena*);
+template<> ::sentry::PeerEventsRequest* Arena::CreateMaybeMessage<::sentry::PeerEventsRequest>(Arena*);
 template<> ::sentry::PeerMinBlockRequest* Arena::CreateMaybeMessage<::sentry::PeerMinBlockRequest>(Arena*);
 template<> ::sentry::PeersReply* Arena::CreateMaybeMessage<::sentry::PeersReply>(Arena*);
-template<> ::sentry::PeersRequest* Arena::CreateMaybeMessage<::sentry::PeersRequest>(Arena*);
 template<> ::sentry::PenalizePeerRequest* Arena::CreateMaybeMessage<::sentry::PenalizePeerRequest>(Arena*);
 template<> ::sentry::SendMessageByIdRequest* Arena::CreateMaybeMessage<::sentry::SendMessageByIdRequest>(Arena*);
 template<> ::sentry::SendMessageByMinBlockRequest* Arena::CreateMaybeMessage<::sentry::SendMessageByMinBlockRequest>(Arena*);
@@ -130,30 +142,30 @@ template<> ::sentry::StatusData* Arena::CreateMaybeMessage<::sentry::StatusData>
 PROTOBUF_NAMESPACE_CLOSE
 namespace sentry {
 
-enum PeersReply_PeerEvent : int {
-  PeersReply_PeerEvent_Connect = 0,
-  PeersReply_PeerEvent_Disconnect = 1,
-  PeersReply_PeerEvent_PeersReply_PeerEvent_INT_MIN_SENTINEL_DO_NOT_USE_ = std::numeric_limits<::PROTOBUF_NAMESPACE_ID::int32>::min(),
-  PeersReply_PeerEvent_PeersReply_PeerEvent_INT_MAX_SENTINEL_DO_NOT_USE_ = std::numeric_limits<::PROTOBUF_NAMESPACE_ID::int32>::max()
+enum PeerEvent_PeerEventId : int {
+  PeerEvent_PeerEventId_Connect = 0,
+  PeerEvent_PeerEventId_Disconnect = 1,
+  PeerEvent_PeerEventId_PeerEvent_PeerEventId_INT_MIN_SENTINEL_DO_NOT_USE_ = std::numeric_limits<::PROTOBUF_NAMESPACE_ID::int32>::min(),
+  PeerEvent_PeerEventId_PeerEvent_PeerEventId_INT_MAX_SENTINEL_DO_NOT_USE_ = std::numeric_limits<::PROTOBUF_NAMESPACE_ID::int32>::max()
 };
-bool PeersReply_PeerEvent_IsValid(int value);
-constexpr PeersReply_PeerEvent PeersReply_PeerEvent_PeerEvent_MIN = PeersReply_PeerEvent_Connect;
-constexpr PeersReply_PeerEvent PeersReply_PeerEvent_PeerEvent_MAX = PeersReply_PeerEvent_Disconnect;
-constexpr int PeersReply_PeerEvent_PeerEvent_ARRAYSIZE = PeersReply_PeerEvent_PeerEvent_MAX + 1;
+bool PeerEvent_PeerEventId_IsValid(int value);
+constexpr PeerEvent_PeerEventId PeerEvent_PeerEventId_PeerEventId_MIN = PeerEvent_PeerEventId_Connect;
+constexpr PeerEvent_PeerEventId PeerEvent_PeerEventId_PeerEventId_MAX = PeerEvent_PeerEventId_Disconnect;
+constexpr int PeerEvent_PeerEventId_PeerEventId_ARRAYSIZE = PeerEvent_PeerEventId_PeerEventId_MAX + 1;
 
-const ::PROTOBUF_NAMESPACE_ID::EnumDescriptor* PeersReply_PeerEvent_descriptor();
+const ::PROTOBUF_NAMESPACE_ID::EnumDescriptor* PeerEvent_PeerEventId_descriptor();
 template<typename T>
-inline const std::string& PeersReply_PeerEvent_Name(T enum_t_value) {
-  static_assert(::std::is_same<T, PeersReply_PeerEvent>::value ||
+inline const std::string& PeerEvent_PeerEventId_Name(T enum_t_value) {
+  static_assert(::std::is_same<T, PeerEvent_PeerEventId>::value ||
     ::std::is_integral<T>::value,
-    "Incorrect type passed to function PeersReply_PeerEvent_Name.");
+    "Incorrect type passed to function PeerEvent_PeerEventId_Name.");
   return ::PROTOBUF_NAMESPACE_ID::internal::NameOfEnum(
-    PeersReply_PeerEvent_descriptor(), enum_t_value);
+    PeerEvent_PeerEventId_descriptor(), enum_t_value);
 }
-inline bool PeersReply_PeerEvent_Parse(
-    ::PROTOBUF_NAMESPACE_ID::ConstStringParam name, PeersReply_PeerEvent* value) {
-  return ::PROTOBUF_NAMESPACE_ID::internal::ParseNamedEnum<PeersReply_PeerEvent>(
-    PeersReply_PeerEvent_descriptor(), name, value);
+inline bool PeerEvent_PeerEventId_Parse(
+    ::PROTOBUF_NAMESPACE_ID::ConstStringParam name, PeerEvent_PeerEventId* value) {
+  return ::PROTOBUF_NAMESPACE_ID::internal::ParseNamedEnum<PeerEvent_PeerEventId>(
+    PeerEvent_PeerEventId_descriptor(), name, value);
 }
 enum MessageId : int {
   STATUS_65 = 0,
@@ -236,12 +248,13 @@ inline bool PenaltyKind_Parse(
 enum Protocol : int {
   ETH65 = 0,
   ETH66 = 1,
+  ETH67 = 2,
   Protocol_INT_MIN_SENTINEL_DO_NOT_USE_ = std::numeric_limits<::PROTOBUF_NAMESPACE_ID::int32>::min(),
   Protocol_INT_MAX_SENTINEL_DO_NOT_USE_ = std::numeric_limits<::PROTOBUF_NAMESPACE_ID::int32>::max()
 };
 bool Protocol_IsValid(int value);
 constexpr Protocol Protocol_MIN = ETH65;
-constexpr Protocol Protocol_MAX = ETH66;
+constexpr Protocol Protocol_MAX = ETH67;
 constexpr int Protocol_ARRAYSIZE = Protocol_MAX + 1;
 
 const ::PROTOBUF_NAMESPACE_ID::EnumDescriptor* Protocol_descriptor();
@@ -2303,6 +2316,151 @@ class MessagesRequest PROTOBUF_FINAL :
 };
 // -------------------------------------------------------------------
 
+class PeersReply PROTOBUF_FINAL :
+    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:sentry.PeersReply) */ {
+ public:
+  inline PeersReply() : PeersReply(nullptr) {}
+  virtual ~PeersReply();
+
+  PeersReply(const PeersReply& from);
+  PeersReply(PeersReply&& from) noexcept
+    : PeersReply() {
+    *this = ::std::move(from);
+  }
+
+  inline PeersReply& operator=(const PeersReply& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  inline PeersReply& operator=(PeersReply&& from) noexcept {
+    if (GetArena() == from.GetArena()) {
+      if (this != &from) InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* descriptor() {
+    return GetDescriptor();
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* GetDescriptor() {
+    return GetMetadataStatic().descriptor;
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Reflection* GetReflection() {
+    return GetMetadataStatic().reflection;
+  }
+  static const PeersReply& default_instance();
+
+  static inline const PeersReply* internal_default_instance() {
+    return reinterpret_cast<const PeersReply*>(
+               &_PeersReply_default_instance_);
+  }
+  static constexpr int kIndexInFileMessages =
+    13;
+
+  friend void swap(PeersReply& a, PeersReply& b) {
+    a.Swap(&b);
+  }
+  inline void Swap(PeersReply* other) {
+    if (other == this) return;
+    if (GetArena() == other->GetArena()) {
+      InternalSwap(other);
+    } else {
+      ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
+    }
+  }
+  void UnsafeArenaSwap(PeersReply* other) {
+    if (other == this) return;
+    GOOGLE_DCHECK(GetArena() == other->GetArena());
+    InternalSwap(other);
+  }
+
+  // implements Message ----------------------------------------------
+
+  inline PeersReply* New() const final {
+    return CreateMaybeMessage<PeersReply>(nullptr);
+  }
+
+  PeersReply* New(::PROTOBUF_NAMESPACE_ID::Arena* arena) const final {
+    return CreateMaybeMessage<PeersReply>(arena);
+  }
+  void CopyFrom(const ::PROTOBUF_NAMESPACE_ID::Message& from) final;
+  void MergeFrom(const ::PROTOBUF_NAMESPACE_ID::Message& from) final;
+  void CopyFrom(const PeersReply& from);
+  void MergeFrom(const PeersReply& from);
+  PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
+  bool IsInitialized() const final;
+
+  size_t ByteSizeLong() const final;
+  const char* _InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) final;
+  ::PROTOBUF_NAMESPACE_ID::uint8* _InternalSerialize(
+      ::PROTOBUF_NAMESPACE_ID::uint8* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const final;
+  int GetCachedSize() const final { return _cached_size_.Get(); }
+
+  private:
+  inline void SharedCtor();
+  inline void SharedDtor();
+  void SetCachedSize(int size) const final;
+  void InternalSwap(PeersReply* other);
+  friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
+  static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
+    return "sentry.PeersReply";
+  }
+  protected:
+  explicit PeersReply(::PROTOBUF_NAMESPACE_ID::Arena* arena);
+  private:
+  static void ArenaDtor(void* object);
+  inline void RegisterArenaDtor(::PROTOBUF_NAMESPACE_ID::Arena* arena);
+  public:
+
+  ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadata() const final;
+  private:
+  static ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadataStatic() {
+    ::PROTOBUF_NAMESPACE_ID::internal::AssignDescriptors(&::descriptor_table_p2psentry_2fsentry_2eproto);
+    return ::descriptor_table_p2psentry_2fsentry_2eproto.file_level_metadata[kIndexInFileMessages];
+  }
+
+  public:
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  enum : int {
+    kPeersFieldNumber = 1,
+  };
+  // repeated .types.PeerInfo peers = 1;
+  int peers_size() const;
+  private:
+  int _internal_peers_size() const;
+  public:
+  void clear_peers();
+  ::types::PeerInfo* mutable_peers(int index);
+  ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::types::PeerInfo >*
+      mutable_peers();
+  private:
+  const ::types::PeerInfo& _internal_peers(int index) const;
+  ::types::PeerInfo* _internal_add_peers();
+  public:
+  const ::types::PeerInfo& peers(int index) const;
+  ::types::PeerInfo* add_peers();
+  const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::types::PeerInfo >&
+      peers() const;
+
+  // @@protoc_insertion_point(class_scope:sentry.PeersReply)
+ private:
+  class _Internal;
+
+  template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
+  typedef void InternalArenaConstructable_;
+  typedef void DestructorSkippable_;
+  ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::types::PeerInfo > peers_;
+  mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
+  friend struct ::TableStruct_p2psentry_2fsentry_2eproto;
+};
+// -------------------------------------------------------------------
+
 class PeerCountRequest PROTOBUF_FINAL :
     public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:sentry.PeerCountRequest) */ {
  public:
@@ -2344,7 +2502,7 @@ class PeerCountRequest PROTOBUF_FINAL :
                &_PeerCountRequest_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    13;
+    14;
 
   friend void swap(PeerCountRequest& a, PeerCountRequest& b) {
     a.Swap(&b);
@@ -2467,7 +2625,7 @@ class PeerCountReply PROTOBUF_FINAL :
                &_PeerCountReply_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    14;
+    15;
 
   friend void swap(PeerCountReply& a, PeerCountReply& b) {
     a.Swap(&b);
@@ -2562,23 +2720,23 @@ class PeerCountReply PROTOBUF_FINAL :
 };
 // -------------------------------------------------------------------
 
-class PeersRequest PROTOBUF_FINAL :
-    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:sentry.PeersRequest) */ {
+class PeerByIdRequest PROTOBUF_FINAL :
+    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:sentry.PeerByIdRequest) */ {
  public:
-  inline PeersRequest() : PeersRequest(nullptr) {}
-  virtual ~PeersRequest();
+  inline PeerByIdRequest() : PeerByIdRequest(nullptr) {}
+  virtual ~PeerByIdRequest();
 
-  PeersRequest(const PeersRequest& from);
-  PeersRequest(PeersRequest&& from) noexcept
-    : PeersRequest() {
+  PeerByIdRequest(const PeerByIdRequest& from);
+  PeerByIdRequest(PeerByIdRequest&& from) noexcept
+    : PeerByIdRequest() {
     *this = ::std::move(from);
   }
 
-  inline PeersRequest& operator=(const PeersRequest& from) {
+  inline PeerByIdRequest& operator=(const PeerByIdRequest& from) {
     CopyFrom(from);
     return *this;
   }
-  inline PeersRequest& operator=(PeersRequest&& from) noexcept {
+  inline PeerByIdRequest& operator=(PeerByIdRequest&& from) noexcept {
     if (GetArena() == from.GetArena()) {
       if (this != &from) InternalSwap(&from);
     } else {
@@ -2596,142 +2754,19 @@ class PeersRequest PROTOBUF_FINAL :
   static const ::PROTOBUF_NAMESPACE_ID::Reflection* GetReflection() {
     return GetMetadataStatic().reflection;
   }
-  static const PeersRequest& default_instance();
+  static const PeerByIdRequest& default_instance();
 
-  static inline const PeersRequest* internal_default_instance() {
-    return reinterpret_cast<const PeersRequest*>(
-               &_PeersRequest_default_instance_);
-  }
-  static constexpr int kIndexInFileMessages =
-    15;
-
-  friend void swap(PeersRequest& a, PeersRequest& b) {
-    a.Swap(&b);
-  }
-  inline void Swap(PeersRequest* other) {
-    if (other == this) return;
-    if (GetArena() == other->GetArena()) {
-      InternalSwap(other);
-    } else {
-      ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
-    }
-  }
-  void UnsafeArenaSwap(PeersRequest* other) {
-    if (other == this) return;
-    GOOGLE_DCHECK(GetArena() == other->GetArena());
-    InternalSwap(other);
-  }
-
-  // implements Message ----------------------------------------------
-
-  inline PeersRequest* New() const final {
-    return CreateMaybeMessage<PeersRequest>(nullptr);
-  }
-
-  PeersRequest* New(::PROTOBUF_NAMESPACE_ID::Arena* arena) const final {
-    return CreateMaybeMessage<PeersRequest>(arena);
-  }
-  void CopyFrom(const ::PROTOBUF_NAMESPACE_ID::Message& from) final;
-  void MergeFrom(const ::PROTOBUF_NAMESPACE_ID::Message& from) final;
-  void CopyFrom(const PeersRequest& from);
-  void MergeFrom(const PeersRequest& from);
-  PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
-  bool IsInitialized() const final;
-
-  size_t ByteSizeLong() const final;
-  const char* _InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) final;
-  ::PROTOBUF_NAMESPACE_ID::uint8* _InternalSerialize(
-      ::PROTOBUF_NAMESPACE_ID::uint8* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const final;
-  int GetCachedSize() const final { return _cached_size_.Get(); }
-
-  private:
-  inline void SharedCtor();
-  inline void SharedDtor();
-  void SetCachedSize(int size) const final;
-  void InternalSwap(PeersRequest* other);
-  friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
-  static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
-    return "sentry.PeersRequest";
-  }
-  protected:
-  explicit PeersRequest(::PROTOBUF_NAMESPACE_ID::Arena* arena);
-  private:
-  static void ArenaDtor(void* object);
-  inline void RegisterArenaDtor(::PROTOBUF_NAMESPACE_ID::Arena* arena);
-  public:
-
-  ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadata() const final;
-  private:
-  static ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadataStatic() {
-    ::PROTOBUF_NAMESPACE_ID::internal::AssignDescriptors(&::descriptor_table_p2psentry_2fsentry_2eproto);
-    return ::descriptor_table_p2psentry_2fsentry_2eproto.file_level_metadata[kIndexInFileMessages];
-  }
-
-  public:
-
-  // nested types ----------------------------------------------------
-
-  // accessors -------------------------------------------------------
-
-  // @@protoc_insertion_point(class_scope:sentry.PeersRequest)
- private:
-  class _Internal;
-
-  template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
-  typedef void InternalArenaConstructable_;
-  typedef void DestructorSkippable_;
-  mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
-  friend struct ::TableStruct_p2psentry_2fsentry_2eproto;
-};
-// -------------------------------------------------------------------
-
-class PeersReply PROTOBUF_FINAL :
-    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:sentry.PeersReply) */ {
- public:
-  inline PeersReply() : PeersReply(nullptr) {}
-  virtual ~PeersReply();
-
-  PeersReply(const PeersReply& from);
-  PeersReply(PeersReply&& from) noexcept
-    : PeersReply() {
-    *this = ::std::move(from);
-  }
-
-  inline PeersReply& operator=(const PeersReply& from) {
-    CopyFrom(from);
-    return *this;
-  }
-  inline PeersReply& operator=(PeersReply&& from) noexcept {
-    if (GetArena() == from.GetArena()) {
-      if (this != &from) InternalSwap(&from);
-    } else {
-      CopyFrom(from);
-    }
-    return *this;
-  }
-
-  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* descriptor() {
-    return GetDescriptor();
-  }
-  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* GetDescriptor() {
-    return GetMetadataStatic().descriptor;
-  }
-  static const ::PROTOBUF_NAMESPACE_ID::Reflection* GetReflection() {
-    return GetMetadataStatic().reflection;
-  }
-  static const PeersReply& default_instance();
-
-  static inline const PeersReply* internal_default_instance() {
-    return reinterpret_cast<const PeersReply*>(
-               &_PeersReply_default_instance_);
+  static inline const PeerByIdRequest* internal_default_instance() {
+    return reinterpret_cast<const PeerByIdRequest*>(
+               &_PeerByIdRequest_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
     16;
 
-  friend void swap(PeersReply& a, PeersReply& b) {
+  friend void swap(PeerByIdRequest& a, PeerByIdRequest& b) {
     a.Swap(&b);
   }
-  inline void Swap(PeersReply* other) {
+  inline void Swap(PeerByIdRequest* other) {
     if (other == this) return;
     if (GetArena() == other->GetArena()) {
       InternalSwap(other);
@@ -2739,7 +2774,7 @@ class PeersReply PROTOBUF_FINAL :
       ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
     }
   }
-  void UnsafeArenaSwap(PeersReply* other) {
+  void UnsafeArenaSwap(PeerByIdRequest* other) {
     if (other == this) return;
     GOOGLE_DCHECK(GetArena() == other->GetArena());
     InternalSwap(other);
@@ -2747,17 +2782,17 @@ class PeersReply PROTOBUF_FINAL :
 
   // implements Message ----------------------------------------------
 
-  inline PeersReply* New() const final {
-    return CreateMaybeMessage<PeersReply>(nullptr);
+  inline PeerByIdRequest* New() const final {
+    return CreateMaybeMessage<PeerByIdRequest>(nullptr);
   }
 
-  PeersReply* New(::PROTOBUF_NAMESPACE_ID::Arena* arena) const final {
-    return CreateMaybeMessage<PeersReply>(arena);
+  PeerByIdRequest* New(::PROTOBUF_NAMESPACE_ID::Arena* arena) const final {
+    return CreateMaybeMessage<PeerByIdRequest>(arena);
   }
   void CopyFrom(const ::PROTOBUF_NAMESPACE_ID::Message& from) final;
   void MergeFrom(const ::PROTOBUF_NAMESPACE_ID::Message& from) final;
-  void CopyFrom(const PeersReply& from);
-  void MergeFrom(const PeersReply& from);
+  void CopyFrom(const PeerByIdRequest& from);
+  void MergeFrom(const PeerByIdRequest& from);
   PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
   bool IsInitialized() const final;
 
@@ -2771,13 +2806,13 @@ class PeersReply PROTOBUF_FINAL :
   inline void SharedCtor();
   inline void SharedDtor();
   void SetCachedSize(int size) const final;
-  void InternalSwap(PeersReply* other);
+  void InternalSwap(PeerByIdRequest* other);
   friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
   static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
-    return "sentry.PeersReply";
+    return "sentry.PeerByIdRequest";
   }
   protected:
-  explicit PeersReply(::PROTOBUF_NAMESPACE_ID::Arena* arena);
+  explicit PeerByIdRequest(::PROTOBUF_NAMESPACE_ID::Arena* arena);
   private:
   static void ArenaDtor(void* object);
   inline void RegisterArenaDtor(::PROTOBUF_NAMESPACE_ID::Arena* arena);
@@ -2793,42 +2828,11 @@ class PeersReply PROTOBUF_FINAL :
   public:
 
   // nested types ----------------------------------------------------
-
-  typedef PeersReply_PeerEvent PeerEvent;
-  static constexpr PeerEvent Connect =
-    PeersReply_PeerEvent_Connect;
-  static constexpr PeerEvent Disconnect =
-    PeersReply_PeerEvent_Disconnect;
-  static inline bool PeerEvent_IsValid(int value) {
-    return PeersReply_PeerEvent_IsValid(value);
-  }
-  static constexpr PeerEvent PeerEvent_MIN =
-    PeersReply_PeerEvent_PeerEvent_MIN;
-  static constexpr PeerEvent PeerEvent_MAX =
-    PeersReply_PeerEvent_PeerEvent_MAX;
-  static constexpr int PeerEvent_ARRAYSIZE =
-    PeersReply_PeerEvent_PeerEvent_ARRAYSIZE;
-  static inline const ::PROTOBUF_NAMESPACE_ID::EnumDescriptor*
-  PeerEvent_descriptor() {
-    return PeersReply_PeerEvent_descriptor();
-  }
-  template<typename T>
-  static inline const std::string& PeerEvent_Name(T enum_t_value) {
-    static_assert(::std::is_same<T, PeerEvent>::value ||
-      ::std::is_integral<T>::value,
-      "Incorrect type passed to function PeerEvent_Name.");
-    return PeersReply_PeerEvent_Name(enum_t_value);
-  }
-  static inline bool PeerEvent_Parse(::PROTOBUF_NAMESPACE_ID::ConstStringParam name,
-      PeerEvent* value) {
-    return PeersReply_PeerEvent_Parse(name, value);
-  }
 
   // accessors -------------------------------------------------------
 
   enum : int {
     kPeerIdFieldNumber = 1,
-    kEventFieldNumber = 2,
   };
   // .types.H512 peer_id = 1;
   bool has_peer_id() const;
@@ -2848,16 +2852,7 @@ class PeersReply PROTOBUF_FINAL :
       ::types::H512* peer_id);
   ::types::H512* unsafe_arena_release_peer_id();
 
-  // .sentry.PeersReply.PeerEvent event = 2;
-  void clear_event();
-  ::sentry::PeersReply_PeerEvent event() const;
-  void set_event(::sentry::PeersReply_PeerEvent value);
-  private:
-  ::sentry::PeersReply_PeerEvent _internal_event() const;
-  void _internal_set_event(::sentry::PeersReply_PeerEvent value);
-  public:
-
-  // @@protoc_insertion_point(class_scope:sentry.PeersReply)
+  // @@protoc_insertion_point(class_scope:sentry.PeerByIdRequest)
  private:
   class _Internal;
 
@@ -2865,7 +2860,461 @@ class PeersReply PROTOBUF_FINAL :
   typedef void InternalArenaConstructable_;
   typedef void DestructorSkippable_;
   ::types::H512* peer_id_;
-  int event_;
+  mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
+  friend struct ::TableStruct_p2psentry_2fsentry_2eproto;
+};
+// -------------------------------------------------------------------
+
+class PeerByIdReply PROTOBUF_FINAL :
+    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:sentry.PeerByIdReply) */ {
+ public:
+  inline PeerByIdReply() : PeerByIdReply(nullptr) {}
+  virtual ~PeerByIdReply();
+
+  PeerByIdReply(const PeerByIdReply& from);
+  PeerByIdReply(PeerByIdReply&& from) noexcept
+    : PeerByIdReply() {
+    *this = ::std::move(from);
+  }
+
+  inline PeerByIdReply& operator=(const PeerByIdReply& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  inline PeerByIdReply& operator=(PeerByIdReply&& from) noexcept {
+    if (GetArena() == from.GetArena()) {
+      if (this != &from) InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* descriptor() {
+    return GetDescriptor();
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* GetDescriptor() {
+    return GetMetadataStatic().descriptor;
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Reflection* GetReflection() {
+    return GetMetadataStatic().reflection;
+  }
+  static const PeerByIdReply& default_instance();
+
+  static inline const PeerByIdReply* internal_default_instance() {
+    return reinterpret_cast<const PeerByIdReply*>(
+               &_PeerByIdReply_default_instance_);
+  }
+  static constexpr int kIndexInFileMessages =
+    17;
+
+  friend void swap(PeerByIdReply& a, PeerByIdReply& b) {
+    a.Swap(&b);
+  }
+  inline void Swap(PeerByIdReply* other) {
+    if (other == this) return;
+    if (GetArena() == other->GetArena()) {
+      InternalSwap(other);
+    } else {
+      ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
+    }
+  }
+  void UnsafeArenaSwap(PeerByIdReply* other) {
+    if (other == this) return;
+    GOOGLE_DCHECK(GetArena() == other->GetArena());
+    InternalSwap(other);
+  }
+
+  // implements Message ----------------------------------------------
+
+  inline PeerByIdReply* New() const final {
+    return CreateMaybeMessage<PeerByIdReply>(nullptr);
+  }
+
+  PeerByIdReply* New(::PROTOBUF_NAMESPACE_ID::Arena* arena) const final {
+    return CreateMaybeMessage<PeerByIdReply>(arena);
+  }
+  void CopyFrom(const ::PROTOBUF_NAMESPACE_ID::Message& from) final;
+  void MergeFrom(const ::PROTOBUF_NAMESPACE_ID::Message& from) final;
+  void CopyFrom(const PeerByIdReply& from);
+  void MergeFrom(const PeerByIdReply& from);
+  PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
+  bool IsInitialized() const final;
+
+  size_t ByteSizeLong() const final;
+  const char* _InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) final;
+  ::PROTOBUF_NAMESPACE_ID::uint8* _InternalSerialize(
+      ::PROTOBUF_NAMESPACE_ID::uint8* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const final;
+  int GetCachedSize() const final { return _cached_size_.Get(); }
+
+  private:
+  inline void SharedCtor();
+  inline void SharedDtor();
+  void SetCachedSize(int size) const final;
+  void InternalSwap(PeerByIdReply* other);
+  friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
+  static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
+    return "sentry.PeerByIdReply";
+  }
+  protected:
+  explicit PeerByIdReply(::PROTOBUF_NAMESPACE_ID::Arena* arena);
+  private:
+  static void ArenaDtor(void* object);
+  inline void RegisterArenaDtor(::PROTOBUF_NAMESPACE_ID::Arena* arena);
+  public:
+
+  ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadata() const final;
+  private:
+  static ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadataStatic() {
+    ::PROTOBUF_NAMESPACE_ID::internal::AssignDescriptors(&::descriptor_table_p2psentry_2fsentry_2eproto);
+    return ::descriptor_table_p2psentry_2fsentry_2eproto.file_level_metadata[kIndexInFileMessages];
+  }
+
+  public:
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  enum : int {
+    kPeerFieldNumber = 1,
+  };
+  // .types.PeerInfo peer = 1;
+  bool has_peer() const;
+  private:
+  bool _internal_has_peer() const;
+  public:
+  void clear_peer();
+  const ::types::PeerInfo& peer() const;
+  ::types::PeerInfo* release_peer();
+  ::types::PeerInfo* mutable_peer();
+  void set_allocated_peer(::types::PeerInfo* peer);
+  private:
+  const ::types::PeerInfo& _internal_peer() const;
+  ::types::PeerInfo* _internal_mutable_peer();
+  public:
+  void unsafe_arena_set_allocated_peer(
+      ::types::PeerInfo* peer);
+  ::types::PeerInfo* unsafe_arena_release_peer();
+
+  // @@protoc_insertion_point(class_scope:sentry.PeerByIdReply)
+ private:
+  class _Internal;
+
+  template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
+  typedef void InternalArenaConstructable_;
+  typedef void DestructorSkippable_;
+  ::PROTOBUF_NAMESPACE_ID::internal::HasBits<1> _has_bits_;
+  mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
+  ::types::PeerInfo* peer_;
+  friend struct ::TableStruct_p2psentry_2fsentry_2eproto;
+};
+// -------------------------------------------------------------------
+
+class PeerEventsRequest PROTOBUF_FINAL :
+    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:sentry.PeerEventsRequest) */ {
+ public:
+  inline PeerEventsRequest() : PeerEventsRequest(nullptr) {}
+  virtual ~PeerEventsRequest();
+
+  PeerEventsRequest(const PeerEventsRequest& from);
+  PeerEventsRequest(PeerEventsRequest&& from) noexcept
+    : PeerEventsRequest() {
+    *this = ::std::move(from);
+  }
+
+  inline PeerEventsRequest& operator=(const PeerEventsRequest& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  inline PeerEventsRequest& operator=(PeerEventsRequest&& from) noexcept {
+    if (GetArena() == from.GetArena()) {
+      if (this != &from) InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* descriptor() {
+    return GetDescriptor();
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* GetDescriptor() {
+    return GetMetadataStatic().descriptor;
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Reflection* GetReflection() {
+    return GetMetadataStatic().reflection;
+  }
+  static const PeerEventsRequest& default_instance();
+
+  static inline const PeerEventsRequest* internal_default_instance() {
+    return reinterpret_cast<const PeerEventsRequest*>(
+               &_PeerEventsRequest_default_instance_);
+  }
+  static constexpr int kIndexInFileMessages =
+    18;
+
+  friend void swap(PeerEventsRequest& a, PeerEventsRequest& b) {
+    a.Swap(&b);
+  }
+  inline void Swap(PeerEventsRequest* other) {
+    if (other == this) return;
+    if (GetArena() == other->GetArena()) {
+      InternalSwap(other);
+    } else {
+      ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
+    }
+  }
+  void UnsafeArenaSwap(PeerEventsRequest* other) {
+    if (other == this) return;
+    GOOGLE_DCHECK(GetArena() == other->GetArena());
+    InternalSwap(other);
+  }
+
+  // implements Message ----------------------------------------------
+
+  inline PeerEventsRequest* New() const final {
+    return CreateMaybeMessage<PeerEventsRequest>(nullptr);
+  }
+
+  PeerEventsRequest* New(::PROTOBUF_NAMESPACE_ID::Arena* arena) const final {
+    return CreateMaybeMessage<PeerEventsRequest>(arena);
+  }
+  void CopyFrom(const ::PROTOBUF_NAMESPACE_ID::Message& from) final;
+  void MergeFrom(const ::PROTOBUF_NAMESPACE_ID::Message& from) final;
+  void CopyFrom(const PeerEventsRequest& from);
+  void MergeFrom(const PeerEventsRequest& from);
+  PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
+  bool IsInitialized() const final;
+
+  size_t ByteSizeLong() const final;
+  const char* _InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) final;
+  ::PROTOBUF_NAMESPACE_ID::uint8* _InternalSerialize(
+      ::PROTOBUF_NAMESPACE_ID::uint8* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const final;
+  int GetCachedSize() const final { return _cached_size_.Get(); }
+
+  private:
+  inline void SharedCtor();
+  inline void SharedDtor();
+  void SetCachedSize(int size) const final;
+  void InternalSwap(PeerEventsRequest* other);
+  friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
+  static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
+    return "sentry.PeerEventsRequest";
+  }
+  protected:
+  explicit PeerEventsRequest(::PROTOBUF_NAMESPACE_ID::Arena* arena);
+  private:
+  static void ArenaDtor(void* object);
+  inline void RegisterArenaDtor(::PROTOBUF_NAMESPACE_ID::Arena* arena);
+  public:
+
+  ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadata() const final;
+  private:
+  static ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadataStatic() {
+    ::PROTOBUF_NAMESPACE_ID::internal::AssignDescriptors(&::descriptor_table_p2psentry_2fsentry_2eproto);
+    return ::descriptor_table_p2psentry_2fsentry_2eproto.file_level_metadata[kIndexInFileMessages];
+  }
+
+  public:
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  // @@protoc_insertion_point(class_scope:sentry.PeerEventsRequest)
+ private:
+  class _Internal;
+
+  template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
+  typedef void InternalArenaConstructable_;
+  typedef void DestructorSkippable_;
+  mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
+  friend struct ::TableStruct_p2psentry_2fsentry_2eproto;
+};
+// -------------------------------------------------------------------
+
+class PeerEvent PROTOBUF_FINAL :
+    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:sentry.PeerEvent) */ {
+ public:
+  inline PeerEvent() : PeerEvent(nullptr) {}
+  virtual ~PeerEvent();
+
+  PeerEvent(const PeerEvent& from);
+  PeerEvent(PeerEvent&& from) noexcept
+    : PeerEvent() {
+    *this = ::std::move(from);
+  }
+
+  inline PeerEvent& operator=(const PeerEvent& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  inline PeerEvent& operator=(PeerEvent&& from) noexcept {
+    if (GetArena() == from.GetArena()) {
+      if (this != &from) InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* descriptor() {
+    return GetDescriptor();
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* GetDescriptor() {
+    return GetMetadataStatic().descriptor;
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Reflection* GetReflection() {
+    return GetMetadataStatic().reflection;
+  }
+  static const PeerEvent& default_instance();
+
+  static inline const PeerEvent* internal_default_instance() {
+    return reinterpret_cast<const PeerEvent*>(
+               &_PeerEvent_default_instance_);
+  }
+  static constexpr int kIndexInFileMessages =
+    19;
+
+  friend void swap(PeerEvent& a, PeerEvent& b) {
+    a.Swap(&b);
+  }
+  inline void Swap(PeerEvent* other) {
+    if (other == this) return;
+    if (GetArena() == other->GetArena()) {
+      InternalSwap(other);
+    } else {
+      ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
+    }
+  }
+  void UnsafeArenaSwap(PeerEvent* other) {
+    if (other == this) return;
+    GOOGLE_DCHECK(GetArena() == other->GetArena());
+    InternalSwap(other);
+  }
+
+  // implements Message ----------------------------------------------
+
+  inline PeerEvent* New() const final {
+    return CreateMaybeMessage<PeerEvent>(nullptr);
+  }
+
+  PeerEvent* New(::PROTOBUF_NAMESPACE_ID::Arena* arena) const final {
+    return CreateMaybeMessage<PeerEvent>(arena);
+  }
+  void CopyFrom(const ::PROTOBUF_NAMESPACE_ID::Message& from) final;
+  void MergeFrom(const ::PROTOBUF_NAMESPACE_ID::Message& from) final;
+  void CopyFrom(const PeerEvent& from);
+  void MergeFrom(const PeerEvent& from);
+  PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
+  bool IsInitialized() const final;
+
+  size_t ByteSizeLong() const final;
+  const char* _InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) final;
+  ::PROTOBUF_NAMESPACE_ID::uint8* _InternalSerialize(
+      ::PROTOBUF_NAMESPACE_ID::uint8* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const final;
+  int GetCachedSize() const final { return _cached_size_.Get(); }
+
+  private:
+  inline void SharedCtor();
+  inline void SharedDtor();
+  void SetCachedSize(int size) const final;
+  void InternalSwap(PeerEvent* other);
+  friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
+  static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
+    return "sentry.PeerEvent";
+  }
+  protected:
+  explicit PeerEvent(::PROTOBUF_NAMESPACE_ID::Arena* arena);
+  private:
+  static void ArenaDtor(void* object);
+  inline void RegisterArenaDtor(::PROTOBUF_NAMESPACE_ID::Arena* arena);
+  public:
+
+  ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadata() const final;
+  private:
+  static ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadataStatic() {
+    ::PROTOBUF_NAMESPACE_ID::internal::AssignDescriptors(&::descriptor_table_p2psentry_2fsentry_2eproto);
+    return ::descriptor_table_p2psentry_2fsentry_2eproto.file_level_metadata[kIndexInFileMessages];
+  }
+
+  public:
+
+  // nested types ----------------------------------------------------
+
+  typedef PeerEvent_PeerEventId PeerEventId;
+  static constexpr PeerEventId Connect =
+    PeerEvent_PeerEventId_Connect;
+  static constexpr PeerEventId Disconnect =
+    PeerEvent_PeerEventId_Disconnect;
+  static inline bool PeerEventId_IsValid(int value) {
+    return PeerEvent_PeerEventId_IsValid(value);
+  }
+  static constexpr PeerEventId PeerEventId_MIN =
+    PeerEvent_PeerEventId_PeerEventId_MIN;
+  static constexpr PeerEventId PeerEventId_MAX =
+    PeerEvent_PeerEventId_PeerEventId_MAX;
+  static constexpr int PeerEventId_ARRAYSIZE =
+    PeerEvent_PeerEventId_PeerEventId_ARRAYSIZE;
+  static inline const ::PROTOBUF_NAMESPACE_ID::EnumDescriptor*
+  PeerEventId_descriptor() {
+    return PeerEvent_PeerEventId_descriptor();
+  }
+  template<typename T>
+  static inline const std::string& PeerEventId_Name(T enum_t_value) {
+    static_assert(::std::is_same<T, PeerEventId>::value ||
+      ::std::is_integral<T>::value,
+      "Incorrect type passed to function PeerEventId_Name.");
+    return PeerEvent_PeerEventId_Name(enum_t_value);
+  }
+  static inline bool PeerEventId_Parse(::PROTOBUF_NAMESPACE_ID::ConstStringParam name,
+      PeerEventId* value) {
+    return PeerEvent_PeerEventId_Parse(name, value);
+  }
+
+  // accessors -------------------------------------------------------
+
+  enum : int {
+    kPeerIdFieldNumber = 1,
+    kEventIdFieldNumber = 2,
+  };
+  // .types.H512 peer_id = 1;
+  bool has_peer_id() const;
+  private:
+  bool _internal_has_peer_id() const;
+  public:
+  void clear_peer_id();
+  const ::types::H512& peer_id() const;
+  ::types::H512* release_peer_id();
+  ::types::H512* mutable_peer_id();
+  void set_allocated_peer_id(::types::H512* peer_id);
+  private:
+  const ::types::H512& _internal_peer_id() const;
+  ::types::H512* _internal_mutable_peer_id();
+  public:
+  void unsafe_arena_set_allocated_peer_id(
+      ::types::H512* peer_id);
+  ::types::H512* unsafe_arena_release_peer_id();
+
+  // .sentry.PeerEvent.PeerEventId event_id = 2;
+  void clear_event_id();
+  ::sentry::PeerEvent_PeerEventId event_id() const;
+  void set_event_id(::sentry::PeerEvent_PeerEventId value);
+  private:
+  ::sentry::PeerEvent_PeerEventId _internal_event_id() const;
+  void _internal_set_event_id(::sentry::PeerEvent_PeerEventId value);
+  public:
+
+  // @@protoc_insertion_point(class_scope:sentry.PeerEvent)
+ private:
+  class _Internal;
+
+  template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
+  typedef void InternalArenaConstructable_;
+  typedef void DestructorSkippable_;
+  ::types::H512* peer_id_;
+  int event_id_;
   mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   friend struct ::TableStruct_p2psentry_2fsentry_2eproto;
 };
@@ -4229,6 +4678,46 @@ MessagesRequest::mutable_ids() {
 
 // -------------------------------------------------------------------
 
+// PeersReply
+
+// repeated .types.PeerInfo peers = 1;
+inline int PeersReply::_internal_peers_size() const {
+  return peers_.size();
+}
+inline int PeersReply::peers_size() const {
+  return _internal_peers_size();
+}
+inline ::types::PeerInfo* PeersReply::mutable_peers(int index) {
+  // @@protoc_insertion_point(field_mutable:sentry.PeersReply.peers)
+  return peers_.Mutable(index);
+}
+inline ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::types::PeerInfo >*
+PeersReply::mutable_peers() {
+  // @@protoc_insertion_point(field_mutable_list:sentry.PeersReply.peers)
+  return &peers_;
+}
+inline const ::types::PeerInfo& PeersReply::_internal_peers(int index) const {
+  return peers_.Get(index);
+}
+inline const ::types::PeerInfo& PeersReply::peers(int index) const {
+  // @@protoc_insertion_point(field_get:sentry.PeersReply.peers)
+  return _internal_peers(index);
+}
+inline ::types::PeerInfo* PeersReply::_internal_add_peers() {
+  return peers_.Add();
+}
+inline ::types::PeerInfo* PeersReply::add_peers() {
+  // @@protoc_insertion_point(field_add:sentry.PeersReply.peers)
+  return _internal_add_peers();
+}
+inline const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::types::PeerInfo >&
+PeersReply::peers() const {
+  // @@protoc_insertion_point(field_list:sentry.PeersReply.peers)
+  return peers_;
+}
+
+// -------------------------------------------------------------------
+
 // PeerCountRequest
 
 // -------------------------------------------------------------------
@@ -4257,29 +4746,25 @@ inline void PeerCountReply::set_count(::PROTOBUF_NAMESPACE_ID::uint64 value) {
 
 // -------------------------------------------------------------------
 
-// PeersRequest
-
-// -------------------------------------------------------------------
-
-// PeersReply
+// PeerByIdRequest
 
 // .types.H512 peer_id = 1;
-inline bool PeersReply::_internal_has_peer_id() const {
+inline bool PeerByIdRequest::_internal_has_peer_id() const {
   return this != internal_default_instance() && peer_id_ != nullptr;
 }
-inline bool PeersReply::has_peer_id() const {
+inline bool PeerByIdRequest::has_peer_id() const {
   return _internal_has_peer_id();
 }
-inline const ::types::H512& PeersReply::_internal_peer_id() const {
+inline const ::types::H512& PeerByIdRequest::_internal_peer_id() const {
   const ::types::H512* p = peer_id_;
   return p != nullptr ? *p : reinterpret_cast<const ::types::H512&>(
       ::types::_H512_default_instance_);
 }
-inline const ::types::H512& PeersReply::peer_id() const {
-  // @@protoc_insertion_point(field_get:sentry.PeersReply.peer_id)
+inline const ::types::H512& PeerByIdRequest::peer_id() const {
+  // @@protoc_insertion_point(field_get:sentry.PeerByIdRequest.peer_id)
   return _internal_peer_id();
 }
-inline void PeersReply::unsafe_arena_set_allocated_peer_id(
+inline void PeerByIdRequest::unsafe_arena_set_allocated_peer_id(
     ::types::H512* peer_id) {
   if (GetArena() == nullptr) {
     delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(peer_id_);
@@ -4290,9 +4775,9 @@ inline void PeersReply::unsafe_arena_set_allocated_peer_id(
   } else {
     
   }
-  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:sentry.PeersReply.peer_id)
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:sentry.PeerByIdRequest.peer_id)
 }
-inline ::types::H512* PeersReply::release_peer_id() {
+inline ::types::H512* PeerByIdRequest::release_peer_id() {
   
   ::types::H512* temp = peer_id_;
   peer_id_ = nullptr;
@@ -4301,14 +4786,14 @@ inline ::types::H512* PeersReply::release_peer_id() {
   }
   return temp;
 }
-inline ::types::H512* PeersReply::unsafe_arena_release_peer_id() {
-  // @@protoc_insertion_point(field_release:sentry.PeersReply.peer_id)
+inline ::types::H512* PeerByIdRequest::unsafe_arena_release_peer_id() {
+  // @@protoc_insertion_point(field_release:sentry.PeerByIdRequest.peer_id)
   
   ::types::H512* temp = peer_id_;
   peer_id_ = nullptr;
   return temp;
 }
-inline ::types::H512* PeersReply::_internal_mutable_peer_id() {
+inline ::types::H512* PeerByIdRequest::_internal_mutable_peer_id() {
   
   if (peer_id_ == nullptr) {
     auto* p = CreateMaybeMessage<::types::H512>(GetArena());
@@ -4316,11 +4801,11 @@ inline ::types::H512* PeersReply::_internal_mutable_peer_id() {
   }
   return peer_id_;
 }
-inline ::types::H512* PeersReply::mutable_peer_id() {
-  // @@protoc_insertion_point(field_mutable:sentry.PeersReply.peer_id)
+inline ::types::H512* PeerByIdRequest::mutable_peer_id() {
+  // @@protoc_insertion_point(field_mutable:sentry.PeerByIdRequest.peer_id)
   return _internal_mutable_peer_id();
 }
-inline void PeersReply::set_allocated_peer_id(::types::H512* peer_id) {
+inline void PeerByIdRequest::set_allocated_peer_id(::types::H512* peer_id) {
   ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArena();
   if (message_arena == nullptr) {
     delete reinterpret_cast< ::PROTOBUF_NAMESPACE_ID::MessageLite*>(peer_id_);
@@ -4337,32 +4822,206 @@ inline void PeersReply::set_allocated_peer_id(::types::H512* peer_id) {
     
   }
   peer_id_ = peer_id;
-  // @@protoc_insertion_point(field_set_allocated:sentry.PeersReply.peer_id)
+  // @@protoc_insertion_point(field_set_allocated:sentry.PeerByIdRequest.peer_id)
 }
 
-// .sentry.PeersReply.PeerEvent event = 2;
-inline void PeersReply::clear_event() {
-  event_ = 0;
+// -------------------------------------------------------------------
+
+// PeerByIdReply
+
+// .types.PeerInfo peer = 1;
+inline bool PeerByIdReply::_internal_has_peer() const {
+  bool value = (_has_bits_[0] & 0x00000001u) != 0;
+  PROTOBUF_ASSUME(!value || peer_ != nullptr);
+  return value;
 }
-inline ::sentry::PeersReply_PeerEvent PeersReply::_internal_event() const {
-  return static_cast< ::sentry::PeersReply_PeerEvent >(event_);
+inline bool PeerByIdReply::has_peer() const {
+  return _internal_has_peer();
 }
-inline ::sentry::PeersReply_PeerEvent PeersReply::event() const {
-  // @@protoc_insertion_point(field_get:sentry.PeersReply.event)
-  return _internal_event();
+inline const ::types::PeerInfo& PeerByIdReply::_internal_peer() const {
+  const ::types::PeerInfo* p = peer_;
+  return p != nullptr ? *p : reinterpret_cast<const ::types::PeerInfo&>(
+      ::types::_PeerInfo_default_instance_);
 }
-inline void PeersReply::_internal_set_event(::sentry::PeersReply_PeerEvent value) {
+inline const ::types::PeerInfo& PeerByIdReply::peer() const {
+  // @@protoc_insertion_point(field_get:sentry.PeerByIdReply.peer)
+  return _internal_peer();
+}
+inline void PeerByIdReply::unsafe_arena_set_allocated_peer(
+    ::types::PeerInfo* peer) {
+  if (GetArena() == nullptr) {
+    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(peer_);
+  }
+  peer_ = peer;
+  if (peer) {
+    _has_bits_[0] |= 0x00000001u;
+  } else {
+    _has_bits_[0] &= ~0x00000001u;
+  }
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:sentry.PeerByIdReply.peer)
+}
+inline ::types::PeerInfo* PeerByIdReply::release_peer() {
+  _has_bits_[0] &= ~0x00000001u;
+  ::types::PeerInfo* temp = peer_;
+  peer_ = nullptr;
+  if (GetArena() != nullptr) {
+    temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  }
+  return temp;
+}
+inline ::types::PeerInfo* PeerByIdReply::unsafe_arena_release_peer() {
+  // @@protoc_insertion_point(field_release:sentry.PeerByIdReply.peer)
+  _has_bits_[0] &= ~0x00000001u;
+  ::types::PeerInfo* temp = peer_;
+  peer_ = nullptr;
+  return temp;
+}
+inline ::types::PeerInfo* PeerByIdReply::_internal_mutable_peer() {
+  _has_bits_[0] |= 0x00000001u;
+  if (peer_ == nullptr) {
+    auto* p = CreateMaybeMessage<::types::PeerInfo>(GetArena());
+    peer_ = p;
+  }
+  return peer_;
+}
+inline ::types::PeerInfo* PeerByIdReply::mutable_peer() {
+  // @@protoc_insertion_point(field_mutable:sentry.PeerByIdReply.peer)
+  return _internal_mutable_peer();
+}
+inline void PeerByIdReply::set_allocated_peer(::types::PeerInfo* peer) {
+  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArena();
+  if (message_arena == nullptr) {
+    delete reinterpret_cast< ::PROTOBUF_NAMESPACE_ID::MessageLite*>(peer_);
+  }
+  if (peer) {
+    ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
+      reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(peer)->GetArena();
+    if (message_arena != submessage_arena) {
+      peer = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, peer, submessage_arena);
+    }
+    _has_bits_[0] |= 0x00000001u;
+  } else {
+    _has_bits_[0] &= ~0x00000001u;
+  }
+  peer_ = peer;
+  // @@protoc_insertion_point(field_set_allocated:sentry.PeerByIdReply.peer)
+}
+
+// -------------------------------------------------------------------
+
+// PeerEventsRequest
+
+// -------------------------------------------------------------------
+
+// PeerEvent
+
+// .types.H512 peer_id = 1;
+inline bool PeerEvent::_internal_has_peer_id() const {
+  return this != internal_default_instance() && peer_id_ != nullptr;
+}
+inline bool PeerEvent::has_peer_id() const {
+  return _internal_has_peer_id();
+}
+inline const ::types::H512& PeerEvent::_internal_peer_id() const {
+  const ::types::H512* p = peer_id_;
+  return p != nullptr ? *p : reinterpret_cast<const ::types::H512&>(
+      ::types::_H512_default_instance_);
+}
+inline const ::types::H512& PeerEvent::peer_id() const {
+  // @@protoc_insertion_point(field_get:sentry.PeerEvent.peer_id)
+  return _internal_peer_id();
+}
+inline void PeerEvent::unsafe_arena_set_allocated_peer_id(
+    ::types::H512* peer_id) {
+  if (GetArena() == nullptr) {
+    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(peer_id_);
+  }
+  peer_id_ = peer_id;
+  if (peer_id) {
+    
+  } else {
+    
+  }
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:sentry.PeerEvent.peer_id)
+}
+inline ::types::H512* PeerEvent::release_peer_id() {
   
-  event_ = value;
+  ::types::H512* temp = peer_id_;
+  peer_id_ = nullptr;
+  if (GetArena() != nullptr) {
+    temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  }
+  return temp;
 }
-inline void PeersReply::set_event(::sentry::PeersReply_PeerEvent value) {
-  _internal_set_event(value);
-  // @@protoc_insertion_point(field_set:sentry.PeersReply.event)
+inline ::types::H512* PeerEvent::unsafe_arena_release_peer_id() {
+  // @@protoc_insertion_point(field_release:sentry.PeerEvent.peer_id)
+  
+  ::types::H512* temp = peer_id_;
+  peer_id_ = nullptr;
+  return temp;
+}
+inline ::types::H512* PeerEvent::_internal_mutable_peer_id() {
+  
+  if (peer_id_ == nullptr) {
+    auto* p = CreateMaybeMessage<::types::H512>(GetArena());
+    peer_id_ = p;
+  }
+  return peer_id_;
+}
+inline ::types::H512* PeerEvent::mutable_peer_id() {
+  // @@protoc_insertion_point(field_mutable:sentry.PeerEvent.peer_id)
+  return _internal_mutable_peer_id();
+}
+inline void PeerEvent::set_allocated_peer_id(::types::H512* peer_id) {
+  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArena();
+  if (message_arena == nullptr) {
+    delete reinterpret_cast< ::PROTOBUF_NAMESPACE_ID::MessageLite*>(peer_id_);
+  }
+  if (peer_id) {
+    ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
+      reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(peer_id)->GetArena();
+    if (message_arena != submessage_arena) {
+      peer_id = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, peer_id, submessage_arena);
+    }
+    
+  } else {
+    
+  }
+  peer_id_ = peer_id;
+  // @@protoc_insertion_point(field_set_allocated:sentry.PeerEvent.peer_id)
+}
+
+// .sentry.PeerEvent.PeerEventId event_id = 2;
+inline void PeerEvent::clear_event_id() {
+  event_id_ = 0;
+}
+inline ::sentry::PeerEvent_PeerEventId PeerEvent::_internal_event_id() const {
+  return static_cast< ::sentry::PeerEvent_PeerEventId >(event_id_);
+}
+inline ::sentry::PeerEvent_PeerEventId PeerEvent::event_id() const {
+  // @@protoc_insertion_point(field_get:sentry.PeerEvent.event_id)
+  return _internal_event_id();
+}
+inline void PeerEvent::_internal_set_event_id(::sentry::PeerEvent_PeerEventId value) {
+  
+  event_id_ = value;
+}
+inline void PeerEvent::set_event_id(::sentry::PeerEvent_PeerEventId value) {
+  _internal_set_event_id(value);
+  // @@protoc_insertion_point(field_set:sentry.PeerEvent.event_id)
 }
 
 #ifdef __GNUC__
   #pragma GCC diagnostic pop
 #endif  // __GNUC__
+// -------------------------------------------------------------------
+
+// -------------------------------------------------------------------
+
+// -------------------------------------------------------------------
+
 // -------------------------------------------------------------------
 
 // -------------------------------------------------------------------
@@ -4402,10 +5061,10 @@ inline void PeersReply::set_event(::sentry::PeersReply_PeerEvent value) {
 
 PROTOBUF_NAMESPACE_OPEN
 
-template <> struct is_proto_enum< ::sentry::PeersReply_PeerEvent> : ::std::true_type {};
+template <> struct is_proto_enum< ::sentry::PeerEvent_PeerEventId> : ::std::true_type {};
 template <>
-inline const EnumDescriptor* GetEnumDescriptor< ::sentry::PeersReply_PeerEvent>() {
-  return ::sentry::PeersReply_PeerEvent_descriptor();
+inline const EnumDescriptor* GetEnumDescriptor< ::sentry::PeerEvent_PeerEventId>() {
+  return ::sentry::PeerEvent_PeerEventId_descriptor();
 }
 template <> struct is_proto_enum< ::sentry::MessageId> : ::std::true_type {};
 template <>

@@ -19,7 +19,7 @@
 namespace silkworm::rpc {
 
 ReceivePeerStats::ReceivePeerStats()
-        : OutStreamingCall("ReceivePeerStats", &sentry::Sentry::Stub::Peers, {}) {
+        : OutStreamingCall("ReceivePeerStats", &sentry::Sentry::Stub::PeerEvents, {}) {
 }
 
 }

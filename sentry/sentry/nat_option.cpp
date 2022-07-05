@@ -15,6 +15,7 @@ limitations under the License.
 */
 
 #include "nat_option.hpp"
+#include <boost/algorithm/string/predicate.hpp>
 
 namespace silkworm::sentry {
 
@@ -23,7 +24,7 @@ bool lexical_cast(const std::string& input, NatOption& value) {
         value = {};
         return true;
     }
-    if (input.starts_with("extip:")) {
+    if (boost::algorithm::istarts_with(input, "extip:")) {
         std::string ip_str = input.substr(6);
         boost::system::error_code err;
         auto ip = boost::asio::ip::address::from_string(ip_str, err);

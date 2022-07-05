@@ -38,7 +38,10 @@ int sentry_main(int argc, char* argv[]) {
     cli.add_option("--sentry.api.addr", options.api_address, "GRPC API endpoint")
         ->capture_default_str()
         ->check(IPEndPointValidator(/*allow_empty=*/true));
-    cli.add_option("--port", options.port, "Network listening port")
+
+    cli.add_option("--port", options.port)
+        ->description("Network listening port for incoming peers TCP connections and discovery UDP requests")
+        ->check(CLI::Range(1024, 65535))
         ->capture_default_str();
 
     auto nat_option = cli.add_option("--nat", [&options](CLI::results_t results) {

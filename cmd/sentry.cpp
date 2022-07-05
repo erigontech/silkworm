@@ -41,6 +41,21 @@ int sentry_main(int argc, char* argv[]) {
     add_option_num_contexts(cli, options.num_contexts);
     add_option_wait_mode(cli, options.wait_mode);
 
+    auto static_peers_option = cli.add_option("--staticpeers", [&options](CLI::results_t results) {
+        try {
+            for (auto& result : results) {
+                if (result.empty()) continue;
+                options.static_peers.emplace_back(result);
+            }
+        } catch (const std::exception& e) {
+            log::Error() << e.what();
+            return false;
+        }
+        return true;
+    });
+    static_peers_option->description("Peers enode URLs to connect to without discovery");
+    static_peers_option->type_size(1, INT_MAX);
+
     try {
         cli.parse(argc, argv);
     } catch (const CLI::ParseError& pe) {

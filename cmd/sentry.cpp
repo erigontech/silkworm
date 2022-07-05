@@ -38,6 +38,17 @@ int sentry_main(int argc, char* argv[]) {
     cli.add_option("--sentry.api.addr", options.api_address, "GRPC API endpoint")
         ->capture_default_str()
         ->check(IPEndPointValidator(/*allow_empty=*/true));
+    cli.add_option("--port", options.port, "Network listening port")
+        ->capture_default_str();
+
+    auto nat_option = cli.add_option("--nat", [&options](CLI::results_t results) {
+       return lexical_cast(results[0], options.nat);
+    });
+    nat_option->description("NAT port mapping mechanism (none|extip:<IP>)\n"
+            "- none              no NAT, use a local IP as public\n"
+            "- extip:1.2.3.4     use the given public IP");
+    nat_option->default_str("none");
+
     add_option_num_contexts(cli, options.num_contexts);
     add_option_wait_mode(cli, options.wait_mode);
 

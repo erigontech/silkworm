@@ -1,5 +1,5 @@
 /*
-   Copyright 2021 The Silkworm Authors
+   Copyright 2021-2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -53,6 +53,14 @@ namespace db {
             auto genesis_json = nlohmann::json::parse(source_data, nullptr, /*allow_exceptions=*/false);
             // We don't have json data (yet)
             REQUIRE(db::initialize_genesis(txn, genesis_json, /*allow_exceptions=*/false) == false);
+            CHECK(db::read_chain_config(txn) == silkworm::kRopstenConfig);
+        }
+        SECTION("Initialize with Sepolia") {
+            auto source_data{silkworm::read_genesis_data(silkworm::kSepoliaConfig.chain_id)};
+            auto genesis_json = nlohmann::json::parse(source_data, nullptr, /*allow_exceptions=*/false);
+            // We don't have json data (yet)
+            REQUIRE(db::initialize_genesis(txn, genesis_json, /*allow_exceptions=*/false) == false);
+            CHECK(db::read_chain_config(txn) == silkworm::kSepoliaConfig);
         }
 
         SECTION("Initialize with invalid Json") {

@@ -1,6 +1,6 @@
 
 /*
-   Copyright 2021 The Silkworm Authors
+   Copyright 2021-2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -36,7 +36,7 @@ TEST_CASE("genesis config") {
 
     CHECK((genesis_json.contains("config") && genesis_json["config"].is_object()));
     auto config = ChainConfig::from_json(genesis_json["config"]);
-    CHECK(config.has_value());
+    REQUIRE(config.has_value());
     CHECK(config.value() == kMainnetConfig);
 
     genesis_data = read_genesis_data(static_cast<uint32_t>(kGoerliConfig.chain_id));
@@ -45,7 +45,7 @@ TEST_CASE("genesis config") {
 
     CHECK((genesis_json.contains("config") && genesis_json["config"].is_object()));
     config = ChainConfig::from_json(genesis_json["config"]);
-    CHECK(config.has_value());
+    REQUIRE(config.has_value());
     CHECK(config.value() == kGoerliConfig);
 
     genesis_data = read_genesis_data(static_cast<uint32_t>(kRinkebyConfig.chain_id));
@@ -54,8 +54,17 @@ TEST_CASE("genesis config") {
 
     CHECK((genesis_json.contains("config") && genesis_json["config"].is_object()));
     config = ChainConfig::from_json(genesis_json["config"]);
-    CHECK(config.has_value());
+    REQUIRE(config.has_value());
     CHECK(config.value() == kRinkebyConfig);
+
+    genesis_data = read_genesis_data(static_cast<uint32_t>(kSepoliaConfig.chain_id));
+    genesis_json = nlohmann::json::parse(genesis_data, nullptr, /* allow_exceptions = */ false);
+    CHECK_FALSE(genesis_json.is_discarded());
+
+    CHECK((genesis_json.contains("config") && genesis_json["config"].is_object()));
+    config = ChainConfig::from_json(genesis_json["config"]);
+    REQUIRE(config.has_value());
+    CHECK(config.value() == kSepoliaConfig);
 
     genesis_data = read_genesis_data(1'000u);
     genesis_json = nlohmann::json::parse(genesis_data, nullptr, /* allow_exceptions = */ false);

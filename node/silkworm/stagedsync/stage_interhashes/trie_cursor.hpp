@@ -102,7 +102,7 @@ std::optional<Bytes> increment_nibbled_key(ByteView nibbles);
 
 class TrieCursor {
   public:
-    explicit TrieCursor(mdbx::cursor& db_cursor, PrefixSet& changed, etl::Collector* collector = nullptr);
+    explicit TrieCursor(mdbx::cursor& db_cursor, PrefixSet* changed, etl::Collector* collector = nullptr);
 
     // Not copyable nor movable
     TrieCursor(const TrieCursor&) = delete;
@@ -158,7 +158,7 @@ class TrieCursor {
     ByteView db_cursor_key_{};  // Key at current db_cursor position
     ByteView db_cursor_val_{};  // Value at current db_cursor position
 
-    PrefixSet& changed_;         // The collection of changed nibbled keys
+    PrefixSet* changed_;         // The collection of changed nibbled keys
     etl::Collector* collector_;  // Pointer to a collector for deletion of obsolete keys
 
     void db_seek(ByteView seek_key);  // Seeks lowerbound of provided key using db_cursor_

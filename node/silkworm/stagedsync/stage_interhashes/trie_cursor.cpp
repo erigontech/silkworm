@@ -225,7 +225,7 @@ std::optional<Bytes> increment_nibbled_key(ByteView nibbles) {
     return ret;
 }
 
-TrieCursor::TrieCursor(mdbx::cursor& db_cursor, PrefixSet& changed, etl::Collector* collector)
+TrieCursor::TrieCursor(mdbx::cursor& db_cursor, PrefixSet* changed, etl::Collector* collector)
     : db_cursor_(db_cursor), changed_{changed}, collector_{collector} {
     prefix_.reserve(40);    // Max size assignable is 40
     buffer_.reserve(96);    // Max size is 40 (TrieStorage prefix) + full unrolled nibbled key 32 == 82 (rounded to 96)
@@ -295,7 +295,7 @@ TrieCursor::move_operation_result TrieCursor::to_next() {
 
         const Bytes full_key{sub_node.full_key()};
         const Bytes prefix_and_full_key{prefix_ + full_key};
-        const bool has_changes{changed_.contains(prefix_and_full_key)};
+        const bool has_changes{!changed_ || changed_->contains(prefix_and_full_key)};
 
         /*
                 static const Bytes debug_key{*from_hex("0x0008020506000e")};

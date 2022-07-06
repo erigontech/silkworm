@@ -1466,7 +1466,7 @@ void do_trie_root2(db::EnvConfig& config) {
         }
     };
 
-    trie::TrieCursor trie_cursor{trie_accounts, empty_changes, &collector};
+    trie::TrieCursor trie_cursor{trie_accounts, &empty_changes, &collector};
     for (auto trie_data{trie_cursor.to_prefix({})}; trie_data.key.has_value(); trie_data = trie_cursor.to_next()) {
         log::Info("Trie",
                   {"key", to_hex(trie_data.key.value(), true), "skip", (trie_data.skip_state ? "true" : "false")});

@@ -60,8 +60,8 @@ class InterHashes final : public IStage {
     //! \remarks might throw
     //! \return the state root
     [[nodiscard]] StageResult increment_intermediate_hashes(db::RWTxn& txn, const evmc::bytes32* expected_root,
-                                                            trie::PrefixSet& account_changes,
-                                                            trie::PrefixSet& storage_changes);
+                                                            trie::PrefixSet* account_changes,
+                                                            trie::PrefixSet* storage_changes);
 
     /*
     **Theoretically:** "Merkle trie root calculation" starts from state, build from state keys - trie,
@@ -105,11 +105,11 @@ class InterHashes final : public IStage {
     */
 
     //! \see Erigon's FlatDBTrieLoader
-    evmc::bytes32 calculate_root(db::RWTxn& txn, trie::PrefixSet& account_changes, trie::PrefixSet& storage_changes);
+    evmc::bytes32 calculate_root(db::RWTxn& txn, trie::PrefixSet* account_changes, trie::PrefixSet* storage_changes);
 
     //! \see Erigon's FlatDBTrieLoader
     evmc::bytes32 calculate_storage_root(db::RWTxn& txn, const Bytes& db_storage_prefix,
-                                         trie::PrefixSet& storage_changes);
+                                         trie::PrefixSet* storage_changes);
 
     std::unique_ptr<etl::Collector> account_collector_;  // To accumulate new records for kTrieOfAccounts
     std::unique_ptr<etl::Collector> storage_collector_;  // To accumulate new records for kTrieOfStorage

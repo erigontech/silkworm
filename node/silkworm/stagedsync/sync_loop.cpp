@@ -21,8 +21,8 @@
 #include <silkworm/stagedsync/stage_blockhashes.hpp>
 #include <silkworm/stagedsync/stage_execution.hpp>
 #include <silkworm/stagedsync/stage_hashstate.hpp>
-#include <silkworm/stagedsync/stage_senders.hpp>
 #include <silkworm/stagedsync/stage_interhashes.hpp>
+#include <silkworm/stagedsync/stage_senders.hpp>
 
 namespace silkworm::stagedsync {
 
@@ -121,8 +121,17 @@ StageResult SyncLoop::run_cycle(db::RWTxn& cycle_txn, Timer& log_timer) {
     StopWatch stages_stop_watch;
     (void)stages_stop_watch.start();
     try {
+        // Force any particular stage ?
+        const std::string env_stage{"STAGE_NAME"};
+        const char* stage_name{std::getenv(env_stage.c_str())};
+
         for (; current_stage_ < stages_.size() && !is_stopping(); ++current_stage_) {
             auto& stage{stages_.at(current_stage_)};
+
+            if (stage_name && !iequals(stage_name, stage->name())) {
+                continue;
+            }
+
             log_timer.reset();  // Resets the interval for next log line from now
             const auto stage_result{stage->forward(cycle_txn)};
             if (stage_result != StageResult::kSuccess) {
@@ -134,7 +143,9 @@ StageResult SyncLoop::run_cycle(db::RWTxn& cycle_txn, Timer& log_timer) {
                 log::Info(get_log_prefix(), {"done", StopWatch::format(stage_duration)});
             }
         }
+
         return is_stopping() ? StageResult::kAborted : StageResult::kSuccess;
+
     } catch (const std::exception& ex) {
         log::Error(get_log_prefix(), {"exception", std::string(ex.what())});
         return StageResult::kUnexpectedError;

@@ -284,8 +284,8 @@ StageResult InterHashes::regenerate_intermediate_hashes(db::RWTxn& txn, const ev
         txn->clear_map(db::table::kTrieOfStorage.name);
         trie::PrefixSet empty;
         ret = increment_intermediate_hashes(txn, expected_root,  //
-                                            /*account_changes=*/empty,
-                                            /*storage_changes=*/empty);
+                                            /*account_changes=*/nullptr,
+                                            /*storage_changes=*/nullptr);
     } catch (const mdbx::exception& ex) {
         log::Error(std::string(stage_name_),
                    {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
@@ -325,7 +325,7 @@ StageResult InterHashes::increment_intermediate_hashes(db::RWTxn& txn, BlockNum 
         current_key_.clear();
         log_lck.unlock();
 
-        ret = increment_intermediate_hashes(txn, expected_root, account_changes, storage_changes);
+        ret = increment_intermediate_hashes(txn, expected_root, &account_changes, &storage_changes);
 
     } catch (const mdbx::exception& ex) {
         log::Error(std::string(stage_name_),
@@ -348,8 +348,8 @@ StageResult InterHashes::increment_intermediate_hashes(db::RWTxn& txn, BlockNum 
 }
 
 StageResult InterHashes::increment_intermediate_hashes(db::RWTxn& txn, const evmc::bytes32* expected_root,
-                                                       trie::PrefixSet& account_changes,
-                                                       trie::PrefixSet& storage_changes) {
+                                                       trie::PrefixSet* account_changes,
+                                                       trie::PrefixSet* storage_changes) {
     account_collector_ = std::make_unique<etl::Collector>(node_settings_);
     storage_collector_ = std::make_unique<etl::Collector>(node_settings_);
 
@@ -390,8 +390,8 @@ StageResult InterHashes::increment_intermediate_hashes(db::RWTxn& txn, const evm
     return StageResult::kSuccess;
 }
 
-evmc::bytes32 InterHashes::calculate_root(db::RWTxn& txn, trie::PrefixSet& account_changes,
-                                          trie::PrefixSet& storage_changes) {
+evmc::bytes32 InterHashes::calculate_root(db::RWTxn& txn, trie::PrefixSet* account_changes,
+                                          trie::PrefixSet* storage_changes) {
     db::Cursor hashed_accounts(txn, db::table::kHashedAccounts);
     db::Cursor trie_accounts(txn, db::table::kTrieOfAccounts);
 
@@ -444,15 +444,13 @@ evmc::bytes32 InterHashes::calculate_root(db::RWTxn& txn, trie::PrefixSet& accou
             }
 
             // Retrieve account data
-            evmc::bytes32 storage_root{kEmptyRoot};
             const auto [account, err]{Account::from_encoded_storage(db::from_slice(ha_data.value))};
             rlp::success_or_throw(err);
-
-            //            if (account.incarnation) {
-            //                const Bytes key_with_incarnation{db::storage_prefix(ha_data_key_view,
-            //                account.incarnation)}; storage_root = calculate_storage_root(txn,key_with_incarnation,
-            //                storage_changes);
-            //            }
+            evmc::bytes32 storage_root{kEmptyRoot};
+            if (account.incarnation) {
+                const Bytes key_with_incarnation{db::storage_prefix(ha_data_key_view, account.incarnation)};
+                storage_root = calculate_storage_root(txn, key_with_incarnation, storage_changes);
+            }
 
             hash_builder.add_leaf(ha_data_key_nibbled, account.rlp(storage_root));
             ++processed;
@@ -552,7 +550,7 @@ evmc::bytes32 InterHashes::calculate_root(db::RWTxn& txn, trie::PrefixSet& accou
 }
 
 evmc::bytes32 InterHashes::calculate_storage_root(db::RWTxn& txn, const Bytes& db_storage_prefix,
-                                                  trie::PrefixSet& storage_changes) {
+                                                  trie::PrefixSet* storage_changes) {
     static Bytes rlp{};
     db::Cursor hashed_storage(txn, db::table::kHashedStorage);
     db::Cursor trie_storage(txn, db::table::kTrieOfStorage);
@@ -578,6 +576,7 @@ evmc::bytes32 InterHashes::calculate_storage_root(db::RWTxn& txn, const Bytes& d
     auto db_storage_prefix_slice{db::to_slice(db_storage_prefix)};
     trie::TrieCursor trie_cursor{trie_storage, storage_changes, collector};
     for (auto tdata{trie_cursor.to_prefix(db_storage_prefix)}; tdata.key.has_value(); tdata = trie_cursor.to_next()) {
+
         if (tdata.skip_state) {
             SILKWORM_ASSERT(tdata.hash.has_value());
             evmc::bytes32 hash{to_bytes32(tdata.hash.value())};
@@ -589,16 +588,17 @@ evmc::bytes32 InterHashes::calculate_storage_root(db::RWTxn& txn, const Bytes& d
         auto hs_data{hashed_storage.lower_bound_multivalue(db_storage_prefix_slice, prefix_slice, false)};
         while (hs_data) {
             const ByteView data_value_view{db::from_slice(hs_data.value)};
-            const Bytes nibbled_location{trie::unpack_nibbles(data_value_view.substr(0, kHashLength))};
 
-            if (tdata.key.value() < nibbled_location) {
+            // Check the nibbled data key matches current trie node key
+            auto hs_data_key_nibbled{trie::unpack_nibbles(data_value_view.substr(0, kHashLength))};
+            if (!hs_data_key_nibbled.starts_with(*tdata.key)) {
                 break;
             }
 
             const ByteView value{data_value_view.substr(kHashLength)};
             rlp.clear();
             rlp::encode(rlp, value);
-            hash_builder.add_leaf(nibbled_location, rlp);
+            hash_builder.add_leaf(hs_data_key_nibbled, rlp);
             hs_data = hashed_storage.to_current_next_multi(/*throw_notfound=*/false);
         }
     }

@@ -19,6 +19,8 @@
 #include <cassert>
 #include <stdexcept>
 
+#include "config.hpp"
+
 extern const char* genesis_mainnet_data();
 extern size_t sizeof_genesis_mainnet_data();
 
@@ -33,15 +35,15 @@ namespace silkworm {
 std::string read_genesis_data(uint64_t chain_id) {
     std::string ret{};
     switch (chain_id) {
-        case 1:
+        case kMainnetConfig.chain_id:
             assert(sizeof_genesis_mainnet_data() != 0);
             ret.assign(genesis_mainnet_data(), sizeof_genesis_mainnet_data());
             break;
-        case 4:
+        case kRinkebyConfig.chain_id:
             assert(sizeof_genesis_rinkeby_data() != 0);
             ret.assign(genesis_rinkeby_data(), sizeof_genesis_rinkeby_data());
             break;
-        case 5:
+        case kGoerliConfig.chain_id:
             assert(sizeof_genesis_goerli_data() != 0);
             ret.assign(genesis_goerli_data(), sizeof_genesis_goerli_data());
             break;

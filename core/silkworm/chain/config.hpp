@@ -19,8 +19,9 @@
 
 #include <array>
 #include <cstdint>
+#include <map>
 #include <optional>
-#include <variant>
+#include <string>
 
 #include <evmc/evmc.h>
 #include <intx/intx.hpp>
@@ -219,8 +220,11 @@ inline constexpr ChainConfig kSepoliaConfig{
     .terminal_total_difficulty = 17000000000000000,
 };
 
-//! \brief Looksup a chain config provided its network id or its common name
-const ChainConfig* lookup_chain_config(std::variant<uint64_t, std::string> identifier) noexcept;
+//! \brief Looks up a chain config provided its network id
+const ChainConfig* lookup_chain_config(uint64_t identifier) noexcept;
+
+//! \brief Looks up a chain config provided its common name
+const ChainConfig* lookup_chain_config(const std::string& identifier) noexcept;
 
 //! \brief Returns a map known chains names mapped to their respective chain ids
 std::map<std::string, uint64_t> get_known_chains_map() noexcept;

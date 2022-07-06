@@ -143,13 +143,21 @@ void ChainConfig::set_revision_block(evmc_revision rev, std::optional<uint64_t> 
 
 std::ostream& operator<<(std::ostream& out, const ChainConfig& obj) { return out << obj.to_json(); }
 
-const ChainConfig* lookup_chain_config(std::variant<uint64_t, std::string> identifier) noexcept {
+const ChainConfig* lookup_chain_config(const std::string& identifier) noexcept {
     auto it{as_range::find_if(kKnownChainConfigs,
                               [&identifier](const std::pair<std::string, const ChainConfig*>& x) -> bool {
-                                  if (std::holds_alternative<std::string>(identifier)) {
-                                      return iequals(x.first, std::get<std::string>(identifier));
-                                  }
-                                  return x.second->chain_id == std::get<uint64_t>(identifier);
+                                  return iequals(x.first, identifier);
+                              })};
+    if (it == kKnownChainConfigs.end()) {
+        return nullptr;
+    }
+    return it->second;
+}
+
+const ChainConfig* lookup_chain_config(const uint64_t identifier) noexcept {
+    auto it{as_range::find_if(kKnownChainConfigs,
+                              [&identifier](const std::pair<std::string, const ChainConfig*>& x) -> bool {
+                                  return x.second->chain_id == identifier;
                               })};
     if (it == kKnownChainConfigs.end()) {
         return nullptr;

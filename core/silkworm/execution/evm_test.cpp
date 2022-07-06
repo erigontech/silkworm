@@ -399,7 +399,7 @@ class TestTracer : public EvmTracer {
                 intra_block_state.get_current_storage(contract_address_.value(), key_.value_or(evmc::bytes32{}));
         }
     }
-    void on_precompiled_run(const evmc::result& /*result*/, int64_t /*gas*/,
+    void on_precompiled_run(const evmc_result& /*result*/, int64_t /*gas*/,
                             const IntraBlockState& /*intra_block_state*/) noexcept override {}
     void on_reward_granted(const CallResult& /*result*/,
                            const IntraBlockState& /*intra_block_state*/) noexcept override {}

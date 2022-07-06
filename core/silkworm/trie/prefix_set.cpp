@@ -55,6 +55,13 @@ bool PrefixSet::contains(ByteView prefix) {
     }
 }
 
+ByteView PrefixSet::find_contains(ByteView prefix) {
+    if (!contains(prefix)) {
+        return {};
+    }
+    return {nibbled_keys_[index_].first};
+}
+
 std::pair<bool, ByteView> PrefixSet::contains_and_next_marked(ByteView prefix) {
     if (!contains(prefix)) {
         return {false, {}};

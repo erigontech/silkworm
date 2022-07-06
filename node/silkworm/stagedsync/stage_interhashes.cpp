@@ -408,67 +408,146 @@ evmc::bytes32 InterHashes::calculate_root(db::RWTxn& txn, trie::PrefixSet& accou
     };
 
     size_t log_trigger_counter{1};
+    size_t total_processed{0};
 
-    trie::Cursor trie_cursor{trie_accounts, account_changes, collector};
-    auto trie_cursor_key{trie_cursor.key()};
-
-    while (trie_cursor_key.has_value()) {
-        if (trie_cursor.can_skip_state()) {
-            auto trie_cursor_hash{trie_cursor.hash()};
-            SILKWORM_ASSERT(trie_cursor_hash != nullptr);
-            hash_builder.add_branch_node(trie_cursor_key.value(), *trie_cursor_hash,
-                                         trie_cursor.children_are_in_trie());
+    trie::TrieCursor trie_cursor{trie_accounts, account_changes, collector};
+    for (auto tdata{trie_cursor.to_prefix({})}; tdata.key.has_value(); tdata = trie_cursor.to_next()) {
+        if (tdata.skip_state) {
+            SILKWORM_ASSERT(tdata.hash.has_value());
+            auto hash{to_bytes32(tdata.hash.value())};
+            hash_builder.add_branch_node(tdata.key.value(), hash, tdata.children_in_trie);
+            continue;
         }
 
-        const std::optional<Bytes> uncovered{trie_cursor.first_uncovered_prefix()};
-        if (!uncovered.has_value()) {
-            // no more uncovered accounts
-            break;
-        }
+        Bytes ha_key{tdata.packed_key.value()};
+        auto ha_key_slice{db::to_slice(ha_key)};
+        auto ha_data{ha_key.empty() ? hashed_accounts.to_first(false)
+                                    : hashed_accounts.lower_bound(ha_key_slice, false)};
 
-        trie_cursor.next();
-
-        // This is a dirty hack to work around an issue I could not address (call me dumb) on
-        // trie cursor which, when traversing trie, returns twice the same key
-        auto trie_cursor_next_key = trie_cursor.key();
-        while (trie_cursor_next_key == trie_cursor_key) {
-            trie_cursor.next();
-            trie_cursor_next_key = trie_cursor.key();
-        }
-        std::swap(trie_cursor_key, trie_cursor_next_key);
-
-        auto data{hashed_accounts.lower_bound(db::to_slice(*uncovered), false)};
-        while (data) {
-            const auto data_key_view{db::from_slice(data.key)};
+        size_t processed{0};
+        while (ha_data) {
+            const auto ha_data_key_view{db::from_slice(ha_data.key)};
 
             if (!--log_trigger_counter) {
                 std::unique_lock<std::mutex> log_lck(log_mtx_);
                 current_source_ = "HashedState";
-                current_key_ = to_hex(data_key_view, true);
+                current_key_ = to_hex(ha_data_key_view, true);
                 log_lck.unlock();
                 throw_if_stopping();
                 log_trigger_counter = 128;
             }
 
-            const Bytes nibbled_key{trie::unpack_nibbles(data_key_view)};
-            if (trie_cursor_key.has_value() && trie_cursor_key.value() < nibbled_key) {
+            // Check the nibbled data key matches current trie node key
+            auto ha_data_key_nibbled{trie::unpack_nibbles(ha_data_key_view)};
+            if (!ha_data_key_nibbled.starts_with(*tdata.key)) {
                 break;
             }
 
-            const auto [account, err]{Account::from_encoded_storage(db::from_slice(data.value))};
+            // Retrieve account data
+            evmc::bytes32 storage_root{kEmptyRoot};
+            const auto [account, err]{Account::from_encoded_storage(db::from_slice(ha_data.value))};
             rlp::success_or_throw(err);
 
-            evmc::bytes32 storage_root{kEmptyRoot};
-            if (account.incarnation) {
-                const Bytes key_with_incarnation{db::storage_prefix(data_key_view, account.incarnation)};
-                storage_root = calculate_storage_root(txn, key_with_incarnation, storage_changes);
-            }
+            //            if (account.incarnation) {
+            //                const Bytes key_with_incarnation{db::storage_prefix(ha_data_key_view,
+            //                account.incarnation)}; storage_root = calculate_storage_root(txn,key_with_incarnation,
+            //                storage_changes);
+            //            }
 
-            hash_builder.add_leaf(nibbled_key, account.rlp(storage_root));
-            data = hashed_accounts.to_next(false);
+            hash_builder.add_leaf(ha_data_key_nibbled, account.rlp(storage_root));
+            ++processed;
+            ha_data = hashed_accounts.to_next(false);
         }
+        total_processed += processed;
     }
 
+    // *******************************************************************
+
+    /*
+        trie::Cursor trie_cursor{trie_accounts, account_changes, collector};
+        auto trie_cursor_key{trie_cursor.key()};
+
+        while (trie_cursor_key.has_value()) {
+            if (!trie_cursor_key.value().empty() && trie_cursor_key.value().front() != '\0') {
+                break;
+            }
+
+            std::vector<std::string> log{"key", to_hex(trie_cursor_key.value(), true), "skip",
+                                         (trie_cursor.can_skip_state() ? "true" : "false")};
+
+            if (trie_cursor.can_skip_state()) {
+                auto trie_cursor_hash{trie_cursor.hash()};
+                SILKWORM_ASSERT(trie_cursor_hash != nullptr);
+                log.insert(log.end(), {"hash", to_hex(trie_cursor_hash->bytes, true), "in_trie",
+                                       (trie_cursor.children_are_in_trie() ? "true" : "false")});
+                hash_builder.add_branch_node(trie_cursor_key.value(), *trie_cursor_hash,
+                                             trie_cursor.children_are_in_trie());
+            }
+
+            const std::optional<Bytes> uncovered{trie_cursor.first_uncovered_prefix()};
+            if (!uncovered.has_value()) {
+                // no more uncovered accounts
+                break;
+            }
+
+            log.insert(log.end(), {"uncovered", to_hex(*uncovered, true)});
+
+            trie_cursor.next();
+
+            // This is a dirty hack to work around an issue I could not address (call me dumb) on
+            // trie cursor which, when traversing trie, returns twice the same key
+            auto trie_cursor_next_key = trie_cursor.key();
+            while (trie_cursor_next_key == trie_cursor_key) {
+                trie_cursor.next();
+                trie_cursor_next_key = trie_cursor.key();
+            }
+            std::swap(trie_cursor_key, trie_cursor_next_key);
+
+            const auto uncovered_slice{db::to_slice(*uncovered)};
+            auto data{hashed_accounts.lower_bound(uncovered_slice, false)};
+
+            size_t processed{0};
+            while (data) {
+                const auto data_key_view{db::from_slice(data.key)};
+
+                if (!--log_trigger_counter) {
+                    std::unique_lock<std::mutex> log_lck(log_mtx_);
+                    current_source_ = "HashedState";
+                    current_key_ = to_hex(data_key_view, true);
+                    log_lck.unlock();
+                    throw_if_stopping();
+                    log_trigger_counter = 128;
+                }
+
+                const Bytes nibbled_key{trie::unpack_nibbles(data_key_view)};
+                if (trie_cursor_key.has_value() && trie_cursor_key.value() < nibbled_key) {
+                    log.insert(log.end(),
+                               {"nibbled_key", abridge(to_hex(nibbled_key, true), 20), "key", to_hex(*trie_cursor_key,
+       true)}); break;
+                }
+
+                const auto [account, err]{Account::from_encoded_storage(db::from_slice(data.value))};
+                rlp::success_or_throw(err);
+
+                evmc::bytes32 storage_root{kEmptyRoot};
+                //                if (account.incarnation) {
+                //                    const Bytes key_with_incarnation{db::storage_prefix(data_key_view,
+                //                    account.incarnation)}; storage_root = calculate_storage_root(txn,
+                //                    key_with_incarnation, storage_changes);
+                //                }
+
+                hash_builder.add_leaf(nibbled_key, account.rlp(storage_root));
+                ++processed;
+                data = hashed_accounts.to_next(false);
+            }
+
+            total_processed += processed;
+            log.insert(log.end(), {"processed", std::to_string(processed), "total", std::to_string(total_processed)});
+            log::Debug("Trie", log);
+        }
+    */
+
+    log::Debug("Trie", {"total processed", std::to_string(total_processed)});
     return hash_builder.root_hash();
 }
 
@@ -496,41 +575,71 @@ evmc::bytes32 InterHashes::calculate_storage_root(db::RWTxn& txn, const Bytes& d
         collector->collect({key, value});
     };
 
-    trie::Cursor trie_cursor{trie_storage, storage_changes, collector, db_storage_prefix};
-    auto trie_cursor_key{trie_cursor.key()};
-
-    while (trie_cursor_key.has_value()) {
-        if (trie_cursor.can_skip_state()) {
-            auto trie_cursor_hash{trie_cursor.hash()};
-            SILKWORM_ASSERT(trie_cursor_hash != nullptr);
-            hash_builder.add_branch_node(trie_cursor_key.value(), *trie_cursor_hash,
-                                         trie_cursor.children_are_in_trie());
+    auto db_storage_prefix_slice{db::to_slice(db_storage_prefix)};
+    trie::TrieCursor trie_cursor{trie_storage, storage_changes, collector};
+    for (auto tdata{trie_cursor.to_prefix(db_storage_prefix)}; tdata.key.has_value(); tdata = trie_cursor.to_next()) {
+        if (tdata.skip_state) {
+            SILKWORM_ASSERT(tdata.hash.has_value());
+            evmc::bytes32 hash{to_bytes32(tdata.hash.value())};
+            hash_builder.add_branch_node(tdata.key.value(), hash, tdata.children_in_trie);
+            continue;
         }
 
-        const std::optional<Bytes> uncovered{trie_cursor.first_uncovered_prefix()};
-        if (!uncovered.has_value()) {
-            // no more uncovered accounts
-            break;
-        }
-
-        trie_cursor.next();
-        trie_cursor_key = trie_cursor.key();
-
-        auto data{hashed_storage.lower_bound_multivalue(db::to_slice(db_storage_prefix), db::to_slice(*uncovered),
-                                                        /*throw_notfound=*/false)};
-        while (data) {
-            const ByteView data_value_view{db::from_slice(data.value)};
+        auto prefix_slice{db::to_slice(tdata.packed_key.value())};
+        auto hs_data{hashed_storage.lower_bound_multivalue(db_storage_prefix_slice, prefix_slice, false)};
+        while (hs_data) {
+            const ByteView data_value_view{db::from_slice(hs_data.value)};
             const Bytes nibbled_location{trie::unpack_nibbles(data_value_view.substr(0, kHashLength))};
-            if (trie_cursor_key.has_value() && trie_cursor_key.value() < nibbled_location) {
+
+            if (tdata.key.value() < nibbled_location) {
                 break;
             }
+
             const ByteView value{data_value_view.substr(kHashLength)};
             rlp.clear();
             rlp::encode(rlp, value);
             hash_builder.add_leaf(nibbled_location, rlp);
-            data = hashed_storage.to_current_next_multi(/*throw_notfound=*/false);
+            hs_data = hashed_storage.to_current_next_multi(/*throw_notfound=*/false);
         }
     }
+
+    // *******************************************************************************
+
+    //    trie::Cursor trie_cursor{trie_storage, storage_changes, collector, db_storage_prefix};
+    //    auto trie_cursor_key{trie_cursor.key()};
+    //
+    //    while (trie_cursor_key.has_value()) {
+    //        if (trie_cursor.can_skip_state()) {
+    //            auto trie_cursor_hash{trie_cursor.hash()};
+    //            SILKWORM_ASSERT(trie_cursor_hash != nullptr);
+    //            hash_builder.add_branch_node(trie_cursor_key.value(), *trie_cursor_hash,
+    //                                         trie_cursor.children_are_in_trie());
+    //        }
+    //
+    //        const std::optional<Bytes> uncovered{trie_cursor.first_uncovered_prefix()};
+    //        if (!uncovered.has_value()) {
+    //            // no more uncovered accounts
+    //            break;
+    //        }
+    //
+    //        trie_cursor.next();
+    //        trie_cursor_key = trie_cursor.key();
+    //
+    //        auto data{hashed_storage.lower_bound_multivalue(db::to_slice(db_storage_prefix), db::to_slice(*uncovered),
+    //                                                        /*throw_notfound=*/false)};
+    //        while (data) {
+    //            const ByteView data_value_view{db::from_slice(data.value)};
+    //            const Bytes nibbled_location{trie::unpack_nibbles(data_value_view.substr(0, kHashLength))};
+    //            if (trie_cursor_key.has_value() && trie_cursor_key.value() < nibbled_location) {
+    //                break;
+    //            }
+    //            const ByteView value{data_value_view.substr(kHashLength)};
+    //            rlp.clear();
+    //            rlp::encode(rlp, value);
+    //            hash_builder.add_leaf(nibbled_location, rlp);
+    //            data = hashed_storage.to_current_next_multi(/*throw_notfound=*/false);
+    //        }
+    //    }
 
     return hash_builder.root_hash();
 }

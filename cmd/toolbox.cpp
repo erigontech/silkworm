@@ -30,6 +30,7 @@
 #include <silkworm/chain/config.hpp>
 #include <silkworm/chain/genesis.hpp>
 #include <silkworm/common/as_range.hpp>
+#include <silkworm/common/assert.hpp>
 #include <silkworm/common/bits.hpp>
 #include <silkworm/common/directories.hpp>
 #include <silkworm/common/endian.hpp>
@@ -1123,17 +1124,6 @@ void do_trie_integrity(db::EnvConfig& config, bool with_state_coverage) {
                                          std::bitset<16>(node_hash_mask).to_string());
             }
 
-            // Please don't remove this commented block ... useful for debugging
-            //            static size_t loop{0};
-            //            if (++loop > 16) {
-            //                throw std::runtime_error("Interrupted");
-            //            }
-            //            std::cout << to_hex(data1_k) << " state=" << std::bitset<16>(node_state_mask).to_string() << "
-            //            tree=" << std::bitset<16>(node_tree_mask).to_string() << " hash="
-            //                      << std::bitset<16>(node_hash_mask).to_string() << " root="
-            //                      << ((effective_hashes_count == expected_hashes_count + 1) ? "true" : "false") <<
-            //                      std::endl;
-
             /*
              * Check parents
              * Whether node key length > 1 then at least one parent with a key length shorter than this one must exist
@@ -1147,8 +1137,7 @@ void do_trie_integrity(db::EnvConfig& config, bool with_state_coverage) {
 
             bool found{false};
             Bytes parent_key;
-            for (size_t i{data1_k.length() - 1}, end{prefix_len ? prefix_len - 1 : prefix_len};
-                 i > end && found == false; --i) {
+            for (size_t i{data1_k.length() - 1}, end{prefix_len ? prefix_len - 1 : 0}; i > end && found == false; --i) {
                 parent_key.assign(data1_k.substr(0, i));
                 auto data2{trie_cursor2.find(db::to_slice(parent_key), false)};
                 if (!data2) {
@@ -1181,6 +1170,17 @@ void do_trie_integrity(db::EnvConfig& config, bool with_state_coverage) {
                                              " with tree mask : " + std::bitset<16>(parent_tree_mask).to_string() +
                                              " and no bit set at position " + std::to_string(i));
                 }
+
+                // Debug - We have a leap of 2 o more bytes in key length
+                //                if (data2.key.length() < (data1_k.length() - 1)) {
+                //                    std::cout << "Parent " << to_hex(parent_key, true) << " tree " <<
+                //                    std::bitset<16>(parent_tree_mask)
+                //                              << " on position " << i << " points to child " << to_hex(data1_k, true)
+                //                              << std::endl;
+                //                    if (SignalHandler::signalled()) {
+                //                        throw std::runtime_error("Interrupted");
+                //                    }
+                //                }
             }
 
             if (!found && data1_k.length() > (prefix_len ? prefix_len : 1u)) {
@@ -1444,9 +1444,11 @@ void do_trie_root2(db::EnvConfig& config) {
     // Retrieve expected state root
     auto hashstate_stage_progress{db::stages::read_stage_progress(txn, db::stages::kHashStateKey)};
     auto intermediate_hashes_stage_progress{db::stages::read_stage_progress(txn, db::stages::kIntermediateHashesKey)};
+/*
     if (hashstate_stage_progress != intermediate_hashes_stage_progress) {
         throw std::runtime_error("HashState and Intermediate hashes stage progresses do not match");
     }
+*/
     auto header_hash{db::read_canonical_header_hash(txn, hashstate_stage_progress)};
     auto header{db::read_header(txn, hashstate_stage_progress, header_hash->bytes)};
     auto expected_state_root{header->state_root};
@@ -1464,29 +1466,18 @@ void do_trie_root2(db::EnvConfig& config) {
         }
     };
 
-    trie::AccCursor trie_cursor{trie_accounts, empty_changes, &collector};
-    auto trie_data{trie_cursor.to_prefix({})};
-
-    while (trie_data.key.has_value()) {
-        log::Info("Trie", {"key", to_hex(trie_data.key.value(), true), "skip",
-                           (trie_cursor.can_skip_state() ? "true" : "false")});
-
-        if (trie_cursor.can_skip_state()) {
-            if (!trie_data.hash.has_value()) {
-                throw std::runtime_error("Invalid node hash for key" + to_hex(trie_data.key.value(), true));
-            }
-            hash_builder.add_branch_node(trie_data.key.value(), to_bytes32(trie_data.hash.value()), trie_data.has_tree);
+    trie::TrieCursor trie_cursor{trie_accounts, empty_changes, &collector};
+    for (auto trie_data{trie_cursor.to_prefix({})}; trie_data.key.has_value(); trie_data = trie_cursor.to_next()) {
+        log::Info("Trie",
+                  {"key", to_hex(trie_data.key.value(), true), "skip", (trie_data.skip_state ? "true" : "false")});
+        if (trie_data.skip_state) {
+            SILKWORM_ASSERT(trie_data.hash.has_value());
+            auto hash{to_bytes32(trie_data.hash.value())};
+            hash_builder.add_branch_node(trie_data.key.value(), hash, trie_data.children_in_trie);
         }
-
-        if (std::chrono::time_point now{std::chrono::steady_clock::now()}; now - start >= 10s) {
-            if (SignalHandler::signalled()) {
-                throw std::runtime_error("Interrupted");
-            }
-            std::swap(start, now);
-            log::Info("Checking ...", {"source", source, "key", to_hex(trie_data.key.value(), true)});
+        if (SignalHandler::signalled()) {
+            throw std::runtime_error("Interrupted");
         }
-
-        trie_data = trie_cursor.to_next();
     }
 
     auto computed_state_root{hash_builder.root_hash()};

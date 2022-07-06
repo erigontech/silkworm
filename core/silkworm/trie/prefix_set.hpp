@@ -43,6 +43,10 @@ class PrefixSet {
     //! concurrently. \see Erigon's RetainList::Retain
     bool contains(ByteView prefix);
 
+    //! \brief Pretty much as contains but also returns the found key
+    //! \remarks An empty byteview means no key found (PrefixSet does not have empty keys)
+    ByteView find_contains(ByteView prefix);
+
     //! \brief Returns the next key with marker==true in the list
     //! \see Erigon's RetainList::RetainWithMarker
     std::pair<bool, ByteView> contains_and_next_marked(ByteView prefix);

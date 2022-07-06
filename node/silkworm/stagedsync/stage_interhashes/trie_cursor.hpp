@@ -85,39 +85,48 @@ class Cursor {
 //! \remarks Being a prefix of nibbles trailing zeroes must be erased
 std::optional<Bytes> increment_nibbled_key(ByteView nibbles);
 
-class AccCursor {
-  public:
-    explicit AccCursor(mdbx::cursor& db_cursor, PrefixSet& changed, etl::Collector* collector = nullptr);
+//! \brief TrieCursor class helps traversing the MerkleTree for Accounts and Storage
+//! \details Traversing the trie relies on various assumptions
+//! \verbatim
+//! 1) The keys being processed represent a node in the trie
+//! 2) The keys being processed are served in lexicographical order
+//! 3) The keys in database are stored in lexicographical order
+//! 4) Whenever a key is found it is checked against a list of changed accounts (or storage locations) to determine
+//! whether the retrieved node can be used as is or it needs to be recalculated
+//! \endverbatim
+//! The implementation takes into account that : TrieAccount hold all the nodes for Hashed accounts (hence is a single
+//! tree) whilst TrieStorage hold as many trees as many contracts are active on the chain (hence collection of trees).
+//! In this second case each tree is stored with a prefix which is exactly the sum of hashed address + incarnation.
+//! Due to the above traversing the trees implies there is no prefix for Accounts whilst there is always a prefix of 40
+//! bytes for Storage.
 
+class TrieCursor {
+  public:
+    explicit TrieCursor(mdbx::cursor& db_cursor, PrefixSet& changed, etl::Collector* collector = nullptr);
+
+    // Not copyable nor movable
+    TrieCursor(const TrieCursor&) = delete;
+    TrieCursor& operator=(const TrieCursor&) = delete;
+
+    //! \brief Represent the data returned after a move operation (to_prefix or to_next)
     struct move_operation_result {
-        std::optional<Bytes> key{};   // The nibbled key of node being processed
-        std::optional<Bytes> hash{};  // The hash of node being processed
-        bool has_tree{false};         // Whether this node has children
+        bool skip_state{false};             // Whether the node can be used as is without need to recompute root hash
+        std::optional<Bytes> key{};         // Nibbled key of node
+        std::optional<Bytes> packed_key{};  // Packed key of node
+        std::optional<Bytes> hash{};        // Hash of node
+        bool children_in_trie{false};       // Whether there are children in trie
     };
 
-    //! \brief Sets the trie cursor to given prefix
-    //! \details Tries are separated into TrieAccounts and TrieStorage. TrieAccounts stores all nodes needed to build
-    //! the StateRoot whilst TrieStorage holds every node needed to build Storage Root for every contract account. By
-    //! consequence TrieAccounts has keys which are always made of only nibbled keys whilst TrieStorage has all nibbled
-    //! keys owned by storage root prefixed by the contract address hash + its incarnation. Due to this brief
-    //! explanation this method makes sense only once (with empty prefix) for TrieAccounts and traverse the whole tree
-    //! whilst for TrieStorage it must be used to set the account + incarnation for which we want to traverse the trie
-    //! and build StorageRoot
-    move_operation_result to_prefix(ByteView prefix);  // See Erigon's AtPrefix
+    //! \brief Acquires the prefix and position the cursor to the first occurrence
+    [[nodiscard]] move_operation_result to_prefix(ByteView prefix);
 
-    //! \brief Advances the cursor to next position (child or child-of-parent) and computes whether or not
-    //! discovered (or computed) node has to be up-serted in the trie
-    move_operation_result to_next();  // See Erigon's Next (capital N)
-
-    //! \brief Returns the first nibbled prefix higher code must process to upsert this node in the trie
-    std::optional<Bytes> first_uncovered_prefix() const;  // Next prefix (packed) not covered in subtree
-
-    //! \brief Returns whether the discovered node can be used as-is without recalculation
-    [[nodiscard]] bool can_skip_state() const { return skip_state_; }
+    //! \brief Moves the cursor to next relevant position
+    [[nodiscard]] move_operation_result to_next();
 
   private:
     struct SubNode {
-        ByteView key{};  // Current nibbled key
+        Bytes key{};       // Nibbled key value of current subnode
+        ByteView value{};  // Value retrieved from db (if any)
 
         uint16_t state_mask{0};  // One bit set for every child nibbled key state
         uint16_t tree_mask{0};   // One bit set for every child node
@@ -125,62 +134,36 @@ class AccCursor {
         ByteView root_hash{};    // Root Hash
         ByteView hashes{};       // Child nodes hashes
 
-        int8_t child_id{0};   // Current child being inspected in this node (aka nibble)
-        int8_t hash_id{0};    // Hash to be retrieved
+        int8_t child_id{-1};  // Current child being inspected in this node (aka nibble)
         bool deleted{false};  // Whether already deleted (in collector)
 
-        [[nodiscard]] bool has_state() const;  // Whether current child_id has bit set in state mask
         [[nodiscard]] bool has_tree() const;   // Whether current child_id has bit set in tree mask
         [[nodiscard]] bool has_hash() const;   // Whether current child_id has bit set in hash mask
+        [[nodiscard]] bool has_state() const;  // Whether current child_id has bit set in state mask
 
-        void reset();                                // Resets node to default values
-        void parse(ByteView k, ByteView v);          // Parses node data contents from db (may throw)
-        [[nodiscard]] Bytes key_and_nibble() const;  // Returns full key to node (i.e. key + child_id)
+        void reset();                                         // Resets node to default values
+        void parse(ByteView k, ByteView v);                   // Parses node data contents from db (may throw)
+        [[nodiscard]] Bytes full_key() const;                 // Returns full key to child node (i.e. key + child_id)
+        [[nodiscard]] std::optional<Bytes> get_hash() const;  // Returns hash of child node (i.e. key + child_id)
     };
 
-    mdbx::cursor& db_cursor_;             // MDBX Cursor to TrieAccounts
-    PrefixSet& changed_;                  // List of changed addresses for incremental promotion
-    etl::Collector* collector_{nullptr};  // To queue deleted records
+    std::array<SubNode, 64> sub_nodes_{{}};  // Collection of subnodes being unrolled
+    uint32_t level_{0};                      // Depth level in sub_nodes_
 
-    std::array<SubNode, 64> sub_nodes_{{}};
-    // std::vector<SubNode> sub_nodes_{64, SubNode{}};
-    bool skip_state_{false};
-    size_t level_{0};
+    Bytes prefix_{};    // Db key prefix for this trie (0 bytes TrieAccount - 40 bytes TrieStorage)
+    Bytes buffer_{};    // A convenience buffer
 
-    Bytes prefix_{};  // global prefix - cursor will never return keys without this prefix
-    Bytes prev_{};    // Previous nibbled key
-    Bytes curr_{};    // Current nibbled key
-    Bytes next_{};    // Next nibbled key
-    Bytes buff_{};    // Convenience buffer
+    mdbx::cursor db_cursor_;    // The underlying db cursor (TrieAccount/TrieStorage)
+    bool db_cursor_eof_{true};  // Whether there is no more data to read from database
+    ByteView db_cursor_key_{};  // Key at current db_cursor position
+    ByteView db_cursor_val_{};  // Value at current db_cursor position
 
-    Bytes next_created_{};
-    std::optional<Bytes> first_uncovered_{};
+    PrefixSet& changed_;         // The collection of changed nibbled keys
+    etl::Collector* collector_;  // Pointer to a collector for deletion of obsolete keys
 
-    ByteView hash(int8_t id);
+    void db_seek(ByteView seek_key);  // Seeks lowerbound of provided key using db_cursor_
 
-    bool has_tree();
-    bool key_is_before(ByteView k1, ByteView k2);
-
-    void preorder_traversal_step();
-    void preorder_traversal_step_no_indepth();
-    void delete_current();
-
-    //! \brief Partially parses node
-    //! \remarks We don't need to copy all hashes for trie::Node
-    //! \see Erigon's _unmarshal
-    void parse_subnode(ByteView key, ByteView value);
-
-    /*
-     * Trie traversing
-     */
-
-    move_operation_result next_sibling();
-    void next_sibling_in_db();
-    bool next_sibling_in_mem();
-    bool next_sibling_of_parent_in_mem();
-
-    bool db_seek(ByteView seek_key, ByteView within_prefix = {});  // Locates node in db (if any)
-    bool consume();  // Marks this node for deletion in collector as will be rebuilt
+    void collect_deletion(SubNode& sub_node);  // Collects deletion of sub-node being rebuilt or no longer needed
 };
 
 }  // namespace silkworm::trie

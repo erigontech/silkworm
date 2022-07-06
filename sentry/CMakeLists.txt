@@ -18,6 +18,7 @@ set(TARGET silkworm_sentry)
 
 find_package(absl CONFIG REQUIRED)
 find_package(Boost CONFIG REQUIRED thread)
+find_package(Microsoft.GSL CONFIG REQUIRED)
 find_package(gRPC CONFIG REQUIRED)
 
 get_filename_component(MAIN_DIR ../ ABSOLUTE)
@@ -55,6 +56,7 @@ target_include_directories(${TARGET} PUBLIC
 
 set(LIBS "")
 list(APPEND LIBS Boost::thread)
+list(APPEND LIBS Microsoft.GSL::GSL)
 list(APPEND LIBS protobuf::libprotobuf)
 list(APPEND LIBS gRPC::grpc++)
 list(APPEND LIBS silkworm_core)

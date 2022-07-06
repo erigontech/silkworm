@@ -104,6 +104,21 @@ void add_logging_options(CLI::App& cli, log::Settings& log_settings) {
     log_opts.add_option("--log.file", log_settings.log_file, "Tee all log lines to given file name");
 }
 
+void add_option_data_dir(CLI::App& cli, std::filesystem::path& data_dir) {
+    auto option = cli.add_option("--datadir", [&](CLI::results_t results) {
+        try {
+            data_dir = std::filesystem::path(results[0]);
+            return true;
+        } catch (const std::exception& e) {
+            log::Error() << e.what();
+            return false;
+        }
+    });
+    option->description("Path to the data directory");
+    data_dir = DataDirectory::get_default_storage_path();
+    option->default_str(data_dir.string());
+}
+
 void add_option_num_contexts(CLI::App& cli, uint32_t& num_contexts) {
     cli.add_option("--contexts", num_contexts, "The number of running contexts")->capture_default_str();
 }
@@ -119,12 +134,12 @@ void add_option_wait_mode(CLI::App& cli, silkworm::rpc::WaitMode& wait_mode) {
 void parse_silkworm_command_line(CLI::App& cli, int argc, char* argv[], log::Settings& log_settings,
                                  NodeSettings& node_settings) {
     // Node settings
-    std::string datadir{DataDirectory::get_default_storage_path().string()};
+    std::filesystem::path data_dir_path;
     std::string chaindata_max_size{human_size(node_settings.chaindata_env_config.max_size)};
     std::string chaindata_growth_size{human_size(node_settings.chaindata_env_config.growth_size)};
     std::string batch_size{human_size(node_settings.batch_size)};
     std::string etl_buffer_size{human_size(node_settings.etl_buffer_size)};
-    cli.add_option("--datadir", datadir, "Path to data directory")->capture_default_str();
+    add_option_data_dir(cli, data_dir_path);
     cli.add_flag("--chaindata.exclusive", node_settings.chaindata_env_config.exclusive,
                  "Chaindata database opened in exclusive mode");
     cli.add_flag("--chaindata.readahead", node_settings.chaindata_env_config.read_ahead,
@@ -220,7 +235,7 @@ void parse_silkworm_command_line(CLI::App& cli, int argc, char* argv[], log::Set
     cli.parse(argc, argv);
 
     // Assign settings
-    node_settings.data_directory = std::make_unique<DataDirectory>(datadir, /*create=*/true);
+    node_settings.data_directory = std::make_unique<DataDirectory>(data_dir_path, /*create=*/true);
     node_settings.chaindata_env_config.max_size = parse_size(chaindata_max_size).value();
     node_settings.chaindata_env_config.growth_size = parse_size(chaindata_growth_size).value();
     if (node_settings.chaindata_env_config.growth_size > node_settings.chaindata_env_config.max_size / 2) {

@@ -18,36 +18,28 @@ limitations under the License.
 
 #include <filesystem>
 #include <optional>
-#include <string>
 #include <variant>
-#include <vector>
 #include <silkworm/common/base.hpp>
-#include <silkworm/rpc/server/wait_strategy.hpp>
-#include "enode_url.hpp"
-#include "nat_option.hpp"
+#include <silkworm/common/directories.hpp>
+#include "node_key.hpp"
 
 namespace silkworm::sentry {
 
-struct Options {
-    std::string api_address{"127.0.0.1:9091"};
+class NodeKeyConfig {
+  public:
+    explicit NodeKeyConfig(std::filesystem::path path);
+    explicit NodeKeyConfig(const DataDirectory& data_dir);
 
-    // RLPx TCP port
-    uint16_t port{30303};
+    NodeKey load();
+    void save(const NodeKey& key);
+    bool exists();
 
-    NatOption nat;
-
-    // initialized in the constructor based on hardware_concurrency
-    uint32_t num_contexts{0};
-
-    silkworm::rpc::WaitMode wait_mode{silkworm::rpc::WaitMode::blocking};
-
-    std::filesystem::path data_dir_path;
-
-    std::optional<std::variant<std::filesystem::path, Bytes>> node_key;
-
-    std::vector<EnodeUrl> static_peers;
-
-    Options();
+  private:
+    std::filesystem::path path_;
 };
+
+NodeKey node_key_get_or_generate(
+        const std::optional<std::variant<std::filesystem::path, Bytes>>& node_key_option,
+        const DataDirectory& data_dir);
 
 }  // namespace silkworm::sentry

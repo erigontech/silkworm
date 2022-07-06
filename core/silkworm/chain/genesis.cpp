@@ -1,5 +1,5 @@
 /*
-   Copyright 2021 The Silkworm Authors
+   Copyright 2021-2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -30,6 +30,9 @@ extern size_t sizeof_genesis_goerli_data();
 extern const char* genesis_rinkeby_data();
 extern size_t sizeof_genesis_rinkeby_data();
 
+extern const char* genesis_sepolia_data();
+extern size_t sizeof_genesis_sepolia_data();
+
 namespace silkworm {
 
 std::string read_genesis_data(uint64_t chain_id) {
@@ -46,6 +49,10 @@ std::string read_genesis_data(uint64_t chain_id) {
         case kGoerliConfig.chain_id:
             assert(sizeof_genesis_goerli_data() != 0);
             ret.assign(genesis_goerli_data(), sizeof_genesis_goerli_data());
+            break;
+        case kSepoliaConfig.chain_id:
+            assert(sizeof_genesis_sepolia_data() != 0);
+            ret.assign(genesis_sepolia_data(), sizeof_genesis_sepolia_data());
             break;
         default:
             ret = "{";  // <- Won't be lately parsed as valid json value

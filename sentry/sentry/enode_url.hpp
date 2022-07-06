@@ -17,23 +17,28 @@ limitations under the License.
 #pragma once
 
 #include <string>
-#include <vector>
-#include <silkworm/rpc/server/wait_strategy.hpp>
-#include "enode_url.hpp"
+#include <boost/asio/ip/address.hpp>
 
 namespace silkworm::sentry {
 
-struct Options {
-    std::string api_address{"127.0.0.1:9091"};
+class EnodeUrl {
+  public:
+    explicit EnodeUrl(const std::string& url_str);
 
-    // initialized in the constructor based on hardware_concurrency
-    uint32_t num_contexts{0};
+    [[nodiscard]]
+    const std::string& pub_key_hex() const { return pub_key_hex_; }
+    [[nodiscard]]
+    const boost::asio::ip::address& ip() const { return ip_; }
+    [[nodiscard]]
+    uint16_t port() const { return port_; }
 
-    silkworm::rpc::WaitMode wait_mode{silkworm::rpc::WaitMode::blocking};
+    [[nodiscard]]
+    std::string to_string() const;
 
-    std::vector<EnodeUrl> static_peers;
-
-    Options();
+  private:
+    std::string pub_key_hex_;
+    boost::asio::ip::address ip_;
+    uint16_t port_;
 };
 
 }  // namespace silkworm::sentry

@@ -23,10 +23,8 @@
 namespace silkworm {
 
 static const std::vector<std::pair<std::string, const ChainConfig*>> kKnownChainConfigs{
-    {"mainnet", &kMainnetConfig},  //
-    {"ropsten", &kRopstenConfig},  //
-    {"rinkeby", &kRinkebyConfig},  //
-    {"goerli", &kGoerliConfig}     //
+    {"mainnet", &kMainnetConfig}, {"ropsten", &kRopstenConfig}, {"rinkeby", &kRinkebyConfig},
+    {"goerli", &kGoerliConfig},   {"sepolia", &kSepoliaConfig},
 };
 
 constexpr const char* kTerminalTotalDifficulty{"terminalTotalDifficulty"};

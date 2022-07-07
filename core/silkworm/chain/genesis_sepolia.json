@@ -62,10 +62,10 @@
         "terminalTotalDifficulty": 17000000000000000,
         "ethash": {}
     },
-    "difficulty": 131072,
+    "difficulty": "0x20000",
     "extraData": "Sepolia, Athens, Attica, Greece!",
-    "gasLimit": 30000000,
+    "gasLimit": "0x1C9C380",
     "mixHash": "0x0000000000000000000000000000000000000000000000000000000000000000",
-    "nonce": 0,
-    "timestamp": 1633267481
+    "nonce": "0x0",
+    "timestamp": "0x6159AF19"
 }

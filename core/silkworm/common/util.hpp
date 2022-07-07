@@ -79,9 +79,6 @@ size_t prefix_length(ByteView a, ByteView b);
 
 inline ethash::hash256 keccak256(ByteView view) { return ethash::keccak256(view.data(), view.size()); }
 
-// Splits a string by delimiter and returns a vector of tokens
-std::vector<std::string> split(std::string_view source, std::string_view delimiter);
-
 }  // namespace silkworm
 
 #endif  // SILKWORM_COMMON_UTIL_HPP_

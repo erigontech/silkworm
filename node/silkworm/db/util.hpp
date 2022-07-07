@@ -27,6 +27,7 @@ see its package dbutils.
 #include <string>
 
 #include <absl/container/btree_map.h>
+#include <absl/strings/str_cat.h>
 
 #include <silkworm/common/base.hpp>
 #include <silkworm/db/mdbx.hpp>
@@ -42,12 +43,7 @@ struct VersionBase {
     uint32_t Minor{0};
     uint32_t Patch{0};
 
-    [[nodiscard]] std::string to_string() const {
-        std::string ret{std::to_string(Major)};
-        ret.append("." + std::to_string(Minor));
-        ret.append("." + std::to_string(Patch));
-        return ret;
-    }
+    [[nodiscard]] std::string to_string() const { return absl::StrCat(Major, ".", Minor, ".", Patch); }
 
     friend auto operator<=>(const VersionBase&, const VersionBase&) = default;
 };

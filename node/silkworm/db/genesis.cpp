@@ -1,5 +1,5 @@
 /*
-    Copyright 2021 The Silkworm Authors
+    Copyright 2021-2022 The Silkworm Authors
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -51,13 +51,13 @@ std::pair<bool, std::vector<std::string>> validate_genesis_json(const nlohmann::
                     ret.second.emplace_back("Incomplete / Wrong genesis config member");
                 } else {
                     if (chain_config->seal_engine == SealEngineType::kEthash) {
-                        if (!genesis_json.contains("mixhash") || !genesis_json["mixhash"].is_string() ||
+                        if (!genesis_json.contains("mixHash") || !genesis_json["mixHash"].is_string() ||
                             !genesis_json.contains("nonce") || !genesis_json["nonce"].is_string()) {
-                            ret.second.emplace_back("Missing mixhash and or nonce member for ethash PoW chain");
+                            ret.second.emplace_back("Missing mixHash and or nonce member for ethash PoW chain");
                         } else {
-                            auto mixhash = from_hex(genesis_json["mixhash"].get<std::string>());
+                            auto mixhash = from_hex(genesis_json["mixHash"].get<std::string>());
                             if (!mixhash.has_value() || mixhash->length() != kHashLength) {
-                                ret.second.emplace_back("mixhash member is not a valid hash hex string");
+                                ret.second.emplace_back("mixHash member is not a valid hash hex string");
                             }
                             auto nonce = from_hex(genesis_json["nonce"].get<std::string>());
                             if (!nonce.has_value()) {
@@ -184,8 +184,8 @@ bool initialize_genesis(mdbx::txn& txn, const nlohmann::json& genesis_json, bool
             header.extra_data = extra_data.value();
         }
 
-        if (chain_config->seal_engine == SealEngineType::kEthash && genesis_json.contains("mixhash")) {
-            auto mixhash = from_hex(genesis_json["mixhash"].get<std::string>());
+        if (chain_config->seal_engine == SealEngineType::kEthash && genesis_json.contains("mixHash")) {
+            auto mixhash = from_hex(genesis_json["mixHash"].get<std::string>());
             std::memcpy(header.mix_hash.bytes, mixhash->data(), mixhash->size());
         }
         if (genesis_json.contains("nonce")) {

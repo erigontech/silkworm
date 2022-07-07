@@ -126,7 +126,7 @@ TEST_CASE("mainnet_genesis") {
         header.extra_data = *extra_data;
     }
 
-    auto mix_data = from_hex(genesis_json["mixhash"].get<std::string>());
+    auto mix_data = from_hex(genesis_json["mixHash"].get<std::string>());
     CHECK((mix_data.has_value() && mix_data->size() == kHashLength));
     header.mix_hash = to_bytes32(*mix_data);
 

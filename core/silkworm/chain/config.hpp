@@ -21,7 +21,7 @@
 #include <cstdint>
 #include <map>
 #include <optional>
-#include <string>
+#include <string_view>
 
 #include <evmc/evmc.h>
 #include <intx/intx.hpp>
@@ -224,7 +224,7 @@ inline constexpr ChainConfig kSepoliaConfig{
 const ChainConfig* lookup_chain_config(uint64_t identifier) noexcept;
 
 //! \brief Looks up a chain config provided its common name
-const ChainConfig* lookup_chain_config(const std::string& identifier) noexcept;
+const ChainConfig* lookup_chain_config(std::string_view identifier) noexcept;
 
 //! \brief Returns a map known chains names mapped to their respective chain ids
 std::map<std::string, uint64_t> get_known_chains_map() noexcept;

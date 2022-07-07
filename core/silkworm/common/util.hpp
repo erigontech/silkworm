@@ -72,7 +72,7 @@ std::optional<uint64_t> parse_size(const std::string& sizestr);
 std::string human_size(uint64_t bytes);
 
 // Compares two strings for equality with case insensitivity
-bool iequals(const std::string& a, const std::string& b);
+bool iequals(std::string_view a, std::string_view b);
 
 // The length of the longest common prefix of a and b.
 size_t prefix_length(ByteView a, ByteView b);

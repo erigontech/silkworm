@@ -154,7 +154,7 @@ const ChainConfig* lookup_chain_config(const uint64_t identifier) noexcept {
     return it->second;
 }
 
-const ChainConfig* lookup_chain_config(const std::string& identifier) noexcept {
+const ChainConfig* lookup_chain_config(const std::string_view identifier) noexcept {
     auto it{as_range::find_if(kKnownChainConfigs,
                               [&identifier](const std::pair<std::string, const ChainConfig*>& x) -> bool {
                                   return iequals(x.first, identifier);

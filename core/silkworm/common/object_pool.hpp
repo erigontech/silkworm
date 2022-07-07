@@ -18,7 +18,6 @@
 #define SILKWORM_COMMON_OBJECT_POOL_HPP_
 
 #include <memory>
-#include <stack>
 #include <vector>
 
 #ifndef __wasm__
@@ -42,7 +41,7 @@ namespace silkworm {
 template <class T, class TDtor = std::default_delete<T>>
 class ObjectPool {
   public:
-    explicit ObjectPool(bool thread_safe = false) : thread_safe_{thread_safe} {}
+    constexpr explicit ObjectPool(bool thread_safe = false) : thread_safe_{thread_safe} {}
 
     // Not copyable nor movable
     ObjectPool(const ObjectPool&) = delete;
@@ -50,7 +49,7 @@ class ObjectPool {
 
     void add(gsl::owner<T*> t) {
         SILKWORM_DETAIL_OBJECT_POOL_GUARD
-        pool_.push({t, TDtor()});
+        pool_.emplace_back(t, TDtor());
     }
 
     gsl::owner<T*> acquire() {
@@ -58,8 +57,8 @@ class ObjectPool {
         if (pool_.empty()) {
             return nullptr;
         }
-        gsl::owner<T*> ret(pool_.top().release());
-        pool_.pop();
+        gsl::owner<T*> ret(pool_.back().release());
+        pool_.pop_back();
         return ret;
     }
 
@@ -76,7 +75,7 @@ class ObjectPool {
   private:
     using PointerType = std::unique_ptr<T, TDtor>;
 
-    std::stack<PointerType, std::vector<PointerType>> pool_{};
+    std::vector<PointerType> pool_{};
 
     bool thread_safe_{false};
 

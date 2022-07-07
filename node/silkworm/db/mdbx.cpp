@@ -159,7 +159,7 @@ namespace detail {
     return tx.open_cursor(open_map(tx, config));
 }
 
-thread_local ObjectPool<MDBX_cursor, detail::cursor_handle_deleter> Cursor::handles_pool_{};
+constinit thread_local ObjectPool<MDBX_cursor, detail::cursor_handle_deleter> Cursor::handles_pool_{};
 
 Cursor::Cursor(::mdbx::txn& txn, const MapConfig& config) {
     handle_ = handles_pool_.acquire();

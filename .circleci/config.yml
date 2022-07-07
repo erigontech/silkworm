@@ -66,26 +66,39 @@ commands:
           command: cmd/test/consensus --threads 4 # out of memory with 8 threads under thread sanitizer 
 
 jobs:
-  linux-gcc-12-thread-sanitizer:
+  linux-gcc-11-thread-sanitizer:
     environment:
       BUILD_TYPE: Debug
       CLANG_COVERAGE: OFF
       SANITIZE: thread
     docker:
-      - image: ethereum/cpp-build-env:18-gcc-12
+      - image: ethereum/cpp-build-env:17-gcc-11
     resource_class: xlarge
     steps:
       - checkout_with_submodules
       - build
       - test
 
-  linux-gcc-11:
+  linux-gcc-10-debug:
     environment:
       BUILD_TYPE: Debug
       CLANG_COVERAGE: OFF
       SANITIZE: OFF
     docker:
-      - image: ethereum/cpp-build-env:17-gcc-11
+      - image: ethereum/cpp-build-env:17-gcc-10
+    resource_class: xlarge
+    steps:
+      - checkout_with_submodules
+      - build
+      - test
+
+  linux-gcc-12-release:
+    environment:
+      BUILD_TYPE: Release
+      CLANG_COVERAGE: OFF
+      SANITIZE: OFF
+    docker:
+      - image: ethereum/cpp-build-env:18-gcc-12
     resource_class: xlarge
     steps:
       - checkout_with_submodules
@@ -202,8 +215,9 @@ workflows:
   version: 2
   silkworm:
     jobs:
-      - linux-gcc-12-thread-sanitizer
-      - linux-gcc-11
+      - linux-gcc-10-debug
+      - linux-gcc-12-release
+      - linux-gcc-11-thread-sanitizer
       - linux-clang-13-coverage
       - linux-clang-12-address-sanitizer
       - linux-wasm-build

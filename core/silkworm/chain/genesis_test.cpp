@@ -71,9 +71,9 @@ TEST_CASE("genesis config") {
     CHECK(genesis_json.is_discarded());
 }
 
-TEST_CASE("mainnet_genesis") {
+nlohmann::json sanity_checked_json(uint64_t chain_id) {
     // Parse genesis data
-    std::string genesis_data = read_genesis_data(static_cast<uint32_t>(kMainnetConfig.chain_id));
+    std::string genesis_data = read_genesis_data(static_cast<uint32_t>(chain_id));
     nlohmann::json genesis_json = nlohmann::json::parse(genesis_data, nullptr, /* allow_exceptions = */ false);
     CHECK_FALSE(genesis_json.is_discarded());
 
@@ -84,6 +84,10 @@ TEST_CASE("mainnet_genesis") {
     CHECK(genesis_json.contains("extraData"));
     CHECK((genesis_json.contains("alloc") && genesis_json["alloc"].is_object() && !genesis_json["alloc"].empty()));
 
+    return genesis_json;
+}
+
+evmc::bytes32 state_root(const nlohmann::json& genesis_json) {
     InMemoryState state;
 
     for (auto& item : genesis_json["alloc"].items()) {
@@ -98,11 +102,15 @@ TEST_CASE("mainnet_genesis") {
         state.update_account(account_address, std::nullopt, account);
     }
 
-    SECTION("state_root") {
-        auto expected_state_root{0xd7f8974fb5ac78d9ac099b9ad5018bedc2ce0a72dad1827a1709da30580f0544_bytes32};
-        auto actual_state_root{state.state_root_hash()};
-        CHECK(to_hex(expected_state_root) == to_hex(actual_state_root));
-    }
+    return state.state_root_hash();
+}
+
+TEST_CASE("mainnet_genesis") {
+    nlohmann::json genesis_json = sanity_checked_json(kMainnetConfig.chain_id);
+
+    auto expected_state_root{0xd7f8974fb5ac78d9ac099b9ad5018bedc2ce0a72dad1827a1709da30580f0544_bytes32};
+    auto actual_state_root{state_root(genesis_json)};
+    CHECK(to_hex(expected_state_root) == to_hex(actual_state_root));
 
     // Fill Header
     BlockHeader header;
@@ -112,7 +120,7 @@ TEST_CASE("mainnet_genesis") {
     }
     header.ommers_hash = kEmptyListHash;
     header.beneficiary = 0x0000000000000000000000000000000000000000_address;
-    header.state_root = state.state_root_hash();
+    header.state_root = actual_state_root;
     header.transactions_root = kEmptyRoot;
     header.receipts_root = kEmptyRoot;
     auto difficulty_str{genesis_json["difficulty"].get<std::string>()};
@@ -145,6 +153,31 @@ TEST_CASE("mainnet_genesis") {
     // auto epoch_context{ethash::create_epoch_context(0)};
     // auto result{ethash::hash(*epoch_context, sealh256, nonce)};
     // CHECK(ethash::is_less_or_equal(result.final_hash, boundary));
+}
+
+TEST_CASE("Rinkeby state root") {
+    nlohmann::json genesis_json = sanity_checked_json(kRinkebyConfig.chain_id);
+
+    auto expected_state_root{0x53580584816f617295ea26c0e17641e0120cab2f0a8ffb53a866fd53aa8e8c2d_bytes32};
+    auto actual_state_root{state_root(genesis_json)};
+    CHECK(to_hex(expected_state_root) == to_hex(actual_state_root));
+}
+
+TEST_CASE("Goerli state root") {
+    nlohmann::json genesis_json = sanity_checked_json(kGoerliConfig.chain_id);
+
+    auto expected_state_root{0x5d6cded585e73c4e322c30c2f782a336316f17dd85a4863b9d838d2d4b8b3008_bytes32};
+    auto actual_state_root{state_root(genesis_json)};
+    CHECK(to_hex(expected_state_root) == to_hex(actual_state_root));
+}
+
+TEST_CASE("Sepolia state root") {
+    nlohmann::json genesis_json = sanity_checked_json(kSepoliaConfig.chain_id);
+    CHECK(genesis_json["extraData"] == "Sepolia, Athens, Attica, Greece!");
+
+    auto expected_state_root{0x5eb6e371a698b8d68f665192350ffcecbbbf322916f4b51bd79bb6887da3f494_bytes32};
+    auto actual_state_root{state_root(genesis_json)};
+    CHECK(to_hex(expected_state_root) == to_hex(actual_state_root));
 }
 
 }  // namespace silkworm

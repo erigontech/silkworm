@@ -20,30 +20,6 @@
 
 namespace silkworm {
 
-TEST_CASE("Split") {
-    std::string source{};
-    std::string delim{};
-    auto output{split(source, delim)};
-    CHECK((output.size() == 1 && output.at(0) == source));
-
-    source = "aabbcc";
-    output = split(source, delim);
-    CHECK((output.size() == 1 && output.at(0) == source));
-
-    delim = "b";
-    output = split(source, delim);
-    CHECK((output.size() == 3 && output.at(0) == "aa" && output.at(1).empty() == true && output.at(2) == "cc"));
-
-    delim = "bb";
-    output = split(source, delim);
-    CHECK((output.size() == 2 && output.at(0) == "aa" && output.at(1) == "cc"));
-
-    source = "aaaaa";
-    delim = "a";
-    output = split(source, delim);
-    CHECK(output.size() == 5);
-}
-
 TEST_CASE("Hex") {
     CHECK(decode_hex_digit('g').has_value() == false);
 

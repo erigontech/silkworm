@@ -242,22 +242,4 @@ size_t prefix_length(ByteView a, ByteView b) {
     return len;
 }
 
-std::vector<std::string> split(std::string_view source, std::string_view delimiter) {
-    std::vector<std::string> res{};
-    if (delimiter.length() >= source.length() || !delimiter.length()) {
-        res.emplace_back(source);
-        return res;
-    }
-    size_t pos{0};
-    while ((pos = source.find(delimiter)) != std::string::npos) {
-        res.emplace_back(source.substr(0, pos));
-        source.remove_prefix(pos + delimiter.length());
-    }
-    // Any residual part of input where delimiter is not found
-    if (source.length()) {
-        res.emplace_back(source);
-    }
-    return res;
-}
-
 }  // namespace silkworm

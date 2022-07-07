@@ -59,7 +59,7 @@
         "muirGlacierBlock": 0,
         "berlinBlock": 0,
         "londonBlock": 0,
-        "terminalTotalDifficulty": 17000000000000000,
+        "terminalTotalDifficulty": "17000000000000000",
         "ethash": {}
     },
     "difficulty": "0x20000",

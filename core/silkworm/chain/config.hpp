@@ -220,8 +220,8 @@ inline constexpr ChainConfig kSepoliaConfig{
     .terminal_total_difficulty = 17000000000000000,
 };
 
-//! \brief Looks up a chain config provided its network id
-const ChainConfig* lookup_chain_config(uint64_t identifier) noexcept;
+//! \brief Looks up a chain config provided its chain ID
+const ChainConfig* lookup_chain_config(uint64_t chain_id) noexcept;
 
 //! \brief Looks up a chain config provided its common name
 const ChainConfig* lookup_chain_config(std::string_view identifier) noexcept;

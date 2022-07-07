@@ -63,16 +63,16 @@ commands:
           name: "Ethereum consensus tests"
           working_directory: ~/build
           no_output_timeout: 20m
-          command: cmd/test/consensus --threads 4 # out of memory with 8 threads under linux-gcc-11-thread-sanitizer 
+          command: cmd/test/consensus --threads 4 # out of memory with 8 threads under thread sanitizer 
 
 jobs:
-  linux-gcc-11-thread-sanitizer:
+  linux-gcc-12-thread-sanitizer:
     environment:
       BUILD_TYPE: Debug
       CLANG_COVERAGE: OFF
       SANITIZE: thread
     docker:
-      - image: ethereum/cpp-build-env:17-gcc-11
+      - image: ethereum/cpp-build-env:18-gcc-12
     resource_class: xlarge
     steps:
       - checkout_with_submodules
@@ -202,7 +202,7 @@ workflows:
   version: 2
   silkworm:
     jobs:
-      - linux-gcc-11-thread-sanitizer
+      - linux-gcc-12-thread-sanitizer
       - linux-gcc-11
       - linux-clang-13-coverage
       - linux-clang-12-address-sanitizer

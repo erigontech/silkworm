@@ -17,7 +17,9 @@ limitations under the License.
 #pragma once
 
 #include <string>
+#include <vector>
 #include <silkworm/rpc/server/wait_strategy.hpp>
+#include "enode_url.hpp"
 
 namespace silkworm::sentry {
 
@@ -28,6 +30,8 @@ struct Options {
     uint32_t num_contexts{0};
 
     silkworm::rpc::WaitMode wait_mode{silkworm::rpc::WaitMode::blocking};
+
+    std::vector<EnodeUrl> static_peers;
 
     Options();
 };

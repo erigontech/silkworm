@@ -111,11 +111,11 @@ void SentryClient::stats_receiving_loop() {
 
     // receive stats
     while (!is_stopping() && receive_peer_stats.receive_one_reply()) {
-        const sentry::PeersReply& stat = receive_peer_stats.reply();
+        const sentry::PeerEvent& stat = receive_peer_stats.reply();
 
         auto peerId = string_from_H512(stat.peer_id());
         const char* event = "";
-        if (stat.event() == sentry::PeersReply::Connect) {
+        if (stat.event_id() == sentry::PeerEvent::Connect) {
             event = "connected";
             active_peers_++;
         } else {

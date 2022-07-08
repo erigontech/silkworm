@@ -25,6 +25,17 @@ find_program(GRPC_CPP_PLUGIN_EXECUTABLE grpc_cpp_plugin REQUIRED)
 
 set(PROTO_PATH "${CMAKE_CURRENT_SOURCE_DIR}/proto")
 
+set(PROTOC_ARGS
+    --cpp_out "${CMAKE_CURRENT_SOURCE_DIR}"
+    -I "${PROTO_PATH}"
+    --experimental_allow_proto3_optional
+)
+set(PROTOC_ARGS_GRPC
+    ${PROTOC_ARGS}
+    --grpc_out "${CMAKE_CURRENT_SOURCE_DIR}"
+    "--plugin=protoc-gen-grpc=${GRPC_CPP_PLUGIN_EXECUTABLE}"
+)
+
 # ---------------------------------------------------------------------------------------------------------------------
 # Types
 # ---------------------------------------------------------------------------------------------------------------------
@@ -38,9 +49,7 @@ set(TYPES_PROTO_HEADERS "${CMAKE_CURRENT_SOURCE_DIR}/types/types.pb.h")
 add_custom_command(
     OUTPUT "${TYPES_PROTO_SOURCES}" "${TYPES_PROTO_HEADERS}"
     COMMAND ${PROTOBUF_PROTOC}
-    ARGS --cpp_out "${CMAKE_CURRENT_SOURCE_DIR}"
-      -I "${PROTO_PATH}"
-      "${TYPES_PROTO}"
+    ARGS ${PROTOC_ARGS} "${TYPES_PROTO}"
     DEPENDS "${TYPES_PROTO}"
 )
 
@@ -59,11 +68,7 @@ set(SENTRY_GRPC_HEADERS "${CMAKE_CURRENT_SOURCE_DIR}/p2psentry/sentry.grpc.pb.h"
 add_custom_command(
     OUTPUT "${SENTRY_PROTO_SOURCES}" "${SENTRY_PROTO_HEADERS}" "${SENTRY_GRPC_SOURCES}" "${SENTRY_GRPC_HEADERS}"
     COMMAND ${PROTOBUF_PROTOC}
-    ARGS --grpc_out "${CMAKE_CURRENT_SOURCE_DIR}"
-      --cpp_out "${CMAKE_CURRENT_SOURCE_DIR}"
-      -I "${PROTO_PATH}"
-      --plugin=protoc-gen-grpc="${GRPC_CPP_PLUGIN_EXECUTABLE}"
-      "${SENTRY_PROTO}"
+    ARGS ${PROTOC_ARGS_GRPC} "${SENTRY_PROTO}"
     DEPENDS "${SENTRY_PROTO}"
 )
 
@@ -88,11 +93,7 @@ set(KV_GRPC_HEADERS "${CMAKE_CURRENT_SOURCE_DIR}/remote/kv.grpc.pb.h")
 add_custom_command(
     OUTPUT "${KV_PROTO_SOURCES}" "${KV_PROTO_HEADERS}" "${KV_GRPC_SOURCES}" "${KV_GRPC_HEADERS}"
     COMMAND ${PROTOBUF_PROTOC}
-    ARGS --grpc_out "${CMAKE_CURRENT_SOURCE_DIR}"
-      --cpp_out "${CMAKE_CURRENT_SOURCE_DIR}"
-      -I "${PROTO_PATH}"
-      --plugin=protoc-gen-grpc="${GRPC_CPP_PLUGIN_EXECUTABLE}"
-      "${KV_PROTO}"
+    ARGS ${PROTOC_ARGS_GRPC} "${KV_PROTO}"
     DEPENDS "${KV_PROTO}"
     COMMENT "Running C++ gRPC compiler on ${KV_PROTO}"
 )
@@ -118,11 +119,7 @@ set(ETHBACKEND_GRPC_HEADERS "${CMAKE_CURRENT_SOURCE_DIR}/remote/ethbackend.grpc.
 add_custom_command(
     OUTPUT "${ETHBACKEND_PROTO_SOURCES}" "${ETHBACKEND_PROTO_HEADERS}" "${ETHBACKEND_GRPC_SOURCES}" "${ETHBACKEND_GRPC_HEADERS}"
     COMMAND ${PROTOBUF_PROTOC}
-    ARGS --grpc_out "${CMAKE_CURRENT_SOURCE_DIR}"
-      --cpp_out "${CMAKE_CURRENT_SOURCE_DIR}"
-      -I "${PROTO_PATH}"
-      --plugin=protoc-gen-grpc="${GRPC_CPP_PLUGIN_EXECUTABLE}"
-      "${ETHBACKEND_PROTO}"
+    ARGS ${PROTOC_ARGS_GRPC} "${ETHBACKEND_PROTO}"
     DEPENDS "${ETHBACKEND_PROTO}"
     COMMENT "Running C++ gRPC compiler on ${ETHBACKEND_PROTO}"
 )

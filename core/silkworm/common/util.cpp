@@ -168,7 +168,7 @@ std::optional<Bytes> from_hex(std::string_view hex) noexcept {
 
 inline bool case_insensitive_char_comparer(char a, char b) { return (tolower(a) == tolower(b)); }
 
-bool iequals(const std::string& a, const std::string& b) {
+bool iequals(const std::string_view a, const std::string_view b) {
     return (a.size() == b.size() && std::equal(a.begin(), a.end(), b.begin(), case_insensitive_char_comparer));
 }
 
@@ -240,24 +240,6 @@ size_t prefix_length(ByteView a, ByteView b) {
         }
     }
     return len;
-}
-
-std::vector<std::string> split(std::string_view source, std::string_view delimiter) {
-    std::vector<std::string> res{};
-    if (delimiter.length() >= source.length() || !delimiter.length()) {
-        res.emplace_back(source);
-        return res;
-    }
-    size_t pos{0};
-    while ((pos = source.find(delimiter)) != std::string::npos) {
-        res.emplace_back(source.substr(0, pos));
-        source.remove_prefix(pos + delimiter.length());
-    }
-    // Any residual part of input where delimiter is not found
-    if (source.length()) {
-        res.emplace_back(source);
-    }
-    return res;
 }
 
 }  // namespace silkworm

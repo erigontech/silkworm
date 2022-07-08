@@ -47,7 +47,7 @@ class EvmTracer {
 
     virtual void on_execution_end(const evmc_result& result, const IntraBlockState& intra_block_state) noexcept = 0;
 
-    virtual void on_precompiled_run(const evmc::result& result, int64_t gas, const IntraBlockState& intra_block_state) noexcept = 0;
+    virtual void on_precompiled_run(const evmc_result& result, int64_t gas, const IntraBlockState& intra_block_state) noexcept = 0;
 
     virtual void on_reward_granted(const CallResult& result, const IntraBlockState& intra_block_state) noexcept = 0;
 };

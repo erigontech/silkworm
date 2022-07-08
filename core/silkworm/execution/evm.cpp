@@ -231,7 +231,7 @@ evmc::result EVM::call(const evmc_message& message) noexcept {
         // Explicitly notify registered tracers (if any)
         if (!tracers_.empty()) {
             for (auto tracer : tracers_) {
-                tracer.get().on_precompiled_run(evmc::result{res}, message.gas, state_);
+                tracer.get().on_precompiled_run(res, message.gas, state_);
             }
         }
     } else {

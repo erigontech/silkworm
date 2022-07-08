@@ -16,18 +16,30 @@ limitations under the License.
 
 #pragma once
 
+#include <memory>
 #include <boost/asio/io_context.hpp>
 #include <grpcpp/grpcpp.h>
 #include <p2psentry/sentry.grpc.pb.h>
 
 namespace silkworm::sentry {
 
+class ServiceImpl;
+
 class Service final {
   public:
+    Service();
+    ~Service();
+
+    Service(const Service&) = delete;
+    Service& operator=(const Service&) = delete;
+
     void register_request_calls(
         boost::asio::io_context& scheduler,
         ::sentry::Sentry::AsyncService* async_service,
         grpc::ServerCompletionQueue* queue);
+
+  private:
+    std::unique_ptr<ServiceImpl> p_impl_;
 };
 
 }  // namespace silkworm::sentry

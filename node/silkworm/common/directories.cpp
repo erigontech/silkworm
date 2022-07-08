@@ -1,5 +1,5 @@
 /*
-   Copyright 2021 The Silkworm Authors
+   Copyright 2021-2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -17,6 +17,8 @@
 #include "directories.hpp"
 
 #include <random>
+
+#include <absl/strings/str_split.h>
 
 #include <silkworm/common/util.hpp>
 
@@ -124,7 +126,7 @@ DataDirectory DataDirectory::from_chaindata(const std::filesystem::path& chainda
     }
 
     std::string delimiter{std::filesystem::path::preferred_separator};
-    auto tokens{silkworm::split(chaindata_path.string(), delimiter)};
+    std::vector<std::string> tokens{absl::StrSplit(chaindata_path.string(), delimiter)};
     if (tokens.empty() || !iequals(tokens.back(), "chaindata")) {
         throw std::invalid_argument("Not a valid Silkworm chaindata path");
     }
@@ -185,9 +187,7 @@ void DataDirectory::deploy() {
     nodes_.create();
 }
 
-std::filesystem::path TemporaryDirectory::get_os_temporary_path() {
-    return std::filesystem::temp_directory_path();
-}
+std::filesystem::path TemporaryDirectory::get_os_temporary_path() { return std::filesystem::temp_directory_path(); }
 
 std::filesystem::path TemporaryDirectory::get_unique_temporary_path(const std::filesystem::path& base_path) {
     if (base_path.empty()) {

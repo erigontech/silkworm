@@ -14,32 +14,24 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-#pragma once
-
-#include <string>
-#include <vector>
-#include <silkworm/rpc/server/wait_strategy.hpp>
-#include "enode_url.hpp"
 #include "nat_option.hpp"
+#include <boost/algorithm/string/predicate.hpp>
 
 namespace silkworm::sentry {
 
-struct Options {
-    std::string api_address{"127.0.0.1:9091"};
-
-    // RLPx TCP port
-    uint16_t port{30303};
-
-    NatOption nat;
-
-    // initialized in the constructor based on hardware_concurrency
-    uint32_t num_contexts{0};
-
-    silkworm::rpc::WaitMode wait_mode{silkworm::rpc::WaitMode::blocking};
-
-    std::vector<EnodeUrl> static_peers;
-
-    Options();
-};
+bool lexical_cast(const std::string& input, NatOption& value) {
+    if (input == "none") {
+        value = {};
+        return true;
+    }
+    if (boost::algorithm::istarts_with(input, "extip:")) {
+        auto ip_str = input.c_str() + 6;
+        boost::system::error_code err;
+        auto ip = boost::asio::ip::address::from_string(ip_str, err);
+        value = {NatMode::kExternalIP, {ip}};
+        return !err;
+    }
+    return false;
+}
 
 }  // namespace silkworm::sentry

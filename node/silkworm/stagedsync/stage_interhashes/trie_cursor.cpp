@@ -16,9 +16,6 @@
 
 #include "trie_cursor.hpp"
 
-#include <bitset>
-#include <iostream>
-
 #include <silkworm/common/assert.hpp>
 #include <silkworm/common/bits.hpp>
 #include <silkworm/common/endian.hpp>
@@ -26,209 +23,10 @@
 
 namespace silkworm::trie {
 
-Cursor::Cursor(mdbx::cursor& db_cursor, PrefixSet& changed, etl::Collector* collector, ByteView prefix)
-    : db_cursor_{db_cursor}, changed_{changed}, collector_{collector}, prefix_{prefix} {
-    subnodes_.reserve(64);
-    consume_node(/*key=*/{}, /*exact=*/true);
-}
-
-void Cursor::consume_node(ByteView key, bool exact) {
-    const Bytes db_key{prefix_ + Bytes{key}};
-    const auto db_data{exact ? db_cursor_.find(db::to_slice(db_key), /*throw_notfound=*/false)
-                             : db_cursor_.lower_bound(db::to_slice(db_key), /*throw_notfound=*/false)};
-
-    if (!exact) {
-        if (!db_data) {
-            // end-of-tree
-            subnodes_.clear();
-            return;
-        }
-        key = db::from_slice(db_data.key);
-        if (!prefix_.empty()) {
-            if (!key.starts_with(prefix_)) {
-                subnodes_.clear();
-                return;
-            }
-            key.remove_prefix(prefix_.length());
-        }
-    }
-
-    std::optional<Node> node{std::nullopt};
-    int nibble{-1};
-    if (db_data) {
-        node = Node::from_encoded_storage(db::from_slice(db_data.value));
-        SILKWORM_ASSERT(node.has_value());
-        SILKWORM_ASSERT(node->state_mask() != 0);
-        if (!node->root_hash().has_value()) {
-            nibble = ctz_16(node->state_mask()) - 1;
-        }
-    }
-
-    if (!key.empty() && !subnodes_.empty()) {
-        // the root might have nullopt node and thus no state bits, so we rely on the DB
-        subnodes_[0].nibble = key[0];
-    }
-
-    subnodes_.push_back(SubNode{Bytes{key}, node, nibble});
-
-    update_skip_state();
-
-    // don't erase nodes with valid root hashes
-    if (db_data && (!can_skip_state_ || nibble != -1)) {
-        collector_->collect({Bytes{db::from_slice(db_data.key)}, Bytes{}});
-    }
-}
-
-void Cursor::next() {
-    if (subnodes_.empty()) {
-        // end-of-tree
-        return;
-    }
-
-    auto& sub_node{subnodes_.back()};
-    if (!can_skip_state_ && sub_node.tree_flag()) {
-        // go to the child node
-        if (sub_node.nibble < 0) {
-            move_to_next_sibling(/*allow_root_to_child_nibble_within_subnode=*/true);
-        } else {
-            consume_node(sub_node.full_key(), /*exact=*/false);
-            return;  // ^^ already updates skip state
-        }
-    } else {
-        move_to_next_sibling(/*allow_root_to_child_nibble_within_subnode=*/false);
-    }
-
-    update_skip_state();
-}
-
-void Cursor::update_skip_state() {
-    const std::optional<Bytes> k{key()};
-    if (!k.has_value() || changed_.contains(prefix_ + k.value())) {
-        can_skip_state_ = false;
-    } else {
-        can_skip_state_ = subnodes_.back().hash_flag();
-    }
-}
-
-void Cursor::move_to_next_sibling(bool allow_root_to_child_nibble_within_subnode) {
-    while (!subnodes_.empty()) {
-        SubNode& sub_node{subnodes_.back()};
-
-        if (sub_node.nibble >= 0xF || (sub_node.nibble == -1 && !allow_root_to_child_nibble_within_subnode)) {
-            // this node is fully traversed
-            subnodes_.pop_back();
-            allow_root_to_child_nibble_within_subnode = false;
-            continue;
-        }
-
-        ++sub_node.nibble;
-
-        if (!sub_node.node.has_value()) {
-            // we can't rely on the state flag, so search in the DB
-            consume_node(sub_node.full_key(), /*exact=*/false);
-            return;
-        }
-
-        for (; sub_node.nibble < 0x10; ++sub_node.nibble) {
-            if (sub_node.node->state_mask() & (1u << sub_node.nibble)) {
-                return;
-            }
-        }
-
-        // this node is fully traversed
-        subnodes_.pop_back();
-        allow_root_to_child_nibble_within_subnode = false;
-    }
-}
-
-Bytes Cursor::SubNode::full_key() const {
-    Bytes out{key};
-    if (nibble != -1) {
-        out.push_back(nibble);
-    }
-    return out;
-}
-
-bool Cursor::SubNode::tree_flag() const {
-    if (nibble < 0 || !node.has_value()) {
-        return true;
-    }
-    return node->tree_mask() & (1u << nibble);
-}
-
-bool Cursor::SubNode::hash_flag() const {
-    if (!node.has_value()) {
-        return false;
-    }
-    return nibble == -1 ? node->root_hash().has_value() : node->hash_mask() & (1u << nibble);
-}
-
-const evmc::bytes32* Cursor::SubNode::hash() const {
-    if (!hash_flag()) {
-        return nullptr;
-    }
-
-    if (nibble < 0) {
-        return &node->root_hash().value();
-    }
-
-    const unsigned first_nibbles_mask{(1u << nibble) - 1};
-    const size_t hash_idx{popcount_16(node->hash_mask() & first_nibbles_mask)};
-    return &node->hashes()[hash_idx];
-}
-
-std::optional<Bytes> Cursor::key() const {
-    if (subnodes_.empty()) {
-        return std::nullopt;
-    }
-    return subnodes_.back().full_key();
-}
-
-const evmc::bytes32* Cursor::hash() const {
-    if (subnodes_.empty()) {
-        return nullptr;
-    }
-    return subnodes_.back().hash();
-}
-
-bool Cursor::children_are_in_trie() const {
-    if (subnodes_.empty()) {
-        return false;
-    }
-    return subnodes_.back().tree_flag();
-}
-
-std::optional<Bytes> Cursor::first_uncovered_prefix() const {
-    std::optional<Bytes> k{key()};
-    if (can_skip_state_ && k.has_value()) {
-        k = increment_nibbled_key(*k);
-    }
-    if (!k.has_value()) {
-        return std::nullopt;
-    }
-    return pack_nibbles(*k);
-}
-
-std::optional<Bytes> increment_nibbled_key(ByteView nibbles) {
-    if (nibbles.empty()) {
-        return std::nullopt;
-    }
-
-    auto rit{std::find_if(nibbles.rbegin(), nibbles.rend(), [](uint8_t nibble) { return nibble < 0xf; })};
-    if (rit == nibbles.rend()) {
-        return std::nullopt;
-    }
-
-    auto count{static_cast<size_t>(std::distance(nibbles.begin(), rit.base()))};
-    Bytes ret{nibbles.substr(0, count)};
-    ++ret.back();
-    return ret;
-}
-
 TrieCursor::TrieCursor(mdbx::cursor& db_cursor, PrefixSet* changed, etl::Collector* collector)
     : db_cursor_(db_cursor), changed_{changed}, collector_{collector} {
-    prefix_.reserve(40);    // Max size assignable is 40
-    buffer_.reserve(96);    // Max size is 40 (TrieStorage prefix) + full unrolled nibbled key 32 == 82 (rounded to 96)
+    prefix_.reserve(40);  // Max size assignable is 40
+    buffer_.reserve(96);  // Max size is 40 (TrieStorage prefix) + full unrolled nibbled key 32 == 82 (rounded to 96)
 }
 
 TrieCursor::move_operation_result TrieCursor::to_prefix(ByteView prefix) {
@@ -280,7 +78,6 @@ TrieCursor::move_operation_result TrieCursor::to_next() {
      */
 
     while (true) {
-
         auto& sub_node{sub_nodes_[level_]};
         if (sub_node.child_id > 0xf) {
             // This node is completely traversed - Ascend one level if possible
@@ -296,25 +93,6 @@ TrieCursor::move_operation_result TrieCursor::to_next() {
         const Bytes full_key{sub_node.full_key()};
         const Bytes prefix_and_full_key{prefix_ + full_key};
         const bool has_changes{!changed_ || changed_->contains(prefix_and_full_key)};
-
-        /*
-                static const Bytes debug_key{*from_hex("0x0008020506000e")};
-                if (full_key == debug_key) {
-                    auto changed{changed_.find_contains(prefix_and_full_key)};
-                    std::cout << "Key=" << to_hex(full_key, true)
-                              << " has_value=" << (sub_node.value.empty() ? "false" : "true")
-                              << " child_id=" << std::to_string(sub_node.child_id)
-                              << " state_mask=" << std::bitset<16>(sub_node.state_mask)
-                              << " tree_mask=" << std::bitset<16>(sub_node.tree_mask)
-                              << " hash_mask=" << std::bitset<16>(sub_node.hash_mask)
-                              << " has_hash=" << (sub_node.has_hash() ? "true" : "false")
-                              << " changes=" << (has_changes ? "true" : "false") << " changed=" << to_hex(changed, true)
-                              << std::endl;
-                    SILKWORM_ASSERT(true == false);
-                }
-        */
-
-        // std::cout << "Level=" << std::to_string(level_) << " key=" << to_hex(full_key) << std::endl;
 
         // Is this a node with a hash which can be used ?
         // If child_id == -1 then is a root node
@@ -359,7 +137,6 @@ TrieCursor::move_operation_result TrieCursor::to_next() {
         // Return to calling loop to process all hashed states with current
         // nibbled prefix.
         if (has_changes || sub_node.has_state()) {
-
             move_operation_result ret{false, full_key, pack_nibbles(full_key), std::nullopt, false};
 
             // Erase the node (if in db) as it will be recomputed

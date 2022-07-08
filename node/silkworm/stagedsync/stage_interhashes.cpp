@@ -279,13 +279,11 @@ trie::PrefixSet InterHashes::gather_forward_storage_changes(
 StageResult InterHashes::regenerate_intermediate_hashes(db::RWTxn& txn, const evmc::bytes32* expected_root) {
     StageResult ret{StageResult::kSuccess};
     try {
-        // Clear any data in target tables
-        txn->clear_map(db::table::kTrieOfAccounts.name);
-        txn->clear_map(db::table::kTrieOfStorage.name);
-        trie::PrefixSet empty;
-        ret = increment_intermediate_hashes(txn, expected_root,  //
-                                            /*account_changes=*/nullptr,
-                                            /*storage_changes=*/nullptr);
+        txn->clear_map(db::table::kTrieOfAccounts.name);  // Clear
+        txn->clear_map(db::table::kTrieOfStorage.name);   // Clear
+        txn.commit();                                     // Will reuse deleted pages
+        ret = increment_intermediate_hashes(txn, expected_root, nullptr, nullptr);
+
     } catch (const mdbx::exception& ex) {
         log::Error(std::string(stage_name_),
                    {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});

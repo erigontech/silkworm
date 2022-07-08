@@ -1379,7 +1379,7 @@ void do_trie_root(db::EnvConfig& config) {
     auto header{db::read_header(txn, hashstate_stage_progress, header_hash->bytes)};
     auto expected_state_root{header->state_root};
 
-    trie::PrefixSet empty_changes{};
+    trie::PrefixSet empty_changes{};  // We need this to tell we have no changes. If nullptr means full regen
     trie::HashBuilder hash_builder;
     etl::Collector collector{};
     hash_builder.node_collector = [&collector](ByteView nibbled_key, const trie::Node& node) {
@@ -1392,89 +1392,12 @@ void do_trie_root(db::EnvConfig& config) {
         }
     };
 
-    trie::Cursor trie_cursor{trie_accounts, empty_changes, &collector};
-    auto trie_cursor_key{trie_cursor.key()};
-    while (trie_cursor_key.has_value()) {
-        log::Info("Trie", {"key", to_hex(trie_cursor_key.value(), true), "skip",
-                           (trie_cursor.can_skip_state() ? "true" : "false")});
-
-        if (trie_cursor.can_skip_state()) {
-            auto trie_cursor_hash{trie_cursor.hash()};
-            if (!trie_cursor_hash) {
-                throw std::runtime_error("Invalid node hash for key" + to_hex(trie_cursor_key.value(), true));
-            }
-            hash_builder.add_branch_node(trie_cursor_key.value(), *trie_cursor_hash,
-                                         trie_cursor.children_are_in_trie());
-        }
-
-        if (std::chrono::time_point now{std::chrono::steady_clock::now()}; now - start >= 10s) {
-            if (SignalHandler::signalled()) {
-                throw std::runtime_error("Interrupted");
-            }
-            std::swap(start, now);
-            log::Info("Checking ...", {"source", source, "key", to_hex(trie_cursor_key.value(), true)});
-        }
-
-        trie_cursor.next();
-        trie_cursor_key = trie_cursor.key();
-    }
-
-    auto computed_state_root{hash_builder.root_hash()};
-    if (computed_state_root != expected_state_root) {
-        log::Error("State root",
-                   {"expected", to_hex(expected_state_root, true), "got", to_hex(hash_builder.root_hash(), true)});
-    } else {
-        log::Info("State root " + to_hex(computed_state_root, true));
-    }
-}
-
-void do_trie_root2(db::EnvConfig& config) {
-    if (!config.exclusive) {
-        throw std::runtime_error("Function requires exclusive access to database");
-    }
-
-    using namespace std::chrono_literals;
-    std::chrono::time_point start{std::chrono::steady_clock::now()};
-
-    auto env{silkworm::db::open_env(config)};
-    auto txn{env.start_read()};
-    db::Cursor trie_accounts(txn, db::table::kTrieOfAccounts);
-    std::string source{db::table::kTrieOfAccounts.name};
-
-    // Retrieve expected state root
-    auto hashstate_stage_progress{db::stages::read_stage_progress(txn, db::stages::kHashStateKey)};
-    auto intermediate_hashes_stage_progress{db::stages::read_stage_progress(txn, db::stages::kIntermediateHashesKey)};
-/*
-    if (hashstate_stage_progress != intermediate_hashes_stage_progress) {
-        throw std::runtime_error("HashState and Intermediate hashes stage progresses do not match");
-    }
-*/
-    auto header_hash{db::read_canonical_header_hash(txn, hashstate_stage_progress)};
-    auto header{db::read_header(txn, hashstate_stage_progress, header_hash->bytes)};
-    auto expected_state_root{header->state_root};
-
-    trie::PrefixSet empty_changes{};
-    trie::HashBuilder hash_builder;
-    etl::Collector collector{};
-    hash_builder.node_collector = [&collector](ByteView nibbled_key, const trie::Node& node) {
-        if (!nibbled_key.empty()) {
-            etl::Entry entry{Bytes(nibbled_key), {}};
-            if (node.state_mask() != 0) {
-                entry.value = node.encode_for_storage();
-            }
-            collector.collect(std::move(entry));
-        }
-    };
-
-    trie::TrieCursor trie_cursor{trie_accounts, &empty_changes, &collector};
+    trie::TrieCursor trie_cursor{trie_accounts, &empty_changes};
     for (auto trie_data{trie_cursor.to_prefix({})}; trie_data.key.has_value(); trie_data = trie_cursor.to_next()) {
-        log::Info("Trie",
-                  {"key", to_hex(trie_data.key.value(), true), "skip", (trie_data.skip_state ? "true" : "false")});
-        if (trie_data.skip_state) {
-            SILKWORM_ASSERT(trie_data.hash.has_value());
-            auto hash{to_bytes32(trie_data.hash.value())};
-            hash_builder.add_branch_node(trie_data.key.value(), hash, trie_data.children_in_trie);
-        }
+        SILKWORM_ASSERT(trie_data.skip_state);
+        log::Info("Trie", {"key", to_hex(trie_data.key.value(), true), "hash", to_hex(trie_data.hash.value(), true)});
+        auto hash{to_bytes32(trie_data.hash.value())};
+        hash_builder.add_branch_node(trie_data.key.value(), hash, trie_data.children_in_trie);
         if (SignalHandler::signalled()) {
             throw std::runtime_error("Interrupted");
         }
@@ -1614,9 +1537,6 @@ int main(int argc, char* argv[]) {
     // Trie root rebuild and check
     auto cmd_trie_root = app_main.add_subcommand("trie-root", "Compute trie root");
 
-    // Trie root rebuild and check
-    auto cmd_trie_root2 = app_main.add_subcommand("trie-root2", "Compute trie root (AccCursor)");
-
     /*
      * Parse arguments and validate
      */
@@ -1707,8 +1627,6 @@ int main(int argc, char* argv[]) {
             do_trie_account_analysis(src_config);
         } else if (*cmd_trie_root) {
             do_trie_root(src_config);
-        } else if (*cmd_trie_root2) {
-            do_trie_root2(src_config);
         }
 
         return 0;

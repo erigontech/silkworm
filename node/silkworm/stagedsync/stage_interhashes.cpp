@@ -490,13 +490,13 @@ evmc::bytes32 InterHashes::calculate_storage_root(db::RWTxn& txn, const Bytes& d
             continue;
         }
 
-        auto prefix_slice{db::to_slice(tdata.packed_key.value())};
+        const auto prefix_slice{db::to_slice(tdata.packed_key.value())};
         auto hs_data{hashed_storage.lower_bound_multivalue(db_storage_prefix_slice, prefix_slice, false)};
         while (hs_data) {
             const ByteView data_value_view{db::from_slice(hs_data.value)};
 
             // Check the nibbled data key matches current trie node key
-            auto hs_data_key_nibbled{trie::unpack_nibbles(data_value_view.substr(0, kHashLength))};
+            const auto hs_data_key_nibbled{trie::unpack_nibbles(data_value_view.substr(0, kHashLength))};
             if (!hs_data_key_nibbled.starts_with(*tdata.key)) {
                 break;
             }

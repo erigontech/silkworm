@@ -159,8 +159,8 @@ namespace rlp {
             encode(to, txn.s);
         } else if (txn.chain_id) {
             encode(to, *txn.chain_id);
-            encode(to, 0);
-            encode(to, 0);
+            encode(to, 0u);
+            encode(to, 0u);
         }
     }
 

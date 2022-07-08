@@ -1,5 +1,5 @@
 /*
-   Copyright 2020-2021 The Silkworm Authors
+   Copyright 2020-2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@
 #include <intx/intx.hpp>
 
 #include <silkworm/common/base.hpp>
+#include <silkworm/common/endian.hpp>
 
 namespace silkworm::rlp {
 
@@ -40,14 +41,38 @@ inline constexpr uint8_t kEmptyListCode{0xC0};
 void encode_header(Bytes& to, Header header);
 
 void encode(Bytes& to, ByteView);
-void encode(Bytes& to, uint64_t);
-void encode(Bytes& to, const intx::uint256&);
 
-size_t length_of_length(uint64_t payload_length);
+template <UnsignedIntegral T>
+void encode(Bytes& to, const T& n) {
+    if (n == 0) {
+        to.push_back(kEmptyStringCode);
+    } else if (n < kEmptyStringCode) {
+        to.push_back(static_cast<uint8_t>(n));
+    } else {
+        const ByteView be{endian::to_big_compact(n)};
+        encode_header(to, {.list = false, .payload_length = be.length()});
+        to.append(be);
+    }
+}
 
-size_t length(ByteView);
-size_t length(uint64_t) noexcept;
-size_t length(const intx::uint256&);
+size_t length_of_length(uint64_t payload_length) noexcept;
+
+size_t length(ByteView) noexcept;
+
+template <UnsignedIntegral T>
+size_t length(const T& n) noexcept {
+    if (n < kEmptyStringCode) {
+        return 1;
+    } else {
+        const size_t n_bytes{intx::count_significant_bytes(n)};
+        return n_bytes + length_of_length(n_bytes);
+    }
+}
+
+template <>
+inline size_t length(const bool&) noexcept {
+    return 1;
+}
 
 }  // namespace silkworm::rlp
 

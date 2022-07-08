@@ -1,5 +1,5 @@
 /*
-   Copyright 2021 The Silkworm Authors
+   Copyright 2021-2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -19,6 +19,8 @@
 #include <cassert>
 #include <stdexcept>
 
+#include "config.hpp"
+
 extern const char* genesis_mainnet_data();
 extern size_t sizeof_genesis_mainnet_data();
 
@@ -28,19 +30,25 @@ extern size_t sizeof_genesis_goerli_data();
 extern const char* genesis_rinkeby_data();
 extern size_t sizeof_genesis_rinkeby_data();
 
+extern const char* genesis_sepolia_data();
+extern size_t sizeof_genesis_sepolia_data();
+
 namespace silkworm {
 
 std::string read_genesis_data(uint64_t chain_id) {
     switch (chain_id) {
-        case 1:
+        case kMainnetConfig.chain_id:
             assert(sizeof_genesis_mainnet_data() != 0);
             return std::string(genesis_mainnet_data(), sizeof_genesis_mainnet_data());
-        case 4:
+        case kRinkebyConfig.chain_id:
             assert(sizeof_genesis_rinkeby_data() != 0);
             return std::string(genesis_rinkeby_data(), sizeof_genesis_rinkeby_data());
-        case 5:
+        case kGoerliConfig.chain_id:
             assert(sizeof_genesis_goerli_data() != 0);
             return std::string(genesis_goerli_data(), sizeof_genesis_goerli_data());
+        case kSepoliaConfig.chain_id:
+            assert(sizeof_genesis_sepolia_data() != 0);
+            return std::string(genesis_sepolia_data(), sizeof_genesis_sepolia_data());
         default:
             return "{";  // <- Won't be lately parsed as valid json value
     }

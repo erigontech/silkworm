@@ -168,7 +168,7 @@ std::optional<Bytes> from_hex(std::string_view hex) noexcept {
 
 inline bool case_insensitive_char_comparer(char a, char b) { return (tolower(a) == tolower(b)); }
 
-bool iequals(const std::string& a, const std::string& b) {
+bool iequals(const std::string_view a, const std::string_view b) {
     return (a.size() == b.size() && std::equal(a.begin(), a.end(), b.begin(), case_insensitive_char_comparer));
 }
 

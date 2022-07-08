@@ -19,8 +19,9 @@
 
 #include <array>
 #include <cstdint>
+#include <map>
 #include <optional>
-#include <variant>
+#include <string_view>
 
 #include <evmc/evmc.h>
 #include <intx/intx.hpp>
@@ -200,8 +201,30 @@ inline constexpr ChainConfig kGoerliConfig{
         },
 };
 
-//! \brief Looksup a chain config provided its network id or its common name
-const ChainConfig* lookup_chain_config(std::variant<uint64_t, std::string> identifier) noexcept;
+inline constexpr ChainConfig kSepoliaConfig{
+    .chain_id = 11155111,
+    .seal_engine = SealEngineType::kEthash,
+    .evmc_fork_blocks =
+        {
+            0,  // Homestead
+            0,  // Tangerine Whistle
+            0,  // Spurious Dragon
+            0,  // Byzantium
+            0,  // Constantinople
+            0,  // Petersburg
+            0,  // Istanbul
+            0,  // Berlin
+            0,  // London
+        },
+    .muir_glacier_block = 0,
+    .terminal_total_difficulty = 17000000000000000,
+};
+
+//! \brief Looks up a chain config provided its chain ID
+const ChainConfig* lookup_chain_config(uint64_t chain_id) noexcept;
+
+//! \brief Looks up a chain config provided its common name
+const ChainConfig* lookup_chain_config(std::string_view identifier) noexcept;
 
 //! \brief Returns a map known chains names mapped to their respective chain ids
 std::map<std::string, uint64_t> get_known_chains_map() noexcept;

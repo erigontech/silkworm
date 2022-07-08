@@ -55,6 +55,9 @@ void encode(Bytes& to, const T& n) {
     }
 }
 
+template <>
+void encode(Bytes& to, const bool&);
+
 size_t length_of_length(uint64_t payload_length) noexcept;
 
 size_t length(ByteView) noexcept;

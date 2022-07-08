@@ -38,6 +38,11 @@ size_t length_of_length(uint64_t payload_length) noexcept {
     }
 }
 
+template <>
+void encode(Bytes& to, const bool& x) {
+    to.push_back(x ? uint8_t{1} : kEmptyStringCode);
+}
+
 void encode(Bytes& to, ByteView s) {
     if (s.length() != 1 || s[0] >= kEmptyStringCode) {
         encode_header(to, {false, s.length()});

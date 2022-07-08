@@ -22,7 +22,8 @@ limitations under the License.
 #include <silkworm/common/log.hpp>
 #include <silkworm/common/measure.hpp>
 #include <silkworm/common/stopwatch.hpp>
-
+#include <silkworm/downloader/messages/outbound_get_block_bodies.hpp>
+#include <silkworm/downloader/messages/outbound_new_block.hpp>
 #include <silkworm/downloader/internals/body_persistence.hpp>
 
 namespace silkworm {
@@ -96,7 +97,7 @@ namespace silkworm {
     4. returns (headers,bodies)
 
  */
-BodiesStage::BodiesStage(const Db::ReadWriteAccess& db_access, BlockDownloader& bd)
+BodiesStage::BodiesStage(const Db::ReadWriteAccess& db_access, BlockExchange& bd)
     : db_access_{db_access}, block_downloader_{bd} {
 }
 
@@ -111,22 +112,27 @@ Stage::Result BodiesStage::forward([[maybe_unused]] bool first_sync) {
 
     Stage::Result result;
 
-    auto constexpr KShortInterval = 1000ms;
+    auto constexpr KShortInterval = 200ms;
     auto constexpr kProgressUpdateInterval = 30s;
 
     StopWatch timing; timing.start();
     log::Info() << "[2/16 Bodies] Start";
-    log::Trace() << "[INFO] BodyDownloader forward operation started";
 
     try {
         Db::ReadWriteAccess::Tx tx = db_access_.start_tx();  // start a new tx only if db_access has not an active tx
-        auto headers_stage_height = tx.read_stage_progress(db::stages::kBlockBodiesKey);
 
-        BodyPersistence body_persistence(tx);
+        BodyPersistence body_persistence(tx, block_downloader_.chain_identity());
+        body_persistence.set_preverified_height(block_downloader_.preverified_hashes().height);
 
         RepeatedMeasure<BlockNum> height_progress(body_persistence.initial_height());
-        log::Info() << "[2/16 Headers] Waiting for bodies... from=" << height_progress.get();
+        log::Info() << "[2/16 Bodies] Waiting for bodies... from=" << height_progress.get();
 
+        // sync status
+        BlockNum headers_stage_height = tx.read_stage_progress(db::stages::kHeadersKey);
+        auto sync_command = sync_body_sequence(body_persistence.initial_height(), headers_stage_height);
+        sync_command->result().get();  // blocking
+
+        // prepare bodies, if any
         auto withdraw_command = withdraw_ready_bodies();
 
         // block processing
@@ -135,7 +141,7 @@ Stage::Result BodiesStage::forward([[maybe_unused]] bool first_sync) {
 
             send_body_requests();
 
-            if (!withdraw_command->completed_and_read()) {
+            if (withdraw_command->completed_and_read()) {
                 // renew request
                 withdraw_command = withdraw_ready_bodies();
             }
@@ -152,6 +158,9 @@ Stage::Result BodiesStage::forward([[maybe_unused]] bool first_sync) {
                 } else {
                     result.status = Stage::Result::Done;
                 }
+
+                // do announcements
+                send_announcements();
             }
 
             // show progress
@@ -160,8 +169,8 @@ Stage::Result BodiesStage::forward([[maybe_unused]] bool first_sync) {
 
                 height_progress.set(body_persistence.highest_height());
 
-                log::Info() << "[1/16 Headers] Wrote block headers number=" << height_progress.get() << " (+"
-                            << height_progress.delta() << "), " << height_progress.throughput() << " headers/secs";
+                log::Info() << "[2/16 Bodies] Wrote block bodies number=" << height_progress.get() << " (+"
+                            << height_progress.delta() << "), " << height_progress.throughput() << " bodies/secs";
             }
         }
 
@@ -170,17 +179,14 @@ Stage::Result BodiesStage::forward([[maybe_unused]] bool first_sync) {
                     << " last=" << body_persistence.highest_height()
                     << " duration=" << StopWatch::format(timing.lap_duration());
 
-        //log::Info() << "[2/16 Bodies] Updating canonical chain";
         body_persistence.close();
 
         tx.commit();  // this will commit if the tx was started here
 
         log::Info() << "[2/16 Bodies] Done, duration= " << StopWatch::format(timing.lap_duration());
-        log::Trace() << "[INFO] BodyDownloader forward operation completed";
 
     } catch (const std::exception& e) {
         log::Error() << "[2/16 Bodies] Aborted due to exception: " << e.what();
-        log::Trace() << "[ERROR] BodyDownloader forward operation is stopping due to an exception: " << e.what();
 
         // tx rollback executed automatically if needed
         result.status = Stage::Result::Error;
@@ -189,20 +195,68 @@ Stage::Result BodiesStage::forward([[maybe_unused]] bool first_sync) {
     return result;
 }
 
-Stage::Result BodiesStage::unwind_to(BlockNum, Hash) {
-    // todo: implement
+Stage::Result BodiesStage::unwind_to(BlockNum new_height, Hash bad_block) {
+    Stage::Result result;
 
-    return Stage::Result();
+    StopWatch timing; timing.start();
+    log::Info() << "[2/16 Bodies] Unwind start";
+
+    try {
+        Db::ReadWriteAccess::Tx tx = db_access_.start_tx();
+
+        BodyPersistence::remove_bodies(new_height, bad_block, tx);
+
+        tx.commit();
+
+        log::Info() << "[1/16 Bodies] Unwind completed, duration= " << StopWatch::format(timing.lap_duration());
+
+    } catch (const std::exception& e) {
+        log::Error() << "[1/16 Bodies] Unwind aborted due to exception: " << e.what();
+
+        // tx rollback executed automatically if needed
+        result.status = Stage::Result::Error;
+    }
+
+    return result;
 }
 
 void BodiesStage::send_body_requests() {
-    // todo: implement
+    auto message = std::make_shared<OutboundGetBlockBodies>();
+
+    block_downloader_.accept(message);
 }
 
-auto BodiesStage::withdraw_ready_bodies() -> std::shared_ptr<InternalMessage<std::vector<BlockBody>>> {
-    // todo: implement
+auto BodiesStage::sync_body_sequence(BlockNum highest_body, BlockNum highest_header)
+    -> std::shared_ptr<InternalMessage<void>> {
 
-    return std::shared_ptr<InternalMessage<std::vector<BlockBody>>>();
+    auto message = std::make_shared<InternalMessage<void>>(
+        [highest_body, highest_header](HeaderChain&, BodySequence& bs) {
+            bs.sync_current_state(highest_body, highest_header);
+        });
+
+    block_downloader_.accept(message);
+
+    return message;
+}
+
+auto BodiesStage::withdraw_ready_bodies() -> std::shared_ptr<InternalMessage<std::vector<Block>>> {
+    using result_t = std::vector<Block>;
+
+    auto message = std::make_shared<InternalMessage<result_t>>([](HeaderChain&, BodySequence& bs) {
+        return bs.withdraw_ready_bodies();
+    });
+
+    block_downloader_.accept(message);
+
+    return message;
+}
+
+// New block announcements propagation
+void BodiesStage::send_announcements() {
+
+    auto message = std::make_shared<OutboundNewBlock>();
+
+    block_downloader_.accept(message);
 }
 
 }  // namespace silkworm

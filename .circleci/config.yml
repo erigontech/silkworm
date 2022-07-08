@@ -37,7 +37,7 @@ commands:
       - run:
           name: "Cmake"
           working_directory: ~/build
-          command: cmake ../project -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DCMAKE_TOOLCHAIN_FILE=$HOME/project/cmake/toolchain/$TOOLCHAIN -DSILKWORM_CLANG_COVERAGE=$CLANG_COVERAGE -DSILKWORM_SANITIZE=$SANITIZE
+          command: cmake ../project -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DSILKWORM_CLANG_COVERAGE=$CLANG_COVERAGE -DSILKWORM_SANITIZE=$SANITIZE
       - save_cache:
           name: "Save Hunter cache"
           key: *hunter-cache-key
@@ -63,13 +63,12 @@ commands:
           name: "Ethereum consensus tests"
           working_directory: ~/build
           no_output_timeout: 20m
-          command: cmd/test/consensus --threads 4 # out of memory with 8 threads under linux-gcc-11-thread-sanitizer 
+          command: cmd/test/consensus --threads 4 # out of memory with 8 threads under thread sanitizer 
 
 jobs:
   linux-gcc-11-thread-sanitizer:
     environment:
       BUILD_TYPE: Debug
-      TOOLCHAIN: cxx20.cmake
       CLANG_COVERAGE: OFF
       SANITIZE: thread
     docker:
@@ -80,42 +79,52 @@ jobs:
       - build
       - test
 
-  linux-gcc-11:
+  linux-gcc-10-debug:
     environment:
       BUILD_TYPE: Debug
-      TOOLCHAIN: cxx20.cmake
       CLANG_COVERAGE: OFF
       SANITIZE: OFF
     docker:
-      - image: ethereum/cpp-build-env:17-gcc-11
+      - image: ethereum/cpp-build-env:17-gcc-10
     resource_class: xlarge
     steps:
       - checkout_with_submodules
       - build
       - test
 
-  linux-clang-10-address-sanitizer:
+  linux-gcc-12-release:
+    environment:
+      BUILD_TYPE: Release
+      CLANG_COVERAGE: OFF
+      SANITIZE: OFF
+    docker:
+      - image: ethereum/cpp-build-env:18-gcc-12
+    resource_class: xlarge
+    steps:
+      - checkout_with_submodules
+      - build
+      - test
+
+  linux-clang-12-address-sanitizer:
     environment:
       BUILD_TYPE: Debug
-      TOOLCHAIN: cxx20.cmake
       CLANG_COVERAGE: OFF
       SANITIZE: address
     docker:
-      - image: ethereum/cpp-build-env:15-clang-10
+      - image: ethereum/cpp-build-env:17-clang-12
     resource_class: xlarge
     steps:
       - checkout_with_submodules
       - build
       - test
 
-  linux-clang-10-coverage:
+  linux-clang-13-coverage:
     environment:
       BUILD_TYPE: Debug
-      TOOLCHAIN: cxx20.cmake
       CLANG_COVERAGE: ON
       SANITIZE: OFF
     docker:
-      - image: ethereum/cpp-build-env:15-clang-10
+      - image: ethereum/cpp-build-env:17-clang-13
     resource_class: xlarge
     steps:
       - checkout_with_submodules
@@ -158,6 +167,8 @@ jobs:
             done
 
   linux-wasm-build:
+    environment:
+      WASI_SDK_VERSION: 14
     machine:
       image: ubuntu-2004:202010-01
     steps:
@@ -166,9 +177,9 @@ jobs:
           name: "Install WASI SDK"
           working_directory: ~/tmp1
           command: |
-            wget https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-12/wasi-sdk-12.0-linux.tar.gz
-            tar xvf wasi-sdk-12.0-linux.tar.gz
-            sudo mv wasi-sdk-12.0 /opt/wasi-sdk
+            wget https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-$WASI_SDK_VERSION/wasi-sdk-$WASI_SDK_VERSION.0-linux.tar.gz
+            tar xvf wasi-sdk-$WASI_SDK_VERSION.0-linux.tar.gz
+            sudo mv wasi-sdk-$WASI_SDK_VERSION.0 /opt/wasi-sdk
       - run:
           name: "Install dependencies"
           command: |
@@ -204,8 +215,9 @@ workflows:
   version: 2
   silkworm:
     jobs:
+      - linux-gcc-10-debug
+      - linux-gcc-12-release
       - linux-gcc-11-thread-sanitizer
-      - linux-gcc-11
-      - linux-clang-10-coverage
-      - linux-clang-10-address-sanitizer
+      - linux-clang-13-coverage
+      - linux-clang-12-address-sanitizer
       - linux-wasm-build

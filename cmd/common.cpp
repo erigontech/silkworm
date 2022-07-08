@@ -60,8 +60,8 @@ struct PruneModeValidator : public CLI::Validator {
     }
 };
 
-struct IPEndPointValidator : public CLI::Validator {
-    explicit IPEndPointValidator(bool allow_empty = false) {
+IPEndPointValidator::IPEndPointValidator(bool allow_empty) {
+    {
         func_ = [&allow_empty](const std::string& value) -> std::string {
             if (value.empty() && allow_empty) {
                 return {};
@@ -89,7 +89,32 @@ struct IPEndPointValidator : public CLI::Validator {
             return {};
         };
     }
-};
+}
+
+void add_logging_options(CLI::App& cli, log::Settings& log_settings) {
+    auto& log_opts = *cli.add_option_group("Log", "Logging options");
+    log_opts.add_option("--log.verbosity", log_settings.log_verbosity, "Sets log verbosity")
+        ->capture_default_str()
+        ->check(CLI::Range(static_cast<uint32_t>(log::Level::kCritical), static_cast<uint32_t>(log::Level::kTrace)))
+        ->default_val(std::to_string(static_cast<uint32_t>(log_settings.log_verbosity)));
+    log_opts.add_flag("--log.stdout", log_settings.log_std_out, "Outputs to std::out instead of std::err");
+    log_opts.add_flag("--log.nocolor", log_settings.log_nocolor, "Disable colors on log lines");
+    log_opts.add_flag("--log.utc", log_settings.log_utc, "Prints log timings in UTC");
+    log_opts.add_flag("--log.threads", log_settings.log_threads, "Prints thread ids");
+    log_opts.add_option("--log.file", log_settings.log_file, "Tee all log lines to given file name");
+}
+
+void add_option_num_contexts(CLI::App& cli, uint32_t& num_contexts) {
+    cli.add_option("--contexts", num_contexts, "The number of running contexts")->capture_default_str();
+}
+
+void add_option_wait_mode(CLI::App& cli, silkworm::rpc::WaitMode& wait_mode) {
+    cli.add_option("--wait.mode", wait_mode, "The waiting mode for execution loops during idle cycles")
+        ->capture_default_str()
+        ->check(CLI::Range(static_cast<uint32_t>(silkworm::rpc::WaitMode::blocking),
+                           static_cast<uint32_t>(silkworm::rpc::WaitMode::busy_spin)))
+        ->default_val(std::to_string(static_cast<uint32_t>(silkworm::rpc::WaitMode::blocking)));
+}
 
 void parse_silkworm_command_line(CLI::App& cli, int argc, char* argv[], log::Settings& log_settings,
                                  NodeSettings& node_settings) {
@@ -190,17 +215,7 @@ void parse_silkworm_command_line(CLI::App& cli, int argc, char* argv[], log::Set
     prune_opts.add_option("--prune.c.before", "Prune call traces data before this block")
         ->check(CLI::Range(0u, UINT32_MAX));
 
-    // Logging options
-    auto& log_opts = *cli.add_option_group("Log", "Logging options");
-    log_opts.add_option("--log.verbosity", log_settings.log_verbosity, "Sets log verbosity")
-        ->capture_default_str()
-        ->check(CLI::Range(static_cast<uint32_t>(log::Level::kCritical), static_cast<uint32_t>(log::Level::kTrace)))
-        ->default_val(std::to_string(static_cast<uint32_t>(log_settings.log_verbosity)));
-    log_opts.add_flag("--log.stdout", log_settings.log_std_out, "Outputs to std::out instead of std::err");
-    log_opts.add_flag("--log.nocolor", log_settings.log_nocolor, "Disable colors on log lines");
-    log_opts.add_flag("--log.utc", log_settings.log_utc, "Prints log timings in UTC");
-    log_opts.add_flag("--log.threads", log_settings.log_threads, "Prints thread ids");
-    log_opts.add_option("--log.file", log_settings.log_file, "Tee all log lines to given file name");
+    add_logging_options(cli, log_settings);
 
     cli.parse(argc, argv);
 

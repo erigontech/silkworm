@@ -1,5 +1,5 @@
 /*
-   Copyright 2021-2022 The Silkworm Authors
+   Copyright 2021 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -92,11 +92,6 @@ std::optional<Node> Node::from_encoded_storage(ByteView raw) {
     std::memcpy(hashes.data(), raw.data(), raw.length());
 
     return Node{state_mask, tree_mask, hash_mask, hashes, root_hash};
-}
-
-bool operator==(const Node& a, const Node& b) {
-    return a.state_mask() == b.state_mask() && a.tree_mask() == b.tree_mask() && a.hash_mask() == b.hash_mask() &&
-           a.hashes() == b.hashes() && a.root_hash() == b.root_hash();
 }
 
 }  // namespace silkworm::trie

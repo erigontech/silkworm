@@ -17,6 +17,8 @@
 #ifndef SILKWORM_RPC_COMPLETION_END_POINT_HPP_
 #define SILKWORM_RPC_COMPLETION_END_POINT_HPP_
 
+#include <cstddef>
+
 #include <boost/asio/io_context.hpp>
 #include <grpcpp/grpcpp.h>
 
@@ -30,14 +32,21 @@ class CompletionEndPoint {
     CompletionEndPoint(const CompletionEndPoint&) = delete;
     CompletionEndPoint& operator=(const CompletionEndPoint&) = delete;
 
+    //! Check if the end-point has been shut down or not.
+    bool closed() const { return closed_; }
+
     //! Run at most one execution cycle polling gRPC completion queue for one event.
-    int poll_one();
+    std::size_t poll_one();
 
     //! Post to scheduler at most one execution task polling gRPC completion queue for one event.
     bool post_one(boost::asio::io_context& scheduler);
 
     //! Shutdown and drain the gRPC completion queue.
     void shutdown();
+
+  protected:
+    //! Flag indicating if the end-point has been shut down or not.
+    bool closed_{false};
 
   private:
     //! The gRPC completion queue to read async completion notifications from.

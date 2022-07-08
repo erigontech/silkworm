@@ -57,54 +57,6 @@ static constexpr uint8_t kUnhexTable4[256] = {
     0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
     0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
 
-ByteView left_pad(ByteView view, size_t min_size, Bytes& buffer) {
-    if (view.size() >= min_size) {
-        return view;
-    }
-
-    if (buffer.size() < min_size) {
-        buffer.resize(min_size);
-    } else {
-        // view & buffer might overlap in memory,
-        // so we avoid shrinking the buffer prior to the memmove
-    }
-
-    assert(view.size() < min_size);
-    size_t prefix_len{min_size - view.size()};
-
-    // view & buffer might overlap in memory,
-    // thus memmove instead of memcpy
-    std::memmove(buffer.data() + prefix_len, view.data(), view.size());
-
-    buffer.resize(min_size);
-    std::memset(buffer.data(), 0, prefix_len);
-
-    return buffer;
-}
-
-ByteView right_pad(ByteView view, size_t min_size, Bytes& buffer) {
-    if (view.size() >= min_size) {
-        return view;
-    }
-
-    if (buffer.size() < view.size()) {
-        buffer.resize(view.size());
-    } else {
-        // view & buffer might overlap in memory,
-        // so we avoid shrinking the buffer prior to the memmove
-    }
-
-    // view & buffer might overlap in memory,
-    // thus memmove instead of memcpy
-    std::memmove(buffer.data(), view.data(), view.size());
-
-    assert(view.size() < min_size);
-    buffer.resize(view.size());
-    buffer.resize(min_size);
-
-    return buffer;
-}
-
 evmc::address to_evmc_address(ByteView bytes) {
     evmc::address out;
     if (!bytes.empty()) {
@@ -216,7 +168,7 @@ std::optional<Bytes> from_hex(std::string_view hex) noexcept {
 
 inline bool case_insensitive_char_comparer(char a, char b) { return (tolower(a) == tolower(b)); }
 
-bool iequals(const std::string& a, const std::string& b) {
+bool iequals(const std::string_view a, const std::string_view b) {
     return (a.size() == b.size() && std::equal(a.begin(), a.end(), b.begin(), case_insensitive_char_comparer));
 }
 
@@ -288,24 +240,6 @@ size_t prefix_length(ByteView a, ByteView b) {
         }
     }
     return len;
-}
-
-std::vector<std::string> split(std::string_view source, std::string_view delimiter) {
-    std::vector<std::string> res{};
-    if (delimiter.length() >= source.length() || !delimiter.length()) {
-        res.emplace_back(source);
-        return res;
-    }
-    size_t pos{0};
-    while ((pos = source.find(delimiter)) != std::string::npos) {
-        res.emplace_back(source.substr(0, pos));
-        source.remove_prefix(pos + delimiter.length());
-    }
-    // Any residual part of input where delimiter is not found
-    if (source.length()) {
-        res.emplace_back(source);
-    }
-    return res;
 }
 
 }  // namespace silkworm

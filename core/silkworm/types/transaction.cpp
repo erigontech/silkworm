@@ -20,16 +20,14 @@
 #include <cstring>
 
 #include <ethash/keccak.hpp>
+#include <silkpre/ecdsa.h>
 
 #include <silkworm/common/util.hpp>
-#include <silkworm/crypto/ecdsa.hpp>
 #include <silkworm/rlp/encode_vector.hpp>
 
-namespace silkworm {
+#include "y_parity_and_chain_id.hpp"
 
-bool operator==(const AccessListEntry& a, const AccessListEntry& b) {
-    return a.account == b.account && a.storage_keys == b.storage_keys;
-}
+namespace silkworm {
 
 bool operator==(const Transaction& a, const Transaction& b) {
     // from is omitted since it's derived from the signature
@@ -40,11 +38,11 @@ bool operator==(const Transaction& a, const Transaction& b) {
 }
 
 // https://eips.ethereum.org/EIPS/eip-155
-intx::uint256 Transaction::v() const { return ecdsa::y_parity_and_chain_id_to_v(odd_y_parity, chain_id); }
+intx::uint256 Transaction::v() const { return y_parity_and_chain_id_to_v(odd_y_parity, chain_id); }
 
 // https://eips.ethereum.org/EIPS/eip-155
 bool Transaction::set_v(const intx::uint256& v) {
-    const std::optional<ecdsa::YParityAndChainId> parity_and_id{ecdsa::v_to_y_parity_and_chain_id(v)};
+    const std::optional<YParityAndChainId> parity_and_id{v_to_y_parity_and_chain_id(v)};
     if (parity_and_id == std::nullopt) {
         return false;
     }
@@ -404,8 +402,11 @@ void Transaction::recover_sender() {
     intx::be::unsafe::store(signature, r);
     intx::be::unsafe::store(signature + kHashLength, s);
 
-    // Might still return std::nullopt if the recovery fails
-    from = ecdsa::recover_address(hash.bytes, signature, odd_y_parity);
+    from = evmc::address{};
+    static secp256k1_context* context{secp256k1_context_create(SILKPRE_SECP256K1_CONTEXT_FLAGS)};
+    if (!silkpre_recover_address(from->bytes, hash.bytes, signature, odd_y_parity, context)) {
+        from = std::nullopt;
+    }
 }
 
 intx::uint256 Transaction::priority_fee_per_gas(const intx::uint256& base_fee_per_gas) const {

@@ -60,6 +60,12 @@ HunterGate(
 ]]
 
 project(silkworm)
+set(PROJECT_VERSION 0.1.0-dev)
+
+string(REGEX MATCH "([0-9]+)\\.([0-9]+)\\.([0-9]+)" _ ${PROJECT_VERSION})
+set(PROJECT_VERSION_MAJOR ${CMAKE_MATCH_1})
+set(PROJECT_VERSION_MINOR ${CMAKE_MATCH_2})
+set(PROJECT_VERSION_PATCH ${CMAKE_MATCH_3})
 
 cable_add_buildinfo_library(PROJECT_NAME ${PROJECT_NAME})
 
@@ -74,58 +80,6 @@ include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/Hunter/core_packages.cmake)
 if(NOT SILKWORM_CORE_ONLY)
   include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/Hunter/extra_packages.cmake)
 endif()
-
-
-# GMP
-find_path(GMP_INCLUDE_DIR NAMES gmp.h)
-if(MSVC)
-  find_library(GMP_LIBRARY mpir)
-else()
-  find_library(GMP_LIBRARY gmp)
-endif()
-if(GMP_LIBRARY MATCHES ${CMAKE_SHARED_LIBRARY_SUFFIX})
-  set(gmp_library_type SHARED)
-else()
-  set(gmp_library_type STATIC)
-endif()
-message(STATUS "GMP: ${GMP_LIBRARY}, ${GMP_INCLUDE_DIR}")
-add_library(gmp ${gmp_library_type} IMPORTED)
-set_target_properties(
-  gmp PROPERTIES
-  IMPORTED_LOCATION ${GMP_LIBRARY}
-  INTERFACE_INCLUDE_DIRECTORIES ${GMP_INCLUDE_DIR}
-)
-
-# secp256k1
-add_library(secp256k1 third_party/secp256k1/src/secp256k1.c)
-
-if(MSVC)
-
-  target_link_libraries(secp256k1 PRIVATE gmp)
-  target_compile_definitions(secp256k1 PUBLIC USE_NUM_GMP USE_FIELD_INV_NUM USE_SCALAR_INV_NUM)
-  target_compile_definitions(secp256k1 PUBLIC USE_FIELD_10X26 USE_SCALAR_8X32)
-
-  target_compile_options(secp256k1 PRIVATE /w) # Not much we can do about warnings
-
-else()
-
-  target_compile_definitions(secp256k1 PUBLIC USE_NUM_NONE USE_FIELD_INV_BUILTIN USE_SCALAR_INV_BUILTIN)
-  target_compile_definitions(secp256k1 PUBLIC USE_FIELD_5X52 USE_SCALAR_4X64 HAVE___INT128)
-
-endif()
-
-target_compile_definitions(secp256k1 PUBLIC ECMULT_WINDOW_SIZE=15 ECMULT_GEN_PREC_BITS=4 USE_ENDOMORPHISM)
-target_compile_definitions(secp256k1 PUBLIC ENABLE_MODULE_RECOVERY)
-target_include_directories(secp256k1 PRIVATE secp256k1 INTERFACE third_party/secp256k1/include)
-
-# libff
-set(CURVE "ALT_BN128" CACHE STRING "" FORCE)
-option(WITH_PROCPS "" OFF)
-option(IS_LIBFF_PARENT "" OFF)
-if(MSVC)
-  option(MPIR_INSTEAD_OF_GMP "" ON)
-endif()
-add_subdirectory(third_party/libff)
 
 if(NOT SILKWORM_CORE_ONLY)
 
@@ -189,6 +143,8 @@ if(NOT SILKWORM_CORE_ONLY)
   target_include_directories(mdbx-static INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/third_party/libmdbx)
 endif()
 
+add_subdirectory(third_party/silkpre)
+
 # Compiler enforcements on Silkworm
 if(NOT MSVC)
   add_compile_options(-Werror -Wall -Wextra)
@@ -210,6 +166,7 @@ add_subdirectory(core)
 if(NOT SILKWORM_CORE_ONLY)
   add_subdirectory(interfaces)
   add_subdirectory(node)
+  add_subdirectory(sentry)
 endif()
 
 if(NOT SILKWORM_HAS_PARENT)

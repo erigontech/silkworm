@@ -19,7 +19,6 @@
 
 #include <silkworm/chain/protocol_param.hpp>
 #include <silkworm/common/as_range.hpp>
-#include <silkworm/crypto/ecdsa.hpp>
 #include <silkworm/rlp/encode_vector.hpp>
 #include <silkworm/trie/vector_root.hpp>
 
@@ -55,6 +54,12 @@ ValidationResult EngineBase::pre_validate_block(const Block& block, const BlockS
     if (ByteView{ommers_hash.bytes} != ByteView{header.ommers_hash}) {
         return ValidationResult::kWrongOmmersHash;
     }
+
+    return validate_ommers(block, state);
+}
+
+ValidationResult EngineBase::validate_ommers(const Block& block, const BlockState& state) {
+    const BlockHeader& header{block.header};
 
     if (block.ommers.size() > 2) {
         return ValidationResult::kTooManyOmmers;

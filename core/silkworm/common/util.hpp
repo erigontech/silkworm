@@ -29,24 +29,6 @@
 
 namespace silkworm {
 
-// If a given string is shorter than min_size,
-// pads it to the left with 0s up to min_size.
-// Otherwise, returns unmodified string.
-//
-// Might return a view of the supplied buffer,
-// which must be consumed prior to the next invocation.
-// However, an already padded view may be padded again.
-ByteView left_pad(ByteView view, size_t min_size, Bytes& buffer);
-
-// If a given string is shorter than min_size,
-// pads it to the right with 0s up to min_size.
-// Otherwise, returns unmodified string.
-//
-// Might return a view of the supplied buffer,
-// which must be consumed prior to the next invocation.
-// However, an already padded view may be padded again.
-ByteView right_pad(ByteView view, size_t min_size, Bytes& buffer);
-
 // Converts bytes to evmc::address; input is cropped if necessary.
 // Short inputs are left-padded with 0s.
 evmc::address to_evmc_address(ByteView bytes);
@@ -90,15 +72,12 @@ std::optional<uint64_t> parse_size(const std::string& sizestr);
 std::string human_size(uint64_t bytes);
 
 // Compares two strings for equality with case insensitivity
-bool iequals(const std::string& a, const std::string& b);
+bool iequals(std::string_view a, std::string_view b);
 
 // The length of the longest common prefix of a and b.
 size_t prefix_length(ByteView a, ByteView b);
 
 inline ethash::hash256 keccak256(ByteView view) { return ethash::keccak256(view.data(), view.size()); }
-
-// Splits a string by delimiter and returns a vector of tokens
-std::vector<std::string> split(std::string_view source, std::string_view delimiter);
 
 }  // namespace silkworm
 

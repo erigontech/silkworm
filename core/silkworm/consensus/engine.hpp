@@ -47,6 +47,12 @@ class IEngine {
     //! \brief Validates the seal of the header
     virtual ValidationResult validate_seal(const BlockHeader& header) = 0;
 
+    //! \brief Performs validation of block ommers only.
+    //! \brief See [YP] Sections 11.1 "Ommer Validation".
+    //! \param [in] block: block to validate.
+    //! \param [in] state: current state.
+    virtual ValidationResult validate_ommers(const Block& block, const BlockState& state) = 0;
+
     //! \brief Finalizes block execution by applying changes in the state of accounts or of the consensus itself
     //! \param [in] state: current state.
     //! \param [in] block: current block to apply rewards for.

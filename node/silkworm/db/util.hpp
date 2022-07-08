@@ -22,10 +22,12 @@ Part of the compatibility layer with the Erigon DB format;
 see its package dbutils.
 */
 
+#include <compare>
 #include <span>
 #include <string>
 
 #include <absl/container/btree_map.h>
+#include <absl/strings/str_cat.h>
 
 #include <silkworm/common/base.hpp>
 #include <silkworm/db/mdbx.hpp>
@@ -37,49 +39,13 @@ namespace silkworm::db {
 
 // Used to compare versions of entities (e.g. DbSchema)
 struct VersionBase {
-    uint32_t Major;
-    uint32_t Minor;
-    uint32_t Patch;
-    [[nodiscard]] std::string to_string() const {
-        std::string ret{std::to_string(Major)};
-        ret.append("." + std::to_string(Minor));
-        ret.append("." + std::to_string(Patch));
-        return ret;
-    }
-    bool operator==(const VersionBase& other) const {
-        return Major == other.Major && Minor == other.Minor && Patch == other.Patch;
-    }
-    bool operator!=(const VersionBase& other) const { return !(this->operator==(other)); }
-    bool operator<(const VersionBase& other) const {
-        if (Major < other.Major) {
-            return true;
-        } else if (Major == other.Major) {
-            if (Minor < other.Minor) {
-                return true;
-            } else if (Minor == other.Minor) {
-                if (Patch < other.Patch) {
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
-    bool operator>(const VersionBase& other) const {
-        if (Major > other.Major) {
-            return true;
-        } else if (Major == other.Major) {
-            if (Minor > other.Minor) {
-                return true;
-            } else if (Minor == other.Minor) {
-                if (Patch > other.Patch) {
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
-    bool operator<=(const VersionBase& other) const { return this->operator==(other) || this->operator<(other); }
-    bool operator>=(const VersionBase& other) const { return this->operator==(other) || this->operator>(other); }
+    uint32_t Major{0};
+    uint32_t Minor{0};
+    uint32_t Patch{0};
+
+    [[nodiscard]] std::string to_string() const { return absl::StrCat(Major, ".", Minor, ".", Patch); }
+
+    friend auto operator<=>(const VersionBase&, const VersionBase&) = default;
 };
 
 /* Common Keys */

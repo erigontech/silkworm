@@ -40,7 +40,8 @@ TEST_CASE("CompletionEndPoint::poll_one", "[silkworm][rpc][completion_end_point]
 
     SECTION("waiting on empty completion queue") {
         auto completion_end_point_thread = std::thread([&]() {
-            while (completion_end_point.poll_one() >= 0) {
+            while (!completion_end_point.closed()) {
+                completion_end_point.poll_one();
                 std::this_thread::sleep_for(100us);
             }
         });
@@ -57,7 +58,8 @@ TEST_CASE("CompletionEndPoint::poll_one", "[silkworm][rpc][completion_end_point]
         auto alarm_deadline = gpr_time_add(gpr_now(GPR_CLOCK_MONOTONIC), gpr_time_from_millis(50, GPR_TIMESPAN));
         grpc::Alarm alarm;
         alarm.Set(&queue, alarm_deadline, &tag_processor);
-        while (completion_end_point.poll_one() >= 0) {
+        while (!completion_end_point.closed()) {
+            completion_end_point.poll_one();
             std::this_thread::sleep_for(100us);
         }
         CHECK(executed);
@@ -66,7 +68,8 @@ TEST_CASE("CompletionEndPoint::poll_one", "[silkworm][rpc][completion_end_point]
     SECTION("exiting on completion queue already shutdown") {
         completion_end_point.shutdown();
         auto completion_end_point_thread = std::thread([&]() {
-            while (completion_end_point.poll_one() >= 0) {
+            while (!completion_end_point.closed()) {
+                completion_end_point.poll_one();
                 std::this_thread::sleep_for(100us);
             }
         });
@@ -75,7 +78,8 @@ TEST_CASE("CompletionEndPoint::poll_one", "[silkworm][rpc][completion_end_point]
 
     SECTION("stopping again after already stopped") {
         auto completion_end_point_thread = std::thread([&]() {
-            while (completion_end_point.poll_one() >= 0) {
+            while (!completion_end_point.closed()) {
+                completion_end_point.poll_one();
                 std::this_thread::sleep_for(100us);
             }
         });

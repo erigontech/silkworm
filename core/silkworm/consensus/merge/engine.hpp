@@ -42,6 +42,8 @@ class MergeEngine : public IEngine {
   private:
     bool terminal_pow_block(const BlockHeader& header, const BlockState& state) const;
 
+    ValidationResult validate_ommers(const Block& block, const BlockState& state) override;
+
     intx::uint256 terminal_total_difficulty_;
     EthashEngine ethash_engine_;
     ProofOfStakeEngine pos_engine_;

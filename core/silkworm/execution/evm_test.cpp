@@ -21,11 +21,11 @@
 
 #include <catch2/catch.hpp>
 #include <evmone/execution_state.hpp>
+#include <silkpre/precompile.h>
 
 #include <silkworm/chain/protocol_param.hpp>
 #include <silkworm/common/test_util.hpp>
 #include <silkworm/common/util.hpp>
-#include <silkworm/execution/precompiled.hpp>
 #include <silkworm/state/in_memory_state.hpp>
 
 #include "address.hpp"
@@ -371,18 +371,18 @@ TEST_CASE("EIP-3541: Reject new contracts starting with the 0xEF byte") {
 class TestTracer : public EvmTracer {
   public:
     TestTracer(std::optional<evmc::address> contract_address = std::nullopt,
-                std::optional<evmc::bytes32> key = std::nullopt)
+               std::optional<evmc::bytes32> key = std::nullopt)
         : contract_address_(contract_address), key_(key) {}
 
-    void on_execution_start(evmc_revision rev, const evmc_message& msg,
-                            evmone::bytes_view bytecode) noexcept override {
+    void on_execution_start(evmc_revision rev, const evmc_message& msg, evmone::bytes_view bytecode) noexcept override {
         execution_start_called_ = true;
         rev_ = rev;
         msg_ = msg;
         bytecode_ = Bytes{bytecode};
     }
-    void on_instruction_start(uint32_t pc, const intx::uint256* /*stack_top*/, int /*stack_height*/, 
-        const evmone::ExecutionState& state, const IntraBlockState& intra_block_state) noexcept override {
+    void on_instruction_start(uint32_t pc, const intx::uint256* /*stack_top*/, int /*stack_height*/,
+                              const evmone::ExecutionState& state,
+                              const IntraBlockState& intra_block_state) noexcept override {
         pc_stack_.push_back(pc);
         memory_size_stack_[pc] = state.memory.size();
         if (contract_address_) {
@@ -399,12 +399,10 @@ class TestTracer : public EvmTracer {
                 intra_block_state.get_current_storage(contract_address_.value(), key_.value_or(evmc::bytes32{}));
         }
     }
-    void on_precompiled_run(const evmc::result& /*result*/, int64_t /*gas*/,
-        const IntraBlockState& /*intra_block_state*/) noexcept override {
-    }
+    void on_precompiled_run(const evmc_result& /*result*/, int64_t /*gas*/,
+                            const IntraBlockState& /*intra_block_state*/) noexcept override {}
     void on_reward_granted(const CallResult& /*result*/,
-        const IntraBlockState& /*intra_block_state*/) noexcept override {
-    }
+                           const IntraBlockState& /*intra_block_state*/) noexcept override {}
 
     bool execution_start_called() const { return execution_start_called_; }
     bool execution_end_called() const { return execution_end_called_; }
@@ -641,7 +639,7 @@ TEST_CASE("Tracing precompiled contract failure") {
     evmc::address caller{0x0a6bb546b9208cfab9e8fa2b9b2c042b18df7030_address};
 
     evmc::address max_precompiled{};
-    max_precompiled.bytes[kAddressLength - 1] = precompiled::kNumOfIstanbulContracts;
+    max_precompiled.bytes[kAddressLength - 1] = SILKPRE_NUMBER_OF_ISTANBUL_CONTRACTS;
 
     Transaction txn{};
     txn.from = caller;

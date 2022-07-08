@@ -1,0 +1,67 @@
+#[[
+   Copyright 2020-2022 The Silkworm Authors
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+]]
+
+set(TARGET silkworm_sentry)
+
+find_package(absl CONFIG REQUIRED)
+find_package(Boost CONFIG REQUIRED thread)
+find_package(gRPC CONFIG REQUIRED)
+
+get_filename_component(MAIN_DIR ../ ABSOLUTE)
+
+set(SRC "")
+file(GLOB_RECURSE SRC CONFIGURE_DEPENDS "*.cpp" "*.hpp" "*.c" "*.h" "*.cc")
+list(FILTER SRC EXCLUDE REGEX "_test\\.cpp$")
+
+set(GRPC_SRC "")
+set(GRPC_SRC_DIR "${MAIN_DIR}/interfaces/p2psentry")
+file(GLOB GRPC_SRC CONFIGURE_DEPENDS "${GRPC_SRC_DIR}/*.h" "${GRPC_SRC_DIR}/*.cc")
+list(PREPEND GRPC_SRC "${MAIN_DIR}/interfaces/types/types.pb.cc")
+list(PREPEND GRPC_SRC "${MAIN_DIR}/interfaces/types/types.pb.h")
+list(PREPEND SRC ${GRPC_SRC})
+
+add_library(${TARGET} ${SRC})
+
+add_dependencies(silkworm_node generate_sentry_grpc)
+
+set_source_files_properties(${GRPC_SRC} PROPERTIES GENERATED TRUE)
+if(NOT MSVC)
+  set_source_files_properties(${GRPC_SRC} PROPERTIES COMPILE_FLAGS -Wno-sign-conversion)
+endif(NOT MSVC)
+
+# Suppress ASAN/TSAN in gRPC to avoid ODR violation when building Silkworm with sanitizers
+# See https://github.com/grpc/grpc/issues/19224
+if(SILKWORM_SANITIZE)
+    target_compile_definitions(${TARGET} PRIVATE GRPC_ASAN_SUPPRESSED GRPC_TSAN_SUPPRESSED)
+endif()
+
+target_include_directories(${TARGET} PUBLIC
+  ${CMAKE_CURRENT_SOURCE_DIR}
+  "${MAIN_DIR}/interfaces"
+)
+
+set(LIBS "")
+list(APPEND LIBS Boost::thread)
+list(APPEND LIBS protobuf::libprotobuf)
+list(APPEND LIBS gRPC::grpc++)
+list(APPEND LIBS silkworm_core)
+list(APPEND LIBS silkworm_node)
+
+if(MSVC)
+  list(APPEND LIBS ntdll.lib)
+endif(MSVC)
+
+target_link_libraries(${TARGET} PRIVATE ${LIBS})

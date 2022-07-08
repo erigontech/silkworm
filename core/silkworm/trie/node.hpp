@@ -55,6 +55,8 @@ class Node {
     //! \see Erigon's UnmarshalTrieNodeTyped
     [[nodiscard]] static std::optional<Node> from_encoded_storage(ByteView raw);
 
+    friend bool operator==(const Node&, const Node&) = default;
+
   private:
     uint16_t state_mask_{0};  // Each bit set indicates parenting of a hashed state
     uint16_t tree_mask_{0};   // Each bit set indicates parenting of a child

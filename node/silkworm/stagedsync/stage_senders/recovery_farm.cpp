@@ -19,6 +19,8 @@
 #include <functional>
 #include <mutex>
 
+#include <silkpre/secp256k1n.hpp>
+
 #include <silkworm/common/as_range.hpp>
 #include <silkworm/common/assert.hpp>
 #include <silkworm/common/endian.hpp>
@@ -319,7 +321,7 @@ StageResult RecoveryFarm::transform_and_fill_batch(uint64_t block_num, const std
                 break;
         }
 
-        if (!silkworm::ecdsa::is_valid_signature(transaction.r, transaction.s, has_homestead)) {
+        if (!silkpre::is_valid_signature(transaction.r, transaction.s, has_homestead)) {
             log::Error() << "Got invalid signature for transaction #" << tx_id << " in block #" << block_num;
             return StageResult::kInvalidTransaction;
         }

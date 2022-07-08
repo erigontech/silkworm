@@ -55,7 +55,7 @@ namespace db {
             REQUIRE(read_header->gas_used == header.gas_used);
         }
 
-        SECTION("read/write header") {
+        SECTION("read/write head header") {
             auto hash = header.hash();
             CHECK_NOTHROW(tx.write_head_header_hash(hash));
             auto read_hash = tx.read_head_header_hash();
@@ -132,6 +132,18 @@ namespace db {
 
             REQUIRE(max_bn == expected_max_bn);
             REQUIRE(max_hash == expected_max_hash);
+        }
+
+        SECTION("read/write body") {
+            BlockBody body{}; // a void body, access_layer already has test on body read/write
+
+            CHECK_NOTHROW(tx.write_body(body, header.hash(), header.number));
+
+            BlockBody read_body{};
+            bool present = tx.read_body(header.hash(), header.number, read_body);
+
+            REQUIRE(present);
+            REQUIRE(body == read_body);
         }
     }
 

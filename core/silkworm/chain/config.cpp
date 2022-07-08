@@ -23,10 +23,8 @@
 namespace silkworm {
 
 static const std::vector<std::pair<std::string, const ChainConfig*>> kKnownChainConfigs{
-    {"mainnet", &kMainnetConfig},  //
-    {"ropsten", &kRopstenConfig},  //
-    {"rinkeby", &kRinkebyConfig},  //
-    {"goerli", &kGoerliConfig}     //
+    {"mainnet", &kMainnetConfig}, {"ropsten", &kRopstenConfig}, {"rinkeby", &kRinkebyConfig},
+    {"goerli", &kGoerliConfig},   {"sepolia", &kSepoliaConfig},
 };
 
 constexpr const char* kTerminalTotalDifficulty{"terminalTotalDifficulty"};
@@ -67,12 +65,13 @@ nlohmann::json ChainConfig::to_json() const noexcept {
     }
 
     for (size_t i{0}; i < EVMC_MAX_REVISION; ++i) {
-        member_to_json(ret, kJsonForkNames[i], fork_blocks[i]);
+        member_to_json(ret, kJsonForkNames[i], evmc_fork_blocks[i]);
     }
 
     member_to_json(ret, "daoForkBlock", dao_block);
     member_to_json(ret, "muirGlacierBlock", muir_glacier_block);
     member_to_json(ret, "arrowGlacierBlock", arrow_glacier_block);
+    member_to_json(ret, "grayGlacierBlock", gray_glacier_block);
     member_to_json(ret, kTerminalBlockNumber, terminal_block_number);
 
     if (terminal_total_difficulty.has_value()) {
@@ -105,12 +104,13 @@ std::optional<ChainConfig> ChainConfig::from_json(const nlohmann::json& json) no
     }
 
     for (size_t i{0}; i < EVMC_MAX_REVISION; ++i) {
-        read_json_config_member(json, kJsonForkNames[i], config.fork_blocks[i]);
+        read_json_config_member(json, kJsonForkNames[i], config.evmc_fork_blocks[i]);
     }
 
     read_json_config_member(json, "daoForkBlock", config.dao_block);
     read_json_config_member(json, "muirGlacierBlock", config.muir_glacier_block);
     read_json_config_member(json, "arrowGlacierBlock", config.arrow_glacier_block);
+    read_json_config_member(json, "grayGlacierBlock", config.gray_glacier_block);
     read_json_config_member(json, kTerminalBlockNumber, config.terminal_block_number);
 
     if (json.contains(kTerminalTotalDifficulty)) {
@@ -132,26 +132,32 @@ std::optional<uint64_t> ChainConfig::revision_block(evmc_revision rev) const noe
         return 0;
     }
     size_t i{static_cast<size_t>(rev) - 1};
-    return fork_blocks.at(i);
+    return evmc_fork_blocks.at(i);
 }
 
 void ChainConfig::set_revision_block(evmc_revision rev, std::optional<uint64_t> block) {
     if (rev > 0) {  // Frontier block is always 0
-        fork_blocks[static_cast<size_t>(rev) - 1] = block;
+        evmc_fork_blocks[static_cast<size_t>(rev) - 1] = block;
     }
 }
 
-bool operator==(const ChainConfig& a, const ChainConfig& b) { return a.to_json() == b.to_json(); }
-
 std::ostream& operator<<(std::ostream& out, const ChainConfig& obj) { return out << obj.to_json(); }
 
-const ChainConfig* lookup_chain_config(std::variant<uint64_t, std::string> identifier) noexcept {
+const ChainConfig* lookup_chain_config(const uint64_t identifier) noexcept {
     auto it{as_range::find_if(kKnownChainConfigs,
                               [&identifier](const std::pair<std::string, const ChainConfig*>& x) -> bool {
-                                  if (std::holds_alternative<std::string>(identifier)) {
-                                      return iequals(x.first, std::get<std::string>(identifier));
-                                  }
-                                  return x.second->chain_id == std::get<uint64_t>(identifier);
+                                  return x.second->chain_id == identifier;
+                              })};
+    if (it == kKnownChainConfigs.end()) {
+        return nullptr;
+    }
+    return it->second;
+}
+
+const ChainConfig* lookup_chain_config(const std::string_view identifier) noexcept {
+    auto it{as_range::find_if(kKnownChainConfigs,
+                              [&identifier](const std::pair<std::string, const ChainConfig*>& x) -> bool {
+                                  return iequals(x.first, identifier);
                               })};
     if (it == kKnownChainConfigs.end()) {
         return nullptr;

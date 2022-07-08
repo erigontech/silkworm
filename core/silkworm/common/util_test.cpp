@@ -20,30 +20,6 @@
 
 namespace silkworm {
 
-TEST_CASE("Split") {
-    std::string source{};
-    std::string delim{};
-    auto output{split(source, delim)};
-    CHECK((output.size() == 1 && output.at(0) == source));
-
-    source = "aabbcc";
-    output = split(source, delim);
-    CHECK((output.size() == 1 && output.at(0) == source));
-
-    delim = "b";
-    output = split(source, delim);
-    CHECK((output.size() == 3 && output.at(0) == "aa" && output.at(1).empty() == true && output.at(2) == "cc"));
-
-    delim = "bb";
-    output = split(source, delim);
-    CHECK((output.size() == 2 && output.at(0) == "aa" && output.at(1) == "cc"));
-
-    source = "aaaaa";
-    delim = "a";
-    output = split(source, delim);
-    CHECK(output.size() == 5);
-}
-
 TEST_CASE("Hex") {
     CHECK(decode_hex_digit('g').has_value() == false);
 
@@ -112,30 +88,6 @@ TEST_CASE("Integrals to hex") {
 
     uint32_t uint64{5642869};
     CHECK(to_hex(uint64, false) == "561a75");
-}
-
-TEST_CASE("Padding") {
-    Bytes buffer;
-
-    CHECK(to_hex(right_pad(*from_hex("a5"), 3, buffer)) == "a50000");
-    CHECK(to_hex(right_pad(*from_hex("5a0b54d5dc17e0aadc383d2db4"), 3, buffer)) == "5a0b54d5dc17e0aadc383d2db4");
-
-    CHECK(to_hex(left_pad(*from_hex("a5"), 3, buffer)) == "0000a5");
-    CHECK(to_hex(left_pad(*from_hex("5a0b54d5dc17e0aadc383d2db4"), 3, buffer)) == "5a0b54d5dc17e0aadc383d2db4");
-
-    ByteView repeatedly_padded{right_pad(*from_hex("b8c4"), 3, buffer)};
-    CHECK(to_hex(repeatedly_padded) == "b8c400");
-    repeatedly_padded.remove_prefix(1);
-    CHECK(to_hex(repeatedly_padded) == "c400");
-    repeatedly_padded = right_pad(repeatedly_padded, 4, buffer);
-    CHECK(to_hex(repeatedly_padded) == "c4000000");
-
-    repeatedly_padded = left_pad(*from_hex("b8c4"), 3, buffer);
-    CHECK(to_hex(repeatedly_padded) == "00b8c4");
-    repeatedly_padded.remove_suffix(1);
-    CHECK(to_hex(repeatedly_padded) == "00b8");
-    repeatedly_padded = left_pad(repeatedly_padded, 4, buffer);
-    CHECK(to_hex(repeatedly_padded) == "000000b8");
 }
 
 TEST_CASE("Zeroless view") {

@@ -55,7 +55,7 @@ git submodule update --init --recursive
 ## Building on Linux & macOS
 
 Building Silkworm requires:
-* C++20 compiler: [GCC](https://www.gnu.org/software/gcc/) >= 10.2.0 or [Clang](https://clang.llvm.org/) >= 10.0.0
+* C++20 compiler: [GCC](https://www.gnu.org/software/gcc/) >= 10.2.0 or [Clang](https://clang.llvm.org/) >= 12.0.0
 * [CMake]
 * [GMP] (`sudo apt-get install libgmp3-dev` or `brew install gmp` or https://gmplib.org/manual/Installing-GMP)
 

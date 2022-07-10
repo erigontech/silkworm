@@ -79,7 +79,7 @@ ByteView to_big_compact(const intx::uint256& value);
 
 //! \brief Parses unsigned integer from a compacted big endian byte form.
 //! \param [in] data : byte view of a compacted value.
-//! Its length must not be greater than the sizeof the UnsignedIntegral type; otherwise kOverflow is returned.
+//! Its length must not be greater than the sizeof the UnsignedIntegral type; otherwise, kOverflow is returned.
 //! \param [out] out: the corresponding integer with native endianness.
 //! \return kOk or kOverflow or kLeadingZero.
 //! \remarks A "compact" big endian form strips leftmost bytes valued to zero;

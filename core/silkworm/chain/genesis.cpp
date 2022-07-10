@@ -23,6 +23,7 @@
 #include <silkworm/common/cast.hpp>
 
 #include "config.hpp"
+#include "protocol_param.hpp"
 
 extern const char* genesis_mainnet_data();
 extern size_t sizeof_genesis_mainnet_data();
@@ -96,6 +97,12 @@ BlockHeader read_genesis_header(const nlohmann::json& genesis_json, const evmc::
     header.receipts_root = kEmptyRoot;
     header.gas_limit = std::stoull(genesis_json["gasLimit"].get<std::string>(), nullptr, 0);
     header.timestamp = std::stoull(genesis_json["timestamp"].get<std::string>(), nullptr, 0);
+
+    const auto chain_config = ChainConfig::from_json(genesis_json["config"]);
+    SILKWORM_ASSERT(chain_config.has_value());
+    if (chain_config->revision(0) >= EVMC_LONDON) {
+        header.base_fee_per_gas = param::kInitialBaseFee;
+    }
 
     return header;
 }

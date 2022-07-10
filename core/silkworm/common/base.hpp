@@ -17,18 +17,24 @@
 #ifndef SILKWORM_COMMON_BASE_HPP_
 #define SILKWORM_COMMON_BASE_HPP_
 
-// The most common and basic types and constants.
+// The most common and basic concepts, types, and constants.
 
+#include <concepts>
 #include <cstddef>
 #include <cstdint>
 #include <string>
 #include <string_view>
 
 #include <evmc/evmc.hpp>
+#include <intx/intx.hpp>
 
 namespace silkworm {
 
 using namespace evmc::literals;
+
+template <class T>
+concept UnsignedIntegral = std::unsigned_integral<T> || std::same_as<T, intx::uint128> ||
+    std::same_as<T, intx::uint256> || std::same_as<T, intx::uint512>;
 
 using Bytes = std::basic_string<uint8_t>;
 

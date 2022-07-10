@@ -121,30 +121,4 @@ DecodingResult decode(ByteView& from, bool& to) noexcept {
     return DecodingResult::kOk;
 }
 
-template <typename UnsignedInteger>
-static DecodingResult decode_integer(ByteView& from, UnsignedInteger& to) noexcept {
-    auto [h, err]{decode_header(from)};
-    if (err != DecodingResult::kOk) {
-        return err;
-    }
-    if (h.list) {
-        return DecodingResult::kUnexpectedList;
-    }
-    err = endian::from_big_compact(from.substr(0, h.payload_length), to);
-    if (err != DecodingResult::kOk) {
-        return err;
-    }
-    from.remove_prefix(h.payload_length);
-    return DecodingResult::kOk;
-}
-
-template <>
-DecodingResult decode(ByteView& from, uint64_t& to) noexcept {
-    return decode_integer<uint64_t>(from, to);
-}
-
-template <>
-DecodingResult decode(ByteView& from, intx::uint256& to) noexcept {
-    return decode_integer<intx::uint256>(from, to);
-}
 }  // namespace silkworm::rlp

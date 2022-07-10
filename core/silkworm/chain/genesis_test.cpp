@@ -114,6 +114,7 @@ evmc::bytes32 state_root(const nlohmann::json& genesis_json) {
     return state.state_root_hash();
 }
 
+// https://etherscan.io/block/0
 TEST_CASE("mainnet_genesis") {
     nlohmann::json genesis_json = sanity_checked_json(kMainnetConfig.chain_id);
 
@@ -137,6 +138,7 @@ TEST_CASE("mainnet_genesis") {
     // CHECK(ethash::is_less_or_equal(result.final_hash, boundary));
 }
 
+// https://ropsten.etherscan.io/block/0
 TEST_CASE("Ropsten genesis") {
     nlohmann::json genesis_json = sanity_checked_json(kRopstenConfig.chain_id);
 
@@ -149,6 +151,7 @@ TEST_CASE("Ropsten genesis") {
     CHECK(to_hex(computed_hash) == to_hex(kRopstenIdentity.genesis_hash));
 }
 
+// https://rinkeby.etherscan.io/block/0
 TEST_CASE("Rinkeby genesis") {
     nlohmann::json genesis_json = sanity_checked_json(kRinkebyConfig.chain_id);
 
@@ -161,6 +164,7 @@ TEST_CASE("Rinkeby genesis") {
     CHECK(to_hex(computed_hash) == to_hex(kRinkebyIdentity.genesis_hash));
 }
 
+// https://goerli.etherscan.io/block/0
 TEST_CASE("Goerli genesis") {
     nlohmann::json genesis_json = sanity_checked_json(kGoerliConfig.chain_id);
 
@@ -173,6 +177,7 @@ TEST_CASE("Goerli genesis") {
     CHECK(to_hex(computed_hash) == to_hex(kGoerliIdentity.genesis_hash));
 }
 
+// https://sepolia.etherscan.io/block/0
 TEST_CASE("Sepolia genesis") {
     nlohmann::json genesis_json = sanity_checked_json(kSepoliaConfig.chain_id);
     CHECK(genesis_json["extraData"] == "Sepolia, Athens, Attica, Greece!");

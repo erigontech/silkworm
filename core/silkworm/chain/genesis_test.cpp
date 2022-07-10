@@ -137,37 +137,53 @@ TEST_CASE("mainnet_genesis") {
     // CHECK(ethash::is_less_or_equal(result.final_hash, boundary));
 }
 
-TEST_CASE("Rinkeby state root") {
-    nlohmann::json genesis_json = sanity_checked_json(kRinkebyConfig.chain_id);
-
-    auto expected_state_root{0x53580584816f617295ea26c0e17641e0120cab2f0a8ffb53a866fd53aa8e8c2d_bytes32};
-    auto actual_state_root{state_root(genesis_json)};
-    CHECK(to_hex(expected_state_root) == to_hex(actual_state_root));
-}
-
-TEST_CASE("Ropsten state root") {
+TEST_CASE("Ropsten genesis") {
     nlohmann::json genesis_json = sanity_checked_json(kRopstenConfig.chain_id);
 
     auto expected_state_root{0x217b0bbcfb72e2d57e28f33cb361b9983513177755dc3f33ce3e7022ed62b77b_bytes32};
     auto actual_state_root{state_root(genesis_json)};
     CHECK(to_hex(expected_state_root) == to_hex(actual_state_root));
+
+    BlockHeader header{read_genesis_header(genesis_json, actual_state_root)};
+    auto computed_hash{header.hash()};
+    CHECK(to_hex(computed_hash) == to_hex(kRopstenIdentity.genesis_hash));
 }
 
-TEST_CASE("Goerli state root") {
+TEST_CASE("Rinkeby genesis") {
+    nlohmann::json genesis_json = sanity_checked_json(kRinkebyConfig.chain_id);
+
+    auto expected_state_root{0x53580584816f617295ea26c0e17641e0120cab2f0a8ffb53a866fd53aa8e8c2d_bytes32};
+    auto actual_state_root{state_root(genesis_json)};
+    CHECK(to_hex(expected_state_root) == to_hex(actual_state_root));
+
+    BlockHeader header{read_genesis_header(genesis_json, actual_state_root)};
+    auto computed_hash{header.hash()};
+    CHECK(to_hex(computed_hash) == to_hex(kRinkebyIdentity.genesis_hash));
+}
+
+TEST_CASE("Goerli genesis") {
     nlohmann::json genesis_json = sanity_checked_json(kGoerliConfig.chain_id);
 
     auto expected_state_root{0x5d6cded585e73c4e322c30c2f782a336316f17dd85a4863b9d838d2d4b8b3008_bytes32};
     auto actual_state_root{state_root(genesis_json)};
     CHECK(to_hex(expected_state_root) == to_hex(actual_state_root));
+
+    BlockHeader header{read_genesis_header(genesis_json, actual_state_root)};
+    auto computed_hash{header.hash()};
+    CHECK(to_hex(computed_hash) == to_hex(kGoerliIdentity.genesis_hash));
 }
 
-TEST_CASE("Sepolia state root") {
+TEST_CASE("Sepolia genesis") {
     nlohmann::json genesis_json = sanity_checked_json(kSepoliaConfig.chain_id);
     CHECK(genesis_json["extraData"] == "Sepolia, Athens, Attica, Greece!");
 
     auto expected_state_root{0x5eb6e371a698b8d68f665192350ffcecbbbf322916f4b51bd79bb6887da3f494_bytes32};
     auto actual_state_root{state_root(genesis_json)};
     CHECK(to_hex(expected_state_root) == to_hex(actual_state_root));
+
+    BlockHeader header{read_genesis_header(genesis_json, actual_state_root)};
+    auto computed_hash{header.hash()};
+    CHECK(to_hex(computed_hash) == to_hex(kSepoliaIdentity.genesis_hash));
 }
 
 }  // namespace silkworm

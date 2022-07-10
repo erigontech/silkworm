@@ -68,9 +68,9 @@ BlockHeader read_genesis_header(const nlohmann::json& genesis_json, const evmc::
     BlockHeader header;
 
     if (genesis_json.contains("extraData")) {
-        const std::string extra_data_str = genesis_json["extraData"].get<std::string>();
+        const std::string extra_data_str{genesis_json["extraData"].get<std::string>()};
         if (has_hex_prefix(extra_data_str)) {
-            const std::optional<Bytes> extra_data_hex = from_hex(extra_data_str);
+            const std::optional<Bytes> extra_data_hex{from_hex(extra_data_str)};
             SILKWORM_ASSERT(extra_data_hex.has_value());
             header.extra_data = *extra_data_hex;
         } else {
@@ -78,16 +78,16 @@ BlockHeader read_genesis_header(const nlohmann::json& genesis_json, const evmc::
         }
     }
     if (genesis_json.contains("mixHash")) {
-        auto mix_hash = from_hex(genesis_json["mixHash"].get<std::string>());
+        const std::optional<Bytes> mix_hash{from_hex(genesis_json["mixHash"].get<std::string>())};
         SILKWORM_ASSERT(mix_hash.has_value());
         std::memcpy(header.mix_hash.bytes, mix_hash->data(), mix_hash->size());
     }
     if (genesis_json.contains("nonce")) {
-        auto nonce = std::stoull(genesis_json["nonce"].get<std::string>(), nullptr, 0);
+        const uint64_t nonce{std::stoull(genesis_json["nonce"].get<std::string>(), nullptr, 0)};
         endian::store_big_u64(header.nonce.data(), nonce);
     }
     if (genesis_json.contains("difficulty")) {
-        auto difficulty_str{genesis_json["difficulty"].get<std::string>()};
+        const auto difficulty_str{genesis_json["difficulty"].get<std::string>()};
         header.difficulty = intx::from_string<intx::uint256>(difficulty_str);
     }
 
@@ -98,7 +98,7 @@ BlockHeader read_genesis_header(const nlohmann::json& genesis_json, const evmc::
     header.gas_limit = std::stoull(genesis_json["gasLimit"].get<std::string>(), nullptr, 0);
     header.timestamp = std::stoull(genesis_json["timestamp"].get<std::string>(), nullptr, 0);
 
-    const auto chain_config = ChainConfig::from_json(genesis_json["config"]);
+    const std::optional<ChainConfig> chain_config{ChainConfig::from_json(genesis_json["config"])};
     SILKWORM_ASSERT(chain_config.has_value());
     if (chain_config->revision(0) >= EVMC_LONDON) {
         header.base_fee_per_gas = param::kInitialBaseFee;

@@ -37,7 +37,7 @@ TEST_CASE("BodyPersistence - body persistence") {
 
     bool allow_exceptions = false;
 
-    auto chain_identity = ChainIdentity::mainnet;
+    auto chain_identity = kMainnetIdentity;
 
     auto source_data = silkworm::read_genesis_data(chain_identity.chain.chain_id);
     auto genesis_json = nlohmann::json::parse(source_data, nullptr, allow_exceptions);
@@ -63,7 +63,7 @@ TEST_CASE("BodyPersistence - body persistence") {
         block1.header.difficulty = 17'171'480'576;  // a random value
         block1.header.parent_hash = *header0_hash;
         auto header1_hash = block1.header.hash();
-        block1.ommers.push_back(BlockHeader{}); // generate error InvalidOmmerHeader
+        block1.ommers.push_back(BlockHeader{});  // generate error InvalidOmmerHeader
 
         BodyPersistence bp(tx, chain_identity);
 

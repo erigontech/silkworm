@@ -15,12 +15,12 @@
 */
 
 #include "header_chain.hpp"
-#include "silkworm/chain/identity.hpp"
 
 #include <algorithm>
 
 #include <catch2/catch.hpp>
 
+#include <silkworm/chain/identity.hpp>
 #include <silkworm/common/cast.hpp>
 
 namespace silkworm {
@@ -33,12 +33,12 @@ class HeaderChain_ForTest : public HeaderChain {
     using HeaderChain::anchors_;
     using HeaderChain::find_anchor;
     using HeaderChain::generate_request_id;
+    using HeaderChain::HeaderChain;
     using HeaderChain::links_;
     using HeaderChain::pending_links;
     using HeaderChain::reduce_links_to;
-    using HeaderChain::HeaderChain;
 
-    HeaderChain_ForTest() : HeaderChain(consensus::engine_factory(ChainIdentity::mainnet.chain)) {}
+    HeaderChain_ForTest() : HeaderChain(consensus::engine_factory(kMainnetIdentity.chain)) {}
 };
 
 // TESTs related to HeaderList::split_into_segments
@@ -959,7 +959,7 @@ TEST_CASE("HeaderChain - process_segment - (5) pre-verified hashes") {
      */
     INFO("extend down") {
         // adding two headers to extend down the anchor
-        chain.accept_headers({headers[5],headers[4]}, request_id, peer_id);
+        chain.accept_headers({headers[5], headers[4]}, request_id, peer_id);
 
         // check pre-verification propagation
         auto link5 = chain.links_[headers[5].hash()];
@@ -973,7 +973,7 @@ TEST_CASE("HeaderChain - process_segment - (5) pre-verified hashes") {
      */
     INFO("connect") {
         // adding two headers to extend down the anchor
-        chain.accept_headers({headers[2],headers[3]}, request_id, peer_id);
+        chain.accept_headers({headers[2], headers[3]}, request_id, peer_id);
 
         // check pre-verification propagation
         auto link1 = chain.links_[headers[1].hash()];

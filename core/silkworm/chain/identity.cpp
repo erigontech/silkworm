@@ -47,27 +47,4 @@ std::vector<BlockNum> ChainIdentity::distinct_fork_numbers() const {
     return forks;
 }
 
-static ChainIdentity mainnet_identity() {
-    ChainIdentity id;
-
-    id.name = "mainnet";
-    id.chain = kMainnetConfig;
-    id.genesis_hash = 0xd4e56740f876aef8c010b86a40d5f56745a118d0906a34e69aec8c0db1cb8fa3_bytes32;
-
-    return id;
-}
-
-static ChainIdentity goerli_identity() {
-    ChainIdentity id;
-
-    id.name = "goerli";
-    id.chain = kGoerliConfig;
-    id.genesis_hash = 0xbf7e331f7f7c1dd2e05159666b3bf8bc7a8a3a9eb1d518969eab529dd9b88c1a_bytes32;
-
-    return id;
-}
-
-ChainIdentity ChainIdentity::mainnet = mainnet_identity();
-ChainIdentity ChainIdentity::goerli = goerli_identity();
-
 }  // namespace silkworm

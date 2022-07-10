@@ -152,7 +152,7 @@ TEST_CASE("mainnet_genesis") {
 
     // Verify our RLP encoding produces the same result
     auto computed_hash{header.hash()};
-    CHECK(to_hex(computed_hash) == to_hex(ChainIdentity::mainnet.genesis_hash));
+    CHECK(to_hex(computed_hash) == to_hex(kMainnetIdentity.genesis_hash));
 
     // TODO (Andrea) Why this fails for genesis ?
     // auto seal_hash(header.hash(/*for_sealing =*/true));

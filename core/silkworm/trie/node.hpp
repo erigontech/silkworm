@@ -49,6 +49,8 @@ class Node {
 
     void set_root_hash(const std::optional<evmc::bytes32>& root_hash);
 
+    friend bool operator==(const Node&, const Node&) = default;
+
     //! \see Erigon's MarshalTrieNodeTyped
     [[nodiscard]] Bytes encode_for_storage() const;
 
@@ -62,8 +64,6 @@ class Node {
     std::vector<evmc::bytes32> hashes_{};
     std::optional<evmc::bytes32> root_hash_{std::nullopt};
 };
-
-bool operator==(const Node& a, const Node& b);
 
 inline bool is_subset(uint16_t sub, uint16_t sup) { return (sub & sup) == sub; }
 

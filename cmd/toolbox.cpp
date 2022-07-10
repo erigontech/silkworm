@@ -1361,9 +1361,6 @@ void do_trie_root(db::EnvConfig& config) {
         throw std::runtime_error("Function requires exclusive access to database");
     }
 
-    using namespace std::chrono_literals;
-    std::chrono::time_point start{std::chrono::steady_clock::now()};
-
     auto env{silkworm::db::open_env(config)};
     auto txn{env.start_read()};
     db::Cursor trie_accounts(txn, db::table::kTrieOfAccounts);

@@ -57,6 +57,15 @@ TEST_CASE("genesis config") {
     REQUIRE(config.has_value());
     CHECK(config.value() == kRinkebyConfig);
 
+    genesis_data = read_genesis_data(static_cast<uint32_t>(kRopstenConfig.chain_id));
+    genesis_json = nlohmann::json::parse(genesis_data, nullptr, /* allow_exceptions = */ false);
+    CHECK_FALSE(genesis_json.is_discarded());
+
+    CHECK((genesis_json.contains("config") && genesis_json["config"].is_object()));
+    config = ChainConfig::from_json(genesis_json["config"]);
+    REQUIRE(config.has_value());
+    CHECK(config.value() == kRopstenConfig);
+
     genesis_data = read_genesis_data(static_cast<uint32_t>(kSepoliaConfig.chain_id));
     genesis_json = nlohmann::json::parse(genesis_data, nullptr, /* allow_exceptions = */ false);
     CHECK_FALSE(genesis_json.is_discarded());
@@ -159,6 +168,14 @@ TEST_CASE("Rinkeby state root") {
     nlohmann::json genesis_json = sanity_checked_json(kRinkebyConfig.chain_id);
 
     auto expected_state_root{0x53580584816f617295ea26c0e17641e0120cab2f0a8ffb53a866fd53aa8e8c2d_bytes32};
+    auto actual_state_root{state_root(genesis_json)};
+    CHECK(to_hex(expected_state_root) == to_hex(actual_state_root));
+}
+
+TEST_CASE("Ropsten state root") {
+    nlohmann::json genesis_json = sanity_checked_json(kRopstenConfig.chain_id);
+
+    auto expected_state_root{0x217b0bbcfb72e2d57e28f33cb361b9983513177755dc3f33ce3e7022ed62b77b_bytes32};
     auto actual_state_root{state_root(genesis_json)};
     CHECK(to_hex(expected_state_root) == to_hex(actual_state_root));
 }

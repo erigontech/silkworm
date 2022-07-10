@@ -1,5 +1,5 @@
 /*
-   Copyright 2020-2021 The Silkworm Authors
+   Copyright 2020-2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -18,16 +18,22 @@
 #ifndef SILKWORM_CORE_CHAIN_GENESIS_HPP_
 #define SILKWORM_CORE_CHAIN_GENESIS_HPP_
 
-#include <string>
 #include <cstddef>
+#include <string>
+
+#include <nlohmann/json.hpp>
+
+#include <silkworm/types/block.hpp>
 
 namespace silkworm {
 
 /*
-* \brief Returns genesis data given a known chain_id.
-* If id is not recognized returns an invalid json string
-*/
+ * \brief Returns genesis data given a known chain_id.
+ * If id is not recognized returns an invalid json string
+ */
 std::string read_genesis_data(uint64_t chain_id);
+
+BlockHeader read_genesis_header(const nlohmann::json& genesis_config, const evmc::bytes32& state_root);
 
 }  // namespace silkworm
 

@@ -19,6 +19,9 @@
 #include <cassert>
 #include <stdexcept>
 
+#include <silkworm/common/assert.hpp>
+#include <silkworm/common/cast.hpp>
+
 #include "config.hpp"
 
 extern const char* genesis_mainnet_data();
@@ -58,6 +61,43 @@ std::string read_genesis_data(uint64_t chain_id) {
         default:
             return "{";  // <- Won't be lately parsed as valid json value
     }
+}
+
+BlockHeader read_genesis_header(const nlohmann::json& genesis_json, const evmc::bytes32& state_root) {
+    BlockHeader header;
+
+    if (genesis_json.contains("extraData")) {
+        const std::string extra_data_str = genesis_json["extraData"].get<std::string>();
+        if (has_hex_prefix(extra_data_str)) {
+            const std::optional<Bytes> extra_data_hex = from_hex(extra_data_str);
+            SILKWORM_ASSERT(extra_data_hex.has_value());
+            header.extra_data = *extra_data_hex;
+        } else {
+            header.extra_data = string_view_to_byte_view(extra_data_str);
+        }
+    }
+    if (genesis_json.contains("mixHash")) {
+        auto mix_hash = from_hex(genesis_json["mixHash"].get<std::string>());
+        SILKWORM_ASSERT(mix_hash.has_value());
+        std::memcpy(header.mix_hash.bytes, mix_hash->data(), mix_hash->size());
+    }
+    if (genesis_json.contains("nonce")) {
+        auto nonce = std::stoull(genesis_json["nonce"].get<std::string>(), nullptr, 0);
+        endian::store_big_u64(header.nonce.data(), nonce);
+    }
+    if (genesis_json.contains("difficulty")) {
+        auto difficulty_str{genesis_json["difficulty"].get<std::string>()};
+        header.difficulty = intx::from_string<intx::uint256>(difficulty_str);
+    }
+
+    header.ommers_hash = kEmptyListHash;
+    header.state_root = state_root;
+    header.transactions_root = kEmptyRoot;
+    header.receipts_root = kEmptyRoot;
+    header.gas_limit = std::stoull(genesis_json["gasLimit"].get<std::string>(), nullptr, 0);
+    header.timestamp = std::stoull(genesis_json["timestamp"].get<std::string>(), nullptr, 0);
+
+    return header;
 }
 
 }  // namespace silkworm

@@ -121,34 +121,7 @@ TEST_CASE("mainnet_genesis") {
     auto actual_state_root{state_root(genesis_json)};
     CHECK(to_hex(expected_state_root) == to_hex(actual_state_root));
 
-    // Fill Header
-    BlockHeader header;
-    auto parent_hash{from_hex(genesis_json["parentHash"].get<std::string>())};
-    if (parent_hash.has_value()) {
-        header.parent_hash = to_bytes32(*parent_hash);
-    }
-    header.ommers_hash = kEmptyListHash;
-    header.beneficiary = 0x0000000000000000000000000000000000000000_address;
-    header.state_root = actual_state_root;
-    header.transactions_root = kEmptyRoot;
-    header.receipts_root = kEmptyRoot;
-    auto difficulty_str{genesis_json["difficulty"].get<std::string>()};
-    header.difficulty = intx::from_string<intx::uint256>(difficulty_str);
-    header.number = 0;
-    header.gas_limit = std::stoull(genesis_json["gasLimit"].get<std::string>(), nullptr, 0);
-    header.timestamp = std::stoull(genesis_json["timestamp"].get<std::string>(), nullptr, 0);
-
-    auto extra_data = from_hex(genesis_json["extraData"].get<std::string>());
-    if (extra_data.has_value()) {
-        header.extra_data = *extra_data;
-    }
-
-    auto mix_data = from_hex(genesis_json["mixHash"].get<std::string>());
-    CHECK((mix_data.has_value() && mix_data->size() == kHashLength));
-    header.mix_hash = to_bytes32(*mix_data);
-
-    auto nonce = std::stoull(genesis_json["nonce"].get<std::string>(), nullptr, 0);
-    endian::store_big_u64(header.nonce.data(), nonce);
+    BlockHeader header{read_genesis_header(genesis_json, actual_state_root)};
 
     // Verify our RLP encoding produces the same result
     auto computed_hash{header.hash()};

@@ -146,7 +146,7 @@ int main(int argc, char* argv[]) {
                                    " not supported");
         }
 
-        log::Message("Chain/db status", {"chain-id", to_string(chain_identity.chain.chain_id)});
+        log::Message("Chain/db status", {"chain-id", to_string(chain_identity.config.chain_id)});
         log::Message("Chain/db status", {"genesis_hash", to_hex(chain_identity.genesis_hash)});
         log::Message("Chain/db status", {"hard-forks", to_string(chain_identity.distinct_fork_numbers().size())});
 

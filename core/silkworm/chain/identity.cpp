@@ -23,22 +23,22 @@ namespace silkworm {
 std::vector<BlockNum> ChainIdentity::distinct_fork_numbers() const {
     std::vector<BlockNum> forks;
 
-    for (std::optional<uint64_t> bn : chain.evmc_fork_blocks) {
+    for (std::optional<uint64_t> bn : config.evmc_fork_blocks) {
         if (bn && *bn != 0) {
             forks.push_back(*bn);
         }
     }
-    if (chain.dao_block) {
-        forks.push_back(*chain.dao_block);
+    if (config.dao_block) {
+        forks.push_back(*config.dao_block);
     }
-    if (chain.muir_glacier_block) {
-        forks.push_back(*chain.muir_glacier_block);
+    if (config.muir_glacier_block) {
+        forks.push_back(*config.muir_glacier_block);
     }
-    if (chain.arrow_glacier_block) {
-        forks.push_back(*chain.arrow_glacier_block);
+    if (config.arrow_glacier_block) {
+        forks.push_back(*config.arrow_glacier_block);
     }
-    if (chain.gray_glacier_block) {
-        forks.push_back(*chain.gray_glacier_block);
+    if (config.gray_glacier_block) {
+        forks.push_back(*config.gray_glacier_block);
     }
 
     sort(forks.begin(), forks.end());                              // block list must be ordered

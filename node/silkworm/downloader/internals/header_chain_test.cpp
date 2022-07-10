@@ -38,7 +38,7 @@ class HeaderChain_ForTest : public HeaderChain {
     using HeaderChain::pending_links;
     using HeaderChain::reduce_links_to;
 
-    HeaderChain_ForTest() : HeaderChain(consensus::engine_factory(kMainnetIdentity.chain)) {}
+    HeaderChain_ForTest() : HeaderChain(consensus::engine_factory(kMainnetIdentity.config)) {}
 };
 
 // TESTs related to HeaderList::split_into_segments

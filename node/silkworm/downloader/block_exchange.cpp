@@ -31,7 +31,7 @@ BlockExchange::BlockExchange(SentryClient& sentry, const Db::ReadOnlyAccess& dba
     : db_access_{dba},
       sentry_{sentry},
       chain_identity_{ci},
-      preverified_hashes_{PreverifiedHashes::load(ci.chain.chain_id)},
+      preverified_hashes_{PreverifiedHashes::load(ci.config.chain_id)},
       header_chain_{ci},
       body_sequence_{dba, ci} {
     auto tx = db_access_.start_ro_tx();
@@ -56,12 +56,11 @@ void BlockExchange::receive_message(const sentry::InboundMessage& raw_message) {
         SILK_TRACE << "BlockExchange received message " << *message;
 
         messages_.push(message);
-    }
-    catch(rlp::DecodingError& error) {
+    } catch (rlp::DecodingError& error) {
         PeerId peer_id = string_from_H512(raw_message.peer_id());
-        log::Warning() << "BlockExchange received and ignored a malformed message, peer= " << peer_id <<
-                          ", msg-id= " << raw_message.id() << "/" << sentry::MessageId_Name(raw_message.id()) <<
-                          " - " << error.what();
+        log::Warning() << "BlockExchange received and ignored a malformed message, peer= " << peer_id
+                       << ", msg-id= " << raw_message.id() << "/" << sentry::MessageId_Name(raw_message.id()) << " - "
+                       << error.what();
         send_penalization(peer_id, BadBlockPenalty);
     }
 }
@@ -94,7 +93,6 @@ void BlockExchange::execution_loop() {
             log_status();
             last_update = now;
         }
-
     }
 
     stop();
@@ -102,25 +100,23 @@ void BlockExchange::execution_loop() {
 }
 
 void BlockExchange::log_status() {
-    log::Debug() << "BlockExchange messages: " << std::setfill('_') << std::setw(5) << std::right
-                 << messages_.size() << " in queue";
+    log::Debug() << "BlockExchange messages: " << std::setfill('_') << std::setw(5) << std::right << messages_.size()
+                 << " in queue";
 
     auto [min_anchor_height, max_anchor_height] = header_chain_.anchor_height_range();
-    log::Debug() << "BlockExchange headers: " << std::setfill('_')
-                 << "links= " << std::setw(7) << std::right << header_chain_.pending_links()
-                 << ", anchors= " << std::setw(3) << std::right << header_chain_.anchors()
-                 << ", db-height= " << std::setw(10) << std::right << header_chain_.highest_block_in_db()
-                 << ", mem-height= " << std::setw(10) << std::right << min_anchor_height
-                 << "~" << std::setw(10) << std::right << max_anchor_height
+    log::Debug() << "BlockExchange headers: " << std::setfill('_') << "links= " << std::setw(7) << std::right
+                 << header_chain_.pending_links() << ", anchors= " << std::setw(3) << std::right
+                 << header_chain_.anchors() << ", db-height= " << std::setw(10) << std::right
+                 << header_chain_.highest_block_in_db() << ", mem-height= " << std::setw(10) << std::right
+                 << min_anchor_height << "~" << std::setw(10) << std::right << max_anchor_height
                  << ", net-height= " << std::setw(10) << std::right << header_chain_.top_seen_block_height()
                  << "; stats: " << header_chain_.statistics();
 
-    log::Debug() << "BlockExchange bodies:  " << std::setfill('_')
-                 << "outstanding bodies= " << std::setw(6) << std::right
-                 << body_sequence_.outstanding_bodies(std::chrono::system_clock::now()) << "  "
+    log::Debug() << "BlockExchange bodies:  " << std::setfill('_') << "outstanding bodies= " << std::setw(6)
+                 << std::right << body_sequence_.outstanding_bodies(std::chrono::system_clock::now()) << "  "
                  << ", db-height= " << std::setw(10) << std::right << body_sequence_.highest_block_in_db()
-                 << ", mem-height= " << std::setw(10) << std::right << body_sequence_.lowest_block_in_memory()
-                 << "~" << std::setw(10) << std::right << body_sequence_.highest_block_in_memory()
+                 << ", mem-height= " << std::setw(10) << std::right << body_sequence_.lowest_block_in_memory() << "~"
+                 << std::setw(10) << std::right << body_sequence_.highest_block_in_memory()
                  << ", net-height= " << std::setw(10) << std::right << body_sequence_.target_height()
                  << "; stats: " << body_sequence_.statistics();
 }

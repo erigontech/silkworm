@@ -52,7 +52,7 @@ TEST_CASE("body downloading", "[silkworm][downloader][BodySequence]") {
     auto chain_identity = kMainnetIdentity;
 
     // add genesis to db
-    auto source_data = silkworm::read_genesis_data(chain_identity.chain.chain_id);
+    auto source_data = silkworm::read_genesis_data(chain_identity.config.chain_id);
     auto genesis_json = nlohmann::json::parse(source_data, nullptr, allow_exceptions);
     db::initialize_genesis(txn, genesis_json, allow_exceptions);
 

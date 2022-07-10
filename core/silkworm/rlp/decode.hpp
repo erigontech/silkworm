@@ -47,14 +47,25 @@ DecodingResult decode(ByteView& from, evmc::bytes32& to) noexcept;
 template <>
 DecodingResult decode(ByteView& from, Bytes& to) noexcept;
 
+template <UnsignedIntegral T>
+DecodingResult decode(ByteView& from, T& to) noexcept {
+    auto [h, err]{decode_header(from)};
+    if (err != DecodingResult::kOk) {
+        return err;
+    }
+    if (h.list) {
+        return DecodingResult::kUnexpectedList;
+    }
+    err = endian::from_big_compact(from.substr(0, h.payload_length), to);
+    if (err != DecodingResult::kOk) {
+        return err;
+    }
+    from.remove_prefix(h.payload_length);
+    return DecodingResult::kOk;
+}
+
 template <>
 DecodingResult decode(ByteView& from, bool& to) noexcept;
-
-template <>
-DecodingResult decode(ByteView& from, uint64_t& to) noexcept;
-
-template <>
-DecodingResult decode(ByteView& from, intx::uint256& to) noexcept;
 
 template <size_t N>
 DecodingResult decode(ByteView& from, std::span<uint8_t, N> to) noexcept {

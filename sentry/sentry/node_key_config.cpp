@@ -31,7 +31,7 @@ NodeKeyConfig::NodeKeyConfig(const DataDirectory& data_dir)
     : NodeKeyConfig(data_dir.path() / "nodekey") {
 }
 
-NodeKey NodeKeyConfig::load() {
+NodeKey NodeKeyConfig::load() const {
     string contents;
     ifstream file{path_};
     file.exceptions(ios::failbit | ios::badbit);
@@ -44,13 +44,13 @@ NodeKey NodeKeyConfig::load() {
     return NodeKey(data.value());
 }
 
-void NodeKeyConfig::save(const NodeKey& key) {
+void NodeKeyConfig::save(const NodeKey& key) const {
     ofstream file{path_};
     file.exceptions(ios::failbit | ios::badbit);
     file << key.to_hex();
 }
 
-bool NodeKeyConfig::exists() {
+bool NodeKeyConfig::exists() const {
     return fs::exists(path_);
 }
 

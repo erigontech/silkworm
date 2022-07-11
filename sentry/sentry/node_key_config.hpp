@@ -30,9 +30,9 @@ class NodeKeyConfig {
     explicit NodeKeyConfig(std::filesystem::path path);
     explicit NodeKeyConfig(const DataDirectory& data_dir);
 
-    NodeKey load();
-    void save(const NodeKey& key);
-    bool exists();
+    NodeKey load() const;
+    void save(const NodeKey& key) const;
+    bool exists() const;
 
   private:
     std::filesystem::path path_;

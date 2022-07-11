@@ -15,11 +15,13 @@ limitations under the License.
 */
 
 #pragma once
+#ifndef SILKWORM_COMMON_SECP256K1_CONTEXT_HPP_
+#define SILKWORM_COMMON_SECP256K1_CONTEXT_HPP_
 
 #include <secp256k1.h>
 #include <gsl/pointers>
 
-namespace silkworm::sentry {
+namespace silkworm {
 
 class SecP256K1Context final {
   public:
@@ -55,4 +57,6 @@ class SecP256K1Context final {
     gsl::owner<secp256k1_context*> context_;
 };
 
-}  // namespace silkworm::sentry
+}  // namespace silkworm
+
+#endif  // !SILKWORM_COMMON_SECP256K1_CONTEXT_HPP_

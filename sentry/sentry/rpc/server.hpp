@@ -18,10 +18,10 @@ limitations under the License.
 
 #include <p2psentry/sentry.grpc.pb.h>
 #include <silkworm/rpc/server/server.hpp>
-#include "options.hpp"
+#include "../options.hpp"
 #include "service.hpp"
 
-namespace silkworm::sentry {
+namespace silkworm::sentry::rpc {
 
 class Server final : public silkworm::rpc::Server {
   public:
@@ -36,4 +36,4 @@ class Server final : public silkworm::rpc::Server {
     std::vector<std::unique_ptr<Service>> services_;
 };
 
-}  // namespace silkworm::sentry
+}  // namespace silkworm::sentry::rpc

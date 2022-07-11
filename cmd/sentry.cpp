@@ -24,7 +24,7 @@ limitations under the License.
 #include <silkworm/rpc/util.hpp>
 #include <sentry/options.hpp>
 #include <sentry/node_key_config.hpp>
-#include <sentry/server.hpp>
+#include <sentry/rpc/server.hpp>
 #include "common.hpp"
 
 using namespace silkworm;
@@ -111,7 +111,7 @@ int sentry_main(int argc, char* argv[]) {
     [[maybe_unused]]
     NodeKey node_key = node_key_get_or_generate(options.node_key, data_dir);
 
-    Server server{options};
+    silkworm::sentry::rpc::Server server{options};
     server.build_and_start();
 
     boost::asio::signal_set signals{server.next_io_context(), SIGINT, SIGTERM};

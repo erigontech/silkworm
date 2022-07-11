@@ -18,7 +18,7 @@ limitations under the License.
 #include <silkworm/common/log.hpp>
 #include <silkworm/rpc/server/server_config.hpp>
 
-namespace silkworm::sentry {
+namespace silkworm::sentry::rpc {
 
 using namespace silkworm::log;
 
@@ -57,4 +57,4 @@ void Server::register_request_calls() {
     }
 }
 
-}  // namespace silkworm::sentry
+}  // namespace silkworm::sentry::rpc

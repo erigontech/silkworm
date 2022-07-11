@@ -105,18 +105,8 @@ void add_logging_options(CLI::App& cli, log::Settings& log_settings) {
 }
 
 void add_option_data_dir(CLI::App& cli, std::filesystem::path& data_dir) {
-    auto option = cli.add_option("--datadir", [&](CLI::results_t results) {
-        try {
-            data_dir = std::filesystem::path(results[0]);
-            return true;
-        } catch (const std::exception& e) {
-            log::Error() << e.what();
-            return false;
-        }
-    });
-    option->description("Path to the data directory");
     data_dir = DataDirectory::get_default_storage_path();
-    option->default_str(data_dir.string());
+    cli.add_option("--datadir", data_dir, "Path to the data directory")->capture_default_str();
 }
 
 void add_option_num_contexts(CLI::App& cli, uint32_t& num_contexts) {

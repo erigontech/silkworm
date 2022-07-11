@@ -17,14 +17,12 @@ limitations under the License.
 #include <filesystem>
 
 #include <CLI/CLI.hpp>
-#include <boost/asio/signal_set.hpp>
 #include <boost/process/environment.hpp>
 
 #include <silkworm/common/util.hpp>
 #include <silkworm/rpc/util.hpp>
 #include <sentry/options.hpp>
-#include <sentry/node_key_config.hpp>
-#include <sentry/rpc/server.hpp>
+#include <sentry/sentry.hpp>
 #include "common.hpp"
 
 using namespace silkworm;
@@ -106,25 +104,13 @@ int sentry_main(int argc, char* argv[]) {
     // TODO(canepat): this could be an option in Silkworm logging facility
     silkworm::rpc::Grpc2SilkwormLogGuard log_guard;
 
-    // TODO: move inside the Server
-    DataDirectory data_dir{options.data_dir_path, true};
-    [[maybe_unused]]
-    NodeKey node_key = node_key_get_or_generate(options.node_key, data_dir);
-
-    silkworm::sentry::rpc::Server server{options};
-    server.build_and_start();
-
-    boost::asio::signal_set signals{server.next_io_context(), SIGINT, SIGTERM};
-    signals.async_wait([&](const boost::system::error_code& error, int signal_number) {
-        log::Info() << "\n";
-        log::Info() << "Signal caught, error: " << error << " number: " << signal_number;
-        server.shutdown();
-    });
+    Sentry sentry{std::move(options)};
+    sentry.start();
 
     const auto pid = boost::this_process::get_id();
     const auto tid = std::this_thread::get_id();
     log::Info() << "Sentry is now running [pid=" << pid << ", main thread=" << tid << "]";
-    server.join();
+    sentry.join();
 
     log::Info() << "Sentry exiting [pid=" << pid << ", main thread=" << tid << "]";
     return 0;

@@ -18,6 +18,7 @@ limitations under the License.
 
 #include <p2psentry/sentry.grpc.pb.h>
 #include <silkworm/rpc/server/server.hpp>
+#include <silkworm/rpc/server/server_config.hpp>
 #include "../options.hpp"
 #include "service.hpp"
 
@@ -25,7 +26,10 @@ namespace silkworm::sentry::rpc {
 
 class Server final : public silkworm::rpc::Server {
   public:
-    explicit Server(const Options& options);
+    explicit Server(const silkworm::rpc::ServerConfig& config);
+
+    Server(const Server&) = delete;
+    Server& operator=(const Server&) = delete;
 
   private:
     void register_async_services(grpc::ServerBuilder& builder) override;

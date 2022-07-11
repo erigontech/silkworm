@@ -17,15 +17,13 @@ limitations under the License.
 #include "node_key.hpp"
 #include <array>
 #include <random>
-#include <gsl/util>
-#include <secp256k1.h>
 #include <silkworm/common/util.hpp>
+#include <silkworm/common/secp256k1_context.hpp>
 
 namespace silkworm::sentry {
 
 NodeKey::NodeKey() {
-    secp256k1_context* ctx = secp256k1_context_create(SECP256K1_CONTEXT_VERIFY);
-    auto _ = gsl::finally([ctx] { secp256k1_context_destroy(ctx); });
+    SecP256K1Context ctx;
 
     std::default_random_engine random_engine{std::random_device{}()};
     std::uniform_int_distribution<uint8_t> random_distribution;
@@ -34,16 +32,15 @@ NodeKey::NodeKey() {
     do {
         for (auto& d : data)
             d = random_distribution(random_engine);
-    } while (!secp256k1_ec_seckey_verify(ctx, data.data()));
+    } while (!ctx.verify_private_key_data(data));
 
     private_key_ = Bytes(data.data(), data.size());
 }
 
-NodeKey::NodeKey(Bytes data) : private_key_(data) {
-    secp256k1_context* ctx = secp256k1_context_create(SECP256K1_CONTEXT_VERIFY);
-    auto _ = gsl::finally([ctx] { secp256k1_context_destroy(ctx); });
+NodeKey::NodeKey(Bytes data) : private_key_(std::move(data)) {
+    SecP256K1Context ctx;
 
-    if (!secp256k1_ec_seckey_verify(ctx, data.data())) {
+    if (!ctx.verify_private_key_data(private_key_)) {
         throw std::invalid_argument("Invalid node key");
     }
 }

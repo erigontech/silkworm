@@ -29,13 +29,12 @@ using namespace silkworm;
 using namespace silkworm::cmd;
 using namespace silkworm::sentry;
 
-int sentry_main(int argc, char* argv[]) {
+Options sentry_parse_cli_options(int argc, char* argv[]) {
     CLI::App cli{"Sentry - P2P proxy"};
 
-    log::Settings log_settings;
-    add_logging_options(cli, log_settings);
-
     Options options;
+    add_logging_options(cli, options.log_settings);
+
     cli.add_option("--sentry.api.addr", options.api_address, "GRPC API endpoint")
         ->capture_default_str()
         ->check(IPEndPointValidator(/*allow_empty=*/true));
@@ -45,8 +44,8 @@ int sentry_main(int argc, char* argv[]) {
         ->check(CLI::Range(1024, 65535))
         ->capture_default_str();
 
-    auto nat_option = cli.add_option("--nat", [&options](CLI::results_t results) {
-       return lexical_cast(results[0], options.nat);
+    auto nat_option = cli.add_option("--nat", [&options](const CLI::results_t& results) {
+        return lexical_cast(results[0], options.nat);
     });
     nat_option->description("NAT port mapping mechanism (none|extip:<IP>)\n"
             "- none              no NAT, use a local IP as public\n"
@@ -58,7 +57,7 @@ int sentry_main(int argc, char* argv[]) {
 
     add_option_data_dir(cli, options.data_dir_path);
 
-    auto node_key_path_option = cli.add_option("--nodekey", [&options](CLI::results_t results) {
+    auto node_key_path_option = cli.add_option("--nodekey", [&options](const CLI::results_t& results) {
         try {
             options.node_key = {{std::filesystem::path(results[0])}};
             return true;
@@ -69,7 +68,7 @@ int sentry_main(int argc, char* argv[]) {
     });
     node_key_path_option->description("P2P node key file");
 
-    auto node_key_hex_option = cli.add_option("--nodekeyhex", [&options](CLI::results_t results) {
+    auto node_key_hex_option = cli.add_option("--nodekeyhex", [&options](const CLI::results_t& results) {
         auto key_bytes = from_hex(results[0]);
         if (key_bytes) {
             options.node_key = {{key_bytes.value()}};
@@ -78,7 +77,7 @@ int sentry_main(int argc, char* argv[]) {
     });
     node_key_hex_option->description("P2P node key as a hex string");
 
-    auto static_peers_option = cli.add_option("--staticpeers", [&options](CLI::results_t results) {
+    auto static_peers_option = cli.add_option("--staticpeers", [&options](const CLI::results_t& results) {
         try {
             for (auto& result : results) {
                 if (result.empty()) continue;
@@ -96,10 +95,15 @@ int sentry_main(int argc, char* argv[]) {
     try {
         cli.parse(argc, argv);
     } catch (const CLI::ParseError& pe) {
-        return cli.exit(pe);
+        cli.exit(pe);
+        throw;
     }
 
-    log::init(log_settings);
+    return options;
+}
+
+void sentry_main(Options options) {
+    log::init(options.log_settings);
     log::set_thread_name("main");
     // TODO(canepat): this could be an option in Silkworm logging facility
     silkworm::rpc::Grpc2SilkwormLogGuard log_guard;
@@ -113,12 +117,13 @@ int sentry_main(int argc, char* argv[]) {
     sentry.join();
 
     log::Info() << "Sentry exiting [pid=" << pid << ", main thread=" << tid << "]";
-    return 0;
 }
 
 int main(int argc, char* argv[]) {
     try {
-        return sentry_main(argc, argv);
+        sentry_main(sentry_parse_cli_options(argc, argv));
+    } catch (const CLI::ParseError& pe) {
+        return -1;
     } catch (const std::exception& e) {
         log::Critical() << "Sentry exiting due to exception: " << e.what();
         return -2;

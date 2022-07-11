@@ -22,6 +22,7 @@ limitations under the License.
 #include <variant>
 #include <vector>
 #include <silkworm/common/base.hpp>
+#include <silkworm/common/log.hpp>
 #include <silkworm/rpc/server/wait_strategy.hpp>
 #include "enode_url.hpp"
 #include "nat_option.hpp"
@@ -29,6 +30,8 @@ limitations under the License.
 namespace silkworm::sentry {
 
 struct Options {
+    log::Settings log_settings;
+
     std::string api_address{"127.0.0.1:9091"};
 
     // RLPx TCP port

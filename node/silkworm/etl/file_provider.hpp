@@ -51,4 +51,4 @@ class FileProvider {
 
 }  // namespace silkworm::etl
 
-#endif  // !ETL_SILKWORM_FILE_PROVIDER_HPP_
+#endif  // ETL_SILKWORM_FILE_PROVIDER_HPP_

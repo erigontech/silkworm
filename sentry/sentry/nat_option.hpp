@@ -14,7 +14,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-#pragma once
+#ifndef SILKWORM_SENTRY_NAT_OPTION_HPP_
+#define SILKWORM_SENTRY_NAT_OPTION_HPP_
 
 #include <string>
 #include <optional>
@@ -35,3 +36,5 @@ struct NatOption {
 bool lexical_cast(const std::string& input, NatOption& value);
 
 }  // silkworm::sentry
+
+#endif  // SILKWORM_SENTRY_NAT_OPTION_HPP_

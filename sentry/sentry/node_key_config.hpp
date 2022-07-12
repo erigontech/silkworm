@@ -14,7 +14,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-#pragma once
+#ifndef SILKWORM_SENTRY_NODE_KEY_CONFIG_HPP_
+#define SILKWORM_SENTRY_NODE_KEY_CONFIG_HPP_
 
 #include <filesystem>
 #include <optional>
@@ -43,3 +44,5 @@ NodeKey node_key_get_or_generate(
         const DataDirectory& data_dir);
 
 }  // namespace silkworm::sentry
+
+#endif  // SILKWORM_SENTRY_NODE_KEY_CONFIG_HPP_

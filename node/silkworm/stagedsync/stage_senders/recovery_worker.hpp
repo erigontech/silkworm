@@ -14,7 +14,6 @@
    limitations under the License.
 */
 
-#pragma once
 #ifndef SILKWORM_STAGEDSYNC_RECOVERY_WORKER_HPP_
 #define SILKWORM_STAGEDSYNC_RECOVERY_WORKER_HPP_
 

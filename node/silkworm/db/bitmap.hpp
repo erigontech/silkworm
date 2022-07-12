@@ -47,4 +47,4 @@ roaring::Roaring cut_left(roaring::Roaring& bitmap, uint64_t size_limit);
 
 }  // namespace silkworm::db::bitmap
 
-#endif  // !SILKWORM_DB_BITMAP_HPP_
+#endif  // SILKWORM_DB_BITMAP_HPP_

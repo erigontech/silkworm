@@ -14,7 +14,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-#pragma once
+#ifndef SILKWORM_SENTRY_ENODE_URL_HPP_
+#define SILKWORM_SENTRY_ENODE_URL_HPP_
 
 #include <string>
 #include <boost/asio/ip/address.hpp>
@@ -42,3 +43,5 @@ class EnodeUrl {
 };
 
 }  // namespace silkworm::sentry
+
+#endif  // SILKWORM_SENTRY_ENODE_URL_HPP_

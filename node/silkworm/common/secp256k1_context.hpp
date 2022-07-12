@@ -58,4 +58,4 @@ class SecP256K1Context final {
 
 }  // namespace silkworm
 
-#endif  // !SILKWORM_COMMON_SECP256K1_CONTEXT_HPP_
+#endif  // SILKWORM_COMMON_SECP256K1_CONTEXT_HPP_

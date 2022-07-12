@@ -14,7 +14,6 @@
    limitations under the License.
 */
 
-#pragma once
 #ifndef SILKWORM_COMMON_STOPWATCH_HPP_
 #define SILKWORM_COMMON_STOPWATCH_HPP_
 
@@ -81,4 +80,4 @@ class StopWatch {
 
 }  // namespace silkworm
 
-#endif  // !SILKWORM_COMMON_STOPWATCH_HPP_
+#endif  // SILKWORM_COMMON_STOPWATCH_HPP_

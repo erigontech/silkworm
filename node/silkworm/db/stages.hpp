@@ -143,4 +143,4 @@ bool is_known_stage(const char* stage_name);
 
 }  // namespace silkworm::db::stages
 
-#endif  // !SILKWORM_DB_STAGES_HPP_
+#endif  // SILKWORM_DB_STAGES_HPP_

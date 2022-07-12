@@ -14,7 +14,6 @@
     limitations under the License.
 */
 
-#pragma once
 #ifndef SILKWORM_CONSENSUS_BASE_ENGINE_HPP_
 #define SILKWORM_CONSENSUS_BASE_ENGINE_HPP_
 

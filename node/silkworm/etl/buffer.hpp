@@ -80,4 +80,4 @@ class Buffer {
 
 }  // namespace silkworm::etl
 
-#endif  // !SILKWORM_ETL_BUFFER_HPP_
+#endif  // SILKWORM_ETL_BUFFER_HPP_

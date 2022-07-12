@@ -124,4 +124,4 @@ using Message = LogBuffer<Level::kNone>;
 #define SILK_CRIT SILK_LOGBUFFER(silkworm::log::Level::kCritical)
 #define SILK_LOG SILK_LOGBUFFER(silkworm::log::Level::kNone)
 
-#endif  // !SILKWORM_COMMON_LOG_HPP_
+#endif  // SILKWORM_COMMON_LOG_HPP_

@@ -14,7 +14,6 @@
    limitations under the License.
 */
 
-#pragma once
 #ifndef SILKWORM_COMMON_DATA_DIR_HPP_
 #define SILKWORM_COMMON_DATA_DIR_HPP_
 
@@ -149,4 +148,5 @@ class DataDirectory final : public Directory {
 };
 
 }  // namespace silkworm
-#endif  // !SILKWORM_COMMON_DATA_DIR_HPP_
+
+#endif  // SILKWORM_COMMON_DATA_DIR_HPP_

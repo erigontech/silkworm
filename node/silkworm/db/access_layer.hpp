@@ -145,4 +145,4 @@ uint64_t read_map_sequence(mdbx::txn& txn, const char* map_name);
 
 }  // namespace silkworm::db
 
-#endif  // !SILKWORM_DB_ACCESS_LAYER_HPP_
+#endif  // SILKWORM_DB_ACCESS_LAYER_HPP_

@@ -14,7 +14,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-#pragma once
+#ifndef SILKWORM_SENTRY_SERVICE_HPP_
+#define SILKWORM_SENTRY_SERVICE_HPP_
 
 #include <memory>
 #include <boost/asio/io_context.hpp>
@@ -43,3 +44,5 @@ class Service final {
 };
 
 }  // namespace silkworm::sentry
+
+#endif  // SILKWORM_SENTRY_SERVICE_HPP_

@@ -14,7 +14,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-#pragma once
+#ifndef SILKWORM_SENTRY_OPTIONS_HPP_
+#define SILKWORM_SENTRY_OPTIONS_HPP_
 
 #include <filesystem>
 #include <optional>
@@ -51,3 +52,5 @@ struct Options {
 };
 
 }  // namespace silkworm::sentry
+
+#endif  // SILKWORM_SENTRY_OPTIONS_HPP_

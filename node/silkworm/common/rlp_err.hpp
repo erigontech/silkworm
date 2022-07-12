@@ -14,7 +14,6 @@
    limitations under the License.
 */
 
-#pragma once
 #ifndef SILKWORM_COMMON_RLP_ERR_HPP_
 #define SILKWORM_COMMON_RLP_ERR_HPP_
 
@@ -46,4 +45,4 @@ inline void success_or_throw(DecodingResult err) {
 
 }  // namespace silkworm::rlp
 
-#endif  // !SILKWORM_COMMON_RLP_ERR_HPP_
+#endif  // SILKWORM_COMMON_RLP_ERR_HPP_

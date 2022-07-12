@@ -263,4 +263,4 @@ size_t cursor_erase(::mdbx::cursor& cursor, const silkworm::ByteView& set_key, s
 
 }  // namespace silkworm::db
 
-#endif  // !SILKWORM_DB_MDBX_HPP_
+#endif  // SILKWORM_DB_MDBX_HPP_

@@ -14,7 +14,6 @@
    limitations under the License.
 */
 
-#pragma once
 #ifndef SILKWORM_CORE_CHAIN_GENESIS_HPP_
 #define SILKWORM_CORE_CHAIN_GENESIS_HPP_
 

@@ -37,7 +37,7 @@ bool PrefixSet::contains(ByteView prefix) {
     // Key uniqueness and sorting
     ensure_sorted();
 
-    // We optimize for the case when contains() inquires are made with increasing prefixes,
+    // We optimize for the case when contains() queries are issued with increasing prefixes,
     // e.g. contains("00"), contains("04"), contains("0b"), contains("0b05"), contains("0c"), contains("0f"), ...
     // instead of some random order.
     while (index_ > 0 && nibbled_keys_[index_].first > prefix) {

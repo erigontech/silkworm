@@ -1049,7 +1049,7 @@ void do_trie_scan(db::EnvConfig& config, bool del) {
     std::cout << "\n" << std::endl;
 }
 
-void do_trie_integrity(db::EnvConfig& config, bool with_state_coverage) {
+void do_trie_integrity(db::EnvConfig& config, bool with_state_coverage, bool sanitize) {
     if (!config.exclusive) {
         throw std::runtime_error("Function requires exclusive access to database");
     }
@@ -1058,7 +1058,7 @@ void do_trie_integrity(db::EnvConfig& config, bool with_state_coverage) {
     std::chrono::time_point start{std::chrono::steady_clock::now()};
 
     auto env{silkworm::db::open_env(config)};
-    auto txn{env.start_read()};
+    auto txn{env.start_write()};
 
     std::string source{db::table::kTrieOfAccounts.name};
 
@@ -1165,10 +1165,16 @@ void do_trie_integrity(db::EnvConfig& config, bool with_state_coverage) {
                 const auto parent_tree_mask{endian::load_big_u16(&data2_v[2])};
                 const auto parent_has_tree_bit{((1 << static_cast<uint16_t>(data1_k[i])) & parent_tree_mask) != 0};
                 if (!parent_has_tree_bit) {
-                    throw std::runtime_error("At key " + to_hex(data1_k, true) + " found parent key " +
-                                             to_hex(parent_key, true) +
-                                             " with tree mask : " + std::bitset<16>(parent_tree_mask).to_string() +
-                                             " and no bit set at position " + std::to_string(i));
+                    if (!sanitize) {
+                        throw std::runtime_error("At key " + to_hex(data1_k, true) + " found parent key " +
+                                                 to_hex(parent_key, true) +
+                                                 " with tree mask : " + std::bitset<16>(parent_tree_mask).to_string() +
+                                                 " and no bit set at position " + std::to_string(i));
+                    }
+                    // This is an orphan
+                    std::cout << "Deleting orphaned node " << to_hex(data1_k, true) << std::endl;
+                    trie_cursor1.erase();
+                    goto integrity_next_node;
                 }
 
                 // Debug - We have a leap of 2 o more bytes in key length
@@ -1184,7 +1190,13 @@ void do_trie_integrity(db::EnvConfig& config, bool with_state_coverage) {
             }
 
             if (!found && data1_k.length() > (prefix_len ? prefix_len : 1u)) {
-                throw std::runtime_error("At key " + to_hex(data1_k, true) + " no parent found");
+                if (!sanitize) {
+                    throw std::runtime_error("At key " + to_hex(data1_k, true) + " no parent found");
+                }
+                // This is an orphan
+                std::cout << "Deleting orphaned node " << to_hex(data1_k, true) << std::endl;
+                trie_cursor1.erase();
+                goto integrity_next_node;
             }
 
             /*
@@ -1321,6 +1333,7 @@ void do_trie_integrity(db::EnvConfig& config, bool with_state_coverage) {
                 log::Info("Checking ...", {"source", source, "key", to_hex(data1_k, true)});
             }
 
+        integrity_next_node:
             data1 = trie_cursor1.to_next(false);
         }
     }
@@ -1378,23 +1391,13 @@ void do_trie_root(db::EnvConfig& config) {
 
     trie::PrefixSet empty_changes{};  // We need this to tell we have no changes. If nullptr means full regen
     trie::HashBuilder hash_builder;
-    etl::Collector collector{};
-    hash_builder.node_collector = [&collector](ByteView nibbled_key, const trie::Node& node) {
-        if (!nibbled_key.empty()) {
-            etl::Entry entry{Bytes(nibbled_key), {}};
-            if (node.state_mask() != 0) {
-                entry.value = node.encode_for_storage();
-            }
-            collector.collect(std::move(entry));
-        }
-    };
 
     trie::TrieCursor trie_cursor{trie_accounts, &empty_changes};
     for (auto trie_data{trie_cursor.to_prefix({})}; trie_data.key.has_value(); trie_data = trie_cursor.to_next()) {
         SILKWORM_ASSERT(trie_data.skip_state);
         log::Info("Trie", {"key", to_hex(trie_data.key.value(), true), "hash", to_hex(trie_data.hash.value(), true)});
         auto hash{to_bytes32(trie_data.hash.value())};
-        hash_builder.add_branch_node(trie_data.key.value(), hash, trie_data.children_in_trie);
+        hash_builder.add_branch_node(trie_data.key.value(), hash, false);
         if (SignalHandler::signalled()) {
             throw std::runtime_error("Interrupted");
         }
@@ -1526,6 +1529,7 @@ int main(int argc, char* argv[]) {
     // Trie integrity
     auto cmd_trie_integrity = app_main.add_subcommand("trie-integrity", "Checks trie integrity");
     auto cmd_trie_integrity_state_opt = cmd_trie_integrity->add_flag("--with-state", "Checks covered states (slower)");
+    auto cmd_trie_integrity_sanitize_opt = cmd_trie_integrity->add_flag("--with-sanitize", "Do some corrections");
 
     // Trie account analysis
     auto cmd_trie_account_analysis =
@@ -1619,7 +1623,8 @@ int main(int argc, char* argv[]) {
         } else if (*cmd_trie_reset) {
             do_trie_reset(src_config, static_cast<bool>(*app_yes_opt));
         } else if (*cmd_trie_integrity) {
-            do_trie_integrity(src_config, static_cast<bool>(*cmd_trie_integrity_state_opt));
+            do_trie_integrity(src_config, static_cast<bool>(*cmd_trie_integrity_state_opt),
+                              static_cast<bool>(*cmd_trie_integrity_sanitize_opt));
         } else if (*cmd_trie_account_analysis) {
             do_trie_account_analysis(src_config);
         } else if (*cmd_trie_root) {

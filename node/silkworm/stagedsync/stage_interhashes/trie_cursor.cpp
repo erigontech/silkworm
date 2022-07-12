@@ -16,7 +16,8 @@
 
 #include "trie_cursor.hpp"
 
-#include <silkworm/common/assert.hpp>
+#include <iostream>
+
 #include <silkworm/common/bits.hpp>
 #include <silkworm/common/endian.hpp>
 #include <silkworm/trie/nibbles.hpp>
@@ -83,8 +84,7 @@ TrieCursor::move_operation_result TrieCursor::to_next() {
             // This node is completely traversed - Ascend one level if possible
             sub_node.reset();  // We leave this level so reset it
             if (level_ == 0) {
-                // No higher level
-                return {false, std::nullopt, std::nullopt, std::nullopt, false};
+                return {};  // No higher level
             }
             sub_nodes_[--level_].child_id += 1;  // To next child of parent
             continue;
@@ -102,7 +102,7 @@ TrieCursor::move_operation_result TrieCursor::to_next() {
             move_operation_result ret{true, full_key, std::nullopt, sub_node.get_hash().value(), sub_node.has_tree()};
             // ... advance ...
             if (sub_node.child_id == -1) {
-                sub_node.child_id = 0xf;  // Mark as traversed (next cycle will bump to next child of parent)
+                sub_node.child_id = 0x10;  // Mark as fully traversed (next cycle will bump to next child of parent)
             } else {
                 ++sub_node.child_id;  // To next child
             }
@@ -125,29 +125,18 @@ TrieCursor::move_operation_result TrieCursor::to_next() {
         // Eventually look in db for a child
         if (sub_node.has_tree()) {
             db_seek(full_key);
-            SILKWORM_ASSERT(!db_cursor_eof_);
-
-            auto& new_sub_node{sub_nodes_[++level_]};
-            new_sub_node.parse(db_cursor_key_, db_cursor_val_);
-            continue;
+            if (!db_cursor_eof_) {
+                auto& child_sub_node{sub_nodes_[++level_]};
+                child_sub_node.parse(db_cursor_key_, db_cursor_val_);
+                continue;
+            }
         }
 
-        // Node has no children to inspect so there are no sub-hashes
-        // If this key is in changed list then we cannot skip it.
-        // Return to calling loop to process all hashed states with current
-        // nibbled prefix.
-        if (has_changes || sub_node.has_state()) {
-            move_operation_result ret{false, full_key, pack_nibbles(full_key), std::nullopt, false};
+        // Return to calling loop to process hashed states with current nibbled prefix
+        move_operation_result ret{false, full_key, pack_nibbles(full_key), std::nullopt, false};
+        ++sub_node.child_id;  // Increment for next cycle
+        return ret;
 
-            // Erase the node (if in db) as it will be recomputed
-            // Note ! This is not a root node (if we're here it means child_id != -1)
-            collect_deletion(sub_node);
-
-            ++sub_node.child_id;  // Increment for next cycle
-            return ret;
-        }
-
-        ++sub_node.child_id;  // Simply increment
     }
 }
 
@@ -263,12 +252,14 @@ std::optional<Bytes> TrieCursor::SubNode::get_hash() const {
     return Bytes(hashes.substr(kHashLength * hash_idx, kHashLength));
 }
 
-bool TrieCursor::SubNode::has_tree() const { return (child_id == -1 || (tree_mask & (1u << child_id)) != 0); }
+bool TrieCursor::SubNode::has_tree() const {
+    return (child_id == -1 || value.empty() || (tree_mask & (1u << child_id)) != 0);
+}
 
 bool TrieCursor::SubNode::has_hash() const {
     return child_id == -1 ? !root_hash.empty() : ((hash_mask & (1u << child_id)) != 0);
 }
 
-bool TrieCursor::SubNode::has_state() const { return (state_mask & (1u << child_id)) != 0; }
+bool TrieCursor::SubNode::has_state() const { return (value.empty() || state_mask & (1u << child_id)) != 0; }
 
 }  // namespace silkworm::trie

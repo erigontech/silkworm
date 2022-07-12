@@ -15,8 +15,6 @@
 */
 
 #pragma once
-#ifndef SILKWORM_BLOCK_HEADERS_PACKET_HPP
-#define SILKWORM_BLOCK_HEADERS_PACKET_HPP
 
 #include <algorithm>
 
@@ -59,5 +57,3 @@ inline std::ostream& operator<<(std::ostream& os, const BlockHeadersPacket66& pa
 }
 
 }  // namespace silkworm
-
-#endif  // SILKWORM_BLOCK_HEADERS_PACKET_HPP

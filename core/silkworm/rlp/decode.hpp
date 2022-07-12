@@ -18,8 +18,6 @@
 // https://eth.wiki/en/fundamentals/rlp
 
 #pragma once
-#ifndef SILKWORM_RLP_DECODE_HPP_
-#define SILKWORM_RLP_DECODE_HPP_
 
 #include <array>
 #include <cstring>
@@ -123,5 +121,3 @@ DecodingResult decode_vector(ByteView& from, std::vector<T>& to) noexcept {
 }
 
 }  // namespace silkworm::rlp
-
-#endif  // SILKWORM_RLP_DECODE_HPP_

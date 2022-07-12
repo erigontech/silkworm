@@ -15,8 +15,6 @@
 */
 
 #pragma once
-#ifndef SILKWORM_TRIE_NODE_HPP_
-#define SILKWORM_TRIE_NODE_HPP_
 
 #include <cassert>
 #include <optional>
@@ -74,5 +72,3 @@ inline void assert_subset(uint16_t sub, uint16_t sup) {
 }
 
 }  // namespace silkworm::trie
-
-#endif  // SILKWORM_TRIE_NODE_HPP_

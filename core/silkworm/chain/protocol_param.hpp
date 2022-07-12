@@ -15,8 +15,6 @@
 */
 
 #pragma once
-#ifndef SILKWORM_CHAIN_PROTOCOL_PARAM_HPP_
-#define SILKWORM_CHAIN_PROTOCOL_PARAM_HPP_
 
 #include <cstdint>
 
@@ -74,5 +72,3 @@ namespace param {
 }  // namespace param
 
 }  // namespace silkworm
-
-#endif  // SILKWORM_CHAIN_PROTOCOL_PARAM_HPP_

@@ -15,8 +15,6 @@
 */
 
 #pragma once
-#ifndef SILKWORM_CONSENSUS_VALIDATION_HPP_
-#define SILKWORM_CONSENSUS_VALIDATION_HPP_
 
 namespace silkworm {
 
@@ -77,5 +75,3 @@ enum class [[nodiscard]] ValidationResult{
 };
 
 }  // namespace silkworm
-
-#endif  // SILKWORM_CONSENSUS_VALIDATION_HPP_

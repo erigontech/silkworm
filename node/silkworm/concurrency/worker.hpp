@@ -15,8 +15,6 @@
 */
 
 #pragma once
-#ifndef SILKWORM_CONCURRENCY_WORKER_HPP_
-#define SILKWORM_CONCURRENCY_WORKER_HPP_
 
 #include <atomic>
 #include <condition_variable>
@@ -92,5 +90,3 @@ class Worker {
 };
 
 }  // namespace silkworm
-
-#endif  // SILKWORM_CONCURRENCY_WORKER_HPP_

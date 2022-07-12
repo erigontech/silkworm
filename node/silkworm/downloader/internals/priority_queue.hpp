@@ -15,8 +15,6 @@
 */
 
 #pragma once
-#ifndef SILKWORM_PRIORITY_QUEUE_HPP
-#define SILKWORM_PRIORITY_QUEUE_HPP
 
 #include <queue>
 #include <set>
@@ -126,5 +124,3 @@ class map_based_priority_queue {
   - erase:
       map.erase(map.begin(), map.lower_bound(HMap::key_type(x,0)));
  */
-
-#endif  // SILKWORM_PRIORITY_QUEUE_HPP

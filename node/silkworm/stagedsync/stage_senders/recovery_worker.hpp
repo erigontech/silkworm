@@ -15,8 +15,6 @@
 */
 
 #pragma once
-#ifndef SILKWORM_STAGEDSYNC_RECOVERY_WORKER_HPP_
-#define SILKWORM_STAGEDSYNC_RECOVERY_WORKER_HPP_
 
 #include <secp256k1.h>
 
@@ -74,5 +72,3 @@ class RecoveryWorker final : public silkworm::Worker {
 };
 
 }  // namespace silkworm::stagedsync::recovery
-
-#endif  // SILKWORM_STAGEDSYNC_RECOVERY_WORKER_HPP_

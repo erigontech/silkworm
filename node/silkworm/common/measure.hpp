@@ -15,8 +15,6 @@ limitations under the License.
 */
 
 #pragma once
-#ifndef SILKWORM_MEASURE_HPP
-#define SILKWORM_MEASURE_HPP
 
 #include <chrono>
 
@@ -91,5 +89,3 @@ class RepeatedMeasure {
 };
 
 }
-
-#endif  // SILKWORM_MEASURE_HPP

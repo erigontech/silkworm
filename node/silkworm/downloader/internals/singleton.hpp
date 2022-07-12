@@ -15,8 +15,6 @@
 */
 
 #pragma once
-#ifndef SILKWORM_SINGLETON_HPP
-#define SILKWORM_SINGLETON_HPP
 
 #include <memory>
 
@@ -51,5 +49,3 @@ class Singleton {
     static T& instance() { return instance_; }
 };
 }  // namespace default_instantiating
-
-#endif  // SILKWORM_SINGLETON_HPP

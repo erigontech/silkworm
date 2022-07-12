@@ -15,8 +15,6 @@
 */
 
 #pragma once
-#ifndef SILKWORM_ETL_UTIL_HPP_
-#define SILKWORM_ETL_UTIL_HPP_
 
 #include <stdexcept>
 
@@ -49,5 +47,3 @@ struct Entry {
 bool operator<(const Entry& a, const Entry& b);
 
 }  // namespace silkworm::etl
-
-#endif  // SILKWORM_ETL_UTIL_HPP_

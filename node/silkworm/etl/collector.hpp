@@ -12,8 +12,6 @@
 */
 
 #pragma once
-#ifndef SILKWORM_ETL_COLLECTOR_HPP_
-#define SILKWORM_ETL_COLLECTOR_HPP_
 
 #include <mutex>
 
@@ -115,5 +113,3 @@ class Collector {
 };
 
 }  // namespace silkworm::etl
-
-#endif  // SILKWORM_ETL_COLLECTOR_HPP_

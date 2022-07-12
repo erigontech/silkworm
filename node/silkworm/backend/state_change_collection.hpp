@@ -15,8 +15,6 @@
 */
 
 #pragma once
-#ifndef SILKWORM_BACKEND_STATE_CHANGE_COLLECTION_HPP_
-#define SILKWORM_BACKEND_STATE_CHANGE_COLLECTION_HPP_
 
 #include <functional>
 #include <map>
@@ -108,5 +106,3 @@ class StateChangeCollection : public StateChangeSource {
 };
 
 } // namespace silkworm
-
-#endif // SILKWORM_BACKEND_STATE_CHANGE_COLLECTION_HPP_

@@ -15,8 +15,6 @@
 */
 
 #pragma once
-#ifndef SILKWORM_STAGEDSYNC_RECOVERY_FARM_HPP_
-#define SILKWORM_STAGEDSYNC_RECOVERY_FARM_HPP_
 
 #include <atomic>
 #include <queue>
@@ -140,5 +138,3 @@ class RecoveryFarm : public Stoppable {
 };
 
 }  // namespace silkworm::stagedsync::recovery
-
-#endif  // SILKWORM_STAGEDSYNC_RECOVERY_FARM_HPP_

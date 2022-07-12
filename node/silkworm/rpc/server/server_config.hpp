@@ -15,8 +15,6 @@
 */
 
 #pragma once
-#ifndef SILKWORM_RPC_SERVER_CONFIG_HPP_
-#define SILKWORM_RPC_SERVER_CONFIG_HPP_
 
 #include <memory>
 #include <string>
@@ -56,5 +54,3 @@ class ServerConfig {
 };
 
 } // namespace silkworm::rpc
-
-#endif // SILKWORM_RPC_SERVER_CONFIG_HPP_

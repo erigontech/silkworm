@@ -15,8 +15,6 @@
 */
 
 #pragma once
-#ifndef SILKWORM_PEER_COUNT_HPP
-#define SILKWORM_PEER_COUNT_HPP
 
 #include <silkworm/downloader/sentry_client.hpp>
 
@@ -28,5 +26,3 @@ class PeerCount : public rpc::UnaryCall<sentry::Sentry, sentry::PeerCountRequest
 };
 
 }  // namespace silkworm::rpc
-
-#endif //SILKWORM_PEER_COUNT_HPP

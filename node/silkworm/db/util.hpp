@@ -15,8 +15,6 @@
 */
 
 #pragma once
-#ifndef SILKWORM_DB_UTIL_HPP_
-#define SILKWORM_DB_UTIL_HPP_
 
 /*
 Part of the compatibility layer with the Erigon DB format;
@@ -126,5 +124,3 @@ namespace detail {
 
 }  // namespace detail
 }  // namespace silkworm::db
-
-#endif  // SILKWORM_DB_UTIL_HPP_

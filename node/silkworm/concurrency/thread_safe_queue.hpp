@@ -15,8 +15,6 @@
 */
 
 #pragma once
-#ifndef SILKWORM_CONCURRENCY_THREAD_SAFE_QUEUE_HPP_
-#define SILKWORM_CONCURRENCY_THREAD_SAFE_QUEUE_HPP_
 
 #include <condition_variable>
 #include <mutex>
@@ -77,5 +75,3 @@ class ThreadSafeQueue {
         return true;
     }
 };
-
-#endif  // SILKWORM_CONCURRENCY_THREAD_SAFE_QUEUE_HPP_

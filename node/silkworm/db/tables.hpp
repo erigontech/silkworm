@@ -15,8 +15,6 @@
 */
 
 #pragma once
-#ifndef SILKWORM_DB_TABLES_HPP_
-#define SILKWORM_DB_TABLES_HPP_
 
 #include <optional>
 
@@ -285,5 +283,3 @@ inline constexpr db::MapConfig kChainDataTables[]{
 void check_or_create_chaindata_tables(mdbx::txn& txn);
 
 }  // namespace silkworm::db::table
-
-#endif  // SILKWORM_DB_TABLES_HPP_

@@ -15,8 +15,6 @@
 */
 
 #pragma once
-#ifndef SILKWORM_CHAIN_INTRINSIC_GAS_HPP_
-#define SILKWORM_CHAIN_INTRINSIC_GAS_HPP_
 
 #include <intx/intx.hpp>
 
@@ -30,5 +28,3 @@ namespace silkworm {
 intx::uint128 intrinsic_gas(const Transaction& txn, bool homestead, bool istanbul) noexcept;
 
 }  // namespace silkworm
-
-#endif  // SILKWORM_CHAIN_INTRINSIC_GAS_HPP_

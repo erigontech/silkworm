@@ -15,8 +15,6 @@
 */
 
 #pragma once
-#ifndef SILKWORM_CONCURRENCY_STOPPABLE_HPP_
-#define SILKWORM_CONCURRENCY_STOPPABLE_HPP_
 
 #include <atomic>
 
@@ -42,4 +40,3 @@ class Stoppable {
 };
 
 }  // namespace silkworm
-#endif  // SILKWORM_CONCURRENCY_STOPPABLE_HPP_

@@ -15,8 +15,6 @@
 */
 
 #pragma once
-#ifndef SILKWORM_HEADER_PERSISTENCE_HPP
-#define SILKWORM_HEADER_PERSISTENCE_HPP
 
 #include <silkworm/common/lru_cache.hpp>
 
@@ -83,5 +81,3 @@ class HeaderPersistence {
 };
 
 }  // namespace silkworm
-
-#endif  // SILKWORM_HEADER_PERSISTENCE_HPP

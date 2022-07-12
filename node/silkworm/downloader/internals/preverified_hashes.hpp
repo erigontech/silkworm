@@ -15,8 +15,6 @@
 */
 
 #pragma once
-#ifndef SILKWORM_PREVERIFIED_HASHES_HPP
-#define SILKWORM_PREVERIFIED_HASHES_HPP
 
 #include <map>
 #include <set>
@@ -54,5 +52,3 @@ struct PreverifiedHashes {
 };
 
 }  // namespace silkworm
-
-#endif  // SILKWORM_PREVERIFIED_HASHES_HPP

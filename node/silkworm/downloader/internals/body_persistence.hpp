@@ -15,8 +15,6 @@ limitations under the License.
 */
 
 #pragma once
-#ifndef SILKWORM_BODY_PERSISTENCE_H
-#define SILKWORM_BODY_PERSISTENCE_H
 
 #include <silkworm/chain/identity.hpp>
 #include <silkworm/db/buffer.hpp>
@@ -63,5 +61,3 @@ class BodyPersistence {
 };
 
 }
-
-#endif  // SILKWORM_BODY_PERSISTENCE_H

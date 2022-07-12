@@ -15,8 +15,6 @@ limitations under the License.
 */
 
 #pragma once
-#ifndef SILKWORM_BODY_DOWNLOADER_H
-#define SILKWORM_BODY_DOWNLOADER_H
 
 #include <silkworm/concurrency/containers.hpp>
 #include <silkworm/downloader/internals/db_tx.hpp>
@@ -50,5 +48,3 @@ class BodiesStage : public Stage {
 };
 
 }  // namespace silkworm
-
-#endif  // SILKWORM_BODY_DOWNLOADER_H

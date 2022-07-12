@@ -15,8 +15,6 @@
 */
 
 #pragma once
-#ifndef SILKWORM_HAND_SHAKE_HPP
-#define SILKWORM_HAND_SHAKE_HPP
 
 #include <silkworm/chain/identity.hpp>
 #include <silkworm/downloader/internals/types.hpp>
@@ -30,5 +28,3 @@ namespace silkworm::rpc {
 };
 
 }  // namespace silkworm::rpc
-
-#endif  // SILKWORM_HAND_SHAKE_HPP

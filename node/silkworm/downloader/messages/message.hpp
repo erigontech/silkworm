@@ -15,8 +15,6 @@
 */
 
 #pragma once
-#ifndef SILKWORM_MESSAGE_HPP
-#define SILKWORM_MESSAGE_HPP
 
 #include <silkworm/downloader/internals/body_sequence.hpp>
 #include <silkworm/downloader/internals/db_tx.hpp>
@@ -37,5 +35,3 @@ class Message {
 };
 
 }  // namespace silkworm
-
-#endif  // SILKWORM_MESSAGE_HPP

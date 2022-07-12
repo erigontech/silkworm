@@ -15,8 +15,6 @@
 */
 
 #pragma once
-#ifndef SILKWORM_GET_BLOCK_HEADERS_PACKET_HPP
-#define SILKWORM_GET_BLOCK_HEADERS_PACKET_HPP
 
 #include "hash_or_number.hpp"
 
@@ -59,5 +57,3 @@ inline std::ostream& operator<<(std::ostream& os, const GetBlockHeadersPacket66&
 }
 
 }  // namespace silkworm
-
-#endif  // SILKWORM_GET_BLOCK_HEADERS_PACKET_HPP

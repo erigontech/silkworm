@@ -15,8 +15,6 @@
 */
 
 #pragma once
-#ifndef SILKWORM_TYPES_RECEIPT_CBOR_HPP_
-#define SILKWORM_TYPES_RECEIPT_CBOR_HPP_
 
 #include <silkworm/types/receipt.hpp>
 
@@ -27,5 +25,3 @@ namespace silkworm {
 Bytes cbor_encode(const std::vector<Receipt>& v);
 
 }  // namespace silkworm
-
-#endif  // SILKWORM_TYPES_RECEIPT_CBOR_HPP_

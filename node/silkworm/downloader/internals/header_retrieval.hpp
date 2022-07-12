@@ -15,8 +15,6 @@
 */
 
 #pragma once
-#ifndef SILKWORM_HEADER_RETRIEVAL_HPP
-#define SILKWORM_HEADER_RETRIEVAL_HPP
 
 #include "db_tx.hpp"
 #include "types.hpp"
@@ -51,5 +49,3 @@ class HeaderRetrieval {
 };
 
 }  // namespace silkworm
-
-#endif  // SILKWORM_HEADER_RETRIEVAL_HPP

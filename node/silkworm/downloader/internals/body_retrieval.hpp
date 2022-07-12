@@ -15,8 +15,6 @@
 */
 
 #pragma once
-#ifndef SILKWORM_BODY_RETRIEVAL_HPP
-#define SILKWORM_BODY_RETRIEVAL_HPP
 
 #include "db_tx.hpp"
 #include "types.hpp"
@@ -37,4 +35,3 @@ class BodyRetrieval {
 };
 
 }  // namespace silkworm
-#endif  // SILKWORM_BODY_RETRIEVAL_HPP

@@ -15,8 +15,6 @@
 */
 
 #pragma once
-#ifndef SILKWORM_ETL_BUFFER_HPP_
-#define SILKWORM_ETL_BUFFER_HPP_
 
 #include <algorithm>
 #include <vector>
@@ -80,5 +78,3 @@ class Buffer {
 };
 
 }  // namespace silkworm::etl
-
-#endif  // SILKWORM_ETL_BUFFER_HPP_

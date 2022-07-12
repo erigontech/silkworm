@@ -15,8 +15,6 @@ limitations under the License.
 */
 
 #pragma once
-#ifndef SILKWORM_SENTRY_SERVER_HPP_
-#define SILKWORM_SENTRY_SERVER_HPP_
 
 #include <p2psentry/sentry.grpc.pb.h>
 #include <silkworm/rpc/server/server.hpp>
@@ -39,5 +37,3 @@ class Server final : public silkworm::rpc::Server {
 };
 
 }  // namespace silkworm::sentry
-
-#endif  // SILKWORM_SENTRY_SERVER_HPP_

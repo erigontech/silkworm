@@ -33,8 +33,6 @@
  */
 
 #pragma once
-#ifndef SILKWORM_RPC_SERVER_WAIT_STRATEGY_HPP_
-#define SILKWORM_RPC_SERVER_WAIT_STRATEGY_HPP_
 
 #include <chrono>
 #include <limits>
@@ -92,5 +90,3 @@ bool AbslParseFlag(absl::string_view text, WaitMode* wait_mode, std::string* err
 std::string AbslUnparseFlag(WaitMode wait_mode);
 
 }  // namespace silkworm::rpc
-
-#endif  // SILKWORM_RPC_SERVER_WAIT_STRATEGY_HPP_

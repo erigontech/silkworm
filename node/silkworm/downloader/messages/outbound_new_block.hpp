@@ -15,8 +15,6 @@ limitations under the License.
 */
 
 #pragma once
-#ifndef SILKWORM_OUTBOUND_NEW_BLOCK_H
-#define SILKWORM_OUTBOUND_NEW_BLOCK_H
 
 #include <silkworm/downloader/internals/header_chain.hpp>
 #include <silkworm/downloader/packets/new_block_packet.hpp>
@@ -44,4 +42,3 @@ class OutboundNewBlock : public OutboundMessage {
 };
 
 }  // namespace silkworm
-#endif  // SILKWORM_OUTBOUND_NEW_BLOCK_H

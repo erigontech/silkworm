@@ -15,8 +15,6 @@
 */
 
 #pragma once
-#ifndef SILKWORM_DB_MDBX_HPP_
-#define SILKWORM_DB_MDBX_HPP_
 
 #include <cstdint>
 #include <filesystem>
@@ -263,5 +261,3 @@ size_t cursor_erase(::mdbx::cursor& cursor, const silkworm::ByteView& set_key, s
                     CursorMoveDirection direction = CursorMoveDirection::Forward);
 
 }  // namespace silkworm::db
-
-#endif  // SILKWORM_DB_MDBX_HPP_

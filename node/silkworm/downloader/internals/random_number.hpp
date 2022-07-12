@@ -15,8 +15,6 @@
 */
 
 #pragma once
-#ifndef SILKWORM_RANDOM_NUMBER_HPP
-#define SILKWORM_RANDOM_NUMBER_HPP
 #include <random>
 
 #include "singleton.hpp"
@@ -44,4 +42,3 @@ class RandomNumber {
 #define RANDOM_NUMBER default_instantiating::Singleton<RandomNumber>::instance()
 
 }  // namespace silkworm
-#endif  // SILKWORM_RANDOM_NUMBER_HPP

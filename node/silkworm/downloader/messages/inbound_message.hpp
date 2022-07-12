@@ -15,8 +15,6 @@
 */
 
 #pragma once
-#ifndef SILKWORM_INBOUND_MESSAGE_HPP
-#define SILKWORM_INBOUND_MESSAGE_HPP
 
 #include <memory>
 
@@ -41,5 +39,3 @@ std::ostream& operator<<(std::ostream&, const silkworm::InboundMessage&);
 std::string identify(const silkworm::InboundMessage& message);
 
 }  // namespace silkworm
-
-#endif  // SILKWORM_INBOUND_MESSAGE_HPP

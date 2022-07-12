@@ -20,8 +20,6 @@
  */
 
 #pragma once
-#ifndef SILKWORM_CONCURRENCY_THREAD_POOL_HPP_
-#define SILKWORM_CONCURRENCY_THREAD_POOL_HPP_
 
 #include <atomic>       // std::atomic
 #include <chrono>       // std::chrono
@@ -439,5 +437,3 @@ class thread_pool {
 // ============================================================================================= //
 
 }  // namespace silkworm
-
-#endif  // SILKWORM_CONCURRENCY_THREAD_POOL_HPP_

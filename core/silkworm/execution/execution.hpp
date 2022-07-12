@@ -15,8 +15,6 @@
 */
 
 #pragma once
-#ifndef SILKWORM_EXECUTION_EXECUTION_HPP_
-#define SILKWORM_EXECUTION_EXECUTION_HPP_
 
 #include <vector>
 
@@ -54,5 +52,3 @@ namespace silkworm {
 }
 
 }  // namespace silkworm
-
-#endif  // SILKWORM_EXECUTION_EXECUTION_HPP_

@@ -15,8 +15,6 @@
 */
 
 #pragma once
-#ifndef SILKWORM_RPC_CLIENT_SENTRY_CLIENT_HPP_
-#define SILKWORM_RPC_CLIENT_SENTRY_CLIENT_HPP_
 
 #include <chrono>
 #include <functional>
@@ -91,5 +89,3 @@ class RemoteSentryClientFactory : public SentryClientFactory {
 };
 
 } // namespace silkworm::rpc
-
-#endif // SILKWORM_RPC_CLIENT_SENTRY_CLIENT_HPP_

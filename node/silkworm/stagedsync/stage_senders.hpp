@@ -15,8 +15,6 @@
 */
 
 #pragma once
-#ifndef SILKWORM_STAGEDSYNC_STAGE_SENDERS_HPP_
-#define SILKWORM_STAGEDSYNC_STAGE_SENDERS_HPP_
 
 #include <silkworm/stagedsync/common.hpp>
 #include <silkworm/stagedsync/stage_senders/recovery_farm.hpp>
@@ -39,5 +37,3 @@ class Senders final : public IStage {
 };
 
 }  // namespace silkworm::stagedsync
-
-#endif  // SILKWORM_STAGEDSYNC_STAGE_SENDERS_HPP_

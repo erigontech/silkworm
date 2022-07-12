@@ -15,8 +15,6 @@
 */
 
 #pragma once
-#ifndef SILKWORM_TRIE_VECTOR_ROOT_HPP_
-#define SILKWORM_TRIE_VECTOR_ROOT_HPP_
 
 #include <silkworm/rlp/encode.hpp>
 #include <silkworm/trie/hash_builder.hpp>
@@ -58,5 +56,3 @@ evmc::bytes32 root_hash(const std::vector<Value>& v, Encoder value_encoder) {
 }
 
 }  // namespace silkworm::trie
-
-#endif  // SILKWORM_TRIE_VECTOR_ROOT_HPP_

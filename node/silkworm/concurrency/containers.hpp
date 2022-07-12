@@ -15,8 +15,6 @@
 */
 
 #pragma once
-#ifndef SILKWORM_CONCURRENCY_CONTAINERS_HPP_
-#define SILKWORM_CONCURRENCY_CONTAINERS_HPP_
 
 /*
  * Decisions about concurrent containers
@@ -27,5 +25,3 @@
 template <typename T>
 using ConcurrentQueue =
     ThreadSafeQueue<T>;  // todo: use a better alternative from a known library (Intel oneTBB concurrent_queue<T>?)
-
-#endif  // SILKWORM_CONCURRENCY_CONTAINERS_HPP_

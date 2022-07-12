@@ -15,8 +15,6 @@
 */
 
 #pragma once
-#ifndef SILKWORM_COMMON_HASH_MAPS_HPP_
-#define SILKWORM_COMMON_HASH_MAPS_HPP_
 
 #if defined(__wasm__)
 
@@ -78,5 +76,3 @@ using NodeHashMap = absl::node_hash_map<K, V>;
 #endif
 
 }  // namespace silkworm
-
-#endif  // SILKWORM_COMMON_HASH_MAPS_HPP_

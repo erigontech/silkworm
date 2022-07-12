@@ -15,8 +15,6 @@
 */
 
 #pragma once
-#ifndef SILKWORM_RPC_CALL_FACTORY_HPP_
-#define SILKWORM_RPC_CALL_FACTORY_HPP_
 
 #include <cstddef>
 #include <memory>
@@ -101,5 +99,3 @@ class CallFactory {
 };
 
 } // namespace silkworm::rpc
-
-#endif // SILKWORM_RPC_CALL_FACTORY_HPP_

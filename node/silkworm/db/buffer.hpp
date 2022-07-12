@@ -15,8 +15,6 @@
 */
 
 #pragma once
-#ifndef SILKWORM_DB_BUFFER_HPP_
-#define SILKWORM_DB_BUFFER_HPP_
 
 #include <cassert>
 #include <optional>
@@ -169,5 +167,3 @@ class Buffer : public State {
 };
 
 }  // namespace silkworm::db
-
-#endif  // SILKWORM_DB_BUFFER_HPP_

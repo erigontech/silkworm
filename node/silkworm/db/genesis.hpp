@@ -15,8 +15,6 @@
 */
 
 #pragma once
-#ifndef SILKWORM_DB_GENESIS_HPP_
-#define SILKWORM_DB_GENESIS_HPP_
 
 #include "access_layer.hpp"
 
@@ -34,5 +32,3 @@ std::pair<bool, std::vector<std::string>> validate_genesis_json(const nlohmann::
 bool initialize_genesis(mdbx::txn& txn, const nlohmann::json& genesis_json, bool allow_exceptions);
 
 }  // namespace silkworm::db
-
-#endif  // SILKWORM_DB_GENESIS_HPP_

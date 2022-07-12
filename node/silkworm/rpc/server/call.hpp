@@ -15,8 +15,6 @@
 */
 
 #pragma once
-#ifndef SILKWORM_RPC_CALL_HPP_
-#define SILKWORM_RPC_CALL_HPP_
 
 #include <atomic>
 #include <functional>
@@ -791,5 +789,3 @@ class BidirectionalStreamingRpc : public BaseRpc {
 };
 
 } // namespace silkworm::rpc
-
-#endif // SILKWORM_RPC_CALL_HPP_

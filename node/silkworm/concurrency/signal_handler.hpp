@@ -15,8 +15,6 @@
 */
 
 #pragma once
-#ifndef SILKWORM_CONCURRENCY_SIGNAL_HANDLER_HPP_
-#define SILKWORM_CONCURRENCY_SIGNAL_HANDLER_HPP_
 
 #include <atomic>
 #include <cstdint>
@@ -37,5 +35,3 @@ class SignalHandler {
 };
 
 }  // namespace silkworm
-
-#endif  // SILKWORM_CONCURRENCY_SIGNAL_HANDLER_HPP_

@@ -15,8 +15,6 @@
 */
 
 #pragma once
-#ifndef SILKWORM_COMMON_OBJECT_POOL_HPP_
-#define SILKWORM_COMMON_OBJECT_POOL_HPP_
 
 #include <memory>
 #include <stack>
@@ -87,5 +85,3 @@ class ObjectPool {
 };
 
 }  // namespace silkworm
-
-#endif  // SILKWORM_COMMON_OBJECT_POOL_HPP_

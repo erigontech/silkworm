@@ -15,8 +15,6 @@
 */
 
 #pragma once
-#ifndef SILKWORM_TRIE_HASH_BUILDER_HPP_
-#define SILKWORM_TRIE_HASH_BUILDER_HPP_
 
 #include <functional>
 #include <optional>
@@ -92,5 +90,3 @@ Bytes pack_nibbles(ByteView nibbles);
 Bytes unpack_nibbles(ByteView packed);
 
 }  // namespace silkworm::trie
-
-#endif  // SILKWORM_TRIE_HASH_BUILDER_HPP_

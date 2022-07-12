@@ -15,8 +15,6 @@
 */
 
 #pragma once
-#ifndef SILKWORM_TYPES_BLOCK_HPP_
-#define SILKWORM_TYPES_BLOCK_HPP_
 
 #include <array>
 #include <cstdint>
@@ -107,5 +105,3 @@ namespace rlp {
 }  // namespace rlp
 
 }  // namespace silkworm
-
-#endif  // SILKWORM_TYPES_BLOCK_HPP_

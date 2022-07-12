@@ -15,8 +15,6 @@
 */
 
 #pragma once
-#ifndef SILKWORM_INBOUND_BLOCK_HEADERS_HPP
-#define SILKWORM_INBOUND_BLOCK_HEADERS_HPP
 
 #include <silkworm/downloader/packets/block_headers_packet.hpp>
 
@@ -40,5 +38,3 @@ class InboundBlockHeaders : public InboundMessage {
 };
 
 }  // namespace silkworm
-
-#endif  // SILKWORM_INBOUND_BLOCK_HEADERS_HPP

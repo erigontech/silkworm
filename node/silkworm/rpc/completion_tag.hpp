@@ -15,8 +15,6 @@
 */
 
 #pragma once
-#ifndef SILKWORM_RPC_COMPLETION_TAG_HPP_
-#define SILKWORM_RPC_COMPLETION_TAG_HPP_
 
 namespace silkworm::rpc {
 
@@ -31,5 +29,3 @@ struct CompletionTag {
 };
 
 } // namespace silkworm::rpc
-
-#endif // SILKWORM_RPC_COMPLETION_TAG_HPP_

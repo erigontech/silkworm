@@ -15,8 +15,6 @@
 */
 
 #pragma once
-#ifndef SILKWORM_STATE_OBJECT_HPP_
-#define SILKWORM_STATE_OBJECT_HPP_
 
 #include <optional>
 
@@ -42,5 +40,3 @@ struct Storage {
 };
 
 }  // namespace silkworm::state
-
-#endif  // SILKWORM_STATE_OBJECT_HPP_

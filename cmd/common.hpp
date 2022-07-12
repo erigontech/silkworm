@@ -15,8 +15,6 @@
 */
 
 #pragma once
-#ifndef SILKWORM_CMD_COMMON_HPP_
-#define SILKWORM_CMD_COMMON_HPP_
 
 #include <filesystem>
 #include <CLI/CLI.hpp>
@@ -51,4 +49,3 @@ void add_option_num_contexts(CLI::App& cli, uint32_t& num_contexts);
 void add_option_wait_mode(CLI::App& cli, silkworm::rpc::WaitMode& wait_mode);
 
 } // namespace silkworm::cmd
-#endif  // SILKWORM_CMD_COMMON_HPP_

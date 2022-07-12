@@ -15,8 +15,6 @@
 */
 
 #pragma once
-#ifndef SILKWORM_RPC_BACKEND_SERVER_HPP_
-#define SILKWORM_RPC_BACKEND_SERVER_HPP_
 
 #include <memory>
 #include <vector>
@@ -62,5 +60,3 @@ class BackEndKvServer : public Server {
 };
 
 } // namespace silkworm::rpc
-
-#endif // SILKWORM_RPC_BACKEND_SERVER_HPP_

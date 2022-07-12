@@ -15,8 +15,6 @@
 */
 
 #pragma once
-#ifndef SILKWORM_CHAIN_ELEMENTS_HPP
-#define SILKWORM_CHAIN_ELEMENTS_HPP
 
 #include <map>
 #include <queue>
@@ -257,5 +255,3 @@ struct Segment
 };
 
 }  // namespace silkworm
-
-#endif  // SILKWORM_CHAIN_ELEMENTS_HPP

@@ -15,8 +15,6 @@
 */
 
 #pragma once
-#ifndef SILKWORM_EXECUTION_EVM_HPP_
-#define SILKWORM_EXECUTION_EVM_HPP_
 
 #include <functional>
 #include <stack>
@@ -163,5 +161,3 @@ class EvmHost : public evmc::Host {
 };
 
 }  // namespace silkworm
-
-#endif  // SILKWORM_EXECUTION_EVM_HPP_

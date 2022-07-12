@@ -15,8 +15,6 @@
 */
 
 #pragma once
-#ifndef SILKWORM_RPC_SERVER_HPP_
-#define SILKWORM_RPC_SERVER_HPP_
 
 #include <memory>
 #include <vector>
@@ -154,5 +152,3 @@ class Server {
 };
 
 } // namespace silkworm::rpc
-
-#endif // SILKWORM_RPC_SERVER_HPP_

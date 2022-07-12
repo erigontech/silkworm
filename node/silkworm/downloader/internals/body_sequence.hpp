@@ -15,8 +15,6 @@ limitations under the License.
 */
 
 #pragma once
-#ifndef SILKWORM_BODY_SEQUENCE_HPP
-#define SILKWORM_BODY_SEQUENCE_HPP
 
 #include <list>
 
@@ -137,6 +135,3 @@ class BodySequence {
 };
 
 }
-
-
-#endif  // SILKWORM_BODY_SEQUENCE_HPP

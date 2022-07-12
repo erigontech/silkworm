@@ -15,8 +15,6 @@
 */
 
 #pragma once
-#ifndef SILKWORM_TYPES_LOG_HPP_
-#define SILKWORM_TYPES_LOG_HPP_
 
 #include <vector>
 
@@ -36,5 +34,3 @@ namespace rlp {
 }  // namespace rlp
 
 }  // namespace silkworm
-
-#endif  // SILKWORM_TYPES_LOG_HPP_

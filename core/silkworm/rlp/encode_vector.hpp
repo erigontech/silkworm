@@ -15,8 +15,6 @@
 */
 
 #pragma once
-#ifndef SILKWORM_RLP_ENCODE_VECTOR_HPP_
-#define SILKWORM_RLP_ENCODE_VECTOR_HPP_
 
 #include <vector>
 
@@ -52,5 +50,3 @@ void encode(Bytes& to, const std::vector<T>& v) {
 }
 
 }  // namespace silkworm::rlp
-
-#endif  // SILKWORM_RLP_ENCODE_VECTOR_HPP_

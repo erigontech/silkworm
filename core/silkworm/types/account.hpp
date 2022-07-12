@@ -15,8 +15,6 @@
 */
 
 #pragma once
-#ifndef SILKWORM_TYPES_ACCOUNT_HPP_
-#define SILKWORM_TYPES_ACCOUNT_HPP_
 
 #include <intx/intx.hpp>
 
@@ -57,5 +55,3 @@ struct Account {
 };
 
 }  // namespace silkworm
-
-#endif  // SILKWORM_TYPES_ACCOUNT_HPP_

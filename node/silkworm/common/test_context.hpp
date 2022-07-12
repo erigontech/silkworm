@@ -15,8 +15,6 @@
 */
 
 #pragma once
-#ifndef SILKWORM_COMMON_TEST_CONTEXT_HPP_
-#define SILKWORM_COMMON_TEST_CONTEXT_HPP_
 
 #include <silkworm/common/directories.hpp>
 #include <silkworm/db/mdbx.hpp>
@@ -57,5 +55,3 @@ class Context {
 };
 
 }  // namespace silkworm::test
-
-#endif  // SILKWORM_COMMON_TEST_CONTEXT_HPP_

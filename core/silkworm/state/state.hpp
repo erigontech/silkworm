@@ -15,8 +15,6 @@
 */
 
 #pragma once
-#ifndef SILKWORM_STATE_STATE_HPP_
-#define SILKWORM_STATE_STATE_HPP_
 
 #include <silkworm/state/block_state.hpp>
 #include <silkworm/types/account.hpp>
@@ -87,5 +85,3 @@ class State : public BlockState {
 };
 
 }  // namespace silkworm
-
-#endif  // SILKWORM_STATE_STATE_HPP_

@@ -37,8 +37,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 #pragma once
-#ifndef SILKWORM_COMMON_LRU_CACHE_HPP_
-#define SILKWORM_COMMON_LRU_CACHE_HPP_
 
 #include <cstddef>
 #include <list>
@@ -115,5 +113,3 @@ class lru_cache {
 };
 
 }  // namespace silkworm
-
-#endif  // SILKWORM_COMMON_LRU_CACHE_HPP_

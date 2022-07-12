@@ -15,8 +15,6 @@ limitations under the License.
 */
 
 #pragma once
-#ifndef SILKWORM_SEND_MESSAGE_TO_ALL_HPP
-#define SILKWORM_SEND_MESSAGE_TO_ALL_HPP
 
 #include <silkworm/downloader/sentry_client.hpp>
 
@@ -28,5 +26,3 @@ class SendMessageToAll : public rpc::UnaryCall<sentry::Sentry, sentry::OutboundM
 };
 
 }  // namespace silkworm::rpc
-
-#endif  // SILKWORM_SEND_MESSAGE_TO_ALL_HPP

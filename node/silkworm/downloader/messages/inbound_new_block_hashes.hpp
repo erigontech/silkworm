@@ -15,8 +15,6 @@
 */
 
 #pragma once
-#ifndef SILKWORM_INBOUND_NEW_BLOCK_HASHES_HPP
-#define SILKWORM_INBOUND_NEW_BLOCK_HASHES_HPP
 
 #include <silkworm/downloader/packets/new_block_hashes_packet.hpp>
 
@@ -41,5 +39,3 @@ class InboundNewBlockHashes : public InboundMessage {
 };
 
 }  // namespace silkworm
-
-#endif  // SILKWORM_INBOUND_NEW_BLOCK_HASHES_HPP

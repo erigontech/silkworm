@@ -15,8 +15,6 @@
 */
 
 #pragma once
-#ifndef SILKWORM_SENTRY_TYPE_CASTS_HPP
-#define SILKWORM_SENTRY_TYPE_CASTS_HPP
 
 #include <memory>
 
@@ -35,4 +33,3 @@ Hash hash_from_H256(const types::H256& orig);
 std::string string_from_H512(const types::H512& orig);
 
 }  // namespace silkworm
-#endif  // SILKWORM_SENTRY_TYPE_CASTS_HPP

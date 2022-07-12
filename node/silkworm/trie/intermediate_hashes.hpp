@@ -15,8 +15,6 @@
 */
 
 #pragma once
-#ifndef SILKWORM_TRIE_INTERMEDIATE_HASHES_HPP_
-#define SILKWORM_TRIE_INTERMEDIATE_HASHES_HPP_
 
 /* On TrieAccount & TrieStorage DB tables
 
@@ -183,5 +181,3 @@ evmc::bytes32 increment_intermediate_hashes(mdbx::txn& txn, const std::filesyste
 std::optional<Bytes> increment_key(ByteView unpacked);
 
 }  // namespace silkworm::trie
-
-#endif  // SILKWORM_TRIE_INTERMEDIATE_HASHES_HPP_

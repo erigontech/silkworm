@@ -15,8 +15,6 @@
 */
 
 #pragma once
-#ifndef SILKWORM_COMMON_ASSERT_HPP_
-#define SILKWORM_COMMON_ASSERT_HPP_
 
 namespace silkworm {
 void abort_due_to_assertion_failure(char const* expr, char const* file, long line);
@@ -28,5 +26,3 @@ void abort_due_to_assertion_failure(char const* expr, char const* file, long lin
         static_cast<void>(0); \
     else                      \
         ::silkworm::abort_due_to_assertion_failure(#expr, __FILE__, __LINE__)
-
-#endif  // SILKWORM_COMMON_ASSERT_HPP_

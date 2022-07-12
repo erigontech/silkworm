@@ -15,8 +15,6 @@
 */
 
 #pragma once
-#ifndef SILKWORM_DB_TX_HPP
-#define SILKWORM_DB_TX_HPP
 
 #include <functional>
 #include <set>
@@ -334,5 +332,3 @@ class Db::ReadWriteAccess::Tx : public Db::ReadOnlyAccess::Tx {
 inline auto Db::ReadOnlyAccess::start_ro_tx() -> Tx { return Tx(*this); }
 
 inline auto Db::ReadWriteAccess::start_tx() -> Tx { return Tx(*this); }
-
-#endif  // SILKWORM_DB_TX_HPP

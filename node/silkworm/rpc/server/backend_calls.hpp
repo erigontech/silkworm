@@ -15,8 +15,6 @@
 */
 
 #pragma once
-#ifndef SILKWORM_RPC_BACKEND_FACTORIES_HPP_
-#define SILKWORM_RPC_BACKEND_FACTORIES_HPP_
 
 #include <memory>
 #include <set>
@@ -225,5 +223,3 @@ struct BackEndService {
 };
 
 } // namespace silkworm::rpc
-
-#endif // SILKWORM_RPC_BACKEND_FACTORIES_HPP_

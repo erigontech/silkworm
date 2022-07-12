@@ -15,8 +15,6 @@
 */
 
 #pragma once
-#ifndef SILKWORM_DB_BITMAP_HPP_
-#define SILKWORM_DB_BITMAP_HPP_
 
 #include <optional>
 
@@ -47,5 +45,3 @@ roaring::Roaring64Map cut_left(roaring::Roaring64Map& bitmap, uint64_t size_limi
 roaring::Roaring cut_left(roaring::Roaring& bitmap, uint64_t size_limit);
 
 }  // namespace silkworm::db::bitmap
-
-#endif  // SILKWORM_DB_BITMAP_HPP_

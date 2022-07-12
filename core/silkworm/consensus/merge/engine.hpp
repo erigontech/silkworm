@@ -15,8 +15,6 @@
 */
 
 #pragma once
-#ifndef SILKWORM_CONSENSUS_MERGE_ENGINE_HPP_
-#define SILKWORM_CONSENSUS_MERGE_ENGINE_HPP_
 
 #include <silkworm/consensus/ethash/engine.hpp>
 #include <silkworm/consensus/pos/engine.hpp>
@@ -51,5 +49,3 @@ class MergeEngine : public IEngine {
 };
 
 }  // namespace silkworm::consensus
-
-#endif  // SILKWORM_CONSENSUS_MERGE_ENGINE_HPP_

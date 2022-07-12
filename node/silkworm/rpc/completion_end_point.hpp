@@ -15,8 +15,6 @@
 */
 
 #pragma once
-#ifndef SILKWORM_RPC_COMPLETION_END_POINT_HPP_
-#define SILKWORM_RPC_COMPLETION_END_POINT_HPP_
 
 #include <cstddef>
 
@@ -55,5 +53,3 @@ class CompletionEndPoint {
 };
 
 } // namespace silkworm::rpc
-
-#endif  // SILKWORM_RPC_COMPLETION_END_POINT_HPP_

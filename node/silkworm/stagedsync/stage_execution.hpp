@@ -15,8 +15,6 @@
 */
 
 #pragma once
-#ifndef SILKWORM_STAGEDSYNC_STAGE_EXECUTION_HPP_
-#define SILKWORM_STAGEDSYNC_STAGE_EXECUTION_HPP_
 
 #include <boost/circular_buffer.hpp>
 
@@ -77,5 +75,3 @@ class Execution final : public IStage {
 };
 
 }  // namespace silkworm::stagedsync
-
-#endif  // SILKWORM_STAGEDSYNC_STAGE_EXECUTION_HPP_

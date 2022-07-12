@@ -15,8 +15,6 @@
 */
 
 #pragma once
-#ifndef SILKWORM_INBOUND_GET_BLOCK_BODIES_HPP
-#define SILKWORM_INBOUND_GET_BLOCK_BODIES_HPP
 
 #include <silkworm/downloader/packets/get_block_bodies_packet.hpp>
 
@@ -40,4 +38,3 @@ class InboundGetBlockBodies : public InboundMessage {
 };
 
 }  // namespace silkworm
-#endif  // SILKWORM_INBOUND_GET_BLOCK_BODIES_HPP

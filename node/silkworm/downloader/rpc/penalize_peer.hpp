@@ -15,8 +15,6 @@
 */
 
 #pragma once
-#ifndef SILKWORM_PENALIZE_PEER_HPP
-#define SILKWORM_PENALIZE_PEER_HPP
 
 #include <silkworm/downloader/sentry_client.hpp>
 
@@ -28,5 +26,3 @@ class PenalizePeer : public rpc::UnaryCall<sentry::Sentry, sentry::PenalizePeerR
 };
 
 }  // namespace silkworm::rpc
-
-#endif  // SILKWORM_PENALIZE_PEER_HPP

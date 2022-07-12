@@ -15,8 +15,6 @@
 */
 
 #pragma once
-#ifndef SILKWORM_COMMON_DECODING_RESULT_HPP_
-#define SILKWORM_COMMON_DECODING_RESULT_HPP_
 
 namespace silkworm {
 
@@ -38,5 +36,3 @@ enum class [[nodiscard]] DecodingResult{
 };
 
 }  // namespace silkworm
-
-#endif  // SILKWORM_COMMON_DECODING_RESULT_HPP_

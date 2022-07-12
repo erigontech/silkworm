@@ -15,8 +15,6 @@
 */
 
 #pragma once
-#ifndef SILKWORM_DOWNLOADER_INTERNAL_ALGORITHM_HPP
-#define SILKWORM_DOWNLOADER_INTERNAL_ALGORITHM_HPP
 
 #include <stack>
 #include <vector>
@@ -33,5 +31,3 @@ template <typename T>
 void push_all(std::stack<T>& destination, std::vector<T>& source) {
     for (auto& element : source) destination.push(element);
 }
-
-#endif  // SILKWORM_DOWNLOADER_INTERNAL_ALGORITHM_HPP

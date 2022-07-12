@@ -15,8 +15,6 @@
 */
 
 #pragma once
-#ifndef SILKWORM_CHAIN_DIFFICULTY_HPP_
-#define SILKWORM_CHAIN_DIFFICULTY_HPP_
 
 #include <intx/intx.hpp>
 
@@ -34,5 +32,3 @@ intx::uint256 canonical_difficulty(uint64_t block_number, uint64_t block_timesta
                                    bool parent_has_uncles, const ChainConfig& config);
 
 }  // namespace silkworm
-
-#endif  // SILKWORM_CHAIN_DIFFICULTY_HPP_

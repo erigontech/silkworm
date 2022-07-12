@@ -15,8 +15,6 @@
 */
 
 #pragma once
-#ifndef SILKWORM_RPC_SERVER_CONTEXT_POOL_HPP_
-#define SILKWORM_RPC_SERVER_CONTEXT_POOL_HPP_
 
 #include <cstddef>
 #include <ostream>
@@ -117,5 +115,3 @@ class ServerContextPool {
 };
 
 } // namespace silkworm::rpc
-
-#endif // SILKWORM_RPC_SERVER_CONTEXT_POOL_HPP_

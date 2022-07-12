@@ -15,8 +15,6 @@
 */
 
 #pragma once
-#ifndef SILKWORM_TRIE_PREFIX_SET_HPP_
-#define SILKWORM_TRIE_PREFIX_SET_HPP_
 
 #include <vector>
 
@@ -48,5 +46,3 @@ class PrefixSet {
 };
 
 }  // namespace silkworm::trie
-
-#endif  // SILKWORM_TRIE_PREFIX_SET_HPP_

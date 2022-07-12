@@ -15,8 +15,6 @@
 */
 
 #pragma once
-#ifndef SILKWORM_PEER_MIN_BLOCK_HPP
-#define SILKWORM_PEER_MIN_BLOCK_HPP
 
 #include <silkworm/downloader/sentry_client.hpp>
 
@@ -28,5 +26,3 @@ class PeerMinBlock : public rpc::UnaryCall<sentry::Sentry, sentry::PeerMinBlockR
 };
 
 }  // namespace silkworm::rpc
-
-#endif  // SILKWORM_PEER_MIN_BLOCK_HPP

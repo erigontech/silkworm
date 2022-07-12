@@ -15,8 +15,6 @@
 */
 
 #pragma once
-#ifndef SILKWORM_CONCURRENCY_ACTIVE_COMPONENT_HPP_
-#define SILKWORM_CONCURRENCY_ACTIVE_COMPONENT_HPP_
 
 #include <atomic>
 
@@ -37,5 +35,3 @@ class ActiveComponent : public Stoppable {
 };
 
 }  // namespace silkworm
-
-#endif  // SILKWORM_CONCURRENCY_ACTIVE_COMPONENT_HPP_

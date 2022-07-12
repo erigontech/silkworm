@@ -15,8 +15,6 @@
 */
 
 #pragma once
-#ifndef SILKWORM_EXECUTION_ANALYSIS_CACHE_HPP_
-#define SILKWORM_EXECUTION_ANALYSIS_CACHE_HPP_
 
 #include <memory>
 
@@ -64,5 +62,3 @@ class AdvancedAnalysisCache {
 };
 
 }  // namespace silkworm
-
-#endif  // SILKWORM_EXECUTION_ANALYSIS_CACHE_HPP_

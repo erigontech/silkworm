@@ -15,8 +15,6 @@ limitations under the License.
 */
 
 #pragma once
-#ifndef SILKWORM_OUTBOUND_NEW_BLOCK_HASHES_HPP
-#define SILKWORM_OUTBOUND_NEW_BLOCK_HASHES_HPP
 
 #include <silkworm/downloader/internals/header_chain.hpp>
 #include <silkworm/downloader/packets/new_block_hashes_packet.hpp>
@@ -39,4 +37,3 @@ class OutboundNewBlockHashes : public OutboundMessage {
 };
 
 }  // namespace silkworm
-#endif  // SILKWORM_OUTBOUND_NEW_BLOCK_HASHES_HPP

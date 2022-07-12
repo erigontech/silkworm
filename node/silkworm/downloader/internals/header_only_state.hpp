@@ -15,8 +15,6 @@ limitations under the License.
 */
 
 #pragma once
-#ifndef SILKWORM_CUSTOM_HEADER_ONLY_CHAIN_STATE_HPP
-#define SILKWORM_CUSTOM_HEADER_ONLY_CHAIN_STATE_HPP
 
 #include <silkworm/state/block_state.hpp>
 
@@ -63,5 +61,3 @@ class SimpleHeaderOnlyChainState : public BlockState {
 };
 
 }  // namespace silkworm
-
-#endif  // SILKWORM_CUSTOM_HEADER_ONLY_CHAIN_STATE_HPP

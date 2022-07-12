@@ -15,8 +15,6 @@
 */
 
 #pragma once
-#ifndef SILKWORM_STATE_DELTA_HPP_
-#define SILKWORM_STATE_DELTA_HPP_
 
 #include <silkworm/common/base.hpp>
 #include <silkworm/state/object.hpp>
@@ -161,5 +159,3 @@ namespace state {
 
 }  // namespace state
 }  // namespace silkworm
-
-#endif  // SILKWORM_STATE_DELTA_HPP_

@@ -15,8 +15,6 @@
 */
 
 #pragma once
-#ifndef SILKWORM_COMMON_LOG_HPP_
-#define SILKWORM_COMMON_LOG_HPP_
 
 #include <filesystem>
 #include <sstream>
@@ -124,5 +122,3 @@ using Message = LogBuffer<Level::kNone>;
 #define SILK_ERROR SILK_LOGBUFFER(silkworm::log::Level::kError)
 #define SILK_CRIT SILK_LOGBUFFER(silkworm::log::Level::kCritical)
 #define SILK_LOG SILK_LOGBUFFER(silkworm::log::Level::kNone)
-
-#endif  // SILKWORM_COMMON_LOG_HPP_

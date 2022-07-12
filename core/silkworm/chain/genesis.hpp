@@ -15,8 +15,6 @@
 */
 
 #pragma once
-#ifndef SILKWORM_CORE_CHAIN_GENESIS_HPP_
-#define SILKWORM_CORE_CHAIN_GENESIS_HPP_
 
 #include <string>
 #include <cstddef>
@@ -30,5 +28,3 @@ namespace silkworm {
 std::string read_genesis_data(uint64_t chain_id);
 
 }  // namespace silkworm
-
-#endif  // SILKWORM_CORE_CHAIN_GENESIS_HPP_

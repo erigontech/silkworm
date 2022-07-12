@@ -15,8 +15,6 @@
 */
 
 #pragma once
-#ifndef SILKWORM_SEND_MESSAGE_BY_ID_HPP
-#define SILKWORM_SEND_MESSAGE_BY_ID_HPP
 
 #include <silkworm/downloader/sentry_client.hpp>
 
@@ -28,4 +26,3 @@ class SendMessageById : public rpc::UnaryCall<sentry::Sentry, sentry::SendMessag
 };
 
 }  // namespace silkworm::rpc
-#endif  // SILKWORM_SEND_MESSAGE_BY_ID_HPP

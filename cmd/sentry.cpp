@@ -14,14 +14,17 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+#include <filesystem>
+
 #include <CLI/CLI.hpp>
 #include <boost/asio/signal_set.hpp>
 #include <boost/process/environment.hpp>
-#include <sentry/options.hpp>
-#include <sentry/server.hpp>
 
+#include <silkworm/common/util.hpp>
 #include <silkworm/rpc/util.hpp>
-
+#include <sentry/options.hpp>
+#include <sentry/node_key_config.hpp>
+#include <sentry/server.hpp>
 #include "common.hpp"
 
 using namespace silkworm;
@@ -55,6 +58,28 @@ int sentry_main(int argc, char* argv[]) {
     add_option_num_contexts(cli, options.num_contexts);
     add_option_wait_mode(cli, options.wait_mode);
 
+    add_option_data_dir(cli, options.data_dir_path);
+
+    auto node_key_path_option = cli.add_option("--nodekey", [&options](CLI::results_t results) {
+        try {
+            options.node_key = {{std::filesystem::path(results[0])}};
+            return true;
+        } catch (const std::exception& e) {
+            log::Error() << e.what();
+            return false;
+        }
+    });
+    node_key_path_option->description("P2P node key file");
+
+    auto node_key_hex_option = cli.add_option("--nodekeyhex", [&options](CLI::results_t results) {
+        auto key_bytes = from_hex(results[0]);
+        if (key_bytes) {
+            options.node_key = {{key_bytes.value()}};
+        }
+        return key_bytes.has_value();
+    });
+    node_key_hex_option->description("P2P node key as a hex string");
+
     auto static_peers_option = cli.add_option("--staticpeers", [&options](CLI::results_t results) {
         try {
             for (auto& result : results) {
@@ -80,6 +105,11 @@ int sentry_main(int argc, char* argv[]) {
     log::set_thread_name("main");
     // TODO(canepat): this could be an option in Silkworm logging facility
     silkworm::rpc::Grpc2SilkwormLogGuard log_guard;
+
+    // TODO: move inside the Server
+    DataDirectory data_dir{options.data_dir_path, true};
+    [[maybe_unused]]
+    NodeKey node_key = node_key_get_or_generate(options.node_key, data_dir);
 
     Server server{options};
     server.build_and_start();

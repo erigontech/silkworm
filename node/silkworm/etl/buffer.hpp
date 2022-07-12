@@ -14,6 +14,7 @@
    limitations under the License.
 */
 
+#pragma once
 #ifndef SILKWORM_ETL_BUFFER_HPP_
 #define SILKWORM_ETL_BUFFER_HPP_
 

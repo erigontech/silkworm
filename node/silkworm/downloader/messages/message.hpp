@@ -14,6 +14,7 @@
    limitations under the License.
 */
 
+#pragma once
 #ifndef SILKWORM_MESSAGE_HPP
 #define SILKWORM_MESSAGE_HPP
 

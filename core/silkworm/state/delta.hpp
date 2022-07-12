@@ -14,6 +14,7 @@
    limitations under the License.
 */
 
+#pragma once
 #ifndef SILKWORM_STATE_DELTA_HPP_
 #define SILKWORM_STATE_DELTA_HPP_
 

@@ -14,6 +14,7 @@
     limitations under the License.
 */
 
+#pragma once
 #ifndef SILKWORM_PRIORITY_QUEUE_HPP
 #define SILKWORM_PRIORITY_QUEUE_HPP
 

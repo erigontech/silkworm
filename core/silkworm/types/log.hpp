@@ -14,6 +14,7 @@
    limitations under the License.
 */
 
+#pragma once
 #ifndef SILKWORM_TYPES_LOG_HPP_
 #define SILKWORM_TYPES_LOG_HPP_
 

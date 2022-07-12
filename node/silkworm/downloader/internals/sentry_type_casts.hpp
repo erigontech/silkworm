@@ -14,6 +14,7 @@
    limitations under the License.
 */
 
+#pragma once
 #ifndef SILKWORM_SENTRY_TYPE_CASTS_HPP
 #define SILKWORM_SENTRY_TYPE_CASTS_HPP
 

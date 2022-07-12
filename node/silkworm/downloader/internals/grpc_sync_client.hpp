@@ -14,6 +14,7 @@
    limitations under the License.
 */
 
+#pragma once
 #ifndef SILKWORM_GRPC_SYNC_CLIENT_HPP
 #define SILKWORM_GRPC_SYNC_CLIENT_HPP
 

@@ -14,6 +14,7 @@
    limitations under the License.
 */
 
+#pragma once
 #ifndef SILKWORM_BODY_RETRIEVAL_HPP
 #define SILKWORM_BODY_RETRIEVAL_HPP
 

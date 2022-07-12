@@ -14,6 +14,7 @@
    limitations under the License.
 */
 
+#pragma once
 #ifndef SILKWORM_AS_RANGE
 #define SILKWORM_AS_RANGE
 

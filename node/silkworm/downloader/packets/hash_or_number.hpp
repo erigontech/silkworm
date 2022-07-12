@@ -14,6 +14,7 @@
    limitations under the License.
 */
 
+#pragma once
 #ifndef SILKWORM_HASH_OR_NUMBER_HPP
 #define SILKWORM_HASH_OR_NUMBER_HPP
 

@@ -14,6 +14,7 @@
    limitations under the License.
 */
 
+#pragma once
 #ifndef SILKWORM_TRIE_PREFIX_SET_HPP_
 #define SILKWORM_TRIE_PREFIX_SET_HPP_
 

@@ -32,6 +32,7 @@
  * limitations under the License.
  */
 
+#pragma once
 #ifndef SILKWORM_RPC_SERVER_WAIT_STRATEGY_HPP_
 #define SILKWORM_RPC_SERVER_WAIT_STRATEGY_HPP_
 

@@ -14,6 +14,7 @@
    limitations under the License.
 */
 
+#pragma once
 #ifndef SILKWORM_WASM_API_HPP_
 #define SILKWORM_WASM_API_HPP_
 

@@ -14,6 +14,7 @@
    limitations under the License.
 */
 
+#pragma once
 #ifndef SILKWORM_CHAIN_DAO_HPP_
 #define SILKWORM_CHAIN_DAO_HPP_
 

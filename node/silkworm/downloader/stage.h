@@ -1,4 +1,5 @@
 
+#pragma once
 #ifndef SILKWORM_STAGE_H
 #define SILKWORM_STAGE_H
 

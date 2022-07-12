@@ -14,6 +14,7 @@
    limitations under the License.
 */
 
+#pragma once
 #ifndef SILKWORM_RLPETH66PACKETS_HPP
 #define SILKWORM_RLPETH66PACKETS_HPP
 

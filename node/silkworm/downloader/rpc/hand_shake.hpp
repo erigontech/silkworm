@@ -14,6 +14,7 @@
    limitations under the License.
 */
 
+#pragma once
 #ifndef SILKWORM_HAND_SHAKE_HPP
 #define SILKWORM_HAND_SHAKE_HPP
 

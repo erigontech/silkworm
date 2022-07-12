@@ -17,6 +17,7 @@
 // RLP decoding functions as per
 // https://eth.wiki/en/fundamentals/rlp
 
+#pragma once
 #ifndef SILKWORM_RLP_DECODE_HPP_
 #define SILKWORM_RLP_DECODE_HPP_
 

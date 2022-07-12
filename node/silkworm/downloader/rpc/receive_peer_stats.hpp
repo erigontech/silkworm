@@ -14,6 +14,7 @@
    limitations under the License.
 */
 
+#pragma once
 #ifndef SILKWORM_RECEIVE_PEER_STATS_HPP
 #define SILKWORM_RECEIVE_PEER_STATS_HPP
 

@@ -14,6 +14,7 @@
    limitations under the License.
 */
 
+#pragma once
 #ifndef SILKWORM_PENALIZE_PEER_HPP
 #define SILKWORM_PENALIZE_PEER_HPP
 

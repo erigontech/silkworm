@@ -14,6 +14,7 @@
    limitations under the License.
 */
 
+#pragma once
 #ifndef SILKWORM_PEER_MIN_BLOCK_HPP
 #define SILKWORM_PEER_MIN_BLOCK_HPP
 

@@ -14,6 +14,7 @@
    limitations under the License.
 */
 
+#pragma once
 #ifndef SILKWORM_CHAIN_ELEMENTS_HPP
 #define SILKWORM_CHAIN_ELEMENTS_HPP
 

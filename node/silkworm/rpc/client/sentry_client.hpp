@@ -14,6 +14,7 @@
    limitations under the License.
 */
 
+#pragma once
 #ifndef SILKWORM_RPC_CLIENT_SENTRY_CLIENT_HPP_
 #define SILKWORM_RPC_CLIENT_SENTRY_CLIENT_HPP_
 

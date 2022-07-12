@@ -14,6 +14,7 @@
    limitations under the License.
 */
 
+#pragma once
 #ifndef SILKWORM_STAGEDSYNC_STAGE_SENDERS_HPP_
 #define SILKWORM_STAGEDSYNC_STAGE_SENDERS_HPP_
 

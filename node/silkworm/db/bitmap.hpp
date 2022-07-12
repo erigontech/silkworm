@@ -14,6 +14,7 @@
    limitations under the License.
 */
 
+#pragma once
 #ifndef SILKWORM_DB_BITMAP_HPP_
 #define SILKWORM_DB_BITMAP_HPP_
 

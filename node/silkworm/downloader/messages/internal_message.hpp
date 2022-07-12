@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+#pragma once
 #ifndef SILKWORM_INTERNAL_MESSAGE_HPP
 #define SILKWORM_INTERNAL_MESSAGE_HPP
 

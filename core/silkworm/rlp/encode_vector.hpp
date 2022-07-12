@@ -14,6 +14,7 @@
    limitations under the License.
 */
 
+#pragma once
 #ifndef SILKWORM_RLP_ENCODE_VECTOR_HPP_
 #define SILKWORM_RLP_ENCODE_VECTOR_HPP_
 

@@ -14,6 +14,7 @@
    limitations under the License.
 */
 
+#pragma once
 #ifndef SILKWORM_RPC_COMPLETION_END_POINT_HPP_
 #define SILKWORM_RPC_COMPLETION_END_POINT_HPP_
 

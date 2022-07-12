@@ -14,6 +14,7 @@
    limitations under the License.
 */
 
+#pragma once
 #ifndef SILKWORM_GET_BLOCK_HEADERS_PACKET_HPP
 #define SILKWORM_GET_BLOCK_HEADERS_PACKET_HPP
 

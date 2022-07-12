@@ -14,6 +14,7 @@
    limitations under the License.
 */
 
+#pragma once
 #ifndef SILKWORM_CONCURRENCY_CONTAINERS_HPP_
 #define SILKWORM_CONCURRENCY_CONTAINERS_HPP_
 

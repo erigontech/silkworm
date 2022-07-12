@@ -14,6 +14,7 @@
    limitations under the License.
 */
 
+#pragma once
 #ifndef SILKWORM_STAGEDSYNC_LISTENER_LOG_INDEX_HPP_
 #define SILKWORM_STAGEDSYNC_LISTENER_LOG_INDEX_HPP_
 

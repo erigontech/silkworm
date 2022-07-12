@@ -14,6 +14,7 @@
    limitations under the License.
 */
 
+#pragma once
 #ifndef SILKWORM_CHAIN_PROTOCOL_PARAM_HPP_
 #define SILKWORM_CHAIN_PROTOCOL_PARAM_HPP_
 

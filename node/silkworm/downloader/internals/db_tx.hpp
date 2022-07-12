@@ -14,6 +14,7 @@
    limitations under the License.
 */
 
+#pragma once
 #ifndef SILKWORM_DB_TX_HPP
 #define SILKWORM_DB_TX_HPP
 

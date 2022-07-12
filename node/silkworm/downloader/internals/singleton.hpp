@@ -14,6 +14,7 @@
    limitations under the License.
 */
 
+#pragma once
 #ifndef SILKWORM_SINGLETON_HPP
 #define SILKWORM_SINGLETON_HPP
 

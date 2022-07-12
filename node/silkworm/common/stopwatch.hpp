@@ -14,6 +14,7 @@
    limitations under the License.
 */
 
+#pragma once
 #ifndef SILKWORM_COMMON_STOPWATCH_HPP_
 #define SILKWORM_COMMON_STOPWATCH_HPP_
 

@@ -14,6 +14,7 @@
    limitations under the License.
 */
 
+#pragma once
 #ifndef SILKWORM_RANDOM_NUMBER_HPP
 #define SILKWORM_RANDOM_NUMBER_HPP
 #include <random>

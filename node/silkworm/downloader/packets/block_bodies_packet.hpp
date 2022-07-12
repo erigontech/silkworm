@@ -14,6 +14,7 @@
    limitations under the License.
 */
 
+#pragma once
 #ifndef SILKWORM_BLOCK_BODIES_PACKET_HPP
 #define SILKWORM_BLOCK_BODIES_PACKET_HPP
 

@@ -11,6 +11,7 @@
    limitations under the License.
 */
 
+#pragma once
 #ifndef SILKWORM_ETL_COLLECTOR_HPP_
 #define SILKWORM_ETL_COLLECTOR_HPP_
 

@@ -14,6 +14,7 @@
     limitations under the License.
 */
 
+#pragma once
 #ifndef SILKWORM_CMD_COMMON_HPP_
 #define SILKWORM_CMD_COMMON_HPP_
 

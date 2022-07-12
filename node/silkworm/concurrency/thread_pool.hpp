@@ -19,6 +19,7 @@
  * sizes. See also http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2020/p2019r0.pdf
  */
 
+#pragma once
 #ifndef SILKWORM_CONCURRENCY_THREAD_POOL_HPP_
 #define SILKWORM_CONCURRENCY_THREAD_POOL_HPP_
 

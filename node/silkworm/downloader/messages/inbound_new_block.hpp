@@ -14,6 +14,7 @@
    limitations under the License.
 */
 
+#pragma once
 #ifndef SILKWORM_INBOUND_NEW_BLOCK_HPP
 #define SILKWORM_INBOUND_NEW_BLOCK_HPP
 

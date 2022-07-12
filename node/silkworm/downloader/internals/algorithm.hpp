@@ -14,6 +14,7 @@
    limitations under the License.
 */
 
+#pragma once
 #ifndef SILKWORM_DOWNLOADER_INTERNAL_ALGORITHM_HPP
 #define SILKWORM_DOWNLOADER_INTERNAL_ALGORITHM_HPP
 

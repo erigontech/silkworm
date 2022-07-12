@@ -14,6 +14,7 @@
    limitations under the License.
 */
 
+#pragma once
 #ifndef SILKWORM_RPC_SERVER_HPP_
 #define SILKWORM_RPC_SERVER_HPP_
 

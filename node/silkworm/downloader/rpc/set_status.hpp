@@ -14,6 +14,7 @@
    limitations under the License.
 */
 
+#pragma once
 #ifndef SILKWORM_SET_STATUS_HPP
 #define SILKWORM_SET_STATUS_HPP
 

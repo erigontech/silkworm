@@ -14,6 +14,7 @@
    limitations under the License.
 */
 
+#pragma once
 #ifndef SILKWORM_BACKEND_ETHEREUM_BACKEND_HPP_
 #define SILKWORM_BACKEND_ETHEREUM_BACKEND_HPP_
 

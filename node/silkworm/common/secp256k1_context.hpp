@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+#pragma once
 #ifndef SILKWORM_COMMON_SECP256K1_CONTEXT_HPP_
 #define SILKWORM_COMMON_SECP256K1_CONTEXT_HPP_
 

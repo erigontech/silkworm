@@ -14,6 +14,7 @@
    limitations under the License.
 */
 
+#pragma once
 #ifndef SILKWORM_EXECUTION_EXECUTION_HPP_
 #define SILKWORM_EXECUTION_EXECUTION_HPP_
 

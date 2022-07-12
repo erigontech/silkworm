@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+#pragma once
 #ifndef SILKWORM_SENTRY_NAT_OPTION_HPP_
 #define SILKWORM_SENTRY_NAT_OPTION_HPP_
 

@@ -14,6 +14,7 @@
    limitations under the License.
 */
 
+#pragma once
 #ifndef SILKWORM_TYPE_Y_PARITY_AND_CHAIN_ID_HPP_
 #define SILKWORM_TYPE_Y_PARITY_AND_CHAIN_ID_HPP_
 

@@ -21,8 +21,8 @@ limitations under the License.
 
 #include <silkworm/common/util.hpp>
 #include <silkworm/rpc/util.hpp>
-#include <sentry/settings.hpp>
-#include <sentry/sentry.hpp>
+#include <silkworm/sentry/settings.hpp>
+#include <silkworm/sentry/sentry.hpp>
 #include "common.hpp"
 
 using namespace silkworm;

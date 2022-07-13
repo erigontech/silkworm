@@ -19,7 +19,7 @@ limitations under the License.
 #include <p2psentry/sentry.grpc.pb.h>
 #include <silkworm/rpc/server/server.hpp>
 #include <silkworm/rpc/server/server_config.hpp>
-#include "../options.hpp"
+#include "../settings.hpp"
 #include "service.hpp"
 
 namespace silkworm::sentry::rpc {

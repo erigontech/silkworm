@@ -27,7 +27,7 @@ using namespace std;
 
 class SentryImpl final {
   public:
-    explicit SentryImpl(Options options);
+    explicit SentryImpl(Settings settings);
 
     SentryImpl(const SentryImpl&) = delete;
     SentryImpl& operator=(const SentryImpl&) = delete;
@@ -39,28 +39,28 @@ class SentryImpl final {
   private:
     void setup_shutdown_on_signals(boost::asio::io_context&);
 
-    Options options_;
+    Settings settings_;
     rpc::Server rpc_server_;
     optional<unique_ptr<boost::asio::signal_set>> shutdown_signals_;
 };
 
-static silkworm::rpc::ServerConfig make_server_config(const Options& options) {
+static silkworm::rpc::ServerConfig make_server_config(const Settings& settings) {
     silkworm::rpc::ServerConfig config;
-    config.set_address_uri(options.api_address);
-    config.set_num_contexts(options.num_contexts);
-    config.set_wait_mode(options.wait_mode);
+    config.set_address_uri(settings.api_address);
+    config.set_num_contexts(settings.num_contexts);
+    config.set_wait_mode(settings.wait_mode);
     return config;
 }
 
-SentryImpl::SentryImpl(Options options)
-    : options_(std::move(options)),
-      rpc_server_(make_server_config(options_)) {
+SentryImpl::SentryImpl(Settings settings)
+    : settings_(std::move(settings)),
+      rpc_server_(make_server_config(settings_)) {
 }
 
 void SentryImpl::start() {
-    DataDirectory data_dir{options_.data_dir_path, true};
+    DataDirectory data_dir{settings_.data_dir_path, true};
     [[maybe_unused]]
-    NodeKey node_key = node_key_get_or_generate(options_.node_key, data_dir);
+    NodeKey node_key = node_key_get_or_generate(settings_.node_key, data_dir);
 
     rpc_server_.build_and_start();
     setup_shutdown_on_signals(rpc_server_.next_io_context());
@@ -83,8 +83,8 @@ void SentryImpl::setup_shutdown_on_signals(boost::asio::io_context& io_context) 
     });
 }
 
-Sentry::Sentry(Options options)
-    : p_impl_(make_unique<SentryImpl>(std::move(options))) {
+Sentry::Sentry(Settings settings)
+    : p_impl_(make_unique<SentryImpl>(std::move(settings))) {
 }
 
 Sentry::~Sentry() {

@@ -14,12 +14,12 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-#include "options.hpp"
+#include "settings.hpp"
 #include <thread>
 
 namespace silkworm::sentry {
 
-Options::Options() {
+Settings::Settings() {
     num_contexts = std::thread::hardware_concurrency() / 2;
 }
 

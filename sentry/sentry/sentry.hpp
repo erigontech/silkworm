@@ -17,7 +17,7 @@ limitations under the License.
 #pragma once
 
 #include <memory>
-#include "options.hpp"
+#include "settings.hpp"
 
 namespace silkworm::sentry {
 
@@ -25,7 +25,7 @@ class SentryImpl;
 
 class Sentry final {
   public:
-    explicit Sentry(Options options);
+    explicit Sentry(Settings settings);
     ~Sentry();
 
     Sentry(const Sentry&) = delete;

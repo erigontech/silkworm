@@ -29,7 +29,7 @@ limitations under the License.
 
 namespace silkworm::sentry {
 
-struct Options {
+struct Settings {
     log::Settings log_settings;
 
     std::string api_address{"127.0.0.1:9091"};
@@ -50,7 +50,7 @@ struct Options {
 
     std::vector<EnodeUrl> static_peers;
 
-    Options();
+    Settings();
 };
 
 }  // namespace silkworm::sentry

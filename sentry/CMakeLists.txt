@@ -36,7 +36,7 @@ list(PREPEND SRC ${GRPC_SRC})
 
 add_library(${TARGET} ${SRC})
 
-add_dependencies(silkworm_node generate_sentry_grpc)
+add_dependencies(${TARGET} silkworm_node generate_sentry_grpc)
 
 set_source_files_properties(${GRPC_SRC} PROPERTIES GENERATED TRUE)
 if(NOT MSVC)

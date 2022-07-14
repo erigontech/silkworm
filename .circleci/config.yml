@@ -74,6 +74,10 @@ commands:
           working_directory: ~/build
           no_output_timeout: 20m
           command: cmd/test/consensus --threads 4 # out of memory with 8 threads under thread sanitizer 
+      - run:
+          name: "Sentry unit tests"
+          working_directory: ~/build
+          command: cmd/test/sentry_test
 
 jobs:
   linux-gcc-11-thread-sanitizer:

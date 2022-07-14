@@ -22,7 +22,7 @@ find_package(gRPC CONFIG REQUIRED)
 get_filename_component(SILKWORM_MAIN_DIR ../ ABSOLUTE)
 
 file(GLOB_RECURSE SILKWORM_NODE_SRC CONFIGURE_DEPENDS "*.cpp" "*.hpp" "*.c" "*.h" "*.cc")
-list(FILTER SILKWORM_NODE_SRC EXCLUDE REGEX "_test\.cpp$")
+list(FILTER SILKWORM_NODE_SRC EXCLUDE REGEX "_test\\.cpp$")
 
 set(SILKWORM_INTERFACE_SRC
         ${SILKWORM_MAIN_DIR}/interfaces/p2psentry/sentry.grpc.pb.cc

@@ -15,6 +15,14 @@
 ]]
 
 hunter_config(
+  abseil
+  VERSION 20220623.0
+  URL https://github.com/abseil/abseil-cpp/archive/20220623.0.tar.gz
+  SHA1 144c2108e1532c642cdb6ca532ee26e91146cf28
+  CMAKE_ARGS ABSL_PROPAGATE_CXX_STD=ON
+)
+
+hunter_config(
   Microsoft.GSL
   VERSION 4.0.0
   URL https://github.com/microsoft/GSL/archive/v4.0.0.tar.gz
@@ -32,6 +40,11 @@ hunter_config(
 hunter_config(
   Protobuf
   VERSION 3.14.0-4a09d77-p0
+  CMAKE_ARGS
+    CMAKE_POLICY_DEFAULT_CMP0063=NEW
+    CMAKE_C_VISIBILITY_PRESET=hidden
+    CMAKE_CXX_VISIBILITY_PRESET=hidden
+    CMAKE_VISIBILITY_INLINES_HIDDEN=ON
 )
 
 hunter_config(

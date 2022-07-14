@@ -15,6 +15,7 @@
 ]]
 
 find_package(Catch2 CONFIG REQUIRED)
+find_package(Microsoft.GSL CONFIG REQUIRED)
 
 # Silkworm Core Tests
 file(GLOB_RECURSE SILKWORM_CORE_TESTS CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/core/silkworm/*_test.cpp")
@@ -52,6 +53,11 @@ if(NOT SILKWORM_CORE_ONLY)
   if(SILKWORM_SANITIZE)
     target_compile_definitions(sentry_test PRIVATE GRPC_ASAN_SUPPRESSED GRPC_TSAN_SUPPRESSED)
   endif()
-  target_link_libraries(sentry_test silkworm_sentry Catch2::Catch2)
+  target_link_libraries(sentry_test
+    silkworm_sentry
+    silkworm_node
+    Catch2::Catch2
+    Microsoft.GSL::GSL
+  )
 
 endif()

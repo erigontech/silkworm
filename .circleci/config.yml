@@ -33,11 +33,11 @@ commands:
             sudo apt-get install -y libgmp3-dev
       - restore_cache:
           name: "Restore Hunter cache"
-          key: &hunter-cache-key hunter-{{ .Environment.CIRCLE_JOB }}-{{checksum "cmake/toolchain/base.cmake"}}-{{checksum "cmake/Hunter/config.cmake"}}-{{checksum "cmake/Hunter/core_packages.cmake"}}-{{checksum "cmake/Hunter/extra_packages.cmake"}}
+          key: &hunter-cache-key hunter-{{ .Environment.CIRCLE_JOB }}-{{checksum "cmake/Hunter/config.cmake"}}-{{checksum "cmake/toolchain/base.cmake"}}-{{checksum "cmake/toolchain/cxx17.cmake"}}-{{checksum "cmake/toolchain/cxx20.cmake"}}-{{checksum "cmake/toolchain/clang_libcxx.cmake"}}-{{checksum "cmake/toolchain/wasi.cmake"}}
       - run:
           name: "Cmake"
           working_directory: ~/build
-          command: cmake ../project -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DSILKWORM_CLANG_COVERAGE=$CLANG_COVERAGE -DSILKWORM_SANITIZE=$SANITIZE
+          command: cmake ../project -DCMAKE_TOOLCHAIN_FILE=$HOME/project/cmake/toolchain/$TOOLCHAIN.cmake -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DSILKWORM_CLANG_COVERAGE=$CLANG_COVERAGE -DSILKWORM_SANITIZE=$SANITIZE
       - save_cache:
           name: "Save Hunter cache"
           key: *hunter-cache-key
@@ -46,6 +46,16 @@ commands:
       - run:
           name: "Build"
           command: cmake --build ~/build -j4 # each compiler job requires 4GB of RAM
+
+  # libc++ is an alternative standard library needed for coroutines support on Clang
+  # https://libcxx.llvm.org
+  install_libcxx:
+    steps:
+      - run:
+          name: "Install libc++"
+          command: |
+            sudo apt-get update
+            sudo apt -y install libc++-$CLANG_VERSION-dev libc++abi-$CLANG_VERSION-dev
 
   test:
     steps:
@@ -68,6 +78,7 @@ commands:
 jobs:
   linux-gcc-11-thread-sanitizer:
     environment:
+      TOOLCHAIN: cxx20
       BUILD_TYPE: Debug
       CLANG_COVERAGE: OFF
       SANITIZE: thread
@@ -81,6 +92,7 @@ jobs:
 
   linux-gcc-10-debug:
     environment:
+      TOOLCHAIN: cxx20
       BUILD_TYPE: Debug
       CLANG_COVERAGE: OFF
       SANITIZE: OFF
@@ -94,6 +106,7 @@ jobs:
 
   linux-gcc-12-release:
     environment:
+      TOOLCHAIN: cxx20
       BUILD_TYPE: Release
       CLANG_COVERAGE: OFF
       SANITIZE: OFF
@@ -105,21 +118,26 @@ jobs:
       - build
       - test
 
-  linux-clang-12-address-sanitizer:
+  linux-clang-13-address-sanitizer:
     environment:
+      TOOLCHAIN: clang_libcxx
+      CLANG_VERSION: 13
       BUILD_TYPE: Debug
       CLANG_COVERAGE: OFF
       SANITIZE: address
     docker:
-      - image: ethereum/cpp-build-env:17-clang-12
+      - image: ethereum/cpp-build-env:17-clang-13
     resource_class: xlarge
     steps:
       - checkout_with_submodules
+      - install_libcxx
       - build
       - test
 
   linux-clang-13-coverage:
     environment:
+      TOOLCHAIN: clang_libcxx
+      CLANG_VERSION: 13
       BUILD_TYPE: Debug
       CLANG_COVERAGE: ON
       SANITIZE: OFF
@@ -128,6 +146,7 @@ jobs:
     resource_class: xlarge
     steps:
       - checkout_with_submodules
+      - install_libcxx
       - build
       - run:
           name: "Core unit tests"
@@ -219,5 +238,5 @@ workflows:
       - linux-gcc-12-release
       - linux-gcc-11-thread-sanitizer
       - linux-clang-13-coverage
-      - linux-clang-12-address-sanitizer
+      - linux-clang-13-address-sanitizer
       - linux-wasm-build

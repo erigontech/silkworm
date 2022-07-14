@@ -94,6 +94,13 @@ elseif("${CMAKE_CXX_COMPILER_ID}" MATCHES ".*Clang$")
     add_compile_options(-gline-tables-only)
   endif()
 
+  # coroutines support
+  if(NOT SILKWORM_WASM_API)
+    add_compile_options(-stdlib=libc++)
+    link_libraries(c++)
+    link_libraries(c++abi)
+  endif()
+
 else ()
 
  message(WARNING "${CMAKE_CXX_COMPILER_ID} is not tested. Should you stumble into any issue please report at https://github.com/torquem-ch/silkworm/issues")

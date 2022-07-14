@@ -20,11 +20,14 @@
 
 #include <silkworm/common/as_range.hpp>
 
+#include "identity.hpp"
+
 namespace silkworm {
 
 static const std::vector<std::pair<std::string, const ChainConfig*>> kKnownChainConfigs{
-    {"mainnet", &kMainnetConfig}, {"ropsten", &kRopstenConfig}, {"rinkeby", &kRinkebyConfig},
-    {"goerli", &kGoerliConfig},   {"sepolia", &kSepoliaConfig},
+    {kMainnetIdentity.name, &kMainnetConfig}, {kRopstenIdentity.name, &kRopstenConfig},
+    {kRinkebyIdentity.name, &kRinkebyConfig}, {kGoerliIdentity.name, &kGoerliConfig},
+    {kSepoliaIdentity.name, &kSepoliaConfig},
 };
 
 constexpr const char* kTerminalTotalDifficulty{"terminalTotalDifficulty"};

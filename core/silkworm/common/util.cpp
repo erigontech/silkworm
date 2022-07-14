@@ -114,7 +114,7 @@ std::optional<unsigned> decode_hex_digit(char ch) noexcept {
 }
 
 std::optional<Bytes> from_hex(std::string_view hex) noexcept {
-    if (hex.length() >= 2 && hex[0] == '0' && (hex[1] == 'x' || hex[1] == 'X')) {
+    if (has_hex_prefix(hex)) {
         hex.remove_prefix(2);
     }
     if (hex.empty()) {

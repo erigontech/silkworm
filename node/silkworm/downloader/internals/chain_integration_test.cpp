@@ -25,8 +25,8 @@
 #include <silkworm/consensus/engine.hpp>
 #include <silkworm/db/genesis.hpp>
 
-#include "header_persistence.hpp"
 #include "header_chain.hpp"
+#include "header_persistence.hpp"
 
 namespace silkworm {
 
@@ -91,7 +91,7 @@ TEST_CASE("working/persistent-chain integration test") {
         // header1.gas_limit = 5000;
         // header1.timestamp = ++timestamp;
         // header1.difficulty = canonical_difficulty(header1.number, header1.timestamp, header0->difficulty,
-        // header0->timestamp, false, ChainIdentity::mainnet.chain);
+        // header0->timestamp, false, kMainnetIdentity.config);
         header1.parent_hash = header0_hash;
         auto header1_hash = header1.hash();
 

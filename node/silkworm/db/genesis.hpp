@@ -1,5 +1,5 @@
 /*
-    Copyright 2021 The Silkworm Authors
+    Copyright 2021-2022 The Silkworm Authors
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -18,7 +18,7 @@
 #ifndef SILKWORM_DB_GENESIS_HPP_
 #define SILKWORM_DB_GENESIS_HPP_
 
-#include "access_layer.hpp"
+#include <silkworm/db/access_layer.hpp>
 
 namespace silkworm::db {
 //! \brief Validates provided genesis json payload

@@ -42,6 +42,10 @@ evmc::bytes32 to_bytes32(ByteView bytes);
 //! \return A new view of the sequence
 ByteView zeroless_view(ByteView data);
 
+inline bool has_hex_prefix(std::string_view s) {
+    return s.length() >= 2 && s[0] == '0' && (s[1] == 'x' || s[1] == 'X');
+}
+
 //! \brief Returns a string representing the hex form of provided string of bytes
 std::string to_hex(ByteView bytes, bool with_prefix = false);
 

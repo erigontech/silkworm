@@ -44,18 +44,16 @@ TrieCursor::move_operation_result TrieCursor::to_prefix(ByteView prefix) {
     for (auto& sub_node : sub_nodes_) {
         sub_node.reset();
     }
+    auto& sub_node{sub_nodes_[level_]};
 
     prefix_.assign(prefix);  // Set the prefix and move on top of tree
-    db_seek({});             // Moves db_cursor_ on top of *existing* (if any) trie
+    db_seek({});             // Try to locate root node of this tree
 
-    if (!db_cursor_eof_) {
-        // We've found a record : proceed with parsing.
-        level_ = db_cursor_key_.length();
-        auto& sub_node{sub_nodes_[level_]};
+    if (!db_cursor_eof_ && db_cursor_key_.length() == 0) {
+        // We've found a root record : proceed with parsing.
         sub_node.parse(db_cursor_key_, db_cursor_val_);
-        if (level_ > 0) {
-            sub_nodes_[0].child_id = static_cast<int8_t>(sub_node.key[0]);
-        }
+    } else {
+        sub_node.child_id = 0;
     }
 
     return to_next();
@@ -82,10 +80,10 @@ TrieCursor::move_operation_result TrieCursor::to_next() {
         auto& sub_node{sub_nodes_[level_]};
         if (sub_node.child_id > 0xf) {
             // This node is completely traversed - Ascend one level if possible
-            sub_node.reset();  // We leave this level so reset it
             if (level_ == 0) {
                 return {};  // No higher level
             }
+            sub_node.reset();                    // We leave this level so reset it
             sub_nodes_[--level_].child_id += 1;  // To next child of parent
             continue;
         }
@@ -119,11 +117,9 @@ TrieCursor::move_operation_result TrieCursor::to_next() {
         }
 
         // Do we have children in db ?
-        // Firstly we check whether result from previous seek
-        // has data in the path: should we find data then descend
-        // one level and restart. This prevents multiple lookups of same key
-        // Eventually look in db for a child
-        if (sub_node.has_tree()) {
+        // We must either rely on tree_mask (if node is loaded from db) or, if we're at level 0 (root)
+        // search in any case as we might not have a node loaded.
+        if ((!level_ && sub_node.value.empty()) || sub_node.has_tree()) {
             db_seek(full_key);
             if (!db_cursor_eof_) {
                 auto& child_sub_node{sub_nodes_[++level_]};
@@ -132,11 +128,16 @@ TrieCursor::move_operation_result TrieCursor::to_next() {
             }
         }
 
+        // Something to process on this node ?
+        if (!has_changes && !sub_node.has_state()) {
+            ++sub_node.child_id;
+            continue;
+        }
+
         // Return to calling loop to process hashed states with current nibbled prefix
         move_operation_result ret{false, full_key, pack_nibbles(full_key), std::nullopt, false};
         ++sub_node.child_id;  // Increment for next cycle
         return ret;
-
     }
 }
 
@@ -152,7 +153,7 @@ void TrieCursor::db_seek(ByteView seek_key) {
         buffer_.append(seek_key);
     }
 
-    auto buffer_slice{db::to_slice(buffer_)};
+    const auto buffer_slice{db::to_slice(buffer_)};
     auto data{buffer_.empty() ? db_cursor_.to_first(false) : db_cursor_.lower_bound(buffer_slice, false)};
     if (!data || !data.key.starts_with(buffer_slice)) {
         db_cursor_eof_ = true;
@@ -252,14 +253,12 @@ std::optional<Bytes> TrieCursor::SubNode::get_hash() const {
     return Bytes(hashes.substr(kHashLength * hash_idx, kHashLength));
 }
 
-bool TrieCursor::SubNode::has_tree() const {
-    return (child_id == -1 || value.empty() || (tree_mask & (1u << child_id)) != 0);
-}
+bool TrieCursor::SubNode::has_tree() const { return (tree_mask & (1u << child_id)) != 0; }
 
 bool TrieCursor::SubNode::has_hash() const {
     return child_id == -1 ? !root_hash.empty() : ((hash_mask & (1u << child_id)) != 0);
 }
 
-bool TrieCursor::SubNode::has_state() const { return (value.empty() || state_mask & (1u << child_id)) != 0; }
+bool TrieCursor::SubNode::has_state() const { return (state_mask & (1u << child_id)) != 0; }
 
 }  // namespace silkworm::trie

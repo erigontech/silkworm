@@ -396,13 +396,8 @@ evmc::bytes32 InterHashes::calculate_root(db::RWTxn& txn, trie::PrefixSet* accou
     trie::HashBuilder hash_builder;
     auto collector = account_collector_.get();
     hash_builder.node_collector = [collector](ByteView nibbled_key, const trie::Node& node) {
-        if (!nibbled_key.empty()) {
-            etl::Entry entry{Bytes(nibbled_key), {}};
-            if (node.state_mask() != 0) {
-                entry.value = node.encode_for_storage();
-            }
-            collector->collect(std::move(entry));
-        }
+        Bytes value{node.state_mask() ? node.encode_for_storage() : Bytes()};
+        collector->collect({Bytes{nibbled_key}, value});
     };
 
     size_t log_trigger_counter{1};
@@ -458,31 +453,32 @@ evmc::bytes32 InterHashes::calculate_root(db::RWTxn& txn, trie::PrefixSet* accou
 
 evmc::bytes32 InterHashes::calculate_storage_root(db::RWTxn& txn, const Bytes& db_storage_prefix,
                                                   trie::PrefixSet* storage_changes) {
+    const bool debug{db_storage_prefix ==
+                     *from_hex("0xe4405bfd8d8a3a8b528b1fc9187bc030f0dbaa79e828619a95d9335ddfe3ea6b0000000000000001")};
+
     static Bytes rlp{};
     db::Cursor hashed_storage(txn, db::table::kHashedStorage);
     db::Cursor trie_storage(txn, db::table::kTrieOfStorage);
 
     trie::HashBuilder hash_builder;
     auto collector = storage_collector_.get();
-    hash_builder.node_collector = [collector, db_storage_prefix](ByteView unpacked_storage_key,
-                                                                 const trie::Node& node) {
+    hash_builder.node_collector = [collector, db_storage_prefix, debug](ByteView nibbled_key, const trie::Node& node) {
         Bytes key{db_storage_prefix};
-        key.append(unpacked_storage_key);
-        Bytes value{};
-        if (node.state_mask() == 0) {
-            collector->collect({key, value});
-            return;
-        }
-        if (!unpacked_storage_key.empty() && node.hash_mask() == 0 && node.tree_mask() == 0) {
-            return;
-        }
-        value = node.encode_for_storage();
+        key.append(nibbled_key);
+        Bytes value{node.state_mask() ? node.encode_for_storage() : Bytes()};
         collector->collect({key, value});
+        if (debug) {
+            log::Trace("Collector", {"key", to_hex(key, true)});
+        }
     };
 
     auto db_storage_prefix_slice{db::to_slice(db_storage_prefix)};
     trie::TrieCursor trie_cursor{trie_storage, storage_changes, collector};
     for (auto tdata{trie_cursor.to_prefix(db_storage_prefix)}; tdata.key.has_value(); tdata = trie_cursor.to_next()) {
+        if (debug) {
+            log::Trace("Trie", {"key", to_hex(tdata.key.value(), true), "skip", (tdata.skip_state ? "true" : "false")});
+        }
+
         if (tdata.skip_state) {
             SILKWORM_ASSERT(tdata.hash.has_value());
             evmc::bytes32 hash{to_bytes32(tdata.hash.value())};
@@ -496,20 +492,25 @@ evmc::bytes32 InterHashes::calculate_storage_root(db::RWTxn& txn, const Bytes& d
             const ByteView data_value_view{db::from_slice(hs_data.value)};
 
             // Check the nibbled data key matches current trie node key
-            const auto hs_data_key_nibbled{trie::unpack_nibbles(data_value_view.substr(0, kHashLength))};
-            if (!hs_data_key_nibbled.starts_with(*tdata.key)) {
+            const auto nibbled_location{trie::unpack_nibbles(data_value_view.substr(0, kHashLength))};
+            if (!nibbled_location.starts_with(*tdata.key)) {
                 break;
             }
 
             const ByteView value{data_value_view.substr(kHashLength)};
             rlp.clear();
             rlp::encode(rlp, value);
-            hash_builder.add_leaf(hs_data_key_nibbled, rlp);
+            hash_builder.add_leaf(nibbled_location, rlp);
             hs_data = hashed_storage.to_current_next_multi(/*throw_notfound=*/false);
         }
     }
 
-    return hash_builder.root_hash();
+    auto ret{hash_builder.root_hash()};
+    if (debug) {
+        log::Trace("Trie", {"root", to_hex(ret.bytes, true)});
+    }
+    return ret;
+
 }
 
 void InterHashes::reset_log_progress() {

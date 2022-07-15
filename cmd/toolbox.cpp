@@ -1412,6 +1412,23 @@ void do_trie_root(db::EnvConfig& config) {
     }
 }
 
+void do_hashed_storage(db::EnvConfig& config) {
+
+    auto env{silkworm::db::open_env(config)};
+    auto txn{env.start_read()};
+    db::Cursor hs_cursor(txn, db::table::kHashedStorage);
+    const Bytes prefix{*from_hex("e4405bfd8d8a3a8b528b1fc9187bc030f0dbaa79e828619a95d9335ddfe3ea6b0000000000000001")};
+    auto hs_data{hs_cursor.lower_bound_multivalue(db::to_slice(prefix), {}, false)};
+    while (hs_data) {
+        const auto hs_data_key_view{db::from_slice(hs_data.key)};
+        const auto hs_data_value_view{db::from_slice(hs_data.value)};
+
+        log::Info("Storage",{"location", to_hex(trie::unpack_nibbles(hs_data_value_view.substr(0, kHashLength))), "value", to_hex(hs_data_value_view.substr(kHashLength))});
+        hs_data = hs_cursor.to_current_next_multi(false);
+    }
+
+}
+
 int main(int argc, char* argv[]) {
     SignalHandler::init();
 
@@ -1538,6 +1555,10 @@ int main(int argc, char* argv[]) {
     // Trie root rebuild and check
     auto cmd_trie_root = app_main.add_subcommand("trie-root", "Compute trie root");
 
+    // Trie root rebuild and check
+    auto cmd_hashed_storage = app_main.add_subcommand("hashed_storage", "Debug");
+
+
     /*
      * Parse arguments and validate
      */
@@ -1629,6 +1650,8 @@ int main(int argc, char* argv[]) {
             do_trie_account_analysis(src_config);
         } else if (*cmd_trie_root) {
             do_trie_root(src_config);
+        } else if (*cmd_hashed_storage) {
+            do_hashed_storage(src_config);
         }
 
         return 0;

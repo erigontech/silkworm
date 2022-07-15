@@ -230,12 +230,12 @@ void HashBuilder::gen_struct_step(ByteView current, const ByteView succeeding) {
                         SILKWORM_ASSERT(child_hashes[i].size() == kHashLength + 1);
                         std::memcpy(hashes[i].bytes, &child_hashes[i][1], kHashLength);
                     }
-                    Node n{groups_[len], tree_masks_[len], hash_masks_[len], hashes};
+                    Node node{groups_[len], tree_masks_[len], hash_masks_[len], hashes};
                     if (len == 0) {
-                        n.set_root_hash(root_hash(/*auto_finalize=*/false));
+                        node.set_root_hash(root_hash(/*auto_finalize=*/false));
                     }
 
-                    node_collector(current.substr(0, len), n);
+                    node_collector(current.substr(0, len), node);
                 }
             }
         }

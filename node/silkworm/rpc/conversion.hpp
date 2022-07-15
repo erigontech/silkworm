@@ -14,8 +14,7 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_RPC_CONVERSION_HPP_
-#define SILKWORM_RPC_CONVERSION_HPP_
+#pragma once
 
 #include <memory>
 #include <string>
@@ -57,5 +56,3 @@ std::unique_ptr<types::H256> H256_from_bytes32(const evmc::bytes32& orig);
 std::unique_ptr<types::H160> H160_from_address(const evmc::address& orig);
 
 } // namespace silkworm::rpc
-
-#endif // SILKWORM_RPC_CONVERSION_HPP_

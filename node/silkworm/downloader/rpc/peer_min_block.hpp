@@ -14,8 +14,7 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_PEER_MIN_BLOCK_HPP
-#define SILKWORM_PEER_MIN_BLOCK_HPP
+#pragma once
 
 #include <silkworm/downloader/sentry_client.hpp>
 
@@ -27,5 +26,3 @@ class PeerMinBlock : public rpc::UnaryCall<sentry::Sentry, sentry::PeerMinBlockR
 };
 
 }  // namespace silkworm::rpc
-
-#endif  // SILKWORM_PEER_MIN_BLOCK_HPP

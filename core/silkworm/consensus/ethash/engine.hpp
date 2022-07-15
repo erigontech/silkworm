@@ -15,8 +15,6 @@
 */
 
 #pragma once
-#ifndef SILKWORM_CONSENSUS_ETHASH_ENGINE_HPP_
-#define SILKWORM_CONSENSUS_ETHASH_ENGINE_HPP_
 
 #include <ethash/ethash.hpp>
 
@@ -45,5 +43,3 @@ class EthashEngine : public EngineBase {
 };
 
 }  // namespace silkworm::consensus
-
-#endif  // SILKWORM_CONSENSUS_ETHASH_ENGINE_HPP_

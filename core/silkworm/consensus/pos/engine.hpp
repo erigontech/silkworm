@@ -14,8 +14,7 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_CONSENSUS_POS_ENGINE_HPP_
-#define SILKWORM_CONSENSUS_POS_ENGINE_HPP_
+#pragma once
 
 #include <silkworm/consensus/base/engine.hpp>
 
@@ -33,5 +32,3 @@ class ProofOfStakeEngine : public EngineBase {
 };
 
 }  // namespace silkworm::consensus
-
-#endif  // SILKWORM_CONSENSUS_POS_ENGINE_HPP_

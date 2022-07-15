@@ -14,8 +14,7 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_CHAIN_CONFIG_HPP_
-#define SILKWORM_CHAIN_CONFIG_HPP_
+#pragma once
 
 #include <array>
 #include <cstdint>
@@ -230,5 +229,3 @@ const ChainConfig* lookup_chain_config(std::string_view identifier) noexcept;
 std::map<std::string, uint64_t> get_known_chains_map() noexcept;
 
 }  // namespace silkworm
-
-#endif  // SILKWORM_CHAIN_CONFIG_HPP_

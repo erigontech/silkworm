@@ -15,8 +15,6 @@
 */
 
 #pragma once
-#ifndef SILKWORM_STAGEDSYNC_COMMON_HPP_
-#define SILKWORM_STAGEDSYNC_COMMON_HPP_
 
 #include <cstdint>
 #include <exception>
@@ -128,5 +126,3 @@ class IStage : public Stoppable {
 };
 
 }  // namespace silkworm::stagedsync
-
-#endif  // SILKWORM_STAGEDSYNC_COMMON_HPP_

@@ -14,8 +14,7 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_WASM_API_HPP_
-#define SILKWORM_WASM_API_HPP_
+#pragma once
 
 // Preliminary Silkworm API for WebAssembly.
 // Currently it's unstable and is likely to change.
@@ -136,5 +135,3 @@ SILKWORM_EXPORT void delete_blockchain(silkworm::consensus::Blockchain* x);
 SILKWORM_EXPORT silkworm::ValidationResult blockchain_insert_block(silkworm::consensus::Blockchain* chain,
                                                                    silkworm::Block* block, bool check_state_root);
 }
-
-#endif  // SILKWORM_WASM_API_HPP_

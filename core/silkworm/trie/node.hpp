@@ -14,8 +14,7 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_TRIE_NODE_HPP_
-#define SILKWORM_TRIE_NODE_HPP_
+#pragma once
 
 #include <cassert>
 #include <optional>
@@ -73,5 +72,3 @@ inline void assert_subset(uint16_t sub, uint16_t sup) {
 }
 
 }  // namespace silkworm::trie
-
-#endif  // SILKWORM_TRIE_NODE_HPP_

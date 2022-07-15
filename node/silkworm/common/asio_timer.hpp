@@ -15,8 +15,6 @@
 */
 
 #pragma once
-#ifndef SILKWORM_COMMON_ASIO_TIMER_HPP_
-#define SILKWORM_COMMON_ASIO_TIMER_HPP_
 
 #include <atomic>
 #include <chrono>
@@ -96,5 +94,3 @@ class Timer {
 };
 
 }  // namespace silkworm
-
-#endif  // SILKWORM_COMMON_ASIO_TIMER_HPP_

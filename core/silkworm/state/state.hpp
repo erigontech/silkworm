@@ -14,8 +14,7 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_STATE_STATE_HPP_
-#define SILKWORM_STATE_STATE_HPP_
+#pragma once
 
 #include <silkworm/state/block_state.hpp>
 #include <silkworm/types/account.hpp>
@@ -86,5 +85,3 @@ class State : public BlockState {
 };
 
 }  // namespace silkworm
-
-#endif  // SILKWORM_STATE_STATE_HPP_

@@ -14,8 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-#ifndef SILKWORM_COMMON_SECP256K1_CONTEXT_HPP_
-#define SILKWORM_COMMON_SECP256K1_CONTEXT_HPP_
+#pragma once
 
 #include <secp256k1.h>
 #include <gsl/pointers>
@@ -57,5 +56,3 @@ class SecP256K1Context final {
 };
 
 }  // namespace silkworm
-
-#endif  // !SILKWORM_COMMON_SECP256K1_CONTEXT_HPP_

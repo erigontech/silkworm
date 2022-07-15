@@ -14,8 +14,7 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_COMMON_CAST_HPP_
-#define SILKWORM_COMMON_CAST_HPP_
+#pragma once
 
 // Utilities for type casting
 
@@ -47,5 +46,3 @@ bit_cast(const From& src) noexcept {
 inline ByteView string_view_to_byte_view(std::string_view sv) { return {byte_ptr_cast(sv.data()), sv.length()}; }
 
 }  // namespace silkworm
-
-#endif  // SILKWORM_COMMON_CAST_HPP_

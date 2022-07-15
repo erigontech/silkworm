@@ -14,8 +14,7 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_TYPES_HPP
-#define SILKWORM_TYPES_HPP
+#pragma once
 
 #include <chrono>
 
@@ -127,5 +126,3 @@ struct hash<silkworm::Hash> : public std::hash<evmc::bytes32>  // to use Hash wi
 {};
 
 }  // namespace std
-
-#endif  // SILKWORM_TYPES_HPP

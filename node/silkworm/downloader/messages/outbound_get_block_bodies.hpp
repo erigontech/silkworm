@@ -14,8 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-#ifndef SILKWORM_OUTBOUND_GET_BLOCK_BODIES_HPP
-#define SILKWORM_OUTBOUND_GET_BLOCK_BODIES_HPP
+#pragma once
 
 #include <silkworm/downloader/packets/get_block_bodies_packet.hpp>
 
@@ -43,5 +42,3 @@ class OutboundGetBlockBodies : public OutboundMessage {
 };
 
 }
-
-#endif  // SILKWORM_OUTBOUND_GET_BLOCK_BODIES_HPP

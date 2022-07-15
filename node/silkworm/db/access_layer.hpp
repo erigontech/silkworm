@@ -14,8 +14,7 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_DB_ACCESS_LAYER_HPP_
-#define SILKWORM_DB_ACCESS_LAYER_HPP_
+#pragma once
 
 // Database Access Layer
 // See Erigon core/rawdb/accessors_chain.go
@@ -144,5 +143,3 @@ uint64_t increment_map_sequence(mdbx::txn& txn, const char* map_name, uint64_t i
 uint64_t read_map_sequence(mdbx::txn& txn, const char* map_name);
 
 }  // namespace silkworm::db
-
-#endif  // !SILKWORM_DB_ACCESS_LAYER_HPP_

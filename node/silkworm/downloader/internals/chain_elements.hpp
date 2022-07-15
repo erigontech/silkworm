@@ -14,8 +14,7 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_CHAIN_ELEMENTS_HPP
-#define SILKWORM_CHAIN_ELEMENTS_HPP
+#pragma once
 
 #include <map>
 #include <queue>
@@ -256,5 +255,3 @@ struct Segment
 };
 
 }  // namespace silkworm
-
-#endif  // SILKWORM_CHAIN_ELEMENTS_HPP

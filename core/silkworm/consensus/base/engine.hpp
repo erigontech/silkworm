@@ -15,8 +15,6 @@
 */
 
 #pragma once
-#ifndef SILKWORM_CONSENSUS_BASE_ENGINE_HPP_
-#define SILKWORM_CONSENSUS_BASE_ENGINE_HPP_
 
 #include <silkworm/consensus/engine.hpp>
 
@@ -78,5 +76,3 @@ class EngineBase : public IEngine {
 };
 
 }  // namespace silkworm::consensus
-
-#endif  // SILKWORM_CONSENSUS_BASE_ENGINE_HPP_

@@ -15,8 +15,6 @@
 */
 
 #pragma once
-#ifndef SILKWORM_CORE_CHAIN_GENESIS_HPP_
-#define SILKWORM_CORE_CHAIN_GENESIS_HPP_
 
 #include <cstddef>
 #include <string>
@@ -36,5 +34,3 @@ std::string read_genesis_data(uint64_t chain_id);
 BlockHeader read_genesis_header(const nlohmann::json& genesis_config, const evmc::bytes32& state_root);
 
 }  // namespace silkworm
-
-#endif  // SILKWORM_CORE_CHAIN_GENESIS_HPP_

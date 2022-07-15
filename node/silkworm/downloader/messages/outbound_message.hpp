@@ -13,8 +13,7 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 */
-#ifndef SILKWORM_OUTBOUND_MESSAGE_HPP
-#define SILKWORM_OUTBOUND_MESSAGE_HPP
+#pragma once
 
 #include "message.hpp"
 #include <silkworm/downloader/sentry_client.hpp>
@@ -34,4 +33,3 @@ inline std::ostream& operator<<(std::ostream& os, const silkworm::OutboundMessag
 }
 
 }  // namespace silkworm
-#endif  // SILKWORM_OUTBOUND_MESSAGE_HPP

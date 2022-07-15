@@ -15,8 +15,6 @@
 */
 
 #pragma once
-#ifndef SILKWORM_COMMON_TERMINAL_HPP_
-#define SILKWORM_COMMON_TERMINAL_HPP_
 
 namespace silkworm {
 
@@ -92,5 +90,3 @@ inline constexpr const char* kColorTealUnderline = "\x1b[4;36m";    // Cyan
 void init_terminal();
 
 }  // namespace silkworm
-
-#endif  // SILKWORM_COMMON_TERMINAL_HPP_

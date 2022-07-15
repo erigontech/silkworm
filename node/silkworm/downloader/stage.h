@@ -1,6 +1,5 @@
 
-#ifndef SILKWORM_STAGE_H
-#define SILKWORM_STAGE_H
+#pragma once
 
 #include <silkworm/downloader/internals/types.hpp>
 
@@ -21,5 +20,3 @@ class Stage {
 };
 
 }
-
-#endif  // SILKWORM_STAGE_H

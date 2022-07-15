@@ -14,8 +14,7 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_COMMON_UTIL_HPP_
-#define SILKWORM_COMMON_UTIL_HPP_
+#pragma once
 
 #include <cstring>
 #include <optional>
@@ -84,5 +83,3 @@ size_t prefix_length(ByteView a, ByteView b);
 inline ethash::hash256 keccak256(ByteView view) { return ethash::keccak256(view.data(), view.size()); }
 
 }  // namespace silkworm
-
-#endif  // SILKWORM_COMMON_UTIL_HPP_

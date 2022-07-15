@@ -14,8 +14,7 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_STAGEDSYNC_STAGE_SENDERS_HPP_
-#define SILKWORM_STAGEDSYNC_STAGE_SENDERS_HPP_
+#pragma once
 
 #include <silkworm/stagedsync/common.hpp>
 #include <silkworm/stagedsync/stage_senders/recovery_farm.hpp>
@@ -38,5 +37,3 @@ class Senders final : public IStage {
 };
 
 }  // namespace silkworm::stagedsync
-
-#endif  // SILKWORM_STAGEDSYNC_STAGE_SENDERS_HPP_

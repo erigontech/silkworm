@@ -14,8 +14,7 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_CONSENSUS_ENGINE_HPP_
-#define SILKWORM_CONSENSUS_ENGINE_HPP_
+#pragma once
 
 #include <silkworm/consensus/validation.hpp>
 #include <silkworm/state/intra_block_state.hpp>
@@ -76,5 +75,3 @@ ValidationResult pre_validate_transaction(const Transaction& txn, uint64_t block
 std::unique_ptr<IEngine> engine_factory(const ChainConfig& chain_config);
 
 }  // namespace silkworm::consensus
-
-#endif  // SILKWORM_CONSENSUS_ENGINE_HPP_

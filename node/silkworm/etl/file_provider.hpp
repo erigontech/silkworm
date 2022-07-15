@@ -14,8 +14,7 @@
    limitations under the License.
 */
 
-#ifndef ETL_SILKWORM_FILE_PROVIDER_HPP_
-#define ETL_SILKWORM_FILE_PROVIDER_HPP_
+#pragma once
 
 #include <fstream>
 #include <memory>
@@ -50,5 +49,3 @@ class FileProvider {
 };
 
 }  // namespace silkworm::etl
-
-#endif  // !ETL_SILKWORM_FILE_PROVIDER_HPP_

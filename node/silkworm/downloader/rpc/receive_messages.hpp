@@ -14,8 +14,7 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_RECEIVE_MESSAGES_HPP
-#define SILKWORM_RECEIVE_MESSAGES_HPP
+#pragma once
 
 #include <silkworm/downloader/sentry_client.hpp>
 
@@ -29,5 +28,3 @@ class ReceiveMessages : public rpc::OutStreamingCall<sentry::Sentry, sentry::Mes
 };
 
 }  // namespace silkworm::rpc
-
-#endif  // SILKWORM_RECEIVE_MESSAGES_HPP

@@ -14,8 +14,7 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_HAND_SHAKE_HPP
-#define SILKWORM_HAND_SHAKE_HPP
+#pragma once
 
 #include <silkworm/chain/identity.hpp>
 #include <silkworm/downloader/internals/types.hpp>
@@ -29,5 +28,3 @@ namespace silkworm::rpc {
 };
 
 }  // namespace silkworm::rpc
-
-#endif  // SILKWORM_HAND_SHAKE_HPP

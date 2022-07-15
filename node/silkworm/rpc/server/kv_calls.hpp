@@ -14,8 +14,7 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_RPC_KV_FACTORIES_HPP_
-#define SILKWORM_RPC_KV_FACTORIES_HPP_
+#pragma once
 
 #include <exception>
 #include <map>
@@ -206,5 +205,3 @@ std::string dump_mdbx_result(const mdbx::cursor::move_result& result);
 } // namespace detail
 
 } // namespace silkworm::rpc
-
-#endif // SILKWORM_RPC_KV_FACTORIES_HPP_

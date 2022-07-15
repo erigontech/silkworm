@@ -14,8 +14,7 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_TRIE_PREFIX_SET_HPP_
-#define SILKWORM_TRIE_PREFIX_SET_HPP_
+#pragma once
 
 #include <vector>
 
@@ -47,5 +46,3 @@ class PrefixSet {
 };
 
 }  // namespace silkworm::trie
-
-#endif  // SILKWORM_TRIE_PREFIX_SET_HPP_

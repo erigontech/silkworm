@@ -14,8 +14,7 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_INBOUND_BLOCK_BODIES_HPP
-#define SILKWORM_INBOUND_BLOCK_BODIES_HPP
+#pragma once
 
 #include <silkworm/downloader/packets/block_bodies_packet.hpp>
 
@@ -39,5 +38,3 @@ class InboundBlockBodies : public InboundMessage {
 };
 
 }  // namespace silkworm
-
-#endif  // SILKWORM_INBOUND_BLOCK_BODIES_HPP

@@ -14,8 +14,7 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_CORE_CHAIN_IDENTITY_HPP_
-#define SILKWORM_CORE_CHAIN_IDENTITY_HPP_
+#pragma once
 
 #include <silkworm/chain/config.hpp>
 #include <silkworm/common/base.hpp>
@@ -62,5 +61,3 @@ inline constexpr ChainIdentity kSepoliaIdentity{
 };
 
 }  // namespace silkworm
-
-#endif  // SILKWORM_CORE_CHAIN_IDENTITY_HPP_

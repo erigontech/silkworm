@@ -14,8 +14,7 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_NEWBLOCKHASHPACKET_HPP
-#define SILKWORM_NEWBLOCKHASHPACKET_HPP
+#pragma once
 
 #include <silkworm/downloader/internals/types.hpp>
 
@@ -51,5 +50,3 @@ inline std::ostream& operator<<(std::ostream& os, const NewBlockHashesPacket& pa
 }
 
 }  // namespace silkworm
-
-#endif  // SILKWORM_NEWBLOCKHASHPACKET_HPP

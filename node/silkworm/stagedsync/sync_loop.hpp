@@ -15,8 +15,6 @@
 */
 
 #pragma once
-#ifndef SILKWORM_STAGEDSYNC_SYNCLOOP_HPP_
-#define SILKWORM_STAGEDSYNC_SYNCLOOP_HPP_
 
 #include <silkworm/common/asio_timer.hpp>
 #include <silkworm/common/stopwatch.hpp>
@@ -49,4 +47,3 @@ class SyncLoop final : public Worker {
     std::string get_log_prefix() const;  // Returns the current log lines prefix on behalf of current stage
 };
 }  // namespace silkworm::stagedsync
-#endif  // SILKWORM_STAGEDSYNC_SYNCLOOP_HPP_

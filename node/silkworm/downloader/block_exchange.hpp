@@ -14,8 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-#ifndef SILKWORM_BLOCK_EXCHANGE_H
-#define SILKWORM_BLOCK_EXCHANGE_H
+#pragma once
 
 #include <silkworm/chain/identity.hpp>
 #include <silkworm/concurrency/active_component.hpp>
@@ -58,5 +57,3 @@ class BlockExchange : public ActiveComponent {
 };
 
 }  // namespace silkworm
-
-#endif  // SILKWORM_BLOCK_EXCHANGE_H

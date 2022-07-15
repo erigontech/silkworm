@@ -14,8 +14,7 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_GRPC_SYNC_CLIENT_HPP
-#define SILKWORM_GRPC_SYNC_CLIENT_HPP
+#pragma once
 
 #include <chrono>
 #include <iostream>
@@ -242,5 +241,3 @@ class OutStreamingCall : public Call<STUB> {
 };
 
 }  // namespace silkworm::rpc
-
-#endif  // SILKWORM_GRPC_SYNC_CLIENT_HPP

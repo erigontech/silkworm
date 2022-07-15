@@ -14,8 +14,7 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_TYPES_BLOOM_HPP_
-#define SILKWORM_TYPES_BLOOM_HPP_
+#pragma once
 
 #include <array>
 #include <cstddef>
@@ -39,5 +38,3 @@ inline void join(Bloom& sum, const Bloom& addend) {
 }
 
 }  // namespace silkworm
-
-#endif  // SILKWORM_TYPES_BLOOM_HPP_

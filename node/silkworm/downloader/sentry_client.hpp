@@ -14,8 +14,7 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_SENTRY_CLIENT_HPP
-#define SILKWORM_SENTRY_CLIENT_HPP
+#pragma once
 
 #include <p2psentry/sentry.grpc.pb.h>
 
@@ -78,4 +77,3 @@ class SentryClientException : public std::runtime_error {
 };
 
 }  // namespace silkworm
-#endif  // SILKWORM_SENTRY_CLIENT_HPP

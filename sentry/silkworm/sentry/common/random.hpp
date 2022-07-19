@@ -16,31 +16,10 @@ limitations under the License.
 
 #pragma once
 
-#include <string>
 #include <silkworm/common/base.hpp>
 
 namespace silkworm::sentry::common {
 
-class EccKeyPair {
-  public:
-    EccKeyPair();
-    explicit EccKeyPair(Bytes data);
-    explicit EccKeyPair(const ByteView& data);
-
-    [[nodiscard]]
-    Bytes public_key() const;
-
-    [[nodiscard]]
-    std::string public_key_hex() const;
-
-    [[nodiscard]]
-    ByteView private_key() const { return private_key_; }
-
-    [[nodiscard]]
-    std::string private_key_hex() const;
-
-  private:
-    Bytes private_key_;
-};
+Bytes random_bytes(Bytes::size_type size);
 
 }  // namespace silkworm::sentry::common

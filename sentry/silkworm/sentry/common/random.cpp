@@ -14,33 +14,19 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-#pragma once
-
-#include <string>
-#include <silkworm/common/base.hpp>
+#include "random.hpp"
+#include <random>
 
 namespace silkworm::sentry::common {
 
-class EccKeyPair {
-  public:
-    EccKeyPair();
-    explicit EccKeyPair(Bytes data);
-    explicit EccKeyPair(const ByteView& data);
+Bytes random_bytes(Bytes::size_type size) {
+    std::default_random_engine random_engine{std::random_device{}()};
+    std::uniform_int_distribution<uint8_t> random_distribution;
 
-    [[nodiscard]]
-    Bytes public_key() const;
-
-    [[nodiscard]]
-    std::string public_key_hex() const;
-
-    [[nodiscard]]
-    ByteView private_key() const { return private_key_; }
-
-    [[nodiscard]]
-    std::string private_key_hex() const;
-
-  private:
-    Bytes private_key_;
-};
+    Bytes data(size, 0);
+    for (auto& d : data)
+        d = random_distribution(random_engine);
+    return data;
+}
 
 }  // namespace silkworm::sentry::common

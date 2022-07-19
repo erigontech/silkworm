@@ -16,31 +16,25 @@ limitations under the License.
 
 #pragma once
 
-#include <string>
 #include <silkworm/common/base.hpp>
 
-namespace silkworm::sentry::common {
+namespace silkworm::sentry::rlpx::auth {
 
-class EccKeyPair {
+class EciesCipher {
   public:
-    EccKeyPair();
-    explicit EccKeyPair(Bytes data);
-    explicit EccKeyPair(const ByteView& data);
+    using PublicKey = Bytes;
+    using PublicKeyView = ByteView;
+    using PrivateKeyView = ByteView;
 
-    [[nodiscard]]
-    Bytes public_key() const;
+    struct Message {
+        PublicKey ephemeral_public_key;
+        Bytes iv;
+        Bytes cipher_text;
+        Bytes mac;
+    };
 
-    [[nodiscard]]
-    std::string public_key_hex() const;
-
-    [[nodiscard]]
-    ByteView private_key() const { return private_key_; }
-
-    [[nodiscard]]
-    std::string private_key_hex() const;
-
-  private:
-    Bytes private_key_;
+    static Message encrypt(ByteView plain_text, PublicKeyView public_key);
+    static Bytes decrypt(const Message& message, PrivateKeyView private_key);
 };
 
-}  // namespace silkworm::sentry::common
+}  // namespace silkworm::sentry::rlpx::auth

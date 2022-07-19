@@ -16,7 +16,7 @@ limitations under the License.
 
 #include "ecc_key_pair.hpp"
 #include <array>
-#include <random>
+#include <silkworm/sentry/common/random.hpp>
 #include <silkworm/common/util.hpp>
 #include <silkworm/common/secp256k1_context.hpp>
 
@@ -24,17 +24,9 @@ namespace silkworm::sentry::common {
 
 EccKeyPair::EccKeyPair() {
     SecP256K1Context ctx;
-
-    std::default_random_engine random_engine{std::random_device{}()};
-    std::uniform_int_distribution<uint8_t> random_distribution;
-
-    std::array<uint8_t, 32> data{};
     do {
-        for (auto& d : data)
-            d = random_distribution(random_engine);
-    } while (!ctx.verify_private_key_data(data));
-
-    private_key_ = Bytes(data.data(), data.size());
+        private_key_ = common::random_bytes(32);
+    } while (!ctx.verify_private_key_data(private_key_));
 }
 
 EccKeyPair::EccKeyPair(Bytes data) : private_key_(std::move(data)) {
@@ -46,6 +38,20 @@ EccKeyPair::EccKeyPair(Bytes data) : private_key_(std::move(data)) {
 }
 
 EccKeyPair::EccKeyPair(const ByteView& data) : EccKeyPair(Bytes(data)) {
+}
+
+Bytes EccKeyPair::public_key() const {
+    SecP256K1Context ctx{/* allow_verify = */ false, /* allow_sign = */ true};
+    secp256k1_pubkey public_key;
+    bool ok = ctx.create_public_key(&public_key, private_key_);
+    if (!ok) {
+        throw std::runtime_error("Failed to create a corresponding public key");
+    }
+    return {public_key.data, sizeof(public_key.data)};
+}
+
+std::string EccKeyPair::public_key_hex() const {
+    return ::silkworm::to_hex(public_key());
 }
 
 std::string EccKeyPair::private_key_hex() const {

@@ -16,8 +16,9 @@ limitations under the License.
 
 #pragma once
 
-#include <secp256k1.h>
 #include <gsl/pointers>
+#include <secp256k1.h>
+#include <silkpre/ecdsa.h>
 
 namespace silkworm {
 
@@ -36,8 +37,17 @@ class SecP256K1Context final {
     // escape hatch
     secp256k1_context* raw() { return context_; }
 
-    bool verify_private_key_data(const ByteView& data) {
+    [[nodiscard]]
+    bool verify_private_key_data(const ByteView& data) const {
         return secp256k1_ec_seckey_verify(context_, data.data());
+    }
+
+    bool create_public_key(secp256k1_pubkey* public_key, const ByteView& private_key) const {
+        return secp256k1_ec_pubkey_create(context_, public_key, private_key.data());
+    }
+
+    bool compute_ecdh_secret(Bytes& shared_secret, const secp256k1_pubkey* public_key, const ByteView& private_key) const {
+        return silkpre_secp256k1_ecdh(context_, shared_secret.data(), public_key, private_key.data());
     }
 
   private:

@@ -78,8 +78,9 @@ class TrieCursor {
         ByteView root_hash{};    // Root Hash
         ByteView hashes{};       // Child nodes hashes
 
-        int8_t child_id{-1};  // Current child being inspected in this node (aka nibble)
-        bool deleted{false};  // Whether already deleted (in collector)
+        int8_t child_id{-1};       // Current child being inspected in this node (aka nibble)
+        int8_t max_child_id{0xf};  // Max child of this node
+        bool deleted{false};       // Whether already deleted (in collector)
 
         [[nodiscard]] bool has_tree() const;   // Whether current child_id has bit set in tree mask
         [[nodiscard]] bool has_hash() const;   // Whether current child_id has bit set in hash mask
@@ -91,23 +92,28 @@ class TrieCursor {
         [[nodiscard]] std::optional<Bytes> get_hash() const;  // Returns hash of child node (i.e. key + child_id)
     };
 
+    uint32_t level_{0};  // Depth level in sub_nodes_
+    Bytes curr_key_{};
+    Bytes prev_key_{};
+    bool skip_state_{false};                 // Whether we can skip state of node
     std::array<SubNode, 64> sub_nodes_{{}};  // Collection of subnodes being unrolled
-    uint32_t level_{0};                      // Depth level in sub_nodes_
 
-    Bytes prefix_{};    // Db key prefix for this trie (0 bytes TrieAccount - 40 bytes TrieStorage)
-    Bytes buffer_{};    // A convenience buffer
+    Bytes prefix_{};  // Db key prefix for this trie (0 bytes TrieAccount - 40 bytes TrieStorage)
+    Bytes buffer_{};  // A convenience buffer
 
-    mdbx::cursor db_cursor_;    // The underlying db cursor (TrieAccount/TrieStorage)
-    bool db_cursor_eof_{true};  // Whether there is no more data to read from database
-    ByteView db_cursor_key_{};  // Key at current db_cursor position
-    ByteView db_cursor_val_{};  // Value at current db_cursor position
-
+    mdbx::cursor db_cursor_;     // The underlying db cursor (TrieAccount/TrieStorage)
     PrefixSet* changed_;         // The collection of changed nibbled keys
+    ByteView next_created_{};    // The next created account/location in changed list
     etl::Collector* collector_;  // Pointer to a collector for deletion of obsolete keys
 
-    void db_seek(ByteView seek_key);  // Seeks lowerbound of provided key using db_cursor_
+    bool db_seek(ByteView seek_key);  // Seeks lowerbound of provided key using db_cursor_
+    void db_delete(SubNode& node);    // Collects deletion of node being rebuilt or no longer needed
 
-    void collect_deletion(SubNode& sub_node);  // Collects deletion of sub-node being rebuilt or no longer needed
+    bool next_sibling_of_current();
+    bool next_sibling_of_parent();
+    bool consume_current();
+
+    bool key_is_before(ByteView k1, ByteView k2);  // Same as < operator but with difference that null keys are last
 };
 
 }  // namespace silkworm::trie

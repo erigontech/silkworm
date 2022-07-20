@@ -63,15 +63,27 @@ ByteView PrefixSet::find_contains(ByteView prefix) {
 }
 
 std::pair<bool, ByteView> PrefixSet::contains_and_next_marked(ByteView prefix) {
-    if (!contains(prefix)) {
-        return {false, {}};
-    }
-    for (size_t i{index_ + 1}, e{nibbled_keys_.size() - 1}; i <= e; ++i) {
-        if (nibbled_keys_[i].second) {
-            return {true, ByteView(nibbled_keys_[i].first)};
+    bool is_contained{contains(prefix)};
+    ByteView next_created{};
+
+    {
+        // Lookup next marked created key
+        size_t i{UINT64_MAX};
+        if (index_ < nibbled_keys_.size() - 1) {
+            i = index_ + 1;
+        } else if (index_ < nibbled_keys_.size()) {
+            i = index_;
+        }
+
+        for (size_t e{nibbled_keys_.size() - 1}; i < e; ++i) {
+            if (nibbled_keys_[i].second) {
+                next_created = ByteView(nibbled_keys_[i].first);
+                break;
+            }
         }
     }
-    return {true, {}};  // There is no newly created account after this prefix
+
+    return {is_contained, next_created};
 }
 
 void PrefixSet::ensure_sorted() {

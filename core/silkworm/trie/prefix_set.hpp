@@ -51,6 +51,9 @@ class PrefixSet {
     //! \see Erigon's RetainList::RetainWithMarker
     std::pair<bool, ByteView> contains_and_next_marked(ByteView prefix);
 
+    size_t size() const { return nibbled_keys_.size(); }
+    bool empty() const { return size() == 0; }
+
   private:
     void ensure_sorted();
 

@@ -108,10 +108,7 @@ class TrieCursor {
 
     bool db_seek(ByteView seek_key);  // Seeks lowerbound of provided key using db_cursor_
     void db_delete(SubNode& node);    // Collects deletion of node being rebuilt or no longer needed
-
-    bool next_sibling_of_current();
-    bool next_sibling_of_parent();
-    bool consume_current();
+    bool consume(SubNode& node);      // If node has hash consume it
 
     bool key_is_before(ByteView k1, ByteView k2);  // Same as < operator but with difference that null keys are last
 };

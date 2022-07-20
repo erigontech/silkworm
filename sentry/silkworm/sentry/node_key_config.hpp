@@ -21,9 +21,11 @@ limitations under the License.
 #include <variant>
 #include <silkworm/common/base.hpp>
 #include <silkworm/common/directories.hpp>
-#include "node_key.hpp"
+#include <silkworm/sentry/common/ecc_key_pair.hpp>
 
 namespace silkworm::sentry {
+
+using NodeKey = common::EccKeyPair;
 
 class NodeKeyConfig {
   public:

@@ -19,19 +19,19 @@ limitations under the License.
 #include <string>
 #include <silkworm/common/base.hpp>
 
-namespace silkworm::sentry {
+namespace silkworm::sentry::common {
 
-class NodeKey {
+class EccKeyPair {
   public:
-    NodeKey();
-    explicit NodeKey(Bytes data);
-    explicit NodeKey(const ByteView& data);
+    EccKeyPair();
+    explicit EccKeyPair(Bytes data);
+    explicit EccKeyPair(const ByteView& data);
 
     [[nodiscard]]
-    std::string to_hex() const;
+    std::string private_key_hex() const;
 
   private:
     Bytes private_key_;
 };
 
-}  // namespace silkworm::sentry
+}  // namespace silkworm::sentry::common

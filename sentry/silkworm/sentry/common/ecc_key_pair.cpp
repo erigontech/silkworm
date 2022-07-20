@@ -14,15 +14,15 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-#include "node_key.hpp"
+#include "ecc_key_pair.hpp"
 #include <array>
 #include <random>
 #include <silkworm/common/util.hpp>
 #include <silkworm/common/secp256k1_context.hpp>
 
-namespace silkworm::sentry {
+namespace silkworm::sentry::common {
 
-NodeKey::NodeKey() {
+EccKeyPair::EccKeyPair() {
     SecP256K1Context ctx;
 
     std::default_random_engine random_engine{std::random_device{}()};
@@ -37,7 +37,7 @@ NodeKey::NodeKey() {
     private_key_ = Bytes(data.data(), data.size());
 }
 
-NodeKey::NodeKey(Bytes data) : private_key_(std::move(data)) {
+EccKeyPair::EccKeyPair(Bytes data) : private_key_(std::move(data)) {
     SecP256K1Context ctx;
 
     if (!ctx.verify_private_key_data(private_key_)) {
@@ -45,11 +45,11 @@ NodeKey::NodeKey(Bytes data) : private_key_(std::move(data)) {
     }
 }
 
-NodeKey::NodeKey(const ByteView& data) : NodeKey(Bytes(data)) {
+EccKeyPair::EccKeyPair(const ByteView& data) : EccKeyPair(Bytes(data)) {
 }
 
-std::string NodeKey::to_hex() const {
+std::string EccKeyPair::private_key_hex() const {
     return ::silkworm::to_hex(private_key_);
 }
 
-}  // namespace silkworm::sentry
+}  // namespace silkworm::sentry::common

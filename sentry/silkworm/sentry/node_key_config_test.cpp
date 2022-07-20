@@ -40,7 +40,7 @@ TEST_CASE("NodeKeyConfig::load") {
         file << expected_key_hex;
         file.close();
 
-        REQUIRE(NodeKeyConfig(file_path).load().to_hex() == expected_key_hex);
+        REQUIRE(NodeKeyConfig(file_path).load().private_key_hex() == expected_key_hex);
     }
 
     SECTION("not exists") {

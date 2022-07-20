@@ -34,7 +34,7 @@ class InternalMessage : public Message {
 
     std::string name() const override { return "InternalMessage"; }
 
-    void execute(Db::ReadOnlyAccess, HeaderChain&, BodySequence&, SentryClient&) override;
+    void execute(db::ROAccess, HeaderChain&, BodySequence&, SentryClient&) override;
 
     std::future<R>& result() { return result_out_; }
 
@@ -51,14 +51,14 @@ InternalMessage<R>::InternalMessage(ExecutionFunc exec)
     : execution_impl_{exec}, result_in_{}, result_out_{result_in_.get_future()} {}
 
 template <class R>
-void InternalMessage<R>::execute(Db::ReadOnlyAccess, HeaderChain& hc, BodySequence& bs, SentryClient&) {
+void InternalMessage<R>::execute(db::ROAccess, HeaderChain& hc, BodySequence& bs, SentryClient&) {
     R local_result = execution_impl_(hc, bs);
 
     result_in_.set_value(local_result);
 }
 
 template <>
-inline void InternalMessage<void>::execute(Db::ReadOnlyAccess, HeaderChain& hc, BodySequence& bs, SentryClient&) {
+inline void InternalMessage<void>::execute(db::ROAccess, HeaderChain& hc, BodySequence& bs, SentryClient&) {
     execution_impl_(hc, bs);
 
     result_in_.set_value();

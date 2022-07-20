@@ -28,7 +28,7 @@ BlockNum BodySequence::kMaxBlocksPerMessage;
 size_t BodySequence::kPerPeerMaxOutstandingRequests;
 milliseconds_t BodySequence::kNoPeerDelay;
 
-BodySequence::BodySequence(const Db::ReadOnlyAccess& dba, const ChainIdentity& ci)
+BodySequence::BodySequence(const db::ROAccess& dba, const ChainIdentity& ci)
     : db_access_(dba), chain_identity_(ci) {
     recover_initial_state();
 }
@@ -208,7 +208,7 @@ void BodySequence::make_new_requests(GetBlockBodiesPacket66& packet, BlockNum& m
     while (packet.request.size() < kMaxBlocksPerMessage && last_requested_block < headers_stage_height_) {
         BlockNum bn = last_requested_block + 1;
 
-        auto header = tx.read_canonical_header(bn);
+        auto header = db::read_canonical_header(tx, bn);
         if (!header) {
             body_requests_.erase(bn);
             throw std::logic_error("BodySequence exception, "
@@ -284,10 +284,10 @@ auto BodySequence::withdraw_ready_bodies() -> std::vector<Block> {
     return ready_bodies;
 }
 
-void BodySequence::add_to_announcements(BlockHeader header, BlockBody body, Db::ReadOnlyAccess::Tx& tx) {
+void BodySequence::add_to_announcements(BlockHeader header, BlockBody body, db::ROTxn& tx) {
 
     // calculate total difficulty of the block
-    auto parent_td = tx.read_total_difficulty(header.number -1, header.parent_hash);
+    auto parent_td = db::read_total_difficulty(tx, header.number -1, header.parent_hash);
     if (!parent_td) {
         log::Warning() << "BodySequence: dangling block " << std::to_string(header.number);
         return; // non inserted in announcement list

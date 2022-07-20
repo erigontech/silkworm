@@ -27,7 +27,7 @@ limitations under the License.
 
 namespace silkworm {
 
-BlockExchange::BlockExchange(SentryClient& sentry, const Db::ReadOnlyAccess& dba, const ChainIdentity& ci)
+BlockExchange::BlockExchange(SentryClient& sentry, const db::ROAccess& dba, const ChainIdentity& ci)
     : db_access_{dba},
       sentry_{sentry},
       chain_identity_{ci},

@@ -30,7 +30,7 @@ class OutboundNewBlock : public OutboundMessage {
     std::string name() const override { return "OutboundNewBlock"; }
     std::string content() const override;
 
-    void execute(Db::ReadOnlyAccess, HeaderChain&, BodySequence&, SentryClient&) override;
+    void execute(db::ROAccess, HeaderChain&, BodySequence&, SentryClient&) override;
 
   private:
     sentry::SentPeers send_packet(SentryClient& sentry, const NewBlockPacket& packet, seconds_t timeout);

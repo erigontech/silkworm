@@ -16,6 +16,7 @@
 
 #include "inbound_get_block_bodies.hpp"
 
+#include <silkworm/common/cast.hpp>
 #include <silkworm/common/log.hpp>
 #include <silkworm/downloader/internals/body_retrieval.hpp>
 #include <silkworm/downloader/packets/block_bodies_packet.hpp>
@@ -46,7 +47,7 @@ func (p *Peer) ReplyBlockBodiesRLP(id uint64, bodies []rlp.RawValue) error {
         })
 }
  */
-void InboundGetBlockBodies::execute(Db::ReadOnlyAccess db, HeaderChain&, BodySequence& bs, SentryClient& sentry) {
+void InboundGetBlockBodies::execute(db::ROAccess db, HeaderChain&, BodySequence& bs, SentryClient& sentry) {
     using namespace std;
 
     SILK_TRACE << "Processing message " << *this;

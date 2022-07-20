@@ -16,13 +16,16 @@ limitations under the License.
 
 #include "body_persistence.hpp"
 
+#include <silkworm/db/stages.hpp>
+
 namespace silkworm {
 
-BodyPersistence::BodyPersistence(Db::ReadWriteAccess::Tx& tx, const ChainIdentity& ci)
+BodyPersistence::BodyPersistence(db::RWTxn& tx, const ChainIdentity& ci)
     : tx_{tx},
-      consensus_engine_{consensus::engine_factory(ci.config)},
-      chain_state_{tx.raw(), /*prune_from=*/0, /*historical_block=null*/} {
-    auto bodies_stage_height = tx.read_stage_progress(db::stages::kBlockBodiesKey);
+      consensus_engine_{consensus::engine_factory(ci.chain)},
+      chain_state_{tx, /*prune_from=*/0, /*historical_block=null*/} {
+
+    auto bodies_stage_height = db::stages::read_stage_progress(tx, db::stages::kBlockBodiesKey);
 
     initial_height_ = bodies_stage_height;
     highest_height_ = bodies_stage_height;
@@ -36,7 +39,7 @@ Hash BodyPersistence::bad_block() const { return bad_block_; }
 void BodyPersistence::set_preverified_height(BlockNum height) { preverified_height_ = height; }
 
 void BodyPersistence::persist(const Block& block) {
-    Hash block_hash = block.header.hash();  // save cpu
+    Hash block_hash = block.header.hash(); // save cpu
     BlockNum block_num = block.header.number;
 
     auto validation_result = ValidationResult::kOk;
@@ -55,18 +58,17 @@ void BodyPersistence::persist(const Block& block) {
         return;
     }
 
-    if (!tx_.has_body(block_hash, block_num)) {
-        tx_.write_body(block, block_hash, block_num);
-    }
+    if (!db::has_body(tx_, block_num, block_hash))
+        db::write_body(tx_, block, block_hash, block_num);
 
     if (block_num > highest_height_) {
         highest_height_ = block_num;
-        tx_.write_stage_progress(db::stages::kBlockBodiesKey, block_num);
+        db::stages::write_stage_progress(tx_, db::stages::kBlockBodiesKey, block_num);
     }
 }
 
 void BodyPersistence::persist(const std::vector<Block>& blocks) {
-    for (auto& block : blocks) {
+    for(auto& block: blocks) {
         persist(block);
     }
 }
@@ -75,9 +77,9 @@ void BodyPersistence::close() {
     // does nothing
 }
 
-void BodyPersistence::remove_bodies(BlockNum new_height, Hash, Db::ReadWriteAccess::Tx& tx) {
+void BodyPersistence::remove_bodies(BlockNum new_height, std::optional<Hash>, db::RWTxn& tx) {
     // like Erigon, we do not erase "wrong" blocks, only update stage progress...
-    tx.write_stage_progress(db::stages::kBlockBodiesKey, new_height);
+    db::stages::write_stage_progress(tx, db::stages::kBlockBodiesKey, new_height);
 }
 
-}  // namespace silkworm
+}

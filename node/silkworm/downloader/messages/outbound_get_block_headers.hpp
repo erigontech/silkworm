@@ -29,7 +29,7 @@ class OutboundGetBlockHeaders : public OutboundMessage {
     std::string name() const override { return "OutboundGetBlockHeaders"; }
     std::string content() const override;
 
-    void execute(Db::ReadOnlyAccess, HeaderChain&, BodySequence&, SentryClient&) override;
+    void execute(db::ROAccess, HeaderChain&, BodySequence&, SentryClient&) override;
 
     int sent_request() const;
 

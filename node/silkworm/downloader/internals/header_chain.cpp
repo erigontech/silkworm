@@ -21,6 +21,7 @@
 #include <silkworm/common/log.hpp>
 
 #include "algorithm.hpp"
+#include "db_utils.hpp"
 #include "random_number.hpp"
 
 namespace silkworm {
@@ -82,10 +83,10 @@ void HeaderChain::add_bad_headers(const std::set<Hash>& bads) {
     bad_headers_.insert(bads.begin(), bads.end());  // todo: use set_union or merge?
 }
 
-void HeaderChain::recover_initial_state(Db::ReadOnlyAccess::Tx& tx) {
+void HeaderChain::recover_initial_state(db::ROTxn& tx) {
     reduce_persisted_links_to(0);  // drain persistedLinksQueue and remove links
 
-    tx.read_headers_in_reverse_order(persistent_link_limit, [this](BlockHeader&& header) {
+    read_headers_in_reverse_order(tx, persistent_link_limit, [this](BlockHeader&& header) {
         this->add_header_as_link(header, true);  // todo: optimize add_header_as_link to use Header&&
     });
 

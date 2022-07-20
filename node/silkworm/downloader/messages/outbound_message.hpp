@@ -22,7 +22,7 @@ namespace silkworm {
 
 class OutboundMessage : public Message {
   public:
-    void execute(Db::ReadOnlyAccess, HeaderChain&, BodySequence&, SentryClient&) override = 0;
+    void execute(db::ROAccess, HeaderChain&, BodySequence&, SentryClient&) override = 0;
 
     virtual std::string content() const = 0;
 };

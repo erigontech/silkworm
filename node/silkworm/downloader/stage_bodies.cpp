@@ -22,6 +22,7 @@ limitations under the License.
 #include <silkworm/common/log.hpp>
 #include <silkworm/common/measure.hpp>
 #include <silkworm/common/stopwatch.hpp>
+#include <silkworm/db/stages.hpp>
 #include <silkworm/downloader/messages/outbound_get_block_bodies.hpp>
 #include <silkworm/downloader/messages/outbound_new_block.hpp>
 #include <silkworm/downloader/internals/body_persistence.hpp>
@@ -97,15 +98,14 @@ namespace silkworm {
     4. returns (headers,bodies)
 
  */
-BodiesStage::BodiesStage(const Db::ReadWriteAccess& db_access, BlockExchange& bd)
-    : db_access_{db_access}, block_downloader_{bd} {
+BodiesStage::BodiesStage(Status& status, BlockExchange& bd) : Stage(status), block_downloader_{bd} {
 }
 
 BodiesStage::~BodiesStage() {
     // todo: implement
 }
 
-Stage::Result BodiesStage::forward([[maybe_unused]] bool first_sync) {
+Stage::Result BodiesStage::forward(db::RWTxn& tx) {
     using std::shared_ptr;
     using namespace std::chrono_literals;
     using namespace std::chrono;
@@ -119,8 +119,6 @@ Stage::Result BodiesStage::forward([[maybe_unused]] bool first_sync) {
     log::Info() << "[2/16 Bodies] Start";
 
     try {
-        Db::ReadWriteAccess::Tx tx = db_access_.start_tx();  // start a new tx only if db_access has not an active tx
-
         BodyPersistence body_persistence(tx, block_downloader_.chain_identity());
         body_persistence.set_preverified_height(block_downloader_.preverified_hashes().height);
 
@@ -128,7 +126,7 @@ Stage::Result BodiesStage::forward([[maybe_unused]] bool first_sync) {
         log::Info() << "[2/16 Bodies] Waiting for bodies... from=" << height_progress.get();
 
         // sync status
-        BlockNum headers_stage_height = tx.read_stage_progress(db::stages::kHeadersKey);
+        BlockNum headers_stage_height = db::stages::read_stage_progress(tx, db::stages::kHeadersKey);
         auto sync_command = sync_body_sequence(body_persistence.initial_height(), headers_stage_height);
         sync_command->result().get();  // blocking
 
@@ -152,11 +150,11 @@ Stage::Result BodiesStage::forward([[maybe_unused]] bool first_sync) {
                 body_persistence.persist(bodies);
                 // check unwind condition
                 if (body_persistence.unwind_needed()) {
-                    result.status = Result::UnwindNeeded;
-                    result.unwind_point = body_persistence.unwind_point();
+                    result = Result::UnwindNeeded;
+                    shared_status_.unwind_point = body_persistence.unwind_point();
                     break;
                 } else {
-                    result.status = Stage::Result::Done;
+                    result = Stage::Result::Done;
                 }
 
                 // do announcements
@@ -189,22 +187,20 @@ Stage::Result BodiesStage::forward([[maybe_unused]] bool first_sync) {
         log::Error() << "[2/16 Bodies] Aborted due to exception: " << e.what();
 
         // tx rollback executed automatically if needed
-        result.status = Stage::Result::Error;
+        result = Stage::Result::Error;
     }
 
     return result;
 }
 
-Stage::Result BodiesStage::unwind_to(BlockNum new_height, Hash bad_block) {
+Stage::Result BodiesStage::unwind(db::RWTxn& tx, BlockNum new_height) {
     Stage::Result result;
 
     StopWatch timing; timing.start();
     log::Info() << "[2/16 Bodies] Unwind start";
 
     try {
-        Db::ReadWriteAccess::Tx tx = db_access_.start_tx();
-
-        BodyPersistence::remove_bodies(new_height, bad_block, tx);
+        BodyPersistence::remove_bodies(new_height, shared_status_.bad_block, tx);
 
         tx.commit();
 
@@ -214,7 +210,7 @@ Stage::Result BodiesStage::unwind_to(BlockNum new_height, Hash bad_block) {
         log::Error() << "[1/16 Bodies] Unwind aborted due to exception: " << e.what();
 
         // tx rollback executed automatically if needed
-        result.status = Stage::Result::Error;
+        result = Stage::Result::Error;
     }
 
     return result;

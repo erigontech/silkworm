@@ -24,7 +24,7 @@ limitations under the License.
 #include <silkworm/downloader/packets/block_bodies_packet.hpp>
 #include <silkworm/downloader/packets/get_block_bodies_packet.hpp>
 
-#include "db_tx.hpp"
+#include <silkworm/db/access_layer.hpp>
 #include "statistics.hpp"
 #include "types.hpp"
 
@@ -38,7 +38,7 @@ namespace silkworm {
  */
 class BodySequence {
   public:
-    BodySequence(const Db::ReadOnlyAccess&, const ChainIdentity&);
+    BodySequence(const db::ROAccess&, const ChainIdentity&);
     ~BodySequence();
 
     // sync current state - this must be done at body forward
@@ -86,7 +86,7 @@ class BodySequence {
     void make_new_requests(GetBlockBodiesPacket66&, MinBlock&, time_point_t tp, seconds_t timeout);
     auto renew_stale_requests(GetBlockBodiesPacket66&, MinBlock&, time_point_t tp, seconds_t timeout)
         -> std::vector<PeerPenalization>;
-    void add_to_announcements(BlockHeader, BlockBody, Db::ReadOnlyAccess::Tx&);
+    void add_to_announcements(BlockHeader, BlockBody, db::ROTxn&);
 
     static bool is_valid_body(const BlockHeader&, const BlockBody&);
 
@@ -124,7 +124,7 @@ class BodySequence {
     AnnouncedBlocks announced_blocks_;
     std::list<NewBlockPacket> announcements_to_do_;
 
-    Db::ReadOnlyAccess db_access_;
+    db::ROAccess db_access_;
     [[maybe_unused]] const ChainIdentity& chain_identity_;
 
     BlockNum highest_body_in_db_{0};

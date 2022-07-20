@@ -140,7 +140,7 @@ TEST_CASE("BodyPersistence - body persistence") {
         REQUIRE(present);
         REQUIRE(saved_body == block1);
 
-        auto bodies_stage_height = tx.read_stage_progress(db::stages::kBlockBodiesKey);
+        auto bodies_stage_height = db::stages::read_stage_progress(tx, db::stages::kBlockBodiesKey);
 
         REQUIRE(bodies_stage_height == block1.header.number);
 

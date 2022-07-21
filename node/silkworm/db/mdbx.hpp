@@ -64,7 +64,7 @@ class ROTxn {
     operator mdbx::txn&() { return external_txn_ ? *external_txn_ : managed_txn_; }
 
   protected:
-    ROTxn(mdbx::txn_managed&& source) : managed_txn_{std::move(source)} {}
+    ROTxn(mdbx::env& env, mdbx::txn_managed&& source) : env_{&env}, managed_txn_{std::move(source)} {}
 
     mdbx::txn* external_txn_{nullptr};
     mdbx::env* env_{nullptr};
@@ -77,7 +77,7 @@ class ROTxn {
 class RWTxn : public ROTxn {
   public:
     // This variant creates new mdbx transactions as need be.
-    explicit RWTxn(mdbx::env& env) : ROTxn{env.start_write()} {}
+    explicit RWTxn(mdbx::env& env) : ROTxn{env, env.start_write()} {}
 
     // This variant is just a wrapper over an external transaction.
     // Useful in staged sync for running several stages on a handful of blocks atomically.

@@ -206,6 +206,8 @@ Stage::Result BodiesStage::unwind(db::RWTxn& tx, BlockNum new_height) {
 
         log::Info() << "[1/16 Bodies] Unwind completed, duration= " << StopWatch::format(timing.lap_duration());
 
+        result = Stage::Result::Done;
+
     } catch (const std::exception& e) {
         log::Error() << "[1/16 Bodies] Unwind aborted due to exception: " << e.what();
 

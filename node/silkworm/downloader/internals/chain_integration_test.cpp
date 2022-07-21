@@ -60,7 +60,7 @@ TEST_CASE("working/persistent-chain integration test") {
     auto source_data = silkworm::read_genesis_data(silkworm::kMainnetConfig.chain_id);
     auto genesis_json = nlohmann::json::parse(source_data, nullptr, allow_exceptions);
     db::initialize_genesis(txn, genesis_json, allow_exceptions);
-    context.commit_and_renew_txn();
+    context.commit_txn();
 
     /* status:
      *         h0 (persisted)
@@ -69,10 +69,10 @@ TEST_CASE("working/persistent-chain integration test") {
      *                |-- h1'
      */
     SECTION("accepting 1 batch of headers") {
-        Db::ReadWriteAccess::Tx tx(txn);  // sub transaction
+        db::RWTxn tx(context.env());
 
         // starting from an initial status
-        auto header0 = tx.read_canonical_header(0);
+        auto header0 = db::read_canonical_header(tx, 0);
         auto header0_hash = header0->hash();
         BlockNum highest_in_db = 0;
 
@@ -130,23 +130,23 @@ TEST_CASE("working/persistent-chain integration test") {
         REQUIRE(pc.unwind_needed() == false);
 
         // check db content
-        REQUIRE(tx.read_head_header_hash() == header2_hash);
-        REQUIRE(tx.read_total_difficulty(2, header2.hash()) == expected_td);
+        REQUIRE(db::read_head_header_hash(tx) == header2_hash);
+        REQUIRE(db::read_total_difficulty(tx, 2, header2.hash()) == expected_td);
 
-        auto header1_in_db = tx.read_header(header1_hash);
+        auto header1_in_db = db::read_header(tx, header1_hash);
         REQUIRE(header1_in_db.has_value());
         REQUIRE(header1_in_db == header1);
-        auto header2_in_db = tx.read_header(header2_hash);
+        auto header2_in_db = db::read_header(tx, header2_hash);
         REQUIRE(header2_in_db.has_value());
         REQUIRE(header2_in_db == header2);
-        auto header1b_in_db = tx.read_header(header1b_hash);
+        auto header1b_in_db = db::read_header(tx, header1b_hash);
         REQUIRE(header1b_in_db.has_value());
         REQUIRE(header1b_in_db == header1b);
 
         pc.close();  // here pc update the canonical chain on the db
 
-        REQUIRE(tx.read_canonical_hash(1) == header1_hash);
-        REQUIRE(tx.read_canonical_hash(2) == header2_hash);
+        REQUIRE(db::read_canonical_hash(tx, 1) == header1_hash);
+        REQUIRE(db::read_canonical_hash(tx, 2) == header2_hash);
     }
 
     /* status:
@@ -160,10 +160,10 @@ TEST_CASE("working/persistent-chain integration test") {
      *               |--- h1'
      */
     SECTION("accepting 2 batch of headers, the second not changing the temporary canonical") {
-        Db::ReadWriteAccess::Tx tx(txn);  // sub transaction
+        db::RWTxn tx(context.env());
 
         // starting from an initial status
-        auto header0 = tx.read_canonical_header(0);
+        auto header0 = db::read_canonical_header(tx, 0);
         auto header0_hash = header0->hash();
         BlockNum highest_in_db = 0;
 
@@ -208,13 +208,13 @@ TEST_CASE("working/persistent-chain integration test") {
         REQUIRE(pc.unwind_needed() == false);
 
         // check db content
-        REQUIRE(tx.read_head_header_hash() == header2_hash);
-        REQUIRE(tx.read_total_difficulty(2, header2.hash()) == expected_td);
+        REQUIRE(db::read_head_header_hash(tx) == header2_hash);
+        REQUIRE(db::read_total_difficulty(tx, 2, header2.hash()) == expected_td);
 
-        auto header1_in_db = tx.read_header(header1_hash);
+        auto header1_in_db = db::read_header(tx, header1_hash);
         REQUIRE(header1_in_db.has_value());
         REQUIRE(header1_in_db == header1);
-        auto header2_in_db = tx.read_header(header2_hash);
+        auto header2_in_db = db::read_header(tx, header2_hash);
         REQUIRE(header2_in_db.has_value());
         REQUIRE(header2_in_db == header2);
 
@@ -234,7 +234,7 @@ TEST_CASE("working/persistent-chain integration test") {
         Headers headers_to_persist_bis = wc.withdraw_stable_headers();
         pc.persist(headers_to_persist_bis);
 
-        auto header1b_in_db = tx.read_header(header1b_hash);
+        auto header1b_in_db = db::read_header(tx, header1b_hash);
         REQUIRE(header1b_in_db.has_value());
         REQUIRE(header1b_in_db == header1b);
 
@@ -245,21 +245,21 @@ TEST_CASE("working/persistent-chain integration test") {
         REQUIRE(pc.highest_hash() == header2_hash);
         REQUIRE(pc.unwind_needed() == false);
 
-        REQUIRE(tx.read_head_header_hash() == header2_hash);
-        REQUIRE(tx.read_total_difficulty(2, header2.hash()) == expected_td);
+        REQUIRE(db::read_head_header_hash(tx) == header2_hash);
+        REQUIRE(db::read_total_difficulty(tx, 2, header2.hash()) == expected_td);
 
-        header1_in_db = tx.read_header(header1_hash);
+        header1_in_db = db::read_header(tx, header1_hash);
         REQUIRE(header1_in_db.has_value());
         REQUIRE(header1_in_db == header1);
-        header2_in_db = tx.read_header(header2_hash);
+        header2_in_db = db::read_header(tx, header2_hash);
         REQUIRE(header2_in_db.has_value());
         REQUIRE(header2_in_db == header2);
 
         // updating the canonical chain on the db
         pc.close();
 
-        REQUIRE(tx.read_canonical_hash(1) == header1_hash);
-        REQUIRE(tx.read_canonical_hash(2) == header2_hash);
+        REQUIRE(db::read_canonical_hash(tx, 1) == header1_hash);
+        REQUIRE(db::read_canonical_hash(tx, 2) == header2_hash);
     }
 
     /* status:
@@ -273,10 +273,10 @@ TEST_CASE("working/persistent-chain integration test") {
      *               |--- h1'             (canonical chain)
      */
     SECTION("accepting 2 batch of headers, the second changing the temporary canonical having height lower") {
-        Db::ReadWriteAccess::Tx tx(txn);  // sub transaction
+        db::RWTxn tx(context.env());
 
         // starting from an initial status
-        auto header0 = tx.read_canonical_header(0);
+        auto header0 = db::read_canonical_header(tx, 0);
         auto header0_hash = header0->hash();
         BlockNum highest_in_db = 0;
 
@@ -321,13 +321,13 @@ TEST_CASE("working/persistent-chain integration test") {
         REQUIRE(pc.unwind_needed() == false);
 
         // check db content
-        REQUIRE(tx.read_head_header_hash() == header2_hash);
-        REQUIRE(tx.read_total_difficulty(2, header2.hash()) == expected_td);
+        REQUIRE(db::read_head_header_hash(tx) == header2_hash);
+        REQUIRE(db::read_total_difficulty(tx, 2, header2.hash()) == expected_td);
 
-        auto header1_in_db = tx.read_header(header1_hash);
+        auto header1_in_db = db::read_header(tx, header1_hash);
         REQUIRE(header1_in_db.has_value());
         REQUIRE(header1_in_db == header1);
-        auto header2_in_db = tx.read_header(header2_hash);
+        auto header2_in_db = db::read_header(tx, header2_hash);
         REQUIRE(header2_in_db.has_value());
         REQUIRE(header2_in_db == header2);
 
@@ -347,7 +347,7 @@ TEST_CASE("working/persistent-chain integration test") {
         Headers headers_to_persist_bis = wc.withdraw_stable_headers();
         pc.persist(headers_to_persist_bis);
 
-        auto header1b_in_db = tx.read_header(header1b_hash);
+        auto header1b_in_db = db::read_header(tx, header1b_hash);
         REQUIRE(header1b_in_db.has_value());
         REQUIRE(header1b_in_db == header1b);
 
@@ -360,22 +360,22 @@ TEST_CASE("working/persistent-chain integration test") {
         REQUIRE(pc.highest_hash() == header1b_hash);
         REQUIRE(pc.unwind_needed() == false);  // because the prev canonical was not persisted
 
-        REQUIRE(tx.read_head_header_hash() == header1b_hash);
-        REQUIRE(tx.read_total_difficulty(1, header1b.hash()) == expected_td_bis);
-        REQUIRE(tx.read_total_difficulty(2, header2.hash()) == expected_td);
+        REQUIRE(db::read_head_header_hash(tx) == header1b_hash);
+        REQUIRE(db::read_total_difficulty(tx, 1, header1b.hash()) == expected_td_bis);
+        REQUIRE(db::read_total_difficulty(tx, 2, header2.hash()) == expected_td);
 
-        header1_in_db = tx.read_header(header1_hash);
+        header1_in_db = db::read_header(tx, header1_hash);
         REQUIRE(header1_in_db.has_value());
         REQUIRE(header1_in_db == header1);
-        header2_in_db = tx.read_header(header2_hash);
+        header2_in_db = db::read_header(tx, header2_hash);
         REQUIRE(header2_in_db.has_value());
         REQUIRE(header2_in_db == header2);
 
         // updating the canonical chain on the db
         pc.close();
 
-        REQUIRE(tx.read_canonical_hash(1) == header1b_hash);
-        REQUIRE(tx.read_canonical_hash(2).has_value() == false);
+        REQUIRE(db::read_canonical_hash(tx, 1) == header1b_hash);
+        REQUIRE(db::read_canonical_hash(tx, 2).has_value() == false);
     }
 
     /* status:
@@ -389,10 +389,10 @@ TEST_CASE("working/persistent-chain integration test") {
      *               |--- h1 <----- h2
      */
     SECTION("accepting 2 batch of headers, the second changing the temporary canonical") {
-        Db::ReadWriteAccess::Tx tx(txn);  // sub transaction
+        db::RWTxn tx(context.env());
 
         // starting from an initial status
-        auto header0 = tx.read_canonical_header(0);
+        auto header0 = db::read_canonical_header(tx, 0);
         auto header0_hash = header0->hash();
         BlockNum highest_in_db = 0;
 
@@ -431,10 +431,10 @@ TEST_CASE("working/persistent-chain integration test") {
         REQUIRE(pc.unwind_needed() == false);
 
         // check db content
-        REQUIRE(tx.read_head_header_hash() == header1b_hash);
-        REQUIRE(tx.read_total_difficulty(1, header1b.hash()) == expected_td);
+        REQUIRE(db::read_head_header_hash(tx) == header1b_hash);
+        REQUIRE(db::read_total_difficulty(tx, 1, header1b.hash()) == expected_td);
 
-        auto header1b_in_db = tx.read_header(header1b_hash);
+        auto header1b_in_db = db::read_header(tx, header1b_hash);
         REQUIRE(header1b_in_db.has_value());
         REQUIRE(header1b_in_db == header1b);
 
@@ -470,24 +470,24 @@ TEST_CASE("working/persistent-chain integration test") {
         REQUIRE(pc.unwind_needed() == false);
 
         // check db
-        REQUIRE(tx.read_head_header_hash() == header2_hash);
-        REQUIRE(tx.read_total_difficulty(2, header2.hash()) == expected_td_bis);
+        REQUIRE(db::read_head_header_hash(tx) == header2_hash);
+        REQUIRE(db::read_total_difficulty(tx, 2, header2.hash()) == expected_td_bis);
 
-        auto header1_in_db = tx.read_header(header1_hash);
+        auto header1_in_db = db::read_header(tx, header1_hash);
         REQUIRE(header1_in_db.has_value());
         REQUIRE(header1_in_db == header1);
-        auto header2_in_db = tx.read_header(header2_hash);
+        auto header2_in_db = db::read_header(tx, header2_hash);
         REQUIRE(header2_in_db.has_value());
         REQUIRE(header2_in_db == header2);
-        header1b_in_db = tx.read_header(header1b_hash);
+        header1b_in_db = db::read_header(tx, header1b_hash);
         REQUIRE(header1b_in_db.has_value());
         REQUIRE(header1b_in_db == header1b);
 
         // updating the canonical chain on the db
         pc.close();
 
-        REQUIRE(tx.read_canonical_hash(1) == header1_hash);
-        REQUIRE(tx.read_canonical_hash(2) == header2_hash);
+        REQUIRE(db::read_canonical_hash(tx, 1) == header1_hash);
+        REQUIRE(db::read_canonical_hash(tx, 2) == header2_hash);
     }
 
     /* status:
@@ -497,7 +497,7 @@ TEST_CASE("working/persistent-chain integration test") {
      *               |-- h1' <----- h2' <----- h3' (new cononical) -> unwind?
      */
     //  SECTION("a header in a secondary chain") {
-    //      // todo
+    //      // ...
     //  }
 
     /* status:
@@ -508,7 +508,7 @@ TEST_CASE("working/persistent-chain integration test") {
      *               |-- h1' <----- h2' <----- h3' (new cononical) -> unwind?
      */
     //  SECTION("a forking point in the past") {
-    //       // todo
+    //       // ...
     //  }
 }
 

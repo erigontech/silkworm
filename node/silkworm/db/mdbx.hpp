@@ -51,12 +51,12 @@ namespace detail {
 class ROTxn {
   public:
     // This variant creates new mdbx transactions as need be.
-    explicit ROTxn(mdbx::env& env) : env_{&env} { managed_txn_ = env_->start_read(); }
+    explicit ROTxn(mdbx::env& env) : managed_txn_{env.start_read()} {}
     // This variant is just a wrapper over an external transaction.
     explicit ROTxn(mdbx::txn& external_txn) : external_txn_{&external_txn} {}
     // Move construction
     ROTxn(ROTxn&& source) noexcept :
-        external_txn_(source.external_txn_), env_(source.env_), managed_txn_(std::move(source.managed_txn_)) {}
+        external_txn_(source.external_txn_), managed_txn_(std::move(source.managed_txn_)) {}
 
     // Access to the underling raw mdbx transaction
     mdbx::txn& operator*() { return external_txn_ ? *external_txn_ : managed_txn_; }
@@ -64,10 +64,9 @@ class ROTxn {
     operator mdbx::txn&() { return external_txn_ ? *external_txn_ : managed_txn_; }
 
   protected:
-    ROTxn(mdbx::env& env, mdbx::txn_managed&& source) : env_{&env}, managed_txn_{std::move(source)} {}
+    ROTxn(mdbx::txn_managed&& source) : managed_txn_{std::move(source)} {}
 
     mdbx::txn* external_txn_{nullptr};
-    mdbx::env* env_{nullptr};
     mdbx::txn_managed managed_txn_;
 };
 
@@ -77,7 +76,7 @@ class ROTxn {
 class RWTxn : public ROTxn {
   public:
     // This variant creates new mdbx transactions as need be.
-    explicit RWTxn(mdbx::env& env) : ROTxn{env, env.start_write()} {}
+    explicit RWTxn(mdbx::env& env) : ROTxn{env.start_write()} {}
 
     // This variant is just a wrapper over an external transaction.
     // Useful in staged sync for running several stages on a handful of blocks atomically.
@@ -104,9 +103,10 @@ class RWTxn : public ROTxn {
          * */
 
         if (external_txn_ == nullptr) {
+            mdbx::env env = managed_txn_.env();
             managed_txn_.commit();
             if (renew) {
-                managed_txn_ = env_->start_write();  // renew transaction
+                managed_txn_ = env.start_write();  // renew transaction
             }
         }
     }

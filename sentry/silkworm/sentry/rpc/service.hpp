@@ -21,7 +21,7 @@ limitations under the License.
 #include <grpcpp/grpcpp.h>
 #include <p2psentry/sentry.grpc.pb.h>
 
-namespace silkworm::sentry {
+namespace silkworm::sentry::rpc {
 
 class ServiceImpl;
 
@@ -42,4 +42,4 @@ class Service final {
     std::unique_ptr<ServiceImpl> p_impl_;
 };
 
-}  // namespace silkworm::sentry
+}  // namespace silkworm::sentry::rpc

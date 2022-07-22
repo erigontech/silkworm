@@ -18,16 +18,15 @@ limitations under the License.
 #include <future>
 
 #include <silkworm/concurrency/coroutine.hpp>
+#include <boost/asio/bind_cancellation_slot.hpp>
+#include <boost/asio/cancellation_signal.hpp>
 #include <boost/asio/co_spawn.hpp>
-#include <boost/asio/experimental/awaitable_operators.hpp>
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/signal_set.hpp>
-#include <boost/asio/use_future.hpp>
 #include <grpc/grpc.h>
 
 #include <silkworm/common/directories.hpp>
 #include <silkworm/common/log.hpp>
-#include <silkworm/concurrency/cancellation_signal.hpp>
 #include <silkworm/rpc/server/server_context_pool.hpp>
 
 #include "rlpx/server.hpp"
@@ -37,7 +36,7 @@ limitations under the License.
 namespace silkworm::sentry {
 
 using namespace std;
-using namespace boost::asio::experimental::awaitable_operators;
+using namespace boost;
 
 class SentryImpl final {
   public:
@@ -51,17 +50,17 @@ class SentryImpl final {
     void join();
 
   private:
-    void setup_shutdown_on_signals(boost::asio::io_context&);
+    void setup_shutdown_on_signals(asio::io_context&);
 
     Settings settings_;
     silkworm::rpc::ServerContextPool context_pool_;
 
     rlpx::Server rlpx_server_;
-    optional<future<std::variant<std::monostate, std::monostate>>> rlpx_server_task_;
+    std::promise<void> rlpx_server_task_;
     rpc::Server rpc_server_;
 
-    optional<unique_ptr<boost::asio::signal_set>> shutdown_signals_;
-    optional<unique_ptr<concurrency::CancellationSignal>> stop_signal_;
+    optional<unique_ptr<asio::signal_set>> shutdown_signals_;
+    asio::cancellation_signal stop_signal_;
 };
 
 static silkworm::rpc::ServerConfig make_server_config(const Settings& settings) {
@@ -70,6 +69,15 @@ static silkworm::rpc::ServerConfig make_server_config(const Settings& settings) 
     config.set_num_contexts(settings.num_contexts);
     config.set_wait_mode(settings.wait_mode);
     return config;
+}
+
+static void rethrow_unless_cancelled(const std::exception_ptr& ex_ptr) {
+    try {
+        std::rethrow_exception(ex_ptr);
+    } catch (const boost::system::system_error &e) {
+        if (e.code() != boost::system::errc::operation_canceled)
+            throw;
+    }
 }
 
 class DummyServerCompletionQueue : public grpc::ServerCompletionQueue {
@@ -93,11 +101,14 @@ void SentryImpl::start() {
     rpc_server_.build_and_start();
 
     auto& rlpx_io_context = context_pool_.next_io_context();
-    stop_signal_ = { std::make_unique<concurrency::CancellationSignal>(rlpx_io_context) };
-    rlpx_server_task_ = boost::asio::co_spawn(
+    auto rlpx_server_task_completion = [&](const std::exception_ptr& ex_ptr) {
+        rethrow_unless_cancelled(ex_ptr);
+        this->rlpx_server_task_.set_value();
+    };
+    asio::co_spawn(
             rlpx_io_context,
-            rlpx_server_.start(rlpx_io_context) || stop_signal_.value()->await(),
-            boost::asio::use_future);
+            rlpx_server_.start(rlpx_io_context),
+            asio::bind_cancellation_slot(stop_signal_.slot(), rlpx_server_task_completion));
 
     setup_shutdown_on_signals(context_pool_.next_io_context());
 
@@ -106,25 +117,19 @@ void SentryImpl::start() {
 
 void SentryImpl::stop() {
     rpc_server_.shutdown();
-
-    if (stop_signal_) {
-        stop_signal_.value()->emit();
-    }
+    stop_signal_.emit(asio::cancellation_type::all);
 }
 
 void SentryImpl::join() {
     rpc_server_.join();
-
-    if (rlpx_server_task_) {
-        rlpx_server_task_->wait();
-    }
+    rlpx_server_task_.get_future().wait();
 
     context_pool_.stop();
     context_pool_.join();
 }
 
-void SentryImpl::setup_shutdown_on_signals(boost::asio::io_context& io_context) {
-    shutdown_signals_ = { make_unique<boost::asio::signal_set>(io_context, SIGINT, SIGTERM) };
+void SentryImpl::setup_shutdown_on_signals(asio::io_context& io_context) {
+    shutdown_signals_ = { make_unique<asio::signal_set>(io_context, SIGINT, SIGTERM) };
     shutdown_signals_.value()->async_wait([&](const boost::system::error_code& error, int signal_number) {
         log::Info() << "\n";
         log::Info() << "Signal caught, error: " << error << " number: " << signal_number;

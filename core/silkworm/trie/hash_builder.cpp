@@ -298,4 +298,15 @@ std::vector<Bytes> HashBuilder::branch_ref(uint16_t state_mask, uint16_t hash_ma
     return child_hashes;
 }
 
+void HashBuilder::reset() {
+    key_.clear();
+    value_ = Bytes();
+    is_in_db_trie_ = false;
+    groups_.clear();
+    tree_masks_.clear();
+    hash_masks_.clear();
+    stack_.clear();
+    rlp_buffer_.clear();
+}
+
 }  // namespace silkworm::trie

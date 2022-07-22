@@ -19,6 +19,8 @@
 
 #include <silkworm/etl/collector.hpp>
 #include <silkworm/stagedsync/common.hpp>
+#include <silkworm/stagedsync/stage_interhashes/trie_cursor.hpp>
+#include <silkworm/trie/hash_builder.hpp>
 #include <silkworm/trie/prefix_set.hpp>
 
 namespace silkworm::stagedsync {
@@ -108,8 +110,8 @@ class InterHashes final : public IStage {
     evmc::bytes32 calculate_root(db::RWTxn& txn, trie::PrefixSet* account_changes, trie::PrefixSet* storage_changes);
 
     //! \see Erigon's FlatDBTrieLoader
-//    evmc::bytes32 calculate_storage_root(db::RWTxn& txn, const Bytes& db_storage_prefix,
-//                                         trie::PrefixSet* storage_changes);
+    evmc::bytes32 calculate_storage_root(trie::TrieCursor& ts_cursor, trie::HashBuilder& hbs,
+                                         db::Cursor& hashed_storage, const Bytes& db_storage_prefix);
 
     std::unique_ptr<etl::Collector> account_collector_;  // To accumulate new records for kTrieOfAccounts
     std::unique_ptr<etl::Collector> storage_collector_;  // To accumulate new records for kTrieOfStorage

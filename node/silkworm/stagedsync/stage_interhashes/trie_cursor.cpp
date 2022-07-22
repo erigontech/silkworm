@@ -43,12 +43,15 @@ TrieCursor::move_operation_result TrieCursor::to_prefix(ByteView prefix) {
     buffer_.clear();
     curr_key_.clear();
     prev_key_.clear();
+    eot_ = false;
+    skip_state_ = true;
 
     // Reset all SubNodes (we're starting a new tree)
-    level_ = 0;
-    for (auto& sub_node : sub_nodes_) {
-        sub_node.reset();
+    while (level_ != 0) {
+        sub_nodes_[level_].reset();
+        --level_;
     }
+    sub_nodes_[level_].reset();
 
     if (changed_) {
         buffer_.assign(prefix_);
@@ -94,6 +97,9 @@ TrieCursor::move_operation_result TrieCursor::to_next() {
      *  loaded from db) and for all child_ids it has always has_tree and has_state
      */
 
+    if (eot_) {
+        throw std::runtime_error("End of tree");
+    }
     skip_state_ = true;
     prev_key_.assign(curr_key_);
     curr_key_.clear();
@@ -115,6 +121,8 @@ TrieCursor::move_operation_result TrieCursor::to_next() {
                 if (first_uncovered.has_value()) {
                     first_uncovered = pack_nibbles(first_uncovered.value());
                 }
+                sub_node.reset();
+                eot_ = true;
                 return {skip_state_, std::nullopt, std::nullopt, false, first_uncovered};  // No higher level
             }
             sub_node.reset();  // We do leave this level so reset it

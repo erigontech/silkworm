@@ -93,9 +93,10 @@ class TrieCursor {
     };
 
     uint32_t level_{0};                      // Depth level in sub_nodes_
+    bool eot_{false};                        // End of tree (protects from to_next beyond eot_
     Bytes curr_key_{};                       // Latest key returned
     Bytes prev_key_{};                       // Key returned on previous cycle
-    bool skip_state_{false};                 // Whether we can skip state of node
+    bool skip_state_{true};                  // Whether we can skip state of node
     std::array<SubNode, 64> sub_nodes_{{}};  // Collection of subnodes being unrolled
 
     Bytes prefix_{};  // Db key prefix for this trie (0 bytes TrieAccount - 40 bytes TrieStorage)

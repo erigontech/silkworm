@@ -54,11 +54,11 @@ class TrieCursor {
 
     //! \brief Represent the data returned after a move operation (to_prefix or to_next)
     struct move_operation_result {
-        bool skip_state{false};             // Whether the node can be used as is without need to recompute root hash
-        std::optional<Bytes> key{};         // Nibbled key of node
-        std::optional<Bytes> packed_key{};  // Packed key of node
-        std::optional<Bytes> hash{};        // Hash of node
-        bool children_in_trie{false};       // Whether there are children in trie
+        bool skip_state{false};        // Whether the node can be used as is without need to recompute root hash
+        std::optional<Bytes> key{};    // Nibbled key of node
+        std::optional<Bytes> hash{};   // Hash of node
+        bool children_in_trie{false};  // Whether there are children in trie
+        std::optional<Bytes> first_uncovered{};  // First uncovered prefix to be processed by higher loop
     };
 
     //! \brief Acquires the prefix and position the cursor to the first occurrence
@@ -92,9 +92,9 @@ class TrieCursor {
         [[nodiscard]] std::optional<Bytes> get_hash() const;  // Returns hash of child node (i.e. key + child_id)
     };
 
-    uint32_t level_{0};  // Depth level in sub_nodes_
-    Bytes curr_key_{};
-    Bytes prev_key_{};
+    uint32_t level_{0};                      // Depth level in sub_nodes_
+    Bytes curr_key_{};                       // Latest key returned
+    Bytes prev_key_{};                       // Key returned on previous cycle
     bool skip_state_{false};                 // Whether we can skip state of node
     std::array<SubNode, 64> sub_nodes_{{}};  // Collection of subnodes being unrolled
 
@@ -110,7 +110,22 @@ class TrieCursor {
     void db_delete(SubNode& node);    // Collects deletion of node being rebuilt or no longer needed
     bool consume(SubNode& node);      // If node has hash consume it
 
-    bool key_is_before(ByteView k1, ByteView k2);  // Same as < operator but with difference that null keys are last
+    //! \brief Produces the next key in sequence
+    //! \details It's essentially +1 in the hexadecimal (base 16) numeral system
+    //! \verbatim
+    //! Example :
+    //! increment_nibbled_key(0x125) == 0x126;
+    //! increment_nibbled_key(0x12f) == 0x13; (note is shorter)
+    //! increment_nibbled_key(0x13) == 0x14;
+    //! \endverbatim
+    //! \returns the new string of bytes or nullopt if overflows
+    static std::optional<Bytes> increment_nibbled_key(ByteView origin);
+
+  public:
+    //! \brief Compares two strings and returns true when k1 < k2
+    //! \remarks Unlike standard lexical comparison null/empty keys are last
+    static bool key_is_before(ByteView k1,
+                              ByteView k2);  // Same as < operator but with difference that null keys are last
 };
 
 }  // namespace silkworm::trie

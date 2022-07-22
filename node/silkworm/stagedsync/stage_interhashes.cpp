@@ -400,128 +400,131 @@ evmc::bytes32 InterHashes::calculate_root(db::RWTxn& txn, trie::PrefixSet* accou
         collector->collect({Bytes{nibbled_key}, value});
     };
 
-    size_t log_trigger_counter{1};
+    using namespace std::chrono_literals;
+    auto log_time{std::chrono::steady_clock::now()};
 
     trie::TrieCursor trie_cursor{trie_accounts, account_changes, collector};
-    size_t loops{0};
+    for (auto tdata{trie_cursor.to_prefix({})};; tdata = trie_cursor.to_next()) {
 
-    for (auto tdata{trie_cursor.to_prefix({})}; tdata.key.has_value(); tdata = trie_cursor.to_next()) {
+        if (!tdata.skip_state && tdata.first_uncovered.has_value()) {
+            auto ha_key_slice{db::to_slice(tdata.first_uncovered.value())};
+            auto ha_data{ha_key_slice.empty() ? hashed_accounts.to_first(false)
+                                              : hashed_accounts.lower_bound(ha_key_slice, false)};
 
-        log::Debug("Tdata", {"key", to_hex(tdata.key.value(), true), "skip", (tdata.skip_state ? "true" : "false")});
-        ++loops;
-        if(loops > 512) {
-            break;
-        }
-        throw_if_stopping();
-        continue;
-
-        if (tdata.skip_state) {
-            SILKWORM_ASSERT(tdata.hash.has_value());
-            auto hash{to_bytes32(tdata.hash.value())};
-            hash_builder.add_branch_node(tdata.key.value(), hash, tdata.children_in_trie);
-            continue;
-        }
-
-        Bytes ha_key{tdata.packed_key.value()};
-        auto ha_key_slice{db::to_slice(ha_key)};
-        auto ha_data{ha_key.empty() ? hashed_accounts.to_first(false)
-                                    : hashed_accounts.lower_bound(ha_key_slice, false)};
-
-//        while (ha_data) {
-//            const auto ha_data_key_view{db::from_slice(ha_data.key)};
-//
-//            if (!--log_trigger_counter) {
-//                log_trigger_counter = 256;
-//                std::unique_lock<std::mutex> log_lck(log_mtx_);
-//                current_source_ = "HashedState";
-//                current_key_ = to_hex(ha_data_key_view, true);
-//                log_lck.unlock();
-//                throw_if_stopping();
-//            }
-//
-//            // Check the nibbled data key matches current trie node key
-//            auto ha_data_key_nibbled{trie::unpack_nibbles(ha_data_key_view)};
-//            if (!ha_data_key_nibbled.starts_with(*tdata.key)) {
-//                break;
-//            }
-//
-//            // Retrieve account data
-//            const auto [account, err]{Account::from_encoded_storage(db::from_slice(ha_data.value))};
-//            rlp::success_or_throw(err);
-//            evmc::bytes32 storage_root{kEmptyRoot};
-//            if (account.incarnation) {
-//                const Bytes key_with_incarnation{db::storage_prefix(ha_data_key_view, account.incarnation)};
-//                storage_root = calculate_storage_root(txn, key_with_incarnation, storage_changes);
-//            }
-//
-//            hash_builder.add_leaf(ha_data_key_nibbled, account.rlp(storage_root));
-//            ha_data = hashed_accounts.to_next(false);
-//        }
-    }
-
-    return hash_builder.root_hash();
-}
-
-evmc::bytes32 InterHashes::calculate_storage_root(db::RWTxn& txn, const Bytes& db_storage_prefix,
-                                                  trie::PrefixSet* storage_changes) {
-    const bool debug{db_storage_prefix ==
-                     *from_hex("0xe4405bfd8d8a3a8b528b1fc9187bc030f0dbaa79e828619a95d9335ddfe3ea6b0000000000000001")};
-
-    static Bytes rlp{};
-    db::Cursor hashed_storage(txn, db::table::kHashedStorage);
-    db::Cursor trie_storage(txn, db::table::kTrieOfStorage);
-
-    trie::HashBuilder hash_builder;
-    auto collector = storage_collector_.get();
-    hash_builder.node_collector = [collector, db_storage_prefix, debug](ByteView nibbled_key, const trie::Node& node) {
-        Bytes key{db_storage_prefix};
-        key.append(nibbled_key);
-        Bytes value{node.state_mask() ? node.encode_for_storage() : Bytes()};
-        collector->collect({key, value});
-        if (debug) {
-            log::Trace("Collector", {"key", to_hex(key, true)});
-        }
-    };
-
-    auto db_storage_prefix_slice{db::to_slice(db_storage_prefix)};
-    trie::TrieCursor trie_cursor{trie_storage, storage_changes, collector};
-    for (auto tdata{trie_cursor.to_prefix(db_storage_prefix)}; tdata.key.has_value(); tdata = trie_cursor.to_next()) {
-        if (debug) {
-            log::Trace("Trie", {"key", to_hex(tdata.key.value(), true), "skip", (tdata.skip_state ? "true" : "false")});
-        }
-
-        if (tdata.skip_state) {
-            SILKWORM_ASSERT(tdata.hash.has_value());
-            evmc::bytes32 hash{to_bytes32(tdata.hash.value())};
-            hash_builder.add_branch_node(tdata.key.value(), hash, tdata.children_in_trie);
-            continue;
-        }
-
-        const auto prefix_slice{db::to_slice(tdata.packed_key.value())};
-        auto hs_data{hashed_storage.lower_bound_multivalue(db_storage_prefix_slice, prefix_slice, false)};
-        while (hs_data) {
-            const ByteView data_value_view{db::from_slice(hs_data.value)};
-
-            // Check the nibbled data key matches current trie node key
-            const auto nibbled_location{trie::unpack_nibbles(data_value_view.substr(0, kHashLength))};
-            if (!nibbled_location.starts_with(*tdata.key)) {
-                break;
+            if (const auto now{std::chrono::steady_clock::now()}; log_time <= now) {
+                log_time = now + 5s;
+                throw_if_stopping();
+                std::unique_lock log_lck(log_mtx_);
+                current_source_ = "HashedState";
+                current_key_ = to_hex(tdata.first_uncovered.value(), true);
             }
 
-            const ByteView value{data_value_view.substr(kHashLength)};
-            rlp.clear();
-            rlp::encode(rlp, value);
-            hash_builder.add_leaf(nibbled_location, rlp);
-            hs_data = hashed_storage.to_current_next_multi(/*throw_notfound=*/false);
+            while (ha_data) {
+                auto ha_data_key_view{db::from_slice(ha_data.key)};
+                auto ha_data_key_nibbled{trie::unpack_nibbles(ha_data_key_view)};
+                if (tdata.key.has_value() && tdata.key.value() < ha_data_key_nibbled) {
+                    break;
+                }
+
+                if (const auto now{std::chrono::steady_clock::now()}; log_time <= now) {
+                    log_time = now + 5s;
+                    throw_if_stopping();
+                    std::unique_lock log_lck(log_mtx_);
+                    current_source_ = "HashedState";
+                    current_key_ = to_hex(ha_data_key_view, true);
+                }
+
+                // Retrieve account data
+                const auto [account, err]{Account::from_encoded_storage(db::from_slice(ha_data.value))};
+                rlp::success_or_throw(err);
+                evmc::bytes32 storage_root{kEmptyRoot};
+                if (account.incarnation) {
+                    const Bytes key_with_incarnation{db::storage_prefix(ha_data_key_view, account.incarnation)};
+                    storage_root = calculate_storage_root(txn, key_with_incarnation, storage_changes);
+                }
+
+                hash_builder.add_leaf(ha_data_key_nibbled, account.rlp(storage_root));
+                ha_data = hashed_accounts.to_next(false);
+            }
         }
+
+        // Interrupt loop when no more keys to process
+        if (!tdata.key.has_value()) {
+            break;
+        }
+
+        auto hash{to_bytes32(tdata.hash.value())};
+        hash_builder.add_branch_node(tdata.key.value(), hash, tdata.children_in_trie);
     }
 
     auto ret{hash_builder.root_hash()};
-    if (debug) {
-        log::Trace("Trie", {"root", to_hex(ret.bytes, true)});
-    }
+    log::Debug("Merkle tree", {"root", to_hex(ret, true)});
     return ret;
 }
+
+// evmc::bytes32 InterHashes::calculate_storage_root(db::RWTxn& txn, const Bytes& db_storage_prefix,
+//                                                   trie::PrefixSet* storage_changes) {
+//     const bool debug{db_storage_prefix ==
+//                      *from_hex("0xe4405bfd8d8a3a8b528b1fc9187bc030f0dbaa79e828619a95d9335ddfe3ea6b0000000000000001")};
+//
+//     static Bytes rlp{};
+//     db::Cursor hashed_storage(txn, db::table::kHashedStorage);
+//     db::Cursor trie_storage(txn, db::table::kTrieOfStorage);
+//
+//     trie::HashBuilder hash_builder;
+//     auto collector = storage_collector_.get();
+//     hash_builder.node_collector = [collector, db_storage_prefix, debug](ByteView nibbled_key, const trie::Node& node)
+//     {
+//         Bytes key{db_storage_prefix};
+//         key.append(nibbled_key);
+//         Bytes value{node.state_mask() ? node.encode_for_storage() : Bytes()};
+//         collector->collect({key, value});
+//         if (debug) {
+//             log::Trace("Collector", {"key", to_hex(key, true)});
+//         }
+//     };
+//
+//     auto db_storage_prefix_slice{db::to_slice(db_storage_prefix)};
+//     trie::TrieCursor trie_cursor{trie_storage, storage_changes, collector};
+//     for (auto tdata{trie_cursor.to_prefix(db_storage_prefix)}; tdata.key.has_value(); tdata = trie_cursor.to_next())
+//     {
+//         if (debug) {
+//             log::Trace("Trie", {"key", to_hex(tdata.key.value(), true), "skip", (tdata.skip_state ? "true" :
+//             "false")});
+//         }
+//
+//         if (tdata.skip_state) {
+//             SILKWORM_ASSERT(tdata.hash.has_value());
+//             evmc::bytes32 hash{to_bytes32(tdata.hash.value())};
+//             hash_builder.add_branch_node(tdata.key.value(), hash, tdata.children_in_trie);
+//             continue;
+//         }
+//
+//         const auto prefix_slice{db::to_slice(tdata.first_uncovered)};
+//         auto hs_data{hashed_storage.lower_bound_multivalue(db_storage_prefix_slice, prefix_slice, false)};
+//         while (hs_data) {
+//             const ByteView data_value_view{db::from_slice(hs_data.value)};
+//
+//             // Check the nibbled data key matches current trie node key
+//             const auto nibbled_location{trie::unpack_nibbles(data_value_view.substr(0, kHashLength))};
+//             if (!nibbled_location.starts_with(*tdata.key)) {
+//                 break;
+//             }
+//
+//             const ByteView value{data_value_view.substr(kHashLength)};
+//             rlp.clear();
+//             rlp::encode(rlp, value);
+//             hash_builder.add_leaf(nibbled_location, rlp);
+//             hs_data = hashed_storage.to_current_next_multi(/*throw_notfound=*/false);
+//         }
+//     }
+//
+//     auto ret{hash_builder.root_hash()};
+//     if (debug) {
+//         log::Trace("Trie", {"root", to_hex(ret.bytes, true)});
+//     }
+//     return ret;
+// }
 
 void InterHashes::reset_log_progress() {
     std::unique_lock log_lck(log_mtx_);

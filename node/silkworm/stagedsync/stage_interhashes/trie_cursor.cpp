@@ -26,8 +26,8 @@ namespace silkworm::trie {
 
 TrieCursor::TrieCursor(mdbx::cursor& db_cursor, PrefixSet* changed, etl::Collector* collector)
     : db_cursor_(db_cursor), changed_{changed}, collector_{collector} {
-    curr_key_.reserve(40);
-    prev_key_.reserve(40);
+    curr_key_.reserve(64);
+    prev_key_.reserve(64);
     prefix_.reserve(40);  // Max size assignable is 40
     buffer_.reserve(96);  // Max size is 40 (TrieStorage prefix) + full unrolled nibbled key 32 == 82 (rounded to 96)
 }
@@ -58,8 +58,8 @@ TrieCursor::move_operation_result TrieCursor::to_prefix(ByteView prefix) {
 
     // Do we have root a node ?
     if (db_seek({}) && consume(sub_nodes_[level_])) {
-        auto& node{sub_nodes_[level_]};
-        return {skip_state_, curr_key_, std::nullopt, node.get_hash(), node.has_tree()};
+        auto& sub_node{sub_nodes_[level_]};
+        return {skip_state_, curr_key_, sub_node.get_hash(), sub_node.has_tree()};
     }
 
     return to_next();
@@ -68,6 +68,7 @@ TrieCursor::move_operation_result TrieCursor::to_prefix(ByteView prefix) {
 TrieCursor::move_operation_result TrieCursor::to_next() {
     /*
      * We process node's nibbled keys in ascending lexicographical order
+     * 0x
      * 0x00
      * 0x0000
      * 0x0001
@@ -76,10 +77,21 @@ TrieCursor::move_operation_result TrieCursor::to_next() {
      * 0x000f
      * 0x01
      *
-     * Requirements for going down are either
-     * - sub_node has child in db
-     * - sub_node child key is prefix of next node in db
-     * - sub_node child key is contained in changed list
+     * When AtPrefix is executed it tries to locate the root node of the tree
+     * If found (and no changes) then it returns the root hash. Otherwise the to_next cycle is triggered.
+     * On every to_next we
+     *  1) Point to the node of current level_ and increment child_id by 1
+     *  2) If child_id > max_child_id we try to go up one level (if possible) and goto 1)
+     *  3) If node has_hash and skip_state==true return node.full_key and hash (it will be added as a branch node
+     *     in hash builder). If has_hash and skip_state==false also return the previous nobbled key after increment
+     *     This will cause to process state of all previous hashed accounts as leaves *and* the branch node.
+     *  4) If node does not have hash but has_tree try locate child node. If found descent one level (++level) and
+     *     goto 1)
+     *  5) If node has_state set skip_state to false
+     *  6) goto 1)
+     *
+     *  Note ! In absence of a root node then node at level 0 is always an ephemeral node (it does not have any value
+     *  loaded from db) and for all child_ids it has always has_tree and has_state
      */
 
     skip_state_ = true;
@@ -94,25 +106,41 @@ TrieCursor::move_operation_result TrieCursor::to_next() {
         // Note ! We don't have intermediate ephemeral nodes as in Erigon
         if (sub_node.child_id > sub_node.max_child_id) {
             if (level_ == 0) {
+                // We can't go up further
+                // If prev_key_ is empty we haven't consumed any node yet so all hashed state must be processed (full
+                // regen). This is done by providing an empty value to first_uncovered Otherwise we provide the
+                // incremented prev_key_ (which may be nullopt if overflows)
                 skip_state_ = false;
-                return {skip_state_};  // No higher level
+                auto first_uncovered{increment_nibbled_key(prev_key_)};
+                if (first_uncovered.has_value()) {
+                    first_uncovered = pack_nibbles(first_uncovered.value());
+                }
+                return {skip_state_, std::nullopt, std::nullopt, false, first_uncovered};  // No higher level
             }
             sub_node.reset();  // We do leave this level so reset it
             --level_;
             continue;
         }
 
-        // Consume node - Implies has hash
+        // Consume node - Implies has hash and sets prev_key_
         if (consume(sub_node)) {
-            return {skip_state_, sub_node.full_key(), std::nullopt, sub_node.get_hash().value(), sub_node.has_tree()};
+            std::optional<Bytes> first_uncovered{};
+            if (!skip_state_) {
+                // Don't need to increment and pack first uncovered key when we skip state
+                first_uncovered = increment_nibbled_key(prev_key_);
+                if (first_uncovered.has_value()) {
+                    first_uncovered = pack_nibbles(first_uncovered.value());
+                }
+            }
+            return {skip_state_, sub_node.full_key(), sub_node.get_hash().value(), sub_node.has_tree(),
+                    first_uncovered};
         }
 
         // Do we have children in db ?
         // We must either rely on tree_mask (if node is loaded from db) or search anyway if ephemeral node
-        if (sub_node.has_tree()) {
-            if (db_seek(sub_node.full_key())) {
-                continue;
-            }
+        // (see has_tree() implementation)
+        if (sub_node.has_tree() && db_seek(sub_node.full_key())) {
+            continue;
         }
 
         if (sub_node.has_state()) {
@@ -160,21 +188,20 @@ void TrieCursor::db_delete(SubNode& node) {
     }
 }
 bool TrieCursor::consume(SubNode& node) {
-    if (node.has_hash()) {
+    if (node.has_hash() && changed_ != nullptr) {
         if (prefix_.empty()) {
             buffer_.assign(node.full_key());
         } else {
             buffer_.assign(prefix_);
             buffer_.append(node.full_key());
         }
-        if (changed_) {
-            auto [has_changes, next_created]{changed_->contains_and_next_marked(buffer_)};
-            if (!has_changes) {
-                skip_state_ = skip_state_ && key_is_before(buffer_, next_created_);
-                next_created_ = next_created;
-                curr_key_.assign(buffer_.substr(prefix_.size()));
-                return true;
-            }
+
+        auto [has_changes, next_created]{changed_->contains_and_next_marked(buffer_)};
+        if (!has_changes) {
+            skip_state_ = skip_state_ && key_is_before(buffer_, next_created_);
+            next_created_ = next_created;
+            curr_key_.assign(buffer_.substr(prefix_.size()));
+            return true;
         }
     }
     db_delete(node);
@@ -182,13 +209,28 @@ bool TrieCursor::consume(SubNode& node) {
 }
 
 bool TrieCursor::key_is_before(ByteView k1, ByteView k2) {
-    if (k1.is_null()) {
+    if (k1.is_null() || k1.empty()) {
         return false;
     }
-    if (k2.is_null()) {
+    if (k2.is_null() || k2.empty()) {
         return true;
     }
     return k1 < k2;
+}
+std::optional<Bytes> TrieCursor::increment_nibbled_key(const ByteView origin) {
+    Bytes ret{};
+    // This is intended. Don't want an empty origin to be marked as overflown
+    if (!origin.empty()) {
+        auto rit{std::find_if(origin.rbegin(), origin.rend(), [](uint8_t nibble) { return nibble != 0xf; })};
+        if (rit == origin.rend()) {
+            // Overflow
+            return std::nullopt;
+        }
+        auto count{std::distance(origin.begin(), rit.base())};
+        ret.assign(origin.substr(0, count));
+        ++ret.back();
+    }
+    return ret;
 }
 
 void TrieCursor::SubNode::reset() {

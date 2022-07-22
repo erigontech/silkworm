@@ -58,8 +58,9 @@ void BodyPersistence::persist(const Block& block) {
         return;
     }
 
-    if (!db::has_body(tx_, block_num, block_hash))
+    if (!db::has_body(tx_, block_num, block_hash)) {
         db::write_body(tx_, block, block_hash, block_num);
+    }
 
     if (block_num > highest_height_) {
         highest_height_ = block_num;
@@ -82,4 +83,4 @@ void BodyPersistence::remove_bodies(BlockNum new_height, std::optional<Hash>, db
     db::stages::write_stage_progress(tx, db::stages::kBlockBodiesKey, new_height);
 }
 
-}
+} // namespace silkworm

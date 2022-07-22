@@ -183,8 +183,6 @@ BlockNum HeaderPersistence::find_forking_point(db::RWTxn& tx, const BlockHeader&
 }
 
 // On Erigon is fixCanonicalChain
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wuninitialized"
 void HeaderPersistence::update_canonical_chain(BlockNum height, Hash hash) {  // hash can be empty
     if (height == 0) return;
 
@@ -192,7 +190,7 @@ void HeaderPersistence::update_canonical_chain(BlockNum height, Hash hash) {  //
     auto ancestor_height = height;
 
     std::optional<Hash> persisted_canon_hash = db::read_canonical_hash(tx_, ancestor_height);
-    while (persisted_canon_hash != ancestor_hash) { // here the sanitizer erroneously raises a maybe-uninitialized warn
+    while (!persisted_canon_hash || persisted_canon_hash != ancestor_hash) { // here the sanitizer erroneously raises a maybe-uninitialized warn
         db::write_canonical_hash(tx_, ancestor_height, ancestor_hash);
 
         auto ancestor = db::read_header(tx_, ancestor_height, ancestor_hash);
@@ -209,7 +207,6 @@ void HeaderPersistence::update_canonical_chain(BlockNum height, Hash hash) {  //
         persisted_canon_hash = db::read_canonical_hash(tx_, ancestor_height);
     }
 }
-#pragma GCC diagnostic pop
 
 void HeaderPersistence::close() {
     if (closed_) return;

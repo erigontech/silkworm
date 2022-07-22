@@ -37,7 +37,7 @@ static Bytes aes_decrypt(ByteView cipher_text, ByteView key, ByteView iv);
 static Bytes sha256(ByteView data);
 static Bytes hmac(ByteView key, ByteView data1, ByteView data2);
 
-EciesCipher::Message EciesCipher::encrypt(ByteView plain_text, PublicKeyView public_key_view) {
+EciesCipher::Message EciesCipher::encrypt_message(ByteView plain_text, PublicKeyView public_key_view) {
     secp256k1_pubkey public_key;
     assert(public_key_view.size() == sizeof(public_key.data));
     memcpy(public_key.data, public_key_view.data(), sizeof(public_key.data));
@@ -68,7 +68,7 @@ EciesCipher::Message EciesCipher::encrypt(ByteView plain_text, PublicKeyView pub
     };
 }
 
-Bytes EciesCipher::decrypt(const EciesCipher::Message& message, PrivateKeyView private_key) {
+Bytes EciesCipher::decrypt_message(const EciesCipher::Message& message, PrivateKeyView private_key) {
     secp256k1_pubkey ephemeral_public_key;
     assert(message.ephemeral_public_key.size() == sizeof(ephemeral_public_key.data));
     memcpy(ephemeral_public_key.data, message.ephemeral_public_key.data(), sizeof(ephemeral_public_key.data));
@@ -160,5 +160,66 @@ static Bytes hmac(ByteView key, ByteView data1, ByteView data2) {
 
     return hash;
 }
+
+Bytes EciesCipher::serialize_message(const Message& message) {
+    secp256k1_pubkey public_key;
+    assert(message.ephemeral_public_key.size() == sizeof(public_key.data));
+    memcpy(public_key.data, message.ephemeral_public_key.data(), sizeof(public_key.data));
+
+    SecP256K1Context ctx;
+    Bytes key_data = ctx.serialize_public_key(&public_key, /* is_compressed = */ false);
+
+    Bytes data;
+    data.reserve(key_data.size()
+            + message.iv.size()
+            + message.cipher_text.size()
+            + message.mac.size());
+    data.append(key_data);
+    data.append(message.iv);
+    data.append(message.cipher_text);
+    data.append(message.mac);
+    return data;
+}
+
+EciesCipher::Message EciesCipher::deserialize_message(ByteView message_data) {
+    const std::size_t key_size = 65;
+    const std::size_t iv_size = AES_BLOCK_SIZE;
+    const std::size_t mac_size = 32;
+
+    const std::size_t min_size = key_size + iv_size + mac_size;
+    if (message_data.size() < min_size) {
+        throw std::runtime_error("Message data is too short");
+    }
+    const std::size_t cipher_text_size = message_data.size() - min_size;
+
+    Bytes key_data{&message_data[0], key_size};
+    Bytes iv{&message_data[key_size], iv_size};
+    Bytes cipher_text{&message_data[key_size + iv_size], cipher_text_size};
+    Bytes mac{&message_data[key_size + iv_size + cipher_text_size], mac_size};
+
+    SecP256K1Context ctx;
+    secp256k1_pubkey public_key;
+    bool ok = ctx.parse_public_key(&public_key, key_data);
+    if (!ok) {
+        throw std::runtime_error("Failed to parse an ephemeral public key");
+    }
+    Bytes ephemeral_public_key{public_key.data, sizeof(public_key.data)};
+
+    return {
+        std::move(ephemeral_public_key),
+        std::move(iv),
+        std::move(cipher_text),
+        std::move(mac),
+    };
+}
+
+Bytes EciesCipher::encrypt(ByteView plain_text, PublicKeyView public_key) {
+    return serialize_message(encrypt_message(plain_text, public_key));
+}
+
+Bytes EciesCipher::decrypt(ByteView message_data, PrivateKeyView private_key) {
+    return decrypt_message(deserialize_message(message_data), private_key);
+}
+
 
 }  // namespace silkworm::sentry::rlpx::auth

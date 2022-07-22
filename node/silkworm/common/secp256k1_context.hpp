@@ -46,6 +46,19 @@ class SecP256K1Context final {
         return secp256k1_ec_pubkey_create(context_, public_key, private_key.data());
     }
 
+    Bytes serialize_public_key(const secp256k1_pubkey* public_key, bool is_compressed) const {
+        size_t data_size = is_compressed ? 33 : 65;
+        Bytes data(data_size, 0);
+        unsigned int flags = is_compressed ? SECP256K1_EC_COMPRESSED : SECP256K1_EC_UNCOMPRESSED;
+        secp256k1_ec_pubkey_serialize(context_, data.data(), &data_size, public_key, flags);
+        data.resize(data_size);
+        return data;
+    }
+
+    bool parse_public_key(secp256k1_pubkey* public_key, const ByteView& public_key_data) const {
+        return secp256k1_ec_pubkey_parse(context_, public_key, public_key_data.data(), public_key_data.size());
+    }
+
     bool compute_ecdh_secret(Bytes& shared_secret, const secp256k1_pubkey* public_key, const ByteView& private_key) const {
         return silkpre_secp256k1_ecdh(context_, shared_secret.data(), public_key, private_key.data());
     }

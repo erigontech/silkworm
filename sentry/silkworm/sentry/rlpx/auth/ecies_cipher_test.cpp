@@ -20,12 +20,12 @@ limitations under the License.
 
 namespace silkworm::sentry::rlpx::auth {
 
-TEST_CASE("EciesCipher") {
+TEST_CASE("EciesCipher.encrypt_decrypt_message") {
     common::EccKeyPair receiver_key;
 
     Bytes expected_plain_text = {1, 2, 3, 4, 5};
     EciesCipher::PublicKey public_key = receiver_key.public_key();
-    auto message = EciesCipher::encrypt(expected_plain_text, public_key);
+    auto message = EciesCipher::encrypt_message(expected_plain_text, public_key);
     CHECK_FALSE(message.ephemeral_public_key.empty());
     CHECK_FALSE(message.iv.empty());
     CHECK_FALSE(message.cipher_text.empty());
@@ -33,8 +33,21 @@ TEST_CASE("EciesCipher") {
     CHECK(message.cipher_text != expected_plain_text);
 
     EciesCipher::PrivateKeyView private_key = receiver_key.private_key();
-    Bytes plain_text = EciesCipher::decrypt(message, private_key);
+    Bytes plain_text = EciesCipher::decrypt_message(message, private_key);
     CHECK_FALSE(plain_text.empty());
+    CHECK(plain_text == expected_plain_text);
+}
+
+TEST_CASE("EciesCipher.encrypt_decrypt_bytes") {
+    common::EccKeyPair receiver_key;
+
+    Bytes expected_plain_text = {1, 2, 3, 4, 5};
+    EciesCipher::PublicKey public_key = receiver_key.public_key();
+    auto cipher_text = EciesCipher::encrypt(expected_plain_text, receiver_key.public_key());
+    CHECK_FALSE(cipher_text.empty());
+    CHECK(cipher_text != expected_plain_text);
+
+    Bytes plain_text = EciesCipher::decrypt(cipher_text, receiver_key.private_key());
     CHECK(plain_text == expected_plain_text);
 }
 

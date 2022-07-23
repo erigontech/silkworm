@@ -198,6 +198,7 @@ inline constexpr ChainConfig kGoerliConfig{
             4'460'644,  // Berlin
             5'062'605,  // London
         },
+    .terminal_total_difficulty = 10790000,
 };
 
 inline constexpr ChainConfig kSepoliaConfig{

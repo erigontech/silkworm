@@ -205,15 +205,16 @@ inline constexpr ChainConfig kSepoliaConfig{
     .seal_engine = SealEngineType::kEthash,
     .evmc_fork_blocks =
         {
-            0,  // Homestead
-            0,  // Tangerine Whistle
-            0,  // Spurious Dragon
-            0,  // Byzantium
-            0,  // Constantinople
-            0,  // Petersburg
-            0,  // Istanbul
-            0,  // Berlin
-            0,  // London
+            0,        // Homestead
+            0,        // Tangerine Whistle
+            0,        // Spurious Dragon
+            0,        // Byzantium
+            0,        // Constantinople
+            0,        // Petersburg
+            0,        // Istanbul
+            0,        // Berlin
+            0,        // London
+            1735371,  // Merge Netsplit
         },
     .muir_glacier_block = 0,
     .terminal_total_difficulty = 17000000000000000,

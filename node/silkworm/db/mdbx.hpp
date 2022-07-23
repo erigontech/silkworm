@@ -168,6 +168,12 @@ class Cursor : public ::mdbx::cursor {
     //! \brief Returns stat info of underlying dbi
     [[nodiscard]] MDBX_stat get_map_stat() const;
 
+    //! \brief Returns the size of the underlying table
+    [[nodiscard]] size_t size() const;
+
+    //! \brief Returns whether the underlying table is empty
+    [[nodiscard]] bool empty() const;
+
     //! \brief Exposes handles cache
     static const ObjectPool<MDBX_cursor, detail::cursor_handle_deleter>& handles_cache() { return handles_pool_; }
 

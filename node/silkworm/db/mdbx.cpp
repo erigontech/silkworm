@@ -207,6 +207,10 @@ MDBX_stat Cursor::get_map_stat() const {
     return txn().get_map_stat(map());
 }
 
+size_t Cursor::size() const { return get_map_stat().ms_entries; }
+
+bool Cursor::empty() const { return size() == 0; }
+
 bool has_map(::mdbx::txn& tx, const char* map_name) {
     try {
         ::mdbx::map_handle main_map{1};

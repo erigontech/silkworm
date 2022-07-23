@@ -103,7 +103,7 @@ class TrieCursor {
     Bytes buffer_{};  // A convenience buffer
 
     mdbx::cursor db_cursor_;     // The underlying db cursor (TrieAccount/TrieStorage)
-    PrefixSet* changed_;         // The collection of changed nibbled keys
+    PrefixSet* changed_list_;    // The collection of changed nibbled keys
     ByteView next_created_{};    // The next created account/location in changed list
     etl::Collector* collector_;  // Pointer to a collector for deletion of obsolete keys
 

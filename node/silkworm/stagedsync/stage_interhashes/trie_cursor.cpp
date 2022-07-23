@@ -25,11 +25,11 @@
 namespace silkworm::trie {
 
 TrieCursor::TrieCursor(mdbx::cursor& db_cursor, PrefixSet* changed, etl::Collector* collector)
-    : db_cursor_(db_cursor), changed_{changed}, collector_{collector} {
+    : db_cursor_(db_cursor), changed_list_{changed}, collector_{collector} {
     curr_key_.reserve(64);
     prev_key_.reserve(64);
-    prefix_.reserve(40);  // Max size assignable is 40
-    buffer_.reserve(96);  // Max size is 40 (TrieStorage prefix) + full unrolled nibbled key 32 == 82 (rounded to 96)
+    prefix_.reserve(64);
+    buffer_.reserve(128);
 }
 
 TrieCursor::move_operation_result TrieCursor::to_prefix(ByteView prefix) {
@@ -43,6 +43,7 @@ TrieCursor::move_operation_result TrieCursor::to_prefix(ByteView prefix) {
     buffer_.clear();
     curr_key_.clear();
     prev_key_.clear();
+    next_created_ = ByteView{};
     eot_ = false;
     skip_state_ = true;
 
@@ -53,9 +54,8 @@ TrieCursor::move_operation_result TrieCursor::to_prefix(ByteView prefix) {
     }
     sub_nodes_[level_].reset();
 
-    if (changed_) {
-        buffer_.assign(prefix_);
-        auto [_, next_created]{changed_->contains_and_next_marked({})};
+    if (changed_list_) {
+        auto [_, next_created]{changed_list_->contains_and_next_marked(prefix_)};
         next_created_ = next_created;
     }
 
@@ -158,15 +158,34 @@ TrieCursor::move_operation_result TrieCursor::to_next() {
 }
 
 bool TrieCursor::db_seek(ByteView seek_key) {
+    bool debug{false};
     if (prefix_.empty()) {
         buffer_.assign(seek_key);
     } else {
+        debug = seek_key.empty();
         buffer_.assign(prefix_);
         buffer_.append(seek_key);
     }
 
     const auto buffer_slice{db::to_slice(buffer_)};
     auto data{buffer_.empty() ? db_cursor_.to_first(false) : db_cursor_.lower_bound(buffer_slice, false)};
+    if (debug) {
+        std::cout << "Root seek slice " << to_hex(buffer_, true);
+        if (!data) {
+            std::cout << " not found" << std::endl;
+
+            data = db_cursor_.to_first(false);
+            if (!data) {
+                throw std::runtime_error("Should not be empty");
+            } else {
+                std::cout << " first is " << to_hex(db::from_slice(data.key), true) << std::endl;
+                throw std::runtime_error("WTF");
+            }
+
+        } else {
+            std::cout << " " << to_hex(db::from_slice(data.key), true) << std::endl;
+        }
+    }
     if (!data || !data.key.starts_with(buffer_slice)) {
         return false;
     }
@@ -178,8 +197,12 @@ bool TrieCursor::db_seek(ByteView seek_key) {
         return false;
     }
 
+    if (debug) {
+        throw std::runtime_error("Finally one is found");
+    }
+
     ByteView db_cursor_val{db::from_slice(data.value)};  // Save db_cursor_ value
-    level_ += seek_key.empty() ? 0 : 1;                  // Down one level for child node. Stay at zero for root node
+    level_ += seek_key.empty() ? 0 : 1u;                 // Down one level for child node. Stay at zero for root node
     auto& new_node{sub_nodes_[level_]};
     new_node.parse(db_cursor_key, db_cursor_val);
     return true;
@@ -196,17 +219,11 @@ void TrieCursor::db_delete(SubNode& node) {
     }
 }
 bool TrieCursor::consume(SubNode& node) {
-    if (node.has_hash() && changed_ != nullptr) {
-        if (prefix_.empty()) {
-            buffer_.assign(node.full_key());
-        } else {
-            buffer_.assign(prefix_);
-            buffer_.append(node.full_key());
-        }
-
-        auto [has_changes, next_created]{changed_->contains_and_next_marked(buffer_)};
+    if (node.has_hash() && changed_list_ != nullptr) {
+        buffer_.assign(prefix_ + node.full_key());
+        auto [has_changes, next_created]{changed_list_->contains_and_next_marked(buffer_)};
         if (!has_changes) {
-            skip_state_ = skip_state_ && key_is_before(buffer_, next_created_);
+            skip_state_ = skip_state_ && (next_created_.is_null() || buffer_ < next_created_);
             next_created_ = next_created;
             curr_key_.assign(buffer_.substr(prefix_.size()));
             return true;

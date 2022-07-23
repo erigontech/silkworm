@@ -388,25 +388,29 @@ StageResult InterHashes::increment_intermediate_hashes(db::RWTxn& txn, const evm
 
 evmc::bytes32 InterHashes::calculate_root(db::RWTxn& txn, trie::PrefixSet* account_changes,
                                           trie::PrefixSet* storage_changes) {
-    bool log_trace{log::test_verbosity(log::Level::kTrace)};
+    static bool log_trace{log::test_verbosity(log::Level::kTrace)};
 
     db::Cursor hashed_accounts(txn, db::table::kHashedAccounts);
     db::Cursor trie_accounts(txn, db::table::kTrieOfAccounts);
     db::Cursor hashed_storage(txn, db::table::kHashedStorage);
     db::Cursor trie_storage(txn, db::table::kTrieOfStorage);
 
+    if (log_trace) {
+        log::Trace(db::table::kHashedAccounts.name, {"records", std::to_string(hashed_accounts.size())});
+        log::Trace(db::table::kTrieOfAccounts.name, {"records", std::to_string(trie_accounts.size())});
+        log::Trace(db::table::kHashedStorage.name, {"records", std::to_string(hashed_storage.size())});
+        log::Trace(db::table::kTrieOfStorage.name, {"records", std::to_string(trie_storage.size())});
+    }
+
     Bytes storage_prefix_buffer{};
     storage_prefix_buffer.reserve(40);
 
     // These are needed to avoid capture all in lambdas
-    auto na_collector = account_collector_.get();  // Node account collector
-    auto ns_collector = storage_collector_.get();  // Node storage collector
+    auto na_collector{account_collector_.get()};  // Node account collector
+    auto ns_collector{storage_collector_.get()};  // Node storage collector
 
     trie::HashBuilder hba;
-    hba.node_collector = [na_collector](ByteView nibbled_key, const trie::Node& node) {
-        if (nibbled_key.empty()) {
-            return;
-        }
+    hba.node_collector = [&na_collector](ByteView nibbled_key, const trie::Node& node) {
         Bytes value{node.state_mask() ? node.encode_for_storage() : Bytes()};
         na_collector->collect({Bytes{nibbled_key}, value});
     };
@@ -423,8 +427,8 @@ evmc::bytes32 InterHashes::calculate_root(db::RWTxn& txn, trie::PrefixSet* accou
     auto log_time{std::chrono::steady_clock::now()};
 
     // Open both tries (Account and Storage) to avoid reallocation of Storage on every contract
-    trie::TrieCursor ta_cursor{trie_accounts, account_changes, na_collector};
-    trie::TrieCursor ts_cursor{trie_storage, storage_changes, ns_collector};
+    trie::TrieCursor ta_cursor(trie_accounts, account_changes, na_collector);
+    trie::TrieCursor ts_cursor(trie_storage, storage_changes, ns_collector);
 
     for (auto ta_data{ta_cursor.to_prefix({})};; ta_data = ta_cursor.to_next()) {
         if (!ta_data.skip_state && ta_data.first_uncovered.has_value()) {
@@ -452,7 +456,7 @@ evmc::bytes32 InterHashes::calculate_root(db::RWTxn& txn, trie::PrefixSet* accou
                 const auto [account, err]{Account::from_encoded_storage(db::from_slice(ha_data.value))};
                 rlp::success_or_throw(err);
                 evmc::bytes32 storage_root{kEmptyRoot};
-                if (account.incarnation) {
+                if (account.incarnation != 0) {
                     // Calc storage root
                     storage_prefix_buffer.assign(db::storage_prefix(ha_data_key_view, account.incarnation));
                     storage_root = calculate_storage_root(ts_cursor, hbs, hashed_storage, storage_prefix_buffer);
@@ -470,7 +474,6 @@ evmc::bytes32 InterHashes::calculate_root(db::RWTxn& txn, trie::PrefixSet* accou
 
         auto hash{to_bytes32(ta_data.hash.value())};
         hba.add_branch_node(ta_data.key.value(), hash, ta_data.children_in_trie);
-
     }
 
     auto ret{hba.root_hash()};
@@ -516,10 +519,9 @@ evmc::bytes32 InterHashes::calculate_storage_root(trie::TrieCursor& ts_cursor, t
         hbs.add_branch_node(ts_data.key.value(), hash, ts_data.children_in_trie);
 
         // Have we just sent Storage root for this contract ?
-        if(ts_data.key.value().empty()) {
+        if (ts_data.key.value().empty()) {
             break;
         }
-
     }
 
     auto ret{hbs.root_hash()};

@@ -51,9 +51,9 @@ struct ChainConfig {
         "berlinBlock",  // EVMC_BERLIN
         "londonBlock",  // EVMC_LONDON
         // there's no evmc_revision for arrowGlacierBlock, nor for grayGlacierBlock
-        "mergeForkBlock",  // EVMC_PARIS, corresponds to FORK_NEXT_VALUE of EIP-3675
-        "shanghaiBlock",   // EVMC_SHANGHAI
-        "cancunBlock",     // EVMC_CANCUN
+        "mergeNetsplitBlock",  // EVMC_PARIS, corresponds to FORK_NEXT_VALUE of EIP-3675
+        "shanghaiBlock",       // EVMC_SHANGHAI
+        "cancunBlock",         // EVMC_CANCUN
     };
 
     static_assert(std::size(kJsonForkNames) == EVMC_MAX_REVISION);

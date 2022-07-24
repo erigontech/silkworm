@@ -122,11 +122,9 @@ class TrieCursor {
     //! \returns the new string of bytes or nullopt if overflows
     static std::optional<Bytes> increment_nibbled_key(ByteView origin);
 
-  public:
     //! \brief Compares two strings and returns true when k1 < k2
-    //! \remarks Unlike standard lexical comparison null/empty keys are last
-    static bool key_is_before(ByteView k1,
-                              ByteView k2);  // Same as < operator but with difference that null keys are last
+    //! \remarks Unlike standard lexical comparison null keys are last
+    static bool key_is_before(ByteView k1, ByteView k2);
 };
 
 }  // namespace silkworm::trie

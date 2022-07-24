@@ -111,11 +111,13 @@ trie::PrefixSet InterHashes::gather_forward_account_changes(
 
     BlockNum reached_blocknum{0};
     BlockNum expected_blocknum{from + 1};
-    absl::btree_set<Bytes> deleted_hashes{};
+    absl::btree_set<Bytes> deleted_ts_prefixes{};
+
+    using namespace std::chrono_literals;
+    auto log_time{std::chrono::steady_clock::now()};
 
     std::unique_lock log_lck(log_mtx_);
     current_source_ = std::string(db::table::kAccountChangeSet.name);
-    current_key_ = std::to_string(expected_blocknum);
     log_lck.unlock();
 
     const Bytes starting_key{db::block_key(expected_blocknum)};
@@ -131,46 +133,53 @@ trie::PrefixSet InterHashes::gather_forward_account_changes(
         check_block_sequence(reached_blocknum, expected_blocknum);
         if (reached_blocknum > to) {
             break;
-        } else if (reached_blocknum % 32 == 0) {
+        } else if (auto now{std::chrono::steady_clock::now()}; log_time <= now) {
             throw_if_stopping();
             log_lck.lock();
+            log_time = now + 5s;
             current_key_ = std::to_string(reached_blocknum);
             log_lck.unlock();
         }
 
         while (changeset_data) {
             auto changeset_value_view{db::from_slice(changeset_data.value)};
+
+            // Extract address and hash if needed
             const evmc::address address{to_evmc_address(changeset_value_view)};
             changeset_value_view.remove_prefix(kAddressLength);
-
-            if (!hashed_addresses.contains(address)) {
+            auto hashed_addresses_it{hashed_addresses.find(address)};
+            if (hashed_addresses_it == hashed_addresses.end()) {
                 const auto hashed_address{keccak256(address)};
-                hashed_addresses[address] = hashed_address;
+                hashed_addresses_it = hashed_addresses.insert_or_assign(address, hashed_address).first;
+            }
 
-                if (!changeset_value_view.empty()) {
-                    auto [previous_account, rlp_err]{Account::from_encoded_storage(changeset_value_view)};
+            // Lookup value in plainstate (current) if any
+            // TODO(Andrea) optimize caching
+            std::optional<Account> current_account{};
+            {
+                auto ps_data{plain_state.find(db::to_slice(address.bytes), false)};
+                if (ps_data && ps_data.value.length()) {
+                    auto [account, rlp_err]{Account::from_encoded_storage(db::from_slice(ps_data.value))};
                     rlp::success_or_throw(rlp_err);
+                    current_account.emplace(account);
+                }
+            }
 
-                    if (previous_account.incarnation /* not an EOA */) {
-                        // Lookup current
-                        auto plainstate_data{plain_state.find(db::to_slice(address.bytes),
-                                                              /*throw_notfound=*/false)};
-                        if (!plainstate_data || plainstate_data.value.empty()) {
-                            // Self-destructed
-                            (void)deleted_hashes.insert(hashed_address.bytes);
-                        } else {
-                            auto [current_account,
-                                  rlp_err2]{Account::from_encoded_storage(db::from_slice(plainstate_data.value))};
-                            rlp::success_or_throw(rlp_err2);
-                            if (current_account.incarnation < previous_account.incarnation) {
-                                (void)deleted_hashes.insert(hashed_address.bytes);
-                            }
-                        }
+            // Check whether this is a contract
+            if (!changeset_value_view.empty()) {
+                auto [previous_account, rlp_err]{Account::from_encoded_storage(changeset_value_view)};
+                rlp::success_or_throw(rlp_err);
+                if (previous_account.incarnation) {
+                    if (current_account == std::nullopt ||
+                        current_account->incarnation < previous_account.incarnation) {
+                        // Self destructed or reverted
+                        (void)deleted_ts_prefixes.insert(
+                            db::storage_prefix(hashed_addresses_it->first.bytes, previous_account.incarnation));
                     }
                 }
-
-                ret.insert(trie::unpack_nibbles(hashed_address.bytes), changeset_value_view.empty());
             }
+
+            ret.insert(trie::unpack_nibbles(hashed_addresses_it->second.bytes), changeset_value_view.empty());
             changeset_data = account_changeset.to_current_next_multi(/*throw_notfound=*/false);
         }
 
@@ -179,9 +188,9 @@ trie::PrefixSet InterHashes::gather_forward_account_changes(
     }
 
     // Eventually delete nodes from trie for deleted accounts
-    if (!deleted_hashes.empty()) {
+    if (!deleted_ts_prefixes.empty()) {
         db::Cursor trie_storage(txn, db::table::kTrieOfStorage);
-        for (const auto& hash : deleted_hashes) {
+        for (const auto& hash : deleted_ts_prefixes) {
             const auto hash_slice{db::to_slice(hash)};
             auto data{trie_storage.lower_bound(hash_slice, /*throw_notfound=*/false)};
             while (data && data.key.starts_with(hash_slice)) {
@@ -431,6 +440,15 @@ evmc::bytes32 InterHashes::calculate_root(db::RWTxn& txn, trie::PrefixSet* accou
     trie::TrieCursor ts_cursor(trie_storage, storage_changes, ns_collector);
 
     for (auto ta_data{ta_cursor.to_prefix({})};; ta_data = ta_cursor.to_next()) {
+        if (log_trace) {
+            log::Trace("Ta-data",
+                       {"skip", (ta_data.skip_state ? "true" : "false"), "key",
+                        (ta_data.key.has_value() ? to_hex(ta_data.key.value(), true) : "nil"), "hash",
+                        (ta_data.hash.has_value() ? to_hex(ta_data.hash.value(), true) : "nil"), "trie",
+                        (ta_data.children_in_trie ? "true" : "false"), "uncovered",
+                        (ta_data.first_uncovered.has_value() ? to_hex(ta_data.first_uncovered.value(), true) : "nil")});
+        }
+
         if (!ta_data.skip_state && ta_data.first_uncovered.has_value()) {
             auto ha_seek_slice{db::to_slice(ta_data.first_uncovered.value())};
             auto ha_data{ha_seek_slice.empty() ? hashed_accounts.to_first(false)
@@ -488,12 +506,32 @@ evmc::bytes32 InterHashes::calculate_storage_root(trie::TrieCursor& ts_cursor, t
     bool log_trace{log::test_verbosity(log::Level::kTrace)};
     Bytes rlp_buffer{};
 
+    using namespace std::chrono_literals;
+    auto log_time{std::chrono::steady_clock::now()};
+
     const auto db_storage_prefix_slice{db::to_slice(db_storage_prefix)};
     for (auto ts_data{ts_cursor.to_prefix(db_storage_prefix)};; ts_data = ts_cursor.to_next()) {
+
+        if (log_trace) {
+            log::Trace("Ts-data",
+                       {"skip", (ts_data.skip_state ? "true" : "false"), "key",
+                        (ts_data.key.has_value() ? to_hex(ts_data.key.value(), true) : "nil"), "hash",
+                        (ts_data.hash.has_value() ? to_hex(ts_data.hash.value(), true) : "nil"), "trie",
+                        (ts_data.children_in_trie ? "true" : "false"), "uncovered",
+                        (ts_data.first_uncovered.has_value() ? to_hex(ts_data.first_uncovered.value(), true) : "nil")});
+        }
+
+
         if (!ts_data.skip_state && ts_data.first_uncovered.has_value()) {
             const auto prefix_slice{db::to_slice(ts_data.first_uncovered.value())};
             auto hs_data{hashed_storage.lower_bound_multivalue(db_storage_prefix_slice, prefix_slice, false)};
             while (hs_data) {
+
+                if (const auto now{std::chrono::steady_clock::now()}; log_time <= now) {
+                    log_time = now + 5s;
+                    throw_if_stopping();
+                }
+
                 auto data_value_view{db::from_slice(hs_data.value)};
 
                 // Check the nibbled location matches current trie node key boundary
@@ -528,7 +566,7 @@ evmc::bytes32 InterHashes::calculate_storage_root(trie::TrieCursor& ts_cursor, t
     hbs.reset();
 
     if (log_trace) {
-        log::Debug("Storage Merkle tree", {"key", to_hex(db_storage_prefix, true), "root", to_hex(ret, true)});
+        log::Trace("Storage Merkle tree", {"key", to_hex(db_storage_prefix, true), "root", to_hex(ret, true)});
     }
 
     return ret;

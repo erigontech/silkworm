@@ -158,34 +158,10 @@ TrieCursor::move_operation_result TrieCursor::to_next() {
 }
 
 bool TrieCursor::db_seek(ByteView seek_key) {
-    bool debug{false};
-    if (prefix_.empty()) {
-        buffer_.assign(seek_key);
-    } else {
-        debug = seek_key.empty();
-        buffer_.assign(prefix_);
-        buffer_.append(seek_key);
-    }
+    buffer_.assign(prefix_).append(seek_key);
 
     const auto buffer_slice{db::to_slice(buffer_)};
     auto data{buffer_.empty() ? db_cursor_.to_first(false) : db_cursor_.lower_bound(buffer_slice, false)};
-    if (debug) {
-        std::cout << "Root seek slice " << to_hex(buffer_, true);
-        if (!data) {
-            std::cout << " not found" << std::endl;
-
-            data = db_cursor_.to_first(false);
-            if (!data) {
-                throw std::runtime_error("Should not be empty");
-            } else {
-                std::cout << " first is " << to_hex(db::from_slice(data.key), true) << std::endl;
-                throw std::runtime_error("WTF");
-            }
-
-        } else {
-            std::cout << " " << to_hex(db::from_slice(data.key), true) << std::endl;
-        }
-    }
     if (!data || !data.key.starts_with(buffer_slice)) {
         return false;
     }
@@ -195,10 +171,6 @@ bool TrieCursor::db_seek(ByteView seek_key) {
     if (seek_key.empty() && !db_cursor_key.empty()) {
         // Note ! an empty seek_key means we're looking for a root node with empty key
         return false;
-    }
-
-    if (debug) {
-        throw std::runtime_error("Finally one is found");
     }
 
     ByteView db_cursor_val{db::from_slice(data.value)};  // Save db_cursor_ value
@@ -211,8 +183,7 @@ bool TrieCursor::db_seek(ByteView seek_key) {
 void TrieCursor::db_delete(SubNode& node) {
     if (!node.deleted) {
         if (!node.value.empty() && collector_) {
-            buffer_.assign(prefix_);
-            buffer_.append(node.key);
+            buffer_.assign(prefix_).append(node.key);
             collector_->collect({Bytes(buffer_), Bytes{}});
         }
         node.deleted = true;
@@ -223,7 +194,7 @@ bool TrieCursor::consume(SubNode& node) {
         buffer_.assign(prefix_ + node.full_key());
         auto [has_changes, next_created]{changed_list_->contains_and_next_marked(buffer_)};
         if (!has_changes) {
-            skip_state_ = skip_state_ && (next_created_.is_null() || buffer_ < next_created_);
+            skip_state_ = skip_state_ && key_is_before(buffer_, next_created);
             next_created_ = next_created;
             curr_key_.assign(buffer_.substr(prefix_.size()));
             return true;
@@ -234,10 +205,10 @@ bool TrieCursor::consume(SubNode& node) {
 }
 
 bool TrieCursor::key_is_before(ByteView k1, ByteView k2) {
-    if (k1.is_null() || k1.empty()) {
+    if (k1.is_null()) {
         return false;
     }
-    if (k2.is_null() || k2.empty()) {
+    if (k2.is_null()) {
         return true;
     }
     return k1 < k2;

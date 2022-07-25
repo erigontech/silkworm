@@ -60,6 +60,7 @@
         "berlinBlock": 0,
         "londonBlock": 0,
         "terminalTotalDifficulty": "17000000000000000",
+        "mergeNetsplitBlock": 1735371,
         "ethash": {}
     },
     "difficulty": "0x20000",

@@ -101,7 +101,7 @@ TrieCursor::move_operation_result TrieCursor::to_next() {
         throw std::runtime_error("End of tree");
     }
     skip_state_ = true;
-    prev_key_.assign(curr_key_);
+    std::swap(prev_key_, curr_key_);
     curr_key_.clear();
 
     while (true) {
@@ -184,7 +184,7 @@ void TrieCursor::db_delete(SubNode& node) {
     if (!node.deleted) {
         if (!node.value.empty() && collector_) {
             buffer_.assign(prefix_).append(node.key);
-            collector_->collect({Bytes(buffer_), Bytes{}});
+            collector_->collect({buffer_, Bytes{}});
         }
         node.deleted = true;
     }

@@ -268,7 +268,7 @@ trie::PrefixSet InterHashes::gather_forward_storage_changes(
 
             auto unpacked_location{trie::unpack_nibbles(hashed_location.bytes)};
             std::memcpy(&hashed_key[hashed_key_prefix_len], unpacked_location.data(), unpacked_location.length());
-            ret.insert(ByteView(hashed_key.data(), hashed_key_prefix_len + unpacked_location.length()));
+            ret.insert(ByteView(hashed_key.data(), hashed_key_prefix_len + unpacked_location.length()), changeset_value_view.length() == kHashLength);
             changeset_data = storage_changeset.to_current_next_multi(/*throw_notfound=*/false);
         }
 
@@ -521,12 +521,10 @@ evmc::bytes32 InterHashes::calculate_storage_root(trie::TrieCursor& ts_cursor, t
                         (ts_data.first_uncovered.has_value() ? to_hex(ts_data.first_uncovered.value(), true) : "nil")});
         }
 
-
         if (!ts_data.skip_state && ts_data.first_uncovered.has_value()) {
             const auto prefix_slice{db::to_slice(ts_data.first_uncovered.value())};
             auto hs_data{hashed_storage.lower_bound_multivalue(db_storage_prefix_slice, prefix_slice, false)};
             while (hs_data) {
-
                 if (const auto now{std::chrono::steady_clock::now()}; log_time <= now) {
                     log_time = now + 5s;
                     throw_if_stopping();

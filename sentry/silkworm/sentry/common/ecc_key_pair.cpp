@@ -37,7 +37,7 @@ EccKeyPair::EccKeyPair(Bytes data) : private_key_(std::move(data)) {
     }
 }
 
-EccKeyPair::EccKeyPair(const ByteView& data) : EccKeyPair(Bytes(data)) {
+EccKeyPair::EccKeyPair(ByteView data) : EccKeyPair(Bytes(data)) {
 }
 
 Bytes EccKeyPair::public_key() const {

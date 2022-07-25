@@ -25,7 +25,7 @@ class EccKeyPair {
   public:
     EccKeyPair();
     explicit EccKeyPair(Bytes data);
-    explicit EccKeyPair(const ByteView& data);
+    explicit EccKeyPair(ByteView data);
 
     [[nodiscard]]
     Bytes public_key() const;

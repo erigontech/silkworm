@@ -47,7 +47,9 @@ class SecP256K1Context final {
     }
 
     Bytes serialize_public_key(const secp256k1_pubkey* public_key, bool is_compressed) const {
-        size_t data_size = is_compressed ? 33 : 65;
+        const size_t kSizeCompressed = 33;
+        const size_t kSizeUncompressed = 65;
+        size_t data_size = is_compressed ? kSizeCompressed : kSizeUncompressed;
         Bytes data(data_size, 0);
         unsigned int flags = is_compressed ? SECP256K1_EC_COMPRESSED : SECP256K1_EC_UNCOMPRESSED;
         secp256k1_ec_pubkey_serialize(context_, data.data(), &data_size, public_key, flags);

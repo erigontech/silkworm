@@ -47,7 +47,7 @@ NodeKey NodeKeyConfig::load() const {
 void NodeKeyConfig::save(const NodeKey& key) const {
     ofstream file{path_};
     file.exceptions(ios::failbit | ios::badbit);
-    file << key.to_hex();
+    file << key.private_key_hex();
 }
 
 bool NodeKeyConfig::exists() const {

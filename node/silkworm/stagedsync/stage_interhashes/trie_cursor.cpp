@@ -16,10 +16,11 @@
 
 #include "trie_cursor.hpp"
 
-#include <iostream>
+#include <bitset>
 
 #include <silkworm/common/bits.hpp>
 #include <silkworm/common/endian.hpp>
+#include <silkworm/common/log.hpp>
 #include <silkworm/trie/nibbles.hpp>
 
 namespace silkworm::trie {
@@ -40,6 +41,11 @@ TrieCursor::move_operation_result TrieCursor::to_prefix(ByteView prefix) {
     }
     prefix_.assign(prefix);
 
+    const auto debug_prefix_key{
+        *from_hex("0x1595ed441fffc67895156fce9b8a32a1bc6735550d9bd6bb81e2bfb47e5f21d40000000000000001")};
+    debug_prefix_ = (debug_prefix_key == prefix_);
+    debug_key_ = debug_prefix_;
+
     buffer_.clear();
     curr_key_.clear();
     prev_key_.clear();
@@ -54,17 +60,26 @@ TrieCursor::move_operation_result TrieCursor::to_prefix(ByteView prefix) {
     }
     sub_nodes_[level_].reset();
 
-    if (changed_list_) {
-        auto [_, next_created]{changed_list_->contains_and_next_marked(prefix_)};
-        next_created_ = next_created;
+    bool has_changes{changed_list_ == nullptr};  // Full regeneration: everything is changed
+    if (changed_list_ != nullptr) {
+        std::tie(has_changes, next_created_) = changed_list_->contains_and_next_marked(prefix_);
+        //        // next_created_ = std::get<1>(changed_list_->contains_and_next_marked(prefix_));
+        //        auto [_, next_created]{changed_list_->contains_and_next_marked(prefix_)};
+        //        next_created_ = next_created;
     }
 
-    // Do we have root a node ?
-    if (db_seek({}) && consume(sub_nodes_[level_])) {
-        auto& sub_node{sub_nodes_[level_]};
-        return {skip_state_, curr_key_, sub_node.get_hash(), sub_node.has_tree()};
+    // Can we consume a root node ?
+    if (db_seek({})) {
+        if (auto& root_node{sub_nodes_[level_]}; !root_node.root_hash.empty() && !has_changes) {
+            root_node.child_id = root_node.max_child_id + 1;  // Mark it as fully traversed
+            return {skip_state_, curr_key_, Bytes(root_node.root_hash), root_node.has_tree()};
+        }
     }
+//    if (auto& sub_node{sub_nodes_[level_]}; db_seek({}) && consume(sub_node)) {
+//        return {skip_state_, curr_key_, sub_node.get_hash(), sub_node.has_tree()};
+//    }
 
+    // Begin looping child_ids
     return to_next();
 }
 
@@ -116,13 +131,15 @@ TrieCursor::move_operation_result TrieCursor::to_next() {
                 // If prev_key_ is empty we haven't consumed any node yet so all hashed state must be processed (full
                 // regen). This is done by providing an empty value to first_uncovered Otherwise we provide the
                 // incremented prev_key_ (which may be nullopt if overflows)
-                skip_state_ = false;
-                auto first_uncovered{increment_nibbled_key(prev_key_)};
-                if (first_uncovered.has_value()) {
-                    first_uncovered = pack_nibbles(first_uncovered.value());
+                std::optional<Bytes> first_uncovered{};
+                if (!skip_state_) {
+                    first_uncovered = increment_nibbled_key(prev_key_);
+                    if (first_uncovered.has_value()) {
+                        first_uncovered = pack_nibbles(first_uncovered.value());
+                    }
                 }
                 sub_node.reset();
-                eot_ = true;
+                eot_ = true;  // Mark the end of tree. No more calls to to_next() beyond this
                 return {skip_state_, std::nullopt, std::nullopt, false, first_uncovered};  // No higher level
             }
             sub_node.reset();  // We do leave this level so reset it
@@ -132,14 +149,15 @@ TrieCursor::move_operation_result TrieCursor::to_next() {
 
         // Consume node - Implies has hash and sets prev_key_
         if (consume(sub_node)) {
+            // Don't need to increment and pack first uncovered key when we skip state
             std::optional<Bytes> first_uncovered{};
             if (!skip_state_) {
-                // Don't need to increment and pack first uncovered key when we skip state
                 first_uncovered = increment_nibbled_key(prev_key_);
                 if (first_uncovered.has_value()) {
                     first_uncovered = pack_nibbles(first_uncovered.value());
                 }
             }
+
             return {skip_state_, sub_node.full_key(), sub_node.get_hash().value(), sub_node.has_tree(),
                     first_uncovered};
         }
@@ -159,7 +177,6 @@ TrieCursor::move_operation_result TrieCursor::to_next() {
 
 bool TrieCursor::db_seek(ByteView seek_key) {
     buffer_.assign(prefix_).append(seek_key);
-
     const auto buffer_slice{db::to_slice(buffer_)};
     auto data{buffer_.empty() ? db_cursor_.to_first(false) : db_cursor_.lower_bound(buffer_slice, false)};
     if (!data || !data.key.starts_with(buffer_slice)) {
@@ -190,16 +207,34 @@ void TrieCursor::db_delete(SubNode& node) {
     }
 }
 bool TrieCursor::consume(SubNode& node) {
-    if (node.has_hash() && changed_list_ != nullptr) {
-        buffer_.assign(prefix_ + node.full_key());
+    if (debug_key_) {
+        buffer_.assign(prefix_).append(node.full_key());
         auto [has_changes, next_created]{changed_list_->contains_and_next_marked(buffer_)};
+        bool is_before(key_is_before(buffer_, next_created_));
+        log::Trace("Sub-Node", {"key", to_hex(node.full_key(), true), "has_hash", (node.has_hash() ? "true" : "false"),
+                                "has_changes", (has_changes ? "true" : "false"), "next_created",
+                                to_hex(next_created, true), "is_before", (is_before ? "true" : "false")});
+    }
+
+    bool has_changes{changed_list_ == nullptr};  // Full regeneration
+    ByteView next_created{};
+
+    if (changed_list_ != nullptr) {
+        buffer_.assign(prefix_).append(node.full_key());
+        std::tie(has_changes, next_created) = changed_list_->contains_and_next_marked(buffer_);
+    }
+
+    if (node.has_hash()) {
         if (!has_changes) {
-            skip_state_ = skip_state_ && key_is_before(buffer_, next_created);
-            next_created_ = next_created;
+            skip_state_ = skip_state_ && key_is_before(buffer_, next_created_);
+            std::swap(next_created_, next_created);
             curr_key_.assign(buffer_.substr(prefix_.size()));
             return true;
         }
+    } else {
+        skip_state_ = skip_state_ && !has_changes;
     }
+
     db_delete(node);
     return false;
 }
@@ -311,6 +346,9 @@ std::optional<Bytes> TrieCursor::SubNode::get_hash() const {
 bool TrieCursor::SubNode::has_tree() const { return (value.empty() || tree_mask & (1u << child_id)) != 0; }
 
 bool TrieCursor::SubNode::has_hash() const {
+    if (value.empty()) {
+        return false;
+    }
     return child_id == -1 ? !root_hash.empty() : ((hash_mask & (1u << child_id)) != 0);
 }
 

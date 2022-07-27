@@ -69,7 +69,8 @@ StageResult InterHashes::forward(db::RWTxn& txn) {
             ret = regenerate_intermediate_hashes(txn, &expected_state_root);
         } else {
             // Incremental update
-            ret = increment_intermediate_hashes(txn, previous_progress, hashstate_stage_progress, &expected_state_root);
+            ret = increment_intermediate_hashes(
+                txn, previous_progress, previous_progress + 1 /*hashstate_stage_progress*/, &expected_state_root);
         }
 
         success_or_throw(ret);
@@ -231,6 +232,10 @@ trie::PrefixSet InterHashes::gather_forward_storage_changes(
     db::Cursor storage_changeset(txn, db::table::kStorageChangeSet);
     auto changeset_data{storage_changeset.lower_bound(db::to_slice(starting_key), /*throw_notfound=*/false)};
 
+    const auto debug_key{
+        *from_hex("0x1595ed441fffc67895156fce9b8a32a1bc6735550d9bd6bb81e2bfb47e5f21d40000000000000001")};
+    bool debug{false};
+
     while (changeset_data) {
         auto changeset_key_view{db::from_slice(changeset_data.key)};
         reached_blocknum = endian::load_big_u64(changeset_key_view.data());
@@ -255,20 +260,29 @@ trie::PrefixSet InterHashes::gather_forward_storage_changes(
 
         changeset_key_view.remove_prefix(kAddressLength);
 
-        // Reserve 104 bytes for kHashLength (32) + db::kIncarnationLength (8) + 2*kHashLength (nibbled hashed location)
-        Bytes hashed_key(104, '\0');
-        const size_t hashed_key_prefix_len{kHashLength + db::kIncarnationLength};
+        Bytes hashed_key(db::kHashedStoragePrefixLength + (2 * kHashLength), '\0');
         std::memcpy(&hashed_key[0], hashed_addresses_it->second.bytes, kHashLength);
         std::memcpy(&hashed_key[kHashLength], changeset_key_view.data(), db::kIncarnationLength);
 
+        debug = (std::memcmp(&hashed_key[0], &debug_key[0], db::kHashedStoragePrefixLength) == 0);
+
         while (changeset_data) {
             auto changeset_value_view{db::from_slice(changeset_data.value)};
+
             const ByteView location{changeset_value_view.substr(0, kHashLength)};
             const auto hashed_location{keccak256(location)};
 
             auto unpacked_location{trie::unpack_nibbles(hashed_location.bytes)};
-            std::memcpy(&hashed_key[hashed_key_prefix_len], unpacked_location.data(), unpacked_location.length());
-            ret.insert(ByteView(hashed_key.data(), hashed_key_prefix_len + unpacked_location.length()), changeset_value_view.length() == kHashLength);
+            std::memcpy(&hashed_key[db::kHashedStoragePrefixLength], unpacked_location.data(),
+                        unpacked_location.length());
+            auto ret_item{ByteView(hashed_key.data(), db::kHashedStoragePrefixLength + unpacked_location.length())};
+
+            if (debug) {
+                log::Trace("St-changeset", {"value", to_hex(ret_item, true), "marked",
+                                            (changeset_value_view.length() == kHashLength ? "true" : "false")});
+            }
+
+            ret.insert(ret_item, changeset_value_view.length() == kHashLength);
             changeset_data = storage_changeset.to_current_next_multi(/*throw_notfound=*/false);
         }
 
@@ -511,14 +525,14 @@ evmc::bytes32 InterHashes::calculate_storage_root(trie::TrieCursor& ts_cursor, t
 
     const auto db_storage_prefix_slice{db::to_slice(db_storage_prefix)};
     for (auto ts_data{ts_cursor.to_prefix(db_storage_prefix)};; ts_data = ts_cursor.to_next()) {
-
         if (log_trace) {
             log::Trace("Ts-data",
                        {"skip", (ts_data.skip_state ? "true" : "false"), "key",
                         (ts_data.key.has_value() ? to_hex(ts_data.key.value(), true) : "nil"), "hash",
                         (ts_data.hash.has_value() ? to_hex(ts_data.hash.value(), true) : "nil"), "trie",
                         (ts_data.children_in_trie ? "true" : "false"), "uncovered",
-                        (ts_data.first_uncovered.has_value() ? to_hex(ts_data.first_uncovered.value(), true) : "nil")});
+                        (ts_data.first_uncovered.has_value() ? to_hex(ts_data.first_uncovered.value(), true) : "nil"),
+                       "storage_prefix", to_hex(db_storage_prefix, true)});
         }
 
         if (!ts_data.skip_state && ts_data.first_uncovered.has_value()) {
@@ -531,6 +545,11 @@ evmc::bytes32 InterHashes::calculate_storage_root(trie::TrieCursor& ts_cursor, t
                 }
 
                 auto data_value_view{db::from_slice(hs_data.value)};
+
+                if (log_trace) {
+                    auto data_key_view{db::from_slice(hs_data.key)};
+                    log::Trace("Hs-data", {"key", to_hex(data_key_view, true), "value", to_hex(data_value_view, true)});
+                }
 
                 // Check the nibbled location matches current trie node key boundary
                 const auto nibbled_location{trie::unpack_nibbles(data_value_view.substr(0, kHashLength))};
@@ -563,9 +582,9 @@ evmc::bytes32 InterHashes::calculate_storage_root(trie::TrieCursor& ts_cursor, t
     auto ret{hbs.root_hash()};
     hbs.reset();
 
-    if (log_trace) {
-        log::Trace("Storage Merkle tree", {"key", to_hex(db_storage_prefix, true), "root", to_hex(ret, true)});
-    }
+//    if (log_trace) {
+//        log::Trace("Storage Merkle tree", {"key", to_hex(db_storage_prefix, true), "root", to_hex(ret, true)});
+//    }
 
     return ret;
 }

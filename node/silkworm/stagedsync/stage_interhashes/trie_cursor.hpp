@@ -107,6 +107,10 @@ class TrieCursor {
     ByteView next_created_{};    // The next created account/location in changed list
     etl::Collector* collector_;  // Pointer to a collector for deletion of obsolete keys
 
+    bool debug_prefix_{false};
+    bool debug_key_{false};
+
+
     bool db_seek(ByteView seek_key);  // Seeks lowerbound of provided key using db_cursor_
     void db_delete(SubNode& node);    // Collects deletion of node being rebuilt or no longer needed
     bool consume(SubNode& node);      // If node has hash consume it

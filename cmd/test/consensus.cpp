@@ -195,7 +195,28 @@ static const std::map<std::string, ChainConfig> kNetworkConfig{
              },
          .muir_glacier_block = 0,
          .arrow_glacier_block = 0,
+         .gray_glacier_block = 0,
          .terminal_total_difficulty = 0,
+     }},
+    {"ArrowGlacierToMergeAtDiffC0000",
+     {
+         .chain_id = 1,
+         .seal_engine = SealEngineType::kNoProof,
+         .evmc_fork_blocks =
+             {
+                 0,  // Homestead
+                 0,  // Tangerine Whistle
+                 0,  // Spurious Dragon
+                 0,  // Byzantium
+                 0,  // Constantinople
+                 0,  // Petersburg
+                 0,  // Istanbul
+                 0,  // Berlin
+                 0,  // London
+             },
+         .muir_glacier_block = 0,
+         .arrow_glacier_block = 0,
+         .terminal_total_difficulty = 0xC0000,
      }},
     {"FrontierToHomesteadAt5",
      {
@@ -303,6 +324,26 @@ static const std::map<std::string, ChainConfig> kNetworkConfig{
              },
          .muir_glacier_block = 0,
          .arrow_glacier_block = 0,
+     }},
+    {"GrayGlacier",
+     {
+         .chain_id = 1,
+         .seal_engine = SealEngineType::kNoProof,
+         .evmc_fork_blocks =
+             {
+                 0,  // Homestead
+                 0,  // Tangerine Whistle
+                 0,  // Spurious Dragon
+                 0,  // Byzantium
+                 0,  // Constantinople
+                 0,  // Petersburg
+                 0,  // Istanbul
+                 0,  // Berlin
+                 0,  // London
+             },
+         .muir_glacier_block = 0,
+         .arrow_glacier_block = 0,
+         .gray_glacier_block = 0,
      }},
 };
 
@@ -478,9 +519,13 @@ RunResults blockchain_test(const nlohmann::json& json_test) {
     Block genesis_block;
     rlp::success_or_throw(rlp::decode(genesis_view, genesis_block));
 
-    InMemoryState state;
     std::string network{json_test["network"].get<std::string>()};
-    const ChainConfig& config{kNetworkConfig.at(network)};
+    const auto config_it{kNetworkConfig.find(network)};
+    if (config_it == kNetworkConfig.end()) {
+        std::cout << "unknown network " << network << std::endl;
+        return Status::kFailed;
+    }
+    const ChainConfig& config{config_it->second};
 
     auto consensus_engine{consensus::engine_factory(config)};
     if (!consensus_engine) {
@@ -489,6 +534,7 @@ RunResults blockchain_test(const nlohmann::json& json_test) {
         return Status::kSkipped;
     }
 
+    InMemoryState state;
     init_pre_state(json_test["pre"], state);
 
     Blockchain blockchain{state, consensus_engine, config, genesis_block};

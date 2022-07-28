@@ -18,12 +18,6 @@
 
 #include <silkworm/common/util.hpp>
 
-#if defined(__wasm__)
-#define SILKWORM_THREAD_LOCAL static
-#else
-#define SILKWORM_THREAD_LOCAL thread_local
-#endif
-
 namespace silkworm::endian {
 
 ByteView to_big_compact(const uint64_t value) {

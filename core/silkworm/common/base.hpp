@@ -16,7 +16,7 @@
 
 #pragma once
 
-// The most common and basic concepts, types, and constants.
+// The most common and basic macros, concepts, types, and constants.
 
 #include <concepts>
 #include <cstddef>
@@ -26,6 +26,12 @@
 
 #include <evmc/evmc.hpp>
 #include <intx/intx.hpp>
+
+#if defined(__wasm__)
+#define SILKWORM_THREAD_LOCAL static
+#else
+#define SILKWORM_THREAD_LOCAL thread_local
+#endif
 
 namespace silkworm {
 

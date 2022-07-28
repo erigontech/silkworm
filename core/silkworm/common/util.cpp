@@ -228,7 +228,7 @@ std::string human_size(uint64_t bytes) {
         }
     }
     static constexpr size_t kBufferSize{64};
-    static char output[kBufferSize];
+    SILKWORM_THREAD_LOCAL char output[kBufferSize];
     std::snprintf(output, kBufferSize, "%.02lf %s", value, suffix[index]);
     return output;
 }

@@ -69,15 +69,12 @@ std::pair<bool, ByteView> PrefixSet::contains_and_next_marked(ByteView prefix) {
     bool is_storage{prefix.length() >= 40};  // This is a prefix_set for storage changes
 
     // Lookup next marked created key
-    for (size_t i{index_ + 1}, e{nibbled_keys_.size()}; i < e; ++i) {
+    for (size_t i{index_}, e{nibbled_keys_.size()}; i < e; ++i) {
         auto& item{nibbled_keys_.at(i)};
 
-        // Check we're in the same prefixed trie
-        // To prevent we get the next created for another contract
-        if (is_storage) {
-            if (std::memcmp(&prefix[0], &item.first[0], 40) != 0) {
-                break;
-            }
+        // Check we're in the same prefixed trie to avoid jumping out of the boundaries of current contract
+        if (is_storage && std::memcmp(&prefix[0], &item.first[0], 40) != 0) {
+            break;
         }
 
         if (item.second) {

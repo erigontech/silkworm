@@ -233,7 +233,7 @@ trie::PrefixSet InterHashes::gather_forward_storage_changes(
     auto changeset_data{storage_changeset.lower_bound(db::to_slice(starting_key), /*throw_notfound=*/false)};
 
     const auto debug_key{
-        *from_hex("0x1595ed441fffc67895156fce9b8a32a1bc6735550d9bd6bb81e2bfb47e5f21d40000000000000001")};
+        *from_hex("0x4fca164cbe608b115a81b8bfe5ad8207c5a6cbbb7552493d09e096791c07fa570000000000000001")};
     bool debug{false};
 
     while (changeset_data) {

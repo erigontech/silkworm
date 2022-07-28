@@ -42,9 +42,8 @@ TrieCursor::move_operation_result TrieCursor::to_prefix(ByteView prefix) {
     prefix_.assign(prefix);
 
     const auto debug_prefix_key{
-        *from_hex("0x1595ed441fffc67895156fce9b8a32a1bc6735550d9bd6bb81e2bfb47e5f21d40000000000000001")};
+        *from_hex("0x4fca164cbe608b115a81b8bfe5ad8207c5a6cbbb7552493d09e096791c07fa570000000000000001")};
     debug_prefix_ = (debug_prefix_key == prefix_);
-    debug_key_ = debug_prefix_;
 
     buffer_.clear();
     curr_key_.clear();
@@ -71,13 +70,12 @@ TrieCursor::move_operation_result TrieCursor::to_prefix(ByteView prefix) {
     // Can we consume a root node ?
     if (db_seek({})) {
         if (auto& root_node{sub_nodes_[level_]}; !root_node.root_hash.empty() && !has_changes) {
-            root_node.child_id = root_node.max_child_id + 1;  // Mark it as fully traversed
             return {skip_state_, curr_key_, Bytes(root_node.root_hash), root_node.has_tree()};
         }
     }
-//    if (auto& sub_node{sub_nodes_[level_]}; db_seek({}) && consume(sub_node)) {
-//        return {skip_state_, curr_key_, sub_node.get_hash(), sub_node.has_tree()};
-//    }
+    //    if (auto& sub_node{sub_nodes_[level_]}; db_seek({}) && consume(sub_node)) {
+    //        return {skip_state_, curr_key_, sub_node.get_hash(), sub_node.has_tree()};
+    //    }
 
     // Begin looping child_ids
     return to_next();
@@ -122,6 +120,13 @@ TrieCursor::move_operation_result TrieCursor::to_next() {
     while (true) {
         auto& sub_node{sub_nodes_[level_]};
         ++sub_node.child_id;
+
+        if (debug_prefix_ &&
+            (sub_node.full_key() == *from_hex("0x090003") ||sub_node.full_key() == *from_hex("0x0900") || sub_node.full_key() == *from_hex("0x0901"))) {
+            debug_key_ = true;
+        } else {
+            debug_key_ = false;
+        }
 
         // When node is completely traversed ascend one level if possible
         // Note ! We don't have intermediate ephemeral nodes as in Erigon
@@ -222,11 +227,12 @@ bool TrieCursor::consume(SubNode& node) {
     if (changed_list_ != nullptr) {
         buffer_.assign(prefix_).append(node.full_key());
         std::tie(has_changes, next_created) = changed_list_->contains_and_next_marked(buffer_);
+        skip_state_ = skip_state_ && key_is_before(buffer_, next_created_);
     }
 
     if (node.has_hash()) {
         if (!has_changes) {
-            skip_state_ = skip_state_ && key_is_before(buffer_, next_created_);
+            // skip_state_ = skip_state_ && key_is_before(buffer_, next_created_);
             std::swap(next_created_, next_created);
             curr_key_.assign(buffer_.substr(prefix_.size()));
             return true;

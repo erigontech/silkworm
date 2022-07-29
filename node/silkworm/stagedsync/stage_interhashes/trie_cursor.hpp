@@ -93,7 +93,7 @@ class TrieCursor {
     };
 
     uint32_t level_{0};                      // Depth level in sub_nodes_
-    bool eot_{false};                        // End of tree (protects from to_next beyond eot_
+    bool end_of_tree_{false};                // Protects from to_next() beyond end of tree
     Bytes curr_key_{};                       // Latest key returned
     Bytes prev_key_{};                       // Key returned on previous cycle
     bool skip_state_{true};                  // Whether we can skip state of node
@@ -110,10 +110,13 @@ class TrieCursor {
     bool debug_prefix_{false};
     bool debug_key_{false};
 
-
     bool db_seek(ByteView seek_key);  // Seeks lowerbound of provided key using db_cursor_
     void db_delete(SubNode& node);    // Collects deletion of node being rebuilt or no longer needed
     bool consume(SubNode& node);      // If node has hash consume it
+
+    //! \brief Returns the first uncovered prefix. nullopt if overflows
+    //! \see increment_nibbled_key()
+    std::optional<Bytes> first_uncovered();
 
     //! \brief Produces the next key in sequence
     //! \details It's essentially +1 in the hexadecimal (base 16) numeral system

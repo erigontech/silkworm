@@ -70,7 +70,7 @@ StageResult InterHashes::forward(db::RWTxn& txn) {
         } else {
             // Incremental update
             ret = increment_intermediate_hashes(
-                txn, previous_progress, previous_progress + 1 /*hashstate_stage_progress*/, &expected_state_root);
+                txn, previous_progress, /* previous_progress + 1*/ hashstate_stage_progress, &expected_state_root);
         }
 
         success_or_throw(ret);
@@ -232,10 +232,6 @@ trie::PrefixSet InterHashes::gather_forward_storage_changes(
     db::Cursor storage_changeset(txn, db::table::kStorageChangeSet);
     auto changeset_data{storage_changeset.lower_bound(db::to_slice(starting_key), /*throw_notfound=*/false)};
 
-    const auto debug_key{
-        *from_hex("0x4fca164cbe608b115a81b8bfe5ad8207c5a6cbbb7552493d09e096791c07fa570000000000000001")};
-    bool debug{false};
-
     while (changeset_data) {
         auto changeset_key_view{db::from_slice(changeset_data.key)};
         reached_blocknum = endian::load_big_u64(changeset_key_view.data());
@@ -264,8 +260,6 @@ trie::PrefixSet InterHashes::gather_forward_storage_changes(
         std::memcpy(&hashed_key[0], hashed_addresses_it->second.bytes, kHashLength);
         std::memcpy(&hashed_key[kHashLength], changeset_key_view.data(), db::kIncarnationLength);
 
-        debug = (std::memcmp(&hashed_key[0], &debug_key[0], db::kHashedStoragePrefixLength) == 0);
-
         while (changeset_data) {
             auto changeset_value_view{db::from_slice(changeset_data.value)};
 
@@ -276,11 +270,6 @@ trie::PrefixSet InterHashes::gather_forward_storage_changes(
             std::memcpy(&hashed_key[db::kHashedStoragePrefixLength], unpacked_location.data(),
                         unpacked_location.length());
             auto ret_item{ByteView(hashed_key.data(), db::kHashedStoragePrefixLength + unpacked_location.length())};
-
-            if (debug) {
-                log::Trace("St-changeset", {"value", to_hex(ret_item, true), "marked",
-                                            (changeset_value_view.length() == kHashLength ? "true" : "false")});
-            }
 
             ret.insert(ret_item, changeset_value_view.length() == kHashLength);
             changeset_data = storage_changeset.to_current_next_multi(/*throw_notfound=*/false);
@@ -532,7 +521,7 @@ evmc::bytes32 InterHashes::calculate_storage_root(trie::TrieCursor& ts_cursor, t
                         (ts_data.hash.has_value() ? to_hex(ts_data.hash.value(), true) : "nil"), "trie",
                         (ts_data.children_in_trie ? "true" : "false"), "uncovered",
                         (ts_data.first_uncovered.has_value() ? to_hex(ts_data.first_uncovered.value(), true) : "nil"),
-                       "storage_prefix", to_hex(db_storage_prefix, true)});
+                        "storage_prefix", to_hex(db_storage_prefix, true)});
         }
 
         if (!ts_data.skip_state && ts_data.first_uncovered.has_value()) {
@@ -582,9 +571,9 @@ evmc::bytes32 InterHashes::calculate_storage_root(trie::TrieCursor& ts_cursor, t
     auto ret{hbs.root_hash()};
     hbs.reset();
 
-//    if (log_trace) {
-//        log::Trace("Storage Merkle tree", {"key", to_hex(db_storage_prefix, true), "root", to_hex(ret, true)});
-//    }
+    //    if (log_trace) {
+    //        log::Trace("Storage Merkle tree", {"key", to_hex(db_storage_prefix, true), "root", to_hex(ret, true)});
+    //    }
 
     return ret;
 }

@@ -1,5 +1,5 @@
 /*
-   Copyright 2021 The Silkworm Authors
+   Copyright 2021-2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -45,13 +45,13 @@ class listener_log_index : public cbor::listener {
             if (topics_map_->find(key) == topics_map_->end()) {
                 topics_map_->emplace(key, roaring::Roaring());
             }
-            topics_map_->at(key).add(block_number_);
+            topics_map_->at(key).add(static_cast<uint32_t>(block_number_));
             *allocated_topics_ += kHashLength;
         } else if (size == kAddressLength) {
             if (addrs_map_->find(key) == addrs_map_->end()) {
                 addrs_map_->emplace(key, roaring::Roaring());
             }
-            addrs_map_->at(key).add(block_number_);
+            addrs_map_->at(key).add(static_cast<uint32_t>(block_number_));
             *allocated_addrs_ += kAddressLength;
         }
     }

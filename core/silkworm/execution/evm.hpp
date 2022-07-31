@@ -39,14 +39,18 @@ struct CallResult {
 
 class EvmTracer {
   public:
+    virtual ~EvmTracer() = default;
+
     virtual void on_execution_start(evmc_revision rev, const evmc_message& msg, evmone::bytes_view code) noexcept = 0;
 
-    virtual void on_instruction_start(uint32_t pc, const intx::uint256* stack_top, int stack_height, const evmone::ExecutionState& state,
+    virtual void on_instruction_start(uint32_t pc, const intx::uint256* stack_top, int stack_height,
+                                      const evmone::ExecutionState& state,
                                       const IntraBlockState& intra_block_state) noexcept = 0;
 
     virtual void on_execution_end(const evmc_result& result, const IntraBlockState& intra_block_state) noexcept = 0;
 
-    virtual void on_precompiled_run(const evmc_result& result, int64_t gas, const IntraBlockState& intra_block_state) noexcept = 0;
+    virtual void on_precompiled_run(const evmc_result& result, int64_t gas,
+                                    const IntraBlockState& intra_block_state) noexcept = 0;
 
     virtual void on_reward_granted(const CallResult& result, const IntraBlockState& intra_block_state) noexcept = 0;
 };
@@ -76,7 +80,7 @@ class EVM {
     evmc_revision revision() const noexcept;
 
     void add_tracer(EvmTracer& tracer) noexcept;
-    const std::vector<std::reference_wrapper<EvmTracer>>& tracers() const noexcept {return tracers_;};
+    const std::vector<std::reference_wrapper<EvmTracer>>& tracers() const noexcept { return tracers_; };
 
     // Use for better performance with evmone baseline interpreter
     BaselineAnalysisCache* baseline_analysis_cache{nullptr};

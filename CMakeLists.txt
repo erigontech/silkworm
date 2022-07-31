@@ -147,10 +147,10 @@ add_subdirectory(third_party/silkpre)
 
 # Compiler enforcements on Silkworm
 if(NOT MSVC)
-  add_compile_options(-Werror -Wall -Wextra)
+  add_compile_options(-Werror -Wall -Wextra -pedantic)
   add_compile_options(-Wshadow -Wimplicit-fallthrough -Wsign-conversion)
   add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wold-style-cast>)
-  add_compile_options(-Wno-missing-field-initializers)
+  add_compile_options(-Wno-missing-field-initializers -Wnon-virtual-dtor)
 
   if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
     add_compile_options(-Wno-attributes)

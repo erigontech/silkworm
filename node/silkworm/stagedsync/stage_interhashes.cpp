@@ -22,6 +22,7 @@
 
 #include <silkworm/common/assert.hpp>
 #include <silkworm/common/endian.hpp>
+#include <silkworm/common/lru_cache.hpp>
 #include <silkworm/common/rlp_err.hpp>
 #include <silkworm/common/stopwatch.hpp>
 #include <silkworm/db/access_layer.hpp>
@@ -70,7 +71,7 @@ StageResult InterHashes::forward(db::RWTxn& txn) {
         } else {
             // Incremental update
             ret = increment_intermediate_hashes(
-                txn, previous_progress, /* previous_progress + 1*/ hashstate_stage_progress, &expected_state_root);
+                txn, previous_progress, /*previous_progress + 1000 */ hashstate_stage_progress, &expected_state_root);
         }
 
         success_or_throw(ret);
@@ -113,6 +114,7 @@ trie::PrefixSet InterHashes::gather_forward_account_changes(
     BlockNum reached_blocknum{0};
     BlockNum expected_blocknum{from + 1};
     absl::btree_set<Bytes> deleted_ts_prefixes{};
+    silkworm::lru_cache<evmc::address, std::optional<Account>> lru_accounts_(10000);
 
     using namespace std::chrono_literals;
     auto log_time{std::chrono::steady_clock::now()};
@@ -157,14 +159,27 @@ trie::PrefixSet InterHashes::gather_forward_account_changes(
             // Lookup value in plainstate (current) if any
             // TODO(Andrea) optimize caching
             std::optional<Account> current_account{};
-            {
+            if (auto item{lru_accounts_.get(address)}; item != nullptr) {
+                current_account = *item;
+            } else {
                 auto ps_data{plain_state.find(db::to_slice(address.bytes), false)};
                 if (ps_data && ps_data.value.length()) {
                     auto [account, rlp_err]{Account::from_encoded_storage(db::from_slice(ps_data.value))};
                     rlp::success_or_throw(rlp_err);
                     current_account.emplace(account);
                 }
+                lru_accounts_.put(address, current_account);
             }
+
+            //            std::optional<Account> current_account{};
+            //            {
+            //                auto ps_data{plain_state.find(db::to_slice(address.bytes), false)};
+            //                if (ps_data && ps_data.value.length()) {
+            //                    auto [account, rlp_err]{Account::from_encoded_storage(db::from_slice(ps_data.value))};
+            //                    rlp::success_or_throw(rlp_err);
+            //                    current_account.emplace(account);
+            //                }
+            //            }
 
             // Check whether this is a contract
             if (!changeset_value_view.empty()) {
@@ -461,7 +476,7 @@ evmc::bytes32 InterHashes::calculate_root(db::RWTxn& txn, trie::PrefixSet* accou
                 auto ha_data_key_view{db::from_slice(ha_data.key)};
 
                 if (const auto now{std::chrono::steady_clock::now()}; log_time <= now) {
-                    log_time = now + 5s;
+                    log_time = now + 10s;
                     throw_if_stopping();
                     std::unique_lock log_lck(log_mtx_);
                     current_source_ = "HashedState";

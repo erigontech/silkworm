@@ -1290,7 +1290,7 @@ void do_trie_integrity(db::EnvConfig& config, bool with_state_coverage, bool con
                         if (!found) {
                             std::string what{"At key " + to_hex(data1_k, true) + " state mask is " +
                                              std::bitset<16>(node_state_mask).to_string() + " but there is no child " +
-                                             std::to_string(i) + "," + to_hex(seek, true) + " in state"};
+                                             std::to_string(i) + "," + to_hex(seek, true) + " in hashed state"};
                             if (data3) {
                                 auto data3_k{db::from_slice(data3.key)};
                                 what.append(" found instead " + to_hex(data3_k, true));

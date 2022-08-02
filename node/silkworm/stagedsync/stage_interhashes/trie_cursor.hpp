@@ -69,35 +69,35 @@ class TrieCursor {
 
   private:
     struct SubNode {
-        Bytes key{};       // Nibbled key value of current subnode
-        ByteView value{};  // Value retrieved from db (if any)
-
-        uint16_t state_mask{0};  // One bit set for every child nibbled key state
-        uint16_t tree_mask{0};   // One bit set for every child node
-        uint16_t hash_mask{0};   // One bit set for every child node hash
-        ByteView root_hash{};    // Root Hash
-        ByteView hashes{};       // Child nodes hashes
-
+        ByteView key{};            // Key retrieved from db (if any) Is nibbled
+        ByteView value{};          // Value retrieved from db (if any)
+        uint16_t state_mask{0};    // One bit set for every child_id which points to a hashed state
+        uint16_t tree_mask{0};     // One bit set for every child_id which has a child in trie
+        uint16_t hash_mask{0};     // One bit set for every child_id which has a valid hash
+        ByteView root_hash{};      // Root Hash
+        ByteView hashes{};         // Child nodes hashes data
+        size_t hashes_count{0};    // Actual number of hashes (excluding root hash)
         int8_t child_id{-1};       // Current child being inspected in this node (aka nibble)
         int8_t max_child_id{0xf};  // Max child of this node
+        int8_t hash_id{-1};        // Index of hash to be retrieved
         bool deleted{false};       // Whether already deleted (in collector)
 
         [[nodiscard]] bool has_tree() const;   // Whether current child_id has bit set in tree mask
         [[nodiscard]] bool has_hash() const;   // Whether current child_id has bit set in hash mask
         [[nodiscard]] bool has_state() const;  // Whether current child_id has bit set in state mask
 
-        void reset();                                         // Resets node to default values
-        void parse(ByteView k, ByteView v);                   // Parses node data contents from db (may throw)
-        [[nodiscard]] Bytes full_key() const;                 // Returns full key to child node (i.e. key + child_id)
-        [[nodiscard]] std::optional<Bytes> get_hash() const;  // Returns hash of child node (i.e. key + child_id)
+        void reset();                          // Resets node to default values
+        void parse(ByteView k, ByteView v);    // Parses node data contents from db (may throw)
+        [[nodiscard]] Bytes full_key() const;  // Returns full key to child node (i.e. key + child_id)
+        [[nodiscard]] Bytes hash() const;      // Returns hash of child node (i.e. key + child_id)
     };
 
     uint32_t level_{0};                      // Depth level in sub_nodes_
     bool end_of_tree_{false};                // Protects from to_next() beyond end of tree
-    Bytes curr_key_{};                       // Latest key returned
-    Bytes prev_key_{};                       // Key returned on previous cycle
-    bool skip_state_{true};                  // Whether we can skip state of node
-    std::array<SubNode, 64> sub_nodes_{{}};  // Collection of subnodes being unrolled
+    Bytes curr_key_{};                       // Latest key returned on a valid hash
+    Bytes prev_key_{};                       // Same as curr_key_ but for previous cycle
+    bool skip_state_{true};                  // Whether account(s) state scan can be skipped
+    std::array<SubNode, 64> sub_nodes_{{}};  // Collection of sub-nodes being unrolled
 
     Bytes prefix_{};  // Db key prefix for this trie (0 bytes TrieAccount - 40 bytes TrieStorage)
     Bytes buffer_{};  // A convenience buffer

@@ -24,7 +24,8 @@
 
 namespace silkworm {
 
-std::optional<StateChangeToken> StateChangeCollection::subscribe(StateChangeConsumer consumer, StateChangeFilter /*filter*/) {
+std::optional<StateChangeToken> StateChangeCollection::subscribe(StateChangeConsumer consumer,
+                                                                 StateChangeFilter /*filter*/) {
     std::unique_lock consumers_lock{consumers_mutex_};
     StateChangeToken token = ++next_token_;
     const auto [_, inserted] = consumers_.insert({token, consumer});
@@ -45,8 +46,10 @@ void StateChangeCollection::reset(uint64_t tx_id) {
     storage_change_index_.clear();
 }
 
-void StateChangeCollection::start_new_batch(BlockNum block_height, const evmc::bytes32& block_hash, const std::vector<Bytes>&& tx_rlps, bool unwind) {
-    SILK_TRACE << "StateChangeCollection::start_new_batch " << this << " block: " << block_height << " unwind:" << unwind << " START";
+void StateChangeCollection::start_new_batch(BlockNum block_height, const evmc::bytes32& block_hash,
+                                            const std::vector<Bytes>&& tx_rlps, bool unwind) {
+    SILK_TRACE << "StateChangeCollection::start_new_batch " << this << " block: " << block_height
+               << " unwind:" << unwind << " START";
 
     SILKWORM_ASSERT(latest_change_ == nullptr);
 
@@ -65,15 +68,17 @@ void StateChangeCollection::change_account(const evmc::address& address, uint64_
     SILKWORM_ASSERT(latest_change_ != nullptr);
 
     const auto& ac_it = account_change_index_.find(address);
-    auto index{ac_it != account_change_index_.end() ? std::make_optional(ac_it->second) : std::nullopt};
+    std::optional<size_t> index{ac_it != account_change_index_.end() ? std::make_optional(ac_it->second)
+                                                                     : std::nullopt};
 
-    if (!index.has_value() || incarnation > latest_change_->changes(index.value()).incarnation()) {
+    if (!index.has_value() || incarnation > latest_change_->changes(static_cast<int>(index.value())).incarnation()) {
         index = latest_change_->changes_size();
-        latest_change_->add_changes()->set_allocated_address(rpc::H160_from_address(address).release()); // takes ownership
+        latest_change_->add_changes()->set_allocated_address(
+            rpc::H160_from_address(address).release());  // takes ownership
         account_change_index_[address] = index.value();
     }
 
-    remote::AccountChange* account_change = latest_change_->mutable_changes(index.value());
+    remote::AccountChange* account_change = latest_change_->mutable_changes(static_cast<int>(index.value()));
     switch (account_change->action()) {
         case remote::Action::STORAGE:
             account_change->set_action(remote::Action::UPSERT);
@@ -96,17 +101,18 @@ void StateChangeCollection::change_code(const evmc::address& address, uint64_t i
     SILKWORM_ASSERT(latest_change_ != nullptr);
 
     const auto& ac_it = account_change_index_.find(address);
-    auto index{ac_it != account_change_index_.end() ? std::make_optional(ac_it->second) : std::nullopt};
+    std::optional<size_t> index{ac_it != account_change_index_.end() ? std::make_optional(ac_it->second)
+                                                                     : std::nullopt};
 
-    if (!index.has_value() || incarnation > latest_change_->changes(index.value()).incarnation()) {
+    if (!index.has_value() || incarnation > latest_change_->changes(static_cast<int>(index.value())).incarnation()) {
         index = latest_change_->changes_size();
         remote::AccountChange* account_change = latest_change_->add_changes();
-        account_change->set_allocated_address(rpc::H160_from_address(address).release()); // takes ownership
+        account_change->set_allocated_address(rpc::H160_from_address(address).release());  // takes ownership
         account_change->set_action(remote::Action::CODE);
         account_change_index_[address] = index.value();
     }
 
-    remote::AccountChange* account_change = latest_change_->mutable_changes(index.value());
+    remote::AccountChange* account_change = latest_change_->mutable_changes(static_cast<int>(index.value()));
     switch (account_change->action()) {
         case remote::Action::STORAGE:
             account_change->set_action(remote::Action::CODE);
@@ -115,7 +121,8 @@ void StateChangeCollection::change_code(const evmc::address& address, uint64_t i
             account_change->set_action(remote::Action::UPSERT_CODE);
             break;
         case remote::Action::REMOVE:
-            SILK_CRIT << "cannot change code for deleted account: " << to_hex(address) << " incarnation: " << incarnation;
+            SILK_CRIT << "cannot change code for deleted account: " << to_hex(address)
+                      << " incarnation: " << incarnation;
             SILKWORM_ASSERT(false);
             break;
         default:
@@ -125,24 +132,27 @@ void StateChangeCollection::change_code(const evmc::address& address, uint64_t i
     account_change->set_code(to_hex(code));
 }
 
-void StateChangeCollection::change_storage(const evmc::address& address, uint64_t incarnation, const evmc::bytes32& location, const Bytes& data) {
+void StateChangeCollection::change_storage(const evmc::address& address, uint64_t incarnation,
+                                           const evmc::bytes32& location, const Bytes& data) {
     SILKWORM_ASSERT(latest_change_ != nullptr);
 
     const auto& ac_it = account_change_index_.find(address);
-    std::optional<std::size_t> ac_index{ac_it != account_change_index_.end() ? std::make_optional(ac_it->second) : std::nullopt};
+    std::optional<std::size_t> ac_index{ac_it != account_change_index_.end() ? std::make_optional(ac_it->second)
+                                                                             : std::nullopt};
 
-    if (!ac_index || incarnation > latest_change_->changes(ac_index.value()).incarnation()) {
+    if (!ac_index || incarnation > latest_change_->changes(static_cast<int>(ac_index.value())).incarnation()) {
         ac_index = latest_change_->changes_size();
         remote::AccountChange* account_change = latest_change_->add_changes();
-        account_change->set_allocated_address(rpc::H160_from_address(address).release()); // takes ownership
+        account_change->set_allocated_address(rpc::H160_from_address(address).release());  // takes ownership
         account_change->set_action(remote::Action::STORAGE);
         account_change_index_[address] = ac_index.value();
     }
 
-    remote::AccountChange* account_change = latest_change_->mutable_changes(ac_index.value());
+    remote::AccountChange* account_change = latest_change_->mutable_changes(static_cast<int>(ac_index.value()));
     switch (account_change->action()) {
         case remote::Action::REMOVE:
-            SILK_CRIT << "cannot change storage for deleted account: " << to_hex(address) << " incarnation: " << incarnation;
+            SILK_CRIT << "cannot change storage for deleted account: " << to_hex(address)
+                      << " incarnation: " << incarnation;
             SILKWORM_ASSERT(false);
             break;
         default:
@@ -150,7 +160,7 @@ void StateChangeCollection::change_storage(const evmc::address& address, uint64_
     }
     account_change->set_incarnation(incarnation);
 
-    auto& index_by_location = storage_change_index_[address]; // insert if not present
+    auto& index_by_location = storage_change_index_[address];  // insert if not present
     const auto& loc_it = index_by_location.find(location);
     auto loc_index{loc_it != index_by_location.end() ? std::make_optional(loc_it->second) : std::nullopt};
     if (!loc_index) {
@@ -159,8 +169,8 @@ void StateChangeCollection::change_storage(const evmc::address& address, uint64_
         index_by_location[location] = loc_index.value();
     }
 
-    remote::StorageChange* storage_change = account_change->mutable_storagechanges(loc_index.value());
-    storage_change->set_allocated_location(rpc::H256_from_bytes32(location).release()); // takes ownership
+    remote::StorageChange* storage_change = account_change->mutable_storagechanges(static_cast<int>(loc_index.value()));
+    storage_change->set_allocated_location(rpc::H256_from_bytes32(location).release());  // takes ownership
     storage_change->set_data(to_hex(data));
 }
 
@@ -172,12 +182,13 @@ void StateChangeCollection::delete_account(const evmc::address& address) {
 
     if (!index.has_value()) {
         index = latest_change_->changes_size();
-        latest_change_->add_changes()->set_allocated_address(rpc::H160_from_address(address).release()); // takes ownership
+        latest_change_->add_changes()->set_allocated_address(
+            rpc::H160_from_address(address).release());  // takes ownership
         account_change_index_[address] = index.value();
     }
 
-    remote::AccountChange* account_change = latest_change_->mutable_changes(index.value());
-    SILKWORM_ASSERT(account_change->action() == remote::Action::STORAGE); // TODO(canepat) check Erigon
+    remote::AccountChange* account_change = latest_change_->mutable_changes(static_cast<int>(index.value()));
+    SILKWORM_ASSERT(account_change->action() == remote::Action::STORAGE);  // TODO(canepat) check Erigon
     account_change->set_action(remote::Action::REMOVE);
     account_change->clear_code();
     account_change->clear_data();
@@ -185,7 +196,8 @@ void StateChangeCollection::delete_account(const evmc::address& address) {
 }
 
 void StateChangeCollection::notify_batch(uint64_t pending_base_fee, uint64_t gas_limit) {
-    SILK_TRACE << "StateChangeCollection::notify_batch " << this << " pending_base_fee: " << pending_base_fee << " gas_limit:" << gas_limit << " START";
+    SILK_TRACE << "StateChangeCollection::notify_batch " << this << " pending_base_fee: " << pending_base_fee
+               << " gas_limit:" << gas_limit << " START";
 
     state_changes_.set_pendingblockbasefee(pending_base_fee);
     state_changes_.set_blockgaslimit(gas_limit);
@@ -214,4 +226,4 @@ void StateChangeCollection::close() {
     reset(0);
 }
 
-} // namespace silkworm
+}  // namespace silkworm

@@ -410,7 +410,7 @@ bool RecoveryFarm::initialize_new_worker() {
     log::Trace("Spawning new Recovery worker", {"id", std::to_string(workers_.size())});
     using namespace std::placeholders;
     try {
-        workers_.emplace_back(new RecoveryWorker(workers_.size()));
+        workers_.emplace_back(new RecoveryWorker(static_cast<uint32_t>(workers_.size())));
         workers_connections_.emplace_back(
             workers_.back()->signal_task_completed.connect(std::bind(&RecoveryFarm::task_completed_handler, this, _1)));
         workers_connections_.emplace_back(workers_.back()->signal_worker_stopped.connect(

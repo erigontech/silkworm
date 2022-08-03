@@ -174,6 +174,7 @@ TEST_CASE("HashBuilder3") {
 
     auto computed_root{hb.root_hash()};
     REQUIRE(computed_root == expected_root);
+    REQUIRE(entries.size() == 1);
     REQUIRE(entries[0].first.empty());
 
 }

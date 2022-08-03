@@ -231,7 +231,7 @@ std::optional<Bytes> TrieCursor::increment_nibbled_key(const ByteView origin) {
         // Overflow
         return std::nullopt;
     }
-    auto count{std::distance(origin.begin(), rit.base())};
+    auto count{static_cast<size_t>(std::distance(origin.begin(), rit.base()))};
     ret.assign(origin.substr(0, count));
     ++ret.back();
     return ret;
@@ -321,10 +321,10 @@ Bytes TrieCursor::SubNode::full_key() const noexcept {
 }
 
 Bytes TrieCursor::SubNode::hash() const {
-    if (hash_id < 0 || hash_id >= hashes_count) {
+    if (hash_id < 0 || static_cast<uint32_t>(hash_id) >= hashes_count) {
         throw std::out_of_range("Hash id out of bounds");
     }
-    return Bytes(hashes.substr(kHashLength * hash_id, kHashLength));
+    return Bytes(hashes.substr(kHashLength * static_cast<uint32_t>(hash_id), kHashLength));
 }
 
 bool TrieCursor::SubNode::has_tree() const noexcept { return (tree_mask & (1u << child_id)) != 0; }

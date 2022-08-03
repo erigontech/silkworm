@@ -1413,6 +1413,9 @@ void do_trie_root(db::EnvConfig& config) {
         if (SignalHandler::signalled()) {
             throw std::runtime_error("Interrupted");
         }
+        if (trie_data.key->empty()) {
+            break;  // just added root node
+        }
     }
 
     auto computed_state_root{hash_builder.root_hash()};
@@ -1421,22 +1424,6 @@ void do_trie_root(db::EnvConfig& config) {
                    {"expected", to_hex(expected_state_root, true), "got", to_hex(hash_builder.root_hash(), true)});
     } else {
         log::Info("State root " + to_hex(computed_state_root, true));
-    }
-}
-
-void do_hashed_storage(db::EnvConfig& config) {
-    auto env{silkworm::db::open_env(config)};
-    auto txn{env.start_read()};
-    db::Cursor hs_cursor(txn, db::table::kHashedStorage);
-    const Bytes prefix{*from_hex("e4405bfd8d8a3a8b528b1fc9187bc030f0dbaa79e828619a95d9335ddfe3ea6b0000000000000001")};
-    auto hs_data{hs_cursor.lower_bound_multivalue(db::to_slice(prefix), {}, false)};
-    while (hs_data) {
-        const auto hs_data_key_view{db::from_slice(hs_data.key)};
-        const auto hs_data_value_view{db::from_slice(hs_data.value)};
-
-        log::Info("Storage", {"location", to_hex(trie::unpack_nibbles(hs_data_value_view.substr(0, kHashLength))),
-                              "value", to_hex(hs_data_value_view.substr(kHashLength))});
-        hs_data = hs_cursor.to_current_next_multi(false);
     }
 }
 
@@ -1564,11 +1551,8 @@ int main(int argc, char* argv[]) {
     auto cmd_trie_account_analysis =
         app_main.add_subcommand("trie-account-analysis", "Trie account key sizes analysis");
 
-    // Trie root rebuild and check
-    auto cmd_trie_root = app_main.add_subcommand("trie-root", "Compute trie root");
-
-    // Trie root rebuild and check
-    auto cmd_hashed_storage = app_main.add_subcommand("hashed_storage", "Debug");
+    // Trie root hash verification
+    auto cmd_trie_root = app_main.add_subcommand("trie-root", "Checks trie root");
 
     /*
      * Parse arguments and validate
@@ -1662,8 +1646,6 @@ int main(int argc, char* argv[]) {
             do_trie_account_analysis(src_config);
         } else if (*cmd_trie_root) {
             do_trie_root(src_config);
-        } else if (*cmd_hashed_storage) {
-            do_hashed_storage(src_config);
         }
 
         return 0;

@@ -82,14 +82,14 @@ class TrieCursor {
         int8_t hash_id{-1};        // Index of hash to be retrieved
         bool deleted{false};       // Whether already deleted (in collector)
 
-        [[nodiscard]] bool has_tree() const;   // Whether current child_id has bit set in tree mask
-        [[nodiscard]] bool has_hash() const;   // Whether current child_id has bit set in hash mask
-        [[nodiscard]] bool has_state() const;  // Whether current child_id has bit set in state mask
+        [[nodiscard]] bool has_tree() const noexcept;   // Whether current child_id has bit set in tree mask
+        [[nodiscard]] bool has_hash() const noexcept;   // Whether current child_id has bit set in hash mask
+        [[nodiscard]] bool has_state() const noexcept;  // Whether current child_id has bit set in state mask
 
-        void reset();                          // Resets node to default values
-        void parse(ByteView k, ByteView v);    // Parses node data contents from db (may throw)
-        [[nodiscard]] Bytes full_key() const;  // Returns full key to child node (i.e. key + child_id)
-        [[nodiscard]] Bytes hash() const;      // Returns hash of child node (i.e. key + child_id)
+        void reset();                                   // Resets node to default values
+        void parse(ByteView k, ByteView v);             // Parses node data contents from db (may throw)
+        [[nodiscard]] Bytes full_key() const noexcept;  // Returns full key to child node (i.e. key + child_id)
+        [[nodiscard]] Bytes hash() const;               // Returns hash of child node (i.e. key + child_id)
     };
 
     uint32_t level_{0};                      // Depth level in sub_nodes_
@@ -98,9 +98,6 @@ class TrieCursor {
     Bytes prev_key_{};                       // Same as curr_key_ but for previous cycle
     bool skip_state_{true};                  // Whether account(s) state scan can be skipped
     std::array<SubNode, 64> sub_nodes_{{}};  // Collection of sub-nodes being unrolled
-
-    size_t prefix_len_{0};                    // The length of current prefix
-    Bytes prefixed_key_buffer_{(128, '\0')};  // Storage area for fully prefixed key (for searches in db and changes)
 
     Bytes prefix_{};  // Db key prefix for this trie (0 bytes TrieAccount - 40 bytes TrieStorage)
     Bytes buffer_{};  // A convenience buffer

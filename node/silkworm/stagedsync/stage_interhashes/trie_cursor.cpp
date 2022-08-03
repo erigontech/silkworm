@@ -34,7 +34,7 @@ TrieCursor::TrieCursor(mdbx::cursor& db_cursor, PrefixSet* changed, etl::Collect
 TrieCursor::move_operation_result TrieCursor::to_prefix(ByteView prefix) {
     // 0 bytes for TrieAccounts
     // 40 bytes (hashed address + incarnation) for TrieStorage
-    if (size_t len{prefix.length()}; len != 0 && len != 40) {
+    if (size_t len{prefix.length()}; len != 0 && len != db::kHashedStoragePrefixLength) {
         throw std::invalid_argument("Invalid prefix len : expected (0 || 40) whilst got " + std::to_string(len));
     }
     prefix_.assign(prefix);
@@ -312,7 +312,7 @@ void TrieCursor::SubNode::parse(ByteView k, ByteView v) {
     max_child_id = static_cast<int8_t>(bitlen_16(state_mask));
 }
 
-Bytes TrieCursor::SubNode::full_key() const {
+Bytes TrieCursor::SubNode::full_key() const noexcept {
     Bytes ret{key};
     if (child_id != -1) {
         ret.push_back(static_cast<uint8_t>(child_id));
@@ -327,10 +327,10 @@ Bytes TrieCursor::SubNode::hash() const {
     return Bytes(hashes.substr(kHashLength * hash_id, kHashLength));
 }
 
-bool TrieCursor::SubNode::has_tree() const { return (tree_mask & (1u << child_id)) != 0; }
+bool TrieCursor::SubNode::has_tree() const noexcept { return (tree_mask & (1u << child_id)) != 0; }
 
-bool TrieCursor::SubNode::has_hash() const { return (hash_mask & (1u << child_id)) != 0; }
+bool TrieCursor::SubNode::has_hash() const noexcept { return (hash_mask & (1u << child_id)) != 0; }
 
-bool TrieCursor::SubNode::has_state() const { return (state_mask & (1u << child_id)) != 0; }
+bool TrieCursor::SubNode::has_state() const noexcept { return (state_mask & (1u << child_id)) != 0; }
 
 }  // namespace silkworm::trie

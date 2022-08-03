@@ -19,7 +19,6 @@
 #include <silkworm/common/bits.hpp>
 #include <silkworm/common/endian.hpp>
 #include <silkworm/common/log.hpp>
-#include <silkworm/common/util.hpp>
 #include <silkworm/trie/nibbles.hpp>
 
 namespace silkworm::trie {
@@ -35,7 +34,7 @@ TrieCursor::TrieCursor(mdbx::cursor& db_cursor, PrefixSet* changed, etl::Collect
 TrieCursor::move_operation_result TrieCursor::to_prefix(ByteView prefix) {
     // 0 bytes for TrieAccounts
     // 40 bytes (hashed address + incarnation) for TrieStorage
-    if (size_t len{prefix.length()}; len != 0 && len != db::kHashedStoragePrefixLength) {
+    if (size_t len{prefix.length()}; len != 0 && len != 40) {
         throw std::invalid_argument("Invalid prefix len : expected (0 || 40) whilst got " + std::to_string(len));
     }
     prefix_.assign(prefix);
@@ -247,7 +246,7 @@ std::optional<Bytes> TrieCursor::first_uncovered() {
         return prev_key_;
     }
 
-    auto incremented_nibbled_key{increment_nibbled_key(prev_key_)};
+    const auto incremented_nibbled_key{increment_nibbled_key(prev_key_)};
     if (incremented_nibbled_key.has_value()) {
         return pack_nibbles(incremented_nibbled_key.value());
     }
@@ -263,7 +262,7 @@ void TrieCursor::SubNode::reset() {
     tree_mask = 0;
     hash_mask = 0;
     child_id = -1;
-    max_child_id = 0x10;
+    max_child_id = 0x10;  // Traverse all node for ephemeral ones.
     hash_id = -1;
     deleted = false;
 }

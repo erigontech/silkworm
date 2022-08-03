@@ -171,6 +171,16 @@ trie::PrefixSet InterHashes::gather_forward_account_changes(
                 lru_accounts_.put(address, current_account);
             }
 
+            //            std::optional<Account> current_account{};
+            //            {
+            //                auto ps_data{plain_state.find(db::to_slice(address.bytes), false)};
+            //                if (ps_data && ps_data.value.length()) {
+            //                    auto [account, rlp_err]{Account::from_encoded_storage(db::from_slice(ps_data.value))};
+            //                    rlp::success_or_throw(rlp_err);
+            //                    current_account.emplace(account);
+            //                }
+            //            }
+
             // Check whether this is a contract
             if (!changeset_value_view.empty()) {
                 auto [previous_account, rlp_err]{Account::from_encoded_storage(changeset_value_view)};
@@ -404,10 +414,19 @@ StageResult InterHashes::increment_intermediate_hashes(db::RWTxn& txn, const evm
 
 evmc::bytes32 InterHashes::calculate_root(db::RWTxn& txn, trie::PrefixSet* account_changes,
                                           trie::PrefixSet* storage_changes) {
+    static bool log_trace{log::test_verbosity(log::Level::kTrace)};
+
     db::Cursor hashed_accounts(txn, db::table::kHashedAccounts);
     db::Cursor trie_accounts(txn, db::table::kTrieOfAccounts);
     db::Cursor hashed_storage(txn, db::table::kHashedStorage);
     db::Cursor trie_storage(txn, db::table::kTrieOfStorage);
+
+    if (log_trace) {
+        log::Trace(db::table::kHashedAccounts.name, {"records", std::to_string(hashed_accounts.size())});
+        log::Trace(db::table::kTrieOfAccounts.name, {"records", std::to_string(trie_accounts.size())});
+        log::Trace(db::table::kHashedStorage.name, {"records", std::to_string(hashed_storage.size())});
+        log::Trace(db::table::kTrieOfStorage.name, {"records", std::to_string(trie_storage.size())});
+    }
 
     Bytes storage_prefix_buffer{};
     storage_prefix_buffer.reserve(40);
@@ -438,6 +457,15 @@ evmc::bytes32 InterHashes::calculate_root(db::RWTxn& txn, trie::PrefixSet* accou
     trie::TrieCursor ts_cursor(trie_storage, storage_changes, ns_collector);
 
     for (auto ta_data{ta_cursor.to_prefix({})};; ta_data = ta_cursor.to_next()) {
+        if (log_trace) {
+            log::Trace("Ta-data",
+                       {"skip", (ta_data.skip_state ? "true" : "false"), "key",
+                        (ta_data.key.has_value() ? to_hex(ta_data.key.value(), true) : "nil"), "hash",
+                        (ta_data.hash.has_value() ? to_hex(ta_data.hash.value(), true) : "nil"), "trie",
+                        (ta_data.children_in_trie ? "true" : "false"), "uncovered",
+                        (ta_data.first_uncovered.has_value() ? to_hex(ta_data.first_uncovered.value(), true) : "nil")});
+        }
+
         if (!ta_data.skip_state && ta_data.first_uncovered.has_value()) {
             auto ha_seek_slice{db::to_slice(ta_data.first_uncovered.value())};
             auto ha_data{ha_seek_slice.empty() ? hashed_accounts.to_first(false)
@@ -481,19 +509,18 @@ evmc::bytes32 InterHashes::calculate_root(db::RWTxn& txn, trie::PrefixSet* accou
 
         auto hash{to_bytes32(ta_data.hash.value())};
         hba.add_branch_node(ta_data.key.value(), hash, ta_data.children_in_trie);
-
-        if (!ta_data.key->empty()) {
-            // Just added root node
-            break;
-        }
     }
 
     auto ret{hba.root_hash()};
+    if (log_trace) {
+        log::Trace("Account Merkle tree", {"root", to_hex(ret, true)});
+    }
     return ret;
 }
 
 evmc::bytes32 InterHashes::calculate_storage_root(trie::TrieCursor& ts_cursor, trie::HashBuilder& hbs,
                                                   db::Cursor& hashed_storage, const Bytes& db_storage_prefix) {
+    bool log_trace{log::test_verbosity(log::Level::kTrace)};
     Bytes rlp_buffer{};
 
     using namespace std::chrono_literals;
@@ -501,6 +528,16 @@ evmc::bytes32 InterHashes::calculate_storage_root(trie::TrieCursor& ts_cursor, t
 
     const auto db_storage_prefix_slice{db::to_slice(db_storage_prefix)};
     for (auto ts_data{ts_cursor.to_prefix(db_storage_prefix)};; ts_data = ts_cursor.to_next()) {
+        if (log_trace) {
+            log::Trace("Ts-data",
+                       {"skip", (ts_data.skip_state ? "true" : "false"), "key",
+                        (ts_data.key.has_value() ? to_hex(ts_data.key.value(), true) : "nil"), "hash",
+                        (ts_data.hash.has_value() ? to_hex(ts_data.hash.value(), true) : "nil"), "trie",
+                        (ts_data.children_in_trie ? "true" : "false"), "uncovered",
+                        (ts_data.first_uncovered.has_value() ? to_hex(ts_data.first_uncovered.value(), true) : "nil"),
+                        "storage_prefix", to_hex(db_storage_prefix, true)});
+        }
+
         if (!ts_data.skip_state && ts_data.first_uncovered.has_value()) {
             const auto prefix_slice{db::to_slice(ts_data.first_uncovered.value())};
             auto hs_data{hashed_storage.lower_bound_multivalue(db_storage_prefix_slice, prefix_slice, false)};
@@ -511,6 +548,11 @@ evmc::bytes32 InterHashes::calculate_storage_root(trie::TrieCursor& ts_cursor, t
                 }
 
                 auto data_value_view{db::from_slice(hs_data.value)};
+
+                if (log_trace) {
+                    auto data_key_view{db::from_slice(hs_data.key)};
+                    log::Trace("Hs-data", {"key", to_hex(data_key_view, true), "value", to_hex(data_value_view, true)});
+                }
 
                 // Check the nibbled location matches current trie node key boundary
                 const auto nibbled_location{trie::unpack_nibbles(data_value_view.substr(0, kHashLength))};
@@ -542,6 +584,11 @@ evmc::bytes32 InterHashes::calculate_storage_root(trie::TrieCursor& ts_cursor, t
 
     auto ret{hbs.root_hash()};
     hbs.reset();
+
+    //    if (log_trace) {
+    //        log::Trace("Storage Merkle tree", {"key", to_hex(db_storage_prefix, true), "root", to_hex(ret, true)});
+    //    }
+
     return ret;
 }
 

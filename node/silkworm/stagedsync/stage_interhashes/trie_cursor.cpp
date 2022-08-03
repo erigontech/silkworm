@@ -324,7 +324,7 @@ Bytes TrieCursor::SubNode::hash() const {
     if (hash_id < 0 || static_cast<uint32_t>(hash_id) >= hashes_count) {
         throw std::out_of_range("Hash id out of bounds");
     }
-    return Bytes(hashes.substr(kHashLength * static_cast<uint32_t>(hash_id), kHashLength));
+    return Bytes(hashes.substr(kHashLength * static_cast<size_t>(hash_id), kHashLength));
 }
 
 bool TrieCursor::SubNode::has_tree() const noexcept { return (tree_mask & (1u << child_id)) != 0; }

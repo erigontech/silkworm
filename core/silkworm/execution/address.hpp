@@ -14,8 +14,7 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_EXECUTION_ADDRESS_HPP_
-#define SILKWORM_EXECUTION_ADDRESS_HPP_
+#pragma once
 
 #include <silkworm/common/base.hpp>
 
@@ -27,5 +26,3 @@ evmc::address create_address(const evmc::address& caller, uint64_t nonce) noexce
 evmc::address create2_address(const evmc::address& caller, const evmc::bytes32& salt,
                               uint8_t (&code_hash)[32]) noexcept;
 }  // namespace silkworm
-
-#endif  // SILKWORM_EXECUTION_ADDRESS_HPP_

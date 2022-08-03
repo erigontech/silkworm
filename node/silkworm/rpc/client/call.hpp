@@ -14,8 +14,7 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_RPC_CLIENT_CALL_HPP_
-#define SILKWORM_RPC_CLIENT_CALL_HPP_
+#pragma once
 
 #include <chrono>
 #include <functional>
@@ -259,5 +258,3 @@ class AsyncServerStreamingCall : public AsyncCall {
 };
 
 } // namespace silkworm::rpc
-
-#endif // SILKWORM_RPC_CLIENT_CALL_HPP_

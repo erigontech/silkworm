@@ -26,7 +26,7 @@ TEST_CASE("distinct_fork_numbers") {
         9'069'000, 9'200'000, 12'244'000, 12'965'000, 13'773'000, 15'050'000,
     };
 
-    CHECK(ChainIdentity::mainnet.distinct_fork_numbers() == expectedMainnetForkNumbers);
+    CHECK(kMainnetIdentity.distinct_fork_numbers() == expectedMainnetForkNumbers);
 
     std::vector<BlockNum> expectedGoerliForkNumbers{
         1'561'651,
@@ -34,7 +34,7 @@ TEST_CASE("distinct_fork_numbers") {
         5'062'605,
     };
 
-    CHECK(ChainIdentity::goerli.distinct_fork_numbers() == expectedGoerliForkNumbers);
+    CHECK(kGoerliIdentity.distinct_fork_numbers() == expectedGoerliForkNumbers);
 }
 
 }  // namespace silkworm

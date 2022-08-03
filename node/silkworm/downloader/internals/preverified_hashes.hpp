@@ -14,8 +14,7 @@
     limitations under the License.
 */
 
-#ifndef SILKWORM_PREVERIFIED_HASHES_HPP
-#define SILKWORM_PREVERIFIED_HASHES_HPP
+#pragma once
 
 #include <map>
 #include <set>
@@ -53,5 +52,3 @@ struct PreverifiedHashes {
 };
 
 }  // namespace silkworm
-
-#endif  // SILKWORM_PREVERIFIED_HASHES_HPP

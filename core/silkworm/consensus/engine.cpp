@@ -78,18 +78,28 @@ ValidationResult pre_validate_transaction(const Transaction& txn, uint64_t block
     return ValidationResult::kOk;
 }
 
-std::unique_ptr<IEngine> engine_factory(const ChainConfig& chain_config) {
-    if (chain_config.terminal_total_difficulty.has_value()) {
-        return std::make_unique<MergeEngine>(chain_config);
-    }
-
+static std::unique_ptr<IEngine> pre_merge_engine(const ChainConfig& chain_config) {
     switch (chain_config.seal_engine) {
         case SealEngineType::kEthash:
             return std::make_unique<EthashEngine>(chain_config);
         case SealEngineType::kNoProof:
             return std::make_unique<NoProofEngine>(chain_config);
         default:
-            return {};
+            return nullptr;
+    }
+}
+
+std::unique_ptr<IEngine> engine_factory(const ChainConfig& chain_config) {
+    std::unique_ptr<IEngine> engine{pre_merge_engine(chain_config)};
+    if (!engine) {
+        return nullptr;
+    }
+
+    if (chain_config.terminal_total_difficulty.has_value()) {
+        // TODO(yperbasis): refactor MergeEngine to wrap pre_merge_engine
+        return std::make_unique<MergeEngine>(chain_config);
+    } else {
+        return engine;
     }
 }
 

@@ -16,24 +16,31 @@ limitations under the License.
 
 #pragma once
 
-#include <p2psentry/sentry.grpc.pb.h>
-#include <silkworm/rpc/server/server.hpp>
-#include "options.hpp"
-#include "service.hpp"
+#include <string>
+#include <silkworm/common/base.hpp>
 
-namespace silkworm::sentry {
+namespace silkworm::sentry::common {
 
-class Server final : public silkworm::rpc::Server {
+class EccKeyPair {
   public:
-    explicit Server(const Options& options);
+    EccKeyPair();
+    explicit EccKeyPair(Bytes data);
+    explicit EccKeyPair(ByteView data);
+
+    [[nodiscard]]
+    Bytes public_key() const;
+
+    [[nodiscard]]
+    std::string public_key_hex() const;
+
+    [[nodiscard]]
+    ByteView private_key() const { return private_key_; }
+
+    [[nodiscard]]
+    std::string private_key_hex() const;
 
   private:
-    void register_async_services(grpc::ServerBuilder& builder) override;
-    void register_request_calls() override;
-
-    ::sentry::Sentry::AsyncService async_service_;
-
-    std::vector<std::unique_ptr<Service>> services_;
+    Bytes private_key_;
 };
 
-}  // namespace silkworm::sentry
+}  // namespace silkworm::sentry::common

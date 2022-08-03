@@ -14,8 +14,7 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_TYPES_RECEIPT_CBOR_HPP_
-#define SILKWORM_TYPES_RECEIPT_CBOR_HPP_
+#pragma once
 
 #include <silkworm/types/receipt.hpp>
 
@@ -26,5 +25,3 @@ namespace silkworm {
 Bytes cbor_encode(const std::vector<Receipt>& v);
 
 }  // namespace silkworm
-
-#endif  // SILKWORM_TYPES_RECEIPT_CBOR_HPP_

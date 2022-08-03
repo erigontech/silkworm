@@ -69,7 +69,7 @@ bool Senders::stop() {
         (void)farm_->stop();
     }
     return IStage::stop();
-};
+}
 
 std::vector<std::string> Senders::get_log_progress() {
     if (!farm_) {

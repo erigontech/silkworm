@@ -14,8 +14,7 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_CONCURRENCY_ACTIVE_COMPONENT_HPP_
-#define SILKWORM_CONCURRENCY_ACTIVE_COMPONENT_HPP_
+#pragma once
 
 #include <atomic>
 
@@ -36,5 +35,3 @@ class ActiveComponent : public Stoppable {
 };
 
 }  // namespace silkworm
-
-#endif  // SILKWORM_CONCURRENCY_ACTIVE_COMPONENT_HPP_

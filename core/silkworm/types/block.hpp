@@ -14,8 +14,7 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_TYPES_BLOCK_HPP_
-#define SILKWORM_TYPES_BLOCK_HPP_
+#pragma once
 
 #include <array>
 #include <cstdint>
@@ -106,5 +105,3 @@ namespace rlp {
 }  // namespace rlp
 
 }  // namespace silkworm
-
-#endif  // SILKWORM_TYPES_BLOCK_HPP_

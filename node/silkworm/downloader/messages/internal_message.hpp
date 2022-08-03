@@ -14,8 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-#ifndef SILKWORM_INTERNAL_MESSAGE_HPP
-#define SILKWORM_INTERNAL_MESSAGE_HPP
+#pragma once
 
 #include <future>
 
@@ -66,4 +65,3 @@ inline void InternalMessage<void>::execute(Db::ReadOnlyAccess, HeaderChain& hc, 
 }
 
 }  // namespace silkworm
-#endif  // SILKWORM_INTERNAL_MESSAGE_HPP

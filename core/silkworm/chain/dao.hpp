@@ -14,8 +14,7 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_CHAIN_DAO_HPP_
-#define SILKWORM_CHAIN_DAO_HPP_
+#pragma once
 
 // https://eips.ethereum.org/EIPS/eip-779
 
@@ -91,5 +90,3 @@ inline constexpr evmc::address kChildren[]{
 void transfer_balances(IntraBlockState& state);
 
 }  // namespace silkworm::dao
-
-#endif  // SILKWORM_CHAIN_DAO_HPP_

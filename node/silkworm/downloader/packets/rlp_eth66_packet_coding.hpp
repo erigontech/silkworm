@@ -14,8 +14,7 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_RLPETH66PACKETS_HPP
-#define SILKWORM_RLPETH66PACKETS_HPP
+#pragma once
 
 #include <type_traits>
 
@@ -87,5 +86,3 @@ inline DecodingResult decode_eth66_packet(ByteView& from, T& to) noexcept {
 }
 
 }  // namespace silkworm::rlp
-
-#endif  // SILKWORM_RLPETH66PACKETS_HPP

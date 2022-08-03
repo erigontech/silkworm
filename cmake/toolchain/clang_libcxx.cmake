@@ -1,5 +1,5 @@
 #[[
-   Copyright 2021 The Silkworm Authors
+   Copyright 2020-2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -14,6 +14,7 @@
    limitations under the License.
 ]]
 
-include(${CMAKE_CURRENT_LIST_DIR}/base.cmake)
+include(${CMAKE_CURRENT_LIST_DIR}/cxx20.cmake)
 
-set(CMAKE_CXX_STANDARD 17)
+# coroutines support
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++" CACHE STRING "" FORCE)

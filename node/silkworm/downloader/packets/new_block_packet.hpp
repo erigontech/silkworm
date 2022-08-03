@@ -14,8 +14,7 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_NEW_BLOCK_PACKET_HPP
-#define SILKWORM_NEW_BLOCK_PACKET_HPP
+#pragma once
 
 #include <silkworm/downloader/internals/types.hpp>
 
@@ -43,5 +42,3 @@ inline std::ostream& operator<<(std::ostream& os, const NewBlockPacket& packet) 
 }
 
 }  // namespace silkworm
-
-#endif  // SILKWORM_NEW_BLOCK_PACKET_HPP

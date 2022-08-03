@@ -14,8 +14,7 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_OUTBOUND_GET_BLOCK_HEADERS_HPP
-#define SILKWORM_OUTBOUND_GET_BLOCK_HEADERS_HPP
+#pragma once
 
 #include <silkworm/downloader/packets/get_block_headers_packet.hpp>
 
@@ -43,4 +42,3 @@ class OutboundGetBlockHeaders : public OutboundMessage {
 };
 
 }  // namespace silkworm
-#endif  // SILKWORM_OUTBOUND_GET_BLOCK_HEADERS_HPP

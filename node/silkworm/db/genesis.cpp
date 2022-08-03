@@ -16,6 +16,7 @@
 
 #include "genesis.hpp"
 
+#include <silkworm/chain/genesis.hpp>
 #include <silkworm/state/in_memory_state.hpp>
 #include <silkworm/trie/hash_builder.hpp>
 #include <silkworm/trie/nibbles.hpp>
@@ -135,7 +136,6 @@ bool initialize_genesis(mdbx::txn& txn, const nlohmann::json& genesis_json, bool
     try {
         InMemoryState state_buffer{};
         evmc::bytes32 state_root_hash{kEmptyRoot};
-        const auto chain_config = ChainConfig::from_json(genesis_json["config"]);
 
         // Allocate accounts
         if (genesis_json.contains("alloc")) {
@@ -176,36 +176,7 @@ bool initialize_genesis(mdbx::txn& txn, const nlohmann::json& genesis_json, bool
             state_root_hash = hb.root_hash();
         }
 
-        // Fill Header and Body
-        BlockHeader header;
-        BlockBody body{};
-
-        auto extra_data = from_hex(genesis_json["extraData"].get<std::string>());
-        if (extra_data.has_value()) {
-            header.extra_data = extra_data.value();
-        }
-
-        if (chain_config->seal_engine == SealEngineType::kEthash && genesis_json.contains("mixHash")) {
-            auto mixhash = from_hex(genesis_json["mixHash"].get<std::string>());
-            std::memcpy(header.mix_hash.bytes, mixhash->data(), mixhash->size());
-        }
-        if (genesis_json.contains("nonce")) {
-            auto nonce = from_hex(genesis_json["nonce"].get<std::string>());
-            if (nonce.has_value() && nonce->length() == sizeof(uint64_t)) {  // 0x0 is not passing right now
-                std::memcpy(header.nonce.data(), nonce->data(), nonce->size());
-            }
-        }
-        if (genesis_json.contains("difficulty")) {
-            auto difficulty_str{genesis_json["difficulty"].get<std::string>()};
-            header.difficulty = intx::from_string<intx::uint256>(difficulty_str);
-        }
-
-        header.ommers_hash = kEmptyListHash;
-        header.state_root = state_root_hash;
-        header.transactions_root = kEmptyRoot;
-        header.receipts_root = kEmptyRoot;
-        header.gas_limit = std::stoull(genesis_json["gasLimit"].get<std::string>(), nullptr, 0);
-        header.timestamp = std::stoull(genesis_json["timestamp"].get<std::string>(), nullptr, 0);
+        const BlockHeader header{read_genesis_header(genesis_json, state_root_hash)};
 
         auto block_hash{header.hash()};
         auto block_hash_key{db::block_key(header.number, block_hash.bytes)};

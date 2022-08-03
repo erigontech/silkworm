@@ -19,6 +19,8 @@ set(TARGET silkworm_sentry)
 find_package(absl CONFIG REQUIRED)
 find_package(Boost CONFIG REQUIRED thread)
 find_package(gRPC CONFIG REQUIRED)
+find_package(Microsoft.GSL CONFIG REQUIRED)
+find_package(OpenSSL REQUIRED)
 
 get_filename_component(MAIN_DIR ../ ABSOLUTE)
 
@@ -35,7 +37,7 @@ list(PREPEND SRC ${GRPC_SRC})
 
 add_library(${TARGET} ${SRC})
 
-add_dependencies(silkworm_node generate_sentry_grpc)
+add_dependencies(${TARGET} silkworm_node generate_sentry_grpc)
 
 set_source_files_properties(${GRPC_SRC} PROPERTIES GENERATED TRUE)
 if(NOT MSVC)
@@ -53,12 +55,16 @@ target_include_directories(${TARGET} PUBLIC
   "${MAIN_DIR}/interfaces"
 )
 
-set(LIBS "")
-list(APPEND LIBS Boost::thread)
-list(APPEND LIBS protobuf::libprotobuf)
-list(APPEND LIBS gRPC::grpc++)
-list(APPEND LIBS silkworm_core)
-list(APPEND LIBS silkworm_node)
+set(LIBS
+  Boost::thread
+  gRPC::grpc++
+  Microsoft.GSL::GSL
+  protobuf::libprotobuf
+  OpenSSL::Crypto
+  silkpre
+  silkworm_core
+  silkworm_node
+)
 
 if(MSVC)
   list(APPEND LIBS ntdll.lib)

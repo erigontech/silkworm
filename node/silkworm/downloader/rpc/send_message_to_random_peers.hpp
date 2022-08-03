@@ -14,8 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-#ifndef SILKWORM_SEND_MESSAGE_TO_RANDOM_PEERS_HPP
-#define SILKWORM_SEND_MESSAGE_TO_RANDOM_PEERS_HPP
+#pragma once
 
 #include <silkworm/downloader/sentry_client.hpp>
 
@@ -28,5 +27,3 @@ class SendMessageToRandomPeers
 };
 
 }  // namespace silkworm::rpc
-
-#endif  // SILKWORM_SEND_MESSAGE_TO_RANDOM_PEERS_HPP

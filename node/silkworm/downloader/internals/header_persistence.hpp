@@ -14,8 +14,7 @@
     limitations under the License.
 */
 
-#ifndef SILKWORM_HEADER_PERSISTENCE_HPP
-#define SILKWORM_HEADER_PERSISTENCE_HPP
+#pragma once
 
 #include <silkworm/common/lru_cache.hpp>
 
@@ -82,5 +81,3 @@ class HeaderPersistence {
 };
 
 }  // namespace silkworm
-
-#endif  // SILKWORM_HEADER_PERSISTENCE_HPP

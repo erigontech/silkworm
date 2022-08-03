@@ -160,6 +160,7 @@ We adhere to [Google's C++ Style Guide] with the following differences:
 * Exceptions are allowed outside of the `core` library.
 * User-defined literals are allowed.
 * Maximum line length is 120, indentation is 4 spaces – see [.clang-format](.clang-format).
+* Use `#pragma once` in the headers instead of the classic `#ifndef` guards.
 
 
 ## License

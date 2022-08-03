@@ -14,8 +14,7 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_COMMON_UTIL_HPP_
-#define SILKWORM_COMMON_UTIL_HPP_
+#pragma once
 
 #include <cstring>
 #include <optional>
@@ -41,6 +40,10 @@ evmc::bytes32 to_bytes32(ByteView bytes);
 //! \param [in] data : The view to process
 //! \return A new view of the sequence
 ByteView zeroless_view(ByteView data);
+
+inline bool has_hex_prefix(std::string_view s) {
+    return s.length() >= 2 && s[0] == '0' && (s[1] == 'x' || s[1] == 'X');
+}
 
 //! \brief Returns a string representing the hex form of provided string of bytes
 std::string to_hex(ByteView bytes, bool with_prefix = false);
@@ -80,5 +83,3 @@ size_t prefix_length(ByteView a, ByteView b);
 inline ethash::hash256 keccak256(ByteView view) { return ethash::keccak256(view.data(), view.size()); }
 
 }  // namespace silkworm
-
-#endif  // SILKWORM_COMMON_UTIL_HPP_

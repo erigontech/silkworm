@@ -14,8 +14,7 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_MESSAGE_HPP
-#define SILKWORM_MESSAGE_HPP
+#pragma once
 
 #include <silkworm/downloader/internals/body_sequence.hpp>
 #include <silkworm/downloader/internals/db_tx.hpp>
@@ -36,5 +35,3 @@ class Message {
 };
 
 }  // namespace silkworm
-
-#endif  // SILKWORM_MESSAGE_HPP

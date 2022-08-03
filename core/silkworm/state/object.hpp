@@ -14,8 +14,7 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_STATE_OBJECT_HPP_
-#define SILKWORM_STATE_OBJECT_HPP_
+#pragma once
 
 #include <optional>
 
@@ -41,5 +40,3 @@ struct Storage {
 };
 
 }  // namespace silkworm::state
-
-#endif  // SILKWORM_STATE_OBJECT_HPP_

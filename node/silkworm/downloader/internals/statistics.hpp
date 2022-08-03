@@ -14,8 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-#ifndef SILKWORM_STATISTICS_H
-#define SILKWORM_STATISTICS_H
+#pragma once
 
 #include <cstdint>
 #include <ostream>
@@ -45,4 +44,3 @@ struct Download_Statistics {
 std::ostream& operator<<(std::ostream& os, const Download_Statistics& stats);
 
 }
-#endif  // SILKWORM_STATISTICS_H

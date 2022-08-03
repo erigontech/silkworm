@@ -18,27 +18,19 @@ limitations under the License.
 #include <silkworm/common/log.hpp>
 #include <silkworm/rpc/server/server_config.hpp>
 
-namespace silkworm::sentry {
+namespace silkworm::sentry::rpc {
 
 using namespace silkworm::log;
 
-static silkworm::rpc::ServerConfig make_server_config(const Options& options) {
-    silkworm::rpc::ServerConfig config;
-    config.set_address_uri(options.api_address);
-    config.set_num_contexts(options.num_contexts);
-    config.set_wait_mode(options.wait_mode);
-    return config;
-}
-
-Server::Server(const Options& options)
-    : silkworm::rpc::Server(make_server_config(options))
+Server::Server(const silkworm::rpc::ServerConfig& config)
+    : silkworm::rpc::Server(config)
 {
-    std::size_t num_contexts = options.num_contexts;
+    std::size_t num_contexts = config.num_contexts();
     for (std::size_t i = 0; i < num_contexts; i++) {
         services_.push_back(std::make_unique<Service>());
     }
     log::Info() << "Server created"
-        << " listening on: " << options.api_address << ";"
+        << " listening on: " << config.address_uri() << ";"
         << " contexts: " << num_contexts;
 }
 
@@ -57,4 +49,4 @@ void Server::register_request_calls() {
     }
 }
 
-}  // namespace silkworm::sentry
+}  // namespace silkworm::sentry::rpc

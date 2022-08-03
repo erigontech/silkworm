@@ -14,8 +14,7 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_STATE_INTRA_BLOCK_STATE_HPP_
-#define SILKWORM_STATE_INTRA_BLOCK_STATE_HPP_
+#pragma once
 
 #include <memory>
 #include <vector>
@@ -158,5 +157,3 @@ class IntraBlockState {
 };
 
 }  // namespace silkworm
-
-#endif  // SILKWORM_STATE_INTRA_BLOCK_STATE_HPP_

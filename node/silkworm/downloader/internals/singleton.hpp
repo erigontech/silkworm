@@ -14,8 +14,7 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_SINGLETON_HPP
-#define SILKWORM_SINGLETON_HPP
+#pragma once
 
 #include <memory>
 
@@ -50,5 +49,3 @@ class Singleton {
     static T& instance() { return instance_; }
 };
 }  // namespace default_instantiating
-
-#endif  // SILKWORM_SINGLETON_HPP

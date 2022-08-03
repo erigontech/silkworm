@@ -14,8 +14,7 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_TRIE_HASH_BUILDER_HPP_
-#define SILKWORM_TRIE_HASH_BUILDER_HPP_
+#pragma once
 
 #include <functional>
 #include <optional>
@@ -91,5 +90,3 @@ class HashBuilder {
 };
 
 }  // namespace silkworm::trie
-
-#endif  // SILKWORM_TRIE_HASH_BUILDER_HPP_

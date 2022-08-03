@@ -14,8 +14,7 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_HEADER_CHAIN_HPP
-#define SILKWORM_HEADER_CHAIN_HPP
+#pragma once
 
 #include <cstdio>
 
@@ -174,5 +173,3 @@ class HeaderChain {
 };
 
 }  // namespace silkworm
-
-#endif  // SILKWORM_HEADER_CHAIN_HPP

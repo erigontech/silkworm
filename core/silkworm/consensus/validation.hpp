@@ -14,8 +14,7 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_CONSENSUS_VALIDATION_HPP_
-#define SILKWORM_CONSENSUS_VALIDATION_HPP_
+#pragma once
 
 namespace silkworm {
 
@@ -76,5 +75,3 @@ enum class [[nodiscard]] ValidationResult{
 };
 
 }  // namespace silkworm
-
-#endif  // SILKWORM_CONSENSUS_VALIDATION_HPP_

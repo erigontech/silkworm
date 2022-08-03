@@ -57,7 +57,7 @@ void run_collector_test(LoadFunc load_func, bool do_copy = true) {
     test::Context context;
 
     // Initialize random seed
-    std::srand(std::time(nullptr));
+    std::srand(static_cast<unsigned>(std::time(nullptr)));
 
     // Generate Test Entries
     auto set{generate_entry_set(1000)};  // 1000 entries in total

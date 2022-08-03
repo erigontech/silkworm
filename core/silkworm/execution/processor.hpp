@@ -14,8 +14,7 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_EXECUTION_PROCESSOR_HPP_
-#define SILKWORM_EXECUTION_PROCESSOR_HPP_
+#pragma once
 
 #include <cstdint>
 #include <vector>
@@ -71,5 +70,3 @@ class ExecutionProcessor {
 };
 
 }  // namespace silkworm
-
-#endif  // SILKWORM_EXECUTION_PROCESSOR_HPP_

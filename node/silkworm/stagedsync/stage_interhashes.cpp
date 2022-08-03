@@ -171,16 +171,6 @@ trie::PrefixSet InterHashes::gather_forward_account_changes(
                 lru_accounts_.put(address, current_account);
             }
 
-            //            std::optional<Account> current_account{};
-            //            {
-            //                auto ps_data{plain_state.find(db::to_slice(address.bytes), false)};
-            //                if (ps_data && ps_data.value.length()) {
-            //                    auto [account, rlp_err]{Account::from_encoded_storage(db::from_slice(ps_data.value))};
-            //                    rlp::success_or_throw(rlp_err);
-            //                    current_account.emplace(account);
-            //                }
-            //            }
-
             // Check whether this is a contract
             if (!changeset_value_view.empty()) {
                 auto [previous_account, rlp_err]{Account::from_encoded_storage(changeset_value_view)};

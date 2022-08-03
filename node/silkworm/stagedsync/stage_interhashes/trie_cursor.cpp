@@ -16,8 +16,6 @@
 
 #include "trie_cursor.hpp"
 
-#include <bitset>
-
 #include <silkworm/common/bits.hpp>
 #include <silkworm/common/endian.hpp>
 #include <silkworm/common/log.hpp>
@@ -129,31 +127,12 @@ TrieCursor::move_operation_result TrieCursor::to_next() {
 
     while (!end_of_tree_) {
         auto& sub_node{sub_nodes_[level_]};
+        ++sub_node.child_id;  // Advance to next child_id. (Note we start from -1 so "first next" is 0)
+        sub_node.hash_id += static_cast<int>(sub_node.has_hash());
 
-        // Advance to next child
-        // Please note that before very first increment on every node both child_id and hash_id are "first meaningful
-        // value minus 1".
-        // See Erigon's _nextSiblingInMem
-        while (sub_node.child_id < sub_node.max_child_id) {
-            ++sub_node.child_id;
-            if (sub_node.has_hash()) {
-                ++sub_node.hash_id;
-                break;  // See if following consume() can utilize it
-            }
-            if (sub_node.has_tree()) {
-                // We MUST descend hence extending the node key: eg. (A) 0x01 -> (B)0x0101
-                // Assertion B.starts_with(A) == true
-                break;
-            }
-
-            if (sub_node.has_state()) {
-                skip_state_ = false;
-            }
-        }
-
-        // When node is completely traversed ascend one level if possible
+        // On reach of max_child_id the node is completely traversed :
+        // ascend one level, if possible, or mark the end of the tree (completely traversed)
         // Note ! We don't have intermediate "empty" nodes as in Erigon
-        // See Erigon's _nextSiblingOfParentInMem
         if (sub_node.child_id == sub_node.max_child_id) {
             sub_node.reset();
             if (level_) {
@@ -164,13 +143,11 @@ TrieCursor::move_operation_result TrieCursor::to_next() {
             continue;
         }
 
-        // Consume node - Implies has hash
+        // Consume node's hash (if any)
         if (consume(sub_node)) {
             curr_key_.assign(sub_node.full_key());
             return {skip_state_, curr_key_, sub_node.hash(), sub_node.has_tree(), first_uncovered()};
         }
-
-        // skip_state_ = skip_state_ && sub_node.has_tree();
 
         // If a child is expected we MUST find it. db_seek also descends one level
         // If not found it means the tree is corrupted
@@ -181,6 +158,10 @@ TrieCursor::move_operation_result TrieCursor::to_next() {
                     " child_id=" + std::to_string(static_cast<uint32_t>(sub_node.child_id)));
             }
         } else {
+            skip_state_ = false;
+        }
+
+        if (sub_node.has_state()) {
             skip_state_ = false;
         }
     }
@@ -213,25 +194,14 @@ bool TrieCursor::db_seek(ByteView seek_key) {
 }
 
 void TrieCursor::db_delete(SubNode& node) {
-    if (!node.deleted) {
-        if (!node.value.is_null() && collector_) {
-            buffer_.assign(prefix_).append(node.key);
-            collector_->collect({buffer_, Bytes{}});
-        }
+    if (!node.deleted && collector_) {
+        buffer_.assign(prefix_).append(node.key);
+        collector_->collect({buffer_, Bytes{}});
         node.deleted = true;
     }
 }
 
 bool TrieCursor::consume(SubNode& node) {
-    if (debug_key_) {
-        buffer_.assign(prefix_).append(node.full_key());
-        auto [has_changes, next_created]{changed_list_->contains_and_next_marked(buffer_)};
-        bool is_before(key_is_before(buffer_, next_created_));
-        log::Trace("Sub-Node", {"key", to_hex(node.full_key(), true), "has_hash", (node.has_hash() ? "true" : "false"),
-                                "has_changes", (has_changes ? "true" : "false"), "next_created",
-                                to_hex(next_created, true), "is_before", (is_before ? "true" : "false")});
-    }
-
     if (node.has_hash()) {
         buffer_.assign(prefix_).append(node.full_key());
         auto [has_changes, next_created]{changed_list_->contains_and_next_marked(buffer_)};
@@ -241,7 +211,6 @@ bool TrieCursor::consume(SubNode& node) {
             return true;
         }
     }
-
     db_delete(node);
     return false;
 }

@@ -99,6 +99,9 @@ class TrieCursor {
     bool skip_state_{true};                  // Whether account(s) state scan can be skipped
     std::array<SubNode, 64> sub_nodes_{{}};  // Collection of sub-nodes being unrolled
 
+    size_t prefix_len_{0};                    // The length of current prefix
+    Bytes prefixed_key_buffer_{(128, '\0')};  // Storage area for fully prefixed key (for searches in db and changes)
+
     Bytes prefix_{};  // Db key prefix for this trie (0 bytes TrieAccount - 40 bytes TrieStorage)
     Bytes buffer_{};  // A convenience buffer
 
@@ -106,9 +109,6 @@ class TrieCursor {
     PrefixSet* changed_list_;    // The collection of changed nibbled keys
     ByteView next_created_{};    // The next created account/location in changed list
     etl::Collector* collector_;  // Pointer to a collector for deletion of obsolete keys
-
-    bool debug_prefix_{false};
-    bool debug_key_{false};
 
     bool db_seek(ByteView seek_key);  // Seeks lowerbound of provided key using db_cursor_
     void db_delete(SubNode& node);    // Collects deletion of node being rebuilt or no longer needed

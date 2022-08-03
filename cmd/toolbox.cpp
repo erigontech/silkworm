@@ -1051,7 +1051,7 @@ void do_trie_scan(db::EnvConfig& config, bool del) {
     std::cout << "\n" << std::endl;
 }
 
-void do_trie_integrity(db::EnvConfig& config, bool with_state_coverage, bool continue_scan) {
+void do_trie_integrity(db::EnvConfig& config, bool with_state_coverage, bool continue_scan, bool sanitize) {
     if (!config.exclusive) {
         throw std::runtime_error("Function requires exclusive access to database");
     }
@@ -1080,7 +1080,7 @@ void do_trie_integrity(db::EnvConfig& config, bool with_state_coverage, bool con
             trie_cursor1.bind(txn, db::table::kTrieOfStorage);
             trie_cursor2.bind(txn, db::table::kTrieOfStorage);
             state_cursor.bind(txn, db::table::kHashedStorage);
-            prefix_len = 40;
+            prefix_len = db::kHashedStoragePrefixLength;
         }
 
         log::Info("Checking ...", {"source", source, "state", (with_state_coverage ? "true" : "false")});
@@ -1090,6 +1090,7 @@ void do_trie_integrity(db::EnvConfig& config, bool with_state_coverage, bool con
         while (data1) {
             auto data1_k{db::from_slice(data1.key)};
             auto data1_v{db::from_slice(data1.value)};
+            auto node_k{data1_k.substr(prefix_len)};
 
             // Only unmarshal relevant data without copy on read
             if (data1_v.length() < 6) {
@@ -1137,65 +1138,17 @@ void do_trie_integrity(db::EnvConfig& config, bool with_state_coverage, bool con
             }
 
             /*
-             * Check parents (if not root)
-             * Whether node key length > 1 then at least one parent with a key length shorter than this one must exist
-             * Note : length is expressed in nibbles count
-             * Example:
-             * When node key : 01020304
-             * Must find one key in list {010203, 0102, 01}
-             * Remarks :
-             * One nibble keys don't have a parent
+             * Nodes with a key length == 0 are root nodes and MUST have a root hash
              */
-
-            bool found{node_has_root};
-            Bytes parent_key;
-            for (size_t i{data1_k.length() - 1}, end{prefix_len ? prefix_len - 1 : 0}; i > end && found == false; --i) {
-                parent_key.assign(data1_k.substr(0, i));
-                auto data2{trie_cursor2.find(db::to_slice(parent_key), false)};
-                if (!data2) {
-                    continue;
-                }
-                found = true;
-
-                /*
-                 * Check parent's tree mask has a bit set which points to current child
-                 * Example :
-                 * Child  key  : 010203
-                 * On first loop i == 2
-                 * Parent key  : 0102
-                 * Nibble == child_key[2] == 3
-                 * The bit at index 3 of parent mask must be set
-                 * If parent mask : 0b0000000000000000 -> wrong
-                 * If parent mask : 0b0000000000001000 -> right
-                 */
-
-                if (data2.value.length() < 6) {
-                    throw std::runtime_error("At key" + to_hex(data1_k, true) + " : Parent key " +
-                                             to_hex(parent_key, true) + " has invalid value");
-                }
-                const auto data2_v{db::from_slice(data2.value)};
-                const auto parent_tree_mask{endian::load_big_u16(&data2_v[2])};
-                const auto parent_has_tree_bit{((1 << static_cast<uint16_t>(data1_k[i])) & parent_tree_mask) != 0};
-                if (!parent_has_tree_bit) {
-                    std::string what{"At key " + to_hex(data1_k, true) + " found parent key " +
-                                     to_hex(parent_key, true) +
-                                     " with tree mask : " + std::bitset<16>(parent_tree_mask).to_string() +
-                                     " and no bit set at position " + std::to_string(i)};
-                    if (!continue_scan) {
-                        throw std::runtime_error(what);
-                    }
-                    is_healthy = false;
-                    std::cout << " " << what << std::endl;
-                }
-            }
-
-            if (!found && data1_k.length() > (prefix_len ? prefix_len : 1u)) {
-                std::string what{"At key " + to_hex(data1_k, true) + " no parent found"};
+            if (node_k.empty() && !node_has_root) {
+                std::string what{"At key " + to_hex(data1_k, true) + " found root node without root hash"};
                 if (!continue_scan) {
                     throw std::runtime_error(what);
                 }
                 is_healthy = false;
                 std::cout << " " << what << std::endl;
+            } else if (!node_k.empty() && node_has_root) {
+                std::cout << " Node with root hash ? " << to_hex(data1_k, true);
             }
 
             /*
@@ -1212,9 +1165,8 @@ void do_trie_integrity(db::EnvConfig& config, bool with_state_coverage, bool con
              */
 
             if (node_tree_mask) {
-                buffer.assign(data1_k);
-                buffer.push_back('\0');
-                for (uint16_t i{ctz_16(node_tree_mask)}; i < 16; ++i) {
+                buffer.assign(data1_k).push_back('\0');
+                for (uint16_t i{ctz_16(node_tree_mask)}, e{bitlen_16(node_tree_mask)}; i < e; ++i) {
                     if (((1 << i) & node_tree_mask) == 0) {
                         continue;
                     }
@@ -1227,6 +1179,7 @@ void do_trie_integrity(db::EnvConfig& config, bool with_state_coverage, bool con
                                                  " in db. LTE found is : null");
                     } else {
                         auto data2_k{db::from_slice(data2.key)};
+
                         if (!data2_k.starts_with(buffer)) {
                             throw std::runtime_error("At key " + to_hex(data1_k, true) + " tree mask is " +
                                                      std::bitset<16>(node_tree_mask).to_string() +
@@ -1234,6 +1187,63 @@ void do_trie_integrity(db::EnvConfig& config, bool with_state_coverage, bool con
                                                      " in db. LTE found is : " + to_hex(data2_k, true));
                         }
                     }
+                }
+            }
+
+            /*
+             * Check parents (if not root)
+             * Whether node key length > 1 then at least one parent with a key length shorter than this one must exist
+             * Note : length is expressed in nibbles count
+             * Example:
+             * When node key : 01020304
+             * Must find one key in list {010203; 0102} (max jump of 2)
+             */
+
+            if (!node_k.empty()) {
+                bool found{false};
+
+                for (size_t i{data1_k.size() - 1}; i >= prefix_len && !found; --i) {
+                    auto parent_seek_key{data1_k.substr(0, i)};
+                    auto data2{trie_cursor2.find(db::to_slice(parent_seek_key), false)};
+                    if (!data2) {
+                        continue;
+                    }
+                    found = true;
+                    const auto data2_v{db::from_slice(data2.value)};
+                    const auto parent_tree_mask{endian::load_big_u16(&data2_v[2])};
+                    const auto parent_child_id{static_cast<int>(data1_k[i])};
+                    const auto parent_has_tree_bit{(parent_tree_mask & (1 << parent_child_id)) != 0};
+                    if (!parent_has_tree_bit) {
+                        found = false;
+                        if (sanitize) {
+                            log::Warning("Erasing orphan", {"key", to_hex(data1_k, true)});
+                            trie_cursor1.erase();
+                            goto next_node;
+                        }
+                        std::string what{"At key " + to_hex(data1_k, true) + " found parent key " +
+                                         to_hex(parent_seek_key, true) +
+                                         " with tree mask : " + std::bitset<16>(parent_tree_mask).to_string() +
+                                         " and no bit set at position " + std::to_string(parent_child_id)};
+                        if (!continue_scan) {
+                            throw std::runtime_error(what);
+                        }
+                        is_healthy = false;
+                        std::cout << " " << what << std::endl;
+                    }
+                }
+
+                if (!found) {
+                    if (sanitize) {
+                        log::Warning("Erasing orphan", {"key", to_hex(data1_k, true)});
+                        trie_cursor1.erase();
+                        goto next_node;
+                    }
+                    std::string what{"At key " + to_hex(data1_k, true) + " no parent found"};
+                    if (!continue_scan) {
+                        throw std::runtime_error(what);
+                    }
+                    is_healthy = false;
+                    std::cout << " " << what << std::endl;
                 }
             }
 
@@ -1266,12 +1276,12 @@ void do_trie_integrity(db::EnvConfig& config, bool with_state_coverage, bool con
                 }
                 // <<< See Erigon's ByteMask
 
-                for (uint16_t i{ctz_16(node_state_mask)}; i < 16; ++i) {
+                for (uint16_t i{ctz_16(node_state_mask)}, e{bitlen_16(node_state_mask)}; i < e; ++i) {
                     if (((1 << i) & node_state_mask) == 0) {
                         continue;
                     }
 
-                    found = false;
+                    bool found{false};
                     buffer.back() = static_cast<uint8_t>(i);
 
                     Bytes seek{trie::pack_nibbles(buffer)};
@@ -1332,6 +1342,7 @@ void do_trie_integrity(db::EnvConfig& config, bool with_state_coverage, bool con
                 log::Info("Checking ...", {"source", source, "key", to_hex(data1_k, true)});
             }
 
+        next_node:
             data1 = trie_cursor1.to_next(false);
         }
     }
@@ -1365,7 +1376,6 @@ void do_trie_reset(db::EnvConfig& config, bool always_yes) {
     log::Info("Setting progress ...", {"key", db::stages::kIntermediateHashesKey, "value", "0"});
     db::stages::write_stage_progress(txn, db::stages::kIntermediateHashesKey, 0);
     log::Info("Committing ...", {});
-    std::cout << "Committing " << std::endl;
     txn.commit();
     log::Info("Closing db", {"path", env.get_path().string()});
     env.close();
@@ -1548,6 +1558,7 @@ int main(int argc, char* argv[]) {
     auto cmd_trie_integrity = app_main.add_subcommand("trie-integrity", "Checks trie integrity");
     auto cmd_trie_integrity_state_opt = cmd_trie_integrity->add_flag("--with-state", "Checks covered states (slower)");
     auto cmd_trie_integrity_continue_opt = cmd_trie_integrity->add_flag("--continue", "Keeps scanning on found errors");
+    auto cmd_trie_integrity_sanitize_opt = cmd_trie_integrity->add_flag("--sanitize", "Clean orphan nodes");
 
     // Trie account analysis
     auto cmd_trie_account_analysis =
@@ -1645,7 +1656,8 @@ int main(int argc, char* argv[]) {
             do_trie_reset(src_config, static_cast<bool>(*app_yes_opt));
         } else if (*cmd_trie_integrity) {
             do_trie_integrity(src_config, static_cast<bool>(*cmd_trie_integrity_state_opt),
-                              static_cast<bool>(*cmd_trie_integrity_continue_opt));
+                              static_cast<bool>(*cmd_trie_integrity_continue_opt),
+                              static_cast<bool>(*cmd_trie_integrity_sanitize_opt));
         } else if (*cmd_trie_account_analysis) {
             do_trie_account_analysis(src_config);
         } else if (*cmd_trie_root) {

@@ -391,8 +391,7 @@ StageResult InterHashes::increment_intermediate_hashes(db::RWTxn& txn, const evm
     log_lck.unlock();
 
     db::Cursor target(txn, db::table::kTrieOfAccounts);
-    MDBX_put_flags_t flags{target.get_map_stat().ms_entries ? MDBX_put_flags_t::MDBX_UPSERT
-                                                            : MDBX_put_flags_t::MDBX_APPEND};
+    MDBX_put_flags_t flags{target.size() ? MDBX_put_flags_t::MDBX_UPSERT : MDBX_put_flags_t::MDBX_APPEND};
     loading_collector_->load(target, nullptr, flags);
 
     log_lck.lock();

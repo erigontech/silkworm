@@ -68,10 +68,9 @@ void Collector::collect(Entry&& entry) {
 }
 
 void Collector::load(mdbx::cursor& target, const LoadFunc& load_func, MDBX_put_flags_t flags) {
-
     using namespace std::chrono_literals;
-    static const auto kLogInterval{5s}; // Updates processing key (for log purposes) every this time
-    auto log_time{std::chrono::steady_clock::now()}; // To check if an update of key is needed
+    static const auto kLogInterval{5s};               // Updates processing key (for log purposes) every this time
+    auto log_time{std::chrono::steady_clock::now()};  // To check if an update of key is needed
 
     set_loading_key({});
 

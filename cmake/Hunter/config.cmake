@@ -14,6 +14,16 @@
    limitations under the License.
 ]]
 
+include(hunter_cmake_args)
+
+hunter_cmake_args(
+  abseil
+  CMAKE_ARGS
+        ABSL_PROPAGATE_CXX_STD=ON
+        ABSL_ENABLE_INSTALL=OFF
+        ABSL_RUN_TESTS=OFF
+)
+
 hunter_config(
   Microsoft.GSL
   VERSION 4.0.0

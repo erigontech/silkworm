@@ -30,8 +30,9 @@ if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
   add_compile_definitions(_SILENCE_CXX17_OLD_ALLOCATOR_MEMBERS_DEPRECATION_WARNING)
   add_compile_definitions(_SILENCE_CXX17_RESULT_OF_DEPRECATION_WARNING)
 
-  add_compile_options(/MP)     # Enable parallel compilation
-  add_compile_options(/EHa)    # Enable standard C++ unwinding
+  add_compile_options(/MP)            # Enable parallel compilation
+  add_compile_options(/EHa)           # Enable standard C++ unwinding
+  add_compile_options(/await:strict)  # Enable coroutine support in std namespace
 
   #[[
   There is an issue on CLion IDE when toolchain is MSVC. Basically it wrongly parses file(line,column) which

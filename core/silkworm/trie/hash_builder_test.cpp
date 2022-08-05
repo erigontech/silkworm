@@ -139,9 +139,10 @@ TEST_CASE("HashBuilder2") {
 /*
 This test is temporarily commented out while searching for the solution.
 Note ! HashBuilder should create at least a root node for every tree but apparently
-when the addresses/locations begin all with the same nibble(s) - very rare - this does not happen.
+when all leaves begin all with the same nibble(s) - very rare - this does not happen.
 The absence of a root node however does NOT break stage IntermediateHashes as trie cursor, when
-a root node is not found, rebuilds the entire trie.
+a root node is not found, instructs higher loop to rebuild the entire tree. I have encountered
+this edge case only on one contract (below is real data - hashed unfortunately)
 
 TEST_CASE("HashBuilder3") {
     Bytes key_0{

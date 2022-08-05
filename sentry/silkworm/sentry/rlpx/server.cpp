@@ -38,7 +38,15 @@ awaitable<void> Server::start(io_context& io_context) {
 
     ip::tcp::acceptor acceptor{io_context, endpoint.protocol()};
     acceptor.set_option(ip::tcp::acceptor::reuse_address(true));
+
+#if defined(_WIN32)
+    // Windows does not have SO_REUSEPORT
+    // see portability notes https://stackoverflow.com/questions/14388706/how-do-so-reuseaddr-and-so-reuseport-differ
+    acceptor.set_option(detail::socket_option::boolean<SOL_SOCKET, SO_EXCLUSIVEADDRUSE>(true));
+#else
     acceptor.set_option(detail::socket_option::boolean<SOL_SOCKET, SO_REUSEPORT>(true));
+#endif
+
     acceptor.bind(endpoint);
     acceptor.listen();
 

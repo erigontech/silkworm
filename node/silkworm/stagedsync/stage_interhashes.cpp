@@ -104,8 +104,9 @@ StageResult InterHashes::unwind(db::RWTxn& txn, BlockNum to) {
 
 StageResult InterHashes::prune(db::RWTxn&) { return StageResult::kSuccess; }
 
-trie::PrefixSet InterHashes::gather_forward_account_changes(
-    db::RWTxn& txn, BlockNum from, BlockNum to, absl::btree_map<evmc::address, ethash_hash256>& hashed_addresses) {
+trie::PrefixSet InterHashes::collect_account_changes(db::RWTxn& txn, BlockNum from, BlockNum to,
+                                                     absl::btree_map<evmc::address, ethash_hash256>& hashed_addresses,
+                                                     bool forward) {
     std::unique_ptr<StopWatch> sw;
     if (log::test_verbosity(log::Level::kTrace)) {
         sw = std::make_unique<StopWatch>(/*auto_start=*/true);
@@ -114,7 +115,7 @@ trie::PrefixSet InterHashes::gather_forward_account_changes(
     BlockNum reached_blocknum{0};
     BlockNum expected_blocknum{from + 1};
     absl::btree_set<Bytes> deleted_ts_prefixes{};
-    silkworm::lru_cache<evmc::address, std::optional<Account>> lru_accounts_(10000);
+    silkworm::lru_cache<evmc::address, std::optional<Account>> plainstate_accounts(100'000);
 
     using namespace std::chrono_literals;
     auto log_time{std::chrono::steady_clock::now()};
@@ -156,36 +157,65 @@ trie::PrefixSet InterHashes::gather_forward_account_changes(
                 hashed_addresses_it = hashed_addresses.insert_or_assign(address, hashed_address).first;
             }
 
-            // Lookup value in plainstate (current) if any
-            // TODO(Andrea) optimize caching
-            std::optional<Account> current_account{};
-            if (auto item{lru_accounts_.get(address)}; item != nullptr) {
-                current_account = *item;
+            // Lookup value in plainstate if any
+            // Note ! on unwinds plainstate has not been unwound yet.
+            std::optional<Account> plainstate_account{};
+            if (auto item{plainstate_accounts.get(address)}; item != nullptr) {
+                plainstate_account = *item;
             } else {
                 auto ps_data{plain_state.find(db::to_slice(address.bytes), false)};
                 if (ps_data && ps_data.value.length()) {
                     auto [account, rlp_err]{Account::from_encoded_storage(db::from_slice(ps_data.value))};
                     rlp::success_or_throw(rlp_err);
-                    current_account.emplace(account);
+                    plainstate_account.emplace(account);
                 }
-                lru_accounts_.put(address, current_account);
+                plainstate_accounts.put(address, plainstate_account);
             }
 
-            // Check whether this is a contract
-            if (!changeset_value_view.empty()) {
-                auto [previous_account, rlp_err]{Account::from_encoded_storage(changeset_value_view)};
-                rlp::success_or_throw(rlp_err);
-                if (previous_account.incarnation) {
-                    if (current_account == std::nullopt ||
-                        current_account->incarnation < previous_account.incarnation) {
-                        // Self destructed or reverted
-                        (void)deleted_ts_prefixes.insert(
-                            db::storage_prefix(hashed_addresses_it->first.bytes, previous_account.incarnation));
+            bool account_created{false};  // Whether the account has to be marked as created in changed list
+
+            if (forward) {
+                // For forward collection:
+                // Creation : if there is no value in changeset it means the account has been created
+                // TrieStorage cleanup : if there is value in changeset we check account in changeset matches account in
+                // plainstate Specifically if both have value and incarnations do not match then a self-destruct has
+                // happened (with possible recreation). If they don't match delete from TrieStorage all hashed addresses
+                // + incarnation
+                if (!changeset_value_view.empty()) {
+                    auto [changeset_account, rlp_err]{Account::from_encoded_storage(changeset_value_view)};
+                    rlp::success_or_throw(rlp_err);
+                    if (changeset_account.incarnation) {
+                        if (plainstate_account == std::nullopt ||
+                            plainstate_account->incarnation != changeset_account.incarnation) {
+                            (void)deleted_ts_prefixes.insert(
+                                db::storage_prefix(address.bytes, changeset_account.incarnation));
+                        }
                     }
+                } else {
+                    account_created = true;
+                }
+            } else {
+                // For unwind collection:
+                // Creation : if there is no value in plainstate then it means the account has been created
+                if (plainstate_account != std::nullopt) {
+                    if (plainstate_account->incarnation) {
+                        if (changeset_value_view.empty()) {
+                            deleted_ts_prefixes.insert(address.bytes);
+                        } else {
+                            auto [changeset_account, rlp_err]{Account::from_encoded_storage(changeset_value_view)};
+                            rlp::success_or_throw(rlp_err);
+                            if (changeset_account.incarnation > plainstate_account->incarnation) {
+                                deleted_ts_prefixes.insert(
+                                    db::storage_prefix(address.bytes, plainstate_account->incarnation));
+                            }
+                        }
+                    }
+                } else {
+                    account_created = true;
                 }
             }
 
-            ret.insert(trie::unpack_nibbles(hashed_addresses_it->second.bytes), changeset_value_view.empty());
+            ret.insert(trie::unpack_nibbles(hashed_addresses_it->second.bytes), account_created);
             changeset_data = account_changeset.to_current_next_multi(/*throw_notfound=*/false);
         }
 
@@ -196,10 +226,10 @@ trie::PrefixSet InterHashes::gather_forward_account_changes(
     // Eventually delete nodes from trie for deleted accounts
     if (!deleted_ts_prefixes.empty()) {
         db::Cursor trie_storage(txn, db::table::kTrieOfStorage);
-        for (const auto& hash : deleted_ts_prefixes) {
-            const auto hash_slice{db::to_slice(hash)};
-            auto data{trie_storage.lower_bound(hash_slice, /*throw_notfound=*/false)};
-            while (data && data.key.starts_with(hash_slice)) {
+        for (const auto& prefix : deleted_ts_prefixes) {
+            const auto prefix_slice{db::to_slice(prefix)};
+            auto data{trie_storage.lower_bound(prefix_slice, /*throw_notfound=*/false)};
+            while (data && data.key.starts_with(prefix_slice)) {
                 trie_storage.erase();
                 data = trie_storage.to_next(/*throw_notfound=*/false);
             }
@@ -213,8 +243,8 @@ trie::PrefixSet InterHashes::gather_forward_account_changes(
     return ret;
 }
 
-trie::PrefixSet InterHashes::gather_forward_storage_changes(
-    db::RWTxn& txn, BlockNum from, BlockNum to, absl::btree_map<evmc::address, ethash_hash256>& hashed_addresses) {
+trie::PrefixSet InterHashes::collect_storage_changes(db::RWTxn& txn, BlockNum from, BlockNum to,
+                                                     absl::btree_map<evmc::address, ethash_hash256>& hashed_addresses) {
     std::unique_ptr<StopWatch> sw;
     if (log::test_verbosity(log::Level::kTrace)) {
         sw = std::make_unique<StopWatch>(/*auto_start=*/true);
@@ -222,6 +252,9 @@ trie::PrefixSet InterHashes::gather_forward_storage_changes(
 
     BlockNum reached_blocknum{0};
     BlockNum expected_blocknum{from + 1};
+
+    using namespace std::chrono_literals;
+    auto log_time{std::chrono::steady_clock::now()};
 
     std::unique_lock log_lck(log_mtx_);
     current_source_ = std::string(db::table::kStorageChangeSet.name);
@@ -243,9 +276,10 @@ trie::PrefixSet InterHashes::gather_forward_storage_changes(
 
         if (reached_blocknum > to) {
             break;
-        } else if (reached_blocknum % 16 == 0) {
+        } else if (auto now{std::chrono::steady_clock::now()}; log_time <= now) {
             throw_if_stopping();
             log_lck.lock();
+            log_time = now + 5s;
             current_key_ = std::to_string(reached_blocknum);
             log_lck.unlock();
         }
@@ -329,8 +363,8 @@ StageResult InterHashes::increment_intermediate_hashes(db::RWTxn& txn, BlockNum 
     try {
         // Cache of hashed addresses
         absl::btree_map<evmc::address, ethash_hash256> hashed_addresses{};
-        trie::PrefixSet account_changes{gather_forward_account_changes(txn, from, to, hashed_addresses)};
-        trie::PrefixSet storage_changes{gather_forward_storage_changes(txn, from, to, hashed_addresses)};
+        trie::PrefixSet account_changes{collect_account_changes(txn, from, to, hashed_addresses)};
+        trie::PrefixSet storage_changes{collect_storage_changes(txn, from, to, hashed_addresses)};
         hashed_addresses.clear();
 
         log_lck.lock();
@@ -404,8 +438,6 @@ StageResult InterHashes::increment_intermediate_hashes(db::RWTxn& txn, const evm
 
 evmc::bytes32 InterHashes::calculate_root(db::RWTxn& txn, trie::PrefixSet* account_changes,
                                           trie::PrefixSet* storage_changes) {
-
-
     db::Cursor hashed_accounts(txn, db::table::kHashedAccounts);
     db::Cursor trie_accounts(txn, db::table::kTrieOfAccounts);
     db::Cursor hashed_storage(txn, db::table::kHashedStorage);
@@ -440,7 +472,6 @@ evmc::bytes32 InterHashes::calculate_root(db::RWTxn& txn, trie::PrefixSet* accou
     trie::TrieCursor ts_cursor(trie_storage, storage_changes, ns_collector);
 
     for (auto ta_data{ta_cursor.to_prefix({})};; ta_data = ta_cursor.to_next()) {
-
         if (!ta_data.skip_state && ta_data.first_uncovered.has_value()) {
             auto ha_seek_slice{db::to_slice(ta_data.first_uncovered.value())};
             auto ha_data{ha_seek_slice.empty() ? hashed_accounts.to_first(false)
@@ -492,7 +523,6 @@ evmc::bytes32 InterHashes::calculate_root(db::RWTxn& txn, trie::PrefixSet* accou
 
 evmc::bytes32 InterHashes::calculate_storage_root(trie::TrieCursor& ts_cursor, trie::HashBuilder& hbs,
                                                   db::Cursor& hashed_storage, const Bytes& db_storage_prefix) {
-
     Bytes rlp_buffer{};
 
     using namespace std::chrono_literals;
@@ -500,7 +530,6 @@ evmc::bytes32 InterHashes::calculate_storage_root(trie::TrieCursor& ts_cursor, t
 
     const auto db_storage_prefix_slice{db::to_slice(db_storage_prefix)};
     for (auto ts_data{ts_cursor.to_prefix(db_storage_prefix)};; ts_data = ts_cursor.to_next()) {
-
         if (!ts_data.skip_state && ts_data.first_uncovered.has_value()) {
             const auto prefix_slice{db::to_slice(ts_data.first_uncovered.value())};
             auto hs_data{hashed_storage.lower_bound_multivalue(db_storage_prefix_slice, prefix_slice, false)};

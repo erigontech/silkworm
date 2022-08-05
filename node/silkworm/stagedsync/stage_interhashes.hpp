@@ -39,12 +39,13 @@ class InterHashes final : public IStage {
     void reset_log_progress();
 
     //! \brief See Erigon (p *HashPromoter) Promote
-    trie::PrefixSet gather_forward_account_changes(db::RWTxn& txn, BlockNum from, BlockNum to,
-                                                   absl::btree_map<evmc::address, ethash_hash256>& hashed_addresses);
+    trie::PrefixSet collect_account_changes(db::RWTxn& txn, BlockNum from, BlockNum to,
+                                            absl::btree_map<evmc::address, ethash_hash256>& hashed_addresses,
+                                            bool forward = true);
 
     //! \brief See Erigon (p *HashPromoter) Promote
-    trie::PrefixSet gather_forward_storage_changes(db::RWTxn& txn, BlockNum from, BlockNum to,
-                                                   absl::btree_map<evmc::address, ethash_hash256>& hashed_addresses);
+    trie::PrefixSet collect_storage_changes(db::RWTxn& txn, BlockNum from, BlockNum to,
+                                            absl::btree_map<evmc::address, ethash_hash256>& hashed_addresses);
 
     //! \brief Erigon's RegenerateIntermediateHashes
     //! \remarks might throw WrongRoot

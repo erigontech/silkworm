@@ -14,8 +14,7 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_CHAIN_CONFIG_HPP_
-#define SILKWORM_CHAIN_CONFIG_HPP_
+#pragma once
 
 #include <array>
 #include <cstdint>
@@ -52,9 +51,9 @@ struct ChainConfig {
         "berlinBlock",  // EVMC_BERLIN
         "londonBlock",  // EVMC_LONDON
         // there's no evmc_revision for arrowGlacierBlock, nor for grayGlacierBlock
-        "mergeForkBlock",  // EVMC_PARIS, corresponds to FORK_NEXT_VALUE of EIP-3675
-        "shanghaiBlock",   // EVMC_SHANGHAI
-        "cancunBlock",     // EVMC_CANCUN
+        "mergeNetsplitBlock",  // EVMC_PARIS, corresponds to FORK_NEXT_VALUE of EIP-3675
+        "shanghaiBlock",       // EVMC_SHANGHAI
+        "cancunBlock",         // EVMC_CANCUN
     };
 
     static_assert(std::size(kJsonForkNames) == EVMC_MAX_REVISION);
@@ -199,6 +198,7 @@ inline constexpr ChainConfig kGoerliConfig{
             4'460'644,  // Berlin
             5'062'605,  // London
         },
+    .terminal_total_difficulty = 10790000,
 };
 
 inline constexpr ChainConfig kSepoliaConfig{
@@ -206,15 +206,16 @@ inline constexpr ChainConfig kSepoliaConfig{
     .seal_engine = SealEngineType::kEthash,
     .evmc_fork_blocks =
         {
-            0,  // Homestead
-            0,  // Tangerine Whistle
-            0,  // Spurious Dragon
-            0,  // Byzantium
-            0,  // Constantinople
-            0,  // Petersburg
-            0,  // Istanbul
-            0,  // Berlin
-            0,  // London
+            0,        // Homestead
+            0,        // Tangerine Whistle
+            0,        // Spurious Dragon
+            0,        // Byzantium
+            0,        // Constantinople
+            0,        // Petersburg
+            0,        // Istanbul
+            0,        // Berlin
+            0,        // London
+            1735371,  // Merge Netsplit
         },
     .muir_glacier_block = 0,
     .terminal_total_difficulty = 17000000000000000,
@@ -230,5 +231,3 @@ const ChainConfig* lookup_chain_config(std::string_view identifier) noexcept;
 std::map<std::string, uint64_t> get_known_chains_map() noexcept;
 
 }  // namespace silkworm
-
-#endif  // SILKWORM_CHAIN_CONFIG_HPP_

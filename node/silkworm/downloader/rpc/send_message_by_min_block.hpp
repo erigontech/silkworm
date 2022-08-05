@@ -14,8 +14,7 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_SEND_MESSAGE_BY_MIN_BLOCK_HPP
-#define SILKWORM_SEND_MESSAGE_BY_MIN_BLOCK_HPP
+#pragma once
 
 #include <silkworm/downloader/sentry_client.hpp>
 
@@ -28,5 +27,3 @@ class SendMessageByMinBlock
 };
 
 }  // namespace silkworm::rpc
-
-#endif  // SILKWORM_SEND_MESSAGE_BY_MIN_BLOCK_HPP

@@ -14,8 +14,7 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_INBOUND_NEW_BLOCK_HPP
-#define SILKWORM_INBOUND_NEW_BLOCK_HPP
+#pragma once
 
 #include <silkworm/downloader/packets/new_block_packet.hpp>
 
@@ -40,5 +39,3 @@ class InboundNewBlock : public InboundMessage {
 };
 
 }  // namespace silkworm
-
-#endif  // SILKWORM_INBOUND_NEW_BLOCK_HPP

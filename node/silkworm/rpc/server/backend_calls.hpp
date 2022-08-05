@@ -14,8 +14,7 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_RPC_BACKEND_FACTORIES_HPP_
-#define SILKWORM_RPC_BACKEND_FACTORIES_HPP_
+#pragma once
 
 #include <memory>
 #include <set>
@@ -224,5 +223,3 @@ struct BackEndService {
 };
 
 } // namespace silkworm::rpc
-
-#endif // SILKWORM_RPC_BACKEND_FACTORIES_HPP_

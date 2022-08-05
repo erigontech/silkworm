@@ -1,7 +1,3 @@
-#pragma once
-#ifndef SILKWORM_CONCURRENCY_THREAD_POOL_HPP_
-#define SILKWORM_CONCURRENCY_THREAD_POOL_HPP_
-
 /**
  * @file thread_pool.hpp
  * @author Barak Shoshany (baraksh@gmail.com) (http://baraksh.com)
@@ -22,6 +18,8 @@
  * The thread pool uses boost::thread instead of std::thread because the latter does not support setting custom stack
  * sizes. See also http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2020/p2019r0.pdf
  */
+
+#pragma once
 
 #include <atomic>       // std::atomic
 #include <chrono>       // std::chrono
@@ -439,5 +437,3 @@ class thread_pool {
 // ============================================================================================= //
 
 }  // namespace silkworm
-
-#endif  // SILKWORM_CONCURRENCY_THREAD_POOL_HPP_

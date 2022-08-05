@@ -14,8 +14,7 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_DB_BUFFER_HPP_
-#define SILKWORM_DB_BUFFER_HPP_
+#pragma once
 
 #include <cassert>
 #include <optional>
@@ -168,5 +167,3 @@ class Buffer : public State {
 };
 
 }  // namespace silkworm::db
-
-#endif  // SILKWORM_DB_BUFFER_HPP_

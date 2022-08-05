@@ -14,8 +14,7 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_DB_STAGES_HPP_
-#define SILKWORM_DB_STAGES_HPP_
+#pragma once
 
 #include <silkworm/db/tables.hpp>
 
@@ -142,5 +141,3 @@ void write_stage_unwind(mdbx::txn& txn, const char* stage_name, BlockNum block_n
 bool is_known_stage(const char* stage_name);
 
 }  // namespace silkworm::db::stages
-
-#endif  // !SILKWORM_DB_STAGES_HPP_

@@ -19,16 +19,17 @@ limitations under the License.
 #include <silkworm/rpc/server/call.hpp>
 #include <silkworm/rpc/server/call_factory.hpp>
 
-namespace silkworm::sentry {
+namespace silkworm::sentry::rpc {
 
 using boost::asio::io_context;
 namespace protobuf = google::protobuf;
 namespace proto = ::sentry;
 namespace proto_types = ::types;
 using AsyncService = proto::Sentry::AsyncService;
+namespace sw_rpc = silkworm::rpc;
 
 // rpc SetStatus(StatusData) returns (SetStatusReply);
-class SetStatusCall : public rpc::UnaryRpc<AsyncService, proto::StatusData, proto::SetStatusReply> {
+class SetStatusCall : public sw_rpc::UnaryRpc<AsyncService, proto::StatusData, proto::SetStatusReply> {
   public:
     SetStatusCall(io_context& scheduler, AsyncService* service, grpc::ServerCompletionQueue* queue, Handlers handlers)
         : UnaryRpc<AsyncService, proto::StatusData, proto::SetStatusReply>(scheduler, service, queue, std::move(handlers)) {}
@@ -40,7 +41,7 @@ class SetStatusCall : public rpc::UnaryRpc<AsyncService, proto::StatusData, prot
 // HandShake - pre-requirement for all Send* methods - returns ETH protocol version,
 // without knowledge of protocol - impossible encode correct P2P message
 // rpc HandShake(google.protobuf.Empty) returns (HandShakeReply);
-class HandshakeCall : public rpc::UnaryRpc<AsyncService, protobuf::Empty, proto::HandShakeReply> {
+class HandshakeCall : public sw_rpc::UnaryRpc<AsyncService, protobuf::Empty, proto::HandShakeReply> {
   public:
     HandshakeCall(io_context& scheduler, AsyncService* service, grpc::ServerCompletionQueue* queue, Handlers handlers)
         : UnaryRpc<AsyncService, protobuf::Empty, proto::HandShakeReply>(scheduler, service, queue, std::move(handlers)) {}
@@ -51,7 +52,7 @@ class HandshakeCall : public rpc::UnaryRpc<AsyncService, protobuf::Empty, proto:
 
 // NodeInfo returns a collection of metadata known about the host.
 // rpc NodeInfo(google.protobuf.Empty) returns(types.NodeInfoReply);
-class NodeInfoCall : public rpc::UnaryRpc<AsyncService, protobuf::Empty, proto_types::NodeInfoReply> {
+class NodeInfoCall : public sw_rpc::UnaryRpc<AsyncService, protobuf::Empty, proto_types::NodeInfoReply> {
   public:
     NodeInfoCall(io_context& scheduler, AsyncService* service, grpc::ServerCompletionQueue* queue, Handlers handlers)
         : UnaryRpc<AsyncService, protobuf::Empty, proto_types::NodeInfoReply>(scheduler, service, queue, std::move(handlers)) {}
@@ -61,7 +62,7 @@ class NodeInfoCall : public rpc::UnaryRpc<AsyncService, protobuf::Empty, proto_t
 };
 
 // rpc SendMessageById(SendMessageByIdRequest) returns (SentPeers);
-class SendMessageByIdCall : public rpc::UnaryRpc<AsyncService, proto::SendMessageByIdRequest, proto::SentPeers> {
+class SendMessageByIdCall : public sw_rpc::UnaryRpc<AsyncService, proto::SendMessageByIdRequest, proto::SentPeers> {
   public:
     SendMessageByIdCall(io_context& scheduler, AsyncService* service, grpc::ServerCompletionQueue* queue, Handlers handlers)
         : UnaryRpc<AsyncService, proto::SendMessageByIdRequest, proto::SentPeers>(scheduler, service, queue, std::move(handlers)) {}
@@ -71,7 +72,7 @@ class SendMessageByIdCall : public rpc::UnaryRpc<AsyncService, proto::SendMessag
 };
 
 // rpc SendMessageToRandomPeers(SendMessageToRandomPeersRequest) returns (SentPeers);
-class SendMessageToRandomPeersCall : public rpc::UnaryRpc<AsyncService, proto::SendMessageToRandomPeersRequest, proto::SentPeers> {
+class SendMessageToRandomPeersCall : public sw_rpc::UnaryRpc<AsyncService, proto::SendMessageToRandomPeersRequest, proto::SentPeers> {
   public:
     SendMessageToRandomPeersCall(io_context& scheduler, AsyncService* service, grpc::ServerCompletionQueue* queue, Handlers handlers)
         : UnaryRpc<AsyncService, proto::SendMessageToRandomPeersRequest, proto::SentPeers>(scheduler, service, queue, std::move(handlers)) {}
@@ -81,7 +82,7 @@ class SendMessageToRandomPeersCall : public rpc::UnaryRpc<AsyncService, proto::S
 };
 
 // rpc SendMessageToAll(OutboundMessageData) returns (SentPeers);
-class SendMessageToAllCall : public rpc::UnaryRpc<AsyncService, proto::OutboundMessageData, proto::SentPeers> {
+class SendMessageToAllCall : public sw_rpc::UnaryRpc<AsyncService, proto::OutboundMessageData, proto::SentPeers> {
   public:
     SendMessageToAllCall(io_context& scheduler, AsyncService* service, grpc::ServerCompletionQueue* queue, Handlers handlers)
         : UnaryRpc<AsyncService, proto::OutboundMessageData, proto::SentPeers>(scheduler, service, queue, std::move(handlers)) {}
@@ -91,7 +92,7 @@ class SendMessageToAllCall : public rpc::UnaryRpc<AsyncService, proto::OutboundM
 };
 
 // rpc SendMessageByMinBlock(SendMessageByMinBlockRequest) returns (SentPeers);
-class SendMessageByMinBlockCall : public rpc::UnaryRpc<AsyncService, proto::SendMessageByMinBlockRequest, proto::SentPeers> {
+class SendMessageByMinBlockCall : public sw_rpc::UnaryRpc<AsyncService, proto::SendMessageByMinBlockRequest, proto::SentPeers> {
   public:
     SendMessageByMinBlockCall(io_context& scheduler, AsyncService* service, grpc::ServerCompletionQueue* queue, Handlers handlers)
         : UnaryRpc<AsyncService, proto::SendMessageByMinBlockRequest, proto::SentPeers>(scheduler, service, queue, std::move(handlers)) {}
@@ -101,7 +102,7 @@ class SendMessageByMinBlockCall : public rpc::UnaryRpc<AsyncService, proto::Send
 };
 
 // rpc PeerMinBlock(PeerMinBlockRequest) returns (google.protobuf.Empty);
-class PeerMinBlockCall : public rpc::UnaryRpc<AsyncService, proto::PeerMinBlockRequest, protobuf::Empty> {
+class PeerMinBlockCall : public sw_rpc::UnaryRpc<AsyncService, proto::PeerMinBlockRequest, protobuf::Empty> {
   public:
     PeerMinBlockCall(io_context& scheduler, AsyncService* service, grpc::ServerCompletionQueue* queue, Handlers handlers)
         : UnaryRpc<AsyncService, proto::PeerMinBlockRequest, protobuf::Empty>(scheduler, service, queue, std::move(handlers)) {}
@@ -114,7 +115,7 @@ class PeerMinBlockCall : public rpc::UnaryRpc<AsyncService, proto::PeerMinBlockR
 // Calling multiple times with a different set of ids starts separate streams.
 // It is possible to subscribe to the same set if ids more than once.
 // rpc Messages(MessagesRequest) returns (stream InboundMessage);
-class MessagesCall : public rpc::ServerStreamingRpc<AsyncService, proto::MessagesRequest, proto::InboundMessage> {
+class MessagesCall : public sw_rpc::ServerStreamingRpc<AsyncService, proto::MessagesRequest, proto::InboundMessage> {
   public:
     MessagesCall(io_context& scheduler, AsyncService* service, grpc::ServerCompletionQueue* queue, Handlers handlers)
         : ServerStreamingRpc<AsyncService, proto::MessagesRequest, proto::InboundMessage>(scheduler, service, queue, std::move(handlers)) {}
@@ -125,7 +126,7 @@ class MessagesCall : public rpc::ServerStreamingRpc<AsyncService, proto::Message
 };
 
 // rpc Peers(google.protobuf.Empty) returns (PeersReply);
-class PeersCall : public rpc::UnaryRpc<AsyncService, protobuf::Empty, proto::PeersReply> {
+class PeersCall : public sw_rpc::UnaryRpc<AsyncService, protobuf::Empty, proto::PeersReply> {
   public:
     PeersCall(io_context& scheduler, AsyncService* service, grpc::ServerCompletionQueue* queue, Handlers handlers)
         : UnaryRpc<AsyncService, protobuf::Empty, proto::PeersReply>(scheduler, service, queue, std::move(handlers)) {}
@@ -135,7 +136,7 @@ class PeersCall : public rpc::UnaryRpc<AsyncService, protobuf::Empty, proto::Pee
 };
 
 // rpc PeerCount(PeerCountRequest) returns (PeerCountReply);
-class PeerCountCall : public rpc::UnaryRpc<AsyncService, proto::PeerCountRequest, proto::PeerCountReply> {
+class PeerCountCall : public sw_rpc::UnaryRpc<AsyncService, proto::PeerCountRequest, proto::PeerCountReply> {
   public:
     PeerCountCall(io_context& scheduler, AsyncService* service, grpc::ServerCompletionQueue* queue, Handlers handlers)
         : UnaryRpc<AsyncService, proto::PeerCountRequest, proto::PeerCountReply>(scheduler, service, queue, std::move(handlers)) {}
@@ -145,7 +146,7 @@ class PeerCountCall : public rpc::UnaryRpc<AsyncService, proto::PeerCountRequest
 };
 
 // rpc PeerById(PeerByIdRequest) returns (PeerByIdReply);
-class PeerByIdCall : public rpc::UnaryRpc<AsyncService, proto::PeerByIdRequest, proto::PeerByIdReply> {
+class PeerByIdCall : public sw_rpc::UnaryRpc<AsyncService, proto::PeerByIdRequest, proto::PeerByIdReply> {
   public:
     PeerByIdCall(io_context& scheduler, AsyncService* service, grpc::ServerCompletionQueue* queue, Handlers handlers)
         : UnaryRpc<AsyncService, proto::PeerByIdRequest, proto::PeerByIdReply>(scheduler, service, queue, std::move(handlers)) {}
@@ -155,7 +156,7 @@ class PeerByIdCall : public rpc::UnaryRpc<AsyncService, proto::PeerByIdRequest, 
 };
 
 // rpc PenalizePeer(PenalizePeerRequest) returns (google.protobuf.Empty);
-class PenalizePeerCall : public rpc::UnaryRpc<AsyncService, proto::PenalizePeerRequest, protobuf::Empty> {
+class PenalizePeerCall : public sw_rpc::UnaryRpc<AsyncService, proto::PenalizePeerRequest, protobuf::Empty> {
   public:
     PenalizePeerCall(io_context& scheduler, AsyncService* service, grpc::ServerCompletionQueue* queue, Handlers handlers)
         : UnaryRpc<AsyncService, proto::PenalizePeerRequest, protobuf::Empty>(scheduler, service, queue, std::move(handlers)) {}
@@ -166,7 +167,7 @@ class PenalizePeerCall : public rpc::UnaryRpc<AsyncService, proto::PenalizePeerR
 
 // Subscribe to notifications about connected or lost peers.
 // rpc PeerEvents(PeerEventsRequest) returns (stream PeerEvent);
-class PeerEventsCall : public rpc::ServerStreamingRpc<AsyncService, proto::PeerEventsRequest, proto::PeerEvent> {
+class PeerEventsCall : public sw_rpc::ServerStreamingRpc<AsyncService, proto::PeerEventsRequest, proto::PeerEvent> {
   public:
     PeerEventsCall(io_context& scheduler, AsyncService* service, grpc::ServerCompletionQueue* queue, Handlers handlers)
         : ServerStreamingRpc<AsyncService, proto::PeerEventsRequest, proto::PeerEvent>(scheduler, service, queue, std::move(handlers)) {}
@@ -201,49 +202,49 @@ class ServiceImpl final {
     }
 
   private:
-    struct SetStatusCallFactory : public rpc::CallFactory<AsyncService, SetStatusCall> {
-        SetStatusCallFactory() : rpc::CallFactory<AsyncService, SetStatusCall>(&AsyncService::RequestSetStatus) {}
+    struct SetStatusCallFactory : public sw_rpc::CallFactory<AsyncService, SetStatusCall> {
+        SetStatusCallFactory() : sw_rpc::CallFactory<AsyncService, SetStatusCall>(&AsyncService::RequestSetStatus) {}
     } call_factory_set_status_;
-    struct HandshakeCallFactory : public rpc::CallFactory<AsyncService, HandshakeCall> {
-        HandshakeCallFactory() : rpc::CallFactory<AsyncService, HandshakeCall>(&AsyncService::RequestHandShake) {}
+    struct HandshakeCallFactory : public sw_rpc::CallFactory<AsyncService, HandshakeCall> {
+        HandshakeCallFactory() : sw_rpc::CallFactory<AsyncService, HandshakeCall>(&AsyncService::RequestHandShake) {}
     } call_factory_handshake_;
-    struct NodeInfoCallFactory : public rpc::CallFactory<AsyncService, NodeInfoCall> {
-        NodeInfoCallFactory() : rpc::CallFactory<AsyncService, NodeInfoCall>(&AsyncService::RequestNodeInfo) {}
+    struct NodeInfoCallFactory : public sw_rpc::CallFactory<AsyncService, NodeInfoCall> {
+        NodeInfoCallFactory() : sw_rpc::CallFactory<AsyncService, NodeInfoCall>(&AsyncService::RequestNodeInfo) {}
     } call_factory_node_info_;
 
-    struct SendMessageByIdCallFactory : public rpc::CallFactory<AsyncService, SendMessageByIdCall> {
-        SendMessageByIdCallFactory() : rpc::CallFactory<AsyncService, SendMessageByIdCall>(&AsyncService::RequestSendMessageById) {}
+    struct SendMessageByIdCallFactory : public sw_rpc::CallFactory<AsyncService, SendMessageByIdCall> {
+        SendMessageByIdCallFactory() : sw_rpc::CallFactory<AsyncService, SendMessageByIdCall>(&AsyncService::RequestSendMessageById) {}
     } call_factory_send_message_by_id_;
-    struct SendMessageToRandomPeersCallFactory : public rpc::CallFactory<AsyncService, SendMessageToRandomPeersCall> {
-        SendMessageToRandomPeersCallFactory() : rpc::CallFactory<AsyncService, SendMessageToRandomPeersCall>(&AsyncService::RequestSendMessageToRandomPeers) {}
+    struct SendMessageToRandomPeersCallFactory : public sw_rpc::CallFactory<AsyncService, SendMessageToRandomPeersCall> {
+        SendMessageToRandomPeersCallFactory() : sw_rpc::CallFactory<AsyncService, SendMessageToRandomPeersCall>(&AsyncService::RequestSendMessageToRandomPeers) {}
     } call_factory_send_message_to_random_peers_;
-    struct SendMessageToAllCallFactory : public rpc::CallFactory<AsyncService, SendMessageToAllCall> {
-        SendMessageToAllCallFactory() : rpc::CallFactory<AsyncService, SendMessageToAllCall>(&AsyncService::RequestSendMessageToAll) {}
+    struct SendMessageToAllCallFactory : public sw_rpc::CallFactory<AsyncService, SendMessageToAllCall> {
+        SendMessageToAllCallFactory() : sw_rpc::CallFactory<AsyncService, SendMessageToAllCall>(&AsyncService::RequestSendMessageToAll) {}
     } call_factory_send_message_to_all_;
-    struct SendMessageByMinBlockCallFactory : public rpc::CallFactory<AsyncService, SendMessageByMinBlockCall> {
-        SendMessageByMinBlockCallFactory() : rpc::CallFactory<AsyncService, SendMessageByMinBlockCall>(&AsyncService::RequestSendMessageByMinBlock) {}
+    struct SendMessageByMinBlockCallFactory : public sw_rpc::CallFactory<AsyncService, SendMessageByMinBlockCall> {
+        SendMessageByMinBlockCallFactory() : sw_rpc::CallFactory<AsyncService, SendMessageByMinBlockCall>(&AsyncService::RequestSendMessageByMinBlock) {}
     } call_factory_send_message_by_min_block_;
-    struct PeerMinBlockCallFactory : public rpc::CallFactory<AsyncService, PeerMinBlockCall> {
-        PeerMinBlockCallFactory() : rpc::CallFactory<AsyncService, PeerMinBlockCall>(&AsyncService::RequestPeerMinBlock) {}
+    struct PeerMinBlockCallFactory : public sw_rpc::CallFactory<AsyncService, PeerMinBlockCall> {
+        PeerMinBlockCallFactory() : sw_rpc::CallFactory<AsyncService, PeerMinBlockCall>(&AsyncService::RequestPeerMinBlock) {}
     } call_factory_peer_min_block_;
-    struct MessagesCallFactory : public rpc::CallFactory<AsyncService, MessagesCall> {
-        MessagesCallFactory() : rpc::CallFactory<AsyncService, MessagesCall>(&AsyncService::RequestMessages) {}
+    struct MessagesCallFactory : public sw_rpc::CallFactory<AsyncService, MessagesCall> {
+        MessagesCallFactory() : sw_rpc::CallFactory<AsyncService, MessagesCall>(&AsyncService::RequestMessages) {}
     } call_factory_messages_;
 
-    struct PeersCallFactory : public rpc::CallFactory<AsyncService, PeersCall> {
-        PeersCallFactory() : rpc::CallFactory<AsyncService, PeersCall>(&AsyncService::RequestPeers) {}
+    struct PeersCallFactory : public sw_rpc::CallFactory<AsyncService, PeersCall> {
+        PeersCallFactory() : sw_rpc::CallFactory<AsyncService, PeersCall>(&AsyncService::RequestPeers) {}
     } call_factory_peers_;
-    struct PeerCountCallFactory : public rpc::CallFactory<AsyncService, PeerCountCall> {
-        PeerCountCallFactory() : rpc::CallFactory<AsyncService, PeerCountCall>(&AsyncService::RequestPeerCount) {}
+    struct PeerCountCallFactory : public sw_rpc::CallFactory<AsyncService, PeerCountCall> {
+        PeerCountCallFactory() : sw_rpc::CallFactory<AsyncService, PeerCountCall>(&AsyncService::RequestPeerCount) {}
     } call_factory_peer_count_;
-    struct PeerByIdCallFactory : public rpc::CallFactory<AsyncService, PeerByIdCall> {
-        PeerByIdCallFactory() : rpc::CallFactory<AsyncService, PeerByIdCall>(&AsyncService::RequestPeerById) {}
+    struct PeerByIdCallFactory : public sw_rpc::CallFactory<AsyncService, PeerByIdCall> {
+        PeerByIdCallFactory() : sw_rpc::CallFactory<AsyncService, PeerByIdCall>(&AsyncService::RequestPeerById) {}
     } call_factory_peer_by_id_;
-    struct PenalizePeerCallFactory : public rpc::CallFactory<AsyncService, PenalizePeerCall> {
-        PenalizePeerCallFactory() : rpc::CallFactory<AsyncService, PenalizePeerCall>(&AsyncService::RequestPenalizePeer) {}
+    struct PenalizePeerCallFactory : public sw_rpc::CallFactory<AsyncService, PenalizePeerCall> {
+        PenalizePeerCallFactory() : sw_rpc::CallFactory<AsyncService, PenalizePeerCall>(&AsyncService::RequestPenalizePeer) {}
     } call_factory_penalize_peer_;
-    struct PeerEventsCallFactory : public rpc::CallFactory<AsyncService, PeerEventsCall> {
-        PeerEventsCallFactory() : rpc::CallFactory<AsyncService, PeerEventsCall>(&AsyncService::RequestPeerEvents) {}
+    struct PeerEventsCallFactory : public sw_rpc::CallFactory<AsyncService, PeerEventsCall> {
+        PeerEventsCallFactory() : sw_rpc::CallFactory<AsyncService, PeerEventsCall>(&AsyncService::RequestPeerEvents) {}
     } call_factory_peer_events_;
 };
 
@@ -261,4 +262,4 @@ void Service::register_request_calls(
     p_impl_->register_request_calls(scheduler, async_service, queue);
 }
 
-}  // namespace silkworm::sentry
+}  // namespace silkworm::sentry::rpc

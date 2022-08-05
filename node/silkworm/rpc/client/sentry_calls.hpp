@@ -14,8 +14,7 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_RPC_CLIENT_SENTRY_CALLS_HPP_
-#define SILKWORM_RPC_CLIENT_SENTRY_CALLS_HPP_
+#pragma once
 
 #include <grpcpp/grpcpp.h>
 
@@ -47,5 +46,3 @@ class AsyncNodeInfoCall : public AsyncUnaryCall<
 };
 
 } // namespace silkworm::rpc
-
-#endif // SILKWORM_RPC_CLIENT_SENTRY_CALLS_HPP_

@@ -14,8 +14,7 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_GET_BLOCK_BODIES_PACKET_HPP
-#define SILKWORM_GET_BLOCK_BODIES_PACKET_HPP
+#pragma once
 
 #include <silkworm/downloader/internals/types.hpp>
 
@@ -54,5 +53,3 @@ inline std::ostream& operator<<(std::ostream& os, const GetBlockBodiesPacket66& 
 }
 
 }  // namespace silkworm
-
-#endif  // SILKWORM_GET_BLOCK_BODIES_PACKET_HPP

@@ -14,8 +14,7 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_STAGEDSYNC_STAGE_BLOCKHASHES_HPP_
-#define SILKWORM_STAGEDSYNC_STAGE_BLOCKHASHES_HPP_
+#pragma once
 
 #include <silkworm/stagedsync/common.hpp>
 
@@ -40,5 +39,3 @@ class BlockHashes final : public IStage {
 };
 
 } // namespace silkworm::stagedsync
-
-#endif  // SILKWORM_STAGEDSYNC_STAGE_BLOCKHASHES_HPP_

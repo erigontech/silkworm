@@ -14,10 +14,9 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_COMMON_BASE_HPP_
-#define SILKWORM_COMMON_BASE_HPP_
+#pragma once
 
-// The most common and basic concepts, types, and constants.
+// The most common and basic macros, concepts, types, and constants.
 
 #include <concepts>
 #include <cstddef>
@@ -27,6 +26,12 @@
 
 #include <evmc/evmc.hpp>
 #include <intx/intx.hpp>
+
+#if defined(__wasm__)
+#define SILKWORM_THREAD_LOCAL static
+#else
+#define SILKWORM_THREAD_LOCAL thread_local
+#endif
 
 namespace silkworm {
 
@@ -96,5 +101,3 @@ constexpr uint64_t operator"" _Gibi(unsigned long long x) { return x * kGibi; }
 constexpr uint64_t operator"" _Tebi(unsigned long long x) { return x * kTebi; }
 
 }  // namespace silkworm
-
-#endif  // SILKWORM_COMMON_BASE_HPP_

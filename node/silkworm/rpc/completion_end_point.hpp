@@ -14,8 +14,7 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_RPC_COMPLETION_END_POINT_HPP_
-#define SILKWORM_RPC_COMPLETION_END_POINT_HPP_
+#pragma once
 
 #include <cstddef>
 
@@ -54,5 +53,3 @@ class CompletionEndPoint {
 };
 
 } // namespace silkworm::rpc
-
-#endif  // SILKWORM_RPC_COMPLETION_END_POINT_HPP_

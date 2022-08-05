@@ -14,8 +14,7 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_SET_STATUS_HPP
-#define SILKWORM_SET_STATUS_HPP
+#pragma once
 
 #include <silkworm/chain/identity.hpp>
 #include <silkworm/downloader/internals/types.hpp>
@@ -29,5 +28,3 @@ class SetStatus : public rpc::UnaryCall<sentry::Sentry, sentry::StatusData, sent
 };
 
 }  // namespace silkworm::rpc
-
-#endif  // SILKWORM_SET_STATUS_HPP

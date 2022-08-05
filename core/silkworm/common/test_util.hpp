@@ -14,8 +14,7 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_COMMON_TEST_UTIL_HPP_
-#define SILKWORM_COMMON_TEST_UTIL_HPP_
+#pragma once
 
 #include <silkworm/types/block.hpp>
 #include <silkworm/types/receipt.hpp>
@@ -49,5 +48,3 @@ std::vector<Transaction> sample_transactions();
 std::vector<Receipt> sample_receipts();
 
 }  // namespace silkworm::test
-
-#endif  // SILKWORM_COMMON_TEST_UTIL_HPP_

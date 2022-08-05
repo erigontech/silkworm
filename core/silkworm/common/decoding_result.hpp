@@ -14,8 +14,7 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_COMMON_DECODING_RESULT_HPP_
-#define SILKWORM_COMMON_DECODING_RESULT_HPP_
+#pragma once
 
 namespace silkworm {
 
@@ -37,5 +36,3 @@ enum class [[nodiscard]] DecodingResult{
 };
 
 }  // namespace silkworm
-
-#endif  // SILKWORM_COMMON_DECODING_RESULT_HPP_

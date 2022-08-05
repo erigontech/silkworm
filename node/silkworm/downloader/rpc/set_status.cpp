@@ -1,5 +1,5 @@
 /*
-   Copyright 2021 The Silkworm Authors
+   Copyright 2021-2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -20,7 +20,7 @@ namespace silkworm::rpc {
 
 SetStatus::SetStatus(const ChainIdentity& chain_identity, Hash best_hash, BigInt total_difficulty)
     : UnaryCall("SetStatus", &sentry::Sentry::Stub::SetStatus, {}) {
-    request_.set_network_id(chain_identity.chain.chain_id);
+    request_.set_network_id(chain_identity.config.chain_id);
 
     request_.set_allocated_total_difficulty(to_H256(total_difficulty).release());  // remove trailing zeros???
 

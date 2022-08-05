@@ -13,8 +13,7 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 */
-#ifndef SILKWORM_HEADER_DOWNLOADER_HPP
-#define SILKWORM_HEADER_DOWNLOADER_HPP
+#pragma once
 
 #include <atomic>
 
@@ -87,5 +86,3 @@ class HeadersStage : public Stage {
 };
 
 }  // namespace silkworm
-
-#endif  // SILKWORM_HEADER_DOWNLOADER_HPP

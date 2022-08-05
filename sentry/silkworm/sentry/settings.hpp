@@ -16,15 +16,22 @@ limitations under the License.
 
 #pragma once
 
+#include <filesystem>
+#include <optional>
 #include <string>
+#include <variant>
 #include <vector>
+#include <silkworm/common/base.hpp>
+#include <silkworm/common/log.hpp>
 #include <silkworm/rpc/server/wait_strategy.hpp>
 #include "enode_url.hpp"
 #include "nat_option.hpp"
 
 namespace silkworm::sentry {
 
-struct Options {
+struct Settings {
+    log::Settings log_settings;
+
     std::string api_address{"127.0.0.1:9091"};
 
     // RLPx TCP port
@@ -37,9 +44,13 @@ struct Options {
 
     silkworm::rpc::WaitMode wait_mode{silkworm::rpc::WaitMode::blocking};
 
+    std::filesystem::path data_dir_path;
+
+    std::optional<std::variant<std::filesystem::path, Bytes>> node_key;
+
     std::vector<EnodeUrl> static_peers;
 
-    Options();
+    Settings();
 };
 
 }  // namespace silkworm::sentry

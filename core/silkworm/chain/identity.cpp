@@ -23,22 +23,22 @@ namespace silkworm {
 std::vector<BlockNum> ChainIdentity::distinct_fork_numbers() const {
     std::vector<BlockNum> forks;
 
-    for (std::optional<uint64_t> bn : chain.evmc_fork_blocks) {
+    for (std::optional<uint64_t> bn : config.evmc_fork_blocks) {
         if (bn && *bn != 0) {
             forks.push_back(*bn);
         }
     }
-    if (chain.dao_block) {
-        forks.push_back(*chain.dao_block);
+    if (config.dao_block) {
+        forks.push_back(*config.dao_block);
     }
-    if (chain.muir_glacier_block) {
-        forks.push_back(*chain.muir_glacier_block);
+    if (config.muir_glacier_block) {
+        forks.push_back(*config.muir_glacier_block);
     }
-    if (chain.arrow_glacier_block) {
-        forks.push_back(*chain.arrow_glacier_block);
+    if (config.arrow_glacier_block) {
+        forks.push_back(*config.arrow_glacier_block);
     }
-    if (chain.gray_glacier_block) {
-        forks.push_back(*chain.gray_glacier_block);
+    if (config.gray_glacier_block) {
+        forks.push_back(*config.gray_glacier_block);
     }
 
     sort(forks.begin(), forks.end());                              // block list must be ordered
@@ -46,28 +46,5 @@ std::vector<BlockNum> ChainIdentity::distinct_fork_numbers() const {
 
     return forks;
 }
-
-static ChainIdentity mainnet_identity() {
-    ChainIdentity id;
-
-    id.name = "mainnet";
-    id.chain = kMainnetConfig;
-    id.genesis_hash = 0xd4e56740f876aef8c010b86a40d5f56745a118d0906a34e69aec8c0db1cb8fa3_bytes32;
-
-    return id;
-}
-
-static ChainIdentity goerli_identity() {
-    ChainIdentity id;
-
-    id.name = "goerli";
-    id.chain = kGoerliConfig;
-    id.genesis_hash = 0xbf7e331f7f7c1dd2e05159666b3bf8bc7a8a3a9eb1d518969eab529dd9b88c1a_bytes32;
-
-    return id;
-}
-
-ChainIdentity ChainIdentity::mainnet = mainnet_identity();
-ChainIdentity ChainIdentity::goerli = goerli_identity();
 
 }  // namespace silkworm

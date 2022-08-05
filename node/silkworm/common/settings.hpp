@@ -15,8 +15,6 @@
 */
 
 #pragma once
-#ifndef SILKWORM_COMMON_SETTINGS_HPP_
-#define SILKWORM_COMMON_SETTINGS_HPP_
 
 #include <memory>
 #include <optional>
@@ -53,5 +51,3 @@ struct NodeSettings {
 };
 
 }  // namespace silkworm
-
-#endif  // SILKWORM_COMMON_SETTINGS_HPP_

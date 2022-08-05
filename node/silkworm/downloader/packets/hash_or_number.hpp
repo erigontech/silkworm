@@ -14,8 +14,7 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_HASH_OR_NUMBER_HPP
-#define SILKWORM_HASH_OR_NUMBER_HPP
+#pragma once
 
 #include <variant>
 
@@ -77,4 +76,3 @@ inline std::ostream& operator<<(std::ostream& os, const HashOrNumber& packet) {
 }
 
 }  // namespace silkworm
-#endif  // SILKWORM_HASH_OR_NUMBER_HPP

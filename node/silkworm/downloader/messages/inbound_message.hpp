@@ -14,8 +14,7 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_INBOUND_MESSAGE_HPP
-#define SILKWORM_INBOUND_MESSAGE_HPP
+#pragma once
 
 #include <memory>
 
@@ -40,5 +39,3 @@ std::ostream& operator<<(std::ostream&, const silkworm::InboundMessage&);
 std::string identify(const silkworm::InboundMessage& message);
 
 }  // namespace silkworm
-
-#endif  // SILKWORM_INBOUND_MESSAGE_HPP

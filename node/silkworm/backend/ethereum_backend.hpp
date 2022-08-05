@@ -14,8 +14,7 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_BACKEND_ETHEREUM_BACKEND_HPP_
-#define SILKWORM_BACKEND_ETHEREUM_BACKEND_HPP_
+#pragma once
 
 #include <memory>
 #include <optional>
@@ -67,5 +66,3 @@ class EthereumBackEnd {
 };
 
 } // namespace silkworm
-
-#endif // SILKWORM_BACKEND_ETHEREUM_BACKEND_HPP_

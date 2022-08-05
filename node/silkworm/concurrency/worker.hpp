@@ -14,8 +14,7 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_CONCURRENCY_WORKER_HPP_
-#define SILKWORM_CONCURRENCY_WORKER_HPP_
+#pragma once
 
 #include <atomic>
 #include <condition_variable>
@@ -91,5 +90,3 @@ class Worker {
 };
 
 }  // namespace silkworm
-
-#endif  // SILKWORM_CONCURRENCY_WORKER_HPP_

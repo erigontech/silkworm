@@ -14,8 +14,7 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_AS_RANGE
-#define SILKWORM_AS_RANGE
+#pragma once
 
 #include <algorithm>
 
@@ -81,6 +80,3 @@ namespace as_range
         std::stable_sort(std::begin(c), std::end(c), std::forward<F>(f));
     }
 }
-
-
-#endif // SILKWORM_AS_RANGE

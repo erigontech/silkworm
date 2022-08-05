@@ -14,8 +14,7 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_TRIE_NODE_HPP_
-#define SILKWORM_TRIE_NODE_HPP_
+#pragma once
 
 #include <optional>
 #include <vector>
@@ -68,5 +67,3 @@ class Node {
 inline bool is_subset(uint16_t sub, uint16_t sup) { return (sub & sup) == sub; }
 
 }  // namespace silkworm::trie
-
-#endif  // SILKWORM_TRIE_NODE_HPP_

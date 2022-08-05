@@ -15,8 +15,6 @@
 */
 
 #pragma once
-#ifndef SILKWORM_DB_PRUNE_MODE_HPP_
-#define SILKWORM_DB_PRUNE_MODE_HPP_
 
 #include <silkworm/db/mdbx.hpp>
 #include <silkworm/db/tables.hpp>
@@ -111,5 +109,3 @@ std::unique_ptr<PruneMode> parse_prune_mode(const std::string& mode, const Prune
                                             const PruneThreshold& beforeCallTraces);
 
 }  // namespace silkworm::db
-
-#endif  // SILKWORM_DB_PRUNE_MODE_HPP_

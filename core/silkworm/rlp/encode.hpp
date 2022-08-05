@@ -17,8 +17,7 @@
 // RLP encoding functions as per
 // https://eth.wiki/en/fundamentals/rlp
 
-#ifndef SILKWORM_RLP_ENCODE_HPP_
-#define SILKWORM_RLP_ENCODE_HPP_
+#pragma once
 
 #include <optional>
 #include <vector>
@@ -78,5 +77,3 @@ inline size_t length(const bool&) noexcept {
 }
 
 }  // namespace silkworm::rlp
-
-#endif  // SILKWORM_RLP_ENCODE_HPP_

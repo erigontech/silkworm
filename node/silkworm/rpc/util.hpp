@@ -14,8 +14,7 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_RPC_UTIL_HPP_
-#define SILKWORM_RPC_UTIL_HPP_
+#pragma once
 
 #include <ostream>
 #include <string>
@@ -89,5 +88,3 @@ using GrpcNoLogGuard = GrpcLogGuard<gpr_no_log>;
 using Grpc2SilkwormLogGuard = GrpcLogGuard<gpr_silkworm_log>;
 
 } // namespace silkworm::rpc
-
-#endif // SILKWORM_RPC_UTIL_HPP_

@@ -32,7 +32,7 @@ class segment_cut_and_paste_error : public std::logic_error {
     explicit segment_cut_and_paste_error(const std::string& reason) : std::logic_error(reason) {}
 };
 
-HeaderChain::HeaderChain(const ChainIdentity& ci) : HeaderChain(consensus::engine_factory(ci.chain)) {}
+HeaderChain::HeaderChain(const ChainIdentity& ci) : HeaderChain(consensus::engine_factory(ci.config)) {}
 
 HeaderChain::HeaderChain(ConsensusEnginePtr consensus_engine)
     : highest_in_db_(0),

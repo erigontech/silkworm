@@ -14,13 +14,24 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-#include "options.hpp"
-#include <thread>
+#pragma once
 
-namespace silkworm::sentry {
+#include <string>
+#include <silkworm/concurrency/coroutine.hpp>
+#include <boost/asio/awaitable.hpp>
+#include <boost/asio/io_context.hpp>
 
-Options::Options() {
-    num_contexts = std::thread::hardware_concurrency() / 2;
-}
+namespace silkworm::sentry::rlpx {
 
-}  // namespace silkworm::sentry
+class Server final {
+  public:
+    Server(std::string host, uint16_t port);
+
+    boost::asio::awaitable<void> start(boost::asio::io_context& io_context);
+
+  private:
+    std::string host_;
+    uint16_t port_;
+};
+
+}  // namespace silkworm::sentry::rlpx

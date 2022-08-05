@@ -147,13 +147,20 @@ add_subdirectory(third_party/silkpre)
 
 # Compiler enforcements on Silkworm
 if(NOT MSVC)
-  add_compile_options(-Werror -Wall -Wextra)
+  add_compile_options(-Werror -Wall -Wextra -pedantic)
   add_compile_options(-Wshadow -Wimplicit-fallthrough -Wsign-conversion)
   add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wold-style-cast>)
-  add_compile_options(-Wno-missing-field-initializers)
+  add_compile_options(-Wno-missing-field-initializers -Wnon-virtual-dtor)
+
   if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
     add_compile_options(-Wno-attributes)
+
+    # coroutines support
+    if((CMAKE_CXX_STANDARD GREATER_EQUAL 20) AND (NOT SILKWORM_WASM_API))
+      add_compile_options(-fcoroutines)
+    endif()
   endif()
+
   if(CMAKE_CXX_COMPILER_ID MATCHES "Clang" AND CMAKE_SYSTEM_NAME MATCHES "Darwin")
     add_compile_definitions(_LIBCPP_ENABLE_THREAD_SAFETY_ANNOTATIONS)
     add_compile_options(-Wthread-safety)

@@ -14,8 +14,7 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_TYPES_ACCOUNT_HPP_
-#define SILKWORM_TYPES_ACCOUNT_HPP_
+#pragma once
 
 #include <intx/intx.hpp>
 
@@ -56,5 +55,3 @@ struct Account {
 };
 
 }  // namespace silkworm
-
-#endif  // SILKWORM_TYPES_ACCOUNT_HPP_

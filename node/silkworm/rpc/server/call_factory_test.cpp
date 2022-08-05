@@ -21,46 +21,46 @@
 
 namespace silkworm::rpc {
 
-namespace { // Trick suggested by gRPC team to avoid name clashes in multiple test modules
-class MockAsyncService {};
-class MockRequest {};
-class MockReply {
-    virtual ~MockReply() {}
-};
-
-template <typename AsyncService, typename Request, typename Reply>
-class MockUnaryRpc : public BaseRpc {
-  public:
-    struct Handlers {
-        struct ProcessRequestFunc {};
-        struct RequestRpcFunc {};
+namespace {  // Trick suggested by gRPC team to avoid name clashes in multiple test modules
+    class MockAsyncService {};
+    class MockRequest {};
+    class MockReply {
+        virtual ~MockReply() {}
     };
 
-    static int instance_count() { return instance_count_; }
+    template <typename AsyncService, typename Request, typename Reply>
+    class MockUnaryRpc : public BaseRpc {
+      public:
+        struct Handlers {
+            struct ProcessRequestFunc {};
+            struct RequestRpcFunc {};
+        };
 
-    explicit MockUnaryRpc(boost::asio::io_context& scheduler) : BaseRpc(scheduler) { instance_count_++; }
-    ~MockUnaryRpc() { instance_count_--; }
+        static int instance_count() { return instance_count_; }
 
-    void cleanup() override {}
+        explicit MockUnaryRpc(boost::asio::io_context& scheduler) : BaseRpc(scheduler) { instance_count_++; }
+        ~MockUnaryRpc() { instance_count_--; }
 
-  private:
-    inline static int instance_count_{0};
-};
+        void cleanup() override {}
 
-using MockRpc = MockUnaryRpc<MockAsyncService, MockRequest, MockReply>;
-using MockRpcFactory = CallFactory<MockAsyncService, MockRpc>;
+      private:
+        inline static int instance_count_{0};
+    };
 
-class MockFactory : public MockRpcFactory {
-  public:
-    MockFactory() : MockRpcFactory(MockRpc::Handlers{}) {}
-    MockFactory(std::size_t capacity) : MockRpcFactory(MockRpc::Handlers{}, capacity) {}
+    using MockRpc = MockUnaryRpc<MockAsyncService, MockRequest, MockReply>;
+    using MockRpcFactory = CallFactory<MockAsyncService, MockRpc>;
 
-    auto insert_request(gsl::owner<MockRpc*> rpc) { return add_rpc(rpc); }
-    auto erase_request(gsl::owner<MockRpc*> rpc) { return remove_rpc(rpc); }
-    auto requests_capacity() const { return requests_bucket_count(); }
-    auto requests_count() const { return requests_size(); }
-};
-};
+    class MockFactory : public MockRpcFactory {
+      public:
+        MockFactory() : MockRpcFactory(MockRpc::Handlers{}) {}
+        MockFactory(std::size_t capacity) : MockRpcFactory(MockRpc::Handlers{}, capacity) {}
+
+        auto insert_request(gsl::owner<MockRpc*> rpc) { return add_rpc(rpc); }
+        auto erase_request(gsl::owner<MockRpc*> rpc) { return remove_rpc(rpc); }
+        auto requests_capacity() const { return requests_bucket_count(); }
+        auto requests_count() const { return requests_size(); }
+    };
+}  // namespace
 
 TEST_CASE("CallFactory::CallFactory", "[silkworm][node][rpc]") {
     SECTION("OK: has default capacity for requests", "[silkworm][node][rpc]") {
@@ -118,4 +118,4 @@ TEST_CASE("CallFactory::remove_rpc", "[silkworm][node][rpc]") {
     CHECK(MockRpc::instance_count() == 0);
 }
 
-} // namespace silkworm::rpc
+}  // namespace silkworm::rpc

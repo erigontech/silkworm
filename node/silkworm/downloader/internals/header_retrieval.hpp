@@ -14,8 +14,7 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_HEADER_RETRIEVAL_HPP
-#define SILKWORM_HEADER_RETRIEVAL_HPP
+#pragma once
 
 #include "db_tx.hpp"
 #include "types.hpp"
@@ -50,5 +49,3 @@ class HeaderRetrieval {
 };
 
 }  // namespace silkworm
-
-#endif  // SILKWORM_HEADER_RETRIEVAL_HPP

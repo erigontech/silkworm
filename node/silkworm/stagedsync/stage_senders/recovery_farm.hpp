@@ -15,8 +15,6 @@
 */
 
 #pragma once
-#ifndef SILKWORM_STAGEDSYNC_RECOVERY_FARM_HPP_
-#define SILKWORM_STAGEDSYNC_RECOVERY_FARM_HPP_
 
 #include <atomic>
 #include <queue>
@@ -121,8 +119,8 @@ class RecoveryFarm : public Stoppable {
 
     /* Canonical blocks + headers */
     struct HeaderInfo {
-        HeaderInfo(uint32_t count, const evmc::bytes32& hash) : txn_count(count), block_hash{hash} {};
-        uint32_t txn_count;
+        HeaderInfo(uint64_t count, const evmc::bytes32& hash) : txn_count(count), block_hash{hash} {};
+        uint64_t txn_count;
         evmc::bytes32 block_hash;
     };
     std::vector<HeaderInfo> headers_{};               // Collected canonical headers
@@ -140,5 +138,3 @@ class RecoveryFarm : public Stoppable {
 };
 
 }  // namespace silkworm::stagedsync::recovery
-
-#endif  // SILKWORM_STAGEDSYNC_RECOVERY_FARM_HPP_

@@ -11,8 +11,7 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_ETL_COLLECTOR_HPP_
-#define SILKWORM_ETL_COLLECTOR_HPP_
+#pragma once
 
 #include <mutex>
 
@@ -114,5 +113,3 @@ class Collector {
 };
 
 }  // namespace silkworm::etl
-
-#endif  // SILKWORM_ETL_COLLECTOR_HPP_

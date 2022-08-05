@@ -14,8 +14,7 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_TYPES_LOG_HPP_
-#define SILKWORM_TYPES_LOG_HPP_
+#pragma once
 
 #include <vector>
 
@@ -35,5 +34,3 @@ namespace rlp {
 }  // namespace rlp
 
 }  // namespace silkworm
-
-#endif  // SILKWORM_TYPES_LOG_HPP_

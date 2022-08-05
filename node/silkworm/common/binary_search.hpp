@@ -14,8 +14,7 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_COMMON_BINARY_SEARCH_HPP_
-#define SILKWORM_COMMON_BINARY_SEARCH_HPP_
+#pragma once
 
 #include <cstddef>
 
@@ -41,5 +40,3 @@ namespace silkworm {
 std::size_t binary_find_if(std::size_t n, absl::FunctionRef<bool(std::size_t)> f);
 
 }  // namespace silkworm
-
-#endif  // SILKWORM_COMMON_BINARY_SEARCH_HPP_

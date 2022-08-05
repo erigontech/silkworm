@@ -14,8 +14,7 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_SEND_MESSAGE_BY_ID_HPP
-#define SILKWORM_SEND_MESSAGE_BY_ID_HPP
+#pragma once
 
 #include <silkworm/downloader/sentry_client.hpp>
 
@@ -27,4 +26,3 @@ class SendMessageById : public rpc::UnaryCall<sentry::Sentry, sentry::SendMessag
 };
 
 }  // namespace silkworm::rpc
-#endif  // SILKWORM_SEND_MESSAGE_BY_ID_HPP

@@ -14,8 +14,7 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_CONSENSUS_BLOCKCHAIN_HPP_
-#define SILKWORM_CONSENSUS_BLOCKCHAIN_HPP_
+#pragma once
 
 #include <unordered_map>
 #include <vector>
@@ -75,5 +74,3 @@ class Blockchain {
 };
 
 }  // namespace silkworm::consensus
-
-#endif  // SILKWORM_CONSENSUS_BLOCKCHAIN_HPP_

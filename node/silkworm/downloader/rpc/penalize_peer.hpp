@@ -14,8 +14,7 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_PENALIZE_PEER_HPP
-#define SILKWORM_PENALIZE_PEER_HPP
+#pragma once
 
 #include <silkworm/downloader/sentry_client.hpp>
 
@@ -27,5 +26,3 @@ class PenalizePeer : public rpc::UnaryCall<sentry::Sentry, sentry::PenalizePeerR
 };
 
 }  // namespace silkworm::rpc
-
-#endif  // SILKWORM_PENALIZE_PEER_HPP

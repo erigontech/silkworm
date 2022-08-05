@@ -14,8 +14,7 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_RECEIVE_PEER_STATS_HPP
-#define SILKWORM_RECEIVE_PEER_STATS_HPP
+#pragma once
 
 #include <silkworm/downloader/sentry_client.hpp>
 
@@ -27,5 +26,3 @@ class ReceivePeerStats : public rpc::OutStreamingCall<sentry::Sentry, sentry::Pe
 };
 
 }  // namespace silkworm::rpc
-
-#endif //SILKWORM_RECEIVE_PEER_STATS_HPP

@@ -14,8 +14,7 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_STAGEDSYNC_STAGEDSYNC_HPP_
-#define SILKWORM_STAGEDSYNC_STAGEDSYNC_HPP_
+#pragma once
 
 // See https://github.com/ledgerwatch/erigon/blob/devel/eth/stagedsync/README.md
 
@@ -57,5 +56,3 @@ StageResult prune_tx_lookup(db::RWTxn& txn, const std::filesystem::path& etl_pat
 
 
 }  // namespace silkworm::stagedsync
-
-#endif  // SILKWORM_STAGEDSYNC_STAGEDSYNC_HPP_

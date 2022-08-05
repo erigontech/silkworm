@@ -14,8 +14,7 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_COMMON_ENDIAN_HPP_
-#define SILKWORM_COMMON_ENDIAN_HPP_
+#pragma once
 
 /*
 Facilities to deal with byte order/endianness
@@ -107,5 +106,3 @@ static DecodingResult from_big_compact(ByteView data, T& out) {
 }
 
 }  // namespace silkworm::endian
-
-#endif  // SILKWORM_COMMON_ENDIAN_HPP_

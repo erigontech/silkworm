@@ -14,8 +14,7 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_EXECUTION_EXECUTION_HPP_
-#define SILKWORM_EXECUTION_EXECUTION_HPP_
+#pragma once
 
 #include <vector>
 
@@ -53,5 +52,3 @@ namespace silkworm {
 }
 
 }  // namespace silkworm
-
-#endif  // SILKWORM_EXECUTION_EXECUTION_HPP_

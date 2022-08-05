@@ -14,8 +14,7 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_RPC_SERVER_CONFIG_HPP_
-#define SILKWORM_RPC_SERVER_CONFIG_HPP_
+#pragma once
 
 #include <memory>
 #include <string>
@@ -55,5 +54,3 @@ class ServerConfig {
 };
 
 } // namespace silkworm::rpc
-
-#endif // SILKWORM_RPC_SERVER_CONFIG_HPP_

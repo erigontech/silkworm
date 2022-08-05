@@ -14,8 +14,7 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_DB_MDBX_HPP_
-#define SILKWORM_DB_MDBX_HPP_
+#pragma once
 
 #include <cstdint>
 #include <filesystem>
@@ -268,5 +267,3 @@ size_t cursor_erase(::mdbx::cursor& cursor, const silkworm::ByteView& set_key, s
                     CursorMoveDirection direction = CursorMoveDirection::Forward);
 
 }  // namespace silkworm::db
-
-#endif  // !SILKWORM_DB_MDBX_HPP_

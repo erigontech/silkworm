@@ -14,8 +14,7 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_TYPE_Y_PARITY_AND_CHAIN_ID_HPP_
-#define SILKWORM_TYPE_Y_PARITY_AND_CHAIN_ID_HPP_
+#pragma once
 
 // See Yellow Paper, Appendix F "Signing Transactions"
 // and EIP-155: Simple replay attack protection.
@@ -42,5 +41,3 @@ std::optional<YParityAndChainId> v_to_y_parity_and_chain_id(const intx::uint256&
 intx::uint256 y_parity_and_chain_id_to_v(bool odd, const std::optional<intx::uint256>& chain_id) noexcept;
 
 }  // namespace silkworm
-
-#endif  // SILKWORM_TYPE_Y_PARITY_AND_CHAIN_ID_HPP_

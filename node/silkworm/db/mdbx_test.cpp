@@ -164,6 +164,12 @@ TEST_CASE("RWTxn") {
         ext_tx = env.start_write();
         REQUIRE(db::has_map(ext_tx, table_name) == false);
     }
+
+    SECTION("Cursor from RWTxn") {
+        auto tx{db::RWTxn(env)};
+        db::Cursor table_cursor(tx, {table_name});
+        REQUIRE(table_cursor.empty());
+    }
 }
 
 TEST_CASE("Cursor walk") {
@@ -197,7 +203,6 @@ TEST_CASE("Cursor walk") {
         REQUIRE(data_map.empty());
         REQUIRE(table_cursor.size() == 0);
         REQUIRE(table_cursor.empty() == true);
-
 
         // populate table
         for (const auto& [key, value] : kGeneticCode) {

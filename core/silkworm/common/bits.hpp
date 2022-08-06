@@ -14,8 +14,7 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_COMMON_BITS_HPP_
-#define SILKWORM_COMMON_BITS_HPP_
+#pragma once
 
 #include <cstdint>
 #ifdef _MSC_VER
@@ -70,4 +69,3 @@ inline uint16_t bitlen_16(uint16_t x) { return static_cast<uint16_t>(x ? 16 - cl
 
 }  // namespace silkworm
 
-#endif  // SILKWORM_COMMON_BITS_HPP_

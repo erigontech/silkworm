@@ -14,9 +14,7 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_TRIE_NIBBLES_HPP_
-#define SILKWORM_TRIE_NIBBLES_HPP_
-
+#pragma once
 #include <silkworm/common/base.hpp>
 
 namespace silkworm::trie {
@@ -31,7 +29,4 @@ Bytes pack_nibbles(ByteView unpacked);
 //! \see Erigon's DecompressNibbles
 Bytes unpack_nibbles(ByteView data);
 
-
 }  // namespace silkworm::trie
-
-#endif  // SILKWORM_TRIE_NIBBLES_HPP_

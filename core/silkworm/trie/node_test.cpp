@@ -16,9 +16,10 @@
 
 #include "node.hpp"
 
-#include <bitset>
-
 #include <catch2/catch.hpp>
+
+#include <silkworm/common/bits.hpp>
+#include <silkworm/common/util.hpp>
 
 namespace silkworm::trie {
 
@@ -33,12 +34,31 @@ TEST_CASE("Node marshalling") {
            },
            /*root_hash*/ 0xaaaabbbb0006767767776fffffeee44444000005567645600000000eeddddddd_bytes32};
 
-    REQUIRE(std::bitset<16>(n.hash_mask()).count() == n.hashes().size());
+    REQUIRE(n.hashes().size() == popcount_16(n.hash_mask()));
 
     Bytes raw{n.encode_for_storage()};
     std::optional<Node> from_raw{Node::from_encoded_storage(raw)};
     REQUIRE(from_raw.has_value());
     REQUIRE(*from_raw == n);
+
+    // An empty decoding
+    REQUIRE(Node::from_encoded_storage({}).has_value() == false);
+
+    // Decode from only state_mask
+    raw = *from_hex("0xf607");
+    REQUIRE(Node::from_encoded_storage(raw).has_value() == false);
+
+    // Decode with no hashes when hashmask is valued to 2
+    raw = *from_hex("0xf60700054004");
+    REQUIRE(Node::from_encoded_storage(raw).has_value() == false);
+
+    // Decode with bad hash when hashmask is valued 2
+    raw = *from_hex("0xf60700054004aaaabbbb0006767767776fffffeee4444400000556764560000");
+    REQUIRE(Node::from_encoded_storage(raw).has_value() == false);
+
+    // Decode with zero state mask (is subset fails)
+    raw = *from_hex("0x000000054004");
+    REQUIRE(Node::from_encoded_storage(raw).has_value() == false);
 }
 
 }  // namespace silkworm::trie

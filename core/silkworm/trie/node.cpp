@@ -68,6 +68,10 @@ std::optional<Node> Node::from_encoded_storage(ByteView raw) {
     const auto state_mask{endian::load_big_u16(&raw[0])};
     const auto tree_mask{endian::load_big_u16(&raw[2])};
     const auto hash_mask{endian::load_big_u16(&raw[4])};
+    if (is_subset(tree_mask, state_mask) == false || is_subset(hash_mask, state_mask) == false) {
+        return std::nullopt;
+    }
+
     raw.remove_prefix(6);
 
     std::optional<evmc::bytes32> root_hash{std::nullopt};

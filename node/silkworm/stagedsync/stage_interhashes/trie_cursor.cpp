@@ -69,8 +69,8 @@ TrieCursor::move_operation_result TrieCursor::to_prefix(ByteView prefix) {
         // to be reconstructed and eventually begin the child_id loop
         auto& node{sub_nodes_[level_]};
         if (node.root_hash.is_null()) {
-            throw std::runtime_error("Trie integrity failure. Requested root node with key " +
-                                     to_hex(node.full_key(), true) + " has no root_hash");
+            throw std::logic_error("Trie integrity failure. Requested root node with key " +
+                                   to_hex(node.full_key(), true) + " has no root_hash");
         }
         if (!has_changes) {
             end_of_tree_ = true;  // We don't need to further traverse this trie
@@ -118,7 +118,7 @@ TrieCursor::move_operation_result TrieCursor::to_next() {
      */
 
     if (end_of_tree_) {
-        throw std::runtime_error("Can't move next beyond the end of tree");
+        throw std::domain_error("Can't move next beyond the end of tree");
     }
 
     skip_state_ = true;
@@ -153,7 +153,7 @@ TrieCursor::move_operation_result TrieCursor::to_next() {
         // If not found it means the tree is corrupted
         if (sub_node.has_tree()) {
             if (!db_seek(sub_node.full_key())) {
-                throw std::runtime_error(
+                throw std::logic_error(
                     "Trie integrity failure. Missing child for node key=" + to_hex(sub_node.key, true) +
                     " child_id=" + std::to_string(static_cast<uint32_t>(sub_node.child_id)));
             }

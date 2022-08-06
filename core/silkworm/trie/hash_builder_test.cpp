@@ -83,6 +83,10 @@ TEST_CASE("HashBuilder1") {
     const ethash::hash256 hash{keccak256(extension_rlp)};
     const auto root_hash{hb.root_hash()};
     CHECK(to_hex(root_hash) == to_hex(hash.bytes));
+
+    // Reset hash builder
+    hb.reset();
+    REQUIRE(hb.root_hash() == kEmptyRoot);
 }
 
 TEST_CASE("HashBuilder2") {

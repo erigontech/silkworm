@@ -41,6 +41,12 @@ TEST_CASE("Node marshalling") {
     REQUIRE(from_raw.has_value());
     REQUIRE(*from_raw == n);
 
+    REQUIRE(to_hex(from_raw->state_mask()) == "f607" );
+    REQUIRE(to_hex(from_raw->tree_mask()) == "05" );
+    REQUIRE(to_hex(from_raw->hash_mask()) == "4004" );
+    REQUIRE(from_raw->root_hash().has_value());
+    REQUIRE(from_raw->hashes().size() == 2);
+
     // An empty decoding
     REQUIRE(Node::from_encoded_storage({}).has_value() == false);
 

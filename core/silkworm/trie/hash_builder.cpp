@@ -33,7 +33,7 @@ namespace silkworm::trie {
 // at https://eth.wiki/fundamentals/patricia-tree
 static Bytes encode_path(ByteView nibbles, bool terminating) {
     Bytes res(nibbles.length() / 2 + 1, '\0');
-    const bool odd{nibbles.length() % 2 != 0};
+    const bool odd{static_cast<bool>((nibbles.length() & 1u) != 0)};
 
     res[0] = terminating ? 0x20 : 0x00;
     res[0] += odd ? 0x10 : 0x00;
@@ -41,7 +41,6 @@ static Bytes encode_path(ByteView nibbles, bool terminating) {
     if (odd) {
         res[0] |= nibbles[0];
         nibbles.remove_prefix(1);
-        SILKWORM_ASSERT((nibbles.length() & 1u) == 0);
     }
 
     for (auto it{std::next(res.begin(), 1)}, end{res.end()}; it != end; ++it) {

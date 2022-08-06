@@ -199,34 +199,4 @@ TEST_CASE("Known root hash") {
     CHECK(to_hex(hb.root_hash()) == to_hex(root_hash.bytes));
 }
 
-TEST_CASE("Nibbles") {
-    std::vector<std::pair<std::string, std::string>> test_cases = {
-        // Bytes -> Nibbles
-        {"00", "0000"},                                            //
-        {"01", "0001"},                                            //
-        {"0f", "000f"},                                            //
-        {"f011", "0f000101"},                                      //
-        {"f111", "0f010101"},                                      //
-        {"123456789a", "0102030405060708090a"},                    //
-        {"123456789f", "0102030405060708090f"},                    //
-        {"12345678aa", "01020304050607080a0a"},                    //
-        {"123456789abcdeff", "0102030405060708090a0b0c0d0e0f0f"},  //
-    };
-
-    for (const auto& test_case : test_cases) {
-        if (test_case.first.empty()) {
-            auto packed{pack_nibbles({})};
-            REQUIRE(packed.empty());
-            REQUIRE(unpack_nibbles(packed).empty());
-            continue;
-        }
-
-        const auto packed{from_hex(test_case.first)};
-        const auto unpacked{from_hex(test_case.second)};
-        REQUIRE((packed.has_value() && unpacked.has_value()));
-        REQUIRE(to_hex(unpack_nibbles(*packed)) == test_case.second);
-        REQUIRE(to_hex(pack_nibbles(*unpacked)) == test_case.first);
-    }
-}
-
 }  // namespace silkworm::trie

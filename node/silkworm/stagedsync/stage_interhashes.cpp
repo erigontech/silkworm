@@ -57,6 +57,7 @@ StageResult InterHashes::forward(db::RWTxn& txn) {
                       {"from", std::to_string(previous_progress), "to", std::to_string(hashstate_stage_progress)});
         }
 
+        // Retrieve header's state_root at target block to be compared with the one computed here
         auto header_hash{db::read_canonical_header_hash(*txn, hashstate_stage_progress)};
         SILKWORM_ASSERT(header_hash.has_value());
         auto header{db::read_header(*txn, hashstate_stage_progress, header_hash->bytes)};
@@ -70,8 +71,7 @@ StageResult InterHashes::forward(db::RWTxn& txn) {
             ret = regenerate_intermediate_hashes(txn, &expected_state_root);
         } else {
             // Incremental update
-            ret = increment_intermediate_hashes(
-                txn, previous_progress, /*previous_progress + 1000 */ hashstate_stage_progress, &expected_state_root);
+            ret = increment_intermediate_hashes(txn, previous_progress, hashstate_stage_progress, &expected_state_root);
         }
 
         success_or_throw(ret);
@@ -97,23 +97,72 @@ StageResult InterHashes::forward(db::RWTxn& txn) {
 }
 
 StageResult InterHashes::unwind(db::RWTxn& txn, BlockNum to) {
-    (void)txn;
-    (void)to;
-    return StageResult::kUnknownError;
+    StageResult ret{StageResult::kSuccess};
+    try {
+        throw_if_stopping();
+        BlockNum previous_progress{get_progress(txn)};
+        if (to >= previous_progress) {
+            // Actually nothing to unwind
+            return StageResult::kSuccess;
+        }
+
+        BlockNum segment_width{previous_progress - to};
+        if (segment_width > 16) {
+            log::Info("Begin " + std::string(stage_name_) + " unwind",
+                      {"from", std::to_string(previous_progress), "to", std::to_string(to)});
+        }
+
+        // Retrieve header's state_root at target block to be compared with the one computed here
+        auto header_hash{db::read_canonical_header_hash(*txn, to)};
+        SILKWORM_ASSERT(header_hash.has_value());
+        auto header{db::read_header(*txn, to, header_hash->bytes)};
+        SILKWORM_ASSERT(header.has_value());
+        auto expected_state_root{header->state_root};
+
+        reset_log_progress();
+
+        if (segment_width > 100'000) {
+            // Full regeneration
+            // It will process all HashedState which is already unwound
+            ret = regenerate_intermediate_hashes(txn, &expected_state_root);
+        } else {
+            // Incremental update
+            ret = increment_intermediate_hashes(txn, previous_progress, to, &expected_state_root);
+        }
+
+        success_or_throw(ret);
+        throw_if_stopping();
+        db::stages::write_stage_progress(*txn, db::stages::kIntermediateHashesKey, to);
+        txn.commit();
+
+    } catch (const StageError& ex) {
+        log::Error(std::string(stage_name_),
+                   {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
+        return static_cast<StageResult>(ex.err());
+    } catch (const std::exception& ex) {
+        reset_log_progress();
+        log::Error(std::string(stage_name_), {"exception", std::string(ex.what())});
+        return StageResult::kUnexpectedError;
+    }
+
+    return StageResult::kSuccess;
 }
 
 StageResult InterHashes::prune(db::RWTxn&) { return StageResult::kSuccess; }
 
 trie::PrefixSet InterHashes::collect_account_changes(db::RWTxn& txn, BlockNum from, BlockNum to,
-                                                     absl::btree_map<evmc::address, ethash_hash256>& hashed_addresses,
-                                                     bool forward) {
+                                                     absl::btree_map<evmc::address, ethash_hash256>& hashed_addresses) {
     std::unique_ptr<StopWatch> sw;
     if (log::test_verbosity(log::Level::kTrace)) {
         sw = std::make_unique<StopWatch>(/*auto_start=*/true);
     }
 
+    bool forward{to > from};  // Are we forwarding or unwinding ?
+
     BlockNum reached_blocknum{0};
-    BlockNum expected_blocknum{from + 1};
+    BlockNum expected_blocknum{std::min(from, to) + 1u};
+    BlockNum max_blocknum{std::max(from, to)};
+
     absl::btree_set<Bytes> deleted_ts_prefixes{};
     silkworm::lru_cache<evmc::address, std::optional<Account>> plainstate_accounts(100'000);
 
@@ -135,7 +184,7 @@ trie::PrefixSet InterHashes::collect_account_changes(db::RWTxn& txn, BlockNum fr
     while (changeset_data) {
         reached_blocknum = endian::load_big_u64(db::from_slice(changeset_data.key).data());
         check_block_sequence(reached_blocknum, expected_blocknum);
-        if (reached_blocknum > to) {
+        if (reached_blocknum > max_blocknum) {
             break;
         } else if (auto now{std::chrono::steady_clock::now()}; log_time <= now) {
             throw_if_stopping();
@@ -363,8 +412,10 @@ StageResult InterHashes::increment_intermediate_hashes(db::RWTxn& txn, BlockNum 
     try {
         // Cache of hashed addresses
         absl::btree_map<evmc::address, ethash_hash256> hashed_addresses{};
+        // List of changes collected
         trie::PrefixSet account_changes{collect_account_changes(txn, from, to, hashed_addresses)};
         trie::PrefixSet storage_changes{collect_storage_changes(txn, from, to, hashed_addresses)};
+        // Remove unneeded RAM occupation
         hashed_addresses.clear();
 
         log_lck.lock();

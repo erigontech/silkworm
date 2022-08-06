@@ -40,8 +40,7 @@ class InterHashes final : public IStage {
 
     //! \brief See Erigon (p *HashPromoter) Promote
     trie::PrefixSet collect_account_changes(db::RWTxn& txn, BlockNum from, BlockNum to,
-                                            absl::btree_map<evmc::address, ethash_hash256>& hashed_addresses,
-                                            bool forward = true);
+                                            absl::btree_map<evmc::address, ethash_hash256>& hashed_addresses);
 
     //! \brief See Erigon (p *HashPromoter) Promote
     trie::PrefixSet collect_storage_changes(db::RWTxn& txn, BlockNum from, BlockNum to,

@@ -121,15 +121,18 @@ StageResult SyncLoop::run_cycle(db::RWTxn& cycle_txn, Timer& log_timer) {
     StopWatch stages_stop_watch;
     (void)stages_stop_watch.start();
     try {
-        // Force any particular stage ?
-        const std::string env_stage{"STAGE_NAME"};
-        const char* stage_name{std::getenv(env_stage.c_str())};
+        // Force to stop at any particular stage ?
+        // Same as in Erigon
+        const std::string env_stop_before_stage{"STOP_BEFORE_STAGE"};
+        const char* stop_stage_name{std::getenv(env_stop_before_stage.c_str())};
 
         for (; current_stage_ < stages_.size() && !is_stopping(); ++current_stage_) {
             auto& stage{stages_.at(current_stage_)};
 
-            if (stage_name && !iequals(stage_name, stage->name())) {
-                continue;
+            if (stop_stage_name && !iequals(stop_stage_name, stage->name())) {
+                stop();
+                log::Warning("Stopping ...", {"STOP_BEFORE_STAGE", stop_stage_name, "hit", "true"});
+                return StageResult::kSuccess;
             }
 
             log_timer.reset();  // Resets the interval for next log line from now

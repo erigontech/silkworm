@@ -437,6 +437,15 @@ namespace db {
         CHECK_NOTHROW(write_canonical_header(txn, header));
         CHECK_NOTHROW(write_header(txn, header, /*with_header_numbers=*/true));
 
+        // Read back canonical header hash
+        auto db_hash{read_canonical_header_hash(txn, block_num)};
+        REQUIRE(db_hash.has_value());
+        REQUIRE(memcmp(hash.bytes, db_hash.value().bytes, sizeof(hash)) == 0);
+
+        // Read non existent canonical header hash
+        db_hash = read_canonical_header_hash(txn, block_num+1);
+        REQUIRE(db_hash.has_value() == false);
+
         std::optional<BlockHeader> header_from_db{read_header(txn, header.number, hash.bytes)};
         REQUIRE(header_from_db.has_value());
         CHECK(*header_from_db == header);

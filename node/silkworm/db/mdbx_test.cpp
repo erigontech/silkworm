@@ -195,11 +195,16 @@ TEST_CASE("Cursor walk") {
         // empty table
         cursor_for_each(table_cursor, save_all_data_map);
         REQUIRE(data_map.empty());
+        REQUIRE(table_cursor.size() == 0);
+        REQUIRE(table_cursor.empty() == true);
+
 
         // populate table
         for (const auto& [key, value] : kGeneticCode) {
             table_cursor.upsert(mdbx::slice{key}, mdbx::slice{value});
         }
+        REQUIRE(table_cursor.size() == kGeneticCode.size());
+        REQUIRE(table_cursor.empty() == false);
 
         // Rebind cursor so its position is undefined
         table_cursor.bind(txn, {table_name});

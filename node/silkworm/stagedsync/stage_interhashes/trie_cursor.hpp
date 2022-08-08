@@ -97,7 +97,7 @@ class TrieCursor {
     Bytes curr_key_{};                       // Latest key returned on a valid hash
     Bytes prev_key_{};                       // Same as curr_key_ but for previous cycle
     bool skip_state_{true};                  // Whether account(s) state scan can be skipped
-    std::array<SubNode, 64> sub_nodes_{{}};  // Collection of sub-nodes being unrolled
+    std::array<SubNode, 32> sub_nodes_{{}};  // Collection of sub-nodes being unrolled
 
     Bytes prefix_{};  // Db key prefix for this trie (0 bytes TrieAccount - 40 bytes TrieStorage)
     Bytes buffer_{};  // A convenience buffer

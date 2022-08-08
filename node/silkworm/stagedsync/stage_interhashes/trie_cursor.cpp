@@ -45,13 +45,12 @@ TrieCursor::move_operation_result TrieCursor::to_prefix(ByteView prefix) {
     next_created_ = ByteView{};
     end_of_tree_ = false;
     skip_state_ = true;
+    level_ = 0u;
+    sub_nodes_[level_].reset();  // Reset root node
 
-    // Reset all SubNodes (we're starting a new tree)
-    // from currently used to top
-    sub_nodes_[level_].reset();
-    while (level_ != 0) {
-        sub_nodes_[--level_].reset();
-    }
+    // ^^^ Note! We don't actually need to reset all sub-nodes (i.e. level_ > 0) as
+    // the only case we descend level is when parsing a new sub node which implies
+    // node at level_ gets overwritten in any case
 
     // Check changed list contains requested prefix_ and retrieve the first created account under "that" trie
     // This also returns the first "created" account in "that" trie
@@ -134,12 +133,11 @@ TrieCursor::move_operation_result TrieCursor::to_next() {
         // ascend one level, if possible, or mark the end of the tree (completely traversed)
         // Note ! We don't have intermediate "empty" nodes as in Erigon
         if (sub_node.child_id == sub_node.max_child_id) {
-            sub_node.reset();
-            if (level_) {
-                --level_;
-            } else {
+            if (!level_) {
                 end_of_tree_ = true;
+                break;
             }
+            --level_;
             continue;
         }
 

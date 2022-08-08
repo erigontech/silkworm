@@ -41,9 +41,9 @@ TEST_CASE("Node marshalling") {
     REQUIRE(from_raw.has_value());
     REQUIRE(*from_raw == n);
 
-    REQUIRE(to_hex(from_raw->state_mask()) == "f607" );
-    REQUIRE(to_hex(from_raw->tree_mask()) == "05" );
-    REQUIRE(to_hex(from_raw->hash_mask()) == "4004" );
+    REQUIRE(to_hex(from_raw->state_mask()) == "f607");
+    REQUIRE(to_hex(from_raw->tree_mask()) == "05");
+    REQUIRE(to_hex(from_raw->hash_mask()) == "4004");
     REQUIRE(from_raw->root_hash().has_value());
     REQUIRE(from_raw->hashes().size() == 2);
 
@@ -64,6 +64,13 @@ TEST_CASE("Node marshalling") {
 
     // Decode with zero state mask (is subset fails)
     raw = *from_hex("0x000000054004");
+    REQUIRE(Node::from_encoded_storage(raw).has_value() == false);
+
+    // Decode with more hashes than allowed
+    raw = *from_hex(
+        "0xf60700054004aaaabbbb0006767767776fffffeee44444000005567645600000000eeddddddd90d53cd810cc5d4243766cd4451e7b9d"
+        "14b736a1148b26b3baac7617f617d321cc35c964dda53ba6c0b87798073a9628dbc9cd26b5cce88eb69655a9c609caf1cc35c964dda53b"
+        "a6c0b87798073a9628dbc9cd26b5cce88eb69655a9c609caf1");
     REQUIRE(Node::from_encoded_storage(raw).has_value() == false);
 }
 

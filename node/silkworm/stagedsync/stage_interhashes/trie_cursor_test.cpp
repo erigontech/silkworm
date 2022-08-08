@@ -233,6 +233,45 @@ TEST_CASE("Trie Cursor") {
         }
         REQUIRE(has_thrown);
     }
+
+    SECTION("Root + 16 children with changes") {
+        etl::Collector collector{db_context.dir().path()};
+        trie::PrefixSet changed_accounts{};
+        db::Cursor trie_accounts(txn, db::table::kTrieOfAccounts);
+        trie::TrieCursor ta_cursor{trie_accounts, &changed_accounts, &collector};
+
+        // Fake root node with no hashes and only tree mask (must descend to all)
+        Bytes k{};
+        Bytes v{*from_hex(
+            "ffff" /* all state bits set */
+            "ffff" /* has all children */
+            "0000" /* no hash mask */
+            "061d711a452d9137600bc9a5fecb8fa8f4fe4496f232b0ec706c8fb601beff0b" /* root hash - must have it */)};
+
+        trie_accounts.insert(db::to_slice(k), db::to_slice(v));
+
+        // Generate 16 fake sub nodes - note root node above has all bits set in tree_mask
+        v = *from_hex(
+            "0001" /* at least one state bit */
+            "0000" /* no tree mask */
+            "0000" /* no hash mask */);
+
+        for (uint8_t c{'\0'}; c < 0x10; ++c) {
+            k.clear();
+            k.push_back(c);
+            trie_accounts.insert(db::to_slice(k), db::to_slice(v));
+        }
+
+        // Insert a change so we don't get hash of root and
+        // cursor forced to descend and traverse children
+        changed_accounts.insert(*from_hex("0x000001"));
+
+        // Moving to first MUST not throw
+        REQUIRE_NOTHROW((void)ta_cursor.to_prefix({}));
+
+        // Both root node and all child node should be traversed and deleted
+        REQUIRE(collector.size() == 17);
+    }
 }
 
 TEST_CASE("Trie Cursor Increment Nibbles") {

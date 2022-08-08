@@ -23,7 +23,6 @@
 
 namespace silkworm {
 TEST_CASE("Trie Cursor") {
-
     test::Context db_context{};
     auto txn{db_context.txn()};
 
@@ -276,21 +275,21 @@ TEST_CASE("Trie Cursor") {
 
     SECTION("Empty prefixed trie no changes") {
         trie::PrefixSet changed_accounts{};
-        db::Cursor trie_accounts(txn, db::table::kTrieOfStorage);
-        trie::TrieCursor ta_cursor{trie_accounts, &changed_accounts};
+        db::Cursor trie_storage(txn, db::table::kTrieOfStorage);
+        trie::TrieCursor ts_cursor{trie_storage, &changed_accounts};
         Bytes prefix{*from_hex("0xfff2bcbbf823e72a3a9025c14b96f5c28026735aeb7f19e5f2f317aa7a017c080000000000000001")};
-        auto ta_data{ta_cursor.to_prefix(prefix)};
+        auto ts_data{ts_cursor.to_prefix(prefix)};
 
-        REQUIRE(ta_data.skip_state == false);
-        REQUIRE(ta_data.key.has_value() == false);
-        REQUIRE(ta_data.first_uncovered.has_value() == true);
-        REQUIRE(ta_data.first_uncovered.value().empty() == true);
-        REQUIRE(ta_data.hash.has_value() == false);
+        REQUIRE(ts_data.skip_state == false);
+        REQUIRE(ts_data.key.has_value() == false);
+        REQUIRE(ts_data.first_uncovered.has_value() == true);
+        REQUIRE(ts_data.first_uncovered.value().empty() == true);
+        REQUIRE(ts_data.hash.has_value() == false);
 
         bool has_thrown{false};
         try {
             // Must throw as we're at the end of tree
-            ta_data = ta_cursor.to_next();
+            ts_data = ts_cursor.to_next();
         } catch (...) {
             has_thrown = true;
         }
@@ -298,6 +297,41 @@ TEST_CASE("Trie Cursor") {
         REQUIRE(has_thrown);
     }
 
+    SECTION("Missing prefixed root no changes") {
+        trie::PrefixSet changed_storage{};
+        db::Cursor trie_storage(txn, db::table::kTrieOfStorage);
+
+        Bytes k{
+            *from_hex("0xfff2bcbbf823e72a3a9025c14b96f5c28026735aeb7f19e5f2f317aa7a017c080000000000000001" /* prefix */
+                      "00" /* first subnode */)};
+        Bytes v{
+            *from_hex("ffff" /* all state bits set */
+                      "ffff" /* has all children */
+                      "0000" /* no hash mask */
+                      )};
+
+        trie_storage.insert(db::to_slice(k), db::to_slice(v));
+
+        trie::TrieCursor ts_cursor{trie_storage, &changed_storage};
+        Bytes prefix{*from_hex("0xfff2bcbbf823e72a3a9025c14b96f5c28026735aeb7f19e5f2f317aa7a017c080000000000000001")};
+        auto ts_data{ts_cursor.to_prefix(prefix)};
+
+        REQUIRE(ts_data.skip_state == false);
+        REQUIRE(ts_data.key.has_value() == false);
+        REQUIRE(ts_data.first_uncovered.has_value() == true);
+        REQUIRE(ts_data.first_uncovered.value().empty() == true);
+        REQUIRE(ts_data.hash.has_value() == false);
+
+        bool has_thrown{false};
+        try {
+            // Must throw as we're at the end of tree
+            ts_data = ts_cursor.to_next();
+        } catch (...) {
+            has_thrown = true;
+        }
+
+        REQUIRE(has_thrown);
+    }
 }
 
 TEST_CASE("Trie Cursor Increment Nibbles") {

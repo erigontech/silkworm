@@ -115,6 +115,7 @@ class TrieCursor {
     //! \see increment_nibbled_key()
     std::optional<Bytes> first_uncovered();
 
+  public:
     //! \brief Produces the next key in sequence
     //! \details It's essentially +1 in the hexadecimal (base 16) numeral system
     //! \verbatim

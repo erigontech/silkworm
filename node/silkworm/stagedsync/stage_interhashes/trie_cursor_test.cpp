@@ -235,4 +235,44 @@ TEST_CASE("Trie Cursor") {
     }
 }
 
+TEST_CASE("Trie Cursor Increment Nibbles") {
+    // Incrementable same level
+    Bytes input{*from_hex("0x010203")};
+    std::optional<Bytes> incremented{trie::TrieCursor::increment_nibbled_key(input)};
+    REQUIRE(incremented.has_value());
+    REQUIRE(to_hex(*incremented, true) == "0x010204");
+
+    // Incrementable up one level
+    input = *from_hex("0x01020f");
+    incremented = trie::TrieCursor::increment_nibbled_key(input);
+    REQUIRE(incremented.has_value());
+    REQUIRE(to_hex(*incremented, true) == "0x0103");
+
+    // Increment overflows
+    input = *from_hex("0x0f0f0f");
+    incremented = trie::TrieCursor::increment_nibbled_key(input);
+    REQUIRE(incremented.has_value() == false);
+
+    // Increment empty
+    input = Bytes{};
+    incremented = trie::TrieCursor::increment_nibbled_key(input);
+    REQUIRE(incremented.has_value() == false);
+}
+
+TEST_CASE("Trie Cursor KeyIsBefore") {
+    ByteView input1_view{};
+    ByteView input2_view{};
+
+    REQUIRE(trie::TrieCursor::key_is_before(input1_view, input2_view) == false);
+
+    Bytes input1{*from_hex("0x01")};
+    Bytes input2{*from_hex("0x02")};
+    input1_view = ByteView(input1.data(), input1.size());
+    REQUIRE(trie::TrieCursor::key_is_before(input1_view, input2_view) == true);
+
+    input2_view = ByteView(input2.data(), input2.size());
+    REQUIRE(trie::TrieCursor::key_is_before(input1_view, input2_view) == true);
+    REQUIRE(trie::TrieCursor::key_is_before(input2_view, input1_view) == false);
+}
+
 }  // namespace silkworm

@@ -23,6 +23,7 @@
 
 namespace silkworm {
 TEST_CASE("Trie Cursor") {
+
     test::Context db_context{};
     auto txn{db_context.txn()};
 
@@ -272,6 +273,31 @@ TEST_CASE("Trie Cursor") {
         // Both root node and all child node should be traversed and deleted
         REQUIRE(collector.size() == 17);
     }
+
+    SECTION("Empty prefixed trie no changes") {
+        trie::PrefixSet changed_accounts{};
+        db::Cursor trie_accounts(txn, db::table::kTrieOfStorage);
+        trie::TrieCursor ta_cursor{trie_accounts, &changed_accounts};
+        Bytes prefix{*from_hex("0xfff2bcbbf823e72a3a9025c14b96f5c28026735aeb7f19e5f2f317aa7a017c080000000000000001")};
+        auto ta_data{ta_cursor.to_prefix(prefix)};
+
+        REQUIRE(ta_data.skip_state == false);
+        REQUIRE(ta_data.key.has_value() == false);
+        REQUIRE(ta_data.first_uncovered.has_value() == true);
+        REQUIRE(ta_data.first_uncovered.value().empty() == true);
+        REQUIRE(ta_data.hash.has_value() == false);
+
+        bool has_thrown{false};
+        try {
+            // Must throw as we're at the end of tree
+            ta_data = ta_cursor.to_next();
+        } catch (...) {
+            has_thrown = true;
+        }
+
+        REQUIRE(has_thrown);
+    }
+
 }
 
 TEST_CASE("Trie Cursor Increment Nibbles") {

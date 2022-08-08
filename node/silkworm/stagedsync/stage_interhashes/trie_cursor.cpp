@@ -133,11 +133,11 @@ TrieCursor::move_operation_result TrieCursor::to_next() {
         // ascend one level, if possible, or mark the end of the tree (completely traversed)
         // Note ! We don't have intermediate "empty" nodes as in Erigon
         if (sub_node.child_id == sub_node.max_child_id) {
-            if (!level_) {
+            if (level_) {
+                --level_;
+            } else {
                 end_of_tree_ = true;
-                break;
             }
-            --level_;
             continue;
         }
 

@@ -148,9 +148,8 @@ TEST_CASE("RWTxn") {
         }
 
         auto tx{env.start_read()};
-        REQUIRE(db::has_map(tx, table_name));
-        const auto handle{tx.open_map(table_name)};
-        REQUIRE(tx.get_map_stat(handle).ms_entries == kGeneticCode.size());
+        db::Cursor table_cursor(tx, {table_name});
+        REQUIRE(table_cursor.empty() == false);
     }
 
     SECTION("External") {
@@ -169,6 +168,7 @@ TEST_CASE("RWTxn") {
         auto tx{db::RWTxn(env)};
         db::Cursor table_cursor(tx, {table_name});
         REQUIRE(table_cursor.empty());
+        REQUIRE_NOTHROW(table_cursor.bind(tx, {table_name}));
     }
 }
 
@@ -201,7 +201,6 @@ TEST_CASE("Cursor walk") {
         // empty table
         cursor_for_each(table_cursor, save_all_data_map);
         REQUIRE(data_map.empty());
-        REQUIRE(table_cursor.size() == 0);
         REQUIRE(table_cursor.empty() == true);
 
         // populate table

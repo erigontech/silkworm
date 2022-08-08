@@ -46,11 +46,12 @@ TrieCursor::move_operation_result TrieCursor::to_prefix(ByteView prefix) {
     end_of_tree_ = false;
     skip_state_ = true;
     level_ = 0u;
-    sub_nodes_[level_].reset();  // Reset root node
+    sub_nodes_[level_].reset(); // Reset root node
 
     // ^^^ Note! We don't actually need to reset all sub-nodes (i.e. level_ > 0) as
     // the only case we descend level is when parsing a new sub node which implies
     // node at level_ gets overwritten in any case
+
 
     // Check changed list contains requested prefix_ and retrieve the first created account under "that" trie
     // This also returns the first "created" account in "that" trie
@@ -277,7 +278,7 @@ void TrieCursor::SubNode::parse(ByteView k, ByteView v) {
 
     key = k;
     value = v;
-
+    root_hash = ByteView();
     hashes = v.substr(6);
     state_mask = endian::load_big_u16(&v[0]);
     tree_mask = endian::load_big_u16(&v[2]);
@@ -308,6 +309,8 @@ void TrieCursor::SubNode::parse(ByteView k, ByteView v) {
 
     child_id = static_cast<int8_t>(ctz_16(state_mask)) - 1;
     max_child_id = static_cast<int8_t>(bitlen_16(state_mask));
+    hash_id = -1;
+    deleted = false;
 }
 
 Bytes TrieCursor::SubNode::full_key() const noexcept {

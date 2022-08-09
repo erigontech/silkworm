@@ -14,8 +14,7 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_STAGEDSYNC_STAGE_INTERHASHES_CURSOR_HPP_
-#define SILKWORM_STAGEDSYNC_STAGE_INTERHASHES_CURSOR_HPP_
+#pragma once
 
 #include <silkworm/db/mdbx.hpp>
 #include <silkworm/etl/collector.hpp>
@@ -133,5 +132,3 @@ class TrieCursor {
 };
 
 }  // namespace silkworm::trie
-
-#endif  // SILKWORM_STAGEDSYNC_STAGE_INTERHASHES_CURSOR_HPP_

@@ -32,7 +32,7 @@ TrieLoader::TrieLoader(db::RWTxn& txn, PrefixSet* account_changes, PrefixSet* st
       account_trie_node_collector_{account_trie_node_collector},
       storage_trie_node_collector_{storage_trie_node_collector} {
     // Either both or nothing
-    if (!(account_changes && storage_changes || !account_changes && !storage_changes)) {
+    if ((account_changes == nullptr) != (storage_changes == nullptr)) {
         throw std::runtime_error("TrieLoader requires account_changes to be both provided or bot nullptr");
     }
     if (!account_trie_node_collector_ || !storage_trie_node_collector_) {

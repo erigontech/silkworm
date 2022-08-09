@@ -136,7 +136,7 @@ evmc::bytes32 TrieLoader::calculate_root() {
         trie_account_data = trie_account_cursor.to_next();
     }
 
-    auto root_hash{storage_hash_builder.root_hash()};
+    auto root_hash{account_hash_builder.root_hash()};
     account_hash_builder.reset();
     return root_hash;
 }

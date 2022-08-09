@@ -1107,6 +1107,17 @@ void do_trie_integrity(db::EnvConfig& config, bool with_state_coverage, bool con
             const auto node_hash_mask{endian::load_big_u16(&data1_v[4])};
             bool node_has_root{false};
 
+            if (!node_state_mask) {
+                // This node should not be here as it does not point to anything
+                std::string what{"At key " + to_hex(data1_k, true) +
+                                 " node with nil state_mask. Does not point to anything. Shouldn't be here"};
+                if (!continue_scan) {
+                    throw std::runtime_error(what);
+                }
+                is_healthy = false;
+                std::cout << " " << what << std::endl;
+            }
+
             if (!trie::is_subset(node_tree_mask, node_state_mask)) {
                 throw std::runtime_error("At key " + to_hex(data1_k, true) + " tree mask " +
                                          std::bitset<16>(node_tree_mask).to_string() + " is not subset of state mask " +
@@ -1148,7 +1159,7 @@ void do_trie_integrity(db::EnvConfig& config, bool with_state_coverage, bool con
                 is_healthy = false;
                 std::cout << " " << what << std::endl;
             } else if (!node_k.empty() && node_has_root) {
-                std::cout << " Node with root hash ? " << to_hex(data1_k, true);
+                std::cout << " Branch node with root hash ? " << to_hex(data1_k, true) << std::endl;
             }
 
             /*

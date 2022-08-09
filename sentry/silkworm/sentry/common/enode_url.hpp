@@ -17,24 +17,30 @@
 #pragma once
 
 #include <string>
-#include <silkworm/common/base.hpp>
+#include <boost/asio/ip/address.hpp>
 #include "ecc_public_key.hpp"
 
 namespace silkworm::sentry::common {
 
-class EccKeyPair {
+class EnodeUrl {
   public:
-    EccKeyPair();
-    explicit EccKeyPair(Bytes private_key_data);
+    explicit EnodeUrl(const std::string& url_str);
 
-    [[nodiscard]] EccPublicKey public_key() const;
+    EnodeUrl(common::EccPublicKey public_key, boost::asio::ip::address ip, uint16_t port)
+        : public_key_(std::move(public_key)),
+          ip_(std::move(ip)),
+          port_(port) {}
 
-    [[nodiscard]] ByteView private_key() const { return private_key_; }
+    [[nodiscard]] const common::EccPublicKey& public_key() const { return public_key_; }
+    [[nodiscard]] const boost::asio::ip::address& ip() const { return ip_; }
+    [[nodiscard]] uint16_t port() const { return port_; }
 
-    [[nodiscard]] std::string private_key_hex() const;
+    [[nodiscard]] std::string to_string() const;
 
   private:
-    Bytes private_key_;
+    common::EccPublicKey public_key_;
+    boost::asio::ip::address ip_;
+    uint16_t port_;
 };
 
 }  // namespace silkworm::sentry::common

@@ -16,25 +16,31 @@
 
 #pragma once
 
-#include <string>
+#include <optional>
 #include <silkworm/concurrency/coroutine.hpp>
 #include <boost/asio/awaitable.hpp>
-#include <silkworm/rpc/server/server_context_pool.hpp>
+#include <silkworm/sentry/common/socket_stream.hpp>
 #include <silkworm/sentry/common/ecc_key_pair.hpp>
+#include <silkworm/sentry/common/ecc_public_key.hpp>
+#include "auth_session.hpp"
 
-namespace silkworm::sentry::rlpx {
+namespace silkworm::sentry::rlpx::auth {
 
-class Server final {
+class Handshake {
   public:
-    Server(std::string host, uint16_t port);
+    explicit Handshake(
+        common::EccKeyPair node_key,
+        std::optional<common::EccPublicKey> peer_public_key)
+        : node_key_(std::move(node_key)),
+          peer_public_key_(std::move(peer_public_key)) {}
 
-    boost::asio::awaitable<void> start(
-            silkworm::rpc::ServerContextPool& context_pool,
-            common::EccKeyPair node_key);
+    boost::asio::awaitable<void> execute(common::SocketStream& stream);
 
   private:
-    std::string host_;
-    uint16_t port_;
+    boost::asio::awaitable<AuthSession> auth(common::SocketStream& stream);
+
+    common::EccKeyPair node_key_;
+    std::optional<common::EccPublicKey> peer_public_key_;
 };
 
-}  // namespace silkworm::sentry::rlpx
+}  // namespace silkworm::sentry::rlpx::auth

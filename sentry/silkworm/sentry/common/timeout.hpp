@@ -16,25 +16,29 @@
 
 #pragma once
 
-#include <string>
+#include <chrono>
 #include <silkworm/concurrency/coroutine.hpp>
 #include <boost/asio/awaitable.hpp>
-#include <silkworm/rpc/server/server_context_pool.hpp>
-#include <silkworm/sentry/common/ecc_key_pair.hpp>
 
-namespace silkworm::sentry::rlpx {
+namespace silkworm::sentry::common {
 
-class Server final {
+class Timeout {
   public:
-    Server(std::string host, uint16_t port);
+    explicit Timeout(std::chrono::milliseconds duration) : duration_(duration) {}
 
-    boost::asio::awaitable<void> start(
-            silkworm::rpc::ServerContextPool& context_pool,
-            common::EccKeyPair node_key);
+    Timeout(const Timeout&) = delete;
+    Timeout& operator=(const Timeout&) = delete;
+
+    boost::asio::awaitable<void> schedule() const;
+    boost::asio::awaitable<void> operator()() const { return schedule(); }
+
+    class ExpiredError : public std::runtime_error {
+      public:
+        ExpiredError() : std::runtime_error("Timeout has expired") {}
+    };
 
   private:
-    std::string host_;
-    uint16_t port_;
+    std::chrono::milliseconds duration_;
 };
 
-}  // namespace silkworm::sentry::rlpx
+}  // namespace silkworm::sentry::common

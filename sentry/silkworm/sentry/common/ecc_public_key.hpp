@@ -14,12 +14,32 @@
     limitations under the License.
 */
 
+
 #pragma once
 
+#include <string>
+#include <string_view>
 #include <silkworm/common/base.hpp>
 
 namespace silkworm::sentry::common {
 
-Bytes random_bytes(Bytes::size_type size);
+class EccPublicKey {
+  public:
+    explicit EccPublicKey(Bytes data) : data_(std::move(data)) {}
+
+    [[nodiscard]] ByteView data() const { return data_; }
+    [[nodiscard]] Bytes::size_type size() const { return data_.size(); }
+
+    [[nodiscard]] Bytes serialized_std() const;
+    [[nodiscard]] Bytes serialized() const;
+    [[nodiscard]] std::string hex() const;
+
+    [[nodiscard]] static EccPublicKey deserialize_std(ByteView serialized_data);
+    [[nodiscard]] static EccPublicKey deserialize(ByteView serialized_data);
+    [[nodiscard]] static EccPublicKey deserialize_hex(std::string_view hex);
+
+  private:
+    Bytes data_;
+};
 
 }  // namespace silkworm::sentry::common

@@ -16,25 +16,25 @@
 
 #pragma once
 
-#include <string>
 #include <silkworm/concurrency/coroutine.hpp>
 #include <boost/asio/awaitable.hpp>
-#include <silkworm/rpc/server/server_context_pool.hpp>
+#include <silkworm/common/base.hpp>
 #include <silkworm/sentry/common/ecc_key_pair.hpp>
+#include <silkworm/sentry/common/socket_stream.hpp>
+#include "auth_session.hpp"
 
-namespace silkworm::sentry::rlpx {
+namespace silkworm::sentry::rlpx::auth {
 
-class Server final {
+class AuthRecipient {
   public:
-    Server(std::string host, uint16_t port);
+    explicit AuthRecipient(common::EccKeyPair recipient_key_pair)
+        : recipient_key_pair_(std::move(recipient_key_pair)) {}
 
-    boost::asio::awaitable<void> start(
-            silkworm::rpc::ServerContextPool& context_pool,
-            common::EccKeyPair node_key);
+    boost::asio::awaitable<AuthSession> execute(common::SocketStream& stream);
 
   private:
-    std::string host_;
-    uint16_t port_;
+    common::EccKeyPair recipient_key_pair_;
+    common::EccKeyPair recipient_ephemeral_key_pair_;
 };
 
-}  // namespace silkworm::sentry::rlpx
+}  // namespace silkworm::sentry::rlpx::auth

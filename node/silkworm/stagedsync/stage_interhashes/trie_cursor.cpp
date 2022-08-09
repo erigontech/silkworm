@@ -294,10 +294,6 @@ void TrieCursor::SubNode::parse(ByteView k, ByteView v) {
         throw std::invalid_argument("hash mask not subset of state mask");
     }
 
-    if (hashes.length() % kHashLength != 0) {
-        throw std::invalid_argument("malformed hashes payload (not multiple of " + std::to_string(kHashLength) + ")");
-    }
-
     size_t expected_hashes_count{popcount_16(hash_mask)};
     hashes_count = hashes.length() / kHashLength;
     if (hashes_count == (expected_hashes_count + 1)) {

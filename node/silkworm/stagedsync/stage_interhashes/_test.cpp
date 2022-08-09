@@ -278,6 +278,35 @@ TEST_CASE("Trie Cursor") {
         REQUIRE(has_thrown_argument);
     }
 
+    SECTION("Malformed root trie - no root hash") {
+        trie::PrefixSet changed_accounts{};
+        db::Cursor trie_accounts(txn, db::table::kTrieOfAccounts);
+        trie::TrieCursor ta_cursor{trie_accounts, &changed_accounts};
+
+        Bytes k{};
+        Bytes v{
+            *from_hex("0xffffffff0001"                                                   /* state/tree/hash masks */
+                      "08a6097114f741d87630f06fd8f8ff6b11889389b1f65e2ac07cc239233c896a" /* hash 1 */
+                      )};
+
+        trie_accounts.insert(db::to_slice(k), db::to_slice(v));
+
+        bool has_thrown{false};
+        bool has_thrown_logic{false};
+        try {
+            // Must throw as node is loaded but being a root it does not have root hash
+            (void)ta_cursor.to_prefix({});
+        } catch (const std::logic_error&) {
+            has_thrown = true;
+            has_thrown_logic = true;
+        } catch (...) {
+            has_thrown = true;
+        }
+
+        REQUIRE(has_thrown);
+        REQUIRE(has_thrown_logic);
+    }
+
     SECTION("Only root trie with changes") {
         trie::PrefixSet changed_accounts{};
         db::Cursor trie_accounts(txn, db::table::kTrieOfAccounts);

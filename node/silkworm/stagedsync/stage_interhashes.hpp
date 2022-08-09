@@ -14,8 +14,7 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_STAGEDSYNC_STAGE_INTERHASHES_HPP_
-#define SILKWORM_STAGEDSYNC_STAGE_INTERHASHES_HPP_
+#pragma once
 
 #include <silkworm/etl/collector.hpp>
 #include <silkworm/stagedsync/common.hpp>
@@ -127,5 +126,3 @@ class InterHashes final : public IStage {
 };
 
 }  // namespace silkworm::stagedsync
-
-#endif  // SILKWORM_STAGEDSYNC_STAGE_INTERHASHES_HPP_

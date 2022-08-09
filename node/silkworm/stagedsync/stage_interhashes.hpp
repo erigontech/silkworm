@@ -18,7 +18,7 @@
 
 #include <silkworm/etl/collector.hpp>
 #include <silkworm/stagedsync/common.hpp>
-#include <silkworm/stagedsync/stage_interhashes/trie_cursor.hpp>
+#include <silkworm/stagedsync/stage_interhashes/trie_loader.hpp>
 #include <silkworm/trie/hash_builder.hpp>
 #include <silkworm/trie/prefix_set.hpp>
 
@@ -57,12 +57,8 @@ class InterHashes final : public IStage {
     [[nodiscard]] StageResult increment_intermediate_hashes(db::RWTxn& txn, BlockNum from, BlockNum to,
                                                             const evmc::bytes32* expected_root = nullptr);
 
-    //! \brief Erigon's IncrementIntermediateHashes
-    //! \remarks might throw
-    //! \return the state root
-    [[nodiscard]] StageResult increment_intermediate_hashes(db::RWTxn& txn, const evmc::bytes32* expected_root,
-                                                            trie::PrefixSet* account_changes,
-                                                            trie::PrefixSet* storage_changes);
+    //! \brief Persists in TrieAccount and TrieStorage the collected nodes (and respective deletions if any)
+    void flush_collected_nodes(db::RWTxn& txn);
 
     /*
     **Theoretically:** "Merkle trie root calculation" starts from state, build from state keys - trie,
@@ -105,13 +101,7 @@ class InterHashes final : public IStage {
     amount of iterations will not be big.
     */
 
-    //! \see Erigon's FlatDBTrieLoader
-    evmc::bytes32 calculate_root(db::RWTxn& txn, trie::PrefixSet* account_changes, trie::PrefixSet* storage_changes);
-
-    //! \see Erigon's FlatDBTrieLoader
-    evmc::bytes32 calculate_storage_root(trie::TrieCursor& ts_cursor, trie::HashBuilder& hbs,
-                                         db::Cursor& hashed_storage, const Bytes& db_storage_prefix);
-
+    std::unique_ptr<trie::TrieLoader> trie_loader_;      // The loader which (re)builds the trees
     std::unique_ptr<etl::Collector> account_collector_;  // To accumulate new records for kTrieOfAccounts
     std::unique_ptr<etl::Collector> storage_collector_;  // To accumulate new records for kTrieOfStorage
     std::unique_ptr<etl::Collector> loading_collector_;  // Effectively the current collector undergoing load (for log)

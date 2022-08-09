@@ -35,6 +35,12 @@ class TrieLoader {
     //! \remark May throw
     [[nodiscard]] evmc::bytes32 calculate_root();
 
+    //! \brief Returns the hex representation of current load key (for progress tracking)
+    [[nodiscard]] std::string get_log_key() const {
+        std::unique_lock l{log_mtx_};
+        return log_key_;
+    }
+
   private:
     db::RWTxn& txn_;
     PrefixSet* account_changes_;
@@ -44,12 +50,6 @@ class TrieLoader {
 
     std::string log_key_{};         // To export logging key
     mutable std::mutex log_mtx_{};  // Guards async logging
-
-    //! \brief Returns the hex representation of current load key (for progress tracking)
-    [[nodiscard]] std::string get_log_key() const {
-        std::unique_lock l{log_mtx_};
-        return log_key_;
-    }
 
     //! \brief (re)calculates storage root hash on behalf of collected hashed changes and existing data in
     //! TrieOfStorage bucket

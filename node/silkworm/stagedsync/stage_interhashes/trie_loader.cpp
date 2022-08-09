@@ -41,7 +41,6 @@ TrieLoader::TrieLoader(db::RWTxn& txn, PrefixSet* account_changes, PrefixSet* st
 }
 
 evmc::bytes32 TrieLoader::calculate_root() {
-
     using namespace std::chrono_literals;
     auto log_time{std::chrono::steady_clock::now()};
 
@@ -89,7 +88,6 @@ evmc::bytes32 TrieLoader::calculate_root() {
                                          ? hashed_accounts.to_first(false)
                                          : hashed_accounts.lower_bound(hashed_account_seek_slice, false)};
             while (hashed_account_data) {
-
                 auto hashed_account_data_key_view{db::from_slice(hashed_account_data.key)};
 
                 if (const auto now{std::chrono::steady_clock::now()}; log_time <= now) {
@@ -137,10 +135,14 @@ evmc::bytes32 TrieLoader::calculate_root() {
 
         trie_account_data = trie_account_cursor.to_next();
     }
+
+    auto root_hash{storage_hash_builder.root_hash()};
+    account_hash_builder.reset();
+    return root_hash;
 }
+
 evmc::bytes32 TrieLoader::calculate_storage_root(TrieCursor& trie_storage_cursor, HashBuilder& storage_hash_builder,
                                                  db::Cursor& hashed_storage, const Bytes& db_storage_prefix) {
-
     using namespace std::chrono_literals;
     auto log_time{std::chrono::steady_clock::now()};
 
@@ -155,7 +157,6 @@ evmc::bytes32 TrieLoader::calculate_storage_root(TrieCursor& trie_storage_cursor
                 hashed_storage.lower_bound_multivalue(db_storage_prefix_slice, prefix_slice, false)};
 
             while (hashed_storage_data) {
-
                 if (const auto now{std::chrono::steady_clock::now()}; log_time <= now) {
                     throw_if_signalled();
                 }

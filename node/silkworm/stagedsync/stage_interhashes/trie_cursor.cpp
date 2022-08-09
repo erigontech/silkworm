@@ -284,6 +284,9 @@ void TrieCursor::SubNode::parse(ByteView k, ByteView v) {
     tree_mask = endian::load_big_u16(&v[2]);
     hash_mask = endian::load_big_u16(&v[4]);
 
+    if (!state_mask) {
+        throw std::invalid_argument("state mask is zero");
+    }
     if (!is_subset(tree_mask, state_mask)) {
         throw std::invalid_argument("tree mask not subset of state mask");
     }

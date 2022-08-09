@@ -22,6 +22,7 @@
 #include <silkworm/stagedsync/stage_interhashes/trie_cursor.hpp>
 
 namespace silkworm {
+
 TEST_CASE("Trie Cursor") {
     test::Context db_context{};
     auto txn{db_context.txn()};
@@ -109,14 +110,123 @@ TEST_CASE("Trie Cursor") {
         REQUIRE(has_thrown);
     }
 
-    SECTION("Only malformed root trie no changes") {
+    SECTION("Malformed root trie - value len < 6") {
+        trie::PrefixSet changed_accounts{};
+        db::Cursor trie_accounts(txn, db::table::kTrieOfAccounts);
+        trie::TrieCursor ta_cursor{trie_accounts, &changed_accounts};
+
+        Bytes k{};
+        Bytes v{*from_hex("0xff")};
+
+        trie_accounts.insert(db::to_slice(k), db::to_slice(v));
+
+        bool has_thrown{false};
+        bool has_thrown_argument{false};
+        try {
+            // Must throw as we're at the end of tree
+            (void)ta_cursor.to_prefix({});
+        } catch (const std::invalid_argument&) {
+            has_thrown = true;
+            has_thrown_argument = true;
+        } catch (...) {
+            has_thrown = true;
+        }
+
+        REQUIRE(has_thrown);
+        REQUIRE(has_thrown_argument);
+    }
+
+    SECTION("Malformed root trie - value len >= 6 hashes len % kHashLength != 0") {
+        trie::PrefixSet changed_accounts{};
+        db::Cursor trie_accounts(txn, db::table::kTrieOfAccounts);
+        trie::TrieCursor ta_cursor{trie_accounts, &changed_accounts};
+
+        Bytes k{};
+        Bytes v{*from_hex("0xffffff0123456")};
+
+        trie_accounts.insert(db::to_slice(k), db::to_slice(v));
+
+        bool has_thrown{false};
+        bool has_thrown_argument{false};
+        try {
+            // Must throw as we're at the end of tree
+            (void)ta_cursor.to_prefix({});
+        } catch (const std::invalid_argument&) {
+            has_thrown = true;
+            has_thrown_argument = true;
+        } catch (...) {
+            has_thrown = true;
+        }
+
+        REQUIRE(has_thrown);
+        REQUIRE(has_thrown_argument);
+    }
+
+    SECTION("Malformed root trie - no state mask") {
+        trie::PrefixSet changed_accounts{};
+        db::Cursor trie_accounts(txn, db::table::kTrieOfAccounts);
+        trie::TrieCursor ta_cursor{trie_accounts, &changed_accounts};
+
+        Bytes k{};
+        Bytes v{*from_hex("0x00ffff")};
+
+        trie_accounts.insert(db::to_slice(k), db::to_slice(v));
+
+        bool has_thrown{false};
+        bool has_thrown_argument{false};
+        try {
+            // Must throw as we're at the end of tree
+            (void)ta_cursor.to_prefix({});
+        } catch (const std::invalid_argument&) {
+            has_thrown = true;
+            has_thrown_argument = true;
+        } catch (...) {
+            has_thrown = true;
+        }
+
+        REQUIRE(has_thrown);
+        REQUIRE(has_thrown_argument);
+    }
+
+    SECTION("Malformed root trie - more hashes than allowed") {
+        trie::PrefixSet changed_accounts{};
+        db::Cursor trie_accounts(txn, db::table::kTrieOfAccounts);
+        trie::TrieCursor ta_cursor{trie_accounts, &changed_accounts};
+
+        Bytes k{};
+        Bytes v{
+            *from_hex("0x00ff01"                                                         /* state/tree/hash masks */
+                      "08a6097114f741d87630f06fd8f8ff6b11889389b1f65e2ac07cc239233c896a" /* hash 1 */
+                      "08a6097114f741d87630f06fd8f8ff6b11889389b1f65e2ac07cc239233c896a" /* hash 2 */
+                      "08a6097114f741d87630f06fd8f8ff6b11889389b1f65e2ac07cc239233c896a" /* hash 3 */
+                      )};
+
+        trie_accounts.insert(db::to_slice(k), db::to_slice(v));
+
+        bool has_thrown{false};
+        bool has_thrown_argument{false};
+        try {
+            // Must throw as we're at the end of tree
+            (void)ta_cursor.to_prefix({});
+        } catch (const std::invalid_argument&) {
+            has_thrown = true;
+            has_thrown_argument = true;
+        } catch (...) {
+            has_thrown = true;
+        }
+
+        REQUIRE(has_thrown);
+        REQUIRE(has_thrown_argument);
+    }
+
+    SECTION("Malformed root trie no changes") {
         trie::PrefixSet changed_accounts{};
         db::Cursor trie_accounts(txn, db::table::kTrieOfAccounts);
         trie::TrieCursor ta_cursor{trie_accounts, &changed_accounts};
 
         Bytes k{};
         Bytes v{*from_hex(
-            "0xffffffffffffc587157345c796457244932c27c7"
+            "0xffffffffffffc587157345c796457244932c27c7" /* missing a part of hash */
             "2a5b59b2af68229aced2a35c11064fcb52183c3a01330eeb55d1bc5229391d98f1d47677ff57f04aa31bccb2eae0458bf2435fc423"
             "08a6097114f741d87630f06fd8f8ff6b11889389b1f65e2ac07cc239233c896ad842d010f886b4ffbc558eb8dc2f20ad47f0fc082f"
             "c081d1ed1c354d51e1c6c148e00033f6699ff564e316647628c9d9b51204faf3841a6ca538e768be56a17afb284f6a858115b652be"

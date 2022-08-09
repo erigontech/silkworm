@@ -142,7 +142,7 @@ TEST_CASE("Trie Cursor") {
         trie::TrieCursor ta_cursor{trie_accounts, &changed_accounts};
 
         Bytes k{};
-        Bytes v{*from_hex("0xffffff0123456")};
+        Bytes v{*from_hex("0xffffffffffff0123456")};
 
         trie_accounts.insert(db::to_slice(k), db::to_slice(v));
 
@@ -168,7 +168,36 @@ TEST_CASE("Trie Cursor") {
         trie::TrieCursor ta_cursor{trie_accounts, &changed_accounts};
 
         Bytes k{};
-        Bytes v{*from_hex("0x00ffff")};
+        Bytes v{*from_hex("0x0000ffffffff")};
+
+        trie_accounts.insert(db::to_slice(k), db::to_slice(v));
+
+        bool has_thrown{false};
+        bool has_thrown_argument{false};
+        try {
+            // Must throw as we're at the end of tree
+            (void)ta_cursor.to_prefix({});
+        } catch (const std::invalid_argument&) {
+            has_thrown = true;
+            has_thrown_argument = true;
+        } catch (...) {
+            has_thrown = true;
+        }
+
+        REQUIRE(has_thrown);
+        REQUIRE(has_thrown_argument);
+    }
+
+    SECTION("Malformed root trie - tree mask not subset of state mask") {
+        trie::PrefixSet changed_accounts{};
+        db::Cursor trie_accounts(txn, db::table::kTrieOfAccounts);
+        trie::TrieCursor ta_cursor{trie_accounts, &changed_accounts};
+
+        Bytes k{};
+        Bytes v{
+            *from_hex("0001" /* 0b0000000000000001 */
+                      "0400" /* 0b0000010000000000 */
+                      "0000" /* 0b0000000000000000 */)};
 
         trie_accounts.insert(db::to_slice(k), db::to_slice(v));
 
@@ -195,7 +224,7 @@ TEST_CASE("Trie Cursor") {
 
         Bytes k{};
         Bytes v{
-            *from_hex("0x00ff01"                                                         /* state/tree/hash masks */
+            *from_hex("0xffffffff0001"                                                   /* state/tree/hash masks */
                       "08a6097114f741d87630f06fd8f8ff6b11889389b1f65e2ac07cc239233c896a" /* hash 1 */
                       "08a6097114f741d87630f06fd8f8ff6b11889389b1f65e2ac07cc239233c896a" /* hash 2 */
                       "08a6097114f741d87630f06fd8f8ff6b11889389b1f65e2ac07cc239233c896a" /* hash 3 */

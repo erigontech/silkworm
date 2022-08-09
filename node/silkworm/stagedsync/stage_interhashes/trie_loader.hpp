@@ -42,8 +42,22 @@ class TrieLoader {
     etl::Collector* account_trie_node_collector_;
     etl::Collector* storage_trie_node_collector_;
 
+    std::string log_key_{};         // To export logging key
+    mutable std::mutex log_mtx_{};  // Guards async logging
+
+    //! \brief Returns the hex representation of current load key (for progress tracking)
+    [[nodiscard]] std::string get_log_key() const {
+        std::unique_lock l{log_mtx_};
+        return log_key_;
+    }
+
+    //! \brief (re)calculates storage root hash on behalf of collected hashed changes and existing data in
+    //! TrieOfStorage bucket
+    //! \return The computed hash
+    //! \remark May throw
     [[nodiscard]] evmc::bytes32 calculate_storage_root(TrieCursor& trie_storage_cursor,
                                                        HashBuilder& storage_hash_builder, db::Cursor& hashed_storage,
                                                        const Bytes& db_storage_prefix);
+    void throw_if_signalled();
 };
 }  // namespace silkworm::trie

@@ -17,6 +17,7 @@
 #include "trie_loader.hpp"
 
 #include <silkworm/common/rlp_err.hpp>
+#include <silkworm/concurrency/signal_handler.hpp>
 #include <silkworm/db/tables.hpp>
 #include <silkworm/trie/nibbles.hpp>
 #include <silkworm/types/account.hpp>
@@ -40,6 +41,10 @@ TrieLoader::TrieLoader(db::RWTxn& txn, PrefixSet* account_changes, PrefixSet* st
 }
 
 evmc::bytes32 TrieLoader::calculate_root() {
+
+    using namespace std::chrono_literals;
+    auto log_time{std::chrono::steady_clock::now()};
+
     db::Cursor hashed_accounts(txn_, db::table::kHashedAccounts);
     db::Cursor hashed_storage(txn_, db::table::kHashedStorage);
     db::Cursor trie_accounts(txn_, db::table::kTrieOfAccounts);
@@ -84,7 +89,16 @@ evmc::bytes32 TrieLoader::calculate_root() {
                                          ? hashed_accounts.to_first(false)
                                          : hashed_accounts.lower_bound(hashed_account_seek_slice, false)};
             while (hashed_account_data) {
+
                 auto hashed_account_data_key_view{db::from_slice(hashed_account_data.key)};
+
+                if (const auto now{std::chrono::steady_clock::now()}; log_time <= now) {
+                    throw_if_signalled();
+                    std::unique_lock log_lck(log_mtx_);
+                    log_key_ = to_hex(hashed_account_data_key_view, true);
+                    log_time = now + 2s;
+                }
+
                 auto hashed_account_data_key_nibbled{unpack_nibbles(hashed_account_data_key_view)};
                 if (trie_account_data.key.has_value() &&
                     trie_account_data.key.value() < hashed_account_data_key_nibbled) {
@@ -126,7 +140,12 @@ evmc::bytes32 TrieLoader::calculate_root() {
 }
 evmc::bytes32 TrieLoader::calculate_storage_root(TrieCursor& trie_storage_cursor, HashBuilder& storage_hash_builder,
                                                  db::Cursor& hashed_storage, const Bytes& db_storage_prefix) {
+
+    using namespace std::chrono_literals;
+    auto log_time{std::chrono::steady_clock::now()};
+
     static Bytes rlp_buffer{};
+
     const auto db_storage_prefix_slice{db::to_slice(db_storage_prefix)};
     auto trie_storage_data{trie_storage_cursor.to_prefix(db_storage_prefix)};
     while (true) {
@@ -136,6 +155,11 @@ evmc::bytes32 TrieLoader::calculate_storage_root(TrieCursor& trie_storage_cursor
                 hashed_storage.lower_bound_multivalue(db_storage_prefix_slice, prefix_slice, false)};
 
             while (hashed_storage_data) {
+
+                if (const auto now{std::chrono::steady_clock::now()}; log_time <= now) {
+                    throw_if_signalled();
+                }
+
                 auto hashed_storage_data_value_view{db::from_slice(hashed_storage_data.value)};
                 const auto nibbled_location{
                     trie::unpack_nibbles(hashed_storage_data_value_view.substr(0, kHashLength))};
@@ -170,6 +194,12 @@ evmc::bytes32 TrieLoader::calculate_storage_root(TrieCursor& trie_storage_cursor
     auto storage_root{storage_hash_builder.root_hash()};
     storage_hash_builder.reset();
     return storage_root;
+}
+
+void TrieLoader::throw_if_signalled() {
+    if (SignalHandler::signalled()) {
+        throw std::runtime_error("aborted");
+    }
 }
 
 }  // namespace silkworm::trie

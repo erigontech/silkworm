@@ -393,7 +393,7 @@ StageResult InterHashes::regenerate_intermediate_hashes(db::RWTxn& txn, const ev
         current_source_ = "HashState";
         current_target_.clear();
         current_key_.clear();
-        trie_loader_ = std::make_unique<trie::TrieLoader>(txn, nullptr, nullptr, account_collector_.get(),
+        trie_loader_ = std::make_unique<trie::TrieLoader>(*txn, nullptr, nullptr, account_collector_.get(),
                                                           storage_collector_.get());
         log_lck.unlock();
 
@@ -457,7 +457,7 @@ StageResult InterHashes::increment_intermediate_hashes(db::RWTxn& txn, BlockNum 
         current_source_ = "ChangeSets";
         current_target_.clear();
         current_key_.clear();
-        trie_loader_ = std::make_unique<trie::TrieLoader>(txn, &account_changes, &storage_changes,
+        trie_loader_ = std::make_unique<trie::TrieLoader>(*txn, &account_changes, &storage_changes,
                                                           account_collector_.get(), storage_collector_.get());
         log_lck.unlock();
 
@@ -508,7 +508,7 @@ void InterHashes::flush_collected_nodes(db::RWTxn& txn) {
     log_lck.unlock();
 
     db::Cursor target(txn, db::table::kTrieOfAccounts);
-    MDBX_put_flags_t flags{target.size() ? MDBX_put_flags_t::MDBX_UPSERT : MDBX_put_flags_t::MDBX_APPEND};
+    MDBX_put_flags_t flags{target.empty() ? MDBX_put_flags_t::MDBX_APPEND : MDBX_put_flags_t::MDBX_UPSERT};
     loading_collector_->load(target, nullptr, flags);
 
     log_lck.lock();
@@ -517,7 +517,7 @@ void InterHashes::flush_collected_nodes(db::RWTxn& txn) {
     log_lck.unlock();
 
     target.bind(txn, db::table::kTrieOfStorage);
-    flags = target.get_map_stat().ms_entries ? MDBX_put_flags_t::MDBX_UPSERT : MDBX_put_flags_t::MDBX_APPEND;
+    flags = target.empty() ? MDBX_put_flags_t::MDBX_APPEND : MDBX_put_flags_t::MDBX_UPSERT;
     loading_collector_->load(target, nullptr, flags);
 
     log_lck.lock();

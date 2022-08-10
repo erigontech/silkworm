@@ -20,8 +20,12 @@
 #include <silkworm/db/tables.hpp>
 #include <silkworm/etl/collector.hpp>
 #include <silkworm/stagedsync/stage_interhashes/trie_cursor.hpp>
+#include <silkworm/stagedsync/stage_interhashes/trie_loader.hpp>
+#include <silkworm/trie/hash_builder.hpp>
+#include <silkworm/trie/nibbles.hpp>
+#include <silkworm/types/account.hpp>
 
-namespace silkworm {
+namespace silkworm::trie {
 
 TEST_CASE("Trie Cursor") {
     test::Context db_context{};
@@ -423,7 +427,7 @@ TEST_CASE("Trie Cursor") {
             trie_accounts.insert(db::to_slice(k), db::to_slice(v));
         }
 
-        // Insert a change so we don't get hash of root and
+        // Insert a change, so we don't get hash of root and
         // cursor forced to descend and traverse children
         changed_accounts.insert(*from_hex("0x000001"));
 
@@ -535,4 +539,325 @@ TEST_CASE("Trie Cursor KeyIsBefore") {
     REQUIRE(trie::TrieCursor::key_is_before(input2_view, input1_view) == false);
 }
 
-}  // namespace silkworm
+static evmc::bytes32 setup_storage(mdbx::txn& txn, ByteView storage_key) {
+    static const std::vector<std::pair<evmc::bytes32, Bytes>> locations{
+        {0x1200000000000000000000000000000000000000000000000000000000000000_bytes32, *from_hex("0x42")},
+        {0x1400000000000000000000000000000000000000000000000000000000000000_bytes32, *from_hex("0x01")},
+        {0x3000000000000000000000000000000000000000000000000000000000E00000_bytes32, *from_hex("0x127a89")},
+        {0x3000000000000000000000000000000000000000000000000000000000E00001_bytes32, *from_hex("0x05")},
+    };
+
+    db::Cursor hashed_storage(txn, db::table::kHashedStorage);
+    HashBuilder storage_hb;
+    Bytes value_rlp{};
+
+    for (auto [location, value] : locations) {
+        db::upsert_storage_value(hashed_storage, storage_key, location, value);
+        value_rlp.clear();
+        rlp::encode(value_rlp, value);
+        storage_hb.add_leaf(unpack_nibbles(location), value_rlp);
+    }
+
+    return storage_hb.root_hash();
+}
+
+static std::map<Bytes, Node> read_all_nodes(mdbx::cursor& cursor) {
+    cursor.to_first(/*throw_notfound=*/false);
+    std::map<Bytes, Node> out;
+    db::WalkFunc save_nodes{[&out](mdbx::cursor&, mdbx::cursor::move_result& entry) {
+        const Node node{*Node::from_encoded_storage(db::from_slice(entry.value))};
+        out.emplace(db::from_slice(entry.key), node);
+        return true;
+    }};
+    db::cursor_for_each(cursor, save_nodes);
+    return out;
+}
+
+static Bytes nibbles_from_hex(std::string_view s) {
+    Bytes unpacked(s.size(), '\0');
+    for (size_t i{0}; i < s.size(); ++i) {
+        unpacked[i] = *decode_hex_digit(s[i]);
+    }
+    return unpacked;
+}
+
+static std::string nibbles_to_hex(ByteView unpacked) {
+    static const char* kHexDigits{"0123456789ABCDEF"};
+
+    std::string out;
+    out.reserve(unpacked.length());
+
+    for (uint8_t x : unpacked) {
+        out.push_back(kHexDigits[x]);
+    }
+
+    return out;
+}
+
+TEST_CASE("Account and storage trie") {
+    test::Context context;
+    auto& txn{context.txn()};
+
+    // ----------------------------------------------------------------
+    // Set up test accounts according to the example
+    // in the big comment in intermediate_hashes.hpp
+    // ----------------------------------------------------------------
+
+    auto hashed_accounts{db::open_cursor(txn, db::table::kHashedAccounts)};
+
+    HashBuilder hb;
+
+    const auto key1{0xB000000000000000000000000000000000000000000000000000000000000000_bytes32};
+    const Account a1{0, 3 * kEther};
+    hashed_accounts.upsert(db::to_slice(key1), db::to_slice(a1.encode_for_storage()));
+    hb.add_leaf(unpack_nibbles(key1), a1.rlp(/*storage_root=*/kEmptyRoot));
+
+    // Some address whose hash starts with 0xB040
+    const auto address2{0x7db3e81b72d2695e19764583f6d219dbee0f35ca_address};
+    const auto key2{keccak256(address2)};
+    REQUIRE((key2.bytes[0] == 0xB0 && key2.bytes[1] == 0x40));
+    const Account a2{0, 1 * kEther};
+    hashed_accounts.upsert(db::to_slice(key2.bytes), db::to_slice(a2.encode_for_storage()));
+    hb.add_leaf(unpack_nibbles(key2.bytes), a2.rlp(/*storage_root=*/kEmptyRoot));
+
+    // Some address whose hash starts with 0xB041
+    const auto address3{0x16b07afd1c635f77172e842a000ead9a2a222459_address};
+    const auto key3{keccak256(address3)};
+    REQUIRE((key3.bytes[0] == 0xB0 && key3.bytes[1] == 0x41));
+    const auto code_hash{0x5be74cad16203c4905c068b012a2e9fb6d19d036c410f16fd177f337541440dd_bytes32};
+    const Account a3{0, 2 * kEther, code_hash, kDefaultIncarnation};
+    hashed_accounts.upsert(db::to_slice(key3.bytes), db::to_slice(a3.encode_for_storage()));
+
+    Bytes storage_key{db::storage_prefix(key3.bytes, kDefaultIncarnation)};
+    const evmc::bytes32 storage_root{setup_storage(txn, storage_key)};
+
+    hb.add_leaf(unpack_nibbles(key3.bytes), a3.rlp(storage_root));
+
+    const auto key4a{0xB1A0000000000000000000000000000000000000000000000000000000000000_bytes32};
+    const Account a4a{0, 4 * kEther};
+    hashed_accounts.upsert(db::to_slice(key4a), db::to_slice(a4a.encode_for_storage()));
+    hb.add_leaf(unpack_nibbles(key4a), a4a.rlp(/*storage_root=*/kEmptyRoot));
+
+    const auto key5{0xB310000000000000000000000000000000000000000000000000000000000000_bytes32};
+    const Account a5{0, 8 * kEther};
+    hashed_accounts.upsert(db::to_slice(key5), db::to_slice(a5.encode_for_storage()));
+    hb.add_leaf(unpack_nibbles(key5), a5.rlp(/*storage_root=*/kEmptyRoot));
+
+    const auto key6{0xB340000000000000000000000000000000000000000000000000000000000000_bytes32};
+    const Account a6{0, 1 * kEther};
+    hashed_accounts.upsert(db::to_slice(key6), db::to_slice(a6.encode_for_storage()));
+    hb.add_leaf(unpack_nibbles(key6), a6.rlp(/*storage_root=*/kEmptyRoot));
+
+    // ----------------------------------------------------------------
+    // Populate account & storage trie DB tables
+    // ----------------------------------------------------------------
+
+    evmc::bytes32 expected_root{hb.root_hash()};
+    evmc::bytes32 computed_root{};
+    {
+        etl::Collector account_trie_node_collector{context.dir().etl().path()};
+        etl::Collector storage_trie_node_collector{context.dir().etl().path()};
+        TrieLoader trie_loader(txn, nullptr, nullptr, &account_trie_node_collector, &storage_trie_node_collector);
+        computed_root = trie_loader.calculate_root();
+        REQUIRE(computed_root == expected_root);
+
+        // Save collected node changes
+        db::Cursor target(txn, db::table::kTrieOfAccounts);
+        MDBX_put_flags_t flags{target.size() ? MDBX_put_flags_t::MDBX_UPSERT : MDBX_put_flags_t::MDBX_APPEND};
+        account_trie_node_collector.load(target, nullptr, flags);
+
+        target.bind(txn, db::table::kTrieOfStorage);
+        flags = target.empty() ? MDBX_put_flags_t::MDBX_APPEND : MDBX_put_flags_t::MDBX_UPSERT;
+        storage_trie_node_collector.load(target, nullptr, flags);
+    }
+
+    // ----------------------------------------------------------------
+    // Check account trie
+    // ----------------------------------------------------------------
+
+    db::Cursor account_trie(txn, db::table::kTrieOfAccounts);
+    REQUIRE(account_trie.size() == 2);
+
+    std::map<Bytes, Node> node_map{read_all_nodes(account_trie)};
+    REQUIRE(node_map.size() == account_trie.size());
+
+    const Node node1a{node_map.at(nibbles_from_hex("B"))};
+
+    CHECK(0b1011 == node1a.state_mask());
+    CHECK(0b0001 == node1a.tree_mask());
+    CHECK(0b1001 == node1a.hash_mask());
+
+    CHECK(node1a.root_hash() == std::nullopt);
+    CHECK(node1a.hashes().size() == 2);
+
+    const Node node2a{node_map.at(nibbles_from_hex("B0"))};
+
+    CHECK(0b10001 == node2a.state_mask());
+    CHECK(0b00000 == node2a.tree_mask());
+    CHECK(0b10000 == node2a.hash_mask());
+
+    CHECK(node2a.root_hash() == std::nullopt);
+    CHECK(node2a.hashes().size() == 1);
+
+    // ----------------------------------------------------------------
+    // Check storage trie
+    // ----------------------------------------------------------------
+
+    db::Cursor storage_trie(txn, db::table::kTrieOfStorage);
+    REQUIRE(storage_trie.size() == 1);
+
+    node_map = read_all_nodes(storage_trie);
+    CHECK(node_map.size() == storage_trie.size());
+
+    const Node node3{node_map.at(storage_key)};
+
+    CHECK(0b1010 == node3.state_mask());
+    CHECK(0b0000 == node3.tree_mask());
+    CHECK(0b0010 == node3.hash_mask());
+
+    CHECK(node3.root_hash() == storage_root);
+    CHECK(node3.hashes().size() == 1);
+
+    // ----------------------------------------------------------------
+    // Add an account
+    // ----------------------------------------------------------------
+
+    // Some address whose hash starts with 0xB1
+    const auto address4b{0x4f61f2d5ebd991b85aa1677db97307caf5215c91_address};
+    const auto key4b{keccak256(address4b)};
+    REQUIRE(key4b.bytes[0] == key4a.bytes[0]);
+
+    const Account a4b{0, 5 * kEther};
+    hashed_accounts.upsert(db::to_slice(key4b.bytes), db::to_slice(a4b.encode_for_storage()));
+
+    PrefixSet account_changes{};
+    PrefixSet storage_changes{};
+    account_changes.insert(Bytes(&key4b.bytes[0], kHashLength));
+
+    expected_root = 0x8e263cd4eefb0c3cbbb14e5541a66a755cad25bcfab1e10dd9d706263e811b28_bytes32;
+
+    {
+        etl::Collector account_trie_node_collector{context.dir().etl().path()};
+        etl::Collector storage_trie_node_collector{context.dir().etl().path()};
+        TrieLoader trie_loader(txn, &account_changes, &storage_changes, &account_trie_node_collector,
+                               &storage_trie_node_collector);
+        computed_root = trie_loader.calculate_root();
+        REQUIRE(expected_root == computed_root);
+
+        // Save collected node changes
+        db::Cursor target(txn, db::table::kTrieOfAccounts);
+        MDBX_put_flags_t flags{target.size() ? MDBX_put_flags_t::MDBX_UPSERT : MDBX_put_flags_t::MDBX_APPEND};
+        account_trie_node_collector.load(target, nullptr, flags);
+
+        target.bind(txn, db::table::kTrieOfStorage);
+        flags = target.empty() ? MDBX_put_flags_t::MDBX_APPEND : MDBX_put_flags_t::MDBX_UPSERT;
+        storage_trie_node_collector.load(target, nullptr, flags);
+    }
+
+    node_map = read_all_nodes(account_trie);
+    CHECK(node_map.size() == 2);
+
+    const Node node1b{node_map.at(nibbles_from_hex("B"))};
+    CHECK(0b1011 == node1b.state_mask());
+    CHECK(0b0001 == node1b.tree_mask());
+    CHECK(0b1011 == node1b.hash_mask());
+
+    CHECK(node1b.root_hash() == std::nullopt);
+
+    REQUIRE(node1b.hashes().size() == 3);
+    CHECK(node1a.hashes()[0] == node1b.hashes()[0]);
+    CHECK(node1a.hashes()[1] == node1b.hashes()[2]);
+
+    const Node node2b{node_map.at(nibbles_from_hex("B0"))};
+    CHECK(node2a == node2b);
+
+    SECTION("Delete an account") {
+        account_changes.clear();
+        storage_changes.clear();
+
+        hashed_accounts.erase(db::to_slice(key2.bytes));
+        account_changes.insert(Bytes(&key2.bytes[0], kHashLength));
+        expected_root = 0x986b623eac8b26c8624cbaffaa60c1b48a7b88be1574bd98bd88391fc34c0a9c_bytes32;
+
+        {
+            etl::Collector account_trie_node_collector{context.dir().etl().path()};
+            etl::Collector storage_trie_node_collector{context.dir().etl().path()};
+            TrieLoader trie_loader(txn, &account_changes, &storage_changes, &account_trie_node_collector,
+                                   &storage_trie_node_collector);
+            computed_root = trie_loader.calculate_root();
+            REQUIRE(computed_root == expected_root);
+
+            // Save collected node changes
+            db::Cursor target(txn, db::table::kTrieOfAccounts);
+            MDBX_put_flags_t flags{target.size() ? MDBX_put_flags_t::MDBX_UPSERT : MDBX_put_flags_t::MDBX_APPEND};
+            account_trie_node_collector.load(target, nullptr, flags);
+
+            target.bind(txn, db::table::kTrieOfStorage);
+            flags = target.empty() ? MDBX_put_flags_t::MDBX_APPEND : MDBX_put_flags_t::MDBX_UPSERT;
+            storage_trie_node_collector.load(target, nullptr, flags);
+        }
+
+        node_map = read_all_nodes(account_trie);
+
+        // Compared to previous case the node 0b40 has been deleted so nodes are 3-1 == 2
+        CHECK(node_map.size() == 2);
+
+        const Node node1c{node_map.at(nibbles_from_hex("B"))};
+        CHECK(0b1011 == node1c.state_mask());
+        CHECK(0b0000 == node1c.tree_mask());
+        CHECK(0b1011 == node1c.hash_mask());
+
+        CHECK(node1c.root_hash() == std::nullopt);
+
+        REQUIRE(node1c.hashes().size() == 3);
+        CHECK(node1b.hashes()[0] != node1c.hashes()[0]);
+        CHECK(node1b.hashes()[1] == node1c.hashes()[1]);
+        CHECK(node1b.hashes()[2] == node1c.hashes()[2]);
+    }
+
+    SECTION("Delete several accounts") {
+        account_changes.clear();
+        storage_changes.clear();
+
+        hashed_accounts.erase(db::to_slice(key2.bytes));
+        account_changes.insert(Bytes(&key2.bytes[0], kHashLength));
+
+        hashed_accounts.erase(db::to_slice(key3.bytes));
+        account_changes.insert(Bytes(&key3.bytes[0], kHashLength));
+        expected_root = 0xaa953dc994f3375a95f2c413ed5a1a5a2f84d34b377d7587e3aa8dba944c12bf_bytes32;
+
+        {
+            etl::Collector account_trie_node_collector{context.dir().etl().path()};
+            etl::Collector storage_trie_node_collector{context.dir().etl().path()};
+            TrieLoader trie_loader(txn, &account_changes, &storage_changes, &account_trie_node_collector,
+                                   &storage_trie_node_collector);
+            computed_root = trie_loader.calculate_root();
+            REQUIRE(computed_root == expected_root);
+
+            // Save collected node changes
+            db::Cursor target(txn, db::table::kTrieOfAccounts);
+            MDBX_put_flags_t flags{target.size() ? MDBX_put_flags_t::MDBX_UPSERT : MDBX_put_flags_t::MDBX_APPEND};
+            account_trie_node_collector.load(target, nullptr, flags);
+
+            target.bind(txn, db::table::kTrieOfStorage);
+            flags = target.empty() ? MDBX_put_flags_t::MDBX_APPEND : MDBX_put_flags_t::MDBX_UPSERT;
+            storage_trie_node_collector.load(target, nullptr, flags);
+        }
+
+        node_map = read_all_nodes(account_trie);
+        CHECK(node_map.size() == 2);
+
+        const Node node1c{node_map.at(nibbles_from_hex("B"))};
+        CHECK(0b1011 == node1c.state_mask());
+        CHECK(0b0000 == node1c.tree_mask());
+        CHECK(0b1010 == node1c.hash_mask());
+
+        CHECK(node1c.root_hash() == std::nullopt);
+
+        REQUIRE(node1c.hashes().size() == 2);
+        CHECK(node1b.hashes()[1] == node1c.hashes()[0]);
+        CHECK(node1b.hashes()[2] == node1c.hashes()[1]);
+    }
+}
+
+}  // namespace silkworm::trie

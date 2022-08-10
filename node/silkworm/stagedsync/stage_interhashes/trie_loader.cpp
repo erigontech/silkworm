@@ -24,7 +24,7 @@
 
 namespace silkworm::trie {
 
-TrieLoader::TrieLoader(db::RWTxn& txn, PrefixSet* account_changes, PrefixSet* storage_changes,
+TrieLoader::TrieLoader(mdbx::txn& txn, PrefixSet* account_changes, PrefixSet* storage_changes,
                        etl::Collector* account_trie_node_collector, etl::Collector* storage_trie_node_collector)
     : txn_{txn},
       account_changes_{account_changes},

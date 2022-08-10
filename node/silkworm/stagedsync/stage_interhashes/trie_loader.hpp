@@ -26,7 +26,7 @@ namespace silkworm::trie {
 
 class TrieLoader {
   public:
-    explicit TrieLoader(db::RWTxn& txn, PrefixSet* account_changes, PrefixSet* storage_changes,
+    explicit TrieLoader(mdbx::txn& txn, PrefixSet* account_changes, PrefixSet* storage_changes,
                         etl::Collector* account_trie_node_collector, etl::Collector* storage_trie_node_collector);
 
     //! \brief (re)calculates root hash on behalf of collected hashed changes and existing data in TrieOfAccount and
@@ -42,7 +42,7 @@ class TrieLoader {
     }
 
   private:
-    db::RWTxn& txn_;
+    mdbx::txn& txn_;
     PrefixSet* account_changes_;
     PrefixSet* storage_changes_;
     etl::Collector* account_trie_node_collector_;

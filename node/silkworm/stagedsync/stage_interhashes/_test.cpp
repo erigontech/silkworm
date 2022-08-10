@@ -840,4 +840,54 @@ TEST_CASE("Account and storage trie") {
     }
 }
 
+TEST_CASE("Account trie around extension node") {
+    const Account a{0, 1 * kEther};
+
+    const std::vector<evmc::bytes32> keys{
+        0x30af561000000000000000000000000000000000000000000000000000000000_bytes32,
+        0x30af569000000000000000000000000000000000000000000000000000000000_bytes32,
+        0x30af650000000000000000000000000000000000000000000000000000000000_bytes32,
+        0x30af6f0000000000000000000000000000000000000000000000000000000000_bytes32,
+        0x30af8f0000000000000000000000000000000000000000000000000000000000_bytes32,
+        0x3100000000000000000000000000000000000000000000000000000000000000_bytes32,
+    };
+
+    test::Context context;
+    auto& txn{context.txn()};
+
+    auto hashed_accounts{db::open_cursor(txn, db::table::kHashedAccounts)};
+    HashBuilder hb;
+
+    for (const auto& key : keys) {
+        hashed_accounts.upsert(db::to_slice(key), db::to_slice(a.encode_for_storage()));
+        hb.add_leaf(unpack_nibbles(key), a.rlp(/*storage_root=*/kEmptyRoot));
+    }
+
+    const evmc::bytes32 expected_root{hb.root_hash()};
+    const evmc::bytes32 computed_root{regenerate_intermediate_hashes(txn, context.dir().etl().path())};
+    REQUIRE(expected_root == computed_root);
+
+    db::Cursor account_trie(txn, db::table::kTrieOfAccounts);
+    std::map<Bytes, Node> node_map{read_all_nodes(account_trie)};
+    CHECK(node_map.size() == 2);
+
+    const Node node1{node_map.at(nibbles_from_hex("3"))};
+
+    CHECK(0b11 == node1.state_mask());
+    CHECK(0b01 == node1.tree_mask());
+    CHECK(0b00 == node1.hash_mask());
+
+    CHECK(node1.root_hash() == std::nullopt);
+    CHECK(node1.hashes().empty());
+
+    const Node node2{node_map.at(nibbles_from_hex("30af"))};
+
+    CHECK(0b101100000 == node2.state_mask());
+    CHECK(0b000000000 == node2.tree_mask());
+    CHECK(0b001000000 == node2.hash_mask());
+
+    CHECK(node2.root_hash() == std::nullopt);
+    CHECK(node2.hashes().size() == 1);
+}
+
 }  // namespace silkworm::trie

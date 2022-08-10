@@ -594,6 +594,32 @@ static std::string nibbles_to_hex(ByteView unpacked) {
     return out;
 }
 
+static evmc::bytes32 increment_intermediate_hashes(mdbx::txn& txn, std::filesystem::path etl_path,
+                                                   PrefixSet* account_changes, PrefixSet* storage_changes) {
+    etl::Collector account_trie_node_collector{etl_path};
+    etl::Collector storage_trie_node_collector{etl_path};
+
+    TrieLoader trie_loader(txn, account_changes, storage_changes, &account_trie_node_collector,
+                           &storage_trie_node_collector);
+
+    auto computed_root{trie_loader.calculate_root()};
+
+    // Save collected node changes
+    db::Cursor target(txn, db::table::kTrieOfAccounts);
+    MDBX_put_flags_t flags{target.size() ? MDBX_put_flags_t::MDBX_UPSERT : MDBX_put_flags_t::MDBX_APPEND};
+    account_trie_node_collector.load(target, nullptr, flags);
+
+    target.bind(txn, db::table::kTrieOfStorage);
+    flags = target.empty() ? MDBX_put_flags_t::MDBX_APPEND : MDBX_put_flags_t::MDBX_UPSERT;
+    storage_trie_node_collector.load(target, nullptr, flags);
+
+    return computed_root;
+}
+
+static evmc::bytes32 regenerate_intermediate_hashes(mdbx::txn& txn, std::filesystem::path etl_path) {
+    return increment_intermediate_hashes(txn, etl_path, nullptr, nullptr);
+}
+
 TEST_CASE("Account and storage trie") {
     test::Context context;
     auto& txn{context.txn()};
@@ -653,23 +679,8 @@ TEST_CASE("Account and storage trie") {
     // ----------------------------------------------------------------
 
     evmc::bytes32 expected_root{hb.root_hash()};
-    evmc::bytes32 computed_root{};
-    {
-        etl::Collector account_trie_node_collector{context.dir().etl().path()};
-        etl::Collector storage_trie_node_collector{context.dir().etl().path()};
-        TrieLoader trie_loader(txn, nullptr, nullptr, &account_trie_node_collector, &storage_trie_node_collector);
-        computed_root = trie_loader.calculate_root();
-        REQUIRE(computed_root == expected_root);
-
-        // Save collected node changes
-        db::Cursor target(txn, db::table::kTrieOfAccounts);
-        MDBX_put_flags_t flags{target.size() ? MDBX_put_flags_t::MDBX_UPSERT : MDBX_put_flags_t::MDBX_APPEND};
-        account_trie_node_collector.load(target, nullptr, flags);
-
-        target.bind(txn, db::table::kTrieOfStorage);
-        flags = target.empty() ? MDBX_put_flags_t::MDBX_APPEND : MDBX_put_flags_t::MDBX_UPSERT;
-        storage_trie_node_collector.load(target, nullptr, flags);
-    }
+    evmc::bytes32 computed_root{regenerate_intermediate_hashes(txn, context.dir().etl().path())};
+    REQUIRE(computed_root == expected_root);
 
     // ----------------------------------------------------------------
     // Check account trie
@@ -735,24 +746,8 @@ TEST_CASE("Account and storage trie") {
     account_changes.insert(Bytes(&key4b.bytes[0], kHashLength));
 
     expected_root = 0x8e263cd4eefb0c3cbbb14e5541a66a755cad25bcfab1e10dd9d706263e811b28_bytes32;
-
-    {
-        etl::Collector account_trie_node_collector{context.dir().etl().path()};
-        etl::Collector storage_trie_node_collector{context.dir().etl().path()};
-        TrieLoader trie_loader(txn, &account_changes, &storage_changes, &account_trie_node_collector,
-                               &storage_trie_node_collector);
-        computed_root = trie_loader.calculate_root();
-        REQUIRE(expected_root == computed_root);
-
-        // Save collected node changes
-        db::Cursor target(txn, db::table::kTrieOfAccounts);
-        MDBX_put_flags_t flags{target.size() ? MDBX_put_flags_t::MDBX_UPSERT : MDBX_put_flags_t::MDBX_APPEND};
-        account_trie_node_collector.load(target, nullptr, flags);
-
-        target.bind(txn, db::table::kTrieOfStorage);
-        flags = target.empty() ? MDBX_put_flags_t::MDBX_APPEND : MDBX_put_flags_t::MDBX_UPSERT;
-        storage_trie_node_collector.load(target, nullptr, flags);
-    }
+    computed_root = increment_intermediate_hashes(txn, context.dir().etl().path(), &account_changes, &storage_changes);
+    REQUIRE(expected_root == computed_root);
 
     node_map = read_all_nodes(account_trie);
     CHECK(node_map.size() == 2);
@@ -824,25 +819,10 @@ TEST_CASE("Account and storage trie") {
 
         hashed_accounts.erase(db::to_slice(key3.bytes));
         account_changes.insert(Bytes(&key3.bytes[0], kHashLength));
+
         expected_root = 0xaa953dc994f3375a95f2c413ed5a1a5a2f84d34b377d7587e3aa8dba944c12bf_bytes32;
-
-        {
-            etl::Collector account_trie_node_collector{context.dir().etl().path()};
-            etl::Collector storage_trie_node_collector{context.dir().etl().path()};
-            TrieLoader trie_loader(txn, &account_changes, &storage_changes, &account_trie_node_collector,
-                                   &storage_trie_node_collector);
-            computed_root = trie_loader.calculate_root();
-            REQUIRE(computed_root == expected_root);
-
-            // Save collected node changes
-            db::Cursor target(txn, db::table::kTrieOfAccounts);
-            MDBX_put_flags_t flags{target.size() ? MDBX_put_flags_t::MDBX_UPSERT : MDBX_put_flags_t::MDBX_APPEND};
-            account_trie_node_collector.load(target, nullptr, flags);
-
-            target.bind(txn, db::table::kTrieOfStorage);
-            flags = target.empty() ? MDBX_put_flags_t::MDBX_APPEND : MDBX_put_flags_t::MDBX_UPSERT;
-            storage_trie_node_collector.load(target, nullptr, flags);
-        }
+        computed_root = increment_intermediate_hashes(txn, context.dir().etl().path(), &account_changes, &storage_changes);
+        REQUIRE(computed_root == expected_root);
 
         node_map = read_all_nodes(account_trie);
         CHECK(node_map.size() == 2);

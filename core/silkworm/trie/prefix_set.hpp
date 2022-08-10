@@ -49,7 +49,7 @@ class PrefixSet {
     size_t size() const { return nibbled_keys_.size(); }
     bool empty() const { return size() == 0; }
 
-    void clear() {
+    void clear() noexcept {
         nibbled_keys_.clear();
         index_ = 0;
         sorted_ = false;

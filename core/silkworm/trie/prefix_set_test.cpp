@@ -59,6 +59,9 @@ TEST_CASE("Prefix set - no prefix") {
     CHECK(!ps.contains(string_view_to_byte_view("fgk")));
     CHECK(!ps.contains(string_view_to_byte_view("fy")));
     CHECK(!ps.contains(string_view_to_byte_view("yyz")));
+
+    ps.clear();
+    REQUIRE(ps.empty() == true);
 }
 
 TEST_CASE("Prefix set - storage prefix") {

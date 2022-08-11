@@ -1159,7 +1159,7 @@ void do_trie_integrity(db::EnvConfig& config, bool with_state_coverage, bool con
                 is_healthy = false;
                 std::cout << " " << what << std::endl;
             } else if (!node_k.empty() && node_has_root) {
-                std::cout << " Branch node with root hash ? " << to_hex(data1_k, true) << std::endl;
+                log::Warning("Unexpected root hash", {"key", to_hex(data1_k, true)});
             }
 
             /*

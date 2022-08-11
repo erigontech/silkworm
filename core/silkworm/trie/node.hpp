@@ -20,6 +20,7 @@
 #include <vector>
 
 #include <silkworm/common/base.hpp>
+#include <silkworm/common/decoding_result.hpp>
 
 namespace silkworm::trie {
 
@@ -31,8 +32,9 @@ namespace silkworm::trie {
 // 3) #hash_mask == #hashes
 class Node {
   public:
-    Node(uint16_t state_mask, uint16_t tree_mask, uint16_t hash_mask, std::vector<evmc::bytes32> hashes,
-         const std::optional<evmc::bytes32>& root_hash = std::nullopt);
+    Node() = default;
+    explicit Node(uint16_t state_mask, uint16_t tree_mask, uint16_t hash_mask, std::vector<evmc::bytes32> hashes,
+                  const std::optional<evmc::bytes32>& root_hash = std::nullopt);
 
     // copyable
     Node(const Node& other) = default;
@@ -54,14 +56,20 @@ class Node {
     [[nodiscard]] Bytes encode_for_storage() const;
 
     //! \see Erigon's UnmarshalTrieNodeTyped
-    [[nodiscard]] static std::optional<Node> from_encoded_storage(ByteView raw);
+    [[nodiscard]] static std::optional<Node> decode_from_storage(ByteView raw);
 
-  private:
+    static DecodingResult decode_from_storage(ByteView raw, Node& node);
+
+  protected:
     uint16_t state_mask_{0};  // Each bit set indicates parenting of a hashed state
     uint16_t tree_mask_{0};   // Each bit set indicates parenting of a child
-    uint16_t hash_mask_{0};
+    uint16_t hash_mask_{0};   // Each bit set indicates ownership of a valid hash
     std::vector<evmc::bytes32> hashes_{};
     std::optional<evmc::bytes32> root_hash_{std::nullopt};
+
+  private:
+
+
 };
 
 inline bool is_subset(uint16_t sub, uint16_t sup) { return (sub & sup) == sub; }

@@ -82,7 +82,7 @@ evmc::bytes32 TrieLoader::calculate_root() {
     // Begin loop on accounts
     auto trie_account_data{trie_account_cursor.to_prefix({})};
     while (true) {
-        if (!trie_account_data.skip_state && trie_account_data.first_uncovered.has_value()) {
+        if (trie_account_data.first_uncovered.has_value()) {
             auto hashed_account_seek_slice{db::to_slice(trie_account_data.first_uncovered.value())};
             auto hashed_account_data{hashed_account_seek_slice.empty()
                                          ? hashed_accounts.to_first(false)
@@ -125,8 +125,8 @@ evmc::bytes32 TrieLoader::calculate_root() {
             break;
         }
 
-        auto hash{to_bytes32(trie_account_data.hash.value())};
-        account_hash_builder.add_branch_node(trie_account_data.key.value(), hash, trie_account_data.children_in_trie);
+        account_hash_builder.add_branch_node(trie_account_data.key.value(), trie_account_data.hash.value(),
+                                             trie_account_data.children_in_trie);
 
         // If root node added we can exit
         if (trie_account_data.key->empty()) {
@@ -151,7 +151,7 @@ evmc::bytes32 TrieLoader::calculate_storage_root(TrieCursor& trie_storage_cursor
     const auto db_storage_prefix_slice{db::to_slice(db_storage_prefix)};
     auto trie_storage_data{trie_storage_cursor.to_prefix(db_storage_prefix)};
     while (true) {
-        if (!trie_storage_data.skip_state && trie_storage_data.first_uncovered.has_value()) {
+        if (trie_storage_data.first_uncovered.has_value()) {
             const auto prefix_slice{db::to_slice(trie_storage_data.first_uncovered.value())};
             auto hashed_storage_data{
                 hashed_storage.lower_bound_multivalue(db_storage_prefix_slice, prefix_slice, false)};
@@ -181,8 +181,8 @@ evmc::bytes32 TrieLoader::calculate_storage_root(TrieCursor& trie_storage_cursor
             break;
         }
 
-        auto hash{to_bytes32(trie_storage_data.hash.value())};
-        storage_hash_builder.add_branch_node(trie_storage_data.key.value(), hash, trie_storage_data.children_in_trie);
+        storage_hash_builder.add_branch_node(trie_storage_data.key.value(), trie_storage_data.hash.value(),
+                                             trie_storage_data.children_in_trie);
 
         // Have we just sent Storage root for this contract ?
         if (trie_storage_data.key.value().empty()) {

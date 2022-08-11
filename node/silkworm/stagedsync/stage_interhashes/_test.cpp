@@ -31,50 +31,6 @@ TEST_CASE("Trie Cursor") {
     test::Context db_context{};
     auto txn{db_context.txn()};
 
-    SECTION("Wrong prefix") {
-        trie::PrefixSet changed_accounts{};
-        db::Cursor trie_accounts(txn, db::table::kTrieOfAccounts);
-        trie::TrieCursor ta_cursor{trie_accounts, &changed_accounts};
-
-        Bytes prefix{*from_hex("0x010203")};
-        bool has_thrown{false};
-        bool has_thrown_argument{false};
-        try {
-            // Must throw as we're at the end of tree
-            (void)ta_cursor.to_prefix(prefix);
-        } catch (const std::invalid_argument&) {
-            has_thrown = true;
-            has_thrown_argument = true;
-        } catch (...) {
-            has_thrown = true;
-        }
-
-        REQUIRE(has_thrown);
-        REQUIRE(has_thrown_argument);
-    }
-
-    SECTION("Empty trie no changes") {
-        trie::PrefixSet changed_accounts{};
-        db::Cursor trie_accounts(txn, db::table::kTrieOfAccounts);
-        trie::TrieCursor ta_cursor{trie_accounts, &changed_accounts};
-        auto ta_data{ta_cursor.to_prefix({})};
-
-        REQUIRE(ta_data.skip_state == false);
-        REQUIRE(ta_data.key.has_value() == false);
-        REQUIRE(ta_data.first_uncovered.has_value() == true);
-        REQUIRE(ta_data.hash.has_value() == false);
-
-        bool has_thrown{false};
-        try {
-            // Must throw as we're at the end of tree
-            ta_data = ta_cursor.to_next();
-        } catch (...) {
-            has_thrown = true;
-        }
-
-        REQUIRE(has_thrown);
-    }
-
     SECTION("Only root trie no changes") {
         trie::PrefixSet changed_accounts{};
         db::Cursor trie_accounts(txn, db::table::kTrieOfAccounts);
@@ -98,7 +54,6 @@ TEST_CASE("Trie Cursor") {
 
         auto ta_data{ta_cursor.to_prefix({})};
 
-        REQUIRE(ta_data.skip_state == true);
         REQUIRE((ta_data.key.has_value() == true && ta_data.key.value().empty()));
         REQUIRE(ta_data.first_uncovered.has_value() == false);
         REQUIRE(ta_data.hash.has_value() == true);
@@ -112,203 +67,6 @@ TEST_CASE("Trie Cursor") {
         }
 
         REQUIRE(has_thrown);
-    }
-
-    SECTION("Malformed root trie - value len < 6") {
-        trie::PrefixSet changed_accounts{};
-        db::Cursor trie_accounts(txn, db::table::kTrieOfAccounts);
-        trie::TrieCursor ta_cursor{trie_accounts, &changed_accounts};
-
-        Bytes k{};
-        Bytes v{*from_hex("0xff")};
-
-        trie_accounts.insert(db::to_slice(k), db::to_slice(v));
-
-        bool has_thrown{false};
-        bool has_thrown_argument{false};
-        try {
-            // Must throw as node can't be loaded
-            (void)ta_cursor.to_prefix({});
-        } catch (const std::invalid_argument&) {
-            has_thrown = true;
-            has_thrown_argument = true;
-        } catch (...) {
-            has_thrown = true;
-        }
-
-        REQUIRE(has_thrown);
-        REQUIRE(has_thrown_argument);
-    }
-
-    SECTION("Malformed root trie - value len >= 6 hashes len % kHashLength != 0") {
-        trie::PrefixSet changed_accounts{};
-        db::Cursor trie_accounts(txn, db::table::kTrieOfAccounts);
-        trie::TrieCursor ta_cursor{trie_accounts, &changed_accounts};
-
-        Bytes k{};
-        Bytes v{*from_hex("0xffffffffffff0123456")};
-
-        trie_accounts.insert(db::to_slice(k), db::to_slice(v));
-
-        bool has_thrown{false};
-        bool has_thrown_argument{false};
-        try {
-            // Must throw as node can't be loaded
-            (void)ta_cursor.to_prefix({});
-        } catch (const std::invalid_argument&) {
-            has_thrown = true;
-            has_thrown_argument = true;
-        } catch (...) {
-            has_thrown = true;
-        }
-
-        REQUIRE(has_thrown);
-        REQUIRE(has_thrown_argument);
-    }
-
-    SECTION("Malformed root trie - no state mask") {
-        trie::PrefixSet changed_accounts{};
-        db::Cursor trie_accounts(txn, db::table::kTrieOfAccounts);
-        trie::TrieCursor ta_cursor{trie_accounts, &changed_accounts};
-
-        Bytes k{};
-        Bytes v{*from_hex("0x0000ffffffff")};
-
-        trie_accounts.insert(db::to_slice(k), db::to_slice(v));
-
-        bool has_thrown{false};
-        bool has_thrown_argument{false};
-        try {
-            // Must throw as node can't be loaded
-            (void)ta_cursor.to_prefix({});
-        } catch (const std::invalid_argument&) {
-            has_thrown = true;
-            has_thrown_argument = true;
-        } catch (...) {
-            has_thrown = true;
-        }
-
-        REQUIRE(has_thrown);
-        REQUIRE(has_thrown_argument);
-    }
-
-    SECTION("Malformed root trie - tree mask not subset of state mask") {
-        trie::PrefixSet changed_accounts{};
-        db::Cursor trie_accounts(txn, db::table::kTrieOfAccounts);
-        trie::TrieCursor ta_cursor{trie_accounts, &changed_accounts};
-
-        Bytes k{};
-        Bytes v{
-            *from_hex("0001" /* 0b0000000000000001 */
-                      "0400" /* 0b0000010000000000 */
-                      "0000" /* 0b0000000000000000 */)};
-
-        trie_accounts.insert(db::to_slice(k), db::to_slice(v));
-
-        bool has_thrown{false};
-        bool has_thrown_argument{false};
-        try {
-            // Must throw as node can't be loaded
-            (void)ta_cursor.to_prefix({});
-        } catch (const std::invalid_argument&) {
-            has_thrown = true;
-            has_thrown_argument = true;
-        } catch (...) {
-            has_thrown = true;
-        }
-
-        REQUIRE(has_thrown);
-        REQUIRE(has_thrown_argument);
-    }
-
-    SECTION("Malformed root trie - hash mask not subset of state mask") {
-        trie::PrefixSet changed_accounts{};
-        db::Cursor trie_accounts(txn, db::table::kTrieOfAccounts);
-        trie::TrieCursor ta_cursor{trie_accounts, &changed_accounts};
-
-        Bytes k{};
-        Bytes v{
-            *from_hex("0001" /* 0b0000000000000001 */
-                      "0000" /* 0b0000000000000000 */
-                      "0400" /* 0b0000010000000000 */
-                      )};
-
-        trie_accounts.insert(db::to_slice(k), db::to_slice(v));
-
-        bool has_thrown{false};
-        bool has_thrown_argument{false};
-        try {
-            // Must throw as node can't be loaded
-            (void)ta_cursor.to_prefix({});
-        } catch (const std::invalid_argument&) {
-            has_thrown = true;
-            has_thrown_argument = true;
-        } catch (...) {
-            has_thrown = true;
-        }
-
-        REQUIRE(has_thrown);
-        REQUIRE(has_thrown_argument);
-    }
-
-    SECTION("Malformed root trie - more hashes than allowed") {
-        trie::PrefixSet changed_accounts{};
-        db::Cursor trie_accounts(txn, db::table::kTrieOfAccounts);
-        trie::TrieCursor ta_cursor{trie_accounts, &changed_accounts};
-
-        Bytes k{};
-        Bytes v{
-            *from_hex("0xffffffff0001"                                                   /* state/tree/hash masks */
-                      "08a6097114f741d87630f06fd8f8ff6b11889389b1f65e2ac07cc239233c896a" /* hash 1 */
-                      "08a6097114f741d87630f06fd8f8ff6b11889389b1f65e2ac07cc239233c896a" /* hash 2 */
-                      "08a6097114f741d87630f06fd8f8ff6b11889389b1f65e2ac07cc239233c896a" /* hash 3 */
-                      )};
-
-        trie_accounts.insert(db::to_slice(k), db::to_slice(v));
-
-        bool has_thrown{false};
-        bool has_thrown_argument{false};
-        try {
-            // Must throw as node can't be loaded
-            (void)ta_cursor.to_prefix({});
-        } catch (const std::invalid_argument&) {
-            has_thrown = true;
-            has_thrown_argument = true;
-        } catch (...) {
-            has_thrown = true;
-        }
-
-        REQUIRE(has_thrown);
-        REQUIRE(has_thrown_argument);
-    }
-
-    SECTION("Malformed root trie - no root hash") {
-        trie::PrefixSet changed_accounts{};
-        db::Cursor trie_accounts(txn, db::table::kTrieOfAccounts);
-        trie::TrieCursor ta_cursor{trie_accounts, &changed_accounts};
-
-        Bytes k{};
-        Bytes v{
-            *from_hex("0xffffffff0001"                                                   /* state/tree/hash masks */
-                      "08a6097114f741d87630f06fd8f8ff6b11889389b1f65e2ac07cc239233c896a" /* hash 1 */
-                      )};
-
-        trie_accounts.insert(db::to_slice(k), db::to_slice(v));
-
-        bool has_thrown{false};
-        bool has_thrown_logic{false};
-        try {
-            // Must throw as node is loaded but being a root it does not have root hash
-            (void)ta_cursor.to_prefix({});
-        } catch (const std::logic_error&) {
-            has_thrown = true;
-            has_thrown_logic = true;
-        } catch (...) {
-            has_thrown = true;
-        }
-
-        REQUIRE(has_thrown);
-        REQUIRE(has_thrown_logic);
     }
 
     SECTION("Only root trie with changes") {
@@ -382,8 +140,7 @@ TEST_CASE("Trie Cursor") {
 
         auto ta_data{ta_cursor.to_prefix({})};
 
-        REQUIRE(ta_data.skip_state == true);
-        REQUIRE((ta_data.key.has_value() == true && ta_data.key.value() == *from_hex("0x00")));
+        REQUIRE((ta_data.key.has_value() && ta_data.key.value() == *from_hex("0x00")));
         REQUIRE(ta_data.first_uncovered.has_value() == false);
         REQUIRE(ta_data.hash.has_value() == true);
 
@@ -445,7 +202,6 @@ TEST_CASE("Trie Cursor") {
         Bytes prefix{*from_hex("0xfff2bcbbf823e72a3a9025c14b96f5c28026735aeb7f19e5f2f317aa7a017c080000000000000001")};
         auto ts_data{ts_cursor.to_prefix(prefix)};
 
-        REQUIRE(ts_data.skip_state == false);
         REQUIRE(ts_data.key.has_value() == false);
         REQUIRE(ts_data.first_uncovered.has_value() == true);
         REQUIRE(ts_data.first_uncovered.value().empty() == true);
@@ -481,7 +237,6 @@ TEST_CASE("Trie Cursor") {
         Bytes prefix{*from_hex("0xfff2bcbbf823e72a3a9025c14b96f5c28026735aeb7f19e5f2f317aa7a017c080000000000000001")};
         auto ts_data{ts_cursor.to_prefix(prefix)};
 
-        REQUIRE(ts_data.skip_state == false);
         REQUIRE(ts_data.key.has_value() == false);
         REQUIRE(ts_data.first_uncovered.has_value() == true);
         REQUIRE(ts_data.first_uncovered.value().empty() == true);
@@ -565,7 +320,7 @@ static std::map<Bytes, Node> read_all_nodes(mdbx::cursor& cursor) {
     cursor.to_first(/*throw_notfound=*/false);
     std::map<Bytes, Node> out;
     db::WalkFunc save_nodes{[&out](mdbx::cursor&, mdbx::cursor::move_result& entry) {
-        const Node node{*Node::from_encoded_storage(db::from_slice(entry.value))};
+        const Node node{*Node::decode_from_storage(db::from_slice(entry.value))};
         out.emplace(db::from_slice(entry.key), node);
         return true;
     }};
@@ -1026,7 +781,8 @@ TEST_CASE("Trie Storage : incremental vs regeneration") {
     static const Bytes storage_prefix1{db::storage_prefix(hashed_address1.bytes, incarnation1)};
     static const Bytes storage_prefix2{db::storage_prefix(hashed_address2.bytes, incarnation2)};
 
-    const auto upsert_storage_for_two_test_accounts = [&](size_t i, ByteView value, bool register_change, bool new_records = false) {
+    const auto upsert_storage_for_two_test_accounts = [&](size_t i, ByteView value, bool register_change,
+                                                          bool new_records = false) {
         const evmc::bytes32 plain_loc1{int_to_bytes32(2 * i)};
         const evmc::bytes32 plain_loc2{int_to_bytes32(2 * i + 1)};
 

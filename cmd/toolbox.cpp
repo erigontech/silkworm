@@ -1417,7 +1417,7 @@ void do_trie_root(db::EnvConfig& config) {
 
     trie::TrieCursor trie_cursor{trie_accounts, &empty_changes};
     for (auto trie_data{trie_cursor.to_prefix({})}; trie_data.key.has_value(); trie_data = trie_cursor.to_next()) {
-        SILKWORM_ASSERT(trie_data.skip_state);
+        SILKWORM_ASSERT(!trie_data.first_uncovered.has_value());  // Means skip state
         log::Info("Trie", {"key", to_hex(trie_data.key.value(), true), "hash", to_hex(trie_data.hash.value(), true)});
         auto hash{to_bytes32(trie_data.hash.value())};
         hash_builder.add_branch_node(trie_data.key.value(), hash, false);

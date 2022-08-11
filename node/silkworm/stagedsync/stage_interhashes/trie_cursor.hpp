@@ -23,6 +23,32 @@
 
 namespace silkworm::trie {
 
+//! \brief Extends trie::Node with methods for traversing child_ids
+class SubNode : public Node {
+  public:
+    SubNode() = default;
+
+    // Not copyable nor movable
+    SubNode(const SubNode&) = delete;
+    SubNode& operator=(const SubNode&) = delete;
+
+    [[nodiscard]] bool has_tree() const noexcept;   // Whether current child_id has bit set in tree mask
+    [[nodiscard]] bool has_hash() const noexcept;   // Whether current child_id has bit set in hash mask
+    [[nodiscard]] bool has_state() const noexcept;  // Whether current child_id has bit set in state mask
+
+    void reset();                                   // Resets node to default values
+    void parse(ByteView k, ByteView v);             // Parses node data contents from db (may throw)
+    [[nodiscard]] Bytes full_key() const noexcept;  // Returns full key to child node (i.e. key + child_id)
+    [[nodiscard]] const evmc::bytes32& hash();      // Returns hash of child node (i.e. key + child_id)
+
+    ByteView key{};            // Key retrieved from db (if any) Is nibbled
+    ByteView value{};          // Value retrieved from db (if any)
+    int8_t child_id{-1};       // Current child being inspected in this node (aka nibble)
+    int8_t max_child_id{0xf};  // Max child of this node
+    int8_t hash_id{-1};        // Index of hash to be retrieved
+    bool deleted{false};       // Whether already deleted (in collector)
+};
+
 //! \brief Traverses TrieAccount or TrieStorage in pre-order: \n
 //! 1. Visit the current node \n
 //! 2. Recursively traverse the current node's left subtree. \n
@@ -53,10 +79,9 @@ class TrieCursor {
 
     //! \brief Represent the data returned after a move operation (to_prefix or to_next)
     struct move_operation_result {
-        bool skip_state{false};        // Whether the node can be used as is without need to recompute root hash
-        std::optional<Bytes> key{};    // Nibbled key of node
-        std::optional<Bytes> hash{};   // Hash of node
-        bool children_in_trie{false};  // Whether there are children in trie
+        std::optional<Bytes> key{};              // Nibbled key of node
+        std::optional<evmc::bytes32> hash{};     // Hash of node
+        bool children_in_trie{false};            // Whether there are children in trie
         std::optional<Bytes> first_uncovered{};  // First uncovered prefix to be processed by higher loop
     };
 
@@ -67,30 +92,6 @@ class TrieCursor {
     [[nodiscard]] move_operation_result to_next();
 
   private:
-    struct SubNode {
-        ByteView key{};            // Key retrieved from db (if any) Is nibbled
-        ByteView value{};          // Value retrieved from db (if any)
-        uint16_t state_mask{0};    // One bit set for every child_id which points to a hashed state
-        uint16_t tree_mask{0};     // One bit set for every child_id which has a child in trie
-        uint16_t hash_mask{0};     // One bit set for every child_id which has a valid hash
-        ByteView root_hash{};      // Root Hash
-        ByteView hashes{};         // Child nodes hashes data
-        size_t hashes_count{0};    // Actual number of hashes (excluding root hash)
-        int8_t child_id{-1};       // Current child being inspected in this node (aka nibble)
-        int8_t max_child_id{0xf};  // Max child of this node
-        int8_t hash_id{-1};        // Index of hash to be retrieved
-        bool deleted{false};       // Whether already deleted (in collector)
-
-        [[nodiscard]] bool has_tree() const noexcept;   // Whether current child_id has bit set in tree mask
-        [[nodiscard]] bool has_hash() const noexcept;   // Whether current child_id has bit set in hash mask
-        [[nodiscard]] bool has_state() const noexcept;  // Whether current child_id has bit set in state mask
-
-        void reset();                                   // Resets node to default values
-        void parse(ByteView k, ByteView v);             // Parses node data contents from db (may throw)
-        [[nodiscard]] Bytes full_key() const noexcept;  // Returns full key to child node (i.e. key + child_id)
-        [[nodiscard]] Bytes hash() const;               // Returns hash of child node (i.e. key + child_id)
-    };
-
     uint32_t level_{0};                      // Depth level in sub_nodes_
     bool end_of_tree_{false};                // Protects from to_next() beyond end of tree
     Bytes curr_key_{};                       // Latest key returned on a valid hash

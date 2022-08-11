@@ -17,11 +17,59 @@
 #include "trie_cursor.hpp"
 
 #include <silkworm/common/bits.hpp>
-#include <silkworm/common/endian.hpp>
 #include <silkworm/common/log.hpp>
+#include <silkworm/common/rlp_err.hpp>
 #include <silkworm/trie/nibbles.hpp>
 
 namespace silkworm::trie {
+
+bool SubNode::has_tree() const noexcept { return (tree_mask_ & (1u << child_id)) != 0; }
+
+bool SubNode::has_hash() const noexcept { return (hash_mask_ & (1u << child_id)) != 0; }
+
+bool SubNode::has_state() const noexcept { return (state_mask_ & (1u << child_id)) != 0; }
+
+void SubNode::reset() {
+    key = ByteView();
+    value = ByteView();
+    root_hash_.reset();
+    hashes_.clear();
+    state_mask_ = 0;
+    tree_mask_ = 0;
+    hash_mask_ = 0;
+    child_id = -1;
+    max_child_id = 0x10;  // Traverse all node for ephemeral ones.
+    hash_id = -1;
+    deleted = false;
+}
+
+Bytes SubNode::full_key() const noexcept {
+    Bytes ret{key};
+    if (child_id != -1) {
+        ret.push_back(static_cast<uint8_t>(child_id));
+    }
+    return ret;
+}
+
+const evmc::bytes32& SubNode::hash() {
+    if (hash_id < 0 || static_cast<uint32_t>(hash_id) >= hashes_.size()) {
+        throw std::out_of_range("Hash id out of bounds");
+    }
+    return hashes_[static_cast<size_t>(hash_id)];
+}
+
+void SubNode::parse(ByteView k, ByteView v) {
+
+    key = k;
+    value = v;
+
+    rlp::success_or_throw(Node::decode_from_storage(v, *this));
+
+    child_id = static_cast<int8_t>(ctz_16(state_mask_)) - 1;
+    max_child_id = static_cast<int8_t>(bitlen_16(state_mask_));
+    hash_id = -1;
+    deleted = false;
+}
 
 TrieCursor::TrieCursor(mdbx::cursor& db_cursor, PrefixSet* changed, etl::Collector* collector)
     : db_cursor_(db_cursor), changed_list_{changed}, collector_{collector} {
@@ -46,12 +94,11 @@ TrieCursor::move_operation_result TrieCursor::to_prefix(ByteView prefix) {
     end_of_tree_ = false;
     skip_state_ = true;
     level_ = 0u;
-    sub_nodes_[level_].reset(); // Reset root node
+    sub_nodes_[level_].reset();  // Reset root node
 
     // ^^^ Note! We don't actually need to reset all sub-nodes (i.e. level_ > 0) as
     // the only case we descend level is when parsing a new sub node which implies
     // node at level_ gets overwritten in any case
-
 
     // Check changed list contains requested prefix_ and retrieve the first created account under "that" trie
     // This also returns the first "created" account in "that" trie
@@ -68,19 +115,19 @@ TrieCursor::move_operation_result TrieCursor::to_prefix(ByteView prefix) {
         // Otherwise this root can be marked for deletion as it needs
         // to be reconstructed and eventually begin the child_id loop
         auto& node{sub_nodes_[level_]};
-        if (node.root_hash.is_null()) {
+        if (!node.root_hash().has_value()) {
             throw std::logic_error("Trie integrity failure. Requested root node with key " +
                                    to_hex(node.full_key(), true) + " has no root_hash");
         }
         if (!has_changes) {
             end_of_tree_ = true;  // We don't need to further traverse this trie
-            return {skip_state_, curr_key_, Bytes(node.root_hash), false};
+            return {curr_key_, node.root_hash().value(), false};
         }
         db_delete(node);
     } else {
         skip_state_ = false;
         end_of_tree_ = true;
-        return {skip_state_, std::nullopt, std::nullopt, false, Bytes{}};
+        return {std::nullopt, std::nullopt, false, Bytes{}};
     }
 
     // Begin looping child_ids (we have found a root node but has changes)
@@ -145,7 +192,7 @@ TrieCursor::move_operation_result TrieCursor::to_next() {
         // Consume node's hash (if any)
         if (consume(sub_node)) {
             curr_key_.assign(sub_node.full_key());
-            return {skip_state_, curr_key_, sub_node.hash(), sub_node.has_tree(), first_uncovered()};
+            return {curr_key_, sub_node.hash(), sub_node.has_tree(), first_uncovered()};
         }
 
         // If a child is expected we MUST find it. db_seek also descends one level
@@ -167,7 +214,7 @@ TrieCursor::move_operation_result TrieCursor::to_next() {
 
     auto next{increment_nibbled_key(prev_key_)};
     skip_state_ = skip_state_ && (next == std::nullopt);
-    return {skip_state_, std::nullopt, std::nullopt, false, first_uncovered()};  // No higher level
+    return {std::nullopt, std::nullopt, false, first_uncovered()};  // No higher level
 }
 
 bool TrieCursor::db_seek(ByteView seek_key) {
@@ -245,92 +292,11 @@ std::optional<Bytes> TrieCursor::first_uncovered() {
         return prev_key_;
     }
 
-    const auto incremented_nibbled_key{increment_nibbled_key(prev_key_)};
+    auto incremented_nibbled_key{increment_nibbled_key(prev_key_)};
     if (incremented_nibbled_key.has_value()) {
         return pack_nibbles(incremented_nibbled_key.value());
     }
     return incremented_nibbled_key;
 }
-
-void TrieCursor::SubNode::reset() {
-    key = ByteView();
-    value = ByteView();
-    root_hash = ByteView();
-    hashes = ByteView();
-    state_mask = 0;
-    tree_mask = 0;
-    hash_mask = 0;
-    child_id = -1;
-    max_child_id = 0x10;  // Traverse all node for ephemeral ones.
-    hash_id = -1;
-    deleted = false;
-}
-
-void TrieCursor::SubNode::parse(ByteView k, ByteView v) {
-    // At least state/tree/hash masks need to be present
-    if (v.length() < 6) {
-        throw std::invalid_argument("wrong node raw length: expected >= 6 got " + std::to_string(v.length()));
-    }
-    // Beyond the 6th byte the length must be a multiple of kHashLength
-    if ((v.length() - 6) % kHashLength != 0) {
-        throw std::invalid_argument("wrong node raw hashes length: not a multiple of " + std::to_string(kHashLength));
-    }
-
-    key = k;
-    value = v;
-    root_hash = ByteView();
-    hashes = v.substr(6);
-    state_mask = endian::load_big_u16(&v[0]);
-    tree_mask = endian::load_big_u16(&v[2]);
-    hash_mask = endian::load_big_u16(&v[4]);
-
-    if (!state_mask) {
-        throw std::invalid_argument("state mask is zero");
-    }
-    if (!is_subset(tree_mask, state_mask)) {
-        throw std::invalid_argument("tree mask not subset of state mask");
-    }
-    if (!is_subset(hash_mask, state_mask)) {
-        throw std::invalid_argument("hash mask not subset of state mask");
-    }
-
-    size_t expected_hashes_count{popcount_16(hash_mask)};
-    hashes_count = hashes.length() / kHashLength;
-    if (hashes_count == (expected_hashes_count + 1)) {
-        root_hash = hashes.substr(0, kHashLength);
-        hashes.remove_prefix(kHashLength);
-        --hashes_count;
-    } else if (hashes_count != expected_hashes_count) {
-        // Wrong number of hashes
-        throw std::invalid_argument("invalid hashes count expected " + std::to_string(expected_hashes_count) + " got " +
-                                    std::to_string(hashes_count));
-    }
-
-    child_id = static_cast<int8_t>(ctz_16(state_mask)) - 1;
-    max_child_id = static_cast<int8_t>(bitlen_16(state_mask));
-    hash_id = -1;
-    deleted = false;
-}
-
-Bytes TrieCursor::SubNode::full_key() const noexcept {
-    Bytes ret{key};
-    if (child_id != -1) {
-        ret.push_back(static_cast<uint8_t>(child_id));
-    }
-    return ret;
-}
-
-Bytes TrieCursor::SubNode::hash() const {
-    if (hash_id < 0 || static_cast<uint32_t>(hash_id) >= hashes_count) {
-        throw std::out_of_range("Hash id out of bounds");
-    }
-    return Bytes(hashes.substr(kHashLength * static_cast<size_t>(hash_id), kHashLength));
-}
-
-bool TrieCursor::SubNode::has_tree() const noexcept { return (tree_mask & (1u << child_id)) != 0; }
-
-bool TrieCursor::SubNode::has_hash() const noexcept { return (hash_mask & (1u << child_id)) != 0; }
-
-bool TrieCursor::SubNode::has_state() const noexcept { return (state_mask & (1u << child_id)) != 0; }
 
 }  // namespace silkworm::trie

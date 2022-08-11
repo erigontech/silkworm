@@ -47,7 +47,7 @@ class PrefixSet {
     //! \param [in] prefix : the prefix to search for
     //! \param [in] invariant_prefix_len : when searching for next marked the scanned items must begin with this number
     //! of identical bytes
-    std::pair<bool, ByteView> contains_and_next_marked(ByteView prefix, size_t invariant_prefix_len);
+    std::pair<bool, ByteView> contains_and_next_marked(ByteView prefix, size_t invariant_prefix_len = 0);
 
     size_t size() const { return keys_.size(); }
     bool empty() const { return size() == 0; }

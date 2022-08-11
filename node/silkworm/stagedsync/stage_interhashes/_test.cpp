@@ -884,7 +884,13 @@ static evmc::address int_to_address(uint64_t i) {
     return to_evmc_address(be);
 }
 
-TEST_CASE("Trie : incremental vs regeneration") {
+static evmc::bytes32 int_to_bytes32(uint64_t i) {
+    uint8_t be[8];
+    endian::store_big_u64(be, i);
+    return to_bytes32(be);
+}
+
+TEST_CASE("Trie Accounts : incremental vs regeneration") {
     test::Context context;
     auto& txn{context.txn()};
 
@@ -948,7 +954,6 @@ TEST_CASE("Trie : incremental vs regeneration") {
     // without increment_intermediate_hashes
     // ------------------------------------------------------------------------------
     txn.clear_map(db::open_map(txn, db::table::kHashedAccounts));
-    txn.clear_map(db::open_map(txn, db::table::kAccountChangeSet));
 
     // Accounts [0,n) now hold 2 ETH
     for (size_t i{0}; i < n; ++i) {
@@ -960,7 +965,7 @@ TEST_CASE("Trie : incremental vs regeneration") {
     // Accounts [n,2n) are deleted
 
     // Accounts [2n,4n) hold 1 ETH
-    for (size_t i{2 * n}; i < 4 * n; ++i) {
+    for (size_t i{2 * n}, e{4 * n}; i < e; ++i) {
         const evmc::address address{int_to_address(i)};
         const auto hash{keccak256(address)};
         hashed_accounts.upsert(db::to_slice(hash.bytes), db::to_slice(one_eth.encode_for_storage()));
@@ -971,6 +976,136 @@ TEST_CASE("Trie : incremental vs regeneration") {
     const auto fused_root{regenerate_intermediate_hashes(txn, context.dir().etl().path())};
 
     const std::map<Bytes, Node> fused_nodes{read_all_nodes(account_trie)};
+
+    // ------------------------------------------------------------------------------
+    // A and B should yield the same result
+    // ------------------------------------------------------------------------------
+    REQUIRE(to_hex(fused_root.bytes, true) == to_hex(incremental_root.bytes, true));
+    REQUIRE(fused_nodes == incremental_nodes);
+}
+
+TEST_CASE("Trie Storage : incremental vs regeneration") {
+    test::Context context;
+    auto& txn{context.txn()};
+
+    PrefixSet account_changes;
+    PrefixSet storage_changes;
+
+    // TODO (Andrew) n = 2000 triggers AddressSanitizer: use-after-poison in MDBX
+    static constexpr size_t n{1'000};
+
+    auto hashed_accounts{db::open_cursor(txn, db::table::kHashedAccounts)};
+    auto hashed_storage{db::open_cursor(txn, db::table::kHashedStorage)};
+    auto storage_trie{db::open_cursor(txn, db::table::kTrieOfStorage)};
+
+    static constexpr uint64_t incarnation1{3};
+    static constexpr uint64_t incarnation2{1};
+
+    static constexpr Account account1{
+        5,                                                                           // nonce
+        7 * kEther,                                                                  // balance
+        0x5e3c5ae99a1c6785210d0d233641562557ad763e18907cca3a8d42bd0a0b4ecb_bytes32,  // code_hash
+        incarnation1,                                                                // incarnation
+    };
+
+    static constexpr Account account2{
+        1,                                                                           // nonce
+        13 * kEther,                                                                 // balance
+        0x3a9c1d84e48734ae951e023197bda6d03933a4ca44124a2a544e227aa93efe75_bytes32,  // code_hash
+        incarnation2,                                                                // incarnation
+    };
+
+    static constexpr auto address1{0x1000000000000000000000000000000000000000_address};
+    static constexpr auto address2{0x2000000000000000000000000000000000000000_address};
+
+    static const auto hashed_address1{keccak256(address1)};
+    static const auto hashed_address2{keccak256(address2)};
+
+    hashed_accounts.upsert(db::to_slice(hashed_address1.bytes), db::to_slice(account1.encode_for_storage()));
+    hashed_accounts.upsert(db::to_slice(hashed_address2.bytes), db::to_slice(account2.encode_for_storage()));
+
+    static const Bytes storage_prefix1{db::storage_prefix(hashed_address1.bytes, incarnation1)};
+    static const Bytes storage_prefix2{db::storage_prefix(hashed_address2.bytes, incarnation2)};
+
+    const auto upsert_storage_for_two_test_accounts = [&](size_t i, ByteView value, bool register_change, bool new_records = false) {
+        const evmc::bytes32 plain_loc1{int_to_bytes32(2 * i)};
+        const evmc::bytes32 plain_loc2{int_to_bytes32(2 * i + 1)};
+
+        const auto hashed_loc1{keccak256(plain_loc1)};
+        const auto hashed_loc2{keccak256(plain_loc2)};
+
+        const auto nibbled_hashed_loc1{unpack_nibbles(hashed_loc1.bytes)};
+        const auto nibbled_hashed_loc2{unpack_nibbles(hashed_loc2.bytes)};
+
+        db::upsert_storage_value(hashed_storage, storage_prefix1, hashed_loc1.bytes, value);
+        db::upsert_storage_value(hashed_storage, storage_prefix2, hashed_loc2.bytes, value);
+        if (register_change) {
+            storage_changes.insert(Bytes{storage_prefix1 + nibbled_hashed_loc1}, new_records);
+            storage_changes.insert(Bytes{storage_prefix2 + nibbled_hashed_loc2}, new_records);
+        }
+    };
+
+    // ------------------------------------------------------------------------------
+    // Take A: create some storage at genesis and then apply some changes at Block 1
+    // ------------------------------------------------------------------------------
+
+    // Start with 3n storage slots per account at genesis, each with the same value
+    static const Bytes value_x{*from_hex("42")};
+    for (size_t i{0}, e{3 * n}; i < e; ++i) {
+        upsert_storage_for_two_test_accounts(i, value_x, false);
+    }
+
+    (void)regenerate_intermediate_hashes(txn, context.dir().etl().path());
+
+    // Change the value of the first third of the storage
+    static const Bytes value_y{*from_hex("71f602b294119bf452f1923814f5c6de768221254d3056b1bd63e72dc3142a29")};
+    for (size_t i{0}; i < n; ++i) {
+        upsert_storage_for_two_test_accounts(i, value_y, true);
+    }
+
+    // Delete the second third of the storage
+    for (size_t i{n}, e{2 * n}; i < e; ++i) {
+        upsert_storage_for_two_test_accounts(i, {}, true);
+    }
+
+    // Don't touch the last third of genesis storage
+
+    // And add some new storage
+    for (size_t i{3 * n}, e{4 * n}; i < e; ++i) {
+        upsert_storage_for_two_test_accounts(i, value_x, true, true);
+    }
+
+    account_changes.insert(unpack_nibbles(hashed_address1.bytes));
+    account_changes.insert(unpack_nibbles(hashed_address2.bytes));
+
+    const auto incremental_root{
+        increment_intermediate_hashes(txn, context.dir().etl().path(), &account_changes, &storage_changes)};
+
+    const std::map<Bytes, Node> incremental_nodes{read_all_nodes(storage_trie)};
+
+    // ------------------------------------------------------------------------------
+    // Take B: generate intermediate hashes for the storage as of Block 1 in one go,
+    // without increment_intermediate_hashes
+    // ------------------------------------------------------------------------------
+    txn.clear_map(db::open_map(txn, db::table::kHashedStorage));
+
+    // The first third of the storage now has value_y
+    for (size_t i{0}; i < n; ++i) {
+        upsert_storage_for_two_test_accounts(i, value_y, false);
+    }
+
+    // The second third of the storage is deleted
+
+    // The last third and the extra storage has value_x
+    for (size_t i{2 * n}, e{4 * n}; i < e; ++i) {
+        upsert_storage_for_two_test_accounts(i, value_x, false);
+    }
+
+    txn.clear_map(db::open_map(txn, db::table::kTrieOfAccounts));
+    txn.clear_map(db::open_map(txn, db::table::kTrieOfStorage));
+    const auto fused_root{regenerate_intermediate_hashes(txn, context.dir().etl().path())};
+
+    const std::map<Bytes, Node> fused_nodes{read_all_nodes(storage_trie)};
 
     // ------------------------------------------------------------------------------
     // A and B should yield the same result

@@ -91,7 +91,7 @@ evmc::bytes32 TrieLoader::calculate_root() {
                 auto hashed_account_data_key_view{db::from_slice(hashed_account_data.key)};
 
                 if (const auto now{std::chrono::steady_clock::now()}; log_time <= now) {
-                    throw_if_signalled();
+                    SignalHandler::throw_if_signalled();
                     std::unique_lock log_lck(log_mtx_);
                     log_key_ = to_hex(hashed_account_data_key_view, true);
                     log_time = now + 2s;
@@ -158,7 +158,7 @@ evmc::bytes32 TrieLoader::calculate_storage_root(TrieCursor& trie_storage_cursor
 
             while (hashed_storage_data) {
                 if (const auto now{std::chrono::steady_clock::now()}; log_time <= now) {
-                    throw_if_signalled();
+                    SignalHandler::throw_if_signalled();
                 }
 
                 auto hashed_storage_data_value_view{db::from_slice(hashed_storage_data.value)};
@@ -195,12 +195,6 @@ evmc::bytes32 TrieLoader::calculate_storage_root(TrieCursor& trie_storage_cursor
     auto storage_root{storage_hash_builder.root_hash()};
     storage_hash_builder.reset();
     return storage_root;
-}
-
-void TrieLoader::throw_if_signalled() {
-    if (SignalHandler::signalled()) {
-        throw std::runtime_error("aborted");
-    }
 }
 
 }  // namespace silkworm::trie

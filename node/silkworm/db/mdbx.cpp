@@ -109,8 +109,8 @@ namespace detail {
 
     ::mdbx::env_managed::create_parameters cp{};  // Default create parameters
     if (!config.shared) {
-        auto max_map_size = static_cast<intptr_t>(config.inmemory ? 64_Mebi : config.max_size);
-        auto growth_size = static_cast<intptr_t>(config.inmemory ? 2_Mebi : config.growth_size);
+        auto max_map_size = static_cast<intptr_t>(config.inmemory ? 128_Mebi : config.max_size);
+        auto growth_size = static_cast<intptr_t>(config.inmemory ? 8_Mebi : config.growth_size);
         cp.geometry.make_dynamic(::mdbx::env::geometry::default_value, max_map_size);
         cp.geometry.growth_step = growth_size;
         cp.geometry.pagesize = 4_Kibi;

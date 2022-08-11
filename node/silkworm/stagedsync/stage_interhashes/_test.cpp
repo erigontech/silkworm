@@ -991,8 +991,7 @@ TEST_CASE("Trie Storage : incremental vs regeneration") {
     PrefixSet account_changes;
     PrefixSet storage_changes;
 
-    // TODO (Andrew) n = 2000 triggers AddressSanitizer: use-after-poison in MDBX
-    static constexpr size_t n{1'000};
+    static constexpr size_t n{2'000};
 
     auto hashed_accounts{db::open_cursor(txn, db::table::kHashedAccounts)};
     auto hashed_storage{db::open_cursor(txn, db::table::kHashedStorage)};

@@ -63,7 +63,7 @@ evmc::bytes32 TrieLoader::calculate_root() {
 
     HashBuilder account_hash_builder;
     account_hash_builder.node_collector = [&](ByteView nibbled_key, const trie::Node& node) {
-        Bytes value{node.encode_for_storage()};
+        Bytes value{node.state_mask() ? node.encode_for_storage() : Bytes{}};  // Node with no state should be deleted
         account_trie_node_collector_->collect({Bytes{nibbled_key}, value});
     };
 
@@ -71,7 +71,7 @@ evmc::bytes32 TrieLoader::calculate_root() {
     storage_hash_builder.node_collector = [&](ByteView nibbled_key, const trie::Node& node) {
         Bytes key{storage_prefix_buffer};
         key.append(nibbled_key);
-        Bytes value{node.encode_for_storage()};
+        Bytes value{node.state_mask() ? node.encode_for_storage() : Bytes{}};  // Node with no state should be deleted
         storage_trie_node_collector_->collect({key, value});
     };
 

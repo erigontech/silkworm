@@ -57,7 +57,7 @@ TrieCursor::move_operation_result TrieCursor::to_prefix(ByteView prefix) {
     // This also returns the first "created" account in "that" trie
     bool has_changes{changed_list_ == nullptr};  // Full regeneration: everything is changed
     if (!has_changes) {
-        std::tie(has_changes, next_created_) = changed_list_->contains_and_next_marked(prefix_);
+        std::tie(has_changes, next_created_) = changed_list_->contains_and_next_marked(prefix_, prefix_.length());
     }
 
     // Lookup for a root node
@@ -203,7 +203,7 @@ void TrieCursor::db_delete(SubNode& node) {
 bool TrieCursor::consume(SubNode& node) {
     if (node.has_hash()) {
         buffer_.assign(prefix_).append(node.full_key());
-        auto [has_changes, next_created]{changed_list_->contains_and_next_marked(buffer_)};
+        auto [has_changes, next_created]{changed_list_->contains_and_next_marked(buffer_, prefix_.length())};
         if (!has_changes) {
             skip_state_ = skip_state_ && key_is_before(buffer_, next_created_);
             std::swap(next_created_, next_created);

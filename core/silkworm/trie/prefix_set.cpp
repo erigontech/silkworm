@@ -25,12 +25,12 @@ namespace silkworm::trie {
 void PrefixSet::insert(ByteView key, bool marker) { insert(Bytes(key), marker); }
 
 void PrefixSet::insert(Bytes&& key, bool marker) {
-    nibbled_keys_.emplace_back(key, marker);
+    keys_.emplace_back(key, marker);
     sorted_ = false;
 }
 
 bool PrefixSet::contains(ByteView prefix) {
-    if (nibbled_keys_.empty()) {
+    if (keys_.empty()) {
         return false;
     }
 
@@ -40,12 +40,12 @@ bool PrefixSet::contains(ByteView prefix) {
     // We optimize for the case when contains() queries are issued with increasing prefixes,
     // e.g. contains("00"), contains("04"), contains("0b"), contains("0b05"), contains("0c"), contains("0f"), ...
     // instead of some random order.
-    while (index_ > 0 && nibbled_keys_[index_].first > prefix) {
+    while (index_ > 0 && keys_[index_].first > prefix) {
         --index_;
     }
 
-    for (size_t max_index{nibbled_keys_.size() - 1};; ++index_) {
-        const auto& [key, _]{nibbled_keys_[index_]};
+    for (size_t max_index{keys_.size() - 1};; ++index_) {
+        const auto& [key, _]{keys_[index_]};
         if (key.starts_with(prefix)) {
             return true;
         }
@@ -55,18 +55,18 @@ bool PrefixSet::contains(ByteView prefix) {
     }
 }
 
-std::pair<bool, ByteView> PrefixSet::contains_and_next_marked(ByteView prefix) {
+std::pair<bool, ByteView> PrefixSet::contains_and_next_marked(ByteView prefix, size_t invariant_prefix_len) {
     bool is_contained{contains(prefix)};
     ByteView next_created{};
 
-    bool is_storage{prefix.length() >= 40};  // This is a prefix_set for storage changes
+    invariant_prefix_len = std::min(invariant_prefix_len, prefix.size());
 
     // Lookup next marked created key
-    for (size_t i{index_}, e{nibbled_keys_.size()}; i < e; ++i) {
-        auto& item{nibbled_keys_.at(i)};
+    for (size_t i{index_}, e{keys_.size()}; i < e; ++i) {
+        auto& item{keys_[i]};
 
-        // Check we're in the same prefixed trie to avoid jumping out of the boundaries of current contract
-        if (is_storage && std::memcmp(&prefix[0], &item.first[0], 40) != 0) {
+        // Check we're in the same invariant part of the prefix
+        if (invariant_prefix_len && std::memcmp(&prefix[0], &item.first[0], invariant_prefix_len) != 0) {
             break;
         }
 
@@ -81,8 +81,8 @@ std::pair<bool, ByteView> PrefixSet::contains_and_next_marked(ByteView prefix) {
 
 void PrefixSet::ensure_sorted() {
     if (!sorted_) {
-        std::sort(nibbled_keys_.begin(), nibbled_keys_.end());
-        nibbled_keys_.erase(std::unique(nibbled_keys_.begin(), nibbled_keys_.end()), nibbled_keys_.end());
+        std::sort(keys_.begin(), keys_.end());
+        keys_.erase(std::unique(keys_.begin(), keys_.end()), keys_.end());
         sorted_ = true;
     }
 }

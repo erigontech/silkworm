@@ -44,13 +44,16 @@ class PrefixSet {
 
     //! \brief Returns the next key with marker==true in the list
     //! \see Erigon's RetainList::RetainWithMarker
-    std::pair<bool, ByteView> contains_and_next_marked(ByteView prefix);
+    //! \param [in] prefix : the prefix to search for
+    //! \param [in] invariant_prefix_len : when searching for next marked the scanned items must begin with this number
+    //! of identical bytes
+    std::pair<bool, ByteView> contains_and_next_marked(ByteView prefix, size_t invariant_prefix_len);
 
-    size_t size() const { return nibbled_keys_.size(); }
+    size_t size() const { return keys_.size(); }
     bool empty() const { return size() == 0; }
 
     void clear() noexcept {
-        nibbled_keys_.clear();
+        keys_.clear();
         index_ = 0;
         sorted_ = false;
     }
@@ -58,9 +61,9 @@ class PrefixSet {
   private:
     void ensure_sorted();
 
-    std::vector<std::pair<Bytes, bool>> nibbled_keys_;  // Collection of nibbled keys with marker of newly created
-    size_t index_{0};                                   // Index of last compared key
-    bool sorted_{false};                                // Whether nibbled_keys_ has been unique-ed and sorted
+    std::vector<std::pair<Bytes, bool>> keys_;  // Collection of nibbled keys with marker of newly created
+    size_t index_{0};                           // Index of last compared key
+    bool sorted_{false};                        // Whether nibbled_keys_ has been unique-ed and sorted
 };
 
 }  // namespace silkworm::trie

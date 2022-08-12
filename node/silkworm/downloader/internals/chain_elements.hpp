@@ -48,9 +48,7 @@ struct Link {
     }
 
     void remove_child(const Link& child) {
-        auto to_remove =
-                std::remove_if(next.begin(), next.end(), [child](auto& link) { return (link->hash == child.hash); });
-        next.erase(to_remove, next.end());
+        std::erase_if(next, [child](auto& link) { return (link->hash == child.hash); });
     }
 
     auto find_child(const Hash& h) {
@@ -82,9 +80,7 @@ struct Anchor {
     BlockNum chainLength() { return lastLinkHeight - blockHeight + 1; }
 
     void remove_child(const Link& child) {
-        auto to_remove =
-                std::remove_if(links.begin(), links.end(), [child](auto& link) { return (link->hash == child.hash); });
-        links.erase(to_remove, links.end());
+        std::erase_if(links, [child](auto& link) { return (link->hash == child.hash); });
     }
 
     auto find_child(const Hash& h) {

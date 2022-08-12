@@ -48,7 +48,7 @@ if(NOT SILKWORM_CORE_ONLY)
   target_link_libraries(backend_kv_test PRIVATE silkworm_node CLI11::CLI11)
 
   # Sentry Tests
-  file(GLOB_RECURSE SENTRY_TEST_FILES CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/sentry/sentry/*_test.cpp")
+  file(GLOB_RECURSE SENTRY_TEST_FILES CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/sentry/*_test.cpp")
   add_executable(sentry_test unit_test.cpp ${SENTRY_TEST_FILES})
   if(SILKWORM_SANITIZE)
     target_compile_definitions(sentry_test PRIVATE GRPC_ASAN_SUPPRESSED GRPC_TSAN_SUPPRESSED)

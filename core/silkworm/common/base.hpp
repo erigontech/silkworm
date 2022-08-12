@@ -16,7 +16,7 @@
 
 #pragma once
 
-// The most common and basic concepts, types, and constants.
+// The most common and basic macros, concepts, types, and constants.
 
 #include <concepts>
 #include <cstddef>
@@ -27,13 +27,19 @@
 #include <evmc/evmc.hpp>
 #include <intx/intx.hpp>
 
+#if defined(__wasm__)
+#define SILKWORM_THREAD_LOCAL static
+#else
+#define SILKWORM_THREAD_LOCAL thread_local
+#endif
+
 namespace silkworm {
 
 using namespace evmc::literals;
 
 template <class T>
 concept UnsignedIntegral = std::unsigned_integral<T> || std::same_as<T, intx::uint128> ||
-    std::same_as<T, intx::uint256> || std::same_as<T, intx::uint512>;
+                           std::same_as<T, intx::uint256> || std::same_as<T, intx::uint512>;
 
 using Bytes = std::basic_string<uint8_t>;
 

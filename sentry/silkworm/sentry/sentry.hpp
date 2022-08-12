@@ -16,22 +16,27 @@ limitations under the License.
 
 #pragma once
 
-#include <string>
-#include <silkworm/common/base.hpp>
+#include <memory>
+#include "settings.hpp"
 
 namespace silkworm::sentry {
 
-class NodeKey {
-  public:
-    NodeKey();
-    explicit NodeKey(Bytes data);
-    explicit NodeKey(const ByteView& data);
+class SentryImpl;
 
-    [[nodiscard]]
-    std::string to_hex() const;
+class Sentry final {
+  public:
+    explicit Sentry(Settings settings);
+    ~Sentry();
+
+    Sentry(const Sentry&) = delete;
+    Sentry& operator=(const Sentry&) = delete;
+
+    void start();
+    void stop();
+    void join();
 
   private:
-    Bytes private_key_;
+    std::unique_ptr<SentryImpl> p_impl_;
 };
 
 }  // namespace silkworm::sentry

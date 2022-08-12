@@ -1,5 +1,5 @@
 #[[
-   Copyright 2020-2021 The SilkRpc Authors
+   Copyright 2020-2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -72,10 +72,12 @@ add_custom_command(
     DEPENDS "${SENTRY_PROTO}"
 )
 
+add_custom_target(generate_types_proto DEPENDS "${TYPES_PROTO_SOURCES}" "${TYPES_PROTO_HEADERS}")
+
 add_custom_target(
     generate_sentry_grpc
     DEPENDS "${SENTRY_PROTO_SOURCES}" "${SENTRY_PROTO_HEADERS}" "${SENTRY_GRPC_SOURCES}" "${SENTRY_GRPC_HEADERS}"
-            "${TYPES_PROTO_SOURCES}" "${TYPES_PROTO_HEADERS}"
+            generate_types_proto
 )
 
 # ---------------------------------------------------------------------------------------------------------------------
@@ -101,7 +103,7 @@ add_custom_command(
 add_custom_target(
     generate_kv_grpc
     DEPENDS "${KV_PROTO_SOURCES}" "${KV_PROTO_HEADERS}" "${KV_GRPC_SOURCES}" "${KV_GRPC_HEADERS}"
-            "${TYPES_PROTO_SOURCES}" "${TYPES_PROTO_HEADERS}"
+            generate_types_proto
 )
 
 # ---------------------------------------------------------------------------------------------------------------------
@@ -127,5 +129,5 @@ add_custom_command(
 add_custom_target(
     generate_ethbackend_grpc
     DEPENDS "${ETHBACKEND_PROTO_SOURCES}" "${ETHBACKEND_PROTO_HEADERS}" "${ETHBACKEND_GRPC_SOURCES}" "${ETHBACKEND_GRPC_HEADERS}"
-            "${TYPES_PROTO_SOURCES}" "${TYPES_PROTO_HEADERS}"
+            generate_types_proto
 )

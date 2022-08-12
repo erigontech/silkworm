@@ -33,7 +33,7 @@ commands:
             sudo apt-get install -y libgmp3-dev
       - restore_cache:
           name: "Restore Hunter cache"
-          key: &hunter-cache-key hunter-{{ .Environment.CIRCLE_JOB }}-{{checksum "cmake/Hunter/config.cmake"}}-{{checksum "cmake/toolchain/base.cmake"}}-{{checksum "cmake/toolchain/cxx17.cmake"}}-{{checksum "cmake/toolchain/cxx20.cmake"}}-{{checksum "cmake/toolchain/clang_libcxx.cmake"}}-{{checksum "cmake/toolchain/wasi.cmake"}}
+          key: &hunter-cache-key hunter-{{ .Environment.CIRCLE_JOB }}-{{checksum "cmake/Hunter/config.cmake"}}-{{checksum "cmake/toolchain/base.cmake"}}-{{checksum "cmake/toolchain/cxx20.cmake"}}-{{checksum "cmake/toolchain/clang_libcxx.cmake"}}-{{checksum "cmake/toolchain/wasi.cmake"}}
       - run:
           name: "Cmake"
           working_directory: ~/build
@@ -74,6 +74,10 @@ commands:
           working_directory: ~/build
           no_output_timeout: 20m
           command: cmd/test/consensus --threads 4 # out of memory with 8 threads under thread sanitizer 
+      - run:
+          name: "Sentry unit tests"
+          working_directory: ~/build
+          command: cmd/test/sentry_test
 
 jobs:
   linux-gcc-11-thread-sanitizer:

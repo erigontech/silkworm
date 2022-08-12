@@ -42,14 +42,22 @@ StageResult HashState::forward(db::RWTxn& txn) {
             return StageResult::kInvalidProgress;
         }
 
-        if (execution_stage_progress - previous_progress > 16) {
+        BlockNum segment_width{execution_stage_progress - previous_progress};
+        if (segment_width > 16) {
             log::Info("Begin " + std::string(stage_name_),
                       {"from", std::to_string(previous_progress), "to", std::to_string(execution_stage_progress)});
         }
 
         reset_log_progress();
 
-        if (!previous_progress) {
+        if (!previous_progress || segment_width > 100'000) {
+
+            // Clear any previous contents
+            txn->clear_map(db::table::kHashedAccounts.name);
+            txn->clear_map(db::table::kHashedStorage.name);
+            txn->clear_map(db::table::kHashedCodeHash.name);
+            txn.commit();
+
             success_or_throw(hash_from_plainstate(txn));
             collector_->clear();
             reset_log_progress();

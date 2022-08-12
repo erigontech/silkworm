@@ -23,6 +23,7 @@
 #include <silkworm/common/util.hpp>
 #include <silkworm/rlp/encode.hpp>
 #include <silkworm/trie/hash_builder.hpp>
+#include <silkworm/trie/nibbles.hpp>
 
 namespace silkworm {
 

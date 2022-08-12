@@ -25,6 +25,18 @@
 
 namespace silkworm {
 
+TEST_CASE("Byteviews") {
+    Bytes source{'0', '1', '2'};
+    ByteView bv1(source);
+    bv1.remove_prefix(3);
+    REQUIRE(bv1.empty());
+    ByteView bv2{};
+    REQUIRE(bv2.empty());
+    REQUIRE(bv1 == bv2);
+    REQUIRE_FALSE(bv1.data() == bv2.data());
+    REQUIRE(bv2.is_null());
+}
+
 TEST_CASE("Empty hashes") {
     const ByteView empty_string;
     const ethash::hash256 hash_of_empty_string{keccak256(empty_string)};

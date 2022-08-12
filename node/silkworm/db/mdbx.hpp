@@ -156,9 +156,9 @@ class Cursor : public ::mdbx::cursor {
 
     //! \brief (re)uses current cursor binding it to provided transaction and map
     void bind(::mdbx::txn& tx, const MapConfig& config);
-    
+
     //! \brief (re)uses current cursor binding it to provided transaction and map
-    void bind(RWTxn& tx, const MapConfig& config) { bind(*tx, config); }
+    void bind(RWTxn& txn, const MapConfig& config) { bind(*txn, config); }
 
     //! \brief Closes cursor causing de-allocation of MDBX_cursor handle
     //! \remarks After this call the cursor is not reusable and the handle does not return to the cache
@@ -166,6 +166,12 @@ class Cursor : public ::mdbx::cursor {
 
     //! \brief Returns stat info of underlying dbi
     [[nodiscard]] MDBX_stat get_map_stat() const;
+
+    //! \brief Returns the size of the underlying table
+    [[nodiscard]] size_t size() const;
+
+    //! \brief Returns whether the underlying table is empty
+    [[nodiscard]] bool empty() const;
 
     //! \brief Exposes handles cache
     static const ObjectPool<MDBX_cursor, detail::cursor_handle_deleter>& handles_cache() { return handles_pool_; }

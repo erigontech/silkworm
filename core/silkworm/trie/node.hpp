@@ -16,11 +16,11 @@
 
 #pragma once
 
-#include <cassert>
 #include <optional>
 #include <vector>
 
 #include <silkworm/common/base.hpp>
+#include <silkworm/common/decoding_result.hpp>
 
 namespace silkworm::trie {
 
@@ -32,43 +32,46 @@ namespace silkworm::trie {
 // 3) #hash_mask == #hashes
 class Node {
   public:
-    Node(uint16_t state_mask, uint16_t tree_mask, uint16_t hash_mask, std::vector<evmc::bytes32> hashes,
-         const std::optional<evmc::bytes32>& root_hash = std::nullopt);
+    Node() = default;
+    explicit Node(uint16_t state_mask, uint16_t tree_mask, uint16_t hash_mask, std::vector<evmc::bytes32> hashes,
+                  const std::optional<evmc::bytes32>& root_hash = std::nullopt);
 
     // copyable
     Node(const Node& other) = default;
     Node& operator=(const Node& other) = default;
 
-    uint16_t state_mask() const { return state_mask_; }
-    uint16_t tree_mask() const { return tree_mask_; }
-    uint16_t hash_mask() const { return hash_mask_; }
+    [[nodiscard]] uint16_t state_mask() const { return state_mask_; }
+    [[nodiscard]] uint16_t tree_mask() const { return tree_mask_; }
+    [[nodiscard]] uint16_t hash_mask() const { return hash_mask_; }
 
-    const std::vector<evmc::bytes32>& hashes() const { return hashes_; }
+    [[nodiscard]] const std::vector<evmc::bytes32>& hashes() const { return hashes_; }
 
-    const std::optional<evmc::bytes32>& root_hash() const { return root_hash_; }
+    [[nodiscard]] const std::optional<evmc::bytes32>& root_hash() const { return root_hash_; }
 
     void set_root_hash(const std::optional<evmc::bytes32>& root_hash);
 
     friend bool operator==(const Node&, const Node&) = default;
 
-  private:
-    uint16_t state_mask_{0};
-    uint16_t tree_mask_{0};
-    uint16_t hash_mask_{0};
+    //! \see Erigon's MarshalTrieNodeTyped
+    [[nodiscard]] Bytes encode_for_storage() const;
+
+    //! \see Erigon's UnmarshalTrieNodeTyped
+    [[nodiscard]] static std::optional<Node> decode_from_storage(ByteView raw);
+
+    static DecodingResult decode_from_storage(ByteView raw, Node& node);
+
+  protected:
+    uint16_t state_mask_{0};  // Each bit set indicates parenting of a hashed state
+    uint16_t tree_mask_{0};   // Each bit set indicates parenting of a child
+    uint16_t hash_mask_{0};   // Each bit set indicates ownership of a valid hash
     std::vector<evmc::bytes32> hashes_{};
     std::optional<evmc::bytes32> root_hash_{std::nullopt};
+
+  private:
+
+
 };
 
-// Erigon MarshalTrieNode
-Bytes marshal_node(const Node& n);
-
-// Erigon UnmarshalTrieNode
-std::optional<Node> unmarshal_node(ByteView v);
-
-inline void assert_subset(uint16_t sub, uint16_t sup) {
-    auto intersection{sub & sup};
-    assert(intersection == sub);
-    (void)intersection;
-}
+inline bool is_subset(uint16_t sub, uint16_t sup) { return (sub & sup) == sub; }
 
 }  // namespace silkworm::trie

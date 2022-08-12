@@ -19,6 +19,7 @@
 #include <csignal>
 #include <cstdio>
 #include <cstdlib>
+#include <stdexcept>
 
 namespace silkworm {
 
@@ -100,6 +101,7 @@ inline constexpr int kHandleableCodes[] {
 };
 
 std::atomic_uint32_t SignalHandler::sig_count_{0};
+std::atomic_int SignalHandler::sig_code_{0};
 std::atomic_bool SignalHandler::signalled_{false};
 
 void SignalHandler::init() {
@@ -111,6 +113,7 @@ void SignalHandler::init() {
 void SignalHandler::handle(int sig_code) {
     bool expected{false};
     if (signalled_.compare_exchange_strong(expected, true)) {
+        sig_code_ = sig_code;
         std::fputs("Got ", stderr);
         std::fputs(sig_name(sig_code), stderr);
         std::fputs(". Shutting down ...\n", stderr);
@@ -133,6 +136,13 @@ void SignalHandler::handle(int sig_code) {
 void SignalHandler::reset() {
     signalled_ = false;
     sig_count_ = 0;
+}
+
+void SignalHandler::throw_if_signalled() {
+    if (!signalled()) {
+        return;
+    }
+    throw std::runtime_error(sig_name(sig_code_));
 }
 
 }  // namespace silkworm

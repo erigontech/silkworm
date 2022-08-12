@@ -114,7 +114,7 @@ BufferBase::BufferBase(Level level) : should_print_(level <= settings_.log_verbo
 
 BufferBase::BufferBase(Level level, std::string_view msg, const std::vector<std::string>& args) : BufferBase(level) {
     if (!should_print_) return;
-    ss_ << std::left << std::setw(30) << std::setfill(' ') << msg;
+    ss_ << std::left << std::setw(35) << std::setfill(' ') << msg;
     bool left{true};
     for (const auto& arg : args) {
         ss_ << (left ? kColorGreen : kColorWhiteHigh) << arg << kColorReset << (left ? "=" : " ") << kColorReset;

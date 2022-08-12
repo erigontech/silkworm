@@ -1,5 +1,5 @@
-#[[
-   Copyright 2020-2021 The Silkworm Authors
+/*
+   Copyright 2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -12,20 +12,21 @@
    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
    See the License for the specific language governing permissions and
    limitations under the License.
-]]
+*/
 
-set(CMAKE_CXX_STANDARD_REQUIRED YES)
-set(CMAKE_CXX_EXTENSIONS NO)
+#pragma once
+#include <silkworm/common/base.hpp>
 
-set(CMAKE_POSITION_INDEPENDENT_CODE YES)
+namespace silkworm::trie {
 
-set(CMAKE_C_VISIBILITY_PRESET hidden)
-set(CMAKE_CXX_VISIBILITY_PRESET hidden)
-set(CMAKE_VISIBILITY_INLINES_HIDDEN YES)
+//! \brief Transforms a string of of Nibbles into a string of Bytes
+//! \def A Nibble's value is [0..16)
+//! \see Erigon's CompressNibbles
+Bytes pack_nibbles(ByteView unpacked);
 
-cmake_policy(SET CMP0063 NEW)
-cmake_policy(SET CMP0074 NEW)
+//! \brief Transforms a string of of bytes into a string of Nibbles
+//! \def A Nibble's value is [0..16)
+//! \see Erigon's DecompressNibbles
+Bytes unpack_nibbles(ByteView data);
 
-if(CMAKE_HOST_SYSTEM_PROCESSOR STREQUAL "arm64")
-  set(CMAKE_OSX_ARCHITECTURES "arm64" CACHE STRING "")
-endif()
+}  // namespace silkworm::trie

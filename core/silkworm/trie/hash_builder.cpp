@@ -16,13 +16,13 @@
 
 #include "hash_builder.hpp"
 
+#include <bit>
 #include <cstring>
 #include <span>
 
 #include <ethash/keccak.hpp>
 
 #include <silkworm/common/assert.hpp>
-#include <silkworm/common/bits.hpp>
 #include <silkworm/common/cast.hpp>
 #include <silkworm/common/util.hpp>
 #include <silkworm/rlp/encode.hpp>
@@ -259,9 +259,9 @@ void HashBuilder::gen_struct_step(ByteView current, const ByteView succeeding) {
 std::vector<Bytes> HashBuilder::branch_ref(uint16_t state_mask, uint16_t hash_mask) {
     SILKWORM_ASSERT(is_subset(hash_mask, state_mask));
     std::vector<Bytes> child_hashes;
-    child_hashes.reserve(popcount_16(hash_mask));
+    child_hashes.reserve(static_cast<size_t>(std::popcount(hash_mask)));
 
-    const size_t first_child_idx{stack_.size() - popcount_16(state_mask)};
+    const size_t first_child_idx{stack_.size() - static_cast<size_t>(std::popcount(state_mask))};
 
     // Length for the nil value added below
     rlp::Header h{/*list=*/true, /*payload_length=*/1};

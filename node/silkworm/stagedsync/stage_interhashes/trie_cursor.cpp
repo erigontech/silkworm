@@ -16,7 +16,8 @@
 
 #include "trie_cursor.hpp"
 
-#include <silkworm/common/bits.hpp>
+#include <bit>
+
 #include <silkworm/common/log.hpp>
 #include <silkworm/common/rlp_err.hpp>
 #include <silkworm/trie/nibbles.hpp>
@@ -59,14 +60,13 @@ const evmc::bytes32& SubNode::hash() {
 }
 
 void SubNode::parse(ByteView k, ByteView v) {
-
     key = k;
     value = v;
 
     rlp::success_or_throw(Node::decode_from_storage(v, *this));
 
-    child_id = static_cast<int8_t>(ctz_16(state_mask_)) - 1;
-    max_child_id = static_cast<int8_t>(bitlen_16(state_mask_));
+    child_id = static_cast<int8_t>(std::countr_zero(state_mask_)) - 1;
+    max_child_id = static_cast<int8_t>(std::bit_width(state_mask_));
     hash_id = -1;
     deleted = false;
 }

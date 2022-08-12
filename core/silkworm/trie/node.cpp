@@ -16,8 +16,9 @@
 
 #include "node.hpp"
 
+#include <bit>
+
 #include <silkworm/common/assert.hpp>
-#include <silkworm/common/bits.hpp>
 #include <silkworm/common/endian.hpp>
 
 namespace silkworm::trie {
@@ -31,7 +32,7 @@ Node::Node(uint16_t state_mask, uint16_t tree_mask, uint16_t hash_mask, std::vec
       root_hash_{root_hash} {
     SILKWORM_ASSERT(is_subset(tree_mask, state_mask));
     SILKWORM_ASSERT(is_subset(hash_mask, state_mask));
-    SILKWORM_ASSERT(popcount_16(hash_mask_) == hashes_.size());
+    SILKWORM_ASSERT(static_cast<size_t>(std::popcount(hash_mask_)) == hashes_.size());
 }
 
 void Node::set_root_hash(const std::optional<evmc::bytes32>& root_hash) { root_hash_ = root_hash; }
@@ -85,7 +86,7 @@ DecodingResult Node::decode_from_storage(ByteView raw, Node& node) {
 
     raw.remove_prefix(6);
 
-    size_t expected_num_hashes{popcount_16(node.hash_mask_)};
+    size_t expected_num_hashes{static_cast<size_t>(std::popcount(node.hash_mask_))};
     size_t effective_num_hashes{raw.length() / kHashLength};
 
     if (effective_num_hashes < expected_num_hashes) {

@@ -16,9 +16,10 @@
 
 #include "node.hpp"
 
+#include <bit>
+
 #include <catch2/catch.hpp>
 
-#include <silkworm/common/bits.hpp>
 #include <silkworm/common/util.hpp>
 
 namespace silkworm::trie {
@@ -34,7 +35,7 @@ TEST_CASE("Node marshalling") {
            },
            /*root_hash*/ 0xaaaabbbb0006767767776fffffeee44444000005567645600000000eeddddddd_bytes32};
 
-    REQUIRE(n.hashes().size() == popcount_16(n.hash_mask()));
+    REQUIRE(n.hashes().size() == static_cast<size_t>(std::popcount(n.hash_mask())));
 
     Bytes raw{n.encode_for_storage()};
     std::optional<Node> from_raw{Node::decode_from_storage(raw)};

@@ -14,6 +14,7 @@
    limitations under the License.
 */
 
+#include <bit>
 #include <bitset>
 #include <csignal>
 #include <filesystem>
@@ -31,7 +32,6 @@
 #include <silkworm/chain/genesis.hpp>
 #include <silkworm/common/as_range.hpp>
 #include <silkworm/common/assert.hpp>
-#include <silkworm/common/bits.hpp>
 #include <silkworm/common/directories.hpp>
 #include <silkworm/common/endian.hpp>
 #include <silkworm/common/log.hpp>
@@ -1130,7 +1130,7 @@ void do_trie_integrity(db::EnvConfig& config, bool with_state_coverage, bool con
             }
 
             data1_v.remove_prefix(6);
-            auto expected_hashes_count{popcount_16(node_hash_mask)};
+            auto expected_hashes_count{static_cast<size_t>(std::popcount(node_hash_mask))};
             auto effective_hashes_count{data1_v.length() / kHashLength};
             if (!(effective_hashes_count == expected_hashes_count ||
                   effective_hashes_count == expected_hashes_count + 1u)) {
@@ -1177,7 +1177,7 @@ void do_trie_integrity(db::EnvConfig& config, bool with_state_coverage, bool con
 
             if (node_tree_mask) {
                 buffer.assign(data1_k).push_back('\0');
-                for (uint16_t i{ctz_16(node_tree_mask)}, e{bitlen_16(node_tree_mask)}; i < e; ++i) {
+                for (int i{std::countr_zero(node_tree_mask)}, e{std::bit_width(node_tree_mask)}; i < e; ++i) {
                     if (((1 << i) & node_tree_mask) == 0) {
                         continue;
                     }
@@ -1287,7 +1287,7 @@ void do_trie_integrity(db::EnvConfig& config, bool with_state_coverage, bool con
                 }
                 // <<< See Erigon's ByteMask
 
-                for (uint16_t i{ctz_16(node_state_mask)}, e{bitlen_16(node_state_mask)}; i < e; ++i) {
+                for (int i{std::countr_zero(node_state_mask)}, e{std::bit_width(node_state_mask)}; i < e; ++i) {
                     if (((1 << i) & node_state_mask) == 0) {
                         continue;
                     }

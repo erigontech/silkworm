@@ -1,5 +1,5 @@
 /*
-    Copyright 2021 The Silkworm Authors
+    Copyright 2021-2022 The Silkworm Authors
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -297,8 +297,6 @@ void run_preflight_checklist(NodeSettings& node_settings) {
             node_settings.chain_config = db::read_chain_config(*tx);
         }
 
-        log::Message("Initialized chain", {"configuration", node_settings.chain_config.value().to_json().dump()});
-
         if (!node_settings.chain_config.has_value()) {
             throw std::runtime_error("Unable to retrieve chain configuration");
         } else if (node_settings.chain_config.value().chain_id != node_settings.network_id) {
@@ -306,15 +304,36 @@ void run_preflight_checklist(NodeSettings& node_settings) {
                                      std::to_string(node_settings.network_id) + "; Database has " +
                                      std::to_string(node_settings.chain_config.value().chain_id));
         }
-        std::string chain_name{" unknown/custom network"};
-        auto chains_map{get_known_chains_map()};
-        for (auto& [name, id] : chains_map) {
-            if (id == node_settings.chain_config.value().chain_id) {
-                chain_name = name;
-                break;
+
+        auto known_chain{lookup_known_chain(node_settings.chain_config->chain_id)};
+        if (known_chain.has_value()) {
+            // If loaded config is known we must ensure is up-to-date with hardcoded one
+            // Loop all respective JSON members to find discrepancies
+            auto known_chain_config_json{known_chain->second->to_json()};
+            auto active_chain_config_json{node_settings.chain_config->to_json()};
+            bool new_members_added{false};
+            for (auto& [known_key, known_value] : known_chain_config_json.items()) {
+                if (!active_chain_config_json.contains(known_key)) {
+                    new_members_added = true;
+                    continue;
+                }
+
+                auto active_value{active_chain_config_json[known_key]};
+                if (active_value.type_name() != known_value.type_name() || active_value != known_value) {
+                    throw std::runtime_error(
+                        "Hard-coded chain config has incompatible data types or values with stored chain config");
+                }
+            }
+
+            if (new_members_added) {
+                db::update_chain_config(*tx, *(known_chain->second));
+                tx.commit();
+                node_settings.chain_config = db::read_chain_config(*tx);
             }
         }
-        log::Message("Starting Silkworm", {"chain", chain_name});
+
+        log::Message("Starting Silkworm", {"chain", (known_chain.has_value() ? known_chain->first : "unknown/custom"),
+                                           "config", node_settings.chain_config->to_json().dump()});
     }
 
     // Detect prune-mode and verify is compatible

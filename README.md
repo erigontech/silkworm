@@ -13,6 +13,7 @@ C++ implementation of the Ethereum protocol based on the [Erigon architecture].
 - [Building on Linux & macOS](#build_on_unix)
 - [Building on Windows](#build_on_windows)
 - [Codemap](#codemap)
+- [Testing Silkworm](#testing_silkworm)
 - [Style Guide](#guide)
 - [License](#license)
 
@@ -87,25 +88,6 @@ or [Ethereum Consensus Tests]
 cmd/test/consensus
 ```
 
-You can also try run Silkworm to test the stages implemented so far. To do that you need to obtain a primed database by Erigon (strictly from `stable` branch) by forcing it to stop before stage Senders.
-
-On Linux [build Erigon](https://github.com/ledgerwatch/erigon#getting-started) and 
-```
-export STOP_BEFORE_STAGE="Senders"
-./build/bin/erigon --datadir <path-where-to-store-data>
-```
-
-On Windows [build Erigon](https://github.com/ledgerwatch/erigon#windows) and 
-```
-$env:STOP_BEFORE_STAGE="Senders"
-./build/bin/erigon.exe --datadir <path-where-to-store-data>
-```
-
-After any of those steps (wait for completion) launch Silkworm and point it to the same data directory you've used for Erigon
-```
-cmd/silkworm --datadir <same-datadir-path-used-for-erigon>
-```
-
 <a name="build_on_windows"></a>
 ## Building on Windows
 
@@ -145,6 +127,30 @@ Apart from the submodules and some auxiliary directories, Silkworm contains the 
   The `node` library depends on the `core` library.
 * [`cmd`](cmd/)
   <br /> The source code of  Silkworm executable binaries.
+
+<a name="testing_silkworm"></a>
+## Testing Silkworm
+
+**Note : at current state of development Silkworm can't actually "sync" the chain like Erigon does. What instead does is  a one-pass loop over all implemented stages to process all blocks which are already in the database. Due to that you NEED a primed database from Erigon.**
+
+You can try run Silkworm to test the stages implemented so far. To do that you need to obtain a primed database by Erigon (strictly from `stable` branch) by forcing it to stop before stage Senders.
+
+On Linux [build Erigon](https://github.com/ledgerwatch/erigon#getting-started) and
+```
+export STOP_BEFORE_STAGE="Senders"
+./build/bin/erigon --datadir <path-where-to-store-data>
+```
+
+On Windows [build Erigon](https://github.com/ledgerwatch/erigon#windows) and
+```
+$env:STOP_BEFORE_STAGE="Senders"
+./build/bin/erigon.exe --datadir <path-where-to-store-data>
+```
+
+After any of those steps (wait for completion) launch Silkworm and point it to the same data directory you've used for Erigon
+```
+cmd/silkworm --datadir <same-datadir-path-used-for-erigon>
+```
 
 
 <a name="guide"></a>

@@ -281,6 +281,10 @@ void run_preflight_checklist(NodeSettings& node_settings) {
     db::table::check_or_create_chaindata_tables(*tx);
     log::Message("Database schema", {"version", db::read_schema_version(*tx)->to_string()});
 
+    // Detect the highest downloaded header. We need that to detect if we can apply changes in chain config and/or
+    // prune mode
+    auto header_download_progress{db::stages::read_stage_progress(*tx, db::stages::kHeadersKey)};
+
     // Check db is initialized with chain config
     {
         node_settings.chain_config = db::read_chain_config(*tx);
@@ -314,6 +318,19 @@ void run_preflight_checklist(NodeSettings& node_settings) {
             bool new_members_added{false};
             for (auto& [known_key, known_value] : known_chain_config_json.items()) {
                 if (!active_chain_config_json.contains(known_key)) {
+                    // Is this new key a definition of a new fork block or a bomb delay block ?
+                    // If so we need to check its new value must be **beyond** the highest
+                    // header processed.
+
+                    const std::regex block_pattern(R"(Block$)", std::regex_constants::icase);
+                    if (std::regex_match(known_key, block_pattern)) {
+                        if (known_value.get<uint64_t>() <= header_download_progress) {
+                            throw std::runtime_error("Can't apply new chain config key " + known_key + "with value " +
+                                                     known_value.get<std::string>() +
+                                                     " as the database has already a higher header");
+                        }
+                    }
+
                     new_members_added = true;
                     continue;
                 }
@@ -342,7 +359,6 @@ void run_preflight_checklist(NodeSettings& node_settings) {
         if (db_prune_mode != *node_settings.prune_mode) {
             // In case we have mismatching modes (cli != db) we prevent
             // further execution ONLY if we've already synced something
-            auto header_download_progress{db::stages::read_stage_progress(*tx, db::stages::kHeadersKey)};
             if (header_download_progress) {
                 throw std::runtime_error("Can't change prune_mode on already synced data. Expected " +
                                          node_settings.prune_mode->to_string() + " got " + db_prune_mode.to_string());

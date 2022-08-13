@@ -131,7 +131,7 @@ Apart from the submodules and some auxiliary directories, Silkworm contains the 
 <a name="testing_silkworm"></a>
 ## Testing Silkworm
 
-**Note : at current state of development Silkworm can't actually "sync" the chain like Erigon does. What instead does is  a one-pass loop over all implemented stages to process all blocks which are already in the database. Due to that you NEED a primed database from Erigon.**
+**Note : at current state of development Silkworm can't actually "sync" the chain like Erigon does. What instead does is a one-pass loop over all implemented stages to process all blocks which are already in the database. Due to that you NEED a primed database from Erigon.**
 
 You can try run Silkworm to test the stages implemented so far. To do that you need to obtain a primed database by Erigon (strictly from `stable` branch) by forcing it to stop before stage Senders.
 

@@ -35,71 +35,88 @@ StageResult BlockHashes::forward(db::RWTxn& txn) {
      *        to HeaderNumber bucket    : HeaderHash  ->  BlockNumber
      */
 
-    if (is_stopping()) {
-        return StageResult::kAborted;
-    }
+    using namespace std::chrono_literals;
+    auto log_time{std::chrono::steady_clock::now()};
 
-    // Check stage boundaries from previous execution and previous stage execution
-    auto previous_progress{db::stages::read_stage_progress(*txn, stage_name_)};
-    auto headers_stage_progress{db::stages::read_stage_progress(*txn, db::stages::kHeadersKey)};
-    if (previous_progress == headers_stage_progress) {
-        // Nothing to process
-        return StageResult::kSuccess;
-    } else if (previous_progress > headers_stage_progress) {
-        // Something bad had happened.
-        // Maybe we need to unwind ?
-        log::Error() << "Bad progress sequence. BlockHashes stage progress " << previous_progress
-                     << " while Headers stage " << headers_stage_progress;
-        return StageResult::kInvalidProgress;
-    }
+    try {
+        throw_if_stopping();
 
-    reached_block_num_ = 0;
-    auto expected_block_number{previous_progress + 1};
-    uint64_t headers_count{headers_stage_progress - previous_progress};
-    if (headers_count > 16) {
-        log::Info("Begin " + std::string(stage_name_),
-                  {"from", std::to_string(expected_block_number), "to", std::to_string(headers_stage_progress)});
-    }
-
-    collector_ =
-        std::make_unique<etl::Collector>(node_settings_->data_directory->etl().path(), node_settings_->etl_buffer_size);
-    auto header_key{db::block_key(expected_block_number)};
-    auto source{db::open_cursor(*txn, db::table::kCanonicalHashes)};
-    auto data{source.find(db::to_slice(header_key), /*throw_notfound=*/false)};
-    while (data.done) {
-        reached_block_num_ = endian::load_big_u64(static_cast<uint8_t*>(data.key.data()));
-        SILKWORM_ASSERT(reached_block_num_ == expected_block_number);
-        SILKWORM_ASSERT(data.value.length() == kHashLength);
-        // TODO (Andrew) is the value, key order intentional?
-        collector_->collect(etl::Entry{Bytes{db::from_slice(data.value)}, Bytes{db::from_slice(data.key)}});
-        // Do we need to abort ?
-        if (!(expected_block_number % 1024) && is_stopping()) {
-            return StageResult::kAborted;
+        // Check stage boundaries from previous execution and previous stage execution
+        auto previous_progress{db::stages::read_stage_progress(*txn, stage_name_)};
+        auto headers_stage_progress{db::stages::read_stage_progress(*txn, db::stages::kHeadersKey)};
+        if (previous_progress == headers_stage_progress) {
+            // Nothing to process
+            return StageResult::kSuccess;
+        } else if (previous_progress > headers_stage_progress) {
+            // Something bad had happened.
+            // Maybe we need to unwind ?
+            log::Error() << "Bad progress sequence. BlockHashes stage progress " << previous_progress
+                         << " while Headers stage " << headers_stage_progress;
+            return StageResult::kInvalidProgress;
         }
-        expected_block_number++;
-        data = source.to_next(/*throw_notfound=*/false);
+
+        BlockNum segment_width{headers_stage_progress - previous_progress};
+        if (segment_width > 16) {
+            log::Info("Begin " + std::string(stage_name_),
+                      {"from", std::to_string(previous_progress), "to", std::to_string(headers_stage_progress)});
+        }
+
+        reached_block_num_ = 0;
+        collector_ = std::make_unique<etl::Collector>(node_settings_);
+
+        auto expected_block_number{previous_progress + 1};
+        auto header_key{db::block_key(expected_block_number)};
+        db::Cursor source(txn, db::table::kCanonicalHashes);
+        auto data{source.find(db::to_slice(header_key), /*throw_notfound=*/false)};
+        while (data.done) {
+            reached_block_num_ = endian::load_big_u64(static_cast<uint8_t*>(data.key.data()));
+
+            if (reached_block_num_ > headers_stage_progress) {
+                break;
+            }
+
+            check_block_sequence(reached_block_num_, expected_block_number);
+            SILKWORM_ASSERT(data.value.length() == kHashLength);
+
+            collector_->collect(etl::Entry{Bytes{db::from_slice(data.value)}, Bytes{db::from_slice(data.key)}});
+
+            if (auto now{std::chrono::steady_clock::now()}; log_time <= now) {
+                throw_if_stopping();
+                log_time = now + 5s;
+            }
+
+            // Do we need to abort ?
+            expected_block_number++;
+            data = source.to_next(/*throw_notfound=*/false);
+        }
+
+        // Load what collected
+        if (!collector_->empty()) {
+            db::Cursor target(txn, db::table::kHeaderNumbers);
+            MDBX_put_flags_t db_flags{target.empty() ? MDBX_put_flags_t::MDBX_APPEND : MDBX_put_flags_t::MDBX_UPSERT};
+
+            // Eventually load collected items with no transform (may throw)
+            collector_->load(target, nullptr, db_flags);
+
+            // Update progress height with last processed block
+            db::stages::write_stage_progress(*txn, stage_name_, reached_block_num_);
+
+            txn.commit();
+        }
+
+        collector_.reset();
+
+    } catch (const StageError& ex) {
+        log::Error(std::string(stage_name_),
+                   {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
+        collector_.reset();
+        return static_cast<StageResult>(ex.err());
+    } catch (const std::exception& ex) {
+        collector_.reset();
+        log::Error(std::string(stage_name_), {"exception", std::string(ex.what())});
+        return StageResult::kUnexpectedError;
     }
 
-    if (reached_block_num_ != headers_stage_progress) {
-        throw std::runtime_error("Unable to read all headers. Expected height " +
-                                 std::to_string(headers_stage_progress) + " got " + std::to_string(reached_block_num_));
-    }
-
-    // Proceed only if we've done something
-    if (!collector_->empty()) {
-        auto target{db::open_cursor(*txn, db::table::kHeaderNumbers)};
-        auto target_rcount{txn->get_map_stat(target.map()).ms_entries};
-        MDBX_put_flags_t db_flags{target_rcount ? MDBX_put_flags_t::MDBX_UPSERT : MDBX_put_flags_t::MDBX_APPEND};
-
-        // Eventually load collected items with no transform (may throw)
-        collector_->load(target, nullptr, db_flags);
-
-        // Update progress height with last processed block
-        db::stages::write_stage_progress(*txn, stage_name_, reached_block_num_);
-
-        txn.commit();
-    }
-    collector_.reset();
     return is_stopping() ? StageResult::kAborted : StageResult::kSuccess;
 }
 
@@ -119,11 +136,12 @@ StageResult BlockHashes::unwind(db::RWTxn& txn, BlockNum to) {
         return StageResult::kAborted;
     }
 
-    auto source{db::open_cursor(*txn, db::table::kCanonicalHashes)};
+    db::Cursor source(txn, db::table::kCanonicalHashes);
     auto initial_key{db::block_key(to + 1)};
     auto source_data{source.lower_bound(db::to_slice(initial_key), false)};
 
     std::vector<Bytes> collected_keys;
+
     db::WalkFunc walk_func = [&collected_keys](::mdbx::cursor&, ::mdbx::cursor::move_result& data) -> bool {
         collected_keys.emplace_back(db::from_slice(data.value));
         return true;

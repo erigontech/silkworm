@@ -74,17 +74,20 @@ StageResult HashState::forward(db::RWTxn& txn) {
             reset_log_progress();
         }
 
+        collector_.reset();
         throw_if_stopping();
         db::stages::write_stage_progress(*txn, db::stages::kHashStateKey, execution_stage_progress);
         txn.commit();
 
+
     } catch (const StageError& ex) {
         log::Error(std::string(stage_name_),
                    {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
+        collector_.reset();
         return static_cast<StageResult>(ex.err());
     } catch (const std::exception& ex) {
         reset_log_progress();
-        collector_->clear();
+        collector_.reset();
         log::Error(std::string(stage_name_), {"exception", std::string(ex.what())});
         return StageResult::kUnexpectedError;
     }

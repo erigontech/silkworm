@@ -118,7 +118,6 @@ void SyncLoop::work() {
 }
 
 StageResult SyncLoop::run_cycle(db::RWTxn& cycle_txn, Timer& log_timer) {
-
     StopWatch stages_stop_watch(true);
     try {
         // Force to stop at any particular stage ?
@@ -132,7 +131,7 @@ StageResult SyncLoop::run_cycle(db::RWTxn& cycle_txn, Timer& log_timer) {
             if (stop_stage_name && !iequals(stop_stage_name, stage->name())) {
                 stop();
                 log::Warning("Stopping ...", {"STOP_BEFORE_STAGE", stop_stage_name, "hit", "true"});
-                return StageResult::kSuccess;
+                break;
             }
 
             log_timer.reset();  // Resets the interval for next log line from now

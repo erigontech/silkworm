@@ -283,7 +283,7 @@ void run_preflight_checklist(NodeSettings& node_settings) {
 
     // Detect the highest downloaded header. We need that to detect if we can apply changes in chain config and/or
     // prune mode
-    auto header_download_progress{db::stages::read_stage_progress(*tx, db::stages::kHeadersKey)};
+    const auto header_download_progress{db::stages::read_stage_progress(*tx, db::stages::kHeadersKey)};
 
     // Check db is initialized with chain config
     {
@@ -309,7 +309,7 @@ void run_preflight_checklist(NodeSettings& node_settings) {
                                      std::to_string(node_settings.chain_config.value().chain_id));
         }
 
-        auto known_chain{lookup_known_chain(node_settings.chain_config->chain_id)};
+        const auto known_chain{lookup_known_chain(node_settings.chain_config->chain_id)};
         if (known_chain.has_value() && *(known_chain->second) != *(node_settings.chain_config)) {
             // If loaded config is known we must ensure is up-to-date with hardcoded one
             // Loop all respective JSON members to find discrepancies
@@ -345,7 +345,7 @@ void run_preflight_checklist(NodeSettings& node_settings) {
             if (new_members_added) {
                 db::update_chain_config(*tx, *(known_chain->second));
                 tx.commit();
-                node_settings.chain_config = db::read_chain_config(*tx);
+                node_settings.chain_config = *(known_chain->second);
             }
         }
 

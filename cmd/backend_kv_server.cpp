@@ -120,7 +120,7 @@ int parse_command_line(int argc, char* argv[], CLI::App& app, BackEndKvSettings&
         node_settings.network_id = chain_name->as<uint32_t>();
     }
 
-    auto known_chain_config{silkworm::lookup_known_chain(node_settings.network_id)};
+    const auto known_chain_config{silkworm::lookup_known_chain(node_settings.network_id)};
     if (!known_chain_config.has_value()) {
         SILK_CRIT << "Unknown chain identifier: " << node_settings.network_id;
         return -1;

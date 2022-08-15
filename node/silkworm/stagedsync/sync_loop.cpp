@@ -118,8 +118,8 @@ void SyncLoop::work() {
 }
 
 StageResult SyncLoop::run_cycle(db::RWTxn& cycle_txn, Timer& log_timer) {
-    StopWatch stages_stop_watch;
-    (void)stages_stop_watch.start();
+
+    StopWatch stages_stop_watch(true);
     try {
         // Force to stop at any particular stage ?
         // Same as in Erigon

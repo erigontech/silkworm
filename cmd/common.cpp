@@ -310,7 +310,7 @@ void run_preflight_checklist(NodeSettings& node_settings) {
         }
 
         auto known_chain{lookup_known_chain(node_settings.chain_config->chain_id)};
-        if (known_chain.has_value()) {
+        if (known_chain.has_value() && *(known_chain->second) != *(node_settings.chain_config)) {
             // If loaded config is known we must ensure is up-to-date with hardcoded one
             // Loop all respective JSON members to find discrepancies
             auto known_chain_config_json{known_chain->second->to_json()};

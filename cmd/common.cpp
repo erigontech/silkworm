@@ -324,10 +324,18 @@ void run_preflight_checklist(NodeSettings& node_settings) {
 
                     const std::regex block_pattern(R"(Block$)", std::regex_constants::icase);
                     if (std::regex_match(known_key, block_pattern)) {
-                        if (known_value.get<uint64_t>() <= header_download_progress) {
+                        // New forkBlock definition (as well as bomb defusing block) must be "activated" to be relevant.
+                        // By "activated" we mean it has to have a value > 0. Code should also take into account
+                        // different chain_id(s) if special features are embedded from genesis
+                        // All our chain configurations inherit from ChainConfig which necessarily needs to be extended
+                        // to allow derivative chains to support new fork blocks
+
+                        if (const auto known_value_activation{known_value.get<uint64_t>()};
+                            known_value_activation > 0 && known_value_activation <= header_download_progress) {
                             throw std::runtime_error("Can't apply new chain config key " + known_key + "with value " +
-                                                     known_value.get<std::string>() +
-                                                     " as the database has already a higher header");
+                                                     std::to_string(known_value_activation) +
+                                                     " as the database has already blocks up to " +
+                                                     std::to_string(header_download_progress));
                         }
                     }
 

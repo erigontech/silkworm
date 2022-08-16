@@ -316,6 +316,7 @@ void run_preflight_checklist(NodeSettings& node_settings) {
             auto known_chain_config_json{known_chain->second->to_json()};
             auto active_chain_config_json{node_settings.chain_config->to_json()};
             bool new_members_added{false};
+            bool old_members_changed(false);
             for (auto& [known_key, known_value] : known_chain_config_json.items()) {
                 if (!active_chain_config_json.contains(known_key)) {
                     // Is this new key a definition of a new fork block or a bomb delay block ?
@@ -341,16 +342,36 @@ void run_preflight_checklist(NodeSettings& node_settings) {
 
                     new_members_added = true;
                     continue;
-                }
 
-                auto active_value{active_chain_config_json[known_key]};
-                if (active_value.type_name() != known_value.type_name() || active_value != known_value) {
-                    throw std::runtime_error(
-                        "Hard-coded chain config has incompatible data types or values with stored chain config");
+                } else {
+                    const auto active_value{active_chain_config_json[known_key]};
+                    if (active_value.type_name() != known_value.type_name()) {
+                        throw std::runtime_error("Hard-coded chain config key " + known_key + " has type " +
+                                                 std::string(known_value.type_name()) +
+                                                 " whilst persisted config has type " +
+                                                 std::string(active_value.type_name()));
+                    }
+
+                    // Check whether activation value has been modified
+                    const auto known_value_activation{known_value.get<uint64_t>()};
+                    const auto active_value_activation{active_value.get<uint64_t>()};
+                    if (known_value_activation != active_value_activation) {
+                        // If chain downloaded headers already surpassed active_value_activation then any change is not
+                        // acceptable. Also reject any new value which is before header_download_progress
+                        if (active_value_activation <= header_download_progress ||
+                            known_value_activation <= header_download_progress) {
+                            throw std::runtime_error("Can't apply modified chain config key " + known_key + " from " +
+                                                     std::to_string(active_value_activation) + " to " +
+                                                     std::to_string(known_value_activation) +
+                                                     " as the database has already headers up to " +
+                                                     std::to_string(header_download_progress));
+                        }
+                        old_members_changed = true;
+                    }
                 }
             }
 
-            if (new_members_added) {
+            if (new_members_added || old_members_changed) {
                 db::update_chain_config(*tx, *(known_chain->second));
                 tx.commit();
                 node_settings.chain_config = *(known_chain->second);

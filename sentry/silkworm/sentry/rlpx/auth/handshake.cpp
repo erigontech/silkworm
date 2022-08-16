@@ -29,7 +29,7 @@ namespace silkworm::sentry::rlpx::auth {
 using namespace std::chrono_literals;
 using namespace common::awaitable_wait_for_one;
 
-boost::asio::awaitable<AuthSession> Handshake::auth(common::SocketStream& stream) {
+boost::asio::awaitable<AuthKeys> Handshake::auth(common::SocketStream& stream) {
     if (peer_public_key_) {
         auth::AuthInitiator auth_initiator{node_key_, peer_public_key_.value()};
         co_return (co_await auth_initiator.execute(stream));

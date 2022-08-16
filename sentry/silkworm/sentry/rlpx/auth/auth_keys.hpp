@@ -21,7 +21,7 @@
 
 namespace silkworm::sentry::rlpx::auth {
 
-struct AuthSession {
+struct AuthKeys {
     common::EccPublicKey peer_public_key;
     common::EccPublicKey peer_ephemeral_public_key;
     common::EccKeyPair ephemeral_key_pair;

@@ -16,22 +16,24 @@
 
 #pragma once
 
-#include <silkworm/sentry/common/ecc_key_pair.hpp>
-#include <silkworm/sentry/common/ecc_public_key.hpp>
+#include <memory>
 
-namespace silkworm::sentry::rlpx::auth {
+#include <silkworm/common/base.hpp>
 
-struct AuthKeys {
-    common::EccPublicKey peer_public_key;
+class Keccak;
 
-    common::EccPublicKey peer_ephemeral_public_key;
-    common::EccKeyPair ephemeral_key_pair;
+namespace silkworm::sentry::rlpx::crypto {
 
-    Bytes initiator_nonce;
-    Bytes recipient_nonce;
+class Sha3Hasher final {
+  public:
+    Sha3Hasher();
+    ~Sha3Hasher();
 
-    Bytes initiator_first_message_data;
-    Bytes recipient_first_message_data;
+    void update(ByteView data);
+    [[nodiscard]] Bytes hash();
+
+  private:
+    std::unique_ptr<Keccak> impl_;
 };
 
-}  // namespace silkworm::sentry::rlpx::auth
+}  // namespace silkworm::sentry::rlpx::crypto

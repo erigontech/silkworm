@@ -36,6 +36,7 @@ class Handshake {
         common::EccKeyPair node_key,
         std::optional<common::EccPublicKey> peer_public_key)
         : node_key_(std::move(node_key)),
+          is_initiator_(peer_public_key.has_value()),
           peer_public_key_(std::move(peer_public_key)) {}
 
     boost::asio::awaitable<void> execute(common::SocketStream& stream);
@@ -44,6 +45,7 @@ class Handshake {
     boost::asio::awaitable<AuthKeys> auth(common::SocketStream& stream);
 
     common::EccKeyPair node_key_;
+    const bool is_initiator_;
     std::optional<common::EccPublicKey> peer_public_key_;
 };
 

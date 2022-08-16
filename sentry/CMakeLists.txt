@@ -35,6 +35,8 @@ list(PREPEND GRPC_SRC "${MAIN_DIR}/interfaces/types/types.pb.cc")
 list(PREPEND GRPC_SRC "${MAIN_DIR}/interfaces/types/types.pb.h")
 list(PREPEND SRC ${GRPC_SRC})
 
+list(PREPEND SRC "${MAIN_DIR}/third_party/stbrumme-keccak/keccak.cpp")
+
 add_library(${TARGET} ${SRC})
 
 add_dependencies(${TARGET} silkworm_node generate_sentry_grpc)
@@ -53,6 +55,7 @@ endif()
 target_include_directories(${TARGET} PUBLIC
   ${CMAKE_CURRENT_SOURCE_DIR}
   "${MAIN_DIR}/interfaces"
+  "${MAIN_DIR}/third_party/stbrumme-keccak"
 )
 
 set(LIBS

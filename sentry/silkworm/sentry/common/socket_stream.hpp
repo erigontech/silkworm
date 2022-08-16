@@ -41,7 +41,7 @@ class SocketStream {
 
     boost::asio::awaitable<uint16_t> receive_short();
     boost::asio::awaitable<Bytes> receive_fixed(std::size_t size);
-    boost::asio::awaitable<Bytes> receive();
+    boost::asio::awaitable<ByteView> receive_size_and_data(Bytes& raw_data);
 
   private:
     boost::asio::ip::tcp::socket socket_;

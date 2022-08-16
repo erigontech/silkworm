@@ -19,9 +19,11 @@
 #include <silkworm/common/log.hpp>
 #include <silkworm/sentry/common/awaitable_wait_for_one.hpp>
 #include <silkworm/sentry/common/timeout.hpp>
+#include <silkworm/sentry/rlpx/framing/framing_cipher.hpp>
 
 #include "auth_initiator.hpp"
 #include "auth_recipient.hpp"
+#include "ecies_cipher.hpp"
 #include "hello_message.hpp"
 
 namespace silkworm::sentry::rlpx::auth {
@@ -40,8 +42,20 @@ boost::asio::awaitable<AuthKeys> Handshake::auth(common::SocketStream& stream) {
 }
 
 boost::asio::awaitable<void> Handshake::execute(common::SocketStream& stream) {
-    auto session = co_await auth(stream);
-    log::Debug() << "AuthSession.peer_ephemeral_public_key: " << session.peer_ephemeral_public_key.hex();
+    auto auth_keys = co_await auth(stream);
+    log::Debug() << "AuthSession.peer_ephemeral_public_key: " << auth_keys.peer_ephemeral_public_key.hex();
+
+    framing::FramingCipher framing_cipher{
+        framing::FramingCipher::KeyMaterial{
+            EciesCipher::compute_shared_secret(
+                auth_keys.peer_ephemeral_public_key,
+                auth_keys.ephemeral_key_pair.private_key()),
+            is_initiator_,
+            auth_keys.initiator_nonce,
+            auth_keys.recipient_nonce,
+            auth_keys.initiator_first_message_data,
+            auth_keys.recipient_first_message_data,
+        }};
 
     // TODO: Hello message exchange
     common::Timeout timeout(5s);

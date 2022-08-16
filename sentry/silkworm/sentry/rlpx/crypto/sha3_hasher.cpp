@@ -14,24 +14,26 @@
    limitations under the License.
 */
 
-#pragma once
+#include "sha3_hasher.hpp"
 
-#include <silkworm/sentry/common/ecc_key_pair.hpp>
-#include <silkworm/sentry/common/ecc_public_key.hpp>
+#include <keccak.h>
 
-namespace silkworm::sentry::rlpx::auth {
+#include <silkworm/common/util.hpp>
 
-struct AuthKeys {
-    common::EccPublicKey peer_public_key;
+namespace silkworm::sentry::rlpx::crypto {
 
-    common::EccPublicKey peer_ephemeral_public_key;
-    common::EccKeyPair ephemeral_key_pair;
+Sha3Hasher::Sha3Hasher() : impl_(std::make_unique<Keccak>()) {
+}
 
-    Bytes initiator_nonce;
-    Bytes recipient_nonce;
+Sha3Hasher::~Sha3Hasher() {
+}
 
-    Bytes initiator_first_message_data;
-    Bytes recipient_first_message_data;
-};
+void Sha3Hasher::update(ByteView data) {
+    impl_->add(data.data(), data.size());
+}
 
-}  // namespace silkworm::sentry::rlpx::auth
+Bytes Sha3Hasher::hash() {
+    return from_hex(impl_->getHash()).value();
+}
+
+}  // namespace silkworm::sentry::rlpx::crypto

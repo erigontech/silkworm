@@ -356,10 +356,22 @@ void run_preflight_checklist(NodeSettings& node_settings) {
                     const auto known_value_activation{known_value.get<uint64_t>()};
                     const auto active_value_activation{active_value.get<uint64_t>()};
                     if (known_value_activation != active_value_activation) {
-                        // If chain downloaded headers already surpassed active_value_activation then any change is not
-                        // acceptable. Also reject any new value which is before header_download_progress
-                        if (active_value_activation <= header_download_progress ||
-                            known_value_activation <= header_download_progress) {
+                        bool must_throw{false};
+                        if (!known_value_activation && active_value_activation &&
+                            active_value_activation <= header_download_progress) {
+                            // Can't de-activate an already activated fork block
+                            must_throw = true;
+                        } else if (!active_value_activation && known_value_activation &&
+                                   known_value_activation <= header_download_progress) {
+                            // Can't activate a fork block BEFORE current height
+                            must_throw = true;
+                        } else if (known_value_activation && active_value_activation &&
+                                   std::min(known_value_activation, active_value_activation) <=
+                                       header_download_progress) {
+                            // Can change activation height BEFORE current height
+                            must_throw = true;
+                        }
+                        if (must_throw) {
                             throw std::runtime_error("Can't apply modified chain config key " + known_key + " from " +
                                                      std::to_string(active_value_activation) + " to " +
                                                      std::to_string(known_value_activation) +

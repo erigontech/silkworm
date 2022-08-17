@@ -31,6 +31,7 @@
 #include <silkworm/common/settings.hpp>
 #include <silkworm/rpc/server/backend_kv_server.hpp>
 #include <silkworm/rpc/util.hpp>
+
 #include "common.hpp"
 
 //! Assemble the full node name using the Cable build information
@@ -91,20 +92,19 @@ int parse_command_line(int argc, char* argv[], CLI::App& app, BackEndKvSettings&
 
     // RPC Server options
     app.add_option("--private.api.addr", node_settings.private_api_addr,
-                    "Private API network address to serve remote database interface\n"
-                    "An empty string means to not start the listener\n"
-                    "Use the endpoint form i.e. ip-address:port\n"
-                    "DO NOT EXPOSE TO THE INTERNET")
+                   "Private API network address to serve remote database interface\n"
+                   "An empty string means to not start the listener\n"
+                   "Use the endpoint form i.e. ip-address:port\n"
+                   "DO NOT EXPOSE TO THE INTERNET")
         ->capture_default_str();
     // TODO(canepat) add check on private.api.addr using IPEndPointValidator
-    app.add_option("--sentry.api.addr", node_settings.sentry_api_addr, "Sentry api endpoint")
-        ->capture_default_str();
+    app.add_option("--sentry.api.addr", node_settings.sentry_api_addr, "Sentry api endpoint")->capture_default_str();
     // TODO(canepat) add check on sentry_api_addr using IPEndPointValidator
 
     // Chain options
     auto& chain_opts = *app.add_option_group("Chain", "Chain selection options");
     auto chain_name = chain_opts.add_option("--chain", "Name of the network to join (default: \"mainnet\")")
-                            ->transform(CLI::Transformer(silkworm::get_known_chains_map(), CLI::ignore_case));
+                          ->transform(CLI::Transformer(silkworm::get_known_chains_map(), CLI::ignore_case));
     chain_opts
         .add_option("--networkid", node_settings.network_id,
                     "Explicitly set network id\n"
@@ -119,12 +119,13 @@ int parse_command_line(int argc, char* argv[], CLI::App& app, BackEndKvSettings&
     if (chain_name->count()) {
         node_settings.network_id = chain_name->as<uint32_t>();
     }
-    const silkworm::ChainConfig* chain_config = silkworm::lookup_chain_config(node_settings.network_id);
-    if (chain_config == nullptr) {
+
+    const auto known_chain_config{silkworm::lookup_known_chain(node_settings.network_id)};
+    if (!known_chain_config.has_value()) {
         SILK_CRIT << "Unknown chain identifier: " << node_settings.network_id;
         return -1;
     }
-    node_settings.chain_config = *chain_config;
+    node_settings.chain_config = *(known_chain_config->second);
 
     if (!etherbase_address.empty()) {
         const auto etherbase = silkworm::from_hex(etherbase_address);

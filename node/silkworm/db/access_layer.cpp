@@ -514,6 +514,16 @@ std::optional<ChainConfig> read_chain_config(mdbx::txn& txn) {
     return ChainConfig::from_json(json);
 }
 
+void update_chain_config(mdbx::txn& txn, const ChainConfig& config) {
+    auto genesis_hash{read_canonical_header_hash(txn, 0)};
+    if (!genesis_hash.has_value()) {
+        return;
+    }
+    Cursor cursor(txn, db::table::kConfig);
+    auto config_data{config.to_json().dump()};
+    cursor.upsert(db::to_slice(genesis_hash->bytes), mdbx::slice(config_data.data()));
+}
+
 void write_head_header_hash(mdbx::txn& txn, const uint8_t (&hash)[kHashLength]) {
     Cursor target(txn, table::kHeadHeader);
     mdbx::slice key(db::table::kLastHeaderKey);

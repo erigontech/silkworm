@@ -63,7 +63,7 @@ class IntraBlockState {
 
     void destruct(const evmc::address& address);
 
-    void record_suicide(const evmc::address& address) noexcept;
+    bool record_suicide(const evmc::address& address) noexcept;
     void destruct_suicides();
     void destruct_touched_dead();
 

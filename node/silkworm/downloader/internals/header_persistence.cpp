@@ -193,9 +193,7 @@ void HeaderPersistence::update_canonical_chain(BlockNum height, Hash hash) {  //
     std::optional<Hash> persisted_canon_hash = db::read_canonical_hash(tx_, ancestor_height);
     while (!persisted_canon_hash ||
            std::memcmp(persisted_canon_hash.value().bytes, ancestor_hash.bytes, kHashLength) != 0) {
-        
     // while (persisted_canon_hash != ancestor_hash) { // better but gcc12 release erroneously raises a maybe-uninitialized warn
-    // while (!persisted_canon_hash || persisted_canon_hash.value() != ancestor_hash) {
         db::write_canonical_hash(tx_, ancestor_height, ancestor_hash);
 
         auto ancestor = db::read_header(tx_, ancestor_height, ancestor_hash);

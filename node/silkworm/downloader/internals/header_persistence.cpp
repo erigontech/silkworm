@@ -185,6 +185,8 @@ BlockNum HeaderPersistence::find_forking_point(db::RWTxn& tx, const BlockHeader&
 
 // On Erigon is fixCanonicalChain
 void HeaderPersistence::update_canonical_chain(BlockNum height, Hash hash) {  // hash can be empty
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wuninitialized"
     if (height == 0) return;
 
     auto ancestor_hash = hash;
@@ -208,6 +210,7 @@ void HeaderPersistence::update_canonical_chain(BlockNum height, Hash hash) {  //
 
         persisted_canon_hash = db::read_canonical_hash(tx_, ancestor_height);
     }
+#pragma GCC diagnostic pop
 }
 
 void HeaderPersistence::close() {

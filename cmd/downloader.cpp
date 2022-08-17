@@ -39,7 +39,8 @@ using LastStage = size_t;
 template <size_t N>
 std::tuple<Stage::Result, LastStage> forward(std::array<Stage*, N> stages, db::RWTxn& txn) {
     using Status = Stage::Result;
-    Stage::Result result;
+    Stage::Result result{Status::Unspecified};
+
 
     for(size_t i = 0; i < N; ++i) {
         result = stages[i]->forward(txn);
@@ -54,7 +55,7 @@ std::tuple<Stage::Result, LastStage> forward(std::array<Stage*, N> stages, db::R
 template <size_t N>
 Stage::Result unwind(std::array<Stage*, N> stages, BlockNum unwind_point, LastStage last_stage, db::RWTxn& txn) {
     using Status = Stage::Result;
-    Stage::Result result;
+    Stage::Result result{Status::Unspecified};
 
     for(size_t i = last_stage; i <= 0; --i) { // reverse loop
         result = stages[i]->unwind(txn, unwind_point);

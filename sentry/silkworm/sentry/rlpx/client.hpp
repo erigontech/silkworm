@@ -16,25 +16,23 @@
 
 #pragma once
 
-#include <string>
+#include <vector>
 #include <silkworm/concurrency/coroutine.hpp>
 #include <boost/asio/awaitable.hpp>
-#include <silkworm/rpc/server/server_context_pool.hpp>
 #include <silkworm/sentry/common/ecc_key_pair.hpp>
+#include <silkworm/sentry/common/enode_url.hpp>
 
 namespace silkworm::sentry::rlpx {
 
-class Server final {
+class Client {
   public:
-    Server(std::string host, uint16_t port);
+    explicit Client(std::vector<common::EnodeUrl> peer_urls)
+        : peer_urls_(std::move(peer_urls)) {}
 
-    boost::asio::awaitable<void> start(
-            silkworm::rpc::ServerContextPool& context_pool,
-            common::EccKeyPair node_key);
+    boost::asio::awaitable<void> start(common::EccKeyPair node_key);
 
   private:
-    std::string host_;
-    uint16_t port_;
+    const std::vector<common::EnodeUrl> peer_urls_;
 };
 
 }  // namespace silkworm::sentry::rlpx

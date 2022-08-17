@@ -120,4 +120,37 @@ DecodingResult decode_vector(ByteView& from, std::vector<T>& to) noexcept {
     return DecodingResult::kOk;
 }
 
+template <class T>
+DecodingResult decode(ByteView& from, std::vector<T>& to) noexcept {
+    return decode_vector(from, to);
+}
+
+template <typename Arg1, typename Arg2>
+DecodingResult decode_items(ByteView& from, Arg1& arg1, Arg2& arg2) noexcept {
+    DecodingResult err = decode(from, arg1);
+    if (err != DecodingResult::kOk)
+        return err;
+    return decode(from, arg2);
+}
+
+template <typename Arg1, typename Arg2, typename... Args>
+DecodingResult decode_items(ByteView& from, Arg1& arg1, Arg2& arg2, Args&... args) noexcept {
+    DecodingResult err = decode(from, arg1);
+    if (err != DecodingResult::kOk)
+        return err;
+    return decode_items(from, arg2, args...);
+}
+
+template <typename Arg1, typename Arg2, typename... Args>
+DecodingResult decode(ByteView& from, Arg1& arg1, Arg2& arg2, Args&... args) noexcept {
+    auto [header, err] = decode_header(from);
+    if (err != DecodingResult::kOk) {
+        return err;
+    }
+    if (!header.list) {
+        return DecodingResult::kUnexpectedString;
+    }
+    return decode_items(from, arg1, arg2, args...);
+}
+
 }  // namespace silkworm::rlp

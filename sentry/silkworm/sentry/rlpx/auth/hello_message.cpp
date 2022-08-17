@@ -14,27 +14,17 @@
     limitations under the License.
 */
 
-#pragma once
+#include "hello_message.hpp"
 
-#include <string>
-#include <silkworm/concurrency/coroutine.hpp>
-#include <boost/asio/awaitable.hpp>
-#include <silkworm/rpc/server/server_context_pool.hpp>
-#include <silkworm/sentry/common/ecc_key_pair.hpp>
+namespace silkworm::sentry::rlpx::auth {
 
-namespace silkworm::sentry::rlpx {
+HelloMessage::HelloMessage(ByteView) {
+    // TODO
+}
 
-class Server final {
-  public:
-    Server(std::string host, uint16_t port);
+Bytes HelloMessage::serialize() const {
+    // TODO
+    return Bytes();
+}
 
-    boost::asio::awaitable<void> start(
-            silkworm::rpc::ServerContextPool& context_pool,
-            common::EccKeyPair node_key);
-
-  private:
-    std::string host_;
-    uint16_t port_;
-};
-
-}  // namespace silkworm::sentry::rlpx
+}  // namespace silkworm::sentry::rlpx::auth

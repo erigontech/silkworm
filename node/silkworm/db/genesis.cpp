@@ -19,6 +19,7 @@
 #include <silkworm/chain/genesis.hpp>
 #include <silkworm/state/in_memory_state.hpp>
 #include <silkworm/trie/hash_builder.hpp>
+#include <silkworm/trie/nibbles.hpp>
 
 #include "tables.hpp"
 
@@ -194,7 +195,7 @@ bool initialize_genesis(mdbx::txn& txn, const nlohmann::json& genesis_json, bool
         // Write Chain Settings
         auto config_data{genesis_json["config"].dump()};
         db::open_cursor(txn, db::table::kConfig)
-            .upsert(db::to_slice(block_hash.bytes), mdbx::slice{config_data.c_str()});
+            .upsert(db::to_slice(block_hash.bytes), mdbx::slice{config_data.data()});
 
         return true;
 

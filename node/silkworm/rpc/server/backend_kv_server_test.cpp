@@ -22,27 +22,24 @@
 #include <memory>
 #include <mutex>
 #include <string>
-#include <sstream>
 #include <thread>
 #include <vector>
 
-#include <boost/asio/post.hpp>
 #include <catch2/catch.hpp>
-#include <grpc/grpc.h>
+#include <types/types.pb.h>
 
+#include <silkworm/backend/ethereum_backend.hpp>
+#include <silkworm/backend/state_change_collection.hpp>
 #include <silkworm/common/base.hpp>
 #include <silkworm/common/directories.hpp>
 #include <silkworm/common/log.hpp>
 #include <silkworm/db/mdbx.hpp>
-#include <silkworm/backend/ethereum_backend.hpp>
 #include <silkworm/rpc/conversion.hpp>
 #include <silkworm/rpc/util.hpp>
-#include <silkworm/backend/state_change_collection.hpp>
-#include <types/types.pb.h>
 
 using namespace std::chrono_literals;
 
-namespace { // Trick suggested by gRPC team to avoid name clashes in multiple test modules
+namespace {  // Trick suggested by gRPC team to avoid name clashes in multiple test modules
 class BackEndClient {
   public:
     explicit BackEndClient(remote::ETHBACKEND::StubInterface* stub) : stub_(stub) {}
@@ -77,7 +74,8 @@ class BackEndClient {
         return stub_->ClientVersion(&context, remote::ClientVersionRequest{}, response);
     }
 
-    grpc::Status subscribe_and_consume(const remote::SubscribeRequest& request, std::vector<remote::SubscribeReply>& responses) {
+    grpc::Status subscribe_and_consume(const remote::SubscribeRequest& request,
+                                       std::vector<remote::SubscribeReply>& responses) {
         grpc::ClientContext context;
         auto subscribe_reply_reader = stub_->Subscribe(&context, request);
         bool has_more{true};
@@ -137,9 +135,7 @@ class KvClient {
         return tx_reader_writer->Finish();
     }
 
-    auto tx_start(grpc::ClientContext* context) {
-        return stub_->Tx(context);
-    }
+    auto tx_start(grpc::ClientContext* context) { return stub_->Tx(context); }
 
     auto statechanges_start(grpc::ClientContext* context, const remote::StateChangeRequest& request) {
         return stub_->StateChanges(context, request);
@@ -181,7 +177,7 @@ class ThreadedKvClient {
 
     bool wait_one_milli_for_subscription() {
         std::unique_lock subscribed_lock{subscribed_mutex_};
-        return subscribed_condition_.wait_for(subscribed_lock, 1ms, [&]{ return subscribed_; });
+        return subscribed_condition_.wait_for(subscribed_lock, 1ms, [&] { return subscribed_; });
     }
 
     grpc::Status join_and_finish() {
@@ -232,7 +228,8 @@ class SentryServer {
         grpc::ServerContext pc_context;
         sentry::PeerCountRequest pc_request;
         grpc::ServerAsyncResponseWriter<sentry::PeerCountReply> pc_responder{&pc_context};
-        service_.RequestPeerCount(&pc_context, &pc_request, &pc_responder, cq_.get(), cq_.get(), PEER_COUNT_REQUEST_TAG);
+        service_.RequestPeerCount(&pc_context, &pc_request, &pc_responder, cq_.get(), cq_.get(),
+                                  PEER_COUNT_REQUEST_TAG);
         grpc::ServerContext ni_context;
         google::protobuf::Empty ni_request;
         grpc::ServerAsyncResponseWriter<types::NodeInfoReply> ni_responder{&ni_context};
@@ -311,13 +308,9 @@ struct TestableStateChangeCollection : public StateChangeCollection {
         return token;
     }
 
-    void set_token(StateChangeToken next_token) {
-        next_token_ = next_token;
-    }
+    void set_token(StateChangeToken next_token) { next_token_ = next_token; }
 
-    void register_token_observer(StateChangeTokenObserver token_observer) {
-        token_observer_ = token_observer;
-    }
+    void register_token_observer(StateChangeTokenObserver token_observer) { token_observer_ = token_observer; }
 
     StateChangeTokenObserver token_observer_;
 };
@@ -325,8 +318,7 @@ struct TestableStateChangeCollection : public StateChangeCollection {
 class TestableEthereumBackEnd : public EthereumBackEnd {
   public:
     TestableEthereumBackEnd(const NodeSettings& node_settings, mdbx::env* chaindata_env)
-        : EthereumBackEnd(node_settings, chaindata_env, std::make_unique<TestableStateChangeCollection>()) {
-    }
+        : EthereumBackEnd(node_settings, chaindata_env, std::make_unique<TestableStateChangeCollection>()) {}
 
     TestableStateChangeCollection* state_change_source() const noexcept {
         return dynamic_cast<TestableStateChangeCollection*>(EthereumBackEnd::state_change_source());
@@ -334,9 +326,11 @@ class TestableEthereumBackEnd : public EthereumBackEnd {
 };
 
 struct BackEndKvE2eTest {
-    BackEndKvE2eTest(silkworm::log::Level log_verbosity, const NodeSettings& options = {}, std::vector<grpc::Status> statuses = {}) {
+    BackEndKvE2eTest(silkworm::log::Level log_verbosity, const NodeSettings& options = {},
+                     std::vector<grpc::Status> statuses = {}) {
         silkworm::log::set_verbosity(log_verbosity);
-        std::shared_ptr<grpc::Channel> channel = grpc::CreateChannel(kTestAddressUri, grpc::InsecureChannelCredentials());
+        std::shared_ptr<grpc::Channel> channel =
+            grpc::CreateChannel(kTestAddressUri, grpc::InsecureChannelCredentials());
         ethbackend_stub = remote::ETHBACKEND::NewStub(channel);
         backend_client = std::make_unique<BackEndClient>(ethbackend_stub.get());
         kv_stub = remote::KV::NewStub(channel);
@@ -406,7 +400,7 @@ struct BackEndKvE2eTest {
     std::unique_ptr<rpc::BackEndKvServer> server;
     std::vector<std::unique_ptr<SentryServer>> sentry_servers;
 };
-} // namespace anonymous
+}  // namespace
 
 namespace silkworm::rpc {
 
@@ -439,9 +433,7 @@ TEST_CASE("BackEndKvServer", "[silkworm][node][rpc]") {
     SECTION("BackEndKvServer::build_and_start OK: run server in separate thread", "[silkworm][node][rpc]") {
         BackEndKvServer server{srv_config, backend};
         server.build_and_start();
-        std::thread server_thread{[&server]() {
-            server.join();
-        }};
+        std::thread server_thread{[&server]() { server.join(); }};
         server.shutdown();
         server_thread.join();
     }
@@ -489,9 +481,7 @@ TEST_CASE("BackEndKvServer", "[silkworm][node][rpc]") {
     SECTION("BackEndKvServer::join OK: shutdown joined server", "[silkworm][node][rpc]") {
         BackEndKvServer server{srv_config, backend};
         server.build_and_start();
-        std::thread server_thread{[&server]() {
-            server.join();
-        }};
+        std::thread server_thread{[&server]() { server.join(); }};
         server.shutdown();
         server_thread.join();
     }
@@ -499,12 +489,10 @@ TEST_CASE("BackEndKvServer", "[silkworm][node][rpc]") {
     SECTION("BackEndKvServer::join OK: shutdown joined server and join again", "[silkworm][node][rpc]") {
         BackEndKvServer server{srv_config, backend};
         server.build_and_start();
-        std::thread server_thread{[&server]() {
-            server.join();
-        }};
+        std::thread server_thread{[&server]() { server.join(); }};
         server.shutdown();
         server_thread.join();
-        server.join(); // cannot move before server_thread.join() due to data race in boost::asio::detail::posix_thread
+        server.join();  // cannot move before server_thread.join() due to data race in boost::asio::detail::posix_thread
     }
 }
 
@@ -770,7 +758,8 @@ TEST_CASE("BackEndKvServer E2E: KV", "[silkworm][node][rpc]") {
             state_change_source->start_new_batch(++block_number, kEmptyHash, std::vector<Bytes>{}, /*unwind=*/false);
             state_change_source->notify_batch(kTestPendingBaseFee, kTestGasLimit);
 
-            publishing = !(threaded_kv_client1.wait_one_milli_for_subscription() && threaded_kv_client2.wait_one_milli_for_subscription());
+            publishing = !(threaded_kv_client1.wait_one_milli_for_subscription() &&
+                           threaded_kv_client2.wait_one_milli_for_subscription());
         }
         // After at least one state change has been received, close the server-side RPC stream
         state_change_source->close();
@@ -810,7 +799,7 @@ TEST_CASE("BackEndKvServer E2E: KV", "[silkworm][node][rpc]") {
 
         // Wait for token reset condition to happen
         std::unique_lock token_reset_lock{token_reset_mutex};
-        token_reset_condition.wait(token_reset_lock, [&]{ return token_reset; });
+        token_reset_condition.wait(token_reset_lock, [&] { return token_reset; });
 
         // Start another StateChanges server-streaming call and check it fails
         grpc::ClientContext context2;
@@ -832,7 +821,7 @@ TEST_CASE("BackEndKvServer E2E: KV", "[silkworm][node][rpc]") {
 
 TEST_CASE("BackEndKvServer E2E: mainnet chain with zero etherbase", "[silkworm][node][rpc]") {
     NodeSettings node_settings;
-    node_settings.chain_config = *silkworm::lookup_chain_config("mainnet");
+    node_settings.chain_config = *(silkworm::lookup_known_chain("mainnet")->second);
     node_settings.etherbase = evmc::address{};
     BackEndKvE2eTest test{silkworm::log::Level::kNone, node_settings};
     auto backend_client = *test.backend_client;
@@ -920,7 +909,7 @@ TEST_CASE("BackEndKvServer E2E: more than one Sentry all status OK", "[silkworm]
         const auto status = backend_client.node_info(request, &response);
         CHECK(status.ok());
         CHECK(response.nodesinfo_size() == 2);
-        for (int i{0}; i<response.nodesinfo_size(); i++) {
+        for (int i{0}; i < response.nodesinfo_size(); i++) {
             const types::NodeInfoReply& nodes_info = response.nodesinfo(i);
             CHECK(nodes_info.id() == kTestSentryPeerId);
             CHECK(nodes_info.name() == kTestSentryPeerName);
@@ -972,7 +961,6 @@ TEST_CASE("BackEndKvServer E2E: more than one Sentry all status KO", "[silkworm]
     }
 }
 
-
 TEST_CASE("BackEndKvServer E2E: trigger server-side write error", "[silkworm][node][rpc]") {
     {
         const uint32_t kNumTxs{1000};
@@ -982,7 +970,7 @@ TEST_CASE("BackEndKvServer E2E: trigger server-side write error", "[silkworm][no
         auto kv_client = *test.kv_client;
 
         // Start many Tx calls w/o reading responses after writing requests.
-        for (uint32_t i{0}; i<kNumTxs; i++) {
+        for (uint32_t i{0}; i < kNumTxs; i++) {
             grpc::ClientContext context;
             auto tx_stream = kv_client.tx_start(&context);
             remote::Pair response;
@@ -1006,7 +994,7 @@ TEST_CASE("BackEndKvServer E2E: Tx max simultaneous readers exceeded", "[silkwor
     // Start and keep open as many Tx calls as the maximum number of readers.
     std::vector<std::unique_ptr<grpc::ClientContext>> client_contexts;
     std::vector<TxStreamPtr> tx_streams;
-    for (uint32_t i{0}; i<test.database_env.get_info().mi_maxreaders; i++) {
+    for (uint32_t i{0}; i < test.database_env.get_info().mi_maxreaders; i++) {
         auto& context = client_contexts.emplace_back(std::make_unique<grpc::ClientContext>());
         auto tx_stream = kv_client.tx_start(context.get());
         // You must read at least the first unsolicited incoming message (TxID announcement).
@@ -1046,7 +1034,7 @@ TEST_CASE("BackEndKvServer E2E: Tx max opened cursors exceeded", "[silkworm][nod
     REQUIRE(response.txid() != 0);
     response.clear_txid();
     // Open as many cursors as possible expecting successful result.
-    for (uint32_t i{0}; i<kMaxTxCursors; i++) {
+    for (uint32_t i{0}; i < kMaxTxCursors; i++) {
         remote::Cursor open;
         open.set_op(remote::Op::OPEN);
         open.set_bucketname(kTestMap.name);
@@ -1065,7 +1053,7 @@ TEST_CASE("BackEndKvServer E2E: Tx max opened cursors exceeded", "[silkworm][nod
     REQUIRE(response.cursorid() == 0);
     // Half-close the stream and complete the call checking expected failure.
     REQUIRE(tx_stream->WritesDone());
-    auto status= tx_stream->Finish();
+    auto status = tx_stream->Finish();
     CHECK(!status.ok());
     CHECK(status.error_code() == grpc::StatusCode::RESOURCE_EXHAUSTED);
     CHECK(status.error_message().find("maximum cursors per txn") != std::string::npos);
@@ -1073,12 +1061,8 @@ TEST_CASE("BackEndKvServer E2E: Tx max opened cursors exceeded", "[silkworm][nod
 
 class TxIdleTimeoutGuard {
   public:
-    explicit TxIdleTimeoutGuard(uint8_t t) {
-        TxCall::set_max_idle_duration(boost::posix_time::milliseconds{t});
-    }
-    ~TxIdleTimeoutGuard() {
-        TxCall::set_max_idle_duration(kMaxIdleDuration);
-    }
+    explicit TxIdleTimeoutGuard(uint8_t t) { TxCall::set_max_idle_duration(boost::posix_time::milliseconds{t}); }
+    ~TxIdleTimeoutGuard() { TxCall::set_max_idle_duration(kMaxIdleDuration); }
 };
 
 TEST_CASE("BackEndKvServer E2E: bidirectional idle timeout", "[silkworm][node][rpc]") {
@@ -1144,10 +1128,10 @@ TEST_CASE("BackEndKvServer E2E: Tx cursor valid operations", "[silkworm][node][r
         open.set_bucketname(kTestMap.name);
         remote::Cursor first;
         first.set_op(remote::Op::FIRST);
-        first.set_cursor(0); // automatically assigned by KvClient::tx
+        first.set_cursor(0);  // automatically assigned by KvClient::tx
         remote::Cursor close;
         close.set_op(remote::Op::CLOSE);
-        close.set_cursor(0); // automatically assigned by KvClient::tx
+        close.set_cursor(0);  // automatically assigned by KvClient::tx
         std::vector<remote::Cursor> requests{open, first, close};
         std::vector<remote::Pair> responses;
         const auto status = kv_client.tx(requests, responses);
@@ -1167,13 +1151,13 @@ TEST_CASE("BackEndKvServer E2E: Tx cursor valid operations", "[silkworm][node][r
         open.set_bucketname(kTestMap.name);
         remote::Cursor first1;
         first1.set_op(remote::Op::FIRST);
-        first1.set_cursor(0); // automatically assigned by KvClient::tx
+        first1.set_cursor(0);  // automatically assigned by KvClient::tx
         remote::Cursor first2;
         first2.set_op(remote::Op::FIRST);
-        first2.set_cursor(0); // automatically assigned by KvClient::tx
+        first2.set_cursor(0);  // automatically assigned by KvClient::tx
         remote::Cursor close;
         close.set_op(remote::Op::CLOSE);
-        close.set_cursor(0); // automatically assigned by KvClient::tx
+        close.set_cursor(0);  // automatically assigned by KvClient::tx
         std::vector<remote::Cursor> requests{open, first1, first2, close};
         std::vector<remote::Pair> responses;
         const auto status = kv_client.tx(requests, responses);
@@ -1195,10 +1179,10 @@ TEST_CASE("BackEndKvServer E2E: Tx cursor valid operations", "[silkworm][node][r
         open.set_bucketname(kTestMap.name);
         remote::Cursor last;
         last.set_op(remote::Op::LAST);
-        last.set_cursor(0); // automatically assigned by KvClient::tx
+        last.set_cursor(0);  // automatically assigned by KvClient::tx
         remote::Cursor close;
         close.set_op(remote::Op::CLOSE);
-        close.set_cursor(0); // automatically assigned by KvClient::tx
+        close.set_cursor(0);  // automatically assigned by KvClient::tx
         std::vector<remote::Cursor> requests{open, last, close};
         std::vector<remote::Pair> responses;
         const auto status = kv_client.tx(requests, responses);
@@ -1218,13 +1202,13 @@ TEST_CASE("BackEndKvServer E2E: Tx cursor valid operations", "[silkworm][node][r
         open.set_bucketname(kTestMap.name);
         remote::Cursor last1;
         last1.set_op(remote::Op::LAST);
-        last1.set_cursor(0); // automatically assigned by KvClient::tx
+        last1.set_cursor(0);  // automatically assigned by KvClient::tx
         remote::Cursor last2;
         last2.set_op(remote::Op::LAST);
-        last2.set_cursor(0); // automatically assigned by KvClient::tx
+        last2.set_cursor(0);  // automatically assigned by KvClient::tx
         remote::Cursor close;
         close.set_op(remote::Op::CLOSE);
-        close.set_cursor(0); // automatically assigned by KvClient::tx
+        close.set_cursor(0);  // automatically assigned by KvClient::tx
         std::vector<remote::Cursor> requests{open, last1, last2, close};
         std::vector<remote::Pair> responses;
         const auto status = kv_client.tx(requests, responses);
@@ -1246,10 +1230,10 @@ TEST_CASE("BackEndKvServer E2E: Tx cursor valid operations", "[silkworm][node][r
         open.set_bucketname(kTestMap.name);
         remote::Cursor next;
         next.set_op(remote::Op::NEXT);
-        next.set_cursor(0); // automatically assigned by KvClient::tx
+        next.set_cursor(0);  // automatically assigned by KvClient::tx
         remote::Cursor close;
         close.set_op(remote::Op::CLOSE);
-        close.set_cursor(0); // automatically assigned by KvClient::tx
+        close.set_cursor(0);  // automatically assigned by KvClient::tx
         std::vector<remote::Cursor> requests{open, next, close};
         std::vector<remote::Pair> responses;
         const auto status = kv_client.tx(requests, responses);
@@ -1269,13 +1253,13 @@ TEST_CASE("BackEndKvServer E2E: Tx cursor valid operations", "[silkworm][node][r
         open.set_bucketname(kTestMap.name);
         remote::Cursor next1;
         next1.set_op(remote::Op::NEXT);
-        next1.set_cursor(0); // automatically assigned by KvClient::tx
+        next1.set_cursor(0);  // automatically assigned by KvClient::tx
         remote::Cursor next2;
         next2.set_op(remote::Op::NEXT);
-        next2.set_cursor(0); // automatically assigned by KvClient::tx
+        next2.set_cursor(0);  // automatically assigned by KvClient::tx
         remote::Cursor close;
         close.set_op(remote::Op::CLOSE);
-        close.set_cursor(0); // automatically assigned by KvClient::tx
+        close.set_cursor(0);  // automatically assigned by KvClient::tx
         std::vector<remote::Cursor> requests{open, next1, next2, close};
         std::vector<remote::Pair> responses;
         const auto status = kv_client.tx(requests, responses);
@@ -1297,19 +1281,19 @@ TEST_CASE("BackEndKvServer E2E: Tx cursor valid operations", "[silkworm][node][r
         open1.set_bucketname(kTestMap.name);
         remote::Cursor next1;
         next1.set_op(remote::Op::NEXT);
-        next1.set_cursor(0); // automatically assigned by KvClient::tx
+        next1.set_cursor(0);  // automatically assigned by KvClient::tx
         remote::Cursor close1;
         close1.set_op(remote::Op::CLOSE);
-        close1.set_cursor(0); // automatically assigned by KvClient::tx
+        close1.set_cursor(0);  // automatically assigned by KvClient::tx
         remote::Cursor open2;
         open2.set_op(remote::Op::OPEN);
         open2.set_bucketname(kTestMap.name);
         remote::Cursor next2;
         next2.set_op(remote::Op::NEXT);
-        next2.set_cursor(0); // automatically assigned by KvClient::tx
+        next2.set_cursor(0);  // automatically assigned by KvClient::tx
         remote::Cursor close2;
         close2.set_op(remote::Op::CLOSE);
-        close2.set_cursor(0); // automatically assigned by KvClient::tx
+        close2.set_cursor(0);  // automatically assigned by KvClient::tx
         std::vector<remote::Cursor> requests{open1, next1, close1, open2, next2, close2};
         std::vector<remote::Pair> responses;
         const auto status = kv_client.tx(requests, responses);
@@ -1333,10 +1317,10 @@ TEST_CASE("BackEndKvServer E2E: Tx cursor valid operations", "[silkworm][node][r
         open.set_bucketname(kTestMap.name);
         remote::Cursor prev;
         prev.set_op(remote::Op::PREV);
-        prev.set_cursor(0); // automatically assigned by KvClient::tx
+        prev.set_cursor(0);  // automatically assigned by KvClient::tx
         remote::Cursor close;
         close.set_op(remote::Op::CLOSE);
-        close.set_cursor(0); // automatically assigned by KvClient::tx
+        close.set_cursor(0);  // automatically assigned by KvClient::tx
         std::vector<remote::Cursor> requests{open, prev, close};
         std::vector<remote::Pair> responses;
         const auto status = kv_client.tx(requests, responses);
@@ -1356,13 +1340,13 @@ TEST_CASE("BackEndKvServer E2E: Tx cursor valid operations", "[silkworm][node][r
         open.set_bucketname(kTestMap.name);
         remote::Cursor prev1;
         prev1.set_op(remote::Op::PREV);
-        prev1.set_cursor(0); // automatically assigned by KvClient::tx
+        prev1.set_cursor(0);  // automatically assigned by KvClient::tx
         remote::Cursor prev2;
         prev2.set_op(remote::Op::PREV);
-        prev2.set_cursor(0); // automatically assigned by KvClient::tx
+        prev2.set_cursor(0);  // automatically assigned by KvClient::tx
         remote::Cursor close;
         close.set_op(remote::Op::CLOSE);
-        close.set_cursor(0); // automatically assigned by KvClient::tx
+        close.set_cursor(0);  // automatically assigned by KvClient::tx
         std::vector<remote::Cursor> requests{open, prev1, prev2, close};
         std::vector<remote::Pair> responses;
         const auto status = kv_client.tx(requests, responses);
@@ -1384,19 +1368,19 @@ TEST_CASE("BackEndKvServer E2E: Tx cursor valid operations", "[silkworm][node][r
         open1.set_bucketname(kTestMap.name);
         remote::Cursor prev1;
         prev1.set_op(remote::Op::PREV);
-        prev1.set_cursor(0); // automatically assigned by KvClient::tx
+        prev1.set_cursor(0);  // automatically assigned by KvClient::tx
         remote::Cursor close1;
         close1.set_op(remote::Op::CLOSE);
-        close1.set_cursor(0); // automatically assigned by KvClient::tx
+        close1.set_cursor(0);  // automatically assigned by KvClient::tx
         remote::Cursor open2;
         open2.set_op(remote::Op::OPEN);
         open2.set_bucketname(kTestMap.name);
         remote::Cursor prev2;
         prev2.set_op(remote::Op::PREV);
-        prev2.set_cursor(0); // automatically assigned by KvClient::tx
+        prev2.set_cursor(0);  // automatically assigned by KvClient::tx
         remote::Cursor close2;
         close2.set_op(remote::Op::CLOSE);
-        close2.set_cursor(0); // automatically assigned by KvClient::tx
+        close2.set_cursor(0);  // automatically assigned by KvClient::tx
         std::vector<remote::Cursor> requests{open1, prev1, close1, open2, prev2, close2};
         std::vector<remote::Pair> responses;
         const auto status = kv_client.tx(requests, responses);
@@ -1420,13 +1404,13 @@ TEST_CASE("BackEndKvServer E2E: Tx cursor valid operations", "[silkworm][node][r
         open.set_bucketname(kTestMultiMap.name);
         remote::Cursor first;
         first.set_op(remote::Op::FIRST);
-        first.set_cursor(0); // automatically assigned by KvClient::tx
+        first.set_cursor(0);  // automatically assigned by KvClient::tx
         remote::Cursor current;
         current.set_op(remote::Op::CURRENT);
-        current.set_cursor(0); // automatically assigned by KvClient::tx
+        current.set_cursor(0);  // automatically assigned by KvClient::tx
         remote::Cursor close;
         close.set_op(remote::Op::CLOSE);
-        close.set_cursor(0); // automatically assigned by KvClient::tx
+        close.set_cursor(0);  // automatically assigned by KvClient::tx
         std::vector<remote::Cursor> requests{open, first, current, close};
         std::vector<remote::Pair> responses;
         const auto status = kv_client.tx(requests, responses);
@@ -1447,13 +1431,13 @@ TEST_CASE("BackEndKvServer E2E: Tx cursor valid operations", "[silkworm][node][r
         open.set_bucketname(kTestMultiMap.name);
         remote::Cursor last;
         last.set_op(remote::Op::LAST);
-        last.set_cursor(0); // automatically assigned by KvClient::tx
+        last.set_cursor(0);  // automatically assigned by KvClient::tx
         remote::Cursor current;
         current.set_op(remote::Op::CURRENT);
-        current.set_cursor(0); // automatically assigned by KvClient::tx
+        current.set_cursor(0);  // automatically assigned by KvClient::tx
         remote::Cursor close;
         close.set_op(remote::Op::CLOSE);
-        close.set_cursor(0); // automatically assigned by KvClient::tx
+        close.set_cursor(0);  // automatically assigned by KvClient::tx
         std::vector<remote::Cursor> requests{open, last, current, close};
         std::vector<remote::Pair> responses;
         const auto status = kv_client.tx(requests, responses);
@@ -1474,13 +1458,13 @@ TEST_CASE("BackEndKvServer E2E: Tx cursor valid operations", "[silkworm][node][r
         open.set_bucketname(kTestMultiMap.name);
         remote::Cursor first;
         first.set_op(remote::Op::FIRST);
-        first.set_cursor(0); // automatically assigned by KvClient::tx
+        first.set_cursor(0);  // automatically assigned by KvClient::tx
         remote::Cursor first_dup;
         first_dup.set_op(remote::Op::FIRST_DUP);
-        first_dup.set_cursor(0); // automatically assigned by KvClient::tx
+        first_dup.set_cursor(0);  // automatically assigned by KvClient::tx
         remote::Cursor close;
         close.set_op(remote::Op::CLOSE);
-        close.set_cursor(0); // automatically assigned by KvClient::tx
+        close.set_cursor(0);  // automatically assigned by KvClient::tx
         std::vector<remote::Cursor> requests{open, first, first_dup, close};
         std::vector<remote::Pair> responses;
         const auto status = kv_client.tx(requests, responses);
@@ -1501,14 +1485,14 @@ TEST_CASE("BackEndKvServer E2E: Tx cursor valid operations", "[silkworm][node][r
         open.set_bucketname(kTestMultiMap.name);
         remote::Cursor last;
         last.set_op(remote::Op::LAST);
-        last.set_cursor(0); // automatically assigned by KvClient::tx
+        last.set_cursor(0);  // automatically assigned by KvClient::tx
         remote::Cursor first_dup;
         first_dup.set_op(remote::Op::FIRST_DUP);
-        first_dup.set_cursor(0); // automatically assigned by KvClient::tx
+        first_dup.set_cursor(0);  // automatically assigned by KvClient::tx
         first_dup.set_k("AA");
         remote::Cursor close;
         close.set_op(remote::Op::CLOSE);
-        close.set_cursor(0); // automatically assigned by KvClient::tx
+        close.set_cursor(0);  // automatically assigned by KvClient::tx
         std::vector<remote::Cursor> requests{open, last, first_dup, close};
         std::vector<remote::Pair> responses;
         const auto status = kv_client.tx(requests, responses);
@@ -1529,16 +1513,16 @@ TEST_CASE("BackEndKvServer E2E: Tx cursor valid operations", "[silkworm][node][r
         open.set_bucketname(kTestMultiMap.name);
         remote::Cursor first;
         first.set_op(remote::Op::FIRST);
-        first.set_cursor(0); // automatically assigned by KvClient::tx
+        first.set_cursor(0);  // automatically assigned by KvClient::tx
         remote::Cursor next_dup1;
         next_dup1.set_op(remote::Op::NEXT_DUP);
-        next_dup1.set_cursor(0); // automatically assigned by KvClient::tx
+        next_dup1.set_cursor(0);  // automatically assigned by KvClient::tx
         remote::Cursor next_dup2;
         next_dup2.set_op(remote::Op::NEXT_DUP);
-        next_dup2.set_cursor(0); // automatically assigned by KvClient::tx
+        next_dup2.set_cursor(0);  // automatically assigned by KvClient::tx
         remote::Cursor close;
         close.set_op(remote::Op::CLOSE);
-        close.set_cursor(0); // automatically assigned by KvClient::tx
+        close.set_cursor(0);  // automatically assigned by KvClient::tx
         std::vector<remote::Cursor> requests{open, first, next_dup1, next_dup2, close};
         std::vector<remote::Pair> responses;
         const auto status = kv_client.tx(requests, responses);
@@ -1561,13 +1545,13 @@ TEST_CASE("BackEndKvServer E2E: Tx cursor valid operations", "[silkworm][node][r
         open.set_bucketname(kTestMap.name);
         remote::Cursor first;
         first.set_op(remote::Op::FIRST);
-        first.set_cursor(0); // automatically assigned by KvClient::tx
+        first.set_cursor(0);  // automatically assigned by KvClient::tx
         remote::Cursor next_dup;
         next_dup.set_op(remote::Op::NEXT_DUP);
-        next_dup.set_cursor(0); // automatically assigned by KvClient::tx
+        next_dup.set_cursor(0);  // automatically assigned by KvClient::tx
         remote::Cursor close;
         close.set_op(remote::Op::CLOSE);
-        close.set_cursor(0); // automatically assigned by KvClient::tx
+        close.set_cursor(0);  // automatically assigned by KvClient::tx
         std::vector<remote::Cursor> requests{open, next_dup, close};
         std::vector<remote::Pair> responses;
         const auto status = kv_client.tx(requests, responses);
@@ -1586,10 +1570,10 @@ TEST_CASE("BackEndKvServer E2E: Tx cursor valid operations", "[silkworm][node][r
         open.set_bucketname(kTestMap.name);
         remote::Cursor prev_dup;
         prev_dup.set_op(remote::Op::PREV_DUP);
-        prev_dup.set_cursor(0); // automatically assigned by KvClient::tx
+        prev_dup.set_cursor(0);  // automatically assigned by KvClient::tx
         remote::Cursor close;
         close.set_op(remote::Op::CLOSE);
-        close.set_cursor(0); // automatically assigned by KvClient::tx
+        close.set_cursor(0);  // automatically assigned by KvClient::tx
         std::vector<remote::Cursor> requests{open, prev_dup, close};
         std::vector<remote::Pair> responses;
         const auto status = kv_client.tx(requests, responses);
@@ -1608,10 +1592,10 @@ TEST_CASE("BackEndKvServer E2E: Tx cursor valid operations", "[silkworm][node][r
         open.set_bucketname(kTestMultiMap.name);
         remote::Cursor next_dup;
         next_dup.set_op(remote::Op::NEXT_DUP);
-        next_dup.set_cursor(0); // automatically assigned by KvClient::tx
+        next_dup.set_cursor(0);  // automatically assigned by KvClient::tx
         remote::Cursor close;
         close.set_op(remote::Op::CLOSE);
-        close.set_cursor(0); // automatically assigned by KvClient::tx
+        close.set_cursor(0);  // automatically assigned by KvClient::tx
         std::vector<remote::Cursor> requests{open, next_dup, close};
         std::vector<remote::Pair> responses;
         const auto status = kv_client.tx(requests, responses);
@@ -1630,10 +1614,10 @@ TEST_CASE("BackEndKvServer E2E: Tx cursor valid operations", "[silkworm][node][r
         open.set_bucketname(kTestMultiMap.name);
         remote::Cursor prev_dup;
         prev_dup.set_op(remote::Op::PREV_DUP);
-        prev_dup.set_cursor(0); // automatically assigned by KvClient::tx
+        prev_dup.set_cursor(0);  // automatically assigned by KvClient::tx
         remote::Cursor close;
         close.set_op(remote::Op::CLOSE);
-        close.set_cursor(0); // automatically assigned by KvClient::tx
+        close.set_cursor(0);  // automatically assigned by KvClient::tx
         std::vector<remote::Cursor> requests{open, prev_dup, close};
         std::vector<remote::Pair> responses;
         const auto status = kv_client.tx(requests, responses);
@@ -1652,13 +1636,13 @@ TEST_CASE("BackEndKvServer E2E: Tx cursor valid operations", "[silkworm][node][r
         open.set_bucketname(kTestMultiMap.name);
         remote::Cursor first;
         first.set_op(remote::Op::FIRST);
-        first.set_cursor(0); // automatically assigned by KvClient::tx
+        first.set_cursor(0);  // automatically assigned by KvClient::tx
         remote::Cursor last_dup;
         last_dup.set_op(remote::Op::LAST_DUP);
-        last_dup.set_cursor(0); // automatically assigned by KvClient::tx
+        last_dup.set_cursor(0);  // automatically assigned by KvClient::tx
         remote::Cursor close;
         close.set_op(remote::Op::CLOSE);
-        close.set_cursor(0); // automatically assigned by KvClient::tx
+        close.set_cursor(0);  // automatically assigned by KvClient::tx
         std::vector<remote::Cursor> requests{open, first, last_dup, close};
         std::vector<remote::Pair> responses;
         const auto status = kv_client.tx(requests, responses);
@@ -1679,13 +1663,13 @@ TEST_CASE("BackEndKvServer E2E: Tx cursor valid operations", "[silkworm][node][r
         open.set_bucketname(kTestMultiMap.name);
         remote::Cursor last;
         last.set_op(remote::Op::LAST);
-        last.set_cursor(0); // automatically assigned by KvClient::tx
+        last.set_cursor(0);  // automatically assigned by KvClient::tx
         remote::Cursor last_dup;
         last_dup.set_op(remote::Op::LAST_DUP);
-        last_dup.set_cursor(0); // automatically assigned by KvClient::tx
+        last_dup.set_cursor(0);  // automatically assigned by KvClient::tx
         remote::Cursor close;
         close.set_op(remote::Op::CLOSE);
-        close.set_cursor(0); // automatically assigned by KvClient::tx
+        close.set_cursor(0);  // automatically assigned by KvClient::tx
         std::vector<remote::Cursor> requests{open, last, last_dup, close};
         std::vector<remote::Pair> responses;
         const auto status = kv_client.tx(requests, responses);
@@ -1706,10 +1690,10 @@ TEST_CASE("BackEndKvServer E2E: Tx cursor valid operations", "[silkworm][node][r
         open.set_bucketname(kTestMultiMap.name);
         remote::Cursor next_no_dup;
         next_no_dup.set_op(remote::Op::NEXT_NO_DUP);
-        next_no_dup.set_cursor(0); // automatically assigned by KvClient::tx
+        next_no_dup.set_cursor(0);  // automatically assigned by KvClient::tx
         remote::Cursor close;
         close.set_op(remote::Op::CLOSE);
-        close.set_cursor(0); // automatically assigned by KvClient::tx
+        close.set_cursor(0);  // automatically assigned by KvClient::tx
         std::vector<remote::Cursor> requests{open, next_no_dup, close};
         std::vector<remote::Pair> responses;
         const auto status = kv_client.tx(requests, responses);
@@ -1728,10 +1712,10 @@ TEST_CASE("BackEndKvServer E2E: Tx cursor valid operations", "[silkworm][node][r
         open.set_bucketname(kTestMultiMap.name);
         remote::Cursor prev_no_dup;
         prev_no_dup.set_op(remote::Op::PREV_NO_DUP);
-        prev_no_dup.set_cursor(0); // automatically assigned by KvClient::tx
+        prev_no_dup.set_cursor(0);  // automatically assigned by KvClient::tx
         remote::Cursor close;
         close.set_op(remote::Op::CLOSE);
-        close.set_cursor(0); // automatically assigned by KvClient::tx
+        close.set_cursor(0);  // automatically assigned by KvClient::tx
         std::vector<remote::Cursor> requests{open, prev_no_dup, close};
         std::vector<remote::Pair> responses;
         const auto status = kv_client.tx(requests, responses);
@@ -1750,10 +1734,10 @@ TEST_CASE("BackEndKvServer E2E: Tx cursor valid operations", "[silkworm][node][r
         open.set_bucketname(kTestMap.name);
         remote::Cursor seek;
         seek.set_op(remote::Op::SEEK);
-        seek.set_cursor(0); // automatically assigned by KvClient::tx
+        seek.set_cursor(0);  // automatically assigned by KvClient::tx
         remote::Cursor close;
         close.set_op(remote::Op::CLOSE);
-        close.set_cursor(0); // automatically assigned by KvClient::tx
+        close.set_cursor(0);  // automatically assigned by KvClient::tx
         std::vector<remote::Cursor> requests{open, seek, close};
         std::vector<remote::Pair> responses;
         const auto status = kv_client.tx(requests, responses);
@@ -1772,11 +1756,11 @@ TEST_CASE("BackEndKvServer E2E: Tx cursor valid operations", "[silkworm][node][r
         open.set_bucketname(kTestMap.name);
         remote::Cursor seek;
         seek.set_op(remote::Op::SEEK);
-        seek.set_cursor(0); // automatically assigned by KvClient::tx
+        seek.set_cursor(0);  // automatically assigned by KvClient::tx
         seek.set_k("BB");
         remote::Cursor close;
         close.set_op(remote::Op::CLOSE);
-        close.set_cursor(0); // automatically assigned by KvClient::tx
+        close.set_cursor(0);  // automatically assigned by KvClient::tx
         std::vector<remote::Cursor> requests{open, seek, close};
         std::vector<remote::Pair> responses;
         const auto status = kv_client.tx(requests, responses);
@@ -1795,11 +1779,11 @@ TEST_CASE("BackEndKvServer E2E: Tx cursor valid operations", "[silkworm][node][r
         open.set_bucketname(kTestMap.name);
         remote::Cursor seek;
         seek.set_op(remote::Op::SEEK);
-        seek.set_cursor(0); // automatically assigned by KvClient::tx
+        seek.set_cursor(0);  // automatically assigned by KvClient::tx
         seek.set_k("ZZ");
         remote::Cursor close;
         close.set_op(remote::Op::CLOSE);
-        close.set_cursor(0); // automatically assigned by KvClient::tx
+        close.set_cursor(0);  // automatically assigned by KvClient::tx
         std::vector<remote::Cursor> requests{open, seek, close};
         std::vector<remote::Pair> responses;
         const auto status = kv_client.tx(requests, responses);
@@ -1818,10 +1802,10 @@ TEST_CASE("BackEndKvServer E2E: Tx cursor valid operations", "[silkworm][node][r
         open.set_bucketname(kTestMap.name);
         remote::Cursor seek_exact;
         seek_exact.set_op(remote::Op::SEEK_EXACT);
-        seek_exact.set_cursor(0); // automatically assigned by KvClient::tx
+        seek_exact.set_cursor(0);  // automatically assigned by KvClient::tx
         remote::Cursor close;
         close.set_op(remote::Op::CLOSE);
-        close.set_cursor(0); // automatically assigned by KvClient::tx
+        close.set_cursor(0);  // automatically assigned by KvClient::tx
         std::vector<remote::Cursor> requests{open, seek_exact, close};
         std::vector<remote::Pair> responses;
         const auto status = kv_client.tx(requests, responses);
@@ -1840,11 +1824,11 @@ TEST_CASE("BackEndKvServer E2E: Tx cursor valid operations", "[silkworm][node][r
         open.set_bucketname(kTestMap.name);
         remote::Cursor seek_exact;
         seek_exact.set_op(remote::Op::SEEK_EXACT);
-        seek_exact.set_cursor(0); // automatically assigned by KvClient::tx
+        seek_exact.set_cursor(0);  // automatically assigned by KvClient::tx
         seek_exact.set_k("BB");
         remote::Cursor close;
         close.set_op(remote::Op::CLOSE);
-        close.set_cursor(0); // automatically assigned by KvClient::tx
+        close.set_cursor(0);  // automatically assigned by KvClient::tx
         std::vector<remote::Cursor> requests{open, seek_exact, close};
         std::vector<remote::Pair> responses;
         const auto status = kv_client.tx(requests, responses);
@@ -1863,11 +1847,11 @@ TEST_CASE("BackEndKvServer E2E: Tx cursor valid operations", "[silkworm][node][r
         open.set_bucketname(kTestMap.name);
         remote::Cursor seek_exact;
         seek_exact.set_op(remote::Op::SEEK_EXACT);
-        seek_exact.set_cursor(0); // automatically assigned by KvClient::tx
+        seek_exact.set_cursor(0);  // automatically assigned by KvClient::tx
         seek_exact.set_k("ZZ");
         remote::Cursor close;
         close.set_op(remote::Op::CLOSE);
-        close.set_cursor(0); // automatically assigned by KvClient::tx
+        close.set_cursor(0);  // automatically assigned by KvClient::tx
         std::vector<remote::Cursor> requests{open, seek_exact, close};
         std::vector<remote::Pair> responses;
         const auto status = kv_client.tx(requests, responses);
@@ -1886,10 +1870,10 @@ TEST_CASE("BackEndKvServer E2E: Tx cursor valid operations", "[silkworm][node][r
         open.set_bucketname(kTestMultiMap.name);
         remote::Cursor seek_both;
         seek_both.set_op(remote::Op::SEEK_BOTH);
-        seek_both.set_cursor(0); // automatically assigned by KvClient::tx
+        seek_both.set_cursor(0);  // automatically assigned by KvClient::tx
         remote::Cursor close;
         close.set_op(remote::Op::CLOSE);
-        close.set_cursor(0); // automatically assigned by KvClient::tx
+        close.set_cursor(0);  // automatically assigned by KvClient::tx
         std::vector<remote::Cursor> requests{open, seek_both, close};
         std::vector<remote::Pair> responses;
         const auto status = kv_client.tx(requests, responses);
@@ -1908,11 +1892,11 @@ TEST_CASE("BackEndKvServer E2E: Tx cursor valid operations", "[silkworm][node][r
         open.set_bucketname(kTestMultiMap.name);
         remote::Cursor seek_both;
         seek_both.set_op(remote::Op::SEEK_BOTH);
-        seek_both.set_cursor(0); // automatically assigned by KvClient::tx
+        seek_both.set_cursor(0);  // automatically assigned by KvClient::tx
         seek_both.set_k("CC");
         remote::Cursor close;
         close.set_op(remote::Op::CLOSE);
-        close.set_cursor(0); // automatically assigned by KvClient::tx
+        close.set_cursor(0);  // automatically assigned by KvClient::tx
         std::vector<remote::Cursor> requests{open, seek_both, close};
         std::vector<remote::Pair> responses;
         const auto status = kv_client.tx(requests, responses);
@@ -1931,11 +1915,11 @@ TEST_CASE("BackEndKvServer E2E: Tx cursor valid operations", "[silkworm][node][r
         open.set_bucketname(kTestMultiMap.name);
         remote::Cursor seek_both;
         seek_both.set_op(remote::Op::SEEK_BOTH);
-        seek_both.set_cursor(0); // automatically assigned by KvClient::tx
+        seek_both.set_cursor(0);  // automatically assigned by KvClient::tx
         seek_both.set_k("AA");
         remote::Cursor close;
         close.set_op(remote::Op::CLOSE);
-        close.set_cursor(0); // automatically assigned by KvClient::tx
+        close.set_cursor(0);  // automatically assigned by KvClient::tx
         std::vector<remote::Cursor> requests{open, seek_both, close};
         std::vector<remote::Pair> responses;
         const auto status = kv_client.tx(requests, responses);
@@ -1954,12 +1938,12 @@ TEST_CASE("BackEndKvServer E2E: Tx cursor valid operations", "[silkworm][node][r
         open.set_bucketname(kTestMultiMap.name);
         remote::Cursor seek_both;
         seek_both.set_op(remote::Op::SEEK_BOTH);
-        seek_both.set_cursor(0); // automatically assigned by KvClient::tx
+        seek_both.set_cursor(0);  // automatically assigned by KvClient::tx
         seek_both.set_k("AA");
         seek_both.set_v("22");
         remote::Cursor close;
         close.set_op(remote::Op::CLOSE);
-        close.set_cursor(0); // automatically assigned by KvClient::tx
+        close.set_cursor(0);  // automatically assigned by KvClient::tx
         std::vector<remote::Cursor> requests{open, seek_both, close};
         std::vector<remote::Pair> responses;
         const auto status = kv_client.tx(requests, responses);
@@ -1978,10 +1962,10 @@ TEST_CASE("BackEndKvServer E2E: Tx cursor valid operations", "[silkworm][node][r
         open.set_bucketname(kTestMultiMap.name);
         remote::Cursor seek_both_exact;
         seek_both_exact.set_op(remote::Op::SEEK_BOTH_EXACT);
-        seek_both_exact.set_cursor(0); // automatically assigned by KvClient::tx
+        seek_both_exact.set_cursor(0);  // automatically assigned by KvClient::tx
         remote::Cursor close;
         close.set_op(remote::Op::CLOSE);
-        close.set_cursor(0); // automatically assigned by KvClient::tx
+        close.set_cursor(0);  // automatically assigned by KvClient::tx
         std::vector<remote::Cursor> requests{open, seek_both_exact, close};
         std::vector<remote::Pair> responses;
         const auto status = kv_client.tx(requests, responses);
@@ -2000,11 +1984,11 @@ TEST_CASE("BackEndKvServer E2E: Tx cursor valid operations", "[silkworm][node][r
         open.set_bucketname(kTestMultiMap.name);
         remote::Cursor seek_both_exact;
         seek_both_exact.set_op(remote::Op::SEEK_BOTH_EXACT);
-        seek_both_exact.set_cursor(0); // automatically assigned by KvClient::tx
+        seek_both_exact.set_cursor(0);  // automatically assigned by KvClient::tx
         seek_both_exact.set_k("CC");
         remote::Cursor close;
         close.set_op(remote::Op::CLOSE);
-        close.set_cursor(0); // automatically assigned by KvClient::tx
+        close.set_cursor(0);  // automatically assigned by KvClient::tx
         std::vector<remote::Cursor> requests{open, seek_both_exact, close};
         std::vector<remote::Pair> responses;
         const auto status = kv_client.tx(requests, responses);
@@ -2023,11 +2007,11 @@ TEST_CASE("BackEndKvServer E2E: Tx cursor valid operations", "[silkworm][node][r
         open.set_bucketname(kTestMultiMap.name);
         remote::Cursor seek_both_exact;
         seek_both_exact.set_op(remote::Op::SEEK_BOTH_EXACT);
-        seek_both_exact.set_cursor(0); // automatically assigned by KvClient::tx
+        seek_both_exact.set_cursor(0);  // automatically assigned by KvClient::tx
         seek_both_exact.set_k("AA");
         remote::Cursor close;
         close.set_op(remote::Op::CLOSE);
-        close.set_cursor(0); // automatically assigned by KvClient::tx
+        close.set_cursor(0);  // automatically assigned by KvClient::tx
         std::vector<remote::Cursor> requests{open, seek_both_exact, close};
         std::vector<remote::Pair> responses;
         const auto status = kv_client.tx(requests, responses);
@@ -2040,18 +2024,19 @@ TEST_CASE("BackEndKvServer E2E: Tx cursor valid operations", "[silkworm][node][r
         CHECK(responses[3].cursorid() == 0);
     }
 
-    SECTION("Tx OK: one SEEK_BOTH_EXACT w/ existent key+value operation on multi-value table", "[silkworm][node][rpc]") {
+    SECTION("Tx OK: one SEEK_BOTH_EXACT w/ existent key+value operation on multi-value table",
+            "[silkworm][node][rpc]") {
         remote::Cursor open;
         open.set_op(remote::Op::OPEN);
         open.set_bucketname(kTestMultiMap.name);
         remote::Cursor seek_both_exact;
         seek_both_exact.set_op(remote::Op::SEEK_BOTH_EXACT);
-        seek_both_exact.set_cursor(0); // automatically assigned by KvClient::tx
+        seek_both_exact.set_cursor(0);  // automatically assigned by KvClient::tx
         seek_both_exact.set_k("AA");
         seek_both_exact.set_v("22");
         remote::Cursor close;
         close.set_op(remote::Op::CLOSE);
-        close.set_cursor(0); // automatically assigned by KvClient::tx
+        close.set_cursor(0);  // automatically assigned by KvClient::tx
         std::vector<remote::Cursor> requests{open, seek_both_exact, close};
         std::vector<remote::Pair> responses;
         const auto status = kv_client.tx(requests, responses);
@@ -2076,10 +2061,10 @@ TEST_CASE("BackEndKvServer E2E: Tx cursor invalid operations", "[silkworm][node]
         open.set_bucketname(kTestMap.name);
         remote::Cursor current;
         current.set_op(remote::Op::CURRENT);
-        current.set_cursor(0); // automatically assigned by KvClient::tx
+        current.set_cursor(0);  // automatically assigned by KvClient::tx
         remote::Cursor close;
         close.set_op(remote::Op::CLOSE);
-        close.set_cursor(0); // automatically assigned by KvClient::tx
+        close.set_cursor(0);  // automatically assigned by KvClient::tx
         std::vector<remote::Cursor> requests{open, current, close};
         std::vector<remote::Pair> responses;
         const auto status = kv_client.tx(requests, responses);
@@ -2097,13 +2082,13 @@ TEST_CASE("BackEndKvServer E2E: Tx cursor invalid operations", "[silkworm][node]
         open.set_bucketname(kTestMap.name);
         remote::Cursor first;
         first.set_op(remote::Op::FIRST);
-        first.set_cursor(0); // automatically assigned by KvClient::tx
+        first.set_cursor(0);  // automatically assigned by KvClient::tx
         remote::Cursor first_dup;
         first_dup.set_op(remote::Op::FIRST_DUP);
-        first_dup.set_cursor(0); // automatically assigned by KvClient::tx
+        first_dup.set_cursor(0);  // automatically assigned by KvClient::tx
         remote::Cursor close;
         close.set_op(remote::Op::CLOSE);
-        close.set_cursor(0); // automatically assigned by KvClient::tx
+        close.set_cursor(0);  // automatically assigned by KvClient::tx
         std::vector<remote::Cursor> requests{open, first, first_dup, close};
         std::vector<remote::Pair> responses;
         const auto status = kv_client.tx(requests, responses);
@@ -2121,13 +2106,13 @@ TEST_CASE("BackEndKvServer E2E: Tx cursor invalid operations", "[silkworm][node]
         open.set_bucketname(kTestMap.name);
         remote::Cursor first;
         first.set_op(remote::Op::FIRST);
-        first.set_cursor(0); // automatically assigned by KvClient::tx
+        first.set_cursor(0);  // automatically assigned by KvClient::tx
         remote::Cursor last_dup;
         last_dup.set_op(remote::Op::LAST_DUP);
-        last_dup.set_cursor(0); // automatically assigned by KvClient::tx
+        last_dup.set_cursor(0);  // automatically assigned by KvClient::tx
         remote::Cursor close;
         close.set_op(remote::Op::CLOSE);
-        close.set_cursor(0); // automatically assigned by KvClient::tx
+        close.set_cursor(0);  // automatically assigned by KvClient::tx
         std::vector<remote::Cursor> requests{open, first, last_dup, close};
         std::vector<remote::Pair> responses;
         const auto status = kv_client.tx(requests, responses);
@@ -2145,10 +2130,10 @@ TEST_CASE("BackEndKvServer E2E: Tx cursor invalid operations", "[silkworm][node]
         open.set_bucketname(kTestMultiMap.name);
         remote::Cursor first_dup;
         first_dup.set_op(remote::Op::FIRST_DUP);
-        first_dup.set_cursor(0); // automatically assigned by KvClient::tx
+        first_dup.set_cursor(0);  // automatically assigned by KvClient::tx
         remote::Cursor close;
         close.set_op(remote::Op::CLOSE);
-        close.set_cursor(0); // automatically assigned by KvClient::tx
+        close.set_cursor(0);  // automatically assigned by KvClient::tx
         std::vector<remote::Cursor> requests{open, first_dup, close};
         std::vector<remote::Pair> responses;
         const auto status = kv_client.tx(requests, responses);
@@ -2165,10 +2150,10 @@ TEST_CASE("BackEndKvServer E2E: Tx cursor invalid operations", "[silkworm][node]
         open.set_bucketname(kTestMultiMap.name);
         remote::Cursor last_dup;
         last_dup.set_op(remote::Op::LAST_DUP);
-        last_dup.set_cursor(0); // automatically assigned by KvClient::tx
+        last_dup.set_cursor(0);  // automatically assigned by KvClient::tx
         remote::Cursor close;
         close.set_op(remote::Op::CLOSE);
-        close.set_cursor(0); // automatically assigned by KvClient::tx
+        close.set_cursor(0);  // automatically assigned by KvClient::tx
         std::vector<remote::Cursor> requests{open, last_dup, close};
         std::vector<remote::Pair> responses;
         const auto status = kv_client.tx(requests, responses);
@@ -2185,10 +2170,10 @@ TEST_CASE("BackEndKvServer E2E: Tx cursor invalid operations", "[silkworm][node]
         open.set_bucketname(kTestMap.name);
         remote::Cursor seek_both;
         seek_both.set_op(remote::Op::SEEK_BOTH);
-        seek_both.set_cursor(0); // automatically assigned by KvClient::tx
+        seek_both.set_cursor(0);  // automatically assigned by KvClient::tx
         remote::Cursor close;
         close.set_op(remote::Op::CLOSE);
-        close.set_cursor(0); // automatically assigned by KvClient::tx
+        close.set_cursor(0);  // automatically assigned by KvClient::tx
         std::vector<remote::Cursor> requests{open, seek_both, close};
         std::vector<remote::Pair> responses;
         const auto status = kv_client.tx(requests, responses);
@@ -2205,10 +2190,10 @@ TEST_CASE("BackEndKvServer E2E: Tx cursor invalid operations", "[silkworm][node]
         open.set_bucketname(kTestMap.name);
         remote::Cursor seek_both_exact;
         seek_both_exact.set_op(remote::Op::SEEK_BOTH_EXACT);
-        seek_both_exact.set_cursor(0); // automatically assigned by KvClient::tx
+        seek_both_exact.set_cursor(0);  // automatically assigned by KvClient::tx
         remote::Cursor close;
         close.set_op(remote::Op::CLOSE);
-        close.set_cursor(0); // automatically assigned by KvClient::tx
+        close.set_cursor(0);  // automatically assigned by KvClient::tx
         std::vector<remote::Cursor> requests{open, seek_both_exact, close};
         std::vector<remote::Pair> responses;
         const auto status = kv_client.tx(requests, responses);
@@ -2222,12 +2207,8 @@ TEST_CASE("BackEndKvServer E2E: Tx cursor invalid operations", "[silkworm][node]
 
 class TxMaxTimeToLiveGuard {
   public:
-    explicit TxMaxTimeToLiveGuard(uint8_t t) {
-        TxCall::set_max_ttl_duration(boost::posix_time::milliseconds{t});
-    }
-    ~TxMaxTimeToLiveGuard() {
-        TxCall::set_max_ttl_duration(kMaxTxDuration);
-    }
+    explicit TxMaxTimeToLiveGuard(uint8_t t) { TxCall::set_max_ttl_duration(boost::posix_time::milliseconds{t}); }
+    ~TxMaxTimeToLiveGuard() { TxCall::set_max_ttl_duration(kMaxTxDuration); }
 };
 
 TEST_CASE("BackEndKvServer E2E: bidirectional max TTL duration", "[silkworm][node][rpc]") {
@@ -2310,6 +2291,6 @@ TEST_CASE("BackEndKvServer E2E: bidirectional max TTL duration", "[silkworm][nod
         CHECK(status.ok());
     }
 }
-#endif // SILKWORM_SANITIZE
+#endif  // SILKWORM_SANITIZE
 
-} // namespace silkworm::rpc
+}  // namespace silkworm::rpc

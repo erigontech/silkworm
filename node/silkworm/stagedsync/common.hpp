@@ -40,6 +40,7 @@ enum class [[nodiscard]] StageResult{
     kInvalidBlock,            //
     kInvalidTransaction,      //
     kDecodingError,           //
+    kWrongStateRoot,          //
     kUnexpectedError,         //
     kUnknownError,            //
     kDbError,                 //
@@ -114,12 +115,14 @@ class IStage : public Stoppable {
     [[nodiscard]] const char* name() const { return stage_name_; }
 
     //! \brief Forces an exception if stage has been requested to stop
-    void throw_if_stopping() { success_or_throw(is_stopping() ? StageResult::kAborted : StageResult::kSuccess); }
+    inline void throw_if_stopping() {
+        if (is_stopping()) throw StageError(StageResult::kAborted);
+    }
 
   protected:
-    const char* stage_name_;
-    NodeSettings* node_settings_;
-    std::atomic<OperationType> operation_{OperationType::None};
+    const char* stage_name_;                                     // Human friendly identifier of the stage
+    NodeSettings* node_settings_;                                // Pointer to shared node configuration settings
+    std::atomic<OperationType> operation_{OperationType::None};  // Actual operation being carried out
 
     //! \brief Throws if actual block != expected block
     static void check_block_sequence(BlockNum actual, BlockNum expected);

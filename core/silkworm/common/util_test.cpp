@@ -171,5 +171,4 @@ TEST_CASE("human_size") {
     val = kKibi;
     CHECK(human_size(val) == "1.00 KB");
 }
-
 }  // namespace silkworm

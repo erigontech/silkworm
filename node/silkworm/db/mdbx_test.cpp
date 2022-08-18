@@ -148,9 +148,8 @@ TEST_CASE("RWTxn") {
         }
 
         auto tx{env.start_read()};
-        REQUIRE(db::has_map(tx, table_name));
-        const auto handle{tx.open_map(table_name)};
-        REQUIRE(tx.get_map_stat(handle).ms_entries == kGeneticCode.size());
+        db::Cursor table_cursor(tx, {table_name});
+        REQUIRE(table_cursor.empty() == false);
     }
 
     SECTION("External") {
@@ -163,6 +162,13 @@ TEST_CASE("RWTxn") {
         ext_tx.abort();
         ext_tx = env.start_write();
         REQUIRE(db::has_map(ext_tx, table_name) == false);
+    }
+
+    SECTION("Cursor from RWTxn") {
+        auto tx{db::RWTxn(env)};
+        db::Cursor table_cursor(tx, {table_name});
+        REQUIRE(table_cursor.empty());
+        REQUIRE_NOTHROW(table_cursor.bind(tx, {table_name}));
     }
 }
 
@@ -195,11 +201,14 @@ TEST_CASE("Cursor walk") {
         // empty table
         cursor_for_each(table_cursor, save_all_data_map);
         REQUIRE(data_map.empty());
+        REQUIRE(table_cursor.empty() == true);
 
         // populate table
         for (const auto& [key, value] : kGeneticCode) {
             table_cursor.upsert(mdbx::slice{key}, mdbx::slice{value});
         }
+        REQUIRE(table_cursor.size() == kGeneticCode.size());
+        REQUIRE(table_cursor.empty() == false);
 
         // Rebind cursor so its position is undefined
         table_cursor.bind(txn, {table_name});

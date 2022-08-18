@@ -1,43 +1,37 @@
 /*
-Copyright 2020-2022 The Silkworm Authors
+    Copyright 2022 The Silkworm Authors
 
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
 
-    http://www.apache.org/licenses/LICENSE-2.0
+        http://www.apache.org/licenses/LICENSE-2.0
 
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
 */
 
 #pragma once
 
 #include <string>
 #include <silkworm/common/base.hpp>
+#include "ecc_public_key.hpp"
 
 namespace silkworm::sentry::common {
 
 class EccKeyPair {
   public:
     EccKeyPair();
-    explicit EccKeyPair(Bytes data);
-    explicit EccKeyPair(ByteView data);
+    explicit EccKeyPair(Bytes private_key_data);
 
-    [[nodiscard]]
-    Bytes public_key() const;
+    [[nodiscard]] EccPublicKey public_key() const;
 
-    [[nodiscard]]
-    std::string public_key_hex() const;
+    [[nodiscard]] ByteView private_key() const { return private_key_; }
 
-    [[nodiscard]]
-    ByteView private_key() const { return private_key_; }
-
-    [[nodiscard]]
-    std::string private_key_hex() const;
+    [[nodiscard]] std::string private_key_hex() const;
 
   private:
     Bytes private_key_;

@@ -1,5 +1,5 @@
 #[[
-   Copyright 2021 The Silkworm Authors
+   Copyright 2021-2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -16,6 +16,9 @@
 
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
 
+  message("MSVC_VERSION = ${MSVC_VERSION}")
+  message("MSVC_CXX_ARCHITECTURE_ID = ${MSVC_CXX_ARCHITECTURE_ID}")
+
   add_definitions(-D_WIN32_WINNT=0x0602)  # Min Windows 8
   add_definitions(-DVC_EXTRALEAN)         # Process windows headers faster ...
   add_definitions(-DWIN32_LEAN_AND_MEAN)  # ... and prevent winsock mismatch with Boost's
@@ -29,6 +32,10 @@ if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
   # Abseil triggers some deprecation warnings
   add_compile_definitions(_SILENCE_CXX17_OLD_ALLOCATOR_MEMBERS_DEPRECATION_WARNING)
   add_compile_definitions(_SILENCE_CXX17_RESULT_OF_DEPRECATION_WARNING)
+  add_compile_definitions(_SILENCE_CXX20_IS_POD_DEPRECATION_WARNING)
+
+  # And gRPC too ...
+  add_compile_definitions(_SILENCE_CXX17_ITERATOR_BASE_CLASS_DEPRECATION_WARNING)
 
   add_compile_options(/MP)            # Enable parallel compilation
   add_compile_options(/EHa)           # Enable standard C++ unwinding

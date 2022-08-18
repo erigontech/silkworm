@@ -193,6 +193,18 @@ void write_total_difficulty(mdbx::txn& txn, BlockNum block_number, const evmc::b
     write_total_difficulty(txn, key, total_difficulty);
 }
 
+std::optional<evmc::bytes32> read_canonical_header_hash(mdbx::txn& txn, BlockNum number) {
+    Cursor source(txn, table::kCanonicalHashes);
+    auto key{db::block_key(number)};
+    auto data{source.find(to_slice(key), /*throw_notfound=*/false)};
+    if (!data) {
+        return std::nullopt;
+    }
+    evmc::bytes32 ret{};
+    std::memcpy(ret.bytes, data.value.data(), kHashLength);
+    return ret;
+}
+
 void write_canonical_header(mdbx::txn& txn, const BlockHeader& header) {
     write_canonical_header_hash(txn, header.hash().bytes, header.number);
 }
@@ -576,6 +588,16 @@ std::optional<ChainConfig> read_chain_config(mdbx::txn& txn) {
     // https://github.com/nlohmann/json/issues/2204
     const auto json = nlohmann::json::parse(data.value.as_string(), nullptr, false);
     return ChainConfig::from_json(json);
+}
+
+void update_chain_config(mdbx::txn& txn, const ChainConfig& config) {
+    auto genesis_hash{read_canonical_header_hash(txn, 0)};
+    if (!genesis_hash.has_value()) {
+        return;
+    }
+    Cursor cursor(txn, db::table::kConfig);
+    auto config_data{config.to_json().dump()};
+    cursor.upsert(db::to_slice(genesis_hash->bytes), mdbx::slice(config_data.data()));
 }
 
 static Bytes head_header_key() {

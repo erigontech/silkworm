@@ -65,6 +65,9 @@ void write_header_number(mdbx::txn& txn, const uint8_t (&hash)[kHashLength], Blo
 //! \brief Writes the header hash in table::kCanonicalHashes
 void write_canonical_header(mdbx::txn& txn, const BlockHeader& header);
 
+//! \brief Reads the header hash in table::kCanonicalHashes
+std::optional<evmc::bytes32> read_canonical_header_hash(mdbx::txn& txn, BlockNum number);
+
 //! \brief Writes the header hash in table::kCanonicalHashes
 void write_canonical_header_hash(mdbx::txn& txn, const uint8_t (&hash)[kHashLength], BlockNum number);
 
@@ -138,6 +141,9 @@ StorageChanges read_storage_changes(mdbx::txn& txn, BlockNum block_number);
 //! \brief Retrieves the chain_id for which database is populated
 //! \see Erigon chainConfig / chainConfigWithGenesis
 std::optional<ChainConfig> read_chain_config(mdbx::txn& txn);
+
+//! \brief Writes / Updates chain config provided genesis has been initialized
+void update_chain_config(mdbx::txn& txn, const ChainConfig& config);
 
 //! \brief Updates highest header hash in table::kHeadHeader
 void write_head_header_hash(mdbx::txn& txn, const uint8_t (&hash)[kHashLength]);

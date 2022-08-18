@@ -23,25 +23,25 @@ using namespace evmc::literals;
 namespace silkworm {
 
 TEST_CASE("Config lookup") {
-    CHECK(lookup_chain_config(0u) == nullptr);
-    CHECK(lookup_chain_config(1u) == &kMainnetConfig);
-    CHECK(lookup_chain_config(3u) == &kRopstenConfig);
-    CHECK(lookup_chain_config(4u) == &kRinkebyConfig);
-    CHECK(lookup_chain_config(5u) == &kGoerliConfig);
-    CHECK(lookup_chain_config(12345u) == nullptr);
-    CHECK(lookup_chain_config("mainnet") == &kMainnetConfig);
-    CHECK(lookup_chain_config("ropsten") == &kRopstenConfig);
-    CHECK(lookup_chain_config("Rinkeby") == &kRinkebyConfig);
-    CHECK(lookup_chain_config("goErli") == &kGoerliConfig);
-    CHECK(lookup_chain_config("xxxx") == nullptr);
+    CHECK(lookup_known_chain(0u).has_value() == false);
+    CHECK(lookup_known_chain(1u)->second == &kMainnetConfig);
+    CHECK(lookup_known_chain(3u)->second == &kRopstenConfig);
+    CHECK(lookup_known_chain(4u)->second == &kRinkebyConfig);
+    CHECK(lookup_known_chain(5u)->second == &kGoerliConfig);
+    CHECK(lookup_known_chain(12345u).has_value() == false);
+    CHECK(lookup_known_chain("mainnet")->second == &kMainnetConfig);
+    CHECK(lookup_known_chain("ropsten")->second == &kRopstenConfig);
+    CHECK(lookup_known_chain("Rinkeby")->second == &kRinkebyConfig);
+    CHECK(lookup_known_chain("goErli")->second == &kGoerliConfig);
+    CHECK(lookup_known_chain("xxxx").has_value() == false);
 
     auto chains_map{get_known_chains_map()};
     CHECK(chains_map.empty() == false);
     for (auto& [name, id] : chains_map) {
-        REQUIRE(lookup_chain_config(name) != nullptr);
-        REQUIRE(lookup_chain_config(id) != nullptr);
-        REQUIRE(lookup_chain_config(name) == lookup_chain_config(id));
-        REQUIRE(lookup_chain_config(name)->chain_id == id);
+        REQUIRE(lookup_known_chain(name).has_value());
+        REQUIRE(lookup_known_chain(id).has_value());
+        REQUIRE(lookup_known_chain(name) == lookup_known_chain(id));
+        REQUIRE(lookup_known_chain(name)->second->chain_id == id);
     }
 }
 

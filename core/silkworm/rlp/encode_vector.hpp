@@ -16,37 +16,73 @@
 
 #pragma once
 
+#include <numeric>
 #include <vector>
 
 #include <silkworm/rlp/encode.hpp>
 
 namespace silkworm::rlp {
 
-namespace detail {
-    template <class T>
-    Header rlp_header(const std::vector<T>& v) {
-        Header h{/*list=*/true, /*payload_length=*/0};
-        for (const T& x : v) {
-            h.payload_length += length(x);
-        }
-        return h;
-    }
-}  // namespace detail
+template <typename T>
+size_t length_items(const std::vector<T>& v) {
+    return std::accumulate(v.cbegin(), v.cend(), size_t{0}, [] (size_t sum, const T &x) { return sum + length(x); });
+}
 
-template <class T>
+template <typename T>
 size_t length(const std::vector<T>& v) {
-    const size_t payload_length{detail::rlp_header(v).payload_length};
+    const size_t payload_length = length_items(v);
     return length_of_length(payload_length) + payload_length;
 }
 
-template <class T>
-void encode(Bytes& to, const std::vector<T>& v) {
-    const Header h{detail::rlp_header(v)};
-    to.reserve(to.size() + length_of_length(h.payload_length) + h.payload_length);
-    encode_header(to, h);
+template <typename T>
+void encode_items(Bytes& to, const std::vector<T>& v) {
     for (const T& x : v) {
         encode(to, x);
     }
+}
+
+template <typename T>
+void encode(Bytes& to, const std::vector<T>& v) {
+    const Header h{/*list=*/true, /*payload_length=*/length_items(v)};
+    to.reserve(to.size() + length_of_length(h.payload_length) + h.payload_length);
+    encode_header(to, h);
+    encode_items(to, v);
+}
+
+template <typename Arg1, typename Arg2>
+size_t length_items(const Arg1& arg1, const Arg2& arg2) {
+    return length(arg1) + length(arg2);
+}
+
+template <typename Arg1, typename Arg2, typename... Args>
+size_t length_items(const Arg1& arg1, const Arg2& arg2, const Args&... args) {
+    return length(arg1) + length_items(arg2, args...);
+}
+
+template <typename Arg1, typename Arg2, typename... Args>
+size_t length(const Arg1& arg1, const Arg2& arg2, const Args&... args) {
+    const size_t payload_length = length_items(arg1, arg2, args...);
+    return length_of_length(payload_length) + payload_length;
+}
+
+template <typename Arg1, typename Arg2>
+void encode_items(Bytes& to, const Arg1& arg1, const Arg2& arg2) {
+    encode(to, arg1);
+    encode(to, arg2);
+}
+
+template <typename Arg1, typename Arg2, typename... Args>
+void encode_items(Bytes& to, const Arg1& arg1, const Arg2& arg2, const Args&... args) {
+    encode(to, arg1);
+    encode_items(to, arg2, args...);
+}
+
+template <typename Arg1, typename Arg2, typename... Args>
+void encode(Bytes& to, const Arg1& arg1, const Arg2& arg2, const Args&... args) {
+    const Header h{/*list=*/true, /*payload_length=*/length_items(arg1, arg2, args...)};
+    to.reserve(to.size() + length_of_length(h.payload_length) + h.payload_length);
+    encode_header(to, h);
+    encode_items(to, arg1, arg2, args...);
 }
 
 }  // namespace silkworm::rlp

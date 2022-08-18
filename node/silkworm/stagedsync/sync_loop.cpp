@@ -27,6 +27,7 @@
 namespace silkworm::stagedsync {
 
 void SyncLoop::load_stages() {
+
     stages_.push_back(std::make_unique<stagedsync::BlockHashes>(node_settings_));
     stages_.push_back(std::make_unique<stagedsync::Senders>(node_settings_));
     stages_.push_back(std::make_unique<stagedsync::Execution>(node_settings_));
@@ -93,6 +94,9 @@ void SyncLoop::work() {
             cycle_txn = std::make_unique<db::RWTxn>(*chaindata_env_);
         }
 
+        // TODO Populate shared state amongst stages with firsT_cycle + a ton of other things
+
+
         if (run_cycle(*cycle_txn, log_timer) != StageResult::kSuccess) {
             break;
         }
@@ -136,10 +140,15 @@ StageResult SyncLoop::run_cycle(db::RWTxn& cycle_txn, Timer& log_timer) {
 
             log_timer.reset();  // Resets the interval for next log line from now
             const auto stage_result{stage->forward(cycle_txn)};
+
+            // TODO Switch on result values to decide if we need to unwind or
+            // if we encountered an unrecoverable error
+
             if (stage_result != StageResult::kSuccess) {
                 log::Error(get_log_prefix(), {"return", std::string(magic_enum::enum_name<StageResult>(stage_result))});
                 return stage_result;
             }
+
             auto [_, stage_duration] = stages_stop_watch.lap();
             if (stage_duration > std::chrono::milliseconds(10)) {
                 log::Info(get_log_prefix(), {"done", StopWatch::format(stage_duration)});

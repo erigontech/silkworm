@@ -41,7 +41,7 @@ class SyncLoop final : public Worker {
     void load_stages();                                          // Fills the vector with stages
 
     //! \brief Runs a full sync cycle
-    [[nodiscard]] StageResult run_cycle(db::RWTxn& cycle_txn, Timer& log_timer);
+    [[nodiscard]] StageResult run_cycle_forward(db::RWTxn& cycle_txn, Timer& log_timer);
 
     void throttle_next_cycle(const StopWatch::Duration& cycle_duration);  // Delays (if required) next cycle run
     std::string get_log_prefix() const;  // Returns the current log lines prefix on behalf of current stage

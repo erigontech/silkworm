@@ -27,7 +27,6 @@
 namespace silkworm::stagedsync {
 
 void SyncLoop::load_stages() {
-
     stages_.push_back(std::make_unique<stagedsync::BlockHashes>(node_settings_));
     stages_.push_back(std::make_unique<stagedsync::Senders>(node_settings_));
     stages_.push_back(std::make_unique<stagedsync::Execution>(node_settings_));
@@ -96,8 +95,7 @@ void SyncLoop::work() {
 
         // TODO Populate shared state amongst stages with firsT_cycle + a ton of other things
 
-
-        if (run_cycle(*cycle_txn, log_timer) != StageResult::kSuccess) {
+        if (run_cycle_forward(*cycle_txn, log_timer) != StageResult::kSuccess) {
             break;
         }
 
@@ -121,7 +119,7 @@ void SyncLoop::work() {
     log::Info() << "Synchronization loop terminated";
 }
 
-StageResult SyncLoop::run_cycle(db::RWTxn& cycle_txn, Timer& log_timer) {
+StageResult SyncLoop::run_cycle_forward(db::RWTxn& cycle_txn, Timer& log_timer) {
     StopWatch stages_stop_watch(true);
     try {
         // Force to stop at any particular stage ?

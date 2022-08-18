@@ -36,9 +36,9 @@ class SyncLoop final : public Worker {
     silkworm::NodeSettings* node_settings_;  // As being passed by CLI arguments and/or already initialized data
     mdbx::env* chaindata_env_;               // The actual opened environment
     std::vector<std::unique_ptr<stagedsync::IStage>> stages_{};  // Collection of stages
-    size_t current_stage_{0};                                    // Index of current stage
+    std::atomic<size_t> current_stage_{0};                       // Index of current stage
     void work() final;                                           // The loop itself
-    void load_stages();                                          // Fills the vector of stages
+    void load_stages();                                          // Fills the vector with stages
 
     //! \brief Runs a full sync cycle
     [[nodiscard]] StageResult run_cycle(db::RWTxn& cycle_txn, Timer& log_timer);

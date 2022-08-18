@@ -14,8 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-#ifndef SILKWORM_DB_UTILS_H
-#define SILKWORM_DB_UTILS_H
+#pragma once
 
 #include <functional>
 #include <set>
@@ -34,4 +33,3 @@ std::tuple<BlockNum, Hash> header_with_biggest_td(mdbx::txn& txn, const std::set
 
 }
 
-#endif  // SILKWORM_DB_UTILS_H

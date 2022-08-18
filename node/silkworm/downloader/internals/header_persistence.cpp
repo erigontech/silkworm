@@ -164,7 +164,7 @@ BlockNum HeaderPersistence::find_forking_point(db::RWTxn& tx, const BlockHeader&
         while ((cached_canon_hash = canonical_cache_.get(ancestor_height)) && *cached_canon_hash != ancestor_hash) {
             auto ancestor = db::read_header(tx, ancestor_height, ancestor_hash);
             ancestor_hash = ancestor->parent_hash;
-            ancestor_height--;
+            --ancestor_height;
         }  // if this loop finds a prev_canon_hash the next loop will be executed, is this right?
 
         // now look in the db
@@ -172,7 +172,7 @@ BlockNum HeaderPersistence::find_forking_point(db::RWTxn& tx, const BlockHeader&
         while ((db_canon_hash = read_canonical_hash(tx, ancestor_height)) && db_canon_hash != ancestor_hash) {
             auto ancestor = db::read_header(tx, ancestor_height, ancestor_hash);
             ancestor_hash = ancestor->parent_hash;
-            ancestor_height--;
+            --ancestor_height;
         }
 
         // loop above terminates when prev_canon_hash == ancestor_hash, therefore ancestor_height is our forking point
@@ -205,7 +205,7 @@ void HeaderPersistence::update_canonical_chain(BlockNum height, Hash hash) {  //
         }
 
         ancestor_hash = ancestor->parent_hash;
-        ancestor_height--;
+        --ancestor_height;
 
         persisted_canon_hash = db::read_canonical_hash(tx_, ancestor_height);
     }

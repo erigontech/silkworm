@@ -133,10 +133,12 @@ std::tuple<Hash, BlockNum> HeaderRetrieval::get_ancestor(Hash hash, BlockNum blo
 
     if (ancestorDelta == 1) {
         auto header = db::read_header(db_tx_, blockNum, hash);
-        if (header)
+        if (header) {
             return {header->parent_hash, blockNum - 1};
-        else
+        }
+        else {
             return {Hash{}, 0};
+        }
     }
 
     while (ancestorDelta != 0) {

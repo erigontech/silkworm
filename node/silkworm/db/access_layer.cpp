@@ -126,7 +126,7 @@ std::optional<BlockHeader> read_canonical_header(mdbx::txn& txn, BlockNum b) {  
     if (!h) {
         return std::nullopt;  // not found
     }
-    return read_header(txn, b, (*h).bytes);
+    return read_header(txn, b, h->bytes);
 }
 
 static Bytes header_numbers_key(evmc::bytes32 hash) {
@@ -601,7 +601,7 @@ std::optional<evmc::bytes32> read_head_header_hash(mdbx::txn& txn) {
     Bytes key = head_header_key();
     auto skey = db::to_slice(key);
     auto data{src.find(skey, /*throw_notfound=*/false)};
-    if (!data || data.value.length() != sizeof(evmc::bytes32)) {
+    if (!data || data.value.length() != kHashLength) {
         return std::nullopt;
     }
     return to_bytes32(from_slice(data.value));
@@ -622,13 +622,12 @@ void write_canonical_hash(mdbx::txn& txn, BlockNum b, const evmc::bytes32& hash)
     auto skey = db::to_slice(key);
     auto svalue = db::to_slice(hash);
 
-    auto hashes_table = db::open_cursor(txn, db::table::kCanonicalHashes);
+    Cursor hashes_table(txn, db::table::kCanonicalHashes);
     hashes_table.upsert(skey, svalue);
-    hashes_table.close();
 }
 
 void delete_canonical_hash(mdbx::txn& txn, BlockNum b) {
-    auto hashes_table = db::open_cursor(txn, db::table::kCanonicalHashes);
+    Cursor hashes_table(txn, db::table::kCanonicalHashes);
     Bytes key = db::block_key(b);
     auto skey = db::to_slice(key);
     (void)hashes_table.erase(skey);

@@ -24,7 +24,7 @@ namespace silkworm {
 // Read all headers up to limit, in reverse order from last, processing each via a user defined callback
 // alternative implementation: use cursor_for_count(cursor, const WalkFunc&, size_t max_count, CursorMoveDirection)
 void read_headers_in_reverse_order(mdbx::txn& txn, size_t limit, std::function<void(BlockHeader&&)> callback) {
-    auto header_table = db::open_cursor(txn, db::table::kHeaders);
+    db::Cursor header_table(txn, db::table::kHeaders);
 
     bool throw_notfound = false;
     size_t read = 0;
@@ -40,7 +40,7 @@ void read_headers_in_reverse_order(mdbx::txn& txn, size_t limit, std::function<v
         // move backward
         data = header_table.to_previous(throw_notfound);
     }
-}
+} // note: maybe we can simplify/replace the implementation with db::cursor_for_count plus lambda
 
 // Return (block-num, hash) of the header with the biggest total difficulty skipping bad headers
 // see Erigon's HeadersUnwind method for the implementation

@@ -16,9 +16,32 @@
 
 #pragma once
 
+#include <optional>
+
+#include <gsl/pointers>
+
 #include <silkworm/common/base.hpp>
 
+typedef struct evp_cipher_ctx_st EVP_CIPHER_CTX;
+
 namespace silkworm::sentry::rlpx::crypto {
+
+class AESCipher final {
+  public:
+    enum class Direction {
+        kEncrypt,
+        kDecrypt,
+    };
+
+    AESCipher(ByteView key, std::optional<ByteView> iv, Direction direction);
+    ~AESCipher();
+
+    Bytes encrypt(ByteView plain_text);
+    Bytes decrypt(ByteView cipher_text);
+
+  private:
+    gsl::owner<EVP_CIPHER_CTX*> ctx_;
+};
 
 Bytes aes_encrypt(ByteView plain_text, ByteView key, ByteView iv);
 Bytes aes_decrypt(ByteView cipher_text, ByteView key, ByteView iv);

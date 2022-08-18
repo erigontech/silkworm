@@ -58,13 +58,13 @@ EciesCipher::Message EciesCipher::encrypt_message(ByteView plain_text, PublicKey
 
     Bytes iv = aes_make_iv();
 
-    Bytes cypher_text = aes_encrypt(plain_text, aes_key, iv);
-    Bytes mac = hmac(sha256(mac_key), iv, cypher_text, mac_extra_data);
+    Bytes cipher_text = aes_encrypt(plain_text, aes_key, iv);
+    Bytes mac = hmac(sha256(mac_key), iv, cipher_text, mac_extra_data);
 
     return {
         ephemeral_key_pair.public_key(),
         std::move(iv),
-        std::move(cypher_text),
+        std::move(cipher_text),
         std::move(mac),
     };
 }

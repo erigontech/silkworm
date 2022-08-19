@@ -114,7 +114,7 @@ void write_header(mdbx::txn& txn, const BlockHeader& header, bool with_header_nu
 }
 
 std::optional<ByteView> read_rlp_encoded_header(mdbx::txn& txn, BlockNum bn, const evmc::bytes32& hash) {
-    auto header_table = db::open_cursor(txn, db::table::kHeaders);
+    Cursor header_table(txn, db::table::kHeaders);
     auto key = db::block_key(bn, hash.bytes);
     auto data = header_table.find(db::to_slice(key), /*throw_notfound*/ false);
     if (!data) return std::nullopt;
@@ -134,7 +134,7 @@ static Bytes header_numbers_key(evmc::bytes32 hash) {
 }
 
 std::optional<BlockNum> read_block_number(mdbx::txn& txn, const evmc::bytes32& hash) {
-    auto blockhashes_table = db::open_cursor(txn, db::table::kHeaderNumbers);
+    Cursor blockhashes_table(txn, db::table::kHeaderNumbers);
     auto key = header_numbers_key(hash);
     auto data = blockhashes_table.find(db::to_slice(key), /*throw_notfound*/ false);
     if (!data) {
@@ -630,7 +630,7 @@ std::optional<evmc::bytes32> read_head_header_hash(mdbx::txn& txn) {
 }
 
 std::optional<evmc::bytes32> read_canonical_hash(mdbx::txn& txn, BlockNum b) {  // throws db exceptions
-    auto hashes_table = db::open_cursor(txn, db::table::kCanonicalHashes);
+    Cursor hashes_table(txn, db::table::kCanonicalHashes);
     // accessing this table with only b we will get the hash of the canonical block at height b
     auto key = db::block_key(b);
     auto data = hashes_table.find(db::to_slice(key), /*throw_notfound*/ false);

@@ -27,6 +27,27 @@
 namespace silkworm::stagedsync {
 
 void SyncLoop::load_stages() {
+
+    /*
+     * Stages from Erigon -> Silkworm
+     *  1 StageHeaders ->  Downloader ?
+     *  2 StageCumulativeIndex -> Downloader ?
+     *  3 StageBlockHashes -> stagedsync::BlockHashes
+     *  4 StageBodies -> Downloader ?
+     *  5 StageIssuance -> TBD
+     *  6 StageSenders -> stagedsync::Senders
+     *  7 StageExecuteBlocks -> stagedsync::Execution
+     *  8 StageTranspile -> TBD
+     *  9 StageHashState -> stagedsync::HashState
+     * 10 StageTrie -> stagedsync::InterHashes
+     * 11 StageHistory -> TBD
+     * 12 StageLogIndex -> TBD
+     * 13 StageCallTraces -> TBD
+     * 14 StageTxLookup -> TBD
+     * 15 StageFinish -> TBD
+     */
+
+
     stages_.push_back(std::make_unique<stagedsync::BlockHashes>(node_settings_));
     stages_.push_back(std::make_unique<stagedsync::Senders>(node_settings_));
     stages_.push_back(std::make_unique<stagedsync::Execution>(node_settings_));

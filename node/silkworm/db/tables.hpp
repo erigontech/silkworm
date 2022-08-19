@@ -207,7 +207,7 @@ inline constexpr db::MapConfig kStateSnapshotInfo{"StateSnapshotInfo"};
 //! \struct
 //! \verbatim
 //!   key   : block_num_u64 (BE) + address + incarnation_u64 (BE)
-//!   value : location (32 bytes) + previous_value (no leading zeros)
+//!   value : plain_storage_location (32 bytes) + previous_value (no leading zeros)
 //! \endverbatim
 //! \example If block N changed storage from value X to Y. Then:
 //! \verbatim

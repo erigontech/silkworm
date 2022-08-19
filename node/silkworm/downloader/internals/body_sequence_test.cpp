@@ -88,7 +88,7 @@ TEST_CASE("body downloading", "[silkworm][downloader][BodySequence]") {
     // Note: block1 has zero transactions and zero ommers on mainnet
 
     // prepare BodySequence
-    Db::ReadWriteAccess dba(context.env());
+    db::RWAccess dba(context.env());
 
     BlockNum highest_header = 1;
     BlockNum highest_body = 0;

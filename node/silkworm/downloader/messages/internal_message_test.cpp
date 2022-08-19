@@ -24,7 +24,7 @@ namespace silkworm {
 
     TEST_CASE("internal message") {
         test::Context context;
-        Db::ReadOnlyAccess dba(context.env());  // not used in the test execution
+        db::ROAccess dba(context.env());  // not used in the test execution
         HeaderChain* hc = nullptr; // not used in the test execution
         BodySequence* bs = nullptr; // not used in the test execution
         SentryClient* sc = nullptr; // not used in the test execution

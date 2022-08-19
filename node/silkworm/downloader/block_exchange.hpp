@@ -19,7 +19,8 @@ limitations under the License.
 #include <silkworm/chain/identity.hpp>
 #include <silkworm/concurrency/active_component.hpp>
 #include <silkworm/concurrency/containers.hpp>
-#include <silkworm/downloader/internals/db_tx.hpp>
+#include <silkworm/db/access_layer.hpp>
+
 #include <silkworm/downloader/internals/header_chain.hpp>
 #include <silkworm/downloader/internals/body_sequence.hpp>
 #include <silkworm/downloader/messages/message.hpp>
@@ -30,7 +31,7 @@ namespace silkworm {
 //! \brief Implement the logic needed to download headers and bodies
 class BlockExchange : public ActiveComponent {
   public:
-    BlockExchange(SentryClient&, const Db::ReadOnlyAccess&, const ChainIdentity&);
+    BlockExchange(SentryClient&, const db::ROAccess&, const ChainIdentity&);
     ~BlockExchange();
 
     void accept(std::shared_ptr<Message>); /*[[thread_safe]]*/
@@ -47,7 +48,7 @@ class BlockExchange : public ActiveComponent {
 
     static constexpr seconds_t kRpcTimeout = std::chrono::seconds(1);
     
-    Db::ReadOnlyAccess db_access_;
+    db::ROAccess db_access_;
     SentryClient& sentry_;
     const ChainIdentity& chain_identity_;
     PreverifiedHashes preverified_hashes_;

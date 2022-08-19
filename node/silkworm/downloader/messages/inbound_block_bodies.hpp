@@ -30,7 +30,7 @@ class InboundBlockBodies : public InboundMessage {
     std::string content() const override;
     uint64_t reqId() const override;
 
-    void execute(Db::ReadOnlyAccess db, HeaderChain&, BodySequence&, SentryClient&) override;
+    void execute(db::ROAccess db, HeaderChain&, BodySequence&, SentryClient&) override;
 
   private:
     PeerId peerId_;

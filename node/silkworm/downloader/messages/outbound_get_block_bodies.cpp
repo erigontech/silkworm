@@ -28,7 +28,7 @@ OutboundGetBlockBodies::OutboundGetBlockBodies() {}
 
 int OutboundGetBlockBodies::sent_request() const { return sent_reqs_; }
 
-void OutboundGetBlockBodies::execute(Db::ReadOnlyAccess, HeaderChain&, BodySequence& bs, SentryClient& sentry) {
+void OutboundGetBlockBodies::execute(db::ROAccess, HeaderChain&, BodySequence& bs, SentryClient& sentry) {
     using namespace std::literals::chrono_literals;
 
     seconds_t timeout = 1s;

@@ -17,9 +17,9 @@
 #pragma once
 
 #include <silkworm/common/lru_cache.hpp>
+#include <silkworm/db/access_layer.hpp>
 
 #include "chain_elements.hpp"
-#include "db_tx.hpp"
 #include "types.hpp"
 
 namespace silkworm {
@@ -42,14 +42,14 @@ namespace silkworm {
 
 class HeaderPersistence {
   public:
-    explicit HeaderPersistence(Db::ReadWriteAccess::Tx& tx);
+    explicit HeaderPersistence(db::RWTxn& tx);
 
     void persist(const Headers&);
     void persist(const BlockHeader&);
     void close();
 
-    static std::set<Hash> remove_headers(BlockNum new_height, Hash bad_block,
-                                         std::optional<BlockNum>& new_max_block_num, Db::ReadWriteAccess::Tx& tx);
+    static std::set<Hash> remove_headers(BlockNum new_height, std::optional<Hash> bad_block,
+                                         std::optional<BlockNum>& new_max_block_num, db::RWTxn& tx);
 
     bool best_header_changed() const;
     bool unwind_needed() const;
@@ -63,11 +63,11 @@ class HeaderPersistence {
   private:
     static constexpr size_t kCanonicalCacheSize = 1000;
 
-    BlockNum find_forking_point(Db::ReadWriteAccess::Tx&, const BlockHeader& header, BlockNum height,
+    BlockNum find_forking_point(db::RWTxn&, const BlockHeader& header, BlockNum height,
                                 const BlockHeader& parent);
     void update_canonical_chain(BlockNum height, Hash hash);
 
-    Db::ReadWriteAccess::Tx& tx_;
+    db::RWTxn& tx_;
     Hash previous_hash_;
     Hash highest_hash_;
     BlockNum initial_in_db_{};

@@ -30,7 +30,7 @@ int OutboundGetBlockHeaders::sent_request() const {
     return sent_reqs_;
 }
 
-void OutboundGetBlockHeaders::execute(Db::ReadOnlyAccess, HeaderChain& hc, BodySequence&, SentryClient& sentry) {
+void OutboundGetBlockHeaders::execute(db::ROAccess, HeaderChain& hc, BodySequence&, SentryClient& sentry) {
     using namespace std::literals::chrono_literals;
 
     time_point_t now = std::chrono::system_clock::now();

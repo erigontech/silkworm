@@ -18,6 +18,7 @@
 
 #include <algorithm>
 
+#include <silkworm/common/cast.hpp>
 #include <silkworm/common/log.hpp>
 #include <silkworm/downloader/internals/random_number.hpp>
 #include <silkworm/downloader/packets/rlp_eth66_packet_coding.hpp>
@@ -39,7 +40,7 @@ InboundNewBlockHashes::InboundNewBlockHashes(const sentry::InboundMessage& msg) 
     SILK_TRACE << "Received message " << *this;
 }
 
-void InboundNewBlockHashes::execute(Db::ReadOnlyAccess, HeaderChain& hc, BodySequence&, SentryClient& sentry) {
+void InboundNewBlockHashes::execute(db::ROAccess, HeaderChain& hc, BodySequence&, SentryClient& sentry) {
     using namespace std;
 
     SILK_TRACE << "Processing message " << *this;

@@ -36,7 +36,7 @@ InboundBlockHeaders::InboundBlockHeaders(const sentry::InboundMessage& msg) {
     SILK_TRACE << "Received message " << *this;
 }
 
-void InboundBlockHeaders::execute(Db::ReadOnlyAccess, HeaderChain& hc, BodySequence&, SentryClient& sentry) {
+void InboundBlockHeaders::execute(db::ROAccess, HeaderChain& hc, BodySequence&, SentryClient& sentry) {
     using namespace std;
 
     SILK_TRACE << "Processing message " << *this;

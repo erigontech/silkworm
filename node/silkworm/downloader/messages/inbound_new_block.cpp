@@ -39,7 +39,7 @@ InboundNewBlock::InboundNewBlock(const sentry::InboundMessage& msg) {
     SILK_TRACE << "Received message " << *this;
 }
 
-void InboundNewBlock::execute(Db::ReadOnlyAccess, HeaderChain&, BodySequence& bs, SentryClient&) {
+void InboundNewBlock::execute(db::ROAccess, HeaderChain&, BodySequence& bs, SentryClient&) {
     SILK_TRACE << "Processing message " << *this;
 
     // todo: complete implementation

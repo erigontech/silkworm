@@ -63,7 +63,7 @@ class HeaderChain {
     explicit HeaderChain(ConsensusEnginePtr); // alternative constructor
 
     // load initial state from db - this must be done at creation time
-    void recover_initial_state(Db::ReadOnlyAccess::Tx&);
+    void recover_initial_state(db::ROTxn&);
 
     // sync current state - this must be done at header forward
     void sync_current_state(BlockNum highest_in_db);

@@ -24,7 +24,7 @@ namespace silkworm {
 
 OutboundNewBlockHashes::OutboundNewBlockHashes() {}
 
-void OutboundNewBlockHashes::execute(Db::ReadOnlyAccess, HeaderChain& hc, BodySequence&, SentryClient& sentry) {
+void OutboundNewBlockHashes::execute(db::ROAccess, HeaderChain& hc, BodySequence&, SentryClient& sentry) {
     using namespace std::literals::chrono_literals;
 
     auto& announces_to_do = hc.announces_to_do();

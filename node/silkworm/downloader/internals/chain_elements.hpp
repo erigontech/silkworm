@@ -23,7 +23,7 @@
 #include <stack>
 #include <vector>
 
-#include "db_tx.hpp"
+#include <silkworm/db/access_layer.hpp>
 #include "priority_queue.hpp"
 #include "types.hpp"
 
@@ -146,9 +146,9 @@ struct BlockOlderThan : public std::function<bool(BlockNum, BlockNum)> {
 
 } // close namespace to define mbpq_key - I do not like this
 template<>
-struct mbpq_key<std::shared_ptr<Link>> {    // extract key type and value
-    using type = BlockNum;   // type of the key
-    static type value(const std::shared_ptr<Link>& l) { return l->blockHeight; } // value of the key
+struct mbpq_key<std::shared_ptr<silkworm::Link>> {    // extract key type and value
+    using type = silkworm::BlockNum;   // type of the key
+    static type value(const std::shared_ptr<silkworm::Link>& l) { return l->blockHeight; } // value of the key
 };
 namespace silkworm { // reopen namespace
 

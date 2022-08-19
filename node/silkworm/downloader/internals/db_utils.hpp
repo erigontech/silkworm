@@ -16,24 +16,20 @@ limitations under the License.
 
 #pragma once
 
-#include <silkworm/downloader/internals/header_chain.hpp>
-#include <silkworm/downloader/packets/new_block_hashes_packet.hpp>
+#include <functional>
+#include <set>
 
-#include "outbound_message.hpp"
+#include <silkworm/db/access_layer.hpp>
+
+#include "types.hpp"
 
 namespace silkworm {
 
-class OutboundNewBlockHashes : public OutboundMessage {
-  public:
-    OutboundNewBlockHashes();
+//! \brief Read all headers up to limit, in reverse order from last, processing each via a user defined callback
+void read_headers_in_reverse_order(mdbx::txn& txn, size_t limit, std::function<void(BlockHeader&&)> callback);
 
-    std::string name() const override { return "OutboundNewBlockHashes"; }
-    std::string content() const override;
+//! \brief Return (block-num, hash) of the header with the biggest total difficulty skipping bad headers
+std::tuple<BlockNum, Hash> header_with_biggest_td(mdbx::txn& txn, const std::set<Hash>* bad_headers = nullptr);
 
-    void execute(db::ROAccess, HeaderChain&, BodySequence&, SentryClient&) override;
+}
 
-  private:
-    NewBlockHashesPacket packet_;
-};
-
-}  // namespace silkworm

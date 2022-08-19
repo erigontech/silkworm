@@ -16,6 +16,7 @@
 
 #include "inbound_block_bodies.hpp"
 
+#include <silkworm/common/cast.hpp>
 #include <silkworm/common/log.hpp>
 #include <silkworm/downloader/rpc/penalize_peer.hpp>
 
@@ -33,7 +34,7 @@ InboundBlockBodies::InboundBlockBodies(const sentry::InboundMessage& msg) {
     SILK_TRACE << "Received message " << *this;
 }
 
-void InboundBlockBodies::execute(Db::ReadOnlyAccess, HeaderChain&, BodySequence& bs, SentryClient& sentry) {
+void InboundBlockBodies::execute(db::ROAccess, HeaderChain&, BodySequence& bs, SentryClient& sentry) {
 
     SILK_TRACE << "Processing message " << *this;
 

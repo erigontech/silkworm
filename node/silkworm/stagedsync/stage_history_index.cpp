@@ -88,7 +88,7 @@ StageResult HistoryIndex::forward_impl(db::RWTxn& txn, BlockNum from, BlockNum t
     const db::MapConfig source_config{storage ? db::table::kStorageChangeSet : db::table::kAccountChangeSet};
     const db::MapConfig target_config{storage ? db::table::kStorageHistory : db::table::kAccountHistory};
 
-    std::unordered_map<Bytes, roaring::Roaring64Map> bitmaps{};
+    std::unordered_map<Bytes, roaring::Roaring64Map> bitmaps;
     auto bitmaps_it{bitmaps.begin()};
     Bytes bitmaps_key{};
     size_t bitmaps_size{0};
@@ -193,7 +193,7 @@ StageResult HistoryIndex::forward_impl(db::RWTxn& txn, BlockNum from, BlockNum t
             while (bm.cardinality() > 0) {
                 // Divide in different bitmaps of different (chunks) and push all of them individually
                 auto current_chunk{db::bitmap::cut_left(bm, db::bitmap::kBitmapChunkLimit)};
-                // Make chunk index (Location + Suffix )
+                // Make chunk index (Original key + Suffix )
                 Bytes chunk_index(entry.key.size() + 8, '\0');
                 std::memcpy(&chunk_index[0], &entry.key[0], entry.key.size());
                 // Suffix is either the maximum Block Number of the bitmap or if it's the last chunk: UINT64_MAX

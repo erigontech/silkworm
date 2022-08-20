@@ -29,7 +29,7 @@ StageResult HashState::forward(db::RWTxn& txn) {
         throw_if_stopping();
 
         // Check stage boundaries from previous execution and previous stage execution
-        auto previous_progress{db::stages::read_stage_progress(*txn, stage_name_)};
+        const auto previous_progress{get_progress(txn)};
         auto execution_stage_progress{db::stages::read_stage_progress(*txn, db::stages::kExecutionKey)};
         if (previous_progress == execution_stage_progress) {
             // Nothing to process

@@ -46,6 +46,9 @@ inline constexpr const char* kIntermediateHashesKey{"IntermediateHashes"};
 inline constexpr const char* kHashStateKey{"HashState"};
 
 // Generating history index for accounts
+inline constexpr const char* kHistoryIndexKey{"HistoryIndex"};
+
+// Generating history index for accounts
 inline constexpr const char* kAccountHistoryIndexKey{"AccountHistoryIndex"};
 
 // Generating history index for storage
@@ -84,6 +87,7 @@ inline constexpr const char* kAllStages[]{
     kExecutionKey,
     kIntermediateHashesKey,
     kHashStateKey,
+    kHistoryIndexKey,
     kAccountHistoryIndexKey,
     kStorageHistoryIndexKey,
     kLogIndexKey,

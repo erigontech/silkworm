@@ -192,14 +192,14 @@ StageResult HistoryIndex::forward_impl(db::RWTxn& txn, BlockNum from, BlockNum t
                                                       previous_bitmap_bytes.value.length());
                 put_flags = MDBX_put_flags_t::MDBX_UPSERT;
             }
-            while (bm.cardinality() > 0) {
+            while (!bm.isEmpty()) {
                 // Divide in different bitmaps of different (chunks) and push all of them individually
                 auto current_chunk{db::bitmap::cut_left(bm, db::bitmap::kBitmapChunkLimit)};
                 // Make chunk index (Original key + Suffix )
                 Bytes chunk_index(entry.key.size() + 8, '\0');
                 std::memcpy(&chunk_index[0], &entry.key[0], entry.key.size());
                 // Suffix is either the maximum Block Number of the bitmap or if it's the last chunk: UINT64_MAX
-                BlockNum suffix{bm.cardinality() == 0 ? UINT64_MAX : current_chunk.maximum()};
+                BlockNum suffix{bm.isEmpty() ? UINT64_MAX : current_chunk.maximum()};
                 endian::store_big_u64(&chunk_index[entry.key.size()], suffix);
                 // Push chunk to database
                 Bytes current_chunk_bytes(current_chunk.getSizeInBytes(), '\0');

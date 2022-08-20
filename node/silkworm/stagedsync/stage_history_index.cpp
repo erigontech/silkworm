@@ -18,6 +18,8 @@
 
 #include <unordered_map>
 
+#include <boost/functional/hash.hpp>
+
 #include <silkworm/common/cast.hpp>
 #include <silkworm/common/endian.hpp>
 #include <silkworm/common/log.hpp>
@@ -88,7 +90,7 @@ StageResult HistoryIndex::forward_impl(db::RWTxn& txn, BlockNum from, BlockNum t
     const db::MapConfig source_config{storage ? db::table::kStorageChangeSet : db::table::kAccountChangeSet};
     const db::MapConfig target_config{storage ? db::table::kStorageHistory : db::table::kAccountHistory};
 
-    std::unordered_map<Bytes, roaring::Roaring64Map> bitmaps;
+    std::unordered_map<Bytes, roaring::Roaring64Map, boost::hash<Bytes>> bitmaps;
     auto bitmaps_it{bitmaps.begin()};
     Bytes bitmaps_key{};
     size_t bitmaps_size{0};

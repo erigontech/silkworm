@@ -80,4 +80,4 @@ class HashState final : public IStage {
     std::unique_ptr<etl::Collector> collector_;  // Collector (used only in !incremental_)
 };
 
-} // namespace silkworm::stagedsync
+}  // namespace silkworm::stagedsync

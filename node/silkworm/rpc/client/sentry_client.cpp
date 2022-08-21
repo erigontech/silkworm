@@ -17,13 +17,13 @@
 #include "sentry_client.hpp"
 
 #include <silkworm/common/log.hpp>
-#include <silkworm/rpc/util.hpp>
 #include <silkworm/rpc/client/sentry_calls.hpp>
+#include <silkworm/rpc/util.hpp>
 
 namespace silkworm::rpc {
 
 RemoteSentryClient::RemoteSentryClient(grpc::CompletionQueue* queue, std::shared_ptr<grpc::Channel> channel)
-: queue_(queue), stub_(sentry::Sentry::NewStub(channel)) {
+    : queue_(queue), stub_(sentry::Sentry::NewStub(channel)) {
 }
 
 void RemoteSentryClient::peer_count(PeerCountCallback callback) {
@@ -49,4 +49,4 @@ std::unique_ptr<SentryClient> RemoteSentryClientFactory::make_sentry_client(cons
     return std::make_unique<RemoteSentryClient>(queue_, channel);
 }
 
-} // namespace silkworm::rpc
+}  // namespace silkworm::rpc

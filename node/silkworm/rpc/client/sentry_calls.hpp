@@ -17,17 +17,17 @@
 #pragma once
 
 #include <grpcpp/grpcpp.h>
+#include <p2psentry/sentry.grpc.pb.h>
 
 #include <silkworm/rpc/client/call.hpp>
-#include <p2psentry/sentry.grpc.pb.h>
 
 namespace silkworm::rpc {
 
 class AsyncPeerCountCall : public AsyncUnaryCall<
-    sentry::PeerCountRequest,
-    sentry::PeerCountReply,
-    sentry::Sentry::StubInterface,
-    &sentry::Sentry::StubInterface::PrepareAsyncPeerCount> {
+                               sentry::PeerCountRequest,
+                               sentry::PeerCountReply,
+                               sentry::Sentry::StubInterface,
+                               &sentry::Sentry::StubInterface::PrepareAsyncPeerCount> {
   public:
     explicit AsyncPeerCountCall(grpc::CompletionQueue* queue, sentry::Sentry::StubInterface* stub, CompletionFunc completion_handler);
 
@@ -35,14 +35,14 @@ class AsyncPeerCountCall : public AsyncUnaryCall<
 };
 
 class AsyncNodeInfoCall : public AsyncUnaryCall<
-    google::protobuf::Empty,
-    types::NodeInfoReply,
-    sentry::Sentry::StubInterface,
-    &sentry::Sentry::StubInterface::PrepareAsyncNodeInfo> {
+                              google::protobuf::Empty,
+                              types::NodeInfoReply,
+                              sentry::Sentry::StubInterface,
+                              &sentry::Sentry::StubInterface::PrepareAsyncNodeInfo> {
   public:
     explicit AsyncNodeInfoCall(grpc::CompletionQueue* queue, sentry::Sentry::StubInterface* stub, CompletionFunc completion_handler);
 
     void handle_finish(bool ok) override;
 };
 
-} // namespace silkworm::rpc
+}  // namespace silkworm::rpc

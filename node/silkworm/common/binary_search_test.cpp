@@ -21,6 +21,7 @@
 #include <vector>
 
 #include <catch2/catch.hpp>
+
 #include <silkworm/common/as_range.hpp>
 
 namespace silkworm {

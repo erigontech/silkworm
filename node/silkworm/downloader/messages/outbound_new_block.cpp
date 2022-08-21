@@ -40,9 +40,9 @@ void OutboundNewBlock::execute(db::ROAccess, HeaderChain&, BodySequence& bs, Sen
         auto peers = send_packet(sentry, announce, timeout);
 
         if (peers.peers_size() == 0)
-            break; // no peer available
+            break;  // no peer available
 
-        announces_to_do.erase(announces_to_do.begin()); // clear announce from the queue
+        announces_to_do.erase(announces_to_do.begin());  // clear announce from the queue
     }
 }
 
@@ -85,4 +85,3 @@ std::string OutboundNewBlock::content() const {
 }
 
 }  // namespace silkworm
-

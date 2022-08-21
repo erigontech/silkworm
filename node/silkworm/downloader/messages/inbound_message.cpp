@@ -20,8 +20,8 @@
 
 #include <silkworm/common/log.hpp>
 
-#include "inbound_block_headers.hpp"
 #include "inbound_block_bodies.hpp"
+#include "inbound_block_headers.hpp"
 #include "inbound_get_block_bodies.hpp"
 #include "inbound_get_block_headers.hpp"
 #include "inbound_new_block.hpp"

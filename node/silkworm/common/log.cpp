@@ -84,9 +84,9 @@ static inline std::pair<const char*, const char*> get_level_settings(Level level
 
 struct separate_thousands : std::numpunct<char> {
     char separator;
-    explicit separate_thousands(char sep): separator(sep) {}
+    explicit separate_thousands(char sep) : separator(sep) {}
     char do_thousands_sep() const override { return separator; }
-    string_type do_grouping() const override { return "\3"; } // groups of 3 digit
+    string_type do_grouping() const override { return "\3"; }  // groups of 3 digit
 };
 
 BufferBase::BufferBase(Level level) : should_print_(level <= settings_.log_verbosity) {

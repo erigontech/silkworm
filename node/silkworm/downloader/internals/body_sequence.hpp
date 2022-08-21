@@ -19,12 +19,11 @@ limitations under the License.
 #include <list>
 
 #include <silkworm/chain/identity.hpp>
-
-#include <silkworm/downloader/packets/new_block_packet.hpp>
+#include <silkworm/db/access_layer.hpp>
 #include <silkworm/downloader/packets/block_bodies_packet.hpp>
 #include <silkworm/downloader/packets/get_block_bodies_packet.hpp>
+#include <silkworm/downloader/packets/new_block_packet.hpp>
 
-#include <silkworm/db/access_layer.hpp>
 #include "statistics.hpp"
 #include "types.hpp"
 
@@ -73,12 +72,12 @@ class BodySequence {
     [[nodiscard]] const Download_Statistics& statistics() const;
 
     // downloading process tuning parameters
-    static /*constexpr*/ seconds_t kRequestDeadline; // = std::chrono::seconds(30);
-                                    // after this a response is considered lost it is related to Sentry's peerDeadline
-    static /*constexpr*/ milliseconds_t kNoPeerDelay; // = std::chrono::milliseconds(500);
-                                                                       // delay when no peer accepted the last request
-    static /*constexpr*/ size_t kPerPeerMaxOutstandingRequests; // = 4;
-    static /*constexpr*/ BlockNum kMaxBlocksPerMessage; // = 128;               // go-ethereum client acceptance limit
+    static /*constexpr*/ seconds_t kRequestDeadline;             // = std::chrono::seconds(30);
+                                                                 // after this a response is considered lost it is related to Sentry's peerDeadline
+    static /*constexpr*/ milliseconds_t kNoPeerDelay;            // = std::chrono::milliseconds(500);
+                                                                 // delay when no peer accepted the last request
+    static /*constexpr*/ size_t kPerPeerMaxOutstandingRequests;  // = 4;
+    static /*constexpr*/ BlockNum kMaxBlocksPerMessage;          // = 128;               // go-ethereum client acceptance limit
     static constexpr BlockNum kMaxAnnouncedBlocks = 10000;
 
   protected:
@@ -104,12 +103,13 @@ class BodySequence {
         void add(Block block);
         std::optional<BlockBody> remove(BlockNum bn);
         size_t size();
+
       private:
         std::map<BlockNum, Block> blocks_;
     };
 
-    //using IncreasingHeightOrderedMap = std::map<BlockNum, BodyRequest>; // default ordering: less<BlockNum>
-    struct IncreasingHeightOrderedRequestContainer: public std::map<BlockNum, BodyRequest> {
+    // using IncreasingHeightOrderedMap = std::map<BlockNum, BodyRequest>; // default ordering: less<BlockNum>
+    struct IncreasingHeightOrderedRequestContainer : public std::map<BlockNum, BodyRequest> {
         using Impl = std::map<BlockNum, BodyRequest>;
         using Iter = Impl::iterator;
 
@@ -134,4 +134,4 @@ class BodySequence {
     Download_Statistics statistics_;
 };
 
-}
+}  // namespace silkworm

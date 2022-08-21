@@ -41,5 +41,4 @@ void init_terminal() {
 #endif
 }
 
-
-} // namespace silkworm
+}  // namespace silkworm

@@ -19,7 +19,6 @@
 namespace silkworm::rpc {
 
 PeerCount::PeerCount() : UnaryCall("PeerCount", &sentry::Sentry::Stub::PeerCount, {}) {
-
 }
 
 }  // namespace silkworm::rpc

@@ -15,6 +15,7 @@
 */
 
 #include "server.hpp"
+
 #include <silkworm/common/log.hpp>
 #include <silkworm/rpc/server/server_config.hpp>
 
@@ -23,15 +24,14 @@ namespace silkworm::sentry::rpc {
 using namespace silkworm::log;
 
 Server::Server(const silkworm::rpc::ServerConfig& config)
-    : silkworm::rpc::Server(config)
-{
+    : silkworm::rpc::Server(config) {
     std::size_t num_contexts = config.num_contexts();
     for (std::size_t i = 0; i < num_contexts; i++) {
         services_.push_back(std::make_unique<Service>());
     }
     log::Info() << "Server created"
-        << " listening on: " << config.address_uri() << ";"
-        << " contexts: " << num_contexts;
+                << " listening on: " << config.address_uri() << ";"
+                << " contexts: " << num_contexts;
 }
 
 // Register the gRPC services: they must exist for the lifetime of the server built by builder.

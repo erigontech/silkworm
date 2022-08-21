@@ -443,7 +443,7 @@ namespace db {
         REQUIRE(memcmp(hash.bytes, db_hash.value().bytes, sizeof(hash)) == 0);
 
         // Read non existent canonical header hash
-        db_hash = read_canonical_header_hash(txn, block_num+1);
+        db_hash = read_canonical_header_hash(txn, block_num + 1);
         REQUIRE(db_hash.has_value() == false);
 
         std::optional<BlockHeader> header_from_db{read_header(txn, header.number, hash.bytes)};

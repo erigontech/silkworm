@@ -17,8 +17,11 @@
 #pragma once
 
 #include <vector>
+
 #include <silkworm/concurrency/coroutine.hpp>
+
 #include <boost/asio/awaitable.hpp>
+
 #include <silkworm/sentry/common/ecc_key_pair.hpp>
 #include <silkworm/sentry/common/enode_url.hpp>
 

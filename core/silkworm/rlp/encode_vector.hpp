@@ -25,7 +25,7 @@ namespace silkworm::rlp {
 
 template <typename T>
 size_t length_items(const std::vector<T>& v) {
-    return std::accumulate(v.cbegin(), v.cend(), size_t{0}, [] (size_t sum, const T &x) { return sum + length(x); });
+    return std::accumulate(v.cbegin(), v.cend(), size_t{0}, [](size_t sum, const T& x) { return sum + length(x); });
 }
 
 template <typename T>

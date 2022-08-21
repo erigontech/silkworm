@@ -19,8 +19,8 @@
 #include <catch2/catch.hpp>
 
 #include <silkworm/common/directories.hpp>
-#include <silkworm/db/tables.hpp>
 #include <silkworm/db/stages.hpp>
+#include <silkworm/db/tables.hpp>
 
 namespace silkworm {
 
@@ -137,7 +137,7 @@ namespace db {
         }
 
         SECTION("read/write body") {
-            BlockBody body{}; // a void body, access_layer already has test on body read/write
+            BlockBody body{};  // a void body, access_layer already has test on body read/write
 
             CHECK_NOTHROW(db::write_body(tx, body, header.hash(), header.number));
 

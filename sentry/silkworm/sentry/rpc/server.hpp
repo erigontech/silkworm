@@ -17,8 +17,10 @@
 #pragma once
 
 #include <p2psentry/sentry.grpc.pb.h>
+
 #include <silkworm/rpc/server/server.hpp>
 #include <silkworm/rpc/server/server_config.hpp>
+
 #include "../settings.hpp"
 #include "service.hpp"
 

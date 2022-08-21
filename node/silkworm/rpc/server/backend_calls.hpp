@@ -22,14 +22,14 @@
 #include <vector>
 
 #include <grpcpp/grpcpp.h>
-#include <remote/ethbackend.pb.h>
 #include <remote/ethbackend.grpc.pb.h>
+#include <remote/ethbackend.pb.h>
 
 #include <silkworm/backend/ethereum_backend.hpp>
 #include <silkworm/chain/config.hpp>
+#include <silkworm/rpc/client/sentry_client.hpp>
 #include <silkworm/rpc/server/call.hpp>
 #include <silkworm/rpc/server/call_factory.hpp>
-#include <silkworm/rpc/client/sentry_client.hpp>
 #include <silkworm/rpc/server/server.hpp>
 
 // ETHBACKEND API protocol versions
@@ -222,4 +222,4 @@ struct BackEndService {
     std::vector<std::unique_ptr<SentryClient>> sentries_;
 };
 
-} // namespace silkworm::rpc
+}  // namespace silkworm::rpc

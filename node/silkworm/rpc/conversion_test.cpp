@@ -41,7 +41,7 @@ TEST_CASE("H128::operator==", "[silkworm][rpc][util]") {
     CHECK(types::H128{} == types::H128{});
 }
 
-} // namespace types
+}  // namespace types
 
 namespace silkworm::rpc {
 
@@ -181,4 +181,4 @@ TEST_CASE("invertibility", "[silkworm][rpc][util]") {
     }
 }
 
-} // namespace silkworm::rpc
+}  // namespace silkworm::rpc

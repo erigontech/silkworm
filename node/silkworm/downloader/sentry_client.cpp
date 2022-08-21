@@ -17,7 +17,6 @@
 #include "sentry_client.hpp"
 
 #include <silkworm/common/log.hpp>
-
 #include <silkworm/downloader/rpc/hand_shake.hpp>
 #include <silkworm/downloader/rpc/peer_count.hpp>
 #include <silkworm/downloader/rpc/receive_messages.hpp>
@@ -120,8 +119,8 @@ void SentryClient::stats_receiving_loop() {
             active_peers_++;
         } else {
             event = "disconnected";
-            if (active_peers_ > 0) active_peers_--; // workaround, to fix this we need to improve the interface
-        }                                           // or issue a count_active_peers()
+            if (active_peers_ > 0) active_peers_--;  // workaround, to fix this we need to improve the interface
+        }                                            // or issue a count_active_peers()
 
         log::Info() << "Peer " << peerId << " " << event << ", active " << active_peers_;
     }

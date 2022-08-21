@@ -15,7 +15,9 @@
 */
 
 #include "node_key_config.hpp"
+
 #include <fstream>
+
 #include <silkworm/common/util.hpp>
 
 namespace silkworm::sentry {
@@ -55,12 +57,12 @@ bool NodeKeyConfig::exists() const {
 }
 
 NodeKey node_key_get_or_generate(
-        const optional<variant<fs::path, Bytes>>& node_key_option,
-        const DataDirectory& data_dir) {
+    const optional<variant<fs::path, Bytes>>& node_key_option,
+    const DataDirectory& data_dir) {
     NodeKeyConfig config{data_dir};
 
     if (node_key_option) {
-        const Bytes *data = get_if<Bytes>(&node_key_option.value());
+        const Bytes* data = get_if<Bytes>(&node_key_option.value());
         if (data) {
             return NodeKey(*data);
         } else {

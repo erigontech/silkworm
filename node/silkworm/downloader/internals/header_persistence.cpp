@@ -15,12 +15,13 @@
 */
 
 #include "header_persistence.hpp"
-#include "db_utils.hpp"
 
 #include <silkworm/common/as_range.hpp>
 #include <silkworm/common/log.hpp>
-#include "silkworm/common/stopwatch.hpp"
 #include <silkworm/db/stages.hpp>
+
+#include "db_utils.hpp"
+#include "silkworm/common/stopwatch.hpp"
 
 namespace silkworm {
 
@@ -73,7 +74,7 @@ void HeaderPersistence::persist(const Headers& headers) {
 
     log::Trace() << "[INFO] HeaderPersistence: saved " << headers.size() << " headers from height "
                  << header_at(headers.begin()).number << " to height " << header_at(headers.rbegin()).number
-                 << " (duration=" << measure_curr_scope.format(end_time - start_time) << ")"; // only for test
+                 << " (duration=" << measure_curr_scope.format(end_time - start_time) << ")";  // only for test
 }
 
 void HeaderPersistence::persist(const BlockHeader& header) {  // todo: try to modularize
@@ -114,7 +115,7 @@ void HeaderPersistence::persist(const BlockHeader& header) {  // todo: try to mo
         BlockNum forking_point = find_forking_point(tx_, header, height, *parent);
 
         // Save progress
-        db::write_head_header_hash(tx_, hash);                           // can throw exception
+        db::write_head_header_hash(tx_, hash);                                   // can throw exception
         db::stages::write_stage_progress(tx_, db::stages::kHeadersKey, height);  // can throw exception
 
         highest_in_db_ = height;
@@ -125,7 +126,7 @@ void HeaderPersistence::persist(const BlockHeader& header) {  // todo: try to mo
 
         if (forking_point < unwind_point_) {  // See if the forking point affects the unwind-point (the block number to
             unwind_point_ = forking_point;    // which other stages will need to unwind before the new canonical chain
-            unwind_needed_ = true;                   // is applied
+            unwind_needed_ = true;            // is applied
         }
     }
 
@@ -141,7 +142,7 @@ void HeaderPersistence::persist(const BlockHeader& header) {  // todo: try to mo
 }
 
 BlockNum HeaderPersistence::find_forking_point(db::RWTxn& tx, const BlockHeader& header, BlockNum height,
-                                            const BlockHeader& parent) {
+                                               const BlockHeader& parent) {
     BlockNum forking_point{};
 
     // Read canonical hash at height-1
@@ -182,7 +183,6 @@ BlockNum HeaderPersistence::find_forking_point(db::RWTxn& tx, const BlockHeader&
     return forking_point;
 }
 
-
 // On Erigon is fixCanonicalChain
 void HeaderPersistence::update_canonical_chain(BlockNum height, Hash hash) {  // hash can be empty
     if (height == 0) return;
@@ -193,13 +193,15 @@ void HeaderPersistence::update_canonical_chain(BlockNum height, Hash hash) {  //
     std::optional<Hash> persisted_canon_hash = db::read_canonical_hash(tx_, ancestor_height);
     while (!persisted_canon_hash ||
            std::memcmp(persisted_canon_hash.value().bytes, ancestor_hash.bytes, kHashLength) != 0) {
-    // while (persisted_canon_hash != ancestor_hash) { // better but gcc12 release erroneously raises a maybe-uninitialized warn
+        // while (persisted_canon_hash != ancestor_hash) { // better but gcc12 release erroneously raises a maybe-uninitialized warn
         db::write_canonical_hash(tx_, ancestor_height, ancestor_hash);
 
         auto ancestor = db::read_header(tx_, ancestor_height, ancestor_hash);
         if (ancestor == std::nullopt) {
-            std::string msg = "HeaderPersistence: fix canonical chain failed at"
-                " ancestor=" + std::to_string(ancestor_height) + " hash=" + ancestor_hash.to_hex();
+            std::string msg =
+                "HeaderPersistence: fix canonical chain failed at"
+                " ancestor=" +
+                std::to_string(ancestor_height) + " hash=" + ancestor_hash.to_hex();
             log::Error() << msg;
             throw std::logic_error(msg);
         }
@@ -209,7 +211,6 @@ void HeaderPersistence::update_canonical_chain(BlockNum height, Hash hash) {  //
 
         persisted_canon_hash = db::read_canonical_hash(tx_, ancestor_height);
     }
-
 }
 
 void HeaderPersistence::close() {
@@ -225,7 +226,7 @@ void HeaderPersistence::close() {
 }
 
 std::set<Hash> HeaderPersistence::remove_headers(BlockNum unwind_point, std::optional<Hash> bad_block,
-                                              std::optional<BlockNum>& max_block_num_ok, db::RWTxn& tx) {
+                                                 std::optional<BlockNum>& max_block_num_ok, db::RWTxn& tx) {
     std::set<Hash> bad_headers;
     max_block_num_ok.reset();
 

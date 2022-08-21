@@ -33,8 +33,8 @@ class SyncLoop final : public Worker {
     void stop(bool wait = false) final;
 
   private:
-    silkworm::NodeSettings* node_settings_;  // As being passed by CLI arguments and/or already initialized data
-    mdbx::env* chaindata_env_;               // The actual opened environment
+    silkworm::NodeSettings* node_settings_;                      // As being passed by CLI arguments and/or already initialized data
+    mdbx::env* chaindata_env_;                                   // The actual opened environment
     std::vector<std::unique_ptr<stagedsync::IStage>> stages_{};  // Collection of stages
     size_t current_stage_{0};                                    // Index of current stage
     void work() final;                                           // The loop itself
@@ -44,6 +44,6 @@ class SyncLoop final : public Worker {
     [[nodiscard]] StageResult run_cycle(db::RWTxn& cycle_txn, Timer& log_timer);
 
     void throttle_next_cycle(const StopWatch::Duration& cycle_duration);  // Delays (if required) next cycle run
-    std::string get_log_prefix() const;  // Returns the current log lines prefix on behalf of current stage
+    std::string get_log_prefix() const;                                   // Returns the current log lines prefix on behalf of current stage
 };
 }  // namespace silkworm::stagedsync

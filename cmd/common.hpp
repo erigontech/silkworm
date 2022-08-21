@@ -17,7 +17,9 @@
 #pragma once
 
 #include <filesystem>
+
 #include <CLI/CLI.hpp>
+
 #include <silkworm/common/log.hpp>
 #include <silkworm/common/settings.hpp>
 #include <silkworm/rpc/server/wait_strategy.hpp>
@@ -27,7 +29,7 @@ namespace silkworm::cmd {
 //! \brief Parses command line arguments for silkworm executable
 //! \remark This implements the set of CLI args for silkworm executable ONLY !
 void parse_silkworm_command_line(CLI::App& cli, int argc, char* argv[], log::Settings& log_settings,
-                        NodeSettings& node_settings);
+                                 NodeSettings& node_settings);
 
 //! \brief Ensures database is ready for take off and consistent with command line arguments
 void run_preflight_checklist(NodeSettings& node_settings);
@@ -48,4 +50,4 @@ void add_option_num_contexts(CLI::App& cli, uint32_t& num_contexts);
 //! \brief Sets up parsing of wait_mode
 void add_option_wait_mode(CLI::App& cli, silkworm::rpc::WaitMode& wait_mode);
 
-} // namespace silkworm::cmd
+}  // namespace silkworm::cmd

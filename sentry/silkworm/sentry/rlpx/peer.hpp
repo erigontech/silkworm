@@ -18,10 +18,13 @@
 
 #include <memory>
 #include <optional>
+
 #include <silkworm/concurrency/coroutine.hpp>
+
 #include <boost/asio/awaitable.hpp>
-#include <silkworm/sentry/common/ecc_public_key.hpp>
+
 #include <silkworm/sentry/common/ecc_key_pair.hpp>
+#include <silkworm/sentry/common/ecc_public_key.hpp>
 #include <silkworm/sentry/common/socket_stream.hpp>
 
 namespace silkworm::sentry::rlpx {
@@ -29,9 +32,9 @@ namespace silkworm::sentry::rlpx {
 class Peer {
   public:
     explicit Peer(
-            common::SocketStream stream,
-            common::EccKeyPair node_key,
-            std::optional<common::EccPublicKey> peer_public_key)
+        common::SocketStream stream,
+        common::EccKeyPair node_key,
+        std::optional<common::EccPublicKey> peer_public_key)
         : stream_(std::move(stream)),
           node_key_(std::move(node_key)),
           peer_public_key_(std::move(peer_public_key)) {}

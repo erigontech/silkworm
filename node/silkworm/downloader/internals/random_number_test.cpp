@@ -14,11 +14,11 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+#include "random_number.hpp"
+
 #include <algorithm>
 
 #include <catch2/catch.hpp>
-
-#include "random_number.hpp"
 
 namespace silkworm {
 
@@ -33,4 +33,4 @@ TEST_CASE("random numbers") {
     }
 }
 
-}
+}  // namespace silkworm

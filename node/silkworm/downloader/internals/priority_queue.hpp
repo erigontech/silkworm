@@ -38,7 +38,9 @@ class set_based_priority_queue {
     [[nodiscard]] bool empty() const { return elements_.empty(); }
     [[nodiscard]] bool contains(const T& element) { return elements_.find(element) != elements_.end(); }
 
-    void push_all(const std::vector<T>& source) { for (auto& element: source) push(element); } // bulk insert
+    void push_all(const std::vector<T>& source) {
+        for (auto& element : source) push(element);
+    }  // bulk insert
 
     typename impl_t::iterator begin() { return elements_.begin(); }
     typename impl_t::iterator end() { return elements_.end(); }

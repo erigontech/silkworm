@@ -19,12 +19,11 @@
 
 #include <silkworm/chain/identity.hpp>
 #include <silkworm/db/access_layer.hpp>
-
 #include <silkworm/downloader/internals/types.hpp>
 #include <silkworm/downloader/messages/internal_message.hpp>
 
-#include "stage.h"
 #include "block_exchange.hpp"
+#include "stage.h"
 
 namespace silkworm {
 
@@ -70,7 +69,7 @@ class HeadersStage : public Stage {
     HeadersStage(HeadersStage&&) = delete;       // nor movable
     ~HeadersStage();
 
-    Stage::Result forward(db::RWTxn&) override;  // go forward, downloading headers
+    Stage::Result forward(db::RWTxn&) override;                      // go forward, downloading headers
     Stage::Result unwind(db::RWTxn&, BlockNum new_height) override;  // go backward, unwinding headers to new_height
 
   private:

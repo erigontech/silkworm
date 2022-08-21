@@ -14,11 +14,11 @@
     limitations under the License.
 */
 
-
 #pragma once
 
 #include <string>
 #include <string_view>
+
 #include <silkworm/common/base.hpp>
 
 namespace silkworm::sentry::common {

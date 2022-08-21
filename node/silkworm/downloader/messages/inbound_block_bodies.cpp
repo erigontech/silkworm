@@ -35,7 +35,6 @@ InboundBlockBodies::InboundBlockBodies(const sentry::InboundMessage& msg) {
 }
 
 void InboundBlockBodies::execute(db::ROAccess, HeaderChain&, BodySequence& bs, SentryClient& sentry) {
-
     SILK_TRACE << "Processing message " << *this;
 
     Penalty penalty = bs.accept_requested_bodies(packet_, peerId_);

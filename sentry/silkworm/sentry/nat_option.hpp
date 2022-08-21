@@ -16,8 +16,9 @@
 
 #pragma once
 
-#include <string>
 #include <optional>
+#include <string>
+
 #include <boost/asio/ip/address.hpp>
 
 namespace silkworm::sentry {
@@ -34,4 +35,4 @@ struct NatOption {
 
 bool lexical_cast(const std::string& input, NatOption& value);
 
-}  // silkworm::sentry
+}  // namespace silkworm::sentry

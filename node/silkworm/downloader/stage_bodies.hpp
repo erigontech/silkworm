@@ -18,7 +18,6 @@ limitations under the License.
 
 #include <silkworm/concurrency/containers.hpp>
 #include <silkworm/db/access_layer.hpp>
-
 #include <silkworm/downloader/internals/types.hpp>
 #include <silkworm/downloader/messages/internal_message.hpp>
 
@@ -34,7 +33,7 @@ class BodiesStage : public Stage {
     BodiesStage(BodiesStage&&) = delete;       // nor movable
     ~BodiesStage();
 
-    Stage::Result forward(db::RWTxn&) override;  // go forward, downloading headers
+    Stage::Result forward(db::RWTxn&) override;                      // go forward, downloading headers
     Stage::Result unwind(db::RWTxn&, BlockNum new_height) override;  // go backward, unwinding headers to new_height
 
   private:

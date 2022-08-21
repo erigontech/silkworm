@@ -24,7 +24,6 @@ BodyPersistence::BodyPersistence(db::RWTxn& tx, const ChainIdentity& ci)
     : tx_{tx},
       consensus_engine_{consensus::engine_factory(ci.config)},
       chain_state_{tx, /*prune_from=*/0, /*historical_block=null*/} {
-
     auto bodies_stage_height = db::stages::read_stage_progress(tx, db::stages::kBlockBodiesKey);
 
     initial_height_ = bodies_stage_height;
@@ -39,7 +38,7 @@ Hash BodyPersistence::bad_block() const { return bad_block_; }
 void BodyPersistence::set_preverified_height(BlockNum height) { preverified_height_ = height; }
 
 void BodyPersistence::persist(const Block& block) {
-    Hash block_hash = block.header.hash(); // save cpu
+    Hash block_hash = block.header.hash();  // save cpu
     BlockNum block_num = block.header.number;
 
     auto validation_result = ValidationResult::kOk;
@@ -69,7 +68,7 @@ void BodyPersistence::persist(const Block& block) {
 }
 
 void BodyPersistence::persist(const std::vector<Block>& blocks) {
-    for(auto& block: blocks) {
+    for (auto& block : blocks) {
         persist(block);
     }
 }
@@ -83,4 +82,4 @@ void BodyPersistence::remove_bodies(BlockNum new_height, std::optional<Hash>, db
     db::stages::write_stage_progress(tx, db::stages::kBlockBodiesKey, new_height);
 }
 
-} // namespace silkworm
+}  // namespace silkworm

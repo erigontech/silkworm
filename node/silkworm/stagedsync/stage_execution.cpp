@@ -388,8 +388,8 @@ std::vector<std::string> Execution::get_log_progress() {
     processed_gas_ = 0;
     progress_lock.unlock();
 
-    return {"block",  std::to_string(block_num_),         "blocks/s", std::to_string(speed_blocks),
-            "txns/s", std::to_string(speed_transactions), "Mgas/s",   std::to_string(speed_mgas)};
+    return {"block", std::to_string(block_num_), "blocks/s", std::to_string(speed_blocks),
+            "txns/s", std::to_string(speed_transactions), "Mgas/s", std::to_string(speed_mgas)};
 }
 
 void Execution::revert_state(ByteView key, ByteView value, mdbx::cursor& plain_state_table,

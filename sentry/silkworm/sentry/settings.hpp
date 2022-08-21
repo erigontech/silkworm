@@ -21,10 +21,12 @@
 #include <string>
 #include <variant>
 #include <vector>
+
 #include <silkworm/common/base.hpp>
 #include <silkworm/common/log.hpp>
 #include <silkworm/rpc/server/wait_strategy.hpp>
 #include <silkworm/sentry/common/enode_url.hpp>
+
 #include "nat_option.hpp"
 
 namespace silkworm::sentry {

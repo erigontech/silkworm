@@ -203,11 +203,11 @@ std::vector<std::string> RecoveryFarm::get_log_progress() {
             case 1:
                 return {"phase", std::to_string(current_phase_) + "/3", "blocks", std::to_string(headers_.size())};
             case 2:
-                return {"phase",        std::to_string(current_phase_) + "/3",  //
-                        "blocks",       std::to_string(headers_.size()),        //
-                        "current",      std::to_string(total_processed_blocks_),
+                return {"phase", std::to_string(current_phase_) + "/3",  //
+                        "blocks", std::to_string(headers_.size()),       //
+                        "current", std::to_string(total_processed_blocks_),
                         "transactions", std::to_string(total_collected_transactions_),
-                        "workers",      std::to_string(workers_in_flight_.load())};
+                        "workers", std::to_string(workers_in_flight_.load())};
             case 3:
                 return {"phase", std::to_string(current_phase_) + "/3", "key", collector_.get_load_key()};
             default:

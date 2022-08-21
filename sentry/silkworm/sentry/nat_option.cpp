@@ -15,6 +15,7 @@
 */
 
 #include "nat_option.hpp"
+
 #include <boost/algorithm/string/predicate.hpp>
 
 namespace silkworm::sentry {

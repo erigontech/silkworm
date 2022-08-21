@@ -37,16 +37,16 @@
 #include <silkworm/common/log.hpp>
 #include <silkworm/common/util.hpp>
 #include <silkworm/db/tables.hpp>
+#include <silkworm/rpc/client/call.hpp>
 #include <silkworm/rpc/conversion.hpp>
 #include <silkworm/rpc/util.hpp>
-#include <silkworm/rpc/client/call.hpp>
 
 using namespace std::literals;
 
 using silkworm::rpc::AsyncCall;
 using silkworm::rpc::AsyncResponseReaderPtr;
-using silkworm::rpc::AsyncUnaryCall;
 using silkworm::rpc::AsyncServerStreamingCall;
+using silkworm::rpc::AsyncUnaryCall;
 using silkworm::rpc::TagProcessor;
 
 struct BidirectionalStreamingStats {
@@ -255,9 +255,9 @@ class AsyncBidirectionalStreamingCall : public AsyncCall {
 };
 
 class AsyncEtherbaseCall : public AsyncUnaryCall<
-    remote::EtherbaseRequest, remote::EtherbaseReply,
-    remote::ETHBACKEND::StubInterface,
-    &remote::ETHBACKEND::StubInterface::PrepareAsyncEtherbase> {
+                               remote::EtherbaseRequest, remote::EtherbaseReply,
+                               remote::ETHBACKEND::StubInterface,
+                               &remote::ETHBACKEND::StubInterface::PrepareAsyncEtherbase> {
   public:
     explicit AsyncEtherbaseCall(grpc::CompletionQueue* queue, remote::ETHBACKEND::StubInterface* stub)
         : AsyncUnaryCall(queue, stub, [](auto* call) { delete call; }) {}
@@ -280,10 +280,10 @@ class AsyncEtherbaseCall : public AsyncUnaryCall<
 };
 
 class AsyncNetVersionCall : public AsyncUnaryCall<
-    remote::NetVersionRequest,
-    remote::NetVersionReply,
-    remote::ETHBACKEND::StubInterface,
-    &remote::ETHBACKEND::StubInterface::PrepareAsyncNetVersion> {
+                                remote::NetVersionRequest,
+                                remote::NetVersionReply,
+                                remote::ETHBACKEND::StubInterface,
+                                &remote::ETHBACKEND::StubInterface::PrepareAsyncNetVersion> {
   public:
     explicit AsyncNetVersionCall(grpc::CompletionQueue* queue, remote::ETHBACKEND::StubInterface* stub)
         : AsyncUnaryCall(queue, stub, [](auto* call) { delete call; }) {}
@@ -300,10 +300,10 @@ class AsyncNetVersionCall : public AsyncUnaryCall<
 };
 
 class AsyncNetPeerCountCall : public AsyncUnaryCall<
-    remote::NetPeerCountRequest,
-    remote::NetPeerCountReply,
-    remote::ETHBACKEND::StubInterface,
-    &remote::ETHBACKEND::StubInterface::PrepareAsyncNetPeerCount> {
+                                  remote::NetPeerCountRequest,
+                                  remote::NetPeerCountReply,
+                                  remote::ETHBACKEND::StubInterface,
+                                  &remote::ETHBACKEND::StubInterface::PrepareAsyncNetPeerCount> {
   public:
     explicit AsyncNetPeerCountCall(grpc::CompletionQueue* queue, remote::ETHBACKEND::StubInterface* stub)
         : AsyncUnaryCall(queue, stub, [](auto* call) { delete call; }) {}
@@ -320,10 +320,10 @@ class AsyncNetPeerCountCall : public AsyncUnaryCall<
 };
 
 class AsyncBackEndVersionCall : public AsyncUnaryCall<
-    google::protobuf::Empty,
-    types::VersionReply,
-    remote::ETHBACKEND::StubInterface,
-    &remote::ETHBACKEND::StubInterface::PrepareAsyncVersion> {
+                                    google::protobuf::Empty,
+                                    types::VersionReply,
+                                    remote::ETHBACKEND::StubInterface,
+                                    &remote::ETHBACKEND::StubInterface::PrepareAsyncVersion> {
   public:
     explicit AsyncBackEndVersionCall(grpc::CompletionQueue* queue, remote::ETHBACKEND::StubInterface* stub)
         : AsyncUnaryCall(queue, stub, [](auto* call) { delete call; }) {}
@@ -343,10 +343,10 @@ class AsyncBackEndVersionCall : public AsyncUnaryCall<
 };
 
 class AsyncProtocolVersionCall : public AsyncUnaryCall<
-    remote::ProtocolVersionRequest,
-    remote::ProtocolVersionReply,
-    remote::ETHBACKEND::StubInterface,
-    &remote::ETHBACKEND::StubInterface::PrepareAsyncProtocolVersion> {
+                                     remote::ProtocolVersionRequest,
+                                     remote::ProtocolVersionReply,
+                                     remote::ETHBACKEND::StubInterface,
+                                     &remote::ETHBACKEND::StubInterface::PrepareAsyncProtocolVersion> {
   public:
     explicit AsyncProtocolVersionCall(grpc::CompletionQueue* queue, remote::ETHBACKEND::StubInterface* stub)
         : AsyncUnaryCall(queue, stub, [](auto* call) { delete call; }) {}
@@ -363,10 +363,10 @@ class AsyncProtocolVersionCall : public AsyncUnaryCall<
 };
 
 class AsyncClientVersionCall : public AsyncUnaryCall<
-    remote::ClientVersionRequest,
-    remote::ClientVersionReply,
-    remote::ETHBACKEND::StubInterface,
-    &remote::ETHBACKEND::StubInterface::PrepareAsyncClientVersion> {
+                                   remote::ClientVersionRequest,
+                                   remote::ClientVersionReply,
+                                   remote::ETHBACKEND::StubInterface,
+                                   &remote::ETHBACKEND::StubInterface::PrepareAsyncClientVersion> {
   public:
     explicit AsyncClientVersionCall(grpc::CompletionQueue* queue, remote::ETHBACKEND::StubInterface* stub)
         : AsyncUnaryCall(queue, stub, [](auto* call) { delete call; }) {}
@@ -404,10 +404,10 @@ class AsyncSubscribeCall : public AsyncServerStreamingCall<remote::SubscribeRequ
 };
 
 class AsyncNodeInfoCall : public AsyncUnaryCall<
-    remote::NodesInfoRequest,
-    remote::NodesInfoReply,
-    remote::ETHBACKEND::StubInterface,
-    &remote::ETHBACKEND::StubInterface::PrepareAsyncNodeInfo> {
+                              remote::NodesInfoRequest,
+                              remote::NodesInfoReply,
+                              remote::ETHBACKEND::StubInterface,
+                              &remote::ETHBACKEND::StubInterface::PrepareAsyncNodeInfo> {
   public:
     explicit AsyncNodeInfoCall(grpc::CompletionQueue* queue, remote::ETHBACKEND::StubInterface* stub)
         : AsyncUnaryCall(queue, stub) {}
@@ -424,10 +424,10 @@ class AsyncNodeInfoCall : public AsyncUnaryCall<
 };
 
 class AsyncKvVersionCall : public AsyncUnaryCall<
-    google::protobuf::Empty,
-    types::VersionReply,
-    remote::KV::StubInterface,
-    &remote::KV::StubInterface::PrepareAsyncVersion> {
+                               google::protobuf::Empty,
+                               types::VersionReply,
+                               remote::KV::StubInterface,
+                               &remote::KV::StubInterface::PrepareAsyncVersion> {
   public:
     explicit AsyncKvVersionCall(grpc::CompletionQueue* queue, remote::KV::StubInterface* stub)
         : AsyncUnaryCall(queue, stub) {}
@@ -452,7 +452,7 @@ inline std::ostream& operator<<(std::ostream& out, const Pair& kv_pair) {
         << " v= " << silkworm::to_hex(silkworm::Bytes(kv_pair.v().begin(), kv_pair.v().end()));
     return out;
 }
-} // namespace remote
+}  // namespace remote
 
 class AsyncTxCall
     : public AsyncBidirectionalStreamingCall<remote::Cursor, remote::Pair, remote::KV::StubInterface,
@@ -609,7 +609,7 @@ class AsyncCallFactory {
           kv_stub_{remote::KV::NewStub(channel, grpc::StubOptions{})} {}
 
     void start_batch(std::atomic_bool& stop, const BatchOptions& batch_options) {
-        for (auto i{0}; i<batch_options.batch_size && !stop; i++) {
+        for (auto i{0}; i < batch_options.batch_size && !stop; i++) {
             if (batch_options.is_configured(Rpc::etherbase)) {
                 auto* etherbase = new AsyncEtherbaseCall(queue_, ethbackend_stub_.get());
                 etherbase->start(remote::EtherbaseRequest{});

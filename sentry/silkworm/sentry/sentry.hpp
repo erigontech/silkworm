@@ -17,6 +17,7 @@
 #pragma once
 
 #include <memory>
+
 #include "settings.hpp"
 
 namespace silkworm::sentry {

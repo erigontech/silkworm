@@ -41,4 +41,4 @@ void ServerConfig::set_wait_mode(WaitMode wait_mode) noexcept {
     wait_mode_ = wait_mode;
 }
 
-} // namespace silkworm::rpc
+}  // namespace silkworm::rpc

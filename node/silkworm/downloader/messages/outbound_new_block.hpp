@@ -38,7 +38,7 @@ class OutboundNewBlock : public OutboundMessage {
     static constexpr uint64_t kMaxPeers = 1024;
 
     long sent_packets_{0};
-    //NewBlockPacket packet_;
+    // NewBlockPacket packet_;
 };
 
 }  // namespace silkworm

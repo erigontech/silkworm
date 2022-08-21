@@ -15,10 +15,11 @@
 */
 
 #include "ecies_cipher.hpp"
+
 #include <cassert>
 #include <memory>
-#include <gsl/util>
 
+#include <gsl/util>
 #include <openssl/aes.h>
 #include <openssl/evp.h>
 #include <openssl/hmac.h>
@@ -93,10 +94,7 @@ size_t EciesCipher::round_up_to_block_size(size_t size) {
 }
 
 size_t EciesCipher::estimate_encrypted_size(size_t size) {
-    return size
-        + SecP256K1Context::kPublicKeySizeUncompressed
-        + AES_BLOCK_SIZE
-        + kMacSize;
+    return size + SecP256K1Context::kPublicKeySizeUncompressed + AES_BLOCK_SIZE + kMacSize;
 }
 
 // NIST SP 800-56 Concatenation Key Derivation Function (see section 5.8.1).
@@ -189,10 +187,7 @@ Bytes EciesCipher::serialize_message(const Message& message) {
     Bytes key_data = ctx.serialize_public_key(&public_key, /* is_compressed = */ false);
 
     Bytes data;
-    data.reserve(key_data.size()
-            + message.iv.size()
-            + message.cipher_text.size()
-            + message.mac.size());
+    data.reserve(key_data.size() + message.iv.size() + message.cipher_text.size() + message.mac.size());
     data.append(key_data);
     data.append(message.iv);
     data.append(message.cipher_text);
@@ -233,6 +228,5 @@ Bytes EciesCipher::encrypt(ByteView plain_text, PublicKeyView public_key, ByteVi
 Bytes EciesCipher::decrypt(ByteView message_data, PrivateKeyView private_key, ByteView mac_extra_data) {
     return decrypt_message(deserialize_message(message_data), private_key, mac_extra_data);
 }
-
 
 }  // namespace silkworm::sentry::rlpx::auth

@@ -47,7 +47,7 @@ void EthashEngine::finalize(IntraBlockState& state, const Block& block, const ev
 ValidationResult EthashEngine::validate_seal(const BlockHeader& header) {
     const int epoch_number{static_cast<int>(header.number / ethash::epoch_length)};
     if (!epoch_context_ || epoch_context_->epoch_number != epoch_number) {
-        epoch_context_.reset(); // Firstly release the obsoleted context
+        epoch_context_.reset();  // Firstly release the obsoleted context
         epoch_context_ = ethash::create_epoch_context(epoch_number);
     }
 

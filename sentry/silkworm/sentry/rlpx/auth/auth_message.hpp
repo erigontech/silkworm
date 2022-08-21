@@ -17,8 +17,8 @@
 #pragma once
 
 #include <silkworm/common/base.hpp>
-#include <silkworm/sentry/common/ecc_public_key.hpp>
 #include <silkworm/sentry/common/ecc_key_pair.hpp>
+#include <silkworm/sentry/common/ecc_public_key.hpp>
 
 namespace silkworm::sentry::rlpx::auth {
 

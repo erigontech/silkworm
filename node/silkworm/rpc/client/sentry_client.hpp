@@ -23,10 +23,10 @@
 
 #include <grpcpp/grpcpp.h>
 #include <gsl/pointers>
+#include <p2psentry/sentry.grpc.pb.h>
 
 #include <silkworm/common/assert.hpp>
 #include <silkworm/rpc/client/call.hpp>
-#include <p2psentry/sentry.grpc.pb.h>
 
 namespace silkworm::rpc {
 
@@ -88,4 +88,4 @@ class RemoteSentryClientFactory : public SentryClientFactory {
     grpc::CompletionQueue* queue_;
 };
 
-} // namespace silkworm::rpc
+}  // namespace silkworm::rpc

@@ -81,7 +81,7 @@ void InboundNewBlockHashes::execute(db::ROAccess, HeaderChain& hc, BodySequence&
 
         [[maybe_unused]] sentry::SentPeers peers = rpc.reply();
         SILK_TRACE << "Received rpc result of " << identify(*this) << ": "
-                     << std::to_string(peers.peers_size()) + " peer(s)";
+                   << std::to_string(peers.peers_size()) + " peer(s)";
 
         // calculate top seen block height
         max = std::max(max, packet_[i].number);

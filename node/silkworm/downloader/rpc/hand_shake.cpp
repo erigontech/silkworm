@@ -22,5 +22,3 @@ HandShake::HandShake() : UnaryCall("HandShake", &sentry::Sentry::Stub::HandShake
 }
 
 }  // namespace silkworm::rpc
-
-

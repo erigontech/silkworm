@@ -164,13 +164,16 @@ int main(int argc, char* argv[]) {
         log::Error() << ex.what();
         return -1;
     } catch (const std::invalid_argument& ex) {
-        std::cerr << "\tInvalid argument :" << ex.what() << "\n" << std::endl;
+        std::cerr << "\tInvalid argument :" << ex.what() << "\n"
+                  << std::endl;
         return -3;
     } catch (const std::exception& ex) {
-        std::cerr << "\tUnexpected error : " << ex.what() << "\n" << std::endl;
+        std::cerr << "\tUnexpected error : " << ex.what() << "\n"
+                  << std::endl;
         return -4;
     } catch (...) {
-        std::cerr << "\tUnexpected undefined error\n" << std::endl;
+        std::cerr << "\tUnexpected undefined error\n"
+                  << std::endl;
         return -99;
     }
 }

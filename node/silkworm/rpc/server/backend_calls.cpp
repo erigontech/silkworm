@@ -17,12 +17,12 @@
 #include "backend_calls.hpp"
 
 #include <evmc/evmc.hpp>
+#include <types/types.pb.h>
 
 #include <silkworm/common/endian.hpp>
 #include <silkworm/common/log.hpp>
 #include <silkworm/rpc/conversion.hpp>
 #include <silkworm/rpc/util.hpp>
-#include <types/types.pb.h>
 
 namespace silkworm::rpc {
 
@@ -64,7 +64,7 @@ void NetVersionCall::fill_predefined_reply(const EthereumBackEnd& backend) {
     if (backend.chain_id()) {
         NetVersionCall::response_.set_id(*backend.chain_id());
     } else {
-        NetVersionCall::response_.set_id(0); // unused chain ID
+        NetVersionCall::response_.set_id(0);  // unused chain ID
     }
 }
 
@@ -117,7 +117,7 @@ void NetPeerCountCall::process(const remote::NetPeerCountRequest* request) {
         sentry->peer_count([&](const grpc::Status status, const sentry::PeerCountReply& reply) {
             --expected_responses_;
 
-            SILK_DEBUG << "Peer count replies: [" << (sentries_.size()-expected_responses_) << "/" << sentries_.size() << "]";
+            SILK_DEBUG << "Peer count replies: [" << (sentries_.size() - expected_responses_) << "/" << sentries_.size() << "]";
 
             if (status.ok()) {
                 uint64_t count = reply.count();
@@ -327,4 +327,4 @@ BackEndService::~BackEndService() {
     }
 }
 
-} // namespace silkworm::rpc
+}  // namespace silkworm::rpc

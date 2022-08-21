@@ -41,4 +41,4 @@ class OutboundGetBlockBodies : public OutboundMessage {
     size_t requested_bodies_{0};
 };
 
-}
+}  // namespace silkworm

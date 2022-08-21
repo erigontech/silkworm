@@ -24,4 +24,4 @@ SendMessageToRandomPeers::SendMessageToRandomPeers(uint64_t max_peers, std::uniq
     request_.set_allocated_data(message.release());  // take ownership
 }
 
-}
+}  // namespace silkworm::rpc

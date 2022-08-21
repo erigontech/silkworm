@@ -51,7 +51,6 @@ StageResult HashState::forward(db::RWTxn& txn) {
         reset_log_progress();
 
         if (!previous_progress || segment_width > 100'000) {
-
             // Clear any previous contents
             txn->clear_map(db::table::kHashedAccounts.name);
             txn->clear_map(db::table::kHashedStorage.name);

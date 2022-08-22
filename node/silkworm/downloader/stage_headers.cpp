@@ -21,7 +21,6 @@
 #include <silkworm/common/log.hpp>
 #include <silkworm/common/measure.hpp>
 #include <silkworm/common/stopwatch.hpp>
-
 #include <silkworm/downloader/messages/inbound_message.hpp>
 #include <silkworm/downloader/messages/outbound_get_block_headers.hpp>
 #include <silkworm/downloader/messages/outbound_new_block_hashes.hpp>
@@ -43,7 +42,8 @@ auto HeadersStage::forward(db::RWTxn& tx) -> Stage::Result {
     bool new_height_reached = false;
     std::thread message_receiving;
 
-    StopWatch timing; timing.start();
+    StopWatch timing;
+    timing.start();
     log::Info() << "[1/16 Headers] Start";
     log::Trace() << "[INFO] HeaderDownloader forward operation started";
 
@@ -53,7 +53,7 @@ auto HeadersStage::forward(db::RWTxn& tx) -> Stage::Result {
         if (header_persistence.unwind_needed()) {
             tx.commit();
             log::Info() << "[1/16 Headers] End (forward skipped due to unwind_needed detection, canonical chain updated), "
-                << "duration=" << timing.format(timing.lap_duration());
+                        << "duration=" << timing.format(timing.lap_duration());
             return Stage::Result::Done;
         }
 
@@ -70,7 +70,6 @@ auto HeadersStage::forward(db::RWTxn& tx) -> Stage::Result {
         // header processing
         time_point_t last_update = system_clock::now();
         while (!new_height_reached && !block_downloader_.is_stopping()) {
-
             // make some outbound header requests
             send_header_requests();
 
@@ -78,22 +77,22 @@ auto HeadersStage::forward(db::RWTxn& tx) -> Stage::Result {
             if (withdraw_command->completed_and_read()) {
                 // submit another withdrawal command
                 withdraw_command = withdraw_stable_headers();
-            }
-            else if (withdraw_command->result().wait_for(500ms) == std::future_status::ready) {
+            } else if (withdraw_command->result().wait_for(500ms) == std::future_status::ready) {
                 // check the result of withdrawal command
                 auto [stable_headers, in_sync] = withdraw_command->result().get();  // blocking
                 if (!stable_headers.empty()) {
                     if (stable_headers.size() > 100000) {
                         log::Info() << "[1/16 Headers] Inserting headers...";
                     }
-                    StopWatch insertion_timing; insertion_timing.start();
+                    StopWatch insertion_timing;
+                    insertion_timing.start();
 
                     // persist headers
                     header_persistence.persist(stable_headers);
 
                     if (stable_headers.size() > 100000) {
                         log::Info() << "[1/16 Headers] Inserted headers tot=" << stable_headers.size()
-                            << " (duration=" << StopWatch::format(insertion_timing.lap_duration()) << "s)";
+                                    << " (duration=" << StopWatch::format(insertion_timing.lap_duration()) << "s)";
                     }
                 }
 
@@ -104,7 +103,7 @@ auto HeadersStage::forward(db::RWTxn& tx) -> Stage::Result {
                 if (shared_status_.first_sync) {  // if this is the first sync (first run or run after a long break)...
                     // ... we want to make sure we insert as many headers as possible
                     new_height_reached = in_sync && header_persistence.best_header_changed();
-                } else { // otherwise, we are working at the tip of the chain so ...
+                } else {  // otherwise, we are working at the tip of the chain so ...
                     // ... we need to react quickly when new headers are coming in
                     new_height_reached = header_persistence.best_header_changed();
                 }
@@ -132,8 +131,8 @@ auto HeadersStage::forward(db::RWTxn& tx) -> Stage::Result {
 
         auto headers_downloaded = header_persistence.highest_height() - header_persistence.initial_height();
         log::Info() << "[1/16 Headers] Downloading completed, wrote " << headers_downloaded << " headers,"
-            << " last=" << header_persistence.highest_height()
-            << " duration=" << StopWatch::format(timing.lap_duration());
+                    << " last=" << header_persistence.highest_height()
+                    << " duration=" << StopWatch::format(timing.lap_duration());
 
         log::Info() << "[1/16 Headers] Updating canonical chain";
         header_persistence.close();
@@ -157,7 +156,8 @@ auto HeadersStage::forward(db::RWTxn& tx) -> Stage::Result {
 auto HeadersStage::unwind(db::RWTxn& tx, BlockNum new_height) -> Stage::Result {
     Stage::Result result;
 
-    StopWatch timing; timing.start();
+    StopWatch timing;
+    timing.start();
     log::Info() << "[1/16 Headers] Unwind start";
 
     try {

@@ -14,7 +14,6 @@
     limitations under the License.
 */
 
-
 #include "random.hpp"
 
 #include <random>

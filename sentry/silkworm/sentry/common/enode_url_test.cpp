@@ -37,4 +37,4 @@ TEST_CASE("EnodeUrl") {
     CHECK_THROWS(EnodeUrl("enode://24bfa2cdce7c6a41184fa0809ad8d76969b7280952e9aa46179d90cfbab90f7d2b004928f0364389a1aa8d5166281f2ff7568493c1f719e8f6148ef8cf8af42d@1.2.3.4"));
 }
 
-}
+}  // namespace silkworm::sentry::common

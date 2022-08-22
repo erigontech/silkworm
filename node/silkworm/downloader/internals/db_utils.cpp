@@ -40,7 +40,7 @@ void read_headers_in_reverse_order(mdbx::txn& txn, size_t limit, std::function<v
         // move backward
         data = header_table.to_previous(throw_notfound);
     }
-} // note: maybe we can simplify/replace the implementation with db::cursor_for_count plus lambda
+}  // note: maybe we can simplify/replace the implementation with db::cursor_for_count plus lambda
 
 // Return (block-num, hash) of the header with the biggest total difficulty skipping bad headers
 // see Erigon's HeadersUnwind method for the implementation

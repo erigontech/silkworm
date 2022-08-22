@@ -18,8 +18,9 @@
 
 #include <algorithm>
 
-#include "protocol_param.hpp"
 #include <silkworm/common/as_range.hpp>
+
+#include "protocol_param.hpp"
 
 namespace silkworm {
 

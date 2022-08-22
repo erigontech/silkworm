@@ -16,8 +16,8 @@
 
 #include "client.hpp"
 
-#include <boost/asio/this_coro.hpp>
 #include <boost/asio/ip/tcp.hpp>
+#include <boost/asio/this_coro.hpp>
 #include <boost/asio/use_awaitable.hpp>
 
 #include <silkworm/common/log.hpp>

@@ -155,7 +155,7 @@ class BaseRpc {
 /// a different response writer to call the gRPC library.
 /// \warning Note that in gRPC async model an application must explicitly ask the gRPC server to start handling an
 /// incoming RPC on a particular service: that's why createRpc exists.
-template <typename AsyncService, typename Request, typename Response, template<typename, typename, typename> typename Rpc>
+template <typename AsyncService, typename Request, typename Response, template <typename, typename, typename> typename Rpc>
 struct RpcHandlers {
     using CreateRpcFunc = std::function<void(boost::asio::io_context&, AsyncService*, grpc::ServerCompletionQueue*)>;
     using CleanupRpcFunc = std::function<void(Rpc<AsyncService, Request, Response>&, bool)>;
@@ -169,7 +169,7 @@ struct RpcHandlers {
 };
 
 //! Represents the RPC handlers for unary RPCs.
-template <typename AsyncService, typename Request, typename Response, template<typename, typename, typename> typename Rpc>
+template <typename AsyncService, typename Request, typename Response, template <typename, typename, typename> typename Rpc>
 struct UnaryRpcHandlers : public RpcHandlers<AsyncService, Request, Response, Rpc> {
     using Responder = grpc::ServerAsyncResponseWriter<Response>;
     using RequestRpcFunc = std::function<void(AsyncService*, grpc::ServerContext*, Request*, Responder*, grpc::CompletionQueue*, grpc::ServerCompletionQueue*, void*)>;
@@ -185,7 +185,7 @@ class UnaryRpc : public BaseRpc {
     using Handlers = UnaryRpcHandlers<AsyncService, Request, Response, UnaryRpc>;
 
     UnaryRpc(boost::asio::io_context& scheduler, AsyncService* service, grpc::ServerCompletionQueue* queue, Handlers handlers)
-    : BaseRpc(scheduler), service_(service), queue_(queue), responder_(&context_), handlers_(handlers) {
+        : BaseRpc(scheduler), service_(service), queue_(queue), responder_(&context_), handlers_(handlers) {
         SILK_TRACE << "UnaryRpc::UnaryRpc START [" << this << "]";
 
         // Create READ/FINISH/DONE tag processors used to interact with gRPC completion queue.
@@ -226,7 +226,7 @@ class UnaryRpc : public BaseRpc {
     void process_read(bool ok) {
         SILK_TRACE << "UnaryRpc::process_read START [" << this << "] ok: " << ok;
         if (!ok) {
-            handle_completed(OperationType::kRead); // TODO(canepat): test if correct
+            handle_completed(OperationType::kRead);  // TODO(canepat): test if correct
             return;
         }
 
@@ -279,7 +279,7 @@ class UnaryRpc : public BaseRpc {
 };
 
 //! Represents the RPC handlers for server-streaming RPCs.
-template <typename AsyncService, typename Request, typename Response, template<typename, typename, typename> typename Rpc>
+template <typename AsyncService, typename Request, typename Response, template <typename, typename, typename> typename Rpc>
 struct ServerStreamingRpcHandlers : public RpcHandlers<AsyncService, Request, Response, Rpc> {
     using Responder = grpc::ServerAsyncWriter<Response>;
     using RequestRpcFunc = std::function<void(AsyncService*, grpc::ServerContext*, Request*, Responder*, grpc::CompletionQueue*, grpc::ServerCompletionQueue*, void*)>;
@@ -295,7 +295,7 @@ class ServerStreamingRpc : public BaseRpc {
     using Handlers = ServerStreamingRpcHandlers<AsyncService, Request, Response, ServerStreamingRpc>;
 
     ServerStreamingRpc(boost::asio::io_context& scheduler, AsyncService* service, grpc::ServerCompletionQueue* queue, Handlers handlers)
-    : BaseRpc(scheduler), service_(service), queue_(queue), responder_(&context_), handlers_(handlers) {
+        : BaseRpc(scheduler), service_(service), queue_(queue), responder_(&context_), handlers_(handlers) {
         SILK_TRACE << "ServerStreamingRpc::ServerStreamingRpc START [" << this << "]";
 
         // Create READ/WRITE/FINISH/DONE tag processors used to interact with gRPC completion queue.
@@ -374,7 +374,7 @@ class ServerStreamingRpc : public BaseRpc {
     void process_read(bool ok) {
         SILK_TRACE << "ServerStreamingRpc::process_read START [" << this << "] ok: " << ok;
         if (!ok) {
-            handle_completed(OperationType::kRead); // TODO(canepat): test if correct
+            handle_completed(OperationType::kRead);  // TODO(canepat): test if correct
             return;
         }
 
@@ -437,7 +437,7 @@ class ServerStreamingRpc : public BaseRpc {
     void finish_with_error(const grpc::Status& error) {
         handle_started(OperationType::kFinish);
         responder_.Finish(error, &finish_processor_);
-        SILK_DEBUG << "ServerStreamingRpc::finish_with_error finished error_code=" <<  error.error_code() << " [" << this << "]";
+        SILK_DEBUG << "ServerStreamingRpc::finish_with_error finished error_code=" << error.error_code() << " [" << this << "]";
     }
 
     void cleanup() override {
@@ -486,7 +486,7 @@ class ServerStreamingRpc : public BaseRpc {
 };
 
 //! Represents the RPC handlers for bidirectional-streaming RPCs.
-template <typename AsyncService, typename Request, typename Response, template<typename, typename, typename> typename Rpc>
+template <typename AsyncService, typename Request, typename Response, template <typename, typename, typename> typename Rpc>
 struct BidirectionalStreamingRpcHandlers : public RpcHandlers<AsyncService, Request, Response, Rpc> {
     using Responder = grpc::ServerAsyncReaderWriter<Response, Request>;
     using RequestRpcFunc = std::function<void(AsyncService*, grpc::ServerContext*, Responder*, grpc::CompletionQueue*, grpc::ServerCompletionQueue*, void*)>;
@@ -496,7 +496,7 @@ struct BidirectionalStreamingRpcHandlers : public RpcHandlers<AsyncService, Requ
 };
 
 //! This represents any bidirectional-streaming RPC (i.e. many-client-requests, many-server-responses).
-template<typename AsyncService, typename Request, typename Response>
+template <typename AsyncService, typename Request, typename Response>
 class BidirectionalStreamingRpc : public BaseRpc {
   public:
     static void set_max_idle_duration(const boost::posix_time::milliseconds& max_idle_duration) {
@@ -506,7 +506,7 @@ class BidirectionalStreamingRpc : public BaseRpc {
     using Handlers = BidirectionalStreamingRpcHandlers<AsyncService, Request, Response, BidirectionalStreamingRpc>;
 
     BidirectionalStreamingRpc(boost::asio::io_context& scheduler, AsyncService* service, grpc::ServerCompletionQueue* queue, Handlers handlers)
-    : BaseRpc(scheduler), service_(service), queue_(queue), responder_(&context_), handlers_(handlers), idle_timer_{scheduler} {
+        : BaseRpc(scheduler), service_(service), queue_(queue), responder_(&context_), handlers_(handlers), idle_timer_{scheduler} {
         SILK_TRACE << "BidirectionalStreamingRpc::BidirectionalStreamingRpc START [" << this << "]";
 
         // Create REQUEST/READ/WRITE/FINISH/DONE tag processors used to interact with gRPC completion queue.
@@ -721,7 +721,7 @@ class BidirectionalStreamingRpc : public BaseRpc {
     void finish_with_error(const grpc::Status& error) {
         handle_started(OperationType::kFinish);
         responder_.Finish(error, &finish_processor_);
-        SILK_DEBUG << "BidirectionalStreamingRpc::finish_with_error finished error_code=" <<  error.error_code() << " [" << this << "]";
+        SILK_DEBUG << "BidirectionalStreamingRpc::finish_with_error finished error_code=" << error.error_code() << " [" << this << "]";
     }
 
     void cleanup() override {
@@ -788,4 +788,4 @@ class BidirectionalStreamingRpc : public BaseRpc {
     bool client_streaming_done_{false};
 };
 
-} // namespace silkworm::rpc
+}  // namespace silkworm::rpc

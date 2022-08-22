@@ -75,11 +75,10 @@ TEST_CASE("DiscardStaleElement") {
     cache_lru.put(1, 111);
     cache_lru.put(2, 222);
     cache_lru.put(3, 333);
-    cache_lru.get(1); // refresh item 1
+    cache_lru.get(1);       // refresh item 1
     cache_lru.put(4, 444);  // will cause item 2 removal
 
     REQUIRE(cache_lru.get(2) == nullptr);
-
 }
 
 TEST_CASE("GetWithCopy") {
@@ -106,7 +105,7 @@ TEST_CASE("RemoveElement") {
 
     cache_lru.put(4, 444);
 
-    REQUIRE(cache_lru.get(1) != nullptr);   // element 1 is still here because removal freed 1 slot
+    REQUIRE(cache_lru.get(1) != nullptr);  // element 1 is still here because removal freed 1 slot
     REQUIRE(cache_lru.get(3) != nullptr);
     REQUIRE(cache_lru.get(4) != nullptr);
 }

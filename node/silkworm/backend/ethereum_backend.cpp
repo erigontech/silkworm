@@ -52,4 +52,4 @@ void EthereumBackEnd::close() {
     state_change_collection_->close();
 }
 
-} // namespace silkworm
+}  // namespace silkworm

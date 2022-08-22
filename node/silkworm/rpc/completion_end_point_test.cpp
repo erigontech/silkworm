@@ -158,6 +158,6 @@ TEST_CASE("CompletionEndPoint::post_one", "[silkworm][rpc][completion_end_point]
         CHECK_NOTHROW(completion_end_point.shutdown());
     }
 }
-#endif // SILKWORM_SANITIZE
+#endif  // SILKWORM_SANITIZE
 
-} // namespace silkworm::rpc
+}  // namespace silkworm::rpc

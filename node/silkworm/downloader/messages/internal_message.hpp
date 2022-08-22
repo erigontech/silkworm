@@ -18,8 +18,8 @@ limitations under the License.
 
 #include <future>
 
-#include <silkworm/downloader/internals/header_persistence.hpp>
 #include <silkworm/downloader/internals/header_chain.hpp>
+#include <silkworm/downloader/internals/header_persistence.hpp>
 
 #include "message.hpp"
 
@@ -38,7 +38,7 @@ class InternalMessage : public Message {
 
     std::future<R>& result() { return result_out_; }
 
-    bool completed_and_read() { return !result_out_.valid(); }   // result arrived and was read
+    bool completed_and_read() { return !result_out_.valid(); }  // result arrived and was read
 
   private:
     ExecutionFunc execution_impl_;

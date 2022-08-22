@@ -16,11 +16,14 @@
 
 #pragma once
 
-#include <utility>
-#include <gsl/pointers>
 #include <secp256k1.h>
-#include <silkpre/ecdsa.h>
+
+#include <utility>
+
+#include <gsl/pointers>
 #include <secp256k1_recovery.h>
+#include <silkpre/ecdsa.h>
+
 #include <silkworm/common/base.hpp>
 
 namespace silkworm {
@@ -77,7 +80,7 @@ class SecP256K1Context final {
         return {data, static_cast<uint8_t>(recovery_id)};
     }
 
-    bool parse_recoverable_signature(secp256k1_ecdsa_recoverable_signature *signature, const ByteView& signature_data, uint8_t recovery_id) {
+    bool parse_recoverable_signature(secp256k1_ecdsa_recoverable_signature* signature, const ByteView& signature_data, uint8_t recovery_id) {
         if (signature_data.size() != 64)
             return false;
         return secp256k1_ecdsa_recoverable_signature_parse_compact(context_, signature, signature_data.data(), static_cast<int>(recovery_id));

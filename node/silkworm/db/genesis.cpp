@@ -180,7 +180,7 @@ bool initialize_genesis(mdbx::txn& txn, const nlohmann::json& genesis_json, bool
 
         auto block_hash{header.hash()};
         auto block_hash_key{db::block_key(header.number, block_hash.bytes)};
-        db::write_header(txn, header, /*with_header_numbers=*/true);  // Write table::kHeaders and table::kHeaderNumbers
+        db::write_header(txn, header, /*with_header_numbers=*/true);            // Write table::kHeaders and table::kHeaderNumbers
         db::write_canonical_header_hash(txn, block_hash.bytes, header.number);  // Insert header hash as canonical
         db::write_total_difficulty(txn, block_hash_key, header.difficulty);     // Write initial difficulty
 

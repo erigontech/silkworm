@@ -47,7 +47,7 @@ void InboundNewBlock::execute(db::ROAccess, HeaderChain&, BodySequence& bs, Sent
     // use packet_.td ?
     hc.accept_header(packet_.block.header); // process as single header segment
     */
-    bs.accept_new_block(packet_.block, peerId_); // add to prefetched bodies
+    bs.accept_new_block(packet_.block, peerId_);  // add to prefetched bodies
 }
 
 uint64_t InboundNewBlock::reqId() const { return reqId_; }

@@ -20,10 +20,10 @@
 #include <string>
 
 #include <evmc/evmc.hpp>
+#include <types/types.pb.h>
 
 #include <silkworm/common/base.hpp>
 #include <silkworm/common/endian.hpp>
-#include <types/types.pb.h>
 
 // operator== overloading is *NOT* present in gRPC generated sources
 namespace types {
@@ -33,7 +33,7 @@ bool operator==(const H256& lhs, const H256& rhs);
 bool operator==(const H160& lhs, const H160& rhs);
 bool operator==(const H128& lhs, const H128& rhs);
 
-} // namespace types
+}  // namespace types
 
 namespace silkworm::rpc {
 
@@ -55,4 +55,4 @@ std::unique_ptr<types::H256> H256_from_bytes32(const evmc::bytes32& orig);
 //! Convert evmc::address to internal RPC H160 type instance.
 std::unique_ptr<types::H160> H160_from_address(const evmc::address& orig);
 
-} // namespace silkworm::rpc
+}  // namespace silkworm::rpc

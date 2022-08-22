@@ -15,9 +15,12 @@
 */
 
 #include "peer.hpp"
+
 #include <boost/asio/error.hpp>
 #include <boost/system/system_error.hpp>
+
 #include <silkworm/common/log.hpp>
+
 #include "auth/handshake.hpp"
 
 namespace silkworm::sentry::rlpx {
@@ -29,7 +32,7 @@ boost::asio::awaitable<void> Peer::handle() {
         auth::Handshake handshake{node_key_, peer_public_key_};
         co_await handshake.execute(stream_);
 
-    } catch (const boost::system::system_error &ex) {
+    } catch (const boost::system::system_error& ex) {
         if (ex.code() == boost::asio::error::eof) {
             // TODO: handle disconnect
             log::Debug() << "Peer::handle EOF";

@@ -15,10 +15,13 @@
 */
 
 #include "node_key_config.hpp"
+
 #include <fstream>
 #include <string>
+
 #include <catch2/catch.hpp>
 #include <gsl/util>
+
 #include <silkworm/common/directories.hpp>
 
 namespace silkworm::sentry {

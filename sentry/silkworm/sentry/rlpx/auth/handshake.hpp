@@ -17,11 +17,15 @@
 #pragma once
 
 #include <optional>
+
 #include <silkworm/concurrency/coroutine.hpp>
+
 #include <boost/asio/awaitable.hpp>
-#include <silkworm/sentry/common/socket_stream.hpp>
+
 #include <silkworm/sentry/common/ecc_key_pair.hpp>
 #include <silkworm/sentry/common/ecc_public_key.hpp>
+#include <silkworm/sentry/common/socket_stream.hpp>
+
 #include "auth_session.hpp"
 
 namespace silkworm::sentry::rlpx::auth {

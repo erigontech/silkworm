@@ -15,7 +15,9 @@
 */
 
 #include "ecies_cipher.hpp"
+
 #include <catch2/catch.hpp>
+
 #include <silkworm/common/endian.hpp>
 #include <silkworm/common/util.hpp>
 #include <silkworm/sentry/common/ecc_key_pair.hpp>
@@ -60,4 +62,4 @@ TEST_CASE("EciesCipher.decrypt") {
     CHECK_FALSE(plain_text.empty());
 }
 
-}  // silkworm::sentry::rlpx::auth
+}  // namespace silkworm::sentry::rlpx::auth

@@ -25,8 +25,10 @@
 namespace silkworm {
 
 static const std::vector<std::pair<std::string, const ChainConfig*>> kKnownChainConfigs{
-    {kMainnetIdentity.name, &kMainnetConfig}, {kRopstenIdentity.name, &kRopstenConfig},
-    {kRinkebyIdentity.name, &kRinkebyConfig}, {kGoerliIdentity.name, &kGoerliConfig},
+    {kMainnetIdentity.name, &kMainnetConfig},
+    {kRopstenIdentity.name, &kRopstenConfig},
+    {kRinkebyIdentity.name, &kRinkebyConfig},
+    {kGoerliIdentity.name, &kGoerliConfig},
     {kSepoliaIdentity.name, &kSepoliaConfig},
 };
 

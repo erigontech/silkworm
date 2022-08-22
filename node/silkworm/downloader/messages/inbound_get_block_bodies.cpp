@@ -74,7 +74,7 @@ void InboundGetBlockBodies::execute(db::ROAccess db, HeaderChain&, BodySequence&
     msg_reply->set_data(rlp_encoding.data(), rlp_encoding.length());  // copy
 
     SILK_TRACE << "Replying to " << identify(*this) << " using send_message_by_id with "
-                 << reply.request.size() << " bodies";
+               << reply.request.size() << " bodies";
 
     rpc::SendMessageById rpc(peerId_, std::move(msg_reply));
     rpc.do_not_throw_on_failure();
@@ -83,13 +83,11 @@ void InboundGetBlockBodies::execute(db::ROAccess db, HeaderChain&, BodySequence&
     if (rpc.status().ok()) {
         sentry::SentPeers peers = rpc.reply();
         SILK_TRACE << "Received rpc result of " << identify(*this) << ": "
-                     << std::to_string(peers.peers_size()) + " peer(s)";
-    }
-    else {
+                   << std::to_string(peers.peers_size()) + " peer(s)";
+    } else {
         SILK_TRACE << "Failure of rpc " << identify(*this) << ": "
-                     << rpc.status().error_message();
+                   << rpc.status().error_message();
     }
-
 }
 
 uint64_t InboundGetBlockBodies::reqId() const { return packet_.requestId; }

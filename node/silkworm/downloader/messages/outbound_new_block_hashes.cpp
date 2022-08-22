@@ -48,7 +48,7 @@ void OutboundNewBlockHashes::execute(db::ROAccess, HeaderChain& hc, BodySequence
     request->set_data(rlp_encoding.data(), rlp_encoding.length());  // copy
 
     SILK_TRACE << "Sending message OutboundNewBlockHashes (announcements) with send_message_to_all, content:"
-                 << packet_;
+               << packet_;
 
     rpc::SendMessageToAll rpc{std::move(request)};
 
@@ -65,7 +65,7 @@ void OutboundNewBlockHashes::execute(db::ROAccess, HeaderChain& hc, BodySequence
 
     sentry::SentPeers peers = rpc.reply();
     SILK_TRACE << "Received rpc result of OutboundNewBlockHashes: "
-                 << std::to_string(peers.peers_size()) + " peer(s)";
+               << std::to_string(peers.peers_size()) + " peer(s)";
 
     announces_to_do.clear();  // clear announces from the queue
 }

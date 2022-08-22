@@ -17,7 +17,9 @@
 #pragma once
 
 #include <string>
+
 #include <boost/asio/ip/address.hpp>
+
 #include "ecc_public_key.hpp"
 
 namespace silkworm::sentry::common {

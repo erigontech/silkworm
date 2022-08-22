@@ -17,9 +17,9 @@
 #include "server.hpp"
 
 #include <future>
+#include <list>
 #include <memory>
 #include <utility>
-#include <list>
 
 #include <boost/asio/co_spawn.hpp>
 #include <boost/asio/ip/tcp.hpp>
@@ -30,6 +30,7 @@
 #include <silkworm/common/log.hpp>
 #include <silkworm/sentry/common/enode_url.hpp>
 #include <silkworm/sentry/common/socket_stream.hpp>
+
 #include "peer.hpp"
 
 namespace silkworm::sentry::rlpx {
@@ -39,8 +40,8 @@ using namespace boost::asio;
 Server::Server(std::string host, uint16_t port) : host_(std::move(host)), port_(port) {}
 
 awaitable<void> Server::start(
-        silkworm::rpc::ServerContextPool& context_pool,
-        common::EccKeyPair node_key) {
+    silkworm::rpc::ServerContextPool& context_pool,
+    common::EccKeyPair node_key) {
     auto executor = co_await this_coro::executor;
 
     ip::tcp::resolver resolver{executor};
@@ -75,9 +76,9 @@ awaitable<void> Server::start(
         log::Debug() << "RLPx server client connected from " << remote_endpoint.address().to_string() << ":" << remote_endpoint.port();
 
         auto peer = std::make_unique<Peer>(
-                std::move(stream),
-                node_key,
-                std::nullopt);
+            std::move(stream),
+            node_key,
+            std::nullopt);
         auto handler = co_spawn(client_context, peer->handle(), use_future);
 
         peers.emplace_back(std::move(peer), std::move(handler));

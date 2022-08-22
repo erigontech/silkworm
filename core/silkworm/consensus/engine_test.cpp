@@ -14,11 +14,11 @@
    limitations under the License.
 */
 
+#include "engine.hpp"
+
 #include <catch2/catch.hpp>
 
 #include <silkworm/common/test_util.hpp>
-
-#include "engine.hpp"
 
 namespace silkworm::consensus {
 

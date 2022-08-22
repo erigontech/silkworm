@@ -26,7 +26,7 @@ class Measure {
     using TimePoint = std::chrono::time_point<std::chrono::high_resolution_clock>;
     using Duration = std::chrono::nanoseconds;
 
-    Measure() =default;
+    Measure() = default;
     explicit Measure(T value) { set(value); }
 
     T get() { return value_; }
@@ -47,11 +47,12 @@ template <typename T>
 class RepeatedMeasure {
     Measure<T> prev_value_;
     Measure<T> curr_value_;
+
   public:
     using TimePoint = typename Measure<T>::TimePoint;
     using Duration = typename Measure<T>::Duration;
 
-    RepeatedMeasure() =default;
+    RepeatedMeasure() = default;
     explicit RepeatedMeasure(T value) { set(value); }
 
     T get() { return curr_value_.get(); }
@@ -88,4 +89,4 @@ class RepeatedMeasure {
     }
 };
 
-}
+}  // namespace silkworm

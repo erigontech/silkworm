@@ -31,5 +31,4 @@ void read_headers_in_reverse_order(mdbx::txn& txn, size_t limit, std::function<v
 //! \brief Return (block-num, hash) of the header with the biggest total difficulty skipping bad headers
 std::tuple<BlockNum, Hash> header_with_biggest_td(mdbx::txn& txn, const std::set<Hash>* bad_headers = nullptr);
 
-}
-
+}  // namespace silkworm

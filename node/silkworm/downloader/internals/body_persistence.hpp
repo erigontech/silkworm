@@ -17,10 +17,10 @@ limitations under the License.
 #pragma once
 
 #include <silkworm/chain/identity.hpp>
-#include <silkworm/db/buffer.hpp>
 #include <silkworm/consensus/engine.hpp>
-
 #include <silkworm/db/access_layer.hpp>
+#include <silkworm/db/buffer.hpp>
+
 #include "types.hpp"
 
 namespace silkworm {
@@ -43,6 +43,7 @@ class BodyPersistence {
     Hash bad_block() const;
 
     void set_preverified_height(BlockNum height);
+
   private:
     using ConsensusEnginePtr = std::unique_ptr<consensus::IEngine>;
 
@@ -60,4 +61,4 @@ class BodyPersistence {
     Hash bad_block_;
 };
 
-}
+}  // namespace silkworm

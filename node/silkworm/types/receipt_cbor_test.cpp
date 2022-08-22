@@ -18,9 +18,9 @@
 
 #include <catch2/catch.hpp>
 
+#include <silkworm/common/test_util.hpp>
 #include <silkworm/common/util.hpp>
 #include <silkworm/types/transaction.hpp>
-#include <silkworm/common/test_util.hpp>
 
 namespace silkworm {
 

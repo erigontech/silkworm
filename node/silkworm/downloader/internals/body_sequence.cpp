@@ -14,11 +14,12 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+#include "body_sequence.hpp"
+
 #include <silkworm/chain/difficulty.hpp>
 #include <silkworm/common/log.hpp>
 #include <silkworm/consensus/base/engine.hpp>
 
-#include "body_sequence.hpp"
 #include "random_number.hpp"
 
 namespace silkworm {
@@ -34,7 +35,6 @@ BodySequence::BodySequence(const db::ROAccess& dba, const ChainIdentity& ci)
 }
 
 BodySequence::~BodySequence() {
-
 }
 
 void BodySequence::recover_initial_state() {
@@ -46,18 +46,17 @@ BlockNum BodySequence::target_height() const { return headers_stage_height_; }
 BlockNum BodySequence::highest_block_in_memory() const { return body_requests_.highest_block(); }
 BlockNum BodySequence::lowest_block_in_memory() const { return body_requests_.lowest_block(); }
 
-
 void BodySequence::sync_current_state(BlockNum highest_body_in_db, BlockNum highest_header_in_db) {
     highest_body_in_db_ = highest_body_in_db;
     headers_stage_height_ = highest_header_in_db;
 
-    statistics_ = {}; // reset statistics
+    statistics_ = {};  // reset statistics
 }
 
 size_t BodySequence::outstanding_bodies(time_point_t tp) const {
     size_t requested_bodies{0};
 
-    for (auto& br: body_requests_) {
+    for (auto& br : body_requests_) {
         const BodyRequest& past_request = br.second;
         if (!past_request.ready &&
             (tp - past_request.request_time < kRequestDeadline))
@@ -79,11 +78,11 @@ Penalty BodySequence::accept_requested_bodies(BlockBodiesPacket66& packet, const
     // Find matching requests and completing BodyRequest
     auto matching_requests = body_requests_.find_by_request_id(packet.requestId);
 
-    for (auto& body: packet.request) {
+    for (auto& body : packet.request) {
         Hash oh = consensus::EngineBase::compute_ommers_hash(body);
         Hash tr = consensus::EngineBase::compute_transaction_root(body);
 
-        auto exact_request = body_requests_.end(); // = no request
+        auto exact_request = body_requests_.end();  // = no request
 
         auto r = std::find_if(matching_requests.begin(), matching_requests.end(), [&oh, &tr](const auto& elem) {
             const BodyRequest& request = elem->second;
@@ -95,14 +94,13 @@ Penalty BodySequence::accept_requested_bodies(BlockBodiesPacket66& packet, const
             exact_request = *r;
 
             matching_requests.erase(r);
-        }
-        else {
+        } else {
             // not found, can be a response to "past" request upon same bodies?
             exact_request = body_requests_.find_by_hash(oh, tr);
 
             if (exact_request == body_requests_.end()) {
-                //penalty = BadBlockPenalty; // Erigon doesn't penalize the peer maybe because can be a late response but
-                // todo: here we are sure it is not a late response, should we penalize the peer?
+                // penalty = BadBlockPenalty; // Erigon doesn't penalize the peer maybe because can be a late response but
+                //  todo: here we are sure it is not a late response, should we penalize the peer?
                 SILK_TRACE << "BodySequence: body rejected, no matching requests";
                 statistics_.reject_causes.not_requested += 1;
                 continue;
@@ -116,15 +114,13 @@ Penalty BodySequence::accept_requested_bodies(BlockBodiesPacket66& packet, const
             ready_bodies_ += 1;
             statistics_.accepted_items += 1;
             SILK_TRACE << "BodySequence: body accepted, block_num=" << request.block_height;
-        }
-        else {
+        } else {
             statistics_.reject_causes.duplicated += 1;
         }
-
     }
 
     // Process remaining elements in matching_requests invalidating corresponding BodyRequest
-    for(auto& elem: matching_requests) {
+    for (auto& elem : matching_requests) {
         BodyRequest& request = elem->second;
         request.request_id = 0;
         request.request_time = time_point_t();
@@ -134,7 +130,6 @@ Penalty BodySequence::accept_requested_bodies(BlockBodiesPacket66& packet, const
 }
 
 Penalty BodySequence::accept_new_block(const Block& block, const PeerId&) {
-
     // save for later usage
     announced_blocks_.add(block);
 
@@ -155,10 +150,10 @@ auto BodySequence::request_more_bodies(time_point_t tp, uint64_t active_peers)
 
     auto penalizations = renew_stale_requests(packet, min_block, tp, timeout);
 
-    size_t stale_requests = 0; // see below
+    size_t stale_requests = 0;  // see below
     auto outstanding_bodies = body_requests_.size() - ready_bodies_ - stale_requests;
 
-    if (packet.request.size() < kMaxBlocksPerMessage &&   // if this condition is true stale_requests == 0
+    if (packet.request.size() < kMaxBlocksPerMessage &&  // if this condition is true stale_requests == 0
         outstanding_bodies < kPerPeerMaxOutstandingRequests * active_peers * kMaxBlocksPerMessage) {
         make_new_requests(packet, min_block, tp, timeout);
     }
@@ -173,7 +168,7 @@ auto BodySequence::renew_stale_requests(GetBlockBodiesPacket66& packet, BlockNum
                                         time_point_t tp, seconds_t timeout) -> std::vector<PeerPenalization> {
     std::vector<PeerPenalization> penalizations;
 
-    for (auto& br: body_requests_) {
+    for (auto& br : body_requests_) {
         BodyRequest& past_request = br.second;
 
         if (past_request.ready || tp - past_request.request_time < timeout)
@@ -184,7 +179,7 @@ auto BodySequence::renew_stale_requests(GetBlockBodiesPacket66& packet, BlockNum
         past_request.request_id = packet.requestId;
 
         // Erigon increment a penalization counter for the peer, but it doesn't use it
-        //penalizations.emplace_back({Penalty::BadBlockPenalty, });
+        // penalizations.emplace_back({Penalty::BadBlockPenalty, });
 
         SILK_TRACE << "BodySequence: renewed request block num= " << past_request.block_height
                    << ", hash= " << past_request.block_hash;
@@ -203,7 +198,7 @@ void BodySequence::make_new_requests(GetBlockBodiesPacket66& packet, BlockNum& m
 
     BlockNum last_requested_block = highest_body_in_db_;
     if (!body_requests_.empty())
-        last_requested_block = body_requests_.rbegin()->second.block_height; // the last requested
+        last_requested_block = body_requests_.rbegin()->second.block_height;  // the last requested
 
     while (packet.request.size() < kMaxBlocksPerMessage && last_requested_block < headers_stage_height_) {
         BlockNum bn = last_requested_block + 1;
@@ -211,8 +206,10 @@ void BodySequence::make_new_requests(GetBlockBodiesPacket66& packet, BlockNum& m
         auto header = db::read_canonical_header(tx, bn);
         if (!header) {
             body_requests_.erase(bn);
-            throw std::logic_error("BodySequence exception, "
-                "cause: header of block " + std::to_string(bn) + " expected in db");
+            throw std::logic_error(
+                "BodySequence exception, "
+                "cause: header of block " +
+                std::to_string(bn) + " expected in db");
         }
 
         BodyRequest new_request;
@@ -227,9 +224,8 @@ void BodySequence::make_new_requests(GetBlockBodiesPacket66& packet, BlockNum& m
 
             new_request.body = std::move(*announced_body);
             new_request.ready = true;
-            ready_bodies_ += 1; 
-        }
-        else {
+            ready_bodies_ += 1;
+        } else {
             packet.request.push_back(new_request.block_hash);
 
             SILK_TRACE << "BodySequence: requested body block-num= " << new_request.block_height
@@ -243,12 +239,11 @@ void BodySequence::make_new_requests(GetBlockBodiesPacket66& packet, BlockNum& m
 
         ++last_requested_block;
     }
-
 }
 
 void BodySequence::request_nack(const GetBlockBodiesPacket66& packet) {
     seconds_t timeout = BodySequence::kRequestDeadline;
-    for (auto& br: body_requests_) {
+    for (auto& br : body_requests_) {
         BodyRequest& past_request = br.second;
         if (past_request.request_id == packet.requestId)
             past_request.request_time -= timeout;
@@ -272,31 +267,30 @@ auto BodySequence::withdraw_ready_bodies() -> std::vector<Block> {
     while (curr_req != body_requests_.end()) {
         BodyRequest& past_request = curr_req->second;
         if (!past_request.ready)
-            break; // it needs to return the first range of consecutive blocks, so it stops at the first non ready
+            break;  // it needs to return the first range of consecutive blocks, so it stops at the first non ready
 
         highest_body_in_db_ = std::max(highest_body_in_db_, past_request.block_height);
         ready_bodies.push_back({std::move(past_request.body), std::move(past_request.header)});
 
         curr_req = body_requests_.erase(curr_req);  // erase curr_req and update curr_req to point to the next request
     }
-    
+
     ready_bodies_ -= ready_bodies.size();
     return ready_bodies;
 }
 
 void BodySequence::add_to_announcements(BlockHeader header, BlockBody body, db::ROTxn& tx) {
-
     // calculate total difficulty of the block
-    auto parent_td = db::read_total_difficulty(tx, header.number -1, header.parent_hash);
+    auto parent_td = db::read_total_difficulty(tx, header.number - 1, header.parent_hash);
     if (!parent_td) {
         log::Warning() << "BodySequence: dangling block " << std::to_string(header.number);
-        return; // non inserted in announcement list
+        return;  // non inserted in announcement list
     }
 
     auto td = *parent_td + header.difficulty;
 
-    //auto td = parent_td + canonical_difficulty(header.number, header.timestamp,
-    //                                           parent_td, parent_ts, parent_has_uncle, chain_config_);
+    // auto td = parent_td + canonical_difficulty(header.number, header.timestamp,
+    //                                            parent_td, parent_ts, parent_has_uncle, chain_config_);
 
     NewBlockPacket packet{{std::move(body), std::move(header)}, td};
 
@@ -358,4 +352,4 @@ const Download_Statistics& BodySequence::statistics() const {
     return statistics_;
 }
 
-}
+}  // namespace silkworm

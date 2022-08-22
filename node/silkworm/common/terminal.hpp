@@ -19,7 +19,7 @@
 namespace silkworm {
 
 // Reset sequence
-inline constexpr const char* kColorReset = "\x1b[0m";    // Resets fore color to terminal default
+inline constexpr const char* kColorReset = "\x1b[0m";  // Resets fore color to terminal default
 
 // Normal colors
 inline constexpr const char* kColorBlack = "\x1b[30m";   // Black

@@ -137,9 +137,9 @@ class UnaryCall : public Call<STUB> {
 
     UnaryCall(std::string name, procedure_t proc, request_t request)
         : base_t{std::move(name)}, procedure_{proc}, request_{std::move(request)} {
-        context_.set_wait_for_ready(true); // not fail if the channel is in TRANSIENT_FAILURE, instead queue the RPCs
-                                           // until the channel is READY.
-    }                                      // When channel is in CONNECTING, READY, or IDLE it doesn't fail anyway
+        context_.set_wait_for_ready(true);  // not fail if the channel is in TRANSIENT_FAILURE, instead queue the RPCs
+                                            // until the channel is READY.
+    }                                       // When channel is in CONNECTING, READY, or IDLE it doesn't fail anyway
 
     void deadline(time_point_t tp) { context_.set_deadline(tp); }
     void do_not_throw_on_failure() { not_throw_on_failure_ = true; }

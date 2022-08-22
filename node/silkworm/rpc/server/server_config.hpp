@@ -53,4 +53,4 @@ class ServerConfig {
     WaitMode wait_mode_;
 };
 
-} // namespace silkworm::rpc
+}  // namespace silkworm::rpc

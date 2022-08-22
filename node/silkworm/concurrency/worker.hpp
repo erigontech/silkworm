@@ -30,7 +30,13 @@ namespace silkworm {
 // If you only need stoppability, use ActiveComponent instead.
 class Worker {
   public:
-    enum class State { kStopped, kStarting, kStarted, kKickWaiting, kStopping };
+    enum class State {
+        kStopped,
+        kStarting,
+        kStarted,
+        kKickWaiting,
+        kStopping
+    };
 
     Worker() : name_{"worker"} {}
     explicit Worker(std::string& name) : name_{name} {}

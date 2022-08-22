@@ -47,7 +47,7 @@ void OutboundGetBlockHeaders::execute(db::ROAccess, HeaderChain& hc, BodySequenc
 
         packets_ += "o=" + std::to_string(std::get<BlockNum>(packet->request.origin)) + ",";  // todo: log level?
         SILK_TRACE << "Headers request sent (" << *packet << "), received by " << send_outcome.peers_size()
-                     << " peer(s)";
+                   << " peer(s)";
 
         if (send_outcome.peers_size() == 0) {
             hc.request_nack(*packet);
@@ -71,7 +71,7 @@ void OutboundGetBlockHeaders::execute(db::ROAccess, HeaderChain& hc, BodySequenc
         sent_reqs_++;
         packets_ += "SK o=" + std::to_string(std::get<BlockNum>(packet->request.origin)) + ",";  // todo: log level?
         SILK_TRACE << "Headers skeleton request sent (" << *packet << "), received by " << send_outcome.peers_size()
-                     << " peer(s)";
+                   << " peer(s)";
     }
 
     if (!packets_.empty()) {
@@ -111,7 +111,7 @@ sentry::SentPeers OutboundGetBlockHeaders::send_packet(SentryClient& sentry,
 
     sentry::SentPeers peers = rpc.reply();
     SILK_TRACE << "Received rpc result of OutboundGetBlockHeaders reqId=" << packet_.requestId << ": "
-                 << std::to_string(peers.peers_size()) + " peer(s)";
+               << std::to_string(peers.peers_size()) + " peer(s)";
 
     return peers;
 }

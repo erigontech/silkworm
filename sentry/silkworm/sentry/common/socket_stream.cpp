@@ -14,14 +14,14 @@
     limitations under the License.
 */
 
+#include "socket_stream.hpp"
+
 #include <boost/asio/buffer.hpp>
 #include <boost/asio/read.hpp>
 #include <boost/asio/use_awaitable.hpp>
 #include <boost/asio/write.hpp>
 
 #include <silkworm/common/endian.hpp>
-
-#include "socket_stream.hpp"
 
 namespace silkworm::sentry::common {
 

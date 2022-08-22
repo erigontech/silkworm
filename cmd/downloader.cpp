@@ -21,16 +21,16 @@
 #include <CLI/CLI.hpp>
 
 #include <silkworm/buildinfo.h>
-#include <silkworm/common/settings.hpp>
 #include <silkworm/common/directories.hpp>
 #include <silkworm/common/log.hpp>
+#include <silkworm/common/settings.hpp>
 #include <silkworm/db/access_layer.hpp>
-#include <silkworm/downloader/internals/header_retrieval.hpp>
 #include <silkworm/downloader/internals/body_sequence.hpp>
+#include <silkworm/downloader/internals/header_retrieval.hpp>
 #include <silkworm/downloader/stage_headers.hpp>
-#include "silkworm/downloader/stage_bodies.hpp"
 
 #include "common.hpp"
+#include "silkworm/downloader/stage_bodies.hpp"
 
 using namespace silkworm;
 
@@ -41,14 +41,13 @@ std::tuple<Stage::Result, LastStage> forward(std::array<Stage*, N> stages, db::R
     using Status = Stage::Result;
     Stage::Result result{Status::Unspecified};
 
-
-    for(size_t i = 0; i < N; ++i) {
+    for (size_t i = 0; i < N; ++i) {
         result = stages[i]->forward(txn);
         if (result == Status::UnwindNeeded) {
             return {result, i};
         }
     }
-    return {result, N-1};
+    return {result, N - 1};
 }
 
 // stage-loop, unwinding phase
@@ -57,7 +56,7 @@ Stage::Result unwind(std::array<Stage*, N> stages, BlockNum unwind_point, LastSt
     using Status = Stage::Result;
     Stage::Result result{Status::Unspecified};
 
-    for(size_t i = last_stage; i <= 0; --i) { // reverse loop
+    for (size_t i = last_stage; i <= 0; --i) {  // reverse loop
         result = stages[i]->unwind(txn, unwind_point);
         if (result == Status::Error) {
             break;
@@ -117,11 +116,9 @@ int main(int argc, char* argv[]) {
 
         // Output BuildInfo
         auto build_info{silkworm_get_buildinfo()};
-        log::Message("SILKWORM DOWNLOADER", {
-            "version", std::string(build_info->git_branch) + std::string(build_info->project_version),
-            "build", std::string(build_info->system_name) + "-" + std::string(build_info->system_processor)
-                             + " " + std::string(build_info->build_type),
-            "compiler", std::string(build_info->compiler_id) + " " + std::string(build_info->compiler_version)});
+        log::Message("SILKWORM DOWNLOADER", {"version", std::string(build_info->git_branch) + std::string(build_info->project_version),
+                                             "build", std::string(build_info->system_name) + "-" + std::string(build_info->system_processor) + " " + std::string(build_info->build_type),
+                                             "compiler", std::string(build_info->compiler_id) + " " + std::string(build_info->compiler_version)});
 
         log::Message("BlockExchange parameter", {"--max_blocks_per_req", to_string(BodySequence::kMaxBlocksPerMessage)});
         log::Message("BlockExchange parameter", {"--max_requests_per_peer", to_string(BodySequence::kPerPeerMaxOutstandingRequests)});
@@ -150,9 +147,9 @@ int main(int argc, char* argv[]) {
         log::Message("Chain/db status", {"hard-forks", to_string(chain_identity.distinct_fork_numbers().size())});
 
         // Database access
-        //node_settings.chaindata_env_config.readonly = false;
-        //node_settings.chaindata_env_config.shared = true;
-        //node_settings.chaindata_env_config.growth_size = 10_Tebi;
+        // node_settings.chaindata_env_config.readonly = false;
+        // node_settings.chaindata_env_config.shared = true;
+        // node_settings.chaindata_env_config.growth_size = 10_Tebi;
         mdbx::env_managed db = db::open_env(node_settings.chaindata_env_config);
 
         // Node current status
@@ -205,17 +202,15 @@ int main(int argc, char* argv[]) {
         cout << "Downloader stage-loop ended\n";
 
         // Wait threads termination
-        block_exchange.stop();     // signal exiting
+        block_exchange.stop();  // signal exiting
         message_receiving.join();
         stats_receiving.join();
         block_downloading.join();
 
         db.close();
-    }
-    catch (const CLI::ParseError& ex) {
+    } catch (const CLI::ParseError& ex) {
         return_value = app.exit(ex);
-    }
-    catch (std::exception& e) {
+    } catch (std::exception& e) {
         cerr << "Exception (type " << typeid(e).name() << "): " << e.what() << "\n";
         return_value = 1;
     }

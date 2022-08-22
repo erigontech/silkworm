@@ -19,6 +19,7 @@
 #include <filesystem>
 #include <optional>
 #include <variant>
+
 #include <silkworm/common/base.hpp>
 #include <silkworm/common/directories.hpp>
 #include <silkworm/sentry/common/ecc_key_pair.hpp>
@@ -43,7 +44,7 @@ class NodeKeyConfig {
 };
 
 NodeKey node_key_get_or_generate(
-        const std::optional<std::variant<std::filesystem::path, Bytes>>& node_key_option,
-        const DataDirectory& data_dir);
+    const std::optional<std::variant<std::filesystem::path, Bytes>>& node_key_option,
+    const DataDirectory& data_dir);
 
 }  // namespace silkworm::sentry

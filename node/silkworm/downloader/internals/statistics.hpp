@@ -43,4 +43,4 @@ struct Download_Statistics {
 
 std::ostream& operator<<(std::ostream& os, const Download_Statistics& stats);
 
-}
+}  // namespace silkworm

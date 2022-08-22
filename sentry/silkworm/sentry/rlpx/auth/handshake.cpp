@@ -49,8 +49,8 @@ boost::asio::awaitable<void> Handshake::execute(common::SocketStream& stream) {
     HelloMessage hello_message;
     co_await (stream.send(hello_message.serialize()) || timeout());
 
-//    Bytes hello_reply_message_data = std::get<Bytes>(co_await (stream.receive() || timeout()));
-//    HelloMessage hello_reply_message(hello_reply_message_data);
+    //    Bytes hello_reply_message_data = std::get<Bytes>(co_await (stream.receive() || timeout()));
+    //    HelloMessage hello_reply_message(hello_reply_message_data);
 }
 
 }  // namespace silkworm::sentry::rlpx::auth

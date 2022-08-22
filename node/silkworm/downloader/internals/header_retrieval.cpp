@@ -48,7 +48,7 @@ std::vector<BlockHeader> HeaderRetrieval::recover_by_hash(Hash origin, uint64_t 
             if (next <= current) {  // true only if there is an overflow
                 unknown = true;
                 log::Warning() << "GetBlockHeaders skip overflow attack:"
-                                      << " current=" << current << ", skip=" << skip << ", next=" << next;
+                               << " current=" << current << ", skip=" << skip << ", next=" << next;
             } else {
                 header = db::read_canonical_header(db_tx_, next);
                 if (!header)
@@ -135,8 +135,7 @@ std::tuple<Hash, BlockNum> HeaderRetrieval::get_ancestor(Hash hash, BlockNum blo
         auto header = db::read_header(db_tx_, blockNum, hash);
         if (header) {
             return {header->parent_hash, blockNum - 1};
-        }
-        else {
+        } else {
             return {Hash{}, 0};
         }
     }

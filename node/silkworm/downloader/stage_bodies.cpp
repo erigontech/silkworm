@@ -23,9 +23,9 @@ limitations under the License.
 #include <silkworm/common/measure.hpp>
 #include <silkworm/common/stopwatch.hpp>
 #include <silkworm/db/stages.hpp>
+#include <silkworm/downloader/internals/body_persistence.hpp>
 #include <silkworm/downloader/messages/outbound_get_block_bodies.hpp>
 #include <silkworm/downloader/messages/outbound_new_block.hpp>
-#include <silkworm/downloader/internals/body_persistence.hpp>
 
 namespace silkworm {
 
@@ -115,7 +115,8 @@ Stage::Result BodiesStage::forward(db::RWTxn& tx) {
     auto constexpr KShortInterval = 200ms;
     auto constexpr kProgressUpdateInterval = 30s;
 
-    StopWatch timing; timing.start();
+    StopWatch timing;
+    timing.start();
     log::Info() << "[2/16 Bodies] Start";
 
     try {
@@ -136,14 +137,12 @@ Stage::Result BodiesStage::forward(db::RWTxn& tx) {
         // block processing
         time_point_t last_update = system_clock::now();
         while (body_persistence.highest_height() < headers_stage_height && !block_downloader_.is_stopping()) {
-
             send_body_requests();
 
             if (withdraw_command->completed_and_read()) {
                 // renew request
                 withdraw_command = withdraw_ready_bodies();
-            }
-            else if (withdraw_command->result().wait_for(KShortInterval) == std::future_status::ready) {
+            } else if (withdraw_command->result().wait_for(KShortInterval) == std::future_status::ready) {
                 // read response
                 auto bodies = withdraw_command->result().get();
                 // persist bodies
@@ -196,7 +195,8 @@ Stage::Result BodiesStage::forward(db::RWTxn& tx) {
 Stage::Result BodiesStage::unwind(db::RWTxn& tx, BlockNum new_height) {
     Stage::Result result;
 
-    StopWatch timing; timing.start();
+    StopWatch timing;
+    timing.start();
     log::Info() << "[2/16 Bodies] Unwind start";
 
     try {
@@ -226,7 +226,6 @@ void BodiesStage::send_body_requests() {
 
 auto BodiesStage::sync_body_sequence(BlockNum highest_body, BlockNum highest_header)
     -> std::shared_ptr<InternalMessage<void>> {
-
     auto message = std::make_shared<InternalMessage<void>>(
         [highest_body, highest_header](HeaderChain&, BodySequence& bs) {
             bs.sync_current_state(highest_body, highest_header);
@@ -251,7 +250,6 @@ auto BodiesStage::withdraw_ready_bodies() -> std::shared_ptr<InternalMessage<std
 
 // New block announcements propagation
 void BodiesStage::send_announcements() {
-
     auto message = std::make_shared<OutboundNewBlock>();
 
     block_downloader_.accept(message);

@@ -15,9 +15,11 @@
 */
 
 #include "auth_ack_message.hpp"
+
 #include <silkworm/rlp/decode.hpp>
 #include <silkworm/rlp/encode_vector.hpp>
 #include <silkworm/sentry/common/random.hpp>
+
 #include "ecies_cipher.hpp"
 
 namespace silkworm::sentry::rlpx::auth {

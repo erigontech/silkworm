@@ -54,5 +54,4 @@ StageResult prune_account_history(db::RWTxn& txn, const std::filesystem::path& e
 StageResult prune_storage_history(db::RWTxn& txn, const std::filesystem::path& etl_path, uint64_t prune_from);
 StageResult prune_tx_lookup(db::RWTxn& txn, const std::filesystem::path& etl_path, uint64_t prune_from);
 
-
 }  // namespace silkworm::stagedsync

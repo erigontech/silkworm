@@ -14,12 +14,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-#include <catch2/catch.hpp>
 #include "coroutine.hpp"
+
 #include <boost/asio/awaitable.hpp>
 #include <boost/asio/co_spawn.hpp>
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/use_future.hpp>
+#include <catch2/catch.hpp>
 
 namespace silkworm::concurrency {
 
@@ -43,4 +44,4 @@ TEST_CASE("coroutine co_return") {
     CHECK(task.get() == 123);
 }
 
-}  // silkworm::concurrency
+}  // namespace silkworm::concurrency

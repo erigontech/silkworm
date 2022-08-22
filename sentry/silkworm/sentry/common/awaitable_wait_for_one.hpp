@@ -22,14 +22,16 @@
 //
 
 #include <variant>
+
 #include <silkworm/concurrency/coroutine.hpp>
+
 #include <boost/asio/any_io_executor.hpp>
 #include <boost/asio/awaitable.hpp>
 #include <boost/asio/completion_condition.hpp>
 #include <boost/asio/experimental/awaitable_operators.hpp>
-#include <boost/asio/experimental/parallel_group.hpp>
 #include <boost/asio/experimental/cancellation_condition.hpp>
 #include <boost/asio/experimental/deferred.hpp>
+#include <boost/asio/experimental/parallel_group.hpp>
 #include <boost/asio/multiple_exceptions.hpp>
 #include <boost/asio/this_coro.hpp>
 #include <boost/asio/use_awaitable.hpp>
@@ -51,10 +53,10 @@ namespace this_coro {
 }
 
 namespace detail {
-    using boost::asio::experimental::awaitable_operators::detail::awaitable_wrap;
     using boost::asio::experimental::awaitable_operators::detail::awaitable_unwrap;
+    using boost::asio::experimental::awaitable_operators::detail::awaitable_wrap;
     using boost::asio::experimental::awaitable_operators::detail::widen_variant;
-}
+}  // namespace detail
 
 using boost::asio::multiple_exceptions;
 

@@ -46,14 +46,18 @@ class SentryClient : public rpc::Client<sentry::Sentry>, public ActiveComponent 
     SentryClient(SentryClient&&) = delete;
 
     void set_status(Hash head_hash, BigInt head_td, const ChainIdentity&);  // init the remote sentry
-    void hand_shake();  // needed by the remote sentry, also check the protocol version
-    uint64_t count_active_peers(); // ask the remote sentry for active peers
+    void hand_shake();                                                      // needed by the remote sentry, also check the protocol version
+    uint64_t count_active_peers();                                          // ask the remote sentry for active peers
 
-    uint64_t active_peers(); // return cached peers count
+    uint64_t active_peers();  // return cached peers count
 
     using base_t::exec_remotely;  // exec_remotely(SentryRpc& rpc) sends a rpc request to the remote sentry
 
-    enum Scope { BlockRequests = 0x01, BlockAnnouncements = 0x02, Other = 0x04 };
+    enum Scope {
+        BlockRequests = 0x01,
+        BlockAnnouncements = 0x02,
+        Other = 0x04
+    };
     // enum values enable bit masking, for example: cope = BlockRequests & BlockAnnouncements
 
     void subscribe(Scope, subscriber_t callback);  // subscribe with sentry to receive messages

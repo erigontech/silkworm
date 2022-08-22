@@ -20,7 +20,6 @@
 
 #include <catch2/catch.hpp>
 #include <grpc/grpc.h>
-
 #include <remote/ethbackend.grpc.pb.h>
 #include <remote/kv.grpc.pb.h>
 
@@ -62,10 +61,10 @@ static const std::string kTestAddressUri{"localhost:12345"};
 
 TEST_CASE("AsyncUnaryCall", "[silkworm][rpc][client][call]") {
     class FakeUnaryCall : public AsyncUnaryCall<
-        remote::NetVersionRequest,
-        remote::NetVersionReply,
-        remote::ETHBACKEND::StubInterface,
-        &remote::ETHBACKEND::StubInterface::PrepareAsyncNetVersion> {
+                              remote::NetVersionRequest,
+                              remote::NetVersionReply,
+                              remote::ETHBACKEND::StubInterface,
+                              &remote::ETHBACKEND::StubInterface::PrepareAsyncNetVersion> {
       public:
         explicit FakeUnaryCall(grpc::CompletionQueue* queue, remote::ETHBACKEND::StubInterface* stub, CompletionFunc func = {})
             : AsyncUnaryCall(queue, stub, func) {}
@@ -116,10 +115,10 @@ TEST_CASE("AsyncUnaryCall", "[silkworm][rpc][client][call]") {
 
 TEST_CASE("AsyncServerStreamingCall", "[silkworm][rpc][client][call]") {
     class FakeServerStreamingCall : public AsyncServerStreamingCall<
-        remote::StateChangeRequest,
-        remote::StateChangeBatch,
-        remote::KV::StubInterface,
-        &remote::KV::StubInterface::PrepareAsyncStateChanges> {
+                                        remote::StateChangeRequest,
+                                        remote::StateChangeBatch,
+                                        remote::KV::StubInterface,
+                                        &remote::KV::StubInterface::PrepareAsyncStateChanges> {
       public:
         explicit FakeServerStreamingCall(grpc::CompletionQueue* queue, remote::KV::StubInterface* stub)
             : AsyncServerStreamingCall(queue, stub) {}
@@ -208,10 +207,10 @@ TEST_CASE("AsyncServerStreamingCall", "[silkworm][rpc][client][call]") {
     }
 
     SECTION("print ServerStreamingStats") {
-        CHECK_NOTHROW(null_stream() <<  FakeServerStreamingCall::stats());
+        CHECK_NOTHROW(null_stream() << FakeServerStreamingCall::stats());
     }
 }
 
-#endif // SILKWORM_SANITIZE
+#endif  // SILKWORM_SANITIZE
 
-} // namespace silkworm::rpc
+}  // namespace silkworm::rpc

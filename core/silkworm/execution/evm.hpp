@@ -63,7 +63,8 @@ class EVM {
     EVM(const EVM&) = delete;
     EVM& operator=(const EVM&) = delete;
 
-    EVM(const Block& block, IntraBlockState& state, const ChainConfig& config) noexcept;
+    EVM(const Block& block, IntraBlockState& state, const ChainConfig& config)
+    noexcept;
 
     ~EVM();
 

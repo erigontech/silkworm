@@ -38,4 +38,4 @@ class BlockHashes final : public IStage {
     BlockNum reached_block_num_{0};
 };
 
-} // namespace silkworm::stagedsync
+}  // namespace silkworm::stagedsync

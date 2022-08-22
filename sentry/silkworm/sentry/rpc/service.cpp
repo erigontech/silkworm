@@ -15,6 +15,7 @@
 */
 
 #include "service.hpp"
+
 #include <silkworm/common/log.hpp>
 #include <silkworm/rpc/server/call.hpp>
 #include <silkworm/rpc/server/call_factory.hpp>
@@ -180,9 +181,9 @@ class PeerEventsCall : public sw_rpc::ServerStreamingRpc<AsyncService, proto::Pe
 class ServiceImpl final {
   public:
     void register_request_calls(
-            boost::asio::io_context& scheduler,
-            ::sentry::Sentry::AsyncService* async_service,
-            grpc::ServerCompletionQueue* queue) {
+        boost::asio::io_context& scheduler,
+        ::sentry::Sentry::AsyncService* async_service,
+        grpc::ServerCompletionQueue* queue) {
         call_factory_set_status_.create_rpc(scheduler, async_service, queue);
         call_factory_handshake_.create_rpc(scheduler, async_service, queue);
         call_factory_node_info_.create_rpc(scheduler, async_service, queue);
@@ -256,9 +257,9 @@ Service::~Service() {
 
 // Register one requested call for each RPC factory
 void Service::register_request_calls(
-        boost::asio::io_context& scheduler,
-        ::sentry::Sentry::AsyncService* async_service,
-        grpc::ServerCompletionQueue* queue) {
+    boost::asio::io_context& scheduler,
+    ::sentry::Sentry::AsyncService* async_service,
+    grpc::ServerCompletionQueue* queue) {
     p_impl_->register_request_calls(scheduler, async_service, queue);
 }
 

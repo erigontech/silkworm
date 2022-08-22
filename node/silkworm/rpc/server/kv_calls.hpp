@@ -28,12 +28,12 @@
 #include <remote/kv.grpc.pb.h>
 
 #include <silkworm/backend/ethereum_backend.hpp>
+#include <silkworm/backend/state_change_collection.hpp>
 #include <silkworm/chain/config.hpp>
 #include <silkworm/db/mdbx.hpp>
 #include <silkworm/rpc/server/call.hpp>
 #include <silkworm/rpc/server/call_factory.hpp>
 #include <silkworm/rpc/server/server.hpp>
-#include <silkworm/backend/state_change_collection.hpp>
 
 // KV API protocol versions
 // 5.1.0 - first issue
@@ -200,8 +200,8 @@ class KvService {
 
 namespace detail {
 
-std::string dump_mdbx_result(const mdbx::cursor::move_result& result);
+    std::string dump_mdbx_result(const mdbx::cursor::move_result& result);
 
-} // namespace detail
+}  // namespace detail
 
-} // namespace silkworm::rpc
+}  // namespace silkworm::rpc

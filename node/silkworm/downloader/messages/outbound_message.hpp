@@ -15,8 +15,9 @@
 */
 #pragma once
 
-#include "message.hpp"
 #include <silkworm/downloader/sentry_client.hpp>
+
+#include "message.hpp"
 
 namespace silkworm {
 

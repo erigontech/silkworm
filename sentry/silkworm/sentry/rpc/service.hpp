@@ -17,6 +17,7 @@
 #pragma once
 
 #include <memory>
+
 #include <boost/asio/io_context.hpp>
 #include <grpcpp/grpcpp.h>
 #include <p2psentry/sentry.grpc.pb.h>

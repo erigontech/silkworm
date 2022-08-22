@@ -68,8 +68,6 @@ class Node {
     std::optional<evmc::bytes32> root_hash_{std::nullopt};
 
   private:
-
-
 };
 
 inline bool is_subset(uint16_t sub, uint16_t sup) { return (sub & sup) == sub; }

@@ -83,4 +83,4 @@ TEST_CASE("EthereumBackEnd", "[silkworm][backend][ethereum_backend]") {
     }
 }
 
-} // namespace silkworm
+}  // namespace silkworm

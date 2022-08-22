@@ -55,8 +55,7 @@ class ROTxn {
     // This variant is just a wrapper over an external transaction.
     explicit ROTxn(mdbx::txn& external_txn) : external_txn_{&external_txn} {}
     // Move construction
-    ROTxn(ROTxn&& source) noexcept :
-        external_txn_(source.external_txn_), managed_txn_(std::move(source.managed_txn_)) {}
+    ROTxn(ROTxn&& source) noexcept : external_txn_(source.external_txn_), managed_txn_(std::move(source.managed_txn_)) {}
 
     // Access to the underling raw mdbx transaction
     mdbx::txn& operator*() { return external_txn_ ? *external_txn_ : managed_txn_; }
@@ -246,7 +245,10 @@ static inline std::filesystem::path get_lockfile_path(const std::filesystem::pat
 }
 
 //! \brief Defines the direction of cursor while looping by cursor_for_each or cursor_for_count
-enum class CursorMoveDirection { Forward, Reverse };
+enum class CursorMoveDirection {
+    Forward,
+    Reverse
+};
 
 //! \brief Executes a function on each record reachable by the provided cursor
 //! \param [in] cursor : A reference to a cursor opened on a map

@@ -17,7 +17,9 @@
 #pragma once
 
 #include <string>
+
 #include <silkworm/common/base.hpp>
+
 #include "ecc_public_key.hpp"
 
 namespace silkworm::sentry::common {

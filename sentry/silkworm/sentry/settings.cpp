@@ -15,6 +15,7 @@
 */
 
 #include "settings.hpp"
+
 #include <thread>
 
 namespace silkworm::sentry {

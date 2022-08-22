@@ -29,6 +29,8 @@
 namespace silkworm::db::bitmap {
 
 // Erigon bitmapdb.ChunkLimit
+// Value is obtained as threshold beyond which MDBX overflow pages : i.e. 4096 / 2 - (keySize + 8)
+// TODO Adjust for case when pagesize is 8192
 inline constexpr size_t kBitmapChunkLimit = 1950;
 
 roaring::Roaring64Map read(ByteView serialized);

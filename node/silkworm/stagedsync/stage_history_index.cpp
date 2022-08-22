@@ -52,7 +52,7 @@ StageResult HistoryIndex::forward(db::RWTxn& txn) {
                                  " greater than Execution progress " + std::to_string(execution_stage_progress));
         }
 
-        operation_ = OperationType::Forward;
+        reset_log_progress();
         const BlockNum segment_width{execution_stage_progress - previous_progress};
         if (segment_width > 16) {
             log::Info("Begin " + std::string(stage_name_),
@@ -65,6 +65,7 @@ StageResult HistoryIndex::forward(db::RWTxn& txn) {
         success_or_throw(forward_impl(txn, previous_progress_accounts, execution_stage_progress, false));
         success_or_throw(forward_impl(txn, previous_progress_storage, execution_stage_progress, true));
         collector_.reset();
+        reset_log_progress();
         update_progress(txn, execution_stage_progress);
         txn.commit();
 
@@ -82,6 +83,10 @@ StageResult HistoryIndex::forward(db::RWTxn& txn) {
     operation_ = OperationType::None;
     return is_stopping() ? StageResult::kAborted : StageResult::kSuccess;
 }
+
+StageResult HistoryIndex::unwind(db::RWTxn& txn, BlockNum to) { return StageResult::kUnknownError; }
+
+StageResult HistoryIndex::prune(db::RWTxn& txn) { return StageResult::kUnknownError; }
 
 StageResult HistoryIndex::forward_impl(db::RWTxn& txn, BlockNum from, BlockNum to, bool storage) {
     using namespace std::chrono_literals;
@@ -106,6 +111,7 @@ StageResult HistoryIndex::forward_impl(db::RWTxn& txn, BlockNum from, BlockNum t
     }};
 
     std::unique_lock log_lck(sl_mutex_);
+    operation_ = OperationType::Forward;
     loading_ = false;
     current_source_ = std::string(source_config.name);
     current_target_ = std::string(target_config.name);
@@ -153,7 +159,7 @@ StageResult HistoryIndex::forward_impl(db::RWTxn& txn, BlockNum from, BlockNum t
                 bitmaps_size += 64;
             }
             bitmaps_it->second.add(reached_block_number);
-            bitmaps_size += 8;
+            bitmaps_size += sizeof(BlockNum);
 
             source_data = table.to_current_next_multi(false);
         }
@@ -177,45 +183,71 @@ StageResult HistoryIndex::forward_impl(db::RWTxn& txn, BlockNum from, BlockNum t
         log_lck.unlock();
 
         table.bind(txn, target_config);
-        MDBX_put_flags_t db_flags{table.empty() ? MDBX_put_flags_t::MDBX_APPEND : MDBX_put_flags_t::MDBX_UPSERT};
         etl::LoadFunc load_func{[](const etl::Entry& entry, mdbx::cursor& index_cursor, MDBX_put_flags_t put_flags) {
-            auto bm{roaring::Roaring64Map::readSafe(byte_ptr_cast(entry.value.data()), entry.value.size())};
+            auto bitmap{roaring::Roaring64Map::readSafe(byte_ptr_cast(entry.value.data()), entry.value.size())};
+
             // Check whether we still need to rework the previous entry
-            Bytes last_chunk_index(entry.key.size() + 8, '\0');
-            std::memcpy(&last_chunk_index[0], &entry.key[0], entry.key.size());
-            endian::store_big_u64(&last_chunk_index[entry.key.size()], UINT64_MAX);
-            auto previous_bitmap_bytes{index_cursor.find(db::to_slice(last_chunk_index), false)};
-            // If we have an unfinished bitmap for the current location then continue working on it
-            if (previous_bitmap_bytes) {
+            Bytes chunk_key{entry.key};
+            chunk_key.append(db::block_key(UINT64_MAX));  // The highest uncompleted chunk
+            auto index_data{index_cursor.find(db::to_slice(chunk_key), false)};
+            if (index_data) {
                 // Merge previous and current bitmap
-                bm |= roaring::Roaring64Map::readSafe(previous_bitmap_bytes.value.char_ptr(),
-                                                      previous_bitmap_bytes.value.length());
-                put_flags = MDBX_put_flags_t::MDBX_UPSERT;
+                bitmap |= roaring::Roaring64Map::readSafe(index_data.value.char_ptr(), index_data.value.length());
+                index_cursor.erase();  // Delete current record as it'll be rewritten
             }
-            while (!bm.isEmpty()) {
-                // Divide in different bitmaps of different (chunks) and push all of them individually
-                auto current_chunk{db::bitmap::cut_left(bm, db::bitmap::kBitmapChunkLimit)};
-                // Make chunk index (Original key + Suffix )
-                Bytes chunk_index(entry.key.size() + 8, '\0');
-                std::memcpy(&chunk_index[0], &entry.key[0], entry.key.size());
-                // Suffix is either the maximum Block Number of the bitmap or if it's the last chunk: UINT64_MAX
-                BlockNum suffix{bm.isEmpty() ? UINT64_MAX : current_chunk.maximum()};
-                endian::store_big_u64(&chunk_index[entry.key.size()], suffix);
+
+            // Consume the bitmap splitting it in chunks
+            while (!bitmap.isEmpty()) {
+                auto bitmap_chunk{db::bitmap::cut_left(bitmap, db::bitmap::kBitmapChunkLimit)};
+                const BlockNum suffix{bitmap.isEmpty() /* consumed to last chunk */ ? UINT64_MAX
+                                                                                    : bitmap_chunk.maximum()};
+                endian::store_big_u64(&chunk_key[chunk_key.size() - sizeof(BlockNum)], suffix);
+
                 // Push chunk to database
-                Bytes current_chunk_bytes(current_chunk.getSizeInBytes(), '\0');
-                current_chunk.write(byte_ptr_cast(&current_chunk_bytes[0]));
-                mdbx::slice k{db::to_slice(chunk_index)};
-                mdbx::slice v{db::to_slice(current_chunk_bytes)};
+                Bytes chunk_bytes(bitmap_chunk.getSizeInBytes(), '\0');
+                bitmap_chunk.write(byte_ptr_cast(&chunk_bytes[0]));
+                mdbx::slice k{db::to_slice(chunk_key)};
+                mdbx::slice v{db::to_slice(chunk_bytes)};
                 mdbx::error::success_or_throw(index_cursor.put(k, &v, put_flags));
             }
         }};
-        collector_->load(table, load_func, db_flags);
+        collector_->load(table, load_func, MDBX_put_flags_t::MDBX_UPSERT);
+        collector_->clear();
     }
 
     db::stages::write_stage_progress(
         *txn, (storage ? db::stages::kStorageHistoryIndexKey : db::stages::kAccountHistoryIndexKey), to);
 
     return StageResult::kSuccess;
+}
+
+std::vector<std::string> HistoryIndex::get_log_progress() {
+    std::vector<std::string> ret{};
+    std::unique_lock log_lck(sl_mutex_);
+    if (current_source_.empty() && current_target_.empty()) {
+        ret.insert(ret.end(), {"db", "waiting ..."});
+    } else {
+        if (operation_ == OperationType::Forward || operation_ == OperationType::Unwind) {
+            if (loading_) {
+                current_key_ = collector_ ? collector_->get_load_key() : "";
+                ret.insert(ret.end(), {"from", "etl", "to", current_target_, "key", current_key_});
+            } else {
+                ret.insert(ret.end(), {"from", current_source_, "to", "etl", "key", current_key_});
+            }
+        } else {
+            ret.insert(ret.end(), {"from", current_source_, "key", current_key_});
+        }
+    }
+    return ret;
+}
+
+void HistoryIndex::reset_log_progress() {
+    std::unique_lock log_lck(sl_mutex_);
+    operation_ = OperationType::None;
+    loading_ = false;
+    current_source_.clear();
+    current_target_.clear();
+    current_key_.clear();
 }
 
 static constexpr size_t kBitmapBufferSizeLimit = 256_Mebi;

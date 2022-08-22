@@ -34,13 +34,14 @@ class HistoryIndex : public IStage {
     const size_t kBitmapBufferSizeLimit = 256_Mebi;
     std::unique_ptr<etl::Collector> collector_{nullptr};
 
-    std::atomic_bool loading_{false};            // Whether we're in ETL loading phase
-    std::string current_source_;                 // Current source of data
-    std::string current_target_;                 // Current target of transformed data
-    std::string current_key_;                    // Actual processing key
+    std::atomic_bool loading_{false};  // Whether we're in ETL loading phase
+    std::string current_source_;       // Current source of data
+    std::string current_target_;       // Current target of transformed data
+    std::string current_key_;          // Actual processing key
 
     StageResult forward_impl(db::RWTxn& txn, BlockNum from, BlockNum to, bool storage);
+    void reset_log_progress();  // Clears out all logging vars
 
 };
 
-} // namespace silkworm::stagedsync
+}  // namespace silkworm::stagedsync

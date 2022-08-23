@@ -239,6 +239,26 @@ size_t cursor_for_each(::mdbx::cursor& cursor, const WalkFunc& walker, const Cur
     return ret;
 }
 
+size_t cursor_for_prefix(::mdbx::cursor& cursor, ::mdbx::slice prefix, const WalkFunc& walker,
+                         CursorMoveDirection direction) {
+    const mdbx::cursor::move_operation move_operation{direction == CursorMoveDirection::Forward
+                                                          ? mdbx::cursor::move_operation::next
+                                                          : mdbx::cursor::move_operation::previous};
+    size_t ret{0};
+    auto data{cursor.lower_bound(prefix, false)};
+    while (data.done) {
+        if (!data.key.starts_with(prefix)) {
+            break;
+        }
+        ++ret;
+        if (!walker(cursor, data)) {
+            break;  // Walker function has returned false hence stop
+        }
+        data = cursor.move(move_operation, /*throw_notfound=*/false);
+    }
+    return ret;
+}
+
 size_t cursor_for_count(::mdbx::cursor& cursor, const WalkFunc& walker, size_t count,
                         const CursorMoveDirection direction) {
     const mdbx::cursor::move_operation move_operation{direction == CursorMoveDirection::Forward

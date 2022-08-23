@@ -255,6 +255,23 @@ TEST_CASE("Cursor walk") {
         CHECK(data_map.at("AAU") == "Asparagine");
     }
 
+    SECTION("cursor_for_prefix") {
+        Bytes prefix{};
+
+        // populate table
+        for (const auto& [key, value] : kGeneticCode) {
+            table_cursor.upsert(mdbx::slice{key}, mdbx::slice{value});
+        }
+        REQUIRE(table_cursor.size() == kGeneticCode.size());
+        REQUIRE(table_cursor.empty() == false);
+
+        // Delete all records starting with "AC"
+        prefix.append({'A', 'C'});
+        auto erased{cursor_for_prefix(table_cursor, to_slice(prefix), walk_erase)};
+        REQUIRE(erased == 4);
+        REQUIRE(table_cursor.size() == (kGeneticCode.size() - erased));
+    }
+
     SECTION("cursor_for_count") {
         // empty table
         cursor_for_count(table_cursor, save_all_data_map, /*max_count=*/5);

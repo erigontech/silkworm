@@ -98,6 +98,12 @@ class RWTxn {
 //! \remarks Return value signals whether the loop should continue on next record
 using WalkFunc = std::function<bool(::mdbx::cursor& cursor, ::mdbx::cursor::move_result& data)>;
 
+//! \brief Convenience function to erase records of cursor
+static const WalkFunc walk_erase{[](::mdbx::cursor& cursor, ::mdbx::cursor::move_result& data) -> bool {
+    cursor.erase();
+    return true;
+}};
+
 //! \brief Essential environment settings
 struct EnvConfig {
     std::string path{};
@@ -213,6 +219,16 @@ enum class CursorMoveDirection { Forward, Reverse };
 //! end of the table on behalf of the move criteria
 size_t cursor_for_each(::mdbx::cursor& cursor, const WalkFunc& func,
                        CursorMoveDirection direction = CursorMoveDirection::Forward);
+
+//! \brief Executes a function on each record reachable by the provided cursor asserting keys start with provided prefix
+//! \param [in] cursor : A reference to a cursor opened on a map
+//! \param [in] prefix : The slice each key must start with
+//! \param [in] func : A pointer to a std::function with the code to execute on records. Note the return value of the
+//! function may stop the loop
+//! \param [in] direction : Whether the cursor should navigate records forward (default) or backwards
+//! \return The overall number of processed records
+size_t cursor_for_prefix(::mdbx::cursor& cursor, ::mdbx::slice prefix, const WalkFunc& func,
+                         CursorMoveDirection direction = CursorMoveDirection::Forward);
 
 //! \brief Executes a function on each record reachable by the provided cursor up to a max number of iterations
 //! \param [in] cursor : A reference to a cursor opened on a map

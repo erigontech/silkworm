@@ -15,6 +15,7 @@
 */
 
 #pragma once
+#include <boost/functional/hash.hpp>
 
 #include <silkworm/stagedsync/common.hpp>
 
@@ -40,8 +41,19 @@ class HistoryIndex : public IStage {
     std::string current_key_;          // Actual processing key
 
     StageResult forward_impl(db::RWTxn& txn, BlockNum from, BlockNum to, bool storage);
-    void reset_log_progress();  // Clears out all logging vars
+    StageResult unwind_impl(db::RWTxn& txn, BlockNum from, BlockNum to, bool storage);
+    StageResult prune_impl(db::RWTxn& txn, BlockNum threshold, BlockNum to, bool storage);
 
+    //! \brief Collects bitmaps of block numbers changes for each account within provided
+    //! changeset boundaries
+    void collect_bitmaps_from_changeset(db::RWTxn& txn, const db::MapConfig& source_config, BlockNum from, BlockNum to,
+                                        bool storage);
+
+    //! \brief Collects unique keys touched by changesets within provided boundaries
+    std::unordered_map<Bytes, bool, boost::hash<Bytes>> collect_unique_keys_from_changeset(
+        db::RWTxn& txn, const db::MapConfig& source_config, BlockNum from, BlockNum to, bool storage);
+
+    void reset_log_progress();  // Clears out all logging vars
 };
 
 }  // namespace silkworm::stagedsync

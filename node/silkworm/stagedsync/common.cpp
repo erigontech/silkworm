@@ -22,6 +22,8 @@ namespace silkworm::stagedsync {
 
 BlockNum IStage::get_progress(db::RWTxn& txn) { return db::stages::read_stage_progress(*txn, stage_name_); }
 
+BlockNum IStage::get_prune_progress(db::RWTxn& txn) { return db::stages::read_stage_prune_progress(*txn, stage_name_); }
+
 void IStage::update_progress(db::RWTxn& txn, BlockNum progress) {
     db::stages::write_stage_progress(*txn, stage_name_, progress);
 }

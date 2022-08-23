@@ -77,7 +77,7 @@ StageResult Execution::forward(db::RWTxn& txn) {
         log::Info("Begin Execution", {"from", std::to_string(block_num_), "to", std::to_string(bodies_stage_progress)});
     }
 
-    // Determine pruning thresholds on behalf of current db pruning mode and verify next stage does not need
+    // Determine pruning thresholds on behalf of current db pruning mode and verify next stage(s) does not need
     // prune-able data
     BlockNum prune_history{node_settings_->prune_mode->history().value_from_head(headers_stage_progress)};
     BlockNum prune_receipts{node_settings_->prune_mode->receipts().value_from_head(headers_stage_progress)};

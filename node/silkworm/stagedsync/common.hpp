@@ -109,6 +109,9 @@ class IStage : public Stoppable {
     //! \brief Returns the actual progress recorded into db
     BlockNum get_progress(db::RWTxn& txn);
 
+    //! \brief Returns the actual prune progress recorded into db
+    BlockNum get_prune_progress(db::RWTxn& txn);
+
     //! \brief Updates current stage progress
     void update_progress(db::RWTxn& txn, BlockNum progress);
 

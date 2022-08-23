@@ -35,23 +35,16 @@ struct Stage {
 };
 
 // Stage functions
-StageResult stage_headers(db::RWTxn& txn, const std::filesystem::path& etl_path, uint64_t prune_from = 0);
 
 /* **************************** */
-StageResult stage_account_history(db::RWTxn& txn, const std::filesystem::path& etl_path, uint64_t prune_from = 0);
-StageResult stage_storage_history(db::RWTxn& txn, const std::filesystem::path& etl_path, uint64_t prune_from = 0);
 StageResult stage_log_index(db::RWTxn& txn, const std::filesystem::path& etl_path, uint64_t prune_from = 0);
 StageResult stage_tx_lookup(db::RWTxn& txn, const std::filesystem::path& etl_path, uint64_t prune_from = 0);
 
 // Unwind functions
-StageResult unwind_account_history(db::RWTxn& txn, const std::filesystem::path& etl_path, uint64_t unwind_to);
-StageResult unwind_storage_history(db::RWTxn& txn, const std::filesystem::path& etl_path, uint64_t unwind_to);
 StageResult unwind_log_index(db::RWTxn& txn, const std::filesystem::path& etl_path, uint64_t unwind_to);
 StageResult unwind_tx_lookup(db::RWTxn& txn, const std::filesystem::path& etl_path, uint64_t unwind_to);
 
 // Prune functions
-StageResult prune_account_history(db::RWTxn& txn, const std::filesystem::path& etl_path, uint64_t prune_from);
-StageResult prune_storage_history(db::RWTxn& txn, const std::filesystem::path& etl_path, uint64_t prune_from);
 StageResult prune_tx_lookup(db::RWTxn& txn, const std::filesystem::path& etl_path, uint64_t prune_from);
 
 

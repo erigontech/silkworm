@@ -99,7 +99,7 @@ class RWTxn {
 using WalkFunc = std::function<bool(::mdbx::cursor& cursor, ::mdbx::cursor::move_result& data)>;
 
 //! \brief Convenience function to erase records of cursor
-static const WalkFunc walk_erase{[](::mdbx::cursor& cursor, ::mdbx::cursor::move_result& data) -> bool {
+static const WalkFunc walk_erase{[](::mdbx::cursor& cursor, ::mdbx::cursor::move_result&) -> bool {
     cursor.erase();
     return true;
 }};

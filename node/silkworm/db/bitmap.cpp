@@ -74,4 +74,13 @@ roaring::Roaring cut_left(roaring::Roaring& bm, uint64_t size_limit) { return cu
 
 roaring::Roaring64Map cut_left(roaring::Roaring64Map& bm, uint64_t size_limit) { return cut_left_impl(bm, size_limit); }
 
+Bytes to_bytes(const roaring::Roaring64Map& bitmap) {
+    if(!bitmap.isEmpty()) {
+        Bytes ret(bitmap.getSizeInBytes(), '\0');
+        bitmap.write(byte_ptr_cast(&ret[0]));
+        return ret;
+    }
+    return {};
+}
+
 }  // namespace silkworm::db::bitmap

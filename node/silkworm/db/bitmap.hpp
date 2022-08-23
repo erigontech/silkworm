@@ -46,4 +46,7 @@ roaring::Roaring64Map cut_left(roaring::Roaring64Map& bitmap, uint64_t size_limi
 // Remove from a bitmap and return its biggest left part not exceeding a given size
 roaring::Roaring cut_left(roaring::Roaring& bitmap, uint64_t size_limit);
 
+//! \brief Returns Bytes of bitmap data
+Bytes to_bytes(roaring::Roaring64Map& bitmap);
+
 }  // namespace silkworm::db::bitmap

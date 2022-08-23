@@ -120,11 +120,12 @@ void IntraBlockState::touch(const evmc::address& address) noexcept {
     }
 }
 
-void IntraBlockState::record_suicide(const evmc::address& address) noexcept {
+bool IntraBlockState::record_suicide(const evmc::address& address) noexcept {
     const bool inserted{self_destructs_.insert(address).second};
     if (inserted) {
         journal_.emplace_back(new state::SuicideDelta{address});
     }
+    return inserted;
 }
 
 void IntraBlockState::destruct_suicides() {

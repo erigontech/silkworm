@@ -417,7 +417,7 @@ void HistoryIndex::collect_bitmaps_from_changeset(db::RWTxn& txn, const db::MapC
             Bytes etl_key(key.size() + sizeof(uint32_t), '\0');
             std::memcpy(&etl_key[0], key.data(), key.size());
             endian::store_big_u32(&etl_key[key.size()], flush_count);
-            collector->collect({key, db::bitmap::to_bytes(bitmap)});
+            collector->collect({etl_key, db::bitmap::to_bytes(bitmap)});
         }
         bitmaps.clear();
         bitmaps_size = 0;

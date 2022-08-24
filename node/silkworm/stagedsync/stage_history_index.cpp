@@ -410,8 +410,9 @@ void HistoryIndex::collect_bitmaps_from_changeset(db::RWTxn& txn, const db::MapC
     size_t bitmaps_size{0};
 
     // A note on flush_count
-    // Etl collector will sort and process entries lexicographically (using both key and value) for this reason we add
-    // flush_count as suffix of key, so we ensure for same account we process entries in the order they've been collected
+    // Etl collector will sort and process entries lexicographically (using both key and value) for this reason
+    // we add flush_count as suffix of key, so we ensure for same account we process entries in the order
+    // they've been collected.
     uint32_t flush_count{0};
     auto bitmaps_flush{[&bitmaps, &bitmaps_size, &flush_count](etl::Collector* collector) {
         for (auto& [key, bitmap] : bitmaps) {

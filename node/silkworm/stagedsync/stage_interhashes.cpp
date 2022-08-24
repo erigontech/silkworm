@@ -75,7 +75,6 @@ StageResult InterHashes::forward(db::RWTxn& txn) {
 
         // TODO If I return with kWrongStateRoot begin a binary search backwards
 
-
         success_or_throw(ret);
         throw_if_stopping();
         db::stages::write_stage_progress(*txn, db::stages::kIntermediateHashesKey, hashstate_stage_progress);

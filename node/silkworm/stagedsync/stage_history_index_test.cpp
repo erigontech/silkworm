@@ -365,7 +365,7 @@ TEST_CASE("Stage History Index") {
                 db::cursor_for_prefix(account_history, db::to_slice(prefix),
                                       [](::mdbx::cursor&, ::mdbx::cursor::move_result&) -> bool { return true; })};
             REQUIRE(count == 0);
-            addresses.pop_back(); // Remove unused address for next tests
+            addresses.pop_back();  // Remove unused address for next tests
         }
 
         // Each key must have only 1 record now which has UINT64_MAX suffix
@@ -409,8 +409,6 @@ TEST_CASE("Stage History Index") {
                 })};
             REQUIRE(count == 1);
         }
-
-
     }
 
     log::set_verbosity(log::Level::kInfo);

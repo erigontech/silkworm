@@ -78,7 +78,6 @@ StageResult HashState::forward(db::RWTxn& txn) {
         db::stages::write_stage_progress(*txn, db::stages::kHashStateKey, execution_stage_progress);
         txn.commit();
 
-
     } catch (const StageError& ex) {
         log::Error(std::string(stage_name_),
                    {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});

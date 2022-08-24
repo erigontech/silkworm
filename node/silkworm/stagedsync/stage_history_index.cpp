@@ -35,10 +35,8 @@ StageResult HistoryIndex::forward(db::RWTxn& txn) {
 
         // Check stage boundaries from previous execution and previous stage execution
         const auto previous_progress{get_progress(txn)};
-        const auto previous_progress_accounts{
-            db::stages::read_stage_progress(*txn, db::stages::kAccountHistoryIndexKey)};
-        const auto previous_progress_storage{
-            db::stages::read_stage_progress(*txn, db::stages::kStorageHistoryIndexKey)};
+        auto previous_progress_accounts{db::stages::read_stage_progress(*txn, db::stages::kAccountHistoryIndexKey)};
+        auto previous_progress_storage{db::stages::read_stage_progress(*txn, db::stages::kStorageHistoryIndexKey)};
         const auto target_progress{db::stages::read_stage_progress(*txn, db::stages::kExecutionKey)};
         if (previous_progress == target_progress) {
             // Nothing to process
@@ -59,8 +57,16 @@ StageResult HistoryIndex::forward(db::RWTxn& txn) {
                        std::to_string(segment_width)});
         }
 
-        collector_ = std::make_unique<etl::Collector>(node_settings_);
+        // If this is first time we forward AND we have "prune history" set
+        // do not process all blocks rather only what is needed
+        if (node_settings_->prune_mode->history().enabled()) {
+            if (!previous_progress_accounts)
+                previous_progress_accounts = node_settings_->prune_mode->history().value_from_head(target_progress);
+            if (!previous_progress_storage)
+                previous_progress_storage = node_settings_->prune_mode->history().value_from_head(target_progress);
+        }
 
+        collector_ = std::make_unique<etl::Collector>(node_settings_);
         if (previous_progress_accounts < target_progress)
             success_or_throw(forward_impl(txn, previous_progress_accounts, target_progress, false));
         if (previous_progress_storage < target_progress)

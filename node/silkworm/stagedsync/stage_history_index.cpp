@@ -228,9 +228,10 @@ StageResult HistoryIndex::forward_impl(db::RWTxn& txn, const BlockNum from, cons
             auto bitmap{db::bitmap::from_bytes(entry.value)};
 
             // Check whether we still need to rework the previous entry
-            Bytes shard_key{entry.key
-                                .substr(0, entry.key.size() - sizeof(uint32_t)) /* remove etl ordering suffix */
-                                .append(last_shard_suffix)};                    /* and append const suffix for last key */
+            Bytes shard_key{
+                entry.key
+                    .substr(0, entry.key.size() - sizeof(uint32_t)) /* remove etl ordering suffix */
+                    .append(last_shard_suffix)};                    /* and append const suffix for last key */
 
             auto index_data{index_cursor.find(db::to_slice(shard_key), /*throw_notfound=*/false)};
             if (index_data) {

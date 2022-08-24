@@ -91,6 +91,6 @@ TEST_CASE("gpr_silkworm_log", "[silkworm][rpc][util]") {
         CHECK_NOTHROW(gpr_log(FILE_NAME, LINE_NUMBER, GPR_LOG_SEVERITY_DEBUG, "debug message"));
     }
 }
-#endif // SILKWORM_SANITIZE
+#endif  // SILKWORM_SANITIZE
 
-} // namespace silkworm::rpc
+}  // namespace silkworm::rpc

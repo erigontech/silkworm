@@ -1,5 +1,5 @@
 /*
-   Copyright 2020-2021 The Silkworm Authors
+   Copyright 2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -25,7 +25,7 @@ namespace silkworm::rlp {
 
 template <typename T>
 size_t length_items(const std::vector<T>& v) {
-    return std::accumulate(v.cbegin(), v.cend(), size_t{0}, [] (size_t sum, const T &x) { return sum + length(x); });
+    return std::accumulate(v.cbegin(), v.cend(), size_t{0}, [](size_t sum, const T& x) { return sum + length(x); });
 }
 
 template <typename T>

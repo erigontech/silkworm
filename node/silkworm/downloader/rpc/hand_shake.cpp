@@ -1,5 +1,5 @@
 /*
-   Copyright 2021 The Silkworm Authors
+   Copyright 2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -22,5 +22,3 @@ HandShake::HandShake() : UnaryCall("HandShake", &sentry::Sentry::Stub::HandShake
 }
 
 }  // namespace silkworm::rpc
-
-

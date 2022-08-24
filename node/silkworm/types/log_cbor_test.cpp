@@ -1,5 +1,5 @@
 /*
-   Copyright 2020-2021 The Silkworm Authors
+   Copyright 2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -13,9 +13,9 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 */
-#include <catch2/catch.hpp>
-
 #include "log_cbor.hpp"
+
+#include <catch2/catch.hpp>
 
 #include <silkworm/common/test_util.hpp>
 
@@ -30,10 +30,11 @@ TEST_CASE("CBOR encoding of empty logs") {
 TEST_CASE("CBOR encoding of logs") {
     auto logs{test::sample_receipts().at(0).logs};
     auto encoded{cbor_encode(logs)};
-    CHECK(to_hex(encoded) == "828354ea674fdde714fd979de3edf0f56aa9716b898ec88043010043835444fd3ab8381cc3d"
-                             "14afa7c4af7fd13cdc65026e1825820000000000000000000000000000000000000000000000"
-                             "000000000000000dead582000000000000000000000000000000000000000000000000000000"
-                             "0000000abba46aabbff780043");
+    CHECK(to_hex(encoded) ==
+          "828354ea674fdde714fd979de3edf0f56aa9716b898ec88043010043835444fd3ab8381cc3d"
+          "14afa7c4af7fd13cdc65026e1825820000000000000000000000000000000000000000000000"
+          "000000000000000dead582000000000000000000000000000000000000000000000000000000"
+          "0000000abba46aabbff780043");
 }
 
 }  // namespace silkworm

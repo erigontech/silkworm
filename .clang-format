@@ -1,25 +1,30 @@
 BasedOnStyle: Google
-ColumnLimit: 120
+ColumnLimit: 0
 IndentWidth: 4
 AccessModifierOffset: -2
 NamespaceIndentation: Inner
-
+AllowShortEnumsOnASingleLine: false
 DerivePointerAlignment: false
 PointerAlignment: Left
 
 IncludeCategories:
+  # coroutine.hpp has to go before the boost headers,
+  # otherwise boost::asio fails to compile on GCC 12
+  - Regex:           '<silkworm/concurrency/coroutine\.hpp>'
+    Priority:        30
+  
   # Silkworm headers
   - Regex:           '<silkworm.*'
-    Priority:        4
+    Priority:        50
   
   # C standard library
   - Regex:           '<[[:alnum:]]+\.h>'
-    Priority:        1
+    Priority:        10
 
   # C++ standard library
   - Regex:           '<[[:alnum:]_]+>'
-    Priority:        2
+    Priority:        20
 
   # Third-party libraries
   - Regex:           '<.*'
-    Priority:        3
+    Priority:        40

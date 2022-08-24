@@ -1,5 +1,5 @@
 /*
-   Copyright 2021-2022 The Silkworm Authors
+   Copyright 2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -39,7 +39,7 @@ InboundNewBlock::InboundNewBlock(const sentry::InboundMessage& msg) {
     SILK_TRACE << "Received message " << *this;
 }
 
-void InboundNewBlock::execute(Db::ReadOnlyAccess, HeaderChain&, BodySequence& bs, SentryClient&) {
+void InboundNewBlock::execute(db::ROAccess, HeaderChain&, BodySequence& bs, SentryClient&) {
     SILK_TRACE << "Processing message " << *this;
 
     // todo: complete implementation
@@ -47,7 +47,7 @@ void InboundNewBlock::execute(Db::ReadOnlyAccess, HeaderChain&, BodySequence& bs
     // use packet_.td ?
     hc.accept_header(packet_.block.header); // process as single header segment
     */
-    bs.accept_new_block(packet_.block, peerId_); // add to prefetched bodies
+    bs.accept_new_block(packet_.block, peerId_);  // add to prefetched bodies
 }
 
 uint64_t InboundNewBlock::reqId() const { return reqId_; }

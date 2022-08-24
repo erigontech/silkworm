@@ -1,24 +1,25 @@
 /*
-    Copyright 2022 The Silkworm Authors
+   Copyright 2022 The Silkworm Authors
 
-    Licensed under the Apache License, Version 2.0 (the "License");
-    you may not use this file except in compliance with the License.
-    You may obtain a copy of the License at
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
 
-        http://www.apache.org/licenses/LICENSE-2.0
+       http://www.apache.org/licenses/LICENSE-2.0
 
-    Unless required by applicable law or agreed to in writing, software
-    distributed under the License is distributed on an "AS IS" BASIS,
-    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-    See the License for the specific language governing permissions and
-    limitations under the License.
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
 */
 
 #include "ecies_cipher.hpp"
+
 #include <cassert>
 #include <memory>
-#include <gsl/util>
 
+#include <gsl/util>
 #include <openssl/aes.h>
 #include <openssl/evp.h>
 #include <openssl/hmac.h>
@@ -93,10 +94,7 @@ size_t EciesCipher::round_up_to_block_size(size_t size) {
 }
 
 size_t EciesCipher::estimate_encrypted_size(size_t size) {
-    return size
-        + SecP256K1Context::kPublicKeySizeUncompressed
-        + AES_BLOCK_SIZE
-        + kMacSize;
+    return size + SecP256K1Context::kPublicKeySizeUncompressed + AES_BLOCK_SIZE + kMacSize;
 }
 
 // NIST SP 800-56 Concatenation Key Derivation Function (see section 5.8.1).
@@ -189,10 +187,7 @@ Bytes EciesCipher::serialize_message(const Message& message) {
     Bytes key_data = ctx.serialize_public_key(&public_key, /* is_compressed = */ false);
 
     Bytes data;
-    data.reserve(key_data.size()
-            + message.iv.size()
-            + message.cipher_text.size()
-            + message.mac.size());
+    data.reserve(key_data.size() + message.iv.size() + message.cipher_text.size() + message.mac.size());
     data.append(key_data);
     data.append(message.iv);
     data.append(message.cipher_text);
@@ -233,6 +228,5 @@ Bytes EciesCipher::encrypt(ByteView plain_text, PublicKeyView public_key, ByteVi
 Bytes EciesCipher::decrypt(ByteView message_data, PrivateKeyView private_key, ByteView mac_extra_data) {
     return decrypt_message(deserialize_message(message_data), private_key, mac_extra_data);
 }
-
 
 }  // namespace silkworm::sentry::rlpx::auth

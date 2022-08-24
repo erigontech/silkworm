@@ -1,17 +1,17 @@
 /*
-Copyright 2021-2022 The Silkworm Authors
+   Copyright 2022 The Silkworm Authors
 
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
 
-    http://www.apache.org/licenses/LICENSE-2.0
+       http://www.apache.org/licenses/LICENSE-2.0
 
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
 */
 
 #include "outbound_new_block_hashes.hpp"
@@ -24,7 +24,7 @@ namespace silkworm {
 
 OutboundNewBlockHashes::OutboundNewBlockHashes() {}
 
-void OutboundNewBlockHashes::execute(Db::ReadOnlyAccess, HeaderChain& hc, BodySequence&, SentryClient& sentry) {
+void OutboundNewBlockHashes::execute(db::ROAccess, HeaderChain& hc, BodySequence&, SentryClient& sentry) {
     using namespace std::literals::chrono_literals;
 
     auto& announces_to_do = hc.announces_to_do();
@@ -48,7 +48,7 @@ void OutboundNewBlockHashes::execute(Db::ReadOnlyAccess, HeaderChain& hc, BodySe
     request->set_data(rlp_encoding.data(), rlp_encoding.length());  // copy
 
     SILK_TRACE << "Sending message OutboundNewBlockHashes (announcements) with send_message_to_all, content:"
-                 << packet_;
+               << packet_;
 
     rpc::SendMessageToAll rpc{std::move(request)};
 
@@ -65,7 +65,7 @@ void OutboundNewBlockHashes::execute(Db::ReadOnlyAccess, HeaderChain& hc, BodySe
 
     sentry::SentPeers peers = rpc.reply();
     SILK_TRACE << "Received rpc result of OutboundNewBlockHashes: "
-                 << std::to_string(peers.peers_size()) + " peer(s)";
+               << std::to_string(peers.peers_size()) + " peer(s)";
 
     announces_to_do.clear();  // clear announces from the queue
 }

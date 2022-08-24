@@ -1,5 +1,5 @@
 /*
-   Copyright 2021-2022 The Silkworm Authors
+   Copyright 2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -20,7 +20,7 @@
 
 namespace silkworm {
 
-BodyRetrieval::BodyRetrieval(Db::ReadOnlyAccess db_access) : db_tx_{db_access.start_ro_tx()} {}
+BodyRetrieval::BodyRetrieval(db::ROAccess db_access) : db_tx_{db_access.start_ro_tx()} {}
 
 std::vector<BlockBody> BodyRetrieval::recover(std::vector<Hash> request) {
     std::vector<BlockBody> response;
@@ -28,7 +28,7 @@ std::vector<BlockBody> BodyRetrieval::recover(std::vector<Hash> request) {
     for (size_t i = 0; i <= request.size(); ++i) {
         Hash& hash = request[i];
         BlockBody body;
-        if (!db_tx_.read_body(hash, body)) {
+        if (!db::read_body(db_tx_, hash, body)) {
             continue;
         }
         response.push_back(body);

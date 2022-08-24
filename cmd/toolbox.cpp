@@ -1,5 +1,5 @@
 /*
-   Copyright 2020-2022 The Silkworm Authors
+   Copyright 2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -291,7 +291,8 @@ void do_scan(const db::EnvConfig& config) {
 
     auto tablesInfo{get_tablesInfo(txn)};
 
-    std::cout << "\n Database tables    : " << tablesInfo.tables.size() << "\n" << std::endl;
+    std::cout << "\n Database tables    : " << tablesInfo.tables.size() << "\n"
+              << std::endl;
 
     if (!tablesInfo.tables.empty()) {
         std::cout << (boost::format(fmt_hdr) % "Dbi" % "Table name" % "Progress" % "Keys" % "Data" % "Total")
@@ -303,7 +304,8 @@ void do_scan(const db::EnvConfig& config) {
         for (dbTableEntry item : tablesInfo.tables) {
             mdbx::map_handle tbl_map;
 
-            std::cout << "\n" << (boost::format(" %3u %-24s ") % item.id % item.name) << std::flush;
+            std::cout << "\n"
+                      << (boost::format(" %3u %-24s ") % item.id % item.name) << std::flush;
 
             if (item.id < 2) {
                 tbl_map = mdbx::map_handle(item.id);
@@ -346,7 +348,8 @@ void do_scan(const db::EnvConfig& config) {
         }
     }
 
-    std::cout << "\n" << (SignalHandler::signalled() ? "Aborted" : "Done") << " !\n " << std::endl;
+    std::cout << "\n"
+              << (SignalHandler::signalled() ? "Aborted" : "Done") << " !\n " << std::endl;
     txn.commit();
     env.close(config.shared);
 }
@@ -365,7 +368,8 @@ void do_stages(db::EnvConfig& config) {
     auto crs{db::open_cursor(txn, db::table::kSyncStageProgress)};
 
     if (txn.get_map_stat(crs.map()).ms_entries) {
-        std::cout << "\n" << (boost::format(fmt_hdr) % "Stage Name" % "Block") << std::endl;
+        std::cout << "\n"
+                  << (boost::format(fmt_hdr) % "Stage Name" % "Block") << std::endl;
         std::cout << (boost::format(fmt_hdr) % std::string(24, '-') % std::string(10, '-')) << std::endl;
 
         auto result{crs.to_first(/*throw_notfound =*/false)};
@@ -385,9 +389,11 @@ void do_stages(db::EnvConfig& config) {
                       << std::endl;
             result = crs.to_next(/*throw_notfound =*/false);
         }
-        std::cout << "\n" << std::endl;
+        std::cout << "\n"
+                  << std::endl;
     } else {
-        std::cout << "\n There are no stages to list\n" << std::endl;
+        std::cout << "\n There are no stages to list\n"
+                  << std::endl;
     }
 
     txn.commit();
@@ -409,7 +415,8 @@ void do_migrations(db::EnvConfig& config) {
     auto crs{db::open_cursor(txn, db::table::kMigrations)};
 
     if (txn.get_map_stat(crs.map()).ms_entries) {
-        std::cout << "\n" << (boost::format(fmt_hdr) % "Migration Name") << std::endl;
+        std::cout << "\n"
+                  << (boost::format(fmt_hdr) % "Migration Name") << std::endl;
         std::cout << (boost::format(fmt_hdr) % std::string(24, '-')) << std::endl;
 
         auto result{crs.to_first(/*throw_notfound =*/false)};
@@ -417,9 +424,11 @@ void do_migrations(db::EnvConfig& config) {
             std::cout << (boost::format(fmt_row) % result.key.as_string()) << std::endl;
             result = crs.to_next(/*throw_notfound =*/false);
         }
-        std::cout << "\n" << std::endl;
+        std::cout << "\n"
+                  << std::endl;
     } else {
-        std::cout << "\n There are no migrations to list\n" << std::endl;
+        std::cout << "\n There are no migrations to list\n"
+                  << std::endl;
     }
 
     txn.commit();
@@ -463,7 +472,8 @@ void do_tables(db::EnvConfig& config) {
     auto dbFreeInfo{get_freeInfo(txn)};
 
     std::cout << "\n Database tables          : " << dbTablesInfo.tables.size() << std::endl;
-    std::cout << " Effective pruning        : " << db::read_prune_mode(txn).to_string() << "\n" << std::endl;
+    std::cout << " Effective pruning        : " << db::read_prune_mode(txn).to_string() << "\n"
+              << std::endl;
 
     if (!dbTablesInfo.tables.empty()) {
         std::cout << (boost::format(fmt_hdr) % "Dbi" % "Table name" % "Records" % "D" % "Branch" % "Leaf" % "Overflow" %
@@ -896,7 +906,8 @@ void do_first_byte_analysis(db::EnvConfig& config) {
     progress.set_current(total_entries);
     std::cout << progress.print_interval('.') << std::endl;
 
-    std::cout << "\n Last block : " << last_block << "\n Contracts  : " << total_entries << "\n" << std::endl;
+    std::cout << "\n Last block : " << last_block << "\n Contracts  : " << total_entries << "\n"
+              << std::endl;
 
     // Sort histogram by usage (from most used to less used)
     std::vector<std::pair<uint8_t, size_t>> histogram_sorted;
@@ -915,7 +926,8 @@ void do_first_byte_analysis(db::EnvConfig& config) {
         }
     }
 
-    std::cout << "\n" << std::endl;
+    std::cout << "\n"
+              << std::endl;
 }
 
 void do_extract_headers(db::EnvConfig& config, const std::string& file_name, uint32_t step) {
@@ -1013,7 +1025,8 @@ void do_trie_account_analysis(db::EnvConfig& config) {
             std::cout << (boost::format(" %4u %8u") % size % usage_count) << std::endl;
         }
     }
-    std::cout << "\n" << std::endl;
+    std::cout << "\n"
+              << std::endl;
 }
 
 void do_trie_scan(db::EnvConfig& config, bool del) {
@@ -1048,7 +1061,8 @@ void do_trie_scan(db::EnvConfig& config, bool del) {
     if (!SignalHandler::signalled()) {
         txn.commit();
     }
-    std::cout << "\n" << std::endl;
+    std::cout << "\n"
+              << std::endl;
 }
 
 void do_trie_integrity(db::EnvConfig& config, bool with_state_coverage, bool continue_scan, bool sanitize) {
@@ -1662,9 +1676,11 @@ int main(int argc, char* argv[]) {
         return 0;
 
     } catch (const std::exception& ex) {
-        std::cerr << "\nUnexpected error : " << ex.what() << "\n" << std::endl;
+        std::cerr << "\nUnexpected error : " << ex.what() << "\n"
+                  << std::endl;
     } catch (...) {
-        std::cerr << "\nUnexpected undefined error\n" << std::endl;
+        std::cerr << "\nUnexpected undefined error\n"
+                  << std::endl;
     }
 
     return -1;

@@ -20,8 +20,8 @@
 #include <functional>
 
 #include <grpcpp/grpcpp.h>
-#include <grpcpp/impl/codegen/async_unary_call.h>
 #include <grpcpp/impl/codegen/async_stream.h>
+#include <grpcpp/impl/codegen/async_unary_call.h>
 #include <grpcpp/impl/codegen/client_callback.h>
 #include <grpcpp/impl/codegen/client_context.h>
 #include <grpcpp/impl/codegen/completion_queue.h>
@@ -73,12 +73,11 @@ class AsyncCall {
 template <typename Reply>
 using AsyncResponseReaderPtr = std::unique_ptr<grpc::ClientAsyncResponseReaderInterface<Reply>>;
 
-template<
+template <
     typename Request,
     typename Reply,
     typename StubInterface,
-    AsyncResponseReaderPtr<Reply>(StubInterface::*PrepareAsyncUnary)(grpc::ClientContext*, const Request&, grpc::CompletionQueue*)
->
+    AsyncResponseReaderPtr<Reply> (StubInterface::*PrepareAsyncUnary)(grpc::ClientContext*, const Request&, grpc::CompletionQueue*)>
 class AsyncUnaryCall : public AsyncCall {
   public:
     using CompletionFunc = std::function<void(AsyncUnaryCall<Request, Reply, StubInterface, PrepareAsyncUnary>*)>;
@@ -86,7 +85,7 @@ class AsyncUnaryCall : public AsyncCall {
     static UnaryStats stats() { return unary_stats_; }
 
     explicit AsyncUnaryCall(grpc::CompletionQueue* queue, StubInterface* stub, CompletionFunc completion_handler = {})
-    : AsyncCall(queue), stub_(stub), completion_handler_(completion_handler) {
+        : AsyncCall(queue), stub_(stub), completion_handler_(completion_handler) {
         finish_processor_ = [&](bool ok) { process_finish(ok); };
     }
 
@@ -150,11 +149,10 @@ template <
     typename Request,
     typename Reply,
     typename StubInterface,
-    AsyncReaderPtr<Reply>(StubInterface::*PrepareAsyncServerStreaming)(grpc::ClientContext*, const Request&, grpc::CompletionQueue*)
->
+    AsyncReaderPtr<Reply> (StubInterface::*PrepareAsyncServerStreaming)(grpc::ClientContext*, const Request&, grpc::CompletionQueue*)>
 class AsyncServerStreamingCall : public AsyncCall {
   public:
-      static ServerStreamingStats stats() { return server_streaming_stats_; }
+    static ServerStreamingStats stats() { return server_streaming_stats_; }
 
     explicit AsyncServerStreamingCall(grpc::CompletionQueue* queue, StubInterface* stub)
         : AsyncCall(queue), stub_(stub) {
@@ -257,4 +255,4 @@ class AsyncServerStreamingCall : public AsyncCall {
     bool done_{false};
 };
 
-} // namespace silkworm::rpc
+}  // namespace silkworm::rpc

@@ -1,17 +1,17 @@
 /*
-    Copyright 2020 The Silkworm Authors
+   Copyright 2022 The Silkworm Authors
 
-    Licensed under the Apache License, Version 2.0 (the "License");
-    you may not use this file except in compliance with the License.
-    You may obtain a copy of the License at
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
 
-        http://www.apache.org/licenses/LICENSE-2.0
+       http://www.apache.org/licenses/LICENSE-2.0
 
-    Unless required by applicable law or agreed to in writing, software
-    distributed under the License is distributed on an "AS IS" BASIS,
-    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-    See the License for the specific language governing permissions and
-    limitations under the License.
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
 */
 
 #include <algorithm>
@@ -135,21 +135,21 @@ TEST_CASE("Oldest_First_Anchor_Queue - siblings handling") {
     anchor1->timestamp = now;
 
     auto anchor2 = std::make_shared<Anchor>(dummy_header, "dummy-peer-id");
-    anchor2->blockHeight = 1;   // same block number, it is a sibling
+    anchor2->blockHeight = 1;  // same block number, it is a sibling
     anchor2->timestamp = now;
 
     OldestFirstAnchorQueue queue;
 
     queue.push(anchor1);
 
-    queue.push(anchor2);            // add a sibling with different identity
-    queue.erase(anchor2);           // erase only 1 element using identity, not block number
+    queue.push(anchor2);   // add a sibling with different identity
+    queue.erase(anchor2);  // erase only 1 element using identity, not block number
     REQUIRE(queue.size() == 1);
 
-    queue.push(anchor1);            // add the same object, same identity
-    REQUIRE(queue.size() == 2);     // it should be present
-    queue.erase(anchor1);           // erase 1 element only
-    REQUIRE(queue.size() == 1);     
+    queue.push(anchor1);         // add the same object, same identity
+    REQUIRE(queue.size() == 2);  // it should be present
+    queue.erase(anchor1);        // erase 1 element only
+    REQUIRE(queue.size() == 1);
 }
 
 TEST_CASE("Youngest_First_Link_Queue") {
@@ -232,7 +232,6 @@ TEST_CASE("Oldest_First_Link_Queue") {
     queue.push(link2);
     queue.push(link3);
 
-
     SECTION("element ordering") {
         REQUIRE(queue.size() == 4);
 
@@ -283,14 +282,13 @@ TEST_CASE("Oldest_First_Link_Queue") {
         bool link1b_present = queue.contains(link1b);
         REQUIRE(link1b_present == false);
 
-        queue.push(link1b); // again, different identity
+        queue.push(link1b);  // again, different identity
 
         REQUIRE(queue.size() == 5);
         bool link1_present = queue.contains(link1);
         REQUIRE(link1_present == true);
         link1b_present = queue.contains(link1b);
         REQUIRE(link1b_present == true);
-
     }
 }
 
@@ -363,9 +361,10 @@ TEST_CASE("Oldest_First_Link_Map") {
         REQUIRE(*a != *c);
         REQUIRE(a->first == 1);
         REQUIRE(a->second->blockHeight == 1);
-        auto b = a; b++;
-        REQUIRE(a != b); // different iterator
-        REQUIRE(*a == *b); // same identity
+        auto b = a;
+        b++;
+        REQUIRE(a != b);    // different iterator
+        REQUIRE(*a == *b);  // same identity
         REQUIRE(b->first == 1);
         REQUIRE(b->second->blockHeight == 1);
         REQUIRE(++b == c);
@@ -377,7 +376,7 @@ TEST_CASE("Oldest_First_Link_Map") {
         auto link1b = std::make_shared<Link>(dummy_header, persisted);
         link1b->blockHeight = 1;
         link1b->persisted = !persisted;
-        queue.push(link1b); // again, different identity
+        queue.push(link1b);  // again, different identity
 
         REQUIRE(queue.size() == 5);
         bool link1_present = queue.contains(link1);
@@ -392,9 +391,10 @@ TEST_CASE("Oldest_First_Link_Map") {
         REQUIRE(*a != *c);
         REQUIRE(a->first == 1);
         REQUIRE(a->second->blockHeight == 1);
-        auto b = a; b++;
-        REQUIRE(a != b); // different iterator
-        REQUIRE(*a != *b); // different identity
+        auto b = a;
+        b++;
+        REQUIRE(a != b);    // different iterator
+        REQUIRE(*a != *b);  // different identity
         REQUIRE(b->first == 1);
         REQUIRE(b->second->blockHeight == 1);
         REQUIRE(++b == c);

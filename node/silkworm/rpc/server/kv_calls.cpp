@@ -26,17 +26,17 @@ namespace silkworm::rpc {
 
 namespace detail {
 
-std::string dump_mdbx_result(const mdbx::cursor::move_result& result) {
-    std::string dump{"done="};
-    dump.append(std::to_string(result.done));
-    dump.append(" bool(key)=");
-    dump.append(std::to_string(bool(result.key)));
-    dump.append(" bool(value)=");
-    dump.append(std::to_string(bool(result.value)));
-    return dump;
-}
+    std::string dump_mdbx_result(const mdbx::cursor::move_result& result) {
+        std::string dump{"done="};
+        dump.append(std::to_string(result.done));
+        dump.append(" bool(key)=");
+        dump.append(std::to_string(bool(result.key)));
+        dump.append(" bool(value)=");
+        dump.append(std::to_string(bool(result.value)));
+        return dump;
+    }
 
-} // namespace detail
+}  // namespace detail
 
 types::VersionReply KvVersionCall::response_;
 
@@ -97,7 +97,7 @@ void TxCall::set_max_ttl_duration(const boost::posix_time::milliseconds& max_ttl
 
 TxCall::TxCall(boost::asio::io_context& scheduler, remote::KV::AsyncService* service, grpc::ServerCompletionQueue* queue, Handlers handlers)
     : BidirectionalStreamingRpc<remote::KV::AsyncService, remote::Cursor, remote::Pair>(scheduler, service, queue, handlers),
-    max_ttl_timer_{scheduler} {
+      max_ttl_timer_{scheduler} {
 }
 
 void TxCall::start() {
@@ -234,72 +234,56 @@ void TxCall::handle_operation(const remote::Cursor* request, db::Cursor& cursor)
     switch (request->op()) {
         case remote::Op::FIRST: {
             handle_first(cursor);
-        }
-        break;
+        } break;
         case remote::Op::FIRST_DUP: {
             handle_first_dup(cursor);
-        }
-        break;
+        } break;
         case remote::Op::SEEK: {
             handle_seek(request, cursor);
-        }
-        break;
+        } break;
         case remote::Op::SEEK_BOTH: {
             handle_seek_both(request, cursor);
-        }
-        break;
+        } break;
         case remote::Op::SEEK_EXACT: {
             handle_seek_exact(request, cursor);
-        }
-        break;
+        } break;
         case remote::Op::SEEK_BOTH_EXACT: {
             handle_seek_both_exact(request, cursor);
-        }
-        break;
+        } break;
         case remote::Op::CURRENT: {
             handle_current(cursor);
-        }
-        break;
+        } break;
         case remote::Op::LAST: {
             handle_last(cursor);
-        }
-        break;
+        } break;
         case remote::Op::LAST_DUP: {
             handle_last_dup(cursor);
-        }
-        break;
+        } break;
         case remote::Op::NEXT: {
             handle_next(cursor);
-        }
-        break;
+        } break;
         case remote::Op::NEXT_DUP: {
             handle_next_dup(cursor);
-        }
-        break;
+        } break;
         case remote::Op::NEXT_NO_DUP: {
             handle_next_no_dup(cursor);
-        }
-        break;
+        } break;
         case remote::Op::PREV: {
             handle_prev(cursor);
-        }
-        break;
+        } break;
         case remote::Op::PREV_DUP: {
             handle_prev_dup(cursor);
-        }
-        break;
+        } break;
         case remote::Op::PREV_NO_DUP: {
             handle_prev_no_dup(cursor);
-        }
-        break;
+        } break;
         default: {
             std::string error_message{"unhandled operation "};
             error_message.append(remote::Op_Name(request->op()));
             error_message.append(" on cursor: ");
             error_message.append(std::to_string(request->cursor()));
             close_with_internal_error(error_message);
-        }
-        break;
+        } break;
     }
 
     SILK_TRACE << "TxCall::handle_operation " << this << " op=" << remote::Op_Name(request->op()) << " END";
@@ -338,7 +322,7 @@ void TxCall::handle_max_ttl_timer_expired(const boost::system::error_code& ec) {
 }
 
 bool TxCall::save_cursors(std::vector<CursorPosition>& positions) {
-    for (const auto& [cursor_id, tx_cursor]: cursors_) {
+    for (const auto& [cursor_id, tx_cursor] : cursors_) {
         const auto result = tx_cursor.cursor.current(/*throw_notfound=*/false);
         SILK_DEBUG << "Tx save cursor: " << cursor_id << " result: " << detail::dump_mdbx_result(result);
         if (!result) {
@@ -357,7 +341,7 @@ bool TxCall::restore_cursors(std::vector<CursorPosition>& positions) {
 
     auto position_iterator = positions.begin();
 
-    for (auto& [cursor_id, tx_cursor]: cursors_) {
+    for (auto& [cursor_id, tx_cursor] : cursors_) {
         const std::string& bucket_name = tx_cursor.bucket_name;
         const db::MapConfig map_config{bucket_name.c_str()};
 
@@ -371,7 +355,7 @@ bool TxCall::restore_cursors(std::vector<CursorPosition>& positions) {
         mdbx::slice key{current_key.c_str()};
 
         // Restore each cursor saved position.
-        //TODO(canepat): change db::Cursor and replace with: cursor.map_flags() & MDBX_DUPSORT
+        // TODO(canepat): change db::Cursor and replace with: cursor.map_flags() & MDBX_DUPSORT
         if (cursor.txn().get_handle_info(cursor.map()).flags & MDBX_DUPSORT) {
             /* multi-value table */
             mdbx::slice value{current_value.c_str()};
@@ -387,9 +371,7 @@ bool TxCall::restore_cursors(std::vector<CursorPosition>& positions) {
             }
         } else {
             /* single-value table */
-            const auto result = (key.length() == 0) ?
-                cursor.to_first(/*throw_notfound=*/false) :
-                cursor.lower_bound(key, /*throw_notfound=*/false);
+            const auto result = (key.length() == 0) ? cursor.to_first(/*throw_notfound=*/false) : cursor.lower_bound(key, /*throw_notfound=*/false);
             SILK_DEBUG << "Tx restore cursor " << cursor_id << " for: " << bucket_name << " result: " << detail::dump_mdbx_result(result);
             if (!result) {
                 return false;
@@ -435,9 +417,7 @@ void TxCall::handle_seek(const remote::Cursor* request, db::Cursor& cursor) {
     SILK_TRACE << "TxCall::handle_seek " << this << " START";
     mdbx::slice key{request->k()};
 
-    const auto result = (key.length() == 0) ?
-        cursor.to_first(/*throw_notfound=*/false) :
-        cursor.lower_bound(key, /*throw_notfound=*/false);
+    const auto result = (key.length() == 0) ? cursor.to_first(/*throw_notfound=*/false) : cursor.lower_bound(key, /*throw_notfound=*/false);
 
     remote::Pair kv_pair;
     if (result) {
@@ -687,7 +667,8 @@ void StateChangesCall::process(const remote::StateChangeRequest* request) {
                 SILK_DEBUG << "State change stream closed sent: " << sent;
             }
         });
-    }, filter);
+    },
+                                filter);
 
     // The assigned token ID must be valid.
     if (!token_) {
@@ -715,4 +696,4 @@ void KvService::register_kv_request_calls(boost::asio::io_context& scheduler, re
     state_changes_factory_.create_rpc(scheduler, async_service, queue);
 }
 
-} // namespace silkworm::rpc
+}  // namespace silkworm::rpc

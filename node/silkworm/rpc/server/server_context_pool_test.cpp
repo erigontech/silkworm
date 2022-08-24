@@ -172,6 +172,6 @@ TEST_CASE("ServerContextPool", "[silkworm][rpc][server_context]") {
         CHECK_NOTHROW(server_context_pool.join());
     }
 }
-#endif // SILKWORM_SANITIZE
+#endif  // SILKWORM_SANITIZE
 
-} // namespace silkworm::rpc
+}  // namespace silkworm::rpc

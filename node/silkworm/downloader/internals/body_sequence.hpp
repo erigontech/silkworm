@@ -1,17 +1,17 @@
 /*
-Copyright 2021-2022 The Silkworm Authors
+   Copyright 2022 The Silkworm Authors
 
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
 
-    http://www.apache.org/licenses/LICENSE-2.0
+       http://www.apache.org/licenses/LICENSE-2.0
 
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
 */
 
 #pragma once
@@ -19,12 +19,11 @@ limitations under the License.
 #include <list>
 
 #include <silkworm/chain/identity.hpp>
-
-#include <silkworm/downloader/packets/new_block_packet.hpp>
+#include <silkworm/db/access_layer.hpp>
 #include <silkworm/downloader/packets/block_bodies_packet.hpp>
 #include <silkworm/downloader/packets/get_block_bodies_packet.hpp>
+#include <silkworm/downloader/packets/new_block_packet.hpp>
 
-#include "db_tx.hpp"
 #include "statistics.hpp"
 #include "types.hpp"
 
@@ -38,7 +37,7 @@ namespace silkworm {
  */
 class BodySequence {
   public:
-    BodySequence(const Db::ReadOnlyAccess&, const ChainIdentity&);
+    BodySequence(const db::ROAccess&, const ChainIdentity&);
     ~BodySequence();
 
     // sync current state - this must be done at body forward
@@ -73,12 +72,12 @@ class BodySequence {
     [[nodiscard]] const Download_Statistics& statistics() const;
 
     // downloading process tuning parameters
-    static /*constexpr*/ seconds_t kRequestDeadline; // = std::chrono::seconds(30);
-                                    // after this a response is considered lost it is related to Sentry's peerDeadline
-    static /*constexpr*/ milliseconds_t kNoPeerDelay; // = std::chrono::milliseconds(500);
-                                                                       // delay when no peer accepted the last request
-    static /*constexpr*/ size_t kPerPeerMaxOutstandingRequests; // = 4;
-    static /*constexpr*/ BlockNum kMaxBlocksPerMessage; // = 128;               // go-ethereum client acceptance limit
+    static /*constexpr*/ seconds_t kRequestDeadline;             // = std::chrono::seconds(30);
+                                                                 // after this a response is considered lost it is related to Sentry's peerDeadline
+    static /*constexpr*/ milliseconds_t kNoPeerDelay;            // = std::chrono::milliseconds(500);
+                                                                 // delay when no peer accepted the last request
+    static /*constexpr*/ size_t kPerPeerMaxOutstandingRequests;  // = 4;
+    static /*constexpr*/ BlockNum kMaxBlocksPerMessage;          // = 128;               // go-ethereum client acceptance limit
     static constexpr BlockNum kMaxAnnouncedBlocks = 10000;
 
   protected:
@@ -86,7 +85,7 @@ class BodySequence {
     void make_new_requests(GetBlockBodiesPacket66&, MinBlock&, time_point_t tp, seconds_t timeout);
     auto renew_stale_requests(GetBlockBodiesPacket66&, MinBlock&, time_point_t tp, seconds_t timeout)
         -> std::vector<PeerPenalization>;
-    void add_to_announcements(BlockHeader, BlockBody, Db::ReadOnlyAccess::Tx&);
+    void add_to_announcements(BlockHeader, BlockBody, db::ROTxn&);
 
     static bool is_valid_body(const BlockHeader&, const BlockBody&);
 
@@ -104,12 +103,13 @@ class BodySequence {
         void add(Block block);
         std::optional<BlockBody> remove(BlockNum bn);
         size_t size();
+
       private:
         std::map<BlockNum, Block> blocks_;
     };
 
-    //using IncreasingHeightOrderedMap = std::map<BlockNum, BodyRequest>; // default ordering: less<BlockNum>
-    struct IncreasingHeightOrderedRequestContainer: public std::map<BlockNum, BodyRequest> {
+    // using IncreasingHeightOrderedMap = std::map<BlockNum, BodyRequest>; // default ordering: less<BlockNum>
+    struct IncreasingHeightOrderedRequestContainer : public std::map<BlockNum, BodyRequest> {
         using Impl = std::map<BlockNum, BodyRequest>;
         using Iter = Impl::iterator;
 
@@ -124,7 +124,7 @@ class BodySequence {
     AnnouncedBlocks announced_blocks_;
     std::list<NewBlockPacket> announcements_to_do_;
 
-    Db::ReadOnlyAccess db_access_;
+    db::ROAccess db_access_;
     [[maybe_unused]] const ChainIdentity& chain_identity_;
 
     BlockNum highest_body_in_db_{0};
@@ -134,4 +134,4 @@ class BodySequence {
     Download_Statistics statistics_;
 };
 
-}
+}  // namespace silkworm

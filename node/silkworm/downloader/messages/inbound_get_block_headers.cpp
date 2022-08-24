@@ -1,5 +1,5 @@
 /*
-   Copyright 2021-2022 The Silkworm Authors
+   Copyright 2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -37,12 +37,12 @@ InboundGetBlockHeaders::InboundGetBlockHeaders(const sentry::InboundMessage& msg
     SILK_TRACE << "Received message " << *this;
 }
 
-void InboundGetBlockHeaders::execute(Db::ReadOnlyAccess db, HeaderChain&, BodySequence& bs, SentryClient& sentry) {
+void InboundGetBlockHeaders::execute(db::ROAccess db, HeaderChain&, BodySequence& bs, SentryClient& sentry) {
     using namespace std;
 
     SILK_TRACE << "Processing message " << *this;
 
-    if (bs.highest_block_in_db() == 0) // skip requests in the first sync even if we already saved some headers
+    if (bs.highest_block_in_db() == 0)  // skip requests in the first sync even if we already saved some headers
         return;
 
     HeaderRetrieval header_retrieval(db);
@@ -71,7 +71,7 @@ void InboundGetBlockHeaders::execute(Db::ReadOnlyAccess db, HeaderChain&, BodySe
     msg_reply->set_data(rlp_encoding.data(), rlp_encoding.length());  // copy
 
     SILK_TRACE << "Replying to " << identify(*this) << " using send_message_by_id with "
-                        << reply.request.size() << " headers";
+               << reply.request.size() << " headers";
 
     rpc::SendMessageById rpc{peerId_, std::move(msg_reply)};
     rpc.do_not_throw_on_failure();
@@ -80,11 +80,10 @@ void InboundGetBlockHeaders::execute(Db::ReadOnlyAccess db, HeaderChain&, BodySe
     if (rpc.status().ok()) {
         sentry::SentPeers peers = rpc.reply();
         SILK_TRACE << "Received rpc result of " << identify(*this) << ": "
-                     << std::to_string(peers.peers_size()) + " peer(s)";
-    }
-    else {
+                   << std::to_string(peers.peers_size()) + " peer(s)";
+    } else {
         SILK_TRACE << "Failure of rpc " << identify(*this) << ": "
-                     << rpc.status().error_message();
+                   << rpc.status().error_message();
     }
 }
 

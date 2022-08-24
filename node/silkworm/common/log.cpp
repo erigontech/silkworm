@@ -1,11 +1,11 @@
 /*
-   Copyright 2020-2022 The Silkworm Authors
+   Copyright 2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
    You may obtain a copy of the License at
 
-           http://www.apache.org/licenses/LICENSE-2.0
+       http://www.apache.org/licenses/LICENSE-2.0
 
    Unless required by applicable law or agreed to in writing, software
    distributed under the License is distributed on an "AS IS" BASIS,
@@ -84,9 +84,9 @@ static inline std::pair<const char*, const char*> get_level_settings(Level level
 
 struct separate_thousands : std::numpunct<char> {
     char separator;
-    explicit separate_thousands(char sep): separator(sep) {}
+    explicit separate_thousands(char sep) : separator(sep) {}
     char do_thousands_sep() const override { return separator; }
-    string_type do_grouping() const override { return "\3"; } // groups of 3 digit
+    string_type do_grouping() const override { return "\3"; }  // groups of 3 digit
 };
 
 BufferBase::BufferBase(Level level) : should_print_(level <= settings_.log_verbosity) {

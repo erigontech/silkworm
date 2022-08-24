@@ -1,5 +1,5 @@
 /*
-   Copyright 2020-2022 The Silkworm Authors
+   Copyright 2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -338,7 +338,11 @@ void init_pre_state(const nlohmann::json& pre, State& state) {
     }
 }
 
-enum class Status { kPassed, kFailed, kSkipped };
+enum class Status {
+    kPassed,
+    kFailed,
+    kSkipped
+};
 
 Status run_block(const nlohmann::json& json_block, Blockchain& blockchain) {
     bool invalid{json_block.contains("expectException")};
@@ -506,7 +510,8 @@ RunResults blockchain_test(const nlohmann::json& json_test) {
         evmc::bytes32 state_root{state.state_root_hash()};
         std::string expected_hex{json_test["postStateHash"].get<std::string>()};
         if (state_root != to_bytes32(from_hex(expected_hex).value())) {
-            std::cout << "postStateHash mismatch:\n" << to_hex(state_root) << " != " << expected_hex << std::endl;
+            std::cout << "postStateHash mismatch:\n"
+                      << to_hex(state_root) << " != " << expected_hex << std::endl;
             return Status::kFailed;
         } else {
             return Status::kPassed;

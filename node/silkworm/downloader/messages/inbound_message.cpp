@@ -1,5 +1,5 @@
 /*
-   Copyright 2021-2022 The Silkworm Authors
+   Copyright 2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -20,8 +20,8 @@
 
 #include <silkworm/common/log.hpp>
 
-#include "inbound_block_headers.hpp"
 #include "inbound_block_bodies.hpp"
+#include "inbound_block_headers.hpp"
 #include "inbound_get_block_bodies.hpp"
 #include "inbound_get_block_headers.hpp"
 #include "inbound_new_block.hpp"

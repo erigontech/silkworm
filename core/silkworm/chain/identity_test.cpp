@@ -1,5 +1,5 @@
 /*
-   Copyright 2021-2022 The Silkworm Authors
+   Copyright 2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -22,8 +22,18 @@ namespace silkworm {
 
 TEST_CASE("distinct_fork_numbers") {
     std::vector<BlockNum> expectedMainnetForkNumbers{
-        1'150'000, 1'920'000, 2'463'000,  2'675'000,  4'370'000,  7'280'000,
-        9'069'000, 9'200'000, 12'244'000, 12'965'000, 13'773'000, 15'050'000,
+        1'150'000,
+        1'920'000,
+        2'463'000,
+        2'675'000,
+        4'370'000,
+        7'280'000,
+        9'069'000,
+        9'200'000,
+        12'244'000,
+        12'965'000,
+        13'773'000,
+        15'050'000,
     };
 
     CHECK(kMainnetIdentity.distinct_fork_numbers() == expectedMainnetForkNumbers);

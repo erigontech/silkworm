@@ -1,5 +1,5 @@
 /*
-   Copyright 2020-2022 The Silkworm Authors
+   Copyright 2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -63,7 +63,8 @@ class EVM {
     EVM(const EVM&) = delete;
     EVM& operator=(const EVM&) = delete;
 
-    EVM(const Block& block, IntraBlockState& state, const ChainConfig& config) noexcept;
+    EVM(const Block& block, IntraBlockState& state, const ChainConfig& config)
+    noexcept;
 
     ~EVM();
 
@@ -97,9 +98,9 @@ class EVM {
   private:
     friend class EvmHost;
 
-    evmc::result create(const evmc_message& message) noexcept;
+    evmc::Result create(const evmc_message& message) noexcept;
 
-    evmc::result call(const evmc_message& message) noexcept;
+    evmc::Result call(const evmc_message& message) noexcept;
 
     evmc_result execute(const evmc_message& message, ByteView code, const evmc::bytes32* code_hash) noexcept;
 
@@ -149,9 +150,9 @@ class EvmHost : public evmc::Host {
     size_t copy_code(const evmc::address& address, size_t code_offset, uint8_t* buffer_data,
                      size_t buffer_size) const noexcept override;
 
-    void selfdestruct(const evmc::address& address, const evmc::address& beneficiary) noexcept override;
+    bool selfdestruct(const evmc::address& address, const evmc::address& beneficiary) noexcept override;
 
-    evmc::result call(const evmc_message& message) noexcept override;
+    evmc::Result call(const evmc_message& message) noexcept override;
 
     evmc_tx_context get_tx_context() const noexcept override;
 

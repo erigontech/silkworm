@@ -63,12 +63,9 @@ class CallFactory {
 
     CallFactory(typename CallHandlers::RequestRpcFunc request_rpc, std::size_t requestsInitialCapacity)
         : handlers_{
-            {
-                [&](auto& scheduler, auto* svc, auto* cq) { create_rpc(scheduler, svc, cq); },
-                [&](auto& rpc, bool cancelled) { cleanup_rpc(rpc, cancelled); }
-            },
-            request_rpc
-        } {
+              {[&](auto& scheduler, auto* svc, auto* cq) { create_rpc(scheduler, svc, cq); },
+               [&](auto& rpc, bool cancelled) { cleanup_rpc(rpc, cancelled); }},
+              request_rpc} {
         requests_.reserve(requestsInitialCapacity);
     }
 
@@ -98,4 +95,4 @@ class CallFactory {
     std::unordered_set<std::unique_ptr<BaseRpc>> requests_;
 };
 
-} // namespace silkworm::rpc
+}  // namespace silkworm::rpc

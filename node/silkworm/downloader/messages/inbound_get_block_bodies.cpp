@@ -1,5 +1,5 @@
 /*
-   Copyright 2021-2022 The Silkworm Authors
+   Copyright 2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 
 #include "inbound_get_block_bodies.hpp"
 
+#include <silkworm/common/cast.hpp>
 #include <silkworm/common/log.hpp>
 #include <silkworm/downloader/internals/body_retrieval.hpp>
 #include <silkworm/downloader/packets/block_bodies_packet.hpp>
@@ -46,7 +47,7 @@ func (p *Peer) ReplyBlockBodiesRLP(id uint64, bodies []rlp.RawValue) error {
         })
 }
  */
-void InboundGetBlockBodies::execute(Db::ReadOnlyAccess db, HeaderChain&, BodySequence& bs, SentryClient& sentry) {
+void InboundGetBlockBodies::execute(db::ROAccess db, HeaderChain&, BodySequence& bs, SentryClient& sentry) {
     using namespace std;
 
     SILK_TRACE << "Processing message " << *this;
@@ -73,7 +74,7 @@ void InboundGetBlockBodies::execute(Db::ReadOnlyAccess db, HeaderChain&, BodySeq
     msg_reply->set_data(rlp_encoding.data(), rlp_encoding.length());  // copy
 
     SILK_TRACE << "Replying to " << identify(*this) << " using send_message_by_id with "
-                 << reply.request.size() << " bodies";
+               << reply.request.size() << " bodies";
 
     rpc::SendMessageById rpc(peerId_, std::move(msg_reply));
     rpc.do_not_throw_on_failure();
@@ -82,13 +83,11 @@ void InboundGetBlockBodies::execute(Db::ReadOnlyAccess db, HeaderChain&, BodySeq
     if (rpc.status().ok()) {
         sentry::SentPeers peers = rpc.reply();
         SILK_TRACE << "Received rpc result of " << identify(*this) << ": "
-                     << std::to_string(peers.peers_size()) + " peer(s)";
-    }
-    else {
+                   << std::to_string(peers.peers_size()) + " peer(s)";
+    } else {
         SILK_TRACE << "Failure of rpc " << identify(*this) << ": "
-                     << rpc.status().error_message();
+                   << rpc.status().error_message();
     }
-
 }
 
 uint64_t InboundGetBlockBodies::reqId() const { return packet_.requestId; }

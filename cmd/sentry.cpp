@@ -21,8 +21,9 @@
 
 #include <silkworm/common/util.hpp>
 #include <silkworm/rpc/util.hpp>
-#include <silkworm/sentry/settings.hpp>
 #include <silkworm/sentry/sentry.hpp>
+#include <silkworm/sentry/settings.hpp>
+
 #include "common.hpp"
 
 using namespace silkworm;
@@ -47,9 +48,10 @@ Settings sentry_parse_cli_settings(int argc, char* argv[]) {
     auto nat_option = cli.add_option("--nat", [&settings](const CLI::results_t& results) {
         return lexical_cast(results[0], settings.nat);
     });
-    nat_option->description("NAT port mapping mechanism (none|extip:<IP>)\n"
-            "- none              no NAT, use a local IP as public\n"
-            "- extip:1.2.3.4     use the given public IP");
+    nat_option->description(
+        "NAT port mapping mechanism (none|extip:<IP>)\n"
+        "- none              no NAT, use a local IP as public\n"
+        "- extip:1.2.3.4     use the given public IP");
     nat_option->default_str("none");
 
     add_option_num_contexts(cli, settings.num_contexts);

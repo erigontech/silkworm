@@ -1,5 +1,5 @@
 /*
-   Copyright 2021-2022 The Silkworm Authors
+   Copyright 2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -23,7 +23,8 @@
 #include <stack>
 #include <vector>
 
-#include "db_tx.hpp"
+#include <silkworm/db/access_layer.hpp>
+
 #include "priority_queue.hpp"
 #include "types.hpp"
 
@@ -60,20 +61,20 @@ struct Link {
 
 // An anchor is the bottom of a chain bundle that consists of one anchor and some chain links.
 struct Anchor {
-    Hash parentHash;         // Hash of the header this anchor can be connected to (to disappear)
-    BlockNum blockHeight;    // block height of the anchor
-    time_point_t timestamp;  // request/arrival time
-    time_point_t prev_timestamp;  // Used to restore timestamp when a request fails for network reasons
-    int timeouts = 0;  // Number of timeout that this anchor has experienced;after certain threshold,it gets invalidated
+    Hash parentHash;                           // Hash of the header this anchor can be connected to (to disappear)
+    BlockNum blockHeight;                      // block height of the anchor
+    time_point_t timestamp;                    // request/arrival time
+    time_point_t prev_timestamp;               // Used to restore timestamp when a request fails for network reasons
+    int timeouts = 0;                          // Number of timeout that this anchor has experienced;after certain threshold,it gets invalidated
     std::vector<std::shared_ptr<Link>> links;  // Links attached immediately to this anchor
-    BlockNum lastLinkHeight; // the blockHeight of the last link of the chain bundle anchored to this
+    BlockNum lastLinkHeight;                   // the blockHeight of the last link of the chain bundle anchored to this
     PeerId peerId;
 
     Anchor(const BlockHeader& header, PeerId p) {
         parentHash = header.parent_hash;
         blockHeight = header.number;
         lastLinkHeight = blockHeight;
-        //timestamp = 0;  // ready to get extended
+        // timestamp = 0;  // ready to get extended
         peerId = std::move(p);
     }
 
@@ -104,27 +105,23 @@ struct Anchor {
 // Binary relations to use in priority queues
 struct LinkOlderThan : public std::function<bool(std::shared_ptr<Link>, std::shared_ptr<Link>)> {
     bool operator()(const std::shared_ptr<Link>& x, const std::shared_ptr<Link>& y) const {
-        return x->blockHeight != y->blockHeight ?
-               x->blockHeight < y->blockHeight :   // cause ordering
-               x < y;                              // preserve identity
+        return x->blockHeight != y->blockHeight ? x->blockHeight < y->blockHeight :  // cause ordering
+                   x < y;                                                            // preserve identity
     }
 };
 
 struct LinkYoungerThan : public std::function<bool(std::shared_ptr<Link>, std::shared_ptr<Link>)> {
     bool operator()(const std::shared_ptr<Link>& x, const std::shared_ptr<Link>& y) const {
-        return x->blockHeight != y->blockHeight ?
-               x->blockHeight > y->blockHeight :   // cause ordering
-               x > y;                              // preserve identity
+        return x->blockHeight != y->blockHeight ? x->blockHeight > y->blockHeight :  // cause ordering
+                   x > y;                                                            // preserve identity
     }
 };
 
 struct AnchorYoungerThan : public std::function<bool(std::shared_ptr<Link>, std::shared_ptr<Link>)> {
     bool operator()(const std::shared_ptr<Anchor>& x, const std::shared_ptr<Anchor>& y) const {
-        return x->timestamp != y->timestamp ?
-               x->timestamp > y->timestamp :      // prefer smaller timestamp
-               (x->blockHeight != y->blockHeight ?
-                x->blockHeight > y->blockHeight : // when timestamps are the same prioritise low blockHeight
-                x > y);                           // when blockHeight are the same preserve identity
+        return x->timestamp != y->timestamp ? x->timestamp > y->timestamp :               // prefer smaller timestamp
+                   (x->blockHeight != y->blockHeight ? x->blockHeight > y->blockHeight :  // when timestamps are the same prioritise low blockHeight
+                        x > y);                                                           // when blockHeight are the same preserve identity
     }
 };
 
@@ -144,13 +141,13 @@ struct BlockOlderThan : public std::function<bool(BlockNum, BlockNum)> {
 // - get parent header when we need to verify a new one
 // using OldestFirstLinkQueue = std::multimap<BlockNum, std::shared_ptr<Link>, BlockOlderThan>;
 
-} // close namespace to define mbpq_key - I do not like this
-template<>
-struct mbpq_key<std::shared_ptr<Link>> {    // extract key type and value
-    using type = BlockNum;   // type of the key
-    static type value(const std::shared_ptr<Link>& l) { return l->blockHeight; } // value of the key
+}  // namespace silkworm
+template <>
+struct mbpq_key<std::shared_ptr<silkworm::Link>> {                                          // extract key type and value
+    using type = silkworm::BlockNum;                                                        // type of the key
+    static type value(const std::shared_ptr<silkworm::Link>& l) { return l->blockHeight; }  // value of the key
 };
-namespace silkworm { // reopen namespace
+namespace silkworm {  // reopen namespace
 
 using OldestFirstLinkMap = map_based_priority_queue<std::shared_ptr<Link>, BlockOlderThan>;
 
@@ -160,13 +157,13 @@ using OldestFirstLinkQueue = set_based_priority_queue<std::shared_ptr<Link>, Lin
 // - store the links
 // - get younger links to evict when we need to free memory
 using YoungestFirstLinkQueue = set_based_priority_queue<std::shared_ptr<Link>,
-        LinkYoungerThan>;  // c++ set put min at the top
+                                                        LinkYoungerThan>;  // c++ set put min at the top
 
 // We need a queue for anchors to get anchors in reverse order respect to timestamp
 // (that is the time at which we asked peers for ancestor of the anchor)
 using OldestFirstAnchorQueue = heap_based_priority_queue<std::shared_ptr<Anchor>,
-        std::vector<std::shared_ptr<Anchor>>,  // inner impl
-        AnchorYoungerThan>;  // c++ heap is a max heap
+                                                         std::vector<std::shared_ptr<Anchor>>,  // inner impl
+                                                         AnchorYoungerThan>;                    // c++ heap is a max heap
 // (note that go heap is a min heap)
 
 // Maps
@@ -214,7 +211,7 @@ struct HeaderList : std::enable_shared_from_this<HeaderList> {
 
   private:
     HeaderList(std::vector<BlockHeader> headers)
-            : headers_(std::move(headers)) {}  // private, it needs to stay in the heap,
+        : headers_(std::move(headers)) {}  // private, it needs to stay in the heap,
     // use make method to get an instance
     std::vector<BlockHeader> headers_;
 
@@ -228,7 +225,7 @@ struct HeaderList : std::enable_shared_from_this<HeaderList> {
 // Segment, a sequence of headers connected to one another (with parent-hash relationship),
 // without any branching, ordered from high block number to lower block number, from children to parents
 struct Segment
-        : public std::vector<HeaderList::Header_Ref> {  // pointers/iterators to the headers that belongs to this segment
+    : public std::vector<HeaderList::Header_Ref> {  // pointers/iterators to the headers that belongs to this segment
 
     Segment(std::shared_ptr<HeaderList> line) : line_(line) {}
 

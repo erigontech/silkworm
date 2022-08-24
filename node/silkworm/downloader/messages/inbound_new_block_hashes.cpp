@@ -1,5 +1,5 @@
 /*
-   Copyright 2021-2022 The Silkworm Authors
+   Copyright 2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@
 
 #include <algorithm>
 
+#include <silkworm/common/cast.hpp>
 #include <silkworm/common/log.hpp>
 #include <silkworm/downloader/internals/random_number.hpp>
 #include <silkworm/downloader/packets/rlp_eth66_packet_coding.hpp>
@@ -39,7 +40,7 @@ InboundNewBlockHashes::InboundNewBlockHashes(const sentry::InboundMessage& msg) 
     SILK_TRACE << "Received message " << *this;
 }
 
-void InboundNewBlockHashes::execute(Db::ReadOnlyAccess, HeaderChain& hc, BodySequence&, SentryClient& sentry) {
+void InboundNewBlockHashes::execute(db::ROAccess, HeaderChain& hc, BodySequence&, SentryClient& sentry) {
     using namespace std;
 
     SILK_TRACE << "Processing message " << *this;
@@ -80,7 +81,7 @@ void InboundNewBlockHashes::execute(Db::ReadOnlyAccess, HeaderChain& hc, BodySeq
 
         [[maybe_unused]] sentry::SentPeers peers = rpc.reply();
         SILK_TRACE << "Received rpc result of " << identify(*this) << ": "
-                     << std::to_string(peers.peers_size()) + " peer(s)";
+                   << std::to_string(peers.peers_size()) + " peer(s)";
 
         // calculate top seen block height
         max = std::max(max, packet_[i].number);

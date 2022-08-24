@@ -1,5 +1,5 @@
 /*
-   Copyright 2021-2022 The Silkworm Authors
+   Copyright 2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -16,10 +16,10 @@
 
 #pragma once
 
+#include <silkworm/db/access_layer.hpp>
 #include <silkworm/downloader/internals/body_sequence.hpp>
-#include <silkworm/downloader/internals/db_tx.hpp>
-#include <silkworm/downloader/internals/types.hpp>
 #include <silkworm/downloader/internals/header_chain.hpp>
+#include <silkworm/downloader/internals/types.hpp>
 #include <silkworm/downloader/sentry_client.hpp>
 
 namespace silkworm {
@@ -29,7 +29,7 @@ class Message {
     virtual std::string name() const = 0;
 
     // execute: inbound message send a reply, outbound message send a request
-    virtual void execute(Db::ReadOnlyAccess, HeaderChain&, BodySequence&, SentryClient&) = 0;
+    virtual void execute(db::ROAccess, HeaderChain&, BodySequence&, SentryClient&) = 0;
 
     virtual ~Message() = default;
 };

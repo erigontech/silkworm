@@ -23,9 +23,9 @@
 #include <remote/kv.grpc.pb.h>
 
 #include <silkworm/chain/config.hpp>
-#include <silkworm/rpc/server/server.hpp>
 #include <silkworm/rpc/server/backend_calls.hpp>
 #include <silkworm/rpc/server/kv_calls.hpp>
+#include <silkworm/rpc/server/server.hpp>
 
 namespace silkworm::rpc {
 
@@ -59,4 +59,4 @@ class BackEndKvServer : public Server {
     std::vector<std::unique_ptr<BackEndKvService>> backend_kv_services_;
 };
 
-} // namespace silkworm::rpc
+}  // namespace silkworm::rpc

@@ -1,5 +1,5 @@
 /*
-   Copyright 2020-2022 The Silkworm Authors
+   Copyright 2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -388,8 +388,8 @@ std::vector<std::string> Execution::get_log_progress() {
     processed_gas_ = 0;
     progress_lock.unlock();
 
-    return {"block",  std::to_string(block_num_),         "blocks/s", std::to_string(speed_blocks),
-            "txns/s", std::to_string(speed_transactions), "Mgas/s",   std::to_string(speed_mgas)};
+    return {"block", std::to_string(block_num_), "blocks/s", std::to_string(speed_blocks),
+            "txns/s", std::to_string(speed_transactions), "Mgas/s", std::to_string(speed_mgas)};
 }
 
 void Execution::revert_state(ByteView key, ByteView value, mdbx::cursor& plain_state_table,

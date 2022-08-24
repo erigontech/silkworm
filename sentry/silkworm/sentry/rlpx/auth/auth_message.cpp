@@ -1,28 +1,31 @@
 /*
-    Copyright 2022 The Silkworm Authors
+   Copyright 2022 The Silkworm Authors
 
-    Licensed under the Apache License, Version 2.0 (the "License");
-    you may not use this file except in compliance with the License.
-    You may obtain a copy of the License at
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
 
-        http://www.apache.org/licenses/LICENSE-2.0
+       http://www.apache.org/licenses/LICENSE-2.0
 
-    Unless required by applicable law or agreed to in writing, software
-    distributed under the License is distributed on an "AS IS" BASIS,
-    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-    See the License for the specific language governing permissions and
-    limitations under the License.
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
 */
 
 #include "auth_message.hpp"
+
 #include <algorithm>
 #include <functional>
+
 #include <silkworm/common/endian.hpp>
 #include <silkworm/common/secp256k1_context.hpp>
 #include <silkworm/rlp/decode.hpp>
 #include <silkworm/rlp/encode_vector.hpp>
 #include <silkworm/sentry/common/ecc_key_pair.hpp>
 #include <silkworm/sentry/common/random.hpp>
+
 #include "ecies_cipher.hpp"
 
 namespace silkworm::sentry::rlpx::auth {
@@ -71,7 +74,6 @@ AuthMessage::AuthMessage(
     : initiator_public_key_(initiator_key_pair.public_key()),
       recipient_public_key_(std::move(recipient_public_key)),
       ephemeral_public_key_(ephemeral_key_pair.public_key()) {
-
     Bytes shared_secret = EciesCipher::compute_shared_secret(recipient_public_key_, initiator_key_pair.private_key());
 
     nonce_ = common::random_bytes(shared_secret.size());

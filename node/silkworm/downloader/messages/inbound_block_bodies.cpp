@@ -1,5 +1,5 @@
 /*
-   Copyright 2021-2022 The Silkworm Authors
+   Copyright 2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 
 #include "inbound_block_bodies.hpp"
 
+#include <silkworm/common/cast.hpp>
 #include <silkworm/common/log.hpp>
 #include <silkworm/downloader/rpc/penalize_peer.hpp>
 
@@ -33,8 +34,7 @@ InboundBlockBodies::InboundBlockBodies(const sentry::InboundMessage& msg) {
     SILK_TRACE << "Received message " << *this;
 }
 
-void InboundBlockBodies::execute(Db::ReadOnlyAccess, HeaderChain&, BodySequence& bs, SentryClient& sentry) {
-
+void InboundBlockBodies::execute(db::ROAccess, HeaderChain&, BodySequence& bs, SentryClient& sentry) {
     SILK_TRACE << "Processing message " << *this;
 
     Penalty penalty = bs.accept_requested_bodies(packet_, peerId_);

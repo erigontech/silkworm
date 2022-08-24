@@ -1,5 +1,5 @@
 /*
-   Copyright 2021 The Silkworm Authors
+   Copyright 2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -18,12 +18,12 @@
 #include <atomic>
 
 #include <silkworm/chain/identity.hpp>
-#include <silkworm/downloader/internals/db_tx.hpp>
+#include <silkworm/db/access_layer.hpp>
 #include <silkworm/downloader/internals/types.hpp>
 #include <silkworm/downloader/messages/internal_message.hpp>
 
-#include "stage.h"
 #include "block_exchange.hpp"
+#include "stage.h"
 
 namespace silkworm {
 
@@ -64,14 +64,13 @@ namespace silkworm {
  */
 class HeadersStage : public Stage {
   public:
-    HeadersStage(const Db::ReadWriteAccess&, BlockExchange&);
+    HeadersStage(Status&, BlockExchange&);
     HeadersStage(const HeadersStage&) = delete;  // not copyable
     HeadersStage(HeadersStage&&) = delete;       // nor movable
     ~HeadersStage();
 
-    Stage::Result forward(bool first_sync) override;  // go forward, downloading headers
-    Stage::Result unwind_to(BlockNum new_height,
-                            Hash bad_block) override;  // go backward, unwinding headers to new_height
+    Stage::Result forward(db::RWTxn&) override;                      // go forward, downloading headers
+    Stage::Result unwind(db::RWTxn&, BlockNum new_height) override;  // go backward, unwinding headers to new_height
 
   private:
     void send_header_requests();  // send requests for more headers
@@ -79,9 +78,7 @@ class HeadersStage : public Stage {
     auto sync_header_chain(BlockNum highest_in_db) -> std::shared_ptr<InternalMessage<void>>;
     auto withdraw_stable_headers() -> std::shared_ptr<InternalMessage<std::tuple<Headers, bool>>>;
     auto update_bad_headers(std::set<Hash>) -> std::shared_ptr<InternalMessage<void>>;
-    void receive_message(const sentry::InboundMessage&);
 
-    Db::ReadWriteAccess db_access_;
     BlockExchange& block_downloader_;
 };
 

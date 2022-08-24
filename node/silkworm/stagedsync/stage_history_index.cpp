@@ -213,6 +213,8 @@ StageResult HistoryIndex::forward_impl(db::RWTxn& txn, const BlockNum from, cons
 
     collect_bitmaps_from_changeset(txn, source_config, from, to, storage);
 
+    const Bytes last_shard_suffix{db::block_key(UINT64_MAX)};
+
     if (!collector_->empty()) {
         log_lck.lock();
         loading_ = true;
@@ -220,12 +222,16 @@ StageResult HistoryIndex::forward_impl(db::RWTxn& txn, const BlockNum from, cons
         db::Cursor target(txn, target_config);
 
         // Collected bitmaps must be merged with the last uncompleted shard for each key
-        etl::LoadFunc load_func{[](const etl::Entry& entry, mdbx::cursor& index_cursor, MDBX_put_flags_t put_flags) {
+        etl::LoadFunc load_func{[&last_shard_suffix](const etl::Entry& entry,
+                                                     mdbx::cursor& index_cursor,
+                                                     MDBX_put_flags_t put_flags) {
             auto bitmap{db::bitmap::from_bytes(entry.value)};
 
             // Check whether we still need to rework the previous entry
-            Bytes shard_key{entry.key};
-            shard_key.append(db::block_key(UINT64_MAX));  // The highest uncompleted chunk
+            Bytes shard_key{entry.key
+                                .substr(0, entry.key.size() - sizeof(uint32_t)) /* remove etl ordering suffix */
+                                .append(last_shard_suffix)};                    /* and append const suffix for last key */
+
             auto index_data{index_cursor.find(db::to_slice(shard_key), /*throw_notfound=*/false)};
             if (index_data) {
                 // Merge previous and current bitmap
@@ -348,7 +354,7 @@ StageResult HistoryIndex::prune_impl(db::RWTxn& txn, const BlockNum threshold, c
     db::Cursor table(txn, table_config);
     auto data{table.to_first(false)};
     while (data) {
-        auto data_key_view{db::from_slice(data.key)};
+        const auto data_key_view{db::from_slice(data.key)};
 
         // Log and abort check
         if (const auto now{std::chrono::steady_clock::now()}; log_time <= now) {
@@ -402,11 +408,16 @@ void HistoryIndex::collect_bitmaps_from_changeset(db::RWTxn& txn, const db::MapC
     Bytes bitmaps_key{};
     size_t bitmaps_size{0};
 
-    auto bitmaps_flush{[&bitmaps, &bitmaps_size](etl::Collector* collector) {
-        for (const auto& [key, bitmap] : bitmaps) {
-            Bytes bitmap_data(bitmap.getSizeInBytes(), '\0');
-            bitmap.write(byte_ptr_cast(bitmap_data.data()));
-            collector->collect({key, bitmap_data});
+    // A note on flush_count
+    // Etl collector will sort and process entries lexicographically (using both key and value) for this reason we add
+    // flush_count as suffix of key, so we ensure for same account we process entries in the order they've been collected
+    uint32_t flush_count{0};
+    auto bitmaps_flush{[&bitmaps, &bitmaps_size, &flush_count](etl::Collector* collector) {
+        for (auto& [key, bitmap] : bitmaps) {
+            Bytes etl_key(key.size() + sizeof(uint32_t), '\0');
+            std::memcpy(&etl_key[0], key.data(), key.size());
+            endian::store_big_u32(&etl_key[key.size()], flush_count);
+            collector->collect({key, db::bitmap::to_bytes(bitmap)});
         }
         bitmaps.clear();
         bitmaps_size = 0;
@@ -438,7 +449,7 @@ void HistoryIndex::collect_bitmaps_from_changeset(db::RWTxn& txn, const db::MapC
         }
 
         while (source_data) {
-            auto source_data_value_view{db::from_slice(source_data.value)};
+            const auto source_data_value_view{db::from_slice(source_data.value)};
             if (storage) {
                 // Contract address + location
                 bitmaps_key.assign(source_data_key_view.substr(0, kAddressLength))
@@ -461,6 +472,7 @@ void HistoryIndex::collect_bitmaps_from_changeset(db::RWTxn& txn, const db::MapC
 
         // Flush bitmaps to etl if necessary
         if (bitmaps_size >= kBitmapBufferSizeLimit) {
+            ++flush_count;
             bitmaps_flush(collector_.get());
         }
 
@@ -469,6 +481,7 @@ void HistoryIndex::collect_bitmaps_from_changeset(db::RWTxn& txn, const db::MapC
     }
 
     if (bitmaps_size) {
+        ++flush_count;
         bitmaps_flush(collector_.get());
     }
 }

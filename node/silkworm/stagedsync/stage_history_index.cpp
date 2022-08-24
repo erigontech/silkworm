@@ -183,7 +183,7 @@ StageResult HistoryIndex::prune(db::RWTxn& txn) {
 
     } catch (const StageError& ex) {
         log::Error() << "Unexpected error in " << std::string(__FUNCTION__) << " : " << ex.what();
-        return magic_enum::enum_value<StageResult>(ex.err());
+        return magic_enum::enum_value<StageResult>(static_cast<size_t>(ex.err()));
     } catch (const mdbx::exception& ex) {
         log::Error() << "Unexpected db error in " << std::string(__FUNCTION__) << " : " << ex.what();
         return StageResult::kDbError;

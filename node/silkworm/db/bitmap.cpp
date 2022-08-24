@@ -1,5 +1,5 @@
 /*
-   Copyright 2021 The Silkworm Authors
+   Copyright 2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -74,8 +74,8 @@ roaring::Roaring cut_left(roaring::Roaring& bm, uint64_t size_limit) { return cu
 
 roaring::Roaring64Map cut_left(roaring::Roaring64Map& bm, uint64_t size_limit) { return cut_left_impl(bm, size_limit); }
 
-Bytes to_bytes(const roaring::Roaring64Map& bitmap) {
-    if(!bitmap.isEmpty()) {
+Bytes to_bytes(roaring::Roaring64Map& bitmap) {
+    if (!bitmap.isEmpty()) {
         Bytes ret(bitmap.getSizeInBytes(), '\0');
         bitmap.write(byte_ptr_cast(&ret[0]));
         return ret;
@@ -83,4 +83,11 @@ Bytes to_bytes(const roaring::Roaring64Map& bitmap) {
     return {};
 }
 
+roaring::Roaring64Map from_slice(mdbx::slice& data) {
+    return roaring::Roaring64Map::readSafe(data.char_ptr(), data.length());
+}
+
+roaring::Roaring64Map from_bytes(ByteView data) {
+    return roaring::Roaring64Map::readSafe(byte_ptr_cast(&data[0]), data.size());
+}
 }  // namespace silkworm::db::bitmap

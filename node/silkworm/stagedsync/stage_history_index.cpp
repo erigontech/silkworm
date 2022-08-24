@@ -125,6 +125,11 @@ StageResult HistoryIndex::unwind(db::RWTxn& txn, BlockNum to) {
                    {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
         collector_.reset();
         return static_cast<StageResult>(ex.err());
+    } catch (const mdbx::exception& ex) {
+        log::Error(std::string(stage_name_),
+                   {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
+        collector_.reset();
+        return StageResult::kDbError;
     } catch (const std::exception& ex) {
         collector_.reset();
         log::Error(std::string(stage_name_), {"exception", std::string(ex.what())});
@@ -177,7 +182,7 @@ StageResult HistoryIndex::prune(db::RWTxn& txn) {
         return StageResult::kSuccess;
 
     } catch (const StageError& ex) {
-        log::Error() << "Unexpected db error in " << std::string(__FUNCTION__) << " : " << ex.what();
+        log::Error() << "Unexpected error in " << std::string(__FUNCTION__) << " : " << ex.what();
         return magic_enum::enum_value<StageResult>(ex.err());
     } catch (const mdbx::exception& ex) {
         log::Error() << "Unexpected db error in " << std::string(__FUNCTION__) << " : " << ex.what();
@@ -211,7 +216,7 @@ StageResult HistoryIndex::forward_impl(db::RWTxn& txn, const BlockNum from, cons
 
         // Collected bitmaps must be merged with the last uncompleted shard for each key
         etl::LoadFunc load_func{[](const etl::Entry& entry, mdbx::cursor& index_cursor, MDBX_put_flags_t put_flags) {
-            auto bitmap{roaring::Roaring64Map::readSafe(byte_ptr_cast(entry.value.data()), entry.value.size())};
+            auto bitmap{db::bitmap::from_bytes(entry.value)};
 
             // Check whether we still need to rework the previous entry
             Bytes chunk_key{entry.key};
@@ -221,7 +226,7 @@ StageResult HistoryIndex::forward_impl(db::RWTxn& txn, const BlockNum from, cons
                 auto index_data{index_cursor.find(db::to_slice(chunk_key), false)};
                 if (index_data) {
                     // Merge previous and current bitmap
-                    bitmap |= roaring::Roaring64Map::readSafe(index_data.value.char_ptr(), index_data.value.length());
+                    bitmap |= db::bitmap::from_slice(index_data.value);
                     index_cursor.erase();  // Delete currently found record as it'll be rewritten
                 }
             }
@@ -270,7 +275,7 @@ StageResult HistoryIndex::unwind_impl(db::RWTxn& txn, const BlockNum from, const
     const auto keys{collect_unique_keys_from_changeset(txn, source_config, from, to, storage)};
     for (const auto& [key, created] : keys) {
         // Log and abort check
-        if (auto now{std::chrono::steady_clock::now()}; log_time <= now) {
+        if (const auto now{std::chrono::steady_clock::now()}; log_time <= now) {
             throw_if_stopping();
             log_lck.lock();
             current_key_ = abridge(to_hex(key, true), kAddressLength + 2);
@@ -296,7 +301,7 @@ StageResult HistoryIndex::unwind_impl(db::RWTxn& txn, const BlockNum from, const
                 break;
             }
 
-            auto db_bitmap{roaring::Roaring64Map::readSafe(index_data.value.char_ptr(), index_data.value.length())};
+            auto db_bitmap{db::bitmap::from_slice(index_data.value)};
             if (db_bitmap.maximum() <= to) {
                 break;
             }
@@ -306,9 +311,11 @@ StageResult HistoryIndex::unwind_impl(db::RWTxn& txn, const BlockNum from, const
                 shards_tampered = true;
             }
 
+            if (!shards_tampered) continue;
+
             if (db_bitmap.isEmpty()) {
                 // Delete this record and move to previous shard (if any)
-                shards_tampered = target.erase();
+                target.erase();
                 index_data = target.to_previous(false);
                 continue;
             }
@@ -333,7 +340,7 @@ StageResult HistoryIndex::prune_impl(db::RWTxn& txn, const BlockNum threshold, c
     using namespace std::chrono_literals;
     auto log_time{std::chrono::steady_clock::now()};
 
-    const db::MapConfig table_config{storage ? db::table::kStorageChangeSet : db::table::kAccountChangeSet};
+    const db::MapConfig table_config{storage ? db::table::kStorageHistory : db::table::kAccountHistory};
 
     std::unique_lock log_lck(sl_mutex_);
     operation_ = OperationType::Prune;
@@ -349,7 +356,7 @@ StageResult HistoryIndex::prune_impl(db::RWTxn& txn, const BlockNum threshold, c
         auto data_key_view{db::from_slice(data.key)};
 
         // Log and abort check
-        if (auto now{std::chrono::steady_clock::now()}; log_time <= now) {
+        if (const auto now{std::chrono::steady_clock::now()}; log_time <= now) {
             throw_if_stopping();
             log_lck.lock();
             current_key_ = abridge(to_hex(data_key_view, true), kAddressLength + 2);
@@ -358,32 +365,30 @@ StageResult HistoryIndex::prune_impl(db::RWTxn& txn, const BlockNum threshold, c
         }
 
         // Suffix indicates the upper bound of the shard.
-        auto suffix{endian::load_big_u64(&data_key_view[data_key_view.size() - sizeof(BlockNum)])};
+        const auto suffix{endian::load_big_u64(&data_key_view[data_key_view.size() - sizeof(BlockNum)])};
 
         // If below pruning threshold simply delete the record
         if (suffix <= threshold) {
             table.erase();
         } else {
             // Read current bitmap
-            auto bitmap{roaring::Roaring64Map::readSafe(data.value.char_ptr(), data.value.length())};
-            if (bitmap.minimum() <= threshold) {
-                // Build list of blocks to be pruned inside this shard
-                const auto subtrahend_bitmap{
-                    roaring::Roaring64Map(roaring::api::roaring_bitmap_from_range(bitmap.minimum(), threshold, 1))};
-                bitmap -= subtrahend_bitmap;  // and remove them
-
-                // Replace with new data or delete
+            auto bitmap{db::bitmap::from_slice(data.value)};
+            bool shard_shrunk{false};
+            while (!bitmap.isEmpty() && bitmap.minimum() <= threshold) {
+                bitmap.remove(bitmap.minimum());
+                shard_shrunk = true;
+            }
+            if (bitmap.isEmpty() || shard_shrunk) {
                 if (!bitmap.isEmpty()) {
-                    Bytes new_shard_data(bitmap.getSizeInBytes(), '\0');
-                    bitmap.write(byte_ptr_cast(&new_shard_data[0]));
-                    auto new_shard_slice{db::to_slice(new_shard_data)};
-                    mdbx::error::success_or_throw(
-                        table.put(db::to_slice(data_key_view), &new_shard_slice, MDBX_put_flags_t::MDBX_CURRENT));
+                    Bytes new_shard_data{db::bitmap::to_bytes(bitmap)};
+                    table.update(db::to_slice(data_key_view), db::to_slice(new_shard_data));
                 } else {
                     table.erase();
                 }
             }
         }
+
+        data = table.to_next(/*throw_notfound=*/false);
     }
 
     db::stages::write_stage_prune_progress(
@@ -430,7 +435,7 @@ void HistoryIndex::collect_bitmaps_from_changeset(db::RWTxn& txn, const db::MapC
         source_data_key_view.remove_prefix(sizeof(BlockNum));
 
         // Log and abort check
-        if (auto now{std::chrono::steady_clock::now()}; log_time <= now) {
+        if (const auto now{std::chrono::steady_clock::now()}; log_time <= now) {
             throw_if_stopping();
             std::unique_lock log_lck(sl_mutex_);
             current_key_ = std::to_string(reached_block_number);
@@ -500,7 +505,7 @@ std::unordered_map<Bytes, bool, boost::hash<Bytes>> HistoryIndex::collect_unique
         source_data_key_view.remove_prefix(sizeof(BlockNum));
 
         // Log and abort check
-        if (auto now{std::chrono::steady_clock::now()}; log_time <= now) {
+        if (const auto now{std::chrono::steady_clock::now()}; log_time <= now) {
             throw_if_stopping();
             std::unique_lock log_lck(sl_mutex_);
             current_key_ = std::to_string(reached_block_number);
@@ -510,8 +515,9 @@ std::unordered_map<Bytes, bool, boost::hash<Bytes>> HistoryIndex::collect_unique
         while (source_data) {
             auto source_data_value_view{db::from_slice(source_data.value)};
             if (storage) {
-                // Contract address + incarnation + location
-                unique_key.assign(source_data_key_view).append(source_data_value_view.substr(0, kHashLength));
+                // Contract address + location
+                unique_key.assign(source_data_key_view.substr(0, kAddressLength))
+                    .append(source_data_value_view.substr(0, kHashLength));
                 source_data_value_view.remove_prefix(kHashLength);
             } else {
                 // Only address for accounts

@@ -25,6 +25,7 @@
 #pragma GCC diagnostic pop
 
 #include <silkworm/common/base.hpp>
+#include <silkworm/db/mdbx.hpp>
 
 namespace silkworm::db::bitmap {
 
@@ -46,7 +47,13 @@ roaring::Roaring64Map cut_left(roaring::Roaring64Map& bitmap, uint64_t size_limi
 // Remove from a bitmap and return its biggest left part not exceeding a given size
 roaring::Roaring cut_left(roaring::Roaring& bitmap, uint64_t size_limit);
 
-//! \brief Returns Bytes of bitmap data
+//! \brief Returns Bytes of Roaring64Map data
 Bytes to_bytes(roaring::Roaring64Map& bitmap);
+
+//! \brief Returns Roaring64Map from MDBX's slice;
+roaring::Roaring64Map from_slice(mdbx::slice& data);
+
+//! \brief Returns Roaring64Map from Bytes/Byteview;
+roaring::Roaring64Map from_bytes(ByteView data);
 
 }  // namespace silkworm::db::bitmap

@@ -33,7 +33,7 @@ using namespace evmc::literals;
 
 namespace silkworm {
 
-TEST_CASE("Stage History") {
+TEST_CASE("Stage History Index") {
     test::Context context;
     db::RWTxn txn{context.txn()};
 
@@ -116,201 +116,135 @@ TEST_CASE("Stage History") {
     buffer.write_to_db();
     db::stages::write_stage_progress(*txn, db::stages::kExecutionKey, 3);
 
-    db::Cursor account_changes(txn, db::table::kAccountChangeSet);
-    REQUIRE(!account_changes.empty());
+    SECTION("Forward and Unwind") {
+        db::Cursor account_changes(txn, db::table::kAccountChangeSet);
+        REQUIRE(!account_changes.empty());
 
-    stagedsync::HistoryIndex stage_history_index(&context.node_settings());
-    REQUIRE(stage_history_index.forward(txn) == stagedsync::StageResult::kSuccess);
-    db::Cursor account_history(txn, db::table::kAccountHistory);
-    db::Cursor storage_history(txn, db::table::kStorageHistory);
-    REQUIRE(!account_history.empty());
-    REQUIRE(!storage_history.empty());
+        stagedsync::HistoryIndex stage_history_index(&context.node_settings());
+        REQUIRE(stage_history_index.forward(txn) == stagedsync::StageResult::kSuccess);
+        db::Cursor account_history(txn, db::table::kAccountHistory);
+        db::Cursor storage_history(txn, db::table::kStorageHistory);
+        REQUIRE(!account_history.empty());
+        REQUIRE(!storage_history.empty());
 
-    auto account_history_data{account_history.lower_bound(db::to_slice(sender), /*throw_notfound=*/false)};
-    REQUIRE(account_history_data.done);
-    auto account_history_data_view{db::from_slice(account_history_data.key)};
-    REQUIRE(endian::load_big_u64(&account_history_data_view[account_history_data_view.size() -8]) == UINT64_MAX);
-    auto account_history_bitmap{roaring::Roaring64Map::readSafe(account_history_data.value.char_ptr(), account_history_data.value.size())};
-    REQUIRE(account_history_bitmap.cardinality() == 3);
-    REQUIRE(account_history_bitmap.toString() == "{1,2,3}");
+        auto account_history_data{account_history.lower_bound(db::to_slice(sender), /*throw_notfound=*/false)};
+        REQUIRE(account_history_data.done);
+        auto account_history_data_view{db::from_slice(account_history_data.key)};
+        REQUIRE(endian::load_big_u64(&account_history_data_view[account_history_data_view.size() - 8]) == UINT64_MAX);
+        auto account_history_bitmap{db::bitmap::from_slice(account_history_data.value)};
+        REQUIRE(account_history_bitmap.cardinality() == 3);
+        REQUIRE(account_history_bitmap.toString() == "{1,2,3}");
 
-    auto storage_history_data{storage_history.lower_bound(db::to_slice(contract_address), /*throw_notfound=*/false)};
-    REQUIRE(storage_history_data.done);
-    auto storage_history_data_view{db::from_slice(storage_history_data.key)};
-    REQUIRE(endian::load_big_u64(&storage_history_data_view[storage_history_data_view.size() -8]) == UINT64_MAX);
-    auto storage_history_bitmap{roaring::Roaring64Map::readSafe(storage_history_data.value.char_ptr(), storage_history_data.value.size())};
-    REQUIRE(storage_history_bitmap.cardinality() == 3);
-    REQUIRE(storage_history_bitmap.toString() == "{1,2,3}");
+        auto storage_history_data{
+            storage_history.lower_bound(db::to_slice(contract_address), /*throw_notfound=*/false)};
+        REQUIRE(storage_history_data.done);
+        auto storage_history_data_view{db::from_slice(storage_history_data.key)};
+        REQUIRE(endian::load_big_u64(&storage_history_data_view[storage_history_data_view.size() - 8]) == UINT64_MAX);
+        auto storage_history_bitmap{db::bitmap::from_slice(storage_history_data.value)};
+        REQUIRE(storage_history_bitmap.cardinality() == 3);
+        REQUIRE(storage_history_bitmap.toString() == "{1,2,3}");
 
-    // The location is the first so it's at 0
-    evmc::bytes32 location{0x0000000000000000000000000000000000000000000000000000000000000000_bytes32};
-    // Composite: Address + Location
-    Bytes composite(kAddressLength + kHashLength, '\0');
-    std::memcpy(&composite[0], contract_address.bytes, kAddressLength);
-    std::memcpy(&composite[kAddressLength], location.bytes, kHashLength);
-    // Storage retrieving from Database
-    storage_history_data = storage_history.lower_bound(db::to_slice(composite), false);
-    REQUIRE(storage_history_data.done);
-    storage_history_data_view = db::from_slice(storage_history_data.key);
-    REQUIRE(storage_history_data_view.starts_with(composite));
-    REQUIRE(endian::load_big_u64(&storage_history_data_view[storage_history_data_view.size() -8]) == UINT64_MAX);
-    storage_history_bitmap = roaring::Roaring64Map::readSafe(storage_history_data.value.char_ptr(), storage_history_data.value.size());
-    REQUIRE(storage_history_bitmap.cardinality() == 3);
-    REQUIRE(storage_history_bitmap.toString() == "{1,2,3}");
+        // The location is the first so it's at 0
+        evmc::bytes32 location{0x0000000000000000000000000000000000000000000000000000000000000000_bytes32};
+        // Composite: Address + Location
+        Bytes composite(kAddressLength + kHashLength, '\0');
+        std::memcpy(&composite[0], contract_address.bytes, kAddressLength);
+        std::memcpy(&composite[kAddressLength], location.bytes, kHashLength);
 
-    REQUIRE(stage_history_index.unwind(txn, 2) == stagedsync::StageResult::kSuccess);
-    REQUIRE(db::stages::read_stage_progress(*txn, db::stages::kHistoryIndexKey) == 2);
-//
-//    account_history_table = db::open_cursor(*txn, db::table::kAccountHistory);
-//    storage_history_table = db::open_cursor(*txn, db::table::kStorageHistory);
-//    // Account retrieving from Database
-//    bitmap_address_sender_bytes = account_history_table.lower_bound(db::to_slice(sender)).value;
-//    bitmap_address_contract_bytes = account_history_table.lower_bound(db::to_slice(contract_address)).value;
-//    // Bitmaps computation of accounts
-//    bitmap_address_sender = roaring::Roaring64Map::readSafe(
-//        byte_ptr_cast(db::from_slice(bitmap_address_sender_bytes).data()), bitmap_address_sender_bytes.size());
-//    bitmap_address_contract = roaring::Roaring64Map::readSafe(
-//        byte_ptr_cast(db::from_slice(bitmap_address_contract_bytes).data()), bitmap_address_contract_bytes.size());
-//    // Checks on account's bitmaps
-//    CHECK(bitmap_address_sender.cardinality() == 2);
-//    CHECK(bitmap_address_contract.cardinality() == 2);
-//    CHECK(bitmap_address_sender.toString() == "{1,2}");
-//    CHECK(bitmap_address_contract.toString() == "{1,2}");
-//    // Storage retrieving from Database
-//    bitmap_storage_contract_bytes = storage_history_table.lower_bound(db::to_slice(composite)).value;
-//    // Bitmaps computing for storage
-//    bitmap_storage_contract = roaring::Roaring64Map::readSafe(
-//        byte_ptr_cast(db::from_slice(bitmap_storage_contract_bytes).data()), bitmap_storage_contract_bytes.size());
-//    // Checks on storage's bitmaps
-//    CHECK(bitmap_storage_contract.cardinality() == 2);
-//    CHECK(bitmap_storage_contract.toString() == "{1,2}");
+        // Storage retrieving from Database
+        storage_history_data = storage_history.lower_bound(db::to_slice(composite), false);
+        REQUIRE(storage_history_data.done);
+        storage_history_data_view = db::from_slice(storage_history_data.key);
+        REQUIRE(storage_history_data_view.starts_with(composite));
+        REQUIRE(endian::load_big_u64(&storage_history_data_view[storage_history_data_view.size() - 8]) == UINT64_MAX);
+        storage_history_bitmap = db::bitmap::from_slice(storage_history_data.value);
+        REQUIRE(storage_history_bitmap.cardinality() == 3);
+        REQUIRE(storage_history_bitmap.toString() == "{1,2,3}");
+
+        REQUIRE(stage_history_index.unwind(txn, 2) == stagedsync::StageResult::kSuccess);
+        REQUIRE(db::stages::read_stage_progress(*txn, db::stages::kHistoryIndexKey) == 2);
+
+        // Account retrieving from Database
+        account_history_data = account_history.lower_bound(db::to_slice(sender), /*throw_notfound=*/false);
+        REQUIRE(account_history_data.done);
+        account_history_bitmap = db::bitmap::from_slice(account_history_data.value);
+        REQUIRE(account_history_bitmap.cardinality() == 2);
+        REQUIRE(account_history_bitmap.toString() == "{1,2}");
+
+        // Contract retrieving from Database
+        account_history_data = account_history.lower_bound(db::to_slice(contract_address), /*throw_notfound=*/false);
+        REQUIRE(account_history_data.done);
+        account_history_bitmap = db::bitmap::from_slice(account_history_data.value);
+        REQUIRE(account_history_bitmap.cardinality() == 2);
+        REQUIRE(account_history_bitmap.toString() == "{1,2}");
+
+        // Storage retrieving from Database
+        storage_history_data = storage_history.lower_bound(db::to_slice(composite), false);
+        REQUIRE(storage_history_data.done);
+        storage_history_data_view = db::from_slice(storage_history_data.key);
+        REQUIRE(storage_history_data_view.starts_with(composite));
+        REQUIRE(endian::load_big_u64(&storage_history_data_view[storage_history_data_view.size() - 8]) == UINT64_MAX);
+        storage_history_bitmap = db::bitmap::from_slice(storage_history_data.value);
+        REQUIRE(storage_history_bitmap.cardinality() == 2);
+        REQUIRE(storage_history_bitmap.toString() == "{1,2}");
+    }
+
+    SECTION("Prune") {
+        // Prune from second block, so we delete block 1
+        // Alter node settings pruning
+        db::PruneDistance olderHistory, olderReceipts, olderSenders, olderTxIndex, olderCallTraces;
+        db::PruneThreshold beforeHistory, beforeReceipts, beforeSenders, beforeTxIndex, beforeCallTraces;
+        beforeHistory.emplace(2);  // Will delete any history before block 2
+        context.node_settings().prune_mode =
+            db::parse_prune_mode("h", olderHistory, olderReceipts, olderSenders, olderTxIndex, olderCallTraces,
+                                 beforeHistory, beforeReceipts, beforeSenders, beforeTxIndex, beforeCallTraces);
+
+        REQUIRE(context.node_settings().prune_mode->history().enabled());
+
+        stagedsync::HistoryIndex stage_history_index(&context.node_settings());
+        REQUIRE(stage_history_index.forward(txn) == stagedsync::StageResult::kSuccess);
+        REQUIRE(stage_history_index.prune(txn) == stagedsync::StageResult::kSuccess);
+        REQUIRE(db::stages::read_stage_progress(*txn, db::stages::kHistoryIndexKey) == 3);
+        REQUIRE(db::stages::read_stage_prune_progress(*txn, db::stages::kHistoryIndexKey) == 3);
+
+        db::Cursor account_history(txn, db::table::kAccountHistory);
+        db::Cursor storage_history(txn, db::table::kStorageHistory);
+        REQUIRE(!account_history.empty());
+        REQUIRE(!storage_history.empty());
+
+        auto account_history_data{account_history.lower_bound(db::to_slice(sender), /*throw_notfound=*/false)};
+        REQUIRE(account_history_data.done);
+        auto account_history_data_view{db::from_slice(account_history_data.key)};
+        REQUIRE(endian::load_big_u64(&account_history_data_view[account_history_data_view.size() - 8]) == UINT64_MAX);
+        auto account_history_bitmap{db::bitmap::from_slice(account_history_data.value)};
+        REQUIRE(account_history_bitmap.cardinality() == 2);
+        REQUIRE(account_history_bitmap.toString() == "{2,3}");
+
+        auto storage_history_data{
+            storage_history.lower_bound(db::to_slice(contract_address), /*throw_notfound=*/false)};
+        REQUIRE(storage_history_data.done);
+        auto storage_history_data_view{db::from_slice(storage_history_data.key)};
+        REQUIRE(endian::load_big_u64(&storage_history_data_view[storage_history_data_view.size() - 8]) == UINT64_MAX);
+        auto storage_history_bitmap{db::bitmap::from_slice(storage_history_data.value)};
+        REQUIRE(storage_history_bitmap.cardinality() == 2);
+        REQUIRE(storage_history_bitmap.toString() == "{2,3}");
+
+        // The location is the first so it's at 0
+        evmc::bytes32 location{0x0000000000000000000000000000000000000000000000000000000000000000_bytes32};
+        // Composite: Address + Location
+        Bytes composite(kAddressLength + kHashLength, '\0');
+        std::memcpy(&composite[0], contract_address.bytes, kAddressLength);
+        std::memcpy(&composite[kAddressLength], location.bytes, kHashLength);
+
+        // Storage retrieving from Database
+        storage_history_data = storage_history.lower_bound(db::to_slice(composite), false);
+        REQUIRE(storage_history_data.done);
+        storage_history_data_view = db::from_slice(storage_history_data.key);
+        REQUIRE(storage_history_data_view.starts_with(composite));
+        REQUIRE(endian::load_big_u64(&storage_history_data_view[storage_history_data_view.size() - 8]) == UINT64_MAX);
+        storage_history_bitmap = db::bitmap::from_slice(storage_history_data.value);
+        REQUIRE(storage_history_bitmap.cardinality() == 2);
+        REQUIRE(storage_history_bitmap.toString() == "{2,3}");
+    }
 }
-
-//TEST_CASE("Prune History Index") {
-//    test::Context context;
-//    db::RWTxn txn{context.txn()};
-//
-//    // ---------------------------------------
-//    // Prepare
-//    // ---------------------------------------
-//
-//    uint64_t block_number{1};
-//    auto miner{0x5a0b54d5dc17e0aadc383d2db43b0a0d3e029c4c_address};
-//
-//    Block block{};
-//    block.header.number = block_number;
-//    block.header.beneficiary = miner;
-//    block.header.gas_limit = 100'000;
-//    block.header.gas_used = 63'820;
-//
-//    // This contract initially sets its 0th storage to 0x2a
-//    // and its 1st storage to 0x01c9.
-//    // When called, it updates its 0th storage to the input provided.
-//    Bytes contract_code{*from_hex("600035600055")};
-//    Bytes deployment_code{*from_hex("602a6000556101c960015560068060166000396000f3") + contract_code};
-//
-//    block.transactions.resize(1);
-//    block.transactions[0].data = deployment_code;
-//    block.transactions[0].gas_limit = block.header.gas_limit;
-//    block.transactions[0].max_priority_fee_per_gas = 20 * kGiga;
-//    block.transactions[0].max_fee_per_gas = block.transactions[0].max_priority_fee_per_gas;
-//
-//    auto sender{0xb685342b8c54347aad148e1f22eff3eb3eb29391_address};
-//    block.transactions[0].r = 1;  // dummy
-//    block.transactions[0].s = 1;  // dummy
-//    block.transactions[0].from = sender;
-//
-//    db::Buffer buffer{*txn, 0};
-//    Account sender_account{};
-//    sender_account.balance = kEther;
-//    buffer.update_account(sender, std::nullopt, sender_account);
-//
-//    // ---------------------------------------
-//    // Execute first block
-//    // ---------------------------------------
-//    CHECK(execute_block(block, buffer, kMainnetConfig) == ValidationResult::kOk);
-//    auto contract_address{create_address(sender, /*nonce=*/0)};
-//
-//    // ---------------------------------------
-//    // Execute second block
-//    // ---------------------------------------
-//
-//    std::string new_val{"000000000000000000000000000000000000000000000000000000000000003e"};
-//
-//    block_number = 2;
-//    block.header.number = block_number;
-//    block.header.gas_used = 26'201;
-//
-//    block.transactions[0].nonce = 1;
-//    block.transactions[0].value = 1000;
-//
-//    block.transactions[0].to = contract_address;
-//    block.transactions[0].data = *from_hex(new_val);
-//
-//    CHECK(execute_block(block, buffer, kMainnetConfig) == ValidationResult::kOk);
-//
-//    // ---------------------------------------
-//    // Execute third block
-//    // ---------------------------------------
-//
-//    new_val = "000000000000000000000000000000000000000000000000000000000000003b";
-//
-//    block_number = 3;
-//    block.header.number = block_number;
-//    block.header.gas_used = 26'201;
-//
-//    block.transactions[0].nonce = 2;
-//    block.transactions[0].value = 1000;
-//
-//    block.transactions[0].to = contract_address;
-//    block.transactions[0].data = *from_hex(new_val);
-//
-//    CHECK(execute_block(block, buffer, kMainnetConfig) == ValidationResult::kOk);
-//    buffer.write_to_db();
-//    db::stages::write_stage_progress(*txn, db::stages::kExecutionKey, 3);
-//
-//    // Prune from second block, so we delete block 1
-//    // Alter nodesettings pruning
-//    db::PruneDistance olderHistory, olderReceipts, olderSenders, olderTxIndex, olderCallTraces;
-//    db::PruneThreshold beforeHistory, beforeReceipts, beforeSenders, beforeTxIndex, beforeCallTraces;
-//    beforeHistory.emplace(2);  // Will delete any history before block 2
-//    context.node_settings().prune_mode =
-//        db::parse_prune_mode("h", olderHistory, olderReceipts, olderSenders, olderTxIndex, olderCallTraces,
-//                             beforeHistory, beforeReceipts, beforeSenders, beforeTxIndex, beforeCallTraces);
-//
-//    stagedsync::HistoryIndex stage_history_index(&context.node_settings());
-//    REQUIRE(stage_history_index.forward(txn) == stagedsync::StageResult::kSuccess);
-//    REQUIRE(stage_history_index.prune(txn) == stagedsync::StageResult::kSuccess);
-//
-//    auto account_history_table{db::open_cursor(*txn, db::table::kAccountHistory)};
-//    auto storage_history_table{db::open_cursor(*txn, db::table::kStorageHistory)};
-//    // Account retrieving from Database
-//    auto bitmap_address_sender_bytes{account_history_table.lower_bound(db::to_slice(sender)).value};
-//    auto bitmap_address_contract_bytes{account_history_table.lower_bound(db::to_slice(contract_address)).value};
-//    // Bitmaps computation of accounts
-//    auto bitmap_address_sender{roaring::Roaring64Map::readSafe(
-//        byte_ptr_cast(db::from_slice(bitmap_address_sender_bytes).data()), bitmap_address_sender_bytes.size())};
-//    auto bitmap_address_contract{roaring::Roaring64Map::readSafe(
-//        byte_ptr_cast(db::from_slice(bitmap_address_contract_bytes).data()), bitmap_address_contract_bytes.size())};
-//    // Checks on account's bitmaps
-//    CHECK(bitmap_address_sender.cardinality() == 2);
-//    CHECK(bitmap_address_contract.cardinality() == 2);
-//    CHECK(bitmap_address_sender.toString() == "{2,3}");
-//    CHECK(bitmap_address_contract.toString() == "{2,3}");
-//    // The location is the first so it's at 0
-//    evmc::bytes32 location{0x0000000000000000000000000000000000000000000000000000000000000000_bytes32};
-//    // Composite: Address + Location
-//    Bytes composite(kAddressLength + kHashLength, '\0');
-//    std::memcpy(&composite[0], contract_address.bytes, kAddressLength);
-//    std::memcpy(&composite[kAddressLength], location.bytes, kHashLength);
-//    // Storage retrieving from Database
-//    auto bitmap_storage_contract_bytes{storage_history_table.lower_bound(db::to_slice(composite)).value};
-//    // Bitmaps computing for storage
-//    auto bitmap_storage_contract{roaring::Roaring64Map::readSafe(
-//        byte_ptr_cast(db::from_slice(bitmap_storage_contract_bytes).data()), bitmap_storage_contract_bytes.size())};
-//    // Checks on storage's bitmaps
-//    CHECK(bitmap_storage_contract.cardinality() == 2);
-//    CHECK(bitmap_storage_contract.toString() == "{2,3}");
-//}
-
 }  // namespace silkworm

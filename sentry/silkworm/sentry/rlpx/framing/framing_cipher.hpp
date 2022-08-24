@@ -38,6 +38,9 @@ class FramingCipher final {
     explicit FramingCipher(const KeyMaterial& key_material);
     ~FramingCipher();
 
+    FramingCipher(FramingCipher&&) noexcept;
+    FramingCipher& operator=(FramingCipher&&) noexcept;
+
     [[nodiscard]] Bytes encrypt_frame(Bytes frame_data);
 
     [[nodiscard]] static size_t header_size();

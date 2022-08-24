@@ -14,30 +14,15 @@
    limitations under the License.
 */
 
-#include "hello_message.hpp"
+#pragma once
 
-namespace silkworm::sentry::rlpx::auth {
+#include <silkworm/common/base.hpp>
 
-using common::Message;
+namespace silkworm::sentry::common {
 
-const uint8_t HelloMessage::kId = 0;
+struct Message {
+    uint8_t id;
+    Bytes data;
+};
 
-Bytes HelloMessage::rlp_encode() const {
-    // TODO
-    return Bytes();
-}
-
-HelloMessage HelloMessage::rlp_decode(ByteView) {
-    // TODO
-    return HelloMessage{};
-}
-
-Message HelloMessage::to_message() const {
-    return Message{kId, rlp_encode()};
-}
-
-HelloMessage HelloMessage::from_message(const Message& message) {
-    return rlp_decode(message.data);
-}
-
-}  // namespace silkworm::sentry::rlpx::auth
+}  // namespace silkworm::sentry::common

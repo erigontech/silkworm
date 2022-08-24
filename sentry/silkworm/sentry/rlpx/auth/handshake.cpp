@@ -19,7 +19,9 @@
 #include <silkworm/common/log.hpp>
 #include <silkworm/sentry/common/awaitable_wait_for_one.hpp>
 #include <silkworm/sentry/common/timeout.hpp>
+#include <silkworm/sentry/rlpx/common/disconnect_message.hpp>
 #include <silkworm/sentry/rlpx/framing/framing_cipher.hpp>
+#include <silkworm/sentry/rlpx/framing/message_stream.hpp>
 
 #include "auth_initiator.hpp"
 #include "auth_recipient.hpp"
@@ -30,6 +32,7 @@ namespace silkworm::sentry::rlpx::auth {
 
 using namespace std::chrono_literals;
 using namespace common::awaitable_wait_for_one;
+using common::Message;
 
 boost::asio::awaitable<AuthKeys> Handshake::auth(common::SocketStream& stream) {
     if (peer_public_key_) {
@@ -57,14 +60,26 @@ boost::asio::awaitable<void> Handshake::execute(common::SocketStream& stream) {
             auth_keys.recipient_first_message_data,
         }};
 
-    // TODO: Hello message exchange
+    framing::MessageStream message_stream{std::move(framing_cipher), stream};
+
     common::Timeout timeout(5s);
 
+    // TODO: init outgoing HelloMessage
     HelloMessage hello_message;
-    co_await (stream.send(hello_message.serialize()) || timeout());
+    co_await (message_stream.send(hello_message.to_message()) || timeout());
 
-    //    Bytes hello_reply_message_data = std::get<Bytes>(co_await (stream.receive() || timeout()));
-    //    HelloMessage hello_reply_message(hello_reply_message_data);
+    Message reply_message = std::get<Message>(co_await (message_stream.receive() || timeout()));
+    if (reply_message.id != HelloMessage::kId) {
+        if (reply_message.id == DisconnectMessage::kId) {
+            throw std::runtime_error("Handshake: Disconnect received");
+        } else {
+            throw std::runtime_error("Handshake: unexpected RLPx message");
+        }
+    }
+
+    HelloMessage hello_reply_message = HelloMessage::from_message(reply_message);
+
+    message_stream.enable_compression();
 }
 
 }  // namespace silkworm::sentry::rlpx::auth

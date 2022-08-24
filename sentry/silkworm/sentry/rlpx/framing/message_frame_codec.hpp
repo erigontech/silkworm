@@ -14,30 +14,21 @@
    limitations under the License.
 */
 
-#include "hello_message.hpp"
+#pragma once
 
-namespace silkworm::sentry::rlpx::auth {
+#include <silkworm/sentry/common/message.hpp>
 
-using common::Message;
+namespace silkworm::sentry::rlpx::framing {
 
-const uint8_t HelloMessage::kId = 0;
+class MessageFrameCodec {
+  public:
+    [[nodiscard]] Bytes encode(const common::Message& message) const;
+    [[nodiscard]] common::Message decode(ByteView frame_data) const;
 
-Bytes HelloMessage::rlp_encode() const {
-    // TODO
-    return Bytes();
-}
+    void enable_compression() { is_compression_enabled_ = true; }
 
-HelloMessage HelloMessage::rlp_decode(ByteView) {
-    // TODO
-    return HelloMessage{};
-}
+  private:
+    bool is_compression_enabled_{false};
+};
 
-Message HelloMessage::to_message() const {
-    return Message{kId, rlp_encode()};
-}
-
-HelloMessage HelloMessage::from_message(const Message& message) {
-    return rlp_decode(message.data);
-}
-
-}  // namespace silkworm::sentry::rlpx::auth
+}  // namespace silkworm::sentry::rlpx::framing

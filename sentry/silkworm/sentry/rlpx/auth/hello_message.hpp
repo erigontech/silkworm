@@ -17,15 +17,18 @@
 #pragma once
 
 #include <silkworm/common/base.hpp>
+#include <silkworm/sentry/common/message.hpp>
 
 namespace silkworm::sentry::rlpx::auth {
 
-class HelloMessage {
-  public:
-    HelloMessage() = default;
-    explicit HelloMessage(ByteView data);
+struct HelloMessage {
+    [[nodiscard]] Bytes rlp_encode() const;
+    [[nodiscard]] static HelloMessage rlp_decode(ByteView data);
 
-    [[nodiscard]] Bytes serialize() const;
+    [[nodiscard]] common::Message to_message() const;
+    [[nodiscard]] static HelloMessage from_message(const common::Message& message);
+
+    static const uint8_t kId;
 };
 
 }  // namespace silkworm::sentry::rlpx::auth

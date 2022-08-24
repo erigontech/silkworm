@@ -203,6 +203,14 @@ FramingCipher::~FramingCipher() {
     assert(true);
 }
 
+FramingCipher::FramingCipher(FramingCipher&& other) noexcept
+    : impl_(std::move(other.impl_)) {}
+
+FramingCipher& FramingCipher::operator=(FramingCipher&& other) noexcept {
+    this->impl_ = std::move(other.impl_);
+    return *this;
+}
+
 Bytes FramingCipher::encrypt_frame(Bytes frame_data) {
     return impl_->encrypt_frame(std::move(frame_data));
 }

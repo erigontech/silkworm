@@ -100,8 +100,7 @@ using WalkFunc = std::function<bool(::mdbx::cursor& cursor, ::mdbx::cursor::move
 
 //! \brief Convenience function to erase records of cursor
 static const WalkFunc walk_erase{[](::mdbx::cursor& cursor, ::mdbx::cursor::move_result&) -> bool {
-    cursor.erase();
-    return true;
+    return cursor.erase();
 }};
 
 //! \brief Essential environment settings

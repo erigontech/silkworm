@@ -42,7 +42,7 @@ static void cut_everything(roaring::Roaring& bm, uint64_t limit) {
 
 TEST_CASE("Roaring Bitmaps") {
     SECTION("Operator -=") {
-        // Building from ranges implies [a ... b)
+        // Building from ranges implies [a,b)
         auto minuend_bitmap{roaring::Roaring64Map(roaring::api::roaring_bitmap_from_range(1, 101, 1))};
         auto subtrahend_bitmap{roaring::Roaring64Map(roaring::api::roaring_bitmap_from_range(1, 25, 1))};
         minuend_bitmap -= subtrahend_bitmap;

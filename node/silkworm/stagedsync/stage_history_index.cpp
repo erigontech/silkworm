@@ -39,36 +39,36 @@ StageResult HistoryIndex::forward(db::RWTxn& txn) {
             db::stages::read_stage_progress(*txn, db::stages::kAccountHistoryIndexKey)};
         const auto previous_progress_storage{
             db::stages::read_stage_progress(*txn, db::stages::kStorageHistoryIndexKey)};
-        const auto execution_stage_progress{db::stages::read_stage_progress(*txn, db::stages::kExecutionKey)};
-        if (previous_progress == execution_stage_progress) {
+        const auto target_progress{db::stages::read_stage_progress(*txn, db::stages::kExecutionKey)};
+        if (previous_progress == target_progress) {
             // Nothing to process
             return StageResult::kSuccess;
-        } else if (previous_progress > execution_stage_progress) {
+        } else if (previous_progress > target_progress) {
             // Something bad had happened.  Maybe we need to unwind ?
             throw StageError(StageResult::kInvalidProgress,
                              "HistoryIndex progress " + std::to_string(previous_progress) +
-                                 " greater than Execution progress " + std::to_string(execution_stage_progress));
+                                 " greater than Execution progress " + std::to_string(target_progress));
         }
 
         reset_log_progress();
-        const BlockNum segment_width{execution_stage_progress - previous_progress};
+        const BlockNum segment_width{target_progress - previous_progress};
         if (segment_width > 16) {
             log::Info("Begin " + std::string(stage_name_),
                       {"op", std::string(magic_enum::enum_name<OperationType>(OperationType::Forward)), "from",
-                       std::to_string(previous_progress), "to", std::to_string(execution_stage_progress), "span",
+                       std::to_string(previous_progress), "to", std::to_string(target_progress), "span",
                        std::to_string(segment_width)});
         }
 
         collector_ = std::make_unique<etl::Collector>(node_settings_);
 
-        if (!previous_progress_accounts || previous_progress_accounts < previous_progress)
-            success_or_throw(forward_impl(txn, previous_progress_accounts, execution_stage_progress, false));
-        if (!previous_progress_storage || previous_progress_storage < previous_progress)
-            success_or_throw(forward_impl(txn, previous_progress_storage, execution_stage_progress, true));
+        if (previous_progress_accounts < target_progress)
+            success_or_throw(forward_impl(txn, previous_progress_accounts, target_progress, false));
+        if (previous_progress_storage < target_progress)
+            success_or_throw(forward_impl(txn, previous_progress_storage, target_progress, true));
 
         collector_.reset();
         reset_log_progress();
-        update_progress(txn, execution_stage_progress);
+        update_progress(txn, target_progress);
         txn.commit();
 
     } catch (const StageError& ex) {
@@ -212,41 +212,36 @@ StageResult HistoryIndex::forward_impl(db::RWTxn& txn, const BlockNum from, cons
         loading_ = true;
         log_lck.unlock();
         db::Cursor target(txn, target_config);
-        MDBX_put_flags_t db_flags{target.empty() ? MDBX_put_flags_t::MDBX_APPEND : MDBX_put_flags_t::MDBX_UPSERT};
 
         // Collected bitmaps must be merged with the last uncompleted shard for each key
         etl::LoadFunc load_func{[](const etl::Entry& entry, mdbx::cursor& index_cursor, MDBX_put_flags_t put_flags) {
             auto bitmap{db::bitmap::from_bytes(entry.value)};
 
             // Check whether we still need to rework the previous entry
-            Bytes chunk_key{entry.key};
-            chunk_key.append(db::block_key(UINT64_MAX));  // The highest uncompleted chunk
-
-            if (put_flags != MDBX_put_flags_t::MDBX_APPEND) {
-                auto index_data{index_cursor.find(db::to_slice(chunk_key), false)};
-                if (index_data) {
-                    // Merge previous and current bitmap
-                    bitmap |= db::bitmap::from_slice(index_data.value);
-                    index_cursor.erase();  // Delete currently found record as it'll be rewritten
-                }
+            Bytes shard_key{entry.key};
+            shard_key.append(db::block_key(UINT64_MAX));  // The highest uncompleted chunk
+            auto index_data{index_cursor.find(db::to_slice(shard_key), /*throw_notfound=*/false)};
+            if (index_data) {
+                // Merge previous and current bitmap
+                bitmap |= db::bitmap::from_slice(index_data.value);
+                index_cursor.erase();  // Delete currently found record as it'll be rewritten
             }
 
             // Consume the bitmap splitting it in chunks
             while (!bitmap.isEmpty()) {
-                auto bitmap_chunk{db::bitmap::cut_left(bitmap, db::bitmap::kBitmapChunkLimit)};
+                auto bitmap_shard{db::bitmap::cut_left(bitmap, db::bitmap::kBitmapChunkLimit)};
                 const BlockNum suffix{bitmap.isEmpty() /* consumed to last chunk */ ? UINT64_MAX
-                                                                                    : bitmap_chunk.maximum()};
-                endian::store_big_u64(&chunk_key[chunk_key.size() - sizeof(BlockNum)], suffix);
+                                                                                    : bitmap_shard.maximum()};
+                endian::store_big_u64(&shard_key[shard_key.size() - sizeof(BlockNum)], suffix);
 
                 // Push chunk to database
-                Bytes chunk_bytes(bitmap_chunk.getSizeInBytes(), '\0');
-                bitmap_chunk.write(byte_ptr_cast(&chunk_bytes[0]));
-                mdbx::slice k{db::to_slice(chunk_key)};
-                mdbx::slice v{db::to_slice(chunk_bytes)};
+                Bytes shard_bytes{db::bitmap::to_bytes(bitmap_shard)};
+                mdbx::slice k{db::to_slice(shard_key)};
+                mdbx::slice v{db::to_slice(shard_bytes)};
                 mdbx::error::success_or_throw(index_cursor.put(k, &v, put_flags));
             }
         }};
-        collector_->load(target, load_func, db_flags);
+        collector_->load(target, load_func, MDBX_put_flags_t::MDBX_UPSERT);
         collector_->clear();
     }
 
@@ -292,8 +287,7 @@ StageResult HistoryIndex::unwind_impl(db::RWTxn& txn, const BlockNum from, const
 
         // Locate previous incomplete shard. There's always one if account has been touched at least once in
         // changeset !
-        Bytes shard_key{key};
-        shard_key.append(db::block_key(UINT64_MAX));
+        const Bytes shard_key{key + db::block_key(UINT64_MAX)};
         auto index_data{target.find(db::to_slice(shard_key), false)};
         while (index_data) {
             const auto index_data_key_view{db::from_slice(index_data.key)};
@@ -305,13 +299,10 @@ StageResult HistoryIndex::unwind_impl(db::RWTxn& txn, const BlockNum from, const
             if (db_bitmap.maximum() <= to) {
                 break;
             }
-            bool shards_tampered{false};
+
             while (!db_bitmap.isEmpty() && db_bitmap.maximum() > to) {
                 db_bitmap.remove(db_bitmap.maximum());
-                shards_tampered = true;
             }
-
-            if (!shards_tampered) continue;
 
             if (db_bitmap.isEmpty()) {
                 // Delete this record and move to previous shard (if any)
@@ -321,11 +312,9 @@ StageResult HistoryIndex::unwind_impl(db::RWTxn& txn, const BlockNum from, const
             }
 
             // Replace current record with the new bitmap ensuring is marked as last shard
-            if (shards_tampered) {
-                target.erase();
-                Bytes shard_bytes{db::bitmap::to_bytes(db_bitmap)};
-                target.insert(db::to_slice(shard_key), db::to_slice(shard_bytes));
-            }
+            target.erase();
+            Bytes shard_bytes{db::bitmap::to_bytes(db_bitmap)};
+            target.insert(db::to_slice(shard_key), db::to_slice(shard_bytes));
             break;
         }
     }

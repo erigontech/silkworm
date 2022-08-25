@@ -60,6 +60,8 @@ TEST_CASE("Roaring Bitmaps") {
         Bytes bitmap_data{db::bitmap::to_bytes(original_bitmap)};
         auto loaded_bitmap{db::bitmap::from_bytes(bitmap_data)};
         REQUIRE(original_bitmap == loaded_bitmap);
+        original_bitmap.clear();
+        REQUIRE(db::bitmap::to_bytes(original_bitmap).empty());
     }
 
     SECTION("cut_left1") {

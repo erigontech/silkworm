@@ -318,6 +318,14 @@ TEST_CASE("Cursor walk") {
         auto erased{cursor_for_prefix(table_cursor, to_slice(prefix), walk_erase)};
         REQUIRE(erased == 4);
         REQUIRE(table_cursor.size() == (kGeneticCode.size() - erased));
+
+        // Early stop
+        prefix.assign({'A', 'A'});
+        auto count{cursor_for_prefix(table_cursor, to_slice(prefix), [](::mdbx::cursor&, ::mdbx::cursor::move_result& data) -> bool {
+            if (data.value == "Asparagine") return false;
+            return true;
+        })};
+        REQUIRE(count == 1);
     }
 
     SECTION("cursor_for_count") {

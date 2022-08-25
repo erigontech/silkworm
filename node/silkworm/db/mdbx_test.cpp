@@ -327,7 +327,7 @@ TEST_CASE("Cursor walk") {
                                          if (data.value == "Asparagine") return false;
                                          return true;
                                      })};
-        REQUIRE(count == 1);
+        REQUIRE(count == 2);
     }
 
     SECTION("cursor_for_count") {

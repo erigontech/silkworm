@@ -71,7 +71,7 @@ StageResult HistoryIndex::forward(db::RWTxn& txn) {
             success_or_throw(forward_impl(txn, previous_progress_accounts, target_progress, false));
             txn.commit();
         }
-        if (previous_progress_storage < target_progress){
+        if (previous_progress_storage < target_progress) {
             success_or_throw(forward_impl(txn, previous_progress_storage, target_progress, true));
             txn.commit();
         }

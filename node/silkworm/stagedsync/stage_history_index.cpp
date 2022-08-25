@@ -466,9 +466,11 @@ void HistoryIndex::collect_bitmaps_from_changeset(db::RWTxn& txn, const db::MapC
             if (bitmaps_it == bitmaps.end()) {
                 bitmaps_it = bitmaps.emplace(bitmaps_key, roaring::Roaring64Map()).first;
                 bitmaps_size += bitmaps_key.size();
+                bitmaps_size += sizeof(uint64_t);  // see Roaring64Map()::getSizeInBytes()
             }
             bitmaps_it->second.add(reached_block_number);
-            bitmaps_size += sizeof(BlockNum);
+            bitmaps_size += sizeof(uint32_t);  // All blocks <= UINT32_MAX
+                                               // Is there a chain exceeding that height ?
 
             source_data = source.to_current_next_multi(false);
         }

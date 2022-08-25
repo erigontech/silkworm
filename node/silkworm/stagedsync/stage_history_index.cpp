@@ -555,7 +555,7 @@ std::vector<std::string> HistoryIndex::get_log_progress() {
     } else {
         if (operation_ == OperationType::Forward || operation_ == OperationType::Unwind) {
             if (loading_) {
-                current_key_ = collector_ ? collector_->get_load_key() : "";
+                current_key_ = collector_ ? abridge(collector_->get_load_key(), (kAddressLength * 2 + 2)) : "";
                 ret.insert(ret.end(), {"from", "etl", "to", current_target_, "key", current_key_});
             } else {
                 ret.insert(ret.end(), {"from", current_source_, "to", "etl", "key", current_key_});

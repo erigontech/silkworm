@@ -321,10 +321,12 @@ TEST_CASE("Cursor walk") {
 
         // Early stop
         prefix.assign({'A', 'A'});
-        auto count{cursor_for_prefix(table_cursor, to_slice(prefix), [](::mdbx::cursor&, ::mdbx::cursor::move_result& data) -> bool {
-            if (data.value == "Asparagine") return false;
-            return true;
-        })};
+        auto count{cursor_for_prefix(table_cursor,
+                                     to_slice(prefix),
+                                     [](::mdbx::cursor&, ::mdbx::cursor::move_result& data) -> bool {
+                                         if (data.value == "Asparagine") return false;
+                                         return true;
+                                     })};
         REQUIRE(count == 1);
     }
 

@@ -32,7 +32,6 @@ class HistoryIndex : public IStage {
     std::vector<std::string> get_log_progress() final;
 
   private:
-    const size_t kBitmapBufferSizeLimit = 256_Mebi;
     std::unique_ptr<etl::Collector> collector_{nullptr};
 
     std::atomic_bool loading_{false};  // Whether we're in ETL loading phase

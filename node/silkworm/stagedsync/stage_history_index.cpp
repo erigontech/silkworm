@@ -67,11 +67,14 @@ StageResult HistoryIndex::forward(db::RWTxn& txn) {
         }
 
         collector_ = std::make_unique<etl::Collector>(node_settings_);
-        if (previous_progress_accounts < target_progress)
+        if (previous_progress_accounts < target_progress) {
             success_or_throw(forward_impl(txn, previous_progress_accounts, target_progress, false));
-        if (previous_progress_storage < target_progress)
+            txn.commit();
+        }
+        if (previous_progress_storage < target_progress){
             success_or_throw(forward_impl(txn, previous_progress_storage, target_progress, true));
-
+            txn.commit();
+        }
         collector_.reset();
         reset_log_progress();
         update_progress(txn, target_progress);
@@ -175,7 +178,7 @@ StageResult HistoryIndex::prune(db::RWTxn& txn) {
         const auto prune_progress_accounts{
             db::stages::read_stage_prune_progress(*txn, db::stages::kAccountHistoryIndexKey)};
         const auto prune_progress_storage{
-            db::stages::read_stage_prune_progress(*txn, db::stages::kAccountHistoryIndexKey)};
+            db::stages::read_stage_prune_progress(*txn, db::stages::kStorageHistoryIndexKey)};
 
         if (!prune_progress_accounts || prune_progress_accounts < forward_progress)
             success_or_throw(prune_impl(txn, prune_threshold, forward_progress, /*storage=*/false));
@@ -425,18 +428,16 @@ void HistoryIndex::collect_bitmaps_from_changeset(db::RWTxn& txn, const db::MapC
         bitmaps_size = 0;
     }};
 
-    BlockNum expected_block_number{std::min(from, to) + 1};
-    const BlockNum max_block_number{std::max(from, to)};
+    const BlockNum max_block_number{to};
     BlockNum reached_block_number{0};
 
-    auto start_key{db::block_key(expected_block_number)};
+    auto start_key{db::block_key(from + 1)};
     db::Cursor source(txn, source_config);
     auto source_data{storage ? source.lower_bound(db::to_slice(start_key), false)
                              : source.find(db::to_slice(start_key), false)};
     while (source_data) {
         auto source_data_key_view{db::from_slice(source_data.key)};
         reached_block_number = endian::load_big_u64(source_data_key_view.data());
-        check_block_sequence(expected_block_number, reached_block_number);
         if (reached_block_number > max_block_number) {
             break;
         }
@@ -473,12 +474,11 @@ void HistoryIndex::collect_bitmaps_from_changeset(db::RWTxn& txn, const db::MapC
         }
 
         // Flush bitmaps to etl if necessary
-        if (bitmaps_size >= kBitmapBufferSizeLimit) {
+        if (bitmaps_size >= node_settings_->batch_size) {
             ++flush_count;
             bitmaps_flush(collector_.get());
         }
 
-        ++expected_block_number;
         source_data = source.to_next(false);
     }
 

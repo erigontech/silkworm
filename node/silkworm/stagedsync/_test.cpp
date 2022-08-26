@@ -45,8 +45,9 @@ TEST_CASE("Sync Stages") {
     node_settings.chaindata_env_config.create = true;
     node_settings.chaindata_env_config.exclusive = true;
     node_settings.prune_mode =
-        db::parse_prune_mode("", std::nullopt, std::nullopt, std::nullopt, std::nullopt, std::nullopt, std::nullopt,
-                             std::nullopt, std::nullopt, std::nullopt, std::nullopt);
+        db::parse_prune_mode("",
+                             std::nullopt, std::nullopt, std::nullopt, std::nullopt, std::nullopt,
+                             std::nullopt, std::nullopt, std::nullopt, std::nullopt, std::nullopt);
 
     log::Settings log_settings{};
     log_settings.log_std_out = true;
@@ -64,21 +65,16 @@ TEST_CASE("Sync Stages") {
     node_settings.chain_config = db::read_chain_config(*txn);
 
     SECTION("BlockHashes") {
-
         SECTION("Forward/Unwind/Prune args validation") {
-
             stagedsync::BlockHashes stage(&node_settings);
 
             // (previous_progress == headers_progress == 0)
             REQUIRE(stage.forward(txn) == stagedsync::StageResult::kSuccess);
             REQUIRE(stage.unwind(txn, 0) == stagedsync::StageResult::kSuccess);
 
-
             // (previous_progress > headers_progress)
             stage.update_progress(txn, 10);
             REQUIRE(stage.forward(txn) == stagedsync::StageResult::kInvalidProgress);
-
-
         }
 
         SECTION("Forward and Unwind") {
@@ -134,7 +130,6 @@ TEST_CASE("Sync Stages") {
                 REQUIRE(txn->get_map_stat(target_table.map()).ms_entries == 2);
                 REQUIRE(target_table.seek(db::to_slice(block_hashes.back())) == false);
             }
-
         }
     }
 

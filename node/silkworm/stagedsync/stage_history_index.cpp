@@ -233,7 +233,7 @@ StageResult HistoryIndex::forward_impl(db::RWTxn& txn, const BlockNum from, cons
             // Check whether we still need to rework the previous entry
             Bytes shard_key{
                 entry.key
-                    .substr(0, entry.key.size() - sizeof(uint32_t)) /* remove etl ordering suffix */
+                    .substr(0, entry.key.size() - sizeof(uint16_t)) /* remove etl ordering suffix */
                     .append(last_shard_suffix)};                    /* and append const suffix for last key */
 
             auto index_data{index_cursor.find(db::to_slice(shard_key), /*throw_notfound=*/false)};
@@ -415,13 +415,13 @@ void HistoryIndex::collect_bitmaps_from_changeset(db::RWTxn& txn, const db::MapC
     // A note on flush_count
     // Etl collector will sort and process entries lexicographically (using both key and value) for this reason
     // we add flush_count as suffix of key, so we ensure for same account we process entries in the order
-    // they've been collected.
-    uint32_t flush_count{0};
+    // they've been collected. uint16_t maxes 65K flushes
+    uint16_t flush_count{0};
     auto bitmaps_flush{[&bitmaps, &bitmaps_size, &flush_count](etl::Collector* collector) {
         for (auto& [key, bitmap] : bitmaps) {
-            Bytes etl_key(key.size() + sizeof(uint32_t), '\0');
+            Bytes etl_key(key.size() + sizeof(uint16_t), '\0');
             std::memcpy(&etl_key[0], key.data(), key.size());
-            endian::store_big_u32(&etl_key[key.size()], flush_count);
+            endian::store_big_u16(&etl_key[key.size()], flush_count);
             collector->collect({etl_key, db::bitmap::to_bytes(bitmap)});
         }
         bitmaps.clear();

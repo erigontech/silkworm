@@ -101,7 +101,9 @@ TEST_CASE("Sync Stages") {
             {
                 // Verify written data is consistent
                 auto target_table{db::open_cursor(*txn, db::table::kHeaderNumbers)};
-                REQUIRE(txn->get_map_stat(target_table.map()).ms_entries == block_hashes.size() + 1);  // Block 0 is genesis
+
+                REQUIRE(txn->get_map_stat(target_table.map()).ms_entries ==
+                        block_hashes.size() + 1);  // +1 cause block 0 is genesis
 
                 std::vector<std::pair<evmc::bytes32, BlockNum>> written_data{};
                 db::WalkFunc walk_func = [&written_data](::mdbx::cursor&, ::mdbx::cursor::move_result& data) -> bool {

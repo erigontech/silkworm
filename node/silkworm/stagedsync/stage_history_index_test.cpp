@@ -20,6 +20,7 @@
 #include <silkworm/chain/config.hpp>
 #include <silkworm/common/cast.hpp>
 #include <silkworm/common/test_context.hpp>
+#include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/bitmap.hpp>
 #include <silkworm/db/buffer.hpp>
 #include <silkworm/db/stages.hpp>
@@ -130,6 +131,14 @@ TEST_CASE("Stage History Index") {
             db::Cursor storage_history(txn, db::table::kStorageHistory);
             REQUIRE(!account_history.empty());
             REQUIRE(!storage_history.empty());
+
+            // Miner has mined 3 blocks hence is historical balance must be < current balanca
+            auto current_miner_account{db::read_account(*txn, miner)};
+            auto historical_miner_account{db::read_account(*txn, miner, 2)};
+            REQUIRE(current_miner_account.has_value());
+            REQUIRE(historical_miner_account.has_value());
+            REQUIRE(historical_miner_account->balance);
+            REQUIRE(historical_miner_account->balance < current_miner_account->balance);
 
             auto account_history_data{account_history.lower_bound(db::to_slice(sender), /*throw_notfound=*/false)};
             REQUIRE(account_history_data.done);

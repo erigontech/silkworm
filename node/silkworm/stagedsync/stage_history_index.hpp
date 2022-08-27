@@ -42,6 +42,7 @@ class HistoryIndex : public IStage {
     StageResult forward_impl(db::RWTxn& txn, BlockNum from, BlockNum to, bool storage);
     StageResult unwind_impl(db::RWTxn& txn, BlockNum from, BlockNum to, bool storage);
     StageResult prune_impl(db::RWTxn& txn, BlockNum threshold, BlockNum to, bool storage);
+    size_t compute_optimal_shard_size(size_t shard_key_len);  // To fill data pages and avoid page overflows
 
     //! \brief Collects bitmaps of block numbers changes for each account within provided
     //! changeset boundaries

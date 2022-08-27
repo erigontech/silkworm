@@ -113,7 +113,7 @@ namespace detail {
         auto growth_size = static_cast<intptr_t>(config.inmemory ? 8_Mebi : config.growth_size);
         cp.geometry.make_dynamic(::mdbx::env::geometry::default_value, max_map_size);
         cp.geometry.growth_step = growth_size;
-        cp.geometry.pagesize = 4_Kibi;
+        cp.geometry.pagesize = static_cast<intptr_t>(config.page_size);
     }
 
     ::mdbx::env::operate_parameters op{};  // Operational parameters

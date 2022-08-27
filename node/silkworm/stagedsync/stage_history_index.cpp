@@ -205,6 +205,8 @@ StageResult HistoryIndex::prune(db::RWTxn& txn) {
 StageResult HistoryIndex::forward_impl(db::RWTxn& txn, const BlockNum from, const BlockNum to, const bool storage) {
     const db::MapConfig source_config{storage ? db::table::kStorageChangeSet : db::table::kAccountChangeSet};
     const db::MapConfig target_config{storage ? db::table::kStorageHistory : db::table::kAccountHistory};
+    const size_t shard_optimal_size{compute_optimal_shard_size(
+        storage ? kAddressLength + kHashLength : kAddressLength)};
 
     std::unique_lock log_lck(sl_mutex_);
     operation_ = OperationType::Forward;
@@ -225,9 +227,9 @@ StageResult HistoryIndex::forward_impl(db::RWTxn& txn, const BlockNum from, cons
         db::Cursor target(txn, target_config);
 
         // Collected bitmaps must be merged with the last uncompleted shard for each key
-        etl::LoadFunc load_func{[&last_shard_suffix](const etl::Entry& entry,
-                                                     mdbx::cursor& index_cursor,
-                                                     MDBX_put_flags_t put_flags) {
+        etl::LoadFunc load_func{[&last_shard_suffix, &shard_optimal_size](const etl::Entry& entry,
+                                                                          mdbx::cursor& index_cursor,
+                                                                          MDBX_put_flags_t put_flags) {
             auto bitmap{db::bitmap::from_bytes(entry.value)};
 
             // Check whether we still need to rework the previous entry
@@ -245,7 +247,7 @@ StageResult HistoryIndex::forward_impl(db::RWTxn& txn, const BlockNum from, cons
 
             // Consume the bitmap splitting it in chunks
             while (!bitmap.isEmpty()) {
-                auto bitmap_shard{db::bitmap::cut_left(bitmap, db::bitmap::kBitmapChunkLimit)};
+                auto bitmap_shard{db::bitmap::cut_left(bitmap, shard_optimal_size)};
                 const BlockNum suffix{bitmap.isEmpty() /* consumed to last chunk */ ? UINT64_MAX
                                                                                     : bitmap_shard.maximum()};
                 endian::store_big_u64(&shard_key[shard_key.size() - sizeof(BlockNum)], suffix);
@@ -576,6 +578,33 @@ void HistoryIndex::reset_log_progress() {
     current_source_.clear();
     current_target_.clear();
     current_key_.clear();
+}
+
+size_t HistoryIndex::compute_optimal_shard_size(size_t shard_key_len) {
+    /*
+     * On behalf of configured MDBX's page size we need to find
+     * the size of each shard best fitting in data page without
+     * causing MDBX to use overflow pages for value.
+     *
+     * Example :
+     *  for accounts
+     *  with shard_key_len == kAddressLength == 20
+     *  with page_size == 4096
+     *  optimal shard size == 2000
+     *
+     *  for storage
+     *  with shard_key_len == kAddressLength + kHashLength == 20 + 32 == 52
+     *  with page_size == 4096
+     *  optimal shard size == 1968
+     *
+     *  NOTE !! Keep an eye on MDBX code as Page and Node structs might change
+     */
+
+    static constexpr size_t kPageOverheadSize{40ull}; // PageHeader + NodeSize
+    size_t page_room{node_settings_->chaindata_env_config.page_size - kPageOverheadSize};
+    size_t leaf_node_max_room{((page_room / 2) & ~1ull /* even number */) - sizeof(uint16_t)};
+    size_t optimal_size{leaf_node_max_room - (shard_key_len + /* shard upper_bound */ sizeof(uint64_t))};
+    return optimal_size;
 }
 
 }  // namespace silkworm::stagedsync

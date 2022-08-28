@@ -67,6 +67,7 @@ set(LIBS
   silkpre
   silkworm_core
   silkworm_node
+  silkworm-buildinfo
 )
 
 if(MSVC)

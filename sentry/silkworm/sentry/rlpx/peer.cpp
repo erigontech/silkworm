@@ -29,7 +29,12 @@ boost::asio::awaitable<void> Peer::handle() {
     try {
         log::Debug() << "Peer::handle";
 
-        auth::Handshake handshake{node_key_, peer_public_key_};
+        auth::Handshake handshake{
+            node_key_,
+            client_id_,
+            node_listen_port_,
+            peer_public_key_,
+        };
         co_await handshake.execute(stream_);
 
     } catch (const boost::system::system_error& ex) {

@@ -46,7 +46,7 @@ boost::asio::awaitable<AuthKeys> Handshake::auth(common::SocketStream& stream) {
 
 boost::asio::awaitable<void> Handshake::execute(common::SocketStream& stream) {
     auto auth_keys = co_await auth(stream);
-    log::Debug() << "AuthSession.peer_ephemeral_public_key: " << auth_keys.peer_ephemeral_public_key.hex();
+    log::Debug() << "AuthKeys.peer_ephemeral_public_key: " << auth_keys.peer_ephemeral_public_key.hex();
 
     framing::FramingCipher framing_cipher{
         framing::FramingCipher::KeyMaterial{
@@ -64,8 +64,15 @@ boost::asio::awaitable<void> Handshake::execute(common::SocketStream& stream) {
 
     common::Timeout timeout(5s);
 
-    // TODO: init outgoing HelloMessage
-    HelloMessage hello_message;
+    HelloMessage hello_message{
+        client_id_,
+        {
+            {"p2p", HelloMessage::kProtocolVersion},
+            {"eth", 67},
+        },
+        node_listen_port_,
+        node_key_.public_key(),
+    };
     co_await (message_stream.send(hello_message.to_message()) || timeout());
 
     Message reply_message = std::get<Message>(co_await (message_stream.receive() || timeout()));
@@ -78,6 +85,8 @@ boost::asio::awaitable<void> Handshake::execute(common::SocketStream& stream) {
     }
 
     HelloMessage hello_reply_message = HelloMessage::from_message(reply_message);
+    log::Debug() << "Handshake success: peer Hello: " << hello_reply_message.client_id()
+                 << " with " << hello_reply_message.capabilities_description();
 
     message_stream.enable_compression();
 }

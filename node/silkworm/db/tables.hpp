@@ -255,8 +255,23 @@ inline constexpr db::MapConfig kSyncStageProgress{"SyncStage"};
 //! \struct stage name -> block_num_u64 (BE)
 inline constexpr db::MapConfig kSyncStageUnwind{"SyncStageUnwind"};
 
+//! \brief Hold the nodes composing the StateRoot
+//! \verbatim
+//!   key   : node key
+//!   value : serialized node value (see core::trie::Node)
+//! \endverbatim
+//! \remark The only record with empty key is the root node
 inline constexpr db::MapConfig kTrieOfAccounts{"TrieAccount"};
+
+//! \brief Hold the nodes composing the StorageRoot for each contract
+//! \verbatim
+//!   key   : db::kHashedStoragePrefix(40 bytes == hashed address + incarnation) + node key
+//!   value : serialized node value (see core::trie::Node)
+//! \endverbatim
+//! \remark Each trie has its own invariant db::kHashedStoragePrefix
+//! \remark Records with key len == 40 (ie node key == 0) are root nodes
 inline constexpr db::MapConfig kTrieOfStorage{"TrieStorage"};
+
 inline constexpr db::MapConfig kTxLookup{"BlockTransactionLookup"};
 
 inline constexpr db::MapConfig kChainDataTables[]{

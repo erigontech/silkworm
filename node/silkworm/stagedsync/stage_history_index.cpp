@@ -288,9 +288,6 @@ StageResult HistoryIndex::unwind_impl(db::RWTxn& txn, const BlockNum from, const
 }
 
 StageResult HistoryIndex::prune_impl(db::RWTxn& txn, const BlockNum threshold, const BlockNum to, const bool storage) {
-    using namespace std::chrono_literals;
-    auto log_time{std::chrono::steady_clock::now()};
-
     const db::MapConfig table_config{storage ? db::table::kStorageHistory : db::table::kAccountHistory};
 
     std::unique_lock log_lck(sl_mutex_);

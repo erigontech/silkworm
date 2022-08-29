@@ -66,6 +66,9 @@ class Collector {
     //! \brief Returns the number of actually collected items
     [[nodiscard]] size_t size() const { return size_; }
 
+    //! \brief Returns the number of actually collected bytes
+    [[nodiscard]] size_t bytes_size() const { return bytes_size_; }
+
     //! \brief Returns whether this instance is empty (i.e. no items)
     [[nodiscard]] bool empty() const { return size_ == 0; }
 
@@ -74,6 +77,7 @@ class Collector {
         file_providers_.clear();
         buffer_.clear();
         size_ = 0;
+        bytes_size_ = 0;
     }
 
     //! \brief Returns the hex representation of current load key (for progress tracking)
@@ -110,7 +114,8 @@ class Collector {
     uintptr_t unique_id_{reinterpret_cast<uintptr_t>(this)};
 
     std::vector<std::unique_ptr<FileProvider>> file_providers_;  // Collection of file providers
-    size_t size_{0};                                             // Total collected size
+    size_t size_{0};                                             // Count of total collected items
+    size_t bytes_size_{0};                                       // Count of total collected bytes
     mutable std::mutex mutex_{};                                 // To sync loading_key_
     std::string loading_key_{};                                  // Actual load key (for log purposes)
 };

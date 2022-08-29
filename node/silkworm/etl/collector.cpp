@@ -52,16 +52,18 @@ void Collector::flush_buffer() {
 }
 
 void Collector::collect(const Entry& entry) {
-    buffer_.put(entry);
     ++size_;
+    bytes_size_ += entry.key.size() + entry.value.size();
+    buffer_.put(entry);
     if (buffer_.overflows()) {
         flush_buffer();
     }
 }
 
 void Collector::collect(Entry&& entry) {
-    buffer_.put(std::move(entry));
     ++size_;
+    bytes_size_ += entry.key.size() + entry.value.size();
+    buffer_.put(std::move(entry));
     if (buffer_.overflows()) {
         flush_buffer();
     }
@@ -102,8 +104,7 @@ void Collector::load(mdbx::cursor& target, const LoadFunc& load_func, MDBX_put_f
             }
         }
 
-        size_ = 0;
-        buffer_.clear();
+        clear();
         return;
     }
 
@@ -168,7 +169,7 @@ void Collector::load(mdbx::cursor& target, const LoadFunc& load_func, MDBX_put_f
             file_provider.reset();
         }
     }
-    size_ = 0;  // We have consumed all items
+    clear();
 }
 
 std::filesystem::path Collector::set_work_path(const std::optional<std::filesystem::path>& provided_work_path) {

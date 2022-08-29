@@ -30,7 +30,7 @@ void IndexLoader::merge_bitmaps(RWTxn& txn, size_t mdbx_page_size, size_t key_si
     etl::LoadFunc load_func{[&last_shard_suffix, &optimal_shard_size](const etl::Entry& entry,
                                                                       mdbx::cursor& index_cursor,
                                                                       MDBX_put_flags_t put_flags) -> void {
-        auto new_bitmap{db::bitmap::from_bytes(entry.value)};  // Bitmap being merged
+        auto new_bitmap{db::bitmap::parse(entry.value)};  // Bitmap being merged
 
         // Check whether we have any previous shard to merge with
         Bytes shard_key{
@@ -40,7 +40,7 @@ void IndexLoader::merge_bitmaps(RWTxn& txn, size_t mdbx_page_size, size_t key_si
 
         if (auto index_data{index_cursor.find(db::to_slice(shard_key), /*throw_notfound=*/false)}; index_data.done) {
             // Merge previous and current bitmap
-            new_bitmap |= db::bitmap::from_slice(index_data.value);
+            new_bitmap |= db::bitmap::parse(index_data.value);
             index_cursor.erase();  // Delete currently found record as it'll be rewritten
         }
 
@@ -95,7 +95,7 @@ void IndexLoader::unwind_bitmaps(RWTxn& txn, BlockNum to, const std::map<Bytes, 
                 break;
             }
 
-            auto db_bitmap{db::bitmap::from_slice(index_data.value)};
+            auto db_bitmap{db::bitmap::parse(index_data.value)};
             if (db_bitmap.maximum() <= to) {
                 break;
             }
@@ -146,7 +146,7 @@ void IndexLoader::prune_bitmaps(RWTxn& txn, BlockNum threshold) {
             target.erase();
         } else {
             // Read current bitmap
-            auto bitmap{db::bitmap::from_slice(target_data.value)};
+            auto bitmap{db::bitmap::parse(target_data.value)};
             bool shard_shrunk{false};
             while (!bitmap.isEmpty() && bitmap.minimum() <= threshold) {
                 bitmap.remove(bitmap.minimum());
@@ -255,11 +255,11 @@ Bytes to_bytes(roaring::Roaring64Map& bitmap) {
     return {};
 }
 
-roaring::Roaring64Map from_slice(mdbx::slice& data) {
+roaring::Roaring64Map parse(mdbx::slice& data) {
     return roaring::Roaring64Map::readSafe(data.char_ptr(), data.length());
 }
 
-roaring::Roaring64Map from_bytes(ByteView data) {
+roaring::Roaring64Map parse(ByteView data) {
     return roaring::Roaring64Map::readSafe(byte_ptr_cast(&data[0]), data.size());
 }
 }  // namespace silkworm::db::bitmap

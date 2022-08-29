@@ -145,7 +145,7 @@ TEST_CASE("Stage History Index") {
             auto account_history_data_view{db::from_slice(account_history_data.key)};
             REQUIRE(endian::load_big_u64(&account_history_data_view[account_history_data_view.size() - 8]) ==
                     UINT64_MAX);
-            auto account_history_bitmap{db::bitmap::from_slice(account_history_data.value)};
+            auto account_history_bitmap{db::bitmap::parse(account_history_data.value)};
             REQUIRE(account_history_bitmap.cardinality() == 3);
             REQUIRE(account_history_bitmap.toString() == "{1,2,3}");
 
@@ -155,7 +155,7 @@ TEST_CASE("Stage History Index") {
             auto storage_history_data_view{db::from_slice(storage_history_data.key)};
             REQUIRE(endian::load_big_u64(&storage_history_data_view[storage_history_data_view.size() - 8]) ==
                     UINT64_MAX);
-            auto storage_history_bitmap{db::bitmap::from_slice(storage_history_data.value)};
+            auto storage_history_bitmap{db::bitmap::parse(storage_history_data.value)};
             REQUIRE(storage_history_bitmap.cardinality() == 3);
             REQUIRE(storage_history_bitmap.toString() == "{1,2,3}");
 
@@ -173,7 +173,7 @@ TEST_CASE("Stage History Index") {
             REQUIRE(storage_history_data_view.starts_with(composite));
             REQUIRE(endian::load_big_u64(&storage_history_data_view[storage_history_data_view.size() - 8]) ==
                     UINT64_MAX);
-            storage_history_bitmap = db::bitmap::from_slice(storage_history_data.value);
+            storage_history_bitmap = db::bitmap::parse(storage_history_data.value);
             REQUIRE(storage_history_bitmap.cardinality() == 3);
             REQUIRE(storage_history_bitmap.toString() == "{1,2,3}");
 
@@ -183,7 +183,7 @@ TEST_CASE("Stage History Index") {
             // Account retrieving from Database
             account_history_data = account_history.lower_bound(db::to_slice(sender), /*throw_notfound=*/false);
             REQUIRE(account_history_data.done);
-            account_history_bitmap = db::bitmap::from_slice(account_history_data.value);
+            account_history_bitmap = db::bitmap::parse(account_history_data.value);
             REQUIRE(account_history_bitmap.cardinality() == 2);
             REQUIRE(account_history_bitmap.toString() == "{1,2}");
 
@@ -191,7 +191,7 @@ TEST_CASE("Stage History Index") {
             account_history_data =
                 account_history.lower_bound(db::to_slice(contract_address), /*throw_notfound=*/false);
             REQUIRE(account_history_data.done);
-            account_history_bitmap = db::bitmap::from_slice(account_history_data.value);
+            account_history_bitmap = db::bitmap::parse(account_history_data.value);
             REQUIRE(account_history_bitmap.cardinality() == 2);
             REQUIRE(account_history_bitmap.toString() == "{1,2}");
 
@@ -202,7 +202,7 @@ TEST_CASE("Stage History Index") {
             REQUIRE(storage_history_data_view.starts_with(composite));
             REQUIRE(endian::load_big_u64(&storage_history_data_view[storage_history_data_view.size() - 8]) ==
                     UINT64_MAX);
-            storage_history_bitmap = db::bitmap::from_slice(storage_history_data.value);
+            storage_history_bitmap = db::bitmap::parse(storage_history_data.value);
             REQUIRE(storage_history_bitmap.cardinality() == 2);
             REQUIRE(storage_history_bitmap.toString() == "{1,2}");
         }
@@ -235,7 +235,7 @@ TEST_CASE("Stage History Index") {
             auto account_history_data_view{db::from_slice(account_history_data.key)};
             REQUIRE(endian::load_big_u64(&account_history_data_view[account_history_data_view.size() - 8]) ==
                     UINT64_MAX);
-            auto account_history_bitmap{db::bitmap::from_slice(account_history_data.value)};
+            auto account_history_bitmap{db::bitmap::parse(account_history_data.value)};
             REQUIRE(account_history_bitmap.cardinality() == 2);
             REQUIRE(account_history_bitmap.toString() == "{2,3}");
 
@@ -245,7 +245,7 @@ TEST_CASE("Stage History Index") {
             auto storage_history_data_view{db::from_slice(storage_history_data.key)};
             REQUIRE(endian::load_big_u64(&storage_history_data_view[storage_history_data_view.size() - 8]) ==
                     UINT64_MAX);
-            auto storage_history_bitmap{db::bitmap::from_slice(storage_history_data.value)};
+            auto storage_history_bitmap{db::bitmap::parse(storage_history_data.value)};
             REQUIRE(storage_history_bitmap.cardinality() == 2);
             REQUIRE(storage_history_bitmap.toString() == "{2,3}");
 
@@ -263,7 +263,7 @@ TEST_CASE("Stage History Index") {
             REQUIRE(storage_history_data_view.starts_with(composite));
             REQUIRE(endian::load_big_u64(&storage_history_data_view[storage_history_data_view.size() - 8]) ==
                     UINT64_MAX);
-            storage_history_bitmap = db::bitmap::from_slice(storage_history_data.value);
+            storage_history_bitmap = db::bitmap::parse(storage_history_data.value);
             REQUIRE(storage_history_bitmap.cardinality() == 2);
             REQUIRE(storage_history_bitmap.toString() == "{2,3}");
         }
@@ -310,7 +310,7 @@ TEST_CASE("Stage History Index") {
                 bool has_thrown{false};
                 try {
                     auto data = account_history.find(db::to_slice(key), /*throw_notfound=*/true);
-                    auto bitmap{db::bitmap::from_slice(data.value)};
+                    auto bitmap{db::bitmap::parse(data.value)};
                     REQUIRE(bitmap.maximum() == block - 1);
                 } catch (...) {
                     has_thrown = true;
@@ -385,7 +385,7 @@ TEST_CASE("Stage History Index") {
                 account_history, db::to_slice(prefix), [](::mdbx::cursor&, ::mdbx::cursor::move_result& data) -> bool {
                     const auto data_key_view{db::from_slice(data.key)};
                     CHECK(endian::load_big_u64(&data_key_view[data_key_view.size() - sizeof(BlockNum)]) == UINT64_MAX);
-                    const auto bitmap{db::bitmap::from_slice(data.value)};
+                    const auto bitmap{db::bitmap::parse(data.value)};
                     CHECK(bitmap.maximum() == 4000);
                     return true;
                 })};
@@ -412,7 +412,7 @@ TEST_CASE("Stage History Index") {
                 account_history, db::to_slice(prefix), [](::mdbx::cursor&, ::mdbx::cursor::move_result& data) -> bool {
                     const auto data_key_view{db::from_slice(data.key)};
                     CHECK(endian::load_big_u64(&data_key_view[data_key_view.size() - sizeof(BlockNum)]) == UINT64_MAX);
-                    const auto bitmap{db::bitmap::from_slice(data.value)};
+                    const auto bitmap{db::bitmap::parse(data.value)};
                     CHECK(bitmap.minimum() == 3590);
                     return true;
                 })};

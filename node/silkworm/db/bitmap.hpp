@@ -93,9 +93,9 @@ roaring::Roaring cut_left(roaring::Roaring& bitmap, uint64_t size_limit);
 Bytes to_bytes(roaring::Roaring64Map& bitmap);
 
 //! \brief Returns Roaring64Map from MDBX's slice;
-roaring::Roaring64Map from_slice(mdbx::slice& data);
+roaring::Roaring64Map parse(mdbx::slice& data);
 
 //! \brief Returns Roaring64Map from Bytes/Byteview;
-roaring::Roaring64Map from_bytes(ByteView data);
+roaring::Roaring64Map parse(ByteView data);
 
 }  // namespace silkworm::db::bitmap

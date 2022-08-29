@@ -58,7 +58,7 @@ TEST_CASE("Roaring Bitmaps") {
     SECTION("To/From Bytes") {
         auto original_bitmap{roaring::Roaring64Map(roaring::api::roaring_bitmap_from_range(1, 101, 1))};
         Bytes bitmap_data{db::bitmap::to_bytes(original_bitmap)};
-        auto loaded_bitmap{db::bitmap::from_bytes(bitmap_data)};
+        auto loaded_bitmap{db::bitmap::parse(bitmap_data)};
         REQUIRE(original_bitmap == loaded_bitmap);
         original_bitmap.clear();
         REQUIRE(db::bitmap::to_bytes(original_bitmap).empty());

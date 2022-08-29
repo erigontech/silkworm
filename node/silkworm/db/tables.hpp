@@ -229,6 +229,18 @@ inline constexpr db::MapConfig kStateSnapshotInfo{"StateSnapshotInfo"};
 //! \endverbatim
 inline constexpr db::MapConfig kStorageChangeSet{"StorageChangeSet", mdbx::key_mode::usual, mdbx::value_mode::multi};
 
+//! \details Holds the list of blocks in which a specific storage location has been changed
+//! \struct
+//! \verbatim
+//!   key   : plain contract account address (20 bytes) + location (32 bytes hash) + suffix (BE 64bit unsigned integer)
+//!   value : binary bitmap holding list of blocks including a state change for the account
+//! \endverbatim
+//! \remark Each record's key holds a suffix which is a 64bit unsigned integer specifying the "upper bound" limit
+//! of the list of blocks contained in value part. When this integer is equal to UINT64_MAX it means this
+//! record holds the last known chunk of blocks which have changed the account. This is due to
+//! how RoaringBitmap64 work.
+//! \remark This table/bucket indexes the contents of PlainState (Account record type) therefore honoring the
+//! same content limits wrt pruning
 inline constexpr db::MapConfig kStorageHistory{"StorageHistory"};
 
 //! \details Stores reached progress for each stage

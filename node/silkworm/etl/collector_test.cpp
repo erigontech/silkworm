@@ -79,6 +79,7 @@ void run_collector_test(LoadFunc load_func, bool do_copy = true) {
     }
     // Check whether temporary files were generated
     CHECK(std::distance(fs::directory_iterator{context.dir().etl().path()}, fs::directory_iterator{}) == 10);
+    CHECK(collector.bytes_size() == generated_size);
 
     // Load data while reading loading key from another thread
     auto key_reader_thread = std::thread([&collector]() -> void {

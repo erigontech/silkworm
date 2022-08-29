@@ -53,7 +53,7 @@ void Collector::flush_buffer() {
 
 void Collector::collect(const Entry& entry) {
     ++size_;
-    bytes_size_ += entry.key.size() + entry.value.size();
+    bytes_size_ += entry.size();
     buffer_.put(entry);
     if (buffer_.overflows()) {
         flush_buffer();
@@ -62,7 +62,7 @@ void Collector::collect(const Entry& entry) {
 
 void Collector::collect(Entry&& entry) {
     ++size_;
-    bytes_size_ += entry.key.size() + entry.value.size();
+    bytes_size_ += entry.size();
     buffer_.put(std::move(entry));
     if (buffer_.overflows()) {
         flush_buffer();

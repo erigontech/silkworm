@@ -29,6 +29,7 @@
 namespace silkworm::stagedsync {
 
 StageResult HistoryIndex::forward(db::RWTxn& txn) {
+    StageResult ret{StageResult::kSuccess};
     try {
         throw_if_stopping();
 
@@ -39,7 +40,7 @@ StageResult HistoryIndex::forward(db::RWTxn& txn) {
         const auto target_progress{db::stages::read_stage_progress(*txn, db::stages::kExecutionKey)};
         if (previous_progress == target_progress) {
             // Nothing to process
-            return StageResult::kSuccess;
+            return ret;
         } else if (previous_progress > target_progress) {
             // Something bad had happened.  Maybe we need to unwind ?
             throw StageError(StageResult::kInvalidProgress,
@@ -82,19 +83,24 @@ StageResult HistoryIndex::forward(db::RWTxn& txn) {
     } catch (const StageError& ex) {
         log::Error(std::string(stage_name_),
                    {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
-        collector_.reset();
-        return static_cast<StageResult>(ex.err());
+        ret = static_cast<StageResult>(ex.err());
     } catch (const std::exception& ex) {
-        collector_.reset();
-        log::Error(std::string(stage_name_), {"exception", std::string(ex.what())});
-        return StageResult::kUnexpectedError;
+        log::Error(std::string(stage_name_),
+                   {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
+        ret = StageResult::kUnexpectedError;
+    } catch (...) {
+        log::Error(std::string(stage_name_),
+                   {"function", std::string(__FUNCTION__), "exception", "unexpected and undefined"});
+        ret = StageResult::kUnexpectedError;
     }
 
+    collector_.reset();
     operation_ = OperationType::None;
-    return is_stopping() ? StageResult::kAborted : StageResult::kSuccess;
+    return is_stopping() ? StageResult::kAborted : ret;
 }
 
 StageResult HistoryIndex::unwind(db::RWTxn& txn, BlockNum to) {
+    StageResult ret{StageResult::kSuccess};
     try {
         throw_if_stopping();
 
@@ -107,7 +113,7 @@ StageResult HistoryIndex::unwind(db::RWTxn& txn, BlockNum to) {
         const auto execution_stage_progress{db::stages::read_stage_progress(*txn, db::stages::kExecutionKey)};
         if (previous_progress <= to || execution_stage_progress <= to) {
             // Nothing to process
-            return StageResult::kSuccess;
+            return ret;
         }
 
         reset_log_progress();
@@ -131,33 +137,35 @@ StageResult HistoryIndex::unwind(db::RWTxn& txn, BlockNum to) {
     } catch (const StageError& ex) {
         log::Error(std::string(stage_name_),
                    {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
-        collector_.reset();
-        return static_cast<StageResult>(ex.err());
+        ret = static_cast<StageResult>(ex.err());
     } catch (const mdbx::exception& ex) {
         log::Error(std::string(stage_name_),
                    {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
-        collector_.reset();
-        return StageResult::kDbError;
+        ret = StageResult::kDbError;
     } catch (const std::exception& ex) {
-        collector_.reset();
-        log::Error(std::string(stage_name_), {"exception", std::string(ex.what())});
-        return StageResult::kUnexpectedError;
+        log::Error(std::string(stage_name_),
+                   {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
+        ret = StageResult::kUnexpectedError;
+    } catch (...) {
+        log::Error(std::string(stage_name_),
+                   {"function", std::string(__FUNCTION__), "exception", "unexpected and undefined"});
+        ret = StageResult::kUnexpectedError;
     }
 
+    collector_.reset();
     operation_ = OperationType::None;
-    return is_stopping() ? StageResult::kAborted : StageResult::kSuccess;
+    return is_stopping() ? StageResult::kAborted : ret;
 }
 
 StageResult HistoryIndex::prune(db::RWTxn& txn) {
+    StageResult ret{StageResult::kSuccess};
     try {
         throw_if_stopping();
-        if (!node_settings_->prune_mode->history().enabled()) return StageResult::kSuccess;
+        if (!node_settings_->prune_mode->history().enabled()) return ret;
 
         const auto forward_progress{get_progress(txn)};
         const auto prune_progress{get_prune_progress(txn)};
-        if (prune_progress >= forward_progress) {
-            return StageResult::kSuccess;
-        }
+        if (prune_progress >= forward_progress) return ret;
 
         // Need to erase all history info below this threshold
         // If threshold is zero we don't have anything to prune
@@ -187,18 +195,26 @@ StageResult HistoryIndex::prune(db::RWTxn& txn) {
         reset_log_progress();
         db::stages::write_stage_prune_progress(*txn, stage_name_, forward_progress);
         txn.commit();
-        return StageResult::kSuccess;
 
     } catch (const StageError& ex) {
-        log::Error() << "Unexpected error in " << std::string(__FUNCTION__) << " : " << ex.what();
-        return magic_enum::enum_value<StageResult>(static_cast<size_t>(ex.err()));
+        log::Error(std::string(stage_name_),
+                   {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
+        ret = static_cast<StageResult>(ex.err());
     } catch (const mdbx::exception& ex) {
-        log::Error() << "Unexpected db error in " << std::string(__FUNCTION__) << " : " << ex.what();
-        return StageResult::kDbError;
+        log::Error(std::string(stage_name_),
+                   {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
+        ret = StageResult::kDbError;
+    } catch (const std::exception& ex) {
+        log::Error(std::string(stage_name_),
+                   {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
+        ret = StageResult::kUnexpectedError;
     } catch (...) {
-        log::Error() << "Unexpected unknown error in " << std::string(__FUNCTION__);
-        return StageResult::kUnexpectedError;
+        log::Error(std::string(stage_name_),
+                   {"function", std::string(__FUNCTION__), "exception", "unexpected and undefined"});
+        ret = StageResult::kUnexpectedError;
     }
+
+    return ret;
 }
 
 StageResult HistoryIndex::forward_impl(db::RWTxn& txn, const BlockNum from, const BlockNum to, const bool storage) {

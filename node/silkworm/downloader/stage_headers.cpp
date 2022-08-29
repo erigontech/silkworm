@@ -50,9 +50,9 @@ auto HeadersStage::forward(db::RWTxn& tx) -> Stage::Result {
     try {
         HeaderPersistence header_persistence(tx);
 
-        if (header_persistence.unwind_needed()) {
+        if (header_persistence.repaired()) {
             tx.commit();
-            log::Info() << "[1/16 Headers] End (forward skipped due to unwind_needed detection, canonical chain updated), "
+            log::Info() << "[1/16 Headers] End (forward skipped due to the need of to complete the previous run, canonical chain updated), "
                         << "duration=" << timing.format(timing.lap_duration());
             return Stage::Result::Done;
         }

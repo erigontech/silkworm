@@ -30,7 +30,7 @@ HeaderPersistence::HeaderPersistence(db::RWTxn& tx) : tx_(tx), canonical_cache_(
     auto headers_head_hash = db::read_canonical_hash(tx, headers_height);
     if (!headers_head_hash) {
         update_canonical_chain(headers_height, *db::read_head_header_hash(tx));
-        unwind_needed_ = true;
+        repaired_ = true;
         return;
     }
 
@@ -48,6 +48,8 @@ HeaderPersistence::HeaderPersistence(db::RWTxn& tx) : tx_(tx), canonical_cache_(
 bool HeaderPersistence::best_header_changed() const { return new_canonical_; }
 
 bool HeaderPersistence::unwind_needed() const { return unwind_needed_; }
+
+bool HeaderPersistence::repaired() const { return repaired_; }
 
 BlockNum HeaderPersistence::initial_height() const { return initial_in_db_; }
 

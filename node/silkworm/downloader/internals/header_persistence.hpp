@@ -53,6 +53,7 @@ class HeaderPersistence {
 
     bool best_header_changed() const;
     bool unwind_needed() const;
+    bool repaired() const;
 
     BlockNum unwind_point() const;
     BlockNum initial_height() const;
@@ -76,6 +77,7 @@ class HeaderPersistence {
     BlockNum unwind_point_{};
     bool unwind_needed_{false};
     bool new_canonical_{false};
+    bool repaired_{false};
     lru_cache<BlockNum, Hash> canonical_cache_;
     bool closed_{false};
 };

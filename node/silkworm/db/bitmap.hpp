@@ -68,15 +68,13 @@ class IndexLoader {
 
     //! \brief Determines optimal bitmap shard size on behalf of MDBX's page size to have leaf nodes
     //! filled at maximum without generating overflow pages
-    [[nodiscard]] size_t compute_optimal_bitmap_shard_size(size_t mdbx_page_size, size_t shard_key_size);
+    [[nodiscard]] size_t compute_optimal_bitmap_shard_size(const size_t mdbx_page_size, const size_t shard_key_size);
 };
 
 // Erigon bitmapdb.ChunkLimit
 // Value is obtained as threshold beyond which MDBX overflow pages : i.e. 4096 / 2 - (keySize + 8)
 // TODO Adjust for case when pagesize is 8192
 inline constexpr size_t kBitmapChunkLimit = 1950;
-
-roaring::Roaring64Map read(ByteView serialized);
 
 // Return the first value in the bitmap that is not less than (i.e. greater or equal to) n,
 // or std::nullopt if no such element is found.
@@ -93,9 +91,9 @@ roaring::Roaring cut_left(roaring::Roaring& bitmap, uint64_t size_limit);
 Bytes to_bytes(roaring::Roaring64Map& bitmap);
 
 //! \brief Returns Roaring64Map from MDBX's slice;
-roaring::Roaring64Map parse(mdbx::slice& data);
+roaring::Roaring64Map parse(const mdbx::slice& data);
 
 //! \brief Returns Roaring64Map from Bytes/Byteview;
-roaring::Roaring64Map parse(ByteView data);
+roaring::Roaring64Map parse(const ByteView data);
 
 }  // namespace silkworm::db::bitmap

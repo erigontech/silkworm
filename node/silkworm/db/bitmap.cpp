@@ -166,7 +166,7 @@ void IndexLoader::prune_bitmaps(RWTxn& txn, BlockNum threshold) {
     }
 }
 
-size_t IndexLoader::compute_optimal_bitmap_shard_size(size_t mdbx_page_size, size_t shard_key_size) {
+size_t IndexLoader::compute_optimal_bitmap_shard_size(const size_t mdbx_page_size, const size_t shard_key_size) {
     /*
      * On behalf of configured MDBX's page size we need to find
      * the size of each shard best fitting in data page without
@@ -183,7 +183,7 @@ size_t IndexLoader::compute_optimal_bitmap_shard_size(size_t mdbx_page_size, siz
      *  with page_size == 4096
      *  optimal shard size == 1968
      *
-     *  NOTE !! Keep an eye on MDBX code as Page and Node structs might change
+     *  NOTE !! Keep an eye on MDBX code as PageHeader and Node structs might change
      */
 
     static constexpr size_t kPageOverheadSize{40ull};  // PageHeader + NodeSize
@@ -191,10 +191,6 @@ size_t IndexLoader::compute_optimal_bitmap_shard_size(size_t mdbx_page_size, siz
     size_t leaf_node_max_room{((page_room / 2) & ~1ull /* even number */) - sizeof(uint16_t)};
     size_t optimal_size{leaf_node_max_room - (shard_key_size + /* shard upper_bound */ sizeof(uint64_t))};
     return optimal_size;
-}
-
-roaring::Roaring64Map read(ByteView serialized) {
-    return roaring::Roaring64Map::readSafe(byte_ptr_cast(serialized.data()), serialized.size());
 }
 
 std::optional<uint64_t> seek(const roaring::Roaring64Map& bitmap, uint64_t n) {
@@ -255,11 +251,11 @@ Bytes to_bytes(roaring::Roaring64Map& bitmap) {
     return {};
 }
 
-roaring::Roaring64Map parse(mdbx::slice& data) {
+roaring::Roaring64Map parse(const mdbx::slice& data) {
     return roaring::Roaring64Map::readSafe(data.char_ptr(), data.length());
 }
 
-roaring::Roaring64Map parse(ByteView data) {
+roaring::Roaring64Map parse(const ByteView data) {
     return roaring::Roaring64Map::readSafe(byte_ptr_cast(&data[0]), data.size());
 }
 }  // namespace silkworm::db::bitmap

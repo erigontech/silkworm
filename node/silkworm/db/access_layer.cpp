@@ -410,7 +410,7 @@ static std::optional<ByteView> historical_account(mdbx::txn& txn, const evmc::ad
         return std::nullopt;
     }
 
-    const auto bitmap{bitmap::read(from_slice(data.value))};
+    const auto bitmap{bitmap::parse(data.value)};
     const auto change_block{bitmap::seek(bitmap, block_number)};
     if (!change_block) {
         return std::nullopt;
@@ -439,7 +439,7 @@ static std::optional<ByteView> historical_storage(mdbx::txn& txn, const evmc::ad
         return std::nullopt;
     }
 
-    const auto bitmap{bitmap::read(from_slice(data.value))};
+    const auto bitmap{bitmap::parse(data.value)};
     const auto change_block{bitmap::seek(bitmap, block_number)};
     if (!change_block) {
         return std::nullopt;

@@ -21,7 +21,6 @@
 #include <silkworm/common/cast.hpp>
 #include <silkworm/common/endian.hpp>
 #include <silkworm/common/log.hpp>
-#include <silkworm/db/bitmap.hpp>
 #include <silkworm/db/stages.hpp>
 #include <silkworm/etl/collector.hpp>
 
@@ -205,8 +204,7 @@ StageResult HistoryIndex::prune(db::RWTxn& txn) {
 StageResult HistoryIndex::forward_impl(db::RWTxn& txn, const BlockNum from, const BlockNum to, const bool storage) {
     const db::MapConfig source_config{storage ? db::table::kStorageChangeSet : db::table::kAccountChangeSet};
     const db::MapConfig target_config{storage ? db::table::kStorageHistory : db::table::kAccountHistory};
-    const size_t shard_optimal_size{compute_optimal_shard_size(
-        storage ? kAddressLength + kHashLength : kAddressLength)};
+    const size_t target_key_size{kAddressLength + (storage ? kHashLength : 0)};
 
     std::unique_lock log_lck(sl_mutex_);
     operation_ = OperationType::Forward;
@@ -218,49 +216,21 @@ StageResult HistoryIndex::forward_impl(db::RWTxn& txn, const BlockNum from, cons
 
     collect_bitmaps_from_changeset(txn, source_config, from, to, storage);
 
-    const Bytes last_shard_suffix{db::block_key(UINT64_MAX)};
-
     if (!collector_->empty()) {
         log_lck.lock();
         loading_ = true;
+        index_loader_ = std::make_unique<db::bitmap::IndexLoader>(target_config);
         log_lck.unlock();
-        db::Cursor target(txn, target_config);
+        index_loader_->merge_bitmaps(txn,
+                                     node_settings_->chaindata_env_config.page_size,
+                                     target_key_size, collector_.get());
 
-        // Collected bitmaps must be merged with the last uncompleted shard for each key
-        etl::LoadFunc load_func{[&last_shard_suffix, &shard_optimal_size](const etl::Entry& entry,
-                                                                          mdbx::cursor& index_cursor,
-                                                                          MDBX_put_flags_t put_flags) {
-            auto bitmap{db::bitmap::from_bytes(entry.value)};
-
-            // Check whether we still need to rework the previous entry
-            Bytes shard_key{
-                entry.key
-                    .substr(0, entry.key.size() - sizeof(uint16_t)) /* remove etl ordering suffix */
-                    .append(last_shard_suffix)};                    /* and append const suffix for last key */
-
-            auto index_data{index_cursor.find(db::to_slice(shard_key), /*throw_notfound=*/false)};
-            if (index_data) {
-                // Merge previous and current bitmap
-                bitmap |= db::bitmap::from_slice(index_data.value);
-                index_cursor.erase();  // Delete currently found record as it'll be rewritten
-            }
-
-            // Consume the bitmap splitting it in chunks
-            while (!bitmap.isEmpty()) {
-                auto bitmap_shard{db::bitmap::cut_left(bitmap, shard_optimal_size)};
-                const BlockNum suffix{bitmap.isEmpty() /* consumed to last chunk */ ? UINT64_MAX
-                                                                                    : bitmap_shard.maximum()};
-                endian::store_big_u64(&shard_key[shard_key.size() - sizeof(BlockNum)], suffix);
-
-                // Push chunk to database
-                Bytes shard_bytes{db::bitmap::to_bytes(bitmap_shard)};
-                mdbx::slice k{db::to_slice(shard_key)};
-                mdbx::slice v{db::to_slice(shard_bytes)};
-                mdbx::error::success_or_throw(index_cursor.put(k, &v, put_flags));
-            }
-        }};
-        collector_->load(target, load_func, MDBX_put_flags_t::MDBX_UPSERT);
-        collector_->clear();
+        log_lck.lock();
+        loading_ = false;
+        index_loader_.reset();
+        current_source_.clear();
+        current_target_.clear();
+        log_lck.unlock();
     }
 
     db::stages::write_stage_progress(
@@ -270,9 +240,6 @@ StageResult HistoryIndex::forward_impl(db::RWTxn& txn, const BlockNum from, cons
 }
 
 StageResult HistoryIndex::unwind_impl(db::RWTxn& txn, const BlockNum from, const BlockNum to, const bool storage) {
-    using namespace std::chrono_literals;
-    auto log_time{std::chrono::steady_clock::now()};
-
     const db::MapConfig source_config{storage ? db::table::kStorageChangeSet : db::table::kAccountChangeSet};
     const db::MapConfig target_config{storage ? db::table::kStorageHistory : db::table::kAccountHistory};
 
@@ -284,58 +251,20 @@ StageResult HistoryIndex::unwind_impl(db::RWTxn& txn, const BlockNum from, const
     current_key_.clear();
     log_lck.unlock();
 
-    db::Cursor target(txn, target_config);
     const auto keys{collect_unique_keys_from_changeset(txn, source_config, from, to, storage)};
-    for (const auto& [key, created] : keys) {
-        // Log and abort check
-        if (const auto now{std::chrono::steady_clock::now()}; log_time <= now) {
-            throw_if_stopping();
-            log_lck.lock();
-            current_key_ = abridge(to_hex(key, true), kAddressLength + 2);
-            log_time = now + 5s;
-            log_lck.unlock();
-        }
 
-        if (created) {
-            // Key was created in the batch we're unwinding
-            // Delete all its history
-            db::cursor_for_prefix(target, db::to_slice(key), db::walk_erase);
-            continue;
-        }
+    log_lck.lock();
+    index_loader_ = std::make_unique<db::bitmap::IndexLoader>(target_config);
+    log_lck.unlock();
 
-        // Locate previous incomplete shard. There's always one if account has been touched at least once in
-        // changeset !
-        const Bytes shard_key{key + db::block_key(UINT64_MAX)};
-        auto index_data{target.find(db::to_slice(shard_key), false)};
-        while (index_data) {
-            const auto index_data_key_view{db::from_slice(index_data.key)};
-            if (!index_data_key_view.starts_with(key)) {
-                break;
-            }
+    index_loader_->unwind_bitmaps(txn, to, keys);
 
-            auto db_bitmap{db::bitmap::from_slice(index_data.value)};
-            if (db_bitmap.maximum() <= to) {
-                break;
-            }
-
-            while (!db_bitmap.isEmpty() && db_bitmap.maximum() > to) {
-                db_bitmap.remove(db_bitmap.maximum());
-            }
-
-            if (db_bitmap.isEmpty()) {
-                // Delete this record and move to previous shard (if any)
-                target.erase();
-                index_data = target.to_previous(false);
-                continue;
-            }
-
-            // Replace current record with the new bitmap ensuring is marked as last shard
-            target.erase();
-            Bytes shard_bytes{db::bitmap::to_bytes(db_bitmap)};
-            target.insert(db::to_slice(shard_key), db::to_slice(shard_bytes));
-            break;
-        }
-    }
+    log_lck.lock();
+    index_loader_.reset();
+    current_source_.clear();
+    current_target_.clear();
+    current_key_.clear();
+    log_lck.unlock();
 
     db::stages::write_stage_progress(
         *txn, (storage ? db::stages::kStorageHistoryIndexKey : db::stages::kAccountHistoryIndexKey), to);
@@ -355,48 +284,17 @@ StageResult HistoryIndex::prune_impl(db::RWTxn& txn, const BlockNum threshold, c
     current_source_ = std::string(table_config.name);
     current_target_ = current_source_;
     current_key_.clear();
+    index_loader_ = std::make_unique<db::bitmap::IndexLoader>(table_config);
     log_lck.unlock();
 
-    db::Cursor table(txn, table_config);
-    auto data{table.to_first(false)};
-    while (data) {
-        const auto data_key_view{db::from_slice(data.key)};
+    index_loader_->prune_bitmaps(txn, threshold);
 
-        // Log and abort check
-        if (const auto now{std::chrono::steady_clock::now()}; log_time <= now) {
-            throw_if_stopping();
-            log_lck.lock();
-            current_key_ = abridge(to_hex(data_key_view, true), kAddressLength + 2);
-            log_time = now + 5s;
-            log_lck.unlock();
-        }
-
-        // Suffix indicates the upper bound of the shard.
-        const auto suffix{endian::load_big_u64(&data_key_view[data_key_view.size() - sizeof(BlockNum)])};
-
-        // If below pruning threshold simply delete the record
-        if (suffix <= threshold) {
-            table.erase();
-        } else {
-            // Read current bitmap
-            auto bitmap{db::bitmap::from_slice(data.value)};
-            bool shard_shrunk{false};
-            while (!bitmap.isEmpty() && bitmap.minimum() <= threshold) {
-                bitmap.remove(bitmap.minimum());
-                shard_shrunk = true;
-            }
-            if (bitmap.isEmpty() || shard_shrunk) {
-                if (!bitmap.isEmpty()) {
-                    Bytes new_shard_data{db::bitmap::to_bytes(bitmap)};
-                    table.update(db::to_slice(data_key_view), db::to_slice(new_shard_data));
-                } else {
-                    table.erase();
-                }
-            }
-        }
-
-        data = table.to_next(/*throw_notfound=*/false);
-    }
+    log_lck.lock();
+    index_loader_.reset();
+    current_source_.clear();
+    current_target_.clear();
+    current_key_.clear();
+    log_lck.unlock();
 
     db::stages::write_stage_prune_progress(
         *txn, (storage ? db::stages::kStorageHistoryIndexKey : db::stages::kAccountHistoryIndexKey), to);
@@ -492,12 +390,12 @@ void HistoryIndex::collect_bitmaps_from_changeset(db::RWTxn& txn, const db::MapC
     }
 }
 
-std::unordered_map<Bytes, bool, boost::hash<Bytes>> HistoryIndex::collect_unique_keys_from_changeset(
+std::map<Bytes, bool> HistoryIndex::collect_unique_keys_from_changeset(
     db::RWTxn& txn, const db::MapConfig& source_config, BlockNum from, BlockNum to, bool storage) {
     using namespace std::chrono_literals;
     auto log_time{std::chrono::steady_clock::now()};
 
-    std::unordered_map<Bytes, bool, boost::hash<Bytes>> ret;
+    std::map<Bytes, bool> ret;
     Bytes unique_key{};
 
     BlockNum expected_block_number{std::min(from, to) + 1};
@@ -557,15 +455,33 @@ std::vector<std::string> HistoryIndex::get_log_progress() {
     if (current_source_.empty() && current_target_.empty()) {
         ret.insert(ret.end(), {"db", "waiting ..."});
     } else {
-        if (operation_ == OperationType::Forward || operation_ == OperationType::Unwind) {
-            if (loading_) {
-                current_key_ = collector_ ? abridge(collector_->get_load_key(), (kAddressLength * 2 + 2)) : "";
-                ret.insert(ret.end(), {"from", "etl", "to", current_target_, "key", current_key_});
-            } else {
-                ret.insert(ret.end(), {"from", current_source_, "to", "etl", "key", current_key_});
-            }
-        } else {
-            ret.insert(ret.end(), {"from", current_source_, "key", current_key_});
+        switch (operation_) {
+            case OperationType::Forward:
+                if (loading_) {
+                    current_key_ = collector_ ? abridge(collector_->get_load_key(), kAddressLength) : "";
+                    ret.insert(ret.end(), {"from", "etl", "to", current_target_, "key", current_key_});
+                } else {
+                    ret.insert(ret.end(), {"from", current_source_, "to", "etl", "key", current_key_});
+                }
+                break;
+            case OperationType::Unwind:
+                if (index_loader_) {
+                    current_key_ = index_loader_->get_current_key();
+                    ret.insert(ret.end(), {"from", "etl", "to", current_target_, "key", current_key_});
+                } else {
+                    ret.insert(ret.end(), {"from", current_source_, "to", "etl", "key", current_key_});
+                }
+                break;
+            case OperationType::Prune:
+                if (index_loader_) {
+                    current_key_ = index_loader_->get_current_key();
+                    ret.insert(ret.end(), {"to", current_target_, "key", current_key_});
+                } else {
+                    ret.insert(ret.end(), {"to", current_target_, current_key_});
+                }
+                break;
+            default:
+                ret.insert(ret.end(), {"from", current_source_, "key", current_key_});
         }
     }
     return ret;
@@ -578,33 +494,6 @@ void HistoryIndex::reset_log_progress() {
     current_source_.clear();
     current_target_.clear();
     current_key_.clear();
-}
-
-size_t HistoryIndex::compute_optimal_shard_size(size_t shard_key_len) {
-    /*
-     * On behalf of configured MDBX's page size we need to find
-     * the size of each shard best fitting in data page without
-     * causing MDBX to use overflow pages for value.
-     *
-     * Example :
-     *  for accounts
-     *  with shard_key_len == kAddressLength == 20
-     *  with page_size == 4096
-     *  optimal shard size == 2000
-     *
-     *  for storage
-     *  with shard_key_len == kAddressLength + kHashLength == 20 + 32 == 52
-     *  with page_size == 4096
-     *  optimal shard size == 1968
-     *
-     *  NOTE !! Keep an eye on MDBX code as Page and Node structs might change
-     */
-
-    static constexpr size_t kPageOverheadSize{40ull}; // PageHeader + NodeSize
-    size_t page_room{node_settings_->chaindata_env_config.page_size - kPageOverheadSize};
-    size_t leaf_node_max_room{((page_room / 2) & ~1ull /* even number */) - sizeof(uint16_t)};
-    size_t optimal_size{leaf_node_max_room - (shard_key_len + /* shard upper_bound */ sizeof(uint64_t))};
-    return optimal_size;
 }
 
 }  // namespace silkworm::stagedsync

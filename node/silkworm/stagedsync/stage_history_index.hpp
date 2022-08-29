@@ -15,8 +15,8 @@
 */
 
 #pragma once
-#include <boost/functional/hash.hpp>
 
+#include <silkworm/db/bitmap.hpp>
 #include <silkworm/stagedsync/common.hpp>
 
 namespace silkworm::stagedsync {
@@ -33,6 +33,7 @@ class HistoryIndex : public IStage {
 
   private:
     std::unique_ptr<etl::Collector> collector_{nullptr};
+    std::unique_ptr<db::bitmap::IndexLoader> index_loader_{nullptr};
 
     std::atomic_bool loading_{false};  // Whether we're in ETL loading phase
     std::string current_source_;       // Current source of data
@@ -42,7 +43,6 @@ class HistoryIndex : public IStage {
     StageResult forward_impl(db::RWTxn& txn, BlockNum from, BlockNum to, bool storage);
     StageResult unwind_impl(db::RWTxn& txn, BlockNum from, BlockNum to, bool storage);
     StageResult prune_impl(db::RWTxn& txn, BlockNum threshold, BlockNum to, bool storage);
-    size_t compute_optimal_shard_size(size_t shard_key_len);  // To fill data pages and avoid page overflows
 
     //! \brief Collects bitmaps of block numbers changes for each account within provided
     //! changeset boundaries
@@ -50,7 +50,7 @@ class HistoryIndex : public IStage {
                                         bool storage);
 
     //! \brief Collects unique keys touched by changesets within provided boundaries
-    std::unordered_map<Bytes, bool, boost::hash<Bytes>> collect_unique_keys_from_changeset(
+    std::map<Bytes, bool> collect_unique_keys_from_changeset(
         db::RWTxn& txn, const db::MapConfig& source_config, BlockNum from, BlockNum to, bool storage);
 
     void reset_log_progress();  // Clears out all logging vars

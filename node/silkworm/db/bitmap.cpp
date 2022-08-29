@@ -164,7 +164,6 @@ void IndexLoader::prune_bitmaps(RWTxn& txn, BlockNum threshold) {
 
         target_data = target.to_next(/*throw_notfound=*/false);
     }
-
 }
 
 size_t IndexLoader::compute_optimal_bitmap_shard_size(size_t mdbx_page_size, size_t shard_key_size) {

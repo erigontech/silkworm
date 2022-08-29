@@ -31,8 +31,8 @@ HeaderPersistence::HeaderPersistence(db::RWTxn& tx) : tx_(tx), canonical_cache_(
     if (!headers_head_hash) {
         update_canonical_chain(headers_height, *db::read_head_header_hash(tx));
         repaired_ = true;
-        return;
-    }
+        return; // todo: remove this return so that the instance will be fully initialised
+    }           // so that we are not forced to check this state in every method, and we can use it even when repaired
 
     std::optional<BigInt> headers_head_td = db::read_total_difficulty(tx, headers_height, *headers_head_hash);
     if (!headers_head_td)

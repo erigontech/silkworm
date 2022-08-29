@@ -61,6 +61,17 @@ class IndexLoader {
         return current_key_;
     }
 
+    //! \brief Flushes a collected map of Bitmaps into an etl::Collector taking care of proper keys sorting
+    //! for subsequent load
+    //! \param bitmaps [in] : A map of keys and related bitmaps
+    //! \param collector [in] : The collector to flush to
+    //! \param flush_count [in]
+    //! \remark Etl collector will sort and process entries lexicographically (using both key and value) for this reason
+    //! we add flush_count as suffix of key, so we ensure for same account we process entries in the order
+    //! they've been collected. uint16_t maxes 65K flushes
+    static void flush_bitmaps_to_etl(std::map<Bytes, roaring::Roaring64Map> bitmaps,
+                                     etl::Collector* collector, uint16_t flush_count);
+
   private:
     const db::MapConfig& index_config_;  // The bucket config holding the index of maps
     mutable std::mutex log_mtx_;         // To get progress status

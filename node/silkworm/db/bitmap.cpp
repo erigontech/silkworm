@@ -166,6 +166,16 @@ void IndexLoader::prune_bitmaps(RWTxn& txn, BlockNum threshold) {
     }
 }
 
+void IndexLoader::flush_bitmaps_to_etl(std::map<Bytes, roaring::Roaring64Map> bitmaps,
+                                       etl::Collector* collector, uint16_t flush_count) {
+    for (auto& [key, bitmap] : bitmaps) {
+        Bytes etl_key(key.size() + sizeof(uint16_t), '\0');
+        std::memcpy(&etl_key[0], key.data(), key.size());
+        endian::store_big_u16(&etl_key[key.size()], flush_count);
+        collector->collect({etl_key, db::bitmap::to_bytes(bitmap)});
+    }
+    bitmaps.clear();
+}
 size_t IndexLoader::compute_optimal_bitmap_shard_size(const size_t mdbx_page_size, const size_t shard_key_size) {
     /*
      * On behalf of configured MDBX's page size we need to find

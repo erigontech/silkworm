@@ -16,8 +16,6 @@
 
 #include "stage_history_index.hpp"
 
-#include <unordered_map>
-
 #include <silkworm/common/cast.hpp>
 #include <silkworm/common/endian.hpp>
 #include <silkworm/common/log.hpp>
@@ -230,6 +228,7 @@ StageResult HistoryIndex::forward_impl(db::RWTxn& txn, const BlockNum from, cons
     current_key_.clear();
     log_lck.unlock();
 
+    // Into etl
     collect_bitmaps_from_changeset(txn, source_config, from, to, storage);
 
     if (!collector_->empty()) {
@@ -323,26 +322,11 @@ void HistoryIndex::collect_bitmaps_from_changeset(db::RWTxn& txn, const db::MapC
     using namespace std::chrono_literals;
     auto log_time{std::chrono::steady_clock::now()};
 
-    std::unordered_map<Bytes, roaring::Roaring64Map, boost::hash<Bytes>> bitmaps;
+    std::map<Bytes, roaring::Roaring64Map> bitmaps;
     auto bitmaps_it{bitmaps.begin()};
     Bytes bitmaps_key{};
-    size_t bitmaps_size{0};
-
-    // A note on flush_count
-    // Etl collector will sort and process entries lexicographically (using both key and value) for this reason
-    // we add flush_count as suffix of key, so we ensure for same account we process entries in the order
-    // they've been collected. uint16_t maxes 65K flushes
-    uint16_t flush_count{0};
-    auto bitmaps_flush{[&bitmaps, &bitmaps_size, &flush_count](etl::Collector* collector) {
-        for (auto& [key, bitmap] : bitmaps) {
-            Bytes etl_key(key.size() + sizeof(uint16_t), '\0');
-            std::memcpy(&etl_key[0], key.data(), key.size());
-            endian::store_big_u16(&etl_key[key.size()], flush_count);
-            collector->collect({etl_key, db::bitmap::to_bytes(bitmap)});
-        }
-        bitmaps.clear();
-        bitmaps_size = 0;
-    }};
+    size_t bitmaps_size{0};   // To account flushing threshold
+    uint16_t flush_count{0};  // To account number of flushings
 
     const BlockNum max_block_number{to};
     BlockNum reached_block_number{0};
@@ -393,16 +377,16 @@ void HistoryIndex::collect_bitmaps_from_changeset(db::RWTxn& txn, const db::MapC
 
         // Flush bitmaps to etl if necessary
         if (bitmaps_size >= node_settings_->batch_size) {
-            ++flush_count;
-            bitmaps_flush(collector_.get());
+            db::bitmap::IndexLoader::flush_bitmaps_to_etl(bitmaps, collector_.get(), flush_count++);
+            bitmaps_size = 0;
         }
 
         source_data = source.to_next(false);
     }
 
     if (bitmaps_size) {
-        ++flush_count;
-        bitmaps_flush(collector_.get());
+        db::bitmap::IndexLoader::flush_bitmaps_to_etl(bitmaps, collector_.get(), flush_count++);
+        bitmaps_size = 0;
     }
 }
 

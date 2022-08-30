@@ -24,7 +24,7 @@ namespace silkworm::db::bitmap {
 
 void IndexLoader::merge_bitmaps(RWTxn& txn, size_t mdbx_page_size, size_t key_size, etl::Collector* bitmaps_collector) {
     const Bytes last_shard_suffix{db::block_key(UINT64_MAX)};
-    const size_t optimal_shard_size{compute_optimal_bitmap_shard_size(mdbx_page_size, key_size)};
+    const size_t optimal_shard_size{db::max_value_size_for_leaf_page(mdbx_page_size, key_size)};
 
     db::Cursor target(txn, index_config_);
     etl::LoadFunc load_func{[&last_shard_suffix, &optimal_shard_size](const etl::Entry& entry,
@@ -175,32 +175,6 @@ void IndexLoader::flush_bitmaps_to_etl(std::map<Bytes, roaring::Roaring64Map> bi
         collector->collect({etl_key, db::bitmap::to_bytes(bitmap)});
     }
     bitmaps.clear();
-}
-size_t IndexLoader::compute_optimal_bitmap_shard_size(const size_t mdbx_page_size, const size_t shard_key_size) {
-    /*
-     * On behalf of configured MDBX's page size we need to find
-     * the size of each shard best fitting in data page without
-     * causing MDBX to write value in overflow pages.
-     *
-     * Example :
-     *  for accounts history index
-     *  with shard_key_len == kAddressLength == 20
-     *  with page_size == 4096
-     *  optimal shard size == 2000
-     *
-     *  for storage history index
-     *  with shard_key_len == kAddressLength + kHashLength == 20 + 32 == 52
-     *  with page_size == 4096
-     *  optimal shard size == 1968
-     *
-     *  NOTE !! Keep an eye on MDBX code as PageHeader and Node structs might change
-     */
-
-    static constexpr size_t kPageOverheadSize{40ull};  // PageHeader + NodeSize
-    size_t page_room{mdbx_page_size - kPageOverheadSize};
-    size_t leaf_node_max_room{((page_room / 2) & ~1ull /* even number */) - sizeof(uint16_t)};
-    size_t optimal_size{leaf_node_max_room - (shard_key_size + /* shard upper_bound */ sizeof(uint64_t))};
-    return optimal_size;
 }
 
 std::optional<uint64_t> seek(const roaring::Roaring64Map& bitmap, uint64_t n) {

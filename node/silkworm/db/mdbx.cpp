@@ -159,6 +159,33 @@ namespace detail {
     return tx.open_cursor(open_map(tx, config));
 }
 
+size_t max_value_size_for_leaf_page(const size_t page_size, const size_t key_size) {
+    /*
+     * On behalf of configured MDBX's page size we need to find
+     * the size of each shard best fitting in data page without
+     * causing MDBX to write value in overflow pages.
+     *
+     * Example :
+     *  for accounts history index
+     *  with shard_key_len == kAddressLength == 20
+     *  with page_size == 4096
+     *  optimal shard size == 2000
+     *
+     *  for storage history index
+     *  with shard_key_len == kAddressLength + kHashLength == 20 + 32 == 52
+     *  with page_size == 4096
+     *  optimal shard size == 1968
+     *
+     *  NOTE !! Keep an eye on MDBX code as PageHeader and Node structs might change
+     */
+
+    static constexpr size_t kPageOverheadSize{40ull};  // PageHeader + NodeSize
+    size_t page_room{page_size - kPageOverheadSize};
+    size_t leaf_node_max_room{((page_room / 2) & ~1ull /* even number */) - sizeof(uint16_t)};
+    size_t max_size{leaf_node_max_room - (key_size + /* shard upper_bound */ sizeof(uint64_t))};
+    return max_size;
+}
+
 thread_local ObjectPool<MDBX_cursor, detail::cursor_handle_deleter> Cursor::handles_pool_{};
 
 Cursor::Cursor(::mdbx::txn& txn, const MapConfig& config) {
@@ -309,5 +336,4 @@ size_t cursor_erase(mdbx::cursor& cursor, const ByteView& set_key, size_t max_co
     }
     return cursor_for_count(cursor, detail::cursor_erase_data, max_count, direction);
 }
-
 }  // namespace silkworm::db

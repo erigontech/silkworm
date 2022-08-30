@@ -76,10 +76,6 @@ class IndexLoader {
     const db::MapConfig& index_config_;  // The bucket config holding the index of maps
     mutable std::mutex log_mtx_;         // To get progress status
     std::string current_key_;            // Key being processed
-
-    //! \brief Determines optimal bitmap shard size on behalf of MDBX's page size to have leaf nodes
-    //! filled at maximum without generating overflow pages
-    [[nodiscard]] size_t compute_optimal_bitmap_shard_size(const size_t mdbx_page_size, const size_t shard_key_size);
 };
 
 // Erigon bitmapdb.ChunkLimit

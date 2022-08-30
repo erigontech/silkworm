@@ -166,9 +166,10 @@ inline constexpr db::MapConfig kLogTopicIndex{"LogTopicIndex"};
 //! \struct
 //! \verbatim
 //!   key   : block_num_u64 (BE) + transaction_index_u32 (BE)
-//!   value : logs of transaction
+//!   value : logs of transaction (CBOR Encoded)
 //! \endverbatim
 inline constexpr db::MapConfig kLogs{"TransactionLog"};
+
 inline constexpr db::MapConfig kMigrations{"Migration"};
 
 //! \details Store contract code hash for given contract address + incarnation

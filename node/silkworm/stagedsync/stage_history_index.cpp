@@ -236,9 +236,7 @@ StageResult HistoryIndex::forward_impl(db::RWTxn& txn, const BlockNum from, cons
         loading_ = true;
         index_loader_ = std::make_unique<db::bitmap::IndexLoader>(target_config);
         log_lck.unlock();
-        index_loader_->merge_bitmaps(txn,
-                                     node_settings_->chaindata_env_config.page_size,
-                                     target_key_size, collector_.get());
+        index_loader_->merge_bitmaps(txn, target_key_size, collector_.get());
 
         log_lck.lock();
         loading_ = false;

@@ -186,6 +186,11 @@ size_t max_value_size_for_leaf_page(const size_t page_size, const size_t key_siz
     return max_size;
 }
 
+size_t db::max_value_size_for_leaf_page(const mdbx::txn& txn, const size_t key_size) {
+    const size_t page_size{txn.env().get_pagesize()};
+    return max_value_size_for_leaf_page(page_size, key_size);
+}
+
 thread_local ObjectPool<MDBX_cursor, detail::cursor_handle_deleter> Cursor::handles_pool_{};
 
 Cursor::Cursor(::mdbx::txn& txn, const MapConfig& config) {

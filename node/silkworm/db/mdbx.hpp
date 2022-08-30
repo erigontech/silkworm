@@ -194,6 +194,11 @@ struct MapConfig {
 //! \param [in] key_size : the known key size to fit in bundle computed value size
 size_t max_value_size_for_leaf_page(const size_t page_size, const size_t key_size );
 
+//! \brief Computes the max size of value data to fit in a leaf data page
+//! \param [in] txn : the transaction used to derive pagesize from
+//! \param [in] key_size : the known key size to fit in bundle computed value size
+size_t max_value_size_for_leaf_page(const ::mdbx::txn& txn, const size_t key_size );
+
 //! \brief Managed cursor class to access cursor API
 //! \remarks Unlike ::mdbx::cursor_managed this class withdraws and deposits allocated MDBX_cursor handles in a
 //! thread_local pool for reuse. This helps avoiding multiple mallocs on cursor creation.

@@ -22,9 +22,9 @@
 
 namespace silkworm::db::bitmap {
 
-void IndexLoader::merge_bitmaps(RWTxn& txn, size_t mdbx_page_size, size_t key_size, etl::Collector* bitmaps_collector) {
+void IndexLoader::merge_bitmaps(RWTxn& txn, size_t key_size, etl::Collector* bitmaps_collector) {
     const Bytes last_shard_suffix{db::block_key(UINT64_MAX)};
-    const size_t optimal_shard_size{db::max_value_size_for_leaf_page(mdbx_page_size, key_size)};
+    const size_t optimal_shard_size{db::max_value_size_for_leaf_page(*txn, key_size)};
 
     db::Cursor target(txn, index_config_);
     etl::LoadFunc load_func{[&last_shard_suffix, &optimal_shard_size](const etl::Entry& entry,

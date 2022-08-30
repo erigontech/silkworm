@@ -39,10 +39,9 @@ class IndexLoader {
     //! \brief Merges a list of bitmaps, previously collected, into index table ensuring
     //! all bitmaps are properly sharded and that last bitmap is marked with an UINT64_MAX upper bound
     //! \param txn [in] : An MDBX transaction holder
-    //! \param mdbx_page_size [in] : The configured page size for underlying MDBX data
     //! \param key_size [in] : The actual length of key in the list of bitmap shards (the index)
     //! \param collector [in] : A pointer to the etl::collector holding the bitmaps to be merged
-    void merge_bitmaps(RWTxn& txn, size_t mdbx_page_size, size_t key_size, etl::Collector* bitmaps_collector);
+    void merge_bitmaps(RWTxn& txn, size_t key_size, etl::Collector* bitmaps_collector);
 
     //! \brief Provided a list of keys for which the unwind should be applied this removes right values from shards
     //! \param txn [in] : An MDBX transaction holder

@@ -50,7 +50,7 @@ auto HeadersStage::forward(db::RWTxn& tx) -> Stage::Result {
     try {
         HeaderPersistence header_persistence(tx);
 
-        if (header_persistence.repaired()) {
+        if (header_persistence.canonical_repaired()) {
             tx.commit();
             log::Info() << "[1/16 Headers] End (forward skipped due to the need of to complete the previous run, canonical chain updated), "
                         << "duration=" << timing.format(timing.lap_duration());
@@ -135,7 +135,7 @@ auto HeadersStage::forward(db::RWTxn& tx) -> Stage::Result {
                     << " duration=" << StopWatch::format(timing.lap_duration());
 
         log::Info() << "[1/16 Headers] Updating canonical chain";
-        header_persistence.close();
+        header_persistence.finish();
 
         tx.commit();  // this will commit or not depending on the creator of txn
 

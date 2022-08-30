@@ -83,7 +83,7 @@ TEST_CASE("header persistence", "[silkworm][downloader][HeaderPersistence]") {
         REQUIRE(header1_in_db.has_value());
         REQUIRE(header1_in_db == header1);
 
-        pc.close();  // here pc update the canonical chain on the db
+        pc.finish();  // here pc update the canonical chain on the db
 
         REQUIRE(db::read_canonical_hash(tx, 1) == header1_hash);
     }
@@ -150,7 +150,7 @@ TEST_CASE("header persistence", "[silkworm][downloader][HeaderPersistence]") {
         REQUIRE(header1b_in_db.has_value());
         REQUIRE(header1b_in_db == header1b);
 
-        pc.close();  // here pc update the canonical chain on the db
+        pc.finish();  // here pc update the canonical chain on the db
 
         REQUIRE(db::read_canonical_hash(tx, 1) == header1_hash);
         REQUIRE(db::read_canonical_hash(tx, 2) == header2_hash);

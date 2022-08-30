@@ -74,7 +74,7 @@ std::tuple<BlockNum, Hash> header_with_biggest_td(mdbx::txn& txn, const std::set
             max_block_num = endian::load_big_u64(block_num.data());
         }
 
-        return true;  // = continue loop
+        return true;  // = continue loop - todo: check if we really need to parse all the table
     };
 
     db::cursor_for_each(td_cursor, find_max, db::CursorMoveDirection::Reverse);

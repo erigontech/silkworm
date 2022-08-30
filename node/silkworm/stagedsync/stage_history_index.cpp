@@ -174,7 +174,7 @@ StageResult HistoryIndex::prune(db::RWTxn& txn) {
         const BlockNum segment_width{forward_progress - prune_progress};
         if (segment_width > 16) {
             log::Info("Begin " + std::string(stage_name_),
-                      {"op", std::string(magic_enum::enum_name<OperationType>(OperationType::Unwind)), "from",
+                      {"op", std::string(magic_enum::enum_name<OperationType>(OperationType::Prune)), "from",
                        std::to_string(prune_progress), "to", std::to_string(forward_progress), "span",
                        std::to_string(segment_width)});
         }

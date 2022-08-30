@@ -18,7 +18,6 @@
 #include <ethash/keccak.hpp>
 
 #include <silkworm/chain/config.hpp>
-#include <silkworm/common/cast.hpp>
 #include <silkworm/common/test_context.hpp>
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/bitmap.hpp>

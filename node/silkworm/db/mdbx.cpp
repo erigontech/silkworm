@@ -167,22 +167,24 @@ size_t max_value_size_for_leaf_page(const size_t page_size, const size_t key_siz
      *
      * Example :
      *  for accounts history index
-     *  with shard_key_len == kAddressLength == 20
+     *  with shard_key_len == kAddressLength + sizeof(uint64_t) == 28
      *  with page_size == 4096
      *  optimal shard size == 2000
      *
      *  for storage history index
-     *  with shard_key_len == kAddressLength + kHashLength == 20 + 32 == 52
+     *  with shard_key_len == kAddressLength + kHashLength + sizeof(uint64_t) == 20 + 32 + 8 == 60
      *  with page_size == 4096
      *  optimal shard size == 1968
      *
      *  NOTE !! Keep an eye on MDBX code as PageHeader and Node structs might change
      */
 
-    static constexpr size_t kPageOverheadSize{40ull};  // PageHeader + NodeSize
-    size_t page_room{page_size - kPageOverheadSize};
-    size_t leaf_node_max_room{((page_room / 2) & ~1ull /* even number */) - sizeof(uint16_t)};
-    size_t max_size{leaf_node_max_room - (key_size + /* shard upper_bound */ sizeof(uint64_t))};
+    static constexpr size_t kPageOverheadSize{32ull};  // PageHeader + NodeSize
+    const size_t page_room{page_size - kPageOverheadSize};
+    const size_t leaf_node_max_room{
+        ((page_room / 2) & ~1ull /* even number */) -
+        (/* key and value sizes fields */ 2 * sizeof(uint16_t))};
+    const size_t max_size{leaf_node_max_room - key_size};
     return max_size;
 }
 

@@ -20,8 +20,7 @@
 
 #include <catch2/catch.hpp>
 
-#include <silkworm/common/directories.hpp>
-#include <silkworm/db/mdbx.hpp>
+#include <silkworm/common/test_context.hpp>
 
 static const std::map<std::string, std::string> kGeneticCode{
     {"AAA", "Lysine"},
@@ -461,4 +460,30 @@ TEST_CASE("Cursor walk") {
     }
 }
 
+TEST_CASE("OF pages") {
+    test::Context context;
+    db::RWTxn txn{context.txn()};
+
+    SECTION("No overflow") {
+        db::Cursor target(txn, db::table::kAccountHistory);
+        Bytes key(20, '\0');
+        Bytes value(db::max_value_size_for_leaf_page(*txn, key.size()), '\0');
+        target.insert(db::to_slice(key), db::to_slice(value));
+        txn.commit(/*renew=*/true);
+        target.bind(txn, db::table::kAccountHistory);
+        auto stats{target.get_map_stat()};
+        REQUIRE(!stats.ms_overflow_pages);
+    }
+
+    SECTION("Let's overflow") {
+        db::Cursor target(txn, db::table::kAccountHistory);
+        Bytes key(20, '\0');
+        Bytes value(db::max_value_size_for_leaf_page(*txn, key.size()) + /*any extra value */ 1, '\0');
+        target.insert(db::to_slice(key), db::to_slice(value));
+        txn.commit(/*renew=*/true);
+        target.bind(txn, db::table::kAccountHistory);
+        auto stats{target.get_map_stat()};
+        REQUIRE(stats.ms_overflow_pages);
+    }
+}
 }  // namespace silkworm::db

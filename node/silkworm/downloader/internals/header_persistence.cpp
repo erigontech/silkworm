@@ -27,14 +27,13 @@ namespace silkworm {
 
 HeaderPersistence::HeaderPersistence(db::RWTxn& tx) : tx_(tx), canonical_cache_(kCanonicalCacheSize) {
     BlockNum headers_height = db::stages::read_stage_progress(tx, db::stages::kHeadersKey);
-    auto headers_head_hash = db::read_canonical_hash(tx, headers_height);
-    if (!headers_head_hash) {
+    auto head_header_hash = db::read_canonical_hash(tx, headers_height);
+    if (!head_header_hash) {
         update_canonical_chain(headers_height, *db::read_head_header_hash(tx));
-        unwind_needed_ = true;
-        return;
+        repaired_ = true;
     }
 
-    std::optional<BigInt> headers_head_td = db::read_total_difficulty(tx, headers_height, *headers_head_hash);
+    std::optional<BigInt> headers_head_td = db::read_total_difficulty(tx, headers_height, *head_header_hash);
     if (!headers_head_td)
         throw std::logic_error("total difficulty of canonical hash at height " + std::to_string(headers_height) +
                                " not found in db");
@@ -48,6 +47,8 @@ HeaderPersistence::HeaderPersistence(db::RWTxn& tx) : tx_(tx), canonical_cache_(
 bool HeaderPersistence::best_header_changed() const { return new_canonical_; }
 
 bool HeaderPersistence::unwind_needed() const { return unwind_needed_; }
+
+bool HeaderPersistence::canonical_repaired() const { return repaired_; }
 
 BlockNum HeaderPersistence::initial_height() const { return initial_in_db_; }
 
@@ -77,7 +78,13 @@ void HeaderPersistence::persist(const Headers& headers) {
                  << " (duration=" << measure_curr_scope.format(end_time - start_time) << ")";  // only for test
 }
 
-void HeaderPersistence::persist(const BlockHeader& header) {  // todo: try to modularize
+void HeaderPersistence::persist(const BlockHeader& header) {  // try to modularize this method
+    if (finished_) {
+        std::string error_message = "HeaderPersistence: persist method called on instance in 'finished' state";
+        log::Error() << error_message;
+        throw std::logic_error(error_message);
+    }
+
     // Admittance conditions
     auto height = header.number;
     Hash hash = header.hash();
@@ -90,8 +97,8 @@ void HeaderPersistence::persist(const BlockHeader& header) {  // todo: try to mo
     }
     auto parent = db::read_header(tx_, height - 1, header.parent_hash);
     if (!parent) {
-        std::string error_message = "HeaderPersistence: could not find parent with hash " + to_hex(header.parent_hash) + " and height " +
-                                    std::to_string(height - 1) + " for header " + hash.to_hex();
+        std::string error_message = "HeaderPersistence: could not find parent with hash " + to_hex(header.parent_hash) +
+                                    " and height " + std::to_string(height - 1) + " for header " + hash.to_hex();
         log::Error() << error_message;
         throw std::logic_error(error_message);
     }
@@ -213,8 +220,8 @@ void HeaderPersistence::update_canonical_chain(BlockNum height, Hash hash) {  //
     }
 }
 
-void HeaderPersistence::close() {
-    if (closed_) return;
+void HeaderPersistence::finish() {
+    if (finished_) return;
 
     if (unwind_needed()) return;
 
@@ -222,7 +229,7 @@ void HeaderPersistence::close() {
         update_canonical_chain(highest_height(), highest_hash());
     }
 
-    closed_ = true;
+    finished_ = true;
 }
 
 std::set<Hash> HeaderPersistence::remove_headers(BlockNum unwind_point, std::optional<Hash> bad_block,

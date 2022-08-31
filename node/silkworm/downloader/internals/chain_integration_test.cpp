@@ -143,7 +143,7 @@ TEST_CASE("working/persistent-chain integration test") {
         REQUIRE(header1b_in_db.has_value());
         REQUIRE(header1b_in_db == header1b);
 
-        pc.close();  // here pc update the canonical chain on the db
+        pc.finish();  // here pc update the canonical chain on the db
 
         REQUIRE(db::read_canonical_hash(tx, 1) == header1_hash);
         REQUIRE(db::read_canonical_hash(tx, 2) == header2_hash);
@@ -256,7 +256,7 @@ TEST_CASE("working/persistent-chain integration test") {
         REQUIRE(header2_in_db == header2);
 
         // updating the canonical chain on the db
-        pc.close();
+        pc.finish();
 
         REQUIRE(db::read_canonical_hash(tx, 1) == header1_hash);
         REQUIRE(db::read_canonical_hash(tx, 2) == header2_hash);
@@ -372,7 +372,7 @@ TEST_CASE("working/persistent-chain integration test") {
         REQUIRE(header2_in_db == header2);
 
         // updating the canonical chain on the db
-        pc.close();
+        pc.finish();
 
         REQUIRE(db::read_canonical_hash(tx, 1) == header1b_hash);
         REQUIRE(db::read_canonical_hash(tx, 2).has_value() == false);
@@ -484,7 +484,7 @@ TEST_CASE("working/persistent-chain integration test") {
         REQUIRE(header1b_in_db == header1b);
 
         // updating the canonical chain on the db
-        pc.close();
+        pc.finish();
 
         REQUIRE(db::read_canonical_hash(tx, 1) == header1_hash);
         REQUIRE(db::read_canonical_hash(tx, 2) == header2_hash);

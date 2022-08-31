@@ -25,8 +25,16 @@
 
 namespace silkworm {
 
+static auto kMaxReceiveMessageSize = 10_Mebi;  // reference: eth/66 protocol
+
+static std::shared_ptr<grpc::Channel> create_custom_channel(const std::string& sentry_addr) {
+    grpc::ChannelArguments custom_args{};
+    custom_args.SetMaxReceiveMessageSize(kMaxReceiveMessageSize);
+    return grpc::CreateCustomChannel(sentry_addr, grpc::InsecureChannelCredentials(), custom_args);
+}
+
 SentryClient::SentryClient(const std::string& sentry_addr)
-    : base_t(grpc::CreateChannel(sentry_addr, grpc::InsecureChannelCredentials())) {
+    : base_t(create_custom_channel(sentry_addr)) {
     log::Info() << "SentryClient, connecting to remote sentry...";
 }
 

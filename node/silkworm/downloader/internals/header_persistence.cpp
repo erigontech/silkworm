@@ -97,8 +97,8 @@ void HeaderPersistence::persist(const BlockHeader& header) {  // try to modulari
     }
     auto parent = db::read_header(tx_, height - 1, header.parent_hash);
     if (!parent) {
-        std::string error_message = "HeaderPersistence: could not find parent with hash " + to_hex(header.parent_hash)
-                                    + " and height " + std::to_string(height - 1) + " for header " + hash.to_hex();
+        std::string error_message = "HeaderPersistence: could not find parent with hash " + to_hex(header.parent_hash) +
+                                    " and height " + std::to_string(height - 1) + " for header " + hash.to_hex();
         log::Error() << error_message;
         throw std::logic_error(error_message);
     }

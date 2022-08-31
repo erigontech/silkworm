@@ -18,6 +18,8 @@
 
 #include <optional>
 
+#include <absl/container/flat_hash_map.h>
+
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wold-style-cast"
 #pragma GCC diagnostic ignored "-Wsign-conversion"
@@ -68,7 +70,7 @@ class IndexLoader {
     //! \remark Etl collector will sort and process entries lexicographically (using both key and value) for this reason
     //! we add flush_count as suffix of key, so we ensure for same account we process entries in the order
     //! they've been collected. uint16_t maxes 65K flushes
-    static void flush_bitmaps_to_etl(std::map<Bytes, roaring::Roaring64Map> bitmaps,
+    static void flush_bitmaps_to_etl(absl::flat_hash_map<Bytes, roaring::Roaring64Map>& bitmaps,
                                      etl::Collector* collector, uint16_t flush_count);
 
   private:

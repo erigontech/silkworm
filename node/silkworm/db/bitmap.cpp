@@ -58,7 +58,9 @@ void IndexLoader::merge_bitmaps(RWTxn& txn, size_t key_size, etl::Collector* bit
         }
     }};
 
-    bitmaps_collector->load(target, load_func, MDBX_put_flags_t::MDBX_UPSERT);
+    bitmaps_collector->load(target,
+                            load_func,
+                            target.empty() ? MDBX_put_flags_t::MDBX_APPEND : MDBX_put_flags_t::MDBX_UPSERT);
     bitmaps_collector->clear();
 }
 
@@ -167,7 +169,7 @@ void IndexLoader::prune_bitmaps(RWTxn& txn, BlockNum threshold) {
     }
 }
 
-void IndexLoader::flush_bitmaps_to_etl(std::map<Bytes, roaring::Roaring64Map> bitmaps,
+void IndexLoader::flush_bitmaps_to_etl(absl::flat_hash_map<Bytes, roaring::Roaring64Map>& bitmaps,
                                        etl::Collector* collector, uint16_t flush_count) {
     for (auto& [key, bitmap] : bitmaps) {
         Bytes etl_key(key.size() + sizeof(uint16_t), '\0');

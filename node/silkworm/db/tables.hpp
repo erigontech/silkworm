@@ -158,7 +158,29 @@ inline constexpr db::MapConfig kHeadersSnapshotInfo{"HeadersSnapshotInfo"};
 //!   value : incarnation (u64 BE)
 //! \endverbatim
 inline constexpr db::MapConfig kIncarnationMap{"IncarnationMap"};
+
+//! \details Holds the list of blocks in which a specific log address has been touched
+//! \struct
+//! \verbatim
+//!   key   : address (20 bytes) + suffix (BE 64bit unsigned integer)
+//!   value : binary bitmap holding list of blocks
+//! \endverbatim
+//! \remark Each record's key holds a suffix which is a 64bit unsigned integer specifying the "upper bound" limit
+//! of the list of blocks contained in value part. When this integer is equal to UINT64_MAX it means this
+//! record holds the last known chunk of blocks which have changed the account. This is due to
+//! how RoaringBitmap64 work.
 inline constexpr db::MapConfig kLogAddressIndex{"LogAddressIndex"};
+
+//! \details Holds the list of blocks in which a specific log topic has been touched
+//! \struct
+//! \verbatim
+//!   key   : hash (32 bytes) + suffix (BE 64bit unsigned integer)
+//!   value : binary bitmap holding list of blocks
+//! \endverbatim
+//! \remark Each record's key holds a suffix which is a 64bit unsigned integer specifying the "upper bound" limit
+//! of the list of blocks contained in value part. When this integer is equal to UINT64_MAX it means this
+//! record holds the last known chunk of blocks which have changed the account. This is due to
+//! how RoaringBitmap64 work.
 inline constexpr db::MapConfig kLogTopicIndex{"LogTopicIndex"};
 
 //! \details Stores the logs for every transaction in canonical blocks

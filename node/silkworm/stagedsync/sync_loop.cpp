@@ -23,6 +23,7 @@
 #include <silkworm/stagedsync/stage_hashstate.hpp>
 #include <silkworm/stagedsync/stage_history_index.hpp>
 #include <silkworm/stagedsync/stage_interhashes.hpp>
+#include <silkworm/stagedsync/stage_log_index.hpp>
 #include <silkworm/stagedsync/stage_senders.hpp>
 
 namespace silkworm::stagedsync {
@@ -53,6 +54,7 @@ void SyncLoop::load_stages() {
     stages_.push_back(std::make_unique<stagedsync::HashState>(node_settings_));
     stages_.push_back(std::make_unique<stagedsync::InterHashes>(node_settings_));
     stages_.push_back(std::make_unique<stagedsync::HistoryIndex>(node_settings_));
+    stages_.push_back(std::make_unique<stagedsync::LogIndex>(node_settings_));
 }
 
 void SyncLoop::stop(bool wait) {

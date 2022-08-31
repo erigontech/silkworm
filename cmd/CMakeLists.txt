@@ -51,9 +51,6 @@ if(NOT SILKWORM_CORE_ONLY)
   add_executable(unwind_tx_lookup unwind_tx_lookup.cpp)
   target_link_libraries(unwind_tx_lookup PRIVATE silkworm_node CLI11::CLI11)
 
-  add_executable(unwind_log_index unwind_log_index.cpp)
-  target_link_libraries(unwind_log_index PRIVATE silkworm_node CLI11::CLI11)
-
   add_executable(check_hashstate check_hashstate.cpp)
   target_link_libraries(check_hashstate PRIVATE silkworm_node CLI11::CLI11)
 
@@ -65,9 +62,6 @@ if(NOT SILKWORM_CORE_ONLY)
 
   add_executable(check_blockhashes check_blockhashes.cpp)
   target_link_libraries(check_blockhashes PRIVATE silkworm_node CLI11::CLI11)
-
-  add_executable(log_index log_index.cpp)
-  target_link_libraries(log_index PRIVATE silkworm_node cborcpp CLI11::CLI11)
 
   add_executable(downloader downloader.cpp common.cpp)
   target_link_libraries(downloader PRIVATE silkworm_node silkworm-buildinfo CLI11::CLI11)

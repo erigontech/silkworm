@@ -317,7 +317,7 @@ void HistoryIndex::collect_bitmaps_from_changeset(db::RWTxn& txn, const db::MapC
     using namespace std::chrono_literals;
     auto log_time{std::chrono::steady_clock::now()};
 
-    std::map<Bytes, roaring::Roaring64Map> bitmaps;
+    absl::flat_hash_map<Bytes, roaring::Roaring64Map> bitmaps;
     auto bitmaps_it{bitmaps.begin()};
     Bytes bitmaps_key{};
     size_t bitmaps_size{0};   // To account flushing threshold
@@ -406,9 +406,7 @@ std::map<Bytes, bool> HistoryIndex::collect_unique_keys_from_changeset(
         auto source_data_key_view{db::from_slice(source_data.key)};
         reached_block_number = endian::load_big_u64(source_data_key_view.data());
         check_block_sequence(expected_block_number, reached_block_number);
-        if (reached_block_number > max_block_number) {
-            break;
-        }
+        if (reached_block_number > max_block_number) break;
         source_data_key_view.remove_prefix(sizeof(BlockNum));
 
         // Log and abort check
@@ -490,5 +488,4 @@ void HistoryIndex::reset_log_progress() {
     current_target_.clear();
     current_key_.clear();
 }
-
 }  // namespace silkworm::stagedsync

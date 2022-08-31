@@ -14,251 +14,464 @@
    limitations under the License.
 */
 
-#include <filesystem>
-#include <string>
-#include <unordered_map>
-
-#include <silkworm/common/cast.hpp>
-#include <silkworm/common/endian.hpp>
-#include <silkworm/common/log.hpp>
-#include <silkworm/db/bitmap.hpp>
-#include <silkworm/db/stages.hpp>
-#include <silkworm/etl/collector.hpp>
-#include <silkworm/stagedsync/stage_logindex/listener_log_index.hpp>
-
-#include "stagedsync.hpp"
+#include "stage_log_index.hpp"
 
 namespace silkworm::stagedsync {
 
-namespace fs = std::filesystem;
+StageResult LogIndex::forward(db::RWTxn& txn) {
+    StageResult ret{StageResult::kSuccess};
+    try {
+        throw_if_stopping();
 
-static constexpr size_t kBitmapBufferSizeLimit = 512_Mebi;
+        // Check stage boundaries from previous execution and previous stage execution
+        auto previous_progress{get_progress(txn)};
+        const auto target_progress{db::stages::read_stage_progress(*txn, db::stages::kExecutionKey)};
+        if (previous_progress == target_progress) {
+            // Nothing to process
+            return ret;
+        } else if (previous_progress > target_progress) {
+            // Something bad had happened.  Maybe we need to unwind ?
+            throw StageError(StageResult::kInvalidProgress,
+                             "LogIndex progress " + std::to_string(previous_progress) +
+                                 " greater than Execution progress " + std::to_string(target_progress));
+        }
 
-static void loader_function(const etl::Entry& entry, mdbx::cursor& target_table, MDBX_put_flags_t db_flags) {
-    auto bm{roaring::Roaring::readSafe(byte_ptr_cast(entry.value.data()), entry.value.size())};
-    Bytes last_chunk_index(entry.key.size() + 4, '\0');
-    std::memcpy(&last_chunk_index[0], &entry.key[0], entry.key.size());
-    endian::store_big_u32(&last_chunk_index[entry.key.size()], UINT32_MAX);
-    auto previous_bitmap_bytes{target_table.find(db::to_slice(last_chunk_index), false)};
-    if (previous_bitmap_bytes) {
-        bm |= roaring::Roaring::readSafe(previous_bitmap_bytes.value.char_ptr(), previous_bitmap_bytes.value.length());
-        db_flags = MDBX_put_flags_t::MDBX_UPSERT;
+        reset_log_progress();
+        const BlockNum segment_width{target_progress - previous_progress};
+        if (segment_width > 16) {
+            log::Info("Begin " + std::string(stage_name_),
+                      {"op", std::string(magic_enum::enum_name<OperationType>(OperationType::Forward)), "from",
+                       std::to_string(previous_progress), "to", std::to_string(target_progress), "span",
+                       std::to_string(segment_width)});
+        }
+
+        // If this is first time we forward AND we have "prune history" set
+        // do not process all blocks rather only what is needed
+        if (node_settings_->prune_mode->history().enabled()) {
+            if (!previous_progress)
+                previous_progress = node_settings_->prune_mode->history().value_from_head(target_progress);
+        }
+
+        if (previous_progress < target_progress)
+            forward_impl(txn, previous_progress, target_progress);
+
+        reset_log_progress();
+        update_progress(txn, target_progress);
+        txn.commit();
+
+    } catch (const StageError& ex) {
+        log::Error(std::string(stage_name_),
+                   {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
+        ret = static_cast<StageResult>(ex.err());
+    } catch (const std::exception& ex) {
+        log::Error(std::string(stage_name_),
+                   {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
+        ret = StageResult::kUnexpectedError;
+    } catch (...) {
+        log::Error(std::string(stage_name_),
+                   {"function", std::string(__FUNCTION__), "exception", "unexpected and undefined"});
+        ret = StageResult::kUnexpectedError;
     }
-    while (bm.cardinality() > 0) {
-        auto current_chunk{db::bitmap::cut_left(bm, db::bitmap::kBitmapChunkLimit)};
-        // make chunk index
-        Bytes chunk_index(entry.key.size() + 4, '\0');
-        std::memcpy(&chunk_index[0], &entry.key[0], entry.key.size());
-        const uint32_t suffix{bm.cardinality() == 0 ? UINT32_MAX : current_chunk.maximum()};
-        endian::store_big_u32(&chunk_index[entry.key.size()], suffix);
-        Bytes current_chunk_bytes(current_chunk.getSizeInBytes(), '\0');
-        current_chunk.write(byte_ptr_cast(&current_chunk_bytes[0]));
 
-        mdbx::slice k{db::to_slice(chunk_index)};
-        mdbx::slice v{db::to_slice(current_chunk_bytes)};
-        mdbx::error::success_or_throw(target_table.put(k, &v, db_flags));
-    }
+    addresses_collector_.reset();
+    topics_collector_.reset();
+    operation_ = OperationType::None;
+    return is_stopping() ? StageResult::kAborted : ret;
 }
 
-static void flush_bitmaps(etl::Collector& collector, std::unordered_map<std::string, roaring::Roaring>& map) {
-    for (const auto& [key, bm] : map) {
-        Bytes bitmap_bytes(bm.getSizeInBytes(), '\0');
-        bm.write(byte_ptr_cast(bitmap_bytes.data()));
-        collector.collect(etl::Entry{Bytes(byte_ptr_cast(key.c_str()), key.size()), bitmap_bytes});
+StageResult LogIndex::unwind(db::RWTxn& txn, BlockNum to) {
+    StageResult ret{StageResult::kSuccess};
+    try {
+        throw_if_stopping();
+
+        // Check stage boundaries from previous execution and previous stage execution
+        const auto previous_progress{get_progress(txn)};
+        const auto execution_stage_progress{db::stages::read_stage_progress(*txn, db::stages::kExecutionKey)};
+        if (previous_progress <= to || execution_stage_progress <= to) {
+            // Nothing to process
+            return ret;
+        }
+
+        reset_log_progress();
+        const BlockNum segment_width{previous_progress - to};
+        if (segment_width > 16) {
+            log::Info(
+                "Begin " + std::string(stage_name_),
+                {"op", std::string(magic_enum::enum_name<OperationType>(OperationType::Unwind)), "from",
+                 std::to_string(previous_progress), "to", std::to_string(to), "span", std::to_string(segment_width)});
+        }
+
+        if (previous_progress && previous_progress > to)
+            unwind_impl(txn, previous_progress, to);
+
+        reset_log_progress();
+        update_progress(txn, to);
+        txn.commit();
+
+    } catch (const StageError& ex) {
+        log::Error(std::string(stage_name_),
+                   {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
+        ret = static_cast<StageResult>(ex.err());
+    } catch (const mdbx::exception& ex) {
+        log::Error(std::string(stage_name_),
+                   {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
+        ret = StageResult::kDbError;
+    } catch (const std::exception& ex) {
+        log::Error(std::string(stage_name_),
+                   {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
+        ret = StageResult::kUnexpectedError;
+    } catch (...) {
+        log::Error(std::string(stage_name_),
+                   {"function", std::string(__FUNCTION__), "exception", "unexpected and undefined"});
+        ret = StageResult::kUnexpectedError;
     }
-    map.clear();
+
+    addresses_collector_.reset();
+    topics_collector_.reset();
+    operation_ = OperationType::None;
+    return is_stopping() ? StageResult::kAborted : ret;
 }
 
-StageResult stage_log_index(db::RWTxn& txn, const std::filesystem::path& etl_path, uint64_t) {
-    fs::create_directories(etl_path);
-    etl::Collector topic_collector(etl_path, /* flush size */ 256_Mebi);
-    etl::Collector addresses_collector(etl_path, /* flush size */ 256_Mebi);
+StageResult LogIndex::prune(db::RWTxn& txn) {
+    StageResult ret{StageResult::kSuccess};
+    try {
+        throw_if_stopping();
+        if (!node_settings_->prune_mode->history().enabled()) return ret;
 
-    auto log_table{db::open_cursor(*txn, db::table::kLogs)};
-    auto last_processed_block_number{db::stages::read_stage_progress(*txn, db::stages::kLogIndexKey)};
+        const auto forward_progress{get_progress(txn)};
+        const auto prune_progress{get_prune_progress(txn)};
+        if (prune_progress >= forward_progress) return ret;
 
-    // Extract
-    log::Info() << "Started Log Index Extraction";
-    Bytes start(8, '\0');
-    endian::store_big_u64(&start[0], last_processed_block_number);
+        // Need to erase all history info below this threshold
+        // If threshold is zero we don't have anything to prune
+        const auto prune_threshold{node_settings_->prune_mode->history().value_from_head(forward_progress)};
+        if (!prune_threshold) return StageResult::kSuccess;
 
-    uint64_t block_number{0};
-    uint64_t topics_allocated_space{0};
-    uint64_t addresses_allocated_space{0};
-    // Two bitmaps to fill: topics and addresses
-    std::unordered_map<std::string, roaring::Roaring> topic_bitmaps;
-    std::unordered_map<std::string, roaring::Roaring> addresses_bitmaps;
-    // CBOR decoder
-    listener_log_index current_listener(block_number, &topic_bitmaps, &addresses_bitmaps, &topics_allocated_space,
-                                        &addresses_allocated_space);
+        reset_log_progress();
+        const BlockNum segment_width{forward_progress - prune_progress};
+        if (segment_width > 16) {
+            log::Info("Begin " + std::string(stage_name_),
+                      {"op", std::string(magic_enum::enum_name<OperationType>(OperationType::Prune)), "from",
+                       std::to_string(prune_progress), "to", std::to_string(forward_progress), "span",
+                       std::to_string(segment_width)});
+        }
 
-    auto log_data{log_table.lower_bound(db::to_slice(start), false)};
-    while (log_data) {
-        // Decode CBOR and distribute it to the 2 bitmaps
-        block_number = endian::load_big_u64(static_cast<uint8_t*>(log_data.key.data()));
-        current_listener.set_block_number(block_number);
-        cbor::input input(log_data.value.data(), static_cast<int>(log_data.value.length()));
-        cbor::decoder decoder(input, current_listener);
+        if (!prune_progress || prune_progress < forward_progress) {
+            prune_impl(txn, prune_threshold, db::table::kLogAddressIndex);
+            prune_impl(txn, prune_threshold, db::table::kLogTopicIndex);
+        }
+
+        reset_log_progress();
+        db::stages::write_stage_prune_progress(*txn, stage_name_, forward_progress);
+        txn.commit();
+
+    } catch (const StageError& ex) {
+        log::Error(std::string(stage_name_),
+                   {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
+        ret = static_cast<StageResult>(ex.err());
+    } catch (const mdbx::exception& ex) {
+        log::Error(std::string(stage_name_),
+                   {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
+        ret = StageResult::kDbError;
+    } catch (const std::exception& ex) {
+        log::Error(std::string(stage_name_),
+                   {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
+        ret = StageResult::kUnexpectedError;
+    } catch (...) {
+        log::Error(std::string(stage_name_),
+                   {"function", std::string(__FUNCTION__), "exception", "unexpected and undefined"});
+        ret = StageResult::kUnexpectedError;
+    }
+
+    addresses_collector_.reset();
+    topics_collector_.reset();
+    return ret;
+}
+
+void LogIndex::forward_impl(db::RWTxn& txn, const BlockNum from, const BlockNum to) {
+    const db::MapConfig source_config{db::table::kLogs};
+
+    std::unique_lock log_lck(sl_mutex_);
+    operation_ = OperationType::Forward;
+    loading_ = false;
+    topics_collector_ = std::make_unique<etl::Collector>(node_settings_);
+    addresses_collector_ = std::make_unique<etl::Collector>(node_settings_);
+    current_source_ = std::string(source_config.name);
+    current_target_.clear();
+    current_key_.clear();
+    log_lck.unlock();
+
+    // Into etl collectors
+    collect_bitmaps_from_logs(txn, source_config, from, to);
+
+    log_lck.lock();
+    loading_ = true;
+    current_key_.clear();
+    current_target_ = db::table::kLogAddressIndex.name;
+    index_loader_ = std::make_unique<db::bitmap::IndexLoader>(db::table::kLogAddressIndex);
+    log_lck.unlock();
+
+    index_loader_->merge_bitmaps(txn, kAddressLength, addresses_collector_.get());
+
+    log_lck.lock();
+    current_key_.clear();
+    current_target_ = db::table::kLogTopicIndex.name;
+    index_loader_ = std::make_unique<db::bitmap::IndexLoader>(db::table::kLogTopicIndex);
+    log_lck.unlock();
+
+    index_loader_->merge_bitmaps(txn, kHashLength, topics_collector_.get());
+
+    log_lck.lock();
+    loading_ = false;
+    current_target_.clear();
+    index_loader_.reset();
+    log_lck.unlock();
+}
+
+void LogIndex::unwind_impl(db::RWTxn& txn, BlockNum from, BlockNum to) {
+    const db::MapConfig source_config{db::table::kLogs};
+
+    std::unique_lock log_lck(sl_mutex_);
+    operation_ = OperationType::Unwind;
+    loading_ = false;
+    current_source_ = std::string(source_config.name);
+    current_key_.clear();
+    log_lck.unlock();
+
+    std::map<Bytes, bool> addresses_keys;
+    std::map<Bytes, bool> topics_keys;
+    collect_unique_keys_from_logs(txn, source_config, from, to, addresses_keys, topics_keys);
+
+    log_lck.lock();
+    current_target_ = db::table::kLogAddressIndex.name;
+    index_loader_ = std::make_unique<db::bitmap::IndexLoader>(db::table::kLogAddressIndex);
+    log_lck.unlock();
+
+    index_loader_->unwind_bitmaps(txn, to, addresses_keys);
+
+    log_lck.lock();
+    current_target_ = db::table::kLogTopicIndex.name;
+    index_loader_ = std::make_unique<db::bitmap::IndexLoader>(db::table::kLogTopicIndex);
+    log_lck.unlock();
+
+    index_loader_->unwind_bitmaps(txn, to, topics_keys);
+
+    log_lck.lock();
+    index_loader_.reset();
+    current_source_.clear();
+    current_target_.clear();
+    current_key_.clear();
+    log_lck.unlock();
+}
+
+void LogIndex::collect_bitmaps_from_logs(db::RWTxn& txn, const db::MapConfig& source_config, BlockNum from, BlockNum to) {
+    using namespace std::chrono_literals;
+    auto log_time{std::chrono::steady_clock::now()};
+
+    const BlockNum max_block_number{to};
+    BlockNum reached_block_number{0};
+
+    absl::flat_hash_map<Bytes, roaring::Roaring64Map> topics_bitmaps;
+    absl::flat_hash_map<Bytes, roaring::Roaring64Map> addresses_bitmaps;
+    size_t topics_bitmaps_size{0};
+    size_t addresses_bitmaps_size{0};
+    uint16_t topics_flush_count{0};
+    uint16_t addresses_flush_count{0};
+
+    // The function we use to collect decoded data into bitmaps
+    cbor_function on_log_bytes{[&topics_bitmaps,
+                                &topics_bitmaps_size,
+                                &addresses_bitmaps,
+                                &addresses_bitmaps_size,
+                                &reached_block_number](unsigned char* data, int size) -> void {
+        // We need either a hash or an address
+        auto s{static_cast<size_t>(size)};
+        if (s != kHashLength && s != kAddressLength) return;
+
+        Bytes key(data, s);
+        if (key.size() == kHashLength) {
+            auto it{topics_bitmaps.find(key)};
+            if (it == topics_bitmaps.end()) {
+                it = topics_bitmaps.emplace(key, roaring::Roaring64Map()).first;
+                topics_bitmaps_size += key.size() + sizeof(BlockNum);
+            }
+            it->second.add(reached_block_number);
+            topics_bitmaps_size += sizeof(uint32_t);
+        } else {
+            auto it{addresses_bitmaps.find(key)};
+            if (it == addresses_bitmaps.end()) {
+                it = addresses_bitmaps.emplace(key, roaring::Roaring64Map()).first;
+                addresses_bitmaps_size += key.size() + sizeof(BlockNum);
+            }
+            it->second.add(reached_block_number);
+            addresses_bitmaps_size += sizeof(uint32_t);
+        }
+    }};
+
+    // Listener to CBOR decoder
+    CborListener listener{on_log_bytes};
+
+    auto start_key{db::block_key(from + 1)};
+    db::Cursor source(txn, source_config);
+    auto source_data{source.lower_bound(db::to_slice(start_key), false)};
+    while (source_data) {
+        reached_block_number = endian::load_big_u64(static_cast<uint8_t*>(source_data.key.data()));
+        if (reached_block_number > max_block_number) break;
+
+        // Log and abort check
+        if (const auto now{std::chrono::steady_clock::now()}; log_time <= now) {
+            throw_if_stopping();
+            std::unique_lock log_lck(sl_mutex_);
+            current_key_ = std::to_string(reached_block_number);
+            log_time = now + 5s;
+        }
+
+        // Decode CBOR value content and distribute it to the 2 bitmaps
+        cbor::input input(source_data.value.data(), static_cast<int>(source_data.value.length()));
+        cbor::decoder decoder(input, listener);
         decoder.run();
+
         // Flushes
-        if (topics_allocated_space > kBitmapBufferSizeLimit) {
-            flush_bitmaps(topic_collector, topic_bitmaps);
-            log::Info() << "Current Block: " << block_number;
-            topics_allocated_space = 0;
+        if (topics_bitmaps_size > node_settings_->batch_size) {
+            db::bitmap::IndexLoader::flush_bitmaps_to_etl(topics_bitmaps,
+                                                          topics_collector_.get(),
+                                                          topics_flush_count++);
+            topics_bitmaps_size = 0;
         }
 
-        if (addresses_allocated_space > kBitmapBufferSizeLimit) {
-            flush_bitmaps(addresses_collector, addresses_bitmaps);
-            log::Info() << "Current Block: " << block_number;
-            addresses_allocated_space = 0;
+        if (addresses_bitmaps_size > node_settings_->batch_size) {
+            db::bitmap::IndexLoader::flush_bitmaps_to_etl(addresses_bitmaps,
+                                                          addresses_collector_.get(),
+                                                          addresses_flush_count++);
+            addresses_bitmaps_size = 0;
         }
 
-        log_data = log_table.to_next(/*throw_notfound*/ false);
+        source_data = source.to_next(/*throw_notfound=*/false);
     }
-
-    log_table.close();
-    // Flush once it is done
-    flush_bitmaps(topic_collector, topic_bitmaps);
-    flush_bitmaps(addresses_collector, addresses_bitmaps);
-
-    log::Info() << "Latest Block: " << block_number;
-    // Proceed only if we've done something
-    log::Info() << "Started Topics Loading";
-    // if stage has never been touched then appending is safe
-    MDBX_put_flags_t db_flags{last_processed_block_number ? MDBX_put_flags_t::MDBX_UPSERT
-                                                          : MDBX_put_flags_t::MDBX_APPEND};
-
-    // Eventually load collected items WITH transform (may throw)
-    auto target{db::open_cursor(*txn, db::table::kLogTopicIndex)};
-    topic_collector.load(target, loader_function, db_flags);
-    target.close();
-    target = db::open_cursor(*txn, db::table::kLogAddressIndex);
-    log::Info() << "Started Address Loading";
-    addresses_collector.load(target, loader_function, db_flags);
-
-    // Update progress height with last processed block
-    db::stages::write_stage_progress(*txn, db::stages::kLogIndexKey, block_number);
-
-    txn.commit();
-
-    log::Info() << "All Done";
-
-    return StageResult::kSuccess;
 }
 
-static StageResult unwind_log_index(db::RWTxn& txn, etl::Collector& collector, uint64_t unwind_to, bool topics) {
-    auto index_table{topics ? db::open_cursor(*txn, db::table::kLogTopicIndex)
-                            : db::open_cursor(*txn, db::table::kLogAddressIndex)};
-    if (unwind_to >= db::stages::read_stage_progress(*txn, db::stages::kLogIndexKey)) {
-        return StageResult::kSuccess;
-    }
+void LogIndex::collect_unique_keys_from_logs(db::RWTxn& txn,
+                                             const db::MapConfig& source_config,
+                                             BlockNum from, BlockNum to,
+                                             std::map<Bytes, bool>& addresses,
+                                             std::map<Bytes, bool>& topics) {
+    using namespace std::chrono_literals;
+    auto log_time{std::chrono::steady_clock::now()};
 
-    // Latest bitmap
-    auto data{index_table.to_first(/*throw_notfound=*/false)};
-    while (data) {
-        // Get bitmap data of current element
-        auto key{db::from_slice(data.key)};
-        auto bitmap_data{db::from_slice(data.value)};
+    BlockNum expected_block_number{std::min(from, to) + 1};
+    const BlockNum max_block_number{std::max(from, to)};
+    BlockNum reached_block_number{0};
 
-        auto bm{roaring::Roaring::readSafe(byte_ptr_cast(bitmap_data.data()), bitmap_data.size())};
-        // Check for keys that can be skipped
-        if (bm.maximum() <= unwind_to) {
-            data = index_table.to_next(/*throw_notfound*/ false);
-            continue;
+    // The function we use to collect decoded data into bitmaps
+    cbor_function on_log_bytes{[&addresses,
+                                &topics](unsigned char* data, int size) -> void {
+        // We need either a hash or an address
+        auto s{static_cast<size_t>(size)};
+        if (s != kHashLength && s != kAddressLength) return;
+
+        Bytes key(data, s);
+        if (key.size() == kHashLength) {
+            (void)topics.try_emplace(key, false);
+        } else {
+            (void)addresses.try_emplace(key, false);
         }
-        // adjust bitmaps
-        if (bm.minimum() <= unwind_to) {
-            // Erase elements that are > unwind_to
-            bm &= roaring::Roaring(roaring::api::roaring_bitmap_from_range(0, unwind_to + 1, 1));
-            auto new_bitmap{Bytes(bm.getSizeInBytes(), '\0')};
-            bm.write(byte_ptr_cast(&new_bitmap[0]));
-            // make new key
-            Bytes new_key(key.size(), '\0');
-            std::memcpy(&new_key[0], key.data(), key.size());
-            endian::store_big_u32(&new_key[new_key.size() - 4], UINT32_MAX);
-            // collect higher bitmap
-            collector.collect(etl::Entry{new_key, new_bitmap});
+    }};
+
+    // Listener to CBOR decoder
+    CborListener listener{on_log_bytes};
+
+    auto start_key{db::block_key(expected_block_number)};
+    db::Cursor source(txn, source_config);
+    auto source_data{source.lower_bound(db::to_slice(start_key), false)};
+    while (source_data) {
+        reached_block_number = endian::load_big_u64(static_cast<uint8_t*>(source_data.key.data()));
+        if (reached_block_number > max_block_number) break;
+
+        // Log and abort check
+        if (const auto now{std::chrono::steady_clock::now()}; log_time <= now) {
+            throw_if_stopping();
+            std::unique_lock log_lck(sl_mutex_);
+            current_key_ = std::to_string(reached_block_number);
+            log_time = now + 5s;
         }
-        // erase index
-        index_table.erase(true);
-        data = index_table.to_next(/*throw_notfound*/ false);
+
+        // Decode CBOR value content and distribute it to the 2 bitmaps
+        cbor::input input(source_data.value.data(), static_cast<int>(source_data.value.length()));
+        cbor::decoder decoder(input, listener);
+        decoder.run();
+        source_data = source.to_next(/*throw_notfound=*/false);
     }
-
-    collector.load(index_table, nullptr, MDBX_put_flags_t::MDBX_UPSERT);
-    txn.commit();
-
-    return StageResult::kSuccess;
 }
 
-StageResult unwind_log_index(db::RWTxn& txn, const std::filesystem::path& etl_path, uint64_t unwind_to) {
-    etl::Collector collector(etl_path, /* flush size */ 256_Mebi);
+void LogIndex::prune_impl(db::RWTxn& txn, BlockNum threshold, const db::MapConfig& target) {
+    std::unique_lock log_lck(sl_mutex_);
+    operation_ = OperationType::Prune;
+    loading_ = false;
+    current_source_ = target.name;
+    current_target_ = current_source_;
+    current_key_.clear();
+    index_loader_ = std::make_unique<db::bitmap::IndexLoader>(target);
+    log_lck.unlock();
 
-    log::Info() << "Started Topic Index Unwind";
-    auto result{unwind_log_index(txn, collector, unwind_to, true)};
-    collector.clear();
-    if (result != StageResult::kSuccess) {
-        return result;
-    }
-    log::Info() << "Started Address Index Unwind";
-    result = unwind_log_index(txn, collector, unwind_to, false);
-    collector.clear();
-    if (result != StageResult::kSuccess) {
-        return result;
-    }
-    db::stages::write_stage_progress(*txn, db::stages::kLogIndexKey, unwind_to);
-    log::Info() << "All Done";
-    return StageResult::kSuccess;
+    index_loader_->prune_bitmaps(txn, threshold);
+
+    log_lck.lock();
+    index_loader_.reset();
+    current_source_.clear();
+    current_target_.clear();
+    current_key_.clear();
+    log_lck.unlock();
 }
 
-void prune_log_index(db::RWTxn& txn, etl::Collector& collector, uint64_t prune_from, bool topics) {
-    auto last_processed_block{db::stages::read_stage_progress(*txn, db::stages::kLogIndexKey)};
-
-    auto index_table{topics ? db::open_cursor(*txn, db::table::kLogTopicIndex)
-                            : db::open_cursor(*txn, db::table::kLogAddressIndex)};
-
-    if (index_table.to_first(/* throw_notfound = */ false)) {
-        auto data{index_table.current()};
-        while (data) {
-            // Get bitmap data of current element
-            auto key{db::from_slice(data.key)};
-            auto bitmap_data{db::from_slice(data.value)};
-            auto bm{roaring::Roaring::readSafe(byte_ptr_cast(bitmap_data.data()), bitmap_data.size())};
-            // Check whether we should skip the current bitmap
-            if (bm.minimum() >= prune_from) {
-                data = index_table.to_next(/*throw_notfound*/ false);
-                continue;
-            }
-            // check if prune can be applied
-            if (bm.maximum() >= prune_from) {
-                // Erase elements that are below prune_from
-                bm &=
-                    roaring::Roaring(roaring::api::roaring_bitmap_from_range(prune_from, last_processed_block + 1, 1));
-                Bytes new_bitmap(bm.getSizeInBytes(), '\0');
-                bm.write(byte_ptr_cast(&new_bitmap[0]));
-                // replace with new index
-                etl::Entry entry{Bytes{key}, new_bitmap};
-                collector.collect(entry);
-            }
-            index_table.erase(/* whole_multivalue = */ true);
-            data = index_table.to_next(/*throw_notfound*/ false);
+std::vector<std::string> LogIndex::get_log_progress() {
+    std::vector<std::string> ret{};
+    std::unique_lock log_lck(sl_mutex_);
+    if (current_source_.empty() && current_target_.empty()) {
+        ret.insert(ret.end(), {"db", "waiting ..."});
+    } else {
+        switch (operation_) {
+            case OperationType::Forward:
+                if (loading_) {
+                    if (current_target_ == db::table::kLogAddressIndex.name) {
+                        current_key_ = abridge(addresses_collector_->get_load_key(), kAddressLength);
+                    } else if (current_target_ == db::table::kLogTopicIndex.name) {
+                        current_key_ = abridge(topics_collector_->get_load_key(), kAddressLength);
+                    } else {
+                        current_key_.clear();
+                    }
+                    ret.insert(ret.end(), {"from", "etl", "to", current_target_, "key", current_key_});
+                } else {
+                    ret.insert(ret.end(), {"from", current_source_, "to", "etl", "key", current_key_});
+                }
+                break;
+            case OperationType::Unwind:
+                if (index_loader_) {
+                    current_key_ = index_loader_->get_current_key();
+                    ret.insert(ret.end(), {"from", "etl", "to", current_target_, "key", current_key_});
+                } else {
+                    ret.insert(ret.end(), {"from", current_source_, "to", "etl", "key", current_key_});
+                }
+                break;
+            case OperationType::Prune:
+                if (index_loader_) {
+                    current_key_ = index_loader_->get_current_key();
+                    ret.insert(ret.end(), {"to", current_target_, "key", current_key_});
+                } else {
+                    ret.insert(ret.end(), {"to", current_target_, current_key_});
+                }
+                break;
+            default:
+                ret.insert(ret.end(), {"from", current_source_, "key", current_key_});
         }
     }
-
-    collector.load(index_table, nullptr, MDBX_put_flags_t::MDBX_UPSERT);
-    txn.commit();
+    return ret;
 }
-
-StageResult prune_log_index(db::RWTxn& txn, const std::filesystem::path& etl_path, uint64_t prune_from) {
-    etl::Collector collector(etl_path, /* flush size */ 256_Mebi);
-
-    log::Info() << "Pruning Log Index from: " << prune_from;
-    prune_log_index(txn, collector, prune_from, true);
-    collector.clear();
-    prune_log_index(txn, collector, prune_from, false);
-    collector.clear();
-
-    log::Info() << "Pruning Log Index finished...";
-    return StageResult::kSuccess;
+void LogIndex::reset_log_progress() {
+    std::unique_lock log_lck(sl_mutex_);
+    operation_ = OperationType::None;
+    loading_ = false;
+    current_source_.clear();
+    current_target_.clear();
+    current_key_.clear();
 }
-
 }  // namespace silkworm::stagedsync

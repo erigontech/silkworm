@@ -46,13 +46,14 @@ class HeaderPersistence {
 
     void persist(const Headers&);
     void persist(const BlockHeader&);
-    void close();
+    void finish();
 
     static std::set<Hash> remove_headers(BlockNum new_height, std::optional<Hash> bad_block,
                                          std::optional<BlockNum>& new_max_block_num, db::RWTxn& tx);
 
     bool best_header_changed() const;
     bool unwind_needed() const;
+    bool canonical_repaired() const;
 
     BlockNum unwind_point() const;
     BlockNum initial_height() const;
@@ -76,8 +77,9 @@ class HeaderPersistence {
     BlockNum unwind_point_{};
     bool unwind_needed_{false};
     bool new_canonical_{false};
+    bool repaired_{false};
     lru_cache<BlockNum, Hash> canonical_cache_;
-    bool closed_{false};
+    bool finished_{false};
 };
 
 }  // namespace silkworm

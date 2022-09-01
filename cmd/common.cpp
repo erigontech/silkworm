@@ -352,33 +352,35 @@ void run_preflight_checklist(NodeSettings& node_settings) {
                                                  std::string(active_value.type_name()));
                     }
 
-                    // Check whether activation value has been modified
-                    const auto known_value_activation{known_value.get<uint64_t>()};
-                    const auto active_value_activation{active_value.get<uint64_t>()};
-                    if (known_value_activation != active_value_activation) {
-                        bool must_throw{false};
-                        if (!known_value_activation && active_value_activation &&
-                            active_value_activation <= header_download_progress) {
-                            // Can't de-activate an already activated fork block
-                            must_throw = true;
-                        } else if (!active_value_activation && known_value_activation &&
-                                   known_value_activation <= header_download_progress) {
-                            // Can't activate a fork block BEFORE current height
-                            must_throw = true;
-                        } else if (known_value_activation && active_value_activation &&
-                                   std::min(known_value_activation, active_value_activation) <=
-                                       header_download_progress) {
-                            // Can change activation height BEFORE current height
-                            must_throw = true;
+                    if (known_value.is_number()) {
+                        // Check whether activation value has been modified
+                        const auto known_value_activation{known_value.get<uint64_t>()};
+                        const auto active_value_activation{active_value.get<uint64_t>()};
+                        if (known_value_activation != active_value_activation) {
+                            bool must_throw{false};
+                            if (!known_value_activation && active_value_activation &&
+                                active_value_activation <= header_download_progress) {
+                                // Can't de-activate an already activated fork block
+                                must_throw = true;
+                            } else if (!active_value_activation && known_value_activation &&
+                                       known_value_activation <= header_download_progress) {
+                                // Can't activate a fork block BEFORE current height
+                                must_throw = true;
+                            } else if (known_value_activation && active_value_activation &&
+                                       std::min(known_value_activation, active_value_activation) <=
+                                           header_download_progress) {
+                                // Can change activation height BEFORE current height
+                                must_throw = true;
+                            }
+                            if (must_throw) {
+                                throw std::runtime_error("Can't apply modified chain config key " + known_key + " from " +
+                                                         std::to_string(active_value_activation) + " to " +
+                                                         std::to_string(known_value_activation) +
+                                                         " as the database has already headers up to " +
+                                                         std::to_string(header_download_progress));
+                            }
+                            old_members_changed = true;
                         }
-                        if (must_throw) {
-                            throw std::runtime_error("Can't apply modified chain config key " + known_key + " from " +
-                                                     std::to_string(active_value_activation) + " to " +
-                                                     std::to_string(known_value_activation) +
-                                                     " as the database has already headers up to " +
-                                                     std::to_string(header_download_progress));
-                        }
-                        old_members_changed = true;
                     }
                 }
             }

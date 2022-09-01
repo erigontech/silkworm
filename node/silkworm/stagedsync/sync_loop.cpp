@@ -42,7 +42,7 @@ void SyncLoop::load_stages() {
      *  9 StageHashState -> stagedsync::HashState
      * 10 StageTrie -> stagedsync::InterHashes
      * 11 StageHistory -> stagedsync::HistoryIndex
-     * 12 StageLogIndex -> TBD
+     * 12 StageLogIndex -> stagedsync::LogIndex
      * 13 StageCallTraces -> TBD
      * 14 StageTxLookup -> TBD
      * 15 StageFinish -> TBD

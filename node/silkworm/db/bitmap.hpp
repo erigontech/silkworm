@@ -79,11 +79,6 @@ class IndexLoader {
     std::string current_key_;            // Key being processed
 };
 
-// Erigon bitmapdb.ChunkLimit
-// Value is obtained as threshold beyond which MDBX overflow pages : i.e. 4096 / 2 - (keySize + 8)
-// TODO Adjust for case when pagesize is 8192
-inline constexpr size_t kBitmapChunkLimit = 1950;
-
 // Return the first value in the bitmap that is not less than (i.e. greater or equal to) n,
 // or std::nullopt if no such element is found.
 // See Erigon SeekInBitmap64.

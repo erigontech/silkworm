@@ -288,7 +288,7 @@ trie::PrefixSet InterHashes::collect_account_changes(db::RWTxn& txn, BlockNum fr
 
     if (sw) {
         const auto [_, duration]{sw->stop()};
-        log::Trace("Gathered Forward Account Changes", {"in", StopWatch::format(duration)});
+        log::Trace("Gathered Account Changes", {"in", StopWatch::format(duration)});
     }
     return ret;
 }
@@ -369,7 +369,7 @@ trie::PrefixSet InterHashes::collect_storage_changes(db::RWTxn& txn, BlockNum fr
 
     if (sw) {
         const auto [_, duration]{sw->stop()};
-        log::Trace("Gathered Forward Storage Changes", {"in", StopWatch::format(duration)});
+        log::Trace("Gathered Storage Changes", {"in", StopWatch::format(duration)});
     }
 
     return ret;

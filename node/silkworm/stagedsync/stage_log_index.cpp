@@ -271,8 +271,8 @@ void LogIndex::collect_bitmaps_from_logs(db::RWTxn& txn, const db::MapConfig& so
     const BlockNum max_block_number{to};
     BlockNum reached_block_number{0};
 
-    absl::flat_hash_map<Bytes, roaring::Roaring64Map> topics_bitmaps;
-    absl::flat_hash_map<Bytes, roaring::Roaring64Map> addresses_bitmaps;
+    absl::btree_map<Bytes, roaring::Roaring64Map> topics_bitmaps;
+    absl::btree_map<Bytes, roaring::Roaring64Map> addresses_bitmaps;
     size_t topics_bitmaps_size{0};
     size_t addresses_bitmaps_size{0};
     uint16_t topics_flush_count{0};

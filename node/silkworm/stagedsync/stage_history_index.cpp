@@ -317,7 +317,7 @@ void HistoryIndex::collect_bitmaps_from_changeset(db::RWTxn& txn, const db::MapC
     using namespace std::chrono_literals;
     auto log_time{std::chrono::steady_clock::now()};
 
-    absl::flat_hash_map<Bytes, roaring::Roaring64Map> bitmaps;
+    absl::btree_map<Bytes, roaring::Roaring64Map> bitmaps;
     auto bitmaps_it{bitmaps.begin()};
     Bytes bitmaps_key{};
     size_t bitmaps_size{0};   // To account flushing threshold

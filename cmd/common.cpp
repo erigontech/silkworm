@@ -405,7 +405,7 @@ void run_preflight_checklist(NodeSettings& node_settings) {
             // further execution ONLY if we've already synced something
             if (header_download_progress) {
                 throw std::runtime_error("Can't change prune_mode on already synced data. Expected " +
-                                         node_settings.prune_mode->to_string() + " got " + db_prune_mode.to_string());
+                                         db_prune_mode.to_string() + " got " + node_settings.prune_mode->to_string());
             }
             db::write_prune_mode(*tx, *node_settings.prune_mode);
             node_settings.prune_mode = std::make_unique<db::PruneMode>(db::read_prune_mode(*tx));

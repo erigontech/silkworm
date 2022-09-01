@@ -341,7 +341,7 @@ TEST_CASE("HeaderChain - process_segment - (1) simple chain") {
     HeaderChain_ForTest chain;
     chain.top_seen_block_height(1'000'000);
     auto request_id = chain.generate_request_id();
-    PeerId peer_id = "1";
+    PeerId peer_id{byte_ptr_cast("1")};
 
     std::array<BlockHeader, 10> headers;
 
@@ -566,7 +566,7 @@ TEST_CASE("HeaderChain - process_segment - (2) extending down with 2 siblings") 
     HeaderChain_ForTest chain;
     chain.top_seen_block_height(1'000'000);
     auto request_id = chain.generate_request_id();
-    PeerId peer_id = "1";
+    PeerId peer_id{byte_ptr_cast("1")};
 
     std::array<BlockHeader, 10> headers;
 
@@ -622,7 +622,7 @@ TEST_CASE("HeaderChain - process_segment - (3) chain with branches") {
     HeaderChain_ForTest chain;
     chain.top_seen_block_height(1'000'000);
     auto request_id = chain.generate_request_id();
-    PeerId peer_id = "1";
+    PeerId peer_id {byte_ptr_cast("1")};
 
     std::array<BlockHeader, 10> headers;
 
@@ -835,7 +835,7 @@ TEST_CASE("HeaderChain - process_segment - (4) pre-verified hashes on canonical 
     HeaderChain_ForTest chain;
     chain.top_seen_block_height(1'000'000);
     auto request_id = chain.generate_request_id();
-    PeerId peer_id = "1";
+    PeerId peer_id{byte_ptr_cast("1")};
 
     std::array<BlockHeader, 10> headers;
 
@@ -923,7 +923,7 @@ TEST_CASE("HeaderChain - process_segment - (5) pre-verified hashes") {
     HeaderChain_ForTest chain;
     chain.top_seen_block_height(1'000'000);
     auto request_id = chain.generate_request_id();
-    PeerId peer_id = "1";
+    PeerId peer_id{byte_ptr_cast("1")};
 
     std::array<BlockHeader, 7> headers;
 
@@ -998,7 +998,7 @@ TEST_CASE("HeaderChain - process_segment - (5') pre-verified hashes with canonic
     HeaderChain_ForTest chain;
     chain.top_seen_block_height(1'000'000);
     auto request_id = chain.generate_request_id();
-    PeerId peer_id = "1";
+    PeerId peer_id{byte_ptr_cast("1")};
 
     std::array<BlockHeader, 6> a_headers;
 
@@ -1055,7 +1055,7 @@ TEST_CASE("HeaderChain - process_segment - (6) (malicious) siblings") {
     HeaderChain_ForTest chain;
     chain.top_seen_block_height(1'000'000);
     auto request_id = chain.generate_request_id();
-    PeerId peer_id = "1";
+    PeerId peer_id{byte_ptr_cast("1")};
 
     std::array<BlockHeader, 10> headers;
 
@@ -1190,7 +1190,7 @@ TEST_CASE("HeaderChain - process_segment - (7) invalidating anchor") {
     HeaderChain_ForTest chain;
     chain.top_seen_block_height(1'000'000);
     auto request_id = chain.generate_request_id();
-    PeerId peer_id = "1";
+    PeerId peer_id{byte_ptr_cast("1")};
 
     std::array<BlockHeader, 10> headers;
 
@@ -1279,7 +1279,7 @@ TEST_CASE("HeaderChain - process_segment - (8) sibling with anchor invalidation 
     HeaderChain_ForTest chain;
     chain.top_seen_block_height(1'000'000);
     auto request_id = chain.generate_request_id();
-    PeerId peer_id = "1";
+    PeerId peer_id{byte_ptr_cast("1")};
 
     std::array<BlockHeader, 10> headers;
 

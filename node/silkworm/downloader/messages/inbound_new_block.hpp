@@ -33,7 +33,7 @@ class InboundNewBlock : public InboundMessage {
     void execute(db::ROAccess, HeaderChain&, BodySequence&, SentryClient&) override;
 
   private:
-    std::string peerId_;
+    PeerId peerId_;
     NewBlockPacket packet_;
     uint64_t reqId_;
 };

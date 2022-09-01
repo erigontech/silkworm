@@ -16,6 +16,8 @@
 
 #include <algorithm>
 
+#include <silkworm/common/cast.hpp>
+
 #include <catch2/catch.hpp>
 
 #include "header_chain.hpp"
@@ -47,26 +49,27 @@ TEST_CASE("Oldest_First_Anchor_Queue") {
     using namespace std::literals::chrono_literals;
     BlockHeader dummy_header;
     time_point_t now = std::chrono::system_clock::now();
+    PeerId dummy_peer_id{byte_ptr_cast("dummy-peer-id")};
 
     OldestFirstAnchorQueue queue;
 
-    auto anchor = std::make_shared<Anchor>(dummy_header, "dummy-peer-id");
+    auto anchor = std::make_shared<Anchor>(dummy_header, dummy_peer_id);
     anchor->blockHeight = 1;
     anchor->timestamp = now;
     queue.push(anchor);
 
-    anchor = std::make_shared<Anchor>(dummy_header, "dummy-peer-id");
+    anchor = std::make_shared<Anchor>(dummy_header, dummy_peer_id);
     anchor->blockHeight = 3;
     anchor->timestamp = now;
     queue.push(anchor);
 
-    anchor = std::make_shared<Anchor>(dummy_header, "dummy-peer-id");
+    anchor = std::make_shared<Anchor>(dummy_header, dummy_peer_id);
     anchor->blockHeight = 2;
     anchor->timestamp = now + 2s;
     queue.push(anchor);
     auto anchor2 = anchor;
 
-    anchor = std::make_shared<Anchor>(dummy_header, "dummy-peer-id");
+    anchor = std::make_shared<Anchor>(dummy_header, dummy_peer_id);
     anchor->blockHeight = 4;
     anchor->timestamp = now + 4s;
     queue.push(anchor);
@@ -127,14 +130,15 @@ TEST_CASE("Oldest_First_Anchor_Queue") {
 TEST_CASE("Oldest_First_Anchor_Queue - siblings handling") {
     using namespace std::literals::chrono_literals;
     time_point_t now = std::chrono::system_clock::now();
+    PeerId dummy_peer_id{byte_ptr_cast("dummy-peer-id")};
 
     BlockHeader dummy_header;
 
-    auto anchor1 = std::make_shared<Anchor>(dummy_header, "dummy-peer-id");
+    auto anchor1 = std::make_shared<Anchor>(dummy_header, dummy_peer_id);
     anchor1->blockHeight = 1;
     anchor1->timestamp = now;
 
-    auto anchor2 = std::make_shared<Anchor>(dummy_header, "dummy-peer-id");
+    auto anchor2 = std::make_shared<Anchor>(dummy_header, dummy_peer_id);
     anchor2->blockHeight = 1;  // same block number, it is a sibling
     anchor2->timestamp = now;
 

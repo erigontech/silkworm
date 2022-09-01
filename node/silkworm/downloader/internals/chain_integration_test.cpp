@@ -111,7 +111,7 @@ TEST_CASE("working/persistent-chain integration test") {
 
         // processing the headers
         std::vector<BlockHeader> headers = {header1, header2, header1b};
-        PeerId peer_id = "1";
+        PeerId peer_id{byte_ptr_cast("1")};
         wc.accept_headers(headers, request_id, peer_id);
 
         // saving headers ready to persist as the header downloader does in the forward() method
@@ -188,7 +188,7 @@ TEST_CASE("working/persistent-chain integration test") {
 
         // processing the headers
         std::vector<BlockHeader> headers = {header1, header2};
-        PeerId peer_id = "1";
+        PeerId peer_id{byte_ptr_cast("1")};
         wc.accept_headers(headers, request_id, peer_id);
 
         // creating the persisted chain as the header downloader does at the beginning of the forward() method
@@ -227,7 +227,7 @@ TEST_CASE("working/persistent-chain integration test") {
         auto header1b_hash = header1b.hash();
 
         std::vector<BlockHeader> headers_bis = {header1b};
-        peer_id = "2";
+        peer_id = byte_ptr_cast("2");
         wc.accept_headers(headers_bis, request_id, peer_id);
 
         // saving headers ready to persist as the header downloader does in the forward() method
@@ -301,7 +301,7 @@ TEST_CASE("working/persistent-chain integration test") {
 
         // processing the headers
         std::vector<BlockHeader> headers = {header1, header2};
-        PeerId peer_id = "1";
+        PeerId peer_id{byte_ptr_cast("1")};
         wc.accept_headers(headers, request_id, peer_id);
 
         // creating the persisted chain as the header downloader does at the beginning of the forward() method
@@ -340,7 +340,7 @@ TEST_CASE("working/persistent-chain integration test") {
         auto header1b_hash = header1b.hash();
 
         std::vector<BlockHeader> headers_bis = {header1b};
-        peer_id = "2";
+        peer_id = byte_ptr_cast("2");
         wc.accept_headers(headers_bis, request_id, peer_id);
 
         // saving headers ready to persist as the header downloader does in the forward() method
@@ -411,7 +411,7 @@ TEST_CASE("working/persistent-chain integration test") {
         auto header1b_hash = header1b.hash();
 
         std::vector<BlockHeader> headers = {header1b};
-        PeerId peer_id = "1";
+        PeerId peer_id{byte_ptr_cast("1")};
         wc.accept_headers(headers, request_id, peer_id);
 
         // creating the persisted chain as the header downloader does at the beginning of the forward() method
@@ -453,7 +453,7 @@ TEST_CASE("working/persistent-chain integration test") {
 
         // processing the headers
         std::vector<BlockHeader> headers_bis = {header1, header2};
-        peer_id = "2";
+        peer_id = byte_ptr_cast("2");
         wc.accept_headers(headers_bis, request_id, peer_id);
 
         // saving headers ready to persist as the header downloader does in the forward() method

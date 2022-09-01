@@ -264,7 +264,9 @@ void LogIndex::unwind_impl(db::RWTxn& txn, BlockNum from, BlockNum to) {
     log_lck.unlock();
 }
 
-void LogIndex::collect_bitmaps_from_logs(db::RWTxn& txn, const db::MapConfig& source_config, BlockNum from, BlockNum to) {
+void LogIndex::collect_bitmaps_from_logs(db::RWTxn& txn,
+                                         const db::MapConfig& source_config,
+                                         BlockNum from, BlockNum to) {
     using namespace std::chrono_literals;
     auto log_time{std::chrono::steady_clock::now()};
 

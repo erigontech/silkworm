@@ -373,7 +373,8 @@ void run_preflight_checklist(NodeSettings& node_settings) {
                                 must_throw = true;
                             }
                             if (must_throw) {
-                                throw std::runtime_error("Can't apply modified chain config key " + known_key + " from " +
+                                throw std::runtime_error("Can't apply modified chain config key " +
+                                                         known_key + " from " +
                                                          std::to_string(active_value_activation) + " to " +
                                                          std::to_string(known_value_activation) +
                                                          " as the database has already headers up to " +

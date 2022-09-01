@@ -18,9 +18,9 @@
 
 #include <algorithm>
 
-#include <silkworm/common/cast.hpp>
-
 #include <catch2/catch.hpp>
+
+#include <silkworm/common/cast.hpp>
 
 namespace silkworm {
 

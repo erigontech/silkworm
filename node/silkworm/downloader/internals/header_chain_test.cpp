@@ -622,7 +622,7 @@ TEST_CASE("HeaderChain - process_segment - (3) chain with branches") {
     HeaderChain_ForTest chain;
     chain.top_seen_block_height(1'000'000);
     auto request_id = chain.generate_request_id();
-    PeerId peer_id {byte_ptr_cast("1")};
+    PeerId peer_id{byte_ptr_cast("1")};
 
     std::array<BlockHeader, 10> headers;
 

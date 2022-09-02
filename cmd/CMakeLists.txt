@@ -48,14 +48,8 @@ if(NOT SILKWORM_CORE_ONLY)
   add_executable(genesistool genesistool.cpp)
   target_link_libraries(genesistool PRIVATE CLI11::CLI11)
 
-  add_executable(unwind_tx_lookup unwind_tx_lookup.cpp)
-  target_link_libraries(unwind_tx_lookup PRIVATE silkworm_node CLI11::CLI11)
-
   add_executable(check_hashstate check_hashstate.cpp)
   target_link_libraries(check_hashstate PRIVATE silkworm_node CLI11::CLI11)
-
-  add_executable(tx_lookup tx_lookup.cpp)
-  target_link_libraries(tx_lookup PRIVATE silkworm_node CLI11::CLI11)
 
   add_executable(check_tx_lookup check_tx_lookup.cpp)
   target_link_libraries(check_tx_lookup PRIVATE silkworm_node CLI11::CLI11)
@@ -71,4 +65,5 @@ if(NOT SILKWORM_CORE_ONLY)
 
   add_executable(backend_kv_server backend_kv_server.cpp common.cpp)
   target_link_libraries(backend_kv_server PRIVATE silkworm_node silkworm-buildinfo CLI11::CLI11)
+
 endif()

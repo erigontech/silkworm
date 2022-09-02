@@ -17,10 +17,7 @@
 #include "stage_hashstate.hpp"
 
 #include <silkworm/common/endian.hpp>
-#include <silkworm/common/log.hpp>
 #include <silkworm/db/access_layer.hpp>
-#include <silkworm/db/util.hpp>
-#include <silkworm/etl/collector.hpp>
 
 namespace silkworm::stagedsync {
 

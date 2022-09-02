@@ -17,11 +17,8 @@
 #include "stage_execution.hpp"
 
 #include <span>
-#include <string>
 
-#include <silkworm/common/assert.hpp>
 #include <silkworm/common/endian.hpp>
-#include <silkworm/common/log.hpp>
 #include <silkworm/common/stopwatch.hpp>
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/buffer.hpp>
@@ -133,8 +130,13 @@ void Execution::prefetch_blocks(db::RWTxn& txn, const BlockNum from, const Block
             if (reached_block_num != block_num) {
                 throw std::runtime_error("Bad canonical header sequence: expected " + std::to_string(block_num) +
                                          " got " + std::to_string(reached_block_num));
+            } else if (data.value.length() != kHashLength) {
+                throw std::runtime_error("Invalid value for hash in " +
+                                         std::string(db::table::kCanonicalHashes.name) +
+                                         " expected=" + std::to_string(kHashLength) +
+                                         " got=" + std::to_string(data.value.length()));
             }
-            SILKWORM_ASSERT(data.value.length() == kHashLength);
+
             const auto hash_ptr{static_cast<const uint8_t*>(data.value.data())};
             prefetched_blocks_.push_back();
             if (!db::read_block(*txn, std::span<const uint8_t, kHashLength>{hash_ptr, kHashLength}, block_num,

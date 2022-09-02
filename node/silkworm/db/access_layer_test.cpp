@@ -14,21 +14,17 @@
    limitations under the License.
 */
 
-#include "access_layer.hpp"
-
 #include <catch2/catch.hpp>
 
 #include <silkworm/chain/genesis.hpp>
 #include <silkworm/chain/protocol_param.hpp>
 #include <silkworm/common/test_context.hpp>
+#include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/buffer.hpp>
 #include <silkworm/db/prune_mode.hpp>
 #include <silkworm/db/tables.hpp>
 #include <silkworm/execution/execution.hpp>
-#include <silkworm/stagedsync/stagedsync.hpp>
-
-#include "silkworm/stagedsync/stage_history_index.hpp"
-#include "stages.hpp"
+#include <silkworm/stagedsync/stage_history_index.hpp>
 
 namespace silkworm {
 

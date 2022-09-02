@@ -22,8 +22,6 @@
 #include <silkworm/db/stages.hpp>
 #include <silkworm/etl/collector.hpp>
 
-#include "stagedsync.hpp"
-
 namespace silkworm::stagedsync {
 
 StageResult HistoryIndex::forward(db::RWTxn& txn) {

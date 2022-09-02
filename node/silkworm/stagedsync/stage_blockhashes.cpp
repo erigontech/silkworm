@@ -16,13 +16,7 @@
 
 #include "stage_blockhashes.hpp"
 
-#include <memory>
-
 #include <silkworm/common/endian.hpp>
-#include <silkworm/common/log.hpp>
-#include <silkworm/db/stages.hpp>
-#include <silkworm/db/tables.hpp>
-#include <silkworm/etl/collector.hpp>
 
 namespace silkworm::stagedsync {
 

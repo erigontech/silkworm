@@ -27,8 +27,6 @@
 #include <silkworm/execution/execution.hpp>
 #include <silkworm/stagedsync/stage_history_index.hpp>
 
-#include "stagedsync.hpp"
-
 using namespace evmc::literals;
 
 namespace silkworm {

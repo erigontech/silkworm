@@ -105,18 +105,18 @@ BlockNum BlockAmount::value() const {
 }
 
 BlockNum BlockAmount::value_from_head(BlockNum stage_head) const {
-    if (!enabled_ || !value_) {
+    if (!stage_head || !enabled_ || !value_) {
         return 0;
     }
-    BlockNum tmpVal{value()};
-    if (tmpVal >= stage_head) {
-        return 0;
-    }
+
+    const BlockNum prune_value{value()};
     switch (type_) {
         case Type::kOlder:  // See Erigon prune mode Distance interface
-            return stage_head - tmpVal;
+            if (prune_value >= stage_head) return 0;
+            return stage_head - prune_value;
         case Type::kBefore:  // See Erigon prune mode Before interface
-            return tmpVal - 1;
+            if (!prune_value) return 0;
+            return prune_value - 1;
         default:
             return 0;  // Should not happen
     }

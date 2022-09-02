@@ -26,6 +26,7 @@
 #include <silkworm/common/settings.hpp>
 #include <silkworm/concurrency/stoppable.hpp>
 #include <silkworm/db/stages.hpp>
+#include <silkworm/db/tables.hpp>
 #include <silkworm/etl/collector.hpp>
 
 namespace silkworm::stagedsync {

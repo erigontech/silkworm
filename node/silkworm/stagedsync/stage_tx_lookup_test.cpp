@@ -15,12 +15,10 @@
 */
 
 #include <catch2/catch.hpp>
-#include <ethash/keccak.hpp>
 
 #include <silkworm/common/test_context.hpp>
 #include <silkworm/common/test_util.hpp>
-
-#include "stagedsync.hpp"
+#include <silkworm/stagedsync/stage_tx_lookup.hpp>
 
 using namespace evmc::literals;
 
@@ -32,9 +30,12 @@ TEST_CASE("Stage Transaction Lookups") {
 
     test::Context context;
     db::RWTxn txn{context.txn()};
+    log::Settings log_settings;
+    log_settings.log_std_out = true;
+    log::init(log_settings);
 
-    auto bodies_table{db::open_cursor(*txn, db::table::kBlockBodies)};
-    auto transaction_table{db::open_cursor(*txn, db::table::kBlockTransactions)};
+    db::Cursor bodies_table(txn, db::table::kBlockBodies);
+    db::Cursor transactions_table(txn, db::table::kBlockTransactions);
 
     db::detail::BlockBodyForStorage block{};
     auto transactions{test::sample_transactions()};
@@ -47,7 +48,7 @@ TEST_CASE("Stage Transaction Lookups") {
     rlp::encode(tx_rlp, transactions[0]);
     auto tx_hash_1{keccak256(tx_rlp)};
 
-    transaction_table.upsert(db::to_slice(db::block_key(1)), db::to_slice(tx_rlp));
+    transactions_table.upsert(db::to_slice(db::block_key(1)), db::to_slice(tx_rlp));
     bodies_table.upsert(db::to_slice(db::block_key(1, hash_0.bytes)), db::to_slice(block.encode()));
 
     // ---------------------------------------
@@ -59,14 +60,17 @@ TEST_CASE("Stage Transaction Lookups") {
     rlp::encode(tx_rlp, transactions[1]);
     auto tx_hash_2{keccak256(tx_rlp)};
 
-    transaction_table.upsert(db::to_slice(db::block_key(2)), db::to_slice(tx_rlp));
+    transactions_table.upsert(db::to_slice(db::block_key(2)), db::to_slice(tx_rlp));
     bodies_table.upsert(db::to_slice(db::block_key(2, hash_1.bytes)), db::to_slice(block.encode()));
+    db::stages::write_stage_progress(*txn, db::stages::kBlockBodiesKey, 2);
 
     // Execute stage forward
-    REQUIRE(stagedsync::stage_tx_lookup(txn, context.dir().etl().path()) == stagedsync::StageResult::kSuccess);
+    stagedsync::TxLookup stage_tx_lookup(&context.node_settings());
+    REQUIRE(stage_tx_lookup.forward(txn) == stagedsync::StageResult::kSuccess);
 
     SECTION("Forward checks and unwind") {
-        auto lookup_table{db::open_cursor(*txn, db::table::kTxLookup)};
+        db::Cursor lookup_table(txn, db::table::kTxLookup);
+
         // Retrieve numbers associated with hashes
         auto got_block_0{db::from_slice(lookup_table.find(db::to_slice(tx_hash_1.bytes)).value)};
         auto got_block_1{db::from_slice(lookup_table.find(db::to_slice(tx_hash_2.bytes)).value)};
@@ -75,9 +79,8 @@ TEST_CASE("Stage Transaction Lookups") {
         CHECK(got_block_1.compare(ByteView({2})) == 0);
 
         // Execute stage unwind
-        REQUIRE(stagedsync::unwind_tx_lookup(txn, context.dir().etl().path(), 1) == stagedsync::StageResult::kSuccess);
+        REQUIRE(stage_tx_lookup.unwind(txn, 1) == stagedsync::StageResult::kSuccess);
 
-        lookup_table = db::open_cursor(*txn, db::table::kTxLookup);
         // Unwind block should be still there
         got_block_0 = db::from_slice(lookup_table.find(db::to_slice(tx_hash_1.bytes)).value);
         REQUIRE(got_block_0.compare(ByteView({1})) == 0);
@@ -86,14 +89,26 @@ TEST_CASE("Stage Transaction Lookups") {
     }
 
     SECTION("Prune") {
-        // Only leave block 2 alive
-        REQUIRE(stagedsync::prune_tx_lookup(txn, context.dir().etl().path(), 2) == stagedsync::StageResult::kSuccess);
+        // Prune from second block, so we delete block 1
+        // Alter node settings pruning
+        db::PruneDistance olderHistory, olderReceipts, olderSenders, olderTxIndex, olderCallTraces;
+        db::PruneThreshold beforeHistory, beforeReceipts, beforeSenders, beforeTxIndex, beforeCallTraces;
+        beforeTxIndex.emplace(2);  // Will delete any transaction before block 2
+        context.node_settings().prune_mode =
+            db::parse_prune_mode("t", olderHistory, olderReceipts, olderSenders, olderTxIndex, olderCallTraces,
+                                 beforeHistory, beforeReceipts, beforeSenders, beforeTxIndex, beforeCallTraces);
 
-        auto lookup_table{db::open_cursor(*txn, db::table::kTxLookup)};
+        REQUIRE(context.node_settings().prune_mode->tx_index().enabled());
+
+        // Only leave block 2 alive
+        REQUIRE(stage_tx_lookup.prune(txn) == stagedsync::StageResult::kSuccess);
+
+        db::Cursor lookup_table(txn, db::table::kTxLookup);
         // Unwind block should be still there
         auto got_block_1{db::from_slice(lookup_table.find(db::to_slice(tx_hash_2.bytes)).value)};
         REQUIRE(got_block_1.compare(ByteView({2})) == 0);
-        // Block 2 must be absent due to unwind
+
+        // Block 1 must be absent due to prune
         CHECK(!lookup_table.seek(db::to_slice(tx_hash_1.bytes)));
     }
 }

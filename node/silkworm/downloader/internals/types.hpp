@@ -61,25 +61,9 @@ using duration_t = std::chrono::system_clock::duration;
 using seconds_t = std::chrono::seconds;
 using milliseconds_t = std::chrono::milliseconds;
 
-inline std::ostream& operator<<(std::ostream& out, const silkworm::ByteView& bytes) {
-    out << silkworm::to_hex(bytes);
-    return out;
-}
-
-inline std::ostream& operator<<(std::ostream& out, const evmc::address& addr) {
-    out << silkworm::to_hex(addr);
-    return out;
-}
-
-inline std::ostream& operator<<(std::ostream& out, const evmc::bytes32& b32) {
-    out << silkworm::to_hex(b32);
-    return out;
-}
-
 using PeerId = Bytes;
 
-// Bytes already has operator<<, so PeerId but PeerId is too long
-inline ByteView human_readable_id(const PeerId& peer_id) {
+inline Bytes human_readable_id(const PeerId& peer_id) {
     return {peer_id.data(), std::min<size_t>(peer_id.length(), 20)};
 }
 

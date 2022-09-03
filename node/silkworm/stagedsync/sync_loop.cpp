@@ -20,6 +20,7 @@
 
 #include <silkworm/stagedsync/stage_blockhashes.hpp>
 #include <silkworm/stagedsync/stage_execution.hpp>
+#include <silkworm/stagedsync/stage_finish.hpp>
 #include <silkworm/stagedsync/stage_hashstate.hpp>
 #include <silkworm/stagedsync/stage_history_index.hpp>
 #include <silkworm/stagedsync/stage_interhashes.hpp>
@@ -46,7 +47,7 @@ void SyncLoop::load_stages() {
      * 12 StageLogIndex -> stagedsync::LogIndex
      * 13 StageCallTraces -> TBD
      * 14 StageTxLookup -> stagedsync::TxLookup
-     * 15 StageFinish -> TBD
+     * 15 StageFinish -> stagedsync::Finish
      */
 
     stages_.push_back(std::make_unique<stagedsync::BlockHashes>(node_settings_));
@@ -57,6 +58,7 @@ void SyncLoop::load_stages() {
     stages_.push_back(std::make_unique<stagedsync::HistoryIndex>(node_settings_));
     stages_.push_back(std::make_unique<stagedsync::LogIndex>(node_settings_));
     stages_.push_back(std::make_unique<stagedsync::TxLookup>(node_settings_));
+    stages_.push_back(std::make_unique<stagedsync::Finish>(node_settings_));
 }
 
 void SyncLoop::stop(bool wait) {

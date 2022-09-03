@@ -120,7 +120,7 @@ StageResult HashState::unwind(db::RWTxn& txn, BlockNum to) {
         reset_log_progress();
 
         throw_if_stopping();
-        db::stages::write_stage_progress(*txn, db::stages::kHashStateKey, to);
+        update_progress(txn, to);
         txn.commit();
 
     } catch (const StageError& ex) {

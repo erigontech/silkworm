@@ -32,11 +32,16 @@
 
 namespace silkworm::db {
 
-// Pulls database schema version
+//! \brief Pulls database schema version
 std::optional<VersionBase> read_schema_version(mdbx::txn& txn);
 
-// Writes database schema version (throws on downgrade)
+//! \brief Writes database schema version (throws on downgrade)
 void write_schema_version(mdbx::txn& txn, const VersionBase& schema_version);
+
+//! \brief Updates database info with build info at provided height
+//! \details Is useful to track whether increasing heights have been affected by
+//! upgrades or downgrades of Silkworm's build
+void write_build_info_height(mdbx::txn& txn, Bytes key, BlockNum height);
 
 //! \brief Reads a header with the specified key (block number, hash)
 std::optional<BlockHeader> read_header(mdbx::txn& txn, BlockNum block_number, const uint8_t (&hash)[kHashLength]);

@@ -210,7 +210,6 @@ TEST_CASE("Bitmap Index Loader") {
     REQUIRE(loaded_bitmap.minimum() == 25'001);
 
     REQUIRE(bm_loader.get_current_key().empty());
-
 }
 
 }  // namespace silkworm::db::bitmap

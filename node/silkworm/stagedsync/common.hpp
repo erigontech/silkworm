@@ -117,7 +117,7 @@ class IStage : public Stoppable {
     void update_progress(db::RWTxn& txn, BlockNum progress);
 
     //! \brief This function implementation MUST be thread safe as is called asynchronously from ASIO thread
-    [[nodiscard]] virtual std::vector<std::string> get_log_progress() = 0;
+    [[nodiscard]] virtual std::vector<std::string> get_log_progress() { return {}; };
 
     //! \brief Returns the key name of the stage instance
     [[nodiscard]] const char* name() const { return stage_name_; }

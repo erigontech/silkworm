@@ -249,7 +249,6 @@ StageResult HashState::hash_from_plainstate(db::RWTxn& txn) {
             data = source.to_next(/*throw_notfound=*/false);
         }
 
-        source.close();
         throw_if_stopping();
 
         if (!collector_->empty()) {
@@ -446,8 +445,7 @@ StageResult HashState::hash_from_account_changeset(db::RWTxn& txn, BlockNum prev
             ++expected_blocknum;
             changeset_data = source_changeset.to_next(/*throw_notfound=*/false);
         }
-        source_changeset.close();
-        source_plainstate.close();
+
         ret = write_changes_from_changed_addresses(txn, changed_addresses);
 
     } catch (const mdbx::exception& ex) {
@@ -624,7 +622,6 @@ StageResult HashState::unwind_from_account_changeset(db::RWTxn& txn, BlockNum pr
             changeset_data = source_changeset.to_next(/*throw_notfound=*/false);
         }
 
-        source_changeset.close();
         ret = write_changes_from_changed_addresses(txn, changed_addresses);
 
     } catch (const mdbx::exception& ex) {

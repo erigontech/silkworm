@@ -83,7 +83,7 @@ TEST_CASE("Sync Stages") {
                 0xb5553de315e0edf504d9150af82dafa5c4667fa618ed0a6f19c69b41166c5510_bytes32,
                 0x0b42b6393c1f53060fe3ddbfcd7aadcca894465a5a438f69c87d790b2299b9b2_bytes32};
 
-            auto canonical_table{db::open_cursor(*txn, db::table::kCanonicalHashes)};
+            db::Cursor canonical_table(txn, db::table::kCanonicalHashes);
             BlockNum block_num{1};
             for (const auto& hash : block_hashes) {
                 Bytes block_key{db::block_key(block_num++)};
@@ -128,7 +128,7 @@ TEST_CASE("Sync Stages") {
             REQUIRE(stage_result == stagedsync::StageResult::kSuccess);
             {
                 // Verify written data is consistent
-                auto target_table{db::open_cursor(*txn, db::table::kHeaderNumbers)};
+                db::Cursor target_table(txn, db::table::kHeaderNumbers);
                 REQUIRE(txn->get_map_stat(target_table.map()).ms_entries == 2);
                 REQUIRE(target_table.seek(db::to_slice(block_hashes.back())) == false);
             }
@@ -339,21 +339,19 @@ TEST_CASE("Sync Stages") {
             REQUIRE(stage.prune(txn) == stagedsync::StageResult::kSuccess);
 
             // With default settings nothing should be pruned
-            auto account_changeset_table{db::open_cursor(*txn, db::table::kAccountChangeSet)};
+            db::Cursor account_changeset_table(txn, db::table::kAccountChangeSet);
             auto data{account_changeset_table.to_first(false)};
             REQUIRE(data.done);
             BlockNum expected_block_num{0};  // We have account changes from genesis
             auto actual_block_num = endian::load_big_u64(db::from_slice(data.key).data());
             REQUIRE(actual_block_num == expected_block_num);
-            account_changeset_table.close();
 
-            auto storage_changeset_table{db::open_cursor(*txn, db::table::kStorageChangeSet)};
+            db::Cursor storage_changeset_table(txn, db::table::kStorageChangeSet);
             data = storage_changeset_table.to_first(false);
             REQUIRE(data.done);
             expected_block_num = 1;  // First storage change is at block 1
             actual_block_num = endian::load_big_u64(db::from_slice(data.key).data());
             REQUIRE(actual_block_num == expected_block_num);
-            storage_changeset_table.close();
             REQUIRE(db::stages::read_stage_prune_progress(*txn, db::stages::kExecutionKey) == 3);
         }
 
@@ -368,13 +366,12 @@ TEST_CASE("Sync Stages") {
             stagedsync::Execution stage(&node_settings);
             REQUIRE(stage.prune(txn) == stagedsync::StageResult::kSuccess);
 
-            auto account_changeset_table{db::open_cursor(*txn, db::table::kAccountChangeSet)};
+            db::Cursor account_changeset_table(txn, db::table::kAccountChangeSet);
             auto data{account_changeset_table.to_first(false)};
             REQUIRE(data.done);
             BlockNum expected_block_num = 2;  // We've pruned history *before* 2 so the last is 2
             BlockNum actual_block_num = endian::load_big_u64(db::from_slice(data.key).data());
             REQUIRE(actual_block_num == expected_block_num);
-            account_changeset_table.close();
             REQUIRE(db::stages::read_stage_prune_progress(*txn, db::stages::kExecutionKey) == 3);
         }
 
@@ -389,7 +386,7 @@ TEST_CASE("Sync Stages") {
             // ---------------------------------------
             // Check hashed account
             // ---------------------------------------
-            auto hashed_accounts_table{db::open_cursor(*txn, db::table::kHashedAccounts)};
+            db::Cursor hashed_accounts_table(txn, db::table::kHashedAccounts);
             auto hashed_sender{keccak256(sender)};
             REQUIRE(hashed_accounts_table.seek(db::to_slice(hashed_sender.bytes)));
             {
@@ -402,7 +399,7 @@ TEST_CASE("Sync Stages") {
             // ---------------------------------------
             // Check hashed storage
             // ---------------------------------------
-            auto hashed_storage_table{db::open_cursor(*txn, db::table::kHashedStorage)};
+            db::Cursor hashed_storage_table(txn, db::table::kHashedStorage);
             auto hashed_contract{keccak256(contract_address)};
             Bytes storage_key{db::storage_prefix(hashed_contract.bytes, kDefaultIncarnation)};
             REQUIRE(hashed_storage_table.find(db::to_slice(storage_key)));
@@ -428,7 +425,7 @@ TEST_CASE("Sync Stages") {
             BlockNum unwind_to{1};
             actual_stage_result = magic_enum::enum_name<stagedsync::StageResult>(stage.unwind(txn, unwind_to));
             REQUIRE(expected_stage_result == actual_stage_result);
-            hashed_accounts_table = db::open_cursor(*txn, db::table::kHashedAccounts);
+            hashed_accounts_table.bind(txn, db::table::kHashedAccounts);
             REQUIRE(hashed_accounts_table.seek(db::to_slice(hashed_sender.bytes)));
             {
                 auto account_encoded{db::from_slice(hashed_accounts_table.current().value)};

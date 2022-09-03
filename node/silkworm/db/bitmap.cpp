@@ -121,6 +121,9 @@ void IndexLoader::unwind_bitmaps(RWTxn& txn, BlockNum to, const std::map<Bytes, 
             break;
         }
     }
+
+    std::unique_lock log_lck(log_mtx_);
+    current_key_.clear();
 }
 
 void IndexLoader::prune_bitmaps(RWTxn& txn, BlockNum threshold) {
@@ -167,6 +170,9 @@ void IndexLoader::prune_bitmaps(RWTxn& txn, BlockNum threshold) {
 
         target_data = target.to_next(/*throw_notfound=*/false);
     }
+
+    std::unique_lock log_lck(log_mtx_);
+    current_key_.clear();
 }
 
 void IndexLoader::flush_bitmaps_to_etl(absl::btree_map<Bytes, roaring::Roaring64Map>& bitmaps,

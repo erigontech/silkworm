@@ -16,9 +16,14 @@
 
 #include "bitmap.hpp"
 
+#include <map>
 #include <vector>
 
+#include <absl/container/btree_map.h>
 #include <catch2/catch.hpp>
+
+#include <silkworm/common/test_context.hpp>
+#include <silkworm/etl/collector.hpp>
 
 namespace silkworm::db::bitmap {
 
@@ -102,6 +107,110 @@ TEST_CASE("Roaring Bitmaps") {
         CHECK(lft.cardinality() == 1);
         CHECK(bm.cardinality() == 0);
     }
+}
+
+TEST_CASE("Bitmap Index Loader") {
+    test::Context context;
+    db::RWTxn txn{context.txn()};
+
+    const auto address1{0x00000000000000000001_address};
+    const auto address2{0x00000000000000000002_address};
+    const auto address3{0x00000000000000000003_address};
+
+    // Note range is [min,max)
+    roaring::Roaring64Map roaring1{roaring::api::roaring_bitmap_from_range(1, 20'001, 1)};
+    roaring::Roaring64Map roaring2{roaring::api::roaring_bitmap_from_range(1, 50'001, 1)};
+    roaring::Roaring64Map roaring3{roaring::api::roaring_bitmap_from_range(40'000, 50'001, 1)};
+
+    absl::btree_map<Bytes, roaring::Roaring64Map> bitmaps{
+        {Bytes(address1.bytes, kAddressLength), roaring1},
+        {Bytes(address2.bytes, kAddressLength), roaring2},
+        {Bytes(address3.bytes, kAddressLength), roaring3},
+    };
+
+    etl::Collector collector(context.node_settings().data_directory->etl().path());
+    db::bitmap::IndexLoader bm_loader(db::table::kLogAddressIndex);
+    bm_loader.flush_bitmaps_to_etl(bitmaps, &collector, /*flush_count=*/1);
+    REQUIRE(collector.bytes_size());
+
+    // Load into LogAddressIndex
+    REQUIRE_NOTHROW(bm_loader.merge_bitmaps(txn, kAddressLength, &collector));
+    Cursor log_addresses(txn, table::kLogAddressIndex);
+    REQUIRE(log_addresses.size() > bitmaps.size());
+
+    // Check we have an incomplete shard for each key
+    Bytes key(address1.bytes, kAddressLength);
+    key.append(db::block_key(UINT64_MAX));
+    auto data{log_addresses.find(db::to_slice(key), /*throw_notfound=*/false)};
+    REQUIRE(data.done);
+    auto loaded_bitmap{bitmap::parse(data.value)};
+    REQUIRE(loaded_bitmap.maximum() == 20'000);
+
+    key.assign(address2.bytes, kAddressLength);
+    key.append(db::block_key(UINT64_MAX));
+    data = log_addresses.find(db::to_slice(key), /*throw_notfound=*/false);
+    REQUIRE(data.done);
+    loaded_bitmap = bitmap::parse(data.value);
+    REQUIRE(loaded_bitmap.maximum() == 50'000);
+
+    key.assign(address3.bytes, kAddressLength);
+    key.append(db::block_key(UINT64_MAX));
+    data = log_addresses.find(db::to_slice(key), /*throw_notfound=*/false);
+    REQUIRE(data.done);
+    loaded_bitmap = bitmap::parse(data.value);
+    REQUIRE(loaded_bitmap.maximum() == 50'000);
+
+    // Unwind to 30'000
+    std::map<Bytes, bool> ubm{
+        {Bytes(address1.bytes, kAddressLength), false},
+        {Bytes(address2.bytes, kAddressLength), false},
+        {Bytes(address3.bytes, kAddressLength), false},
+    };
+    REQUIRE_NOTHROW(bm_loader.unwind_bitmaps(txn, 30'000, ubm));
+
+    // First address stays the same
+    key.assign(address1.bytes, kAddressLength);
+    key.append(db::block_key(UINT64_MAX));
+    data = log_addresses.find(db::to_slice(key), /*throw_notfound=*/false);
+    REQUIRE(data.done);
+    loaded_bitmap = bitmap::parse(data.value);
+    REQUIRE(loaded_bitmap.maximum() == 20'000);
+
+    // Second address has decreased to 30'000
+    key.assign(address2.bytes, kAddressLength);
+    key.append(db::block_key(UINT64_MAX));
+    data = log_addresses.find(db::to_slice(key), /*throw_notfound=*/false);
+    REQUIRE(data.done);
+    loaded_bitmap = bitmap::parse(data.value);
+    REQUIRE(loaded_bitmap.maximum() == 30'000);
+
+    // Third address should be gone
+    key.assign(address3.bytes, kAddressLength);
+    key.append(db::block_key(UINT64_MAX));
+    data = log_addresses.find(db::to_slice(key), /*throw_notfound=*/false);
+    REQUIRE_FALSE(data.done);
+
+    // Now prune up to 25000
+    // Note that all blocks <= threshold are removed
+    REQUIRE_NOTHROW(bm_loader.prune_bitmaps(txn, 25'000));
+
+    // First address is gone
+    key.assign(address1.bytes, kAddressLength);
+    key.append(db::block_key(UINT64_MAX));
+    data = log_addresses.find(db::to_slice(key), /*throw_notfound=*/false);
+    REQUIRE_FALSE(data.done);
+
+    // Second address has a new minimum
+    key.assign(address2.bytes, kAddressLength);
+    key.append(db::block_key(UINT64_MAX));
+    data = log_addresses.find(db::to_slice(key), /*throw_notfound=*/false);
+    REQUIRE(data.done);
+    loaded_bitmap = bitmap::parse(data.value);
+    REQUIRE(loaded_bitmap.maximum() == 30'000);
+    REQUIRE(loaded_bitmap.minimum() == 25'001);
+
+    REQUIRE(bm_loader.get_current_key().empty());
+
 }
 
 }  // namespace silkworm::db::bitmap

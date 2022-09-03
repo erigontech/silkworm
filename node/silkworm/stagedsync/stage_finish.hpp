@@ -29,6 +29,6 @@ class Finish : public IStage {
     StageResult unwind(db::RWTxn& txn, BlockNum to) final;
 
     // Finish does not prune.
-    StageResult prune(db::RWTxn& txn) final { return StageResult::kSuccess; };
+    StageResult prune(db::RWTxn&) final { return StageResult::kSuccess; };
 };
 }  // namespace silkworm::stagedsync

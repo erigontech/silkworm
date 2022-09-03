@@ -70,22 +70,38 @@ TEST_CASE("Stage Transaction Lookups") {
 
     SECTION("Forward checks and unwind") {
         db::Cursor lookup_table(txn, db::table::kTxLookup);
+        REQUIRE(lookup_table.size() == 2);  // Must be two transactions indexed
 
-        // Retrieve numbers associated with hashes
-        auto got_block_0{db::from_slice(lookup_table.find(db::to_slice(tx_hash_1.bytes)).value)};
-        auto got_block_1{db::from_slice(lookup_table.find(db::to_slice(tx_hash_2.bytes)).value)};
-        // Keys must be compact and equivalent to block number
-        CHECK(got_block_0.compare(ByteView({1})) == 0);
-        CHECK(got_block_1.compare(ByteView({2})) == 0);
+        // Retrieve block numbers associated with hashes
+        auto lookup_data{lookup_table.find(db::to_slice(tx_hash_1.bytes), false)};
+        REQUIRE(lookup_data.done);
+        REQUIRE(lookup_data.value.size());
+        BlockNum lookup_data_block_num{0};
+        REQUIRE(endian::from_big_compact(
+                    db::from_slice(lookup_data.value), lookup_data_block_num) == DecodingResult::kOk);
+        REQUIRE(lookup_data_block_num == 1u);
 
-        // Execute stage unwind
+        lookup_data = lookup_table.find(db::to_slice(tx_hash_2.bytes), false);
+        REQUIRE(lookup_data.done);
+        REQUIRE(lookup_data.value.size());
+        REQUIRE(endian::from_big_compact(
+                    db::from_slice(lookup_data.value), lookup_data_block_num) == DecodingResult::kOk);
+        REQUIRE(lookup_data_block_num == 2u);
+
+        // Execute stage unwind to block 1
         REQUIRE(stage_tx_lookup.unwind(txn, 1) == stagedsync::StageResult::kSuccess);
+        lookup_table.bind(txn, db::table::kTxLookup);  // Needed due to commit
 
-        // Unwind block should be still there
-        got_block_0 = db::from_slice(lookup_table.find(db::to_slice(tx_hash_1.bytes)).value);
-        REQUIRE(got_block_0.compare(ByteView({1})) == 0);
+        // Block 1 should be still there
+        lookup_data = lookup_table.find(db::to_slice(tx_hash_1.bytes), false);
+        REQUIRE(lookup_data.done);
+        REQUIRE(lookup_data.value.size());
+        REQUIRE(endian::from_big_compact(
+                    db::from_slice(lookup_data.value), lookup_data_block_num) == DecodingResult::kOk);
+        REQUIRE(lookup_data_block_num == 1u);
+
         // Block 2 must be absent due to unwind
-        CHECK(!lookup_table.seek(db::to_slice(tx_hash_2.bytes)));
+        REQUIRE_THROWS(lookup_table.find(db::to_slice(tx_hash_2.bytes), true));
     }
 
     SECTION("Prune") {
@@ -104,12 +120,20 @@ TEST_CASE("Stage Transaction Lookups") {
         REQUIRE(stage_tx_lookup.prune(txn) == stagedsync::StageResult::kSuccess);
 
         db::Cursor lookup_table(txn, db::table::kTxLookup);
-        // Unwind block should be still there
-        auto got_block_1{db::from_slice(lookup_table.find(db::to_slice(tx_hash_2.bytes)).value)};
-        REQUIRE(got_block_1.compare(ByteView({2})) == 0);
+        REQUIRE(lookup_table.size() == 1);
 
-        // Block 1 must be absent due to prune
-        CHECK(!lookup_table.seek(db::to_slice(tx_hash_1.bytes)));
+        // Block 1 should NOT be there
+        auto lookup_data{lookup_table.find(db::to_slice(tx_hash_1.bytes), false)};
+        REQUIRE(lookup_data.done == false);
+
+        // Block 2 should still be there
+        lookup_data = lookup_table.find(db::to_slice(tx_hash_2.bytes), false);
+        REQUIRE(lookup_data.done);
+        REQUIRE(lookup_data.value.size());
+        BlockNum lookup_data_block_num{0};
+        REQUIRE(endian::from_big_compact(
+                    db::from_slice(lookup_data.value), lookup_data_block_num) == DecodingResult::kOk);
+        REQUIRE(lookup_data_block_num == 2u);
     }
 }
 

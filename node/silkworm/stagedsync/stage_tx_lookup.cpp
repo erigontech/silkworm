@@ -340,7 +340,7 @@ void TxLookup::collect_transaction_hashes_from_bodies(db::RWTxn& txn,
                 // Hash transaction rlp
                 auto transaction_data_value_view{db::from_slice(transactions_data.value)};
                 auto transaction_hash{keccak256(transaction_data_value_view)};
-                collector_->collect({Bytes(transaction_hash.bytes), etl_value});
+                collector_->collect({Bytes(transaction_hash.bytes, kHashLength), etl_value});
 
                 ++processed_transactions;
                 transactions_data = transactions.to_next(/*throw_notfound=*/false);

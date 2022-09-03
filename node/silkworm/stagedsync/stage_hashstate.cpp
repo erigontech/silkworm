@@ -318,8 +318,6 @@ StageResult HashState::hash_from_plaincode(db::RWTxn& txn) {
         db::Cursor source(txn, db::table::kPlainCodeHash);
         auto data{source.to_first(/*throw_notfound=*/false)};
 
-        // TODO(Andrea) Maybe introduce an assertion for target table to be empty ?
-
         evmc::address last_address{};
         Bytes new_key(db::kHashedStoragePrefixLength, '\0');
 
@@ -360,12 +358,15 @@ StageResult HashState::hash_from_plaincode(db::RWTxn& txn) {
         throw_if_stopping();
 
         if (!collector_->empty()) {
-            source.bind(txn, db::table::kHashedCodeHash);
+            db::Cursor target(txn, db::table::kHashedCodeHash);
+            if (!target.empty())
+                throw std::runtime_error(std::string(db::table::kHashedCodeHash.name) + " should be empty");
+
             log_lck.lock();
             current_target_ = std::string(db::table::kHashedCodeHash.name);
             loading_ = true;
             log_lck.unlock();
-            collector_->load(source, nullptr, MDBX_put_flags_t::MDBX_APPEND);
+            collector_->load(target, nullptr, MDBX_put_flags_t::MDBX_APPEND);
         }
 
     } catch (const mdbx::exception& ex) {

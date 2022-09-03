@@ -18,9 +18,6 @@
 
 #include <silkworm/common/cast.hpp>
 #include <silkworm/common/endian.hpp>
-#include <silkworm/common/log.hpp>
-#include <silkworm/db/stages.hpp>
-#include <silkworm/etl/collector.hpp>
 
 namespace silkworm::stagedsync {
 

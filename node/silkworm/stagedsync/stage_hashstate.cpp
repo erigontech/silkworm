@@ -36,7 +36,8 @@ StageResult HashState::forward(db::RWTxn& txn) {
             // Something bad had happened. Not possible execution stage is ahead of bodies
             // Maybe we need to unwind ?
             std::string what{std::string(stage_name_) + " progress " + std::to_string(previous_progress) +
-                             " while " + std::string(db::stages::kExecutionKey) + " stage " + std::to_string(execution_stage_progress)};
+                             " while " + std::string(db::stages::kExecutionKey) + " stage " +
+                             std::to_string(execution_stage_progress)};
             throw StageError(StageResult::kInvalidProgress, what);
         }
 

@@ -358,7 +358,6 @@ StageResult HashState::hash_from_plaincode(db::RWTxn& txn) {
             data = source.to_next(/*throw_notfound=*/false);
         }
 
-        source.close();
         throw_if_stopping();
 
         if (!collector_->empty()) {

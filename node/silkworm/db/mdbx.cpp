@@ -217,6 +217,7 @@ Cursor::~Cursor() {
 }
 
 void Cursor::bind(::mdbx::txn& txn, const MapConfig& config) {
+    if(!handle_) throw std::runtime_error("Can't bind a closed cursor");
     // Check cursor is bound to a live transaction
     if (auto cm_tx{mdbx_cursor_txn(handle_)}; cm_tx) {
         // If current transaction id does not match cursor's transaction close it

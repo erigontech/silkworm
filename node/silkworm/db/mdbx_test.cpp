@@ -216,6 +216,8 @@ TEST_CASE("RWTxn") {
         db::Cursor table_cursor(tx, {table_name});
         REQUIRE(table_cursor.empty());
         REQUIRE_NOTHROW(table_cursor.bind(tx, {table_name}));
+        table_cursor.close();
+        REQUIRE_THROWS(table_cursor.bind(tx, {table_name}));
     }
 }
 

@@ -239,7 +239,7 @@ struct Segment
     using Slice = std::span<const HeaderList::Header_Ref>;  // a Segment slice
 
     [[nodiscard]] Slice slice(size_t start, size_t end) const {
-        return Slice(*this).subspan(start, end - start);
+        return Slice(data() + start, end - start);
     }  // with c++20 it can be implemented as: return Slice(begin() + start, begin() + end);
 
   protected:

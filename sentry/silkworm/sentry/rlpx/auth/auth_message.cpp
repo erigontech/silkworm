@@ -16,15 +16,13 @@
 
 #include "auth_message.hpp"
 
-#include <algorithm>
-#include <functional>
-
 #include <silkworm/common/endian.hpp>
 #include <silkworm/common/secp256k1_context.hpp>
 #include <silkworm/rlp/decode.hpp>
 #include <silkworm/rlp/encode_vector.hpp>
 #include <silkworm/sentry/common/ecc_key_pair.hpp>
 #include <silkworm/sentry/common/random.hpp>
+#include <silkworm/sentry/rlpx/crypto/xor.hpp>
 
 #include "ecies_cipher.hpp"
 
@@ -79,7 +77,7 @@ AuthMessage::AuthMessage(
     nonce_ = common::random_bytes(shared_secret.size());
 
     // shared_secret ^= nonce_
-    std::transform(shared_secret.cbegin(), shared_secret.cend(), nonce_.cbegin(), shared_secret.begin(), std::bit_xor<>{});
+    crypto::xor_bytes(shared_secret, nonce_);
 
     signature_ = sign(shared_secret, ephemeral_key_pair.private_key());
 }
@@ -97,7 +95,7 @@ AuthMessage::AuthMessage(ByteView data, const common::EccKeyPair& recipient_key_
         throw std::runtime_error("AuthMessage: invalid nonce size");
 
     // shared_secret ^= nonce_
-    std::transform(shared_secret.cbegin(), shared_secret.cend(), nonce_.cbegin(), shared_secret.begin(), std::bit_xor<>{});
+    crypto::xor_bytes(shared_secret, nonce_);
 
     ephemeral_public_key_ = recover_and_verify(shared_secret, signature_);
 }

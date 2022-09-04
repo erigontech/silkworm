@@ -37,6 +37,8 @@ class AuthAckMessage {
         return ephemeral_public_key_;
     }
 
+    [[nodiscard]] ByteView nonce() const { return nonce_; }
+
   private:
     [[nodiscard]] Bytes body_as_rlp() const;
     void init_from_rlp(ByteView data);

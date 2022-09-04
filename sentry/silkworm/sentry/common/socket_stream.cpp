@@ -43,9 +43,16 @@ awaitable<Bytes> SocketStream::receive_fixed(std::size_t size) {
     co_return std::move(data);
 }
 
-awaitable<Bytes> SocketStream::receive() {
-    auto size = co_await receive_short();
-    co_return (co_await receive_fixed(size));
+awaitable<ByteView> SocketStream::receive_size_and_data(Bytes& raw_data) {
+    raw_data.resize(sizeof(uint16_t));
+    co_await async_read(socket_, buffer(raw_data), use_awaitable);
+    uint16_t size = endian::load_big_u16(raw_data.data());
+
+    raw_data.resize(raw_data.size() + size);
+    auto data_ptr = raw_data.data() + sizeof(uint16_t);
+    co_await async_read(socket_, buffer(data_ptr, size), use_awaitable);
+
+    co_return ByteView(data_ptr, size);
 }
 
 }  // namespace silkworm::sentry::common

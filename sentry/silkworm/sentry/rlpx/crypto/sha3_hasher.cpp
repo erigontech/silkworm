@@ -14,31 +14,26 @@
    limitations under the License.
 */
 
-#pragma once
+#include "sha3_hasher.hpp"
 
-#include <string>
+#include <keccak.h>
 
-#include <silkworm/concurrency/coroutine.hpp>
+#include <silkworm/common/util.hpp>
 
-#include <boost/asio/awaitable.hpp>
+namespace silkworm::sentry::rlpx::crypto {
 
-#include <silkworm/rpc/server/server_context_pool.hpp>
-#include <silkworm/sentry/common/ecc_key_pair.hpp>
+Sha3Hasher::Sha3Hasher() : impl_(std::make_unique<Keccak>()) {
+}
 
-namespace silkworm::sentry::rlpx {
+Sha3Hasher::~Sha3Hasher() {
+}
 
-class Server final {
-  public:
-    Server(std::string host, uint16_t port);
+void Sha3Hasher::update(ByteView data) {
+    impl_->add(data.data(), data.size());
+}
 
-    boost::asio::awaitable<void> start(
-        silkworm::rpc::ServerContextPool& context_pool,
-        common::EccKeyPair node_key,
-        std::string client_id);
+Bytes Sha3Hasher::hash() {
+    return from_hex(impl_->getHash()).value();
+}
 
-  private:
-    std::string host_;
-    uint16_t port_;
-};
-
-}  // namespace silkworm::sentry::rlpx
+}  // namespace silkworm::sentry::rlpx::crypto

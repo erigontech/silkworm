@@ -14,31 +14,16 @@
    limitations under the License.
 */
 
-#pragma once
+#include "xor.hpp"
 
-#include <string>
+#include <algorithm>
+#include <functional>
 
-#include <silkworm/concurrency/coroutine.hpp>
+namespace silkworm::sentry::rlpx::crypto {
 
-#include <boost/asio/awaitable.hpp>
+void xor_bytes(Bytes& data1, ByteView data2) {
+    assert(data1.size() <= data2.size());
+    std::transform(data1.cbegin(), data1.cend(), data2.cbegin(), data1.begin(), std::bit_xor<>{});
+}
 
-#include <silkworm/rpc/server/server_context_pool.hpp>
-#include <silkworm/sentry/common/ecc_key_pair.hpp>
-
-namespace silkworm::sentry::rlpx {
-
-class Server final {
-  public:
-    Server(std::string host, uint16_t port);
-
-    boost::asio::awaitable<void> start(
-        silkworm::rpc::ServerContextPool& context_pool,
-        common::EccKeyPair node_key,
-        std::string client_id);
-
-  private:
-    std::string host_;
-    uint16_t port_;
-};
-
-}  // namespace silkworm::sentry::rlpx
+}  // namespace silkworm::sentry::rlpx::crypto

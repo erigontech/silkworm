@@ -16,29 +16,20 @@
 
 #pragma once
 
-#include <string>
-
-#include <silkworm/concurrency/coroutine.hpp>
-
-#include <boost/asio/awaitable.hpp>
-
-#include <silkworm/rpc/server/server_context_pool.hpp>
-#include <silkworm/sentry/common/ecc_key_pair.hpp>
+#include <silkworm/common/base.hpp>
+#include <silkworm/sentry/common/message.hpp>
 
 namespace silkworm::sentry::rlpx {
 
-class Server final {
-  public:
-    Server(std::string host, uint16_t port);
+struct DisconnectMessage {
+    [[nodiscard]] Bytes rlp_encode() const;
+    [[nodiscard]] static DisconnectMessage rlp_decode(ByteView data);
 
-    boost::asio::awaitable<void> start(
-        silkworm::rpc::ServerContextPool& context_pool,
-        common::EccKeyPair node_key,
-        std::string client_id);
+    [[nodiscard]] sentry::common::Message to_message() const;
+    [[nodiscard]] static DisconnectMessage from_message(const sentry::common::Message& message);
 
-  private:
-    std::string host_;
-    uint16_t port_;
+    static const uint8_t kId;
+    uint8_t reason{0};
 };
 
 }  // namespace silkworm::sentry::rlpx

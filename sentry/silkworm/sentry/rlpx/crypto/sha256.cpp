@@ -14,31 +14,16 @@
    limitations under the License.
 */
 
-#pragma once
+#include "sha256.hpp"
 
-#include <string>
+#include <silkpre/sha256.h>
 
-#include <silkworm/concurrency/coroutine.hpp>
+namespace silkworm::sentry::rlpx::crypto {
 
-#include <boost/asio/awaitable.hpp>
+Bytes sha256(ByteView data) {
+    Bytes hash(32, 0);
+    silkpre_sha256(hash.data(), data.data(), data.size(), /* use_cpu_extensions = */ false);
+    return hash;
+}
 
-#include <silkworm/rpc/server/server_context_pool.hpp>
-#include <silkworm/sentry/common/ecc_key_pair.hpp>
-
-namespace silkworm::sentry::rlpx {
-
-class Server final {
-  public:
-    Server(std::string host, uint16_t port);
-
-    boost::asio::awaitable<void> start(
-        silkworm::rpc::ServerContextPool& context_pool,
-        common::EccKeyPair node_key,
-        std::string client_id);
-
-  private:
-    std::string host_;
-    uint16_t port_;
-};
-
-}  // namespace silkworm::sentry::rlpx
+}  // namespace silkworm::sentry::rlpx::crypto

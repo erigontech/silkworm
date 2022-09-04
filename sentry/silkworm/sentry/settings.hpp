@@ -29,9 +29,12 @@
 
 #include "nat_option.hpp"
 
+struct buildinfo;
+
 namespace silkworm::sentry {
 
 struct Settings {
+    const buildinfo* build_info{nullptr};
     log::Settings log_settings;
 
     std::string api_address{"127.0.0.1:9091"};

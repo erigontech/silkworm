@@ -16,29 +16,19 @@
 
 #pragma once
 
-#include <string>
+#include <silkworm/sentry/common/message.hpp>
 
-#include <silkworm/concurrency/coroutine.hpp>
+namespace silkworm::sentry::rlpx::framing {
 
-#include <boost/asio/awaitable.hpp>
-
-#include <silkworm/rpc/server/server_context_pool.hpp>
-#include <silkworm/sentry/common/ecc_key_pair.hpp>
-
-namespace silkworm::sentry::rlpx {
-
-class Server final {
+class MessageFrameCodec {
   public:
-    Server(std::string host, uint16_t port);
+    [[nodiscard]] Bytes encode(const common::Message& message) const;
+    [[nodiscard]] common::Message decode(ByteView frame_data) const;
 
-    boost::asio::awaitable<void> start(
-        silkworm::rpc::ServerContextPool& context_pool,
-        common::EccKeyPair node_key,
-        std::string client_id);
+    void enable_compression() { is_compression_enabled_ = true; }
 
   private:
-    std::string host_;
-    uint16_t port_;
+    bool is_compression_enabled_{false};
 };
 
-}  // namespace silkworm::sentry::rlpx
+}  // namespace silkworm::sentry::rlpx::framing

@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <string>
 #include <vector>
 
 #include <silkworm/concurrency/coroutine.hpp>
@@ -32,7 +33,10 @@ class Client {
     explicit Client(std::vector<common::EnodeUrl> peer_urls)
         : peer_urls_(std::move(peer_urls)) {}
 
-    boost::asio::awaitable<void> start(common::EccKeyPair node_key);
+    boost::asio::awaitable<void> start(
+        common::EccKeyPair node_key,
+        std::string client_id,
+        uint16_t node_listen_port);
 
   private:
     const std::vector<common::EnodeUrl> peer_urls_;

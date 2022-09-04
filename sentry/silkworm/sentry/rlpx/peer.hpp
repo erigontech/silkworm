@@ -18,6 +18,7 @@
 
 #include <memory>
 #include <optional>
+#include <string>
 
 #include <silkworm/concurrency/coroutine.hpp>
 
@@ -34,9 +35,13 @@ class Peer {
     explicit Peer(
         common::SocketStream stream,
         common::EccKeyPair node_key,
+        std::string client_id,
+        uint16_t node_listen_port,
         std::optional<common::EccPublicKey> peer_public_key)
         : stream_(std::move(stream)),
           node_key_(std::move(node_key)),
+          client_id_(std::move(client_id)),
+          node_listen_port_(node_listen_port),
           peer_public_key_(std::move(peer_public_key)) {}
 
     Peer(Peer&&) = default;
@@ -47,6 +52,8 @@ class Peer {
   private:
     common::SocketStream stream_;
     common::EccKeyPair node_key_;
+    std::string client_id_;
+    uint16_t node_listen_port_;
     std::optional<common::EccPublicKey> peer_public_key_;
 };
 

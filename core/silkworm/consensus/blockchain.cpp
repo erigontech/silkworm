@@ -75,7 +75,8 @@ ValidationResult Blockchain::insert_block(Block& block, bool check_state_root) {
     intx::uint256 current_total_difficulty{
         *state_.total_difficulty(current_canonical_block, *state_.canonical_hash(current_canonical_block))};
 
-    if (state_.total_difficulty(block_number, hash) > current_total_difficulty) {
+    // Non-strict comparison because of the Merge
+    if (state_.total_difficulty(block_number, hash) >= current_total_difficulty) {
         // canonize the new chain
         for (uint64_t i{current_canonical_block}; i > ancestor; --i) {
             state_.decanonize_block(i);

@@ -16,7 +16,8 @@
 
 #pragma once
 
-#include <silkworm/consensus/ethash/engine.hpp>
+#include <memory>
+
 #include <silkworm/consensus/pos/engine.hpp>
 
 namespace silkworm::consensus {
@@ -25,7 +26,7 @@ namespace silkworm::consensus {
 // See EIP-3675: Upgrade consensus to Proof-of-Stake.
 class MergeEngine : public IEngine {
   public:
-    explicit MergeEngine(const ChainConfig& chain_config);
+    explicit MergeEngine(std::unique_ptr<IEngine> pre_merge_engine, const ChainConfig& chain_config);
 
     ValidationResult pre_validate_block(const Block& block, const BlockState& state) override;
 
@@ -44,8 +45,8 @@ class MergeEngine : public IEngine {
     ValidationResult validate_ommers(const Block& block, const BlockState& state) override;
 
     intx::uint256 terminal_total_difficulty_;
-    EthashEngine ethash_engine_;
-    ProofOfStakeEngine pos_engine_;
+    std::unique_ptr<IEngine> pre_merge_engine_;
+    ProofOfStakeEngine post_merge_engine_;
 };
 
 }  // namespace silkworm::consensus

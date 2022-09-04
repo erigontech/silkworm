@@ -145,6 +145,7 @@ inline constexpr ChainConfig kMainnetConfig{
     .muir_glacier_block = 9'200'000,
     .arrow_glacier_block = 13'773'000,
     .gray_glacier_block = 15'050'000,
+    .terminal_total_difficulty = intx::from_string<intx::uint256>("58750000000000000000000"),
 };
 
 inline constexpr ChainConfig kRopstenConfig{

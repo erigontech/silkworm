@@ -53,10 +53,10 @@ TEST_CASE("Consensus Engine factory") {
 }
 
 TEST_CASE("Consensus Engine Seal") {
-    std::unique_ptr<IEngine> consensus_engine{engine_factory(kMainnetConfig)};  // Ethash consensus engine
+    std::unique_ptr<IEngine> consensus_engine{engine_factory(ChainConfig{.seal_engine = SealEngineType::kEthash})};
     BlockHeader fake_header{};
     CHECK(consensus_engine->validate_seal(fake_header) != ValidationResult::kOk);
-    consensus_engine = engine_factory(test::kLondonConfig);  // Noproof consensus engine
+    consensus_engine = engine_factory(ChainConfig{.seal_engine = SealEngineType::kNoProof});
     CHECK(consensus_engine->validate_seal(fake_header) == ValidationResult::kOk);
 }
 

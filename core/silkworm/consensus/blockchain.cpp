@@ -33,10 +33,12 @@ Blockchain::Blockchain(State& state, std::unique_ptr<IEngine>& engine, const Cha
 }
 
 ValidationResult Blockchain::insert_block(Block& block, bool check_state_root) {
-    if (ValidationResult err{engine_->validate_block_header(block.header, state_, /*with_future_timestamp_check=*/true)}; err != ValidationResult::kOk) {
+    ValidationResult err{engine_->validate_block_header(block.header, state_, /*with_future_timestamp_check=*/true)};
+    if (err != ValidationResult::kOk) {
         return err;
     }
-    if (ValidationResult err{engine_->pre_validate_block_body(block, state_)}; err != ValidationResult::kOk) {
+    err = engine_->pre_validate_block_body(block, state_);
+    if (err != ValidationResult::kOk) {
         return err;
     }
 
@@ -56,7 +58,6 @@ ValidationResult Blockchain::insert_block(Block& block, bool check_state_root) {
     std::vector<BlockWithHash> chain{intermediate_chain(block_number - 1, block.header.parent_hash, ancestor)};
     chain.push_back({block, hash});
 
-    ValidationResult err{ValidationResult::kOk};
     size_t num_of_executed_chain_blocks{0};
     for (const BlockWithHash& x : chain) {
         err = execute_block(x.block, check_state_root);

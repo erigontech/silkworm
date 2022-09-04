@@ -1,5 +1,5 @@
 /*
-   Copyright 2020-2022 The Silkworm Authors
+   Copyright 2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -38,18 +38,35 @@ std::optional<VersionBase> read_schema_version(mdbx::txn& txn);
 // Writes database schema version (throws on downgrade)
 void write_schema_version(mdbx::txn& txn, const VersionBase& schema_version);
 
+//! \brief Reads a header with the specified key (block number, hash)
 std::optional<BlockHeader> read_header(mdbx::txn& txn, BlockNum block_number, const uint8_t (&hash)[kHashLength]);
+std::optional<BlockHeader> read_header(mdbx::txn& txn, BlockNum block_number, const evmc::bytes32&);
 std::optional<BlockHeader> read_header(mdbx::txn& txn, ByteView key);
 Bytes read_header_raw(mdbx::txn& txn, ByteView key);
 
+//! \brief Reads a header with the specified hash
+std::optional<BlockHeader> read_header(mdbx::txn& txn, const evmc::bytes32& hash);
+
+//! \brief Reads a header without rlp-decoding it
+std::optional<ByteView> read_rlp_encoded_header(mdbx::txn& txn, BlockNum bn, const evmc::bytes32& hash);
+
+//! \brief Reads the canonical header from a block number
+std::optional<BlockHeader> read_canonical_header(mdbx::txn& txn, BlockNum b);
+
 //! \brief Writes given header to table::kHeaders
 void write_header(mdbx::txn& txn, const BlockHeader& header, bool with_header_numbers = false);
+
+//! \brief Read block number from hash
+std::optional<BlockNum> read_block_number(mdbx::txn& txn, const evmc::bytes32& hash);
 
 //! \brief Writes header hash in table::kHeaderNumbers
 void write_header_number(mdbx::txn& txn, const uint8_t (&hash)[kHashLength], BlockNum number);
 
 //! \brief Writes the header hash in table::kCanonicalHashes
 void write_canonical_header(mdbx::txn& txn, const BlockHeader& header);
+
+//! \brief Reads the header hash in table::kCanonicalHashes
+std::optional<evmc::bytes32> read_canonical_header_hash(mdbx::txn& txn, BlockNum number);
 
 //! \brief Writes the header hash in table::kCanonicalHashes
 void write_canonical_header_hash(mdbx::txn& txn, const uint8_t (&hash)[kHashLength], BlockNum number);
@@ -58,23 +75,26 @@ void write_canonical_header_hash(mdbx::txn& txn, const uint8_t (&hash)[kHashLeng
 [[nodiscard]] bool read_body(mdbx::txn& txn, const Bytes& key, bool read_senders, BlockBody& out);
 [[nodiscard]] bool read_body(mdbx::txn& txn, BlockNum block_number, const uint8_t (&hash)[kHashLength],
                              bool read_senders, BlockBody& out);
+[[nodiscard]] bool read_body(mdbx::txn& txn, const evmc::bytes32& hash, BlockNum bn, BlockBody& body);
+[[nodiscard]] bool read_body(mdbx::txn& txn, const evmc::bytes32& hash, BlockBody& body);
 
 //! \brief Check the presence of a block body using block number and hash
 [[nodiscard]] bool has_body(mdbx::txn& txn, BlockNum block_number, const uint8_t (&hash)[kHashLength]);
+[[nodiscard]] bool has_body(mdbx::txn& txn, BlockNum block_number, const evmc::bytes32& hash);
 
 //! \brief Writes block body in table::kBlockBodies
+void write_body(mdbx::txn& txn, const BlockBody& body, const evmc::bytes32& hash, BlockNum bn);
 void write_body(mdbx::txn& txn, const BlockBody& body, const uint8_t (&hash)[kHashLength], BlockNum number);
 
 // See Erigon ReadTd
-std::optional<intx::uint256> read_total_difficulty(mdbx::txn& txn, BlockNum block_number,
-                                                   const uint8_t (&hash)[kHashLength]);
-
+std::optional<intx::uint256> read_total_difficulty(mdbx::txn& txn, BlockNum, const evmc::bytes32& hash);
+std::optional<intx::uint256> read_total_difficulty(mdbx::txn& txn, BlockNum, const uint8_t (&hash)[kHashLength]);
 std::optional<intx::uint256> read_total_difficulty(mdbx::txn& txn, ByteView key);
 
 // See Erigon WriteTd
+void write_total_difficulty(mdbx::txn& txn, BlockNum, const evmc::bytes32& hash, const intx::uint256& total_difficulty);
+void write_total_difficulty(mdbx::txn& txn, BlockNum, const uint8_t (&hash)[kHashLength], const intx::uint256& td);
 void write_total_difficulty(mdbx::txn& txn, const Bytes& key, const intx::uint256& total_difficulty);
-void write_total_difficulty(mdbx::txn& txn, BlockNum block_number, const uint8_t (&hash)[kHashLength],
-                            const intx::uint256& total_difficulty);
 
 // Reads canonical block; see Erigon ReadBlockByNumber.
 // Returns true on success and false on missing block.
@@ -122,11 +142,24 @@ StorageChanges read_storage_changes(mdbx::txn& txn, BlockNum block_number);
 //! \see Erigon chainConfig / chainConfigWithGenesis
 std::optional<ChainConfig> read_chain_config(mdbx::txn& txn);
 
+//! \brief Writes / Updates chain config provided genesis has been initialized
+void update_chain_config(mdbx::txn& txn, const ChainConfig& config);
+
 //! \brief Updates highest header hash in table::kHeadHeader
 void write_head_header_hash(mdbx::txn& txn, const uint8_t (&hash)[kHashLength]);
+void write_head_header_hash(mdbx::txn& txn, const evmc::bytes32& hash);
 
 //! \brief Reads highest header hash from table::kHeadHeader
 std::optional<evmc::bytes32> read_head_header_hash(mdbx::txn& txn);
+
+//! \brief Reads canonical hash from block number
+std::optional<evmc::bytes32> read_canonical_hash(mdbx::txn& txn, BlockNum b);
+
+//! \brief Delete a canonical hash associated to a block number
+void delete_canonical_hash(mdbx::txn& txn, BlockNum b);
+
+//! \brief Write canonical hash
+void write_canonical_hash(mdbx::txn& txn, BlockNum b, const evmc::bytes32& hash);
 
 //! \brief Gets/Increments the sequence value for a given map (bucket)
 //! \param [in] map_name : the name of the map to get a sequence for

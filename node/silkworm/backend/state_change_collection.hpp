@@ -24,8 +24,8 @@
 
 #include <evmc/evmc.hpp>
 #include <gsl/pointers>
-
 #include <remote/kv.pb.h>
+
 #include <silkworm/common/util.hpp>
 
 namespace silkworm {
@@ -105,4 +105,4 @@ class StateChangeCollection : public StateChangeSource {
     std::mutex consumers_mutex_;
 };
 
-} // namespace silkworm
+}  // namespace silkworm

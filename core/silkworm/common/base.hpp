@@ -1,5 +1,5 @@
 /*
-   Copyright 2020-2022 The Silkworm Authors
+   Copyright 2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -65,6 +65,8 @@ class ByteView : public std::basic_string_view<uint8_t> {
     constexpr ByteView(const evmc::address& address) noexcept : ByteView{address.bytes} {}
 
     constexpr ByteView(const evmc::bytes32& hash) noexcept : ByteView{hash.bytes} {}
+
+    [[nodiscard]] bool is_null() const noexcept { return data() == nullptr; }
 };
 
 using BlockNum = uint64_t;

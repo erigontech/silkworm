@@ -1,5 +1,5 @@
 /*
-   Copyright 2021-2022 The Silkworm Authors
+   Copyright 2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -17,14 +17,15 @@
 #include "prefix_set.hpp"
 
 #include <algorithm>
-#include <cassert>
 
 #include <silkworm/common/util.hpp>
 
 namespace silkworm::trie {
 
-void PrefixSet::insert(ByteView key) {
-    keys_.emplace_back(key);
+void PrefixSet::insert(ByteView key, bool marker) { insert(Bytes(key), marker); }
+
+void PrefixSet::insert(Bytes&& key, bool marker) {
+    keys_.emplace_back(key, marker);
     sorted_ = false;
 }
 
@@ -33,31 +34,56 @@ bool PrefixSet::contains(ByteView prefix) {
         return false;
     }
 
-    if (!sorted_) {
-        std::sort(keys_.begin(), keys_.end());
-        keys_.erase(std::unique(keys_.begin(), keys_.end()), keys_.end());
-        sorted_ = true;
-    }
+    // Key uniqueness and sorting
+    ensure_sorted();
 
-    // We optimize for the case when contains() inquires are made with increasing prefixes,
+    // We optimize for the case when contains() queries are issued with increasing prefixes,
     // e.g. contains("00"), contains("04"), contains("0b"), contains("0b05"), contains("0c"), contains("0f"), ...
     // instead of some random order.
-    assert(index_ < keys_.size());
-    while (index_ > 0 && keys_[index_] > prefix) {
+    while (index_ > 0 && keys_[index_].first > prefix) {
         --index_;
     }
 
-    for (;; ++index_) {
-        if (keys_[index_].starts_with(prefix)) {
+    for (size_t max_index{keys_.size() - 1};; ++index_) {
+        const auto& [key, _]{keys_[index_]};
+        if (key.starts_with(prefix)) {
             return true;
         }
-        if (keys_[index_] > prefix) {
-            return false;
-        }
-        if (index_ == keys_.size() - 1) {
+        if (key > prefix || index_ == max_index) {
             return false;
         }
     }
 }
 
+std::pair<bool, ByteView> PrefixSet::contains_and_next_marked(ByteView prefix, size_t invariant_prefix_len) {
+    bool is_contained{contains(prefix)};
+    ByteView next_created{};
+
+    invariant_prefix_len = std::min(invariant_prefix_len, prefix.size());
+
+    // Lookup next marked created key
+    for (size_t i{index_}, e{keys_.size()}; i < e; ++i) {
+        auto& item{keys_[i]};
+
+        // Check we're in the same invariant part of the prefix
+        if (invariant_prefix_len && std::memcmp(&prefix[0], &item.first[0], invariant_prefix_len) != 0) {
+            break;
+        }
+
+        if (item.second) {
+            next_created = ByteView(item.first);
+            break;
+        }
+    }
+
+    return {is_contained, next_created};
+}
+
+void PrefixSet::ensure_sorted() {
+    if (!sorted_) {
+        std::sort(keys_.begin(), keys_.end());
+        keys_.erase(std::unique(keys_.begin(), keys_.end()), keys_.end());
+        sorted_ = true;
+    }
+}
 }  // namespace silkworm::trie

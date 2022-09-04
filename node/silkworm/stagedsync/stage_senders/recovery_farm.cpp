@@ -1,5 +1,5 @@
 /*
-   Copyright 2020-2022 The Silkworm Authors
+   Copyright 2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@
 #include <silkworm/common/assert.hpp>
 #include <silkworm/common/endian.hpp>
 #include <silkworm/common/log.hpp>
+#include <silkworm/common/stopwatch.hpp>
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/stages.hpp>
 
@@ -69,7 +70,8 @@ StageResult RecoveryFarm::recover() {
     uint64_t reached_block_num{0};                 // Block number being processed
     header_index_offset_ = expected_block_number;  // See collect_workers_results
 
-    log::Trace() << "Senders begin read block bodies ... ";
+    log::Trace("Senders begin read blocks ...", {"height", std::to_string(expected_block_number)});
+
     current_phase_ = 2;
     auto bodies_table{db::open_cursor(*txn_, db::table::kBlockBodies)};
     auto transactions_table{db::open_cursor(*txn_, db::table::kBlockTransactions)};
@@ -129,8 +131,7 @@ StageResult RecoveryFarm::recover() {
         expected_block_number++;
         body_data = bodies_table.to_next(false);
     }
-
-    log::Trace("Senders end", {"block", std::to_string(reached_block_num)});
+    log::Trace("Senders end read blocks ...", {"height", std::to_string(reached_block_num)});
 
     if (!is_stopping()                            // No stop requests
         && stage_result == StageResult::kSuccess  // Previous steps ok
@@ -202,11 +203,11 @@ std::vector<std::string> RecoveryFarm::get_log_progress() {
             case 1:
                 return {"phase", std::to_string(current_phase_) + "/3", "blocks", std::to_string(headers_.size())};
             case 2:
-                return {"phase",        std::to_string(current_phase_) + "/3",  //
-                        "blocks",       std::to_string(headers_.size()),        //
-                        "current",      std::to_string(total_processed_blocks_),
+                return {"phase", std::to_string(current_phase_) + "/3",  //
+                        "blocks", std::to_string(headers_.size()),       //
+                        "current", std::to_string(total_processed_blocks_),
                         "transactions", std::to_string(total_collected_transactions_),
-                        "workers",      std::to_string(workers_in_flight_.load())};
+                        "workers", std::to_string(workers_in_flight_.load())};
             case 3:
                 return {"phase", std::to_string(current_phase_) + "/3", "key", collector_.get_load_key()};
             default:
@@ -410,7 +411,7 @@ bool RecoveryFarm::initialize_new_worker() {
     log::Trace("Spawning new Recovery worker", {"id", std::to_string(workers_.size())});
     using namespace std::placeholders;
     try {
-        workers_.emplace_back(new RecoveryWorker(workers_.size()));
+        workers_.emplace_back(new RecoveryWorker(static_cast<uint32_t>(workers_.size())));
         workers_connections_.emplace_back(
             workers_.back()->signal_task_completed.connect(std::bind(&RecoveryFarm::task_completed_handler, this, _1)));
         workers_connections_.emplace_back(workers_.back()->signal_worker_stopped.connect(
@@ -424,6 +425,11 @@ bool RecoveryFarm::initialize_new_worker() {
 }
 
 StageResult RecoveryFarm::fill_canonical_headers(BlockNum from, BlockNum to) noexcept {
+    std::unique_ptr<StopWatch> sw;
+    if (log::test_verbosity(log::Level::kTrace)) {
+        sw = std::make_unique<StopWatch>(/*auto_start=*/true);
+    }
+
     uint64_t headers_count{to - from};
     headers_.reserve(headers_count);
     if (headers_count > 16) {
@@ -467,6 +473,11 @@ StageResult RecoveryFarm::fill_canonical_headers(BlockNum from, BlockNum to) noe
 
         // Initialize iterators
         headers_it_1_ = headers_.begin();
+        if (sw) {
+            const auto [_, duration]{sw->stop()};
+            log::Trace("Collected headers",
+                       {"count", std::to_string(headers_.size()), "in", StopWatch::format(duration)});
+        }
         return is_stopping() ? StageResult::kAborted : StageResult::kSuccess;
 
     } catch (const mdbx::exception& ex) {

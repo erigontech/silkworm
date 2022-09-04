@@ -1,5 +1,5 @@
 /*
-   Copyright 2021-2022 The Silkworm Authors
+   Copyright 2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@
 
 #include <silkworm/chain/genesis.hpp>
 #include <silkworm/common/test_context.hpp>
+#include <silkworm/db/tables.hpp>
 
 namespace silkworm {
 
@@ -117,6 +118,28 @@ namespace db {
                 const auto& [valid, errors]{db::validate_genesis_json(genesis_json)};
                 REQUIRE(valid == false);
                 CHECK(errors.size() == 1);
+            }
+        }
+
+        SECTION("Update chain config") {
+            SECTION("Without genesis block") {
+                // Nothing should happen
+                db::update_chain_config(txn, silkworm::kMainnetConfig);
+                db::Cursor config(txn, db::table::kConfig);
+                REQUIRE(config.empty());
+            }
+
+            SECTION("With genesis block") {
+                auto source_data{silkworm::read_genesis_data(silkworm::kMainnetConfig.chain_id)};
+                auto genesis_json = nlohmann::json::parse(source_data, nullptr, /*allow_exceptions=*/false);
+                REQUIRE(db::initialize_genesis(txn, genesis_json, /*allow_exceptions=*/false));
+                context.commit_and_renew_txn();
+                CHECK(db::read_chain_config(txn) == silkworm::kMainnetConfig);
+
+                // Now update with sepolia chain config
+                // Yes it should not happen and is wrong - but only needed to test a new
+                db::update_chain_config(txn, silkworm::kSepoliaConfig);
+                REQUIRE(db::read_chain_config(txn) == silkworm::kSepoliaConfig);
             }
         }
     }

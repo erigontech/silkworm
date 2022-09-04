@@ -1,5 +1,5 @@
 /*
-   Copyright 2021-2022 The Silkworm Authors
+   Copyright 2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -25,8 +25,10 @@
 namespace silkworm {
 
 static const std::vector<std::pair<std::string, const ChainConfig*>> kKnownChainConfigs{
-    {kMainnetIdentity.name, &kMainnetConfig}, {kRopstenIdentity.name, &kRopstenConfig},
-    {kRinkebyIdentity.name, &kRinkebyConfig}, {kGoerliIdentity.name, &kGoerliConfig},
+    {kMainnetIdentity.name, &kMainnetConfig},
+    {kRopstenIdentity.name, &kRopstenConfig},
+    {kRinkebyIdentity.name, &kRinkebyConfig},
+    {kGoerliIdentity.name, &kGoerliConfig},
     {kSepoliaIdentity.name, &kSepoliaConfig},
 };
 
@@ -146,26 +148,28 @@ void ChainConfig::set_revision_block(evmc_revision rev, std::optional<uint64_t> 
 
 std::ostream& operator<<(std::ostream& out, const ChainConfig& obj) { return out << obj.to_json(); }
 
-const ChainConfig* lookup_chain_config(const uint64_t identifier) noexcept {
-    auto it{as_range::find_if(kKnownChainConfigs,
-                              [&identifier](const std::pair<std::string, const ChainConfig*>& x) -> bool {
-                                  return x.second->chain_id == identifier;
-                              })};
+std::optional<std::pair<const std::string, const ChainConfig*>> lookup_known_chain(const uint64_t chain_id) noexcept {
+    auto it{
+        as_range::find_if(kKnownChainConfigs, [&chain_id](const std::pair<std::string, const ChainConfig*>& x) -> bool {
+            return x.second->chain_id == chain_id;
+        })};
+
     if (it == kKnownChainConfigs.end()) {
-        return nullptr;
+        return std::nullopt;
     }
-    return it->second;
+    return std::make_pair(it->first, it->second);
 }
 
-const ChainConfig* lookup_chain_config(const std::string_view identifier) noexcept {
-    auto it{as_range::find_if(kKnownChainConfigs,
-                              [&identifier](const std::pair<std::string, const ChainConfig*>& x) -> bool {
-                                  return iequals(x.first, identifier);
-                              })};
+std::optional<std::pair<const std::string, const ChainConfig*>> lookup_known_chain(const std::string_view identifier) noexcept {
+    auto it{
+        as_range::find_if(kKnownChainConfigs, [&identifier](const std::pair<std::string, const ChainConfig*>& x) -> bool {
+            return iequals(x.first, identifier);
+        })};
+
     if (it == kKnownChainConfigs.end()) {
-        return nullptr;
+        return std::nullopt;
     }
-    return it->second;
+    return std::make_pair(it->first, it->second);
 }
 
 std::map<std::string, uint64_t> get_known_chains_map() noexcept {

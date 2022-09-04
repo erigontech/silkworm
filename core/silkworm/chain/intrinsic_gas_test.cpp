@@ -1,5 +1,5 @@
 /*
-   Copyright 2021 The Silkworm Authors
+   Copyright 2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -33,16 +33,16 @@ TEST_CASE("EIP-2930 intrinsic gas") {
     };
 
     Transaction txn{
-        Transaction::Type::kEip2930,                         // type
-        7,                                                   // nonce
-        30000000000,                                         // max_priority_fee_per_gas
-        30000000000,                                         // max_fee_per_gas
-        5748100,                                             // gas_limit
-        0x811a752c8cd697e3cb27279c330ed1ada745a8d7_address,  // to
-        2 * kEther,                                          // value
-        {},                                                  // data
-        false,                                               // odd_y_parity
-        5,                                                   // chain_id
+        Transaction::Type::kEip2930,                                                                             // type
+        7,                                                                                                       // nonce
+        30000000000,                                                                                             // max_priority_fee_per_gas
+        30000000000,                                                                                             // max_fee_per_gas
+        5748100,                                                                                                 // gas_limit
+        0x811a752c8cd697e3cb27279c330ed1ada745a8d7_address,                                                      // to
+        2 * kEther,                                                                                              // value
+        {},                                                                                                      // data
+        false,                                                                                                   // odd_y_parity
+        5,                                                                                                       // chain_id
         intx::from_string<intx::uint256>("0x36b241b061a36a32ab7fe86c7aa9eb592dd59018cd0443adc0903590c16b02b0"),  // r
         intx::from_string<intx::uint256>("0x5edcc541b4741c5cc6dd347c5ed9577ef293a62787b4510465fadbfe39ee4094"),  // s
         access_list,

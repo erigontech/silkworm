@@ -1,17 +1,17 @@
 /*
-    Copyright 2021 The Silkworm Authors
+   Copyright 2022 The Silkworm Authors
 
-    Licensed under the Apache License, Version 2.0 (the "License");
-    you may not use this file except in compliance with the License.
-    You may obtain a copy of the License at
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
 
-        http://www.apache.org/licenses/LICENSE-2.0
+       http://www.apache.org/licenses/LICENSE-2.0
 
-    Unless required by applicable law or agreed to in writing, software
-    distributed under the License is distributed on an "AS IS" BASIS,
-    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-    See the License for the specific language governing permissions and
-    limitations under the License.
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
 */
 
 #include "sync_loop.hpp"
@@ -21,6 +21,7 @@
 #include <silkworm/stagedsync/stage_blockhashes.hpp>
 #include <silkworm/stagedsync/stage_execution.hpp>
 #include <silkworm/stagedsync/stage_hashstate.hpp>
+#include <silkworm/stagedsync/stage_interhashes.hpp>
 #include <silkworm/stagedsync/stage_senders.hpp>
 
 namespace silkworm::stagedsync {
@@ -30,6 +31,7 @@ void SyncLoop::load_stages() {
     stages_.push_back(std::make_unique<stagedsync::Senders>(node_settings_));
     stages_.push_back(std::make_unique<stagedsync::Execution>(node_settings_));
     stages_.push_back(std::make_unique<stagedsync::HashState>(node_settings_));
+    stages_.push_back(std::make_unique<stagedsync::InterHashes>(node_settings_));
 }
 
 void SyncLoop::stop(bool wait) {
@@ -119,8 +121,20 @@ StageResult SyncLoop::run_cycle(db::RWTxn& cycle_txn, Timer& log_timer) {
     StopWatch stages_stop_watch;
     (void)stages_stop_watch.start();
     try {
+        // Force to stop at any particular stage ?
+        // Same as in Erigon
+        const std::string env_stop_before_stage{"STOP_BEFORE_STAGE"};
+        const char* stop_stage_name{std::getenv(env_stop_before_stage.c_str())};
+
         for (; current_stage_ < stages_.size() && !is_stopping(); ++current_stage_) {
             auto& stage{stages_.at(current_stage_)};
+
+            if (stop_stage_name && !iequals(stop_stage_name, stage->name())) {
+                stop();
+                log::Warning("Stopping ...", {"STOP_BEFORE_STAGE", stop_stage_name, "hit", "true"});
+                return StageResult::kSuccess;
+            }
+
             log_timer.reset();  // Resets the interval for next log line from now
             const auto stage_result{stage->forward(cycle_txn)};
             if (stage_result != StageResult::kSuccess) {
@@ -132,7 +146,9 @@ StageResult SyncLoop::run_cycle(db::RWTxn& cycle_txn, Timer& log_timer) {
                 log::Info(get_log_prefix(), {"done", StopWatch::format(stage_duration)});
             }
         }
+
         return is_stopping() ? StageResult::kAborted : StageResult::kSuccess;
+
     } catch (const std::exception& ex) {
         log::Error(get_log_prefix(), {"exception", std::string(ex.what())});
         return StageResult::kUnexpectedError;

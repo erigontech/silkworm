@@ -20,20 +20,28 @@
 
 namespace silkworm {
 
-// todo: use IStage from stagedsync module when it will have support for returning unwind_point and bad_block
+// todo: replace this class with IStage as soon as it will support the shared status
 class Stage {
   public:
-    struct Result {
-        enum Status { Unspecified, Done, DoneAndUpdated, UnwindNeeded, SkipTx, Error } status;
+    enum Result { Unspecified, Done, DoneAndUpdated, UnwindNeeded, SkipTx, Error };
+
+    struct Status {
+        bool first_sync{false};
         std::optional<BlockNum> current_point;
         std::optional<BlockNum> unwind_point;
         std::optional<Hash> bad_block;
     };
 
+    Stage(Status& s): shared_status_(s) {}
+    Stage(const Stage& s): shared_status_(s.shared_status_) {}
+    
     virtual ~Stage() = default;
+    
+    virtual Result forward(db::RWTxn&) = 0;
+    virtual Result unwind(db::RWTxn&, BlockNum new_height) = 0;
 
-    virtual Result forward(bool first_sync) = 0;
-    virtual Result unwind_to(BlockNum new_height, Hash bad_block) = 0;
+  protected:
+    Status& shared_status_;
 };
 
 }  // namespace silkworm

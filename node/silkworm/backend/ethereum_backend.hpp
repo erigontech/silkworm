@@ -22,9 +22,9 @@
 #include <vector>
 
 #include <silkworm/backend/state_change_collection.hpp>
+#include <silkworm/chain/config.hpp>
 #include <silkworm/common/base.hpp>
 #include <silkworm/common/settings.hpp>
-#include <silkworm/chain/config.hpp>
 
 namespace silkworm {
 
@@ -65,4 +65,4 @@ class EthereumBackEnd {
     std::unique_ptr<StateChangeCollection> state_change_collection_;
 };
 
-} // namespace silkworm
+}  // namespace silkworm

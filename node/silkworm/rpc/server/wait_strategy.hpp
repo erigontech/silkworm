@@ -44,7 +44,7 @@
 
 namespace silkworm::rpc {
 
-using namespace std::chrono_literals; // NOLINT(build/namespaces)
+using namespace std::chrono_literals;  // NOLINT(build/namespaces)
 
 class SleepingWaitStrategy {
   public:

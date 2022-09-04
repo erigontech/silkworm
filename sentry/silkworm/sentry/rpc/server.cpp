@@ -1,20 +1,21 @@
 /*
-Copyright 2020-2022 The Silkworm Authors
+   Copyright 2022 The Silkworm Authors
 
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
 
-    http://www.apache.org/licenses/LICENSE-2.0
+       http://www.apache.org/licenses/LICENSE-2.0
 
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
 */
 
 #include "server.hpp"
+
 #include <silkworm/common/log.hpp>
 #include <silkworm/rpc/server/server_config.hpp>
 
@@ -23,15 +24,14 @@ namespace silkworm::sentry::rpc {
 using namespace silkworm::log;
 
 Server::Server(const silkworm::rpc::ServerConfig& config)
-    : silkworm::rpc::Server(config)
-{
+    : silkworm::rpc::Server(config) {
     std::size_t num_contexts = config.num_contexts();
     for (std::size_t i = 0; i < num_contexts; i++) {
         services_.push_back(std::make_unique<Service>());
     }
     log::Info() << "Server created"
-        << " listening on: " << config.address_uri() << ";"
-        << " contexts: " << num_contexts;
+                << " listening on: " << config.address_uri() << ";"
+                << " contexts: " << num_contexts;
 }
 
 // Register the gRPC services: they must exist for the lifetime of the server built by builder.

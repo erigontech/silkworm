@@ -88,4 +88,4 @@ TEST_CASE("dump_mdbx_result", "[silkworm][rpc][kv_calls]") {
     ro_txn.abort();
 }
 
-} // namespace silkworm::rpc
+}  // namespace silkworm::rpc

@@ -1,5 +1,5 @@
 /*
-   Copyright 2021-2022 The Silkworm Authors
+   Copyright 2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -45,25 +45,48 @@ namespace detail {
     };
 }  // namespace detail
 
-//! \brief This class manages mdbx transactions across stages.
-//! It either creates new mdbx transaction as need be or uses an externally provided transaction.
-//! The external transaction mode is handy for running several stages on a handful of blocks atomically.
-class RWTxn {
+//! \brief This class wraps a read only transaction.
+//! It is used to make clear in the methods signature that the method does not require read-write access.
+//! It can either create a transaction from an environment or manage an externally created one.
+class ROTxn {
   public:
     // This variant creates new mdbx transactions as need be.
-    explicit RWTxn(mdbx::env& env) : env_{&env} { managed_txn_ = env_->start_write(); }
+    explicit ROTxn(mdbx::env& env) : managed_txn_{env.start_read()} {}
+    // This variant is just a wrapper over an external transaction.
+    explicit ROTxn(mdbx::txn& external_txn) : external_txn_{&external_txn} {}
+    // Move construction
+    ROTxn(ROTxn&& source) noexcept : external_txn_(source.external_txn_), managed_txn_(std::move(source.managed_txn_)) {}
+
+    // Access to the underling raw mdbx transaction
+    mdbx::txn& operator*() { return external_txn_ ? *external_txn_ : managed_txn_; }
+    mdbx::txn* operator->() { return external_txn_ ? external_txn_ : &managed_txn_; }
+    operator mdbx::txn&() { return external_txn_ ? *external_txn_ : managed_txn_; }
+
+  protected:
+    ROTxn(mdbx::txn_managed&& source) : managed_txn_{std::move(source)} {}
+
+    mdbx::txn* external_txn_{nullptr};
+    mdbx::txn_managed managed_txn_;
+};
+
+//! \brief This class wraps read-write transactions, it is used to manages mdbx transactions across stages.
+//! It either creates new mdbx transaction as need be or uses an externally provided transaction.
+//! The external transaction mode is handy for running several stages on a handful of blocks atomically.
+class RWTxn : public ROTxn {
+  public:
+    // This variant creates new mdbx transactions as need be.
+    explicit RWTxn(mdbx::env& env) : ROTxn{env.start_write()} {}
 
     // This variant is just a wrapper over an external transaction.
     // Useful in staged sync for running several stages on a handful of blocks atomically.
     // The code that invokes the stages is responsible for committing the external txn later on.
-    explicit RWTxn(mdbx::txn& external_txn) : external_txn_{&external_txn} {}
+    explicit RWTxn(mdbx::txn& external_txn) : ROTxn{external_txn} {}
 
-    // Not copyable nor movable
+    // Not copyable
     RWTxn(const RWTxn&) = delete;
     RWTxn& operator=(const RWTxn&) = delete;
-
-    mdbx::txn& operator*() { return external_txn_ ? *external_txn_ : managed_txn_; }
-    mdbx::txn* operator->() { return external_txn_ ? external_txn_ : &managed_txn_; }
+    // Only movable
+    RWTxn(RWTxn&& source) noexcept : ROTxn(std::move(source)) {}
 
     void commit(const bool renew = true) {
         /*
@@ -79,17 +102,38 @@ class RWTxn {
          * */
 
         if (external_txn_ == nullptr) {
+            mdbx::env env = managed_txn_.env();
             managed_txn_.commit();
             if (renew) {
-                managed_txn_ = env_->start_write();  // renew transaction
+                managed_txn_ = env.start_write();  // renew transaction
             }
         }
     }
 
-  private:
-    mdbx::txn* external_txn_{nullptr};
-    mdbx::env* env_{nullptr};
-    mdbx::txn_managed managed_txn_;
+    void abort() { managed_txn_.abort(); }
+};
+
+//! \brief This class create ROTxn(s) on demand, it is used to enforce in some method signatures the type of db access
+//!
+class ROAccess {
+  public:
+    ROAccess(mdbx::env& env) : env_{env} {}
+    ROAccess(const ROAccess& copy) : env_{copy.env_} {}
+
+    ROTxn start_ro_tx() { return ROTxn(env_); }
+
+  protected:
+    mdbx::env& env_;
+};
+
+//! \brief This class create RWTxn(s) on demand, it is used to enforce in some method signatures the type of db access
+//!
+class RWAccess : public ROAccess {
+  public:
+    RWAccess(mdbx::env& env) : ROAccess{env} {}
+    RWAccess(const RWAccess& copy) : ROAccess{copy} {}
+
+    RWTxn start_rw_tx() { return RWTxn(env_); }
 };
 
 //! \brief Pointer to a processing function invoked by cursor_for_each & cursor_for_count on each record
@@ -156,9 +200,9 @@ class Cursor : public ::mdbx::cursor {
 
     //! \brief (re)uses current cursor binding it to provided transaction and map
     void bind(::mdbx::txn& tx, const MapConfig& config);
-    
+
     //! \brief (re)uses current cursor binding it to provided transaction and map
-    void bind(RWTxn& tx, const MapConfig& config) { bind(*tx, config); }
+    void bind(RWTxn& txn, const MapConfig& config) { bind(*txn, config); }
 
     //! \brief Closes cursor causing de-allocation of MDBX_cursor handle
     //! \remarks After this call the cursor is not reusable and the handle does not return to the cache
@@ -166,6 +210,12 @@ class Cursor : public ::mdbx::cursor {
 
     //! \brief Returns stat info of underlying dbi
     [[nodiscard]] MDBX_stat get_map_stat() const;
+
+    //! \brief Returns the size of the underlying table
+    [[nodiscard]] size_t size() const;
+
+    //! \brief Returns whether the underlying table is empty
+    [[nodiscard]] bool empty() const;
 
     //! \brief Exposes handles cache
     static const ObjectPool<MDBX_cursor, detail::cursor_handle_deleter>& handles_cache() { return handles_pool_; }
@@ -195,7 +245,10 @@ static inline std::filesystem::path get_lockfile_path(const std::filesystem::pat
 }
 
 //! \brief Defines the direction of cursor while looping by cursor_for_each or cursor_for_count
-enum class CursorMoveDirection { Forward, Reverse };
+enum class CursorMoveDirection {
+    Forward,
+    Reverse
+};
 
 //! \brief Executes a function on each record reachable by the provided cursor
 //! \param [in] cursor : A reference to a cursor opened on a map

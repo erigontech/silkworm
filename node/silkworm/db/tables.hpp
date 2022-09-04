@@ -1,5 +1,5 @@
 /*
-   Copyright 2020-2022 The Silkworm Authors
+   Copyright 2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -110,7 +110,7 @@ inline constexpr db::MapConfig kBlockTransactions{"BlockTransaction"};
 //! \remarks This table stores the same values for PlainState (Account record type) but with hashed key
 //! \struct
 //! \verbatim
-//!   key   : account address hash (20 bytes)
+//!   key   : account address hash (32 bytes)
 //!   value : account encoded for storage
 //! \endverbatim
 inline constexpr db::MapConfig kHashedAccounts{"HashedAccount"};

@@ -1,5 +1,5 @@
 #[[
-   Copyright 2020-2021 The Silkworm Authors
+   Copyright 2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -24,6 +24,7 @@ set(CMAKE_CXX_VISIBILITY_PRESET hidden)
 set(CMAKE_VISIBILITY_INLINES_HIDDEN YES)
 
 cmake_policy(SET CMP0063 NEW)
+cmake_policy(SET CMP0074 NEW)
 
 if(CMAKE_HOST_SYSTEM_PROCESSOR STREQUAL "arm64")
   set(CMAKE_OSX_ARCHITECTURES "arm64" CACHE STRING "")

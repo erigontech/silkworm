@@ -1,5 +1,5 @@
 /*
-   Copyright 2020-2021 The Silkworm Authors
+   Copyright 2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -14,16 +14,16 @@
    limitations under the License.
 */
 
-#include "hash_builder.hpp"
-
-#include <algorithm>
 #include <iterator>
+#include <utility>
 
 #include <catch2/catch.hpp>
 #include <ethash/keccak.hpp>
 
 #include <silkworm/common/util.hpp>
 #include <silkworm/rlp/encode.hpp>
+#include <silkworm/trie/hash_builder.hpp>
+#include <silkworm/trie/nibbles.hpp>
 
 namespace silkworm::trie {
 
@@ -83,6 +83,10 @@ TEST_CASE("HashBuilder1") {
     const ethash::hash256 hash{keccak256(extension_rlp)};
     const auto root_hash{hb.root_hash()};
     CHECK(to_hex(root_hash) == to_hex(hash.bytes));
+
+    // Reset hash builder
+    hb.reset();
+    REQUIRE(hb.root_hash() == kEmptyRoot);
 }
 
 TEST_CASE("HashBuilder2") {
@@ -136,20 +140,63 @@ TEST_CASE("HashBuilder2") {
     CHECK(to_hex(hb2.root_hash()) == to_hex(hash1.bytes));
 }
 
+/*
+This test is temporarily commented out while searching for the solution.
+Note ! HashBuilder should create at least a root node for every tree but apparently
+when all leaves begin all with the same nibble(s) - very rare - this does not happen.
+The absence of a root node however does NOT break stage IntermediateHashes as trie cursor, when
+a root node is not found, instructs higher loop to rebuild the entire tree. I have encountered
+this edge case only on one contract (below is real data - hashed unfortunately)
+
+TEST_CASE("HashBuilder3") {
+    Bytes key_0{
+        *from_hex("0400000d0e0307060d0404010c0c000c020f04000d080e04050407090003060e070b09050a0e080e0c0a0d0d080a0405020b"
+                  "03050a070b090a02080405040300")};
+    Bytes key_1{
+        *from_hex("0400050708070f0a01020a0802030e000f020b070603010c0c04010b030b0a080802080b030302010c0a0801010101010f0a"
+                  "07050c0d030a0a030b0b050a0c0e")};
+    Bytes key_2{
+        *from_hex("040b000a0f010b000d0305050506090a03050705060f0a000c020e0502020405040d020a0f0d0f0807000c010e0501010d0a"
+                  "06040e0e0d0c0f000f0b0f04000f")};
+    Bytes val_0{*from_hex("0360051c896000")};
+    Bytes val_1{*from_hex("038d7ea4c68000")};
+    Bytes val_2{*from_hex("2d79883d2000")};
+
+    evmc::bytes32 expected_root{
+        to_bytes32(*from_hex("0xa6952477996e4881392f2f6eb688fc541bebd1c7ab794f295da484d38d363be9"))};
+    std::vector<std::pair<Bytes, Bytes>> entries{};
+
+    HashBuilder hb;
+    hb.node_collector = [&entries](ByteView nibbled_key, const trie::Node& node) {
+        Bytes key{nibbled_key};
+        Bytes value{node.state_mask() ? node.encode_for_storage() : Bytes()};
+        entries.emplace_back(key, value);
+    };
+    Bytes rlp_buffer{};
+
+    rlp::encode(rlp_buffer, val_0);
+    hb.add_leaf(key_0, rlp_buffer);
+    rlp_buffer.clear();
+    rlp::encode(rlp_buffer, val_1);
+    hb.add_leaf(key_1, rlp_buffer);
+    rlp_buffer.clear();
+    rlp::encode(rlp_buffer, val_2);
+    hb.add_leaf(key_2, rlp_buffer);
+    rlp_buffer.clear();
+
+    auto computed_root{hb.root_hash()};
+    REQUIRE(computed_root == expected_root);
+    REQUIRE(entries.size() == 1);
+    REQUIRE(entries[0].first.empty());
+
+}
+*/
+
 TEST_CASE("Known root hash") {
     static constexpr auto root_hash{0x9fa752911d55c3a1246133fe280785afbdba41f357e9cae1131d5f5b0a078b9c_bytes32};
     HashBuilder hb;
     hb.add_branch_node({}, root_hash);
     CHECK(to_hex(hb.root_hash()) == to_hex(root_hash.bytes));
-}
-
-TEST_CASE("pack_nibbles") {
-    CHECK(pack_nibbles({}).empty());
-    CHECK(to_hex(pack_nibbles(*from_hex("0a"))) == "a0");
-    CHECK(to_hex(pack_nibbles(*from_hex("0a0b"))) == "ab");
-    CHECK(to_hex(pack_nibbles(*from_hex("0a0b02"))) == "ab20");
-    CHECK(to_hex(pack_nibbles(*from_hex("0a0b0200"))) == "ab20");
-    CHECK(to_hex(pack_nibbles(*from_hex("0a0b0207"))) == "ab27");
 }
 
 }  // namespace silkworm::trie

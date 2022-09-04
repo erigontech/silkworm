@@ -1,5 +1,5 @@
 /*
-   Copyright 2021-2022 The Silkworm Authors
+   Copyright 2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -38,4 +38,4 @@ class BlockHashes final : public IStage {
     BlockNum reached_block_num_{0};
 };
 
-} // namespace silkworm::stagedsync
+}  // namespace silkworm::stagedsync

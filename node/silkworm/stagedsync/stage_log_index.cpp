@@ -1,5 +1,5 @@
 /*
-   Copyright 2021-2022 The Silkworm Authors
+   Copyright 2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -49,7 +49,7 @@ static void loader_function(const etl::Entry& entry, mdbx::cursor& target_table,
         // make chunk index
         Bytes chunk_index(entry.key.size() + 4, '\0');
         std::memcpy(&chunk_index[0], &entry.key[0], entry.key.size());
-        uint64_t suffix{bm.cardinality() == 0 ? UINT32_MAX : current_chunk.maximum()};
+        const uint32_t suffix{bm.cardinality() == 0 ? UINT32_MAX : current_chunk.maximum()};
         endian::store_big_u32(&chunk_index[entry.key.size()], suffix);
         Bytes current_chunk_bytes(current_chunk.getSizeInBytes(), '\0');
         current_chunk.write(byte_ptr_cast(&current_chunk_bytes[0]));
@@ -97,7 +97,7 @@ StageResult stage_log_index(db::RWTxn& txn, const std::filesystem::path& etl_pat
         // Decode CBOR and distribute it to the 2 bitmaps
         block_number = endian::load_big_u64(static_cast<uint8_t*>(log_data.key.data()));
         current_listener.set_block_number(block_number);
-        cbor::input input(log_data.value.data(), log_data.value.length());
+        cbor::input input(log_data.value.data(), static_cast<int>(log_data.value.length()));
         cbor::decoder decoder(input, current_listener);
         decoder.run();
         // Flushes

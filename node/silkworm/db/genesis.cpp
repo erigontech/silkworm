@@ -1,17 +1,17 @@
 /*
-    Copyright 2021-2022 The Silkworm Authors
+   Copyright 2022 The Silkworm Authors
 
-    Licensed under the Apache License, Version 2.0 (the "License");
-    you may not use this file except in compliance with the License.
-    You may obtain a copy of the License at
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
 
-        http://www.apache.org/licenses/LICENSE-2.0
+       http://www.apache.org/licenses/LICENSE-2.0
 
-    Unless required by applicable law or agreed to in writing, software
-    distributed under the License is distributed on an "AS IS" BASIS,
-    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-    See the License for the specific language governing permissions and
-    limitations under the License.
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
 */
 
 #include "genesis.hpp"
@@ -19,6 +19,7 @@
 #include <silkworm/chain/genesis.hpp>
 #include <silkworm/state/in_memory_state.hpp>
 #include <silkworm/trie/hash_builder.hpp>
+#include <silkworm/trie/nibbles.hpp>
 
 #include "tables.hpp"
 
@@ -179,7 +180,7 @@ bool initialize_genesis(mdbx::txn& txn, const nlohmann::json& genesis_json, bool
 
         auto block_hash{header.hash()};
         auto block_hash_key{db::block_key(header.number, block_hash.bytes)};
-        db::write_header(txn, header, /*with_header_numbers=*/true);  // Write table::kHeaders and table::kHeaderNumbers
+        db::write_header(txn, header, /*with_header_numbers=*/true);            // Write table::kHeaders and table::kHeaderNumbers
         db::write_canonical_header_hash(txn, block_hash.bytes, header.number);  // Insert header hash as canonical
         db::write_total_difficulty(txn, block_hash_key, header.difficulty);     // Write initial difficulty
 
@@ -194,7 +195,7 @@ bool initialize_genesis(mdbx::txn& txn, const nlohmann::json& genesis_json, bool
         // Write Chain Settings
         auto config_data{genesis_json["config"].dump()};
         db::open_cursor(txn, db::table::kConfig)
-            .upsert(db::to_slice(block_hash.bytes), mdbx::slice{config_data.c_str()});
+            .upsert(db::to_slice(block_hash.bytes), mdbx::slice{config_data.data()});
 
         return true;
 

@@ -1,5 +1,5 @@
 #[[
-   Copyright 2020-2022 The Silkworm Authors
+   Copyright 2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -14,12 +14,14 @@
    limitations under the License.
 ]]
 
-hunter_config(
+include(hunter_cmake_args)
+
+hunter_cmake_args(
   abseil
-  VERSION 20220623.0
-  URL https://github.com/abseil/abseil-cpp/archive/20220623.0.tar.gz
-  SHA1 144c2108e1532c642cdb6ca532ee26e91146cf28
-  CMAKE_ARGS ABSL_PROPAGATE_CXX_STD=ON
+  CMAKE_ARGS
+        ABSL_PROPAGATE_CXX_STD=ON
+        ABSL_ENABLE_INSTALL=OFF
+        ABSL_RUN_TESTS=OFF
 )
 
 hunter_config(

@@ -26,9 +26,9 @@ BackEndKvService::BackEndKvService(const EthereumBackEnd& backend)
 }
 
 BackEndKvServer::BackEndKvServer(const ServerConfig& srv_config, const EthereumBackEnd& backend)
-: Server(srv_config), backend_(backend) {
+    : Server(srv_config), backend_(backend) {
     backend_kv_services_.reserve(srv_config.num_contexts());
-    for (std::size_t i{0}; i<srv_config.num_contexts(); i++) {
+    for (std::size_t i{0}; i < srv_config.num_contexts(); i++) {
         backend_kv_services_.emplace_back(std::make_unique<BackEndKvService>(backend));
     }
     SILK_INFO << "BackEndKvServer created listening on: " << srv_config.address_uri();
@@ -61,4 +61,4 @@ void BackEndKvServer::register_request_calls() {
     }
 }
 
-} // namespace silkworm::rpc
+}  // namespace silkworm::rpc

@@ -1,5 +1,5 @@
 /*
-   Copyright 2021-2022 The Silkworm Authors
+   Copyright 2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -15,14 +15,15 @@
 */
 #pragma once
 
-#include "message.hpp"
 #include <silkworm/downloader/sentry_client.hpp>
+
+#include "message.hpp"
 
 namespace silkworm {
 
 class OutboundMessage : public Message {
   public:
-    void execute(Db::ReadOnlyAccess, HeaderChain&, BodySequence&, SentryClient&) override = 0;
+    void execute(db::ROAccess, HeaderChain&, BodySequence&, SentryClient&) override = 0;
 
     virtual std::string content() const = 0;
 };

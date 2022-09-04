@@ -1,5 +1,5 @@
 /*
-   Copyright 2021-2022 The Silkworm Authors
+   Copyright 2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -30,7 +30,7 @@ class InboundBlockBodies : public InboundMessage {
     std::string content() const override;
     uint64_t reqId() const override;
 
-    void execute(Db::ReadOnlyAccess db, HeaderChain&, BodySequence&, SentryClient&) override;
+    void execute(db::ROAccess db, HeaderChain&, BodySequence&, SentryClient&) override;
 
   private:
     PeerId peerId_;

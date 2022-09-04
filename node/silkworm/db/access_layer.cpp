@@ -1,5 +1,5 @@
 /*
-   Copyright 2020-2022 The Silkworm Authors
+   Copyright 2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 #include "access_layer.hpp"
 
 #include <silkworm/common/assert.hpp>
+#include <silkworm/common/cast.hpp>
 #include <silkworm/common/endian.hpp>
 
 #include "bitmap.hpp"
@@ -60,6 +61,10 @@ void write_schema_version(mdbx::txn& txn, const VersionBase& schema_version) {
     src.upsert(mdbx::slice{kDbSchemaVersionKey}, to_slice(value));
 }
 
+std::optional<BlockHeader> read_header(mdbx::txn& txn, BlockNum block_number, const evmc::bytes32& hash) {
+    return read_header(txn, block_number, hash.bytes);
+}
+
 std::optional<BlockHeader> read_header(mdbx::txn& txn, BlockNum block_number, const uint8_t (&hash)[kHashLength]) {
     auto key{block_key(block_number, hash)};
     return read_header(txn, key);
@@ -85,23 +90,68 @@ Bytes read_header_raw(mdbx::txn& txn, ByteView key) {
     return Bytes{from_slice(data.value)};
 }
 
+std::optional<BlockHeader> read_header(mdbx::txn& txn, const evmc::bytes32& hash) {
+    auto block_num = read_block_number(txn, hash);
+    if (!block_num) {
+        return std::nullopt;
+    }
+    return read_header(txn, *block_num, hash.bytes);
+}
+
 void write_header(mdbx::txn& txn, const BlockHeader& header, bool with_header_numbers) {
     Bytes value{};
     rlp::encode(value, header);
-    auto header_hash{header.hash()};
+    auto header_hash = bit_cast<evmc_bytes32>(keccak256(value));  // avoid header.hash() because it re-does rlp encoding
     auto key{db::block_key(header.number, header_hash.bytes)};
+    auto skey = db::to_slice(key);
+    auto svalue = db::to_slice(value);
 
     Cursor target(txn, table::kHeaders);
-    target.upsert(to_slice(key), to_slice(value));
+    target.upsert(skey, svalue);
     if (with_header_numbers) {
         write_header_number(txn, header_hash.bytes, header.number);
     }
+}
+
+std::optional<ByteView> read_rlp_encoded_header(mdbx::txn& txn, BlockNum bn, const evmc::bytes32& hash) {
+    Cursor header_table(txn, db::table::kHeaders);
+    auto key = db::block_key(bn, hash.bytes);
+    auto data = header_table.find(db::to_slice(key), /*throw_notfound*/ false);
+    if (!data) return std::nullopt;
+    return db::from_slice(data.value);
+}
+
+std::optional<BlockHeader> read_canonical_header(mdbx::txn& txn, BlockNum b) {  // also known as read-header-by-number
+    std::optional<evmc::bytes32> h = read_canonical_hash(txn, b);
+    if (!h) {
+        return std::nullopt;  // not found
+    }
+    return read_header(txn, b, h->bytes);
+}
+
+static Bytes header_numbers_key(evmc::bytes32 hash) {
+    return {hash.bytes, 32};
+}
+
+std::optional<BlockNum> read_block_number(mdbx::txn& txn, const evmc::bytes32& hash) {
+    Cursor blockhashes_table(txn, db::table::kHeaderNumbers);
+    auto key = header_numbers_key(hash);
+    auto data = blockhashes_table.find(db::to_slice(key), /*throw_notfound*/ false);
+    if (!data) {
+        return std::nullopt;
+    }
+    auto block_num = endian::load_big_u64(static_cast<const unsigned char*>(data.value.data()));
+    return block_num;
 }
 
 void write_header_number(mdbx::txn& txn, const uint8_t (&hash)[kHashLength], const BlockNum number) {
     Cursor target(txn, table::kHeaderNumbers);
     auto value{db::block_key(number)};
     target.upsert({hash, kHashLength}, to_slice(value));
+}
+
+std::optional<intx::uint256> read_total_difficulty(mdbx::txn& txn, BlockNum b, const evmc::bytes32& hash) {
+    return db::read_total_difficulty(txn, b, hash.bytes);
 }
 
 std::optional<intx::uint256> read_total_difficulty(mdbx::txn& txn, BlockNum block_number,
@@ -135,6 +185,24 @@ void write_total_difficulty(mdbx::txn& txn, BlockNum block_number, const uint8_t
                             const intx::uint256& total_difficulty) {
     auto key{block_key(block_number, hash)};
     write_total_difficulty(txn, key, total_difficulty);
+}
+
+void write_total_difficulty(mdbx::txn& txn, BlockNum block_number, const evmc::bytes32& hash,
+                            const intx::uint256& total_difficulty) {
+    auto key{block_key(block_number, hash.bytes)};
+    write_total_difficulty(txn, key, total_difficulty);
+}
+
+std::optional<evmc::bytes32> read_canonical_header_hash(mdbx::txn& txn, BlockNum number) {
+    Cursor source(txn, table::kCanonicalHashes);
+    auto key{db::block_key(number)};
+    auto data{source.find(to_slice(key), /*throw_notfound=*/false)};
+    if (!data) {
+        return std::nullopt;
+    }
+    evmc::bytes32 ret{};
+    std::memcpy(ret.bytes, data.value.data(), kHashLength);
+    return ret;
 }
 
 void write_canonical_header(mdbx::txn& txn, const BlockHeader& header) {
@@ -216,6 +284,10 @@ bool read_block(mdbx::txn& txn, std::span<const uint8_t, kHashLength> hash, Bloc
     return read_body(txn, key, read_senders, block);
 }
 
+bool read_body(mdbx::txn& txn, const evmc::bytes32& h, BlockNum bn, BlockBody& body) {
+    return db::read_body(txn, bn, h.bytes, /*read_senders=*/false, body);
+}
+
 bool read_body(mdbx::txn& txn, BlockNum block_number, const uint8_t (&hash)[kHashLength], bool read_senders,
                BlockBody& out) {
     auto key{block_key(block_number, hash)};
@@ -239,10 +311,26 @@ bool read_body(mdbx::txn& txn, const Bytes& key, bool read_senders, BlockBody& o
     return true;
 }
 
+bool read_body(mdbx::txn& txn, const evmc::bytes32& h, BlockBody& body) {
+    auto block_num = read_block_number(txn, h);
+    if (!block_num) {
+        return false;
+    }
+    return db::read_body(txn, *block_num, h.bytes, /*read_senders=*/false, body);
+}
+
 bool has_body(mdbx::txn& txn, BlockNum block_number, const uint8_t (&hash)[kHashLength]) {
     auto key{block_key(block_number, hash)};
     Cursor src(txn, table::kBlockBodies);
     return src.find(to_slice(key), false);
+}
+
+bool has_body(mdbx::txn& txn, BlockNum block_number, const evmc::bytes32& hash) {
+    return db::has_body(txn, block_number, hash.bytes);
+}
+
+void write_body(mdbx::txn& txn, const BlockBody& body, const evmc::bytes32& hash, BlockNum bn) {
+    write_body(txn, body, hash.bytes, bn);
 }
 
 void write_body(mdbx::txn& txn, const BlockBody& body, const uint8_t (&hash)[kHashLength], const BlockNum number) {
@@ -502,20 +590,69 @@ std::optional<ChainConfig> read_chain_config(mdbx::txn& txn) {
     return ChainConfig::from_json(json);
 }
 
+void update_chain_config(mdbx::txn& txn, const ChainConfig& config) {
+    auto genesis_hash{read_canonical_header_hash(txn, 0)};
+    if (!genesis_hash.has_value()) {
+        return;
+    }
+    Cursor cursor(txn, db::table::kConfig);
+    auto config_data{config.to_json().dump()};
+    cursor.upsert(db::to_slice(genesis_hash->bytes), mdbx::slice(config_data.data()));
+}
+
+static Bytes head_header_key() {
+    std::string table_name = db::table::kHeadHeader.name;
+    Bytes key{table_name.begin(), table_name.end()};
+    return key;
+}
+
+void write_head_header_hash(mdbx::txn& txn, const evmc::bytes32& hash) {
+    write_head_header_hash(txn, hash.bytes);
+}
+
 void write_head_header_hash(mdbx::txn& txn, const uint8_t (&hash)[kHashLength]) {
     Cursor target(txn, table::kHeadHeader);
-    mdbx::slice key(db::table::kLastHeaderKey);
-    target.upsert(key, to_slice(hash));
+    Bytes key = head_header_key();
+    auto skey = db::to_slice(key);
+
+    target.upsert(skey, to_slice(hash));
 }
 
 std::optional<evmc::bytes32> read_head_header_hash(mdbx::txn& txn) {
     Cursor src(txn, table::kHeadHeader);
-    mdbx::slice key(db::table::kLastHeaderKey);
-    auto data{src.find(key, /*throw_notfound=*/false)};
-    if (!data || data.value.length() != sizeof(evmc::bytes32)) {
+    Bytes key = head_header_key();
+    auto skey = db::to_slice(key);
+    auto data{src.find(skey, /*throw_notfound=*/false)};
+    if (!data || data.value.length() != kHashLength) {
         return std::nullopt;
     }
     return to_bytes32(from_slice(data.value));
+}
+
+std::optional<evmc::bytes32> read_canonical_hash(mdbx::txn& txn, BlockNum b) {  // throws db exceptions
+    Cursor hashes_table(txn, db::table::kCanonicalHashes);
+    // accessing this table with only b we will get the hash of the canonical block at height b
+    auto key = db::block_key(b);
+    auto data = hashes_table.find(db::to_slice(key), /*throw_notfound*/ false);
+    if (!data) return std::nullopt;  // not found
+    assert(data.value.length() == kHashLength);
+    return to_bytes32(from_slice(data.value));  // copy
+}
+
+void write_canonical_hash(mdbx::txn& txn, BlockNum b, const evmc::bytes32& hash) {
+    Bytes key = db::block_key(b);
+    auto skey = db::to_slice(key);
+    auto svalue = db::to_slice(hash);
+
+    Cursor hashes_table(txn, db::table::kCanonicalHashes);
+    hashes_table.upsert(skey, svalue);
+}
+
+void delete_canonical_hash(mdbx::txn& txn, BlockNum b) {
+    Cursor hashes_table(txn, db::table::kCanonicalHashes);
+    Bytes key = db::block_key(b);
+    auto skey = db::to_slice(key);
+    (void)hashes_table.erase(skey);
 }
 
 uint64_t increment_map_sequence(mdbx::txn& txn, const char* map_name, uint64_t increment) {

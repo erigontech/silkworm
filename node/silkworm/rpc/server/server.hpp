@@ -151,4 +151,4 @@ class Server {
     bool shutdown_{false};
 };
 
-} // namespace silkworm::rpc
+}  // namespace silkworm::rpc

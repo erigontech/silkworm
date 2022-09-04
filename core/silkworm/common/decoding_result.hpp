@@ -33,6 +33,9 @@ enum class [[nodiscard]] DecodingResult{
     kUnsupportedTransactionType,  // EIP-2718
     kInvalidFieldset,
     kUnexpectedEip2718Serialization,
+    kInvalidHashesLength,  // trie::Node decoding
+    kInvalidMasksSubsets,  // trie::Node decoding
+
 };
 
 }  // namespace silkworm

@@ -1,5 +1,5 @@
 /*
-   Copyright 2021-2022 The Silkworm Authors
+   Copyright 2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -23,9 +23,9 @@
 #include <silkworm/consensus/engine.hpp>
 #include <silkworm/downloader/packets/get_block_headers_packet.hpp>
 
-#include "preverified_hashes.hpp"
 #include "chain_elements.hpp"
 #include "header_only_state.hpp"
+#include "preverified_hashes.hpp"
 #include "statistics.hpp"
 
 namespace silkworm {
@@ -60,10 +60,10 @@ class HeaderChain {
     explicit HeaderChain(const ChainIdentity&);
 
     using ConsensusEnginePtr = std::unique_ptr<consensus::IEngine>;
-    explicit HeaderChain(ConsensusEnginePtr); // alternative constructor
+    explicit HeaderChain(ConsensusEnginePtr);  // alternative constructor
 
     // load initial state from db - this must be done at creation time
-    void recover_initial_state(Db::ReadOnlyAccess::Tx&);
+    void recover_initial_state(db::ROTxn&);
 
     // sync current state - this must be done at header forward
     void sync_current_state(BlockNum highest_in_db);
@@ -73,12 +73,12 @@ class HeaderChain {
     BlockNum highest_block_in_db() const;
     BlockNum top_seen_block_height() const;
     void top_seen_block_height(BlockNum);
-    std::pair<BlockNum,BlockNum> anchor_height_range() const;
+    std::pair<BlockNum, BlockNum> anchor_height_range() const;
     size_t pending_links() const;
     size_t anchors() const;
     const Download_Statistics& statistics() const;
 
-        // core functionalities: anchor collection
+    // core functionalities: anchor collection
     // to collect anchor more quickly we do a skeleton request i.e. a request of many headers equally distributed in a
     // given range of block chain that we want to fill
     auto request_skeleton() -> std::optional<GetBlockHeadersPacket66>;
@@ -138,7 +138,12 @@ class HeaderChain {
     BlockNum lowest_anchor_within_range(BlockNum bottom, BlockNum top);
     std::shared_ptr<Anchor> highest_anchor();
 
-    enum VerificationResult { Preverified, Skip, Postpone, Accept };
+    enum VerificationResult {
+        Preverified,
+        Skip,
+        Postpone,
+        Accept
+    };
     VerificationResult verify(const Link& link);
 
     void connect(std::shared_ptr<Link>, Segment::Slice, std::shared_ptr<Anchor>);
@@ -146,15 +151,15 @@ class HeaderChain {
     void extend_up(std::shared_ptr<Link>, Segment::Slice);
     auto new_anchor(Segment::Slice, PeerId) -> RequestMoreHeaders;
 
-    OldestFirstAnchorQueue anchor_queue_;        // Priority queue of anchors used to sequence the header requests
-    LinkMap links_;                              // Links by header hash
-    AnchorMap anchors_;                          // Mapping from parentHash to collection of anchors
-    OldestFirstLinkMap persisted_link_queue_;    // Priority queue of persisted links used to limit their number
-    OldestFirstLinkQueue insert_list_;  // List of non-persisted links that can be inserted (their parent is persisted)
+    OldestFirstAnchorQueue anchor_queue_;      // Priority queue of anchors used to sequence the header requests
+    LinkMap links_;                            // Links by header hash
+    AnchorMap anchors_;                        // Mapping from parentHash to collection of anchors
+    OldestFirstLinkMap persisted_link_queue_;  // Priority queue of persisted links used to limit their number
+    OldestFirstLinkQueue insert_list_;         // List of non-persisted links that can be inserted (their parent is persisted)
     BlockNum highest_in_db_;
     BlockNum top_seen_height_;
     std::set<Hash> bad_headers_;
-    const PreverifiedHashes* preverified_hashes_; // Set of hashes that are known to belong to canonical chain
+    const PreverifiedHashes* preverified_hashes_;  // Set of hashes that are known to belong to canonical chain
     using Ignore = int;
     lru_cache<Hash, Ignore> seen_announces_;
     std::vector<Announce> announces_to_do_;

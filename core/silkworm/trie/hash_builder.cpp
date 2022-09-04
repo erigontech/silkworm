@@ -1,5 +1,5 @@
 /*
-   Copyright 2020-2022 The Silkworm Authors
+   Copyright 2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -16,56 +16,24 @@
 
 #include "hash_builder.hpp"
 
-#include <algorithm>
-#include <bitset>
-#include <cassert>
+#include <bit>
 #include <cstring>
 #include <span>
 
 #include <ethash/keccak.hpp>
 
+#include <silkworm/common/assert.hpp>
 #include <silkworm/common/cast.hpp>
 #include <silkworm/common/util.hpp>
 #include <silkworm/rlp/encode.hpp>
 
 namespace silkworm::trie {
 
-Bytes pack_nibbles(ByteView nibbles) {
-    const size_t n{(nibbles.length() + 1) / 2};
-    Bytes out(n, '\0');
-    if (n == 0) {
-        return out;
-    }
-
-    auto out_it{out.begin()};
-    while (!nibbles.empty()) {
-        *out_it = nibbles[0] << 4;
-        nibbles.remove_prefix(1);
-        if (!nibbles.empty()) {
-            *out_it += nibbles[0];
-            nibbles.remove_prefix(1);
-            std::advance(out_it, 1);
-        }
-    }
-
-    return out;
-}
-
-Bytes unpack_nibbles(ByteView packed) {
-    Bytes out(2 * packed.length(), '\0');
-    auto out_it{out.begin()};
-    for (const auto& b : packed) {
-        *out_it++ = b >> 4;
-        *out_it++ = b & 0xF;
-    }
-    return out;
-}
-
 // See "Specification: Compact encoding of hex sequence with optional terminator"
 // at https://eth.wiki/fundamentals/patricia-tree
 static Bytes encode_path(ByteView nibbles, bool terminating) {
     Bytes res(nibbles.length() / 2 + 1, '\0');
-    const bool odd{nibbles.length() % 2 != 0};
+    const bool odd{static_cast<bool>((nibbles.length() & 1u) != 0)};
 
     res[0] = terminating ? 0x20 : 0x00;
     res[0] += odd ? 0x10 : 0x00;
@@ -73,10 +41,9 @@ static Bytes encode_path(ByteView nibbles, bool terminating) {
     if (odd) {
         res[0] |= nibbles[0];
         nibbles.remove_prefix(1);
-        assert(nibbles.length() % 2 == 0);
     }
 
-    for (auto it{std::next(res.begin(), 1)}; it != res.end(); std::advance(it, 1)) {
+    for (auto it{std::next(res.begin(), 1)}, end{res.end()}; it != end; ++it) {
         *it = (nibbles[0] << 4) + nibbles[1];
         nibbles.remove_prefix(2);
     }
@@ -120,7 +87,7 @@ static Bytes node_ref(ByteView rlp) {
 }
 
 void HashBuilder::add_leaf(Bytes key, ByteView value) {
-    assert(key > key_);
+    SILKWORM_ASSERT(key > key_);
     if (!key_.empty()) {
         gen_struct_step(key_, key);
     }
@@ -129,7 +96,7 @@ void HashBuilder::add_leaf(Bytes key, ByteView value) {
 }
 
 void HashBuilder::add_branch_node(Bytes key, const evmc::bytes32& value, bool is_in_db_trie) {
-    assert(key > key_ || (key_.empty() && key.empty()));
+    SILKWORM_ASSERT(key > key_ || (key_.empty() && key.empty()));
     if (!key_.empty()) {
         gen_struct_step(key_, key);
     } else if (key.empty()) {
@@ -179,7 +146,7 @@ void HashBuilder::gen_struct_step(ByteView current, const ByteView succeeding) {
         const size_t preceding_len{groups_.empty() ? 0 : groups_.size() - 1};
         const size_t common_prefix_len{prefix_length(succeeding, current)};
         const size_t len{std::max(preceding_len, common_prefix_len)};
-        assert(len < current.length());
+        SILKWORM_ASSERT(len < current.length());
 
         // Add the digit immediately following the max common prefix
         const uint8_t extra_digit{current[len]};
@@ -259,15 +226,15 @@ void HashBuilder::gen_struct_step(ByteView current, const ByteView succeeding) {
 
                     std::vector<evmc::bytes32> hashes(child_hashes.size());
                     for (size_t i{0}; i < child_hashes.size(); ++i) {
-                        assert(child_hashes[i].size() == kHashLength + 1);
+                        SILKWORM_ASSERT(child_hashes[i].size() == kHashLength + 1);
                         std::memcpy(hashes[i].bytes, &child_hashes[i][1], kHashLength);
                     }
-                    Node n{groups_[len], tree_masks_[len], hash_masks_[len], hashes};
+                    Node node{groups_[len], tree_masks_[len], hash_masks_[len], hashes};
                     if (len == 0) {
-                        n.set_root_hash(root_hash(/*auto_finalize=*/false));
+                        node.set_root_hash(root_hash(/*auto_finalize=*/false));
                     }
 
-                    node_collector(current.substr(0, len), n);
+                    node_collector(current.substr(0, len), node);
                 }
             }
         }
@@ -290,11 +257,11 @@ void HashBuilder::gen_struct_step(ByteView current, const ByteView succeeding) {
 
 // Takes children from the stack and replaces them with branch node ref.
 std::vector<Bytes> HashBuilder::branch_ref(uint16_t state_mask, uint16_t hash_mask) {
-    assert_subset(hash_mask, state_mask);
+    SILKWORM_ASSERT(is_subset(hash_mask, state_mask));
     std::vector<Bytes> child_hashes;
-    child_hashes.reserve(std::bitset<16>(hash_mask).count());
+    child_hashes.reserve(static_cast<size_t>(std::popcount(hash_mask)));
 
-    const size_t first_child_idx{stack_.size() - std::bitset<16>(state_mask).count()};
+    const size_t first_child_idx{stack_.size() - static_cast<size_t>(std::popcount(state_mask))};
 
     // Length for the nil value added below
     rlp::Header h{/*list=*/true, /*payload_length=*/1};
@@ -328,6 +295,17 @@ std::vector<Bytes> HashBuilder::branch_ref(uint16_t state_mask, uint16_t hash_ma
     stack_.back() = node_ref(rlp_buffer_);
 
     return child_hashes;
+}
+
+void HashBuilder::reset() {
+    key_.clear();
+    value_ = Bytes();
+    is_in_db_trie_ = false;
+    groups_.clear();
+    tree_masks_.clear();
+    hash_masks_.clear();
+    stack_.clear();
+    rlp_buffer_.clear();
 }
 
 }  // namespace silkworm::trie

@@ -19,8 +19,8 @@
 #include <ostream>
 #include <string>
 
-#include <grpcpp/grpcpp.h>
 #include <grpc/support/log.h>
+#include <grpcpp/grpcpp.h>
 
 #include <silkworm/common/base.hpp>
 #include <silkworm/common/log.hpp>
@@ -30,8 +30,8 @@ namespace grpc {
 // operator== overloading for grpc::Status is *NOT* present in gRPC library
 inline bool operator==(const Status& lhs, const Status& rhs) {
     return lhs.error_code() == rhs.error_code() &&
-        lhs.error_message() == rhs.error_message() &&
-        lhs.error_details() == rhs.error_details();
+           lhs.error_message() == rhs.error_message() &&
+           lhs.error_details() == rhs.error_details();
 }
 
 // operator<< overloading for grpc::Status is *NOT* present in gRPC library
@@ -45,7 +45,7 @@ inline std::ostream& operator<<(std::ostream& out, const Status& status) {
     return out;
 }
 
-} // namespace grpc
+}  // namespace grpc
 
 // The default gRPC logging function
 void gpr_default_log(gpr_log_func_args* args);
@@ -66,7 +66,7 @@ static void gpr_silkworm_log(gpr_log_func_args* args) {
         SILK_ERROR << log_message;
     } else if (args->severity == GPR_LOG_SEVERITY_INFO) {
         SILK_INFO << log_message;
-    } else { // args->severity == GPR_LOG_SEVERITY_DEBUG
+    } else {  // args->severity == GPR_LOG_SEVERITY_DEBUG
         SILK_DEBUG << log_message;
     }
 }
@@ -87,4 +87,4 @@ using GrpcNoLogGuard = GrpcLogGuard<gpr_no_log>;
 //! Utility class to map gRPC logging to Silkworm logging for an instance lifetime.
 using Grpc2SilkwormLogGuard = GrpcLogGuard<gpr_silkworm_log>;
 
-} // namespace silkworm::rpc
+}  // namespace silkworm::rpc

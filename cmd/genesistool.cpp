@@ -1,5 +1,5 @@
 /*
-   Copyright 2020-2022 The Silkworm Authors
+   Copyright 2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -29,8 +29,10 @@ void to_byte_array(fs::path& in, fs::path& out) {
     std::pair<std::regex, std::string> replacements[] = {
         {std::regex("\n+"), ""},  // New lines
         {std::regex("  "), " "},  // Double spaces
-        {std::regex(": \""), ":\""}, {std::regex(": \\{"), ":{"},
-        {std::regex(": \\["), ":["}, {std::regex(": ([0-9]{1,}),"), ":$1,"}};
+        {std::regex(": \""), ":\""},
+        {std::regex(": \\{"), ":{"},
+        {std::regex(": \\["), ":["},
+        {std::regex(": ([0-9]{1,}),"), ":$1,"}};
 
     size_t input_size{fs::file_size(in)};
     if (!input_size) {

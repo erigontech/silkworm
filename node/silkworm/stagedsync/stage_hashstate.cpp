@@ -1,5 +1,5 @@
 /*
-   Copyright 2021-2022 The Silkworm Authors
+   Copyright 2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -42,14 +42,21 @@ StageResult HashState::forward(db::RWTxn& txn) {
             return StageResult::kInvalidProgress;
         }
 
-        if (execution_stage_progress - previous_progress > 16) {
+        BlockNum segment_width{execution_stage_progress - previous_progress};
+        if (segment_width > 16) {
             log::Info("Begin " + std::string(stage_name_),
                       {"from", std::to_string(previous_progress), "to", std::to_string(execution_stage_progress)});
         }
 
         reset_log_progress();
 
-        if (!previous_progress) {
+        if (!previous_progress || segment_width > 100'000) {
+            // Clear any previous contents
+            txn->clear_map(db::table::kHashedAccounts.name);
+            txn->clear_map(db::table::kHashedStorage.name);
+            txn->clear_map(db::table::kHashedCodeHash.name);
+            txn.commit();
+
             success_or_throw(hash_from_plainstate(txn));
             collector_->clear();
             reset_log_progress();

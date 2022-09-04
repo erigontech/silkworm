@@ -1,39 +1,39 @@
 /*
-Copyright 2021-2022 The Silkworm Authors
+   Copyright 2022 The Silkworm Authors
 
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
 
-    http://www.apache.org/licenses/LICENSE-2.0
+       http://www.apache.org/licenses/LICENSE-2.0
 
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
 */
 
 #pragma once
 
 #include <silkworm/chain/identity.hpp>
-#include <silkworm/db/buffer.hpp>
 #include <silkworm/consensus/engine.hpp>
+#include <silkworm/db/access_layer.hpp>
+#include <silkworm/db/buffer.hpp>
 
-#include "db_tx.hpp"
 #include "types.hpp"
 
 namespace silkworm {
 
 class BodyPersistence {
   public:
-    BodyPersistence(Db::ReadWriteAccess::Tx&, const ChainIdentity&);
+    BodyPersistence(db::RWTxn&, const ChainIdentity&);
 
     void persist(const Block&);
     void persist(const std::vector<Block>&);
     void close();
 
-    static void remove_bodies(BlockNum new_height, Hash bad_block, Db::ReadWriteAccess::Tx& tx);
+    static void remove_bodies(BlockNum new_height, std::optional<Hash> bad_block, db::RWTxn& tx);
 
     bool unwind_needed() const;
 
@@ -43,11 +43,12 @@ class BodyPersistence {
     Hash bad_block() const;
 
     void set_preverified_height(BlockNum height);
+
   private:
     using ConsensusEnginePtr = std::unique_ptr<consensus::IEngine>;
 
-    [[maybe_unused]] Db::ReadWriteAccess::Tx& tx_;
-    [[maybe_unused]] ConsensusEnginePtr consensus_engine_;
+    db::RWTxn& tx_;
+    ConsensusEnginePtr consensus_engine_;
     db::Buffer chain_state_;
 
     BlockNum initial_height_{0};
@@ -60,4 +61,4 @@ class BodyPersistence {
     Hash bad_block_;
 };
 
-}
+}  // namespace silkworm

@@ -17,8 +17,8 @@
 #pragma once
 
 #include <cstddef>
-#include <ostream>
 #include <memory>
+#include <ostream>
 #include <vector>
 
 #include <boost/asio/io_context.hpp>
@@ -114,4 +114,4 @@ class ServerContextPool {
     bool stopped_{false};
 };
 
-} // namespace silkworm::rpc
+}  // namespace silkworm::rpc

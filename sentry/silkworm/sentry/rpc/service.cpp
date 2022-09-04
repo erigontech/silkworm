@@ -1,20 +1,21 @@
 /*
-Copyright 2020-2022 The Silkworm Authors
+   Copyright 2022 The Silkworm Authors
 
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
 
-    http://www.apache.org/licenses/LICENSE-2.0
+       http://www.apache.org/licenses/LICENSE-2.0
 
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
 */
 
 #include "service.hpp"
+
 #include <silkworm/common/log.hpp>
 #include <silkworm/rpc/server/call.hpp>
 #include <silkworm/rpc/server/call_factory.hpp>
@@ -180,9 +181,9 @@ class PeerEventsCall : public sw_rpc::ServerStreamingRpc<AsyncService, proto::Pe
 class ServiceImpl final {
   public:
     void register_request_calls(
-            boost::asio::io_context& scheduler,
-            ::sentry::Sentry::AsyncService* async_service,
-            grpc::ServerCompletionQueue* queue) {
+        boost::asio::io_context& scheduler,
+        ::sentry::Sentry::AsyncService* async_service,
+        grpc::ServerCompletionQueue* queue) {
         call_factory_set_status_.create_rpc(scheduler, async_service, queue);
         call_factory_handshake_.create_rpc(scheduler, async_service, queue);
         call_factory_node_info_.create_rpc(scheduler, async_service, queue);
@@ -256,9 +257,9 @@ Service::~Service() {
 
 // Register one requested call for each RPC factory
 void Service::register_request_calls(
-        boost::asio::io_context& scheduler,
-        ::sentry::Sentry::AsyncService* async_service,
-        grpc::ServerCompletionQueue* queue) {
+    boost::asio::io_context& scheduler,
+    ::sentry::Sentry::AsyncService* async_service,
+    grpc::ServerCompletionQueue* queue) {
     p_impl_->register_request_calls(scheduler, async_service, queue);
 }
 

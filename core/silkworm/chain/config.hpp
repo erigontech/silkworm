@@ -1,5 +1,5 @@
 /*
-   Copyright 2020-2022 The Silkworm Authors
+   Copyright 2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -221,11 +221,11 @@ inline constexpr ChainConfig kSepoliaConfig{
     .terminal_total_difficulty = 17000000000000000,
 };
 
-//! \brief Looks up a chain config provided its chain ID
-const ChainConfig* lookup_chain_config(uint64_t chain_id) noexcept;
+//! \brief Looks up a known chain config provided its chain ID
+std::optional<std::pair<const std::string, const ChainConfig*>> lookup_known_chain(uint64_t chain_id) noexcept;
 
-//! \brief Looks up a chain config provided its common name
-const ChainConfig* lookup_chain_config(std::string_view identifier) noexcept;
+//! \brief Looks up a known chain config provided its chain identifier (eg. "mainnet")
+std::optional<std::pair<const std::string, const ChainConfig*>> lookup_known_chain(std::string_view identifier) noexcept;
 
 //! \brief Returns a map known chains names mapped to their respective chain ids
 std::map<std::string, uint64_t> get_known_chains_map() noexcept;

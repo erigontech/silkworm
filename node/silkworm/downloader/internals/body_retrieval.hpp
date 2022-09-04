@@ -1,5 +1,5 @@
 /*
-   Copyright 2021 The Silkworm Authors
+   Copyright 2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -16,7 +16,8 @@
 
 #pragma once
 
-#include "db_tx.hpp"
+#include <silkworm/db/access_layer.hpp>
+
 #include "types.hpp"
 
 namespace silkworm {
@@ -24,14 +25,14 @@ namespace silkworm {
 class BodyRetrieval {
   public:
     static const long soft_response_limit = 2 * 1024 * 1024;  // Target maximum size of returned blocks
-    static const long max_bodies_serve = 1024;  // Amount of block bodies to be fetched per retrieval request
+    static const long max_bodies_serve = 1024;                // Amount of block bodies to be fetched per retrieval request
 
-    explicit BodyRetrieval(Db::ReadOnlyAccess db_access);
+    explicit BodyRetrieval(db::ROAccess db_access);
 
     std::vector<BlockBody> recover(std::vector<Hash>);
 
   protected:
-    Db::ReadOnlyAccess::Tx db_tx_;
+    db::ROTxn db_tx_;
 };
 
 }  // namespace silkworm

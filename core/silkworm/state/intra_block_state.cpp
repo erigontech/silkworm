@@ -1,5 +1,5 @@
 /*
-   Copyright 2020-2021 The Silkworm Authors
+   Copyright 2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -120,11 +120,12 @@ void IntraBlockState::touch(const evmc::address& address) noexcept {
     }
 }
 
-void IntraBlockState::record_suicide(const evmc::address& address) noexcept {
+bool IntraBlockState::record_suicide(const evmc::address& address) noexcept {
     const bool inserted{self_destructs_.insert(address).second};
     if (inserted) {
         journal_.emplace_back(new state::SuicideDelta{address});
     }
+    return inserted;
 }
 
 void IntraBlockState::destruct_suicides() {

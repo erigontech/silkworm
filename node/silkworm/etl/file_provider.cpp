@@ -1,5 +1,5 @@
 /*
-   Copyright 2020-2022 The Silkworm Authors
+   Copyright 2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -49,8 +49,8 @@ void FileProvider::flush(Buffer& buffer) {
     }
 
     for (const auto& entry : entries) {
-        head.lengths[0] = entry.key.size();
-        head.lengths[1] = entry.value.size();
+        head.lengths[0] = static_cast<uint32_t>(entry.key.size());
+        head.lengths[1] = static_cast<uint32_t>(entry.value.size());
         if (!file_.write(byte_ptr_cast(head.bytes), 8) ||
             !file_.write(byte_ptr_cast(entry.key.data()), static_cast<std::streamsize>(entry.key.size())) ||
             !file_.write(byte_ptr_cast(entry.value.data()), static_cast<std::streamsize>(entry.value.size()))) {

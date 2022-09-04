@@ -24,6 +24,7 @@ TEST_CASE("BaseRpc", "[silkworm][rpc][call]") {
     class FakeRpc : public BaseRpc {
       public:
         explicit FakeRpc(boost::asio::io_context& scheduler) : BaseRpc(scheduler) {}
+
       protected:
         void cleanup() override {}
     };
@@ -57,4 +58,4 @@ TEST_CASE("BaseRpc", "[silkworm][rpc][call]") {
     }
 }
 
-} // namespace silkworm::rpc
+}  // namespace silkworm::rpc

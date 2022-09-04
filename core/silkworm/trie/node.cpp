@@ -1,5 +1,5 @@
 /*
-   Copyright 2021-2022 The Silkworm Authors
+   Copyright 2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -16,8 +16,9 @@
 
 #include "node.hpp"
 
-#include <bitset>
+#include <bit>
 
+#include <silkworm/common/assert.hpp>
 #include <silkworm/common/endian.hpp>
 
 namespace silkworm::trie {
@@ -29,76 +30,82 @@ Node::Node(uint16_t state_mask, uint16_t tree_mask, uint16_t hash_mask, std::vec
       hash_mask_{hash_mask},
       hashes_{std::move(hashes)},
       root_hash_{root_hash} {
-    assert_subset(tree_mask_, state_mask_);
-    assert_subset(hash_mask_, state_mask_);
-    assert(std::bitset<16>(hash_mask_).count() == hashes_.size());
+    SILKWORM_ASSERT(is_subset(tree_mask, state_mask));
+    SILKWORM_ASSERT(is_subset(hash_mask, state_mask));
+    SILKWORM_ASSERT(static_cast<size_t>(std::popcount(hash_mask_)) == hashes_.size());
 }
 
 void Node::set_root_hash(const std::optional<evmc::bytes32>& root_hash) { root_hash_ = root_hash; }
 
-Bytes marshal_node(const Node& n) {
-    size_t buf_size{/* 3 masks state/tree/hash 2 bytes each */ 6 +
-                    /* root hash */ (n.root_hash().has_value() ? kHashLength : 0u) +
-                    /* hashes */ n.hashes().size() * kHashLength};
-
+Bytes Node::encode_for_storage() const {
+    const size_t buf_size{/* 3 masks state/tree/hash 2 bytes each */ 6 +
+                          /* root hash */ (root_hash_.has_value() ? kHashLength : 0u) +
+                          /* hashes */ hashes_.size() * kHashLength};
     Bytes buf(buf_size, '\0');
-    size_t pos{0};
+    endian::store_big_u16(&buf[0], state_mask_);
+    endian::store_big_u16(&buf[2], tree_mask_);
+    endian::store_big_u16(&buf[4], hash_mask_);
 
-    endian::store_big_u16(&buf[pos], n.state_mask());
-    pos += 2;
-
-    endian::store_big_u16(&buf[pos], n.tree_mask());
-    pos += 2;
-
-    endian::store_big_u16(&buf[pos], n.hash_mask());
-    pos += 2;
-
-    if (n.root_hash().has_value()) {
-        std::memcpy(&buf[pos], n.root_hash()->bytes, kHashLength);
+    size_t pos{6};
+    if (root_hash_.has_value()) {
+        std::memcpy(&buf[pos], root_hash_->bytes, kHashLength);
         pos += kHashLength;
     }
 
-    for (const auto& hash : n.hashes()) {
-        std::memcpy(&buf[pos], hash.bytes, kHashLength);
-        pos += kHashLength;
-    }
-
+    std::memcpy(&buf[pos], hashes_.data(), hashes_.size() * kHashLength);
     return buf;
 }
 
-std::optional<Node> unmarshal_node(ByteView v) {
-    if (v.length() < 6) {
-        // At least state/tree/hash masks need to be present
-        return std::nullopt;
-    } else {
-        // Beyond the 6th byte the length must be a multiple of kHashLength
-        if ((v.length() - 6) % kHashLength != 0) {
-            return std::nullopt;
-        }
+std::optional<Node> Node::decode_from_storage(ByteView raw) {
+    Node node;
+    if (decode_from_storage(raw, node) == DecodingResult::kOk) {
+        return node;
+    }
+    return std::nullopt;
+}
+
+DecodingResult Node::decode_from_storage(ByteView raw, Node& node) {
+    // At least state/tree/hash masks need to be present
+    if (raw.length() < 6) {
+        return DecodingResult::kInputTooShort;
+    }
+    // Beyond the 6th byte the length must be a multiple of kHashLength
+    if ((raw.length() - 6) % kHashLength != 0) {
+        return DecodingResult::kInvalidHashesLength;
     }
 
-    const auto state_mask{endian::load_big_u16(v.data())};
-    v.remove_prefix(2);
-    const auto tree_mask{endian::load_big_u16(v.data())};
-    v.remove_prefix(2);
-    const auto hash_mask{endian::load_big_u16(v.data())};
-    v.remove_prefix(2);
+    node.root_hash_.reset();
+    node.hashes_.clear();
+    node.state_mask_ = endian::load_big_u16(&raw[0]);
+    node.tree_mask_ = endian::load_big_u16(&raw[2]);
+    node.hash_mask_ = endian::load_big_u16(&raw[4]);
 
-    std::optional<evmc::bytes32> root_hash{std::nullopt};
-    if (std::bitset<16>(hash_mask).count() + 1 == v.length() / kHashLength) {
-        root_hash = evmc::bytes32{};
-        std::memcpy(root_hash->bytes, v.data(), kHashLength);
-        v.remove_prefix(kHashLength);
+    if (!is_subset(node.tree_mask_, node.state_mask_) || !is_subset(node.hash_mask_, node.state_mask_)) {
+        return DecodingResult::kInvalidMasksSubsets;
     }
 
-    const size_t num_hashes{v.length() / kHashLength};
-    std::vector<evmc::bytes32> hashes(num_hashes);
-    for (size_t i{0}; i < num_hashes; ++i) {
-        std::memcpy(hashes[i].bytes, v.data(), kHashLength);
-        v.remove_prefix(kHashLength);
+    raw.remove_prefix(6);
+
+    size_t expected_num_hashes{static_cast<size_t>(std::popcount(node.hash_mask_))};
+    size_t effective_num_hashes{raw.length() / kHashLength};
+
+    if (effective_num_hashes < expected_num_hashes) {
+        return DecodingResult::kInvalidHashesLength;
     }
 
-    return Node{state_mask, tree_mask, hash_mask, hashes, root_hash};
+    size_t delta{effective_num_hashes - expected_num_hashes};
+    if (delta > 1) {
+        return DecodingResult::kInvalidHashesLength;
+    } else if (delta == 1) {
+        node.root_hash_.emplace();
+        std::memcpy(node.root_hash_->bytes, raw.data(), kHashLength);
+        raw.remove_prefix(kHashLength);
+        --effective_num_hashes;
+    }
+
+    node.hashes_.resize(effective_num_hashes);
+    std::memcpy(node.hashes_.data(), raw.data(), raw.length());
+    return DecodingResult::kOk;
 }
 
 }  // namespace silkworm::trie

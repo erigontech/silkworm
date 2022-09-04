@@ -1,5 +1,5 @@
 #[[
-   Copyright 2020-2022 The Silkworm Authors
+   Copyright 2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -74,9 +74,6 @@ if(NOT SILKWORM_CORE_ONLY)
 
   add_executable(log_index log_index.cpp)
   target_link_libraries(log_index PRIVATE silkworm_node cborcpp CLI11::CLI11)
-
-  add_executable(trie trie.cpp)
-  target_link_libraries(trie PRIVATE silkworm_node CLI11::CLI11)
 
   add_executable(downloader downloader.cpp common.cpp)
   target_link_libraries(downloader PRIVATE silkworm_node silkworm-buildinfo CLI11::CLI11)

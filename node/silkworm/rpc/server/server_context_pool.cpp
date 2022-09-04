@@ -25,8 +25,7 @@
 namespace silkworm::rpc {
 
 std::ostream& operator<<(std::ostream& out, const ServerContext& c) {
-    out << "io_context: " << c.io_context()
-        << " server_queue: " << c.server_queue()
+    out << "io_context: " << c.io_context() << " server_queue: " << c.server_queue()
         << " client_queue: " << c.client_queue();
     return out;
 }
@@ -38,8 +37,7 @@ ServerContext::ServerContext(std::unique_ptr<grpc::ServerCompletionQueue> queue,
       server_end_point_{std::make_unique<CompletionEndPoint>(*server_queue_)},
       client_queue_{std::make_unique<grpc::CompletionQueue>()},
       client_end_point_{std::make_unique<CompletionEndPoint>(*client_queue_)},
-      wait_mode_(wait_mode) {
-}
+      wait_mode_(wait_mode) {}
 
 template <typename WaitStrategy>
 void ServerContext::execute_loop_single_threaded(WaitStrategy&& wait_strategy) {
@@ -48,7 +46,7 @@ void ServerContext::execute_loop_single_threaded(WaitStrategy&& wait_strategy) {
         std::size_t work_count = server_end_point_->poll_one();
         work_count += client_end_point_->poll_one();
         work_count += io_context_->poll_one();
-        wait_strategy.idle(work_count);
+        wait_strategy.idle(static_cast<int>(work_count));
     }
     server_end_point_->shutdown();
     client_end_point_->shutdown();
@@ -85,22 +83,20 @@ void ServerContext::execute_loop() {
     switch (wait_mode_) {
         case WaitMode::blocking:
             execute_loop_multi_threaded();
-        break;
+            break;
         case WaitMode::yielding:
             execute_loop_single_threaded(YieldingWaitStrategy{});
-        break;
+            break;
         case WaitMode::sleeping:
             execute_loop_single_threaded(SleepingWaitStrategy{});
-        break;
+            break;
         case WaitMode::busy_spin:
             execute_loop_single_threaded(BusySpinWaitStrategy{});
-        break;
+            break;
     }
 }
 
-void ServerContext::stop() {
-    io_context_->stop();
-}
+void ServerContext::stop() { io_context_->stop(); }
 
 ServerContextPool::ServerContextPool(std::size_t pool_size) : next_index_{0} {
     if (pool_size == 0) {
@@ -187,4 +183,4 @@ boost::asio::io_context& ServerContextPool::next_io_context() {
     return *context.io_context();
 }
 
-} // namespace silkworm::rpc
+}  // namespace silkworm::rpc

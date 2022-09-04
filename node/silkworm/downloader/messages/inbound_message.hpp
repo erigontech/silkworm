@@ -1,5 +1,5 @@
 /*
-   Copyright 2021-2022 The Silkworm Authors
+   Copyright 2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -29,7 +29,7 @@ class InboundMessage : public Message {
   public:
     static std::shared_ptr<InboundMessage> make(const sentry::InboundMessage& msg);
 
-    void execute(Db::ReadOnlyAccess, HeaderChain&, BodySequence&, SentryClient&) override = 0;
+    void execute(db::ROAccess, HeaderChain&, BodySequence&, SentryClient&) override = 0;
 
     virtual uint64_t reqId() const = 0;
     virtual std::string content() const = 0;

@@ -49,12 +49,11 @@ TEST_CASE("ServerConfig::set_num_contexts", "[silkworm][rpc][server_config]") {
 TEST_CASE("ServerConfig::set_credentials", "[silkworm][rpc][server_config]") {
     grpc::SslServerCredentialsOptions ssl_options;
     const std::shared_ptr<grpc::ServerCredentials> server_credentials{
-        grpc::SslServerCredentials(ssl_options)
-    };
+        grpc::SslServerCredentials(ssl_options)};
     ServerConfig config;
     config.set_credentials(server_credentials);
     CHECK(config.credentials() == server_credentials);
 }
-#endif // SILKWORM_SANITIZE
+#endif  // SILKWORM_SANITIZE
 
-} // namespace silkworm::rpc
+}  // namespace silkworm::rpc

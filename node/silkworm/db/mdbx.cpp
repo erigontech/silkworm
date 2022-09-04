@@ -1,5 +1,5 @@
 /*
-   Copyright 2021-2022 The Silkworm Authors
+   Copyright 2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -109,8 +109,8 @@ namespace detail {
 
     ::mdbx::env_managed::create_parameters cp{};  // Default create parameters
     if (!config.shared) {
-        auto max_map_size = static_cast<intptr_t>(config.inmemory ? 64_Mebi : config.max_size);
-        auto growth_size = static_cast<intptr_t>(config.inmemory ? 2_Mebi : config.growth_size);
+        auto max_map_size = static_cast<intptr_t>(config.inmemory ? 128_Mebi : config.max_size);
+        auto growth_size = static_cast<intptr_t>(config.inmemory ? 8_Mebi : config.growth_size);
         cp.geometry.make_dynamic(::mdbx::env::geometry::default_value, max_map_size);
         cp.geometry.growth_step = growth_size;
         cp.geometry.pagesize = 4_Kibi;
@@ -206,6 +206,10 @@ MDBX_stat Cursor::get_map_stat() const {
     }
     return txn().get_map_stat(map());
 }
+
+size_t Cursor::size() const { return get_map_stat().ms_entries; }
+
+bool Cursor::empty() const { return size() == 0; }
 
 bool has_map(::mdbx::txn& tx, const char* map_name) {
     try {

@@ -1,17 +1,17 @@
 /*
-    Copyright 2021-2022 The Silkworm Authors
+   Copyright 2022 The Silkworm Authors
 
-    Licensed under the Apache License, Version 2.0 (the "License");
-    you may not use this file except in compliance with the License.
-    You may obtain a copy of the License at
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
 
-        http://www.apache.org/licenses/LICENSE-2.0
+       http://www.apache.org/licenses/LICENSE-2.0
 
-    Unless required by applicable law or agreed to in writing, software
-    distributed under the License is distributed on an "AS IS" BASIS,
-    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-    See the License for the specific language governing permissions and
-    limitations under the License.
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
 */
 
 #include "signal_handler.hpp"
@@ -19,6 +19,7 @@
 #include <csignal>
 #include <cstdio>
 #include <cstdlib>
+#include <stdexcept>
 
 namespace silkworm {
 
@@ -100,6 +101,7 @@ inline constexpr int kHandleableCodes[] {
 };
 
 std::atomic_uint32_t SignalHandler::sig_count_{0};
+std::atomic_int SignalHandler::sig_code_{0};
 std::atomic_bool SignalHandler::signalled_{false};
 
 void SignalHandler::init() {
@@ -111,6 +113,7 @@ void SignalHandler::init() {
 void SignalHandler::handle(int sig_code) {
     bool expected{false};
     if (signalled_.compare_exchange_strong(expected, true)) {
+        sig_code_ = sig_code;
         std::fputs("Got ", stderr);
         std::fputs(sig_name(sig_code), stderr);
         std::fputs(". Shutting down ...\n", stderr);
@@ -133,6 +136,13 @@ void SignalHandler::handle(int sig_code) {
 void SignalHandler::reset() {
     signalled_ = false;
     sig_count_ = 0;
+}
+
+void SignalHandler::throw_if_signalled() {
+    if (!signalled()) {
+        return;
+    }
+    throw std::runtime_error(sig_name(sig_code_));
 }
 
 }  // namespace silkworm

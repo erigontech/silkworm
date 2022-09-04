@@ -1,17 +1,17 @@
 /*
-Copyright 2020-2022 The Silkworm Authors
+   Copyright 2022 The Silkworm Authors
 
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
 
-    http://www.apache.org/licenses/LICENSE-2.0
+       http://www.apache.org/licenses/LICENSE-2.0
 
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
 */
 
 #include "body_persistence.hpp"
@@ -25,6 +25,7 @@ limitations under the License.
 #include <silkworm/common/cast.hpp>
 #include <silkworm/common/test_context.hpp>
 #include <silkworm/db/genesis.hpp>
+#include <silkworm/db/stages.hpp>
 #include <silkworm/types/block.hpp>
 
 #include "body_sequence.hpp"
@@ -42,7 +43,7 @@ TEST_CASE("BodyPersistence - body persistence") {
     auto source_data = silkworm::read_genesis_data(chain_identity.config.chain_id);
     auto genesis_json = nlohmann::json::parse(source_data, nullptr, allow_exceptions);
     db::initialize_genesis(txn, genesis_json, allow_exceptions);
-    context.commit_and_renew_txn();
+    context.commit_txn();
 
     /* status:
      *         h0
@@ -50,12 +51,12 @@ TEST_CASE("BodyPersistence - body persistence") {
      *         h0 <----- h1
      */
     SECTION("one invalid body after the genesis") {
-        Db::ReadWriteAccess::Tx tx(txn);  // sub transaction
+        db::RWTxn tx(context.env());
 
-        auto header0_hash = tx.read_canonical_hash(0);
+        auto header0_hash = db::read_canonical_hash(tx, 0);
         REQUIRE(header0_hash.has_value());
 
-        auto header0 = tx.read_canonical_header(0);
+        auto header0 = db::read_canonical_header(tx, 0);
         REQUIRE(header0.has_value());
 
         Block block1;
@@ -82,7 +83,7 @@ TEST_CASE("BodyPersistence - body persistence") {
 
         // check db content
         BlockBody saved_body;
-        bool present = tx.read_body(block1.header.hash(), saved_body);
+        bool present = db::read_body(tx, block1.header.hash(), saved_body);
 
         REQUIRE(!present);
 
@@ -90,12 +91,12 @@ TEST_CASE("BodyPersistence - body persistence") {
     }
 
     SECTION("one valid body after the genesis") {
-        Db::ReadWriteAccess::Tx tx(txn);  // sub transaction
+        db::RWTxn tx(context.env());
 
-        auto header0_hash = tx.read_canonical_hash(0);
+        auto header0_hash = db::read_canonical_hash(tx, 0);
         REQUIRE(header0_hash.has_value());
 
-        auto header0 = tx.read_canonical_header(0);
+        auto header0 = db::read_canonical_header(tx, 0);
         REQUIRE(header0.has_value());
 
         std::string raw_header1 =
@@ -135,12 +136,12 @@ TEST_CASE("BodyPersistence - body persistence") {
 
         // check db content
         BlockBody saved_body;
-        bool present = tx.read_body(block1.header.hash(), block1.header.number, saved_body);
+        bool present = db::read_body(tx, block1.header.hash(), block1.header.number, saved_body);
 
         REQUIRE(present);
         REQUIRE(saved_body == block1);
 
-        auto bodies_stage_height = tx.read_stage_progress(db::stages::kBlockBodiesKey);
+        auto bodies_stage_height = db::stages::read_stage_progress(tx, db::stages::kBlockBodiesKey);
 
         REQUIRE(bodies_stage_height == block1.header.number);
 

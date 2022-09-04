@@ -52,4 +52,4 @@ class CompletionEndPoint {
     grpc::CompletionQueue& queue_;
 };
 
-} // namespace silkworm::rpc
+}  // namespace silkworm::rpc

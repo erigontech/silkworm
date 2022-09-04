@@ -1,5 +1,5 @@
 /*
-   Copyright 2020-2021 The Silkworm Authors
+   Copyright 2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -34,7 +34,7 @@ Bytes cbor_encode(const std::vector<Log>& v) {
         for (const evmc::bytes32& t : l.topics) {
             encoder.write_bytes(t.bytes, kHashLength);
         }
-        encoder.write_bytes(l.data.data(), l.data.size());
+        encoder.write_bytes(l.data.data(), static_cast<unsigned>(l.data.size()));
     }
 
     return Bytes{output.data(), output.size()};

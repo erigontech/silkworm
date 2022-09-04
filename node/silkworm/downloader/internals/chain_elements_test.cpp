@@ -1,24 +1,24 @@
 /*
-Copyright 2020 The Silkworm Authors
+   Copyright 2022 The Silkworm Authors
 
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
 
-    http://www.apache.org/licenses/LICENSE-2.0
+       http://www.apache.org/licenses/LICENSE-2.0
 
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
 */
+
+#include "chain_elements.hpp"
 
 #include <algorithm>
 
 #include <catch2/catch.hpp>
-
-#include "chain_elements.hpp"
 
 namespace silkworm {
 
@@ -47,9 +47,9 @@ TEST_CASE("links") {
         REQUIRE(link1.preverified == false);
         REQUIRE(link1.next.empty());
 
-        headers[1].number = 100; // only for the following test
-        REQUIRE(link1.blockHeight == 1); // link1 has a copy of headers[1]
-        headers[1].number = 1; // ok
+        headers[1].number = 100;          // only for the following test
+        REQUIRE(link1.blockHeight == 1);  // link1 has a copy of headers[1]
+        headers[1].number = 1;            // ok
     }
 
     SECTION("children") {
@@ -114,7 +114,7 @@ TEST_CASE("anchors") {
         REQUIRE(anchor.find_child(headers[1].hash()) == anchor.links.end());
         REQUIRE(anchor.has_child(headers[1].hash()) == false);
 
-        for(size_t i = 1; i <= 3; i++) {
+        for (size_t i = 1; i <= 3; i++) {
             anchor.links.push_back(links[i]);
         }
 
@@ -135,7 +135,6 @@ TEST_CASE("anchors") {
         auto link3_it = anchor.find_child(links[3]->hash);
         REQUIRE(link3_it == anchor.links.end());
     }
-
 }
 
-}
+}  // namespace silkworm

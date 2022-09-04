@@ -28,7 +28,7 @@ class MergeEngine : public IEngine {
   public:
     explicit MergeEngine(std::unique_ptr<IEngine> pre_merge_engine, const ChainConfig& chain_config);
 
-    ValidationResult pre_validate_block(const Block& block, const BlockState& state) override;
+    ValidationResult pre_validate_block_body(const Block& block, const BlockState& state) override;
 
     ValidationResult validate_block_header(const BlockHeader& header, const BlockState& state,
                                            bool with_future_timestamp_check) override;

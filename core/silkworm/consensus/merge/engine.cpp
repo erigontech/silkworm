@@ -25,11 +25,11 @@ MergeEngine::MergeEngine(std::unique_ptr<IEngine> eth1_engine, const ChainConfig
       pre_merge_engine_{std::move(eth1_engine)},
       post_merge_engine_{chain_config} {}
 
-ValidationResult MergeEngine::pre_validate_block(const Block& block, const BlockState& state) {
+ValidationResult MergeEngine::pre_validate_block_body(const Block& block, const BlockState& state) {
     if (block.header.difficulty != 0) {
-        return pre_merge_engine_->pre_validate_block(block, state);
+        return pre_merge_engine_->pre_validate_block_body(block, state);
     } else {
-        return post_merge_engine_.pre_validate_block(block, state);
+        return post_merge_engine_.pre_validate_block_body(block, state);
     }
 }
 

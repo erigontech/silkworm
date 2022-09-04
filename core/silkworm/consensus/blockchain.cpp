@@ -33,7 +33,10 @@ Blockchain::Blockchain(State& state, std::unique_ptr<IEngine>& engine, const Cha
 }
 
 ValidationResult Blockchain::insert_block(Block& block, bool check_state_root) {
-    if (ValidationResult err{engine_->pre_validate_block(block, state_)}; err != ValidationResult::kOk) {
+    if (ValidationResult err{engine_->validate_block_header(block.header, state_, /*with_future_timestamp_check=*/true)}; err != ValidationResult::kOk) {
+        return err;
+    }
+    if (ValidationResult err{engine_->pre_validate_block_body(block, state_)}; err != ValidationResult::kOk) {
         return err;
     }
 

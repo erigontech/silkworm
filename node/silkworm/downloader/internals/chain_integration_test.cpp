@@ -38,7 +38,7 @@ class HeaderChain_ForTest : public HeaderChain {
 
 class DummyConsensusEngine : public consensus::IEngine {
   public:
-    ValidationResult pre_validate_block(const Block&, const BlockState&) override { return ValidationResult::kOk; }
+    ValidationResult pre_validate_block_body(const Block&, const BlockState&) override { return ValidationResult::kOk; }
 
     ValidationResult validate_ommers(const Block&, const BlockState&) override { return ValidationResult::kOk; }
 

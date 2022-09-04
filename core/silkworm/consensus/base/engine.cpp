@@ -25,13 +25,8 @@
 
 namespace silkworm::consensus {
 
-ValidationResult EngineBase::pre_validate_block(const Block& block, const BlockState& state) {
+ValidationResult EngineBase::pre_validate_block_body(const Block& block, const BlockState& state) {
     const BlockHeader& header{block.header};
-
-    if (ValidationResult err{validate_block_header(header, state, /*with_future_timestamp_check=*/true)};
-        err != ValidationResult::kOk) {
-        return err;
-    }
 
     evmc::bytes32 txn_root = compute_transaction_root(block);
     if (txn_root != header.transactions_root) {

@@ -110,7 +110,7 @@ Stage::Result BodiesStage::forward(db::RWTxn& tx) {
     using namespace std::chrono_literals;
     using namespace std::chrono;
 
-    Stage::Result result;
+    Stage::Result result = Stage::Result::Unspecified;
 
     auto constexpr KShortInterval = 200ms;
     auto constexpr kProgressUpdateInterval = 30s;
@@ -118,6 +118,11 @@ Stage::Result BodiesStage::forward(db::RWTxn& tx) {
     StopWatch timing;
     timing.start();
     log::Info() << "[2/16 Bodies] Start";
+
+    if (block_downloader_.is_stopping()) {
+        log::Error() << "[2/16 Bodies] Aborted, block exchange is down";
+        return Stage::Result::Error;
+    }
 
     try {
         BodyPersistence body_persistence(tx, block_downloader_.chain_config());
@@ -136,7 +141,7 @@ Stage::Result BodiesStage::forward(db::RWTxn& tx) {
 
         // block processing
         time_point_t last_update = system_clock::now();
-        while (body_persistence.highest_height() < headers_stage_height && !block_downloader_.is_stopping()) {
+        while (body_persistence.highest_height() < headers_stage_height && !is_stopping()) {
             send_body_requests();
 
             if (withdraw_command->completed_and_read()) {
@@ -182,6 +187,10 @@ Stage::Result BodiesStage::forward(db::RWTxn& tx) {
 
         log::Info() << "[2/16 Bodies] Done, duration= " << StopWatch::format(timing.lap_duration());
 
+        if (result == Stage::Result::Unspecified) {
+            result = Stage::Result::Done;
+        }
+
     } catch (const std::exception& e) {
         log::Error() << "[2/16 Bodies] Aborted due to exception: " << e.what();
 
@@ -216,6 +225,10 @@ Stage::Result BodiesStage::unwind(db::RWTxn& tx, BlockNum new_height) {
     }
 
     return result;
+}
+
+auto BodiesStage::prune(db::RWTxn& txn) -> Stage::Result {
+    return Stage::Result::Error;
 }
 
 void BodiesStage::send_body_requests() {

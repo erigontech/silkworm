@@ -70,6 +70,7 @@ class HeadersStage : public Stage {
 
     Stage::Result forward(db::RWTxn&) override;                      // go forward, downloading headers
     Stage::Result unwind(db::RWTxn&, BlockNum new_height) override;  // go backward, unwinding headers to new_height
+    Stage::Result prune(db::RWTxn&) override;
 
   private:
     void send_header_requests();  // send requests for more headers
@@ -79,6 +80,9 @@ class HeadersStage : public Stage {
     auto update_bad_headers(std::set<Hash>) -> std::shared_ptr<InternalMessage<void>>;
 
     BlockExchange& block_downloader_;
+
+    std::vector<std::string> get_log_progress(); // thread safe
+    std::atomic<BlockNum> current_height_;
 };
 
 }  // namespace silkworm

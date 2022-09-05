@@ -38,14 +38,18 @@ auto HeadersStage::forward(db::RWTxn& tx) -> Stage::Result {
     using namespace std::chrono_literals;
     using namespace std::chrono;
 
-    Stage::Result result;
+    Stage::Result result = Stage::Result::Unspecified;
     bool new_height_reached = false;
     std::thread message_receiving;
 
     StopWatch timing;
     timing.start();
     log::Info() << "[1/16 Headers] Start";
-    log::Trace() << "[INFO] HeaderDownloader forward operation started";
+
+    if (block_downloader_.is_stopping()) {
+        log::Error() << "[1/16 Headers] Aborted, block exchange is down";
+        return Stage::Result::Error;
+    }
 
     try {
         HeaderPersistence header_persistence(tx);
@@ -57,6 +61,7 @@ auto HeadersStage::forward(db::RWTxn& tx) -> Stage::Result {
             return Stage::Result::Done;
         }
 
+        current_height_ = header_persistence.initial_height();
         RepeatedMeasure<BlockNum> height_progress(header_persistence.initial_height());
         log::Info() << "[1/16 Headers] Waiting for headers... from=" << height_progress.get();
 
@@ -69,7 +74,7 @@ auto HeadersStage::forward(db::RWTxn& tx) -> Stage::Result {
 
         // header processing
         time_point_t last_update = system_clock::now();
-        while (!new_height_reached && !block_downloader_.is_stopping()) {
+        while (!new_height_reached && !is_stopping()) {
             // make some outbound header requests
             send_header_requests();
 
@@ -110,13 +115,14 @@ auto HeadersStage::forward(db::RWTxn& tx) -> Stage::Result {
             }
 
             // show progress
+            current_height_ = header_persistence.initial_height();
             if (system_clock::now() - last_update > 30s) {
                 last_update = system_clock::now();
 
                 height_progress.set(header_persistence.highest_height());
 
-                log::Info() << "[1/16 Headers] Wrote block headers number=" << height_progress.get() << " (+"
-                            << height_progress.delta() << "), " << height_progress.throughput() << " headers/secs";
+                log::Debug() << "[1/16 Headers] Wrote block headers number=" << height_progress.get() << " (+"
+                             << height_progress.delta() << "), " << height_progress.throughput() << " headers/secs";
             }
         }
 
@@ -173,6 +179,8 @@ auto HeadersStage::unwind(db::RWTxn& tx, BlockNum new_height) -> Stage::Result {
             result = Result::SkipTx;  // todo:  here Erigon does unwind_state.signal(skip_tx), check!
         }
 
+        current_height_ = new_height;
+
         update_bad_headers(std::move(bad_headers));
 
         tx.commit();
@@ -189,6 +197,10 @@ auto HeadersStage::unwind(db::RWTxn& tx, BlockNum new_height) -> Stage::Result {
     }
 
     return result;
+}
+
+auto HeadersStage::prune(db::RWTxn& txn) -> Stage::Result {
+    return Stage::Result::Error;
 }
 
 // Request new headers from peers

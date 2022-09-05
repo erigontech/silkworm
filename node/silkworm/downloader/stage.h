@@ -21,7 +21,7 @@
 namespace silkworm {
 
 // todo: replace this class with IStage as soon as it will support the shared status
-class Stage {
+class Stage : public Stoppable {
   public:
     enum Result { Unspecified, Done, DoneAndUpdated, UnwindNeeded, SkipTx, Error };
 
@@ -39,6 +39,9 @@ class Stage {
     
     virtual Result forward(db::RWTxn&) = 0;
     virtual Result unwind(db::RWTxn&, BlockNum new_height) = 0;
+    virtual Result prune(db::RWTxn&) = 0;
+
+    //virtual std::vector<std::string> get_log_progress() = 0; // implementation MUST be thread safe
 
   protected:
     Status& shared_status_;

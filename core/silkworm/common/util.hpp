@@ -82,19 +82,4 @@ size_t prefix_length(ByteView a, ByteView b);
 
 inline ethash::hash256 keccak256(ByteView view) { return ethash::keccak256(view.data(), view.size()); }
 
-inline std::ostream& operator<<(std::ostream& out, const silkworm::ByteView& bytes) {
-    out << silkworm::to_hex(bytes);
-    return out;
-}
-
-inline std::ostream& operator<<(std::ostream& out, const evmc::address& addr) {
-    out << silkworm::to_hex(addr);
-    return out;
-}
-
-inline std::ostream& operator<<(std::ostream& out, const evmc::bytes32& b32) {
-    out << silkworm::to_hex(b32);
-    return out;
-}
-
 }  // namespace silkworm

@@ -80,7 +80,7 @@ class HeadersStage : public Stage {
     auto withdraw_stable_headers() -> std::shared_ptr<InternalMessage<std::tuple<Headers, bool>>>;
     auto update_bad_headers(std::set<Hash>) -> std::shared_ptr<InternalMessage<void>>;
 
-    std::vector<std::string> get_log_progress() override; // thread safe
+    std::vector<std::string> get_log_progress() override;  // thread safe
     std::atomic<BlockNum> current_height_;
 
     BlockExchange& block_downloader_;

@@ -37,6 +37,7 @@ namespace silkworm::db {
 
 inline constexpr std::string_view kDbDataFileName{"mdbx.dat"};
 inline constexpr std::string_view kDbLockFileName{"mdbx.lck"};
+inline constexpr size_t kMdbx_max_pages{2147483648ull};
 
 namespace detail {
     struct cursor_handle_deleter {  // default deleter for pooled cursors

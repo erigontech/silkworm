@@ -113,7 +113,8 @@ namespace detail {
         auto growth_size = static_cast<intptr_t>(config.inmemory ? 8_Mebi : config.growth_size);
         cp.geometry.make_dynamic(::mdbx::env::geometry::default_value, max_map_size);
         cp.geometry.growth_step = growth_size;
-        cp.geometry.pagesize = static_cast<intptr_t>(config.page_size);
+        if (!db_ondisk_file_size)
+            cp.geometry.pagesize = static_cast<intptr_t>(config.page_size);
     }
 
     ::mdbx::env::operate_parameters op{};  // Operational parameters
@@ -124,6 +125,13 @@ namespace detail {
     op.max_readers = config.max_readers;
 
     ::mdbx::env_managed ret{db_path.native(), cp, op, config.shared};
+    if (size_t db_page_size{ret.get_pagesize()}; db_page_size != config.page_size) {
+        throw std::runtime_error(
+            "Incompatible page size. "
+            "Requested " +
+            human_size(config.page_size) +
+            " db has " + human_size(db_page_size));
+    }
 
     if (!config.shared) {
         // C++ bindings don't have setoptions

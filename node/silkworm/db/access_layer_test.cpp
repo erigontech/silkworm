@@ -21,6 +21,7 @@
 #include <silkworm/chain/genesis.hpp>
 #include <silkworm/chain/protocol_param.hpp>
 #include <silkworm/common/test_context.hpp>
+#include <silkworm/common/test_util.hpp>
 #include <silkworm/db/buffer.hpp>
 #include <silkworm/db/prune_mode.hpp>
 #include <silkworm/db/tables.hpp>
@@ -501,19 +502,19 @@ namespace db {
         block1.header.number = 1;
         block1.header.beneficiary = miner_a;
         // miner_a gets one block reward
-        REQUIRE(execute_block(block1, buffer, kMainnetConfig) == ValidationResult::kOk);
+        REQUIRE(execute_block(block1, buffer, test::kFrontierConfig) == ValidationResult::kOk);
 
         Block block2;
         block2.header.number = 2;
         block2.header.beneficiary = miner_b;
         // miner_a gets nothing
-        REQUIRE(execute_block(block2, buffer, kMainnetConfig) == ValidationResult::kOk);
+        REQUIRE(execute_block(block2, buffer, test::kFrontierConfig) == ValidationResult::kOk);
 
         Block block3;
         block3.header.number = 3;
         block3.header.beneficiary = miner_a;
         // miner_a gets another block reward
-        REQUIRE(execute_block(block3, buffer, kMainnetConfig) == ValidationResult::kOk);
+        REQUIRE(execute_block(block3, buffer, test::kFrontierConfig) == ValidationResult::kOk);
 
         buffer.write_to_db();
 

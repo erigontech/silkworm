@@ -43,7 +43,7 @@ class BodiesStage : public Stage {
     auto withdraw_ready_bodies() -> std::shared_ptr<InternalMessage<std::vector<Block>>>;
     void send_announcements();
 
-    std::vector<std::string> get_log_progress() override; // thread safe
+    std::vector<std::string> get_log_progress() override;  // thread safe
     std::atomic<BlockNum> current_height_;
 
     BlockExchange& block_downloader_;

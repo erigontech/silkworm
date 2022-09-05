@@ -37,10 +37,6 @@ commands:
               exit 1
             fi
       - run:
-          name: "Check line length"
-          working_directory: ~/project
-          command: cmake -P cmake/lint_line_length.cmake
-      - run:
           name: "Copyright"
           working_directory: ~/project
           command: cmake -P cmake/copyright.cmake

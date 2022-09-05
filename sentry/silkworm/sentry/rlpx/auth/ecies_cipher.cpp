@@ -49,7 +49,10 @@ Bytes EciesCipher::compute_shared_secret(PublicKeyView public_key_view, PrivateK
     return shared_secret;
 }
 
-EciesCipher::Message EciesCipher::encrypt_message(ByteView plain_text, PublicKeyView public_key_view, ByteView mac_extra_data) {
+EciesCipher::Message EciesCipher::encrypt_message(
+    ByteView plain_text,
+    PublicKeyView public_key_view,
+    ByteView mac_extra_data) {
     common::EccKeyPair ephemeral_key_pair;
 
     Bytes shared_secret = kdf(compute_shared_secret(public_key_view, ephemeral_key_pair.private_key()));
@@ -69,7 +72,10 @@ EciesCipher::Message EciesCipher::encrypt_message(ByteView plain_text, PublicKey
     };
 }
 
-Bytes EciesCipher::decrypt_message(const EciesCipher::Message& message, PrivateKeyView private_key, ByteView mac_extra_data) {
+Bytes EciesCipher::decrypt_message(
+    const EciesCipher::Message& message,
+    PrivateKeyView private_key,
+    ByteView mac_extra_data) {
     Bytes shared_secret = kdf(compute_shared_secret(message.ephemeral_public_key, private_key));
     ByteView aes_key(shared_secret.data(), kKeySize);
     ByteView mac_key(&shared_secret[kKeySize], kKeySize);

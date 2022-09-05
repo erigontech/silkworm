@@ -32,7 +32,9 @@ namespace silkworm::rpc {
 //! Asynchronous server scheduler running an execution loop.
 class ServerContext {
   public:
-    explicit ServerContext(std::unique_ptr<grpc::ServerCompletionQueue> server_queue, WaitMode wait_mode = WaitMode::blocking);
+    explicit ServerContext(
+        std::unique_ptr<grpc::ServerCompletionQueue> server_queue,
+        WaitMode wait_mode = WaitMode::blocking);
 
     boost::asio::io_context* io_context() const noexcept { return io_context_.get(); }
     grpc::ServerCompletionQueue* server_queue() const noexcept { return server_queue_.get(); }

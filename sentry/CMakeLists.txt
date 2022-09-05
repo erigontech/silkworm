@@ -16,11 +16,14 @@
 
 set(TARGET silkworm_sentry)
 
+hunter_add_package(Snappy)
+
 find_package(absl CONFIG REQUIRED)
 find_package(Boost CONFIG REQUIRED thread)
 find_package(gRPC CONFIG REQUIRED)
 find_package(Microsoft.GSL CONFIG REQUIRED)
 find_package(OpenSSL REQUIRED)
+find_package(Snappy CONFIG REQUIRED)
 
 get_filename_component(MAIN_DIR ../ ABSOLUTE)
 
@@ -64,6 +67,8 @@ set(LIBS
   Microsoft.GSL::GSL
   protobuf::libprotobuf
   OpenSSL::Crypto
+  Snappy::snappy
+
   silkpre
   silkworm_core
   silkworm_node

@@ -16,6 +16,10 @@
 
 #include "message_frame_codec.hpp"
 
+#include <snappy.h>
+
+#include <string>
+
 #include <silkworm/rlp/decode.hpp>
 #include <silkworm/rlp/encode.hpp>
 
@@ -23,14 +27,45 @@ namespace silkworm::sentry::rlpx::framing {
 
 using common::Message;
 
+const size_t MessageFrameCodec::kMaxFrameSize = 16 << 20;
+
 static Bytes snappy_compress(ByteView data) {
-    // TODO
-    return Bytes{data};
+    Bytes output;
+    output.resize(snappy::MaxCompressedLength(data.size()));
+
+    size_t compressed_length;
+    snappy::RawCompress(
+        reinterpret_cast<const char*>(data.data()),
+        data.size(),
+        reinterpret_cast<char*>(output.data()),
+        &compressed_length);
+
+    output.resize(compressed_length);
+    return output;
+}
+
+static size_t snappy_uncompressed_length(ByteView data) {
+    size_t uncompressed_length;
+    bool ok = snappy::GetUncompressedLength(
+        reinterpret_cast<const char*>(data.data()),
+        data.size(),
+        &uncompressed_length);
+    if (!ok)
+        throw std::runtime_error("MessageFrameCodec: invalid snappy uncompressed length");
+    return uncompressed_length;
 }
 
 static Bytes snappy_decompress(ByteView data) {
-    // TODO
-    return Bytes{data};
+    Bytes output;
+    output.resize(snappy_uncompressed_length(data));
+
+    bool ok = snappy::RawUncompress(
+        reinterpret_cast<const char*>(data.data()),
+        data.size(),
+        reinterpret_cast<char*>(output.data()));
+    if (!ok)
+        throw std::runtime_error("MessageFrameCodec: invalid snappy data");
+    return output;
 }
 
 Bytes MessageFrameCodec::encode(const Message& message) const {
@@ -62,6 +97,8 @@ Message MessageFrameCodec::decode(ByteView frame_data) const {
     if (!is_compression_enabled_) {
         data = Bytes{frame_data.substr(1)};
     } else {
+        if (snappy_uncompressed_length(frame_data.substr(1)) > kMaxFrameSize)
+            throw std::runtime_error("MessageFrameCodec: uncompressed frame is too large");
         data = snappy_decompress(frame_data.substr(1));
     }
 

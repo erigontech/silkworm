@@ -69,11 +69,7 @@ static const std::vector<fs::path> kFailingTests{
 static constexpr size_t kColumnWidth{80};
 
 static const std::map<std::string, ChainConfig> kNetworkConfig{
-    {"Frontier",
-     {
-         .chain_id = 1,
-         .seal_engine = SealEngineType::kNoProof,
-     }},
+    {"Frontier", test::kFrontierConfig},
     {"Homestead",
      {
          .chain_id = 1,

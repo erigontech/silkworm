@@ -21,6 +21,12 @@
 
 namespace silkworm::test {
 
+/// Always Frontier rules.
+inline constexpr ChainConfig kFrontierConfig{
+    .chain_id = 1,
+    .seal_engine = SealEngineType::kNoProof,
+};
+
 /// Enables London from genesis.
 inline constexpr ChainConfig kLondonConfig{
     .chain_id = 1,

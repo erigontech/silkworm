@@ -33,6 +33,7 @@ boost::asio::awaitable<void> Peer::handle() {
             node_key_,
             client_id_,
             node_listen_port_,
+            {"eth", 67},
             peer_public_key_,
         };
         auto message_stream = co_await handshake.execute(stream_);

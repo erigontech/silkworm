@@ -18,6 +18,7 @@
 
 #include <optional>
 #include <string>
+#include <utility>
 
 #include <silkworm/concurrency/coroutine.hpp>
 
@@ -38,10 +39,12 @@ class Handshake {
         common::EccKeyPair node_key,
         std::string client_id,
         uint16_t node_listen_port,
+        std::pair<std::string, uint8_t> required_capability,
         std::optional<common::EccPublicKey> peer_public_key)
         : node_key_(std::move(node_key)),
           client_id_(std::move(client_id)),
           node_listen_port_(node_listen_port),
+          required_capability_(std::move(required_capability)),
           is_initiator_(peer_public_key.has_value()),
           peer_public_key_(std::move(peer_public_key)) {}
 
@@ -53,6 +56,7 @@ class Handshake {
     common::EccKeyPair node_key_;
     std::string client_id_;
     uint16_t node_listen_port_;
+    std::pair<std::string, uint8_t> required_capability_;
     const bool is_initiator_;
     std::optional<common::EccPublicKey> peer_public_key_;
 };

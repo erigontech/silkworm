@@ -18,6 +18,7 @@
 
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 #include <silkworm/common/base.hpp>
@@ -36,6 +37,9 @@ class HelloMessage {
             uint8_t version1)
             : name_bytes(reinterpret_cast<const uint8_t*>(name.data()), name.size()),
               version(version1) {}
+
+        explicit Capability(const std::pair<std::string, uint8_t>& info)
+            : Capability(info.first, info.second) {}
 
         [[nodiscard]] std::string_view name() const {
             return {reinterpret_cast<const char*>(name_bytes.data()), name_bytes.size()};
@@ -60,6 +64,8 @@ class HelloMessage {
     [[nodiscard]] std::string_view client_id() const {
         return {reinterpret_cast<const char*>(client_id_bytes_.data()), client_id_bytes_.size()};
     }
+
+    [[nodiscard]] bool contains_capability(const Capability& capability) const;
 
     [[nodiscard]] std::string capabilities_description();
 

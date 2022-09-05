@@ -67,7 +67,7 @@ boost::asio::awaitable<framing::MessageStream> Handshake::execute(common::Socket
         client_id_,
         {
             {"p2p", HelloMessage::kProtocolVersion},
-            {"eth", 67},
+            HelloMessage::Capability{required_capability_},
         },
         node_listen_port_,
         node_key_.public_key(),
@@ -86,6 +86,9 @@ boost::asio::awaitable<framing::MessageStream> Handshake::execute(common::Socket
     HelloMessage hello_reply_message = HelloMessage::from_message(reply_message);
     log::Debug() << "Handshake success: peer Hello: " << hello_reply_message.client_id()
                  << " with " << hello_reply_message.capabilities_description();
+
+    if (!hello_reply_message.contains_capability(HelloMessage::Capability{required_capability_}))
+        throw std::runtime_error("Handshake: no matching required capability");
 
     message_stream.enable_compression();
 

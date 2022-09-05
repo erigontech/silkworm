@@ -19,6 +19,7 @@
 #include <CLI/CLI.hpp>
 #include <boost/process/environment.hpp>
 
+#include <silkworm/buildinfo.h>
 #include <silkworm/common/util.hpp>
 #include <silkworm/rpc/util.hpp>
 #include <silkworm/sentry/sentry.hpp>
@@ -34,6 +35,7 @@ Settings sentry_parse_cli_settings(int argc, char* argv[]) {
     CLI::App cli{"Sentry - P2P proxy"};
 
     Settings settings;
+    settings.build_info = silkworm_get_buildinfo();
     add_logging_options(cli, settings.log_settings);
 
     cli.add_option("--sentry.api.addr", settings.api_address, "GRPC API endpoint")

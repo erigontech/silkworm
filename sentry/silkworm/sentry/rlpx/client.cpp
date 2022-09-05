@@ -29,7 +29,10 @@ namespace silkworm::sentry::rlpx {
 
 using namespace boost::asio;
 
-awaitable<void> Client::start(common::EccKeyPair node_key) {
+awaitable<void> Client::start(
+    common::EccKeyPair node_key,
+    std::string client_id,
+    uint16_t node_listen_port) {
     if (peer_urls_.empty()) {
         co_return;
     }
@@ -50,6 +53,8 @@ awaitable<void> Client::start(common::EccKeyPair node_key) {
     Peer peer{
         std::move(stream),
         node_key,
+        client_id,
+        node_listen_port,
         {peer_url.public_key()},
     };
 

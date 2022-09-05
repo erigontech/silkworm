@@ -498,7 +498,7 @@ void do_tables(db::EnvConfig& config) {
               << " Database file size   (A) : " << (boost::format("%13s") % human_size(dbTablesInfo.filesize)) << "\n"
               << " Data pages count         : " << (boost::format("%13u") % dbTablesInfo.pages) << "\n"
               << " Data pages size      (B) : " << (boost::format("%13s") % human_size(dbTablesInfo.size)) << "\n"
-              << " Free pages count         : " << (boost::format("%13u") % dbTablesInfo.tables[0].pages()) << "\n"
+              << " Free pages count         : " << (boost::format("%13u") % dbFreeInfo.pages) << "\n"
               << " Free pages size      (C) : " << (boost::format("%13s") % human_size(dbFreeInfo.size)) << "\n"
               << " Reclaimable space        : "
               << (boost::format("%13s") % human_size(dbTablesInfo.filesize - dbTablesInfo.size + dbFreeInfo.size))

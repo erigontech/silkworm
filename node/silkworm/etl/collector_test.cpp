@@ -66,7 +66,7 @@ void run_collector_test(LoadFunc load_func, bool do_copy = true) {
     auto set{generate_entry_set(1000)};  // 1000 entries in total
     size_t generated_size{0};
     for (const auto& entry : set) {
-        generated_size += entry.size() + 8;
+        generated_size += entry.size() + /* each flushed record stores also length of key and length of value */ 8;
     }
     auto collector{Collector(context.dir().etl().path(), generated_size / 10)};  // expect 10 files
 
@@ -79,6 +79,7 @@ void run_collector_test(LoadFunc load_func, bool do_copy = true) {
     }
     // Check whether temporary files were generated
     CHECK(std::distance(fs::directory_iterator{context.dir().etl().path()}, fs::directory_iterator{}) == 10);
+    CHECK(collector.bytes_size() == (generated_size - 8 * set.size()));
 
     // Load data while reading loading key from another thread
     auto key_reader_thread = std::thread([&collector]() -> void {

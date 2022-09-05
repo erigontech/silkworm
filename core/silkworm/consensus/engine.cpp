@@ -16,6 +16,8 @@
 
 #include "engine.hpp"
 
+#include <utility>
+
 #include <silkpre/secp256k1n.hpp>
 
 #include <silkworm/chain/intrinsic_gas.hpp>
@@ -96,8 +98,7 @@ std::unique_ptr<IEngine> engine_factory(const ChainConfig& chain_config) {
     }
 
     if (chain_config.terminal_total_difficulty.has_value()) {
-        // TODO(yperbasis): refactor MergeEngine to wrap pre_merge_engine
-        return std::make_unique<MergeEngine>(chain_config);
+        return std::make_unique<MergeEngine>(std::move(engine), chain_config);
     } else {
         return engine;
     }

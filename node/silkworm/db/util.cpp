@@ -34,20 +34,20 @@ Bytes storage_prefix(ByteView address, uint64_t incarnation) {
 }
 
 Bytes block_key(BlockNum block_number) {
-    Bytes key(8, '\0');
+    Bytes key(sizeof(BlockNum), '\0');
     endian::store_big_u64(&key[0], block_number);
     return key;
 }
 
 Bytes block_key(BlockNum block_number, std::span<const uint8_t, kHashLength> hash) {
-    Bytes key(8 + kHashLength, '\0');
+    Bytes key(sizeof(BlockNum) + kHashLength, '\0');
     endian::store_big_u64(&key[0], block_number);
     std::memcpy(&key[8], hash.data(), kHashLength);
     return key;
 }
 
 Bytes storage_change_key(BlockNum block_number, const evmc::address& address, uint64_t incarnation) {
-    Bytes res(8 + kPlainStoragePrefixLength, '\0');
+    Bytes res(sizeof(BlockNum) + kPlainStoragePrefixLength, '\0');
     endian::store_big_u64(&res[0], block_number);
     std::memcpy(&res[8], address.bytes, kAddressLength);
     endian::store_big_u64(&res[8 + kAddressLength], incarnation);
@@ -55,14 +55,14 @@ Bytes storage_change_key(BlockNum block_number, const evmc::address& address, ui
 }
 
 Bytes account_history_key(const evmc::address& address, BlockNum block_number) {
-    Bytes res(kAddressLength + 8, '\0');
+    Bytes res(kAddressLength + sizeof(BlockNum), '\0');
     std::memcpy(&res[0], address.bytes, kAddressLength);
     endian::store_big_u64(&res[kAddressLength], block_number);
     return res;
 }
 
 Bytes storage_history_key(const evmc::address& address, const evmc::bytes32& location, BlockNum block_number) {
-    Bytes res(kAddressLength + kHashLength + 8, '\0');
+    Bytes res(kAddressLength + kHashLength + sizeof(BlockNum), '\0');
     std::memcpy(&res[0], address.bytes, kAddressLength);
     std::memcpy(&res[kAddressLength], location.bytes, kHashLength);
     endian::store_big_u64(&res[kAddressLength + kHashLength], block_number);
@@ -70,14 +70,14 @@ Bytes storage_history_key(const evmc::address& address, const evmc::bytes32& loc
 }
 
 Bytes log_key(BlockNum block_number, uint32_t transaction_id) {
-    Bytes key(8 + 4, '\0');
+    Bytes key(sizeof(BlockNum) + sizeof(uint32_t), '\0');
     endian::store_big_u64(&key[0], block_number);
     endian::store_big_u32(&key[8], transaction_id);
     return key;
 }
 
 std::pair<Bytes, Bytes> changeset_to_plainstate_format(const ByteView key, ByteView value) {
-    if (key.size() == 8) {
+    if (key.size() == sizeof(BlockNum)) {
         if (value.length() < kAddressLength) {
             throw std::runtime_error("Invalid value length " + std::to_string(value.length()) +
                                      " for account changeset in " + std::string(__FUNCTION__));
@@ -86,7 +86,7 @@ std::pair<Bytes, Bytes> changeset_to_plainstate_format(const ByteView key, ByteV
         const Bytes address{value.substr(0, kAddressLength)};
         const Bytes previous_value{value.substr(kAddressLength)};
         return {address, previous_value};
-    } else if (key.length() == 8 + kPlainStoragePrefixLength) {
+    } else if (key.length() == sizeof(BlockNum) + kPlainStoragePrefixLength) {
         if (value.length() < kHashLength) {
             throw std::runtime_error("Invalid value length " + std::to_string(value.length()) +
                                      " for storage changeset in " + std::string(__FUNCTION__));

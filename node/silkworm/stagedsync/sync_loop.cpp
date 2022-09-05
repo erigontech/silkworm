@@ -20,18 +20,45 @@
 
 #include <silkworm/stagedsync/stage_blockhashes.hpp>
 #include <silkworm/stagedsync/stage_execution.hpp>
+#include <silkworm/stagedsync/stage_finish.hpp>
 #include <silkworm/stagedsync/stage_hashstate.hpp>
+#include <silkworm/stagedsync/stage_history_index.hpp>
 #include <silkworm/stagedsync/stage_interhashes.hpp>
+#include <silkworm/stagedsync/stage_log_index.hpp>
 #include <silkworm/stagedsync/stage_senders.hpp>
+#include <silkworm/stagedsync/stage_tx_lookup.hpp>
 
 namespace silkworm::stagedsync {
 
 void SyncLoop::load_stages() {
+    /*
+     * Stages from Erigon -> Silkworm
+     *  1 StageHeaders ->  Downloader ?
+     *  2 StageCumulativeIndex -> Downloader ?
+     *  3 StageBlockHashes -> stagedsync::BlockHashes
+     *  4 StageBodies -> Downloader ?
+     *  5 StageIssuance -> TBD
+     *  6 StageSenders -> stagedsync::Senders
+     *  7 StageExecuteBlocks -> stagedsync::Execution
+     *  8 StageTranspile -> TBD
+     *  9 StageHashState -> stagedsync::HashState
+     * 10 StageTrie -> stagedsync::InterHashes
+     * 11 StageHistory -> stagedsync::HistoryIndex
+     * 12 StageLogIndex -> stagedsync::LogIndex
+     * 13 StageCallTraces -> TBD
+     * 14 StageTxLookup -> stagedsync::TxLookup
+     * 15 StageFinish -> stagedsync::Finish
+     */
+
     stages_.push_back(std::make_unique<stagedsync::BlockHashes>(node_settings_));
     stages_.push_back(std::make_unique<stagedsync::Senders>(node_settings_));
     stages_.push_back(std::make_unique<stagedsync::Execution>(node_settings_));
     stages_.push_back(std::make_unique<stagedsync::HashState>(node_settings_));
     stages_.push_back(std::make_unique<stagedsync::InterHashes>(node_settings_));
+    stages_.push_back(std::make_unique<stagedsync::HistoryIndex>(node_settings_));
+    stages_.push_back(std::make_unique<stagedsync::LogIndex>(node_settings_));
+    stages_.push_back(std::make_unique<stagedsync::TxLookup>(node_settings_));
+    stages_.push_back(std::make_unique<stagedsync::Finish>(node_settings_));
 }
 
 void SyncLoop::stop(bool wait) {
@@ -93,7 +120,9 @@ void SyncLoop::work() {
             cycle_txn = std::make_unique<db::RWTxn>(*chaindata_env_);
         }
 
-        if (run_cycle(*cycle_txn, log_timer) != StageResult::kSuccess) {
+        // TODO Populate shared state amongst stages with firsT_cycle + a ton of other things
+
+        if (run_cycle_forward(*cycle_txn, log_timer) != StageResult::kSuccess) {
             break;
         }
 
@@ -117,9 +146,8 @@ void SyncLoop::work() {
     log::Info() << "Synchronization loop terminated";
 }
 
-StageResult SyncLoop::run_cycle(db::RWTxn& cycle_txn, Timer& log_timer) {
-    StopWatch stages_stop_watch;
-    (void)stages_stop_watch.start();
+StageResult SyncLoop::run_cycle_forward(db::RWTxn& cycle_txn, Timer& log_timer) {
+    StopWatch stages_stop_watch(true);
     try {
         // Force to stop at any particular stage ?
         // Same as in Erigon
@@ -132,15 +160,20 @@ StageResult SyncLoop::run_cycle(db::RWTxn& cycle_txn, Timer& log_timer) {
             if (stop_stage_name && !iequals(stop_stage_name, stage->name())) {
                 stop();
                 log::Warning("Stopping ...", {"STOP_BEFORE_STAGE", stop_stage_name, "hit", "true"});
-                return StageResult::kSuccess;
+                break;
             }
 
             log_timer.reset();  // Resets the interval for next log line from now
             const auto stage_result{stage->forward(cycle_txn)};
+
+            // TODO Switch on result values to decide if we need to unwind or
+            // if we encountered an unrecoverable error
+
             if (stage_result != StageResult::kSuccess) {
                 log::Error(get_log_prefix(), {"return", std::string(magic_enum::enum_name<StageResult>(stage_result))});
                 return stage_result;
             }
+
             auto [_, stage_duration] = stages_stop_watch.lap();
             if (stage_duration > std::chrono::milliseconds(10)) {
                 log::Info(get_log_prefix(), {"done", StopWatch::format(stage_duration)});

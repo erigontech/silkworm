@@ -17,29 +17,28 @@
 #include "stage_hashstate.hpp"
 
 #include <silkworm/common/endian.hpp>
-#include <silkworm/common/log.hpp>
 #include <silkworm/db/access_layer.hpp>
-#include <silkworm/db/util.hpp>
-#include <silkworm/etl/collector.hpp>
 
 namespace silkworm::stagedsync {
 
 StageResult HashState::forward(db::RWTxn& txn) {
+    StageResult ret{StageResult::kSuccess};
     try {
         throw_if_stopping();
 
         // Check stage boundaries from previous execution and previous stage execution
-        auto previous_progress{db::stages::read_stage_progress(*txn, stage_name_)};
+        const auto previous_progress{get_progress(txn)};
         auto execution_stage_progress{db::stages::read_stage_progress(*txn, db::stages::kExecutionKey)};
         if (previous_progress == execution_stage_progress) {
             // Nothing to process
-            return StageResult::kSuccess;
+            return ret;
         } else if (previous_progress > execution_stage_progress) {
             // Something bad had happened. Not possible execution stage is ahead of bodies
             // Maybe we need to unwind ?
-            log::Error() << "Bad progress sequence. HashState stage progress " << previous_progress
-                         << " while Execution stage " << execution_stage_progress;
-            return StageResult::kInvalidProgress;
+            std::string what{std::string(stage_name_) + " progress " + std::to_string(previous_progress) +
+                             " while " + std::string(db::stages::kExecutionKey) + " stage " +
+                             std::to_string(execution_stage_progress)};
+            throw StageError(StageResult::kInvalidProgress, what);
         }
 
         BlockNum segment_width{execution_stage_progress - previous_progress};
@@ -80,24 +79,34 @@ StageResult HashState::forward(db::RWTxn& txn) {
     } catch (const StageError& ex) {
         log::Error(std::string(stage_name_),
                    {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
-        return static_cast<StageResult>(ex.err());
+        ret = static_cast<StageResult>(ex.err());
+    } catch (const mdbx::exception& ex) {
+        log::Error(std::string(stage_name_),
+                   {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
+        ret = StageResult::kDbError;
     } catch (const std::exception& ex) {
-        reset_log_progress();
-        collector_->clear();
-        log::Error(std::string(stage_name_), {"exception", std::string(ex.what())});
-        return StageResult::kUnexpectedError;
+        log::Error(std::string(stage_name_),
+                   {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
+        ret = StageResult::kUnexpectedError;
+    } catch (...) {
+        log::Error(std::string(stage_name_),
+                   {"function", std::string(__FUNCTION__), "exception", "unexpected and undefined"});
+        ret = StageResult::kUnexpectedError;
     }
 
-    return StageResult::kSuccess;
+    reset_log_progress();
+    collector_.reset();
+    return ret;
 }
 
 StageResult HashState::unwind(db::RWTxn& txn, BlockNum to) {
+    StageResult ret{StageResult::kSuccess};
     try {
         throw_if_stopping();
         auto previous_progress{db::stages::read_stage_progress(*txn, stage_name_)};
         if (to >= previous_progress) {
             // Nothing to unwind actually
-            return StageResult::kSuccess;
+            return ret;
         }
         if (previous_progress - to > 16) {
             log::Info("Begin " + std::string(stage_name_) + " unwind",
@@ -111,20 +120,28 @@ StageResult HashState::unwind(db::RWTxn& txn, BlockNum to) {
         reset_log_progress();
 
         throw_if_stopping();
-        db::stages::write_stage_progress(*txn, db::stages::kHashStateKey, to);
+        update_progress(txn, to);
         txn.commit();
 
     } catch (const StageError& ex) {
         log::Error(std::string(stage_name_),
                    {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
-        return static_cast<StageResult>(ex.err());
+        ret = static_cast<StageResult>(ex.err());
+    } catch (const mdbx::exception& ex) {
+        log::Error(std::string(stage_name_),
+                   {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
+        ret = StageResult::kDbError;
     } catch (const std::exception& ex) {
-        reset_log_progress();
-        log::Error(std::string(stage_name_), {"exception", std::string(ex.what())});
-        return StageResult::kUnexpectedError;
+        log::Error(std::string(stage_name_),
+                   {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
+        ret = StageResult::kUnexpectedError;
+    } catch (...) {
+        log::Error(std::string(stage_name_),
+                   {"function", std::string(__FUNCTION__), "exception", "unexpected and undefined"});
+        ret = StageResult::kUnexpectedError;
     }
 
-    return StageResult::kSuccess;
+    return ret;
 }
 
 StageResult HashState::prune(db::RWTxn&) {
@@ -135,10 +152,8 @@ StageResult HashState::prune(db::RWTxn&) {
 StageResult HashState::hash_from_plainstate(db::RWTxn& txn) {
     StageResult ret{StageResult::kSuccess};
     try {
-        auto source{db::open_cursor(*txn, db::table::kPlainState)};
+        db::Cursor source(txn, db::table::kPlainState);
         auto data{source.to_first(/*throw_notfound=*/true)};
-
-        // TODO(Andrea) Maybe introduce an assertion for target tables to be empty ?
 
         /*
          * This relies on the assumption previous execution stage has completed correctly
@@ -234,12 +249,16 @@ StageResult HashState::hash_from_plainstate(db::RWTxn& txn) {
             data = source.to_next(/*throw_notfound=*/false);
         }
 
-        source.close();
         throw_if_stopping();
 
         if (!collector_->empty()) {
-            auto account_target = db::open_cursor(*txn, db::table::kHashedAccounts);
-            auto storage_target = db::open_cursor(*txn, db::table::kHashedStorage);
+            db::Cursor account_target(txn, db::table::kHashedAccounts);
+            db::Cursor storage_target(txn, db::table::kHashedStorage);
+
+            if (!account_target.empty())
+                throw std::runtime_error(std::string(db::table::kHashedAccounts.name) + " should be empty");
+            if (!storage_target.empty())
+                throw std::runtime_error(std::string(db::table::kHashedStorage.name) + " should be empty");
 
             // ETL key contains hashed location; for DB put we need to move it from key to value
             const etl::LoadFunc load_func = [&storage_target](const etl::Entry& entry, mdbx::cursor& target,
@@ -296,10 +315,8 @@ StageResult HashState::hash_from_plainstate(db::RWTxn& txn) {
 StageResult HashState::hash_from_plaincode(db::RWTxn& txn) {
     StageResult ret{StageResult::kSuccess};
     try {
-        auto source{db::open_cursor(*txn, db::table::kPlainCodeHash)};
+        db::Cursor source(txn, db::table::kPlainCodeHash);
         auto data{source.to_first(/*throw_notfound=*/false)};
-
-        // TODO(Andrea) Maybe introduce an assertion for target table to be empty ?
 
         evmc::address last_address{};
         Bytes new_key(db::kHashedStoragePrefixLength, '\0');
@@ -338,16 +355,18 @@ StageResult HashState::hash_from_plaincode(db::RWTxn& txn) {
             data = source.to_next(/*throw_notfound=*/false);
         }
 
-        source.close();
         throw_if_stopping();
 
         if (!collector_->empty()) {
-            source = db::open_cursor(*txn, db::table::kHashedCodeHash);
+            db::Cursor target(txn, db::table::kHashedCodeHash);
+            if (!target.empty())
+                throw std::runtime_error(std::string(db::table::kHashedCodeHash.name) + " should be empty");
+
             log_lck.lock();
             current_target_ = std::string(db::table::kHashedCodeHash.name);
             loading_ = true;
             log_lck.unlock();
-            collector_->load(source, nullptr, MDBX_put_flags_t::MDBX_APPEND);
+            collector_->load(target, nullptr, MDBX_put_flags_t::MDBX_APPEND);
         }
 
     } catch (const mdbx::exception& ex) {
@@ -391,8 +410,8 @@ StageResult HashState::hash_from_account_changeset(db::RWTxn& txn, BlockNum prev
         log_lck.unlock();
 
         auto source_initial_key{db::block_key(expected_blocknum)};
-        auto source_changeset{db::open_cursor(*txn, db::table::kAccountChangeSet)};
-        auto source_plainstate{db::open_cursor(*txn, db::table::kPlainState)};
+        db::Cursor source_changeset(txn, db::table::kAccountChangeSet);
+        db::Cursor source_plainstate(txn, db::table::kPlainState);
         auto changeset_data{source_changeset.find(db::to_slice(source_initial_key),
                                                   /*throw_notfound=*/true)};  // Initial record MUST be found
         while (changeset_data.done) {
@@ -427,8 +446,7 @@ StageResult HashState::hash_from_account_changeset(db::RWTxn& txn, BlockNum prev
             ++expected_blocknum;
             changeset_data = source_changeset.to_next(/*throw_notfound=*/false);
         }
-        source_changeset.close();
-        source_plainstate.close();
+
         ret = write_changes_from_changed_addresses(txn, changed_addresses);
 
     } catch (const mdbx::exception& ex) {
@@ -472,8 +490,8 @@ StageResult HashState::hash_from_storage_changeset(db::RWTxn& txn, BlockNum prev
         current_key_ = std::to_string(previous_progress + 1);
         log_lck.unlock();
 
-        auto source_changeset{db::open_cursor(*txn, db::table::kStorageChangeSet)};
-        auto source_plainstate{db::open_cursor(*txn, db::table::kPlainState)};
+        db::Cursor source_changeset(txn, db::table::kStorageChangeSet);
+        db::Cursor source_plainstate(txn, db::table::kPlainState);
 
         auto source_initial_key{db::block_key(previous_progress + 1)};
         auto changeset_data{source_changeset.lower_bound(db::to_slice(source_initial_key), /*throw_notfound=*/true)};
@@ -568,8 +586,9 @@ StageResult HashState::unwind_from_account_changeset(db::RWTxn& txn, BlockNum pr
         log_lck.unlock();
 
         throw_if_stopping();
+
+        db::Cursor source_changeset(txn, db::table::kAccountChangeSet);
         auto source_initial_key{db::block_key(expected_blocknum)};
-        auto source_changeset{db::open_cursor(*txn, db::table::kAccountChangeSet)};
         auto changeset_data{source_changeset.lower_bound(db::to_slice(source_initial_key),
                                                          /*throw_notfound=*/true)};  // Initial record MUST be found
 
@@ -604,7 +623,6 @@ StageResult HashState::unwind_from_account_changeset(db::RWTxn& txn, BlockNum pr
             changeset_data = source_changeset.to_next(/*throw_notfound=*/false);
         }
 
-        source_changeset.close();
         ret = write_changes_from_changed_addresses(txn, changed_addresses);
 
     } catch (const mdbx::exception& ex) {
@@ -655,7 +673,7 @@ StageResult HashState::unwind_from_storage_changeset(db::RWTxn& txn, BlockNum pr
         current_key_ = std::to_string(to + 1);
         log_lck.unlock();
 
-        auto source_changeset{db::open_cursor(*txn, db::table::kStorageChangeSet)};
+        db::Cursor source_changeset(txn, db::table::kStorageChangeSet);
         auto source_initial_key{db::block_key(to + 1)};
         auto changeset_data{source_changeset.lower_bound(db::to_slice(source_initial_key), /*throw_notfound=*/true)};
 
@@ -729,9 +747,9 @@ StageResult HashState::write_changes_from_changed_addresses(db::RWTxn& txn, cons
     current_key_ = to_hex(changed_addresses.begin()->first.bytes, /*with_prefix=*/true);
     log_lck.unlock();
 
-    auto source_plaincode{db::open_cursor(*txn, db::table::kPlainCodeHash)};
-    auto target_hashed_accounts{db::open_cursor(*txn, db::table::kHashedAccounts)};
-    auto target_hashed_code{db::open_cursor(*txn, db::table::kHashedCodeHash)};
+    db::Cursor source_plaincode(txn, db::table::kPlainCodeHash);
+    db::Cursor target_hashed_accounts(txn, db::table::kHashedAccounts);
+    db::Cursor target_hashed_code(txn, db::table::kHashedCodeHash);
 
     Bytes plain_code_key(kAddressLength + db::kIncarnationLength, '\0');  // Only one allocation
     Bytes hashed_code_key(kHashLength + db::kIncarnationLength, '\0');    // Only one allocation
@@ -780,7 +798,7 @@ StageResult HashState::write_changes_from_changed_storage(
     db::RWTxn& txn, db::StorageChanges& storage_changes,
     const absl::btree_map<evmc::address, evmc::bytes32>& hashed_addresses) {
     throw_if_stopping();
-    auto target_hashed_storage{db::open_cursor(*txn, db::table::kHashedStorage)};
+    db::Cursor target_hashed_storage(txn, db::table::kHashedStorage);
 
     std::unique_lock log_lck(log_mtx_);
     loading_ = true;

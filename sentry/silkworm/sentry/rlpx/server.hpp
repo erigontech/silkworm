@@ -33,7 +33,8 @@ class Server final {
 
     boost::asio::awaitable<void> start(
         silkworm::rpc::ServerContextPool& context_pool,
-        common::EccKeyPair node_key);
+        common::EccKeyPair node_key,
+        std::string client_id);
 
   private:
     std::string host_;

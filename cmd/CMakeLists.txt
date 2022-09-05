@@ -48,39 +48,22 @@ if(NOT SILKWORM_CORE_ONLY)
   add_executable(genesistool genesistool.cpp)
   target_link_libraries(genesistool PRIVATE CLI11::CLI11)
 
-  add_executable(unwind_tx_lookup unwind_tx_lookup.cpp)
-  target_link_libraries(unwind_tx_lookup PRIVATE silkworm_node CLI11::CLI11)
-
-  add_executable(unwind_history_index unwind_history_index.cpp)
-  target_link_libraries(unwind_history_index PRIVATE silkworm_node CLI11::CLI11)
-
-  add_executable(unwind_log_index unwind_log_index.cpp)
-  target_link_libraries(unwind_log_index PRIVATE silkworm_node CLI11::CLI11)
-
   add_executable(check_hashstate check_hashstate.cpp)
   target_link_libraries(check_hashstate PRIVATE silkworm_node CLI11::CLI11)
-
-  add_executable(tx_lookup tx_lookup.cpp)
-  target_link_libraries(tx_lookup PRIVATE silkworm_node CLI11::CLI11)
 
   add_executable(check_tx_lookup check_tx_lookup.cpp)
   target_link_libraries(check_tx_lookup PRIVATE silkworm_node CLI11::CLI11)
 
-  add_executable(history_index history_index.cpp)
-  target_link_libraries(history_index PRIVATE silkworm_node CLI11::CLI11)
-
   add_executable(check_blockhashes check_blockhashes.cpp)
   target_link_libraries(check_blockhashes PRIVATE silkworm_node CLI11::CLI11)
-
-  add_executable(log_index log_index.cpp)
-  target_link_libraries(log_index PRIVATE silkworm_node cborcpp CLI11::CLI11)
 
   add_executable(downloader downloader.cpp common.cpp)
   target_link_libraries(downloader PRIVATE silkworm_node silkworm-buildinfo CLI11::CLI11)
 
   add_executable(sentry sentry.cpp common.cpp)
-  target_link_libraries(sentry PRIVATE silkworm_node silkworm_sentry CLI11::CLI11)
+  target_link_libraries(sentry PRIVATE silkworm_node silkworm-buildinfo CLI11::CLI11 silkworm_sentry)
 
   add_executable(backend_kv_server backend_kv_server.cpp common.cpp)
   target_link_libraries(backend_kv_server PRIVATE silkworm_node silkworm-buildinfo CLI11::CLI11)
+
 endif()

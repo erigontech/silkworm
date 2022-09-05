@@ -47,7 +47,7 @@ StageResult Senders::prune(db::RWTxn& txn) {
             auto prune_to_block{node_settings_->prune_mode->senders().value_from_head(head_progress)};
             if (prune_to_block) {
                 auto upper_key{db::block_key(prune_to_block + 1)};
-                auto prune_table{db::open_cursor(*txn, db::table::kSenders)};
+                db::Cursor prune_table(txn, db::table::kSenders);
                 db::cursor_erase(prune_table, upper_key, db::CursorMoveDirection::Reverse);
                 db::stages::write_stage_prune_progress(*txn, db::stages::kSendersKey, head_progress);
                 txn.commit();

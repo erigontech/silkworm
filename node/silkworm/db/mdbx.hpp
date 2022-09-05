@@ -142,6 +142,11 @@ class RWAccess : public ROAccess {
 //! \remarks Return value signals whether the loop should continue on next record
 using WalkFunc = std::function<bool(::mdbx::cursor& cursor, ::mdbx::cursor::move_result& data)>;
 
+//! \brief Convenience function to erase records of cursor
+static const WalkFunc walk_erase{[](::mdbx::cursor& cursor, ::mdbx::cursor::move_result&) -> bool {
+    return cursor.erase();
+}};
+
 //! \brief Essential environment settings
 struct EnvConfig {
     std::string path{};
@@ -152,7 +157,8 @@ struct EnvConfig {
     bool shared{false};          // Whether this process opens a db already opened by another process
     bool read_ahead{false};      // Whether to enable mdbx read ahead
     bool write_map{false};       // Whether to enable mdbx write map
-    size_t max_size{3_Tebi};     // Max mdbx map size
+    size_t page_size{4_Kibi};    // Mdbx page size
+    size_t max_size{3_Tebi};     // Mdbx max map size
     size_t growth_size{2_Gibi};  // Increment size for each extension
     uint32_t max_tables{128};    // Default max number of named tables
     uint32_t max_readers{100};   // Default max number of readers
@@ -182,6 +188,16 @@ struct MapConfig {
 //! \param [in] config : the configuration settings for the underlying map
 //! \return A handle to the opened cursor
 ::mdbx::cursor_managed open_cursor(::mdbx::txn& tx, const MapConfig& config);
+
+//! \brief Computes the max size of value data to fit in a leaf data page
+//! \param [in] page_size : the actually configured MDBX's page size
+//! \param [in] key_size : the known key size to fit in bundle computed value size
+size_t max_value_size_for_leaf_page(const size_t page_size, const size_t key_size);
+
+//! \brief Computes the max size of value data to fit in a leaf data page
+//! \param [in] txn : the transaction used to derive pagesize from
+//! \param [in] key_size : the known key size to fit in bundle computed value size
+size_t max_value_size_for_leaf_page(const ::mdbx::txn& txn, const size_t key_size);
 
 //! \brief Managed cursor class to access cursor API
 //! \remarks Unlike ::mdbx::cursor_managed this class withdraws and deposits allocated MDBX_cursor handles in a
@@ -260,6 +276,16 @@ enum class CursorMoveDirection {
 //! end of the table on behalf of the move criteria
 size_t cursor_for_each(::mdbx::cursor& cursor, const WalkFunc& func,
                        CursorMoveDirection direction = CursorMoveDirection::Forward);
+
+//! \brief Executes a function on each record reachable by the provided cursor asserting keys start with provided prefix
+//! \param [in] cursor : A reference to a cursor opened on a map
+//! \param [in] prefix : The slice each key must start with
+//! \param [in] func : A pointer to a std::function with the code to execute on records. Note the return value of the
+//! function may stop the loop
+//! \param [in] direction : Whether the cursor should navigate records forward (default) or backwards
+//! \return The overall number of processed records
+size_t cursor_for_prefix(::mdbx::cursor& cursor, ::mdbx::slice prefix, const WalkFunc& func,
+                         CursorMoveDirection direction = CursorMoveDirection::Forward);
 
 //! \brief Executes a function on each record reachable by the provided cursor up to a max number of iterations
 //! \param [in] cursor : A reference to a cursor opened on a map

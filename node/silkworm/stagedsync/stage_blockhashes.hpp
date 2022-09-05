@@ -34,8 +34,11 @@ class BlockHashes final : public IStage {
     std::unique_ptr<etl::Collector> collector_{nullptr};
 
     /* Stats */
-    uint16_t current_phase_{0};
-    BlockNum reached_block_num_{0};
+    std::atomic_uint32_t current_phase_{0};
+    std::atomic<BlockNum> reached_block_num_{0};
+
+    void collect_and_load(db::RWTxn& txn, const BlockNum from,
+                          const BlockNum to);  // Accrues canonical hashes in collector and loads them
 };
 
 }  // namespace silkworm::stagedsync

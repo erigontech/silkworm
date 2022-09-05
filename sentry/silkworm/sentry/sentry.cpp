@@ -17,6 +17,7 @@
 #include "sentry.hpp"
 
 #include <future>
+#include <string>
 
 #include <silkworm/concurrency/coroutine.hpp>
 
@@ -27,6 +28,7 @@
 #include <boost/asio/signal_set.hpp>
 #include <grpc/grpc.h>
 
+#include <silkworm/buildinfo.h>
 #include <silkworm/common/directories.hpp>
 #include <silkworm/common/log.hpp>
 #include <silkworm/rpc/server/server_context_pool.hpp>
@@ -54,6 +56,7 @@ class SentryImpl final {
 
   private:
     void setup_shutdown_on_signals(asio::io_context&);
+    [[nodiscard]] std::string client_id() const;
 
     Settings settings_;
     silkworm::rpc::ServerContextPool context_pool_;
@@ -116,7 +119,7 @@ void SentryImpl::start() {
     };
     asio::co_spawn(
         context_pool_.next_io_context(),
-        rlpx_server_.start(context_pool_, node_key),
+        rlpx_server_.start(context_pool_, node_key, client_id()),
         asio::bind_cancellation_slot(rlpx_server_stop_signal_.slot(), rlpx_server_task_completion));
 
     auto rlpx_client_task_completion = [&](const std::exception_ptr& ex_ptr) {
@@ -125,7 +128,7 @@ void SentryImpl::start() {
     };
     asio::co_spawn(
         context_pool_.next_io_context(),
-        rlpx_client_.start(node_key),
+        rlpx_client_.start(node_key, client_id(), settings_.port),
         asio::bind_cancellation_slot(rlpx_client_stop_signal_.slot(), rlpx_client_task_completion));
 
     setup_shutdown_on_signals(context_pool_.next_io_context());
@@ -155,6 +158,19 @@ void SentryImpl::setup_shutdown_on_signals(asio::io_context& io_context) {
         log::Info() << "Signal caught, error: " << error << " number: " << signal_number;
         this->stop();
     });
+}
+
+static std::string make_client_id(const buildinfo& info) {
+    return std::string(info.project_name) +
+           "/v" + info.project_version +
+           "/" + info.system_name + "-" + info.system_processor +
+           "/" + info.compiler_id + "-" + info.compiler_version;
+}
+
+std::string SentryImpl::client_id() const {
+    if (settings_.build_info)
+        return make_client_id(*settings_.build_info);
+    return "silkworm";
 }
 
 Sentry::Sentry(Settings settings)

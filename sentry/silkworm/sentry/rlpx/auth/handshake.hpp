@@ -17,6 +17,7 @@
 #pragma once
 
 #include <optional>
+#include <string>
 
 #include <silkworm/concurrency/coroutine.hpp>
 
@@ -26,7 +27,7 @@
 #include <silkworm/sentry/common/ecc_public_key.hpp>
 #include <silkworm/sentry/common/socket_stream.hpp>
 
-#include "auth_session.hpp"
+#include "auth_keys.hpp"
 
 namespace silkworm::sentry::rlpx::auth {
 
@@ -34,16 +35,24 @@ class Handshake {
   public:
     explicit Handshake(
         common::EccKeyPair node_key,
+        std::string client_id,
+        uint16_t node_listen_port,
         std::optional<common::EccPublicKey> peer_public_key)
         : node_key_(std::move(node_key)),
+          client_id_(std::move(client_id)),
+          node_listen_port_(node_listen_port),
+          is_initiator_(peer_public_key.has_value()),
           peer_public_key_(std::move(peer_public_key)) {}
 
     boost::asio::awaitable<void> execute(common::SocketStream& stream);
 
   private:
-    boost::asio::awaitable<AuthSession> auth(common::SocketStream& stream);
+    boost::asio::awaitable<AuthKeys> auth(common::SocketStream& stream);
 
     common::EccKeyPair node_key_;
+    std::string client_id_;
+    uint16_t node_listen_port_;
+    const bool is_initiator_;
     std::optional<common::EccPublicKey> peer_public_key_;
 };
 

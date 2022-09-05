@@ -88,15 +88,21 @@ int main(int argc, char* argv[]) {
 
         // Output BuildInfo
         auto build_info{silkworm_get_buildinfo()};
+        node_settings.build_info =
+            "version=" + std::string(build_info->git_branch) + std::string(build_info->project_version) +
+            "build=" + std::string(build_info->system_name) + "-" + std::string(build_info->system_processor) +
+            " " + std::string(build_info->build_type) +
+            "compiler=" + std::string(build_info->compiler_id) +
+            " " + std::string(build_info->compiler_version);
+
         log::Message(
             "Silkworm",
-            {
-                "version", std::string(build_info->git_branch) + std::string(build_info->project_version),  //
-                "build",
-                std::string(build_info->system_name) + "-" + std::string(build_info->system_processor) + " " +
-                    std::string(build_info->build_type),                                                            //
-                "compiler", std::string(build_info->compiler_id) + " " + std::string(build_info->compiler_version)  //
-            });
+            {"version", std::string(build_info->git_branch) + std::string(build_info->project_version),
+             "build",
+             std::string(build_info->system_name) + "-" + std::string(build_info->system_processor) + " " +
+                 std::string(build_info->build_type),
+             "compiler",
+             std::string(build_info->compiler_id) + " " + std::string(build_info->compiler_version)});
 
         // Output mdbx build info
         auto mdbx_ver{mdbx::get_version()};

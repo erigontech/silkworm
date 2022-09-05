@@ -18,9 +18,9 @@
 
 #include <catch2/catch.hpp>
 
-#include <silkworm/common/endian.hpp>
 #include <silkworm/common/util.hpp>
 #include <silkworm/sentry/common/ecc_key_pair.hpp>
+#include <silkworm/sentry/rlpx/crypto/aes.hpp>
 
 namespace silkworm::sentry::rlpx::auth {
 
@@ -28,6 +28,7 @@ TEST_CASE("EciesCipher.encrypt_decrypt_message") {
     common::EccKeyPair receiver_key;
 
     Bytes expected_plain_text = {1, 2, 3, 4, 5};
+    expected_plain_text.resize(crypto::kAESBlockSize);
     auto message = EciesCipher::encrypt_message(expected_plain_text, receiver_key.public_key(), {});
     CHECK(message.ephemeral_public_key.size() > 0);
     CHECK_FALSE(message.iv.empty());
@@ -45,6 +46,7 @@ TEST_CASE("EciesCipher.encrypt_decrypt_bytes") {
     common::EccKeyPair receiver_key;
 
     Bytes expected_plain_text = {1, 2, 3, 4, 5};
+    expected_plain_text.resize(crypto::kAESBlockSize);
     auto cipher_text = EciesCipher::encrypt(expected_plain_text, receiver_key.public_key(), {});
     CHECK_FALSE(cipher_text.empty());
     CHECK(cipher_text != expected_plain_text);

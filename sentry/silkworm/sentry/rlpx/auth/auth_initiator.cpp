@@ -28,19 +28,25 @@ namespace silkworm::sentry::rlpx::auth {
 using namespace std::chrono_literals;
 using namespace common::awaitable_wait_for_one;
 
-boost::asio::awaitable<AuthSession> AuthInitiator::execute(common::SocketStream& stream) {
+boost::asio::awaitable<AuthKeys> AuthInitiator::execute(common::SocketStream& stream) {
     common::Timeout timeout(5s);
 
     AuthMessage auth_message{initiator_key_pair_, recipient_public_key_, initiator_ephemeral_key_pair_};
-    co_await (stream.send(auth_message.serialize()) || timeout());
+    Bytes auth_data = auth_message.serialize();
+    co_await (stream.send(auth_data) || timeout());
 
-    Bytes auth_ack_message_data = std::get<Bytes>(co_await (stream.receive() || timeout()));
-    AuthAckMessage auth_ack_message{auth_ack_message_data, initiator_key_pair_};
+    Bytes auth_ack_data_raw;
+    auto auth_ack_data = std::get<ByteView>(co_await (stream.receive_size_and_data(auth_ack_data_raw) || timeout()));
+    AuthAckMessage auth_ack_message{auth_ack_data, initiator_key_pair_};
 
-    co_return AuthSession{
+    co_return AuthKeys{
         recipient_public_key_,
         auth_ack_message.ephemeral_public_key(),
         initiator_ephemeral_key_pair_,
+        Bytes{auth_message.nonce()},
+        Bytes{auth_ack_message.nonce()},
+        std::move(auth_data),
+        std::move(auth_ack_data_raw),
     };
 }
 

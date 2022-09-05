@@ -26,9 +26,7 @@
 #include <silkworm/db/prune_mode.hpp>
 #include <silkworm/db/tables.hpp>
 #include <silkworm/execution/execution.hpp>
-#include <silkworm/stagedsync/stagedsync.hpp>
-
-#include "stages.hpp"
+#include <silkworm/stagedsync/stage_history_index.hpp>
 
 namespace silkworm {
 
@@ -517,9 +515,11 @@ namespace db {
         REQUIRE(execute_block(block3, buffer, test::kFrontierConfig) == ValidationResult::kOk);
 
         buffer.write_to_db();
+        db::stages::write_stage_progress(txn, db::stages::kExecutionKey, 3);
 
         db::RWTxn tm{txn};
-        REQUIRE(stagedsync::stage_account_history(tm, context.dir().etl().path()) == stagedsync::StageResult::kSuccess);
+        stagedsync::HistoryIndex stage_history_index(&context.node_settings());
+        REQUIRE(stage_history_index.forward(tm) == stagedsync::StageResult::kSuccess);
 
         std::optional<Account> current_account{read_account(txn, miner_a)};
         REQUIRE(current_account.has_value());
@@ -527,7 +527,7 @@ namespace db {
 
         std::optional<Account> historical_account{read_account(txn, miner_a, /*block_number=*/2)};
         REQUIRE(historical_account.has_value());
-        CHECK(historical_account->balance == param::kBlockRewardFrontier);
+        CHECK(intx::to_string(historical_account->balance) == std::to_string(param::kBlockRewardFrontier));
     }
 
     TEST_CASE("read_storage") {

@@ -25,7 +25,7 @@
 
 namespace silkworm {
 
-static auto kMaxReceiveMessageSize = 10_Mebi;  // reference: eth/66 protocol
+constexpr int kMaxReceiveMessageSize = 10_Mebi;  // reference: eth/66 protocol
 
 static std::shared_ptr<grpc::Channel> create_custom_channel(const std::string& sentry_addr) {
     grpc::ChannelArguments custom_args{};

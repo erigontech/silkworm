@@ -107,27 +107,15 @@ TEST_CASE("Env opening") {
             db::EnvConfig db_config{tmp_dir.path().string(), /*create*/ true};
             db_config.inmemory = true;
             db_config.page_size = 4_Kibi;
-            bool has_thrown{false};
-            try {
-                (void)db::open_env(db_config);
-            } catch (...) {
-                has_thrown = true;
-            }
-            REQUIRE_FALSE(has_thrown);
+            REQUIRE_NOTHROW((void)db::open_env(db_config));
         }
 
         {
-            // Try reopen same db with 16KB page size
+            // Try to reopen same db with 16KB page size
             db::EnvConfig db_config{tmp_dir.path().string(), /*create*/ false};
             db_config.inmemory = true;
             db_config.page_size = 16_Kibi;
-            bool has_thrown{false};
-            try {
-                (void)db::open_env(db_config);
-            } catch (...) {
-                has_thrown = true;
-            }
-            REQUIRE(has_thrown);
+            REQUIRE_THROWS((void)db::open_env(db_config));
         }
     }
 }

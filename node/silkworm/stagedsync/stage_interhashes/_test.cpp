@@ -869,4 +869,97 @@ TEST_CASE("Trie Storage : incremental vs regeneration") {
     REQUIRE(fused_nodes == incremental_nodes);
 }
 
+TEST_CASE("Hive test trie root") {
+    test::Context context;
+    auto& txn{context.txn()};
+
+    auto hashed_accounts{db::open_cursor(txn, db::table::kHashedAccounts)};
+    auto hashed_storage{db::open_cursor(txn, db::table::kHashedStorage)};
+
+    const auto hashed_address1{keccak256(0x0000000000000000000000000000000000000000_address)};
+    hashed_accounts.upsert(db::to_slice(hashed_address1.bytes),
+                           db::to_slice(*from_hex("02081bc5e32fd4403800")));
+
+    const auto hashed_address2{keccak256(0x0000000000000000000000000000000000000314_address)};
+    hashed_accounts.upsert(db::to_slice(hashed_address2.bytes),
+                           db::to_slice(*from_hex("0c0101203e6de602146067c01322e2528a8f320c504fd3d19a4d6c4c53b54d2b2f9357ec")));
+
+    const Bytes storage_prefix1{db::storage_prefix(hashed_address2.bytes, 1)};
+    db::upsert_storage_value(hashed_storage, storage_prefix1,
+                             keccak256(0x0000000000000000000000000000000000000000000000000000000000000000_bytes32).bytes,
+                             *from_hex("1234"));
+    db::upsert_storage_value(hashed_storage, storage_prefix1,
+                             keccak256(0x6661e9d6d8b923d5bbaab1b96e1dd51ff6ea2a93520fdc9eb75d059238b8c5e9_bytes32).bytes,
+                             *from_hex("01"));
+
+    const auto hashed_address3{keccak256(0x0000000000000000000000000000000000000315_address)};
+    hashed_accounts.upsert(db::to_slice(hashed_address3.bytes),
+                           db::to_slice(*from_hex("0e100999999999999999999999999999999901012052de487a82a5e45f90f7fb0edf025b1d23f85c308ae7543736a91ac6295217f3")));
+
+    const auto hashed_address4{keccak256(0x0000000000000000000000000000000000000316_address)};
+    hashed_accounts.upsert(db::to_slice(hashed_address4.bytes),
+                           db::to_slice(*from_hex("0c010120803ac275052ba5360d44e51a7d4a49ed9156c461a21119ff650506869827f2c8")));
+
+    const Bytes storage_prefix2{db::storage_prefix(hashed_address4.bytes, 1)};
+    db::upsert_storage_value(hashed_storage, storage_prefix2,
+                             keccak256(0x0000000000000000000000000000000000000000000000000000000000000001_bytes32).bytes,
+                             *from_hex("030000"));
+
+    const auto hashed_address5{keccak256(0x0000000000000000000000000000000000000317_address)};
+    hashed_accounts.upsert(db::to_slice(hashed_address5.bytes),
+                           db::to_slice(*from_hex("0c010120247c40b032c36acb07ca105280db053d204d3133302420f403dfbb54f775d0e2")));
+
+    const auto hashed_address6{keccak256(0x0161e041aad467a890839d5b08b138c1e6373072_address)};
+    hashed_accounts.upsert(db::to_slice(hashed_address6.bytes),
+                           db::to_slice(*from_hex("020b0123450000000000000000")));
+
+    const auto hashed_address7{keccak256(0x6e53b788a8e675377c5f160e5c6cca6b46074af8_address)};
+    hashed_accounts.upsert(db::to_slice(hashed_address7.bytes),
+                           db::to_slice(*from_hex("02081bc16d674ec80000")));
+
+    const auto hashed_address8{keccak256(0x87da6a8c6e9eff15d703fc2773e32f6af8dbe301_address)};
+    hashed_accounts.upsert(db::to_slice(hashed_address8.bytes),
+                           db::to_slice(*from_hex("020b0123450000000000000000")));
+
+    const auto hashed_address9{keccak256(0xb97de4b8c857e4f6bc354f226dc3249aaee49209_address)};
+    hashed_accounts.upsert(db::to_slice(hashed_address9.bytes),
+                           db::to_slice(*from_hex("020b0123450000000000000000")));
+
+    const auto hashed_address10{keccak256(0xc5065c9eeebe6df2c2284d046bfc906501846c51_address)};
+    hashed_accounts.upsert(db::to_slice(hashed_address10.bytes),
+                           db::to_slice(*from_hex("020b0123450000000000000000")));
+
+    const auto hashed_address11{keccak256(0xcf49fda3be353c69b41ed96333cd24302da4556f_address)};
+    hashed_accounts.upsert(db::to_slice(hashed_address11.bytes),
+                           db::to_slice(*from_hex("0301010b012344fffb67ea09bf8000")));
+
+    const auto hashed_address12{keccak256(0xe0840414c530d72e5c2f1fe64f6311cc3136cab1_address)};
+    hashed_accounts.upsert(db::to_slice(hashed_address12.bytes),
+                           db::to_slice(*from_hex("02081bc16d674ec80000")));
+
+    const auto hashed_address13{keccak256(0xf8e0e7f6f1d0514ddfbc00bec204641f1f4d8cc8_address)};
+    hashed_accounts.upsert(db::to_slice(hashed_address13.bytes),
+                           db::to_slice(*from_hex("02081bc16d674ec80000")));
+
+    const auto root{regenerate_intermediate_hashes(txn, context.dir().etl().path())};
+    REQUIRE(to_hex(root) == "a23dfe01c4fef6aa7d7816882e326cf9720d4ac2c5e7ef23a96cbef7e59b6e70");
+
+    // ----------
+
+    const Account account{.balance = 2000000000000000000};
+    REQUIRE(to_hex(account.encode_for_storage()) == "02081bc16d674ec80000");
+
+    const auto new_hashed_address{keccak256(0xf76fefb6608ca3d826945a9571d1f8e53bb6f366_address)};
+    hashed_accounts.upsert(db::to_slice(new_hashed_address.bytes),
+                           db::to_slice(account.encode_for_storage()));
+
+    PrefixSet account_changes;
+    account_changes.insert(unpack_nibbles(new_hashed_address.bytes));
+    PrefixSet storage_changes;
+    const auto new_root{
+        increment_intermediate_hashes(txn, context.dir().etl().path(), &account_changes, &storage_changes)};
+
+    REQUIRE(to_hex(new_root) == "ba3ec4f75a2245282352639bff5e5c7fee0e1c80101b2d540a74078c8054e4d0");
+}
+
 }  // namespace silkworm::trie

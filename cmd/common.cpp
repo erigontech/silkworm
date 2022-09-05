@@ -139,13 +139,13 @@ void parse_silkworm_command_line(CLI::App& cli, int argc, char* argv[], log::Set
     cli.add_flag("--chaindata.writemap", node_settings.chaindata_env_config.write_map,
                  "Chaindata database enable writemap");
 
-    cli.add_option("--chaindata.growthsize", chaindata_growth_size_str, "Chaindata database growth size. A power of 2")
+    cli.add_option("--chaindata.growthsize", chaindata_growth_size_str, "Chaindata database growth size.")
         ->capture_default_str()
         ->check(HumanSizeParserValidator("64MB"));
     cli.add_option("--chaindata.pagesize", chaindata_page_size_str, "Chaindata database page size. A power of 2")
         ->capture_default_str()
         ->check(HumanSizeParserValidator("256B", {"65KB"}));
-    cli.add_option("--chaindata.maxsize", chaindata_max_size_str, "Chaindata database max size. A power of 2")
+    cli.add_option("--chaindata.maxsize", chaindata_max_size_str, "Chaindata database max size.")
         ->capture_default_str()
         ->check(HumanSizeParserValidator("32MB", {"128TB"}));
 

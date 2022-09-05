@@ -20,8 +20,7 @@
 
 #include <catch2/catch.hpp>
 
-#include <silkworm/common/directories.hpp>
-#include <silkworm/db/mdbx.hpp>
+#include <silkworm/common/test_context.hpp>
 
 static const std::map<std::string, std::string> kGeneticCode{
     {"AAA", "Lysine"},
@@ -217,6 +216,8 @@ TEST_CASE("RWTxn") {
         db::Cursor table_cursor(tx, {table_name});
         REQUIRE(table_cursor.empty());
         REQUIRE_NOTHROW(table_cursor.bind(tx, {table_name}));
+        table_cursor.close();
+        REQUIRE_THROWS(table_cursor.bind(tx, {table_name}));
     }
 }
 
@@ -301,6 +302,33 @@ TEST_CASE("Cursor walk") {
         CHECK(data_map.at("AAC") == "Asparagine");
         CHECK(data_map.at("AAG") == "Lysine");
         CHECK(data_map.at("AAU") == "Asparagine");
+    }
+
+    SECTION("cursor_for_prefix") {
+        Bytes prefix{};
+
+        // populate table
+        for (const auto& [key, value] : kGeneticCode) {
+            table_cursor.upsert(mdbx::slice{key}, mdbx::slice{value});
+        }
+        REQUIRE(table_cursor.size() == kGeneticCode.size());
+        REQUIRE(table_cursor.empty() == false);
+
+        // Delete all records starting with "AC"
+        prefix.append({'A', 'C'});
+        auto erased{cursor_for_prefix(table_cursor, to_slice(prefix), walk_erase)};
+        REQUIRE(erased == 4);
+        REQUIRE(table_cursor.size() == (kGeneticCode.size() - erased));
+
+        // Early stop
+        prefix.assign({'A', 'A'});
+        auto count{cursor_for_prefix(table_cursor,
+                                     to_slice(prefix),
+                                     [](::mdbx::cursor&, ::mdbx::cursor::move_result& data) -> bool {
+                                         if (data.value == "Asparagine") return false;
+                                         return true;
+                                     })};
+        REQUIRE(count == 2);
     }
 
     SECTION("cursor_for_count") {
@@ -434,4 +462,30 @@ TEST_CASE("Cursor walk") {
     }
 }
 
+TEST_CASE("OF pages") {
+    test::Context context;
+    db::RWTxn txn{context.txn()};
+
+    SECTION("No overflow") {
+        db::Cursor target(txn, db::table::kAccountHistory);
+        Bytes key(20, '\0');
+        Bytes value(db::max_value_size_for_leaf_page(*txn, key.size()), '\0');
+        target.insert(db::to_slice(key), db::to_slice(value));
+        txn.commit(/*renew=*/true);
+        target.bind(txn, db::table::kAccountHistory);
+        auto stats{target.get_map_stat()};
+        REQUIRE(!stats.ms_overflow_pages);
+    }
+
+    SECTION("Let's overflow") {
+        db::Cursor target(txn, db::table::kAccountHistory);
+        Bytes key(20, '\0');
+        Bytes value(db::max_value_size_for_leaf_page(*txn, key.size()) + /*any extra value */ 1, '\0');
+        target.insert(db::to_slice(key), db::to_slice(value));
+        txn.commit(/*renew=*/true);
+        target.bind(txn, db::table::kAccountHistory);
+        auto stats{target.get_map_stat()};
+        REQUIRE(stats.ms_overflow_pages);
+    }
+}
 }  // namespace silkworm::db

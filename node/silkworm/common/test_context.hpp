@@ -17,6 +17,7 @@
 #pragma once
 
 #include <silkworm/common/directories.hpp>
+#include <silkworm/common/settings.hpp>
 #include <silkworm/db/mdbx.hpp>
 
 namespace silkworm::test {
@@ -32,15 +33,15 @@ class Context {
     Context(const Context&) = delete;
     Context& operator=(const Context&) = delete;
 
-    [[nodiscard]] const DataDirectory& dir() const { return data_dir_; }
+    [[nodiscard]] silkworm::NodeSettings& node_settings() { return node_settings_; }
+
+    [[nodiscard]] const DataDirectory& dir() const { return *(node_settings_.data_directory); }
 
     [[nodiscard]] mdbx::txn& txn() { return txn_; }
 
     [[nodiscard]] mdbx::env& env() { return env_; }
 
-    void commit_txn() {
-        txn_.commit();
-    }
+    void commit_txn() { txn_.commit(); }
 
     void commit_and_renew_txn() {
         txn_.commit();
@@ -48,8 +49,8 @@ class Context {
     }
 
   private:
-    TemporaryDirectory tmp_dir_;
-    DataDirectory data_dir_;
+    TemporaryDirectory tmp_dir_{};
+    silkworm::NodeSettings node_settings_;
     mdbx::env_managed env_;
     mdbx::txn_managed txn_;
 };

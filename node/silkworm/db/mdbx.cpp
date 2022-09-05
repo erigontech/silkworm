@@ -113,7 +113,7 @@ namespace detail {
         auto growth_size = static_cast<intptr_t>(config.inmemory ? 8_Mebi : config.growth_size);
         cp.geometry.make_dynamic(::mdbx::env::geometry::default_value, max_map_size);
         cp.geometry.growth_step = growth_size;
-        cp.geometry.pagesize = 4_Kibi;
+        cp.geometry.pagesize = static_cast<intptr_t>(config.page_size);
     }
 
     ::mdbx::env::operate_parameters op{};  // Operational parameters
@@ -159,6 +159,40 @@ namespace detail {
     return tx.open_cursor(open_map(tx, config));
 }
 
+size_t max_value_size_for_leaf_page(const size_t page_size, const size_t key_size) {
+    /*
+     * On behalf of configured MDBX's page size we need to find
+     * the size of each shard best fitting in data page without
+     * causing MDBX to write value in overflow pages.
+     *
+     * Example :
+     *  for accounts history index
+     *  with shard_key_len == kAddressLength + sizeof(uint64_t) == 28
+     *  with page_size == 4096
+     *  optimal shard size == 2000
+     *
+     *  for storage history index
+     *  with shard_key_len == kAddressLength + kHashLength + sizeof(uint64_t) == 20 + 32 + 8 == 60
+     *  with page_size == 4096
+     *  optimal shard size == 1968
+     *
+     *  NOTE !! Keep an eye on MDBX code as PageHeader and Node structs might change
+     */
+
+    static constexpr size_t kPageOverheadSize{32ull};  // PageHeader + NodeSize
+    const size_t page_room{page_size - kPageOverheadSize};
+    const size_t leaf_node_max_room{
+        ((page_room / 2) & ~1ull /* even number */) -
+        (/* key and value sizes fields */ 2 * sizeof(uint16_t))};
+    const size_t max_size{leaf_node_max_room - key_size};
+    return max_size;
+}
+
+size_t max_value_size_for_leaf_page(const mdbx::txn& txn, const size_t key_size) {
+    const size_t page_size{txn.env().get_pagesize()};
+    return max_value_size_for_leaf_page(page_size, key_size);
+}
+
 thread_local ObjectPool<MDBX_cursor, detail::cursor_handle_deleter> Cursor::handles_pool_{};
 
 Cursor::Cursor(::mdbx::txn& txn, const MapConfig& config) {
@@ -183,6 +217,7 @@ Cursor::~Cursor() {
 }
 
 void Cursor::bind(::mdbx::txn& txn, const MapConfig& config) {
+    if (!handle_) throw std::runtime_error("Can't bind a closed cursor");
     // Check cursor is bound to a live transaction
     if (auto cm_tx{mdbx_cursor_txn(handle_)}; cm_tx) {
         // If current transaction id does not match cursor's transaction close it
@@ -230,6 +265,26 @@ size_t cursor_for_each(::mdbx::cursor& cursor, const WalkFunc& walker, const Cur
     size_t ret{0};
     auto data{detail::adjust_cursor_position_if_unpositioned_and_return_data(cursor, direction)};
     while (data.done) {
+        ++ret;
+        if (!walker(cursor, data)) {
+            break;  // Walker function has returned false hence stop
+        }
+        data = cursor.move(move_operation, /*throw_notfound=*/false);
+    }
+    return ret;
+}
+
+size_t cursor_for_prefix(::mdbx::cursor& cursor, ::mdbx::slice prefix, const WalkFunc& walker,
+                         CursorMoveDirection direction) {
+    const mdbx::cursor::move_operation move_operation{direction == CursorMoveDirection::Forward
+                                                          ? mdbx::cursor::move_operation::next
+                                                          : mdbx::cursor::move_operation::previous};
+    size_t ret{0};
+    auto data{cursor.lower_bound(prefix, false)};
+    while (data.done) {
+        if (!data.key.starts_with(prefix)) {
+            break;
+        }
         ++ret;
         if (!walker(cursor, data)) {
             break;  // Walker function has returned false hence stop
@@ -289,5 +344,4 @@ size_t cursor_erase(mdbx::cursor& cursor, const ByteView& set_key, size_t max_co
     }
     return cursor_for_count(cursor, detail::cursor_erase_data, max_count, direction);
 }
-
 }  // namespace silkworm::db

@@ -18,6 +18,7 @@
 
 #include <cstdint>
 #include <exception>
+#include <mutex>
 
 #include <magic_enum.hpp>
 
@@ -25,6 +26,7 @@
 #include <silkworm/common/settings.hpp>
 #include <silkworm/concurrency/stoppable.hpp>
 #include <silkworm/db/stages.hpp>
+#include <silkworm/db/tables.hpp>
 #include <silkworm/etl/collector.hpp>
 
 namespace silkworm::stagedsync {
@@ -108,8 +110,14 @@ class IStage : public Stoppable {
     //! \brief Returns the actual progress recorded into db
     BlockNum get_progress(db::RWTxn& txn);
 
+    //! \brief Returns the actual prune progress recorded into db
+    BlockNum get_prune_progress(db::RWTxn& txn);
+
+    //! \brief Updates current stage progress
+    void update_progress(db::RWTxn& txn, BlockNum progress);
+
     //! \brief This function implementation MUST be thread safe as is called asynchronously from ASIO thread
-    [[nodiscard]] virtual std::vector<std::string> get_log_progress() = 0;
+    [[nodiscard]] virtual std::vector<std::string> get_log_progress() { return {}; };
 
     //! \brief Returns the key name of the stage instance
     [[nodiscard]] const char* name() const { return stage_name_; }
@@ -123,6 +131,7 @@ class IStage : public Stoppable {
     const char* stage_name_;                                     // Human friendly identifier of the stage
     NodeSettings* node_settings_;                                // Pointer to shared node configuration settings
     std::atomic<OperationType> operation_{OperationType::None};  // Actual operation being carried out
+    std::mutex sl_mutex_;                                        // To synchronize access by outer sync loop
 
     //! \brief Throws if actual block != expected block
     static void check_block_sequence(BlockNum actual, BlockNum expected);

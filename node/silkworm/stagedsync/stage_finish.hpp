@@ -20,25 +20,15 @@
 
 namespace silkworm::stagedsync {
 
-class BlockHashes final : public IStage {
+class Finish : public IStage {
   public:
-    explicit BlockHashes(NodeSettings* node_settings) : IStage(db::stages::kBlockHashesKey, node_settings){};
-    ~BlockHashes() override = default;
+    explicit Finish(NodeSettings* node_settings) : IStage(db::stages::kFinishKey, node_settings){};
+    ~Finish() override = default;
 
     StageResult forward(db::RWTxn& txn) final;
     StageResult unwind(db::RWTxn& txn, BlockNum to) final;
-    StageResult prune(db::RWTxn& txn) final;
-    std::vector<std::string> get_log_progress() final;
 
-  private:
-    std::unique_ptr<etl::Collector> collector_{nullptr};
-
-    /* Stats */
-    std::atomic_uint32_t current_phase_{0};
-    std::atomic<BlockNum> reached_block_num_{0};
-
-    void collect_and_load(db::RWTxn& txn, const BlockNum from,
-                          const BlockNum to);  // Accrues canonical hashes in collector and loads them
+    // Finish does not prune.
+    StageResult prune(db::RWTxn&) final { return StageResult::kSuccess; };
 };
-
 }  // namespace silkworm::stagedsync

@@ -61,6 +61,12 @@ void write_schema_version(mdbx::txn& txn, const VersionBase& schema_version) {
     src.upsert(mdbx::slice{kDbSchemaVersionKey}, to_slice(value));
 }
 
+void write_build_info_height(mdbx::txn& txn, Bytes key, BlockNum height) {
+    Cursor tgt(txn, db::table::kDatabaseInfo);
+    Bytes value{db::block_key(height)};
+    tgt.upsert(db::to_slice(key), db::to_slice(value));
+}
+
 std::optional<BlockHeader> read_header(mdbx::txn& txn, BlockNum block_number, const evmc::bytes32& hash) {
     return read_header(txn, block_number, hash.bytes);
 }
@@ -410,7 +416,7 @@ static std::optional<ByteView> historical_account(mdbx::txn& txn, const evmc::ad
         return std::nullopt;
     }
 
-    const auto bitmap{bitmap::read(from_slice(data.value))};
+    const auto bitmap{bitmap::parse(data.value)};
     const auto change_block{bitmap::seek(bitmap, block_number)};
     if (!change_block) {
         return std::nullopt;
@@ -439,7 +445,7 @@ static std::optional<ByteView> historical_storage(mdbx::txn& txn, const evmc::ad
         return std::nullopt;
     }
 
-    const auto bitmap{bitmap::read(from_slice(data.value))};
+    const auto bitmap{bitmap::parse(data.value)};
     const auto change_block{bitmap::seek(bitmap, block_number)};
     if (!change_block) {
         return std::nullopt;

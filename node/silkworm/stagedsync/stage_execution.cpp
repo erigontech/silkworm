@@ -17,11 +17,8 @@
 #include "stage_execution.hpp"
 
 #include <span>
-#include <string>
 
-#include <silkworm/common/assert.hpp>
 #include <silkworm/common/endian.hpp>
-#include <silkworm/common/log.hpp>
 #include <silkworm/common/stopwatch.hpp>
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/buffer.hpp>
@@ -77,7 +74,7 @@ StageResult Execution::forward(db::RWTxn& txn) {
         log::Info("Begin Execution", {"from", std::to_string(block_num_), "to", std::to_string(bodies_stage_progress)});
     }
 
-    // Determine pruning thresholds on behalf of current db pruning mode and verify next stage does not need
+    // Determine pruning thresholds on behalf of current db pruning mode and verify next stage(s) does not need
     // prune-able data
     BlockNum prune_history{node_settings_->prune_mode->history().value_from_head(headers_stage_progress)};
     BlockNum prune_receipts{node_settings_->prune_mode->receipts().value_from_head(headers_stage_progress)};
@@ -133,8 +130,13 @@ void Execution::prefetch_blocks(db::RWTxn& txn, const BlockNum from, const Block
             if (reached_block_num != block_num) {
                 throw std::runtime_error("Bad canonical header sequence: expected " + std::to_string(block_num) +
                                          " got " + std::to_string(reached_block_num));
+            } else if (data.value.length() != kHashLength) {
+                throw std::runtime_error("Invalid value for hash in " +
+                                         std::string(db::table::kCanonicalHashes.name) +
+                                         " expected=" + std::to_string(kHashLength) +
+                                         " got=" + std::to_string(data.value.length()));
             }
-            SILKWORM_ASSERT(data.value.length() == kHashLength);
+
             const auto hash_ptr{static_cast<const uint8_t*>(data.value.data())};
             prefetched_blocks_.push_back();
             if (!db::read_block(*txn, std::span<const uint8_t, kHashLength>{hash_ptr, kHashLength}, block_num,
@@ -273,10 +275,11 @@ StageResult Execution::unwind(db::RWTxn& txn, BlockNum to) {
     try {
         {
             // Revert states
-            auto plain_state_table{db::open_cursor(*txn, db::table::kPlainState)};
-            auto plain_code_table{db::open_cursor(*txn, db::table::kPlainCodeHash)};
-            auto account_changeset_table{db::open_cursor(*txn, db::table::kAccountChangeSet)};
-            auto storage_changeset_table{db::open_cursor(*txn, db::table::kStorageChangeSet)};
+            db::Cursor plain_state_table(txn, db::table::kPlainState);
+            db::Cursor plain_code_table(txn, db::table::kPlainCodeHash);
+            db::Cursor account_changeset_table(txn, db::table::kAccountChangeSet);
+            db::Cursor storage_changeset_table(txn, db::table::kStorageChangeSet);
+
             unwind_state_from_changeset(account_changeset_table, plain_state_table, plain_code_table, to);
             unwind_state_from_changeset(storage_changeset_table, plain_state_table, plain_code_table, to);
         }
@@ -286,7 +289,7 @@ StageResult Execution::unwind(db::RWTxn& txn, BlockNum to) {
         Bytes start_key(8, '\0');
         endian::store_big_u64(&start_key[0], to + 1);
         for (const auto& map_config : unwind_tables) {
-            auto unwind_cursor{db::open_cursor(*txn, map_config)};
+            db::Cursor unwind_cursor(txn, map_config);
             auto erased{db::cursor_erase(unwind_cursor, start_key, db::CursorMoveDirection::Forward)};
             log::Info() << "Erased " << erased << " records from " << map_config.name;
         }
@@ -314,25 +317,24 @@ StageResult Execution::prune(db::RWTxn& txn) {
             auto prune_from{node_settings_->prune_mode->history().value_from_head(execution_progress)};
             auto key{db::block_key(prune_from)};
             size_t erased{0};
-            auto origin{db::open_cursor(*txn, db::table::kAccountChangeSet)};
-            auto data{origin.lower_bound(db::to_slice(key), /*throw_notfound=*/false)};
+            db::Cursor source(txn, db::table::kAccountChangeSet);
+            auto data{source.lower_bound(db::to_slice(key), /*throw_notfound=*/false)};
             while (data) {
-                erased += origin.count_multivalue();
-                origin.erase(/*whole_multivalue=*/true);
-                data = origin.to_previous(/*throw_notfound=*/false);
+                erased += source.count_multivalue();
+                source.erase(/*whole_multivalue=*/true);
+                data = source.to_previous(/*throw_notfound=*/false);
             }
             log::Info() << "Erased " << erased << " records from " << db::table::kAccountChangeSet.name;
 
-            origin.close();
-            origin = db::open_cursor(*txn, db::table::kStorageChangeSet);
-            data = origin.lower_bound(db::to_slice(key), /*throw_notfound=*/false);
+            source.bind(txn, db::table::kStorageChangeSet);
+            data = source.lower_bound(db::to_slice(key), /*throw_notfound=*/false);
             while (data) {
                 auto data_value_view{db::from_slice(data.value)};
                 if (endian::load_big_u64(data_value_view.data()) < prune_from) {
-                    erased += origin.count_multivalue();
-                    origin.erase(/*whole_multivalue=*/true);
+                    erased += source.count_multivalue();
+                    source.erase(/*whole_multivalue=*/true);
                 }
-                data = origin.to_previous(/*throw_notfound=*/false);
+                data = source.to_previous(/*throw_notfound=*/false);
             }
             log::Info() << "Erased " << erased << " records from " << db::table::kStorageChangeSet.name;
         }
@@ -340,12 +342,11 @@ StageResult Execution::prune(db::RWTxn& txn) {
         if (node_settings_->prune_mode->receipts().enabled()) {
             auto prune_from{node_settings_->prune_mode->receipts().value_from_head(execution_progress)};
             auto key{db::block_key(prune_from)};
-            auto origin{db::open_cursor(*txn, db::table::kBlockReceipts)};
-            size_t erased = db::cursor_erase(origin, key, db::CursorMoveDirection::Reverse);
+            db::Cursor source(txn, db::table::kBlockReceipts);
+            size_t erased = db::cursor_erase(source, key, db::CursorMoveDirection::Reverse);
             log::Info() << "Erased " << erased << " records from " << db::table::kBlockReceipts.name;
-            origin.close();
-            origin = db::open_cursor(*txn, db::table::kLogs);
-            erased = db::cursor_erase(origin, key, db::CursorMoveDirection::Reverse);
+            source.bind(txn, db::table::kLogs);
+            erased = db::cursor_erase(source, key, db::CursorMoveDirection::Reverse);
             log::Info() << "Erased " << erased << " records from " << db::table::kLogs.name;
         }
 
@@ -354,7 +355,7 @@ StageResult Execution::prune(db::RWTxn& txn) {
         //        if (node_settings_->prune_mode->call_traces().enabled()) {
         //            auto prune_from{node_settings_->prune_mode->receipts().value_from_head(execution_progress)};
         //            auto key{db::block_key(prune_from)};
-        //            auto origin{db::open_cursor(*txn, db::table::kCallTraceSet)};
+        //            db::Cursor source(txn, db::table::kCallTraceSet);
         //            size_t erased = db::cursor_erase(origin, key, db::CursorMoveDirection::Reverse);
         //            log::Info() << "Erased " << erased << " records from " << db::table::kCallTraceSet.name;
         //        }

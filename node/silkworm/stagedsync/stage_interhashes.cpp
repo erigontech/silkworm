@@ -73,6 +73,8 @@ StageResult InterHashes::forward(db::RWTxn& txn) {
             ret = increment_intermediate_hashes(txn, previous_progress, hashstate_stage_progress, &expected_state_root);
         }
 
+        // TODO If I return with kWrongStateRoot begin a binary search backwards
+
         success_or_throw(ret);
         throw_if_stopping();
         db::stages::write_stage_progress(*txn, db::stages::kIntermediateHashesKey, hashstate_stage_progress);
@@ -286,7 +288,7 @@ trie::PrefixSet InterHashes::collect_account_changes(db::RWTxn& txn, BlockNum fr
 
     if (sw) {
         const auto [_, duration]{sw->stop()};
-        log::Trace("Gathered Forward Account Changes", {"in", StopWatch::format(duration)});
+        log::Trace("Gathered Account Changes", {"in", StopWatch::format(duration)});
     }
     return ret;
 }
@@ -367,7 +369,7 @@ trie::PrefixSet InterHashes::collect_storage_changes(db::RWTxn& txn, BlockNum fr
 
     if (sw) {
         const auto [_, duration]{sw->stop()};
-        log::Trace("Gathered Forward Storage Changes", {"in", StopWatch::format(duration)});
+        log::Trace("Gathered Storage Changes", {"in", StopWatch::format(duration)});
     }
 
     return ret;

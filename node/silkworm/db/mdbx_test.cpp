@@ -95,6 +95,7 @@ TEST_CASE("Env opening") {
     SECTION("Non default page size") {
         const TemporaryDirectory tmp_dir;
         db::EnvConfig db_config{tmp_dir.path().string(), /*create*/ true};
+        db_config.inmemory = true;
         db_config.page_size = 8_Kibi;
         auto env{db::open_env(db_config)};
         REQUIRE(env.get_pagesize() == db_config.page_size);
@@ -104,6 +105,7 @@ TEST_CASE("Env opening") {
         const TemporaryDirectory tmp_dir;
         {
             db::EnvConfig db_config{tmp_dir.path().string(), /*create*/ true};
+            db_config.inmemory = true;
             db_config.page_size = 4_Kibi;
             bool has_thrown{false};
             try {
@@ -117,6 +119,7 @@ TEST_CASE("Env opening") {
         {
             // Try reopen same db with 16KB page size
             db::EnvConfig db_config{tmp_dir.path().string(), /*create*/ false};
+            db_config.inmemory = true;
             db_config.page_size = 16_Kibi;
             bool has_thrown{false};
             try {

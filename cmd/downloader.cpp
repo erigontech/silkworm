@@ -160,8 +160,8 @@ int main(int argc, char* argv[]) {
         db::RWAccess db_access(db);
 
         // Stages 1 & 2 - Headers and bodies downloading - example code
-        HeadersStage header_stage{shared_status, block_exchange};
-        BodiesStage body_stage{shared_status, block_exchange};
+        HeadersStage header_stage{shared_status, block_exchange, &node_settings};
+        BodiesStage body_stage{shared_status, block_exchange, &node_settings};
 
         // Sample stage loop with 2 stages
         std::array<Stage*, 2> stages = {&header_stage, &body_stage};

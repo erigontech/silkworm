@@ -28,7 +28,7 @@ namespace silkworm {
 
 class BodiesStage : public Stage {
   public:
-    BodiesStage(Status&, BlockExchange&);
+    BodiesStage(Status&, BlockExchange&, NodeSettings*);
     BodiesStage(const BodiesStage&) = delete;  // not copyable
     BodiesStage(BodiesStage&&) = delete;       // nor movable
     ~BodiesStage();
@@ -42,6 +42,9 @@ class BodiesStage : public Stage {
     auto sync_body_sequence(BlockNum highest_body, BlockNum highest_header) -> std::shared_ptr<InternalMessage<void>>;
     auto withdraw_ready_bodies() -> std::shared_ptr<InternalMessage<std::vector<Block>>>;
     void send_announcements();
+
+    std::vector<std::string> get_log_progress() override; // thread safe
+    std::atomic<BlockNum> current_height_;
 
     BlockExchange& block_downloader_;
 };

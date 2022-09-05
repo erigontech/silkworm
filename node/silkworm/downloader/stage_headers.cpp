@@ -21,13 +21,15 @@
 #include <silkworm/common/log.hpp>
 #include <silkworm/common/measure.hpp>
 #include <silkworm/common/stopwatch.hpp>
+#include <silkworm/db/stages.hpp>
 #include <silkworm/downloader/messages/inbound_message.hpp>
 #include <silkworm/downloader/messages/outbound_get_block_headers.hpp>
 #include <silkworm/downloader/messages/outbound_new_block_hashes.hpp>
 
 namespace silkworm {
 
-HeadersStage::HeadersStage(Status& status, BlockExchange& bd) : Stage(status), block_downloader_(bd) {
+HeadersStage::HeadersStage(Status& status, BlockExchange& bd, NodeSettings* ns)
+    : Stage(db::stages::kHeadersKey, status, ns), block_downloader_(bd) {
 }
 
 HeadersStage::~HeadersStage() {
@@ -41,6 +43,7 @@ auto HeadersStage::forward(db::RWTxn& tx) -> Stage::Result {
     Stage::Result result = Stage::Result::Unspecified;
     bool new_height_reached = false;
     std::thread message_receiving;
+    operation_ = OperationType::Forward;
 
     StopWatch timing;
     timing.start();
@@ -62,6 +65,8 @@ auto HeadersStage::forward(db::RWTxn& tx) -> Stage::Result {
         }
 
         current_height_ = header_persistence.initial_height();
+        get_log_progress();  // this is a trick to set log progress initial value, please improve
+
         RepeatedMeasure<BlockNum> height_progress(header_persistence.initial_height());
         log::Info() << "[1/16 Headers] Waiting for headers... from=" << height_progress.get();
 
@@ -94,6 +99,7 @@ auto HeadersStage::forward(db::RWTxn& tx) -> Stage::Result {
 
                     // persist headers
                     header_persistence.persist(stable_headers);
+                    current_height_ = header_persistence.initial_height();
 
                     if (stable_headers.size() > 100000) {
                         log::Info() << "[1/16 Headers] Inserted headers tot=" << stable_headers.size()
@@ -115,7 +121,6 @@ auto HeadersStage::forward(db::RWTxn& tx) -> Stage::Result {
             }
 
             // show progress
-            current_height_ = header_persistence.initial_height();
             if (system_clock::now() - last_update > 30s) {
                 last_update = system_clock::now();
 
@@ -162,9 +167,14 @@ auto HeadersStage::forward(db::RWTxn& tx) -> Stage::Result {
 auto HeadersStage::unwind(db::RWTxn& tx, BlockNum new_height) -> Stage::Result {
     Stage::Result result;
 
+    operation_ = OperationType::Unwind;
+
     StopWatch timing;
     timing.start();
     log::Info() << "[1/16 Headers] Unwind start";
+
+    current_height_ = db::stages::read_stage_progress(tx, db::stages::kHeadersKey);
+    get_log_progress();  // this is a trick to set log progress initial value, please improve
 
     try {
         std::optional<BlockNum> new_max_block_num;
@@ -199,7 +209,7 @@ auto HeadersStage::unwind(db::RWTxn& tx, BlockNum new_height) -> Stage::Result {
     return result;
 }
 
-auto HeadersStage::prune(db::RWTxn& txn) -> Stage::Result {
+auto HeadersStage::prune(db::RWTxn&) -> Stage::Result {
     return Stage::Result::Error;
 }
 
@@ -251,6 +261,16 @@ auto HeadersStage::update_bad_headers(std::set<Hash> bad_headers) -> std::shared
     block_downloader_.accept(message);
 
     return message;
+}
+
+std::vector<std::string> HeadersStage::get_log_progress() {  // implementation MUST be thread safe
+    static RepeatedMeasure<BlockNum> height_progress{0};
+
+    height_progress.set(current_height_);
+
+    return {"current number", std::to_string(height_progress.get()),
+            "progress", std::to_string(height_progress.delta()),
+            "headers/secs", std::to_string(height_progress.throughput())};
 }
 
 }  // namespace silkworm

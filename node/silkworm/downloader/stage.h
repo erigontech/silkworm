@@ -17,6 +17,7 @@
 #pragma once
 
 #include <silkworm/downloader/internals/types.hpp>
+#include <silkworm/common/settings.hpp>
 
 namespace silkworm {
 
@@ -32,7 +33,7 @@ class Stage : public Stoppable {
         std::optional<Hash> bad_block;
     };
 
-    Stage(Status& s): shared_status_(s) {}
+    Stage([[maybe_unused]] const char* stage_name, Status& s, NodeSettings*): shared_status_(s) {};
     Stage(const Stage& s): shared_status_(s.shared_status_) {}
     
     virtual ~Stage() = default;
@@ -41,7 +42,10 @@ class Stage : public Stoppable {
     virtual Result unwind(db::RWTxn&, BlockNum new_height) = 0;
     virtual Result prune(db::RWTxn&) = 0;
 
-    //virtual std::vector<std::string> get_log_progress() = 0; // implementation MUST be thread safe
+    // for progress log
+    enum class OperationType { None, Forward, Unwind, Prune };
+    std::atomic<OperationType> operation_{OperationType::None};  // actual operation being carried out
+    virtual std::vector<std::string> get_log_progress() = 0; // implementation MUST be thread safe
 
   protected:
     Status& shared_status_;

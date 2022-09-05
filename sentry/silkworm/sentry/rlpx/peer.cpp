@@ -35,7 +35,10 @@ boost::asio::awaitable<void> Peer::handle() {
             node_listen_port_,
             peer_public_key_,
         };
-        co_await handshake.execute(stream_);
+        auto message_stream = co_await handshake.execute(stream_);
+
+        auto first_message = co_await message_stream.receive();
+        log::Debug() << "Peer::handle first_message: " << int(first_message.id);
 
     } catch (const boost::system::system_error& ex) {
         if (ex.code() == boost::asio::error::eof) {

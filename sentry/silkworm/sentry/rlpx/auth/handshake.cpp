@@ -21,7 +21,6 @@
 #include <silkworm/sentry/common/timeout.hpp>
 #include <silkworm/sentry/rlpx/common/disconnect_message.hpp>
 #include <silkworm/sentry/rlpx/framing/framing_cipher.hpp>
-#include <silkworm/sentry/rlpx/framing/message_stream.hpp>
 
 #include "auth_initiator.hpp"
 #include "auth_recipient.hpp"
@@ -44,7 +43,7 @@ boost::asio::awaitable<AuthKeys> Handshake::auth(common::SocketStream& stream) {
     }
 }
 
-boost::asio::awaitable<void> Handshake::execute(common::SocketStream& stream) {
+boost::asio::awaitable<framing::MessageStream> Handshake::execute(common::SocketStream& stream) {
     auto auth_keys = co_await auth(stream);
     log::Debug() << "AuthKeys.peer_ephemeral_public_key: " << auth_keys.peer_ephemeral_public_key.hex();
 
@@ -89,6 +88,8 @@ boost::asio::awaitable<void> Handshake::execute(common::SocketStream& stream) {
                  << " with " << hello_reply_message.capabilities_description();
 
     message_stream.enable_compression();
+
+    co_return message_stream;
 }
 
 }  // namespace silkworm::sentry::rlpx::auth

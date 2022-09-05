@@ -26,6 +26,7 @@
 #include <silkworm/sentry/common/ecc_key_pair.hpp>
 #include <silkworm/sentry/common/ecc_public_key.hpp>
 #include <silkworm/sentry/common/socket_stream.hpp>
+#include <silkworm/sentry/rlpx/framing/message_stream.hpp>
 
 #include "auth_keys.hpp"
 
@@ -44,7 +45,7 @@ class Handshake {
           is_initiator_(peer_public_key.has_value()),
           peer_public_key_(std::move(peer_public_key)) {}
 
-    boost::asio::awaitable<void> execute(common::SocketStream& stream);
+    boost::asio::awaitable<framing::MessageStream> execute(common::SocketStream& stream);
 
   private:
     boost::asio::awaitable<AuthKeys> auth(common::SocketStream& stream);

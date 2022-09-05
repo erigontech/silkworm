@@ -30,7 +30,7 @@ namespace silkworm {
 /** @brief Executes a given block and writes resulting changes into the state.
  *
  * Preconditions:
- *  pre_validate_block(block) must return kOk;
+ *  validate_block_header & pre_validate_block_body must return kOk;
  *  transaction senders must be already populated.
  *
  * Warning: This method does not verify state root;

@@ -16,18 +16,20 @@
 
 #include "engine.hpp"
 
+#include <utility>
+
 namespace silkworm::consensus {
 
-MergeEngine::MergeEngine(const ChainConfig& chain_config)
+MergeEngine::MergeEngine(std::unique_ptr<IEngine> eth1_engine, const ChainConfig& chain_config)
     : terminal_total_difficulty_{*chain_config.terminal_total_difficulty},
-      ethash_engine_{chain_config},
-      pos_engine_{chain_config} {}
+      pre_merge_engine_{std::move(eth1_engine)},
+      post_merge_engine_{chain_config} {}
 
-ValidationResult MergeEngine::pre_validate_block(const Block& block, const BlockState& state) {
+ValidationResult MergeEngine::pre_validate_block_body(const Block& block, const BlockState& state) {
     if (block.header.difficulty != 0) {
-        return ethash_engine_.pre_validate_block(block, state);
+        return pre_merge_engine_->pre_validate_block_body(block, state);
     } else {
-        return pos_engine_.pre_validate_block(block, state);
+        return post_merge_engine_.pre_validate_block_body(block, state);
     }
 }
 
@@ -49,12 +51,12 @@ ValidationResult MergeEngine::validate_block_header(const BlockHeader& header, c
         if (parent_total_difficulty >= terminal_total_difficulty_) {
             return ValidationResult::kPoWBlockAfterMerge;
         }
-        return ethash_engine_.validate_block_header(header, state, with_future_timestamp_check);
+        return pre_merge_engine_->validate_block_header(header, state, with_future_timestamp_check);
     } else {
         if (parent->difficulty != 0 && !terminal_pow_block(*parent, state)) {
             return ValidationResult::kPoSBlockBeforeMerge;
         }
-        return pos_engine_.validate_block_header(header, state, with_future_timestamp_check);
+        return post_merge_engine_.validate_block_header(header, state, with_future_timestamp_check);
     }
 }
 
@@ -81,27 +83,33 @@ bool MergeEngine::terminal_pow_block(const BlockHeader& header, const BlockState
 
 ValidationResult MergeEngine::validate_seal(const BlockHeader& header) {
     if (header.difficulty != 0) {
-        return ethash_engine_.validate_seal(header);
+        return pre_merge_engine_->validate_seal(header);
     } else {
-        return pos_engine_.validate_seal(header);
+        return post_merge_engine_.validate_seal(header);
     }
 }
 
 void MergeEngine::finalize(IntraBlockState& state, const Block& block, evmc_revision revision) {
     if (block.header.difficulty != 0) {
-        ethash_engine_.finalize(state, block, revision);
+        pre_merge_engine_->finalize(state, block, revision);
     } else {
-        pos_engine_.finalize(state, block, revision);
+        post_merge_engine_.finalize(state, block, revision);
     }
 }
 
-evmc::address MergeEngine::get_beneficiary(const BlockHeader& header) { return header.beneficiary; }
+evmc::address MergeEngine::get_beneficiary(const BlockHeader& header) {
+    if (header.difficulty != 0) {
+        return pre_merge_engine_->get_beneficiary(header);
+    } else {
+        return post_merge_engine_.get_beneficiary(header);
+    }
+}
 
 ValidationResult MergeEngine::validate_ommers(const Block& block, const BlockState& state) {
     if (block.header.difficulty != 0) {
-        return ethash_engine_.validate_ommers(block, state);
+        return pre_merge_engine_->validate_ommers(block, state);
     } else {
-        return pos_engine_.validate_ommers(block, state);
+        return post_merge_engine_.validate_ommers(block, state);
     }
 }
 

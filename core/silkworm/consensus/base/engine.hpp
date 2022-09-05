@@ -25,12 +25,12 @@ class EngineBase : public IEngine {
     explicit EngineBase(const ChainConfig& chain_config, bool prohibit_ommers)
         : chain_config_{chain_config}, prohibit_ommers_{prohibit_ommers} {}
 
-    //! \brief Performs validation of block header & body that can be done prior to sender recovery and execution.
-    //! \brief See [YP] Sections 4.3.2 "Holistic Validity", 4.3.4 "Block Header Validity", and 11.1 "Ommer Validation".
+    //! \brief Performs validation of block body that can be done prior to sender recovery and execution.
+    //! \brief See [YP] Sections 4.3.2 "Holistic Validity" and 11.1 "Ommer Validation".
     //! \param [in] block: block to pre-validate.
     //! \param [in] state: current state.
     //! \note Shouldn't be used for genesis block.
-    ValidationResult pre_validate_block(const Block& block, const BlockState& state) override;
+    ValidationResult pre_validate_block_body(const Block& block, const BlockState& state) override;
 
     //! \brief See [YP] Section 4.3.4 "Block Header Validity".
     //! \param [in] header: header to validate.

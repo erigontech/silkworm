@@ -46,6 +46,10 @@ boost::asio::awaitable<void> Peer::handle() {
             // TODO: handle disconnect
             log::Debug() << "Peer::handle EOF";
             co_return;
+        } else if (ex.code() == boost::asio::error::connection_reset) {
+            // TODO: handle disconnect
+            log::Debug() << "Peer::handle connection reset";
+            co_return;
         }
         log::Error() << "Peer::handle system_error: " << ex.what();
         throw;

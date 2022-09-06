@@ -91,6 +91,35 @@ static const std::map<std::string, std::string> kGeneticCode{
 
 namespace silkworm::db {
 
+TEST_CASE("Env opening") {
+    SECTION("Non default page size") {
+        const TemporaryDirectory tmp_dir;
+        db::EnvConfig db_config{tmp_dir.path().string(), /*create*/ true};
+        db_config.inmemory = true;
+        db_config.page_size = 8_Kibi;
+        auto env{db::open_env(db_config)};
+        REQUIRE(env.get_pagesize() == db_config.page_size);
+    }
+
+    SECTION("Incompatible page size") {
+        const TemporaryDirectory tmp_dir;
+        {
+            db::EnvConfig db_config{tmp_dir.path().string(), /*create*/ true};
+            db_config.inmemory = true;
+            db_config.page_size = 4_Kibi;
+            REQUIRE_NOTHROW((void)db::open_env(db_config));
+        }
+
+        {
+            // Try to reopen same db with 16KB page size
+            db::EnvConfig db_config{tmp_dir.path().string(), /*create*/ false};
+            db_config.inmemory = true;
+            db_config.page_size = 16_Kibi;
+            REQUIRE_THROWS((void)db::open_env(db_config));
+        }
+    }
+}
+
 TEST_CASE("Cursor") {
     const TemporaryDirectory tmp_dir;
     db::EnvConfig db_config{tmp_dir.path().string(), /*create*/ true};

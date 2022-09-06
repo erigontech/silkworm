@@ -22,22 +22,12 @@
 
 namespace silkworm {
 
-// Gas & refund fee schedule—see Appendix G of the Yellow Paper
+// Gas fee schedule—see Appendix G of the Yellow Paper
 // https://ethereum.github.io/yellowpaper/paper.pdf
 namespace fee {
 
-    inline constexpr uint64_t kGSLoadTangerineWhistle{200};
-    inline constexpr uint64_t kGSLoadIstanbul{800};
-    inline constexpr uint64_t kWarmStorageReadCost{100};         // EIP-2929
-    inline constexpr uint64_t kColdSloadCost{2'100};             // EIP-2929
     inline constexpr uint64_t kAccessListStorageKeyCost{1'900};  // EIP-2930
     inline constexpr uint64_t kAccessListAddressCost{2'400};     // EIP-2930
-
-    inline constexpr uint64_t kGSSet{20'000};
-    inline constexpr uint64_t kGSReset{5'000};
-
-    inline constexpr uint64_t kRSClear{15'000};
-    inline constexpr uint64_t kRSelfDestruct{24'000};
 
     inline constexpr uint64_t kGCodeDeposit{200};
 

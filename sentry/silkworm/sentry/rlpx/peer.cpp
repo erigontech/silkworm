@@ -41,6 +41,10 @@ boost::asio::awaitable<void> Peer::handle() {
         auto first_message = co_await message_stream.receive();
         log::Debug() << "Peer::handle first_message: " << int(first_message.id);
 
+    } catch (const auth::Handshake::DisconnectError&) {
+        // TODO: handle disconnect
+        log::Debug() << "Peer::handle DisconnectError";
+        co_return;
     } catch (const boost::system::system_error& ex) {
         if (ex.code() == boost::asio::error::eof) {
             // TODO: handle disconnect

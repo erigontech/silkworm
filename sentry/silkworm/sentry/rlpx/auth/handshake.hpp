@@ -50,6 +50,11 @@ class Handshake {
 
     boost::asio::awaitable<framing::MessageStream> execute(common::SocketStream& stream);
 
+    class DisconnectError : public std::runtime_error {
+      public:
+        DisconnectError() : std::runtime_error("Handshake: Disconnect received") {}
+    };
+
   private:
     boost::asio::awaitable<AuthKeys> auth(common::SocketStream& stream);
 

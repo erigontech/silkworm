@@ -77,7 +77,7 @@ boost::asio::awaitable<framing::MessageStream> Handshake::execute(common::Socket
     Message reply_message = std::get<Message>(co_await (message_stream.receive() || timeout()));
     if (reply_message.id != HelloMessage::kId) {
         if (reply_message.id == DisconnectMessage::kId) {
-            throw std::runtime_error("Handshake: Disconnect received");
+            throw DisconnectError();
         } else {
             throw std::runtime_error("Handshake: unexpected RLPx message");
         }

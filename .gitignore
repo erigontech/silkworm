@@ -5,5 +5,4 @@ xcode
 .vscode
 .vs
 CMakeFiles
-Makefile
 cmake-build-*

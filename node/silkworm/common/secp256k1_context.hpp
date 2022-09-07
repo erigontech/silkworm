@@ -57,7 +57,10 @@ class SecP256K1Context final {
         return secp256k1_ec_pubkey_parse(context_, public_key, public_key_data.data(), public_key_data.size());
     }
 
-    bool compute_ecdh_secret(Bytes& shared_secret, const secp256k1_pubkey* public_key, const ByteView& private_key) const {
+    bool compute_ecdh_secret(
+        Bytes& shared_secret,
+        const secp256k1_pubkey* public_key,
+        const ByteView& private_key) const {
         return silkpre_secp256k1_ecdh(context_, shared_secret.data(), public_key, private_key.data());
     }
 
@@ -67,7 +70,10 @@ class SecP256K1Context final {
         return secp256k1_ecdsa_sign_recoverable(context_, signature, data.data(), private_key.data(), nullptr, nullptr);
     }
 
-    bool recover_signature_public_key(secp256k1_pubkey* public_key, const secp256k1_ecdsa_recoverable_signature* signature, ByteView data) {
+    bool recover_signature_public_key(
+        secp256k1_pubkey* public_key,
+        const secp256k1_ecdsa_recoverable_signature* signature,
+        ByteView data) {
         if (data.size() != 32)
             return false;
         return secp256k1_ecdsa_recover(context_, public_key, signature, data.data());
@@ -80,10 +86,17 @@ class SecP256K1Context final {
         return {data, static_cast<uint8_t>(recovery_id)};
     }
 
-    bool parse_recoverable_signature(secp256k1_ecdsa_recoverable_signature* signature, const ByteView& signature_data, uint8_t recovery_id) {
+    bool parse_recoverable_signature(
+        secp256k1_ecdsa_recoverable_signature* signature,
+        const ByteView& signature_data,
+        uint8_t recovery_id) {
         if (signature_data.size() != 64)
             return false;
-        return secp256k1_ecdsa_recoverable_signature_parse_compact(context_, signature, signature_data.data(), static_cast<int>(recovery_id));
+        return secp256k1_ecdsa_recoverable_signature_parse_compact(
+            context_,
+            signature,
+            signature_data.data(),
+            static_cast<int>(recovery_id));
     }
 
     static const size_t kPublicKeySizeCompressed;

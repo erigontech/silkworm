@@ -74,7 +74,8 @@ awaitable<void> Server::start(
         co_await acceptor.async_accept(stream.socket(), use_awaitable);
 
         auto remote_endpoint = stream.socket().remote_endpoint();
-        log::Debug() << "RLPx server client connected from " << remote_endpoint.address().to_string() << ":" << remote_endpoint.port();
+        log::Debug() << "RLPx server client connected from "
+                     << remote_endpoint.address().to_string() << ":" << remote_endpoint.port();
 
         auto peer = std::make_unique<Peer>(
             std::move(stream),

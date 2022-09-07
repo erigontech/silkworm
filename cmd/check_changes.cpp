@@ -50,7 +50,9 @@ int main(int argc, char* argv[]) {
     CLI::App app{"Executes Ethereum blocks and compares resulting change sets against DB"};
 
     std::string chaindata{DataDirectory{}.chaindata().path().string()};
-    app.add_option("--chaindata", chaindata, "Path to a database populated by Erigon")->capture_default_str()->check(CLI::ExistingDirectory);
+    app.add_option("--chaindata", chaindata, "Path to a database populated by Erigon")
+        ->capture_default_str()
+        ->check(CLI::ExistingDirectory);
 
     uint64_t from{1};
     app.add_option("--from", from, "start from block number (inclusive)");

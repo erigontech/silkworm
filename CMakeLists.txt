@@ -146,7 +146,32 @@ if(NOT SILKWORM_CORE_ONLY)
   target_include_directories(mdbx-static INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/third_party/libmdbx)
 endif()
 
+if(NOT MSVC)
+  set(GMP_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/third_party/gmplib")
+  set(GMP_INSTALL_DIR "${CMAKE_BINARY_DIR}/third_party/gmplib")
+
+  set(GMP_INCLUDE_DIR "${GMP_INSTALL_DIR}" CACHE PATH "")
+  set(GMP_LIBRARY "${GMP_INSTALL_DIR}/lib/libgmp.a" CACHE FILEPATH "")
+
+  include(ExternalProject)
+  ExternalProject_Add(
+    gmplib
+    SOURCE_DIR "${GMP_SOURCE_DIR}"
+    BINARY_DIR "${GMP_INSTALL_DIR}"
+    CONFIGURE_COMMAND "${GMP_SOURCE_DIR}/configure"
+      "--prefix=${GMP_INSTALL_DIR}"
+      --with-pic=yes
+    PREFIX "${GMP_INSTALL_DIR}"
+    BUILD_BYPRODUCTS "${GMP_LIBRARY}"
+  )
+endif()
+
 add_subdirectory(third_party/silkpre)
+
+if(NOT MSVC)
+  add_dependencies(silkpre gmplib)
+  add_dependencies(ff gmplib)
+endif()
 
 # Compiler enforcements on Silkworm
 if(NOT MSVC)

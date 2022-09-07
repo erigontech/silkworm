@@ -23,3 +23,6 @@
 [submodule "silkpre"]
 	path = third_party/silkpre
 	url = https://github.com/torquem-ch/silkpre.git
+[submodule "third_party/gmplib"]
+	path = third_party/gmplib
+	url = https://github.com/torquem-ch/gmp-wasm.git

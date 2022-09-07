@@ -392,7 +392,9 @@ class TestTracer : public EvmTracer {
     }
     void on_execution_end(const evmc_result& res, const IntraBlockState& intra_block_state) noexcept override {
         execution_end_called_ = true;
-        result_ = {res.status_code, static_cast<uint64_t>(res.gas_left), {res.output_data, res.output_size}};
+        const auto gas_left = static_cast<uint64_t>(res.gas_left);
+        const auto gas_refund = static_cast<uint64_t>(res.gas_refund);
+        result_ = {res.status_code, gas_left, gas_refund, {res.output_data, res.output_size}};
         if (contract_address_ && pc_stack_.size() > 0) {
             const auto pc = pc_stack_.back();
             storage_stack_[pc] =

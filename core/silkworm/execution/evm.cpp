@@ -93,7 +93,9 @@ CallResult EVM::execute(const Transaction& txn, uint64_t gas) noexcept {
 
     evmc::Result res{contract_creation ? create(message) : call(message)};
 
-    return {res.status_code, static_cast<uint64_t>(res.gas_left), {res.output_data, res.output_size}};
+    const auto gas_left = static_cast<uint64_t>(res.gas_left);
+    const auto gas_refund = static_cast<uint64_t>(res.gas_refund);
+    return {res.status_code, gas_left, gas_refund, {res.output_data, res.output_size}};
 }
 
 evmc::Result EVM::create(const evmc_message& message) noexcept {
@@ -180,6 +182,7 @@ evmc::Result EVM::create(const evmc_message& message) noexcept {
         res.create_address = contract_addr;
     } else {
         state_.revert_to_snapshot(snapshot);
+        res.gas_refund = 0;
         if (res.status_code != EVMC_REVERT) {
             res.gas_left = 0;
         }
@@ -246,6 +249,7 @@ evmc::Result EVM::call(const evmc_message& message) noexcept {
 
     if (res.status_code != EVMC_SUCCESS) {
         state_.revert_to_snapshot(snapshot);
+        res.gas_refund = 0;
         if (res.status_code != EVMC_REVERT) {
             res.gas_left = 0;
         }
@@ -403,68 +407,44 @@ evmc_storage_status EvmHost::set_storage(const evmc::address& address, const evm
 
     evm_.state().set_storage(address, key, new_val);
 
-    const evmc_revision rev{evm_.revision()};
-    const bool eip1283{rev >= EVMC_ISTANBUL || rev == EVMC_CONSTANTINOPLE};
-
-    if (!eip1283) {
-        if (is_zero(current_val)) {
-            return EVMC_STORAGE_ADDED;
-        }
-
-        if (is_zero(new_val)) {
-            evm_.state().add_refund(fee::kRSClear);
-            return EVMC_STORAGE_DELETED;
-        }
-
-        return EVMC_STORAGE_MODIFIED;
-    }
-
-    const uint64_t sload_cost{[rev]() {
-        if (rev >= EVMC_BERLIN) {
-            return fee::kWarmStorageReadCost;
-        } else if (rev >= EVMC_ISTANBUL) {
-            return fee::kGSLoadIstanbul;
-        } else {
-            return fee::kGSLoadTangerineWhistle;
-        }
-    }()};
-
-    uint64_t sstore_reset_gas{fee::kGSReset};
-    if (rev >= EVMC_BERLIN) {
-        sstore_reset_gas -= fee::kColdSloadCost;
-    }
-
     // https://eips.ethereum.org/EIPS/eip-1283
     const evmc::bytes32 original_val{evm_.state().get_original_storage(address, key)};
-
-    // https://eips.ethereum.org/EIPS/eip-3529
-    const uint64_t sstore_clears_refund{rev >= EVMC_LONDON ? sstore_reset_gas + fee::kAccessListStorageKeyCost
-                                                           : fee::kRSClear};
 
     if (original_val == current_val) {
         if (is_zero(original_val)) {
             return EVMC_STORAGE_ADDED;
         }
+        // !is_zero(original_val)
         if (is_zero(new_val)) {
-            evm_.state().add_refund(sstore_clears_refund);
+            return EVMC_STORAGE_DELETED;
+        } else {
+            return EVMC_STORAGE_MODIFIED;
         }
-        return EVMC_STORAGE_MODIFIED;
-    } else {
-        if (!is_zero(original_val)) {
-            if (is_zero(current_val)) {
-                evm_.state().subtract_refund(sstore_clears_refund);
-            }
-            if (is_zero(new_val)) {
-                evm_.state().add_refund(sstore_clears_refund);
-            }
-        }
-        if (original_val == new_val) {
-            if (is_zero(original_val)) {
-                evm_.state().add_refund(fee::kGSSet - sload_cost);
+    }
+    // original_val != current_val
+    if (!is_zero(original_val)) {
+        if (is_zero(current_val)) {
+            if (original_val == new_val) {
+                return EVMC_STORAGE_DELETED_RESTORED;
             } else {
-                evm_.state().add_refund(sstore_reset_gas - sload_cost);
+                return EVMC_STORAGE_DELETED_ADDED;
             }
         }
+        // !is_zero(current_val)
+        if (is_zero(new_val)) {
+            return EVMC_STORAGE_MODIFIED_DELETED;
+        }
+        // !is_zero(new_val)
+        if (original_val == new_val) {
+            return EVMC_STORAGE_MODIFIED_RESTORED;
+        } else {
+            return EVMC_STORAGE_ASSIGNED;
+        }
+    }
+    // is_zero(original_val)
+    if (original_val == new_val) {
+        return EVMC_STORAGE_ADDED_DELETED;
+    } else {
         return EVMC_STORAGE_ASSIGNED;
     }
 }
@@ -515,7 +495,7 @@ evmc::Result EvmHost::call(const evmc_message& message) noexcept {
             // geth returns CREATE output only in case of REVERT
             return res;
         } else {
-            evmc::Result res_with_no_output{res.status_code, res.gas_left};
+            evmc::Result res_with_no_output{res.status_code, res.gas_left, res.gas_refund};
             res_with_no_output.create_address = res.create_address;
             return res_with_no_output;
         }

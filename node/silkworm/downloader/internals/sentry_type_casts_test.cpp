@@ -39,10 +39,10 @@ TEST_CASE("H256/512 to/from conversions") {
 
     for (size_t len : {64u, 64u, 64u, 64u, 64u, 60u, 70u}) {
         SECTION("H512 to/from string, len=" + to_string(len)) {
-            string orig_string(len, 0);
+            Bytes orig_string(len, 0);
             generate_n(orig_string.begin(), len, [] { return static_cast<char>(rand() % 255); });
 
-            string transf_string = string_from_H512(*to_H512(orig_string));
+            Bytes transf_string = bytes_from_H512(*to_H512(orig_string));
 
             orig_string.resize(64, 0);  // transf_string is always of 64 bytes with trailing zeros if needed
             REQUIRE(orig_string == transf_string);

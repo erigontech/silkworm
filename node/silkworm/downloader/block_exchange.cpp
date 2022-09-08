@@ -57,8 +57,8 @@ void BlockExchange::receive_message(const sentry::InboundMessage& raw_message) {
 
         messages_.push(message);
     } catch (rlp::DecodingError& error) {
-        PeerId peer_id = string_from_H512(raw_message.peer_id());
-        log::Warning() << "BlockExchange received and ignored a malformed message, peer= " << peer_id
+        PeerId peer_id = bytes_from_H512(raw_message.peer_id());
+        log::Warning() << "BlockExchange received and ignored a malformed message, peer= " << human_readable_id(peer_id)
                        << ", msg-id= " << raw_message.id() << "/" << sentry::MessageId_Name(raw_message.id())
                        << " - " << error.what();
         send_penalization(peer_id, BadBlockPenalty);

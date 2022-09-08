@@ -26,7 +26,7 @@ InboundBlockBodies::InboundBlockBodies(const sentry::InboundMessage& msg) {
     if (msg.id() != sentry::MessageId::BLOCK_BODIES_66)
         throw std::logic_error("InboundBlockBodies received wrong InboundMessage");
 
-    peerId_ = string_from_H512(msg.peer_id());
+    peerId_ = bytes_from_H512(msg.peer_id());
 
     ByteView data = string_view_to_byte_view(msg.data());  // copy for consumption
     rlp::success_or_throw(rlp::decode(data, packet_));

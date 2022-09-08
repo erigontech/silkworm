@@ -29,7 +29,7 @@ InboundGetBlockHeaders::InboundGetBlockHeaders(const sentry::InboundMessage& msg
         throw std::logic_error("InboundGetBlockHeaders received wrong InboundMessage");
     }
 
-    peerId_ = string_from_H512(msg.peer_id());
+    peerId_ = bytes_from_H512(msg.peer_id());
 
     ByteView data = string_view_to_byte_view(msg.data());
     rlp::success_or_throw(rlp::decode(data, packet_));

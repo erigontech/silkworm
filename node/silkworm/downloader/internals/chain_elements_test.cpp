@@ -20,10 +20,12 @@
 
 #include <catch2/catch.hpp>
 
+#include <silkworm/common/cast.hpp>
+
 namespace silkworm {
 
 TEST_CASE("links") {
-    PeerId peer_id{"dummy"};
+    PeerId peer_id{byte_ptr_cast("dummy")};
     bool persisted = false;
 
     std::array<BlockHeader, 5> headers;
@@ -82,7 +84,7 @@ TEST_CASE("links") {
 }
 
 TEST_CASE("anchors") {
-    PeerId peer_id{"dummy"};
+    PeerId peer_id{byte_ptr_cast("dummy")};
     bool persisted = false;
 
     std::array<BlockHeader, 5> headers;

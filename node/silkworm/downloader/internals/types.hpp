@@ -76,7 +76,12 @@ inline std::ostream& operator<<(std::ostream& out, const evmc::bytes32& b32) {
     return out;
 }
 
-using PeerId = std::string;
+using PeerId = Bytes;
+
+// Bytes already has operator<<, so PeerId but PeerId is too long
+inline ByteView human_readable_id(const PeerId& peer_id) {
+    return {peer_id.data(), std::min<size_t>(peer_id.length(), 20)};
+}
 
 enum Penalty : int {
     NoPenalty = 0,

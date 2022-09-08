@@ -111,7 +111,7 @@ Hash hash_from_H256(const types::H256& orig) {
     return dest;
 }
 
-std::unique_ptr<types::H512> to_H512(const std::string& orig) {
+std::unique_ptr<types::H512> to_H512(const Bytes& orig) {
     using types::H128, types::H256, types::H512, evmc::load64be;
 
     Bytes bytes(64, 0);
@@ -146,7 +146,7 @@ std::unique_ptr<types::H512> to_H512(const std::string& orig) {
     return dest;  // transfer ownership
 }
 
-std::string string_from_H512(const types::H512& orig) {
+Bytes bytes_from_H512(const types::H512& orig) {
     uint64_t hi_hi_hi = orig.hi().hi().hi();
     uint64_t hi_hi_lo = orig.hi().hi().lo();
     uint64_t hi_lo_hi = orig.hi().lo().hi();
@@ -156,8 +156,8 @@ std::string string_from_H512(const types::H512& orig) {
     uint64_t lo_lo_hi = orig.lo().lo().hi();
     uint64_t lo_lo_lo = orig.lo().lo().lo();
 
-    std::string dest(64, 0);
-    auto data = reinterpret_cast<uint8_t*>(dest.data());
+    Bytes dest(64, 0);
+    auto data = dest.data();
     endian::store_big_u64(data + 0, hi_hi_hi);
     endian::store_big_u64(data + 8, hi_hi_lo);
     endian::store_big_u64(data + 16, hi_lo_hi);

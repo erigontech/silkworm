@@ -21,6 +21,7 @@
 #include <catch2/catch.hpp>
 
 #include <silkworm/chain/genesis.hpp>
+#include <silkworm/common/cast.hpp>
 #include <silkworm/common/test_context.hpp>
 #include <silkworm/db/genesis.hpp>
 
@@ -139,7 +140,7 @@ TEST_CASE("body downloading", "[silkworm][downloader][BodySequence]") {
         REQUIRE(bs.lowest_block_in_memory() == 1);
 
         // accepting
-        PeerId peer_id{"1"};
+        PeerId peer_id{byte_ptr_cast("1")};
         BlockBodiesPacket66 response_packet;
         response_packet.requestId = packet.requestId;
         response_packet.request.push_back(block1);
@@ -212,7 +213,7 @@ TEST_CASE("body downloading", "[silkworm][downloader][BodySequence]") {
         block1tampered.transactions[0].gas_limit = 90'000;
         block1tampered.transactions[0].to = 0xe5ef458d37212a06e3f59d40c454e76150ae7c32_address;
 
-        PeerId peer_id{"1"};
+        PeerId peer_id{byte_ptr_cast("1")};
         BlockBodiesPacket66 response_packet;
         response_packet.requestId = packet.requestId;       // correct request-id
         response_packet.request.push_back(block1tampered);  // wrong body
@@ -245,7 +246,7 @@ TEST_CASE("body downloading", "[silkworm][downloader][BodySequence]") {
         REQUIRE(request_status.block_height == 1);
 
         // accepting
-        PeerId peer_id{"1"};
+        PeerId peer_id{byte_ptr_cast("1")};
         BlockBodiesPacket66 response_packet;
         response_packet.requestId = packet.requestId;
         response_packet.request.push_back(block1);
@@ -283,7 +284,7 @@ TEST_CASE("body downloading", "[silkworm][downloader][BodySequence]") {
         // in real life the request can become stale and can be renewed
         // but if the peer is slow we will get a response to the old request
 
-        PeerId peer_id{"1"};
+        PeerId peer_id{byte_ptr_cast("1")};
         BlockBodiesPacket66 response_packet;
         response_packet.requestId = packet.requestId - 1;  // simulate response to prev request
         response_packet.request.push_back(block1);
@@ -436,7 +437,7 @@ TEST_CASE("body downloading", "[silkworm][downloader][BodySequence]") {
         REQUIRE(bs.announced_blocks_.size() == 0);
 
         // accepting announcement
-        PeerId peer_id{"1"};
+        PeerId peer_id{byte_ptr_cast("1")};
         bs.accept_new_block(block1, peer_id);
         REQUIRE(bs.announced_blocks_.size() == 1);
 

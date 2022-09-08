@@ -34,6 +34,7 @@ namespace silkworm {
 struct CallResult {
     evmc_status_code status{EVMC_SUCCESS};
     uint64_t gas_left{0};
+    uint64_t gas_refund{0};
     Bytes data;
 };
 

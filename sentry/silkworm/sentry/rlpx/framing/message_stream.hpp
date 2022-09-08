@@ -34,6 +34,8 @@ class MessageStream {
         : cipher_(std::move(cipher)),
           stream_(stream) {}
 
+    MessageStream(MessageStream&&) = default;
+
     boost::asio::awaitable<void> send(common::Message message);
     boost::asio::awaitable<common::Message> receive();
 

@@ -21,7 +21,6 @@
 #include <silkworm/sentry/common/timeout.hpp>
 #include <silkworm/sentry/rlpx/common/disconnect_message.hpp>
 #include <silkworm/sentry/rlpx/framing/framing_cipher.hpp>
-#include <silkworm/sentry/rlpx/framing/message_stream.hpp>
 
 #include "auth_initiator.hpp"
 #include "auth_recipient.hpp"
@@ -44,7 +43,7 @@ boost::asio::awaitable<AuthKeys> Handshake::auth(common::SocketStream& stream) {
     }
 }
 
-boost::asio::awaitable<void> Handshake::execute(common::SocketStream& stream) {
+boost::asio::awaitable<framing::MessageStream> Handshake::execute(common::SocketStream& stream) {
     auto auth_keys = co_await auth(stream);
     log::Debug() << "AuthKeys.peer_ephemeral_public_key: " << auth_keys.peer_ephemeral_public_key.hex();
 
@@ -68,7 +67,7 @@ boost::asio::awaitable<void> Handshake::execute(common::SocketStream& stream) {
         client_id_,
         {
             {"p2p", HelloMessage::kProtocolVersion},
-            {"eth", 67},
+            HelloMessage::Capability{required_capability_},
         },
         node_listen_port_,
         node_key_.public_key(),
@@ -78,7 +77,7 @@ boost::asio::awaitable<void> Handshake::execute(common::SocketStream& stream) {
     Message reply_message = std::get<Message>(co_await (message_stream.receive() || timeout()));
     if (reply_message.id != HelloMessage::kId) {
         if (reply_message.id == DisconnectMessage::kId) {
-            throw std::runtime_error("Handshake: Disconnect received");
+            throw DisconnectError();
         } else {
             throw std::runtime_error("Handshake: unexpected RLPx message");
         }
@@ -88,7 +87,12 @@ boost::asio::awaitable<void> Handshake::execute(common::SocketStream& stream) {
     log::Debug() << "Handshake success: peer Hello: " << hello_reply_message.client_id()
                  << " with " << hello_reply_message.capabilities_description();
 
+    if (!hello_reply_message.contains_capability(HelloMessage::Capability{required_capability_}))
+        throw std::runtime_error("Handshake: no matching required capability");
+
     message_stream.enable_compression();
+
+    co_return message_stream;
 }
 
 }  // namespace silkworm::sentry::rlpx::auth

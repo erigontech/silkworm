@@ -27,6 +27,8 @@ class MessageFrameCodec {
 
     void enable_compression() { is_compression_enabled_ = true; }
 
+    static const size_t kMaxFrameSize;
+
   private:
     bool is_compression_enabled_{false};
 };

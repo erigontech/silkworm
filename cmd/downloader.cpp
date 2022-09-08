@@ -72,7 +72,7 @@ class ProgressLog : public ActiveComponent {
   public:
     ProgressLog(std::vector<Stage*>& stages) : stages_(stages) {}
 
-    void execution_loop() override { // this is only a trick to avoid using asio timers, this is only test code
+    void execution_loop() override {  // this is only a trick to avoid using asio timers, this is only test code
         using namespace std::chrono;
         log::set_thread_name("progress-log  ");
         while (!is_stopping()) {
@@ -84,7 +84,6 @@ class ProgressLog : public ActiveComponent {
         }
     }
 };
-
 
 // Main
 int main(int argc, char* argv[]) {

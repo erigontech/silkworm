@@ -33,11 +33,13 @@ class Stage : public Stoppable {
         std::optional<Hash> bad_block;
     };
 
-    Stage([[maybe_unused]] const char* stage_name, Status& s, NodeSettings*): shared_status_(s) {};
+    Stage(const char* stage_name, Status& s, NodeSettings*): shared_status_(s), stage_name_(stage_name) {};
     Stage(const Stage& s): shared_status_(s.shared_status_) {}
-    
+
     virtual ~Stage() = default;
-    
+
+    const char* name() const { return stage_name_; }
+
     virtual Result forward(db::RWTxn&) = 0;
     virtual Result unwind(db::RWTxn&, BlockNum new_height) = 0;
     virtual Result prune(db::RWTxn&) = 0;
@@ -49,6 +51,7 @@ class Stage : public Stoppable {
 
   protected:
     Status& shared_status_;
+    const char* stage_name_;
 };
 
 }  // namespace silkworm

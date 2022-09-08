@@ -37,23 +37,21 @@ using namespace silkworm;
 
 // stage-loop, forwarding phase
 using LastStage = size_t;
-template <size_t N>
-std::tuple<Stage::Result, LastStage> forward(std::array<Stage*, N> stages, db::RWTxn& txn) {
+std::tuple<Stage::Result, LastStage> forward(std::vector<Stage*> stages, db::RWTxn& txn) {
     using Status = Stage::Result;
     Stage::Result result{Status::Unspecified};
 
-    for (size_t i = 0; i < N; ++i) {
+    for (size_t i = 0; i < stages.size(); ++i) {
         result = stages[i]->forward(txn);
         if (result == Status::UnwindNeeded) {
             return {result, i};
         }
     }
-    return {result, N - 1};
+    return {result, stages.size() - 1};
 }
 
 // stage-loop, unwinding phase
-template <size_t N>
-Stage::Result unwind(std::array<Stage*, N> stages, BlockNum unwind_point, LastStage last_stage, db::RWTxn& txn) {
+Stage::Result unwind(std::vector<Stage*> stages, BlockNum unwind_point, LastStage last_stage, db::RWTxn& txn) {
     using Status = Stage::Result;
     Stage::Result result{Status::Unspecified};
 
@@ -66,6 +64,27 @@ Stage::Result unwind(std::array<Stage*, N> stages, BlockNum unwind_point, LastSt
 
     return result;
 }
+
+// progress log
+class ProgressLog : public ActiveComponent {
+    std::vector<Stage*> stages_;
+
+  public:
+    ProgressLog(std::vector<Stage*>& stages) : stages_(stages) {}
+
+    void execution_loop() override { // this is only a trick to avoid using asio timers, this is only test code
+        using namespace std::chrono;
+        log::set_thread_name("progress-log  ");
+        while (!is_stopping()) {
+            std::this_thread::sleep_for(30s);
+            for (auto stage : stages_) {
+                auto progress = stage->get_log_progress();
+                log::Message(stage->name(), progress);
+            }
+        }
+    }
+};
+
 
 // Main
 int main(int argc, char* argv[]) {
@@ -175,7 +194,12 @@ int main(int argc, char* argv[]) {
         });
 
         // Sample stage loop with 2 stages
-        std::array<Stage*, 2> stages = {&header_stage, &body_stage};
+        std::vector<Stage*> stages = {&header_stage, &body_stage};
+
+        ProgressLog progress_log(stages);
+        auto progress_displaying = std::thread([&progress_log]() {
+            progress_log.execution_loop();
+        });
 
         Stage::Result result{Stage::Result::Unspecified};
         size_t last_stage = 0;
@@ -195,11 +219,13 @@ int main(int argc, char* argv[]) {
         log::Info() << "Downloader stage-loop ended\n";
 
         // Signal exiting
+        progress_log.stop();
         header_stage.stop();
         body_stage.stop();
         block_exchange.stop();
         // Wait threads termination
         log::Info() << "Waiting threads termination\n";
+        progress_displaying.join();
         block_downloading.join();
         message_receiving.join();
         stats_receiving.join();

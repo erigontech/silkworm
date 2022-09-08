@@ -87,7 +87,7 @@ Stage::Result BodiesStage::forward(db::RWTxn& tx) {
                 auto bodies = withdraw_command->result().get();
                 // persist bodies
                 body_persistence.persist(bodies);
-                current_height_ = body_persistence.initial_height();
+                current_height_ = body_persistence.highest_height();
 
                 // check unwind condition
                 if (body_persistence.unwind_needed()) {
@@ -216,10 +216,12 @@ std::vector<std::string> BodiesStage::get_log_progress() {  // implementation MU
     static RepeatedMeasure<BlockNum> height_progress{0};
 
     height_progress.set(current_height_);
+    auto peers = block_downloader_.sentry().active_peers();
 
     return {"current number", std::to_string(height_progress.get()),
             "progress", std::to_string(height_progress.delta()),
-            "bodies/secs", std::to_string(height_progress.throughput())};
+            "bodies/secs", std::to_string(height_progress.throughput()),
+            "peers", std::to_string(peers)};
 }
 
 }  // namespace silkworm

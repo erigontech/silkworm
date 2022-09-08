@@ -81,7 +81,7 @@ class HeadersStage : public Stage {
     auto update_bad_headers(std::set<Hash>) -> std::shared_ptr<InternalMessage<void>>;
 
     std::vector<std::string> get_log_progress() override;  // thread safe
-    std::atomic<BlockNum> current_height_;
+    std::atomic<BlockNum> current_height_{0};
 
     BlockExchange& block_downloader_;
 };

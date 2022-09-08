@@ -46,6 +46,7 @@ BlockExchange::~BlockExchange() {
 const ChainConfig& BlockExchange::chain_config() const { return chain_config_; }
 
 const PreverifiedHashes& BlockExchange::preverified_hashes() const { return preverified_hashes_; }
+SentryClient& BlockExchange::sentry() const { return sentry_; }
 
 void BlockExchange::accept(std::shared_ptr<Message> message) { messages_.push(message); }
 

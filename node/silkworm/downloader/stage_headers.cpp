@@ -99,7 +99,7 @@ auto HeadersStage::forward(db::RWTxn& tx) -> Stage::Result {
 
                     // persist headers
                     header_persistence.persist(stable_headers);
-                    current_height_ = header_persistence.initial_height();
+                    current_height_ = header_persistence.highest_height();
 
                     if (stable_headers.size() > 100000) {
                         log::Info() << "[1/16 Headers] Inserted headers tot=" << stable_headers.size()
@@ -267,10 +267,12 @@ std::vector<std::string> HeadersStage::get_log_progress() {  // implementation M
     static RepeatedMeasure<BlockNum> height_progress{0};
 
     height_progress.set(current_height_);
+    auto peers = block_downloader_.sentry().active_peers();
 
     return {"current number", std::to_string(height_progress.get()),
             "progress", std::to_string(height_progress.delta()),
-            "headers/secs", std::to_string(height_progress.throughput())};
+            "headers/secs", std::to_string(height_progress.throughput()),
+            "peers", std::to_string(peers)};
 }
 
 }  // namespace silkworm

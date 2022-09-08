@@ -44,7 +44,7 @@ class BodiesStage : public Stage {
     void send_announcements();
 
     std::vector<std::string> get_log_progress() override;  // thread safe
-    std::atomic<BlockNum> current_height_;
+    std::atomic<BlockNum> current_height_{0};
 
     BlockExchange& block_downloader_;
 };

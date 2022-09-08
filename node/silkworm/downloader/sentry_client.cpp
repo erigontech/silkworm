@@ -140,7 +140,7 @@ void SentryClient::stats_receiving_loop() {
 	            if (active_peers_ > 0) active_peers_--;  // workaround, to fix this we need to improve the interface
 	        }                                            // or issue a count_active_peers()
 
-            log::Info() << "Peer " << human_readable_id(peerId) << " " << event << ", active " << active_peers_;
+            log::Debug() << "Peer " << human_readable_id(peerId) << " " << event << ", active " << active_peers_;
         }
 
     } catch (const std::exception& e) {

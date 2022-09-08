@@ -22,16 +22,13 @@
 #include <silkworm/downloader/internals/grpc_sync_client.hpp>
 #include <silkworm/downloader/internals/sentry_type_casts.hpp>
 #include <silkworm/downloader/internals/types.hpp>
+#include <silkworm/downloader/rpc/receive_messages.hpp>
+#include <silkworm/downloader/rpc/receive_peer_stats.hpp>
 
 namespace silkworm {
 
 /*
- * SentryClient is a client to the external Sentry
- * It connects to the Sentry, send rpc and receive reply.
- */
-
-/*
- * A client to connect to a remote sentry
+ * SentryClient is a client to connect to a remote sentry, send rpc and receive reply.
  * The remote sentry must implement the ethereum p2p protocol and must have an interface specified by sentry.proto
  * SentryClient uses gRPC/protobuf to communicate with the remote sentry.
  */
@@ -52,24 +49,22 @@ class SentryClient : public rpc::Client<sentry::Sentry>, public ActiveComponent 
 
     using base_t::exec_remotely;  // exec_remotely(SentryRpc& rpc) sends a rpc request to the remote sentry
 
-    enum Scope {
-        BlockRequests = 0x01,
-        BlockAnnouncements = 0x02,
-        Other = 0x04
-    };
-    // enum values enable bit masking, for example: cope = BlockRequests & BlockAnnouncements
+    void subscribe(rpc::ReceiveMessages::Scope, subscriber_t callback);  // subscribe with sentry to receive messages
 
-    void subscribe(Scope, subscriber_t callback);  // subscribe with sentry to receive messages
+    bool stop() override;
 
     /*[[long_running]]*/ void execution_loop() override;  // do a long-running loop to wait for messages
     /*[[long_running]]*/ void stats_receiving_loop();     // do a long-running loop to wait for peer statistics
 
-    static Scope scope(const sentry::InboundMessage& message);  // find the scope of the message
+    static rpc::ReceiveMessages::Scope scope(const sentry::InboundMessage& message);  // find the scope of the message
 
   protected:
     void publish(const sentry::InboundMessage&);  // notifying registered subscribers
 
-    std::map<Scope, std::list<subscriber_t>> subscribers_;  // todo: optimize
+    rpc::ReceiveMessages message_subscription_;
+    rpc::ReceivePeerStats receive_peer_stats_;
+
+    std::map<rpc::ReceiveMessages::Scope, std::list<subscriber_t>> subscribers_;  // todo: optimize
     std::atomic<uint64_t> active_peers_{0};
 };
 

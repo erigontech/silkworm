@@ -24,6 +24,7 @@
 #include <silkworm/common/directories.hpp>
 #include <silkworm/common/log.hpp>
 #include <silkworm/common/settings.hpp>
+#include <silkworm/concurrency/signal_handler.hpp>
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/downloader/internals/body_sequence.hpp>
 #include <silkworm/downloader/internals/header_retrieval.hpp>
@@ -84,6 +85,7 @@ int main(int argc, char* argv[]) {
         log_settings.log_file = "downloader.log";
         log_settings.log_verbosity = log::Level::kInfo;
         log_settings.log_thousands_sep = '\'';
+        log::set_thread_name("main          ");
 
         // test & measurement only parameters [to remove]
         BodySequence::kMaxBlocksPerMessage = 128;
@@ -163,6 +165,15 @@ int main(int argc, char* argv[]) {
         HeadersStage header_stage{shared_status, block_exchange, &node_settings};
         BodiesStage body_stage{shared_status, block_exchange, &node_settings};
 
+        // Trap os signals
+        SignalHandler::init([&](int) {
+            log::Info() << "Requesting threads termination\n";
+            header_stage.stop();
+            body_stage.stop();
+            block_exchange.stop();
+            sentry.stop();
+        });
+
         // Sample stage loop with 2 stages
         std::array<Stage*, 2> stages = {&header_stage, &body_stage};
 
@@ -179,17 +190,25 @@ int main(int argc, char* argv[]) {
             }
 
             shared_status.first_sync = false;
-        } while (result != Stage::Result::Error);
+        } while (result != Stage::Result::Error && !SignalHandler::signalled());
 
-        cout << "Downloader stage-loop ended\n";
+        log::Info() << "Downloader stage-loop ended\n";
 
+        // Signal exiting
+        header_stage.stop();
+        body_stage.stop();
+        block_exchange.stop();
         // Wait threads termination
-        block_exchange.stop();  // signal exiting
+        log::Info() << "Waiting threads termination\n";
+        block_downloading.join();
         message_receiving.join();
         stats_receiving.join();
-        block_downloading.join();
 
+        log::Info() << "Closing db\n";
         db.close();
+
+        log::Info() << "Downloader terminated\n";
+
     } catch (const CLI::ParseError& ex) {
         return_value = app.exit(ex);
     } catch (std::exception& e) {

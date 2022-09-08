@@ -103,11 +103,13 @@ inline constexpr int kHandleableCodes[] {
 std::atomic_uint32_t SignalHandler::sig_count_{0};
 std::atomic_int SignalHandler::sig_code_{0};
 std::atomic_bool SignalHandler::signalled_{false};
+std::function<void(int)> SignalHandler::custom_handler_;
 
-void SignalHandler::init() {
+void SignalHandler::init(std::function<void(int)> custom_handler) {
     for (const int sig_code : kHandleableCodes) {
         signal(sig_code, &SignalHandler::handle);
     }
+    custom_handler_ = custom_handler;
 }
 
 void SignalHandler::handle(int sig_code) {
@@ -129,6 +131,9 @@ void SignalHandler::handle(int sig_code) {
         digit_with_endl[1] = '\n';
         digit_with_endl[2] = '\0';
         std::fputs(digit_with_endl, stderr);
+    }
+    if (custom_handler_) {
+        custom_handler_(sig_code);
     }
     signal(sig_code, &SignalHandler::handle);  // Re-enable the hook
 }

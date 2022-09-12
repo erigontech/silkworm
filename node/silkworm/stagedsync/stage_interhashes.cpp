@@ -20,7 +20,6 @@
 
 #include <absl/container/btree_set.h>
 
-#include <silkworm/common/assert.hpp>
 #include <silkworm/common/endian.hpp>
 #include <silkworm/common/lru_cache.hpp>
 #include <silkworm/common/rlp_err.hpp>
@@ -54,7 +53,7 @@ StageResult InterHashes::forward(db::RWTxn& txn) {
         }
 
         BlockNum segment_width{hashstate_stage_progress - previous_progress};
-        if (segment_width > kSmallSegmentWidth) {
+        if (segment_width > db::stages::kSmallSegmentWidth) {
             log::Info(log_prefix_ + " begin",
                       {"op", std::string(magic_enum::enum_name<OperationType>(operation_)),
                        "from", std::to_string(previous_progress),
@@ -128,7 +127,7 @@ StageResult InterHashes::unwind(db::RWTxn& txn, BlockNum to) {
         }
 
         BlockNum segment_width{previous_progress - to};
-        if (segment_width > kSmallSegmentWidth) {
+        if (segment_width > db::stages::kSmallSegmentWidth) {
             log::Info(log_prefix_ + " begin",
                       {"op", std::string(magic_enum::enum_name<OperationType>(operation_)),
                        "from", std::to_string(previous_progress),

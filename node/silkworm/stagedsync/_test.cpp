@@ -352,7 +352,9 @@ TEST_CASE("Sync Stages") {
             expected_block_num = 1;  // First storage change is at block 1
             actual_block_num = endian::load_big_u64(db::from_slice(data.key).data());
             REQUIRE(actual_block_num == expected_block_num);
-            REQUIRE(db::stages::read_stage_prune_progress(*txn, db::stages::kExecutionKey) == 3);
+
+            // There is no pruning setting enabled hence no pruning occurred
+            REQUIRE(db::stages::read_stage_prune_progress(*txn, db::stages::kExecutionKey) == 0);
         }
 
         SECTION("Execution Prune History") {

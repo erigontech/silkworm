@@ -131,7 +131,6 @@ class IStage : public Stoppable {
     }
 
   protected:
-    static constexpr size_t kSmallSegmentWidth{16};              // A small segment does not require logging of begin/end
     const char* stage_name_;                                     // Human friendly identifier of the stage
     NodeSettings* node_settings_;                                // Pointer to shared node configuration settings
     std::atomic<OperationType> operation_{OperationType::None};  // Actual operation being carried out

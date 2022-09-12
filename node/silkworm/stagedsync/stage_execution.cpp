@@ -75,7 +75,7 @@ StageResult Execution::forward(db::RWTxn& txn) {
         block_num_ = previous_progress + 1;
         BlockNum max_block_num{bodies_stage_progress};
         BlockNum segment_width{bodies_stage_progress - previous_progress};
-        if (segment_width > kSmallSegmentWidth) {
+        if (segment_width > db::stages::kSmallSegmentWidth) {
             log::Info(log_prefix_ + " begin",
                       {"op", std::string(magic_enum::enum_name<OperationType>(operation_)),
                        "from", std::to_string(block_num_),
@@ -309,8 +309,8 @@ StageResult Execution::unwind(db::RWTxn& txn, BlockNum to) {
 
         operation_ = OperationType::Unwind;
         const BlockNum segment_width{previous_progress - to};
-        if (segment_width > kSmallSegmentWidth) {
-            log::Info(log_prefix_ + " begin " + std::string(stage_name_),
+        if (segment_width > db::stages::kSmallSegmentWidth) {
+            log::Info(log_prefix_ + " begin",
                       {"op", std::string(magic_enum::enum_name<OperationType>(operation_)),
                        "from", std::to_string(previous_progress),
                        "to", std::to_string(to),
@@ -371,16 +371,34 @@ StageResult Execution::prune(db::RWTxn& txn) {
     }
 
     try {
-        BlockNum execution_progress{db::stages::read_stage_progress(*txn, stage_name_)};
-        BlockNum prune_progress{db::stages::read_stage_prune_progress(*txn, stage_name_)};
-        if (prune_progress >= execution_progress) {
+        if (!node_settings_->prune_mode->history().enabled() &&
+            !node_settings_->prune_mode->receipts().enabled() &&
+            !node_settings_->prune_mode->call_traces().enabled()) {
             operation_ = OperationType::None;
             return ret;
         }
 
-        if (node_settings_->prune_mode->history().enabled()) {
-            auto prune_from{node_settings_->prune_mode->history().value_from_head(execution_progress)};
-            auto key{db::block_key(prune_from)};
+        BlockNum forward_progress{get_progress(txn)};
+        BlockNum prune_progress{get_prune_progress(txn)};
+        if (prune_progress >= forward_progress) {
+            operation_ = OperationType::None;
+            return ret;
+        }
+
+        const BlockNum segment_width{forward_progress - prune_progress};
+
+        // Prune history of changes (changesets)
+        if (const auto prune_threshold{node_settings_->prune_mode->history().value_from_head(forward_progress)}; prune_threshold) {
+            if (segment_width > db::stages::kSmallSegmentWidth) {
+                log::Info(log_prefix_ + " begin",
+                          {"op", std::string(magic_enum::enum_name<OperationType>(operation_)),
+                           "source", "history",
+                           "from", std::to_string(prune_progress),
+                           "to", std::to_string(forward_progress),
+                           "threshold", std::to_string(prune_threshold)});
+            }
+
+            auto key{db::block_key(prune_threshold)};
             size_t erased{0};
             db::Cursor source(txn, db::table::kAccountChangeSet);
             auto data{source.lower_bound(db::to_slice(key), /*throw_notfound=*/false)};
@@ -401,7 +419,7 @@ StageResult Execution::prune(db::RWTxn& txn) {
             data = source.lower_bound(db::to_slice(key), /*throw_notfound=*/false);
             while (data) {
                 auto data_value_view{db::from_slice(data.value)};
-                if (endian::load_big_u64(data_value_view.data()) < prune_from) {
+                if (endian::load_big_u64(data_value_view.data()) < prune_threshold) {
                     erased += source.count_multivalue();
                     source.erase(/*whole_multivalue=*/true);
                 }
@@ -416,9 +434,17 @@ StageResult Execution::prune(db::RWTxn& txn) {
             }
         }
 
-        if (node_settings_->prune_mode->receipts().enabled()) {
-            auto prune_from{node_settings_->prune_mode->receipts().value_from_head(execution_progress)};
-            auto key{db::block_key(prune_from)};
+        // Prune receipts
+        if (const auto prune_threshold{node_settings_->prune_mode->receipts().value_from_head(forward_progress)}; prune_threshold) {
+            if (segment_width > db::stages::kSmallSegmentWidth) {
+                log::Info(log_prefix_ + " begin",
+                          {"op", std::string(magic_enum::enum_name<OperationType>(operation_)),
+                           "source", "receipts",
+                           "from", std::to_string(prune_progress),
+                           "to", std::to_string(forward_progress),
+                           "threshold", std::to_string(prune_threshold)});
+            }
+            auto key{db::block_key(prune_threshold)};
             db::Cursor source(txn, db::table::kBlockReceipts);
             size_t erased = db::cursor_erase(source, key, db::CursorMoveDirection::Reverse);
             if (stop_watch) {
@@ -428,6 +454,7 @@ StageResult Execution::prune(db::RWTxn& txn) {
                             "erased", std::to_string(erased),
                             "elapsed", StopWatch::format(duration)});
             }
+
             source.bind(txn, db::table::kLogs);
             erased = db::cursor_erase(source, key, db::CursorMoveDirection::Reverse);
             if (stop_watch) {
@@ -439,9 +466,17 @@ StageResult Execution::prune(db::RWTxn& txn) {
             }
         }
 
-        if (node_settings_->prune_mode->call_traces().enabled()) {
-            auto prune_from{node_settings_->prune_mode->receipts().value_from_head(execution_progress)};
-            auto key{db::block_key(prune_from)};
+        // Prune call traces
+        if (const auto prune_threshold{node_settings_->prune_mode->receipts().value_from_head(forward_progress)}; prune_threshold) {
+            if (segment_width > db::stages::kSmallSegmentWidth) {
+                log::Info(log_prefix_ + " begin",
+                          {"op", std::string(magic_enum::enum_name<OperationType>(operation_)),
+                           "source", "call traces",
+                           "from", std::to_string(prune_progress),
+                           "to", std::to_string(forward_progress),
+                           "threshold", std::to_string(prune_threshold)});
+            }
+            auto key{db::block_key(prune_threshold)};
             db::Cursor source(txn, db::table::kCallTraceSet);
             size_t erased = db::cursor_erase(source, key, db::CursorMoveDirection::Reverse);
             if (stop_watch) {
@@ -453,7 +488,7 @@ StageResult Execution::prune(db::RWTxn& txn) {
             }
         }
 
-        db::stages::write_stage_prune_progress(*txn, db::stages::kExecutionKey, execution_progress);
+        db::stages::write_stage_prune_progress(*txn, db::stages::kExecutionKey, forward_progress);
         txn.commit();
 
     } catch (const StageError& ex) {

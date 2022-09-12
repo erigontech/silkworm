@@ -157,11 +157,11 @@ void SyncLoop::work() {
                 // A single commit at the end of the cycle
                 external_txn = chaindata_env_->start_write();
                 cycle_txn = std::make_unique<db::RWTxn>(external_txn);
-                log::Trace("SyncLoop", {"db transactions", "per cycle"});
+                log::Trace("SyncLoop", {"MDBX tx", "per cycle"});
             } else {
                 // Single stages will commit
                 cycle_txn = std::make_unique<db::RWTxn>(*chaindata_env_);
-                log::Trace("SyncLoop", {"db transactions", "per stage"});
+                log::Trace("SyncLoop", {"MDBX tx", "per stage"});
             }
 
             // Run forward

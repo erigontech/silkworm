@@ -44,7 +44,7 @@ bool CustomHeaderOnlyChainState::read_body(BlockNum, const evmc::bytes32&, Block
 std::optional<intx::uint256> CustomHeaderOnlyChainState::total_difficulty(uint64_t,
                                                                           const evmc::bytes32&) const noexcept {
     // TODO (mriccobene): to implement
-    return {};
+    return {0};
 }
 
 // A better Chain_State implementation

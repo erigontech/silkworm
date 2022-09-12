@@ -227,7 +227,7 @@ std::vector<std::string> Senders::get_log_progress() {
             if (farm_) {
                 return farm_->get_log_progress();
             } else {
-                return {}
+                return {};
             }
         default:
             return {"key", current_key_};

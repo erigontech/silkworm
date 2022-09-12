@@ -155,7 +155,7 @@ StageResult LogIndex::prune(db::RWTxn& txn) {
 
         const auto forward_progress{get_progress(txn)};
         const auto prune_progress{get_prune_progress(txn)};
-        if (prune_progress >= forward_progress){
+        if (prune_progress >= forward_progress) {
             operation_ = OperationType::None;
             return ret;
         }
@@ -163,7 +163,7 @@ StageResult LogIndex::prune(db::RWTxn& txn) {
         // Need to erase all history info below this threshold
         // If threshold is zero we don't have anything to prune
         const auto prune_threshold{node_settings_->prune_mode->history().value_from_head(forward_progress)};
-        if (!prune_threshold){
+        if (!prune_threshold) {
             operation_ = OperationType::None;
             return ret;
         }

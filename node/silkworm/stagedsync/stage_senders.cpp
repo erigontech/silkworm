@@ -224,7 +224,11 @@ bool Senders::stop() {
 std::vector<std::string> Senders::get_log_progress() {
     switch (operation_) {
         case OperationType::Forward:
-            if (farm_) return farm_->get_log_progress();
+            if (farm_) {
+                return farm_->get_log_progress();
+            } else {
+                return {}
+            }
         default:
             return {"key", current_key_};
     }

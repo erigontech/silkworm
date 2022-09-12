@@ -28,7 +28,7 @@ StageResult TxLookup::forward(db::RWTxn& txn) {
 
         // Check stage boundaries from previous execution and previous stage execution
         auto previous_progress{get_progress(txn)};
-        const auto target_progress{db::stages::read_stage_progress(*txn, db::stages::kBlockBodiesKey)};
+        const auto target_progress{db::stages::read_stage_progress(*txn, db::stages::kExecutionKey)};
         if (previous_progress == target_progress) {
             // Nothing to process
             operation_ = OperationType::None;
@@ -37,7 +37,7 @@ StageResult TxLookup::forward(db::RWTxn& txn) {
             // Something bad had happened.  Maybe we need to unwind ?
             throw StageError(StageResult::kInvalidProgress,
                              "TxLookup progress " + std::to_string(previous_progress) +
-                                 " greater than BlockBodies progress " + std::to_string(target_progress));
+                                 " greater than Execution progress " + std::to_string(target_progress));
         }
 
         reset_log_progress();

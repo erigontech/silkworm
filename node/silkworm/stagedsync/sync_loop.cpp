@@ -185,6 +185,13 @@ void SyncLoop::work() {
             if (sync_context_->unwind_to.has_value()) {
                 // Need to persist unwind point (in case of user stop)
                 db::stages::write_stage_progress(*cycle_txn, db::stages::kUnwindKey, sync_context_->unwind_to.value());
+                if (cycle_in_one_tx) {
+                    external_txn.commit();
+                    external_txn = chaindata_env_->start_write();
+                    cycle_txn = std::make_unique<db::RWTxn>(external_txn);
+                } else {
+                    cycle_txn->commit(/*renew=*/true);
+                }
 
                 // Run unwind
                 log::Warning("Unwinding", {"to", std::to_string(sync_context_->unwind_to.value())});
@@ -208,7 +215,7 @@ void SyncLoop::work() {
             if (cycle_in_one_tx) {
                 external_txn.commit();
             } else {
-                cycle_txn->commit();
+                cycle_txn->commit(/*renew=*/false);
             }
 
             cycle_txn.reset();

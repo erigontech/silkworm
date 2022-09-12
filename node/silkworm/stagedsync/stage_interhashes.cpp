@@ -84,7 +84,11 @@ StageResult InterHashes::forward(db::RWTxn& txn) {
             ret = increment_intermediate_hashes(txn, previous_progress, hashstate_stage_progress, &expected_state_root);
         }
 
-        // TODO If I return with kWrongStateRoot begin a binary search backwards
+        if (ret == StageResult::kWrongStateRoot) {
+            // Binary search for the correct block, biased to the lower numbers
+            sync_context_->unwind_to.emplace(previous_progress + (segment_width / 2));
+            sync_context_->bad_block_hash.emplace(header_hash.value());
+        }
 
         success_or_throw(ret);
         throw_if_stopping();

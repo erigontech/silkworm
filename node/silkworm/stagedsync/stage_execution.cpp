@@ -498,7 +498,7 @@ StageResult Execution::prune(db::RWTxn& txn) {
         // Prune call traces
         if (const auto prune_threshold{node_settings_->prune_mode->receipts().value_from_head(forward_progress)}; prune_threshold) {
             if (segment_width > db::stages::kSmallSegmentWidth) {
-                log::Info(log_prefix_ ",
+                log::Info(log_prefix_,
                           {"op", std::string(magic_enum::enum_name<OperationType>(operation_)),
                            "source", "call traces",
                            "from", std::to_string(prune_progress),

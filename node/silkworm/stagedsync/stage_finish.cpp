@@ -51,19 +51,19 @@ StageResult Finish::forward(db::RWTxn& txn) {
         txn.commit();
 
     } catch (const StageError& ex) {
-        log::Error(std::string(stage_name_),
+        log::Error(log_prefix_,
                    {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
         ret = static_cast<StageResult>(ex.err());
     } catch (const mdbx::exception& ex) {
-        log::Error(std::string(stage_name_),
+        log::Error(log_prefix_,
                    {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
         ret = StageResult::kDbError;
     } catch (const std::exception& ex) {
-        log::Error(std::string(stage_name_),
+        log::Error(log_prefix_,
                    {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
         ret = StageResult::kUnexpectedError;
     } catch (...) {
-        log::Error(std::string(stage_name_),
+        log::Error(log_prefix_,
                    {"function", std::string(__FUNCTION__), "exception", "unexpected and undefined"});
         ret = StageResult::kUnexpectedError;
     }
@@ -81,19 +81,19 @@ StageResult Finish::unwind(db::RWTxn& txn, BlockNum to) {
         txn.commit();
 
     } catch (const StageError& ex) {
-        log::Error(std::string(stage_name_),
+        log::Error(log_prefix_,
                    {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
         ret = static_cast<StageResult>(ex.err());
     } catch (const mdbx::exception& ex) {
-        log::Error(std::string(stage_name_),
+        log::Error(log_prefix_,
                    {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
         ret = StageResult::kDbError;
     } catch (const std::exception& ex) {
-        log::Error(std::string(stage_name_),
+        log::Error(log_prefix_,
                    {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
         ret = StageResult::kUnexpectedError;
     } catch (...) {
-        log::Error(std::string(stage_name_),
+        log::Error(log_prefix_,
                    {"function", std::string(__FUNCTION__), "exception", "unexpected and undefined"});
         ret = StageResult::kUnexpectedError;
     }

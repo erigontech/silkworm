@@ -116,6 +116,9 @@ class IStage : public Stoppable {
     //! \brief Updates current stage progress
     void update_progress(db::RWTxn& txn, BlockNum progress);
 
+    //! \brief Sets the prefix for logging lines produced by stage itself
+    void set_log_prefix(const std::string prefix) { log_prefix_ = prefix; };
+
     //! \brief This function implementation MUST be thread safe as is called asynchronously from ASIO thread
     [[nodiscard]] virtual std::vector<std::string> get_log_progress() { return {}; };
 
@@ -128,10 +131,12 @@ class IStage : public Stoppable {
     }
 
   protected:
+    static constexpr size_t kSmallSegmentWidth{16};              // A small segment does not require logging of begin/end
     const char* stage_name_;                                     // Human friendly identifier of the stage
     NodeSettings* node_settings_;                                // Pointer to shared node configuration settings
     std::atomic<OperationType> operation_{OperationType::None};  // Actual operation being carried out
     std::mutex sl_mutex_;                                        // To synchronize access by outer sync loop
+    std::string log_prefix_;                                     // Log lines prefix holding the progress among stages
 
     //! \brief Throws if actual block != expected block
     static void check_block_sequence(BlockNum actual, BlockNum expected);

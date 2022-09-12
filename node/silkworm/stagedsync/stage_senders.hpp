@@ -34,6 +34,9 @@ class Senders final : public IStage {
 
   private:
     std::unique_ptr<recovery::RecoveryFarm> farm_{nullptr};
+
+    // Logging
+    std::string current_key_{};
 };
 
 }  // namespace silkworm::stagedsync

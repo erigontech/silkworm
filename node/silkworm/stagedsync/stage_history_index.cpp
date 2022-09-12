@@ -23,6 +23,7 @@ namespace silkworm::stagedsync {
 
 StageResult HistoryIndex::forward(db::RWTxn& txn) {
     StageResult ret{StageResult::kSuccess};
+    operation_ = OperationType::Forward;
     try {
         throw_if_stopping();
 
@@ -33,6 +34,7 @@ StageResult HistoryIndex::forward(db::RWTxn& txn) {
         const auto target_progress{db::stages::read_stage_progress(*txn, db::stages::kExecutionKey)};
         if (previous_progress == target_progress) {
             // Nothing to process
+            operation_ = OperationType::None;
             return ret;
         } else if (previous_progress > target_progress) {
             // Something bad had happened.  Maybe we need to unwind ?
@@ -43,11 +45,12 @@ StageResult HistoryIndex::forward(db::RWTxn& txn) {
 
         reset_log_progress();
         const BlockNum segment_width{target_progress - previous_progress};
-        if (segment_width > 16) {
-            log::Info("Begin " + std::string(stage_name_),
-                      {"op", std::string(magic_enum::enum_name<OperationType>(OperationType::Forward)), "from",
-                       std::to_string(previous_progress), "to", std::to_string(target_progress), "span",
-                       std::to_string(segment_width)});
+        if (segment_width > kSmallSegmentWidth) {
+            log::Info(log_prefix_ + " begin",
+                      {"op", std::string(magic_enum::enum_name<OperationType>(operation_)),
+                       "from", std::to_string(previous_progress),
+                       "to", std::to_string(target_progress),
+                       "span", std::to_string(segment_width)});
         }
 
         // If this is first time we forward AND we have "prune history" set
@@ -68,21 +71,24 @@ StageResult HistoryIndex::forward(db::RWTxn& txn) {
             success_or_throw(forward_impl(txn, previous_progress_storage, target_progress, true));
             txn.commit();
         }
-        collector_.reset();
         reset_log_progress();
         update_progress(txn, target_progress);
         txn.commit();
 
     } catch (const StageError& ex) {
-        log::Error(std::string(stage_name_),
+        log::Error(log_prefix_,
                    {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
         ret = static_cast<StageResult>(ex.err());
+    } catch (const mdbx::exception& ex) {
+        log::Error(log_prefix_,
+                   {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
+        ret = StageResult::kDbError;
     } catch (const std::exception& ex) {
-        log::Error(std::string(stage_name_),
+        log::Error(log_prefix_,
                    {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
         ret = StageResult::kUnexpectedError;
     } catch (...) {
-        log::Error(std::string(stage_name_),
+        log::Error(log_prefix_,
                    {"function", std::string(__FUNCTION__), "exception", "unexpected and undefined"});
         ret = StageResult::kUnexpectedError;
     }
@@ -94,6 +100,7 @@ StageResult HistoryIndex::forward(db::RWTxn& txn) {
 
 StageResult HistoryIndex::unwind(db::RWTxn& txn, BlockNum to) {
     StageResult ret{StageResult::kSuccess};
+    operation_ = OperationType::None;
     try {
         throw_if_stopping();
 
@@ -106,16 +113,18 @@ StageResult HistoryIndex::unwind(db::RWTxn& txn, BlockNum to) {
         const auto execution_stage_progress{db::stages::read_stage_progress(*txn, db::stages::kExecutionKey)};
         if (previous_progress <= to || execution_stage_progress <= to) {
             // Nothing to process
+            operation_ = OperationType::None;
             return ret;
         }
 
         reset_log_progress();
         const BlockNum segment_width{previous_progress - to};
-        if (segment_width > 16) {
-            log::Info(
-                "Begin " + std::string(stage_name_),
-                {"op", std::string(magic_enum::enum_name<OperationType>(OperationType::Unwind)), "from",
-                 std::to_string(previous_progress), "to", std::to_string(to), "span", std::to_string(segment_width)});
+        if (segment_width > kSmallSegmentWidth) {
+            log::Info(log_prefix_ + " begin",
+                      {"op", std::string(magic_enum::enum_name<OperationType>(operation_)),
+                       "from", std::to_string(previous_progress),
+                       "to", std::to_string(to),
+                       "span", std::to_string(segment_width)});
         }
 
         if (previous_progress_accounts && previous_progress_accounts > to)
@@ -128,19 +137,19 @@ StageResult HistoryIndex::unwind(db::RWTxn& txn, BlockNum to) {
         txn.commit();
 
     } catch (const StageError& ex) {
-        log::Error(std::string(stage_name_),
+        log::Error(log_prefix_,
                    {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
         ret = static_cast<StageResult>(ex.err());
     } catch (const mdbx::exception& ex) {
-        log::Error(std::string(stage_name_),
+        log::Error(log_prefix_,
                    {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
         ret = StageResult::kDbError;
     } catch (const std::exception& ex) {
-        log::Error(std::string(stage_name_),
+        log::Error(log_prefix_,
                    {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
         ret = StageResult::kUnexpectedError;
     } catch (...) {
-        log::Error(std::string(stage_name_),
+        log::Error(log_prefix_,
                    {"function", std::string(__FUNCTION__), "exception", "unexpected and undefined"});
         ret = StageResult::kUnexpectedError;
     }
@@ -152,26 +161,37 @@ StageResult HistoryIndex::unwind(db::RWTxn& txn, BlockNum to) {
 
 StageResult HistoryIndex::prune(db::RWTxn& txn) {
     StageResult ret{StageResult::kSuccess};
+    operation_ = OperationType::Prune;
     try {
         throw_if_stopping();
-        if (!node_settings_->prune_mode->history().enabled()) return ret;
+        if (!node_settings_->prune_mode->history().enabled()) {
+            operation_ = OperationType::None;
+            return ret;
+        }
 
         const auto forward_progress{get_progress(txn)};
         const auto prune_progress{get_prune_progress(txn)};
-        if (prune_progress >= forward_progress) return ret;
+        if (prune_progress >= forward_progress) {
+            operation_ = OperationType::None;
+            return ret;
+        }
 
         // Need to erase all history info below this threshold
         // If threshold is zero we don't have anything to prune
         const auto prune_threshold{node_settings_->prune_mode->history().value_from_head(forward_progress)};
-        if (!prune_threshold) return StageResult::kSuccess;
+        if (!prune_threshold) {
+            operation_ = OperationType::None;
+            return ret;
+        }
 
         reset_log_progress();
         const BlockNum segment_width{forward_progress - prune_progress};
-        if (segment_width > 16) {
-            log::Info("Begin " + std::string(stage_name_),
-                      {"op", std::string(magic_enum::enum_name<OperationType>(OperationType::Prune)), "from",
-                       std::to_string(prune_progress), "to", std::to_string(forward_progress), "span",
-                       std::to_string(segment_width)});
+        if (segment_width > kSmallSegmentWidth) {
+            log::Info(log_prefix_ + " begin",
+                      {"op", std::string(magic_enum::enum_name<OperationType>(operation_)),
+                       "from", std::to_string(prune_progress),
+                       "to", std::to_string(forward_progress),
+                       "threshold", std::to_string(prune_threshold)});
         }
 
         // We split the stage in two
@@ -190,23 +210,24 @@ StageResult HistoryIndex::prune(db::RWTxn& txn) {
         txn.commit();
 
     } catch (const StageError& ex) {
-        log::Error(std::string(stage_name_),
+        log::Error(log_prefix_,
                    {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
         ret = static_cast<StageResult>(ex.err());
     } catch (const mdbx::exception& ex) {
-        log::Error(std::string(stage_name_),
+        log::Error(log_prefix_,
                    {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
         ret = StageResult::kDbError;
     } catch (const std::exception& ex) {
-        log::Error(std::string(stage_name_),
+        log::Error(log_prefix_,
                    {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
         ret = StageResult::kUnexpectedError;
     } catch (...) {
-        log::Error(std::string(stage_name_),
+        log::Error(log_prefix_,
                    {"function", std::string(__FUNCTION__), "exception", "unexpected and undefined"});
         ret = StageResult::kUnexpectedError;
     }
 
+    operation_ = OperationType::None;
     return ret;
 }
 
@@ -216,7 +237,6 @@ StageResult HistoryIndex::forward_impl(db::RWTxn& txn, const BlockNum from, cons
     const size_t target_key_size{kAddressLength + (storage ? kHashLength : 0)};
 
     std::unique_lock log_lck(sl_mutex_);
-    operation_ = OperationType::Forward;
     loading_ = false;
     current_source_ = std::string(source_config.name);
     current_target_ = std::string(target_config.name);
@@ -252,7 +272,6 @@ StageResult HistoryIndex::unwind_impl(db::RWTxn& txn, const BlockNum from, const
     const db::MapConfig target_config{storage ? db::table::kStorageHistory : db::table::kAccountHistory};
 
     std::unique_lock log_lck(sl_mutex_);
-    operation_ = OperationType::Unwind;
     loading_ = false;
     current_source_ = std::string(source_config.name);
     current_target_ = std::string(target_config.name);
@@ -284,7 +303,6 @@ StageResult HistoryIndex::prune_impl(db::RWTxn& txn, const BlockNum threshold, c
     const db::MapConfig table_config{storage ? db::table::kStorageHistory : db::table::kAccountHistory};
 
     std::unique_lock log_lck(sl_mutex_);
-    operation_ = OperationType::Prune;
     loading_ = false;
     current_source_ = std::string(table_config.name);
     current_target_ = current_source_;

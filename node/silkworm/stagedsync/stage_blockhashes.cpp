@@ -27,6 +27,8 @@ StageResult BlockHashes::forward(db::RWTxn& txn) {
      *        to HeaderNumber bucket    : HeaderHash  ->  BlockNumber
      */
 
+    StageResult ret{StageResult::kSuccess};
+    operation_ = OperationType::Forward;
     try {
         throw_if_stopping();
 
@@ -35,7 +37,8 @@ StageResult BlockHashes::forward(db::RWTxn& txn) {
         const auto headers_stage_progress{db::stages::read_stage_progress(*txn, db::stages::kHeadersKey)};
         if (previous_progress == headers_stage_progress) {
             // Nothing to process
-            return StageResult::kSuccess;
+            operation_ = OperationType::None;
+            return ret;
         } else if (previous_progress > headers_stage_progress) {
             // Something bad had happened.
             // Maybe we need to unwind ?
@@ -44,33 +47,41 @@ StageResult BlockHashes::forward(db::RWTxn& txn) {
                                  " greater than Headers progress " + std::to_string(headers_stage_progress));
         }
 
-        operation_ = OperationType::Forward;
         const BlockNum segment_width{headers_stage_progress - previous_progress};
-        if (segment_width > 16) {
-            log::Info("Begin " + std::string(stage_name_),
-                      {"op", std::string(magic_enum::enum_name<OperationType>(operation_)), "from",
-                       std::to_string(previous_progress), "to", std::to_string(headers_stage_progress), "span",
-                       std::to_string(segment_width)});
+        if (segment_width > kSmallSegmentWidth) {
+            log::Info(log_prefix_ + " begin",
+                      {"op", std::string(magic_enum::enum_name<OperationType>(operation_)),
+                       "from", std::to_string(previous_progress),
+                       "to", std::to_string(headers_stage_progress),
+                       "span", std::to_string(segment_width)});
         }
 
         collector_ = std::make_unique<etl::Collector>(node_settings_);
         collect_and_load(txn, previous_progress, headers_stage_progress);
         update_progress(txn, reached_block_num_);
-        collector_.reset();
+        txn.commit();
 
-    } catch (const StageError& ex) {
-        log::Error(std::string(stage_name_),
+    } catch (const mdbx::exception& ex) {
+        log::Error(log_prefix_,
                    {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
-        collector_.reset();
-        return static_cast<StageResult>(ex.err());
+        ret = StageResult::kDbError;
+    } catch (const StageError& ex) {
+        log::Error(log_prefix_,
+                   {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
+        ret = static_cast<StageResult>(ex.err());
     } catch (const std::exception& ex) {
-        collector_.reset();
-        log::Error(std::string(stage_name_), {"exception", std::string(ex.what())});
-        return StageResult::kUnexpectedError;
+        log::Error(log_prefix_,
+                   {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
+        ret = StageResult::kUnexpectedError;
+    } catch (...) {
+        log::Error(log_prefix_,
+                   {"function", std::string(__FUNCTION__), "exception", "undefined"});
+        ret = StageResult::kUnexpectedError;
     }
 
     operation_ = OperationType::None;
-    return is_stopping() ? StageResult::kAborted : StageResult::kSuccess;
+    collector_.reset();
+    return ret;
 }
 
 StageResult BlockHashes::unwind(db::RWTxn& txn, BlockNum to) {
@@ -85,43 +96,53 @@ StageResult BlockHashes::unwind(db::RWTxn& txn, BlockNum to) {
      *       where HeaderNumber->HeaderHash == vector.item
      */
 
+    StageResult ret{StageResult::kSuccess};
+    operation_ = OperationType::Unwind;
     try {
         throw_if_stopping();
 
         const auto previous_progress{get_progress(txn)};
         if (previous_progress <= to) {
             // Nothing to process
-            return StageResult::kSuccess;
+            operation_ = OperationType::None;
+            return ret;
         }
 
-        operation_ = OperationType::Unwind;
         const BlockNum segment_width{previous_progress - to};
-        if (segment_width > 16) {
-            log::Info(
-                "Begin " + std::string(stage_name_),
-                {"op", std::string(magic_enum::enum_name<OperationType>(operation_)), "from",
-                 std::to_string(previous_progress), "to", std::to_string(to), "span", std::to_string(segment_width)});
+        if (segment_width > kSmallSegmentWidth) {
+            log::Info(log_prefix_ + " begin " + std::string(stage_name_),
+                      {"op", std::string(magic_enum::enum_name<OperationType>(operation_)),
+                       "from", std::to_string(previous_progress),
+                       "to", std::to_string(to),
+                       "span", std::to_string(segment_width)});
         }
 
         collector_ = std::make_unique<etl::Collector>(node_settings_);
         collect_and_load(txn, to, previous_progress);
         update_progress(txn, to);
-        collector_.reset();
         txn.commit();
 
-    } catch (const StageError& ex) {
-        log::Error(std::string(stage_name_),
+    } catch (const mdbx::exception& ex) {
+        log::Error(log_prefix_,
                    {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
-        collector_.reset();
-        return static_cast<StageResult>(ex.err());
+        ret = StageResult::kDbError;
+    } catch (const StageError& ex) {
+        log::Error(log_prefix_,
+                   {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
+        ret = static_cast<StageResult>(ex.err());
     } catch (const std::exception& ex) {
-        collector_.reset();
-        log::Error(std::string(stage_name_), {"exception", std::string(ex.what())});
-        return StageResult::kUnexpectedError;
+        log::Error(log_prefix_,
+                   {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
+        ret = StageResult::kUnexpectedError;
+    } catch (...) {
+        log::Error(log_prefix_,
+                   {"function", std::string(__FUNCTION__), "exception", "undefined"});
+        ret = StageResult::kUnexpectedError;
     }
 
     operation_ = OperationType::None;
-    return is_stopping() ? StageResult::kAborted : StageResult::kSuccess;
+    collector_.reset();
+    return ret;
 }
 
 StageResult BlockHashes::prune(db::RWTxn&) { return StageResult::kSuccess; }

@@ -49,12 +49,6 @@ class RecoveryFarm : public Stoppable {
         return false;
     }
 
-    //! \brief Unwinds sender's recovery i.e. deletes recovered addresses from storage
-    //! \param [in] db_transaction : the database transaction we should work on
-    //! \param [in] new_height : the new height at which senders' addresses will be registered as recovered in storage
-    //! \return A code indicating process status
-    static StageResult unwind(mdbx::txn& db_transaction, BlockNum new_height);
-
     //! \brief Returns a collection of progress strings to be printed in log
     [[nodiscard]] std::vector<std::string> get_log_progress();
 

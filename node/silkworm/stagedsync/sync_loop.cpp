@@ -50,19 +50,44 @@ void SyncLoop::load_stages() {
      * 15 StageFinish -> stagedsync::Finish
      */
 
-    stages_.push_back(std::make_unique<stagedsync::BlockHashes>(node_settings_));
-    stages_.push_back(std::make_unique<stagedsync::Senders>(node_settings_));
-    stages_.push_back(std::make_unique<stagedsync::Execution>(node_settings_));
-    stages_.push_back(std::make_unique<stagedsync::HashState>(node_settings_));
-    stages_.push_back(std::make_unique<stagedsync::InterHashes>(node_settings_));
-    stages_.push_back(std::make_unique<stagedsync::HistoryIndex>(node_settings_));
-    stages_.push_back(std::make_unique<stagedsync::LogIndex>(node_settings_));
-    stages_.push_back(std::make_unique<stagedsync::TxLookup>(node_settings_));
-    stages_.push_back(std::make_unique<stagedsync::Finish>(node_settings_));
+    stages_.emplace(db::stages::kBlockHashesKey, std::make_unique<stagedsync::BlockHashes>(node_settings_));
+    stages_.emplace(db::stages::kSendersKey, std::make_unique<stagedsync::Senders>(node_settings_));
+    stages_.emplace(db::stages::kExecutionKey, std::make_unique<stagedsync::Execution>(node_settings_));
+    stages_.emplace(db::stages::kHashStateKey, std::make_unique<stagedsync::HashState>(node_settings_));
+    stages_.emplace(db::stages::kIntermediateHashesKey, std::make_unique<stagedsync::InterHashes>(node_settings_));
+    stages_.emplace(db::stages::kHistoryIndexKey, std::make_unique<stagedsync::HistoryIndex>(node_settings_));
+    stages_.emplace(db::stages::kLogIndexKey, std::make_unique<stagedsync::LogIndex>(node_settings_));
+    stages_.emplace(db::stages::kTxLookupKey, std::make_unique<stagedsync::TxLookup>(node_settings_));
+    stages_.emplace(db::stages::kFinishKey, std::make_unique<stagedsync::Finish>(node_settings_));
+    current_stage_ = stages_.begin();
+
+    stages_forward_order_.insert(stages_forward_order_.begin(),
+                                 {
+                                     db::stages::kSendersKey,
+                                     db::stages::kExecutionKey,
+                                     db::stages::kHashStateKey,
+                                     db::stages::kIntermediateHashesKey,
+                                     db::stages::kHistoryIndexKey,
+                                     db::stages::kLogIndexKey,
+                                     db::stages::kTxLookupKey,
+                                     db::stages::kFinishKey,
+                                 });
+
+    stages_unwind_order_.insert(stages_unwind_order_.begin(),
+                                {
+                                    db::stages::kFinishKey,
+                                    db::stages::kTxLookupKey,
+                                    db::stages::kLogIndexKey,
+                                    db::stages::kHistoryIndexKey,
+                                    db::stages::kHashStateKey,           // Needs to happen before unwinding Execution
+                                    db::stages::kIntermediateHashesKey,  // Needs to happen after unwinding HashState
+                                    db::stages::kExecutionKey,
+                                    db::stages::kSendersKey,
+                                });
 }
 
 void SyncLoop::stop(bool wait) {
-    for (const auto& stage : stages_) {
+    for (const auto& [_, stage] : stages_) {
         if (!stage->is_stopping()) {
             stage->stop();
         }
@@ -85,13 +110,12 @@ void SyncLoop::work() {
                 log::Info(get_log_prefix()) << "stopping ...";
                 return false;
             }
-            log::Info(get_log_prefix(), stages_.at(current_stage_)->get_log_progress());
+            log::Info(get_log_prefix(), current_stage_->second->get_log_progress());
             return true;
         },
         true);
 
     while (!is_stopping()) {
-        current_stage_ = 0;
         cycle_stop_watch.start(/*with_reset=*/true);
 
         // TODO we should get highest seen from header downloader but is not plugged in yet
@@ -154,23 +178,28 @@ StageResult SyncLoop::run_cycle_forward(db::RWTxn& cycle_txn, Timer& log_timer) 
         const std::string env_stop_before_stage{"STOP_BEFORE_STAGE"};
         const char* stop_stage_name{std::getenv(env_stop_before_stage.c_str())};
 
-        for (; current_stage_ < stages_.size() && !is_stopping(); ++current_stage_) {
-            auto& stage{stages_.at(current_stage_)};
+        current_stages_count_ = stages_forward_order_.size();
+        current_stage_number_ = 0;
+        for (auto& stage_id : stages_forward_order_) {
+            current_stage_ = stages_.find(stage_id);
+            if (current_stage_ == stages_.end()) {
+                // Should not happen
+                throw std::runtime_error("Stage " + std::string(stage_id) + " requested but not implemented");
+            }
+            ++current_stage_number_;
+            current_stage_->second->set_log_prefix(get_log_prefix());
 
-            if (stop_stage_name && !iequals(stop_stage_name, stage->name())) {
+            // Check if we have to stop due to environment variable
+            if (stop_stage_name && !iequals(stop_stage_name, stage_id)) {
                 stop();
                 log::Warning("Stopping ...", {"STOP_BEFORE_STAGE", stop_stage_name, "hit", "true"});
                 break;
             }
 
             log_timer.reset();  // Resets the interval for next log line from now
-            const auto stage_result{stage->forward(cycle_txn)};
-
-            // TODO Switch on result values to decide if we need to unwind or
-            // if we encountered an unrecoverable error
-
+            const auto stage_result{current_stage_->second->forward(cycle_txn)};
             if (stage_result != StageResult::kSuccess) {
-                log::Error(get_log_prefix(), {"return", std::string(magic_enum::enum_name<StageResult>(stage_result))});
+                log::Error(get_log_prefix(), {"returned", std::string(magic_enum::enum_name<StageResult>(stage_result))});
                 return stage_result;
             }
 
@@ -210,9 +239,9 @@ void SyncLoop::throttle_next_cycle(const StopWatch::Duration& cycle_duration) {
     }
 }
 std::string SyncLoop::get_log_prefix() const {
-    static std::string log_prefix_fmt{"Stage %u/%u : %s"};
-    return boost::str(boost::format(log_prefix_fmt) % (current_stage_ + 1) % stages_.size() %
-                      stages_.at(current_stage_)->name());
+    static std::string log_prefix_fmt{"[%u/%u %s]"};
+    return boost::str(boost::format(log_prefix_fmt) % (current_stage_number_ + 1) % current_stages_count_ %
+                      current_stage_->first);
 }
 
 }  // namespace silkworm::stagedsync

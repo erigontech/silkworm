@@ -176,27 +176,6 @@ StageResult RecoveryFarm::recover() {
     return is_stopping() ? StageResult::kAborted : stage_result;
 }
 
-StageResult RecoveryFarm::unwind(mdbx::txn& db_transaction, BlockNum new_height) {
-    log::Info() << "Unwinding Senders' table to height " << new_height;
-    try {
-        auto unwind_table{db::open_cursor(db_transaction, db::table::kSenders)};
-        auto unwind_point{db::block_key(new_height + 1)};
-        db::cursor_erase(unwind_table, unwind_point);
-
-        // Eventually update new stage height
-        db::stages::write_stage_progress(db_transaction, db::stages::kSendersKey, new_height);
-
-        return StageResult::kSuccess;
-
-    } catch (const mdbx::exception& ex) {
-        log::Error() << "Unexpected db error in " << std::string(__FUNCTION__) << " : " << ex.what();
-        return StageResult::kDbError;
-    } catch (...) {
-        log::Error() << "Unexpected unknown error in " << std::string(__FUNCTION__);
-        return StageResult::kUnexpectedError;
-    }
-}
-
 std::vector<std::string> RecoveryFarm::get_log_progress() {
     if (!is_stopping()) {
         switch (current_phase_) {

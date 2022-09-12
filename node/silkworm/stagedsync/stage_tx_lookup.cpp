@@ -22,6 +22,7 @@ namespace silkworm::stagedsync {
 
 StageResult TxLookup::forward(db::RWTxn& txn) {
     StageResult ret{StageResult::kSuccess};
+    operation_ = OperationType::Forward;
     try {
         throw_if_stopping();
 
@@ -30,6 +31,7 @@ StageResult TxLookup::forward(db::RWTxn& txn) {
         const auto target_progress{db::stages::read_stage_progress(*txn, db::stages::kBlockBodiesKey)};
         if (previous_progress == target_progress) {
             // Nothing to process
+            operation_ = OperationType::None;
             return ret;
         } else if (previous_progress > target_progress) {
             // Something bad had happened.  Maybe we need to unwind ?
@@ -40,11 +42,12 @@ StageResult TxLookup::forward(db::RWTxn& txn) {
 
         reset_log_progress();
         const BlockNum segment_width{target_progress - previous_progress};
-        if (segment_width > 16) {
-            log::Info("Begin " + std::string(stage_name_),
-                      {"op", std::string(magic_enum::enum_name<OperationType>(OperationType::Forward)), "from",
-                       std::to_string(previous_progress), "to", std::to_string(target_progress), "span",
-                       std::to_string(segment_width)});
+        if (segment_width > kSmallSegmentWidth) {
+            log::Info(log_prefix_ + " begin",
+                      {"op", std::string(magic_enum::enum_name<OperationType>(operation_)),
+                       "from", std::to_string(previous_progress),
+                       "to", std::to_string(target_progress),
+                       "span", std::to_string(segment_width)});
         }
 
         // If this is first time we forward AND we have "prune history" set
@@ -60,27 +63,31 @@ StageResult TxLookup::forward(db::RWTxn& txn) {
         txn.commit();
 
     } catch (const StageError& ex) {
-        log::Error(std::string(stage_name_),
+        log::Error(log_prefix_,
                    {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
         ret = static_cast<StageResult>(ex.err());
+    } catch (const mdbx::exception& ex) {
+        log::Error(log_prefix_,
+                   {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
+        ret = StageResult::kDbError;
     } catch (const std::exception& ex) {
-        log::Error(std::string(stage_name_),
+        log::Error(log_prefix_,
                    {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
         ret = StageResult::kUnexpectedError;
     } catch (...) {
-        log::Error(std::string(stage_name_),
+        log::Error(log_prefix_,
                    {"function", std::string(__FUNCTION__), "exception", "unexpected and undefined"});
         ret = StageResult::kUnexpectedError;
     }
 
-    collector_.reset();
     operation_ = OperationType::None;
-    return is_stopping() ? StageResult::kAborted : ret;
+    collector_.reset();
+    return ret;
 }
 
 StageResult TxLookup::unwind(db::RWTxn& txn, BlockNum to) {
     StageResult ret{StageResult::kSuccess};
-
+    operation_ = OperationType::Unwind;
     try {
         throw_if_stopping();
 
@@ -89,16 +96,18 @@ StageResult TxLookup::unwind(db::RWTxn& txn, BlockNum to) {
         const auto bodies_stage_progress{db::stages::read_stage_progress(*txn, db::stages::kBlockBodiesKey)};
         if (previous_progress <= to || bodies_stage_progress <= to) {
             // Nothing to process
+            operation_ = OperationType::None;
             return ret;
         }
 
         reset_log_progress();
         const BlockNum segment_width{previous_progress - to};
-        if (segment_width > 16) {
-            log::Info(
-                "Begin " + std::string(stage_name_),
-                {"op", std::string(magic_enum::enum_name<OperationType>(OperationType::Unwind)), "from",
-                 std::to_string(previous_progress), "to", std::to_string(to), "span", std::to_string(segment_width)});
+        if (segment_width > kSmallSegmentWidth) {
+            log::Info(log_prefix_ + " begin",
+                      {"op", std::string(magic_enum::enum_name<OperationType>(operation_)),
+                       "from", std::to_string(previous_progress),
+                       "to", std::to_string(to),
+                       "span", std::to_string(segment_width)});
         }
 
         if (previous_progress && previous_progress > to)
@@ -109,50 +118,62 @@ StageResult TxLookup::unwind(db::RWTxn& txn, BlockNum to) {
         txn.commit();
 
     } catch (const StageError& ex) {
-        log::Error(std::string(stage_name_),
+        log::Error(log_prefix_,
                    {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
         ret = static_cast<StageResult>(ex.err());
     } catch (const mdbx::exception& ex) {
-        log::Error(std::string(stage_name_),
+        log::Error(log_prefix_,
                    {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
         ret = StageResult::kDbError;
     } catch (const std::exception& ex) {
-        log::Error(std::string(stage_name_),
+        log::Error(log_prefix_,
                    {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
         ret = StageResult::kUnexpectedError;
     } catch (...) {
-        log::Error(std::string(stage_name_),
+        log::Error(log_prefix_,
                    {"function", std::string(__FUNCTION__), "exception", "unexpected and undefined"});
         ret = StageResult::kUnexpectedError;
     }
 
-    collector_.reset();
     operation_ = OperationType::None;
-    return is_stopping() ? StageResult::kAborted : ret;
+    collector_.reset();
+    return ret;
 }
 
 StageResult TxLookup::prune(db::RWTxn& txn) {
     StageResult ret{StageResult::kSuccess};
+    operation_ = OperationType::Prune;
+
     try {
         throw_if_stopping();
-        if (!node_settings_->prune_mode->tx_index().enabled()) return ret;
+        if (!node_settings_->prune_mode->tx_index().enabled()) {
+            operation_ = OperationType::None;
+            return ret;
+        }
 
         const auto forward_progress{get_progress(txn)};
         const auto prune_progress{get_prune_progress(txn)};
-        if (prune_progress >= forward_progress) return ret;
+        if (prune_progress >= forward_progress) {
+            operation_ = OperationType::None;
+            return ret;
+        }
 
         // Need to erase all history info below this threshold
         // If threshold is zero we don't have anything to prune
         const auto prune_threshold{node_settings_->prune_mode->tx_index().value_from_head(forward_progress)};
-        if (!prune_threshold) return StageResult::kSuccess;
+        if (!prune_threshold) {
+            operation_ = OperationType::None;
+            return ret;
+        }
 
         reset_log_progress();
         const BlockNum segment_width{forward_progress - prune_progress};
-        if (segment_width > 16) {
-            log::Info("Begin " + std::string(stage_name_),
-                      {"op", std::string(magic_enum::enum_name<OperationType>(OperationType::Prune)), "from",
-                       std::to_string(prune_progress), "to", std::to_string(forward_progress), "span",
-                       std::to_string(segment_width)});
+        if (segment_width > kSmallSegmentWidth) {
+            log::Info(log_prefix_ + " begin",
+                      {"op", std::string(magic_enum::enum_name<OperationType>(operation_)),
+                       "from", std::to_string(prune_progress),
+                       "to", std::to_string(forward_progress),
+                       "threshold", std::to_string(prune_threshold)});
         }
 
         if (!prune_progress || prune_progress < forward_progress) {
@@ -166,23 +187,24 @@ StageResult TxLookup::prune(db::RWTxn& txn) {
         txn.commit();
 
     } catch (const StageError& ex) {
-        log::Error(std::string(stage_name_),
+        log::Error(log_prefix_,
                    {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
         ret = static_cast<StageResult>(ex.err());
     } catch (const mdbx::exception& ex) {
-        log::Error(std::string(stage_name_),
+        log::Error(log_prefix_,
                    {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
         ret = StageResult::kDbError;
     } catch (const std::exception& ex) {
-        log::Error(std::string(stage_name_),
+        log::Error(log_prefix_,
                    {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
         ret = StageResult::kUnexpectedError;
     } catch (...) {
-        log::Error(std::string(stage_name_),
+        log::Error(log_prefix_,
                    {"function", std::string(__FUNCTION__), "exception", "unexpected and undefined"});
         ret = StageResult::kUnexpectedError;
     }
 
+    operation_ = OperationType::None;
     return ret;
 }
 

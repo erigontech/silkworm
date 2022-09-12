@@ -41,7 +41,7 @@ StageResult LogIndex::forward(db::RWTxn& txn) {
         reset_log_progress();
         const BlockNum segment_width{target_progress - previous_progress};
         if (segment_width > db::stages::kSmallSegmentWidth) {
-            log::Info(log_prefix_ + " begin",
+            log::Info(log_prefix_,
                       {"op", std::string(magic_enum::enum_name<OperationType>(operation_)),
                        "from", std::to_string(previous_progress),
                        "to", std::to_string(target_progress),
@@ -108,7 +108,7 @@ StageResult LogIndex::unwind(db::RWTxn& txn) {
         reset_log_progress();
         const BlockNum segment_width{previous_progress - to};
         if (segment_width > db::stages::kSmallSegmentWidth) {
-            log::Info(log_prefix_ + " begin",
+            log::Info(log_prefix_,
                       {"op", std::string(magic_enum::enum_name<OperationType>(operation_)),
                        "from", std::to_string(previous_progress),
                        "to", std::to_string(to),
@@ -175,7 +175,7 @@ StageResult LogIndex::prune(db::RWTxn& txn) {
         reset_log_progress();
         const BlockNum segment_width{forward_progress - prune_progress};
         if (segment_width > db::stages::kSmallSegmentWidth) {
-            log::Info(log_prefix_ + " begin",
+            log::Info(log_prefix_,
                       {"op", std::string(magic_enum::enum_name<OperationType>(operation_)),
                        "from", std::to_string(prune_progress),
                        "to", std::to_string(forward_progress),
@@ -452,7 +452,7 @@ void LogIndex::prune_impl(db::RWTxn& txn, BlockNum threshold, const db::MapConfi
 }
 
 std::vector<std::string> LogIndex::get_log_progress() {
-    std::vector<std::string> ret{};
+    std::vector<std::string> ret{"op", std::string(magic_enum::enum_name<OperationType>(operation_))};
     std::unique_lock log_lck(sl_mutex_);
     if (current_source_.empty() && current_target_.empty()) {
         ret.insert(ret.end(), {"db", "waiting ..."});
@@ -496,7 +496,6 @@ std::vector<std::string> LogIndex::get_log_progress() {
 }
 void LogIndex::reset_log_progress() {
     std::unique_lock log_lck(sl_mutex_);
-    operation_ = OperationType::None;
     loading_ = false;
     current_source_.clear();
     current_target_.clear();

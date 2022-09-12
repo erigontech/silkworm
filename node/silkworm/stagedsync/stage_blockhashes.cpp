@@ -49,7 +49,7 @@ StageResult BlockHashes::forward(db::RWTxn& txn) {
 
         const BlockNum segment_width{headers_stage_progress - previous_progress};
         if (segment_width > db::stages::kSmallSegmentWidth) {
-            log::Info(log_prefix_ + " begin",
+            log::Info(log_prefix_,
                       {"op", std::string(magic_enum::enum_name<OperationType>(operation_)),
                        "from", std::to_string(previous_progress),
                        "to", std::to_string(headers_stage_progress),
@@ -113,7 +113,7 @@ StageResult BlockHashes::unwind(db::RWTxn& txn) {
 
         const BlockNum segment_width{previous_progress - to};
         if (segment_width > db::stages::kSmallSegmentWidth) {
-            log::Info(log_prefix_ + " begin",
+            log::Info(log_prefix_,
                       {"op", std::string(magic_enum::enum_name<OperationType>(operation_)),
                        "from", std::to_string(previous_progress),
                        "to", std::to_string(to),

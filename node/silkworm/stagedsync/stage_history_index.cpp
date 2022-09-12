@@ -46,7 +46,7 @@ StageResult HistoryIndex::forward(db::RWTxn& txn) {
         reset_log_progress();
         const BlockNum segment_width{target_progress - previous_progress};
         if (segment_width > db::stages::kSmallSegmentWidth) {
-            log::Info(log_prefix_ + " begin",
+            log::Info(log_prefix_,
                       {"op", std::string(magic_enum::enum_name<OperationType>(operation_)),
                        "from", std::to_string(previous_progress),
                        "to", std::to_string(target_progress),
@@ -124,7 +124,7 @@ StageResult HistoryIndex::unwind(db::RWTxn& txn) {
         reset_log_progress();
         const BlockNum segment_width{previous_progress - to};
         if (segment_width > db::stages::kSmallSegmentWidth) {
-            log::Info(log_prefix_ + " begin",
+            log::Info(log_prefix_,
                       {"op", std::string(magic_enum::enum_name<OperationType>(operation_)),
                        "from", std::to_string(previous_progress),
                        "to", std::to_string(to),
@@ -191,7 +191,7 @@ StageResult HistoryIndex::prune(db::RWTxn& txn) {
         reset_log_progress();
         const BlockNum segment_width{forward_progress - prune_progress};
         if (segment_width > db::stages::kSmallSegmentWidth) {
-            log::Info(log_prefix_ + " begin",
+            log::Info(log_prefix_,
                       {"op", std::string(magic_enum::enum_name<OperationType>(operation_)),
                        "from", std::to_string(prune_progress),
                        "to", std::to_string(forward_progress),
@@ -460,8 +460,8 @@ std::map<Bytes, bool> HistoryIndex::collect_unique_keys_from_changeset(
 }
 
 std::vector<std::string> HistoryIndex::get_log_progress() {
-    std::vector<std::string> ret{};
     std::unique_lock log_lck(sl_mutex_);
+    std::vector<std::string> ret{"op", std::string(magic_enum::enum_name<OperationType>(operation_))};
     if (current_source_.empty() && current_target_.empty()) {
         ret.insert(ret.end(), {"db", "waiting ..."});
     } else {
@@ -499,7 +499,6 @@ std::vector<std::string> HistoryIndex::get_log_progress() {
 
 void HistoryIndex::reset_log_progress() {
     std::unique_lock log_lck(sl_mutex_);
-    operation_ = OperationType::None;
     loading_ = false;
     current_source_.clear();
     current_target_.clear();

@@ -43,7 +43,7 @@ StageResult TxLookup::forward(db::RWTxn& txn) {
         reset_log_progress();
         const BlockNum segment_width{target_progress - previous_progress};
         if (segment_width > db::stages::kSmallSegmentWidth) {
-            log::Info(log_prefix_ + " begin",
+            log::Info(log_prefix_,
                       {"op", std::string(magic_enum::enum_name<OperationType>(operation_)),
                        "from", std::to_string(previous_progress),
                        "to", std::to_string(target_progress),
@@ -107,7 +107,7 @@ StageResult TxLookup::unwind(db::RWTxn& txn) {
         reset_log_progress();
         const BlockNum segment_width{previous_progress - to};
         if (segment_width > db::stages::kSmallSegmentWidth) {
-            log::Info(log_prefix_ + " begin",
+            log::Info(log_prefix_,
                       {"op", std::string(magic_enum::enum_name<OperationType>(operation_)),
                        "from", std::to_string(previous_progress),
                        "to", std::to_string(to),
@@ -173,7 +173,7 @@ StageResult TxLookup::prune(db::RWTxn& txn) {
         reset_log_progress();
         const BlockNum segment_width{forward_progress - prune_progress};
         if (segment_width > db::stages::kSmallSegmentWidth) {
-            log::Info(log_prefix_ + " begin",
+            log::Info(log_prefix_,
                       {"op", std::string(magic_enum::enum_name<OperationType>(operation_)),
                        "from", std::to_string(prune_progress),
                        "to", std::to_string(forward_progress),
@@ -386,7 +386,7 @@ void TxLookup::collect_transaction_hashes_from_bodies(db::RWTxn& txn,
 }
 
 std::vector<std::string> TxLookup::get_log_progress() {
-    std::vector<std::string> ret{};
+    std::vector<std::string> ret{"op", std::string(magic_enum::enum_name<OperationType>(operation_))};
     std::unique_lock log_lck(sl_mutex_);
     if (current_source_.empty() && current_target_.empty()) {
         ret.insert(ret.end(), {"db", "waiting ..."});
@@ -403,7 +403,6 @@ std::vector<std::string> TxLookup::get_log_progress() {
 
 void TxLookup::reset_log_progress() {
     std::unique_lock log_lck(sl_mutex_);
-    operation_ = OperationType::None;
     loading_ = false;
     current_source_.clear();
     current_target_.clear();

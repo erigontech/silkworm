@@ -47,6 +47,7 @@ enum class [[nodiscard]] StageResult{
     kUnknownError,            //
     kDbError,                 //
     kAborted,                 //
+    kStoppedByEnv,            // Encountered "STOP_BEFORE_STAGE" env var
 };
 
 //! \brief Stage execution exception

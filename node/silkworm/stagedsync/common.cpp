@@ -30,7 +30,7 @@ void IStage::update_progress(db::RWTxn& txn, BlockNum progress) {
 
 void IStage::check_block_sequence(BlockNum actual, BlockNum expected) {
     if (actual != expected) {
-        const std::string what{"Bad block sequence : expected " + std::to_string(expected) + " got " +
+        const std::string what{"bad block sequence : expected " + std::to_string(expected) + " got " +
                                std::to_string(actual)};
         throw StageError(StageResult::kBadChainSequence, what);
     }

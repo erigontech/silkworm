@@ -92,6 +92,7 @@ void SyncLoop::load_stages() {
                                     db::stages::kIntermediateHashesKey,  // Needs to happen after unwinding HashState
                                     db::stages::kExecutionKey,
                                     db::stages::kSendersKey,
+                                    db::stages::kBlockHashesKey,  // Decanonify block hashes
                                 });
 }
 
@@ -105,13 +106,6 @@ void SyncLoop::stop(bool wait) {
 }
 
 void SyncLoop::work() {
-    log::Trace() << "Synchronization loop started";
-
-    bool is_first_cycle{true};
-    std::unique_ptr<db::RWTxn> cycle_txn{nullptr};
-    mdbx::txn_managed external_txn;
-
-    StopWatch cycle_stop_watch;
     Timer log_timer(
         node_settings_->asio_context, node_settings_->sync_loop_log_interval_seconds * 1'000,
         [&]() -> bool {
@@ -124,59 +118,123 @@ void SyncLoop::work() {
         },
         true);
 
-    while (!is_stopping()) {
-        cycle_stop_watch.start(/*with_reset=*/true);
+    try {
+        log::Info() << "SyncLoop started";
 
-        // TODO we should get highest seen from header downloader but is not plugged in yet
-        BlockNum highest_seen_header{14'000'000};
-        bool cycle_in_one_tx{!is_first_cycle};
-
+        // Open a temporary transaction to see if we have an uncompleted Unwind from previous
+        // runs.
         {
-            auto ro_tx{chaindata_env_->start_read()};
-            auto origin{db::stages::read_stage_progress(ro_tx, db::stages::kHeadersKey)};
-            if (highest_seen_header >= origin && highest_seen_header - origin > 8096) {
-                cycle_in_one_tx = false;
-            }
-            auto previous_finish_progress{db::stages::read_stage_progress(ro_tx, db::stages::kFinishKey)};
-            if (highest_seen_header >= previous_finish_progress &&
-                highest_seen_header - previous_finish_progress > 8096) {
-                cycle_in_one_tx = false;
+            auto txn{chaindata_env_->start_write()};
+            db::Cursor source(txn, db::table::kSyncStageProgress);
+            mdbx::slice key(db::stages::kUnwindKey);
+            auto data{source.find(key, /*throw_notfound=*/false)};
+            if (data && data.value.size() == sizeof(BlockNum)) {
+                sync_context_->unwind_to = endian::load_big_u64(db::from_slice(data.value).data());
             }
         }
 
-        if (cycle_in_one_tx) {
-            // A single commit at the end of the cycle
-            external_txn = chaindata_env_->start_write();
-            cycle_txn = std::make_unique<db::RWTxn>(external_txn);
-        } else {
-            // Single stages will commit
-            cycle_txn = std::make_unique<db::RWTxn>(*chaindata_env_);
+        sync_context_->is_first_cycle = true;
+        std::unique_ptr<db::RWTxn> cycle_txn{nullptr};
+        mdbx::txn_managed external_txn;
+
+        StopWatch cycle_stop_watch;
+
+        while (!is_stopping()) {
+            cycle_stop_watch.start(/*with_reset=*/true);
+
+            bool cycle_in_one_tx{!sync_context_->is_first_cycle};
+
+            {
+                auto ro_tx{chaindata_env_->start_read()};
+                auto from{db::stages::read_stage_progress(ro_tx, db::stages::kFinishKey)};
+                auto to{db::stages::read_stage_progress(ro_tx, db::stages::kHeadersKey)};
+                if (to >= from && to - from > 4096) {
+                    cycle_in_one_tx = false;
+                }
+            }
+
+            if (cycle_in_one_tx) {
+                // A single commit at the end of the cycle
+                external_txn = chaindata_env_->start_write();
+                cycle_txn = std::make_unique<db::RWTxn>(external_txn);
+                log::Trace("SyncLoop", {"db transactions", "per cycle"});
+            } else {
+                // Single stages will commit
+                cycle_txn = std::make_unique<db::RWTxn>(*chaindata_env_);
+                log::Trace("SyncLoop", {"db transactions", "per stage"});
+            }
+
+            // Run forward
+            if (sync_context_->unwind_to.has_value() == false) {
+                bool should_end_loop{false};
+                const auto forward_result{run_cycle_forward(*cycle_txn, log_timer)};
+                switch (forward_result) {
+                    case StageResult::kInvalidBlock:
+                    case StageResult::kWrongStateRoot:
+                        break;  // Do nothing. Unwind is triggered afterwards
+                    case StageResult::kStoppedByEnv:
+                        should_end_loop = true;
+                        break;
+                    default:
+                        throw StageError(forward_result);
+                }
+                if (should_end_loop) break;
+            }
+
+            // Run unwind if required
+            if (sync_context_->unwind_to.has_value()) {
+                // Need to persist unwind point (in case of user stop)
+                db::stages::write_stage_progress(*cycle_txn, db::stages::kUnwindKey, sync_context_->unwind_to.value());
+
+                // Run unwind
+                log::Warning("Unwinding", {"to", std::to_string(sync_context_->unwind_to.value())});
+                const auto unwind_result{run_cycle_unwind(*cycle_txn, log_timer)};
+                success_or_throw(unwind_result);  // Must be successful: no recovery from bad unwinding
+
+                // Erase unwind key from progress table
+                db::Cursor progress_table(*cycle_txn, db::table::kSyncStageProgress);
+                mdbx::slice key(db::stages::kUnwindKey);
+                (void)progress_table.erase(key);
+
+                // Clear context
+                std::swap(sync_context_->unwind_to, sync_context_->previous_unwind_to);
+                sync_context_->unwind_to.reset();
+                sync_context_->bad_block_hash.reset();
+            }
+
+            // Eventually run prune (should not fail)
+            success_or_throw(run_cycle_prune(*cycle_txn, log_timer));
+
+            if (cycle_in_one_tx) {
+                external_txn.commit();
+            } else {
+                cycle_txn->commit();
+            }
+
+            cycle_txn.reset();
+            sync_context_->is_first_cycle = false;
+
+            auto [_, cycle_duration] = cycle_stop_watch.lap();
+            log::Info("Cycle completed", {"elapsed", StopWatch::format(cycle_duration)});
+            throttle_next_cycle(cycle_duration);
         }
 
-        // TODO Populate shared state amongst stages with firsT_cycle + a ton of other things
-
-        if (run_cycle_forward(*cycle_txn, log_timer) != StageResult::kSuccess) {
-            break;
-        }
-
-        if (cycle_in_one_tx) {
-            external_txn.commit();
-        } else {
-            cycle_txn->commit();
-        }
-
-        cycle_txn.reset();
-        is_first_cycle = false;
-
-        auto [_, cycle_duration] = cycle_stop_watch.lap();
-        log::Info("Cycle completed", {"elapsed", StopWatch::format(cycle_duration)});
-        throttle_next_cycle(cycle_duration);
-
-        break;  // TODO(Andrea) Remove
+    } catch (const StageError& ex) {
+        log::Error("SyncLoop",
+                   {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
+    } catch (const mdbx::exception& ex) {
+        log::Error("SyncLoop",
+                   {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
+    } catch (const std::exception& ex) {
+        log::Error("SyncLoop",
+                   {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
+    } catch (...) {
+        log::Error("SyncLoop",
+                   {"function", std::string(__FUNCTION__), "exception", "undefined"});
     }
 
     log_timer.stop();
-    log::Info() << "Synchronization loop terminated";
+    log::Info() << "SyncLoop terminated";
 }
 
 StageResult SyncLoop::run_cycle_forward(db::RWTxn& cycle_txn, Timer& log_timer) {
@@ -202,19 +260,101 @@ StageResult SyncLoop::run_cycle_forward(db::RWTxn& cycle_txn, Timer& log_timer) 
             if (stop_stage_name && !iequals(stop_stage_name, stage_id)) {
                 stop();
                 log::Warning("Stopping ...", {"STOP_BEFORE_STAGE", stop_stage_name, "hit", "true"});
-                break;
+                return StageResult::kStoppedByEnv;
             }
 
             log_timer.reset();  // Resets the interval for next log line from now
             const auto stage_result{current_stage_->second->forward(cycle_txn)};
             if (stage_result != StageResult::kSuccess) {
-                log::Error(get_log_prefix(), {"returned", std::string(magic_enum::enum_name<StageResult>(stage_result))});
+                log::Error(get_log_prefix(),
+                           {"op", "Forward",
+                            "returned", std::string(magic_enum::enum_name<StageResult>(stage_result))});
                 return stage_result;
             }
 
             auto [_, stage_duration] = stages_stop_watch.lap();
             if (stage_duration > std::chrono::milliseconds(10)) {
-                log::Info(get_log_prefix(), {"done", StopWatch::format(stage_duration)});
+                log::Info(get_log_prefix(),
+                          {"op", "Forward",
+                           "done", StopWatch::format(stage_duration)});
+            }
+        }
+
+        return is_stopping() ? StageResult::kAborted : StageResult::kSuccess;
+
+    } catch (const std::exception& ex) {
+        log::Error(get_log_prefix(), {"exception", std::string(ex.what())});
+        return StageResult::kUnexpectedError;
+    }
+}
+
+StageResult SyncLoop::run_cycle_unwind(db::RWTxn& cycle_txn, Timer& log_timer) {
+    StopWatch stages_stop_watch(true);
+    try {
+        current_stages_count_ = stages_unwind_order_.size();
+        current_stage_number_ = 0;
+        for (auto& stage_id : stages_unwind_order_) {
+            current_stage_ = stages_.find(stage_id);
+            if (current_stage_ == stages_.end()) {
+                // Should not happen
+                throw std::runtime_error("Stage " + std::string(stage_id) + " requested but not implemented");
+            }
+            ++current_stage_number_;
+            current_stage_->second->set_log_prefix(get_log_prefix());
+
+            log_timer.reset();  // Resets the interval for next log line from now
+            const auto stage_result{current_stage_->second->unwind(cycle_txn)};
+            if (stage_result != StageResult::kSuccess) {
+                log::Error(get_log_prefix(),
+                           {"op", "Unwind",
+                            "returned", std::string(magic_enum::enum_name<StageResult>(stage_result))});
+                return stage_result;
+            }
+
+            auto [_, stage_duration] = stages_stop_watch.lap();
+            if (stage_duration > std::chrono::milliseconds(10)) {
+                log::Info(get_log_prefix(),
+                          {"op", "Unwind",
+                           "done", StopWatch::format(stage_duration)});
+            }
+        }
+
+        return is_stopping() ? StageResult::kAborted : StageResult::kSuccess;
+
+    } catch (const std::exception& ex) {
+        log::Error(get_log_prefix(), {"exception", std::string(ex.what())});
+        return StageResult::kUnexpectedError;
+    }
+}
+
+StageResult SyncLoop::run_cycle_prune(db::RWTxn& cycle_txn, Timer& log_timer) {
+    StopWatch stages_stop_watch(true);
+    try {
+        current_stages_count_ = stages_forward_order_.size();
+        current_stage_number_ = 0;
+        for (auto& stage_id : stages_unwind_order_) {
+            current_stage_ = stages_.find(stage_id);
+            if (current_stage_ == stages_.end()) {
+                // Should not happen
+                throw std::runtime_error("Stage " + std::string(stage_id) + " requested but not implemented");
+            }
+            ++current_stage_number_;
+            current_stage_->second->set_log_prefix(get_log_prefix());
+
+            log_timer.reset();  // Resets the interval for next log line from now
+            const auto stage_result{current_stage_->second->prune(cycle_txn)};
+            if (stage_result != StageResult::kSuccess) {
+                log::Error(get_log_prefix(),
+                           {"op", "Prune",
+                            "returned", std::string(magic_enum::enum_name<StageResult>(stage_result))});
+                return stage_result;
+            }
+
+            auto [_, stage_duration] = stages_stop_watch.lap();
+            if (stage_duration > std::chrono::milliseconds(10)) {
+                log::Info(get_log_prefix(),
+                          {"op", "Prune",
+                           "done", StopWatch::format(stage_duration)});
             }
         }
 
@@ -249,7 +389,9 @@ void SyncLoop::throttle_next_cycle(const StopWatch::Duration& cycle_duration) {
 }
 std::string SyncLoop::get_log_prefix() const {
     static std::string log_prefix_fmt{"[%u/%u %s]"};
-    return boost::str(boost::format(log_prefix_fmt) % (current_stage_number_ + 1) % current_stages_count_ %
+    return boost::str(boost::format(log_prefix_fmt) %
+                      current_stage_number_ %
+                      current_stages_count_ %
                       current_stage_->first);
 }
 

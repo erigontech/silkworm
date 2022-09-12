@@ -25,7 +25,7 @@ StageResult Senders::forward(db::RWTxn& txn) {
         return StageResult::kUnknownChainId;
     }
 
-    farm_ = std::make_unique<recovery::RecoveryFarm>(txn, node_settings_);
+    farm_ = std::make_unique<recovery::RecoveryFarm>(txn, node_settings_, log_prefix_);
     const auto res{farm_->recover()};
     if (res == StageResult::kSuccess) {
         txn.commit();
@@ -64,7 +64,7 @@ StageResult Senders::unwind(db::RWTxn& txn) {
 
         const BlockNum segment_width{previous_progress - to};
         if (segment_width > db::stages::kSmallSegmentWidth) {
-            log::Info(log_prefix_ + " begin",
+            log::Info(log_prefix_,
                       {"op", std::string(magic_enum::enum_name<OperationType>(operation_)),
                        "from", std::to_string(previous_progress),
                        "to", std::to_string(to),
@@ -156,7 +156,7 @@ StageResult Senders::prune(db::RWTxn& txn) {
 
         const BlockNum segment_width{forward_progress - prune_progress};
         if (segment_width > db::stages::kSmallSegmentWidth) {
-            log::Info(log_prefix_ + " begin",
+            log::Info(log_prefix_,
                       {"op", std::string(magic_enum::enum_name<OperationType>(operation_)),
                        "from", std::to_string(prune_progress),
                        "to", std::to_string(forward_progress),

@@ -584,7 +584,8 @@ void InterHashes::reset_log_progress() {
 
 std::vector<std::string> InterHashes::get_log_progress() {
     std::unique_lock log_lck(log_mtx_);
-    std::vector<std::string> ret{"mode", (incremental_ ? "incr" : "full")};
+    std::vector<std::string> ret{"op", std::string(magic_enum::enum_name<OperationType>(operation_)),
+                                 "mode", (incremental_ ? "incr" : "full")};
 
     if (trie_loader_) {
         current_key_ = abridge(trie_loader_->get_log_key(), kAddressLength);

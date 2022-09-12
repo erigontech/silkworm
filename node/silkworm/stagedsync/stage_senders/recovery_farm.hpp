@@ -33,7 +33,7 @@ class RecoveryFarm : public Stoppable {
 
     //! \brief This class coordinates the recovery of senders' addresses through multiple threads. May eventually handle
     //! the unwinding of already recovered addresses.
-    RecoveryFarm(db::RWTxn& txn, NodeSettings* node_settings);
+    RecoveryFarm(db::RWTxn& txn, NodeSettings* node_settings, std::string log_prefix);
     ~RecoveryFarm() = default;
 
     //! \brief Recover sender's addresses from transactions
@@ -98,6 +98,7 @@ class RecoveryFarm : public Stoppable {
 
     db::RWTxn& txn_;               // Managed transaction
     NodeSettings* node_settings_;  // Global node settings
+    std::string log_prefix_;       // For logging purposes
     etl::Collector collector_;     // Reserved collector
 
     /* Recovery workers */

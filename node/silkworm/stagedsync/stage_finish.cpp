@@ -45,10 +45,10 @@ StageResult Finish::forward(db::RWTxn& txn) {
         update_progress(txn, execution_stage_progress);
 
         // Log the new version of app at this height
-        // TODO Should be done only on first cycle
-        Bytes build_info{byte_ptr_cast(node_settings_->build_info.data())};
-        db::write_build_info_height(*txn, build_info, execution_stage_progress);
-
+        if (sync_context_->is_first_cycle) {
+            Bytes build_info{byte_ptr_cast(node_settings_->build_info.data())};
+            db::write_build_info_height(*txn, build_info, execution_stage_progress);
+        }
         txn.commit();
 
     } catch (const StageError& ex) {

@@ -44,7 +44,7 @@ StageResult HashState::forward(db::RWTxn& txn) {
 
         BlockNum segment_width{execution_stage_progress - previous_progress};
         if (segment_width > db::stages::kSmallSegmentWidth) {
-            log::Info(log_prefix_ + " begin",
+            log::Info(log_prefix_,
                       {"op", std::string(magic_enum::enum_name<OperationType>(operation_)),
                        "from", std::to_string(previous_progress),
                        "to", std::to_string(execution_stage_progress),
@@ -122,7 +122,7 @@ StageResult HashState::unwind(db::RWTxn& txn) {
         }
         BlockNum segment_width{previous_progress - to};
         if (segment_width > db::stages::kSmallSegmentWidth) {
-            log::Info(log_prefix_ + " begin",
+            log::Info(log_prefix_,
                       {"op", std::string(magic_enum::enum_name<OperationType>(operation_)),
                        "from", std::to_string(previous_progress),
                        "to", std::to_string(to),
@@ -853,13 +853,13 @@ StageResult HashState::write_changes_from_changed_storage(
 
 std::vector<std::string> HashState::get_log_progress() {
     std::unique_lock log_lck(log_mtx_);
-    std::vector<std::string> ret{};
+    std::vector<std::string> ret{"op", std::string(magic_enum::enum_name<OperationType>(operation_)),
+                                 "mode", (incremental_ ? "incr" : "full")};
     if (operation_ == OperationType::None) {
         return ret;
     } else if (operation_ != OperationType::Forward) {
         ret.insert(ret.end(), {"op", std::string(magic_enum::enum_name<OperationType>(operation_.load()))});
     }
-    ret.insert(ret.end(), {"mode", (incremental_ ? "incr" : "full")});
     if (loading_) {
         if (!incremental_) {
             current_key_ = abridge(collector_->get_load_key(), kAddressLength * 2 + 2);
@@ -873,7 +873,6 @@ std::vector<std::string> HashState::get_log_progress() {
 
 void HashState::reset_log_progress() {
     std::unique_lock log_lck(log_mtx_);
-    operation_ = OperationType::None;
     incremental_ = false;
     loading_ = false;
     current_source_.clear();

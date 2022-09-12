@@ -41,25 +41,18 @@ StageResult Execution::forward(db::RWTxn& txn) {
         StopWatch commit_stopwatch;
         // Check stage boundaries from previous execution and previous stage execution
         auto previous_progress{get_progress(txn)};
-        auto headers_stage_progress{db::stages::read_stage_progress(*txn, db::stages::kHeadersKey)};
-        auto bodies_stage_progress{db::stages::read_stage_progress(*txn, db::stages::kBlockBodiesKey)};
         auto senders_stage_progress{db::stages::read_stage_progress(*txn, db::stages::kSendersKey)};
 
         // This is next stage probably needing full history
         auto hashstate_stage_progress{db::stages::read_stage_progress(*txn, db::stages::kHashStateKey)};
 
-        if (previous_progress == bodies_stage_progress) {
+        if (previous_progress == senders_stage_progress) {
             // Nothing to process
             operation_ = OperationType::None;
             return ret;
-        } else if (previous_progress > bodies_stage_progress) {
-            // Something bad had happened. Not possible execution stage is ahead of bodies
-            // Maybe we need to unwind ?
-            std::string what{"Bad progress sequence. Execution stage progress " + std::to_string(previous_progress) +
-                             " while Bodies stage " + std::to_string(bodies_stage_progress)};
-            throw StageError(StageResult::kInvalidProgress, what);
         } else if (previous_progress > senders_stage_progress) {
-            // Same as above but for senders
+            // Something bad had happened. Not possible execution stage is ahead of senders
+            // Maybe we need to unwind ?
             std::string what{"Bad progress sequence. Execution stage progress " + std::to_string(previous_progress) +
                              " while Senders stage " + std::to_string(senders_stage_progress)};
             throw StageError(StageResult::kInvalidProgress, what);
@@ -73,20 +66,20 @@ StageResult Execution::forward(db::RWTxn& txn) {
         progress_lock.unlock();
 
         block_num_ = previous_progress + 1;
-        BlockNum max_block_num{bodies_stage_progress};
-        BlockNum segment_width{bodies_stage_progress - previous_progress};
+        BlockNum max_block_num{senders_stage_progress};
+        BlockNum segment_width{senders_stage_progress - previous_progress};
         if (segment_width > db::stages::kSmallSegmentWidth) {
-            log::Info(log_prefix_ + " begin",
+            log::Info(log_prefix_,
                       {"op", std::string(magic_enum::enum_name<OperationType>(operation_)),
                        "from", std::to_string(block_num_),
-                       "to", std::to_string(bodies_stage_progress),
+                       "to", std::to_string(senders_stage_progress),
                        "span", std::to_string(segment_width)});
         }
 
         // Determine pruning thresholds on behalf of current db pruning mode and verify next stage(s) does not need
         // prune-able data
-        BlockNum prune_history{node_settings_->prune_mode->history().value_from_head(headers_stage_progress)};
-        BlockNum prune_receipts{node_settings_->prune_mode->receipts().value_from_head(headers_stage_progress)};
+        BlockNum prune_history{node_settings_->prune_mode->history().value_from_head(senders_stage_progress)};
+        BlockNum prune_receipts{node_settings_->prune_mode->receipts().value_from_head(senders_stage_progress)};
         if (hashstate_stage_progress) {
             prune_history = std::min(prune_history, hashstate_stage_progress - 1);
             prune_receipts = std::min(prune_receipts, hashstate_stage_progress - 1);
@@ -100,11 +93,22 @@ StageResult Execution::forward(db::RWTxn& txn) {
 
         while (block_num_ <= max_block_num) {
             throw_if_stopping();
-            const auto res{execute_batch(txn, max_block_num, analysis_cache, state_pool, prune_history, prune_receipts)};
-            success_or_throw(res);
+            const auto execution_result{execute_batch(txn,
+                                                      max_block_num,
+                                                      analysis_cache,
+                                                      state_pool,
+                                                      prune_history,
+                                                      prune_receipts)};
+
+            // If we return with success we must persist data
+            // Though counterintuitive we also must persist on KInvalidBlock to allow subsequent unwind
+            if (execution_result != StageResult::kSuccess &&
+                execution_result != StageResult::kInvalidBlock) {
+                throw StageError(execution_result);
+            }
 
             // Persist forward and prune progresses
-            db::stages::write_stage_progress(*txn, db::stages::kExecutionKey, block_num_);
+            update_progress(txn, block_num_);
             if (node_settings_->prune_mode->history().enabled() || node_settings_->prune_mode->receipts().enabled()) {
                 db::stages::write_stage_prune_progress(*txn, db::stages::kExecutionKey, block_num_);
             }
@@ -113,6 +117,12 @@ StageResult Execution::forward(db::RWTxn& txn) {
             txn.commit();
             auto [_, duration]{commit_stopwatch.stop()};
             log::Info(log_prefix_ + " commit", {"batch time", StopWatch::format(duration)});
+
+            // If an invalid block returned now can throw
+            if (execution_result == StageResult::kInvalidBlock) {
+                ret = execution_result;
+                break;
+            }
             block_num_++;
         }
 
@@ -191,6 +201,9 @@ StageResult Execution::execute_batch(db::RWTxn& txn, BlockNum max_block_num, Bas
                                      ObjectPool<EvmoneExecutionState>& state_pool, BlockNum prune_history_threshold,
                                      BlockNum prune_receipts_threshold) {
     StageResult ret{StageResult::kSuccess};
+    using namespace std::chrono_literals;
+    auto log_time{std::chrono::steady_clock::now()};
+
     try {
         db::Buffer buffer(*txn, prune_history_threshold);
         std::vector<Receipt> receipts;
@@ -213,25 +226,38 @@ StageResult Execution::execute_batch(db::RWTxn& txn, BlockNum max_block_num, Bas
             }
 
             const Block& block{prefetched_blocks_.front()};
-            if (block.header.number != block_num_) {
-                throw std::runtime_error("Bad block sequence");
-            }
+            check_block_sequence(block.header.number, block_num_);
 
-            if ((block_num_ % 64 == 0) && is_stopping()) {
-                return StageResult::kAborted;
+            // Log and abort check
+            if (const auto now{std::chrono::steady_clock::now()}; log_time <= now) {
+                throw_if_stopping();
+                log_time = now + 5s;
             }
 
             ExecutionProcessor processor(block, *consensus_engine_, buffer, node_settings_->chain_config.value());
             processor.evm().baseline_analysis_cache = &analysis_cache;
             processor.evm().state_pool = &state_pool;
 
-            // TODO(Andrea) Add Tracer
+            // TODO Add Tracer and collect call traces
 
             if (const auto res{processor.execute_and_write_block(receipts)}; res != ValidationResult::kOk) {
-                const auto block_hash_hex{to_hex(block.header.hash().bytes, true)};
-                // TODO(Andrea) Set the bad block hash in stage loop context so other stages are aware
-                std::string what{"Block hash " + block_hash_hex + " validation error : " + std::string(magic_enum::enum_name<ValidationResult>(res))};
-                throw StageError(StageResult::kInvalidBlock, what);
+                // Persist work done so far
+                if (block_num_ >= prune_receipts_threshold) {
+                    buffer.insert_receipts(block_num_, receipts);
+                }
+                buffer.write_to_db();
+                prefetched_blocks_.clear();
+
+                // Notify sync_loop we need to unwind
+                sync_context_->unwind_to.emplace(block_num_ - 1u);
+                sync_context_->bad_block_hash.emplace(block.header.hash());
+
+                // Display warning and return
+                log::Warning(log_prefix_,
+                             {"block", std::to_string(block_num_),
+                              "hash", to_hex(block.header.hash().bytes, true),
+                              "error", std::string(magic_enum::enum_name<ValidationResult>(res))});
+                return StageResult::kInvalidBlock;
             }
 
             if (block_num_ >= prune_receipts_threshold) {
@@ -313,7 +339,7 @@ StageResult Execution::unwind(db::RWTxn& txn) {
         operation_ = OperationType::Unwind;
         const BlockNum segment_width{previous_progress - to};
         if (segment_width > db::stages::kSmallSegmentWidth) {
-            log::Info(log_prefix_ + " begin",
+            log::Info(log_prefix_,
                       {"op", std::string(magic_enum::enum_name<OperationType>(operation_)),
                        "from", std::to_string(previous_progress),
                        "to", std::to_string(to),
@@ -393,7 +419,7 @@ StageResult Execution::prune(db::RWTxn& txn) {
         // Prune history of changes (changesets)
         if (const auto prune_threshold{node_settings_->prune_mode->history().value_from_head(forward_progress)}; prune_threshold) {
             if (segment_width > db::stages::kSmallSegmentWidth) {
-                log::Info(log_prefix_ + " begin",
+                log::Info(log_prefix_,
                           {"op", std::string(magic_enum::enum_name<OperationType>(operation_)),
                            "source", "history",
                            "from", std::to_string(prune_progress),
@@ -440,7 +466,7 @@ StageResult Execution::prune(db::RWTxn& txn) {
         // Prune receipts
         if (const auto prune_threshold{node_settings_->prune_mode->receipts().value_from_head(forward_progress)}; prune_threshold) {
             if (segment_width > db::stages::kSmallSegmentWidth) {
-                log::Info(log_prefix_ + " begin",
+                log::Info(log_prefix_,
                           {"op", std::string(magic_enum::enum_name<OperationType>(operation_)),
                            "source", "receipts",
                            "from", std::to_string(prune_progress),
@@ -472,7 +498,7 @@ StageResult Execution::prune(db::RWTxn& txn) {
         // Prune call traces
         if (const auto prune_threshold{node_settings_->prune_mode->receipts().value_from_head(forward_progress)}; prune_threshold) {
             if (segment_width > db::stages::kSmallSegmentWidth) {
-                log::Info(log_prefix_ + " begin",
+                log::Info(log_prefix_ ",
                           {"op", std::string(magic_enum::enum_name<OperationType>(operation_)),
                            "source", "call traces",
                            "from", std::to_string(prune_progress),

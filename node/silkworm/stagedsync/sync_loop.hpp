@@ -25,25 +25,13 @@
 
 namespace silkworm::stagedsync {
 
-class SyncContext {
-  public:
-    SyncContext() = default;
-    ~SyncContext() = default;
-
-    // Not copyable nor movable
-    SyncContext(const SyncContext&) = delete;
-    SyncContext& operator=(const SyncContext&) = delete;
-
-  private:
-    std::optional<BlockNum> unwind_point_;
-    std::optional<BlockNum> previous_unwind_point_;
-    std::optional<evmc::bytes32> bad_block_hash_;
-};
-
 class SyncLoop final : public Worker {
   public:
     explicit SyncLoop(silkworm::NodeSettings* node_settings, mdbx::env* chaindata_env)
-        : Worker("SyncLoop"), node_settings_{node_settings}, chaindata_env_{chaindata_env} {
+        : Worker("SyncLoop"),
+          node_settings_{node_settings},
+          chaindata_env_{chaindata_env},
+          sync_context_{std::make_unique<SyncContext>()} {
         load_stages();
     };
     ~SyncLoop() override = default;
@@ -51,9 +39,9 @@ class SyncLoop final : public Worker {
     void stop(bool wait = false) final;
 
   private:
-    silkworm::NodeSettings* node_settings_;  // As being passed by CLI arguments and/or already initialized data
-    mdbx::env* chaindata_env_;               // The actual opened environment
-
+    silkworm::NodeSettings* node_settings_;      // As being passed by CLI arguments and/or already initialized data
+    mdbx::env* chaindata_env_;                   // The actual opened environment
+    std::unique_ptr<SyncContext> sync_context_;  // Context shared across stages
     std::map<const char*, std::unique_ptr<stagedsync::IStage>> stages_;
     std::map<const char*, std::unique_ptr<stagedsync::IStage>>::iterator current_stage_;
     std::vector<const char*> stages_forward_order_;

@@ -50,15 +50,24 @@ void SyncLoop::load_stages() {
      * 15 StageFinish -> stagedsync::Finish
      */
 
-    stages_.emplace(db::stages::kBlockHashesKey, std::make_unique<stagedsync::BlockHashes>(node_settings_));
-    stages_.emplace(db::stages::kSendersKey, std::make_unique<stagedsync::Senders>(node_settings_));
-    stages_.emplace(db::stages::kExecutionKey, std::make_unique<stagedsync::Execution>(node_settings_));
-    stages_.emplace(db::stages::kHashStateKey, std::make_unique<stagedsync::HashState>(node_settings_));
-    stages_.emplace(db::stages::kIntermediateHashesKey, std::make_unique<stagedsync::InterHashes>(node_settings_));
-    stages_.emplace(db::stages::kHistoryIndexKey, std::make_unique<stagedsync::HistoryIndex>(node_settings_));
-    stages_.emplace(db::stages::kLogIndexKey, std::make_unique<stagedsync::LogIndex>(node_settings_));
-    stages_.emplace(db::stages::kTxLookupKey, std::make_unique<stagedsync::TxLookup>(node_settings_));
-    stages_.emplace(db::stages::kFinishKey, std::make_unique<stagedsync::Finish>(node_settings_));
+    stages_.emplace(db::stages::kBlockHashesKey,
+                    std::make_unique<stagedsync::BlockHashes>(node_settings_, sync_context_.get()));
+    stages_.emplace(db::stages::kSendersKey,
+                    std::make_unique<stagedsync::Senders>(node_settings_, sync_context_.get()));
+    stages_.emplace(db::stages::kExecutionKey,
+                    std::make_unique<stagedsync::Execution>(node_settings_, sync_context_.get()));
+    stages_.emplace(db::stages::kHashStateKey,
+                    std::make_unique<stagedsync::HashState>(node_settings_, sync_context_.get()));
+    stages_.emplace(db::stages::kIntermediateHashesKey,
+                    std::make_unique<stagedsync::InterHashes>(node_settings_, sync_context_.get()));
+    stages_.emplace(db::stages::kHistoryIndexKey,
+                    std::make_unique<stagedsync::HistoryIndex>(node_settings_, sync_context_.get()));
+    stages_.emplace(db::stages::kLogIndexKey,
+                    std::make_unique<stagedsync::LogIndex>(node_settings_, sync_context_.get()));
+    stages_.emplace(db::stages::kTxLookupKey,
+                    std::make_unique<stagedsync::TxLookup>(node_settings_, sync_context_.get()));
+    stages_.emplace(db::stages::kFinishKey,
+                    std::make_unique<stagedsync::Finish>(node_settings_, sync_context_.get()));
     current_stage_ = stages_.begin();
 
     stages_forward_order_.insert(stages_forward_order_.begin(),

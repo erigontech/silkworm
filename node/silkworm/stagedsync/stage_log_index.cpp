@@ -86,8 +86,12 @@ StageResult LogIndex::forward(db::RWTxn& txn) {
     return ret;
 }
 
-StageResult LogIndex::unwind(db::RWTxn& txn, BlockNum to) {
+StageResult LogIndex::unwind(db::RWTxn& txn) {
     StageResult ret{StageResult::kSuccess};
+
+    if (!sync_context_->unwind_to.has_value()) return ret;
+    const BlockNum to{sync_context_->unwind_to.value()};
+
     operation_ = OperationType::Unwind;
     try {
         throw_if_stopping();

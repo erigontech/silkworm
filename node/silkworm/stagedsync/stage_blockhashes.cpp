@@ -84,7 +84,7 @@ StageResult BlockHashes::forward(db::RWTxn& txn) {
     return ret;
 }
 
-StageResult BlockHashes::unwind(db::RWTxn& txn, BlockNum to) {
+StageResult BlockHashes::unwind(db::RWTxn& txn) {
     /*
      * Unwinds HeaderNumber index by
      *      select CanonicalHashes->HeaderHash
@@ -97,6 +97,9 @@ StageResult BlockHashes::unwind(db::RWTxn& txn, BlockNum to) {
      */
 
     StageResult ret{StageResult::kSuccess};
+    if (!sync_context_->unwind_to.has_value()) return ret;
+    const BlockNum to{sync_context_->unwind_to.value()};
+
     operation_ = OperationType::Unwind;
     try {
         throw_if_stopping();

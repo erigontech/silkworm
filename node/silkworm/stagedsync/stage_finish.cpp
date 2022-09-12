@@ -23,6 +23,7 @@ namespace silkworm::stagedsync {
 
 StageResult Finish::forward(db::RWTxn& txn) {
     StageResult ret{StageResult::kSuccess};
+    operation_ = OperationType::Forward;
     try {
         throw_if_stopping();
 
@@ -68,10 +69,14 @@ StageResult Finish::forward(db::RWTxn& txn) {
         ret = StageResult::kUnexpectedError;
     }
 
+    operation_ = OperationType::None;
     return ret;
 }
-StageResult Finish::unwind(db::RWTxn& txn, BlockNum to) {
+StageResult Finish::unwind(db::RWTxn& txn) {
     StageResult ret{StageResult::kSuccess};
+    if (!sync_context_->unwind_to.has_value()) return ret;
+    const BlockNum to{sync_context_->unwind_to.value()};
+    operation_ = OperationType::Unwind;
     try {
         throw_if_stopping();
         auto previous_progress{db::stages::read_stage_progress(*txn, stage_name_)};
@@ -98,6 +103,7 @@ StageResult Finish::unwind(db::RWTxn& txn, BlockNum to) {
         ret = StageResult::kUnexpectedError;
     }
 
+    operation_ = OperationType::None;
     return ret;
 }
 }  // namespace silkworm::stagedsync

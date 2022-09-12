@@ -98,8 +98,12 @@ StageResult HistoryIndex::forward(db::RWTxn& txn) {
     return is_stopping() ? StageResult::kAborted : ret;
 }
 
-StageResult HistoryIndex::unwind(db::RWTxn& txn, BlockNum to) {
+StageResult HistoryIndex::unwind(db::RWTxn& txn) {
     StageResult ret{StageResult::kSuccess};
+
+    if (!sync_context_->unwind_to.has_value()) return ret;
+    const BlockNum to{sync_context_->unwind_to.value()};
+
     operation_ = OperationType::None;
     try {
         throw_if_stopping();

@@ -289,7 +289,7 @@ StageResult Execution::execute_batch(db::RWTxn& txn, BlockNum max_block_num, Bas
     return ret;
 }
 
-StageResult Execution::unwind(db::RWTxn& txn, BlockNum to) {
+StageResult Execution::unwind(db::RWTxn& txn) {
     static const db::MapConfig unwind_tables[5] = {
         db::table::kAccountChangeSet,  //
         db::table::kStorageChangeSet,  //
@@ -299,6 +299,9 @@ StageResult Execution::unwind(db::RWTxn& txn, BlockNum to) {
     };
 
     StageResult ret{StageResult::kSuccess};
+    if (!sync_context_->unwind_to.has_value()) return ret;
+    const BlockNum to{sync_context_->unwind_to.value()};
+
     operation_ = OperationType::Unwind;
     try {
         BlockNum previous_progress{db::stages::read_stage_progress(*txn, db::stages::kExecutionKey)};

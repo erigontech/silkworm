@@ -74,6 +74,28 @@ inline void success_or_throw(StageResult code) {
     }
 }
 
+//! \brief Holds informations across all stages
+struct SyncContext {
+    SyncContext() = default;
+    ~SyncContext() = default;
+
+    // Not copyable nor movable
+    SyncContext(const SyncContext&) = delete;
+    SyncContext& operator=(const SyncContext&) = delete;
+
+    //! \brief Whether this is first cycle
+    bool is_first_cycle{false};
+
+    //! \brief If an unwind operation is requested this member is valued
+    std::optional<BlockNum> unwind_to;
+
+    //! \brief After an unwind operation this is valued to last unwind point
+    std::optional<BlockNum> previous_unwind_to;
+
+    //! \brief If an unwind operation is requested this member is valued
+    std::optional<evmc::bytes32> bad_block_hash;
+};
+
 //! \brief Base Stage interface. All stages MUST inherit from this class and MUST override forward / unwind /
 //! prune
 class IStage : public Stoppable {
@@ -84,8 +106,8 @@ class IStage : public Stoppable {
         Unwind,   // Executing Unwind
         Prune,    // Executing Prune
     };
-    explicit IStage(const char* stage_name, NodeSettings* node_settings)
-        : stage_name_{stage_name}, node_settings_{node_settings} {};
+    explicit IStage(SyncContext* sync_context, const char* stage_name, NodeSettings* node_settings)
+        : sync_context_{sync_context}, stage_name_{stage_name}, node_settings_{node_settings} {};
     virtual ~IStage() = default;
 
     //! \brief Forward is called when the stage is executed. The main logic of the stage must be here.
@@ -99,7 +121,7 @@ class IStage : public Stoppable {
     //! \param [in] to : New height we need to unwind to
     //! \return StageResult
     //! \remarks Must be overridden
-    [[nodiscard]] virtual StageResult unwind(db::RWTxn& txn, BlockNum to) = 0;
+    [[nodiscard]] virtual StageResult unwind(db::RWTxn& txn) = 0;
 
     //! \brief Prune is called when (part of) stage previously persisted data should be deleted. The pruning logic
     //! must be here.
@@ -131,6 +153,7 @@ class IStage : public Stoppable {
     }
 
   protected:
+    SyncContext* sync_context_;                                  // Shared context across stages
     const char* stage_name_;                                     // Human friendly identifier of the stage
     NodeSettings* node_settings_;                                // Pointer to shared node configuration settings
     std::atomic<OperationType> operation_{OperationType::None};  // Actual operation being carried out

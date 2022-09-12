@@ -65,7 +65,8 @@ TEST_CASE("Stage Transaction Lookups") {
     db::stages::write_stage_progress(*txn, db::stages::kBlockBodiesKey, 2);
 
     // Execute stage forward
-    stagedsync::TxLookup stage_tx_lookup(&context.node_settings());
+    stagedsync::SyncContext sync_context{};
+    stagedsync::TxLookup stage_tx_lookup(&context.node_settings(), &sync_context);
     REQUIRE(stage_tx_lookup.forward(txn) == stagedsync::StageResult::kSuccess);
 
     SECTION("Forward checks and unwind") {
@@ -89,7 +90,8 @@ TEST_CASE("Stage Transaction Lookups") {
         REQUIRE(lookup_data_block_num == 2u);
 
         // Execute stage unwind to block 1
-        REQUIRE(stage_tx_lookup.unwind(txn, 1) == stagedsync::StageResult::kSuccess);
+        sync_context.unwind_to.emplace(1);
+        REQUIRE(stage_tx_lookup.unwind(txn) == stagedsync::StageResult::kSuccess);
         lookup_table.bind(txn, db::table::kTxLookup);  // Needed due to commit
 
         // Block 1 should be still there

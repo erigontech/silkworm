@@ -122,7 +122,8 @@ TEST_CASE("Stage History Index") {
             db::Cursor account_changes(txn, db::table::kAccountChangeSet);
             REQUIRE(!account_changes.empty());
 
-            stagedsync::HistoryIndex stage_history_index(&context.node_settings());
+            stagedsync::SyncContext sync_context{};
+            stagedsync::HistoryIndex stage_history_index(&context.node_settings(), &sync_context);
             REQUIRE(stage_history_index.forward(txn) == stagedsync::StageResult::kSuccess);
             db::Cursor account_history(txn, db::table::kAccountHistory);
             db::Cursor storage_history(txn, db::table::kStorageHistory);
@@ -174,7 +175,8 @@ TEST_CASE("Stage History Index") {
             REQUIRE(storage_history_bitmap.cardinality() == 3);
             REQUIRE(storage_history_bitmap.toString() == "{1,2,3}");
 
-            REQUIRE(stage_history_index.unwind(txn, 2) == stagedsync::StageResult::kSuccess);
+            sync_context.unwind_to.emplace(2);
+            REQUIRE(stage_history_index.unwind(txn) == stagedsync::StageResult::kSuccess);
             REQUIRE(db::stages::read_stage_progress(*txn, db::stages::kHistoryIndexKey) == 2);
 
             // Account retrieving from Database
@@ -216,7 +218,8 @@ TEST_CASE("Stage History Index") {
 
             REQUIRE(context.node_settings().prune_mode->history().enabled());
 
-            stagedsync::HistoryIndex stage_history_index(&context.node_settings());
+            stagedsync::SyncContext sync_context{};
+            stagedsync::HistoryIndex stage_history_index(&context.node_settings(), &sync_context);
             REQUIRE(stage_history_index.forward(txn) == stagedsync::StageResult::kSuccess);
             REQUIRE(stage_history_index.prune(txn) == stagedsync::StageResult::kSuccess);
             REQUIRE(db::stages::read_stage_progress(*txn, db::stages::kHistoryIndexKey) == 3);
@@ -292,7 +295,8 @@ TEST_CASE("Stage History Index") {
         db::stages::write_stage_progress(*txn, db::stages::kExecutionKey, block - 1);
 
         // Forward history
-        stagedsync::HistoryIndex stage_history_index(&context.node_settings());
+        stagedsync::SyncContext sync_context{};
+        stagedsync::HistoryIndex stage_history_index(&context.node_settings(), &sync_context);
         REQUIRE(stage_history_index.forward(txn) == stagedsync::StageResult::kSuccess);
         db::Cursor account_history(txn, db::table::kAccountHistory);
         auto batch_1{account_history.size()};
@@ -363,7 +367,8 @@ TEST_CASE("Stage History Index") {
         txn.commit();
 
         // Unwind to 4000 and ensure account 4 has been removed from history
-        REQUIRE(stage_history_index.unwind(txn, 4000) == stagedsync::StageResult::kSuccess);
+        sync_context.unwind_to.emplace(4'000);
+        REQUIRE(stage_history_index.unwind(txn) == stagedsync::StageResult::kSuccess);
         {
             Bytes prefix(kAddressLength, '\0');
             std::memcpy(&prefix[0], addresses.back().bytes, kAddressLength);

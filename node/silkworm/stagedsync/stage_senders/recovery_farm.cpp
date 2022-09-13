@@ -80,7 +80,7 @@ StageResult RecoveryFarm::recover() {
 
     // Set to first block and read all in sequence
     auto bodies_initial_key{db::block_key(expected_block_number, headers_it_1_->block_hash.bytes)};
-    auto body_data{bodies_table.find(db::to_slice(bodies_initial_key), false)};
+    auto body_data{bodies_table.find(ByteView{bodies_initial_key}, false)};
     while (body_data.done) {
         auto body_data_key_view{db::from_slice(body_data.key)};
         reached_block_num = endian::load_big_u64(body_data_key_view.data());
@@ -445,7 +445,7 @@ StageResult RecoveryFarm::fill_canonical_headers(BlockNum from, BlockNum to) noe
         auto hashes_table{db::open_cursor(*txn_, db::table::kCanonicalHashes)};
         auto header_key{db::block_key(expected_block_num)};
         // Read all headers up to upper bound (included)
-        auto data{hashes_table.find(db::to_slice(header_key), false)};
+        auto data{hashes_table.find(ByteView{header_key}, false)};
         while (data.done) {
             reached_block_num = endian::load_big_u64(static_cast<uint8_t*>(data.key.data()));
             SILKWORM_ASSERT(reached_block_num == expected_block_num);

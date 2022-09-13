@@ -111,7 +111,7 @@ int main(int argc, char* argv[]) {
             }
 
             auto block_key{db::block_key(block_num)};
-            auto data{canonical_hashes.find(db::to_slice(block_key), /*throw_notfound*/ false)};
+            auto data{canonical_hashes.find(ByteView{block_key}, /*throw_notfound=*/false)};
             if (!data) {
                 throw std::runtime_error("Can't retrieve canonical hash for block " + std::to_string(block_num));
             }

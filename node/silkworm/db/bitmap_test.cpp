@@ -141,21 +141,21 @@ TEST_CASE("Bitmap Index Loader") {
     // Check we have an incomplete shard for each key
     Bytes key(address1.bytes, kAddressLength);
     key.append(db::block_key(UINT64_MAX));
-    auto data{log_addresses.find(db::to_slice(key), /*throw_notfound=*/false)};
+    auto data{log_addresses.find(ByteView{key}, /*throw_notfound=*/false)};
     REQUIRE(data.done);
     auto loaded_bitmap{bitmap::parse(data.value)};
     REQUIRE(loaded_bitmap.maximum() == 20'000);
 
     key.assign(address2.bytes, kAddressLength);
     key.append(db::block_key(UINT64_MAX));
-    data = log_addresses.find(db::to_slice(key), /*throw_notfound=*/false);
+    data = log_addresses.find(ByteView{key}, /*throw_notfound=*/false);
     REQUIRE(data.done);
     loaded_bitmap = bitmap::parse(data.value);
     REQUIRE(loaded_bitmap.maximum() == 50'000);
 
     key.assign(address3.bytes, kAddressLength);
     key.append(db::block_key(UINT64_MAX));
-    data = log_addresses.find(db::to_slice(key), /*throw_notfound=*/false);
+    data = log_addresses.find(ByteView{key}, /*throw_notfound=*/false);
     REQUIRE(data.done);
     loaded_bitmap = bitmap::parse(data.value);
     REQUIRE(loaded_bitmap.maximum() == 50'000);
@@ -171,7 +171,7 @@ TEST_CASE("Bitmap Index Loader") {
     // First address stays the same
     key.assign(address1.bytes, kAddressLength);
     key.append(db::block_key(UINT64_MAX));
-    data = log_addresses.find(db::to_slice(key), /*throw_notfound=*/false);
+    data = log_addresses.find(ByteView{key}, /*throw_notfound=*/false);
     REQUIRE(data.done);
     loaded_bitmap = bitmap::parse(data.value);
     REQUIRE(loaded_bitmap.maximum() == 20'000);
@@ -179,7 +179,7 @@ TEST_CASE("Bitmap Index Loader") {
     // Second address has decreased to 30'000
     key.assign(address2.bytes, kAddressLength);
     key.append(db::block_key(UINT64_MAX));
-    data = log_addresses.find(db::to_slice(key), /*throw_notfound=*/false);
+    data = log_addresses.find(ByteView{key}, /*throw_notfound=*/false);
     REQUIRE(data.done);
     loaded_bitmap = bitmap::parse(data.value);
     REQUIRE(loaded_bitmap.maximum() == 30'000);
@@ -187,7 +187,7 @@ TEST_CASE("Bitmap Index Loader") {
     // Third address should be gone
     key.assign(address3.bytes, kAddressLength);
     key.append(db::block_key(UINT64_MAX));
-    data = log_addresses.find(db::to_slice(key), /*throw_notfound=*/false);
+    data = log_addresses.find(ByteView{key}, /*throw_notfound=*/false);
     REQUIRE_FALSE(data.done);
 
     // Now prune up to 25000
@@ -197,13 +197,13 @@ TEST_CASE("Bitmap Index Loader") {
     // First address is gone
     key.assign(address1.bytes, kAddressLength);
     key.append(db::block_key(UINT64_MAX));
-    data = log_addresses.find(db::to_slice(key), /*throw_notfound=*/false);
+    data = log_addresses.find(ByteView{key}, /*throw_notfound=*/false);
     REQUIRE_FALSE(data.done);
 
     // Second address has a new minimum
     key.assign(address2.bytes, kAddressLength);
     key.append(db::block_key(UINT64_MAX));
-    data = log_addresses.find(db::to_slice(key), /*throw_notfound=*/false);
+    data = log_addresses.find(ByteView{key}, /*throw_notfound=*/false);
     REQUIRE(data.done);
     loaded_bitmap = bitmap::parse(data.value);
     REQUIRE(loaded_bitmap.maximum() == 30'000);

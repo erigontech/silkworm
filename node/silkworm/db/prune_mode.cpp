@@ -59,14 +59,14 @@ static void write_block_amount_for_key(mdbx::cursor& target, const char* key, co
 
     if (!block_amount.enabled()) {
         endian::store_big_u64(db_value.data(), UINT64_MAX);
-        target.upsert(mdbx::slice(db_key), to_slice(db_value));
+        target.upsert(mdbx::slice(db_key), ByteView{db_value});
         db_key += "Type";
         target.upsert(mdbx::slice(db_key), mdbx::slice(db_type));
         return;
     }
 
     endian::store_big_u64(db_value.data(), block_amount.value());
-    target.upsert(mdbx::slice(db_key), to_slice(db_value));
+    target.upsert(mdbx::slice(db_key), ByteView{db_value});
     db_key += "Type";
     db_type = (block_amount.type() == BlockAmount::Type::kOlder ? "older" : "before");
     target.upsert(mdbx::slice(db_key), mdbx::slice(db_type));

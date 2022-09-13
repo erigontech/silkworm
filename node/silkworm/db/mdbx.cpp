@@ -282,7 +282,7 @@ size_t cursor_for_each(::mdbx::cursor& cursor, const WalkFunc& walker, const Cur
     return ret;
 }
 
-size_t cursor_for_prefix(::mdbx::cursor& cursor, ::mdbx::slice prefix, const WalkFunc& walker,
+size_t cursor_for_prefix(::mdbx::cursor& cursor, const ByteView prefix, const WalkFunc& walker,
                          CursorMoveDirection direction) {
     const mdbx::cursor::move_operation move_operation{direction == CursorMoveDirection::Forward
                                                           ? mdbx::cursor::move_operation::next
@@ -326,7 +326,7 @@ size_t cursor_erase(mdbx::cursor& cursor, const CursorMoveDirection direction) {
 
 size_t cursor_erase(mdbx::cursor& cursor, const ByteView& set_key, const CursorMoveDirection direction) {
     // Search lower bound key
-    if (!cursor.lower_bound(to_slice(set_key), false)) {
+    if (!cursor.lower_bound(set_key, false)) {
         return 0;
     }
     // In reverse direction move to lower key
@@ -343,7 +343,7 @@ size_t cursor_erase(mdbx::cursor& cursor, size_t max_count, const CursorMoveDire
 size_t cursor_erase(mdbx::cursor& cursor, const ByteView& set_key, size_t max_count,
                     const CursorMoveDirection direction) {
     // Search lower bound key
-    if (!cursor.lower_bound(to_slice(set_key), false)) {
+    if (!cursor.lower_bound(set_key, false)) {
         return 0;
     }
     // In reverse direction move to lower key

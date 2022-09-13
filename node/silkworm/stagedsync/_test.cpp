@@ -87,7 +87,7 @@ TEST_CASE("Sync Stages") {
             BlockNum block_num{1};
             for (const auto& hash : block_hashes) {
                 Bytes block_key{db::block_key(block_num++)};
-                canonical_table.insert(db::to_slice(block_key), db::to_slice(hash));
+                canonical_table.insert(ByteView{block_key}, ByteView{hash});
             }
             db::stages::write_stage_progress(*txn, db::stages::kHeadersKey, 3);
             REQUIRE_NOTHROW(txn.commit(true));
@@ -130,7 +130,7 @@ TEST_CASE("Sync Stages") {
                 // Verify written data is consistent
                 db::Cursor target_table(txn, db::table::kHeaderNumbers);
                 REQUIRE(txn->get_map_stat(target_table.map()).ms_entries == 2);
-                REQUIRE(target_table.seek(db::to_slice(block_hashes.back())) == false);
+                REQUIRE(target_table.seek(ByteView{block_hashes.back()}) == false);
             }
         }
     }
@@ -388,7 +388,7 @@ TEST_CASE("Sync Stages") {
             // ---------------------------------------
             db::Cursor hashed_accounts_table(txn, db::table::kHashedAccounts);
             auto hashed_sender{keccak256(sender)};
-            REQUIRE(hashed_accounts_table.seek(db::to_slice(hashed_sender.bytes)));
+            REQUIRE(hashed_accounts_table.seek(ByteView{hashed_sender.bytes}));
             {
                 auto account_encoded{db::from_slice(hashed_accounts_table.current().value)};
                 auto [account, _]{Account::from_encoded_storage(account_encoded)};
@@ -402,14 +402,14 @@ TEST_CASE("Sync Stages") {
             db::Cursor hashed_storage_table(txn, db::table::kHashedStorage);
             auto hashed_contract{keccak256(contract_address)};
             Bytes storage_key{db::storage_prefix(hashed_contract.bytes, kDefaultIncarnation)};
-            REQUIRE(hashed_storage_table.find(db::to_slice(storage_key)));
+            REQUIRE(hashed_storage_table.find(ByteView{storage_key}));
             REQUIRE(hashed_storage_table.count_multivalue() == 2);
 
             // location 0
             auto hashed_loc0{keccak256(0x0000000000000000000000000000000000000000000000000000000000000000_bytes32)};
             hashed_storage_table.to_current_first_multi();
             mdbx::slice db_val{hashed_storage_table.current().value};
-            REQUIRE(db_val.starts_with(db::to_slice(hashed_loc0.bytes)));
+            REQUIRE(db_val.starts_with(ByteView{hashed_loc0.bytes}));
             ByteView value{db::from_slice(db_val).substr(kHashLength)};
             REQUIRE(to_hex(value) == to_hex(zeroless_view(new_val)));
 
@@ -417,7 +417,7 @@ TEST_CASE("Sync Stages") {
             auto hashed_loc1{keccak256(0x0000000000000000000000000000000000000000000000000000000000000001_bytes32)};
             hashed_storage_table.to_current_next_multi();
             db_val = hashed_storage_table.current().value;
-            CHECK(db_val.starts_with(db::to_slice(hashed_loc1.bytes)));
+            CHECK(db_val.starts_with(ByteView{hashed_loc1.bytes}));
             value = db::from_slice(db_val).substr(kHashLength);
             CHECK(to_hex(value) == "01c9");
 
@@ -426,7 +426,7 @@ TEST_CASE("Sync Stages") {
             actual_stage_result = magic_enum::enum_name<stagedsync::StageResult>(stage.unwind(txn, unwind_to));
             REQUIRE(expected_stage_result == actual_stage_result);
             hashed_accounts_table.bind(txn, db::table::kHashedAccounts);
-            REQUIRE(hashed_accounts_table.seek(db::to_slice(hashed_sender.bytes)));
+            REQUIRE(hashed_accounts_table.seek(ByteView{hashed_sender.bytes}));
             {
                 auto account_encoded{db::from_slice(hashed_accounts_table.current().value)};
                 auto [account, _]{Account::from_encoded_storage(account_encoded)};

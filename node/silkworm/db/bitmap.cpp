@@ -39,7 +39,7 @@ void IndexLoader::merge_bitmaps(RWTxn& txn, size_t key_size, etl::Collector* bit
                 .substr(0, entry.key.size() - sizeof(uint16_t)) /* remove etl ordering suffix */
                 .append(last_shard_suffix)};                    /* and append const suffix for last key */
 
-        if (auto index_data{index_cursor.find(db::to_slice(shard_key), /*throw_notfound=*/false)}; index_data.done) {
+        if (auto index_data{index_cursor.find(ByteView{shard_key}, /*throw_notfound=*/false)}; index_data.done) {
             // Merge previous and current bitmap
             new_bitmap |= db::bitmap::parse(index_data.value);
             index_cursor.erase();  // Delete currently found record as it'll be rewritten
@@ -52,8 +52,8 @@ void IndexLoader::merge_bitmaps(RWTxn& txn, size_t key_size, etl::Collector* bit
                                                                                     : shard.maximum()};
             endian::store_big_u64(&shard_key[shard_key.size() - sizeof(BlockNum)], suffix);
             Bytes shard_bytes{db::bitmap::to_bytes(shard)};
-            mdbx::slice k{db::to_slice(shard_key)};
-            mdbx::slice v{db::to_slice(shard_bytes)};
+            mdbx::slice k{shard_key};
+            mdbx::slice v{shard_bytes};
             mdbx::error::success_or_throw(index_cursor.put(k, &v, put_flags));
         }
     }};
@@ -84,14 +84,14 @@ void IndexLoader::unwind_bitmaps(RWTxn& txn, BlockNum to, const std::map<Bytes, 
         if (created) {
             // Key was created in the batch we're unwinding
             // Delete all its history
-            db::cursor_for_prefix(target, db::to_slice(key), db::walk_erase);
+            db::cursor_for_prefix(target, key, db::walk_erase);
             continue;
         }
 
         // Locate previous incomplete shard. There's always one if account has been touched at least once in
         // changeset !
         const Bytes shard_key{key + db::block_key(UINT64_MAX)};
-        auto index_data{target.find(db::to_slice(shard_key), false)};
+        auto index_data{target.find(ByteView{shard_key}, false)};
         while (index_data) {
             const auto index_data_key_view{db::from_slice(index_data.key)};
             if (!index_data_key_view.starts_with(key)) {
@@ -117,7 +117,7 @@ void IndexLoader::unwind_bitmaps(RWTxn& txn, BlockNum to, const std::map<Bytes, 
             // Replace current record with the new bitmap ensuring is marked as last shard
             target.erase();
             Bytes shard_bytes{db::bitmap::to_bytes(db_bitmap)};
-            target.insert(db::to_slice(shard_key), db::to_slice(shard_bytes));
+            target.insert(ByteView{shard_key}, ByteView{shard_bytes});
             break;
         }
     }
@@ -161,7 +161,7 @@ void IndexLoader::prune_bitmaps(RWTxn& txn, BlockNum threshold) {
             if (bitmap.isEmpty() || shard_shrunk) {
                 if (!bitmap.isEmpty()) {
                     Bytes new_shard_data{db::bitmap::to_bytes(bitmap)};
-                    target.update(db::to_slice(data_key_view), db::to_slice(new_shard_data));
+                    target.update(data_key_view, ByteView{new_shard_data});
                 } else {
                     target.erase();
                 }

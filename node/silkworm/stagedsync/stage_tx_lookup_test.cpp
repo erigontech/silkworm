@@ -48,8 +48,8 @@ TEST_CASE("Stage Transaction Lookups") {
     rlp::encode(tx_rlp, transactions[0]);
     auto tx_hash_1{keccak256(tx_rlp)};
 
-    transactions_table.upsert(db::to_slice(db::block_key(1)), db::to_slice(tx_rlp));
-    bodies_table.upsert(db::to_slice(db::block_key(1, hash_0.bytes)), db::to_slice(block.encode()));
+    transactions_table.upsert(ByteView{db::block_key(1)}, ByteView{tx_rlp});
+    bodies_table.upsert(ByteView{db::block_key(1, hash_0.bytes)}, ByteView{block.encode()});
 
     // ---------------------------------------
     // Push second block
@@ -60,8 +60,8 @@ TEST_CASE("Stage Transaction Lookups") {
     rlp::encode(tx_rlp, transactions[1]);
     auto tx_hash_2{keccak256(tx_rlp)};
 
-    transactions_table.upsert(db::to_slice(db::block_key(2)), db::to_slice(tx_rlp));
-    bodies_table.upsert(db::to_slice(db::block_key(2, hash_1.bytes)), db::to_slice(block.encode()));
+    transactions_table.upsert(ByteView{db::block_key(2)}, ByteView{tx_rlp});
+    bodies_table.upsert(ByteView{db::block_key(2, hash_1.bytes)}, ByteView{block.encode()});
     db::stages::write_stage_progress(*txn, db::stages::kBlockBodiesKey, 2);
 
     // Execute stage forward
@@ -73,7 +73,7 @@ TEST_CASE("Stage Transaction Lookups") {
         REQUIRE(lookup_table.size() == 2);  // Must be two transactions indexed
 
         // Retrieve block numbers associated with hashes
-        auto lookup_data{lookup_table.find(db::to_slice(tx_hash_1.bytes), false)};
+        auto lookup_data{lookup_table.find(ByteView{tx_hash_1.bytes}, false)};
         REQUIRE(lookup_data.done);
         REQUIRE(lookup_data.value.size());
         BlockNum lookup_data_block_num{0};
@@ -81,7 +81,7 @@ TEST_CASE("Stage Transaction Lookups") {
                     db::from_slice(lookup_data.value), lookup_data_block_num) == DecodingResult::kOk);
         REQUIRE(lookup_data_block_num == 1u);
 
-        lookup_data = lookup_table.find(db::to_slice(tx_hash_2.bytes), false);
+        lookup_data = lookup_table.find(ByteView{tx_hash_2.bytes}, false);
         REQUIRE(lookup_data.done);
         REQUIRE(lookup_data.value.size());
         REQUIRE(endian::from_big_compact(
@@ -93,7 +93,7 @@ TEST_CASE("Stage Transaction Lookups") {
         lookup_table.bind(txn, db::table::kTxLookup);  // Needed due to commit
 
         // Block 1 should be still there
-        lookup_data = lookup_table.find(db::to_slice(tx_hash_1.bytes), false);
+        lookup_data = lookup_table.find(ByteView{tx_hash_1.bytes}, false);
         REQUIRE(lookup_data.done);
         REQUIRE(lookup_data.value.size());
         REQUIRE(endian::from_big_compact(
@@ -101,7 +101,7 @@ TEST_CASE("Stage Transaction Lookups") {
         REQUIRE(lookup_data_block_num == 1u);
 
         // Block 2 must be absent due to unwind
-        REQUIRE_THROWS(lookup_table.find(db::to_slice(tx_hash_2.bytes), true));
+        REQUIRE_THROWS(lookup_table.find(ByteView{tx_hash_2.bytes}, true));
     }
 
     SECTION("Prune") {
@@ -123,11 +123,11 @@ TEST_CASE("Stage Transaction Lookups") {
         REQUIRE(lookup_table.size() == 1);
 
         // Block 1 should NOT be there
-        auto lookup_data{lookup_table.find(db::to_slice(tx_hash_1.bytes), false)};
+        auto lookup_data{lookup_table.find(ByteView{tx_hash_1.bytes}, false)};
         REQUIRE(lookup_data.done == false);
 
         // Block 2 should still be there
-        lookup_data = lookup_table.find(db::to_slice(tx_hash_2.bytes), false);
+        lookup_data = lookup_table.find(ByteView{tx_hash_2.bytes}, false);
         REQUIRE(lookup_data.done);
         REQUIRE(lookup_data.value.size());
         BlockNum lookup_data_block_num{0};

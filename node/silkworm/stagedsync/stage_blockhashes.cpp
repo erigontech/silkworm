@@ -151,7 +151,7 @@ void BlockHashes::collect_and_load(db::RWTxn& txn, const BlockNum from, const Bl
     auto expected_block_number{from + 1};
     auto header_key{db::block_key(expected_block_number)};
     db::Cursor table(txn, db::table::kCanonicalHashes);
-    auto data{table.find(db::to_slice(header_key), /*throw_notfound=*/false)};
+    auto data{table.find(ByteView{header_key}, /*throw_notfound=*/false)};
     while (data.done) {
         reached_block_num_ = endian::load_big_u64(static_cast<uint8_t*>(data.key.data()));
         if (reached_block_num_ > to) {

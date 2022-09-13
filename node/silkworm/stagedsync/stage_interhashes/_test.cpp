@@ -50,7 +50,7 @@ TEST_CASE("Trie Cursor") {
             "b804061bfa46e86139874800ae6d6f9f79097ac8c221e9229d13a45a0864a3fda170863bb6513010e95cfdd3f4bb151c7d242a682a"
             "16041a426bea6de01aa9ed925e80d5fed57c302988")};
 
-        trie_accounts.insert(db::to_slice(k), db::to_slice(v));
+        trie_accounts.insert(ByteView(k), ByteView(v));
 
         auto ta_data{ta_cursor.to_prefix({})};
 
@@ -88,7 +88,7 @@ TEST_CASE("Trie Cursor") {
             "b804061bfa46e86139874800ae6d6f9f79097ac8c221e9229d13a45a0864a3fda170863bb6513010e95cfdd3f4bb151c7d242a682a"
             "16041a426bea6de01aa9ed925e80d5fed57c302988")};
 
-        trie_accounts.insert(db::to_slice(k), db::to_slice(v));
+        trie_accounts.insert(ByteView(k), ByteView(v));
         changed_accounts.insert(*from_hex("0x000001"));
 
         bool has_thrown{false};
@@ -121,7 +121,7 @@ TEST_CASE("Trie Cursor") {
             "67beb3125b34103b14f16d88f9c68fc4516203fad53c3a2c405ef83201fee92bd4fb7cfb1022b46d6507c31957b94580926086c547"
             "b804061bfa46e86139874800ae6d6f9f79097ac8c221e9229d13a45a0864a3fda170863bb6513010e95cfdd3f4bb151c7d242a682a"
             "16041a426bea6de01aa9ed925e80d5fed57c302988")};
-        trie_accounts.insert(db::to_slice(k), db::to_slice(v));
+        trie_accounts.insert(ByteView(k), ByteView(v));
 
         k = *from_hex("0x00");
         v = *from_hex(
@@ -170,7 +170,7 @@ TEST_CASE("Trie Cursor") {
             "0000" /* no hash mask */
             "061d711a452d9137600bc9a5fecb8fa8f4fe4496f232b0ec706c8fb601beff0b" /* root hash - must have it */)};
 
-        trie_accounts.insert(db::to_slice(k), db::to_slice(v));
+        trie_accounts.insert(ByteView(k), ByteView(v));
 
         // Generate 16 fake sub nodes - note root node above has all bits set in tree_mask
         v = *from_hex(
@@ -181,7 +181,7 @@ TEST_CASE("Trie Cursor") {
         for (uint8_t c{'\0'}; c < 0x10; ++c) {
             k.clear();
             k.push_back(c);
-            trie_accounts.insert(db::to_slice(k), db::to_slice(v));
+            trie_accounts.insert(ByteView(k), ByteView(v));
         }
 
         // Insert a change, so we don't get hash of root and
@@ -231,7 +231,7 @@ TEST_CASE("Trie Cursor") {
                       "0000" /* no hash mask */
                       )};
 
-        trie_storage.insert(db::to_slice(k), db::to_slice(v));
+        trie_storage.insert(ByteView(k), ByteView(v));
 
         trie::TrieCursor ts_cursor{trie_storage, &changed_storage};
         Bytes prefix{*from_hex("0xfff2bcbbf823e72a3a9025c14b96f5c28026735aeb7f19e5f2f317aa7a017c080000000000000001")};
@@ -377,7 +377,7 @@ TEST_CASE("Account and storage trie") {
 
     const auto key1{0xB000000000000000000000000000000000000000000000000000000000000000_bytes32};
     const Account a1{0, 3 * kEther};
-    hashed_accounts.upsert(db::to_slice(key1), db::to_slice(a1.encode_for_storage()));
+    hashed_accounts.upsert(ByteView(key1), ByteView(a1.encode_for_storage()));
     hb.add_leaf(unpack_nibbles(key1), a1.rlp(/*storage_root=*/kEmptyRoot));
 
     // Some address whose hash starts with 0xB040
@@ -385,7 +385,7 @@ TEST_CASE("Account and storage trie") {
     const auto key2{keccak256(address2)};
     REQUIRE((key2.bytes[0] == 0xB0 && key2.bytes[1] == 0x40));
     const Account a2{0, 1 * kEther};
-    hashed_accounts.upsert(db::to_slice(key2.bytes), db::to_slice(a2.encode_for_storage()));
+    hashed_accounts.upsert(ByteView(key2.bytes), ByteView(a2.encode_for_storage()));
     hb.add_leaf(unpack_nibbles(key2.bytes), a2.rlp(/*storage_root=*/kEmptyRoot));
 
     // Some address whose hash starts with 0xB041
@@ -394,7 +394,7 @@ TEST_CASE("Account and storage trie") {
     REQUIRE((key3.bytes[0] == 0xB0 && key3.bytes[1] == 0x41));
     const auto code_hash{0x5be74cad16203c4905c068b012a2e9fb6d19d036c410f16fd177f337541440dd_bytes32};
     const Account a3{0, 2 * kEther, code_hash, kDefaultIncarnation};
-    hashed_accounts.upsert(db::to_slice(key3.bytes), db::to_slice(a3.encode_for_storage()));
+    hashed_accounts.upsert(ByteView(key3.bytes), ByteView(a3.encode_for_storage()));
 
     Bytes storage_key{db::storage_prefix(key3.bytes, kDefaultIncarnation)};
     const evmc::bytes32 storage_root{setup_storage(txn, storage_key)};
@@ -403,17 +403,17 @@ TEST_CASE("Account and storage trie") {
 
     const auto key4a{0xB1A0000000000000000000000000000000000000000000000000000000000000_bytes32};
     const Account a4a{0, 4 * kEther};
-    hashed_accounts.upsert(db::to_slice(key4a), db::to_slice(a4a.encode_for_storage()));
+    hashed_accounts.upsert(ByteView(key4a), ByteView(a4a.encode_for_storage()));
     hb.add_leaf(unpack_nibbles(key4a), a4a.rlp(/*storage_root=*/kEmptyRoot));
 
     const auto key5{0xB310000000000000000000000000000000000000000000000000000000000000_bytes32};
     const Account a5{0, 8 * kEther};
-    hashed_accounts.upsert(db::to_slice(key5), db::to_slice(a5.encode_for_storage()));
+    hashed_accounts.upsert(ByteView(key5), ByteView(a5.encode_for_storage()));
     hb.add_leaf(unpack_nibbles(key5), a5.rlp(/*storage_root=*/kEmptyRoot));
 
     const auto key6{0xB340000000000000000000000000000000000000000000000000000000000000_bytes32};
     const Account a6{0, 1 * kEther};
-    hashed_accounts.upsert(db::to_slice(key6), db::to_slice(a6.encode_for_storage()));
+    hashed_accounts.upsert(ByteView(key6), ByteView(a6.encode_for_storage()));
     hb.add_leaf(unpack_nibbles(key6), a6.rlp(/*storage_root=*/kEmptyRoot));
 
     // ----------------------------------------------------------------
@@ -481,7 +481,7 @@ TEST_CASE("Account and storage trie") {
     REQUIRE(key4b.bytes[0] == key4a.bytes[0]);
 
     const Account a4b{0, 5 * kEther};
-    hashed_accounts.upsert(db::to_slice(key4b.bytes), db::to_slice(a4b.encode_for_storage()));
+    hashed_accounts.upsert(ByteView(key4b.bytes), ByteView(a4b.encode_for_storage()));
 
     PrefixSet account_changes{};
     PrefixSet storage_changes{};
@@ -512,7 +512,7 @@ TEST_CASE("Account and storage trie") {
         account_changes.clear();
         storage_changes.clear();
 
-        hashed_accounts.erase(db::to_slice(key2.bytes));
+        hashed_accounts.erase(ByteView(key2.bytes));
         account_changes.insert(unpack_nibbles(Bytes(&key2.bytes[0], kHashLength)));
         expected_root = 0x986b623eac8b26c8624cbaffaa60c1b48a7b88be1574bd98bd88391fc34c0a9c_bytes32;
 
@@ -556,10 +556,10 @@ TEST_CASE("Account and storage trie") {
         account_changes.clear();
         storage_changes.clear();
 
-        hashed_accounts.erase(db::to_slice(key2.bytes));
+        hashed_accounts.erase(ByteView(key2.bytes));
         account_changes.insert(unpack_nibbles(Bytes(&key2.bytes[0], kHashLength)));
 
-        hashed_accounts.erase(db::to_slice(key3.bytes));
+        hashed_accounts.erase(ByteView(key3.bytes));
         account_changes.insert(unpack_nibbles(Bytes(&key3.bytes[0], kHashLength)));
 
         expected_root = 0xaa953dc994f3375a95f2c413ed5a1a5a2f84d34b377d7587e3aa8dba944c12bf_bytes32;
@@ -602,7 +602,7 @@ TEST_CASE("Account trie around extension node") {
     HashBuilder hb;
 
     for (const auto& key : keys) {
-        hashed_accounts.upsert(db::to_slice(key), db::to_slice(account_one_ether.encode_for_storage()));
+        hashed_accounts.upsert(ByteView(key), ByteView(account_one_ether.encode_for_storage()));
         hb.add_leaf(unpack_nibbles(key), account_one_ether.rlp(/*storage_root=*/kEmptyRoot));
     }
 
@@ -666,7 +666,7 @@ TEST_CASE("Trie Accounts : incremental vs regeneration") {
     for (size_t i{0}, e{3 * n}; i < e; ++i) {
         const evmc::address address{int_to_address(i)};
         const auto hash{keccak256(address)};
-        hashed_accounts.upsert(db::to_slice(hash.bytes), db::to_slice(one_eth.encode_for_storage()));
+        hashed_accounts.upsert(ByteView(hash.bytes), ByteView(one_eth.encode_for_storage()));
     }
 
     // This populates TrieAccounts for the first pass
@@ -677,7 +677,7 @@ TEST_CASE("Trie Accounts : incremental vs regeneration") {
     for (size_t i{0}; i < n; ++i) {
         const evmc::address address{int_to_address(i)};
         const auto hash{keccak256(address)};
-        hashed_accounts.upsert(db::to_slice(hash.bytes), db::to_slice(two_eth.encode_for_storage()));
+        hashed_accounts.upsert(ByteView(hash.bytes), ByteView(two_eth.encode_for_storage()));
         account_changes.insert(unpack_nibbles(Bytes(&hash.bytes[0], kHashLength)));
     }
 
@@ -685,7 +685,7 @@ TEST_CASE("Trie Accounts : incremental vs regeneration") {
     for (size_t i{n}, e{2 * n}; i < e; ++i) {
         const evmc::address address{int_to_address(i)};
         const auto hash{keccak256(address)};
-        hashed_accounts.erase(db::to_slice(hash.bytes));
+        hashed_accounts.erase(ByteView(hash.bytes));
         account_changes.insert(unpack_nibbles(Bytes(&hash.bytes[0], kHashLength)));
     }
 
@@ -695,7 +695,7 @@ TEST_CASE("Trie Accounts : incremental vs regeneration") {
     for (size_t i{3 * n}, e{4 * n}; i < e; ++i) {
         const evmc::address address{int_to_address(i)};
         const auto hash{keccak256(address)};
-        hashed_accounts.upsert(db::to_slice(hash.bytes), db::to_slice(one_eth.encode_for_storage()));
+        hashed_accounts.upsert(ByteView(hash.bytes), ByteView(one_eth.encode_for_storage()));
         account_changes.insert(unpack_nibbles(Bytes(&hash.bytes[0], kHashLength)), /* mark as created */ true);
     }
 
@@ -714,7 +714,7 @@ TEST_CASE("Trie Accounts : incremental vs regeneration") {
     for (size_t i{0}; i < n; ++i) {
         const evmc::address address{int_to_address(i)};
         const auto hash{keccak256(address)};
-        hashed_accounts.upsert(db::to_slice(hash.bytes), db::to_slice(two_eth.encode_for_storage()));
+        hashed_accounts.upsert(ByteView(hash.bytes), ByteView(two_eth.encode_for_storage()));
     }
 
     // Accounts [n,2n) are deleted
@@ -723,7 +723,7 @@ TEST_CASE("Trie Accounts : incremental vs regeneration") {
     for (size_t i{2 * n}, e{4 * n}; i < e; ++i) {
         const evmc::address address{int_to_address(i)};
         const auto hash{keccak256(address)};
-        hashed_accounts.upsert(db::to_slice(hash.bytes), db::to_slice(one_eth.encode_for_storage()));
+        hashed_accounts.upsert(ByteView(hash.bytes), ByteView(one_eth.encode_for_storage()));
     }
 
     txn.clear_map(db::open_map(txn, db::table::kTrieOfAccounts));
@@ -775,8 +775,8 @@ TEST_CASE("Trie Storage : incremental vs regeneration") {
     static const auto hashed_address1{keccak256(address1)};
     static const auto hashed_address2{keccak256(address2)};
 
-    hashed_accounts.upsert(db::to_slice(hashed_address1.bytes), db::to_slice(account1.encode_for_storage()));
-    hashed_accounts.upsert(db::to_slice(hashed_address2.bytes), db::to_slice(account2.encode_for_storage()));
+    hashed_accounts.upsert(ByteView(hashed_address1.bytes), ByteView(account1.encode_for_storage()));
+    hashed_accounts.upsert(ByteView(hashed_address2.bytes), ByteView(account2.encode_for_storage()));
 
     static const Bytes storage_prefix1{db::storage_prefix(hashed_address1.bytes, incarnation1)};
     static const Bytes storage_prefix2{db::storage_prefix(hashed_address2.bytes, incarnation2)};

@@ -106,7 +106,7 @@ TEST_CASE("collect_and_load") {
     run_collector_test([](const Entry& entry, mdbx::cursor& table, MDBX_put_flags_t) {
         Bytes key{entry.key};
         key.at(0) = 1;
-        table.upsert(db::to_slice(key), db::to_slice(entry.value));
+        table.upsert(ByteView{key}, ByteView{entry.value});
     });
 }
 

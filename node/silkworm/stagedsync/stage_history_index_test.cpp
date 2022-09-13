@@ -137,7 +137,7 @@ TEST_CASE("Stage History Index") {
             REQUIRE(historical_miner_account->balance);
             REQUIRE(historical_miner_account->balance < current_miner_account->balance);
 
-            auto account_history_data{account_history.lower_bound(db::to_slice(sender), /*throw_notfound=*/false)};
+            auto account_history_data{account_history.lower_bound(ByteView{sender}, /*throw_notfound=*/false)};
             REQUIRE(account_history_data.done);
             auto account_history_data_view{db::from_slice(account_history_data.key)};
             REQUIRE(endian::load_big_u64(&account_history_data_view[account_history_data_view.size() - 8]) ==
@@ -147,7 +147,7 @@ TEST_CASE("Stage History Index") {
             REQUIRE(account_history_bitmap.toString() == "{1,2,3}");
 
             auto storage_history_data{
-                storage_history.lower_bound(db::to_slice(contract_address), /*throw_notfound=*/false)};
+                storage_history.lower_bound(ByteView{contract_address}, /*throw_notfound=*/false)};
             REQUIRE(storage_history_data.done);
             auto storage_history_data_view{db::from_slice(storage_history_data.key)};
             REQUIRE(endian::load_big_u64(&storage_history_data_view[storage_history_data_view.size() - 8]) ==
@@ -164,7 +164,7 @@ TEST_CASE("Stage History Index") {
             std::memcpy(&composite[kAddressLength], location.bytes, kHashLength);
 
             // Storage retrieving from Database
-            storage_history_data = storage_history.lower_bound(db::to_slice(composite), false);
+            storage_history_data = storage_history.lower_bound(ByteView{composite}, false);
             REQUIRE(storage_history_data.done);
             storage_history_data_view = db::from_slice(storage_history_data.key);
             REQUIRE(storage_history_data_view.starts_with(composite));
@@ -178,7 +178,7 @@ TEST_CASE("Stage History Index") {
             REQUIRE(db::stages::read_stage_progress(*txn, db::stages::kHistoryIndexKey) == 2);
 
             // Account retrieving from Database
-            account_history_data = account_history.lower_bound(db::to_slice(sender), /*throw_notfound=*/false);
+            account_history_data = account_history.lower_bound(ByteView{sender}, /*throw_notfound=*/false);
             REQUIRE(account_history_data.done);
             account_history_bitmap = db::bitmap::parse(account_history_data.value);
             REQUIRE(account_history_bitmap.cardinality() == 2);
@@ -186,14 +186,14 @@ TEST_CASE("Stage History Index") {
 
             // Contract retrieving from Database
             account_history_data =
-                account_history.lower_bound(db::to_slice(contract_address), /*throw_notfound=*/false);
+                account_history.lower_bound(ByteView{contract_address}, /*throw_notfound=*/false);
             REQUIRE(account_history_data.done);
             account_history_bitmap = db::bitmap::parse(account_history_data.value);
             REQUIRE(account_history_bitmap.cardinality() == 2);
             REQUIRE(account_history_bitmap.toString() == "{1,2}");
 
             // Storage retrieving from Database
-            storage_history_data = storage_history.lower_bound(db::to_slice(composite), false);
+            storage_history_data = storage_history.lower_bound(ByteView{composite}, false);
             REQUIRE(storage_history_data.done);
             storage_history_data_view = db::from_slice(storage_history_data.key);
             REQUIRE(storage_history_data_view.starts_with(composite));
@@ -227,7 +227,7 @@ TEST_CASE("Stage History Index") {
             REQUIRE(!account_history.empty());
             REQUIRE(!storage_history.empty());
 
-            auto account_history_data{account_history.lower_bound(db::to_slice(sender), /*throw_notfound=*/false)};
+            auto account_history_data{account_history.lower_bound(ByteView{sender}, /*throw_notfound=*/false)};
             REQUIRE(account_history_data.done);
             auto account_history_data_view{db::from_slice(account_history_data.key)};
             REQUIRE(endian::load_big_u64(&account_history_data_view[account_history_data_view.size() - 8]) ==
@@ -237,7 +237,7 @@ TEST_CASE("Stage History Index") {
             REQUIRE(account_history_bitmap.toString() == "{2,3}");
 
             auto storage_history_data{
-                storage_history.lower_bound(db::to_slice(contract_address), /*throw_notfound=*/false)};
+                storage_history.lower_bound(ByteView{contract_address}, /*throw_notfound=*/false)};
             REQUIRE(storage_history_data.done);
             auto storage_history_data_view{db::from_slice(storage_history_data.key)};
             REQUIRE(endian::load_big_u64(&storage_history_data_view[storage_history_data_view.size() - 8]) ==
@@ -254,7 +254,7 @@ TEST_CASE("Stage History Index") {
             std::memcpy(&composite[kAddressLength], location.bytes, kHashLength);
 
             // Storage retrieving from Database
-            storage_history_data = storage_history.lower_bound(db::to_slice(composite), false);
+            storage_history_data = storage_history.lower_bound(ByteView{composite}, false);
             REQUIRE(storage_history_data.done);
             storage_history_data_view = db::from_slice(storage_history_data.key);
             REQUIRE(storage_history_data_view.starts_with(composite));
@@ -282,9 +282,9 @@ TEST_CASE("Stage History Index") {
                 Bytes value(kAddressLength, '\0');
                 std::memcpy(&value[0], address.bytes, kAddressLength);
                 value.append(non_empty);
-                auto value_slice{db::to_slice(value)};
+                mdbx::slice value_slice{value};
                 mdbx::error::success_or_throw(
-                    account_changeset.put(db::to_slice(block_key), &value_slice, MDBX_put_flags_t::MDBX_APPENDDUP));
+                    account_changeset.put(ByteView{block_key}, &value_slice, MDBX_put_flags_t::MDBX_APPENDDUP));
             }
         }
 
@@ -306,7 +306,7 @@ TEST_CASE("Stage History Index") {
 
                 bool has_thrown{false};
                 try {
-                    auto data = account_history.find(db::to_slice(key), /*throw_notfound=*/true);
+                    auto data = account_history.find(ByteView{key}, /*throw_notfound=*/true);
                     auto bitmap{db::bitmap::parse(data.value)};
                     REQUIRE(bitmap.maximum() == block - 1);
                 } catch (...) {
@@ -322,10 +322,8 @@ TEST_CASE("Stage History Index") {
 
         // Given the amount of blocks each address should hold 2 shards
         for (const auto& address : addresses) {
-            Bytes prefix(kAddressLength, '\0');
-            std::memcpy(&prefix[0], address.bytes, kAddressLength);
             auto count{
-                db::cursor_for_prefix(account_history, db::to_slice(prefix),
+                db::cursor_for_prefix(account_history, ByteView{address},
                                       [](::mdbx::cursor&, ::mdbx::cursor::move_result&) -> bool { return true; })};
             REQUIRE(count == 2);
         }
@@ -334,11 +332,9 @@ TEST_CASE("Stage History Index") {
         {
             addresses.push_back(0x0000000000000000000000000000000000000004_address);
             const auto block_key{db::block_key(block++)};
-            Bytes value(kAddressLength, '\0');
-            std::memcpy(&value[0], addresses.back().bytes, kAddressLength);
-            auto value_slice{db::to_slice(value)};
+            mdbx::slice value_slice{ByteView{addresses.back()}};
             mdbx::error::success_or_throw(
-                account_changeset.put(db::to_slice(block_key), &value_slice, MDBX_put_flags_t::MDBX_APPENDDUP));
+                account_changeset.put(ByteView{block_key}, &value_slice, MDBX_put_flags_t::MDBX_APPENDDUP));
         }
 
         for (; block <= 100000; ++block) {
@@ -347,9 +343,9 @@ TEST_CASE("Stage History Index") {
                 Bytes value(kAddressLength, '\0');
                 std::memcpy(&value[0], address.bytes, kAddressLength);
                 value.append(non_empty);
-                auto value_slice{db::to_slice(value)};
+                mdbx::slice value_slice{value};
                 mdbx::error::success_or_throw(
-                    account_changeset.put(db::to_slice(block_key), &value_slice, MDBX_put_flags_t::MDBX_APPENDDUP));
+                    account_changeset.put(ByteView{block_key}, &value_slice, MDBX_put_flags_t::MDBX_APPENDDUP));
             }
         }
         db::stages::write_stage_progress(*txn, db::stages::kExecutionKey, block - 1);
@@ -365,10 +361,9 @@ TEST_CASE("Stage History Index") {
         // Unwind to 4000 and ensure account 4 has been removed from history
         REQUIRE(stage_history_index.unwind(txn, 4000) == stagedsync::StageResult::kSuccess);
         {
-            Bytes prefix(kAddressLength, '\0');
-            std::memcpy(&prefix[0], addresses.back().bytes, kAddressLength);
+            ByteView prefix{addresses.back()};
             auto count{
-                db::cursor_for_prefix(account_history, db::to_slice(prefix),
+                db::cursor_for_prefix(account_history, prefix,
                                       [](::mdbx::cursor&, ::mdbx::cursor::move_result&) -> bool { return true; })};
             REQUIRE(count == 0);
             addresses.pop_back();  // Remove unused address for next tests
@@ -376,10 +371,8 @@ TEST_CASE("Stage History Index") {
 
         // Each key must have only 1 record now which has UINT64_MAX suffix
         for (const auto& address : addresses) {
-            Bytes prefix(kAddressLength, '\0');
-            std::memcpy(&prefix[0], address.bytes, kAddressLength);
             auto count{db::cursor_for_prefix(
-                account_history, db::to_slice(prefix), [](::mdbx::cursor&, ::mdbx::cursor::move_result& data) -> bool {
+                account_history, address, [](::mdbx::cursor&, ::mdbx::cursor::move_result& data) -> bool {
                     const auto data_key_view{db::from_slice(data.key)};
                     CHECK(endian::load_big_u64(&data_key_view[data_key_view.size() - sizeof(BlockNum)]) == UINT64_MAX);
                     const auto bitmap{db::bitmap::parse(data.value)};
@@ -403,10 +396,8 @@ TEST_CASE("Stage History Index") {
 
         // Each key must have only 1 record now which has UINT64_MAX suffix AND bitmap max value must be 3590
         for (const auto& address : addresses) {
-            Bytes prefix(kAddressLength, '\0');
-            std::memcpy(&prefix[0], address.bytes, kAddressLength);
             auto count{db::cursor_for_prefix(
-                account_history, db::to_slice(prefix), [](::mdbx::cursor&, ::mdbx::cursor::move_result& data) -> bool {
+                account_history, address, [](::mdbx::cursor&, ::mdbx::cursor::move_result& data) -> bool {
                     const auto data_key_view{db::from_slice(data.key)};
                     CHECK(endian::load_big_u64(&data_key_view[data_key_view.size() - sizeof(BlockNum)]) == UINT64_MAX);
                     const auto bitmap{db::bitmap::parse(data.value)};

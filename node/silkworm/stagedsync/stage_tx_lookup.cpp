@@ -296,12 +296,12 @@ void TxLookup::collect_transaction_hashes_from_bodies(db::RWTxn& txn,
     const BlockNum max_block_number{std::max(from, to)};
     BlockNum reached_block_number{0};
 
-    auto start_key{db::block_key(std::min(from, to) + 1)};
+    Bytes start_key{db::block_key(std::min(from, to) + 1)};
     Bytes etl_value{};
     db::Cursor source(txn, source_config);
     db::Cursor transactions{txn, db::table::kBlockTransactions};
 
-    auto source_data{source.lower_bound(db::to_slice(start_key), /*throw_notfound=*/false)};
+    auto source_data{source.lower_bound(ByteView{start_key}, /*throw_notfound=*/false)};
     while (source_data) {
         auto source_data_key_view{db::from_slice(source_data.key)};
         auto source_data_value_view{db::from_slice(source_data.value)};
@@ -331,7 +331,7 @@ void TxLookup::collect_transaction_hashes_from_bodies(db::RWTxn& txn,
 
             const Bytes transactions_base_key{db::block_key(block_body.base_txn_id)};
             auto transactions_data{
-                transactions.lower_bound(db::to_slice(transactions_base_key), /*throw_notfound=*/false)};
+                transactions.lower_bound(ByteView{transactions_base_key}, /*throw_notfound=*/false)};
             while (transactions_data) {
                 const auto reached_transaction_id{
                     endian::load_big_u64(static_cast<uint8_t*>(transactions_data.key.data()))};

@@ -103,9 +103,8 @@ std::pair<Bytes, Bytes> changeset_to_plainstate_format(const ByteView key, ByteV
 }
 
 std::optional<ByteView> find_value_suffix(mdbx::cursor& table, ByteView key, ByteView value_prefix) {
-    auto value_prefix_slice{to_slice(value_prefix)};
-    auto data{table.lower_bound_multivalue(to_slice(key), value_prefix_slice, /*throw_notfound=*/false)};
-    if (!data || !data.value.starts_with(value_prefix_slice)) {
+    auto data{table.lower_bound_multivalue(key, value_prefix, /*throw_notfound=*/false)};
+    if (!data || !data.value.starts_with(value_prefix)) {
         return std::nullopt;
     }
 
@@ -123,7 +122,7 @@ void upsert_storage_value(mdbx::cursor& state_cursor, ByteView storage_prefix, B
         Bytes new_db_value(location.length() + new_value.length(), '\0');
         std::memcpy(&new_db_value[0], location.data(), location.length());
         std::memcpy(&new_db_value[location.length()], new_value.data(), new_value.length());
-        state_cursor.upsert(to_slice(storage_prefix), to_slice(new_db_value));
+        state_cursor.upsert(storage_prefix, ByteView{new_db_value});
     }
 }
 

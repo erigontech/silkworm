@@ -189,7 +189,7 @@ namespace db {
         Bytes fake_value(sizeof(uint32_t), '\0');
         mdbx::slice key(table::kBlockTransactions.name);
         auto tgt{db::open_cursor(txn2, table::kSequence)};
-        tgt.upsert(key, to_slice(fake_value));
+        tgt.upsert(key, ByteView{fake_value});
 
         bool thrown{false};
         try {
@@ -391,7 +391,7 @@ namespace db {
         // Write voluntary wrong value in stage
         Bytes stage_progress(2, 0);
         auto map{db::open_cursor(txn, table::kSyncStageProgress)};
-        CHECK_NOTHROW(txn.upsert(map, mdbx::slice{stages::kBlockBodiesKey}, to_slice(stage_progress)));
+        CHECK_NOTHROW(txn.upsert(map, mdbx::slice{stages::kBlockBodiesKey}, ByteView{stage_progress}));
         CHECK_THROWS(block_num = stages::read_stage_progress(txn, stages::kBlockBodiesKey));
 
         // Check "prune_" prefix
@@ -476,7 +476,7 @@ namespace db {
 
             Bytes key{block_key(header.number, hash.bytes)};
             auto sender_table{db::open_cursor(txn, table::kSenders)};
-            sender_table.upsert(to_slice(key), to_slice(full_senders));
+            sender_table.upsert(ByteView{key}, ByteView{full_senders});
             REQUIRE(read_block_by_number(txn, block_num, read_senders, block));
             CHECK(block.header == header);
             CHECK(block.ommers == body.ommers);
@@ -588,20 +588,20 @@ namespace db {
         Bytes data1{ByteView{addr1}};
         Bytes key1{block_key(block_num1)};
         data1.append(*from_hex(val1));
-        table.upsert(to_slice(key1), to_slice(data1));
+        table.upsert(ByteView{key1}, ByteView{data1});
 
         Bytes data2{ByteView{addr2}};
         data2.append(*from_hex(val2));
-        table.upsert(to_slice(key1), to_slice(data2));
+        table.upsert(ByteView{key1}, ByteView{data2});
 
         Bytes data3{ByteView{addr3}};
         data3.append(*from_hex(val3));
-        table.upsert(to_slice(key1), to_slice(data3));
+        table.upsert(ByteView{key1}, ByteView{data3});
 
         Bytes data4{ByteView{addr4}};
         Bytes key2{block_key(block_num2)};
         data4.append(*from_hex(val4));
-        table.upsert(to_slice(key2), to_slice(data4));
+        table.upsert(ByteView{key2}, ByteView{data4});
 
         changes = read_account_changes(txn, block_num1);
         REQUIRE(changes.size() == 3);
@@ -657,22 +657,22 @@ namespace db {
         Bytes data1{ByteView{location1}};
         data1.append(val1);
         auto key1{storage_change_key(block_num1, addr1, incarnation1)};
-        table.upsert(db::to_slice(key1), db::to_slice(data1));
+        table.upsert(ByteView{key1}, ByteView{data1});
 
         Bytes data2{ByteView{location2}};
         data2.append(val2);
         auto key2{storage_change_key(block_num1, addr2, incarnation2)};
-        table.upsert(db::to_slice(key2), db::to_slice(data2));
+        table.upsert(ByteView{key2}, ByteView{data2});
 
         Bytes data3{ByteView{location3}};
         data3.append(val3);
         auto key3{storage_change_key(block_num1, addr3, incarnation3)};
-        table.upsert(db::to_slice(key3), db::to_slice(data3));
+        table.upsert(ByteView{key3}, ByteView{data3});
 
         Bytes data4{ByteView{location4}};
         data4.append(val4);
         auto key4{storage_change_key(block_num3, addr4, incarnation4)};
-        table.upsert(db::to_slice(key4), db::to_slice(data4));
+        table.upsert(ByteView{key4}, ByteView{data4});
 
         CHECK(txn.get_map_stat(table.map()).ms_entries == 4);
 
@@ -706,14 +706,14 @@ namespace db {
         auto canonical_hashes{db::open_cursor(txn, table::kCanonicalHashes)};
         const Bytes genesis_block_key{block_key(0)};
         const auto ropsten_genesis_hash{0x41941023680923e0fe4d74a34bdac8141f2540e3ae90623718e47d66d1ca4a2d_bytes32};
-        canonical_hashes.upsert(to_slice(genesis_block_key), to_slice(ropsten_genesis_hash));
+        canonical_hashes.upsert(ByteView{genesis_block_key}, ByteView{ropsten_genesis_hash});
 
         const auto chain_config2{read_chain_config(txn)};
         CHECK(chain_config2 == std::nullopt);
 
         auto config_table{db::open_cursor(txn, table::kConfig)};
         const std::string ropsten_config_json{kRopstenConfig.to_json().dump()};
-        config_table.upsert(to_slice(ropsten_genesis_hash), mdbx::slice{ropsten_config_json.c_str()});
+        config_table.upsert(ByteView{ropsten_genesis_hash}, mdbx::slice{ropsten_config_json.c_str()});
 
         const auto chain_config3{read_chain_config(txn)};
         CHECK(chain_config3 == kRopstenConfig);

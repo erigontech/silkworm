@@ -219,7 +219,7 @@ TrieCursor::move_operation_result TrieCursor::to_next() {
 
 bool TrieCursor::db_seek(ByteView seek_key) {
     buffer_.assign(prefix_).append(seek_key);
-    const auto buffer_slice{db::to_slice(buffer_)};
+    const mdbx::slice buffer_slice{buffer_};
     auto data{buffer_.empty() ? db_cursor_.to_first(false) : db_cursor_.lower_bound(buffer_slice, false)};
     if (!data || !data.key.starts_with(buffer_slice)) {
         return false;

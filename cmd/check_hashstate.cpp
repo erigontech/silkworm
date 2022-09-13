@@ -65,7 +65,7 @@ void check(mdbx::txn& txn, Operation operation) {
             auto hash{keccak256(mdb_key_as_bytes)};
             ByteView key{hash.bytes};
 
-            auto actual_value{target_table.find(db::to_slice(key))};
+            auto actual_value{target_table.find(key)};
             if (!actual_value) {
                 log::Error() << "key: " << to_hex(key) << ", does not exist.";
                 return;
@@ -90,7 +90,7 @@ void check(mdbx::txn& txn, Operation operation) {
             std::memcpy(&key[kHashLength + db::kIncarnationLength],
                         keccak256(mdb_key_as_bytes.substr(kAddressLength + db::kIncarnationLength)).bytes, kHashLength);
 
-            auto target_data{target_table.find_multivalue(db::to_slice(key), data.value, /*throw_notfound*/ false)};
+            auto target_data{target_table.find_multivalue(ByteView{key}, data.value, /*throw_notfound=*/false)};
             if (!target_data) {
                 log::Error() << "Key: " << to_hex(key) << ", does not exist.";
                 return;
@@ -106,7 +106,7 @@ void check(mdbx::txn& txn, Operation operation) {
             Bytes key(kHashLength + db::kIncarnationLength, '\0');
             std::memcpy(&key[0], keccak256(mdb_key_as_bytes.substr(0, kAddressLength)).bytes, kHashLength);
             std::memcpy(&key[kHashLength], &mdb_key_as_bytes[kAddressLength], db::kIncarnationLength);
-            auto actual_value{target_table.find(db::to_slice(key), /*throw_notfound*/ false)};
+            auto actual_value{target_table.find(ByteView{key}, /*throw_notfound=*/false)};
             if (!actual_value) {
                 log::Error() << "Key: " << to_hex(key) << ", does not exist.";
                 data = source_table.to_next(false);

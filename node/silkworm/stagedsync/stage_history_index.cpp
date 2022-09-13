@@ -323,8 +323,8 @@ void HistoryIndex::collect_bitmaps_from_changeset(db::RWTxn& txn, const db::MapC
 
     auto start_key{db::block_key(from + 1)};
     db::Cursor source(txn, source_config);
-    auto source_data{storage ? source.lower_bound(db::to_slice(start_key), false)
-                             : source.find(db::to_slice(start_key), false)};
+    auto source_data{storage ? source.lower_bound(ByteView{start_key}, false)
+                             : source.find(ByteView{start_key}, false)};
     while (source_data) {
         auto source_data_key_view{db::from_slice(source_data.key)};
         reached_block_number = endian::load_big_u64(source_data_key_view.data());
@@ -394,8 +394,8 @@ std::map<Bytes, bool> HistoryIndex::collect_unique_keys_from_changeset(
 
     auto start_key{db::block_key(expected_block_number)};
     db::Cursor source(txn, source_config);
-    auto source_data{storage ? source.lower_bound(db::to_slice(start_key), false)
-                             : source.find(db::to_slice(start_key), false)};
+    auto source_data{storage ? source.lower_bound(ByteView{start_key}, false)
+                             : source.find(ByteView{start_key}, false)};
 
     while (source_data) {
         auto source_data_key_view{db::from_slice(source_data.key)};

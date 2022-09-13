@@ -345,14 +345,14 @@ TEST_CASE("Cursor walk") {
 
         // Delete all records starting with "AC"
         prefix.append({'A', 'C'});
-        auto erased{cursor_for_prefix(table_cursor, to_slice(prefix), walk_erase)};
+        auto erased{cursor_for_prefix(table_cursor, prefix, walk_erase)};
         REQUIRE(erased == 4);
         REQUIRE(table_cursor.size() == (kGeneticCode.size() - erased));
 
         // Early stop
         prefix.assign({'A', 'A'});
         auto count{cursor_for_prefix(table_cursor,
-                                     to_slice(prefix),
+                                     prefix,
                                      [](::mdbx::cursor&, ::mdbx::cursor::move_result& data) -> bool {
                                          if (data.value == "Asparagine") return false;
                                          return true;
@@ -499,7 +499,7 @@ TEST_CASE("OF pages") {
         db::Cursor target(txn, db::table::kAccountHistory);
         Bytes key(20, '\0');
         Bytes value(db::max_value_size_for_leaf_page(*txn, key.size()), '\0');
-        target.insert(db::to_slice(key), db::to_slice(value));
+        target.insert(ByteView{key}, ByteView{value});
         txn.commit(/*renew=*/true);
         target.bind(txn, db::table::kAccountHistory);
         auto stats{target.get_map_stat()};
@@ -510,7 +510,7 @@ TEST_CASE("OF pages") {
         db::Cursor target(txn, db::table::kAccountHistory);
         Bytes key(20, '\0');
         Bytes value(db::max_value_size_for_leaf_page(*txn, key.size()) + /*any extra value */ 1, '\0');
-        target.insert(db::to_slice(key), db::to_slice(value));
+        target.insert(ByteView{key}, ByteView{value});
         txn.commit(/*renew=*/true);
         target.bind(txn, db::table::kAccountHistory);
         auto stats{target.get_map_stat()};

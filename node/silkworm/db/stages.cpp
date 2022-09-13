@@ -60,7 +60,7 @@ static void set_stage_data(mdbx::txn& txn, const char* stage_name, uint64_t bloc
         endian::store_big_u64(stage_progress.data(), block_num);
         db::Cursor target(txn, domain);
         mdbx::slice key(item_key.c_str());
-        mdbx::slice value{db::to_slice(stage_progress)};
+        mdbx::slice value{stage_progress};
         target.upsert(key, value);
     } catch (const mdbx::exception& ex) {
         std::string what("Error in " + std::string(__FUNCTION__) + " " + std::string(ex.what()));

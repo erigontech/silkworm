@@ -412,7 +412,7 @@ StageResult HashState::hash_from_account_changeset(db::RWTxn& txn, BlockNum prev
         auto source_initial_key{db::block_key(expected_blocknum)};
         db::Cursor source_changeset(txn, db::table::kAccountChangeSet);
         db::Cursor source_plainstate(txn, db::table::kPlainState);
-        auto changeset_data{source_changeset.find(db::to_slice(source_initial_key),
+        auto changeset_data{source_changeset.find(ByteView{source_initial_key},
                                                   /*throw_notfound=*/true)};  // Initial record MUST be found
         while (changeset_data.done) {
             reached_blocknum = endian::load_big_u64(db::from_slice(changeset_data.key).data());
@@ -433,7 +433,7 @@ StageResult HashState::hash_from_account_changeset(db::RWTxn& txn, BlockNum prev
                 evmc::address address{to_evmc_address(changeset_value_view)};
                 if (!changed_addresses.contains(address)) {
                     auto address_hash{to_bytes32(keccak256(address.bytes).bytes)};
-                    auto plainstate_data{source_plainstate.find(db::to_slice(address.bytes), /*throw_notfound=*/false)};
+                    auto plainstate_data{source_plainstate.find(ByteView{address}, /*throw_notfound=*/false)};
                     if (plainstate_data.done) {
                         Bytes current_value{db::from_slice(plainstate_data.value)};
                         changed_addresses[address] = std::make_pair(address_hash, current_value);
@@ -494,7 +494,7 @@ StageResult HashState::hash_from_storage_changeset(db::RWTxn& txn, BlockNum prev
         db::Cursor source_plainstate(txn, db::table::kPlainState);
 
         auto source_initial_key{db::block_key(previous_progress + 1)};
-        auto changeset_data{source_changeset.lower_bound(db::to_slice(source_initial_key), /*throw_notfound=*/true)};
+        auto changeset_data{source_changeset.lower_bound(ByteView{source_initial_key}, /*throw_notfound=*/true)};
 
         while (changeset_data.done) {
             auto changeset_key_view{db::from_slice(changeset_data.key)};
@@ -589,7 +589,7 @@ StageResult HashState::unwind_from_account_changeset(db::RWTxn& txn, BlockNum pr
 
         db::Cursor source_changeset(txn, db::table::kAccountChangeSet);
         auto source_initial_key{db::block_key(expected_blocknum)};
-        auto changeset_data{source_changeset.lower_bound(db::to_slice(source_initial_key),
+        auto changeset_data{source_changeset.lower_bound(ByteView{source_initial_key},
                                                          /*throw_notfound=*/true)};  // Initial record MUST be found
 
         while (changeset_data.done) {
@@ -675,7 +675,7 @@ StageResult HashState::unwind_from_storage_changeset(db::RWTxn& txn, BlockNum pr
 
         db::Cursor source_changeset(txn, db::table::kStorageChangeSet);
         auto source_initial_key{db::block_key(to + 1)};
-        auto changeset_data{source_changeset.lower_bound(db::to_slice(source_initial_key), /*throw_notfound=*/true)};
+        auto changeset_data{source_changeset.lower_bound(ByteView{source_initial_key}, /*throw_notfound=*/true)};
 
         while (changeset_data.done) {
             auto changeset_key_view{db::from_slice(changeset_data.key)};
@@ -768,7 +768,7 @@ StageResult HashState::write_changes_from_changed_addresses(db::RWTxn& txn, cons
         auto& [address_hash, current_encoded_value] = pair;
         if (!current_encoded_value.empty()) {
             // Update HashedAccounts table
-            target_hashed_accounts.upsert(db::to_slice(address_hash.bytes), db::to_slice(current_encoded_value));
+            target_hashed_accounts.upsert(ByteView{address_hash}, ByteView{current_encoded_value});
 
             // Lookup value in PlainCodeHash for Contract
             auto [incarnation, err]{Account::incarnation_from_encoded_storage(current_encoded_value)};
@@ -778,16 +778,16 @@ StageResult HashState::write_changes_from_changed_addresses(db::RWTxn& txn, cons
                 std::memcpy(&hashed_code_key[0], address_hash.bytes, kHashLength);
                 endian::store_big_u64(&hashed_code_key[kHashLength], incarnation);
                 endian::store_big_u64(&plain_code_key[kAddressLength], incarnation);
-                auto code_data{source_plaincode.find(db::to_slice(plain_code_key),
+                auto code_data{source_plaincode.find(ByteView{plain_code_key},
                                                      /*throw_notfound=*/false)};
                 if (code_data.done && !code_data.value.empty()) {
-                    target_hashed_code.upsert(db::to_slice(hashed_code_key), code_data.value);
+                    target_hashed_code.upsert(ByteView{hashed_code_key}, code_data.value);
                 } else {
-                    (void)target_hashed_code.erase(db::to_slice(hashed_code_key));
+                    target_hashed_code.erase(ByteView{hashed_code_key});
                 }
             }
         } else {
-            (void)target_hashed_accounts.erase(db::to_slice(address_hash.bytes));
+            target_hashed_accounts.erase(ByteView{address_hash});
         }
     }
 

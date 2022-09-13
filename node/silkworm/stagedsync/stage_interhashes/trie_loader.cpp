@@ -83,7 +83,7 @@ evmc::bytes32 TrieLoader::calculate_root() {
     auto trie_account_data{trie_account_cursor.to_prefix({})};
     while (true) {
         if (trie_account_data.first_uncovered.has_value()) {
-            auto hashed_account_seek_slice{db::to_slice(trie_account_data.first_uncovered.value())};
+            mdbx::slice hashed_account_seek_slice{trie_account_data.first_uncovered.value()};
             auto hashed_account_data{hashed_account_seek_slice.empty()
                                          ? hashed_accounts.to_first(false)
                                          : hashed_accounts.lower_bound(hashed_account_seek_slice, false)};
@@ -148,11 +148,11 @@ evmc::bytes32 TrieLoader::calculate_storage_root(TrieCursor& trie_storage_cursor
 
     static Bytes rlp_buffer{};
 
-    const auto db_storage_prefix_slice{db::to_slice(db_storage_prefix)};
+    const mdbx::slice db_storage_prefix_slice{db_storage_prefix};
     auto trie_storage_data{trie_storage_cursor.to_prefix(db_storage_prefix)};
     while (true) {
         if (trie_storage_data.first_uncovered.has_value()) {
-            const auto prefix_slice{db::to_slice(trie_storage_data.first_uncovered.value())};
+            const mdbx::slice prefix_slice{trie_storage_data.first_uncovered.value()};
             auto hashed_storage_data{
                 hashed_storage.lower_bound_multivalue(db_storage_prefix_slice, prefix_slice, false)};
 

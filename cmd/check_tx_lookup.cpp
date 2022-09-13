@@ -77,7 +77,7 @@ int main(int argc, char* argv[]) {
                 endian::store_big_u64(transaction_key.data(), body.base_txn_id);
 
                 uint64_t i{0};
-                auto transaction_data{transactions_table.find(db::to_slice(transaction_key), false)};
+                auto transaction_data{transactions_table.find(ByteView{transaction_key}, false)};
                 for (; i < body.txn_count && transaction_data.done;
                      i++, transaction_data = transactions_table.to_next(false)) {
                     if (!transaction_data) {
@@ -89,7 +89,7 @@ int main(int argc, char* argv[]) {
                     ByteView transaction_rlp{db::from_slice(transaction_data.value)};
                     auto transaction_hash{keccak256(transaction_rlp)};
                     ByteView transaction_view{transaction_hash.bytes};
-                    auto lookup_data{tx_lookup_table.find(db::to_slice(transaction_view), false)};
+                    auto lookup_data{tx_lookup_table.find(transaction_view, false)};
                     if (!lookup_data) {
                         log::Error() << "Block " << block_number << " transaction " << i << " with hash "
                                      << to_hex(transaction_view) << " not found in " << db::table::kTxLookup.name

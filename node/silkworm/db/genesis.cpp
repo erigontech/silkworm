@@ -162,7 +162,7 @@ bool initialize_genesis(mdbx::txn& txn, const nlohmann::json& genesis_json, bool
             for (const auto& [address, account] : state_buffer.accounts()) {
                 // Store account plain state
                 Bytes encoded{account.encode_for_storage()};
-                state_table.upsert(db::to_slice(address), db::to_slice(encoded));
+                state_table.upsert(ByteView{address}, ByteView{encoded});
 
                 // First pass for state_root_hash
                 ethash::hash256 hash{keccak256(address)};
@@ -190,12 +190,12 @@ bool initialize_genesis(mdbx::txn& txn, const nlohmann::json& genesis_json, bool
         // TODO(Andrea) verify how receipts are stored (see buffer.cpp)
         const uint8_t genesis_null_receipts[] = {0xf6};  // <- cbor encoded
         db::open_cursor(txn, db::table::kBlockReceipts)
-            .upsert(db::to_slice(block_hash_key).safe_middle(0, 8), db::to_slice(Bytes(genesis_null_receipts, 1)));
+            .upsert(mdbx::slice(block_hash_key).safe_middle(0, 8), ByteView{genesis_null_receipts});
 
         // Write Chain Settings
         auto config_data{genesis_json["config"].dump()};
         db::open_cursor(txn, db::table::kConfig)
-            .upsert(db::to_slice(block_hash.bytes), mdbx::slice{config_data.data()});
+            .upsert(ByteView{block_hash}, mdbx::slice{config_data.data()});
 
         return true;
 

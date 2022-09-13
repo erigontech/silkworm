@@ -956,7 +956,7 @@ void do_extract_headers(db::EnvConfig& config, const std::string& file_name, uin
 
     for (BlockNum block_num = 0; block_num <= block_max; block_num += step) {
         auto block_key{db::block_key(block_num)};
-        auto data{hashes_table.find(db::to_slice(block_key), false)};
+        auto data{hashes_table.find(ByteView{block_key}, false)};
         if (!data.done) {
             break;
         }
@@ -1196,7 +1196,7 @@ void do_trie_integrity(db::EnvConfig& config, bool with_state_coverage, bool con
                         continue;
                     }
                     buffer.back() = static_cast<uint8_t>(i);
-                    auto data2{trie_cursor2.lower_bound(db::to_slice(buffer), false)};
+                    auto data2{trie_cursor2.lower_bound(ByteView{buffer}, false)};
                     if (!data2) {
                         throw std::runtime_error("At key " + to_hex(data1_k, true) + " tree mask is " +
                                                  std::bitset<16>(node_tree_mask).to_string() +
@@ -1229,7 +1229,7 @@ void do_trie_integrity(db::EnvConfig& config, bool with_state_coverage, bool con
 
                 for (size_t i{data1_k.size() - 1}; i >= prefix_len && !found; --i) {
                     auto parent_seek_key{data1_k.substr(0, i)};
-                    auto data2{trie_cursor2.find(db::to_slice(parent_seek_key), false)};
+                    auto data2{trie_cursor2.find(parent_seek_key, false)};
                     if (!data2) {
                         continue;
                     }
@@ -1313,7 +1313,7 @@ void do_trie_integrity(db::EnvConfig& config, bool with_state_coverage, bool con
 
                     // On first loop we search HashedAccounts (which is not dupsorted)
                     if (!loop_id) {
-                        auto data3{state_cursor.lower_bound(db::to_slice(seek), false)};
+                        auto data3{state_cursor.lower_bound(ByteView{seek}, false)};
                         if (data3) {
                             auto data3_k{db::from_slice(data3.key)};
                             if (data3_k.length() >= fixed_bytes) {
@@ -1334,8 +1334,8 @@ void do_trie_integrity(db::EnvConfig& config, bool with_state_coverage, bool con
                         }
                     } else {
                         // On second loop we search HashedStorage (which is dupsorted)
-                        auto data3{state_cursor.lower_bound_multivalue(db::to_slice(data1_k.substr(0, prefix_len)),
-                                                                       db::to_slice(seek), false)};
+                        auto data3{state_cursor.lower_bound_multivalue(data1_k.substr(0, prefix_len),
+                                                                       ByteView{seek}, false)};
                         if (data3) {
                             auto data3_v{db::from_slice(data3.value)};
                             if (data3_v.length() >= fixed_bytes) {

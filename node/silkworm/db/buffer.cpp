@@ -134,7 +134,7 @@ void Buffer::write_history_to_db() {
             for (const auto& [address, account_encoded] : account_changes) {
                 std::memcpy(&change_value[0], address.bytes, kAddressLength);
                 std::memcpy(&change_value[kAddressLength], account_encoded.data(), account_encoded.length());
-                mdbx::slice k{to_slice(change_key)};
+                mdbx::slice k{change_key};
                 mdbx::slice v{change_value.data(), kAddressLength + account_encoded.length()};
                 mdbx::error::success_or_throw(account_change_table.put(k, &v, MDBX_APPENDDUP));
                 written_size += kAddressLength + account_encoded.length();
@@ -168,7 +168,7 @@ void Buffer::write_history_to_db() {
                         std::memcpy(&change_value[kHashLength], value.data(), value.length());
                         mdbx::slice change_value_slice{change_value.data(), kHashLength + value.length()};
                         mdbx::error::success_or_throw(
-                            storage_change_table.put(to_slice(change_key), &change_value_slice, MDBX_APPENDDUP));
+                            storage_change_table.put(ByteView{change_key}, &change_value_slice, MDBX_APPENDDUP));
                         written_size += kLocationLength + value.length();
                     }
                 }
@@ -186,8 +186,8 @@ void Buffer::write_history_to_db() {
     if (!receipts_.empty()) {
         auto receipt_table{db::open_cursor(txn_, table::kBlockReceipts)};
         for (const auto& [block_key, receipts] : receipts_) {
-            auto k{to_slice(block_key)};
-            auto v{to_slice(receipts)};
+            mdbx::slice k{block_key};
+            mdbx::slice v{receipts};
             mdbx::error::success_or_throw(receipt_table.put(k, &v, MDBX_APPEND));
             written_size += k.length() + v.length();
         }
@@ -203,8 +203,8 @@ void Buffer::write_history_to_db() {
     if (!logs_.empty()) {
         auto log_table{db::open_cursor(txn_, table::kLogs)};
         for (const auto& [log_key, value] : logs_) {
-            auto k{to_slice(log_key)};
-            auto v{to_slice(value)};
+            mdbx::slice k{log_key};
+            mdbx::slice v{value};
             mdbx::error::success_or_throw(log_table.put(k, &v, MDBX_APPEND));
             written_size += k.length() + v.length();
         }
@@ -242,7 +242,7 @@ void Buffer::write_state_to_db() {
         Bytes data(kIncarnationLength, '\0');
         for (const auto& [address, incarnation] : incarnations_) {
             endian::store_big_u64(&data[0], incarnation);
-            incarnation_table.upsert(to_slice(address), to_slice(data));
+            incarnation_table.upsert(ByteView{address}, ByteView{data});
             written_size += kAddressLength + kIncarnationLength;
         }
         incarnations_.clear();
@@ -257,7 +257,7 @@ void Buffer::write_state_to_db() {
     if (!hash_to_code_.empty()) {
         auto code_table{db::open_cursor(txn_, table::kCode)};
         for (const auto& entry : hash_to_code_) {
-            code_table.upsert(to_slice(entry.first), to_slice(entry.second));
+            code_table.upsert(ByteView{entry.first}, ByteView{entry.second});
             written_size += kHashLength + entry.second.length();
         }
         hash_to_code_.clear();
@@ -272,7 +272,7 @@ void Buffer::write_state_to_db() {
     if (!storage_prefix_to_code_hash_.empty()) {
         auto code_hash_table{db::open_cursor(txn_, table::kPlainCodeHash)};
         for (const auto& entry : storage_prefix_to_code_hash_) {
-            code_hash_table.upsert(to_slice(entry.first), to_slice(entry.second));
+            code_hash_table.upsert(ByteView{entry.first}, ByteView{entry.second});
             written_size += kAddressLength + kIncarnationLength + kHashLength;
         }
         storage_prefix_to_code_hash_.clear();
@@ -301,11 +301,11 @@ void Buffer::write_state_to_db() {
     auto state_table{db::open_cursor(txn_, table::kPlainState)};
     for (const auto& address : addresses) {
         if (auto it{accounts_.find(address)}; it != accounts_.end()) {
-            auto key{to_slice(address)};
+            ByteView key{address};
             state_table.erase(key, /*whole_multivalue=*/true);  // PlainState is multivalue
             if (it->second.has_value()) {
                 Bytes encoded{it->second->encode_for_storage()};
-                state_table.upsert(key, to_slice(encoded));
+                state_table.upsert(key, ByteView{encoded});
                 written_size += kAddressLength + encoded.length();
             }
             accounts_.erase(it);

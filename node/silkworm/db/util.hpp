@@ -95,8 +95,6 @@ Bytes log_key(BlockNum block_number, uint32_t transaction_id);
 //! while technically in PlainState it's the first part of the value.
 std::pair<Bytes, Bytes> changeset_to_plainstate_format(ByteView key, ByteView value);
 
-inline mdbx::slice to_slice(ByteView value) { return {value.data(), value.length()}; }
-
 inline ByteView from_slice(const mdbx::slice slice) {
     return {static_cast<const uint8_t*>(slice.data()), slice.length()};
 }

@@ -180,7 +180,7 @@ trie::PrefixSet InterHashes::collect_account_changes(db::RWTxn& txn, BlockNum fr
     db::Cursor account_changeset(txn, db::table::kAccountChangeSet);
     db::Cursor plain_state(txn, db::table::kPlainState);
 
-    auto changeset_data{account_changeset.lower_bound(db::to_slice(starting_key), /*throw_notfound=*/false)};
+    auto changeset_data{account_changeset.lower_bound(ByteView{starting_key}, /*throw_notfound=*/false)};
 
     while (changeset_data) {
         reached_blocknum = endian::load_big_u64(db::from_slice(changeset_data.key).data());
@@ -213,7 +213,7 @@ trie::PrefixSet InterHashes::collect_account_changes(db::RWTxn& txn, BlockNum fr
             if (auto item{plainstate_accounts.get(address)}; item != nullptr) {
                 plainstate_account = *item;
             } else {
-                auto ps_data{plain_state.find(db::to_slice(address.bytes), false)};
+                auto ps_data{plain_state.find(ByteView{address}, false)};
                 if (ps_data && ps_data.value.length()) {
                     auto [account, rlp_err]{Account::from_encoded_storage(db::from_slice(ps_data.value))};
                     rlp::success_or_throw(rlp_err);
@@ -277,7 +277,7 @@ trie::PrefixSet InterHashes::collect_account_changes(db::RWTxn& txn, BlockNum fr
     if (!deleted_ts_prefixes.empty()) {
         db::Cursor trie_storage(txn, db::table::kTrieOfStorage);
         for (const auto& prefix : deleted_ts_prefixes) {
-            const auto prefix_slice{db::to_slice(prefix)};
+            const mdbx::slice prefix_slice{prefix};
             auto data{trie_storage.lower_bound(prefix_slice, /*throw_notfound=*/false)};
             while (data && data.key.starts_with(prefix_slice)) {
                 trie_storage.erase();
@@ -318,7 +318,7 @@ trie::PrefixSet InterHashes::collect_storage_changes(db::RWTxn& txn, BlockNum fr
     absl::btree_map<evmc::address, ethash_hash256>::iterator hashed_addresses_it{hashed_addresses.begin()};
 
     db::Cursor storage_changeset(txn, db::table::kStorageChangeSet);
-    auto changeset_data{storage_changeset.lower_bound(db::to_slice(starting_key), /*throw_notfound=*/false)};
+    auto changeset_data{storage_changeset.lower_bound(ByteView{starting_key}, /*throw_notfound=*/false)};
 
     while (changeset_data) {
         auto changeset_key_view{db::from_slice(changeset_data.key)};

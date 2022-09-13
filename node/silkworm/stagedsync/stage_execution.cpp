@@ -123,7 +123,7 @@ void Execution::prefetch_blocks(db::RWTxn& txn, const BlockNum from, const Block
 
     db::Cursor hashes_table(txn, db::table::kCanonicalHashes);
     auto key{db::block_key(from)};
-    if (hashes_table.seek(db::to_slice(key))) {
+    if (hashes_table.seek(ByteView{key})) {
         BlockNum block_num{from};
         db::WalkFunc walk_function{[&](mdbx::cursor&, mdbx::cursor::move_result& data) {
             BlockNum reached_block_num{endian::load_big_u64(static_cast<const uint8_t*>(data.key.data()))};
@@ -318,7 +318,7 @@ StageResult Execution::prune(db::RWTxn& txn) {
             auto key{db::block_key(prune_from)};
             size_t erased{0};
             db::Cursor source(txn, db::table::kAccountChangeSet);
-            auto data{source.lower_bound(db::to_slice(key), /*throw_notfound=*/false)};
+            auto data{source.lower_bound(ByteView{key}, /*throw_notfound=*/false)};
             while (data) {
                 erased += source.count_multivalue();
                 source.erase(/*whole_multivalue=*/true);
@@ -327,7 +327,7 @@ StageResult Execution::prune(db::RWTxn& txn) {
             log::Info() << "Erased " << erased << " records from " << db::table::kAccountChangeSet.name;
 
             source.bind(txn, db::table::kStorageChangeSet);
-            data = source.lower_bound(db::to_slice(key), /*throw_notfound=*/false);
+            data = source.lower_bound(ByteView{key}, /*throw_notfound=*/false);
             while (data) {
                 auto data_value_view{db::from_slice(data.value)};
                 if (endian::load_big_u64(data_value_view.data()) < prune_from) {
@@ -403,11 +403,11 @@ void Execution::revert_state(ByteView key, ByteView value, mdbx::cursor& plain_s
                 Bytes code_hash_key(kAddressLength + db::kIncarnationLength, '\0');
                 std::memcpy(&code_hash_key[0], &key[0], kAddressLength);
                 endian::store_big_u64(&code_hash_key[kAddressLength], account.incarnation);
-                auto new_code_hash{plain_code_table.find(db::to_slice(code_hash_key))};
+                auto new_code_hash{plain_code_table.find(ByteView{code_hash_key})};
                 std::memcpy(&account.code_hash.bytes[0], new_code_hash.value.data(), kHashLength);
             }
             // cleaning up contract codes
-            auto state_account_encoded{plain_state_table.find(db::to_slice(key), /*throw_notfound=*/false)};
+            auto state_account_encoded{plain_state_table.find(key, /*throw_notfound=*/false)};
             if (state_account_encoded) {
                 auto [state_incarnation,
                       err2]{Account::incarnation_from_encoded_storage(db::from_slice(state_account_encoded.value))};
@@ -417,14 +417,14 @@ void Execution::revert_state(ByteView key, ByteView value, mdbx::cursor& plain_s
                     Bytes key_hash(kAddressLength + 8, '\0');
                     std::memcpy(&key_hash[0], key.data(), kAddressLength);
                     endian::store_big_u64(&key_hash[kAddressLength], i);
-                    plain_code_table.erase(db::to_slice(key_hash));
+                    plain_code_table.erase(ByteView{key_hash});
                 }
             }
-            auto new_encoded_account{account.encode_for_storage(false)};
-            plain_state_table.erase(db::to_slice(key), /*whole_multivalue=*/true);
-            plain_state_table.upsert(db::to_slice(key), db::to_slice(new_encoded_account));
+            Bytes new_encoded_account{account.encode_for_storage(false)};
+            plain_state_table.erase(key, /*whole_multivalue=*/true);
+            plain_state_table.upsert(key, ByteView{new_encoded_account});
         } else {
-            plain_state_table.erase(db::to_slice(key));
+            plain_state_table.erase(key);
         }
         return;
     }
@@ -436,7 +436,7 @@ void Execution::revert_state(ByteView key, ByteView value, mdbx::cursor& plain_s
     if (!value.empty()) {
         Bytes data{location};
         data.append(value);
-        plain_state_table.upsert(db::to_slice(key1), db::to_slice(data));
+        plain_state_table.upsert(key1, ByteView{data});
     }
 }
 

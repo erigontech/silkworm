@@ -333,6 +333,7 @@ void TxLookup::collect_transaction_hashes_from_canonical_bodies(db::RWTxn& txn,
     while (canonical_data) {
         reached_block_number = endian::load_big_u64(static_cast<const uint8_t*>(canonical_data.key.data()));
         check_block_sequence(reached_block_number, expected_block_number);
+        if (reached_block_number > max_block_number) break;
 
         // Log and abort check
         if (const auto now{std::chrono::steady_clock::now()}; log_time <= now) {

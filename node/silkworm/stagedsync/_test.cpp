@@ -168,6 +168,9 @@ TEST_CASE("Sync Stages") {
         REQUIRE_NOTHROW(db::write_canonical_header_hash(*txn, block_hashes[1].bytes, 2));
         REQUIRE_NOTHROW(db::write_canonical_header_hash(*txn, block_hashes[2].bytes, 3));
 
+        // Update progress
+        REQUIRE_NOTHROW(db::stages::write_stage_progress(*txn, db::stages::kBlockHashesKey, 3));
+
         // Commit
         REQUIRE_NOTHROW(txn.commit());
 

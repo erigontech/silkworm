@@ -142,11 +142,6 @@ class RWAccess : public ROAccess {
 //! \param [in] _data : The result of recent move operation on the cursor
 using WalkFunc = std::function<void(::mdbx::cursor& cursor, ::mdbx::cursor::move_result& data)>;
 
-//! \brief Convenience function to erase records of cursor
-static const WalkFunc walk_erase{[](::mdbx::cursor& cursor, ::mdbx::cursor::move_result&) {
-    cursor.erase();
-}};
-
 //! \brief Essential environment settings
 struct EnvConfig {
     std::string path{};
@@ -316,7 +311,7 @@ size_t cursor_erase(::mdbx::cursor& cursor, CursorMoveDirection direction = Curs
 //! \return The overall number of erased records
 //! \remarks When direction is forward all keys greater equal set_key will be deleted. When direction is reverse all
 //! keys lower than set_key will be deleted.
-size_t cursor_erase(::mdbx::cursor& cursor, const silkworm::ByteView& set_key,
+size_t cursor_erase(::mdbx::cursor& cursor, ByteView set_key,
                     CursorMoveDirection direction = CursorMoveDirection::Forward);
 
 //! \brief Erases map records by cursor until any record is found or max_count of deletions is reached
@@ -336,7 +331,12 @@ size_t cursor_erase(::mdbx::cursor& cursor, size_t max_count,
 //! \return The overall number of erased records
 //! \remarks When direction is forward all keys greater equal set_key will be deleted. When direction is reverse all
 //! keys lower than set_key will be deleted.
-size_t cursor_erase(::mdbx::cursor& cursor, const silkworm::ByteView& set_key, size_t max_count,
+size_t cursor_erase(::mdbx::cursor& cursor, ByteView set_key, size_t max_count,
                     CursorMoveDirection direction = CursorMoveDirection::Forward);
+
+//! \brief Erases all records whose key starts with a prefix
+//! \param [in] cursor : A reference to a cursor opened on a map
+//! \param [in] prefix : Delete keys starting with this prefix
+size_t cursor_erase_prefix(mdbx::cursor& cursor, ByteView prefix);
 
 }  // namespace silkworm::db

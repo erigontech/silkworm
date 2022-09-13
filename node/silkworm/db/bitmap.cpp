@@ -84,7 +84,7 @@ void IndexLoader::unwind_bitmaps(RWTxn& txn, BlockNum to, const std::map<Bytes, 
         if (created) {
             // Key was created in the batch we're unwinding
             // Delete all its history
-            db::cursor_for_prefix(target, db::to_slice(key), db::walk_erase);
+            db::cursor_erase_prefix(target, key);
             continue;
         }
 

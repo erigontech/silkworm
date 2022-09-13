@@ -298,6 +298,20 @@ size_t cursor_for_prefix(::mdbx::cursor& cursor, ::mdbx::slice prefix, const Wal
     return ret;
 }
 
+size_t cursor_erase_prefix(mdbx::cursor& cursor, ByteView prefix) {
+    size_t ret{0};
+    auto data{cursor.lower_bound(prefix, /*throw_notfound=*/false)};
+    while (data.done) {
+        if (!data.key.starts_with(prefix)) {
+            break;
+        }
+        ++ret;
+        cursor.erase();
+        data = cursor.to_next(/*throw_notfound=*/false);
+    }
+    return ret;
+}
+
 size_t cursor_for_count(::mdbx::cursor& cursor, const WalkFunc& walker, size_t count,
                         const CursorMoveDirection direction) {
     const mdbx::cursor::move_operation move_operation{direction == CursorMoveDirection::Forward
@@ -318,7 +332,7 @@ size_t cursor_erase(mdbx::cursor& cursor, const CursorMoveDirection direction) {
     return cursor_for_each(cursor, detail::cursor_erase_data, direction);
 }
 
-size_t cursor_erase(mdbx::cursor& cursor, const ByteView& set_key, const CursorMoveDirection direction) {
+size_t cursor_erase(mdbx::cursor& cursor, const ByteView set_key, const CursorMoveDirection direction) {
     // Search lower bound key
     if (!cursor.lower_bound(to_slice(set_key), false)) {
         return 0;
@@ -334,7 +348,7 @@ size_t cursor_erase(mdbx::cursor& cursor, size_t max_count, const CursorMoveDire
     return cursor_for_count(cursor, detail::cursor_erase_data, max_count, direction);
 }
 
-size_t cursor_erase(mdbx::cursor& cursor, const ByteView& set_key, size_t max_count,
+size_t cursor_erase(mdbx::cursor& cursor, const ByteView set_key, size_t max_count,
                     const CursorMoveDirection direction) {
     // Search lower bound key
     if (!cursor.lower_bound(to_slice(set_key), false)) {
@@ -346,4 +360,5 @@ size_t cursor_erase(mdbx::cursor& cursor, const ByteView& set_key, size_t max_co
     }
     return cursor_for_count(cursor, detail::cursor_erase_data, max_count, direction);
 }
+
 }  // namespace silkworm::db

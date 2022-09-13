@@ -315,9 +315,7 @@ TEST_CASE("Cursor walk") {
         data_map.clear();
     }
 
-    SECTION("cursor_for_prefix") {
-        Bytes prefix{};
-
+    SECTION("cursor_erase_prefix") {
         // populate table
         for (const auto& [key, value] : kGeneticCode) {
             table_cursor.upsert(mdbx::slice{key}, mdbx::slice{value});
@@ -326,11 +324,20 @@ TEST_CASE("Cursor walk") {
         REQUIRE(table_cursor.empty() == false);
 
         // Delete all records starting with "AC"
+        Bytes prefix{};
         prefix.append({'A', 'C'});
-        auto erased{cursor_for_prefix(table_cursor, to_slice(prefix), walk_erase)};
+        auto erased{cursor_erase_prefix(table_cursor, prefix)};
         REQUIRE(erased == 4);
         REQUIRE(table_cursor.size() == (kGeneticCode.size() - erased));
+    }
 
+    SECTION("cursor_for_prefix") {
+        // populate table
+        for (const auto& [key, value] : kGeneticCode) {
+            table_cursor.upsert(mdbx::slice{key}, mdbx::slice{value});
+        }
+
+        Bytes prefix{};
         prefix.assign({'A', 'A'});
         auto count{cursor_for_prefix(table_cursor,
                                      to_slice(prefix),

@@ -134,9 +134,8 @@ namespace db {
         auto main_crs{txn.open_cursor(main_map)};
         std::vector<std::string> table_names{};
 
-        const db::WalkFunc walk_func{[&table_names](::mdbx::cursor&, ::mdbx::cursor::move_result& data) -> bool {
+        const db::WalkFunc walk_func{[&table_names](::mdbx::cursor&, ::mdbx::cursor::move_result& data) {
             table_names.push_back(data.key.as_string());
-            return true;
         }};
 
         main_crs.to_first();

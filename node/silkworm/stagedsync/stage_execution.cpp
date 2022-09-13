@@ -144,7 +144,6 @@ void Execution::prefetch_blocks(db::RWTxn& txn, const BlockNum from, const Block
                 throw std::runtime_error("Unable to read block " + std::to_string(block_num));
             }
             ++block_num;
-            return true;
         }};
         num_read = db::cursor_for_count(hashes_table, walk_function, count);
     }

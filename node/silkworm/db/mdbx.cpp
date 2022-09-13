@@ -274,9 +274,7 @@ size_t cursor_for_each(::mdbx::cursor& cursor, const WalkFunc& walker, const Cur
     auto data{detail::adjust_cursor_position_if_unpositioned_and_return_data(cursor, direction)};
     while (data.done) {
         ++ret;
-        if (!walker(cursor, data)) {
-            break;  // Walker function has returned false hence stop
-        }
+        walker(cursor, data);
         data = cursor.move(move_operation, /*throw_notfound=*/false);
     }
     return ret;
@@ -294,9 +292,7 @@ size_t cursor_for_prefix(::mdbx::cursor& cursor, ::mdbx::slice prefix, const Wal
             break;
         }
         ++ret;
-        if (!walker(cursor, data)) {
-            break;  // Walker function has returned false hence stop
-        }
+        walker(cursor, data);
         data = cursor.move(move_operation, /*throw_notfound=*/false);
     }
     return ret;
@@ -312,9 +308,7 @@ size_t cursor_for_count(::mdbx::cursor& cursor, const WalkFunc& walker, size_t c
     while (count && data.done) {
         ++ret;
         --count;
-        if (!walker(cursor, data)) {
-            break;  // Walker function has returned false hence stop
-        }
+        walker(cursor, data);
         data = cursor.move(move_operation, /*throw_notfound=*/false);
     }
     return ret;

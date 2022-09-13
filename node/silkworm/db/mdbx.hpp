@@ -140,12 +140,11 @@ class RWAccess : public ROAccess {
 //! \brief Pointer to a processing function invoked by cursor_for_each & cursor_for_count on each record
 //! \param [in] _cursor : A reference to the cursor
 //! \param [in] _data : The result of recent move operation on the cursor
-//! \remarks Return value signals whether the loop should continue on next record
-using WalkFunc = std::function<bool(::mdbx::cursor& cursor, ::mdbx::cursor::move_result& data)>;
+using WalkFunc = std::function<void(::mdbx::cursor& cursor, ::mdbx::cursor::move_result& data)>;
 
 //! \brief Convenience function to erase records of cursor
-static const WalkFunc walk_erase{[](::mdbx::cursor& cursor, ::mdbx::cursor::move_result&) -> bool {
-    return cursor.erase();
+static const WalkFunc walk_erase{[](::mdbx::cursor& cursor, ::mdbx::cursor::move_result&) {
+    cursor.erase();
 }};
 
 //! \brief Essential environment settings

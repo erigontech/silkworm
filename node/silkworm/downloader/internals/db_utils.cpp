@@ -52,7 +52,7 @@ std::tuple<BlockNum, Hash> header_with_biggest_td(mdbx::txn& txn, const std::set
     auto td_cursor = db::open_cursor(txn, db::table::kDifficulty);
 
     db::WalkFunc find_max = [bad_headers, &max_block_num, &max_hash, &max_td](
-                                const ::mdbx::cursor&, const ::mdbx::cursor::move_result& result) -> bool {
+                                const ::mdbx::cursor&, const ::mdbx::cursor::move_result& result) {
         ByteView key = db::from_slice(result.key);
         ByteView value = db::from_slice(result.value);
 
@@ -62,7 +62,7 @@ std::tuple<BlockNum, Hash> header_with_biggest_td(mdbx::txn& txn, const std::set
         ByteView block_num = key.substr(0, sizeof(BlockNum));
 
         if (bad_headers && bad_headers->contains(hash)) {
-            return true;  // = continue loop
+            return;
         }
 
         BigInt td = 0;
@@ -74,7 +74,7 @@ std::tuple<BlockNum, Hash> header_with_biggest_td(mdbx::txn& txn, const std::set
             max_block_num = endian::load_big_u64(block_num.data());
         }
 
-        return true;  // = continue loop - todo: check if we really need to parse all the table
+        // TODO: check if we really need to parse all the table
     };
 
     db::cursor_for_each(td_cursor, find_max, db::CursorMoveDirection::Reverse);

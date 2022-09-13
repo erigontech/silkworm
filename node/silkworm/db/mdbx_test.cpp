@@ -265,14 +265,12 @@ TEST_CASE("Cursor walk") {
     std::map<std::string, std::string> data_map;
     WalkFunc save_all_data_map{[&data_map](::mdbx::cursor&, ::mdbx::cursor::move_result& entry) {
         data_map.emplace(entry.key, entry.value);
-        return true;
     }};
 
     // A vector to collect data
     std::vector<std::pair<std::string, std::string>> data_vec;
     WalkFunc save_all_data_vec{[&data_vec](::mdbx::cursor&, ::mdbx::cursor::move_result& entry) {
         data_vec.emplace_back(entry.key, entry.value);
-        return true;
     }};
 
     SECTION("cursor_for_each") {
@@ -315,22 +313,6 @@ TEST_CASE("Cursor walk") {
         CHECK(data_map.at("UUG") == "Leucine");
         CHECK(data_map.at("UUU") == "Phenylalanine");
         data_map.clear();
-
-        // early stop
-        WalkFunc save_some_data{[&data_map](::mdbx::cursor&, ::mdbx::cursor::move_result& entry) {
-            if (entry.value == "Threonine") {
-                return false;
-            }
-            data_map.emplace(entry.key, entry.value);
-            return true;
-        }};
-        table_cursor.to_first();
-        cursor_for_each(table_cursor, save_some_data);
-        REQUIRE(data_map.size() == 4);
-        CHECK(data_map.at("AAA") == "Lysine");
-        CHECK(data_map.at("AAC") == "Asparagine");
-        CHECK(data_map.at("AAG") == "Lysine");
-        CHECK(data_map.at("AAU") == "Asparagine");
     }
 
     SECTION("cursor_for_prefix") {
@@ -349,15 +331,13 @@ TEST_CASE("Cursor walk") {
         REQUIRE(erased == 4);
         REQUIRE(table_cursor.size() == (kGeneticCode.size() - erased));
 
-        // Early stop
         prefix.assign({'A', 'A'});
         auto count{cursor_for_prefix(table_cursor,
                                      to_slice(prefix),
-                                     [](::mdbx::cursor&, ::mdbx::cursor::move_result& data) -> bool {
-                                         if (data.value == "Asparagine") return false;
-                                         return true;
+                                     [](::mdbx::cursor&, ::mdbx::cursor::move_result&) {
+                                         // do nothing
                                      })};
-        REQUIRE(count == 2);
+        REQUIRE(count == 4);
     }
 
     SECTION("cursor_for_count") {

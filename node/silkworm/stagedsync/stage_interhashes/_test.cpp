@@ -322,7 +322,6 @@ static std::map<Bytes, Node> read_all_nodes(mdbx::cursor& cursor) {
     db::WalkFunc save_nodes{[&out](mdbx::cursor&, mdbx::cursor::move_result& entry) {
         const Node node{*Node::decode_from_storage(db::from_slice(entry.value))};
         out.emplace(db::from_slice(entry.key), node);
-        return true;
     }};
     db::cursor_for_each(cursor, save_nodes);
     return out;

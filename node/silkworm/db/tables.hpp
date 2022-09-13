@@ -59,6 +59,12 @@ inline constexpr db::MapConfig kAccountChangeSet{"AccountChangeSet", mdbx::key_m
 //! same content limits wrt pruning
 inline constexpr db::MapConfig kAccountHistory{"AccountHistory"};
 
+//! \details Holds blockbody data
+//! \struct
+//! \verbatim
+//!   key   : block number (BE 8 bytes) + block header hash (32 bytes)
+//!   value : block body data RLP encoded
+//! \endverbatim
 inline constexpr db::MapConfig kBlockBodies{"BlockBody"};
 
 //! \details Stores the binding of *canonical* block number with header hash

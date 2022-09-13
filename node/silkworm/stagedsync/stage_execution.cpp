@@ -159,9 +159,9 @@ void Execution::prefetch_blocks(db::RWTxn& txn, const BlockNum from, const Block
     const size_t count{std::min(static_cast<size_t>(to - from + 1), kMaxPrefetchedBlocks)};
     size_t num_read{0};
 
-    db::Cursor hashes_table(txn, db::table::kCanonicalHashes);
+    db::Cursor canonicals(txn, db::table::kCanonicalHashes);
     auto key{db::block_key(from)};
-    if (hashes_table.seek(db::to_slice(key))) {
+    if (canonicals.seek(db::to_slice(key))) {
         BlockNum block_num{from};
         db::WalkFunc walk_function{[&](mdbx::cursor&, mdbx::cursor::move_result& data) {
             BlockNum reached_block_num{endian::load_big_u64(static_cast<const uint8_t*>(data.key.data()))};
@@ -184,7 +184,7 @@ void Execution::prefetch_blocks(db::RWTxn& txn, const BlockNum from, const Block
             ++block_num;
             return true;
         }};
-        num_read = db::cursor_for_count(hashes_table, walk_function, count);
+        num_read = db::cursor_for_count(canonicals, walk_function, count);
     }
 
     if (num_read != count) {

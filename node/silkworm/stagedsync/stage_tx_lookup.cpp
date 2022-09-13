@@ -17,6 +17,7 @@
 #include "stage_tx_lookup.hpp"
 
 #include <silkworm/common/endian.hpp>
+#include <silkworm/db/access_layer.hpp>
 
 namespace silkworm::stagedsync {
 
@@ -97,8 +98,8 @@ StageResult TxLookup::unwind(db::RWTxn& txn) {
 
         // Check stage boundaries from previous execution and previous stage execution
         const auto previous_progress{get_progress(txn)};
-        const auto bodies_stage_progress{db::stages::read_stage_progress(*txn, db::stages::kBlockBodiesKey)};
-        if (previous_progress <= to || bodies_stage_progress <= to) {
+        const auto execution_progress{db::stages::read_stage_progress(*txn, db::stages::kExecutionKey)};
+        if (previous_progress <= to || execution_progress <= to) {
             // Nothing to process
             operation_ = OperationType::None;
             return ret;
@@ -213,19 +214,17 @@ StageResult TxLookup::prune(db::RWTxn& txn) {
 }
 
 void TxLookup::forward_impl(db::RWTxn& txn, const BlockNum from, const BlockNum to) {
-    const db::MapConfig source_config{db::table::kBlockBodies};
-
     std::unique_lock log_lck(sl_mutex_);
     operation_ = OperationType::Forward;
     loading_ = false;
     collector_ = std::make_unique<etl::Collector>(node_settings_);
-    current_source_ = std::string(source_config.name);
+    current_source_ = std::string(db::table::kBlockBodies.name);
     current_target_.clear();
     current_key_.clear();
     log_lck.unlock();
 
     // Into etl collector
-    collect_transaction_hashes_from_bodies(txn, source_config, from, to, /*for_deletion=*/false);
+    collect_transaction_hashes_from_canonical_bodies(txn, from, to, /*for_deletion=*/false);
 
     log_lck.lock();
     loading_ = true;
@@ -247,19 +246,17 @@ void TxLookup::forward_impl(db::RWTxn& txn, const BlockNum from, const BlockNum 
 }
 
 void TxLookup::unwind_impl(db::RWTxn& txn, BlockNum from, BlockNum to) {
-    const db::MapConfig source_config{db::table::kBlockBodies};
-
     std::unique_lock log_lck(sl_mutex_);
     operation_ = OperationType::Unwind;
     loading_ = false;
     collector_ = std::make_unique<etl::Collector>(node_settings_);
-    current_source_ = std::string(source_config.name);
+    current_source_ = std::string(db::table::kBlockBodies.name);
     current_target_.clear();
     current_key_.clear();
     log_lck.unlock();
 
     // Into etl collector
-    collect_transaction_hashes_from_bodies(txn, source_config, from, to, /*for_deletion=*/true);
+    collect_transaction_hashes_from_canonical_bodies(txn, from, to, /*for_deletion=*/true);
 
     log_lck.lock();
     loading_ = true;
@@ -292,7 +289,7 @@ void TxLookup::prune_impl(db::RWTxn& txn, BlockNum from, BlockNum to) {
     log_lck.unlock();
 
     // Into etl collector
-    collect_transaction_hashes_from_bodies(txn, source_config, from, to, /*for_deletion=*/true);
+    collect_transaction_hashes_from_canonical_bodies(txn, from, to, /*for_deletion=*/true);
 
     log_lck.lock();
     loading_ = true;
@@ -312,28 +309,30 @@ void TxLookup::prune_impl(db::RWTxn& txn, BlockNum from, BlockNum to) {
     log_lck.unlock();
 }
 
-void TxLookup::collect_transaction_hashes_from_bodies(db::RWTxn& txn,
-                                                      const db::MapConfig& source_config,
-                                                      const BlockNum from, const BlockNum to,
-                                                      const bool for_deletion) {
+void TxLookup::collect_transaction_hashes_from_canonical_bodies(db::RWTxn& txn,
+                                                                const BlockNum from, const BlockNum to,
+                                                                const bool for_deletion) {
     using namespace std::chrono_literals;
     auto log_time{std::chrono::steady_clock::now()};
 
     const BlockNum max_block_number{std::max(from, to)};
+    BlockNum expected_block_number{std::min(from, to) + 1};
     BlockNum reached_block_number{0};
 
-    auto start_key{db::block_key(std::min(from, to) + 1)};
+    auto start_key{db::block_key(expected_block_number)};
     Bytes etl_value{};
-    db::Cursor source(txn, source_config);
+    db::Cursor canonicals(txn, db::table::kCanonicalHashes);
+    db::Cursor bodies(txn, db::table::kBlockBodies);
     db::Cursor transactions{txn, db::table::kBlockTransactions};
 
-    auto source_data{source.lower_bound(db::to_slice(start_key), /*throw_notfound=*/false)};
-    while (source_data) {
-        auto source_data_key_view{db::from_slice(source_data.key)};
-        auto source_data_value_view{db::from_slice(source_data.value)};
-
-        reached_block_number = endian::load_big_u64(source_data_key_view.data());
-        if (reached_block_number > max_block_number) break;
+    auto canonical_data{canonicals.find(db::to_slice(start_key), /*throw_notfound=*/false)};
+    if (!canonical_data) {
+        throw StageError(StageResult::kBadChainSequence,
+                         "Missing canonical hash for block " + std::to_string(expected_block_number));
+    }
+    while (canonical_data) {
+        reached_block_number = endian::load_big_u64(static_cast<const uint8_t*>(canonical_data.key.data()));
+        check_block_sequence(reached_block_number, expected_block_number);
 
         // Log and abort check
         if (const auto now{std::chrono::steady_clock::now()}; log_time <= now) {
@@ -343,13 +342,27 @@ void TxLookup::collect_transaction_hashes_from_bodies(db::RWTxn& txn,
             log_time = now + 5s;
         }
 
-        const auto block_body{db::detail::decode_stored_block_body(source_data_value_view)};
+        if (canonical_data.value.length() != kHashLength) {
+            throw StageError(StageResult::kDbError,
+                             "Invalid value length for canonical hash at block " + std::to_string(reached_block_number));
+        }
+
+        const evmc::bytes32 header_hash{to_bytes32(db::from_slice(canonical_data.value))};
+        const auto body_key{db::block_key(reached_block_number, header_hash.bytes)};
+        const auto body_data{bodies.find(db::to_slice(body_key), /*throw_notfound=*/false)};
+        if (!body_data) {
+            throw StageError(StageResult::kDbError,
+                             "Could not load block body " + std::to_string(reached_block_number));
+        }
+        auto body_data_key_view{db::from_slice(body_data.key)};
+        auto body_data_value_view{db::from_slice(body_data.value)};
+        const auto block_body{db::detail::decode_stored_block_body(body_data_value_view)};
         if (block_body.txn_count) {
-            // The same loop is used for forward and for unwind/prune
+            // The same loop is used for forward and for unwind
             // In the latter two records must be deleted hence we set etl_value only if deletion
             // is not required
             if (!for_deletion) {
-                etl_value.assign(zeroless_view(source_data_key_view.substr(0, sizeof(BlockNum))));
+                etl_value.assign(zeroless_view(body_data_key_view.substr(0, sizeof(BlockNum))));
             }
 
             size_t max_transaction_id{block_body.base_txn_id + block_body.txn_count - 1};
@@ -381,7 +394,8 @@ void TxLookup::collect_transaction_hashes_from_bodies(db::RWTxn& txn,
             }
         }
 
-        source_data = source.to_next(/*throw_notfound=*/false);
+        ++expected_block_number;
+        canonical_data = canonicals.to_next(/*throw_notfound=*/false);
     }
 }
 

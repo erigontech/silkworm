@@ -46,9 +46,8 @@ class TxLookup : public IStage {
 
     void reset_log_progress();  // Clears out all logging vars
 
-    void collect_transaction_hashes_from_bodies(db::RWTxn& txn,
-                                                const db::MapConfig& source_config,
-                                                BlockNum from, BlockNum to,
-                                                bool for_deletion);
+    void collect_transaction_hashes_from_canonical_bodies(db::RWTxn& txn,
+                                                          BlockNum from, BlockNum to,
+                                                          bool for_deletion);
 };
 }  // namespace silkworm::stagedsync

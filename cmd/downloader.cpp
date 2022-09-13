@@ -184,13 +184,14 @@ int main(int argc, char* argv[]) {
         BodiesStage body_stage{shared_status, block_exchange, &node_settings};
 
         // Trap os signals
-        SignalHandler::init([&](int) {
-            log::Info() << "Requesting threads termination\n";
-            header_stage.stop();
-            body_stage.stop();
-            block_exchange.stop();
-            sentry.stop();
-        });
+        SignalHandler::init();
+        //        SignalHandler::init([&](int) {
+        //            log::Info() << "Requesting threads termination\n";
+        //            header_stage.stop();
+        //            body_stage.stop();
+        //            block_exchange.stop();
+        //            sentry.stop();
+        //        });
 
         // Sample stage loop with 2 stages
         std::vector<Stage*> stages = {&header_stage, &body_stage};

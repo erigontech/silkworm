@@ -41,7 +41,7 @@ HeaderPersistence::HeaderPersistence(db::RWTxn& tx) : tx_(tx), canonical_cache_(
     local_td_ = *headers_head_td;
     unwind_point_ = headers_height;
     initial_in_db_ = headers_height;  // in Erigon is highest_in_db_
-    highest_in_db_ = headers_height;
+    highest_in_db_ = headers_height;  // TODO (mike) set highest_hash_?
 }
 
 bool HeaderPersistence::best_header_changed() const { return new_canonical_; }
@@ -225,7 +225,7 @@ void HeaderPersistence::finish() {
 
     if (unwind_needed()) return;
 
-    if (highest_height() != 0) {
+    if (highest_height() != initial_height()) {
         update_canonical_chain(highest_height(), highest_hash());
     }
 

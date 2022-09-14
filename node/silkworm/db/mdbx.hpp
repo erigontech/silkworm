@@ -297,15 +297,6 @@ size_t cursor_for_count(::mdbx::cursor& cursor, const WalkFunc& func, size_t max
 
 //! \brief Erases map records by cursor until any record is found
 //! \param [in] cursor : A reference to a cursor opened on a map
-//! \param [in] direction : Whether the cursor should navigate records forward (default) or backwards
-//! \return The overall number of erased records
-//! \remarks If the provided cursor is *not* positioned on any record it will be moved to either the beginning or the
-//! end of the table on behalf of the move criteria.
-//! \warning Might nuke all your table records if not used properly
-size_t cursor_erase(::mdbx::cursor& cursor, CursorMoveDirection direction = CursorMoveDirection::Forward);
-
-//! \brief Erases map records by cursor until any record is found
-//! \param [in] cursor : A reference to a cursor opened on a map
 //! \param [in] set_key : A reference to a key where to set the cursor.
 //! \param [in] direction : Whether the cursor should navigate records forward (default) or backwards.
 //! \return The overall number of erased records
@@ -314,29 +305,9 @@ size_t cursor_erase(::mdbx::cursor& cursor, CursorMoveDirection direction = Curs
 size_t cursor_erase(::mdbx::cursor& cursor, ByteView set_key,
                     CursorMoveDirection direction = CursorMoveDirection::Forward);
 
-//! \brief Erases map records by cursor until any record is found or max_count of deletions is reached
-//! \param [in] cursor : A reference to a cursor opened on a map
-//! \param [in] max_count : Max number of deletions
-//! \param [in] direction : Whether the cursor should navigate records forward (default) or backwards
-//! \return The overall number of erased records
-//! \warning Might nuke all your table records if not used properly
-size_t cursor_erase(::mdbx::cursor& cursor, size_t max_count,
-                    CursorMoveDirection direction = CursorMoveDirection::Forward);
-
-//! \brief Erases map records by cursor until any record is found or max_count of deletions is reached
-//! \param [in] cursor : A reference to a cursor opened on a map
-//! \param [in] set_key : A reference to a key where to set the cursor.
-//! \param [in] max_count : Max number of deletions
-//! \param [in] direction : Whether the cursor should navigate records forward (default) or backwards
-//! \return The overall number of erased records
-//! \remarks When direction is forward all keys greater equal set_key will be deleted. When direction is reverse all
-//! keys lower than set_key will be deleted.
-size_t cursor_erase(::mdbx::cursor& cursor, ByteView set_key, size_t max_count,
-                    CursorMoveDirection direction = CursorMoveDirection::Forward);
-
 //! \brief Erases all records whose key starts with a prefix
 //! \param [in] cursor : A reference to a cursor opened on a map
 //! \param [in] prefix : Delete keys starting with this prefix
-size_t cursor_erase_prefix(mdbx::cursor& cursor, ByteView prefix);
+size_t cursor_erase_prefix(::mdbx::cursor& cursor, ByteView prefix);
 
 }  // namespace silkworm::db

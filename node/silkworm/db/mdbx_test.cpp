@@ -427,7 +427,7 @@ TEST_CASE("Cursor walk") {
 
         // Erase all records in forward order
         table_cursor.bind(txn, {table_name});
-        cursor_erase(table_cursor);
+        cursor_erase(table_cursor, {});
         REQUIRE(txn.get_map_stat(table_cursor.map()).ms_entries == 0);
 
         // populate table
@@ -436,8 +436,12 @@ TEST_CASE("Cursor walk") {
         }
 
         // Erase all records in reverse order
+        Bytes set_key(3, '\0');
+        set_key[0] = 'X';
+        set_key[1] = 'X';
+        set_key[2] = 'X';
         table_cursor.bind(txn, {table_name});
-        cursor_erase(table_cursor, CursorMoveDirection::Reverse);
+        cursor_erase(table_cursor, set_key, CursorMoveDirection::Reverse);
         REQUIRE(txn.get_map_stat(table_cursor.map()).ms_entries == 0);
 
         // populate table
@@ -445,21 +449,7 @@ TEST_CASE("Cursor walk") {
             table_cursor.upsert(mdbx::slice{key}, mdbx::slice{value});
         }
 
-        // Erase first 5 records
-        table_cursor.to_first();
-        auto erased{cursor_erase(table_cursor, 5)};
-        REQUIRE(erased == 5);
-        REQUIRE(txn.get_map_stat(table_cursor.map()).ms_entries == kGeneticCode.size() - erased);
-        cursor_for_each(table_cursor, save_all_data_map);
-        REQUIRE(data_map.find("AAA") == data_map.end());
-        REQUIRE(data_map.find("AAC") == data_map.end());
-        REQUIRE(data_map.find("AAG") == data_map.end());
-        REQUIRE(data_map.find("AAU") == data_map.end());
-        REQUIRE(data_map.find("ACA") == data_map.end());
-        data_map.clear();
-
         // Erase backwards from "CAA"
-        Bytes set_key(3, '\0');
         set_key[0] = 'C';
         set_key[1] = 'A';
         set_key[2] = 'A';
@@ -504,4 +494,5 @@ TEST_CASE("OF pages") {
         REQUIRE(stats.ms_overflow_pages);
     }
 }
+
 }  // namespace silkworm::db

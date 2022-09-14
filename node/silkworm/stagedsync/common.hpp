@@ -140,7 +140,7 @@ class IStage : public Stoppable {
     void update_progress(db::RWTxn& txn, BlockNum progress);
 
     //! \brief Sets the prefix for logging lines produced by stage itself
-    void set_log_prefix(const std::string prefix) { log_prefix_ = prefix; };
+    void set_log_prefix(const std::string& prefix) { log_prefix_ = prefix; };
 
     //! \brief This function implementation MUST be thread safe as is called asynchronously from ASIO thread
     [[nodiscard]] virtual std::vector<std::string> get_log_progress() { return {}; };

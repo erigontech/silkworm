@@ -277,7 +277,7 @@ size_t cursor_for_each(::mdbx::cursor& cursor, const WalkFunc& walker, const Cur
     auto data{adjust_cursor_position_if_unpositioned(cursor, direction)};
     while (data) {
         ++ret;
-        walker(cursor, data);
+        walker(from_slice(data.key), from_slice(data.value));
         data = cursor.move(move_operation(direction), /*throw_notfound=*/false);
     }
     return ret;
@@ -292,7 +292,7 @@ size_t cursor_for_prefix(::mdbx::cursor& cursor, const ByteView prefix, const Wa
             break;
         }
         ++ret;
-        walker(cursor, data);
+        walker(from_slice(data.key), from_slice(data.value));
         data = cursor.move(move_operation(direction), /*throw_notfound=*/false);
     }
     return ret;
@@ -319,7 +319,7 @@ size_t cursor_for_count(::mdbx::cursor& cursor, const WalkFunc& walker, size_t c
     while (count && data) {
         ++ret;
         --count;
-        walker(cursor, data);
+        walker(from_slice(data.key), from_slice(data.value));
         data = cursor.move(move_operation(direction), /*throw_notfound=*/false);
     }
     return ret;

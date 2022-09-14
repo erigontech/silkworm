@@ -138,9 +138,7 @@ class RWAccess : public ROAccess {
 };
 
 //! \brief Pointer to a processing function invoked by cursor_for_each & cursor_for_count on each record
-//! \param [in] _cursor : A reference to the cursor
-//! \param [in] _data : The result of recent move operation on the cursor
-using WalkFunc = std::function<void(::mdbx::cursor& cursor, ::mdbx::cursor::move_result& data)>;
+using WalkFunc = std::function<void(ByteView key, ByteView value)>;
 
 //! \brief Essential environment settings
 struct EnvConfig {

@@ -163,19 +163,19 @@ void Execution::prefetch_blocks(db::RWTxn& txn, const BlockNum from, const Block
     auto key{db::block_key(from)};
     if (canonicals.seek(db::to_slice(key))) {
         BlockNum block_num{from};
-        db::WalkFunc walk_function{[&](mdbx::cursor&, mdbx::cursor::move_result& data) {
-            BlockNum reached_block_num{endian::load_big_u64(static_cast<const uint8_t*>(data.key.data()))};
+        db::WalkFunc walk_function{[&](ByteView key, ByteView value) {
+            BlockNum reached_block_num{endian::load_big_u64(key.data())};
             if (reached_block_num != block_num) {
                 throw std::runtime_error("Bad canonical header sequence: expected " + std::to_string(block_num) +
                                          " got " + std::to_string(reached_block_num));
-            } else if (data.value.length() != kHashLength) {
+            } else if (value.length() != kHashLength) {
                 throw std::runtime_error("Invalid value for hash in " +
                                          std::string(db::table::kCanonicalHashes.name) +
                                          " expected=" + std::to_string(kHashLength) +
-                                         " got=" + std::to_string(data.value.length()));
+                                         " got=" + std::to_string(value.length()));
             }
 
-            const auto hash_ptr{static_cast<const uint8_t*>(data.value.data())};
+            const auto hash_ptr{value.data()};
             prefetched_blocks_.push_back();
             if (!db::read_block(*txn, std::span<const uint8_t, kHashLength>{hash_ptr, kHashLength}, block_num,
                                 /*read_senders=*/true, prefetched_blocks_.back())) {

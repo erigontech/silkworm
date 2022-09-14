@@ -20,6 +20,7 @@
 
 #include <catch2/catch.hpp>
 
+#include <silkworm/common/cast.hpp>
 #include <silkworm/common/test_context.hpp>
 
 static const std::map<std::string, std::string> kGeneticCode{
@@ -263,14 +264,14 @@ TEST_CASE("Cursor walk") {
 
     // A map to collect data
     std::map<std::string, std::string> data_map;
-    WalkFunc save_all_data_map{[&data_map](::mdbx::cursor&, ::mdbx::cursor::move_result& entry) {
-        data_map.emplace(entry.key, entry.value);
+    WalkFunc save_all_data_map{[&data_map](ByteView key, ByteView value) {
+        data_map.emplace(byte_view_to_string_view(key), byte_view_to_string_view(value));
     }};
 
     // A vector to collect data
     std::vector<std::pair<std::string, std::string>> data_vec;
-    WalkFunc save_all_data_vec{[&data_vec](::mdbx::cursor&, ::mdbx::cursor::move_result& entry) {
-        data_vec.emplace_back(entry.key, entry.value);
+    WalkFunc save_all_data_vec{[&data_vec](ByteView key, ByteView value) {
+        data_vec.emplace_back(byte_view_to_string_view(key), byte_view_to_string_view(value));
     }};
 
     SECTION("cursor_for_each") {
@@ -341,7 +342,7 @@ TEST_CASE("Cursor walk") {
         prefix.assign({'A', 'A'});
         auto count{cursor_for_prefix(table_cursor,
                                      prefix,
-                                     [](::mdbx::cursor&, ::mdbx::cursor::move_result&) {
+                                     [](ByteView, ByteView) {
                                          // do nothing
                                      })};
         REQUIRE(count == 4);
@@ -393,13 +394,11 @@ TEST_CASE("Cursor walk") {
         CHECK(data_map.at("UUU") == "Phenylalanine");
         data_map.clear();
 
-        // early stop 1
-        const auto save_some_data{[&data_map](::mdbx::cursor&, mdbx::cursor::move_result& entry) {
-            if (entry.value == "Threonine") {
-                return false;
+        // selective save 1
+        const auto save_some_data{[&data_map](ByteView key, ByteView value) {
+            if (value != string_view_to_byte_view("Threonine")) {
+                data_map.emplace(byte_view_to_string_view(key), byte_view_to_string_view(value));
             }
-            data_map.emplace(entry.key, entry.value);
-            return true;
         }};
         table_cursor.to_first();
         cursor_for_count(table_cursor, save_some_data, /*max_count=*/3);
@@ -409,7 +408,7 @@ TEST_CASE("Cursor walk") {
         CHECK(data_map.at("AAG") == "Lysine");
         data_map.clear();
 
-        // early stop 2
+        // selective save 2
         table_cursor.to_first();
         cursor_for_count(table_cursor, save_some_data, /*max_count=*/5);
         REQUIRE(data_map.size() == 4);

@@ -330,7 +330,7 @@ TEST_CASE("Stage History Index") {
             std::memcpy(&prefix[0], address.bytes, kAddressLength);
             auto count{
                 db::cursor_for_prefix(account_history, prefix,
-                                      [](::mdbx::cursor&, ::mdbx::cursor::move_result&) -> bool { return true; })};
+                                      [](ByteView, ByteView) {})};
             REQUIRE(count == 2);
         }
 
@@ -374,7 +374,7 @@ TEST_CASE("Stage History Index") {
             std::memcpy(&prefix[0], addresses.back().bytes, kAddressLength);
             auto count{
                 db::cursor_for_prefix(account_history, prefix,
-                                      [](::mdbx::cursor&, ::mdbx::cursor::move_result&) -> bool { return true; })};
+                                      [](ByteView, ByteView) {})};
             REQUIRE(count == 0);
             addresses.pop_back();  // Remove unused address for next tests
         }
@@ -384,12 +384,10 @@ TEST_CASE("Stage History Index") {
             Bytes prefix(kAddressLength, '\0');
             std::memcpy(&prefix[0], address.bytes, kAddressLength);
             auto count{db::cursor_for_prefix(
-                account_history, prefix, [](::mdbx::cursor&, ::mdbx::cursor::move_result& data) -> bool {
-                    const auto data_key_view{db::from_slice(data.key)};
-                    CHECK(endian::load_big_u64(&data_key_view[data_key_view.size() - sizeof(BlockNum)]) == UINT64_MAX);
-                    const auto bitmap{db::bitmap::parse(data.value)};
+                account_history, prefix, [](ByteView key, ByteView value) {
+                    CHECK(endian::load_big_u64(&key[key.size() - sizeof(BlockNum)]) == UINT64_MAX);
+                    const auto bitmap{db::bitmap::parse(value)};
                     CHECK(bitmap.maximum() == 4000);
-                    return true;
                 })};
             REQUIRE(count == 1);
         }
@@ -411,12 +409,10 @@ TEST_CASE("Stage History Index") {
             Bytes prefix(kAddressLength, '\0');
             std::memcpy(&prefix[0], address.bytes, kAddressLength);
             auto count{db::cursor_for_prefix(
-                account_history, prefix, [](::mdbx::cursor&, ::mdbx::cursor::move_result& data) -> bool {
-                    const auto data_key_view{db::from_slice(data.key)};
-                    CHECK(endian::load_big_u64(&data_key_view[data_key_view.size() - sizeof(BlockNum)]) == UINT64_MAX);
-                    const auto bitmap{db::bitmap::parse(data.value)};
+                account_history, prefix, [](ByteView key, ByteView value) {
+                    CHECK(endian::load_big_u64(&key[key.size() - sizeof(BlockNum)]) == UINT64_MAX);
+                    const auto bitmap{db::bitmap::parse(value)};
                     CHECK(bitmap.minimum() == 3590);
-                    return true;
                 })};
             REQUIRE(count == 1);
         }
@@ -424,4 +420,5 @@ TEST_CASE("Stage History Index") {
 
     log::set_verbosity(log::Level::kInfo);
 }
+
 }  // namespace silkworm

@@ -163,7 +163,7 @@ void Execution::prefetch_blocks(db::RWTxn& txn, const BlockNum from, const Block
     auto key{db::block_key(from)};
     if (canonicals.seek(db::to_slice(key))) {
         BlockNum block_num{from};
-        db::WalkFunc walk_function{[&](ByteView key, ByteView value) {
+        auto walk_function{[&](ByteView key, ByteView value) {
             BlockNum reached_block_num{endian::load_big_u64(key.data())};
             if (reached_block_num != block_num) {
                 throw std::runtime_error("Bad canonical header sequence: expected " + std::to_string(block_num) +

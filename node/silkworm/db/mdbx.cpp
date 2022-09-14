@@ -272,7 +272,7 @@ bool has_map(::mdbx::txn& tx, const char* map_name) {
     }
 }
 
-size_t cursor_for_each(::mdbx::cursor& cursor, const WalkFunc& walker, const CursorMoveDirection direction) {
+size_t cursor_for_each(::mdbx::cursor& cursor, WalkFuncRef walker, const CursorMoveDirection direction) {
     size_t ret{0};
     auto data{adjust_cursor_position_if_unpositioned(cursor, direction)};
     while (data) {
@@ -283,7 +283,7 @@ size_t cursor_for_each(::mdbx::cursor& cursor, const WalkFunc& walker, const Cur
     return ret;
 }
 
-size_t cursor_for_prefix(::mdbx::cursor& cursor, const ByteView prefix, const WalkFunc& walker,
+size_t cursor_for_prefix(::mdbx::cursor& cursor, const ByteView prefix, WalkFuncRef walker,
                          CursorMoveDirection direction) {
     size_t ret{0};
     auto data{cursor.lower_bound(prefix, false)};
@@ -312,7 +312,7 @@ size_t cursor_erase_prefix(::mdbx::cursor& cursor, const ByteView prefix) {
     return ret;
 }
 
-size_t cursor_for_count(::mdbx::cursor& cursor, const WalkFunc& walker, size_t count,
+size_t cursor_for_count(::mdbx::cursor& cursor, WalkFuncRef walker, size_t count,
                         const CursorMoveDirection direction) {
     size_t ret{0};
     auto data{adjust_cursor_position_if_unpositioned(cursor, direction)};

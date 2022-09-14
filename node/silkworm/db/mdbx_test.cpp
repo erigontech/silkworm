@@ -264,13 +264,13 @@ TEST_CASE("Cursor walk") {
 
     // A map to collect data
     std::map<std::string, std::string> data_map;
-    WalkFunc save_all_data_map{[&data_map](ByteView key, ByteView value) {
+    auto save_all_data_map{[&data_map](ByteView key, ByteView value) {
         data_map.emplace(byte_view_to_string_view(key), byte_view_to_string_view(value));
     }};
 
     // A vector to collect data
     std::vector<std::pair<std::string, std::string>> data_vec;
-    WalkFunc save_all_data_vec{[&data_vec](ByteView key, ByteView value) {
+    auto save_all_data_vec{[&data_vec](ByteView key, ByteView value) {
         data_vec.emplace_back(byte_view_to_string_view(key), byte_view_to_string_view(value));
     }};
 

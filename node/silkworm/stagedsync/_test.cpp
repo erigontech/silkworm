@@ -109,7 +109,7 @@ TEST_CASE("Sync Stages") {
                         block_hashes.size() + 1);  // +1 cause block 0 is genesis
 
                 std::vector<std::pair<evmc::bytes32, BlockNum>> written_data{};
-                db::WalkFunc walk_func = [&written_data](ByteView key, ByteView value) {
+                auto walk_func = [&written_data](ByteView key, ByteView value) {
                     auto written_block_num{endian::load_big_u64(value.data())};
                     auto written_hash{to_bytes32(key)};
                     written_data.emplace_back(written_hash, written_block_num);

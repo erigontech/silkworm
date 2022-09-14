@@ -135,7 +135,7 @@ namespace db {
         auto main_crs{txn.open_cursor(main_map)};
         std::vector<std::string> table_names{};
 
-        const db::WalkFunc walk_func{[&table_names](ByteView key, ByteView) {
+        const auto walk_func{[&table_names](ByteView key, ByteView) {
             table_names.push_back(byte_ptr_cast(key.data()));
         }};
 

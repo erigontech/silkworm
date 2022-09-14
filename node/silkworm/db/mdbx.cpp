@@ -34,10 +34,10 @@ static inline ::mdbx::cursor::move_result adjust_cursor_position_if_unpositioned
     return c.current(/*throw_notfound=*/false);
 }
 
-// Last entry whose key is strictly less than the key
+// Last entry whose key is strictly less than the given key
 static inline mdbx::cursor::move_result strict_lower_bound(mdbx::cursor& cursor, const ByteView key) {
     if (!cursor.lower_bound(key, /*throw_notfound=*/false)) {
-        // all DB keys are less than the key
+        // all DB keys are less than the given key
         return cursor.to_last(/*throw_notfound=*/false);
     }
     // return lower_bound - 1

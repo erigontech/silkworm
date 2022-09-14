@@ -263,7 +263,7 @@ dbTablesInfo get_tablesInfo(::mdbx::txn& txn) {
     ret.size += table->size();
     ret.tables.push_back(*table);
 
-    const auto collect_func{[&ret, &txn](ByteView key, ByteView) {
+    const auto& collect_func{[&ret, &txn](ByteView key, ByteView) {
         auto named_map{txn.open_map(byte_ptr_cast(key.data()))};
         auto stat2{txn.get_map_stat(named_map)};
         auto info2{txn.get_handle_info(named_map)};

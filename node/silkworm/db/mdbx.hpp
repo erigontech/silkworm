@@ -297,7 +297,7 @@ size_t cursor_for_count(::mdbx::cursor& cursor, WalkFuncRef func, size_t max_cou
 
 //! \brief Erases map records by cursor until any record is found
 //! \param [in] cursor : A reference to a cursor opened on a map
-//! \param [in] set_key : A reference to a key where to set the cursor.
+//! \param [in] set_key : The key where to set the cursor to.
 //! \param [in] direction : Whether the cursor should navigate records forward (default) or backwards.
 //! \return The overall number of erased records
 //! \remarks When direction is forward all keys greater equal set_key will be deleted. When direction is reverse all

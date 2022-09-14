@@ -18,35 +18,31 @@
 
 namespace silkworm::db {
 
-namespace detail {
-
-    //! \brief Returns data of current cursor position or moves it to the beginning or the end of the table based on
-    //! provided direction if the cursor is not positioned.
-    //! \param [in] c : A reference to an open cursor
-    //! \param [in] d : Direction cursor should have \return ::mdbx::cursor::move_result
-    static inline ::mdbx::cursor::move_result adjust_cursor_position_if_unpositioned(
-        ::mdbx::cursor& c, CursorMoveDirection d) {
-        // Warning: eof() is not exactly what we need here since it returns true not only for cursors
-        // that are not positioned, but also for those pointing to the end of data.
-        // Unfortunately, there's no MDBX API to differentiate the two.
-        if (c.eof()) {
-            return (d == CursorMoveDirection::Forward) ? c.to_first(/*throw_notfound=*/false)
-                                                       : c.to_last(/*throw_notfound=*/false);
-        }
-        return c.current(/*throw_notfound=*/false);
+//! \brief Returns data of current cursor position or moves it to the beginning or the end of the table based on
+//! provided direction if the cursor is not positioned.
+//! \param [in] c : A reference to an open cursor
+//! \param [in] d : Direction cursor should have \return ::mdbx::cursor::move_result
+static inline ::mdbx::cursor::move_result adjust_cursor_position_if_unpositioned(
+    ::mdbx::cursor& c, CursorMoveDirection d) {
+    // Warning: eof() is not exactly what we need here since it returns true not only for cursors
+    // that are not positioned, but also for those pointing to the end of data.
+    // Unfortunately, there's no MDBX API to differentiate the two.
+    if (c.eof()) {
+        return (d == CursorMoveDirection::Forward) ? c.to_first(/*throw_notfound=*/false)
+                                                   : c.to_last(/*throw_notfound=*/false);
     }
+    return c.current(/*throw_notfound=*/false);
+}
 
-    // Last entry whose key is strictly less than the key
-    static inline mdbx::cursor::move_result strict_lower_bound(mdbx::cursor& cursor, const ByteView key) {
-        if (!cursor.lower_bound(key, /*throw_notfound=*/false)) {
-            // all DB keys are less than the key
-            return cursor.to_last(/*throw_notfound=*/false);
-        }
-        // return lower_bound - 1
-        return cursor.to_previous(/*throw_notfound=*/false);
+// Last entry whose key is strictly less than the key
+static inline mdbx::cursor::move_result strict_lower_bound(mdbx::cursor& cursor, const ByteView key) {
+    if (!cursor.lower_bound(key, /*throw_notfound=*/false)) {
+        // all DB keys are less than the key
+        return cursor.to_last(/*throw_notfound=*/false);
     }
-
-}  // namespace detail
+    // return lower_bound - 1
+    return cursor.to_previous(/*throw_notfound=*/false);
+}
 
 ::mdbx::env_managed open_env(const EnvConfig& config) {
     namespace fs = std::filesystem;
@@ -276,7 +272,7 @@ size_t cursor_for_each(::mdbx::cursor& cursor, const WalkFunc& walker, const Cur
                                                           : mdbx::cursor::move_operation::previous};
 
     size_t ret{0};
-    auto data{detail::adjust_cursor_position_if_unpositioned(cursor, direction)};
+    auto data{adjust_cursor_position_if_unpositioned(cursor, direction)};
     while (data) {
         ++ret;
         walker(cursor, data);
@@ -323,7 +319,7 @@ size_t cursor_for_count(::mdbx::cursor& cursor, const WalkFunc& walker, size_t c
                                                           ? mdbx::cursor::move_operation::next
                                                           : mdbx::cursor::move_operation::previous};
     size_t ret{0};
-    auto data{detail::adjust_cursor_position_if_unpositioned(cursor, direction)};
+    auto data{adjust_cursor_position_if_unpositioned(cursor, direction)};
     while (count && data) {
         ++ret;
         --count;
@@ -340,7 +336,7 @@ size_t cursor_erase(mdbx::cursor& cursor, const ByteView set_key, const CursorMo
 
     mdbx::cursor::move_result data{direction == CursorMoveDirection::Forward
                                        ? cursor.lower_bound(set_key, /*throw_notfound=*/false)
-                                       : detail::strict_lower_bound(cursor, set_key)};
+                                       : strict_lower_bound(cursor, set_key)};
 
     size_t ret{0};
     while (data) {

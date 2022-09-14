@@ -160,8 +160,8 @@ void Execution::prefetch_blocks(db::RWTxn& txn, const BlockNum from, const Block
     size_t num_read{0};
 
     db::Cursor canonicals(txn, db::table::kCanonicalHashes);
-    auto key{db::block_key(from)};
-    if (canonicals.seek(db::to_slice(key))) {
+    Bytes starting_key{db::block_key(from)};
+    if (canonicals.seek(db::to_slice(starting_key))) {
         BlockNum block_num{from};
         auto walk_function{[&](ByteView key, ByteView value) {
             BlockNum reached_block_num{endian::load_big_u64(key.data())};

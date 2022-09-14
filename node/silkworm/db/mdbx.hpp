@@ -274,12 +274,12 @@ size_t cursor_for_each(::mdbx::cursor& cursor, const WalkFunc& func,
 
 //! \brief Executes a function on each record reachable by the provided cursor asserting keys start with provided prefix
 //! \param [in] cursor : A reference to a cursor opened on a map
-//! \param [in] prefix : The slice each key must start with
+//! \param [in] prefix : The prefix each key must start with
 //! \param [in] func : A pointer to a std::function with the code to execute on records. Note the return value of the
 //! function may stop the loop
 //! \param [in] direction : Whether the cursor should navigate records forward (default) or backwards
 //! \return The overall number of processed records
-size_t cursor_for_prefix(::mdbx::cursor& cursor, ::mdbx::slice prefix, const WalkFunc& func,
+size_t cursor_for_prefix(::mdbx::cursor& cursor, ByteView prefix, const WalkFunc& func,
                          CursorMoveDirection direction = CursorMoveDirection::Forward);
 
 //! \brief Executes a function on each record reachable by the provided cursor up to a max number of iterations

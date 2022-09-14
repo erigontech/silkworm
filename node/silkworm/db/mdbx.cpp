@@ -280,7 +280,7 @@ size_t cursor_for_each(::mdbx::cursor& cursor, const WalkFunc& walker, const Cur
     return ret;
 }
 
-size_t cursor_for_prefix(::mdbx::cursor& cursor, ::mdbx::slice prefix, const WalkFunc& walker,
+size_t cursor_for_prefix(::mdbx::cursor& cursor, const ByteView prefix, const WalkFunc& walker,
                          CursorMoveDirection direction) {
     const mdbx::cursor::move_operation move_operation{direction == CursorMoveDirection::Forward
                                                           ? mdbx::cursor::move_operation::next

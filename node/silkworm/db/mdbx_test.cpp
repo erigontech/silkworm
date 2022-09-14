@@ -340,7 +340,7 @@ TEST_CASE("Cursor walk") {
         Bytes prefix{};
         prefix.assign({'A', 'A'});
         auto count{cursor_for_prefix(table_cursor,
-                                     to_slice(prefix),
+                                     prefix,
                                      [](::mdbx::cursor&, ::mdbx::cursor::move_result&) {
                                          // do nothing
                                      })};

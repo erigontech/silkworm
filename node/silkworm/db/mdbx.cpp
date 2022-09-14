@@ -44,6 +44,12 @@ static inline mdbx::cursor::move_result strict_lower_bound(mdbx::cursor& cursor,
     return cursor.to_previous(/*throw_notfound=*/false);
 }
 
+static inline mdbx::cursor::move_operation move_operation(CursorMoveDirection direction) {
+    return direction == CursorMoveDirection::Forward
+               ? mdbx::cursor::move_operation::next
+               : mdbx::cursor::move_operation::previous;
+}
+
 ::mdbx::env_managed open_env(const EnvConfig& config) {
     namespace fs = std::filesystem;
 
@@ -267,25 +273,18 @@ bool has_map(::mdbx::txn& tx, const char* map_name) {
 }
 
 size_t cursor_for_each(::mdbx::cursor& cursor, const WalkFunc& walker, const CursorMoveDirection direction) {
-    const mdbx::cursor::move_operation move_operation{direction == CursorMoveDirection::Forward
-                                                          ? mdbx::cursor::move_operation::next
-                                                          : mdbx::cursor::move_operation::previous};
-
     size_t ret{0};
     auto data{adjust_cursor_position_if_unpositioned(cursor, direction)};
     while (data) {
         ++ret;
         walker(cursor, data);
-        data = cursor.move(move_operation, /*throw_notfound=*/false);
+        data = cursor.move(move_operation(direction), /*throw_notfound=*/false);
     }
     return ret;
 }
 
 size_t cursor_for_prefix(::mdbx::cursor& cursor, const ByteView prefix, const WalkFunc& walker,
                          CursorMoveDirection direction) {
-    const mdbx::cursor::move_operation move_operation{direction == CursorMoveDirection::Forward
-                                                          ? mdbx::cursor::move_operation::next
-                                                          : mdbx::cursor::move_operation::previous};
     size_t ret{0};
     auto data{cursor.lower_bound(prefix, false)};
     while (data) {
@@ -294,7 +293,7 @@ size_t cursor_for_prefix(::mdbx::cursor& cursor, const ByteView prefix, const Wa
         }
         ++ret;
         walker(cursor, data);
-        data = cursor.move(move_operation, /*throw_notfound=*/false);
+        data = cursor.move(move_operation(direction), /*throw_notfound=*/false);
     }
     return ret;
 }
@@ -315,25 +314,18 @@ size_t cursor_erase_prefix(::mdbx::cursor& cursor, const ByteView prefix) {
 
 size_t cursor_for_count(::mdbx::cursor& cursor, const WalkFunc& walker, size_t count,
                         const CursorMoveDirection direction) {
-    const mdbx::cursor::move_operation move_operation{direction == CursorMoveDirection::Forward
-                                                          ? mdbx::cursor::move_operation::next
-                                                          : mdbx::cursor::move_operation::previous};
     size_t ret{0};
     auto data{adjust_cursor_position_if_unpositioned(cursor, direction)};
     while (count && data) {
         ++ret;
         --count;
         walker(cursor, data);
-        data = cursor.move(move_operation, /*throw_notfound=*/false);
+        data = cursor.move(move_operation(direction), /*throw_notfound=*/false);
     }
     return ret;
 }
 
 size_t cursor_erase(mdbx::cursor& cursor, const ByteView set_key, const CursorMoveDirection direction) {
-    const mdbx::cursor::move_operation move_operation{direction == CursorMoveDirection::Forward
-                                                          ? mdbx::cursor::move_operation::next
-                                                          : mdbx::cursor::move_operation::previous};
-
     mdbx::cursor::move_result data{direction == CursorMoveDirection::Forward
                                        ? cursor.lower_bound(set_key, /*throw_notfound=*/false)
                                        : strict_lower_bound(cursor, set_key)};
@@ -342,7 +334,7 @@ size_t cursor_erase(mdbx::cursor& cursor, const ByteView set_key, const CursorMo
     while (data) {
         ++ret;
         cursor.erase();
-        data = cursor.move(move_operation, /*throw_notfound=*/false);
+        data = cursor.move(move_operation(direction), /*throw_notfound=*/false);
     }
     return ret;
 }

@@ -36,9 +36,14 @@ namespace detail {
         return c.current(/*throw_notfound=*/false);
     }
 
-    static bool cursor_erase_data(::mdbx::cursor& cursor, ::mdbx::cursor::move_result& data) {
-        (void)data;
-        return cursor.erase();
+    // Last entry whose key is strictly less than the key
+    static inline mdbx::cursor::move_result strict_lower_bound(mdbx::cursor& cursor, const ByteView key) {
+        if (!cursor.lower_bound(key, /*throw_notfound=*/false)) {
+            // all DB keys are less than the key
+            return cursor.to_last(/*throw_notfound=*/false);
+        }
+        // return lower_bound - 1
+        return cursor.to_previous(/*throw_notfound=*/false);
     }
 
 }  // namespace detail
@@ -329,17 +334,21 @@ size_t cursor_for_count(::mdbx::cursor& cursor, const WalkFunc& walker, size_t c
 }
 
 size_t cursor_erase(mdbx::cursor& cursor, const ByteView set_key, const CursorMoveDirection direction) {
-    // Search lower bound key
-    if (!cursor.lower_bound(to_slice(set_key), false)) {
-        // In reverse direction move to the last key if all keys are less than set_key
-        if (direction != CursorMoveDirection::Reverse || !cursor.to_last(false)) {
-            return 0;
-        }
-    } else if (direction == CursorMoveDirection::Reverse && !cursor.to_previous(false)) {
-        // In reverse direction move to the key just before set_key
-        return 0;
+    const mdbx::cursor::move_operation move_operation{direction == CursorMoveDirection::Forward
+                                                          ? mdbx::cursor::move_operation::next
+                                                          : mdbx::cursor::move_operation::previous};
+
+    mdbx::cursor::move_result data{direction == CursorMoveDirection::Forward
+                                       ? cursor.lower_bound(set_key, /*throw_notfound=*/false)
+                                       : detail::strict_lower_bound(cursor, set_key)};
+
+    size_t ret{0};
+    while (data) {
+        ++ret;
+        cursor.erase();
+        data = cursor.move(move_operation, /*throw_notfound=*/false);
     }
-    return cursor_for_each(cursor, detail::cursor_erase_data, direction);
+    return ret;
 }
 
 }  // namespace silkworm::db

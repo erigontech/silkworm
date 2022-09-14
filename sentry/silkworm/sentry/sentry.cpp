@@ -16,25 +16,33 @@
 
 #include "sentry.hpp"
 
+#include <functional>
 #include <future>
+#include <memory>
 #include <string>
 
 #include <silkworm/concurrency/coroutine.hpp>
 
+#include <boost/asio/awaitable.hpp>
 #include <boost/asio/bind_cancellation_slot.hpp>
 #include <boost/asio/cancellation_signal.hpp>
 #include <boost/asio/co_spawn.hpp>
+#include <boost/asio/experimental/awaitable_operators.hpp>
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/signal_set.hpp>
-#include <grpc/grpc.h>
 
 #include <silkworm/buildinfo.h>
 #include <silkworm/common/directories.hpp>
 #include <silkworm/common/log.hpp>
 #include <silkworm/rpc/server/server_context_pool.hpp>
+#include <silkworm/sentry/common/atomic_value.hpp>
+#include <silkworm/sentry/common/channel.hpp>
 
+#include "eth/protocol.hpp"
+#include "eth/status_data.hpp"
 #include "node_key_config.hpp"
 #include "rlpx/client.hpp"
+#include "rlpx/protocol.hpp"
 #include "rlpx/server.hpp"
 #include "rpc/server.hpp"
 
@@ -55,19 +63,28 @@ class SentryImpl final {
     void join();
 
   private:
+    void setup_node_key();
     void setup_shutdown_on_signals(asio::io_context&);
+    void spawn_run_tasks();
+    boost::asio::awaitable<void> run_tasks();
+    boost::asio::awaitable<void> start_server();
+    boost::asio::awaitable<void> start_client();
+    std::unique_ptr<rlpx::Protocol> make_protocol();
+    std::function<std::unique_ptr<rlpx::Protocol>()> protocol_factory();
     [[nodiscard]] std::string client_id() const;
 
     Settings settings_;
+    std::optional<NodeKey> node_key_;
     silkworm::rpc::ServerContextPool context_pool_;
 
-    rlpx::Server rlpx_server_;
-    std::promise<void> rlpx_server_task_;
-    asio::cancellation_signal rlpx_server_stop_signal_;
+    common::Channel<eth::StatusData> status_channel_;
+    optional<common::AtomicValue<eth::StatusData>> status_;
 
+    std::promise<void> tasks_promise_;
+    asio::cancellation_signal tasks_stop_signal_;
+
+    rlpx::Server rlpx_server_;
     rlpx::Client rlpx_client_;
-    std::promise<void> rlpx_client_task_;
-    asio::cancellation_signal rlpx_client_stop_signal_;
 
     rpc::Server rpc_server_;
 
@@ -80,6 +97,13 @@ static silkworm::rpc::ServerConfig make_server_config(const Settings& settings) 
     config.set_num_contexts(settings.num_contexts);
     config.set_wait_mode(settings.wait_mode);
     return config;
+}
+
+static rpc::ServiceState make_service_state(common::Channel<eth::StatusData>& status_channel) {
+    return rpc::ServiceState{
+        eth::Protocol::kVersion,
+        status_channel,
+    };
 }
 
 static void rethrow_unless_cancelled(const std::exception_ptr& ex_ptr) {
@@ -98,54 +122,77 @@ class DummyServerCompletionQueue : public grpc::ServerCompletionQueue {
 
 SentryImpl::SentryImpl(Settings settings)
     : settings_(std::move(settings)),
-      context_pool_(settings_.num_contexts),
+      context_pool_(settings_.num_contexts, settings_.wait_mode, [] { return make_unique<DummyServerCompletionQueue>(); }),
+      status_channel_(context_pool_.next_io_context()),
       rlpx_server_("0.0.0.0", settings_.port),
       rlpx_client_(settings_.static_peers),
-      rpc_server_(make_server_config(settings_)) {
-    for (size_t i = 0; i < settings_.num_contexts; i++) {
-        context_pool_.add_context(make_unique<DummyServerCompletionQueue>(), settings_.wait_mode);
-    }
+      rpc_server_(make_server_config(settings_), make_service_state(status_channel_)) {
 }
 
 void SentryImpl::start() {
-    DataDirectory data_dir{settings_.data_dir_path, true};
-    NodeKey node_key = node_key_get_or_generate(settings_.node_key, data_dir);
-
+    setup_node_key();
     rpc_server_.build_and_start();
 
-    auto rlpx_server_task_completion = [&](const std::exception_ptr& ex_ptr) {
-        rethrow_unless_cancelled(ex_ptr);
-        this->rlpx_server_task_.set_value();
-    };
-    asio::co_spawn(
-        context_pool_.next_io_context(),
-        rlpx_server_.start(context_pool_, node_key, client_id()),
-        asio::bind_cancellation_slot(rlpx_server_stop_signal_.slot(), rlpx_server_task_completion));
-
-    auto rlpx_client_task_completion = [&](const std::exception_ptr& ex_ptr) {
-        rethrow_unless_cancelled(ex_ptr);
-        this->rlpx_client_task_.set_value();
-    };
-    asio::co_spawn(
-        context_pool_.next_io_context(),
-        rlpx_client_.start(node_key, client_id(), settings_.port),
-        asio::bind_cancellation_slot(rlpx_client_stop_signal_.slot(), rlpx_client_task_completion));
+    spawn_run_tasks();
 
     setup_shutdown_on_signals(context_pool_.next_io_context());
 
     context_pool_.start();
 }
 
+void SentryImpl::setup_node_key() {
+    DataDirectory data_dir{settings_.data_dir_path, true};
+    NodeKey node_key = node_key_get_or_generate(settings_.node_key, data_dir);
+    node_key_ = {node_key};
+}
+
+void SentryImpl::spawn_run_tasks() {
+    auto completion = [&](const std::exception_ptr& ex_ptr) {
+        rethrow_unless_cancelled(ex_ptr);
+        this->tasks_promise_.set_value();
+    };
+    asio::co_spawn(
+        context_pool_.next_io_context(),
+        run_tasks(),
+        asio::bind_cancellation_slot(tasks_stop_signal_.slot(), completion));
+}
+
+boost::asio::awaitable<void> SentryImpl::run_tasks() {
+    using namespace boost::asio::experimental::awaitable_operators;
+
+    log::Info() << "Waiting for status message...";
+    auto status = co_await status_channel_.receive();
+    // auto status = eth::StatusData::test_instance();
+    status_.emplace(status);
+    log::Info() << "Status received: network ID = " << status.message.network_id;
+
+    co_await (start_server() && start_client());
+}
+
+std::unique_ptr<rlpx::Protocol> SentryImpl::make_protocol() {
+    return std::unique_ptr<rlpx::Protocol>(new eth::Protocol(status_->getter()));
+}
+
+std::function<std::unique_ptr<rlpx::Protocol>()> SentryImpl::protocol_factory() {
+    return [this] { return this->make_protocol(); };
+}
+
+boost::asio::awaitable<void> SentryImpl::start_server() {
+    return rlpx_server_.start(context_pool_, node_key_.value(), client_id(), protocol_factory());
+}
+
+boost::asio::awaitable<void> SentryImpl::start_client() {
+    return rlpx_client_.start(node_key_.value(), client_id(), settings_.port, protocol_factory());
+}
+
 void SentryImpl::stop() {
     rpc_server_.shutdown();
-    rlpx_server_stop_signal_.emit(asio::cancellation_type::all);
-    rlpx_client_stop_signal_.emit(asio::cancellation_type::all);
+    tasks_stop_signal_.emit(asio::cancellation_type::all);
 }
 
 void SentryImpl::join() {
     rpc_server_.join();
-    rlpx_server_task_.get_future().wait();
-    rlpx_client_task_.get_future().wait();
+    tasks_promise_.get_future().wait();
 
     context_pool_.stop();
     context_pool_.join();

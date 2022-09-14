@@ -17,6 +17,7 @@
 #pragma once
 
 #include <cstddef>
+#include <functional>
 #include <memory>
 #include <ostream>
 #include <utility>  // for std::exchange in Boost 1.78, fixed in Boost 1.79
@@ -86,6 +87,10 @@ std::ostream& operator<<(std::ostream& out, const ServerContext& c);
 class ServerContextPool {
   public:
     explicit ServerContextPool(std::size_t pool_size);
+    ServerContextPool(
+        std::size_t pool_size,
+        WaitMode wait_mode,
+        const std::function<std::unique_ptr<grpc::ServerCompletionQueue>()>& queue_factory);
     ~ServerContextPool();
 
     ServerContextPool(const ServerContextPool&) = delete;

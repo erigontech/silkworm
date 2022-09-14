@@ -33,17 +33,24 @@ boost::asio::awaitable<void> Peer::handle() {
             node_key_,
             client_id_,
             node_listen_port_,
-            {"eth", 67},
+            protocol_->capability(),
             peer_public_key_,
         };
         auto message_stream = co_await handshake.execute(stream_);
 
+        co_await message_stream.send(protocol_->first_message());
         auto first_message = co_await message_stream.receive();
         log::Debug() << "Peer::handle first_message: " << int(first_message.id);
+
+        protocol_->handle_peer_first_message(first_message);
 
     } catch (const auth::Handshake::DisconnectError&) {
         // TODO: handle disconnect
         log::Debug() << "Peer::handle DisconnectError";
+        co_return;
+    } catch (const Protocol::IncompatiblePeerError&) {
+        // TODO: handle disconnect: send reason 0x03 Useless peer
+        log::Debug() << "Peer::handle IncompatiblePeerError";
         co_return;
     } catch (const boost::system::system_error& ex) {
         if (ex.code() == boost::asio::error::eof) {

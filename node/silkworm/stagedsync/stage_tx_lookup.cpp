@@ -43,7 +43,7 @@ StageResult TxLookup::forward(db::RWTxn& txn) {
 
         reset_log_progress();
         const BlockNum segment_width{target_progress - previous_progress};
-        if (segment_width > db::stages::kSmallSegmentWidth) {
+        if (segment_width > db::stages::kSmallBlockSegmentWidth) {
             log::Info(log_prefix_,
                       {"op", std::string(magic_enum::enum_name<OperationType>(operation_)),
                        "from", std::to_string(previous_progress),
@@ -107,7 +107,7 @@ StageResult TxLookup::unwind(db::RWTxn& txn) {
 
         reset_log_progress();
         const BlockNum segment_width{previous_progress - to};
-        if (segment_width > db::stages::kSmallSegmentWidth) {
+        if (segment_width > db::stages::kSmallBlockSegmentWidth) {
             log::Info(log_prefix_,
                       {"op", std::string(magic_enum::enum_name<OperationType>(operation_)),
                        "from", std::to_string(previous_progress),
@@ -173,7 +173,7 @@ StageResult TxLookup::prune(db::RWTxn& txn) {
 
         reset_log_progress();
         const BlockNum segment_width{forward_progress - prune_progress};
-        if (segment_width > db::stages::kSmallSegmentWidth) {
+        if (segment_width > db::stages::kSmallBlockSegmentWidth) {
             log::Info(log_prefix_,
                       {"op", std::string(magic_enum::enum_name<OperationType>(operation_)),
                        "from", std::to_string(prune_progress),

@@ -68,7 +68,7 @@ StageResult Execution::forward(db::RWTxn& txn) {
         block_num_ = previous_progress + 1;
         BlockNum max_block_num{senders_stage_progress};
         BlockNum segment_width{senders_stage_progress - previous_progress};
-        if (segment_width > db::stages::kSmallSegmentWidth) {
+        if (segment_width > db::stages::kSmallBlockSegmentWidth) {
             log::Info(log_prefix_,
                       {"op", std::string(magic_enum::enum_name<OperationType>(operation_)),
                        "from", std::to_string(block_num_),
@@ -338,7 +338,7 @@ StageResult Execution::unwind(db::RWTxn& txn) {
 
         operation_ = OperationType::Unwind;
         const BlockNum segment_width{previous_progress - to};
-        if (segment_width > db::stages::kSmallSegmentWidth) {
+        if (segment_width > db::stages::kSmallBlockSegmentWidth) {
             log::Info(log_prefix_,
                       {"op", std::string(magic_enum::enum_name<OperationType>(operation_)),
                        "from", std::to_string(previous_progress),
@@ -418,7 +418,7 @@ StageResult Execution::prune(db::RWTxn& txn) {
 
         // Prune history of changes (changesets)
         if (const auto prune_threshold{node_settings_->prune_mode->history().value_from_head(forward_progress)}; prune_threshold) {
-            if (segment_width > db::stages::kSmallSegmentWidth) {
+            if (segment_width > db::stages::kSmallBlockSegmentWidth) {
                 log::Info(log_prefix_,
                           {"op", std::string(magic_enum::enum_name<OperationType>(operation_)),
                            "source", "history",
@@ -465,7 +465,7 @@ StageResult Execution::prune(db::RWTxn& txn) {
 
         // Prune receipts
         if (const auto prune_threshold{node_settings_->prune_mode->receipts().value_from_head(forward_progress)}; prune_threshold) {
-            if (segment_width > db::stages::kSmallSegmentWidth) {
+            if (segment_width > db::stages::kSmallBlockSegmentWidth) {
                 log::Info(log_prefix_,
                           {"op", std::string(magic_enum::enum_name<OperationType>(operation_)),
                            "source", "receipts",
@@ -497,7 +497,7 @@ StageResult Execution::prune(db::RWTxn& txn) {
 
         // Prune call traces
         if (const auto prune_threshold{node_settings_->prune_mode->receipts().value_from_head(forward_progress)}; prune_threshold) {
-            if (segment_width > db::stages::kSmallSegmentWidth) {
+            if (segment_width > db::stages::kSmallBlockSegmentWidth) {
                 log::Info(log_prefix_,
                           {"op", std::string(magic_enum::enum_name<OperationType>(operation_)),
                            "source", "call traces",

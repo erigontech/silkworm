@@ -53,7 +53,7 @@ StageResult InterHashes::forward(db::RWTxn& txn) {
         }
 
         BlockNum segment_width{hashstate_stage_progress - previous_progress};
-        if (segment_width > db::stages::kSmallSegmentWidth) {
+        if (segment_width > db::stages::kSmallBlockSegmentWidth) {
             log::Info(log_prefix_ + " begin",
                       {"op", std::string(magic_enum::enum_name<OperationType>(operation_)),
                        "from", std::to_string(previous_progress),
@@ -76,7 +76,7 @@ StageResult InterHashes::forward(db::RWTxn& txn) {
         auto expected_state_root{header->state_root};
 
         reset_log_progress();
-        if (!previous_progress || segment_width > db::stages::kLargeSegmentWorthRegen) {
+        if (!previous_progress || segment_width > db::stages::kLargeBlockSegmentWorthRegen) {
             // Full regeneration
             ret = regenerate_intermediate_hashes(txn, &expected_state_root);
         } else {
@@ -135,7 +135,7 @@ StageResult InterHashes::unwind(db::RWTxn& txn) {
         }
 
         BlockNum segment_width{previous_progress - to};
-        if (segment_width > db::stages::kSmallSegmentWidth) {
+        if (segment_width > db::stages::kSmallBlockSegmentWidth) {
             log::Info(log_prefix_ + " begin",
                       {"op", std::string(magic_enum::enum_name<OperationType>(operation_)),
                        "from", std::to_string(previous_progress),
@@ -159,7 +159,7 @@ StageResult InterHashes::unwind(db::RWTxn& txn) {
         auto expected_state_root{header->state_root};
 
         reset_log_progress();
-        if (segment_width > db::stages::kLargeSegmentWorthRegen) {
+        if (segment_width > db::stages::kLargeBlockSegmentWorthRegen) {
             // Full regeneration
             // It will process all HashedState which is already unwound
             ret = regenerate_intermediate_hashes(txn, &expected_state_root);

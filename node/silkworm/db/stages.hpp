@@ -101,11 +101,11 @@ inline constexpr const char* kAllStages[]{
     kUnwindKey,
 };
 
-//! \brief Stages won't log begin if segment is beyond this threshold
-inline constexpr size_t kSmallSegmentWidth{16};
+//! \brief Stages won't log their "start" if segment is below this threshold
+inline constexpr size_t kSmallBlockSegmentWidth{16};
 
 //! \brief Some stages will use this threshold to determine if worth regen vs incremental
-inline constexpr size_t kLargeSegmentWorthRegen{100'000};
+inline constexpr size_t kLargeBlockSegmentWorthRegen{100'000};
 
 //! \brief Reads from db the progress (block height) of the provided stage name
 //! \param [in] txn : a reference to a ro/rw db transaction

@@ -43,7 +43,7 @@ StageResult HashState::forward(db::RWTxn& txn) {
         }
 
         BlockNum segment_width{execution_stage_progress - previous_progress};
-        if (segment_width > db::stages::kSmallSegmentWidth) {
+        if (segment_width > db::stages::kSmallBlockSegmentWidth) {
             log::Info(log_prefix_,
                       {"op", std::string(magic_enum::enum_name<OperationType>(operation_)),
                        "from", std::to_string(previous_progress),
@@ -53,7 +53,7 @@ StageResult HashState::forward(db::RWTxn& txn) {
 
         reset_log_progress();
 
-        if (!previous_progress || segment_width > db::stages::kLargeSegmentWorthRegen) {
+        if (!previous_progress || segment_width > db::stages::kLargeBlockSegmentWorthRegen) {
             // Clear any previous contents
             log::Info(log_prefix_, {"clearing", db::table::kHashedAccounts.name});
             txn->clear_map(db::table::kHashedAccounts.name);
@@ -121,7 +121,7 @@ StageResult HashState::unwind(db::RWTxn& txn) {
             return ret;
         }
         BlockNum segment_width{previous_progress - to};
-        if (segment_width > db::stages::kSmallSegmentWidth) {
+        if (segment_width > db::stages::kSmallBlockSegmentWidth) {
             log::Info(log_prefix_,
                       {"op", std::string(magic_enum::enum_name<OperationType>(operation_)),
                        "from", std::to_string(previous_progress),

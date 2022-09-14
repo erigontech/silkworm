@@ -22,6 +22,7 @@
 
 #include <silkworm/common/directories.hpp>
 #include <silkworm/common/log.hpp>
+#include <silkworm/common/stopwatch.hpp>
 #include <silkworm/concurrency/signal_handler.hpp>
 
 namespace silkworm::etl {
@@ -37,6 +38,7 @@ Collector::~Collector() {
 
 void Collector::flush_buffer() {
     if (buffer_.size()) {
+        StopWatch sw(/*auto_start=*/true);
         buffer_.sort();
 
         /* Build a unique file name to pass FileProvider */
@@ -46,8 +48,10 @@ void Collector::flush_buffer() {
         file_providers_.emplace_back(new FileProvider(new_file_path.string(), file_providers_.size()));
         file_providers_.back()->flush(buffer_);
         buffer_.clear();
-        log::Info("Collector flushed file", {"path", std::string(file_providers_.back()->get_file_name()), "size",
-                                             human_size(file_providers_.back()->get_file_size())});
+        const auto [_, duration]{sw.stop()};
+        log::Info("Collector flushed file", {"path", std::string(file_providers_.back()->get_file_name()),
+                                             "size", human_size(file_providers_.back()->get_file_size()),
+                                             "in", StopWatch::format(duration)});
     }
 }
 

@@ -16,16 +16,22 @@
 
 #pragma once
 
+#include <map>
+
 #include <silkworm/common/asio_timer.hpp>
 #include <silkworm/common/stopwatch.hpp>
 #include <silkworm/concurrency/worker.hpp>
 #include <silkworm/stagedsync/common.hpp>
 
 namespace silkworm::stagedsync {
+
 class SyncLoop final : public Worker {
   public:
     explicit SyncLoop(silkworm::NodeSettings* node_settings, mdbx::env* chaindata_env)
-        : Worker("SyncLoop"), node_settings_{node_settings}, chaindata_env_{chaindata_env} {
+        : Worker("SyncLoop"),
+          node_settings_{node_settings},
+          chaindata_env_{chaindata_env},
+          sync_context_{std::make_unique<SyncContext>()} {
         load_stages();
     };
     ~SyncLoop() override = default;
@@ -33,15 +39,27 @@ class SyncLoop final : public Worker {
     void stop(bool wait = false) final;
 
   private:
-    silkworm::NodeSettings* node_settings_;                      // As being passed by CLI arguments and/or already initialized data
-    mdbx::env* chaindata_env_;                                   // The actual opened environment
-    std::vector<std::unique_ptr<stagedsync::IStage>> stages_{};  // Collection of stages
-    std::atomic<size_t> current_stage_{0};                       // Index of current stage
-    void work() final;                                           // The loop itself
-    void load_stages();                                          // Fills the vector with stages
+    silkworm::NodeSettings* node_settings_;      // As being passed by CLI arguments and/or already initialized data
+    mdbx::env* chaindata_env_;                   // The actual opened environment
+    std::unique_ptr<SyncContext> sync_context_;  // Context shared across stages
+    std::map<const char*, std::unique_ptr<stagedsync::IStage>> stages_;
+    std::map<const char*, std::unique_ptr<stagedsync::IStage>>::iterator current_stage_;
+    std::vector<const char*> stages_forward_order_;
+    std::vector<const char*> stages_unwind_order_;
+    std::atomic<size_t> current_stages_count_{0};
+    std::atomic<size_t> current_stage_number_{0};
 
-    //! \brief Runs a full sync cycle
+    void work() final;   // The loop itself
+    void load_stages();  // Fills the vector with stages
+
+    //! \brief Runs a full forward cycle
     [[nodiscard]] StageResult run_cycle_forward(db::RWTxn& cycle_txn, Timer& log_timer);
+
+    //! \brief Runs a full unwind cycle
+    [[nodiscard]] StageResult run_cycle_unwind(db::RWTxn& cycle_txn, Timer& log_timer);
+
+    //! \brief Runs a full prune cycle
+    [[nodiscard]] StageResult run_cycle_prune(db::RWTxn& cycle_txn, Timer& log_timer);
 
     void throttle_next_cycle(const StopWatch::Duration& cycle_duration);  // Delays (if required) next cycle run
     std::string get_log_prefix() const;                                   // Returns the current log lines prefix on behalf of current stage

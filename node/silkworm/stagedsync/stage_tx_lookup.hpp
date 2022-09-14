@@ -23,11 +23,12 @@ namespace silkworm::stagedsync {
 
 class TxLookup : public IStage {
   public:
-    explicit TxLookup(NodeSettings* node_settings) : IStage(db::stages::kTxLookupKey, node_settings){};
+    explicit TxLookup(NodeSettings* node_settings, SyncContext* sync_context)
+        : IStage(sync_context, db::stages::kTxLookupKey, node_settings){};
     ~TxLookup() override = default;
 
     StageResult forward(db::RWTxn& txn) final;
-    StageResult unwind(db::RWTxn& txn, BlockNum to) final;
+    StageResult unwind(db::RWTxn& txn) final;
     StageResult prune(db::RWTxn& txn) final;
     std::vector<std::string> get_log_progress() final;
 
@@ -45,9 +46,8 @@ class TxLookup : public IStage {
 
     void reset_log_progress();  // Clears out all logging vars
 
-    void collect_transaction_hashes_from_bodies(db::RWTxn& txn,
-                                                const db::MapConfig& source_config,
-                                                BlockNum from, BlockNum to,
-                                                bool for_deletion);
+    void collect_transaction_hashes_from_canonical_bodies(db::RWTxn& txn,
+                                                          BlockNum from, BlockNum to,
+                                                          bool for_deletion);
 };
 }  // namespace silkworm::stagedsync

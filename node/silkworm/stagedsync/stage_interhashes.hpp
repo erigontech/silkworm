@@ -26,10 +26,11 @@ namespace silkworm::stagedsync {
 
 class InterHashes final : public IStage {
   public:
-    explicit InterHashes(NodeSettings* node_settings) : IStage(db::stages::kIntermediateHashesKey, node_settings){};
+    explicit InterHashes(NodeSettings* node_settings, SyncContext* sync_context)
+        : IStage(sync_context, db::stages::kIntermediateHashesKey, node_settings){};
     ~InterHashes() override = default;
     StageResult forward(db::RWTxn& txn) final;
-    StageResult unwind(db::RWTxn& txn, BlockNum to) final;
+    StageResult unwind(db::RWTxn& txn) final;
     StageResult prune(db::RWTxn& txn) final;
     std::vector<std::string> get_log_progress() final;
 

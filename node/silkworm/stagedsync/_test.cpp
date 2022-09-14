@@ -66,11 +66,12 @@ TEST_CASE("Sync Stages") {
 
     SECTION("BlockHashes") {
         SECTION("Forward/Unwind/Prune args validation") {
-            stagedsync::BlockHashes stage(&node_settings);
+            stagedsync::SyncContext sync_context{};
+            stagedsync::BlockHashes stage(&node_settings, &sync_context);
 
             // (previous_progress == headers_progress == 0)
             REQUIRE(stage.forward(txn) == stagedsync::StageResult::kSuccess);
-            REQUIRE(stage.unwind(txn, 0) == stagedsync::StageResult::kSuccess);
+            REQUIRE(stage.unwind(txn) == stagedsync::StageResult::kSuccess);
 
             // (previous_progress > headers_progress)
             stage.update_progress(txn, 10);
@@ -91,7 +92,9 @@ TEST_CASE("Sync Stages") {
             }
             db::stages::write_stage_progress(*txn, db::stages::kHeadersKey, 3);
             REQUIRE_NOTHROW(txn.commit(true));
-            stagedsync::BlockHashes stage(&node_settings);
+
+            stagedsync::SyncContext sync_context{};
+            stagedsync::BlockHashes stage(&node_settings, &sync_context);
 
             // Forward
             auto stage_result{stage.forward(txn)};
@@ -124,7 +127,8 @@ TEST_CASE("Sync Stages") {
             }
 
             // Unwind
-            stage_result = stage.unwind(txn, 1);
+            sync_context.unwind_to.emplace(1);
+            stage_result = stage.unwind(txn);
             REQUIRE(stage_result == stagedsync::StageResult::kSuccess);
             {
                 // Verify written data is consistent
@@ -164,6 +168,9 @@ TEST_CASE("Sync Stages") {
         REQUIRE_NOTHROW(db::write_canonical_header_hash(*txn, block_hashes[1].bytes, 2));
         REQUIRE_NOTHROW(db::write_canonical_header_hash(*txn, block_hashes[2].bytes, 3));
 
+        // Update progress
+        REQUIRE_NOTHROW(db::stages::write_stage_progress(*txn, db::stages::kBlockHashesKey, 3));
+
         // Commit
         REQUIRE_NOTHROW(txn.commit());
 
@@ -172,7 +179,8 @@ TEST_CASE("Sync Stages") {
         REQUIRE(last_tx_sequence == 2);
 
         // Check forward works
-        stagedsync::Senders stage(&node_settings);
+        stagedsync::SyncContext sync_context{};
+        stagedsync::Senders stage(&node_settings, &sync_context);
         auto stage_result = stage.forward(txn);
         REQUIRE(stage_result == stagedsync::StageResult::kSuccess);
         REQUIRE_NOTHROW(txn.commit());
@@ -195,7 +203,8 @@ TEST_CASE("Sync Stages") {
         }
 
         // Check unwind works
-        stage_result = stage.unwind(txn, 1);
+        sync_context.unwind_to.emplace(1);
+        stage_result = stage.unwind(txn);
         REQUIRE(stage_result == stagedsync::StageResult::kSuccess);
 
         {
@@ -311,8 +320,10 @@ TEST_CASE("Sync Stages") {
             // ---------------------------------------
             // Unwind 3rd block and checks if state is second block
             // ---------------------------------------
-            stagedsync::Execution stage(&node_settings);
-            REQUIRE(stage.unwind(txn, 2) == stagedsync::StageResult::kSuccess);
+            stagedsync::SyncContext sync_context{};
+            sync_context.unwind_to.emplace(2);
+            stagedsync::Execution stage(&node_settings, &sync_context);
+            REQUIRE(stage.unwind(txn) == stagedsync::StageResult::kSuccess);
 
             db::Buffer buffer2{*txn, 0};
 
@@ -335,7 +346,8 @@ TEST_CASE("Sync Stages") {
 
         SECTION("Execution Prune Default") {
             log::Info() << "Pruning with " << node_settings.prune_mode->to_string();
-            stagedsync::Execution stage(&node_settings);
+            stagedsync::SyncContext sync_context{};
+            stagedsync::Execution stage(&node_settings, &sync_context);
             REQUIRE(stage.prune(txn) == stagedsync::StageResult::kSuccess);
 
             // With default settings nothing should be pruned
@@ -352,7 +364,9 @@ TEST_CASE("Sync Stages") {
             expected_block_num = 1;  // First storage change is at block 1
             actual_block_num = endian::load_big_u64(db::from_slice(data.key).data());
             REQUIRE(actual_block_num == expected_block_num);
-            REQUIRE(db::stages::read_stage_prune_progress(*txn, db::stages::kExecutionKey) == 3);
+
+            // There is no pruning setting enabled hence no pruning occurred
+            REQUIRE(db::stages::read_stage_prune_progress(*txn, db::stages::kExecutionKey) == 0);
         }
 
         SECTION("Execution Prune History") {
@@ -363,7 +377,8 @@ TEST_CASE("Sync Stages") {
 
             log::Info() << "Pruning with " << node_settings.prune_mode->to_string();
             REQUIRE(node_settings.prune_mode->history().enabled());
-            stagedsync::Execution stage(&node_settings);
+            stagedsync::SyncContext sync_context{};
+            stagedsync::Execution stage(&node_settings, &sync_context);
             REQUIRE(stage.prune(txn) == stagedsync::StageResult::kSuccess);
 
             db::Cursor account_changeset_table(txn, db::table::kAccountChangeSet);
@@ -376,7 +391,8 @@ TEST_CASE("Sync Stages") {
         }
 
         SECTION("HashState") {
-            stagedsync::HashState stage(&node_settings);
+            stagedsync::SyncContext sync_context{};
+            stagedsync::HashState stage(&node_settings, &sync_context);
             auto expected_stage_result{
                 magic_enum::enum_name<stagedsync::StageResult>(stagedsync::StageResult::kSuccess)};
             auto actual_stage_result = magic_enum::enum_name<stagedsync::StageResult>(stage.forward(txn));
@@ -423,7 +439,8 @@ TEST_CASE("Sync Stages") {
 
             // Unwind the stage to block 1 (i.e. block 1 *is* applied)
             BlockNum unwind_to{1};
-            actual_stage_result = magic_enum::enum_name<stagedsync::StageResult>(stage.unwind(txn, unwind_to));
+            sync_context.unwind_to.emplace(unwind_to);
+            actual_stage_result = magic_enum::enum_name<stagedsync::StageResult>(stage.unwind(txn));
             REQUIRE(expected_stage_result == actual_stage_result);
             hashed_accounts_table.bind(txn, db::table::kHashedAccounts);
             REQUIRE(hashed_accounts_table.seek(db::to_slice(hashed_sender.bytes)));

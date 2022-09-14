@@ -23,17 +23,21 @@ namespace silkworm::stagedsync {
 
 class Senders final : public IStage {
   public:
-    explicit Senders(NodeSettings* node_settings) : IStage(db::stages::kSendersKey, node_settings){};
+    explicit Senders(NodeSettings* node_settings, SyncContext* sync_context)
+        : IStage(sync_context, db::stages::kSendersKey, node_settings){};
     ~Senders() override = default;
 
     StageResult forward(db::RWTxn& txn) final;
-    StageResult unwind(db::RWTxn& txn, BlockNum to) final;
+    StageResult unwind(db::RWTxn& txn) final;
     StageResult prune(db::RWTxn& txn) final;
     std::vector<std::string> get_log_progress() final;
     bool stop() final;
 
   private:
     std::unique_ptr<recovery::RecoveryFarm> farm_{nullptr};
+
+    // Logging
+    std::string current_key_{};
 };
 
 }  // namespace silkworm::stagedsync

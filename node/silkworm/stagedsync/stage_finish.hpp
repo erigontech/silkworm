@@ -22,11 +22,12 @@ namespace silkworm::stagedsync {
 
 class Finish : public IStage {
   public:
-    explicit Finish(NodeSettings* node_settings) : IStage(db::stages::kFinishKey, node_settings){};
+    explicit Finish(NodeSettings* node_settings, SyncContext* sync_context)
+        : IStage(sync_context, db::stages::kFinishKey, node_settings){};
     ~Finish() override = default;
 
     StageResult forward(db::RWTxn& txn) final;
-    StageResult unwind(db::RWTxn& txn, BlockNum to) final;
+    StageResult unwind(db::RWTxn& txn) final;
 
     // Finish does not prune.
     StageResult prune(db::RWTxn&) final { return StageResult::kSuccess; };

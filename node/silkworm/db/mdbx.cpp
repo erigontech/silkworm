@@ -277,7 +277,7 @@ size_t cursor_for_each(::mdbx::cursor& cursor, const WalkFunc& walker, const Cur
 
     size_t ret{0};
     auto data{detail::adjust_cursor_position_if_unpositioned_and_return_data(cursor, direction)};
-    while (data.done) {
+    while (data) {
         ++ret;
         walker(cursor, data);
         data = cursor.move(move_operation, /*throw_notfound=*/false);
@@ -292,7 +292,7 @@ size_t cursor_for_prefix(::mdbx::cursor& cursor, const ByteView prefix, const Wa
                                                           : mdbx::cursor::move_operation::previous};
     size_t ret{0};
     auto data{cursor.lower_bound(prefix, false)};
-    while (data.done) {
+    while (data) {
         if (!data.key.starts_with(prefix)) {
             break;
         }
@@ -306,7 +306,7 @@ size_t cursor_for_prefix(::mdbx::cursor& cursor, const ByteView prefix, const Wa
 size_t cursor_erase_prefix(::mdbx::cursor& cursor, const ByteView prefix) {
     size_t ret{0};
     auto data{cursor.lower_bound(prefix, /*throw_notfound=*/false)};
-    while (data.done) {
+    while (data) {
         if (!data.key.starts_with(prefix)) {
             break;
         }
@@ -324,7 +324,7 @@ size_t cursor_for_count(::mdbx::cursor& cursor, const WalkFunc& walker, size_t c
                                                           : mdbx::cursor::move_operation::previous};
     size_t ret{0};
     auto data{detail::adjust_cursor_position_if_unpositioned_and_return_data(cursor, direction)};
-    while (count && data.done) {
+    while (count && data) {
         ++ret;
         --count;
         walker(cursor, data);

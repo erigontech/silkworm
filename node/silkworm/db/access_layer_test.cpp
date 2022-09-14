@@ -517,7 +517,8 @@ namespace db {
         db::stages::write_stage_progress(txn, db::stages::kExecutionKey, 3);
 
         db::RWTxn tm{txn};
-        stagedsync::HistoryIndex stage_history_index(&context.node_settings());
+        stagedsync::SyncContext sync_context{};
+        stagedsync::HistoryIndex stage_history_index(&context.node_settings(), &sync_context);
         REQUIRE(stage_history_index.forward(tm) == stagedsync::StageResult::kSuccess);
 
         std::optional<Account> current_account{read_account(txn, miner_a)};

@@ -18,6 +18,7 @@
 
 #include <silkworm/common/test_context.hpp>
 #include <silkworm/common/test_util.hpp>
+#include <silkworm/db/access_layer.hpp>
 #include <silkworm/stagedsync/stage_tx_lookup.hpp>
 
 using namespace evmc::literals;
@@ -34,6 +35,7 @@ TEST_CASE("Stage Transaction Lookups") {
     log_settings.log_std_out = true;
     log::init(log_settings);
 
+    db::Cursor canonicals(txn, db::table::kCanonicalHashes);
     db::Cursor bodies_table(txn, db::table::kBlockBodies);
     db::Cursor transactions_table(txn, db::table::kBlockTransactions);
 
@@ -50,6 +52,7 @@ TEST_CASE("Stage Transaction Lookups") {
 
     transactions_table.upsert(db::to_slice(db::block_key(1)), db::to_slice(tx_rlp));
     bodies_table.upsert(db::to_slice(db::block_key(1, hash_0.bytes)), db::to_slice(block.encode()));
+    REQUIRE_NOTHROW(db::write_canonical_header_hash(*txn, hash_0.bytes, 1));
 
     // ---------------------------------------
     // Push second block
@@ -62,10 +65,15 @@ TEST_CASE("Stage Transaction Lookups") {
 
     transactions_table.upsert(db::to_slice(db::block_key(2)), db::to_slice(tx_rlp));
     bodies_table.upsert(db::to_slice(db::block_key(2, hash_1.bytes)), db::to_slice(block.encode()));
+    REQUIRE_NOTHROW(db::write_canonical_header_hash(*txn, hash_1.bytes, 2));
+
     db::stages::write_stage_progress(*txn, db::stages::kBlockBodiesKey, 2);
+    db::stages::write_stage_progress(*txn, db::stages::kBlockHashesKey, 2);
+    db::stages::write_stage_progress(*txn, db::stages::kExecutionKey, 2);
 
     // Execute stage forward
-    stagedsync::TxLookup stage_tx_lookup(&context.node_settings());
+    stagedsync::SyncContext sync_context{};
+    stagedsync::TxLookup stage_tx_lookup(&context.node_settings(), &sync_context);
     REQUIRE(stage_tx_lookup.forward(txn) == stagedsync::StageResult::kSuccess);
 
     SECTION("Forward checks and unwind") {
@@ -89,7 +97,8 @@ TEST_CASE("Stage Transaction Lookups") {
         REQUIRE(lookup_data_block_num == 2u);
 
         // Execute stage unwind to block 1
-        REQUIRE(stage_tx_lookup.unwind(txn, 1) == stagedsync::StageResult::kSuccess);
+        sync_context.unwind_to.emplace(1);
+        REQUIRE(stage_tx_lookup.unwind(txn) == stagedsync::StageResult::kSuccess);
         lookup_table.bind(txn, db::table::kTxLookup);  // Needed due to commit
 
         // Block 1 should be still there
@@ -115,6 +124,7 @@ TEST_CASE("Stage Transaction Lookups") {
                                  beforeHistory, beforeReceipts, beforeSenders, beforeTxIndex, beforeCallTraces);
 
         REQUIRE(context.node_settings().prune_mode->tx_index().enabled());
+        REQUIRE(context.node_settings().prune_mode->tx_index().value_from_head(2) == 1);
 
         // Only leave block 2 alive
         REQUIRE(stage_tx_lookup.prune(txn) == stagedsync::StageResult::kSuccess);

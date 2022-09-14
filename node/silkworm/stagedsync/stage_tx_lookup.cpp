@@ -17,34 +17,38 @@
 #include "stage_tx_lookup.hpp"
 
 #include <silkworm/common/endian.hpp>
+#include <silkworm/db/access_layer.hpp>
 
 namespace silkworm::stagedsync {
 
 StageResult TxLookup::forward(db::RWTxn& txn) {
     StageResult ret{StageResult::kSuccess};
+    operation_ = OperationType::Forward;
     try {
         throw_if_stopping();
 
         // Check stage boundaries from previous execution and previous stage execution
         auto previous_progress{get_progress(txn)};
-        const auto target_progress{db::stages::read_stage_progress(*txn, db::stages::kBlockBodiesKey)};
+        const auto target_progress{db::stages::read_stage_progress(*txn, db::stages::kExecutionKey)};
         if (previous_progress == target_progress) {
             // Nothing to process
+            operation_ = OperationType::None;
             return ret;
         } else if (previous_progress > target_progress) {
             // Something bad had happened.  Maybe we need to unwind ?
             throw StageError(StageResult::kInvalidProgress,
                              "TxLookup progress " + std::to_string(previous_progress) +
-                                 " greater than BlockBodies progress " + std::to_string(target_progress));
+                                 " greater than Execution progress " + std::to_string(target_progress));
         }
 
         reset_log_progress();
         const BlockNum segment_width{target_progress - previous_progress};
-        if (segment_width > 16) {
-            log::Info("Begin " + std::string(stage_name_),
-                      {"op", std::string(magic_enum::enum_name<OperationType>(OperationType::Forward)), "from",
-                       std::to_string(previous_progress), "to", std::to_string(target_progress), "span",
-                       std::to_string(segment_width)});
+        if (segment_width > db::stages::kSmallBlockSegmentWidth) {
+            log::Info(log_prefix_,
+                      {"op", std::string(magic_enum::enum_name<OperationType>(operation_)),
+                       "from", std::to_string(previous_progress),
+                       "to", std::to_string(target_progress),
+                       "span", std::to_string(segment_width)});
         }
 
         // If this is first time we forward AND we have "prune history" set
@@ -60,45 +64,55 @@ StageResult TxLookup::forward(db::RWTxn& txn) {
         txn.commit();
 
     } catch (const StageError& ex) {
-        log::Error(std::string(stage_name_),
+        log::Error(log_prefix_,
                    {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
         ret = static_cast<StageResult>(ex.err());
+    } catch (const mdbx::exception& ex) {
+        log::Error(log_prefix_,
+                   {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
+        ret = StageResult::kDbError;
     } catch (const std::exception& ex) {
-        log::Error(std::string(stage_name_),
+        log::Error(log_prefix_,
                    {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
         ret = StageResult::kUnexpectedError;
     } catch (...) {
-        log::Error(std::string(stage_name_),
+        log::Error(log_prefix_,
                    {"function", std::string(__FUNCTION__), "exception", "unexpected and undefined"});
         ret = StageResult::kUnexpectedError;
     }
 
-    collector_.reset();
     operation_ = OperationType::None;
-    return is_stopping() ? StageResult::kAborted : ret;
+    collector_.reset();
+    return ret;
 }
 
-StageResult TxLookup::unwind(db::RWTxn& txn, BlockNum to) {
+StageResult TxLookup::unwind(db::RWTxn& txn) {
     StageResult ret{StageResult::kSuccess};
 
+    if (!sync_context_->unwind_to.has_value()) return ret;
+    const BlockNum to{sync_context_->unwind_to.value()};
+
+    operation_ = OperationType::Unwind;
     try {
         throw_if_stopping();
 
         // Check stage boundaries from previous execution and previous stage execution
         const auto previous_progress{get_progress(txn)};
-        const auto bodies_stage_progress{db::stages::read_stage_progress(*txn, db::stages::kBlockBodiesKey)};
-        if (previous_progress <= to || bodies_stage_progress <= to) {
+        const auto execution_progress{db::stages::read_stage_progress(*txn, db::stages::kExecutionKey)};
+        if (previous_progress <= to || execution_progress <= to) {
             // Nothing to process
+            operation_ = OperationType::None;
             return ret;
         }
 
         reset_log_progress();
         const BlockNum segment_width{previous_progress - to};
-        if (segment_width > 16) {
-            log::Info(
-                "Begin " + std::string(stage_name_),
-                {"op", std::string(magic_enum::enum_name<OperationType>(OperationType::Unwind)), "from",
-                 std::to_string(previous_progress), "to", std::to_string(to), "span", std::to_string(segment_width)});
+        if (segment_width > db::stages::kSmallBlockSegmentWidth) {
+            log::Info(log_prefix_,
+                      {"op", std::string(magic_enum::enum_name<OperationType>(operation_)),
+                       "from", std::to_string(previous_progress),
+                       "to", std::to_string(to),
+                       "span", std::to_string(segment_width)});
         }
 
         if (previous_progress && previous_progress > to)
@@ -109,50 +123,62 @@ StageResult TxLookup::unwind(db::RWTxn& txn, BlockNum to) {
         txn.commit();
 
     } catch (const StageError& ex) {
-        log::Error(std::string(stage_name_),
+        log::Error(log_prefix_,
                    {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
         ret = static_cast<StageResult>(ex.err());
     } catch (const mdbx::exception& ex) {
-        log::Error(std::string(stage_name_),
+        log::Error(log_prefix_,
                    {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
         ret = StageResult::kDbError;
     } catch (const std::exception& ex) {
-        log::Error(std::string(stage_name_),
+        log::Error(log_prefix_,
                    {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
         ret = StageResult::kUnexpectedError;
     } catch (...) {
-        log::Error(std::string(stage_name_),
+        log::Error(log_prefix_,
                    {"function", std::string(__FUNCTION__), "exception", "unexpected and undefined"});
         ret = StageResult::kUnexpectedError;
     }
 
-    collector_.reset();
     operation_ = OperationType::None;
-    return is_stopping() ? StageResult::kAborted : ret;
+    collector_.reset();
+    return ret;
 }
 
 StageResult TxLookup::prune(db::RWTxn& txn) {
     StageResult ret{StageResult::kSuccess};
+    operation_ = OperationType::Prune;
+
     try {
         throw_if_stopping();
-        if (!node_settings_->prune_mode->tx_index().enabled()) return ret;
+        if (!node_settings_->prune_mode->tx_index().enabled()) {
+            operation_ = OperationType::None;
+            return ret;
+        }
 
         const auto forward_progress{get_progress(txn)};
         const auto prune_progress{get_prune_progress(txn)};
-        if (prune_progress >= forward_progress) return ret;
+        if (prune_progress >= forward_progress) {
+            operation_ = OperationType::None;
+            return ret;
+        }
 
         // Need to erase all history info below this threshold
         // If threshold is zero we don't have anything to prune
         const auto prune_threshold{node_settings_->prune_mode->tx_index().value_from_head(forward_progress)};
-        if (!prune_threshold) return StageResult::kSuccess;
+        if (!prune_threshold) {
+            operation_ = OperationType::None;
+            return ret;
+        }
 
         reset_log_progress();
         const BlockNum segment_width{forward_progress - prune_progress};
-        if (segment_width > 16) {
-            log::Info("Begin " + std::string(stage_name_),
-                      {"op", std::string(magic_enum::enum_name<OperationType>(OperationType::Prune)), "from",
-                       std::to_string(prune_progress), "to", std::to_string(forward_progress), "span",
-                       std::to_string(segment_width)});
+        if (segment_width > db::stages::kSmallBlockSegmentWidth) {
+            log::Info(log_prefix_,
+                      {"op", std::string(magic_enum::enum_name<OperationType>(operation_)),
+                       "from", std::to_string(prune_progress),
+                       "to", std::to_string(forward_progress),
+                       "threshold", std::to_string(prune_threshold)});
         }
 
         if (!prune_progress || prune_progress < forward_progress) {
@@ -166,40 +192,39 @@ StageResult TxLookup::prune(db::RWTxn& txn) {
         txn.commit();
 
     } catch (const StageError& ex) {
-        log::Error(std::string(stage_name_),
+        log::Error(log_prefix_,
                    {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
         ret = static_cast<StageResult>(ex.err());
     } catch (const mdbx::exception& ex) {
-        log::Error(std::string(stage_name_),
+        log::Error(log_prefix_,
                    {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
         ret = StageResult::kDbError;
     } catch (const std::exception& ex) {
-        log::Error(std::string(stage_name_),
+        log::Error(log_prefix_,
                    {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
         ret = StageResult::kUnexpectedError;
     } catch (...) {
-        log::Error(std::string(stage_name_),
+        log::Error(log_prefix_,
                    {"function", std::string(__FUNCTION__), "exception", "unexpected and undefined"});
         ret = StageResult::kUnexpectedError;
     }
 
+    operation_ = OperationType::None;
     return ret;
 }
 
 void TxLookup::forward_impl(db::RWTxn& txn, const BlockNum from, const BlockNum to) {
-    const db::MapConfig source_config{db::table::kBlockBodies};
-
     std::unique_lock log_lck(sl_mutex_);
     operation_ = OperationType::Forward;
     loading_ = false;
     collector_ = std::make_unique<etl::Collector>(node_settings_);
-    current_source_ = std::string(source_config.name);
+    current_source_ = std::string(db::table::kBlockBodies.name);
     current_target_.clear();
     current_key_.clear();
     log_lck.unlock();
 
     // Into etl collector
-    collect_transaction_hashes_from_bodies(txn, source_config, from, to, /*for_deletion=*/false);
+    collect_transaction_hashes_from_canonical_bodies(txn, from, to, /*for_deletion=*/false);
 
     log_lck.lock();
     loading_ = true;
@@ -221,19 +246,17 @@ void TxLookup::forward_impl(db::RWTxn& txn, const BlockNum from, const BlockNum 
 }
 
 void TxLookup::unwind_impl(db::RWTxn& txn, BlockNum from, BlockNum to) {
-    const db::MapConfig source_config{db::table::kBlockBodies};
-
     std::unique_lock log_lck(sl_mutex_);
     operation_ = OperationType::Unwind;
     loading_ = false;
     collector_ = std::make_unique<etl::Collector>(node_settings_);
-    current_source_ = std::string(source_config.name);
+    current_source_ = std::string(db::table::kBlockBodies.name);
     current_target_.clear();
     current_key_.clear();
     log_lck.unlock();
 
     // Into etl collector
-    collect_transaction_hashes_from_bodies(txn, source_config, from, to, /*for_deletion=*/true);
+    collect_transaction_hashes_from_canonical_bodies(txn, from, to, /*for_deletion=*/true);
 
     log_lck.lock();
     loading_ = true;
@@ -266,7 +289,7 @@ void TxLookup::prune_impl(db::RWTxn& txn, BlockNum from, BlockNum to) {
     log_lck.unlock();
 
     // Into etl collector
-    collect_transaction_hashes_from_bodies(txn, source_config, from, to, /*for_deletion=*/true);
+    collect_transaction_hashes_from_canonical_bodies(txn, from, to, /*for_deletion=*/true);
 
     log_lck.lock();
     loading_ = true;
@@ -286,27 +309,30 @@ void TxLookup::prune_impl(db::RWTxn& txn, BlockNum from, BlockNum to) {
     log_lck.unlock();
 }
 
-void TxLookup::collect_transaction_hashes_from_bodies(db::RWTxn& txn,
-                                                      const db::MapConfig& source_config,
-                                                      const BlockNum from, const BlockNum to,
-                                                      const bool for_deletion) {
+void TxLookup::collect_transaction_hashes_from_canonical_bodies(db::RWTxn& txn,
+                                                                const BlockNum from, const BlockNum to,
+                                                                const bool for_deletion) {
     using namespace std::chrono_literals;
     auto log_time{std::chrono::steady_clock::now()};
 
     const BlockNum max_block_number{std::max(from, to)};
+    BlockNum expected_block_number{std::min(from, to) + 1};
     BlockNum reached_block_number{0};
 
-    auto start_key{db::block_key(std::min(from, to) + 1)};
+    auto start_key{db::block_key(expected_block_number)};
     Bytes etl_value{};
-    db::Cursor source(txn, source_config);
+    db::Cursor canonicals(txn, db::table::kCanonicalHashes);
+    db::Cursor bodies(txn, db::table::kBlockBodies);
     db::Cursor transactions{txn, db::table::kBlockTransactions};
 
-    auto source_data{source.lower_bound(db::to_slice(start_key), /*throw_notfound=*/false)};
-    while (source_data) {
-        auto source_data_key_view{db::from_slice(source_data.key)};
-        auto source_data_value_view{db::from_slice(source_data.value)};
-
-        reached_block_number = endian::load_big_u64(source_data_key_view.data());
+    auto canonical_data{canonicals.find(db::to_slice(start_key), /*throw_notfound=*/false)};
+    if (!canonical_data) {
+        throw StageError(StageResult::kBadChainSequence,
+                         "Missing canonical hash for block " + std::to_string(expected_block_number));
+    }
+    while (canonical_data) {
+        reached_block_number = endian::load_big_u64(static_cast<const uint8_t*>(canonical_data.key.data()));
+        check_block_sequence(reached_block_number, expected_block_number);
         if (reached_block_number > max_block_number) break;
 
         // Log and abort check
@@ -317,13 +343,27 @@ void TxLookup::collect_transaction_hashes_from_bodies(db::RWTxn& txn,
             log_time = now + 5s;
         }
 
-        const auto block_body{db::detail::decode_stored_block_body(source_data_value_view)};
+        if (canonical_data.value.length() != kHashLength) {
+            throw StageError(StageResult::kDbError,
+                             "Invalid value length for canonical hash at block " + std::to_string(reached_block_number));
+        }
+
+        const evmc::bytes32 header_hash{to_bytes32(db::from_slice(canonical_data.value))};
+        const auto body_key{db::block_key(reached_block_number, header_hash.bytes)};
+        const auto body_data{bodies.find(db::to_slice(body_key), /*throw_notfound=*/false)};
+        if (!body_data) {
+            throw StageError(StageResult::kDbError,
+                             "Could not load block body " + std::to_string(reached_block_number));
+        }
+        auto body_data_key_view{db::from_slice(body_data.key)};
+        auto body_data_value_view{db::from_slice(body_data.value)};
+        const auto block_body{db::detail::decode_stored_block_body(body_data_value_view)};
         if (block_body.txn_count) {
-            // The same loop is used for forward and for unwind/prune
+            // The same loop is used for forward and for unwind
             // In the latter two records must be deleted hence we set etl_value only if deletion
             // is not required
             if (!for_deletion) {
-                etl_value.assign(zeroless_view(source_data_key_view.substr(0, sizeof(BlockNum))));
+                etl_value.assign(zeroless_view(body_data_key_view.substr(0, sizeof(BlockNum))));
             }
 
             size_t max_transaction_id{block_body.base_txn_id + block_body.txn_count - 1};
@@ -355,12 +395,13 @@ void TxLookup::collect_transaction_hashes_from_bodies(db::RWTxn& txn,
             }
         }
 
-        source_data = source.to_next(/*throw_notfound=*/false);
+        ++expected_block_number;
+        canonical_data = canonicals.to_next(/*throw_notfound=*/false);
     }
 }
 
 std::vector<std::string> TxLookup::get_log_progress() {
-    std::vector<std::string> ret{};
+    std::vector<std::string> ret{"op", std::string(magic_enum::enum_name<OperationType>(operation_))};
     std::unique_lock log_lck(sl_mutex_);
     if (current_source_.empty() && current_target_.empty()) {
         ret.insert(ret.end(), {"db", "waiting ..."});
@@ -377,7 +418,6 @@ std::vector<std::string> TxLookup::get_log_progress() {
 
 void TxLookup::reset_log_progress() {
     std::unique_lock log_lck(sl_mutex_);
-    operation_ = OperationType::None;
     loading_ = false;
     current_source_.clear();
     current_target_.clear();

@@ -27,14 +27,14 @@ namespace silkworm::stagedsync {
 
 class Execution final : public IStage {
   public:
-    explicit Execution(NodeSettings* node_settings)
-        : IStage(db::stages::kExecutionKey, node_settings),
+    explicit Execution(NodeSettings* node_settings, SyncContext* sync_context)
+        : IStage(sync_context, db::stages::kExecutionKey, node_settings),
           consensus_engine_{consensus::engine_factory(node_settings->chain_config.value())} {}
 
     ~Execution() override = default;
 
     StageResult forward(db::RWTxn& txn) final;
-    StageResult unwind(db::RWTxn& txn, BlockNum to) final;
+    StageResult unwind(db::RWTxn& txn) final;
     StageResult prune(db::RWTxn& txn) final;
     std::vector<std::string> get_log_progress() final;
 

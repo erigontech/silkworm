@@ -20,7 +20,6 @@
 
 #include <absl/container/btree_set.h>
 
-#include <silkworm/common/assert.hpp>
 #include <silkworm/common/endian.hpp>
 #include <silkworm/common/lru_cache.hpp>
 #include <silkworm/common/rlp_err.hpp>
@@ -32,6 +31,7 @@ namespace silkworm::stagedsync {
 
 StageResult InterHashes::forward(db::RWTxn& txn) {
     StageResult ret{StageResult::kSuccess};
+    operation_ = OperationType::Forward;
 
     try {
         throw_if_stopping();
@@ -41,31 +41,42 @@ StageResult InterHashes::forward(db::RWTxn& txn) {
         auto hashstate_stage_progress{db::stages::read_stage_progress(*txn, db::stages::kHashStateKey)};
         if (previous_progress == hashstate_stage_progress) {
             // Nothing to process
+            operation_ = OperationType::None;
             return StageResult::kSuccess;
         } else if (previous_progress > hashstate_stage_progress) {
             // Something bad had happened. Not possible hashstate stage is ahead of bodies
             // Maybe we need to unwind ?
-            log::Error() << "Bad progress sequence. InterHashes stage progress " << previous_progress
-                         << " while HashState stage " << hashstate_stage_progress;
-            return StageResult::kInvalidProgress;
+            // Something bad had happened.  Maybe we need to unwind ?
+            throw StageError(StageResult::kInvalidProgress,
+                             "InterHashes progress " + std::to_string(previous_progress) +
+                                 " greater than HashState progress " + std::to_string(hashstate_stage_progress));
         }
 
         BlockNum segment_width{hashstate_stage_progress - previous_progress};
-        if (segment_width > 16) {
-            log::Info("Begin " + std::string(stage_name_),
-                      {"from", std::to_string(previous_progress), "to", std::to_string(hashstate_stage_progress)});
+        if (segment_width > db::stages::kSmallBlockSegmentWidth) {
+            log::Info(log_prefix_ + " begin",
+                      {"op", std::string(magic_enum::enum_name<OperationType>(operation_)),
+                       "from", std::to_string(previous_progress),
+                       "to", std::to_string(hashstate_stage_progress),
+                       "span", std::to_string(segment_width)});
         }
 
         // Retrieve header's state_root at target block to be compared with the one computed here
         auto header_hash{db::read_canonical_header_hash(*txn, hashstate_stage_progress)};
-        SILKWORM_ASSERT(header_hash.has_value());
+        if (!header_hash.has_value()) {
+            throw std::runtime_error("Could not find hash for canonical header " +
+                                     std::to_string(hashstate_stage_progress));
+        }
         auto header{db::read_header(*txn, hashstate_stage_progress, header_hash->bytes)};
-        SILKWORM_ASSERT(header.has_value());
+        if (!header_hash.has_value()) {
+            throw std::runtime_error("Could not find canonical header number " +
+                                     std::to_string(hashstate_stage_progress) +
+                                     " hash " + to_hex(header_hash->bytes, true));
+        }
         auto expected_state_root{header->state_root};
 
         reset_log_progress();
-
-        if (!previous_progress || segment_width > 100'000) {
+        if (!previous_progress || segment_width > db::stages::kLargeBlockSegmentWorthRegen) {
             // Full regeneration
             ret = regenerate_intermediate_hashes(txn, &expected_state_root);
         } else {
@@ -73,56 +84,82 @@ StageResult InterHashes::forward(db::RWTxn& txn) {
             ret = increment_intermediate_hashes(txn, previous_progress, hashstate_stage_progress, &expected_state_root);
         }
 
-        // TODO If I return with kWrongStateRoot begin a binary search backwards
+        if (ret == StageResult::kWrongStateRoot) {
+            // Binary search for the correct block, biased to the lower numbers
+            sync_context_->unwind_to.emplace(previous_progress + (segment_width / 2));
+            sync_context_->bad_block_hash.emplace(header_hash.value());
+        }
 
         success_or_throw(ret);
         throw_if_stopping();
         db::stages::write_stage_progress(*txn, db::stages::kIntermediateHashesKey, hashstate_stage_progress);
         txn.commit();
 
+    } catch (const StageError& ex) {
+        log::Error(log_prefix_,
+                   {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
+        ret = static_cast<StageResult>(ex.err());
     } catch (const mdbx::exception& ex) {
-        log::Error(std::string(stage_name_),
+        log::Error(log_prefix_,
                    {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
         ret = StageResult::kDbError;
-    } catch (const StageError& ex) {
-        log::Error(std::string(stage_name_),
-                   {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
-        return static_cast<StageResult>(ex.err());
     } catch (const std::exception& ex) {
-        reset_log_progress();
-        log::Error(std::string(stage_name_), {"exception", std::string(ex.what())});
-        return StageResult::kUnexpectedError;
+        log::Error(log_prefix_,
+                   {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
+        ret = StageResult::kUnexpectedError;
+    } catch (...) {
+        log::Error(log_prefix_,
+                   {"function", std::string(__FUNCTION__), "exception", "unexpected and undefined"});
+        ret = StageResult::kUnexpectedError;
     }
 
+    operation_ = OperationType::None;
     return ret;
 }
 
-StageResult InterHashes::unwind(db::RWTxn& txn, BlockNum to) {
+StageResult InterHashes::unwind(db::RWTxn& txn) {
     StageResult ret{StageResult::kSuccess};
+
+    if (!sync_context_->unwind_to.has_value()) return ret;
+    const BlockNum to{sync_context_->unwind_to.value()};
+
+    operation_ = OperationType::Unwind;
+
     try {
         throw_if_stopping();
         BlockNum previous_progress{get_progress(txn)};
         if (to >= previous_progress) {
             // Actually nothing to unwind
+            operation_ = OperationType::None;
             return StageResult::kSuccess;
         }
 
         BlockNum segment_width{previous_progress - to};
-        if (segment_width > 16) {
-            log::Info("Begin " + std::string(stage_name_) + " unwind",
-                      {"from", std::to_string(previous_progress), "to", std::to_string(to)});
+        if (segment_width > db::stages::kSmallBlockSegmentWidth) {
+            log::Info(log_prefix_ + " begin",
+                      {"op", std::string(magic_enum::enum_name<OperationType>(operation_)),
+                       "from", std::to_string(previous_progress),
+                       "to", std::to_string(to),
+                       "span", std::to_string(segment_width)});
         }
 
         // Retrieve header's state_root at target block to be compared with the one computed here
+        // Retrieve header's state_root at target block to be compared with the one computed here
         auto header_hash{db::read_canonical_header_hash(*txn, to)};
-        SILKWORM_ASSERT(header_hash.has_value());
+        if (!header_hash.has_value()) {
+            throw std::runtime_error("Could not find hash for canonical header " +
+                                     std::to_string(to));
+        }
         auto header{db::read_header(*txn, to, header_hash->bytes)};
-        SILKWORM_ASSERT(header.has_value());
+        if (!header_hash.has_value()) {
+            throw std::runtime_error("Could not find canonical header number " +
+                                     std::to_string(to) +
+                                     " hash " + to_hex(header_hash->bytes, true));
+        }
         auto expected_state_root{header->state_root};
 
         reset_log_progress();
-
-        if (segment_width > 100'000) {
+        if (segment_width > db::stages::kLargeBlockSegmentWorthRegen) {
             // Full regeneration
             // It will process all HashedState which is already unwound
             ret = regenerate_intermediate_hashes(txn, &expected_state_root);
@@ -137,16 +174,25 @@ StageResult InterHashes::unwind(db::RWTxn& txn, BlockNum to) {
         txn.commit();
 
     } catch (const StageError& ex) {
-        log::Error(std::string(stage_name_),
+        log::Error(log_prefix_,
                    {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
-        return static_cast<StageResult>(ex.err());
+        ret = static_cast<StageResult>(ex.err());
+    } catch (const mdbx::exception& ex) {
+        log::Error(log_prefix_,
+                   {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
+        ret = StageResult::kDbError;
     } catch (const std::exception& ex) {
-        reset_log_progress();
-        log::Error(std::string(stage_name_), {"exception", std::string(ex.what())});
-        return StageResult::kUnexpectedError;
+        log::Error(log_prefix_,
+                   {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
+        ret = StageResult::kUnexpectedError;
+    } catch (...) {
+        log::Error(log_prefix_,
+                   {"function", std::string(__FUNCTION__), "exception", "unexpected and undefined"});
+        ret = StageResult::kUnexpectedError;
     }
 
-    return StageResult::kSuccess;
+    operation_ = OperationType::None;
+    return ret;
 }
 
 StageResult InterHashes::prune(db::RWTxn&) { return StageResult::kSuccess; }
@@ -288,7 +334,7 @@ trie::PrefixSet InterHashes::collect_account_changes(db::RWTxn& txn, BlockNum fr
 
     if (sw) {
         const auto [_, duration]{sw->stop()};
-        log::Trace("Gathered Account Changes", {"in", StopWatch::format(duration)});
+        log::Trace(log_prefix_ + " gathered account changes", {"in", StopWatch::format(duration)});
     }
     return ret;
 }
@@ -369,7 +415,7 @@ trie::PrefixSet InterHashes::collect_storage_changes(db::RWTxn& txn, BlockNum fr
 
     if (sw) {
         const auto [_, duration]{sw->stop()};
-        log::Trace("Gathered Storage Changes", {"in", StopWatch::format(duration)});
+        log::Trace(log_prefix_ + " gathered storage changes", {"in", StopWatch::format(duration)});
     }
 
     return ret;
@@ -384,9 +430,11 @@ StageResult InterHashes::regenerate_intermediate_hashes(db::RWTxn& txn, const ev
     StageResult ret{StageResult::kSuccess};
 
     try {
-        txn->clear_map(db::table::kTrieOfAccounts.name);  // Clear
-        txn->clear_map(db::table::kTrieOfStorage.name);   // Clear
-        txn.commit();                                     // Will reuse deleted pages
+        log::Info(log_prefix_, {"clearing", db::table::kTrieOfAccounts.name});
+        txn->clear_map(db::table::kTrieOfAccounts.name);
+        log::Info(log_prefix_, {"clearing", db::table::kTrieOfStorage.name});
+        txn->clear_map(db::table::kTrieOfStorage.name);
+        txn.commit();
 
         account_collector_ = std::make_unique<etl::Collector>(node_settings_);
         storage_collector_ = std::make_unique<etl::Collector>(node_settings_);
@@ -408,27 +456,27 @@ StageResult InterHashes::regenerate_intermediate_hashes(db::RWTxn& txn, const ev
             account_collector_.reset();  // Will invoke dtor which causes all flushed files (if any) to be deleted
             storage_collector_.reset();  // Will invoke dtor which causes all flushed files (if any) to be deleted
             log_lck.unlock();
-            log::Error("Wrong trie root",
-                       {"expected", to_hex(*expected_root, true), "got", to_hex(computed_root, true)});
-            return StageResult::kWrongStateRoot;
+            const std::string what{"expected " + to_hex(*expected_root, true) + " got " + to_hex(computed_root, true)};
+            throw StageError(StageResult::kWrongStateRoot, what);
         }
 
         flush_collected_nodes(txn);
 
-    } catch (const mdbx::exception& ex) {
-        log::Error(std::string(stage_name_),
-                   {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
-        ret = StageResult::kDbError;
     } catch (const StageError& ex) {
-        log::Error(std::string(stage_name_),
+        log::Error(log_prefix_,
                    {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
         ret = static_cast<StageResult>(ex.err());
+    } catch (const mdbx::exception& ex) {
+        log::Error(log_prefix_,
+                   {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
+        ret = StageResult::kDbError;
     } catch (const std::exception& ex) {
-        log::Error(std::string(stage_name_),
+        log::Error(log_prefix_,
                    {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
         ret = StageResult::kUnexpectedError;
     } catch (...) {
-        log::Error(std::string(stage_name_), {"function", std::string(__FUNCTION__), "exception", "undefined"});
+        log::Error(log_prefix_,
+                   {"function", std::string(__FUNCTION__), "exception", "unexpected and undefined"});
         ret = StageResult::kUnexpectedError;
     }
 
@@ -479,20 +527,21 @@ StageResult InterHashes::increment_intermediate_hashes(db::RWTxn& txn, BlockNum 
 
         flush_collected_nodes(txn);
 
-    } catch (const mdbx::exception& ex) {
-        log::Error(std::string(stage_name_),
-                   {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
-        ret = StageResult::kDbError;
     } catch (const StageError& ex) {
-        log::Error(std::string(stage_name_),
+        log::Error(log_prefix_,
                    {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
         ret = static_cast<StageResult>(ex.err());
+    } catch (const mdbx::exception& ex) {
+        log::Error(log_prefix_,
+                   {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
+        ret = StageResult::kDbError;
     } catch (const std::exception& ex) {
-        log::Error(std::string(stage_name_),
+        log::Error(log_prefix_,
                    {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
         ret = StageResult::kUnexpectedError;
     } catch (...) {
-        log::Error(std::string(stage_name_), {"function", std::string(__FUNCTION__), "exception", "undefined"});
+        log::Error(log_prefix_,
+                   {"function", std::string(__FUNCTION__), "exception", "unexpected and undefined"});
         ret = StageResult::kUnexpectedError;
     }
 
@@ -539,7 +588,8 @@ void InterHashes::reset_log_progress() {
 
 std::vector<std::string> InterHashes::get_log_progress() {
     std::unique_lock log_lck(log_mtx_);
-    std::vector<std::string> ret{"mode", (incremental_ ? "incr" : "full")};
+    std::vector<std::string> ret{"op", std::string(magic_enum::enum_name<OperationType>(operation_)),
+                                 "mode", (incremental_ ? "incr" : "full")};
 
     if (trie_loader_) {
         current_key_ = abridge(trie_loader_->get_log_key(), kAddressLength);
@@ -561,5 +611,4 @@ std::vector<std::string> InterHashes::get_log_progress() {
     }
     return ret;
 }
-
 }  // namespace silkworm::stagedsync

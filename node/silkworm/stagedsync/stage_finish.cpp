@@ -23,6 +23,7 @@ namespace silkworm::stagedsync {
 
 StageResult Finish::forward(db::RWTxn& txn) {
     StageResult ret{StageResult::kSuccess};
+    operation_ = OperationType::Forward;
     try {
         throw_if_stopping();
 
@@ -44,34 +45,38 @@ StageResult Finish::forward(db::RWTxn& txn) {
         update_progress(txn, execution_stage_progress);
 
         // Log the new version of app at this height
-        // TODO Should be done only on first cycle
-        Bytes build_info{byte_ptr_cast(node_settings_->build_info.data())};
-        db::write_build_info_height(*txn, build_info, execution_stage_progress);
-
+        if (sync_context_->is_first_cycle) {
+            Bytes build_info{byte_ptr_cast(node_settings_->build_info.data())};
+            db::write_build_info_height(*txn, build_info, execution_stage_progress);
+        }
         txn.commit();
 
     } catch (const StageError& ex) {
-        log::Error(std::string(stage_name_),
+        log::Error(log_prefix_,
                    {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
         ret = static_cast<StageResult>(ex.err());
     } catch (const mdbx::exception& ex) {
-        log::Error(std::string(stage_name_),
+        log::Error(log_prefix_,
                    {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
         ret = StageResult::kDbError;
     } catch (const std::exception& ex) {
-        log::Error(std::string(stage_name_),
+        log::Error(log_prefix_,
                    {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
         ret = StageResult::kUnexpectedError;
     } catch (...) {
-        log::Error(std::string(stage_name_),
+        log::Error(log_prefix_,
                    {"function", std::string(__FUNCTION__), "exception", "unexpected and undefined"});
         ret = StageResult::kUnexpectedError;
     }
 
+    operation_ = OperationType::None;
     return ret;
 }
-StageResult Finish::unwind(db::RWTxn& txn, BlockNum to) {
+StageResult Finish::unwind(db::RWTxn& txn) {
     StageResult ret{StageResult::kSuccess};
+    if (!sync_context_->unwind_to.has_value()) return ret;
+    const BlockNum to{sync_context_->unwind_to.value()};
+    operation_ = OperationType::Unwind;
     try {
         throw_if_stopping();
         auto previous_progress{db::stages::read_stage_progress(*txn, stage_name_)};
@@ -81,23 +86,24 @@ StageResult Finish::unwind(db::RWTxn& txn, BlockNum to) {
         txn.commit();
 
     } catch (const StageError& ex) {
-        log::Error(std::string(stage_name_),
+        log::Error(log_prefix_,
                    {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
         ret = static_cast<StageResult>(ex.err());
     } catch (const mdbx::exception& ex) {
-        log::Error(std::string(stage_name_),
+        log::Error(log_prefix_,
                    {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
         ret = StageResult::kDbError;
     } catch (const std::exception& ex) {
-        log::Error(std::string(stage_name_),
+        log::Error(log_prefix_,
                    {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
         ret = StageResult::kUnexpectedError;
     } catch (...) {
-        log::Error(std::string(stage_name_),
+        log::Error(log_prefix_,
                    {"function", std::string(__FUNCTION__), "exception", "unexpected and undefined"});
         ret = StageResult::kUnexpectedError;
     }
 
+    operation_ = OperationType::None;
     return ret;
 }
 }  // namespace silkworm::stagedsync

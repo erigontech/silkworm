@@ -47,6 +47,7 @@ enum class [[nodiscard]] StageResult{
     kUnknownError,            //
     kDbError,                 //
     kAborted,                 //
+    kStoppedByEnv,            // Encountered "STOP_BEFORE_STAGE" env var
 };
 
 //! \brief Stage execution exception
@@ -74,6 +75,28 @@ inline void success_or_throw(StageResult code) {
     }
 }
 
+//! \brief Holds informations across all stages
+struct SyncContext {
+    SyncContext() = default;
+    ~SyncContext() = default;
+
+    // Not copyable nor movable
+    SyncContext(const SyncContext&) = delete;
+    SyncContext& operator=(const SyncContext&) = delete;
+
+    //! \brief Whether this is first cycle
+    bool is_first_cycle{false};
+
+    //! \brief If an unwind operation is requested this member is valued
+    std::optional<BlockNum> unwind_to;
+
+    //! \brief After an unwind operation this is valued to last unwind point
+    std::optional<BlockNum> previous_unwind_to;
+
+    //! \brief If an unwind operation is requested this member is valued
+    std::optional<evmc::bytes32> bad_block_hash;
+};
+
 //! \brief Base Stage interface. All stages MUST inherit from this class and MUST override forward / unwind /
 //! prune
 class IStage : public Stoppable {
@@ -84,8 +107,8 @@ class IStage : public Stoppable {
         Unwind,   // Executing Unwind
         Prune,    // Executing Prune
     };
-    explicit IStage(const char* stage_name, NodeSettings* node_settings)
-        : stage_name_{stage_name}, node_settings_{node_settings} {};
+    explicit IStage(SyncContext* sync_context, const char* stage_name, NodeSettings* node_settings)
+        : sync_context_{sync_context}, stage_name_{stage_name}, node_settings_{node_settings} {};
     virtual ~IStage() = default;
 
     //! \brief Forward is called when the stage is executed. The main logic of the stage must be here.
@@ -99,7 +122,7 @@ class IStage : public Stoppable {
     //! \param [in] to : New height we need to unwind to
     //! \return StageResult
     //! \remarks Must be overridden
-    [[nodiscard]] virtual StageResult unwind(db::RWTxn& txn, BlockNum to) = 0;
+    [[nodiscard]] virtual StageResult unwind(db::RWTxn& txn) = 0;
 
     //! \brief Prune is called when (part of) stage previously persisted data should be deleted. The pruning logic
     //! must be here.
@@ -116,6 +139,9 @@ class IStage : public Stoppable {
     //! \brief Updates current stage progress
     void update_progress(db::RWTxn& txn, BlockNum progress);
 
+    //! \brief Sets the prefix for logging lines produced by stage itself
+    void set_log_prefix(const std::string& prefix) { log_prefix_ = prefix; };
+
     //! \brief This function implementation MUST be thread safe as is called asynchronously from ASIO thread
     [[nodiscard]] virtual std::vector<std::string> get_log_progress() { return {}; };
 
@@ -128,10 +154,12 @@ class IStage : public Stoppable {
     }
 
   protected:
+    SyncContext* sync_context_;                                  // Shared context across stages
     const char* stage_name_;                                     // Human friendly identifier of the stage
     NodeSettings* node_settings_;                                // Pointer to shared node configuration settings
     std::atomic<OperationType> operation_{OperationType::None};  // Actual operation being carried out
     std::mutex sl_mutex_;                                        // To synchronize access by outer sync loop
+    std::string log_prefix_;                                     // Log lines prefix holding the progress among stages
 
     //! \brief Throws if actual block != expected block
     static void check_block_sequence(BlockNum actual, BlockNum expected);

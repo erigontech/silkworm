@@ -185,7 +185,7 @@ StageResult Senders::prune(db::RWTxn& txn) {
                 current_key_ = std::to_string(reached_block_number);
                 log_time = now + 5s;
             }
-            if(reached_block_number <= prune_threshold) {
+            if (reached_block_number <= prune_threshold) {
                 prune_table.erase();
                 ++erased;
             }

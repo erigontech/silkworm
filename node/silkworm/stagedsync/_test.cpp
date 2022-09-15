@@ -188,6 +188,13 @@ TEST_CASE("Sync Stages") {
         stage.update_progress(txn, 0);
         stage_result = stage.forward(txn);
         REQUIRE(stage_result == stagedsync::StageResult::kSuccess);
+        REQUIRE(stage.get_progress(txn) == 3);
+
+        // Executing once again with no changes should do nothing
+        stage_result = stage.forward(txn);
+        REQUIRE(stage_result == stagedsync::StageResult::kSuccess);
+        REQUIRE(stage.get_progress(txn) == 3);
+
         REQUIRE_NOTHROW(txn.commit());
 
         {

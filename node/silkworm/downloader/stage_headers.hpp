@@ -17,7 +17,6 @@
 
 #include <atomic>
 
-#include <silkworm/chain/identity.hpp>
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/downloader/internals/types.hpp>
 #include <silkworm/downloader/messages/internal_message.hpp>

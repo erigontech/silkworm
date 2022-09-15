@@ -413,6 +413,11 @@ void run_preflight_checklist(NodeSettings& node_settings) {
             }
         }
 
+        // Load genesis_hash
+        node_settings.chain_config->genesis_hash = db::read_canonical_header_hash(tx, 0);
+        if (!node_settings.chain_config->genesis_hash.has_value())
+            throw std::runtime_error("Could not load genesis hash");
+
         log::Message("Starting Silkworm", {"chain", (known_chain.has_value() ? known_chain->first : "unknown/custom"),
                                            "config", node_settings.chain_config->to_json().dump()});
     }

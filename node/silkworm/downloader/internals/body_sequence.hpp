@@ -18,7 +18,6 @@
 
 #include <list>
 
-#include <silkworm/chain/identity.hpp>
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/downloader/packets/block_bodies_packet.hpp>
 #include <silkworm/downloader/packets/get_block_bodies_packet.hpp>
@@ -37,8 +36,8 @@ namespace silkworm {
  */
 class BodySequence {
   public:
-    BodySequence(const db::ROAccess&, const ChainIdentity&);
-    ~BodySequence();
+    explicit BodySequence(const db::ROAccess&);
+    ~BodySequence() = default;
 
     // sync current state - this must be done at body forward
     void sync_current_state(BlockNum highest_body_in_db, BlockNum highest_header_in_db);
@@ -125,7 +124,6 @@ class BodySequence {
     std::list<NewBlockPacket> announcements_to_do_;
 
     db::ROAccess db_access_;
-    [[maybe_unused]] const ChainIdentity& chain_identity_;
 
     BlockNum highest_body_in_db_{0};
     BlockNum headers_stage_height_{0};

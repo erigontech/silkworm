@@ -16,7 +16,6 @@
 
 #pragma once
 
-#include <silkworm/chain/identity.hpp>
 #include <silkworm/downloader/internals/types.hpp>
 #include <silkworm/downloader/sentry_client.hpp>
 

@@ -127,29 +127,11 @@ int main(int argc, char* argv[]) {
 
         // Prepare database
         cmd::run_preflight_checklist(node_settings);
-
-        // EIP-2124 based chain identity scheme (networkId + genesis + forks)
-        ChainIdentity chain_identity;
-        if (node_settings.chain_config->chain_id == kMainnetConfig.chain_id) {
-            chain_identity = kMainnetIdentity;
-        } else if (node_settings.chain_config->chain_id == kRopstenConfig.chain_id) {
-            chain_identity = kRopstenIdentity;
-        } else if (node_settings.chain_config->chain_id == kSepoliaConfig.chain_id) {
-            chain_identity = kSepoliaIdentity;
-        } else {
-            // for Rinkeby & Goerli we have not implemented the consensus engine yet
-            throw std::logic_error("Chain id=" + std::to_string(node_settings.chain_config->chain_id) +
-                                   " not supported");
-        }
-
-        log::Message("Chain/db status", {"chain-id", to_string(chain_identity.config.chain_id)});
-        log::Message("Chain/db status", {"genesis_hash", to_hex(chain_identity.genesis_hash)});
-        log::Message("Chain/db status", {"hard-forks", to_string(chain_identity.distinct_fork_numbers().size())});
+        log::Message("Chain Identity", {"id", std::to_string(node_settings.chain_config->chain_id),
+                                        "genesis", to_hex(node_settings.chain_config->genesis_hash.value(), true),
+                                        "hard-forks", std::to_string(node_settings.chain_config->distinct_fork_numbers().size())});
 
         // Database access
-        // node_settings.chaindata_env_config.readonly = false;
-        // node_settings.chaindata_env_config.shared = true;
-        // node_settings.chaindata_env_config.growth_size = 10_Tebi;
         mdbx::env_managed db = db::open_env(node_settings.chaindata_env_config);
 
         // Node current status
@@ -163,13 +145,13 @@ int main(int argc, char* argv[]) {
 
         // Sentry client - connects to sentry
         SentryClient sentry{node_settings.sentry_api_addr};
-        sentry.set_status(head_hash, head_td, chain_identity);
+        sentry.set_status(head_hash, head_td, node_settings.chain_config.value());
         sentry.hand_shake();
         auto message_receiving = std::thread([&sentry]() { sentry.execution_loop(); });
         auto stats_receiving = std::thread([&sentry]() { sentry.stats_receiving_loop(); });
 
         // BlockExchange - download headers and bodies from remote peers using the sentry
-        BlockExchange block_exchange{sentry, db::ROAccess{db}, chain_identity};
+        BlockExchange block_exchange{sentry, db::ROAccess{db}, node_settings.chain_config.value()};
         auto block_downloading = std::thread([&block_exchange]() { block_exchange.execution_loop(); });
 
         // Stages shared state

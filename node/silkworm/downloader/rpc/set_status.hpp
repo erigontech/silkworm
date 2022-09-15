@@ -16,7 +16,6 @@
 
 #pragma once
 
-#include <silkworm/chain/identity.hpp>
 #include <silkworm/downloader/internals/types.hpp>
 #include <silkworm/downloader/sentry_client.hpp>
 
@@ -24,7 +23,7 @@ namespace silkworm::rpc {
 
 class SetStatus : public rpc::UnaryCall<sentry::Sentry, sentry::StatusData, sentry::SetStatusReply> {
   public:
-    SetStatus(const ChainIdentity& chain_identity, Hash best_hash, BigInt total_difficulty);
+    SetStatus(const ChainConfig& chain_config, Hash best_hash, BigInt total_difficulty);
 };
 
 }  // namespace silkworm::rpc

@@ -16,7 +16,6 @@
 
 #pragma once
 
-#include <silkworm/chain/identity.hpp>
 #include <silkworm/consensus/engine.hpp>
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/buffer.hpp>
@@ -27,7 +26,8 @@ namespace silkworm {
 
 class BodyPersistence {
   public:
-    BodyPersistence(db::RWTxn&, const ChainIdentity&);
+    explicit BodyPersistence(db::RWTxn&, const ChainConfig&);
+    ~BodyPersistence() = default;
 
     void persist(const Block&);
     void persist(const std::vector<Block>&);

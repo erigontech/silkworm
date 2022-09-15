@@ -38,9 +38,10 @@ TEST_CASE("BodyPersistence - body persistence") {
 
     bool allow_exceptions = false;
 
-    auto chain_identity = kMainnetIdentity;
+    auto chain_config{kMainnetConfig};
+    chain_config.genesis_hash.emplace(kMainnetGenesisHash);
 
-    auto source_data = silkworm::read_genesis_data(chain_identity.config.chain_id);
+    auto source_data = silkworm::read_genesis_data(chain_config.chain_id);
     auto genesis_json = nlohmann::json::parse(source_data, nullptr, allow_exceptions);
     db::initialize_genesis(txn, genesis_json, allow_exceptions);
     context.commit_txn();
@@ -66,7 +67,7 @@ TEST_CASE("BodyPersistence - body persistence") {
         auto header1_hash = block1.header.hash();
         block1.ommers.push_back(BlockHeader{});  // generate error InvalidOmmerHeader
 
-        BodyPersistence bp(tx, chain_identity);
+        BodyPersistence bp(tx, chain_config);
 
         REQUIRE(bp.initial_height() == 0);
         REQUIRE(bp.highest_height() == 0);
@@ -119,7 +120,7 @@ TEST_CASE("BodyPersistence - body persistence") {
         // Note: block1 has zero transactions and zero ommers on mainnet
         REQUIRE(decoding_result == DecodingResult::kOk);
 
-        BodyPersistence bp(tx, chain_identity);
+        BodyPersistence bp(tx, chain_config);
 
         // check internal status
         REQUIRE(bp.initial_height() == 0);
@@ -149,7 +150,7 @@ TEST_CASE("BodyPersistence - body persistence") {
         bp.close();
 
         // re-opening
-        BodyPersistence bp2(tx, chain_identity);
+        BodyPersistence bp2(tx, chain_config);
 
         // check internal status
         REQUIRE(bp2.initial_height() == 1);
@@ -162,7 +163,7 @@ TEST_CASE("BodyPersistence - body persistence") {
         BodyPersistence::remove_bodies(0, block1.header.hash(), tx);
 
         // check internal status
-        BodyPersistence bp3(tx, chain_identity);
+        BodyPersistence bp3(tx, chain_config);
         REQUIRE(bp3.initial_height() == 0);
         REQUIRE(bp3.highest_height() == 0);
     }

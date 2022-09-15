@@ -93,15 +93,13 @@ static std::unique_ptr<IEngine> pre_merge_engine(const ChainConfig& chain_config
 
 std::unique_ptr<IEngine> engine_factory(const ChainConfig& chain_config) {
     std::unique_ptr<IEngine> engine{pre_merge_engine(chain_config)};
-    if (!engine) {
-        return nullptr;
-    }
+    if (!engine) return nullptr;
 
     if (chain_config.terminal_total_difficulty.has_value()) {
-        return std::make_unique<MergeEngine>(std::move(engine), chain_config);
-    } else {
-        return engine;
+        engine = std::make_unique<MergeEngine>(std::move(engine), chain_config);
     }
+
+    return engine;
 }
 
 }  // namespace silkworm::consensus

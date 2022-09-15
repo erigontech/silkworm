@@ -18,7 +18,6 @@
 
 #include <cstdio>
 
-#include <silkworm/chain/identity.hpp>
 #include <silkworm/common/lru_cache.hpp>
 #include <silkworm/consensus/engine.hpp>
 #include <silkworm/downloader/packets/get_block_headers_packet.hpp>
@@ -57,7 +56,7 @@ namespace silkworm {
  */
 class HeaderChain {
   public:
-    explicit HeaderChain(const ChainIdentity&);
+    explicit HeaderChain(const ChainConfig&);
 
     using ConsensusEnginePtr = std::unique_ptr<consensus::IEngine>;
     explicit HeaderChain(ConsensusEnginePtr);  // alternative constructor

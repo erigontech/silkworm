@@ -103,6 +103,33 @@ TEST_CASE("Config revision") {
     CHECK(kMainnetConfig.revision(14'000'000) == EVMC_LONDON);
 }
 
+TEST_CASE("distinct_fork_numbers") {
+    std::vector<BlockNum> expectedMainnetForkNumbers{
+        1'150'000,
+        1'920'000,
+        2'463'000,
+        2'675'000,
+        4'370'000,
+        7'280'000,
+        9'069'000,
+        9'200'000,
+        12'244'000,
+        12'965'000,
+        13'773'000,
+        15'050'000,
+    };
+
+    CHECK(kMainnetConfig.distinct_fork_numbers() == expectedMainnetForkNumbers);
+
+    std::vector<BlockNum> expectedGoerliForkNumbers{
+        1'561'651,
+        4'460'644,
+        5'062'605,
+    };
+
+    CHECK(kGoerliConfig.distinct_fork_numbers() == expectedGoerliForkNumbers);
+}
+
 TEST_CASE("JSON serialization") {
     const auto unrelated_json = nlohmann::json::parse(R"({
             "firstName": "John",
@@ -165,5 +192,4 @@ TEST_CASE("JSON serialization") {
 
     CHECK(config2->to_json() == merge_test_json);
 }
-
 }  // namespace silkworm

@@ -20,7 +20,7 @@
 
 namespace silkworm {
 
-//! \brief Components implementing stoppability should derive from this
+//! \brief Components implementing stop-ability should derive from this
 class Stoppable {
   public:
     //! \brief Sets a stop request for instance;

@@ -20,9 +20,9 @@
 
 namespace silkworm {
 
-BodyPersistence::BodyPersistence(db::RWTxn& tx, const ChainIdentity& ci)
+BodyPersistence::BodyPersistence(db::RWTxn& tx, const ChainConfig& chain_config)
     : tx_{tx},
-      consensus_engine_{consensus::engine_factory(ci.config)},
+      consensus_engine_{consensus::engine_factory(chain_config)},
       chain_state_{tx, /*prune_from=*/0, /*historical_block=null*/} {
     auto bodies_stage_height = db::stages::read_stage_progress(tx, db::stages::kBlockBodiesKey);
 

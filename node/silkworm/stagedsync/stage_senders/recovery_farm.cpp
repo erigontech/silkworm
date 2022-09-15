@@ -31,7 +31,7 @@
 
 namespace silkworm::stagedsync::recovery {
 
-RecoveryFarm::RecoveryFarm(db::RWTxn& txn, NodeSettings* node_settings, std::string log_prefix)
+RecoveryFarm::RecoveryFarm(db::RWTxn& txn, NodeSettings* node_settings, const std::string& log_prefix)
     : txn_{txn},
       node_settings_{node_settings},
       log_prefix_{log_prefix},
@@ -53,8 +53,8 @@ StageResult RecoveryFarm::recover() {
     } else if (previous_progress > block_hashes_progress) {
         // Something bad had happened. Not possible sender stage is ahead of bodies
         // Maybe we need to unwind ?
-        log::Error(log_prefix_) << "Bad progress sequence. Sender stage progress " << previous_progress
-                                << " while BlockHashes stage " << block_hashes_progress;
+        log::Error(log_prefix_ + " bad progress sequence", {"Senders", std::to_string(previous_progress),
+                                                            "BlockHashes", std::to_string(block_hashes_progress)});
         return StageResult::kInvalidProgress;
     }
 
@@ -158,13 +158,16 @@ StageResult RecoveryFarm::recover() {
                 txn_.commit();
 
             } catch (const mdbx::exception& ex) {
-                log::Error(log_prefix_) << "Unexpected db error in " << std::string(__FUNCTION__) << " : " << ex.what();
+                log::Error(log_prefix_,
+                           {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
                 stage_result = StageResult::kDbError;
             } catch (const std::exception& ex) {
-                log::Error(log_prefix_) << "Unexpected error in " << std::string(__FUNCTION__) << " : " << ex.what();
+                log::Error(log_prefix_,
+                           {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
                 stage_result = StageResult::kUnexpectedError;
             } catch (...) {
-                log::Error(log_prefix_) << "Unknown error in " << std::string(__FUNCTION__);
+                log::Error(log_prefix_,
+                           {"function", std::string(__FUNCTION__), "exception", "undefined"});
                 stage_result = StageResult::kUnexpectedError;
             }
         }
@@ -199,7 +202,7 @@ std::vector<std::string> RecoveryFarm::get_log_progress() {
 
 void RecoveryFarm::stop_all_workers(bool wait) {
     for (const auto& worker : workers_) {
-        log::Trace(log_prefix_, {"recoverer #", std::to_string(worker->get_id())}) << " stopping ";
+        log::Trace(log_prefix_, {"recoverer", std::to_string(worker->get_id())}) << " stopping ";
         worker->stop(wait);
     }
 }
@@ -229,7 +232,7 @@ bool RecoveryFarm::collect_workers_results() {
         auto harvestable_worker{get_harvestable_worker()};
         while (harvestable_worker.has_value()) {
             auto& worker{*(workers_.at(harvestable_worker.value()))};
-            log::Trace(log_prefix_, {"recoverer #", std::to_string(harvestable_worker.value())}) << " collecting ";
+            log::Trace(log_prefix_, {"recoverer", std::to_string(harvestable_worker.value())}) << " collecting ";
             worker.set_work(worker_batch, /*kick=*/false);
             BlockNum block_num{0};
             Bytes etl_key;
@@ -258,7 +261,8 @@ bool RecoveryFarm::collect_workers_results() {
         }
 
     } catch (const std::exception& ex) {
-        log::Error(log_prefix_) << "Unexpected error in " << std::string(__FUNCTION__) << " : " << ex.what();
+        log::Error(log_prefix_,
+                   {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
         ret = false;
     }
 
@@ -350,7 +354,7 @@ bool RecoveryFarm::dispatch_batch() {
 
         if (it != workers_.end()) {
             log::Trace(log_prefix_,
-                       {"worker", std::to_string((*it)->get_id()), "items", std::to_string(batch_.size())})
+                       {"recoverer", std::to_string((*it)->get_id()), "items", std::to_string(batch_.size())})
                 << " dispatching";
             (*it)->set_work(batch_, /*kick=*/true);  // Worker will swap contents
             workers_in_flight_++;
@@ -389,7 +393,7 @@ bool RecoveryFarm::initialize_new_worker() {
     if (is_stopping()) {
         return false;
     }
-    log::Trace(log_prefix_, {"worker id", std::to_string(workers_.size())}) << " spawning";
+    log::Trace(log_prefix_, {"recoverer", std::to_string(workers_.size())}) << " spawning";
     using namespace std::placeholders;
     try {
         workers_.emplace_back(new RecoveryWorker(static_cast<uint32_t>(workers_.size())));
@@ -448,7 +452,7 @@ StageResult RecoveryFarm::fill_canonical_headers(BlockNum from, BlockNum to) noe
 
         // If we've not reached block_to something is wrong
         if (reached_block_num != to) {
-            log::Error(log_prefix_) << "Should have reached block " << to << " got " << reached_block_num;
+            log::Error(log_prefix_, {"expected block", std::to_string(to), "got", std::to_string(reached_block_num)});
             return StageResult::kBadChainSequence;
         }
 
@@ -462,13 +466,16 @@ StageResult RecoveryFarm::fill_canonical_headers(BlockNum from, BlockNum to) noe
         return is_stopping() ? StageResult::kAborted : StageResult::kSuccess;
 
     } catch (const mdbx::exception& ex) {
-        log::Error(log_prefix_) << "Unexpected database error in " << std::string(__FUNCTION__) << " : " << ex.what();
+        log::Error(log_prefix_,
+                   {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
         return StageResult::kDbError;
     } catch (const std::exception& ex) {
-        log::Error(log_prefix_) << "Unexpected error in " << std::string(__FUNCTION__) << " : " << ex.what();
+        log::Error(log_prefix_,
+                   {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
         return StageResult::kUnexpectedError;
     } catch (...) {
-        log::Error(log_prefix_) << "Unexpected error in " << std::string(__FUNCTION__) << " : unknown error";
+        log::Error(log_prefix_,
+                   {"function", std::string(__FUNCTION__), "exception", "undefined"});
         return StageResult::kUnexpectedError;
     }
 }

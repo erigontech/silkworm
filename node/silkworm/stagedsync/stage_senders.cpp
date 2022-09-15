@@ -25,12 +25,21 @@ StageResult Senders::forward(db::RWTxn& txn) {
         return StageResult::kUnknownChainId;
     }
 
+    std::unique_lock log_lock(sl_mutex_);
+    operation_ = OperationType::Forward;
     farm_ = std::make_unique<recovery::RecoveryFarm>(txn, node_settings_, log_prefix_);
+    log_lock.unlock();
+
     const auto res{farm_->recover()};
     if (res == StageResult::kSuccess) {
         txn.commit();
     }
+
+    log_lock.lock();
     farm_.reset();
+    operation_ = OperationType::None;
+    log_lock.unlock();
+
     return res;
 }
 

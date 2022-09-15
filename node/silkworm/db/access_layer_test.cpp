@@ -20,6 +20,7 @@
 
 #include <silkworm/chain/genesis.hpp>
 #include <silkworm/chain/protocol_param.hpp>
+#include <silkworm/common/cast.hpp>
 #include <silkworm/common/test_context.hpp>
 #include <silkworm/common/test_util.hpp>
 #include <silkworm/db/buffer.hpp>
@@ -134,9 +135,8 @@ namespace db {
         auto main_crs{txn.open_cursor(main_map)};
         std::vector<std::string> table_names{};
 
-        const db::WalkFunc walk_func{[&table_names](::mdbx::cursor&, ::mdbx::cursor::move_result& data) -> bool {
-            table_names.push_back(data.key.as_string());
-            return true;
+        const auto walk_func{[&table_names](ByteView key, ByteView) {
+            table_names.push_back(byte_ptr_cast(key.data()));
         }};
 
         main_crs.to_first();

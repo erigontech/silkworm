@@ -32,6 +32,7 @@
 #include <silkworm/chain/genesis.hpp>
 #include <silkworm/common/as_range.hpp>
 #include <silkworm/common/assert.hpp>
+#include <silkworm/common/cast.hpp>
 #include <silkworm/common/directories.hpp>
 #include <silkworm/common/endian.hpp>
 #include <silkworm/common/log.hpp>
@@ -219,16 +220,15 @@ dbFreeInfo get_freeInfo(::mdbx::txn& txn) {
     ::mdbx::map_handle free_map{0};
     auto page_size{txn.get_map_stat(free_map).ms_psize};
 
-    const auto& collect_func{[&ret, &page_size](const ::mdbx::cursor&, ::mdbx::cursor::move_result& data) -> bool {
+    const auto& collect_func{[&ret, &page_size](ByteView key, ByteView value) {
         size_t txId;
-        std::memcpy(&txId, data.key.data(), sizeof(size_t));
+        std::memcpy(&txId, key.data(), sizeof(size_t));
         uint32_t pagesCount;
-        std::memcpy(&pagesCount, data.value.data(), sizeof(uint32_t));
+        std::memcpy(&pagesCount, value.data(), sizeof(uint32_t));
         size_t pagesSize = pagesCount * page_size;
         ret.pages += pagesCount;
         ret.size += pagesSize;
         ret.entries.push_back({txId, pagesCount, pagesSize});
-        return true;
     }};
 
     auto free_crs{txn.open_cursor(free_map)};
@@ -263,23 +263,21 @@ dbTablesInfo get_tablesInfo(::mdbx::txn& txn) {
     ret.size += table->size();
     ret.tables.push_back(*table);
 
-    const auto& collect_func{[&ret, &txn](const ::mdbx::cursor&, ::mdbx::cursor::move_result& data) -> bool {
-        auto named_map{txn.open_map(data.key.as_string())};
+    const auto& collect_func{[&ret, &txn](ByteView key, ByteView) {
+        auto named_map{txn.open_map(byte_ptr_cast(key.data()))};
         auto stat2{txn.get_map_stat(named_map)};
         auto info2{txn.get_handle_info(named_map)};
-        auto* table2 = new dbTableEntry{named_map.dbi, data.key.as_string(), stat2, info2};
+        auto* table2 = new dbTableEntry{named_map.dbi, std::string{byte_view_to_string_view(key)}, stat2, info2};
 
         ret.pageSize += table2->stat.ms_psize;
         ret.pages += table2->pages();
         ret.size += table2->size();
         ret.tables.push_back(*table2);
-
-        return true;
     }};
 
     // Get all tables from the unnamed database
     auto main_crs{txn.open_cursor(main_map)};
-    (void)db::cursor_for_each(main_crs, collect_func);
+    db::cursor_for_each(main_crs, collect_func);
     return ret;
 }
 
@@ -889,9 +887,9 @@ void do_first_byte_analysis(db::EnvConfig& config) {
 
     code_cursor.to_first();
     db::cursor_for_each(code_cursor,
-                        [&histogram, &batch_size, &progress](const ::mdbx::cursor&, mdbx::cursor::move_result& entry) {
-                            if (entry.value.length() > 0) {
-                                uint8_t first_byte{entry.value.at(0)};
+                        [&histogram, &batch_size, &progress](ByteView, ByteView value) {
+                            if (value.length() > 0) {
+                                uint8_t first_byte{value.at(0)};
                                 ++histogram[first_byte];
                             }
                             if (!--batch_size) {
@@ -899,7 +897,6 @@ void do_first_byte_analysis(db::EnvConfig& config) {
                                 std::cout << progress.print_interval('.') << std::flush;
                                 batch_size = progress.get_increment_count();
                             }
-                            return true;
                         });
 
     BlockNum last_block{db::stages::read_stage_progress(txn, db::stages::kExecutionKey)};
@@ -1005,14 +1002,13 @@ void do_trie_account_analysis(db::EnvConfig& config) {
 
     code_cursor.to_first();
     db::cursor_for_each(code_cursor,
-                        [&histogram, &batch_size, &progress](const ::mdbx::cursor&, mdbx::cursor::move_result& entry) {
-                            ++histogram[entry.key.length()];
+                        [&histogram, &batch_size, &progress](ByteView key, ByteView) {
+                            ++histogram[key.length()];
                             if (!--batch_size) {
                                 progress.set_current(progress.get_current() + progress.get_increment_count());
                                 std::cout << progress.print_interval('.') << std::flush;
                                 batch_size = progress.get_increment_count();
                             }
-                            return true;
                         });
 
     progress.set_current(total_entries);

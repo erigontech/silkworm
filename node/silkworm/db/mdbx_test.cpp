@@ -20,6 +20,7 @@
 
 #include <catch2/catch.hpp>
 
+#include <silkworm/common/cast.hpp>
 #include <silkworm/common/test_context.hpp>
 
 static const std::map<std::string, std::string> kGeneticCode{
@@ -263,16 +264,14 @@ TEST_CASE("Cursor walk") {
 
     // A map to collect data
     std::map<std::string, std::string> data_map;
-    WalkFunc save_all_data_map{[&data_map](::mdbx::cursor&, ::mdbx::cursor::move_result& entry) {
-        data_map.emplace(entry.key, entry.value);
-        return true;
+    auto save_all_data_map{[&data_map](ByteView key, ByteView value) {
+        data_map.emplace(byte_view_to_string_view(key), byte_view_to_string_view(value));
     }};
 
     // A vector to collect data
     std::vector<std::pair<std::string, std::string>> data_vec;
-    WalkFunc save_all_data_vec{[&data_vec](::mdbx::cursor&, ::mdbx::cursor::move_result& entry) {
-        data_vec.emplace_back(entry.key, entry.value);
-        return true;
+    auto save_all_data_vec{[&data_vec](ByteView key, ByteView value) {
+        data_vec.emplace_back(byte_view_to_string_view(key), byte_view_to_string_view(value));
     }};
 
     SECTION("cursor_for_each") {
@@ -315,27 +314,9 @@ TEST_CASE("Cursor walk") {
         CHECK(data_map.at("UUG") == "Leucine");
         CHECK(data_map.at("UUU") == "Phenylalanine");
         data_map.clear();
-
-        // early stop
-        WalkFunc save_some_data{[&data_map](::mdbx::cursor&, ::mdbx::cursor::move_result& entry) {
-            if (entry.value == "Threonine") {
-                return false;
-            }
-            data_map.emplace(entry.key, entry.value);
-            return true;
-        }};
-        table_cursor.to_first();
-        cursor_for_each(table_cursor, save_some_data);
-        REQUIRE(data_map.size() == 4);
-        CHECK(data_map.at("AAA") == "Lysine");
-        CHECK(data_map.at("AAC") == "Asparagine");
-        CHECK(data_map.at("AAG") == "Lysine");
-        CHECK(data_map.at("AAU") == "Asparagine");
     }
 
-    SECTION("cursor_for_prefix") {
-        Bytes prefix{};
-
+    SECTION("cursor_erase_prefix") {
         // populate table
         for (const auto& [key, value] : kGeneticCode) {
             table_cursor.upsert(mdbx::slice{key}, mdbx::slice{value});
@@ -344,20 +325,27 @@ TEST_CASE("Cursor walk") {
         REQUIRE(table_cursor.empty() == false);
 
         // Delete all records starting with "AC"
+        Bytes prefix{};
         prefix.append({'A', 'C'});
-        auto erased{cursor_for_prefix(table_cursor, to_slice(prefix), walk_erase)};
+        auto erased{cursor_erase_prefix(table_cursor, prefix)};
         REQUIRE(erased == 4);
         REQUIRE(table_cursor.size() == (kGeneticCode.size() - erased));
+    }
 
-        // Early stop
+    SECTION("cursor_for_prefix") {
+        // populate table
+        for (const auto& [key, value] : kGeneticCode) {
+            table_cursor.upsert(mdbx::slice{key}, mdbx::slice{value});
+        }
+
+        Bytes prefix{};
         prefix.assign({'A', 'A'});
         auto count{cursor_for_prefix(table_cursor,
-                                     to_slice(prefix),
-                                     [](::mdbx::cursor&, ::mdbx::cursor::move_result& data) -> bool {
-                                         if (data.value == "Asparagine") return false;
-                                         return true;
+                                     prefix,
+                                     [](ByteView, ByteView) {
+                                         // do nothing
                                      })};
-        REQUIRE(count == 2);
+        REQUIRE(count == 4);
     }
 
     SECTION("cursor_for_count") {
@@ -406,13 +394,11 @@ TEST_CASE("Cursor walk") {
         CHECK(data_map.at("UUU") == "Phenylalanine");
         data_map.clear();
 
-        // early stop 1
-        const auto save_some_data{[&data_map](::mdbx::cursor&, mdbx::cursor::move_result& entry) {
-            if (entry.value == "Threonine") {
-                return false;
+        // selective save 1
+        const auto save_some_data{[&data_map](ByteView key, ByteView value) {
+            if (value != string_view_to_byte_view("Threonine")) {
+                data_map.emplace(byte_view_to_string_view(key), byte_view_to_string_view(value));
             }
-            data_map.emplace(entry.key, entry.value);
-            return true;
         }};
         table_cursor.to_first();
         cursor_for_count(table_cursor, save_some_data, /*max_count=*/3);
@@ -422,7 +408,7 @@ TEST_CASE("Cursor walk") {
         CHECK(data_map.at("AAG") == "Lysine");
         data_map.clear();
 
-        // early stop 2
+        // selective save 2
         table_cursor.to_first();
         cursor_for_count(table_cursor, save_some_data, /*max_count=*/5);
         REQUIRE(data_map.size() == 4);
@@ -440,7 +426,7 @@ TEST_CASE("Cursor walk") {
 
         // Erase all records in forward order
         table_cursor.bind(txn, {table_name});
-        cursor_erase(table_cursor);
+        cursor_erase(table_cursor, {});
         REQUIRE(txn.get_map_stat(table_cursor.map()).ms_entries == 0);
 
         // populate table
@@ -449,8 +435,12 @@ TEST_CASE("Cursor walk") {
         }
 
         // Erase all records in reverse order
+        Bytes set_key(3, '\0');
+        set_key[0] = 'X';
+        set_key[1] = 'X';
+        set_key[2] = 'X';
         table_cursor.bind(txn, {table_name});
-        cursor_erase(table_cursor, CursorMoveDirection::Reverse);
+        cursor_erase(table_cursor, set_key, CursorMoveDirection::Reverse);
         REQUIRE(txn.get_map_stat(table_cursor.map()).ms_entries == 0);
 
         // populate table
@@ -458,21 +448,7 @@ TEST_CASE("Cursor walk") {
             table_cursor.upsert(mdbx::slice{key}, mdbx::slice{value});
         }
 
-        // Erase first 5 records
-        table_cursor.to_first();
-        auto erased{cursor_erase(table_cursor, 5)};
-        REQUIRE(erased == 5);
-        REQUIRE(txn.get_map_stat(table_cursor.map()).ms_entries == kGeneticCode.size() - erased);
-        cursor_for_each(table_cursor, save_all_data_map);
-        REQUIRE(data_map.find("AAA") == data_map.end());
-        REQUIRE(data_map.find("AAC") == data_map.end());
-        REQUIRE(data_map.find("AAG") == data_map.end());
-        REQUIRE(data_map.find("AAU") == data_map.end());
-        REQUIRE(data_map.find("ACA") == data_map.end());
-        data_map.clear();
-
         // Erase backwards from "CAA"
-        Bytes set_key(3, '\0');
         set_key[0] = 'C';
         set_key[1] = 'A';
         set_key[2] = 'A';
@@ -517,4 +493,5 @@ TEST_CASE("OF pages") {
         REQUIRE(stats.ms_overflow_pages);
     }
 }
+
 }  // namespace silkworm::db

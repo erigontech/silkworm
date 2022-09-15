@@ -43,6 +43,8 @@ bit_cast(const From& src) noexcept {
     return dst;
 }
 
-inline ByteView string_view_to_byte_view(std::string_view sv) { return {byte_ptr_cast(sv.data()), sv.length()}; }
+inline ByteView string_view_to_byte_view(std::string_view v) { return {byte_ptr_cast(v.data()), v.length()}; }
+
+inline std::string_view byte_view_to_string_view(ByteView v) { return {byte_ptr_cast(v.data()), v.length()}; }
 
 }  // namespace silkworm

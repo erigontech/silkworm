@@ -159,15 +159,13 @@ TEST_CASE("Sync Stages") {
         block_body.transactions.clear();
         REQUIRE_NOTHROW(db::write_body(*txn, block_body, block_hashes[2].bytes, 3));
 
-        // Update bodies progress
-        REQUIRE_NOTHROW(db::stages::write_stage_progress(*txn, db::stages::kBlockBodiesKey, 3));
-
         // Write canonical hashes
         REQUIRE_NOTHROW(db::write_canonical_header_hash(*txn, block_hashes[0].bytes, 1));
         REQUIRE_NOTHROW(db::write_canonical_header_hash(*txn, block_hashes[1].bytes, 2));
         REQUIRE_NOTHROW(db::write_canonical_header_hash(*txn, block_hashes[2].bytes, 3));
 
-        // Update progress
+        // Update progressese
+        REQUIRE_NOTHROW(db::stages::write_stage_progress(*txn, db::stages::kBlockBodiesKey, 3));
         REQUIRE_NOTHROW(db::stages::write_stage_progress(*txn, db::stages::kBlockHashesKey, 3));
 
         // Commit
@@ -177,10 +175,18 @@ TEST_CASE("Sync Stages") {
         auto last_tx_sequence{db::read_map_sequence(*txn, db::table::kBlockTransactions.name)};
         REQUIRE(last_tx_sequence == 2);
 
-        // Check forward works
+        // Prepare stage
         stagedsync::SyncContext sync_context{};
         stagedsync::Senders stage(&node_settings, &sync_context);
+
+        // Insert a martian stage progress
+        stage.update_progress(txn, 5);
         auto stage_result = stage.forward(txn);
+        REQUIRE(stage_result != stagedsync::StageResult::kSuccess);
+
+        // Check forward works
+        stage.update_progress(txn, 0);
+        stage_result = stage.forward(txn);
         REQUIRE(stage_result == stagedsync::StageResult::kSuccess);
         REQUIRE_NOTHROW(txn.commit());
 
@@ -222,7 +228,21 @@ TEST_CASE("Sync Stages") {
             REQUIRE(written_senders.empty());
         }
 
-        // TODO(Andrea) Check prune works
+        // Check prune works
+        // Override prune mode and issue pruning
+        node_settings.prune_mode =
+            db::parse_prune_mode(/*mode=*/"s",
+                                 /*olderHistory=*/std::nullopt, /*olderReceipts=*/std::nullopt,
+                                 /*olderSenders=*/std::nullopt, /*olderTxIndex=*/std::nullopt,
+                                 /*olderCallTraces=*/std::nullopt,
+                                 /*beforeHistory=*/std::nullopt, /*beforeReceipts=*/std::nullopt,
+                                 /*beforeSenders=*/2, /*beforeTxIndex=*/std::nullopt,
+                                 /*beforeCallTraces=*/std::nullopt);
+
+        stage_result = stage.prune(txn);
+        REQUIRE(stage_result == stagedsync::StageResult::kSuccess);
+        auto written_senders{db::read_senders(*txn, 1, block_hashes[0].bytes)};
+        REQUIRE(written_senders.empty());
     }
 
     SECTION("Execution and HashState") {

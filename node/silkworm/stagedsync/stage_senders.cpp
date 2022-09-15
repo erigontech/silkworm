@@ -175,22 +175,21 @@ StageResult Senders::prune(db::RWTxn& txn) {
         db::Cursor prune_table(txn, db::table::kSenders);
         const auto upper_key{db::block_key(prune_threshold)};
         size_t erased{0};
-        if (prune_table.lower_bound(db::to_slice(upper_key))) {
-            auto prune_data{prune_table.to_previous(/*throw_notfound=*/false)};
-            while (prune_data) {
-                // Log and abort check
-                if (const auto now{std::chrono::steady_clock::now()}; log_time <= now) {
-                    throw_if_stopping();
-                    std::unique_lock log_lck(sl_mutex_);
-                    const auto reached_block_number{endian::load_big_u64(db::from_slice(prune_data.key).data())};
-                    current_key_ = std::to_string(reached_block_number);
-                    log_time = now + 5s;
-                }
-
+        auto prune_data{prune_table.lower_bound(db::to_slice(upper_key), /*throw_notfound=*/false)};
+        while (prune_data) {
+            const auto reached_block_number{endian::load_big_u64(db::from_slice(prune_data.key).data())};
+            // Log and abort check
+            if (const auto now{std::chrono::steady_clock::now()}; log_time <= now) {
+                throw_if_stopping();
+                std::unique_lock log_lck(sl_mutex_);
+                current_key_ = std::to_string(reached_block_number);
+                log_time = now + 5s;
+            }
+            if(reached_block_number <= prune_threshold) {
                 prune_table.erase();
                 ++erased;
-                prune_data = prune_table.to_previous(/*throw_notfound=*/false);
             }
+            prune_data = prune_table.to_previous(/*throw_notfound=*/false);
         }
 
         throw_if_stopping();

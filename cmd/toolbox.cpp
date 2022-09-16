@@ -1593,6 +1593,12 @@ void do_reset_to_download(db::EnvConfig& config) {
     }
 
     {
+        // TODO: Implement properly when/if initial allocation of contracts is allowed in genesis
+        /*
+         * Clarification !
+         * For simplicity all states related to contracts are simply deleted as we do not support (yet)
+         * initial allocation of contracts in genesis.
+         */
         log::Info(db::stages::kExecutionKey, {"table", db::table::kPlainState.name})
             << " reverting from " << db::table::kStorageChangeSet.name << " ...";
         db::Cursor storage_changeset(txn, db::table::kStorageChangeSet);

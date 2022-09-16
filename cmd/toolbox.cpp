@@ -264,10 +264,11 @@ dbTablesInfo get_tablesInfo(::mdbx::txn& txn) {
     ret.tables.push_back(*table);
 
     const auto& collect_func{[&ret, &txn](ByteView key, ByteView) {
-        auto named_map{txn.open_map(byte_ptr_cast(key.data()))};
-        auto stat2{txn.get_map_stat(named_map)};
-        auto info2{txn.get_handle_info(named_map)};
-        auto* table2 = new dbTableEntry{named_map.dbi, std::string{byte_view_to_string_view(key)}, stat2, info2};
+        const auto name{std::string(byte_view_to_string_view(key))};
+        const auto map{txn.open_map(name)};
+        const auto stat2{txn.get_map_stat(map)};
+        const auto info2{txn.get_handle_info(map)};
+        const auto* table2 = new dbTableEntry{map.dbi, std::string{name}, stat2, info2};
 
         ret.pageSize += table2->stat.ms_psize;
         ret.pages += table2->pages();

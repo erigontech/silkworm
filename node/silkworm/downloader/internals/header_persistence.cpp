@@ -29,7 +29,7 @@ HeaderPersistence::HeaderPersistence(db::RWTxn& tx) : tx_(tx), canonical_cache_(
     BlockNum headers_height = db::stages::read_stage_progress(tx, db::stages::kHeadersKey);
     auto headers_hash = db::read_canonical_hash(tx, headers_height);
     if (!headers_hash) {
-        headers_hash = db::read_head_header_hash(tx); // here we assume: headers_height = height(head_header)
+        headers_hash = db::read_head_header_hash(tx);  // here we assume: headers_height = height(head_header)
         update_canonical_chain(headers_height, *headers_hash);
         repaired_ = true;
     }

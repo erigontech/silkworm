@@ -27,13 +27,14 @@ namespace silkworm {
 
 HeaderPersistence::HeaderPersistence(db::RWTxn& tx) : tx_(tx), canonical_cache_(kCanonicalCacheSize) {
     BlockNum headers_height = db::stages::read_stage_progress(tx, db::stages::kHeadersKey);
-    auto head_header_hash = db::read_canonical_hash(tx, headers_height);
-    if (!head_header_hash) {
-        update_canonical_chain(headers_height, *db::read_head_header_hash(tx));
+    auto headers_hash = db::read_canonical_hash(tx, headers_height);
+    if (!headers_hash) {
+        headers_hash = db::read_head_header_hash(tx); // here we assume: headers_height = height(head_header)
+        update_canonical_chain(headers_height, *headers_hash);
         repaired_ = true;
     }
 
-    std::optional<BigInt> headers_head_td = db::read_total_difficulty(tx, headers_height, *head_header_hash);
+    std::optional<BigInt> headers_head_td = db::read_total_difficulty(tx, headers_height, *headers_hash);
     if (!headers_head_td)
         throw std::logic_error("total difficulty of canonical hash at height " + std::to_string(headers_height) +
                                " not found in db");

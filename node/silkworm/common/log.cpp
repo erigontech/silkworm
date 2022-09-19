@@ -48,6 +48,8 @@ void tee_file(const std::filesystem::path& path) {
     }
 }
 
+Level get_verbosity() { return settings_.log_verbosity; }
+
 void set_verbosity(Level level) { settings_.log_verbosity = level; }
 
 bool test_verbosity(Level level) { return level <= settings_.log_verbosity; }

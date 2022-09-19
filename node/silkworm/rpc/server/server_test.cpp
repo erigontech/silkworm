@@ -26,6 +26,7 @@
 
 #include <silkworm/common/log.hpp>
 #include <silkworm/rpc/util.hpp>
+#include <silkworm/test/log.hpp>
 
 namespace silkworm::rpc {
 
@@ -34,7 +35,7 @@ namespace {  // Trick suggested by gRPC team to avoid name clashes in multiple t
 
     class EmptyServer : public Server {
       public:
-        EmptyServer(const ServerConfig& config) : Server(config) {}
+        explicit EmptyServer(const ServerConfig& config) : Server(config) {}
 
       protected:
         void register_async_services(grpc::ServerBuilder& builder) override {
@@ -73,7 +74,7 @@ TEST_CASE("Barebone gRPC Server", "[silkworm][node][rpc]") {
 }
 
 TEST_CASE("Server::Server", "[silkworm][node][rpc]") {
-    silkworm::log::set_verbosity(silkworm::log::Level::kNone);
+    test::SetLogVerbosityGuard guard{log::Level::kNone};
 
     SECTION("OK: create an empty Server", "[silkworm][node][rpc]") {
         ServerConfig config;
@@ -83,7 +84,7 @@ TEST_CASE("Server::Server", "[silkworm][node][rpc]") {
 }
 
 TEST_CASE("Server::build_and_start", "[silkworm][node][rpc]") {
-    silkworm::log::set_verbosity(silkworm::log::Level::kNone);
+    test::SetLogVerbosityGuard set_log_verbosity_guard{log::Level::kNone};
 
     // TODO(canepat): use GMock
     class TestServer : public EmptyServer {
@@ -138,7 +139,7 @@ TEST_CASE("Server::build_and_start", "[silkworm][node][rpc]") {
 }
 
 TEST_CASE("Server::shutdown", "[silkworm][node][rpc]") {
-    silkworm::log::set_verbosity(silkworm::log::Level::kNone);
+    test::SetLogVerbosityGuard guard{log::Level::kNone};
 
     SECTION("OK: build_and_start/shutdown", "[silkworm][node][rpc]") {
         ServerConfig config;
@@ -159,7 +160,7 @@ TEST_CASE("Server::shutdown", "[silkworm][node][rpc]") {
 }
 
 TEST_CASE("Server::join", "[silkworm][node][rpc]") {
-    silkworm::log::set_verbosity(silkworm::log::Level::kNone);
+    test::SetLogVerbosityGuard guard{log::Level::kNone};
 
     SECTION("OK: build_and_start/join/shutdown", "[silkworm][node][rpc]") {
         ServerConfig config;

@@ -26,6 +26,7 @@
 
 #include <silkworm/common/base.hpp>
 #include <silkworm/common/log.hpp>
+#include <silkworm/test/log.hpp>
 
 // Factory function creating one null output stream (all characters are discarded)
 inline std::ostream& null_stream() {
@@ -82,13 +83,13 @@ TEST_CASE("ServerContext", "[silkworm][rpc][server_context]") {
     }
 
     SECTION("print") {
-        silkworm::log::set_verbosity(silkworm::log::Level::kNone);
+        test::SetLogVerbosityGuard guard{log::Level::kNone};
         CHECK_NOTHROW(null_stream() << server_context);
     }
 }
 
 TEST_CASE("ServerContextPool", "[silkworm][rpc][server_context]") {
-    silkworm::log::set_verbosity(silkworm::log::Level::kNone);
+    test::SetLogVerbosityGuard guard{log::Level::kNone};
     grpc::ServerBuilder builder;
 
     SECTION("ServerContextPool OK") {

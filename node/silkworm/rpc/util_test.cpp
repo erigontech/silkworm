@@ -18,8 +18,8 @@
 
 #include <catch2/catch.hpp>
 
-#include <silkworm/common/base.hpp>
 #include <silkworm/common/log.hpp>
+#include <silkworm/test/log.hpp>
 
 namespace silkworm::rpc {
 
@@ -55,7 +55,7 @@ TEST_CASE("compare grpc::Status", "[silkworm][rpc][util]") {
     CHECK(!(status3 == status4));
 }
 
-// Necesary at namespace level for TEST_CASE GrpcLogGuard
+// Necessary at namespace level for TEST_CASE GrpcLogGuard
 static bool gpr_test_log_reached{false};
 static void gpr_test_log(gpr_log_func_args* /*args*/) {
     gpr_test_log_reached = true;
@@ -72,7 +72,7 @@ TEST_CASE("GrpcLogGuard", "[silkworm][rpc][util]") {
 }
 
 TEST_CASE("gpr_silkworm_log", "[silkworm][rpc][util]") {
-    silkworm::log::set_verbosity(silkworm::log::Level::kNone);
+    test::SetLogVerbosityGuard guard{log::Level::kNone};
     const char* FILE_NAME{"file.cpp"};
     const int LINE_NUMBER{10};
     Grpc2SilkwormLogGuard log_guard;

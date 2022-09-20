@@ -17,24 +17,24 @@
 #include "config.hpp"
 
 #include <functional>
+#include <set>
 
 #include <silkworm/common/as_range.hpp>
-
-#include "identity.hpp"
 
 namespace silkworm {
 
 static const std::vector<std::pair<std::string, const ChainConfig*>> kKnownChainConfigs{
-    {kMainnetIdentity.name, &kMainnetConfig},
-    {kRopstenIdentity.name, &kRopstenConfig},
-    {kRinkebyIdentity.name, &kRinkebyConfig},
-    {kGoerliIdentity.name, &kGoerliConfig},
-    {kSepoliaIdentity.name, &kSepoliaConfig},
+    {"mainnet", &kMainnetConfig},
+    {"ropsten", &kRopstenConfig},
+    {"rinkeby", &kRinkebyConfig},
+    {"goerli", &kGoerliConfig},
+    {"sepolia", &kSepoliaConfig},
 };
 
 constexpr const char* kTerminalTotalDifficulty{"terminalTotalDifficulty"};
 constexpr const char* kTerminalBlockNumber{"terminalBlockNumber"};
 constexpr const char* kTerminalBlockHash{"terminalBlockHash"};
+constexpr const char* kGenesisHash{"genesisBlockHash"};
 
 static inline void member_to_json(nlohmann::json& json, const std::string& key, const std::optional<uint64_t>& source) {
     if (source.has_value()) {
@@ -85,8 +85,13 @@ nlohmann::json ChainConfig::to_json() const noexcept {
     }
 
     if (terminal_block_hash.has_value()) {
-        ret[kTerminalBlockHash] = "0x" + to_hex(*terminal_block_hash);
+        ret[kTerminalBlockHash] = to_hex(*terminal_block_hash, /*with_prefix=*/true);
     }
+
+    if (genesis_hash.has_value()) {
+        ret[kGenesisHash] = to_hex(*genesis_hash, /*with_prefix=*/true);
+    }
+
     return ret;
 }
 
@@ -129,6 +134,10 @@ std::optional<ChainConfig> ChainConfig::from_json(const nlohmann::json& json) no
             config.terminal_block_hash = to_bytes32(*terminal_block_hash_bytes);
         }
     }
+
+    /* Note ! genesis_hash is purposely omitted. It must be loaded from db after the
+     * effective genesis block has been persisted */
+
     return config;
 }
 
@@ -144,6 +153,21 @@ void ChainConfig::set_revision_block(evmc_revision rev, std::optional<uint64_t> 
     if (rev > 0) {  // Frontier block is always 0
         evmc_fork_blocks[static_cast<size_t>(rev) - 1] = block;
     }
+}
+std::vector<BlockNum> ChainConfig::distinct_fork_numbers() const {
+    std::set<BlockNum> ret;
+
+    for (const auto& block_number : evmc_fork_blocks) {
+        (void)ret.insert(block_number.value_or(0));
+    }
+
+    (void)ret.insert(dao_block.value_or(0));
+    (void)ret.insert(muir_glacier_block.value_or(0));
+    (void)ret.insert(arrow_glacier_block.value_or(0));
+    (void)ret.insert(gray_glacier_block.value_or(0));
+
+    ret.erase(0);  // Block 0 is not a fork number
+    return {ret.cbegin(), ret.cend()};
 }
 
 std::ostream& operator<<(std::ostream& out, const ChainConfig& obj) { return out << obj.to_json(); }

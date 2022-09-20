@@ -58,34 +58,40 @@ struct ChainConfig {
 
     static_assert(std::size(kJsonForkNames) == EVMC_MAX_REVISION);
 
-    // https://eips.ethereum.org/EIPS/eip-155
+    //! \brief Returns the chain identifier
+    //! \see https://eips.ethereum.org/EIPS/eip-155
     uint64_t chain_id{0};
 
+    //! \brief Holds the hash of genesis block
+    std::optional<evmc::bytes32> genesis_hash;
+
+    //! \brief Returns the type of seal engine
     SealEngineType seal_engine{SealEngineType::kNoProof};
 
-    // Block numbers of forks that have an evmc_revision value
+    //! \brief Block numbers of forks that have an evmc_revision value
     std::array<std::optional<uint64_t>, EVMC_MAX_REVISION> evmc_fork_blocks{};
 
-    // https://eips.ethereum.org/EIPS/eip-779
+    //! \see https://eips.ethereum.org/EIPS/eip-779
     std::optional<uint64_t> dao_block{std::nullopt};
 
-    // https://eips.ethereum.org/EIPS/eip-2387
+    //! \see https://eips.ethereum.org/EIPS/eip-2387
     std::optional<uint64_t> muir_glacier_block{std::nullopt};
 
-    // https://github.com/ethereum/execution-specs/blob/master/network-upgrades/mainnet-upgrades/arrow-glacier.md
+    //! \see https://github.com/ethereum/execution-specs/blob/master/network-upgrades/mainnet-upgrades/arrow-glacier.md
     std::optional<uint64_t> arrow_glacier_block{std::nullopt};
 
-    // https://github.com/ethereum/execution-specs/blob/master/network-upgrades/mainnet-upgrades/gray-glacier.md
+    //! \see https://github.com/ethereum/execution-specs/blob/master/network-upgrades/mainnet-upgrades/gray-glacier.md
     std::optional<uint64_t> gray_glacier_block{std::nullopt};
 
-    // PoW to PoS switch; see EIP-3675
+    //! \brief PoW to PoS switch
+    //! \see EIP-3675
     std::optional<intx::uint256> terminal_total_difficulty{std::nullopt};
     std::optional<uint64_t> terminal_block_number{std::nullopt};
     std::optional<evmc::bytes32> terminal_block_hash{std::nullopt};
 
-    // Returns the revision level at given block number
-    // In other words, on behalf of Json chain config data
-    // returns whether specific HF have occurred
+    //! \brief Returns the revision level at given block number
+    //! \details In other words, on behalf of Json chain config data
+    //! returns whether specific HF have occurred
     [[nodiscard]] constexpr evmc_revision revision(uint64_t block_number) const noexcept {
         for (size_t i{EVMC_MAX_REVISION}; i > 0; --i) {
             if (evmc_fork_blocks[i - 1].has_value() && block_number >= evmc_fork_blocks[i - 1].value()) {
@@ -95,13 +101,16 @@ struct ChainConfig {
         return EVMC_FRONTIER;
     }
 
-    // As ancillary to revision this returns at which block
-    // a specific revision has occurred. If return value is std::nullopt
-    // it means the actual chain either does not support such revision
+    //! \details As ancillary to revision this returns at which block
+    //! a specific revision has occurred. If return value is std::nullopt
+    //! it means the actual chain either does not support such revision
     [[nodiscard]] std::optional<uint64_t> revision_block(evmc_revision rev) const noexcept;
 
     void set_revision_block(evmc_revision rev, std::optional<uint64_t> block);
 
+    std::vector<BlockNum> distinct_fork_numbers() const;
+
+    //! \brief Return the JSON representation of this object
     [[nodiscard]] nlohmann::json to_json() const noexcept;
 
     /*Sample JSON input:
@@ -119,6 +128,8 @@ struct ChainConfig {
             "berlinBlock":12244000
     }
     */
+    //! \brief Try parse a JSON object into strongly typed ChainConfig
+    //! \remark Should this return std::nullopt the parsing has failed
     static std::optional<ChainConfig> from_json(const nlohmann::json& json) noexcept;
 
     friend bool operator==(const ChainConfig&, const ChainConfig&) = default;
@@ -126,6 +137,7 @@ struct ChainConfig {
 
 std::ostream& operator<<(std::ostream& out, const ChainConfig& obj);
 
+inline constexpr evmc::bytes32 kMainnetGenesisHash{0xd4e56740f876aef8c010b86a40d5f56745a118d0906a34e69aec8c0db1cb8fa3_bytes32};
 inline constexpr ChainConfig kMainnetConfig{
     .chain_id = 1,
     .seal_engine = SealEngineType::kEthash,
@@ -148,6 +160,7 @@ inline constexpr ChainConfig kMainnetConfig{
     .terminal_total_difficulty = intx::from_string<intx::uint256>("58750000000000000000000"),
 };
 
+inline constexpr evmc::bytes32 kRopstenGenesisHash{0x41941023680923e0fe4d74a34bdac8141f2540e3ae90623718e47d66d1ca4a2d_bytes32};
 inline constexpr ChainConfig kRopstenConfig{
     .chain_id = 3,
     .seal_engine = SealEngineType::kEthash,
@@ -167,6 +180,7 @@ inline constexpr ChainConfig kRopstenConfig{
     .terminal_total_difficulty = 50000000000000000,
 };
 
+inline constexpr evmc::bytes32 kRinkebyGenesisHash{0x6341fd3daf94b748c72ced5a5b26028f2474f5f00d824504e4fa37a75767e177_bytes32};
 inline constexpr ChainConfig kRinkebyConfig{
     .chain_id = 4,
     .seal_engine = SealEngineType::kClique,
@@ -184,6 +198,7 @@ inline constexpr ChainConfig kRinkebyConfig{
         },
 };
 
+inline constexpr evmc::bytes32 kGoerliGenesisHash{0xbf7e331f7f7c1dd2e05159666b3bf8bc7a8a3a9eb1d518969eab529dd9b88c1a_bytes32};
 inline constexpr ChainConfig kGoerliConfig{
     .chain_id = 5,
     .seal_engine = SealEngineType::kClique,
@@ -202,6 +217,7 @@ inline constexpr ChainConfig kGoerliConfig{
     .terminal_total_difficulty = 10790000,
 };
 
+inline constexpr evmc::bytes32 kSepoliaGenesisHash{0x25a5cc106eea7138acab33231d7160d69cb777ee0c2c553fcddf5138993e6dd9_bytes32};
 inline constexpr ChainConfig kSepoliaConfig{
     .chain_id = 11155111,
     .seal_engine = SealEngineType::kEthash,

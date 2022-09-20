@@ -62,8 +62,8 @@ void SentryClient::publish(const sentry::InboundMessage& message) {
     }
 }
 
-void SentryClient::set_status(Hash head_hash, BigInt head_td, const ChainIdentity& chain_identity) {
-    rpc::SetStatus set_status{chain_identity, head_hash, head_td};
+void SentryClient::set_status(Hash head_hash, BigInt head_td, const ChainConfig& chain_config) {
+    rpc::SetStatus set_status{chain_config, head_hash, head_td};
     exec_remotely(set_status);
     SILK_TRACE << "SentryClient, set_status sent";
 }

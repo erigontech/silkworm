@@ -23,7 +23,8 @@
 namespace silkworm::consensus {
 
 static const ChainConfig kTestConfig{
-    1,  // chain_id
+    1,             // chain_id
+    std::nullopt,  // genesis_hash
     SealEngineType::kNoProof,
     {
         EVMC_HOMESTEAD,

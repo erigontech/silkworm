@@ -120,7 +120,7 @@ Stage::Result BodiesStage::forward(db::RWTxn& tx) {
     log::Info() << "[2/16 Bodies] Start";
 
     try {
-        BodyPersistence body_persistence(tx, block_downloader_.chain_identity());
+        BodyPersistence body_persistence(tx, block_downloader_.chain_config());
         body_persistence.set_preverified_height(block_downloader_.preverified_hashes().height);
 
         RepeatedMeasure<BlockNum> height_progress(body_persistence.initial_height());

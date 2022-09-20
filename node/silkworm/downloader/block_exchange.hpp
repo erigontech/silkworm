@@ -16,7 +16,6 @@
 
 #pragma once
 
-#include <silkworm/chain/identity.hpp>
 #include <silkworm/concurrency/active_component.hpp>
 #include <silkworm/concurrency/containers.hpp>
 #include <silkworm/db/access_layer.hpp>
@@ -28,15 +27,15 @@
 namespace silkworm {
 
 //! \brief Implement the logic needed to download headers and bodies
-class BlockExchange : public ActiveComponent {
+class BlockExchange final : public ActiveComponent {
   public:
-    BlockExchange(SentryClient&, const db::ROAccess&, const ChainIdentity&);
-    ~BlockExchange();
+    BlockExchange(SentryClient&, const db::ROAccess&, const ChainConfig&);
+    virtual ~BlockExchange() override;
 
     void accept(std::shared_ptr<Message>); /*[[thread_safe]]*/
-    void execution_loop() override;        /*[[long_running]]*/
+    void execution_loop() final;           /*[[long_running]]*/
 
-    const ChainIdentity& chain_identity() const;
+    const ChainConfig& chain_config() const;
     const PreverifiedHashes& preverified_hashes() const;
 
   private:
@@ -50,7 +49,7 @@ class BlockExchange : public ActiveComponent {
 
     db::ROAccess db_access_;
     SentryClient& sentry_;
-    const ChainIdentity& chain_identity_;
+    const ChainConfig& chain_config_;
     PreverifiedHashes preverified_hashes_;
     HeaderChain header_chain_;
     BodySequence body_sequence_;

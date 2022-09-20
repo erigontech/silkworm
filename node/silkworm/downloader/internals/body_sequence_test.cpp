@@ -50,10 +50,11 @@ TEST_CASE("body downloading", "[silkworm][downloader][BodySequence]") {
 
     bool allow_exceptions = false;
 
-    auto chain_identity = kMainnetIdentity;
+    auto chain_config{kMainnetConfig};
+    chain_config.genesis_hash.emplace(kMainnetGenesisHash);
 
     // add genesis to db
-    auto source_data = silkworm::read_genesis_data(chain_identity.config.chain_id);
+    auto source_data = silkworm::read_genesis_data(chain_config.chain_id);
     auto genesis_json = nlohmann::json::parse(source_data, nullptr, allow_exceptions);
     db::initialize_genesis(txn, genesis_json, allow_exceptions);
 
@@ -94,7 +95,7 @@ TEST_CASE("body downloading", "[silkworm][downloader][BodySequence]") {
     BlockNum highest_header = 1;
     BlockNum highest_body = 0;
 
-    BodySequence_ForTest bs(dba, chain_identity);
+    BodySequence_ForTest bs(dba);
 
     BodySequence::kMaxBlocksPerMessage = 32;
     BodySequence::kPerPeerMaxOutstandingRequests = 4;

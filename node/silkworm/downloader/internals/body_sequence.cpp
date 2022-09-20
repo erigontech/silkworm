@@ -29,12 +29,9 @@ BlockNum BodySequence::kMaxBlocksPerMessage;
 size_t BodySequence::kPerPeerMaxOutstandingRequests;
 milliseconds_t BodySequence::kNoPeerDelay;
 
-BodySequence::BodySequence(const db::ROAccess& dba, const ChainIdentity& ci)
-    : db_access_(dba), chain_identity_(ci) {
+BodySequence::BodySequence(const db::ROAccess& dba)
+    : db_access_(dba) {
     recover_initial_state();
-}
-
-BodySequence::~BodySequence() {
 }
 
 void BodySequence::recover_initial_state() {

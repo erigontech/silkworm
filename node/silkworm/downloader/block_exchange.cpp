@@ -27,13 +27,13 @@
 
 namespace silkworm {
 
-BlockExchange::BlockExchange(SentryClient& sentry, const db::ROAccess& dba, const ChainIdentity& ci)
+BlockExchange::BlockExchange(SentryClient& sentry, const db::ROAccess& dba, const ChainConfig& chain_config)
     : db_access_{dba},
       sentry_{sentry},
-      chain_identity_{ci},
-      preverified_hashes_{PreverifiedHashes::load(ci.config.chain_id)},
-      header_chain_{ci},
-      body_sequence_{dba, ci} {
+      chain_config_{chain_config},
+      preverified_hashes_{PreverifiedHashes::load(chain_config.chain_id)},
+      header_chain_{chain_config},
+      body_sequence_{dba} {
     auto tx = db_access_.start_ro_tx();
     header_chain_.recover_initial_state(tx);
     header_chain_.set_preverified_hashes(&preverified_hashes_);
@@ -44,7 +44,8 @@ BlockExchange::~BlockExchange() {
     log::Info() << "BlockExchange destroyed";
 }
 
-const ChainIdentity& BlockExchange::chain_identity() const { return chain_identity_; }
+const ChainConfig& BlockExchange::chain_config() const { return chain_config_; }
+
 const PreverifiedHashes& BlockExchange::preverified_hashes() const { return preverified_hashes_; }
 
 void BlockExchange::accept(std::shared_ptr<Message> message) { messages_.push(message); }

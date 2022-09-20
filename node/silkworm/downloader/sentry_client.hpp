@@ -18,7 +18,6 @@
 
 #include <p2psentry/sentry.grpc.pb.h>
 
-#include <silkworm/chain/identity.hpp>
 #include <silkworm/concurrency/active_component.hpp>
 #include <silkworm/downloader/internals/grpc_sync_client.hpp>
 #include <silkworm/downloader/internals/sentry_type_casts.hpp>
@@ -45,9 +44,9 @@ class SentryClient : public rpc::Client<sentry::Sentry>, public ActiveComponent 
     SentryClient(const SentryClient&) = delete;
     SentryClient(SentryClient&&) = delete;
 
-    void set_status(Hash head_hash, BigInt head_td, const ChainIdentity&);  // init the remote sentry
-    void hand_shake();                                                      // needed by the remote sentry, also check the protocol version
-    uint64_t count_active_peers();                                          // ask the remote sentry for active peers
+    void set_status(Hash head_hash, BigInt head_td, const ChainConfig&);  // init the remote sentry
+    void hand_shake();                                                    // needed by the remote sentry, also check the protocol version
+    uint64_t count_active_peers();                                        // ask the remote sentry for active peers
 
     uint64_t active_peers();  // return cached peers count
 

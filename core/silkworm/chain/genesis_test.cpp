@@ -14,17 +14,14 @@
    limitations under the License.
 */
 
-#include "genesis.hpp"
-
 #include <catch2/catch.hpp>
 #include <nlohmann/json.hpp>
 
+#include <silkworm/chain/config.hpp>
+#include <silkworm/chain/genesis.hpp>
 #include <silkworm/common/endian.hpp>
 #include <silkworm/common/util.hpp>
 #include <silkworm/state/in_memory_state.hpp>
-
-#include "config.hpp"
-#include "identity.hpp"
 
 namespace silkworm {
 
@@ -125,7 +122,7 @@ TEST_CASE("mainnet_genesis") {
 
     // Verify our RLP encoding produces the same result
     auto computed_hash{header.hash()};
-    CHECK(to_hex(computed_hash) == to_hex(kMainnetIdentity.genesis_hash));
+    CHECK(to_hex(computed_hash) == to_hex(kMainnetGenesisHash));
 
     // TODO (Andrea) Why this fails for genesis ?
     // auto seal_hash(header.hash(/*for_sealing =*/true));
@@ -147,7 +144,7 @@ TEST_CASE("Ropsten genesis") {
 
     BlockHeader header{read_genesis_header(genesis_json, actual_state_root)};
     auto computed_hash{header.hash()};
-    CHECK(to_hex(computed_hash) == to_hex(kRopstenIdentity.genesis_hash));
+    CHECK(to_hex(computed_hash) == to_hex(kRopstenGenesisHash));
 }
 
 // https://rinkeby.etherscan.io/block/0
@@ -160,7 +157,7 @@ TEST_CASE("Rinkeby genesis") {
 
     BlockHeader header{read_genesis_header(genesis_json, actual_state_root)};
     auto computed_hash{header.hash()};
-    CHECK(to_hex(computed_hash) == to_hex(kRinkebyIdentity.genesis_hash));
+    CHECK(to_hex(computed_hash) == to_hex(kRinkebyGenesisHash));
 }
 
 // https://goerli.etherscan.io/block/0
@@ -173,7 +170,7 @@ TEST_CASE("Goerli genesis") {
 
     BlockHeader header{read_genesis_header(genesis_json, actual_state_root)};
     auto computed_hash{header.hash()};
-    CHECK(to_hex(computed_hash) == to_hex(kGoerliIdentity.genesis_hash));
+    CHECK(to_hex(computed_hash) == to_hex(kGoerliGenesisHash));
 }
 
 // https://sepolia.etherscan.io/block/0
@@ -187,7 +184,6 @@ TEST_CASE("Sepolia genesis") {
 
     BlockHeader header{read_genesis_header(genesis_json, actual_state_root)};
     auto computed_hash{header.hash()};
-    CHECK(to_hex(computed_hash) == to_hex(kSepoliaIdentity.genesis_hash));
+    CHECK(to_hex(computed_hash) == to_hex(kSepoliaGenesisHash));
 }
-
 }  // namespace silkworm

@@ -16,7 +16,6 @@
 
 #include <bit>
 #include <bitset>
-#include <csignal>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
@@ -24,6 +23,7 @@
 #include <string>
 
 #include <CLI/CLI.hpp>
+#include <absl/container/btree_map.h>
 #include <boost/bind/bind.hpp>
 #include <boost/format.hpp>
 #include <magic_enum.hpp>
@@ -36,6 +36,7 @@
 #include <silkworm/common/directories.hpp>
 #include <silkworm/common/endian.hpp>
 #include <silkworm/common/log.hpp>
+#include <silkworm/common/stopwatch.hpp>
 #include <silkworm/concurrency/signal_handler.hpp>
 #include <silkworm/db/genesis.hpp>
 #include <silkworm/db/prune_mode.hpp>
@@ -141,18 +142,20 @@ struct dbFreeInfo {
     std::vector<dbFreeEntry> entries{};
 };
 
-bool user_confirmation() {
+bool user_confirmation(std::string message = {"Confirm ?"}) {
     static std::regex pattern{"^([yY])?([nN])?$"};
     std::smatch matches;
 
     std::string user_input;
-    std::cout << "Confirm ? [y/N] ";
     do {
+        std::cout << "\n"
+                  << message << " [y/N] ";
         std::cin >> user_input;
         std::cin.clear();
         if (std::regex_search(user_input, matches, pattern, std::regex_constants::match_default)) {
             break;
         }
+        std::cout << "Hmmm... maybe you didn't read carefully. I repeat:" << std::endl;
     } while (true);
 
     if (matches[2].length()) {
@@ -1449,6 +1452,179 @@ void do_trie_root(db::EnvConfig& config) {
     }
 }
 
+void do_reset_to_download(db::EnvConfig& config) {
+    if (!config.exclusive) {
+        throw std::runtime_error("Function requires exclusive access to database");
+    }
+
+    // Are you really sure ?
+    if (!user_confirmation("Are you definitely sure ?")) {
+        return;
+    }
+
+    log::Info() << "Ok boss ... you say it. Please be patient...";
+
+    auto env{silkworm::db::open_env(config)};
+    db::RWTxn txn(env);
+
+    StopWatch sw(/*auto_start=*/true);
+    // Void finish stage
+    db::stages::write_stage_progress(*txn, db::stages::kFinishKey, 0);
+    txn.commit(/*renew=*/true);
+    log::Info(db::stages::kFinishKey, {"new height", "0", "in", StopWatch::format(sw.lap().second)});
+    if (SignalHandler::signalled()) throw std::runtime_error("Aborted");
+
+    // Void TxLookup stage
+    log::Info(db::stages::kTxLookupKey, {"table", db::table::kTxLookup.name}) << "truncating ...";
+    db::Cursor source(*txn, db::table::kTxLookup);
+    txn->clear_map(source.map());
+    db::stages::write_stage_progress(*txn, db::stages::kTxLookupKey, 0);
+    db::stages::write_stage_prune_progress(*txn, db::stages::kTxLookupKey, 0);
+    txn.commit(/*renew=*/true);
+    log::Info(db::stages::kTxLookupKey, {"new height", "0", "in", StopWatch::format(sw.lap().second)});
+    if (SignalHandler::signalled()) throw std::runtime_error("Aborted");
+
+    // Void LogIndex stage
+    log::Info(db::stages::kLogIndexKey, {"table", db::table::kLogTopicIndex.name}) << " truncating ...";
+    source.bind(*txn, db::table::kLogTopicIndex);
+    txn->clear_map(source.map());
+    log::Info(db::stages::kLogIndexKey, {"table", db::table::kLogAddressIndex.name}) << " truncating ...";
+    source.bind(*txn, db::table::kLogAddressIndex);
+    txn->clear_map(source.map());
+    db::stages::write_stage_progress(*txn, db::stages::kLogIndexKey, 0);
+    db::stages::write_stage_prune_progress(*txn, db::stages::kLogIndexKey, 0);
+    txn.commit(/*renew=*/true);
+    log::Info(db::stages::kLogIndexKey, {"new height", "0", "in", StopWatch::format(sw.lap().second)});
+    if (SignalHandler::signalled()) throw std::runtime_error("Aborted");
+
+    // Void HistoryIndex stage
+    log::Info(db::stages::kHistoryIndexKey, {"table", db::table::kStorageHistory.name}) << " truncating ...";
+    source.bind(*txn, db::table::kStorageHistory);
+    txn->clear_map(source.map());
+    log::Info(db::stages::kHistoryIndexKey, {"table", db::table::kAccountHistory.name}) << " truncating ...";
+    source.bind(*txn, db::table::kAccountHistory);
+    txn->clear_map(source.map());
+    db::stages::write_stage_progress(*txn, db::stages::kHistoryIndexKey, 0);
+    db::stages::write_stage_prune_progress(*txn, db::stages::kHistoryIndexKey, 0);
+    txn.commit(/*renew=*/true);
+    log::Info(db::stages::kHistoryIndexKey, {"new height", "0", "in", StopWatch::format(sw.lap().second)});
+    if (SignalHandler::signalled()) throw std::runtime_error("Aborted");
+
+    // Void HashState stage
+    log::Info(db::stages::kHashStateKey, {"table", db::table::kHashedCodeHash.name}) << " truncating ...";
+    source.bind(*txn, db::table::kHashedCodeHash);
+    txn->clear_map(source.map());
+    log::Info(db::stages::kHashStateKey, {"table", db::table::kHashedStorage.name}) << " truncating ...";
+    source.bind(*txn, db::table::kHashedStorage);
+    txn->clear_map(source.map());
+    log::Info(db::stages::kHashStateKey, {"table", db::table::kHashedAccounts.name}) << " truncating ...";
+    source.bind(*txn, db::table::kHashedAccounts);
+    txn->clear_map(source.map());
+    db::stages::write_stage_progress(*txn, db::stages::kHashStateKey, 0);
+    db::stages::write_stage_prune_progress(*txn, db::stages::kHashStateKey, 0);
+    txn.commit(/*renew=*/true);
+    log::Info(db::stages::kHashStateKey, {"new height", "0", "in", StopWatch::format(sw.lap().second)});
+    if (SignalHandler::signalled()) throw std::runtime_error("Aborted");
+
+    // Void Intermediate Hashes stage
+    log::Info(db::stages::kIntermediateHashesKey, {"table", db::table::kTrieOfStorage.name}) << " truncating ...";
+    source.bind(*txn, db::table::kTrieOfStorage);
+    txn->clear_map(source.map());
+    log::Info(db::stages::kIntermediateHashesKey, {"table", db::table::kTrieOfAccounts.name}) << " truncating ...";
+    source.bind(*txn, db::table::kTrieOfAccounts);
+    txn->clear_map(source.map());
+    db::stages::write_stage_progress(*txn, db::stages::kIntermediateHashesKey, 0);
+    txn.commit(/*renew=*/true);
+    log::Info(db::stages::kIntermediateHashesKey, {"new height", "0", "in", StopWatch::format(sw.lap().second)});
+    if (SignalHandler::signalled()) throw std::runtime_error("Aborted");
+
+    // Void Execution stage
+    log::Info(db::stages::kExecutionKey, {"table", db::table::kBlockReceipts.name}) << " truncating ...";
+    source.bind(*txn, db::table::kBlockReceipts);
+    txn->clear_map(source.map());
+    log::Info(db::stages::kExecutionKey, {"table", db::table::kLogs.name}) << " truncating ...";
+    source.bind(*txn, db::table::kLogs);
+    txn->clear_map(source.map());
+    log::Info(db::stages::kExecutionKey, {"table", db::table::kIncarnationMap.name}) << " truncating ...";
+    source.bind(*txn, db::table::kIncarnationMap);
+    txn->clear_map(source.map());
+    log::Info(db::stages::kExecutionKey, {"table", db::table::kCode.name}) << " truncating ...";
+    source.bind(*txn, db::table::kCode);
+    txn->clear_map(source.map());
+    log::Info(db::stages::kExecutionKey, {"table", db::table::kPlainCodeHash.name}) << " truncating ...";
+    source.bind(*txn, db::table::kPlainCodeHash);
+    txn->clear_map(source.map());
+
+    {
+        log::Info(db::stages::kExecutionKey, {"table", db::table::kPlainState.name})
+            << " reverting from " << db::table::kAccountChangeSet.name << " ...";
+        db::Cursor account_changeset(txn, db::table::kAccountChangeSet);
+        db::Cursor plain_state(txn, db::table::kPlainState);
+        absl::btree_map<evmc::address, std::optional<Account>> unique_addresses;
+        auto unique_addresses_it{unique_addresses.end()};
+        auto data{account_changeset.to_first(/*throw_notfound=*/false)};
+        while (data) {
+            auto value_view{db::from_slice(data.value)};
+            auto address{to_evmc_address(value_view)};
+            unique_addresses_it = unique_addresses.find(address);
+            if (unique_addresses_it != unique_addresses.end()) {
+                value_view.remove_prefix(kAddressLength);
+                if (value_view.empty()) {
+                    (void)unique_addresses.emplace(address, std::nullopt);
+                } else {
+                    auto [account, err]{Account::from_encoded_storage(value_view)};
+                    rlp::success_or_throw(err);
+                    (void)unique_addresses.emplace(address, account);
+                }
+            }
+            data = account_changeset.to_next(/*throw_notfound=*/false);
+        }
+        for (const auto& [address, account] : unique_addresses) {
+            if (!account) {
+                plain_state.erase(db::to_slice(address), true);
+            } else {
+                auto new_encoded_account{account->encode_for_storage(false)};
+                plain_state.upsert(db::to_slice(address), db::to_slice(new_encoded_account));
+            }
+        }
+        log::Info(db::stages::kExecutionKey, {"table", db::table::kAccountChangeSet.name}) << " truncating ...";
+        txn->clear_map(account_changeset.map());
+        txn.commit(/*renew=*/true);
+    }
+
+    {
+        // TODO: Implement properly when/if initial allocation of contracts is allowed in genesis
+        /*
+         * Clarification !
+         * For simplicity all states related to contracts are simply deleted as we do not support (yet)
+         * initial allocation of contracts in genesis.
+         */
+        log::Info(db::stages::kExecutionKey, {"table", db::table::kPlainState.name})
+            << " reverting from " << db::table::kStorageChangeSet.name << " ...";
+        db::Cursor storage_changeset(txn, db::table::kStorageChangeSet);
+        db::Cursor plain_state(txn, db::table::kPlainState);
+        auto data{plain_state.to_first(/*throw_notfound=*/false)};
+        while (data) {
+            if (data.key.size() == db::kPlainStoragePrefixLength) {
+                plain_state.erase(true);
+            }
+            data = plain_state.to_next(/*throw_notfound=*/false);
+        }
+        log::Info(db::stages::kExecutionKey, {"table", db::table::kStorageChangeSet.name}) << " truncating ...";
+        txn->clear_map(storage_changeset.map());
+        txn.commit(/*renew=*/true);
+    }
+
+    db::stages::write_stage_progress(*txn, db::stages::kExecutionKey, 0);
+    db::stages::write_stage_prune_progress(*txn, db::stages::kExecutionKey, 0);
+    txn.commit(/*renew=*/true);
+    log::Info(db::stages::kExecutionKey, {"new height", "0", "in", StopWatch::format(sw.lap().second)});
+
+    auto [tp, _]{sw.stop()};
+    auto duration{sw.since_start(tp)};
+    log::Info("All done", {"in", StopWatch::format(duration)});
+}
+
 int main(int argc, char* argv[]) {
     SignalHandler::init();
 
@@ -1576,6 +1752,11 @@ int main(int argc, char* argv[]) {
     // Trie root hash verification
     auto cmd_trie_root = app_main.add_subcommand("trie-root", "Checks trie root");
 
+    // Reset after download
+    // Truncates all the work done beyond download stages
+    auto cmd_reset_to_download =
+        app_main.add_subcommand("reset-to-download", "Reset all work and data written after bodies download");
+
     /*
      * Parse arguments and validate
      */
@@ -1668,12 +1849,14 @@ int main(int argc, char* argv[]) {
             do_trie_account_analysis(src_config);
         } else if (*cmd_trie_root) {
             do_trie_root(src_config);
+        } else if (*cmd_reset_to_download) {
+            do_reset_to_download(src_config);
         }
 
         return 0;
 
     } catch (const std::exception& ex) {
-        std::cerr << "\nUnexpected error : " << ex.what() << "\n"
+        std::cerr << "\nUnexpected " << typeid(ex).name() << " : " << ex.what() << "\n"
                   << std::endl;
     } catch (...) {
         std::cerr << "\nUnexpected undefined error\n"

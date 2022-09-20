@@ -71,33 +71,40 @@ void BlockExchange::execution_loop() {
     using namespace std::chrono_literals;
     log::set_thread_name("block-exchange");
 
-    sentry_.subscribe(rpc::ReceiveMessages::Scope::BlockAnnouncements,
-                      [this](const sentry::InboundMessage& msg) { receive_message(msg); });
-    sentry_.subscribe(rpc::ReceiveMessages::Scope::BlockRequests,
-                      [this](const sentry::InboundMessage& msg) { receive_message(msg); });
+    auto receive_message_callback = [this](const sentry::InboundMessage& msg) {
+        receive_message(msg);
+    };
 
-    auto constexpr kShortInterval = 1000ms;
-    time_point_t last_update = system_clock::now();
+    try {
+        boost::signals2::scoped_connection c1(sentry_.announcements_subscription.connect(receive_message_callback));
+        boost::signals2::scoped_connection c2(sentry_.requests_subscription.connect(receive_message_callback));
 
-    while (!is_stopping() && !sentry_.is_stopping()) {
-        // pop a message from the queue
-        std::shared_ptr<Message> message;
-        bool present = messages_.timed_wait_and_pop(message, kShortInterval);
-        if (!present) continue;  // timeout, needed to check exiting_
+        auto constexpr kShortInterval = 1000ms;
+        time_point_t last_update = system_clock::now();
 
-        // process the message (command pattern)
-        message->execute(db_access_, header_chain_, body_sequence_, sentry_);
+        while (!is_stopping() && !sentry_.is_stopping()) {
+            // pop a message from the queue
+            std::shared_ptr<Message> message;
+            bool present = messages_.timed_wait_and_pop(message, kShortInterval);
+            if (!present) continue;  // timeout, needed to check exiting_
 
-        // log status
-        auto now = system_clock::now();
-        if (silkworm::log::test_verbosity(silkworm::log::Level::kDebug) && now - last_update > 30s) {
-            log_status();
-            last_update = now;
+            // process the message (command pattern)
+            message->execute(db_access_, header_chain_, body_sequence_, sentry_);
+
+            // log status
+            auto now = system_clock::now();
+            if (silkworm::log::test_verbosity(silkworm::log::Level::kDebug) && now - last_update > 30s) {
+                log_status();
+                last_update = now;
+            }
         }
+
+        log::Warning() << "BlockExchange execution_loop is stopping...";
+    } catch (std::exception& e) {
+        log::Error() << "BlockExchange execution loop aborted due to exception: " << e.what();
     }
 
     stop();
-    log::Warning() << "BlockExchange execution_loop is stopping...";
 }
 
 void BlockExchange::log_status() {

@@ -35,7 +35,7 @@ static std::shared_ptr<grpc::Channel> create_custom_channel(const std::string& s
 
 SentryClient::SentryClient(const std::string& sentry_addr)
     : base_t(create_custom_channel(sentry_addr)),
-      message_subscription_(rpc::ReceiveMessages::Scope::BlockAnnouncements |
+      receive_messages_(rpc::ReceiveMessages::Scope::BlockAnnouncements |
                             rpc::ReceiveMessages::Scope::BlockRequests) {
     log::Info() << "SentryClient, connecting to remote sentry...";
 }
@@ -55,14 +55,16 @@ rpc::ReceiveMessages::Scope SentryClient::scope(const sentry::InboundMessage& me
     }
 }
 
-void SentryClient::subscribe(rpc::ReceiveMessages::Scope scope, subscriber_t callback) {
-    subscribers_[scope].push_back(std::move(callback));
-}
-
 void SentryClient::publish(const sentry::InboundMessage& message) {
-    auto subscribers = subscribers_[scope(message)];
-    for (auto& subscriber : subscribers) {
-        subscriber(message);
+    switch(scope(message)) {
+        case rpc::ReceiveMessages::Scope::BlockRequests:
+            requests_subscription(message);
+            break;
+        case rpc::ReceiveMessages::Scope::BlockAnnouncements:
+            announcements_subscription(message);
+            break;
+        default:
+            rest_subscription(message);
     }
 }
 
@@ -92,14 +94,11 @@ void SentryClient::execution_loop() {
 
     try {
         // send a message subscription
-        // rpc::ReceiveMessages message_subscription(Scope::BlockAnnouncements | Scope::BlockRequests);
-        exec_remotely(message_subscription_);
+        exec_remotely(receive_messages_);
 
         // receive messages
-        while (!is_stopping() && message_subscription_.receive_one_reply()) {
-            const auto& message = message_subscription_.reply();
-
-            // SILK_TRACE << "SentryClient received message " << *message;
+        while (!is_stopping() && receive_messages_.receive_one_reply()) {
+            const auto& message = receive_messages_.reply();
 
             publish(message);
         }
@@ -177,7 +176,7 @@ uint64_t SentryClient::active_peers() {
 
 bool SentryClient::stop() {
     bool expected = Stoppable::stop();
-    message_subscription_.try_cancel();
+    receive_messages_.try_cancel();
     receive_peer_stats_.try_cancel();
     return expected;
 }

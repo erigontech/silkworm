@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <boost/signals2.hpp>
 #include <p2psentry/sentry.grpc.pb.h>
 
 #include <silkworm/concurrency/active_component.hpp>
@@ -35,21 +36,23 @@ namespace silkworm {
 class SentryClient : public rpc::Client<sentry::Sentry>, public ActiveComponent {
   public:
     using base_t = rpc::Client<sentry::Sentry>;
-    using subscriber_t = std::function<void(const sentry::InboundMessage&)>;
+    using subscriber_t = void(const sentry::InboundMessage&);
 
     explicit SentryClient(const std::string& sentry_addr);  // connect to the remote sentry
     SentryClient(const SentryClient&) = delete;
     SentryClient(SentryClient&&) = delete;
 
     void set_status(Hash head_hash, BigInt head_td, const ChainConfig&);  // init the remote sentry
-    void hand_shake();                                                    // needed by the remote sentry, also check the protocol version
+    void hand_shake();                                                    // hand_shake & check of the protocol version
     uint64_t count_active_peers();                                        // ask the remote sentry for active peers
 
     uint64_t active_peers();  // return cached peers count
 
     using base_t::exec_remotely;  // exec_remotely(SentryRpc& rpc) sends a rpc request to the remote sentry
 
-    void subscribe(rpc::ReceiveMessages::Scope, subscriber_t callback);  // subscribe with sentry to receive messages
+    boost::signals2::signal<subscriber_t> announcements_subscription;  // subscription to headers & bodies announcements
+    boost::signals2::signal<subscriber_t> requests_subscription;       // subscription to headers & bodies requests
+    boost::signals2::signal<subscriber_t> rest_subscription;           // subscription to everything else
 
     bool stop() override;
 
@@ -61,10 +64,8 @@ class SentryClient : public rpc::Client<sentry::Sentry>, public ActiveComponent 
   protected:
     void publish(const sentry::InboundMessage&);  // notifying registered subscribers
 
-    rpc::ReceiveMessages message_subscription_;
+    rpc::ReceiveMessages receive_messages_;
     rpc::ReceivePeerStats receive_peer_stats_;
-
-    std::map<rpc::ReceiveMessages::Scope, std::list<subscriber_t>> subscribers_;  // todo: optimize
     std::atomic<uint64_t> active_peers_{0};
 };
 

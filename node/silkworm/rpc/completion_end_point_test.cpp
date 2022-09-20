@@ -25,6 +25,7 @@
 
 #include <silkworm/common/log.hpp>
 #include <silkworm/rpc/completion_tag.hpp>
+#include <silkworm/test/log.hpp>
 
 namespace silkworm::rpc {
 
@@ -34,7 +35,7 @@ using namespace std::chrono_literals;
 // Exclude gRPC tests from sanitizer builds due to data race warnings inside gRPC library
 #ifndef SILKWORM_SANITIZE
 TEST_CASE("CompletionEndPoint::poll_one", "[silkworm][rpc][completion_end_point]") {
-    silkworm::log::set_verbosity(silkworm::log::Level::kNone);
+    test::SetLogVerbosityGuard guard{log::Level::kNone};
     grpc::CompletionQueue queue;
     CompletionEndPoint completion_end_point{queue};
 
@@ -90,7 +91,7 @@ TEST_CASE("CompletionEndPoint::poll_one", "[silkworm][rpc][completion_end_point]
 }
 
 TEST_CASE("CompletionEndPoint::post_one", "[silkworm][rpc][completion_end_point]") {
-    silkworm::log::set_verbosity(silkworm::log::Level::kNone);
+    test::SetLogVerbosityGuard guard{log::Level::kNone};
     grpc::CompletionQueue queue;
     CompletionEndPoint completion_end_point{queue};
     boost::asio::io_context io_context;

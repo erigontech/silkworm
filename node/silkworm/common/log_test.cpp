@@ -22,13 +22,15 @@
 
 #include <catch2/catch.hpp>
 
+#include <silkworm/test/log.hpp>
+
 namespace silkworm::log {
 
 // Custom LogBuffer just for testing to access buffered content
 template <Level level>
 class TestLogBuffer : public LogBuffer<level> {
   public:
-    std::string content() const { return LogBuffer<level>::ss_.str(); }
+    [[nodiscard]] std::string content() const { return LogBuffer<level>::ss_.str(); }
 };
 
 // Utility test function enforcing that log buffered content *IS* empty
@@ -88,14 +90,14 @@ TEST_CASE("LogBuffer", "[silkworm][common][log]") {
     }
 
     SECTION("LogBuffer stores nothing for verbosity higher than configured one") {
-        set_verbosity(Level::kWarning);
+        test::SetLogVerbosityGuard guard{Level::kWarning};
         check_log_empty<Level::kInfo>();
         check_log_empty<Level::kDebug>();
         check_log_empty<Level::kTrace>();
     }
 
     SECTION("LogBuffer stores content for verbosity lower than or equal to configured one") {
-        set_verbosity(Level::kWarning);
+        test::SetLogVerbosityGuard guard{Level::kWarning};
         check_log_not_empty<Level::kWarning>();
         check_log_not_empty<Level::kError>();
         check_log_not_empty<Level::kCritical>();

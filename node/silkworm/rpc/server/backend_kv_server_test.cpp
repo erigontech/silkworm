@@ -19,7 +19,6 @@
 #include <chrono>
 #include <condition_variable>
 #include <functional>
-#include <memory>
 #include <mutex>
 #include <string>
 #include <thread>
@@ -36,6 +35,7 @@
 #include <silkworm/db/mdbx.hpp>
 #include <silkworm/rpc/conversion.hpp>
 #include <silkworm/rpc/util.hpp>
+#include <silkworm/test/log.hpp>
 
 using namespace std::chrono_literals;
 
@@ -327,8 +327,7 @@ class TestableEthereumBackEnd : public EthereumBackEnd {
 
 struct BackEndKvE2eTest {
     BackEndKvE2eTest(silkworm::log::Level log_verbosity, const NodeSettings& options = {},
-                     std::vector<grpc::Status> statuses = {}) {
-        silkworm::log::set_verbosity(log_verbosity);
+                     std::vector<grpc::Status> statuses = {}) : set_verbosity_log_guard{log_verbosity} {
         std::shared_ptr<grpc::Channel> channel =
             grpc::CreateChannel(kTestAddressUri, grpc::InsecureChannelCredentials());
         ethbackend_stub = remote::ETHBACKEND::NewStub(channel);
@@ -387,7 +386,8 @@ struct BackEndKvE2eTest {
         }
     }
 
-    rpc::Grpc2SilkwormLogGuard log_guard;
+    test::SetLogVerbosityGuard set_verbosity_log_guard;
+    rpc::Grpc2SilkwormLogGuard grpc2silkworm_log_guard;
     std::unique_ptr<remote::ETHBACKEND::Stub> ethbackend_stub;
     std::unique_ptr<BackEndClient> backend_client;
     std::unique_ptr<remote::KV::Stub> kv_stub;
@@ -407,7 +407,7 @@ namespace silkworm::rpc {
 // Exclude gRPC tests from sanitizer builds due to data race warnings inside gRPC library
 #ifndef SILKWORM_SANITIZE
 TEST_CASE("BackEndKvServer", "[silkworm][node][rpc]") {
-    silkworm::log::set_verbosity(silkworm::log::Level::kNone);
+    test::SetLogVerbosityGuard guard{log::Level::kNone};
     Grpc2SilkwormLogGuard log_guard;
     ServerConfig srv_config;
     srv_config.set_address_uri(kTestAddressUri);

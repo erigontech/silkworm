@@ -36,7 +36,7 @@ static std::shared_ptr<grpc::Channel> create_custom_channel(const std::string& s
 SentryClient::SentryClient(const std::string& sentry_addr)
     : base_t(create_custom_channel(sentry_addr)),
       receive_messages_(rpc::ReceiveMessages::Scope::BlockAnnouncements |
-                            rpc::ReceiveMessages::Scope::BlockRequests) {
+                        rpc::ReceiveMessages::Scope::BlockRequests) {
     log::Info() << "SentryClient, connecting to remote sentry...";
 }
 
@@ -56,7 +56,7 @@ rpc::ReceiveMessages::Scope SentryClient::scope(const sentry::InboundMessage& me
 }
 
 void SentryClient::publish(const sentry::InboundMessage& message) {
-    switch(scope(message)) {
+    switch (scope(message)) {
         case rpc::ReceiveMessages::Scope::BlockRequests:
             requests_subscription(message);
             break;

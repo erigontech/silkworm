@@ -130,15 +130,15 @@ void SentryClient::stats_receiving_loop() {
         while (!is_stopping() && receive_peer_stats_.receive_one_reply()) {
             const sentry::PeerEvent& stat = receive_peer_stats_.reply();
 
-	        auto peerId = bytes_from_H512(stat.peer_id());
-	        const char* event = "";
-	        if (stat.event_id() == sentry::PeerEvent::Connect) {
-	            event = "connected";
-	            active_peers_++;
-	        } else {
-	            event = "disconnected";
-	            if (active_peers_ > 0) active_peers_--;  // workaround, to fix this we need to improve the interface
-	        }                                            // or issue a count_active_peers()
+            auto peerId = bytes_from_H512(stat.peer_id());
+            const char* event = "";
+            if (stat.event_id() == sentry::PeerEvent::Connect) {
+                event = "connected";
+                active_peers_++;
+            } else {
+                event = "disconnected";
+                if (active_peers_ > 0) active_peers_--;  // workaround, to fix this we need to improve the interface
+            }                                            // or issue a count_active_peers()
 
             log::Debug() << "Peer " << human_readable_id(peerId) << " " << event << ", active " << active_peers_;
         }

@@ -16,42 +16,57 @@
 
 #pragma once
 
-#include <silkworm/downloader/internals/types.hpp>
 #include <silkworm/common/settings.hpp>
+#include <silkworm/downloader/internals/types.hpp>
 
 namespace silkworm {
 
 // todo: replace this class with IStage as soon as it will support the shared status
 class Stage : public Stoppable {
   public:
-    enum Result { Unspecified, Done, DoneAndUpdated, UnwindNeeded, SkipTx, Error };
+    enum Result {
+        Unspecified,
+        Done,
+        DoneAndUpdated,
+        UnwindNeeded,
+        SkipTx,
+        Error
+    };
 
     struct Status {
         bool first_sync{false};
         std::optional<BlockNum> current_point;
         std::optional<BlockNum> unwind_point;
-        std::optional<Hash> bad_block;
+        std::optional<Hash> bad_block_hash;
     };
 
-    Stage(const char* stage_name, Status& s, NodeSettings*): shared_status_(s), stage_name_(stage_name) {};
-    Stage(const Stage& s): shared_status_(s.shared_status_) {}
+    Stage(const char* stage_name, Status& s, NodeSettings*) : shared_status_(s), stage_name_(stage_name){};
+    Stage(const Stage& s) : shared_status_(s.shared_status_) {}
 
     virtual ~Stage() = default;
 
     const char* name() const { return stage_name_; }
 
     virtual Result forward(db::RWTxn&) = 0;
-    virtual Result unwind(db::RWTxn&, BlockNum new_height) = 0;
+    virtual Result unwind(db::RWTxn&) = 0;
     virtual Result prune(db::RWTxn&) = 0;
 
     // for progress log
-    enum class OperationType { None, Forward, Unwind, Prune };
+    enum class OperationType {
+        None,
+        Forward,
+        Unwind,
+        Prune
+    };
     std::atomic<OperationType> operation_{OperationType::None};  // actual operation being carried out
     virtual std::vector<std::string> get_log_progress() = 0; // implementation MUST be thread safe
+
+    void set_log_prefix(const std::string& prefix) { log_prefix_ = prefix; }
 
   protected:
     Status& shared_status_;
     const char* stage_name_;
+    std::string log_prefix_;
 };
 
 }  // namespace silkworm

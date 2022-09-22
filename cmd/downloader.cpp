@@ -51,12 +51,12 @@ std::tuple<Stage::Result, LastStage> forward(std::vector<Stage*> stages, db::RWT
 }
 
 // stage-loop, unwinding phase
-Stage::Result unwind(std::vector<Stage*> stages, BlockNum unwind_point, LastStage last_stage, db::RWTxn& txn) {
+Stage::Result unwind(std::vector<Stage*> stages, LastStage last_stage, db::RWTxn& txn) {
     using Status = Stage::Result;
     Stage::Result result{Status::Unspecified};
 
     for (size_t i = last_stage; i <= 0; --i) {  // reverse loop
-        result = stages[i]->unwind(txn, unwind_point);
+        result = stages[i]->unwind(txn);
         if (result == Status::Error) {
             break;
         }
@@ -96,9 +96,8 @@ int main(int argc, char* argv[]) {
 
     try {
         NodeSettings node_settings{};
-        node_settings.sentry_api_addr = "127.0.0.1:9091";
 
-        log::Settings log_settings;
+        log::Settings log_settings{};
         log_settings.log_threads = true;
         log_settings.log_file = "downloader.log";
         log_settings.log_verbosity = log::Level::kInfo;
@@ -164,7 +163,7 @@ int main(int argc, char* argv[]) {
         log::Message("Chain/db status", {"head height", to_string(head_height)});
 
         // Sentry client - connects to sentry
-        SentryClient sentry{node_settings.sentry_api_addr};
+        SentryClient sentry{node_settings.external_sentry_addr};
         sentry.set_status(head_hash, head_td, node_settings.chain_config.value());
         sentry.hand_shake();
         auto message_receiving = std::thread([&sentry]() { sentry.execution_loop(); });
@@ -210,7 +209,7 @@ int main(int argc, char* argv[]) {
             std::tie(result, last_stage) = forward(stages, txn);
 
             if (result == Stage::Result::UnwindNeeded) {
-                result = unwind(stages, *(shared_status.unwind_point), last_stage, txn);
+                result = unwind(stages, last_stage, txn);
             }
 
             shared_status.first_sync = false;

@@ -20,7 +20,6 @@
 #include <silkworm/downloader/rpc/hand_shake.hpp>
 #include <silkworm/downloader/rpc/peer_count.hpp>
 #include <silkworm/downloader/rpc/receive_messages.hpp>
-#include <silkworm/downloader/rpc/receive_peer_stats.hpp>
 #include <silkworm/downloader/rpc/set_status.hpp>
 
 namespace silkworm {
@@ -37,7 +36,7 @@ SentryClient::SentryClient(const std::string& sentry_addr)
     : base_t(create_custom_channel(sentry_addr)),
       receive_messages_(rpc::ReceiveMessages::Scope::BlockAnnouncements |
                         rpc::ReceiveMessages::Scope::BlockRequests) {
-    log::Info() << "SentryClient, connecting to remote sentry...";
+    log::Info("SentryClient", {"remote", sentry_addr}) << " connecting ...";
 }
 
 rpc::ReceiveMessages::Scope SentryClient::scope(const sentry::InboundMessage& message) {
@@ -83,7 +82,7 @@ void SentryClient::hand_shake() {
 
     sentry::Protocol supported_protocol = reply.protocol();
     if (supported_protocol != sentry::Protocol::ETH66) {
-        log::Critical() << "SentryClient: sentry do not support eth/66 protocol, is stopping...";
+        log::Critical("SentryClient") << "remote sentry do not support eth/66 protocol, stopping...";
         stop();
         throw SentryClientException("SentryClient exception, cause: sentry do not support eth/66 protocol");
     }
@@ -104,12 +103,12 @@ void SentryClient::execution_loop() {
         }
 
     } catch (const std::exception& e) {
-        if (!is_stopping()) log::Error() << "SentryClient execution loop aborted due to exception: " << e.what();
+        if (!is_stopping()) log::Error("SentryClient") << "execution loop aborted due to exception: " << e.what();
     }
 
     // note: do we need to handle connection loss with an outer loop that wait and then re-try hand_shake and so on?
     // (we would redo set_status & hand-shake too)
-    log::Warning() << "SentryClient execution loop is stopping...";
+    log::Warning("SentryClient") << "execution loop is stopping...";
     stop();
 }
 
@@ -123,7 +122,7 @@ void SentryClient::stats_receiving_loop() {
 
         // ask the remote sentry about the current active peers
         count_active_peers();
-        log::Info() << "SentryClient, " << active_peers_ << " active peers";
+        log::Info("SentryClient") << active_peers_ << " active peers";
 
         // receive stats
         while (!is_stopping() && receive_peer_stats_.receive_one_reply()) {
@@ -139,14 +138,14 @@ void SentryClient::stats_receiving_loop() {
                 if (active_peers_ > 0) active_peers_--;  // workaround, to fix this we need to improve the interface
             }                                            // or issue a count_active_peers()
 
-            log::Debug() << "Peer " << human_readable_id(peerId) << " " << event << ", active " << active_peers_;
+            log::Debug("SentryClient") << "Peer " << human_readable_id(peerId) << " " << event << ", active " << active_peers_;
         }
 
     } catch (const std::exception& e) {
-        if (!is_stopping()) log::Error() << "SentryClient stats loop aborted due to exception: " << e.what();
+        if (!is_stopping()) log::Error("SentryClient") << "stats loop aborted due to exception: " << e.what();
     }
 
-    log::Warning() << "SentryClient stats loop is stopping...";
+    log::Warning("SentryClient") << "stats loop is stopping...";
     stop();
 }
 

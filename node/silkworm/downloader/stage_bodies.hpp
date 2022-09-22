@@ -34,7 +34,7 @@ class BodiesStage : public Stage {
     ~BodiesStage();
 
     Stage::Result forward(db::RWTxn&) override;                      // go forward, downloading headers
-    Stage::Result unwind(db::RWTxn&, BlockNum new_height) override;  // go backward, unwinding headers to new_height
+    Stage::Result unwind(db::RWTxn&) override;   // go backward, unwinding headers to new_height
     Stage::Result prune(db::RWTxn&) override;
 
   private:

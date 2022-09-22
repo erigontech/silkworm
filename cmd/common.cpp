@@ -163,20 +163,27 @@ void parse_silkworm_command_line(CLI::App& cli, int argc, char* argv[], log::Set
         ->capture_default_str()
         ->check(IPEndPointValidator(/*allow_empty=*/false));
 
+    // Sentry settings
+    cli.add_option("--sentry.remote.addr", node_settings.external_sentry_addr, "External sentry endpoint")
+        ->capture_default_str()
+        ->check(IPEndPointValidator(/*allow_empty=*/true));
+
     cli.add_option("--sentry.api.addr", node_settings.sentry_api_addr, "Sentry api endpoint")
         ->capture_default_str()
         ->check(IPEndPointValidator(/*allow_empty=*/true));
 
     cli.add_option("--sync.loop.throttle", node_settings.sync_loop_throttle_seconds,
-                   "Sets the minimum time between sync loop starts (in seconds)")
-        ->capture_default_str();
+                   "Sets the minimum delay between sync loop starts (in seconds)")
+        ->capture_default_str()
+        ->check(CLI::Range(1u, 7200u));
 
     cli.add_option("--sync.loop.log.interval", node_settings.sync_loop_log_interval_seconds,
-                   "Sets the minimum time between sync loop logs (in seconds)")
+                   "Sets the interval between sync loop logs (in seconds)")
         ->capture_default_str()
-        ->check(CLI::Range(5u, 600u));
+        ->check(CLI::Range(10u, 600u));
 
     cli.add_flag("--fakepow", node_settings.fake_pow, "Disables proof-of-work verification");
+
     // Chain options
     auto chains_map{get_known_chains_map()};
     auto& chain_opts = *cli.add_option_group("Chain", "Chain selection options");

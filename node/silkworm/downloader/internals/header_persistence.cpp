@@ -82,7 +82,7 @@ void HeaderPersistence::persist(const Headers& headers) {
 void HeaderPersistence::persist(const BlockHeader& header) {  // try to modularize this method
     if (finished_) {
         std::string error_message = "HeaderPersistence: persist method called on instance in 'finished' state";
-        log::Error() << error_message;
+        log::Error("HeaderStage") << error_message;
         throw std::logic_error(error_message);
     }
 
@@ -100,7 +100,7 @@ void HeaderPersistence::persist(const BlockHeader& header) {  // try to modulari
     if (!parent) {
         std::string error_message = "HeaderPersistence: could not find parent with hash " + to_hex(header.parent_hash) +
                                     " and height " + std::to_string(height - 1) + " for header " + hash.to_hex();
-        log::Error() << error_message;
+        log::Error("HeaderStage") << error_message;
         throw std::logic_error(error_message);
     }
 
@@ -110,7 +110,7 @@ void HeaderPersistence::persist(const BlockHeader& header) {  // try to modulari
         std::string error_message = "HeaderPersistence: parent's total difficulty not found with hash " +
                                     to_hex(header.parent_hash) + " and height " + std::to_string(height - 1) +
                                     " for header " + hash.to_hex();
-        log::Error() << error_message;
+        log::Error("HeaderStage") << error_message;
         throw std::logic_error(error_message);  // unexpected condition, bug?
     }
     auto td = *parent_td + header.difficulty;  // calculated total difficulty of this header
@@ -210,7 +210,7 @@ void HeaderPersistence::update_canonical_chain(BlockNum height, Hash hash) {  //
                 "HeaderPersistence: fix canonical chain failed at"
                 " ancestor=" +
                 std::to_string(ancestor_height) + " hash=" + ancestor_hash.to_hex();
-            log::Error() << msg;
+            log::Error("HeaderStage") << msg;
             throw std::logic_error(msg);
         }
 

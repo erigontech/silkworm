@@ -166,6 +166,18 @@ if(NOT MSVC)
   )
 endif()
 
+# libtorrent
+if(NOT SILKWORM_CORE_ONLY)
+  find_package(Boost CONFIG REQUIRED)
+  # Define Boost::headers target if missing because libtorrent needs it
+  if(NOT TARGET Boost::headers)
+    add_library(Boost::headers INTERFACE IMPORTED)
+    target_include_directories(Boost::headers INTERFACE ${Boost_INCLUDE_DIRS})
+  endif()
+  add_subdirectory(third_party/libtorrent)
+  target_compile_options(torrent-rasterbar PRIVATE -w)
+endif()
+
 add_subdirectory(third_party/silkpre)
 
 if(NOT MSVC)

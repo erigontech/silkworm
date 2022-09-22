@@ -39,8 +39,8 @@ constexpr const char* kDefaultSessionFilePath{".session"};
 constexpr const char* kDefaultResumeFilePath{".resume"};
 constexpr const char* kDefaultMagnetsFilePath{".magnet_links"};
 
-constexpr int kDefaultDownloadRateLimit{64 * 1024 * 1024}; // 64MiB
-constexpr int kDefaultUploadRateLimit{4 * 1024 * 1024}; // 4MiB
+constexpr int kDefaultDownloadRateLimit{64 * 1024 * 1024};  // 64MiB
+constexpr int kDefaultUploadRateLimit{4 * 1024 * 1024};     // 4MiB
 constexpr int kDefaultActiveDownloads{6};
 
 //! The settings for handling BitTorrent protocol

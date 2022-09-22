@@ -17,6 +17,7 @@
 #include "bittorrent.hpp"
 
 #include <fstream>
+#include <utility>
 
 #include <libtorrent/alert_types.hpp>
 #include <libtorrent/magnet_uri.hpp>
@@ -26,7 +27,6 @@
 
 #include <silkworm/common/assert.hpp>
 #include <silkworm/common/log.hpp>
-#include <utility>
 
 namespace silkworm {
 
@@ -76,7 +76,7 @@ void BitTorrentClient::stop() {
 lt::session_params BitTorrentClient::load_or_create_session_parameters() const {
     // Restore session parameters from old session, if any
     const auto prev_session_data = BitTorrentClient::load_file(session_file_path_);
-    auto session_params=
+    auto session_params =
         prev_session_data.empty() ? lt::session_params{} : lt::read_session_params(prev_session_data);
 
     // Customize the session settings
@@ -180,7 +180,7 @@ void BitTorrentClient::run() {
             // When resume data is ready, save it
             if (auto rd = lt::alert_cast<lt::save_resume_data_alert>(alert)) {
                 const auto resume_params_data{lt::write_resume_data_buf(rd->params)};
-                BitTorrentClient::save_file(resume_file_prefix_ + "_"  + rd->torrent_name(), resume_params_data);
+                BitTorrentClient::save_file(resume_file_prefix_ + "_" + rd->torrent_name(), resume_params_data);
                 if (done) break;
             }
 
@@ -193,7 +193,7 @@ void BitTorrentClient::run() {
                 if (st->status.empty()) continue;
                 for (const auto& ts : st->status) {
                     SILK_DEBUG << "[" << ts.handle.id() << "]: " << magic_enum::enum_name(ts.state) << ' ' << (ts.download_payload_rate / 1000) << " kB/s "
-                              << (ts.total_done / 1000) << " kB (" << (ts.progress_ppm / 10000) << "%) downloaded (" << ts.num_peers << " peers)\x1b[K";
+                               << (ts.total_done / 1000) << " kB (" << (ts.progress_ppm / 10000) << "%) downloaded (" << ts.num_peers << " peers)\x1b[K";
                 }
             }
 
@@ -203,13 +203,13 @@ void BitTorrentClient::run() {
             }
         }
 
-        std::this_thread::sleep_for(200ms); // TODO (canepat) no magic number
+        std::this_thread::sleep_for(200ms);  // TODO (canepat) no magic number
 
         // Ask the session to post a state update alert for our torrents
         session.post_torrent_updates();
 
         // Save resume data every once in a while
-        if (std::chrono::steady_clock::now() - last_save_resume >= std::chrono::seconds(60)) { // TODO (canepat) no magic number
+        if (std::chrono::steady_clock::now() - last_save_resume >= std::chrono::seconds(60)) {  // TODO (canepat) no magic number
             for (const auto& torrent_handle : torrent_handles) {
                 torrent_handle.save_resume_data(lt::torrent_handle::save_info_dict);
                 last_save_resume = std::chrono::steady_clock::now();

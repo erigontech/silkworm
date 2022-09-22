@@ -233,15 +233,13 @@ void HeaderPersistence::finish() {
     finished_ = true;
 }
 
-std::set<Hash> HeaderPersistence::remove_headers(BlockNum unwind_point, std::optional<Hash> bad_block,
-                                                 std::optional<BlockNum>& max_block_num_ok, db::RWTxn& tx) {
-    std::set<Hash> bad_headers;
-    max_block_num_ok.reset();
-
+std::tuple<std::set<Hash>, BlockNum>
+HeaderPersistence::remove_headers(BlockNum unwind_point, std::optional<Hash> bad_block, db::RWTxn& tx) {
     BlockNum headers_height = db::stages::read_stage_progress(tx, db::stages::kHeadersKey);
 
     // todo: the following code changed in Erigon, fix it
 
+    std::set<Hash> bad_headers;
     bool is_bad_block = bad_block.has_value();
     for (BlockNum current_height = headers_height; current_height > unwind_point; current_height--) {
         if (is_bad_block) {
@@ -250,6 +248,8 @@ std::set<Hash> HeaderPersistence::remove_headers(BlockNum unwind_point, std::opt
         }
         db::delete_canonical_hash(tx, current_height);  // do not throw if not found
     }
+
+    BlockNum new_height = unwind_point;
 
     if (is_bad_block) {
         bad_headers.insert(*bad_block);
@@ -262,9 +262,10 @@ std::set<Hash> HeaderPersistence::remove_headers(BlockNum unwind_point, std::opt
         }
 
         db::write_head_header_hash(tx, max_hash);
+        new_height = max_block_num;
     }
 
-    return bad_headers;
+    return {bad_headers, new_height};
 }
 
 }  // namespace silkworm

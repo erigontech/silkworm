@@ -26,21 +26,21 @@
 #include <silkworm/downloader/messages/outbound_get_block_headers.hpp>
 #include <silkworm/downloader/messages/outbound_new_block_hashes.hpp>
 
-namespace silkworm {
+namespace silkworm::stagedsync {
 
-HeadersStage::HeadersStage(Status& status, BlockExchange& bd, NodeSettings* ns)
-    : Stage(db::stages::kHeadersKey, status, ns), block_downloader_(bd) {
+HeadersStage::HeadersStage(SyncContext* sc, BlockExchange& bd, NodeSettings* ns)
+    : IStage(sc, db::stages::kHeadersKey, ns), block_downloader_(bd) {
 }
 
 HeadersStage::~HeadersStage() {
 }
 
-auto HeadersStage::forward(db::RWTxn& tx) -> Stage::Result {
+auto HeadersStage::forward(db::RWTxn& tx) -> StageResult {
     using std::shared_ptr;
     using namespace std::chrono_literals;
     using namespace std::chrono;
 
-    Stage::Result result = Stage::Result::Unspecified;
+    StageResult result = StageResult::kUnspecified;
     bool new_height_reached = false;
     std::thread message_receiving;
     operation_ = OperationType::Forward;
@@ -51,7 +51,7 @@ auto HeadersStage::forward(db::RWTxn& tx) -> Stage::Result {
 
     if (block_downloader_.is_stopping()) {
         log::Error(log_prefix_) << "Aborted, block exchange is down";
-        return Stage::Result::Error;
+        return StageResult::kAborted;
     }
 
     try {
@@ -61,7 +61,7 @@ auto HeadersStage::forward(db::RWTxn& tx) -> Stage::Result {
             tx.commit();
             log::Info(log_prefix_) << "End (forward skipped due to the need of to complete the previous run, canonical chain updated), "
                                    << "duration=" << StopWatch::format(timing.lap_duration());
-            return Stage::Result::Done;
+            return StageResult::kSuccess;
         }
 
         current_height_ = header_persistence.initial_height();
@@ -111,7 +111,7 @@ auto HeadersStage::forward(db::RWTxn& tx) -> Stage::Result {
                 send_announcements();
 
                 // check if finished
-                if (shared_status_.first_sync) {  // if this is the first sync (first run or run after a long break)...
+                if (sync_context_->is_first_cycle) {  // if this is the first sync (first run or run after a long break)...
                     // ... we want to make sure we insert as many headers as possible
                     new_height_reached = in_sync && header_persistence.best_header_changed();
                 } else {  // otherwise, we are working at the tip of the chain so ...
@@ -132,11 +132,11 @@ auto HeadersStage::forward(db::RWTxn& tx) -> Stage::Result {
             }
         }
 
-        result = Stage::Result::Done;
+        result = StageResult::kSuccess;
 
         if (header_persistence.unwind_needed()) {
-            result = Result::UnwindNeeded;
-            shared_status_.unwind_point = header_persistence.unwind_point();
+            result = StageResult::kWrongFork;
+            sync_context_->unwind_to = header_persistence.unwind_point();
             // no need to set result.bad_block
             log::Info(log_prefix_) << "Unwind needed";
         }
@@ -159,14 +159,14 @@ auto HeadersStage::forward(db::RWTxn& tx) -> Stage::Result {
         log::Error(log_prefix_) << "Aborted due to exception: " << e.what();
 
         // tx rollback executed automatically if needed
-        result = Stage::Result::Error;
+        result = StageResult::kUnexpectedError;
     }
 
     return result;
 }
 
-auto HeadersStage::unwind(db::RWTxn& tx) -> Stage::Result {
-    Stage::Result result{Stage::Result::Done};
+auto HeadersStage::unwind(db::RWTxn& tx) -> StageResult {
+    StageResult result{StageResult::kSuccess};
     operation_ = OperationType::Unwind;
 
     StopWatch timing;
@@ -176,26 +176,22 @@ auto HeadersStage::unwind(db::RWTxn& tx) -> Stage::Result {
     current_height_ = db::stages::read_stage_progress(tx, db::stages::kHeadersKey);
     get_log_progress();  // this is a trick to set log progress initial value, please improve
 
-    if (!shared_status_.unwind_point.has_value()) {
+    std::optional<Hash> bad_block = sync_context_->bad_block_hash;
+
+    if (!sync_context_->unwind_to.has_value()) {
         operation_ = OperationType::None;
         return result;
     }
-    auto new_height = shared_status_.unwind_point.value();
+    auto new_height = sync_context_->unwind_to.value();
 
     try {
-        std::optional<BlockNum> new_max_block_num;
-        std::set<Hash> bad_headers = HeaderPersistence::remove_headers(new_height, shared_status_.bad_block_hash,
-                                                                       new_max_block_num, tx);
+        std::set<Hash> bad_headers;
+        std::tie(bad_headers, new_height) = HeaderPersistence::remove_headers(new_height, bad_block, tx);
         // todo: do we need to save bad_headers in the state and pass old bad headers here?
 
-        if (new_max_block_num.has_value()) {  // happens when bad_block has value
-            result = Result::DoneAndUpdated;
-            shared_status_.current_point = new_max_block_num;
-        } else {
-            result = Result::SkipTx;  // todo:  here Erigon does unwind_state.signal(skip_tx), check!
-        }
-
         current_height_ = new_height;
+
+        result = StageResult::kSuccess;
 
         update_bad_headers(std::move(bad_headers));
 
@@ -209,14 +205,14 @@ auto HeadersStage::unwind(db::RWTxn& tx) -> Stage::Result {
         log::Error(log_prefix_) << "Unwind aborted due to exception: " << e.what();
 
         // tx rollback executed automatically if needed
-        result = Stage::Result::Error;
+        result = StageResult::kUnexpectedError;
     }
 
     return result;
 }
 
-auto HeadersStage::prune(db::RWTxn&) -> Stage::Result {
-    return Stage::Result::Error;
+auto HeadersStage::prune(db::RWTxn&) -> StageResult {
+    return StageResult::kSuccess;
 }
 
 // Request new headers from peers

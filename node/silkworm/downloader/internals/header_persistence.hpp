@@ -48,8 +48,8 @@ class HeaderPersistence {
     void persist(const BlockHeader&);
     void finish();
 
-    static std::set<Hash> remove_headers(BlockNum new_height, std::optional<Hash> bad_block,
-                                         std::optional<BlockNum>& new_max_block_num, db::RWTxn& tx);
+    static auto remove_headers(BlockNum unwind_point, std::optional<Hash> bad_block, db::RWTxn& tx)
+        -> std::tuple<std::set<Hash>, BlockNum>;
 
     bool best_header_changed() const;
     bool unwind_needed() const;
@@ -64,8 +64,7 @@ class HeaderPersistence {
   private:
     static constexpr size_t kCanonicalCacheSize = 1000;
 
-    BlockNum find_forking_point(db::RWTxn&, const BlockHeader& header, BlockNum height,
-                                const BlockHeader& parent);
+    BlockNum find_forking_point(db::RWTxn&, const BlockHeader& header, BlockNum height, const BlockHeader& parent);
     void update_canonical_chain(BlockNum height, Hash hash);
 
     db::RWTxn& tx_;

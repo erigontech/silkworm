@@ -21,11 +21,11 @@
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/downloader/internals/types.hpp>
 #include <silkworm/downloader/messages/internal_message.hpp>
+#include <silkworm/stagedsync/common.hpp>
 
 #include "block_exchange.hpp"
-#include "stage.h"
 
-namespace silkworm {
+namespace silkworm::stagedsync {
 
 /*
  * HeadersStage implement the header downloading stage.
@@ -62,16 +62,16 @@ namespace silkworm {
  *  used in the other thread and also do not need lock protection.
  *
  */
-class HeadersStage : public Stage {
+class HeadersStage : public IStage {
   public:
-    HeadersStage(Status&, BlockExchange&, NodeSettings*);
+    HeadersStage(SyncContext*, BlockExchange&, NodeSettings*);
     HeadersStage(const HeadersStage&) = delete;  // not copyable
     HeadersStage(HeadersStage&&) = delete;       // nor movable
     ~HeadersStage();
 
-    Stage::Result forward(db::RWTxn&) override;  // go forward, downloading headers
-    Stage::Result unwind(db::RWTxn&) override;   // go backward, unwinding headers to new_height
-    Stage::Result prune(db::RWTxn&) override;
+    StageResult forward(db::RWTxn&) override;  // go forward, downloading headers
+    StageResult unwind(db::RWTxn&) override;   // go backward, unwinding headers to new_height
+    StageResult prune(db::RWTxn&) override;
 
   private:
     void send_header_requests();  // send requests for more headers

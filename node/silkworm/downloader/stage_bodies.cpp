@@ -27,21 +27,21 @@
 #include <silkworm/downloader/messages/outbound_get_block_bodies.hpp>
 #include <silkworm/downloader/messages/outbound_new_block.hpp>
 
-namespace silkworm {
+namespace silkworm::stagedsync {
 
-BodiesStage::BodiesStage(Status& status, BlockExchange& bd, NodeSettings* ns)
-    : Stage(db::stages::kBlockBodiesKey, status, ns), block_downloader_{bd} {
+BodiesStage::BodiesStage(SyncContext* sc, BlockExchange& bd, NodeSettings* ns)
+    : IStage(sc, db::stages::kBlockBodiesKey, ns), block_downloader_{bd} {
 }
 
 BodiesStage::~BodiesStage() {
 }
 
-Stage::Result BodiesStage::forward(db::RWTxn& tx) {
+StageResult BodiesStage::forward(db::RWTxn& tx) {
     using std::shared_ptr;
     using namespace std::chrono_literals;
     using namespace std::chrono;
 
-    Stage::Result result = Stage::Result::Unspecified;
+    StageResult result = StageResult::kUnspecified;
     operation_ = OperationType::Forward;
 
     auto constexpr KShortInterval = 200ms;
@@ -53,7 +53,7 @@ Stage::Result BodiesStage::forward(db::RWTxn& tx) {
 
     if (block_downloader_.is_stopping()) {
         log::Error(log_prefix_) << "Aborted, block exchange is down";
-        return Stage::Result::Error;
+        return StageResult::kAborted;
     }
 
     try {
@@ -91,11 +91,11 @@ Stage::Result BodiesStage::forward(db::RWTxn& tx) {
 
                 // check unwind condition
                 if (body_persistence.unwind_needed()) {
-                    result = Result::UnwindNeeded;
-                    shared_status_.unwind_point = body_persistence.unwind_point();
+                    result = StageResult::kInvalidBlock;
+                    sync_context_->unwind_to = body_persistence.unwind_point();
                     break;
                 } else {
-                    result = Stage::Result::Done;
+                    result = StageResult::kSuccess;
                 }
 
                 // do announcements
@@ -125,22 +125,22 @@ Stage::Result BodiesStage::forward(db::RWTxn& tx) {
 
         log::Info(log_prefix_) << "Done, duration= " << StopWatch::format(timing.lap_duration());
 
-        if (result == Stage::Result::Unspecified) {
-            result = Stage::Result::Done;
+        if (result == StageResult::kUnspecified) {
+            result = StageResult::kSuccess;
         }
 
     } catch (const std::exception& e) {
         log::Error(log_prefix_) << "Aborted due to exception: " << e.what();
 
         // tx rollback executed automatically if needed
-        result = Stage::Result::Error;
+        result = StageResult::kUnexpectedError;
     }
 
     return result;
 }
 
-Stage::Result BodiesStage::unwind(db::RWTxn& tx) {
-    Stage::Result result{Stage::Result::Done};
+StageResult BodiesStage::unwind(db::RWTxn& tx) {
+    StageResult result{StageResult::kSuccess};
     operation_ = OperationType::Unwind;
 
     StopWatch timing;
@@ -150,14 +150,14 @@ Stage::Result BodiesStage::unwind(db::RWTxn& tx) {
     current_height_ = db::stages::read_stage_progress(tx, db::stages::kBlockBodiesKey);
     get_log_progress();  // this is a trick to set log progress initial value, please improve
 
-    if (!shared_status_.unwind_point.has_value()) {
+    if (!sync_context_->unwind_to.has_value()) {
         operation_ = OperationType::None;
         return result;
     }
-    auto new_height = shared_status_.unwind_point.value();
+    auto new_height = sync_context_->unwind_to.value();
 
     try {
-        BodyPersistence::remove_bodies(new_height, shared_status_.bad_block_hash, tx);
+        BodyPersistence::remove_bodies(new_height, sync_context_->bad_block_hash, tx);
 
         current_height_ = new_height;
 
@@ -165,20 +165,20 @@ Stage::Result BodiesStage::unwind(db::RWTxn& tx) {
 
         log::Info(log_prefix_) << "Unwind completed, duration= " << StopWatch::format(timing.lap_duration());
 
-        result = Stage::Result::Done;
+        result = StageResult::kSuccess;
 
     } catch (const std::exception& e) {
         log::Error(log_prefix_) << "Unwind aborted due to exception: " << e.what();
 
         // tx rollback executed automatically if needed
-        result = Stage::Result::Error;
+        result = StageResult::kUnexpectedError;
     }
 
     return result;
 }
 
-auto BodiesStage::prune(db::RWTxn&) -> Stage::Result {
-    return Stage::Result::Error;
+auto BodiesStage::prune(db::RWTxn&) -> StageResult {
+    return StageResult::kSuccess;
 }
 
 void BodiesStage::send_body_requests() {

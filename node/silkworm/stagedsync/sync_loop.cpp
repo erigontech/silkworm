@@ -19,9 +19,11 @@
 #include <boost/format.hpp>
 
 #include <silkworm/stagedsync/stage_blockhashes.hpp>
+#include <silkworm/stagedsync/stage_bodies.hpp>
 #include <silkworm/stagedsync/stage_execution.hpp>
 #include <silkworm/stagedsync/stage_finish.hpp>
 #include <silkworm/stagedsync/stage_hashstate.hpp>
+#include <silkworm/stagedsync/stage_headers.hpp>
 #include <silkworm/stagedsync/stage_history_index.hpp>
 #include <silkworm/stagedsync/stage_interhashes.hpp>
 #include <silkworm/stagedsync/stage_log_index.hpp>
@@ -29,6 +31,15 @@
 #include <silkworm/stagedsync/stage_tx_lookup.hpp>
 
 namespace silkworm::stagedsync {
+
+SyncLoop::SyncLoop(silkworm::NodeSettings* node_settings, mdbx::env* chaindata_env, BlockExchange& be)
+    : Worker("SyncLoop"),
+      node_settings_{node_settings},
+      chaindata_env_{chaindata_env},
+      block_exchange_{be},
+      sync_context_{std::make_unique<SyncContext>()} {
+    load_stages();
+};
 
 void SyncLoop::load_stages() {
     /*
@@ -50,6 +61,10 @@ void SyncLoop::load_stages() {
      * 15 StageFinish -> stagedsync::Finish
      */
 
+    stages_.emplace(db::stages::kHeadersKey,
+                    std::make_unique<stagedsync::HeadersStage>(sync_context_.get(), block_exchange_, node_settings_));
+    stages_.emplace(db::stages::kBlockBodiesKey,
+                    std::make_unique<stagedsync::BodiesStage>(sync_context_.get(), block_exchange_, node_settings_));
     stages_.emplace(db::stages::kBlockHashesKey,
                     std::make_unique<stagedsync::BlockHashes>(node_settings_, sync_context_.get()));
     stages_.emplace(db::stages::kSendersKey,
@@ -72,6 +87,9 @@ void SyncLoop::load_stages() {
 
     stages_forward_order_.insert(stages_forward_order_.begin(),
                                  {
+                                     db::stages::kHeadersKey,
+                                     db::stages::kBlockHashesKey,
+                                     db::stages::kBlockBodiesKey,
                                      db::stages::kSendersKey,
                                      db::stages::kExecutionKey,
                                      db::stages::kHashStateKey,
@@ -92,10 +110,11 @@ void SyncLoop::load_stages() {
                                     db::stages::kIntermediateHashesKey,  // Needs to happen after unwinding HashState
                                     db::stages::kExecutionKey,
                                     db::stages::kSendersKey,
+                                    db::stages::kBlockBodiesKey,
                                     db::stages::kBlockHashesKey,  // Decanonify block hashes
+                                    db::stages::kHeadersKey,
                                 });
 }
-
 void SyncLoop::stop(bool wait) {
     for (const auto& [_, stage] : stages_) {
         if (!stage->is_stopping()) {
@@ -167,8 +186,12 @@ void SyncLoop::work() {
             // Run forward
             if (sync_context_->unwind_to.has_value() == false) {
                 bool should_end_loop{false};
-                const auto forward_result{run_cycle_forward(*cycle_txn, log_timer)};
+
+                const auto forward_result = run_cycle_forward(*cycle_txn, log_timer);
+
                 switch (forward_result) {
+                    case StageResult::kSuccess:
+                    case StageResult::kWrongFork:
                     case StageResult::kInvalidBlock:
                     case StageResult::kWrongStateRoot:
                         break;  // Do nothing. Unwind is triggered afterwards
@@ -195,7 +218,9 @@ void SyncLoop::work() {
 
                 // Run unwind
                 log::Warning("Unwinding", {"to", std::to_string(sync_context_->unwind_to.value())});
-                const auto unwind_result{run_cycle_unwind(*cycle_txn, log_timer)};
+
+                const auto unwind_result = run_cycle_unwind(*cycle_txn, log_timer);
+
                 success_or_throw(unwind_result);  // Must be successful: no recovery from bad unwinding
 
                 // Erase unwind key from progress table

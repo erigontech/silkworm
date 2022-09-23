@@ -17,13 +17,12 @@
 
 #include <atomic>
 
-#include <silkworm/common/measure.hpp>
-#include <silkworm/db/access_layer.hpp>
-#include <silkworm/downloader/internals/types.hpp>
-#include <silkworm/downloader/messages/internal_message.hpp>
-#include <silkworm/stagedsync/common.hpp>
-
-#include "block_exchange.hpp"
+#include "common.hpp"
+#include "silkworm/common/measure.hpp"
+#include "silkworm/db/access_layer.hpp"
+#include "silkworm/downloader/block_exchange.hpp"
+#include "silkworm/downloader/internals/types.hpp"
+#include "silkworm/downloader/messages/internal_message.hpp"
 
 namespace silkworm::stagedsync {
 

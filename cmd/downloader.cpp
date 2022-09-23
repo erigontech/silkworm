@@ -21,18 +21,17 @@
 #include <CLI/CLI.hpp>
 
 #include <silkworm/buildinfo.h>
-#include <silkworm/common/directories.hpp>
 #include <silkworm/common/log.hpp>
 #include <silkworm/common/settings.hpp>
 #include <silkworm/concurrency/signal_handler.hpp>
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/downloader/internals/body_sequence.hpp>
 #include <silkworm/downloader/internals/header_retrieval.hpp>
-#include <silkworm/downloader/stage_bodies.hpp>
-#include <silkworm/downloader/stage_headers.hpp>
 #include <silkworm/stagedsync/common.hpp>
 
 #include "common.hpp"
+#include "silkworm/stagedsync/stage_bodies.hpp"
+#include "silkworm/stagedsync/stage_headers.hpp"
 
 using namespace silkworm;
 using namespace silkworm::stagedsync;
@@ -114,8 +113,6 @@ int main(int argc, char* argv[]) {
         log::set_thread_name("main          ");
 
         // test & measurement only parameters [to remove]
-        BodySequence::kMaxBlocksPerMessage = 128;
-        BodySequence::kPerPeerMaxOutstandingRequests = 4;
         int requestDeadlineSeconds = 30;     // BodySequence::kRequestDeadline = std::chrono::seconds(30);
         int noPeerDelayMilliseconds = 1000;  // BodySequence::kNoPeerDelay = std::chrono::milliseconds(1000)
 

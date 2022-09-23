@@ -25,6 +25,9 @@
 #include <silkworm/common/stopwatch.hpp>
 #include <silkworm/concurrency/signal_handler.hpp>
 #include <silkworm/db/stages.hpp>
+#include <silkworm/downloader/block_exchange.hpp>
+#include <silkworm/downloader/internals/header_retrieval.hpp>
+#include <silkworm/downloader/sentry_client.hpp>
 #include <silkworm/stagedsync/sync_loop.hpp>
 
 #include "common.hpp"
@@ -113,7 +116,7 @@ int main(int argc, char* argv[]) {
         // Check db
         cmd::run_preflight_checklist(node_settings);  // Prepare database for takeoff
 
-        auto chaindata_env{silkworm::db::open_env(node_settings.chaindata_env_config)};
+        auto chaindata_db{silkworm::db::open_env(node_settings.chaindata_env_config)};
 
         // Start boost asio
         using asio_guard_type = boost::asio::executor_work_guard<boost::asio::io_context::executor_type>;
@@ -125,9 +128,29 @@ int main(int argc, char* argv[]) {
             log::Trace("Boost Asio", {"state", "stopped"});
         }};
 
+        // Node current status
+        HeaderRetrieval headers(db::ROAccess{chaindata_db});  // TODO (mike) move into SentryClient
+        auto [head_hash, head_td] = headers.head_hash_and_total_difficulty();
+        auto head_height = headers.head_height();
+
+        log::Message("Chain/db status", {"head hash", head_hash.to_hex()});
+        log::Message("Chain/db status", {"head td", intx::to_string(head_td)});
+        log::Message("Chain/db status", {"head height", std::to_string(head_height)});
+
+        // Sentry client - connects to sentry
+        SentryClient sentry{node_settings.external_sentry_addr};
+        sentry.set_status(head_hash, head_td, node_settings.chain_config.value());  // TODO (mike) move into SentryClient
+        sentry.hand_shake();                                                        // TODO (mike) move into SentryClient
+        auto message_receiving = std::thread([&sentry]() { sentry.execution_loop(); });
+        auto stats_receiving = std::thread([&sentry]() { sentry.stats_receiving_loop(); });
+
+        // BlockExchange - download headers and bodies from remote peers using the sentry
+        BlockExchange block_exchange{sentry, db::ROAccess{chaindata_db}, node_settings.chain_config.value()};
+        auto block_downloading = std::thread([&block_exchange]() { block_exchange.execution_loop(); });
+
         // Start sync loop
         auto start_time{std::chrono::steady_clock::now()};
-        stagedsync::SyncLoop sync_loop(&node_settings, &chaindata_env);
+        stagedsync::SyncLoop sync_loop(&node_settings, &chaindata_db, block_exchange);
         sync_loop.start(/*wait=*/false);
 
         // Keep waiting till sync_loop stops
@@ -156,11 +179,17 @@ int main(int argc, char* argv[]) {
             }
         }
 
+        block_exchange.stop();
+        sentry.stop();
+        block_downloading.join();
+        message_receiving.join();
+        stats_receiving.join();
+
         asio_guard.reset();
         asio_thread.join();
 
         log::Message() << "Closing Database chaindata path " << node_settings.data_directory->chaindata().path();
-        chaindata_env.close();
+        chaindata_db.close();
         sync_loop.rethrow();  // Eventually throws the exception which caused the stop
         return 0;
 

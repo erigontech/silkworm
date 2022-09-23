@@ -24,10 +24,10 @@
 
 namespace silkworm {
 
-seconds_t BodySequence::kRequestDeadline;
-BlockNum BodySequence::kMaxBlocksPerMessage;
-size_t BodySequence::kPerPeerMaxOutstandingRequests;
-milliseconds_t BodySequence::kNoPeerDelay;
+seconds_t BodySequence::kRequestDeadline{std::chrono::seconds(30)};
+BlockNum BodySequence::kMaxBlocksPerMessage{128};
+size_t BodySequence::kPerPeerMaxOutstandingRequests{4};
+milliseconds_t BodySequence::kNoPeerDelay{ std::chrono::milliseconds(1000)};
 
 BodySequence::BodySequence(const db::ROAccess& dba)
     : db_access_(dba) {

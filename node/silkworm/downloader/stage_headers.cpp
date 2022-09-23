@@ -25,11 +25,19 @@
 #include <silkworm/downloader/messages/inbound_message.hpp>
 #include <silkworm/downloader/messages/outbound_get_block_headers.hpp>
 #include <silkworm/downloader/messages/outbound_new_block_hashes.hpp>
+#include <silkworm/downloader/internals/header_chain.hpp>
 
 namespace silkworm::stagedsync {
 
 HeadersStage::HeadersStage(SyncContext* sc, BlockExchange& bd, NodeSettings* ns)
     : IStage(sc, db::stages::kHeadersKey, ns), block_downloader_(bd) {
+
+    // User can specify to stop downloading process at some block
+    const auto stop_at_block = stop_at_block_from_env();
+    if (stop_at_block.has_value()) {
+        target_block_ = stop_at_block;
+        log::Info(log_prefix_) << "env var STOP_AT_BLOCK set, target block=" << target_block_.value();
+    }
 }
 
 HeadersStage::~HeadersStage() {
@@ -66,6 +74,12 @@ auto HeadersStage::forward(db::RWTxn& tx) -> StageResult {
 
         current_height_ = header_persistence.initial_height();
         get_log_progress();  // this is a trick to set log progress initial value, please improve
+
+        if (target_block_ && current_height_ >= *target_block_) {
+            tx.commit();
+            log::Info(log_prefix_) << "End, forward skipped due to target block (" << *target_block_ << ") reached";
+            return StageResult::kSuccess;
+        }
 
         RepeatedMeasure<BlockNum> height_progress(header_persistence.initial_height());
         log::Info(log_prefix_) << "Waiting for headers... from=" << height_progress.get();

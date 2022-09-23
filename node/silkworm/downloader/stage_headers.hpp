@@ -83,6 +83,7 @@ class HeadersStage : public IStage {
     std::vector<std::string> get_log_progress() override;  // thread safe
     std::atomic<BlockNum> current_height_{0};
 
+    std::optional<BlockNum> target_block_;
     BlockExchange& block_downloader_;
 };
 

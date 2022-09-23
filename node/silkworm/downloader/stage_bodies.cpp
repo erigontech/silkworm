@@ -230,4 +230,4 @@ std::vector<std::string> BodiesStage::get_log_progress() {  // implementation MU
             "peers", std::to_string(peers)};
 }
 
-}  // namespace silkworm
+}  // namespace silkworm::stagedsync

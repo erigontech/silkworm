@@ -28,22 +28,24 @@
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/downloader/internals/body_sequence.hpp>
 #include <silkworm/downloader/internals/header_retrieval.hpp>
+#include <silkworm/downloader/stage_bodies.hpp>
 #include <silkworm/downloader/stage_headers.hpp>
+#include <silkworm/stagedsync/common.hpp>
 
 #include "common.hpp"
-#include "silkworm/downloader/stage_bodies.hpp"
 
 using namespace silkworm;
+using namespace silkworm::stagedsync;
 
 // stage-loop, forwarding phase
 using LastStage = size_t;
-std::tuple<Stage::Result, LastStage> forward(std::vector<Stage*> stages, db::RWTxn& txn) {
-    using Status = Stage::Result;
-    Stage::Result result{Status::Unspecified};
+std::tuple<StageResult, LastStage> forward(std::vector<IStage*> stages, db::RWTxn& txn) {
+    StageResult result{StageResult::kUnspecified};
 
     for (size_t i = 0; i < stages.size(); ++i) {
         result = stages[i]->forward(txn);
-        if (result == Status::UnwindNeeded) {
+        // TODO (canepat) add StageResult::unwind_needed(), then if (result.unwind_needed())
+        if (result == StageResult::kInvalidBlock || result == StageResult::kWrongFork) {
             return {result, i};
         }
     }
@@ -51,13 +53,13 @@ std::tuple<Stage::Result, LastStage> forward(std::vector<Stage*> stages, db::RWT
 }
 
 // stage-loop, unwinding phase
-Stage::Result unwind(std::vector<Stage*> stages, LastStage last_stage, db::RWTxn& txn) {
-    using Status = Stage::Result;
-    Stage::Result result{Status::Unspecified};
+StageResult unwind(std::vector<IStage*> stages, LastStage last_stage, db::RWTxn& txn) {
+    StageResult result{StageResult::kUnspecified};
 
     for (size_t i = last_stage; i <= 0; --i) {  // reverse loop
         result = stages[i]->unwind(txn);
-        if (result == Status::Error) {
+        // TODO (canepat) add StageResult::unwind_error(), then if (result.unwind_error())
+        if (result == StageResult::kUnexpectedError || result == StageResult::kAborted) {
             break;
         }
     }
@@ -67,10 +69,10 @@ Stage::Result unwind(std::vector<Stage*> stages, LastStage last_stage, db::RWTxn
 
 // progress log
 class ProgressLog : public ActiveComponent {
-    std::vector<Stage*> stages_;
+    std::vector<IStage*> stages_;
 
   public:
-    ProgressLog(std::vector<Stage*>& stages) : stages_(stages) {}
+    ProgressLog(std::vector<IStage*>& stages) : stages_(stages) {}
 
     void execution_loop() override {  // this is only a trick to avoid using asio timers, this is only test code
         using namespace std::chrono;
@@ -174,8 +176,7 @@ int main(int argc, char* argv[]) {
         auto block_downloading = std::thread([&block_exchange]() { block_exchange.execution_loop(); });
 
         // Stages shared state
-        Stage::Status shared_status;
-        shared_status.first_sync = true;  // = starting up silkworm
+        SyncContext shared_status{/*.is_first_cycle=*/true};  // = starting up silkworm
         db::RWAccess db_access(db);
 
         // Stages 1 & 2 - Headers and bodies downloading - example code
@@ -193,14 +194,14 @@ int main(int argc, char* argv[]) {
         //        });
 
         // Sample stage loop with 2 stages
-        std::vector<Stage*> stages = {&header_stage, &body_stage};
+        std::vector<IStage*> stages = {&header_stage, &body_stage};
 
         ProgressLog progress_log(stages);
         auto progress_displaying = std::thread([&progress_log]() {
             progress_log.execution_loop();
         });
 
-        Stage::Result result{Stage::Result::Unspecified};
+        StageResult result{StageResult::kUnspecified};
         size_t last_stage = 0;
 
         do {
@@ -208,12 +209,13 @@ int main(int argc, char* argv[]) {
 
             std::tie(result, last_stage) = forward(stages, txn);
 
-            if (result == Stage::Result::UnwindNeeded) {
+            // TODO (canepat) add StageResult::unwind_needed(), then if (result.unwind_needed())
+            if (result == StageResult::kInvalidBlock || result == StageResult::kWrongFork) {
                 result = unwind(stages, last_stage, txn);
             }
 
-            shared_status.first_sync = false;
-        } while (result != Stage::Result::Error && !SignalHandler::signalled());
+            shared_status.is_first_cycle = false;
+        } while (result != StageResult::kUnexpectedError && !SignalHandler::signalled());
 
         log::Info() << "Downloader stage-loop ended\n";
 

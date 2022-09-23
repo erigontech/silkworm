@@ -132,6 +132,7 @@ int main(int argc, char* argv[]) {
         HeaderRetrieval headers(db::ROAccess{chaindata_db});  // TODO (mike) move into SentryClient
         auto [head_hash, head_td] = headers.head_hash_and_total_difficulty();
         auto head_height = headers.head_height();
+        headers.close();
 
         log::Message("Chain/db status", {"head hash", head_hash.to_hex()});
         log::Message("Chain/db status", {"head td", intx::to_string(head_td)});

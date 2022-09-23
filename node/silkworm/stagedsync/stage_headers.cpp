@@ -31,7 +31,6 @@ namespace silkworm::stagedsync {
 
 HeadersStage::HeadersStage(SyncContext* sc, BlockExchange& bd, NodeSettings* ns)
     : IStage(sc, db::stages::kHeadersKey, ns), block_downloader_(bd) {
-
     // User can specify to stop downloading process at some block
     const auto stop_at_block = stop_at_block_from_env();
     if (stop_at_block.has_value()) {
@@ -78,7 +77,7 @@ auto HeadersStage::forward(db::RWTxn& tx) -> StageResult {
         if (target_block_ && current_height_ >= *target_block_) {
             tx.commit();
             log::Info(log_prefix_) << "End, forward skipped due to target block (" << *target_block_ << ") reached";
-            return StageResult::kSuccess;
+            return StageResult::kStoppedByEnv;
         }
 
         RepeatedMeasure<BlockNum> height_progress(header_persistence.initial_height());

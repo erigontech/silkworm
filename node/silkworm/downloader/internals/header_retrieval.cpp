@@ -23,6 +23,8 @@ namespace silkworm {
 
 HeaderRetrieval::HeaderRetrieval(db::ROAccess db_access) : db_tx_{db_access.start_ro_tx()} {}
 
+void HeaderRetrieval::close() { db_tx_.abort(); }
+
 std::vector<BlockHeader> HeaderRetrieval::recover_by_hash(Hash origin, uint64_t amount, uint64_t skip, bool reverse) {
     using std::optional;
     uint64_t max_non_canonical = 100;

@@ -44,8 +44,8 @@ std::shared_ptr<InboundMessage> InboundMessage::make(const sentry::InboundMessag
     else if (raw_message.id() == sentry::MessageId::BLOCK_BODIES_66)
         message = std::make_shared<InboundBlockBodies>(raw_message);
     else
-        log::Warning() << "InboundMessage " << sentry::MessageId_Name(raw_message.id())
-                       << " received but ignored";
+        log::Warning("HeaderStage") << "InboundMessage " << sentry::MessageId_Name(raw_message.id())
+                                    << " received but ignored";
     return message;
 }
 

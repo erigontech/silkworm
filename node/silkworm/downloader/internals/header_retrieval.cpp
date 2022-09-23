@@ -33,7 +33,7 @@ std::vector<BlockHeader> HeaderRetrieval::recover_by_hash(Hash origin, uint64_t 
     bool unknown = false;
 
     // first
-    optional<BlockHeader> header = read_header(db_tx_, hash.bytes);
+    optional<BlockHeader> header = read_header(db_tx_, hash);
     if (!header) return headers;
     BlockNum block_num = header->number;
     headers.push_back(*header);
@@ -47,16 +47,16 @@ std::vector<BlockHeader> HeaderRetrieval::recover_by_hash(Hash origin, uint64_t 
             BlockNum next = current + skip + 1;
             if (next <= current) {  // true only if there is an overflow
                 unknown = true;
-                log::Warning() << "GetBlockHeaders skip overflow attack:"
-                               << " current=" << current << ", skip=" << skip << ", next=" << next;
+                log::Warning("HeaderStage") << "GetBlockHeaders skip overflow attack:"
+                                            << " current=" << current << ", skip=" << skip << ", next=" << next;
             } else {
                 header = db::read_canonical_header(db_tx_, next);
                 if (!header)
                     unknown = true;
                 else {
                     Hash nextHash = header->hash();
-                    auto [expOldHash, _] = get_ancestor(nextHash, next, skip + 1, max_non_canonical);
-                    if (expOldHash == hash) {
+                    auto [exp_next_hash, _] = get_ancestor(nextHash, next, skip + 1, max_non_canonical);
+                    if (exp_next_hash == hash) {
                         hash = nextHash;
                         block_num = next;
                     } else
@@ -64,11 +64,11 @@ std::vector<BlockHeader> HeaderRetrieval::recover_by_hash(Hash origin, uint64_t 
                 }
             }
         } else {  // reverse
-            BlockNum ancestor = skip + 1;
-            if (ancestor == 0)
+            BlockNum ancestor_delta = skip + 1;
+            if (ancestor_delta == 0)
                 unknown = true;
             else
-                std::tie(hash, block_num) = get_ancestor(hash, block_num, ancestor, max_non_canonical);
+                std::tie(hash, block_num) = get_ancestor(hash, block_num, ancestor_delta, max_non_canonical);
         }
 
         // end todo: understand
@@ -126,39 +126,37 @@ std::tuple<Hash, BigInt> HeaderRetrieval::head_hash_and_total_difficulty() {
     return {*head_hash, *head_td};
 }
 
-// todo: use optional<> here
-std::tuple<Hash, BlockNum> HeaderRetrieval::get_ancestor(Hash hash, BlockNum blockNum, BlockNum ancestorDelta,
+std::tuple<Hash, BlockNum> HeaderRetrieval::get_ancestor(Hash hash, BlockNum block_num, BlockNum ancestor_delta,
                                                          uint64_t& max_non_canonical) {
-    if (ancestorDelta > blockNum) return {Hash{}, 0};
+    if (ancestor_delta > block_num) return {Hash{}, 0};
 
-    if (ancestorDelta == 1) {
-        auto header = db::read_header(db_tx_, blockNum, hash);
+    if (ancestor_delta == 1) {
+        auto header = db::read_header(db_tx_, block_num, hash);
         if (header) {
-            return {header->parent_hash, blockNum - 1};
+            return {header->parent_hash, block_num - 1};
         } else {
             return {Hash{}, 0};
         }
     }
 
-    while (ancestorDelta != 0) {
-        auto h = read_canonical_hash(db_tx_, blockNum);
+    while (ancestor_delta != 0) {
+        auto h = read_canonical_hash(db_tx_, block_num);
         if (h == hash) {
-            auto ancestorHash = db::read_canonical_hash(db_tx_, blockNum - ancestorDelta);
-            // todo: blockNum - ancestorDelta = constant, it is correct?
-            h = db::read_canonical_hash(db_tx_, blockNum);         // todo: dummy line, remove (also present in Erigon)
-            if (h == hash) {                                       // todo: dummy line, remove
-                return {*ancestorHash, blockNum - ancestorDelta};  // ancestorHash can be empty
-            }
+            auto ancestorHash = db::read_canonical_hash(db_tx_, block_num - ancestor_delta);
+            if (!ancestorHash)
+                return {Hash{}, 0};
+            else
+                return {*ancestorHash, block_num - ancestor_delta};
         }
         if (max_non_canonical == 0) return {Hash{}, 0};
         max_non_canonical--;
-        ancestorDelta--;
-        auto header = db::read_header(db_tx_, blockNum, hash);
+        ancestor_delta--;
+        auto header = db::read_header(db_tx_, block_num, hash);
         if (!header) return {Hash{}, 0};
         hash = header->parent_hash;
-        blockNum--;
+        block_num--;
     }
-    return {hash, blockNum};
+    return {hash, block_num};
 }
 
 }  // namespace silkworm

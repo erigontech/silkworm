@@ -20,21 +20,22 @@
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/downloader/internals/types.hpp>
 #include <silkworm/downloader/messages/internal_message.hpp>
+#include <silkworm/stagedsync/common.hpp>
 
 #include "block_exchange.hpp"
-#include "stage.h"
 
-namespace silkworm {
+namespace silkworm::stagedsync {
 
-class BodiesStage : public Stage {
+class BodiesStage : public IStage {
   public:
-    BodiesStage(Status&, BlockExchange&);
+    BodiesStage(SyncContext*, BlockExchange&, NodeSettings*);
     BodiesStage(const BodiesStage&) = delete;  // not copyable
     BodiesStage(BodiesStage&&) = delete;       // nor movable
     ~BodiesStage();
 
-    Stage::Result forward(db::RWTxn&) override;                      // go forward, downloading headers
-    Stage::Result unwind(db::RWTxn&, BlockNum new_height) override;  // go backward, unwinding headers to new_height
+    StageResult forward(db::RWTxn&) override;  // go forward, downloading headers
+    StageResult unwind(db::RWTxn&) override;   // go backward, unwinding headers to new_height
+    StageResult prune(db::RWTxn&) override;
 
   private:
     void send_body_requests();  // send requests for more bodies
@@ -42,7 +43,10 @@ class BodiesStage : public Stage {
     auto withdraw_ready_bodies() -> std::shared_ptr<InternalMessage<std::vector<Block>>>;
     void send_announcements();
 
+    std::vector<std::string> get_log_progress() override;  // thread safe
+    std::atomic<BlockNum> current_height_{0};
+
     BlockExchange& block_downloader_;
 };
 
-}  // namespace silkworm
+}  // namespace silkworm::stagedsync

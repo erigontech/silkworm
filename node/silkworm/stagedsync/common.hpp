@@ -42,12 +42,14 @@ enum class [[nodiscard]] StageResult{
     kInvalidBlock,            //
     kInvalidTransaction,      //
     kDecodingError,           //
+    kWrongFork,               // The persisted canonical chain must be changed
     kWrongStateRoot,          //
     kUnexpectedError,         //
     kUnknownError,            //
     kDbError,                 //
     kAborted,                 //
     kStoppedByEnv,            // Encountered "STOP_BEFORE_STAGE" env var
+    kUnspecified,
 };
 
 //! \brief Stage execution exception

@@ -24,47 +24,68 @@
 #include <silkworm/common/directories.hpp>
 #include <silkworm/common/log.hpp>
 #include <silkworm/common/settings.hpp>
+#include <silkworm/concurrency/signal_handler.hpp>
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/downloader/internals/body_sequence.hpp>
 #include <silkworm/downloader/internals/header_retrieval.hpp>
+#include <silkworm/downloader/stage_bodies.hpp>
 #include <silkworm/downloader/stage_headers.hpp>
+#include <silkworm/stagedsync/common.hpp>
 
 #include "common.hpp"
-#include "silkworm/downloader/stage_bodies.hpp"
 
 using namespace silkworm;
+using namespace silkworm::stagedsync;
 
 // stage-loop, forwarding phase
 using LastStage = size_t;
-template <size_t N>
-std::tuple<Stage::Result, LastStage> forward(std::array<Stage*, N> stages, db::RWTxn& txn) {
-    using Status = Stage::Result;
-    Stage::Result result{Status::Unspecified};
+std::tuple<StageResult, LastStage> forward(std::vector<IStage*> stages, db::RWTxn& txn) {
+    StageResult result{StageResult::kUnspecified};
 
-    for (size_t i = 0; i < N; ++i) {
+    for (size_t i = 0; i < stages.size(); ++i) {
         result = stages[i]->forward(txn);
-        if (result == Status::UnwindNeeded) {
+        // TODO (canepat) add StageResult::unwind_needed(), then if (result.unwind_needed())
+        if (result == StageResult::kInvalidBlock || result == StageResult::kWrongFork) {
             return {result, i};
         }
     }
-    return {result, N - 1};
+    return {result, stages.size() - 1};
 }
 
 // stage-loop, unwinding phase
-template <size_t N>
-Stage::Result unwind(std::array<Stage*, N> stages, BlockNum unwind_point, LastStage last_stage, db::RWTxn& txn) {
-    using Status = Stage::Result;
-    Stage::Result result{Status::Unspecified};
+StageResult unwind(std::vector<IStage*> stages, LastStage last_stage, db::RWTxn& txn) {
+    StageResult result{StageResult::kUnspecified};
 
     for (size_t i = last_stage; i <= 0; --i) {  // reverse loop
-        result = stages[i]->unwind(txn, unwind_point);
-        if (result == Status::Error) {
+        result = stages[i]->unwind(txn);
+        // TODO (canepat) add StageResult::unwind_error(), then if (result.unwind_error())
+        if (result == StageResult::kUnexpectedError || result == StageResult::kAborted) {
             break;
         }
     }
 
     return result;
 }
+
+// progress log
+class ProgressLog : public ActiveComponent {
+    std::vector<IStage*> stages_;
+
+  public:
+    ProgressLog(std::vector<IStage*>& stages) : stages_(stages) {}
+
+    void execution_loop() override {  // this is only a trick to avoid using asio timers, this is only test code
+        using namespace std::chrono;
+        log::set_thread_name("progress-log  ");
+        while (!is_stopping()) {
+            std::this_thread::sleep_for(30s);
+            for (auto stage : stages_) {
+                auto progress = stage->get_log_progress();
+                log::Message(stage->name(), progress);
+            }
+        }
+    }
+};
 
 // Main
 int main(int argc, char* argv[]) {
@@ -77,13 +98,13 @@ int main(int argc, char* argv[]) {
 
     try {
         NodeSettings node_settings{};
-        node_settings.sentry_api_addr = "127.0.0.1:9091";
 
-        log::Settings log_settings;
+        log::Settings log_settings{};
         log_settings.log_threads = true;
         log_settings.log_file = "downloader.log";
         log_settings.log_verbosity = log::Level::kInfo;
         log_settings.log_thousands_sep = '\'';
+        log::set_thread_name("main          ");
 
         // test & measurement only parameters [to remove]
         BodySequence::kMaxBlocksPerMessage = 128;
@@ -144,7 +165,7 @@ int main(int argc, char* argv[]) {
         log::Message("Chain/db status", {"head height", to_string(head_height)});
 
         // Sentry client - connects to sentry
-        SentryClient sentry{node_settings.sentry_api_addr};
+        SentryClient sentry{node_settings.external_sentry_addr};
         sentry.set_status(head_hash, head_td, node_settings.chain_config.value());
         sentry.hand_shake();
         auto message_receiving = std::thread([&sentry]() { sentry.execution_loop(); });
@@ -155,18 +176,33 @@ int main(int argc, char* argv[]) {
         auto block_downloading = std::thread([&block_exchange]() { block_exchange.execution_loop(); });
 
         // Stages shared state
-        Stage::Status shared_status;
-        shared_status.first_sync = true;  // = starting up silkworm
+        SyncContext shared_status;
+        shared_status.is_first_cycle = true;  // = starting up silkworm
         db::RWAccess db_access(db);
 
         // Stages 1 & 2 - Headers and bodies downloading - example code
-        HeadersStage header_stage{shared_status, block_exchange};
-        BodiesStage body_stage{shared_status, block_exchange};
+        HeadersStage header_stage{&shared_status, block_exchange, &node_settings};
+        BodiesStage body_stage{&shared_status, block_exchange, &node_settings};
+
+        // Trap os signals
+        SignalHandler::init();
+        //        SignalHandler::init([&](int) {
+        //            log::Info() << "Requesting threads termination\n";
+        //            header_stage.stop();
+        //            body_stage.stop();
+        //            block_exchange.stop();
+        //            sentry.stop();
+        //        });
 
         // Sample stage loop with 2 stages
-        std::array<Stage*, 2> stages = {&header_stage, &body_stage};
+        std::vector<IStage*> stages = {&header_stage, &body_stage};
 
-        Stage::Result result{Stage::Result::Unspecified};
+        ProgressLog progress_log(stages);
+        auto progress_displaying = std::thread([&progress_log]() {
+            progress_log.execution_loop();
+        });
+
+        StageResult result{StageResult::kUnspecified};
         size_t last_stage = 0;
 
         do {
@@ -174,22 +210,33 @@ int main(int argc, char* argv[]) {
 
             std::tie(result, last_stage) = forward(stages, txn);
 
-            if (result == Stage::Result::UnwindNeeded) {
-                result = unwind(stages, *(shared_status.unwind_point), last_stage, txn);
+            // TODO (canepat) add StageResult::unwind_needed(), then if (result.unwind_needed())
+            if (result == StageResult::kInvalidBlock || result == StageResult::kWrongFork) {
+                result = unwind(stages, last_stage, txn);
             }
 
-            shared_status.first_sync = false;
-        } while (result != Stage::Result::Error);
+            shared_status.is_first_cycle = false;
+        } while (result != StageResult::kUnexpectedError && !SignalHandler::signalled());
 
-        cout << "Downloader stage-loop ended\n";
+        log::Info() << "Downloader stage-loop ended\n";
 
+        // Signal exiting
+        progress_log.stop();
+        header_stage.stop();
+        body_stage.stop();
+        block_exchange.stop();
         // Wait threads termination
-        block_exchange.stop();  // signal exiting
+        log::Info() << "Waiting threads termination\n";
+        progress_displaying.join();
+        block_downloading.join();
         message_receiving.join();
         stats_receiving.join();
-        block_downloading.join();
 
+        log::Info() << "Closing db\n";
         db.close();
+
+        log::Info() << "Downloader terminated\n";
+
     } catch (const CLI::ParseError& ex) {
         return_value = app.exit(ex);
     } catch (std::exception& e) {

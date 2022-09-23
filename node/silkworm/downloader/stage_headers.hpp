@@ -17,14 +17,15 @@
 
 #include <atomic>
 
+#include <silkworm/common/measure.hpp>
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/downloader/internals/types.hpp>
 #include <silkworm/downloader/messages/internal_message.hpp>
+#include <silkworm/stagedsync/common.hpp>
 
 #include "block_exchange.hpp"
-#include "stage.h"
 
-namespace silkworm {
+namespace silkworm::stagedsync {
 
 /*
  * HeadersStage implement the header downloading stage.
@@ -61,15 +62,16 @@ namespace silkworm {
  *  used in the other thread and also do not need lock protection.
  *
  */
-class HeadersStage : public Stage {
+class HeadersStage : public IStage {
   public:
-    HeadersStage(Status&, BlockExchange&);
+    HeadersStage(SyncContext*, BlockExchange&, NodeSettings*);
     HeadersStage(const HeadersStage&) = delete;  // not copyable
     HeadersStage(HeadersStage&&) = delete;       // nor movable
     ~HeadersStage();
 
-    Stage::Result forward(db::RWTxn&) override;                      // go forward, downloading headers
-    Stage::Result unwind(db::RWTxn&, BlockNum new_height) override;  // go backward, unwinding headers to new_height
+    StageResult forward(db::RWTxn&) override;  // go forward, downloading headers
+    StageResult unwind(db::RWTxn&) override;   // go backward, unwinding headers to new_height
+    StageResult prune(db::RWTxn&) override;
 
   private:
     void send_header_requests();  // send requests for more headers
@@ -78,7 +80,10 @@ class HeadersStage : public Stage {
     auto withdraw_stable_headers() -> std::shared_ptr<InternalMessage<std::tuple<Headers, bool>>>;
     auto update_bad_headers(std::set<Hash>) -> std::shared_ptr<InternalMessage<void>>;
 
+    std::vector<std::string> get_log_progress() override;  // thread safe
+    std::atomic<BlockNum> current_height_{0};
+
     BlockExchange& block_downloader_;
 };
 
-}  // namespace silkworm
+}  // namespace silkworm::stagedsync

@@ -16,7 +16,9 @@
 
 #pragma once
 
-#include <silkworm/downloader/sentry_client.hpp>
+#include <p2psentry/sentry.grpc.pb.h>
+
+#include <silkworm/downloader/internals/grpc_sync_client.hpp>
 
 namespace silkworm::rpc {
 
@@ -24,7 +26,14 @@ class ReceiveMessages : public rpc::OutStreamingCall<sentry::Sentry, sentry::Mes
   public:
     ReceiveMessages(int scope);
 
-    static SentryClient::Scope scope(const sentry::InboundMessage&);
+    enum Scope {
+        BlockRequests = 0x01,
+        BlockAnnouncements = 0x02,
+        Other = 0x04
+    };
+    // enum values enable bit masking, for example: cope = BlockRequests & BlockAnnouncements
+
+    static Scope scope(const sentry::InboundMessage&);
 };
 
 }  // namespace silkworm::rpc

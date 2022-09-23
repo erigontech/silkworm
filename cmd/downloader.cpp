@@ -181,8 +181,8 @@ int main(int argc, char* argv[]) {
         db::RWAccess db_access(db);
 
         // Stages 1 & 2 - Headers and bodies downloading - example code
-        HeadersStage header_stage{shared_status, block_exchange, &node_settings};
-        BodiesStage body_stage{shared_status, block_exchange, &node_settings};
+        HeadersStage header_stage{&shared_status, block_exchange, &node_settings};
+        BodiesStage body_stage{&shared_status, block_exchange, &node_settings};
 
         // Trap os signals
         SignalHandler::init();

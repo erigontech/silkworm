@@ -176,7 +176,8 @@ int main(int argc, char* argv[]) {
         auto block_downloading = std::thread([&block_exchange]() { block_exchange.execution_loop(); });
 
         // Stages shared state
-        SyncContext shared_status{/*.is_first_cycle=*/true};  // = starting up silkworm
+        SyncContext shared_status;
+        shared_status.is_first_cycle = true;  // = starting up silkworm
         db::RWAccess db_access(db);
 
         // Stages 1 & 2 - Headers and bodies downloading - example code

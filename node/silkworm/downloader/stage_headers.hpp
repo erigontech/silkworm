@@ -86,4 +86,4 @@ class HeadersStage : public IStage {
     BlockExchange& block_downloader_;
 };
 
-}  // namespace silkworm
+}  // namespace silkworm::stagedsync

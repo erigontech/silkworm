@@ -277,4 +277,4 @@ std::vector<std::string> HeadersStage::get_log_progress() {  // implementation M
             "peers", std::to_string(peers)};
 }
 
-}  // namespace silkworm
+}  // namespace silkworm::stagedsync

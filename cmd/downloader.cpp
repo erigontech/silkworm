@@ -25,8 +25,6 @@
 #include <silkworm/common/settings.hpp>
 #include <silkworm/concurrency/signal_handler.hpp>
 #include <silkworm/db/access_layer.hpp>
-#include <silkworm/downloader/internals/body_sequence.hpp>
-#include <silkworm/downloader/internals/header_retrieval.hpp>
 #include <silkworm/stagedsync/common.hpp>
 
 #include "common.hpp"
@@ -158,20 +156,8 @@ int main(int argc, char* argv[]) {
         // Database access
         mdbx::env_managed db = db::open_env(node_settings.chaindata_env_config);
 
-        // Node current status
-        HeaderRetrieval headers(db::ROAccess{db});
-        auto [head_hash, head_td] = headers.head_hash_and_total_difficulty();
-        auto head_height = headers.head_height();
-        headers.close();
-
-        log::Message("Chain/db status", {"head hash", head_hash.to_hex()});
-        log::Message("Chain/db status", {"head td", intx::to_string(head_td)});
-        log::Message("Chain/db status", {"head height", to_string(head_height)});
-
         // Sentry client - connects to sentry
-        SentryClient sentry{node_settings.external_sentry_addr};
-        sentry.set_status(head_hash, head_td, node_settings.chain_config.value());
-        sentry.hand_shake();
+        SentryClient sentry{node_settings.external_sentry_addr, db::ROAccess{db}, node_settings.chain_config.value()};
         auto message_receiving = std::thread([&sentry]() { sentry.execution_loop(); });
         auto stats_receiving = std::thread([&sentry]() { sentry.stats_receiving_loop(); });
 

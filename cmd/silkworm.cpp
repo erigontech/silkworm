@@ -26,7 +26,6 @@
 #include <silkworm/concurrency/signal_handler.hpp>
 #include <silkworm/db/stages.hpp>
 #include <silkworm/downloader/block_exchange.hpp>
-#include <silkworm/downloader/internals/header_retrieval.hpp>
 #include <silkworm/downloader/sentry_client.hpp>
 #include <silkworm/stagedsync/sync_loop.hpp>
 
@@ -128,20 +127,9 @@ int main(int argc, char* argv[]) {
             log::Trace("Boost Asio", {"state", "stopped"});
         }};
 
-        // Node current status
-        HeaderRetrieval headers(db::ROAccess{chaindata_db});  // TODO (mike) move into SentryClient
-        auto [head_hash, head_td] = headers.head_hash_and_total_difficulty();
-        auto head_height = headers.head_height();
-        headers.close();
-
-        log::Message("Chain/db status", {"head hash", head_hash.to_hex()});
-        log::Message("Chain/db status", {"head td", intx::to_string(head_td)});
-        log::Message("Chain/db status", {"head height", std::to_string(head_height)});
-
         // Sentry client - connects to sentry
-        SentryClient sentry{node_settings.external_sentry_addr};
-        sentry.set_status(head_hash, head_td, node_settings.chain_config.value());  // TODO (mike) move into SentryClient
-        sentry.hand_shake();                                                        // TODO (mike) move into SentryClient
+        SentryClient sentry{node_settings.external_sentry_addr, db::ROAccess{chaindata_db},
+                            node_settings.chain_config.value()};
         auto message_receiving = std::thread([&sentry]() { sentry.execution_loop(); });
         auto stats_receiving = std::thread([&sentry]() { sentry.stats_receiving_loop(); });
 

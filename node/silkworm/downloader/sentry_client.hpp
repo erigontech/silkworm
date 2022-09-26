@@ -16,10 +16,13 @@
 
 #pragma once
 
+#include <atomic>
+
 #include <boost/signals2.hpp>
 #include <p2psentry/sentry.grpc.pb.h>
 
 #include <silkworm/concurrency/active_component.hpp>
+#include <silkworm/db/access_layer.hpp>
 #include <silkworm/downloader/internals/grpc_sync_client.hpp>
 #include <silkworm/downloader/internals/sentry_type_casts.hpp>
 #include <silkworm/downloader/internals/types.hpp>
@@ -38,13 +41,13 @@ class SentryClient : public rpc::Client<sentry::Sentry>, public ActiveComponent 
     using base_t = rpc::Client<sentry::Sentry>;
     using subscriber_t = void(const sentry::InboundMessage&);
 
-    explicit SentryClient(const std::string& sentry_addr);  // connect to the remote sentry
+    explicit SentryClient(const std::string& sentry_addr, const db::ROAccess&, const ChainConfig&);  // connect to the remote sentry
     SentryClient(const SentryClient&) = delete;
     SentryClient(SentryClient&&) = delete;
 
-    void set_status(Hash head_hash, BigInt head_td, const ChainConfig&);  // init the remote sentry
-    void hand_shake();                                                    // hand_shake & check of the protocol version
-    uint64_t count_active_peers();                                        // ask the remote sentry for active peers
+    void set_status();              // init the remote sentry
+    void hand_shake();              // hand_shake & check of the protocol version
+    uint64_t count_active_peers();  // ask the remote sentry for active peers
 
     uint64_t active_peers();  // return cached peers count
 
@@ -63,9 +66,15 @@ class SentryClient : public rpc::Client<sentry::Sentry>, public ActiveComponent 
 
   protected:
     void publish(const sentry::InboundMessage&);  // notifying registered subscribers
+    void set_status(Hash head_hash, BigInt head_td, const ChainConfig&);
 
-    rpc::ReceiveMessages receive_messages_;
-    rpc::ReceivePeerStats receive_peer_stats_;
+    const std::string sentry_addr_;
+    db::ROAccess db_access_;
+    const ChainConfig& chain_config_;
+
+    std::shared_ptr<rpc::ReceiveMessages> receive_messages_;
+    std::shared_ptr<rpc::ReceivePeerStats> receive_peer_stats_;
+
     std::atomic<uint64_t> active_peers_{0};
 };
 

@@ -21,8 +21,8 @@
 #include <silkworm/common/asio_timer.hpp>
 #include <silkworm/common/stopwatch.hpp>
 #include <silkworm/concurrency/worker.hpp>
-#include <silkworm/stagedsync/common.hpp>
 #include <silkworm/downloader/block_exchange.hpp>
+#include <silkworm/stagedsync/common.hpp>
 
 namespace silkworm::stagedsync {
 

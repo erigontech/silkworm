@@ -39,7 +39,7 @@ SyncLoop::SyncLoop(silkworm::NodeSettings* node_settings, mdbx::env* chaindata_e
       block_exchange_{be},
       sync_context_{std::make_unique<SyncContext>()} {
     load_stages();
-};
+}
 
 void SyncLoop::load_stages() {
     /*

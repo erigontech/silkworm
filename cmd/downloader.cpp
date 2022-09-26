@@ -72,7 +72,6 @@ StageResult unwind(std::vector<IStage*> stages, LastStage last_stage, db::RWTxn&
     return result;
 }
 
-
 // progress log
 class ProgressLog : public ActiveComponent {
     std::vector<IStage*> stages_;

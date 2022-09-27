@@ -65,6 +65,8 @@ class ROTxn {
     mdbx::txn* operator->() { return external_txn_ ? external_txn_ : &managed_txn_; }
     operator mdbx::txn&() { return external_txn_ ? *external_txn_ : managed_txn_; }
 
+    void abort() { managed_txn_.abort(); }
+
   protected:
     ROTxn(mdbx::txn_managed&& source) : managed_txn_{std::move(source)} {}
 
@@ -112,8 +114,6 @@ class RWTxn : public ROTxn {
             }
         }
     }
-
-    void abort() { managed_txn_.abort(); }
 };
 
 //! \brief This class create ROTxn(s) on demand, it is used to enforce in some method signatures the type of db access

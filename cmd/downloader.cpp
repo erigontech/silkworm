@@ -21,21 +21,26 @@
 #include <CLI/CLI.hpp>
 
 #include <silkworm/buildinfo.h>
-#include <silkworm/common/directories.hpp>
 #include <silkworm/common/log.hpp>
 #include <silkworm/common/settings.hpp>
 #include <silkworm/concurrency/signal_handler.hpp>
 #include <silkworm/db/access_layer.hpp>
-#include <silkworm/downloader/internals/body_sequence.hpp>
-#include <silkworm/downloader/internals/header_retrieval.hpp>
-#include <silkworm/downloader/stage_bodies.hpp>
-#include <silkworm/downloader/stage_headers.hpp>
 #include <silkworm/stagedsync/common.hpp>
 
 #include "common.hpp"
+#include "silkworm/stagedsync/stage_bodies.hpp"
+#include "silkworm/stagedsync/stage_headers.hpp"
 
 using namespace silkworm;
 using namespace silkworm::stagedsync;
+
+bool unwind_needed(StageResult result) {
+    return (result == StageResult::kWrongFork || result == StageResult::kInvalidBlock);
+}
+
+bool error_or_abort(StageResult result) {
+    return (result == StageResult::kUnexpectedError || result == StageResult::kAborted);
+}
 
 // stage-loop, forwarding phase
 using LastStage = size_t;
@@ -44,8 +49,7 @@ std::tuple<StageResult, LastStage> forward(std::vector<IStage*> stages, db::RWTx
 
     for (size_t i = 0; i < stages.size(); ++i) {
         result = stages[i]->forward(txn);
-        // TODO (canepat) add StageResult::unwind_needed(), then if (result.unwind_needed())
-        if (result == StageResult::kInvalidBlock || result == StageResult::kWrongFork) {
+        if (unwind_needed(result)) {
             return {result, i};
         }
     }
@@ -58,8 +62,7 @@ StageResult unwind(std::vector<IStage*> stages, LastStage last_stage, db::RWTxn&
 
     for (size_t i = last_stage; i <= 0; --i) {  // reverse loop
         result = stages[i]->unwind(txn);
-        // TODO (canepat) add StageResult::unwind_error(), then if (result.unwind_error())
-        if (result == StageResult::kUnexpectedError || result == StageResult::kAborted) {
+        if (error_or_abort(result)) {
             break;
         }
     }
@@ -107,8 +110,6 @@ int main(int argc, char* argv[]) {
         log::set_thread_name("main          ");
 
         // test & measurement only parameters [to remove]
-        BodySequence::kMaxBlocksPerMessage = 128;
-        BodySequence::kPerPeerMaxOutstandingRequests = 4;
         int requestDeadlineSeconds = 30;     // BodySequence::kRequestDeadline = std::chrono::seconds(30);
         int noPeerDelayMilliseconds = 1000;  // BodySequence::kNoPeerDelay = std::chrono::milliseconds(1000)
 
@@ -155,19 +156,8 @@ int main(int argc, char* argv[]) {
         // Database access
         mdbx::env_managed db = db::open_env(node_settings.chaindata_env_config);
 
-        // Node current status
-        HeaderRetrieval headers(db::ROAccess{db});
-        auto [head_hash, head_td] = headers.head_hash_and_total_difficulty();
-        auto head_height = headers.head_height();
-
-        log::Message("Chain/db status", {"head hash", head_hash.to_hex()});
-        log::Message("Chain/db status", {"head td", intx::to_string(head_td)});
-        log::Message("Chain/db status", {"head height", to_string(head_height)});
-
         // Sentry client - connects to sentry
-        SentryClient sentry{node_settings.external_sentry_addr};
-        sentry.set_status(head_hash, head_td, node_settings.chain_config.value());
-        sentry.hand_shake();
+        SentryClient sentry{node_settings.external_sentry_addr, db::ROAccess{db}, node_settings.chain_config.value()};
         auto message_receiving = std::thread([&sentry]() { sentry.execution_loop(); });
         auto stats_receiving = std::thread([&sentry]() { sentry.stats_receiving_loop(); });
 
@@ -183,6 +173,9 @@ int main(int argc, char* argv[]) {
         // Stages 1 & 2 - Headers and bodies downloading - example code
         HeadersStage header_stage{&shared_status, block_exchange, &node_settings};
         BodiesStage body_stage{&shared_status, block_exchange, &node_settings};
+
+        header_stage.set_log_prefix("[1/2 Headers]");
+        body_stage.set_log_prefix("[2/2 Bodies]");
 
         // Trap os signals
         SignalHandler::init();
@@ -210,13 +203,12 @@ int main(int argc, char* argv[]) {
 
             std::tie(result, last_stage) = forward(stages, txn);
 
-            // TODO (canepat) add StageResult::unwind_needed(), then if (result.unwind_needed())
-            if (result == StageResult::kInvalidBlock || result == StageResult::kWrongFork) {
+            if (unwind_needed(result)) {
                 result = unwind(stages, last_stage, txn);
             }
 
             shared_status.is_first_cycle = false;
-        } while (result != StageResult::kUnexpectedError && !SignalHandler::signalled());
+        } while (!error_or_abort(result) && !SignalHandler::signalled());
 
         log::Info() << "Downloader stage-loop ended\n";
 

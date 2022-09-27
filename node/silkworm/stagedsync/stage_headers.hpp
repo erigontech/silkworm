@@ -17,13 +17,12 @@
 
 #include <atomic>
 
-#include <silkworm/common/measure.hpp>
-#include <silkworm/db/access_layer.hpp>
-#include <silkworm/downloader/internals/types.hpp>
-#include <silkworm/downloader/messages/internal_message.hpp>
-#include <silkworm/stagedsync/common.hpp>
-
-#include "block_exchange.hpp"
+#include "common.hpp"
+#include "silkworm/common/measure.hpp"
+#include "silkworm/db/access_layer.hpp"
+#include "silkworm/downloader/block_exchange.hpp"
+#include "silkworm/downloader/internals/types.hpp"
+#include "silkworm/downloader/messages/internal_message.hpp"
 
 namespace silkworm::stagedsync {
 
@@ -83,6 +82,7 @@ class HeadersStage : public IStage {
     std::vector<std::string> get_log_progress() override;  // thread safe
     std::atomic<BlockNum> current_height_{0};
 
+    std::optional<BlockNum> target_block_;
     BlockExchange& block_downloader_;
 };
 

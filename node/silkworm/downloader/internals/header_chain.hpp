@@ -157,6 +157,7 @@ class HeaderChain {
     OldestFirstLinkQueue insert_list_;         // List of non-persisted links that can be inserted (their parent is persisted)
     BlockNum highest_in_db_;
     BlockNum top_seen_height_;
+    std::optional<BlockNum> target_block_;
     std::set<Hash> bad_headers_;
     const PreverifiedHashes* preverified_hashes_;  // Set of hashes that are known to belong to canonical chain
     using Ignore = int;
@@ -175,5 +176,7 @@ class HeaderChain {
     Download_Statistics statistics_;
     std::string skeleton_condition_;
 };
+
+std::optional<BlockNum> stop_at_block_from_env();
 
 }  // namespace silkworm

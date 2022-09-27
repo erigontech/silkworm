@@ -44,10 +44,10 @@ SyncLoop::SyncLoop(silkworm::NodeSettings* node_settings, mdbx::env* chaindata_e
 void SyncLoop::load_stages() {
     /*
      * Stages from Erigon -> Silkworm
-     *  1 StageHeaders ->  Downloader ?
-     *  2 StageCumulativeIndex -> Downloader ?
+     *  1 StageHeaders ->  stagedsync::HeadersStage
+     *  2 StageCumulativeIndex -> TBD
      *  3 StageBlockHashes -> stagedsync::BlockHashes
-     *  4 StageBodies -> Downloader ?
+     *  4 StageBodies -> stagedsync::BodiesStage
      *  5 StageIssuance -> TBD
      *  6 StageSenders -> stagedsync::Senders
      *  7 StageExecuteBlocks -> stagedsync::Execution
@@ -184,7 +184,7 @@ void SyncLoop::work() {
             }
 
             // Run forward
-            if (sync_context_->unwind_to.has_value() == false) {
+            if (!sync_context_->unwind_to.has_value()) {
                 bool should_end_loop{false};
 
                 const auto forward_result = run_cycle_forward(*cycle_txn, log_timer);
@@ -289,7 +289,7 @@ StageResult SyncLoop::run_cycle_forward(db::RWTxn& cycle_txn, Timer& log_timer) 
             current_stage_->second->set_log_prefix(get_log_prefix());
 
             // Check if we have to stop due to environment variable
-            if (stop_stage_name && !iequals(stop_stage_name, stage_id)) {
+            if (stop_stage_name && iequals(stop_stage_name, stage_id)) {
                 stop();
                 log::Warning("Stopping ...", {"STOP_BEFORE_STAGE", stop_stage_name, "hit", "true"});
                 return StageResult::kStoppedByEnv;

@@ -82,6 +82,9 @@ if(NOT SILKWORM_CORE_ONLY)
 endif()
 
 if(NOT SILKWORM_CORE_ONLY)
+  # Silence CMake policy warnings in submodules
+  set(CMAKE_POLICY_DEFAULT_CMP0048 NEW)
+  set(CMAKE_POLICY_DEFAULT_CMP0063 NEW)
 
   # Roaring Bitmaps
   option(ENABLE_ROARING_TESTS "" OFF)

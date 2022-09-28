@@ -102,12 +102,12 @@ elseif("${CMAKE_CXX_COMPILER_ID}" MATCHES ".*Clang$")
     add_compile_options(-gline-tables-only)
   endif()
 
-  # coroutines support
-  if(NOT SILKWORM_WASM_API)
-    add_compile_options(-stdlib=libc++)
-    link_libraries(c++)
-    link_libraries(c++abi)
-  endif()
+#  # coroutines support
+#  if(NOT SILKWORM_WASM_API)
+#    add_compile_options(-stdlib=libc++)
+#    link_libraries(c++)
+#    link_libraries(c++abi)
+#  endif()
 
 else ()
 

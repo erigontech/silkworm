@@ -23,15 +23,15 @@
 
 namespace silkworm::stagedsync {
 
-class LogIndex : public IStage {
+class LogIndex : public Stage {
   public:
     explicit LogIndex(NodeSettings* node_settings, SyncContext* sync_context)
-        : IStage(sync_context, db::stages::kLogIndexKey, node_settings){};
+        : Stage(sync_context, db::stages::kLogIndexKey, node_settings){};
     ~LogIndex() override = default;
 
-    StageResult forward(db::RWTxn& txn) final;
-    StageResult unwind(db::RWTxn& txn) final;
-    StageResult prune(db::RWTxn& txn) final;
+    Stage::Result forward(db::RWTxn& txn) final;
+    Stage::Result unwind(db::RWTxn& txn) final;
+    Stage::Result prune(db::RWTxn& txn) final;
     std::vector<std::string> get_log_progress() final;
 
   private:

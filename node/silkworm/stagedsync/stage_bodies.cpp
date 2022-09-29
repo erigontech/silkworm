@@ -30,18 +30,18 @@
 namespace silkworm::stagedsync {
 
 BodiesStage::BodiesStage(SyncContext* sc, BlockExchange& bd, NodeSettings* ns)
-    : IStage(sc, db::stages::kBlockBodiesKey, ns), block_downloader_{bd} {
+    : Stage(sc, db::stages::kBlockBodiesKey, ns), block_downloader_{bd} {
 }
 
 BodiesStage::~BodiesStage() {
 }
 
-StageResult BodiesStage::forward(db::RWTxn& tx) {
+Stage::Result BodiesStage::forward(db::RWTxn& tx) {
     using std::shared_ptr;
     using namespace std::chrono_literals;
     using namespace std::chrono;
 
-    StageResult result = StageResult::kUnspecified;
+    Stage::Result result = Stage::Result::kUnspecified;
     operation_ = OperationType::Forward;
 
     auto constexpr KShortInterval = 200ms;
@@ -53,7 +53,7 @@ StageResult BodiesStage::forward(db::RWTxn& tx) {
 
     if (block_downloader_.is_stopping()) {
         log::Error(log_prefix_) << "Aborted, block exchange is down";
-        return StageResult::kAborted;
+        return Stage::Result::kAborted;
     }
 
     try {
@@ -91,11 +91,11 @@ StageResult BodiesStage::forward(db::RWTxn& tx) {
 
                 // check unwind condition
                 if (body_persistence.unwind_needed()) {
-                    result = StageResult::kInvalidBlock;
+                    result = Stage::Result::kInvalidBlock;
                     sync_context_->unwind_to = body_persistence.unwind_point();
                     break;
                 } else {
-                    result = StageResult::kSuccess;
+                    result = Stage::Result::kSuccess;
                 }
 
                 // do announcements
@@ -125,22 +125,22 @@ StageResult BodiesStage::forward(db::RWTxn& tx) {
 
         log::Info(log_prefix_) << "Done, duration= " << StopWatch::format(timing.lap_duration());
 
-        if (result == StageResult::kUnspecified) {
-            result = StageResult::kSuccess;
+        if (result == Stage::Result::kUnspecified) {
+            result = Stage::Result::kSuccess;
         }
 
     } catch (const std::exception& e) {
         log::Error(log_prefix_) << "Aborted due to exception: " << e.what();
 
         // tx rollback executed automatically if needed
-        result = StageResult::kUnexpectedError;
+        result = Stage::Result::kUnexpectedError;
     }
 
     return result;
 }
 
-StageResult BodiesStage::unwind(db::RWTxn& tx) {
-    StageResult result{StageResult::kSuccess};
+Stage::Result BodiesStage::unwind(db::RWTxn& tx) {
+    Stage::Result result{Stage::Result::kSuccess};
     operation_ = OperationType::Unwind;
 
     StopWatch timing;
@@ -165,20 +165,20 @@ StageResult BodiesStage::unwind(db::RWTxn& tx) {
 
         log::Info(log_prefix_) << "Unwind completed, duration= " << StopWatch::format(timing.lap_duration());
 
-        result = StageResult::kSuccess;
+        result = Stage::Result::kSuccess;
 
     } catch (const std::exception& e) {
         log::Error(log_prefix_) << "Unwind aborted due to exception: " << e.what();
 
         // tx rollback executed automatically if needed
-        result = StageResult::kUnexpectedError;
+        result = Stage::Result::kUnexpectedError;
     }
 
     return result;
 }
 
-auto BodiesStage::prune(db::RWTxn&) -> StageResult {
-    return StageResult::kSuccess;
+auto BodiesStage::prune(db::RWTxn&) -> Stage::Result {
+    return Stage::Result::kSuccess;
 }
 
 void BodiesStage::send_body_requests() {

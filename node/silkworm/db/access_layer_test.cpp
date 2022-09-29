@@ -27,6 +27,7 @@
 #include <silkworm/db/prune_mode.hpp>
 #include <silkworm/db/tables.hpp>
 #include <silkworm/execution/execution.hpp>
+#include <silkworm/stagedsync/common.hpp>
 #include <silkworm/stagedsync/stage_history_index.hpp>
 
 namespace silkworm {
@@ -520,7 +521,7 @@ namespace db {
         db::RWTxn tm{txn};
         stagedsync::SyncContext sync_context{};
         stagedsync::HistoryIndex stage_history_index(&context.node_settings(), &sync_context);
-        REQUIRE(stage_history_index.forward(tm) == stagedsync::StageResult::kSuccess);
+        REQUIRE(stage_history_index.forward(tm) == stagedsync::Stage::Result::kSuccess);
 
         std::optional<Account> current_account{read_account(txn, miner_a)};
         REQUIRE(current_account.has_value());

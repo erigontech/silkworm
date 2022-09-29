@@ -21,8 +21,8 @@
 
 namespace silkworm::stagedsync {
 
-StageResult TxLookup::forward(db::RWTxn& txn) {
-    StageResult ret{StageResult::kSuccess};
+Stage::Result TxLookup::forward(db::RWTxn& txn) {
+    Stage::Result ret{Stage::Result::kSuccess};
     operation_ = OperationType::Forward;
     try {
         throw_if_stopping();
@@ -36,7 +36,7 @@ StageResult TxLookup::forward(db::RWTxn& txn) {
             return ret;
         } else if (previous_progress > target_progress) {
             // Something bad had happened.  Maybe we need to unwind ?
-            throw StageError(StageResult::kInvalidProgress,
+            throw StageError(Stage::Result::kInvalidProgress,
                              "TxLookup progress " + std::to_string(previous_progress) +
                                  " greater than Execution progress " + std::to_string(target_progress));
         }
@@ -66,19 +66,19 @@ StageResult TxLookup::forward(db::RWTxn& txn) {
     } catch (const StageError& ex) {
         log::Error(log_prefix_,
                    {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
-        ret = static_cast<StageResult>(ex.err());
+        ret = static_cast<Stage::Result>(ex.err());
     } catch (const mdbx::exception& ex) {
         log::Error(log_prefix_,
                    {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
-        ret = StageResult::kDbError;
+        ret = Stage::Result::kDbError;
     } catch (const std::exception& ex) {
         log::Error(log_prefix_,
                    {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
-        ret = StageResult::kUnexpectedError;
+        ret = Stage::Result::kUnexpectedError;
     } catch (...) {
         log::Error(log_prefix_,
                    {"function", std::string(__FUNCTION__), "exception", "unexpected and undefined"});
-        ret = StageResult::kUnexpectedError;
+        ret = Stage::Result::kUnexpectedError;
     }
 
     operation_ = OperationType::None;
@@ -86,8 +86,8 @@ StageResult TxLookup::forward(db::RWTxn& txn) {
     return ret;
 }
 
-StageResult TxLookup::unwind(db::RWTxn& txn) {
-    StageResult ret{StageResult::kSuccess};
+Stage::Result TxLookup::unwind(db::RWTxn& txn) {
+    Stage::Result ret{Stage::Result::kSuccess};
 
     if (!sync_context_->unwind_to.has_value()) return ret;
     const BlockNum to{sync_context_->unwind_to.value()};
@@ -125,19 +125,19 @@ StageResult TxLookup::unwind(db::RWTxn& txn) {
     } catch (const StageError& ex) {
         log::Error(log_prefix_,
                    {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
-        ret = static_cast<StageResult>(ex.err());
+        ret = static_cast<Stage::Result>(ex.err());
     } catch (const mdbx::exception& ex) {
         log::Error(log_prefix_,
                    {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
-        ret = StageResult::kDbError;
+        ret = Stage::Result::kDbError;
     } catch (const std::exception& ex) {
         log::Error(log_prefix_,
                    {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
-        ret = StageResult::kUnexpectedError;
+        ret = Stage::Result::kUnexpectedError;
     } catch (...) {
         log::Error(log_prefix_,
                    {"function", std::string(__FUNCTION__), "exception", "unexpected and undefined"});
-        ret = StageResult::kUnexpectedError;
+        ret = Stage::Result::kUnexpectedError;
     }
 
     operation_ = OperationType::None;
@@ -145,8 +145,8 @@ StageResult TxLookup::unwind(db::RWTxn& txn) {
     return ret;
 }
 
-StageResult TxLookup::prune(db::RWTxn& txn) {
-    StageResult ret{StageResult::kSuccess};
+Stage::Result TxLookup::prune(db::RWTxn& txn) {
+    Stage::Result ret{Stage::Result::kSuccess};
     operation_ = OperationType::Prune;
 
     try {
@@ -194,19 +194,19 @@ StageResult TxLookup::prune(db::RWTxn& txn) {
     } catch (const StageError& ex) {
         log::Error(log_prefix_,
                    {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
-        ret = static_cast<StageResult>(ex.err());
+        ret = static_cast<Stage::Result>(ex.err());
     } catch (const mdbx::exception& ex) {
         log::Error(log_prefix_,
                    {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
-        ret = StageResult::kDbError;
+        ret = Stage::Result::kDbError;
     } catch (const std::exception& ex) {
         log::Error(log_prefix_,
                    {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
-        ret = StageResult::kUnexpectedError;
+        ret = Stage::Result::kUnexpectedError;
     } catch (...) {
         log::Error(log_prefix_,
                    {"function", std::string(__FUNCTION__), "exception", "unexpected and undefined"});
-        ret = StageResult::kUnexpectedError;
+        ret = Stage::Result::kUnexpectedError;
     }
 
     operation_ = OperationType::None;
@@ -327,7 +327,7 @@ void TxLookup::collect_transaction_hashes_from_canonical_bodies(db::RWTxn& txn,
 
     auto canonical_data{canonicals.find(db::to_slice(start_key), /*throw_notfound=*/false)};
     if (!canonical_data) {
-        throw StageError(StageResult::kBadChainSequence,
+        throw StageError(Stage::Result::kBadChainSequence,
                          "Missing canonical hash for block " + std::to_string(expected_block_number));
     }
     while (canonical_data) {
@@ -344,7 +344,7 @@ void TxLookup::collect_transaction_hashes_from_canonical_bodies(db::RWTxn& txn,
         }
 
         if (canonical_data.value.length() != kHashLength) {
-            throw StageError(StageResult::kDbError,
+            throw StageError(Stage::Result::kDbError,
                              "Invalid value length for canonical hash at block " + std::to_string(reached_block_number));
         }
 
@@ -352,7 +352,7 @@ void TxLookup::collect_transaction_hashes_from_canonical_bodies(db::RWTxn& txn,
         const auto body_key{db::block_key(reached_block_number, header_hash.bytes)};
         const auto body_data{bodies.find(db::to_slice(body_key), /*throw_notfound=*/false)};
         if (!body_data) {
-            throw StageError(StageResult::kDbError,
+            throw StageError(Stage::Result::kDbError,
                              "Could not load block body " + std::to_string(reached_block_number));
         }
         auto body_data_key_view{db::from_slice(body_data.key)};

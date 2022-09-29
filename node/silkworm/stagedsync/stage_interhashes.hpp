@@ -24,14 +24,14 @@
 
 namespace silkworm::stagedsync {
 
-class InterHashes final : public IStage {
+class InterHashes final : public Stage {
   public:
     explicit InterHashes(NodeSettings* node_settings, SyncContext* sync_context)
-        : IStage(sync_context, db::stages::kIntermediateHashesKey, node_settings){};
+        : Stage(sync_context, db::stages::kIntermediateHashesKey, node_settings){};
     ~InterHashes() override = default;
-    StageResult forward(db::RWTxn& txn) final;
-    StageResult unwind(db::RWTxn& txn) final;
-    StageResult prune(db::RWTxn& txn) final;
+    Stage::Result forward(db::RWTxn& txn) final;
+    Stage::Result unwind(db::RWTxn& txn) final;
+    Stage::Result prune(db::RWTxn& txn) final;
     std::vector<std::string> get_log_progress() final;
 
   private:
@@ -49,14 +49,14 @@ class InterHashes final : public IStage {
     //! \brief Erigon's RegenerateIntermediateHashes
     //! \remarks might throw WrongRoot
     //! \return the state root
-    [[nodiscard]] StageResult regenerate_intermediate_hashes(db::RWTxn& txn,
-                                                             const evmc::bytes32* expected_root = nullptr);
+    [[nodiscard]] Stage::Result regenerate_intermediate_hashes(db::RWTxn& txn,
+                                                               const evmc::bytes32* expected_root = nullptr);
 
     //! \brief Erigon's IncrementIntermediateHashes
     //! \remarks might throw
     //! \return the state root
-    [[nodiscard]] StageResult increment_intermediate_hashes(db::RWTxn& txn, BlockNum from, BlockNum to,
-                                                            const evmc::bytes32* expected_root = nullptr);
+    [[nodiscard]] Stage::Result increment_intermediate_hashes(db::RWTxn& txn, BlockNum from, BlockNum to,
+                                                              const evmc::bytes32* expected_root = nullptr);
 
     //! \brief Persists in TrieAccount and TrieStorage the collected nodes (and respective deletions if any)
     void flush_collected_nodes(db::RWTxn& txn);

@@ -20,16 +20,16 @@
 
 namespace silkworm::stagedsync {
 
-class Finish : public IStage {
+class Finish : public Stage {
   public:
     explicit Finish(NodeSettings* node_settings, SyncContext* sync_context)
-        : IStage(sync_context, db::stages::kFinishKey, node_settings){};
+        : Stage(sync_context, db::stages::kFinishKey, node_settings){};
     ~Finish() override = default;
 
-    StageResult forward(db::RWTxn& txn) final;
-    StageResult unwind(db::RWTxn& txn) final;
+    Stage::Result forward(db::RWTxn& txn) final;
+    Stage::Result unwind(db::RWTxn& txn) final;
 
     // Finish does not prune.
-    StageResult prune(db::RWTxn&) final { return StageResult::kSuccess; };
+    Stage::Result prune(db::RWTxn&) final { return Stage::Result::kSuccess; };
 };
 }  // namespace silkworm::stagedsync

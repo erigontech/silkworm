@@ -74,7 +74,7 @@ TEST_CASE("Stage Transaction Lookups") {
     // Execute stage forward
     stagedsync::SyncContext sync_context{};
     stagedsync::TxLookup stage_tx_lookup(&context.node_settings(), &sync_context);
-    REQUIRE(stage_tx_lookup.forward(txn) == stagedsync::StageResult::kSuccess);
+    REQUIRE(stage_tx_lookup.forward(txn) == stagedsync::Stage::Result::kSuccess);
 
     SECTION("Forward checks and unwind") {
         db::Cursor lookup_table(txn, db::table::kTxLookup);
@@ -98,7 +98,7 @@ TEST_CASE("Stage Transaction Lookups") {
 
         // Execute stage unwind to block 1
         sync_context.unwind_to.emplace(1);
-        REQUIRE(stage_tx_lookup.unwind(txn) == stagedsync::StageResult::kSuccess);
+        REQUIRE(stage_tx_lookup.unwind(txn) == stagedsync::Stage::Result::kSuccess);
         lookup_table.bind(txn, db::table::kTxLookup);  // Needed due to commit
 
         // Block 1 should be still there
@@ -127,7 +127,7 @@ TEST_CASE("Stage Transaction Lookups") {
         REQUIRE(context.node_settings().prune_mode->tx_index().value_from_head(2) == 1);
 
         // Only leave block 2 alive
-        REQUIRE(stage_tx_lookup.prune(txn) == stagedsync::StageResult::kSuccess);
+        REQUIRE(stage_tx_lookup.prune(txn) == stagedsync::Stage::Result::kSuccess);
 
         db::Cursor lookup_table(txn, db::table::kTxLookup);
         REQUIRE(lookup_table.size() == 1);

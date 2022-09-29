@@ -26,26 +26,26 @@
 #include <silkworm/concurrency/signal_handler.hpp>
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/stagedsync/common.hpp>
+#include <silkworm/stagedsync/stage_bodies.hpp>
+#include <silkworm/stagedsync/stage_headers.hpp>
 
 #include "common.hpp"
-#include "silkworm/stagedsync/stage_bodies.hpp"
-#include "silkworm/stagedsync/stage_headers.hpp"
 
 using namespace silkworm;
 using namespace silkworm::stagedsync;
 
-bool unwind_needed(StageResult result) {
-    return (result == StageResult::kWrongFork || result == StageResult::kInvalidBlock);
+bool unwind_needed(Stage::Result result) {
+    return (result == Stage::Result::kWrongFork || result == Stage::Result::kInvalidBlock);
 }
 
-bool error_or_abort(StageResult result) {
-    return (result == StageResult::kUnexpectedError || result == StageResult::kAborted);
+bool error_or_abort(Stage::Result result) {
+    return (result == Stage::Result::kUnexpectedError || result == Stage::Result::kAborted);
 }
 
 // stage-loop, forwarding phase
 using LastStage = size_t;
-std::tuple<StageResult, LastStage> forward(std::vector<IStage*> stages, db::RWTxn& txn) {
-    StageResult result{StageResult::kUnspecified};
+std::tuple<Stage::Result, LastStage> forward(std::vector<Stage*> stages, db::RWTxn& txn) {
+    Stage::Result result{Stage::Result::kUnspecified};
 
     for (size_t i = 0; i < stages.size(); ++i) {
         result = stages[i]->forward(txn);
@@ -57,8 +57,8 @@ std::tuple<StageResult, LastStage> forward(std::vector<IStage*> stages, db::RWTx
 }
 
 // stage-loop, unwinding phase
-StageResult unwind(std::vector<IStage*> stages, LastStage last_stage, db::RWTxn& txn) {
-    StageResult result{StageResult::kUnspecified};
+Stage::Result unwind(std::vector<Stage*> stages, LastStage last_stage, db::RWTxn& txn) {
+    Stage::Result result{Stage::Result::kUnspecified};
 
     for (size_t i = last_stage; i <= 0; --i) {  // reverse loop
         result = stages[i]->unwind(txn);
@@ -72,10 +72,10 @@ StageResult unwind(std::vector<IStage*> stages, LastStage last_stage, db::RWTxn&
 
 // progress log
 class ProgressLog : public ActiveComponent {
-    std::vector<IStage*> stages_;
+    std::vector<Stage*> stages_;
 
   public:
-    ProgressLog(std::vector<IStage*>& stages) : stages_(stages) {}
+    ProgressLog(std::vector<Stage*>& stages) : stages_(stages) {}
 
     void execution_loop() override {  // this is only a trick to avoid using asio timers, this is only test code
         using namespace std::chrono;
@@ -188,14 +188,14 @@ int main(int argc, char* argv[]) {
         //        });
 
         // Sample stage loop with 2 stages
-        std::vector<IStage*> stages = {&header_stage, &body_stage};
+        std::vector<Stage*> stages = {&header_stage, &body_stage};
 
         ProgressLog progress_log(stages);
         auto progress_displaying = std::thread([&progress_log]() {
             progress_log.execution_loop();
         });
 
-        StageResult result{StageResult::kUnspecified};
+        Stage::Result result{Stage::Result::kUnspecified};
         size_t last_stage = 0;
 
         do {

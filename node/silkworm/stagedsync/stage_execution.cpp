@@ -26,16 +26,16 @@
 
 namespace silkworm::stagedsync {
 
-StageResult Execution::forward(db::RWTxn& txn) {
-    StageResult ret{StageResult::kSuccess};
+Stage::Result Execution::forward(db::RWTxn& txn) {
+    Stage::Result ret{Stage::Result::kSuccess};
     operation_ = OperationType::Forward;
     try {
         throw_if_stopping();
         if (!node_settings_->chain_config.has_value()) {
-            throw StageError(StageResult::kUnknownChainId);
+            throw StageError(Stage::Result::kUnknownChainId);
         }
         if (!consensus_engine_) {
-            throw StageError(StageResult::kUnknownConsensusEngine);
+            throw StageError(Stage::Result::kUnknownConsensusEngine);
         }
 
         StopWatch commit_stopwatch;
@@ -55,7 +55,7 @@ StageResult Execution::forward(db::RWTxn& txn) {
             // Maybe we need to unwind ?
             std::string what{"Bad progress sequence. Execution stage progress " + std::to_string(previous_progress) +
                              " while Senders stage " + std::to_string(senders_stage_progress)};
-            throw StageError(StageResult::kInvalidProgress, what);
+            throw StageError(Stage::Result::kInvalidProgress, what);
         }
 
         std::unique_lock progress_lock(progress_mtx_);
@@ -102,8 +102,8 @@ StageResult Execution::forward(db::RWTxn& txn) {
 
             // If we return with success we must persist data
             // Though counterintuitive we also must persist on KInvalidBlock to allow subsequent unwind
-            if (execution_result != StageResult::kSuccess &&
-                execution_result != StageResult::kInvalidBlock) {
+            if (execution_result != Stage::Result::kSuccess &&
+                execution_result != Stage::Result::kInvalidBlock) {
                 throw StageError(execution_result);
             }
 
@@ -119,7 +119,7 @@ StageResult Execution::forward(db::RWTxn& txn) {
             log::Info(log_prefix_ + " commit", {"batch time", StopWatch::format(duration)});
 
             // If an invalid block returned now can throw
-            if (execution_result == StageResult::kInvalidBlock) {
+            if (execution_result == Stage::Result::kInvalidBlock) {
                 ret = execution_result;
                 break;
             }
@@ -129,19 +129,19 @@ StageResult Execution::forward(db::RWTxn& txn) {
     } catch (const StageError& ex) {
         log::Error(log_prefix_,
                    {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
-        ret = static_cast<StageResult>(ex.err());
+        ret = static_cast<Stage::Result>(ex.err());
     } catch (const mdbx::exception& ex) {
         log::Error(log_prefix_,
                    {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
-        ret = StageResult::kDbError;
+        ret = Stage::Result::kDbError;
     } catch (const std::exception& ex) {
         log::Error(log_prefix_,
                    {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
-        ret = StageResult::kUnexpectedError;
+        ret = Stage::Result::kUnexpectedError;
     } catch (...) {
         log::Error(log_prefix_,
                    {"function", std::string(__FUNCTION__), "exception", "undefined"});
-        ret = StageResult::kUnexpectedError;
+        ret = Stage::Result::kUnexpectedError;
     }
 
     operation_ = OperationType::None;
@@ -196,10 +196,10 @@ void Execution::prefetch_blocks(db::RWTxn& txn, const BlockNum from, const Block
     }
 }
 
-StageResult Execution::execute_batch(db::RWTxn& txn, BlockNum max_block_num, BaselineAnalysisCache& analysis_cache,
-                                     ObjectPool<EvmoneExecutionState>& state_pool, BlockNum prune_history_threshold,
-                                     BlockNum prune_receipts_threshold) {
-    StageResult ret{StageResult::kSuccess};
+Stage::Result Execution::execute_batch(db::RWTxn& txn, BlockNum max_block_num, BaselineAnalysisCache& analysis_cache,
+                                       ObjectPool<EvmoneExecutionState>& state_pool, BlockNum prune_history_threshold,
+                                       BlockNum prune_receipts_threshold) {
+    Stage::Result ret{Stage::Result::kSuccess};
     using namespace std::chrono_literals;
     auto log_time{std::chrono::steady_clock::now()};
 
@@ -256,7 +256,7 @@ StageResult Execution::execute_batch(db::RWTxn& txn, BlockNum max_block_num, Bas
                              {"block", std::to_string(block_num_),
                               "hash", to_hex(block.header.hash().bytes, true),
                               "error", std::string(magic_enum::enum_name<ValidationResult>(res))});
-                return StageResult::kInvalidBlock;
+                return Stage::Result::kInvalidBlock;
             }
 
             if (block_num_ >= prune_receipts_threshold) {
@@ -292,29 +292,29 @@ StageResult Execution::execute_batch(db::RWTxn& txn, BlockNum max_block_num, Bas
     } catch (const StageError& ex) {
         log::Error(log_prefix_,
                    {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
-        ret = static_cast<StageResult>(ex.err());
+        ret = static_cast<Stage::Result>(ex.err());
     } catch (const mdbx::exception& ex) {
         log::Error(log_prefix_,
                    {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
-        ret = StageResult::kDbError;
+        ret = Stage::Result::kDbError;
     } catch (const rlp::DecodingError& ex) {
         log::Error(log_prefix_,
                    {"function", std::string(__FUNCTION__), "decoding error", std::string(ex.what())});
-        return StageResult::kDecodingError;
+        return Stage::Result::kDecodingError;
     } catch (const std::exception& ex) {
         log::Error(log_prefix_,
                    {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
-        ret = StageResult::kUnexpectedError;
+        ret = Stage::Result::kUnexpectedError;
     } catch (...) {
         log::Error(log_prefix_,
                    {"function", std::string(__FUNCTION__), "exception", "undefined"});
-        ret = StageResult::kUnexpectedError;
+        ret = Stage::Result::kUnexpectedError;
     }
 
     return ret;
 }
 
-StageResult Execution::unwind(db::RWTxn& txn) {
+Stage::Result Execution::unwind(db::RWTxn& txn) {
     static const db::MapConfig unwind_tables[5] = {
         db::table::kAccountChangeSet,  //
         db::table::kStorageChangeSet,  //
@@ -323,7 +323,7 @@ StageResult Execution::unwind(db::RWTxn& txn) {
         db::table::kCallTraceSet       //
     };
 
-    StageResult ret{StageResult::kSuccess};
+    Stage::Result ret{Stage::Result::kSuccess};
     if (!sync_context_->unwind_to.has_value()) return ret;
     const BlockNum to{sync_context_->unwind_to.value()};
 
@@ -332,7 +332,7 @@ StageResult Execution::unwind(db::RWTxn& txn) {
         BlockNum previous_progress{db::stages::read_stage_progress(*txn, db::stages::kExecutionKey)};
         if (to >= previous_progress) {
             operation_ = OperationType::None;
-            return StageResult::kSuccess;
+            return Stage::Result::kSuccess;
         }
 
         operation_ = OperationType::Unwind;
@@ -370,27 +370,27 @@ StageResult Execution::unwind(db::RWTxn& txn) {
     } catch (const StageError& ex) {
         log::Error(log_prefix_,
                    {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
-        ret = static_cast<StageResult>(ex.err());
+        ret = static_cast<Stage::Result>(ex.err());
     } catch (const mdbx::exception& ex) {
         log::Error(log_prefix_,
                    {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
-        ret = StageResult::kDbError;
+        ret = Stage::Result::kDbError;
     } catch (const std::exception& ex) {
         log::Error(log_prefix_,
                    {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
-        ret = StageResult::kUnexpectedError;
+        ret = Stage::Result::kUnexpectedError;
     } catch (...) {
         log::Error(log_prefix_,
                    {"function", std::string(__FUNCTION__), "exception", "undefined"});
-        ret = StageResult::kUnexpectedError;
+        ret = Stage::Result::kUnexpectedError;
     }
 
     operation_ = OperationType::None;
     return ret;
 }
 
-StageResult Execution::prune(db::RWTxn& txn) {
-    StageResult ret{StageResult::kSuccess};
+Stage::Result Execution::prune(db::RWTxn& txn) {
+    Stage::Result ret{Stage::Result::kSuccess};
     operation_ = OperationType::Prune;
 
     std::unique_ptr<StopWatch> stop_watch;
@@ -522,19 +522,19 @@ StageResult Execution::prune(db::RWTxn& txn) {
     } catch (const StageError& ex) {
         log::Error(log_prefix_,
                    {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
-        ret = static_cast<StageResult>(ex.err());
+        ret = static_cast<Stage::Result>(ex.err());
     } catch (const mdbx::exception& ex) {
         log::Error(log_prefix_,
                    {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
-        ret = StageResult::kDbError;
+        ret = Stage::Result::kDbError;
     } catch (const std::exception& ex) {
         log::Error(log_prefix_,
                    {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
-        ret = StageResult::kUnexpectedError;
+        ret = Stage::Result::kUnexpectedError;
     } catch (...) {
         log::Error(log_prefix_,
                    {"function", std::string(__FUNCTION__), "exception", "undefined"});
-        ret = StageResult::kUnexpectedError;
+        ret = Stage::Result::kUnexpectedError;
     }
 
     operation_ = OperationType::None;

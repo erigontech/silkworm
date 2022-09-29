@@ -20,15 +20,15 @@
 
 namespace silkworm::stagedsync {
 
-class BlockHashes final : public IStage {
+class BlockHashes final : public Stage {
   public:
     explicit BlockHashes(NodeSettings* node_settings, SyncContext* sync_context)
-        : IStage(sync_context, db::stages::kBlockHashesKey, node_settings){};
+        : Stage(sync_context, db::stages::kBlockHashesKey, node_settings){};
     ~BlockHashes() override = default;
 
-    StageResult forward(db::RWTxn& txn) final;
-    StageResult unwind(db::RWTxn& txn) final;
-    StageResult prune(db::RWTxn& txn) final;
+    Stage::Result forward(db::RWTxn& txn) final;
+    Stage::Result unwind(db::RWTxn& txn) final;
+    Stage::Result prune(db::RWTxn& txn) final;
     std::vector<std::string> get_log_progress() final;
 
   private:

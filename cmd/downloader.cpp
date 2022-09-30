@@ -100,9 +100,10 @@ int main(int argc, char* argv[]) {
     int return_value = 0;
 
     try {
-        NodeSettings node_settings{};
+        cmd::SilkwormCoreSettings settings;
+        auto& log_settings = settings.log_settings;
+        auto& node_settings = settings.node_settings;
 
-        log::Settings log_settings{};
         log_settings.log_threads = true;
         log_settings.log_file = "downloader.log";
         log_settings.log_verbosity = log::Level::kInfo;
@@ -131,7 +132,7 @@ int main(int argc, char* argv[]) {
         // test & measurement only parameters end
 
         // Command line parsing
-        cmd::parse_silkworm_command_line(app, argc, argv, log_settings, node_settings);
+        cmd::parse_silkworm_command_line(app, argc, argv, settings);
 
         log::init(log_settings);
         log::set_thread_name("stage-loop    ");

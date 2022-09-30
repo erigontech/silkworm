@@ -25,7 +25,7 @@
 #include <silkworm/common/settings.hpp>
 #include <silkworm/concurrency/signal_handler.hpp>
 #include <silkworm/db/access_layer.hpp>
-#include <silkworm/stagedsync/common.hpp>
+#include <silkworm/stagedsync/stage.hpp>
 #include <silkworm/stagedsync/stage_bodies.hpp>
 #include <silkworm/stagedsync/stage_headers.hpp>
 

@@ -21,7 +21,7 @@
 
 #include <silkworm/concurrency/stoppable.hpp>
 #include <silkworm/etl/collector.hpp>
-#include <silkworm/stagedsync/common.hpp>
+#include <silkworm/stagedsync/stage.hpp>
 #include <silkworm/stagedsync/stage_senders/recovery_worker.hpp>
 
 namespace silkworm::stagedsync::recovery {

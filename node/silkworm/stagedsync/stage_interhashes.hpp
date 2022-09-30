@@ -17,7 +17,7 @@
 #pragma once
 
 #include <silkworm/etl/collector.hpp>
-#include <silkworm/stagedsync/common.hpp>
+#include <silkworm/stagedsync/stage.hpp>
 #include <silkworm/stagedsync/stage_interhashes/trie_loader.hpp>
 #include <silkworm/trie/hash_builder.hpp>
 #include <silkworm/trie/prefix_set.hpp>

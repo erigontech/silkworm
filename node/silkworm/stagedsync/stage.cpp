@@ -14,7 +14,7 @@
    limitations under the License.
 */
 
-#include "common.hpp"
+#include "stage.hpp"
 
 #include <silkworm/db/stages.hpp>
 

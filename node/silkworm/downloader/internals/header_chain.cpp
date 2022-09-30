@@ -18,7 +18,7 @@
 
 #include <silkworm/common/as_range.hpp>
 #include <silkworm/common/log.hpp>
-#include <silkworm/stagedsync/common.hpp>
+#include <silkworm/stagedsync/stage.hpp>
 
 #include "algorithm.hpp"
 #include "db_utils.hpp"

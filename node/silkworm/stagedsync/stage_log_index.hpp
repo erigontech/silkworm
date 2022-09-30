@@ -19,7 +19,7 @@
 #include <cbor/cbor.h>
 
 #include <silkworm/db/bitmap.hpp>
-#include <silkworm/stagedsync/common.hpp>
+#include <silkworm/stagedsync/stage.hpp>
 
 namespace silkworm::stagedsync {
 

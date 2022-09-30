@@ -26,6 +26,7 @@
 #include <silkworm/downloader/internals/grpc_sync_client.hpp>
 #include <silkworm/downloader/internals/sentry_type_casts.hpp>
 #include <silkworm/downloader/internals/types.hpp>
+#include <silkworm/downloader/rpc/hand_shake.hpp>
 #include <silkworm/downloader/rpc/receive_messages.hpp>
 #include <silkworm/downloader/rpc/receive_peer_stats.hpp>
 
@@ -72,6 +73,7 @@ class SentryClient : public rpc::Client<sentry::Sentry>, public ActiveComponent 
     db::ROAccess db_access_;
     const ChainConfig& chain_config_;
 
+    std::shared_ptr<rpc::HandShake> handshake_;
     std::shared_ptr<rpc::ReceiveMessages> receive_messages_;
     std::shared_ptr<rpc::ReceivePeerStats> receive_peer_stats_;
 

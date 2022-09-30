@@ -88,11 +88,12 @@ void SentryClient::set_status() {
 }
 
 void SentryClient::hand_shake() {
-    rpc::HandShake hand_shake;
-    exec_remotely(hand_shake);
+    auto rpc = std::make_shared<rpc::HandShake>();
+    std::atomic_store(&handshake_, rpc);
+    exec_remotely(*handshake_);
 
     SILK_TRACE << "SentryClient, hand_shake sent";
-    sentry::HandShakeReply reply = hand_shake.reply();
+    sentry::HandShakeReply reply = handshake_->reply();
 
     sentry::Protocol supported_protocol = reply.protocol();
     if (supported_protocol != sentry::Protocol::ETH66) {
@@ -146,8 +147,8 @@ void SentryClient::stats_receiving_loop() {
 
     while (!is_stopping()) {
         try {
-            if (!wait_reconnection())
-                break;
+            while (!is_stopping() && !is_connected())
+                continue;
 
             // send a stats subscription
             auto rpc = std::make_shared<rpc::ReceivePeerStats>();
@@ -217,6 +218,9 @@ bool SentryClient::stop() {
     auto receive_peer_stats = std::atomic_load(&receive_peer_stats_);
     if (receive_peer_stats)
         receive_peer_stats->try_cancel();
+    auto handshake = std::atomic_load(&handshake_);
+    if (handshake)
+        handshake->try_cancel();
     return expected;
 }
 

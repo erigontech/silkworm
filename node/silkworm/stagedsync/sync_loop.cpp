@@ -87,9 +87,9 @@ void SyncLoop::load_stages() {
 
     stages_forward_order_.insert(stages_forward_order_.begin(),
                                  {
-                                     db::stages::kHeadersKey,
-                                     db::stages::kBlockHashesKey,
-                                     db::stages::kBlockBodiesKey,
+                                     // db::stages::kHeadersKey,
+                                     // db::stages::kBlockHashesKey,
+                                     // db::stages::kBlockBodiesKey,
                                      db::stages::kSendersKey,
                                      db::stages::kExecutionKey,
                                      db::stages::kHashStateKey,
@@ -110,9 +110,9 @@ void SyncLoop::load_stages() {
                                     db::stages::kIntermediateHashesKey,  // Needs to happen after unwinding HashState
                                     db::stages::kExecutionKey,
                                     db::stages::kSendersKey,
-                                    db::stages::kBlockBodiesKey,
-                                    db::stages::kBlockHashesKey,  // Decanonify block hashes
-                                    db::stages::kHeadersKey,
+                                    // db::stages::kBlockBodiesKey,
+                                    // db::stages::kBlockHashesKey,  // Decanonify block hashes
+                                    // db::stages::kHeadersKey,
                                 });
 }
 void SyncLoop::stop(bool wait) {

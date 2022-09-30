@@ -46,10 +46,10 @@ struct SyncContext {
     bool is_first_cycle{false};
 
     //! \brief If an unwind operation is requested this member is valued
-    std::optional<BlockNum> unwind_to;
+    std::optional<BlockNum> unwind_point;
 
     //! \brief After an unwind operation this is valued to last unwind point
-    std::optional<BlockNum> previous_unwind_to;
+    std::optional<BlockNum> previous_unwind_point;
 
     //! \brief If an unwind operation is requested this member is valued
     std::optional<evmc::bytes32> bad_block_hash;

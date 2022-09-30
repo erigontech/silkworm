@@ -149,7 +149,7 @@ auto HeadersStage::forward(db::RWTxn& tx) -> Stage::Result {
 
         if (header_persistence.unwind_needed()) {
             result = Stage::Result::kWrongFork;
-            sync_context_->unwind_to = header_persistence.unwind_point();
+            sync_context_->unwind_point = header_persistence.unwind_point();
             // no need to set result.bad_block
             log::Info(log_prefix_) << "Unwind needed";
         }
@@ -191,11 +191,11 @@ auto HeadersStage::unwind(db::RWTxn& tx) -> Stage::Result {
 
     std::optional<Hash> bad_block = sync_context_->bad_block_hash;
 
-    if (!sync_context_->unwind_to.has_value()) {
+    if (!sync_context_->unwind_point.has_value()) {
         operation_ = OperationType::None;
         return result;
     }
-    auto new_height = sync_context_->unwind_to.value();
+    auto new_height = sync_context_->unwind_point.value();
 
     try {
         std::set<Hash> bad_headers;

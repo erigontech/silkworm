@@ -109,8 +109,8 @@ Stage::Result HashState::forward(db::RWTxn& txn) {
 
 Stage::Result HashState::unwind(db::RWTxn& txn) {
     Stage::Result ret{Stage::Result::kSuccess};
-    if (!sync_context_->unwind_to.has_value()) return ret;
-    const BlockNum to{sync_context_->unwind_to.value()};
+    if (!sync_context_->unwind_point.has_value()) return ret;
+    const BlockNum to{sync_context_->unwind_point.value()};
 
     operation_ = OperationType::Unwind;
     try {

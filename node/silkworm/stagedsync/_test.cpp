@@ -126,7 +126,7 @@ TEST_CASE("Sync Stages") {
             }
 
             // Unwind
-            sync_context.unwind_to.emplace(1);
+            sync_context.unwind_point.emplace(1);
             stage_result = stage.unwind(txn);
             REQUIRE(stage_result == stagedsync::Stage::Result::kSuccess);
             {
@@ -215,7 +215,7 @@ TEST_CASE("Sync Stages") {
         }
 
         // Check unwind works
-        sync_context.unwind_to.emplace(1);
+        sync_context.unwind_point.emplace(1);
         stage_result = stage.unwind(txn);
         REQUIRE(stage_result == stagedsync::Stage::Result::kSuccess);
 
@@ -347,7 +347,7 @@ TEST_CASE("Sync Stages") {
             // Unwind 3rd block and checks if state is second block
             // ---------------------------------------
             stagedsync::SyncContext sync_context{};
-            sync_context.unwind_to.emplace(2);
+            sync_context.unwind_point.emplace(2);
             stagedsync::Execution stage(&node_settings, &sync_context);
             REQUIRE(stage.unwind(txn) == stagedsync::Stage::Result::kSuccess);
 
@@ -465,7 +465,7 @@ TEST_CASE("Sync Stages") {
 
             // Unwind the stage to block 1 (i.e. block 1 *is* applied)
             BlockNum unwind_to{1};
-            sync_context.unwind_to.emplace(unwind_to);
+            sync_context.unwind_point.emplace(unwind_to);
             actual_stage_result = magic_enum::enum_name<stagedsync::Stage::Result>(stage.unwind(txn));
             REQUIRE(expected_stage_result == actual_stage_result);
             hashed_accounts_table.bind(txn, db::table::kHashedAccounts);

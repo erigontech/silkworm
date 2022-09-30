@@ -101,8 +101,8 @@ Stage::Result HistoryIndex::forward(db::RWTxn& txn) {
 Stage::Result HistoryIndex::unwind(db::RWTxn& txn) {
     Stage::Result ret{Stage::Result::kSuccess};
 
-    if (!sync_context_->unwind_to.has_value()) return ret;
-    const BlockNum to{sync_context_->unwind_to.value()};
+    if (!sync_context_->unwind_point.has_value()) return ret;
+    const BlockNum to{sync_context_->unwind_point.value()};
 
     operation_ = OperationType::None;
     try {

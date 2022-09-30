@@ -175,7 +175,7 @@ TEST_CASE("Stage History Index") {
             REQUIRE(storage_history_bitmap.cardinality() == 3);
             REQUIRE(storage_history_bitmap.toString() == "{1,2,3}");
 
-            sync_context.unwind_to.emplace(2);
+            sync_context.unwind_point.emplace(2);
             REQUIRE(stage_history_index.unwind(txn) == stagedsync::Stage::Result::kSuccess);
             REQUIRE(db::stages::read_stage_progress(*txn, db::stages::kHistoryIndexKey) == 2);
 
@@ -367,7 +367,7 @@ TEST_CASE("Stage History Index") {
         txn.commit();
 
         // Unwind to 4000 and ensure account 4 has been removed from history
-        sync_context.unwind_to.emplace(4'000);
+        sync_context.unwind_point.emplace(4'000);
         REQUIRE(stage_history_index.unwind(txn) == stagedsync::Stage::Result::kSuccess);
         {
             Bytes prefix(kAddressLength, '\0');

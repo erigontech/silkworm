@@ -92,7 +92,7 @@ Stage::Result BodiesStage::forward(db::RWTxn& tx) {
                 // check unwind condition
                 if (body_persistence.unwind_needed()) {
                     result = Stage::Result::kInvalidBlock;
-                    sync_context_->unwind_to = body_persistence.unwind_point();
+                    sync_context_->unwind_point = body_persistence.unwind_point();
                     break;
                 } else {
                     result = Stage::Result::kSuccess;
@@ -150,11 +150,11 @@ Stage::Result BodiesStage::unwind(db::RWTxn& tx) {
     current_height_ = db::stages::read_stage_progress(tx, db::stages::kBlockBodiesKey);
     get_log_progress();  // this is a trick to set log progress initial value, please improve
 
-    if (!sync_context_->unwind_to.has_value()) {
+    if (!sync_context_->unwind_point.has_value()) {
         operation_ = OperationType::None;
         return result;
     }
-    auto new_height = sync_context_->unwind_to.value();
+    auto new_height = sync_context_->unwind_point.value();
 
     try {
         BodyPersistence::remove_bodies(new_height, sync_context_->bad_block_hash, tx);

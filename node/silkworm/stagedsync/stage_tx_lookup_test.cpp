@@ -97,7 +97,7 @@ TEST_CASE("Stage Transaction Lookups") {
         REQUIRE(lookup_data_block_num == 2u);
 
         // Execute stage unwind to block 1
-        sync_context.unwind_to.emplace(1);
+        sync_context.unwind_point.emplace(1);
         REQUIRE(stage_tx_lookup.unwind(txn) == stagedsync::Stage::Result::kSuccess);
         lookup_table.bind(txn, db::table::kTxLookup);  // Needed due to commit
 

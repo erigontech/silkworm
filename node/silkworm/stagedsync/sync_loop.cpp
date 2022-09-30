@@ -148,7 +148,7 @@ void SyncLoop::work() {
             mdbx::slice key(db::stages::kUnwindKey);
             auto data{source.find(key, /*throw_notfound=*/false)};
             if (data && data.value.size() == sizeof(BlockNum)) {
-                sync_context_->unwind_to = endian::load_big_u64(db::from_slice(data.value).data());
+                sync_context_->unwind_point = endian::load_big_u64(db::from_slice(data.value).data());
             }
         }
 
@@ -184,7 +184,7 @@ void SyncLoop::work() {
             }
 
             // Run forward
-            if (!sync_context_->unwind_to.has_value()) {
+            if (!sync_context_->unwind_point.has_value()) {
                 bool should_end_loop{false};
 
                 const auto forward_result = run_cycle_forward(*cycle_txn, log_timer);
@@ -205,9 +205,9 @@ void SyncLoop::work() {
             }
 
             // Run unwind if required
-            if (sync_context_->unwind_to.has_value()) {
+            if (sync_context_->unwind_point.has_value()) {
                 // Need to persist unwind point (in case of user stop)
-                db::stages::write_stage_progress(*cycle_txn, db::stages::kUnwindKey, sync_context_->unwind_to.value());
+                db::stages::write_stage_progress(*cycle_txn, db::stages::kUnwindKey, sync_context_->unwind_point.value());
                 if (cycle_in_one_tx) {
                     external_txn.commit();
                     external_txn = chaindata_env_->start_write();
@@ -217,7 +217,7 @@ void SyncLoop::work() {
                 }
 
                 // Run unwind
-                log::Warning("Unwinding", {"to", std::to_string(sync_context_->unwind_to.value())});
+                log::Warning("Unwinding", {"to", std::to_string(sync_context_->unwind_point.value())});
 
                 const auto unwind_result = run_cycle_unwind(*cycle_txn, log_timer);
 
@@ -229,8 +229,8 @@ void SyncLoop::work() {
                 (void)progress_table.erase(key);
 
                 // Clear context
-                std::swap(sync_context_->unwind_to, sync_context_->previous_unwind_to);
-                sync_context_->unwind_to.reset();
+                std::swap(sync_context_->unwind_point, sync_context_->previous_unwind_point);
+                sync_context_->unwind_point.reset();
                 sync_context_->bad_block_hash.reset();
             }
 

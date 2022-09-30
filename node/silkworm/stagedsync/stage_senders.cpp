@@ -46,8 +46,8 @@ Stage::Result Senders::forward(db::RWTxn& txn) {
 Stage::Result Senders::unwind(db::RWTxn& txn) {
     Stage::Result ret{Stage::Result::kSuccess};
 
-    if (!sync_context_->unwind_to.has_value()) return ret;
-    const BlockNum to{sync_context_->unwind_to.value()};
+    if (!sync_context_->unwind_point.has_value()) return ret;
+    const BlockNum to{sync_context_->unwind_point.value()};
 
     operation_ = OperationType::Unwind;
     current_key_.clear();

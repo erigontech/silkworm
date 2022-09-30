@@ -86,7 +86,7 @@ Stage::Result InterHashes::forward(db::RWTxn& txn) {
 
         if (ret == Stage::Result::kWrongStateRoot) {
             // Binary search for the correct block, biased to the lower numbers
-            sync_context_->unwind_to.emplace(previous_progress + (segment_width / 2));
+            sync_context_->unwind_point.emplace(previous_progress + (segment_width / 2));
             sync_context_->bad_block_hash.emplace(header_hash.value());
         }
 
@@ -120,8 +120,8 @@ Stage::Result InterHashes::forward(db::RWTxn& txn) {
 Stage::Result InterHashes::unwind(db::RWTxn& txn) {
     Stage::Result ret{Stage::Result::kSuccess};
 
-    if (!sync_context_->unwind_to.has_value()) return ret;
-    const BlockNum to{sync_context_->unwind_to.value()};
+    if (!sync_context_->unwind_point.has_value()) return ret;
+    const BlockNum to{sync_context_->unwind_point.value()};
 
     operation_ = OperationType::Unwind;
 

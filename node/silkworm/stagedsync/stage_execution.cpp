@@ -248,7 +248,7 @@ Stage::Result Execution::execute_batch(db::RWTxn& txn, BlockNum max_block_num, B
                 prefetched_blocks_.clear();
 
                 // Notify sync_loop we need to unwind
-                sync_context_->unwind_to.emplace(block_num_ - 1u);
+                sync_context_->unwind_point.emplace(block_num_ - 1u);
                 sync_context_->bad_block_hash.emplace(block.header.hash());
 
                 // Display warning and return
@@ -324,8 +324,8 @@ Stage::Result Execution::unwind(db::RWTxn& txn) {
     };
 
     Stage::Result ret{Stage::Result::kSuccess};
-    if (!sync_context_->unwind_to.has_value()) return ret;
-    const BlockNum to{sync_context_->unwind_to.value()};
+    if (!sync_context_->unwind_point.has_value()) return ret;
+    const BlockNum to{sync_context_->unwind_point.value()};
 
     operation_ = OperationType::Unwind;
     try {
@@ -357,7 +357,7 @@ Stage::Result Execution::unwind(db::RWTxn& txn) {
         }
 
         // Delete records which has keys greater than unwind point
-        // Note erasing forward the start key is included that's why we increase unwind_to by 1
+        // Note erasing forward the start key is included that's why we increase unwind_point by 1
         Bytes start_key{db::block_key(to + 1)};
         for (const auto& map_config : unwind_tables) {
             db::Cursor unwind_cursor(txn, map_config);

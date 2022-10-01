@@ -93,8 +93,8 @@ lt::session_params BitTorrentClient::load_or_create_session_parameters() const {
     settings.set_int(lt::settings_pack::upload_rate_limit, settings_.upload_rate_limit);
     settings.set_int(lt::settings_pack::active_downloads, settings_.active_downloads);
     settings.set_int(lt::settings_pack::max_out_request_queue, settings_.max_out_request_queue);
-    settings.set_int(lt::settings_pack::announce_to_all_tiers, settings_.announce_to_all_tiers);
     settings.set_int(lt::settings_pack::aio_threads, settings_.aio_threads);
+    settings.set_bool(lt::settings_pack::announce_to_all_tiers, settings_.announce_to_all_tiers);
 
     return session_params;
 }

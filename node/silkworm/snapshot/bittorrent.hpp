@@ -17,6 +17,7 @@
 #pragma once
 
 #include <atomic>
+#include <chrono>
 #include <filesystem>
 #include <memory>
 #include <set>
@@ -34,51 +35,89 @@
 
 namespace silkworm {
 
-constexpr const char* kDefaultTorrentRepoPath{".torrent"};
-constexpr const char* kDefaultSessionFilePath{".session"};
-constexpr const char* kDefaultResumeFilePath{".resume"};
+constexpr const char* kDefaultTorrentRepoPath{".torrent/"};
+constexpr const char* kSessionFileName{".session"};
+constexpr const char* kResumeDirName{".resume"};
+constexpr const char* kResumeFileExt{".resume"};
 constexpr const char* kDefaultMagnetsFilePath{".magnet_links"};
+constexpr std::chrono::milliseconds kDefaultWaitBetweenAlertPolls{100};
+constexpr std::chrono::seconds kDefaultResumeDataSaveInterval{60};
+constexpr bool kDefaultSeeding{false};
 
 constexpr int kDefaultDownloadRateLimit{64 * 1024 * 1024};  // 64MiB
 constexpr int kDefaultUploadRateLimit{4 * 1024 * 1024};     // 4MiB
 constexpr int kDefaultActiveDownloads{6};
+constexpr int kDefaultMaxOutRequestQueue{6000};
+constexpr bool kDefaultAnnounceToAllTiers{true};
+constexpr int kDefaultAsyncIOThreads{32};
 
 //! The settings for handling BitTorrent protocol
 struct BitTorrentSettings {
+    /* BitTorrentClient configuration settings */
+    //! Directory path where torrent files will be stored
     std::string repository_path{kDefaultTorrentRepoPath};
+    //! Path for magnet links
     std::string magnets_file_path{kDefaultMagnetsFilePath};
+    //! Time interval between two alert polling loops
+    std::chrono::milliseconds wait_between_alert_polls{kDefaultWaitBetweenAlertPolls};
+    //! Time interval between two resume data savings
+    std::chrono::seconds resume_data_save_interval{kDefaultResumeDataSaveInterval};
+    //! Flag indicating if the client should seed torrents when done or not
+    bool seeding{kDefaultSeeding};
+    /* BitTorrent protocol settings */
     int download_rate_limit{kDefaultDownloadRateLimit};
     int upload_rate_limit{kDefaultUploadRateLimit};
     int active_downloads{kDefaultActiveDownloads};
+    int max_out_request_queue{kDefaultMaxOutRequestQueue};
+    bool announce_to_all_tiers{kDefaultAnnounceToAllTiers};
+    int aio_threads{kDefaultAsyncIOThreads};
 };
 
 //! The BitTorrent protocol client handling multiple torrents *asynchronously* using one thread.
+//! \details The user code should probably run the `execute_loop` method in a dedicated thread.
 class BitTorrentClient {
   public:
     explicit BitTorrentClient(BitTorrentSettings settings);
     ~BitTorrentClient();
 
-    void resume();
-    void wait_for_completion();
+    void execute_loop();
     void stop();
 
   protected:
     static std::vector<char> load_file(const std::string& filename);
     static void save_file(const std::string& filename, const std::vector<char>& data);
+    static void delete_file(const std::string& filename);
 
     [[nodiscard]] lt::session_params load_or_create_session_parameters() const;
-    std::vector<lt::add_torrent_params> resume_or_create_magnets();
+    [[nodiscard]] std::vector<lt::add_torrent_params> resume_or_create_magnets() const;
+    [[nodiscard]] std::string resume_file_path(const lt::info_hash_t& info_hashes) const;
+    [[nodiscard]] bool exists_resume_file(const lt::info_hash_t& info_hashes) const;
+
+    void request_torrent_updates();
+    void request_save_resume_data(lt::resume_data_flags_t flags);
+    void process_alerts();
+    bool handle_alert(const lt::alert* alert);
 
   private:
-    void run();
-
+    //! The BitTorrent client configuration parameters
     BitTorrentSettings settings_;
-    lt::session_params session_params_;
-    std::string session_file_path_;
-    std::string resume_file_prefix_;
 
-    // TODO(canepat) replace w/ std::jthread when supported by LLVM libc++
-    std::thread worker_thread_;
+    //! The file containing the session state
+    std::filesystem::path session_file_;
+
+    //! The directory containing the resume state files
+    std::filesystem::path resume_dir_;
+
+    //! The BitTorrent client session
+    lt::session session_;
+
+    //! The number of save resume data requests of still outstanding
+    int outstanding_resume_requests_{0};
+
+    //! The last time when resume state has been saved
+    std::chrono::steady_clock::time_point last_save_resume_;
+
+    //! Flag indicating that the client should stop
     std::atomic<bool> stop_token_{false};
 };
 

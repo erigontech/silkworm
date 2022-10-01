@@ -144,7 +144,7 @@ std::vector<lt::add_torrent_params> BitTorrentClient::resume_or_create_magnets()
 
 std::string BitTorrentClient::resume_file_path(const lt::info_hash_t& info_hashes) const {
     const lt::sha1_hash torrent_best_hash{info_hashes.get_best()};
-    auto resume_file_name= to_hex({reinterpret_cast<const uint8_t*>(torrent_best_hash.data()), lt::sha1_hash::size()});
+    auto resume_file_name = to_hex({reinterpret_cast<const uint8_t*>(torrent_best_hash.data()), lt::sha1_hash::size()});
     resume_file_name.append(kResumeFileExt);
     SILK_DEBUG << "Resume file name: " << resume_file_name;
     return resume_dir_ / resume_file_name;
@@ -261,8 +261,8 @@ bool BitTorrentClient::handle_alert(const lt::alert* alert) {
 
     if (const auto fa = lt::alert_cast<lt::save_resume_data_failed_alert>(alert)) {
         SILK_DEBUG << "Torrent: " << fa->torrent_name() << " save resume data failed ["
-                  << (fa->error == lt::errors::resume_data_not_modified ? "not modified" : ("error=" + fa->error.to_string()))
-                  << "]";
+                   << (fa->error == lt::errors::resume_data_not_modified ? "not modified" : ("error=" + fa->error.to_string()))
+                   << "]";
         --outstanding_resume_requests_;
         handled = true;
     }
@@ -272,8 +272,8 @@ bool BitTorrentClient::handle_alert(const lt::alert* alert) {
         if (!sta->status.empty()) {
             for (const auto& ts : sta->status) {
                 SILK_INFO << "[" << ts.handle.id() << "]: " << magic_enum::enum_name(ts.state) << ' '
-                           << (ts.download_payload_rate / 1000) << " kB/s " << (ts.total_done / 1000) << " kB ("
-                           << (ts.progress_ppm / 10000) << "%) downloaded (" << ts.num_peers << " peers)\x1b[K";
+                          << (ts.download_payload_rate / 1000) << " kB/s " << (ts.total_done / 1000) << " kB ("
+                          << (ts.progress_ppm / 10000) << "%) downloaded (" << ts.num_peers << " peers)\x1b[K";
             }
         }
         handled = true;
@@ -281,7 +281,6 @@ bool BitTorrentClient::handle_alert(const lt::alert* alert) {
 
     // When we receive any performance alert, put it out as warning
     if (const auto pa = lt::alert_cast<lt::performance_alert>(alert)) {
-        //pa->warning_code != lt::performance_alert::outstanding_request_limit_reached
         SILK_WARN << alert->message() << " [warning_code=" << pa->warning_code << "]";
     }
 

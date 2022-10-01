@@ -32,10 +32,10 @@ namespace silkworm {
 class BitTorrentClient_ForTest : public BitTorrentClient {
   public:
     using BitTorrentClient::BitTorrentClient;
-    using BitTorrentClient::request_torrent_updates;
-    using BitTorrentClient::request_save_resume_data;
-    using BitTorrentClient::process_alerts;
     using BitTorrentClient::handle_alert;
+    using BitTorrentClient::process_alerts;
+    using BitTorrentClient::request_save_resume_data;
+    using BitTorrentClient::request_torrent_updates;
 };
 
 TEST_CASE("BitTorrentSettings", "[silkworm][snapshot][bittorrent]") {

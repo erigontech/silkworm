@@ -75,7 +75,7 @@ IPEndPointValidator::IPEndPointValidator(bool allow_empty) {
 
             // Validate IP address
             boost::system::error_code err;
-            std::string ip_address{boost::asio::ip::address::from_string(matches[1], err).to_string()};
+            boost::asio::ip::make_address(matches[1], err).to_string();
             if (err) {
                 return "Value " + std::string(matches[1]) + " is not a valid ip address";
             }

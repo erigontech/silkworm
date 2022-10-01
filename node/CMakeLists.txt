@@ -62,7 +62,7 @@ target_include_directories(silkworm_node PUBLIC
         ${SILKWORM_MAIN_DIR}/third_party/libtorrent/include)
 
 set(SILKWORM_NODE_PUBLIC_LIBS silkworm_core mdbx-static absl::flat_hash_map absl::flat_hash_set absl::btree roaring
-        nlohmann_json::nlohmann_json gRPC::grpc++ protobuf::libprotobuf Boost::thread)
+        nlohmann_json::nlohmann_json gRPC::grpc++ protobuf::libprotobuf Boost::thread torrent-rasterbar)
 set(SILKWORM_NODE_PRIVATE_LIBS cborcpp evmone)
 
 if(MSVC)

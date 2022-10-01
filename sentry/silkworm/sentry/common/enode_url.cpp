@@ -39,7 +39,7 @@ EnodeUrl::EnodeUrl(const string& url_str)
     string ip_str = match[2];
     string port_str = match[3];
 
-    auto ip = boost::asio::ip::address::from_string(ip_str);
+    auto ip = boost::asio::ip::make_address(ip_str);
 
     auto port = boost::lexical_cast<uint16_t>(port_str);
 

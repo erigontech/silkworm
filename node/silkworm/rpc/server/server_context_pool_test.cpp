@@ -17,14 +17,12 @@
 #include "server_context_pool.hpp"
 
 #include <atomic>
-#include <memory>
 #include <stdexcept>
 #include <thread>
 
+#include <boost/asio/executor_work_guard.hpp>
 #include <catch2/catch.hpp>
-#include <grpc/grpc.h>
 
-#include <silkworm/common/base.hpp>
 #include <silkworm/common/log.hpp>
 #include <silkworm/test/log.hpp>
 
@@ -57,7 +55,7 @@ TEST_CASE("ServerContext", "[silkworm][rpc][server_context]") {
     }
 
     SECTION("execute_loop") {
-        boost::asio::io_context::work work{*server_context.io_context()};
+        boost::asio::executor_work_guard work = boost::asio::make_work_guard(*server_context.io_context());
         std::atomic_bool context_thread_failed{false};
         std::thread context_thread{[&]() {
             try {
@@ -72,7 +70,7 @@ TEST_CASE("ServerContext", "[silkworm][rpc][server_context]") {
     }
 
     SECTION("stop") {
-        boost::asio::io_context::work work{*server_context.io_context()};
+        boost::asio::executor_work_guard work = boost::asio::make_work_guard(*server_context.io_context());
         std::thread context_thread{[&]() { server_context.execute_loop(); }};
         CHECK(!server_context.io_context()->stopped());
         server_context.stop();

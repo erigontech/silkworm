@@ -88,7 +88,7 @@ void add_logging_options(CLI::App& cli, log::Settings& log_settings) {
 }
 
 void add_option_chain(CLI::App& cli, uint64_t& network_id) {
-    cli.add_option("--chain", network_id,"Name or ID of the network to join (default: \"mainnet\")")
+    cli.add_option("--chain", network_id, "Name or ID of the network to join (default: \"mainnet\")")
         ->transform(CLI::Transformer(get_known_chains_map(), CLI::ignore_case));
 }
 
@@ -140,7 +140,7 @@ void add_option_wait_mode(CLI::App& cli, silkworm::rpc::WaitMode& wait_mode) {
     };
     cli.add_option("--wait.mode", wait_mode, "The waiting mode for execution loops during idle cycles")
         ->capture_default_str()
-        ->check(CLI::Range(silkworm::rpc::WaitMode::blocking,silkworm::rpc::WaitMode::busy_spin))
+        ->check(CLI::Range(silkworm::rpc::WaitMode::blocking, silkworm::rpc::WaitMode::busy_spin))
         ->transform(CLI::Transformer(wait_mode_mapping, CLI::ignore_case))
         ->default_val(silkworm::rpc::WaitMode::blocking);
 }

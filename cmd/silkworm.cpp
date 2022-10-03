@@ -84,8 +84,11 @@ int main(int argc, char* argv[]) {
 
         auto& node_settings = settings.node_settings;
 
-        SignalHandler::init();    // Trap OS signals
-        log::init(settings.log_settings);  // Initialize logging with cli settings
+        // Trap OS signals
+        SignalHandler::init();
+
+        // Initialize logging with cli settings
+        log::init(settings.log_settings);
         log::set_thread_name("main");
 
         // Output BuildInfo

@@ -78,7 +78,7 @@ struct PruneModeValidator : public CLI::Validator {
 void add_logging_options(CLI::App& cli, log::Settings& log_settings);
 
 //! \brief Set up option for the network to join
-void add_option_chain(CLI::App& cli, uint64_t & network_id);
+void add_option_chain(CLI::App& cli, uint64_t& network_id);
 
 //! \brief Set up option for the data directory path
 void add_option_data_dir(CLI::App& cli, std::filesystem::path& data_dir);

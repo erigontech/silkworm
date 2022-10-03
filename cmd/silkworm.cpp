@@ -145,7 +145,7 @@ int main(int argc, char* argv[]) {
         // Keep waiting till sync_loop stops
         // Signals are handled in sync_loop and below
         auto t1{std::chrono::steady_clock::now()};
-        while (sync_loop.get_state() != Worker::State::kStopped) {
+        while (sync_loop.get_state() != Worker::State::kStopped && sync_loop.get_state() != Worker::State::kStopping) {
             std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
             // Check signals

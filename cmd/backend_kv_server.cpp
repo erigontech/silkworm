@@ -34,6 +34,8 @@
 
 #include "common.hpp"
 
+using namespace silkworm;
+
 //! Assemble the relevant library version information
 std::string get_library_versions() {
     std::string library_versions{"gRPC: "};
@@ -43,51 +45,42 @@ std::string get_library_versions() {
     return library_versions;
 }
 
-//! The overall settings for the BackEnd and KV standalone server
-struct BackEndKvSettings {
-    silkworm::log::Settings log_settings;
-    silkworm::NodeSettings node_settings;
-    silkworm::rpc::ServerConfig server_settings;
-};
-
 //! Parse the command-line arguments into the BackEnd and KV server settings
-int parse_command_line(int argc, char* argv[], CLI::App& app, BackEndKvSettings& settings) {
-    using namespace silkworm::cmd;
-
+int parse_command_line(int argc, char* argv[], CLI::App& app, cmd::SilkwormCoreSettings& settings) {
     auto& log_settings = settings.log_settings;
     auto& node_settings = settings.node_settings;
     auto& server_settings = settings.server_settings;
 
     // Node options
-    add_option_chain(app, node_settings.network_id);
+    cmd::add_option_chain(app, node_settings.network_id);
 
     std::filesystem::path data_dir;
-    add_option_data_dir(app, data_dir);
+    cmd::add_option_data_dir(app, data_dir);
 
     std::string etherbase_address;
-    add_option_etherbase(app, etherbase_address);
+    cmd::add_option_etherbase(app, etherbase_address);
 
     uint32_t max_readers;
-    add_option_db_max_readers(app, max_readers);
+    cmd::add_option_db_max_readers(app, max_readers);
 
     // RPC Server options
-    add_option_private_api_address(app, node_settings.private_api_addr);
-    add_option_sentry_api_address(app, node_settings.sentry_api_addr);
+    cmd::add_option_private_api_address(app, node_settings.private_api_addr);
+    cmd::add_option_sentry_api_address(app, node_settings.sentry_api_addr);
 
     uint32_t num_contexts;
-    add_option_num_contexts(app, num_contexts);
+    cmd::add_option_num_contexts(app, num_contexts);
 
-    silkworm::rpc::WaitMode wait_mode;
-    add_option_wait_mode(app, wait_mode);
+    rpc::WaitMode wait_mode;
+    cmd::add_option_wait_mode(app, wait_mode);
 
     // Logging options
-    add_logging_options(app, log_settings);
+    cmd::add_logging_options(app, log_settings);
 
     app.parse(argc, argv);
 
     // Validate and assign settings
     // TODO (canepat) read chain config from database (allows for custom config)
-    const auto known_chain_config{silkworm::lookup_known_chain(node_settings.network_id)};
+    const auto known_chain_config{lookup_known_chain(node_settings.network_id)};
     if (!known_chain_config.has_value()) {
         SILK_CRIT << "Unknown chain identifier: " << node_settings.network_id;
         return -1;
@@ -95,19 +88,18 @@ int parse_command_line(int argc, char* argv[], CLI::App& app, BackEndKvSettings&
     node_settings.chain_config = *(known_chain_config->second);
 
     if (!etherbase_address.empty()) {
-        const auto etherbase = silkworm::from_hex(etherbase_address);
+        const auto etherbase = from_hex(etherbase_address);
         if (!etherbase) {
             SILK_CRIT << "Invalid etherbase address: " << etherbase_address;
             return -1;
         }
-        node_settings.etherbase = silkworm::to_evmc_address(etherbase.value());
+        node_settings.etherbase = to_evmc_address(etherbase.value());
     }
 
-    node_settings.data_directory = std::make_unique<silkworm::DataDirectory>(data_dir, /*create=*/false);
-    node_settings.chaindata_env_config =
-        silkworm::db::EnvConfig{node_settings.data_directory->chaindata().path().string(),
-                                /*create=*/false,
-                                /*readonly=*/true};
+    node_settings.data_directory = std::make_unique<DataDirectory>(data_dir, /*create=*/false);
+    node_settings.chaindata_env_config = db::EnvConfig{node_settings.data_directory->chaindata().path().string(),
+                                                       /*create=*/false,
+                                                       /*readonly=*/true};
     node_settings.chaindata_env_config.max_readers = max_readers;
 
     server_settings.set_address_uri(node_settings.private_api_addr);
@@ -118,11 +110,11 @@ int parse_command_line(int argc, char* argv[], CLI::App& app, BackEndKvSettings&
 }
 
 int main(int argc, char* argv[]) {
-    CLI::App app{"ETHBACKEND & KV server"};
+    CLI::App cli{"ETHBACKEND & KV server"};
 
     try {
-        BackEndKvSettings settings;
-        int result_code = parse_command_line(argc, argv, app, settings);
+        cmd::SilkwormCoreSettings settings;
+        int result_code = parse_command_line(argc, argv, cli, settings);
         if (result_code != 0) {
             return result_code;
         }
@@ -135,25 +127,25 @@ int main(int argc, char* argv[]) {
         auto& server_settings = settings.server_settings;
 
         // Initialize logging with custom settings
-        silkworm::log::init(log_settings);
+        log::init(log_settings);
 
         // TODO(canepat): this could be an option in Silkworm logging facility
-        silkworm::rpc::Grpc2SilkwormLogGuard log_guard;
+        rpc::Grpc2SilkwormLogGuard log_guard;
 
-        const auto node_name{silkworm::cmd::get_node_name_from_build_info(silkworm_get_buildinfo())};
+        const auto node_name{cmd::get_node_name_from_build_info(silkworm_get_buildinfo())};
         SILK_LOG << "BackEndKvServer build info: " << node_name;
         SILK_LOG << "BackEndKvServer library info: " << get_library_versions();
         SILK_LOG << "BackEndKvServer launched with chain id: " << node_settings.network_id
                  << " address: " << server_settings.address_uri()
                  << " contexts: " << server_settings.num_contexts();
 
-        auto database_env = silkworm::db::open_env(node_settings.chaindata_env_config);
-        silkworm::EthereumBackEnd backend{node_settings, &database_env};
+        auto database_env = db::open_env(node_settings.chaindata_env_config);
+        EthereumBackEnd backend{node_settings, &database_env};
         backend.set_node_name(node_name);
 
         SILK_INFO << "BackEndKvServer MDBX max readers: " << database_env.max_readers();
 
-        silkworm::rpc::BackEndKvServer server{server_settings, backend};
+        rpc::BackEndKvServer server{server_settings, backend};
         server.build_and_start();
 
         boost::asio::io_context& scheduler = server.next_io_context();
@@ -173,7 +165,7 @@ int main(int argc, char* argv[]) {
         SILK_LOG << "BackEndKvServer exiting [pid=" + std::to_string(pid) + ", main thread=" << tid << "]";
         return 0;
     } catch (const CLI::ParseError& pe) {
-        return app.exit(pe);
+        return cli.exit(pe);
     } catch (const std::exception& e) {
         SILK_CRIT << "BackEndKvServer exiting due to exception: " << e.what();
         return -2;

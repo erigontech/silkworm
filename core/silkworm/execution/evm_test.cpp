@@ -370,9 +370,9 @@ TEST_CASE("EIP-3541: Reject new contracts starting with the 0xEF byte") {
 
 class TestTracer : public EvmTracer {
   public:
-    TestTracer(std::optional<evmc::address> contract_address = std::nullopt,
-               std::optional<evmc::bytes32> key = std::nullopt)
-        : contract_address_(contract_address), key_(key) {}
+    explicit TestTracer(std::optional<evmc::address> contract_address = std::nullopt,
+                        std::optional<evmc::bytes32> key = std::nullopt)
+        : contract_address_(contract_address), key_(key), rev_{}, msg_{} {}
 
     void on_execution_start(evmc_revision rev, const evmc_message& msg, evmone::bytes_view bytecode) noexcept override {
         execution_start_called_ = true;
@@ -395,30 +395,37 @@ class TestTracer : public EvmTracer {
         const auto gas_left = static_cast<uint64_t>(res.gas_left);
         const auto gas_refund = static_cast<uint64_t>(res.gas_refund);
         result_ = {res.status_code, gas_left, gas_refund, {res.output_data, res.output_size}};
-        if (contract_address_ && pc_stack_.size() > 0) {
+        if (contract_address_ && !pc_stack_.empty()) {
             const auto pc = pc_stack_.back();
             storage_stack_[pc] =
                 intra_block_state.get_current_storage(contract_address_.value(), key_.value_or(evmc::bytes32{}));
         }
     }
+
+    void on_creation_completed(const evmc_result& /*result*/, const IntraBlockState& /*intra_block_state*/) noexcept override {
+        creation_completed_called_ = true;
+    }
+
     void on_precompiled_run(const evmc_result& /*result*/, int64_t /*gas*/,
                             const IntraBlockState& /*intra_block_state*/) noexcept override {}
     void on_reward_granted(const CallResult& /*result*/,
                            const IntraBlockState& /*intra_block_state*/) noexcept override {}
 
-    bool execution_start_called() const { return execution_start_called_; }
-    bool execution_end_called() const { return execution_end_called_; }
-    const Bytes& bytecode() const { return bytecode_; }
-    const evmc_revision& rev() const { return rev_; }
-    const evmc_message& msg() const { return msg_; }
-    const std::vector<uint32_t>& pc_stack() const { return pc_stack_; }
-    const std::map<uint32_t, std::size_t>& memory_size_stack() const { return memory_size_stack_; }
-    const std::map<uint32_t, evmc::bytes32>& storage_stack() const { return storage_stack_; }
-    const CallResult& result() const { return result_; }
+    [[nodiscard]] bool execution_start_called() const { return execution_start_called_; }
+    [[nodiscard]] bool execution_end_called() const { return execution_end_called_; }
+    [[nodiscard]] bool creation_completed_called() const { return creation_completed_called_; }
+    [[nodiscard]] const Bytes& bytecode() const { return bytecode_; }
+    [[nodiscard]] const evmc_revision& rev() const { return rev_; }
+    [[nodiscard]] const evmc_message& msg() const { return msg_; }
+    [[nodiscard]] const std::vector<uint32_t>& pc_stack() const { return pc_stack_; }
+    [[nodiscard]] const std::map<uint32_t, std::size_t>& memory_size_stack() const { return memory_size_stack_; }
+    [[nodiscard]] const std::map<uint32_t, evmc::bytes32>& storage_stack() const { return storage_stack_; }
+    [[nodiscard]] const CallResult& result() const { return result_; }
 
   private:
     bool execution_start_called_{false};
     bool execution_end_called_{false};
+    bool creation_completed_called_{false};
     std::optional<evmc::address> contract_address_;
     std::optional<evmc::bytes32> key_;
     evmc_revision rev_;
@@ -478,7 +485,7 @@ TEST_CASE("Tracing smart contract with storage") {
     CHECK(res.status == EVMC_OUT_OF_GAS);
     CHECK(res.data.empty());
 
-    CHECK((tracer1.execution_start_called() && tracer1.execution_end_called()));
+    CHECK((tracer1.execution_start_called() && tracer1.execution_end_called() && tracer1.creation_completed_called()));
     CHECK(tracer1.rev() == evmc_revision::EVMC_ISTANBUL);
     CHECK(tracer1.msg().kind == evmc_call_kind::EVMC_CALL);
     CHECK(tracer1.msg().flags == 0);
@@ -489,7 +496,7 @@ TEST_CASE("Tracing smart contract with storage") {
     CHECK(tracer1.memory_size_stack() == std::map<uint32_t, std::size_t>{{0, 0}});
     CHECK(tracer1.result().status == EVMC_OUT_OF_GAS);
     CHECK(tracer1.result().gas_left == 0);
-    CHECK(tracer1.result().data == Bytes{});
+    CHECK(tracer1.result().data.empty());
 
     // Second execution: success
     TestTracer tracer2;
@@ -560,7 +567,7 @@ TEST_CASE("Tracing smart contract with storage") {
     CHECK(tracer3.memory_size_stack() == std::map<uint32_t, std::size_t>{{0, 0}, {2, 0}, {3, 0}, {5, 0}});
     CHECK(tracer3.result().status == EVMC_SUCCESS);
     CHECK(tracer3.result().gas_left == 49191);
-    CHECK(tracer3.result().data == Bytes{});
+    CHECK(tracer3.result().data.empty());
 }
 
 TEST_CASE("Tracing smart contract w/o code") {
@@ -593,11 +600,11 @@ TEST_CASE("Tracing smart contract w/o code") {
     CHECK(tracer1.execution_end_called());
     CHECK(tracer1.rev() == evmc_revision::EVMC_ISTANBUL);
     CHECK(tracer1.bytecode() == code);
-    CHECK(tracer1.pc_stack() == std::vector<uint32_t>{});
-    CHECK(tracer1.memory_size_stack() == std::map<uint32_t, std::size_t>{});
+    CHECK(tracer1.pc_stack().empty());
+    CHECK(tracer1.memory_size_stack().empty());
     CHECK(tracer1.result().status == EVMC_SUCCESS);
     CHECK(tracer1.result().gas_left == gas);
-    CHECK(tracer1.result().data == Bytes{});
+    CHECK(tracer1.result().data.empty());
 
     // Send message to empty contract
     evmc::address contract_address{create_address(caller, 1)};
@@ -617,11 +624,11 @@ TEST_CASE("Tracing smart contract w/o code") {
     CHECK(tracer2.execution_end_called());
     CHECK(tracer2.rev() == evmc_revision::EVMC_ISTANBUL);
     CHECK(tracer2.bytecode() == code);
-    CHECK(tracer2.pc_stack() == std::vector<uint32_t>{});
-    CHECK(tracer2.memory_size_stack() == std::map<uint32_t, std::size_t>{});
+    CHECK(tracer2.pc_stack().empty());
+    CHECK(tracer2.memory_size_stack().empty());
     CHECK(tracer2.result().status == EVMC_SUCCESS);
     CHECK(tracer2.result().gas_left == gas);
-    CHECK(tracer2.result().data == Bytes{});
+    CHECK(tracer2.result().data.empty());
 }
 
 TEST_CASE("Tracing precompiled contract failure") {

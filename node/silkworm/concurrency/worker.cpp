@@ -61,8 +61,13 @@ void Worker::start(bool wait) {
 void Worker::stop(bool wait) {
     if (!thread_) return;
 
-    state_.store(State::kStopping);
-    kick();
+    State expected{State::kStarted};
+    if (!state_.compare_exchange_strong(expected, State::kStopping)) {
+        expected = State::kKickWaiting;
+        if (state_.compare_exchange_strong(expected, State::kStopping)) {
+            kick();
+        }
+    }
 
     if (wait) {
         thread_->join();

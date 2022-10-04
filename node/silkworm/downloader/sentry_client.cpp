@@ -70,6 +70,7 @@ void SentryClient::publish(const sentry::InboundMessage& message) {
 
 void SentryClient::set_status(Hash head_hash, BigInt head_td, const ChainConfig& chain_config) {
     rpc::SetStatus set_status{chain_config, head_hash, head_td};
+    set_status.timeout(std::chrono::seconds(1));
     exec_remotely(set_status);
     SILK_TRACE << "SentryClient, set_status sent";
 }
@@ -187,21 +188,19 @@ void SentryClient::stats_receiving_loop() {
 }
 
 uint64_t SentryClient::count_active_peers() {
-    using namespace std::chrono_literals;
-    auto rpc = std::make_shared<rpc::PeerCount>();
-    std::atomic_store(&peer_count_, rpc);
+    rpc::PeerCount rpc;
 
-    peer_count_->timeout(1s);
-    peer_count_->do_not_throw_on_failure();
+    rpc.timeout(std::chrono::seconds(1));
+    rpc.do_not_throw_on_failure();
 
-    exec_remotely(*peer_count_);
+    exec_remotely(rpc);
 
-    if (!peer_count_->status().ok()) {
-        SILK_TRACE << "Failure of rpc PeerCount: " << peer_count_->status().error_message();
+    if (!rpc.status().ok()) {
+        SILK_TRACE << "Failure of rpc PeerCount: " << rpc.status().error_message();
         return 0;
     }
 
-    sentry::PeerCountReply peers = peer_count_->reply();
+    sentry::PeerCountReply peers = rpc.reply();
     active_peers_.store(peers.count());
 
     return peers.count();
@@ -222,9 +221,6 @@ bool SentryClient::stop() {
     auto handshake = std::atomic_load(&handshake_);
     if (handshake)
         handshake->try_cancel();
-    auto peer_count = std::atomic_load(&peer_count_);
-    if (peer_count)
-        peer_count->try_cancel();
     return expected;
 }
 

@@ -70,6 +70,7 @@ void SentryClient::publish(const sentry::InboundMessage& message) {
 
 void SentryClient::set_status(Hash head_hash, BigInt head_td, const ChainConfig& chain_config) {
     rpc::SetStatus set_status{chain_config, head_hash, head_td};
+    set_status.timeout(std::chrono::seconds(1));
     exec_remotely(set_status);
     SILK_TRACE << "SentryClient, set_status sent";
 }
@@ -187,10 +188,9 @@ void SentryClient::stats_receiving_loop() {
 }
 
 uint64_t SentryClient::count_active_peers() {
-    using namespace std::chrono_literals;
     rpc::PeerCount rpc;
 
-    rpc.timeout(1s);
+    rpc.timeout(std::chrono::seconds(1));
     rpc.do_not_throw_on_failure();
 
     exec_remotely(rpc);

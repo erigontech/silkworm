@@ -31,51 +31,7 @@
 
 namespace silkworm::stagedsync {
 
-enum class [[nodiscard]] StageResult{
-    kSuccess,                 //
-    kUnknownChainId,          //
-    kUnknownConsensusEngine,  //
-    kBadBlockHash,            //
-    kBadChainSequence,        //
-    kInvalidRange,            //
-    kInvalidProgress,         //
-    kInvalidBlock,            //
-    kInvalidTransaction,      //
-    kDecodingError,           //
-    kWrongFork,               // The persisted canonical chain must be changed
-    kWrongStateRoot,          //
-    kUnexpectedError,         //
-    kUnknownError,            //
-    kDbError,                 //
-    kAborted,                 //
-    kStoppedByEnv,            // Encountered "STOP_BEFORE_STAGE" env var
-    kUnspecified,
-};
-
-//! \brief Stage execution exception
-class StageError : public std::exception {
-  public:
-    explicit StageError(StageResult err)
-        : err_{magic_enum::enum_integer<StageResult>(err)},
-          message_{std::string(magic_enum::enum_name<StageResult>(err))} {};
-    explicit StageError(StageResult err, std::string message)
-        : err_{magic_enum::enum_integer<StageResult>(err)}, message_{std::move(message)} {};
-    ~StageError() noexcept override = default;
-    [[nodiscard]] const char* what() const noexcept override { return message_.c_str(); }
-    [[nodiscard]] int err() const noexcept { return err_; }
-
-  protected:
-    int err_;
-    std::string message_;
-};
-
-//! \brief Throws StageError exception when code =! StageResult::kSuccess
-//! \param [in] code : The result of a stage operation
-inline void success_or_throw(StageResult code) {
-    if (code != StageResult::kSuccess) {
-        throw StageError(code);
-    }
-}
+class StageError;
 
 //! \brief Holds informations across all stages
 struct SyncContext {
@@ -90,10 +46,10 @@ struct SyncContext {
     bool is_first_cycle{false};
 
     //! \brief If an unwind operation is requested this member is valued
-    std::optional<BlockNum> unwind_to;
+    std::optional<BlockNum> unwind_point;
 
     //! \brief After an unwind operation this is valued to last unwind point
-    std::optional<BlockNum> previous_unwind_to;
+    std::optional<BlockNum> previous_unwind_point;
 
     //! \brief If an unwind operation is requested this member is valued
     std::optional<evmc::bytes32> bad_block_hash;
@@ -101,36 +57,56 @@ struct SyncContext {
 
 //! \brief Base Stage interface. All stages MUST inherit from this class and MUST override forward / unwind /
 //! prune
-class IStage : public Stoppable {
+class Stage : public Stoppable {
   public:
+    enum class [[nodiscard]] Result{
+        kSuccess,                 //
+        kUnknownChainId,          //
+        kUnknownConsensusEngine,  //
+        kBadBlockHash,            //
+        kBadChainSequence,        //
+        kInvalidRange,            //
+        kInvalidProgress,         //
+        kInvalidBlock,            //
+        kInvalidTransaction,      //
+        kDecodingError,           //
+        kWrongFork,               // The persisted canonical chain must be changed
+        kWrongStateRoot,          //
+        kUnexpectedError,         //
+        kUnknownError,            //
+        kDbError,                 //
+        kAborted,                 //
+        kStoppedByEnv,            // Encountered "STOP_BEFORE_STAGE" env var
+        kUnspecified,
+    };
+
     enum class OperationType {
         None,     // Actually no operation running
         Forward,  // Executing Forward
         Unwind,   // Executing Unwind
         Prune,    // Executing Prune
     };
-    explicit IStage(SyncContext* sync_context, const char* stage_name, NodeSettings* node_settings)
-        : sync_context_{sync_context}, stage_name_{stage_name}, node_settings_{node_settings} {};
-    virtual ~IStage() = default;
+    explicit Stage(SyncContext* sync_context, const char* stage_name, NodeSettings* node_settings);
+    virtual ~Stage() = default;
 
     //! \brief Forward is called when the stage is executed. The main logic of the stage must be here.
     //! \param [in] txn : A db transaction holder
-    //! \return StageResult
+    //! \return Result
     //! \remarks Must be overridden
-    [[nodiscard]] virtual StageResult forward(db::RWTxn& txn) = 0;
+    [[nodiscard]] virtual Stage::Result forward(db::RWTxn& txn) = 0;
 
     //! \brief Unwind is called when the stage should be unwound. The unwind logic must be here.
     //! \param [in] txn : A db transaction holder
     //! \param [in] to : New height we need to unwind to
-    //! \return StageResult
+    //! \return Result
     //! \remarks Must be overridden
-    [[nodiscard]] virtual StageResult unwind(db::RWTxn& txn) = 0;
+    [[nodiscard]] virtual Stage::Result unwind(db::RWTxn& txn) = 0;
 
     //! \brief Prune is called when (part of) stage previously persisted data should be deleted. The pruning logic
     //! must be here.
     //! \param [in] txn : A db transaction holder
-    //! \return StageResult
-    [[nodiscard]] virtual StageResult prune(db::RWTxn& txn) = 0;
+    //! \return Result
+    [[nodiscard]] virtual Stage::Result prune(db::RWTxn& txn) = 0;
 
     //! \brief Returns the actual progress recorded into db
     BlockNum get_progress(db::RWTxn& txn);
@@ -151,9 +127,7 @@ class IStage : public Stoppable {
     [[nodiscard]] const char* name() const { return stage_name_; }
 
     //! \brief Forces an exception if stage has been requested to stop
-    inline void throw_if_stopping() {
-        if (is_stopping()) throw StageError(StageResult::kAborted);
-    }
+    void throw_if_stopping();
 
   protected:
     SyncContext* sync_context_;                                  // Shared context across stages
@@ -166,5 +140,30 @@ class IStage : public Stoppable {
     //! \brief Throws if actual block != expected block
     static void check_block_sequence(BlockNum actual, BlockNum expected);
 };
+
+//! \brief Stage execution exception
+class StageError : public std::exception {
+  public:
+    explicit StageError(Stage::Result err)
+        : err_{magic_enum::enum_integer<Stage::Result>(err)},
+          message_{std::string(magic_enum::enum_name<Stage::Result>(err))} {};
+    explicit StageError(Stage::Result err, std::string message)
+        : err_{magic_enum::enum_integer<Stage::Result>(err)}, message_{std::move(message)} {};
+    ~StageError() noexcept override = default;
+    [[nodiscard]] const char* what() const noexcept override { return message_.c_str(); }
+    [[nodiscard]] int err() const noexcept { return err_; }
+
+  protected:
+    int err_;
+    std::string message_;
+};
+
+//! \brief Throws StageError exception when code =! Result::kSuccess
+//! \param [in] code : The result of a stage operation
+inline void success_or_throw(Stage::Result code) {
+    if (code != Stage::Result::kSuccess) {
+        throw StageError(code);
+    }
+}
 
 }  // namespace silkworm::stagedsync

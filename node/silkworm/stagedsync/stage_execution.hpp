@@ -21,21 +21,21 @@
 #include <silkworm/consensus/engine.hpp>
 #include <silkworm/execution/analysis_cache.hpp>
 #include <silkworm/execution/evm.hpp>
-#include <silkworm/stagedsync/common.hpp>
+#include <silkworm/stagedsync/stage.hpp>
 
 namespace silkworm::stagedsync {
 
-class Execution final : public IStage {
+class Execution final : public Stage {
   public:
     explicit Execution(NodeSettings* node_settings, SyncContext* sync_context)
-        : IStage(sync_context, db::stages::kExecutionKey, node_settings),
+        : Stage(sync_context, db::stages::kExecutionKey, node_settings),
           consensus_engine_{consensus::engine_factory(node_settings->chain_config.value())} {}
 
     ~Execution() override = default;
 
-    StageResult forward(db::RWTxn& txn) final;
-    StageResult unwind(db::RWTxn& txn) final;
-    StageResult prune(db::RWTxn& txn) final;
+    Stage::Result forward(db::RWTxn& txn) final;
+    Stage::Result unwind(db::RWTxn& txn) final;
+    Stage::Result prune(db::RWTxn& txn) final;
     std::vector<std::string> get_log_progress() final;
 
   private:
@@ -54,9 +54,9 @@ class Execution final : public IStage {
 
     //! \brief Executes a batch of blocks
     //! \remarks A batch completes when either max block is reached or buffer dimensions overflow
-    StageResult execute_batch(db::RWTxn& txn, BlockNum max_block_num, BaselineAnalysisCache& analysis_cache,
-                              ObjectPool<EvmoneExecutionState>& state_pool, BlockNum prune_history_threshold,
-                              BlockNum prune_receipts_threshold);
+    Stage::Result execute_batch(db::RWTxn& txn, BlockNum max_block_num, BaselineAnalysisCache& analysis_cache,
+                                ObjectPool<EvmoneExecutionState>& state_pool, BlockNum prune_history_threshold,
+                                BlockNum prune_receipts_threshold);
 
     //! \brief For given changeset cursor/bucket it reverts the changes on states buckets
     static void unwind_state_from_changeset(mdbx::cursor& source_changeset, mdbx::cursor& plain_state_table,

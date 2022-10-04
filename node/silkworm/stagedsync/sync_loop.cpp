@@ -148,7 +148,7 @@ void SyncLoop::work() {
             mdbx::slice key(db::stages::kUnwindKey);
             auto data{source.find(key, /*throw_notfound=*/false)};
             if (data && data.value.size() == sizeof(BlockNum)) {
-                sync_context_->unwind_to = endian::load_big_u64(db::from_slice(data.value).data());
+                sync_context_->unwind_point = endian::load_big_u64(db::from_slice(data.value).data());
             }
         }
 
@@ -184,18 +184,18 @@ void SyncLoop::work() {
             }
 
             // Run forward
-            if (!sync_context_->unwind_to.has_value()) {
+            if (!sync_context_->unwind_point.has_value()) {
                 bool should_end_loop{false};
 
                 const auto forward_result = run_cycle_forward(*cycle_txn, log_timer);
 
                 switch (forward_result) {
-                    case StageResult::kSuccess:
-                    case StageResult::kWrongFork:
-                    case StageResult::kInvalidBlock:
-                    case StageResult::kWrongStateRoot:
+                    case Stage::Result::kSuccess:
+                    case Stage::Result::kWrongFork:
+                    case Stage::Result::kInvalidBlock:
+                    case Stage::Result::kWrongStateRoot:
                         break;  // Do nothing. Unwind is triggered afterwards
-                    case StageResult::kStoppedByEnv:
+                    case Stage::Result::kStoppedByEnv:
                         should_end_loop = true;
                         break;
                     default:
@@ -205,9 +205,9 @@ void SyncLoop::work() {
             }
 
             // Run unwind if required
-            if (sync_context_->unwind_to.has_value()) {
+            if (sync_context_->unwind_point.has_value()) {
                 // Need to persist unwind point (in case of user stop)
-                db::stages::write_stage_progress(*cycle_txn, db::stages::kUnwindKey, sync_context_->unwind_to.value());
+                db::stages::write_stage_progress(*cycle_txn, db::stages::kUnwindKey, sync_context_->unwind_point.value());
                 if (cycle_in_one_tx) {
                     external_txn.commit();
                     external_txn = chaindata_env_->start_write();
@@ -217,7 +217,7 @@ void SyncLoop::work() {
                 }
 
                 // Run unwind
-                log::Warning("Unwinding", {"to", std::to_string(sync_context_->unwind_to.value())});
+                log::Warning("Unwinding", {"to", std::to_string(sync_context_->unwind_point.value())});
 
                 const auto unwind_result = run_cycle_unwind(*cycle_txn, log_timer);
 
@@ -229,8 +229,8 @@ void SyncLoop::work() {
                 (void)progress_table.erase(key);
 
                 // Clear context
-                std::swap(sync_context_->unwind_to, sync_context_->previous_unwind_to);
-                sync_context_->unwind_to.reset();
+                std::swap(sync_context_->unwind_point, sync_context_->previous_unwind_point);
+                sync_context_->unwind_point.reset();
                 sync_context_->bad_block_hash.reset();
             }
 
@@ -269,7 +269,7 @@ void SyncLoop::work() {
     log::Info() << "SyncLoop terminated";
 }
 
-StageResult SyncLoop::run_cycle_forward(db::RWTxn& cycle_txn, Timer& log_timer) {
+Stage::Result SyncLoop::run_cycle_forward(db::RWTxn& cycle_txn, Timer& log_timer) {
     StopWatch stages_stop_watch(true);
     try {
         // Force to stop at any particular stage ?
@@ -292,15 +292,15 @@ StageResult SyncLoop::run_cycle_forward(db::RWTxn& cycle_txn, Timer& log_timer) 
             if (stop_stage_name && iequals(stop_stage_name, stage_id)) {
                 stop();
                 log::Warning("Stopping ...", {"STOP_BEFORE_STAGE", stop_stage_name, "hit", "true"});
-                return StageResult::kStoppedByEnv;
+                return Stage::Result::kStoppedByEnv;
             }
 
             log_timer.reset();  // Resets the interval for next log line from now
             const auto stage_result{current_stage_->second->forward(cycle_txn)};
-            if (stage_result != StageResult::kSuccess) {
+            if (stage_result != Stage::Result::kSuccess) {
                 log::Error(get_log_prefix(),
                            {"op", "Forward",
-                            "returned", std::string(magic_enum::enum_name<StageResult>(stage_result))});
+                            "returned", std::string(magic_enum::enum_name<Stage::Result>(stage_result))});
                 return stage_result;
             }
 
@@ -312,15 +312,15 @@ StageResult SyncLoop::run_cycle_forward(db::RWTxn& cycle_txn, Timer& log_timer) 
             }
         }
 
-        return is_stopping() ? StageResult::kAborted : StageResult::kSuccess;
+        return is_stopping() ? Stage::Result::kAborted : Stage::Result::kSuccess;
 
     } catch (const std::exception& ex) {
         log::Error(get_log_prefix(), {"exception", std::string(ex.what())});
-        return StageResult::kUnexpectedError;
+        return Stage::Result::kUnexpectedError;
     }
 }
 
-StageResult SyncLoop::run_cycle_unwind(db::RWTxn& cycle_txn, Timer& log_timer) {
+Stage::Result SyncLoop::run_cycle_unwind(db::RWTxn& cycle_txn, Timer& log_timer) {
     StopWatch stages_stop_watch(true);
     try {
         current_stages_count_ = stages_unwind_order_.size();
@@ -336,10 +336,10 @@ StageResult SyncLoop::run_cycle_unwind(db::RWTxn& cycle_txn, Timer& log_timer) {
 
             log_timer.reset();  // Resets the interval for next log line from now
             const auto stage_result{current_stage_->second->unwind(cycle_txn)};
-            if (stage_result != StageResult::kSuccess) {
+            if (stage_result != Stage::Result::kSuccess) {
                 log::Error(get_log_prefix(),
                            {"op", "Unwind",
-                            "returned", std::string(magic_enum::enum_name<StageResult>(stage_result))});
+                            "returned", std::string(magic_enum::enum_name<Stage::Result>(stage_result))});
                 return stage_result;
             }
 
@@ -351,15 +351,15 @@ StageResult SyncLoop::run_cycle_unwind(db::RWTxn& cycle_txn, Timer& log_timer) {
             }
         }
 
-        return is_stopping() ? StageResult::kAborted : StageResult::kSuccess;
+        return is_stopping() ? Stage::Result::kAborted : Stage::Result::kSuccess;
 
     } catch (const std::exception& ex) {
         log::Error(get_log_prefix(), {"exception", std::string(ex.what())});
-        return StageResult::kUnexpectedError;
+        return Stage::Result::kUnexpectedError;
     }
 }
 
-StageResult SyncLoop::run_cycle_prune(db::RWTxn& cycle_txn, Timer& log_timer) {
+Stage::Result SyncLoop::run_cycle_prune(db::RWTxn& cycle_txn, Timer& log_timer) {
     StopWatch stages_stop_watch(true);
     try {
         current_stages_count_ = stages_forward_order_.size();
@@ -375,10 +375,10 @@ StageResult SyncLoop::run_cycle_prune(db::RWTxn& cycle_txn, Timer& log_timer) {
 
             log_timer.reset();  // Resets the interval for next log line from now
             const auto stage_result{current_stage_->second->prune(cycle_txn)};
-            if (stage_result != StageResult::kSuccess) {
+            if (stage_result != Stage::Result::kSuccess) {
                 log::Error(get_log_prefix(),
                            {"op", "Prune",
-                            "returned", std::string(magic_enum::enum_name<StageResult>(stage_result))});
+                            "returned", std::string(magic_enum::enum_name<Stage::Result>(stage_result))});
                 return stage_result;
             }
 
@@ -390,11 +390,11 @@ StageResult SyncLoop::run_cycle_prune(db::RWTxn& cycle_txn, Timer& log_timer) {
             }
         }
 
-        return is_stopping() ? StageResult::kAborted : StageResult::kSuccess;
+        return is_stopping() ? Stage::Result::kAborted : Stage::Result::kSuccess;
 
     } catch (const std::exception& ex) {
         log::Error(get_log_prefix(), {"exception", std::string(ex.what())});
-        return StageResult::kUnexpectedError;
+        return Stage::Result::kUnexpectedError;
     }
 }
 

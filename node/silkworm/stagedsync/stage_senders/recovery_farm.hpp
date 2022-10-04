@@ -21,7 +21,7 @@
 
 #include <silkworm/concurrency/stoppable.hpp>
 #include <silkworm/etl/collector.hpp>
-#include <silkworm/stagedsync/common.hpp>
+#include <silkworm/stagedsync/stage.hpp>
 #include <silkworm/stagedsync/stage_senders/recovery_worker.hpp>
 
 namespace silkworm::stagedsync::recovery {
@@ -38,7 +38,7 @@ class RecoveryFarm : public Stoppable {
 
     //! \brief Recover sender's addresses from transactions
     //! \return A code indicating process status
-    StageResult recover();
+    Stage::Result recover();
 
     //! \brief Issue an interruption request
     bool stop() final {
@@ -74,7 +74,7 @@ class RecoveryFarm : public Stoppable {
     //! \param [in] transactions : a set of transactions to transform
     //! \return A code indicating process status
     //! \remarks If detects a batch overflow it also dispatches
-    StageResult transform_and_fill_batch(BlockNum block_num, const std::vector<Transaction>& transactions);
+    Stage::Result transform_and_fill_batch(BlockNum block_num, const std::vector<Transaction>& transactions);
 
     //! \brief Dispatches the collected batch of recovery packages to first available worker
     //! \returns True if operation succeeds, false otherwise
@@ -88,7 +88,7 @@ class RecoveryFarm : public Stoppable {
     //! \param [in] from : Lower boundary for blocks to process (included)
     //! \param [in] to :  Upper boundary for blocks to process (included)
     //! \return A code indicating process status
-    StageResult fill_canonical_headers(BlockNum from, BlockNum to) noexcept;
+    Stage::Result fill_canonical_headers(BlockNum from, BlockNum to) noexcept;
 
     //! \brief Handle task completion signal from workers
     void task_completed_handler(RecoveryWorker* sender);

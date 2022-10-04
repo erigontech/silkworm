@@ -16,25 +16,25 @@
 
 #pragma once
 
-#include "common.hpp"
-#include "silkworm/concurrency/containers.hpp"
-#include "silkworm/db/access_layer.hpp"
-#include "silkworm/downloader/block_exchange.hpp"
-#include "silkworm/downloader/internals/types.hpp"
-#include "silkworm/downloader/messages/internal_message.hpp"
+#include <silkworm/concurrency/containers.hpp>
+#include <silkworm/db/access_layer.hpp>
+#include <silkworm/downloader/block_exchange.hpp>
+#include <silkworm/downloader/internals/types.hpp>
+#include <silkworm/downloader/messages/internal_message.hpp>
+#include <silkworm/stagedsync/stage.hpp>
 
 namespace silkworm::stagedsync {
 
-class BodiesStage : public IStage {
+class BodiesStage : public Stage {
   public:
     BodiesStage(SyncContext*, BlockExchange&, NodeSettings*);
     BodiesStage(const BodiesStage&) = delete;  // not copyable
     BodiesStage(BodiesStage&&) = delete;       // nor movable
     ~BodiesStage();
 
-    StageResult forward(db::RWTxn&) override;  // go forward, downloading headers
-    StageResult unwind(db::RWTxn&) override;   // go backward, unwinding headers to new_height
-    StageResult prune(db::RWTxn&) override;
+    Stage::Result forward(db::RWTxn&) override;  // go forward, downloading headers
+    Stage::Result unwind(db::RWTxn&) override;   // go backward, unwinding headers to new_height
+    Stage::Result prune(db::RWTxn&) override;
 
   private:
     void send_body_requests();  // send requests for more bodies

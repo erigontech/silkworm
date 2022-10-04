@@ -30,7 +30,7 @@
 namespace silkworm::stagedsync {
 
 HeadersStage::HeadersStage(SyncContext* sc, BlockExchange& bd, NodeSettings* ns)
-    : IStage(sc, db::stages::kHeadersKey, ns), block_downloader_(bd) {
+    : Stage(sc, db::stages::kHeadersKey, ns), block_downloader_(bd) {
     // User can specify to stop downloading process at some block
     const auto stop_at_block = stop_at_block_from_env();
     if (stop_at_block.has_value()) {
@@ -42,12 +42,12 @@ HeadersStage::HeadersStage(SyncContext* sc, BlockExchange& bd, NodeSettings* ns)
 HeadersStage::~HeadersStage() {
 }
 
-auto HeadersStage::forward(db::RWTxn& tx) -> StageResult {
+auto HeadersStage::forward(db::RWTxn& tx) -> Stage::Result {
     using std::shared_ptr;
     using namespace std::chrono_literals;
     using namespace std::chrono;
 
-    StageResult result = StageResult::kUnspecified;
+    Stage::Result result = Stage::Result::kUnspecified;
     bool new_height_reached = false;
     std::thread message_receiving;
     operation_ = OperationType::Forward;
@@ -58,7 +58,7 @@ auto HeadersStage::forward(db::RWTxn& tx) -> StageResult {
 
     if (block_downloader_.is_stopping()) {
         log::Error(log_prefix_) << "Aborted, block exchange is down";
-        return StageResult::kAborted;
+        return Stage::Result::kAborted;
     }
 
     try {
@@ -68,7 +68,7 @@ auto HeadersStage::forward(db::RWTxn& tx) -> StageResult {
             tx.commit();
             log::Info(log_prefix_) << "End (forward skipped due to the need of to complete the previous run, canonical chain updated), "
                                    << "duration=" << StopWatch::format(timing.lap_duration());
-            return StageResult::kSuccess;
+            return Stage::Result::kSuccess;
         }
 
         current_height_ = header_persistence.initial_height();
@@ -77,7 +77,7 @@ auto HeadersStage::forward(db::RWTxn& tx) -> StageResult {
         if (target_block_ && current_height_ >= *target_block_) {
             tx.commit();
             log::Info(log_prefix_) << "End, forward skipped due to target block (" << *target_block_ << ") reached";
-            return StageResult::kStoppedByEnv;
+            return Stage::Result::kStoppedByEnv;
         }
 
         RepeatedMeasure<BlockNum> height_progress(header_persistence.initial_height());
@@ -145,11 +145,11 @@ auto HeadersStage::forward(db::RWTxn& tx) -> StageResult {
             }
         }
 
-        result = StageResult::kSuccess;
+        result = Stage::Result::kSuccess;
 
         if (header_persistence.unwind_needed()) {
-            result = StageResult::kWrongFork;
-            sync_context_->unwind_to = header_persistence.unwind_point();
+            result = Stage::Result::kWrongFork;
+            sync_context_->unwind_point = header_persistence.unwind_point();
             // no need to set result.bad_block
             log::Info(log_prefix_) << "Unwind needed";
         }
@@ -172,14 +172,14 @@ auto HeadersStage::forward(db::RWTxn& tx) -> StageResult {
         log::Error(log_prefix_) << "Aborted due to exception: " << e.what();
 
         // tx rollback executed automatically if needed
-        result = StageResult::kUnexpectedError;
+        result = Stage::Result::kUnexpectedError;
     }
 
     return result;
 }
 
-auto HeadersStage::unwind(db::RWTxn& tx) -> StageResult {
-    StageResult result{StageResult::kSuccess};
+auto HeadersStage::unwind(db::RWTxn& tx) -> Stage::Result {
+    Stage::Result result{Stage::Result::kSuccess};
     operation_ = OperationType::Unwind;
 
     StopWatch timing;
@@ -191,11 +191,11 @@ auto HeadersStage::unwind(db::RWTxn& tx) -> StageResult {
 
     std::optional<Hash> bad_block = sync_context_->bad_block_hash;
 
-    if (!sync_context_->unwind_to.has_value()) {
+    if (!sync_context_->unwind_point.has_value()) {
         operation_ = OperationType::None;
         return result;
     }
-    auto new_height = sync_context_->unwind_to.value();
+    auto new_height = sync_context_->unwind_point.value();
 
     try {
         std::set<Hash> bad_headers;
@@ -204,7 +204,7 @@ auto HeadersStage::unwind(db::RWTxn& tx) -> StageResult {
 
         current_height_ = new_height;
 
-        result = StageResult::kSuccess;
+        result = Stage::Result::kSuccess;
 
         update_bad_headers(std::move(bad_headers));
 
@@ -218,14 +218,14 @@ auto HeadersStage::unwind(db::RWTxn& tx) -> StageResult {
         log::Error(log_prefix_) << "Unwind aborted due to exception: " << e.what();
 
         // tx rollback executed automatically if needed
-        result = StageResult::kUnexpectedError;
+        result = Stage::Result::kUnexpectedError;
     }
 
     return result;
 }
 
-auto HeadersStage::prune(db::RWTxn&) -> StageResult {
-    return StageResult::kSuccess;
+auto HeadersStage::prune(db::RWTxn&) -> Stage::Result {
+    return Stage::Result::kSuccess;
 }
 
 // Request new headers from peers

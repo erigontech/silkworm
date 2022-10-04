@@ -16,20 +16,20 @@
 
 #pragma once
 
-#include <silkworm/stagedsync/common.hpp>
+#include <silkworm/stagedsync/stage.hpp>
 #include <silkworm/stagedsync/stage_senders/recovery_farm.hpp>
 
 namespace silkworm::stagedsync {
 
-class Senders final : public IStage {
+class Senders final : public Stage {
   public:
     explicit Senders(NodeSettings* node_settings, SyncContext* sync_context)
-        : IStage(sync_context, db::stages::kSendersKey, node_settings){};
+        : Stage(sync_context, db::stages::kSendersKey, node_settings){};
     ~Senders() override = default;
 
-    StageResult forward(db::RWTxn& txn) final;
-    StageResult unwind(db::RWTxn& txn) final;
-    StageResult prune(db::RWTxn& txn) final;
+    Stage::Result forward(db::RWTxn& txn) final;
+    Stage::Result unwind(db::RWTxn& txn) final;
+    Stage::Result prune(db::RWTxn& txn) final;
     std::vector<std::string> get_log_progress() final;
     bool stop() final;
 

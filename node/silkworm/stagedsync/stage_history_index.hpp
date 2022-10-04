@@ -17,19 +17,19 @@
 #pragma once
 
 #include <silkworm/db/bitmap.hpp>
-#include <silkworm/stagedsync/common.hpp>
+#include <silkworm/stagedsync/stage.hpp>
 
 namespace silkworm::stagedsync {
 
-class HistoryIndex : public IStage {
+class HistoryIndex : public Stage {
   public:
     explicit HistoryIndex(NodeSettings* node_settings, SyncContext* sync_context)
-        : IStage(sync_context, db::stages::kHistoryIndexKey, node_settings){};
+        : Stage(sync_context, db::stages::kHistoryIndexKey, node_settings){};
     ~HistoryIndex() override = default;
 
-    StageResult forward(db::RWTxn& txn) final;
-    StageResult unwind(db::RWTxn& txn) final;
-    StageResult prune(db::RWTxn& txn) final;
+    Stage::Result forward(db::RWTxn& txn) final;
+    Stage::Result unwind(db::RWTxn& txn) final;
+    Stage::Result prune(db::RWTxn& txn) final;
     std::vector<std::string> get_log_progress() final;
 
   private:
@@ -41,9 +41,9 @@ class HistoryIndex : public IStage {
     std::string current_target_;       // Current target of transformed data
     std::string current_key_;          // Actual processing key
 
-    StageResult forward_impl(db::RWTxn& txn, BlockNum from, BlockNum to, bool storage);
-    StageResult unwind_impl(db::RWTxn& txn, BlockNum from, BlockNum to, bool storage);
-    StageResult prune_impl(db::RWTxn& txn, BlockNum threshold, BlockNum to, bool storage);
+    Stage::Result forward_impl(db::RWTxn& txn, BlockNum from, BlockNum to, bool storage);
+    Stage::Result unwind_impl(db::RWTxn& txn, BlockNum from, BlockNum to, bool storage);
+    Stage::Result prune_impl(db::RWTxn& txn, BlockNum threshold, BlockNum to, bool storage);
 
     //! \brief Collects bitmaps of block numbers changes for each account within provided
     //! changeset boundaries

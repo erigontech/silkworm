@@ -20,9 +20,9 @@
 
 namespace silkworm::stagedsync {
 
-StageResult Senders::forward(db::RWTxn& txn) {
+Stage::Result Senders::forward(db::RWTxn& txn) {
     if (!node_settings_->chain_config.has_value()) {
-        return StageResult::kUnknownChainId;
+        return Stage::Result::kUnknownChainId;
     }
 
     std::unique_lock log_lock(sl_mutex_);
@@ -31,7 +31,7 @@ StageResult Senders::forward(db::RWTxn& txn) {
     log_lock.unlock();
 
     const auto res{farm_->recover()};
-    if (res == StageResult::kSuccess) {
+    if (res == Stage::Result::kSuccess) {
         txn.commit();
     }
 
@@ -43,11 +43,11 @@ StageResult Senders::forward(db::RWTxn& txn) {
     return res;
 }
 
-StageResult Senders::unwind(db::RWTxn& txn) {
-    StageResult ret{StageResult::kSuccess};
+Stage::Result Senders::unwind(db::RWTxn& txn) {
+    Stage::Result ret{Stage::Result::kSuccess};
 
-    if (!sync_context_->unwind_to.has_value()) return ret;
-    const BlockNum to{sync_context_->unwind_to.value()};
+    if (!sync_context_->unwind_point.has_value()) return ret;
+    const BlockNum to{sync_context_->unwind_point.value()};
 
     operation_ = OperationType::Unwind;
     current_key_.clear();
@@ -111,27 +111,27 @@ StageResult Senders::unwind(db::RWTxn& txn) {
     } catch (const StageError& ex) {
         log::Error(log_prefix_,
                    {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
-        ret = static_cast<StageResult>(ex.err());
+        ret = static_cast<Stage::Result>(ex.err());
     } catch (const mdbx::exception& ex) {
         log::Error(log_prefix_,
                    {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
-        ret = StageResult::kDbError;
+        ret = Stage::Result::kDbError;
     } catch (const std::exception& ex) {
         log::Error(log_prefix_,
                    {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
-        ret = StageResult::kUnexpectedError;
+        ret = Stage::Result::kUnexpectedError;
     } catch (...) {
         log::Error(log_prefix_,
                    {"function", std::string(__FUNCTION__), "exception", "unexpected and undefined"});
-        ret = StageResult::kUnexpectedError;
+        ret = Stage::Result::kUnexpectedError;
     }
 
     operation_ = OperationType::None;
     return ret;
 }
 
-StageResult Senders::prune(db::RWTxn& txn) {
-    StageResult ret{StageResult::kSuccess};
+Stage::Result Senders::prune(db::RWTxn& txn) {
+    Stage::Result ret{Stage::Result::kSuccess};
     operation_ = OperationType::Prune;
     current_key_.clear();
     std::unique_ptr<StopWatch> sw;
@@ -203,19 +203,19 @@ StageResult Senders::prune(db::RWTxn& txn) {
     } catch (const StageError& ex) {
         log::Error(log_prefix_,
                    {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
-        ret = static_cast<StageResult>(ex.err());
+        ret = static_cast<Stage::Result>(ex.err());
     } catch (const mdbx::exception& ex) {
         log::Error(log_prefix_,
                    {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
-        ret = StageResult::kDbError;
+        ret = Stage::Result::kDbError;
     } catch (const std::exception& ex) {
         log::Error(log_prefix_,
                    {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
-        ret = StageResult::kUnexpectedError;
+        ret = Stage::Result::kUnexpectedError;
     } catch (...) {
         log::Error(log_prefix_,
                    {"function", std::string(__FUNCTION__), "exception", "unexpected and undefined"});
-        ret = StageResult::kUnexpectedError;
+        ret = Stage::Result::kUnexpectedError;
     }
 
     operation_ = OperationType::None;
@@ -226,7 +226,7 @@ bool Senders::stop() {
     if (farm_) {
         (void)farm_->stop();
     }
-    return IStage::stop();
+    return Stage::stop();
 }
 
 std::vector<std::string> Senders::get_log_progress() {

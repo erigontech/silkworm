@@ -20,14 +20,14 @@
 
 namespace silkworm::stagedsync {
 
-StageResult BlockHashes::forward(db::RWTxn& txn) {
+Stage::Result BlockHashes::forward(db::RWTxn& txn) {
     /*
      * Creates HeaderNumber index by transforming
      *      from CanonicalHashes bucket : BlockNumber ->  HeaderHash
      *        to HeaderNumber bucket    : HeaderHash  ->  BlockNumber
      */
 
-    StageResult ret{StageResult::kSuccess};
+    Stage::Result ret{Stage::Result::kSuccess};
     operation_ = OperationType::Forward;
     try {
         throw_if_stopping();
@@ -42,7 +42,7 @@ StageResult BlockHashes::forward(db::RWTxn& txn) {
         } else if (previous_progress > headers_stage_progress) {
             // Something bad had happened.
             // Maybe we need to unwind ?
-            throw StageError(StageResult::kInvalidProgress,
+            throw StageError(Stage::Result::kInvalidProgress,
                              "BlockHashes progress " + std::to_string(previous_progress) +
                                  " greater than Headers progress " + std::to_string(headers_stage_progress));
         }
@@ -64,19 +64,19 @@ StageResult BlockHashes::forward(db::RWTxn& txn) {
     } catch (const mdbx::exception& ex) {
         log::Error(log_prefix_,
                    {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
-        ret = StageResult::kDbError;
+        ret = Stage::Result::kDbError;
     } catch (const StageError& ex) {
         log::Error(log_prefix_,
                    {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
-        ret = static_cast<StageResult>(ex.err());
+        ret = static_cast<Stage::Result>(ex.err());
     } catch (const std::exception& ex) {
         log::Error(log_prefix_,
                    {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
-        ret = StageResult::kUnexpectedError;
+        ret = Stage::Result::kUnexpectedError;
     } catch (...) {
         log::Error(log_prefix_,
                    {"function", std::string(__FUNCTION__), "exception", "undefined"});
-        ret = StageResult::kUnexpectedError;
+        ret = Stage::Result::kUnexpectedError;
     }
 
     operation_ = OperationType::None;
@@ -84,7 +84,7 @@ StageResult BlockHashes::forward(db::RWTxn& txn) {
     return ret;
 }
 
-StageResult BlockHashes::unwind(db::RWTxn& txn) {
+Stage::Result BlockHashes::unwind(db::RWTxn& txn) {
     /*
      * Unwinds HeaderNumber index by
      *      select CanonicalHashes->HeaderHash
@@ -96,9 +96,9 @@ StageResult BlockHashes::unwind(db::RWTxn& txn) {
      *       where HeaderNumber->HeaderHash == vector.item
      */
 
-    StageResult ret{StageResult::kSuccess};
-    if (!sync_context_->unwind_to.has_value()) return ret;
-    const BlockNum to{sync_context_->unwind_to.value()};
+    Stage::Result ret{Stage::Result::kSuccess};
+    if (!sync_context_->unwind_point.has_value()) return ret;
+    const BlockNum to{sync_context_->unwind_point.value()};
 
     operation_ = OperationType::Unwind;
     try {
@@ -128,19 +128,19 @@ StageResult BlockHashes::unwind(db::RWTxn& txn) {
     } catch (const mdbx::exception& ex) {
         log::Error(log_prefix_,
                    {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
-        ret = StageResult::kDbError;
+        ret = Stage::Result::kDbError;
     } catch (const StageError& ex) {
         log::Error(log_prefix_,
                    {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
-        ret = static_cast<StageResult>(ex.err());
+        ret = static_cast<Stage::Result>(ex.err());
     } catch (const std::exception& ex) {
         log::Error(log_prefix_,
                    {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
-        ret = StageResult::kUnexpectedError;
+        ret = Stage::Result::kUnexpectedError;
     } catch (...) {
         log::Error(log_prefix_,
                    {"function", std::string(__FUNCTION__), "exception", "undefined"});
-        ret = StageResult::kUnexpectedError;
+        ret = Stage::Result::kUnexpectedError;
     }
 
     operation_ = OperationType::None;
@@ -148,7 +148,7 @@ StageResult BlockHashes::unwind(db::RWTxn& txn) {
     return ret;
 }
 
-StageResult BlockHashes::prune(db::RWTxn&) { return StageResult::kSuccess; }
+Stage::Result BlockHashes::prune(db::RWTxn&) { return Stage::Result::kSuccess; }
 
 std::vector<std::string> BlockHashes::get_log_progress() {
     if (!is_stopping()) {
@@ -185,8 +185,8 @@ void BlockHashes::collect_and_load(db::RWTxn& txn, const BlockNum from, const Bl
         // Sanity
         check_block_sequence(reached_block_num_, expected_block_number);
         if (data.value.length() != kHashLength) {
-            throw StageError(StageResult::kDbError, "Invalid value length " + std::to_string(data.value.length()) +
-                                                        " expected " + std::to_string(kHashLength));
+            throw StageError(Stage::Result::kDbError, "Invalid value length " + std::to_string(data.value.length()) +
+                                                          " expected " + std::to_string(kHashLength));
         }
 
         collector_->collect(etl::Entry{Bytes{db::from_slice(data.value)}, operation_ == OperationType::Forward

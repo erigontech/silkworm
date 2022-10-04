@@ -124,7 +124,7 @@ TEST_CASE("Stage History Index") {
 
             stagedsync::SyncContext sync_context{};
             stagedsync::HistoryIndex stage_history_index(&context.node_settings(), &sync_context);
-            REQUIRE(stage_history_index.forward(txn) == stagedsync::StageResult::kSuccess);
+            REQUIRE(stage_history_index.forward(txn) == stagedsync::Stage::Result::kSuccess);
             db::Cursor account_history(txn, db::table::kAccountHistory);
             db::Cursor storage_history(txn, db::table::kStorageHistory);
             REQUIRE(!account_history.empty());
@@ -175,8 +175,8 @@ TEST_CASE("Stage History Index") {
             REQUIRE(storage_history_bitmap.cardinality() == 3);
             REQUIRE(storage_history_bitmap.toString() == "{1,2,3}");
 
-            sync_context.unwind_to.emplace(2);
-            REQUIRE(stage_history_index.unwind(txn) == stagedsync::StageResult::kSuccess);
+            sync_context.unwind_point.emplace(2);
+            REQUIRE(stage_history_index.unwind(txn) == stagedsync::Stage::Result::kSuccess);
             REQUIRE(db::stages::read_stage_progress(*txn, db::stages::kHistoryIndexKey) == 2);
 
             // Account retrieving from Database
@@ -220,8 +220,8 @@ TEST_CASE("Stage History Index") {
 
             stagedsync::SyncContext sync_context{};
             stagedsync::HistoryIndex stage_history_index(&context.node_settings(), &sync_context);
-            REQUIRE(stage_history_index.forward(txn) == stagedsync::StageResult::kSuccess);
-            REQUIRE(stage_history_index.prune(txn) == stagedsync::StageResult::kSuccess);
+            REQUIRE(stage_history_index.forward(txn) == stagedsync::Stage::Result::kSuccess);
+            REQUIRE(stage_history_index.prune(txn) == stagedsync::Stage::Result::kSuccess);
             REQUIRE(db::stages::read_stage_progress(*txn, db::stages::kHistoryIndexKey) == 3);
             REQUIRE(db::stages::read_stage_prune_progress(*txn, db::stages::kHistoryIndexKey) == 3);
 
@@ -297,7 +297,7 @@ TEST_CASE("Stage History Index") {
         // Forward history
         stagedsync::SyncContext sync_context{};
         stagedsync::HistoryIndex stage_history_index(&context.node_settings(), &sync_context);
-        REQUIRE(stage_history_index.forward(txn) == stagedsync::StageResult::kSuccess);
+        REQUIRE(stage_history_index.forward(txn) == stagedsync::Stage::Result::kSuccess);
         db::Cursor account_history(txn, db::table::kAccountHistory);
         auto batch_1{account_history.size()};
         REQUIRE(batch_1 != 0);
@@ -359,7 +359,7 @@ TEST_CASE("Stage History Index") {
         db::stages::write_stage_progress(*txn, db::stages::kExecutionKey, block - 1);
         txn.commit();
 
-        REQUIRE(stage_history_index.forward(txn) == stagedsync::StageResult::kSuccess);
+        REQUIRE(stage_history_index.forward(txn) == stagedsync::Stage::Result::kSuccess);
 
         account_history.bind(txn, db::table::kAccountHistory);
         REQUIRE(batch_1 < account_history.size());
@@ -367,8 +367,8 @@ TEST_CASE("Stage History Index") {
         txn.commit();
 
         // Unwind to 4000 and ensure account 4 has been removed from history
-        sync_context.unwind_to.emplace(4'000);
-        REQUIRE(stage_history_index.unwind(txn) == stagedsync::StageResult::kSuccess);
+        sync_context.unwind_point.emplace(4'000);
+        REQUIRE(stage_history_index.unwind(txn) == stagedsync::Stage::Result::kSuccess);
         {
             Bytes prefix(kAddressLength, '\0');
             std::memcpy(&prefix[0], addresses.back().bytes, kAddressLength);
@@ -402,7 +402,7 @@ TEST_CASE("Stage History Index") {
                                  beforeHistory, beforeReceipts, beforeSenders, beforeTxIndex, beforeCallTraces);
 
         REQUIRE(context.node_settings().prune_mode->history().enabled());
-        REQUIRE(stage_history_index.prune(txn) == stagedsync::StageResult::kSuccess);
+        REQUIRE(stage_history_index.prune(txn) == stagedsync::Stage::Result::kSuccess);
 
         // Each key must have only 1 record now which has UINT64_MAX suffix AND bitmap max value must be 3590
         for (const auto& address : addresses) {

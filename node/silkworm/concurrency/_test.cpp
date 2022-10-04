@@ -78,7 +78,7 @@ TEST_CASE("Worker") {
         REQUIRE(worker.get_state() == Worker::State::kKickWaiting);
         worker.kick();
         std::this_thread::sleep_for(std::chrono::milliseconds(50));
-        REQUIRE(worker.get_state() == Worker::State::kStopped); // likely
+        REQUIRE(worker.get_state() == Worker::State::kStopped);  // likely
         worker.stop(true);
         REQUIRE(worker.get_state() == Worker::State::kStopped);
     }

@@ -8,13 +8,13 @@ C++ implementation of the Ethereum protocol based on the [Erigon architecture].
 
 ## Table of Contents
 
-- [About Silkworm](#about)
-- [Obtaining Source Code](#source)
-- [Building on Linux & macOS](#build_on_unix)
-- [Building on Windows](#build_on_windows)
+- [About Silkworm](#about-silkworm)
+- [Obtaining Source Code](#obtaining-source-code)
+- [Building on Linux & macOS](#building-on-linux--macos)
+- [Building on Windows](#building-on-windows)
 - [Codemap](#codemap)
-- [Testing Silkworm](#testing_silkworm)
-- [Style Guide](#guide)
+- [Testing Silkworm](#testing-silkworm)
+- [Style Guide](#style-guide)
 - [License](#license)
 
 
@@ -29,7 +29,7 @@ Silkworm was conceived as an evolution of the [Erigon] project,
 as outlined in its [release commentary](https://ledgerwatch.github.io/turbo_geth_release.html#Licence-and-language-migration-plan-out-of-scope-for-the-release).
 
 Silkworm is under active development and hasn't reached the alpha phase yet.
-Hence there have been no releases so far.
+Hence, there have been no releases so far.
 
 
 <a name="source"></a>
@@ -58,6 +58,7 @@ git submodule update --init --recursive
 Building Silkworm requires:
 * C++20 compiler: [GCC](https://www.gnu.org/software/gcc/) >= 10.2.0 or [Clang](https://clang.llvm.org/) >= 12.0.0
 * [CMake]
+* Tools for [gmplib](https://gmplib.org/): `sudo apt-get install -y m4 texinfo bison`
 
 Once the prerequisites are installed, bootstrap cmake by running
 ```
@@ -74,7 +75,7 @@ make -j
 _Note about parallel builds using `-j`: if not specified the exact number of parallel tasks, the compiler will spawn as many
 as the cores available. That may cause OOM errors if the build is executed on a host with a large number of cores but a relatively
 small amount of RAM. To work around this, either specify `-jn` where `n` is the number of parallel tasks you want to allow or
-remove `-j` completely. Typically for Silkworm, each compiler job requires 4GB of RAM. So, if your total RAM is 16GB, for example,
+remove `-j` completely. Typically, for Silkworm each compiler job requires 4GB of RAM. So, if your total RAM is 16GB, for example,
 then `-j4` should be OK, while `-j8` is probably not. It also means that you need a machine with at least 4GB RAM to compile Silkworm._
 
 Now you can run the unit tests. There's one for core and one for node.
@@ -118,13 +119,13 @@ Use the following steps to detect/enable/disable memory compression:
 ## Codemap
 
 Apart from the submodules and some auxiliary directories, Silkworm contains the following components:
-* [`core`](core/)
+* [`core`](./core)
   <br /> The `core` library contains the bulk of the Ethereum protocol logic as described by the [Yellow Paper].
   Code within `core` is compatible with WebAssembly and may not use C++ exceptions.
-* [`node`](node/)
-  <br /> The `node` library contains database, [staged sync], and other logic necessary for functioning as an Ethereum node.
+* [`node`](./node)
+  <br /> The `node` library contains database, [staged sync] and other logic necessary for functioning as an Ethereum node.
   The `node` library depends on the `core` library.
-* [`cmd`](cmd/)
+* [`cmd`](./cmd)
   <br /> The source code of  Silkworm executable binaries.
 
 <a name="testing_silkworm"></a>
@@ -132,7 +133,7 @@ Apart from the submodules and some auxiliary directories, Silkworm contains the 
 
 **Note : at current state of development Silkworm can't actually "sync" the chain like Erigon does. What instead does is a one-pass loop over all implemented stages to process all blocks which are already in the database. Due to that you NEED a primed database from Erigon.**
 
-You can try run Silkworm to test the stages implemented so far. To do that you need to obtain a primed database by Erigon (strictly from `stable` branch) by forcing it to stop before stage Senders.
+You can try to run Silkworm to test the stages implemented so far. To do that you need to obtain a primed database by Erigon (strictly from `stable` branch) by forcing it to stop before stage Senders.
 
 On Linux [build Erigon](https://github.com/ledgerwatch/erigon#getting-started) and
 ```
@@ -162,7 +163,7 @@ We adhere to [Google's C++ Style Guide] with the following differences:
 * `snake_case()` for function names.
 * .cpp & .hpp file extensions for C++; .c & .h are reserved for C.
 * `using namespace foo` is allowed inside .cpp files, but not inside headers.
-* Exceptions are allowed outside of the `core` library.
+* Exceptions are allowed outside the `core` library.
 * User-defined literals are allowed.
 * Maximum line length is 120, indentation is 4 spaces – see [.clang-format](.clang-format).
 * Use `#pragma once` in the headers instead of the classic `#ifndef` guards.

@@ -94,7 +94,7 @@ void add_option_chain(CLI::App& cli, uint64_t& network_id) {
 
 void add_option_data_dir(CLI::App& cli, std::filesystem::path& data_dir) {
     cli.add_option("--datadir", data_dir, "The path to the blockchain data directory")
-        ->default_val(DataDirectory::get_default_storage_path());
+        ->default_val(DataDirectory::get_default_storage_path().string());
 }
 
 void add_option_etherbase(CLI::App& cli, std::string& etherbase_address) {

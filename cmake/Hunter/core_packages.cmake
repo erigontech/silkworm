@@ -14,6 +14,7 @@
    limitations under the License.
 ]]
 
+hunter_add_package(Boost)
 hunter_add_package(Catch)
 hunter_add_package(intx)
 hunter_add_package(Microsoft.GSL)

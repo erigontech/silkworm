@@ -14,6 +14,7 @@
    limitations under the License.
 ]]
 
+find_package(Boost CONFIG REQUIRED)
 find_package(Microsoft.GSL CONFIG REQUIRED)
 find_package(nlohmann_json CONFIG REQUIRED)
 
@@ -30,7 +31,7 @@ add_library(silkworm_core ${SILKWORM_CORE_SRC})
 target_include_directories(silkworm_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 set(SILKWORM_CORE_PUBLIC_LIBS ethash::ethash evmc evmone intx::intx Microsoft.GSL::GSL nlohmann_json silkpre)
-set(SILKWORM_CORE_PRIVATE_LIBS "")
+set(SILKWORM_CORE_PRIVATE_LIBS Boost::headers)
 
 if(NOT SILKWORM_WASM_API)
   hunter_add_package(abseil)

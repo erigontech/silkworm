@@ -14,7 +14,6 @@
    limitations under the License.
 */
 
-#include <optional>
 #include <regex>
 
 #include <CLI/CLI.hpp>
@@ -27,6 +26,7 @@
 #include <silkworm/db/stages.hpp>
 #include <silkworm/downloader/block_exchange.hpp>
 #include <silkworm/downloader/sentry_client.hpp>
+#include <silkworm/rpc/server/backend_kv_server.hpp>
 #include <silkworm/stagedsync/sync_loop.hpp>
 
 #include "common.hpp"
@@ -79,17 +79,20 @@ int main(int argc, char* argv[]) {
     cli.get_formatter()->column_width(50);
 
     try {
-        log::Settings log_settings{};  // Holds logging settings
-        NodeSettings node_settings{};  // Holds node settings
+        cmd::SilkwormCoreSettings settings;
+        cmd::parse_silkworm_command_line(cli, argc, argv, settings);
 
-        cmd::parse_silkworm_command_line(cli, argc, argv, log_settings, node_settings);
+        auto& node_settings = settings.node_settings;
 
-        SignalHandler::init();    // Trap OS signals
-        log::init(log_settings);  // Initialize logging with cli settings
+        // Trap OS signals
+        SignalHandler::init();
+
+        // Initialize logging with cli settings
+        log::init(settings.log_settings);
         log::set_thread_name("main");
 
         // Output BuildInfo
-        auto build_info{silkworm_get_buildinfo()};
+        const auto build_info{silkworm_get_buildinfo()};
         node_settings.build_info =
             "version=" + std::string(build_info->git_branch) + std::string(build_info->project_version) +
             "build=" + std::string(build_info->system_name) + "-" + std::string(build_info->system_processor) +
@@ -127,6 +130,14 @@ int main(int argc, char* argv[]) {
             log::Trace("Boost Asio", {"state", "stopped"});
         }};
 
+        // BackEnd & KV server
+        const auto node_name{silkworm::cmd::get_node_name_from_build_info(build_info)};
+        silkworm::EthereumBackEnd backend{node_settings, &chaindata_db};
+        backend.set_node_name(node_name);
+
+        silkworm::rpc::BackEndKvServer rpc_server{settings.server_settings, backend};
+        rpc_server.build_and_start();
+
         // Sentry client - connects to sentry
         SentryClient sentry{node_settings.external_sentry_addr, db::ROAccess{chaindata_db},
                             node_settings.chain_config.value()};
@@ -159,14 +170,16 @@ int main(int argc, char* argv[]) {
                 t1 = std::chrono::steady_clock::now();
                 auto total_duration{t1 - start_time};
                 log::Info("Resource usage",
-                          {
-                              "mem", human_size(get_mem_usage()),                                     //
-                              "chain", human_size(node_settings.data_directory->chaindata().size()),  //
-                              "etl-tmp", human_size(node_settings.data_directory->etl().size()),      //
-                              "uptime", StopWatch::format(total_duration)                             //
-                          });
+                          {"mem", human_size(get_mem_usage()),
+                           "chain", human_size(node_settings.data_directory->chaindata().size()),
+                           "etl-tmp", human_size(node_settings.data_directory->etl().size()),
+                           "uptime", StopWatch::format(total_duration)});
             }
         }
+
+        backend.close();
+        rpc_server.shutdown();
+        rpc_server.join();
 
         block_exchange.stop();
         sentry.stop();

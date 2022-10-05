@@ -108,7 +108,7 @@ void TxCall::start() {
 
         // Create a new read-only transaction.
         read_only_txn_ = chaindata_env_->start_read();
-        SILK_INFO << "Tx peer: " << peer() << " started tx: " << read_only_txn_.id();
+        SILK_DEBUG << "Tx peer: " << peer() << " started tx: " << read_only_txn_.id();
 
         // Send an unsolicited message containing the transaction ID.
         remote::Pair kv_pair;
@@ -192,7 +192,7 @@ void TxCall::handle_cursor_open(const remote::Cursor* request) {
     // Send the assigned cursor ID back to the client.
     remote::Pair kv_pair;
     kv_pair.set_cursorid(cursor_it->first);
-    SILK_INFO << "Tx peer: " << peer() << " opened cursor: " << kv_pair.cursorid();
+    SILK_DEBUG << "Tx peer: " << peer() << " opened cursor: " << kv_pair.cursorid();
     const bool sent = send_response(kv_pair);
     SILK_TRACE << "TxCall::handle_cursor_open " << this << " sent: " << sent;
 }
@@ -223,13 +223,13 @@ void TxCall::handle_cursor_close(const remote::Cursor* request) {
         return;
     }
     cursors_.erase(cursor_it);
-    SILK_INFO << "Tx peer: " << peer() << " closed cursor: " << request->cursor();
+    SILK_DEBUG << "Tx peer: " << peer() << " closed cursor: " << request->cursor();
     const bool sent = send_response(remote::Pair{});
     SILK_TRACE << "TxCall::handle_cursor_close " << this << " close cursor: " << request->cursor() << " sent: " << sent;
 }
 
 void TxCall::handle_operation(const remote::Cursor* request, db::Cursor& cursor) {
-    SILK_INFO << "Tx peer: " << peer() << " op=" << remote::Op_Name(request->op()) << " cursor=" << request->cursor();
+    SILK_DEBUG << "Tx peer: " << peer() << " op=" << remote::Op_Name(request->op()) << " cursor=" << request->cursor();
 
     switch (request->op()) {
         case remote::Op::FIRST: {

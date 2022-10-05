@@ -19,12 +19,17 @@
 #include <functional>
 #include <set>
 
-// Disable warning to overcome bug in GCC 12: https://gcc.gnu.org/bugzilla/show_bug.cgi?id=104336
+// Disable 'restrict' warning to overcome bug in GCC 12: https://gcc.gnu.org/bugzilla/show_bug.cgi?id=104336
+// This in turn requires checking we're just using GCC 12 because Clang 13 does not know 'restrict' warning
+#if __GNUC__ == 12
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wrestrict"
+#endif
 #include <boost/multiprecision/cpp_dec_float.hpp>
 #include <boost/multiprecision/cpp_int.hpp>
+#if __GNUC__ == 12
 #pragma GCC diagnostic pop
+#endif
 
 #include <silkworm/common/as_range.hpp>
 

@@ -19,8 +19,12 @@
 #include <functional>
 #include <set>
 
+// Disable warning to overcome bug in GCC 12: https://gcc.gnu.org/bugzilla/show_bug.cgi?id=104336
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wrestrict"
 #include <boost/multiprecision/cpp_dec_float.hpp>
 #include <boost/multiprecision/cpp_int.hpp>
+#pragma GCC diagnostic pop
 
 #include <silkworm/common/as_range.hpp>
 

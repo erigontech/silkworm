@@ -192,4 +192,79 @@ TEST_CASE("JSON serialization") {
 
     CHECK(config2->to_json() == merge_test_json);
 }
+
+TEST_CASE("terminalTotalDifficulty as JSON number (Erigon compatibility)") {
+    const auto mainnet_json_ttd_number = nlohmann::json::parse(R"({
+            "chainId":1,
+            "homesteadBlock":1150000,
+            "daoForkBlock":1920000,
+            "eip150Block":2463000,
+            "eip155Block":2675000,
+            "byzantiumBlock":4370000,
+            "constantinopleBlock":7280000,
+            "petersburgBlock":7280000,
+            "istanbulBlock":9069000,
+            "muirGlacierBlock":9200000,
+            "berlinBlock":12244000,
+            "londonBlock":12965000,
+            "arrowGlacierBlock":13773000,
+            "grayGlacierBlock":15050000,
+            "terminalTotalDifficulty":58750000000000000000000,
+            "ethash":{}
+        })");
+
+    const std::optional<ChainConfig> config1{ChainConfig::from_json(mainnet_json_ttd_number)};
+
+    REQUIRE(config1);
+    CHECK(config1 == kMainnetConfig);
+    CHECK(config1->to_json() != mainnet_json_ttd_number);  // "58750000000000000000000" vs 5.875e+22
+    CHECK(config1->terminal_total_difficulty == intx::from_string<intx::uint256>("58750000000000000000000"));
+
+    const auto goerli_json_ttd_number = nlohmann::json::parse(R"({
+            "chainId":5,
+            "homesteadBlock":0,
+            "eip150Block":0,
+            "eip155Block":0,
+            "byzantiumBlock":0,
+            "constantinopleBlock":0,
+            "petersburgBlock":0,
+            "istanbulBlock":1561651,
+            "berlinBlock":4460644,
+            "londonBlock":5062605,
+            "terminalTotalDifficulty":10790000,
+            "clique":{}
+        })");
+
+    const std::optional<ChainConfig> config2{ChainConfig::from_json(goerli_json_ttd_number)};
+
+    REQUIRE(config2);
+    CHECK(config2 == kGoerliConfig);
+    CHECK(config2->to_json() != goerli_json_ttd_number);  // "10790000" vs 10790000
+    CHECK(config2->terminal_total_difficulty == intx::from_string<intx::uint256>("10790000"));
+
+    const auto sepolia_json_ttd_number = nlohmann::json::parse(R"({
+            "chainId":11155111,
+            "homesteadBlock":0,
+            "eip150Block":0,
+            "eip155Block":0,
+            "byzantiumBlock":0,
+            "constantinopleBlock":0,
+            "petersburgBlock":0,
+            "istanbulBlock":0,
+            "muirGlacierBlock":0,
+            "berlinBlock":0,
+            "londonBlock":0,
+            "terminalTotalDifficulty":17000000000000000,
+            "mergeNetsplitBlock":1735371,
+            "ethash":{}
+        })");
+
+    const std::optional<ChainConfig> config3{ChainConfig::from_json(sepolia_json_ttd_number)};
+
+    REQUIRE(config3);
+    CHECK(config3 == kSepoliaConfig);
+    CHECK(config3->to_json() != sepolia_json_ttd_number);  // "17000000000000000" vs 17000000000000000
+    CHECK(config3->terminal_total_difficulty == intx::from_string<intx::uint256>("17000000000000000"));
+}
+
 }  // namespace silkworm

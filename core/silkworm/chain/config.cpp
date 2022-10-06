@@ -19,38 +19,7 @@
 #include <functional>
 #include <set>
 
-// Disable 'restrict' warning to overcome bug in GCC 12: https://gcc.gnu.org/bugzilla/show_bug.cgi?id=104336
-// This in turn requires checking we're just using GCC 12 because Clang 13 does not know 'restrict' warning
-#if __GNUC__ == 12
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wrestrict"
-#endif
-#include <boost/multiprecision/cpp_dec_float.hpp>
-#include <boost/multiprecision/cpp_int.hpp>
-#if __GNUC__ == 12
-#pragma GCC diagnostic pop
-#endif
-
 #include <silkworm/common/as_range.hpp>
-
-//! Function definition required by BOOST_NO_EXCEPTIONS which in turn is defined because of -fno-exceptions
-//! \details neither throwing nor returning are valid here so aborting is pretty much the only solution
-void boost::throw_exception(std::exception const& /*e*/) {
-    std::abort();
-}
-
-//! Function definition required by BOOST_NO_EXCEPTIONS which in turn is defined because of -fno-exceptions
-//! \details neither throwing nor returning are valid here so aborting is pretty much the only solution
-void boost::throw_exception(std::exception const& /*e*/, boost::source_location const& /*loc*/) {
-    std::abort();
-}
-
-// Erigon treats Terminal Total Difficulty (TTD) as a JSON number. In order to guarantee at least read-only
-// binary compatibility from Erigon database, we need Boost.Multiprecision because:
-// - nlohmann::json treats JSON numbers that overflow 64-bit unsigned integer as floating-point numbers
-// - intx::uint256 cannot currently be constructed from a floating-point number
-using mp_float = boost::multiprecision::cpp_dec_float_100;
-using mp_int = boost::multiprecision::cpp_int;
 
 namespace silkworm {
 
@@ -155,18 +124,17 @@ std::optional<ChainConfig> ChainConfig::from_json(const nlohmann::json& json) no
     read_json_config_member(json, kTerminalBlockNumber, config.terminal_block_number);
 
     if (json.contains(kTerminalTotalDifficulty)) {
-        // We handle TTD serialized both as JSON string *and* as JSON number
+        // We handle terminalTotalDifficulty serialized both as JSON string *and* as JSON number
         if (json[kTerminalTotalDifficulty].is_string()) {
             /* This is still present to maintain compatibility with previous Silkworm format */
             config.terminal_total_difficulty =
                 intx::from_string<intx::uint256>(json[kTerminalTotalDifficulty].get<std::string>());
         } else if (json[kTerminalTotalDifficulty].is_number()) {
-            /* This is for compatibility with Erigon and probably Geth which treat TTD as a JSON number */
-            const auto& ttd_json_value = json[kTerminalTotalDifficulty];
-            const auto ttd_as_mp_int =
-                ttd_json_value.is_number_float() ? mp_int{mp_float{ttd_json_value.dump()}}
-                                                 : mp_int{ttd_json_value.dump()};
-            config.terminal_total_difficulty = intx::from_string<intx::uint256>(ttd_as_mp_int.str());
+            /* This is for compatibility with Erigon that uses a JSON number */
+            // nlohmann::json treats JSON numbers that overflow 64-bit unsigned integer as floating-point numbers and
+            // intx::uint256 cannot currently be constructed from a floating-point number or string in scientific notation
+            config.terminal_total_difficulty =
+                from_string_sci<intx::uint256>(json[kTerminalTotalDifficulty].dump().c_str());
         }
     }
 

@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <cmath>
 #include <cstring>
 #include <optional>
 #include <string_view>
@@ -81,5 +82,58 @@ bool iequals(std::string_view a, std::string_view b);
 size_t prefix_length(ByteView a, ByteView b);
 
 inline ethash::hash256 keccak256(ByteView view) { return ethash::keccak256(view.data(), view.size()); }
+
+//! \brief Create an intx::uint256 from a string supporting both fixed decimal and scientific notation
+template <typename Int>
+inline constexpr Int from_string_sci(const char* str) {
+    auto s = str;
+    auto m = Int{};
+    int num_digits = 0;
+
+    char c;
+    while ((c = *s++)) {
+        if (c == '.') break;
+        if (c == 'e') {
+            if (*s++ != '+') intx::throw_<std::out_of_range>(str);
+            break;
+        }
+        if (num_digits++ > std::numeric_limits<Int>::digits10)
+            intx::throw_<std::out_of_range>(str);
+
+        const auto d = intx::from_dec_digit(c);
+        m = m * Int{10} + d;
+        if (m < d)
+            intx::throw_<std::out_of_range>(str);
+    }
+    if (!c) return m;
+
+    int num_decimal_digits = 0;
+    if (c == '.') {
+        while ((c = *s++)) {
+            if (c == 'e') {
+                if (*s++ != '+') intx::throw_<std::out_of_range>(str);
+                break;
+            }
+            num_decimal_digits++;
+            const auto d = intx::from_dec_digit(c);
+            m = m * Int{10} + d;
+            if (m < d)
+                intx::throw_<std::out_of_range>(str);
+        }
+    }
+
+    int e = 0;
+    while ((c = *s++)) {
+        const auto d = intx::from_dec_digit(c);
+        e = e * 10 + d;
+        if (e < d)
+            intx::throw_<std::out_of_range>(str);
+    }
+    if (e < num_decimal_digits)
+        intx::throw_<std::out_of_range>(str);
+
+    auto x = m * std::pow(10, e - num_decimal_digits);
+    return x;
+}
 
 }  // namespace silkworm

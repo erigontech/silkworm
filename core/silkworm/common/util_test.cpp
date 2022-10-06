@@ -171,4 +171,29 @@ TEST_CASE("human_size") {
     val = kKibi;
     CHECK(human_size(val) == "1.00 KB");
 }
+
+TEST_CASE("intx::uint256 from scientific notation string") {
+    const intx::uint256 kMainnetTTD{intx::from_string<intx::uint256>("58750000000000000000000")};
+    CHECK(from_string_sci<intx::uint256>("5.875e+22") == kMainnetTTD);
+    CHECK(from_string_sci<intx::uint256>("58750000000000000000000") == kMainnetTTD);
+
+    const intx::uint256 kSepoliaTTD{intx::from_string<intx::uint256>("17000000000000000")};
+    CHECK(from_string_sci<intx::uint256>("1.7e+16") == kSepoliaTTD);
+    CHECK(from_string_sci<intx::uint256>("17000000000000000") == kSepoliaTTD);
+
+    const intx::uint256 kGoerliTTD{intx::from_string<intx::uint256>("10790000")};
+    CHECK(from_string_sci<intx::uint256>("1.079e+7") == kGoerliTTD);
+    CHECK(from_string_sci<intx::uint256>("10790000") == kGoerliTTD);
+
+    CHECK(from_string_sci<intx::uint256>("0") == intx::from_string<intx::uint256>("0"));
+    CHECK(from_string_sci<intx::uint256>("0e+0") == intx::from_string<intx::uint256>("0"));
+    CHECK(from_string_sci<intx::uint256>("0.0e+1") == intx::from_string<intx::uint256>("0"));
+    CHECK(from_string_sci<intx::uint256>("18") == intx::from_string<intx::uint256>("18"));
+    CHECK(from_string_sci<intx::uint256>("18e+1") == intx::from_string<intx::uint256>("180"));
+    CHECK(from_string_sci<intx::uint256>("18.1e+1") == intx::from_string<intx::uint256>("181"));
+    CHECK(from_string_sci<intx::uint256>("18e+2") == intx::from_string<intx::uint256>("1800"));
+    CHECK(from_string_sci<intx::uint256>("18.1e+2") == intx::from_string<intx::uint256>("1810"));
+    CHECK(from_string_sci<intx::uint256>("18.12e+2") == intx::from_string<intx::uint256>("1812"));
+}
+
 }  // namespace silkworm

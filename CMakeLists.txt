@@ -81,12 +81,6 @@ if(NOT SILKWORM_CORE_ONLY)
   include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/Hunter/extra_packages.cmake)
 endif()
 
-# Boost: define Boost::headers target if missing because Silkworm Core needs it
-if(NOT TARGET Boost::headers)
-  add_library(Boost::headers INTERFACE IMPORTED)
-  target_include_directories(Boost::headers INTERFACE ${Boost_INCLUDE_DIRS})
-endif()
-
 if(NOT SILKWORM_CORE_ONLY)
   # Silence CMake policy warnings in submodules
   set(CMAKE_POLICY_DEFAULT_CMP0048 NEW)

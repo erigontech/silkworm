@@ -189,6 +189,7 @@ TEST_CASE("intx::uint256 from scientific notation string") {
     CHECK(from_string_sci<intx::uint256>("0e+0") == intx::from_string<intx::uint256>("0"));
     CHECK(from_string_sci<intx::uint256>("0.0e+1") == intx::from_string<intx::uint256>("0"));
     CHECK(from_string_sci<intx::uint256>("18") == intx::from_string<intx::uint256>("18"));
+    CHECK(from_string_sci<intx::uint256>("18e+0") == intx::from_string<intx::uint256>("18"));
     CHECK(from_string_sci<intx::uint256>("18e+1") == intx::from_string<intx::uint256>("180"));
     CHECK(from_string_sci<intx::uint256>("18.1e+1") == intx::from_string<intx::uint256>("181"));
     CHECK(from_string_sci<intx::uint256>("18e+2") == intx::from_string<intx::uint256>("1800"));

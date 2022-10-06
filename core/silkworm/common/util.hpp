@@ -88,13 +88,14 @@ template <typename Int>
 inline constexpr Int from_string_sci(const char* str) {
     auto s = str;
     auto m = Int{};
-    int num_digits = 0;
 
+    int num_digits = 0;
     int num_decimal_digits = 0;
+    bool count_decimals{false};
     char c;
     while ((c = *s++)) {
         if (c == '.') {
-            num_decimal_digits++;
+            count_decimals = true;
             continue;
         }
         if (c == 'e') {
@@ -103,7 +104,7 @@ inline constexpr Int from_string_sci(const char* str) {
         }
         if (num_digits++ > std::numeric_limits<Int>::digits10)
             intx::throw_<std::out_of_range>(str);
-        if (num_decimal_digits > 0) num_decimal_digits++;
+        if (count_decimals) num_decimal_digits++;
 
         const auto d = intx::from_dec_digit(c);
         m = m * Int{10} + d;
@@ -114,7 +115,6 @@ inline constexpr Int from_string_sci(const char* str) {
         if (num_decimal_digits == 0) return m;
         intx::throw_<std::out_of_range>(str);
     }
-    if (num_decimal_digits > 0) num_decimal_digits--;
 
     int e = 0;
     while ((c = *s++)) {

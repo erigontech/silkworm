@@ -90,37 +90,31 @@ inline constexpr Int from_string_sci(const char* str) {
     auto m = Int{};
     int num_digits = 0;
 
+    int num_decimal_digits = 0;
     char c;
     while ((c = *s++)) {
-        if (c == '.') break;
+        if (c == '.') {
+            num_decimal_digits++;
+            continue;
+        }
         if (c == 'e') {
             if (*s++ != '+') intx::throw_<std::out_of_range>(str);
             break;
         }
         if (num_digits++ > std::numeric_limits<Int>::digits10)
             intx::throw_<std::out_of_range>(str);
+        if (num_decimal_digits > 0) num_decimal_digits++;
 
         const auto d = intx::from_dec_digit(c);
         m = m * Int{10} + d;
         if (m < d)
             intx::throw_<std::out_of_range>(str);
     }
-    if (!c) return m;
-
-    int num_decimal_digits = 0;
-    if (c == '.') {
-        while ((c = *s++)) {
-            if (c == 'e') {
-                if (*s++ != '+') intx::throw_<std::out_of_range>(str);
-                break;
-            }
-            num_decimal_digits++;
-            const auto d = intx::from_dec_digit(c);
-            m = m * Int{10} + d;
-            if (m < d)
-                intx::throw_<std::out_of_range>(str);
-        }
+    if (!c) {
+        if (num_decimal_digits == 0) return m;
+        intx::throw_<std::out_of_range>(str);
     }
+    if (num_decimal_digits > 0) num_decimal_digits--;
 
     int e = 0;
     while ((c = *s++)) {

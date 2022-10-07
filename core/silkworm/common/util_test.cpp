@@ -195,6 +195,11 @@ TEST_CASE("intx::uint256 from scientific notation string") {
     CHECK(from_string_sci<intx::uint256>("18e+2") == intx::from_string<intx::uint256>("1800"));
     CHECK(from_string_sci<intx::uint256>("18.1e+2") == intx::from_string<intx::uint256>("1810"));
     CHECK(from_string_sci<intx::uint256>("18.12e+2") == intx::from_string<intx::uint256>("1812"));
+
+    CHECK(from_string_sci<intx::uint256>("115792089237316195423570985008687907853269984665640564039457584007913129639935")
+        == std::numeric_limits<intx::uint256>::max());
+    CHECK(from_string_sci<intx::uint256>("1.15792089237316195423570985008687907853269984665640564039457584007913129639935e+77")
+        == std::numeric_limits<intx::uint256>::max());
 }
 
 }  // namespace silkworm

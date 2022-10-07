@@ -192,9 +192,7 @@ evmc::Result EVM::create(const evmc_message& message) noexcept {
         tracer.get().on_creation_completed(evm_res, state_);
     }
 
-    res = evmc::Result{evm_res};
-
-    return res;
+    return evmc::Result{evm_res};
 }
 
 evmc::Result EVM::call(const evmc_message& message) noexcept {

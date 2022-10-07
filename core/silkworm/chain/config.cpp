@@ -124,8 +124,18 @@ std::optional<ChainConfig> ChainConfig::from_json(const nlohmann::json& json) no
     read_json_config_member(json, kTerminalBlockNumber, config.terminal_block_number);
 
     if (json.contains(kTerminalTotalDifficulty)) {
-        config.terminal_total_difficulty =
-            intx::from_string<intx::uint256>(json[kTerminalTotalDifficulty].get<std::string>());
+        // We handle terminalTotalDifficulty serialized both as JSON string *and* as JSON number
+        if (json[kTerminalTotalDifficulty].is_string()) {
+            /* This is still present to maintain compatibility with previous Silkworm format */
+            config.terminal_total_difficulty =
+                intx::from_string<intx::uint256>(json[kTerminalTotalDifficulty].get<std::string>());
+        } else if (json[kTerminalTotalDifficulty].is_number()) {
+            /* This is for compatibility with Erigon that uses a JSON number */
+            // nlohmann::json treats JSON numbers that overflow 64-bit unsigned integer as floating-point numbers and
+            // intx::uint256 cannot currently be constructed from a floating-point number or string in scientific notation
+            config.terminal_total_difficulty =
+                from_string_sci<intx::uint256>(json[kTerminalTotalDifficulty].dump().c_str());
+        }
     }
 
     if (json.contains(kTerminalBlockHash)) {

@@ -157,38 +157,42 @@ evmc::Result EVM::create(const evmc_message& message) noexcept {
         message.value,   // value
     };
 
-    res =
-        evmc::Result{execute(deploy_message, ByteView{message.input_data, message.input_size}, /*code_hash=*/nullptr)};
+    auto evm_res{execute(deploy_message, ByteView{message.input_data, message.input_size}, /*code_hash=*/nullptr)};
 
-    if (res.status_code == EVMC_SUCCESS) {
-        const size_t code_len{res.output_size};
+    if (evm_res.status_code == EVMC_SUCCESS) {
+        const size_t code_len{evm_res.output_size};
         const uint64_t code_deploy_gas{code_len * fee::kGCodeDeposit};
 
-        if (rev >= EVMC_LONDON && code_len > 0 && res.output_data[0] == 0xEF) {
+        if (rev >= EVMC_LONDON && code_len > 0 && evm_res.output_data[0] == 0xEF) {
             // https://eips.ethereum.org/EIPS/eip-3541
-            res.status_code = EVMC_CONTRACT_VALIDATION_FAILURE;
+            evm_res.status_code = EVMC_CONTRACT_VALIDATION_FAILURE;
         } else if (rev >= EVMC_SPURIOUS_DRAGON && code_len > param::kMaxCodeSize) {
             // https://eips.ethereum.org/EIPS/eip-170
-            res.status_code = EVMC_OUT_OF_GAS;
-        } else if (res.gas_left >= 0 && static_cast<uint64_t>(res.gas_left) >= code_deploy_gas) {
-            res.gas_left -= static_cast<int64_t>(code_deploy_gas);
-            state_.set_code(contract_addr, {res.output_data, res.output_size});
+            evm_res.status_code = EVMC_OUT_OF_GAS;
+        } else if (evm_res.gas_left >= 0 && static_cast<uint64_t>(evm_res.gas_left) >= code_deploy_gas) {
+            evm_res.gas_left -= static_cast<int64_t>(code_deploy_gas);
+            state_.set_code(contract_addr, {evm_res.output_data, evm_res.output_size});
         } else if (rev >= EVMC_HOMESTEAD) {
-            res.status_code = EVMC_OUT_OF_GAS;
+            evm_res.status_code = EVMC_OUT_OF_GAS;
         }
     }
 
-    if (res.status_code == EVMC_SUCCESS) {
-        res.create_address = contract_addr;
+    if (evm_res.status_code == EVMC_SUCCESS) {
+        evm_res.create_address = contract_addr;
     } else {
         state_.revert_to_snapshot(snapshot);
-        res.gas_refund = 0;
-        if (res.status_code != EVMC_REVERT) {
-            res.gas_left = 0;
+        evm_res.gas_refund = 0;
+        if (evm_res.status_code != EVMC_REVERT) {
+            evm_res.gas_left = 0;
         }
     }
 
-    return res;
+    // Explicitly notify registered tracers (if any) because evmc_result has been changed post execute
+    for (auto tracer : tracers_) {
+        tracer.get().on_creation_completed(evm_res, state_);
+    }
+
+    return evmc::Result{evm_res};
 }
 
 evmc::Result EVM::call(const evmc_message& message) noexcept {
@@ -232,10 +236,8 @@ evmc::Result EVM::call(const evmc_message& message) noexcept {
             }
         }
         // Explicitly notify registered tracers (if any)
-        if (!tracers_.empty()) {
-            for (auto tracer : tracers_) {
-                tracer.get().on_precompiled_run(res, message.gas, state_);
-            }
+        for (auto tracer : tracers_) {
+            tracer.get().on_precompiled_run(res, message.gas, state_);
         }
     } else {
         const ByteView code{state_.get_code(message.code_address)};
@@ -272,7 +274,7 @@ evmc_result EVM::execute(const evmc_message& msg, ByteView code, const evmc::byt
     }
 }
 
-gsl::owner<EvmoneExecutionState*> EVM::acquire_state() noexcept {
+gsl::owner<EvmoneExecutionState*> EVM::acquire_state() const noexcept {
     gsl::owner<EvmoneExecutionState*> state{nullptr};
     if (state_pool) {
         state = state_pool->acquire();
@@ -283,7 +285,7 @@ gsl::owner<EvmoneExecutionState*> EVM::acquire_state() noexcept {
     return state;
 }
 
-void EVM::release_state(gsl::owner<EvmoneExecutionState*> state) noexcept {
+void EVM::release_state(gsl::owner<EvmoneExecutionState*> state) const noexcept {
     if (state_pool) {
         state_pool->add(state);
     } else {

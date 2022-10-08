@@ -282,6 +282,7 @@ bool BitTorrentClient::handle_alert(const lt::alert* alert) {
     // When we receive any performance alert, put it out as warning
     if (const auto pa = lt::alert_cast<lt::performance_alert>(alert)) {
         SILK_WARN << alert->message() << " [warning_code=" << pa->warning_code << "]";
+        handled = true;
     }
 
     // Finally, if an alert has not been unhandled yet, just log it for debug purposes

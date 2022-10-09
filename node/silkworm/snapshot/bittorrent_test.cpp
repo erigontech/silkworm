@@ -37,6 +37,8 @@
 
 namespace silkworm {
 
+using namespace std::chrono_literals;
+
 class BitTorrentClient_ForTest : public BitTorrentClient {
   public:
     using BitTorrentClient::BitTorrentClient;
@@ -93,6 +95,8 @@ TEST_CASE("BitTorrentClient::BitTorrentClient", "[silkworm][snapshot][bittorrent
 }
 
 TEST_CASE("BitTorrentClient::execute_loop", "[silkworm][snapshot][bittorrent]") {
+    test::SetLogVerbosityGuard guard{log::Level::kNone};
+
     TestRepository repo;
     BitTorrentSettings settings{};
     settings.repository_path = repo.path();
@@ -106,6 +110,16 @@ TEST_CASE("BitTorrentClient::execute_loop", "[silkworm][snapshot][bittorrent]") 
     SECTION("empty magnet file on separate thread") {
         BitTorrentClient client{settings};
         std::thread{[&client]() { client.execute_loop(); }}.join();
+    }
+
+    SECTION("not-empty magnet file on separate thread") {
+        repo.add_magnet("magnet:?xt=urn:btih:df09957d8a28af3bc5137478885a8003677ca878");
+        repo.flush();
+        BitTorrentClient client{settings};
+        std::thread client_thread{[&client]() { client.execute_loop(); }};
+        std::this_thread::sleep_for(50ms);
+        CHECK_NOTHROW(client.stop());
+        client_thread.join();
     }
 }
 

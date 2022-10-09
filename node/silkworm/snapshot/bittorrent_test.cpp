@@ -41,13 +41,13 @@ using namespace std::chrono_literals;
 
 class BitTorrentClient_ForTest : public BitTorrentClient {
   public:
-    using BitTorrentClient::load_file;
-    using BitTorrentClient::save_file;
     using BitTorrentClient::BitTorrentClient;
     using BitTorrentClient::handle_alert;
+    using BitTorrentClient::load_file;
     using BitTorrentClient::process_alerts;
     using BitTorrentClient::request_save_resume_data;
     using BitTorrentClient::request_torrent_updates;
+    using BitTorrentClient::save_file;
 };
 
 class TestRepository {

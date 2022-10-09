@@ -41,6 +41,8 @@ using namespace std::chrono_literals;
 
 class BitTorrentClient_ForTest : public BitTorrentClient {
   public:
+    using BitTorrentClient::load_file;
+    using BitTorrentClient::save_file;
     using BitTorrentClient::BitTorrentClient;
     using BitTorrentClient::handle_alert;
     using BitTorrentClient::process_alerts;
@@ -82,15 +84,24 @@ TEST_CASE("BitTorrentClient::BitTorrentClient", "[silkworm][snapshot][bittorrent
         CHECK_NOTHROW(BitTorrentClient{BitTorrentSettings{}});
     }
 
+    TestRepository repo;
+    BitTorrentSettings settings{};
+    settings.repository_path = repo.path();
+    settings.magnets_file_path = repo.magnets_file_path();
+
     SECTION("one invalid magnet link") {
-        TestRepository repo;
         // The following magnet link has malformed URL format ("unsupported URL protocol")
         repo.add_magnet("magnet::?xt=urn:btih:df09957d8a28af3bc5137478885a8003677ca878");
         repo.flush();
-        BitTorrentSettings settings{};
-        settings.repository_path = repo.path();
-        settings.magnets_file_path = repo.magnets_file_path();
         CHECK_THROWS_AS(BitTorrentClient{settings}, std::runtime_error);
+    }
+
+    SECTION("nonempty resume dir") {
+        const auto invalid_resume_file = repo.path().append(kResumeDirName).append("a.txt");
+        BitTorrentClient_ForTest::save_file(invalid_resume_file.string(), std::vector<char>{});
+        const auto empty_resume_file = repo.path().append(kResumeDirName).append("a").append(kResumeFileExt);
+        BitTorrentClient_ForTest::save_file(empty_resume_file, std::vector<char>{});
+        CHECK_NOTHROW(BitTorrentClient{settings});
     }
 }
 
@@ -112,7 +123,7 @@ TEST_CASE("BitTorrentClient::execute_loop", "[silkworm][snapshot][bittorrent]") 
         std::thread{[&client]() { client.execute_loop(); }}.join();
     }
 
-    SECTION("not-empty magnet file on separate thread") {
+    SECTION("nonempty magnet file on separate thread") {
         repo.add_magnet("magnet:?xt=urn:btih:df09957d8a28af3bc5137478885a8003677ca878");
         repo.flush();
         BitTorrentClient client{settings};

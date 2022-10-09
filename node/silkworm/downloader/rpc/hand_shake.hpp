@@ -16,8 +16,9 @@
 
 #pragma once
 
-#include <silkworm/downloader/internals/types.hpp>
-#include <silkworm/downloader/sentry_client.hpp>
+#include <p2psentry/sentry.grpc.pb.h>
+
+#include <silkworm/downloader/internals/grpc_sync_client.hpp>
 
 namespace silkworm::rpc {
 

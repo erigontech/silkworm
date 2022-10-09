@@ -37,6 +37,7 @@ class BlockExchange final : public ActiveComponent {
 
     const ChainConfig& chain_config() const;
     const PreverifiedHashes& preverified_hashes() const;
+    SentryClient& sentry() const;
 
   private:
     using MessageQueue = ConcurrentQueue<std::shared_ptr<Message>>;  // used internally to store new messages

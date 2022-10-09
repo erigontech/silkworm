@@ -21,50 +21,74 @@
 #include <CLI/CLI.hpp>
 
 #include <silkworm/buildinfo.h>
-#include <silkworm/common/directories.hpp>
 #include <silkworm/common/log.hpp>
 #include <silkworm/common/settings.hpp>
+#include <silkworm/concurrency/signal_handler.hpp>
 #include <silkworm/db/access_layer.hpp>
-#include <silkworm/downloader/internals/body_sequence.hpp>
-#include <silkworm/downloader/internals/header_retrieval.hpp>
-#include <silkworm/downloader/stage_headers.hpp>
+#include <silkworm/stagedsync/stage.hpp>
+#include <silkworm/stagedsync/stage_bodies.hpp>
+#include <silkworm/stagedsync/stage_headers.hpp>
 
 #include "common.hpp"
-#include "silkworm/downloader/stage_bodies.hpp"
 
 using namespace silkworm;
+using namespace silkworm::stagedsync;
+
+bool unwind_needed(Stage::Result result) {
+    return (result == Stage::Result::kWrongFork || result == Stage::Result::kInvalidBlock);
+}
+
+bool error_or_abort(Stage::Result result) {
+    return (result == Stage::Result::kUnexpectedError || result == Stage::Result::kAborted);
+}
 
 // stage-loop, forwarding phase
 using LastStage = size_t;
-template <size_t N>
-std::tuple<Stage::Result, LastStage> forward(std::array<Stage*, N> stages, db::RWTxn& txn) {
-    using Status = Stage::Result;
-    Stage::Result result{Status::Unspecified};
+std::tuple<Stage::Result, LastStage> forward(std::vector<Stage*> stages, db::RWTxn& txn) {
+    Stage::Result result{Stage::Result::kUnspecified};
 
-    for (size_t i = 0; i < N; ++i) {
+    for (size_t i = 0; i < stages.size(); ++i) {
         result = stages[i]->forward(txn);
-        if (result == Status::UnwindNeeded) {
+        if (unwind_needed(result)) {
             return {result, i};
         }
     }
-    return {result, N - 1};
+    return {result, stages.size() - 1};
 }
 
 // stage-loop, unwinding phase
-template <size_t N>
-Stage::Result unwind(std::array<Stage*, N> stages, BlockNum unwind_point, LastStage last_stage, db::RWTxn& txn) {
-    using Status = Stage::Result;
-    Stage::Result result{Status::Unspecified};
+Stage::Result unwind(std::vector<Stage*> stages, LastStage last_stage, db::RWTxn& txn) {
+    Stage::Result result{Stage::Result::kUnspecified};
 
     for (size_t i = last_stage; i <= 0; --i) {  // reverse loop
-        result = stages[i]->unwind(txn, unwind_point);
-        if (result == Status::Error) {
+        result = stages[i]->unwind(txn);
+        if (error_or_abort(result)) {
             break;
         }
     }
 
     return result;
 }
+
+// progress log
+class ProgressLog : public ActiveComponent {
+    std::vector<Stage*> stages_;
+
+  public:
+    ProgressLog(std::vector<Stage*>& stages) : stages_(stages) {}
+
+    void execution_loop() override {  // this is only a trick to avoid using asio timers, this is only test code
+        using namespace std::chrono;
+        log::set_thread_name("progress-log  ");
+        while (!is_stopping()) {
+            std::this_thread::sleep_for(30s);
+            for (auto stage : stages_) {
+                auto progress = stage->get_log_progress();
+                log::Message(stage->name(), progress);
+            }
+        }
+    }
+};
 
 // Main
 int main(int argc, char* argv[]) {
@@ -76,18 +100,17 @@ int main(int argc, char* argv[]) {
     int return_value = 0;
 
     try {
-        NodeSettings node_settings{};
-        node_settings.sentry_api_addr = "127.0.0.1:9091";
+        cmd::SilkwormCoreSettings settings;
+        auto& log_settings = settings.log_settings;
+        auto& node_settings = settings.node_settings;
 
-        log::Settings log_settings;
         log_settings.log_threads = true;
         log_settings.log_file = "downloader.log";
         log_settings.log_verbosity = log::Level::kInfo;
         log_settings.log_thousands_sep = '\'';
+        log::set_thread_name("main          ");
 
         // test & measurement only parameters [to remove]
-        BodySequence::kMaxBlocksPerMessage = 128;
-        BodySequence::kPerPeerMaxOutstandingRequests = 4;
         int requestDeadlineSeconds = 30;     // BodySequence::kRequestDeadline = std::chrono::seconds(30);
         int noPeerDelayMilliseconds = 1000;  // BodySequence::kNoPeerDelay = std::chrono::milliseconds(1000)
 
@@ -109,7 +132,7 @@ int main(int argc, char* argv[]) {
         // test & measurement only parameters end
 
         // Command line parsing
-        cmd::parse_silkworm_command_line(app, argc, argv, log_settings, node_settings);
+        cmd::parse_silkworm_command_line(app, argc, argv, settings);
 
         log::init(log_settings);
         log::set_thread_name("stage-loop    ");
@@ -134,19 +157,8 @@ int main(int argc, char* argv[]) {
         // Database access
         mdbx::env_managed db = db::open_env(node_settings.chaindata_env_config);
 
-        // Node current status
-        HeaderRetrieval headers(db::ROAccess{db});
-        auto [head_hash, head_td] = headers.head_hash_and_total_difficulty();
-        auto head_height = headers.head_height();
-
-        log::Message("Chain/db status", {"head hash", head_hash.to_hex()});
-        log::Message("Chain/db status", {"head td", intx::to_string(head_td)});
-        log::Message("Chain/db status", {"head height", to_string(head_height)});
-
         // Sentry client - connects to sentry
-        SentryClient sentry{node_settings.sentry_api_addr};
-        sentry.set_status(head_hash, head_td, node_settings.chain_config.value());
-        sentry.hand_shake();
+        SentryClient sentry{node_settings.external_sentry_addr, db::ROAccess{db}, node_settings.chain_config.value()};
         auto message_receiving = std::thread([&sentry]() { sentry.execution_loop(); });
         auto stats_receiving = std::thread([&sentry]() { sentry.stats_receiving_loop(); });
 
@@ -155,18 +167,36 @@ int main(int argc, char* argv[]) {
         auto block_downloading = std::thread([&block_exchange]() { block_exchange.execution_loop(); });
 
         // Stages shared state
-        Stage::Status shared_status;
-        shared_status.first_sync = true;  // = starting up silkworm
+        SyncContext shared_status;
+        shared_status.is_first_cycle = true;  // = starting up silkworm
         db::RWAccess db_access(db);
 
         // Stages 1 & 2 - Headers and bodies downloading - example code
-        HeadersStage header_stage{shared_status, block_exchange};
-        BodiesStage body_stage{shared_status, block_exchange};
+        HeadersStage header_stage{&shared_status, block_exchange, &node_settings};
+        BodiesStage body_stage{&shared_status, block_exchange, &node_settings};
+
+        header_stage.set_log_prefix("[1/2 Headers]");
+        body_stage.set_log_prefix("[2/2 Bodies]");
+
+        // Trap os signals
+        SignalHandler::init();
+        //        SignalHandler::init([&](int) {
+        //            log::Info() << "Requesting threads termination\n";
+        //            header_stage.stop();
+        //            body_stage.stop();
+        //            block_exchange.stop();
+        //            sentry.stop();
+        //        });
 
         // Sample stage loop with 2 stages
-        std::array<Stage*, 2> stages = {&header_stage, &body_stage};
+        std::vector<Stage*> stages = {&header_stage, &body_stage};
 
-        Stage::Result result{Stage::Result::Unspecified};
+        ProgressLog progress_log(stages);
+        auto progress_displaying = std::thread([&progress_log]() {
+            progress_log.execution_loop();
+        });
+
+        Stage::Result result{Stage::Result::kUnspecified};
         size_t last_stage = 0;
 
         do {
@@ -174,22 +204,32 @@ int main(int argc, char* argv[]) {
 
             std::tie(result, last_stage) = forward(stages, txn);
 
-            if (result == Stage::Result::UnwindNeeded) {
-                result = unwind(stages, *(shared_status.unwind_point), last_stage, txn);
+            if (unwind_needed(result)) {
+                result = unwind(stages, last_stage, txn);
             }
 
-            shared_status.first_sync = false;
-        } while (result != Stage::Result::Error);
+            shared_status.is_first_cycle = false;
+        } while (!error_or_abort(result) && !SignalHandler::signalled());
 
-        cout << "Downloader stage-loop ended\n";
+        log::Info() << "Downloader stage-loop ended\n";
 
+        // Signal exiting
+        progress_log.stop();
+        header_stage.stop();
+        body_stage.stop();
+        block_exchange.stop();
         // Wait threads termination
-        block_exchange.stop();  // signal exiting
+        log::Info() << "Waiting threads termination\n";
+        progress_displaying.join();
+        block_downloading.join();
         message_receiving.join();
         stats_receiving.join();
-        block_downloading.join();
 
+        log::Info() << "Closing db\n";
         db.close();
+
+        log::Info() << "Downloader terminated\n";
+
     } catch (const CLI::ParseError& ex) {
         return_value = app.exit(ex);
     } catch (std::exception& e) {

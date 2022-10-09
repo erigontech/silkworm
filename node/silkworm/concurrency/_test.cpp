@@ -70,6 +70,27 @@ TEST_CASE("Worker") {
         REQUIRE(worker.has_exception() == true);
         REQUIRE_THROWS(worker.rethrow());
     }
+
+    SECTION("Stop when already exited") {
+        ThreadWorker worker(true);
+        REQUIRE(worker.get_state() == Worker::State::kStopped);
+        worker.start(true);
+        REQUIRE(worker.get_state() == Worker::State::kKickWaiting);
+        worker.kick();
+        std::this_thread::sleep_for(std::chrono::milliseconds(50));
+        REQUIRE(worker.get_state() == Worker::State::kStopped);  // likely
+        worker.stop(true);
+        REQUIRE(worker.get_state() == Worker::State::kStopped);
+    }
+
+    SECTION("Stop while waiting for kick") {
+        ThreadWorker worker(false);
+        REQUIRE(worker.get_state() == Worker::State::kStopped);
+        worker.start(true);
+        REQUIRE(worker.get_state() == Worker::State::kKickWaiting);
+        worker.stop(true);
+        REQUIRE(worker.get_state() == Worker::State::kStopped);
+    }
 }
 
 TEST_CASE("Signal Handler") {

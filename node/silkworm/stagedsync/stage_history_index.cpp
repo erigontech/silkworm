@@ -21,8 +21,8 @@
 
 namespace silkworm::stagedsync {
 
-StageResult HistoryIndex::forward(db::RWTxn& txn) {
-    StageResult ret{StageResult::kSuccess};
+Stage::Result HistoryIndex::forward(db::RWTxn& txn) {
+    Stage::Result ret{Stage::Result::kSuccess};
     operation_ = OperationType::Forward;
     try {
         throw_if_stopping();
@@ -38,7 +38,7 @@ StageResult HistoryIndex::forward(db::RWTxn& txn) {
             return ret;
         } else if (previous_progress > target_progress) {
             // Something bad had happened.  Maybe we need to unwind ?
-            throw StageError(StageResult::kInvalidProgress,
+            throw StageError(Stage::Result::kInvalidProgress,
                              "HistoryIndex progress " + std::to_string(previous_progress) +
                                  " greater than Execution progress " + std::to_string(target_progress));
         }
@@ -78,31 +78,31 @@ StageResult HistoryIndex::forward(db::RWTxn& txn) {
     } catch (const StageError& ex) {
         log::Error(log_prefix_,
                    {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
-        ret = static_cast<StageResult>(ex.err());
+        ret = static_cast<Stage::Result>(ex.err());
     } catch (const mdbx::exception& ex) {
         log::Error(log_prefix_,
                    {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
-        ret = StageResult::kDbError;
+        ret = Stage::Result::kDbError;
     } catch (const std::exception& ex) {
         log::Error(log_prefix_,
                    {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
-        ret = StageResult::kUnexpectedError;
+        ret = Stage::Result::kUnexpectedError;
     } catch (...) {
         log::Error(log_prefix_,
                    {"function", std::string(__FUNCTION__), "exception", "unexpected and undefined"});
-        ret = StageResult::kUnexpectedError;
+        ret = Stage::Result::kUnexpectedError;
     }
 
     collector_.reset();
     operation_ = OperationType::None;
-    return is_stopping() ? StageResult::kAborted : ret;
+    return is_stopping() ? Stage::Result::kAborted : ret;
 }
 
-StageResult HistoryIndex::unwind(db::RWTxn& txn) {
-    StageResult ret{StageResult::kSuccess};
+Stage::Result HistoryIndex::unwind(db::RWTxn& txn) {
+    Stage::Result ret{Stage::Result::kSuccess};
 
-    if (!sync_context_->unwind_to.has_value()) return ret;
-    const BlockNum to{sync_context_->unwind_to.value()};
+    if (!sync_context_->unwind_point.has_value()) return ret;
+    const BlockNum to{sync_context_->unwind_point.value()};
 
     operation_ = OperationType::None;
     try {
@@ -143,28 +143,28 @@ StageResult HistoryIndex::unwind(db::RWTxn& txn) {
     } catch (const StageError& ex) {
         log::Error(log_prefix_,
                    {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
-        ret = static_cast<StageResult>(ex.err());
+        ret = static_cast<Stage::Result>(ex.err());
     } catch (const mdbx::exception& ex) {
         log::Error(log_prefix_,
                    {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
-        ret = StageResult::kDbError;
+        ret = Stage::Result::kDbError;
     } catch (const std::exception& ex) {
         log::Error(log_prefix_,
                    {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
-        ret = StageResult::kUnexpectedError;
+        ret = Stage::Result::kUnexpectedError;
     } catch (...) {
         log::Error(log_prefix_,
                    {"function", std::string(__FUNCTION__), "exception", "unexpected and undefined"});
-        ret = StageResult::kUnexpectedError;
+        ret = Stage::Result::kUnexpectedError;
     }
 
     collector_.reset();
     operation_ = OperationType::None;
-    return is_stopping() ? StageResult::kAborted : ret;
+    return is_stopping() ? Stage::Result::kAborted : ret;
 }
 
-StageResult HistoryIndex::prune(db::RWTxn& txn) {
-    StageResult ret{StageResult::kSuccess};
+Stage::Result HistoryIndex::prune(db::RWTxn& txn) {
+    Stage::Result ret{Stage::Result::kSuccess};
     operation_ = OperationType::Prune;
     try {
         throw_if_stopping();
@@ -216,26 +216,26 @@ StageResult HistoryIndex::prune(db::RWTxn& txn) {
     } catch (const StageError& ex) {
         log::Error(log_prefix_,
                    {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
-        ret = static_cast<StageResult>(ex.err());
+        ret = static_cast<Stage::Result>(ex.err());
     } catch (const mdbx::exception& ex) {
         log::Error(log_prefix_,
                    {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
-        ret = StageResult::kDbError;
+        ret = Stage::Result::kDbError;
     } catch (const std::exception& ex) {
         log::Error(log_prefix_,
                    {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
-        ret = StageResult::kUnexpectedError;
+        ret = Stage::Result::kUnexpectedError;
     } catch (...) {
         log::Error(log_prefix_,
                    {"function", std::string(__FUNCTION__), "exception", "unexpected and undefined"});
-        ret = StageResult::kUnexpectedError;
+        ret = Stage::Result::kUnexpectedError;
     }
 
     operation_ = OperationType::None;
     return ret;
 }
 
-StageResult HistoryIndex::forward_impl(db::RWTxn& txn, const BlockNum from, const BlockNum to, const bool storage) {
+Stage::Result HistoryIndex::forward_impl(db::RWTxn& txn, const BlockNum from, const BlockNum to, const bool storage) {
     const db::MapConfig source_config{storage ? db::table::kStorageChangeSet : db::table::kAccountChangeSet};
     const db::MapConfig target_config{storage ? db::table::kStorageHistory : db::table::kAccountHistory};
     const size_t target_key_size{kAddressLength + (storage ? kHashLength : 0)};
@@ -268,10 +268,10 @@ StageResult HistoryIndex::forward_impl(db::RWTxn& txn, const BlockNum from, cons
     db::stages::write_stage_progress(
         *txn, (storage ? db::stages::kStorageHistoryIndexKey : db::stages::kAccountHistoryIndexKey), to);
 
-    return StageResult::kSuccess;
+    return Stage::Result::kSuccess;
 }
 
-StageResult HistoryIndex::unwind_impl(db::RWTxn& txn, const BlockNum from, const BlockNum to, const bool storage) {
+Stage::Result HistoryIndex::unwind_impl(db::RWTxn& txn, const BlockNum from, const BlockNum to, const bool storage) {
     const db::MapConfig source_config{storage ? db::table::kStorageChangeSet : db::table::kAccountChangeSet};
     const db::MapConfig target_config{storage ? db::table::kStorageHistory : db::table::kAccountHistory};
 
@@ -300,10 +300,10 @@ StageResult HistoryIndex::unwind_impl(db::RWTxn& txn, const BlockNum from, const
     db::stages::write_stage_progress(
         *txn, (storage ? db::stages::kStorageHistoryIndexKey : db::stages::kAccountHistoryIndexKey), to);
 
-    return StageResult::kSuccess;
+    return Stage::Result::kSuccess;
 }
 
-StageResult HistoryIndex::prune_impl(db::RWTxn& txn, const BlockNum threshold, const BlockNum to, const bool storage) {
+Stage::Result HistoryIndex::prune_impl(db::RWTxn& txn, const BlockNum threshold, const BlockNum to, const bool storage) {
     const db::MapConfig table_config{storage ? db::table::kStorageHistory : db::table::kAccountHistory};
 
     std::unique_lock log_lck(sl_mutex_);
@@ -326,7 +326,7 @@ StageResult HistoryIndex::prune_impl(db::RWTxn& txn, const BlockNum threshold, c
     db::stages::write_stage_prune_progress(
         *txn, (storage ? db::stages::kStorageHistoryIndexKey : db::stages::kAccountHistoryIndexKey), to);
 
-    return StageResult::kSuccess;
+    return Stage::Result::kSuccess;
 }
 
 void HistoryIndex::collect_bitmaps_from_changeset(db::RWTxn& txn, const db::MapConfig& source_config,

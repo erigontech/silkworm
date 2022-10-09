@@ -17,10 +17,10 @@
 #include "sentry_client.hpp"
 
 #include <silkworm/common/log.hpp>
+#include <silkworm/downloader/internals/header_retrieval.hpp>
 #include <silkworm/downloader/rpc/hand_shake.hpp>
 #include <silkworm/downloader/rpc/peer_count.hpp>
 #include <silkworm/downloader/rpc/receive_messages.hpp>
-#include <silkworm/downloader/rpc/receive_peer_stats.hpp>
 #include <silkworm/downloader/rpc/set_status.hpp>
 
 namespace silkworm {
@@ -33,115 +33,164 @@ static std::shared_ptr<grpc::Channel> create_custom_channel(const std::string& s
     return grpc::CreateCustomChannel(sentry_addr, grpc::InsecureChannelCredentials(), custom_args);
 }
 
-SentryClient::SentryClient(const std::string& sentry_addr)
-    : base_t(create_custom_channel(sentry_addr)) {
-    log::Info() << "SentryClient, connecting to remote sentry...";
+SentryClient::SentryClient(const std::string& sentry_addr, const db::ROAccess& dba, const ChainConfig& cc)
+    : base_t(create_custom_channel(sentry_addr)),
+      sentry_addr_{sentry_addr},
+      db_access_{dba},
+      chain_config_{cc} {
 }
 
-SentryClient::Scope SentryClient::scope(const sentry::InboundMessage& message) {
+rpc::ReceiveMessages::Scope SentryClient::scope(const sentry::InboundMessage& message) {
     switch (message.id()) {
         case sentry::MessageId::BLOCK_HEADERS_66:
         case sentry::MessageId::BLOCK_BODIES_66:
         case sentry::MessageId::NEW_BLOCK_HASHES_66:
         case sentry::MessageId::NEW_BLOCK_66:
-            return SentryClient::Scope::BlockAnnouncements;
+            return rpc::ReceiveMessages::Scope::BlockAnnouncements;
         case sentry::MessageId::GET_BLOCK_HEADERS_66:
         case sentry::MessageId::GET_BLOCK_BODIES_66:
-            return SentryClient::Scope::BlockRequests;
+            return rpc::ReceiveMessages::Scope::BlockRequests;
         default:
-            return SentryClient::Scope::Other;
+            return rpc::ReceiveMessages::Scope::Other;
     }
 }
 
-void SentryClient::subscribe(Scope scope, subscriber_t callback) { subscribers_[scope].push_back(std::move(callback)); }
-
 void SentryClient::publish(const sentry::InboundMessage& message) {
-    auto subscribers = subscribers_[scope(message)];
-    for (auto& subscriber : subscribers) {
-        subscriber(message);
+    switch (scope(message)) {
+        case rpc::ReceiveMessages::Scope::BlockRequests:
+            requests_subscription(message);
+            break;
+        case rpc::ReceiveMessages::Scope::BlockAnnouncements:
+            announcements_subscription(message);
+            break;
+        default:
+            rest_subscription(message);
     }
 }
 
 void SentryClient::set_status(Hash head_hash, BigInt head_td, const ChainConfig& chain_config) {
     rpc::SetStatus set_status{chain_config, head_hash, head_td};
+    set_status.timeout(std::chrono::seconds(1));
     exec_remotely(set_status);
     SILK_TRACE << "SentryClient, set_status sent";
 }
 
+void SentryClient::set_status() {
+    HeaderRetrieval headers(db_access_);
+    auto [head_hash, head_td] = headers.head_hash_and_total_difficulty();
+    auto head_height = headers.head_height();
+    headers.close();
+
+    log::Debug("Chain/db status", {"head hash", head_hash.to_hex()});
+    log::Debug("Chain/db status", {"head td", intx::to_string(head_td)});
+    log::Debug("Chain/db status", {"head height", std::to_string(head_height)});
+
+    set_status(head_hash, head_td, chain_config_);
+}
+
 void SentryClient::hand_shake() {
-    rpc::HandShake hand_shake;
-    exec_remotely(hand_shake);
+    auto rpc = std::make_shared<rpc::HandShake>();
+    std::atomic_store(&handshake_, rpc);
+    exec_remotely(*handshake_);
 
     SILK_TRACE << "SentryClient, hand_shake sent";
-    sentry::HandShakeReply reply = hand_shake.reply();
+    sentry::HandShakeReply reply = handshake_->reply();
 
     sentry::Protocol supported_protocol = reply.protocol();
     if (supported_protocol != sentry::Protocol::ETH66) {
-        log::Critical() << "SentryClient: sentry do not support eth/66 protocol, is stopping...";
+        log::Critical("SentryClient") << "remote sentry do not support eth/66 protocol, stopping...";
         stop();
         throw SentryClientException("SentryClient exception, cause: sentry do not support eth/66 protocol");
     }
 }
 
 void SentryClient::execution_loop() {
+    using RMS = rpc::ReceiveMessages::Scope;
+
     log::set_thread_name("sentry-recv   ");
 
-    // send a message subscription
-    rpc::ReceiveMessages message_subscription(Scope::BlockAnnouncements | Scope::BlockRequests);
-    exec_remotely(message_subscription);
+    while (!is_stopping()) {
+        try {
+            log::Info("SentryClient", {"remote", sentry_addr_}) << " connecting ...";
 
-    // receive messages
-    while (!is_stopping() && message_subscription.receive_one_reply()) {
-        const auto& message = message_subscription.reply();
+            // send current status of the chain
+            hand_shake();
+            set_status();
 
-        // SILK_TRACE << "SentryClient received message " << *message;
+            log::Info("SentryClient", {"remote", sentry_addr_}) << " connected";
 
-        publish(message);
+            // send a message subscription
+            auto rpc = std::make_shared<rpc::ReceiveMessages>(RMS::BlockAnnouncements | RMS::BlockRequests);
+            std::atomic_store(&receive_messages_, rpc);
+
+            exec_remotely(*receive_messages_);
+
+            // receive messages
+            while (!is_stopping() && receive_messages_->receive_one_reply()) {
+                const auto& message = receive_messages_->reply();
+
+                publish(message);
+            }
+
+        } catch (const std::exception& e) {
+            if (!is_stopping()) log::Error("SentryClient") << "exception: " << e.what();
+        }
     }
 
     // note: do we need to handle connection loss with an outer loop that wait and then re-try hand_shake and so on?
     // (we would redo set_status & hand-shake too)
+    log::Warning("SentryClient") << "execution loop is stopping...";
     stop();
-    log::Warning() << "SentryClient execution loop is stopping...";
 }
 
 void SentryClient::stats_receiving_loop() {
     log::set_thread_name("sentry-stats  ");
 
-    // send a stats subscription
-    rpc::ReceivePeerStats receive_peer_stats;
-    exec_remotely(receive_peer_stats);
+    while (!is_stopping()) {
+        try {
+            while (!is_stopping() && !is_connected())
+                continue;
 
-    // ask the remote sentry about the current active peers
-    count_active_peers();
-    log::Info() << "SentryClient, " << active_peers_ << " active peers";
+            // send a stats subscription
+            auto rpc = std::make_shared<rpc::ReceivePeerStats>();
+            std::atomic_store(&receive_peer_stats_, rpc);
 
-    // receive stats
-    while (!is_stopping() && receive_peer_stats.receive_one_reply()) {
-        const sentry::PeerEvent& stat = receive_peer_stats.reply();
+            exec_remotely(*receive_peer_stats_);
 
-        auto peerId = bytes_from_H512(stat.peer_id());
-        const char* event = "";
-        if (stat.event_id() == sentry::PeerEvent::Connect) {
-            event = "connected";
-            active_peers_++;
-        } else {
-            event = "disconnected";
-            if (active_peers_ > 0) active_peers_--;  // workaround, to fix this we need to improve the interface
-        }                                            // or issue a count_active_peers()
+            // ask the remote sentry about the current active peers
+            count_active_peers();
+            log::Info("SentryClient") << active_peers_ << " active peers";
 
-        log::Info() << "Peer " << human_readable_id(peerId) << " " << event << ", active " << active_peers_;
+            // receive stats
+            while (!is_stopping() && receive_peer_stats_->receive_one_reply()) {
+                const sentry::PeerEvent& stat = receive_peer_stats_->reply();
+
+                auto peerId = bytes_from_H512(stat.peer_id());
+                const char* event = "";
+                if (stat.event_id() == sentry::PeerEvent::Connect) {
+                    event = "connected";
+                    active_peers_++;
+                } else {
+                    event = "disconnected";
+                    if (active_peers_ > 0) active_peers_--;  // workaround, to fix this we need to improve the interface
+                }                                            // or issue a count_active_peers()
+
+                log::Debug("SentryClient") << "Peer " << human_readable_id(peerId) << " " << event << ", active " << active_peers_;
+            }
+
+        } catch (const std::exception& e) {
+            if (!is_stopping()) log::Warning("SentryClient") << "exception: " << e.what();
+        }
     }
 
+    log::Warning("SentryClient") << "stats loop is stopping...";
     stop();
-    log::Warning() << "SentryClient stats loop is stopping...";
 }
 
 uint64_t SentryClient::count_active_peers() {
-    using namespace std::chrono_literals;
     rpc::PeerCount rpc;
 
-    rpc.timeout(1s);
+    rpc.timeout(std::chrono::seconds(1));
     rpc.do_not_throw_on_failure();
 
     exec_remotely(rpc);
@@ -159,6 +208,20 @@ uint64_t SentryClient::count_active_peers() {
 
 uint64_t SentryClient::active_peers() {
     return active_peers_.load();
+}
+
+bool SentryClient::stop() {
+    bool expected = Stoppable::stop();
+    auto receive_messages = std::atomic_load(&receive_messages_);
+    if (receive_messages)
+        receive_messages->try_cancel();
+    auto receive_peer_stats = std::atomic_load(&receive_peer_stats_);
+    if (receive_peer_stats)
+        receive_peer_stats->try_cancel();
+    auto handshake = std::atomic_load(&handshake_);
+    if (handshake)
+        handshake->try_cancel();
+    return expected;
 }
 
 }  // namespace silkworm

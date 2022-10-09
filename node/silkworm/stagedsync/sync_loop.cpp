@@ -19,9 +19,11 @@
 #include <boost/format.hpp>
 
 #include <silkworm/stagedsync/stage_blockhashes.hpp>
+#include <silkworm/stagedsync/stage_bodies.hpp>
 #include <silkworm/stagedsync/stage_execution.hpp>
 #include <silkworm/stagedsync/stage_finish.hpp>
 #include <silkworm/stagedsync/stage_hashstate.hpp>
+#include <silkworm/stagedsync/stage_headers.hpp>
 #include <silkworm/stagedsync/stage_history_index.hpp>
 #include <silkworm/stagedsync/stage_interhashes.hpp>
 #include <silkworm/stagedsync/stage_log_index.hpp>
@@ -30,13 +32,22 @@
 
 namespace silkworm::stagedsync {
 
+SyncLoop::SyncLoop(silkworm::NodeSettings* node_settings, mdbx::env* chaindata_env, BlockExchange& be)
+    : Worker("SyncLoop"),
+      node_settings_{node_settings},
+      chaindata_env_{chaindata_env},
+      block_exchange_{be},
+      sync_context_{std::make_unique<SyncContext>()} {
+    load_stages();
+}
+
 void SyncLoop::load_stages() {
     /*
      * Stages from Erigon -> Silkworm
-     *  1 StageHeaders ->  Downloader ?
-     *  2 StageCumulativeIndex -> Downloader ?
+     *  1 StageHeaders ->  stagedsync::HeadersStage
+     *  2 StageCumulativeIndex -> TBD
      *  3 StageBlockHashes -> stagedsync::BlockHashes
-     *  4 StageBodies -> Downloader ?
+     *  4 StageBodies -> stagedsync::BodiesStage
      *  5 StageIssuance -> TBD
      *  6 StageSenders -> stagedsync::Senders
      *  7 StageExecuteBlocks -> stagedsync::Execution
@@ -50,6 +61,10 @@ void SyncLoop::load_stages() {
      * 15 StageFinish -> stagedsync::Finish
      */
 
+    stages_.emplace(db::stages::kHeadersKey,
+                    std::make_unique<stagedsync::HeadersStage>(sync_context_.get(), block_exchange_, node_settings_));
+    stages_.emplace(db::stages::kBlockBodiesKey,
+                    std::make_unique<stagedsync::BodiesStage>(sync_context_.get(), block_exchange_, node_settings_));
     stages_.emplace(db::stages::kBlockHashesKey,
                     std::make_unique<stagedsync::BlockHashes>(node_settings_, sync_context_.get()));
     stages_.emplace(db::stages::kSendersKey,
@@ -72,6 +87,9 @@ void SyncLoop::load_stages() {
 
     stages_forward_order_.insert(stages_forward_order_.begin(),
                                  {
+                                     db::stages::kHeadersKey,
+                                     db::stages::kBlockHashesKey,
+                                     db::stages::kBlockBodiesKey,
                                      db::stages::kSendersKey,
                                      db::stages::kExecutionKey,
                                      db::stages::kHashStateKey,
@@ -92,10 +110,11 @@ void SyncLoop::load_stages() {
                                     db::stages::kIntermediateHashesKey,  // Needs to happen after unwinding HashState
                                     db::stages::kExecutionKey,
                                     db::stages::kSendersKey,
+                                    db::stages::kBlockBodiesKey,
                                     db::stages::kBlockHashesKey,  // Decanonify block hashes
+                                    db::stages::kHeadersKey,
                                 });
 }
-
 void SyncLoop::stop(bool wait) {
     for (const auto& [_, stage] : stages_) {
         if (!stage->is_stopping()) {
@@ -129,7 +148,7 @@ void SyncLoop::work() {
             mdbx::slice key(db::stages::kUnwindKey);
             auto data{source.find(key, /*throw_notfound=*/false)};
             if (data && data.value.size() == sizeof(BlockNum)) {
-                sync_context_->unwind_to = endian::load_big_u64(db::from_slice(data.value).data());
+                sync_context_->unwind_point = endian::load_big_u64(db::from_slice(data.value).data());
             }
         }
 
@@ -165,14 +184,18 @@ void SyncLoop::work() {
             }
 
             // Run forward
-            if (sync_context_->unwind_to.has_value() == false) {
+            if (!sync_context_->unwind_point.has_value()) {
                 bool should_end_loop{false};
-                const auto forward_result{run_cycle_forward(*cycle_txn, log_timer)};
+
+                const auto forward_result = run_cycle_forward(*cycle_txn, log_timer);
+
                 switch (forward_result) {
-                    case StageResult::kInvalidBlock:
-                    case StageResult::kWrongStateRoot:
+                    case Stage::Result::kSuccess:
+                    case Stage::Result::kWrongFork:
+                    case Stage::Result::kInvalidBlock:
+                    case Stage::Result::kWrongStateRoot:
                         break;  // Do nothing. Unwind is triggered afterwards
-                    case StageResult::kStoppedByEnv:
+                    case Stage::Result::kStoppedByEnv:
                         should_end_loop = true;
                         break;
                     default:
@@ -182,9 +205,9 @@ void SyncLoop::work() {
             }
 
             // Run unwind if required
-            if (sync_context_->unwind_to.has_value()) {
+            if (sync_context_->unwind_point.has_value()) {
                 // Need to persist unwind point (in case of user stop)
-                db::stages::write_stage_progress(*cycle_txn, db::stages::kUnwindKey, sync_context_->unwind_to.value());
+                db::stages::write_stage_progress(*cycle_txn, db::stages::kUnwindKey, sync_context_->unwind_point.value());
                 if (cycle_in_one_tx) {
                     external_txn.commit();
                     external_txn = chaindata_env_->start_write();
@@ -194,8 +217,10 @@ void SyncLoop::work() {
                 }
 
                 // Run unwind
-                log::Warning("Unwinding", {"to", std::to_string(sync_context_->unwind_to.value())});
-                const auto unwind_result{run_cycle_unwind(*cycle_txn, log_timer)};
+                log::Warning("Unwinding", {"to", std::to_string(sync_context_->unwind_point.value())});
+
+                const auto unwind_result = run_cycle_unwind(*cycle_txn, log_timer);
+
                 success_or_throw(unwind_result);  // Must be successful: no recovery from bad unwinding
 
                 // Erase unwind key from progress table
@@ -204,8 +229,8 @@ void SyncLoop::work() {
                 (void)progress_table.erase(key);
 
                 // Clear context
-                std::swap(sync_context_->unwind_to, sync_context_->previous_unwind_to);
-                sync_context_->unwind_to.reset();
+                std::swap(sync_context_->unwind_point, sync_context_->previous_unwind_point);
+                sync_context_->unwind_point.reset();
                 sync_context_->bad_block_hash.reset();
             }
 
@@ -244,7 +269,7 @@ void SyncLoop::work() {
     log::Info() << "SyncLoop terminated";
 }
 
-StageResult SyncLoop::run_cycle_forward(db::RWTxn& cycle_txn, Timer& log_timer) {
+Stage::Result SyncLoop::run_cycle_forward(db::RWTxn& cycle_txn, Timer& log_timer) {
     StopWatch stages_stop_watch(true);
     try {
         // Force to stop at any particular stage ?
@@ -264,18 +289,18 @@ StageResult SyncLoop::run_cycle_forward(db::RWTxn& cycle_txn, Timer& log_timer) 
             current_stage_->second->set_log_prefix(get_log_prefix());
 
             // Check if we have to stop due to environment variable
-            if (stop_stage_name && !iequals(stop_stage_name, stage_id)) {
+            if (stop_stage_name && iequals(stop_stage_name, stage_id)) {
                 stop();
                 log::Warning("Stopping ...", {"STOP_BEFORE_STAGE", stop_stage_name, "hit", "true"});
-                return StageResult::kStoppedByEnv;
+                return Stage::Result::kStoppedByEnv;
             }
 
             log_timer.reset();  // Resets the interval for next log line from now
             const auto stage_result{current_stage_->second->forward(cycle_txn)};
-            if (stage_result != StageResult::kSuccess) {
+            if (stage_result != Stage::Result::kSuccess) {
                 log::Error(get_log_prefix(),
                            {"op", "Forward",
-                            "returned", std::string(magic_enum::enum_name<StageResult>(stage_result))});
+                            "returned", std::string(magic_enum::enum_name<Stage::Result>(stage_result))});
                 return stage_result;
             }
 
@@ -287,15 +312,15 @@ StageResult SyncLoop::run_cycle_forward(db::RWTxn& cycle_txn, Timer& log_timer) 
             }
         }
 
-        return is_stopping() ? StageResult::kAborted : StageResult::kSuccess;
+        return is_stopping() ? Stage::Result::kAborted : Stage::Result::kSuccess;
 
     } catch (const std::exception& ex) {
         log::Error(get_log_prefix(), {"exception", std::string(ex.what())});
-        return StageResult::kUnexpectedError;
+        return Stage::Result::kUnexpectedError;
     }
 }
 
-StageResult SyncLoop::run_cycle_unwind(db::RWTxn& cycle_txn, Timer& log_timer) {
+Stage::Result SyncLoop::run_cycle_unwind(db::RWTxn& cycle_txn, Timer& log_timer) {
     StopWatch stages_stop_watch(true);
     try {
         current_stages_count_ = stages_unwind_order_.size();
@@ -311,10 +336,10 @@ StageResult SyncLoop::run_cycle_unwind(db::RWTxn& cycle_txn, Timer& log_timer) {
 
             log_timer.reset();  // Resets the interval for next log line from now
             const auto stage_result{current_stage_->second->unwind(cycle_txn)};
-            if (stage_result != StageResult::kSuccess) {
+            if (stage_result != Stage::Result::kSuccess) {
                 log::Error(get_log_prefix(),
                            {"op", "Unwind",
-                            "returned", std::string(magic_enum::enum_name<StageResult>(stage_result))});
+                            "returned", std::string(magic_enum::enum_name<Stage::Result>(stage_result))});
                 return stage_result;
             }
 
@@ -326,15 +351,15 @@ StageResult SyncLoop::run_cycle_unwind(db::RWTxn& cycle_txn, Timer& log_timer) {
             }
         }
 
-        return is_stopping() ? StageResult::kAborted : StageResult::kSuccess;
+        return is_stopping() ? Stage::Result::kAborted : Stage::Result::kSuccess;
 
     } catch (const std::exception& ex) {
         log::Error(get_log_prefix(), {"exception", std::string(ex.what())});
-        return StageResult::kUnexpectedError;
+        return Stage::Result::kUnexpectedError;
     }
 }
 
-StageResult SyncLoop::run_cycle_prune(db::RWTxn& cycle_txn, Timer& log_timer) {
+Stage::Result SyncLoop::run_cycle_prune(db::RWTxn& cycle_txn, Timer& log_timer) {
     StopWatch stages_stop_watch(true);
     try {
         current_stages_count_ = stages_forward_order_.size();
@@ -350,10 +375,10 @@ StageResult SyncLoop::run_cycle_prune(db::RWTxn& cycle_txn, Timer& log_timer) {
 
             log_timer.reset();  // Resets the interval for next log line from now
             const auto stage_result{current_stage_->second->prune(cycle_txn)};
-            if (stage_result != StageResult::kSuccess) {
+            if (stage_result != Stage::Result::kSuccess) {
                 log::Error(get_log_prefix(),
                            {"op", "Prune",
-                            "returned", std::string(magic_enum::enum_name<StageResult>(stage_result))});
+                            "returned", std::string(magic_enum::enum_name<Stage::Result>(stage_result))});
                 return stage_result;
             }
 
@@ -365,11 +390,11 @@ StageResult SyncLoop::run_cycle_prune(db::RWTxn& cycle_txn, Timer& log_timer) {
             }
         }
 
-        return is_stopping() ? StageResult::kAborted : StageResult::kSuccess;
+        return is_stopping() ? Stage::Result::kAborted : Stage::Result::kSuccess;
 
     } catch (const std::exception& ex) {
         log::Error(get_log_prefix(), {"exception", std::string(ex.what())});
-        return StageResult::kUnexpectedError;
+        return Stage::Result::kUnexpectedError;
     }
 }
 

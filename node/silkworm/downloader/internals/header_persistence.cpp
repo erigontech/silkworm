@@ -27,13 +27,14 @@ namespace silkworm {
 
 HeaderPersistence::HeaderPersistence(db::RWTxn& tx) : tx_(tx), canonical_cache_(kCanonicalCacheSize) {
     BlockNum headers_height = db::stages::read_stage_progress(tx, db::stages::kHeadersKey);
-    auto head_header_hash = db::read_canonical_hash(tx, headers_height);
-    if (!head_header_hash) {
-        update_canonical_chain(headers_height, *db::read_head_header_hash(tx));
+    auto headers_hash = db::read_canonical_hash(tx, headers_height);
+    if (!headers_hash) {
+        headers_hash = db::read_head_header_hash(tx);  // here we assume: headers_height = height(head_header)
+        update_canonical_chain(headers_height, *headers_hash);
         repaired_ = true;
     }
 
-    std::optional<BigInt> headers_head_td = db::read_total_difficulty(tx, headers_height, *head_header_hash);
+    std::optional<BigInt> headers_head_td = db::read_total_difficulty(tx, headers_height, *headers_hash);
     if (!headers_head_td)
         throw std::logic_error("total difficulty of canonical hash at height " + std::to_string(headers_height) +
                                " not found in db");
@@ -41,7 +42,7 @@ HeaderPersistence::HeaderPersistence(db::RWTxn& tx) : tx_(tx), canonical_cache_(
     local_td_ = *headers_head_td;
     unwind_point_ = headers_height;
     initial_in_db_ = headers_height;  // in Erigon is highest_in_db_
-    highest_in_db_ = headers_height;
+    highest_in_db_ = headers_height;  // TODO (mike) set highest_hash_?
 }
 
 bool HeaderPersistence::best_header_changed() const { return new_canonical_; }
@@ -81,7 +82,7 @@ void HeaderPersistence::persist(const Headers& headers) {
 void HeaderPersistence::persist(const BlockHeader& header) {  // try to modularize this method
     if (finished_) {
         std::string error_message = "HeaderPersistence: persist method called on instance in 'finished' state";
-        log::Error() << error_message;
+        log::Error("HeaderStage") << error_message;
         throw std::logic_error(error_message);
     }
 
@@ -99,7 +100,7 @@ void HeaderPersistence::persist(const BlockHeader& header) {  // try to modulari
     if (!parent) {
         std::string error_message = "HeaderPersistence: could not find parent with hash " + to_hex(header.parent_hash) +
                                     " and height " + std::to_string(height - 1) + " for header " + hash.to_hex();
-        log::Error() << error_message;
+        log::Error("HeaderStage") << error_message;
         throw std::logic_error(error_message);
     }
 
@@ -109,7 +110,7 @@ void HeaderPersistence::persist(const BlockHeader& header) {  // try to modulari
         std::string error_message = "HeaderPersistence: parent's total difficulty not found with hash " +
                                     to_hex(header.parent_hash) + " and height " + std::to_string(height - 1) +
                                     " for header " + hash.to_hex();
-        log::Error() << error_message;
+        log::Error("HeaderStage") << error_message;
         throw std::logic_error(error_message);  // unexpected condition, bug?
     }
     auto td = *parent_td + header.difficulty;  // calculated total difficulty of this header
@@ -209,7 +210,7 @@ void HeaderPersistence::update_canonical_chain(BlockNum height, Hash hash) {  //
                 "HeaderPersistence: fix canonical chain failed at"
                 " ancestor=" +
                 std::to_string(ancestor_height) + " hash=" + ancestor_hash.to_hex();
-            log::Error() << msg;
+            log::Error("HeaderStage") << msg;
             throw std::logic_error(msg);
         }
 
@@ -225,22 +226,20 @@ void HeaderPersistence::finish() {
 
     if (unwind_needed()) return;
 
-    if (highest_height() != 0) {
+    if (highest_height() != initial_height()) {
         update_canonical_chain(highest_height(), highest_hash());
     }
 
     finished_ = true;
 }
 
-std::set<Hash> HeaderPersistence::remove_headers(BlockNum unwind_point, std::optional<Hash> bad_block,
-                                                 std::optional<BlockNum>& max_block_num_ok, db::RWTxn& tx) {
-    std::set<Hash> bad_headers;
-    max_block_num_ok.reset();
-
+std::tuple<std::set<Hash>, BlockNum>
+HeaderPersistence::remove_headers(BlockNum unwind_point, std::optional<Hash> bad_block, db::RWTxn& tx) {
     BlockNum headers_height = db::stages::read_stage_progress(tx, db::stages::kHeadersKey);
 
     // todo: the following code changed in Erigon, fix it
 
+    std::set<Hash> bad_headers;
     bool is_bad_block = bad_block.has_value();
     for (BlockNum current_height = headers_height; current_height > unwind_point; current_height--) {
         if (is_bad_block) {
@@ -249,6 +248,8 @@ std::set<Hash> HeaderPersistence::remove_headers(BlockNum unwind_point, std::opt
         }
         db::delete_canonical_hash(tx, current_height);  // do not throw if not found
     }
+
+    BlockNum new_height = unwind_point;
 
     if (is_bad_block) {
         bad_headers.insert(*bad_block);
@@ -261,9 +262,10 @@ std::set<Hash> HeaderPersistence::remove_headers(BlockNum unwind_point, std::opt
         }
 
         db::write_head_header_hash(tx, max_hash);
+        new_height = max_block_num;
     }
 
-    return bad_headers;
+    return {bad_headers, new_height};
 }
 
 }  // namespace silkworm

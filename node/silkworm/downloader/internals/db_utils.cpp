@@ -51,8 +51,7 @@ std::tuple<BlockNum, Hash> header_with_biggest_td(mdbx::txn& txn, const std::set
 
     auto td_cursor = db::open_cursor(txn, db::table::kDifficulty);
 
-    auto find_max = [bad_headers, &max_block_num, &max_hash, &max_td](
-                        ByteView key, ByteView value) {
+    auto find_max = [bad_headers, &max_block_num, &max_hash, &max_td](ByteView key, ByteView value) {
         SILKWORM_ASSERT(key.size() == sizeof(BlockNum) + kHashLength);
 
         Hash hash{key.substr(sizeof(BlockNum))};

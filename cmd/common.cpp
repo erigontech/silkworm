@@ -27,76 +27,59 @@
 
 namespace silkworm::cmd {
 
-struct HumanSizeParserValidator : public CLI::Validator {
-    template <typename T>
-    explicit HumanSizeParserValidator(T min, std::optional<T> max = std::nullopt) {
-        std::stringstream out;
-        out << " in [" << min << " - " << (max.has_value() ? max.value() : "inf") << "]";
-        description(out.str());
-
-        func_ = [min, max](const std::string& value) -> std::string {
-            auto parsed_size{parse_size(value)};
-            if (!parsed_size.has_value()) {
-                return std::string("Value " + value + " is not a parseable size");
-            }
-            auto min_size{parse_size(min).value()};
-            auto max_size{max.has_value() ? parse_size(max.value()).value() : UINT64_MAX};
-            if (parsed_size.value() < min_size || parsed_size.value() > max_size) {
-                return "Value " + value + " not in range " + min + " to " + (max.has_value() ? max.value() : "∞");
-            }
-            return {};
-        };
-    }
-};
-
-struct PruneModeValidator : public CLI::Validator {
-    PruneModeValidator() {
-        func_ = [](const std::string& value) -> std::string {
-            if (value.find_first_not_of("hrtc") != std::string::npos) {
-                return "Value " + value + " contains other characters other than h r t c";
-            }
-            return {};
-        };
-    }
-};
+PruneModeValidator::PruneModeValidator() {
+    func_ = [](const std::string& value) -> std::string {
+        if (value.find_first_not_of("hrtc") != std::string::npos) {
+            return "Value " + value + " contains other characters other than h r t c";
+        }
+        return {};
+    };
+}
 
 IPEndPointValidator::IPEndPointValidator(bool allow_empty) {
-    {
-        func_ = [&allow_empty](const std::string& value) -> std::string {
-            if (value.empty() && allow_empty) {
-                return {};
-            }
-
-            const std::regex pattern(R"(([\da-fA-F\.\:]*)\:([\d]*))");
-            std::smatch matches;
-            if (!std::regex_match(value, matches, pattern)) {
-                return "Value " + value + " is not a valid endpoint";
-            }
-
-            // Validate IP address
-            boost::system::error_code err;
-            boost::asio::ip::make_address(matches[1], err).to_string();
-            if (err) {
-                return "Value " + std::string(matches[1]) + " is not a valid ip address";
-            }
-
-            // Validate port
-            int port{std::stoi(matches[2])};
-            if (port < 1 || port > 65535) {
-                return "Value " + std::string(matches[2]) + " is not a valid listening port";
-            }
-
+    func_ = [&allow_empty](const std::string& value) -> std::string {
+        if (value.empty() && allow_empty) {
             return {};
-        };
-    }
+        }
+
+        const std::regex pattern(R"(([\da-fA-F\.\:]*)\:([\d]*))");
+        std::smatch matches;
+        if (!std::regex_match(value, matches, pattern)) {
+            return "Value " + value + " is not a valid endpoint";
+        }
+
+        // Validate IP address
+        boost::system::error_code err;
+        boost::asio::ip::make_address(matches[1], err).to_string();
+        if (err) {
+            return "Value " + std::string(matches[1]) + " is not a valid ip address";
+        }
+
+        // Validate port
+        int port{std::stoi(matches[2])};
+        if (port < 1 || port > 65535) {
+            return "Value " + std::string(matches[2]) + " is not a valid listening port";
+        }
+
+        return {};
+    };
 }
 
 void add_logging_options(CLI::App& cli, log::Settings& log_settings) {
+    std::map<std::string, log::Level> level_mapping{
+        {"critical", log::Level::kCritical},
+        {"error", log::Level::kError},
+        {"warning", log::Level::kWarning},
+        {"info", log::Level::kInfo},
+        {"debug", log::Level::kDebug},
+        {"trace", log::Level::kTrace},
+    };
     auto& log_opts = *cli.add_option_group("Log", "Logging options");
     log_opts.add_option("--log.verbosity", log_settings.log_verbosity, "Sets log verbosity")
         ->capture_default_str()
-        ->check(CLI::Range(static_cast<uint32_t>(log::Level::kCritical), static_cast<uint32_t>(log::Level::kTrace)))
-        ->default_val(std::to_string(static_cast<uint32_t>(log_settings.log_verbosity)));
+        ->check(CLI::Range(log::Level::kCritical, log::Level::kTrace))
+        ->transform(CLI::Transformer(level_mapping, CLI::ignore_case))
+        ->default_val(log_settings.log_verbosity);
     log_opts.add_flag("--log.stdout", log_settings.log_std_out, "Outputs to std::out instead of std::err");
     log_opts.add_flag("--log.nocolor", log_settings.log_nocolor, "Disable colors on log lines");
     log_opts.add_flag("--log.utc", log_settings.log_utc, "Prints log timings in UTC");
@@ -104,25 +87,69 @@ void add_logging_options(CLI::App& cli, log::Settings& log_settings) {
     log_opts.add_option("--log.file", log_settings.log_file, "Tee all log lines to given file name");
 }
 
+void add_option_chain(CLI::App& cli, uint64_t& network_id) {
+    cli.add_option("--chain", network_id, "Name or ID of the network to join (default: \"mainnet\")")
+        ->transform(CLI::Transformer(get_known_chains_map(), CLI::ignore_case));
+}
+
 void add_option_data_dir(CLI::App& cli, std::filesystem::path& data_dir) {
-    data_dir = DataDirectory::get_default_storage_path();
-    cli.add_option("--datadir", data_dir, "Path to the data directory")->capture_default_str();
+    cli.add_option("--datadir", data_dir, "The path to the blockchain data directory")
+        ->default_val(DataDirectory::get_default_storage_path().string());
+}
+
+void add_option_etherbase(CLI::App& cli, std::string& etherbase_address) {
+    cli.add_option("--etherbase", etherbase_address, "The coinbase address as hex string")
+        ->default_val("");
+}
+
+void add_option_db_max_readers(CLI::App& cli, uint32_t& max_readers) {
+    cli.add_option("--mdbx.max.readers", max_readers, "The maximum number of MDBX readers")
+        ->default_val(silkworm::db::EnvConfig{}.max_readers)
+        ->check(CLI::Range(1, 32767));
+}
+
+void add_option_private_api_address(CLI::App& cli, std::string& private_api_address) {
+    add_option_ip_address(cli, "--private.api.addr", private_api_address,
+                          "Private API network address to serve remote database interface\n"
+                          "An empty string means to not start the listener\n"
+                          "Use the endpoint form i.e. ip-address:port\n"
+                          "DO NOT EXPOSE TO THE INTERNET");
+}
+
+void add_option_sentry_api_address(CLI::App& cli, std::string& sentry_api_address) {
+    add_option_ip_address(cli, "--sentry.api.addr", sentry_api_address, "Sentry api endpoint");
+}
+
+void add_option_ip_address(CLI::App& cli, const std::string& name, std::string& address, const std::string& description) {
+    cli.add_option(name, address, description)
+        ->capture_default_str()
+        ->check(IPEndPointValidator(/*allow_empty=*/true));
 }
 
 void add_option_num_contexts(CLI::App& cli, uint32_t& num_contexts) {
-    cli.add_option("--contexts", num_contexts, "The number of running contexts")->capture_default_str();
+    cli.add_option("--contexts", num_contexts, "The number of execution contexts")
+        ->default_val(std::thread::hardware_concurrency() / 2);
 }
 
 void add_option_wait_mode(CLI::App& cli, silkworm::rpc::WaitMode& wait_mode) {
+    std::map<std::string, silkworm::rpc::WaitMode> wait_mode_mapping{
+        {"blocking", silkworm::rpc::WaitMode::blocking},
+        {"busy_spin", silkworm::rpc::WaitMode::busy_spin},
+        {"sleeping", silkworm::rpc::WaitMode::sleeping},
+        {"yielding", silkworm::rpc::WaitMode::yielding},
+    };
     cli.add_option("--wait.mode", wait_mode, "The waiting mode for execution loops during idle cycles")
         ->capture_default_str()
-        ->check(CLI::Range(static_cast<uint32_t>(silkworm::rpc::WaitMode::blocking),
-                           static_cast<uint32_t>(silkworm::rpc::WaitMode::busy_spin)))
-        ->default_val(std::to_string(static_cast<uint32_t>(silkworm::rpc::WaitMode::blocking)));
+        ->check(CLI::Range(silkworm::rpc::WaitMode::blocking, silkworm::rpc::WaitMode::busy_spin))
+        ->transform(CLI::Transformer(wait_mode_mapping, CLI::ignore_case))
+        ->default_val(silkworm::rpc::WaitMode::blocking);
 }
 
-void parse_silkworm_command_line(CLI::App& cli, int argc, char* argv[], log::Settings& log_settings,
-                                 NodeSettings& node_settings) {
+void parse_silkworm_command_line(CLI::App& cli, int argc, char* argv[], SilkwormCoreSettings& settings) {
+    using namespace silkworm::cmd;
+
+    auto& node_settings = settings.node_settings;
+
     // Node settings
     std::filesystem::path data_dir_path;
     std::string chaindata_max_size_str{human_size(node_settings.chaindata_env_config.max_size)};
@@ -155,39 +182,30 @@ void parse_silkworm_command_line(CLI::App& cli, int argc, char* argv[], log::Set
     cli.add_option("--etl.buffersize", etl_buffer_size_str, "Buffer size for ETL operations")
         ->capture_default_str()
         ->check(HumanSizeParserValidator("64MB", {"1GB"}));
-    cli.add_option("--private.api.addr", node_settings.private_api_addr,
-                   "Private API network address to serve remote database interface\n"
-                   "An empty string means to not start the listener\n"
-                   "Use the endpoint form i.e. ip-address:port\n"
-                   "DO NOT EXPOSE TO THE INTERNET")
-        ->capture_default_str()
-        ->check(IPEndPointValidator(/*allow_empty=*/false));
 
-    cli.add_option("--sentry.api.addr", node_settings.sentry_api_addr, "Sentry api endpoint")
+    add_option_private_api_address(cli, node_settings.private_api_addr);
+
+    // Sentry settings
+    cli.add_option("--sentry.remote.addr", node_settings.external_sentry_addr, "External sentry endpoint")
         ->capture_default_str()
         ->check(IPEndPointValidator(/*allow_empty=*/true));
 
+    add_option_sentry_api_address(cli, node_settings.sentry_api_addr);
+
     cli.add_option("--sync.loop.throttle", node_settings.sync_loop_throttle_seconds,
-                   "Sets the minimum time between sync loop starts (in seconds)")
-        ->capture_default_str();
+                   "Sets the minimum delay between sync loop starts (in seconds)")
+        ->capture_default_str()
+        ->check(CLI::Range(1u, 7200u));
 
     cli.add_option("--sync.loop.log.interval", node_settings.sync_loop_log_interval_seconds,
-                   "Sets the minimum time between sync loop logs (in seconds)")
+                   "Sets the interval between sync loop logs (in seconds)")
         ->capture_default_str()
-        ->check(CLI::Range(5u, 600u));
+        ->check(CLI::Range(10u, 600u));
 
     cli.add_flag("--fakepow", node_settings.fake_pow, "Disables proof-of-work verification");
+
     // Chain options
-    auto chains_map{get_known_chains_map()};
-    auto& chain_opts = *cli.add_option_group("Chain", "Chain selection options");
-    auto chain_opts_chain_name = chain_opts.add_option("--chain", "Name of the network to join (default: \"mainnet\")")
-                                     ->transform(CLI::Transformer(chains_map, CLI::ignore_case));
-    chain_opts
-        .add_option("--networkid", node_settings.network_id,
-                    "Explicitly set network id\n"
-                    "For known networks: use --chain <testnet_name> instead")
-        ->capture_default_str()
-        ->excludes(chain_opts_chain_name);
+    add_option_chain(cli, node_settings.network_id);
 
     // Prune options
     std::string prune_mode;
@@ -227,7 +245,18 @@ void parse_silkworm_command_line(CLI::App& cli, int argc, char* argv[], log::Set
     prune_opts.add_option("--prune.c.before", "Prune call traces data before this block")
         ->check(CLI::Range(0u, UINT32_MAX));
 
+    // Logging options
+    auto& log_settings = settings.log_settings;
     add_logging_options(cli, log_settings);
+
+    // RPC server options
+    auto& server_settings = settings.server_settings;
+
+    uint32_t num_contexts;
+    add_option_num_contexts(cli, num_contexts);
+
+    silkworm::rpc::WaitMode wait_mode;
+    add_option_wait_mode(cli, wait_mode);
 
     cli.parse(argc, argv);
 
@@ -275,13 +304,12 @@ void parse_silkworm_command_line(CLI::App& cli, int argc, char* argv[], log::Set
                              olderHistory, olderReceipts, olderSenders, olderTxIndex, olderCallTraces, beforeHistory,
                              beforeReceipts, beforeSenders, beforeTxIndex, beforeCallTraces);
 
-    // Set chain
-    if (chain_opts_chain_name->count()) {
-        node_settings.network_id = chain_opts_chain_name->as<uint32_t>();
-    }
+    server_settings.set_address_uri(node_settings.private_api_addr);
+    server_settings.set_num_contexts(num_contexts);
+    server_settings.set_wait_mode(wait_mode);
 }
 
-void run_preflight_checklist(NodeSettings& node_settings) {
+void run_preflight_checklist(NodeSettings& node_settings, bool init_if_empty) {
     node_settings.data_directory->deploy();                                  // Ensures all subdirs are present
     bool chaindata_exclusive{node_settings.chaindata_env_config.exclusive};  // Save setting
     {
@@ -308,7 +336,7 @@ void run_preflight_checklist(NodeSettings& node_settings) {
     // Check db is initialized with chain config
     {
         node_settings.chain_config = db::read_chain_config(*tx);
-        if (!node_settings.chain_config.has_value()) {
+        if (!node_settings.chain_config.has_value() && init_if_empty) {
             auto source_data{read_genesis_data(node_settings.network_id)};
             auto genesis_json = nlohmann::json::parse(source_data, nullptr, /* allow_exceptions = */ false);
             if (genesis_json.is_discarded()) {
@@ -442,6 +470,23 @@ void run_preflight_checklist(NodeSettings& node_settings) {
     chaindata_env.close();
     node_settings.chaindata_env_config.exclusive = chaindata_exclusive;
     node_settings.chaindata_env_config.create = false;  // Has already been created
+}
+
+std::string get_node_name_from_build_info(const buildinfo* build_info) {
+    std::string node_name{"silkworm/"};
+    node_name.append(build_info->git_branch);
+    node_name.append(build_info->project_version);
+    node_name.append("/");
+    node_name.append(build_info->system_name);
+    node_name.append("-");
+    node_name.append(build_info->system_processor);
+    node_name.append("_");
+    node_name.append(build_info->build_type);
+    node_name.append("/");
+    node_name.append(build_info->compiler_id);
+    node_name.append("-");
+    node_name.append(build_info->compiler_version);
+    return node_name;
 }
 
 }  // namespace silkworm::cmd

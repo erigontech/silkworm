@@ -21,19 +21,14 @@
 #include <silkworm/common/asio_timer.hpp>
 #include <silkworm/common/stopwatch.hpp>
 #include <silkworm/concurrency/worker.hpp>
-#include <silkworm/stagedsync/common.hpp>
+#include <silkworm/downloader/block_exchange.hpp>
+#include <silkworm/stagedsync/stage.hpp>
 
 namespace silkworm::stagedsync {
 
 class SyncLoop final : public Worker {
   public:
-    explicit SyncLoop(silkworm::NodeSettings* node_settings, mdbx::env* chaindata_env)
-        : Worker("SyncLoop"),
-          node_settings_{node_settings},
-          chaindata_env_{chaindata_env},
-          sync_context_{std::make_unique<SyncContext>()} {
-        load_stages();
-    };
+    explicit SyncLoop(silkworm::NodeSettings*, mdbx::env*, BlockExchange&);
     ~SyncLoop() override = default;
 
     void stop(bool wait = false) final;
@@ -41,9 +36,10 @@ class SyncLoop final : public Worker {
   private:
     silkworm::NodeSettings* node_settings_;      // As being passed by CLI arguments and/or already initialized data
     mdbx::env* chaindata_env_;                   // The actual opened environment
+    BlockExchange& block_exchange_;              // The block downloader
     std::unique_ptr<SyncContext> sync_context_;  // Context shared across stages
-    std::map<const char*, std::unique_ptr<stagedsync::IStage>> stages_;
-    std::map<const char*, std::unique_ptr<stagedsync::IStage>>::iterator current_stage_;
+    std::map<const char*, std::unique_ptr<stagedsync::Stage>> stages_;
+    std::map<const char*, std::unique_ptr<stagedsync::Stage>>::iterator current_stage_;
     std::vector<const char*> stages_forward_order_;
     std::vector<const char*> stages_unwind_order_;
     std::atomic<size_t> current_stages_count_{0};
@@ -53,13 +49,13 @@ class SyncLoop final : public Worker {
     void load_stages();  // Fills the vector with stages
 
     //! \brief Runs a full forward cycle
-    [[nodiscard]] StageResult run_cycle_forward(db::RWTxn& cycle_txn, Timer& log_timer);
+    [[nodiscard]] Stage::Result run_cycle_forward(db::RWTxn& cycle_txn, Timer& log_timer);
 
     //! \brief Runs a full unwind cycle
-    [[nodiscard]] StageResult run_cycle_unwind(db::RWTxn& cycle_txn, Timer& log_timer);
+    [[nodiscard]] Stage::Result run_cycle_unwind(db::RWTxn& cycle_txn, Timer& log_timer);
 
     //! \brief Runs a full prune cycle
-    [[nodiscard]] StageResult run_cycle_prune(db::RWTxn& cycle_txn, Timer& log_timer);
+    [[nodiscard]] Stage::Result run_cycle_prune(db::RWTxn& cycle_txn, Timer& log_timer);
 
     void throttle_next_cycle(const StopWatch::Duration& cycle_duration);  // Delays (if required) next cycle run
     std::string get_log_prefix() const;                                   // Returns the current log lines prefix on behalf of current stage

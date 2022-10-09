@@ -35,6 +35,7 @@ void Worker::start(bool wait) {
 
     thread_ = std::make_unique<std::thread>([&]() {
         log::set_thread_name(name_.c_str());
+        log::Trace("New thread started", {"name", name_}) << std::this_thread::get_id();
         State expected_starting{State::kStarting};
         if (state_.compare_exchange_strong(expected_starting, State::kStarted)) {
             signal_worker_started(this);
@@ -60,8 +61,13 @@ void Worker::start(bool wait) {
 void Worker::stop(bool wait) {
     if (!thread_) return;
 
-    state_.store(State::kStopping);
-    kick();
+    State expected{State::kStarted};
+    if (!state_.compare_exchange_strong(expected, State::kStopping)) {
+        expected = State::kKickWaiting;
+        if (state_.compare_exchange_strong(expected, State::kStopping)) {
+            kick();
+        }
+    }
 
     if (wait) {
         thread_->join();

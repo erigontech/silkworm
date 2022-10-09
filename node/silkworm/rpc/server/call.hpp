@@ -45,15 +45,15 @@ class BaseRpc {
     //! Returns the number of total RPC instances.
     static uint64_t total_count() { return total_count_; }
 
-    BaseRpc(boost::asio::io_context& scheduler) : scheduler_(scheduler) {
+    explicit BaseRpc(boost::asio::io_context& scheduler) : scheduler_(scheduler) {
         ++instance_count_;
         ++total_count_;
-        SILK_TRACE << "BaseRpc::BaseRpc [" << this << "] instances: " << instance_count_ << " total: " << total_count_;
+        SILK_TRACE << "BaseRpc::BaseRpc [" << this << "] instances: " << instance_count() << " total: " << total_count();
     }
 
     virtual ~BaseRpc() {
         --instance_count_;
-        SILK_TRACE << "BaseRpc::~BaseRpc [" << this << "] instances: " << instance_count_ << " total: " << total_count_;
+        SILK_TRACE << "BaseRpc::~BaseRpc [" << this << "] instances: " << instance_count() << " total: " << total_count();
     }
 
     //! Returns a unique identifier of the RPC client for this call.
@@ -127,7 +127,7 @@ class BaseRpc {
     //! Used to access the options and current status of the RPC.
     grpc::ServerContext context_;
 
-    //! Keep track of the total outstanding RPC calls (intentionally signed to spot underflows).
+    //! Keep track of the total outstanding RPC calls (intentionally signed to spot underflow).
     inline static std::atomic_int64_t instance_count_ = 0;
 
     //! Keep track of the total RPC calls.

@@ -118,6 +118,12 @@ class Client {
         call.execute(stub_.get());  // provide the stub to the call, it is the call that know what procedure to execute
     }
 
+    bool is_connected() {
+        bool try_to_connect = true;
+        grpc_connectivity_state state = channel_->GetState(try_to_connect);
+        return (state == GRPC_CHANNEL_READY);
+    }
+
   protected:
     std::shared_ptr<grpc::Channel> channel_;
     std::unique_ptr<typename STUB::Stub> stub_;  // the stub class generated from grpc proto

@@ -25,6 +25,7 @@
 #include <thread>
 #include <vector>
 
+// Disable warnings raised during compilation of libtorrent
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wc++11-compat"
 #pragma GCC diagnostic ignored "-Wshadow"
@@ -80,13 +81,15 @@ class BitTorrentClient {
     explicit BitTorrentClient(BitTorrentSettings settings);
     ~BitTorrentClient();
 
+    //! Run the client execution loop until it is stopped or has finished downloading and seeding is not required
     void execute_loop();
+
+    //! Ask the client to stop execution
     void stop();
 
   protected:
     static std::vector<char> load_file(const std::string& filename);
     static void save_file(const std::string& filename, const std::vector<char>& data);
-    static void delete_file(const std::string& filename);
 
     [[nodiscard]] lt::session_params load_or_create_session_parameters() const;
     [[nodiscard]] std::vector<lt::add_torrent_params> resume_or_create_magnets() const;
@@ -111,7 +114,7 @@ class BitTorrentClient {
     //! The BitTorrent client session
     lt::session session_;
 
-    //! The number of save resume data requests of still outstanding
+    //! The number of save resume data requests still outstanding
     int outstanding_resume_requests_{0};
 
     //! The last time when resume state has been saved

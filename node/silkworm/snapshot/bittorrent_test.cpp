@@ -27,7 +27,6 @@
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 #include <libtorrent/alert_types.hpp>
 #pragma GCC diagnostic pop
-#include <libtorrent/aux_/alert_manager.hpp>
 #include <libtorrent/create_torrent.hpp>
 #include <libtorrent/magnet_uri.hpp>
 #include <libtorrent/stack_allocator.hpp>

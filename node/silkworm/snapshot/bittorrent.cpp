@@ -48,12 +48,6 @@ void BitTorrentClient::save_file(const std::string& filename, const std::vector<
     output_file_stream.write(data.data(), static_cast<std::streamsize>(data.size()));
 }
 
-void BitTorrentClient::delete_file(const std::string& filename) {
-    std::filesystem::path file_path{filename};
-    const bool removed = std::filesystem::remove(file_path);
-    SILK_DEBUG << "File: " << filename << " removed: " << removed;
-}
-
 BitTorrentClient::BitTorrentClient(BitTorrentSettings settings)
     : settings_(std::move(settings)),
       session_file_{settings_.repository_path + kSessionFileName},

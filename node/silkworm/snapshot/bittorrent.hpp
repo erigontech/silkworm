@@ -36,7 +36,7 @@
 
 namespace silkworm {
 
-constexpr const char* kDefaultTorrentRepoPath{".torrent/"};
+constexpr const char* kDefaultTorrentRepoPath{".torrent"};
 constexpr const char* kSessionFileName{".session"};
 constexpr const char* kResumeDirName{".resume"};
 constexpr const char* kResumeFileExt{".resume"};

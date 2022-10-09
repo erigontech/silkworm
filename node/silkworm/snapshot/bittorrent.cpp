@@ -50,8 +50,8 @@ void BitTorrentClient::save_file(const std::string& filename, const std::vector<
 
 BitTorrentClient::BitTorrentClient(BitTorrentSettings settings)
     : settings_(std::move(settings)),
-      session_file_{settings_.repository_path + kSessionFileName},
-      resume_dir_{settings_.repository_path + kResumeDirName},
+      session_file_{settings_.repository_path + fs::path::preferred_separator + kSessionFileName},
+      resume_dir_{settings_.repository_path + fs::path::preferred_separator + kResumeDirName},
       session_{load_or_create_session_parameters()} {
     SILK_TRACE << "BitTorrentClient::BitTorrentClient start";
     auto add_magnet_params_sequence = resume_or_create_magnets();

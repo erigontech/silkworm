@@ -97,10 +97,10 @@ TEST_CASE("BitTorrentClient::BitTorrentClient", "[silkworm][snapshot][bittorrent
     }
 
     SECTION("nonempty resume dir") {
-        const auto invalid_resume_file = repo.path().append(kResumeDirName).append("a.txt");
-        BitTorrentClient_ForTest::save_file(invalid_resume_file.string(), std::vector<char>{});
-        const auto empty_resume_file = repo.path().append(kResumeDirName).append("a").append(kResumeFileExt);
-        BitTorrentClient_ForTest::save_file(empty_resume_file, std::vector<char>{});
+        const auto resume_dir_path = repo.path() / kResumeDirName;
+        std::filesystem::create_directories(resume_dir_path);
+        BitTorrentClient_ForTest::save_file(resume_dir_path / "a.txt", std::vector<char>{});
+        BitTorrentClient_ForTest::save_file(resume_dir_path / "a.resume", std::vector<char>{});
         CHECK_NOTHROW(BitTorrentClient{settings});
     }
 }

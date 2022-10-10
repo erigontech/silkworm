@@ -109,14 +109,14 @@ static inline std::vector<char> test_resume_data() {
 
 TEST_CASE("BitTorrentSettings", "[silkworm][snapshot][bittorrent]") {
     BitTorrentSettings settings{};
-    CHECK(settings.repository_path == kDefaultTorrentRepoPath);
-    CHECK(settings.magnets_file_path == kDefaultMagnetsFilePath);
-    CHECK(settings.wait_between_alert_polls == kDefaultWaitBetweenAlertPolls);
-    CHECK(settings.resume_data_save_interval == kDefaultResumeDataSaveInterval);
-    CHECK(settings.seeding == kDefaultSeeding);
-    CHECK(settings.download_rate_limit == kDefaultDownloadRateLimit);
-    CHECK(settings.upload_rate_limit == kDefaultUploadRateLimit);
-    CHECK(settings.active_downloads == kDefaultActiveDownloads);
+    CHECK(settings.repository_path == BitTorrentSettings::kDefaultTorrentRepoPath);
+    CHECK(settings.magnets_file_path == BitTorrentSettings::kDefaultMagnetsFilePath);
+    CHECK(settings.wait_between_alert_polls == BitTorrentSettings::kDefaultWaitBetweenAlertPolls);
+    CHECK(settings.resume_data_save_interval == BitTorrentSettings::kDefaultResumeDataSaveInterval);
+    CHECK(settings.seeding == BitTorrentSettings::kDefaultSeeding);
+    CHECK(settings.download_rate_limit == BitTorrentSettings::kDefaultDownloadRateLimit);
+    CHECK(settings.upload_rate_limit == BitTorrentSettings::kDefaultUploadRateLimit);
+    CHECK(settings.active_downloads == BitTorrentSettings::kDefaultActiveDownloads);
 }
 
 TEST_CASE("BitTorrentClient::BitTorrentClient", "[silkworm][snapshot][bittorrent]") {
@@ -137,7 +137,7 @@ TEST_CASE("BitTorrentClient::BitTorrentClient", "[silkworm][snapshot][bittorrent
     }
 
     SECTION("nonempty resume dir") {
-        const auto resume_dir_path = repo.path() / kResumeDirName;
+        const auto resume_dir_path = repo.path() / BitTorrentClient::kResumeDirName;
         std::filesystem::create_directories(resume_dir_path);
         const auto ignored_file{resume_dir_path / "a.txt"};
         BitTorrentClient_ForTest::save_file(ignored_file, std::vector<char>{});

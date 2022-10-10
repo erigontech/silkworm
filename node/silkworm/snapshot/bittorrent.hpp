@@ -36,24 +36,21 @@
 
 namespace silkworm {
 
-constexpr const char* kDefaultTorrentRepoPath{".torrent"};
-constexpr const char* kSessionFileName{".session"};
-constexpr const char* kResumeDirName{".resume"};
-constexpr const char* kResumeFileExt{".resume"};
-constexpr const char* kDefaultMagnetsFilePath{".magnet_links"};
-constexpr std::chrono::milliseconds kDefaultWaitBetweenAlertPolls{100};
-constexpr std::chrono::seconds kDefaultResumeDataSaveInterval{60};
-constexpr bool kDefaultSeeding{false};
-
-constexpr int kDefaultDownloadRateLimit{64 * 1024 * 1024};  // 64MiB
-constexpr int kDefaultUploadRateLimit{4 * 1024 * 1024};     // 4MiB
-constexpr int kDefaultActiveDownloads{6};
-constexpr int kDefaultMaxOutRequestQueue{6000};
-constexpr bool kDefaultAnnounceToAllTiers{true};
-constexpr int kDefaultAsyncIOThreads{32};
-
 //! The settings for handling BitTorrent protocol
 struct BitTorrentSettings {
+    constexpr static const char* kDefaultTorrentRepoPath{".torrent"};
+    constexpr static const char* kDefaultMagnetsFilePath{".magnet_links"};
+    constexpr static std::chrono::milliseconds kDefaultWaitBetweenAlertPolls{100};
+    constexpr static std::chrono::seconds kDefaultResumeDataSaveInterval{60};
+    constexpr static bool kDefaultSeeding{false};
+
+    constexpr static int kDefaultDownloadRateLimit{64 * 1024 * 1024};  // 64MiB
+    constexpr static int kDefaultUploadRateLimit{4 * 1024 * 1024};     // 4MiB
+    constexpr static int kDefaultActiveDownloads{6};
+    constexpr static int kDefaultMaxOutRequestQueue{6000};
+    constexpr static bool kDefaultAnnounceToAllTiers{true};
+    constexpr static int kDefaultAsyncIOThreads{32};
+
     /* BitTorrentClient configuration settings */
     //! Directory path where torrent files will be stored
     std::string repository_path{kDefaultTorrentRepoPath};
@@ -78,6 +75,10 @@ struct BitTorrentSettings {
 //! \details The user code should probably run the `execute_loop` method in a dedicated thread.
 class BitTorrentClient {
   public:
+    constexpr static const char* kSessionFileName{".session"};
+    constexpr static const char* kResumeDirName{".resume"};
+    constexpr static const char* kResumeFileExt{".resume"};
+
     explicit BitTorrentClient(BitTorrentSettings settings);
     ~BitTorrentClient();
 

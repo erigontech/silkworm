@@ -23,6 +23,9 @@ endif()
 
 get_directory_property(SILKWORM_HAS_PARENT PARENT_DIRECTORY)
 if(NOT SILKWORM_HAS_PARENT)
+  # Enable language *before* indirectly including GNUInstallDirs (see CableBuildInfo)
+  enable_language(CXX)
+
   include(third_party/evmone/cmake/cable/bootstrap.cmake)
   include(CableBuildType)
   include(CableBuildInfo)
@@ -76,6 +79,7 @@ option(SILKWORM_SANITIZE "Build instrumentation for sanitizers" OFF)
 
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/compiler_settings.cmake)
 
+# Include dependencies handled by Hunter package manager
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/Hunter/core_packages.cmake)
 if(NOT SILKWORM_CORE_ONLY)
   include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/Hunter/extra_packages.cmake)
@@ -83,8 +87,9 @@ endif()
 
 if(NOT SILKWORM_CORE_ONLY)
   # Silence CMake policy warnings in submodules
-  set(CMAKE_POLICY_DEFAULT_CMP0048 NEW)
-  set(CMAKE_POLICY_DEFAULT_CMP0063 NEW)
+
+  set(CMAKE_POLICY_DEFAULT_CMP0048 NEW) # project() command manages VERSION variables
+  set(CMAKE_POLICY_DEFAULT_CMP0063 NEW) # Honor visibility properties for all target types
 
   # Roaring Bitmaps
   option(ENABLE_ROARING_TESTS "" OFF)
@@ -167,6 +172,18 @@ if(NOT MSVC)
     PREFIX "${GMP_INSTALL_DIR}"
     BUILD_BYPRODUCTS "${GMP_LIBRARY}"
   )
+endif()
+
+# libtorrent
+if(NOT SILKWORM_CORE_ONLY)
+  find_package(Boost CONFIG REQUIRED)
+  # Define Boost::headers target if missing because libtorrent needs it
+  if(NOT TARGET Boost::headers)
+    add_library(Boost::headers INTERFACE IMPORTED)
+    target_include_directories(Boost::headers INTERFACE ${Boost_INCLUDE_DIRS})
+  endif()
+  add_subdirectory(third_party/libtorrent)
+  target_compile_options(torrent-rasterbar PRIVATE -w)
 endif()
 
 add_subdirectory(third_party/silkpre)

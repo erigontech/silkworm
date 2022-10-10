@@ -19,6 +19,7 @@
 #include <chrono>
 #include <thread>
 
+#include <boost/asio/executor_work_guard.hpp>
 #include <catch2/catch.hpp>
 #include <grpcpp/alarm.h>
 #include <grpcpp/support/time.h>
@@ -95,7 +96,7 @@ TEST_CASE("CompletionEndPoint::post_one", "[silkworm][rpc][completion_end_point]
     grpc::CompletionQueue queue;
     CompletionEndPoint completion_end_point{queue};
     boost::asio::io_context io_context;
-    boost::asio::io_context::work work{io_context};
+    boost::asio::executor_work_guard work = boost::asio::make_work_guard(io_context);
 
     SECTION("waiting on empty completion queue") {
         auto completion_runner_thread = std::thread([&]() {
@@ -111,7 +112,7 @@ TEST_CASE("CompletionEndPoint::post_one", "[silkworm][rpc][completion_end_point]
     SECTION("executing completion handler") {
         bool executed{false};
 
-        // Setup the alarm notification delivered through gRPC queue
+        // Set up the alarm notification delivered through gRPC queue
         TagProcessor tag_processor = [&](bool) {
             executed = true;
             completion_end_point.shutdown();

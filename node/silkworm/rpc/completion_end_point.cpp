@@ -16,8 +16,7 @@
 
 #include "completion_end_point.hpp"
 
-#include <memory>
-
+#include <boost/asio/post.hpp>
 #include <grpcpp/alarm.h>
 
 #include <silkworm/common/log.hpp>
@@ -54,7 +53,7 @@ bool CompletionEndPoint::post_one(boost::asio::io_context& scheduler) {
         // Post the event completion on the passed io_context scheduler.
         CompletionTag completion_tag{reinterpret_cast<TagProcessor*>(tag), ok};
         SILK_DEBUG << "CompletionEndPoint::post_one post operation: " << completion_tag.processor;
-        scheduler.post([completion_tag]() {
+        boost::asio::post(scheduler, [completion_tag]() {
             (*completion_tag.processor)(completion_tag.ok);
         });
     } else {

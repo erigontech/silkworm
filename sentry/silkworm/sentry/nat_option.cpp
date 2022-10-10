@@ -28,7 +28,7 @@ bool lexical_cast(const std::string& input, NatOption& value) {
     if (boost::algorithm::istarts_with(input, "extip:")) {
         auto ip_str = input.c_str() + 6;
         boost::system::error_code err;
-        auto ip = boost::asio::ip::address::from_string(ip_str, err);
+        auto ip = boost::asio::ip::make_address(ip_str, err);
         value = {NatMode::kExternalIP, {ip}};
         return !err;
     }

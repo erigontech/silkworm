@@ -27,7 +27,9 @@
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 #include <libtorrent/alert_types.hpp>
 #pragma GCC diagnostic pop
+#include <libtorrent/bencode.hpp>
 #include <libtorrent/create_torrent.hpp>
+#include <libtorrent/entry.hpp>
 #include <libtorrent/magnet_uri.hpp>
 #include <libtorrent/stack_allocator.hpp>
 
@@ -39,6 +41,7 @@ namespace silkworm {
 
 using namespace std::chrono_literals;
 
+//! BitTorrentClient with protected methods exposed for test
 class BitTorrentClient_ForTest : public BitTorrentClient {
   public:
     using BitTorrentClient::BitTorrentClient;
@@ -50,6 +53,7 @@ class BitTorrentClient_ForTest : public BitTorrentClient {
     using BitTorrentClient::save_file;
 };
 
+//! Temporary repository for torrent files
 class TestRepository {
   public:
     explicit TestRepository() = default;
@@ -66,6 +70,42 @@ class TestRepository {
     std::filesystem::path magnets_file_path_{dir_.path() / "magnet_links"};
     std::ofstream magnet_file_stream_{magnets_file_path_};
 };
+
+//! Generate test data for resume file content
+//! \details https://github.com/arvidn/libtorrent/blob/RC_2_0/test/test_read_resume.cpp
+static inline std::vector<char> test_resume_data() {
+    lt::entry rd;
+
+    rd["file-format"] = "libtorrent resume file";
+    rd["file-version"] = 1;
+    rd["info-hash"] = "abcdefghijklmnopqrst";
+    rd["pieces"] = "\x01\x01\x01\x01\x01\x01";
+
+    rd["total_uploaded"] = 1337;
+    rd["total_downloaded"] = 1338;
+    rd["active_time"] = 1339;
+    rd["seeding_time"] = 1340;
+    rd["upload_rate_limit"] = 1343;
+    rd["download_rate_limit"] = 1344;
+    rd["max_connections"] = 1345;
+    rd["max_uploads"] = 1346;
+    rd["seed_mode"] = 0;
+    rd["super_seeding"] = 0;
+    rd["added_time"] = 1347;
+    rd["completed_time"] = 1348;
+    rd["finished_time"] = 1352;
+    rd["last_seen_complete"] = 1353;
+
+    rd["piece_priority"] = "\x01\x02\x03\x04\x05\x06";
+    rd["auto_managed"] = 0;
+    rd["sequential_download"] = 0;
+    rd["paused"] = 0;
+
+    std::vector<char> resume_data;
+    lt::bencode(std::back_inserter(resume_data), rd);
+
+    return resume_data;
+}
 
 TEST_CASE("BitTorrentSettings", "[silkworm][snapshot][bittorrent]") {
     BitTorrentSettings settings{};
@@ -99,8 +139,16 @@ TEST_CASE("BitTorrentClient::BitTorrentClient", "[silkworm][snapshot][bittorrent
     SECTION("nonempty resume dir") {
         const auto resume_dir_path = repo.path() / kResumeDirName;
         std::filesystem::create_directories(resume_dir_path);
-        BitTorrentClient_ForTest::save_file(resume_dir_path / "a.txt", std::vector<char>{});
-        BitTorrentClient_ForTest::save_file(resume_dir_path / "a.resume", std::vector<char>{});
+        const auto ignored_file{resume_dir_path / "a.txt"};
+        BitTorrentClient_ForTest::save_file(ignored_file, std::vector<char>{});
+        const auto empty_resume_file{resume_dir_path / "a.resume"};
+        BitTorrentClient_ForTest::save_file(empty_resume_file, std::vector<char>{});
+        const auto invalid_resume_file{resume_dir_path / "83112dec4bec180cff67e01d6345c88c3134fd26.resume"};
+        std::vector<char> invalid_resume_data{};
+        BitTorrentClient_ForTest::save_file(invalid_resume_file, invalid_resume_data);
+        const auto valid_resume_file{resume_dir_path / "83112dec4bec180cff67e01d6345c88c3134fd26.resume"};
+        std::vector<char> resume_data{test_resume_data()};
+        BitTorrentClient_ForTest::save_file(valid_resume_file, resume_data);
         CHECK_NOTHROW(BitTorrentClient{settings});
     }
 }

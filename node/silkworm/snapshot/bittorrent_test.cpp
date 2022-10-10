@@ -215,6 +215,21 @@ TEST_CASE("BitTorrentClient::stop", "[silkworm][snapshot][bittorrent]") {
     }
 }
 
+TEST_CASE("BitTorrentClient::request_torrent_updates", "[silkworm][snapshot][bittorrent]") {
+    SECTION("trigger save resume data twice") {
+        constexpr std::chrono::seconds kResumeDataSaveInterval{1};
+        TestRepository repo;
+        BitTorrentSettings settings{};
+        settings.repository_path = repo.path();
+        settings.magnets_file_path = repo.magnets_file_path();
+        settings.resume_data_save_interval = kResumeDataSaveInterval;
+        BitTorrentClient_ForTest client{settings};
+        CHECK_NOTHROW(client.request_torrent_updates());
+        std::this_thread::sleep_for(kResumeDataSaveInterval);
+        CHECK_NOTHROW(client.request_torrent_updates());
+    }
+}
+
 TEST_CASE("BitTorrentClient::process_alerts", "[silkworm][snapshot][bittorrent]") {
     SECTION("one empty magnet link") {
         TestRepository repo;

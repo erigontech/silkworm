@@ -195,7 +195,14 @@ endif()
 
 # Compiler enforcements on Silkworm
 if(NOT MSVC)
-  add_compile_options(-Werror -Wall -Wextra -pedantic)
+  if((CMAKE_CXX_COMPILER_ID STREQUAL "GNU") AND (CMAKE_CXX_COMPILER_VERSION STREQUAL "12.1.0"))
+    # Avoid -Werror to overcome GCC 12.1.0 bug breaking Google Benchmark build
+    # https://github.com/google/benchmark/issues/1398
+    # https://gcc.gnu.org/bugzilla/show_bug.cgi?id=105329
+    add_compile_options(-Wall -Wextra -pedantic)
+  else()
+    add_compile_options(-Werror -Wall -Wextra -pedantic)
+  endif()
   add_compile_options(-Wshadow -Wimplicit-fallthrough -Wsign-conversion)
   add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wold-style-cast>)
   add_compile_options(-Wno-missing-field-initializers -Wnon-virtual-dtor)

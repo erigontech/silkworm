@@ -35,10 +35,10 @@
 #pragma once
 
 #ifdef _WIN32
-#pragma warning(disable:4668)
-#pragma warning(disable:4710)
-#pragma warning(disable:4820)
-#pragma warning(disable:5039)
+#pragma warning(disable : 4668)
+#pragma warning(disable : 4710)
+#pragma warning(disable : 4820)
+#pragma warning(disable : 5039)
 #endif
 
 #include <cstddef>
@@ -51,9 +51,10 @@
 #include <fcntl.h>
 #include <ftw.h>
 #include <pwd.h>
+#include <unistd.h>
+
 #include <sys/mman.h>
 #include <sys/types.h>
-#include <unistd.h>
 #endif
 
 //! Raw memory mapped file structure in *nix

@@ -19,12 +19,13 @@
 #ifdef _WIN32
 #include <windows.h>
 #else
-#include <cstring>
-
 #include <fcntl.h>
 #include <ftw.h>
-#include <sys/mman.h>
 #include <unistd.h>
+
+#include <cstring>
+
+#include <sys/mman.h>
 #endif
 
 #include <stdexcept>
@@ -105,9 +106,9 @@ void* MemoryMappedFile::mmap(const char* path, FileDescriptor fd, std::size_t le
     }
 
     DWORD dwDesiredAccess = static_cast<DWORD>(read_only ? FILE_MAP_READ : FILE_MAP_ALL_ACCESS);
-    void *memory = (LPTSTR)::MapViewOfFile(mapping_, dwDesiredAccess, 0, static_cast<DWORD>(0), length);
+    void* memory = (LPTSTR)::MapViewOfFile(mapping_, dwDesiredAccess, 0, static_cast<DWORD>(0), length);
 
-    return static_cast<std::uint8_t *>(memory);
+    return static_cast<std::uint8_t*>(memory);
 }
 
 void MemoryMappedFile::unmap(const char* /*path*/, void* address, std::size_t /*length*/) {
@@ -139,13 +140,13 @@ std::pair<uint8_t*, std::size_t> MemoryMappedFile::map_existing(const char* path
     }
     auto _ = gsl::finally([fd]() { ::close(fd); });
 
-    struct stat stat_buffer{};
+    struct stat stat_buffer {};
     if (::fstat(fd, &stat_buffer) == -1) {
         throw std::runtime_error{"fstat failed for: " + std::string{path} + " error: " + strerror(errno)};
     }
     const auto length = static_cast<std::size_t>(stat_buffer.st_size);
 
-    const auto address= mmap(path, fd, length, read_only);
+    const auto address = mmap(path, fd, length, read_only);
 
     return {static_cast<uint8_t*>(address), length};
 }

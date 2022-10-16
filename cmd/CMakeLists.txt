@@ -22,13 +22,12 @@ else()
   add_link_options(-Wl,-z,stack-size=0x1000000)
 endif()
 
-# Benchmarks
-add_subdirectory(benchmark)
-
 # Tests
 add_subdirectory(test)
 
 if(NOT SILKWORM_CORE_ONLY)
+  # Benchmarks
+  add_subdirectory(benchmark)
 
   find_package(absl CONFIG REQUIRED)
   find_package(CLI11 CONFIG REQUIRED)

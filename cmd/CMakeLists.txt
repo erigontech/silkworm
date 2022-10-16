@@ -22,6 +22,9 @@ else()
   add_link_options(-Wl,-z,stack-size=0x1000000)
 endif()
 
+# Benchmarks
+add_subdirectory(benchmark)
+
 # Tests
 add_subdirectory(test)
 

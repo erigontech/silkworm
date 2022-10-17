@@ -41,11 +41,11 @@ MemoryMappedFile::MemoryMappedFile(const std::filesystem::path& path, bool read_
     : MemoryMappedFile(path.string().c_str(), read_only) {}
 
 MemoryMappedFile::MemoryMappedFile(const char* path, bool read_only) : path_(path) {
-    std::tie(address_, length_) = map_existing(path, read_only);
+    map_existing(read_only);
 }
 
 MemoryMappedFile::~MemoryMappedFile() {
-    unmap(path_, address_, length_);
+    unmap();
 
 #ifdef _WIN32
     cleanup();
@@ -60,36 +60,34 @@ std::size_t MemoryMappedFile::get_page_size() noexcept {
     return static_cast<std::size_t>(system_info.dwPageSize);
 }
 
-std::pair<uint8_t*, std::size_t> MemoryMappedFile::map_existing(const char* path, bool read_only) {
-    DWORD dwDesiredAccess = read_only ? GENERIC_READ : (GENERIC_READ | GENERIC_WRITE);
-    DWORD dwSharedMode = FILE_SHARE_READ | FILE_SHARE_WRITE;
+void MemoryMappedFile::map_existing(bool read_only) {
+    DWORD desired_access = read_only ? GENERIC_READ : (GENERIC_READ | GENERIC_WRITE);
+    DWORD shared_mode = FILE_SHARE_READ | FILE_SHARE_WRITE;
     FileDescriptor fd = {};
     fd = ::CreateFile(
-        path,
-        dwDesiredAccess,
-        dwSharedMode,
+        path_,
+        desired_access,
+        shared_mode,
         nullptr,
         OPEN_EXISTING,
         FILE_ATTRIBUTE_NORMAL,
         nullptr);
 
     if (INVALID_HANDLE_VALUE == fd) {
-        throw std::runtime_error{"Failed to create existing file: " + std::string{path} + " error: " + std::to_string(GetLastError())};
+        throw std::runtime_error{"Failed to create existing file: " + std::string{path_} + " error: " + std::to_string(GetLastError())};
     }
 
     auto _ = gsl::finally([fd]() { if (INVALID_HANDLE_VALUE != fd) ::CloseHandle(fd); });
 
-    LARGE_INTEGER fileSize;
-    if (!::GetFileSizeEx(fd, &fileSize)) {
-        throw std::runtime_error{"GetFileSizeEx failed for: " + std::string{path} + " error: " + std::to_string(GetLastError())};
+    LARGE_INTEGER file_size;
+    if (!::GetFileSizeEx(fd, &file_size)) {
+        throw std::runtime_error{"GetFileSizeEx failed for: " + std::string{path_} + " error: " + std::to_string(GetLastError())};
     }
 
-    const auto length = static_cast<std::size_t>(fileSize.QuadPart);
+    length_ = static_cast<std::size_t>(file_size.QuadPart);
 
-    const auto address = mmap(path, fd, length, read_only);
+    address_ = static_cast<uint8_t*>(mmap(fd, read_only));
     fd = INVALID_HANDLE_VALUE;
-
-    return {static_cast<uint8_t*>(address), length};
 }
 
 void MemoryMappedFile::advise_random() {
@@ -98,22 +96,22 @@ void MemoryMappedFile::advise_random() {
 void MemoryMappedFile::advise_sequential() {
 }
 
-void* MemoryMappedFile::mmap(const char* path, FileDescriptor fd, std::size_t length, bool read_only) {
-    DWORD flProtect = static_cast<DWORD>(read_only ? PAGE_READONLY : PAGE_READWRITE);
-    mapping_ = ::CreateFileMapping(fd, nullptr, flProtect, 0, static_cast<DWORD>(length), nullptr);
+void* MemoryMappedFile::mmap(FileDescriptor fd, bool read_only) {
+    DWORD protection = static_cast<DWORD>(read_only ? PAGE_READONLY : PAGE_READWRITE);
+    mapping_ = ::CreateFileMapping(fd, nullptr, protection, 0, static_cast<DWORD>(length_), nullptr);
     if (nullptr == mapping_) {
-        throw std::runtime_error{"CreateFileMapping failed for: " + std::string{path} + " error: " + std::to_string(GetLastError())};
+        throw std::runtime_error{"CreateFileMapping failed for: " + std::string{path_} + " error: " + std::to_string(GetLastError())};
     }
 
-    DWORD dwDesiredAccess = static_cast<DWORD>(read_only ? FILE_MAP_READ : FILE_MAP_ALL_ACCESS);
-    void* memory = (LPTSTR)::MapViewOfFile(mapping_, dwDesiredAccess, 0, static_cast<DWORD>(0), length);
+    DWORD desired_access = static_cast<DWORD>(read_only ? FILE_MAP_READ : FILE_MAP_ALL_ACCESS);
+    void* memory = (LPTSTR)::MapViewOfFile(mapping_, desired_access, 0, static_cast<DWORD>(0), length_);
 
     return static_cast<std::uint8_t*>(memory);
 }
 
-void MemoryMappedFile::unmap(const char* /*path*/, void* address, std::size_t /*length*/) {
-    if (address != nullptr) {
-        ::UnmapViewOfFile(address);
+void MemoryMappedFile::unmap() {
+    if (address_ != nullptr) {
+        ::UnmapViewOfFile(address_);
     }
 }
 
@@ -133,22 +131,20 @@ std::size_t MemoryMappedFile::get_page_size() noexcept {
     return static_cast<std::size_t>(::getpagesize());
 }
 
-std::pair<uint8_t*, std::size_t> MemoryMappedFile::map_existing(const char* path, bool read_only) {
-    FileDescriptor fd = ::open(path, read_only ? O_RDONLY : O_RDWR);
+void MemoryMappedFile::map_existing(bool read_only) {
+    FileDescriptor fd = ::open(path_, read_only ? O_RDONLY : O_RDWR);
     if (fd == -1) {
-        throw std::runtime_error{"open failed for: " + std::string{path} + " error: " + strerror(errno)};
+        throw std::runtime_error{"open failed for: " + std::string{path_} + " error: " + strerror(errno)};
     }
     auto _ = gsl::finally([fd]() { ::close(fd); });
 
     struct stat stat_buffer {};
     if (::fstat(fd, &stat_buffer) == -1) {
-        throw std::runtime_error{"fstat failed for: " + std::string{path} + " error: " + strerror(errno)};
+        throw std::runtime_error{"fstat failed for: " + std::string{path_} + " error: " + strerror(errno)};
     }
-    const auto length = static_cast<std::size_t>(stat_buffer.st_size);
+    length_ = static_cast<std::size_t>(stat_buffer.st_size);
 
-    const auto address = mmap(path, fd, length, read_only);
-
-    return {static_cast<uint8_t*>(address), length};
+    address_ = static_cast<uint8_t*>(mmap(fd, read_only));
 }
 
 void MemoryMappedFile::advise_random() {
@@ -159,22 +155,22 @@ void MemoryMappedFile::advise_sequential() {
     advise(MADV_SEQUENTIAL);
 }
 
-void* MemoryMappedFile::mmap(const char* path, FileDescriptor fd, std::size_t length, bool read_only) {
+void* MemoryMappedFile::mmap(FileDescriptor fd, bool read_only) {
     int flags = MAP_SHARED | MAP_POPULATE;
 
-    const auto address = ::mmap(nullptr, length, read_only ? PROT_READ : (PROT_READ | PROT_WRITE), flags, fd, 0);
+    const auto address = ::mmap(nullptr, length_, read_only ? PROT_READ : (PROT_READ | PROT_WRITE), flags, fd, 0);
     if (address == MAP_FAILED) {
-        throw std::runtime_error{"mmap failed for: " + std::string{path} + " error: " + strerror(errno)};
+        throw std::runtime_error{"mmap failed for: " + std::string{path_} + " error: " + strerror(errno)};
     }
 
     return address;
 }
 
-void MemoryMappedFile::unmap(const char* path, void* address, std::size_t length) {
-    if (address != nullptr) {
-        const int result = ::munmap(address, length);
+void MemoryMappedFile::unmap() {
+    if (address_ != nullptr) {
+        const int result = ::munmap(address_, length_);
         if (result == -1) {
-            throw std::runtime_error{"munmap failed for: " + std::string{path} + " error: " + strerror(errno)};
+            throw std::runtime_error{"munmap failed for: " + std::string{path_} + " error: " + strerror(errno)};
         }
     }
 }

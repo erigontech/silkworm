@@ -94,19 +94,10 @@ class MemoryMappedFile {
   private:
     [[nodiscard]] static std::size_t get_page_size() noexcept;
 
-#ifndef _WIN32
-    [[nodiscard]] static std::pair<uint8_t*, std::size_t> map_existing(const char* path, bool read_only);
+    void map_existing(bool read_only);
 
-    static void* mmap(const char* path, FileDescriptor fd, std::size_t length, bool read_only);
-    static void unmap(const char* path, void* address, std::size_t length);
-
-    void advise(int advice);
-#else
-    [[nodiscard]] std::pair<uint8_t*, std::size_t> map_existing(const char* path, bool read_only);
-
-    void* mmap(const char* path, FileDescriptor fd, std::size_t length, bool read_only);
-    void unmap(const char* path, void* address, std::size_t length);
-#endif
+    void* mmap(FileDescriptor fd, bool read_only);
+    void unmap();
 
     //! The path to the file
     const char* path_;
@@ -122,6 +113,8 @@ class MemoryMappedFile {
 
     HANDLE file_ = nullptr;
     HANDLE mapping_ = nullptr;
+#else
+    void advise(int advice);
 #endif
 };
 

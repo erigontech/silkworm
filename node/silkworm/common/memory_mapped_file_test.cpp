@@ -61,7 +61,7 @@ TEST_CASE("MemoryMappedFile", "[silkworm][common][memory_mapped_file]") {
 
     SECTION("has expected memory address and size") {
         CHECK(mmf.address() != nullptr);
-        CHECK(mmf.length() == 3);
+        CHECK(mmf.length() == kFileContent.size());
     }
 
     SECTION("has expected content") {

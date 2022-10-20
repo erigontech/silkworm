@@ -23,14 +23,18 @@ endif()
 
 get_directory_property(SILKWORM_HAS_PARENT PARENT_DIRECTORY)
 if(NOT SILKWORM_HAS_PARENT)
+  # Set default CMAKE_TOOLCHAIN_FILE *before* enable_language (otherwise default toolchain build breaks)
+  if(NOT CMAKE_TOOLCHAIN_FILE)
+    set(CMAKE_TOOLCHAIN_FILE ${CMAKE_CURRENT_SOURCE_DIR}/cmake/toolchain/cxx20.cmake CACHE FILEPATH "" FORCE)
+  endif()
+
+  # Enable language *before* indirectly including GNUInstallDirs (see CableBuildInfo)
+  enable_language(CXX)
+
   include(third_party/evmone/cmake/cable/bootstrap.cmake)
   include(CableBuildType)
   include(CableBuildInfo)
   cable_set_build_type(DEFAULT Release CONFIGURATION_TYPES Release Debug)
-
-  if(NOT CMAKE_TOOLCHAIN_FILE)
-    set(CMAKE_TOOLCHAIN_FILE ${CMAKE_CURRENT_SOURCE_DIR}/cmake/toolchain/cxx20.cmake CACHE FILEPATH "" FORCE)
-  endif()
 
   include(third_party/evmone/cmake/cable/HunterGate.cmake)
   HunterGate(

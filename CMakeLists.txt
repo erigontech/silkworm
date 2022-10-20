@@ -23,9 +23,6 @@ endif()
 
 get_directory_property(SILKWORM_HAS_PARENT PARENT_DIRECTORY)
 if(NOT SILKWORM_HAS_PARENT)
-  # Enable language *before* indirectly including GNUInstallDirs (see CableBuildInfo)
-  enable_language(CXX)
-
   include(third_party/evmone/cmake/cable/bootstrap.cmake)
   include(CableBuildType)
   include(CableBuildInfo)

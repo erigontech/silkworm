@@ -85,8 +85,8 @@ inline ethash::hash256 keccak256(ByteView view) { return ethash::keccak256(view.
 
 //! \brief Create an intx::uint256 from a string supporting both fixed decimal and scientific notation
 template <typename Int>
-inline constexpr Int from_string_sci(std::string_view str) {
-    auto s = str.cbegin();
+inline constexpr Int from_string_sci(const char* str) {
+    auto s = str;
     auto m = Int{};
 
     int num_digits = 0;

@@ -33,9 +33,9 @@
 #include <p2psentry/sentry.grpc.pb.h>
 #include <types/types.pb.h>
 
+#include <silkworm/backend/ethereum_backend.hpp>
 #include <silkworm/common/assert.hpp>
 #include <silkworm/common/util.hpp>
-#include <silkworm/backend/ethereum_backend.hpp>
 #include <silkworm/rpc/client/call.hpp>
 
 namespace silkworm::rpc {

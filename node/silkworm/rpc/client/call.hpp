@@ -16,8 +16,8 @@
 
 #pragma once
 
-#include <agrpc/grpc_context.hpp>
 #include <agrpc/detail/rpc.hpp>
+#include <agrpc/grpc_context.hpp>
 #include <agrpc/rpc.hpp>
 
 namespace silkworm::rpc {

@@ -80,7 +80,7 @@ class BusySpinWaitStrategy {
 };
 
 enum class WaitMode {
-    backoff,    /* Wait strategy implemented in asio-grpc's agrpc::run */
+    backoff, /* Wait strategy implemented in asio-grpc's agrpc::run */
     blocking,
     sleeping,
     yielding,

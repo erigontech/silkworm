@@ -36,8 +36,8 @@
 #include <silkworm/common/log.hpp>
 #include <silkworm/common/util.hpp>
 #include <silkworm/db/tables.hpp>
-#include <silkworm/rpc/conversion.hpp>
 #include <silkworm/rpc/completion_tag.hpp>
+#include <silkworm/rpc/conversion.hpp>
 #include <silkworm/rpc/util.hpp>
 
 using namespace std::literals;

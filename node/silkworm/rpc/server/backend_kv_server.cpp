@@ -45,7 +45,6 @@ void BackEndKvServer::register_request_calls() {
     // Start one server-side RPC request for each available server context
     for (auto& backend_kv_svc : backend_kv_services_) {
         const auto& server_context = next_context();
-        //const auto client_queue = server_context.client_queue();
 
         // Complete the service initialization
         RemoteSentryClientFactory sentry_factory{*server_context.client_grpc_context()};
@@ -55,7 +54,7 @@ void BackEndKvServer::register_request_calls() {
 
         // Register initial requested calls for ETHBACKEND and KV services
         backend_kv_svc->register_backend_request_calls(server_context, &backend_async_service_);
-        //backend_kv_svc->register_kv_request_calls(server_context, &kv_async_service_);
+        // backend_kv_svc->register_kv_request_calls(server_context, &kv_async_service_);
     }
 }
 

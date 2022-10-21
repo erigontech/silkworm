@@ -19,6 +19,7 @@
 #include <cstddef>
 #include <memory>
 #include <ostream>
+#include <utility>
 #include <vector>
 
 #include <agrpc/asio_grpc.hpp>

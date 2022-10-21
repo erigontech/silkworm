@@ -15,12 +15,11 @@
 */
 
 #include <chrono>
-#include <condition_variable>
 #include <functional>
 #include <iostream>
 #include <memory>
-#include <mutex>
 #include <thread>
+#include <utility>
 #include <vector>
 
 #include <CLI/CLI.hpp>
@@ -37,17 +36,230 @@
 #include <silkworm/common/log.hpp>
 #include <silkworm/common/util.hpp>
 #include <silkworm/db/tables.hpp>
-#include <silkworm/rpc/client/call.hpp>
 #include <silkworm/rpc/conversion.hpp>
+#include <silkworm/rpc/completion_tag.hpp>
 #include <silkworm/rpc/util.hpp>
 
 using namespace std::literals;
 
-using silkworm::rpc::AsyncCall;
-using silkworm::rpc::AsyncResponseReaderPtr;
-using silkworm::rpc::AsyncServerStreamingCall;
-using silkworm::rpc::AsyncUnaryCall;
 using silkworm::rpc::TagProcessor;
+
+struct UnaryStats {
+    uint64_t started_count{0};
+    uint64_t completed_count{0};
+    uint64_t ok_count{0};
+    uint64_t ko_count{0};
+};
+
+inline std::ostream& operator<<(std::ostream& out, const UnaryStats& stats) {
+    out << "started=" << stats.started_count << " completed=" << stats.completed_count
+        << " [OK=" << stats.ok_count << " KO=" << stats.ko_count << "]";
+    return out;
+}
+
+class AsyncCall {
+  public:
+    explicit AsyncCall(grpc::CompletionQueue* queue) : queue_(queue) {}
+    virtual ~AsyncCall() = default;
+
+    std::string peer() const { return client_context_.peer(); }
+
+    std::chrono::steady_clock::duration latency() const { return end_time_ - start_time_; }
+
+    grpc::Status status() const { return status_; }
+
+  protected:
+    grpc::ClientContext client_context_;
+    grpc::CompletionQueue* queue_;
+    std::chrono::steady_clock::time_point start_time_;
+    std::chrono::steady_clock::time_point end_time_;
+    grpc::Status status_;
+};
+
+template <typename Reply>
+using AsyncResponseReaderPtr = std::unique_ptr<grpc::ClientAsyncResponseReaderInterface<Reply>>;
+
+template <
+    typename Request,
+    typename Reply,
+    typename StubInterface,
+    AsyncResponseReaderPtr<Reply> (StubInterface::*PrepareAsyncUnary)(grpc::ClientContext*, const Request&, grpc::CompletionQueue*)>
+class AsyncUnaryCall : public AsyncCall {
+  public:
+    using CompletionFunc = std::function<void(AsyncUnaryCall<Request, Reply, StubInterface, PrepareAsyncUnary>*)>;
+
+    static UnaryStats stats() { return unary_stats_; }
+
+    explicit AsyncUnaryCall(grpc::CompletionQueue* queue, StubInterface* stub, CompletionFunc completion_handler = {})
+        : AsyncCall(queue), stub_(stub), completion_handler_(std::move(completion_handler)) {
+        finish_processor_ = [&](bool ok) { process_finish(ok); };
+    }
+
+    void start(const Request& request) {
+        SILK_TRACE << "AsyncUnaryCall::start START";
+        auto response_reader = (stub_->*PrepareAsyncUnary)(&client_context_, request, queue_);
+        response_reader->StartCall();
+        response_reader->Finish(&reply_, &status_, &finish_processor_);
+        start_time_ = std::chrono::steady_clock::now();
+        ++unary_stats_.started_count;
+        SILK_TRACE << "AsyncUnaryCall::start END";
+    }
+
+    Reply reply() const { return reply_; }
+
+  protected:
+    void process_finish(bool ok) {
+        end_time_ = std::chrono::steady_clock::now();
+        ++unary_stats_.completed_count;
+        if (ok && status_.ok()) {
+            ++unary_stats_.ok_count;
+        } else {
+            ++unary_stats_.ko_count;
+        }
+        handle_finish(ok);
+        if (completion_handler_) {
+            completion_handler_(this);
+        }
+    }
+
+    virtual void handle_finish(bool /*ok*/) {}
+
+    inline static UnaryStats unary_stats_;
+
+    StubInterface* stub_;
+    Reply reply_;
+    TagProcessor finish_processor_;
+    CompletionFunc completion_handler_;
+};
+
+struct ServerStreamingStats {
+    uint64_t started_count{0};
+    uint64_t received_count{0};
+    uint64_t completed_count{0};
+    uint64_t cancelled_count{0};
+    uint64_t ok_count{0};
+    uint64_t ko_count{0};
+};
+
+inline std::ostream& operator<<(std::ostream& out, const ServerStreamingStats& stats) {
+    out << "started=" << stats.started_count << " received=" << stats.received_count
+        << " completed=" << stats.completed_count << " cancelled=" << stats.cancelled_count
+        << " [OK=" << stats.ok_count << " KO=" << stats.ko_count << "]";
+    return out;
+}
+
+template <typename Reply>
+using AsyncReaderPtr = std::unique_ptr<grpc::ClientAsyncReaderInterface<Reply>>;
+
+template <
+    typename Request,
+    typename Reply,
+    typename StubInterface,
+    AsyncReaderPtr<Reply> (StubInterface::*PrepareAsyncServerStreaming)(grpc::ClientContext*, const Request&, grpc::CompletionQueue*)>
+class AsyncServerStreamingCall : public AsyncCall {
+  public:
+    static ServerStreamingStats stats() { return server_streaming_stats_; }
+
+    explicit AsyncServerStreamingCall(grpc::CompletionQueue* queue, StubInterface* stub)
+        : AsyncCall(queue), stub_(stub) {
+        start_processor_ = [&](bool ok) { process_start(ok); };
+        read_processor_ = [&](bool ok) { process_read(ok); };
+        finish_processor_ = [&](bool ok) { process_finish(ok); };
+    }
+
+    void start(const Request& request) {
+        SILK_TRACE << "AsyncServerStreamingCall::start START";
+        reader_ = (stub_->*PrepareAsyncServerStreaming)(&client_context_, request, queue_);
+        reader_->StartCall(&start_processor_);
+        start_time_ = std::chrono::steady_clock::now();
+        ++server_streaming_stats_.started_count;
+        SILK_TRACE << "AsyncServerStreamingCall::start END";
+    }
+
+    void cancel() {
+        SILK_TRACE << "AsyncServerStreamingCall::cancel START";
+        client_context_.TryCancel();
+        ++server_streaming_stats_.cancelled_count;
+        SILK_TRACE << "AsyncServerStreamingCall::cancel END";
+    }
+
+  protected:
+    virtual void read() {
+        SILK_TRACE << "AsyncServerStreamingCall::read START";
+        reader_->Read(&reply_, &read_processor_);
+        SILK_TRACE << "AsyncServerStreamingCall::read END";
+    }
+
+    virtual void finish() {
+        SILK_TRACE << "AsyncServerStreamingCall::finish START";
+        reader_->Finish(&status_, &finish_processor_);
+        SILK_TRACE << "AsyncServerStreamingCall::finish END";
+    }
+
+    void process_start(bool ok) {
+        SILK_DEBUG << "AsyncServerStreamingCall::process_start ok: " << ok;
+        if (ok) {
+            started_ = true;
+            SILK_DEBUG << "AsyncServerStreamingCall call started";
+            // Schedule next async READ event.
+            read();
+            SILK_DEBUG << "AsyncServerStreamingCall read scheduled";
+        } else {
+            SILK_DEBUG << "AsyncServerStreamingCall interrupted started: " << started_;
+            done_ = true;
+            finish();
+        }
+    }
+
+    void process_read(bool ok) {
+        SILK_DEBUG << "AsyncServerStreamingCall::process_read ok: " << ok;
+        if (ok) {
+            handle_read();
+            ++server_streaming_stats_.received_count;
+            SILK_DEBUG << "AsyncServerStreamingCall new message received: " << server_streaming_stats_.received_count;
+            // Schedule next async READ event.
+            read();
+            SILK_DEBUG << "AsyncServerStreamingCall read scheduled";
+        } else {
+            SILK_DEBUG << "AsyncServerStreamingCall interrupted started: " << started_;
+            done_ = true;
+            finish();
+        }
+    }
+
+    void process_finish(bool ok) {
+        SILK_DEBUG << "AsyncServerStreamingCall::process_finish ok: " << ok;
+        if (ok) {
+            end_time_ = std::chrono::steady_clock::now();
+            ++server_streaming_stats_.completed_count;
+            if (status_.ok()) {
+                ++server_streaming_stats_.ok_count;
+            } else {
+                ++server_streaming_stats_.ko_count;
+            }
+        } else {
+            SILK_DEBUG << "AsyncServerStreamingCall finished done: " << done_;
+            SILKWORM_ASSERT(done_);
+        }
+        handle_finish();
+    }
+
+    virtual void handle_read() = 0;
+    virtual void handle_finish() = 0;
+
+    inline static ServerStreamingStats server_streaming_stats_;
+
+    TagProcessor start_processor_;
+    TagProcessor read_processor_;
+    TagProcessor finish_processor_;
+
+    StubInterface* stub_;
+    AsyncReaderPtr<Reply> reader_;
+    grpc::Status status_;
+    Reply reply_;
+    bool started_{false};
+    bool done_{false};
+};
 
 struct BidirectionalStreamingStats {
     uint64_t started_count{0};
@@ -248,10 +460,7 @@ class AsyncBidirectionalStreamingCall : public AsyncCall {
     grpc::Status status_;
     Request request_;
     Reply reply_;
-    bool started_{false};
     State state_{State::kIdle};
-    bool client_streaming_done_{false};
-    bool server_streaming_done_{false};
 };
 
 class AsyncEtherbaseCall : public AsyncUnaryCall<
@@ -375,7 +584,7 @@ class AsyncClientVersionCall : public AsyncUnaryCall<
         SILK_DEBUG << "AsyncClientVersionCall::handle_finish ok: " << ok << " status: " << status_;
 
         if (ok && status_.ok()) {
-            SILK_INFO << "ClientVersion reply: nodename=" << reply_.nodename() << " [latency=" << latency() / 1ns << " ns]";
+            SILK_INFO << "ClientVersion reply: node name=" << reply_.nodename() << " [latency=" << latency() / 1ns << " ns]";
         } else {
             SILK_ERROR << "ClientVersion failed: " << status_;
         }
@@ -416,7 +625,7 @@ class AsyncNodeInfoCall : public AsyncUnaryCall<
         SILK_DEBUG << "AsyncNodeInfoCall::handle_finish ok: " << ok << " status: " << status_;
 
         if (ok && status_.ok()) {
-            SILK_INFO << "NodeInfo reply: nodesinfo_size=" << reply_.nodesinfo_size() << " [latency=" << latency() / 1ns << " ns]";
+            SILK_INFO << "NodeInfo reply: nodes info size=" << reply_.nodesinfo_size() << " [latency=" << latency() / 1ns << " ns]";
         } else {
             SILK_ERROR << "NodeInfo failed: " << status_;
         }
@@ -553,10 +762,10 @@ class AsyncStateChangesCall
         : AsyncServerStreamingCall(queue, stub) {}
 
     void handle_read() override {
-        SILK_INFO << "StateChanges batch: changebatch_size=" << reply_.changebatch_size()
-                  << " databaseviewid=" << reply_.databaseviewid()
-                  << " pendingblockbasefee=" << reply_.pendingblockbasefee()
-                  << " blockgaslimit=" << reply_.blockgaslimit();
+        SILK_INFO << "StateChanges batch: change batch size=" << reply_.changebatch_size()
+                  << " database view id=" << reply_.databaseviewid()
+                  << " pending block base fee=" << reply_.pendingblockbasefee()
+                  << " block gas limit=" << reply_.blockgaslimit();
     }
 
     void handle_finish() override {
@@ -591,19 +800,19 @@ struct BatchOptions {
     std::vector<Rpc> configured_calls;
     int64_t interval_between_calls{100};
 
-    bool is_configured(Rpc call) const {
+    [[nodiscard]] bool is_configured(Rpc call) const {
         return configured_calls.empty() || contains_call(call);
     }
 
   private:
-    bool contains_call(Rpc call) const {
+    [[nodiscard]] bool contains_call(Rpc call) const {
         return std::find(configured_calls.begin(), configured_calls.end(), call) != configured_calls.end();
     }
 };
 
 class AsyncCallFactory {
   public:
-    AsyncCallFactory(std::shared_ptr<grpc::Channel> channel, grpc::CompletionQueue* queue)
+    AsyncCallFactory(const std::shared_ptr<grpc::Channel>& channel, grpc::CompletionQueue* queue)
         : queue_(queue),
           ethbackend_stub_{remote::ETHBACKEND::NewStub(channel, grpc::StubOptions{})},
           kv_stub_{remote::KV::NewStub(channel, grpc::StubOptions{})} {}
@@ -728,9 +937,13 @@ int main(int argc, char* argv[]) {
     CLI::App app{"ETHBACKEND & KV interface test"};
 
     std::string target_uri{"localhost:9090"};
+    int num_channels{0};
     BatchOptions batch_options;
     silkworm::log::Level log_level{silkworm::log::Level::kCritical};
     app.add_option("--target", target_uri, "The address to connect to the ETHBACKEND & KV services")
+        ->capture_default_str();
+    app.add_option("--channels", num_channels,
+                   "The number of gRPC channels to use as integer")
         ->capture_default_str();
     app.add_option("--interval", batch_options.interval_between_calls,
                    "The interval to wait between successive call batches as milliseconds")
@@ -745,7 +958,7 @@ int main(int argc, char* argv[]) {
                            static_cast<uint32_t>(silkworm::log::Level::kTrace)))
         ->default_val(std::to_string(static_cast<uint32_t>(log_level)));
 
-    CLI11_PARSE(app, argc, argv);
+    CLI11_PARSE(app, argc, argv)
 
     silkworm::log::Settings log_settings{};
     log_settings.log_threads = true;
@@ -759,7 +972,12 @@ int main(int argc, char* argv[]) {
         boost::asio::io_context scheduler;
         boost::asio::signal_set signals{scheduler, SIGINT, SIGTERM};
 
-        auto channel = grpc::CreateChannel(target_uri, grpc::InsecureChannelCredentials());
+        std::vector<std::shared_ptr<grpc::Channel>> channels;
+        for (int i{0}; i < num_channels; ++i) {
+            grpc::ChannelArguments channel_args;
+            channel_args.SetInt(GRPC_ARG_USE_LOCAL_SUBCHANNEL_POOL, 1);
+            channels.push_back(grpc::CreateCustomChannel(target_uri, grpc::InsecureChannelCredentials(), channel_args));
+        }
         grpc::CompletionQueue queue;
 
         std::mutex mutex;
@@ -768,13 +986,15 @@ int main(int argc, char* argv[]) {
         std::atomic_bool pump_stop{false};
         std::thread pump_thread{[&]() {
             SILK_TRACE << "Pump thread: " << pump_thread.get_id() << " start";
-            AsyncCallFactory call_factory{channel, &queue};
+            std::size_t channel_index{0};
             while (!pump_stop) {
+                AsyncCallFactory call_factory{channels[channel_index], &queue};
                 call_factory.start_batch(pump_stop, batch_options);
                 SILK_DEBUG << "Pump thread going to wait for " << batch_options.interval_between_calls << "ms...";
                 std::unique_lock<std::mutex> lock{mutex};
                 const auto now = std::chrono::system_clock::now();
                 shutdown_requested.wait_until(lock, now + std::chrono::milliseconds{batch_options.interval_between_calls});
+                channel_index = ++channel_index % channels.size();
             }
             AsyncStateChangesCall::cancel_pending_calls();
             SILK_TRACE << "Pump thread: " << pump_thread.get_id() << " end";
@@ -789,8 +1009,8 @@ int main(int argc, char* argv[]) {
                 bool ok{false};
                 const auto got_event = queue.Next(&tag, &ok);
                 if (got_event && !completion_stop) {
-                    TagProcessor* processor = reinterpret_cast<TagProcessor*>(tag);
-                    SILK_DEBUG << "CompletionEndPoint::poll_one post operation: " << processor;
+                    auto* processor = reinterpret_cast<TagProcessor*>(tag);
+                    SILK_DEBUG << "Completion thread post operation: " << processor;
                     (*processor)(ok);
                 } else {
                     SILK_DEBUG << "Got shutdown, draining queue...";

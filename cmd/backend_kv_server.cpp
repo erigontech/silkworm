@@ -28,7 +28,8 @@
 #include <silkworm/chain/config.hpp>
 #include <silkworm/common/directories.hpp>
 #include <silkworm/common/log.hpp>
-#include <silkworm/common/settings.hpp>
+#include <silkworm/db/mdbx.hpp>
+#include <silkworm/downloader/sentry_client.hpp>
 #include <silkworm/rpc/server/backend_kv_server.hpp>
 #include <silkworm/rpc/util.hpp>
 
@@ -52,8 +53,6 @@ int parse_command_line(int argc, char* argv[], CLI::App& app, cmd::SilkwormCoreS
     auto& server_settings = settings.server_settings;
 
     // Node options
-    cmd::add_option_chain(app, node_settings.network_id);
-
     std::filesystem::path data_dir;
     cmd::add_option_data_dir(app, data_dir);
 
@@ -65,7 +64,7 @@ int parse_command_line(int argc, char* argv[], CLI::App& app, cmd::SilkwormCoreS
 
     // RPC Server options
     cmd::add_option_private_api_address(app, node_settings.private_api_addr);
-    cmd::add_option_sentry_api_address(app, node_settings.sentry_api_addr);
+    cmd::add_option_external_sentry_address(app, node_settings.external_sentry_addr);
 
     uint32_t num_contexts;
     cmd::add_option_num_contexts(app, num_contexts);
@@ -79,14 +78,6 @@ int parse_command_line(int argc, char* argv[], CLI::App& app, cmd::SilkwormCoreS
     app.parse(argc, argv);
 
     // Validate and assign settings
-    // TODO (canepat) read chain config from database (allows for custom config)
-    const auto known_chain_config{lookup_known_chain(node_settings.network_id)};
-    if (!known_chain_config.has_value()) {
-        SILK_CRIT << "Unknown chain identifier: " << node_settings.network_id;
-        return -1;
-    }
-    node_settings.chain_config = *(known_chain_config->second);
-
     if (!etherbase_address.empty()) {
         const auto etherbase = from_hex(etherbase_address);
         if (!etherbase) {
@@ -128,6 +119,7 @@ int main(int argc, char* argv[]) {
 
         // Initialize logging with custom settings
         log::init(log_settings);
+        log::set_thread_name("bekv_server");
 
         // TODO(canepat): this could be an option in Silkworm logging facility
         rpc::Grpc2SilkwormLogGuard log_guard;
@@ -136,14 +128,37 @@ int main(int argc, char* argv[]) {
         SILK_LOG << "BackEndKvServer build info: " << node_name;
         SILK_LOG << "BackEndKvServer library info: " << get_library_versions();
         SILK_LOG << "BackEndKvServer launched with chain id: " << node_settings.network_id
-                 << " address: " << server_settings.address_uri()
+                 << " address: " << node_settings.private_api_addr
                  << " contexts: " << server_settings.num_contexts();
 
         auto database_env = db::open_env(node_settings.chaindata_env_config);
+        SILK_INFO << "BackEndKvServer MDBX max readers: " << database_env.max_readers();
+
+        // Read chain config from database (this allows for custom config)
+        db::ROTxn ro_txn{database_env};
+        node_settings.chain_config = db::read_chain_config(ro_txn);
+        if (!node_settings.chain_config.has_value()) {
+            throw std::runtime_error("invalid chain config in database");
+        }
+        node_settings.network_id = node_settings.chain_config.value().chain_id;
+        SILK_INFO << "BackEndKvServer chain from db: " << node_settings.network_id;
+
+        // Load genesis hash
+        node_settings.chain_config->genesis_hash = db::read_canonical_header_hash(ro_txn, 0);
+        if (!node_settings.chain_config->genesis_hash.has_value()) {
+            throw std::runtime_error("could not load genesis hash");
+        }
+        SILK_INFO << "BackEndKvServer genesis from db: " << to_hex(*node_settings.chain_config->genesis_hash);
+
+        SentryClient sentry{node_settings.external_sentry_addr, db::ROAccess{database_env},
+                            node_settings.chain_config.value()};
+        sentry.hand_shake();
+        sentry.set_status();
+
+        SILK_INFO << "SetStatus done for Sentry at gRPC end-point: " << node_settings.external_sentry_addr;
+
         EthereumBackEnd backend{node_settings, &database_env};
         backend.set_node_name(node_name);
-
-        SILK_INFO << "BackEndKvServer MDBX max readers: " << database_env.max_readers();
 
         rpc::BackEndKvServer server{server_settings, backend};
         server.build_and_start();

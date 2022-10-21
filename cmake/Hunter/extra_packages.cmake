@@ -15,6 +15,7 @@
 ]]
 
 hunter_add_package(abseil)
+hunter_add_package(asio-grpc)
 hunter_add_package(Boost COMPONENTS thread)
 hunter_add_package(CLI11)
 hunter_add_package(gRPC)

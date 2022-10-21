@@ -45,13 +45,12 @@ TEST_CASE("ServerContext", "[silkworm][rpc][server_context]") {
     grpc::ServerBuilder builder;
     std::unique_ptr<grpc::ServerCompletionQueue> scq = builder.AddCompletionQueue();
     grpc::ServerCompletionQueue* scq_ptr = scq.get();
-    ServerContext server_context{std::move(scq)};
+    ServerContext server_context{0, std::move(scq)};
 
     SECTION("ServerContext") {
         CHECK(server_context.server_queue() == scq_ptr);
         CHECK(server_context.client_queue() != nullptr);
-        CHECK(server_context.server_end_point() != nullptr);
-        CHECK(server_context.client_end_point() != nullptr);
+        CHECK(server_context.io_context() != nullptr);
     }
 
     SECTION("execute_loop") {

@@ -21,10 +21,10 @@
 #include <ostream>
 #include <vector>
 
+#include <agrpc/asio_grpc.hpp>
 #include <boost/asio/io_context.hpp>
 #include <grpcpp/grpcpp.h>
 
-#include <silkworm/rpc/completion_end_point.hpp>
 #include <silkworm/rpc/server/wait_strategy.hpp>
 
 namespace silkworm::rpc {
@@ -32,15 +32,13 @@ namespace silkworm::rpc {
 //! Asynchronous server scheduler running an execution loop.
 class ServerContext {
   public:
-    explicit ServerContext(
-        std::unique_ptr<grpc::ServerCompletionQueue> server_queue,
-        WaitMode wait_mode = WaitMode::blocking);
+    explicit ServerContext(std::size_t context_id, std::unique_ptr<grpc::ServerCompletionQueue>&& server_queue, WaitMode wait_mode = WaitMode::blocking);
 
-    boost::asio::io_context* io_context() const noexcept { return io_context_.get(); }
-    grpc::ServerCompletionQueue* server_queue() const noexcept { return server_queue_.get(); }
-    CompletionEndPoint* server_end_point() const noexcept { return server_end_point_.get(); }
-    grpc::CompletionQueue* client_queue() const noexcept { return client_queue_.get(); }
-    CompletionEndPoint* client_end_point() const noexcept { return client_end_point_.get(); }
+    [[nodiscard]] boost::asio::io_context* io_context() const noexcept { return io_context_.get(); }
+    [[nodiscard]] grpc::ServerCompletionQueue* server_queue() const noexcept { return server_grpc_context_->get_server_completion_queue(); }
+    [[nodiscard]] grpc::CompletionQueue* client_queue() const noexcept { return client_grpc_context_->get_completion_queue(); }
+    [[nodiscard]] agrpc::GrpcContext* server_grpc_context() const noexcept { return server_grpc_context_.get(); }
+    [[nodiscard]] agrpc::GrpcContext* client_grpc_context() const noexcept { return client_grpc_context_.get(); }
 
     //! Execute the scheduler loop until stopped.
     void execute_loop();
@@ -49,6 +47,9 @@ class ServerContext {
     void stop();
 
   private:
+    //! Execute asio-grpc loop until stopped.
+    void execute_loop_agrpc();
+
     //! Execute single-threaded loop until stopped.
     template <typename WaitStrategy>
     void execute_loop_single_threaded(WaitStrategy&& wait_strategy);
@@ -56,16 +57,22 @@ class ServerContext {
     //! Execute multi-threaded loop until stopped.
     void execute_loop_multi_threaded();
 
-    //! The asynchronous event loop scheduler.
+    //! The unique scheduler identifier.
+    std::size_t context_id_;
+
+    //! The asio asynchronous event loop scheduler.
     std::shared_ptr<boost::asio::io_context> io_context_;
 
-    //! The work-tracking executor that keep the scheduler running.
+    //! The work-tracking executor that keep the asio scheduler running.
     boost::asio::execution::any_executor<> work_;
 
-    std::unique_ptr<grpc::ServerCompletionQueue> server_queue_;
-    std::unique_ptr<CompletionEndPoint> server_end_point_;
-    std::unique_ptr<grpc::CompletionQueue> client_queue_;
-    std::unique_ptr<CompletionEndPoint> client_end_point_;
+    //! The asio-grpc asynchronous event schedulers.
+    std::unique_ptr<agrpc::GrpcContext> server_grpc_context_;
+    std::unique_ptr<agrpc::GrpcContext> client_grpc_context_;
+
+    //! The work-tracking executors that keep the asio-grpc scheduler running.
+    boost::asio::executor_work_guard<agrpc::GrpcContext::executor_type> server_grpc_context_work_;
+    boost::asio::executor_work_guard<agrpc::GrpcContext::executor_type> client_grpc_context_work_;
 
     //! The waiting mode used by execution loops during idle cycles.
     WaitMode wait_mode_;
@@ -96,7 +103,7 @@ class ServerContextPool {
 
     void run();
 
-    std::size_t num_contexts() const { return contexts_.size(); }
+    [[nodiscard]] std::size_t num_contexts() const { return contexts_.size(); }
 
     ServerContext const& next_context();
 

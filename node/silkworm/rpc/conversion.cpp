@@ -39,6 +39,11 @@ bool operator==(const H128& lhs, const H128& rhs) {
 
 namespace silkworm::rpc {
 
+constexpr uint64_t lo_lo(const intx::uint256& x) { return x[0]; }
+constexpr uint64_t lo_hi(const intx::uint256& x) { return x[1]; }
+constexpr uint64_t hi_lo(const intx::uint256& x) { return x[2]; }
+constexpr uint64_t hi_hi(const intx::uint256& x) { return x[3]; }
+
 std::string string_from_H512(const types::H512& orig) {
     uint64_t hi_hi_hi = orig.hi().hi().hi();
     uint64_t hi_hi_lo = orig.hi().hi().lo();
@@ -136,6 +141,23 @@ std::unique_ptr<types::H256> H256_from_bytes32(const evmc::bytes32& orig) {
     dest->set_allocated_lo(lo);  // takes ownership
 
     return dest;
+}
+
+std::unique_ptr<types::H256> H256_from_uint256(const intx::uint256& orig) {
+    auto dest = std::make_unique<types::H256>();
+
+    auto hi = new types::H128{};
+    auto lo = new types::H128{};
+
+    hi->set_hi(hi_hi(orig));
+    hi->set_lo(hi_lo(orig));
+    lo->set_hi(lo_hi(orig));
+    lo->set_lo(lo_lo(orig));
+
+    dest->set_allocated_hi(hi);  // take ownership
+    dest->set_allocated_lo(lo);  // take ownership
+
+    return dest;  // transfer ownership
 }
 
 std::unique_ptr<types::H160> H160_from_address(const evmc::address& orig) {

@@ -16,15 +16,23 @@
 
 #include "backend_calls.hpp"
 
-#include <evmc/evmc.hpp>
+#include <silkworm/concurrency/coroutine.hpp>
+
+#include <boost/asio/awaitable.hpp>
+#include <boost/asio/bind_executor.hpp>
 #include <types/types.pb.h>
 
-#include <silkworm/common/endian.hpp>
 #include <silkworm/common/log.hpp>
 #include <silkworm/rpc/conversion.hpp>
 #include <silkworm/rpc/util.hpp>
 
 namespace silkworm::rpc {
+
+template <class RPC, class RequestHandler>
+void BackEndService::register_request_repeatedly(const ServerContext& context, remote::ETHBACKEND::AsyncService* service, RPC rpc, RequestHandler&& handler) {
+    const auto grpc_context = context.server_grpc_context();
+    agrpc::repeatedly_request(rpc, *service, boost::asio::bind_executor(*grpc_context, handler));
+}
 
 remote::EtherbaseReply EtherbaseCall::response_;
 
@@ -36,26 +44,16 @@ void EtherbaseCall::fill_predefined_reply(const EthereumBackEnd& backend) {
     }
 }
 
-EtherbaseCall::EtherbaseCall(boost::asio::io_context& scheduler, remote::ETHBACKEND::AsyncService* service, grpc::ServerCompletionQueue* queue, Handlers handlers)
-    : UnaryRpc<remote::ETHBACKEND::AsyncService, remote::EtherbaseRequest, remote::EtherbaseReply>(scheduler, service, queue, handlers) {
-}
-
-void EtherbaseCall::process(const remote::EtherbaseRequest* request) {
-    SILK_TRACE << "EtherbaseCall::process START request: " << request;
-
+boost::asio::awaitable<void> EtherbaseCall::operator()(grpc::ServerContext& server_context, remote::EtherbaseRequest& request, Responder& writer) {
+    SILK_TRACE << "EtherbaseCall START";
     if (response_.has_address()) {
-        const bool sent = send_response(response_);
-        SILK_TRACE << "EtherbaseCall::process END etherbase: " << to_hex(address_from_H160(response_.address())) << " sent: " << sent;
+        co_await agrpc::finish(writer, response_, grpc::Status::OK);
+        SILK_TRACE << "EtherbaseCall END etherbase: " << to_hex(address_from_H160(response_.address()));
     } else {
         const grpc::Status error{grpc::StatusCode::INTERNAL, "etherbase must be explicitly specified"};
-        finish_with_error(error);
-        SILK_TRACE << "EtherbaseCall::process END error: " << error;
+        co_await agrpc::finish_with_error(writer, error);
+        SILK_TRACE << "EtherbaseCall END error: " << error;
     }
-}
-
-EtherbaseCallFactory::EtherbaseCallFactory(const EthereumBackEnd& backend)
-    : CallFactory<remote::ETHBACKEND::AsyncService, EtherbaseCall>(&remote::ETHBACKEND::AsyncService::RequestEtherbase) {
-    EtherbaseCall::fill_predefined_reply(backend);
 }
 
 remote::NetVersionReply NetVersionCall::response_;
@@ -68,21 +66,10 @@ void NetVersionCall::fill_predefined_reply(const EthereumBackEnd& backend) {
     }
 }
 
-NetVersionCall::NetVersionCall(boost::asio::io_context& scheduler, remote::ETHBACKEND::AsyncService* service, grpc::ServerCompletionQueue* queue, Handlers handlers)
-    : UnaryRpc<remote::ETHBACKEND::AsyncService, remote::NetVersionRequest, remote::NetVersionReply>(scheduler, service, queue, handlers) {
-}
-
-void NetVersionCall::process(const remote::NetVersionRequest* request) {
-    SILK_TRACE << "NetVersionCall::process request: " << request;
-
-    const bool sent = send_response(response_);
-
-    SILK_TRACE << "NetVersionCall::process chain_id: " << response_.id() << " sent: " << sent;
-}
-
-NetVersionCallFactory::NetVersionCallFactory(const EthereumBackEnd& backend)
-    : CallFactory<remote::ETHBACKEND::AsyncService, NetVersionCall>(&remote::ETHBACKEND::AsyncService::RequestNetVersion) {
-    NetVersionCall::fill_predefined_reply(backend);
+boost::asio::awaitable<void> NetVersionCall::operator()(grpc::ServerContext& server_context, remote::NetVersionRequest& request, Responder& writer) {
+    SILK_TRACE << "NetVersionCall START";
+    co_await agrpc::finish(writer, response_, grpc::Status::OK);
+    SILK_TRACE << "NetVersionCall END chain_id: " << response_.id();
 }
 
 std::set<SentryClient*> NetPeerCountCall::sentries_;
@@ -95,56 +82,42 @@ void NetPeerCountCall::remove_sentry(SentryClient* sentry) {
     NetPeerCountCall::sentries_.erase(sentry);
 }
 
-NetPeerCountCall::NetPeerCountCall(boost::asio::io_context& scheduler, remote::ETHBACKEND::AsyncService* service, grpc::ServerCompletionQueue* queue, Handlers handlers)
-    : UnaryRpc<remote::ETHBACKEND::AsyncService, remote::NetPeerCountRequest, remote::NetPeerCountReply>(scheduler, service, queue, handlers) {
-}
+boost::asio::awaitable<void> NetPeerCountCall::operator()(grpc::ServerContext& server_context, remote::NetPeerCountRequest& request, Responder& writer) {
+    SILK_TRACE << "NetPeerCountCall START";
 
-void NetPeerCountCall::process(const remote::NetPeerCountRequest* request) {
-    SILK_TRACE << "NetPeerCountCall::process START request: " << request;
-
-    if (sentries_.size() == 0) {
-        remote::NetPeerCountReply response;
-        const bool sent = send_response(response);
-        SILK_TRACE << "NetPeerCountCall::process END count: 0 sent: " << sent;
-        return;
+    if (sentries_.empty()) {
+        co_await agrpc::finish(writer, remote::NetPeerCountReply{}, grpc::Status::OK);
+        SILK_TRACE << "NetPeerCountCall END count: 0";
+        co_return;
     }
 
-    SILK_DEBUG << "NetPeerCountCall::process num sentries: " << sentries_.size();
+    SILK_DEBUG << "NetPeerCountCall num sentries: " << sentries_.size();
 
-    expected_responses_ = sentries_.size();
-
+    // This sequential implementation is far from ideal when num sentries > 0 because request latencies sum up
+    // We need when_all algorithm for coroutines or make_parallel_group (see *convoluted* parallel_sort in asio examples)
+    uint64_t total_peer_count{0};
+    grpc::Status result_status{grpc::Status::OK};
     for (const auto& sentry : sentries_) {
-        sentry->peer_count([&](const grpc::Status status, const sentry::PeerCountReply& reply) {
-            --expected_responses_;
-
-            SILK_DEBUG << "Peer count replies: [" << (sentries_.size() - expected_responses_) << "/" << sentries_.size() << "]";
-
-            if (status.ok()) {
-                uint64_t count = reply.count();
-                total_count_ += count;
-                SILK_DEBUG << "Reply OK peer count: partial=" << count << " total=" << total_count_;
-            } else {
-                result_status_ = status;
-                SILK_DEBUG << "Reply KO result: " << result_status_;
-            }
-
-            if (expected_responses_ == 0) {
-                if (result_status_.ok()) {
-                    remote::NetPeerCountReply response;
-                    response.set_count(total_count_);
-                    const bool sent = send_response(response);
-                    SILK_TRACE << "NetPeerCountCall::process END count: " << total_count_ << " sent: " << sent;
-                } else {
-                    finish_with_error(result_status_);
-                    SILK_TRACE << "NetPeerCountCall::process END error: " << result_status_;
-                }
-            }
-        });
+        const auto [status, reply] = co_await sentry->peer_count();
+        if (status.ok()) {
+            const uint64_t count = reply.count();
+            total_peer_count += count;
+            SILK_DEBUG << "Reply OK peer count: partial=" << count << " total=" << total_peer_count;
+        } else {
+            result_status = status;
+            SILK_DEBUG << "Reply KO result: " << result_status;
+        }
     }
-}
 
-NetPeerCountCallFactory::NetPeerCountCallFactory()
-    : CallFactory<remote::ETHBACKEND::AsyncService, NetPeerCountCall>(&remote::ETHBACKEND::AsyncService::RequestNetPeerCount) {
+    if (result_status.ok()) {
+        remote::NetPeerCountReply response;
+        response.set_count(total_peer_count);
+        co_await agrpc::finish(writer, response, grpc::Status::OK);
+        SILK_TRACE << "NetPeerCountCall END count: " << total_peer_count;
+    } else {
+        co_await agrpc::finish_with_error(writer, result_status);
+        SILK_TRACE << "NetPeerCountCall END error: " << result_status;
+    }
 }
 
 types::VersionReply BackEndVersionCall::response_;
@@ -155,21 +128,10 @@ void BackEndVersionCall::fill_predefined_reply() {
     BackEndVersionCall::response_.set_patch(std::get<2>(kEthBackEndApiVersion));
 }
 
-BackEndVersionCall::BackEndVersionCall(boost::asio::io_context& scheduler, remote::ETHBACKEND::AsyncService* service, grpc::ServerCompletionQueue* queue, Handlers handlers)
-    : UnaryRpc<remote::ETHBACKEND::AsyncService, google::protobuf::Empty, types::VersionReply>(scheduler, service, queue, handlers) {
-}
-
-void BackEndVersionCall::process(const google::protobuf::Empty* request) {
-    SILK_TRACE << "BackEndVersionCall::process request: " << request;
-
-    const bool sent = send_response(response_);
-
-    SILK_TRACE << "BackEndVersionCall::process rsp: " << &response_ << " sent: " << sent;
-}
-
-BackEndVersionCallFactory::BackEndVersionCallFactory()
-    : CallFactory<remote::ETHBACKEND::AsyncService, BackEndVersionCall>(&remote::ETHBACKEND::AsyncService::RequestVersion) {
-    BackEndVersionCall::fill_predefined_reply();
+boost::asio::awaitable<void> BackEndVersionCall::operator()(grpc::ServerContext& server_context, google::protobuf::Empty&, Responder& writer) {
+    SILK_TRACE << "BackEndVersionCall START";
+    co_await agrpc::finish(writer, response_, grpc::Status::OK);
+    SILK_TRACE << "BackEndVersionCall END version: " << response_.major() << "." << response_.minor() << "." << response_.patch();
 }
 
 remote::ProtocolVersionReply ProtocolVersionCall::response_;
@@ -178,21 +140,10 @@ void ProtocolVersionCall::fill_predefined_reply() {
     ProtocolVersionCall::response_.set_id(kEthDevp2pProtocolVersion);
 }
 
-ProtocolVersionCall::ProtocolVersionCall(boost::asio::io_context& scheduler, remote::ETHBACKEND::AsyncService* service, grpc::ServerCompletionQueue* queue, Handlers handlers)
-    : UnaryRpc<remote::ETHBACKEND::AsyncService, remote::ProtocolVersionRequest, remote::ProtocolVersionReply>(scheduler, service, queue, handlers) {
-}
-
-void ProtocolVersionCall::process(const remote::ProtocolVersionRequest* request) {
-    SILK_TRACE << "ProtocolVersionCall::process request: " << request;
-
-    const bool sent = send_response(response_);
-
-    SILK_TRACE << "ProtocolVersionCall::process rsp: " << &response_ << " sent: " << sent;
-}
-
-ProtocolVersionCallFactory::ProtocolVersionCallFactory()
-    : CallFactory<remote::ETHBACKEND::AsyncService, ProtocolVersionCall>(&remote::ETHBACKEND::AsyncService::RequestProtocolVersion) {
-    ProtocolVersionCall::fill_predefined_reply();
+boost::asio::awaitable<void> ProtocolVersionCall::operator()(grpc::ServerContext& server_context, remote::ProtocolVersionRequest&, Responder& writer) {
+    SILK_TRACE << "ProtocolVersionCall START";
+    co_await agrpc::finish(writer, response_, grpc::Status::OK);
+    SILK_TRACE << "ProtocolVersionCall END id: " << response_.id();
 }
 
 remote::ClientVersionReply ClientVersionCall::response_;
@@ -201,47 +152,26 @@ void ClientVersionCall::fill_predefined_reply(const EthereumBackEnd& backend) {
     ClientVersionCall::response_.set_nodename(backend.node_name());
 }
 
-ClientVersionCall::ClientVersionCall(boost::asio::io_context& scheduler, remote::ETHBACKEND::AsyncService* service, grpc::ServerCompletionQueue* queue, Handlers handlers)
-    : UnaryRpc<remote::ETHBACKEND::AsyncService, remote::ClientVersionRequest, remote::ClientVersionReply>(scheduler, service, queue, handlers) {
+boost::asio::awaitable<void> ClientVersionCall::operator()(grpc::ServerContext& server_context, remote::ClientVersionRequest&, Responder& writer) {
+    SILK_TRACE << "ClientVersionCall START";
+    co_await agrpc::finish(writer, response_, grpc::Status::OK);
+    SILK_TRACE << "ClientVersionCall END node name: " << response_.nodename();
 }
 
-void ClientVersionCall::process(const remote::ClientVersionRequest* request) {
-    SILK_TRACE << "ClientVersionCall::process request: " << request;
-
-    const bool sent = send_response(response_);
-
-    SILK_TRACE << "ClientVersionCall::process rsp: " << &response_ << " sent: " << sent;
-}
-
-ClientVersionCallFactory::ClientVersionCallFactory(const EthereumBackEnd& backend)
-    : CallFactory<remote::ETHBACKEND::AsyncService, ClientVersionCall>(&remote::ETHBACKEND::AsyncService::RequestClientVersion) {
-    ClientVersionCall::fill_predefined_reply(backend);
-}
-
-SubscribeCall::SubscribeCall(boost::asio::io_context& scheduler, remote::ETHBACKEND::AsyncService* service, grpc::ServerCompletionQueue* queue, Handlers handlers)
-    : ServerStreamingRpc<remote::ETHBACKEND::AsyncService, remote::SubscribeRequest, remote::SubscribeReply>(scheduler, service, queue, handlers) {
-}
-
-void SubscribeCall::process(const remote::SubscribeRequest* request) {
-    SILK_TRACE << "SubscribeCall::process request: " << request;
+boost::asio::awaitable<void> SubscribeCall::operator()(grpc::ServerContext& server_context, remote::SubscribeRequest& request, Responder& writer) {
+    SILK_TRACE << "SubscribeCall START type: " << request.type();
 
     // TODO(canepat): remove this example and fill the correct stream responses
     remote::SubscribeReply response1;
     response1.set_type(remote::Event::PENDING_BLOCK);
     response1.set_data("001122");
-    send_response(response1);
+    co_await agrpc::write(writer, response1);
     remote::SubscribeReply response2;
     response2.set_type(remote::Event::PENDING_LOGS);
     response2.set_data("334455");
-    send_response(response2);
+    co_await agrpc::write_and_finish(writer, response2, grpc::WriteOptions{}, grpc::Status::OK);
 
-    const bool closed = close();
-
-    SILK_TRACE << "SubscribeCall::process closed: " << closed;
-}
-
-SubscribeCallFactory::SubscribeCallFactory()
-    : CallFactory<remote::ETHBACKEND::AsyncService, SubscribeCall>(&remote::ETHBACKEND::AsyncService::RequestSubscribe) {
+    SILK_TRACE << "SubscribeCall END";
 }
 
 std::set<SentryClient*> NodeInfoCall::sentries_;
@@ -254,64 +184,77 @@ void NodeInfoCall::remove_sentry(SentryClient* sentry) {
     NodeInfoCall::sentries_.erase(sentry);
 }
 
-NodeInfoCall::NodeInfoCall(boost::asio::io_context& scheduler, remote::ETHBACKEND::AsyncService* service, grpc::ServerCompletionQueue* queue, Handlers handlers)
-    : UnaryRpc<remote::ETHBACKEND::AsyncService, remote::NodesInfoRequest, remote::NodesInfoReply>(scheduler, service, queue, handlers) {
-}
+boost::asio::awaitable<void> NodeInfoCall::operator()(grpc::ServerContext& server_context, remote::NodesInfoRequest& request, Responder& writer) {
+    SILK_TRACE << "NodeInfoCall START limit: " << request.limit();
 
-void NodeInfoCall::process(const remote::NodesInfoRequest* request) {
-    SILK_TRACE << "NodeInfoCall::process request: " << request << " limit: " << request->limit();
-
-    if (sentries_.size() == 0) {
-        remote::NodesInfoReply response;
-        const bool sent = send_response(response);
-        SILK_TRACE << "NodeInfoCall::process END #nodes: 0 sent: " << sent;
-        return;
+    if (sentries_.empty()) {
+        co_await agrpc::finish(writer, remote::NodesInfoReply{}, grpc::Status::OK);
+        SILK_TRACE << "NodeInfoCall END #nodes: 0";
+        co_return;
     }
 
-    expected_responses_ = sentries_.size();
+    SILK_DEBUG << "NodeInfoCall num sentries: " << sentries_.size();
 
+    // This sequential implementation is far from ideal when num sentries > 0 because request latencies sum up
+    // We need when_all algorithm for coroutines or make_parallel_group (see *convoluted* parallel_sort in asio examples)
+    remote::NodesInfoReply response;
+    grpc::Status result_status{grpc::Status::OK};
     for (const auto& sentry : sentries_) {
-        sentry->node_info([&](const grpc::Status status, const types::NodeInfoReply& reply) {
-            --expected_responses_;
+        const auto [status, reply] = co_await sentry->node_info();
+        if (status.ok()) {
+            types::NodeInfoReply* nodes_info = response.add_nodesinfo();
+            *nodes_info = reply;
+            SILK_DEBUG << "Reply OK node info: name=" << reply.name();
+        } else {
+            result_status = status;
+            SILK_DEBUG << "Reply KO result: " << result_status;
+        }
+    }
 
-            if (status.ok()) {
-                types::NodeInfoReply* nodes_info = response_.add_nodesinfo();
-                *nodes_info = reply;
-            } else {
-                result_status_ = status;
-            }
-
-            if (expected_responses_ == 0) {
-                if (result_status_.ok()) {
-                    const bool sent = send_response(response_);
-                    SILK_TRACE << "NodeInfoCall::process END #nodes: " << response_.nodesinfo_size() << " sent: " << sent;
-                } else {
-                    finish_with_error(result_status_);
-                    SILK_TRACE << "NodeInfoCall::process END error: " << result_status_;
-                }
-            }
-        });
+    if (result_status.ok()) {
+        co_await agrpc::finish(writer, response, grpc::Status::OK);
+        SILK_TRACE << "NodeInfoCall END #nodes: " << response.nodesinfo_size();
+    } else {
+        co_await agrpc::finish_with_error(writer, result_status);
+        SILK_TRACE << "NodeInfoCall END error: " << result_status;
     }
 }
 
-NodeInfoCallFactory::NodeInfoCallFactory()
-    : CallFactory<remote::ETHBACKEND::AsyncService, NodeInfoCall>(&remote::ETHBACKEND::AsyncService::RequestNodeInfo) {
+BackEndService::BackEndService(const EthereumBackEnd& backend) {
+    EtherbaseCall::fill_predefined_reply(backend);
+    NetVersionCall::fill_predefined_reply(backend);
+    BackEndVersionCall::fill_predefined_reply();
+    ProtocolVersionCall::fill_predefined_reply();
+    ClientVersionCall::fill_predefined_reply(backend);
 }
 
-BackEndService::BackEndService(const EthereumBackEnd& backend)
-    : etherbase_factory_{backend}, net_version_factory_{backend}, client_version_factory_{backend} {
-}
-
-void BackEndService::register_backend_request_calls(boost::asio::io_context& scheduler, remote::ETHBACKEND::AsyncService* async_service, grpc::ServerCompletionQueue* queue) {
-    // Register one requested call for each RPC factory
-    etherbase_factory_.create_rpc(scheduler, async_service, queue);
-    net_version_factory_.create_rpc(scheduler, async_service, queue);
-    net_peer_count_factory_.create_rpc(scheduler, async_service, queue);
-    backend_version_factory_.create_rpc(scheduler, async_service, queue);
-    protocol_version_factory_.create_rpc(scheduler, async_service, queue);
-    client_version_factory_.create_rpc(scheduler, async_service, queue);
-    subscribe_factory_.create_rpc(scheduler, async_service, queue);
-    node_info_factory_.create_rpc(scheduler, async_service, queue);
+void BackEndService::register_backend_request_calls(const ServerContext& context, remote::ETHBACKEND::AsyncService* service) {
+    SILK_INFO << "BackEndService::register_backend_request_calls start";
+    // Register one requested call repeatedly for each RPC: asio-grpc will take care of re-registration on any incoming call
+    register_request_repeatedly(context, service, &remote::ETHBACKEND::AsyncService::RequestEtherbase, [&](auto&&... args) {
+        return EtherbaseCall{}(std::forward<decltype(args)>(args)...);
+    });
+    register_request_repeatedly(context, service, &remote::ETHBACKEND::AsyncService::RequestNetVersion, [&](auto&&... args) {
+        return NetVersionCall{}(std::forward<decltype(args)>(args)...);
+    });
+    register_request_repeatedly(context, service, &remote::ETHBACKEND::AsyncService::RequestNetPeerCount, [&](auto&&... args) {
+        return NetPeerCountCall{}(std::forward<decltype(args)>(args)...);
+    });
+    register_request_repeatedly(context, service, &remote::ETHBACKEND::AsyncService::RequestVersion, [&](auto&&... args) {
+        return BackEndVersionCall{}(std::forward<decltype(args)>(args)...);
+    });
+    register_request_repeatedly(context, service, &remote::ETHBACKEND::AsyncService::RequestProtocolVersion, [&](auto&&... args) {
+        return ProtocolVersionCall{}(std::forward<decltype(args)>(args)...);
+    });
+    register_request_repeatedly(context, service, &remote::ETHBACKEND::AsyncService::RequestClientVersion, [&](auto&&... args) {
+        return ClientVersionCall{}(std::forward<decltype(args)>(args)...);
+    });
+    register_request_repeatedly(context, service, &remote::ETHBACKEND::AsyncService::RequestSubscribe, [&](auto&&... args) {
+        return SubscribeCall{}(std::forward<decltype(args)>(args)...);
+    });
+    register_request_repeatedly(context, service, &remote::ETHBACKEND::AsyncService::RequestNodeInfo, [&](auto&&... args) {
+        return NodeInfoCall{}(std::forward<decltype(args)>(args)...);
+    });
 }
 
 void BackEndService::add_sentry(std::unique_ptr<SentryClient>&& sentry) {

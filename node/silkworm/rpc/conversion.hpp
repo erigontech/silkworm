@@ -20,6 +20,7 @@
 #include <string>
 
 #include <evmc/evmc.hpp>
+#include <intx/intx.hpp>
 #include <types/types.pb.h>
 
 #include <silkworm/common/base.hpp>
@@ -37,6 +38,10 @@ bool operator==(const H128& lhs, const H128& rhs);
 
 namespace silkworm::rpc {
 
+// TODO (canepat) move sentry_type_casts here and unify
+// TODO (canepat) sentry_type_casts: better function naming, smart helpers
+// TODO (canepat) conversion: better module name and location
+
 //! Convert internal RPC H512 type instance to std::string.
 std::string string_from_H512(const types::H512& orig);
 
@@ -51,6 +56,9 @@ std::unique_ptr<types::H512> H512_from_string(const std::string& orig);
 
 //! Convert evmc::bytes32 to internal RPC H256 type instance.
 std::unique_ptr<types::H256> H256_from_bytes32(const evmc::bytes32& orig);
+
+//! Convert intx::uint256 to internal RPC H256 type instance.
+std::unique_ptr<types::H256> H256_from_uint256(const intx::uint256& orig);
 
 //! Convert evmc::address to internal RPC H160 type instance.
 std::unique_ptr<types::H160> H160_from_address(const evmc::address& orig);

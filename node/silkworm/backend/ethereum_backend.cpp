@@ -37,7 +37,7 @@ EthereumBackEnd::EthereumBackEnd(
     }
 
     // Get the list of Sentry client addresses from node settings
-    std::stringstream sentry_list_stream{node_settings_.sentry_api_addr};
+    std::stringstream sentry_list_stream{node_settings_.external_sentry_addr};
     std::string sentry_address;
     while (std::getline(sentry_list_stream, sentry_address, kSentryAddressDelimiter)) {
         sentry_addresses_.push_back(sentry_address);

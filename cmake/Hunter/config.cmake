@@ -25,6 +25,14 @@ hunter_cmake_args(
 )
 
 hunter_config(
+  asio-grpc
+  VERSION 2.0.0
+  URL https://github.com/Tradias/asio-grpc/archive/refs/tags/v2.0.0.tar.gz
+  SHA1 a727806a5c93c811e8f73ecb1e733efc4739d5ff
+  CMAKE_ARGS ASIO_GRPC_USE_BOOST_CONTAINER=ON
+)
+
+hunter_config(
   Microsoft.GSL
   VERSION 4.0.0
   URL https://github.com/microsoft/GSL/archive/v4.0.0.tar.gz

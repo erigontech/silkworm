@@ -23,6 +23,10 @@
 namespace silkworm::rpc {
 
 bool AbslParseFlag(absl::string_view text, WaitMode* wait_mode, std::string* error) {
+    if (text == "backoff") {
+        *wait_mode = WaitMode::backoff;
+        return true;
+    }
     if (text == "blocking") {
         *wait_mode = WaitMode::blocking;
         return true;
@@ -45,6 +49,8 @@ bool AbslParseFlag(absl::string_view text, WaitMode* wait_mode, std::string* err
 
 std::string AbslUnparseFlag(WaitMode wait_mode) {
     switch (wait_mode) {
+        case WaitMode::backoff:
+            return "backoff";
         case WaitMode::blocking:
             return "blocking";
         case WaitMode::sleeping:

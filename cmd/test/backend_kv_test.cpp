@@ -15,6 +15,7 @@
 */
 
 #include <chrono>
+#include <condition_variable>
 #include <functional>
 #include <iostream>
 #include <memory>
@@ -994,7 +995,7 @@ int main(int argc, char* argv[]) {
                 std::unique_lock<std::mutex> lock{mutex};
                 const auto now = std::chrono::system_clock::now();
                 shutdown_requested.wait_until(lock, now + std::chrono::milliseconds{batch_options.interval_between_calls});
-                channel_index = ++channel_index % channels.size();
+                channel_index = (channel_index + 1) % channels.size();
             }
             AsyncStateChangesCall::cancel_pending_calls();
             SILK_TRACE << "Pump thread: " << pump_thread.get_id() << " end";

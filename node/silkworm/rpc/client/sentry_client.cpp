@@ -17,7 +17,7 @@
 #include "sentry_client.hpp"
 
 #include <chrono>
-#include <utility>
+#include <utility>  // for std::exchange in Boost 1.78, fixed in Boost 1.79
 
 #include <agrpc/asio_grpc.hpp>
 #include <boost/asio/co_spawn.hpp>

@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include <utility>  // for std::exchange in Boost 1.78, fixed in Boost 1.79
+
 #include <agrpc/detail/rpc.hpp>
 #include <agrpc/grpc_context.hpp>
 #include <agrpc/rpc.hpp>

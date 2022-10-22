@@ -19,7 +19,7 @@
 #include <cstddef>
 #include <memory>
 #include <ostream>
-#include <utility>
+#include <utility>  // for std::exchange in Boost 1.78, fixed in Boost 1.79
 #include <vector>
 
 #include <agrpc/asio_grpc.hpp>

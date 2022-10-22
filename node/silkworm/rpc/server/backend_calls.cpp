@@ -47,7 +47,7 @@ void EtherbaseCall::fill_predefined_reply(const EthereumBackEnd& backend) {
     }
 }
 
-awaitable<void> EtherbaseCall::operator()(grpc::ServerContext& /*server_context*/, remote::EtherbaseRequest& request,
+awaitable<void> EtherbaseCall::operator()(grpc::ServerContext& /*server_context*/, remote::EtherbaseRequest& /*request*/,
                                           Responder& writer) {
     SILK_TRACE << "EtherbaseCall START";
     if (response_.has_address()) {
@@ -70,7 +70,7 @@ void NetVersionCall::fill_predefined_reply(const EthereumBackEnd& backend) {
     }
 }
 
-awaitable<void> NetVersionCall::operator()(grpc::ServerContext& /*server_context*/, remote::NetVersionRequest& request,
+awaitable<void> NetVersionCall::operator()(grpc::ServerContext& /*server_context*/, remote::NetVersionRequest& /*request*/,
                                            Responder& writer) {
     SILK_TRACE << "NetVersionCall START";
     co_await agrpc::finish(writer, response_, grpc::Status::OK);
@@ -87,7 +87,7 @@ void NetPeerCountCall::remove_sentry(SentryClient* sentry) {
     NetPeerCountCall::sentries_.erase(sentry);
 }
 
-awaitable<void> NetPeerCountCall::operator()(grpc::ServerContext& /*server_context*/, remote::NetPeerCountRequest& request,
+awaitable<void> NetPeerCountCall::operator()(grpc::ServerContext& /*server_context*/, remote::NetPeerCountRequest& /*request*/,
                                              Responder& writer) {
     SILK_TRACE << "NetPeerCountCall START";
 
@@ -134,7 +134,7 @@ void BackEndVersionCall::fill_predefined_reply() {
     BackEndVersionCall::response_.set_patch(std::get<2>(kEthBackEndApiVersion));
 }
 
-awaitable<void> BackEndVersionCall::operator()(grpc::ServerContext& /*server_context*/, google::protobuf::Empty&,
+awaitable<void> BackEndVersionCall::operator()(grpc::ServerContext& /*server_context*/, google::protobuf::Empty& /*request*/,
                                                Responder& writer) {
     SILK_TRACE << "BackEndVersionCall START";
     co_await agrpc::finish(writer, response_, grpc::Status::OK);
@@ -147,7 +147,7 @@ void ProtocolVersionCall::fill_predefined_reply() {
     ProtocolVersionCall::response_.set_id(kEthDevp2pProtocolVersion);
 }
 
-awaitable<void> ProtocolVersionCall::operator()(grpc::ServerContext& /*server_context*/, remote::ProtocolVersionRequest&,
+awaitable<void> ProtocolVersionCall::operator()(grpc::ServerContext& /*server_context*/, remote::ProtocolVersionRequest& /*request*/,
                                                 Responder& writer) {
     SILK_TRACE << "ProtocolVersionCall START";
     co_await agrpc::finish(writer, response_, grpc::Status::OK);
@@ -160,14 +160,15 @@ void ClientVersionCall::fill_predefined_reply(const EthereumBackEnd& backend) {
     ClientVersionCall::response_.set_nodename(backend.node_name());
 }
 
-awaitable<void> ClientVersionCall::operator()(grpc::ServerContext& /*server_context*/, remote::ClientVersionRequest&,
+awaitable<void> ClientVersionCall::operator()(grpc::ServerContext& /*server_context*/, remote::ClientVersionRequest& /*request*/,
                                               Responder& writer) {
     SILK_TRACE << "ClientVersionCall START";
     co_await agrpc::finish(writer, response_, grpc::Status::OK);
     SILK_TRACE << "ClientVersionCall END node name: " << response_.nodename();
 }
 
-awaitable<void> SubscribeCall::operator()(grpc::ServerContext& /*server_context*/, remote::SubscribeRequest& request, Responder& writer) {
+awaitable<void> SubscribeCall::operator()(grpc::ServerContext& /*server_context*/, remote::SubscribeRequest& request,
+                                          Responder& writer) {
     SILK_TRACE << "SubscribeCall START type: " << request.type();
 
     // TODO(canepat): remove this example and fill the correct stream responses
@@ -193,7 +194,8 @@ void NodeInfoCall::remove_sentry(SentryClient* sentry) {
     NodeInfoCall::sentries_.erase(sentry);
 }
 
-awaitable<void> NodeInfoCall::operator()(grpc::ServerContext& /*server_context*/, remote::NodesInfoRequest& request, Responder& writer) {
+awaitable<void> NodeInfoCall::operator()(grpc::ServerContext& /*server_context*/, remote::NodesInfoRequest& request,
+                                         Responder& writer) {
     SILK_TRACE << "NodeInfoCall START limit: " << request.limit();
 
     if (sentries_.empty()) {

@@ -126,8 +126,8 @@ TEST_CASE("BitTorrentClient::BitTorrentClient", "[silkworm][snapshot][bittorrent
 
     TestRepository repo;
     BitTorrentSettings settings{};
-    settings.repository_path = repo.path();
-    settings.magnets_file_path = repo.magnets_file_path();
+    settings.repository_path = repo.path().string();
+    settings.magnets_file_path = repo.magnets_file_path().string();
 
     SECTION("one invalid magnet link") {
         // The following magnet link has malformed URL format ("unsupported URL protocol")
@@ -158,8 +158,8 @@ TEST_CASE("BitTorrentClient::execute_loop", "[silkworm][snapshot][bittorrent]") 
 
     TestRepository repo;
     BitTorrentSettings settings{};
-    settings.repository_path = repo.path();
-    settings.magnets_file_path = repo.magnets_file_path();
+    settings.repository_path = repo.path().string();
+    settings.magnets_file_path = repo.magnets_file_path().string();
 
     SECTION("empty magnet file") {
         BitTorrentClient client{settings};
@@ -185,8 +185,8 @@ TEST_CASE("BitTorrentClient::execute_loop", "[silkworm][snapshot][bittorrent]") 
 TEST_CASE("BitTorrentClient::stop", "[silkworm][snapshot][bittorrent]") {
     TestRepository repo;
     BitTorrentSettings settings{};
-    settings.repository_path = repo.path();
-    settings.magnets_file_path = repo.magnets_file_path();
+    settings.repository_path = repo.path().string();
+    settings.magnets_file_path = repo.magnets_file_path().string();
 
     SECTION("before starting") {
         BitTorrentClient client{settings};
@@ -220,8 +220,8 @@ TEST_CASE("BitTorrentClient::request_torrent_updates", "[silkworm][snapshot][bit
         constexpr std::chrono::seconds kResumeDataSaveInterval{1};
         TestRepository repo;
         BitTorrentSettings settings{};
-        settings.repository_path = repo.path();
-        settings.magnets_file_path = repo.magnets_file_path();
+        settings.repository_path = repo.path().string();
+        settings.magnets_file_path = repo.magnets_file_path().string();
         settings.resume_data_save_interval = kResumeDataSaveInterval;
         BitTorrentClient_ForTest client{settings};
         CHECK_NOTHROW(client.request_torrent_updates());
@@ -237,8 +237,8 @@ TEST_CASE("BitTorrentClient::process_alerts", "[silkworm][snapshot][bittorrent]"
         repo.add_magnet("magnet:?xt=urn:btih:df09957d8a28af3bc5137478885a8003677ca878");
         repo.flush();
         BitTorrentSettings settings{};
-        settings.repository_path = repo.path();
-        settings.magnets_file_path = repo.magnets_file_path();
+        settings.repository_path = repo.path().string();
+        settings.magnets_file_path = repo.magnets_file_path().string();
         BitTorrentClient_ForTest client{settings};
         CHECK_NOTHROW(client.process_alerts());
     }
@@ -249,8 +249,8 @@ TEST_CASE("BitTorrentClient::handle_alert", "[silkworm][snapshot][bittorrent]") 
 
     TestRepository repo;
     BitTorrentSettings settings{};
-    settings.repository_path = repo.path();
-    settings.magnets_file_path = repo.magnets_file_path();
+    settings.repository_path = repo.path().string();
+    settings.magnets_file_path = repo.magnets_file_path().string();
     BitTorrentClient_ForTest client{settings};
     lt::aux::stack_allocator allocator;
     lt::session session(lt::settings_pack{});

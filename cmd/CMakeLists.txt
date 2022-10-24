@@ -26,6 +26,8 @@ endif()
 add_subdirectory(test)
 
 if(NOT SILKWORM_CORE_ONLY)
+  # Benchmarks
+  add_subdirectory(benchmark)
 
   find_package(absl CONFIG REQUIRED)
   find_package(CLI11 CONFIG REQUIRED)

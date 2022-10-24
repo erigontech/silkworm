@@ -1,4 +1,4 @@
-#[[
+/*
    Copyright 2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,13 +12,8 @@
    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
    See the License for the specific language governing permissions and
    limitations under the License.
-]]
+*/
 
-hunter_add_package(abseil)
-hunter_add_package(asio-grpc)
-hunter_add_package(benchmark)
-hunter_add_package(Boost COMPONENTS container thread)
-hunter_add_package(CLI11)
-hunter_add_package(gRPC)
-hunter_add_package(OpenSSL)
-hunter_add_package(Protobuf)
+#include <benchmark/benchmark.h>
+
+BENCHMARK_MAIN();

@@ -35,13 +35,13 @@ namespace silkworm {
 namespace fs = std::filesystem;
 using namespace std::chrono_literals;
 
-std::vector<char> BitTorrentClient::load_file(const std::string& filename) {
+std::vector<char> BitTorrentClient::load_file(const fs::path& filename) {
     std::ifstream input_file_stream{filename, std::ios_base::binary};
     input_file_stream.unsetf(std::ios_base::skipws);
     return {std::istream_iterator<char>(input_file_stream), std::istream_iterator<char>()};
 }
 
-void BitTorrentClient::save_file(const std::string& filename, const std::vector<char>& data) {
+void BitTorrentClient::save_file(const fs::path& filename, const std::vector<char>& data) {
     SILK_DEBUG << "Save #data=" << data.size() << " in file: " << filename;
     std::ofstream output_file_stream{filename, std::ios_base::binary};
     output_file_stream.unsetf(std::ios_base::skipws);
@@ -50,8 +50,8 @@ void BitTorrentClient::save_file(const std::string& filename, const std::vector<
 
 BitTorrentClient::BitTorrentClient(BitTorrentSettings settings)
     : settings_(std::move(settings)),
-      session_file_{settings_.repository_path + fs::path::preferred_separator + kSessionFileName},
-      resume_dir_{settings_.repository_path + fs::path::preferred_separator + kResumeDirName},
+      session_file_{fs::path(settings_.repository_path) / fs::path(kSessionFileName)},
+      resume_dir_{fs::path(settings_.repository_path) / fs::path(kResumeDirName)},
       session_{load_or_create_session_parameters()} {
     SILK_TRACE << "BitTorrentClient::BitTorrentClient start";
     auto add_magnet_params_sequence = resume_or_create_magnets();
@@ -136,7 +136,7 @@ std::vector<lt::add_torrent_params> BitTorrentClient::resume_or_create_magnets()
     return add_magnet_params;
 }
 
-std::string BitTorrentClient::resume_file_path(const lt::info_hash_t& info_hashes) const {
+fs::path BitTorrentClient::resume_file_path(const lt::info_hash_t& info_hashes) const {
     const lt::sha1_hash torrent_best_hash{info_hashes.get_best()};
     auto resume_file_name = to_hex({reinterpret_cast<const uint8_t*>(torrent_best_hash.data()), lt::sha1_hash::size()});
     resume_file_name.append(kResumeFileExt);

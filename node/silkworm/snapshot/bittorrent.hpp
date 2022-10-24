@@ -89,12 +89,12 @@ class BitTorrentClient {
     void stop();
 
   protected:
-    static std::vector<char> load_file(const std::string& filename);
-    static void save_file(const std::string& filename, const std::vector<char>& data);
+    static std::vector<char> load_file(const std::filesystem::path& filename);
+    static void save_file(const std::filesystem::path& filename, const std::vector<char>& data);
 
     [[nodiscard]] lt::session_params load_or_create_session_parameters() const;
     [[nodiscard]] std::vector<lt::add_torrent_params> resume_or_create_magnets() const;
-    [[nodiscard]] std::string resume_file_path(const lt::info_hash_t& info_hashes) const;
+    [[nodiscard]] std::filesystem::path resume_file_path(const lt::info_hash_t& info_hashes) const;
     [[nodiscard]] bool exists_resume_file(const lt::info_hash_t& info_hashes) const;
 
     void request_torrent_updates();

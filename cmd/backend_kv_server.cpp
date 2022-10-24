@@ -152,10 +152,10 @@ int main(int argc, char* argv[]) {
 
         SentryClient sentry{node_settings.external_sentry_addr, db::ROAccess{database_env},
                             node_settings.chain_config.value()};
+        SILK_INFO << "Hand-shake and set status start for Sentry at: " << node_settings.external_sentry_addr << "...";
         sentry.hand_shake();
         sentry.set_status();
-
-        SILK_INFO << "SetStatus done for Sentry at gRPC end-point: " << node_settings.external_sentry_addr;
+        SILK_INFO << "Hand-shake and set status completed for Sentry at: " << node_settings.external_sentry_addr;
 
         EthereumBackEnd backend{node_settings, &database_env};
         backend.set_node_name(node_name);

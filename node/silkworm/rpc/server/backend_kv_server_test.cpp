@@ -326,8 +326,8 @@ class TestableEthereumBackEnd : public EthereumBackEnd {
 };
 
 struct BackEndKvE2eTest {
-    BackEndKvE2eTest(silkworm::log::Level log_verbosity, const NodeSettings& options = {},
-                     std::vector<grpc::Status> statuses = {}) : set_verbosity_log_guard{log_verbosity} {
+    BackEndKvE2eTest(silkworm::log::Level log_verbosity, NodeSettings&& options = {},
+                     std::vector<grpc::Status> statuses = {grpc::Status::OK}) : set_verbosity_log_guard{log_verbosity} {
         std::shared_ptr<grpc::Channel> channel =
             grpc::CreateChannel(kTestAddressUri, grpc::InsecureChannelCredentials());
         ethbackend_stub = remote::ETHBACKEND::NewStub(channel);
@@ -350,11 +350,16 @@ struct BackEndKvE2eTest {
         db::open_map(rw_txn, kTestMap);
         rw_txn.commit();
 
+        // Default value for external Sentry address(es) must be erased in tests to avoid conflict on port
+        if (options.external_sentry_addr == "127.0.0.1:9091") {
+            options.external_sentry_addr.clear();
+        }
+
         backend = std::make_unique<TestableEthereumBackEnd>(options, &database_env);
         server = std::make_unique<rpc::BackEndKvServer>(srv_config, *backend);
         server->build_and_start();
 
-        std::stringstream sentry_list_stream{options.sentry_api_addr};
+        std::stringstream sentry_list_stream{options.external_sentry_addr};
         std::string sentry_address;
         std::size_t i{0};
         while (std::getline(sentry_list_stream, sentry_address, kSentryAddressDelimiter)) {
@@ -406,7 +411,7 @@ namespace silkworm::rpc {
 
 // Exclude gRPC tests from sanitizer builds due to data race warnings inside gRPC library
 #ifndef SILKWORM_SANITIZE
-TEST_CASE("BackEndKvServer", "[.]") {
+TEST_CASE("BackEndKvServer", "[silkworm][node][rpc]") {
     test::SetLogVerbosityGuard guard{log::Level::kNone};
     Grpc2SilkwormLogGuard log_guard;
     ServerConfig srv_config;
@@ -421,64 +426,16 @@ TEST_CASE("BackEndKvServer", "[.]") {
     NodeSettings node_settings;
     EthereumBackEnd backend{node_settings, &database_env};
 
-    SECTION("BackEndKvServer::BackEndKvServer OK: create/destroy server", "[.]") {
+    SECTION("BackEndKvServer::BackEndKvServer OK: create/destroy server") {
         BackEndKvServer server{srv_config, backend};
     }
 
-    SECTION("BackEndKvServer::BackEndKvServer OK: create/shutdown/destroy server", "[.]") {
-        BackEndKvServer server{srv_config, backend};
-        server.shutdown();
-    }
-
-    SECTION("BackEndKvServer::build_and_start OK: run server in separate thread", "[.]") {
-        BackEndKvServer server{srv_config, backend};
-        server.build_and_start();
-        std::thread server_thread{[&server]() { server.join(); }};
-        server.shutdown();
-        server_thread.join();
-    }
-
-    SECTION("BackEndKvServer::build_and_start OK: create/shutdown/run/destroy server", "[.]") {
-        BackEndKvServer server{srv_config, backend};
-        server.shutdown();
-        server.build_and_start();
-    }
-
-    SECTION("BackEndKvServer::shutdown OK: shutdown server not running", "[.]") {
+    SECTION("BackEndKvServer::BackEndKvServer OK: create/shutdown/destroy server") {
         BackEndKvServer server{srv_config, backend};
         server.shutdown();
     }
 
-    SECTION("BackEndKvServer::shutdown OK: shutdown twice server not running", "[.]") {
-        BackEndKvServer server{srv_config, backend};
-        server.shutdown();
-        server.shutdown();
-    }
-
-    SECTION("BackEndKvServer::shutdown OK: shutdown running server", "[.]") {
-        BackEndKvServer server{srv_config, backend};
-        server.build_and_start();
-        server.shutdown();
-        server.join();
-    }
-
-    SECTION("BackEndKvServer::shutdown OK: shutdown twice running server", "[.]") {
-        BackEndKvServer server{srv_config, backend};
-        server.build_and_start();
-        server.shutdown();
-        server.shutdown();
-        server.join();
-    }
-
-    SECTION("BackEndKvServer::shutdown OK: shutdown running server again after join", "[.]") {
-        BackEndKvServer server{srv_config, backend};
-        server.build_and_start();
-        server.shutdown();
-        server.join();
-        server.shutdown();
-    }
-
-    SECTION("BackEndKvServer::join OK: shutdown joined server", "[.]") {
+    SECTION("BackEndKvServer::build_and_start OK: run server in separate thread") {
         BackEndKvServer server{srv_config, backend};
         server.build_and_start();
         std::thread server_thread{[&server]() { server.join(); }};
@@ -486,7 +443,55 @@ TEST_CASE("BackEndKvServer", "[.]") {
         server_thread.join();
     }
 
-    SECTION("BackEndKvServer::join OK: shutdown joined server and join again", "[.]") {
+    SECTION("BackEndKvServer::build_and_start OK: create/shutdown/run/destroy server") {
+        BackEndKvServer server{srv_config, backend};
+        server.shutdown();
+        server.build_and_start();
+    }
+
+    SECTION("BackEndKvServer::shutdown OK: shutdown server not running") {
+        BackEndKvServer server{srv_config, backend};
+        server.shutdown();
+    }
+
+    SECTION("BackEndKvServer::shutdown OK: shutdown twice server not running") {
+        BackEndKvServer server{srv_config, backend};
+        server.shutdown();
+        server.shutdown();
+    }
+
+    SECTION("BackEndKvServer::shutdown OK: shutdown running server") {
+        BackEndKvServer server{srv_config, backend};
+        server.build_and_start();
+        server.shutdown();
+        server.join();
+    }
+
+    SECTION("BackEndKvServer::shutdown OK: shutdown twice running server") {
+        BackEndKvServer server{srv_config, backend};
+        server.build_and_start();
+        server.shutdown();
+        server.shutdown();
+        server.join();
+    }
+
+    SECTION("BackEndKvServer::shutdown OK: shutdown running server again after join") {
+        BackEndKvServer server{srv_config, backend};
+        server.build_and_start();
+        server.shutdown();
+        server.join();
+        server.shutdown();
+    }
+
+    SECTION("BackEndKvServer::join OK: shutdown joined server") {
+        BackEndKvServer server{srv_config, backend};
+        server.build_and_start();
+        std::thread server_thread{[&server]() { server.join(); }};
+        server.shutdown();
+        server_thread.join();
+    }
+
+    SECTION("BackEndKvServer::join OK: shutdown joined server and join again") {
         BackEndKvServer server{srv_config, backend};
         server.build_and_start();
         std::thread server_thread{[&server]() { server.join(); }};
@@ -496,11 +501,11 @@ TEST_CASE("BackEndKvServer", "[.]") {
     }
 }
 
-TEST_CASE("BackEndKvServer E2E: empty node settings", "[.]") {
+TEST_CASE("BackEndKvServer E2E: empty node settings", "[silkworm][node][rpc]") {
     BackEndKvE2eTest test{silkworm::log::Level::kNone};
     auto backend_client = *test.backend_client;
 
-    SECTION("Etherbase: return missing coinbase error", "[.]") {
+    SECTION("Etherbase: return missing coinbase error") {
         remote::EtherbaseReply response;
         const auto status = backend_client.etherbase(&response);
         CHECK(!status.ok());
@@ -509,21 +514,21 @@ TEST_CASE("BackEndKvServer E2E: empty node settings", "[.]") {
         CHECK(!response.has_address());
     }
 
-    SECTION("NetVersion: return out-of-range network ID", "[.]") {
+    SECTION("NetVersion: return out-of-range network ID") {
         remote::NetVersionReply response;
         const auto status = backend_client.net_version(&response);
         CHECK(status.ok());
         CHECK(response.id() == 0);
     }
 
-    SECTION("NetPeerCount: return zero peer count", "[.]") {
+    SECTION("NetPeerCount: return zero peer count") {
         remote::NetPeerCountReply response;
         const auto status = backend_client.net_peer_count(&response);
         CHECK(status.ok());
         CHECK(response.count() == 0);
     }
 
-    SECTION("Version: return ETHBACKEND version", "[.]") {
+    SECTION("Version: return ETHBACKEND version") {
         types::VersionReply response;
         const auto status = backend_client.version(&response);
         CHECK(status.ok());
@@ -532,14 +537,14 @@ TEST_CASE("BackEndKvServer E2E: empty node settings", "[.]") {
         CHECK(response.patch() == 0);
     }
 
-    SECTION("ProtocolVersion: return ETH protocol version", "[.]") {
+    SECTION("ProtocolVersion: return ETH protocol version") {
         remote::ProtocolVersionReply response;
         const auto status = backend_client.protocol_version(&response);
         CHECK(status.ok());
         CHECK(response.id() == kEthDevp2pProtocolVersion);
     }
 
-    SECTION("ClientVersion: return Silkworm client version", "[.]") {
+    SECTION("ClientVersion: return Silkworm client version") {
         remote::ClientVersionReply response;
         const auto status = backend_client.client_version(&response);
         CHECK(status.ok());
@@ -547,7 +552,7 @@ TEST_CASE("BackEndKvServer E2E: empty node settings", "[.]") {
     }
 
     // TODO(canepat): change using something meaningful when really implemented
-    SECTION("Subscribe: return streamed subscriptions", "[.]") {
+    SECTION("Subscribe: return streamed subscriptions") {
         remote::SubscribeRequest request;
         std::vector<remote::SubscribeReply> responses;
         const auto status = backend_client.subscribe_and_consume(request, responses);
@@ -555,7 +560,7 @@ TEST_CASE("BackEndKvServer E2E: empty node settings", "[.]") {
         CHECK(responses.size() == 2);
     }
 
-    SECTION("NodeInfo: return information about zero nodes", "[.]") {
+    SECTION("NodeInfo: return information about zero nodes") {
         remote::NodesInfoRequest request;
         request.set_limit(0);
         remote::NodesInfoReply response;
@@ -819,14 +824,14 @@ TEST_CASE("BackEndKvServer E2E: KV", "[.]") {
     }
 }
 
-TEST_CASE("BackEndKvServer E2E: mainnet chain with zero etherbase", "[.]") {
+TEST_CASE("BackEndKvServer E2E: mainnet chain with zero etherbase", "[silkworm][node][rpc]") {
     NodeSettings node_settings;
     node_settings.chain_config = *(silkworm::lookup_known_chain("mainnet")->second);
     node_settings.etherbase = evmc::address{};
-    BackEndKvE2eTest test{silkworm::log::Level::kNone, node_settings};
+    BackEndKvE2eTest test{silkworm::log::Level::kNone, std::move(node_settings)};
     auto backend_client = *test.backend_client;
 
-    SECTION("Etherbase: return coinbase address", "[.]") {
+    SECTION("Etherbase: return coinbase address") {
         remote::EtherbaseReply response;
         const auto status = backend_client.etherbase(&response);
         CHECK(status.ok());
@@ -834,7 +839,7 @@ TEST_CASE("BackEndKvServer E2E: mainnet chain with zero etherbase", "[.]") {
         CHECK(response.address() == types::H160());
     }
 
-    SECTION("NetVersion: return network ID", "[.]") {
+    SECTION("NetVersion: return network ID") {
         remote::NetVersionReply response;
         const auto status = backend_client.net_version(&response);
         CHECK(status.ok());
@@ -842,20 +847,20 @@ TEST_CASE("BackEndKvServer E2E: mainnet chain with zero etherbase", "[.]") {
     }
 }
 
-TEST_CASE("BackEndKvServer E2E: one Sentry status OK", "[.]") {
+TEST_CASE("BackEndKvServer E2E: one Sentry status OK", "[silkworm][node][rpc]") {
     NodeSettings node_settings;
-    node_settings.sentry_api_addr = kTestSentryAddress1;
-    BackEndKvE2eTest test{silkworm::log::Level::kNone, node_settings, {grpc::Status::OK}};
+    node_settings.external_sentry_addr = kTestSentryAddress1;
+    BackEndKvE2eTest test{silkworm::log::Level::kNone, std::move(node_settings), {grpc::Status::OK}};
     auto backend_client = *test.backend_client;
 
-    SECTION("NetPeerCount: return peer count", "[.]") {
+    SECTION("NetPeerCount: return peer count") {
         remote::NetPeerCountReply response;
         const auto status = backend_client.net_peer_count(&response);
         CHECK(status.ok());
         CHECK(response.count() == kTestSentryPeerCount);
     }
 
-    SECTION("NodeInfo: return information about nodes", "[.]") {
+    SECTION("NodeInfo: return information about nodes") {
         remote::NodesInfoRequest request;
         request.set_limit(0);
         remote::NodesInfoReply response;
@@ -867,20 +872,20 @@ TEST_CASE("BackEndKvServer E2E: one Sentry status OK", "[.]") {
     }
 }
 
-TEST_CASE("BackEndKvServer E2E: one Sentry status KO", "[.]") {
+TEST_CASE("BackEndKvServer E2E: one Sentry status KO", "[silkworm][node][rpc]") {
     NodeSettings node_settings;
-    node_settings.sentry_api_addr = kTestSentryAddress1;
+    node_settings.external_sentry_addr = kTestSentryAddress1;
     grpc::Status DEADLINE_EXCEEDED_ERROR{grpc::StatusCode::DEADLINE_EXCEEDED, "timeout"};
-    BackEndKvE2eTest test{silkworm::log::Level::kNone, node_settings, {DEADLINE_EXCEEDED_ERROR}};
+    BackEndKvE2eTest test{silkworm::log::Level::kNone, std::move(node_settings), {DEADLINE_EXCEEDED_ERROR}};
     auto backend_client = *test.backend_client;
 
-    SECTION("NetPeerCount: return expected status error", "[.]") {
+    SECTION("NetPeerCount: return expected status error") {
         remote::NetPeerCountReply response;
         const auto status = backend_client.net_peer_count(&response);
         CHECK(status == DEADLINE_EXCEEDED_ERROR);
     }
 
-    SECTION("NodeInfo: return expected status error", "[.]") {
+    SECTION("NodeInfo: return expected status error") {
         remote::NodesInfoRequest request;
         request.set_limit(0);
         remote::NodesInfoReply response;
@@ -889,20 +894,20 @@ TEST_CASE("BackEndKvServer E2E: one Sentry status KO", "[.]") {
     }
 }
 
-TEST_CASE("BackEndKvServer E2E: more than one Sentry all status OK", "[.]") {
+TEST_CASE("BackEndKvServer E2E: more than one Sentry all status OK", "[silkworm][node][rpc]") {
     NodeSettings node_settings;
-    node_settings.sentry_api_addr = kTestSentryAddress1 + "," + kTestSentryAddress2;
-    BackEndKvE2eTest test{silkworm::log::Level::kNone, node_settings, {grpc::Status::OK, grpc::Status::OK}};
+    node_settings.external_sentry_addr = kTestSentryAddress1 + "," + kTestSentryAddress2;
+    BackEndKvE2eTest test{silkworm::log::Level::kNone, std::move(node_settings), {grpc::Status::OK, grpc::Status::OK}};
     auto backend_client = *test.backend_client;
 
-    SECTION("NetPeerCount: return peer count", "[.]") {
+    SECTION("NetPeerCount: return peer count") {
         remote::NetPeerCountReply response;
         const auto status = backend_client.net_peer_count(&response);
         CHECK(status.ok());
         CHECK(response.count() == 2 * kTestSentryPeerCount);
     }
 
-    SECTION("NodeInfo: return information about nodes", "[.]") {
+    SECTION("NodeInfo: return information about nodes") {
         remote::NodesInfoRequest request;
         request.set_limit(0);
         remote::NodesInfoReply response;
@@ -917,19 +922,19 @@ TEST_CASE("BackEndKvServer E2E: more than one Sentry all status OK", "[.]") {
     }
 }
 
-TEST_CASE("BackEndKvServer E2E: more than one Sentry at least one status KO", "[.]") {
+TEST_CASE("BackEndKvServer E2E: more than one Sentry at least one status KO", "[silkworm][node][rpc]") {
     NodeSettings node_settings;
-    node_settings.sentry_api_addr = kTestSentryAddress1 + "," + kTestSentryAddress2;
-    BackEndKvE2eTest test{silkworm::log::Level::kNone, node_settings, {grpc::Status::OK, grpc::Status::CANCELLED}};
+    node_settings.external_sentry_addr = kTestSentryAddress1 + "," + kTestSentryAddress2;
+    BackEndKvE2eTest test{silkworm::log::Level::kNone, std::move(node_settings), {grpc::Status::OK, grpc::Status::CANCELLED}};
     auto backend_client = *test.backend_client;
 
-    SECTION("NetPeerCount: return expected status error", "[.]") {
+    SECTION("NetPeerCount: return expected status error") {
         remote::NetPeerCountReply response;
         const auto status = backend_client.net_peer_count(&response);
         CHECK(status == grpc::Status::CANCELLED);
     }
 
-    SECTION("NodeInfo: return expected status error", "[.]") {
+    SECTION("NodeInfo: return expected status error") {
         remote::NodesInfoRequest request;
         request.set_limit(0);
         remote::NodesInfoReply response;
@@ -938,21 +943,21 @@ TEST_CASE("BackEndKvServer E2E: more than one Sentry at least one status KO", "[
     }
 }
 
-TEST_CASE("BackEndKvServer E2E: more than one Sentry all status KO", "[.]") {
+TEST_CASE("BackEndKvServer E2E: more than one Sentry all status KO", "[silkworm][node][rpc]") {
     NodeSettings node_settings;
-    node_settings.sentry_api_addr = kTestSentryAddress1 + "," + kTestSentryAddress2;
+    node_settings.external_sentry_addr = kTestSentryAddress1 + "," + kTestSentryAddress2;
     grpc::Status INTERNAL_ERROR{grpc::StatusCode::INTERNAL, "internal error"};
     grpc::Status INVALID_ARGUMENT_ERROR{grpc::StatusCode::INVALID_ARGUMENT, "invalid"};
-    BackEndKvE2eTest test{silkworm::log::Level::kNone, node_settings, {INTERNAL_ERROR, INVALID_ARGUMENT_ERROR}};
+    BackEndKvE2eTest test{silkworm::log::Level::kNone, std::move(node_settings), {INTERNAL_ERROR, INVALID_ARGUMENT_ERROR}};
     auto backend_client = *test.backend_client;
 
-    SECTION("NetPeerCount: return expected status error", "[.]") {
+    SECTION("NetPeerCount: return expected status error") {
         remote::NetPeerCountReply response;
         const auto status = backend_client.net_peer_count(&response);
         CHECK((status == INTERNAL_ERROR || status == INVALID_ARGUMENT_ERROR));
     }
 
-    SECTION("NodeInfo: return expected status error", "[.]") {
+    SECTION("NodeInfo: return expected status error") {
         remote::NodesInfoRequest request;
         request.set_limit(0);
         remote::NodesInfoReply response;
@@ -965,7 +970,7 @@ TEST_CASE("BackEndKvServer E2E: trigger server-side write error", "[.]") {
     {
         const uint32_t kNumTxs{1000};
         NodeSettings node_settings;
-        BackEndKvE2eTest test{silkworm::log::Level::kError, node_settings};
+        BackEndKvE2eTest test{silkworm::log::Level::kError, std::move(node_settings)};
         test.fill_tables();
         auto kv_client = *test.kv_client;
 
@@ -987,7 +992,7 @@ TEST_CASE("BackEndKvServer E2E: trigger server-side write error", "[.]") {
 
 TEST_CASE("BackEndKvServer E2E: Tx max simultaneous readers exceeded", "[.]") {
     NodeSettings node_settings;
-    BackEndKvE2eTest test{silkworm::log::Level::kNone, node_settings};
+    BackEndKvE2eTest test{silkworm::log::Level::kNone, std::move(node_settings)};
     test.fill_tables();
     auto kv_client = *test.kv_client;
 
@@ -1021,8 +1026,7 @@ TEST_CASE("BackEndKvServer E2E: Tx max simultaneous readers exceeded", "[.]") {
 }
 
 TEST_CASE("BackEndKvServer E2E: Tx max opened cursors exceeded", "[.]") {
-    NodeSettings node_settings;
-    BackEndKvE2eTest test{silkworm::log::Level::kNone, node_settings};
+    BackEndKvE2eTest test{silkworm::log::Level::kNone, NodeSettings{}};
     test.fill_tables();
     auto kv_client = *test.kv_client;
 
@@ -1067,8 +1071,7 @@ class TxIdleTimeoutGuard {
 
 TEST_CASE("BackEndKvServer E2E: bidirectional idle timeout", "[.]") {
     TxIdleTimeoutGuard timeout_guard{100};
-    NodeSettings node_settings;
-    BackEndKvE2eTest test{silkworm::log::Level::kNone, node_settings};
+    BackEndKvE2eTest test{silkworm::log::Level::kNone, NodeSettings{}};
     test.fill_tables();
     auto kv_client = *test.kv_client;
 
@@ -2214,8 +2217,7 @@ class TxMaxTimeToLiveGuard {
 TEST_CASE("BackEndKvServer E2E: bidirectional max TTL duration", "[.]") {
     constexpr uint8_t kCustomMaxTimeToLive{10};
     TxMaxTimeToLiveGuard ttl_guard{kCustomMaxTimeToLive};
-    NodeSettings node_settings;
-    BackEndKvE2eTest test{silkworm::log::Level::kNone, node_settings};
+    BackEndKvE2eTest test{silkworm::log::Level::kNone, NodeSettings{}};
     test.fill_tables();
     auto kv_client = *test.kv_client;
 

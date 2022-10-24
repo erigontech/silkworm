@@ -89,15 +89,7 @@ void NetPeerCountCall::remove_sentry(SentryClient* sentry) {
 
 awaitable<void> NetPeerCountCall::operator()(grpc::ServerContext& /*server_context*/, remote::NetPeerCountRequest& /*request*/,
                                              Responder& writer) {
-    SILK_TRACE << "NetPeerCountCall START";
-
-    if (sentries_.empty()) {
-        co_await agrpc::finish(writer, remote::NetPeerCountReply{}, grpc::Status::OK);
-        SILK_TRACE << "NetPeerCountCall END count: 0";
-        co_return;
-    }
-
-    SILK_DEBUG << "NetPeerCountCall num sentries: " << sentries_.size();
+    SILK_TRACE << "NetPeerCountCall START [#sentries: " << sentries_.size() << "]";
 
     // This sequential implementation is far from ideal when num sentries > 0 because request latencies sum up
     // We need when_all algorithm for coroutines or make_parallel_group (see *convoluted* parallel_sort in asio examples)
@@ -196,15 +188,7 @@ void NodeInfoCall::remove_sentry(SentryClient* sentry) {
 
 awaitable<void> NodeInfoCall::operator()(grpc::ServerContext& /*server_context*/, remote::NodesInfoRequest& request,
                                          Responder& writer) {
-    SILK_TRACE << "NodeInfoCall START limit: " << request.limit();
-
-    if (sentries_.empty()) {
-        co_await agrpc::finish(writer, remote::NodesInfoReply{}, grpc::Status::OK);
-        SILK_TRACE << "NodeInfoCall END #nodes: 0";
-        co_return;
-    }
-
-    SILK_DEBUG << "NodeInfoCall num sentries: " << sentries_.size();
+    SILK_TRACE << "NodeInfoCall START limit: " << request.limit() << " [#sentries: " << sentries_.size() << "]";
 
     // This sequential implementation is far from ideal when num sentries > 0 because request latencies sum up
     // We need when_all algorithm for coroutines or make_parallel_group (see *convoluted* parallel_sort in asio examples)

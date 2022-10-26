@@ -42,7 +42,7 @@ void BackEndKvServer::register_async_services(grpc::ServerBuilder& builder) {
 
 /// Start server-side RPC requests as required by gRPC async model: one RPC per type is requested in advance.
 void BackEndKvServer::register_request_calls() {
-    // Start one server-side RPC request for each available server context
+    // Start all server-side RPC requests for each available server context
     for (auto& backend_kv_svc : backend_kv_services_) {
         const auto& server_context = next_context();
 
@@ -53,8 +53,8 @@ void BackEndKvServer::register_request_calls() {
         }
 
         // Register initial requested calls for ETHBACKEND and KV services
-        backend_kv_svc->register_backend_request_calls(server_context, &backend_async_service_);
-        // backend_kv_svc->register_kv_request_calls(server_context, &kv_async_service_);
+        BackEndKvService::register_backend_request_calls(server_context, &backend_async_service_);
+        BackEndKvService::register_kv_request_calls(server_context, &kv_async_service_);
     }
 }
 

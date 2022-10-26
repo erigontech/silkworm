@@ -19,7 +19,6 @@
 #include <silkworm/concurrency/coroutine.hpp>
 
 #include <boost/asio/awaitable.hpp>
-#include <boost/asio/bind_executor.hpp>
 #include <types/types.pb.h>
 
 #include <silkworm/common/log.hpp>
@@ -29,13 +28,6 @@
 namespace silkworm::rpc {
 
 using boost::asio::awaitable;
-
-template <class RPC, class RequestHandler>
-void BackEndService::register_request_repeatedly(const ServerContext& context, remote::ETHBACKEND::AsyncService* service,
-                                                 RPC rpc, RequestHandler&& handler) {
-    const auto grpc_context = context.server_grpc_context();
-    agrpc::repeatedly_request(rpc, *service, boost::asio::bind_executor(*grpc_context, handler));
-}
 
 remote::EtherbaseReply EtherbaseCall::response_;
 
@@ -224,32 +216,34 @@ BackEndService::BackEndService(const EthereumBackEnd& backend) {
 }
 
 void BackEndService::register_backend_request_calls(const ServerContext& context, remote::ETHBACKEND::AsyncService* service) {
-    SILK_INFO << "BackEndService::register_backend_request_calls start";
+    SILK_DEBUG << "BackEndService::register_backend_request_calls START";
+    const auto grpc_context = context.server_grpc_context();
     // Register one requested call repeatedly for each RPC: asio-grpc will take care of re-registration on any incoming call
-    register_request_repeatedly(context, service, &remote::ETHBACKEND::AsyncService::RequestEtherbase, [&](auto&&... args) {
+    request_repeatedly(*grpc_context, service, &remote::ETHBACKEND::AsyncService::RequestEtherbase, [](auto&&... args) {
         return EtherbaseCall{}(std::forward<decltype(args)>(args)...);
     });
-    register_request_repeatedly(context, service, &remote::ETHBACKEND::AsyncService::RequestNetVersion, [&](auto&&... args) {
+    request_repeatedly(*grpc_context, service, &remote::ETHBACKEND::AsyncService::RequestNetVersion, [](auto&&... args) {
         return NetVersionCall{}(std::forward<decltype(args)>(args)...);
     });
-    register_request_repeatedly(context, service, &remote::ETHBACKEND::AsyncService::RequestNetPeerCount, [&](auto&&... args) {
+    request_repeatedly(*grpc_context, service, &remote::ETHBACKEND::AsyncService::RequestNetPeerCount, [](auto&&... args) {
         return NetPeerCountCall{}(std::forward<decltype(args)>(args)...);
     });
-    register_request_repeatedly(context, service, &remote::ETHBACKEND::AsyncService::RequestVersion, [&](auto&&... args) {
+    request_repeatedly(*grpc_context, service, &remote::ETHBACKEND::AsyncService::RequestVersion, [](auto&&... args) {
         return BackEndVersionCall{}(std::forward<decltype(args)>(args)...);
     });
-    register_request_repeatedly(context, service, &remote::ETHBACKEND::AsyncService::RequestProtocolVersion, [&](auto&&... args) {
+    request_repeatedly(*grpc_context, service, &remote::ETHBACKEND::AsyncService::RequestProtocolVersion, [](auto&&... args) {
         return ProtocolVersionCall{}(std::forward<decltype(args)>(args)...);
     });
-    register_request_repeatedly(context, service, &remote::ETHBACKEND::AsyncService::RequestClientVersion, [&](auto&&... args) {
+    request_repeatedly(*grpc_context, service, &remote::ETHBACKEND::AsyncService::RequestClientVersion, [](auto&&... args) {
         return ClientVersionCall{}(std::forward<decltype(args)>(args)...);
     });
-    register_request_repeatedly(context, service, &remote::ETHBACKEND::AsyncService::RequestSubscribe, [&](auto&&... args) {
+    request_repeatedly(*grpc_context, service, &remote::ETHBACKEND::AsyncService::RequestSubscribe, [](auto&&... args) {
         return SubscribeCall{}(std::forward<decltype(args)>(args)...);
     });
-    register_request_repeatedly(context, service, &remote::ETHBACKEND::AsyncService::RequestNodeInfo, [&](auto&&... args) {
+    request_repeatedly(*grpc_context, service, &remote::ETHBACKEND::AsyncService::RequestNodeInfo, [](auto&&... args) {
         return NodeInfoCall{}(std::forward<decltype(args)>(args)...);
     });
+    SILK_DEBUG << "BackEndService::register_backend_request_calls END";
 }
 
 void BackEndService::add_sentry(std::unique_ptr<SentryClient>&& sentry) {

@@ -150,17 +150,14 @@ class NodeInfoCall {
 //! The ETHBACKEND service implementation.
 struct BackEndService {
   public:
+    static void register_backend_request_calls(const ServerContext& context, remote::ETHBACKEND::AsyncService* service);
+
     explicit BackEndService(const EthereumBackEnd& backend);
     ~BackEndService();
-
-    void register_backend_request_calls(const ServerContext& context, remote::ETHBACKEND::AsyncService* service);
 
     void add_sentry(std::unique_ptr<SentryClient>&& sentry);
 
   private:
-    template <class RPC, class RequestHandler>
-    void register_request_repeatedly(const ServerContext& context, remote::ETHBACKEND::AsyncService* service, RPC rpc, RequestHandler&& handler);
-
     std::vector<std::unique_ptr<SentryClient>> sentries_;
 };
 

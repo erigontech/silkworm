@@ -700,14 +700,16 @@ class AsyncTxCall
             if (cursor_id_ == kInvalidCursorId) {
                 SILK_INFO << "Tx opened: cursor=" << reply_.cursorid();
                 cursor_id_ = reply_.cursorid();
+                SILK_DEBUG << "Tx: prepare request FIRST cursor=" << cursor_id_;
+                request_.set_op(remote::Op::FIRST);
+                request_.set_cursor(cursor_id_);
             } else {
                 SILK_INFO << "Tx queried: " << reply_;
+                --query_count_;
+                SILK_DEBUG << "Tx: prepare request NEXT cursor=" << cursor_id_;
+                request_.set_op(remote::Op::NEXT);
+                request_.set_cursor(cursor_id_);
             }
-            --query_count_;
-            SILK_DEBUG << "Tx: prepare request NEXT cursor=" << cursor_id_;
-            // Prepare next Cursor query to send.
-            request_.set_op(remote::Op::NEXT);
-            request_.set_cursor(cursor_id_);
             return false;
         }
     }
@@ -731,7 +733,7 @@ class AsyncTxCall
     inline static const uint32_t kInvalidCursorId{0};
 
     uint32_t view_id_{kInvalidViewId};
-    std::string table_name_{silkworm::db::table::kStorageHistory.name};
+    std::string table_name_{silkworm::db::table::kCanonicalHashes.name};
     uint32_t query_count_{5};
     uint32_t cursor_id_{kInvalidCursorId};
 };
@@ -918,7 +920,7 @@ void print_stats(const BatchOptions& batch_options) {
         SILK_LOG << "Unary stats NodeInfo: " << AsyncNodeInfoCall::stats();
     }
     if (batch_options.is_configured(Rpc::kv_version)) {
-        SILK_LOG << "Unary stats: KV Version" << AsyncKvVersionCall::stats();
+        SILK_LOG << "Unary stats KV Version: " << AsyncKvVersionCall::stats();
     }
     if (batch_options.is_configured(Rpc::subscribe)) {
         SILK_LOG << "Server streaming stats Subscribe: " << AsyncSubscribeCall::stats();

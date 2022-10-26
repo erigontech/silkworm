@@ -21,6 +21,7 @@
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/ip/address.hpp>
 #include <boost/asio/signal_set.hpp>
+#include <boost/asio/steady_timer.hpp>
 #include <boost/process/environment.hpp>
 
 #include <silkworm/backend/ethereum_backend.hpp>
@@ -127,7 +128,7 @@ int main(int argc, char* argv[]) {
         const auto node_name{cmd::get_node_name_from_build_info(silkworm_get_buildinfo())};
         SILK_LOG << "BackEndKvServer build info: " << node_name;
         SILK_LOG << "BackEndKvServer library info: " << get_library_versions();
-        SILK_LOG << "BackEndKvServer launched with chain id: " << node_settings.network_id
+        SILK_LOG << "BackEndKvServer launched with chaindata: " << node_settings.chaindata_env_config.path
                  << " address: " << node_settings.private_api_addr
                  << " contexts: " << server_settings.num_contexts();
 
@@ -150,6 +151,7 @@ int main(int argc, char* argv[]) {
         }
         SILK_INFO << "BackEndKvServer genesis from db: " << to_hex(*node_settings.chain_config->genesis_hash);
 
+        // Standalone BackEndKV server needs to connect to an external Sentry for its Sentry clients to work
         SentryClient sentry{node_settings.external_sentry_addr, db::ROAccess{database_env},
                             node_settings.chain_config.value()};
         SILK_INFO << "Hand-shake and set status start for Sentry at: " << node_settings.external_sentry_addr << "...";
@@ -173,6 +175,26 @@ int main(int argc, char* argv[]) {
             backend.close();
             server.shutdown();
         });
+
+        // Standalone BackEndKV server has no staged loop, so this simulates periodic state changes
+        boost::asio::steady_timer state_changes_timer{scheduler};
+        constexpr auto kStateChangeInterval{std::chrono::seconds(10)};
+        constexpr silkworm::BlockNum kStartBlock{100'000'000};
+        constexpr uint64_t kGasLimit{30'000'000};
+
+        std::function<void(boost::system::error_code)> state_change_notification = [&](const boost::system::error_code& ec) {
+            if (ec != boost::asio::error::operation_aborted) {
+                static auto block_number = kStartBlock;
+                backend.state_change_source()->start_new_batch(block_number, evmc::bytes32{}, {}, false);
+                backend.state_change_source()->notify_batch(0, kGasLimit);
+                SILK_INFO << "New batch notified for block: " << block_number;
+                state_changes_timer.expires_at(std::chrono::steady_clock::now() + kStateChangeInterval);
+                state_changes_timer.async_wait(state_change_notification);
+                ++block_number;
+            }
+        };
+        state_changes_timer.expires_at(std::chrono::steady_clock::now() + kStateChangeInterval);
+        state_changes_timer.async_wait(state_change_notification);
 
         SILK_LOG << "BackEndKvServer is now running [pid=" + std::to_string(pid) + ", main thread=" << tid << "]";
         server.join();

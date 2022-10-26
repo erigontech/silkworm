@@ -30,15 +30,15 @@ namespace silkworm::rpc {
 
 namespace detail {
 
-std::string dump_mdbx_result(const mdbx::cursor::move_result& result) {
-    std::string dump{"done="};
-    dump.append(std::to_string(result.done));
-    dump.append(" bool(key)=");
-    dump.append(std::to_string(bool(result.key)));
-    dump.append(" bool(value)=");
-    dump.append(std::to_string(bool(result.value)));
-    return dump;
-}
+    std::string dump_mdbx_result(const mdbx::cursor::move_result& result) {
+        std::string dump{"done="};
+        dump.append(std::to_string(result.done));
+        dump.append(" bool(key)=");
+        dump.append(std::to_string(bool(result.key)));
+        dump.append(" bool(value)=");
+        dump.append(std::to_string(bool(result.value)));
+        return dump;
+    }
 
 }  // namespace detail
 
@@ -630,7 +630,8 @@ awaitable<void> StateChangesCall::operator()() {
             incoming_batch = batch;
             notifying_timer.cancel();
         });
-    }, filter);
+    },
+                                          filter);
 
     // The assigned token ID must be valid.
     if (!token) {

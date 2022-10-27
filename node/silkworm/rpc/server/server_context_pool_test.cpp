@@ -48,9 +48,11 @@ TEST_CASE("ServerContext", "[silkworm][rpc][server_context]") {
     ServerContext server_context{0, std::move(scq)};
 
     SECTION("ServerContext") {
-        CHECK(server_context.server_queue() == scq_ptr);
-        CHECK(server_context.client_queue() != nullptr);
+        CHECK(server_context.server_grpc_context() != nullptr);
+        CHECK(server_context.client_grpc_context() != nullptr);
         CHECK(server_context.io_context() != nullptr);
+        CHECK(server_context.server_grpc_context()->get_completion_queue() == scq_ptr);
+        CHECK(server_context.client_grpc_context()->get_completion_queue() != nullptr);
     }
 
     SECTION("execute_loop") {
@@ -117,10 +119,10 @@ TEST_CASE("ServerContextPool", "[silkworm][rpc][server_context]") {
         server_context_pool.add_context(std::move(queue_ptr2), WaitMode::blocking);
         CHECK(server_context_pool.num_contexts() == 2);
         auto& context1 = server_context_pool.next_context();
-        CHECK(context1.server_queue() == queue_raw_ptr1);
+        CHECK(context1.server_grpc_context()->get_completion_queue() == queue_raw_ptr1);
         CHECK(context1.io_context() != nullptr);
         auto& context2 = server_context_pool.next_context();
-        CHECK(context2.server_queue() == queue_raw_ptr2);
+        CHECK(context2.server_grpc_context()->get_completion_queue() == queue_raw_ptr2);
         CHECK(context2.io_context() != nullptr);
     }
 

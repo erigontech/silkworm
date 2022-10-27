@@ -20,13 +20,14 @@
 #include <thread>
 #include <utility>
 
+#include <magic_enum.hpp>
+
 #include <silkworm/common/log.hpp>
 
 namespace silkworm::rpc {
 
 std::ostream& operator<<(std::ostream& out, const ServerContext& c) {
-    out << "io_context: " << c.io_context() << " server_queue: " << c.server_queue()
-        << " client_queue: " << c.client_queue();
+    out << "io_context: " << c.io_context() << " wait_mode: " << magic_enum::enum_name(c.wait_mode());
     return out;
 }
 

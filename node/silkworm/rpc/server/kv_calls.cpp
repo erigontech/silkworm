@@ -118,29 +118,47 @@ awaitable<void> TxCall::operator()() {
         std::chrono::system_clock::time_point max_ttl_deadline;
         const auto update_max_ttl_deadline = [&] {
             max_ttl_deadline = std::chrono::system_clock::now() + std::chrono::milliseconds(max_ttl_duration_);
-            SILK_DEBUG << "Tx peer: " << peer() << " max TTL timer expires at: ";  // << max_ttl_deadline;
+            const std::time_t deadline_t = std::chrono::system_clock::to_time_t(max_ttl_deadline);
+            SILK_DEBUG << "Tx peer: " << peer() << " max TTL timer expires at: "  << std::put_time(std::gmtime(&deadline_t), "%F %T");
         };
 
-        bool read_ok{true}, write_ok{true}, max_ttl_expired{false};
-        while (read_ok && write_ok && !max_ttl_expired) {
+        agrpc::GrpcStream read_stream{grpc_context_}, write_stream{grpc_context_};
+        const auto initiate_write = [&](const remote::Pair& response) {
+            if (!write_stream.is_running()) {
+                write_stream.initiate(agrpc::write, responder_, response);
+            }
+        };
+        remote::Cursor request;
+        read_stream.initiate(agrpc::read, responder_, request);
+
+        bool read_ok{true}, write_ok{true}, cancelled{false};
+        while (read_ok && write_ok && !cancelled) {
             update_max_ttl_deadline();
 
-            remote::Cursor request;
-            const auto rv = co_await (agrpc::read(responder_, request) || agrpc::wait(max_ttl_alarm, max_ttl_deadline));
+            const auto rv =
+                co_await (read_stream.next() || agrpc::wait(max_ttl_alarm, max_ttl_deadline) || write_stream.next());
             if (0 == rv.index()) {  // read request completed
                 if (read_ok = std::get<0>(rv); read_ok) {
                     remote::Pair response{};
                     handle(&request, response);
-                    write_ok = co_await agrpc::write(responder_, response);
+                    request.Clear();
+                    read_stream.initiate(agrpc::read, responder_, request);
+                    initiate_write(response);
                 }
-            } else {  // max TTL timer expired
-                if (max_ttl_expired = std::get<1>(rv); max_ttl_expired) {
+            } else if (1 == rv.index()) {  // max TTL timer expired
+                if (const bool max_ttl_expired = std::get<1>(rv); max_ttl_expired) {
                     handle_max_ttl_timer_expired();
                 } else {
                     status = grpc::Status::CANCELLED;
+                    cancelled = true;
                 }
+            } else {  // write response completed
+                write_ok = std::get<2>(rv);
             }
         }
+
+        co_await read_stream.cleanup();
+        co_await write_stream.cleanup();
     } catch (const mdbx::exception& e) {
         const auto error_message = "start tx failed: " + std::string{e.what()};
         SILK_ERROR << "Tx peer: " << peer() << " " << error_message;
@@ -691,8 +709,8 @@ void KvService::register_kv_request_calls(const ServerContext& context, remote::
                            co_return;
                        });
     request_repeatedly(*grpc_context, service, &remote::KV::AsyncService::RequestTx,
-                       [](auto&&... args) -> awaitable<void> {
-                           co_await TxCall{std::forward<decltype(args)>(args)...}();
+                       [grpc_context](auto&&... args) -> awaitable<void> {
+                           co_await TxCall{*grpc_context, std::forward<decltype(args)>(args)...}();
                            co_return;
                        });
     request_repeatedly(*grpc_context, service, &remote::KV::AsyncService::RequestStateChanges,

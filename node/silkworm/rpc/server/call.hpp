@@ -122,13 +122,14 @@ namespace server {
             max_idle_duration_ = max_idle_duration;
         }
 
-        BidiStreamingCall(grpc::ServerContext& server_context, Responder& responder)
-            : Call(server_context), responder_(responder) {}
+        BidiStreamingCall(agrpc::GrpcContext& grpc_context, grpc::ServerContext& server_context, Responder& responder)
+            : Call(server_context), responder_(responder), grpc_context_(grpc_context) {}
 
       protected:
         inline static std::chrono::milliseconds max_idle_duration_{kDefaultMaxIdleDuration};
 
         Responder& responder_;
+        agrpc::GrpcContext& grpc_context_;
     };
 
     class CallException : public std::runtime_error {

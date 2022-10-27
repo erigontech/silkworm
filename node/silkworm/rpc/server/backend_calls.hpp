@@ -47,101 +47,101 @@ constexpr uint64_t kEthDevp2pProtocolVersion = 66;
 constexpr auto kEthBackEndApiVersion = std::make_tuple<uint32_t, uint32_t, uint32_t>(2, 3, 0);
 
 //! Unary RPC for Etherbase method of 'ethbackend' gRPC protocol.
-class EtherbaseCall {
+class EtherbaseCall : public server::UnaryCall<remote::EtherbaseRequest, remote::EtherbaseReply> {
   public:
-    using Responder = grpc::ServerAsyncResponseWriter<remote::EtherbaseReply>;
+    using Base::UnaryCall;
 
     static void fill_predefined_reply(const EthereumBackEnd& backend);
 
-    boost::asio::awaitable<void> operator()(grpc::ServerContext& server_context, remote::EtherbaseRequest& request, Responder& writer);
+    boost::asio::awaitable<void> operator()();
 
   private:
     static remote::EtherbaseReply response_;
 };
 
 //! Unary RPC for NetVersion method of 'ethbackend' gRPC protocol.
-class NetVersionCall {
+class NetVersionCall : public server::UnaryCall<remote::NetVersionRequest, remote::NetVersionReply> {
   public:
-    using Responder = grpc::ServerAsyncResponseWriter<remote::NetVersionReply>;
+    using Base::UnaryCall;
 
     static void fill_predefined_reply(const EthereumBackEnd& backend);
 
-    boost::asio::awaitable<void> operator()(grpc::ServerContext& server_context, remote::NetVersionRequest& request, Responder& writer);
+    boost::asio::awaitable<void> operator()();
 
   private:
     static remote::NetVersionReply response_;
 };
 
 //! Unary RPC for NetPeerCount method of 'ethbackend' gRPC protocol.
-class NetPeerCountCall {
+class NetPeerCountCall : public server::UnaryCall<remote::NetPeerCountRequest, remote::NetPeerCountReply> {
   public:
-    using Responder = grpc::ServerAsyncResponseWriter<remote::NetPeerCountReply>;
+    using Base::UnaryCall;
 
     static void add_sentry(SentryClient* sentry);
     static void remove_sentry(SentryClient* sentry);
 
-    boost::asio::awaitable<void> operator()(grpc::ServerContext& server_context, remote::NetPeerCountRequest& request, Responder& writer);
+    boost::asio::awaitable<void> operator()();
 
   private:
     static std::set<SentryClient*> sentries_;
 };
 
 //! Unary RPC for Version method of 'ethbackend' gRPC protocol.
-class BackEndVersionCall {
+class BackEndVersionCall : public server::UnaryCall<google::protobuf::Empty, types::VersionReply> {
   public:
-    using Responder = grpc::ServerAsyncResponseWriter<types::VersionReply>;
+    using Base::UnaryCall;
 
     static void fill_predefined_reply();
 
-    boost::asio::awaitable<void> operator()(grpc::ServerContext& server_context, google::protobuf::Empty& request, Responder& writer);
+    boost::asio::awaitable<void> operator()();
 
   private:
     static types::VersionReply response_;
 };
 
 //! Unary RPC for ProtocolVersion method of 'ethbackend' gRPC protocol.
-class ProtocolVersionCall {
+class ProtocolVersionCall : public server::UnaryCall<remote::ProtocolVersionRequest, remote::ProtocolVersionReply> {
   public:
-    using Responder = grpc::ServerAsyncResponseWriter<remote::ProtocolVersionReply>;
+    using Base::UnaryCall;
 
     static void fill_predefined_reply();
 
-    boost::asio::awaitable<void> operator()(grpc::ServerContext& server_context, remote::ProtocolVersionRequest& request, Responder& writer);
+    boost::asio::awaitable<void> operator()();
 
   private:
     static remote::ProtocolVersionReply response_;
 };
 
 //! Unary RPC for ClientVersion method of 'ethbackend' gRPC protocol.
-class ClientVersionCall {
+class ClientVersionCall : public server::UnaryCall<remote::ClientVersionRequest, remote::ClientVersionReply> {
   public:
-    using Responder = grpc::ServerAsyncResponseWriter<remote::ClientVersionReply>;
+    using Base::UnaryCall;
 
     static void fill_predefined_reply(const EthereumBackEnd& backend);
 
-    boost::asio::awaitable<void> operator()(grpc::ServerContext& server_context, remote::ClientVersionRequest& request, Responder& writer);
+    boost::asio::awaitable<void> operator()();
 
   private:
     static remote::ClientVersionReply response_;
 };
 
 //! Server-streaming RPC for Subscribe method of 'ethbackend' gRPC protocol.
-class SubscribeCall {
+class SubscribeCall : public server::ServerStreamingCall<remote::SubscribeRequest, remote::SubscribeReply> {
   public:
-    using Responder = grpc::ServerAsyncWriter<remote::SubscribeReply>;
+    using Base::ServerStreamingCall;
 
-    boost::asio::awaitable<void> operator()(grpc::ServerContext& server_context, remote::SubscribeRequest& request, Responder& writer);
+    boost::asio::awaitable<void> operator()();
 };
 
 //! Unary RPC for NodeInfo method of 'ethbackend' gRPC protocol.
-class NodeInfoCall {
+class NodeInfoCall : public server::UnaryCall<remote::NodesInfoRequest, remote::NodesInfoReply> {
   public:
-    using Responder = grpc::ServerAsyncResponseWriter<remote::NodesInfoReply>;
+    using Base::UnaryCall;
 
     static void add_sentry(SentryClient* sentry);
     static void remove_sentry(SentryClient* sentry);
 
-    boost::asio::awaitable<void> operator()(grpc::ServerContext& server_context, remote::NodesInfoRequest& request, Responder& writer);
+    boost::asio::awaitable<void> operator()();
 
   private:
     static std::set<SentryClient*> sentries_;

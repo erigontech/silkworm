@@ -119,7 +119,7 @@ awaitable<void> TxCall::operator()() {
         const auto update_max_ttl_deadline = [&] {
             max_ttl_deadline = std::chrono::system_clock::now() + std::chrono::milliseconds(max_ttl_duration_);
             const std::time_t deadline_t = std::chrono::system_clock::to_time_t(max_ttl_deadline);
-            SILK_DEBUG << "Tx peer: " << peer() << " max TTL timer expires at: "  << std::put_time(std::gmtime(&deadline_t), "%F %T");
+            SILK_DEBUG << "Tx peer: " << peer() << " max TTL timer expires at: " << std::put_time(std::gmtime(&deadline_t), "%F %T");
         };
 
         agrpc::GrpcStream read_stream{grpc_context_}, write_stream{grpc_context_};

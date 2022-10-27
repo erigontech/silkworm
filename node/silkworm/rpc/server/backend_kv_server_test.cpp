@@ -339,7 +339,6 @@ struct BackEndKvE2eTest {
 
         srv_config.set_num_contexts(1);
         srv_config.set_address_uri(kTestAddressUri);
-        //srv_config.set_wait_mode(rpc::WaitMode::backoff);
 
         DataDirectory data_dir{tmp_dir.path()};
         REQUIRE_NOTHROW(data_dir.deploy());

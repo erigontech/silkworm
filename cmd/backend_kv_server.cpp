@@ -47,8 +47,13 @@ std::string get_library_versions() {
     return library_versions;
 }
 
+//! Standalone BackEndKV server settings
+struct StandaloneBackEndKVSettings : public cmd::SilkwormCoreSettings {
+    bool simulate_state_changes{false};
+};
+
 //! Parse the command-line arguments into the BackEnd and KV server settings
-int parse_command_line(int argc, char* argv[], CLI::App& app, cmd::SilkwormCoreSettings& settings) {
+int parse_command_line(int argc, char* argv[], CLI::App& app, StandaloneBackEndKVSettings& settings) {
     auto& log_settings = settings.log_settings;
     auto& node_settings = settings.node_settings;
     auto& server_settings = settings.server_settings;
@@ -75,6 +80,9 @@ int parse_command_line(int argc, char* argv[], CLI::App& app, cmd::SilkwormCoreS
 
     // Logging options
     cmd::add_logging_options(app, log_settings);
+
+    // Standalone BackEndKV server options
+    app.add_flag("--simulate.state.changes", settings.simulate_state_changes, "Simulate state change notifications");
 
     app.parse(argc, argv);
 
@@ -105,7 +113,7 @@ int main(int argc, char* argv[]) {
     CLI::App cli{"ETHBACKEND & KV server"};
 
     try {
-        cmd::SilkwormCoreSettings settings;
+        StandaloneBackEndKVSettings settings;
         int result_code = parse_command_line(argc, argv, cli, settings);
         if (result_code != 0) {
             return result_code;
@@ -193,8 +201,10 @@ int main(int argc, char* argv[]) {
                 ++block_number;
             }
         };
-        state_changes_timer.expires_at(std::chrono::steady_clock::now() + kStateChangeInterval);
-        state_changes_timer.async_wait(state_change_notification);
+        if (settings.simulate_state_changes) {
+            state_changes_timer.expires_at(std::chrono::steady_clock::now() + kStateChangeInterval);
+            state_changes_timer.async_wait(state_change_notification);
+        }
 
         SILK_LOG << "BackEndKvServer is now running [pid=" + std::to_string(pid) + ", main thread=" << tid << "]";
         server.join();

@@ -15,7 +15,8 @@
 ]]
 
 find_package(absl CONFIG REQUIRED)
-find_package(Boost CONFIG REQUIRED thread)
+find_package(asio-grpc CONFIG REQUIRED)
+find_package(Boost CONFIG REQUIRED container thread)
 find_package(nlohmann_json CONFIG REQUIRED)
 find_package(gRPC CONFIG REQUIRED)
 
@@ -62,7 +63,7 @@ target_include_directories(silkworm_node PUBLIC
         ${SILKWORM_MAIN_DIR}/third_party/libtorrent/include)
 
 set(SILKWORM_NODE_PUBLIC_LIBS silkworm_core mdbx-static absl::flat_hash_map absl::flat_hash_set absl::btree roaring
-        nlohmann_json::nlohmann_json gRPC::grpc++ protobuf::libprotobuf Boost::thread torrent-rasterbar)
+        nlohmann_json::nlohmann_json gRPC::grpc++ protobuf::libprotobuf Boost::container Boost::thread asio-grpc::asio-grpc torrent-rasterbar)
 set(SILKWORM_NODE_PRIVATE_LIBS cborcpp evmone)
 
 if(MSVC)

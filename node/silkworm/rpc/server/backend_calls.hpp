@@ -19,8 +19,10 @@
 #include <memory>
 #include <set>
 #include <tuple>
+#include <utility>  // for std::exchange in Boost 1.78, fixed in Boost 1.79
 #include <vector>
 
+#include <agrpc/asio_grpc.hpp>
 #include <grpcpp/grpcpp.h>
 #include <remote/ethbackend.grpc.pb.h>
 #include <remote/ethbackend.pb.h>
@@ -31,6 +33,7 @@
 #include <silkworm/rpc/server/call.hpp>
 #include <silkworm/rpc/server/call_factory.hpp>
 #include <silkworm/rpc/server/server.hpp>
+#include <silkworm/rpc/server/server_context_pool.hpp>
 
 // ETHBACKEND API protocol versions
 // 2.2.0 - first issue
@@ -44,181 +47,117 @@ constexpr uint64_t kEthDevp2pProtocolVersion = 66;
 constexpr auto kEthBackEndApiVersion = std::make_tuple<uint32_t, uint32_t, uint32_t>(2, 3, 0);
 
 //! Unary RPC for Etherbase method of 'ethbackend' gRPC protocol.
-class EtherbaseCall : public UnaryRpc<remote::ETHBACKEND::AsyncService, remote::EtherbaseRequest, remote::EtherbaseReply> {
+class EtherbaseCall {
   public:
+    using Responder = grpc::ServerAsyncResponseWriter<remote::EtherbaseReply>;
+
     static void fill_predefined_reply(const EthereumBackEnd& backend);
 
-    EtherbaseCall(boost::asio::io_context& scheduler, remote::ETHBACKEND::AsyncService* service, grpc::ServerCompletionQueue* queue, Handlers handlers);
-
-    void process(const remote::EtherbaseRequest* request) override;
+    boost::asio::awaitable<void> operator()(grpc::ServerContext& server_context, remote::EtherbaseRequest& request, Responder& writer);
 
   private:
     static remote::EtherbaseReply response_;
 };
 
-//! Factory specialization for Etherbase method.
-class EtherbaseCallFactory : public CallFactory<remote::ETHBACKEND::AsyncService, EtherbaseCall> {
-  public:
-    explicit EtherbaseCallFactory(const EthereumBackEnd& backend);
-};
-
 //! Unary RPC for NetVersion method of 'ethbackend' gRPC protocol.
-class NetVersionCall : public UnaryRpc<remote::ETHBACKEND::AsyncService, remote::NetVersionRequest, remote::NetVersionReply> {
+class NetVersionCall {
   public:
+    using Responder = grpc::ServerAsyncResponseWriter<remote::NetVersionReply>;
+
     static void fill_predefined_reply(const EthereumBackEnd& backend);
 
-    NetVersionCall(boost::asio::io_context& scheduler, remote::ETHBACKEND::AsyncService* service, grpc::ServerCompletionQueue* queue, Handlers handlers);
-
-    void process(const remote::NetVersionRequest* request) override;
+    boost::asio::awaitable<void> operator()(grpc::ServerContext& server_context, remote::NetVersionRequest& request, Responder& writer);
 
   private:
     static remote::NetVersionReply response_;
 };
 
-//! Factory specialization for NetVersion method.
-class NetVersionCallFactory : public CallFactory<remote::ETHBACKEND::AsyncService, NetVersionCall> {
-  public:
-    explicit NetVersionCallFactory(const EthereumBackEnd& backend);
-};
-
 //! Unary RPC for NetPeerCount method of 'ethbackend' gRPC protocol.
-class NetPeerCountCall : public UnaryRpc<remote::ETHBACKEND::AsyncService, remote::NetPeerCountRequest, remote::NetPeerCountReply> {
+class NetPeerCountCall {
   public:
+    using Responder = grpc::ServerAsyncResponseWriter<remote::NetPeerCountReply>;
+
     static void add_sentry(SentryClient* sentry);
     static void remove_sentry(SentryClient* sentry);
 
-    NetPeerCountCall(boost::asio::io_context& scheduler, remote::ETHBACKEND::AsyncService* service, grpc::ServerCompletionQueue* queue, Handlers handlers);
-
-    void process(const remote::NetPeerCountRequest* request) override;
+    boost::asio::awaitable<void> operator()(grpc::ServerContext& server_context, remote::NetPeerCountRequest& request, Responder& writer);
 
   private:
     static std::set<SentryClient*> sentries_;
-
-    std::size_t expected_responses_{0};
-    uint64_t total_count_{0};
-    grpc::Status result_status_{grpc::Status::OK};
-};
-
-//! Factory specialization for NetPeerCount method.
-class NetPeerCountCallFactory : public CallFactory<remote::ETHBACKEND::AsyncService, NetPeerCountCall> {
-  public:
-    explicit NetPeerCountCallFactory();
 };
 
 //! Unary RPC for Version method of 'ethbackend' gRPC protocol.
-class BackEndVersionCall : public UnaryRpc<remote::ETHBACKEND::AsyncService, google::protobuf::Empty, types::VersionReply> {
+class BackEndVersionCall {
   public:
+    using Responder = grpc::ServerAsyncResponseWriter<types::VersionReply>;
+
     static void fill_predefined_reply();
 
-    BackEndVersionCall(boost::asio::io_context& scheduler, remote::ETHBACKEND::AsyncService* service, grpc::ServerCompletionQueue* queue, Handlers handlers);
-
-    void process(const google::protobuf::Empty* request) override;
+    boost::asio::awaitable<void> operator()(grpc::ServerContext& server_context, google::protobuf::Empty& request, Responder& writer);
 
   private:
     static types::VersionReply response_;
 };
 
-//! Factory specialization for Version method.
-class BackEndVersionCallFactory : public CallFactory<remote::ETHBACKEND::AsyncService, BackEndVersionCall> {
-  public:
-    explicit BackEndVersionCallFactory();
-};
-
 //! Unary RPC for ProtocolVersion method of 'ethbackend' gRPC protocol.
-class ProtocolVersionCall : public UnaryRpc<remote::ETHBACKEND::AsyncService, remote::ProtocolVersionRequest, remote::ProtocolVersionReply> {
+class ProtocolVersionCall {
   public:
+    using Responder = grpc::ServerAsyncResponseWriter<remote::ProtocolVersionReply>;
+
     static void fill_predefined_reply();
 
-    ProtocolVersionCall(boost::asio::io_context& scheduler, remote::ETHBACKEND::AsyncService* service, grpc::ServerCompletionQueue* queue, Handlers handlers);
-
-    void process(const remote::ProtocolVersionRequest* request) override;
+    boost::asio::awaitable<void> operator()(grpc::ServerContext& server_context, remote::ProtocolVersionRequest& request, Responder& writer);
 
   private:
     static remote::ProtocolVersionReply response_;
 };
 
-//! Factory specialization for ProtocolVersion method.
-class ProtocolVersionCallFactory : public CallFactory<remote::ETHBACKEND::AsyncService, ProtocolVersionCall> {
-  public:
-    explicit ProtocolVersionCallFactory();
-};
-
 //! Unary RPC for ClientVersion method of 'ethbackend' gRPC protocol.
-class ClientVersionCall : public UnaryRpc<remote::ETHBACKEND::AsyncService, remote::ClientVersionRequest, remote::ClientVersionReply> {
+class ClientVersionCall {
   public:
+    using Responder = grpc::ServerAsyncResponseWriter<remote::ClientVersionReply>;
+
     static void fill_predefined_reply(const EthereumBackEnd& backend);
 
-    ClientVersionCall(boost::asio::io_context& scheduler, remote::ETHBACKEND::AsyncService* service, grpc::ServerCompletionQueue* queue, Handlers handlers);
-
-    void process(const remote::ClientVersionRequest* request) override;
+    boost::asio::awaitable<void> operator()(grpc::ServerContext& server_context, remote::ClientVersionRequest& request, Responder& writer);
 
   private:
     static remote::ClientVersionReply response_;
 };
 
-//! Factory specialization for ClientVersion method.
-class ClientVersionCallFactory : public CallFactory<remote::ETHBACKEND::AsyncService, ClientVersionCall> {
-  public:
-    explicit ClientVersionCallFactory(const EthereumBackEnd& backend);
-};
-
 //! Server-streaming RPC for Subscribe method of 'ethbackend' gRPC protocol.
-class SubscribeCall : public ServerStreamingRpc<remote::ETHBACKEND::AsyncService, remote::SubscribeRequest, remote::SubscribeReply> {
+class SubscribeCall {
   public:
-    SubscribeCall(boost::asio::io_context& scheduler, remote::ETHBACKEND::AsyncService* service, grpc::ServerCompletionQueue* queue, Handlers handlers);
+    using Responder = grpc::ServerAsyncWriter<remote::SubscribeReply>;
 
-    void process(const remote::SubscribeRequest* request) override;
-};
-
-//! Factory specialization for Subscribe method.
-class SubscribeCallFactory : public CallFactory<remote::ETHBACKEND::AsyncService, SubscribeCall> {
-  public:
-    explicit SubscribeCallFactory();
+    boost::asio::awaitable<void> operator()(grpc::ServerContext& server_context, remote::SubscribeRequest& request, Responder& writer);
 };
 
 //! Unary RPC for NodeInfo method of 'ethbackend' gRPC protocol.
-class NodeInfoCall : public UnaryRpc<remote::ETHBACKEND::AsyncService, remote::NodesInfoRequest, remote::NodesInfoReply> {
+class NodeInfoCall {
   public:
+    using Responder = grpc::ServerAsyncResponseWriter<remote::NodesInfoReply>;
+
     static void add_sentry(SentryClient* sentry);
     static void remove_sentry(SentryClient* sentry);
 
-    NodeInfoCall(boost::asio::io_context& scheduler, remote::ETHBACKEND::AsyncService* service, grpc::ServerCompletionQueue* queue, Handlers handlers);
-
-    void process(const remote::NodesInfoRequest* request) override;
+    boost::asio::awaitable<void> operator()(grpc::ServerContext& server_context, remote::NodesInfoRequest& request, Responder& writer);
 
   private:
     static std::set<SentryClient*> sentries_;
-
-    std::size_t expected_responses_{0};
-    remote::NodesInfoReply response_;
-    grpc::Status result_status_{grpc::Status::OK};
-};
-
-//! Factory specialization for NodeInfo method.
-class NodeInfoCallFactory : public CallFactory<remote::ETHBACKEND::AsyncService, NodeInfoCall> {
-  public:
-    explicit NodeInfoCallFactory();
 };
 
 //! The ETHBACKEND service implementation.
 struct BackEndService {
   public:
+    static void register_backend_request_calls(const ServerContext& context, remote::ETHBACKEND::AsyncService* service);
+
     explicit BackEndService(const EthereumBackEnd& backend);
     ~BackEndService();
-
-    void register_backend_request_calls(boost::asio::io_context& scheduler, remote::ETHBACKEND::AsyncService* async_service, grpc::ServerCompletionQueue* queue);
 
     void add_sentry(std::unique_ptr<SentryClient>&& sentry);
 
   private:
-    EtherbaseCallFactory etherbase_factory_;
-    NetVersionCallFactory net_version_factory_;
-    NetPeerCountCallFactory net_peer_count_factory_;
-    BackEndVersionCallFactory backend_version_factory_;
-    ProtocolVersionCallFactory protocol_version_factory_;
-    ClientVersionCallFactory client_version_factory_;
-    SubscribeCallFactory subscribe_factory_;
-    NodeInfoCallFactory node_info_factory_;
     std::vector<std::unique_ptr<SentryClient>> sentries_;
 };
 

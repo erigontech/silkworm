@@ -22,6 +22,7 @@
 #include <mutex>
 #include <string>
 #include <thread>
+#include <utility>
 #include <vector>
 
 #include <catch2/catch.hpp>
@@ -201,7 +202,7 @@ constexpr const char* kTestSentryPeerName{"peer_name"};
 
 class SentryServer {
   public:
-    explicit SentryServer(grpc::Status status) : status_(status) {}
+    explicit SentryServer(grpc::Status status) : status_(std::move(status)) {}
 
     void build_and_start(const std::string& server_address) {
         grpc::ServerBuilder builder;
@@ -287,13 +288,13 @@ class SentryServer {
 };
 
 // TODO(canepat): better copy grpc_pick_unused_port_or_die to generate unused port
-static const std::string kTestAddressUri{"localhost:12345"};
+const std::string kTestAddressUri{"localhost:12345"};
 
-static const std::string kTestSentryAddress1{"localhost:54321"};
-static const std::string kTestSentryAddress2{"localhost:54322"};
+const std::string kTestSentryAddress1{"localhost:54321"};
+const std::string kTestSentryAddress2{"localhost:54322"};
 
-static const silkworm::db::MapConfig kTestMap{"TestTable"};
-static const silkworm::db::MapConfig kTestMultiMap{"TestMultiTable", mdbx::key_mode::usual, mdbx::value_mode::multi};
+const silkworm::db::MapConfig kTestMap{"TestTable"};
+const silkworm::db::MapConfig kTestMultiMap{"TestMultiTable", mdbx::key_mode::usual, mdbx::value_mode::multi};
 
 using namespace silkworm;
 
@@ -310,7 +311,7 @@ struct TestableStateChangeCollection : public StateChangeCollection {
 
     void set_token(StateChangeToken next_token) { next_token_ = next_token; }
 
-    void register_token_observer(StateChangeTokenObserver token_observer) { token_observer_ = token_observer; }
+    void register_token_observer(StateChangeTokenObserver token_observer) { token_observer_ = std::move(token_observer); }
 
     StateChangeTokenObserver token_observer_;
 };
@@ -320,14 +321,15 @@ class TestableEthereumBackEnd : public EthereumBackEnd {
     TestableEthereumBackEnd(const NodeSettings& node_settings, mdbx::env* chaindata_env)
         : EthereumBackEnd(node_settings, chaindata_env, std::make_unique<TestableStateChangeCollection>()) {}
 
-    TestableStateChangeCollection* state_change_source() const noexcept {
+    [[nodiscard]] TestableStateChangeCollection* state_change_source_for_test() const noexcept {
         return dynamic_cast<TestableStateChangeCollection*>(EthereumBackEnd::state_change_source());
     }
 };
 
 struct BackEndKvE2eTest {
-    BackEndKvE2eTest(silkworm::log::Level log_verbosity, const NodeSettings& options = {},
-                     std::vector<grpc::Status> statuses = {}) : set_verbosity_log_guard{log_verbosity} {
+    explicit BackEndKvE2eTest(silkworm::log::Level log_verbosity, NodeSettings&& options = {},
+                              std::vector<grpc::Status> statuses = {grpc::Status::OK})
+        : set_verbosity_log_guard{log_verbosity} {
         std::shared_ptr<grpc::Channel> channel =
             grpc::CreateChannel(kTestAddressUri, grpc::InsecureChannelCredentials());
         ethbackend_stub = remote::ETHBACKEND::NewStub(channel);
@@ -350,11 +352,16 @@ struct BackEndKvE2eTest {
         db::open_map(rw_txn, kTestMap);
         rw_txn.commit();
 
+        // Default value for external Sentry address(es) must be erased in tests to avoid conflict on port
+        if (options.external_sentry_addr == "127.0.0.1:9091") {
+            options.external_sentry_addr.clear();
+        }
+
         backend = std::make_unique<TestableEthereumBackEnd>(options, &database_env);
         server = std::make_unique<rpc::BackEndKvServer>(srv_config, *backend);
         server->build_and_start();
 
-        std::stringstream sentry_list_stream{options.sentry_api_addr};
+        std::stringstream sentry_list_stream{options.external_sentry_addr};
         std::string sentry_address;
         std::size_t i{0};
         while (std::getline(sentry_list_stream, sentry_address, kSentryAddressDelimiter)) {
@@ -421,64 +428,16 @@ TEST_CASE("BackEndKvServer", "[silkworm][node][rpc]") {
     NodeSettings node_settings;
     EthereumBackEnd backend{node_settings, &database_env};
 
-    SECTION("BackEndKvServer::BackEndKvServer OK: create/destroy server", "[silkworm][node][rpc]") {
+    SECTION("BackEndKvServer::BackEndKvServer OK: create/destroy server") {
         BackEndKvServer server{srv_config, backend};
     }
 
-    SECTION("BackEndKvServer::BackEndKvServer OK: create/shutdown/destroy server", "[silkworm][node][rpc]") {
-        BackEndKvServer server{srv_config, backend};
-        server.shutdown();
-    }
-
-    SECTION("BackEndKvServer::build_and_start OK: run server in separate thread", "[silkworm][node][rpc]") {
-        BackEndKvServer server{srv_config, backend};
-        server.build_and_start();
-        std::thread server_thread{[&server]() { server.join(); }};
-        server.shutdown();
-        server_thread.join();
-    }
-
-    SECTION("BackEndKvServer::build_and_start OK: create/shutdown/run/destroy server", "[silkworm][node][rpc]") {
-        BackEndKvServer server{srv_config, backend};
-        server.shutdown();
-        server.build_and_start();
-    }
-
-    SECTION("BackEndKvServer::shutdown OK: shutdown server not running", "[silkworm][node][rpc]") {
+    SECTION("BackEndKvServer::BackEndKvServer OK: create/shutdown/destroy server") {
         BackEndKvServer server{srv_config, backend};
         server.shutdown();
     }
 
-    SECTION("BackEndKvServer::shutdown OK: shutdown twice server not running", "[silkworm][node][rpc]") {
-        BackEndKvServer server{srv_config, backend};
-        server.shutdown();
-        server.shutdown();
-    }
-
-    SECTION("BackEndKvServer::shutdown OK: shutdown running server", "[silkworm][node][rpc]") {
-        BackEndKvServer server{srv_config, backend};
-        server.build_and_start();
-        server.shutdown();
-        server.join();
-    }
-
-    SECTION("BackEndKvServer::shutdown OK: shutdown twice running server", "[silkworm][node][rpc]") {
-        BackEndKvServer server{srv_config, backend};
-        server.build_and_start();
-        server.shutdown();
-        server.shutdown();
-        server.join();
-    }
-
-    SECTION("BackEndKvServer::shutdown OK: shutdown running server again after join", "[silkworm][node][rpc]") {
-        BackEndKvServer server{srv_config, backend};
-        server.build_and_start();
-        server.shutdown();
-        server.join();
-        server.shutdown();
-    }
-
-    SECTION("BackEndKvServer::join OK: shutdown joined server", "[silkworm][node][rpc]") {
+    SECTION("BackEndKvServer::build_and_start OK: run server in separate thread") {
         BackEndKvServer server{srv_config, backend};
         server.build_and_start();
         std::thread server_thread{[&server]() { server.join(); }};
@@ -486,7 +445,55 @@ TEST_CASE("BackEndKvServer", "[silkworm][node][rpc]") {
         server_thread.join();
     }
 
-    SECTION("BackEndKvServer::join OK: shutdown joined server and join again", "[silkworm][node][rpc]") {
+    SECTION("BackEndKvServer::build_and_start OK: create/shutdown/run/destroy server") {
+        BackEndKvServer server{srv_config, backend};
+        server.shutdown();
+        server.build_and_start();
+    }
+
+    SECTION("BackEndKvServer::shutdown OK: shutdown server not running") {
+        BackEndKvServer server{srv_config, backend};
+        server.shutdown();
+    }
+
+    SECTION("BackEndKvServer::shutdown OK: shutdown twice server not running") {
+        BackEndKvServer server{srv_config, backend};
+        server.shutdown();
+        server.shutdown();
+    }
+
+    SECTION("BackEndKvServer::shutdown OK: shutdown running server") {
+        BackEndKvServer server{srv_config, backend};
+        server.build_and_start();
+        server.shutdown();
+        server.join();
+    }
+
+    SECTION("BackEndKvServer::shutdown OK: shutdown twice running server") {
+        BackEndKvServer server{srv_config, backend};
+        server.build_and_start();
+        server.shutdown();
+        server.shutdown();
+        server.join();
+    }
+
+    SECTION("BackEndKvServer::shutdown OK: shutdown running server again after join") {
+        BackEndKvServer server{srv_config, backend};
+        server.build_and_start();
+        server.shutdown();
+        server.join();
+        server.shutdown();
+    }
+
+    SECTION("BackEndKvServer::join OK: shutdown joined server") {
+        BackEndKvServer server{srv_config, backend};
+        server.build_and_start();
+        std::thread server_thread{[&server]() { server.join(); }};
+        server.shutdown();
+        server_thread.join();
+    }
+
+    SECTION("BackEndKvServer::join OK: shutdown joined server and join again") {
         BackEndKvServer server{srv_config, backend};
         server.build_and_start();
         std::thread server_thread{[&server]() { server.join(); }};
@@ -500,7 +507,7 @@ TEST_CASE("BackEndKvServer E2E: empty node settings", "[silkworm][node][rpc]") {
     BackEndKvE2eTest test{silkworm::log::Level::kNone};
     auto backend_client = *test.backend_client;
 
-    SECTION("Etherbase: return missing coinbase error", "[silkworm][node][rpc]") {
+    SECTION("Etherbase: return missing coinbase error") {
         remote::EtherbaseReply response;
         const auto status = backend_client.etherbase(&response);
         CHECK(!status.ok());
@@ -509,21 +516,21 @@ TEST_CASE("BackEndKvServer E2E: empty node settings", "[silkworm][node][rpc]") {
         CHECK(!response.has_address());
     }
 
-    SECTION("NetVersion: return out-of-range network ID", "[silkworm][node][rpc]") {
+    SECTION("NetVersion: return out-of-range network ID") {
         remote::NetVersionReply response;
         const auto status = backend_client.net_version(&response);
         CHECK(status.ok());
         CHECK(response.id() == 0);
     }
 
-    SECTION("NetPeerCount: return zero peer count", "[silkworm][node][rpc]") {
+    SECTION("NetPeerCount: return zero peer count") {
         remote::NetPeerCountReply response;
         const auto status = backend_client.net_peer_count(&response);
         CHECK(status.ok());
         CHECK(response.count() == 0);
     }
 
-    SECTION("Version: return ETHBACKEND version", "[silkworm][node][rpc]") {
+    SECTION("Version: return ETHBACKEND version") {
         types::VersionReply response;
         const auto status = backend_client.version(&response);
         CHECK(status.ok());
@@ -532,14 +539,14 @@ TEST_CASE("BackEndKvServer E2E: empty node settings", "[silkworm][node][rpc]") {
         CHECK(response.patch() == 0);
     }
 
-    SECTION("ProtocolVersion: return ETH protocol version", "[silkworm][node][rpc]") {
+    SECTION("ProtocolVersion: return ETH protocol version") {
         remote::ProtocolVersionReply response;
         const auto status = backend_client.protocol_version(&response);
         CHECK(status.ok());
         CHECK(response.id() == kEthDevp2pProtocolVersion);
     }
 
-    SECTION("ClientVersion: return Silkworm client version", "[silkworm][node][rpc]") {
+    SECTION("ClientVersion: return Silkworm client version") {
         remote::ClientVersionReply response;
         const auto status = backend_client.client_version(&response);
         CHECK(status.ok());
@@ -547,7 +554,7 @@ TEST_CASE("BackEndKvServer E2E: empty node settings", "[silkworm][node][rpc]") {
     }
 
     // TODO(canepat): change using something meaningful when really implemented
-    SECTION("Subscribe: return streamed subscriptions", "[silkworm][node][rpc]") {
+    SECTION("Subscribe: return streamed subscriptions") {
         remote::SubscribeRequest request;
         std::vector<remote::SubscribeReply> responses;
         const auto status = backend_client.subscribe_and_consume(request, responses);
@@ -555,7 +562,7 @@ TEST_CASE("BackEndKvServer E2E: empty node settings", "[silkworm][node][rpc]") {
         CHECK(responses.size() == 2);
     }
 
-    SECTION("NodeInfo: return information about zero nodes", "[silkworm][node][rpc]") {
+    SECTION("NodeInfo: return information about zero nodes") {
         remote::NodesInfoRequest request;
         request.set_limit(0);
         remote::NodesInfoReply response;
@@ -569,16 +576,16 @@ TEST_CASE("BackEndKvServer E2E: KV", "[silkworm][node][rpc]") {
     BackEndKvE2eTest test{silkworm::log::Level::kNone};
     auto kv_client = *test.kv_client;
 
-    SECTION("Version: return KV version", "[silkworm][node][rpc]") {
+    SECTION("Version: return KV version") {
         types::VersionReply response;
         const auto status = kv_client.version(&response);
         CHECK(status.ok());
-        CHECK(response.major() == 4);
+        CHECK(response.major() == 5);
         CHECK(response.minor() == 1);
         CHECK(response.patch() == 0);
     }
 
-    SECTION("Tx KO: empty table name", "[silkworm][node][rpc]") {
+    SECTION("Tx KO: empty table name") {
         remote::Cursor open;
         open.set_op(remote::Op::OPEN);
         std::vector<remote::Cursor> requests{open};
@@ -591,7 +598,7 @@ TEST_CASE("BackEndKvServer E2E: KV", "[silkworm][node][rpc]") {
         CHECK(responses[0].txid() != 0);
     }
 
-    SECTION("Tx KO: invalid table name", "[silkworm][node][rpc]") {
+    SECTION("Tx KO: invalid table name") {
         remote::Cursor open;
         open.set_op(remote::Op::OPEN);
         open.set_bucketname("NonexistentTable");
@@ -605,7 +612,7 @@ TEST_CASE("BackEndKvServer E2E: KV", "[silkworm][node][rpc]") {
         CHECK(responses[0].txid() != 0);
     }
 
-    SECTION("Tx KO: missing operation", "[silkworm][node][rpc]") {
+    SECTION("Tx KO: missing operation") {
         remote::Cursor open;
         open.set_bucketname(kTestMap.name);
         std::vector<remote::Cursor> requests{open};
@@ -618,7 +625,7 @@ TEST_CASE("BackEndKvServer E2E: KV", "[silkworm][node][rpc]") {
         CHECK(responses[0].txid() != 0);
     }
 
-    SECTION("Tx OK: just start then finish", "[silkworm][node][rpc]") {
+    SECTION("Tx OK: just start then finish") {
         std::vector<remote::Cursor> requests{};
         std::vector<remote::Pair> responses;
         const auto status = kv_client.tx(requests, responses);
@@ -627,7 +634,7 @@ TEST_CASE("BackEndKvServer E2E: KV", "[silkworm][node][rpc]") {
         CHECK(responses[0].txid() != 0);
     }
 
-    SECTION("Tx OK: cursor opened", "[silkworm][node][rpc]") {
+    SECTION("Tx OK: cursor opened") {
         remote::Cursor open;
         open.set_op(remote::Op::OPEN);
         open.set_bucketname(kTestMap.name);
@@ -640,7 +647,7 @@ TEST_CASE("BackEndKvServer E2E: KV", "[silkworm][node][rpc]") {
         CHECK(responses[1].cursorid() != 0);
     }
 
-    SECTION("Tx OK: cursor opened then closed", "[silkworm][node][rpc]") {
+    SECTION("Tx OK: cursor opened then closed") {
         remote::Cursor open;
         open.set_op(remote::Op::OPEN);
         open.set_bucketname(kTestMap.name);
@@ -657,7 +664,7 @@ TEST_CASE("BackEndKvServer E2E: KV", "[silkworm][node][rpc]") {
         CHECK(responses[2].cursorid() == 0);
     }
 
-    SECTION("Tx KO: cursor opened then unknown", "[silkworm][node][rpc]") {
+    SECTION("Tx KO: cursor opened then unknown") {
         remote::Cursor open;
         open.set_op(remote::Op::OPEN);
         open.set_bucketname(kTestMap.name);
@@ -675,7 +682,7 @@ TEST_CASE("BackEndKvServer E2E: KV", "[silkworm][node][rpc]") {
         CHECK(responses[1].cursorid() != 0);
     }
 
-    SECTION("Tx OK: one FIRST operation on empty table gives empty result", "[silkworm][node][rpc]") {
+    SECTION("Tx OK: one FIRST operation on empty table gives empty result") {
         remote::Cursor open;
         open.set_op(remote::Op::OPEN);
         open.set_bucketname(kTestMap.name);
@@ -693,7 +700,7 @@ TEST_CASE("BackEndKvServer E2E: KV", "[silkworm][node][rpc]") {
         CHECK(responses[1].v().empty());
     }
 
-    SECTION("Tx KO: one NEXT operation on empty table gives empty result", "[silkworm][node][rpc]") {
+    SECTION("Tx KO: one NEXT operation on empty table gives empty result") {
         remote::Cursor open;
         open.set_op(remote::Op::OPEN);
         open.set_bucketname(kTestMap.name);
@@ -711,7 +718,7 @@ TEST_CASE("BackEndKvServer E2E: KV", "[silkworm][node][rpc]") {
         CHECK(responses[1].v().empty());
     }
 
-    SECTION("StateChanges OK: receive streamed state changes", "[silkworm][node][rpc]") {
+    SECTION("StateChanges OK: receive streamed state changes") {
         static constexpr uint64_t kTestPendingBaseFee{10'000};
         static constexpr uint64_t kTestGasLimit{10'000'000};
         auto* state_change_source = test.backend->state_change_source();
@@ -737,10 +744,10 @@ TEST_CASE("BackEndKvServer E2E: KV", "[silkworm][node][rpc]") {
         const auto status = threaded_kv_client.join_and_finish();
 
         CHECK(status.ok());
-        CHECK(threaded_kv_client.responses().size() > 0);
+        CHECK(!threaded_kv_client.responses().empty());
     }
 
-    SECTION("StateChanges OK: multiple concurrent subscriptions", "[silkworm][node][rpc]") {
+    SECTION("StateChanges OK: multiple concurrent subscriptions") {
         static constexpr uint64_t kTestPendingBaseFee{10'000};
         static constexpr uint64_t kTestGasLimit{10'000'000};
         auto* state_change_source = test.backend->state_change_source();
@@ -755,7 +762,7 @@ TEST_CASE("BackEndKvServer E2E: KV", "[silkworm][node][rpc]") {
         BlockNum block_number{0};
         bool publishing{true};
         while (publishing) {
-            state_change_source->start_new_batch(++block_number, kEmptyHash, std::vector<Bytes>{}, /*unwind=*/false);
+            state_change_source->start_new_batch(++block_number, kEmptyHash, {}, /*unwind=*/false);
             state_change_source->notify_batch(kTestPendingBaseFee, kTestGasLimit);
 
             publishing = !(threaded_kv_client1.wait_one_milli_for_subscription() &&
@@ -770,12 +777,12 @@ TEST_CASE("BackEndKvServer E2E: KV", "[silkworm][node][rpc]") {
 
         CHECK(status1.ok());
         CHECK(status2.ok());
-        CHECK(threaded_kv_client1.responses().size() > 0);
-        CHECK(threaded_kv_client2.responses().size() > 0);
+        CHECK(!threaded_kv_client1.responses().empty());
+        CHECK(!threaded_kv_client2.responses().empty());
     }
 
-    SECTION("StateChanges KO: token already in use", "[silkworm][node][rpc]") {
-        auto* state_change_source = test.backend->state_change_source();
+    SECTION("StateChanges KO: token already in use") {
+        auto* state_change_source = test.backend->state_change_source_for_test();
 
         std::mutex token_reset_mutex;
         std::condition_variable token_reset_condition;
@@ -823,10 +830,10 @@ TEST_CASE("BackEndKvServer E2E: mainnet chain with zero etherbase", "[silkworm][
     NodeSettings node_settings;
     node_settings.chain_config = *(silkworm::lookup_known_chain("mainnet")->second);
     node_settings.etherbase = evmc::address{};
-    BackEndKvE2eTest test{silkworm::log::Level::kNone, node_settings};
+    BackEndKvE2eTest test{silkworm::log::Level::kNone, std::move(node_settings)};
     auto backend_client = *test.backend_client;
 
-    SECTION("Etherbase: return coinbase address", "[silkworm][node][rpc]") {
+    SECTION("Etherbase: return coinbase address") {
         remote::EtherbaseReply response;
         const auto status = backend_client.etherbase(&response);
         CHECK(status.ok());
@@ -834,7 +841,7 @@ TEST_CASE("BackEndKvServer E2E: mainnet chain with zero etherbase", "[silkworm][
         CHECK(response.address() == types::H160());
     }
 
-    SECTION("NetVersion: return network ID", "[silkworm][node][rpc]") {
+    SECTION("NetVersion: return network ID") {
         remote::NetVersionReply response;
         const auto status = backend_client.net_version(&response);
         CHECK(status.ok());
@@ -844,18 +851,18 @@ TEST_CASE("BackEndKvServer E2E: mainnet chain with zero etherbase", "[silkworm][
 
 TEST_CASE("BackEndKvServer E2E: one Sentry status OK", "[silkworm][node][rpc]") {
     NodeSettings node_settings;
-    node_settings.sentry_api_addr = kTestSentryAddress1;
-    BackEndKvE2eTest test{silkworm::log::Level::kNone, node_settings, {grpc::Status::OK}};
+    node_settings.external_sentry_addr = kTestSentryAddress1;
+    BackEndKvE2eTest test{silkworm::log::Level::kNone, std::move(node_settings), {grpc::Status::OK}};
     auto backend_client = *test.backend_client;
 
-    SECTION("NetPeerCount: return peer count", "[silkworm][node][rpc]") {
+    SECTION("NetPeerCount: return peer count") {
         remote::NetPeerCountReply response;
         const auto status = backend_client.net_peer_count(&response);
         CHECK(status.ok());
         CHECK(response.count() == kTestSentryPeerCount);
     }
 
-    SECTION("NodeInfo: return information about nodes", "[silkworm][node][rpc]") {
+    SECTION("NodeInfo: return information about nodes") {
         remote::NodesInfoRequest request;
         request.set_limit(0);
         remote::NodesInfoReply response;
@@ -869,18 +876,18 @@ TEST_CASE("BackEndKvServer E2E: one Sentry status OK", "[silkworm][node][rpc]") 
 
 TEST_CASE("BackEndKvServer E2E: one Sentry status KO", "[silkworm][node][rpc]") {
     NodeSettings node_settings;
-    node_settings.sentry_api_addr = kTestSentryAddress1;
+    node_settings.external_sentry_addr = kTestSentryAddress1;
     grpc::Status DEADLINE_EXCEEDED_ERROR{grpc::StatusCode::DEADLINE_EXCEEDED, "timeout"};
-    BackEndKvE2eTest test{silkworm::log::Level::kNone, node_settings, {DEADLINE_EXCEEDED_ERROR}};
+    BackEndKvE2eTest test{silkworm::log::Level::kNone, std::move(node_settings), {DEADLINE_EXCEEDED_ERROR}};
     auto backend_client = *test.backend_client;
 
-    SECTION("NetPeerCount: return expected status error", "[silkworm][node][rpc]") {
+    SECTION("NetPeerCount: return expected status error") {
         remote::NetPeerCountReply response;
         const auto status = backend_client.net_peer_count(&response);
         CHECK(status == DEADLINE_EXCEEDED_ERROR);
     }
 
-    SECTION("NodeInfo: return expected status error", "[silkworm][node][rpc]") {
+    SECTION("NodeInfo: return expected status error") {
         remote::NodesInfoRequest request;
         request.set_limit(0);
         remote::NodesInfoReply response;
@@ -891,18 +898,18 @@ TEST_CASE("BackEndKvServer E2E: one Sentry status KO", "[silkworm][node][rpc]") 
 
 TEST_CASE("BackEndKvServer E2E: more than one Sentry all status OK", "[silkworm][node][rpc]") {
     NodeSettings node_settings;
-    node_settings.sentry_api_addr = kTestSentryAddress1 + "," + kTestSentryAddress2;
-    BackEndKvE2eTest test{silkworm::log::Level::kNone, node_settings, {grpc::Status::OK, grpc::Status::OK}};
+    node_settings.external_sentry_addr = kTestSentryAddress1 + "," + kTestSentryAddress2;
+    BackEndKvE2eTest test{silkworm::log::Level::kNone, std::move(node_settings), {grpc::Status::OK, grpc::Status::OK}};
     auto backend_client = *test.backend_client;
 
-    SECTION("NetPeerCount: return peer count", "[silkworm][node][rpc]") {
+    SECTION("NetPeerCount: return peer count") {
         remote::NetPeerCountReply response;
         const auto status = backend_client.net_peer_count(&response);
         CHECK(status.ok());
         CHECK(response.count() == 2 * kTestSentryPeerCount);
     }
 
-    SECTION("NodeInfo: return information about nodes", "[silkworm][node][rpc]") {
+    SECTION("NodeInfo: return information about nodes") {
         remote::NodesInfoRequest request;
         request.set_limit(0);
         remote::NodesInfoReply response;
@@ -919,17 +926,17 @@ TEST_CASE("BackEndKvServer E2E: more than one Sentry all status OK", "[silkworm]
 
 TEST_CASE("BackEndKvServer E2E: more than one Sentry at least one status KO", "[silkworm][node][rpc]") {
     NodeSettings node_settings;
-    node_settings.sentry_api_addr = kTestSentryAddress1 + "," + kTestSentryAddress2;
-    BackEndKvE2eTest test{silkworm::log::Level::kNone, node_settings, {grpc::Status::OK, grpc::Status::CANCELLED}};
+    node_settings.external_sentry_addr = kTestSentryAddress1 + "," + kTestSentryAddress2;
+    BackEndKvE2eTest test{silkworm::log::Level::kNone, std::move(node_settings), {grpc::Status::OK, grpc::Status::CANCELLED}};
     auto backend_client = *test.backend_client;
 
-    SECTION("NetPeerCount: return expected status error", "[silkworm][node][rpc]") {
+    SECTION("NetPeerCount: return expected status error") {
         remote::NetPeerCountReply response;
         const auto status = backend_client.net_peer_count(&response);
         CHECK(status == grpc::Status::CANCELLED);
     }
 
-    SECTION("NodeInfo: return expected status error", "[silkworm][node][rpc]") {
+    SECTION("NodeInfo: return expected status error") {
         remote::NodesInfoRequest request;
         request.set_limit(0);
         remote::NodesInfoReply response;
@@ -940,19 +947,19 @@ TEST_CASE("BackEndKvServer E2E: more than one Sentry at least one status KO", "[
 
 TEST_CASE("BackEndKvServer E2E: more than one Sentry all status KO", "[silkworm][node][rpc]") {
     NodeSettings node_settings;
-    node_settings.sentry_api_addr = kTestSentryAddress1 + "," + kTestSentryAddress2;
+    node_settings.external_sentry_addr = kTestSentryAddress1 + "," + kTestSentryAddress2;
     grpc::Status INTERNAL_ERROR{grpc::StatusCode::INTERNAL, "internal error"};
     grpc::Status INVALID_ARGUMENT_ERROR{grpc::StatusCode::INVALID_ARGUMENT, "invalid"};
-    BackEndKvE2eTest test{silkworm::log::Level::kNone, node_settings, {INTERNAL_ERROR, INVALID_ARGUMENT_ERROR}};
+    BackEndKvE2eTest test{silkworm::log::Level::kNone, std::move(node_settings), {INTERNAL_ERROR, INVALID_ARGUMENT_ERROR}};
     auto backend_client = *test.backend_client;
 
-    SECTION("NetPeerCount: return expected status error", "[silkworm][node][rpc]") {
+    SECTION("NetPeerCount: return expected status error") {
         remote::NetPeerCountReply response;
         const auto status = backend_client.net_peer_count(&response);
         CHECK((status == INTERNAL_ERROR || status == INVALID_ARGUMENT_ERROR));
     }
 
-    SECTION("NodeInfo: return expected status error", "[silkworm][node][rpc]") {
+    SECTION("NodeInfo: return expected status error") {
         remote::NodesInfoRequest request;
         request.set_limit(0);
         remote::NodesInfoReply response;
@@ -965,7 +972,7 @@ TEST_CASE("BackEndKvServer E2E: trigger server-side write error", "[silkworm][no
     {
         const uint32_t kNumTxs{1000};
         NodeSettings node_settings;
-        BackEndKvE2eTest test{silkworm::log::Level::kError, node_settings};
+        BackEndKvE2eTest test{silkworm::log::Level::kError, std::move(node_settings)};
         test.fill_tables();
         auto kv_client = *test.kv_client;
 
@@ -982,12 +989,12 @@ TEST_CASE("BackEndKvServer E2E: trigger server-side write error", "[silkworm][no
             CHECK(tx_stream->Write(open));
         }
     }
-    // Server-side lifecyle of Tx calls must be OK.
+    // Server-side life cycle of Tx calls must be OK.
 }
 
 TEST_CASE("BackEndKvServer E2E: Tx max simultaneous readers exceeded", "[silkworm][node][rpc]") {
     NodeSettings node_settings;
-    BackEndKvE2eTest test{silkworm::log::Level::kNone, node_settings};
+    BackEndKvE2eTest test{silkworm::log::Level::kNone, std::move(node_settings)};
     test.fill_tables();
     auto kv_client = *test.kv_client;
 
@@ -1021,8 +1028,7 @@ TEST_CASE("BackEndKvServer E2E: Tx max simultaneous readers exceeded", "[silkwor
 }
 
 TEST_CASE("BackEndKvServer E2E: Tx max opened cursors exceeded", "[silkworm][node][rpc]") {
-    NodeSettings node_settings;
-    BackEndKvE2eTest test{silkworm::log::Level::kNone, node_settings};
+    BackEndKvE2eTest test{silkworm::log::Level::kNone, NodeSettings{}};
     test.fill_tables();
     auto kv_client = *test.kv_client;
 
@@ -1061,14 +1067,13 @@ TEST_CASE("BackEndKvServer E2E: Tx max opened cursors exceeded", "[silkworm][nod
 
 class TxIdleTimeoutGuard {
   public:
-    explicit TxIdleTimeoutGuard(uint8_t t) { TxCall::set_max_idle_duration(boost::posix_time::milliseconds{t}); }
-    ~TxIdleTimeoutGuard() { TxCall::set_max_idle_duration(kMaxIdleDuration); }
+    explicit TxIdleTimeoutGuard(uint8_t t) { TxCall::set_max_idle_duration(std::chrono::milliseconds{t}); }
+    ~TxIdleTimeoutGuard() { TxCall::set_max_idle_duration(server::kDefaultMaxIdleDuration); }
 };
 
-TEST_CASE("BackEndKvServer E2E: bidirectional idle timeout", "[silkworm][node][rpc]") {
+TEST_CASE("BackEndKvServer E2E: bidirectional idle timeout", "[.]") {
     TxIdleTimeoutGuard timeout_guard{100};
-    NodeSettings node_settings;
-    BackEndKvE2eTest test{silkworm::log::Level::kNone, node_settings};
+    BackEndKvE2eTest test{silkworm::log::Level::kNone, NodeSettings{}};
     test.fill_tables();
     auto kv_client = *test.kv_client;
 
@@ -1076,7 +1081,7 @@ TEST_CASE("BackEndKvServer E2E: bidirectional idle timeout", "[silkworm][node][r
     // The reason could be that according to gRPC API spec this is kind of API misuse: it is
     // *appropriate* to call Finish only after all incoming messages have been read (not the
     // case here, missing tx ID announcement read) *and* no outgoing messages need to be sent.
-    /*SECTION("Tx KO: immediate finish", "[silkworm][node][rpc]") {
+    /*SECTION("Tx KO: immediate finish", "[.]") {
         grpc::ClientContext context;
         const auto tx_reader_writer = kv_client.tx_start(&context);
         auto status = tx_reader_writer->Finish();
@@ -1085,7 +1090,7 @@ TEST_CASE("BackEndKvServer E2E: bidirectional idle timeout", "[silkworm][node][r
         CHECK(status.error_message().find("call idle, no incoming request") != std::string::npos);
     }*/
 
-    SECTION("Tx KO: finish after first read (w/o WritesDone)", "[silkworm][node][rpc]") {
+    SECTION("Tx KO: finish after first read (w/o WritesDone)", "[.]") {
         grpc::ClientContext context;
         const auto tx_reader_writer = kv_client.tx_start(&context);
         remote::Pair response;
@@ -1097,7 +1102,7 @@ TEST_CASE("BackEndKvServer E2E: bidirectional idle timeout", "[silkworm][node][r
         CHECK(status.error_message().find("call idle, no incoming request") != std::string::npos);
     }
 
-    SECTION("Tx KO: finish after first read and one write/read (w/o WritesDone)", "[silkworm][node][rpc]") {
+    SECTION("Tx KO: finish after first read and one write/read (w/o WritesDone)", "[.]") {
         grpc::ClientContext context;
         const auto tx_reader_writer = kv_client.tx_start(&context);
         remote::Pair response;
@@ -1122,7 +1127,7 @@ TEST_CASE("BackEndKvServer E2E: Tx cursor valid operations", "[silkworm][node][r
     test.fill_tables();
     auto kv_client = *test.kv_client;
 
-    SECTION("Tx OK: one FIRST operation", "[silkworm][node][rpc]") {
+    SECTION("Tx OK: one FIRST operation") {
         remote::Cursor open;
         open.set_op(remote::Op::OPEN);
         open.set_bucketname(kTestMap.name);
@@ -1145,7 +1150,7 @@ TEST_CASE("BackEndKvServer E2E: Tx cursor valid operations", "[silkworm][node][r
         CHECK(responses[3].cursorid() == 0);
     }
 
-    SECTION("Tx OK: two FIRST operations", "[silkworm][node][rpc]") {
+    SECTION("Tx OK: two FIRST operations") {
         remote::Cursor open;
         open.set_op(remote::Op::OPEN);
         open.set_bucketname(kTestMap.name);
@@ -1173,7 +1178,7 @@ TEST_CASE("BackEndKvServer E2E: Tx cursor valid operations", "[silkworm][node][r
         CHECK(responses[4].cursorid() == 0);
     }
 
-    SECTION("Tx OK: one LAST operation", "[silkworm][node][rpc]") {
+    SECTION("Tx OK: one LAST operation") {
         remote::Cursor open;
         open.set_op(remote::Op::OPEN);
         open.set_bucketname(kTestMap.name);
@@ -1196,7 +1201,7 @@ TEST_CASE("BackEndKvServer E2E: Tx cursor valid operations", "[silkworm][node][r
         CHECK(responses[3].cursorid() == 0);
     }
 
-    SECTION("Tx OK: two LAST operations", "[silkworm][node][rpc]") {
+    SECTION("Tx OK: two LAST operations") {
         remote::Cursor open;
         open.set_op(remote::Op::OPEN);
         open.set_bucketname(kTestMap.name);
@@ -1224,7 +1229,7 @@ TEST_CASE("BackEndKvServer E2E: Tx cursor valid operations", "[silkworm][node][r
         CHECK(responses[4].cursorid() == 0);
     }
 
-    SECTION("Tx OK: one NEXT operation", "[silkworm][node][rpc]") {
+    SECTION("Tx OK: one NEXT operation") {
         remote::Cursor open;
         open.set_op(remote::Op::OPEN);
         open.set_bucketname(kTestMap.name);
@@ -1247,7 +1252,7 @@ TEST_CASE("BackEndKvServer E2E: Tx cursor valid operations", "[silkworm][node][r
         CHECK(responses[3].cursorid() == 0);
     }
 
-    SECTION("Tx OK: two NEXT operations", "[silkworm][node][rpc]") {
+    SECTION("Tx OK: two NEXT operations") {
         remote::Cursor open;
         open.set_op(remote::Op::OPEN);
         open.set_bucketname(kTestMap.name);
@@ -1275,7 +1280,7 @@ TEST_CASE("BackEndKvServer E2E: Tx cursor valid operations", "[silkworm][node][r
         CHECK(responses[4].cursorid() == 0);
     }
 
-    SECTION("Tx OK: two NEXT operations using different cursors", "[silkworm][node][rpc]") {
+    SECTION("Tx OK: two NEXT operations using different cursors") {
         remote::Cursor open1;
         open1.set_op(remote::Op::OPEN);
         open1.set_bucketname(kTestMap.name);
@@ -1311,7 +1316,7 @@ TEST_CASE("BackEndKvServer E2E: Tx cursor valid operations", "[silkworm][node][r
         CHECK(responses[6].cursorid() == 0);
     }
 
-    SECTION("Tx OK: one PREV operation", "[silkworm][node][rpc]") {
+    SECTION("Tx OK: one PREV operation") {
         remote::Cursor open;
         open.set_op(remote::Op::OPEN);
         open.set_bucketname(kTestMap.name);
@@ -1334,7 +1339,7 @@ TEST_CASE("BackEndKvServer E2E: Tx cursor valid operations", "[silkworm][node][r
         CHECK(responses[3].cursorid() == 0);
     }
 
-    SECTION("Tx OK: two PREV operations", "[silkworm][node][rpc]") {
+    SECTION("Tx OK: two PREV operations") {
         remote::Cursor open;
         open.set_op(remote::Op::OPEN);
         open.set_bucketname(kTestMap.name);
@@ -1362,7 +1367,7 @@ TEST_CASE("BackEndKvServer E2E: Tx cursor valid operations", "[silkworm][node][r
         CHECK(responses[4].cursorid() == 0);
     }
 
-    SECTION("Tx OK: two PREV operations using different cursors", "[silkworm][node][rpc]") {
+    SECTION("Tx OK: two PREV operations using different cursors") {
         remote::Cursor open1;
         open1.set_op(remote::Op::OPEN);
         open1.set_bucketname(kTestMap.name);
@@ -1398,7 +1403,7 @@ TEST_CASE("BackEndKvServer E2E: Tx cursor valid operations", "[silkworm][node][r
         CHECK(responses[6].cursorid() == 0);
     }
 
-    SECTION("Tx OK: FIRST + CURRENT operations on multi-value table", "[silkworm][node][rpc]") {
+    SECTION("Tx OK: FIRST + CURRENT operations on multi-value table") {
         remote::Cursor open;
         open.set_op(remote::Op::OPEN);
         open.set_bucketname(kTestMultiMap.name);
@@ -1425,7 +1430,7 @@ TEST_CASE("BackEndKvServer E2E: Tx cursor valid operations", "[silkworm][node][r
         CHECK(responses[4].cursorid() == 0);
     }
 
-    SECTION("Tx OK: LAST + CURRENT operations on multi-value table", "[silkworm][node][rpc]") {
+    SECTION("Tx OK: LAST + CURRENT operations on multi-value table") {
         remote::Cursor open;
         open.set_op(remote::Op::OPEN);
         open.set_bucketname(kTestMultiMap.name);
@@ -1452,7 +1457,7 @@ TEST_CASE("BackEndKvServer E2E: Tx cursor valid operations", "[silkworm][node][r
         CHECK(responses[4].cursorid() == 0);
     }
 
-    SECTION("Tx OK: FIRST + FIRST_DUP operations on multi-value table", "[silkworm][node][rpc]") {
+    SECTION("Tx OK: FIRST + FIRST_DUP operations on multi-value table") {
         remote::Cursor open;
         open.set_op(remote::Op::OPEN);
         open.set_bucketname(kTestMultiMap.name);
@@ -1479,7 +1484,7 @@ TEST_CASE("BackEndKvServer E2E: Tx cursor valid operations", "[silkworm][node][r
         CHECK(responses[4].cursorid() == 0);
     }
 
-    SECTION("Tx OK: LAST + FIRST_DUP operations on multi-value table", "[silkworm][node][rpc]") {
+    SECTION("Tx OK: LAST + FIRST_DUP operations on multi-value table") {
         remote::Cursor open;
         open.set_op(remote::Op::OPEN);
         open.set_bucketname(kTestMultiMap.name);
@@ -1507,7 +1512,7 @@ TEST_CASE("BackEndKvServer E2E: Tx cursor valid operations", "[silkworm][node][r
         CHECK(responses[4].cursorid() == 0);
     }
 
-    SECTION("Tx OK: one FIRST + two NEXT_DUP operations on multi-value table", "[silkworm][node][rpc]") {
+    SECTION("Tx OK: one FIRST + two NEXT_DUP operations on multi-value table") {
         remote::Cursor open;
         open.set_op(remote::Op::OPEN);
         open.set_bucketname(kTestMultiMap.name);
@@ -1539,7 +1544,7 @@ TEST_CASE("BackEndKvServer E2E: Tx cursor valid operations", "[silkworm][node][r
         CHECK(responses[5].cursorid() == 0);
     }
 
-    SECTION("Tx OK: NEXT_DUP operation on single-value table", "[silkworm][node][rpc]") {
+    SECTION("Tx OK: NEXT_DUP operation on single-value table") {
         remote::Cursor open;
         open.set_op(remote::Op::OPEN);
         open.set_bucketname(kTestMap.name);
@@ -1564,7 +1569,7 @@ TEST_CASE("BackEndKvServer E2E: Tx cursor valid operations", "[silkworm][node][r
         CHECK(responses[3].cursorid() == 0);
     }
 
-    SECTION("Tx OK: one PREV_DUP operation on single-value table", "[silkworm][node][rpc]") {
+    SECTION("Tx OK: one PREV_DUP operation on single-value table") {
         remote::Cursor open;
         open.set_op(remote::Op::OPEN);
         open.set_bucketname(kTestMap.name);
@@ -1586,7 +1591,7 @@ TEST_CASE("BackEndKvServer E2E: Tx cursor valid operations", "[silkworm][node][r
         CHECK(responses[3].cursorid() == 0);
     }
 
-    SECTION("Tx OK: one NEXT_DUP operation on multi-value table", "[silkworm][node][rpc]") {
+    SECTION("Tx OK: one NEXT_DUP operation on multi-value table") {
         remote::Cursor open;
         open.set_op(remote::Op::OPEN);
         open.set_bucketname(kTestMultiMap.name);
@@ -1608,7 +1613,7 @@ TEST_CASE("BackEndKvServer E2E: Tx cursor valid operations", "[silkworm][node][r
         CHECK(responses[3].cursorid() == 0);
     }
 
-    SECTION("Tx OK: one PREV_DUP operation on multi-value table", "[silkworm][node][rpc]") {
+    SECTION("Tx OK: one PREV_DUP operation on multi-value table") {
         remote::Cursor open;
         open.set_op(remote::Op::OPEN);
         open.set_bucketname(kTestMultiMap.name);
@@ -1630,7 +1635,7 @@ TEST_CASE("BackEndKvServer E2E: Tx cursor valid operations", "[silkworm][node][r
         CHECK(responses[3].cursorid() == 0);
     }
 
-    SECTION("Tx OK: one FIRST + one LAST_DUP operation on multi-value table", "[silkworm][node][rpc]") {
+    SECTION("Tx OK: one FIRST + one LAST_DUP operation on multi-value table") {
         remote::Cursor open;
         open.set_op(remote::Op::OPEN);
         open.set_bucketname(kTestMultiMap.name);
@@ -1657,7 +1662,7 @@ TEST_CASE("BackEndKvServer E2E: Tx cursor valid operations", "[silkworm][node][r
         CHECK(responses[4].cursorid() == 0);
     }
 
-    SECTION("Tx OK: one LAST + one LAST_DUP operation on multi-value table", "[silkworm][node][rpc]") {
+    SECTION("Tx OK: one LAST + one LAST_DUP operation on multi-value table") {
         remote::Cursor open;
         open.set_op(remote::Op::OPEN);
         open.set_bucketname(kTestMultiMap.name);
@@ -1684,7 +1689,7 @@ TEST_CASE("BackEndKvServer E2E: Tx cursor valid operations", "[silkworm][node][r
         CHECK(responses[4].cursorid() == 0);
     }
 
-    SECTION("Tx OK: one NEXT_NO_DUP operation on multi-value table", "[silkworm][node][rpc]") {
+    SECTION("Tx OK: one NEXT_NO_DUP operation on multi-value table") {
         remote::Cursor open;
         open.set_op(remote::Op::OPEN);
         open.set_bucketname(kTestMultiMap.name);
@@ -1706,7 +1711,7 @@ TEST_CASE("BackEndKvServer E2E: Tx cursor valid operations", "[silkworm][node][r
         CHECK(responses[3].cursorid() == 0);
     }
 
-    SECTION("Tx OK: one PREV_NO_DUP operation on multi-value table", "[silkworm][node][rpc]") {
+    SECTION("Tx OK: one PREV_NO_DUP operation on multi-value table") {
         remote::Cursor open;
         open.set_op(remote::Op::OPEN);
         open.set_bucketname(kTestMultiMap.name);
@@ -1728,7 +1733,7 @@ TEST_CASE("BackEndKvServer E2E: Tx cursor valid operations", "[silkworm][node][r
         CHECK(responses[3].cursorid() == 0);
     }
 
-    SECTION("Tx OK: SEEK operation w/o key on single-value table", "[silkworm][node][rpc]") {
+    SECTION("Tx OK: SEEK operation w/o key on single-value table") {
         remote::Cursor open;
         open.set_op(remote::Op::OPEN);
         open.set_bucketname(kTestMap.name);
@@ -1750,7 +1755,7 @@ TEST_CASE("BackEndKvServer E2E: Tx cursor valid operations", "[silkworm][node][r
         CHECK(responses[3].cursorid() == 0);
     }
 
-    SECTION("Tx OK: SEEK operation w/ existent key on single-value table", "[silkworm][node][rpc]") {
+    SECTION("Tx OK: SEEK operation w/ existent key on single-value table") {
         remote::Cursor open;
         open.set_op(remote::Op::OPEN);
         open.set_bucketname(kTestMap.name);
@@ -1773,7 +1778,7 @@ TEST_CASE("BackEndKvServer E2E: Tx cursor valid operations", "[silkworm][node][r
         CHECK(responses[3].cursorid() == 0);
     }
 
-    SECTION("Tx OK: SEEK operation w/ unexisting key on single-value table", "[silkworm][node][rpc]") {
+    SECTION("Tx OK: SEEK operation w/ unexisting key on single-value table") {
         remote::Cursor open;
         open.set_op(remote::Op::OPEN);
         open.set_bucketname(kTestMap.name);
@@ -1796,7 +1801,7 @@ TEST_CASE("BackEndKvServer E2E: Tx cursor valid operations", "[silkworm][node][r
         CHECK(responses[3].cursorid() == 0);
     }
 
-    SECTION("Tx OK: SEEK_EXACT operation w/o key on single-value table", "[silkworm][node][rpc]") {
+    SECTION("Tx OK: SEEK_EXACT operation w/o key on single-value table") {
         remote::Cursor open;
         open.set_op(remote::Op::OPEN);
         open.set_bucketname(kTestMap.name);
@@ -1818,7 +1823,7 @@ TEST_CASE("BackEndKvServer E2E: Tx cursor valid operations", "[silkworm][node][r
         CHECK(responses[3].cursorid() == 0);
     }
 
-    SECTION("Tx OK: SEEK_EXACT operation w/ existent key on single-value table", "[silkworm][node][rpc]") {
+    SECTION("Tx OK: SEEK_EXACT operation w/ existent key on single-value table") {
         remote::Cursor open;
         open.set_op(remote::Op::OPEN);
         open.set_bucketname(kTestMap.name);
@@ -1841,7 +1846,7 @@ TEST_CASE("BackEndKvServer E2E: Tx cursor valid operations", "[silkworm][node][r
         CHECK(responses[3].cursorid() == 0);
     }
 
-    SECTION("Tx OK: SEEK_EXACT operation w/ nonexistent key on single-value table", "[silkworm][node][rpc]") {
+    SECTION("Tx OK: SEEK_EXACT operation w/ nonexistent key on single-value table") {
         remote::Cursor open;
         open.set_op(remote::Op::OPEN);
         open.set_bucketname(kTestMap.name);
@@ -1864,7 +1869,7 @@ TEST_CASE("BackEndKvServer E2E: Tx cursor valid operations", "[silkworm][node][r
         CHECK(responses[3].cursorid() == 0);
     }
 
-    SECTION("Tx OK: one SEEK_BOTH w/o key operation on multi-value table", "[silkworm][node][rpc]") {
+    SECTION("Tx OK: one SEEK_BOTH w/o key operation on multi-value table") {
         remote::Cursor open;
         open.set_op(remote::Op::OPEN);
         open.set_bucketname(kTestMultiMap.name);
@@ -1886,7 +1891,7 @@ TEST_CASE("BackEndKvServer E2E: Tx cursor valid operations", "[silkworm][node][r
         CHECK(responses[3].cursorid() == 0);
     }
 
-    SECTION("Tx OK: one SEEK_BOTH w/ nonexistent key operation on multi-value table", "[silkworm][node][rpc]") {
+    SECTION("Tx OK: one SEEK_BOTH w/ nonexistent key operation on multi-value table") {
         remote::Cursor open;
         open.set_op(remote::Op::OPEN);
         open.set_bucketname(kTestMultiMap.name);
@@ -1909,7 +1914,7 @@ TEST_CASE("BackEndKvServer E2E: Tx cursor valid operations", "[silkworm][node][r
         CHECK(responses[3].cursorid() == 0);
     }
 
-    SECTION("Tx OK: one SEEK_BOTH w/ existent key operation on multi-value table", "[silkworm][node][rpc]") {
+    SECTION("Tx OK: one SEEK_BOTH w/ existent key operation on multi-value table") {
         remote::Cursor open;
         open.set_op(remote::Op::OPEN);
         open.set_bucketname(kTestMultiMap.name);
@@ -1932,7 +1937,7 @@ TEST_CASE("BackEndKvServer E2E: Tx cursor valid operations", "[silkworm][node][r
         CHECK(responses[3].cursorid() == 0);
     }
 
-    SECTION("Tx OK: one SEEK_BOTH w/ existent key+value operation on multi-value table", "[silkworm][node][rpc]") {
+    SECTION("Tx OK: one SEEK_BOTH w/ existent key+value operation on multi-value table") {
         remote::Cursor open;
         open.set_op(remote::Op::OPEN);
         open.set_bucketname(kTestMultiMap.name);
@@ -1956,7 +1961,7 @@ TEST_CASE("BackEndKvServer E2E: Tx cursor valid operations", "[silkworm][node][r
         CHECK(responses[3].cursorid() == 0);
     }
 
-    SECTION("Tx OK: one SEEK_BOTH_EXACT w/o key operation on multi-value table", "[silkworm][node][rpc]") {
+    SECTION("Tx OK: one SEEK_BOTH_EXACT w/o key operation on multi-value table") {
         remote::Cursor open;
         open.set_op(remote::Op::OPEN);
         open.set_bucketname(kTestMultiMap.name);
@@ -1978,7 +1983,7 @@ TEST_CASE("BackEndKvServer E2E: Tx cursor valid operations", "[silkworm][node][r
         CHECK(responses[3].cursorid() == 0);
     }
 
-    SECTION("Tx OK: one SEEK_BOTH_EXACT w/ nonexistent key operation on multi-value table", "[silkworm][node][rpc]") {
+    SECTION("Tx OK: one SEEK_BOTH_EXACT w/ nonexistent key operation on multi-value table") {
         remote::Cursor open;
         open.set_op(remote::Op::OPEN);
         open.set_bucketname(kTestMultiMap.name);
@@ -2001,7 +2006,7 @@ TEST_CASE("BackEndKvServer E2E: Tx cursor valid operations", "[silkworm][node][r
         CHECK(responses[3].cursorid() == 0);
     }
 
-    SECTION("Tx OK: one SEEK_BOTH_EXACT w/ existent key operation on multi-value table", "[silkworm][node][rpc]") {
+    SECTION("Tx OK: one SEEK_BOTH_EXACT w/ existent key operation on multi-value table") {
         remote::Cursor open;
         open.set_op(remote::Op::OPEN);
         open.set_bucketname(kTestMultiMap.name);
@@ -2024,8 +2029,7 @@ TEST_CASE("BackEndKvServer E2E: Tx cursor valid operations", "[silkworm][node][r
         CHECK(responses[3].cursorid() == 0);
     }
 
-    SECTION("Tx OK: one SEEK_BOTH_EXACT w/ existent key+value operation on multi-value table",
-            "[silkworm][node][rpc]") {
+    SECTION("Tx OK: one SEEK_BOTH_EXACT w/ existent key+value operation on multi-value table") {
         remote::Cursor open;
         open.set_op(remote::Op::OPEN);
         open.set_bucketname(kTestMultiMap.name);
@@ -2055,7 +2059,7 @@ TEST_CASE("BackEndKvServer E2E: Tx cursor invalid operations", "[silkworm][node]
     test.fill_tables();
     auto kv_client = *test.kv_client;
 
-    SECTION("Tx KO: CURRENT operation", "[silkworm][node][rpc]") {
+    SECTION("Tx KO: CURRENT operation") {
         remote::Cursor open;
         open.set_op(remote::Op::OPEN);
         open.set_bucketname(kTestMap.name);
@@ -2076,7 +2080,7 @@ TEST_CASE("BackEndKvServer E2E: Tx cursor invalid operations", "[silkworm][node]
         CHECK(responses[1].cursorid() != 0);
     }
 
-    SECTION("Tx KO: FIRST_DUP operation on single-value table", "[silkworm][node][rpc]") {
+    SECTION("Tx KO: FIRST_DUP operation on single-value table") {
         remote::Cursor open;
         open.set_op(remote::Op::OPEN);
         open.set_bucketname(kTestMap.name);
@@ -2100,7 +2104,7 @@ TEST_CASE("BackEndKvServer E2E: Tx cursor invalid operations", "[silkworm][node]
         CHECK(responses[1].cursorid() != 0);
     }
 
-    SECTION("Tx KO: LAST_DUP operation on single-value table", "[silkworm][node][rpc]") {
+    SECTION("Tx KO: LAST_DUP operation on single-value table") {
         remote::Cursor open;
         open.set_op(remote::Op::OPEN);
         open.set_bucketname(kTestMap.name);
@@ -2124,7 +2128,7 @@ TEST_CASE("BackEndKvServer E2E: Tx cursor invalid operations", "[silkworm][node]
         CHECK(responses[1].cursorid() != 0);
     }
 
-    SECTION("Tx KO: FIRST_DUP operation w/o positioned key", "[silkworm][node][rpc]") {
+    SECTION("Tx KO: FIRST_DUP operation w/o positioned key") {
         remote::Cursor open;
         open.set_op(remote::Op::OPEN);
         open.set_bucketname(kTestMultiMap.name);
@@ -2144,7 +2148,7 @@ TEST_CASE("BackEndKvServer E2E: Tx cursor invalid operations", "[silkworm][node]
         CHECK(responses[0].txid() != 0);
     }
 
-    SECTION("Tx KO: LAST_DUP operation w/o positioned key", "[silkworm][node][rpc]") {
+    SECTION("Tx KO: LAST_DUP operation w/o positioned key") {
         remote::Cursor open;
         open.set_op(remote::Op::OPEN);
         open.set_bucketname(kTestMultiMap.name);
@@ -2164,7 +2168,7 @@ TEST_CASE("BackEndKvServer E2E: Tx cursor invalid operations", "[silkworm][node]
         CHECK(responses[0].txid() != 0);
     }
 
-    SECTION("Tx KO: SEEK_BOTH operation on single-value table", "[silkworm][node][rpc]") {
+    SECTION("Tx KO: SEEK_BOTH operation on single-value table") {
         remote::Cursor open;
         open.set_op(remote::Op::OPEN);
         open.set_bucketname(kTestMap.name);
@@ -2184,7 +2188,7 @@ TEST_CASE("BackEndKvServer E2E: Tx cursor invalid operations", "[silkworm][node]
         CHECK(responses[0].txid() != 0);
     }
 
-    SECTION("Tx KO: SEEK_BOTH_EXACT operation on single-value table", "[silkworm][node][rpc]") {
+    SECTION("Tx KO: SEEK_BOTH_EXACT operation on single-value table") {
         remote::Cursor open;
         open.set_op(remote::Op::OPEN);
         open.set_bucketname(kTestMap.name);
@@ -2207,19 +2211,18 @@ TEST_CASE("BackEndKvServer E2E: Tx cursor invalid operations", "[silkworm][node]
 
 class TxMaxTimeToLiveGuard {
   public:
-    explicit TxMaxTimeToLiveGuard(uint8_t t) { TxCall::set_max_ttl_duration(boost::posix_time::milliseconds{t}); }
+    explicit TxMaxTimeToLiveGuard(uint8_t t) { TxCall::set_max_ttl_duration(std::chrono::milliseconds{t}); }
     ~TxMaxTimeToLiveGuard() { TxCall::set_max_ttl_duration(kMaxTxDuration); }
 };
 
 TEST_CASE("BackEndKvServer E2E: bidirectional max TTL duration", "[silkworm][node][rpc]") {
     constexpr uint8_t kCustomMaxTimeToLive{10};
     TxMaxTimeToLiveGuard ttl_guard{kCustomMaxTimeToLive};
-    NodeSettings node_settings;
-    BackEndKvE2eTest test{silkworm::log::Level::kNone, node_settings};
+    BackEndKvE2eTest test{silkworm::log::Level::kTrace, NodeSettings{}};
     test.fill_tables();
     auto kv_client = *test.kv_client;
 
-    SECTION("Tx: cursor NEXT ops across renew are consecutive", "[silkworm][node][rpc]") {
+    SECTION("Tx: cursor NEXT ops across renew are consecutive") {
         grpc::ClientContext context;
         const auto tx_reader_writer = kv_client.tx_start(&context);
         remote::Pair response;
@@ -2255,7 +2258,7 @@ TEST_CASE("BackEndKvServer E2E: bidirectional max TTL duration", "[silkworm][nod
         CHECK(status.ok());
     }
 
-    SECTION("Tx: cursor NEXT_DUP ops across renew are consecutive", "[silkworm][node][rpc]") {
+    SECTION("Tx: cursor NEXT_DUP ops across renew are consecutive") {
         grpc::ClientContext context;
         const auto tx_reader_writer = kv_client.tx_start(&context);
         remote::Pair response;

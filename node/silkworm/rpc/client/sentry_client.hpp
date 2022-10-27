@@ -19,26 +19,46 @@
 #include <chrono>
 #include <functional>
 #include <memory>
+#include <tuple>
 #include <unordered_set>
 
+#include <silkworm/concurrency/coroutine.hpp>
+
+#include <agrpc/asio_grpc.hpp>
+#include <boost/asio/awaitable.hpp>
+#include <evmc/evmc.hpp>
 #include <grpcpp/grpcpp.h>
 #include <gsl/pointers>
+#include <intx/intx.hpp>
 #include <p2psentry/sentry.grpc.pb.h>
+#include <types/types.pb.h>
 
+#include <silkworm/backend/ethereum_backend.hpp>
 #include <silkworm/common/assert.hpp>
+#include <silkworm/common/util.hpp>
 #include <silkworm/rpc/client/call.hpp>
 
 namespace silkworm::rpc {
 
-using PeerCountCallback = std::function<void(grpc::Status, const sentry::PeerCountReply&)>;
-using NodeInfoCallback = std::function<void(grpc::Status, const types::NodeInfoReply&)>;
+struct SentryStatus {
+    uint64_t network_id;
+    evmc::bytes32 head_hash;
+    intx::uint256 head_td;
+    evmc::bytes32 genesis_hash;
+    std::vector<BlockNum> forks;
+};
 
 class SentryClient {
   public:
+    using SetStatusResult = std::pair<grpc::Status, sentry::SetStatusReply>;
+    using PeerCountResult = std::pair<grpc::Status, sentry::PeerCountReply>;
+    using NodeInfoResult = std::pair<grpc::Status, types::NodeInfoReply>;
+
     virtual ~SentryClient() = default;
 
-    virtual void peer_count(PeerCountCallback callback) = 0;
-    virtual void node_info(NodeInfoCallback callback) = 0;
+    virtual boost::asio::awaitable<SetStatusResult> set_status(SentryStatus sentry_status) = 0;
+    virtual boost::asio::awaitable<PeerCountResult> peer_count() = 0;
+    virtual boost::asio::awaitable<NodeInfoResult> node_info() = 0;
 };
 
 class SentryClientFactory {
@@ -50,42 +70,30 @@ class SentryClientFactory {
 
 class RemoteSentryClient : public SentryClient {
   public:
-    explicit RemoteSentryClient(grpc::CompletionQueue* queue, std::shared_ptr<grpc::Channel> channel);
+    RemoteSentryClient(agrpc::GrpcContext& grpc_context, const std::shared_ptr<grpc::Channel>& channel,
+                       std::string address_uri);
 
     RemoteSentryClient(const RemoteSentryClient&) = delete;
     RemoteSentryClient& operator=(const RemoteSentryClient&) = delete;
 
-    void peer_count(PeerCountCallback callback) override;
-    void node_info(NodeInfoCallback callback) override;
+    boost::asio::awaitable<SetStatusResult> set_status(SentryStatus sentry_status) override;
+    boost::asio::awaitable<PeerCountResult> peer_count() override;
+    boost::asio::awaitable<NodeInfoResult> node_info() override;
 
   private:
-    [[maybe_unused]] auto add_rpc(gsl::owner<AsyncCall*> rpc) {
-        SILKWORM_ASSERT(rpc != nullptr);
-        return requests_.emplace(rpc);
-    }
-
-    [[maybe_unused]] auto remove_rpc(gsl::owner<AsyncCall*> rpc) {
-        SILKWORM_ASSERT(rpc != nullptr);
-        // Trick necessary because heterogeneous lookup for std::unordered_set requires C++20
-        std::unique_ptr<AsyncCall> stale_rpc{rpc};
-        auto removed_count = requests_.erase(stale_rpc);
-        stale_rpc.release();
-        return removed_count;
-    }
-
-    grpc::CompletionQueue* queue_;
+    agrpc::GrpcContext& grpc_context_;
     std::unique_ptr<sentry::Sentry::Stub> stub_;
-    std::unordered_set<std::unique_ptr<AsyncCall>> requests_;
+    std::string address_uri_;
 };
 
 class RemoteSentryClientFactory : public SentryClientFactory {
   public:
-    explicit RemoteSentryClientFactory(grpc::CompletionQueue* queue) : queue_(queue) {}
+    explicit RemoteSentryClientFactory(agrpc::GrpcContext& grpc_context) : grpc_context_(grpc_context) {}
 
     std::unique_ptr<SentryClient> make_sentry_client(const std::string& address_uri) override;
 
   private:
-    grpc::CompletionQueue* queue_;
+    agrpc::GrpcContext& grpc_context_;
 };
 
 }  // namespace silkworm::rpc

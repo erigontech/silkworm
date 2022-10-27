@@ -34,8 +34,9 @@ using Catch::Matchers::Message;
 
 TEST_CASE("parse wait mode", "[silkrpc][common][log]") {
     std::vector<absl::string_view> input_texts{
-        "blocking", "sleeping", "yielding", "busy_spin"};
+        "backoff", "blocking", "sleeping", "yielding", "busy_spin"};
     std::vector<WaitMode> expected_wait_modes{
+        WaitMode::backoff,
         WaitMode::blocking,
         WaitMode::sleeping,
         WaitMode::yielding,
@@ -61,13 +62,14 @@ TEST_CASE("parse invalid wait mode", "[silkrpc][common][log]") {
 
 TEST_CASE("unparse wait mode", "[silkrpc][common][log]") {
     std::vector<WaitMode> input_wait_modes{
+        WaitMode::backoff,
         WaitMode::blocking,
         WaitMode::sleeping,
         WaitMode::yielding,
         WaitMode::busy_spin,
     };
     std::vector<absl::string_view> expected_texts{
-        "blocking", "sleeping", "yielding", "busy_spin"};
+        "backoff", "blocking", "sleeping", "yielding", "busy_spin"};
     for (std::size_t i{0}; i < input_wait_modes.size(); i++) {
         const auto text{AbslUnparseFlag(input_wait_modes[i])};
         CHECK(text == expected_texts[i]);

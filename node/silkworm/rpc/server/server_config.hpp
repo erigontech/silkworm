@@ -39,7 +39,7 @@ class ServerConfig {
     void set_num_contexts(uint32_t num_contexts) noexcept;
     void set_wait_mode(WaitMode wait_mode) noexcept;
 
-    const std::string& address_uri() const noexcept { return address_uri_; }
+    const std::string& address_uri() const noexcept { return address_uri_; }  // TODO(canepat) remove as duplicated
     std::shared_ptr<grpc::ServerCredentials> credentials() const noexcept { return credentials_; }
     uint32_t num_contexts() const noexcept { return num_contexts_; }
     WaitMode wait_mode() const noexcept { return wait_mode_; }

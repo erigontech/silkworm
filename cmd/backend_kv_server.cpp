@@ -21,6 +21,7 @@
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/ip/address.hpp>
 #include <boost/asio/signal_set.hpp>
+#include <boost/asio/steady_timer.hpp>
 #include <boost/process/environment.hpp>
 
 #include <silkworm/backend/ethereum_backend.hpp>
@@ -28,7 +29,8 @@
 #include <silkworm/chain/config.hpp>
 #include <silkworm/common/directories.hpp>
 #include <silkworm/common/log.hpp>
-#include <silkworm/common/settings.hpp>
+#include <silkworm/db/mdbx.hpp>
+#include <silkworm/downloader/sentry_client.hpp>
 #include <silkworm/rpc/server/backend_kv_server.hpp>
 #include <silkworm/rpc/util.hpp>
 
@@ -52,8 +54,6 @@ int parse_command_line(int argc, char* argv[], CLI::App& app, cmd::SilkwormCoreS
     auto& server_settings = settings.server_settings;
 
     // Node options
-    cmd::add_option_chain(app, node_settings.network_id);
-
     std::filesystem::path data_dir;
     cmd::add_option_data_dir(app, data_dir);
 
@@ -65,7 +65,7 @@ int parse_command_line(int argc, char* argv[], CLI::App& app, cmd::SilkwormCoreS
 
     // RPC Server options
     cmd::add_option_private_api_address(app, node_settings.private_api_addr);
-    cmd::add_option_sentry_api_address(app, node_settings.sentry_api_addr);
+    cmd::add_option_external_sentry_address(app, node_settings.external_sentry_addr);
 
     uint32_t num_contexts;
     cmd::add_option_num_contexts(app, num_contexts);
@@ -79,14 +79,6 @@ int parse_command_line(int argc, char* argv[], CLI::App& app, cmd::SilkwormCoreS
     app.parse(argc, argv);
 
     // Validate and assign settings
-    // TODO (canepat) read chain config from database (allows for custom config)
-    const auto known_chain_config{lookup_known_chain(node_settings.network_id)};
-    if (!known_chain_config.has_value()) {
-        SILK_CRIT << "Unknown chain identifier: " << node_settings.network_id;
-        return -1;
-    }
-    node_settings.chain_config = *(known_chain_config->second);
-
     if (!etherbase_address.empty()) {
         const auto etherbase = from_hex(etherbase_address);
         if (!etherbase) {
@@ -128,6 +120,7 @@ int main(int argc, char* argv[]) {
 
         // Initialize logging with custom settings
         log::init(log_settings);
+        log::set_thread_name("bekv_server");
 
         // TODO(canepat): this could be an option in Silkworm logging facility
         rpc::Grpc2SilkwormLogGuard log_guard;
@@ -135,15 +128,39 @@ int main(int argc, char* argv[]) {
         const auto node_name{cmd::get_node_name_from_build_info(silkworm_get_buildinfo())};
         SILK_LOG << "BackEndKvServer build info: " << node_name;
         SILK_LOG << "BackEndKvServer library info: " << get_library_versions();
-        SILK_LOG << "BackEndKvServer launched with chain id: " << node_settings.network_id
-                 << " address: " << server_settings.address_uri()
+        SILK_LOG << "BackEndKvServer launched with chaindata: " << node_settings.chaindata_env_config.path
+                 << " address: " << node_settings.private_api_addr
                  << " contexts: " << server_settings.num_contexts();
 
         auto database_env = db::open_env(node_settings.chaindata_env_config);
+        SILK_INFO << "BackEndKvServer MDBX max readers: " << database_env.max_readers();
+
+        // Read chain config from database (this allows for custom config)
+        db::ROTxn ro_txn{database_env};
+        node_settings.chain_config = db::read_chain_config(ro_txn);
+        if (!node_settings.chain_config.has_value()) {
+            throw std::runtime_error("invalid chain config in database");
+        }
+        node_settings.network_id = node_settings.chain_config.value().chain_id;
+        SILK_INFO << "BackEndKvServer chain from db: " << node_settings.network_id;
+
+        // Load genesis hash
+        node_settings.chain_config->genesis_hash = db::read_canonical_header_hash(ro_txn, 0);
+        if (!node_settings.chain_config->genesis_hash.has_value()) {
+            throw std::runtime_error("could not load genesis hash");
+        }
+        SILK_INFO << "BackEndKvServer genesis from db: " << to_hex(*node_settings.chain_config->genesis_hash);
+
+        // Standalone BackEndKV server needs to connect to an external Sentry for its Sentry clients to work
+        SentryClient sentry{node_settings.external_sentry_addr, db::ROAccess{database_env},
+                            node_settings.chain_config.value()};
+        SILK_INFO << "Hand-shake and set status start for Sentry at: " << node_settings.external_sentry_addr << "...";
+        sentry.hand_shake();
+        sentry.set_status();
+        SILK_INFO << "Hand-shake and set status completed for Sentry at: " << node_settings.external_sentry_addr;
+
         EthereumBackEnd backend{node_settings, &database_env};
         backend.set_node_name(node_name);
-
-        SILK_INFO << "BackEndKvServer MDBX max readers: " << database_env.max_readers();
 
         rpc::BackEndKvServer server{server_settings, backend};
         server.build_and_start();
@@ -158,6 +175,26 @@ int main(int argc, char* argv[]) {
             backend.close();
             server.shutdown();
         });
+
+        // Standalone BackEndKV server has no staged loop, so this simulates periodic state changes
+        boost::asio::steady_timer state_changes_timer{scheduler};
+        constexpr auto kStateChangeInterval{std::chrono::seconds(10)};
+        constexpr silkworm::BlockNum kStartBlock{100'000'000};
+        constexpr uint64_t kGasLimit{30'000'000};
+
+        std::function<void(boost::system::error_code)> state_change_notification = [&](const boost::system::error_code& ec) {
+            if (ec != boost::asio::error::operation_aborted) {
+                static auto block_number = kStartBlock;
+                backend.state_change_source()->start_new_batch(block_number, evmc::bytes32{}, {}, false);
+                backend.state_change_source()->notify_batch(0, kGasLimit);
+                SILK_INFO << "New batch notified for block: " << block_number;
+                state_changes_timer.expires_at(std::chrono::steady_clock::now() + kStateChangeInterval);
+                state_changes_timer.async_wait(state_change_notification);
+                ++block_number;
+            }
+        };
+        state_changes_timer.expires_at(std::chrono::steady_clock::now() + kStateChangeInterval);
+        state_changes_timer.async_wait(state_change_notification);
 
         SILK_LOG << "BackEndKvServer is now running [pid=" + std::to_string(pid) + ", main thread=" << tid << "]";
         server.join();

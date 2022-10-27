@@ -120,6 +120,10 @@ void add_option_sentry_api_address(CLI::App& cli, std::string& sentry_api_addres
     add_option_ip_address(cli, "--sentry.api.addr", sentry_api_address, "Sentry api endpoint");
 }
 
+void add_option_external_sentry_address(CLI::App& cli, std::string& external_sentry_address) {
+    add_option_ip_address(cli, "--sentry.remote.addr", external_sentry_address, "External Sentry endpoint");
+}
+
 void add_option_ip_address(CLI::App& cli, const std::string& name, std::string& address, const std::string& description) {
     cli.add_option(name, address, description)
         ->capture_default_str()
@@ -133,6 +137,7 @@ void add_option_num_contexts(CLI::App& cli, uint32_t& num_contexts) {
 
 void add_option_wait_mode(CLI::App& cli, silkworm::rpc::WaitMode& wait_mode) {
     std::map<std::string, silkworm::rpc::WaitMode> wait_mode_mapping{
+        {"backoff", silkworm::rpc::WaitMode::backoff},
         {"blocking", silkworm::rpc::WaitMode::blocking},
         {"busy_spin", silkworm::rpc::WaitMode::busy_spin},
         {"sleeping", silkworm::rpc::WaitMode::sleeping},
@@ -140,7 +145,7 @@ void add_option_wait_mode(CLI::App& cli, silkworm::rpc::WaitMode& wait_mode) {
     };
     cli.add_option("--wait.mode", wait_mode, "The waiting mode for execution loops during idle cycles")
         ->capture_default_str()
-        ->check(CLI::Range(silkworm::rpc::WaitMode::blocking, silkworm::rpc::WaitMode::busy_spin))
+        ->check(CLI::Range(silkworm::rpc::WaitMode::backoff, silkworm::rpc::WaitMode::busy_spin))
         ->transform(CLI::Transformer(wait_mode_mapping, CLI::ignore_case))
         ->default_val(silkworm::rpc::WaitMode::blocking);
 }
@@ -186,9 +191,7 @@ void parse_silkworm_command_line(CLI::App& cli, int argc, char* argv[], Silkworm
     add_option_private_api_address(cli, node_settings.private_api_addr);
 
     // Sentry settings
-    cli.add_option("--sentry.remote.addr", node_settings.external_sentry_addr, "External sentry endpoint")
-        ->capture_default_str()
-        ->check(IPEndPointValidator(/*allow_empty=*/true));
+    add_option_external_sentry_address(cli, node_settings.external_sentry_addr);
 
     add_option_sentry_api_address(cli, node_settings.sentry_api_addr);
 

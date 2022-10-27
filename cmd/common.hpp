@@ -95,13 +95,16 @@ void add_option_private_api_address(CLI::App& cli, std::string& private_api_addr
 //! \brief Set up option for the IP address of Sentry gRPC API
 void add_option_sentry_api_address(CLI::App& cli, std::string& sentry_api_address);
 
+//! \brief Set up option for the IP address(es) of external Sentry component(s)
+void add_option_external_sentry_address(CLI::App& cli, std::string& external_sentry_address);
+
 //! \brief Set up parsing of the specified IP address
 void add_option_ip_address(CLI::App& cli, const std::string& name, std::string& address, const std::string& description);
 
-//! \brief Set up parsing of num_contexts
+//! \brief Set up parsing of the number of RPC execution contexts (i.e. threading model)
 void add_option_num_contexts(CLI::App& cli, uint32_t& num_contexts);
 
-//! \brief Set up parsing of wait_mode
+//! \brief Set up parsing of the wait mode (e.g. block, sleep, spin...) in RPC execution contexts
 void add_option_wait_mode(CLI::App& cli, silkworm::rpc::WaitMode& wait_mode);
 
 }  // namespace silkworm::cmd

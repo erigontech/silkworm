@@ -33,13 +33,14 @@ namespace silkworm::rpc {
 //! Asynchronous server scheduler running an execution loop.
 class ServerContext {
   public:
-    explicit ServerContext(std::size_t context_id, std::unique_ptr<grpc::ServerCompletionQueue>&& server_queue, WaitMode wait_mode = WaitMode::blocking);
+    explicit ServerContext(std::size_t context_id, std::unique_ptr<grpc::ServerCompletionQueue>&& server_queue,
+                           WaitMode wait_mode = WaitMode::blocking);
 
     [[nodiscard]] boost::asio::io_context* io_context() const noexcept { return io_context_.get(); }
     [[nodiscard]] grpc::ServerCompletionQueue* server_queue() const noexcept { return server_grpc_context_->get_server_completion_queue(); }
-    [[nodiscard]] grpc::CompletionQueue* client_queue() const noexcept { return client_grpc_context_->get_completion_queue(); }
     [[nodiscard]] agrpc::GrpcContext* server_grpc_context() const noexcept { return server_grpc_context_.get(); }
     [[nodiscard]] agrpc::GrpcContext* client_grpc_context() const noexcept { return client_grpc_context_.get(); }
+    [[nodiscard]] WaitMode wait_mode() const noexcept { return wait_mode_; }
 
     //! Execute the scheduler loop until stopped.
     void execute_loop();

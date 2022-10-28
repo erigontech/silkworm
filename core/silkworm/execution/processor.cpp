@@ -77,10 +77,6 @@ void ExecutionProcessor::execute_transaction(const Transaction& txn, Receipt& re
     assert(txn.from.has_value());
     state_.access_account(*txn.from);
 
-    const intx::uint256 base_fee_per_gas{evm_.block().header.base_fee_per_gas.value_or(0)};
-    const intx::uint256 effective_gas_price{txn.effective_gas_price(base_fee_per_gas)};
-    state_.subtract_from_balance(*txn.from, txn.gas_limit * effective_gas_price);
-
     if (txn.to.has_value()) {
         state_.access_account(*txn.to);
         // EVM itself increments the nonce for contract creation
@@ -99,6 +95,10 @@ void ExecutionProcessor::execute_transaction(const Transaction& txn, Receipt& re
         // EIP-3651: Warm COINBASE
         state_.access_account(evm_.beneficiary);
     }
+
+    const intx::uint256 base_fee_per_gas{evm_.block().header.base_fee_per_gas.value_or(0)};
+    const intx::uint256 effective_gas_price{txn.effective_gas_price(base_fee_per_gas)};
+    state_.subtract_from_balance(*txn.from, txn.gas_limit * effective_gas_price);
 
     const intx::uint128 g0{intrinsic_gas(txn, rev >= EVMC_HOMESTEAD, rev >= EVMC_ISTANBUL)};
     assert(g0 <= UINT64_MAX);  // true due to the precondition (transaction must be valid)

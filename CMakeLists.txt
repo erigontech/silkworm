@@ -25,7 +25,6 @@ get_directory_property(SILKWORM_HAS_PARENT PARENT_DIRECTORY)
 if(NOT SILKWORM_HAS_PARENT)
   include(third_party/evmone/cmake/cable/bootstrap.cmake)
   include(CableBuildType)
-  include(CableBuildInfo)
   cable_set_build_type(DEFAULT Release CONFIGURATION_TYPES Release Debug)
 
   if(NOT CMAKE_TOOLCHAIN_FILE)
@@ -46,7 +45,6 @@ add the following lines before the project command of your root CMakeLists.txt:
 
 -----------------------------------------------------------------------------------------------------
 include(silkworm/third_party/evmone/cmake/cable/bootstrap.cmake)
-include(CableBuildInfo)
 include(silkworm/third_party/evmone/cmake/cable/HunterGate.cmake)
 HunterGate(
   URL "https://github.com/cpp-pm/hunter/archive/v0.24.3.tar.gz"
@@ -61,6 +59,8 @@ HunterGate(
 
 project(silkworm)
 set(PROJECT_VERSION 0.1.0-dev)
+
+include(CableBuildInfo)
 
 string(REGEX MATCH "([0-9]+)\\.([0-9]+)\\.([0-9]+)" _ ${PROJECT_VERSION})
 set(PROJECT_VERSION_MAJOR ${CMAKE_MATCH_1})

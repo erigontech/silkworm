@@ -706,17 +706,14 @@ void KvService::register_kv_request_calls(const ServerContext& context, remote::
     request_repeatedly(*grpc_context, service, &remote::KV::AsyncService::RequestVersion,
                        [](auto&&... args) -> awaitable<void> {
                            co_await KvVersionCall{std::forward<decltype(args)>(args)...}();
-                           co_return;
                        });
     request_repeatedly(*grpc_context, service, &remote::KV::AsyncService::RequestTx,
                        [grpc_context](auto&&... args) -> awaitable<void> {
                            co_await TxCall{*grpc_context, std::forward<decltype(args)>(args)...}();
-                           co_return;
                        });
     request_repeatedly(*grpc_context, service, &remote::KV::AsyncService::RequestStateChanges,
                        [](auto&&... args) -> awaitable<void> {
                            co_await StateChangesCall{std::forward<decltype(args)>(args)...}();
-                           co_return;
                        });
     SILK_DEBUG << "KvService::register_kv_request_calls END";
 }

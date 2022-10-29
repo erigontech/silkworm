@@ -23,7 +23,6 @@
 #include <utility>
 #include <vector>
 
-#include <agrpc/asio_grpc.hpp>
 #include <boost/asio/deadline_timer.hpp>
 #include <grpcpp/grpcpp.h>
 #include <remote/kv.grpc.pb.h>

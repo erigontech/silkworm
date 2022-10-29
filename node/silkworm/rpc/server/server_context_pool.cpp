@@ -80,11 +80,13 @@ void ServerContext::execute_loop_single_threaded(WaitStrategy&& wait_strategy) {
 void ServerContext::execute_loop_multi_threaded() {
     SILK_DEBUG << "Multi-thread execution loop start [" << std::this_thread::get_id() << "]";
     std::thread server_grpc_context_thread{[&]() {
+        log::set_thread_name(build_thread_name("grpc_ctx_s", context_id_).c_str());
         SILK_DEBUG << "Server GrpcContext execution loop start [" << std::this_thread::get_id() << "]";
         server_grpc_context_->run();
         SILK_DEBUG << "Server GrpcContext execution loop end [" << std::this_thread::get_id() << "]";
     }};
     std::thread client_grpc_context_thread{[&]() {
+        log::set_thread_name(build_thread_name("grpc_ctx_c", context_id_).c_str());
         SILK_DEBUG << "Client GrpcContext execution loop start [" << std::this_thread::get_id() << "]";
         client_grpc_context_->run_completion_queue();
         SILK_DEBUG << "Client GrpcContext execution loop end [" << std::this_thread::get_id() << "]";
@@ -93,7 +95,6 @@ void ServerContext::execute_loop_multi_threaded() {
 
     server_grpc_context_work_.reset();
     client_grpc_context_work_.reset();
-    server_grpc_context_->stop();
     client_grpc_context_->stop();
     server_grpc_context_thread.join();
     client_grpc_context_thread.join();

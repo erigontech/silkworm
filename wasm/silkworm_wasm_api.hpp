@@ -69,7 +69,7 @@ SILKWORM_EXPORT void difficulty(intx::uint256* in_out, uint64_t block_number, ui
 SILKWORM_EXPORT silkworm::Transaction* new_transaction(const silkworm::Bytes* rlp);
 SILKWORM_EXPORT void delete_transaction(silkworm::Transaction* x);
 
-SILKWORM_EXPORT bool check_intrinsic_gas(const silkworm::Transaction* txn, bool homestead, bool istanbul);
+SILKWORM_EXPORT bool check_intrinsic_gas(const silkworm::Transaction* txn, evmc_revision rev);
 
 SILKWORM_EXPORT const uint8_t* recover_sender(silkworm::Transaction* txn);
 

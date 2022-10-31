@@ -699,7 +699,7 @@ RunResults transaction_test(const nlohmann::json& j) {
 
         const auto expected_intrinsic_gas{intx::from_string<intx::uint256>(test["intrinsicGas"].get<std::string>())};
         const evmc_revision rev{config.revision(/*block_number=*/0)};
-        const auto calculated_intrinsic_gas{intrinsic_gas(txn, rev >= EVMC_HOMESTEAD, rev >= EVMC_ISTANBUL)};
+        const auto calculated_intrinsic_gas{intrinsic_gas(txn, rev)};
         if (calculated_intrinsic_gas != expected_intrinsic_gas) {
             std::cout << "Intrinsic gas mismatch for " << entry.key() << ":\n"
                       << intx::to_string(calculated_intrinsic_gas, /*base=*/16)

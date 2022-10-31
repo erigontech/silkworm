@@ -24,30 +24,38 @@
 
 namespace silkworm {
 
-intx::uint128 intrinsic_gas(const Transaction& txn, bool homestead, bool istanbul) noexcept {
+intx::uint128 intrinsic_gas(const Transaction& txn, const evmc_revision rev) noexcept {
     intx::uint128 gas{fee::kGTransaction};
 
-    if (!txn.to && homestead) {
+    const bool contract_creation{!txn.to};
+    if (contract_creation && rev >= EVMC_HOMESTEAD) {
         gas += fee::kGTxCreate;
     }
 
-    // https://eips.ethereum.org/EIPS/eip-2930
+    // EIP-2930: Optional access lists
     gas += intx::uint128{txn.access_list.size()} * fee::kAccessListAddressCost;
+    intx::uint128 total_num_of_storage_keys{0};
     for (const AccessListEntry& e : txn.access_list) {
-        gas += intx::uint128{e.storage_keys.size()} * fee::kAccessListStorageKeyCost;
+        total_num_of_storage_keys += e.storage_keys.size();
     }
+    gas += total_num_of_storage_keys * fee::kAccessListStorageKeyCost;
 
-    if (txn.data.empty()) {
+    const intx::uint128 data_len{txn.data.length()};
+    if (data_len == 0) {
         return gas;
     }
 
-    intx::uint128 non_zero_bytes{as_range::count_if(txn.data, [](char c) { return c != 0; })};
-
-    uint64_t nonZeroGas{istanbul ? fee::kGTxDataNonZeroIstanbul : fee::kGTxDataNonZeroFrontier};
+    const intx::uint128 non_zero_bytes{as_range::count_if(txn.data, [](uint8_t c) { return c != 0; })};
+    const intx::uint128 nonZeroGas{rev >= EVMC_ISTANBUL ? fee::kGTxDataNonZeroIstanbul : fee::kGTxDataNonZeroFrontier};
     gas += non_zero_bytes * nonZeroGas;
-
-    intx::uint128 zero_bytes{txn.data.length() - non_zero_bytes};
+    const intx::uint128 zero_bytes{data_len - non_zero_bytes};
     gas += zero_bytes * fee::kGTxDataZero;
+
+    // EIP-3860: Limit and meter initcode
+    if (contract_creation && rev >= EVMC_SHANGHAI) {
+        const intx::uint128 num_words{(data_len + 31) / 32};
+        gas += num_words * fee::kInitCodeWordCost;
+    }
 
     return gas;
 }

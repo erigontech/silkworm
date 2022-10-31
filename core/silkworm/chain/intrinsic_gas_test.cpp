@@ -48,7 +48,7 @@ TEST_CASE("EIP-2930 intrinsic gas") {
         access_list,
     };
 
-    intx::uint128 g0{intrinsic_gas(txn, /*homestead=*/true, /*istanbul=*/true)};
+    intx::uint128 g0{intrinsic_gas(txn, EVMC_ISTANBUL)};
     CHECK(g0 == fee::kGTransaction + 2 * fee::kAccessListAddressCost + 2 * fee::kAccessListStorageKeyCost);
 }
 

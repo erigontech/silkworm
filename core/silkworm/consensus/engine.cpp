@@ -67,7 +67,7 @@ ValidationResult pre_validate_transaction(const Transaction& txn, uint64_t block
         }
     }
 
-    const intx::uint128 g0{intrinsic_gas(txn, rev >= EVMC_HOMESTEAD, rev >= EVMC_ISTANBUL)};
+    const intx::uint128 g0{intrinsic_gas(txn, rev)};
     if (txn.gas_limit < g0) {
         return ValidationResult::kIntrinsicGas;
     }

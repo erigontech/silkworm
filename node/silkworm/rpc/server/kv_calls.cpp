@@ -16,6 +16,7 @@
 
 #include "kv_calls.hpp"
 
+#include <agrpc/asio_grpc.hpp>
 #include <boost/asio/experimental/as_tuple.hpp>
 #include <boost/asio/experimental/awaitable_operators.hpp>
 #include <boost/asio/post.hpp>
@@ -95,33 +96,30 @@ void TxCall::set_max_ttl_duration(const std::chrono::milliseconds& max_ttl_durat
 }
 
 awaitable<void> TxCall::operator()() {
-    SILK_TRACE << "TxCall START MDBX readers: " << chaindata_env_->get_info().mi_numreaders;
+    SILK_TRACE << "TxCall peer: " << peer() << " MDBX readers: " << chaindata_env_->get_info().mi_numreaders;
 
     grpc::Status status{grpc::Status::OK};
     try {
         // Create a new read-only transaction.
         read_only_txn_ = chaindata_env_->start_read();
-        SILK_DEBUG << "Tx peer: " << peer() << " started tx: " << read_only_txn_.id();
+        SILK_DEBUG << "TxCall peer: " << peer() << " started tx: " << read_only_txn_.id();
 
         // Send an unsolicited message containing the transaction ID.
         remote::Pair txid_pair;
         txid_pair.set_txid(read_only_txn_.id());
         if (!co_await agrpc::write(responder_, txid_pair)) {
-            SILK_ERROR << "Tx closed by peer: " << server_context_.peer() << " error: write failed";
+            SILK_WARN << "Tx closed by peer: " << server_context_.peer() << " error: write failed";
             co_await agrpc::finish(responder_, grpc::Status::OK);
             co_return;
         }
         SILK_DEBUG << "TxCall announcement with txid=" << read_only_txn_.id() << " sent";
 
-        // Create a guard timer for closing and reopening to avoid long-lived transactions.
-        grpc::Alarm max_ttl_alarm{};
-        std::chrono::system_clock::time_point max_ttl_deadline;
-        const auto update_max_ttl_deadline = [&] {
-            max_ttl_deadline = std::chrono::system_clock::now() + std::chrono::milliseconds(max_ttl_duration_);
-            const std::time_t deadline_t = std::chrono::system_clock::to_time_t(max_ttl_deadline);
-            SILK_DEBUG << "Tx peer: " << peer() << " max TTL timer expires at: " << std::put_time(std::gmtime(&deadline_t), "%F %T");
-        };
+        // Create guard timers to 1) close idle transactions 2) close and reopen long-lived transactions.
+        boost::asio::steady_timer max_idle_alarm{grpc_context_}, max_ttl_alarm{grpc_context_};
+        max_idle_alarm.expires_after(max_idle_duration_);
+        max_ttl_alarm.expires_after(max_ttl_duration_);
 
+        // Initiate read and write streams
         agrpc::GrpcStream read_stream{grpc_context_}, write_stream{grpc_context_};
         const auto initiate_write = [&](const remote::Pair& response) {
             if (!write_stream.is_running()) {
@@ -131,34 +129,57 @@ awaitable<void> TxCall::operator()() {
         remote::Cursor request;
         read_stream.initiate(agrpc::read, responder_, request);
 
-        bool read_ok{true}, write_ok{true}, cancelled{false};
-        while (read_ok && write_ok && !cancelled) {
-            update_max_ttl_deadline();
-
-            const auto rv =
-                co_await (read_stream.next() || agrpc::wait(max_ttl_alarm, max_ttl_deadline) || write_stream.next());
+        boost::asio::cancellation_signal signal;
+        bool completed{false};
+        while (!completed) {
+            SILK_INFO << "Tx peer: " << peer() << " BEFORE ||";
+            const auto rv = co_await (
+                read_stream.next() ||
+                max_idle_alarm.async_wait(as_tuple(use_awaitable)) ||
+                max_ttl_alarm.async_wait(as_tuple(use_awaitable)) ||
+                write_stream.next());
+            SILK_INFO << "Tx peer: " << peer() << " AFTER ||";
             if (0 == rv.index()) {  // read request completed
-                if (read_ok = std::get<0>(rv); read_ok) {
+                if (const bool read_ok = std::get<0>(rv); read_ok) {
+                    // Handle incoming request from client
                     remote::Pair response{};
                     handle(&request, response);
+                    // Schedule write for response
+                    initiate_write(response);
+                    // Reset request and schedule subsequent read
                     request.Clear();
                     read_stream.initiate(agrpc::read, responder_, request);
-                    initiate_write(response);
+                    // Update idle timer deadline every time we receive an incoming request
+                    max_idle_alarm.expires_after(max_idle_duration_);
+                } else {
+                    SILK_WARN << "Tx closed by peer: " << server_context_.peer() << " error: read failed";
+                    completed = true;
                 }
-            } else if (1 == rv.index()) {  // max TTL timer expired
-                if (const bool max_ttl_expired = std::get<1>(rv); max_ttl_expired) {
-                    handle_max_ttl_timer_expired();
+            } else if (1 == rv.index()) {  // max idle timeout expired
+                if (const auto [max_idle_ec] = std::get<1>(rv); max_idle_ec != boost::asio::error::operation_aborted) {
+                    const auto error_msg{"no incoming request in " + std::to_string(max_idle_duration_.count()) + " ms"};
+                    SILK_WARN << "Tx idle peer: " << server_context_.peer() << " error: " << error_msg;
+                    status = grpc::Status{grpc::StatusCode::DEADLINE_EXCEEDED, error_msg};
                 } else {
                     status = grpc::Status::CANCELLED;
-                    cancelled = true;
+                }
+                completed = true;
+            } else if (2 == rv.index()) {  // max TTL timeout expired
+                if (const auto [max_ttl_ec] = std::get<2>(rv); max_ttl_ec != boost::asio::error::operation_aborted) {
+                    handle_max_ttl_timer_expired();
+                    max_ttl_alarm.expires_after(max_ttl_duration_);
+                } else {
+                    status = grpc::Status::CANCELLED;
+                    completed = true;
                 }
             } else {  // write response completed
-                write_ok = std::get<2>(rv);
+                if (const bool write_ok = std::get<3>(rv); !write_ok) {
+                    SILK_WARN << "Tx closed by peer: " << server_context_.peer() << " error: write failed";
+                    completed = true;
+                }
             }
         }
-
-        co_await read_stream.cleanup();
-        co_await write_stream.cleanup();
+        SILK_DEBUG << "TxCall peer: " << peer() << " read/write loop completed";
     } catch (const mdbx::exception& e) {
         const auto error_message = "start tx failed: " + std::string{e.what()};
         SILK_ERROR << "Tx peer: " << peer() << " " << error_message;
@@ -171,7 +192,7 @@ awaitable<void> TxCall::operator()() {
 
     co_await agrpc::finish(responder_, status);
 
-    SILK_TRACE << "TxCall END status: " << status;
+    SILK_TRACE << "TxCall END peer: " << peer() << " status: " << status;
 }
 
 void TxCall::handle(const remote::Cursor* request, remote::Pair& response) {
@@ -315,6 +336,7 @@ void TxCall::handle_operation(const remote::Cursor* request, db::Cursor& cursor,
 }
 
 void TxCall::handle_max_ttl_timer_expired() {
+    // Save the whole state of the transaction (i.e. all cursor positions)
     std::vector<CursorPosition> positions;
     const bool save_success = save_cursors(positions);
     if (!save_success) {
@@ -322,9 +344,11 @@ void TxCall::handle_max_ttl_timer_expired() {
     }
     SILK_DEBUG << "Tx peer: " << peer() << " #cursors: " << cursors_.size() << " saved";
 
+    // Close and reopen to avoid long-lived transactions (resource-consuming for MDBX)
     read_only_txn_.abort();
     read_only_txn_ = chaindata_env_->start_read();
 
+    // Restore the whole state of the transaction (i.e. all cursor positions)
     const bool restore_success = restore_cursors(positions);
     if (!restore_success) {
         throw_with_internal_error("cannot restore state of cursors");
@@ -644,7 +668,7 @@ awaitable<void> StateChangesCall::operator()() {
     StateChangeFilter filter{request_.withstorage(), request_.withtransactions()};
     const auto token = source_->subscribe([&](std::optional<remote::StateChangeBatch> batch) {
         // Make the batch handling logic execute on the scheduler associated to the RPC
-        boost::asio::post(coroutine_executor, [&, batch = std::move(batch)]() {
+        boost::asio::dispatch(coroutine_executor, [&, batch = std::move(batch)]() {
             incoming_batch = batch;
             notifying_timer.cancel();
         });

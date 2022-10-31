@@ -1016,10 +1016,7 @@ int main(int argc, char* argv[]) {
                     SILK_DEBUG << "Completion thread post operation: " << processor;
                     (*processor)(ok);
                 } else {
-                    SILK_DEBUG << "Got shutdown, draining queue...";
-                    while (queue.Next(&tag, &ok)) {
-                    }
-                    SILK_DEBUG << "Queue fully drained";
+                    SILK_DEBUG << "Got shutdown";
                     SILKWORM_ASSERT(completion_stop);
                 }
             }

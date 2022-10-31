@@ -1071,7 +1071,7 @@ class TxIdleTimeoutGuard {
     ~TxIdleTimeoutGuard() { TxCall::set_max_idle_duration(server::kDefaultMaxIdleDuration); }
 };
 
-TEST_CASE("BackEndKvServer E2E: bidirectional idle timeout", "[.]") {
+TEST_CASE("BackEndKvServer E2E: bidirectional idle timeout", "[silkworm][node][rpc]") {
     TxIdleTimeoutGuard timeout_guard{100};
     BackEndKvE2eTest test{silkworm::log::Level::kNone, NodeSettings{}};
     test.fill_tables();
@@ -1090,7 +1090,7 @@ TEST_CASE("BackEndKvServer E2E: bidirectional idle timeout", "[.]") {
         CHECK(status.error_message().find("call idle, no incoming request") != std::string::npos);
     }*/
 
-    SECTION("Tx KO: finish after first read (w/o WritesDone)", "[.]") {
+    SECTION("Tx KO: finish after first read (w/o WritesDone)") {
         grpc::ClientContext context;
         const auto tx_reader_writer = kv_client.tx_start(&context);
         remote::Pair response;
@@ -1099,10 +1099,10 @@ TEST_CASE("BackEndKvServer E2E: bidirectional idle timeout", "[.]") {
         auto status = tx_reader_writer->Finish();
         CHECK(!status.ok());
         CHECK(status.error_code() == grpc::StatusCode::DEADLINE_EXCEEDED);
-        CHECK(status.error_message().find("call idle, no incoming request") != std::string::npos);
+        CHECK(status.error_message().find("no incoming request") != std::string::npos);
     }
 
-    SECTION("Tx KO: finish after first read and one write/read (w/o WritesDone)", "[.]") {
+    SECTION("Tx KO: finish after first read and one write/read (w/o WritesDone)") {
         grpc::ClientContext context;
         const auto tx_reader_writer = kv_client.tx_start(&context);
         remote::Pair response;
@@ -1118,7 +1118,7 @@ TEST_CASE("BackEndKvServer E2E: bidirectional idle timeout", "[.]") {
         auto status = tx_reader_writer->Finish();
         CHECK(!status.ok());
         CHECK(status.error_code() == grpc::StatusCode::DEADLINE_EXCEEDED);
-        CHECK(status.error_message().find("call idle, no incoming request") != std::string::npos);
+        CHECK(status.error_message().find("no incoming request") != std::string::npos);
     }
 }
 
@@ -2218,7 +2218,7 @@ class TxMaxTimeToLiveGuard {
 TEST_CASE("BackEndKvServer E2E: bidirectional max TTL duration", "[silkworm][node][rpc]") {
     constexpr uint8_t kCustomMaxTimeToLive{10};
     TxMaxTimeToLiveGuard ttl_guard{kCustomMaxTimeToLive};
-    BackEndKvE2eTest test{silkworm::log::Level::kTrace, NodeSettings{}};
+    BackEndKvE2eTest test{silkworm::log::Level::kNone, NodeSettings{}};
     test.fill_tables();
     auto kv_client = *test.kv_client;
 

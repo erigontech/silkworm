@@ -21,7 +21,7 @@
 
 #include <silkworm/buildinfo.h>
 #include <silkworm/common/util.hpp>
-#include <silkworm/rpc/util.hpp>
+#include <silkworm/rpc/common/util.hpp>
 #include <silkworm/sentry/sentry.hpp>
 #include <silkworm/sentry/settings.hpp>
 

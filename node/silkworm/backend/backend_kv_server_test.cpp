@@ -34,8 +34,8 @@
 #include <silkworm/common/directories.hpp>
 #include <silkworm/common/log.hpp>
 #include <silkworm/db/mdbx.hpp>
-#include <silkworm/rpc/conversion.hpp>
-#include <silkworm/rpc/util.hpp>
+#include <silkworm/rpc/common/conversion.hpp>
+#include <silkworm/rpc/common/util.hpp>
 #include <silkworm/test/log.hpp>
 
 using namespace std::chrono_literals;

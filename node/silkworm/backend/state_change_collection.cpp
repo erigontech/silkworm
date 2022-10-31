@@ -19,8 +19,7 @@
 #include <silkworm/common/assert.hpp>
 #include <silkworm/common/base.hpp>
 #include <silkworm/common/log.hpp>
-#include <silkworm/rpc/conversion.hpp>
-#include <silkworm/rpc/util.hpp>
+#include <silkworm/rpc/common/conversion.hpp>
 
 namespace silkworm {
 

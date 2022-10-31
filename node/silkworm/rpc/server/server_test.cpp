@@ -16,7 +16,6 @@
 
 #include "server.hpp"
 
-#include <chrono>
 #include <thread>
 
 #include <catch2/catch.hpp>
@@ -25,7 +24,7 @@
 #include <grpcpp/impl/codegen/service_type.h>
 
 #include <silkworm/common/log.hpp>
-#include <silkworm/rpc/util.hpp>
+#include <silkworm/rpc/common/util.hpp>
 #include <silkworm/test/log.hpp>
 
 namespace silkworm::rpc {

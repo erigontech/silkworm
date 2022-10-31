@@ -24,6 +24,7 @@
 #include <boost/asio/steady_timer.hpp>
 #include <boost/process/environment.hpp>
 
+#include <silkworm/backend/backend_kv_server.hpp>
 #include <silkworm/backend/ethereum_backend.hpp>
 #include <silkworm/buildinfo.h>
 #include <silkworm/chain/config.hpp>
@@ -31,8 +32,7 @@
 #include <silkworm/common/log.hpp>
 #include <silkworm/db/mdbx.hpp>
 #include <silkworm/downloader/sentry_client.hpp>
-#include <silkworm/rpc/server/backend_kv_server.hpp>
-#include <silkworm/rpc/util.hpp>
+#include <silkworm/rpc/common/util.hpp>
 
 #include "common.hpp"
 

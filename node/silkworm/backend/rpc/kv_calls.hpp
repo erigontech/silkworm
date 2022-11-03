@@ -25,15 +25,15 @@
 
 #include <boost/asio/deadline_timer.hpp>
 #include <grpcpp/grpcpp.h>
-#include <remote/kv.grpc.pb.h>
 
-#include <silkworm/backend/ethereum_backend.hpp>
-#include <silkworm/backend/state_change_collection.hpp>
-#include <silkworm/chain/config.hpp>
-#include <silkworm/db/mdbx.hpp>
-#include <silkworm/rpc/server/call.hpp>
-#include <silkworm/rpc/server/call_factory.hpp>
-#include <silkworm/rpc/server/server.hpp>
+#include "remote/kv.grpc.pb.h"
+#include "silkworm/backend/ethereum_backend.hpp"
+#include "silkworm/backend/state_change_collection.hpp"
+#include "silkworm/chain/config.hpp"
+#include "silkworm/db/mdbx.hpp"
+#include "silkworm/rpc/server/call.hpp"
+#include "silkworm/rpc/server/call_factory.hpp"
+#include "silkworm/rpc/server/server.hpp"
 
 // KV API protocol versions
 // 5.1.0 - first issue

@@ -17,15 +17,15 @@
 #include "kv_calls.hpp"
 
 #include <agrpc/asio_grpc.hpp>
+#include <boost/asio/dispatch.hpp>
 #include <boost/asio/experimental/as_tuple.hpp>
 #include <boost/asio/experimental/awaitable_operators.hpp>
-#include <boost/asio/post.hpp>
 #include <boost/asio/steady_timer.hpp>
 #include <gsl/util>
 
 #include <silkworm/common/assert.hpp>
 #include <silkworm/common/log.hpp>
-#include <silkworm/rpc/util.hpp>
+#include <silkworm/rpc/common/util.hpp>
 
 namespace silkworm::rpc {
 

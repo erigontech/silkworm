@@ -107,6 +107,21 @@ void encode_header(const SnapshotHeader& header, silkworm::Bytes& output) {
     }
 }
 
+//! Temporary snapshot file
+class TemporarySnapshot {
+  public:
+    explicit TemporarySnapshot(const SnapshotHeader& header) {
+        silkworm::Bytes output{};
+        encode_header(header, output);
+        file_.write(output);
+    }
+
+    const std::filesystem::path& path() const { return file_.path(); }
+
+  private:
+    TemporaryFile file_;
+};
+
 TEST_CASE("Decompressor", "[silkworm][snapshot][decompressor]") {
     const auto tmp_file_path{silkworm::TemporaryDirectory::get_unique_temporary_path()};
     Decompressor decoder{tmp_file_path};
@@ -176,13 +191,58 @@ TEST_CASE("Decompressor::open valid files", "[silkworm][snapshot][decompressor]"
 
     for (const auto& [test_name, header] : header_tests) {
         SECTION(test_name) {
-            TemporaryFile tmp_file;
-            silkworm::Bytes output{};
-            encode_header(header, output);
-            tmp_file.write(output);
-            Decompressor decoder{tmp_file.path()};
+            TemporarySnapshot tmp_snapshot{header};
+            Decompressor decoder{tmp_snapshot.path()};
             CHECK_NOTHROW(decoder.open());
         }
+    }
+}
+
+TEST_CASE("Decompressor::read_ahead", "[silkworm][snapshot][decompressor]") {
+    test::SetLogVerbosityGuard guard{log::Level::kNone};
+    SnapshotHeader header{
+        .words_count = 0,
+        .empty_words_count = 0,
+        .patterns = std::vector<SnapshotPattern>{{0, {}}},
+        .positions = std::vector<SnapshotPosition>{{0, 1}}
+    };
+    TemporarySnapshot tmp_snapshot{header};
+    Decompressor decoder{tmp_snapshot.path()};
+    CHECK_NOTHROW(decoder.open());
+
+    SECTION("close after close") {
+        CHECK_NOTHROW(decoder.read_ahead([](const auto& it) -> bool {
+            CHECK(it.has_next());
+            return true;
+        }) == true);
+        decoder.close();
+    }
+
+    SECTION("failure after close") {
+        decoder.close();
+        CHECK_THROWS_AS(decoder.read_ahead([](const auto&) -> bool { return false; }), std::logic_error);
+    }
+}
+
+TEST_CASE("Decompressor::close", "[silkworm][snapshot][decompressor]") {
+    test::SetLogVerbosityGuard guard{log::Level::kNone};
+    SnapshotHeader header{
+        .words_count = 0,
+        .empty_words_count = 0,
+        .patterns = std::vector<SnapshotPattern>{{0, {}}},
+        .positions = std::vector<SnapshotPosition>{{0, 1}}
+    };
+    TemporarySnapshot tmp_snapshot{header};
+    Decompressor decoder{tmp_snapshot.path()};
+    CHECK_NOTHROW(decoder.open());
+
+    SECTION("close after close") {
+        CHECK_NOTHROW(decoder.close());
+    }
+
+    SECTION("close after close") {
+        CHECK_NOTHROW(decoder.close());
+        CHECK_NOTHROW(decoder.close());
     }
 }
 

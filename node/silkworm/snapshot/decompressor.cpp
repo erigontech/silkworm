@@ -348,6 +348,9 @@ void Decompressor::open() {
 }
 
 bool Decompressor::read_ahead(Decompressor::ReadAheadFunc fn) {
+    if (!compressed_file_) {
+        throw std::logic_error{"decompressor closed, call open first"};
+    }
     compressed_file_->advise_sequential();
     auto _ = gsl::finally([&]() { compressed_file_->advise_random(); });
     ReadIterator it{this};

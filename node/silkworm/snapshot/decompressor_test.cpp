@@ -204,8 +204,7 @@ TEST_CASE("Decompressor::read_ahead", "[silkworm][snapshot][decompressor]") {
         .words_count = 0,
         .empty_words_count = 0,
         .patterns = std::vector<SnapshotPattern>{{0, {}}},
-        .positions = std::vector<SnapshotPosition>{{0, 1}}
-    };
+        .positions = std::vector<SnapshotPosition>{{0, 1}}};
     TemporarySnapshot tmp_snapshot{header};
     Decompressor decoder{tmp_snapshot.path()};
     CHECK_NOTHROW(decoder.open());
@@ -230,8 +229,7 @@ TEST_CASE("Decompressor::close", "[silkworm][snapshot][decompressor]") {
         .words_count = 0,
         .empty_words_count = 0,
         .patterns = std::vector<SnapshotPattern>{{0, {}}},
-        .positions = std::vector<SnapshotPosition>{{0, 1}}
-    };
+        .positions = std::vector<SnapshotPosition>{{0, 1}}};
     TemporarySnapshot tmp_snapshot{header};
     Decompressor decoder{tmp_snapshot.path()};
     CHECK_NOTHROW(decoder.open());

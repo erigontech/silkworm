@@ -26,11 +26,10 @@ namespace silkworm {
 
 class BodyPersistence {
   public:
-    explicit BodyPersistence(db::RWTxn&, const ChainConfig&);
+    explicit BodyPersistence(db::RWTxn&, BlockNum bodies_stage_height, const ChainConfig&);
     ~BodyPersistence() = default;
 
-    void persist(const Block&);
-    void persist(const std::vector<Block>&);
+    void update(const Block&);
     void close();
 
     static void remove_bodies(BlockNum new_height, std::optional<Hash> bad_block, db::RWTxn& tx);

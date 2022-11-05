@@ -101,6 +101,10 @@ inline constexpr const char* kAllStages[]{
     kUnwindKey,
 };
 
+//! \brief Fictious stages
+const char* kPipelineStartKey = "PipelineStart";
+const char* kPipelineEndKey = "PipelineEnd";
+
 //! \brief Stages won't log their "start" if segment is below this threshold
 inline constexpr size_t kSmallBlockSegmentWidth{16};
 

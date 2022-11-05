@@ -25,8 +25,8 @@
 
 namespace silkworm {
 
-HeaderPersistence::HeaderPersistence(db::RWTxn& tx) : tx_(tx), canonical_cache_(kCanonicalCacheSize) {
-    BlockNum headers_height = db::stages::read_stage_progress(tx, db::stages::kHeadersKey);
+HeaderPersistence::HeaderPersistence(db::RWTxn& tx, BlockNum headers_height)
+    : tx_(tx), canonical_cache_(kCanonicalCacheSize) {
     auto headers_hash = db::read_canonical_hash(tx, headers_height);
     if (!headers_hash) {
         headers_hash = db::read_head_header_hash(tx);  // here we assume: headers_height = height(head_header)
@@ -61,25 +61,7 @@ BigInt HeaderPersistence::total_difficulty() const { return local_td_; }
 
 BlockNum HeaderPersistence::unwind_point() const { return unwind_point_; }
 
-// Erigon's func (hi *HeaderInserter) FeedHeader
-
-void HeaderPersistence::persist(const Headers& headers) {
-    SILK_TRACE << "HeaderPersistence: persisting " << headers.size() << " headers";
-    if (headers.empty()) return;
-
-    StopWatch measure_curr_scope;                  // only for test
-    auto start_time = measure_curr_scope.start();  // only for test
-
-    as_range::for_each(headers, [this](const auto& header) { persist(*header); });
-
-    auto [end_time, _] = measure_curr_scope.lap();  // only for test
-
-    log::Trace() << "[INFO] HeaderPersistence: saved " << headers.size() << " headers from height "
-                 << header_at(headers.begin()).number << " to height " << header_at(headers.rbegin()).number
-                 << " (duration=" << measure_curr_scope.format(end_time - start_time) << ")";  // only for test
-}
-
-void HeaderPersistence::persist(const BlockHeader& header) {  // try to modularize this method
+void HeaderPersistence::update(const BlockHeader& header) {
     if (finished_) {
         std::string error_message = "HeaderPersistence: persist method called on instance in 'finished' state";
         log::Error("HeaderStage") << error_message;
@@ -93,9 +75,7 @@ void HeaderPersistence::persist(const BlockHeader& header) {  // try to modulari
         return;  // skip duplicates
     }
 
-    if (db::read_header(tx_, height, hash).has_value()) {
-        return;  // already inserted, skip
-    }
+    // TODO (mike): it would be more beautiful to move header validation here removing it from BlockExchange
 
     // Calculate total difficulty
     auto parent_td = db::read_total_difficulty(tx_, height - 1, header.parent_hash);
@@ -117,11 +97,10 @@ void HeaderPersistence::persist(const BlockHeader& header) {  // try to modulari
 
         // Save progress
         db::write_head_header_hash(tx_, hash);                                   // can throw exception
-        db::stages::write_stage_progress(tx_, db::stages::kHeadersKey, height);  // can throw exception
 
         highest_in_db_ = height;
         highest_hash_ = hash;
-        // highest_timestamp_ = header.timestamp;
+
         canonical_cache_.put(height, hash);
         local_td_ = td;  // this makes sure we end up choosing the chain with the max total difficulty
 
@@ -134,10 +113,9 @@ void HeaderPersistence::persist(const BlockHeader& header) {  // try to modulari
     // Save progress
     db::write_total_difficulty(tx_, height, hash, td);
 
-    // Save header
-    db::write_header(tx_, header, true);  // true = with_header_numbers
-
-    // SILK_TRACE << "HeaderPersistence: saved header height=" << height << " hash=" << hash;
+    // Save header number
+    db::write_header_number(tx_, hash.bytes, header.number);
+    // db::write_header(tx_, header, with_header_numbers);
 
     previous_hash_ = hash;
 }
@@ -158,15 +136,7 @@ BlockNum HeaderPersistence::find_forking_point(db::RWTxn& tx, const BlockHeader&
     }
     // Going further back
     else {
-        auto parent = db::read_header(tx_, height - 1, parent_hash);
-        if (!parent) {
-            std::string error_message = "HeaderPersistence: could not find parent with hash " + to_hex(parent_hash) +
-                                        " and height " + std::to_string(height - 1) + " for header " + to_hex(header.hash());
-            log::Error("HeaderStage") << error_message;
-            throw std::logic_error(error_message);
-        }
-
-        auto ancestor_hash = parent->parent_hash;
+        auto ancestor_hash = parent_hash;
         auto ancestor_height = height - 2;
 
         // look in the cache first

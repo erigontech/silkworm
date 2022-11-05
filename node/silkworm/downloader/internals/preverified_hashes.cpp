@@ -50,4 +50,12 @@ PreverifiedHashes PreverifiedHashes::load(uint64_t chain_id) {
     return result;
 }
 
+uint64_t PreverifiedHashes::max_height(uint64_t chain_id) {
+    if (chain_id == 1) {
+        return preverified_hashes_mainnet_height();
+    }
+
+    return 0;
+}
+
 }  // namespace silkworm

@@ -20,11 +20,10 @@
 
 namespace silkworm {
 
-BodyPersistence::BodyPersistence(db::RWTxn& tx, const ChainConfig& chain_config)
+BodyPersistence::BodyPersistence(db::RWTxn& tx, BlockNum bodies_stage_height, const ChainConfig& chain_config)
     : tx_{tx},
       consensus_engine_{consensus::engine_factory(chain_config)},
       chain_state_{tx, /*prune_from=*/0, /*historical_block=null*/} {
-    auto bodies_stage_height = db::stages::read_stage_progress(tx, db::stages::kBlockBodiesKey);
 
     initial_height_ = bodies_stage_height;
     highest_height_ = bodies_stage_height;
@@ -37,7 +36,7 @@ BlockNum BodyPersistence::unwind_point() const { return unwind_point_; }
 Hash BodyPersistence::bad_block() const { return bad_block_; }
 void BodyPersistence::set_preverified_height(BlockNum height) { preverified_height_ = height; }
 
-void BodyPersistence::persist(const Block& block) {
+void BodyPersistence::update(const Block& block) {
     Hash block_hash = block.header.hash();  // save cpu
     BlockNum block_num = block.header.number;
 
@@ -57,19 +56,12 @@ void BodyPersistence::persist(const Block& block) {
         return;
     }
 
-    if (!db::has_body(tx_, block_num, block_hash)) {
-        db::write_body(tx_, block, block_hash, block_num);
-    }
+    //if (!db::has_body(tx_, block_num, block_hash)) {
+    //    db::write_body(tx_, block, block_hash, block_num);
+    //}
 
     if (block_num > highest_height_) {
         highest_height_ = block_num;
-        db::stages::write_stage_progress(tx_, db::stages::kBlockBodiesKey, block_num);
-    }
-}
-
-void BodyPersistence::persist(const std::vector<Block>& blocks) {
-    for (auto& block : blocks) {
-        persist(block);
     }
 }
 
@@ -78,8 +70,7 @@ void BodyPersistence::close() {
 }
 
 void BodyPersistence::remove_bodies(BlockNum new_height, std::optional<Hash>, db::RWTxn& tx) {
-    // like Erigon, we do not erase "wrong" blocks, only update stage progress...
-    db::stages::write_stage_progress(tx, db::stages::kBlockBodiesKey, new_height);
+    // we do not erase "wrong" blocks, only stage progress will be updated by bodies stage unwind operation
 }
 
 }  // namespace silkworm

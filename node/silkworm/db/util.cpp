@@ -47,6 +47,11 @@ Bytes block_key(BlockNum block_number, std::span<const uint8_t, kHashLength> has
     return key;
 }
 
+auto split_block_key(ByteView key)-> std::tuple<BlockNum, evmc::bytes32> {
+    // TODO implement
+    throw std::runtime_error("not implemented");
+}
+
 Bytes storage_change_key(BlockNum block_number, const evmc::address& address, uint64_t incarnation) {
     Bytes res(sizeof(BlockNum) + kPlainStoragePrefixLength, '\0');
     endian::store_big_u64(&res[0], block_number);

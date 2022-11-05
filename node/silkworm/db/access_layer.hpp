@@ -52,6 +52,9 @@ Bytes read_header_raw(mdbx::txn& txn, ByteView key);
 //! \brief Reads a header with the specified hash
 std::optional<BlockHeader> read_header(mdbx::txn& txn, const evmc::bytes32& hash);
 
+//! \brief Apply a user defined func to the headers at specific height
+size_t process_headers_at_height(mdbx::txn& txn, BlockNum height, std::function<void(BlockHeader&)> process_func);
+
 //! \brief Reads a header without rlp-decoding it
 std::optional<ByteView> read_rlp_encoded_header(mdbx::txn& txn, BlockNum bn, const evmc::bytes32& hash);
 
@@ -82,6 +85,9 @@ void write_canonical_header_hash(mdbx::txn& txn, const uint8_t (&hash)[kHashLeng
                              bool read_senders, BlockBody& out);
 [[nodiscard]] bool read_body(mdbx::txn& txn, const evmc::bytes32& hash, BlockNum bn, BlockBody& body);
 [[nodiscard]] bool read_body(mdbx::txn& txn, const evmc::bytes32& hash, BlockBody& body);
+
+//! \brief Apply a user defined func to the bodies at specific height
+size_t process_blocks_at_height(mdbx::txn& txn, BlockNum height, std::function<void(Block&)> process_func);
 
 //! \brief Check the presence of a block body using block number and hash
 [[nodiscard]] bool has_body(mdbx::txn& txn, BlockNum block_number, const uint8_t (&hash)[kHashLength]);

@@ -29,17 +29,14 @@
 
 namespace silkworm::stagedsync {
 
-HeadersStage::HeadersStage(SyncContext* sc, BlockExchange& bd, NodeSettings* ns)
-    : Stage(sc, db::stages::kHeadersKey, ns), block_downloader_(bd) {
+HeadersStage::HeadersStage(NodeSettings* ns, SyncContext* sc)
+    : Stage(sc, db::stages::kHeadersKey, ns) {
     // User can specify to stop downloading process at some block
     const auto stop_at_block = stop_at_block_from_env();
     if (stop_at_block.has_value()) {
-        target_block_ = stop_at_block;
-        log::Info(log_prefix_) << "env var STOP_AT_BLOCK set, target block=" << target_block_.value();
+        forced_target_block_ = stop_at_block;
+        log::Info(log_prefix_) << "env var STOP_AT_BLOCK set, target block=" << forced_target_block_.value();
     }
-}
-
-HeadersStage::~HeadersStage() {
 }
 
 auto HeadersStage::forward(db::RWTxn& tx) -> Stage::Result {
@@ -48,90 +45,60 @@ auto HeadersStage::forward(db::RWTxn& tx) -> Stage::Result {
     using namespace std::chrono;
 
     Stage::Result result = Stage::Result::kUnspecified;
-    bool new_height_reached = false;
     std::thread message_receiving;
     operation_ = OperationType::Forward;
 
     StopWatch timing;
     timing.start();
-    log::Info(log_prefix_) << "Start";
-
-    if (block_downloader_.is_stopping()) {
-        log::Error(log_prefix_) << "Aborted, block exchange is down";
-        return Stage::Result::kAborted;
-    }
+    log::Info(log_prefix_) << "Forward start";
 
     try {
-        HeaderPersistence header_persistence(tx);
+        current_height_ = db::stages::read_stage_progress(tx, db::stages::kHeadersKey);
+        BlockNum target_height = db::stages::read_stage_progress(tx, db::stages::kPipelineStartKey);
 
+        HeaderPersistence header_persistence(tx, current_height_);
+
+        // premature exit conditions
         if (header_persistence.canonical_repaired()) {
             tx.commit();
-            log::Info(log_prefix_) << "End (forward skipped due to the need of to complete the previous run, canonical chain updated), "
+            log::Info(log_prefix_) << "End, forward skipped to complete the previous run (canonical chain updated), "
                                    << "duration=" << StopWatch::format(timing.lap_duration());
             return Stage::Result::kSuccess;
         }
 
-        current_height_ = header_persistence.initial_height();
-        get_log_progress();  // this is a trick to set log progress initial value, please improve
-
-        if (target_block_ && current_height_ >= *target_block_) {
+        if (forced_target_block_ && current_height_ >= *forced_target_block_) {
             tx.commit();
-            log::Info(log_prefix_) << "End, forward skipped due to target block (" << *target_block_ << ") reached";
+            log::Info(log_prefix_) << "End, forward skipped due to 'stop-at-block', current block= "
+                                   << current_height_.load() << ")";
             return Stage::Result::kSuccess;
         }
 
+        if (current_height_ >= target_height) {
+            tx.commit();
+            log::Info(log_prefix_) << "End, forward skipped, we are already at the target block (" << target_height << ")";
+            return Stage::Result::kSuccess;
+        }
+
+        get_log_progress();  // this is a trick to set log progress initial value, please improve
         RepeatedMeasure<BlockNum> height_progress(header_persistence.initial_height());
-        log::Info(log_prefix_) << "Waiting for headers... from=" << height_progress.get();
-
-        // sync status
-        auto sync_command = sync_header_chain(header_persistence.initial_height());
-        sync_command->result().get();  // blocking
-
-        // prepare headers, if any
-        auto withdraw_command = withdraw_stable_headers();
+        log::Info(log_prefix_) << "Updating headers from=" << height_progress.get();
 
         // header processing
         time_point_t last_update = system_clock::now();
-        while (!new_height_reached && !is_stopping()) {
-            // make some outbound header requests
-            send_header_requests();
+        while (current_height_ < target_height && !is_stopping()) {
+            current_height_++;
 
-            // check if it needs to persist some headers
-            if (withdraw_command->completed_and_read()) {
-                // submit another withdrawal command
-                withdraw_command = withdraw_stable_headers();
-            } else if (withdraw_command->result().wait_for(500ms) == std::future_status::ready) {
-                // check the result of withdrawal command
-                auto [stable_headers, in_sync] = withdraw_command->result().get();  // blocking
-                if (!stable_headers.empty()) {
-                    if (stable_headers.size() > 100000) {
-                        log::Info(log_prefix_) << "Inserting headers...";
-                    }
-                    StopWatch insertion_timing;
-                    insertion_timing.start();
+            // process header and ommers at current height
+            auto processed = db::process_headers_at_height(
+                tx,
+                current_height_,  // may throw exception
+                [&header_persistence](BlockHeader& header) {
+                    header_persistence.update(header);
+                });
 
-                    // persist headers
-                    header_persistence.persist(stable_headers);
-                    current_height_ = header_persistence.highest_height();
+            if (processed == 0) throw std::logic_error("table Headers has a hole");
 
-                    if (stable_headers.size() > 100000) {
-                        log::Info(log_prefix_) << "Inserted headers tot=" << stable_headers.size()
-                                               << " (duration=" << StopWatch::format(insertion_timing.lap_duration()) << "s)";
-                    }
-                }
-
-                // do announcements
-                send_announcements();
-
-                // check if finished
-                if (sync_context_->is_first_cycle) {  // if this is the first sync (first run or run after a long break)...
-                    // ... we want to make sure we insert as many headers as possible
-                    new_height_reached = in_sync && header_persistence.best_header_changed();
-                } else {  // otherwise, we are working at the tip of the chain so ...
-                    // ... we need to react quickly when new headers are coming in
-                    new_height_reached = header_persistence.best_header_changed();
-                }
-            }
+            db::stages::write_stage_progress(tx, db::stages::kHeadersKey, current_height_);
 
             // show progress
             if (system_clock::now() - last_update > 30s) {
@@ -139,7 +106,7 @@ auto HeadersStage::forward(db::RWTxn& tx) -> Stage::Result {
 
                 height_progress.set(header_persistence.highest_height());
 
-                log::Debug(log_prefix_) << "Wrote block headers number=" << height_progress.get()
+                log::Debug(log_prefix_) << "Updated block headers number=" << height_progress.get()
                                         << " (+" << height_progress.delta() << "), "
                                         << height_progress.throughput() << " headers/secs";
             }
@@ -147,6 +114,7 @@ auto HeadersStage::forward(db::RWTxn& tx) -> Stage::Result {
 
         result = Stage::Result::kSuccess;
 
+        // check unwind condition
         if (header_persistence.unwind_needed()) {
             result = Stage::Result::kWrongFork;
             sync_context_->unwind_point = header_persistence.unwind_point();
@@ -154,8 +122,8 @@ auto HeadersStage::forward(db::RWTxn& tx) -> Stage::Result {
             log::Info(log_prefix_) << "Unwind needed";
         }
 
-        auto headers_downloaded = header_persistence.highest_height() - header_persistence.initial_height();
-        log::Info(log_prefix_) << "Downloading completed, wrote " << headers_downloaded << " headers,"
+        auto headers_processed = header_persistence.highest_height() - header_persistence.initial_height();
+        log::Info(log_prefix_) << "Updating completed, wrote " << headers_processed << " headers,"
                                << " last=" << header_persistence.highest_height()
                                << " duration=" << StopWatch::format(timing.lap_duration());
 
@@ -166,10 +134,10 @@ auto HeadersStage::forward(db::RWTxn& tx) -> Stage::Result {
 
         // todo: do we need a sentry.set_status() here?
 
-        log::Info(log_prefix_) << "Done, duration= " << StopWatch::format(timing.lap_duration());
+        log::Info(log_prefix_) << "Forward done, duration= " << StopWatch::format(timing.lap_duration());
 
     } catch (const std::exception& e) {
-        log::Error(log_prefix_) << "Aborted due to exception: " << e.what();
+        log::Error(log_prefix_) << "Forward aborted due to exception: " << e.what();
 
         // tx rollback executed automatically if needed
         result = Stage::Result::kUnexpectedError;
@@ -206,7 +174,7 @@ auto HeadersStage::unwind(db::RWTxn& tx) -> Stage::Result {
 
         result = Stage::Result::kSuccess;
 
-        update_bad_headers(std::move(bad_headers));
+        //update_bad_headers(std::move(bad_headers)); // TODO(mike): move this code to the consensus (?)
 
         tx.commit();
 
@@ -228,66 +196,14 @@ auto HeadersStage::prune(db::RWTxn&) -> Stage::Result {
     return Stage::Result::kSuccess;
 }
 
-// Request new headers from peers
-void HeadersStage::send_header_requests() {
-    // if (!sentry_.ready()) return;
-
-    auto message = std::make_shared<OutboundGetBlockHeaders>();
-
-    block_downloader_.accept(message);
-}
-
-// New block hash announcements propagation
-void HeadersStage::send_announcements() {
-    // if (!sentry_.ready()) return;
-
-    auto message = std::make_shared<OutboundNewBlockHashes>();
-
-    block_downloader_.accept(message);
-}
-
-auto HeadersStage::sync_header_chain(BlockNum highest_in_db) -> std::shared_ptr<InternalMessage<void>> {
-    auto message = std::make_shared<InternalMessage<void>>(
-        [highest_in_db](HeaderChain& wc, BodySequence&) { wc.sync_current_state(highest_in_db); });
-
-    block_downloader_.accept(message);
-
-    return message;
-}
-
-auto HeadersStage::withdraw_stable_headers() -> std::shared_ptr<InternalMessage<std::tuple<Headers, bool>>> {
-    using result_t = std::tuple<Headers, bool>;
-
-    auto message = std::make_shared<InternalMessage<result_t>>([](HeaderChain& wc, BodySequence&) {
-        Headers headers = wc.withdraw_stable_headers();
-        bool in_sync = wc.in_sync();
-        return result_t{std::move(headers), in_sync};
-    });
-
-    block_downloader_.accept(message);
-
-    return message;
-}
-
-auto HeadersStage::update_bad_headers(std::set<Hash> bad_headers) -> std::shared_ptr<InternalMessage<void>> {
-    auto message = std::make_shared<InternalMessage<void>>(
-        [bads = std::move(bad_headers)](HeaderChain& wc, BodySequence&) { wc.add_bad_headers(bads); });
-
-    block_downloader_.accept(message);
-
-    return message;
-}
-
 std::vector<std::string> HeadersStage::get_log_progress() {  // implementation MUST be thread safe
     static RepeatedMeasure<BlockNum> height_progress{0};
 
     height_progress.set(current_height_);
-    auto peers = block_downloader_.sentry().active_peers();
 
     return {"current number", std::to_string(height_progress.get()),
             "progress", std::to_string(height_progress.delta()),
-            "headers/secs", std::to_string(height_progress.throughput()),
-            "peers", std::to_string(peers)};
+            "headers/secs", std::to_string(height_progress.throughput())};
 }
 
 }  // namespace silkworm::stagedsync

@@ -24,17 +24,8 @@
 
 namespace silkworm {
 
-/** HeaderPersistence save headers on the db. It has these responsibilities:
- *    - persist headers on the db
- *    - update canonical chain
- *    - detect unwind point
- *    - do headers unwind
- *    - signal (to other stages) to do an unwind operation
- * It is the counterpart of Erigon's HeaderInserter. Ideally it has to encapsulate all the details of the db
- * organization, but in practice this is not possible completely. Header downloader uses an instance of this class for
- * each forward() operation. When it receives headers from HeaderChain, that are ready to persist, the downloader call
- * persist() on HeaderPersistence. Conversely, in the unwind() operation the downloader call the HeaderPersistence's
- * remove_headers() method.
+/** HeaderPersistence updates consistently db tables related to headers, forward or backward (unwind)
+ * Tables involved are: headers, header numbers, canonical chain, total difficulty, head header hash
  *
  * HeaderPersistence has also the responsibility to detect a change in the canonical chain that is already persisted.
  * In this case the method unwind_point() reports the point to which we must return.
@@ -42,10 +33,9 @@ namespace silkworm {
 
 class HeaderPersistence {
   public:
-    explicit HeaderPersistence(db::RWTxn& tx);
+    explicit HeaderPersistence(db::RWTxn& tx, BlockNum headers_height);
 
-    void persist(const Headers&);
-    void persist(const BlockHeader&);
+    void update(const BlockHeader&);
     void finish();
 
     static auto remove_headers(BlockNum unwind_point, std::optional<Hash> bad_block, db::RWTxn& tx)

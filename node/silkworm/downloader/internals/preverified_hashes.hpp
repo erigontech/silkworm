@@ -47,6 +47,8 @@ struct PreverifiedHashes {
 
     [[nodiscard]] bool contains(const evmc::bytes32& hash) const { return hashes.find(hash) != hashes.end(); }
 
+    static uint64_t max_height(uint64_t chain_id);  // return the max height of preverified hashes
+
     static PreverifiedHashes load(uint64_t chain_id);  // Load a set of pre-verified hashes from low level impl
     static PreverifiedHashes none;
 };

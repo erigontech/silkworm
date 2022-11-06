@@ -54,23 +54,23 @@ class TemporaryFile {
 //! Big-endian int encoder
 template <typename int_t = uint64_t>
 std::size_t encode_big_endian(int_t value, silkworm::Bytes& output) {
-    endian::store_big_u64(output.data(), value);
-    output.resize(output.size() + sizeof(int_t));
+    const std::size_t old_size = output.size();
+    output.resize(old_size + sizeof(int_t));
+    endian::store_big_u64(output.data() + old_size, value);
     return output.size();
 }
 
 //! Varint encoder
 template <typename int_t = uint64_t>
 std::size_t encode_varint(int_t value, silkworm::Bytes& output) {
-    std::size_t output_size = output.size();
+    std::size_t varint_size{0};
     while (value > 127) {
-        output[output_size] = static_cast<uint8_t>(value & 127) | 128;
+        output.push_back(static_cast<uint8_t>(value & 127) | 128);
         value >>= 7;
-        output_size++;
+        ++varint_size;
     }
-    output[output_size++] = static_cast<uint8_t>(value) & 127;
-    output.resize(output_size);
-    return output_size;
+    output.push_back(static_cast<uint8_t>(value) & 127);
+    return ++varint_size;
 }
 
 //! Snapshot header encoder
@@ -89,30 +89,52 @@ struct SnapshotHeader {
     uint64_t empty_words_count;
     std::vector<SnapshotPattern> patterns;
     std::vector<SnapshotPosition> positions;
-};
 
-void encode_header(const SnapshotHeader& header, silkworm::Bytes& output) {
-    encode_big_endian<uint64_t>(header.words_count, output);
-    encode_big_endian<uint64_t>(header.empty_words_count, output);
-    encode_big_endian<uint64_t>(header.patterns.size(), output);
-    for (const auto& pattern : header.patterns) {
-        encode_varint<uint64_t>(pattern.depth, output);
-        encode_varint<uint64_t>(pattern.data.size(), output);
-        output.append(pattern.data.cbegin(), pattern.data.cend());
+    void encode(silkworm::Bytes& output) {
+        encode_big_endian<uint64_t>(words_count, output);
+        encode_big_endian<uint64_t>(empty_words_count, output);
+        encode_big_endian<uint64_t>(compute_patterns_size(), output);
+        for (const auto& pattern : patterns) {
+            encode_varint<uint64_t>(pattern.depth, output);
+            encode_varint<uint64_t>(pattern.data.size(), output);
+            output.append(pattern.data.cbegin(), pattern.data.cend());
+        }
+        encode_big_endian<uint64_t>(compute_positions_size(), output);
+        for (const auto& position : positions) {
+            encode_varint<uint64_t>(position.depth, output);
+            encode_varint<uint64_t>(position.value, output);
+        }
     }
-    encode_big_endian<uint64_t>(header.positions.size(), output);
-    for (const auto& position : header.positions) {
-        encode_varint<uint64_t>(position.depth, output);
-        encode_varint<uint64_t>(position.value, output);
+
+  private:
+    [[nodiscard]] uint64_t compute_patterns_size() const {
+        uint64_t patterns_size{0};
+        Bytes temp_buffer{};
+        for (const auto& pattern : patterns) {
+            patterns_size += encode_varint<uint64_t>(pattern.depth, temp_buffer);
+            patterns_size += encode_varint<uint64_t>(pattern.data.size(), temp_buffer);
+            patterns_size += pattern.data.size();
+        }
+        return patterns_size;
     }
-}
+
+    [[nodiscard]] uint64_t compute_positions_size() const {
+        uint64_t positions_size{0};
+        Bytes temp_buffer{};
+        for (const auto& position : positions) {
+            positions_size += encode_varint<uint64_t>(position.depth, temp_buffer);
+            positions_size += encode_varint<uint64_t>(position.value, temp_buffer);
+        }
+        return positions_size;
+    }
+};
 
 //! Temporary snapshot file
 class TemporarySnapshot {
   public:
-    explicit TemporarySnapshot(const SnapshotHeader& header) {
+    explicit TemporarySnapshot(SnapshotHeader& header) {
         silkworm::Bytes output{};
-        encode_header(header, output);
+        header.encode(output);
         file_.write(output);
     }
 
@@ -122,7 +144,7 @@ class TemporarySnapshot {
     TemporaryFile file_;
 };
 
-TEST_CASE("Decompressor", "[silkworm][snapshot][decompressor]") {
+TEST_CASE("Decompressor::Decompressor", "[silkworm][snapshot][decompressor]") {
     const auto tmp_file_path{silkworm::TemporaryDirectory::get_unique_temporary_path()};
     Decompressor decoder{tmp_file_path};
     CHECK(decoder.compressed_path() == tmp_file_path);
@@ -156,32 +178,44 @@ TEST_CASE("Decompressor::open invalid files", "[silkworm][snapshot][decompressor
         Decompressor decoder{tmp_file.path()};
         CHECK_THROWS_MATCHES(decoder.open(), std::runtime_error, Message("pattern dict is invalid: length read failed at 1"));
     }
+    SECTION("zero patterns and zero positions") {
+        SnapshotHeader header{};
+        TemporarySnapshot tmp_snapshot{header};
+        Decompressor decoder{tmp_snapshot.path()};
+        CHECK_THROWS_MATCHES(decoder.open(), std::runtime_error, Message("invalid empty pattern dict"));
+    }
+    SECTION("one pattern and zero positions") {
+        SnapshotHeader header{
+            .words_count = 0,
+            .empty_words_count = 0,
+            .patterns = std::vector<SnapshotPattern>{{12, {0x11, 0x22}}},
+            .positions = std::vector<SnapshotPosition>{}};
+        TemporarySnapshot tmp_snapshot{header};
+        Decompressor decoder{tmp_snapshot.path()};
+        CHECK_THROWS_MATCHES(decoder.open(), std::runtime_error, Message("invalid empty position dict"));
+    }
+    SECTION("zero patterns and one position") {
+        SnapshotHeader header{
+            .words_count = 0,
+            .empty_words_count = 0,
+            .patterns = std::vector<SnapshotPattern>{},
+            .positions = std::vector<SnapshotPosition>{{0, 22}}};
+        TemporarySnapshot tmp_snapshot{header};
+        Decompressor decoder{tmp_snapshot.path()};
+        CHECK_THROWS_MATCHES(decoder.open(), std::runtime_error, Message("invalid empty pattern dict"));
+    }
 }
 
 TEST_CASE("Decompressor::open valid files", "[silkworm][snapshot][decompressor]") {
     test::SetLogVerbosityGuard guard{log::Level::kNone};
 
     std::map<std::string, SnapshotHeader> header_tests{
-        {"zero patterns and zero positions",
-         SnapshotHeader{}},
-        {"one pattern and zero positions",
-         SnapshotHeader{
-             .words_count = 0,
-             .empty_words_count = 0,
-             .patterns = std::vector<SnapshotPattern>{{0, {}}},
-             .positions = std::vector<SnapshotPosition>{}}},
-        {"zero patterns and one position",
-         SnapshotHeader{
-             .words_count = 0,
-             .empty_words_count = 0,
-             .patterns = std::vector<SnapshotPattern>{},
-             .positions = std::vector<SnapshotPosition>{{0, 22}}}},
         {"one pattern and one position",
          SnapshotHeader{
              .words_count = 0,
              .empty_words_count = 0,
-             .patterns = std::vector<SnapshotPattern>{{0, {}}},
-             .positions = std::vector<SnapshotPosition>{{0, 22}}}},
+             .patterns = std::vector<SnapshotPattern>{{12, {}}},
+             .positions = std::vector<SnapshotPosition>{{13, 22}}}},
         {"two patterns and one position",
          SnapshotHeader{
              .words_count = 0,
@@ -189,7 +223,7 @@ TEST_CASE("Decompressor::open valid files", "[silkworm][snapshot][decompressor]"
              .patterns = std::vector<SnapshotPattern>{{1, {}}, {2, {}}},
              .positions = std::vector<SnapshotPosition>{{0, 22}}}}};
 
-    for (const auto& [test_name, header] : header_tests) {
+    for (auto& [test_name, header] : header_tests) {
         SECTION(test_name) {
             TemporarySnapshot tmp_snapshot{header};
             Decompressor decoder{tmp_snapshot.path()};
@@ -209,17 +243,15 @@ TEST_CASE("Decompressor::read_ahead", "[silkworm][snapshot][decompressor]") {
     Decompressor decoder{tmp_snapshot.path()};
     CHECK_NOTHROW(decoder.open());
 
-    SECTION("close after close") {
-        CHECK_NOTHROW(decoder.read_ahead([](const auto& it) -> bool {
-            CHECK(it.has_next());
-            return true;
-        }) == true);
-        decoder.close();
+    for (const bool b : std::vector<bool>{true, false}) {
+        SECTION("check returned value: " + std::to_string(b)) {
+            CHECK_NOTHROW(decoder.read_ahead([=](auto) -> bool { return b; }) == b);
+        }
     }
 
     SECTION("failure after close") {
         decoder.close();
-        CHECK_THROWS_AS(decoder.read_ahead([](const auto&) -> bool { return false; }), std::logic_error);
+        CHECK_THROWS_AS(decoder.read_ahead([](auto) -> bool { return false; }), std::logic_error);
     }
 }
 
@@ -234,13 +266,42 @@ TEST_CASE("Decompressor::close", "[silkworm][snapshot][decompressor]") {
     Decompressor decoder{tmp_snapshot.path()};
     CHECK_NOTHROW(decoder.open());
 
-    SECTION("close after close") {
+    SECTION("close after open") {
         CHECK_NOTHROW(decoder.close());
     }
 
     SECTION("close after close") {
         CHECK_NOTHROW(decoder.close());
         CHECK_NOTHROW(decoder.close());
+    }
+}
+
+TEST_CASE("ReadIterator::ReadIterator empty data", "[silkworm][snapshot][decompressor]") {
+    test::SetLogVerbosityGuard guard{log::Level::kNone};
+    SnapshotHeader header{
+        .words_count = 0,
+        .empty_words_count = 0,
+        .patterns = std::vector<SnapshotPattern>{{0, {}}},
+        .positions = std::vector<SnapshotPosition>{{0, 1}}};
+    TemporarySnapshot tmp_snapshot{header};
+    Decompressor decoder{tmp_snapshot.path()};
+    CHECK_NOTHROW(decoder.open());
+
+    SECTION("has next") {
+        const auto read_function = [](const auto it) -> bool {
+            CHECK_FALSE(it.has_next());
+            return true;
+        };
+        CHECK_NOTHROW(decoder.read_ahead(read_function));
+    }
+    SECTION("next") {
+        const auto read_function = [](auto it) -> bool {
+            silkworm::Bytes buffer{};
+            CHECK(it.next(buffer) == 0);
+            CHECK(buffer.empty());
+            return true;
+        };
+        CHECK_NOTHROW(decoder.read_ahead(read_function));
     }
 }
 

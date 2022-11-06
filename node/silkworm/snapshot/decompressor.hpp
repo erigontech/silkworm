@@ -171,15 +171,15 @@ class Decompressor {
         //! Extract one *uncompressed* word from current offset in the file and append it to buffer
         //! After extracting current word, move at the beginning of the next one
         //! @return the next word position
-        [[nodiscard]] uint64_t next_uncompressed(Bytes& buffer) const;
+        [[nodiscard]] uint64_t next_uncompressed(Bytes& buffer);
 
         //! Move at the offset of the next *compressed* word skipping current one
         //! @return the next word position
-        [[nodiscard]] uint64_t skip() const;
+        [[nodiscard]] uint64_t skip();
 
         //! Move at the offset of the next *uncompressed* word skipping current one
         //! @return the next word position
-        [[nodiscard]] uint64_t skip_uncompressed() const;
+        [[nodiscard]] uint64_t skip_uncompressed();
 
         void reset(uint64_t data_offset);
 
@@ -215,6 +215,7 @@ class Decompressor {
 
     void open();
 
+    //! Read the data stream eagerly applying the specified function, expected read in sequential order.
     [[nodiscard]] bool read_ahead(ReadAheadFunc fn);
 
     void close();

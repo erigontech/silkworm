@@ -80,6 +80,7 @@ void CodeWord::set_next(CodeWord* next) {
 }
 
 std::ostream& operator<<(std::ostream& out, const PatternTable& pt) {
+    out << "Pattern Table:\n";
     out << "bit length: " << pt.bit_length_ << "\n";
     out << std::setfill('0');
     const int bit_len = static_cast<int>(pt.bit_length_);
@@ -284,6 +285,7 @@ int PositionTable::build_tree(std::span<Position> positions, uint64_t highest_de
 }
 
 std::ostream& operator<<(std::ostream& out, const PositionTable& pt) {
+    out << "Position Table:\n";
     out << "bit length: " << pt.bit_length_ << "\n";
     out << std::setfill('0');
     for (std::size_t i{0}; i < pt.positions_.size(); ++i) {
@@ -319,13 +321,15 @@ void Decompressor::open() {
 
     // Read header from compressed file
     words_count_ = endian::load_big_u64(address);
-    SILK_DEBUG << "Decompress words count: " << words_count_;
     empty_words_count_ = endian::load_big_u64(address + kWordsCountSize);
-    SILK_DEBUG << "Decompress empty words count: " << empty_words_count_;
+    SILK_DEBUG << "Decompress words count: " << words_count_ << " empty words count: " << empty_words_count_;
 
     // Read patterns from compressed file
     const auto pattern_dict_length = endian::load_big_u64(address + kWordsCountSize + kEmptyWordsCountSize);
     SILK_INFO << "Decompress pattern dictionary length: " << pattern_dict_length;
+    if (pattern_dict_length == 0) {
+        throw std::runtime_error("invalid empty pattern dict");
+    }
 
     const std::size_t patterns_dict_offset{kWordsCountSize + kEmptyWordsCountSize + kDictionaryLengthSize};
     read_patterns(ByteView{address + patterns_dict_offset, pattern_dict_length});
@@ -333,6 +337,9 @@ void Decompressor::open() {
     // Read positions from compressed file
     const auto position_dict_length = endian::load_big_u64(address + patterns_dict_offset + pattern_dict_length);
     SILK_INFO << "Decompress position dictionary length: " << position_dict_length;
+    if (position_dict_length == 0) {
+        throw std::runtime_error("invalid empty position dict");
+    }
 
     const std::size_t positions_dict_offset{patterns_dict_offset + pattern_dict_length + kDictionaryLengthSize};
     read_positions(ByteView{address + positions_dict_offset, position_dict_length});
@@ -415,17 +422,11 @@ void Decompressor::read_patterns(ByteView dict) {
 
     SILK_INFO << "Pattern count: " << pattern_count << " highest depth: " << pattern_highest_depth;
 
-    if (dict.length() > 0) {
-        pattern_dict_ = std::make_unique<PatternTable>(pattern_highest_depth);
-        pattern_dict_->build_condensed({patterns.begin(), pattern_count});
-    }
+    pattern_dict_ = std::make_unique<PatternTable>(pattern_highest_depth);
+    pattern_dict_->build_condensed({patterns.begin(), pattern_count});
 
-    SILK_INFO << "#codewords: " << (pattern_dict_ ? pattern_dict_->num_codewords() : 0);
-
-    if (pattern_dict_) {
-        SILK_DEBUG << "Pattern CHT:\n"
-                   << *pattern_dict_;
-    };
+    SILK_INFO << "#codewords: " << pattern_dict_->num_codewords();
+    SILK_DEBUG << *pattern_dict_;
 }
 
 void Decompressor::read_positions(ByteView dict) {
@@ -475,17 +476,11 @@ void Decompressor::read_positions(ByteView dict) {
 
     SILK_INFO << "Position count: " << position_count << " highest depth: " << position_highest_depth;
 
-    if (dict.length() > 0) {
-        position_dict_ = std::make_unique<PositionTable>(position_highest_depth);
-        position_dict_->build({positions.begin(), position_count});
-    }
+    position_dict_ = std::make_unique<PositionTable>(position_highest_depth);
+    position_dict_->build({positions.begin(), position_count});
 
-    SILK_INFO << "#positions: " << (position_dict_ ? position_dict_->num_positions() : 0);
-
-    if (position_dict_) {
-        SILK_DEBUG << "Position CHT:\n"
-                   << *position_dict_;
-    }
+    SILK_INFO << "#positions: " << position_dict_->num_positions();
+    SILK_DEBUG << *position_dict_;
 }
 
 Decompressor::ReadIterator::ReadIterator(const Decompressor* decoder) : decoder_(decoder) {}
@@ -559,18 +554,86 @@ uint64_t Decompressor::ReadIterator::next(Bytes& buffer) {
     return post_loop_offset;
 }
 
-uint64_t Decompressor::ReadIterator::next_uncompressed(Bytes& /*buffer*/) const {
-    // const auto save_pos = word_offset_;
+uint64_t Decompressor::ReadIterator::next_uncompressed(Bytes& buffer) {
+    uint64_t word_length = next_position(true);
+    --word_length;  // because when we create HT we do ++ (0 is terminator)
+    if (word_length == 0) {
+        if (bit_position_ > 0) {
+            ++word_offset_;
+            bit_position_ = 0;
+        }
+        return word_offset_;
+    }
 
-    return 0;
+    buffer.clear();
+
+    (void)next_position(false);
+    if (bit_position_ > 0) {
+        ++word_offset_;
+        bit_position_ = 0;
+    }
+    uint64_t word_position = word_offset_;
+    word_offset_ += word_length;
+    data().copy(buffer.data(), word_length, word_position);
+    return word_offset_;
 }
 
-uint64_t Decompressor::ReadIterator::skip() const {
-    return 0;
+uint64_t Decompressor::ReadIterator::skip() {
+    uint64_t word_length = next_position(true);
+    --word_length;  // because when we create HT we do ++ (0 is terminator)
+    if (word_length == 0) {
+        if (bit_position_ > 0) {
+            ++word_offset_;
+            bit_position_ = 0;
+        }
+        return word_offset_;
+    }
+
+    std::size_t uncovered_count{0};
+    std::size_t buffer_position{0};
+    std::size_t last_uncovered{0};
+    for (auto pos{next_position(false)}; pos != 0; pos = next_position(false)) {
+        // Positions where to insert are encoded relative to one another
+        buffer_position += pos - 1;
+        if (word_length < buffer_position) {
+            throw std::logic_error{"likely index file is invalid: " + decoder_->compressed_path().string()};
+        }
+        if (buffer_position > last_uncovered) {
+            uncovered_count += buffer_position - last_uncovered;
+        }
+        last_uncovered = buffer_position + next_pattern().size();
+    }
+    if (bit_position_ > 0) {
+        ++word_offset_;
+        bit_position_ = 0;
+    }
+
+    if (word_length > last_uncovered) {
+        uncovered_count += word_length - last_uncovered;
+    }
+    word_offset_ += uncovered_count;
+
+    return word_offset_;
 }
 
-uint64_t Decompressor::ReadIterator::skip_uncompressed() const {
-    return 0;
+uint64_t Decompressor::ReadIterator::skip_uncompressed() {
+    uint64_t word_length = next_position(true);
+    --word_length;  // because when we create HT we do ++ (0 is terminator)
+    if (word_length == 0) {
+        if (bit_position_ > 0) {
+            ++word_offset_;
+            bit_position_ = 0;
+        }
+        return word_offset_;
+    }
+
+    (void)next_position(false);
+    if (bit_position_ > 0) {
+        ++word_offset_;
+        bit_position_ = 0;
+    }
+    word_offset_ += word_length;
+    return word_offset_;
 }
 
 void Decompressor::ReadIterator::reset(uint64_t data_offset) {

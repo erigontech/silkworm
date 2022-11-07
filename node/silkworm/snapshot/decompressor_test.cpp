@@ -58,6 +58,26 @@ TEST_CASE("DecodingTable::DecodingTable", "[silkworm][snapshot][decompressor]") 
     }
 }
 
+TEST_CASE("PatternTable::PatternTable", "[silkworm][snapshot][decompressor]") {
+    PatternTable table{0};
+    CHECK_NOTHROW(table.num_codewords() == 0);
+}
+
+TEST_CASE("PatternTable::operator<<", "[silkworm][snapshot][decompressor]") {
+    PatternTable table{0};
+    CHECK_NOTHROW(test::null_stream() << table);
+}
+
+TEST_CASE("PositionTable::PositionTable", "[silkworm][snapshot][decompressor]") {
+    PositionTable table{0};
+    CHECK_NOTHROW(table.num_positions() == 0);
+}
+
+TEST_CASE("PositionTable::operator<<", "[silkworm][snapshot][decompressor]") {
+    PositionTable table{0};
+    CHECK_NOTHROW(test::null_stream() << table);
+}
+
 //! Temporary file flushed after any data insertion
 class TemporaryFile {
   public:

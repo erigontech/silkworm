@@ -26,20 +26,9 @@ namespace silkworm::rpc {
 // Exclude gRPC tests from sanitizer builds due to data race warnings inside gRPC library
 #ifndef SILKWORM_SANITIZE
 
-// Factory function creating one null output stream (all characters are discarded)
-inline std::ostream& null_stream() {
-    static struct null_buf : public std::streambuf {
-        int overflow(int c) override { return c; }
-    } null_buf;
-    static struct null_strm : public std::ostream {
-        null_strm() : std::ostream(&null_buf) {}
-    } null_strm;
-    return null_strm;
-}
-
 TEST_CASE("print grpc::Status", "[silkworm][rpc][util]") {
-    CHECK_NOTHROW(null_stream() << grpc::Status::OK);
-    CHECK_NOTHROW(null_stream() << grpc::Status::CANCELLED);
+    CHECK_NOTHROW(test::null_stream() << grpc::Status::OK);
+    CHECK_NOTHROW(test::null_stream() << grpc::Status::CANCELLED);
 }
 
 TEST_CASE("compare grpc::Status", "[silkworm][rpc][util]") {

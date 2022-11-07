@@ -44,18 +44,6 @@ constexpr std::size_t kMinimumFileSize = 32;
 //! Maximum allowed depth in compressed file
 constexpr std::size_t kMaxAllowedDepth = 2048;
 
-//! The max bit length for tables (we don't use tables larger than 2^9)
-constexpr std::size_t kMaxTableBitLength = 9;
-
-//! The default bit length threshold after which tables are condensed (default: all NOT condensed)
-constexpr std::size_t kDefaultCondensedTableBitLengthThreshold = kMaxTableBitLength;
-
-//! The max number of patterns in decoding tables
-constexpr std::size_t kMaxTablePatterns = (1 << kMaxTableBitLength) * 100;
-
-//! The max number of positions in decoding tables
-constexpr std::size_t kMaxTablePositions = 1 << kMaxTableBitLength;
-
 DecodingTable::DecodingTable(std::size_t max_depth) : max_depth_(max_depth) {
     bit_length_ = max_depth_ > kMaxTableBitLength ? kMaxTableBitLength : max_depth_;
 }
@@ -360,7 +348,7 @@ bool Decompressor::read_ahead(Decompressor::ReadAheadFunc fn) {
     }
     compressed_file_->advise_sequential();
     auto _ = gsl::finally([&]() { compressed_file_->advise_random(); });
-    ReadIterator it{this};
+    Iterator it{this};
     return fn(it);
 }
 
@@ -483,13 +471,13 @@ void Decompressor::read_positions(ByteView dict) {
     SILK_DEBUG << *position_dict_;
 }
 
-Decompressor::ReadIterator::ReadIterator(const Decompressor* decoder) : decoder_(decoder) {}
+Decompressor::Iterator::Iterator(const Decompressor* decoder) : decoder_(decoder) {}
 
-ByteView Decompressor::ReadIterator::data() const {
+ByteView Decompressor::Iterator::data() const {
     return ByteView{decoder_->words_start_, decoder_->words_length_};
 }
 
-uint64_t Decompressor::ReadIterator::next(Bytes& buffer) {
+uint64_t Decompressor::Iterator::next(Bytes& buffer) {
     const auto start_offset = word_offset_;
 
     uint64_t word_length = next_position(true);
@@ -554,7 +542,7 @@ uint64_t Decompressor::ReadIterator::next(Bytes& buffer) {
     return post_loop_offset;
 }
 
-uint64_t Decompressor::ReadIterator::next_uncompressed(Bytes& buffer) {
+uint64_t Decompressor::Iterator::next_uncompressed(Bytes& buffer) {
     uint64_t word_length = next_position(true);
     --word_length;  // because when we create HT we do ++ (0 is terminator)
     if (word_length == 0) {
@@ -578,7 +566,7 @@ uint64_t Decompressor::ReadIterator::next_uncompressed(Bytes& buffer) {
     return word_offset_;
 }
 
-uint64_t Decompressor::ReadIterator::skip() {
+uint64_t Decompressor::Iterator::skip() {
     uint64_t word_length = next_position(true);
     --word_length;  // because when we create HT we do ++ (0 is terminator)
     if (word_length == 0) {
@@ -616,7 +604,7 @@ uint64_t Decompressor::ReadIterator::skip() {
     return word_offset_;
 }
 
-uint64_t Decompressor::ReadIterator::skip_uncompressed() {
+uint64_t Decompressor::Iterator::skip_uncompressed() {
     uint64_t word_length = next_position(true);
     --word_length;  // because when we create HT we do ++ (0 is terminator)
     if (word_length == 0) {
@@ -636,12 +624,12 @@ uint64_t Decompressor::ReadIterator::skip_uncompressed() {
     return word_offset_;
 }
 
-void Decompressor::ReadIterator::reset(uint64_t data_offset) {
+void Decompressor::Iterator::reset(uint64_t data_offset) {
     word_offset_ = data_offset;
     bit_position_ = 0;
 }
 
-ByteView Decompressor::ReadIterator::next_pattern() {
+ByteView Decompressor::Iterator::next_pattern() {
     const PatternTable* table = decoder_->pattern_table();
     if (table->bit_length() == 0) {
         return table->codeword(0)->pattern();
@@ -673,7 +661,7 @@ ByteView Decompressor::ReadIterator::next_pattern() {
     return pattern;
 }
 
-uint64_t Decompressor::ReadIterator::next_position(bool clean) {
+uint64_t Decompressor::Iterator::next_position(bool clean) {
     if (clean && bit_position_ > 0) {
         word_offset_++;
         bit_position_ = 0;
@@ -700,7 +688,7 @@ uint64_t Decompressor::ReadIterator::next_position(bool clean) {
     return position;
 }
 
-uint16_t Decompressor::ReadIterator::next_code(std::size_t bit_length) {
+uint16_t Decompressor::Iterator::next_code(std::size_t bit_length) {
     uint16_t code = static_cast<uint16_t>(decoder_->words_start_[word_offset_]) >> bit_position_;
     if (static_cast<std::size_t>(CHAR_BIT - bit_position_) < bit_length && word_offset_ + 1 < size()) {
         code |= decoder_->words_start_[word_offset_ + 1] << (CHAR_BIT - bit_position_);

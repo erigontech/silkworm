@@ -32,6 +32,9 @@ namespace silkworm {
 
 class DecodingTable {
   public:
+    //! The max bit length for tables (we don't use tables larger than 2^9)
+    constexpr static std::size_t kMaxTableBitLength{9};
+
     [[nodiscard]] std::size_t bit_length() const { return bit_length_; }
 
   protected:
@@ -76,8 +79,10 @@ struct Pattern {
 
 class PatternTable : public DecodingTable {
   public:
-    static constexpr int kNumPowers{10};
-    static constexpr int kMaxPower{512};
+    //! The default bit length threshold after which tables are condensed (default: all NOT condensed)
+    constexpr static std::size_t kDefaultCondensedTableBitLengthThreshold = kMaxTableBitLength;
+    constexpr static int kNumPowers{10};
+    constexpr static int kMaxPower{512};
     using WordDistances = std::array<std::vector<int>, kNumPowers>;
 
     //! @brief Set the bit length threshold after which tables will be condensed.
@@ -155,10 +160,16 @@ class PositionTable : public DecodingTable {
 //! Snapshot decoder using modified Condensed Huffman Table (CHT) algorithm
 class Decompressor {
   public:
+    //! The max number of patterns in decoding tables
+    constexpr static std::size_t kMaxTablePatterns = (1 << DecodingTable::kMaxTableBitLength) * 100;
+
+    //! The max number of positions in decoding tables
+    constexpr static std::size_t kMaxTablePositions = 1 << DecodingTable::kMaxTableBitLength;
+
     //! Read-only access to the file data stream
-    class ReadIterator {
+    class Iterator {
       public:
-        explicit ReadIterator(const Decompressor* decoder);
+        explicit Iterator(const Decompressor* decoder);
 
         [[nodiscard]] std::size_t size() const { return decoder_->words_length_; }
         [[nodiscard]] bool has_next() const { return word_offset_ < decoder_->words_length_; }
@@ -204,7 +215,7 @@ class Decompressor {
         //! Bit position [0..7] in current word of the data file
         uint8_t bit_position_{0};
     };
-    using ReadAheadFunc = std::function<bool(ReadIterator)>;
+    using ReadAheadFunc = std::function<bool(Iterator)>;
 
     explicit Decompressor(std::filesystem::path compressed_file);
     ~Decompressor();

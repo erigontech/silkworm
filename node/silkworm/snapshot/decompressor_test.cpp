@@ -20,6 +20,8 @@
 #include <fstream>
 #include <map>
 #include <stdexcept>
+#include <string>
+#include <tuple>
 #include <vector>
 
 #include <catch2/catch.hpp>
@@ -32,6 +34,29 @@
 using Catch::Matchers::Message;
 
 namespace silkworm {
+
+//! DecodingTable exposed for white-box testing
+class DecodingTable_ForTest : public DecodingTable {
+  public:
+    explicit DecodingTable_ForTest(std::size_t max_depth) : DecodingTable(max_depth) {}
+    [[nodiscard]] std::size_t max_depth() const { return max_depth_; }
+};
+
+TEST_CASE("DecodingTable::DecodingTable", "[silkworm][snapshot][decompressor]") {
+    std::map<std::string, std::pair<std::size_t, std::size_t>> test_params{
+        {"max depth is 0", {0, 0}},
+        {"max depth is < kMaxTableBitLength", {DecodingTable::kMaxTableBitLength - 1, DecodingTable::kMaxTableBitLength - 1}},
+        {"max depth is = kMaxTableBitLength", {DecodingTable::kMaxTableBitLength, DecodingTable::kMaxTableBitLength}},
+        {"max depth is > kMaxTableBitLength", {DecodingTable::kMaxTableBitLength + 1, DecodingTable::kMaxTableBitLength}},
+    };
+    for (const auto& [test_name, test_pair] : test_params) {
+        std::size_t max_depth = test_pair.first;
+        std::size_t expected_bit_length = test_pair.second;
+        DecodingTable_ForTest table{max_depth};
+        CHECK(table.max_depth() == max_depth);
+        CHECK(table.bit_length() == expected_bit_length);
+    }
+}
 
 //! Temporary file flushed after any data insertion
 class TemporaryFile {

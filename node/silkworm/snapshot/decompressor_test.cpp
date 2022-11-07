@@ -99,6 +99,16 @@ TEST_CASE("CodeWord::reset_content", "[silkworm][snapshot][decompressor]") {
     CHECK(cw.next() == &parent_cw);
 }
 
+TEST_CASE("CodeWord::set_next", "[silkworm][snapshot][decompressor]") {
+    CodeWord parent1_cw{}, parent2_cw{};
+    CodeWord cw{0, 0, Bytes{}, std::make_unique<PatternTable>(3), &parent1_cw};
+    CHECK(cw.next() == &parent1_cw);
+
+    CHECK_NOTHROW(cw.set_next(&parent2_cw));
+
+    CHECK(cw.next() == &parent2_cw);
+}
+
 TEST_CASE("PatternTable::PatternTable", "[silkworm][snapshot][decompressor]") {
     PatternTable table{0};
     CHECK(table.num_codewords() == 1);

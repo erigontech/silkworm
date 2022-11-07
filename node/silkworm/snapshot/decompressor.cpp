@@ -690,7 +690,7 @@ uint64_t Decompressor::Iterator::next_position(bool clean) {
 
 uint16_t Decompressor::Iterator::next_code(std::size_t bit_length) {
     uint16_t code = static_cast<uint16_t>(decoder_->words_start_[word_offset_]) >> bit_position_;
-    if (static_cast<std::size_t>(CHAR_BIT - bit_position_) < bit_length && word_offset_ + 1 < size()) {
+    if (static_cast<std::size_t>(CHAR_BIT - bit_position_) < bit_length && word_offset_ + 1 < data_size()) {
         code |= decoder_->words_start_[word_offset_ + 1] << (CHAR_BIT - bit_position_);
     }
     code &= (1 << bit_length) - 1;

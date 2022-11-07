@@ -60,7 +60,9 @@ TEST_CASE("DecodingTable::DecodingTable", "[silkworm][snapshot][decompressor]") 
 
 TEST_CASE("PatternTable::PatternTable", "[silkworm][snapshot][decompressor]") {
     PatternTable table{0};
-    CHECK_NOTHROW(table.num_codewords() == 0);
+    CHECK(table.num_codewords() == 1);
+    CHECK(table.codeword(0) == nullptr);
+    CHECK(table.codeword(table.num_codewords()) == nullptr);
 }
 
 TEST_CASE("PatternTable::operator<<", "[silkworm][snapshot][decompressor]") {
@@ -70,7 +72,13 @@ TEST_CASE("PatternTable::operator<<", "[silkworm][snapshot][decompressor]") {
 
 TEST_CASE("PositionTable::PositionTable", "[silkworm][snapshot][decompressor]") {
     PositionTable table{0};
-    CHECK_NOTHROW(table.num_positions() == 0);
+    CHECK(table.num_positions() == 1);
+    CHECK(table.position(0) == 0);
+    CHECK(table.length(0) == 0);
+    CHECK(table.child(0) == nullptr);
+    CHECK(table.position(table.num_positions()) == 0);
+    CHECK(table.length(table.num_positions()) == 0);
+    CHECK(table.child(table.num_positions()) == nullptr);
 }
 
 TEST_CASE("PositionTable::operator<<", "[silkworm][snapshot][decompressor]") {
@@ -334,6 +342,7 @@ TEST_CASE("ReadIterator::ReadIterator empty data", "[silkworm][snapshot][decompr
 
     SECTION("has next") {
         const auto read_function = [](const auto it) -> bool {
+            CHECK(it.data_size() == 0);
             CHECK_FALSE(it.has_next());
             return true;
         };

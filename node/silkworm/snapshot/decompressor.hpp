@@ -94,7 +94,9 @@ class PatternTable : public DecodingTable {
 
     explicit PatternTable(std::size_t max_depth);
 
-    [[nodiscard]] const CodeWord* codeword(std::size_t code) const { return codewords_[code].get(); }
+    [[nodiscard]] const CodeWord* codeword(std::size_t code) const {
+        return code < codewords_.size() ? codewords_[code].get() : nullptr;
+    }
 
     [[nodiscard]] std::size_t num_codewords() const { return codewords_.size(); }
 
@@ -134,11 +136,17 @@ class PositionTable : public DecodingTable {
 
     [[nodiscard]] std::size_t num_positions() const { return positions_.size(); }
 
-    [[nodiscard]] uint64_t position(std::size_t code) const { return positions_[code]; }
+    [[nodiscard]] uint64_t position(std::size_t code) const {
+        return code < positions_.size() ? positions_[code] : 0;
+    }
 
-    [[nodiscard]] uint8_t length(std::size_t code) const { return lengths_[code]; }
+    [[nodiscard]] uint8_t length(std::size_t code) const {
+        return code < lengths_.size() ? lengths_[code] : 0;
+    }
 
-    [[nodiscard]] PositionTable* child(std::size_t code) const { return children_[code].get(); }
+    [[nodiscard]] PositionTable* child(std::size_t code) const {
+        return code < children_.size() ? children_[code].get() : nullptr;
+    }
 
     int build(std::span<Position> positions);
 
@@ -171,7 +179,7 @@ class Decompressor {
       public:
         explicit Iterator(const Decompressor* decoder);
 
-        [[nodiscard]] std::size_t size() const { return decoder_->words_length_; }
+        [[nodiscard]] std::size_t data_size() const { return decoder_->words_length_; }
         [[nodiscard]] bool has_next() const { return word_offset_ < decoder_->words_length_; }
 
         //! Extract one *compressed* word from current offset in the file and append it to buffer

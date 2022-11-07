@@ -58,6 +58,47 @@ TEST_CASE("DecodingTable::DecodingTable", "[silkworm][snapshot][decompressor]") 
     }
 }
 
+TEST_CASE("CodeWord::CodeWord", "[silkworm][snapshot][decompressor]") {
+    std::vector<CodeWord> codewords{};
+    codewords.emplace_back(CodeWord{});
+    codewords.emplace_back(CodeWord{0, 0, ByteView{}});
+    codewords.emplace_back(CodeWord{0, 0, ByteView{}, nullptr, nullptr});
+    for (const auto& cw : codewords) {
+        CHECK(cw.code() == 0);
+        CHECK(cw.code_length() == 0);
+        CHECK(cw.pattern().empty());
+        CHECK(cw.table() == nullptr);
+        CHECK(cw.next() == nullptr);
+    }
+}
+
+TEST_CASE("CodeWord::reset_content", "[silkworm][snapshot][decompressor]") {
+    CodeWord parent_cw{};
+
+    uint16_t old_code{121};
+    uint8_t old_length{2};
+    Bytes old_pattern{0x11, 0x00, 0x11};
+    auto table_ptr = std::make_unique<PatternTable>(3);
+    const PatternTable* table = table_ptr.get();
+    CodeWord cw{old_code, old_length, old_pattern, std::move(table_ptr), &parent_cw};
+    CHECK(cw.code() == old_code);
+    CHECK(cw.code_length() == old_length);
+    CHECK(cw.pattern() == old_pattern);
+    CHECK(cw.table() == table);
+    CHECK(cw.next() == &parent_cw);
+
+    uint16_t new_code{111};
+    uint8_t new_length{1};
+    Bytes new_pattern{0x00, 0x11, 0x00};
+    CHECK_NOTHROW(cw.reset_content(new_code, new_length, new_pattern));
+
+    CHECK(cw.code() == new_code);
+    CHECK(cw.code_length() == new_length);
+    CHECK(cw.pattern() == new_pattern);
+    CHECK(cw.table() == nullptr);
+    CHECK(cw.next() == &parent_cw);
+}
+
 TEST_CASE("PatternTable::PatternTable", "[silkworm][snapshot][decompressor]") {
     PatternTable table{0};
     CHECK(table.num_codewords() == 1);

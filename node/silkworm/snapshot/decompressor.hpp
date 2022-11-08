@@ -102,7 +102,7 @@ class PatternTable : public DecodingTable {
 
     [[nodiscard]] const CodeWord* search_condensed(uint16_t code) const;
 
-    int build_condensed(std::span<Pattern> patterns);
+    std::size_t build_condensed(std::span<Pattern> patterns);
 
   private:
     static const WordDistances word_distances_;
@@ -110,7 +110,7 @@ class PatternTable : public DecodingTable {
 
     [[nodiscard]] static bool check_distance(std::size_t power, int distance);
 
-    int build_condensed(
+    std::size_t build_condensed(
         std::span<Pattern> patterns,
         uint64_t highest_depth,
         uint16_t code,

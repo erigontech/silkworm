@@ -116,6 +116,34 @@ TEST_CASE("PatternTable::PatternTable", "[silkworm][snapshot][decompressor]") {
     CHECK(table.codeword(table.num_codewords()) == nullptr);
 }
 
+TEST_CASE("PatternTable::build_condensed", "[silkworm][snapshot][decompressor]") {
+    PatternTable table1{0};
+
+    std::span<Pattern> patterns0{};
+    Bytes v1{0x00, 0x11};
+    std::vector<Pattern> patterns1{{0, v1}};
+    Bytes v2{0x00, 0x22};
+    std::vector<Pattern> patterns2{{1, v1}, {2, v2}};
+    std::map<std::string, std::span<Pattern>> test_spans{
+        {"zero patterns", patterns0},
+        {"one pattern", patterns1},
+        {"two patterns", patterns2},
+    };
+
+    for (const auto& [test_name, pattern_span] : test_spans) {
+        SECTION(test_name) {
+            CHECK(table1.build_condensed(pattern_span) == pattern_span.size());
+        }
+    }
+}
+
+TEST_CASE("PatternTable::search_condensed", "[silkworm][snapshot][decompressor]") {
+    PatternTable table1{0};
+    CHECK(table1.search_condensed(0) == nullptr);
+    PatternTable table2{DecodingTable::kMaxTableBitLength + 1};
+    CHECK(table2.search_condensed(0) == nullptr);
+}
+
 TEST_CASE("PatternTable::operator<<", "[silkworm][snapshot][decompressor]") {
     PatternTable table{0};
     CHECK_NOTHROW(test::null_stream() << table);

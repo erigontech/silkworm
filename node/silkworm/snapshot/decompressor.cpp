@@ -130,11 +130,11 @@ PatternTable::PatternTable(std::size_t max_depth) : DecodingTable(max_depth) {
     }
 }
 
-int PatternTable::build_condensed(std::span<Pattern> patterns) {
+std::size_t PatternTable::build_condensed(std::span<Pattern> patterns) {
     return build_condensed(patterns, max_depth_, 0, 0, 0);
 }
 
-int PatternTable::build_condensed(std::span<Pattern> patterns, uint64_t highest_depth, uint16_t code, int bits, uint64_t depth) {
+std::size_t PatternTable::build_condensed(std::span<Pattern> patterns, uint64_t highest_depth, uint16_t code, int bits, uint64_t depth) {
     SILK_DEBUG << "#patterns: " << patterns.size() << " highest_depth: " << highest_depth << " code: " << code
                << " bits: " << std::bitset<CHAR_BIT>(static_cast<uint>(bits)) << " depth: " << depth;
     if (patterns.empty()) {
@@ -150,9 +150,8 @@ int PatternTable::build_condensed(std::span<Pattern> patterns, uint64_t highest_
         const auto last_cw = insert_word(std::make_shared<CodeWord>(code, 0, ByteView{}, std::move(new_table), nullptr));
         return last_cw->table()->build_condensed(patterns, highest_depth, 0, 0, depth);
     }
-    const int b0 = build_condensed(patterns, highest_depth - 1, code, bits + 1, depth + 1);
-    // const std::span<Pattern> sub_patterns{patterns.begin() + b0, patterns.end()};
-    return b0 + build_condensed(patterns.subspan(static_cast<std::size_t>(b0)), highest_depth - 1, (1 << bits) | code, bits + 1, depth + 1);
+    const auto b0 = build_condensed(patterns, highest_depth - 1, code, bits + 1, depth + 1);
+    return b0 + build_condensed(patterns.subspan(b0), highest_depth - 1, (1 << bits) | code, bits + 1, depth + 1);
 }
 
 CodeWord* PatternTable::insert_word(std::shared_ptr<CodeWord> codeword) {

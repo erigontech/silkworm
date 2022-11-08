@@ -136,7 +136,15 @@ BlockNum HeaderPersistence::find_forking_point(db::RWTxn& tx, const BlockHeader&
     }
     // Going further back
     else {
-        auto ancestor_hash = parent_hash;
+        auto parent = db::read_header(tx_, height - 1, parent_hash);
+        if (!parent) {
+            std::string error_message = "HeaderPersistence: could not find parent with hash " + to_hex(parent_hash) +
+                                        " and height " + std::to_string(height - 1) + " for header " + to_hex(header.hash());
+            log::Error("HeaderStage") << error_message;
+            throw std::logic_error(error_message);
+        }
+
+        auto ancestor_hash = parent->parent_hash;
         auto ancestor_height = height - 2;
 
         // look in the cache first

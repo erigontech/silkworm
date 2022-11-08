@@ -43,6 +43,17 @@ class DecodingTable_ForTest : public DecodingTable {
     [[nodiscard]] std::size_t max_depth() const { return max_depth_; }
 };
 
+//! set_condensed_table_bit_length_threshold
+class SetCondensedTableBitLengthThresholdGuard {
+  public:
+    explicit SetCondensedTableBitLengthThresholdGuard(std::size_t threshold) {
+        PatternTable::set_condensed_table_bit_length_threshold(threshold);
+    }
+    ~SetCondensedTableBitLengthThresholdGuard() {
+        PatternTable::set_condensed_table_bit_length_threshold(PatternTable::kDefaultCondensedTableBitLengthThreshold);
+    }
+};
+
 TEST_CASE("DecodingTable::DecodingTable", "[silkworm][snapshot][decompressor]") {
     std::map<std::string, std::pair<std::size_t, std::size_t>> test_params{
         {"max depth is 0", {0, 0}},
@@ -111,19 +122,14 @@ TEST_CASE("CodeWord::set_next", "[silkworm][snapshot][decompressor]") {
 }
 
 TEST_CASE("PatternTable::set_condensed_table_bit_length_threshold", "[silkworm][snapshot][decompressor]") {
-    const auto f = &PatternTable::set_condensed_table_bit_length_threshold;
-
     SECTION("condensed_table_bit_length_threshold < kMaxTableBitLength") {
-        auto _ = gsl::finally([&]() { f(PatternTable::kDefaultCondensedTableBitLengthThreshold); });
-        CHECK_NOTHROW(f(PatternTable::kMaxTableBitLength - 1));
+        CHECK_NOTHROW(SetCondensedTableBitLengthThresholdGuard(PatternTable::kMaxTableBitLength - 1));
     }
     SECTION("condensed_table_bit_length_threshold = kMaxTableBitLength") {
-        auto _ = gsl::finally([&]() { f(PatternTable::kDefaultCondensedTableBitLengthThreshold); });
-        CHECK_NOTHROW(f(PatternTable::kMaxTableBitLength));
+        CHECK_NOTHROW(SetCondensedTableBitLengthThresholdGuard(PatternTable::kMaxTableBitLength));
     }
     SECTION("condensed_table_bit_length_threshold > kMaxTableBitLength") {
-        auto _ = gsl::finally([&]() { f(PatternTable::kDefaultCondensedTableBitLengthThreshold); });
-        CHECK_THROWS_AS(f(PatternTable::kMaxTableBitLength + 1), std::invalid_argument);
+        CHECK_THROWS_AS(SetCondensedTableBitLengthThresholdGuard(PatternTable::kMaxTableBitLength + 1), std::invalid_argument);
     }
 }
 
@@ -163,8 +169,11 @@ TEST_CASE("PatternTable::search_condensed", "[silkworm][snapshot][decompressor]"
 }
 
 TEST_CASE("PatternTable::operator<<", "[silkworm][snapshot][decompressor]") {
-    PatternTable table{0};
-    CHECK_NOTHROW(test::null_stream() << table);
+    PatternTable table1{0};
+    CHECK_NOTHROW(test::null_stream() << table1);
+    SetCondensedTableBitLengthThresholdGuard bit_length_threshold_guard{1};
+    PatternTable table2{0};
+    CHECK_NOTHROW(test::null_stream() << table2);
 }
 
 TEST_CASE("PositionTable::PositionTable", "[silkworm][snapshot][decompressor]") {

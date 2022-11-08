@@ -18,6 +18,7 @@
 
 #include <CLI/CLI.hpp>
 
+#include <silkworm/backend/backend_kv_server.hpp>
 #include <silkworm/buildinfo.h>
 #include <silkworm/common/log.hpp>
 #include <silkworm/common/settings.hpp>
@@ -26,7 +27,6 @@
 #include <silkworm/db/stages.hpp>
 #include <silkworm/downloader/block_exchange.hpp>
 #include <silkworm/downloader/sentry_client.hpp>
-#include <silkworm/rpc/server/backend_kv_server.hpp>
 #include <silkworm/stagedsync/sync_loop.hpp>
 
 #include "common.hpp"

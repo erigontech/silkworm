@@ -31,7 +31,7 @@
 #include <magic_enum.hpp>
 
 #include <silkworm/common/log.hpp>
-#include <silkworm/rpc/completion_tag.hpp>
+#include <silkworm/rpc/common/completion_tag.hpp>
 
 namespace silkworm::rpc {
 

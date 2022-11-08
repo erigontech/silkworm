@@ -37,9 +37,9 @@
 #include <silkworm/common/log.hpp>
 #include <silkworm/common/util.hpp>
 #include <silkworm/db/tables.hpp>
-#include <silkworm/rpc/completion_tag.hpp>
-#include <silkworm/rpc/conversion.hpp>
-#include <silkworm/rpc/util.hpp>
+#include <silkworm/rpc/common/completion_tag.hpp>
+#include <silkworm/rpc/common/conversion.hpp>
+#include <silkworm/rpc/common/util.hpp>
 
 using namespace std::literals;
 
@@ -1016,10 +1016,7 @@ int main(int argc, char* argv[]) {
                     SILK_DEBUG << "Completion thread post operation: " << processor;
                     (*processor)(ok);
                 } else {
-                    SILK_DEBUG << "Got shutdown, draining queue...";
-                    while (queue.Next(&tag, &ok)) {
-                    }
-                    SILK_DEBUG << "Queue fully drained";
+                    SILK_DEBUG << "Got shutdown";
                     SILKWORM_ASSERT(completion_stop);
                 }
             }

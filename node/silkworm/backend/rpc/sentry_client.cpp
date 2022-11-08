@@ -24,8 +24,8 @@
 #include <boost/asio/detached.hpp>
 
 #include <silkworm/common/log.hpp>
-#include <silkworm/rpc/conversion.hpp>
-#include <silkworm/rpc/util.hpp>
+#include <silkworm/rpc/common/conversion.hpp>
+#include <silkworm/rpc/common/util.hpp>
 
 namespace silkworm::rpc {
 

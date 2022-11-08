@@ -28,8 +28,8 @@
 #include <remote/ethbackend.pb.h>
 
 #include <silkworm/backend/ethereum_backend.hpp>
+#include <silkworm/backend/rpc/sentry_client.hpp>
 #include <silkworm/chain/config.hpp>
-#include <silkworm/rpc/client/sentry_client.hpp>
 #include <silkworm/rpc/server/call.hpp>
 #include <silkworm/rpc/server/call_factory.hpp>
 #include <silkworm/rpc/server/server.hpp>

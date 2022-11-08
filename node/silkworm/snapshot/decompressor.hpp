@@ -200,6 +200,7 @@ class Decompressor {
         //! @return the next word position
         [[nodiscard]] uint64_t skip_uncompressed();
 
+        //! Reset to the specified offset in the data stream
         void reset(uint64_t data_offset);
 
       private:

@@ -463,6 +463,29 @@ TEST_CASE("Iterator::Iterator empty data", "[silkworm][snapshot][decompressor]")
         };
         CHECK_NOTHROW(decoder.read_ahead(read_function));
     }
+    SECTION("next_uncompressed") {
+        const auto read_function = [](auto it) -> bool {
+            silkworm::Bytes buffer{};
+            CHECK(it.next_uncompressed(buffer) == 0);
+            CHECK(buffer.empty());
+            return true;
+        };
+        CHECK_NOTHROW(decoder.read_ahead(read_function));
+    }
+    SECTION("skip") {
+        const auto read_function = [](auto it) -> bool {
+            CHECK_NOTHROW(it.skip());
+            return true;
+        };
+        CHECK_NOTHROW(decoder.read_ahead(read_function));
+    }
+    SECTION("skip_uncompressed") {
+        const auto read_function = [](auto it) -> bool {
+            CHECK_NOTHROW(it.skip_uncompressed());
+            return true;
+        };
+        CHECK_NOTHROW(decoder.read_ahead(read_function));
+    }
 }
 
 }  // namespace silkworm

@@ -25,6 +25,7 @@
 
 namespace silkworm::stagedsync {
 
+/*
 class BodiesStage : public Stage {
   public:
     BodiesStage(SyncContext*, BlockExchange&, NodeSettings*);
@@ -47,5 +48,6 @@ class BodiesStage : public Stage {
 
     BlockExchange& block_downloader_;
 };
+*/
 
 }  // namespace silkworm::stagedsync

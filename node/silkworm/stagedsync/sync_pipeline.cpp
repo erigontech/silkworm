@@ -14,6 +14,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+#include "sync_pipeline.hpp"
+
 #include <boost/format.hpp>
 
 #include <silkworm/stagedsync/stage_blockhashes.hpp>
@@ -28,18 +30,59 @@ limitations under the License.
 #include <silkworm/stagedsync/stage_senders.hpp>
 #include <silkworm/stagedsync/stage_tx_lookup.hpp>
 
-#include "sync_pipeline.hpp"
-
 namespace silkworm::stagedsync {
 
-StagePipeline::StagePipeline(silkworm::NodeSettings* node_settings, mdbx::env* chaindata_env)
+class SyncPipeline::LogTimer : public Timer {
+  public:
+    LogTimer(SyncPipeline* pipeline)
+        : Timer(
+              pipeline->node_settings_->asio_context,
+              pipeline->node_settings_->sync_loop_log_interval_seconds * 1'000,
+              [pipeline]() -> bool {
+                  if (pipeline->is_stopping()) {
+                      log::Info(pipeline->get_log_prefix()) << "stopping ...";
+                      return false;
+                  }
+                  log::Info(pipeline->get_log_prefix(), pipeline->current_stage_->second->get_log_progress());
+                  return true;
+              },
+              true)
+    {
+        start();
+    }
+
+    ~LogTimer() {
+        stop();
+    }
+};
+
+SyncPipeline::SyncPipeline(silkworm::NodeSettings* node_settings)
     : node_settings_{node_settings},
-      chaindata_env_{chaindata_env},
       sync_context_{std::make_unique<SyncContext>()} {
+
     load_stages();
 }
 
-void StagePipeline::load_stages() {
+/*
+     * Stages from Erigon -> Silkworm
+     *  1 StageHeaders ->  stagedsync::HeadersStage
+     *  2 StageCumulativeIndex -> TBD
+     *  3 StageBlockHashes -> stagedsync::BlockHashes
+     *  4 StageBodies -> stagedsync::BodiesStage
+     *  5 StageIssuance -> TBD
+     *  6 StageSenders -> stagedsync::Senders
+     *  7 StageExecuteBlocks -> stagedsync::Execution
+     *  8 StageTranspile -> TBD
+     *  9 StageHashState -> stagedsync::HashState
+     * 10 StageTrie -> stagedsync::InterHashes
+     * 11 StageHistory -> stagedsync::HistoryIndex
+     * 12 StageLogIndex -> stagedsync::LogIndex
+     * 13 StageCallTraces -> TBD
+     * 14 StageTxLookup -> stagedsync::TxLookup
+     * 15 StageFinish -> stagedsync::Finish
+ */
+
+void SyncPipeline::load_stages() {
     stages_.emplace(db::stages::kHeadersKey,
                     std::make_unique<stagedsync::HeadersStage>(node_settings_, sync_context_.get()));
     stages_.emplace(db::stages::kBlockBodiesKey,
@@ -95,7 +138,7 @@ void StagePipeline::load_stages() {
                                 });
 }
 
-bool StagePipeline::stop() {
+bool SyncPipeline::stop() {
     bool stopped{true};
     for (const auto& [_, stage] : stages_) {
         if (!stage->is_stopping()) {
@@ -105,8 +148,12 @@ bool StagePipeline::stop() {
     return stopped;
 }
 
-Stage::Result StagePipeline::forward(db::RWTxn& cycle_txn, Timer& log_timer) {
+Stage::Result SyncPipeline::forward(db::RWTxn& cycle_txn, Hash target_header) {
     StopWatch stages_stop_watch(true);
+    LogTimer log_timer{this};
+
+    // todo: use target_header
+
     try {
         // Force to stop at any particular stage ?
         const std::string env_stop_before_stage{"STOP_BEFORE_STAGE"};
@@ -118,7 +165,7 @@ Stage::Result StagePipeline::forward(db::RWTxn& cycle_txn, Timer& log_timer) {
             // retrieve current stage
             current_stage_ = stages_.find(stage_id);
             if (current_stage_ == stages_.end()) {
-                throw std::runtime_error("Stage " + std::string(stage_id) + " requested but not implemented"); // Should not happen
+                throw std::runtime_error("Stage " + std::string(stage_id) + " requested but not implemented");  // Should not happen
             }
             ++current_stage_number_;
             current_stage_->second->set_log_prefix(get_log_prefix());
@@ -157,8 +204,10 @@ Stage::Result StagePipeline::forward(db::RWTxn& cycle_txn, Timer& log_timer) {
     }
 }
 
-Stage::Result StagePipeline::unwind(db::RWTxn& cycle_txn, Timer& log_timer) {
+Stage::Result SyncPipeline::unwind(db::RWTxn& cycle_txn) {
     StopWatch stages_stop_watch(true);
+    LogTimer log_timer{this};
+
     try {
         current_stages_count_ = stages_unwind_order_.size();
         current_stage_number_ = 0;
@@ -196,8 +245,10 @@ Stage::Result StagePipeline::unwind(db::RWTxn& cycle_txn, Timer& log_timer) {
     }
 }
 
-Stage::Result StagePipeline::prune(db::RWTxn& cycle_txn, Timer& log_timer) {
+Stage::Result SyncPipeline::prune(db::RWTxn& cycle_txn) {
     StopWatch stages_stop_watch(true);
+    LogTimer log_timer{this};
+
     try {
         current_stages_count_ = stages_forward_order_.size();
         current_stage_number_ = 0;
@@ -235,7 +286,7 @@ Stage::Result StagePipeline::prune(db::RWTxn& cycle_txn, Timer& log_timer) {
     }
 }
 
-std::string StagePipeline::get_log_prefix() const {
+std::string SyncPipeline::get_log_prefix() const {
     static std::string log_prefix_fmt{"[%u/%u %s]"};
     return boost::str(boost::format(log_prefix_fmt) %
                       current_stage_number_ %

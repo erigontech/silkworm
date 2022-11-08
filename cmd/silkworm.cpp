@@ -28,7 +28,8 @@
 #include <silkworm/db/stages.hpp>
 #include <silkworm/downloader/block_exchange.hpp>
 #include <silkworm/downloader/sentry_client.hpp>
-#include <silkworm/stagedsync/sync_loop.hpp>
+#include <silkworm/stagedsync/consensus/consensus_engine.hpp>
+#include <silkworm/stagedsync/execution_engine.hpp>
 
 #include "common.hpp"
 
@@ -36,9 +37,11 @@ using namespace silkworm;
 
 int main(int argc, char* argv[]) {
     using namespace boost::placeholders;
+    using namespace std::chrono;
 
     CLI::App cli("Silkworm node");
     cli.get_formatter()->column_width(50);
+    auto start_time = steady_clock::now();
 
     try {
         cmd::SilkwormCoreSettings settings;
@@ -110,35 +113,30 @@ int main(int argc, char* argv[]) {
         BlockExchange block_exchange{sentry, db::ROAccess{chaindata_db}, node_settings.chain_config.value()};
         auto block_downloading = std::thread([&block_exchange]() { block_exchange.execution_loop(); });
 
-        // Start sync loop
-        auto start_time{std::chrono::steady_clock::now()};
-        stagedsync::SyncLoop sync_loop(&node_settings, &chaindata_db, block_exchange);
-        sync_loop.start(/*wait=*/false);
+        // ExecutionEngine executes transactions and builds state validating chain slices
+        silkworm::stagedsync::ExecutionEngine execution{node_settings, db::RWAccess{chaindata_db}};
 
-        // Keep waiting till sync_loop stops
-        // Signals are handled in sync_loop and below
-        auto t1{std::chrono::steady_clock::now()};
-        while (sync_loop.get_state() != Worker::State::kStopped) {
-            std::this_thread::sleep_for(std::chrono::milliseconds(500));
+        // ConsensusEngine drives headers and bodies sync, implementing fork choice rules
+        silkworm::stagedsync::ConsensusEngine consensus{node_settings, block_exchange, execution};
+        auto consensus_loop = std::thread([&consensus]() { consensus.execution_loop(); });
 
-            // Check signals
-            if (SignalHandler::signalled()) {
-                sync_loop.stop(true);
-                continue;
-            }
+        // Keep waiting till user stops logging resource usage
+        auto last_update = steady_clock::now();
+        while (!SignalHandler::signalled()) {
+            std::this_thread::sleep_for(500ms);
 
-            auto t2{std::chrono::steady_clock::now()};
-            if ((t2 - t1) > std::chrono::seconds(60)) {
-                t1 = std::chrono::steady_clock::now();
-                auto total_duration{t1 - start_time};
+            auto now = steady_clock::now();
+            if (now - last_update > 300s) {
                 log::Info("Resource usage",
                           {"mem", human_size(get_mem_usage()),
                            "chain", human_size(node_settings.data_directory->chaindata().size()),
                            "etl-tmp", human_size(node_settings.data_directory->etl().size()),
-                           "uptime", StopWatch::format(total_duration)});
+                           "uptime", StopWatch::format(now - start_time)});
+                last_update = now;
             }
         }
 
+        // Close all resources
         backend.close();
         rpc_server.shutdown();
         rpc_server.join();

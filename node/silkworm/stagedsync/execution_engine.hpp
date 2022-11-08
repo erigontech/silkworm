@@ -27,19 +27,26 @@ limitations under the License.
 
 namespace silkworm::stagedsync {
 
-class ExecutionEngine {
+class ExecutionEngine : public Stoppable {
   public:
-    explicit ExecutionEngine(silkworm::NodeSettings*, mdbx::env*);
+    explicit ExecutionEngine(NodeSettings&, const db::RWAccess&);
     ~ExecutionEngine() = default;
 
     void insert_headers(const std::vector<BlockHeader>&);
-    void insert_bodies(const std::vector<BlockBody>&));
+    void insert_bodies(const std::vector<Block>&);
 
-    bool verify_chain_(Hash header_hash);
+    bool verify_chain(Hash header_hash);
 
     bool update_fork_choice(Hash header_hash);
 
     auto get_headers(Hash header_hash);
     auto get_bodies(Hash header_hash);
+
+  private:
+    void insert_header(db::RWTxn& tx, const BlockHeader&);
+    void insert_body(db::RWTxn& tx, const Block&);
+
+    NodeSettings& node_settings_;
+    db::RWAccess db_access_;
 };
 }  // namespace silkworm::stagedsync

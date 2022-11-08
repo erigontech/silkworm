@@ -28,7 +28,7 @@
 #include "silkworm/downloader/messages/outbound_new_block.hpp"
 
 namespace silkworm::stagedsync {
-
+/*
 BodiesStage::BodiesStage(SyncContext* sc, BlockExchange& bd, NodeSettings* ns)
     : Stage(sc, db::stages::kBlockBodiesKey, ns), block_downloader_{bd} {
 }
@@ -229,5 +229,6 @@ std::vector<std::string> BodiesStage::get_log_progress() {  // implementation MU
             "bodies/secs", std::to_string(height_progress.throughput()),
             "peers", std::to_string(peers)};
 }
+*/
 
 }  // namespace silkworm::stagedsync

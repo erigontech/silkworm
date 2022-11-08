@@ -22,24 +22,23 @@ limitations under the License.
 
 #include <silkworm/common/asio_timer.hpp>
 #include <silkworm/common/stopwatch.hpp>
+#include <silkworm/downloader/internals/types.hpp>
 #include <silkworm/stagedsync/stage.hpp>
 
 namespace silkworm::stagedsync {
 
-class StagePipeline : public Stoppable {
+class SyncPipeline : public Stoppable {
   public:
-    explicit StagePipeline(silkworm::NodeSettings*, mdbx::env*);
-    ~StagePipeline() = default;
+    explicit SyncPipeline(NodeSettings*);
+    ~SyncPipeline() = default;
 
-    Stage::Result forward(db::RWTxn& cycle_txn, Timer& log_timer);
-    Stage::Result unwind(db::RWTxn& cycle_txn, Timer& log_timer);
-    Stage::Result prune(db::RWTxn& cycle_txn, Timer& log_timer);
+    Stage::Result forward(db::RWTxn&, Hash target_header);
+    Stage::Result unwind(db::RWTxn&);  // todo: insert 'BlockNum unwind_point' as parameter
+    Stage::Result prune(db::RWTxn&);
 
     bool stop() override;
   private:
     silkworm::NodeSettings* node_settings_;
-    mdbx::env* chaindata_env_;
-
     std::unique_ptr<SyncContext> sync_context_;  // context shared across stages
 
     using Stage_Container = std::map<const char*, std::unique_ptr<stagedsync::Stage>>;
@@ -53,6 +52,7 @@ class StagePipeline : public Stoppable {
 
     void load_stages();  // Fills the vector with stages
 
-    std::string get_log_prefix() const;                                   // Returns the current log lines prefix on behalf of current stage
+    std::string get_log_prefix() const; // Returns the current log lines prefix on behalf of current stage
+    class LogTimer; // Timer for async log scheduling
 };
 }  // namespace silkworm::stagedsync

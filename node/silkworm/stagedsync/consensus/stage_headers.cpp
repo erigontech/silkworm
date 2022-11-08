@@ -28,8 +28,8 @@
 #include "silkworm/downloader/messages/outbound_new_block_hashes.hpp"
 
 namespace silkworm::stagedsync {
-
-HeadersStage::HeadersStage(SyncContext* sc, BlockExchange& bd, NodeSettings* ns)
+/*
+HeadersStage::HeadersStage(BlockExchange& bd, NodeSettings* ns)
     : Stage(sc, db::stages::kHeadersKey, ns), block_downloader_(bd) {
     // User can specify to stop downloading process at some block
     const auto stop_at_block = stop_at_block_from_env();
@@ -289,5 +289,5 @@ std::vector<std::string> HeadersStage::get_log_progress() {  // implementation M
             "headers/secs", std::to_string(height_progress.throughput()),
             "peers", std::to_string(peers)};
 }
-
+*/
 }  // namespace silkworm::stagedsync

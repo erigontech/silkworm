@@ -195,7 +195,7 @@ TEST_CASE("PositionTable::operator<<", "[silkworm][snapshot][decompressor]") {
 //! Temporary file flushed after any data insertion
 class TemporaryFile {
   public:
-    explicit TemporaryFile() : path_{silkworm::TemporaryDirectory::get_unique_temporary_path()}, stream_{path_} {}
+    explicit TemporaryFile() : path_{TemporaryDirectory::get_unique_temporary_path()}, stream_{path_} {}
     ~TemporaryFile() { stream_.close(); }
 
     const std::filesystem::path& path() const noexcept { return path_; }
@@ -212,7 +212,7 @@ class TemporaryFile {
 
 //! Big-endian int encoder
 template <typename int_t = uint64_t>
-std::size_t encode_big_endian(int_t value, silkworm::Bytes& output) {
+std::size_t encode_big_endian(int_t value, Bytes& output) {
     const std::size_t old_size = output.size();
     output.resize(old_size + sizeof(int_t));
     endian::store_big_u64(output.data() + old_size, value);
@@ -221,7 +221,7 @@ std::size_t encode_big_endian(int_t value, silkworm::Bytes& output) {
 
 //! Varint encoder
 template <typename int_t = uint64_t>
-std::size_t encode_varint(int_t value, silkworm::Bytes& output) {
+std::size_t encode_varint(int_t value, Bytes& output) {
     std::size_t varint_size{0};
     while (value > 127) {
         output.push_back(static_cast<uint8_t>(value & 127) | 128);
@@ -249,7 +249,7 @@ struct SnapshotHeader {
     std::vector<SnapshotPattern> patterns;
     std::vector<SnapshotPosition> positions;
 
-    void encode(silkworm::Bytes& output) {
+    void encode(silkworm::Bytes& output) const {
         encode_big_endian<uint64_t>(words_count, output);
         encode_big_endian<uint64_t>(empty_words_count, output);
         encode_big_endian<uint64_t>(compute_patterns_size(), output);
@@ -288,14 +288,30 @@ struct SnapshotHeader {
     }
 };
 
+struct SnapshotBody {
+    Bytes data;
+    bool compressed{false};
+    SnapshotHeader* header{nullptr};
+
+    void encode(Bytes& output) const {
+        if (compressed) {
+            output.append(data.cbegin() + 1, data.cend());
+        } else {
+            output.append(data.cbegin(), data.cend());
+        }
+    }
+};
+
 //! Temporary snapshot file
 class TemporarySnapshot {
   public:
-    explicit TemporarySnapshot(SnapshotHeader& header) {
-        silkworm::Bytes output{};
-        header.encode(output);
-        file_.write(output);
+    explicit TemporarySnapshot(const SnapshotHeader& header, const SnapshotBody& body) {
+        silkworm::Bytes data{};
+        header.encode(data);
+        body.encode(data);
+        file_.write(data);
     }
+    explicit TemporarySnapshot(const SnapshotHeader& header) : TemporarySnapshot(header, {}) {}
 
     const std::filesystem::path& path() const { return file_.path(); }
 
@@ -337,38 +353,26 @@ TEST_CASE("Decompressor::open invalid files", "[silkworm][snapshot][decompressor
         Decompressor decoder{tmp_file.path()};
         CHECK_THROWS_MATCHES(decoder.open(), std::runtime_error, Message("pattern dict is invalid: length read failed at 1"));
     }
-    SECTION("zero patterns and zero positions") {
-        SnapshotHeader header{};
-        TemporarySnapshot tmp_snapshot{header};
-        Decompressor decoder{tmp_snapshot.path()};
-        CHECK_THROWS_MATCHES(decoder.open(), std::runtime_error, Message("invalid empty pattern dict"));
-    }
-    SECTION("one pattern and zero positions") {
-        SnapshotHeader header{
-            .words_count = 0,
-            .empty_words_count = 0,
-            .patterns = std::vector<SnapshotPattern>{{12, {0x11, 0x22}}},
-            .positions = std::vector<SnapshotPosition>{}};
-        TemporarySnapshot tmp_snapshot{header};
-        Decompressor decoder{tmp_snapshot.path()};
-        CHECK_THROWS_MATCHES(decoder.open(), std::runtime_error, Message("invalid empty position dict"));
-    }
-    SECTION("zero patterns and one position") {
-        SnapshotHeader header{
-            .words_count = 0,
-            .empty_words_count = 0,
-            .patterns = std::vector<SnapshotPattern>{},
-            .positions = std::vector<SnapshotPosition>{{0, 22}}};
-        TemporarySnapshot tmp_snapshot{header};
-        Decompressor decoder{tmp_snapshot.path()};
-        CHECK_THROWS_MATCHES(decoder.open(), std::runtime_error, Message("invalid empty pattern dict"));
-    }
 }
 
 TEST_CASE("Decompressor::open valid files", "[silkworm][snapshot][decompressor]") {
     test::SetLogVerbosityGuard guard{log::Level::kNone};
 
     std::map<std::string, SnapshotHeader> header_tests{
+        {"zero patterns and zero positions",
+         SnapshotHeader{}},
+        {"one pattern and zero positions",
+         SnapshotHeader{
+             .words_count = 0,
+             .empty_words_count = 0,
+             .patterns = std::vector<SnapshotPattern>{{12, {0x11, 0x22}}},
+             .positions = std::vector<SnapshotPosition>{}}},
+        {"zero patterns and one position",
+         SnapshotHeader{
+             .words_count = 0,
+             .empty_words_count = 0,
+             .patterns = std::vector<SnapshotPattern>{},
+             .positions = std::vector<SnapshotPosition>{{0, 22}}}},
         {"one pattern and one position",
          SnapshotHeader{
              .words_count = 0,
@@ -446,9 +450,15 @@ TEST_CASE("Iterator::Iterator empty data", "[silkworm][snapshot][decompressor]")
     Decompressor decoder{tmp_snapshot.path()};
     CHECK_NOTHROW(decoder.open());
 
-    SECTION("has next") {
+    SECTION("data_size") {
         const auto read_function = [](const auto it) -> bool {
             CHECK(it.data_size() == 0);
+            return true;
+        };
+        CHECK_NOTHROW(decoder.read_ahead(read_function));
+    }
+    SECTION("has_next") {
+        const auto read_function = [](const auto it) -> bool {
             CHECK_FALSE(it.has_next());
             return true;
         };
@@ -486,6 +496,64 @@ TEST_CASE("Iterator::Iterator empty data", "[silkworm][snapshot][decompressor]")
         };
         CHECK_NOTHROW(decoder.read_ahead(read_function));
     }
+}
+
+const std::string kLoremIpsum{
+    "Lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt ut labore et\n"
+    "dolore magna aliqua Ut enim ad minim veniam quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo\n"
+    "consequat Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur\n"
+    "Excepteur sint occaecat cupidatat non proident sunt in culpa qui officia deserunt mollit anim id est laborum"};
+
+const Bytes kLoremIpsumDict{*from_hex(
+    "000000000000004200000000000000000000000000000000000000000000001e"
+    "010003060409040b040a050d07100716071107050507060c0715070e04080f4c"
+    "6f72656d20300f697073756d20310f646f6c6f72203201736974203307616d65"
+    "74203477636f6e736563746574757220350b61646970697363696e6720360765"
+    "6c697420370173656420387b646f20390d656975736d6f642031300374656d70"
+    "6f7220313177696e6369646964756e74203132017574203133036c61626f7265"
+    "2031340b65740a646f6c6f7265203135056d61676e6120313603616c69717561"
+    "2031370155742031380f656e696d203139016164203230056d696e696d203231"
+    "0376656e69616d2032320f717569732032330d6e6f73747275642032341b6578"
+    "65726369746174696f6e2032350d756c6c616d636f2032360d6c61626f726973"
+    "2032370f6e6973692032380175742032390d616c697175697020333001657820"
+    "333101656120333237636f6d6d6f646f0a636f6e7365717561742033330f4475"
+    "69732033340f6175746520333505697275726520333605646f6c6f7220333701"
+    "696e2033383b726570726568656e646572697420333901696e2034300b766f6c"
+    "7570746174652034310576656c69742034320f657373652034330363696c6c75"
+    "6d20343403646f6c6f726520343501657520343603667567696174203437056e"
+    "756c6c612034385b70617269617475720a4578636570746575722034390f7369"
+    "6e74203530176f636361656361742035310b637570696461746174203532076e"
+    "6f6e2035331770726f6964656e742035340f73756e7420353501696e20353605"
+    "63756c7061203537077175692035380d6f666669636961203539176465736572"
+    "756e74203630036d6f6c6c69742036310f616e696d2036320169642036330765"
+    "73742036340d6c61626f72756d203635")};
+
+TEST_CASE("Decompressor lorem ipsum", "[silkworm][snapshot][decompressor]") {
+    test::SetLogVerbosityGuard guard{log::Level::kNone};
+    TemporaryFile tmp_file{};
+    tmp_file.write(kLoremIpsumDict);
+    Decompressor decoder{tmp_file.path()};
+    CHECK_NOTHROW(decoder.open());
+    std::stringstream word_stream{kLoremIpsum};
+    std::vector<std::string> lorem_ipsum_words;
+    std::string word;
+    while (std::getline(word_stream, word, ' ')) {
+        lorem_ipsum_words.push_back(word);
+    }
+    decoder.read_ahead([&](auto it) {
+        std::size_t i{0};
+        while (it.has_next() && i < lorem_ipsum_words.size()) {
+            const std::string word_plus_index{lorem_ipsum_words[i] + " " + std::to_string(i)};
+            Bytes expected_word{word_plus_index.cbegin(), word_plus_index.cend()};
+            Bytes decoded_word;
+            it.next_uncompressed(decoded_word);
+            CHECK(decoded_word == expected_word);
+            ++i;
+        }
+        CHECK_FALSE(it.has_next());
+        CHECK(i == lorem_ipsum_words.size());
+        return true;
+    });
 }
 
 }  // namespace silkworm

@@ -314,9 +314,6 @@ void Decompressor::open() {
     // Read patterns from compressed file
     const auto pattern_dict_length = endian::load_big_u64(address + kWordsCountSize + kEmptyWordsCountSize);
     SILK_INFO << "Decompress pattern dictionary length: " << pattern_dict_length;
-    if (pattern_dict_length == 0) {
-        throw std::runtime_error("invalid empty pattern dict");
-    }
 
     const std::size_t patterns_dict_offset{kWordsCountSize + kEmptyWordsCountSize + kDictionaryLengthSize};
     read_patterns(ByteView{address + patterns_dict_offset, pattern_dict_length});
@@ -324,9 +321,6 @@ void Decompressor::open() {
     // Read positions from compressed file
     const auto position_dict_length = endian::load_big_u64(address + patterns_dict_offset + pattern_dict_length);
     SILK_INFO << "Decompress position dictionary length: " << position_dict_length;
-    if (position_dict_length == 0) {
-        throw std::runtime_error("invalid empty position dict");
-    }
 
     const std::size_t positions_dict_offset{patterns_dict_offset + pattern_dict_length + kDictionaryLengthSize};
     read_positions(ByteView{address + positions_dict_offset, position_dict_length});
@@ -410,7 +404,9 @@ void Decompressor::read_patterns(ByteView dict) {
     SILK_INFO << "Pattern count: " << pattern_count << " highest depth: " << pattern_highest_depth;
 
     pattern_dict_ = std::make_unique<PatternTable>(pattern_highest_depth);
-    pattern_dict_->build_condensed({patterns.begin(), pattern_count});
+    if (dict.length() > 0) {
+        pattern_dict_->build_condensed({patterns.begin(), pattern_count});
+    }
 
     SILK_INFO << "#codewords: " << pattern_dict_->num_codewords();
     SILK_DEBUG << *pattern_dict_;
@@ -464,7 +460,9 @@ void Decompressor::read_positions(ByteView dict) {
     SILK_INFO << "Position count: " << position_count << " highest depth: " << position_highest_depth;
 
     position_dict_ = std::make_unique<PositionTable>(position_highest_depth);
-    position_dict_->build({positions.begin(), position_count});
+    if (dict.length() > 0) {
+        position_dict_->build({positions.begin(), position_count});
+    }
 
     SILK_INFO << "#positions: " << position_dict_->num_positions();
     SILK_DEBUG << *position_dict_;
@@ -561,6 +559,7 @@ uint64_t Decompressor::Iterator::next_uncompressed(Bytes& buffer) {
     }
     uint64_t word_position = word_offset_;
     word_offset_ += word_length;
+    buffer.resize(word_length);
     data().copy(buffer.data(), word_length, word_position);
     return word_offset_;
 }

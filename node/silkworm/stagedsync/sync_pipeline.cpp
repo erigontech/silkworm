@@ -14,8 +14,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-#include "stage_pipeline.hpp"
-
 #include <boost/format.hpp>
 
 #include <silkworm/stagedsync/stage_blockhashes.hpp>
@@ -29,6 +27,8 @@ limitations under the License.
 #include <silkworm/stagedsync/stage_log_index.hpp>
 #include <silkworm/stagedsync/stage_senders.hpp>
 #include <silkworm/stagedsync/stage_tx_lookup.hpp>
+
+#include "sync_pipeline.hpp"
 
 namespace silkworm::stagedsync {
 

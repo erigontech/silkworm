@@ -25,6 +25,7 @@
 #include <vector>
 
 #include <catch2/catch.hpp>
+#include <gsl/util>
 
 #include <silkworm/common/directories.hpp>
 #include <silkworm/common/endian.hpp>
@@ -107,6 +108,23 @@ TEST_CASE("CodeWord::set_next", "[silkworm][snapshot][decompressor]") {
     CHECK_NOTHROW(cw.set_next(&parent2_cw));
 
     CHECK(cw.next() == &parent2_cw);
+}
+
+TEST_CASE("PatternTable::set_condensed_table_bit_length_threshold", "[silkworm][snapshot][decompressor]") {
+    const auto f = &PatternTable::set_condensed_table_bit_length_threshold;
+
+    SECTION("condensed_table_bit_length_threshold < kMaxTableBitLength") {
+        auto _ = gsl::finally([&]() { f(PatternTable::kDefaultCondensedTableBitLengthThreshold); });
+        CHECK_NOTHROW(f(PatternTable::kMaxTableBitLength - 1));
+    }
+    SECTION("condensed_table_bit_length_threshold = kMaxTableBitLength") {
+        auto _ = gsl::finally([&]() { f(PatternTable::kDefaultCondensedTableBitLengthThreshold); });
+        CHECK_NOTHROW(f(PatternTable::kMaxTableBitLength));
+    }
+    SECTION("condensed_table_bit_length_threshold > kMaxTableBitLength") {
+        auto _ = gsl::finally([&]() { f(PatternTable::kDefaultCondensedTableBitLengthThreshold); });
+        CHECK_THROWS_AS(f(PatternTable::kMaxTableBitLength + 1), std::invalid_argument);
+    }
 }
 
 TEST_CASE("PatternTable::PatternTable", "[silkworm][snapshot][decompressor]") {
@@ -408,7 +426,7 @@ TEST_CASE("Decompressor::close", "[silkworm][snapshot][decompressor]") {
     }
 }
 
-TEST_CASE("ReadIterator::ReadIterator empty data", "[silkworm][snapshot][decompressor]") {
+TEST_CASE("Iterator::Iterator empty data", "[silkworm][snapshot][decompressor]") {
     test::SetLogVerbosityGuard guard{log::Level::kNone};
     SnapshotHeader header{
         .words_count = 0,

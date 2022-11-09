@@ -571,7 +571,7 @@ TEST_CASE("Decompressor: lorem ipsum skip", "[silkworm][snapshot][decompressor]"
     decoder.read_ahead([&](auto it) {
         std::size_t i{0};
         while (it.has_next() && i < lorem_ipsum_words.size()) {
-            if (i%2 == 0) {
+            if (i % 2 == 0) {
                 it.skip();
             } else {
                 const std::string word_plus_index{lorem_ipsum_words[i] + " " + std::to_string(i)};

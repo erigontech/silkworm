@@ -96,13 +96,6 @@ void HeaderPersistence::persist(const BlockHeader& header) {  // try to modulari
     if (db::read_header(tx_, height, hash).has_value()) {
         return;  // already inserted, skip
     }
-    auto parent = db::read_header(tx_, height - 1, header.parent_hash);
-    if (!parent) {
-        std::string error_message = "HeaderPersistence: could not find parent with hash " + to_hex(header.parent_hash) +
-                                    " and height " + std::to_string(height - 1) + " for header " + hash.to_hex();
-        log::Error("HeaderStage") << error_message;
-        throw std::logic_error(error_message);
-    }
 
     // Calculate total difficulty
     auto parent_td = db::read_total_difficulty(tx_, height - 1, header.parent_hash);
@@ -120,7 +113,7 @@ void HeaderPersistence::persist(const BlockHeader& header) {  // try to modulari
         new_canonical_ = true;
 
         // find the forking point - i.e. the latest header on the canonical chain which is an ancestor of this one
-        BlockNum forking_point = find_forking_point(tx_, header, height, *parent);
+        BlockNum forking_point = find_forking_point(tx_, header, height, header.parent_hash);
 
         // Save progress
         db::write_head_header_hash(tx_, hash);                                   // can throw exception
@@ -150,7 +143,7 @@ void HeaderPersistence::persist(const BlockHeader& header) {  // try to modulari
 }
 
 BlockNum HeaderPersistence::find_forking_point(db::RWTxn& tx, const BlockHeader& header, BlockNum height,
-                                               const BlockHeader& parent) {
+                                               const Hash& parent_hash) {
     BlockNum forking_point{};
 
     // Read canonical hash at height-1
@@ -165,7 +158,15 @@ BlockNum HeaderPersistence::find_forking_point(db::RWTxn& tx, const BlockHeader&
     }
     // Going further back
     else {
-        auto ancestor_hash = parent.parent_hash;
+        auto parent = db::read_header(tx_, height - 1, parent_hash);
+        if (!parent) {
+            std::string error_message = "HeaderPersistence: could not find parent with hash " + to_hex(parent_hash) +
+                                        " and height " + std::to_string(height - 1) + " for header " + to_hex(header.hash());
+            log::Error("HeaderStage") << error_message;
+            throw std::logic_error(error_message);
+        }
+
+        auto ancestor_hash = parent->parent_hash;
         auto ancestor_height = height - 2;
 
         // look in the cache first

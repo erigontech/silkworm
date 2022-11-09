@@ -528,18 +528,23 @@ const Bytes kLoremIpsumDict{*from_hex(
     "756e74203630036d6f6c6c69742036310f616e696d2036320169642036330765"
     "73742036340d6c61626f72756d203635")};
 
-TEST_CASE("Decompressor lorem ipsum", "[silkworm][snapshot][decompressor]") {
+auto split_lorem_ipsum_in_words() {
+    std::vector<std::string> lorem_ipsum_words;
+    std::stringstream word_stream{kLoremIpsum};
+    std::string word;
+    while (std::getline(word_stream, word, ' ')) {
+        lorem_ipsum_words.push_back(word);
+    }
+    return lorem_ipsum_words;
+}
+
+TEST_CASE("Decompressor: lorem ipsum next_uncompressed", "[silkworm][snapshot][decompressor]") {
     test::SetLogVerbosityGuard guard{log::Level::kNone};
     TemporaryFile tmp_file{};
     tmp_file.write(kLoremIpsumDict);
     Decompressor decoder{tmp_file.path()};
     CHECK_NOTHROW(decoder.open());
-    std::stringstream word_stream{kLoremIpsum};
-    std::vector<std::string> lorem_ipsum_words;
-    std::string word;
-    while (std::getline(word_stream, word, ' ')) {
-        lorem_ipsum_words.push_back(word);
-    }
+    std::vector<std::string> lorem_ipsum_words = split_lorem_ipsum_in_words();
     decoder.read_ahead([&](auto it) {
         std::size_t i{0};
         while (it.has_next() && i < lorem_ipsum_words.size()) {
@@ -548,6 +553,33 @@ TEST_CASE("Decompressor lorem ipsum", "[silkworm][snapshot][decompressor]") {
             Bytes decoded_word;
             it.next_uncompressed(decoded_word);
             CHECK(decoded_word == expected_word);
+            ++i;
+        }
+        CHECK_FALSE(it.has_next());
+        CHECK(i == lorem_ipsum_words.size());
+        return true;
+    });
+}
+
+TEST_CASE("Decompressor: lorem ipsum skip", "[silkworm][snapshot][decompressor]") {
+    test::SetLogVerbosityGuard guard{log::Level::kNone};
+    TemporaryFile tmp_file{};
+    tmp_file.write(kLoremIpsumDict);
+    Decompressor decoder{tmp_file.path()};
+    CHECK_NOTHROW(decoder.open());
+    std::vector<std::string> lorem_ipsum_words = split_lorem_ipsum_in_words();
+    decoder.read_ahead([&](auto it) {
+        std::size_t i{0};
+        while (it.has_next() && i < lorem_ipsum_words.size()) {
+            if (i%2 == 0) {
+                it.skip();
+            } else {
+                const std::string word_plus_index{lorem_ipsum_words[i] + " " + std::to_string(i)};
+                Bytes expected_word{word_plus_index.cbegin(), word_plus_index.cend()};
+                Bytes decoded_word;
+                it.next(decoded_word);
+                CHECK(decoded_word == expected_word);
+            }
             ++i;
         }
         CHECK_FALSE(it.has_next());

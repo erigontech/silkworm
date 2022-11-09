@@ -494,9 +494,8 @@ uint64_t Decompressor::Iterator::next(Bytes& buffer) {
     std::size_t last_uncovered = buffer.size();
     if (buffer.length() + word_length > buffer.capacity()) {
         buffer.reserve(buffer.length() + word_length);
-    } else {
-        buffer.resize(buffer.length() + word_length);  // TODO(canepat) should we resize also in if branch?
     }
+    buffer.resize(buffer.length() + word_length);
 
     // Fill in the patterns
     for (auto pos{next_position(false)}; pos != 0; pos = next_position(false)) {

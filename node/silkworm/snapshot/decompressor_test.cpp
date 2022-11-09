@@ -548,11 +548,15 @@ TEST_CASE("Decompressor: lorem ipsum next_uncompressed", "[silkworm][snapshot][d
     decoder.read_ahead([&](auto it) {
         std::size_t i{0};
         while (it.has_next() && i < lorem_ipsum_words.size()) {
-            const std::string word_plus_index{lorem_ipsum_words[i] + " " + std::to_string(i)};
-            Bytes expected_word{word_plus_index.cbegin(), word_plus_index.cend()};
-            Bytes decoded_word;
-            it.next_uncompressed(decoded_word);
-            CHECK(decoded_word == expected_word);
+            if (i % 2 == 0) {
+                it.skip_uncompressed();
+            } else {
+                const std::string word_plus_index{lorem_ipsum_words[i] + " " + std::to_string(i)};
+                Bytes expected_word{word_plus_index.cbegin(), word_plus_index.cend()};
+                Bytes decoded_word;
+                it.next_uncompressed(decoded_word);
+                CHECK(decoded_word == expected_word);
+            }
             ++i;
         }
         CHECK_FALSE(it.has_next());

@@ -25,6 +25,8 @@
 
 namespace silkworm::ssz {
 
+void encode(uint32_t from, Bytes& to) noexcept;
+
 void encode(uint64_t from, Bytes& to) noexcept;
 
 template <class T>
@@ -41,6 +43,8 @@ void encode(uint8_t const (&from)[96], Bytes& to) noexcept;
 template <>
 void encode(const evmc::bytes32& from, Bytes& to) noexcept;
 
+DecodingResult decode(ByteView& from, uint32_t& to) noexcept;
+
 DecodingResult decode(ByteView& from, uint64_t& to) noexcept;
 
 template <class T>
@@ -54,5 +58,9 @@ DecodingResult decode(ByteView& from, uint8_t (&to)[96]) noexcept;
 
 template <>
 DecodingResult decode(ByteView& from, evmc::bytes32& to) noexcept;
+
+void encode_offset(uint32_t from, Bytes& to) noexcept;
+
+DecodingResult decode_offset(ByteView& from, uint32_t& to) noexcept;
 
 }  // namespace silkworm::ssz

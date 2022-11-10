@@ -23,6 +23,21 @@
 
 namespace silkworm::ssz {
 
+TEST_CASE("uint32_t SSZ") {
+    SECTION("round-trip") {
+        uint32_t a{4294967295};
+        Bytes b{};
+        ssz::encode(a, b);
+        CHECK(b == *from_hex("0xFFFFFFFF"));
+        CHECK(test::decode_success<uint32_t>(to_hex(b)) == a);
+    }
+    SECTION("decoding error") {
+        CHECK(test::decode_failure<uint32_t>("") == DecodingResult::kInputTooShort);
+        CHECK(test::decode_failure<uint32_t>("00") == DecodingResult::kInputTooShort);
+        CHECK(test::decode_failure<uint32_t>("0xFFFFFF") == DecodingResult::kInputTooShort);
+    }
+}
+
 TEST_CASE("uint64_t SSZ") {
     SECTION("round-trip") {
         uint64_t a{18446744073709551615u};

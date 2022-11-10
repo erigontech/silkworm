@@ -18,6 +18,7 @@
 
 #include <catch2/catch.hpp>
 
+#include <silkworm/common/log.hpp>
 #include <silkworm/common/util.hpp>
 #include <silkworm/lightclient/test/ssz.hpp>
 
@@ -139,6 +140,91 @@ TEST_CASE("BeaconBlockHeader SSZ") {
                                                       "FF000000000000000000EE00000000000000000000EE000000000000000000FF"
                                                       "FF000000000000000000EE00000000000000000000EE000000000000000000")
               == DecodingResult::kInputTooShort);
+    }
+}
+
+TEST_CASE("IndexedAttestation SSZ") {
+    SECTION("round-trip zero indices") {
+        IndexedAttestation a{
+            {},
+            std::make_unique<AttestationData>(AttestationData{
+                120,
+                6,
+                0xFF000000000000000000EE00000000000000000000EE000000000000000000FF_bytes32,
+                std::make_unique<Checkpoint>(Checkpoint{
+                    21,
+                    0xFF000000000000000000EE00000000000000000000EE000000000000000000FF_bytes32}),
+                std::make_unique<Checkpoint>(Checkpoint{
+                    21,
+                    0xFF000000000000000000EE00000000000000000000EE000000000000000000FF_bytes32}),
+            }),
+            {}
+        };
+        Bytes b{};
+        ssz::encode(a, b);
+        CHECK(b == *from_hex(
+                       "E4000000"
+                       "7800000000000000"
+                       "0600000000000000"
+                       "FF000000000000000000EE00000000000000000000EE000000000000000000FF"
+                       "1500000000000000"
+                       "FF000000000000000000EE00000000000000000000EE000000000000000000FF"
+                       "1500000000000000"
+                       "FF000000000000000000EE00000000000000000000EE000000000000000000FF"
+                       "0000000000000000000000000000000000000000000000000000000000000000"
+                       "0000000000000000000000000000000000000000000000000000000000000000"
+                       "0000000000000000000000000000000000000000000000000000000000000000"));
+        CHECK(test::decode_success<IndexedAttestation>(to_hex(b)) == a);
+    }
+    SECTION("decoding error") {
+        CHECK(test::decode_failure<IndexedAttestation>("") == DecodingResult::kInputTooShort);
+        CHECK(test::decode_failure<IndexedAttestation>("00") == DecodingResult::kInputTooShort);
+        CHECK(test::decode_failure<IndexedAttestation>("E4000000"
+                                                       "7800000000000000"
+                                                       "0600000000000000"
+                                                       "FF000000000000000000EE00000000000000000000EE000000000000000000FF"
+                                                       "1500000000000000"
+                                                       "FF000000000000000000EE00000000000000000000EE000000000000000000FF"
+                                                       "1500000000000000"
+                                                       "FF000000000000000000EE00000000000000000000EE000000000000000000FF"
+                                                       "0000000000000000000000000000000000000000000000000000000000000000"
+                                                       "0000000000000000000000000000000000000000000000000000000000000000"
+                                                       "00000000000000000000000000000000000000000000000000000000000000")
+              == DecodingResult::kInputTooShort);
+    }
+    SECTION("round-trip two indices") {
+        IndexedAttestation a{
+            {1, 11},
+            std::make_unique<AttestationData>(AttestationData{
+                120,
+                6,
+                0xFF000000000000000000EE00000000000000000000EE000000000000000000FF_bytes32,
+                std::make_unique<Checkpoint>(Checkpoint{
+                    21,
+                    0xFF000000000000000000EE00000000000000000000EE000000000000000000FF_bytes32}),
+                std::make_unique<Checkpoint>(Checkpoint{
+                    21,
+                    0xFF000000000000000000EE00000000000000000000EE000000000000000000FF_bytes32}),
+            }),
+            {}
+        };
+        Bytes b{};
+        ssz::encode(a, b);
+        CHECK(b == *from_hex(
+                       "E4000000"
+                       "7800000000000000"
+                       "0600000000000000"
+                       "FF000000000000000000EE00000000000000000000EE000000000000000000FF"
+                       "1500000000000000"
+                       "FF000000000000000000EE00000000000000000000EE000000000000000000FF"
+                       "1500000000000000"
+                       "FF000000000000000000EE00000000000000000000EE000000000000000000FF"
+                       "0000000000000000000000000000000000000000000000000000000000000000"
+                       "0000000000000000000000000000000000000000000000000000000000000000"
+                       "0000000000000000000000000000000000000000000000000000000000000000"
+                       "0100000000000000"
+                       "0B00000000000000"));
+        CHECK(test::decode_success<IndexedAttestation>(to_hex(b)) == a);
     }
 }
 

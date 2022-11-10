@@ -18,6 +18,12 @@
 
 namespace silkworm::ssz {
 
+void encode(uint32_t from, Bytes& to) noexcept {
+    for (std::size_t i{0}; i < sizeof(uint32_t); ++i) {
+        to += reinterpret_cast<uint8_t*>(&from)[i];
+    }
+}
+
 void encode(uint64_t from, Bytes& to) noexcept {
     for (std::size_t i{0}; i < sizeof(uint64_t); ++i) {
         to += reinterpret_cast<uint8_t*>(&from)[i];
@@ -44,6 +50,17 @@ void encode(const evmc::bytes32& from, Bytes& to) noexcept {
     for (std::size_t i{0}; i < kHashLength; ++i) {
         to += from.bytes[i];
     }
+}
+
+DecodingResult decode(ByteView& from, uint32_t& to) noexcept {
+    if (from.size() < sizeof(uint32_t)) {
+        return DecodingResult::kInputTooShort;
+    }
+    for (std::size_t i{0}; i < sizeof(uint32_t); ++i) {
+        to += static_cast<uint32_t>(from[i]) << (i*8);
+    }
+    from.remove_prefix(sizeof(uint32_t));
+    return DecodingResult::kOk;
 }
 
 DecodingResult decode(ByteView& from, uint64_t& to) noexcept {
@@ -91,6 +108,14 @@ DecodingResult decode(ByteView& from, evmc::bytes32& to) noexcept {
     }
     from.remove_prefix(kHashLength);
     return DecodingResult::kOk;
+}
+
+void encode_offset(uint32_t from, Bytes& to) noexcept {
+    encode(from, to);
+}
+
+DecodingResult decode_offset(ByteView& from, uint32_t& to) noexcept {
+    return decode(from, to);
 }
 
 }  // namespace silkworm::ssz

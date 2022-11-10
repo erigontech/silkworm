@@ -17,6 +17,7 @@
 #pragma once
 
 #include <memory>
+#include <vector>
 
 #include <evmc/evmc.hpp>
 
@@ -34,7 +35,7 @@ struct Eth1Data {
     uint64_t deposit_count{0};
     evmc::bytes32 block_hash;
 
-    static constexpr std::size_t kSize{72};
+    static constexpr std::size_t kSize{2 * kHashLength + sizeof(uint64_t)};
 };
 
 bool operator==(const Eth1Data& lhs, const Eth1Data& rhs);
@@ -44,7 +45,7 @@ struct Checkpoint {
     uint64_t epoch{0};
     evmc::bytes32 root;
 
-    static constexpr std::size_t kSize{40};
+    static constexpr std::size_t kSize{sizeof(uint64_t) + kHashLength};
 };
 
 bool operator==(const Checkpoint& lhs, const Checkpoint& rhs);
@@ -57,7 +58,7 @@ struct AttestationData {
     std::unique_ptr<Checkpoint> source;
     std::unique_ptr<Checkpoint> target;
 
-    static constexpr std::size_t kSize{128};
+    static constexpr std::size_t kSize{2 * sizeof(uint64_t) + kHashLength + 2 * Checkpoint::kSize};
 };
 
 bool operator==(const AttestationData& lhs, const AttestationData& rhs);
@@ -70,7 +71,7 @@ struct BeaconBlockHeader {
     evmc::bytes32 root;
     evmc::bytes32 body_root;
 
-    static constexpr std::size_t kSize{112};
+    static constexpr std::size_t kSize{3 * kHashLength + 2 * sizeof(uint64_t)};
 };
 
 bool operator==(const BeaconBlockHeader& lhs, const BeaconBlockHeader& rhs);
@@ -80,10 +81,23 @@ struct SignedBeaconBlockHeader {
     std::unique_ptr<BeaconBlockHeader> header;
     uint8_t signature[kSignatureSize];
 
-    static constexpr std::size_t kSize{208};
+    static constexpr std::size_t kSize{BeaconBlockHeader::kSize + kSignatureSize};
 };
 
 bool operator==(const SignedBeaconBlockHeader& lhs, const SignedBeaconBlockHeader& rhs);
+
+//! IndexedAttestation are attestantions sets to prove that someone misbehaved.
+struct IndexedAttestation {
+    std::vector<uint64_t> attesting_indices;
+    std::unique_ptr<AttestationData> data;
+    uint8_t signature[kSignatureSize];
+
+    static constexpr std::size_t kMaxAttestingIndices{2048};
+    static constexpr std::size_t kMinSize{AttestationData::kSize + kSignatureSize + sizeof(uint32_t)};
+    static constexpr std::size_t kMaxSize{kMinSize + kMaxAttestingIndices * sizeof(uint64_t)};
+};
+
+bool operator==(const IndexedAttestation& lhs, const IndexedAttestation& rhs);
 
 }  // namespace silkworm::cl
 
@@ -118,5 +132,11 @@ void encode(const cl::SignedBeaconBlockHeader& from, Bytes& to) noexcept;
 
 template <>
 DecodingResult decode(ByteView& from, cl::SignedBeaconBlockHeader& to) noexcept;
+
+template <>
+void encode(const cl::IndexedAttestation& from, Bytes& to) noexcept;
+
+template <>
+DecodingResult decode(ByteView& from, cl::IndexedAttestation& to) noexcept;
 
 }  // namespace silkworm::ssz

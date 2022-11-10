@@ -57,6 +57,15 @@ bool operator==(const SignedBeaconBlockHeader& lhs, const SignedBeaconBlockHeade
     return true;
 }
 
+bool operator==(const IndexedAttestation& lhs, const IndexedAttestation& rhs) {
+    if (lhs.attesting_indices != rhs.attesting_indices) return false;
+    if (*lhs.data != *rhs.data) return false;
+    for (std::size_t i{0}; i < kSignatureSize; ++i) {
+        if (lhs.signature[i] != rhs.signature[i]) return false;
+    }
+    return true;
+}
+
 }  // namespace silkworm::cl
 
 namespace silkworm::ssz {
@@ -199,6 +208,54 @@ DecodingResult decode(ByteView& from, cl::SignedBeaconBlockHeader& to) noexcept 
     }
     if (DecodingResult err{ssz::decode(from, to.signature)}; err != DecodingResult::kOk) {
         return err;
+    }
+    return DecodingResult::kOk;
+}
+
+template <>
+void encode(const cl::IndexedAttestation& from, Bytes& to) noexcept {
+    ssz::encode_offset(cl::IndexedAttestation::kMinSize, to);
+    if (from.data) {
+        ssz::encode(*from.data, to);
+    }
+    ssz::encode(from.signature, to);
+    for (const auto attesting_index : from.attesting_indices) {
+        ssz::encode(attesting_index, to);
+    }
+}
+
+template <>
+DecodingResult decode(ByteView& from, cl::IndexedAttestation& to) noexcept {
+    const auto size = from.size();
+
+    if (from.size() < cl::IndexedAttestation::kMinSize) {
+        return DecodingResult::kInputTooShort;
+    }
+    if (from.size() > cl::IndexedAttestation::kMaxSize) {
+        return DecodingResult::kUnexpectedLength;
+    }
+
+    uint32_t indices_offset{0};
+    if (DecodingResult err{ssz::decode_offset(from, indices_offset)}; err != DecodingResult::kOk) {
+        return err;
+    }
+    if (indices_offset < cl::IndexedAttestation::kMinSize || indices_offset > size) {
+        return DecodingResult::kUnexpectedLength;
+    }
+
+    to.data = std::make_unique<cl::AttestationData>();
+    if (DecodingResult err{ssz::decode(from, *to.data)}; err != DecodingResult::kOk) {
+        return err;
+    }
+    if (DecodingResult err{ssz::decode(from, to.signature)}; err != DecodingResult::kOk) {
+        return err;
+    }
+    const auto num_attesting_indices = (size - indices_offset) / CHAR_BIT;
+    to.attesting_indices.resize(num_attesting_indices);
+    for (std::size_t i{0}; i < num_attesting_indices; ++i) {
+        if (DecodingResult err{ssz::decode(from, to.attesting_indices[i])}; err != DecodingResult::kOk) {
+            return err;
+        }
     }
     return DecodingResult::kOk;
 }

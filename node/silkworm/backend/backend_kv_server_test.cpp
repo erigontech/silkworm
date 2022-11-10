@@ -2216,7 +2216,7 @@ class TxMaxTimeToLiveGuard {
 };
 
 TEST_CASE("BackEndKvServer E2E: bidirectional max TTL duration", "[silkworm][node][rpc]") {
-    constexpr uint8_t kCustomMaxTimeToLive{10};
+    constexpr uint8_t kCustomMaxTimeToLive{100};
     TxMaxTimeToLiveGuard ttl_guard{kCustomMaxTimeToLive};
     BackEndKvE2eTest test{silkworm::log::Level::kNone, NodeSettings{}};
     test.fill_tables();

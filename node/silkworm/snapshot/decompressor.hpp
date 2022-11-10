@@ -204,6 +204,7 @@ class Decompressor {
         void reset(uint64_t data_offset);
 
       private:
+        //! View on the whole data stream.
         [[nodiscard]] inline ByteView data() const;
 
         //! Read the next pattern from the data stream
@@ -230,12 +231,14 @@ class Decompressor {
     ~Decompressor();
 
     [[nodiscard]] const std::filesystem::path& compressed_path() const { return compressed_path_; }
-    [[nodiscard]] const PatternTable* pattern_table() const { return pattern_dict_.get(); }
-    [[nodiscard]] const PositionTable* position_table() const { return position_dict_.get(); }
+
+    [[nodiscard]] uint64_t words_count() const { return words_count_; }
+
+    [[nodiscard]] uint64_t empty_words_count() const { return empty_words_count_; }
 
     void open();
 
-    //! Read the data stream eagerly applying the specified function, expected read in sequential order.
+    //! Read the data stream eagerly applying the specified function, expected read in sequential order
     bool read_ahead(ReadAheadFunc fn);
 
     void close();
@@ -245,13 +248,28 @@ class Decompressor {
 
     void read_positions(ByteView dict);
 
+    //! The path to the compressed file
     std::filesystem::path compressed_path_;
+
+    //! The memory-mapped compressed file
     std::unique_ptr<MemoryMappedFile> compressed_file_;
+
+    //! The number of words in the data
     uint64_t words_count_{0};
+
+    //! The number of *empty* words in the data
     uint64_t empty_words_count_{0};
+
+    //! The table of patterns used to decode the data words
     std::unique_ptr<PatternTable> pattern_dict_;
+
+    //! The table of positions used to decode the data words
     std::unique_ptr<PositionTable> position_dict_;
+
+    //! The start offset of the data words
     uint8_t* words_start_{nullptr};
+
+    //! The size in bytes of the data words
     uint64_t words_length_{0};
 };
 

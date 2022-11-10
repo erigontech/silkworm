@@ -325,7 +325,7 @@ void Decompressor::open() {
     const std::size_t positions_dict_offset{patterns_dict_offset + pattern_dict_length + kDictionaryLengthSize};
     read_positions(ByteView{address + positions_dict_offset, position_dict_length});
 
-    // Store the words start offset and length
+    // Store the start offset and length of the data words
     words_start_ = address + positions_dict_offset + position_dict_length;
     words_length_ = compressed_file_->length() - (positions_dict_offset + position_dict_length);
     SILKWORM_ASSERT(address + compressed_file_->length() == words_start_ + words_length_);
@@ -627,7 +627,7 @@ void Decompressor::Iterator::reset(uint64_t data_offset) {
 }
 
 ByteView Decompressor::Iterator::next_pattern() {
-    const PatternTable* table = decoder_->pattern_table();
+    const PatternTable* table = decoder_->pattern_dict_.get();
     if (table->bit_length() == 0) {
         return table->codeword(0)->pattern();
     }
@@ -663,7 +663,7 @@ uint64_t Decompressor::Iterator::next_position(bool clean) {
         word_offset_++;
         bit_position_ = 0;
     }
-    const PositionTable* table = decoder_->position_table();
+    const PositionTable* table = decoder_->position_dict_.get();
     if (table->bit_length() == 0) {
         return table->position(0);
     }

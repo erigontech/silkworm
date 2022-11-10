@@ -24,6 +24,7 @@
 #include <tuple>
 #include <vector>
 
+#include <absl/strings/str_split.h>
 #include <catch2/catch.hpp>
 #include <gsl/util>
 
@@ -323,8 +324,8 @@ TEST_CASE("Decompressor::Decompressor", "[silkworm][snapshot][decompressor]") {
     const auto tmp_file_path{silkworm::TemporaryDirectory::get_unique_temporary_path()};
     Decompressor decoder{tmp_file_path};
     CHECK(decoder.compressed_path() == tmp_file_path);
-    CHECK(decoder.pattern_table() == nullptr);
-    CHECK(decoder.position_table() == nullptr);
+    CHECK(decoder.words_count() == 0);
+    CHECK(decoder.empty_words_count() == 0);
 }
 
 TEST_CASE("Decompressor::open invalid files", "[silkworm][snapshot][decompressor]") {
@@ -504,6 +505,8 @@ const std::string kLoremIpsum{
     "consequat Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur\n"
     "Excepteur sint occaecat cupidatat non proident sunt in culpa qui officia deserunt mollit anim id est laborum"};
 
+const std::vector<std::string> kLoremIpsumWords = absl::StrSplit(kLoremIpsum, " ");
+
 const Bytes kLoremIpsumDict{*from_hex(
     "000000000000004200000000000000000000000000000000000000000000001e"
     "010003060409040b040a050d07100716071107050507060c0715070e04080f4c"
@@ -528,30 +531,19 @@ const Bytes kLoremIpsumDict{*from_hex(
     "756e74203630036d6f6c6c69742036310f616e696d2036320169642036330765"
     "73742036340d6c61626f72756d203635")};
 
-auto split_lorem_ipsum_in_words() {
-    std::vector<std::string> lorem_ipsum_words;
-    std::stringstream word_stream{kLoremIpsum};
-    std::string word;
-    while (std::getline(word_stream, word, ' ')) {
-        lorem_ipsum_words.push_back(word);
-    }
-    return lorem_ipsum_words;
-}
-
 TEST_CASE("Decompressor: lorem ipsum next_uncompressed", "[silkworm][snapshot][decompressor]") {
     test::SetLogVerbosityGuard guard{log::Level::kNone};
     TemporaryFile tmp_file{};
     tmp_file.write(kLoremIpsumDict);
     Decompressor decoder{tmp_file.path()};
     CHECK_NOTHROW(decoder.open());
-    std::vector<std::string> lorem_ipsum_words = split_lorem_ipsum_in_words();
     decoder.read_ahead([&](auto it) {
         std::size_t i{0};
-        while (it.has_next() && i < lorem_ipsum_words.size()) {
+        while (it.has_next() && i < kLoremIpsumWords.size()) {
             if (i % 2 == 0) {
                 it.skip_uncompressed();
             } else {
-                const std::string word_plus_index{lorem_ipsum_words[i] + " " + std::to_string(i)};
+                const std::string word_plus_index{kLoremIpsumWords[i] + " " + std::to_string(i)};
                 Bytes expected_word{word_plus_index.cbegin(), word_plus_index.cend()};
                 Bytes decoded_word;
                 it.next_uncompressed(decoded_word);
@@ -560,7 +552,7 @@ TEST_CASE("Decompressor: lorem ipsum next_uncompressed", "[silkworm][snapshot][d
             ++i;
         }
         CHECK_FALSE(it.has_next());
-        CHECK(i == lorem_ipsum_words.size());
+        CHECK(i == kLoremIpsumWords.size());
         return true;
     });
 }
@@ -571,14 +563,13 @@ TEST_CASE("Decompressor: lorem ipsum skip", "[silkworm][snapshot][decompressor]"
     tmp_file.write(kLoremIpsumDict);
     Decompressor decoder{tmp_file.path()};
     CHECK_NOTHROW(decoder.open());
-    std::vector<std::string> lorem_ipsum_words = split_lorem_ipsum_in_words();
     decoder.read_ahead([&](auto it) {
         std::size_t i{0};
-        while (it.has_next() && i < lorem_ipsum_words.size()) {
+        while (it.has_next() && i < kLoremIpsumWords.size()) {
             if (i % 2 == 0) {
                 it.skip();
             } else {
-                const std::string word_plus_index{lorem_ipsum_words[i] + " " + std::to_string(i)};
+                const std::string word_plus_index{kLoremIpsumWords[i] + " " + std::to_string(i)};
                 Bytes expected_word{word_plus_index.cbegin(), word_plus_index.cend()};
                 Bytes decoded_word;
                 it.next(decoded_word);
@@ -587,7 +578,7 @@ TEST_CASE("Decompressor: lorem ipsum skip", "[silkworm][snapshot][decompressor]"
             ++i;
         }
         CHECK_FALSE(it.has_next());
-        CHECK(i == lorem_ipsum_words.size());
+        CHECK(i == kLoremIpsumWords.size());
         return true;
     });
 }

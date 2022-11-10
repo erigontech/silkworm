@@ -26,17 +26,6 @@
 #include <silkworm/common/log.hpp>
 #include <silkworm/test/log.hpp>
 
-// Factory function creating one null output stream (all characters are discarded)
-inline std::ostream& null_stream() {
-    static struct null_buf : public std::streambuf {
-        int overflow(int c) override { return c; }
-    } null_buf;
-    static struct null_strm : public std::ostream {
-        null_strm() : std::ostream(&null_buf) {}
-    } null_strm;
-    return null_strm;
-}
-
 namespace silkworm::rpc {
 
 // Exclude gRPC tests from sanitizer builds due to data race warnings inside gRPC library
@@ -83,7 +72,7 @@ TEST_CASE("ServerContext", "[silkworm][rpc][server_context]") {
 
     SECTION("print") {
         test::SetLogVerbosityGuard guard{log::Level::kNone};
-        CHECK_NOTHROW(null_stream() << server_context);
+        CHECK_NOTHROW(test::null_stream() << server_context);
     }
 }
 

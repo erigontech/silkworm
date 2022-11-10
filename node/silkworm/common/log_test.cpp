@@ -60,21 +60,10 @@ class StreamSwap {
     std::ostream& stream_;
 };
 
-// Factory function creating one null output stream (all characters are discarded)
-std::ostream& null_stream() {
-    static struct null_buf : public std::streambuf {
-        int overflow(int c) override { return c; }
-    } null_buf;
-    static struct null_strm : public std::ostream {
-        null_strm() : std::ostream(&null_buf) {}
-    } null_strm;
-    return null_strm;
-}
-
 TEST_CASE("LogBuffer", "[silkworm][common][log]") {
     // Temporarily override std::cout and std::cerr with null stream to avoid terminal output
-    StreamSwap cout_swap{std::cout, null_stream()};
-    StreamSwap cerr_swap{std::cerr, null_stream()};
+    StreamSwap cout_swap{std::cout, test::null_stream()};
+    StreamSwap cerr_swap{std::cerr, test::null_stream()};
 
     SECTION("LogBuffer stores nothing for verbosity higher than default") {
         check_log_empty<Level::kDebug>();

@@ -28,7 +28,7 @@ using namespace silkworm::cmd;
 
 void lightclient_main(/*Settings settings*/) {
     log::Settings log_settings{};
-    log::init(log_settings/*settings.log_settings*/);
+    log::init(log_settings /*settings.log_settings*/);
     log::set_thread_name("main");
     // TODO(canepat): this could be an option in Silkworm logging facility
     silkworm::rpc::Grpc2SilkwormLogGuard log_guard;

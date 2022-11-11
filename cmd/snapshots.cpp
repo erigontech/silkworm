@@ -28,8 +28,8 @@
 #include <silkworm/buildinfo.h>
 #include <silkworm/common/log.hpp>
 #include <silkworm/snapshot/bittorrent.hpp>
+#include <silkworm/snapshot/repository.hpp>
 #include <silkworm/snapshot/snapshot.hpp>
-#include <silkworm/snapshot/snapshot_repository.hpp>
 
 #include "common.hpp"
 
@@ -111,7 +111,7 @@ void parse_command_line(int argc, char* argv[], CLI::App& app, SnapshotToolboxSe
 
 void decode_segment(const SnapSettings& settings, int repetitions) {
     std::chrono::time_point start{std::chrono::steady_clock::now()};
-    const auto snap_file{silkworm::SnapshotFile::parse_filename(std::filesystem::path{settings.snapshot_file_name})};
+    const auto snap_file{silkworm::SnapshotFile::parse(std::filesystem::path{settings.snapshot_file_name})};
     if (snap_file) {
         for (int i{0}; i < repetitions; ++i) {
             silkworm::HeaderSnapshot header_segment{snap_file->path(), snap_file->block_from(), snap_file->block_to()};

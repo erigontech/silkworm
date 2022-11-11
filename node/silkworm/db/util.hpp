@@ -120,6 +120,8 @@ namespace detail {
         [[nodiscard]] Bytes encode() const;
     };
 
+    DecodingResult decode_stored_block_body(ByteView& from, BlockBodyForStorage& to);
+
     BlockBodyForStorage decode_stored_block_body(ByteView& from);
 
 }  // namespace detail

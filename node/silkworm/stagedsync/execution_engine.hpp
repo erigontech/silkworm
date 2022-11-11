@@ -19,11 +19,15 @@ limitations under the License.
 #include <atomic>
 #include <map>
 #include <vector>
+#include <variant>
 
 #include <silkworm/common/asio_timer.hpp>
+#include <silkworm/common/lru_cache.hpp>
 #include <silkworm/common/stopwatch.hpp>
 #include <silkworm/downloader/internals/types.hpp>
 #include <silkworm/stagedsync/stage.hpp>
+
+#include "sync_pipeline.hpp"
 
 namespace silkworm::stagedsync {
 
@@ -35,18 +39,32 @@ class ExecutionEngine : public Stoppable {
     void insert_headers(const std::vector<BlockHeader>&);
     void insert_bodies(const std::vector<Block>&);
 
-    bool verify_chain(Hash header_hash);
+
+    struct ValidChain {BlockNum current_point;};
+    struct InvalidChain {BlockNum unwind_point; std::optional<Hash> bad_block;};
+    struct ValidationError {BlockNum last_point;};
+    using VerificationResult = std::variant<ValidChain, InvalidChain, ValidationError>;
+
+    auto verify_chain(Hash header_hash) -> VerificationResult;
 
     bool update_fork_choice(Hash header_hash);
 
-    auto get_headers(Hash header_hash);
-    auto get_bodies(Hash header_hash);
+    auto get_headers(Hash header_hash) -> std::optional<BlockHeader>;
+    auto get_bodies(Hash header_hash) -> std::optional<Block>;
 
   private:
     void insert_header(db::RWTxn& tx, const BlockHeader&);
     void insert_body(db::RWTxn& tx, const Block&);
+    BlockNum find_forking_point(db::RWTxn& tx, Hash header_hash);
 
     NodeSettings& node_settings_;
     db::RWAccess db_access_;
+    db::RWTxn tx_;
+    SyncPipeline pipeline_;
+    bool is_first_sync{true};
+
+    static constexpr size_t kCacheSize = 1000;
+    lru_cache<BlockNum, Hash> canonical_cache_;
+    //lru_cache<Hash, BlockHeader> header_cache_; // todo(mike): use?
 };
 }  // namespace silkworm::stagedsync

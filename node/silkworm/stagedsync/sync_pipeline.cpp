@@ -33,19 +33,13 @@ limitations under the License.
 namespace silkworm::stagedsync {
 
 class SyncPipeline::LogTimer : public Timer {
+    SyncPipeline* pipeline_;
   public:
     LogTimer(SyncPipeline* pipeline)
-        : Timer(
+        : pipeline_{pipeline}, Timer(
               pipeline->node_settings_->asio_context,
               pipeline->node_settings_->sync_loop_log_interval_seconds * 1'000,
-              [pipeline]() -> bool {
-                  if (pipeline->is_stopping()) {
-                      log::Info(pipeline->get_log_prefix()) << "stopping ...";
-                      return false;
-                  }
-                  log::Info(pipeline->get_log_prefix(), pipeline->current_stage_->second->get_log_progress());
-                  return true;
-              },
+              [this] { return execute(); },
               true)
     {
         start();
@@ -54,6 +48,15 @@ class SyncPipeline::LogTimer : public Timer {
     ~LogTimer() {
         stop();
     }
+
+    bool execute() {
+        if (pipeline_->is_stopping()) {
+            log::Info(pipeline_->get_log_prefix()) << "stopping ...";
+            return false;
+        }
+        log::Info(pipeline_->get_log_prefix(), pipeline_->current_stage_->second->get_log_progress());
+        return true;
+    }
 };
 
 SyncPipeline::SyncPipeline(silkworm::NodeSettings* node_settings)
@@ -61,6 +64,22 @@ SyncPipeline::SyncPipeline(silkworm::NodeSettings* node_settings)
       sync_context_{std::make_unique<SyncContext>()} {
 
     load_stages();
+}
+
+BlockNum SyncPipeline::head_header_number() {
+    return head_header_number_;
+}
+
+Hash SyncPipeline::head_header_hash() {
+    return head_header_hash_;
+}
+
+std::optional<BlockNum> SyncPipeline::unwind_point() {
+    return sync_context_->unwind_point;
+}
+
+std::optional<Hash> SyncPipeline::bad_block() {
+    return sync_context_->bad_block_hash;
 }
 
 /*
@@ -152,7 +171,7 @@ Stage::Result SyncPipeline::forward(db::RWTxn& cycle_txn, Hash target_header) {
     StopWatch stages_stop_watch(true);
     LogTimer log_timer{this};
 
-    // todo: use target_header
+    // todo(mike): use target_header
 
     try {
         // Force to stop at any particular stage ?
@@ -182,17 +201,18 @@ Stage::Result SyncPipeline::forward(db::RWTxn& cycle_txn, Hash target_header) {
             const auto stage_result = current_stage_->second->forward(cycle_txn);
 
             if (stage_result != Stage::Result::kSuccess) {
-                log::Error(get_log_prefix(),
-                           {"op", "Forward",
-                            "returned", std::string(magic_enum::enum_name<Stage::Result>(stage_result))});
+                auto result_description = std::string(magic_enum::enum_name<Stage::Result>(stage_result));
+                log::Error(get_log_prefix(), {"op", "Forward", "returned", });
                 return stage_result;
             }
 
+            head_header_number_ = db::stages::read_stage_progress(cycle_txn, current_stage_->first);
+            head_header_hash_ = db::read_head_header_hash(cycle_txn).value_or(Hash{}); // todo(mike): check the assumption head_header_number_ == number(head_header_hash_)
+            // todo(mike): maybe remove write_head_header_hash() from header_stage and use here
+
             auto [_, stage_duration] = stages_stop_watch.lap();
             if (stage_duration > std::chrono::milliseconds(10)) {
-                log::Info(get_log_prefix(),
-                          {"op", "Forward",
-                           "done", StopWatch::format(stage_duration)});
+                log::Info(get_log_prefix(), {"op", "Forward", "done", StopWatch::format(stage_duration)});
             }
         }
 
@@ -204,38 +224,44 @@ Stage::Result SyncPipeline::forward(db::RWTxn& cycle_txn, Hash target_header) {
     }
 }
 
-Stage::Result SyncPipeline::unwind(db::RWTxn& cycle_txn) {
+Stage::Result SyncPipeline::unwind(db::RWTxn& cycle_txn, BlockNum unwind_point) {
     StopWatch stages_stop_watch(true);
     LogTimer log_timer{this};
 
     try {
+        sync_context_->unwind_point = unwind_point; // todo(mike): remove unwind_point updating from sync_context_, pass it explicitly to stages
+
+        // Loop at stages in unwind order
         current_stages_count_ = stages_unwind_order_.size();
         current_stage_number_ = 0;
         for (auto& stage_id : stages_unwind_order_) {
             current_stage_ = stages_.find(stage_id);
             if (current_stage_ == stages_.end()) {
-                // Should not happen
                 throw std::runtime_error("Stage " + std::string(stage_id) + " requested but not implemented");
             }
             ++current_stage_number_;
             current_stage_->second->set_log_prefix(get_log_prefix());
-
             log_timer.reset();  // Resets the interval for next log line from now
-            const auto stage_result{current_stage_->second->unwind(cycle_txn)};
+
+            // Do unwind on current stage
+            const auto stage_result = current_stage_->second->unwind(cycle_txn);
             if (stage_result != Stage::Result::kSuccess) {
-                log::Error(get_log_prefix(),
-                           {"op", "Unwind",
-                            "returned", std::string(magic_enum::enum_name<Stage::Result>(stage_result))});
+                auto result_description = std::string(magic_enum::enum_name<Stage::Result>(stage_result));
+                log::Error(get_log_prefix(), {"op", "Unwind", "returned", result_description});
                 return stage_result;
             }
 
+            // Log performances
             auto [_, stage_duration] = stages_stop_watch.lap();
             if (stage_duration > std::chrono::milliseconds(10)) {
-                log::Info(get_log_prefix(),
-                          {"op", "Unwind",
-                           "done", StopWatch::format(stage_duration)});
+                log::Info(get_log_prefix(), {"op", "Unwind", "done", StopWatch::format(stage_duration)});
             }
         }
+
+        // Clear context
+        std::swap(sync_context_->unwind_point, sync_context_->previous_unwind_point);
+        sync_context_->unwind_point.reset();
+        sync_context_->bad_block_hash.reset();
 
         return is_stopping() ? Stage::Result::kAborted : Stage::Result::kSuccess;
 

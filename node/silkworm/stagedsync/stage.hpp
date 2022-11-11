@@ -28,6 +28,7 @@
 #include <silkworm/db/stages.hpp>
 #include <silkworm/db/tables.hpp>
 #include <silkworm/etl/collector.hpp>
+#include <silkworm/downloader/internals/types.hpp>
 
 namespace silkworm::stagedsync {
 
@@ -38,21 +39,15 @@ struct SyncContext {
     SyncContext() = default;
     ~SyncContext() = default;
 
-    // Not copyable nor movable
-    SyncContext(const SyncContext&) = delete;
-    SyncContext& operator=(const SyncContext&) = delete;
+    SyncContext(const SyncContext&) = delete;  // not copyable
+    SyncContext& operator=(const SyncContext&) = delete;  // not copyable
 
-    //! \brief Whether this is first cycle
-    bool is_first_cycle{false};
+    bool is_first_cycle{true};  // true at start-up (fist sync or sync after a long pause)
 
-    //! \brief If an unwind operation is requested this member is valued
-    std::optional<BlockNum> unwind_point;
-
-    //! \brief After an unwind operation this is valued to last unwind point
+    std::optional<BlockNum> unwind_point;  // if valued sync requires an unwind to this point
     std::optional<BlockNum> previous_unwind_point;
 
-    //! \brief If an unwind operation is requested this member is valued
-    std::optional<evmc::bytes32> bad_block_hash;
+    std::optional<evmc::bytes32> bad_block_hash;  // valued if we encountered a bad block
 };
 
 //! \brief Base Stage interface. All stages MUST inherit from this class and MUST override forward / unwind /

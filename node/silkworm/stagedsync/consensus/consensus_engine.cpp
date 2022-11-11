@@ -26,6 +26,26 @@ ConsensusEngine::ConsensusEngine(const NodeSettings& ns, const db::ROAccess& dba
 
 void ConsensusEngine::execution_loop() {
     // todo: implement
+
+    // Main algo:
+    //    1. result = exec_engine_.forward(...)
+    //    2. if (result == unwind_needed) exec_engine_.unwind(...)
+    //    3. prune(...)
+
+    /*
+    switch (forward_result) {
+        case Stage::Result::kSuccess:
+        case Stage::Result::kWrongFork:
+        case Stage::Result::kInvalidBlock:
+        case Stage::Result::kWrongStateRoot:
+            break;  // Do nothing. Unwind is triggered afterwards
+        case Stage::Result::kStoppedByEnv:
+            should_end_loop = true;
+            break;
+        default:
+            throw StageError(forward_result);
+    }
+    */
 };
 
 }  // namespace silkworm::stagedsync

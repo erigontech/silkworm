@@ -114,6 +114,8 @@ class RWTxn : public ROTxn {
             }
         }
     }
+    void commit_and_renew() { commit(true); }
+    void commit_and_stop() { commit(false); }
 };
 
 //! \brief This class create ROTxn(s) on demand, it is used to enforce in some method signatures the type of db access
@@ -124,6 +126,8 @@ class ROAccess {
     ROAccess(const ROAccess& copy) : env_{copy.env_} {}
 
     ROTxn start_ro_tx() { return ROTxn(env_); }
+
+    mdbx::env& operator*() { return env_; }
 
   protected:
     mdbx::env& env_;

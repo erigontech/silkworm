@@ -33,9 +33,14 @@ class SyncPipeline : public Stoppable {
     ~SyncPipeline() = default;
 
     Stage::Result forward(db::RWTxn&, Hash target_header);
-    Stage::Result unwind(db::RWTxn&);  // todo: insert 'BlockNum unwind_point' as parameter
+    Stage::Result unwind(db::RWTxn&, BlockNum unwind_point);
     Stage::Result prune(db::RWTxn&);
 
+    BlockNum head_header_number();
+    Hash head_header_hash();
+    std::optional<BlockNum> unwind_point();
+    std::optional<Hash> bad_block();
+    
     bool stop() override;
   private:
     silkworm::NodeSettings* node_settings_;
@@ -49,6 +54,9 @@ class SyncPipeline : public Stoppable {
     std::vector<const char*> stages_unwind_order_;
     std::atomic<size_t> current_stages_count_{0};
     std::atomic<size_t> current_stage_number_{0};
+
+    BlockNum head_header_number_{0};
+    Hash head_header_hash_;
 
     void load_stages();  // Fills the vector with stages
 

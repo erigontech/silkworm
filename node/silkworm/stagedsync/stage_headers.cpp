@@ -89,9 +89,7 @@ auto HeadersStage::forward(db::RWTxn& tx) -> Stage::Result {
             current_height_++;
 
             // process header and ommers at current height
-            auto processed = db::process_headers_at_height(
-                tx,
-                current_height_,  // may throw exception
+            auto processed = db::process_headers_at_height(tx, current_height_,  // may throw exception
                 [&header_persistence](BlockHeader& header) {
                     header_persistence.update(header);
                 });

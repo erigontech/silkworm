@@ -18,37 +18,38 @@ limitations under the License.
 #include <silkworm/common/as_range.hpp>
 #include <silkworm/db/access_layer.hpp>
 
-#include "sync_pipeline.hpp"
-
 namespace silkworm::stagedsync {
 
 ExecutionEngine::ExecutionEngine(NodeSettings& ns, const db::RWAccess& dba)
     : node_settings_{ns},
-      db_access_{dba} {
+      db_access_{dba},
+      tx_{db_access_.start_rw_tx()},
+      pipeline_{&ns},
+      canonical_cache_{kCacheSize}
+      //header_cache_{kCacheSize}
+{
 }
 
 void ExecutionEngine::insert_headers(const std::vector<BlockHeader>& headers) {
     SILK_TRACE << "ExecutionEngine: inserting " << headers.size() << " headers";
     if (headers.empty()) return;
 
-    db::RWTxn tx = db_access_.start_rw_tx();
-    as_range::for_each(headers, [&, this](const auto& header) { insert_header(tx, header); });
-    tx.commit();
+    as_range::for_each(headers, [&, this](const auto& header) { insert_header(tx_, header); });
 }
 
 void ExecutionEngine::insert_header(db::RWTxn& tx, const BlockHeader& header) {
     // if (!db::has_header(tx_, header.number, header.hash())) { todo: hash() is computationally expensive
     db::write_header(tx, header, true);
     //}
+
+    //header_cache_.put(header.hash(), header);
 }
 
 void ExecutionEngine::insert_bodies(const std::vector<Block>& bodies) {
     SILK_TRACE << "ExecutionEngine: inserting " << bodies.size() << " bodies";
     if (bodies.empty()) return;
 
-    db::RWTxn tx = db_access_.start_rw_tx();
-    as_range::for_each(bodies, [&, this](const auto& body) { insert_body(tx, body); });
-    tx.commit();
+    as_range::for_each(bodies, [&, this](const auto& body) { insert_body(tx_, body); });
 }
 
 void ExecutionEngine::insert_body(db::RWTxn& tx, const Block& block) {
@@ -60,16 +61,130 @@ void ExecutionEngine::insert_body(db::RWTxn& tx, const Block& block) {
     }
 }
 
-bool ExecutionEngine::verify_chain(Hash header_hash) {
-    db::RWTxn tx = db_access_.start_rw_tx();
+auto ExecutionEngine::verify_chain(Hash header_hash) -> VerificationResult {
+    // commit policy
+    bool cycle_in_one_tx = !is_first_sync;
+    std::unique_ptr<db::RWTxn> inner_tx{nullptr};
+    if (cycle_in_one_tx)
+        inner_tx = std::make_unique<db::RWTxn>(*tx_); // will defer commit to the tx
+    else
+        inner_tx = std::make_unique<db::RWTxn>(*db_access_);
 
-    SyncPipeline pipeline(&node_settings_);
-    Stage::Result forward_result = pipeline.forward(tx, header_hash);
+    // forward
+    Stage::Result forward_result = pipeline_.forward(*inner_tx, header_hash);
 
-    tx.commit(); // todo: commit to a shard!
+    // finish
+    tx_.commit_and_renew(); // todo(mike): commit to a shard!
 
-    bool verified = (forward_result == Stage::Result::kSuccess);
-    return verified;
+    switch (forward_result) {
+        case Stage::Result::kSuccess:
+            return ValidChain{pipeline_.head_header_number()};
+        case Stage::Result::kWrongFork:
+        case Stage::Result::kInvalidBlock:
+        case Stage::Result::kWrongStateRoot:
+            return InvalidChain{pipeline_.unwind_point().value(), pipeline_.bad_block()};
+        case Stage::Result::kStoppedByEnv:
+            return ValidationError{pipeline_.head_header_number()}; // todo(mike): is it ok?
+    }
+
+    throw StageError(forward_result);
+}
+
+bool ExecutionEngine::update_fork_choice(Hash header_hash) {
+    // commit policy
+    bool cycle_in_one_tx = !is_first_sync;
+    std::unique_ptr<db::RWTxn> inner_tx{nullptr};
+    if (cycle_in_one_tx)
+        inner_tx = std::make_unique<db::RWTxn>(*tx_); // will defer commit to the tx
+    else
+        inner_tx = std::make_unique<db::RWTxn>(*db_access_);
+
+    if (pipeline_.head_header_hash() != header_hash) { // todo(mike): it true in the PoW, not in the PoS
+        // find forking point on canonical
+        BlockNum forking_point = find_forking_point(*inner_tx, header_hash);
+
+        // run unwind
+        const auto unwind_result = pipeline_.unwind(*inner_tx, forking_point); // todo(mike): this will unwind to the unwind_point
+
+        success_or_throw(unwind_result);  // Must be successful: no recovery from bad unwinding
+    }
+
+    // todo(mike): percorrere a ritroso la canonical e inserire gli header in cache: canonical_cache_.put(header.number, header.hash());
+
+    is_first_sync = false;
+
+    // finish
+    tx_.commit_and_renew(); // todo: commit to a shard!
+
+    return true;
+}
+
+BlockNum ExecutionEngine::find_forking_point(db::RWTxn& tx, Hash header_hash) {
+    BlockNum forking_point{};
+
+    std::optional<BlockHeader> header = db::read_header(tx, header_hash);
+    if (!header) throw std::logic_error("find_forking_point precondition violation, header not found");
+
+    BlockNum height = header->number;
+    Hash parent_hash = header->parent_hash;
+
+    // Read canonical hash at height-1
+    auto prev_canon_hash = canonical_cache_.get_as_copy(height - 1);  // look in the cache first
+    if (!prev_canon_hash) {
+        prev_canon_hash = db::read_canonical_hash(tx, height - 1);  // then look in the db
+    }
+
+    // Most common case: forking point is the height of the parent header
+    if (prev_canon_hash == header->parent_hash) {
+        forking_point = height - 1;
+    }
+    // Going further back
+    else {
+        auto parent = db::read_header(tx, height - 1, parent_hash);
+        if (!parent) {
+            std::string error_message = "HeaderPersistence: could not find parent with hash " + to_hex(parent_hash) +
+                                        " and height " + std::to_string(height - 1) + " for header " + to_hex(header->hash());
+            log::Error("HeaderStage") << error_message;
+            throw std::logic_error(error_message);
+        }
+
+        auto ancestor_hash = parent->parent_hash;
+        auto ancestor_height = height - 2;
+
+        // look in the cache first
+        const Hash* cached_canon_hash;
+        while ((cached_canon_hash = canonical_cache_.get(ancestor_height)) && *cached_canon_hash != ancestor_hash) {
+            auto ancestor = db::read_header(tx, ancestor_height, ancestor_hash); // todo(mike): maybe use cache?
+            ancestor_hash = ancestor->parent_hash;
+            --ancestor_height;
+        }  // if this loop finds a prev_canon_hash the next loop will be executed, is this right?
+
+        // now look in the db
+        std::optional<Hash> db_canon_hash;
+        while ((db_canon_hash = read_canonical_hash(tx, ancestor_height)) && db_canon_hash != ancestor_hash) {
+            auto ancestor = db::read_header(tx, ancestor_height, ancestor_hash); // todo(mike): maybe use cache?
+            ancestor_hash = ancestor->parent_hash;
+            --ancestor_height;
+        }
+
+        // loop above terminates when prev_canon_hash == ancestor_hash, therefore ancestor_height is our forking point
+        forking_point = ancestor_height;
+    }
+
+    return forking_point;
+}
+
+auto ExecutionEngine::get_headers(Hash header_hash) -> std::optional<BlockHeader> {
+    //const BlockHeader* cached = header_cache_.get(header_hash);
+    //if (cached) {
+    //    return *cached;
+    //}
+    std::optional<BlockHeader> header = db::read_header(tx_, header_hash);
+    return header;
+}
+
+auto ExecutionEngine::get_bodies(Hash header_hash) -> std::optional<Block> {
+
 }
 
 /*

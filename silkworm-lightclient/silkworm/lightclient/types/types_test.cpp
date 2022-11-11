@@ -18,7 +18,6 @@
 
 #include <catch2/catch.hpp>
 
-#include <silkworm/common/log.hpp>
 #include <silkworm/common/util.hpp>
 #include <silkworm/lightclient/test/ssz.hpp>
 
@@ -139,6 +138,46 @@ TEST_CASE("BeaconBlockHeader SSZ") {
                                                       "FF000000000000000000EE00000000000000000000EE000000000000000000FF"
                                                       "FF000000000000000000EE00000000000000000000EE000000000000000000FF"
                                                       "FF000000000000000000EE00000000000000000000EE000000000000000000")
+              == DecodingResult::kInputTooShort);
+    }
+}
+
+TEST_CASE("SignedBeaconBlockHeader SSZ") {
+    SECTION("round-trip") {
+        SignedBeaconBlockHeader a{
+            std::make_unique<BeaconBlockHeader>(BeaconBlockHeader{
+                21,
+                120,
+                0xFF000000000000000000EE00000000000000000000EE000000000000000000FF_bytes32,
+                0xFF000000000000000000EE00000000000000000000EE000000000000000000FF_bytes32,
+                0xFF000000000000000000EE00000000000000000000EE000000000000000000FF_bytes32
+            }),
+            {}
+        };
+        Bytes b{};
+        ssz::encode(a, b);
+        CHECK(b == *from_hex(
+                       "1500000000000000"
+                       "7800000000000000"
+                       "FF000000000000000000EE00000000000000000000EE000000000000000000FF"
+                       "FF000000000000000000EE00000000000000000000EE000000000000000000FF"
+                       "FF000000000000000000EE00000000000000000000EE000000000000000000FF"
+                       "0000000000000000000000000000000000000000000000000000000000000000"
+                       "0000000000000000000000000000000000000000000000000000000000000000"
+                       "0000000000000000000000000000000000000000000000000000000000000000"));
+        CHECK(test::decode_success<SignedBeaconBlockHeader>(to_hex(b)) == a);
+    }
+    SECTION("decoding error") {
+        CHECK(test::decode_failure<SignedBeaconBlockHeader>("") == DecodingResult::kInputTooShort);
+        CHECK(test::decode_failure<SignedBeaconBlockHeader>("00") == DecodingResult::kInputTooShort);
+        CHECK(test::decode_failure<SignedBeaconBlockHeader>("1500000000000000"
+                                                            "7800000000000000"
+                                                            "FF000000000000000000EE00000000000000000000EE000000000000000000FF"
+                                                            "FF000000000000000000EE00000000000000000000EE000000000000000000FF"
+                                                            "FF000000000000000000EE00000000000000000000EE00000000000000000000"
+                                                            "0000000000000000000000000000000000000000000000000000000000000000"
+                                                            "0000000000000000000000000000000000000000000000000000000000000000"
+                                                            "00000000000000000000000000000000000000000000000000000000000000")
               == DecodingResult::kInputTooShort);
     }
 }

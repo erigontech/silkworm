@@ -17,18 +17,25 @@
 #include "snapshot.hpp"
 
 #include <tuple>
+#include <utility>
 #include <vector>
 
 #include <catch2/catch.hpp>
 
 #include <silkworm/common/directories.hpp>
 #include <silkworm/common/endian.hpp>
+#include <silkworm/common/log.hpp>
+#include <silkworm/test/log.hpp>
+#include <silkworm/test/snapshot_files.hpp>
 
 namespace silkworm {
 
 class Snapshot_ForTest : public Snapshot {
   public:
-    using Snapshot::Snapshot;
+    Snapshot_ForTest(std::filesystem::path path, BlockNum block_from, BlockNum block_to)
+        : Snapshot(std::move(path), block_from, block_to) {}
+    ~Snapshot_ForTest() override { close(); }
+
     void reopen_index() override {}
     void close_index() override {}
 };
@@ -48,6 +55,36 @@ TEST_CASE("Snapshot::Snapshot", "[silkworm][snapshot][snapshot]") {
     SECTION("invalid") {
         CHECK_THROWS_AS(Snapshot_ForTest(std::filesystem::path{}, 1'000, 999), std::logic_error);
     }
+}
+
+TEST_CASE("Snapshot::reopen_segment", "[silkworm][snapshot][snapshot]") {
+    test::SetLogVerbosityGuard guard{log::Level::kNone};
+    test::TemporarySnapshotFile tmp_snapshot_file{test::SnapshotHeader{}};
+    auto snapshot{std::make_unique<Snapshot_ForTest>(tmp_snapshot_file.path(), 0, 0)};
+    snapshot->reopen_segment();
+}
+
+TEST_CASE("Snapshot::for_each_item", "[silkworm][snapshot][snapshot]") {
+    test::SetLogVerbosityGuard guard{log::Level::kNone};
+    test::HelloWorldSnapshotFile hello_world_snapshot_file{};
+    Decompressor decoder{hello_world_snapshot_file.path()};
+    Snapshot_ForTest tmp_snapshot{hello_world_snapshot_file.path(), 1'000, 2'000};
+    tmp_snapshot.reopen_segment();
+    tmp_snapshot.for_each_item([&](const auto& word_item) {
+        CHECK(std::string{word_item.value.cbegin(), word_item.value.cend()} == "hello, world");
+        CHECK(word_item.position == 0);
+        CHECK(word_item.offset == 0);
+        return true;
+    });
+}
+
+TEST_CASE("Snapshot::close", "[silkworm][snapshot][snapshot]") {
+    test::SetLogVerbosityGuard guard{log::Level::kNone};
+    test::HelloWorldSnapshotFile hello_world_snapshot_file{};
+    Decompressor decoder{hello_world_snapshot_file.path()};
+    Snapshot_ForTest tmp_snapshot{hello_world_snapshot_file.path(), 1'000, 2'000};
+    tmp_snapshot.reopen_segment();
+    CHECK_NOTHROW(tmp_snapshot.close());
 }
 
 }  // namespace silkworm

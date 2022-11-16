@@ -40,7 +40,7 @@ void Snapshot::reopen_segment() {
     decoder_.open();
 }
 
-bool Snapshot::for_each_item(Snapshot::WordItemFunc fn) {
+bool Snapshot::for_each_item(const Snapshot::WordItemFunc& fn) {
     return decoder_.read_ahead([fn](Decompressor::Iterator it) -> bool {
         uint64_t word_count{0};
         WordItem item{};

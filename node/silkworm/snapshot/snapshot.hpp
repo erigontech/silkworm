@@ -32,6 +32,8 @@ namespace silkworm {
 
 class Snapshot {
   public:
+    static constexpr uint64_t kPageSize{4096};
+
     explicit Snapshot(std::filesystem::path path, BlockNum block_from, BlockNum block_to);
     virtual ~Snapshot() = default;
 
@@ -49,11 +51,11 @@ class Snapshot {
         Bytes value;
 
         WordItem() {
-            value.reserve(4096);  // TODO(canepat) avoid hard-coded magic numbers
+            value.reserve(kPageSize);
         }
     };
     using WordItemFunc = std::function<bool(WordItem&)>;
-    bool for_each_item(WordItemFunc fn);
+    bool for_each_item(const WordItemFunc& fn);
 
     void close();
 
@@ -71,6 +73,7 @@ class HeaderSnapshot : public Snapshot {
   public:
     explicit HeaderSnapshot(std::filesystem::path path, BlockNum block_from, BlockNum block_to)
         : Snapshot(std::move(path), block_from, block_to) {}
+    ~HeaderSnapshot() override { close(); }
 
     using HeaderWalker = std::function<bool(const BlockHeader* header)>;
     bool for_each_header(const HeaderWalker& walker);
@@ -89,6 +92,7 @@ class BodySnapshot : public Snapshot {
   public:
     explicit BodySnapshot(std::filesystem::path path, BlockNum block_from, BlockNum block_to)
         : Snapshot(std::move(path), block_from, block_to) {}
+    ~BodySnapshot() override { close(); }
 
     using BodyWalker = std::function<bool(BlockNum number, const db::detail::BlockBodyForStorage* body)>;
     bool for_each_body(const BodyWalker& walker);
@@ -107,6 +111,7 @@ class TransactionSnapshot : public Snapshot {
   public:
     explicit TransactionSnapshot(std::filesystem::path path, BlockNum block_from, BlockNum block_to)
         : Snapshot(std::move(path), block_from, block_to) {}
+    ~TransactionSnapshot() override { close(); }
 
     void reopen_index() override;
 

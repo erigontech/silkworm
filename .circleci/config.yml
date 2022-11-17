@@ -147,7 +147,7 @@ jobs:
       CLANG_COVERAGE: OFF
       SANITIZE: address
     docker:
-      - image: ethereum/cpp-build-env:17-clang-13
+      - image: ethereum/cpp-build-env:18-clang-13
     resource_class: xlarge
     steps:
       - checkout_with_submodules
@@ -164,7 +164,7 @@ jobs:
       CLANG_COVERAGE: ON
       SANITIZE: OFF
     docker:
-      - image: ethereum/cpp-build-env:17-clang-13
+      - image: ethereum/cpp-build-env:18-clang-13
     resource_class: xlarge
     steps:
       - checkout_with_submodules

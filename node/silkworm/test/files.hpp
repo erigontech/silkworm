@@ -18,6 +18,7 @@
 
 #include <filesystem>
 #include <fstream>
+#include <string>
 
 #include <silkworm/common/base.hpp>
 #include <silkworm/common/directories.hpp>
@@ -28,6 +29,8 @@ namespace silkworm::test {
 class TemporaryFile {
   public:
     explicit TemporaryFile() : path_{TemporaryDirectory::get_unique_temporary_path()}, stream_{path_} {}
+    explicit TemporaryFile(const std::string& filename)
+        : path_{TemporaryDirectory::get_os_temporary_path() / filename}, stream_{path_} {}
     ~TemporaryFile() { stream_.close(); }
 
     const std::filesystem::path& path() const noexcept { return path_; }

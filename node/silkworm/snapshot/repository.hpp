@@ -69,7 +69,7 @@ class SnapshotFile {
     [[nodiscard]] SnapshotType type() const { return type_; }
 
     [[nodiscard]] bool exists_torrent_file() const {
-        return std::filesystem::exists(path_.parent_path().append(kTorrentExtension));
+        return std::filesystem::exists(std::filesystem::path{path_ / kTorrentExtension});
     }
 
     [[nodiscard]] bool seedable() const {
@@ -94,7 +94,10 @@ class SnapshotFile {
 
 using SnapshotFileList = std::vector<SnapshotFile>;
 
-template <typename T>  // TODO(canepat) constraint T is derived from Snapshot
+template <typename T>
+concept ConcreteSnapshot = std::is_base_of<Snapshot, T>::value;
+
+template <ConcreteSnapshot T>
 using SnapshotsByPath = std::map<std::filesystem::path, std::unique_ptr<T>>;
 
 //! Read-only repository for all snapshot files.

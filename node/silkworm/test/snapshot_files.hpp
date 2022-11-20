@@ -114,13 +114,20 @@ struct SnapshotBody {
 //! Temporary snapshot file
 class TemporarySnapshotFile {
   public:
-    explicit TemporarySnapshotFile(const SnapshotHeader& header, const SnapshotBody& body) {
+    explicit TemporarySnapshotFile(const SnapshotHeader& header, const SnapshotBody& body = {}) {
         silkworm::Bytes data{};
         header.encode(data);
         body.encode(data);
         file_.write(data);
     }
-    explicit TemporarySnapshotFile(const SnapshotHeader& header) : TemporarySnapshotFile(header, {}) {}
+    TemporarySnapshotFile(const std::string& filename, const SnapshotHeader& header, const SnapshotBody& body = {})
+        : file_(filename) {
+        silkworm::Bytes data{};
+        header.encode(data);
+        body.encode(data);
+        file_.write(data);
+    }
+    explicit TemporarySnapshotFile(const std::string& filename) : TemporarySnapshotFile(filename, {}, {}) {}
 
     const std::filesystem::path& path() const { return file_.path(); }
 

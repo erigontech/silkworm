@@ -16,27 +16,65 @@
 
 #pragma once
 
+#include <mutex>
+#include <vector>
+
+#include <evmc/evmc.h>
+
+#include <silkworm/common/base.hpp>
 #include <silkworm/stagedsync/stage.hpp>
-#include <silkworm/stagedsync/stage_senders/recovery_farm.hpp>
 
 namespace silkworm::stagedsync {
 
+//! \brief A recovery package
+struct RecoveryPackage {
+    BlockNum block_num{0};       // Block number this package refers to
+    ethash::hash256 tx_hash{};   // Keccak hash of transaction's rlp representation
+    bool odd_y_parity{false};    // Whether y parity is odd (https://eips.ethereum.org/EIPS/eip-155)
+    uint8_t tx_signature[64]{};  // Signature of transaction
+    evmc::address tx_from;       // Recovered address
+};
+
 class Senders final : public Stage {
   public:
-    explicit Senders(NodeSettings* node_settings, SyncContext* sync_context)
-        : Stage(sync_context, db::stages::kSendersKey, node_settings){};
+    explicit Senders(NodeSettings* node_settings, SyncContext* sync_context);
     ~Senders() override = default;
 
     Stage::Result forward(db::RWTxn& txn) final;
     Stage::Result unwind(db::RWTxn& txn) final;
     Stage::Result prune(db::RWTxn& txn) final;
     std::vector<std::string> get_log_progress() final;
-    bool stop() final;
 
   private:
-    std::unique_ptr<recovery::RecoveryFarm> farm_{nullptr};
+    Stage::Result parallel_recover(db::RWTxn& txn);
 
-    // Logging
+    Stage::Result read_canonical_headers(db::ROTxn& txn, BlockNum from, BlockNum to) noexcept;
+    Stage::Result read_bodies(db::ROTxn& txn, BlockNum from, BlockNum to, BlockNum& reached_block_num);
+
+    Stage::Result transform_and_fill_batch(BlockNum block_num, std::vector<Transaction>&& transactions);
+
+    //!
+    Stage::Result store_senders(db::RWTxn& txn, BlockNum from, const std::vector<RecoveryPackage>& recovery_batch);
+
+    //!
+    void increment_phase();
+    void increment_total_processed_blocks();
+    void increment_total_collected_transactions(std::size_t delta);
+
+    //!
+    std::vector<evmc::bytes32> block_hashes_;
+
+    //!
+    std::vector<RecoveryPackage> recovery_batch_;
+
+    //! ETL collector writing recovered senders in bulk
+    etl::Collector collector_;
+
+    // Stats
+    std::mutex mutex_{};
+    uint16_t current_phase_{0};
+    std::size_t total_processed_blocks_{0};
+    std::size_t total_collected_transactions_{0};
     std::string current_key_{};
 };
 

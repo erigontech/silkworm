@@ -1620,6 +1620,16 @@ void do_reset_to_download(db::EnvConfig& config) {
     txn.commit(/*renew=*/true);
     log::Info(db::stages::kExecutionKey, {"new height", "0", "in", StopWatch::format(sw.lap().second)});
 
+    // Void Senders stage
+    log::Info(db::stages::kSendersKey, {"table", db::table::kSenders.name}) << " truncating ...";
+    source.bind(*txn, db::table::kSenders);
+    txn->clear_map(source.map());
+    db::stages::write_stage_progress(*txn, db::stages::kSendersKey, 0);
+    db::stages::write_stage_prune_progress(*txn, db::stages::kSendersKey, 0);
+    txn.commit(/*renew=*/true);
+    log::Info(db::stages::kSendersKey, {"new height", "0", "in", StopWatch::format(sw.lap().second)});
+    if (SignalHandler::signalled()) throw std::runtime_error("Aborted");
+
     auto [tp, _]{sw.stop()};
     auto duration{sw.since_start(tp)};
     log::Info("All done", {"in", StopWatch::format(duration)});

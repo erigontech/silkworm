@@ -16,27 +16,55 @@
 
 #include "stage_senders.hpp"
 
+#include <algorithm>
+#include <thread>
+
+#include <gsl/util>
+#include <silkpre/ecdsa.h>
+#include <silkpre/secp256k1n.hpp>
+
+#include <silkworm/common/assert.hpp>
 #include <silkworm/common/stopwatch.hpp>
+#include <silkworm/db/access_layer.hpp>
+
+template <typename InputIt, typename UnaryFunction>
+void parallel_for_each(InputIt first, InputIt last, UnaryFunction f) {
+    const auto range = std::distance(first, last);
+
+    const auto num_threads = std::thread::hardware_concurrency();
+    const long tasks_for_thread = range / num_threads;
+    const long tasks_for_main_thread = tasks_for_thread + range % num_threads;
+
+    const std::size_t num_worker_threads = num_threads - 1;
+    std::vector<std::thread> worker_threads{num_worker_threads};
+    InputIt start{first};
+    for (std::size_t i{0}; i < num_worker_threads; ++i) {
+        worker_threads[i] = std::thread(std::for_each<InputIt, UnaryFunction>, start, start + tasks_for_thread, f);
+        start += tasks_for_thread;
+    }
+    std::for_each(start, start + tasks_for_main_thread, f);
+
+    for (auto& worker_thread : worker_threads) {
+        if (worker_thread.joinable()) worker_thread.join();
+    }
+}
 
 namespace silkworm::stagedsync {
 
-Stage::Result Senders::forward(db::RWTxn& txn) {
-    if (!node_settings_->chain_config.has_value()) {
-        return Stage::Result::kUnknownChainId;
-    }
+Senders::Senders(NodeSettings* node_settings, SyncContext* sync_context)
+    : Stage(sync_context, db::stages::kSendersKey, node_settings), collector_{node_settings} {}
 
+Stage::Result Senders::forward(db::RWTxn& txn) {
     std::unique_lock log_lock(sl_mutex_);
     operation_ = OperationType::Forward;
-    farm_ = std::make_unique<recovery::RecoveryFarm>(txn, node_settings_, log_prefix_);
     log_lock.unlock();
 
-    const auto res{farm_->recover()};
+    const auto res{parallel_recover(txn)};
     if (res == Stage::Result::kSuccess) {
         txn.commit();
     }
 
     log_lock.lock();
-    farm_.reset();
     operation_ = OperationType::None;
     log_lock.unlock();
 
@@ -222,24 +250,352 @@ Stage::Result Senders::prune(db::RWTxn& txn) {
     return ret;
 }
 
-bool Senders::stop() {
-    if (farm_) {
-        (void)farm_->stop();
+Stage::Result Senders::parallel_recover(db::RWTxn& txn) {
+    Stage::Result ret{Stage::Result::kSuccess};
+    try {
+        // Check stage boundaries using previous execution of current stage and current execution of previous stage
+        auto previous_progress{db::stages::read_stage_progress(*txn, db::stages::kSendersKey)};
+        auto block_hashes_progress{db::stages::read_stage_progress(*txn, db::stages::kBlockHashesKey)};
+        auto block_bodies_progress{db::stages::read_stage_progress(*txn, db::stages::kBlockBodiesKey)};
+        auto target_progress{std::min(block_hashes_progress, block_bodies_progress)};
+
+        if (previous_progress == target_progress) {
+            // Nothing to process
+            return ret;
+        } else if (previous_progress > target_progress) {
+            // Something bad had happened. Maybe we need to unwind ?
+            throw StageError(Stage::Result::kInvalidProgress, "Previous progress " + std::to_string(previous_progress) +
+                                                                  " > target progress " + std::to_string(target_progress));
+        }
+
+        BlockNum expected_block_number{previous_progress + 1u};
+        recovery_batch_.clear();
+
+        // Load canonical headers from db
+        increment_phase();
+        success_or_throw(read_canonical_headers(txn, expected_block_number, target_progress));
+
+        // Load block transactions from db
+        increment_phase();
+        BlockNum reached_block_num{0};
+        success_or_throw(read_bodies(txn, expected_block_number, target_progress, reached_block_num));
+
+        if (is_stopping()) throw StageError(Stage::Result::kAborted);
+
+        // Launch parallel sender recovery
+        increment_phase();
+        secp256k1_context* context = secp256k1_context_create(SILKPRE_SECP256K1_CONTEXT_FLAGS);
+        if (!context) throw std::runtime_error("Could not create elliptic curve context");
+        auto _ = gsl::finally([&]() { if (context) std::free(context); });
+
+        log::Info(log_prefix_, {"recovery", "parallel", "size", std::to_string(recovery_batch_.size())});
+
+        // TODO(canepat) replace w/ std::for_each(std::execution::par, ) when Clang will support it
+        parallel_for_each(recovery_batch_.begin(), recovery_batch_.end(), [&](auto& package) {
+            const bool ok = silkpre_recover_address(package.tx_from.bytes, package.tx_hash.bytes, package.tx_signature, package.odd_y_parity, context);
+            if (!ok) {
+                throw std::runtime_error("Unable to recover from address in block " + std::to_string(package.block_num));
+            }
+        });
+
+        // Store transaction senders into db
+        success_or_throw(store_senders(txn, expected_block_number, recovery_batch_));
+
+        // Update stage progress with last reached block number
+        db::stages::write_stage_progress(*txn, db::stages::kSendersKey, reached_block_num);
+    } catch (const StageError& ex) {
+        log::Error(log_prefix_,
+                   {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
+        ret = static_cast<Stage::Result>(ex.err());
+    } catch (const mdbx::exception& ex) {
+        log::Error(log_prefix_,
+                   {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
+        ret = Stage::Result::kDbError;
+    } catch (const std::exception& ex) {
+        log::Error(log_prefix_,
+                   {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
+        ret = Stage::Result::kUnexpectedError;
+    } catch (...) {
+        log::Error(log_prefix_,
+                   {"function", std::string(__FUNCTION__), "exception", "unexpected and undefined"});
+        ret = Stage::Result::kUnexpectedError;
     }
-    return Stage::stop();
+
+    return ret;
+}
+
+Stage::Result Senders::read_canonical_headers(db::ROTxn& txn, BlockNum from, BlockNum to) noexcept {
+    std::unique_ptr<StopWatch> sw;
+    if (log::test_verbosity(log::Level::kTrace)) {
+        sw = std::make_unique<StopWatch>(/*auto_start=*/true);
+    }
+
+    block_hashes_.clear();
+
+    uint64_t headers_count{to - from};
+    block_hashes_.reserve(headers_count);
+    if (headers_count > 16) {
+        log::Info(log_prefix_, {"collecting", "headers", "from", std::to_string(from), "to", std::to_string(to)});
+    }
+
+    // Locate starting canonical header selected
+    BlockNum reached_block_num{0};
+    BlockNum expected_block_num{from};
+
+    // Enclose in try catch block as db cursor reads may fail
+    try {
+        auto hashes_cursor{db::open_cursor(*txn, db::table::kCanonicalHashes)};
+        auto header_key{db::block_key(expected_block_num)};
+        // Read all headers up to upper bound (included)
+        auto header_data{hashes_cursor.find(db::to_slice(header_key), false)};
+        while (header_data.done) {
+            reached_block_num = endian::load_big_u64(static_cast<uint8_t*>(header_data.key.data()));
+            SILKWORM_ASSERT(reached_block_num == expected_block_num);
+            SILKWORM_ASSERT(header_data.value.length() == kHashLength);
+
+            // We have a canonical header hash in right sequence
+            block_hashes_.emplace_back(to_bytes32(db::from_slice(header_data.value)));
+            if (reached_block_num == to) {
+                break;
+            }
+            expected_block_num++;
+            header_data = hashes_cursor.to_next(false);
+
+            // Do we need to abort ?
+            if ((expected_block_num % 1024 == 0) && is_stopping()) {
+                return Stage::Result::kAborted;
+            }
+        }
+
+        // If we've not reached block_to something is wrong
+        if (reached_block_num != to) {
+            log::Error(log_prefix_, {"expected block", std::to_string(to), "got", std::to_string(reached_block_num)});
+            return Stage::Result::kBadChainSequence;
+        }
+
+        if (sw) {
+            const auto [_, duration]{sw->stop()};
+            log::Trace(log_prefix_,
+                       {"collected block hashes", std::to_string(block_hashes_.size()), "in", StopWatch::format(duration)});
+        }
+        return is_stopping() ? Stage::Result::kAborted : Stage::Result::kSuccess;
+
+    } catch (const mdbx::exception& ex) {
+        log::Error(log_prefix_,
+                   {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
+        return Stage::Result::kDbError;
+    } catch (const std::exception& ex) {
+        log::Error(log_prefix_,
+                   {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
+        return Stage::Result::kUnexpectedError;
+    } catch (...) {
+        log::Error(log_prefix_,
+                   {"function", std::string(__FUNCTION__), "exception", "undefined"});
+        return Stage::Result::kUnexpectedError;
+    }
+}
+
+Stage::Result Senders::read_bodies(db::ROTxn& txn, BlockNum from, BlockNum to, BlockNum& reached_block_num) {
+    SILKWORM_ASSERT(!block_hashes_.empty());
+
+    log::Trace(log_prefix_, {"op", "read bodies", "from", std::to_string(from), "to", std::to_string(to)});
+
+    // transactions_.clear();
+    // transactions_.reserve((to - from) * 10);  // TODO(canepat) replace w/ upper bound for number of txs per block
+
+    auto bodies_cursor{db::open_cursor(*txn, db::table::kBlockBodies)};
+    auto transactions_cursor{db::open_cursor(*txn, db::table::kBlockTransactions)};
+
+    // Set to first block and read all in sequence
+    BlockNum expected_block_number{from};
+    auto block_hash_it{block_hashes_.begin()};
+    auto bodies_initial_key{db::block_key(from, block_hash_it->bytes)};
+    auto body_data{bodies_cursor.find(db::to_slice(bodies_initial_key), false)};
+    while (body_data.done) {
+        auto body_data_key_view{db::from_slice(body_data.key)};
+        reached_block_num = endian::load_big_u64(body_data_key_view.data());
+        if (reached_block_num < expected_block_number) {
+            // The same block height has been recorded but is not canonical, move to next and continue
+            body_data = bodies_cursor.to_next(false);
+            continue;
+        } else if (reached_block_num > expected_block_number) {
+            // We exceeded the expected block hence 1) the db misses a block or 2) blocks are not stored sequentially
+            throw StageError(Stage::Result::kBadChainSequence,
+                             "Expected block " + std::to_string(expected_block_number) +
+                                 " got " + std::to_string(reached_block_num));
+        }
+
+        if (memcmp(&body_data_key_view[8], block_hash_it->bytes, sizeof(kHashLength)) != 0) {
+            // We stumbled into a non-canonical block (not matching header), move to next and continue
+            body_data = bodies_cursor.to_next(false);
+            continue;
+        }
+
+        // Every 1024 blocks check if the SignalHandler has been triggered
+        if ((reached_block_num % 1024 == 0) && is_stopping()) {
+            throw StageError(Stage::Result::kAborted);
+        }
+
+        // Get the body and its transactions
+        auto body_rlp{db::from_slice(body_data.value)};
+        auto block_body{db::detail::decode_stored_block_body(body_rlp)};
+        if (block_body.txn_count) {
+            // headers_it->txn_count = block_body.txn_count;
+            std::vector<Transaction> transactions;
+            db::read_transactions(transactions_cursor, block_body.base_txn_id, block_body.txn_count, transactions);
+            success_or_throw(transform_and_fill_batch(reached_block_num, std::move(transactions)));
+        }
+
+        // After processing move to next block number and header
+        if (++block_hash_it == block_hashes_.end()) {
+            // We'd go beyond collected canonical headers
+            break;
+        }
+        expected_block_number++;
+        body_data = bodies_cursor.to_next(false);
+    }
+
+    log::Trace(log_prefix_, {"op", "read bodies", "reached_block_num", std::to_string(reached_block_num)});
+
+    return is_stopping() ? Stage::Result::kAborted : Stage::Result::kSuccess;
+}
+
+Stage::Result Senders::transform_and_fill_batch(BlockNum block_num, std::vector<Transaction>&& transactions) {
+    if (is_stopping()) {
+        return Stage::Result::kAborted;
+    }
+
+    const evmc_revision rev{node_settings_->chain_config->revision(block_num)};
+    const bool has_homestead{rev >= EVMC_HOMESTEAD};
+    const bool has_spurious_dragon{rev >= EVMC_SPURIOUS_DRAGON};
+    const bool has_berlin{rev >= EVMC_BERLIN};
+    const bool has_london{rev >= EVMC_LONDON};
+
+    uint32_t tx_id{0};
+    for (const auto& transaction : transactions) {
+        switch (transaction.type) {
+            case Transaction::Type::kLegacy:
+                break;
+            case Transaction::Type::kEip2930:
+                if (!has_berlin) {
+                    log::Error(log_prefix_) << "Transaction type " << magic_enum::enum_name<Transaction::Type>(transaction.type)
+                                            << " for transaction #" << tx_id << " in block #" << block_num << " before Berlin";
+                    return Stage::Result::kInvalidTransaction;
+                }
+                break;
+            case Transaction::Type::kEip1559:
+                if (!has_london) {
+                    log::Error(log_prefix_) << "Transaction type " << magic_enum::enum_name<Transaction::Type>(transaction.type)
+                                            << " for transaction #" << tx_id << " in block #" << block_num << " before London";
+                    return Stage::Result::kInvalidTransaction;
+                }
+                break;
+        }
+
+        if (!silkpre::is_valid_signature(transaction.r, transaction.s, has_homestead)) {
+            log::Error(log_prefix_) << "Got invalid signature for transaction #" << tx_id << " in block #" << block_num;
+            return Stage::Result::kInvalidTransaction;
+        }
+
+        if (transaction.chain_id.has_value()) {
+            if (!has_spurious_dragon) {
+                log::Error(log_prefix_) << "EIP-155 signature for transaction #" << tx_id << " in block #" << block_num
+                                        << " before Spurious Dragon";
+                return Stage::Result::kInvalidTransaction;
+            } else if (transaction.chain_id.value() != node_settings_->chain_config->chain_id) {
+                log::Error(log_prefix_) << "EIP-155 invalid signature for transaction #" << tx_id << " in block #" << block_num;
+                return Stage::Result::kInvalidTransaction;
+            }
+        }
+
+        Bytes rlp{};
+        rlp::encode(rlp, transaction, /*for_signing=*/true, /*wrap_eip2718_into_string=*/false);
+
+        auto tx_hash{keccak256(rlp)};
+        recovery_batch_.push_back(RecoveryPackage{block_num, tx_hash, transaction.odd_y_parity});
+        intx::be::unsafe::store(recovery_batch_.back().tx_signature, transaction.r);
+        intx::be::unsafe::store(recovery_batch_.back().tx_signature + kHashLength, transaction.s);
+
+        ++tx_id;
+    }
+    increment_total_processed_blocks();
+    increment_total_collected_transactions(recovery_batch_.size());
+
+    return is_stopping() ? Stage::Result::kAborted : Stage::Result::kSuccess;
+}
+
+Stage::Result Senders::store_senders(db::RWTxn& txn, BlockNum from, const std::vector<RecoveryPackage>& recovery_batch) {
+    collector_.clear();
+
+    BlockNum block_num{0};
+    Bytes etl_key;
+    Bytes etl_data;
+    for (const auto& package : recovery_batch) {
+        if (package.block_num != block_num) {
+            if (!etl_key.empty()) {
+                collector_.collect({etl_key, etl_data});
+                etl_key.clear();
+                etl_data.clear();
+            }
+            block_num = package.block_num;
+            etl_key = db::block_key(block_num, block_hashes_.at(block_num - from).bytes);
+            etl_data.clear();
+        }
+        etl_data.append(package.tx_from.bytes, sizeof(evmc::address));
+    }
+    if (!etl_key.empty()) {
+        collector_.collect({etl_key, etl_data});
+        etl_key.clear();
+        etl_data.clear();
+    }
+
+    if (!collector_.empty()) {
+        // Prepare target table
+        auto senders_cursor{db::open_cursor(*txn, db::table::kSenders)};
+        log::Trace(log_prefix_, {"load ETL data", human_size(collector_.bytes_size())});
+        collector_.load(senders_cursor, nullptr, MDBX_put_flags_t::MDBX_APPEND);
+    }
+
+    return is_stopping() ? Stage::Result::kAborted : Stage::Result::kSuccess;
 }
 
 std::vector<std::string> Senders::get_log_progress() {
+    std::unique_lock lock{mutex_};
     switch (operation_) {
-        case OperationType::Forward:
-            if (farm_) {
-                return farm_->get_log_progress();
-            } else {
-                return {};
+        case OperationType::Forward: {
+            switch (current_phase_) {
+                case 1:
+                    return {"phase", std::to_string(current_phase_) + "/3", "block hashes", std::to_string(block_hashes_.size())};
+                case 2:
+                    return {"phase", std::to_string(current_phase_) + "/3",
+                            "block hashes", std::to_string(block_hashes_.size()),
+                            "current", std::to_string(total_processed_blocks_),
+                            "transactions", std::to_string(total_collected_transactions_)};
+                case 3:
+                    return {"phase", std::to_string(current_phase_) + "/3", "key", collector_.get_load_key()};
+                default:
+                    break;
             }
+            return {};
+        }
         default:
             return {"key", current_key_};
     }
+}
+
+void Senders::increment_phase() {
+    std::unique_lock lock{mutex_};
+    current_phase_++;
+}
+
+void Senders::increment_total_processed_blocks() {
+    std::unique_lock lock{mutex_};
+    total_processed_blocks_++;
+}
+
+void Senders::increment_total_collected_transactions(std::size_t delta) {
+    std::unique_lock lock{mutex_};
+    total_collected_transactions_ += delta;
 }
 
 }  // namespace silkworm::stagedsync

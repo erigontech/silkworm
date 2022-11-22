@@ -52,7 +52,7 @@ namespace silkworm::stagedsync {
 
 Senders::Senders(NodeSettings* node_settings, SyncContext* sync_context)
     : Stage(sync_context, db::stages::kSendersKey, node_settings),
-      max_batch_size_{node_settings->batch_size / std::thread::hardware_concurrency() / sizeof(RecoveryPackage)},
+      max_batch_size_{node_settings->batch_size / std::thread::hardware_concurrency() / sizeof(AddressRecovery)},
       collector_{node_settings} {
     batch_.reserve(max_batch_size_ + max_batch_size_ / 10);
 }
@@ -498,7 +498,7 @@ Stage::Result Senders::add_to_batch(BlockNum block_num, std::vector<Transaction>
         rlp::encode(rlp, transaction, /*for_signing=*/true, /*wrap_eip2718_into_string=*/false);
 
         auto tx_hash{keccak256(rlp)};
-        batch_.push_back(RecoveryPackage{block_num, tx_hash, transaction.odd_y_parity});
+        batch_.push_back(AddressRecovery{block_num, tx_hash, transaction.odd_y_parity});
         intx::be::unsafe::store(batch_.back().tx_signature, transaction.r);
         intx::be::unsafe::store(batch_.back().tx_signature + kHashLength, transaction.s);
 

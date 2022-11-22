@@ -27,13 +27,13 @@
 
 namespace silkworm::stagedsync {
 
-//! \brief A recovery package
-struct RecoveryPackage {  // TODO(canepat) rename AddressRecovery
-    BlockNum block_num{0};       // Block number this package refers to
-    ethash::hash256 tx_hash{};   // Keccak hash of transaction's rlp representation
+//! \brief The information to compute the sender address from transaction signature
+struct AddressRecovery {
+    BlockNum block_num{0};       // Number of block containing the transaction
+    ethash::hash256 tx_hash{};   // Keccak hash of transaction's RLP representation
     bool odd_y_parity{false};    // Whether y parity is odd (https://eips.ethereum.org/EIPS/eip-155)
     uint8_t tx_signature[64]{};  // Signature of transaction
-    evmc::address tx_from;       // Recovered address
+    evmc::address tx_from;       // Recovered sender address
 };
 
 class Senders final : public Stage {
@@ -50,31 +50,23 @@ class Senders final : public Stage {
     Stage::Result parallel_recover(db::RWTxn& txn);
 
     Stage::Result read_canonical_headers(db::ROTxn& txn, BlockNum from, BlockNum to) noexcept;
-
     Stage::Result add_to_batch(BlockNum block_num, std::vector<Transaction>&& transactions);
-
-    //!
     void recover_batch(secp256k1_context* context, BlockNum from);
-
-    //!
     void collect_senders(BlockNum from);
-
-    //!
     void store_senders(db::RWTxn& txn);
 
-    //!
     void increment_phase();
     void increment_total_processed_blocks();
     void increment_total_collected_transactions(std::size_t delta);
 
-    //!
+    //! The canonical hashes of the current block range
     std::vector<evmc::bytes32> canonical_hashes_;
 
-    //! The size of recovery batches.
+    //! The size of recovery batches
     std::size_t max_batch_size_;
 
-    //!
-    std::vector<RecoveryPackage> batch_;
+    //! The current recovery batch being created
+    std::vector<AddressRecovery> batch_;
 
     //! ETL collector writing recovered senders in bulk
     etl::Collector collector_;

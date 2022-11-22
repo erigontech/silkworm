@@ -20,6 +20,7 @@
 #include <vector>
 
 #include <evmc/evmc.h>
+#include <silkpre/ecdsa.h>
 
 #include <silkworm/common/base.hpp>
 #include <silkworm/stagedsync/stage.hpp>
@@ -27,7 +28,7 @@
 namespace silkworm::stagedsync {
 
 //! \brief A recovery package
-struct RecoveryPackage {
+struct RecoveryPackage {  // TODO(canepat) rename AddressRecovery
     BlockNum block_num{0};       // Block number this package refers to
     ethash::hash256 tx_hash{};   // Keccak hash of transaction's rlp representation
     bool odd_y_parity{false};    // Whether y parity is odd (https://eips.ethereum.org/EIPS/eip-155)
@@ -49,12 +50,17 @@ class Senders final : public Stage {
     Stage::Result parallel_recover(db::RWTxn& txn);
 
     Stage::Result read_canonical_headers(db::ROTxn& txn, BlockNum from, BlockNum to) noexcept;
-    Stage::Result read_bodies(db::ROTxn& txn, BlockNum from, BlockNum to, BlockNum& reached_block_num);
 
-    Stage::Result transform_and_fill_batch(BlockNum block_num, std::vector<Transaction>&& transactions);
+    Stage::Result add_to_batch(BlockNum block_num, std::vector<Transaction>&& transactions);
 
     //!
-    Stage::Result store_senders(db::RWTxn& txn, BlockNum from, const std::vector<RecoveryPackage>& recovery_batch);
+    void recover_batch(secp256k1_context* context, BlockNum from);
+
+    //!
+    void collect_senders(BlockNum from);
+
+    //!
+    void store_senders(db::RWTxn& txn);
 
     //!
     void increment_phase();
@@ -62,10 +68,13 @@ class Senders final : public Stage {
     void increment_total_collected_transactions(std::size_t delta);
 
     //!
-    std::vector<evmc::bytes32> block_hashes_;
+    std::vector<evmc::bytes32> canonical_hashes_;
+
+    //! The size of recovery batches.
+    std::size_t max_batch_size_;
 
     //!
-    std::vector<RecoveryPackage> recovery_batch_;
+    std::vector<RecoveryPackage> batch_;
 
     //! ETL collector writing recovered senders in bulk
     etl::Collector collector_;

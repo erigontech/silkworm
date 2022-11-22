@@ -20,7 +20,6 @@
 #include <thread>
 
 #include <gsl/util>
-#include <silkpre/ecdsa.h>
 #include <silkpre/secp256k1n.hpp>
 
 #include <silkworm/common/assert.hpp>
@@ -52,7 +51,11 @@ void parallel_for_each(InputIt first, InputIt last, UnaryFunction f) {
 namespace silkworm::stagedsync {
 
 Senders::Senders(NodeSettings* node_settings, SyncContext* sync_context)
-    : Stage(sync_context, db::stages::kSendersKey, node_settings), collector_{node_settings} {}
+    : Stage(sync_context, db::stages::kSendersKey, node_settings),
+      max_batch_size_{node_settings->batch_size / std::thread::hardware_concurrency() / sizeof(RecoveryPackage)},
+      collector_{node_settings} {
+    batch_.reserve(max_batch_size_ + max_batch_size_ / 10);
+}
 
 Stage::Result Senders::forward(db::RWTxn& txn) {
     std::unique_lock log_lock(sl_mutex_);
@@ -268,38 +271,86 @@ Stage::Result Senders::parallel_recover(db::RWTxn& txn) {
                                                                   " > target progress " + std::to_string(target_progress));
         }
 
-        BlockNum expected_block_number{previous_progress + 1u};
-        recovery_batch_.clear();
-
-        // Load canonical headers from db
-        increment_phase();
-        success_or_throw(read_canonical_headers(txn, expected_block_number, target_progress));
-
-        // Load block transactions from db
-        increment_phase();
-        BlockNum reached_block_num{0};
-        success_or_throw(read_bodies(txn, expected_block_number, target_progress, reached_block_num));
-
-        if (is_stopping()) throw StageError(Stage::Result::kAborted);
-
-        // Launch parallel sender recovery
-        increment_phase();
         secp256k1_context* context = secp256k1_context_create(SILKPRE_SECP256K1_CONTEXT_FLAGS);
         if (!context) throw std::runtime_error("Could not create elliptic curve context");
         auto _ = gsl::finally([&]() { if (context) std::free(context); });
 
-        log::Info(log_prefix_, {"recovery", "parallel", "size", std::to_string(recovery_batch_.size())});
+        BlockNum from{previous_progress + 1u};
 
-        // TODO(canepat) replace w/ std::for_each(std::execution::par, ) when Clang will support it
-        parallel_for_each(recovery_batch_.begin(), recovery_batch_.end(), [&](auto& package) {
-            const bool ok = silkpre_recover_address(package.tx_from.bytes, package.tx_hash.bytes, package.tx_signature, package.odd_y_parity, context);
-            if (!ok) {
-                throw std::runtime_error("Unable to recover from address in block " + std::to_string(package.block_num));
+        // Load canonical headers from db
+        increment_phase();
+        success_or_throw(read_canonical_headers(txn, from, target_progress));
+
+        // Load block transactions from db and recover tx senders in batches
+        increment_phase();
+        BlockNum reached_block_num{0};
+
+        log::Trace(log_prefix_, {"op", "read bodies", "from", std::to_string(from), "to", std::to_string(target_progress)});
+
+        auto bodies_cursor{db::open_cursor(*txn, db::table::kBlockBodies)};
+        auto transactions_cursor{db::open_cursor(*txn, db::table::kBlockTransactions)};
+
+        // Set to first block and read all in sequence
+        BlockNum expected_block_num{from};
+        auto block_hash_it{canonical_hashes_.begin()};
+        auto bodies_initial_key{db::block_key(from, block_hash_it->bytes)};
+        auto body_data{bodies_cursor.find(db::to_slice(bodies_initial_key), false)};
+        while (body_data.done) {
+            auto body_data_key_view{db::from_slice(body_data.key)};
+            reached_block_num = endian::load_big_u64(body_data_key_view.data());
+            if (reached_block_num < expected_block_num) {
+                // The same block height has been recorded but is not canonical, move to next and continue
+                body_data = bodies_cursor.to_next(false);
+                continue;
+            } else if (reached_block_num > expected_block_num) {
+                // We exceeded the expected block hence 1) the db misses a block or 2) blocks are not stored sequentially
+                throw StageError(Stage::Result::kBadChainSequence,
+                                 "Expected block " + std::to_string(expected_block_num) +
+                                     " got " + std::to_string(reached_block_num));
             }
-        });
 
-        // Store transaction senders into db
-        success_or_throw(store_senders(txn, expected_block_number, recovery_batch_));
+            if (memcmp(&body_data_key_view[8], block_hash_it->bytes, sizeof(kHashLength)) != 0) {
+                // We stumbled into a non-canonical block (not matching header), move to next and continue
+                body_data = bodies_cursor.to_next(false);
+                continue;
+            }
+
+            // Every 1024 blocks check if the SignalHandler has been triggered
+            if ((reached_block_num % 1024 == 0) && is_stopping()) {
+                throw StageError(Stage::Result::kAborted);
+            }
+
+            // Get the body and its transactions
+            auto body_rlp{db::from_slice(body_data.value)};
+            auto block_body{db::detail::decode_stored_block_body(body_rlp)};
+            if (block_body.txn_count) {
+                std::vector<Transaction> transactions;
+                db::read_transactions(transactions_cursor, block_body.base_txn_id, block_body.txn_count, transactions);
+                success_or_throw(add_to_batch(reached_block_num, std::move(transactions)));
+
+                if (batch_.size() >= max_batch_size_) {
+                    increment_total_collected_transactions(batch_.size());
+                    recover_batch(context, from);
+                }
+            }
+
+            // After processing move to next block number and header
+            if (++block_hash_it == canonical_hashes_.end()) {
+                // We'd go beyond collected canonical headers
+                break;
+            }
+            expected_block_num++;
+            body_data = bodies_cursor.to_next(false);
+        }
+
+        if (!batch_.empty()) {
+            recover_batch(context, from);
+        }
+
+        // Store all recovered senders into db
+        store_senders(txn);
+
+        log::Trace(log_prefix_, {"op", "read bodies", "reached_block_num", std::to_string(reached_block_num)});
 
         // Update stage progress with last reached block number
         db::stages::write_stage_progress(*txn, db::stages::kSendersKey, reached_block_num);
@@ -330,10 +381,10 @@ Stage::Result Senders::read_canonical_headers(db::ROTxn& txn, BlockNum from, Blo
         sw = std::make_unique<StopWatch>(/*auto_start=*/true);
     }
 
-    block_hashes_.clear();
+    canonical_hashes_.clear();
 
     uint64_t headers_count{to - from};
-    block_hashes_.reserve(headers_count);
+    canonical_hashes_.reserve(headers_count);
     if (headers_count > 16) {
         log::Info(log_prefix_, {"collecting", "headers", "from", std::to_string(from), "to", std::to_string(to)});
     }
@@ -354,7 +405,7 @@ Stage::Result Senders::read_canonical_headers(db::ROTxn& txn, BlockNum from, Blo
             SILKWORM_ASSERT(header_data.value.length() == kHashLength);
 
             // We have a canonical header hash in right sequence
-            block_hashes_.emplace_back(to_bytes32(db::from_slice(header_data.value)));
+            canonical_hashes_.emplace_back(to_bytes32(db::from_slice(header_data.value)));
             if (reached_block_num == to) {
                 break;
             }
@@ -376,7 +427,7 @@ Stage::Result Senders::read_canonical_headers(db::ROTxn& txn, BlockNum from, Blo
         if (sw) {
             const auto [_, duration]{sw->stop()};
             log::Trace(log_prefix_,
-                       {"collected block hashes", std::to_string(block_hashes_.size()), "in", StopWatch::format(duration)});
+                       {"collected block hashes", std::to_string(canonical_hashes_.size()), "in", StopWatch::format(duration)});
         }
         return is_stopping() ? Stage::Result::kAborted : Stage::Result::kSuccess;
 
@@ -395,72 +446,7 @@ Stage::Result Senders::read_canonical_headers(db::ROTxn& txn, BlockNum from, Blo
     }
 }
 
-Stage::Result Senders::read_bodies(db::ROTxn& txn, BlockNum from, BlockNum to, BlockNum& reached_block_num) {
-    SILKWORM_ASSERT(!block_hashes_.empty());
-
-    log::Trace(log_prefix_, {"op", "read bodies", "from", std::to_string(from), "to", std::to_string(to)});
-
-    // transactions_.clear();
-    // transactions_.reserve((to - from) * 10);  // TODO(canepat) replace w/ upper bound for number of txs per block
-
-    auto bodies_cursor{db::open_cursor(*txn, db::table::kBlockBodies)};
-    auto transactions_cursor{db::open_cursor(*txn, db::table::kBlockTransactions)};
-
-    // Set to first block and read all in sequence
-    BlockNum expected_block_number{from};
-    auto block_hash_it{block_hashes_.begin()};
-    auto bodies_initial_key{db::block_key(from, block_hash_it->bytes)};
-    auto body_data{bodies_cursor.find(db::to_slice(bodies_initial_key), false)};
-    while (body_data.done) {
-        auto body_data_key_view{db::from_slice(body_data.key)};
-        reached_block_num = endian::load_big_u64(body_data_key_view.data());
-        if (reached_block_num < expected_block_number) {
-            // The same block height has been recorded but is not canonical, move to next and continue
-            body_data = bodies_cursor.to_next(false);
-            continue;
-        } else if (reached_block_num > expected_block_number) {
-            // We exceeded the expected block hence 1) the db misses a block or 2) blocks are not stored sequentially
-            throw StageError(Stage::Result::kBadChainSequence,
-                             "Expected block " + std::to_string(expected_block_number) +
-                                 " got " + std::to_string(reached_block_num));
-        }
-
-        if (memcmp(&body_data_key_view[8], block_hash_it->bytes, sizeof(kHashLength)) != 0) {
-            // We stumbled into a non-canonical block (not matching header), move to next and continue
-            body_data = bodies_cursor.to_next(false);
-            continue;
-        }
-
-        // Every 1024 blocks check if the SignalHandler has been triggered
-        if ((reached_block_num % 1024 == 0) && is_stopping()) {
-            throw StageError(Stage::Result::kAborted);
-        }
-
-        // Get the body and its transactions
-        auto body_rlp{db::from_slice(body_data.value)};
-        auto block_body{db::detail::decode_stored_block_body(body_rlp)};
-        if (block_body.txn_count) {
-            // headers_it->txn_count = block_body.txn_count;
-            std::vector<Transaction> transactions;
-            db::read_transactions(transactions_cursor, block_body.base_txn_id, block_body.txn_count, transactions);
-            success_or_throw(transform_and_fill_batch(reached_block_num, std::move(transactions)));
-        }
-
-        // After processing move to next block number and header
-        if (++block_hash_it == block_hashes_.end()) {
-            // We'd go beyond collected canonical headers
-            break;
-        }
-        expected_block_number++;
-        body_data = bodies_cursor.to_next(false);
-    }
-
-    log::Trace(log_prefix_, {"op", "read bodies", "reached_block_num", std::to_string(reached_block_num)});
-
-    return is_stopping() ? Stage::Result::kAborted : Stage::Result::kSuccess;
-}
-
-Stage::Result Senders::transform_and_fill_batch(BlockNum block_num, std::vector<Transaction>&& transactions) {
+Stage::Result Senders::add_to_batch(BlockNum block_num, std::vector<Transaction>&& transactions) {
     if (is_stopping()) {
         return Stage::Result::kAborted;
     }
@@ -512,25 +498,43 @@ Stage::Result Senders::transform_and_fill_batch(BlockNum block_num, std::vector<
         rlp::encode(rlp, transaction, /*for_signing=*/true, /*wrap_eip2718_into_string=*/false);
 
         auto tx_hash{keccak256(rlp)};
-        recovery_batch_.push_back(RecoveryPackage{block_num, tx_hash, transaction.odd_y_parity});
-        intx::be::unsafe::store(recovery_batch_.back().tx_signature, transaction.r);
-        intx::be::unsafe::store(recovery_batch_.back().tx_signature + kHashLength, transaction.s);
+        batch_.push_back(RecoveryPackage{block_num, tx_hash, transaction.odd_y_parity});
+        intx::be::unsafe::store(batch_.back().tx_signature, transaction.r);
+        intx::be::unsafe::store(batch_.back().tx_signature + kHashLength, transaction.s);
 
         ++tx_id;
     }
     increment_total_processed_blocks();
-    increment_total_collected_transactions(recovery_batch_.size());
 
     return is_stopping() ? Stage::Result::kAborted : Stage::Result::kSuccess;
 }
 
-Stage::Result Senders::store_senders(db::RWTxn& txn, BlockNum from, const std::vector<RecoveryPackage>& recovery_batch) {
-    collector_.clear();
+void Senders::recover_batch(secp256k1_context* context, BlockNum from) {
+    // Launch parallel senders recovery
+    log::Info(log_prefix_, {"recovery", "parallel", "size", std::to_string(batch_.size())});
 
+    // TODO(canepat) replace w/ std::for_each(std::execution::par, ...) when Clang will support parallel algorithms
+    parallel_for_each(batch_.begin(), batch_.end(), [&](auto& package) {
+        const bool ok = silkpre_recover_address(package.tx_from.bytes, package.tx_hash.bytes, package.tx_signature, package.odd_y_parity, context);
+        if (!ok) {
+            throw std::runtime_error("Unable to recover from address in block " + std::to_string(package.block_num));
+        }
+    });
+
+    if (is_stopping()) throw StageError(Stage::Result::kAborted);
+
+    // Put recovered senders into ETL
+    collect_senders(from);
+
+    batch_.clear();
+    batch_.reserve(max_batch_size_ + max_batch_size_ / 10);
+}
+
+void Senders::collect_senders(BlockNum from) {
     BlockNum block_num{0};
     Bytes etl_key;
     Bytes etl_data;
-    for (const auto& package : recovery_batch) {
+    for (const auto& package : batch_) {
         if (package.block_num != block_num) {
             if (!etl_key.empty()) {
                 collector_.collect({etl_key, etl_data});
@@ -538,7 +542,7 @@ Stage::Result Senders::store_senders(db::RWTxn& txn, BlockNum from, const std::v
                 etl_data.clear();
             }
             block_num = package.block_num;
-            etl_key = db::block_key(block_num, block_hashes_.at(block_num - from).bytes);
+            etl_key = db::block_key(block_num, canonical_hashes_.at(block_num - from).bytes);
             etl_data.clear();
         }
         etl_data.append(package.tx_from.bytes, sizeof(evmc::address));
@@ -549,14 +553,17 @@ Stage::Result Senders::store_senders(db::RWTxn& txn, BlockNum from, const std::v
         etl_data.clear();
     }
 
+    if (is_stopping()) throw StageError(Stage::Result::kAborted);
+}
+
+void Senders::store_senders(db::RWTxn& txn) {
     if (!collector_.empty()) {
+        log::Info(log_prefix_, {"load ETL items", std::to_string(collector_.size())});
         // Prepare target table
         auto senders_cursor{db::open_cursor(*txn, db::table::kSenders)};
         log::Trace(log_prefix_, {"load ETL data", human_size(collector_.bytes_size())});
         collector_.load(senders_cursor, nullptr, MDBX_put_flags_t::MDBX_APPEND);
     }
-
-    return is_stopping() ? Stage::Result::kAborted : Stage::Result::kSuccess;
 }
 
 std::vector<std::string> Senders::get_log_progress() {
@@ -565,10 +572,10 @@ std::vector<std::string> Senders::get_log_progress() {
         case OperationType::Forward: {
             switch (current_phase_) {
                 case 1:
-                    return {"phase", std::to_string(current_phase_) + "/3", "block hashes", std::to_string(block_hashes_.size())};
+                    return {"phase", std::to_string(current_phase_) + "/3", "block hashes", std::to_string(canonical_hashes_.size())};
                 case 2:
                     return {"phase", std::to_string(current_phase_) + "/3",
-                            "block hashes", std::to_string(block_hashes_.size()),
+                            "block hashes", std::to_string(canonical_hashes_.size()),
                             "current", std::to_string(total_processed_blocks_),
                             "transactions", std::to_string(total_collected_transactions_)};
                 case 3:

@@ -64,7 +64,7 @@ class HeaderPersistence {
   private:
     static constexpr size_t kCanonicalCacheSize = 1000;
 
-    BlockNum find_forking_point(db::RWTxn&, const BlockHeader& header, BlockNum height, const BlockHeader& parent);
+    BlockNum find_forking_point(db::RWTxn&, const BlockHeader& header, BlockNum height, const Hash& parent_hash);
     void update_canonical_chain(BlockNum height, Hash hash);
 
     db::RWTxn& tx_;

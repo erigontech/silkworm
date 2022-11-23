@@ -30,3 +30,6 @@
 [submodule "third_party/gmplib"]
 	path = third_party/gmplib
 	url = https://github.com/torquem-ch/gmp-wasm.git
+[submodule "third_party/sux"]
+	path = third_party/sux
+	url = https://github.com/torquem-ch/sux

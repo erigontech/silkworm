@@ -132,13 +132,11 @@ awaitable<void> TxCall::operator()() {
         boost::asio::cancellation_signal signal;
         bool completed{false};
         while (!completed) {
-            SILK_INFO << "Tx peer: " << peer() << " BEFORE ||";
             const auto rv = co_await (
                 read_stream.next() ||
                 max_idle_alarm.async_wait(as_tuple(use_awaitable)) ||
                 max_ttl_alarm.async_wait(as_tuple(use_awaitable)) ||
                 write_stream.next());
-            SILK_INFO << "Tx peer: " << peer() << " AFTER ||";
             if (0 == rv.index()) {  // read request completed
                 if (const bool read_ok = std::get<0>(rv); read_ok) {
                     // Handle incoming request from client

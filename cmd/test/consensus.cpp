@@ -64,6 +64,9 @@ static const std::vector<fs::path> kFailingTests{
     // Geth excludes this test as well:
     // https://github.com/ethereum/go-ethereum/blob/v1.10.18/tests/transaction_test.go#L31
     kTransactionDir / "ttGasLimit" / "TransactionWithGasLimitxPriceOverflow.json",
+
+    // EOF is not implemented yet
+    kBlockchainDir / "GeneralStateTests" / "stEIP3540",
 };
 
 static constexpr size_t kColumnWidth{80};
@@ -187,7 +190,30 @@ static const std::map<std::string, ChainConfig> kNetworkConfig{
                  0,  // Istanbul
                  0,  // Berlin
                  0,  // London
-                 0,  // FORK_NEXT_VALUE (EIP-3675)
+                 0,  // Merge Netsplit (FORK_NEXT_VALUE)
+             },
+         .muir_glacier_block = 0,
+         .arrow_glacier_block = 0,
+         .gray_glacier_block = 0,
+         .terminal_total_difficulty = 0,
+     }},
+    {"Merge+3860",  // Shanghai actually
+     {
+         .chain_id = 1,
+         .seal_engine = SealEngineType::kNoProof,
+         .evmc_fork_blocks =
+             {
+                 0,  // Homestead
+                 0,  // Tangerine Whistle
+                 0,  // Spurious Dragon
+                 0,  // Byzantium
+                 0,  // Constantinople
+                 0,  // Petersburg
+                 0,  // Istanbul
+                 0,  // Berlin
+                 0,  // London
+                 0,  // Merge Netsplit (FORK_NEXT_VALUE)
+                 0,  // Shanghai
              },
          .muir_glacier_block = 0,
          .arrow_glacier_block = 0,

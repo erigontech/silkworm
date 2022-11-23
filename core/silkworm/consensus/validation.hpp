@@ -72,6 +72,9 @@ enum class [[nodiscard]] ValidationResult{
     // See EIP-3675: Upgrade consensus to Proof-of-Stake
     kPoSBlockBeforeMerge,
     kPoWBlockAfterMerge,
+
+    // See EIP-3860: Limit and meter initcode
+    kMaxInitCodeSizeExceeded,
 };
 
 }  // namespace silkworm

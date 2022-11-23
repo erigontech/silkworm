@@ -21,6 +21,7 @@
 #include <silkpre/secp256k1n.hpp>
 
 #include <silkworm/chain/intrinsic_gas.hpp>
+#include <silkworm/chain/protocol_param.hpp>
 #include <silkworm/consensus/ethash/engine.hpp>
 #include <silkworm/consensus/merge/engine.hpp>
 #include <silkworm/consensus/noproof/engine.hpp>
@@ -75,6 +76,11 @@ ValidationResult pre_validate_transaction(const Transaction& txn, uint64_t block
     // EIP-2681: Limit account nonce to 2^64-1
     if (txn.nonce >= UINT64_MAX) {
         return ValidationResult::kNonceTooHigh;
+    }
+
+    // EIP-3860: Limit and meter initcode
+    if (rev >= EVMC_SHANGHAI && !txn.to && txn.data.size() > param::kMaxInitCodeSize) {
+        return ValidationResult::kMaxInitCodeSizeExceeded;
     }
 
     return ValidationResult::kOk;

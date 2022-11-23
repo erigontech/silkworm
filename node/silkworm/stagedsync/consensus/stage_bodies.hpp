@@ -21,21 +21,21 @@
 #include <silkworm/downloader/block_exchange.hpp>
 #include <silkworm/downloader/internals/types.hpp>
 #include <silkworm/downloader/messages/internal_message.hpp>
-#include <silkworm/stagedsync/stage.hpp>
+#include <silkworm/stagedsync/execution_engine.hpp>
 
-namespace silkworm::stagedsync {
+#include "stage.hpp"
 
-/*
+namespace silkworm::stagedsync::consensus {
+
 class BodiesStage : public Stage {
   public:
-    BodiesStage(SyncContext*, BlockExchange&, NodeSettings*);
+    BodiesStage(BlockExchange&, ExecutionEngine&);
     BodiesStage(const BodiesStage&) = delete;  // not copyable
     BodiesStage(BodiesStage&&) = delete;       // nor movable
     ~BodiesStage();
 
-    Stage::Result forward(db::RWTxn&) override;  // go forward, downloading headers
-    Stage::Result unwind(db::RWTxn&) override;   // go backward, unwinding headers to new_height
-    Stage::Result prune(db::RWTxn&) override;
+    Stage::Result forward(std::optional<NewHeight>) override;  // go forward, downloading headers
+    Stage::Result unwind(UnwindPoint) override;   // go backward, unwinding headers to new_height
 
   private:
     void send_body_requests();  // send requests for more bodies
@@ -47,7 +47,8 @@ class BodiesStage : public Stage {
     std::atomic<BlockNum> current_height_{0};
 
     BlockExchange& block_downloader_;
+    ExecutionEngine& exec_engine_;
+    std::string log_prefix_;
 };
-*/
 
 }  // namespace silkworm::stagedsync

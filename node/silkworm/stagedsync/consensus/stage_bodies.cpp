@@ -27,22 +27,25 @@
 #include "silkworm/downloader/messages/outbound_get_block_bodies.hpp"
 #include "silkworm/downloader/messages/outbound_new_block.hpp"
 
-namespace silkworm::stagedsync {
-/*
-BodiesStage::BodiesStage(SyncContext* sc, BlockExchange& bd, NodeSettings* ns)
-    : Stage(sc, db::stages::kBlockBodiesKey, ns), block_downloader_{bd} {
+namespace silkworm::stagedsync::consensus {
+
+BodiesStage::BodiesStage(BlockExchange& bd, ExecutionEngine& ee)
+    : Stage("consensus-bodies"), block_downloader_{bd}, exec_engine_{ee}, log_prefix_{"[Cons.Bodies]"}  {
 }
 
 BodiesStage::~BodiesStage() {
 }
 
-Stage::Result BodiesStage::forward(db::RWTxn& tx) {
+Stage::Result BodiesStage::forward(std::optional<NewHeight> new_height) {
     using std::shared_ptr;
     using namespace std::chrono_literals;
     using namespace std::chrono;
 
+    if (!new_height.has_value()) {
+        throw std::logic_error("Consensus bodies stages need a target height");
+    }
+
     Stage::Result result = Stage::Result::kUnspecified;
-    operation_ = OperationType::Forward;
 
     auto constexpr KShortInterval = 200ms;
     auto constexpr kProgressUpdateInterval = 30s;
@@ -53,30 +56,32 @@ Stage::Result BodiesStage::forward(db::RWTxn& tx) {
 
     if (block_downloader_.is_stopping()) {
         log::Error(log_prefix_) << "Aborted, block exchange is down";
-        return Stage::Result::kAborted;
+        return Error{"aborted"};
     }
 
     try {
-        BodyPersistence body_persistence(tx, block_downloader_.chain_config());
-        body_persistence.set_preverified_height(block_downloader_.preverified_hashes().height);
+        BlockIdPair initial_head{};
+        std::tie(initial_head.number, initial_head.hash) = exec_engine_.get_bodies_head();
 
-        current_height_ = body_persistence.initial_height();
+        current_height_ = initial_head.number;
         get_log_progress();  // this is a trick to set log progress initial value, please improve
 
-        RepeatedMeasure<BlockNum> height_progress(body_persistence.initial_height());
+        RepeatedMeasure<BlockNum> height_progress(initial_head.number);
         log::Info(log_prefix_) << "Waiting for bodies... from=" << height_progress.get();
 
         // sync status
-        BlockNum headers_stage_height = db::stages::read_stage_progress(tx, db::stages::kHeadersKey);
-        auto sync_command = sync_body_sequence(body_persistence.initial_height(), headers_stage_height);
+        BlockNum target_height = new_height->block_num;
+        auto sync_command = sync_body_sequence(initial_head.number, target_height); // todo check if target_height is ok in place of headers height #######
         sync_command->result().get();  // blocking
 
         // prepare bodies, if any
         auto withdraw_command = withdraw_ready_bodies();
 
         // block processing
+        BlockIdPair current_head = initial_head;
+
         time_point_t last_update = system_clock::now();
-        while (body_persistence.highest_height() < headers_stage_height && !is_stopping()) {
+        while (current_head.number < target_height && !is_stopping()) {
             send_body_requests();
 
             if (withdraw_command->completed_and_read()) {
@@ -85,17 +90,16 @@ Stage::Result BodiesStage::forward(db::RWTxn& tx) {
             } else if (withdraw_command->result().wait_for(KShortInterval) == std::future_status::ready) {
                 // read response
                 auto bodies = withdraw_command->result().get();
-                // persist bodies
-                body_persistence.persist(bodies);
-                current_height_ = body_persistence.highest_height();
 
-                // check unwind condition
-                if (body_persistence.unwind_needed()) {
-                    result = Stage::Result::kInvalidBlock;
-                    sync_context_->unwind_point = body_persistence.unwind_point();
-                    break;
-                } else {
-                    result = Stage::Result::kSuccess;
+                // send bodies
+                exec_engine_.insert_bodies(bodies);
+
+                // compute new head
+                auto highest_body = std::max_element(bodies.begin(), bodies.end(), [](Block& a, Block& b) {
+                    return a.header.number < b.header.number;
+                });
+                if (highest_body->header.number > current_head.number) {
+                    current_head = {.number = highest_body->header.number, .hash = highest_body->header.hash()};
                 }
 
                 // do announcements
@@ -106,7 +110,7 @@ Stage::Result BodiesStage::forward(db::RWTxn& tx) {
             if (system_clock::now() - last_update > kProgressUpdateInterval) {
                 last_update = system_clock::now();
 
-                height_progress.set(body_persistence.highest_height());
+                height_progress.set(current_head.number);
 
                 log::Debug(log_prefix_) << "Wrote block bodies number=" << height_progress.get()
                                         << " (+" << height_progress.delta() << "), "
@@ -114,71 +118,27 @@ Stage::Result BodiesStage::forward(db::RWTxn& tx) {
             }
         }
 
-        auto bodies_downloaded = body_persistence.highest_height() - body_persistence.initial_height();
+        auto bodies_downloaded = current_head.number - initial_head.number;
         log::Info(log_prefix_) << "Downloading completed, wrote " << bodies_downloaded << " bodies,"
-                               << " last=" << body_persistence.highest_height()
+                               << " last=" << current_head.number
                                << " duration=" << StopWatch::format(timing.lap_duration());
-
-        body_persistence.close();
-
-        tx.commit();  // this will commit if the tx was started here
 
         log::Info(log_prefix_) << "Done, duration= " << StopWatch::format(timing.lap_duration());
 
-        if (result == Stage::Result::kUnspecified) {
-            result = Stage::Result::kSuccess;
-        }
+        return NewHeight{.block_num = current_head.number, .hash = current_head.hash};
 
     } catch (const std::exception& e) {
         log::Error(log_prefix_) << "Aborted due to exception: " << e.what();
 
-        // tx rollback executed automatically if needed
-        result = Stage::Result::kUnexpectedError;
+        return Error{"exception"};
     }
 
     return result;
 }
 
-Stage::Result BodiesStage::unwind(db::RWTxn& tx) {
-    Stage::Result result{Stage::Result::kSuccess};
-    operation_ = OperationType::Unwind;
-
-    StopWatch timing;
-    timing.start();
-    log::Info(log_prefix_) << "Unwind start";
-
-    current_height_ = db::stages::read_stage_progress(tx, db::stages::kBlockBodiesKey);
-    get_log_progress();  // this is a trick to set log progress initial value, please improve
-
-    if (!sync_context_->unwind_point.has_value()) {
-        operation_ = OperationType::None;
-        return result;
-    }
-    auto new_height = sync_context_->unwind_point.value();
-
-    try {
-        BodyPersistence::remove_bodies(new_height, sync_context_->bad_block_hash, tx);
-
-        current_height_ = new_height;
-
-        tx.commit();
-
-        log::Info(log_prefix_) << "Unwind completed, duration= " << StopWatch::format(timing.lap_duration());
-
-        result = Stage::Result::kSuccess;
-
-    } catch (const std::exception& e) {
-        log::Error(log_prefix_) << "Unwind aborted due to exception: " << e.what();
-
-        // tx rollback executed automatically if needed
-        result = Stage::Result::kUnexpectedError;
-    }
-
-    return result;
-}
-
-auto BodiesStage::prune(db::RWTxn&) -> Stage::Result {
-    return Stage::Result::kSuccess;
+Stage::Result BodiesStage::unwind(UnwindPoint unwind_point) {
+    current_height_ = unwind_point.block_num;
+    return Stage::NewHeight{.block_num = unwind_point.block_num, .hash = unwind_point.hash};
 }
 
 void BodiesStage::send_body_requests() {
@@ -229,6 +189,5 @@ std::vector<std::string> BodiesStage::get_log_progress() {  // implementation MU
             "bodies/secs", std::to_string(height_progress.throughput()),
             "peers", std::to_string(peers)};
 }
-*/
 
 }  // namespace silkworm::stagedsync

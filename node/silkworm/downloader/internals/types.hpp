@@ -32,6 +32,8 @@ namespace silkworm {
 
 using BigInt = intx::uint256;  // use intx::to_string, from_string, ...
 
+struct BlockIdPair {BlockNum number; Hash hash;};
+
 // using Bytes = std::basic_string<uint8_t>; already defined elsewhere
 // using std::string to_hex(ByteView bytes);
 // using std::optional<Bytes> from_hex(std::string_view hex) noexcept;

@@ -36,11 +36,12 @@ class SyncPipeline::LogTimer : public Timer {
     SyncPipeline* pipeline_;
   public:
     LogTimer(SyncPipeline* pipeline)
-        : pipeline_{pipeline}, Timer(
+        : Timer{
               pipeline->node_settings_->asio_context,
               pipeline->node_settings_->sync_loop_log_interval_seconds * 1'000,
               [this] { return execute(); },
-              true)
+              true},
+          pipeline_{pipeline}
     {
         start();
     }

@@ -30,11 +30,11 @@ ExecutionEngine::ExecutionEngine(NodeSettings& ns, const db::RWAccess& dba)
 {
 }
 
-void ExecutionEngine::insert_headers(const std::vector<BlockHeader>& headers) {
+void ExecutionEngine::insert_headers(const std::vector<std::shared_ptr<BlockHeader>>& headers) {
     SILK_TRACE << "ExecutionEngine: inserting " << headers.size() << " headers";
     if (headers.empty()) return;
 
-    as_range::for_each(headers, [&, this](const auto& header) { insert_header(tx_, header); });
+    as_range::for_each(headers, [&, this](const auto& header) { insert_header(tx_, *header); });
 }
 
 void ExecutionEngine::insert_header(db::RWTxn& tx, const BlockHeader& header) {
@@ -45,11 +45,11 @@ void ExecutionEngine::insert_header(db::RWTxn& tx, const BlockHeader& header) {
     //header_cache_.put(header.hash(), header);
 }
 
-void ExecutionEngine::insert_bodies(const std::vector<Block>& bodies) {
+void ExecutionEngine::insert_bodies(const std::vector<std::shared_ptr<Block>>& bodies) {
     SILK_TRACE << "ExecutionEngine: inserting " << bodies.size() << " bodies";
     if (bodies.empty()) return;
 
-    as_range::for_each(bodies, [&, this](const auto& body) { insert_body(tx_, body); });
+    as_range::for_each(bodies, [&, this](const auto& body) { insert_body(tx_, *body); });
 }
 
 void ExecutionEngine::insert_body(db::RWTxn& tx, const Block& block) {
@@ -174,7 +174,7 @@ BlockNum ExecutionEngine::find_forking_point(db::RWTxn& tx, Hash header_hash) {
     return forking_point;
 }
 
-auto ExecutionEngine::get_headers(Hash header_hash) -> std::optional<BlockHeader> {
+auto ExecutionEngine::get_header(Hash header_hash) -> std::optional<BlockHeader> {
     //const BlockHeader* cached = header_cache_.get(header_hash);
     //if (cached) {
     //    return *cached;
@@ -183,8 +183,38 @@ auto ExecutionEngine::get_headers(Hash header_hash) -> std::optional<BlockHeader
     return header;
 }
 
-auto ExecutionEngine::get_bodies(Hash header_hash) -> std::optional<Block> {
+auto ExecutionEngine::get_header(BlockNum header_heigth, Hash header_hash) -> std::optional<BlockHeader> {
+    //const BlockHeader* cached = header_cache_.get(header_hash);
+    //if (cached) {
+    //    return *cached;
+    //}
+    std::optional<BlockHeader> header = db::read_header(tx_, header_heigth, header_hash);
+    return header;
+}
 
+auto ExecutionEngine::get_header_td(BlockNum header_heigth, Hash header_hash) -> std::optional<BigInt> {
+    return db::read_total_difficulty(tx_, header_heigth, header_hash);
+}
+
+auto ExecutionEngine::get_body(Hash header_hash) -> std::optional<Block> {
+
+}
+
+auto ExecutionEngine::get_headers_head() -> std::tuple<BlockNum, Hash, BigInt> {
+    auto headers_head_height = db::stages::read_stage_progress(tx_, db::stages::kHeadersKey);
+
+    auto headers_head_hash = db::read_canonical_hash(tx_, headers_head_height);
+    if (!headers_head_hash) {
+        throw std::logic_error("headers stage height not present on canonical, height=" + std::to_string(headers_head_height));
+    }
+
+    std::optional<BigInt> headers_head_td = db::read_total_difficulty(tx_, headers_head_height, *headers_head_hash);
+    if (!headers_head_td) {
+        throw std::logic_error("total difficulty of canonical hash at height " + std::to_string(headers_head_height) +
+                               " not found in db");
+    }
+
+    return {headers_head_height, *headers_head_hash, *headers_head_td}; // add headers_head_td
 }
 
 /*

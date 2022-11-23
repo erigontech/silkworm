@@ -36,21 +36,26 @@ class ExecutionEngine : public Stoppable {
     explicit ExecutionEngine(NodeSettings&, const db::RWAccess&);
     ~ExecutionEngine() = default;
 
-    void insert_headers(const std::vector<BlockHeader>&);
-    void insert_bodies(const std::vector<Block>&);
-
-
     struct ValidChain {BlockNum current_point;};
-    struct InvalidChain {BlockNum unwind_point; std::optional<Hash> bad_block;};
+    struct InvalidChain {BlockNum unwind_point; Hash unwind_head; std::optional<Hash> bad_block;};
     struct ValidationError {BlockNum last_point;};
     using VerificationResult = std::variant<ValidChain, InvalidChain, ValidationError>;
+
+    // actions
+    void insert_headers(const std::vector<std::shared_ptr<BlockHeader>>&);
+    void insert_bodies(const std::vector<std::shared_ptr<Block>>&);
 
     auto verify_chain(Hash header_hash) -> VerificationResult;
 
     bool update_fork_choice(Hash header_hash);
 
-    auto get_headers(Hash header_hash) -> std::optional<BlockHeader>;
-    auto get_bodies(Hash header_hash) -> std::optional<Block>;
+    // state
+    auto get_header(Hash) -> std::optional<BlockHeader>;
+    auto get_header(BlockNum, Hash) -> std::optional<BlockHeader>;
+    auto get_header_td(BlockNum, Hash) -> std::optional<BigInt>;
+    auto get_body(Hash) -> std::optional<Block>;
+    auto get_headers_head() -> std::tuple<BlockNum, Hash, BigInt>;
+    auto get_bodies_head() -> std::tuple<BlockNum, Hash>;
 
   private:
     void insert_header(db::RWTxn& tx, const BlockHeader&);

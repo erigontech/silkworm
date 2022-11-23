@@ -22,20 +22,21 @@
 #include <silkworm/downloader/block_exchange.hpp>
 #include <silkworm/downloader/internals/types.hpp>
 #include <silkworm/downloader/messages/internal_message.hpp>
-#include <silkworm/stagedsync/stage.hpp>
+#include <silkworm/stagedsync/execution_engine.hpp>
 
-namespace silkworm::stagedsync {
+#include "stage.hpp"
 
-/*
+namespace silkworm::stagedsync::consensus {
+
 class HeadersStage : public Stage {
   public:
-    HeadersStage(BlockExchange&, NodeSettings*);
+    HeadersStage(BlockExchange&, ExecutionEngine&);
     HeadersStage(const HeadersStage&) = delete;  // not copyable
     HeadersStage(HeadersStage&&) = delete;       // nor movable
     ~HeadersStage();
 
-    Stage::Result forward() override;  // go forward, downloading headers
-    Stage::Result unwind() override;   // go backward, unwinding headers to new_height
+    Stage::Result forward(std::optional<NewHeight>) override;  // go forward, downloading headers
+    Stage::Result unwind(UnwindPoint) override;   // go backward, unwinding headers to new_height
 
   private:
     void send_header_requests();  // send requests for more headers
@@ -49,7 +50,9 @@ class HeadersStage : public Stage {
 
     std::optional<BlockNum> target_block_;
     BlockExchange& block_downloader_;
+    ExecutionEngine& exec_engine_;
+    std::string log_prefix_;
+    bool is_first_cycle_{true};
 };
-*/
 
 }  // namespace silkworm::stagedsync

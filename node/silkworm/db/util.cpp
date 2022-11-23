@@ -142,23 +142,34 @@ namespace detail {
         return to;
     }
 
-    BlockBodyForStorage decode_stored_block_body(ByteView& from) {
+    DecodingResult decode_stored_block_body(ByteView& from, BlockBodyForStorage& to) {
         auto [header, err]{rlp::decode_header(from)};
         rlp::success_or_throw(err);
         if (!header.list) {
-            rlp::success_or_throw(DecodingResult::kUnexpectedString);
+            return DecodingResult::kUnexpectedString;
         }
         uint64_t leftover{from.length() - header.payload_length};
 
-        BlockBodyForStorage to;
-        rlp::success_or_throw(rlp::decode(from, to.base_txn_id));
-        rlp::success_or_throw(rlp::decode(from, to.txn_count));
-        rlp::success_or_throw(rlp::decode_vector(from, to.ommers));
-
-        if (from.length() != leftover) {
-            throw rlp::DecodingError(DecodingResult::kListLengthMismatch);
+        if (const auto result{rlp::decode(from, to.base_txn_id)}; result != DecodingResult::kOk) {
+            return result;
+        }
+        if (const auto result{rlp::decode(from, to.txn_count)}; result != DecodingResult::kOk) {
+            return result;
+        }
+        if (const auto result{rlp::decode_vector(from, to.ommers)}; result != DecodingResult::kOk) {
+            return result;
         }
 
+        if (from.length() != leftover) {
+            return DecodingResult::kListLengthMismatch;
+        }
+
+        return DecodingResult::kOk;
+    }
+
+    BlockBodyForStorage decode_stored_block_body(ByteView& from) {
+        BlockBodyForStorage to;
+        rlp::success_or_throw(decode_stored_block_body(from, to));
         return to;
     }
 

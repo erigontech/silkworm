@@ -32,6 +32,7 @@ TEST_CASE("Eth1Data SSZ") {
         };
         Bytes b{};
         ssz::encode(a, b);
+        CHECK(b.size() == Eth1Data::kSize);
         CHECK(b == *from_hex(
                        "FF000000000000000000EE00000000000000000000EE000000000000000000FF"
                        "1F00000000000000"
@@ -56,6 +57,7 @@ TEST_CASE("Checkpoint SSZ") {
         };
         Bytes b{};
         ssz::encode(a, b);
+        CHECK(b.size() == Checkpoint::kSize);
         CHECK(b == *from_hex(
                        "1500000000000000"
                        "FF000000000000000000EE00000000000000000000EE000000000000000000FF"));
@@ -87,6 +89,7 @@ TEST_CASE("AttestationData SSZ") {
         };
         Bytes b{};
         ssz::encode(a, b);
+        CHECK(b.size() == AttestationData::kSize);
         CHECK(b == *from_hex(
                        "7800000000000000"
                        "0600000000000000"
@@ -95,6 +98,27 @@ TEST_CASE("AttestationData SSZ") {
                        "FF000000000000000000EE00000000000000000000EE000000000000000000FF"
                        "1500000000000000"
                        "FF000000000000000000EE00000000000000000000EE000000000000000000FF"));
+        CHECK(test::decode_success<AttestationData>(to_hex(b)) == a);
+    }
+    SECTION("round-trip w/ empty source and target") {
+        AttestationData a{
+            120,
+            6,
+            0xFF000000000000000000EE00000000000000000000EE000000000000000000FF_bytes32,
+            {},
+            {},
+        };
+        Bytes b{};
+        ssz::encode(a, b);
+        CHECK(b.size() == AttestationData::kSize);
+        CHECK(b == *from_hex(
+                       "7800000000000000"
+                       "0600000000000000"
+                       "FF000000000000000000EE00000000000000000000EE000000000000000000FF"
+                       "0000000000000000"
+                       "0000000000000000000000000000000000000000000000000000000000000000"
+                       "0000000000000000"
+                       "0000000000000000000000000000000000000000000000000000000000000000"));
         CHECK(test::decode_success<AttestationData>(to_hex(b)) == a);
     }
     SECTION("decoding error") {
@@ -156,12 +180,32 @@ TEST_CASE("SignedBeaconBlockHeader SSZ") {
         };
         Bytes b{};
         ssz::encode(a, b);
+        CHECK(b.size() == SignedBeaconBlockHeader::kSize);
         CHECK(b == *from_hex(
                        "1500000000000000"
                        "7800000000000000"
                        "FF000000000000000000EE00000000000000000000EE000000000000000000FF"
                        "FF000000000000000000EE00000000000000000000EE000000000000000000FF"
                        "FF000000000000000000EE00000000000000000000EE000000000000000000FF"
+                       "0000000000000000000000000000000000000000000000000000000000000000"
+                       "0000000000000000000000000000000000000000000000000000000000000000"
+                       "0000000000000000000000000000000000000000000000000000000000000000"));
+        CHECK(test::decode_success<SignedBeaconBlockHeader>(to_hex(b)) == a);
+    }
+    SECTION("round-trip w/ empty header") {
+        SignedBeaconBlockHeader a{
+            {},
+            {}
+        };
+        Bytes b{};
+        ssz::encode(a, b);
+        CHECK(b.size() == SignedBeaconBlockHeader::kSize);
+        CHECK(b == *from_hex(
+                       "0000000000000000"
+                       "0000000000000000"
+                       "0000000000000000000000000000000000000000000000000000000000000000"
+                       "0000000000000000000000000000000000000000000000000000000000000000"
+                       "0000000000000000000000000000000000000000000000000000000000000000"
                        "0000000000000000000000000000000000000000000000000000000000000000"
                        "0000000000000000000000000000000000000000000000000000000000000000"
                        "0000000000000000000000000000000000000000000000000000000000000000"));
@@ -215,22 +259,6 @@ TEST_CASE("IndexedAttestation SSZ") {
                        "0000000000000000000000000000000000000000000000000000000000000000"));
         CHECK(test::decode_success<IndexedAttestation>(to_hex(b)) == a);
     }
-    SECTION("decoding error") {
-        CHECK(test::decode_failure<IndexedAttestation>("") == DecodingResult::kInputTooShort);
-        CHECK(test::decode_failure<IndexedAttestation>("00") == DecodingResult::kInputTooShort);
-        CHECK(test::decode_failure<IndexedAttestation>("E4000000"
-                                                       "7800000000000000"
-                                                       "0600000000000000"
-                                                       "FF000000000000000000EE00000000000000000000EE000000000000000000FF"
-                                                       "1500000000000000"
-                                                       "FF000000000000000000EE00000000000000000000EE000000000000000000FF"
-                                                       "1500000000000000"
-                                                       "FF000000000000000000EE00000000000000000000EE000000000000000000FF"
-                                                       "0000000000000000000000000000000000000000000000000000000000000000"
-                                                       "0000000000000000000000000000000000000000000000000000000000000000"
-                                                       "00000000000000000000000000000000000000000000000000000000000000")
-              == DecodingResult::kInputTooShort);
-    }
     SECTION("round-trip two indices") {
         IndexedAttestation a{
             {1, 11},
@@ -264,6 +292,50 @@ TEST_CASE("IndexedAttestation SSZ") {
                        "0100000000000000"
                        "0B00000000000000"));
         CHECK(test::decode_success<IndexedAttestation>(to_hex(b)) == a);
+    }
+    SECTION("round-trip w/ empty source and target") {
+        IndexedAttestation a{
+            {},
+            std::make_unique<AttestationData>(AttestationData{
+                120,
+                6,
+                0xFF000000000000000000EE00000000000000000000EE000000000000000000FF_bytes32,
+                {},
+                {},
+            }),
+            {}
+        };
+        Bytes b{};
+        ssz::encode(a, b);
+        CHECK(b == *from_hex(
+                       "E4000000"
+                       "7800000000000000"
+                       "0600000000000000"
+                       "FF000000000000000000EE00000000000000000000EE000000000000000000FF"
+                       "0000000000000000"
+                       "0000000000000000000000000000000000000000000000000000000000000000"
+                       "0000000000000000"
+                       "0000000000000000000000000000000000000000000000000000000000000000"
+                       "0000000000000000000000000000000000000000000000000000000000000000"
+                       "0000000000000000000000000000000000000000000000000000000000000000"
+                       "0000000000000000000000000000000000000000000000000000000000000000"));
+        CHECK(test::decode_success<IndexedAttestation>(to_hex(b)) == a);
+    }
+    SECTION("decoding error") {
+        CHECK(test::decode_failure<IndexedAttestation>("") == DecodingResult::kInputTooShort);
+        CHECK(test::decode_failure<IndexedAttestation>("00") == DecodingResult::kInputTooShort);
+        CHECK(test::decode_failure<IndexedAttestation>("E4000000"
+                                                       "7800000000000000"
+                                                       "0600000000000000"
+                                                       "FF000000000000000000EE00000000000000000000EE000000000000000000FF"
+                                                       "1500000000000000"
+                                                       "FF000000000000000000EE00000000000000000000EE000000000000000000FF"
+                                                       "1500000000000000"
+                                                       "FF000000000000000000EE00000000000000000000EE000000000000000000FF"
+                                                       "0000000000000000000000000000000000000000000000000000000000000000"
+                                                       "0000000000000000000000000000000000000000000000000000000000000000"
+                                                       "00000000000000000000000000000000000000000000000000000000000000")
+              == DecodingResult::kInputTooShort);
     }
 }
 

@@ -30,18 +30,18 @@ void encode(uint32_t from, Bytes& to) noexcept;
 void encode(uint64_t from, Bytes& to) noexcept;
 
 template <class T>
-void encode(const T& from, Bytes& to) noexcept;
+void encode(T& from, Bytes& to) noexcept;
 
-// TODO(canepat) it doesn't work: why?
-// template <class T, int N>
-// requires std::convertible_to<T, uint8_t>
-// void encode(T const (&from)[N], Bytes& to) noexcept;
+template <class T, std::size_t N>
+requires std::convertible_to<T, uint8_t>
+void encode(T (&from)[N], Bytes& to) noexcept {
+    for (std::size_t i{0}; i < N; ++i) {
+        to += from[i];
+    }
+}
 
 template <>
-void encode(uint8_t const (&from)[96], Bytes& to) noexcept;
-
-template <>
-void encode(const evmc::bytes32& from, Bytes& to) noexcept;
+void encode(evmc::bytes32& from, Bytes& to) noexcept;
 
 DecodingResult decode(ByteView& from, uint32_t& to) noexcept;
 

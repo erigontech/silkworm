@@ -55,8 +55,8 @@ struct AttestationData {
     uint64_t slot{0};
     uint64_t index{0};
     evmc::bytes32 beacon_block_hash;
-    std::unique_ptr<Checkpoint> source;
-    std::unique_ptr<Checkpoint> target;
+    std::shared_ptr<Checkpoint> source;
+    std::shared_ptr<Checkpoint> target;
 
     static constexpr std::size_t kSize{2 * sizeof(uint64_t) + kHashLength + 2 * Checkpoint::kSize};
 };
@@ -78,7 +78,7 @@ bool operator==(const BeaconBlockHeader& lhs, const BeaconBlockHeader& rhs);
 
 //! SignedBeaconBlockHeader is a beacon block header + validator signature.
 struct SignedBeaconBlockHeader {
-    std::unique_ptr<BeaconBlockHeader> header;
+    std::shared_ptr<BeaconBlockHeader> header;
     uint8_t signature[kSignatureSize];
 
     static constexpr std::size_t kSize{BeaconBlockHeader::kSize + kSignatureSize};
@@ -86,10 +86,10 @@ struct SignedBeaconBlockHeader {
 
 bool operator==(const SignedBeaconBlockHeader& lhs, const SignedBeaconBlockHeader& rhs);
 
-//! IndexedAttestation are attestantions sets to prove that someone misbehaved.
+//! IndexedAttestation are attestations sets to prove that someone misbehaved.
 struct IndexedAttestation {
     std::vector<uint64_t> attesting_indices;
-    std::unique_ptr<AttestationData> data;
+    std::shared_ptr<AttestationData> data;
     uint8_t signature[kSignatureSize];
 
     static constexpr std::size_t kMaxAttestingIndices{2048};
@@ -99,44 +99,60 @@ struct IndexedAttestation {
 
 bool operator==(const IndexedAttestation& lhs, const IndexedAttestation& rhs);
 
+//! Slashing requires 2 blocks with the same signer as proof
+struct ProposerSlashing {
+    std::shared_ptr<SignedBeaconBlockHeader> header1;
+    std::shared_ptr<SignedBeaconBlockHeader> header2;
+
+    static constexpr std::size_t kSize{2 * SignedBeaconBlockHeader::kSize};
+};
+
+bool operator==(const ProposerSlashing& lhs, const ProposerSlashing& rhs);
+
 }  // namespace silkworm::cl
 
 namespace silkworm::ssz {
 
 template <>
-void encode(const cl::Eth1Data& from, Bytes& to) noexcept;
+void encode(cl::Eth1Data& from, Bytes& to) noexcept;
 
 template <>
 DecodingResult decode(ByteView& from, cl::Eth1Data& to) noexcept;
 
 template <>
-void encode(const cl::Checkpoint& from, Bytes& to) noexcept;
+void encode(cl::Checkpoint& from, Bytes& to) noexcept;
 
 template <>
 DecodingResult decode(ByteView& from, cl::Checkpoint& to) noexcept;
 
 template <>
-void encode(const cl::AttestationData& from, Bytes& to) noexcept;
+void encode(cl::AttestationData& from, Bytes& to) noexcept;
 
 template <>
 DecodingResult decode(ByteView& from, cl::AttestationData& to) noexcept;
 
 template <>
-void encode(const cl::BeaconBlockHeader& from, Bytes& to) noexcept;
+void encode(cl::BeaconBlockHeader& from, Bytes& to) noexcept;
 
 template <>
 DecodingResult decode(ByteView& from, cl::BeaconBlockHeader& to) noexcept;
 
 template <>
-void encode(const cl::SignedBeaconBlockHeader& from, Bytes& to) noexcept;
+void encode(cl::SignedBeaconBlockHeader& from, Bytes& to) noexcept;
 
 template <>
 DecodingResult decode(ByteView& from, cl::SignedBeaconBlockHeader& to) noexcept;
 
 template <>
-void encode(const cl::IndexedAttestation& from, Bytes& to) noexcept;
+void encode(cl::IndexedAttestation& from, Bytes& to) noexcept;
 
 template <>
 DecodingResult decode(ByteView& from, cl::IndexedAttestation& to) noexcept;
+
+template <>
+void encode(cl::ProposerSlashing& from, Bytes& to) noexcept;
+
+template <>
+DecodingResult decode(ByteView& from, cl::ProposerSlashing& to) noexcept;
 
 }  // namespace silkworm::ssz

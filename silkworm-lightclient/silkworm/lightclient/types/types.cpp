@@ -35,7 +35,9 @@ bool operator==(const AttestationData& lhs, const AttestationData& rhs) {
     if (lhs.slot != rhs.slot) return false;
     if (lhs.index != rhs.index) return false;
     if (lhs.beacon_block_hash != rhs.beacon_block_hash) return false;
-    if (*lhs.source != *rhs.source) return false;
+    if (!lhs.source && rhs.source) return false;
+    if (lhs.source && !rhs.source) return false;
+    if (lhs.source && rhs.source && *lhs.source != *rhs.source) return false;
     if (*lhs.target != *rhs.target) return false;
     return true;
 }
@@ -50,7 +52,9 @@ bool operator==(const BeaconBlockHeader& lhs, const BeaconBlockHeader& rhs) {
 }
 
 bool operator==(const SignedBeaconBlockHeader& lhs, const SignedBeaconBlockHeader& rhs) {
-    if (*lhs.header != *rhs.header) return false;
+    if (!lhs.header && rhs.header) return false;
+    if (lhs.header && !rhs.header) return false;
+    if (lhs.header && rhs.header && *lhs.header != *rhs.header) return false;
     for (std::size_t i{0}; i < kSignatureSize; ++i) {
         if (lhs.signature[i] != rhs.signature[i]) return false;
     }
@@ -59,10 +63,22 @@ bool operator==(const SignedBeaconBlockHeader& lhs, const SignedBeaconBlockHeade
 
 bool operator==(const IndexedAttestation& lhs, const IndexedAttestation& rhs) {
     if (lhs.attesting_indices != rhs.attesting_indices) return false;
-    if (*lhs.data != *rhs.data) return false;
+    if (!lhs.data && rhs.data) return false;
+    if (lhs.data && !rhs.data) return false;
+    if (lhs.data && rhs.data && *lhs.data != *rhs.data) return false;
     for (std::size_t i{0}; i < kSignatureSize; ++i) {
         if (lhs.signature[i] != rhs.signature[i]) return false;
     }
+    return true;
+}
+
+bool operator==(const ProposerSlashing& lhs, const ProposerSlashing& rhs) {
+    if (!lhs.header1 && rhs.header1) return false;
+    if (lhs.header1 && !rhs.header1) return false;
+    if (lhs.header1 && rhs.header1 && *lhs.header1 != *rhs.header1) return false;
+    if (!lhs.header2 && rhs.header2) return false;
+    if (lhs.header2 && !rhs.header2) return false;
+    if (lhs.header2 && rhs.header2 && *lhs.header2 != *rhs.header2) return false;
     return true;
 }
 
@@ -71,7 +87,7 @@ bool operator==(const IndexedAttestation& lhs, const IndexedAttestation& rhs) {
 namespace silkworm::ssz {
 
 template <>
-void encode(const cl::Eth1Data& from, Bytes& to) noexcept {
+void encode(cl::Eth1Data& from, Bytes& to) noexcept {
     ssz::encode(from.root, to);
     ssz::encode(from.deposit_count, to);
     ssz::encode(from.block_hash, to);
@@ -96,7 +112,7 @@ DecodingResult decode(ByteView& from, cl::Eth1Data& to) noexcept {
 }
 
 template <>
-void encode(const cl::Checkpoint& from, Bytes& to) noexcept {
+void encode(cl::Checkpoint& from, Bytes& to) noexcept {
     ssz::encode(from.epoch, to);
     ssz::encode(from.root, to);
 }
@@ -117,16 +133,18 @@ DecodingResult decode(ByteView& from, cl::Checkpoint& to) noexcept {
 }
 
 template <>
-void encode(const cl::AttestationData& from, Bytes& to) noexcept {
+void encode(cl::AttestationData& from, Bytes& to) noexcept {
     ssz::encode(from.slot, to);
     ssz::encode(from.index, to);
     ssz::encode(from.beacon_block_hash, to);
-    if (from.source) {
-        ssz::encode(*from.source, to);
+    if (!from.source) {
+        from.source = std::make_shared<cl::Checkpoint>();
     }
-    if (from.target) {
-        ssz::encode(*from.target, to);
+    ssz::encode(*from.source, to);
+    if (!from.target) {
+        from.target = std::make_shared<cl::Checkpoint>();
     }
+    ssz::encode(*from.target, to);
 }
 
 template <>
@@ -144,11 +162,11 @@ DecodingResult decode(ByteView& from, cl::AttestationData& to) noexcept {
     if (DecodingResult err{ssz::decode(from, to.beacon_block_hash)}; err != DecodingResult::kOk) {
         return err;
     }
-    to.source = std::make_unique<cl::Checkpoint>();
+    to.source = std::make_shared<cl::Checkpoint>();
     if (DecodingResult err{ssz::decode(from, *to.source)}; err != DecodingResult::kOk) {
         return err;
     }
-    to.target = std::make_unique<cl::Checkpoint>();
+    to.target = std::make_shared<cl::Checkpoint>();
     if (DecodingResult err{ssz::decode(from, *to.target)}; err != DecodingResult::kOk) {
         return err;
     }
@@ -156,7 +174,7 @@ DecodingResult decode(ByteView& from, cl::AttestationData& to) noexcept {
 }
 
 template <>
-void encode(const cl::BeaconBlockHeader& from, Bytes& to) noexcept {
+void encode(cl::BeaconBlockHeader& from, Bytes& to) noexcept {
     ssz::encode(from.slot, to);
     ssz::encode(from.proposer_index, to);
     ssz::encode(from.parent_root, to);
@@ -189,20 +207,21 @@ DecodingResult decode(ByteView& from, cl::BeaconBlockHeader& to) noexcept {
 }
 
 template <>
-void encode(const cl::SignedBeaconBlockHeader& from, Bytes& to) noexcept {
-    if (from.header) {
-        ssz::encode(*from.header, to);
+void encode(cl::SignedBeaconBlockHeader& from, Bytes& to) noexcept {
+    if (!from.header) {
+        from.header = std::make_shared<cl::BeaconBlockHeader>();
     }
+    ssz::encode(*from.header, to);
     ssz::encode(from.signature, to);
 }
 
 template <>
 DecodingResult decode(ByteView& from, cl::SignedBeaconBlockHeader& to) noexcept {
-    if (from.size() < cl::AttestationData::kSize) {
+    if (from.size() < cl::SignedBeaconBlockHeader::kSize) {
         return DecodingResult::kInputTooShort;
     }
 
-    to.header = std::make_unique<cl::BeaconBlockHeader>();
+    to.header = std::make_shared<cl::BeaconBlockHeader>();
     if (DecodingResult err{ssz::decode(from, *to.header)}; err != DecodingResult::kOk) {
         return err;
     }
@@ -213,11 +232,12 @@ DecodingResult decode(ByteView& from, cl::SignedBeaconBlockHeader& to) noexcept 
 }
 
 template <>
-void encode(const cl::IndexedAttestation& from, Bytes& to) noexcept {
+void encode(cl::IndexedAttestation& from, Bytes& to) noexcept {
     ssz::encode_offset(cl::IndexedAttestation::kMinSize, to);
-    if (from.data) {
-        ssz::encode(*from.data, to);
+    if (!from.data) {
+        from.data = std::make_shared<cl::AttestationData>();
     }
+    ssz::encode(*from.data, to);
     ssz::encode(from.signature, to);
     for (const auto attesting_index : from.attesting_indices) {
         ssz::encode(attesting_index, to);
@@ -243,7 +263,7 @@ DecodingResult decode(ByteView& from, cl::IndexedAttestation& to) noexcept {
         return DecodingResult::kUnexpectedLength;
     }
 
-    to.data = std::make_unique<cl::AttestationData>();
+    to.data = std::make_shared<cl::AttestationData>();
     if (DecodingResult err{ssz::decode(from, *to.data)}; err != DecodingResult::kOk) {
         return err;
     }
@@ -257,6 +277,27 @@ DecodingResult decode(ByteView& from, cl::IndexedAttestation& to) noexcept {
             return err;
         }
     }
+    return DecodingResult::kOk;
+}
+
+template <>
+void encode(cl::ProposerSlashing& from, Bytes& to) noexcept {
+    if (!from.header1) {
+        from.header1 = std::make_shared<cl::SignedBeaconBlockHeader>();
+    }
+    ssz::encode(*from.header1, to);
+    if (!from.header2) {
+        from.header2 = std::make_shared<cl::SignedBeaconBlockHeader>();
+    }
+    ssz::encode(*from.header2, to);
+}
+
+template <>
+DecodingResult decode(ByteView& from, cl::ProposerSlashing& /*to*/) noexcept {
+    if (from.size() < cl::ProposerSlashing::kSize) {
+        return DecodingResult::kInputTooShort;
+    }
+
     return DecodingResult::kOk;
 }
 

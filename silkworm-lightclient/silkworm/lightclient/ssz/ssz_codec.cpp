@@ -30,23 +30,8 @@ void encode(uint64_t from, Bytes& to) noexcept {
     }
 }
 
-/*template <class T, int N>
-    requires std::convertible_to<T, uint8_t>
-void encode(T const (&from)[N], Bytes& to) noexcept {
-    for (std::size_t i{0}; i < N; ++i) {
-        to += from[i];
-    }
-}*/
-
 template <>
-void encode(uint8_t const (&from)[96], Bytes& to) noexcept {
-    for (std::size_t i{0}; i < 96; ++i) {
-        to += from[i];
-    }
-}
-
-template <>
-void encode(const evmc::bytes32& from, Bytes& to) noexcept {
+void encode(evmc::bytes32& from, Bytes& to) noexcept {
     for (std::size_t i{0}; i < kHashLength; ++i) {
         to += from.bytes[i];
     }

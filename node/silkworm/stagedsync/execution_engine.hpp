@@ -42,8 +42,8 @@ class ExecutionEngine : public Stoppable {
     using VerificationResult = std::variant<ValidChain, InvalidChain, ValidationError>;
 
     // actions
-    void insert_headers(const std::vector<std::shared_ptr<BlockHeader>>&);
-    void insert_bodies(const std::vector<std::shared_ptr<Block>>&);
+    void insert_headers(std::vector<std::shared_ptr<BlockHeader>>&);
+    void insert_bodies(std::vector<std::shared_ptr<Block>>&);
 
     auto verify_chain(Hash header_hash) -> VerificationResult;
 
@@ -58,8 +58,8 @@ class ExecutionEngine : public Stoppable {
     auto get_bodies_head() -> std::tuple<BlockNum, Hash>;
 
   private:
-    void insert_header(db::RWTxn& tx, const BlockHeader&);
-    void insert_body(db::RWTxn& tx, const Block&);
+    void insert_header(db::RWTxn& tx, BlockHeader&);
+    void insert_body(db::RWTxn& tx, Block&);
     BlockNum find_forking_point(db::RWTxn& tx, Hash header_hash);
 
     NodeSettings& node_settings_;

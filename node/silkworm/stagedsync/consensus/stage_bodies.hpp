@@ -40,7 +40,7 @@ class BodiesStage : public Stage {
   private:
     void send_body_requests();  // send requests for more bodies
     auto sync_body_sequence(BlockNum highest_body, BlockNum highest_header) -> std::shared_ptr<InternalMessage<void>>;
-    auto withdraw_ready_bodies() -> std::shared_ptr<InternalMessage<std::vector<Block>>>;
+    auto withdraw_ready_bodies() -> std::shared_ptr<InternalMessage<std::vector<std::shared_ptr<Block>>>>;
     void send_announcements();
 
     std::vector<std::string> get_log_progress() override;  // thread safe

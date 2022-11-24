@@ -259,8 +259,8 @@ bool BodySequence::is_valid_body(const BlockHeader& header, const BlockBody& bod
     return true;
 }
 
-auto BodySequence::withdraw_ready_bodies() -> std::vector<Block> {
-    std::vector<Block> ready_bodies;
+auto BodySequence::withdraw_ready_bodies() -> std::vector<std::shared_ptr<Block>> {
+    std::vector<std::shared_ptr<Block>> ready_bodies;
 
     auto curr_req = body_requests_.begin();
     while (curr_req != body_requests_.end()) {
@@ -269,7 +269,8 @@ auto BodySequence::withdraw_ready_bodies() -> std::vector<Block> {
             break;  // it needs to return the first range of consecutive blocks, so it stops at the first non ready
 
         highest_body_in_db_ = std::max(highest_body_in_db_, past_request.block_height);
-        ready_bodies.push_back({std::move(past_request.body), std::move(past_request.header)});
+        std::shared_ptr<Block> b{new Block{std::move(past_request.body), std::move(past_request.header)}};
+        ready_bodies.push_back(b);
 
         curr_req = body_requests_.erase(curr_req);  // erase curr_req and update curr_req to point to the next request
     }

@@ -75,7 +75,7 @@ void HeaderPersistence::update(const BlockHeader& header) {
         return;  // skip duplicates
     }
 
-    // TODO (mike): it would be more beautiful to move header validation here removing it from BlockExchange
+    // TODO (mike): remove forking point check
 
     // Calculate total difficulty
     auto parent_td = db::read_total_difficulty(tx_, height - 1, header.parent_hash);

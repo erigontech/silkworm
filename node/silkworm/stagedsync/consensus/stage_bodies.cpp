@@ -45,8 +45,6 @@ Stage::Result BodiesStage::forward(std::optional<NewHeight> new_height) {
         throw std::logic_error("Consensus bodies stages need a target height");
     }
 
-    Stage::Result result = Stage::Result::kUnspecified;
-
     auto constexpr KShortInterval = 200ms;
     auto constexpr kProgressUpdateInterval = 30s;
 
@@ -95,11 +93,11 @@ Stage::Result BodiesStage::forward(std::optional<NewHeight> new_height) {
                 exec_engine_.insert_bodies(bodies);
 
                 // compute new head
-                auto highest_body = std::max_element(bodies.begin(), bodies.end(), [](Block& a, Block& b) {
-                    return a.header.number < b.header.number;
+                auto highest_block = std::max_element(bodies.begin(), bodies.end(), [](shared_ptr<Block>& a, shared_ptr<Block>& b) {
+                    return a->header.number < b->header.number;
                 });
-                if (highest_body->header.number > current_head.number) {
-                    current_head = {.number = highest_body->header.number, .hash = highest_body->header.hash()};
+                if (highest_block->get()->header.number > current_head.number) {
+                    current_head = {.number = highest_block->get()->header.number, .hash = highest_block->get()->header.hash()};
                 }
 
                 // do announcements
@@ -133,7 +131,6 @@ Stage::Result BodiesStage::forward(std::optional<NewHeight> new_height) {
         return Error{"exception"};
     }
 
-    return result;
 }
 
 Stage::Result BodiesStage::unwind(UnwindPoint unwind_point) {
@@ -159,8 +156,8 @@ auto BodiesStage::sync_body_sequence(BlockNum highest_body, BlockNum highest_hea
     return message;
 }
 
-auto BodiesStage::withdraw_ready_bodies() -> std::shared_ptr<InternalMessage<std::vector<Block>>> {
-    using result_t = std::vector<Block>;
+auto BodiesStage::withdraw_ready_bodies() -> std::shared_ptr<InternalMessage<std::vector<std::shared_ptr<Block>>>> {
+    using result_t = std::vector<std::shared_ptr<Block>>;
 
     auto message = std::make_shared<InternalMessage<result_t>>([](HeaderChain&, BodySequence& bs) {
         return bs.withdraw_ready_bodies();

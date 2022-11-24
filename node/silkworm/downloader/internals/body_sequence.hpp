@@ -57,7 +57,7 @@ class BodySequence {
     Penalty accept_new_block(const Block&, const PeerId&);
 
     //! core functionalities: returns bodies that are ready to be persisted
-    auto withdraw_ready_bodies() -> std::vector<Block>;
+    auto withdraw_ready_bodies() -> std::vector<std::shared_ptr<Block>>;
 
     //! minor functionalities
     std::list<NewBlockPacket>& announces_to_do();

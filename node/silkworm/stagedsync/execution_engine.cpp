@@ -30,29 +30,29 @@ ExecutionEngine::ExecutionEngine(NodeSettings& ns, const db::RWAccess& dba)
 {
 }
 
-void ExecutionEngine::insert_headers(const std::vector<std::shared_ptr<BlockHeader>>& headers) {
+void ExecutionEngine::insert_headers(std::vector<std::shared_ptr<BlockHeader>>& headers) {
     SILK_TRACE << "ExecutionEngine: inserting " << headers.size() << " headers";
     if (headers.empty()) return;
 
     as_range::for_each(headers, [&, this](const auto& header) { insert_header(tx_, *header); });
 }
 
-void ExecutionEngine::insert_header(db::RWTxn& tx, const BlockHeader& header) {
+void ExecutionEngine::insert_header(db::RWTxn& tx, BlockHeader& header) {
     // if (!db::has_header(tx_, header.number, header.hash())) { todo: hash() is computationally expensive
-    db::write_header(tx, header, true);
+    db::write_header(tx, header, true); // todo: move?
     //}
 
     //header_cache_.put(header.hash(), header);
 }
 
-void ExecutionEngine::insert_bodies(const std::vector<std::shared_ptr<Block>>& bodies) {
+void ExecutionEngine::insert_bodies(std::vector<std::shared_ptr<Block>>& bodies) {
     SILK_TRACE << "ExecutionEngine: inserting " << bodies.size() << " bodies";
     if (bodies.empty()) return;
 
     as_range::for_each(bodies, [&, this](const auto& body) { insert_body(tx_, *body); });
 }
 
-void ExecutionEngine::insert_body(db::RWTxn& tx, const Block& block) {
+void ExecutionEngine::insert_body(db::RWTxn& tx, Block& block) {
     Hash block_hash = block.header.hash();  // todo: hash() is computationally expensive
     BlockNum block_num = block.header.number;
 
@@ -82,7 +82,7 @@ auto ExecutionEngine::verify_chain(Hash header_hash) -> VerificationResult {
         case Stage::Result::kWrongFork:
         case Stage::Result::kInvalidBlock:
         case Stage::Result::kWrongStateRoot:
-            return InvalidChain{pipeline_.unwind_point().value(), pipeline_.bad_block()};
+            return InvalidChain{pipeline_.unwind_point().value(), pipeline_.unwind_head(), pipeline_.bad_block()};
         case Stage::Result::kStoppedByEnv:
             return ValidationError{pipeline_.head_header_number()}; // todo(mike): is it ok?
     }
@@ -205,17 +205,29 @@ auto ExecutionEngine::get_headers_head() -> std::tuple<BlockNum, Hash, BigInt> {
 
     auto headers_head_hash = db::read_canonical_hash(tx_, headers_head_height);
     if (!headers_head_hash) {
-        throw std::logic_error("headers stage height not present on canonical, height=" + std::to_string(headers_head_height));
+        throw std::logic_error("Execution, invariant violation, headers stage height not present on canonical, "
+                               "height=" + std::to_string(headers_head_height));
     }
 
     std::optional<BigInt> headers_head_td = db::read_total_difficulty(tx_, headers_head_height, *headers_head_hash);
     if (!headers_head_td) {
-        throw std::logic_error("total difficulty of canonical hash at height " + std::to_string(headers_head_height) +
-                               " not found in db");
+        throw std::logic_error("Execution, invariant violation, total difficulty of canonical hash at height " +
+                               std::to_string(headers_head_height) + " not found in db");
     }
 
     return {headers_head_height, *headers_head_hash, *headers_head_td}; // add headers_head_td
 }
+
+auto ExecutionEngine::get_bodies_head() -> std::tuple<BlockNum, Hash> {
+    auto bodies_head_height = db::stages::read_stage_progress(tx_, db::stages::kBlockBodiesKey);
+    auto bodies_head_hash = db::read_canonical_hash(tx_, bodies_head_height);
+    if (!bodies_head_hash) {
+        throw std::logic_error("Execution, invariant violation, body must have canonical header at same height (" +
+                               std::to_string(bodies_head_height) + ")");
+    }
+    return {bodies_head_height, *bodies_head_hash};
+}
+
 
 /*
  * STAGE LOOP WORKER -> verify_chain

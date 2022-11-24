@@ -190,8 +190,9 @@ int main(int argc, char* argv[]) {
         asio_guard.reset();
         asio_thread.join();
 
-        log::Message() << "Closing Database chaindata path " << node_settings.data_directory->chaindata().path();
+        log::Message() << "Closing database chaindata path: " << node_settings.data_directory->chaindata().path();
         chaindata_db.close();
+        log::Message() << "Database closed";
         sync_loop.rethrow();  // Eventually throws the exception which caused the stop
         return 0;
 

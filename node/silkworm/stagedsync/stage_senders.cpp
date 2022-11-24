@@ -52,7 +52,7 @@ namespace silkworm::stagedsync {
 
 Senders::Senders(NodeSettings* node_settings, SyncContext* sync_context)
     : Stage(sync_context, db::stages::kSendersKey, node_settings),
-      max_batch_size_{node_settings->batch_size / std::thread::hardware_concurrency() / sizeof(AddressRecovery)},
+      max_batch_size_{node_settings->batch_size / sizeof(AddressRecovery)},
       collector_{node_settings} {
     batch_.reserve(max_batch_size_ + max_batch_size_ / 10);
 }
@@ -279,18 +279,19 @@ Stage::Result Senders::parallel_recover(db::RWTxn& txn) {
 
         // Load canonical headers from db
         increment_phase();
+        log::Trace(log_prefix_, {"op", "read canonical hashes", "from", std::to_string(from), "to", std::to_string(target_progress)});
+
         success_or_throw(read_canonical_headers(txn, from, target_progress));
 
         // Load block transactions from db and recover tx senders in batches
         increment_phase();
-        BlockNum reached_block_num{0};
-
         log::Trace(log_prefix_, {"op", "read bodies", "from", std::to_string(from), "to", std::to_string(target_progress)});
 
         auto bodies_cursor{db::open_cursor(*txn, db::table::kBlockBodies)};
         auto transactions_cursor{db::open_cursor(*txn, db::table::kBlockTransactions)};
 
         // Set to first block and read all in sequence
+        BlockNum reached_block_num{0};
         BlockNum expected_block_num{from};
         auto block_hash_it{canonical_hashes_.begin()};
         auto bodies_initial_key{db::block_key(from, block_hash_it->bytes)};
@@ -344,13 +345,15 @@ Stage::Result Senders::parallel_recover(db::RWTxn& txn) {
         }
 
         if (!batch_.empty()) {
+            increment_total_collected_transactions(batch_.size());
             recover_batch(context, from);
         }
 
         // Store all recovered senders into db
-        store_senders(txn);
+        increment_phase();
+        log::Trace(log_prefix_, {"op", "store senders", "reached_block_num", std::to_string(reached_block_num)});
 
-        log::Trace(log_prefix_, {"op", "read bodies", "reached_block_num", std::to_string(reached_block_num)});
+        store_senders(txn);
 
         // Update stage progress with last reached block number
         db::stages::write_stage_progress(*txn, db::stages::kSendersKey, reached_block_num);
@@ -511,7 +514,7 @@ Stage::Result Senders::add_to_batch(BlockNum block_num, std::vector<Transaction>
 
 void Senders::recover_batch(secp256k1_context* context, BlockNum from) {
     // Launch parallel senders recovery
-    log::Info(log_prefix_, {"recovery", "parallel", "size", std::to_string(batch_.size())});
+    log::Trace(log_prefix_, {"op", "recover_batch", "first", std::to_string(batch_.cbegin()->block_num)});
 
     // TODO(canepat) replace w/ std::for_each(std::execution::par, ...) when Clang will support parallel algorithms
     parallel_for_each(batch_.begin(), batch_.end(), [&](auto& package) {
@@ -558,7 +561,7 @@ void Senders::collect_senders(BlockNum from) {
 
 void Senders::store_senders(db::RWTxn& txn) {
     if (!collector_.empty()) {
-        log::Info(log_prefix_, {"load ETL items", std::to_string(collector_.size())});
+        log::Trace(log_prefix_, {"load ETL items", std::to_string(collector_.size())});
         // Prepare target table
         auto senders_cursor{db::open_cursor(*txn, db::table::kSenders)};
         log::Trace(log_prefix_, {"load ETL data", human_size(collector_.bytes_size())});

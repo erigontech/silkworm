@@ -85,6 +85,8 @@ auto ExecutionEngine::verify_chain(Hash header_hash) -> VerificationResult {
             return InvalidChain{pipeline_.unwind_point().value(), pipeline_.unwind_head(), pipeline_.bad_block()};
         case Stage::Result::kStoppedByEnv:
             return ValidationError{pipeline_.head_header_number()}; // todo(mike): is it ok?
+        default:
+            ; // ignore?
     }
 
     throw StageError(forward_result);
@@ -192,12 +194,20 @@ auto ExecutionEngine::get_header(BlockNum header_heigth, Hash header_hash) -> st
     return header;
 }
 
+auto ExecutionEngine::get_canonical_hash(BlockNum height) -> std::optional<Hash> {
+    auto hash = db::read_canonical_hash(tx_, height);
+    return hash;
+}
+
 auto ExecutionEngine::get_header_td(BlockNum header_heigth, Hash header_hash) -> std::optional<BigInt> {
     return db::read_total_difficulty(tx_, header_heigth, header_hash);
 }
 
-auto ExecutionEngine::get_body(Hash header_hash) -> std::optional<Block> {
-
+auto ExecutionEngine::get_body(Hash header_hash) -> std::optional<BlockBody> {
+    BlockBody body;
+    bool found = read_body(tx_, header_hash, body);
+    if (!found) return {};
+    return body;
 }
 
 auto ExecutionEngine::get_headers_head() -> std::tuple<BlockNum, Hash, BigInt> {

@@ -63,7 +63,7 @@ void ChainForkView::add(const BlockHeader& header) {  // try to modularize this 
     // Now we can decide whether this header will create a change in the canonical head
     if (td > current_head_td_) {
         // find the forking point - i.e. the latest header on the canonical chain which is an ancestor of this one
-        auto forking_point = find_forking_point(header, height, header.parent_hash);
+        auto forking_point = find_forking_point(header);
 
         // Save progress
         current_head_.number = height;
@@ -80,13 +80,14 @@ void ChainForkView::add(const BlockHeader& header) {  // try to modularize this 
     previous_hash_ = hash;
 }
 
-BlockIdPair ChainForkView::find_forking_point(const BlockHeader& header, BlockNum height, const Hash& parent_hash) {
+BlockIdPair ChainForkView::find_forking_point(const BlockHeader& header) {
     BlockIdPair forking_point{};
+    BlockNum height = header.number;
 
     // Read canonical hash at height-1
     auto prev_canon_hash = canonical_cache_.get_as_copy(height - 1);  // look in the cache first
     if (!prev_canon_hash) {
-        prev_canon_hash = db::read_canonical_hash(tx, height - 1);  // then look in the db
+        prev_canon_hash = exec_engine_.get_canonical_hash(height - 1);  // then look in the db
     }
 
     // Most common case: forking point is the height of the parent header
@@ -96,10 +97,10 @@ BlockIdPair ChainForkView::find_forking_point(const BlockHeader& header, BlockNu
     }
     // Going further back
     else {
-        auto parent = exec_engine_.get_header(height - 1, parent_hash);
+        auto parent = exec_engine_.get_header(height - 1, header.parent_hash);
         if (!parent) {
             std::string error_message = "Consensus: parent non found on Execution,"
-                " hash= " + to_hex(parent_hash) +
+                " hash= " + to_hex(header.parent_hash) +
                 " height= " + std::to_string(height - 1) +
                 " for header= " + to_hex(header.hash());
             log::Error("Consensus") << error_message;
@@ -119,8 +120,8 @@ BlockIdPair ChainForkView::find_forking_point(const BlockHeader& header, BlockNu
 
         // now look in the db
         std::optional<Hash> db_canon_hash;
-        while ((db_canon_hash = db::read_canonical_hash(tx, ancestor_height)) && db_canon_hash != ancestor_hash) {
-            auto ancestor = exec_engine_.get_header(tx, ancestor_height, ancestor_hash);
+        while ((db_canon_hash = exec_engine_.get_canonical_hash(ancestor_height)) && db_canon_hash != ancestor_hash) {
+            auto ancestor = exec_engine_.get_header(ancestor_height, ancestor_hash);
             ancestor_hash = ancestor->parent_hash;
             --ancestor_height;
         }
@@ -131,36 +132,6 @@ BlockIdPair ChainForkView::find_forking_point(const BlockHeader& header, BlockNu
     }
 
     return forking_point;
-}
-
-// On Erigon is fixCanonicalChain
-void ChainForkView::update_canonical_chain(BlockNum height, Hash hash) {  // hash can be empty
-    if (height == 0) return;
-
-    auto ancestor_hash = hash;
-    auto ancestor_height = height;
-
-    std::optional<Hash> persisted_canon_hash = db::read_canonical_hash(tx_, ancestor_height);
-    while (!persisted_canon_hash ||
-           std::memcmp(persisted_canon_hash.value().bytes, ancestor_hash.bytes, kHashLength) != 0) {
-        // while (persisted_canon_hash != ancestor_hash) { // better but gcc12 release erroneously raises a maybe-uninitialized warn
-        db::write_canonical_hash(tx_, ancestor_height, ancestor_hash);
-
-        auto ancestor = db::read_header(tx_, ancestor_height, ancestor_hash);
-        if (ancestor == std::nullopt) {
-            std::string msg =
-                "HeaderPersistence: fix canonical chain failed at"
-                " ancestor=" +
-                std::to_string(ancestor_height) + " hash=" + ancestor_hash.to_hex();
-            log::Error("HeaderStage") << msg;
-            throw std::logic_error(msg);
-        }
-
-        ancestor_hash = ancestor->parent_hash;
-        --ancestor_height;
-
-        persisted_canon_hash = db::read_canonical_hash(tx_, ancestor_height);
-    }
 }
 
 }

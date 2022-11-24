@@ -39,7 +39,7 @@ class ChainForkView {
   private:
     static constexpr size_t kCanonicalCacheSize = 1000;
 
-    BlockIdPair find_forking_point(const BlockHeader& header, BlockNum height, const Hash& parent_hash);
+    BlockIdPair find_forking_point(const BlockHeader& header);
 
     ExecutionEngine& exec_engine_;
     lru_cache<BlockNum, Hash> canonical_cache_;

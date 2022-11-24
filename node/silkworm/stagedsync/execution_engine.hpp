@@ -52,8 +52,9 @@ class ExecutionEngine : public Stoppable {
     // state
     auto get_header(Hash) -> std::optional<BlockHeader>;
     auto get_header(BlockNum, Hash) -> std::optional<BlockHeader>;
+    auto get_canonical_hash(BlockNum) -> std::optional<Hash>;
     auto get_header_td(BlockNum, Hash) -> std::optional<BigInt>;
-    auto get_body(Hash) -> std::optional<Block>;
+    auto get_body(Hash) -> std::optional<BlockBody>;
     auto get_headers_head() -> std::tuple<BlockNum, Hash, BigInt>;
     auto get_bodies_head() -> std::tuple<BlockNum, Hash>;
 

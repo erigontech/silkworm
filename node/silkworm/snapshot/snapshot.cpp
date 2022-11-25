@@ -53,6 +53,7 @@ bool Snapshot::for_each_item(const Snapshot::WordItemFunc& fn) {
             if (!result) return false;
             ++word_count;
             item.offset = next_offset;
+            item.value.clear();
         }
         return true;
     });
@@ -68,7 +69,7 @@ void Snapshot::close_segment() {
     decoder_.close();
 }
 
-bool HeaderSnapshot::for_each_header(const HeaderWalker& walker) {
+bool HeaderSnapshot::for_each_header(const Walker& walker) {
     return for_each_item([walker](const WordItem& item) -> bool {
         ByteView encoded_header{item.value.data() + 1, item.value.length() - 1};
         SILK_DEBUG << "for_each_header encoded_header: " << to_hex(encoded_header);
@@ -89,11 +90,11 @@ void HeaderSnapshot::close_index() {
     // TODO(canepat): implement
 }
 
-bool BodySnapshot::for_each_body(const BodyWalker& walker) {
-    return for_each_item([walker](const WordItem& item) -> bool {
-        const BlockNum number = item.position;
-        ByteView body_rlp{item.value.data() + 1, item.value.length() - 1};
-        SILK_DEBUG << "for_each_body body_rlp: " << to_hex(body_rlp);
+bool BodySnapshot::for_each_body(const Walker& walker) {
+    return for_each_item([&](const WordItem& item) -> bool {
+        const BlockNum number = block_from_ + item.position;
+        ByteView body_rlp{item.value.data(), item.value.length()};
+        SILK_DEBUG << "for_each_body number: " << number << " body_rlp: " << to_hex(body_rlp);
         db::detail::BlockBodyForStorage body;
         const auto decode_result = db::detail::decode_stored_block_body(body_rlp, body);
         SILK_DEBUG << "for_each_body decode_result: " << magic_enum::enum_name<>(decode_result);

@@ -114,7 +114,8 @@ class SnapshotRepository {
 
     void reopen_folder();
 
-    bool for_each_header(HeaderSnapshot::HeaderWalker fn);
+    bool for_each_header(const HeaderSnapshot::Walker& fn);
+    bool for_each_body(const BodySnapshot::Walker& fn);
 
   private:
     void reopen_list(const SnapshotFileList& segment_files, bool optimistic);

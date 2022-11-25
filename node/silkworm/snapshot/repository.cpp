@@ -109,10 +109,23 @@ void SnapshotRepository::reopen_folder() {
     reopen_list(segment_files, /*.optimistic=*/false);
 }
 
-bool SnapshotRepository::for_each_header(HeaderSnapshot::HeaderWalker fn) {
+bool SnapshotRepository::for_each_header(const HeaderSnapshot::Walker& fn) {
     for (const auto& [_, header_snapshot] : header_segments_) {
         SILK_DEBUG << "for_each_header header_snapshot: " << header_snapshot->path().string();
-        const auto keep_going = header_snapshot->for_each_header([fn](const auto* header) { return fn(header); });
+        const auto keep_going = header_snapshot->for_each_header([fn](const auto* header) {
+            return fn(header);
+        });
+        if (!keep_going) return false;
+    }
+    return true;
+}
+
+bool SnapshotRepository::for_each_body(const BodySnapshot::Walker& fn) {
+    for (const auto& [_, body_snapshot] : body_segments_) {
+        SILK_DEBUG << "for_each_body body_snapshot: " << body_snapshot->path().string();
+        const auto keep_going = body_snapshot->for_each_body([fn](BlockNum number, const auto* body) {
+            return fn(number, body);
+        });
         if (!keep_going) return false;
     }
     return true;
@@ -166,8 +179,15 @@ void SnapshotRepository::reopen_header(const SnapshotFile& seg_file) {
     header_segment->reopen_index();
 }
 
-void SnapshotRepository::reopen_body(const SnapshotFile& /*seg_file*/) {
-    // TODO(canepat): implement
+void SnapshotRepository::reopen_body(const SnapshotFile& seg_file) {
+    if (body_segments_.find(seg_file.path()) == body_segments_.end()) {
+        auto body_segment = std::make_unique<BodySnapshot>(seg_file.path(), seg_file.block_from(), seg_file.block_to());
+        body_segment->reopen_segment();
+        body_segments_[seg_file.path()] = std::move(body_segment);
+    }
+    SILKWORM_ASSERT(body_segments_.find(seg_file.path()) != body_segments_.end());
+    const auto& body_segment = body_segments_[seg_file.path()];
+    body_segment->reopen_index();
 }
 
 void SnapshotRepository::reopen_transaction(const SnapshotFile& /*seg_file*/) {

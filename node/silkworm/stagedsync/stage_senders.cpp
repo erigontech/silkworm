@@ -518,14 +518,14 @@ void Senders::recover_batch(secp256k1_context* context, BlockNum from, mdbx::cur
     const auto start = sw.start();
     // TODO(canepat) replace w/ std::for_each(std::execution::par, ...) when Clang will support parallel algorithms
     parallel_for_each(batch_.begin(), batch_.end(), [&](auto& package) {
-        auto tx_hash{keccak256(package.rlp)};
-        const bool ok = silkpre_recover_address(package.tx_from.bytes, /*package.*/tx_hash.bytes, package.tx_signature, package.odd_y_parity, context);
+        const auto tx_hash{keccak256(package.rlp)};
+        const bool ok = silkpre_recover_address(package.tx_from.bytes, tx_hash.bytes, package.tx_signature, package.odd_y_parity, context);
         if (!ok) {
             throw std::runtime_error("Unable to recover from address in block " + std::to_string(package.block_num));
         }
     });
     const auto [end, _] = sw.lap();
-    log::Trace(log_prefix_, {"op", "parallel_for_each", "elapsed", sw.format(end-start)});
+    log::Trace(log_prefix_, {"op", "parallel_for_each", "elapsed", sw.format(end - start)});
 
     if (is_stopping()) throw StageError(Stage::Result::kAborted);
 
@@ -566,7 +566,7 @@ void Senders::store_senders(BlockNum from, mdbx::cursor& senders_cursor) {
         value.clear();
     }
     const auto [end, _] = sw.lap();
-    log::Trace(log_prefix_, {"op", "store_senders", "elapsed", sw.format(end-start)});
+    log::Trace(log_prefix_, {"op", "store_senders", "elapsed", sw.format(end - start)});
 
     if (is_stopping()) throw StageError(Stage::Result::kAborted);
 }

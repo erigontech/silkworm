@@ -30,10 +30,10 @@ namespace silkworm::stagedsync {
 //! \brief The information to compute the sender address from transaction signature
 struct AddressRecovery {
     BlockNum block_num{0};       // Number of block containing the transaction
-    ethash::hash256 tx_hash{};   // Keccak hash of transaction's RLP representation
     bool odd_y_parity{false};    // Whether y parity is odd (https://eips.ethereum.org/EIPS/eip-155)
-    uint8_t tx_signature[64]{};  // Signature of transaction
+    uint8_t tx_signature[64]{};  // Signature of the transaction
     evmc::address tx_from;       // Recovered sender address
+    Bytes rlp;                   // RLP representation of the transaction
 };
 
 class Senders final : public Stage {
@@ -49,13 +49,11 @@ class Senders final : public Stage {
   private:
     Stage::Result parallel_recover(db::RWTxn& txn);
 
-    Stage::Result read_canonical_headers(db::ROTxn& txn, BlockNum from, BlockNum to) noexcept;
+    Stage::Result read_canonical_hashes(db::ROTxn& txn, BlockNum from, BlockNum to) noexcept;
     Stage::Result add_to_batch(BlockNum block_num, std::vector<Transaction>&& transactions);
-    void recover_batch(secp256k1_context* context, BlockNum from);
-    void collect_senders(BlockNum from);
-    void store_senders(db::RWTxn& txn);
+    void recover_batch(secp256k1_context* context, BlockNum from, mdbx::cursor& senders_cursor);
+    void store_senders(BlockNum from, mdbx::cursor& senders_cursor);
 
-    void increment_phase();
     void increment_total_processed_blocks();
     void increment_total_collected_transactions(std::size_t delta);
 
@@ -68,12 +66,8 @@ class Senders final : public Stage {
     //! The current recovery batch being created
     std::vector<AddressRecovery> batch_;
 
-    //! ETL collector writing recovered senders in bulk
-    etl::Collector collector_;
-
     // Stats
     std::mutex mutex_{};
-    uint16_t current_phase_{0};
     std::size_t total_processed_blocks_{0};
     std::size_t total_collected_transactions_{0};
     std::string current_key_{};

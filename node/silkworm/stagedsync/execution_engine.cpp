@@ -220,7 +220,9 @@ void ExecutionEngine::update_canonical_chain_up_to(BlockNum height, Hash hash) {
     while (!persisted_canon_hash ||
            std::memcmp(persisted_canon_hash.value().bytes, ancestor_hash.bytes, kHashLength) != 0) {
         // while (persisted_canon_hash != ancestor_hash) { // better but gcc12 release erroneously raises a maybe-uninitialized warn
+
         db::write_canonical_hash(tx_, ancestor_height, ancestor_hash);
+        canonical_cache_.put(ancestor_height, ancestor_hash);
 
         auto ancestor = db::read_header(tx_, ancestor_height, ancestor_hash);
         if (ancestor == std::nullopt) {
@@ -243,6 +245,7 @@ void ExecutionEngine::delete_canonical_chain_down_to(BlockNum unwind_point) {
 
     for (BlockNum current_height = current_head_.number; current_height > unwind_point; current_height--) {
         db::delete_canonical_hash(tx_, current_height);  // do not throw if not found
+        canonical_cache_.remove(current_height);
     }
 
 }

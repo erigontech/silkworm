@@ -33,21 +33,12 @@ class ChainForkView {
 
     bool head_changed() const;
 
-    BlockIdPair unwind_point() const;
-    bool unwind_needed() const;
-
   private:
-    static constexpr size_t kCanonicalCacheSize = 1000;
-
-    BlockIdPair find_forking_point(const BlockHeader& header);
-
     ExecutionEngine& exec_engine_;
-    lru_cache<BlockNum, Hash> canonical_cache_;
 
     BlockIdPair initial_head_{};
     BlockIdPair current_head_{};
     BigInt initial_head_td_, current_head_td_; // td of initial and current head
-    std::optional<BlockIdPair> unwind_point_; // point to unwind to
     Hash previous_hash_;
 };
 

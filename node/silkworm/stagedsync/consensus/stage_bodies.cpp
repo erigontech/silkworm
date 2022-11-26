@@ -36,7 +36,7 @@ BodiesStage::BodiesStage(BlockExchange& bd, ExecutionEngine& ee)
 BodiesStage::~BodiesStage() {
 }
 
-Stage::Result BodiesStage::forward(std::optional<NewHeight> new_height) {
+auto BodiesStage::forward(std::optional<NewHeight> new_height) -> NewHeight {
     using std::shared_ptr;
     using namespace std::chrono_literals;
     using namespace std::chrono;
@@ -52,17 +52,17 @@ Stage::Result BodiesStage::forward(std::optional<NewHeight> new_height) {
     timing.start();
     log::Info(log_prefix_) << "Start";
 
-    if (block_downloader_.is_stopping()) {
-        log::Error(log_prefix_) << "Aborted, block exchange is down";
-        return Error{"aborted"};
-    }
-
     try {
         BlockIdPair initial_head{};
         std::tie(initial_head.number, initial_head.hash) = exec_engine_.get_bodies_head();
 
         current_height_ = initial_head.number;
         get_log_progress();  // this is a trick to set log progress initial value, please improve
+
+        if (block_downloader_.is_stopping()) {
+            log::Error(log_prefix_) << "Aborted, block exchange is down";
+            return NewHeight{.block_num = initial_head.number, .hash = initial_head.hash};
+        }
 
         RepeatedMeasure<BlockNum> height_progress(initial_head.number);
         log::Info(log_prefix_) << "Waiting for bodies... from=" << height_progress.get();
@@ -127,15 +127,13 @@ Stage::Result BodiesStage::forward(std::optional<NewHeight> new_height) {
 
     } catch (const std::exception& e) {
         log::Error(log_prefix_) << "Aborted due to exception: " << e.what();
-
-        return Error{"exception"};
+        throw e;
     }
 
 }
 
-Stage::Result BodiesStage::unwind(UnwindPoint unwind_point) {
+void BodiesStage::unwind(UnwindPoint unwind_point) {
     current_height_ = unwind_point.block_num;
-    return Stage::NewHeight{.block_num = unwind_point.block_num, .hash = unwind_point.hash};
 }
 
 void BodiesStage::send_body_requests() {

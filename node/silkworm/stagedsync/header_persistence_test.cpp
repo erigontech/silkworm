@@ -20,12 +20,11 @@
 
 #include <catch2/catch.hpp>
 
-#include <silkworm/chain/genesis.hpp>
-#include <silkworm/common/cast.hpp>
-#include <silkworm/common/test_context.hpp>
-#include <silkworm/db/genesis.hpp>
-
-#include "header_chain.hpp"
+#include "silkworm/chain/genesis.hpp"
+#include "silkworm/common/cast.hpp"
+#include "silkworm/common/test_context.hpp"
+#include "silkworm/db/genesis.hpp"
+#include "silkworm/downloader/internals/header_chain.hpp"
 
 namespace silkworm {
 

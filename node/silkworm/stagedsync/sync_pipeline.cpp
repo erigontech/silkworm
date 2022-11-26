@@ -259,6 +259,9 @@ Stage::Result SyncPipeline::unwind(db::RWTxn& cycle_txn, BlockNum unwind_point) 
             }
         }
 
+        head_header_hash_ = db::read_head_header_hash(cycle_txn).value_or(Hash{});
+        head_header_number_ = ???;
+
         // Clear context
         std::swap(sync_context_->unwind_point, sync_context_->previous_unwind_point);
         sync_context_->unwind_point.reset();

@@ -34,8 +34,8 @@ class BodiesStage : public Stage {
     BodiesStage(BodiesStage&&) = delete;       // nor movable
     ~BodiesStage();
 
-    Stage::Result forward(std::optional<NewHeight>) override;  // go forward, downloading headers
-    Stage::Result unwind(UnwindPoint) override;   // go backward, unwinding headers to new_height
+    NewHeight forward(std::optional<NewHeight>) override;  // go forward, downloading bodies
+    void unwind(UnwindPoint) override;   // go backward, unwinding bodies to unwind point
 
   private:
     void send_body_requests();  // send requests for more bodies

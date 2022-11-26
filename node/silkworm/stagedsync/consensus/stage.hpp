@@ -32,11 +32,9 @@ class Stage : public Stoppable {
 
     struct NewHeight {BlockNum block_num; Hash hash;};
     struct UnwindPoint {BlockNum block_num; Hash hash; std::optional<Hash> bad_block;};
-    struct Error {std::string reason;};
-    using Result = std::variant<NewHeight, UnwindPoint, Error>;
 
-    virtual Stage::Result forward(std::optional<NewHeight>) = 0;
-    virtual Stage::Result unwind(UnwindPoint) = 0;
+    virtual NewHeight forward(std::optional<NewHeight>) = 0;
+    virtual void unwind(UnwindPoint) = 0;
 
     virtual std::vector<std::string> get_log_progress() = 0;
   protected:

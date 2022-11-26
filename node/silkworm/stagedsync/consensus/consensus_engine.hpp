@@ -34,8 +34,8 @@ class ConsensusEngine : public ActiveComponent {
     void execution_loop() final;           /*[[long_running]]*/
 
   private:
-    Stage::Result foward_and_insert_blocks(HeadersStage&, BodiesStage&);
-    Stage::Result unwind(HeadersStage&, BodiesStage&, Stage::UnwindPoint);
+    auto foward_and_insert_blocks(HeadersStage&, BodiesStage&) -> Stage::NewHeight;
+    void unwind(HeadersStage&, BodiesStage&, Stage::UnwindPoint);
 
     NodeSettings& node_settings_;
     db::ROAccess db_access_;

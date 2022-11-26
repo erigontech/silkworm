@@ -21,14 +21,13 @@
 
 #include <catch2/catch.hpp>
 
-#include <silkworm/chain/genesis.hpp>
-#include <silkworm/common/cast.hpp>
-#include <silkworm/common/test_context.hpp>
-#include <silkworm/db/genesis.hpp>
-#include <silkworm/db/stages.hpp>
-#include <silkworm/types/block.hpp>
-
-#include "body_sequence.hpp"
+#include "silkworm/chain/genesis.hpp"
+#include "silkworm/common/cast.hpp"
+#include "silkworm/common/test_context.hpp"
+#include "silkworm/db/genesis.hpp"
+#include "silkworm/db/stages.hpp"
+#include "silkworm/downloader/internals/body_sequence.hpp"
+#include "silkworm/types/block.hpp"
 
 namespace silkworm {
 

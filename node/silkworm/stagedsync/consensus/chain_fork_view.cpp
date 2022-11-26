@@ -21,7 +21,7 @@ limitations under the License.
 
 namespace silkworm::stagedsync::consensus {
 
-ChainForkView::ChainForkView(ExecutionEngine& ee) : exec_engine_{ee}, canonical_cache_(kCanonicalCacheSize) {
+ChainForkView::ChainForkView(ExecutionEngine& ee) : exec_engine_{ee} {
     std::tie(initial_head_.number, initial_head_.hash, initial_head_td_) = exec_engine_.get_headers_head();
 
     current_head_td_ = initial_head_td_;
@@ -30,15 +30,11 @@ ChainForkView::ChainForkView(ExecutionEngine& ee) : exec_engine_{ee}, canonical_
 
 bool ChainForkView::head_changed() const { return current_head_td_ != initial_head_td_; }
 
-bool ChainForkView::unwind_needed() const { return unwind_point_.has_value(); }
-
 BlockNum ChainForkView::head_height() const { return current_head_.number; }
 
 Hash ChainForkView::head_hash() const { return current_head_.hash; }
 
 BigInt ChainForkView::head_total_difficulty() const { return current_head_td_; }
-
-BlockIdPair ChainForkView::unwind_point() const { return *unwind_point_; }
 
 void ChainForkView::add(const BlockHeader& header) {  // try to modularize this method
     // Admittance conditions
@@ -62,76 +58,13 @@ void ChainForkView::add(const BlockHeader& header) {  // try to modularize this 
 
     // Now we can decide whether this header will create a change in the canonical head
     if (td > current_head_td_) {
-        // find the forking point - i.e. the latest header on the canonical chain which is an ancestor of this one
-        auto forking_point = find_forking_point(header);
-
         // Save progress
         current_head_.number = height;
         current_head_.hash = hash;
         current_head_td_ = td;  // this makes sure we end up choosing the chain with the max total difficulty
-
-        canonical_cache_.put(height, hash);
-
-        if (forking_point.number < unwind_point_->number) {  // See if the forking point affects the unwind-point
-            unwind_point_ = forking_point;    // (the block number to which other stages will need to unwind)
-        }
     }
 
     previous_hash_ = hash;
-}
-
-BlockIdPair ChainForkView::find_forking_point(const BlockHeader& header) {
-    BlockIdPair forking_point{};
-    BlockNum height = header.number;
-
-    // Read canonical hash at height-1
-    auto prev_canon_hash = canonical_cache_.get_as_copy(height - 1);  // look in the cache first
-    if (!prev_canon_hash) {
-        prev_canon_hash = exec_engine_.get_canonical_hash(height - 1);  // then look in the db
-    }
-
-    // Most common case: forking point is the height of the parent header
-    if (prev_canon_hash == header.parent_hash) {
-        forking_point.number = height - 1;
-        forking_point.hash = header.parent_hash;
-    }
-    // Going further back
-    else {
-        auto parent = exec_engine_.get_header(height - 1, header.parent_hash);
-        if (!parent) {
-            std::string error_message = "Consensus: parent non found on Execution,"
-                " hash= " + to_hex(header.parent_hash) +
-                " height= " + std::to_string(height - 1) +
-                " for header= " + to_hex(header.hash());
-            log::Error("Consensus") << error_message;
-            throw std::logic_error(error_message);
-        }
-
-        auto ancestor_hash = parent->parent_hash;
-        auto ancestor_height = height - 2;
-
-        // look in the cache first
-        const Hash* cached_canon_hash;
-        while ((cached_canon_hash = canonical_cache_.get(ancestor_height)) && *cached_canon_hash != ancestor_hash) {
-            auto ancestor = exec_engine_.get_header(ancestor_height, ancestor_hash);
-            ancestor_hash = ancestor->parent_hash;
-            --ancestor_height;
-        }  // if this loop finds a prev_canon_hash the next loop will be executed, is this right?
-
-        // now look in the db
-        std::optional<Hash> db_canon_hash;
-        while ((db_canon_hash = exec_engine_.get_canonical_hash(ancestor_height)) && db_canon_hash != ancestor_hash) {
-            auto ancestor = exec_engine_.get_header(ancestor_height, ancestor_hash);
-            ancestor_hash = ancestor->parent_hash;
-            --ancestor_height;
-        }
-
-        // loop above terminates when prev_canon_hash == ancestor_hash, therefore ancestor_height is our forking point
-        forking_point.number = ancestor_height;
-        forking_point.hash = ancestor_hash;
-    }
-
-    return forking_point;
 }
 
 }

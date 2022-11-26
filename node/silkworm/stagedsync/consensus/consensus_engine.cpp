@@ -26,59 +26,26 @@ ConsensusEngine::ConsensusEngine(NodeSettings& ns, db::ROAccess& dba, BlockExcha
       exec_engine_{ee} {
 }
 
-Stage::Result ConsensusEngine::foward_and_insert_blocks(HeadersStage& headers_stage, BodiesStage& bodies_stage) {
+auto ConsensusEngine::foward_and_insert_blocks(HeadersStage& headers_stage, BodiesStage& bodies_stage) -> Stage::NewHeight {
     using NewHeight = Stage::NewHeight;
 
     NewHeight as_far_as_possible{};
-    Stage::Result result = headers_stage.forward(as_far_as_possible);
 
-    if (!std::holds_alternative<NewHeight>(result)) {
-        return result; // unwind or error
+    auto new_height = headers_stage.forward(as_far_as_possible);
+
+    auto bodies_height = bodies_stage.forward(new_height);
+    if (new_height.block_num != bodies_height.block_num) {
+        // ???
     }
 
-    auto new_height = std::get<NewHeight>(result);
-
-    result = bodies_stage.forward(new_height);
-
-    return result; // // new_height or unwind or error
+    return new_height;
 }
 
-Stage::Result ConsensusEngine::unwind(HeadersStage& headers_stage, BodiesStage& bodies_stage, Stage::UnwindPoint unwind_point) {
-    using NewHeight = Stage::NewHeight;
-    using UnwindPoint = Stage::UnwindPoint;
-    using Error = Stage::Error;
+void ConsensusEngine::unwind(HeadersStage& headers_stage, BodiesStage& bodies_stage, Stage::UnwindPoint unwind_point) {
 
-    Stage::Result result = bodies_stage.unwind(unwind_point);
+    bodies_stage.unwind(unwind_point);
 
-    if (std::holds_alternative<UnwindPoint>(result)) {
-        throw std::logic_error("consensus_engine exception, bodies_stage unwind method cannot return unwind");
-    }
-    else if (std::holds_alternative<Error>(result)) {
-        return result;
-    }
-
-    auto new_height = std::get<NewHeight>(result);
-
-    if (new_height.block_num != unwind_point.block_num) {
-        // ???
-    }
-
-    result = headers_stage.unwind(unwind_point);
-
-    if (std::holds_alternative<UnwindPoint>(result)) {
-        throw std::logic_error("consensus_engine exception, headers_stage unwind method cannot return unwind");
-    }
-    else if (std::holds_alternative<Error>(result)) {
-        return result;
-    }
-
-    new_height = std::get<NewHeight>(result);
-
-    if (new_height.block_num != unwind_point.block_num) {
-        // ???
-    }
-
-    return result;
+    headers_stage.unwind(unwind_point);
 }
 
 void ConsensusEngine::execution_loop() {
@@ -87,32 +54,20 @@ void ConsensusEngine::execution_loop() {
     using InvalidChain = ExecutionEngine::InvalidChain;
     using NewHeight = Stage::NewHeight;
     using UnwindPoint = Stage::UnwindPoint;
-    using Error = Stage::Error;
 
     while(!is_stopping()) {
 
         HeadersStage headers_stage{block_exchange_, exec_engine_};
         BodiesStage bodies_stage{block_exchange_, exec_engine_};
 
-        Stage::Result result = foward_and_insert_blocks(headers_stage, bodies_stage);
-
-        if (std::holds_alternative<UnwindPoint>(result)) {
-            auto unwind_point = std::get<UnwindPoint>(result);
-
-            unwind(headers_stage, bodies_stage, unwind_point);
-
-            exec_engine_.update_fork_choice(unwind_point.hash);
-            continue;
-        } else if (std::holds_alternative<Error>(result)) {
-            // ???
-        }
-
-        auto new_height = std::get<NewHeight>(result);
+        NewHeight new_height = foward_and_insert_blocks(headers_stage, bodies_stage);
 
         auto verification = exec_engine_.verify_chain(new_height.hash);
 
         if (std::holds_alternative<InvalidChain>(verification)) {
             auto invalid_chain = std::get<InvalidChain>(verification);
+
+            unwind(headers_stage, bodies_stage, invalid_chain);
 
             exec_engine_.update_fork_choice(invalid_chain.unwind_head);
 

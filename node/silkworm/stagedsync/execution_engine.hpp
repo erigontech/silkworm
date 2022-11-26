@@ -62,12 +62,17 @@ class ExecutionEngine : public Stoppable {
     void insert_header(db::RWTxn& tx, BlockHeader&);
     void insert_body(db::RWTxn& tx, Block&);
     BlockNum find_forking_point(db::RWTxn& tx, Hash header_hash);
+    void update_canonical_chain_up_to(BlockNum height, Hash header_hash);
+    void delete_canonical_chain_down_to(BlockNum unwind_point);
 
     NodeSettings& node_settings_;
     db::RWAccess db_access_;
     db::RWTxn tx_;
     SyncPipeline pipeline_;
     bool is_first_sync{true};
+
+    BlockIdPair initial_head_{};
+    BlockIdPair current_head_{};
 
     static constexpr size_t kCacheSize = 1000;
     lru_cache<BlockNum, Hash> canonical_cache_;

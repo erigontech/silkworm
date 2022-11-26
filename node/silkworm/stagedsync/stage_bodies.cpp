@@ -19,15 +19,103 @@
 #include <chrono>
 #include <thread>
 
-#include "silkworm/common/log.hpp"
-#include "silkworm/common/measure.hpp"
-#include "silkworm/common/stopwatch.hpp"
-#include "silkworm/db/stages.hpp"
-#include "silkworm/downloader/internals/body_persistence.hpp"
-#include "silkworm/downloader/messages/outbound_get_block_bodies.hpp"
-#include "silkworm/downloader/messages/outbound_new_block.hpp"
+#include <silkworm/consensus/engine.hpp>
+#include <silkworm/db/access_layer.hpp>
+#include <silkworm/db/buffer.hpp>
+#include <silkworm/common/log.hpp>
+#include <silkworm/common/measure.hpp>
+#include <silkworm/common/stopwatch.hpp>
+#include <silkworm/db/stages.hpp>
+#include <silkworm/downloader/internals/preverified_hashes.hpp>
 
 namespace silkworm::stagedsync {
+
+class BodyPersistence {
+  public:
+    explicit BodyPersistence(db::RWTxn&, BlockNum bodies_stage_height, const ChainConfig&);
+    ~BodyPersistence() = default;
+
+    void update(const Block&);
+    void close();
+
+    static void remove_bodies(BlockNum new_height, std::optional<Hash> bad_block, db::RWTxn& tx);
+
+    bool unwind_needed() const;
+
+    BlockNum unwind_point() const;
+    BlockNum initial_height() const;
+    BlockNum highest_height() const;
+    Hash bad_block() const;
+
+    void set_preverified_height(BlockNum height);
+
+  private:
+    using ConsensusEnginePtr = std::unique_ptr<consensus::IEngine>;
+
+    ConsensusEnginePtr consensus_engine_;
+    db::Buffer chain_state_;
+
+    BlockNum initial_height_{0};
+    BlockNum highest_height_{0};
+
+    BlockNum preverified_height_{0};
+
+    BlockNum unwind_point_{0};
+    bool unwind_needed_{false};
+    Hash bad_block_;
+};
+
+BodyPersistence::BodyPersistence(db::RWTxn& tx, BlockNum bodies_stage_height, const ChainConfig& chain_config)
+    : consensus_engine_{consensus::engine_factory(chain_config)},
+      chain_state_{tx, /*prune_from=*/0, /*historical_block=null*/} {
+
+    initial_height_ = bodies_stage_height;
+    highest_height_ = bodies_stage_height;
+}
+
+BlockNum BodyPersistence::initial_height() const { return initial_height_; }
+BlockNum BodyPersistence::highest_height() const { return highest_height_; }
+bool BodyPersistence::unwind_needed() const { return unwind_needed_; }
+BlockNum BodyPersistence::unwind_point() const { return unwind_point_; }
+Hash BodyPersistence::bad_block() const { return bad_block_; }
+void BodyPersistence::set_preverified_height(BlockNum height) { preverified_height_ = height; }
+
+void BodyPersistence::update(const Block& block) {
+    Hash block_hash = block.header.hash();  // save cpu
+    BlockNum block_num = block.header.number;
+
+    auto validation_result = ValidationResult::kOk;
+    if (block_num > preverified_height_) {
+        validation_result = consensus_engine_->validate_ommers(block, chain_state_);
+    }
+    // there is no need to validate a body if its header is on the chain of the pre-verified hashes;
+    // note that here we expect:
+    //    1) only bodies on the canonical chain
+    //    2) only bodies whose ommers hashes and transaction root hashes were checked against those of the headers
+
+    if (validation_result != ValidationResult::kOk) {
+        unwind_needed_ = true;
+        unwind_point_ = block_num - 1;
+        bad_block_ = block_hash;
+        return;
+    }
+
+    //if (!db::has_body(tx_, block_num, block_hash)) {
+    //    db::write_body(tx_, block, block_hash, block_num);
+    //}
+
+    if (block_num > highest_height_) {
+        highest_height_ = block_num;
+    }
+}
+
+void BodyPersistence::close() {
+    // does nothing
+}
+
+void BodyPersistence::remove_bodies(BlockNum, std::optional<Hash>, db::RWTxn&) {
+    // we do not erase "wrong" blocks, only stage progress will be updated by bodies stage unwind operation
+}
 
 BodiesStage::BodiesStage(NodeSettings* ns, SyncContext* sc)
     : Stage(sc, db::stages::kBlockBodiesKey, ns) {

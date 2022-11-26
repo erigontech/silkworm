@@ -35,8 +35,8 @@ class HeadersStage : public Stage {
     HeadersStage(HeadersStage&&) = delete;       // nor movable
     ~HeadersStage();
 
-    Stage::Result forward(std::optional<NewHeight>) override;  // go forward, downloading headers
-    Stage::Result unwind(UnwindPoint) override;   // go backward, unwinding headers to new_height
+    NewHeight forward(std::optional<NewHeight>) override;  // go forward, downloading headers
+    void unwind(UnwindPoint) override;   // go backward, unwinding headers to unwind point
 
   private:
     void send_header_requests();  // send requests for more headers

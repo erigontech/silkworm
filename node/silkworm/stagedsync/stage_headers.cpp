@@ -16,19 +16,145 @@
 #include "stage_headers.hpp"
 
 #include <chrono>
+#include <set>
 #include <thread>
 
 #include "silkworm/common/log.hpp"
 #include "silkworm/common/measure.hpp"
 #include "silkworm/common/stopwatch.hpp"
 #include "silkworm/db/stages.hpp"
-#include "silkworm/downloader/internals/header_chain.hpp"
-#include "silkworm/downloader/messages/inbound_message.hpp"
-#include "silkworm/downloader/messages/outbound_get_block_headers.hpp"
-#include "silkworm/downloader/messages/outbound_new_block_hashes.hpp"
 
 namespace silkworm::stagedsync {
 
+// HeaderPersistence has the responsibility to update headers related tables
+class HeaderPersistence {
+  public:
+    explicit HeaderPersistence(db::RWTxn& tx, BlockNum headers_height);
+
+    void update_tables(const BlockHeader&);
+
+    static auto remove_headers(BlockNum unwind_point, std::optional<Hash> bad_block, db::RWTxn& tx)
+        -> std::tuple<std::set<Hash>, BlockNum>;
+
+    bool best_header_changed() const;
+    BlockNum initial_height() const;
+    BlockNum highest_height() const;
+    Hash highest_hash() const;
+    BigInt total_difficulty() const;
+
+  private:
+    static constexpr size_t kCanonicalCacheSize = 1000;
+
+    db::RWTxn& tx_;
+    Hash previous_hash_;
+    Hash highest_hash_;
+    BlockNum initial_in_db_{};
+    BlockNum highest_in_db_{};
+    BigInt local_td_;
+    bool new_canonical_{false};
+};
+
+HeaderPersistence::HeaderPersistence(db::RWTxn& tx, BlockNum headers_height) : tx_(tx) {
+    auto headers_hash = db::read_canonical_hash(tx, headers_height);
+    if (!headers_hash) throw std::logic_error("Headers stage, canonical must be consistent, not found hash at height "
+                                              + std::to_string(headers_height));
+
+    std::optional<BigInt> headers_head_td = db::read_total_difficulty(tx, headers_height, *headers_hash);
+    if (!headers_head_td) throw std::logic_error("Headers stage, not found total difficulty of canonical hash at height "
+                                                 + std::to_string(headers_height));
+
+    local_td_ = *headers_head_td;
+    initial_in_db_ = headers_height;
+    highest_in_db_ = headers_height;
+}
+
+bool HeaderPersistence::best_header_changed() const { return new_canonical_; }
+
+BlockNum HeaderPersistence::initial_height() const { return initial_in_db_; }
+
+BlockNum HeaderPersistence::highest_height() const { return highest_in_db_; }
+
+Hash HeaderPersistence::highest_hash() const { return highest_hash_; }
+
+BigInt HeaderPersistence::total_difficulty() const { return local_td_; }
+
+void HeaderPersistence::update_tables(const BlockHeader& header) {
+    // Admittance conditions
+    auto height = header.number;
+    Hash hash = header.hash();
+    if (hash == previous_hash_) {
+        return;  // skip duplicates
+    }
+
+    // Calculate total difficulty
+    auto parent_td = db::read_total_difficulty(tx_, height - 1, header.parent_hash);
+    if (!parent_td) {
+        std::string error_message = "HeaderPersistence: parent's total difficulty not found with hash " +
+                                    to_hex(header.parent_hash) + " and height " + std::to_string(height - 1) +
+                                    " for header " + hash.to_hex();
+        throw std::logic_error(error_message);  // unexpected condition
+    }
+    auto td = *parent_td + header.difficulty;  // calculated total difficulty of this header
+
+    // Now we can decide whether this header will create a change in the canonical head
+    if (td > local_td_) {
+        new_canonical_ = true;
+
+        // Save progress
+        db::write_head_header_hash(tx_, hash);                                   // can throw exception
+
+        highest_in_db_ = height;
+        highest_hash_ = hash;
+
+        local_td_ = td;  // this makes sure we end up choosing the chain with the max total difficulty
+    }
+
+    // Save progress
+    db::write_total_difficulty(tx_, height, hash, td);
+
+    // Save header number
+    db::write_header_number(tx_, hash.bytes, header.number);
+    // db::write_header(tx_, header, with_header_numbers);
+
+    previous_hash_ = hash;
+}
+
+std::tuple<std::set<Hash>, BlockNum>
+HeaderPersistence::remove_headers(BlockNum unwind_point, std::optional<Hash> bad_block, db::RWTxn& tx) {
+    BlockNum headers_height = db::stages::read_stage_progress(tx, db::stages::kHeadersKey);
+
+    // todo: the following code changed in Erigon, fix it
+
+    std::set<Hash> bad_headers;
+    bool is_bad_block = bad_block.has_value();
+    for (BlockNum current_height = headers_height; current_height > unwind_point; current_height--) {
+        if (is_bad_block) {
+            auto current_hash = db::read_canonical_hash(tx, current_height);
+            bad_headers.insert(*current_hash);
+        }
+        db::delete_canonical_hash(tx, current_height);  // do not throw if not found
+    }
+
+    BlockNum new_height = unwind_point;
+
+    if (is_bad_block) {
+        bad_headers.insert(*bad_block);
+
+        auto [max_block_num, max_hash] = header_with_biggest_td(tx, &bad_headers);
+
+        if (max_block_num == 0) {
+            max_block_num = unwind_point;
+            max_hash = *db::read_canonical_hash(tx, max_block_num);
+        }
+
+        db::write_head_header_hash(tx, max_hash);
+        new_height = max_block_num;
+    }
+
+    return {bad_headers, new_height};
+}
+
+// HeadersStage
 HeadersStage::HeadersStage(NodeSettings* ns, SyncContext* sc)
     : Stage(sc, db::stages::kHeadersKey, ns) {
     // User can specify to stop downloading process at some block
@@ -91,7 +217,7 @@ auto HeadersStage::forward(db::RWTxn& tx) -> Stage::Result {
             // process header and ommers at current height
             auto processed = db::process_headers_at_height(tx, current_height_,  // may throw exception
                 [&header_persistence](BlockHeader& header) {
-                    header_persistence.update(header);
+                    header_persistence.save(header);
                 });
 
             if (processed == 0) throw std::logic_error("table Headers has a hole");
@@ -171,7 +297,7 @@ auto HeadersStage::unwind(db::RWTxn& tx) -> Stage::Result {
         current_height_ = new_height;
 
         result = Stage::Result::kSuccess;
-
+..
         //update_bad_headers(std::move(bad_headers)); // TODO(mike): move this code to the consensus (?)
 
         tx.commit();

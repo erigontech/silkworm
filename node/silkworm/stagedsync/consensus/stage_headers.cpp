@@ -46,13 +46,13 @@ HeadersStage::HeadersStage(BlockExchange& bd, ExecutionEngine& ee)
 HeadersStage::~HeadersStage() {
 }
 
-auto HeadersStage::forward(std::optional<NewHeight> unsupported_target) -> Stage::Result {
+auto HeadersStage::forward(std::optional<NewHeight> desired_height) -> NewHeight {
     using std::shared_ptr;
     using namespace std::chrono_literals;
     using namespace std::chrono;
     using std::tie;
 
-    if (unsupported_target.has_value()) throw std::logic_error("consensus headers stage currently doesn't support target height");
+    if (desired_height.has_value()) throw std::logic_error("consensus headers stage currently doesn't support target height");
 
     bool new_height_reached = false;
     std::thread message_receiving;
@@ -60,11 +60,6 @@ auto HeadersStage::forward(std::optional<NewHeight> unsupported_target) -> Stage
     StopWatch timing;
     timing.start();
     log::Info(log_prefix_) << "Start";
-
-    if (block_downloader_.is_stopping()) {
-        log::Error(log_prefix_) << "Aborted, block exchange is down";
-        return Error{"aborted"};
-    }
 
     try {
         ChainForkView chain_fork_view{exec_engine_};
@@ -79,6 +74,11 @@ auto HeadersStage::forward(std::optional<NewHeight> unsupported_target) -> Stage
         if (target_block_ && current_height_ >= *target_block_) {
             log::Info(log_prefix_) << "End, forward skipped due to target block (" << *target_block_ << ") reached";
             return NewHeight{.block_num = current_height_, .hash = initial_hash};
+        }
+
+        if (block_downloader_.is_stopping()) {
+            log::Error(log_prefix_) << "Aborted, block exchange is down";
+            return NewHeight{.block_num = initial_height, .hash = initial_hash};
         }
 
         RepeatedMeasure<BlockNum> height_progress(initial_height);
@@ -157,26 +157,26 @@ auto HeadersStage::forward(std::optional<NewHeight> unsupported_target) -> Stage
 
         // todo: do we need a sentry.set_status() here?
 
-        Result result = NewHeight{.block_num = chain_fork_view.head_height(), .hash = chain_fork_view.head_hash()};
-
-        if (chain_fork_view.unwind_needed()) {
-            result = UnwindPoint{.block_num = chain_fork_view.unwind_point().number, .hash = chain_fork_view.unwind_point().hash}; // no need to set bad_block
-            log::Info(log_prefix_) << "Unwind needed";
-        }
+        NewHeight result{.block_num = chain_fork_view.head_height(), .hash = chain_fork_view.head_hash()};
 
         log::Info(log_prefix_) << "Done, duration= " << StopWatch::format(timing.lap_duration());
         return result;
 
     } catch (const std::exception& e) {
         log::Error(log_prefix_) << "Aborted due to exception: " << e.what();
-        return Error{"exception"};
+        throw e;
     }
 
 }
 
-auto HeadersStage::unwind(UnwindPoint unwind_point) -> Stage::Result {
+void HeadersStage::unwind(UnwindPoint unwind_point) {
     current_height_ = unwind_point.block_num;
-    return Stage::NewHeight{.block_num = unwind_point.block_num, .hash = unwind_point.hash};
+
+    std::set<Hash> bad_headers;
+    //for(header from current_height_ to unwind_point) // todo: implement
+    //    bad_headers.insert(header);
+
+    update_bad_headers(bad_headers);
 }
 
 // Request new headers from peers

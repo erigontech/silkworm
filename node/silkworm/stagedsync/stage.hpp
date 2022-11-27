@@ -44,6 +44,8 @@ struct SyncContext {
 
     bool is_first_cycle{true};  // true at start-up (fist sync or sync after a long pause)
 
+    BlockNum target_height{0};
+
     std::optional<BlockNum> unwind_point;  // if valued sync requires an unwind to this point
     std::optional<BlockNum> previous_unwind_point;
 

@@ -32,7 +32,7 @@ class SyncPipeline : public Stoppable {
     explicit SyncPipeline(NodeSettings*);
     ~SyncPipeline() = default;
 
-    Stage::Result forward(db::RWTxn&, Hash target_header);
+    Stage::Result forward(db::RWTxn&, BlockNum target_height);
     Stage::Result unwind(db::RWTxn&, BlockNum unwind_point);
     Stage::Result prune(db::RWTxn&);
 

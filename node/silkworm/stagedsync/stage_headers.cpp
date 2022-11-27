@@ -19,22 +19,23 @@
 #include <set>
 #include <thread>
 
-#include "silkworm/common/log.hpp"
-#include "silkworm/common/measure.hpp"
-#include "silkworm/common/stopwatch.hpp"
-#include "silkworm/db/stages.hpp"
+#include <silkworm/common/log.hpp>
+#include <silkworm/common/measure.hpp>
+#include <silkworm/common/stopwatch.hpp>
+#include <silkworm/db/stages.hpp>
+#include <silkworm/downloader/internals/db_utils.hpp>
+#include <silkworm/downloader/internals/header_chain.hpp>
 
 namespace silkworm::stagedsync {
 
 // HeaderPersistence has the responsibility to update headers related tables
-class HeaderPersistence {
+class HeaderDataModel {
   public:
-    explicit HeaderPersistence(db::RWTxn& tx, BlockNum headers_height);
+    explicit HeaderDataModel(db::RWTxn& tx, BlockNum headers_height);
 
     void update_tables(const BlockHeader&);
 
-    static auto remove_headers(BlockNum unwind_point, std::optional<Hash> bad_block, db::RWTxn& tx)
-        -> std::tuple<std::set<Hash>, BlockNum>;
+    static void remove_headers(BlockNum unwind_point, std::optional<Hash> bad_block, db::RWTxn& tx);
 
     bool best_header_changed() const;
     BlockNum initial_height() const;
@@ -43,8 +44,6 @@ class HeaderPersistence {
     BigInt total_difficulty() const;
 
   private:
-    static constexpr size_t kCanonicalCacheSize = 1000;
-
     db::RWTxn& tx_;
     Hash previous_hash_;
     Hash highest_hash_;
@@ -54,7 +53,7 @@ class HeaderPersistence {
     bool new_canonical_{false};
 };
 
-HeaderPersistence::HeaderPersistence(db::RWTxn& tx, BlockNum headers_height) : tx_(tx) {
+HeaderDataModel::HeaderDataModel(db::RWTxn& tx, BlockNum headers_height) : tx_(tx) {
     auto headers_hash = db::read_canonical_hash(tx, headers_height);
     if (!headers_hash) throw std::logic_error("Headers stage, canonical must be consistent, not found hash at height "
                                               + std::to_string(headers_height));
@@ -68,17 +67,17 @@ HeaderPersistence::HeaderPersistence(db::RWTxn& tx, BlockNum headers_height) : t
     highest_in_db_ = headers_height;
 }
 
-bool HeaderPersistence::best_header_changed() const { return new_canonical_; }
+bool HeaderDataModel::best_header_changed() const { return new_canonical_; }
 
-BlockNum HeaderPersistence::initial_height() const { return initial_in_db_; }
+BlockNum HeaderDataModel::initial_height() const { return initial_in_db_; }
 
-BlockNum HeaderPersistence::highest_height() const { return highest_in_db_; }
+BlockNum HeaderDataModel::highest_height() const { return highest_in_db_; }
 
-Hash HeaderPersistence::highest_hash() const { return highest_hash_; }
+Hash HeaderDataModel::highest_hash() const { return highest_hash_; }
 
-BigInt HeaderPersistence::total_difficulty() const { return local_td_; }
+BigInt HeaderDataModel::total_difficulty() const { return local_td_; }
 
-void HeaderPersistence::update_tables(const BlockHeader& header) {
+void HeaderDataModel::update_tables(const BlockHeader& header) {
     // Admittance conditions
     auto height = header.number;
     Hash hash = header.hash();
@@ -101,7 +100,7 @@ void HeaderPersistence::update_tables(const BlockHeader& header) {
         new_canonical_ = true;
 
         // Save progress
-        db::write_head_header_hash(tx_, hash);                                   // can throw exception
+        db::write_head_header_hash(tx_, hash);
 
         highest_in_db_ = height;
         highest_hash_ = hash;
@@ -114,44 +113,20 @@ void HeaderPersistence::update_tables(const BlockHeader& header) {
 
     // Save header number
     db::write_header_number(tx_, hash.bytes, header.number);
-    // db::write_header(tx_, header, with_header_numbers);
 
     previous_hash_ = hash;
 }
 
-std::tuple<std::set<Hash>, BlockNum>
-HeaderPersistence::remove_headers(BlockNum unwind_point, std::optional<Hash> bad_block, db::RWTxn& tx) {
-    BlockNum headers_height = db::stages::read_stage_progress(tx, db::stages::kHeadersKey);
+void HeaderDataModel::remove_headers(BlockNum unwind_point, std::optional<Hash> bad_block, db::RWTxn& tx) {
 
-    // todo: the following code changed in Erigon, fix it
-
-    std::set<Hash> bad_headers;
     bool is_bad_block = bad_block.has_value();
-    for (BlockNum current_height = headers_height; current_height > unwind_point; current_height--) {
-        if (is_bad_block) {
-            auto current_hash = db::read_canonical_hash(tx, current_height);
-            bad_headers.insert(*current_hash);
-        }
-        db::delete_canonical_hash(tx, current_height);  // do not throw if not found
-    }
-
-    BlockNum new_height = unwind_point;
-
     if (is_bad_block) {
-        bad_headers.insert(*bad_block);
-
-        auto [max_block_num, max_hash] = header_with_biggest_td(tx, &bad_headers);
-
-        if (max_block_num == 0) {
-            max_block_num = unwind_point;
-            max_hash = *db::read_canonical_hash(tx, max_block_num);
-        }
-
-        db::write_head_header_hash(tx, max_hash);
-        new_height = max_block_num;
+        auto canonical_hash = db::read_canonical_hash(tx, unwind_point);
+        if (!canonical_hash)
+            throw std::logic_error("Headers stage, expected canonical hash at heigth " + std::to_string(unwind_point));
+        db::write_head_header_hash(tx, *canonical_hash);
     }
 
-    return {bad_headers, new_height};
 }
 
 // HeadersStage
@@ -180,17 +155,9 @@ auto HeadersStage::forward(db::RWTxn& tx) -> Stage::Result {
 
     try {
         current_height_ = db::stages::read_stage_progress(tx, db::stages::kHeadersKey);
-        BlockNum target_height = db::stages::read_stage_progress(tx, db::stages::kPipelineStartKey);
+        BlockNum target_height = sync_context_->target_height;
 
-        HeaderPersistence header_persistence(tx, current_height_);
-
-        // premature exit conditions
-        if (header_persistence.canonical_repaired()) {
-            tx.commit();
-            log::Info(log_prefix_) << "End, forward skipped to complete the previous run (canonical chain updated), "
-                                   << "duration=" << StopWatch::format(timing.lap_duration());
-            return Stage::Result::kSuccess;
-        }
+        HeaderDataModel header_persistence(tx, current_height_);
 
         if (forced_target_block_ && current_height_ >= *forced_target_block_) {
             tx.commit();
@@ -217,7 +184,7 @@ auto HeadersStage::forward(db::RWTxn& tx) -> Stage::Result {
             // process header and ommers at current height
             auto processed = db::process_headers_at_height(tx, current_height_,  // may throw exception
                 [&header_persistence](BlockHeader& header) {
-                    header_persistence.save(header);
+                    header_persistence.update_tables(header);
                 });
 
             if (processed == 0) throw std::logic_error("table Headers has a hole");
@@ -236,27 +203,14 @@ auto HeadersStage::forward(db::RWTxn& tx) -> Stage::Result {
             }
         }
 
-        result = Stage::Result::kSuccess;
-
-        // check unwind condition
-        if (header_persistence.unwind_needed()) {
-            result = Stage::Result::kWrongFork;
-            sync_context_->unwind_point = header_persistence.unwind_point();
-            // no need to set result.bad_block
-            log::Info(log_prefix_) << "Unwind needed";
-        }
+        result = Stage::Result::kSuccess;  // no reason to raise unwind
 
         auto headers_processed = header_persistence.highest_height() - header_persistence.initial_height();
         log::Info(log_prefix_) << "Updating completed, wrote " << headers_processed << " headers,"
                                << " last=" << header_persistence.highest_height()
                                << " duration=" << StopWatch::format(timing.lap_duration());
 
-        log::Info(log_prefix_) << "Updating canonical chain";
-        header_persistence.finish();
-
         tx.commit();  // this will commit or not depending on the creator of txn
-
-        // todo: do we need a sentry.set_status() here?
 
         log::Info(log_prefix_) << "Forward done, duration= " << StopWatch::format(timing.lap_duration());
 
@@ -290,19 +244,13 @@ auto HeadersStage::unwind(db::RWTxn& tx) -> Stage::Result {
     auto new_height = sync_context_->unwind_point.value();
 
     try {
-        std::set<Hash> bad_headers;
-        std::tie(bad_headers, new_height) = HeaderPersistence::remove_headers(new_height, bad_block, tx);
-        // todo: do we need to save bad_headers in the state and pass old bad headers here?
+        HeaderDataModel::remove_headers(new_height, bad_block, tx);
 
         current_height_ = new_height;
 
         result = Stage::Result::kSuccess;
-..
-        //update_bad_headers(std::move(bad_headers)); // TODO(mike): move this code to the consensus (?)
 
         tx.commit();
-
-        // todo: do we need a sentry.set_status() here?
 
         log::Info(log_prefix_) << "Unwind completed, duration= " << StopWatch::format(timing.lap_duration());
 

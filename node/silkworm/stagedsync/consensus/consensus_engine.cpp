@@ -69,6 +69,12 @@ void ConsensusEngine::execution_loop() {
 
             unwind(headers_stage, bodies_stage, invalid_chain);
 
+            if (invalid_chain.bad_block) {
+                auto bad_headers = exec_engine_.collect_bad_header(nvalid_chain.unwind_head);
+                send_to_exchange(bad_headers);
+            }
+
+
             exec_engine_.update_fork_choice(invalid_chain.unwind_head);
 
             continue;

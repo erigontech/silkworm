@@ -67,10 +67,7 @@ class ExecutionEngine : public Stoppable {
     db::RWTxn tx_;
     SyncPipeline pipeline_;
     bool is_first_sync{true};
-
-
-
-    //lru_cache<Hash, BlockHeader> header_cache_; // todo(mike): use?
+    //lru_cache<Hash, BlockHeader> header_cache_; // todo: use cache if improve performances
 
     class CanonicalChain {
       public:

@@ -30,12 +30,12 @@
 
 namespace silkworm::stagedsync {
 
-class BodyPersistence {
+class BodyDataModel {
   public:
-    explicit BodyPersistence(db::RWTxn&, BlockNum bodies_stage_height, const ChainConfig&);
-    ~BodyPersistence() = default;
+    explicit BodyDataModel(db::RWTxn&, BlockNum bodies_stage_height, const ChainConfig&);
+    ~BodyDataModel() = default;
 
-    void update(const Block&);
+    void update_tables(const Block&);
     void close();
 
     static void remove_bodies(BlockNum new_height, std::optional<Hash> bad_block, db::RWTxn& tx);
@@ -65,7 +65,7 @@ class BodyPersistence {
     Hash bad_block_;
 };
 
-BodyPersistence::BodyPersistence(db::RWTxn& tx, BlockNum bodies_stage_height, const ChainConfig& chain_config)
+BodyDataModel::BodyDataModel(db::RWTxn& tx, BlockNum bodies_stage_height, const ChainConfig& chain_config)
     : consensus_engine_{consensus::engine_factory(chain_config)},
       chain_state_{tx, /*prune_from=*/0, /*historical_block=null*/} {
 
@@ -73,14 +73,14 @@ BodyPersistence::BodyPersistence(db::RWTxn& tx, BlockNum bodies_stage_height, co
     highest_height_ = bodies_stage_height;
 }
 
-BlockNum BodyPersistence::initial_height() const { return initial_height_; }
-BlockNum BodyPersistence::highest_height() const { return highest_height_; }
-bool BodyPersistence::unwind_needed() const { return unwind_needed_; }
-BlockNum BodyPersistence::unwind_point() const { return unwind_point_; }
-Hash BodyPersistence::bad_block() const { return bad_block_; }
-void BodyPersistence::set_preverified_height(BlockNum height) { preverified_height_ = height; }
+BlockNum BodyDataModel::initial_height() const { return initial_height_; }
+BlockNum BodyDataModel::highest_height() const { return highest_height_; }
+bool BodyDataModel::unwind_needed() const { return unwind_needed_; }
+BlockNum BodyDataModel::unwind_point() const { return unwind_point_; }
+Hash BodyDataModel::bad_block() const { return bad_block_; }
+void BodyDataModel::set_preverified_height(BlockNum height) { preverified_height_ = height; }
 
-void BodyPersistence::update(const Block& block) {
+void BodyDataModel::update_tables(const Block& block) {
     Hash block_hash = block.header.hash();  // save cpu
     BlockNum block_num = block.header.number;
 
@@ -109,11 +109,11 @@ void BodyPersistence::update(const Block& block) {
     }
 }
 
-void BodyPersistence::close() {
+void BodyDataModel::close() {
     // does nothing
 }
 
-void BodyPersistence::remove_bodies(BlockNum, std::optional<Hash>, db::RWTxn&) {
+void BodyDataModel::remove_bodies(BlockNum, std::optional<Hash>, db::RWTxn&) {
     // we do not erase "wrong" blocks, only stage progress will be updated by bodies stage unwind operation
 }
 
@@ -139,7 +139,7 @@ Stage::Result BodiesStage::forward(db::RWTxn& tx) {
         current_height_ = db::stages::read_stage_progress(tx, db::stages::kBlockBodiesKey);
         BlockNum target_height = db::stages::read_stage_progress(tx, db::stages::kHeadersKey);
 
-        BodyPersistence body_persistence(tx, current_height_, node_settings_->chain_config.value());
+        BodyDataModel body_persistence(tx, current_height_, node_settings_->chain_config.value());
         body_persistence.set_preverified_height(PreverifiedHashes::max_height(node_settings_->network_id));
 
         get_log_progress();  // this is a trick to set log progress initial value, please improve
@@ -158,7 +158,7 @@ Stage::Result BodiesStage::forward(db::RWTxn& tx) {
                 tx,
                 current_height_,  // may throw exception
                 [&body_persistence](const Block& block) {
-                    body_persistence.update(block);
+                    body_persistence.update_tables(block);
                 });
 
             if (processed == 0) throw std::logic_error("table Headers has a hole");
@@ -197,10 +197,6 @@ Stage::Result BodiesStage::forward(db::RWTxn& tx) {
 
         log::Info(log_prefix_) << "Forward done, duration= " << StopWatch::format(timing.lap_duration());
 
-        if (result == Stage::Result::kUnspecified) {
-            result = Stage::Result::kSuccess;
-        }
-
     } catch (const std::exception& e) {
         log::Error(log_prefix_) << "Forward aborted due to exception: " << e.what();
 
@@ -229,7 +225,7 @@ Stage::Result BodiesStage::unwind(db::RWTxn& tx) {
     auto new_height = sync_context_->unwind_point.value();
 
     try {
-        BodyPersistence::remove_bodies(new_height, sync_context_->bad_block_hash, tx);
+        BodyDataModel::remove_bodies(new_height, sync_context_->bad_block_hash, tx);
         db::stages::write_stage_progress(tx, db::stages::kBlockBodiesKey, new_height);
 
         current_height_ = new_height;

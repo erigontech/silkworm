@@ -168,11 +168,13 @@ bool SyncPipeline::stop() {
     return stopped;
 }
 
-Stage::Result SyncPipeline::forward(db::RWTxn& cycle_txn, Hash target_header) {
+Stage::Result SyncPipeline::forward(db::RWTxn& cycle_txn, BlockNum target_height) {
+    using std::to_string;
     StopWatch stages_stop_watch(true);
     LogTimer log_timer{this};
 
-    // todo(mike): use target_header
+    sync_context_->target_height = target_height;
+    db::stages::write_stage_progress(cycle_txn, db::stages::kPipelineStartKey, target_height);
 
     try {
         // Force to stop at any particular stage ?
@@ -185,7 +187,7 @@ Stage::Result SyncPipeline::forward(db::RWTxn& cycle_txn, Hash target_header) {
             // retrieve current stage
             current_stage_ = stages_.find(stage_id);
             if (current_stage_ == stages_.end()) {
-                throw std::runtime_error("Stage " + std::string(stage_id) + " requested but not implemented");  // Should not happen
+                throw std::runtime_error("Stage " + std::string(stage_id) + " requested but not implemented");
             }
             ++current_stage_number_;
             current_stage_->second->set_log_prefix(get_log_prefix());
@@ -207,15 +209,29 @@ Stage::Result SyncPipeline::forward(db::RWTxn& cycle_txn, Hash target_header) {
                 return stage_result;
             }
 
-            head_header_number_ = db::stages::read_stage_progress(cycle_txn, current_stage_->first);
-            head_header_hash_ = db::read_head_header_hash(cycle_txn).value_or(Hash{}); // todo(mike): check the assumption head_header_number_ == number(head_header_hash_)
-            // todo(mike): maybe remove write_head_header_hash() from header_stage and use here
+            auto stage_head_number_ = db::stages::read_stage_progress(cycle_txn, current_stage_->first);
+            if (stage_head_number_ != target_height) {
+                throw std::logic_error("Sync pipeline: stage returned success with an height different from target"
+                    " target= " + to_string(target_height) + " reached= " + to_string(stage_head_number_));
+            }
 
             auto [_, stage_duration] = stages_stop_watch.lap();
             if (stage_duration > std::chrono::milliseconds(10)) {
                 log::Info(get_log_prefix(), {"op", "Forward", "done", StopWatch::format(stage_duration)});
             }
         }
+
+        head_header_hash_ = db::read_head_header_hash(cycle_txn).value_or(Hash{});
+        auto head_header = db::read_header(cycle_txn, head_header_hash_);
+        if (!head_header) throw std::logic_error("Sync pipeline, missing head header hash " + to_hex(head_header_hash_));
+        head_header_number_ = head_header->number;
+        if (head_header_number_ != target_height) {
+            throw std::logic_error("Sync pipeline: head header not at target height "
+                " target_height= " + to_string(target_height) +
+                " head_header_height= " + to_string(head_header_number_));
+        }
+
+        db::stages::write_stage_progress(cycle_txn, db::stages::kPipelineEndKey, target_height);
 
         return is_stopping() ? Stage::Result::kAborted : Stage::Result::kSuccess;
 
@@ -226,11 +242,13 @@ Stage::Result SyncPipeline::forward(db::RWTxn& cycle_txn, Hash target_header) {
 }
 
 Stage::Result SyncPipeline::unwind(db::RWTxn& cycle_txn, BlockNum unwind_point) {
+    using std::to_string;
     StopWatch stages_stop_watch(true);
     LogTimer log_timer{this};
 
     try {
-        sync_context_->unwind_point = unwind_point; // todo(mike): remove unwind_point updating from sync_context_, pass it explicitly to stages
+        sync_context_->unwind_point = unwind_point;
+        db::stages::write_stage_progress(cycle_txn, db::stages::kPipelineStartKey, unwind_point);
 
         // Loop at stages in unwind order
         current_stages_count_ = stages_unwind_order_.size();
@@ -260,7 +278,16 @@ Stage::Result SyncPipeline::unwind(db::RWTxn& cycle_txn, BlockNum unwind_point) 
         }
 
         head_header_hash_ = db::read_head_header_hash(cycle_txn).value_or(Hash{});
-        head_header_number_ = ???;
+        auto head_header = db::read_header(cycle_txn, head_header_hash_);
+        if (!head_header) throw std::logic_error("Sync pipeline, missing head header hash " + to_hex(head_header_hash_));
+        head_header_number_ = head_header->number;
+        if (head_header_number_ != unwind_point) {
+            throw std::logic_error("Sync pipeline: head header not at unwind point "
+                " unwind_point= " + to_string(unwind_point) +
+                " head_header_height= " + to_string(head_header_number_));
+        }
+
+        db::stages::write_stage_progress(cycle_txn, db::stages::kPipelineEndKey, unwind_point);
 
         // Clear context
         std::swap(sync_context_->unwind_point, sync_context_->previous_unwind_point);
@@ -307,6 +334,14 @@ Stage::Result SyncPipeline::prune(db::RWTxn& cycle_txn) {
                            "done", StopWatch::format(stage_duration)});
             }
         }
+
+        head_header_hash_ = db::read_head_header_hash(cycle_txn).value_or(Hash{});
+        auto head_header = db::read_header(cycle_txn, head_header_hash_);
+        if (!head_header) throw std::logic_error("Sync pipeline, missing head header hash " + to_hex(head_header_hash_));
+        head_header_number_ = head_header->number;
+
+        db::stages::write_stage_progress(cycle_txn, db::stages::kPipelineStartKey, head_header_number_);
+        db::stages::write_stage_progress(cycle_txn, db::stages::kPipelineEndKey, head_header_number_);
 
         return is_stopping() ? Stage::Result::kAborted : Stage::Result::kSuccess;
 

@@ -20,22 +20,21 @@ limitations under the License.
 
 namespace silkworm::stagedsync {
 
+ExecutionEngine::CanonicalChain::CanonicalChain(db::RWTxn& tx): tx_{tx}, canonical_cache_{kCacheSize} {
+    // Read head of canonical chain
+    std::tie(initial_head_.number, initial_head_.hash) = db::read_canonical_head(tx_);
+    // Set current status
+    current_head_ = initial_head_;
+}
+
 ExecutionEngine::ExecutionEngine(NodeSettings& ns, const db::RWAccess& dba)
     : node_settings_{ns},
       db_access_{dba},
       tx_{db_access_.start_rw_tx()},
       pipeline_{&ns},
-      canonical_cache_{kCacheSize}
+      canonical_chain_(tx_)
       //header_cache_{kCacheSize}
 {
-    BigInt initial_head_td_;
-    std::tie(initial_head_.number, initial_head_.hash, initial_head_td_) = get_headers_head();
-    current_head_ = initial_head_;
-
-    auto headers_hash = get_canonical_hash(initial_head_.number);
-    if (!headers_hash) { // canonical need to be fixed, maybe last cycle was interrupted
-        update_canonical_chain_up_to(initial_head_.number, *headers_hash);
-    }
 }
 
 void ExecutionEngine::insert_headers(std::vector<std::shared_ptr<BlockHeader>>& headers) {
@@ -70,39 +69,36 @@ void ExecutionEngine::insert_body(db::RWTxn& tx, Block& block) {
 }
 
 auto ExecutionEngine::verify_chain(Hash header_hash) -> VerificationResult {
+    // retrieve the head header
+    auto header = get_header(header_hash);
+    if (!header) throw std::logic_error("Execution invariant violation, header to verify non present");
+
     // db commit policy
-    bool cycle_in_one_tx = !is_first_sync;
+    bool cycle_in_one_tx = !is_first_sync || header->number - canonical_chain_.current_head().number > 4096;
     std::unique_ptr<db::RWTxn> inner_tx{nullptr};
     if (cycle_in_one_tx)
         inner_tx = std::make_unique<db::RWTxn>(*tx_); // will defer commit to the tx
     else
         inner_tx = std::make_unique<db::RWTxn>(*db_access_);
 
-    // retrieve the head header
-    auto header = get_header(header_hash);
-    if (!header) throw std::logic_error("Execution invarian violation, header to verify non present");
-
     // the new head is on a new fork?
-    BlockNum forking_point = find_forking_point(*inner_tx, header_hash); // the forking origin on the canonical
-    if (forking_point < current_head_.number) { // if the forking is behind the current head
+    BlockNum forking_point = canonical_chain_.find_forking_point(*inner_tx, header_hash); // the forking origin
+    if (forking_point < canonical_chain_.current_head().number) { // if the forking is behind the current head
         // we need to do unwind to change canonical
         auto unwind_result = pipeline_.unwind(*inner_tx, forking_point);
         success_or_throw(unwind_result);  // unwind must complete with success
         // remove last part of canonical
-        delete_canonical_chain_down_to(forking_point);
+        canonical_chain_.delete_down_to(forking_point);
     } // todo for PoS: do not unwind, just find the correct overlay
 
     // update canonical up to header_hash
-    update_canonical_chain_up_to(header->number, header_hash);
-
-    // new state, valid or invalid
-    current_head_.number = header->number;
-    current_head_.hash = header_hash;
+    canonical_chain_.update_up_to(header->number, header_hash);
 
     // forward
     Stage::Result forward_result = pipeline_.forward(*inner_tx, header_hash);
 
-    if (pipeline_.head_header_number() != current_head_.number || pipeline_.head_header_hash() != current_head_.hash) {
+    if (pipeline_.head_header_number() != canonical_chain_.current_head().number ||
+        pipeline_.head_header_hash() != canonical_chain_.current_head().hash) {
         // todo: choose a policy???
     }
 
@@ -134,17 +130,17 @@ bool ExecutionEngine::update_fork_choice(Hash header_hash) {
     else
         inner_tx = std::make_unique<db::RWTxn>(*db_access_);
 
-    if (current_head_.hash != header_hash) { // todo for PoS: choose the corresponding overlay and do commit
+    if (canonical_chain_.current_head().hash != header_hash) { // todo for PoS: choose the corresponding overlay and do commit
         // usually update_fork_choice must follow verify_chain with the same header
         // except when verify_chain returned InvalidChain, so we need to do an unwind
 
-        BlockNum forking_point = find_forking_point(*inner_tx, header_hash); // the forking origin on the canonical
+        BlockNum forking_point = canonical_chain_.find_forking_point(*inner_tx, header_hash); // the forking origin on the canonical
 
         auto unwind_result = pipeline_.unwind(*inner_tx, forking_point);
         success_or_throw(unwind_result);  // unwind must complete with success
 
         // remove last part of canonical
-        delete_canonical_chain_down_to(forking_point);
+        canonical_chain_.delete_down_to(forking_point);
     }
 
     is_first_sync = false;
@@ -155,7 +151,7 @@ bool ExecutionEngine::update_fork_choice(Hash header_hash) {
     return true;
 }
 
-BlockNum ExecutionEngine::find_forking_point(db::RWTxn& tx, Hash header_hash) {
+BlockNum ExecutionEngine::CanonicalChain::find_forking_point(db::RWTxn& tx, Hash header_hash) {
     BlockNum forking_point{};
 
     std::optional<BlockHeader> header = db::read_header(tx, header_hash);
@@ -210,7 +206,7 @@ BlockNum ExecutionEngine::find_forking_point(db::RWTxn& tx, Hash header_hash) {
     return forking_point;
 }
 
-void ExecutionEngine::update_canonical_chain_up_to(BlockNum height, Hash hash) {  // hash can be empty
+void ExecutionEngine::CanonicalChain::update_up_to(BlockNum height, Hash hash) {  // hash can be empty
     if (height == 0) return;
 
     auto ancestor_hash = hash;
@@ -225,29 +221,31 @@ void ExecutionEngine::update_canonical_chain_up_to(BlockNum height, Hash hash) {
         canonical_cache_.put(ancestor_height, ancestor_hash);
 
         auto ancestor = db::read_header(tx_, ancestor_height, ancestor_hash);
-        if (ancestor == std::nullopt) {
-            std::string msg =
-                "HeaderPersistence: fix canonical chain failed at"
-                " ancestor=" +
-                std::to_string(ancestor_height) + " hash=" + ancestor_hash.to_hex();
-            log::Error("HeaderStage") << msg;
-            throw std::logic_error(msg);
-        }
+        if (ancestor == std::nullopt) throw std::logic_error("Execution, fix canonical chain failed at "
+                "ancestor= " + std::to_string(ancestor_height) + " hash=" + ancestor_hash.to_hex() );
 
         ancestor_hash = ancestor->parent_hash;
         --ancestor_height;
 
         persisted_canon_hash = db::read_canonical_hash(tx_, ancestor_height);
     }
+
+    current_head_.number = height;
+    current_head_.hash = hash;
 }
 
-void ExecutionEngine::delete_canonical_chain_down_to(BlockNum unwind_point) {
+void ExecutionEngine::CanonicalChain::delete_down_to(BlockNum unwind_point) {
 
     for (BlockNum current_height = current_head_.number; current_height > unwind_point; current_height--) {
         db::delete_canonical_hash(tx_, current_height);  // do not throw if not found
         canonical_cache_.remove(current_height);
     }
 
+    current_head_.number = unwind_point;
+    auto current_head_hash = db::read_canonical_hash(tx_, unwind_point);
+    if (!current_head_hash) throw std::logic_error("Execution invariant violation, hash not found on canonical"
+        "at height " + std::to_string(unwind_point));
+    current_head_.hash = *current_head_hash;
 }
 
 auto ExecutionEngine::get_header(Hash header_hash) -> std::optional<BlockHeader> {

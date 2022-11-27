@@ -73,7 +73,7 @@ void ConsensusEngine::execution_loop() {
 
             continue;
         } else if (std::holds_alternative<ValidationError>(verification)) {
-            // ???
+            throw std::logic_error("Consensus, validation error");
         }
 
         auto valid_chain = std::get<ValidChain>(verification);

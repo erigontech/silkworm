@@ -61,9 +61,6 @@ class ExecutionEngine : public Stoppable {
   private:
     void insert_header(db::RWTxn& tx, BlockHeader&);
     void insert_body(db::RWTxn& tx, Block&);
-    BlockNum find_forking_point(db::RWTxn& tx, Hash header_hash);
-    void update_canonical_chain_up_to(BlockNum height, Hash header_hash);
-    void delete_canonical_chain_down_to(BlockNum unwind_point);
 
     NodeSettings& node_settings_;
     db::RWAccess db_access_;
@@ -71,11 +68,30 @@ class ExecutionEngine : public Stoppable {
     SyncPipeline pipeline_;
     bool is_first_sync{true};
 
-    BlockIdPair initial_head_{};
-    BlockIdPair current_head_{};
 
-    static constexpr size_t kCacheSize = 1000;
-    lru_cache<BlockNum, Hash> canonical_cache_;
+
     //lru_cache<Hash, BlockHeader> header_cache_; // todo(mike): use?
+
+    class CanonicalChain {
+      public:
+        CanonicalChain(db::RWTxn&);
+
+        BlockNum find_forking_point(db::RWTxn& tx, Hash header_hash);
+
+        void update_up_to(BlockNum height, Hash header_hash);
+        void delete_down_to(BlockNum unwind_point);
+
+        BlockIdPair initial_head();
+        BlockIdPair current_head();
+
+      private:
+        db::RWTxn& tx_;
+
+        BlockIdPair initial_head_{};
+        BlockIdPair current_head_{};
+
+        static constexpr size_t kCacheSize = 1000;
+        lru_cache<BlockNum, Hash> canonical_cache_;
+    } canonical_chain_;
 };
 }  // namespace silkworm::stagedsync

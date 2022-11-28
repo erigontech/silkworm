@@ -34,6 +34,9 @@ ExecutionEngine::CanonicalChain::CanonicalChain(db::RWTxn& tx): tx_{tx}, canonic
     current_head_ = initial_head_;
 }
 
+BlockIdPair ExecutionEngine::CanonicalChain::initial_head() { return initial_head_; }
+BlockIdPair ExecutionEngine::CanonicalChain::current_head() { return current_head_; }
+
 BlockNum ExecutionEngine::CanonicalChain::find_forking_point(db::RWTxn& tx, Hash header_hash) {
     BlockNum forking_point{};
 

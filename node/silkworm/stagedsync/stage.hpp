@@ -162,11 +162,11 @@ inline void success_or_throw(Stage::Result code) {
     }
 }
 // Return true if result indicates that an unwind operation is needed
-bool unwind_needed(Stage::Result result) {
+inline bool unwind_needed(Stage::Result result) {
     return (result == Stage::Result::kWrongFork || result == Stage::Result::kInvalidBlock);
 }
 // Return true if result indicates that an error or abortion happened
-bool error_or_abort(Stage::Result result) {
+inline bool error_or_abort(Stage::Result result) {
     return (result == Stage::Result::kUnexpectedError || result == Stage::Result::kAborted);
 }
 

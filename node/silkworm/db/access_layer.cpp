@@ -317,11 +317,26 @@ bool read_block_by_number(mdbx::txn& txn, BlockNum number, bool read_senders, Bl
     return read_block(txn, std::span<const uint8_t, kHashLength>{hash_ptr, kHashLength}, number, read_senders, block);
 }
 
+
 bool read_block(mdbx::txn& txn, const evmc::bytes32& hash, BlockNum number, Block& block) {
     // Read header
     read_header(txn, hash, number, block.header);
     // Read body
     return read_body(txn, hash, number, block); // read_senders == false
+}
+
+bool read_block(mdbx::txn& txn, std::span<const uint8_t, kHashLength> hash, BlockNum number, bool read_senders,
+                Block& block) {
+    // Read header
+    const Bytes key{block_key(number, hash)};
+    const auto raw_header{read_header_raw(txn, key)};
+    if (raw_header.empty()) {
+        return false;
+    }
+    ByteView raw_header_view(raw_header);
+    rlp::success_or_throw(rlp::decode(raw_header_view, block.header));
+
+    return read_body(txn, key, read_senders, block);
 }
 
 // process blocks at specific height

@@ -102,8 +102,8 @@ inline constexpr const char* kAllStages[]{
 };
 
 //! \brief Fictious stages
-const char* kPipelineStartKey = "PipelineStart";
-const char* kPipelineEndKey = "PipelineEnd";
+inline const char* kPipelineStartKey = "PipelineStart";
+inline const char* kPipelineEndKey = "PipelineEnd";
 
 //! \brief Stages won't log their "start" if segment is below this threshold
 inline constexpr size_t kSmallBlockSegmentWidth{16};

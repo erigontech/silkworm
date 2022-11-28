@@ -109,10 +109,10 @@ TEST_CASE("SnapshotRepository::view", "[silkworm][snapshot][snapshot]") {
     SnapshotRepository repository{settings};
     repository.reopen_folder();
 
-    using SnapshotRepository::ViewResult::kSnapshotNotFound;
-    CHECK(repository.view_header_segment(14'500'000, [](const auto&) { return false; }) == kSnapshotNotFound);
-    CHECK(repository.view_body_segment(11'500'000, [](const auto&) { return false; }) == kSnapshotNotFound);
-    CHECK(repository.view_tx_segment(15'000'000, [](const auto&) { return false; }) == kSnapshotNotFound);
+    using ViewResult = SnapshotRepository::ViewResult;
+    CHECK(repository.view_header_segment(14'500'000, [](const auto&) { return false; }) == ViewResult::kSnapshotNotFound);
+    CHECK(repository.view_body_segment(11'500'000, [](const auto&) { return false; }) == ViewResult::kSnapshotNotFound);
+    CHECK(repository.view_tx_segment(15'000'000, [](const auto&) { return false; }) == ViewResult::kSnapshotNotFound);
 }
 
 }  // namespace silkworm

@@ -132,9 +132,9 @@ class SnapshotRepository {
         kWalkFailed,
         kWalkSuccess
     };
-    [[nodiscard]] ViewResult view_header_segment(BlockNum number, const HeaderSnapshotWalker& walker);
-    [[nodiscard]] ViewResult view_body_segment(BlockNum number, const BodySnapshotWalker& walker);
-    [[nodiscard]] ViewResult view_tx_segment(BlockNum number, const TransactionSnapshotWalker& walker);
+    ViewResult view_header_segment(BlockNum number, const HeaderSnapshotWalker& walker);
+    ViewResult view_body_segment(BlockNum number, const BodySnapshotWalker& walker);
+    ViewResult view_tx_segment(BlockNum number, const TransactionSnapshotWalker& walker);
 
   private:
     void reopen_list(const SnapshotFileList& segment_files, bool optimistic);

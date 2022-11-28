@@ -33,6 +33,8 @@
 
 #include "common.hpp"
 
+using namespace silkworm;
+
 constexpr const char* kDefaultSnapshotFile{"v1-000000-000500-bodies.seg"};
 constexpr int kDefaultPageSize{1024 * 4};
 constexpr int kDefaultRepetitions{1};
@@ -44,22 +46,24 @@ struct SnapSettings {
 };
 
 //! The settings for handling BitTorrent protocol
-struct BitTorrentSettings : public silkworm::BitTorrentSettings {
+struct DownloadSettings : public BitTorrentSettings {
     std::string magnet_uri;
 };
 
 //! The Snapshots tools
 enum class SnapshotTool {
+    count_bodies,
     count_headers,
+    create_index,
     decode_segment,
     download
 };
 
 //! The overall settings for the snapshot toolbox
 struct SnapshotToolboxSettings {
-    silkworm::log::Settings log_settings;
+    log::Settings log_settings;
     SnapSettings snapshot_settings;
-    BitTorrentSettings bittorrent_settings;
+    DownloadSettings download_settings;
     SnapshotTool tool{SnapshotTool::download};
     int repetitions{kDefaultRepetitions};
 };
@@ -68,18 +72,19 @@ struct SnapshotToolboxSettings {
 void parse_command_line(int argc, char* argv[], CLI::App& app, SnapshotToolboxSettings& settings) {
     auto& log_settings = settings.log_settings;
     auto& snapshot_settings = settings.snapshot_settings;
-    auto& bittorrent_settings = settings.bittorrent_settings;
+    auto& bittorrent_settings = settings.download_settings;
 
-    silkworm::cmd::add_logging_options(app, log_settings);
+    cmd::add_logging_options(app, log_settings);
 
     std::map<std::string, SnapshotTool> snapshot_tool_mapping{
+        {"count_bodies", SnapshotTool::count_bodies},
         {"count_headers", SnapshotTool::count_headers},
         {"decode_segment", SnapshotTool::decode_segment},
         {"download", SnapshotTool::download},
     };
     app.add_option("--tool", settings.tool, "The snapshot tool to use")
         ->capture_default_str()
-        ->check(CLI::Range(SnapshotTool::count_headers, SnapshotTool::download))
+        ->check(CLI::Range(SnapshotTool::count_bodies, SnapshotTool::download))
         ->transform(CLI::Transformer(snapshot_tool_mapping, CLI::ignore_case))
         ->default_val(SnapshotTool::download);
     app.add_option("--repetitions", settings.repetitions, "The test repetitions")
@@ -111,10 +116,10 @@ void parse_command_line(int argc, char* argv[], CLI::App& app, SnapshotToolboxSe
 
 void decode_segment(const SnapSettings& settings, int repetitions) {
     std::chrono::time_point start{std::chrono::steady_clock::now()};
-    const auto snap_file{silkworm::SnapshotFile::parse(std::filesystem::path{settings.snapshot_file_name})};
+    const auto snap_file{SnapshotFile::parse(std::filesystem::path{settings.snapshot_file_name})};
     if (snap_file) {
         for (int i{0}; i < repetitions; ++i) {
-            silkworm::HeaderSnapshot header_segment{snap_file->path(), snap_file->block_from(), snap_file->block_to()};
+            HeaderSnapshot header_segment{snap_file->path(), snap_file->block_from(), snap_file->block_to()};
             header_segment.reopen_segment();
         }
     }
@@ -123,30 +128,63 @@ void decode_segment(const SnapSettings& settings, int repetitions) {
     SILK_INFO << "Open snapshot elapsed: " << open_duration_micro << " msec";
 }
 
+void count_bodies(int repetitions) {
+    SnapshotRepository snapshot_repo{SnapshotSettings{"../erigon-snapshot/main", false, false}};
+    snapshot_repo.reopen_folder();
+    std::chrono::time_point start{std::chrono::steady_clock::now()};
+    int num_bodies{0};
+    uint64_t num_txns{0};
+    for (int i{0}; i < repetitions; ++i) {
+        snapshot_repo.for_each_body([&](BlockNum number, const db::detail::BlockBodyForStorage* b) -> bool {
+            SILK_DEBUG << "Body number: " << number << " txn_count: " << b->txn_count << " #ommers: " << b->ommers.size();
+            num_bodies++;
+            num_txns += b->txn_count;
+            return true;
+        });
+    }
+    std::chrono::duration elapsed{std::chrono::steady_clock::now() - start};
+    const auto duration_micro = static_cast<uint64_t>(std::chrono::duration_cast<std::chrono::milliseconds>(elapsed).count());
+    SILK_INFO << "How many bodies: " << num_bodies << " txs: " << num_txns << " duration: " << duration_micro << " msec";
+}
+
 void count_headers(int repetitions) {
-    silkworm::SnapshotRepository snapshot_repo{{"../erigon-snapshot/main",
-                                                false,
-                                                false}};
+    SnapshotRepository snapshot_repo{{"../erigon-snapshot/main",
+                                      false,
+                                      false}};
     snapshot_repo.reopen_folder();
     std::chrono::time_point start{std::chrono::steady_clock::now()};
     int count{0};
     for (int i{0}; i < repetitions; ++i) {
-        snapshot_repo.for_each_header([&count](const silkworm::BlockHeader* h) -> bool {
-            SILK_DEBUG << "Header number: " << h->number << " hash: " << silkworm::to_hex(h->hash());
+        snapshot_repo.for_each_header([&count](const BlockHeader* h) -> bool {
+            SILK_DEBUG << "Header number: " << h->number << " hash: " << to_hex(h->hash());
             ++count;
             return true;
         });
     }
     std::chrono::duration elapsed{std::chrono::steady_clock::now() - start};
     const auto duration_micro = static_cast<uint64_t>(std::chrono::duration_cast<std::chrono::milliseconds>(elapsed).count());
-    SILK_INFO << "How many headers count: " << count << " duration: " << duration_micro << " msec";
+    SILK_INFO << "How many headers: " << count << " duration: " << duration_micro << " msec";
+}
+
+void create_index(const SnapSettings& settings, int repetitions) {
+    std::chrono::time_point start{std::chrono::steady_clock::now()};
+    const auto snap_file{SnapshotFile::parse(std::filesystem::path{settings.snapshot_file_name})};
+    if (snap_file) {
+        for (int i{0}; i < repetitions; ++i) {
+            HeaderSnapshot header_segment{snap_file->path(), snap_file->block_from(), snap_file->block_to()};
+            header_segment.reopen_index();
+        }
+    }
+    std::chrono::duration elapsed{std::chrono::steady_clock::now() - start};
+    const auto open_duration_micro = static_cast<uint64_t>(std::chrono::duration_cast<std::chrono::milliseconds>(elapsed).count());
+    SILK_INFO << "Create index elapsed: " << open_duration_micro << " msec";
 }
 
 void download(const BitTorrentSettings& settings, int /*repetitions*/) {
     try {
-        silkworm::BitTorrentSettings bit_torrent_settings;
+        BitTorrentSettings bit_torrent_settings;
         bit_torrent_settings.magnets_file_path = settings.magnets_file_path;
-        silkworm::BitTorrentClient client{bit_torrent_settings};
+        BitTorrentClient client{bit_torrent_settings};
 
         boost::asio::io_context scheduler;
         boost::asio::signal_set signals{scheduler, SIGINT, SIGTERM};
@@ -182,20 +220,24 @@ int main(int argc, char* argv[]) {
         const auto pid = boost::this_process::get_id();
         SILK_LOG << "Snapshots toolbox starting [pid=" << std::to_string(pid) << "]";
 
-        const auto node_name{silkworm::cmd::get_node_name_from_build_info(silkworm_get_buildinfo())};
+        const auto node_name{cmd::get_node_name_from_build_info(silkworm_get_buildinfo())};
         SILK_LOG << "Snapshots toolbox build info: " << node_name;
 
         auto& log_settings = settings.log_settings;
 
         // Initialize logging with custom settings
-        silkworm::log::init(log_settings);
+        log::init(log_settings);
 
-        if (settings.tool == SnapshotTool::count_headers) {
+        if (settings.tool == SnapshotTool::count_bodies) {
+            count_bodies(settings.repetitions);
+        } else if (settings.tool == SnapshotTool::count_headers) {
             count_headers(settings.repetitions);
+        } else if (settings.tool == SnapshotTool::create_index) {
+            create_index(settings.snapshot_settings, settings.repetitions);
         } else if (settings.tool == SnapshotTool::decode_segment) {
             decode_segment(settings.snapshot_settings, settings.repetitions);
         } else if (settings.tool == SnapshotTool::download) {
-            download(settings.bittorrent_settings, settings.repetitions);
+            download(settings.download_settings, settings.repetitions);
         } else {
             throw std::invalid_argument{"unknown tool: " + std::string{magic_enum::enum_name<>(settings.tool)}};
         }

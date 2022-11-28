@@ -42,6 +42,9 @@ class Snapshot {
     [[nodiscard]] BlockNum block_from() const { return block_from_; }
     [[nodiscard]] BlockNum block_to() const { return block_to_; }
 
+    [[nodiscard]] bool empty() const { return item_count() == 0; }
+    [[nodiscard]] std::size_t item_count() const { return decoder_.words_count(); }
+
     void reopen_segment();
     virtual void reopen_index() = 0;
 
@@ -75,8 +78,8 @@ class HeaderSnapshot : public Snapshot {
         : Snapshot(std::move(path), block_from, block_to) {}
     ~HeaderSnapshot() override { close(); }
 
-    using HeaderWalker = std::function<bool(const BlockHeader* header)>;
-    bool for_each_header(const HeaderWalker& walker);
+    using Walker = std::function<bool(const BlockHeader* header)>;
+    bool for_each_header(const Walker& walker);
 
     void reopen_index() override;
 
@@ -94,8 +97,8 @@ class BodySnapshot : public Snapshot {
         : Snapshot(std::move(path), block_from, block_to) {}
     ~BodySnapshot() override { close(); }
 
-    using BodyWalker = std::function<bool(BlockNum number, const db::detail::BlockBodyForStorage* body)>;
-    bool for_each_body(const BodyWalker& walker);
+    using Walker = std::function<bool(BlockNum number, const db::detail::BlockBodyForStorage* body)>;
+    bool for_each_body(const Walker& walker);
 
     void reopen_index() override;
 

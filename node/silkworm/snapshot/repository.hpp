@@ -100,6 +100,12 @@ concept ConcreteSnapshot = std::is_base_of<Snapshot, T>::value;
 template <ConcreteSnapshot T>
 using SnapshotsByPath = std::map<std::filesystem::path, std::unique_ptr<T>>;
 
+template <ConcreteSnapshot T>
+using SnapshotWalker = std::function<bool(const T* snapshot)>;
+using HeaderSnapshotWalker = SnapshotWalker<HeaderSnapshot>;
+using BodySnapshotWalker = SnapshotWalker<BodySnapshot>;
+using TransactionSnapshotWalker = SnapshotWalker<TransactionSnapshot>;
+
 //! Read-only repository for all snapshot files.
 //! @details Some simplifications are currently in place:
 //! - it opens snapshots only on startup and they are immutable
@@ -110,20 +116,40 @@ class SnapshotRepository {
   public:
     explicit SnapshotRepository(SnapshotSettings settings);
 
-    [[nodiscard]] BlockNum max_available_block() const { return std::min(segment_max_block_, idx_max_block_); }
+    [[nodiscard]] BlockNum max_block_available() const { return std::min(segment_max_block_, idx_max_block_); }
 
     void reopen_folder();
 
-    bool for_each_header(HeaderSnapshot::HeaderWalker fn);
+    bool for_each_header(const HeaderSnapshot::Walker& fn);
+    bool for_each_body(const BodySnapshot::Walker& fn);
+
+    [[nodiscard]] std::size_t header_snapshots_count() const { return header_segments_.size(); }
+    [[nodiscard]] std::size_t body_snapshots_count() const { return body_segments_.size(); }
+    [[nodiscard]] std::size_t tx_snapshots_count() const { return tx_segments_.size(); }
+
+    enum ViewResult {
+        kSnapshotNotFound,
+        kWalkFailed,
+        kWalkSuccess
+    };
+    ViewResult view_header_segment(BlockNum number, const HeaderSnapshotWalker& walker);
+    ViewResult view_body_segment(BlockNum number, const BodySnapshotWalker& walker);
+    ViewResult view_tx_segment(BlockNum number, const TransactionSnapshotWalker& walker);
 
   private:
     void reopen_list(const SnapshotFileList& segment_files, bool optimistic);
 
-    void reopen_header(const SnapshotFile& segment_file);
-    void reopen_body(const SnapshotFile& segment_file);
-    void reopen_transaction(const SnapshotFile& segment_file);
+    bool reopen_header(const SnapshotFile& seg_file);
+    bool reopen_body(const SnapshotFile& seg_file);
+    bool reopen_transaction(const SnapshotFile& seg_file);
 
     void close_segments_not_in_list(const SnapshotFileList& segment_files);
+
+    template <ConcreteSnapshot T>
+    static ViewResult view(const SnapshotsByPath<T>& segments, BlockNum number, const SnapshotWalker<T>& walker);
+
+    template <ConcreteSnapshot T>
+    static bool reopen(SnapshotsByPath<T>& segments, const SnapshotFile& seg_file);
 
     [[nodiscard]] SnapshotFileList get_segment_files() const {
         return get_files(kSegmentExtension);
@@ -153,7 +179,7 @@ class SnapshotRepository {
     SnapshotsByPath<BodySnapshot> body_segments_;
 
     //! The snapshots containing the Transactions
-    SnapshotsByPath<TransactionSnapshot> txn_segments_;
+    SnapshotsByPath<TransactionSnapshot> tx_segments_;
 };
 
 }  // namespace silkworm

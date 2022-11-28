@@ -185,7 +185,7 @@ bool SnapshotRepository::reopen_header(const SnapshotFile& seg_file) {
     return reopen(header_segments_, seg_file);
 }
 
-bool SnapshotRepository::reopen_body(const SnapshotFile& seg_file) {;
+bool SnapshotRepository::reopen_body(const SnapshotFile& seg_file) {
     return reopen(body_segments_, seg_file);
 }
 

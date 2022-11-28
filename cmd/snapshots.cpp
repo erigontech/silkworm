@@ -54,7 +54,6 @@ struct DownloadSettings : public BitTorrentSettings {
 enum class SnapshotTool {
     count_bodies,
     count_headers,
-    count_transactions,
     create_index,
     decode_segment,
     download
@@ -80,7 +79,6 @@ void parse_command_line(int argc, char* argv[], CLI::App& app, SnapshotToolboxSe
     std::map<std::string, SnapshotTool> snapshot_tool_mapping{
         {"count_bodies", SnapshotTool::count_bodies},
         {"count_headers", SnapshotTool::count_headers},
-        {"count_transactions", SnapshotTool::count_transactions},
         {"decode_segment", SnapshotTool::decode_segment},
         {"download", SnapshotTool::download},
     };
@@ -168,25 +166,6 @@ void count_headers(int repetitions) {
     SILK_INFO << "How many headers: " << count << " duration: " << duration_micro << " msec";
 }
 
-void count_transactions(int /*repetitions*/) {
-    SnapshotRepository snapshot_repo{{"../erigon-snapshot/main",
-                                      false,
-                                      false}};
-    snapshot_repo.reopen_folder();
-    std::chrono::time_point start{std::chrono::steady_clock::now()};
-    int count{0};
-    /*for (int i{0}; i < repetitions; ++i) {
-        snapshot_repo.for_each_transaction([&count](const Transaction* tx) -> bool {
-            SILK_DEBUG << "Tx type: " << std::to_string(tx->type);
-            ++count;
-            return true;
-        });
-    }*/
-    std::chrono::duration elapsed{std::chrono::steady_clock::now() - start};
-    const auto duration_micro = static_cast<uint64_t>(std::chrono::duration_cast<std::chrono::milliseconds>(elapsed).count());
-    SILK_INFO << "How many transactions: " << count << " duration: " << duration_micro << " msec";
-}
-
 void create_index(const SnapSettings& settings, int repetitions) {
     std::chrono::time_point start{std::chrono::steady_clock::now()};
     const auto snap_file{SnapshotFile::parse(std::filesystem::path{settings.snapshot_file_name})};
@@ -253,8 +232,6 @@ int main(int argc, char* argv[]) {
             count_bodies(settings.repetitions);
         } else if (settings.tool == SnapshotTool::count_headers) {
             count_headers(settings.repetitions);
-        } else if (settings.tool == SnapshotTool::count_transactions) {
-            count_transactions(settings.repetitions);
         } else if (settings.tool == SnapshotTool::create_index) {
             create_index(settings.snapshot_settings, settings.repetitions);
         } else if (settings.tool == SnapshotTool::decode_segment) {

@@ -131,6 +131,18 @@ bool SnapshotRepository::for_each_body(const BodySnapshot::Walker& fn) {
     return true;
 }
 
+SnapshotRepository::ViewResult SnapshotRepository::view_header_segment(BlockNum number, const HeaderSnapshotWalker& walker) {
+    return view(header_segments_, number, walker);
+}
+
+SnapshotRepository::ViewResult SnapshotRepository::view_body_segment(BlockNum number, const BodySnapshotWalker& walker) {
+    return view(body_segments_, number, walker);
+}
+
+SnapshotRepository::ViewResult SnapshotRepository::view_tx_segment(BlockNum number, const TransactionSnapshotWalker& walker) {
+    return view(tx_segments_, number, walker);
+}
+
 void SnapshotRepository::reopen_list(const SnapshotFileList& segment_files, bool optimistic) {
     close_segments_not_in_list(segment_files);
 
@@ -138,17 +150,18 @@ void SnapshotRepository::reopen_list(const SnapshotFileList& segment_files, bool
     for (const auto& seg_file : segment_files) {
         try {
             SILK_INFO << "Reopen segment file: " << seg_file.path();
+            bool snapshot_added{false};
             switch (seg_file.type()) {
                 case SnapshotType::headers: {
-                    reopen_header(seg_file);
+                    snapshot_added = reopen_header(seg_file);
                     break;
                 }
                 case SnapshotType::bodies: {
-                    reopen_body(seg_file);
+                    snapshot_added = reopen_body(seg_file);
                     break;
                 }
                 case SnapshotType::transactions: {
-                    reopen_transaction(seg_file);
+                    snapshot_added = reopen_transaction(seg_file);
                     break;
                 }
                 default: {
@@ -156,7 +169,7 @@ void SnapshotRepository::reopen_list(const SnapshotFileList& segment_files, bool
                 }
             }
 
-            if (seg_file.block_to() > 0) {
+            if (snapshot_added && seg_file.block_to() > segment_max_block) {
                 segment_max_block = seg_file.block_to();
             }
         } catch (const std::exception& exc) {
@@ -168,34 +181,46 @@ void SnapshotRepository::reopen_list(const SnapshotFileList& segment_files, bool
     idx_max_block_ = max_idx_available();
 }
 
-void SnapshotRepository::reopen_header(const SnapshotFile& seg_file) {
-    if (header_segments_.find(seg_file.path()) == header_segments_.end()) {
-        auto header_segment = std::make_unique<HeaderSnapshot>(seg_file.path(), seg_file.block_from(), seg_file.block_to());
-        header_segment->reopen_segment();
-        header_segments_[seg_file.path()] = std::move(header_segment);
-    }
-    SILKWORM_ASSERT(header_segments_.find(seg_file.path()) != header_segments_.end());
-    const auto& header_segment = header_segments_[seg_file.path()];
-    header_segment->reopen_index();
+bool SnapshotRepository::reopen_header(const SnapshotFile& seg_file) {
+    return reopen(header_segments_, seg_file);
 }
 
-void SnapshotRepository::reopen_body(const SnapshotFile& seg_file) {
-    if (body_segments_.find(seg_file.path()) == body_segments_.end()) {
-        auto body_segment = std::make_unique<BodySnapshot>(seg_file.path(), seg_file.block_from(), seg_file.block_to());
-        body_segment->reopen_segment();
-        body_segments_[seg_file.path()] = std::move(body_segment);
-    }
-    SILKWORM_ASSERT(body_segments_.find(seg_file.path()) != body_segments_.end());
-    const auto& body_segment = body_segments_[seg_file.path()];
-    body_segment->reopen_index();
+bool SnapshotRepository::reopen_body(const SnapshotFile& seg_file) {;
+    return reopen(body_segments_, seg_file);
 }
 
-void SnapshotRepository::reopen_transaction(const SnapshotFile& /*seg_file*/) {
-    // TODO(canepat): implement
+bool SnapshotRepository::reopen_transaction(const SnapshotFile& seg_file) {
+    return reopen(tx_segments_, seg_file);
 }
 
 void SnapshotRepository::close_segments_not_in_list(const SnapshotFileList& /*segment_files*/) {
     // TODO(canepat): implement
+}
+
+template <ConcreteSnapshot T>
+SnapshotRepository::ViewResult SnapshotRepository::view(const SnapshotsByPath<T>& segments, BlockNum number,
+                                                        const SnapshotWalker<T>& walker) {
+    for (const auto& [_, snapshot] : segments) {
+        if (snapshot->block_from() <= number && number < snapshot->block_to()) {
+            const bool walk_done = walker(snapshot.get());
+            return walk_done ? kWalkSuccess : kWalkFailed;
+        }
+    }
+    return kSnapshotNotFound;
+}
+
+template <ConcreteSnapshot T>
+bool SnapshotRepository::reopen(SnapshotsByPath<T>& segments, const SnapshotFile& seg_file) {
+    if (segments.find(seg_file.path()) == segments.end()) {
+        auto segment = std::make_unique<T>(seg_file.path(), seg_file.block_from(), seg_file.block_to());
+        segment->reopen_segment();
+        if (segment->empty()) return false;
+        segments[seg_file.path()] = std::move(segment);
+    }
+    SILKWORM_ASSERT(segments.find(seg_file.path()) != segments.end());
+    const auto& segment = segments[seg_file.path()];
+    segment->reopen_index();
+    return true;
 }
 
 SnapshotFileList SnapshotRepository::get_files(const std::string& ext) const {

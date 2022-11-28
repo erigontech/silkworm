@@ -50,6 +50,8 @@ TEST_CASE("Snapshot::Snapshot", "[silkworm][snapshot][snapshot]") {
             CHECK(snapshot.path().empty());
             CHECK(snapshot.block_from() == block_from);
             CHECK(snapshot.block_to() == block_to);
+            CHECK(snapshot.item_count() == 0);
+            CHECK(snapshot.empty());
         }
     }
     SECTION("invalid") {
@@ -70,6 +72,8 @@ TEST_CASE("Snapshot::for_each_item", "[silkworm][snapshot][snapshot]") {
     Decompressor decoder{hello_world_snapshot_file.path()};
     Snapshot_ForTest tmp_snapshot{hello_world_snapshot_file.path(), 1'000, 2'000};
     tmp_snapshot.reopen_segment();
+    CHECK(!tmp_snapshot.empty());
+    CHECK(tmp_snapshot.item_count() == 1);
     tmp_snapshot.for_each_item([&](const auto& word_item) {
         CHECK(std::string{word_item.value.cbegin(), word_item.value.cend()} == "hello, world");
         CHECK(word_item.position == 0);

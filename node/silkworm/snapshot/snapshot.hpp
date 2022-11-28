@@ -42,6 +42,9 @@ class Snapshot {
     [[nodiscard]] BlockNum block_from() const { return block_from_; }
     [[nodiscard]] BlockNum block_to() const { return block_to_; }
 
+    [[nodiscard]] bool empty() const { return item_count() == 0; }
+    [[nodiscard]] std::size_t item_count() const { return decoder_.words_count(); }
+
     void reopen_segment();
     virtual void reopen_index() = 0;
 

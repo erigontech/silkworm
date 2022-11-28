@@ -230,6 +230,16 @@ void write_total_difficulty(mdbx::txn& txn, BlockNum block_number, const evmc::b
     write_total_difficulty(txn, key, total_difficulty);
 }
 
+std::tuple<BlockNum, evmc::bytes32> read_canonical_head(mdbx::txn& txn) {
+    Cursor cursor(txn, table::kCanonicalHashes);
+    auto data = cursor.to_last();
+    if (!data) return {};
+    evmc::bytes32 hash{};
+    std::memcpy(hash.bytes, data.value.data(), kHashLength);
+    BlockNum bn = data.key;
+    return {bn, hash};
+}
+
 std::optional<evmc::bytes32> read_canonical_header_hash(mdbx::txn& txn, BlockNum number) {
     Cursor source(txn, table::kCanonicalHashes);
     auto key{db::block_key(number)};

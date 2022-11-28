@@ -171,12 +171,6 @@ auto HeadersStage::forward(std::optional<NewHeight> desired_height) -> NewHeight
 
 void HeadersStage::unwind(UnwindPoint unwind_point) {
     current_height_ = unwind_point.block_num;
-
-    std::set<Hash> bad_headers;
-    //for(header from current_height_ to unwind_point) // todo: implement
-    //    bad_headers.insert(header);
-
-    update_bad_headers(bad_headers);
 }
 
 // Request new headers from peers
@@ -214,15 +208,6 @@ auto HeadersStage::withdraw_stable_headers() -> std::shared_ptr<InternalMessage<
         bool in_sync = wc.in_sync();
         return result_t{std::move(headers), in_sync};
     });
-
-    block_downloader_.accept(message);
-
-    return message;
-}
-
-auto HeadersStage::update_bad_headers(std::set<Hash> bad_headers) -> std::shared_ptr<InternalMessage<void>> {
-    auto message = std::make_shared<InternalMessage<void>>(
-        [bads = std::move(bad_headers)](HeaderChain& wc, BodySequence&) { wc.add_bad_headers(bads); });
 
     block_downloader_.accept(message);
 

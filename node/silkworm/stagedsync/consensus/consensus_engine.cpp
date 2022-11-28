@@ -19,7 +19,7 @@ limitations under the License.
 
 namespace silkworm::stagedsync::consensus {
 
-ConsensusEngine::ConsensusEngine(NodeSettings& ns, db::ROAccess& dba, BlockExchange& be, ExecutionEngine& ee)
+ConsensusEngine::ConsensusEngine(NodeSettings& ns, db::ROAccess dba, BlockExchange& be, ExecutionEngine& ee)
     : node_settings_{ns},
       db_access_{dba},
       block_exchange_{be},
@@ -67,13 +67,11 @@ void ConsensusEngine::execution_loop() {
         if (std::holds_alternative<InvalidChain>(verification)) {
             auto invalid_chain = std::get<InvalidChain>(verification);
 
-            unwind(headers_stage, bodies_stage, invalid_chain);
+            unwind(headers_stage, bodies_stage, {invalid_chain.unwind_point});
 
-            if (invalid_chain.bad_block) {
-                auto bad_headers = exec_engine_.collect_bad_header(nvalid_chain.unwind_head);
-                send_to_exchange(bad_headers);
+            if (!invalid_chain.bad_headers.empty()) {
+                update_bad_headers(std::move(invalid_chain.bad_headers));
             }
-
 
             exec_engine_.update_fork_choice(invalid_chain.unwind_head);
 
@@ -92,5 +90,15 @@ void ConsensusEngine::execution_loop() {
     }
 
 };
+
+
+auto ConsensusEngine::update_bad_headers(std::set<Hash> bad_headers) -> std::shared_ptr<InternalMessage<void>> {
+    auto message = std::make_shared<InternalMessage<void>>(
+        [bads = std::move(bad_headers)](HeaderChain& wc, BodySequence&) { wc.add_bad_headers(bads); });
+
+    block_exchange_.accept(message);
+
+    return message;
+}
 
 }  // namespace silkworm::stagedsync

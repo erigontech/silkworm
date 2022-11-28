@@ -17,7 +17,7 @@ limitations under the License.
 #pragma once
 
 #include <atomic>
-#include <map>
+#include <set>
 #include <vector>
 #include <variant>
 
@@ -33,11 +33,12 @@ namespace silkworm::stagedsync {
 
 class ExecutionEngine : public Stoppable {
   public:
-    explicit ExecutionEngine(NodeSettings&, const db::RWAccess&);
+    explicit ExecutionEngine(NodeSettings&, const db::RWAccess);
     ~ExecutionEngine() = default;
 
     struct ValidChain {BlockNum current_point;};
-    struct InvalidChain {BlockNum unwind_point; Hash unwind_head; std::optional<Hash> bad_block;};
+    struct InvalidChain {BlockNum unwind_point; Hash unwind_head;
+                         std::optional<Hash> bad_block; std::set<Hash> bad_headers;};
     struct ValidationError {BlockNum last_point;};
     using VerificationResult = std::variant<ValidChain, InvalidChain, ValidationError>;
 
@@ -61,6 +62,7 @@ class ExecutionEngine : public Stoppable {
   private:
     void insert_header(db::RWTxn& tx, BlockHeader&);
     void insert_body(db::RWTxn& tx, Block&);
+    std::set<Hash> collect_bad_headers(db::RWTxn& tx, InvalidChain& invalid_chain);
 
     NodeSettings& node_settings_;
     db::RWAccess db_access_;
@@ -80,6 +82,8 @@ class ExecutionEngine : public Stoppable {
 
         BlockIdPair initial_head();
         BlockIdPair current_head();
+
+        auto get_hash(BlockNum height) -> std::optional<Hash>;
 
       private:
         db::RWTxn& tx_;

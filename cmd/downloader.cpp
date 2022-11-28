@@ -25,51 +25,15 @@
 #include <silkworm/common/settings.hpp>
 #include <silkworm/concurrency/signal_handler.hpp>
 #include <silkworm/db/access_layer.hpp>
-#include <silkworm/stagedsync/stage.hpp>
-#include <silkworm/stagedsync/stage_bodies.hpp>
-#include <silkworm/stagedsync/stage_headers.hpp>
+#include <silkworm/stagedsync/consensus/stage.hpp>
+#include <silkworm/stagedsync/consensus/stage_bodies.hpp>
+#include <silkworm/stagedsync/consensus/stage_headers.hpp>
 
 #include "common.hpp"
 
 using namespace silkworm;
 using namespace silkworm::stagedsync;
-
-bool unwind_needed(Stage::Result result) {
-    return (result == Stage::Result::kWrongFork || result == Stage::Result::kInvalidBlock);
-}
-
-bool error_or_abort(Stage::Result result) {
-    return (result == Stage::Result::kUnexpectedError || result == Stage::Result::kAborted);
-}
-
-// stage-loop, forwarding phase
-using LastStage = size_t;
-std::tuple<Stage::Result, LastStage> forward(std::vector<Stage*> stages, db::RWTxn& txn) {
-    Stage::Result result{Stage::Result::kUnspecified};
-
-    for (size_t i = 0; i < stages.size(); ++i) {
-        result = stages[i]->forward(txn);
-        if (unwind_needed(result)) {
-            return {result, i};
-        }
-    }
-    return {result, stages.size() - 1};
-}
-
-// stage-loop, unwinding phase
-Stage::Result unwind(std::vector<Stage*> stages, LastStage last_stage, db::RWTxn& txn) {
-    Stage::Result result{Stage::Result::kUnspecified};
-
-    for (size_t i = last_stage; i <= 0; --i) {  // reverse loop
-        result = stages[i]->unwind(txn);
-        if (error_or_abort(result)) {
-            break;
-        }
-    }
-
-    return result;
-}
-
+/*
 // progress log
 class ProgressLog : public ActiveComponent {
     std::vector<Stage*> stages_;
@@ -166,17 +130,10 @@ int main(int argc, char* argv[]) {
         BlockExchange block_exchange{sentry, db::ROAccess{db}, node_settings.chain_config.value()};
         auto block_downloading = std::thread([&block_exchange]() { block_exchange.execution_loop(); });
 
-        // Stages shared state
-        SyncContext shared_status;
-        shared_status.is_first_cycle = true;  // = starting up silkworm
-        db::RWAccess db_access(db);
-
         // Stages 1 & 2 - Headers and bodies downloading - example code
-        HeadersStage header_stage{&shared_status, block_exchange, &node_settings};
-        BodiesStage body_stage{&shared_status, block_exchange, &node_settings};
-
-        header_stage.set_log_prefix("[1/2 Headers]");
-        body_stage.set_log_prefix("[2/2 Bodies]");
+        db::RWAccess db_access(db);
+        stagedsync::consensus::HeadersStage header_stage{block_exchange, &node_settings};
+        stagedsync::consensus::BodiesStage body_stage{block_exchange, &node_settings};
 
         // Trap os signals
         SignalHandler::init();
@@ -188,8 +145,7 @@ int main(int argc, char* argv[]) {
         //            sentry.stop();
         //        });
 
-        // Sample stage loop with 2 stages
-        std::vector<Stage*> stages = {&header_stage, &body_stage};
+        // Sample stage loop
 
         ProgressLog progress_log(stages);
         auto progress_displaying = std::thread([&progress_log]() {
@@ -239,3 +195,4 @@ int main(int argc, char* argv[]) {
 
     return return_value;
 }
+*/

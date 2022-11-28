@@ -58,6 +58,9 @@ size_t process_headers_at_height(mdbx::txn& txn, BlockNum height, std::function<
 //! \brief Reads a header without rlp-decoding it
 std::optional<ByteView> read_rlp_encoded_header(mdbx::txn& txn, BlockNum bn, const evmc::bytes32& hash);
 
+//! \brief Reads the canonical head
+std::tuple<BlockNum, evmc::bytes32> read_canonical_head(mdbx::txn& txn);
+
 //! \brief Reads the canonical header from a block number
 std::optional<BlockHeader> read_canonical_header(mdbx::txn& txn, BlockNum b);
 

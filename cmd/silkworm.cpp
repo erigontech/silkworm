@@ -117,7 +117,8 @@ int main(int argc, char* argv[]) {
         silkworm::stagedsync::ExecutionEngine execution{node_settings, db::RWAccess{chaindata_db}};
 
         // ConsensusEngine drives headers and bodies sync, implementing fork choice rules
-        silkworm::stagedsync::ConsensusEngine consensus{node_settings, db::ROAccess{chaindata_db}, block_exchange, execution};
+        silkworm::stagedsync::consensus::ConsensusEngine consensus{
+            node_settings, db::ROAccess{chaindata_db}, block_exchange, execution};
         auto consensus_loop = std::thread([&consensus]() { consensus.execution_loop(); });
 
         // Keep waiting till user stops logging resource usage

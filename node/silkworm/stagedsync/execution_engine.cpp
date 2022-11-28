@@ -15,10 +15,17 @@ limitations under the License.
 */
 #include "execution_engine.hpp"
 
+#include <set>
+
 #include <silkworm/common/as_range.hpp>
 #include <silkworm/db/access_layer.hpp>
 
 namespace silkworm::stagedsync {
+
+void ensure_invariant(bool condition, std::string message) {
+    if (!condition)
+        throw std::logic_error("Execution invariant violation: " + message);
+}
 
 ExecutionEngine::CanonicalChain::CanonicalChain(db::RWTxn& tx): tx_{tx}, canonical_cache_{kCacheSize} {
     // Read head of canonical chain
@@ -49,12 +56,8 @@ BlockNum ExecutionEngine::CanonicalChain::find_forking_point(db::RWTxn& tx, Hash
     // Going further back
     else {
         auto parent = db::read_header(tx, height - 1, parent_hash);  // todo: maybe use parent cache?
-        if (!parent) {
-            std::string error_message = "HeaderPersistence: could not find parent with hash " + to_hex(parent_hash) +
-                                        " and height " + std::to_string(height - 1) + " for header " + to_hex(header->hash());
-            log::Error("HeaderStage") << error_message;
-            throw std::logic_error(error_message);
-        }
+        ensure_invariant(parent.has_value(), "CanonicalChain could not find parent with hash " + to_hex(parent_hash) +
+                        " and height " + std::to_string(height - 1) + " for header " + to_hex(header->hash()));
 
         auto ancestor_hash = parent->parent_hash;
         auto ancestor_height = height - 2;
@@ -97,8 +100,8 @@ void ExecutionEngine::CanonicalChain::update_up_to(BlockNum height, Hash hash) {
         canonical_cache_.put(ancestor_height, ancestor_hash);
 
         auto ancestor = db::read_header(tx_, ancestor_height, ancestor_hash);  // todo: maybe use parent cache?
-        if (ancestor == std::nullopt) throw std::logic_error("Execution, fix canonical chain failed at "
-            "ancestor= " + std::to_string(ancestor_height) + " hash=" + ancestor_hash.to_hex() );
+        ensure_invariant(ancestor.has_value(), "fix canonical chain failed at "
+            "ancestor= " + std::to_string(ancestor_height) + " hash=" + ancestor_hash.to_hex());
 
         ancestor_hash = ancestor->parent_hash;
         --ancestor_height;
@@ -119,14 +122,18 @@ void ExecutionEngine::CanonicalChain::delete_down_to(BlockNum unwind_point) {
 
     current_head_.number = unwind_point;
     auto current_head_hash = db::read_canonical_hash(tx_, unwind_point);
-    if (!current_head_hash) throw std::logic_error("Execution invariant violation, hash not found on canonical"
-        "at height " + std::to_string(unwind_point));
+    ensure_invariant(current_head_hash.has_value(), "hash not found on canonical at height " + std::to_string(unwind_point));
+
     current_head_.hash = *current_head_hash;
+}
+
+auto ExecutionEngine::CanonicalChain::get_hash(BlockNum height) -> std::optional<Hash> {
+    return db::read_canonical_hash(tx_, height);
 }
 
 // --------------------------------------------------------------------------------------------------------------------
 
-ExecutionEngine::ExecutionEngine(NodeSettings& ns, const db::RWAccess& dba)
+ExecutionEngine::ExecutionEngine(NodeSettings& ns, const db::RWAccess dba)
     : node_settings_{ns},
       db_access_{dba},
       tx_{db_access_.start_rw_tx()},
@@ -170,7 +177,7 @@ void ExecutionEngine::insert_body(db::RWTxn& tx, Block& block) {
 auto ExecutionEngine::verify_chain(Hash header_hash) -> VerificationResult {
     // retrieve the head header
     auto header = get_header(header_hash);
-    if (!header) throw std::logic_error("Execution invariant violation, header to verify non present");
+    ensure_invariant(header.has_value(), "header to verify non present");
 
     // db commit policy
     bool cycle_in_one_tx = !is_first_sync || header->number - canonical_chain_.current_head().number > 4096;
@@ -196,28 +203,40 @@ auto ExecutionEngine::verify_chain(Hash header_hash) -> VerificationResult {
     // forward
     Stage::Result forward_result = pipeline_.forward(*inner_tx, header->number);
 
-    if (pipeline_.head_header_number() != canonical_chain_.current_head().number ||
-        pipeline_.head_header_hash() != canonical_chain_.current_head().hash) {
-        // todo: choose a policy???
+    // evaluate result
+    VerificationResult verify_result;
+    switch (forward_result) {
+        case Stage::Result::kSuccess: {
+            if (pipeline_.head_header_number() != canonical_chain_.current_head().number ||
+                pipeline_.head_header_hash() != canonical_chain_.current_head().hash) {
+                // todo: choose a policy???
+            }
+            verify_result = ValidChain{pipeline_.head_header_number()};
+            break;
+        }
+        case Stage::Result::kWrongFork:
+        case Stage::Result::kInvalidBlock:
+        case Stage::Result::kWrongStateRoot: {
+            ensure_invariant(pipeline_.unwind_point().has_value(), "unwind point from pipeline requested when forward fails");
+            InvalidChain invalid_chain = {*pipeline_.unwind_point()};
+            invalid_chain.unwind_head = *canonical_chain_.get_hash(*pipeline_.unwind_point());
+            if (pipeline_.bad_block()) {
+                invalid_chain.bad_block = pipeline_.bad_block();
+                invalid_chain.bad_headers = collect_bad_headers(*inner_tx, invalid_chain);
+            }
+            verify_result = invalid_chain;
+            break;
+        }
+        case Stage::Result::kStoppedByEnv:
+            verify_result = ValidChain{pipeline_.head_header_number()};
+            break;
+        default:
+            verify_result = ValidationError{pipeline_.head_header_number()};
     }
 
     // finish
     tx_.commit_and_renew(); // todo for PoS: do nothing, wait update_fork_choice to persist the correct overlay
-
-    switch (forward_result) {
-        case Stage::Result::kSuccess:
-            return ValidChain{pipeline_.head_header_number()};
-        case Stage::Result::kWrongFork:
-        case Stage::Result::kInvalidBlock:
-        case Stage::Result::kWrongStateRoot:
-            return InvalidChain{pipeline_.unwind_point().value(), pipeline_.unwind_head(), pipeline_.bad_blocks()};
-        case Stage::Result::kStoppedByEnv:
-            return ValidationError{pipeline_.head_header_number()}; // todo(mike): is it ok?
-        default:
-            ; // ignore?
-    }
-
-    throw StageError(forward_result);
+    return verify_result;
 }
 
 bool ExecutionEngine::update_fork_choice(Hash header_hash) {
@@ -250,24 +269,19 @@ bool ExecutionEngine::update_fork_choice(Hash header_hash) {
     return true;
 }
 
-std::tuple<std::set<Hash>, BlockNum>
-HeaderDataModel::collect_bad_headers(BlockNum unwind_point, std::optional<Hash> bad_block, db::RWTxn& tx) {
-    BlockNum headers_height = db::stages::read_stage_progress(tx, db::stages::kHeadersKey);
 
-    // todo: the following code changed in Erigon, fix it
+std::set<Hash> ExecutionEngine::collect_bad_headers(db::RWTxn& tx, InvalidChain& invalid_chain) {
+    if (!invalid_chain.bad_block) return {};
 
     std::set<Hash> bad_headers;
-    bool is_bad_block = bad_block.has_value();
-    for (BlockNum current_height = headers_height; current_height > unwind_point; current_height--) {
-        if (is_bad_block) {
-            auto current_hash = db::read_canonical_hash(tx, current_height);
-            bad_headers.insert(*current_hash);
-        }
-        db::delete_canonical_hash(tx, current_height);  // do not throw if not found
+    for (BlockNum current_height = canonical_chain_.current_head().number;
+         current_height > invalid_chain.unwind_point; current_height--) {
+        auto current_hash = db::read_canonical_hash(tx, current_height);
+        bad_headers.insert(*current_hash);
     }
 
+    /*  todo: check if we need also the following code (remember that this entire algo changed in Erigon)
     BlockNum new_height = unwind_point;
-
     if (is_bad_block) {
         bad_headers.insert(*bad_block);
 
@@ -281,8 +295,9 @@ HeaderDataModel::collect_bad_headers(BlockNum unwind_point, std::optional<Hash> 
         db::write_head_header_hash(tx, max_hash);
         new_height = max_block_num;
     }
-
     return {bad_headers, new_height};
+    */
+    return bad_headers;
 }
 
 auto ExecutionEngine::get_header(Hash header_hash) -> std::optional<BlockHeader> {
@@ -323,16 +338,12 @@ auto ExecutionEngine::get_headers_head() -> std::tuple<BlockNum, Hash, BigInt> {
     auto headers_head_height = db::stages::read_stage_progress(tx_, db::stages::kHeadersKey);
 
     auto headers_head_hash = db::read_canonical_hash(tx_, headers_head_height);
-    if (!headers_head_hash) {
-        throw std::logic_error("Execution, invariant violation, headers stage height not present on canonical, "
-                               "height=" + std::to_string(headers_head_height));
-    }
+    ensure_invariant(headers_head_hash.has_value(),
+       "headers stage height not present on canonical, height=" + std::to_string(headers_head_height));
 
     std::optional<BigInt> headers_head_td = db::read_total_difficulty(tx_, headers_head_height, *headers_head_hash);
-    if (!headers_head_td) {
-        throw std::logic_error("Execution, invariant violation, total difficulty of canonical hash at height " +
-                               std::to_string(headers_head_height) + " not found in db");
-    }
+    ensure_invariant(headers_head_td.has_value(),
+        "total difficulty of canonical hash at height " + std::to_string(headers_head_height) + " not found in db");
 
     return {headers_head_height, *headers_head_hash, *headers_head_td}; // add headers_head_td
 }
@@ -340,10 +351,8 @@ auto ExecutionEngine::get_headers_head() -> std::tuple<BlockNum, Hash, BigInt> {
 auto ExecutionEngine::get_bodies_head() -> std::tuple<BlockNum, Hash> {
     auto bodies_head_height = db::stages::read_stage_progress(tx_, db::stages::kBlockBodiesKey);
     auto bodies_head_hash = db::read_canonical_hash(tx_, bodies_head_height);
-    if (!bodies_head_hash) {
-        throw std::logic_error("Execution, invariant violation, body must have canonical header at same height (" +
-                               std::to_string(bodies_head_height) + ")");
-    }
+    ensure_invariant(bodies_head_hash.has_value(),
+        "body must have canonical header at same height (" + std::to_string(bodies_head_height) + ")");
     return {bodies_head_height, *bodies_head_hash};
 }
 

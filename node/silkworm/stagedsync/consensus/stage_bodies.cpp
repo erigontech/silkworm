@@ -23,7 +23,6 @@
 #include "silkworm/common/measure.hpp"
 #include "silkworm/common/stopwatch.hpp"
 #include "silkworm/db/stages.hpp"
-#include "silkworm/downloader/internals/body_persistence.hpp"
 #include "silkworm/downloader/messages/outbound_get_block_bodies.hpp"
 #include "silkworm/downloader/messages/outbound_new_block.hpp"
 

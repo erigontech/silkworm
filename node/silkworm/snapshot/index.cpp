@@ -16,14 +16,17 @@
 
 #include "index.hpp"
 
+#include <silkworm/common/assert.hpp>
 #include <silkworm/common/util.hpp>
 
 namespace silkworm {
 
 void Index::build() {
-    Decompressor decoder{path_.path()};
+    Decompressor decoder{segment_path_.path()};
     decoder.open();
-    RecSplit8 rec_split{decoder.words_count(), kBucketSize};
+
+    const SnapshotFile index_file = segment_path_.index_file();
+    RecSplit8 rec_split{decoder.words_count(), kBucketSize, index_file.path(), index_file.block_from()};
 
     const bool read_ok = decoder.read_ahead([&](Decompressor::Iterator it) {
         Bytes word{};
@@ -39,16 +42,16 @@ void Index::build() {
         }
         return true;
     });
-    if (!read_ok) throw std::runtime_error{"cannot build index for: " + path_.path().string()};
+    if (!read_ok) throw std::runtime_error{"cannot build index for: " + segment_path_.path().string()};
 
     rec_split.build();
     // TODO(canepat) if build KO, generate new salt and retry
 }
 
 bool HeaderIndex::walk(RecSplit8& rec_split, uint64_t /*i*/, uint64_t offset, ByteView word) {
-    const ethash::hash256 hash = keccak256({word.data() + 1, word.size() - 1});
+    const ByteView rlp_encoded_header{word.data() + 1, word.size() - 1};
+    const ethash::hash256 hash = keccak256(rlp_encoded_header);
     rec_split.add_key(hash.bytes, kHashLength, offset);
-    // TODO(canepat) add_key must be extended or wrapped to use EtlCollector, maybe we need to subclass sux::function::RecSplit?
     return true;
 }
 

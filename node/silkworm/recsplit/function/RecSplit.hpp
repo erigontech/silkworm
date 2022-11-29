@@ -340,6 +340,10 @@ class RecSplit {
     RiceBitVector<AT> descriptors;
     DoubleEF<AT> ef;
 
+    //! Minimal app-specific ID of entries of this index - helps app understand what data stored in given shard - persistent field
+    uint64_t base_data_id_;
+    //! The path of the index file generated
+    std::filesystem::path index_path_;
     //! The number of keys currently added
     uint64_t keys_added_{0};
     //! Minimum delta for Elias-Fano encoding of "enum -> offset" index
@@ -360,7 +364,8 @@ class RecSplit {
   public:
     RecSplit() {}
 
-    RecSplit(const size_t _keys_count, const size_t _bucket_size) {
+    RecSplit(const size_t _keys_count, const size_t _bucket_size, std::filesystem::path index_path, uint64_t base_data_id)
+        : base_data_id_(base_data_id), index_path_(std::move(index_path)) {
         this->bucket_size = _bucket_size;
         this->keys_count = _keys_count;
     }

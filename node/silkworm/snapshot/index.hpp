@@ -50,7 +50,7 @@ class Index {
     static constexpr uint64_t kPageSize{4096};
     static constexpr std::size_t kBucketSize{2'000};
 
-    explicit Index(SnapshotFile path) : path_(std::move(path)) {}
+    explicit Index(SnapshotFile segment_path) : segment_path_(std::move(segment_path)) {}
     virtual ~Index() = default;
 
     void build();
@@ -58,7 +58,7 @@ class Index {
   protected:
     virtual bool walk(RecSplit8& rec_split, uint64_t i, uint64_t offset, ByteView word) = 0;
 
-    SnapshotFile path_;
+    SnapshotFile segment_path_;
 };
 
 class HeaderIndex : public Index {

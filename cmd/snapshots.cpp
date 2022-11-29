@@ -79,6 +79,7 @@ void parse_command_line(int argc, char* argv[], CLI::App& app, SnapshotToolboxSe
     std::map<std::string, SnapshotTool> snapshot_tool_mapping{
         {"count_bodies", SnapshotTool::count_bodies},
         {"count_headers", SnapshotTool::count_headers},
+        {"create_index", SnapshotTool::create_index},
         {"decode_segment", SnapshotTool::decode_segment},
         {"download", SnapshotTool::download},
     };
@@ -174,6 +175,8 @@ void create_index(const SnapSettings& settings, int repetitions) {
             HeaderSnapshot header_segment{snap_file->path(), snap_file->block_from(), snap_file->block_to()};
             header_segment.reopen_index();
         }
+    } else {
+        SILK_ERROR << "Invalid snapshot file: " << settings.snapshot_file_name;
     }
     std::chrono::duration elapsed{std::chrono::steady_clock::now() - start};
     const auto open_duration_micro = static_cast<uint64_t>(std::chrono::duration_cast<std::chrono::milliseconds>(elapsed).count());

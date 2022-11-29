@@ -57,12 +57,6 @@
 #include <sys/types.h>
 #endif
 
-//! Raw memory mapped file structure in *nix
-struct MappedFile {
-    void* address{nullptr};
-    size_t length{0};
-};
-
 namespace silkworm {
 
 #ifdef _WIN32

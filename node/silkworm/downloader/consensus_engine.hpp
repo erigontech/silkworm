@@ -16,21 +16,20 @@ limitations under the License.
 
 #pragma once
 
-#include <silkworm/common/log.hpp>
-#include <silkworm/common/settings.hpp>
-#include <silkworm/concurrency/active_component.hpp>
-#include <silkworm/downloader/block_exchange.hpp>
-#include <silkworm/downloader/messages/internal_message.hpp>
-#include <silkworm/stagedsync/execution_engine.hpp>
-
+#include "block_exchange.hpp"
+#include "silkworm/common/log.hpp"
+#include "silkworm/common/settings.hpp"
+#include "silkworm/concurrency/active_component.hpp"
+#include "silkworm/downloader/messages/internal_message.hpp"
+#include "silkworm/stagedsync/execution_engine.hpp"
 #include "stage_bodies.hpp"
 #include "stage_headers.hpp"
 
-namespace silkworm::stagedsync::consensus {
+namespace silkworm::chainsync {
 
 class ConsensusEngine : public ActiveComponent {
   public:
-    ConsensusEngine(NodeSettings&, db::ROAccess, BlockExchange&, ExecutionEngine&);
+    ConsensusEngine(NodeSettings&, db::ROAccess, BlockExchange&, stagedsync::ExecutionEngine&);
 
     void execution_loop() final; /*[[long_running]]*/
 
@@ -39,10 +38,10 @@ class ConsensusEngine : public ActiveComponent {
     void unwind(HeadersStage&, BodiesStage&, Stage::UnwindPoint);
     auto update_bad_headers(std::set<Hash>) -> std::shared_ptr<InternalMessage<void>>;
 
-    NodeSettings& node_settings_;
+    //NodeSettings& node_settings_;
     db::ROAccess db_access_;
     BlockExchange& block_exchange_;
-    ExecutionEngine& exec_engine_;
+    stagedsync::ExecutionEngine& exec_engine_;
 };
 
-}  // namespace silkworm::stagedsync::consensus
+}  // namespace silkworm::chainsync

@@ -28,10 +28,10 @@
 #include <silkworm/db/stages.hpp>
 #include <silkworm/downloader/block_exchange.hpp>
 #include <silkworm/downloader/sentry_client.hpp>
-#include <silkworm/stagedsync/consensus/consensus_engine.hpp>
 #include <silkworm/stagedsync/execution_engine.hpp>
 
 #include "common.hpp"
+#include "silkworm/downloader/consensus_engine.hpp"
 
 using namespace silkworm;
 
@@ -117,7 +117,7 @@ int main(int argc, char* argv[]) {
         silkworm::stagedsync::ExecutionEngine execution{node_settings, db::RWAccess{chaindata_db}};
 
         // ConsensusEngine drives headers and bodies sync, implementing fork choice rules
-        silkworm::stagedsync::consensus::ConsensusEngine consensus{
+        silkworm::chainsync::ConsensusEngine consensus{
             node_settings, db::ROAccess{chaindata_db}, block_exchange, execution};
         auto consensus_loop = std::thread([&consensus]() { consensus.execution_loop(); });
 

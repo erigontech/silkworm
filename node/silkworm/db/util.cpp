@@ -48,8 +48,16 @@ Bytes block_key(BlockNum block_number, std::span<const uint8_t, kHashLength> has
 }
 
 auto split_block_key(ByteView key) -> std::tuple<BlockNum, evmc::bytes32> {
-    // TODO implement
-    throw std::runtime_error("not implemented");
+    SILKWORM_ASSERT(key.size() == sizeof(BlockNum) + kHashLength);
+
+    ByteView block_num_part = key.substr(0, sizeof(BlockNum));
+    BlockNum block_num = endian::load_big_u64(block_num_part.data());
+
+    ByteView hash_part = key.substr(sizeof(BlockNum));
+    evmc::bytes32 hash;
+    std::memcpy(hash.bytes, hash_part.data(), hash_part.length());
+
+    return {block_num, hash};
 }
 
 Bytes storage_change_key(BlockNum block_number, const evmc::address& address, uint64_t incarnation) {

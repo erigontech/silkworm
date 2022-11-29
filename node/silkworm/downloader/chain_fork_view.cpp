@@ -16,12 +16,12 @@ limitations under the License.
 
 #include "chain_fork_view.hpp"
 
-#include <silkworm/common/log.hpp>
-#include <silkworm/db/stages.hpp>
+#include "silkworm/common/log.hpp"
+#include "silkworm/db/stages.hpp"
 
-namespace silkworm::stagedsync::consensus {
+namespace silkworm::chainsync {
 
-ChainForkView::ChainForkView(ExecutionEngine& ee) : exec_engine_{ee} {
+ChainForkView::ChainForkView(stagedsync::ExecutionEngine& ee) : exec_engine_{ee} {
     std::tie(initial_head_.number, initial_head_.hash, initial_head_td_) = exec_engine_.get_headers_head();
 
     current_head_td_ = initial_head_td_;
@@ -67,4 +67,4 @@ void ChainForkView::add(const BlockHeader& header) {  // try to modularize this 
     previous_hash_ = hash;
 }
 
-}  // namespace silkworm::stagedsync::consensus
+}  // namespace silkworm::chainsync

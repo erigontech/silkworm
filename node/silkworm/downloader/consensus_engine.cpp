@@ -16,10 +16,10 @@ limitations under the License.
 
 #include "consensus_engine.hpp"
 
-namespace silkworm::stagedsync::consensus {
+namespace silkworm::chainsync {
 
-ConsensusEngine::ConsensusEngine(NodeSettings& ns, db::ROAccess dba, BlockExchange& be, ExecutionEngine& ee)
-    : node_settings_{ns},
+ConsensusEngine::ConsensusEngine(NodeSettings&, db::ROAccess dba, BlockExchange& be, stagedsync::ExecutionEngine& ee)
+    : //node_settings_{ns},
       db_access_{dba},
       block_exchange_{be},
       exec_engine_{ee} {
@@ -47,11 +47,12 @@ void ConsensusEngine::unwind(HeadersStage& headers_stage, BodiesStage& bodies_st
 }
 
 void ConsensusEngine::execution_loop() {
+    using namespace stagedsync;
     using ValidChain = ExecutionEngine::ValidChain;
     using ValidationError = ExecutionEngine::ValidationError;
     using InvalidChain = ExecutionEngine::InvalidChain;
     using NewHeight = Stage::NewHeight;
-    using UnwindPoint = Stage::UnwindPoint;
+    //using UnwindPoint = Stage::UnwindPoint;
 
     while (!is_stopping()) {
         HeadersStage headers_stage{block_exchange_, exec_engine_};
@@ -96,4 +97,4 @@ auto ConsensusEngine::update_bad_headers(std::set<Hash> bad_headers) -> std::sha
     return message;
 }
 
-}  // namespace silkworm::stagedsync::consensus
+}  // namespace silkworm::chainsync

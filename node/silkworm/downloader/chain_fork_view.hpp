@@ -14,16 +14,16 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-#include <silkworm/common/lru_cache.hpp>
-#include <silkworm/downloader/internals/types.hpp>
-#include <silkworm/stagedsync/execution_engine.hpp>
-#include <silkworm/types/block.hpp>
+#include "silkworm/common/lru_cache.hpp"
+#include "silkworm/downloader/internals/types.hpp"
+#include "silkworm/stagedsync/execution_engine.hpp"
+#include "silkworm/types/block.hpp"
 
-namespace silkworm::stagedsync::consensus {
+namespace silkworm::chainsync {
 
 class ChainForkView {
   public:
-    ChainForkView(ExecutionEngine&);
+    ChainForkView(stagedsync::ExecutionEngine&);
 
     void add(const BlockHeader& header);
 
@@ -34,7 +34,7 @@ class ChainForkView {
     bool head_changed() const;
 
   private:
-    ExecutionEngine& exec_engine_;
+    stagedsync::ExecutionEngine& exec_engine_;
 
     BlockIdPair initial_head_{};
     BlockIdPair current_head_{};
@@ -42,4 +42,4 @@ class ChainForkView {
     Hash previous_hash_;
 };
 
-}  // namespace silkworm::stagedsync::consensus
+}  // namespace silkworm::chainsync

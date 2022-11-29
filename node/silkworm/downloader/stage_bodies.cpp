@@ -26,9 +26,9 @@
 #include "silkworm/downloader/messages/outbound_get_block_bodies.hpp"
 #include "silkworm/downloader/messages/outbound_new_block.hpp"
 
-namespace silkworm::stagedsync::consensus {
+namespace silkworm::chainsync {
 
-BodiesStage::BodiesStage(BlockExchange& bd, ExecutionEngine& ee)
+BodiesStage::BodiesStage(BlockExchange& bd, stagedsync::ExecutionEngine& ee)
     : Stage("consensus-bodies"), block_downloader_{bd}, exec_engine_{ee}, log_prefix_{"[Cons.Bodies]"} {
 }
 
@@ -183,4 +183,4 @@ std::vector<std::string> BodiesStage::get_log_progress() {  // implementation MU
             "peers", std::to_string(peers)};
 }
 
-}  // namespace silkworm::stagedsync::consensus
+}  // namespace silkworm::chainsync

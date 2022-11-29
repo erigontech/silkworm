@@ -16,8 +16,8 @@ limitations under the License.
 
 #include "stage.hpp"
 
-namespace silkworm::stagedsync::consensus {
+namespace silkworm::chainsync {
 
 Stage::Stage(std::string name) : name_(name) {}
 
-}  // namespace silkworm::stagedsync::consensus
+}  // namespace silkworm::chainsync

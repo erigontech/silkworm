@@ -18,21 +18,20 @@
 #include <chrono>
 #include <thread>
 
-#include <silkworm/common/as_range.hpp>
-#include <silkworm/common/log.hpp>
-#include <silkworm/common/measure.hpp>
-#include <silkworm/common/stopwatch.hpp>
-#include <silkworm/db/stages.hpp>
-#include <silkworm/downloader/internals/header_chain.hpp>
-#include <silkworm/downloader/messages/inbound_message.hpp>
-#include <silkworm/downloader/messages/outbound_get_block_headers.hpp>
-#include <silkworm/downloader/messages/outbound_new_block_hashes.hpp>
-
 #include "chain_fork_view.hpp"
+#include "silkworm/common/as_range.hpp"
+#include "silkworm/common/log.hpp"
+#include "silkworm/common/measure.hpp"
+#include "silkworm/common/stopwatch.hpp"
+#include "silkworm/db/stages.hpp"
+#include "silkworm/downloader/internals/header_chain.hpp"
+#include "silkworm/downloader/messages/inbound_message.hpp"
+#include "silkworm/downloader/messages/outbound_get_block_headers.hpp"
+#include "silkworm/downloader/messages/outbound_new_block_hashes.hpp"
 
-namespace silkworm::stagedsync::consensus {
+namespace silkworm::chainsync {
 
-HeadersStage::HeadersStage(BlockExchange& bd, ExecutionEngine& ee)
+HeadersStage::HeadersStage(BlockExchange& bd, stagedsync::ExecutionEngine& ee)
     : Stage(db::stages::kHeadersKey), block_downloader_(bd), exec_engine_{ee}, log_prefix_{"[Cons.Headers]"} {
     // User can specify to stop downloading process at some block
     const auto stop_at_block = stop_at_block_from_env();
@@ -224,4 +223,4 @@ std::vector<std::string> HeadersStage::get_log_progress() {  // implementation M
             "peers", std::to_string(peers)};
 }
 
-}  // namespace silkworm::stagedsync::consensus
+}  // namespace silkworm::chainsync

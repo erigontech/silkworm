@@ -16,20 +16,19 @@
 
 #pragma once
 
-#include <silkworm/concurrency/containers.hpp>
-#include <silkworm/db/access_layer.hpp>
-#include <silkworm/downloader/block_exchange.hpp>
-#include <silkworm/downloader/internals/types.hpp>
-#include <silkworm/downloader/messages/internal_message.hpp>
-#include <silkworm/stagedsync/execution_engine.hpp>
-
+#include "block_exchange.hpp"
+#include "silkworm/concurrency/containers.hpp"
+#include "silkworm/db/access_layer.hpp"
+#include "silkworm/downloader/internals/types.hpp"
+#include "silkworm/downloader/messages/internal_message.hpp"
+#include "silkworm/stagedsync/execution_engine.hpp"
 #include "stage.hpp"
 
-namespace silkworm::stagedsync::consensus {
+namespace silkworm::chainsync {
 
 class BodiesStage : public Stage {
   public:
-    BodiesStage(BlockExchange&, ExecutionEngine&);
+    BodiesStage(BlockExchange&, stagedsync::ExecutionEngine&);
     BodiesStage(const BodiesStage&) = delete;  // not copyable
     BodiesStage(BodiesStage&&) = delete;       // nor movable
     ~BodiesStage();
@@ -47,8 +46,8 @@ class BodiesStage : public Stage {
     std::atomic<BlockNum> current_height_{0};
 
     BlockExchange& block_downloader_;
-    ExecutionEngine& exec_engine_;
+    stagedsync::ExecutionEngine& exec_engine_;
     std::string log_prefix_;
 };
 
-}  // namespace silkworm::stagedsync::consensus
+}  // namespace silkworm::chainsync

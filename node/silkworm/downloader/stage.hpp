@@ -16,14 +16,14 @@ limitations under the License.
 
 #pragma once
 
-#include <silkworm/common/log.hpp>
-#include <silkworm/common/settings.hpp>
-#include <silkworm/concurrency/stoppable.hpp>
-#include <silkworm/db/stages.hpp>
-#include <silkworm/db/tables.hpp>
-#include <silkworm/downloader/internals/types.hpp>
+#include "silkworm/common/log.hpp"
+#include "silkworm/common/settings.hpp"
+#include "silkworm/concurrency/stoppable.hpp"
+#include "silkworm/db/stages.hpp"
+#include "silkworm/db/tables.hpp"
+#include "silkworm/downloader/internals/types.hpp"
 
-namespace silkworm::stagedsync::consensus {
+namespace silkworm::chainsync {
 
 class Stage : public Stoppable {
   public:
@@ -42,4 +42,4 @@ class Stage : public Stoppable {
     std::string name_;
 };
 
-}  // namespace silkworm::stagedsync::consensus
+}  // namespace silkworm::chainsync

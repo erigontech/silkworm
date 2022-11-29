@@ -25,11 +25,11 @@
 #include <silkworm/common/settings.hpp>
 #include <silkworm/concurrency/signal_handler.hpp>
 #include <silkworm/db/access_layer.hpp>
-#include <silkworm/stagedsync/consensus/stage.hpp>
-#include <silkworm/stagedsync/consensus/stage_bodies.hpp>
-#include <silkworm/stagedsync/consensus/stage_headers.hpp>
 
 #include "common.hpp"
+#include "silkworm/downloader/stage.hpp"
+#include "silkworm/downloader/stage_bodies.hpp"
+#include "silkworm/downloader/stage_headers.hpp"
 
 using namespace silkworm;
 using namespace silkworm::stagedsync;

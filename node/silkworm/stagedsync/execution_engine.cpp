@@ -27,7 +27,7 @@ void ensure_invariant(bool condition, std::string message) {
         throw std::logic_error("Execution invariant violation: " + message);
 }
 
-ExecutionEngine::CanonicalChain::CanonicalChain(db::RWTxn& tx): tx_{tx}, canonical_cache_{kCacheSize} {
+ExecutionEngine::CanonicalChain::CanonicalChain(db::RWTxn& tx) : tx_{tx}, canonical_cache_{kCacheSize} {
     // Read head of canonical chain
     std::tie(initial_head_.number, initial_head_.hash) = db::read_canonical_head(tx_);
     // Set current status
@@ -117,7 +117,6 @@ void ExecutionEngine::CanonicalChain::update_up_to(BlockNum height, Hash hash) {
 }
 
 void ExecutionEngine::CanonicalChain::delete_down_to(BlockNum unwind_point) {
-
     for (BlockNum current_height = current_head_.number; current_height > unwind_point; current_height--) {
         db::delete_canonical_hash(tx_, current_height);  // do not throw if not found
         canonical_cache_.remove(current_height);
@@ -142,7 +141,7 @@ ExecutionEngine::ExecutionEngine(NodeSettings& ns, const db::RWAccess dba)
       tx_{db_access_.start_rw_tx()},
       pipeline_{&ns},
       canonical_chain_(tx_)
-      //header_cache_{kCacheSize}
+// header_cache_{kCacheSize}
 {
 }
 
@@ -155,10 +154,10 @@ void ExecutionEngine::insert_headers(std::vector<std::shared_ptr<BlockHeader>>& 
 
 void ExecutionEngine::insert_header(db::RWTxn& tx, BlockHeader& header) {
     // if (!db::has_header(tx_, header.number, header.hash())) { todo: hash() is computationally expensive
-    db::write_header(tx, header, true); // todo: move?
+    db::write_header(tx, header, true);  // todo: move?
     //}
 
-    //header_cache_.put(header.hash(), header);
+    // header_cache_.put(header.hash(), header);
 }
 
 void ExecutionEngine::insert_bodies(std::vector<std::shared_ptr<Block>>& bodies) {
@@ -186,19 +185,19 @@ auto ExecutionEngine::verify_chain(Hash header_hash) -> VerificationResult {
     bool cycle_in_one_tx = !is_first_sync || header->number - canonical_chain_.current_head().number > 4096;
     std::unique_ptr<db::RWTxn> inner_tx{nullptr};
     if (cycle_in_one_tx)
-        inner_tx = std::make_unique<db::RWTxn>(*tx_); // will defer commit to the tx
+        inner_tx = std::make_unique<db::RWTxn>(*tx_);  // will defer commit to the tx
     else
         inner_tx = std::make_unique<db::RWTxn>(*db_access_);
 
     // the new head is on a new fork?
-    BlockNum forking_point = canonical_chain_.find_forking_point(*inner_tx, header_hash); // the forking origin
-    if (forking_point < canonical_chain_.current_head().number) { // if the forking is behind the current head
+    BlockNum forking_point = canonical_chain_.find_forking_point(*inner_tx, header_hash);  // the forking origin
+    if (forking_point < canonical_chain_.current_head().number) {  // if the forking is behind the current head
         // we need to do unwind to change canonical
         auto unwind_result = pipeline_.unwind(*inner_tx, forking_point);
         success_or_throw(unwind_result);  // unwind must complete with success
         // remove last part of canonical
         canonical_chain_.delete_down_to(forking_point);
-    } // todo for PoS: do not unwind, just find the correct overlay
+    }  // todo for PoS: do not unwind, just find the correct overlay
 
     // update canonical up to header_hash
     canonical_chain_.update_up_to(header->number, header_hash);
@@ -238,7 +237,7 @@ auto ExecutionEngine::verify_chain(Hash header_hash) -> VerificationResult {
     }
 
     // finish
-    tx_.commit_and_renew(); // todo for PoS: do nothing, wait update_fork_choice to persist the correct overlay
+    tx_.commit_and_renew();  // todo for PoS: do nothing, wait update_fork_choice to persist the correct overlay
     return verify_result;
 }
 
@@ -247,15 +246,15 @@ bool ExecutionEngine::update_fork_choice(Hash header_hash) {
     bool cycle_in_one_tx = !is_first_sync;
     std::unique_ptr<db::RWTxn> inner_tx{nullptr};
     if (cycle_in_one_tx)
-        inner_tx = std::make_unique<db::RWTxn>(*tx_); // will defer commit to the tx
+        inner_tx = std::make_unique<db::RWTxn>(*tx_);  // will defer commit to the tx
     else
         inner_tx = std::make_unique<db::RWTxn>(*db_access_);
 
-    if (canonical_chain_.current_head().hash != header_hash) { // todo for PoS: choose the corresponding overlay and do commit
+    if (canonical_chain_.current_head().hash != header_hash) {  // todo for PoS: choose the corresponding overlay and do commit
         // usually update_fork_choice must follow verify_chain with the same header
         // except when verify_chain returned InvalidChain, so we need to do an unwind
 
-        BlockNum forking_point = canonical_chain_.find_forking_point(*inner_tx, header_hash); // the forking origin on the canonical
+        BlockNum forking_point = canonical_chain_.find_forking_point(*inner_tx, header_hash);  // the forking origin on the canonical
 
         auto unwind_result = pipeline_.unwind(*inner_tx, forking_point);
         success_or_throw(unwind_result);  // unwind must complete with success
@@ -267,11 +266,10 @@ bool ExecutionEngine::update_fork_choice(Hash header_hash) {
     is_first_sync = false;
 
     // finish
-    tx_.commit_and_renew(); // todo for PoS: commit the correct shard and discard the others
+    tx_.commit_and_renew();  // todo for PoS: commit the correct shard and discard the others
 
     return true;
 }
-
 
 std::set<Hash> ExecutionEngine::collect_bad_headers(db::RWTxn& tx, InvalidChain& invalid_chain) {
     if (!invalid_chain.bad_block) return {};
@@ -304,19 +302,19 @@ std::set<Hash> ExecutionEngine::collect_bad_headers(db::RWTxn& tx, InvalidChain&
 }
 
 auto ExecutionEngine::get_header(Hash header_hash) -> std::optional<BlockHeader> {
-    //const BlockHeader* cached = header_cache_.get(header_hash);
-    //if (cached) {
-    //    return *cached;
-    //}
+    // const BlockHeader* cached = header_cache_.get(header_hash);
+    // if (cached) {
+    //     return *cached;
+    // }
     std::optional<BlockHeader> header = db::read_header(tx_, header_hash);
     return header;
 }
 
 auto ExecutionEngine::get_header(BlockNum header_heigth, Hash header_hash) -> std::optional<BlockHeader> {
-    //const BlockHeader* cached = header_cache_.get(header_hash);
-    //if (cached) {
-    //    return *cached;
-    //}
+    // const BlockHeader* cached = header_cache_.get(header_hash);
+    // if (cached) {
+    //     return *cached;
+    // }
     std::optional<BlockHeader> header = db::read_header(tx_, header_heigth, header_hash);
     return header;
 }
@@ -342,20 +340,20 @@ auto ExecutionEngine::get_headers_head() -> std::tuple<BlockNum, Hash, BigInt> {
 
     auto headers_head_hash = db::read_canonical_hash(tx_, headers_head_height);
     ensure_invariant(headers_head_hash.has_value(),
-       "headers stage height not present on canonical, height=" + std::to_string(headers_head_height));
+                     "headers stage height not present on canonical, height=" + std::to_string(headers_head_height));
 
     std::optional<BigInt> headers_head_td = db::read_total_difficulty(tx_, headers_head_height, *headers_head_hash);
     ensure_invariant(headers_head_td.has_value(),
-        "total difficulty of canonical hash at height " + std::to_string(headers_head_height) + " not found in db");
+                     "total difficulty of canonical hash at height " + std::to_string(headers_head_height) + " not found in db");
 
-    return {headers_head_height, *headers_head_hash, *headers_head_td}; // add headers_head_td
+    return {headers_head_height, *headers_head_hash, *headers_head_td};  // add headers_head_td
 }
 
 auto ExecutionEngine::get_bodies_head() -> std::tuple<BlockNum, Hash> {
     auto bodies_head_height = db::stages::read_stage_progress(tx_, db::stages::kBlockBodiesKey);
     auto bodies_head_hash = db::read_canonical_hash(tx_, bodies_head_height);
     ensure_invariant(bodies_head_hash.has_value(),
-        "body must have canonical header at same height (" + std::to_string(bodies_head_height) + ")");
+                     "body must have canonical header at same height (" + std::to_string(bodies_head_height) + ")");
     return {bodies_head_height, *bodies_head_hash};
 }
 

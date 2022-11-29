@@ -122,7 +122,8 @@ size_t process_headers_at_height(mdbx::txn& txn, BlockNum height, std::function<
     db::Cursor headers_table(txn, db::table::kHeaders);
     auto key_prefix{db::block_key(height)};
 
-    auto count = db::cursor_for_prefix(headers_table, key_prefix,
+    auto count = db::cursor_for_prefix(
+        headers_table, key_prefix,
         [&process_func]([[maybe_unused]] ByteView key, ByteView raw_header) {
             if (raw_header.empty()) throw std::logic_error("empty header in table Headers");
             BlockHeader header;
@@ -317,12 +318,11 @@ bool read_block_by_number(mdbx::txn& txn, BlockNum number, bool read_senders, Bl
     return read_block(txn, std::span<const uint8_t, kHashLength>{hash_ptr, kHashLength}, number, read_senders, block);
 }
 
-
 bool read_block(mdbx::txn& txn, const evmc::bytes32& hash, BlockNum number, Block& block) {
     // Read header
     read_header(txn, hash, number, block.header);
     // Read body
-    return read_body(txn, hash, number, block); // read_senders == false
+    return read_body(txn, hash, number, block);  // read_senders == false
 }
 
 bool read_block(mdbx::txn& txn, std::span<const uint8_t, kHashLength> hash, BlockNum number, bool read_senders,
@@ -344,7 +344,8 @@ size_t process_blocks_at_height(mdbx::txn& txn, BlockNum height, std::function<v
     db::Cursor bodies_table(txn, db::table::kBlockBodies);
     auto key_prefix{db::block_key(height)};
 
-    auto count = db::cursor_for_prefix(bodies_table, key_prefix,
+    auto count = db::cursor_for_prefix(
+        bodies_table, key_prefix,
         [&process_func, &txn](ByteView key, ByteView raw_body) {
             if (raw_body.empty()) throw std::logic_error("empty header in table Headers");
 

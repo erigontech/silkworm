@@ -19,12 +19,12 @@
 #include <chrono>
 #include <thread>
 
-#include <silkworm/consensus/engine.hpp>
-#include <silkworm/db/access_layer.hpp>
-#include <silkworm/db/buffer.hpp>
 #include <silkworm/common/log.hpp>
 #include <silkworm/common/measure.hpp>
 #include <silkworm/common/stopwatch.hpp>
+#include <silkworm/consensus/engine.hpp>
+#include <silkworm/db/access_layer.hpp>
+#include <silkworm/db/buffer.hpp>
 #include <silkworm/db/stages.hpp>
 #include <silkworm/downloader/internals/preverified_hashes.hpp>
 
@@ -68,7 +68,6 @@ class BodyDataModel {
 BodyDataModel::BodyDataModel(db::RWTxn& tx, BlockNum bodies_stage_height, const ChainConfig& chain_config)
     : consensus_engine_{consensus::engine_factory(chain_config)},
       chain_state_{tx, /*prune_from=*/0, /*historical_block=null*/} {
-
     initial_height_ = bodies_stage_height;
     highest_height_ = bodies_stage_height;
 }
@@ -100,9 +99,9 @@ void BodyDataModel::update_tables(const Block& block) {
         return;
     }
 
-    //if (!db::has_body(tx_, block_num, block_hash)) {
-    //    db::write_body(tx_, block, block_hash, block_num);
-    //}
+    // if (!db::has_body(tx_, block_num, block_hash)) {
+    //     db::write_body(tx_, block, block_hash, block_num);
+    // }
 
     if (block_num > highest_height_) {
         highest_height_ = block_num;

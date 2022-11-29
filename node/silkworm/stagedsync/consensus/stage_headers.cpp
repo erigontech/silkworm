@@ -18,8 +18,8 @@
 #include <chrono>
 #include <thread>
 
-#include <silkworm/common/log.hpp>
 #include <silkworm/common/as_range.hpp>
+#include <silkworm/common/log.hpp>
 #include <silkworm/common/measure.hpp>
 #include <silkworm/common/stopwatch.hpp>
 #include <silkworm/db/stages.hpp>
@@ -33,8 +33,7 @@
 namespace silkworm::stagedsync::consensus {
 
 HeadersStage::HeadersStage(BlockExchange& bd, ExecutionEngine& ee)
-    : Stage(db::stages::kHeadersKey), block_downloader_(bd), exec_engine_{ee}, log_prefix_{"[Cons.Headers]"}
-{
+    : Stage(db::stages::kHeadersKey), block_downloader_(bd), exec_engine_{ee}, log_prefix_{"[Cons.Headers]"} {
     // User can specify to stop downloading process at some block
     const auto stop_at_block = stop_at_block_from_env();
     if (stop_at_block.has_value()) {
@@ -64,7 +63,7 @@ auto HeadersStage::forward(std::optional<NewHeight> desired_height) -> NewHeight
     try {
         ChainForkView chain_fork_view{exec_engine_};
 
-        //auto [initial_height, initial_hash, initial_td] = exec_engine_.get_headers_head();
+        // auto [initial_height, initial_hash, initial_td] = exec_engine_.get_headers_head();
         auto initial_height = chain_fork_view.head_height();
         auto initial_hash = chain_fork_view.head_hash();
 
@@ -166,7 +165,6 @@ auto HeadersStage::forward(std::optional<NewHeight> desired_height) -> NewHeight
         log::Error(log_prefix_) << "Aborted due to exception: " << e.what();
         throw e;
     }
-
 }
 
 void HeadersStage::unwind(UnwindPoint unwind_point) {
@@ -226,4 +224,4 @@ std::vector<std::string> HeadersStage::get_log_progress() {  // implementation M
             "peers", std::to_string(peers)};
 }
 
-}  // namespace silkworm::stagedsync
+}  // namespace silkworm::stagedsync::consensus

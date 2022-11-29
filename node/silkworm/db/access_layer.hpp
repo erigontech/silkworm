@@ -120,7 +120,7 @@ void write_total_difficulty(mdbx::txn& txn, const Bytes& key, const intx::uint25
                               bool read_senders, Block& out);
 [[nodiscard]] bool read_block(mdbx::txn& txn, const evmc::bytes32& hash, BlockNum number, Block& block);
 
-    // See Erigon ReadSenders
+// See Erigon ReadSenders
 std::vector<evmc::address> read_senders(mdbx::txn& txn, const Bytes& key);
 std::vector<evmc::address> read_senders(mdbx::txn& txn, BlockNum block_number, const uint8_t (&hash)[kHashLength]);
 //! \brief Fills transactions' senders addresses directly in place

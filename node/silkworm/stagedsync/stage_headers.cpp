@@ -55,12 +55,10 @@ class HeaderDataModel {
 
 HeaderDataModel::HeaderDataModel(db::RWTxn& tx, BlockNum headers_height) : tx_(tx) {
     auto headers_hash = db::read_canonical_hash(tx, headers_height);
-    if (!headers_hash) throw std::logic_error("Headers stage, canonical must be consistent, not found hash at height "
-                                              + std::to_string(headers_height));
+    if (!headers_hash) throw std::logic_error("Headers stage, canonical must be consistent, not found hash at height " + std::to_string(headers_height));
 
     std::optional<BigInt> headers_head_td = db::read_total_difficulty(tx, headers_height, *headers_hash);
-    if (!headers_head_td) throw std::logic_error("Headers stage, not found total difficulty of canonical hash at height "
-                                                 + std::to_string(headers_height));
+    if (!headers_head_td) throw std::logic_error("Headers stage, not found total difficulty of canonical hash at height " + std::to_string(headers_height));
 
     local_td_ = *headers_head_td;
     initial_in_db_ = headers_height;
@@ -118,7 +116,6 @@ void HeaderDataModel::update_tables(const BlockHeader& header) {
 }
 
 void HeaderDataModel::remove_headers(BlockNum unwind_point, std::optional<Hash> bad_block, db::RWTxn& tx) {
-
     bool is_bad_block = bad_block.has_value();
     if (is_bad_block) {
         auto canonical_hash = db::read_canonical_hash(tx, unwind_point);
@@ -126,7 +123,6 @@ void HeaderDataModel::remove_headers(BlockNum unwind_point, std::optional<Hash> 
             throw std::logic_error("Headers stage, expected canonical hash at heigth " + std::to_string(unwind_point));
         db::write_head_header_hash(tx, *canonical_hash);
     }
-
 }
 
 // HeadersStage

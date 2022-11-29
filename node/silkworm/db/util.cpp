@@ -47,7 +47,7 @@ Bytes block_key(BlockNum block_number, std::span<const uint8_t, kHashLength> has
     return key;
 }
 
-auto split_block_key(ByteView key)-> std::tuple<BlockNum, evmc::bytes32> {
+auto split_block_key(ByteView key) -> std::tuple<BlockNum, evmc::bytes32> {
     // TODO implement
     throw std::runtime_error("not implemented");
 }

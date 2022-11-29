@@ -15,9 +15,9 @@ limitations under the License.
 */
 
 #include <silkworm/common/lru_cache.hpp>
-#include <silkworm/types/block.hpp>
-#include <silkworm/stagedsync/execution_engine.hpp>
 #include <silkworm/downloader/internals/types.hpp>
+#include <silkworm/stagedsync/execution_engine.hpp>
+#include <silkworm/types/block.hpp>
 
 namespace silkworm::stagedsync::consensus {
 
@@ -38,8 +38,8 @@ class ChainForkView {
 
     BlockIdPair initial_head_{};
     BlockIdPair current_head_{};
-    BigInt initial_head_td_, current_head_td_; // td of initial and current head
+    BigInt initial_head_td_, current_head_td_;  // td of initial and current head
     Hash previous_hash_;
 };
 
-}
+}  // namespace silkworm::stagedsync::consensus

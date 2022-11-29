@@ -36,7 +36,7 @@ class HeadersStage : public Stage {
     ~HeadersStage();
 
     NewHeight forward(std::optional<NewHeight>) override;  // go forward, downloading headers
-    void unwind(UnwindPoint) override;   // go backward, unwinding headers to unwind point
+    void unwind(UnwindPoint) override;                     // go backward, unwinding headers to unwind point
 
   private:
     void send_header_requests();  // send requests for more headers
@@ -54,4 +54,4 @@ class HeadersStage : public Stage {
     bool is_first_cycle_{true};
 };
 
-}  // namespace silkworm::stagedsync
+}  // namespace silkworm::stagedsync::consensus

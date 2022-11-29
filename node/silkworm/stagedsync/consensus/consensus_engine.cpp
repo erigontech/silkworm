@@ -16,7 +16,6 @@ limitations under the License.
 
 #include "consensus_engine.hpp"
 
-
 namespace silkworm::stagedsync::consensus {
 
 ConsensusEngine::ConsensusEngine(NodeSettings& ns, db::ROAccess dba, BlockExchange& be, ExecutionEngine& ee)
@@ -42,7 +41,6 @@ auto ConsensusEngine::foward_and_insert_blocks(HeadersStage& headers_stage, Bodi
 }
 
 void ConsensusEngine::unwind(HeadersStage& headers_stage, BodiesStage& bodies_stage, Stage::UnwindPoint unwind_point) {
-
     bodies_stage.unwind(unwind_point);
 
     headers_stage.unwind(unwind_point);
@@ -55,8 +53,7 @@ void ConsensusEngine::execution_loop() {
     using NewHeight = Stage::NewHeight;
     using UnwindPoint = Stage::UnwindPoint;
 
-    while(!is_stopping()) {
-
+    while (!is_stopping()) {
         HeadersStage headers_stage{block_exchange_, exec_engine_};
         BodiesStage bodies_stage{block_exchange_, exec_engine_};
 
@@ -88,9 +85,7 @@ void ConsensusEngine::execution_loop() {
 
         exec_engine_.update_fork_choice(new_height.hash);
     }
-
 };
-
 
 auto ConsensusEngine::update_bad_headers(std::set<Hash> bad_headers) -> std::shared_ptr<InternalMessage<void>> {
     auto message = std::make_shared<InternalMessage<void>>(
@@ -101,4 +96,4 @@ auto ConsensusEngine::update_bad_headers(std::set<Hash> bad_headers) -> std::sha
     return message;
 }
 
-}  // namespace silkworm::stagedsync
+}  // namespace silkworm::stagedsync::consensus

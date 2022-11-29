@@ -34,6 +34,7 @@ namespace silkworm::stagedsync {
 
 class SyncPipeline::LogTimer : public Timer {
     SyncPipeline* pipeline_;
+
   public:
     LogTimer(SyncPipeline* pipeline)
         : Timer{
@@ -41,8 +42,7 @@ class SyncPipeline::LogTimer : public Timer {
               pipeline->node_settings_->sync_loop_log_interval_seconds * 1'000,
               [this] { return execute(); },
               true},
-          pipeline_{pipeline}
-    {
+          pipeline_{pipeline} {
         start();
     }
 
@@ -63,7 +63,6 @@ class SyncPipeline::LogTimer : public Timer {
 SyncPipeline::SyncPipeline(silkworm::NodeSettings* node_settings)
     : node_settings_{node_settings},
       sync_context_{std::make_unique<SyncContext>()} {
-
     load_stages();
 }
 
@@ -84,22 +83,22 @@ std::optional<Hash> SyncPipeline::bad_block() {
 }
 
 /*
-     * Stages from Erigon -> Silkworm
-     *  1 StageHeaders ->  stagedsync::HeadersStage
-     *  2 StageCumulativeIndex -> TBD
-     *  3 StageBlockHashes -> stagedsync::BlockHashes
-     *  4 StageBodies -> stagedsync::BodiesStage
-     *  5 StageIssuance -> TBD
-     *  6 StageSenders -> stagedsync::Senders
-     *  7 StageExecuteBlocks -> stagedsync::Execution
-     *  8 StageTranspile -> TBD
-     *  9 StageHashState -> stagedsync::HashState
-     * 10 StageTrie -> stagedsync::InterHashes
-     * 11 StageHistory -> stagedsync::HistoryIndex
-     * 12 StageLogIndex -> stagedsync::LogIndex
-     * 13 StageCallTraces -> TBD
-     * 14 StageTxLookup -> stagedsync::TxLookup
-     * 15 StageFinish -> stagedsync::Finish
+ * Stages from Erigon -> Silkworm
+ *  1 StageHeaders ->  stagedsync::HeadersStage
+ *  2 StageCumulativeIndex -> TBD
+ *  3 StageBlockHashes -> stagedsync::BlockHashes
+ *  4 StageBodies -> stagedsync::BodiesStage
+ *  5 StageIssuance -> TBD
+ *  6 StageSenders -> stagedsync::Senders
+ *  7 StageExecuteBlocks -> stagedsync::Execution
+ *  8 StageTranspile -> TBD
+ *  9 StageHashState -> stagedsync::HashState
+ * 10 StageTrie -> stagedsync::InterHashes
+ * 11 StageHistory -> stagedsync::HistoryIndex
+ * 12 StageLogIndex -> stagedsync::LogIndex
+ * 13 StageCallTraces -> TBD
+ * 14 StageTxLookup -> stagedsync::TxLookup
+ * 15 StageFinish -> stagedsync::Finish
  */
 
 void SyncPipeline::load_stages() {

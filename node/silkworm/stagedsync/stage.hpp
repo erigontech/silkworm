@@ -27,8 +27,8 @@
 #include <silkworm/concurrency/stoppable.hpp>
 #include <silkworm/db/stages.hpp>
 #include <silkworm/db/tables.hpp>
-#include <silkworm/etl/collector.hpp>
 #include <silkworm/downloader/internals/types.hpp>
+#include <silkworm/etl/collector.hpp>
 
 namespace silkworm::stagedsync {
 
@@ -39,7 +39,7 @@ struct SyncContext {
     SyncContext() = default;
     ~SyncContext() = default;
 
-    SyncContext(const SyncContext&) = delete;  // not copyable
+    SyncContext(const SyncContext&) = delete;             // not copyable
     SyncContext& operator=(const SyncContext&) = delete;  // not copyable
 
     bool is_first_cycle{true};  // true at start-up (fist sync or sync after a long pause)

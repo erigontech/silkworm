@@ -67,4 +67,4 @@ void ChainForkView::add(const BlockHeader& header) {  // try to modularize this 
     previous_hash_ = hash;
 }
 
-}
+}  // namespace silkworm::stagedsync::consensus

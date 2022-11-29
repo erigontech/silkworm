@@ -18,8 +18,8 @@ limitations under the License.
 
 #include <atomic>
 #include <set>
-#include <vector>
 #include <variant>
+#include <vector>
 
 #include <silkworm/common/asio_timer.hpp>
 #include <silkworm/common/lru_cache.hpp>
@@ -36,10 +36,18 @@ class ExecutionEngine : public Stoppable {
     explicit ExecutionEngine(NodeSettings&, const db::RWAccess);
     ~ExecutionEngine() = default;
 
-    struct ValidChain {BlockNum current_point;};
-    struct InvalidChain {BlockNum unwind_point; Hash unwind_head;
-                         std::optional<Hash> bad_block; std::set<Hash> bad_headers;};
-    struct ValidationError {BlockNum last_point;};
+    struct ValidChain {
+        BlockNum current_point;
+    };
+    struct InvalidChain {
+        BlockNum unwind_point;
+        Hash unwind_head;
+        std::optional<Hash> bad_block;
+        std::set<Hash> bad_headers;
+    };
+    struct ValidationError {
+        BlockNum last_point;
+    };
     using VerificationResult = std::variant<ValidChain, InvalidChain, ValidationError>;
 
     // actions
@@ -69,7 +77,7 @@ class ExecutionEngine : public Stoppable {
     db::RWTxn tx_;
     SyncPipeline pipeline_;
     bool is_first_sync{true};
-    //lru_cache<Hash, BlockHeader> header_cache_; // todo: use cache if improve performances
+    // lru_cache<Hash, BlockHeader> header_cache_; // todo: use cache if improve performances
 
     class CanonicalChain {
       public:

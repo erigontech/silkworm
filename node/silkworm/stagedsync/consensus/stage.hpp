@@ -19,9 +19,9 @@ limitations under the License.
 #include <silkworm/common/log.hpp>
 #include <silkworm/common/settings.hpp>
 #include <silkworm/concurrency/stoppable.hpp>
-#include <silkworm/downloader/internals/types.hpp>
 #include <silkworm/db/stages.hpp>
 #include <silkworm/db/tables.hpp>
+#include <silkworm/downloader/internals/types.hpp>
 
 namespace silkworm::stagedsync::consensus {
 
@@ -37,8 +37,9 @@ class Stage : public Stoppable {
     virtual void unwind(UnwindPoint) = 0;
 
     virtual std::vector<std::string> get_log_progress() = 0;
+
   protected:
     std::string name_;
 };
 
-}
+}  // namespace silkworm::stagedsync::consensus

@@ -19,12 +19,12 @@ limitations under the License.
 #include <silkworm/common/log.hpp>
 #include <silkworm/common/settings.hpp>
 #include <silkworm/concurrency/active_component.hpp>
-#include <silkworm/stagedsync/execution_engine.hpp>
 #include <silkworm/downloader/block_exchange.hpp>
 #include <silkworm/downloader/messages/internal_message.hpp>
+#include <silkworm/stagedsync/execution_engine.hpp>
 
-#include "stage_headers.hpp"
 #include "stage_bodies.hpp"
+#include "stage_headers.hpp"
 
 namespace silkworm::stagedsync::consensus {
 
@@ -32,7 +32,7 @@ class ConsensusEngine : public ActiveComponent {
   public:
     ConsensusEngine(NodeSettings&, db::ROAccess, BlockExchange&, ExecutionEngine&);
 
-    void execution_loop() final;           /*[[long_running]]*/
+    void execution_loop() final; /*[[long_running]]*/
 
   private:
     auto foward_and_insert_blocks(HeadersStage&, BodiesStage&) -> Stage::NewHeight;
@@ -45,4 +45,4 @@ class ConsensusEngine : public ActiveComponent {
     ExecutionEngine& exec_engine_;
 };
 
-}  // namespace silkworm::stagedsync
+}  // namespace silkworm::stagedsync::consensus

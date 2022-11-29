@@ -35,7 +35,7 @@ class BodiesStage : public Stage {
     ~BodiesStage();
 
     NewHeight forward(std::optional<NewHeight>) override;  // go forward, downloading bodies
-    void unwind(UnwindPoint) override;   // go backward, unwinding bodies to unwind point
+    void unwind(UnwindPoint) override;                     // go backward, unwinding bodies to unwind point
 
   private:
     void send_body_requests();  // send requests for more bodies
@@ -51,4 +51,4 @@ class BodiesStage : public Stage {
     std::string log_prefix_;
 };
 
-}  // namespace silkworm::stagedsync
+}  // namespace silkworm::stagedsync::consensus

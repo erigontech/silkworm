@@ -29,7 +29,7 @@
 namespace silkworm::stagedsync::consensus {
 
 BodiesStage::BodiesStage(BlockExchange& bd, ExecutionEngine& ee)
-    : Stage("consensus-bodies"), block_downloader_{bd}, exec_engine_{ee}, log_prefix_{"[Cons.Bodies]"}  {
+    : Stage("consensus-bodies"), block_downloader_{bd}, exec_engine_{ee}, log_prefix_{"[Cons.Bodies]"} {
 }
 
 BodiesStage::~BodiesStage() {
@@ -68,8 +68,8 @@ auto BodiesStage::forward(std::optional<NewHeight> new_height) -> NewHeight {
 
         // sync status
         BlockNum target_height = new_height->block_num;
-        auto sync_command = sync_body_sequence(initial_head.number, target_height); // todo check if target_height is ok in place of headers height #######
-        sync_command->result().get();  // blocking
+        auto sync_command = sync_body_sequence(initial_head.number, target_height);  // todo check if target_height is ok in place of headers height #######
+        sync_command->result().get();                                                // blocking
 
         // prepare bodies, if any
         auto withdraw_command = withdraw_ready_bodies();
@@ -128,7 +128,6 @@ auto BodiesStage::forward(std::optional<NewHeight> new_height) -> NewHeight {
         log::Error(log_prefix_) << "Aborted due to exception: " << e.what();
         throw e;
     }
-
 }
 
 void BodiesStage::unwind(UnwindPoint unwind_point) {
@@ -184,4 +183,4 @@ std::vector<std::string> BodiesStage::get_log_progress() {  // implementation MU
             "peers", std::to_string(peers)};
 }
 
-}  // namespace silkworm::stagedsync
+}  // namespace silkworm::stagedsync::consensus

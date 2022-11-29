@@ -40,8 +40,9 @@ class SyncPipeline : public Stoppable {
     Hash head_header_hash();
     std::optional<BlockNum> unwind_point();
     std::optional<Hash> bad_block();
-    
+
     bool stop() override;
+
   private:
     silkworm::NodeSettings* node_settings_;
     std::unique_ptr<SyncContext> sync_context_;  // context shared across stages
@@ -60,7 +61,7 @@ class SyncPipeline : public Stoppable {
 
     void load_stages();  // Fills the vector with stages
 
-    std::string get_log_prefix() const; // Returns the current log lines prefix on behalf of current stage
-    class LogTimer; // Timer for async log scheduling
+    std::string get_log_prefix() const;  // Returns the current log lines prefix on behalf of current stage
+    class LogTimer;                      // Timer for async log scheduling
 };
 }  // namespace silkworm::stagedsync

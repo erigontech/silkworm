@@ -27,9 +27,9 @@ limitations under the License.
 
 namespace silkworm::chainsync {
 
-class ConsensusEngine : public ActiveComponent {
+class SyncEngine : public ActiveComponent {
   public:
-    ConsensusEngine(NodeSettings&, db::ROAccess, BlockExchange&, stagedsync::ExecutionEngine&);
+    SyncEngine(NodeSettings&, db::ROAccess, BlockExchange&, stagedsync::ExecutionEngine&);
 
     void execution_loop() final; /*[[long_running]]*/
 

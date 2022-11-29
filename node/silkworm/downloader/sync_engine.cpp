@@ -14,18 +14,18 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-#include "consensus_engine.hpp"
+#include "sync_engine.hpp"
 
 namespace silkworm::chainsync {
 
-ConsensusEngine::ConsensusEngine(NodeSettings&, db::ROAccess dba, BlockExchange& be, stagedsync::ExecutionEngine& ee)
+SyncEngine::SyncEngine(NodeSettings&, db::ROAccess dba, BlockExchange& be, stagedsync::ExecutionEngine& ee)
     : //node_settings_{ns},
       db_access_{dba},
       block_exchange_{be},
       exec_engine_{ee} {
 }
 
-auto ConsensusEngine::foward_and_insert_blocks(HeadersStage& headers_stage, BodiesStage& bodies_stage) -> Stage::NewHeight {
+auto SyncEngine::foward_and_insert_blocks(HeadersStage& headers_stage, BodiesStage& bodies_stage) -> Stage::NewHeight {
     using NewHeight = Stage::NewHeight;
 
     NewHeight as_far_as_possible{};
@@ -40,13 +40,13 @@ auto ConsensusEngine::foward_and_insert_blocks(HeadersStage& headers_stage, Bodi
     return new_height;
 }
 
-void ConsensusEngine::unwind(HeadersStage& headers_stage, BodiesStage& bodies_stage, Stage::UnwindPoint unwind_point) {
+void SyncEngine::unwind(HeadersStage& headers_stage, BodiesStage& bodies_stage, Stage::UnwindPoint unwind_point) {
     bodies_stage.unwind(unwind_point);
 
     headers_stage.unwind(unwind_point);
 }
 
-void ConsensusEngine::execution_loop() {
+void SyncEngine::execution_loop() {
     using namespace stagedsync;
     using ValidChain = ExecutionEngine::ValidChain;
     using ValidationError = ExecutionEngine::ValidationError;
@@ -88,7 +88,7 @@ void ConsensusEngine::execution_loop() {
     }
 };
 
-auto ConsensusEngine::update_bad_headers(std::set<Hash> bad_headers) -> std::shared_ptr<InternalMessage<void>> {
+auto SyncEngine::update_bad_headers(std::set<Hash> bad_headers) -> std::shared_ptr<InternalMessage<void>> {
     auto message = std::make_shared<InternalMessage<void>>(
         [bads = std::move(bad_headers)](HeaderChain& wc, BodySequence&) { wc.add_bad_headers(bads); });
 

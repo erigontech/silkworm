@@ -31,7 +31,7 @@
 #include <silkworm/stagedsync/execution_engine.hpp>
 
 #include "common.hpp"
-#include "silkworm/downloader/consensus_engine.hpp"
+#include "silkworm/downloader/sync_engine.hpp"
 
 using namespace silkworm;
 
@@ -117,9 +117,9 @@ int main(int argc, char* argv[]) {
         silkworm::stagedsync::ExecutionEngine execution{node_settings, db::RWAccess{chaindata_db}};
 
         // ConsensusEngine drives headers and bodies sync, implementing fork choice rules
-        silkworm::chainsync::ConsensusEngine consensus{
+        silkworm::chainsync::SyncEngine sync{
             node_settings, db::ROAccess{chaindata_db}, block_exchange, execution};
-        auto consensus_loop = std::thread([&consensus]() { consensus.execution_loop(); });
+        auto consensus_loop = std::thread([&sync]() { sync.execution_loop(); });
 
         // Keep waiting till user stops logging resource usage
         auto last_update = steady_clock::now();

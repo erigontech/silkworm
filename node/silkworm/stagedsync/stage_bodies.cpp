@@ -22,64 +22,27 @@
 #include <silkworm/common/log.hpp>
 #include <silkworm/common/measure.hpp>
 #include <silkworm/common/stopwatch.hpp>
-#include <silkworm/consensus/engine.hpp>
 #include <silkworm/db/access_layer.hpp>
-#include <silkworm/db/buffer.hpp>
 #include <silkworm/db/stages.hpp>
 #include <silkworm/downloader/internals/preverified_hashes.hpp>
 
 namespace silkworm::stagedsync {
 
-class BodyDataModel {
-  public:
-    explicit BodyDataModel(db::RWTxn&, BlockNum bodies_stage_height, const ChainConfig&);
-    ~BodyDataModel() = default;
-
-    void update_tables(const Block&);
-    void close();
-
-    static void remove_bodies(BlockNum new_height, std::optional<Hash> bad_block, db::RWTxn& tx);
-
-    bool unwind_needed() const;
-
-    BlockNum unwind_point() const;
-    BlockNum initial_height() const;
-    BlockNum highest_height() const;
-    Hash bad_block() const;
-
-    void set_preverified_height(BlockNum height);
-
-  private:
-    using ConsensusEnginePtr = std::unique_ptr<consensus::IEngine>;
-
-    ConsensusEnginePtr consensus_engine_;
-    db::Buffer chain_state_;
-
-    BlockNum initial_height_{0};
-    BlockNum highest_height_{0};
-
-    BlockNum preverified_height_{0};
-
-    BlockNum unwind_point_{0};
-    bool unwind_needed_{false};
-    Hash bad_block_;
-};
-
-BodyDataModel::BodyDataModel(db::RWTxn& tx, BlockNum bodies_stage_height, const ChainConfig& chain_config)
+BodiesStage::BodyDataModel::BodyDataModel(db::RWTxn& tx, BlockNum bodies_stage_height, const ChainConfig& chain_config)
     : consensus_engine_{consensus::engine_factory(chain_config)},
       chain_state_{tx, /*prune_from=*/0, /*historical_block=null*/} {
     initial_height_ = bodies_stage_height;
     highest_height_ = bodies_stage_height;
 }
 
-BlockNum BodyDataModel::initial_height() const { return initial_height_; }
-BlockNum BodyDataModel::highest_height() const { return highest_height_; }
-bool BodyDataModel::unwind_needed() const { return unwind_needed_; }
-BlockNum BodyDataModel::unwind_point() const { return unwind_point_; }
-Hash BodyDataModel::bad_block() const { return bad_block_; }
-void BodyDataModel::set_preverified_height(BlockNum height) { preverified_height_ = height; }
+BlockNum BodiesStage::BodyDataModel::initial_height() const { return initial_height_; }
+BlockNum BodiesStage::BodyDataModel::highest_height() const { return highest_height_; }
+bool BodiesStage::BodyDataModel::unwind_needed() const { return unwind_needed_; }
+BlockNum BodiesStage::BodyDataModel::unwind_point() const { return unwind_point_; }
+Hash BodiesStage::BodyDataModel::bad_block() const { return bad_block_; }
+void BodiesStage::BodyDataModel::set_preverified_height(BlockNum height) { preverified_height_ = height; }
 
-void BodyDataModel::update_tables(const Block& block) {
+void BodiesStage::BodyDataModel::update_tables(const Block& block) {
     Hash block_hash = block.header.hash();  // save cpu
     BlockNum block_num = block.header.number;
 
@@ -108,11 +71,11 @@ void BodyDataModel::update_tables(const Block& block) {
     }
 }
 
-void BodyDataModel::close() {
+void BodiesStage::BodyDataModel::close() {
     // does nothing
 }
 
-void BodyDataModel::remove_bodies(BlockNum, std::optional<Hash>, db::RWTxn&) {
+void BodiesStage::BodyDataModel::remove_bodies(BlockNum, std::optional<Hash>, db::RWTxn&) {
     // we do not erase "wrong" blocks, only stage progress will be updated by bodies stage unwind operation
 }
 

@@ -119,7 +119,7 @@ int main(int argc, char* argv[]) {
         // ConsensusEngine drives headers and bodies sync, implementing fork choice rules
         silkworm::chainsync::SyncEngine sync{
             node_settings, db::ROAccess{chaindata_db}, block_exchange, execution};
-        auto consensus_loop = std::thread([&sync]() { sync.execution_loop(); });
+        auto chain_syncing = std::thread([&sync]() { sync.execution_loop(); });
 
         // Keep waiting till user stops logging resource usage
         auto last_update = steady_clock::now();
@@ -144,9 +144,11 @@ int main(int argc, char* argv[]) {
 
         block_exchange.stop();
         sentry.stop();
+        sync.stop();
         block_downloading.join();
         message_receiving.join();
         stats_receiving.join();
+        chain_syncing.join();
 
         asio_guard.reset();
         asio_thread.join();

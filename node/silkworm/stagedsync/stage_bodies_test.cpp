@@ -14,7 +14,7 @@
    limitations under the License.
 */
 
-#include "body_persistence.hpp"
+#include "stage_bodies.hpp"
 
 #include <algorithm>
 #include <iostream>
@@ -30,6 +30,11 @@
 #include "silkworm/types/block.hpp"
 
 namespace silkworm {
+
+class BodiesStage_ForTest: public stagedsync::BodiesStage {
+  public:
+    using stagedsync::BodiesStage::BodyDataModel;
+};
 
 TEST_CASE("BodyPersistence - body persistence") {
     test::Context context;
@@ -66,7 +71,7 @@ TEST_CASE("BodyPersistence - body persistence") {
         auto header1_hash = block1.header.hash();
         block1.ommers.push_back(BlockHeader{});  // generate error InvalidOmmerHeader
 
-        BodyPersistence bp(tx, chain_config);
+        BodyDataModel bp(tx, chain_config);
 
         REQUIRE(bp.initial_height() == 0);
         REQUIRE(bp.highest_height() == 0);

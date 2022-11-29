@@ -17,7 +17,9 @@
 #pragma once
 
 #include <silkworm/concurrency/containers.hpp>
+#include <silkworm/consensus/engine.hpp>
 #include <silkworm/db/access_layer.hpp>
+#include <silkworm/db/buffer.hpp>
 #include <silkworm/downloader/internals/types.hpp>
 #include <silkworm/stagedsync/stage.hpp>
 
@@ -37,6 +39,42 @@ class BodiesStage : public Stage {
   private:
     std::vector<std::string> get_log_progress() override;  // thread safe
     std::atomic<BlockNum> current_height_{0};
+
+  protected:
+    class BodyDataModel {
+      public:
+        explicit BodyDataModel(db::RWTxn&, BlockNum bodies_stage_height, const ChainConfig&);
+        ~BodyDataModel() = default;
+
+        void update_tables(const Block&);
+        void close();
+
+        static void remove_bodies(BlockNum new_height, std::optional<Hash> bad_block, db::RWTxn& tx);
+
+        bool unwind_needed() const;
+
+        BlockNum unwind_point() const;
+        BlockNum initial_height() const;
+        BlockNum highest_height() const;
+        Hash bad_block() const;
+
+        void set_preverified_height(BlockNum height);
+
+      private:
+        using ConsensusEnginePtr = std::unique_ptr<consensus::IEngine>;
+
+        ConsensusEnginePtr consensus_engine_;
+        db::Buffer chain_state_;
+
+        BlockNum initial_height_{0};
+        BlockNum highest_height_{0};
+
+        BlockNum preverified_height_{0};
+
+        BlockNum unwind_point_{0};
+        bool unwind_needed_{false};
+        Hash bad_block_;
+    };
 };
 
 }  // namespace silkworm::stagedsync

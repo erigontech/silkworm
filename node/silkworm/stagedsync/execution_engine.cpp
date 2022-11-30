@@ -149,12 +149,12 @@ void ExecutionEngine::insert_headers(std::vector<std::shared_ptr<BlockHeader>>& 
     SILK_TRACE << "ExecutionEngine: inserting " << headers.size() << " headers";
     if (headers.empty()) return;
 
-    as_range::for_each(headers, [&, this](const auto& header) { insert_header(tx_, *header); });
+    as_range::for_each(headers, [&, this](const auto& header) { insert_header( *header); });
 }
 
-void ExecutionEngine::insert_header(db::RWTxn& tx, BlockHeader& header) {
+void ExecutionEngine::insert_header(BlockHeader& header) {
     // if (!db::has_header(tx_, header.number, header.hash())) { todo: hash() is computationally expensive
-    db::write_header(tx, header, true);  // todo: move?
+    db::write_header(tx_, header, true);  // todo: move?
     //}
 
     // header_cache_.put(header.hash(), header);
@@ -164,15 +164,15 @@ void ExecutionEngine::insert_bodies(std::vector<std::shared_ptr<Block>>& bodies)
     SILK_TRACE << "ExecutionEngine: inserting " << bodies.size() << " bodies";
     if (bodies.empty()) return;
 
-    as_range::for_each(bodies, [&, this](const auto& body) { insert_body(tx_, *body); });
+    as_range::for_each(bodies, [&, this](const auto& body) { insert_body(*body); });
 }
 
-void ExecutionEngine::insert_body(db::RWTxn& tx, Block& block) {
+void ExecutionEngine::insert_body(Block& block) {
     Hash block_hash = block.header.hash();  // todo: hash() is computationally expensive
     BlockNum block_num = block.header.number;
 
-    if (!db::has_body(tx, block_num, block_hash)) {
-        db::write_body(tx, block, block_hash, block_num);
+    if (!db::has_body(tx_, block_num, block_hash)) {
+        db::write_body(tx_, block, block_hash, block_num);
     }
 }
 

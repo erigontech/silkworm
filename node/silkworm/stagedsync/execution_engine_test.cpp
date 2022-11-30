@@ -1,20 +1,20 @@
 /*
-   Copyright 2022 The Silkworm Authors
+Copyright 2022 The Silkworm Authors
 
-   Licensed under the Apache License, Version 2.0 (the "License");
-   you may not use this file except in compliance with the License.
-   You may obtain a copy of the License at
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
 
-       http://www.apache.org/licenses/LICENSE-2.0
+    http://www.apache.org/licenses/LICENSE-2.0
 
-   Unless required by applicable law or agreed to in writing, software
-   distributed under the License is distributed on an "AS IS" BASIS,
-   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-   See the License for the specific language governing permissions and
-   limitations under the License.
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
 */
 
-#include "stage_bodies.hpp"
+#include "silkworm/stagedsync/execution_engine.hpp"
 
 #include <algorithm>
 #include <iostream>
@@ -28,17 +28,11 @@
 #include "silkworm/db/stages.hpp"
 #include "silkworm/downloader/internals/body_sequence.hpp"
 #include "silkworm/types/block.hpp"
-#include "silkworm/stagedsync/execution_engine.hpp"
+#include "stage_bodies.hpp"
 
 namespace silkworm {
 
-class BodiesStage_ForTest: public stagedsync::BodiesStage {
-  public:
-    using stagedsync::BodiesStage::BodyDataModel;
-};
-using BodyDataModel_ForTest = BodiesStage_ForTest::BodyDataModel;
-
-TEST_CASE("BodyPersistence - body persistence") {
+TEST_CASE("ExecutionEngine") {
     test::Context context;
     db::RWAccess db_access{context.env()};
     auto& txn{context.txn()};
@@ -53,13 +47,17 @@ TEST_CASE("BodyPersistence - body persistence") {
     db::initialize_genesis(txn, genesis_json, allow_exceptions);
     context.commit_txn();
 
+    stagedsync::ExecutionEngine execution_engine{context.node_settings(), db_access};
+    using ValidChain = stagedsync::ExecutionEngine::ValidChain;
+    using InvalidChain = stagedsync::ExecutionEngine::InvalidChain;
+
     /* status:
      *         h0
      * input:
      *         h0 <----- h1
      */
     SECTION("one invalid body after the genesis") {
-        db::RWTxn tx(context.env());
+        db::ROTxn tx(context.env());
 
         auto header0_hash = db::read_canonical_hash(tx, 0);
         REQUIRE(header0_hash.has_value());
@@ -71,36 +69,24 @@ TEST_CASE("BodyPersistence - body persistence") {
         block1.header.number = 1;
         block1.header.difficulty = 17'171'480'576;  // a random value
         block1.header.parent_hash = *header0_hash;
-        auto header1_hash = block1.header.hash();
+        //auto header1_hash = block1.header.hash();
         block1.ommers.push_back(BlockHeader{});  // generate error InvalidOmmerHeader
 
-        BlockNum bodies_stage_height = 0;
-        BodyDataModel_ForTest bp(tx, bodies_stage_height, chain_config);
+        execution_engine.insert_header(block1.header);
+        execution_engine.insert_body(block1);
+        auto validation_result = execution_engine.verify_chain(block1.header.hash());
 
-        REQUIRE(bp.initial_height() == 0);
-        REQUIRE(bp.highest_height() == 0);
-        REQUIRE(bp.unwind_needed() == false);
-        REQUIRE(bp.unwind_point() == 0);
-
-        bp.update_tables(block1);
-
-        // check internal status
-        REQUIRE(bp.highest_height() == 0);    // block is not valid so no progress
-        REQUIRE(bp.unwind_needed() == true);  // block is not valid -> unwind
-        REQUIRE(bp.unwind_point() == 0);      // block-num - 1
-        REQUIRE(bp.bad_block() == header1_hash);
+        REQUIRE(holds_alternative<InvalidChain>(validation_result));
 
         // check db content
         BlockBody saved_body;
         bool present = db::read_body(tx, block1.header.hash(), block1.header.number, saved_body);
-
-        REQUIRE(!present);
-
-        bp.close();
+        REQUIRE(present);
+        // ... todo: complete
     }
 
     SECTION("one valid body after the genesis") {
-        db::RWTxn tx(context.env());
+        db::ROTxn tx(context.env());
 
         auto header0_hash = db::read_canonical_hash(tx, 0);
         REQUIRE(header0_hash.has_value());
@@ -128,23 +114,27 @@ TEST_CASE("BodyPersistence - body persistence") {
         // Note: block1 has zero transactions and zero ommers on mainnet
         REQUIRE(decoding_result == DecodingResult::kOk);
 
-        BlockNum bodies_stage_height = 0;
-        BodyDataModel_ForTest bp(tx, bodies_stage_height, chain_config);
+        execution_engine.insert_header(block1.header);
+        execution_engine.insert_body(block1);
+        auto validation_result = execution_engine.verify_chain(block1.header.hash());
 
+        REQUIRE(holds_alternative<ValidChain>(validation_result));
+
+        /*
         // check internal status
         REQUIRE(bp.initial_height() == 0);
         REQUIRE(bp.highest_height() == 0);
         REQUIRE(bp.unwind_needed() == false);
         REQUIRE(bp.unwind_point() == 0);
 
-        bp.update_tables(block1);  // validation must pass
+        bp.persist(block1);  // validation must pass
 
         // check internal status
         REQUIRE(bp.highest_height() == 1);
         REQUIRE(bp.unwind_needed() == false);
         REQUIRE(bp.unwind_point() == 0);
+        */
 
-        /*
         // check db content
         BlockBody saved_body;
         bool present = db::read_body(tx, block1.header.hash(), block1.header.number, saved_body);
@@ -152,10 +142,11 @@ TEST_CASE("BodyPersistence - body persistence") {
         REQUIRE(present);
         REQUIRE(saved_body == block1);
 
-        bodies_stage_height = db::stages::read_stage_progress(tx, db::stages::kBlockBodiesKey);
+        auto bodies_stage_height = db::stages::read_stage_progress(tx, db::stages::kBlockBodiesKey);
 
         REQUIRE(bodies_stage_height == block1.header.number);
 
+        /*
         // close
         bp.close();
 

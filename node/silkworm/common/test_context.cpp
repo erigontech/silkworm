@@ -20,7 +20,7 @@
 
 namespace silkworm::test {
 
-Context::Context(bool with_create_tables, bool inmemory) {
+Context::Context(bool with_create_tables, bool inmemory, bool start_a_tx) {
     node_settings_.data_directory = std::make_unique<DataDirectory>(tmp_dir_.path(), /*create=*/true);
     node_settings_.chain_config = silkworm::kMainnetConfig;
     node_settings_.chaindata_env_config =
@@ -31,7 +31,9 @@ Context::Context(bool with_create_tables, bool inmemory) {
                       /*inmemory=*/inmemory};
     node_settings_.prune_mode = std::make_unique<db::PruneMode>();
     env_ = db::open_env(node_settings_.chaindata_env_config);
-    txn_ = env_.start_write();
+    if (start_a_tx) {
+        txn_ = env_.start_write();
+    }
     if (with_create_tables) {
         db::table::check_or_create_chaindata_tables(txn_);
     }

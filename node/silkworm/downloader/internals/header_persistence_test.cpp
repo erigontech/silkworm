@@ -14,8 +14,6 @@
    limitations under the License.
 */
 
-#include "header_persistence.hpp"
-
 #include <algorithm>
 
 #include <catch2/catch.hpp>
@@ -45,6 +43,8 @@ TEST_CASE("header persistence", "[silkworm][downloader][HeaderPersistence]") {
      *         h0 <----- h1
      */
     SECTION("one header after the genesis") {
+        INFO("to implement");
+        /*
         db::RWTxn tx(context.env());
 
         auto header0_hash = db::read_canonical_hash(tx, 0);
@@ -85,6 +85,7 @@ TEST_CASE("header persistence", "[silkworm][downloader][HeaderPersistence]") {
         pc.finish();  // here pc update the canonical chain on the db
 
         REQUIRE(db::read_canonical_hash(tx, 1) == header1_hash);
+         */
     }
 
     /* status:
@@ -94,6 +95,8 @@ TEST_CASE("header persistence", "[silkworm][downloader][HeaderPersistence]") {
      *                |-- h1'
      */
     SECTION("some header after the genesis") {
+        INFO("to implement");
+        /*
         db::RWTxn tx(context.env());
 
         // starting from an initial status
@@ -153,6 +156,7 @@ TEST_CASE("header persistence", "[silkworm][downloader][HeaderPersistence]") {
 
         REQUIRE(db::read_canonical_hash(tx, 1) == header1_hash);
         REQUIRE(db::read_canonical_hash(tx, 2) == header2_hash);
+         */
     }
 }
 

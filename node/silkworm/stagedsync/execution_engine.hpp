@@ -69,8 +69,9 @@ class ExecutionEngine : public Stoppable {
     auto get_body(Hash) -> std::optional<BlockBody>;
     auto get_headers_head() -> std::tuple<BlockNum, Hash, BigInt>;
     auto get_bodies_head() -> std::tuple<BlockNum, Hash>;
+    auto get_canonical_head() -> std::tuple<BlockNum, Hash>;
 
-  private:
+  protected:
     std::set<Hash> collect_bad_headers(db::RWTxn& tx, InvalidChain& invalid_chain);
 
     NodeSettings& node_settings_;

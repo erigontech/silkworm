@@ -357,4 +357,8 @@ auto ExecutionEngine::get_bodies_head() -> std::tuple<BlockNum, Hash> {
     return {bodies_head_height, *bodies_head_hash};
 }
 
+auto ExecutionEngine::get_canonical_head() -> std::tuple<BlockNum, Hash> {
+    return db::read_canonical_head(tx_);
+}
+
 }  // namespace silkworm::stagedsync

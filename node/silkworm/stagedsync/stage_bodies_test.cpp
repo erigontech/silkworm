@@ -16,7 +16,6 @@
 
 #include "stage_bodies.hpp"
 
-#include <algorithm>
 #include <iostream>
 
 #include <catch2/catch.hpp>
@@ -26,9 +25,7 @@
 #include "silkworm/common/test_context.hpp"
 #include "silkworm/db/genesis.hpp"
 #include "silkworm/db/stages.hpp"
-#include "silkworm/downloader/internals/body_sequence.hpp"
 #include "silkworm/types/block.hpp"
-#include "silkworm/stagedsync/execution_engine.hpp"
 
 namespace silkworm {
 
@@ -38,7 +35,7 @@ class BodiesStage_ForTest: public stagedsync::BodiesStage {
 };
 using BodyDataModel_ForTest = BodiesStage_ForTest::BodyDataModel;
 
-TEST_CASE("BodyPersistence - body persistence") {
+TEST_CASE("BodiesStage - data model") {
     test::Context context;
     db::RWAccess db_access{context.env()};
     auto& txn{context.txn()};
@@ -75,28 +72,22 @@ TEST_CASE("BodyPersistence - body persistence") {
         block1.ommers.push_back(BlockHeader{});  // generate error InvalidOmmerHeader
 
         BlockNum bodies_stage_height = 0;
-        BodyDataModel_ForTest bp(tx, bodies_stage_height, chain_config);
+        BodyDataModel_ForTest bm(tx, bodies_stage_height, chain_config);
 
-        REQUIRE(bp.initial_height() == 0);
-        REQUIRE(bp.highest_height() == 0);
-        REQUIRE(bp.unwind_needed() == false);
-        REQUIRE(bp.unwind_point() == 0);
+        REQUIRE(bm.initial_height() == 0);
+        REQUIRE(bm.highest_height() == 0);
+        REQUIRE(bm.unwind_needed() == false);
+        REQUIRE(bm.unwind_point() == 0);
 
-        bp.update_tables(block1);
+        bm.update_tables(block1);
 
         // check internal status
-        REQUIRE(bp.highest_height() == 0);    // block is not valid so no progress
-        REQUIRE(bp.unwind_needed() == true);  // block is not valid -> unwind
-        REQUIRE(bp.unwind_point() == 0);      // block-num - 1
-        REQUIRE(bp.bad_block() == header1_hash);
+        REQUIRE(bm.highest_height() == 0);    // block is not valid so no progress
+        REQUIRE(bm.unwind_needed() == true);  // block is not valid -> unwind
+        REQUIRE(bm.unwind_point() == 0);      // block-num - 1
+        REQUIRE(bm.bad_block() == header1_hash);
 
-        // check db content
-        BlockBody saved_body;
-        bool present = db::read_body(tx, block1.header.hash(), block1.header.number, saved_body);
-
-        REQUIRE(!present);
-
-        bp.close();
+        bm.close();
     }
 
     SECTION("one valid body after the genesis") {
@@ -129,54 +120,23 @@ TEST_CASE("BodyPersistence - body persistence") {
         REQUIRE(decoding_result == DecodingResult::kOk);
 
         BlockNum bodies_stage_height = 0;
-        BodyDataModel_ForTest bp(tx, bodies_stage_height, chain_config);
+        BodyDataModel_ForTest bm(tx, bodies_stage_height, chain_config);
 
         // check internal status
-        REQUIRE(bp.initial_height() == 0);
-        REQUIRE(bp.highest_height() == 0);
-        REQUIRE(bp.unwind_needed() == false);
-        REQUIRE(bp.unwind_point() == 0);
+        REQUIRE(bm.initial_height() == 0);
+        REQUIRE(bm.highest_height() == 0);
+        REQUIRE(bm.unwind_needed() == false);
+        REQUIRE(bm.unwind_point() == 0);
 
-        bp.update_tables(block1);  // validation must pass
+        bm.update_tables(block1);  // validation must pass
 
         // check internal status
-        REQUIRE(bp.highest_height() == 1);
-        REQUIRE(bp.unwind_needed() == false);
-        REQUIRE(bp.unwind_point() == 0);
-
-        /*
-        // check db content
-        BlockBody saved_body;
-        bool present = db::read_body(tx, block1.header.hash(), block1.header.number, saved_body);
-
-        REQUIRE(present);
-        REQUIRE(saved_body == block1);
-
-        bodies_stage_height = db::stages::read_stage_progress(tx, db::stages::kBlockBodiesKey);
-
-        REQUIRE(bodies_stage_height == block1.header.number);
+        REQUIRE(bm.highest_height() == 1);
+        REQUIRE(bm.unwind_needed() == false);
+        REQUIRE(bm.unwind_point() == 0);
 
         // close
-        bp.close();
-
-        // re-opening
-        BodyPersistence bp2(tx, chain_config);
-
-        // check internal status
-        REQUIRE(bp2.initial_height() == 1);
-        REQUIRE(bp2.highest_height() == 1);
-
-        // close
-        bp2.close();
-
-        // removing a block
-        BodyPersistence::remove_bodies(0, block1.header.hash(), tx);
-
-        // check internal status
-        BodyPersistence bp3(tx, chain_config);
-        REQUIRE(bp3.initial_height() == 0);
-        REQUIRE(bp3.highest_height() == 0);
-        */
+        bm.close();
     }
 }
 

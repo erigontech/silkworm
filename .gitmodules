@@ -41,3 +41,6 @@
 [submodule "third_party/expected"]
 	path = third_party/expected
 	url = https://github.com/TartanLlama/expected.git
+[submodule "third_party/consensus-spec-tests"]
+	path = third_party/consensus-spec-tests
+	url = https://github.com/ethereum/consensus-spec-tests.git

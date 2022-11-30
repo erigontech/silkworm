@@ -117,42 +117,42 @@ template <>
 void encode(cl::Eth1Data& from, Bytes& to) noexcept;
 
 template <>
-DecodingResult decode(ByteView& from, cl::Eth1Data& to) noexcept;
+DecodingResult decode(ByteView from, cl::Eth1Data& to) noexcept;
 
 template <>
 void encode(cl::Checkpoint& from, Bytes& to) noexcept;
 
 template <>
-DecodingResult decode(ByteView& from, cl::Checkpoint& to) noexcept;
+DecodingResult decode(ByteView from, cl::Checkpoint& to) noexcept;
 
 template <>
 void encode(cl::AttestationData& from, Bytes& to) noexcept;
 
 template <>
-DecodingResult decode(ByteView& from, cl::AttestationData& to) noexcept;
+DecodingResult decode(ByteView from, cl::AttestationData& to) noexcept;
 
 template <>
 void encode(cl::BeaconBlockHeader& from, Bytes& to) noexcept;
 
 template <>
-DecodingResult decode(ByteView& from, cl::BeaconBlockHeader& to) noexcept;
+DecodingResult decode(ByteView from, cl::BeaconBlockHeader& to) noexcept;
 
 template <>
 void encode(cl::SignedBeaconBlockHeader& from, Bytes& to) noexcept;
 
 template <>
-DecodingResult decode(ByteView& from, cl::SignedBeaconBlockHeader& to) noexcept;
+DecodingResult decode(ByteView from, cl::SignedBeaconBlockHeader& to) noexcept;
 
 template <>
 void encode(cl::IndexedAttestation& from, Bytes& to) noexcept;
 
 template <>
-DecodingResult decode(ByteView& from, cl::IndexedAttestation& to) noexcept;
+DecodingResult decode(ByteView from, cl::IndexedAttestation& to) noexcept;
 
 template <>
 void encode(cl::ProposerSlashing& from, Bytes& to) noexcept;
 
 template <>
-DecodingResult decode(ByteView& from, cl::ProposerSlashing& to) noexcept;
+DecodingResult decode(ByteView from, cl::ProposerSlashing& to) noexcept;
 
 }  // namespace silkworm::ssz

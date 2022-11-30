@@ -94,7 +94,7 @@ void encode(cl::Eth1Data& from, Bytes& to) noexcept {
 }
 
 template <>
-DecodingResult decode(ByteView& from, cl::Eth1Data& to) noexcept {
+DecodingResult decode(ByteView from, cl::Eth1Data& to) noexcept {
     if (from.size() < cl::Eth1Data::kSize) {
         return DecodingResult::kInputTooShort;
     }
@@ -118,7 +118,7 @@ void encode(cl::Checkpoint& from, Bytes& to) noexcept {
 }
 
 template <>
-DecodingResult decode(ByteView& from, cl::Checkpoint& to) noexcept {
+DecodingResult decode(ByteView from, cl::Checkpoint& to) noexcept {
     if (from.size() < cl::Checkpoint::kSize) {
         return DecodingResult::kInputTooShort;
     }
@@ -148,7 +148,7 @@ void encode(cl::AttestationData& from, Bytes& to) noexcept {
 }
 
 template <>
-DecodingResult decode(ByteView& from, cl::AttestationData& to) noexcept {
+DecodingResult decode(ByteView from, cl::AttestationData& to) noexcept {
     if (from.size() < cl::AttestationData::kSize) {
         return DecodingResult::kInputTooShort;
     }
@@ -183,7 +183,7 @@ void encode(cl::BeaconBlockHeader& from, Bytes& to) noexcept {
 }
 
 template <>
-DecodingResult decode(ByteView& from, cl::BeaconBlockHeader& to) noexcept {
+DecodingResult decode(ByteView from, cl::BeaconBlockHeader& to) noexcept {
     if (from.size() < cl::BeaconBlockHeader::kSize) {
         return DecodingResult::kInputTooShort;
     }
@@ -216,7 +216,7 @@ void encode(cl::SignedBeaconBlockHeader& from, Bytes& to) noexcept {
 }
 
 template <>
-DecodingResult decode(ByteView& from, cl::SignedBeaconBlockHeader& to) noexcept {
+DecodingResult decode(ByteView from, cl::SignedBeaconBlockHeader& to) noexcept {
     if (from.size() < cl::SignedBeaconBlockHeader::kSize) {
         return DecodingResult::kInputTooShort;
     }
@@ -245,7 +245,7 @@ void encode(cl::IndexedAttestation& from, Bytes& to) noexcept {
 }
 
 template <>
-DecodingResult decode(ByteView& from, cl::IndexedAttestation& to) noexcept {
+DecodingResult decode(ByteView from, cl::IndexedAttestation& to) noexcept {
     const auto size = from.size();
 
     if (from.size() < cl::IndexedAttestation::kMinSize) {
@@ -293,7 +293,7 @@ void encode(cl::ProposerSlashing& from, Bytes& to) noexcept {
 }
 
 template <>
-DecodingResult decode(ByteView& from, cl::ProposerSlashing& /*to*/) noexcept {
+DecodingResult decode(ByteView from, cl::ProposerSlashing& /*to*/) noexcept {
     if (from.size() < cl::ProposerSlashing::kSize) {
         return DecodingResult::kInputTooShort;
     }

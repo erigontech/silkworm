@@ -36,12 +36,18 @@ if(NOT SILKWORM_CORE_ONLY)
   endif()
   target_link_libraries(node_test silkworm_node Catch2::Catch2)
 
-  # Ethereum Consensus Tests
   hunter_add_package(CLI11)
   find_package(CLI11 CONFIG REQUIRED)
+
+  # Ethereum 1.0 Consensus Tests
   add_executable(consensus consensus.cpp)
   target_compile_definitions(consensus PRIVATE SILKWORM_CONSENSUS_TEST_DIR="${CMAKE_SOURCE_DIR}/third_party/tests")
   target_link_libraries(consensus PRIVATE silkworm_node evmc::loader CLI11::CLI11)
+
+  # Ethereum 2.0 Beacon Consensus Tests
+  add_executable(consensus_eth2 consensus_eth2.cpp)
+  target_compile_definitions(consensus_eth2 PRIVATE SILKWORM_CONSENSUS_ETH2_TEST_DIR="${CMAKE_SOURCE_DIR}/third_party/consensus-spec-tests/tests")
+  target_link_libraries(consensus_eth2 PRIVATE silkworm_node silkworm_lightclient evmc::loader CLI11::CLI11)
 
   # BE&KV Tests
   add_executable(backend_kv_test backend_kv_test.cpp)

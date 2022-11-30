@@ -74,22 +74,19 @@ struct TestRunner {
     std::map<std::string, TestHandler> handlers_;
 };
 
-TestStatus test_attestation_data(ByteView serialized) {
-    SILK_DEBUG << "serialized: " << silkworm::to_hex(serialized);
-    Bytes decompressed = snappy::decompress(serialized);
-    cl::AttestationData attestation_data;
-    const DecodingResult result = ssz::decode(decompressed, attestation_data);
-    SILK_DEBUG << "result: " << magic_enum::enum_name(result);
-    return result == DecodingResult::kOk ? TestStatus::kPassed : TestStatus::kFailed;
-}
-
 struct SszStaticTestRunner : public TestRunner {
     static inline const char* kRoots{"roots.yaml"};
     static inline const char* kSerialized{"serialized.ssz_snappy"};
     static inline const char* kValue{"value.yaml"};
 
     explicit SszStaticTestRunner() {
-        handlers_.emplace("AttestationData", test_attestation_data);
+        handlers_.emplace("AttestationData", decode_test<cl::AttestationData>);
+        handlers_.emplace("BeaconBlockHeader", decode_test<cl::BeaconBlockHeader>);
+        handlers_.emplace("Checkpoint", decode_test<cl::Checkpoint>);
+        handlers_.emplace("Eth1Data", decode_test<cl::Eth1Data>);
+        handlers_.emplace("IndexedAttestation", decode_test<cl::IndexedAttestation>);
+        handlers_.emplace("ProposerSlashing", decode_test<cl::ProposerSlashing>);
+        handlers_.emplace("SignedBeaconBlockHeader", decode_test<cl::SignedBeaconBlockHeader>);
     }
 
     void run(const fs::path& test_case_dir) const override {
@@ -106,8 +103,9 @@ struct SszStaticTestRunner : public TestRunner {
         SILK_DEBUG << "test: handler=" << test_handler << " suite=" << test_suite << " case=" << test_case;
         auto test_handler_it = handlers_.find(test_handler);
         if (test_handler_it != handlers_.cend()) {
+            TestHandler test_handler_func = test_handler_it->second;
             SILK_DEBUG << "test: handler=" << test_handler << " suite=" << test_suite << " case=" << test_case;
-            const TestStatus status = test_handler_it->second(serialized);
+            const TestStatus status = test_handler_func(serialized);
             switch (status) {
                 case TestStatus::kPassed:
                     total_passed++;
@@ -120,6 +118,17 @@ struct SszStaticTestRunner : public TestRunner {
                     break;
             }
         }
+    }
+
+  private:
+    template <class T>
+    static TestStatus decode_test(ByteView serialized) {
+        SILK_DEBUG << "serialized: " << silkworm::to_hex(serialized);
+        Bytes decompressed = snappy::decompress(serialized);
+        T data;
+        const DecodingResult result = ssz::decode<T>(decompressed, data);
+        SILK_DEBUG << "result: " << magic_enum::enum_name(result);
+        return result == DecodingResult::kOk ? TestStatus::kPassed : TestStatus::kFailed;
     }
 };
 

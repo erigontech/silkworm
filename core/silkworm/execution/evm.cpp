@@ -130,17 +130,11 @@ evmc::Result EVM::create(const evmc_message& message) noexcept {
         return res;
     }
 
-    const evmc_revision rev{revision()};
-    // EIP-3860: Limit and meter initcode
-    if (rev >= EVMC_SHANGHAI && message.input_size > param::kMaxInitCodeSize) {
-        res.status_code = EVMC_ARGUMENT_OUT_OF_RANGE;
-        return res;
-    }
-
     auto snapshot{state_.take_snapshot()};
 
     state_.create_contract(contract_addr);
 
+    const evmc_revision rev{revision()};
     if (rev >= EVMC_SPURIOUS_DRAGON) {
         state_.set_nonce(contract_addr, 1);
     }

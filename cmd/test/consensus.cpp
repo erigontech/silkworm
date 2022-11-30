@@ -197,29 +197,8 @@ static const std::map<std::string, ChainConfig> kNetworkConfig{
          .gray_glacier_block = 0,
          .terminal_total_difficulty = 0,
      }},
-    {"Merge+3860",  // Shanghai actually
-     {
-         .chain_id = 1,
-         .seal_engine = SealEngineType::kNoProof,
-         .evmc_fork_blocks =
-             {
-                 0,  // Homestead
-                 0,  // Tangerine Whistle
-                 0,  // Spurious Dragon
-                 0,  // Byzantium
-                 0,  // Constantinople
-                 0,  // Petersburg
-                 0,  // Istanbul
-                 0,  // Berlin
-                 0,  // London
-                 0,  // Merge Netsplit (FORK_NEXT_VALUE)
-                 0,  // Shanghai
-             },
-         .muir_glacier_block = 0,
-         .arrow_glacier_block = 0,
-         .gray_glacier_block = 0,
-         .terminal_total_difficulty = 0,
-     }},
+    {"Merge+3855", test::kShanghaiConfig},
+    {"Merge+3860", test::kShanghaiConfig},
     {"ArrowGlacierToMergeAtDiffC0000",
      {
          .chain_id = 1,

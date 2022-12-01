@@ -155,8 +155,11 @@ struct SszStaticTestRunner : public TestRunner {
         }
         Bytes serialized_output = snappy::compress(uncompressed_output);
         SILK_DEBUG << "serialized_output: " << silkworm::to_hex(serialized_output);
-        return serialized_output == serialized_input ? TestStatus::kPassed :
-                                                     (skip_snappy_fail_ ? TestStatus::kSkipped : TestStatus::kFailed);
+        if (serialized_output == serialized_input) {
+            return TestStatus::kPassed;
+        } else {
+            return skip_snappy_fail_ ? TestStatus::kSkipped : TestStatus::kFailed;
+        }
     }
 };
 

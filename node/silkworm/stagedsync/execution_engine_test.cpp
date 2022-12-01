@@ -30,44 +30,42 @@ limitations under the License.
 
 namespace silkworm {
 
-class ExecutionEngine_ForTest: public stagedsync::ExecutionEngine {
+class ExecutionEngine_ForTest : public stagedsync::ExecutionEngine {
   public:
-    using stagedsync::ExecutionEngine::ExecutionEngine;
-    using stagedsync::ExecutionEngine::CanonicalChain;
     using stagedsync::ExecutionEngine::canonical_chain_;
+    using stagedsync::ExecutionEngine::CanonicalChain;
+    using stagedsync::ExecutionEngine::ExecutionEngine;
+    using stagedsync::ExecutionEngine::tx_;
 };
 
 TEST_CASE("ExecutionEngine") {
-    bool with_create_tables = true, inmemory = true, start_a_tx = false;
-    test::Context context{with_create_tables, inmemory, start_a_tx};
-    db::RWAccess db_access{context.env()};
-
-    bool allow_exceptions = false;
+    test::Context context;
 
     auto chain_config = *context.node_settings().chain_config;
     chain_config.genesis_hash.emplace(kMainnetGenesisHash);
 
-    {
-        auto txn = db_access.start_rw_tx();
-        auto source_data = silkworm::read_genesis_data(chain_config.chain_id);
-        auto genesis_json = nlohmann::json::parse(source_data, nullptr, allow_exceptions);
-        db::initialize_genesis(txn, genesis_json, allow_exceptions);
-        txn.commit();
-    }
+    bool allow_exceptions = false;
+    auto source_data = silkworm::read_genesis_data(chain_config.chain_id);
+    auto genesis_json = nlohmann::json::parse(source_data, nullptr, allow_exceptions);
+    db::initialize_genesis(context.txn(), genesis_json, allow_exceptions);
+    context.commit_txn();
 
+    db::RWAccess db_access{context.env()};
     ExecutionEngine_ForTest execution_engine{context.node_settings(), db_access};
+
+    auto& tx = execution_engine.tx_;  // mdbx refuses to open a ROTxn when there is a RWTxn in the same thread
+
     using ValidChain = stagedsync::ExecutionEngine::ValidChain;
-    using InvalidChain = stagedsync::ExecutionEngine::InvalidChain;
+    // using InvalidChain = stagedsync::ExecutionEngine::InvalidChain;
 
     /* status:
      *         h0
      * input:
      *         h0 <----- h1
      */
-    SECTION("one invalid body after the genesis") {
-/*
-        db::ROTxn tx(context.env());
 
+    SECTION("one invalid body after the genesis") {
+        /*
         auto header0_hash = db::read_canonical_hash(tx, 0);
         REQUIRE(header0_hash.has_value());
 
@@ -145,12 +143,10 @@ TEST_CASE("ExecutionEngine") {
         REQUIRE(final_canonical_head == initial_canonical_head);
         REQUIRE(execution_engine.canonical_chain_.current_head().number == initial_headers_head_height);
         REQUIRE(execution_engine.canonical_chain_.current_head().hash == initial_headers_head_hash);
-*/
+        */
     }
 
     SECTION("one valid body after the genesis") {
-        db::ROTxn tx(context.env());
-
         auto header0_hash = db::read_canonical_hash(tx, 0);
         REQUIRE(header0_hash.has_value());
 
@@ -178,12 +174,14 @@ TEST_CASE("ExecutionEngine") {
         REQUIRE(decoding_result == DecodingResult::kOk);
 
         // getting initial status
-        auto [initial_headers_head_height, initial_headers_head_hash, initial_headers_head_td] = execution_engine.get_headers_head();
+        auto [initial_headers_head_height, initial_headers_head_hash, initial_headers_head_td] =
+            execution_engine.get_headers_head();
         REQUIRE(initial_headers_head_height == 0);
         REQUIRE(initial_headers_head_hash == *header0_hash);
         REQUIRE(initial_headers_head_td == header0->difficulty);
 
-        auto [initial_bodies_head_height, initial_head_bodies_hash] = execution_engine.get_bodies_head();
+        auto [initial_bodies_head_height, initial_head_bodies_hash] =
+            execution_engine.get_bodies_head();
         REQUIRE(initial_bodies_head_height == 0);
         REQUIRE(initial_head_bodies_hash == *header0_hash);
 
@@ -203,7 +201,8 @@ TEST_CASE("ExecutionEngine") {
         REQUIRE(valid_chain.current_point == 0);
 
         // check status
-        auto [final_headers_head_height, final_headers_head_hash, final_headers_head_td] = execution_engine.get_headers_head();
+        auto [final_headers_head_height, final_headers_head_hash, final_headers_head_td] =
+            execution_engine.get_headers_head();
         REQUIRE(final_headers_head_height == block1.header.number);
         REQUIRE(final_headers_head_hash == block1.header.hash());
         REQUIRE(final_headers_head_td > initial_headers_head_td);

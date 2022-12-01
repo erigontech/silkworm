@@ -59,6 +59,9 @@ enum class TestStatus {
 using TestHandler = std::function<TestStatus(ByteView)>;
 
 struct TestRunner {
+    static void set_stop_at_fail(bool stop_at_fail) { stop_at_fail_ = stop_at_fail; }
+    static void set_skip_snappy_fail(bool skip_snappy_fail) { skip_snappy_fail_ = skip_snappy_fail; }
+
     virtual ~TestRunner() = default;
 
     virtual void run(const fs::path& test_case_dir) const = 0;
@@ -71,8 +74,14 @@ struct TestRunner {
         return {std::istreambuf_iterator<char>(ifs), std::istreambuf_iterator<char>()};
     }
 
+    static bool stop_at_fail_;
+    static bool skip_snappy_fail_;
+
     std::map<std::string, TestHandler> handlers_;
 };
+
+bool TestRunner::stop_at_fail_{false};
+bool TestRunner::skip_snappy_fail_{true};
 
 struct SszStaticTestRunner : public TestRunner {
     static inline const char* kRoots{"roots.yaml"};
@@ -80,13 +89,14 @@ struct SszStaticTestRunner : public TestRunner {
     static inline const char* kValue{"value.yaml"};
 
     explicit SszStaticTestRunner() {
-        handlers_.emplace("AttestationData", decode_test<cl::AttestationData>);
-        handlers_.emplace("BeaconBlockHeader", decode_test<cl::BeaconBlockHeader>);
-        handlers_.emplace("Checkpoint", decode_test<cl::Checkpoint>);
-        handlers_.emplace("Eth1Data", decode_test<cl::Eth1Data>);
-        handlers_.emplace("IndexedAttestation", decode_test<cl::IndexedAttestation>);
-        handlers_.emplace("ProposerSlashing", decode_test<cl::ProposerSlashing>);
-        handlers_.emplace("SignedBeaconBlockHeader", decode_test<cl::SignedBeaconBlockHeader>);
+        handlers_.emplace("AttestationData", round_trip<cl::AttestationData>);
+        // handlers_.emplace("AttesterSlashing", round_trip<cl::AttesterSlashing>);
+        handlers_.emplace("BeaconBlockHeader", round_trip<cl::BeaconBlockHeader>);
+        handlers_.emplace("Checkpoint", round_trip<cl::Checkpoint>);
+        handlers_.emplace("Eth1Data", round_trip<cl::Eth1Data>);
+        handlers_.emplace("IndexedAttestation", round_trip<cl::IndexedAttestation>);
+        handlers_.emplace("ProposerSlashing", round_trip<cl::ProposerSlashing>);
+        handlers_.emplace("SignedBeaconBlockHeader", round_trip<cl::SignedBeaconBlockHeader>);
     }
 
     void run(const fs::path& test_case_dir) const override {
@@ -112,6 +122,10 @@ struct SszStaticTestRunner : public TestRunner {
                     break;
                 case TestStatus::kFailed:
                     total_failed++;
+                    if (stop_at_fail_) {
+                        const auto err{test_handler + "_" + test_suite + "_" + test_case};
+                        throw std::logic_error{"first test failed: " + err};
+                    }
                     break;
                 case TestStatus::kSkipped:
                     total_skipped++;
@@ -122,13 +136,27 @@ struct SszStaticTestRunner : public TestRunner {
 
   private:
     template <class T>
-    static TestStatus decode_test(ByteView serialized) {
-        SILK_DEBUG << "serialized: " << silkworm::to_hex(serialized);
-        Bytes decompressed = snappy::decompress(serialized);
+    static TestStatus round_trip(ByteView serialized_input) {
+        SILK_DEBUG << "serialized_input: " << silkworm::to_hex(serialized_input);
+        Bytes uncompressed_input = snappy::decompress(serialized_input);
+        SILK_DEBUG << "uncompressed_input: " << silkworm::to_hex(uncompressed_input);
         T data;
-        const DecodingResult result = ssz::decode<T>(decompressed, data);
+        ByteView uncompressed_input_view{uncompressed_input};
+        const DecodingResult result = ssz::decode<T>(uncompressed_input_view, data);
         SILK_DEBUG << "result: " << magic_enum::enum_name(result);
-        return result == DecodingResult::kOk ? TestStatus::kPassed : TestStatus::kFailed;
+        if (result != DecodingResult::kOk) {
+            return TestStatus::kFailed;
+        }
+        Bytes uncompressed_output;
+        ssz::encode<T>(data, uncompressed_output);
+        SILK_DEBUG << "uncompressed_output: " << silkworm::to_hex(uncompressed_output);
+        if (uncompressed_output != uncompressed_input) {
+            return TestStatus::kFailed;
+        }
+        Bytes serialized_output = snappy::compress(uncompressed_output);
+        SILK_DEBUG << "serialized_output: " << silkworm::to_hex(serialized_output);
+        return serialized_output == serialized_input ? TestStatus::kPassed :
+                                                     (skip_snappy_fail_ ? TestStatus::kSkipped : TestStatus::kFailed);
     }
 };
 
@@ -177,10 +205,15 @@ int main(int argc, char* argv[]) {
         ->check(CLI::ExistingDirectory);
     unsigned int num_threads{std::thread::hardware_concurrency()};
     app.add_option("--threads", num_threads, "Number of parallel threads")->capture_default_str();
-    bool include_slow_tests{false};
-    app.add_flag("--slow", include_slow_tests, "Run slow tests");
+    bool stop_at_fail{false};
+    app.add_flag("--stop_at_fail", stop_at_fail, "Stop at first test failure");
+    bool skip_snappy_fail{true};
+    app.add_flag("--skip_snappy_fail", skip_snappy_fail, "Skip failures due to Snappy round-trip mismatches");
+    std::string test;
+    app.add_option("--test", test, "Execute single test: <handler>#<suite>#<case>")
+        ->capture_default_str();
 
-    CLI11_PARSE(app, argc, argv);
+    CLI11_PARSE(app, argc, argv)
     init_terminal();
 
     size_t stack_size{40 * kMebi};
@@ -193,6 +226,9 @@ int main(int argc, char* argv[]) {
     static const std::vector<fs::path> kTestConfigs{
         kMinimalTestConfigDir,
     };
+
+    TestRunner::set_stop_at_fail(stop_at_fail);
+    TestRunner::set_skip_snappy_fail(skip_snappy_fail);
 
     std::map<std::string, std::unique_ptr<TestRunner>> test_runners;
     test_runners.emplace(kSszStatic, std::make_unique<SszStaticTestRunner>());

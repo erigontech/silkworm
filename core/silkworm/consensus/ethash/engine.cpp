@@ -37,7 +37,7 @@ void EthashEngine::finalize(IntraBlockState& state, const Block& block, const ev
     for (const BlockHeader& ommer : block.ommers) {
         const intx::uint256 ommer_reward{((8 + ommer.number - block_number) * block_reward) >> 3};
         state.add_to_balance(ommer.beneficiary, ommer_reward);
-        miner_reward += block_reward >> 5;  // ÷32
+        miner_reward += block_reward >> 5;  // div 32
     }
 
     state.add_to_balance(block.header.beneficiary, miner_reward);

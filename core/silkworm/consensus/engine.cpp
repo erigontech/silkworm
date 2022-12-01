@@ -79,7 +79,8 @@ ValidationResult pre_validate_transaction(const Transaction& txn, uint64_t block
     }
 
     // EIP-3860: Limit and meter initcode
-    if (rev >= EVMC_SHANGHAI && !txn.to && txn.data.size() > param::kMaxInitCodeSize) {
+    const bool contract_creation{!txn.to};
+    if (rev >= EVMC_SHANGHAI && contract_creation && txn.data.size() > param::kMaxInitCodeSize) {
         return ValidationResult::kMaxInitCodeSizeExceeded;
     }
 

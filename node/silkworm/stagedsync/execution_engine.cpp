@@ -183,17 +183,14 @@ auto ExecutionEngine::verify_chain(Hash header_hash) -> VerificationResult {
 
     // db commit policy
     bool cycle_in_one_tx = !is_first_sync || header->number - canonical_chain_.current_head().number > 4096;
-    std::unique_ptr<db::RWTxn> inner_tx{nullptr};
-    if (cycle_in_one_tx)
-        inner_tx = std::make_unique<db::RWTxn>(*tx_);  // will defer commit to the tx
-    else
-        inner_tx = std::make_unique<db::RWTxn>(*db_access_);
+    if (!cycle_in_one_tx)
+        tx_.commit_reserved(true);
 
     // the new head is on a new fork?
-    BlockNum forking_point = canonical_chain_.find_forking_point(*inner_tx, header_hash);  // the forking origin
+    BlockNum forking_point = canonical_chain_.find_forking_point(tx_, header_hash);  // the forking origin
     if (forking_point < canonical_chain_.current_head().number) {  // if the forking is behind the current head
         // we need to do unwind to change canonical
-        auto unwind_result = pipeline_.unwind(*inner_tx, forking_point);
+        auto unwind_result = pipeline_.unwind(tx_, forking_point);
         success_or_throw(unwind_result);  // unwind must complete with success
         // remove last part of canonical
         canonical_chain_.delete_down_to(forking_point);
@@ -203,7 +200,7 @@ auto ExecutionEngine::verify_chain(Hash header_hash) -> VerificationResult {
     canonical_chain_.update_up_to(header->number, header_hash);
 
     // forward
-    Stage::Result forward_result = pipeline_.forward(*inner_tx, header->number);
+    Stage::Result forward_result = pipeline_.forward(tx_, header->number);
 
     // evaluate result
     VerificationResult verify_result;
@@ -224,7 +221,7 @@ auto ExecutionEngine::verify_chain(Hash header_hash) -> VerificationResult {
             invalid_chain.unwind_head = *canonical_chain_.get_hash(*pipeline_.unwind_point());
             if (pipeline_.bad_block()) {
                 invalid_chain.bad_block = pipeline_.bad_block();
-                invalid_chain.bad_headers = collect_bad_headers(*inner_tx, invalid_chain);
+                invalid_chain.bad_headers = collect_bad_headers(tx_, invalid_chain);
             }
             verify_result = invalid_chain;
             break;
@@ -237,6 +234,7 @@ auto ExecutionEngine::verify_chain(Hash header_hash) -> VerificationResult {
     }
 
     // finish
+    tx_.commit_reserved(false);
     tx_.commit_and_renew();  // todo for PoS: do nothing, wait update_fork_choice to persist the correct overlay
     return verify_result;
 }
@@ -245,18 +243,16 @@ bool ExecutionEngine::update_fork_choice(Hash header_hash) {
     // db commit policy
     bool cycle_in_one_tx = !is_first_sync;
     std::unique_ptr<db::RWTxn> inner_tx{nullptr};
-    if (cycle_in_one_tx)
-        inner_tx = std::make_unique<db::RWTxn>(*tx_);  // will defer commit to the tx
-    else
-        inner_tx = std::make_unique<db::RWTxn>(*db_access_);
+    if (!cycle_in_one_tx)
+        tx_.commit_reserved(true);
 
     if (canonical_chain_.current_head().hash != header_hash) {  // todo for PoS: choose the corresponding overlay and do commit
         // usually update_fork_choice must follow verify_chain with the same header
         // except when verify_chain returned InvalidChain, so we need to do an unwind
 
-        BlockNum forking_point = canonical_chain_.find_forking_point(*inner_tx, header_hash);  // the forking origin on the canonical
+        BlockNum forking_point = canonical_chain_.find_forking_point(tx_, header_hash);  // the forking origin on the canonical
 
-        auto unwind_result = pipeline_.unwind(*inner_tx, forking_point);
+        auto unwind_result = pipeline_.unwind(tx_, forking_point);
         success_or_throw(unwind_result);  // unwind must complete with success
 
         // remove last part of canonical
@@ -266,6 +262,7 @@ bool ExecutionEngine::update_fork_choice(Hash header_hash) {
     is_first_sync = false;
 
     // finish
+    tx_.commit_reserved(false);
     tx_.commit_and_renew();  // todo for PoS: commit the correct shard and discard the others
 
     return true;

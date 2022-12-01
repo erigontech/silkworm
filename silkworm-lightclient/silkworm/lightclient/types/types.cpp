@@ -82,6 +82,16 @@ bool operator==(const ProposerSlashing& lhs, const ProposerSlashing& rhs) {
     return true;
 }
 
+bool operator==(const AttesterSlashing& lhs, const AttesterSlashing& rhs) {
+    if (!lhs.attestation1 && rhs.attestation1) return false;
+    if (lhs.attestation1 && !rhs.attestation1) return false;
+    if (lhs.attestation1 && rhs.attestation1 && *lhs.attestation1 != *rhs.attestation1) return false;
+    if (!lhs.attestation2 && rhs.attestation2) return false;
+    if (lhs.attestation2 && !rhs.attestation2) return false;
+    if (lhs.attestation2 && rhs.attestation2 && *lhs.attestation2 != *rhs.attestation2) return false;
+    return true;
+}
+
 }  // namespace silkworm::cl
 
 namespace silkworm::ssz {
@@ -94,7 +104,7 @@ void encode(cl::Eth1Data& from, Bytes& to) noexcept {
 }
 
 template <>
-DecodingResult decode(ByteView from, cl::Eth1Data& to) noexcept {
+DecodingResult decode(ByteView& from, cl::Eth1Data& to) noexcept {
     if (from.size() < cl::Eth1Data::kSize) {
         return DecodingResult::kInputTooShort;
     }
@@ -118,7 +128,7 @@ void encode(cl::Checkpoint& from, Bytes& to) noexcept {
 }
 
 template <>
-DecodingResult decode(ByteView from, cl::Checkpoint& to) noexcept {
+DecodingResult decode(ByteView& from, cl::Checkpoint& to) noexcept {
     if (from.size() < cl::Checkpoint::kSize) {
         return DecodingResult::kInputTooShort;
     }
@@ -148,7 +158,7 @@ void encode(cl::AttestationData& from, Bytes& to) noexcept {
 }
 
 template <>
-DecodingResult decode(ByteView from, cl::AttestationData& to) noexcept {
+DecodingResult decode(ByteView& from, cl::AttestationData& to) noexcept {
     if (from.size() < cl::AttestationData::kSize) {
         return DecodingResult::kInputTooShort;
     }
@@ -183,7 +193,7 @@ void encode(cl::BeaconBlockHeader& from, Bytes& to) noexcept {
 }
 
 template <>
-DecodingResult decode(ByteView from, cl::BeaconBlockHeader& to) noexcept {
+DecodingResult decode(ByteView& from, cl::BeaconBlockHeader& to) noexcept {
     if (from.size() < cl::BeaconBlockHeader::kSize) {
         return DecodingResult::kInputTooShort;
     }
@@ -216,7 +226,7 @@ void encode(cl::SignedBeaconBlockHeader& from, Bytes& to) noexcept {
 }
 
 template <>
-DecodingResult decode(ByteView from, cl::SignedBeaconBlockHeader& to) noexcept {
+DecodingResult decode(ByteView& from, cl::SignedBeaconBlockHeader& to) noexcept {
     if (from.size() < cl::SignedBeaconBlockHeader::kSize) {
         return DecodingResult::kInputTooShort;
     }
@@ -245,9 +255,8 @@ void encode(cl::IndexedAttestation& from, Bytes& to) noexcept {
 }
 
 template <>
-DecodingResult decode(ByteView from, cl::IndexedAttestation& to) noexcept {
+DecodingResult decode(ByteView& from, cl::IndexedAttestation& to) noexcept {
     const auto size = from.size();
-
     if (from.size() < cl::IndexedAttestation::kMinSize) {
         return DecodingResult::kInputTooShort;
     }
@@ -293,9 +302,75 @@ void encode(cl::ProposerSlashing& from, Bytes& to) noexcept {
 }
 
 template <>
-DecodingResult decode(ByteView from, cl::ProposerSlashing& /*to*/) noexcept {
+DecodingResult decode(ByteView& from, cl::ProposerSlashing& to) noexcept {
     if (from.size() < cl::ProposerSlashing::kSize) {
         return DecodingResult::kInputTooShort;
+    }
+
+    to.header1 = std::make_shared<cl::SignedBeaconBlockHeader>();
+    if (DecodingResult err{ssz::decode(from, *to.header1)}; err != DecodingResult::kOk) {
+        return err;
+    }
+    to.header2 = std::make_shared<cl::SignedBeaconBlockHeader>();
+    if (DecodingResult err{ssz::decode(from, *to.header2)}; err != DecodingResult::kOk) {
+        return err;
+    }
+
+    return DecodingResult::kOk;
+}
+
+template <>
+void encode(cl::AttesterSlashing& from, Bytes& to) noexcept {
+    std::size_t offset = cl::AttesterSlashing::kMinSize;
+    ssz::encode_offset(offset, to);
+
+    if (!from.attestation1) {
+        from.attestation1 = std::make_shared<cl::IndexedAttestation>();
+    }
+    offset += from.attestation1->size();
+    ssz::encode_offset(offset, to);
+
+    if (!from.attestation2) {
+        from.attestation2 = std::make_shared<cl::IndexedAttestation>();
+    }
+
+    ssz::encode(*from.attestation1, to);
+    ssz::encode(*from.attestation2, to);
+}
+
+template <>
+DecodingResult decode(ByteView& from, cl::AttesterSlashing& to) noexcept {
+    const auto size = from.size();
+    if (size < cl::AttesterSlashing::kMinSize) {
+        return DecodingResult::kInputTooShort;
+    }
+    if (size > cl::AttesterSlashing::kMaxSize) {
+        return DecodingResult::kUnexpectedLength;
+    }
+
+    uint32_t offset0{0};
+    if (DecodingResult err{ssz::decode_offset(from, offset0)}; err != DecodingResult::kOk) {
+        return err;
+    }
+    if (offset0 < cl::AttesterSlashing::kMinSize || offset0 > size) {
+        return DecodingResult::kUnexpectedLength;
+    }
+
+    uint32_t offset1{0};
+    if (DecodingResult err{ssz::decode_offset(from, offset1)}; err != DecodingResult::kOk) {
+        return err;
+    }
+    if (offset1 < offset0 || offset1 > size) {
+        return DecodingResult::kUnexpectedLength;
+    }
+
+    to.attestation1 = std::make_shared<cl::IndexedAttestation>();
+    if (DecodingResult err{ssz::decode(from, *to.attestation1)}; err != DecodingResult::kOk) {
+        return err;
+    }
+    to.attestation2 = std::make_shared<cl::IndexedAttestation>();
+    if (DecodingResult err{ssz::decode(from, *to.attestation2)}; err != DecodingResult::kOk) {
+        return err;
     }
 
     return DecodingResult::kOk;

@@ -95,6 +95,8 @@ struct IndexedAttestation {
     static constexpr std::size_t kMaxAttestingIndices{2048};
     static constexpr std::size_t kMinSize{AttestationData::kSize + kSignatureSize + sizeof(uint32_t)};
     static constexpr std::size_t kMaxSize{kMinSize + kMaxAttestingIndices * sizeof(uint64_t)};
+
+    [[nodiscard]] std::size_t size() const { return kMinSize + 8 * attesting_indices.size(); }
 };
 
 bool operator==(const IndexedAttestation& lhs, const IndexedAttestation& rhs);
@@ -109,6 +111,17 @@ struct ProposerSlashing {
 
 bool operator==(const ProposerSlashing& lhs, const ProposerSlashing& rhs);
 
+//! Slashing data for attester needs to provide valid duplicates as proof
+struct AttesterSlashing {
+    std::shared_ptr<IndexedAttestation> attestation1;
+    std::shared_ptr<IndexedAttestation> attestation2;
+
+    static constexpr std::size_t kMinSize{8};
+    static constexpr std::size_t kMaxSize{2 * IndexedAttestation::kMaxSize};
+};
+
+bool operator==(const AttesterSlashing& lhs, const AttesterSlashing& rhs);
+
 }  // namespace silkworm::cl
 
 namespace silkworm::ssz {
@@ -117,42 +130,48 @@ template <>
 void encode(cl::Eth1Data& from, Bytes& to) noexcept;
 
 template <>
-DecodingResult decode(ByteView from, cl::Eth1Data& to) noexcept;
+DecodingResult decode(ByteView& from, cl::Eth1Data& to) noexcept;
 
 template <>
 void encode(cl::Checkpoint& from, Bytes& to) noexcept;
 
 template <>
-DecodingResult decode(ByteView from, cl::Checkpoint& to) noexcept;
+DecodingResult decode(ByteView& from, cl::Checkpoint& to) noexcept;
 
 template <>
 void encode(cl::AttestationData& from, Bytes& to) noexcept;
 
 template <>
-DecodingResult decode(ByteView from, cl::AttestationData& to) noexcept;
+DecodingResult decode(ByteView& from, cl::AttestationData& to) noexcept;
 
 template <>
 void encode(cl::BeaconBlockHeader& from, Bytes& to) noexcept;
 
 template <>
-DecodingResult decode(ByteView from, cl::BeaconBlockHeader& to) noexcept;
+DecodingResult decode(ByteView& from, cl::BeaconBlockHeader& to) noexcept;
 
 template <>
 void encode(cl::SignedBeaconBlockHeader& from, Bytes& to) noexcept;
 
 template <>
-DecodingResult decode(ByteView from, cl::SignedBeaconBlockHeader& to) noexcept;
+DecodingResult decode(ByteView& from, cl::SignedBeaconBlockHeader& to) noexcept;
 
 template <>
 void encode(cl::IndexedAttestation& from, Bytes& to) noexcept;
 
 template <>
-DecodingResult decode(ByteView from, cl::IndexedAttestation& to) noexcept;
+DecodingResult decode(ByteView& from, cl::IndexedAttestation& to) noexcept;
 
 template <>
 void encode(cl::ProposerSlashing& from, Bytes& to) noexcept;
 
 template <>
-DecodingResult decode(ByteView from, cl::ProposerSlashing& to) noexcept;
+DecodingResult decode(ByteView& from, cl::ProposerSlashing& to) noexcept;
+
+template <>
+void encode(cl::AttesterSlashing& from, Bytes& to) noexcept;
+
+template <>
+DecodingResult decode(ByteView& from, cl::AttesterSlashing& to) noexcept;
 
 }  // namespace silkworm::ssz

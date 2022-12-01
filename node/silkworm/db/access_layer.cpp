@@ -237,7 +237,7 @@ std::tuple<BlockNum, evmc::bytes32> read_canonical_head(mdbx::txn& txn) {
     if (!data) return {};
     evmc::bytes32 hash{};
     std::memcpy(hash.bytes, data.value.data(), kHashLength);
-    BlockNum bn = data.key;
+    BlockNum bn = endian::load_big_u64(static_cast<const unsigned char*>(data.key.data()));
     return {bn, hash};
 }
 

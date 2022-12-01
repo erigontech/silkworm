@@ -36,18 +36,9 @@ class ExecutionEngine : public Stoppable {
     explicit ExecutionEngine(NodeSettings&, const db::RWAccess);
     ~ExecutionEngine() = default;
 
-    struct ValidChain {
-        BlockNum current_point;
-    };
-    struct InvalidChain {
-        BlockNum unwind_point;
-        Hash unwind_head;
-        std::optional<Hash> bad_block;
-        std::set<Hash> bad_headers;
-    };
-    struct ValidationError {
-        BlockNum last_point;
-    };
+    struct ValidChain {BlockNum current_point;};
+    struct InvalidChain {BlockNum unwind_point; Hash unwind_head; std::optional<Hash> bad_block; std::set<Hash> bad_headers;};
+    struct ValidationError {BlockNum last_point;};
     using VerificationResult = std::variant<ValidChain, InvalidChain, ValidationError>;
 
     // actions

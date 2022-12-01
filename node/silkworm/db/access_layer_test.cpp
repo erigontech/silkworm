@@ -444,6 +444,11 @@ namespace db {
         REQUIRE(db_hash.has_value());
         REQUIRE(memcmp(hash.bytes, db_hash.value().bytes, sizeof(hash)) == 0);
 
+        // Read canonical head
+        auto [head_block_num, head_hash] = read_canonical_head(txn);
+        REQUIRE(head_block_num == header.number);
+        REQUIRE(head_hash == header.hash());
+
         // Read non existent canonical header hash
         db_hash = read_canonical_header_hash(txn, block_num + 1);
         REQUIRE(db_hash.has_value() == false);
@@ -487,6 +492,10 @@ namespace db {
 
             CHECK(block.transactions[0].from == 0x5a0b54d5dc17e0aadc383d2db43b0a0d3e029c4c_address);
             CHECK(block.transactions[1].from == 0x941591b6ca8e8dd05c69efdec02b77c72dac1496_address);
+
+            auto [b, h] = split_block_key(key);
+            REQUIRE(b == header.number);
+            REQUIRE(h == header.hash());
         }
     }
 

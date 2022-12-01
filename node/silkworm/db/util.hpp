@@ -76,7 +76,7 @@ Bytes block_key(BlockNum block_number);
 // Erigon HeaderKey & BlockBodyKey
 Bytes block_key(BlockNum block_number, std::span<const uint8_t, kHashLength> hash);
 
-// Split and Erigon key in BlockNum and Hash
+// Split a block key in BlockNum and Hash
 auto split_block_key(ByteView key) -> std::tuple<BlockNum, evmc::bytes32>;
 
 Bytes storage_change_key(BlockNum block_number, const evmc::address& address, uint64_t incarnation);

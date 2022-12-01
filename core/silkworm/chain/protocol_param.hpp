@@ -26,6 +26,9 @@ namespace silkworm {
 // https://ethereum.github.io/yellowpaper/paper.pdf
 namespace fee {
 
+    inline constexpr uint64_t kAccessListStorageKeyCost{1'900};  // EIP-2930
+    inline constexpr uint64_t kAccessListAddressCost{2'400};     // EIP-2930
+
     inline constexpr uint64_t kGCodeDeposit{200};
 
     inline constexpr uint64_t kGTransaction{21'000};
@@ -34,12 +37,7 @@ namespace fee {
     inline constexpr uint64_t kGTxDataNonZeroFrontier{68};
     inline constexpr uint64_t kGTxDataNonZeroIstanbul{16};  // EIP-2028
 
-    // EIP-2930: Optional access lists
-    inline constexpr uint64_t kAccessListStorageKeyCost{1'900};
-    inline constexpr uint64_t kAccessListAddressCost{2'400};
-
-    // EIP-3860: Limit and meter initcode
-    inline constexpr uint64_t kInitCodeWordCost{2};
+    inline constexpr uint64_t kInitCodeWordCost{2};  // EIP-3860
 
 }  // namespace fee
 

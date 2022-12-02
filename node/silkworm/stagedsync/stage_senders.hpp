@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <memory>
 #include <mutex>
 #include <vector>
 
@@ -23,6 +24,8 @@
 #include <silkpre/ecdsa.h>
 
 #include <silkworm/common/base.hpp>
+#include <silkworm/concurrency/thread_pool.hpp>
+#include <silkworm/etl/collector.hpp>
 #include <silkworm/stagedsync/stage.hpp>
 
 namespace silkworm::stagedsync {
@@ -35,6 +38,8 @@ struct AddressRecovery {
     evmc::address tx_from;       // Recovered sender address
     Bytes rlp;                   // RLP representation of the transaction
 };
+
+using AddressRecoveryBatch = std::vector<AddressRecovery>;
 
 class Senders final : public Stage {
   public:
@@ -51,8 +56,10 @@ class Senders final : public Stage {
 
     Stage::Result read_canonical_hashes(db::ROTxn& txn, BlockNum from, BlockNum to) noexcept;
     Stage::Result add_to_batch(BlockNum block_num, std::vector<Transaction>&& transactions);
-    void recover_batch(secp256k1_context* context, BlockNum from, mdbx::cursor& senders_cursor);
-    void store_senders(BlockNum from, mdbx::cursor& senders_cursor);
+    void recover_batch(secp256k1_context* context, BlockNum from);
+    void collect_senders(BlockNum from);
+    void collect_senders(BlockNum from, std::shared_ptr<AddressRecoveryBatch>& batch);
+    void store_senders(db::RWTxn& txn);
 
     void increment_total_processed_blocks();
     void increment_total_collected_transactions(std::size_t delta);
@@ -64,7 +71,19 @@ class Senders final : public Stage {
     std::size_t max_batch_size_;
 
     //! The current recovery batch being created
-    std::vector<AddressRecovery> batch_;
+    std::shared_ptr<AddressRecoveryBatch> batch_;
+
+    //! The sequence of completed batch futures
+    std::vector<std::future<std::shared_ptr<AddressRecoveryBatch>>> results_;
+
+    //! The total count of collected senders
+    uint64_t collected_senders_{0};
+
+    //! ETL collector writing recovered senders in bulk
+    etl::Collector collector_;
+
+    //! The pool of worker thread crunching the address recovery tasks
+    thread_pool worker_pool_;
 
     // Stats
     std::mutex mutex_{};

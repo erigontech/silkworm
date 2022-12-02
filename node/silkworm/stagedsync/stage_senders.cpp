@@ -26,35 +26,15 @@
 #include <silkworm/common/stopwatch.hpp>
 #include <silkworm/db/access_layer.hpp>
 
-template <typename InputIt, typename UnaryFunction>
-void parallel_for_each(InputIt first, InputIt last, UnaryFunction f) {
-    const auto range = std::distance(first, last);
-
-    const auto num_threads = std::thread::hardware_concurrency();
-    const long tasks_for_thread = range / num_threads;
-    const long tasks_for_main_thread = tasks_for_thread + range % num_threads;
-
-    const std::size_t num_worker_threads = num_threads - 1;
-    std::vector<std::thread> worker_threads{num_worker_threads};
-    InputIt start{first};
-    for (std::size_t i{0}; i < num_worker_threads; ++i) {
-        worker_threads[i] = std::thread(std::for_each<InputIt, UnaryFunction>, start, start + tasks_for_thread, f);
-        start += tasks_for_thread;
-    }
-    std::for_each(start, start + tasks_for_main_thread, f);
-
-    for (auto& worker_thread : worker_threads) {
-        if (worker_thread.joinable()) worker_thread.join();
-    }
-}
-
 namespace silkworm::stagedsync {
 
 Senders::Senders(NodeSettings* node_settings, SyncContext* sync_context)
     : Stage(sync_context, db::stages::kSendersKey, node_settings),
-      max_batch_size_{node_settings->batch_size / sizeof(AddressRecovery)} {
+      max_batch_size_{node_settings->batch_size / sizeof(AddressRecovery)},
+      batch_{std::make_shared<std::vector<AddressRecovery>>()},
+      collector_{node_settings} {
     // Reserve more space than max size because we first add all txs in a block, then check batch size
-    batch_.reserve(max_batch_size_ + max_batch_size_ / 10);
+    batch_->reserve(max_batch_size_ + max_batch_size_ / 10);
 }
 
 Stage::Result Senders::forward(db::RWTxn& txn) {
@@ -290,9 +270,10 @@ Stage::Result Senders::parallel_recover(db::RWTxn& txn) {
 
         auto bodies_cursor{db::open_cursor(*txn, db::table::kBlockBodies)};
         auto transactions_cursor{db::open_cursor(*txn, db::table::kBlockTransactions)};
-        auto senders_cursor{db::open_cursor(*txn, db::table::kSenders)};
 
-        // Set to first block and read all in sequence
+        uint64_t total_collected_senders{0};
+
+        // Start from first block and read all in sequence
         BlockNum reached_block_num{0};
         BlockNum expected_block_num{from};
         auto block_hash_it{canonical_hashes_.begin()};
@@ -329,12 +310,13 @@ Stage::Result Senders::parallel_recover(db::RWTxn& txn) {
             if (block_body.txn_count) {
                 std::vector<Transaction> transactions;
                 db::read_transactions(transactions_cursor, block_body.base_txn_id, block_body.txn_count, transactions);
+                total_collected_senders += transactions.size();
                 success_or_throw(add_to_batch(reached_block_num, std::move(transactions)));
 
                 // Process batch in parallel if max size has been reached
-                if (batch_.size() >= max_batch_size_) {
-                    increment_total_collected_transactions(batch_.size());
-                    recover_batch(context, from, senders_cursor);
+                if (batch_->size() >= max_batch_size_) {
+                    increment_total_collected_transactions(batch_->size());
+                    recover_batch(context, from);
                 }
             }
 
@@ -348,10 +330,20 @@ Stage::Result Senders::parallel_recover(db::RWTxn& txn) {
         }
 
         // Recover last incomplete batch [likely]
-        if (!batch_.empty()) {
-            increment_total_collected_transactions(batch_.size());
-            recover_batch(context, from, senders_cursor);
+        if (!batch_->empty()) {
+            increment_total_collected_transactions(batch_->size());
+            recover_batch(context, from);
         }
+
+        // Wait for all senders to be recovered and collected in ETL
+        while (collected_senders_ != total_collected_senders) {
+            collect_senders(from);
+            std::this_thread::sleep_for(std::chrono::seconds(1));
+        }
+
+        // Store all recovered senders into db
+        log::Trace(log_prefix_, {"op", "store senders", "reached_block_num", std::to_string(reached_block_num)});
+        store_senders(txn);
 
         // Update stage progress with last reached block number
         db::stages::write_stage_progress(*txn, db::stages::kSendersKey, reached_block_num);
@@ -498,10 +490,10 @@ Stage::Result Senders::add_to_batch(BlockNum block_num, std::vector<Transaction>
         Bytes rlp{};
         rlp::encode(rlp, transaction, /*for_signing=*/true, /*wrap_eip2718_into_string=*/false);
 
-        batch_.push_back(AddressRecovery{block_num, transaction.odd_y_parity});
-        intx::be::unsafe::store(batch_.back().tx_signature, transaction.r);
-        intx::be::unsafe::store(batch_.back().tx_signature + kHashLength, transaction.s);
-        batch_.back().rlp = std::move(rlp);
+        batch_->push_back(AddressRecovery{block_num, transaction.odd_y_parity});
+        intx::be::unsafe::store(batch_->back().tx_signature, transaction.r);
+        intx::be::unsafe::store(batch_->back().tx_signature + kHashLength, transaction.s);
+        batch_->back().rlp = std::move(rlp);
 
         ++tx_id;
     }
@@ -510,45 +502,69 @@ Stage::Result Senders::add_to_batch(BlockNum block_num, std::vector<Transaction>
     return is_stopping() ? Stage::Result::kAborted : Stage::Result::kSuccess;
 }
 
-void Senders::recover_batch(secp256k1_context* context, BlockNum from, mdbx::cursor& senders_cursor) {
+void Senders::recover_batch(secp256k1_context* context, BlockNum from) {
     // Launch parallel senders recovery
-    log::Trace(log_prefix_, {"op", "recover_batch", "first", std::to_string(batch_.cbegin()->block_num)});
+    log::Trace(log_prefix_, {"op", "recover_batch", "first", std::to_string(batch_->cbegin()->block_num)});
 
     StopWatch sw;
     const auto start = sw.start();
-    // TODO(canepat) replace w/ std::for_each(std::execution::par, ...) when Clang will support parallel algorithms
-    parallel_for_each(batch_.begin(), batch_.end(), [&](auto& package) {
-        const auto tx_hash{keccak256(package.rlp)};
-        const bool ok = silkpre_recover_address(package.tx_from.bytes, tx_hash.bytes, package.tx_signature, package.odd_y_parity, context);
-        if (!ok) {
-            throw std::runtime_error("Unable to recover from address in block " + std::to_string(package.block_num));
-        }
+
+    // Wait until total unfinished tasks in worker pool falls below 2 * num workers
+    static const auto kMaxUnfinishedTasks{2 * worker_pool_.get_thread_count()};
+    while (worker_pool_.get_tasks_total() >= kMaxUnfinishedTasks) {
+        std::this_thread::sleep_for(std::chrono::seconds(1));
+    }
+
+    // Swap the waiting batch w/ an empty one and submit a new recovery task to the worker pool
+    std::shared_ptr<std::vector<AddressRecovery>> ready_batch{std::make_shared<std::vector<AddressRecovery>>()};
+    ready_batch->reserve(max_batch_size_ + max_batch_size_ / 10);
+    ready_batch.swap(batch_);
+    auto batch_result = worker_pool_.submit([=]() {
+        std::for_each(ready_batch->begin(), ready_batch->end(), [&](auto& package) {
+            const auto tx_hash{keccak256(package.rlp)};
+            const bool ok = silkpre_recover_address(package.tx_from.bytes, tx_hash.bytes, package.tx_signature, package.odd_y_parity, context);
+            if (!ok) {
+                throw std::runtime_error("Unable to recover from address in block " + std::to_string(package.block_num));
+            }
+        });
+        return ready_batch;
     });
+    results_.emplace_back(std::move(batch_result));
+
+    // Check completed batch of senders and collect them
+    collect_senders(from);
+
     const auto [end, _] = sw.lap();
-    log::Trace(log_prefix_, {"op", "parallel_for_each", "elapsed", sw.format(end - start)});
+    log::Trace(log_prefix_, {"op", "recover_batch", "elapsed", sw.format(end - start)});
 
     if (is_stopping()) throw StageError(Stage::Result::kAborted);
-
-    // Store recovered senders
-    store_senders(from, senders_cursor);
-
-    batch_.clear();
-    batch_.reserve(max_batch_size_ + max_batch_size_ / 10);
 }
 
-void Senders::store_senders(BlockNum from, mdbx::cursor& senders_cursor) {
+void Senders::collect_senders(BlockNum from) {
+    std::erase_if(results_, [&](auto& future_completed_batch) {
+        if (future_completed_batch.wait_for(std::chrono::seconds(0)) == std::future_status::ready) {
+            auto completed_batch = future_completed_batch.get();
+            // Put recovered senders into ETL
+            collect_senders(from, completed_batch);
+            // Update count of collected senders
+            collected_senders_ += completed_batch->size();
+            return true;
+        }
+        return false;
+    });
+}
+
+void Senders::collect_senders(BlockNum from, std::shared_ptr<AddressRecoveryBatch>& batch) {
     StopWatch sw;
     const auto start = sw.start();
 
     BlockNum block_num{0};
     Bytes key;
     Bytes value;
-    for (const auto& package : batch_) {
+    for (const auto& package : *batch) {
         if (package.block_num != block_num) {
             if (!key.empty()) {
-                mdbx::slice k{db::to_slice(key)};
-                mdbx::slice v{db::to_slice(value)};
-                mdbx::error::success_or_throw(senders_cursor.put(k, &v, MDBX_put_flags_t::MDBX_APPEND));
+                collector_.collect({key, value});
                 key.clear();
                 value.clear();
             }
@@ -559,9 +575,7 @@ void Senders::store_senders(BlockNum from, mdbx::cursor& senders_cursor) {
         value.append(package.tx_from.bytes, sizeof(evmc::address));
     }
     if (!key.empty()) {
-        mdbx::slice k{db::to_slice(key)};
-        mdbx::slice v{db::to_slice(value)};
-        mdbx::error::success_or_throw(senders_cursor.put(k, &v, MDBX_put_flags_t::MDBX_APPEND));
+        collector_.collect({key, value});
         key.clear();
         value.clear();
     }
@@ -569,6 +583,16 @@ void Senders::store_senders(BlockNum from, mdbx::cursor& senders_cursor) {
     log::Trace(log_prefix_, {"op", "store_senders", "elapsed", sw.format(end - start)});
 
     if (is_stopping()) throw StageError(Stage::Result::kAborted);
+}
+
+void Senders::store_senders(db::RWTxn& txn) {
+    if (!collector_.empty()) {
+        log::Trace(log_prefix_, {"load ETL items", std::to_string(collector_.size())});
+        // Prepare target table
+        auto senders_cursor{db::open_cursor(*txn, db::table::kSenders)};
+        log::Trace(log_prefix_, {"load ETL data", human_size(collector_.bytes_size())});
+        collector_.load(senders_cursor, nullptr, MDBX_put_flags_t::MDBX_APPEND);
+    }
 }
 
 std::vector<std::string> Senders::get_log_progress() {

@@ -54,27 +54,29 @@ namespace detail {
 class ROTxn {
   public:
     // This variant creates new mdbx transactions as need be.
-    explicit ROTxn(mdbx::env& env) : txn_{new mdbx::txn_managed(std::move(env.start_read()))}, has_txn_ownership_{true} {}
+    explicit ROTxn(mdbx::env& env) : managed_txn_{env.start_read()} {}
     // This variant is just a wrapper over an external transaction.
-    explicit ROTxn(mdbx::txn_managed& external_txn) : txn_{&external_txn}, has_txn_ownership_{false} {}
-    // Move construction
-    ROTxn(ROTxn&& source) noexcept : txn_(source.txn_), has_txn_ownership_{source.has_txn_ownership_}
-    {source.txn_ = nullptr; source.has_txn_ownership_ = false;}
+    explicit ROTxn(mdbx::txn& external_txn) : external_txn_{&external_txn} {}
 
-    ~ROTxn() { if (has_txn_ownership_) delete txn_; }
+    // Not copyable
+    ROTxn(const ROTxn&) = delete;
+    ROTxn& operator=(const ROTxn&) = delete;
+
+    // Only movable
+    ROTxn(ROTxn&& source) noexcept : external_txn_(source.external_txn_), managed_txn_(std::move(source.managed_txn_)) {}
 
     // Access to the underling raw mdbx transaction
-    mdbx::txn& operator*() { return *txn_; }
-    mdbx::txn* operator->() { return txn_; }
-    operator mdbx::txn&() { return *txn_; }
+    mdbx::txn& operator*() { return external_txn_ ? *external_txn_ : managed_txn_; }
+    mdbx::txn* operator->() { return external_txn_ ? external_txn_ : &managed_txn_; }
+    operator mdbx::txn&() { return external_txn_ ? *external_txn_ : managed_txn_; }
 
-    void abort() { txn_->abort(); }
+    void abort() { if (external_txn_ == nullptr) managed_txn_.abort(); }
 
   protected:
-    ROTxn(mdbx::txn_managed&& source) : txn_{new mdbx::txn_managed(std::move(source))} {}
+    ROTxn(mdbx::txn_managed&& source) : managed_txn_{std::move(source)} {}
 
-    mdbx::txn_managed* txn_{nullptr};
-    bool has_txn_ownership_;
+    mdbx::txn* external_txn_{nullptr};
+    mdbx::txn_managed managed_txn_;
 };
 
 //! \brief This class wraps read-write transactions, it is used to manages mdbx transactions across stages.
@@ -86,15 +88,14 @@ class RWTxn : public ROTxn {
     explicit RWTxn(mdbx::env& env) : ROTxn{env.start_write()} {}
 
     // This variant is just a wrapper over an external transaction.
-    // Useful in staged sync for running several stages on a handful of blocks atomically.
-    // The code that invokes the stages is responsible for committing the external txn later on.
-    explicit RWTxn(mdbx::txn_managed& external_txn) : ROTxn{external_txn} {}
+    explicit RWTxn(mdbx::txn& external_txn) : ROTxn{external_txn} {}
 
     // Not copyable
     RWTxn(const RWTxn&) = delete;
     RWTxn& operator=(const RWTxn&) = delete;
+
     // Only movable
-    RWTxn(RWTxn&& source) noexcept : ROTxn(std::move(source)) {}
+    RWTxn(RWTxn&& source) noexcept : ROTxn(std::move(source)), commit_reserved_{source.commit_reserved_} {}
 
     void commit_reserved(bool value) { commit_reserved_ = value; }
 
@@ -111,11 +112,11 @@ class RWTxn : public ROTxn {
          * - or keep RWTxn in a lower scope
          * */
 
-        if (has_txn_ownership_ && !commit_reserved_) {
-            mdbx::env env = txn_->env();
-            txn_->commit();
+        if (external_txn_ == nullptr && !commit_reserved_) {
+            mdbx::env env = managed_txn_.env();
+            managed_txn_.commit();
             if (renew) {
-                txn_ = new mdbx::txn_managed(std::move(env.start_write()));  // renew transaction
+                managed_txn_ = env.start_write();  // renew transaction
             }
         }
     }

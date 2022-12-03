@@ -42,6 +42,7 @@ BlockNum ExecutionEngine::CanonicalChain::find_forking_point(db::RWTxn& tx, Hash
 
     std::optional<BlockHeader> header = db::read_header(tx, header_hash);  // todo: maybe use parent cache?
     if (!header) throw std::logic_error("find_forking_point precondition violation, header not found");
+    if (header->number == 0) return forking_point;
 
     BlockNum height = header->number;
     Hash parent_hash = header->parent_hash;

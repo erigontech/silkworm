@@ -199,7 +199,7 @@ TEST_CASE("ExecutionEngine") {
         REQUIRE(holds_alternative<ValidChain>(verification));
         auto valid_chain = std::get<ValidChain>(verification);
 
-        REQUIRE(valid_chain.current_point == 0);
+        REQUIRE(valid_chain.current_point == 1);
 
         // check status
         auto [final_headers_head_height, final_headers_head_hash, final_headers_head_td] =
@@ -226,16 +226,16 @@ TEST_CASE("ExecutionEngine") {
         REQUIRE(present_in_canonical);
 
         // confirming the chain
-        execution_engine.update_fork_choice(*header0_hash);
+        execution_engine.update_fork_choice(block1.header.hash());
 
         // checking the status
         present_in_canonical = execution_engine.get_canonical_hash(block1.header.number);
-        REQUIRE(!present_in_canonical);
+        REQUIRE(present_in_canonical);
 
         final_canonical_head = execution_engine.get_canonical_head();
         REQUIRE(final_canonical_head == std::tuple(block1.header.number, block1.header.hash()));
-        REQUIRE(execution_engine.canonical_chain_.current_head().number == initial_headers_head_height);
-        REQUIRE(execution_engine.canonical_chain_.current_head().hash == initial_headers_head_hash);
+        REQUIRE(execution_engine.canonical_chain_.current_head().number == block1.header.number);
+        REQUIRE(execution_engine.canonical_chain_.current_head().hash == block1.header.hash());
     }
 }
 

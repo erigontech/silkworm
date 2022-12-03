@@ -340,22 +340,32 @@ bool read_block(mdbx::txn& txn, std::span<const uint8_t, kHashLength> hash, Bloc
 }
 
 // process blocks at specific height
-size_t process_blocks_at_height(mdbx::txn& txn, BlockNum height, std::function<void(Block&)> process_func) {
+size_t process_blocks_at_height(mdbx::txn& txn, BlockNum height, std::function<void(Block&)> process_func, bool read_senders) {
     db::Cursor bodies_table(txn, db::table::kBlockBodies);
     auto key_prefix{db::block_key(height)};
 
     auto count = db::cursor_for_prefix(
         bodies_table, key_prefix,
-        [&process_func, &txn](ByteView key, ByteView raw_body) {
+        [&process_func, &txn, &read_senders](ByteView key, ByteView raw_body) {
             if (raw_body.empty()) throw std::logic_error("empty header in table Headers");
-
+            // read block...
             Block block;
-            ByteView encoded_body{raw_body.data(), raw_body.length()};
-            rlp::success_or_throw(rlp::decode(encoded_body, block));
-
+            // ...ommers
+            auto body_for_storage = detail::decode_stored_block_body(raw_body);
+            std::swap(block.ommers, body_for_storage.ommers);
+            // ...transactions
+            read_transactions(txn, body_for_storage.base_txn_id, body_for_storage.txn_count, block.transactions);
+            // ...senders
+            if (!block.transactions.empty() && read_senders) {
+                Bytes kkey{key.data(), key.length()};
+                db::parse_senders(txn, kkey, block.transactions);
+            }
+            // ...header
             auto [block_num, hash] = split_block_key(key);
-            read_header(txn, hash, block_num, block.header);
-
+            bool present = read_header(txn, hash, block_num, block.header);
+            if (!present) throw std::logic_error("header not found for body "
+                " number= " + std::to_string(block_num) + ", hash= " + to_hex(hash));
+            // invoke handler
             process_func(block);
         },
         db::CursorMoveDirection::Forward);

@@ -173,7 +173,6 @@ Stage::Result SyncPipeline::forward(db::RWTxn& cycle_txn, BlockNum target_height
     LogTimer log_timer{this};
 
     sync_context_->target_height = target_height;
-    db::stages::write_stage_progress(cycle_txn, db::stages::kPipelineStartKey, target_height);
 
     try {
         // Force to stop at any particular stage ?
@@ -230,8 +229,6 @@ Stage::Result SyncPipeline::forward(db::RWTxn& cycle_txn, BlockNum target_height
                 " head_header_height= " + to_string(head_header_number_));
         }
 
-        db::stages::write_stage_progress(cycle_txn, db::stages::kPipelineEndKey, target_height);
-
         return is_stopping() ? Stage::Result::kAborted : Stage::Result::kSuccess;
 
     } catch (const std::exception& ex) {
@@ -247,7 +244,6 @@ Stage::Result SyncPipeline::unwind(db::RWTxn& cycle_txn, BlockNum unwind_point) 
 
     try {
         sync_context_->unwind_point = unwind_point;
-        db::stages::write_stage_progress(cycle_txn, db::stages::kPipelineStartKey, unwind_point);
 
         // Loop at stages in unwind order
         current_stages_count_ = stages_unwind_order_.size();
@@ -285,8 +281,6 @@ Stage::Result SyncPipeline::unwind(db::RWTxn& cycle_txn, BlockNum unwind_point) 
                 " unwind_point= " + to_string(unwind_point) +
                 " head_header_height= " + to_string(head_header_number_));
         }
-
-        db::stages::write_stage_progress(cycle_txn, db::stages::kPipelineEndKey, unwind_point);
 
         // Clear context
         std::swap(sync_context_->unwind_point, sync_context_->previous_unwind_point);
@@ -338,9 +332,6 @@ Stage::Result SyncPipeline::prune(db::RWTxn& cycle_txn) {
         auto head_header = db::read_header(cycle_txn, head_header_hash_);
         if (!head_header) throw std::logic_error("Sync pipeline, missing head header hash " + to_hex(head_header_hash_));
         head_header_number_ = head_header->number;
-
-        db::stages::write_stage_progress(cycle_txn, db::stages::kPipelineStartKey, head_header_number_);
-        db::stages::write_stage_progress(cycle_txn, db::stages::kPipelineEndKey, head_header_number_);
 
         return is_stopping() ? Stage::Result::kAborted : Stage::Result::kSuccess;
 

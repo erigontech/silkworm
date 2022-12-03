@@ -95,7 +95,7 @@ Stage::Result BodiesStage::forward(db::RWTxn& tx) {
 
     StopWatch timing;
     timing.start();
-    log::Info(log_prefix_) << "Start";
+    log::Info(log_prefix_) << "Forward start";
 
     try {
         current_height_ = db::stages::read_stage_progress(tx, db::stages::kBlockBodiesKey);

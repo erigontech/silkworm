@@ -53,7 +53,7 @@ TEST_CASE("ExecutionEngine") {
     db::RWAccess db_access{context.env()};
     ExecutionEngine_ForTest execution_engine{context.node_settings(), db_access};
 
-    //auto& tx = execution_engine.tx_;  // mdbx refuses to open a ROTxn when there is a RWTxn in the same thread
+    auto& tx = execution_engine.tx_;  // mdbx refuses to open a ROTxn when there is a RWTxn in the same thread
 
     using ValidChain = stagedsync::ExecutionEngine::ValidChain;
     // using InvalidChain = stagedsync::ExecutionEngine::InvalidChain;
@@ -147,7 +147,7 @@ TEST_CASE("ExecutionEngine") {
     }
 
     SECTION("one valid body after the genesis") {
-        /*
+
         auto header0_hash = db::read_canonical_hash(tx, 0);
         REQUIRE(header0_hash.has_value());
 
@@ -236,7 +236,6 @@ TEST_CASE("ExecutionEngine") {
         REQUIRE(final_canonical_head == std::tuple(block1.header.number, block1.header.hash()));
         REQUIRE(execution_engine.canonical_chain_.current_head().number == initial_headers_head_height);
         REQUIRE(execution_engine.canonical_chain_.current_head().hash == initial_headers_head_hash);
-         */
     }
 }
 

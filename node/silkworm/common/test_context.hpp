@@ -37,22 +37,21 @@ class Context {
 
     [[nodiscard]] const DataDirectory& dir() const { return *(node_settings_.data_directory); }
 
-    [[nodiscard]] mdbx::txn& txn() { return txn_; }
+    [[nodiscard]] mdbx::txn& txn() { return *txn_; }
+
+    [[nodiscard]] db::RWTxn& rw_txn() { return *txn_; }
 
     [[nodiscard]] mdbx::env& env() { return env_; }
 
-    void commit_txn() { txn_.commit(); }
+    void commit_txn() { txn_->commit_and_stop(); }
 
-    void commit_and_renew_txn() {
-        txn_.commit();
-        txn_ = env_.start_write();
-    }
+    void commit_and_renew_txn() { txn_->commit_and_renew(); }
 
   private:
     TemporaryDirectory tmp_dir_{};
     silkworm::NodeSettings node_settings_;
     mdbx::env_managed env_;
-    mdbx::txn_managed txn_;
+    std::unique_ptr<db::RWTxn> txn_;
 };
 
 }  // namespace silkworm::test

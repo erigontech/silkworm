@@ -230,15 +230,15 @@ TEST_CASE("RWTxn") {
     }
 
     SECTION("External") {
-        auto ext_tx{env.start_write()};
+        RWTxn tx{env};
+        tx.disable_commit();
         {
-            auto tx{db::RWTxn(ext_tx)};
             (void)tx->create_map(table_name, mdbx::key_mode::usual, mdbx::value_mode::single);
             tx.commit();  // Does not have any effect
         }
-        ext_tx.abort();
-        ext_tx = env.start_write();
-        REQUIRE(db::has_map(ext_tx, table_name) == false);
+        tx.abort();
+        RWTxn tx2{env};
+        REQUIRE(db::has_map(tx2, table_name) == false);
     }
 
     SECTION("Cursor from RWTxn") {
@@ -469,7 +469,7 @@ TEST_CASE("Cursor walk") {
 
 TEST_CASE("OF pages") {
     test::Context context;
-    db::RWTxn txn{context.txn()};
+    db::RWTxn& txn = context.rw_txn();
 
     SECTION("No overflow") {
         db::Cursor target(txn, db::table::kAccountHistory);

@@ -184,7 +184,7 @@ auto ExecutionEngine::verify_chain(Hash header_hash) -> VerificationResult {
     // db commit policy
     bool cycle_in_one_tx = !is_first_sync || header->number - canonical_chain_.current_head().number > 4096;
     if (!cycle_in_one_tx)
-        tx_.commit_reserved(true);
+        tx_.disable_commit();
 
     // the new head is on a new fork?
     BlockNum forking_point = canonical_chain_.find_forking_point(tx_, header_hash);  // the forking origin
@@ -234,7 +234,7 @@ auto ExecutionEngine::verify_chain(Hash header_hash) -> VerificationResult {
     }
 
     // finish
-    tx_.commit_reserved(false);
+    tx_.enable_commit();
     tx_.commit_and_renew();  // todo for PoS: do nothing, wait update_fork_choice to persist the correct overlay
     return verify_result;
 }
@@ -244,7 +244,7 @@ bool ExecutionEngine::update_fork_choice(Hash header_hash) {
     bool cycle_in_one_tx = !is_first_sync;
     std::unique_ptr<db::RWTxn> inner_tx{nullptr};
     if (!cycle_in_one_tx)
-        tx_.commit_reserved(true);
+        tx_.disable_commit();
 
     if (canonical_chain_.current_head().hash != header_hash) {  // todo for PoS: choose the corresponding overlay and do commit
         // usually update_fork_choice must follow verify_chain with the same header
@@ -262,7 +262,7 @@ bool ExecutionEngine::update_fork_choice(Hash header_hash) {
     is_first_sync = false;
 
     // finish
-    tx_.commit_reserved(false);
+    tx_.enable_commit();
     tx_.commit_and_renew();  // todo for PoS: commit the correct shard and discard the others
 
     return true;

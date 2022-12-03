@@ -33,7 +33,8 @@ namespace silkworm {
 
 TEST_CASE("Stage History Index") {
     test::Context context;
-    db::RWTxn txn{context.txn()};
+    db::RWTxn& txn{context.rw_txn()};
+    txn.disable_commit();
     log::Settings log_settings;
     log_settings.log_std_out = true;
     log::init(log_settings);

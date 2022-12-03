@@ -501,7 +501,7 @@ namespace db {
 
     TEST_CASE("read_account") {
         test::Context context;
-        auto& txn{context.txn()};
+        db::RWTxn& txn{context.rw_txn()};
 
         Buffer buffer{txn, 0};
 
@@ -529,10 +529,9 @@ namespace db {
         buffer.write_to_db();
         db::stages::write_stage_progress(txn, db::stages::kExecutionKey, 3);
 
-        db::RWTxn tm{txn};
         stagedsync::SyncContext sync_context{};
         stagedsync::HistoryIndex stage_history_index(&context.node_settings(), &sync_context);
-        REQUIRE(stage_history_index.forward(tm) == stagedsync::Stage::Result::kSuccess);
+        REQUIRE(stage_history_index.forward(txn) == stagedsync::Stage::Result::kSuccess);
 
         std::optional<Account> current_account{read_account(txn, miner_a)};
         REQUIRE(current_account.has_value());

@@ -53,29 +53,25 @@ namespace detail {
 //! It can either create a transaction from an environment or manage an externally created one.
 class ROTxn {
   public:
-    // This variant creates new mdbx transactions as need be.
     explicit ROTxn(mdbx::env& env) : managed_txn_{env.start_read()} {}
-    // This variant is just a wrapper over an external transaction.
-    explicit ROTxn(mdbx::txn& external_txn) : external_txn_{&external_txn} {}
 
     // Not copyable
     ROTxn(const ROTxn&) = delete;
     ROTxn& operator=(const ROTxn&) = delete;
 
     // Only movable
-    ROTxn(ROTxn&& source) noexcept : external_txn_(source.external_txn_), managed_txn_(std::move(source.managed_txn_)) {}
+    ROTxn(ROTxn&& source) noexcept : managed_txn_(std::move(source.managed_txn_)) {}
 
     // Access to the underling raw mdbx transaction
-    mdbx::txn& operator*() { return external_txn_ ? *external_txn_ : managed_txn_; }
-    mdbx::txn* operator->() { return external_txn_ ? external_txn_ : &managed_txn_; }
-    operator mdbx::txn&() { return external_txn_ ? *external_txn_ : managed_txn_; }
+    mdbx::txn& operator*() { return managed_txn_; }
+    mdbx::txn* operator->() { return &managed_txn_; }
+    operator mdbx::txn&() { return managed_txn_; }
 
-    void abort() { if (external_txn_ == nullptr) managed_txn_.abort(); }
+    void abort() { managed_txn_.abort(); }
 
   protected:
     ROTxn(mdbx::txn_managed&& source) : managed_txn_{std::move(source)} {}
 
-    mdbx::txn* external_txn_{nullptr};
     mdbx::txn_managed managed_txn_;
 };
 
@@ -87,17 +83,15 @@ class RWTxn : public ROTxn {
     // This variant creates new mdbx transactions as need be.
     explicit RWTxn(mdbx::env& env) : ROTxn{env.start_write()} {}
 
-    // This variant is just a wrapper over an external transaction.
-    explicit RWTxn(mdbx::txn& external_txn) : ROTxn{external_txn} {}
-
     // Not copyable
     RWTxn(const RWTxn&) = delete;
     RWTxn& operator=(const RWTxn&) = delete;
 
     // Only movable
-    RWTxn(RWTxn&& source) noexcept : ROTxn(std::move(source)), commit_reserved_{source.commit_reserved_} {}
+    RWTxn(RWTxn&& source) noexcept : ROTxn(std::move(source)), commit_disabled_{source.commit_disabled_} {}
 
-    void commit_reserved(bool value) { commit_reserved_ = value; }
+    void disable_commit() { commit_disabled_ = true; }
+    void enable_commit() { commit_disabled_ = false; }
 
     void commit(const bool renew = true) {
         /*
@@ -112,7 +106,7 @@ class RWTxn : public ROTxn {
          * - or keep RWTxn in a lower scope
          * */
 
-        if (external_txn_ == nullptr && !commit_reserved_) {
+        if (!commit_disabled_) {
             mdbx::env env = managed_txn_.env();
             managed_txn_.commit();
             if (renew) {
@@ -124,7 +118,7 @@ class RWTxn : public ROTxn {
     void commit_and_stop() { commit(false); }
 
   protected:
-    bool commit_reserved_{false};
+    bool commit_disabled_{false};
 };
 
 //! \brief This class create ROTxn(s) on demand, it is used to enforce in some method signatures the type of db access

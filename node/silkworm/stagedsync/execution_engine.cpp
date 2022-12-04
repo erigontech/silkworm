@@ -141,9 +141,14 @@ ExecutionEngine::ExecutionEngine(NodeSettings& ns, const db::RWAccess dba)
       db_access_{dba},
       tx_{db_access_.start_rw_tx()},
       pipeline_{&ns},
+      current_status_{ValidChain{0}},
       canonical_chain_(tx_)
 // header_cache_{kCacheSize}
 {
+}
+
+auto ExecutionEngine::current_status() -> VerificationResult {
+    return current_status_;
 }
 
 void ExecutionEngine::insert_headers(std::vector<std::shared_ptr<BlockHeader>>& headers) {
@@ -235,6 +240,7 @@ auto ExecutionEngine::verify_chain(Hash header_hash) -> VerificationResult {
     }
 
     // finish
+    current_status_ = verify_result;
     tx_.enable_commit();
     tx_.commit_and_renew();  // todo for PoS: do nothing, wait update_fork_choice to persist the correct overlay
     return verify_result;
@@ -258,6 +264,8 @@ bool ExecutionEngine::update_fork_choice(Hash header_hash) {
 
         // remove last part of canonical
         canonical_chain_.delete_down_to(forking_point);
+
+        current_status_ = ValidChain{.current_point=forking_point};
     }
 
     is_first_sync = false;

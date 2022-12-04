@@ -33,6 +33,7 @@ namespace silkworm {
 class ExecutionEngine_ForTest : public stagedsync::ExecutionEngine {
   public:
     using stagedsync::ExecutionEngine::canonical_chain_;
+    using stagedsync::ExecutionEngine::pipeline_;
     using stagedsync::ExecutionEngine::CanonicalChain;
     using stagedsync::ExecutionEngine::ExecutionEngine;
     using stagedsync::ExecutionEngine::tx_;
@@ -56,7 +57,7 @@ TEST_CASE("ExecutionEngine") {
     auto& tx = execution_engine.tx_;  // mdbx refuses to open a ROTxn when there is a RWTxn in the same thread
 
     using ValidChain = stagedsync::ExecutionEngine::ValidChain;
-    // using InvalidChain = stagedsync::ExecutionEngine::InvalidChain;
+    using InvalidChain = stagedsync::ExecutionEngine::InvalidChain;
 
     /* status:
      *         h0
@@ -65,7 +66,7 @@ TEST_CASE("ExecutionEngine") {
      */
 
     SECTION("one invalid body after the genesis") {
-        /*
+
         auto header0_hash = db::read_canonical_hash(tx, 0);
         REQUIRE(header0_hash.has_value());
 
@@ -80,12 +81,14 @@ TEST_CASE("ExecutionEngine") {
         block1.ommers.push_back(BlockHeader{});  // generate error InvalidOmmerHeader
 
         // getting initial status
-        auto [initial_headers_head_height, initial_headers_head_hash, initial_headers_head_td] = execution_engine.get_headers_head();
+        auto [initial_headers_head_height, initial_headers_head_hash, initial_headers_head_td] =
+            execution_engine.get_headers_head();
         REQUIRE(initial_headers_head_height == 0);
         REQUIRE(initial_headers_head_hash == *header0_hash);
         REQUIRE(initial_headers_head_td == header0->difficulty);
 
-        auto [initial_bodies_head_height, initial_head_bodies_hash] = execution_engine.get_bodies_head();
+        auto [initial_bodies_head_height, initial_head_bodies_hash] =
+            execution_engine.get_bodies_head();
         REQUIRE(initial_bodies_head_height == 0);
         REQUIRE(initial_head_bodies_hash == *header0_hash);
 
@@ -94,9 +97,23 @@ TEST_CASE("ExecutionEngine") {
         REQUIRE(execution_engine.canonical_chain_.current_head().number == initial_headers_head_height);
         REQUIRE(execution_engine.canonical_chain_.current_head().hash == initial_headers_head_hash);
 
-        // inserting & verifying the block
+        // inserting headers
         execution_engine.insert_header(block1.header);
+
+        auto [final_headers_head_height, final_headers_head_hash, final_headers_head_td] =
+            execution_engine.get_headers_head();
+        REQUIRE(final_headers_head_height == 0);  // doesn't change
+        REQUIRE(final_headers_head_hash == *header0_hash);  // doesn't change
+        REQUIRE(final_headers_head_td == header0->difficulty);
+
+        // inserting bodies
         execution_engine.insert_body(block1);
+
+        auto [final_bodies_head_height, final_head_bodies_hash] = execution_engine.get_bodies_head();
+        REQUIRE(final_bodies_head_height == 0);
+        REQUIRE(final_head_bodies_hash == *header0_hash);
+
+        // verifying the chain
         auto verification = execution_engine.verify_chain(block1.header.hash());
 
         REQUIRE(holds_alternative<InvalidChain>(verification));
@@ -110,19 +127,23 @@ TEST_CASE("ExecutionEngine") {
         REQUIRE(*(invalid_chain.bad_headers.begin()) == block1.header.hash());
 
         // check status
-        auto [final_headers_head_height, final_headers_head_hash, final_headers_head_td] = execution_engine.get_headers_head();
-        REQUIRE(final_headers_head_height == initial_headers_head_height);
-        REQUIRE(final_headers_head_hash == initial_headers_head_hash);
-        REQUIRE(final_headers_head_td == initial_headers_head_td);
+        std::tie(final_headers_head_height, final_headers_head_hash, final_headers_head_td) =
+            execution_engine.get_headers_head();
+        REQUIRE(final_headers_head_height == block1.header.number);
+        REQUIRE(final_headers_head_hash == block1.header.hash());
+        REQUIRE(final_headers_head_td > initial_headers_head_td);
 
-        auto [final_bodies_head_height, final_head_bodies_hash] = execution_engine.get_bodies_head();
-        REQUIRE(final_bodies_head_height == initial_bodies_head_height);
-        REQUIRE(final_head_bodies_hash == initial_head_bodies_hash);
+        std::tie(final_bodies_head_height, final_head_bodies_hash) = execution_engine.get_bodies_head();
+        REQUIRE(final_bodies_head_height == block1.header.number);
+        REQUIRE(final_head_bodies_hash == block1.header.hash());
 
         auto final_canonical_head = execution_engine.get_canonical_head();
-        REQUIRE(final_canonical_head == std::tuple(final_headers_head_height, final_headers_head_hash));
-        REQUIRE(execution_engine.canonical_chain_.current_head().number == final_headers_head_height);
-        REQUIRE(execution_engine.canonical_chain_.current_head().hash == final_headers_head_hash);
+        REQUIRE(final_canonical_head == std::tuple(block1.header.number, block1.header.hash()));
+        REQUIRE(execution_engine.canonical_chain_.current_head().number == block1.header.number);
+        REQUIRE(execution_engine.canonical_chain_.current_head().hash == block1.header.hash());
+
+        auto current_status = execution_engine.current_status();
+        REQUIRE(holds_alternative<InvalidChain>(current_status));
 
         // check db content
         BlockBody saved_body;
@@ -143,7 +164,10 @@ TEST_CASE("ExecutionEngine") {
         REQUIRE(final_canonical_head == initial_canonical_head);
         REQUIRE(execution_engine.canonical_chain_.current_head().number == initial_headers_head_height);
         REQUIRE(execution_engine.canonical_chain_.current_head().hash == initial_headers_head_hash);
-        */
+
+        current_status = execution_engine.current_status();
+        REQUIRE(holds_alternative<ValidChain>(current_status));
+        REQUIRE(std::get<ValidChain>(current_status).current_point == 0);
     }
 
     SECTION("one valid body after the genesis") {
@@ -198,10 +222,12 @@ TEST_CASE("ExecutionEngine") {
 
         REQUIRE(holds_alternative<ValidChain>(verification));
         auto valid_chain = std::get<ValidChain>(verification);
-
         REQUIRE(valid_chain.current_point == 1);
 
         // check status
+        REQUIRE(execution_engine.pipeline_.head_header_number() == block1.header.number);
+        REQUIRE(execution_engine.pipeline_.head_header_hash() == block1.header.hash());
+
         auto [final_headers_head_height, final_headers_head_hash, final_headers_head_td] =
             execution_engine.get_headers_head();
         REQUIRE(final_headers_head_height == block1.header.number);
@@ -216,6 +242,10 @@ TEST_CASE("ExecutionEngine") {
         REQUIRE(final_canonical_head == std::tuple(block1.header.number, block1.header.hash()));
         REQUIRE(execution_engine.canonical_chain_.current_head().number == block1.header.number);
         REQUIRE(execution_engine.canonical_chain_.current_head().hash == block1.header.hash());
+
+        auto current_status = execution_engine.current_status();
+        REQUIRE(holds_alternative<ValidChain>(current_status));
+        REQUIRE(std::get<ValidChain>(current_status).current_point == 1);
 
         // check db content
         BlockBody saved_body;

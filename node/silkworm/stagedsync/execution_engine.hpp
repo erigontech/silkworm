@@ -53,6 +53,8 @@ class ExecutionEngine : public Stoppable {
     bool update_fork_choice(Hash header_hash);
 
     // state
+    VerificationResult current_status();
+
     auto get_header(Hash) -> std::optional<BlockHeader>;
     auto get_header(BlockNum, Hash) -> std::optional<BlockHeader>;
     auto get_canonical_hash(BlockNum) -> std::optional<Hash>;
@@ -70,6 +72,7 @@ class ExecutionEngine : public Stoppable {
     db::RWTxn tx_;
     SyncPipeline pipeline_;
     bool is_first_sync{true};
+    VerificationResult current_status_;
     // lru_cache<Hash, BlockHeader> header_cache_; // todo: use cache if improve performances
 
     class CanonicalChain {

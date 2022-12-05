@@ -37,18 +37,10 @@ using BodyDataModel_ForTest = BodiesStage_ForTest::BodyDataModel;
 
 TEST_CASE("BodiesStage - data model") {
     test::Context context;
-    db::RWAccess db_access{context.env()};
-    auto& txn{context.txn()};
-
-    bool allow_exceptions = false;
+    context.add_genesis_data();
+    context.commit_txn();
 
     auto chain_config = *context.node_settings().chain_config;
-    chain_config.genesis_hash.emplace(kMainnetGenesisHash);
-
-    auto source_data = silkworm::read_genesis_data(chain_config.chain_id);
-    auto genesis_json = nlohmann::json::parse(source_data, nullptr, allow_exceptions);
-    db::initialize_genesis(txn, genesis_json, allow_exceptions);
-    context.commit_txn();
 
     /* status:
      *         h0

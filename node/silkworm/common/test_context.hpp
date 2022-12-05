@@ -33,6 +33,8 @@ class Context {
     Context(const Context&) = delete;
     Context& operator=(const Context&) = delete;
 
+    void add_genesis_data();
+
     [[nodiscard]] silkworm::NodeSettings& node_settings() { return node_settings_; }
 
     [[nodiscard]] const DataDirectory& dir() const { return *(node_settings_.data_directory); }

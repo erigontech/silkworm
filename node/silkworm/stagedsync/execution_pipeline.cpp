@@ -14,8 +14,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-#include "sync_pipeline.hpp"
-
 #include <boost/format.hpp>
 
 #include <silkworm/stagedsync/stage_blockhashes.hpp>
@@ -30,6 +28,8 @@ limitations under the License.
 #include <silkworm/stagedsync/stage_senders.hpp>
 #include <silkworm/stagedsync/stage_tx_lookup.hpp>
 
+#include "execution_pipeline.hpp"
+
 namespace silkworm::stagedsync {
 
 #if defined(NDEBUG)
@@ -38,11 +38,11 @@ namespace silkworm::stagedsync {
     static const std::chrono::milliseconds kStageDurationThresholdForLog{0};
 #endif
 
-class SyncPipeline::LogTimer : public Timer {
-    SyncPipeline* pipeline_;
+class ExecutionPipeline::LogTimer : public Timer {
+    ExecutionPipeline* pipeline_;
 
   public:
-    LogTimer(SyncPipeline* pipeline)
+    LogTimer(ExecutionPipeline* pipeline)
         : Timer{
               pipeline->node_settings_->asio_context,
               pipeline->node_settings_->sync_loop_log_interval_seconds * 1'000,
@@ -66,26 +66,25 @@ class SyncPipeline::LogTimer : public Timer {
     }
 };
 
-
-SyncPipeline::SyncPipeline(silkworm::NodeSettings* node_settings)
+ExecutionPipeline::ExecutionPipeline(silkworm::NodeSettings* node_settings)
     : node_settings_{node_settings},
       sync_context_{std::make_unique<SyncContext>()} {
     load_stages();
 }
 
-BlockNum SyncPipeline::head_header_number() {
+BlockNum ExecutionPipeline::head_header_number() {
     return head_header_number_;
 }
 
-Hash SyncPipeline::head_header_hash() {
+Hash ExecutionPipeline::head_header_hash() {
     return head_header_hash_;
 }
 
-std::optional<BlockNum> SyncPipeline::unwind_point() {
+std::optional<BlockNum> ExecutionPipeline::unwind_point() {
     return sync_context_->unwind_point;
 }
 
-std::optional<Hash> SyncPipeline::bad_block() {
+std::optional<Hash> ExecutionPipeline::bad_block() {
     return sync_context_->bad_block_hash;
 }
 
@@ -108,7 +107,7 @@ std::optional<Hash> SyncPipeline::bad_block() {
  * 15 StageFinish -> stagedsync::Finish
  */
 
-void SyncPipeline::load_stages() {
+void ExecutionPipeline::load_stages() {
     stages_.emplace(db::stages::kHeadersKey,
                     std::make_unique<stagedsync::HeadersStage>(node_settings_, sync_context_.get()));
     stages_.emplace(db::stages::kBlockBodiesKey,
@@ -164,7 +163,7 @@ void SyncPipeline::load_stages() {
                                 });
 }
 
-bool SyncPipeline::stop() {
+bool ExecutionPipeline::stop() {
     bool stopped{true};
     for (const auto& [_, stage] : stages_) {
         if (!stage->is_stopping()) {
@@ -174,13 +173,13 @@ bool SyncPipeline::stop() {
     return stopped;
 }
 
-Stage::Result SyncPipeline::forward(db::RWTxn& cycle_txn, BlockNum target_height) {
+Stage::Result ExecutionPipeline::forward(db::RWTxn& cycle_txn, BlockNum target_height) {
     using std::to_string;
     StopWatch stages_stop_watch(true);
     LogTimer log_timer{this};
 
     sync_context_->target_height = target_height;
-    log::Info("SyncPipeline") << "Forward start --------------------------";
+    log::Info("ExecPipeline") << "Forward start --------------------------";
 
     try {
         // Force to stop at any particular stage ?
@@ -212,7 +211,7 @@ Stage::Result SyncPipeline::forward(db::RWTxn& cycle_txn, BlockNum target_height
             if (stage_result != Stage::Result::kSuccess) {
                 auto result_description = std::string(magic_enum::enum_name<Stage::Result>(stage_result));
                 log::Error(get_log_prefix(), {"op", "Forward", "returned", });
-                log::Error("SyncPipeline") << "Forward interrupted due to stage " << current_stage_->first << " failure";
+                log::Error("ExecPipeline") << "Forward interrupted due to stage " << current_stage_->first << " failure";
                 return stage_result;
             }
 
@@ -238,21 +237,21 @@ Stage::Result SyncPipeline::forward(db::RWTxn& cycle_txn, BlockNum target_height
                 " head_header_height= " + to_string(head_header_number_));
         }
 
-        log::Info("SyncPipeline") << "Forward done ---------------------------";
+        log::Info("ExecPipeline") << "Forward done ---------------------------";
         return is_stopping() ? Stage::Result::kAborted : Stage::Result::kSuccess;
 
     } catch (const std::exception& ex) {
         log::Error(get_log_prefix(), {"exception", std::string(ex.what())});
-        log::Error("SyncPipeline") << "Forward aborted due to exception: " << ex.what();
+        log::Error("ExecPipeline") << "Forward aborted due to exception: " << ex.what();
         return Stage::Result::kUnexpectedError;
     }
 }
 
-Stage::Result SyncPipeline::unwind(db::RWTxn& cycle_txn, BlockNum unwind_point) {
+Stage::Result ExecutionPipeline::unwind(db::RWTxn& cycle_txn, BlockNum unwind_point) {
     using std::to_string;
     StopWatch stages_stop_watch(true);
     LogTimer log_timer{this};
-    log::Info("SyncPipeline") << "Unwind start ---------------------------";
+    log::Info("ExecPipeline") << "Unwind start ---------------------------";
 
     try {
         sync_context_->unwind_point = unwind_point;
@@ -274,7 +273,7 @@ Stage::Result SyncPipeline::unwind(db::RWTxn& cycle_txn, BlockNum unwind_point) 
             if (stage_result != Stage::Result::kSuccess) {
                 auto result_description = std::string(magic_enum::enum_name<Stage::Result>(stage_result));
                 log::Error(get_log_prefix(), {"op", "Unwind", "returned", result_description});
-                log::Error("SyncPipeline") << "Unwind interrupted due to stage " << current_stage_->first << " failure";
+                log::Error("ExecPipeline") << "Unwind interrupted due to stage " << current_stage_->first << " failure";
                 return stage_result;
             }
 
@@ -300,17 +299,17 @@ Stage::Result SyncPipeline::unwind(db::RWTxn& cycle_txn, BlockNum unwind_point) 
         sync_context_->unwind_point.reset();
         sync_context_->bad_block_hash.reset();
 
-        log::Info("SyncPipeline") << "Unwind done ----------------------------";
+        log::Info("ExecPipeline") << "Unwind done ----------------------------";
         return is_stopping() ? Stage::Result::kAborted : Stage::Result::kSuccess;
 
     } catch (const std::exception& ex) {
-        log::Error("SyncPipeline") << "Unwind aborted due to exception: " << ex.what();
+        log::Error("ExecPipeline") << "Unwind aborted due to exception: " << ex.what();
         log::Error(get_log_prefix(), {"exception", std::string(ex.what())});
         return Stage::Result::kUnexpectedError;
     }
 }
 
-Stage::Result SyncPipeline::prune(db::RWTxn& cycle_txn) {
+Stage::Result ExecutionPipeline::prune(db::RWTxn& cycle_txn) {
     StopWatch stages_stop_watch(true);
     LogTimer log_timer{this};
 
@@ -332,7 +331,7 @@ Stage::Result SyncPipeline::prune(db::RWTxn& cycle_txn) {
                 log::Error(get_log_prefix(),
                            {"op", "Prune",
                             "returned", std::string(magic_enum::enum_name<Stage::Result>(stage_result))});
-                log::Error("SyncPipeline") << "Prune interrupted due to stage " << current_stage_->first << " failure";
+                log::Error("ExecPipeline") << "Prune interrupted due to stage " << current_stage_->first << " failure";
                 return stage_result;
             }
 
@@ -357,7 +356,7 @@ Stage::Result SyncPipeline::prune(db::RWTxn& cycle_txn) {
     }
 }
 
-std::string SyncPipeline::get_log_prefix() const {
+std::string ExecutionPipeline::get_log_prefix() const {
     static std::string log_prefix_fmt{"[%u/%u %s]"};
     return boost::str(boost::format(log_prefix_fmt) %
                       current_stage_number_ %

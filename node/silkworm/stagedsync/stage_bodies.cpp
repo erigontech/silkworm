@@ -49,7 +49,7 @@ void BodiesStage::BodyDataModel::update_tables(const Block& block) {
 
     auto validation_result = ValidationResult::kOk;
 
-#if !defined(NDEBUG)
+#if !defined(NDEBUG) // maybe it is better to use SILKWORM_FULL_BODY_PRE_VALIDATION
     // a full body pre-validation
     validation_result = consensus_engine_->pre_validate_block_body(block, chain_state_);
 #else
@@ -57,7 +57,7 @@ void BodiesStage::BodyDataModel::update_tables(const Block& block) {
     if (block_num > preverified_height_) {
         // we do not use pre_validate_block_body() because we assume that the downloader (BlockExchange)
         // already checked transaction & ommers root hash
-        validation_result = consensus_engine_->pre_validate_transaction(block, chain_state_);
+        validation_result = consensus_engine_->pre_validate_transactions(block);
         if (validation_result == ValidationResult::kOk)
             validation_result = consensus_engine_->validate_ommers(block, chain_state_);
     }

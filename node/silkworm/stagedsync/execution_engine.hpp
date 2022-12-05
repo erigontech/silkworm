@@ -27,7 +27,7 @@ limitations under the License.
 #include <silkworm/downloader/internals/types.hpp>
 #include <silkworm/stagedsync/stage.hpp>
 
-#include "sync_pipeline.hpp"
+#include "execution_pipeline.hpp"
 
 namespace silkworm::stagedsync {
 
@@ -70,7 +70,7 @@ class ExecutionEngine : public Stoppable {
     NodeSettings& node_settings_;
     db::RWAccess db_access_;
     db::RWTxn tx_;
-    SyncPipeline pipeline_;
+    ExecutionPipeline pipeline_;
     bool is_first_sync{true};
     VerificationResult current_status_;
     // lru_cache<Hash, BlockHeader> header_cache_; // todo: use cache if improve performances

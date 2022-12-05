@@ -20,14 +20,12 @@ limitations under the License.
 
 #include <catch2/catch.hpp>
 
-#include "silkworm/chain/genesis.hpp"
 #include "silkworm/common/cast.hpp"
 #include "silkworm/common/test_context.hpp"
 #include "silkworm/db/genesis.hpp"
 #include "silkworm/db/stages.hpp"
 #include "silkworm/test/log.hpp"
 #include "silkworm/types/block.hpp"
-#include "stage_bodies.hpp"
 
 namespace silkworm {
 
@@ -44,14 +42,7 @@ TEST_CASE("ExecutionEngine") {
     test::SetLogVerbosityGuard log_guard(log::Level::kNone);
 
     test::Context context;
-
-    auto chain_config = *context.node_settings().chain_config;
-    chain_config.genesis_hash.emplace(kMainnetGenesisHash);
-
-    bool allow_exceptions = false;
-    auto source_data = silkworm::read_genesis_data(chain_config.chain_id);
-    auto genesis_json = nlohmann::json::parse(source_data, nullptr, allow_exceptions);
-    db::initialize_genesis(context.txn(), genesis_json, allow_exceptions);
+    context.add_genesis_data();
     context.commit_txn();
 
     db::RWAccess db_access{context.env()};

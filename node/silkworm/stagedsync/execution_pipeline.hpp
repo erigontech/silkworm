@@ -27,10 +27,10 @@ limitations under the License.
 
 namespace silkworm::stagedsync {
 
-class SyncPipeline : public Stoppable {
+class ExecutionPipeline : public Stoppable {
   public:
-    explicit SyncPipeline(NodeSettings*);
-    ~SyncPipeline() = default;
+    explicit ExecutionPipeline(NodeSettings*);
+    ~ExecutionPipeline() = default;
 
     Stage::Result forward(db::RWTxn&, BlockNum target_height);
     Stage::Result unwind(db::RWTxn&, BlockNum unwind_point);

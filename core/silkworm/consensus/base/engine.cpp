@@ -127,7 +127,7 @@ ValidationResult EngineBase::validate_block_header(const BlockHeader& header, co
     }
 
     uint64_t parent_gas_limit{parent->gas_limit};
-    if (header.number == chain_config_.london_block) {
+    if (header.number == chain_config_.revision_block(EVMC_LONDON)) {
         parent_gas_limit = parent->gas_limit * param::kElasticityMultiplier;  // EIP-1559
     }
 
@@ -195,11 +195,11 @@ evmc::address EngineBase::get_beneficiary(const BlockHeader& header) { return he
 
 std::optional<intx::uint256> EngineBase::expected_base_fee_per_gas(const BlockHeader& header,
                                                                    const BlockHeader& parent) {
-    if (chain_config_.revision(header.number, header.timestamp) < EVMC_LONDON) {
+    if (chain_config_.revision(header.number) < EVMC_LONDON) {
         return std::nullopt;
     }
 
-    if (header.number == chain_config_.london_block) {
+    if (header.number == chain_config_.revision_block(EVMC_LONDON)) {
         return param::kInitialBaseFee;
     }
 

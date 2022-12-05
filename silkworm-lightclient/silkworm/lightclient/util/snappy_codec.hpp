@@ -20,6 +20,8 @@
 
 namespace silkworm::snappy {
 
+bool is_valid_compressed_data(ByteView data);
+
 Bytes compress(ByteView data);
 
 Bytes decompress(ByteView data);

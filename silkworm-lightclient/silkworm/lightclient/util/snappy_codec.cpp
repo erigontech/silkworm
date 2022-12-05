@@ -23,6 +23,15 @@
 
 namespace silkworm::snappy {
 
+//! Theoretically this method could use ::snappy::IsValidCompressedBuffer but doing so would produce
+//! an invalid result as of Snappy 1.1.9 for some invalid inputs [https://go.dev/play/p/nr86lSFGBKU]
+//! So we fall back to a round-trip comparison to check validity (bad for performance).
+bool is_valid_compressed_data(ByteView data) {
+    Bytes uncompressed = decompress(data);
+    Bytes compressed = compress(uncompressed);
+    return compressed == data;
+}
+
 Bytes compress(ByteView data) {
     Bytes output;
     output.resize(::snappy::MaxCompressedLength(data.size()));

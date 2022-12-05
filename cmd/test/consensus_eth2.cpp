@@ -60,6 +60,7 @@ using TestHandler = std::function<TestStatus(ByteView)>;
 
 struct TestRunner {
     static void set_stop_at_fail(bool stop_at_fail) { stop_at_fail_ = stop_at_fail; }
+    static void set_trace_on_fail(bool trace_on_fail) { trace_on_fail_ = trace_on_fail; }
     static void set_skip_snappy_fail(bool skip_snappy_fail) { skip_snappy_fail_ = skip_snappy_fail; }
 
     virtual ~TestRunner() = default;
@@ -75,12 +76,14 @@ struct TestRunner {
     }
 
     static bool stop_at_fail_;
+    static bool trace_on_fail_;
     static bool skip_snappy_fail_;
 
     std::map<std::string, TestHandler> handlers_;
 };
 
 bool TestRunner::stop_at_fail_{false};
+bool TestRunner::trace_on_fail_{false};
 bool TestRunner::skip_snappy_fail_{true};
 
 struct SszStaticTestRunner : public TestRunner {
@@ -122,6 +125,9 @@ struct SszStaticTestRunner : public TestRunner {
                     break;
                 case TestStatus::kFailed:
                     total_failed++;
+                    if (trace_on_fail_) {
+                        SILK_ERROR << "test failed: " << test_case_dir.string();
+                    }
                     if (stop_at_fail_) {
                         const auto err{test_handler + "_" + test_suite + "_" + test_case};
                         throw std::logic_error{"first test failed: " + err};
@@ -210,7 +216,9 @@ int main(int argc, char* argv[]) {
     app.add_option("--threads", num_threads, "Number of parallel threads")->capture_default_str();
     bool stop_at_fail{false};
     app.add_flag("--stop_at_fail", stop_at_fail, "Stop at first test failure");
-    bool skip_snappy_fail{true};
+    bool trace_on_fail{false};
+    app.add_flag("--trace_on_fail", trace_on_fail, "Trace an error in case of any test failure");
+    bool skip_snappy_fail{false};
     app.add_flag("--skip_snappy_fail", skip_snappy_fail, "Skip failures due to Snappy round-trip mismatches");
     std::string test;
     app.add_option("--test", test, "Execute single test: <handler>#<suite>#<case>")
@@ -231,6 +239,7 @@ int main(int argc, char* argv[]) {
     };
 
     TestRunner::set_stop_at_fail(stop_at_fail);
+    TestRunner::set_trace_on_fail(trace_on_fail);
     TestRunner::set_skip_snappy_fail(skip_snappy_fail);
 
     std::map<std::string, std::unique_ptr<TestRunner>> test_runners;

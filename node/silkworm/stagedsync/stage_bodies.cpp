@@ -22,6 +22,7 @@
 #include <silkworm/common/log.hpp>
 #include <silkworm/common/measure.hpp>
 #include <silkworm/common/stopwatch.hpp>
+#include <silkworm/consensus/base/engine.hpp>
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/stages.hpp>
 #include <silkworm/downloader/internals/preverified_hashes.hpp>
@@ -47,13 +48,26 @@ void BodiesStage::BodyDataModel::update_tables(const Block& block) {
     BlockNum block_num = block.header.number;
 
     auto validation_result = ValidationResult::kOk;
+
+#if !defined(NDEBUG)
+    // a full body pre-validation
+    validation_result = consensus_engine_->pre_validate_block_body(block, chain_state_);
+#else
+    // a partial body pre-validation, skipped for preverified headers
     if (block_num > preverified_height_) {
-        validation_result = consensus_engine_->validate_ommers(block, chain_state_);
+        // we do not use pre_validate_block_body() because we assume that the downloader (BlockExchange)
+        // already checked transaction & ommers root hash
+        validation_result = consensus_engine_->pre_validate_transaction(block, chain_state_);
+        if (validation_result == ValidationResult::kOk)
+            validation_result = consensus_engine_->validate_ommers(block, chain_state_);
     }
+
     // there is no need to validate a body if its header is on the chain of the pre-verified hashes;
     // note that here we expect:
     //    1) only bodies on the canonical chain
-    //    2) only bodies whose ommers hashes and transaction root hashes were checked against those of the headers
+    //    2) only bodies whose ommers hashes and transaction root hashes were checked against those
+    //       of the headers by the downloader (BlockExchange)
+#endif
 
     if (validation_result != ValidationResult::kOk) {
         unwind_needed_ = true;
@@ -91,12 +105,6 @@ Stage::Result BodiesStage::forward(db::RWTxn& tx) {
     Stage::Result result = Stage::Result::kUnspecified;
     operation_ = OperationType::Forward;
 
-    auto constexpr kProgressUpdateInterval = 30s;
-
-    StopWatch timing;
-    timing.start();
-    log::Info(log_prefix_) << "Forward start";
-
     try {
         current_height_ = db::stages::read_stage_progress(tx, db::stages::kBlockBodiesKey);
         BlockNum target_height = db::stages::read_stage_progress(tx, db::stages::kHeadersKey);
@@ -106,11 +114,8 @@ Stage::Result BodiesStage::forward(db::RWTxn& tx) {
 
         get_log_progress();  // this is a trick to set log progress initial value, please improve
         RepeatedMeasure<BlockNum> height_progress(current_height_);
-        log::Info(log_prefix_) << "Updating bodies from=" << height_progress.get();
 
         // block processing
-        time_point_t last_update = system_clock::now();
-
         db::Cursor bodies_table(tx, db::table::kBlockBodies);
         while (current_height_ < target_height && !is_stopping()) {
             current_height_++;
@@ -126,17 +131,8 @@ Stage::Result BodiesStage::forward(db::RWTxn& tx) {
             if (processed == 0) throw std::logic_error("table Headers has a hole");
 
             db::stages::write_stage_progress(tx, db::stages::kBlockBodiesKey, current_height_);
+            height_progress.set(body_persistence.highest_height());
 
-            // show progress
-            if (system_clock::now() - last_update > kProgressUpdateInterval) {
-                last_update = system_clock::now();
-
-                height_progress.set(body_persistence.highest_height());
-
-                log::Debug(log_prefix_) << "Updated block bodies number=" << height_progress.get()
-                                        << " (+" << height_progress.delta() << "), "
-                                        << height_progress.throughput() << " bodies/secs";
-            }
         }
 
         result = Stage::Result::kSuccess;
@@ -145,19 +141,13 @@ Stage::Result BodiesStage::forward(db::RWTxn& tx) {
         if (body_persistence.unwind_needed()) {
             result = Stage::Result::kInvalidBlock;
             sync_context_->unwind_point = body_persistence.unwind_point();
+            sync_context_->bad_block_hash = body_persistence.bad_block();
             log::Info(log_prefix_) << "Unwind needed";
         }
-
-        auto bodies_processed = body_persistence.highest_height() - body_persistence.initial_height();
-        log::Info(log_prefix_) << "Updating completed, wrote " << bodies_processed << " bodies,"
-                               << " last=" << body_persistence.highest_height()
-                               << " duration=" << StopWatch::format(timing.lap_duration());
 
         body_persistence.close();
 
         tx.commit();  // this will commit if the tx was started here
-
-        log::Info(log_prefix_) << "Forward done, duration= " << StopWatch::format(timing.lap_duration());
 
     } catch (const std::exception& e) {
         log::Error(log_prefix_) << "Forward aborted due to exception: " << e.what();
@@ -166,16 +156,13 @@ Stage::Result BodiesStage::forward(db::RWTxn& tx) {
         result = Stage::Result::kUnexpectedError;
     }
 
+    operation_ = OperationType::None;
     return result;
 }
 
 Stage::Result BodiesStage::unwind(db::RWTxn& tx) {
     Stage::Result result{Stage::Result::kSuccess};
     operation_ = OperationType::Unwind;
-
-    StopWatch timing;
-    timing.start();
-    log::Info(log_prefix_) << "Unwind start";
 
     current_height_ = db::stages::read_stage_progress(tx, db::stages::kBlockBodiesKey);
     get_log_progress();  // this is a trick to set log progress initial value, please improve
@@ -194,8 +181,6 @@ Stage::Result BodiesStage::unwind(db::RWTxn& tx) {
 
         tx.commit();
 
-        log::Info(log_prefix_) << "Unwind completed, duration= " << StopWatch::format(timing.lap_duration());
-
         result = Stage::Result::kSuccess;
 
     } catch (const std::exception& e) {
@@ -205,6 +190,7 @@ Stage::Result BodiesStage::unwind(db::RWTxn& tx) {
         result = Stage::Result::kUnexpectedError;
     }
 
+    operation_ = OperationType::None;
     return result;
 }
 

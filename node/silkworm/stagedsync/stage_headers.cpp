@@ -145,10 +145,6 @@ auto HeadersStage::forward(db::RWTxn& tx) -> Stage::Result {
     std::thread message_receiving;
     operation_ = OperationType::Forward;
 
-    StopWatch timing;
-    timing.start();
-    log::Info(log_prefix_) << "Forward start";
-
     try {
         current_height_ = db::stages::read_stage_progress(tx, db::stages::kHeadersKey);
         BlockNum target_height = sync_context_->target_height;
@@ -173,7 +169,6 @@ auto HeadersStage::forward(db::RWTxn& tx) -> Stage::Result {
         log::Info(log_prefix_) << "Updating headers from=" << height_progress.get();
 
         // header processing
-        time_point_t last_update = system_clock::now();
         while (current_height_ < target_height && !is_stopping()) {
             current_height_++;
 
@@ -186,29 +181,17 @@ auto HeadersStage::forward(db::RWTxn& tx) -> Stage::Result {
             if (processed == 0) throw std::logic_error("table Headers has a hole");
 
             db::stages::write_stage_progress(tx, db::stages::kHeadersKey, current_height_);
+            height_progress.set(header_persistence.highest_height());
 
-            // show progress
-            if (system_clock::now() - last_update > 30s) {
-                last_update = system_clock::now();
-
-                height_progress.set(header_persistence.highest_height());
-
-                log::Debug(log_prefix_) << "Updated block headers number=" << height_progress.get()
-                                        << " (+" << height_progress.delta() << "), "
-                                        << height_progress.throughput() << " headers/secs";
-            }
         }
 
         result = Stage::Result::kSuccess;  // no reason to raise unwind
 
         auto headers_processed = header_persistence.highest_height() - header_persistence.initial_height();
         log::Info(log_prefix_) << "Updating completed, wrote " << headers_processed << " headers,"
-                               << " last=" << header_persistence.highest_height()
-                               << " duration=" << StopWatch::format(timing.lap_duration());
+                               << " last=" << header_persistence.highest_height();
 
         tx.commit();  // this will commit or not depending on the creator of txn
-
-        log::Info(log_prefix_) << "Forward done, duration= " << StopWatch::format(timing.lap_duration());
 
     } catch (const std::exception& e) {
         log::Error(log_prefix_) << "Forward aborted due to exception: " << e.what();
@@ -217,6 +200,7 @@ auto HeadersStage::forward(db::RWTxn& tx) -> Stage::Result {
         result = Stage::Result::kUnexpectedError;
     }
 
+    operation_ = OperationType::None;
     return result;
 }
 
@@ -226,7 +210,6 @@ auto HeadersStage::unwind(db::RWTxn& tx) -> Stage::Result {
 
     StopWatch timing;
     timing.start();
-    log::Info(log_prefix_) << "Unwind start";
 
     current_height_ = db::stages::read_stage_progress(tx, db::stages::kHeadersKey);
     get_log_progress();  // this is a trick to set log progress initial value, please improve
@@ -248,8 +231,6 @@ auto HeadersStage::unwind(db::RWTxn& tx) -> Stage::Result {
 
         tx.commit();
 
-        log::Info(log_prefix_) << "Unwind completed, duration= " << StopWatch::format(timing.lap_duration());
-
     } catch (const std::exception& e) {
         log::Error(log_prefix_) << "Unwind aborted due to exception: " << e.what();
 
@@ -257,6 +238,7 @@ auto HeadersStage::unwind(db::RWTxn& tx) -> Stage::Result {
         result = Stage::Result::kUnexpectedError;
     }
 
+    operation_ = OperationType::None;
     return result;
 }
 

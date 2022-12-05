@@ -32,6 +32,12 @@ limitations under the License.
 
 namespace silkworm::stagedsync {
 
+#if defined(NDEBUG)
+    static const std::chrono::milliseconds kStageDurationThresholdForLog{10};
+#else
+    static const std::chrono::milliseconds kStageDurationThresholdForLog{0};
+#endif
+
 class SyncPipeline::LogTimer : public Timer {
     SyncPipeline* pipeline_;
 
@@ -59,6 +65,7 @@ class SyncPipeline::LogTimer : public Timer {
         return true;
     }
 };
+
 
 SyncPipeline::SyncPipeline(silkworm::NodeSettings* node_settings)
     : node_settings_{node_settings},
@@ -173,6 +180,7 @@ Stage::Result SyncPipeline::forward(db::RWTxn& cycle_txn, BlockNum target_height
     LogTimer log_timer{this};
 
     sync_context_->target_height = target_height;
+    log::Info("SyncPipeline") << "Forward start --------------------------";
 
     try {
         // Force to stop at any particular stage ?
@@ -204,6 +212,7 @@ Stage::Result SyncPipeline::forward(db::RWTxn& cycle_txn, BlockNum target_height
             if (stage_result != Stage::Result::kSuccess) {
                 auto result_description = std::string(magic_enum::enum_name<Stage::Result>(stage_result));
                 log::Error(get_log_prefix(), {"op", "Forward", "returned", });
+                log::Error("SyncPipeline") << "Forward interrupted due to stage " << current_stage_->first << " failure";
                 return stage_result;
             }
 
@@ -214,7 +223,7 @@ Stage::Result SyncPipeline::forward(db::RWTxn& cycle_txn, BlockNum target_height
             }
 
             auto [_, stage_duration] = stages_stop_watch.lap();
-            if (stage_duration > std::chrono::milliseconds(10)) {
+            if (stage_duration > kStageDurationThresholdForLog) {
                 log::Info(get_log_prefix(), {"op", "Forward", "done", StopWatch::format(stage_duration)});
             }
         }
@@ -229,10 +238,12 @@ Stage::Result SyncPipeline::forward(db::RWTxn& cycle_txn, BlockNum target_height
                 " head_header_height= " + to_string(head_header_number_));
         }
 
+        log::Info("SyncPipeline") << "Forward done ---------------------------";
         return is_stopping() ? Stage::Result::kAborted : Stage::Result::kSuccess;
 
     } catch (const std::exception& ex) {
         log::Error(get_log_prefix(), {"exception", std::string(ex.what())});
+        log::Error("SyncPipeline") << "Forward aborted due to exception: " << ex.what();
         return Stage::Result::kUnexpectedError;
     }
 }
@@ -241,6 +252,7 @@ Stage::Result SyncPipeline::unwind(db::RWTxn& cycle_txn, BlockNum unwind_point) 
     using std::to_string;
     StopWatch stages_stop_watch(true);
     LogTimer log_timer{this};
+    log::Info("SyncPipeline") << "Unwind start ---------------------------";
 
     try {
         sync_context_->unwind_point = unwind_point;
@@ -262,12 +274,13 @@ Stage::Result SyncPipeline::unwind(db::RWTxn& cycle_txn, BlockNum unwind_point) 
             if (stage_result != Stage::Result::kSuccess) {
                 auto result_description = std::string(magic_enum::enum_name<Stage::Result>(stage_result));
                 log::Error(get_log_prefix(), {"op", "Unwind", "returned", result_description});
+                log::Error("SyncPipeline") << "Unwind interrupted due to stage " << current_stage_->first << " failure";
                 return stage_result;
             }
 
             // Log performances
             auto [_, stage_duration] = stages_stop_watch.lap();
-            if (stage_duration > std::chrono::milliseconds(10)) {
+            if (stage_duration > kStageDurationThresholdForLog) {
                 log::Info(get_log_prefix(), {"op", "Unwind", "done", StopWatch::format(stage_duration)});
             }
         }
@@ -287,9 +300,11 @@ Stage::Result SyncPipeline::unwind(db::RWTxn& cycle_txn, BlockNum unwind_point) 
         sync_context_->unwind_point.reset();
         sync_context_->bad_block_hash.reset();
 
+        log::Info("SyncPipeline") << "Unwind done ----------------------------";
         return is_stopping() ? Stage::Result::kAborted : Stage::Result::kSuccess;
 
     } catch (const std::exception& ex) {
+        log::Error("SyncPipeline") << "Unwind aborted due to exception: " << ex.what();
         log::Error(get_log_prefix(), {"exception", std::string(ex.what())});
         return Stage::Result::kUnexpectedError;
     }
@@ -317,11 +332,12 @@ Stage::Result SyncPipeline::prune(db::RWTxn& cycle_txn) {
                 log::Error(get_log_prefix(),
                            {"op", "Prune",
                             "returned", std::string(magic_enum::enum_name<Stage::Result>(stage_result))});
+                log::Error("SyncPipeline") << "Prune interrupted due to stage " << current_stage_->first << " failure";
                 return stage_result;
             }
 
             auto [_, stage_duration] = stages_stop_watch.lap();
-            if (stage_duration > std::chrono::milliseconds(10)) {
+            if (stage_duration > kStageDurationThresholdForLog) {
                 log::Info(get_log_prefix(),
                           {"op", "Prune",
                            "done", StopWatch::format(stage_duration)});

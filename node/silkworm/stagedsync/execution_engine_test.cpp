@@ -25,6 +25,7 @@ limitations under the License.
 #include "silkworm/common/test_context.hpp"
 #include "silkworm/db/genesis.hpp"
 #include "silkworm/db/stages.hpp"
+#include "silkworm/test/log.hpp"
 #include "silkworm/types/block.hpp"
 #include "stage_bodies.hpp"
 
@@ -40,6 +41,8 @@ class ExecutionEngine_ForTest : public stagedsync::ExecutionEngine {
 };
 
 TEST_CASE("ExecutionEngine") {
+    test::SetLogVerbosityGuard log_guard(log::Level::kNone);
+
     test::Context context;
 
     auto chain_config = *context.node_settings().chain_config;

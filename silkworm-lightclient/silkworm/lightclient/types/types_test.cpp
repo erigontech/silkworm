@@ -339,4 +339,133 @@ TEST_CASE("IndexedAttestation SSZ") {
     }
 }
 
+TEST_CASE("AttesterSlashing SSZ") {
+    Bytes kSerialized{*from_hex("08000000" // 4 - offset0 attester slashing (8)
+        "f4000000" // 4 - offset1 attester slashing (8 + 228 + 8)
+        "e4000000" // 4 - offset0 indexed attestation (228)
+        "0000000000000000" // 8 - slot
+        "0000000000000000" // 8 - index
+        "0000000000000000000000000000000000000000000000000000000000000000" // 32 - beacon block hash
+        "0000000000000000" // 8 - source epoch
+        "0000000000000000000000000000000000000000000000000000000000000000" // 32 - source root
+        "0000000000000000" // 8 - target epoch
+        "0000000000000000000000000000000000000000000000000000000000000000" // 32 - target root
+        "0000000000000000000000000000000000000000000000000000000000000000" // 32 - signature 1/3
+        "0000000000000000000000000000000000000000000000000000000000000000" // 32 - signature 2/3
+        "0000000000000000000000000000000000000000000000000000000000000000" // 32 - signature 3/3
+        "0000000000000000" // 8 - attestation indices [0]
+        "e4000000" // 4 - offset0 indexed attestation (228)
+        "0000000000000000"
+        "0000000000000000"
+        "0000000000000000000000000000000000000000000000000000000000000000"
+        "0000000000000000"
+        "0000000000000000000000000000000000000000000000000000000000000000"
+        "0000000000000000"
+        "0000000000000000000000000000000000000000000000000000000000000000"
+        "0000000000000000000000000000000000000000000000000000000000000000"
+        "0000000000000000000000000000000000000000000000000000000000000000"
+        "0000000000000000000000000000000000000000000000000000000000000000"
+        "0000000000000000" // 8 - attestation indices [1]
+        "0000000000000000" // 8 - attestation indices [2]
+        "0000000000000000" // 8 - attestation indices [3]
+        "0000000000000000" // 8 - attestation indices [4]
+        "0000000000000000" // 8 - attestation indices [5]
+        "0000000000000000" // 8 - attestation indices [6]
+        "0000000000000000" // 8 - attestation indices [7]
+        "0000000000000000" // 8 - attestation indices [8]
+        )};
+    SECTION("encoding round-trip") {
+        AttesterSlashing a{
+            std::make_unique<IndexedAttestation>(IndexedAttestation{}),
+            std::make_unique<IndexedAttestation>(IndexedAttestation{}),
+        };
+        Bytes b{};
+        ssz::encode(a, b);
+        CHECK(b == *from_hex("08000000" // 4 - offset0 attester slashing (8)
+                             "ec000000" // 4 - offset1 attester slashing (8 + 228)
+                             "e4000000" // 4 - offset0 indexed attestation (228)
+                             "0000000000000000" // 8 - slot
+                             "0000000000000000" // 8 - index
+                             "0000000000000000000000000000000000000000000000000000000000000000" // 32 - beacon block hash
+                             "0000000000000000" // 8 - source epoch
+                             "0000000000000000000000000000000000000000000000000000000000000000" // 32 - source root
+                             "0000000000000000" // 8 - target epoch
+                             "0000000000000000000000000000000000000000000000000000000000000000" // 32 - target root
+                             "0000000000000000000000000000000000000000000000000000000000000000" // 32 - signature 1/3
+                             "0000000000000000000000000000000000000000000000000000000000000000" // 32 - signature 2/3
+                             "0000000000000000000000000000000000000000000000000000000000000000" // 32 - signature 3/3
+                             "e4000000" // 4 - offset0 indexed attestation (228)
+                             "0000000000000000"
+                             "0000000000000000"
+                             "0000000000000000000000000000000000000000000000000000000000000000"
+                             "0000000000000000"
+                             "0000000000000000000000000000000000000000000000000000000000000000"
+                             "0000000000000000"
+                             "0000000000000000000000000000000000000000000000000000000000000000"
+                             "0000000000000000000000000000000000000000000000000000000000000000"
+                             "0000000000000000000000000000000000000000000000000000000000000000"
+                             "0000000000000000000000000000000000000000000000000000000000000000"
+                             ));
+        CHECK(test::decode_success<AttesterSlashing>(to_hex(b)) == a);
+    }
+    SECTION("decoding round-trip") {
+        AttesterSlashing a{test::decode_success<AttesterSlashing>(to_hex(kSerialized))};
+        AttesterSlashing b{
+            std::make_unique<IndexedAttestation>(IndexedAttestation{
+                {0},
+                std::make_unique<AttestationData>(),
+                {}
+            }),
+            std::make_unique<IndexedAttestation>(IndexedAttestation{
+                {0, 0, 0, 0, 0, 0, 0, 0},
+                std::make_unique<AttestationData>(),
+                {}
+            }),
+        };
+        // CHECK(a == b);
+        // CHECK(test::encode_success(a, kSerialized));
+        CHECK(test::decode_success<AttesterSlashing>("08000000" // 4 - offset0 attester slashing (8)
+                                                     "f4000000" // 4 - offset1 attester slashing (8 + 228 + 8)
+                                                     "e4000000" // 4 - offset0 indexed attestation (228)
+                                                     "0000000000000000" // 8 - slot
+                                                     "0000000000000000" // 8 - index
+                                                     "0000000000000000000000000000000000000000000000000000000000000000" // 32 - beacon block hash
+                                                     "0000000000000000" // 8 - source epoch
+                                                     "0000000000000000000000000000000000000000000000000000000000000000" // 32 - source root
+                                                     "0000000000000000" // 8 - target epoch
+                                                     "0000000000000000000000000000000000000000000000000000000000000000" // 32 - target root
+                                                     "0000000000000000000000000000000000000000000000000000000000000000" // 32 - signature 1/3
+                                                     "0000000000000000000000000000000000000000000000000000000000000000" // 32 - signature 2/3
+                                                     "0000000000000000000000000000000000000000000000000000000000000000" // 32 - signature 3/3
+                                                     "0000000000000000" // 8 - attestation indices [0]
+                                                     "e4000000" // 4 - offset0 indexed attestation (228)
+                                                     "0000000000000000"
+                                                     "0000000000000000"
+                                                     "0000000000000000000000000000000000000000000000000000000000000000"
+                                                     "0000000000000000"
+                                                     "0000000000000000000000000000000000000000000000000000000000000000"
+                                                     "0000000000000000"
+                                                     "0000000000000000000000000000000000000000000000000000000000000000"
+                                                     "0000000000000000000000000000000000000000000000000000000000000000"
+                                                     "0000000000000000000000000000000000000000000000000000000000000000"
+                                                     "0000000000000000000000000000000000000000000000000000000000000000"
+                                                     "0000000000000000" // 8 - attestation indices [1]
+                                                     "0000000000000000" // 8 - attestation indices [2]
+                                                     "0000000000000000" // 8 - attestation indices [3]
+                                                     "0000000000000000" // 8 - attestation indices [4]
+                                                     "0000000000000000" // 8 - attestation indices [5]
+                                                     "0000000000000000" // 8 - attestation indices [6]
+                                                     "0000000000000000" // 8 - attestation indices [7]
+                                                     "0000000000000000" // 8 - attestation indices [8]
+                                                     )
+              == a);
+    }
+    SECTION("decoding error") {
+        CHECK(test::decode_failure<AttesterSlashing>("") == DecodingResult::kInputTooShort);
+        CHECK(test::decode_failure<AttesterSlashing>("00") == DecodingResult::kInputTooShort);
+        // Next check truncates the input *one byte before* the attestation indices (8 * sizeof(uit64_t)) producing a corrupt serialization
+        CHECK(test::decode_failure<AttesterSlashing>(kSerialized.substr(0, kSerialized.size() - 65)) == DecodingResult::kInputTooShort);
+    }
+}
+
 }  // namespace silkworm::cl

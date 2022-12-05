@@ -249,6 +249,11 @@ void encode(cl::IndexedAttestation& from, Bytes& to) noexcept {
     }
     ssz::encode(*from.data, to);
     ssz::encode(from.signature, to);
+
+    // TODO(canepat) support encoding errors
+    /*if (from.attesting_indices.size() > cl::IndexedAttestation::kMaxAttestingIndices) {
+        throw std::runtime_error{"too many attesting_indices"};
+    }*/
     for (const auto attesting_index : from.attesting_indices) {
         ssz::encode(attesting_index, to);
     }
@@ -257,18 +262,15 @@ void encode(cl::IndexedAttestation& from, Bytes& to) noexcept {
 template <>
 DecodingResult decode(ByteView& from, cl::IndexedAttestation& to) noexcept {
     const auto size = from.size();
-    if (from.size() < cl::IndexedAttestation::kMinSize) {
+    if (size < cl::IndexedAttestation::kMinSize) {
         return DecodingResult::kInputTooShort;
     }
-    if (from.size() > cl::IndexedAttestation::kMaxSize) {
-        return DecodingResult::kUnexpectedLength;
-    }
 
-    uint32_t indices_offset{0};
-    if (DecodingResult err{ssz::decode_offset(from, indices_offset)}; err != DecodingResult::kOk) {
+    uint32_t offset0{0};
+    if (DecodingResult err{ssz::decode_offset(from, offset0)}; err != DecodingResult::kOk) {
         return err;
     }
-    if (indices_offset < cl::IndexedAttestation::kMinSize || indices_offset > size) {
+    if (offset0 < cl::IndexedAttestation::kMinSize || offset0 > size) {
         return DecodingResult::kUnexpectedLength;
     }
 
@@ -279,7 +281,10 @@ DecodingResult decode(ByteView& from, cl::IndexedAttestation& to) noexcept {
     if (DecodingResult err{ssz::decode(from, to.signature)}; err != DecodingResult::kOk) {
         return err;
     }
-    const auto num_attesting_indices = (size - indices_offset) / CHAR_BIT;
+    const auto num_attesting_indices = (size - offset0) / CHAR_BIT;
+    if (num_attesting_indices > cl::IndexedAttestation::kMaxAttestingIndices) {
+        return DecodingResult::kUnexpectedLength;
+    }
     to.attesting_indices.resize(num_attesting_indices);
     for (std::size_t i{0}; i < num_attesting_indices; ++i) {
         if (DecodingResult err{ssz::decode(from, to.attesting_indices[i])}; err != DecodingResult::kOk) {
@@ -365,11 +370,17 @@ DecodingResult decode(ByteView& from, cl::AttesterSlashing& to) noexcept {
     }
 
     to.attestation1 = std::make_shared<cl::IndexedAttestation>();
-    if (DecodingResult err{ssz::decode(from, *to.attestation1)}; err != DecodingResult::kOk) {
+    // TODO(canepat) change after refactoring ByteView& -> ByteView
+    // ByteView attestation1_from{from.data() + offset0, offset1 - offset0};
+    ByteView attestation1_from{from.data(), offset1 - offset0};
+    if (DecodingResult err{ssz::decode(attestation1_from, *to.attestation1)}; err != DecodingResult::kOk) {
         return err;
     }
     to.attestation2 = std::make_shared<cl::IndexedAttestation>();
-    if (DecodingResult err{ssz::decode(from, *to.attestation2)}; err != DecodingResult::kOk) {
+    // TODO(canepat) change after refactoring ByteView& -> ByteView
+    // ByteView attestation2_from{from.data() + offset1, size - offset1};
+    ByteView attestation2_from{from.data(), size - offset1};
+    if (DecodingResult err{ssz::decode(attestation2_from, *to.attestation2)}; err != DecodingResult::kOk) {
         return err;
     }
 

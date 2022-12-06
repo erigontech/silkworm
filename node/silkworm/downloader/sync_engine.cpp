@@ -71,7 +71,7 @@ void SyncEngine::execution_loop() {
                 update_bad_headers(std::move(invalid_chain.bad_headers));
             }
 
-            exec_engine_.update_fork_choice(invalid_chain.unwind_head);
+            exec_engine_.notify_fork_choice_updated(invalid_chain.unwind_head);
 
             continue;
         } else if (std::holds_alternative<ValidationError>(verification)) {
@@ -84,7 +84,7 @@ void SyncEngine::execution_loop() {
             // ???
         }
 
-        exec_engine_.update_fork_choice(new_height.hash);
+        exec_engine_.notify_fork_choice_updated(new_height.hash);
     }
 };
 

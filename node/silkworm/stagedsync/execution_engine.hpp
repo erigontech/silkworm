@@ -48,9 +48,9 @@ class ExecutionEngine : public Stoppable {
     void insert_body(Block&);
     void insert_bodies(std::vector<std::shared_ptr<Block>>&);
 
-    auto verify_chain(Hash header_hash) -> VerificationResult;
+    auto verify_chain(Hash head_block_hash) -> VerificationResult;
 
-    bool update_fork_choice(Hash header_hash);
+    bool notify_fork_choice_updated(Hash head_block_hash);
 
     // state
     VerificationResult current_status();

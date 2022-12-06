@@ -20,12 +20,13 @@ limitations under the License.
 
 #include <catch2/catch.hpp>
 
-#include "silkworm/common/cast.hpp"
-#include "silkworm/common/test_context.hpp"
-#include "silkworm/db/genesis.hpp"
-#include "silkworm/db/stages.hpp"
-#include "silkworm/test/log.hpp"
-#include "silkworm/types/block.hpp"
+#include <silkworm/common/cast.hpp>
+#include <silkworm/common/environment.hpp>
+#include <silkworm/common/test_context.hpp>
+#include <silkworm/db/genesis.hpp>
+#include <silkworm/db/stages.hpp>
+#include <silkworm/test/log.hpp>
+#include <silkworm/types/block.hpp>
 
 namespace silkworm {
 
@@ -44,6 +45,8 @@ TEST_CASE("ExecutionEngine") {
     test::Context context;
     context.add_genesis_data();
     context.commit_txn();
+
+    Environment::set_pre_verified_hashes_disabled();
 
     db::RWAccess db_access{context.env()};
     ExecutionEngine_ForTest execution_engine{context.node_settings(), db_access};
@@ -148,7 +151,7 @@ TEST_CASE("ExecutionEngine") {
         REQUIRE(present_in_canonical);
 
         // reverting the chain
-        execution_engine.update_fork_choice(*header0_hash);
+        execution_engine.notify_fork_choice_updated(*header0_hash);
 
         // checking the status
         present_in_canonical = execution_engine.get_canonical_hash(block1.header.number);
@@ -250,7 +253,7 @@ TEST_CASE("ExecutionEngine") {
         REQUIRE(present_in_canonical);
 
         // confirming the chain
-        execution_engine.update_fork_choice(block1.header.hash());
+        execution_engine.notify_fork_choice_updated(block1.header.hash());
 
         // checking the status
         present_in_canonical = execution_engine.get_canonical_hash(block1.header.number);

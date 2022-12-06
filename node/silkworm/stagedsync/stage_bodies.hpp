@@ -41,18 +41,20 @@ class BodiesStage : public Stage {
     std::atomic<BlockNum> current_height_{0};
 
   protected:
+    // BodyDataModel has the responsibility to update bodies related tables
     class BodyDataModel {
       public:
         explicit BodyDataModel(db::RWTxn&, BlockNum bodies_stage_height, const ChainConfig&);
         ~BodyDataModel() = default;
 
-        void update_tables(const Block&);
+        void update_tables(const Block&); // make a pre-verification of the body and update body related tables
         void close();
 
+        // remove body data from tables, used in unwind phase
         static void remove_bodies(BlockNum new_height, std::optional<Hash> bad_block, db::RWTxn& tx);
 
+        // holds the status of a batch insertion of bodies
         bool unwind_needed() const;
-
         BlockNum unwind_point() const;
         BlockNum initial_height() const;
         BlockNum highest_height() const;

@@ -18,7 +18,7 @@
 
 #include <silkworm/common/as_range.hpp>
 #include <silkworm/common/log.hpp>
-#include <silkworm/stagedsync/stage.hpp>
+#include <silkworm/common/environment.hpp>
 
 #include "algorithm.hpp"
 #include "db_utils.hpp"
@@ -48,7 +48,7 @@ HeaderChain::HeaderChain(ConsensusEnginePtr consensus_engine)
     }
 
     // User can specify to stop downloading process at some block
-    const auto stop_at_block = stop_at_block_from_env();
+    const auto stop_at_block = Environment::get_stop_at_block();
     if (stop_at_block.has_value()) {
         target_block_ = stop_at_block;
         top_seen_height_ = target_block_.value() + 2 * stride;  // needed if no header announcements on p2p network
@@ -978,14 +978,5 @@ std::string HeaderChain::dump_chain_bundles() const {
     return output;
 }
 */
-
-std::optional<BlockNum> stop_at_block_from_env() {
-    std::optional<BlockNum> target_block;
-    // User can specify to stop downloading process at some block
-    if (const char* stop_at_block{std::getenv("STOP_AT_BLOCK")}; stop_at_block != nullptr) {
-        target_block = std::stoul(stop_at_block);
-    }
-    return target_block;
-}
 
 }  // namespace silkworm

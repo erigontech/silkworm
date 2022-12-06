@@ -177,6 +177,4 @@ class HeaderChain {
     std::string skeleton_condition_;
 };
 
-std::optional<BlockNum> stop_at_block_from_env();
-
 }  // namespace silkworm

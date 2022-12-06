@@ -15,45 +15,19 @@
 */
 #include "stage_headers.hpp"
 
-#include <chrono>
 #include <set>
 #include <thread>
 
+#include <silkworm/common/environment.hpp>
 #include <silkworm/common/log.hpp>
 #include <silkworm/common/measure.hpp>
 #include <silkworm/common/stopwatch.hpp>
 #include <silkworm/db/stages.hpp>
 #include <silkworm/downloader/internals/db_utils.hpp>
-#include <silkworm/downloader/internals/header_chain.hpp>
 
 namespace silkworm::stagedsync {
 
-// HeaderPersistence has the responsibility to update headers related tables
-class HeaderDataModel {
-  public:
-    explicit HeaderDataModel(db::RWTxn& tx, BlockNum headers_height);
-
-    void update_tables(const BlockHeader&);
-
-    static void remove_headers(BlockNum unwind_point, std::optional<Hash> bad_block, db::RWTxn& tx);
-
-    bool best_header_changed() const;
-    BlockNum initial_height() const;
-    BlockNum highest_height() const;
-    Hash highest_hash() const;
-    BigInt total_difficulty() const;
-
-  private:
-    db::RWTxn& tx_;
-    Hash previous_hash_;
-    Hash highest_hash_;
-    BlockNum initial_in_db_{};
-    BlockNum highest_in_db_{};
-    BigInt local_td_;
-    bool new_canonical_{false};
-};
-
-HeaderDataModel::HeaderDataModel(db::RWTxn& tx, BlockNum headers_height) : tx_(tx) {
+HeadersStage::HeaderDataModel::HeaderDataModel(db::RWTxn& tx, BlockNum headers_height) : tx_(tx) {
     auto headers_hash = db::read_canonical_hash(tx, headers_height);
     if (!headers_hash) throw std::logic_error("Headers stage, canonical must be consistent, not found hash at height " + std::to_string(headers_height));
 
@@ -65,17 +39,17 @@ HeaderDataModel::HeaderDataModel(db::RWTxn& tx, BlockNum headers_height) : tx_(t
     highest_in_db_ = headers_height;
 }
 
-bool HeaderDataModel::best_header_changed() const { return new_canonical_; }
+bool HeadersStage::HeaderDataModel::best_header_changed() const { return new_canonical_; }
 
-BlockNum HeaderDataModel::initial_height() const { return initial_in_db_; }
+BlockNum HeadersStage::HeaderDataModel::initial_height() const { return initial_in_db_; }
 
-BlockNum HeaderDataModel::highest_height() const { return highest_in_db_; }
+BlockNum HeadersStage::HeaderDataModel::highest_height() const { return highest_in_db_; }
 
-Hash HeaderDataModel::highest_hash() const { return highest_hash_; }
+Hash HeadersStage::HeaderDataModel::highest_hash() const { return highest_hash_; }
 
-BigInt HeaderDataModel::total_difficulty() const { return local_td_; }
+BigInt HeadersStage::HeaderDataModel::total_difficulty() const { return local_td_; }
 
-void HeaderDataModel::update_tables(const BlockHeader& header) {
+void HeadersStage::HeaderDataModel::update_tables(const BlockHeader& header) {
     // Admittance conditions
     auto height = header.number;
     Hash hash = header.hash();
@@ -115,7 +89,7 @@ void HeaderDataModel::update_tables(const BlockHeader& header) {
     previous_hash_ = hash;
 }
 
-void HeaderDataModel::remove_headers(BlockNum unwind_point, std::optional<Hash> bad_block, db::RWTxn& tx) {
+void HeadersStage::HeaderDataModel::remove_headers(BlockNum unwind_point, std::optional<Hash> bad_block, db::RWTxn& tx) {
     bool is_bad_block = bad_block.has_value();
     if (is_bad_block) {
         auto canonical_hash = db::read_canonical_hash(tx, unwind_point);
@@ -129,7 +103,7 @@ void HeaderDataModel::remove_headers(BlockNum unwind_point, std::optional<Hash> 
 HeadersStage::HeadersStage(NodeSettings* ns, SyncContext* sc)
     : Stage(sc, db::stages::kHeadersKey, ns) {
     // User can specify to stop downloading process at some block
-    const auto stop_at_block = stop_at_block_from_env();
+    const auto stop_at_block = Environment::get_stop_at_block();
     if (stop_at_block.has_value()) {
         forced_target_block_ = stop_at_block;
         log::Info(log_prefix_) << "env var STOP_AT_BLOCK set, target block=" << forced_target_block_.value();

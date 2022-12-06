@@ -19,7 +19,9 @@
 #include <thread>
 
 #include "chain_fork_view.hpp"
+
 #include "silkworm/common/as_range.hpp"
+#include "silkworm/common/environment.hpp"
 #include "silkworm/common/log.hpp"
 #include "silkworm/common/measure.hpp"
 #include "silkworm/common/stopwatch.hpp"
@@ -34,7 +36,7 @@ namespace silkworm::chainsync {
 HeadersStage::HeadersStage(BlockExchange& bd, stagedsync::ExecutionEngine& ee)
     : Stage(db::stages::kHeadersKey), block_downloader_(bd), exec_engine_{ee}, log_prefix_{"[Cons.Headers]"} {
     // User can specify to stop downloading process at some block
-    const auto stop_at_block = stop_at_block_from_env();
+    const auto stop_at_block = Environment::get_stop_at_block();
     if (stop_at_block.has_value()) {
         target_block_ = stop_at_block;
         log::Info(log_prefix_) << "env var STOP_AT_BLOCK set, target block=" << target_block_.value();

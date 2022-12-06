@@ -14,6 +14,8 @@
    limitations under the License.
 */
 
+#include <silkworm/common/environment.hpp>
+
 #include "preverified_hashes.hpp"
 
 extern const uint64_t* preverified_hashes_mainnet_data();
@@ -42,6 +44,10 @@ void load_preverified_hashes(PreverifiedHashes& destination, const uint64_t* (*p
 PreverifiedHashes PreverifiedHashes::load(uint64_t chain_id) {
     PreverifiedHashes result{};
 
+    if (Environment::are_pre_verified_hashes_disabled()) {
+        return result;
+    }
+
     if (chain_id == 1) {
         load_preverified_hashes(result, preverified_hashes_mainnet_data, sizeof_preverified_hashes_mainnet_data,
                                 preverified_hashes_mainnet_height);
@@ -51,6 +57,10 @@ PreverifiedHashes PreverifiedHashes::load(uint64_t chain_id) {
 }
 
 uint64_t PreverifiedHashes::max_height(uint64_t chain_id) {
+    if (Environment::are_pre_verified_hashes_disabled()) {
+        return 0;
+    }
+
     if (chain_id == 1) {
         return preverified_hashes_mainnet_height();
     }

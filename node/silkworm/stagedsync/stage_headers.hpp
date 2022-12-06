@@ -75,6 +75,33 @@ class HeadersStage : public Stage {
     std::atomic<BlockNum> current_height_{0};
 
     std::optional<BlockNum> forced_target_block_;
+
+    // HeaderDataModel has the responsibility to update headers related tables
+    class HeaderDataModel {
+      public:
+        explicit HeaderDataModel(db::RWTxn& tx, BlockNum headers_height);
+
+        void update_tables(const BlockHeader&);  // update header related tables
+
+        // remove header data from tables, used in unwind phase
+        static void remove_headers(BlockNum unwind_point, std::optional<Hash> bad_block, db::RWTxn& tx);
+
+        // holds the status of a batch insertion of headers
+        bool best_header_changed() const;
+        BlockNum initial_height() const;
+        BlockNum highest_height() const;
+        Hash highest_hash() const;
+        BigInt total_difficulty() const;
+
+      private:
+        db::RWTxn& tx_;
+        Hash previous_hash_;
+        Hash highest_hash_;
+        BlockNum initial_in_db_{};
+        BlockNum highest_in_db_{};
+        BigInt local_td_;
+        bool new_canonical_{false};
+    };
 };
 
 }  // namespace silkworm::stagedsync

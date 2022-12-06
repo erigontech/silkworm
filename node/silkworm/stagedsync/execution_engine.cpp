@@ -182,9 +182,9 @@ void ExecutionEngine::insert_body(Block& block) {
     }
 }
 
-auto ExecutionEngine::verify_chain(Hash header_hash) -> VerificationResult {
+auto ExecutionEngine::verify_chain(Hash head_block_hash) -> VerificationResult {
     // retrieve the head header
-    auto header = get_header(header_hash);
+    auto header = get_header(head_block_hash);
     ensure_invariant(header.has_value(), "header to verify non present");
 
     // db commit policy
@@ -193,7 +193,7 @@ auto ExecutionEngine::verify_chain(Hash header_hash) -> VerificationResult {
         tx_.disable_commit();
 
     // the new head is on a new fork?
-    BlockNum forking_point = canonical_chain_.find_forking_point(tx_, header_hash);  // the forking origin
+    BlockNum forking_point = canonical_chain_.find_forking_point(tx_, head_block_hash);  // the forking origin
     if (forking_point < canonical_chain_.current_head().number) {  // if the forking is behind the current head
         // we need to do unwind to change canonical
         auto unwind_result = pipeline_.unwind(tx_, forking_point);
@@ -203,7 +203,7 @@ auto ExecutionEngine::verify_chain(Hash header_hash) -> VerificationResult {
     }  // todo for PoS: do not unwind, just find the correct overlay
 
     // update canonical up to header_hash
-    canonical_chain_.update_up_to(header->number, header_hash);
+    canonical_chain_.update_up_to(header->number, head_block_hash);
 
     // forward
     Stage::Result forward_result = pipeline_.forward(tx_, header->number);
@@ -246,18 +246,18 @@ auto ExecutionEngine::verify_chain(Hash header_hash) -> VerificationResult {
     return verify_result;
 }
 
-bool ExecutionEngine::update_fork_choice(Hash header_hash) {
+bool ExecutionEngine::notify_fork_choice_updated(Hash head_block_hash) {
     // db commit policy
     bool cycle_in_one_tx = !is_first_sync;
     std::unique_ptr<db::RWTxn> inner_tx{nullptr};
     if (!cycle_in_one_tx)
         tx_.disable_commit();
 
-    if (canonical_chain_.current_head().hash != header_hash) {  // todo for PoS: choose the corresponding overlay and do commit
+    if (canonical_chain_.current_head().hash != head_block_hash) {  // todo for PoS: choose the corresponding overlay and do commit
         // usually update_fork_choice must follow verify_chain with the same header
         // except when verify_chain returned InvalidChain, so we need to do an unwind
 
-        BlockNum forking_point = canonical_chain_.find_forking_point(tx_, header_hash);  // the forking origin on the canonical
+        BlockNum forking_point = canonical_chain_.find_forking_point(tx_, head_block_hash);  // the forking origin on the canonical
 
         auto unwind_result = pipeline_.unwind(tx_, forking_point);
         success_or_throw(unwind_result);  // unwind must complete with success

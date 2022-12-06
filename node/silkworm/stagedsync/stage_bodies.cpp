@@ -43,31 +43,29 @@ BlockNum BodiesStage::BodyDataModel::unwind_point() const { return unwind_point_
 Hash BodiesStage::BodyDataModel::bad_block() const { return bad_block_; }
 void BodiesStage::BodyDataModel::set_preverified_height(BlockNum height) { preverified_height_ = height; }
 
+// update_tables has the responsibility to update all tables related with the block that is passed as parameter
+// Right now there is no table that need to be updated but the name of the method is retained because it makes a pair
+// with the same method in the HeadersStages::HeaderDataModel class
 void BodiesStage::BodyDataModel::update_tables(const Block& block) {
     Hash block_hash = block.header.hash();  // save cpu
     BlockNum block_num = block.header.number;
 
     auto validation_result = ValidationResult::kOk;
 
-#if !defined(NDEBUG) // maybe it is better to use SILKWORM_FULL_BODY_PRE_VALIDATION
-    // a full body pre-validation
-    validation_result = consensus_engine_->pre_validate_block_body(block, chain_state_);
-#else
-    // a partial body pre-validation, skipped for preverified headers
+    // Body validation
     if (block_num > preverified_height_) {
-        // we do not use pre_validate_block_body() because we assume that the downloader (BlockExchange)
-        // already checked transaction & ommers root hash
+        // Here we skip a full body pre-validation like
+        // validation_result = consensus_engine_->pre_validate_block_body(block, chain_state_);
+        // because we assume that the downloader (BlockExchange) has already checked transaction & ommers root hash
         validation_result = consensus_engine_->pre_validate_transactions(block);
         if (validation_result == ValidationResult::kOk)
             validation_result = consensus_engine_->validate_ommers(block, chain_state_);
     }
-
-    // there is no need to validate a body if its header is on the chain of the pre-verified hashes;
-    // note that here we expect:
+    // There is no need to validate a body if its header is on the chain of the pre-verified hashes.
+    // Note that here we expect:
     //    1) only bodies on the canonical chain
     //    2) only bodies whose ommers hashes and transaction root hashes were checked against those
     //       of the headers by the downloader (BlockExchange)
-#endif
 
     if (validation_result != ValidationResult::kOk) {
         unwind_needed_ = true;
@@ -75,10 +73,6 @@ void BodiesStage::BodyDataModel::update_tables(const Block& block) {
         bad_block_ = block_hash;
         return;
     }
-
-    // if (!db::has_body(tx_, block_num, block_hash)) {
-    //     db::write_body(tx_, block, block_hash, block_num);
-    // }
 
     if (block_num > highest_height_) {
         highest_height_ = block_num;

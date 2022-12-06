@@ -20,7 +20,6 @@ limitations under the License.
 
 #include <catch2/catch.hpp>
 
-#include <silkworm/common/cast.hpp>
 #include <silkworm/common/environment.hpp>
 #include <silkworm/common/test_context.hpp>
 #include <silkworm/db/genesis.hpp>

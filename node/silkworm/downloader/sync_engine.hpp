@@ -34,7 +34,7 @@ class SyncEngine : public ActiveComponent {
     void execution_loop() final; /*[[long_running]]*/
 
   private:
-    auto foward_and_insert_blocks(HeadersStage&, BodiesStage&) -> Stage::NewHeight;
+    auto forward_and_insert_blocks(HeadersStage&, BodiesStage&) -> Stage::NewHeight;
     void unwind(HeadersStage&, BodiesStage&, Stage::UnwindPoint);
     auto update_bad_headers(std::set<Hash>) -> std::shared_ptr<InternalMessage<void>>;
 

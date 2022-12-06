@@ -112,8 +112,11 @@ auto HeadersStage::forward(std::optional<NewHeight> desired_height) -> NewHeight
                     insertion_timing.start();
 
                     // core activities
-                    as_range::for_each(stable_headers, [&chain_fork_view](const auto& header) { chain_fork_view.add(*header); });
-                    exec_engine_.insert_headers(stable_headers);
+                    for(auto& header: stable_headers) {
+                        chain_fork_view.add(*header);
+                        exec_engine_.insert_header(*header);  // inserting in batch doesn't work because chain_fork_view
+                                                                 // needs data of ancestors from execution engine
+                    }
 
                     current_height_ = chain_fork_view.head_height();
 

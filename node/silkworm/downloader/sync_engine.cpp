@@ -25,7 +25,7 @@ SyncEngine::SyncEngine(NodeSettings&, db::ROAccess dba, BlockExchange& be, stage
       exec_engine_{ee} {
 }
 
-auto SyncEngine::foward_and_insert_blocks(HeadersStage& headers_stage, BodiesStage& bodies_stage) -> Stage::NewHeight {
+auto SyncEngine::forward_and_insert_blocks(HeadersStage& headers_stage, BodiesStage& bodies_stage) -> Stage::NewHeight {
     using NewHeight = Stage::NewHeight;
 
     NewHeight as_far_as_possible{};
@@ -58,7 +58,7 @@ void SyncEngine::execution_loop() {
         HeadersStage headers_stage{block_exchange_, exec_engine_};
         BodiesStage bodies_stage{block_exchange_, exec_engine_};
 
-        NewHeight new_height = foward_and_insert_blocks(headers_stage, bodies_stage);
+        NewHeight new_height = forward_and_insert_blocks(headers_stage, bodies_stage);
 
         auto verification = exec_engine_.verify_chain(new_height.hash);
 

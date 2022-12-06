@@ -18,12 +18,15 @@
 
 #include <catch2/catch.hpp>
 
-#include <silkworm/chain/difficulty.hpp>
-#include <silkworm/chain/genesis.hpp>
 #include <silkworm/common/cast.hpp>
 #include <silkworm/common/test_context.hpp>
 #include <silkworm/consensus/engine.hpp>
 #include <silkworm/db/genesis.hpp>
+#include <silkworm/stagedsync/execution_engine.hpp>
+#include <silkworm/test/log.hpp>
+#include <silkworm/common/environment.hpp>
+#include <silkworm/types/block.hpp>
+#include <silkworm/downloader/chain_fork_view.hpp>
 
 #include "header_chain.hpp"
 
@@ -35,31 +38,59 @@ class HeaderChain_ForTest : public HeaderChain {
     using HeaderChain::HeaderChain;
 };
 
+class ExecutionEngine_ForTest : public stagedsync::ExecutionEngine {
+  public:
+    using stagedsync::ExecutionEngine::canonical_chain_;
+    using stagedsync::ExecutionEngine::pipeline_;
+    using stagedsync::ExecutionEngine::CanonicalChain;
+    using stagedsync::ExecutionEngine::ExecutionEngine;
+    using stagedsync::ExecutionEngine::tx_;
+};
+
 class DummyConsensusEngine : public consensus::IEngine {
   public:
     ValidationResult pre_validate_block_body(const Block&, const BlockState&) override { return ValidationResult::kOk; }
 
+    ValidationResult pre_validate_transactions(const Block&) override { return ValidationResult::kOk; }
+
     ValidationResult validate_ommers(const Block&, const BlockState&) override { return ValidationResult::kOk; }
 
-    ValidationResult validate_block_header(const BlockHeader&, const BlockState&, bool) override {
-        return ValidationResult::kOk;
-    }
+    ValidationResult validate_block_header(const BlockHeader&, const BlockState&, bool) override { return ValidationResult::kOk; }
 
     ValidationResult validate_seal(const BlockHeader&) override { return ValidationResult::kOk; }
 
     evmc::address get_beneficiary(const BlockHeader&) override { return {}; }
 };
 
-TEST_CASE("working/persistent-chain integration test") {
+TEST_CASE("Headers receiving and saving") {
+    test::SetLogVerbosityGuard log_guard(log::Level::kNone);
+
     test::Context context;
-    auto& txn{context.txn()};
-
-    bool allow_exceptions = false;
-
-    auto source_data = silkworm::read_genesis_data(silkworm::kMainnetConfig.chain_id);
-    auto genesis_json = nlohmann::json::parse(source_data, nullptr, allow_exceptions);
-    db::initialize_genesis(txn, genesis_json, allow_exceptions);
+    context.add_genesis_data();
     context.commit_txn();
+
+    Environment::set_pre_verified_hashes_disabled();
+
+    db::RWAccess db_access{context.env()};
+
+    // creating the ExecutionEngine
+    ExecutionEngine_ForTest exec_engine{context.node_settings(), db_access};
+
+    auto& tx = exec_engine.tx_;  // mdbx refuses to open a ROTxn when there is a RWTxn in the same thread
+
+    // creating the chain-fork-view to simulate a bit of the HeaderStage
+    chainsync::ChainForkView chain_fork_view{exec_engine};
+
+    // creating the working chain to simulate a bit of the downloader
+    BlockNum highest_in_db = 0;
+    HeaderChain_ForTest header_chain(std::make_unique<DummyConsensusEngine>());
+    header_chain.recover_initial_state(tx);
+    header_chain.sync_current_state(highest_in_db);
+    auto request_id = header_chain.generate_request_id();
+
+    // reading genesis
+    auto header0 = db::read_canonical_header(tx, 0);
+    auto header0_hash = header0->hash();
 
     /* status:
      *         h0 (persisted)
@@ -68,22 +99,11 @@ TEST_CASE("working/persistent-chain integration test") {
      *                |-- h1'
      */
     SECTION("accepting 1 batch of headers") {
-        INFO("to re-implement");
-        /*
-        db::RWTxn tx(context.env());
-
-        // starting from an initial status
-        auto header0 = db::read_canonical_header(tx, 0);
-        auto header0_hash = header0->hash();
-        BlockNum highest_in_db = 0;
-
-        // creating the working chain as the downloader does at its construction
-        HeaderChain_ForTest wc(std::make_unique<DummyConsensusEngine>());
-        wc.recover_initial_state(tx);
-        wc.sync_current_state(highest_in_db);
-        auto request_id = wc.generate_request_id();
-
-        // auto timestamp = header0->timestamp;
+        // testing initial status
+        auto initial_height = chain_fork_view.head_height();
+        auto initial_hash = chain_fork_view.head_hash();
+        REQUIRE(initial_height == 0);
+        REQUIRE(initial_hash == header0_hash);
 
         // receiving 3 headers from a peer
         BlockHeader header1;
@@ -113,22 +133,25 @@ TEST_CASE("working/persistent-chain integration test") {
         // processing the headers
         std::vector<BlockHeader> headers = {header1, header2, header1b};
         PeerId peer_id{byte_ptr_cast("1")};
-        wc.accept_headers(headers, request_id, peer_id);
+        header_chain.accept_headers(headers, request_id, peer_id);
 
         // saving headers ready to persist as the header downloader does in the forward() method
-        Headers headers_to_persist = wc.withdraw_stable_headers();
-        HeaderPersistence pc(tx);
-        pc.persist(headers_to_persist);
+        Headers headers_to_persist = header_chain.withdraw_stable_headers();
+
+        for(auto& header: headers_to_persist) {
+            chain_fork_view.add(*header);
+            exec_engine.insert_header(*header);  // inserting in batch doesn't work because chain_fork_view
+                                                  // needs data of ancestors from execution engine
+        }
 
         // check internal status
         BigInt expected_td = header0->difficulty + header1.difficulty + header2.difficulty;
 
         REQUIRE(headers_to_persist.size() == 3);
-        REQUIRE(pc.total_difficulty() == expected_td);
-        REQUIRE(pc.best_header_changed() == true);
-        REQUIRE(pc.highest_height() == 2);
-        REQUIRE(pc.highest_hash() == header2_hash);
-        REQUIRE(pc.unwind_needed() == false);
+        REQUIRE(chain_fork_view.head_total_difficulty() == expected_td);
+        REQUIRE(chain_fork_view.head_changed() == true);
+        REQUIRE(chain_fork_view.head_height() == 2);
+        REQUIRE(chain_fork_view.head_hash() == header2_hash);
 
         // check db content
         REQUIRE(db::read_head_header_hash(tx) == header2_hash);
@@ -144,11 +167,8 @@ TEST_CASE("working/persistent-chain integration test") {
         REQUIRE(header1b_in_db.has_value());
         REQUIRE(header1b_in_db == header1b);
 
-        pc.finish();  // here pc update the canonical chain on the db
-
         REQUIRE(db::read_canonical_hash(tx, 1) == header1_hash);
         REQUIRE(db::read_canonical_hash(tx, 2) == header2_hash);
-        */
     }
 
     /* status:

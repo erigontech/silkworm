@@ -28,6 +28,7 @@
 #include <silkworm/buildinfo.h>
 #include <silkworm/common/log.hpp>
 #include <silkworm/snapshot/bittorrent.hpp>
+#include <silkworm/snapshot/index.hpp>
 #include <silkworm/snapshot/repository.hpp>
 #include <silkworm/snapshot/snapshot.hpp>
 
@@ -172,8 +173,8 @@ void create_index(const SnapSettings& settings, int repetitions) {
     const auto snap_file{SnapshotFile::parse(std::filesystem::path{settings.snapshot_file_name})};
     if (snap_file) {
         for (int i{0}; i < repetitions; ++i) {
-            HeaderSnapshot header_segment{snap_file->path(), snap_file->block_from(), snap_file->block_to()};
-            header_segment.reopen_index();
+            HeaderIndex header_index{*snap_file};
+            header_index.build();
         }
     } else {
         SILK_ERROR << "Invalid snapshot file: " << settings.snapshot_file_name;

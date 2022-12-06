@@ -16,36 +16,51 @@
 
 #include "index.hpp"
 
-#include <silkworm/common/assert.hpp>
+#include <silkworm/common/log.hpp>
 #include <silkworm/common/util.hpp>
 
 namespace silkworm {
 
 void Index::build() {
+    SILK_TRACE << "Index::build path: " << segment_path_.path().string() << " start";
+
     Decompressor decoder{segment_path_.path()};
     decoder.open();
 
     const SnapshotFile index_file = segment_path_.index_file();
     RecSplit8 rec_split{decoder.words_count(), kBucketSize, index_file.path(), index_file.block_from()};
 
-    const bool read_ok = decoder.read_ahead([&](Decompressor::Iterator it) {
-        Bytes word{};
-        word.reserve(kPageSize);
-        uint64_t i{0}, offset{0};
-        while (it.has_next()) {
-            uint64_t next_position = it.next(word);
-            if (bool ok = walk(rec_split, i, offset, word); !ok) {
-                return false;
+    SILK_INFO << "Build index for: " << segment_path_.path().string() << " start";
+    uint64_t iterations{0};
+    bool collision_detected{false};
+    do {
+        iterations++;
+        SILK_INFO << "Process snapshot items to prepare index build for: " << segment_path_.path().string();
+        const bool read_ok = decoder.read_ahead([&](Decompressor::Iterator it) {
+            Bytes word{};
+            word.reserve(kPageSize);
+            uint64_t i{0}, offset{0};
+            while (it.has_next()) {
+                uint64_t next_position = it.next(word);
+                if (bool ok = walk(rec_split, i, offset, word); !ok) {
+                    return false;
+                }
+                ++i;
+                offset = next_position;
+                word.clear();
             }
-            ++i;
-            offset = next_position;
-        }
-        return true;
-    });
-    if (!read_ok) throw std::runtime_error{"cannot build index for: " + segment_path_.path().string()};
+            return true;
+        });
+        if (!read_ok) throw std::runtime_error{"cannot build index for: " + segment_path_.path().string()};
 
-    rec_split.build();
-    // TODO(canepat) if build KO, generate new salt and retry
+        SILK_INFO << "Build RecSplit index for: " << segment_path_.path().string() << " [" << iterations << "]";
+        collision_detected = rec_split.build();
+        SILK_DEBUG << "Build RecSplit index collision_detected: " << collision_detected << " [" << iterations << "]";
+        if (collision_detected) rec_split.reset_new_salt();
+    } while (collision_detected);
+    SILK_INFO << "Build index for: " << segment_path_.path().string() << " end [iterations=" << iterations << "]";
+
+    SILK_TRACE << "Index::build path: " << segment_path_.path().string() << " end";
 }
 
 bool HeaderIndex::walk(RecSplit8& rec_split, uint64_t /*i*/, uint64_t offset, ByteView word) {

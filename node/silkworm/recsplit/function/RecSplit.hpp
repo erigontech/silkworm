@@ -555,7 +555,7 @@ class RecSplit {
         read_buffer.reserve(index_file_size);
         index_input_stream.read(read_buffer.data(), index_file_size);
         index_input_stream.close();
-        if (index_file_size != 9 + keys_added_ * bytes_per_record_) {
+        if (index_file_size != 17 + keys_added_ * bytes_per_record_) {
             SILK_CRIT << "size expected=" << 9 + keys_added_ * bytes_per_record_ << " got=" << index_file_size;
             SILKWORM_ASSERT(false);
         }

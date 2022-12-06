@@ -199,6 +199,7 @@ class DoubleEF {
 
         const uint64_t jump_words = jump_size_words();
         jump.size(jump_words);
+        if (jump_words == 0) return;
 
         for (uint64_t i = 0, c = 0, last_super_q = 0; i < words_cum_keys; i++) {
             for (int b = 0; b < 64; b++) {

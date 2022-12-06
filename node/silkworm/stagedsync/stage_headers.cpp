@@ -37,6 +37,7 @@ HeadersStage::HeaderDataModel::HeaderDataModel(db::RWTxn& tx, BlockNum headers_h
     local_td_ = *headers_head_td;
     initial_in_db_ = headers_height;
     highest_in_db_ = headers_height;
+    highest_hash_ = *headers_hash;
 }
 
 bool HeadersStage::HeaderDataModel::best_header_changed() const { return new_canonical_; }

@@ -14,6 +14,8 @@
    limitations under the License.
 */
 
+#include "stage_headers.hpp"
+
 #include <algorithm>
 
 #include <catch2/catch.hpp>
@@ -22,19 +24,20 @@
 #include "silkworm/common/cast.hpp"
 #include "silkworm/common/test_context.hpp"
 #include "silkworm/db/genesis.hpp"
-#include "silkworm/downloader/internals/header_chain.hpp"
+
 
 namespace silkworm {
 
-TEST_CASE("header persistence", "[silkworm][downloader][HeaderPersistence]") {
+class HeadersStage_ForTest: public stagedsync::HeadersStage {
+  public:
+    using stagedsync::HeadersStage::HeaderDataModel;
+};
+using HeaderDataModel_ForTest = HeadersStage_ForTest::HeaderDataModel;
+
+
+TEST_CASE("HeadersStage - data model") {
     test::Context context;
-    auto& txn{context.txn()};
-
-    bool allow_exceptions = false;
-
-    auto source_data = silkworm::read_genesis_data(silkworm::kMainnetConfig.chain_id);
-    auto genesis_json = nlohmann::json::parse(source_data, nullptr, allow_exceptions);
-    db::initialize_genesis(txn, genesis_json, allow_exceptions);
+    context.add_genesis_data();
     context.commit_txn();
 
     /* status:
@@ -43,8 +46,6 @@ TEST_CASE("header persistence", "[silkworm][downloader][HeaderPersistence]") {
      *         h0 <----- h1
      */
     SECTION("one header after the genesis") {
-        INFO("to implement");
-        /*
         db::RWTxn tx(context.env());
 
         auto header0_hash = db::read_canonical_hash(tx, 0);
@@ -53,10 +54,14 @@ TEST_CASE("header persistence", "[silkworm][downloader][HeaderPersistence]") {
         auto header0 = db::read_canonical_header(tx, 0);
         REQUIRE(header0.has_value());
 
-        HeaderPersistence pc(tx);
+        BlockNum headers_stage_height = 0;
+        HeaderDataModel_ForTest hm(tx, headers_stage_height);
 
-        REQUIRE(pc.unwind_needed() == false);
-        REQUIRE(pc.initial_height() == 0);
+        REQUIRE(hm.best_header_changed() == false);
+        REQUIRE(hm.initial_height() == 0);
+        REQUIRE(hm.highest_height() == 0);
+        REQUIRE(hm.highest_hash() == header0_hash);
+        REQUIRE(hm.total_difficulty() == header0->difficulty);
 
         BlockHeader header1;
         header1.number = 1;
@@ -66,26 +71,18 @@ TEST_CASE("header persistence", "[silkworm][downloader][HeaderPersistence]") {
 
         auto td = header0->difficulty + header1.difficulty;
 
-        pc.persist(header1);  // here pc write the header on the db
+        hm.update_tables(header1);  // note that this will NOT write header1 on db
 
         // check internal status
-        REQUIRE(pc.best_header_changed() == true);
-        REQUIRE(pc.highest_height() == 1);
-        REQUIRE(pc.highest_hash() == header1_hash);
-        REQUIRE(pc.total_difficulty() == td);
+        REQUIRE(hm.best_header_changed() == true);
+        REQUIRE(hm.highest_height() == header1.number);
+        REQUIRE(hm.highest_hash() == header1_hash);
+        REQUIRE(hm.total_difficulty() == td);
 
         // check db content
         REQUIRE(db::read_head_header_hash(tx) == header1_hash);
-        REQUIRE(db::read_total_difficulty(tx, 1, header1.hash()) == td);
-
-        auto header1_in_db = db::read_header(tx, header1_hash);
-        REQUIRE(header1_in_db.has_value());
-        REQUIRE(header1_in_db == header1);
-
-        pc.finish();  // here pc update the canonical chain on the db
-
-        REQUIRE(db::read_canonical_hash(tx, 1) == header1_hash);
-         */
+        REQUIRE(db::read_total_difficulty(tx, header1.number, header1.hash()) == td);
+        REQUIRE(db::read_block_number(tx, header1.hash()) == header1.number);
     }
 
     /* status:
@@ -95,8 +92,6 @@ TEST_CASE("header persistence", "[silkworm][downloader][HeaderPersistence]") {
      *                |-- h1'
      */
     SECTION("some header after the genesis") {
-        INFO("to implement");
-        /*
         db::RWTxn tx(context.env());
 
         // starting from an initial status
@@ -121,42 +116,26 @@ TEST_CASE("header persistence", "[silkworm][downloader][HeaderPersistence]") {
         header1b.difficulty = 2'000'000;
         header1b.parent_hash = header0_hash;
         header1b.extra_data = string_view_to_byte_view("I'm different");
-        auto header1b_hash = header1b.hash();
 
-        // saving the headers
-        HeaderPersistence pc(tx);
-        pc.persist(header1);
-        pc.persist(header2);
-        pc.persist(header1b);  // suppose it arrives after header2
+        // updating the data model
+        BlockNum headers_stage_height = 0;
+        HeaderDataModel_ForTest hm(tx, headers_stage_height);
+
+        hm.update_tables(header1);
+        hm.update_tables(header2);
+        hm.update_tables(header1b);  // suppose it arrives after header2
 
         // check internal status
         BigInt expected_td = header0->difficulty + header1.difficulty + header2.difficulty;
 
-        REQUIRE(pc.total_difficulty() == expected_td);
-        REQUIRE(pc.best_header_changed() == true);
-        REQUIRE(pc.highest_height() == 2);
-        REQUIRE(pc.highest_hash() == header2_hash);
-        REQUIRE(pc.unwind_needed() == false);
+        REQUIRE(hm.total_difficulty() == expected_td);
+        REQUIRE(hm.best_header_changed() == true);
+        REQUIRE(hm.highest_height() == 2);
+        REQUIRE(hm.highest_hash() == header2_hash);
 
         // check db content
         REQUIRE(db::read_head_header_hash(tx) == header2_hash);
         REQUIRE(db::read_total_difficulty(tx, 2, header2.hash()) == expected_td);
-
-        auto header1_in_db = db::read_header(tx, header1_hash);
-        REQUIRE(header1_in_db.has_value());
-        REQUIRE(header1_in_db == header1);
-        auto header2_in_db = db::read_header(tx, header2_hash);
-        REQUIRE(header2_in_db.has_value());
-        REQUIRE(header2_in_db == header2);
-        auto header1b_in_db = db::read_header(tx, header1b_hash);
-        REQUIRE(header1b_in_db.has_value());
-        REQUIRE(header1b_in_db == header1b);
-
-        pc.finish();  // here pc update the canonical chain on the db
-
-        REQUIRE(db::read_canonical_hash(tx, 1) == header1_hash);
-        REQUIRE(db::read_canonical_hash(tx, 2) == header2_hash);
-         */
     }
 }
 

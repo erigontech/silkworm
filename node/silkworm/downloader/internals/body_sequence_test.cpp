@@ -46,17 +46,9 @@ TEST_CASE("body downloading", "[silkworm][downloader][BodySequence]") {
     using intx::operator""_u256;
 
     test::Context context;
+    context.add_genesis_data();
+
     auto& txn{context.txn()};
-
-    bool allow_exceptions = false;
-
-    auto chain_config{kMainnetConfig};
-    chain_config.genesis_hash.emplace(kMainnetGenesisHash);
-
-    // add genesis to db
-    auto source_data = silkworm::read_genesis_data(chain_config.chain_id);
-    auto genesis_json = nlohmann::json::parse(source_data, nullptr, allow_exceptions);
-    db::initialize_genesis(txn, genesis_json, allow_exceptions);
 
     // add header 1 to db
     std::string raw_header1 =

@@ -20,7 +20,6 @@
 
 #include <catch2/catch.hpp>
 
-#include "silkworm/chain/genesis.hpp"
 #include "silkworm/common/cast.hpp"
 #include "silkworm/common/test_context.hpp"
 #include "silkworm/db/genesis.hpp"
@@ -34,6 +33,7 @@ class BodiesStage_ForTest: public stagedsync::BodiesStage {
     using stagedsync::BodiesStage::BodyDataModel;
 };
 using BodyDataModel_ForTest = BodiesStage_ForTest::BodyDataModel;
+
 
 TEST_CASE("BodiesStage - data model") {
     test::Context context;

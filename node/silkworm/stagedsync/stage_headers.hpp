@@ -70,7 +70,7 @@ class HeadersStage : public Stage {
     Stage::Result unwind(db::RWTxn&) override;   // go backward, unwinding headers to new_height
     Stage::Result prune(db::RWTxn&) override;
 
-  private:
+  protected:
     std::vector<std::string> get_log_progress() override;  // thread safe
     std::atomic<BlockNum> current_height_{0};
 

@@ -16,27 +16,79 @@
 
 #pragma once
 
+#include <memory>
+#include <mutex>
+#include <vector>
+
+#include <evmc/evmc.h>
+#include <silkpre/ecdsa.h>
+
+#include <silkworm/common/base.hpp>
+#include <silkworm/concurrency/thread_pool.hpp>
+#include <silkworm/etl/collector.hpp>
 #include <silkworm/stagedsync/stage.hpp>
-#include <silkworm/stagedsync/stage_senders/recovery_farm.hpp>
 
 namespace silkworm::stagedsync {
 
+//! \brief The information to compute the sender address from transaction signature
+struct AddressRecovery {
+    BlockNum block_num{0};       // Number of block containing the transaction
+    bool odd_y_parity{false};    // Whether y parity is odd (https://eips.ethereum.org/EIPS/eip-155)
+    uint8_t tx_signature[64]{};  // Signature of the transaction
+    evmc::address tx_from;       // Recovered sender address
+    Bytes rlp;                   // RLP representation of the transaction
+};
+
+using AddressRecoveryBatch = std::vector<AddressRecovery>;
+
 class Senders final : public Stage {
   public:
-    explicit Senders(NodeSettings* node_settings, SyncContext* sync_context)
-        : Stage(sync_context, db::stages::kSendersKey, node_settings){};
+    explicit Senders(NodeSettings* node_settings, SyncContext* sync_context);
     ~Senders() override = default;
 
     Stage::Result forward(db::RWTxn& txn) final;
     Stage::Result unwind(db::RWTxn& txn) final;
     Stage::Result prune(db::RWTxn& txn) final;
     std::vector<std::string> get_log_progress() final;
-    bool stop() final;
 
   private:
-    std::unique_ptr<recovery::RecoveryFarm> farm_{nullptr};
+    Stage::Result parallel_recover(db::RWTxn& txn);
 
-    // Logging
+    Stage::Result read_canonical_hashes(db::ROTxn& txn, BlockNum from, BlockNum to) noexcept;
+    Stage::Result add_to_batch(BlockNum block_num, std::vector<Transaction>&& transactions);
+    void recover_batch(secp256k1_context* context, BlockNum from);
+    void collect_senders(BlockNum from);
+    void collect_senders(BlockNum from, std::shared_ptr<AddressRecoveryBatch>& batch);
+    void store_senders(db::RWTxn& txn);
+
+    void increment_total_processed_blocks();
+    void increment_total_collected_transactions(std::size_t delta);
+
+    //! The canonical hashes of the current block range
+    std::vector<evmc::bytes32> canonical_hashes_;
+
+    //! The size of recovery batches
+    std::size_t max_batch_size_;
+
+    //! The current recovery batch being created
+    std::shared_ptr<AddressRecoveryBatch> batch_;
+
+    //! The sequence of completed batch futures
+    std::vector<std::future<std::shared_ptr<AddressRecoveryBatch>>> results_;
+
+    //! The total count of collected senders
+    uint64_t collected_senders_{0};
+
+    //! ETL collector writing recovered senders in bulk
+    etl::Collector collector_;
+
+    //! The pool of worker thread crunching the address recovery tasks
+    thread_pool worker_pool_;
+
+    // Stats
+    std::mutex mutex_{};
+    std::size_t total_processed_blocks_{0};
+    std::size_t total_collected_transactions_{0};
     std::string current_key_{};
 };
 

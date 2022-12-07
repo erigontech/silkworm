@@ -183,6 +183,11 @@ void ExecutionEngine::insert_body(Block& block) {
 }
 
 auto ExecutionEngine::verify_chain(Hash head_block_hash) -> VerificationResult {
+    // "nothing to do" condition
+    if (canonical_chain_.current_head().hash == head_block_hash) {
+        return ValidChain{canonical_chain_.current_head().number};
+    }
+
     // retrieve the head header
     auto header = get_header(head_block_hash);
     ensure_invariant(header.has_value(), "header to verify non present");
@@ -214,7 +219,7 @@ auto ExecutionEngine::verify_chain(Hash head_block_hash) -> VerificationResult {
         case Stage::Result::kSuccess: {
             if (pipeline_.head_header_number() != canonical_chain_.current_head().number ||
                 pipeline_.head_header_hash() != canonical_chain_.current_head().hash) {
-                // todo: choose a policy???
+                throw std::logic_error("forward succeded but pipeline head is not aligned with canonical head");
             }
             verify_result = ValidChain{pipeline_.head_header_number()};
             break;

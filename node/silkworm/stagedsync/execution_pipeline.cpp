@@ -183,6 +183,7 @@ Stage::Result ExecutionPipeline::forward(db::RWTxn& cycle_txn, BlockNum target_h
     log::Info("ExecPipeline") << "Forward start --------------------------";
 
     try {
+        Stage::Result result = Stage::Result::kSuccess;
         auto stop_stage_name = Environment::get_stop_before_stage();  // force to stop at any particular stage ?
 
         current_stages_count_ = stages_forward_order_.size();
@@ -199,7 +200,8 @@ Stage::Result ExecutionPipeline::forward(db::RWTxn& cycle_txn, BlockNum target_h
             // check if we have to stop due to environment variable
             if (stop_stage_name && stop_stage_name == stage_id) {
                 log::Warning("Stopping ...", {"STOP_BEFORE_STAGE", stop_stage_name->c_str(), "hit", "true"});
-                return Stage::Result::kStoppedByEnv;
+                result = Stage::Result::kStoppedByEnv;
+                break;
             }
 
             log_timer.reset();  // Resets the interval for next log line from now
@@ -237,7 +239,7 @@ Stage::Result ExecutionPipeline::forward(db::RWTxn& cycle_txn, BlockNum target_h
         }
 
         log::Info("ExecPipeline") << "Forward done ---------------------------";
-        return is_stopping() ? Stage::Result::kAborted : Stage::Result::kSuccess;
+        return result;
 
     } catch (const std::exception& ex) {
         log::Error(get_log_prefix(), {"exception", std::string(ex.what())});

@@ -125,6 +125,7 @@ add_library(evmone third_party/evmone/lib/evmone/advanced_analysis.cpp
                    third_party/evmone/lib/evmone/eof.hpp
                    third_party/evmone/lib/evmone/execution_state.hpp
                    third_party/evmone/lib/evmone/instructions_calls.cpp
+                   third_party/evmone/lib/evmone/instructions_opcodes.hpp
                    third_party/evmone/lib/evmone/instructions_storage.cpp
                    third_party/evmone/lib/evmone/instructions_traits.hpp
                    third_party/evmone/lib/evmone/instructions_xmacro.hpp

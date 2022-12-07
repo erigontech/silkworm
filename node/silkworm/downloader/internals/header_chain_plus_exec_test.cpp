@@ -18,6 +18,7 @@
 
 #include <catch2/catch.hpp>
 
+#include "silkworm/common/as_range.hpp"
 #include <silkworm/common/cast.hpp>
 #include <silkworm/common/test_context.hpp>
 #include <silkworm/consensus/engine.hpp>
@@ -90,7 +91,14 @@ TEST_CASE("Headers receiving and saving") {
 
     // reading genesis
     auto header0 = db::read_canonical_header(tx, 0);
+    REQUIRE(header0.has_value());
     auto header0_hash = header0->hash();
+
+    auto td = db::read_total_difficulty(tx, 0, header0_hash);
+    REQUIRE(td.has_value());
+
+    // stop execution pipeline at early stages because we use dummy headers without bodies
+    Environment::set_stop_before_stage(db::stages::kBlockHashesKey);
 
     /* status:
      *         h0 (persisted)
@@ -138,11 +146,10 @@ TEST_CASE("Headers receiving and saving") {
         // saving headers ready to persist as the header downloader does in the forward() method
         Headers headers_to_persist = header_chain.withdraw_stable_headers();
 
-        for(auto& header: headers_to_persist) {
+        as_range::for_each(headers_to_persist, [&chain_fork_view](const auto& header) {
             chain_fork_view.add(*header);
-            exec_engine.insert_header(*header);  // inserting in batch doesn't work because chain_fork_view
-                                                  // needs data of ancestors from execution engine
-        }
+        });
+        exec_engine.insert_headers(headers_to_persist);
 
         // check internal status
         BigInt expected_td = header0->difficulty + header1.difficulty + header2.difficulty;
@@ -154,9 +161,6 @@ TEST_CASE("Headers receiving and saving") {
         REQUIRE(chain_fork_view.head_hash() == header2_hash);
 
         // check db content
-        REQUIRE(db::read_head_header_hash(tx) == header2_hash);
-        REQUIRE(db::read_total_difficulty(tx, 2, header2.hash()) == expected_td);
-
         auto header1_in_db = db::read_header(tx, header1_hash);
         REQUIRE(header1_in_db.has_value());
         REQUIRE(header1_in_db == header1);
@@ -166,6 +170,13 @@ TEST_CASE("Headers receiving and saving") {
         auto header1b_in_db = db::read_header(tx, header1b_hash);
         REQUIRE(header1b_in_db.has_value());
         REQUIRE(header1b_in_db == header1b);
+
+        // verify the inserted chain
+        exec_engine.verify_chain(chain_fork_view.head_hash());
+
+        // check db content
+        REQUIRE(db::read_head_header_hash(tx) == header2_hash);
+        REQUIRE(db::read_total_difficulty(tx, 2, header2.hash()) == expected_td);
 
         REQUIRE(db::read_canonical_hash(tx, 1) == header1_hash);
         REQUIRE(db::read_canonical_hash(tx, 2) == header2_hash);

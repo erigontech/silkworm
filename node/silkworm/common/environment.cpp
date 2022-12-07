@@ -29,6 +29,25 @@ std::optional<BlockNum> Environment::get_stop_at_block() {
     return target_block;
 }
 
+void Environment::set_stop_at_block(BlockNum block_num) {
+    auto environment = boost::this_process::environment();
+    environment["STOP_AT_BLOCK"] = std::to_string(block_num);
+}
+
+std::optional<std::string> Environment::get_stop_before_stage() {
+    std::optional<std::string> stop_before_stage;
+    // User can specify to stop staged execution before some stage
+    if (const char* stop_stage_name{std::getenv("STOP_BEFORE_STAGE")}; stop_stage_name != nullptr) {
+        stop_before_stage = stop_stage_name;
+    }
+    return stop_before_stage;
+}
+
+void Environment::set_stop_before_stage(std::string stage_name) {
+    auto environment = boost::this_process::environment();
+    environment["STOP_BEFORE_STAGE"] = stage_name;
+}
+
 bool Environment::are_pre_verified_hashes_disabled() {
     bool disabled = false;
     // User can specify to not use the pre-verified hashes and do a full header verification
@@ -40,10 +59,8 @@ bool Environment::are_pre_verified_hashes_disabled() {
 }
 
 void Environment::set_pre_verified_hashes_disabled() {
-
     auto environment = boost::this_process::environment();
     environment["DISABLE_PRE_VERIFIED_HASHES"] = "1";
-
 }
 
 }

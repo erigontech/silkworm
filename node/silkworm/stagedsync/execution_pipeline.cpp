@@ -16,6 +16,7 @@ limitations under the License.
 
 #include <boost/format.hpp>
 
+#include <silkworm/common/environment.hpp>
 #include <silkworm/stagedsync/stage_blockhashes.hpp>
 #include <silkworm/stagedsync/stage_bodies.hpp>
 #include <silkworm/stagedsync/stage_execution.hpp>
@@ -182,9 +183,7 @@ Stage::Result ExecutionPipeline::forward(db::RWTxn& cycle_txn, BlockNum target_h
     log::Info("ExecPipeline") << "Forward start --------------------------";
 
     try {
-        // Force to stop at any particular stage ?
-        const std::string env_stop_before_stage{"STOP_BEFORE_STAGE"};
-        const char* stop_stage_name{std::getenv(env_stop_before_stage.c_str())};
+        auto stop_stage_name = Environment::get_stop_before_stage();  // force to stop at any particular stage ?
 
         current_stages_count_ = stages_forward_order_.size();
         current_stage_number_ = 0;
@@ -198,8 +197,8 @@ Stage::Result ExecutionPipeline::forward(db::RWTxn& cycle_txn, BlockNum target_h
             current_stage_->second->set_log_prefix(get_log_prefix());
 
             // check if we have to stop due to environment variable
-            if (stop_stage_name && iequals(stop_stage_name, stage_id)) {
-                log::Warning("Stopping ...", {"STOP_BEFORE_STAGE", stop_stage_name, "hit", "true"});
+            if (stop_stage_name && stop_stage_name == stage_id) {
+                log::Warning("Stopping ...", {"STOP_BEFORE_STAGE", stop_stage_name->c_str(), "hit", "true"});
                 return Stage::Result::kStoppedByEnv;
             }
 

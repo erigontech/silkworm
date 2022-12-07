@@ -21,11 +21,19 @@ limitations under the License.
 
 namespace silkworm::chainsync {
 
+// ChainForkView has the responsibility to maintains a view of forks in the recent history of headers
+// Currently it only use a lru_cache<Hash, Total_Difficulty>, if it will need a full header cache it may use
+// an lru_cache<Hash, std::shared_ptr<BlockHeader>>, accepting std::shared_ptr<BlockHeader> in the add() method
+// to avoid coping header shared with HeaderStages.
+// The lru_cache is not for performance: the ExecutionEngine currently computes and writes the header's total difficulty
+// only when the verify_chain() method is called so the newly headers that the downloader received and inserted into
+// the ExecutionEngine have not yet total difficulty computed.
+
 class ChainForkView {
   public:
     ChainForkView(stagedsync::ExecutionEngine&);
 
-    void add(const BlockHeader& header);
+    void add(const BlockHeader&);
 
     BlockNum head_height() const;
     Hash head_hash() const;
@@ -40,6 +48,9 @@ class ChainForkView {
     BlockIdPair current_head_{};
     BigInt initial_head_td_, current_head_td_;  // td of initial and current head
     Hash previous_hash_;
+
+    static constexpr size_t kCacheSize = 4096;
+    lru_cache<Hash, Total_Difficulty> td_fork_view_;  // this is not for performance
 };
 
 }  // namespace silkworm::chainsync

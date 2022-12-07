@@ -21,7 +21,7 @@ limitations under the License.
 
 namespace silkworm::chainsync {
 
-ChainForkView::ChainForkView(stagedsync::ExecutionEngine& ee) : exec_engine_{ee} {
+ChainForkView::ChainForkView(stagedsync::ExecutionEngine& ee) : exec_engine_{ee}, td_fork_view_{kCacheSize} {
     std::tie(initial_head_.number, initial_head_.hash, initial_head_td_) = exec_engine_.get_headers_head();
 
     current_head_td_ = initial_head_td_;
@@ -37,15 +37,15 @@ Hash ChainForkView::head_hash() const { return current_head_.hash; }
 BigInt ChainForkView::head_total_difficulty() const { return current_head_td_; }
 
 void ChainForkView::add(const BlockHeader& header) {  // try to modularize this method
-    // Admittance conditions
+
     auto height = header.number;
     Hash hash = header.hash();
-    if (hash == previous_hash_) {
-        return;  // skip duplicates
-    }
+    if (hash == previous_hash_) return;  // skip duplicates
 
     // Calculate total difficulty
-    auto parent_td = exec_engine_.get_header_td(height - 1, header.parent_hash);
+    auto parent_td = td_fork_view_.get_as_copy(header.parent_hash);  // find in cache
+    if (!parent_td)
+        parent_td = exec_engine_.get_header_td(height - 1, header.parent_hash);  // ask execution engine
     if (!parent_td) {
         std::string error_message = "Consensus: parent's total difficulty not found on Execution,"
             " hash= " + to_hex(header.parent_hash) +
@@ -65,6 +65,7 @@ void ChainForkView::add(const BlockHeader& header) {  // try to modularize this 
     }
 
     previous_hash_ = hash;
+    td_fork_view_.put(hash, td);
 }
 
 }  // namespace silkworm::chainsync

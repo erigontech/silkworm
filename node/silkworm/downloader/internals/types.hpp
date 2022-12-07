@@ -32,6 +32,8 @@ namespace silkworm {
 
 using BigInt = intx::uint256;  // use intx::to_string, from_string, ...
 
+using Total_Difficulty = BigInt;
+
 struct BlockIdPair {BlockNum number; Hash hash;};
 
 // using Bytes = std::basic_string<uint8_t>; already defined elsewhere

@@ -23,9 +23,8 @@
 namespace silkworm {
 
 // Returns the intrinsic gas of a transaction.
-// Refer to g0 in Section 6.2 "Execution" of the Yellow Paper,
-// EIP-2930 "Optional access lists" and
-// EIP-3860 "Limit and meter initcode".
+// Refer to g0 in Section 6.2 "Execution" of the Yellow Paper
+// and EIP-3860 "Limit and meter initcode".
 intx::uint128 intrinsic_gas(const Transaction& txn, evmc_revision rev) noexcept;
 
 }  // namespace silkworm

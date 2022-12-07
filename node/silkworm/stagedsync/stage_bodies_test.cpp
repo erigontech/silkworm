@@ -28,12 +28,11 @@
 
 namespace silkworm {
 
-class BodiesStage_ForTest: public stagedsync::BodiesStage {
+class BodiesStage_ForTest : public stagedsync::BodiesStage {
   public:
     using stagedsync::BodiesStage::BodyDataModel;
 };
 using BodyDataModel_ForTest = BodiesStage_ForTest::BodyDataModel;
-
 
 TEST_CASE("BodiesStage - data model") {
     test::Context context;

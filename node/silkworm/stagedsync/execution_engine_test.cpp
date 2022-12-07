@@ -32,9 +32,9 @@ namespace silkworm {
 class ExecutionEngine_ForTest : public stagedsync::ExecutionEngine {
   public:
     using stagedsync::ExecutionEngine::canonical_chain_;
-    using stagedsync::ExecutionEngine::pipeline_;
     using stagedsync::ExecutionEngine::CanonicalChain;
     using stagedsync::ExecutionEngine::ExecutionEngine;
+    using stagedsync::ExecutionEngine::pipeline_;
     using stagedsync::ExecutionEngine::tx_;
 };
 
@@ -62,7 +62,6 @@ TEST_CASE("ExecutionEngine") {
      */
 
     SECTION("one invalid body after the genesis") {
-
         auto header0_hash = db::read_canonical_hash(tx, 0);
         REQUIRE(header0_hash.has_value());
 
@@ -73,7 +72,7 @@ TEST_CASE("ExecutionEngine") {
         block1.header.number = 1;
         block1.header.difficulty = 17'171'480'576;  // a random value
         block1.header.parent_hash = *header0_hash;
-        //auto header1_hash = block1.header.hash();
+        // auto header1_hash = block1.header.hash();
         block1.ommers.push_back(BlockHeader{});  // generate error InvalidOmmerHeader
 
         // getting initial status
@@ -98,7 +97,7 @@ TEST_CASE("ExecutionEngine") {
 
         auto [final_headers_head_height, final_headers_head_hash, final_headers_head_td] =
             execution_engine.get_headers_head();
-        REQUIRE(final_headers_head_height == 0);  // doesn't change
+        REQUIRE(final_headers_head_height == 0);            // doesn't change
         REQUIRE(final_headers_head_hash == *header0_hash);  // doesn't change
         REQUIRE(final_headers_head_td == header0->difficulty);
 
@@ -167,7 +166,6 @@ TEST_CASE("ExecutionEngine") {
     }
 
     SECTION("one valid body after the genesis") {
-
         auto header0_hash = db::read_canonical_hash(tx, 0);
         REQUIRE(header0_hash.has_value());
 

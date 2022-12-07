@@ -25,15 +25,13 @@
 #include "silkworm/common/test_context.hpp"
 #include "silkworm/db/genesis.hpp"
 
-
 namespace silkworm {
 
-class HeadersStage_ForTest: public stagedsync::HeadersStage {
+class HeadersStage_ForTest : public stagedsync::HeadersStage {
   public:
     using stagedsync::HeadersStage::HeaderDataModel;
 };
 using HeaderDataModel_ForTest = HeadersStage_ForTest::HeaderDataModel;
-
 
 TEST_CASE("HeadersStage - data model") {
     test::Context context;

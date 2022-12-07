@@ -18,18 +18,18 @@
 
 #include <catch2/catch.hpp>
 
-#include "silkworm/common/as_range.hpp"
 #include <silkworm/common/cast.hpp>
+#include <silkworm/common/environment.hpp>
 #include <silkworm/common/test_context.hpp>
 #include <silkworm/consensus/engine.hpp>
 #include <silkworm/db/genesis.hpp>
+#include <silkworm/downloader/chain_fork_view.hpp>
 #include <silkworm/stagedsync/execution_engine.hpp>
 #include <silkworm/test/log.hpp>
-#include <silkworm/common/environment.hpp>
 #include <silkworm/types/block.hpp>
-#include <silkworm/downloader/chain_fork_view.hpp>
 
 #include "header_chain.hpp"
+#include "silkworm/common/as_range.hpp"
 
 namespace silkworm {
 
@@ -42,9 +42,9 @@ class HeaderChain_ForTest : public HeaderChain {
 class ExecutionEngine_ForTest : public stagedsync::ExecutionEngine {
   public:
     using stagedsync::ExecutionEngine::canonical_chain_;
-    using stagedsync::ExecutionEngine::pipeline_;
     using stagedsync::ExecutionEngine::CanonicalChain;
     using stagedsync::ExecutionEngine::ExecutionEngine;
+    using stagedsync::ExecutionEngine::pipeline_;
     using stagedsync::ExecutionEngine::tx_;
 };
 

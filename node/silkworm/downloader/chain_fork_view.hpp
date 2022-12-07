@@ -37,7 +37,7 @@ class ChainForkView {
 
     BlockNum head_height() const;
     Hash head_hash() const;
-    BigInt head_total_difficulty() const;
+    Total_Difficulty head_total_difficulty() const;
 
     bool head_changed() const;
 
@@ -46,7 +46,7 @@ class ChainForkView {
 
     BlockIdPair initial_head_{};
     BlockIdPair current_head_{};
-    BigInt initial_head_td_, current_head_td_;  // td of initial and current head
+    Total_Difficulty initial_head_td_, current_head_td_;
     Hash previous_hash_;
 
     static constexpr size_t kCacheSize = 4096;

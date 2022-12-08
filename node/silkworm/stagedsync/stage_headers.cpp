@@ -58,15 +58,21 @@ void HeadersStage::HeaderDataModel::update_tables(const BlockHeader& header) {
         return;  // skip duplicates
     }
 
-    // Calculate total difficulty
-    auto parent_td = db::read_total_difficulty(tx_, height - 1, header.parent_hash);
-    if (!parent_td) {
-        std::string error_message = "HeaderPersistence: parent's total difficulty not found with hash " +
-                                    to_hex(header.parent_hash) + " and height " + std::to_string(height - 1) +
-                                    " for header " + hash.to_hex();
-        throw std::logic_error(error_message);  // unexpected condition
+    // Calculate total difficulty of this header
+    Total_Difficulty td{0};
+    if (header.parent_hash == previous_hash_) {
+        td = previous_td_ + header.difficulty;
     }
-    auto td = *parent_td + header.difficulty;  // calculated total difficulty of this header
+    else {
+        auto parent_td = db::read_total_difficulty(tx_, height - 1, header.parent_hash);
+        if (!parent_td) {
+            std::string error_message = "HeaderPersistence: parent's total difficulty not found with hash " +
+                                        to_hex(header.parent_hash) + " and height " + std::to_string(height - 1) +
+                                        " for header " + hash.to_hex();
+            throw std::logic_error(error_message);  // unexpected condition
+        }
+        td = *parent_td + header.difficulty;  // calculated total difficulty of this header
+    }
 
     // Now we can decide whether this header will create a change in the canonical head
     if (td > local_td_) {
@@ -88,16 +94,14 @@ void HeadersStage::HeaderDataModel::update_tables(const BlockHeader& header) {
     db::write_header_number(tx_, hash.bytes, header.number);
 
     previous_hash_ = hash;
+    previous_td_ = td;
 }
 
-void HeadersStage::HeaderDataModel::remove_headers(BlockNum unwind_point, std::optional<Hash> bad_block, db::RWTxn& tx) {
-    bool is_bad_block = bad_block.has_value();
-    if (is_bad_block) {
-        auto canonical_hash = db::read_canonical_hash(tx, unwind_point);
-        if (!canonical_hash)
-            throw std::logic_error("Headers stage, expected canonical hash at heigth " + std::to_string(unwind_point));
-        db::write_head_header_hash(tx, *canonical_hash);
-    }
+void HeadersStage::HeaderDataModel::remove_headers(BlockNum unwind_point, db::RWTxn& tx) {
+    auto canonical_hash = db::read_canonical_hash(tx, unwind_point);
+    if (!canonical_hash)
+        throw std::logic_error("Headers stage, expected canonical hash at heigth " + std::to_string(unwind_point));
+    db::write_head_header_hash(tx, *canonical_hash);
 }
 
 // HeadersStage
@@ -148,18 +152,15 @@ auto HeadersStage::forward(db::RWTxn& tx) -> Stage::Result {
             current_height_++;
 
             // process header and ommers at current height
-            auto processed = db::process_headers_at_height(tx, current_height_,  // may throw exception
-                [&header_persistence](BlockHeader& header) {
-                    header_persistence.update_tables(header);
-                });
+            auto header = db::read_canonical_header(tx, current_height_);
+            if (!header) throw std::logic_error("table Headers has a hole");
 
-            if (processed == 0) throw std::logic_error("table Headers has a hole");
+            header_persistence.update_tables(*header);
 
-            db::stages::write_stage_progress(tx, db::stages::kHeadersKey, current_height_);
             height_progress.set(header_persistence.highest_height());
-
         }
 
+        db::stages::write_stage_progress(tx, db::stages::kHeadersKey, current_height_);
         result = Stage::Result::kSuccess;  // no reason to raise unwind
 
         auto headers_processed = header_persistence.highest_height() - header_persistence.initial_height();
@@ -170,8 +171,6 @@ auto HeadersStage::forward(db::RWTxn& tx) -> Stage::Result {
 
     } catch (const std::exception& e) {
         log::Error(log_prefix_) << "Forward aborted due to exception: " << e.what();
-
-        // tx rollback executed automatically if needed
         result = Stage::Result::kUnexpectedError;
     }
 
@@ -186,21 +185,23 @@ auto HeadersStage::unwind(db::RWTxn& tx) -> Stage::Result {
     StopWatch timing;
     timing.start();
 
-    current_height_ = db::stages::read_stage_progress(tx, db::stages::kHeadersKey);
-    get_log_progress();  // this is a trick to set log progress initial value, please improve
-
-    std::optional<Hash> bad_block = sync_context_->bad_block_hash;
-
-    if (!sync_context_->unwind_point.has_value()) {
-        operation_ = OperationType::None;
-        return result;
-    }
-    auto new_height = sync_context_->unwind_point.value();
-
     try {
-        HeaderDataModel::remove_headers(new_height, bad_block, tx);
+        current_height_ = db::stages::read_stage_progress(tx, db::stages::kHeadersKey);
+        get_log_progress();  // this is a trick to set log progress initial value, please improve
+
+        //std::optional<Hash> bad_block = sync_context_->bad_block_hash;
+
+        if (!sync_context_->unwind_point.has_value()) {
+            operation_ = OperationType::None;
+            return result;
+        }
+        auto new_height = sync_context_->unwind_point.value();
+
+        HeaderDataModel::remove_headers(new_height, tx);
 
         current_height_ = new_height;
+
+        db::stages::write_stage_progress(tx, db::stages::kHeadersKey, current_height_);
 
         result = Stage::Result::kSuccess;
 

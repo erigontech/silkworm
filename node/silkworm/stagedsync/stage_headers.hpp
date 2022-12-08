@@ -84,7 +84,7 @@ class HeadersStage : public Stage {
         void update_tables(const BlockHeader&);  // update header related tables
 
         // remove header data from tables, used in unwind phase
-        static void remove_headers(BlockNum unwind_point, std::optional<Hash> bad_block, db::RWTxn& tx);
+        static void remove_headers(BlockNum unwind_point, db::RWTxn& tx);
 
         // holds the status of a batch insertion of headers
         bool best_header_changed() const;
@@ -96,10 +96,11 @@ class HeadersStage : public Stage {
       private:
         db::RWTxn& tx_;
         Hash previous_hash_;
+        Total_Difficulty previous_td_{0};
         Hash highest_hash_;
         BlockNum initial_in_db_{};
         BlockNum highest_in_db_{};
-        BigInt local_td_;
+        Total_Difficulty local_td_{0};
         bool new_canonical_{false};
     };
 };

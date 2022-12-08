@@ -408,6 +408,16 @@ bool read_body(mdbx::txn& txn, const evmc::bytes32& h, BlockBody& body) {
     return db::read_body(txn, *block_num, h.bytes, /*read_senders=*/false, body);
 }
 
+bool read_canonical_block(mdbx::txn& txn, BlockNum height, Block& block) {
+    std::optional<evmc::bytes32> h = read_canonical_hash(txn, height);
+    if (!h) return false;
+
+    bool present = read_header(txn, *h, height, block.header);
+    if (!present) return false;
+
+    return read_body(txn, *h, height, block);
+}
+
 bool has_body(mdbx::txn& txn, BlockNum block_number, const uint8_t (&hash)[kHashLength]) {
     auto key{block_key(block_number, hash)};
     Cursor src(txn, table::kBlockBodies);

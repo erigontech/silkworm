@@ -89,6 +89,9 @@ void write_canonical_header_hash(mdbx::txn& txn, const uint8_t (&hash)[kHashLeng
 [[nodiscard]] bool read_body(mdbx::txn& txn, const evmc::bytes32& hash, BlockNum bn, BlockBody& body);
 [[nodiscard]] bool read_body(mdbx::txn& txn, const evmc::bytes32& hash, BlockBody& body);
 
+//! \brief Read the canonical block at specified height
+[[nodiscard]] bool read_canonical_block(mdbx::txn& txn, BlockNum height, Block& block);
+
 //! \brief Apply a user defined func to the bodies at specific height
 size_t process_blocks_at_height(mdbx::txn& txn, BlockNum height, std::function<void(Block&)> process_func,
                                 bool read_senders = false);

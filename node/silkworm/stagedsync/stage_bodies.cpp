@@ -110,25 +110,20 @@ Stage::Result BodiesStage::forward(db::RWTxn& tx) {
         RepeatedMeasure<BlockNum> height_progress(current_height_);
 
         // block processing
-        db::Cursor bodies_table(tx, db::table::kBlockBodies);
         while (current_height_ < target_height && !is_stopping()) {
             current_height_++;
 
             // process header and ommers at current height
-            auto processed = db::process_blocks_at_height(
-                tx,
-                current_height_,  // may throw exception
-                [&body_persistence](const Block& block) {
-                    body_persistence.update_tables(block);
-                });
+            Block block;
+            bool present = read_canonical_block(tx, current_height_, block);
+            if (!present) throw std::logic_error("table Bodies has a hole");
 
-            if (processed == 0) throw std::logic_error("table Headers has a hole");
+            body_persistence.update_tables(block);
 
-            db::stages::write_stage_progress(tx, db::stages::kBlockBodiesKey, current_height_);
             height_progress.set(body_persistence.highest_height());
-
         }
 
+        db::stages::write_stage_progress(tx, db::stages::kBlockBodiesKey, current_height_);
         result = Stage::Result::kSuccess;
 
         // check unwind condition

@@ -447,21 +447,6 @@ TEST_CASE("Headers receiving and saving") {
      *               |--- h1 <----- h2
      */
     SECTION("accepting 2 batch of headers, the second changing the canonical") {
-        INFO("to implement");
-        /*
-        db::RWTxn tx(context.env());
-
-        // starting from an initial status
-        auto header0 = db::read_canonical_header(tx, 0);
-        auto header0_hash = header0->hash();
-        BlockNum highest_in_db = 0;
-
-        // creating the working chain as the downloader does at its construction
-        HeaderChain_ForTest wc(std::make_unique<DummyConsensusEngine>());
-        wc.recover_initial_state(tx);
-        wc.sync_current_state(highest_in_db);
-        auto request_id = wc.generate_request_id();
-
         // receiving 1 header from a peer
         BlockHeader header1b;
         header1b.number = 1;
@@ -472,31 +457,38 @@ TEST_CASE("Headers receiving and saving") {
 
         std::vector<BlockHeader> headers = {header1b};
         PeerId peer_id{byte_ptr_cast("1")};
-        wc.accept_headers(headers, request_id, peer_id);
-
-        // creating the persisted chain as the header downloader does at the beginning of the forward() method
-        HeaderPersistence pc(tx);
+        header_chain.accept_headers(headers, request_id, peer_id);
 
         // saving headers ready to persist as the header downloader does in the forward() method
-        Headers headers_to_persist = wc.withdraw_stable_headers();
-        pc.persist(headers_to_persist);
+        Headers headers_to_persist = header_chain.withdraw_stable_headers();
+
+        as_range::for_each(headers_to_persist, [&chain_fork_view](const auto& header) {
+            chain_fork_view.add(*header);
+        });
+        exec_engine.insert_headers(headers_to_persist);
 
         // check internal status
         BigInt expected_td = header0->difficulty + header1b.difficulty;
 
-        REQUIRE(pc.total_difficulty() == expected_td);
-        REQUIRE(pc.best_header_changed() == true);
-        REQUIRE(pc.highest_height() == 1);
-        REQUIRE(pc.highest_hash() == header1b_hash);
-        REQUIRE(pc.unwind_needed() == false);
+        REQUIRE(chain_fork_view.head_total_difficulty() == expected_td);
+        REQUIRE(chain_fork_view.head_changed() == true);
+        REQUIRE(chain_fork_view.head_height() == 1);
+        REQUIRE(chain_fork_view.head_hash() == header1b_hash);
+
+        // check db content
+        auto header1b_in_db = db::read_header(tx, header1b_hash);
+        REQUIRE(header1b_in_db.has_value());
+        REQUIRE(header1b_in_db == header1b);
+
+        // verify the inserted chain
+        auto verification = exec_engine.verify_chain(chain_fork_view.head_hash());
+        REQUIRE(std::holds_alternative<ValidChain>(verification));
+        auto valid_chain = std::get<ValidChain>(verification);
+        REQUIRE(valid_chain.current_point == 1);
 
         // check db content
         REQUIRE(db::read_head_header_hash(tx) == header1b_hash);
         REQUIRE(db::read_total_difficulty(tx, 1, header1b.hash()) == expected_td);
-
-        auto header1b_in_db = db::read_header(tx, header1b_hash);
-        REQUIRE(header1b_in_db.has_value());
-        REQUIRE(header1b_in_db == header1b);
 
         // receiving 2 header that changes the canonical chain
         BlockHeader header1;
@@ -514,25 +506,25 @@ TEST_CASE("Headers receiving and saving") {
         // processing the headers
         std::vector<BlockHeader> headers_bis = {header1, header2};
         peer_id = byte_ptr_cast("2");
-        wc.accept_headers(headers_bis, request_id, peer_id);
+        header_chain.accept_headers(headers_bis, request_id, peer_id);
 
         // saving headers ready to persist as the header downloader does in the forward() method
-        Headers headers_to_persist_bis = wc.withdraw_stable_headers();
-        pc.persist(headers_to_persist_bis);
+        Headers headers_to_persist_bis = header_chain.withdraw_stable_headers();
+
+        as_range::for_each(headers_to_persist_bis, [&chain_fork_view](const auto& header) {
+            chain_fork_view.add(*header);
+        });
+        exec_engine.insert_headers(headers_to_persist_bis);
 
         // check internal status
         BigInt expected_td_bis = header0->difficulty + header1.difficulty + header2.difficulty;
 
-        REQUIRE(pc.total_difficulty() == expected_td_bis);
-        REQUIRE(pc.best_header_changed() == true);
-        REQUIRE(pc.highest_height() == 2);
-        REQUIRE(pc.highest_hash() == header2_hash);
-        REQUIRE(pc.unwind_needed() == false);
+        REQUIRE(chain_fork_view.head_total_difficulty() == expected_td_bis);
+        REQUIRE(chain_fork_view.head_changed() == true);
+        REQUIRE(chain_fork_view.head_height() == 2);
+        REQUIRE(chain_fork_view.head_hash() == header2_hash);
 
         // check db
-        REQUIRE(db::read_head_header_hash(tx) == header2_hash);
-        REQUIRE(db::read_total_difficulty(tx, 2, header2.hash()) == expected_td_bis);
-
         auto header1_in_db = db::read_header(tx, header1_hash);
         REQUIRE(header1_in_db.has_value());
         REQUIRE(header1_in_db == header1);
@@ -543,12 +535,26 @@ TEST_CASE("Headers receiving and saving") {
         REQUIRE(header1b_in_db.has_value());
         REQUIRE(header1b_in_db == header1b);
 
-        // updating the canonical chain on the db
-        pc.finish();
+        // verify the inserted chain
+        verification = exec_engine.verify_chain(chain_fork_view.head_hash());  // this will trigger unwind
+        REQUIRE(std::holds_alternative<ValidChain>(verification));
+        valid_chain = std::get<ValidChain>(verification);
+        REQUIRE(valid_chain.current_point == 2);
+
+        REQUIRE(db::read_head_header_hash(tx) == header2_hash);
+        REQUIRE(db::read_total_difficulty(tx, 2, header2.hash()) == expected_td_bis);
 
         REQUIRE(db::read_canonical_hash(tx, 1) == header1_hash);
         REQUIRE(db::read_canonical_hash(tx, 2) == header2_hash);
-         */
+
+        REQUIRE(db::read_canonical_head(tx) == std::make_tuple(2, header2_hash));
+
+        // update the fork choice
+        exec_engine.notify_fork_choice_updated(header2_hash);
+
+        // check db content
+        REQUIRE(db::read_head_header_hash(tx) == header2_hash);
+        REQUIRE(db::read_canonical_head(tx) == std::make_tuple(2, header2_hash));
     }
 
     /* status:

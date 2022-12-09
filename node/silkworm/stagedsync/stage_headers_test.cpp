@@ -16,8 +16,6 @@
 
 #include "stage_headers.hpp"
 
-#include <algorithm>
-
 #include <catch2/catch.hpp>
 
 #include "silkworm/chain/genesis.hpp"
@@ -55,8 +53,6 @@ TEST_CASE("HeadersStage - data model") {
         BlockNum headers_stage_height = 0;
         HeaderDataModel_ForTest hm(tx, headers_stage_height);
 
-        REQUIRE(hm.best_header_changed() == false);
-        REQUIRE(hm.initial_height() == 0);
         REQUIRE(hm.highest_height() == 0);
         REQUIRE(hm.highest_hash() == header0_hash);
         REQUIRE(hm.total_difficulty() == header0->difficulty);
@@ -72,13 +68,12 @@ TEST_CASE("HeadersStage - data model") {
         hm.update_tables(header1);  // note that this will NOT write header1 on db
 
         // check internal status
-        REQUIRE(hm.best_header_changed() == true);
         REQUIRE(hm.highest_height() == header1.number);
         REQUIRE(hm.highest_hash() == header1_hash);
         REQUIRE(hm.total_difficulty() == td);
 
         // check db content
-        REQUIRE(db::read_head_header_hash(tx) == header1_hash);
+        //REQUIRE(db::read_head_header_hash(tx) == header1_hash);
         REQUIRE(db::read_total_difficulty(tx, header1.number, header1.hash()) == td);
         REQUIRE(db::read_block_number(tx, header1.hash()) == header1.number);
     }
@@ -114,6 +109,7 @@ TEST_CASE("HeadersStage - data model") {
         header1b.difficulty = 2'000'000;
         header1b.parent_hash = header0_hash;
         header1b.extra_data = string_view_to_byte_view("I'm different");
+        auto header1b_hash = header1b.hash();
 
         // updating the data model
         BlockNum headers_stage_height = 0;
@@ -121,19 +117,35 @@ TEST_CASE("HeadersStage - data model") {
 
         hm.update_tables(header1);
         hm.update_tables(header2);
-        hm.update_tables(header1b);  // suppose it arrives after header2
 
         // check internal status
         BigInt expected_td = header0->difficulty + header1.difficulty + header2.difficulty;
 
         REQUIRE(hm.total_difficulty() == expected_td);
-        REQUIRE(hm.best_header_changed() == true);
         REQUIRE(hm.highest_height() == 2);
         REQUIRE(hm.highest_hash() == header2_hash);
 
         // check db content
-        REQUIRE(db::read_head_header_hash(tx) == header2_hash);
+        //REQUIRE(db::read_head_header_hash(tx) == header2_hash);
         REQUIRE(db::read_total_difficulty(tx, 2, header2.hash()) == expected_td);
+
+        // Now we suppose CL triggers an unwind, resetting to h0
+        BlockNum headers_stage_height_fork = 0;
+        HeaderDataModel_ForTest hm_fork(tx, headers_stage_height_fork);
+
+        hm_fork.update_tables(header1b);  // suppose it arrives after header2
+
+        // check internal status
+        BigInt expected_td_fork = header0->difficulty + header1b.difficulty;
+
+        REQUIRE(hm_fork.total_difficulty() == expected_td_fork);
+        REQUIRE(hm_fork.highest_height() == 1);
+        REQUIRE(hm_fork.highest_hash() == header1b_hash);
+
+        // check db content
+        //REQUIRE(db::read_head_header_hash(tx) == header1b_hash);
+        REQUIRE(db::read_total_difficulty(tx, 1, header1b_hash) == expected_td_fork);
+        REQUIRE(db::read_total_difficulty(tx, 2, header2.hash()) == expected_td);  // this should remain
     }
 }
 

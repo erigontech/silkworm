@@ -34,67 +34,39 @@ HeadersStage::HeaderDataModel::HeaderDataModel(db::RWTxn& tx, BlockNum headers_h
     std::optional<BigInt> headers_head_td = db::read_total_difficulty(tx, headers_height, *headers_hash);
     if (!headers_head_td) throw std::logic_error("Headers stage, not found total difficulty of canonical hash at height " + std::to_string(headers_height));
 
-    local_td_ = *headers_head_td;
-    initial_in_db_ = headers_height;
-    highest_in_db_ = headers_height;
-    highest_hash_ = *headers_hash;
+    previous_hash_ = *headers_hash;
+    previous_td_ = *headers_head_td;
+    previous_height_ = headers_height;
 }
 
-bool HeadersStage::HeaderDataModel::best_header_changed() const { return new_canonical_; }
+BlockNum HeadersStage::HeaderDataModel::highest_height() const { return previous_height_; }
 
-BlockNum HeadersStage::HeaderDataModel::initial_height() const { return initial_in_db_; }
+Hash HeadersStage::HeaderDataModel::highest_hash() const { return previous_hash_; }
 
-BlockNum HeadersStage::HeaderDataModel::highest_height() const { return highest_in_db_; }
-
-Hash HeadersStage::HeaderDataModel::highest_hash() const { return highest_hash_; }
-
-BigInt HeadersStage::HeaderDataModel::total_difficulty() const { return local_td_; }
+BigInt HeadersStage::HeaderDataModel::total_difficulty() const { return previous_td_; }
 
 void HeadersStage::HeaderDataModel::update_tables(const BlockHeader& header) {
-    // Admittance conditions
     auto height = header.number;
     Hash hash = header.hash();
-    if (hash == previous_hash_) {
-        return;  // skip duplicates
+
+    // Admittance conditions
+    if (header.parent_hash != previous_hash_) {
+        throw std::logic_error("HeadersStage invariant violation: headers to process must be consecutive, at height=" +
+            std::to_string(height) + ", prev.hash=" + previous_hash_.to_hex() + ", curr.hash=" + hash.to_hex());
     }
 
     // Calculate total difficulty of this header
-    Total_Difficulty td{0};
-    if (header.parent_hash == previous_hash_) {
-        td = previous_td_ + header.difficulty;
-    }
-    else {
-        auto parent_td = db::read_total_difficulty(tx_, height - 1, header.parent_hash);
-        if (!parent_td) {
-            std::string error_message = "HeaderPersistence: parent's total difficulty not found with hash " +
-                                        to_hex(header.parent_hash) + " and height " + std::to_string(height - 1) +
-                                        " for header " + hash.to_hex();
-            throw std::logic_error(error_message);  // unexpected condition
-        }
-        td = *parent_td + header.difficulty;  // calculated total difficulty of this header
-    }
-
-    // Now we can decide whether this header will create a change in the canonical head
-    if (td > local_td_) {
-        new_canonical_ = true;
-
-        // Save progress
-        db::write_head_header_hash(tx_, hash);
-
-        highest_in_db_ = height;
-        highest_hash_ = hash;
-
-        local_td_ = td;  // this makes sure we end up choosing the chain with the max total difficulty
-    }
+    auto td = previous_td_ + header.difficulty;
 
     // Save progress
-    db::write_total_difficulty(tx_, height, hash, td);
-
+    db::write_total_difficulty(tx_, height, hash, td);  // maybe it should be moved to ExecEngine
+                                                                        // insert_headers to write td for every header
     // Save header number
-    db::write_header_number(tx_, hash.bytes, header.number);
+    db::write_header_number(tx_, hash.bytes, header.number);  // maybe it should be moved to ExecEngine
 
     previous_hash_ = hash;
     previous_td_ = td;
+    previous_height_ = height;
 }
 
 void HeadersStage::HeaderDataModel::remove_headers(BlockNum unwind_point, db::RWTxn& tx) {
@@ -125,10 +97,10 @@ auto HeadersStage::forward(db::RWTxn& tx) -> Stage::Result {
     operation_ = OperationType::Forward;
 
     try {
-        current_height_ = db::stages::read_stage_progress(tx, db::stages::kHeadersKey);
+        auto initial_height = current_height_ = db::stages::read_stage_progress(tx, db::stages::kHeadersKey);
         BlockNum target_height = sync_context_->target_height;
 
-        HeaderDataModel header_persistence(tx, current_height_);
+        HeaderDataModel data_model(tx, current_height_);
 
         if (forced_target_block_ && current_height_ >= *forced_target_block_) {
             tx.commit();
@@ -144,7 +116,7 @@ auto HeadersStage::forward(db::RWTxn& tx) -> Stage::Result {
         }
 
         get_log_progress();  // this is a trick to set log progress initial value, please improve
-        RepeatedMeasure<BlockNum> height_progress(header_persistence.initial_height());
+        RepeatedMeasure<BlockNum> height_progress(current_height_);
         log::Info(log_prefix_) << "Updating headers from=" << height_progress.get();
 
         // header processing
@@ -155,17 +127,19 @@ auto HeadersStage::forward(db::RWTxn& tx) -> Stage::Result {
             auto header = db::read_canonical_header(tx, current_height_);
             if (!header) throw std::logic_error("table Headers has a hole");
 
-            header_persistence.update_tables(*header);
+            data_model.update_tables(*header);
 
-            height_progress.set(header_persistence.highest_height());
+            height_progress.set(current_height_);
         }
+
+        db::write_head_header_hash(tx, data_model.highest_hash());
 
         db::stages::write_stage_progress(tx, db::stages::kHeadersKey, current_height_);
         result = Stage::Result::kSuccess;  // no reason to raise unwind
 
-        auto headers_processed = header_persistence.highest_height() - header_persistence.initial_height();
+        auto headers_processed = current_height_ - initial_height;
         log::Info(log_prefix_) << "Updating completed, wrote " << headers_processed << " headers,"
-                               << " last=" << header_persistence.highest_height();
+                               << " last=" << current_height_;
 
         tx.commit();  // this will commit or not depending on the creator of txn
 

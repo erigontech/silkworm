@@ -87,8 +87,6 @@ class HeadersStage : public Stage {
         static void remove_headers(BlockNum unwind_point, db::RWTxn& tx);
 
         // holds the status of a batch insertion of headers
-        bool best_header_changed() const;
-        BlockNum initial_height() const;
         BlockNum highest_height() const;
         Hash highest_hash() const;
         BigInt total_difficulty() const;
@@ -97,11 +95,7 @@ class HeadersStage : public Stage {
         db::RWTxn& tx_;
         Hash previous_hash_;
         Total_Difficulty previous_td_{0};
-        Hash highest_hash_;
-        BlockNum initial_in_db_{};
-        BlockNum highest_in_db_{};
-        Total_Difficulty local_td_{0};
-        bool new_canonical_{false};
+        BlockNum previous_height_{0};
     };
 };
 

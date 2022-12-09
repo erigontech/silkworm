@@ -25,12 +25,10 @@ namespace silkworm {
 TEST_CASE("Config lookup") {
     CHECK(lookup_known_chain(0u).has_value() == false);
     CHECK(lookup_known_chain(1u)->second == &kMainnetConfig);
-    CHECK(lookup_known_chain(3u)->second == &kRopstenConfig);
     CHECK(lookup_known_chain(4u)->second == &kRinkebyConfig);
     CHECK(lookup_known_chain(5u)->second == &kGoerliConfig);
     CHECK(lookup_known_chain(12345u).has_value() == false);
     CHECK(lookup_known_chain("mainnet")->second == &kMainnetConfig);
-    CHECK(lookup_known_chain("ropsten")->second == &kRopstenConfig);
     CHECK(lookup_known_chain("Rinkeby")->second == &kRinkebyConfig);
     CHECK(lookup_known_chain("goErli")->second == &kGoerliConfig);
     CHECK(lookup_known_chain("xxxx").has_value() == false);

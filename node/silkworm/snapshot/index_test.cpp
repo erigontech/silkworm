@@ -29,7 +29,7 @@ TEST_CASE("Index::Index", "[silkworm][snapshot][index]") {
     test::SetLogVerbosityGuard guard{log::Level::kNone};
     test::TemporarySnapshotFile tmp_snapshot_file{"v1-014500-015000-headers.seg"};
     HeaderIndex header_index{*SnapshotFile::parse(tmp_snapshot_file.path().string())};
-    CHECK_NOTHROW(header_index.build());
+    CHECK_THROWS_AS(header_index.build(), std::logic_error);
 }
 
 }  // namespace silkworm

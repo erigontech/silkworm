@@ -406,7 +406,7 @@ class RecSplit {
     std::vector<int64_t> bucket_position_accumulator_;
 
     //!
-    std::vector<uint64_t> buffer_; // TODO(canepat) rename buffer_bucket_
+    std::vector<uint64_t> buffer_;  // TODO(canepat) rename buffer_bucket_
 
     //!
     std::vector<uint64_t> buffer_offsets_;
@@ -420,7 +420,7 @@ class RecSplit {
   public:
     RecSplit() {}
 
-    RecSplit(const size_t _keys_count, const size_t _bucket_size, std::filesystem::path index_path, uint64_t base_data_id)
+    RecSplit(const size_t _keys_count, const size_t _bucket_size, std::filesystem::path index_path, uint64_t base_data_id, uint32_t salt = 0)
         : bucket_size(_bucket_size),
           keys_count(_keys_count),
           nbuckets((keys_count + bucket_size - 1) / bucket_size),
@@ -434,8 +434,8 @@ class RecSplit {
         // Generate random salt for murmur3 hash
         std::random_device rand_dev;
         std::mt19937 rand_gen32{rand_dev()};
-        salt_ = rand_gen32();
-        salt_ = 1; // TODO(canepat) remove
+        salt_ = salt != 0 ? salt : rand_gen32();
+        salt_ = 1;  // TODO(canepat) remove
         hasher_ = std::make_unique<Murmur3>(salt_);
     }
 
@@ -788,7 +788,7 @@ class RecSplit {
             }
             std::copy(buffer_.data(), buffer_.data() + m, bucket.data() + start);
             std::copy(buffer_offsets_.data(), buffer_offsets_.data() + m, offsets.data() + start);
-            delete[] count; // TODO(canepat) remove with std::vector<std::size_t> count(fanout);
+            delete[] count;  // TODO(canepat) remove with std::vector<std::size_t> count(fanout);
 
             salt -= start_seed[level];
             const auto log2golomb = golomb_param(m);

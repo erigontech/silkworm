@@ -76,7 +76,6 @@
 
 #include <silkworm/recsplit/function/elias_fano.hpp>
 #include <silkworm/recsplit/function/golomb_rice.hpp>
-#include <silkworm/recsplit/support/SpookyV2.hpp>  // TODO(canepat) remove
 #include <silkworm/recsplit/support/murmur_hash3.hpp>
 #include <silkworm/recsplit/util/Vector.hpp>
 
@@ -140,27 +139,10 @@ uint64_t inline remix(uint64_t z) {
  * random hashes only (mainly for benchmarking purposes).
  */
 
-typedef struct __hash128_t {
+struct hash128_t {
     uint64_t first, second;  // TODO(canepat) rename first->hi, second->lo
-    bool operator<(const __hash128_t& o) const { return first < o.first || second < o.second; }
-    /*__hash128_t(const uint64_t f, const uint64_t s) {
-        this->first = f;
-        this->second = s;
-    }*/
-} hash128_t;
-
-/** Convenience function hashing a key a returning a __hash128_t
- *
- * @param data a pointer to the key.
- * @param length the length in bytes of the key./endian.hpp
- * @param seed an additional seed.
- */
-
-hash128_t inline spooky(const void* data, const size_t length, const uint64_t seed) {
-    uint64_t h0 = seed, h1 = seed;
-    SpookyHash::Hash128(data, length, &h0, &h1);
-    return {h1, h0};
-}
+    bool operator<(const hash128_t& o) const { return first < o.first || second < o.second; }
+};
 
 // Quick replacements for min/max on not-so-large integers.
 
@@ -249,39 +231,6 @@ class SplittingStrategy {
     inline size_t fanout() { return this->_fanout; }
 };
 
-// Computes the Golomb modulu of a splitting (for statistics purposes only)
-
-template <size_t LEAF_SIZE>
-static constexpr uint64_t split_golomb_b(const int m) {
-    array<int, MAX_FANOUT> k{0};
-
-    size_t fanout = 0, part = 0, unit = 0;
-    SplittingStrategy<LEAF_SIZE>::split_params(m, fanout, unit);
-
-    k[fanout - 1] = m;
-    for (size_t i = 0; i < fanout - 1; ++i) {
-        k[i] = unit;
-        k[fanout - 1] -= k[i];
-    }
-
-    double sqrt_prod = 1;
-    for (size_t i = 0; i < fanout; ++i) sqrt_prod *= sqrt(k[i]);
-
-    const double p = sqrt(m) / (pow(2 * M_PI, (fanout - 1.) / 2) * sqrt_prod);
-    return ceil(-log(2 - p) / log1p(-p));  // Golomb modulus
-}
-
-// Computes the point at which one should stop to test whether
-// bijection extraction failed (around the square root of the leaf size).
-
-static constexpr array<uint8_t, MAX_LEAF_SIZE> fill_bij_midstop() {
-    array<uint8_t, MAX_LEAF_SIZE> memo{0};
-    for (std::size_t s = 0; s < MAX_LEAF_SIZE; ++s) memo[s] = s < static_cast<std::size_t>(ceil(2 * sqrt(s))) ? s : static_cast<std::size_t>(ceil(2 * sqrt(s)));
-    return memo;
-}
-
-#define first_hash(k, len) spooky(k, len, 0)
-// #define golomb_param(m) (memo[m] >> 27)
 #define skip_bits(m) (memo[m] & 0xFFFF)
 #define skip_nodes(m) ((memo[m] >> 16) & 0x7FF)
 
@@ -432,8 +381,6 @@ class RecSplit {
     std::unique_ptr<Murmur3> hasher_;
 
   public:
-    RecSplit() {}
-
     RecSplit(const size_t _keys_count, const size_t _bucket_size, std::filesystem::path index_path, uint64_t base_data_id, uint32_t salt = 0)
         : bucket_size(_bucket_size),
           keys_count(_keys_count),
@@ -496,6 +443,8 @@ class RecSplit {
         add_key(key.c_str(), key.size(), offset);
     }
 
+    //! Build the MPHF using the RecSplit algorithm and save the resulting index file
+    //! \warning duplicate keys will cause this method to never return
     [[nodiscard]] bool build() {
         if (built_) {
             throw std::logic_error{"perfect hash function already built"};
@@ -669,7 +618,71 @@ class RecSplit {
         hasher_ = std::make_unique<Murmur3>(salt_);
     }
 
+    /** Returns the value associated with the given 128-bit hash.
+     *
+     * Note that this method is mainly useful for benchmarking.
+     * @param hash a 128-bit hash.
+     * @return the associated value.
+     */
+    size_t operator()(const hash128_t& hash) {
+        const size_t bucket = hash128_to_bucket(hash);
+        uint64_t cum_keys, cum_keys_next, bit_pos;
+        ef.get(bucket, cum_keys, cum_keys_next, bit_pos);
+
+        // Number of keys in this bucket
+        size_t m = cum_keys_next - cum_keys;
+        auto reader = descriptors.reader();
+        reader.readReset(bit_pos, skip_bits(m));
+        int level = 0;
+
+        while (m > upper_aggr) {  // fanout = 2
+            const auto d = reader.readNext(golomb_param(m, memo));
+            const size_t hmod = remap16(remix(hash.second + d + start_seed[level]), m);
+
+            const uint32_t split = ((uint16_t(m / 2 + upper_aggr - 1) / upper_aggr)) * upper_aggr;
+            if (hmod < split) {
+                m = split;
+            } else {
+                reader.skipSubtree(skip_nodes(split), skip_bits(split));
+                m -= split;
+                cum_keys += split;
+            }
+            level++;
+        }
+        if (m > lower_aggr) {
+            const auto d = reader.readNext(golomb_param(m, memo));
+            const size_t hmod = remap16(remix(hash.second + d + start_seed[level]), m);
+
+            const int part = uint16_t(hmod) / lower_aggr;
+            m = min(lower_aggr, m - part * lower_aggr);
+            cum_keys += lower_aggr * part;
+            if (part) reader.skipSubtree(skip_nodes(lower_aggr) * part, skip_bits(lower_aggr) * part);
+            level++;
+        }
+
+        if (m > _leaf) {
+            const auto d = reader.readNext(golomb_param(m, memo));
+            const size_t hmod = remap16(remix(hash.second + d + start_seed[level]), m);
+
+            const int part = uint16_t(hmod) / _leaf;
+            m = min(_leaf, m - part * _leaf);
+            cum_keys += _leaf * part;
+            if (part) reader.skipSubtree(part, skip_bits(_leaf) * part);
+            level++;
+        }
+
+        const auto b = reader.readNext(golomb_param(m, memo));
+        return cum_keys + remap16(remix(hash.second + b + start_seed[level]), m);
+    }
+
+    //! Return the value associated with the given key
+    size_t operator()(const string& key) const { return operator()(murmur_hash_3(key.c_str(), key.size())); }
+
+    //! Return the number of keys used to build the RecSplit instance
+    inline size_t size() const { return this->keys_count; }
+
   private:
+    //! Compute and store the splittings and bijections of the current bucket
     bool recsplit_current_bucket(std::ofstream& index_output_stream) {
         // Extend bucket size accumulator to accommodate current bucket index + 1
         while (bucket_size_accumulator_.size() <= current_bucket_id_ + 1) {
@@ -713,7 +726,7 @@ class RecSplit {
         return false;
     }
 
-    //! Apply RecSplit algorithm to the given bucket
+    //! Apply the RecSplit algorithm to the given bucket
     void recsplit(std::vector<uint64_t>& bucket,
                   std::vector<uint64_t>& offsets,
                   std::vector<uint32_t>& unary,
@@ -832,503 +845,8 @@ class RecSplit {
         return h;
     }
 
-  public:
-    /** Builds a RecSplit instance using a given list of keys and bucket size.
-     *
-     * **Warning**: duplicate keys will cause this method to never return.
-     *
-     * @param keys a vector of strings.
-     * @param bucket_size the desired bucket size; typical sizes go from
-     * 100 to 2000, with smaller buckets giving slightly larger but faster
-     * functions.
-     */
-    RecSplit(const vector<string>& keys, const size_t _bucket_size) {
-        this->bucket_size = _bucket_size;
-        this->keys_count = keys.size();
-        hash128_t* h = static_cast<hash128_t*>(malloc(this->keys_count * sizeof(hash128_t)));
-        for (size_t i = 0; i < this->keys_count; ++i) {
-            h[i] = first_hash(keys[i].c_str(), keys[i].size());
-        }
-        hash_gen(h);
-        free(h);
-    }
-
-    /** Builds a RecSplit instance using a given list of 128-bit hashes and bucket size.
-     *
-     * **Warning**: duplicate keys will cause this method to never return.
-     *
-     * Note that this constructor is mainly useful for benchmarking.
-     * @param keys a vector of 128-bit hashes.
-     * @param bucket_size the desired bucket size; typical sizes go from
-     * 100 to 2000, with smaller buckets giving slightly larger but faster
-     * functions.
-     */
-    RecSplit(vector<hash128_t>& keys, const size_t _bucket_size) {
-        this->bucket_size = _bucket_size;
-        this->keys_count = keys.size();
-        hash_gen(&keys[0]);
-    }
-
-    /** Builds a RecSplit instance using a list of keys returned by a stream and bucket size.
-     *
-     * **Warning**: duplicate keys will cause this method to never return.
-     *
-     * @param input an open input stream returning a list of keys, one per line.
-     * @param bucket_size the desired bucket size.
-     */
-    RecSplit(ifstream& input, const size_t _bucket_size) {
-        this->bucket_size = _bucket_size;
-        vector<hash128_t> h;
-        for (string key; getline(input, key);) h.push_back(first_hash(key.c_str(), key.size()));
-        this->keys_count = h.size();
-        hash_gen(&h[0]);
-    }
-
-    /** Returns the value associated with the given 128-bit hash.
-     *
-     * Note that this method is mainly useful for benchmarking.
-     * @param hash a 128-bit hash.
-     * @return the associated value.
-     */
-    size_t operator()(const hash128_t& hash) {
-        const size_t bucket = hash128_to_bucket(hash);
-        uint64_t cum_keys, cum_keys_next, bit_pos;
-        ef.get(bucket, cum_keys, cum_keys_next, bit_pos);
-
-        // Number of keys in this bucket
-        size_t m = cum_keys_next - cum_keys;
-        auto reader = descriptors.reader();
-        reader.readReset(bit_pos, skip_bits(m));
-        int level = 0;
-
-        while (m > upper_aggr) {  // fanout = 2
-            const auto d = reader.readNext(golomb_param(m, memo));
-            const size_t hmod = remap16(remix(hash.second + d + start_seed[level]), m);
-
-            const uint32_t split = ((uint16_t(m / 2 + upper_aggr - 1) / upper_aggr)) * upper_aggr;
-            if (hmod < split) {
-                m = split;
-            } else {
-                reader.skipSubtree(skip_nodes(split), skip_bits(split));
-                m -= split;
-                cum_keys += split;
-            }
-            level++;
-        }
-        if (m > lower_aggr) {
-            const auto d = reader.readNext(golomb_param(m, memo));
-            const size_t hmod = remap16(remix(hash.second + d + start_seed[level]), m);
-
-            const int part = uint16_t(hmod) / lower_aggr;
-            m = min(lower_aggr, m - part * lower_aggr);
-            cum_keys += lower_aggr * part;
-            if (part) reader.skipSubtree(skip_nodes(lower_aggr) * part, skip_bits(lower_aggr) * part);
-            level++;
-        }
-
-        if (m > _leaf) {
-            const auto d = reader.readNext(golomb_param(m, memo));
-            const size_t hmod = remap16(remix(hash.second + d + start_seed[level]), m);
-
-            const int part = uint16_t(hmod) / _leaf;
-            m = min(_leaf, m - part * _leaf);
-            cum_keys += _leaf * part;
-            if (part) reader.skipSubtree(part, skip_bits(_leaf) * part);
-            level++;
-        }
-
-        const auto b = reader.readNext(golomb_param(m, memo));
-        return cum_keys + remap16(remix(hash.second + b + start_seed[level]), m);
-    }
-
-    /** Returns the value associated with the given key.
-     *
-     * @param key a key.
-     * @return the associated value.
-     */
-    size_t operator()(const string& key) { return operator()(murmur_hash_3(key.c_str(), key.size())); }
-
-    /** Returns the number of keys used to build this RecSplit instance. */
-    inline size_t size() { return this->keys_count; }
-
-  private:
     // Maps a 128-bit to a bucket using the first 64-bit half.
     inline uint64_t hash128_to_bucket(const hash128_t& hash) const { return remap128(hash.first, nbuckets); }
-
-    // Computes and stores the splittings and bijections of a bucket.
-    void recSplit(vector<uint64_t>& bucket, GolombRiceBuilder& builder, vector<uint32_t>& unary, std::ofstream& index_output_stream) {
-        const auto m = bucket.size();
-        vector<uint64_t> temp(m);
-        recSplit(bucket, temp, 0, bucket.size(), builder, unary, 0, index_output_stream);
-    }
-
-    void recSplit(vector<uint64_t>& bucket, vector<uint64_t>& temp, size_t start, size_t end, GolombRiceBuilder& builder, vector<uint32_t>& unary, const int level, std::ofstream& index_output_stream) {
-        static const array<uint8_t, MAX_LEAF_SIZE> bij_midstop = fill_bij_midstop();
-        const auto m = end - start;
-        assert(m > 1);
-        uint64_t x = start_seed[level];
-
-        if (m <= _leaf) {
-#ifdef MORESTATS
-            sum_depths += m * level;
-            auto start_time = high_resolution_clock::now();
-#endif
-            uint32_t mask;
-            const uint32_t found = (1 << m) - 1;
-            if constexpr (_leaf <= 8) {
-                for (;;) {
-                    mask = 0;
-                    for (size_t i = start; i < end; i++) mask |= uint32_t(1) << remap16(remix(bucket[i] + x), m);
-#ifdef MORESTATS
-                    num_bij_evals[m] += m;
-#endif
-                    if (mask == found) break;
-                    x++;
-                }
-            } else {
-                const size_t midstop = bij_midstop[m];
-                for (;;) {
-                    mask = 0;
-                    size_t i;
-                    for (i = start; i < start + midstop; i++) mask |= uint32_t(1) << remap16(remix(bucket[i] + x), m);
-#ifdef MORESTATS
-                    num_bij_evals[m] += midstop;
-#endif
-                    if (nu(mask) == midstop) {
-                        for (; i < end; i++) mask |= uint32_t(1) << remap16(remix(bucket[i] + x), m);
-#ifdef MORESTATS
-                        num_bij_evals[m] += m - midstop;
-#endif
-                        if (mask == found) break;
-                    }
-                    x++;
-                }
-            }
-#ifdef MORESTATS
-            time_bij += duration_cast<nanoseconds>(high_resolution_clock::now() - start_time).count();
-#endif
-            x -= start_seed[level];
-            const auto log2golomb = golomb_param(m, memo);
-            builder.appendFixed(x, log2golomb);
-            unary.push_back(x >> log2golomb);
-#ifdef MORESTATS
-            bij_count[m]++;
-            num_bij_trials[m] += x + 1;
-            bij_unary += 1 + (x >> log2golomb);
-            bij_fixed += log2golomb;
-
-            min_bij_code = min(min_bij_code, x);
-            max_bij_code = max(max_bij_code, x);
-            sum_bij_codes += x;
-
-            auto b = bij_memo_golomb[m];
-            auto log2b = lambda(b);
-            bij_unary_golomb += x / b + 1;
-            bij_fixed_golomb += x % b < ((1 << log2b + 1) - b) ? log2b : log2b + 1;
-#endif
-        } else {
-#ifdef MORESTATS
-            auto start_time = high_resolution_clock::now();
-#endif
-            if (m > upper_aggr) {  // fanout = 2
-                const size_t split = ((uint16_t(m / 2 + upper_aggr - 1) / upper_aggr)) * upper_aggr;
-
-                size_t count[2];
-                for (;;) {
-                    count[0] = 0;
-                    for (size_t i = start; i < end; i++) {
-                        count[remap16(remix(bucket[i] + x), m) >= split]++;
-#ifdef MORESTATS
-                        ++num_split_evals;
-#endif
-                    }
-                    if (count[0] == split) break;
-                    x++;
-                }
-
-                count[0] = 0;
-                count[1] = split;
-                for (size_t i = start; i < end; i++) {
-                    temp[count[remap16(remix(bucket[i] + x), m) >= split]++] = bucket[i];
-                }
-                copy(&temp[0], &temp[m], &bucket[start]);
-                x -= start_seed[level];
-                const auto log2golomb = golomb_param(m, memo);
-                builder.appendFixed(x, log2golomb);
-                unary.push_back(x >> log2golomb);
-
-#ifdef MORESTATS
-                time_split[min(MAX_LEVEL_TIME, level)] += duration_cast<nanoseconds>(high_resolution_clock::now() - start_time).count();
-#endif
-                recSplit(bucket, temp, start, start + split, builder, unary, level + 1, index_output_stream);
-                if (m - split > 1) recSplit(bucket, temp, start + split, end, builder, unary, level + 1, index_output_stream);
-#ifdef MORESTATS
-                else
-                    sum_depths += level;
-#endif
-            } else if (m > lower_aggr) {  // 2nd aggregation level
-                const size_t fanout = uint16_t(m + lower_aggr - 1) / lower_aggr;
-                size_t* count = new size_t[fanout];  // Note that we never read count[fanout-1]
-                for (;;) {
-                    memset(count, 0, fanout * sizeof(size_t));
-                    for (size_t i = start; i < end; i++) {
-                        count[uint16_t(remap16(remix(bucket[i] + x), m)) / lower_aggr]++;
-#ifdef MORESTATS
-                        ++num_split_evals;
-#endif
-                    }
-                    size_t broken = 0;
-                    for (size_t i = 0; i < fanout - 1; i++) broken |= count[i] - lower_aggr;
-                    if (!broken) break;
-                    x++;
-                }
-
-                for (size_t i = 0, c = 0; i < fanout; i++, c += lower_aggr) count[i] = c;
-                for (size_t i = start; i < end; i++) {
-                    temp[count[uint16_t(remap16(remix(bucket[i] + x), m)) / lower_aggr]++] = bucket[i];
-                }
-                copy(&temp[0], &temp[m], &bucket[start]);
-                delete[] count;
-
-                x -= start_seed[level];
-                const auto log2golomb = golomb_param(m, memo);
-                builder.appendFixed(x, log2golomb);
-                unary.push_back(x >> log2golomb);
-
-#ifdef MORESTATS
-                time_split[min(MAX_LEVEL_TIME, level)] += duration_cast<nanoseconds>(high_resolution_clock::now() - start_time).count();
-#endif
-                size_t i;
-                for (i = 0; i < m - lower_aggr; i += lower_aggr) {
-                    recSplit(bucket, temp, start + i, start + i + lower_aggr, builder, unary, level + 1, index_output_stream);
-                }
-                if (m - i > 1) {
-                    recSplit(bucket, temp, start + i, end, builder, unary, level + 1, index_output_stream);
-                } else if (m - i == 1) {
-                    /*silkworm::Bytes uint64_buffer(8, '\0');
-                    silkworm::endian::store_big_u64(uint64_buffer.data(), offset[i]);
-                    index_output_stream.write(reinterpret_cast<const char*>(uint64_buffer.data()), 8);
-                    SILK_DEBUG << "[index] written offset: " << offset;*/
-                }
-#ifdef MORESTATS
-                else
-                    sum_depths += level;
-#endif
-            } else {  // First aggregation level, m <= lower_aggr
-                const size_t fanout = uint16_t(m + _leaf - 1) / _leaf;
-                size_t* count = new size_t[fanout];  // Note that we never read count[fanout-1]
-                for (;;) {
-                    memset(count, 0, fanout * sizeof(size_t));
-                    for (size_t i = start; i < end; i++) {
-                        count[uint16_t(remap16(remix(bucket[i] + x), m)) / _leaf]++;
-#ifdef MORESTATS
-                        ++num_split_evals;
-#endif
-                    }
-                    size_t broken = 0;
-                    for (size_t i = 0; i < fanout - 1; i++) broken |= count[i] - _leaf;
-                    if (!broken) break;
-                    x++;
-                }
-                for (size_t i = 0, c = 0; i < fanout; i++, c += _leaf) count[i] = c;
-                for (size_t i = start; i < end; i++) {
-                    temp[count[uint16_t(remap16(remix(bucket[i] + x), m)) / _leaf]++] = bucket[i];
-                }
-                copy(&temp[0], &temp[m], &bucket[start]);
-                delete[] count;
-
-                x -= start_seed[level];
-                const auto log2golomb = golomb_param(m, memo);
-                builder.appendFixed(x, log2golomb);
-                unary.push_back(x >> log2golomb);
-
-#ifdef MORESTATS
-                time_split[min(MAX_LEVEL_TIME, level)] += duration_cast<nanoseconds>(high_resolution_clock::now() - start_time).count();
-#endif
-                size_t i;
-                for (i = 0; i < m - _leaf; i += _leaf) {
-                    recSplit(bucket, temp, start + i, start + i + _leaf, builder, unary, level + 1, index_output_stream);
-                }
-                if (m - i > 1) recSplit(bucket, temp, start + i, end, builder, unary, level + 1, index_output_stream);
-#ifdef MORESTATS
-                else
-                    sum_depths += level;
-#endif
-            }
-
-#ifdef MORESTATS
-            ++split_count;
-            num_split_trials += x + 1;
-            double e_trials = 1;
-            size_t aux = m;
-            SplitStrat strat{m};
-            auto v = strat.begin();
-            for (int i = 0; i < strat.fanout(); ++i, ++v) {
-                e_trials *= pow((double)m / *v, *v);
-                for (size_t j = *v; j > 0; --j, --aux) {
-                    e_trials *= (double)j / aux;
-                }
-            }
-            expected_split_trials += (size_t)e_trials;
-            expected_split_evals += (size_t)e_trials * m;
-            const auto log2golomb = golomb_param(m);
-            split_unary += 1 + (x >> log2golomb);
-            split_fixed += log2golomb;
-
-            min_split_code = min(min_split_code, x);
-            max_split_code = max(max_split_code, x);
-            sum_split_codes += x;
-
-            auto b = split_golomb_b<LEAF_SIZE>(m);
-            auto log2b = lambda(b);
-            split_unary_golomb += x / b + 1;
-            split_fixed_golomb += x % b < ((1ULL << log2b + 1) - b) ? log2b : log2b + 1;
-#endif
-        }
-    }
-
-    void hash_gen(hash128_t* hashes) {
-#ifdef MORESTATS
-        time_bij = 0;
-        memset(time_split, 0, sizeof time_split);
-        split_unary = split_fixed = 0;
-        bij_unary = bij_fixed = 0;
-        min_split_code = 1UL << 63;
-        max_split_code = sum_split_codes = 0;
-        min_bij_code = 1UL << 63;
-        max_bij_code = sum_bij_codes = 0;
-        sum_depths = 0;
-        size_t minsize = keys_count, maxsize = 0;
-        double ub_split_bits = 0, ub_bij_bits = 0;
-        double ub_split_evals = 0, ub_bij_evals = 0;
-#endif
-
-#ifndef __SIZEOF_INT128__
-        if (keys_count > (1ULL << 32)) {
-            fprintf(stderr, "For more than 2^32 keys, you need 128-bit integer support.\n");
-            abort();
-        }
-#endif
-        nbuckets = max(1, (keys_count + bucket_size - 1) / bucket_size);
-        auto bucket_size_acc = vector<int64_t>(nbuckets + 1);
-        auto bucket_pos_acc = vector<int64_t>(nbuckets + 1);
-
-        sort(hashes, hashes + keys_count, [this](const hash128_t& a, const hash128_t& b) { return hash128_to_bucket(a) < hash128_to_bucket(b); });
-        typename RiceBitVector<AT>::Builder builder;
-
-        std::ofstream index_output_stream;
-        bucket_size_acc[0] = bucket_pos_acc[0] = 0;
-        for (size_t i = 0, last = 0; i < nbuckets; i++) {
-            vector<uint64_t> bucket;
-            for (; last < keys_count && hash128_to_bucket(hashes[last]) == i; last++) bucket.push_back(hashes[last].second);
-
-            const size_t s = bucket.size();
-            bucket_size_acc[i + 1] = bucket_size_acc[i] + s;
-            if (bucket.size() > 1) {
-                vector<uint32_t> unary;
-                recSplit(bucket, builder, unary, index_output_stream);
-                builder.appendUnaryAll(unary);
-            }
-            bucket_pos_acc[i + 1] = builder.getBits();
-#ifdef MORESTATS
-            auto upper_leaves = (s + _leaf - 1) / _leaf;
-            auto upper_height = ceil(log(upper_leaves) / log(2));  // TODO: check
-            auto upper_s = _leaf * pow(2, upper_height);
-            ub_split_bits += (double)upper_s / (_leaf * 2) * log2(2 * M_PI * _leaf) - .5 * log2(2 * M_PI * upper_s);
-            ub_bij_bits += upper_leaves * _leaf * (log2e - .5 / _leaf * log2(2 * M_PI * _leaf));
-            ub_split_evals += 4 * upper_s * sqrt(pow(2 * M_PI * upper_s, 2 - 1) / pow(2, 2));
-            minsize = min(minsize, s);
-            maxsize = max(maxsize, s);
-#endif
-        }
-        builder.appendFixed(1, 1);  // Sentinel (avoids checking for parts of size 1)
-        descriptors = builder.build();
-        ef = DoubleEF<AT>(vector<uint64_t>(bucket_size_acc.begin(), bucket_size_acc.end()), vector<uint64_t>(bucket_pos_acc.begin(), bucket_pos_acc.end()));
-
-#ifdef STATS
-        // Evaluation purposes only
-        double ef_sizes = (double)ef.bitCountCumKeys() / keys_count;
-        double ef_bits = (double)ef.bitCountPosition() / keys_count;
-        double rice_desc = (double)builder.getBits() / keys_count;
-        printf("Elias-Fano cumul sizes:  %f bits/bucket\n", (double)ef.bitCountCumKeys() / nbuckets);
-        printf("Elias-Fano cumul bits:   %f bits/bucket\n", (double)ef.bitCountPosition() / nbuckets);
-        printf("Elias-Fano cumul sizes:  %f bits/key\n", ef_sizes);
-        printf("Elias-Fano cumul bits:   %f bits/key\n", ef_bits);
-        printf("Rice-Golomb descriptors: %f bits/key\n", rice_desc);
-        printf("Total bits:              %f bits/key\n", ef_sizes + ef_bits + rice_desc);
-#endif
-#ifdef MORESTATS
-
-        printf("\n");
-        printf("Min bucket size: %lu\n", minsize);
-        printf("Max bucket size: %lu\n", maxsize);
-
-        printf("\n");
-        printf("Bijections: %13.3f ms\n", time_bij * 1E-6);
-        for (int i = 0; i < MAX_LEVEL_TIME; i++) {
-            if (time_split[i] > 0) {
-                printf("Split level %d: %10.3f ms\n", i, time_split[i] * 1E-6);
-            }
-        }
-
-        uint64_t fact = 1, tot_bij_count = 0, tot_bij_evals;
-        printf("\n");
-        printf("Bij               count              trials                 exp               evals                 exp           tot evals\n");
-        for (int i = 0; i < MAX_LEAF_SIZE; i++) {
-            if (num_bij_trials[i] != 0) {
-                tot_bij_count += bij_count[i];
-                tot_bij_evals += num_bij_evals[i];
-                printf("%-3d%20d%20.2f%20.2f%20.2f%20.2f%20lld\n", i, bij_count[i], (double)num_bij_trials[i] / bij_count[i], pow(i, i) / fact, (double)num_bij_evals[i] / bij_count[i],
-                       (_leaf <= 8 ? i : bij_midstop[i]) * pow(i, i) / fact, num_bij_evals[i]);
-            }
-            fact *= (i + 1);
-        }
-
-        printf("\n");
-        printf("Split count:       %16zu\n", split_count);
-
-        printf("Total split evals: %16lld\n", num_split_evals);
-        printf("Total bij evals:   %16lld\n", tot_bij_evals);
-        printf("Total evals:       %16lld\n", num_split_evals + tot_bij_evals);
-
-        printf("\n");
-        printf("Average depth:        %f\n", (double)sum_depths / keys_count);
-        printf("\n");
-        printf("Trials per split:     %16.3f\n", (double)num_split_trials / split_count);
-        printf("Exp trials per split: %16.3f\n", (double)expected_split_trials / split_count);
-        printf("Evals per split:      %16.3f\n", (double)num_split_evals / split_count);
-        printf("Exp evals per split:  %16.3f\n", (double)expected_split_evals / split_count);
-
-        printf("\n");
-        printf("Unary bits per bij: %10.5f\n", (double)bij_unary / tot_bij_count);
-        printf("Fixed bits per bij: %10.5f\n", (double)bij_fixed / tot_bij_count);
-        printf("Total bits per bij: %10.5f\n", (double)(bij_unary + bij_fixed) / tot_bij_count);
-
-        printf("\n");
-        printf("Unary bits per split: %10.5f\n", (double)split_unary / split_count);
-        printf("Fixed bits per split: %10.5f\n", (double)split_fixed / split_count);
-        printf("Total bits per split: %10.5f\n", (double)(split_unary + split_fixed) / split_count);
-        printf("Total bits per key:   %10.5f\n", (double)(bij_unary + bij_fixed + split_unary + split_fixed) / keys_count);
-
-        printf("\n");
-        printf("Unary bits per bij (Golomb): %10.5f\n", (double)bij_unary_golomb / tot_bij_count);
-        printf("Fixed bits per bij (Golomb): %10.5f\n", (double)bij_fixed_golomb / tot_bij_count);
-        printf("Total bits per bij (Golomb): %10.5f\n", (double)(bij_unary_golomb + bij_fixed_golomb) / tot_bij_count);
-
-        printf("\n");
-        printf("Unary bits per split (Golomb): %10.5f\n", (double)split_unary_golomb / split_count);
-        printf("Fixed bits per split (Golomb): %10.5f\n", (double)split_fixed_golomb / split_count);
-        printf("Total bits per split (Golomb): %10.5f\n", (double)(split_unary_golomb + split_fixed_golomb) / split_count);
-        printf("Total bits per key (Golomb):   %10.5f\n", (double)(bij_unary_golomb + bij_fixed_golomb + split_unary_golomb + split_fixed_golomb) / keys_count);
-
-        printf("\n");
-
-        printf("Total split bits        %16.3f\n", (double)split_fixed + split_unary);
-        printf("Upper bound split bits: %16.3f\n", ub_split_bits);
-        printf("Total bij bits:         %16.3f\n", (double)bij_fixed + bij_unary);
-        printf("Upper bound bij bits:   %16.3f\n\n", ub_bij_bits);
-#endif
-    }
 
     friend ostream& operator<<(ostream& os, const RecSplit<LEAF_SIZE, AT>& rs) {
         size_t leaf_size = LEAF_SIZE;

@@ -61,8 +61,21 @@
 #include <silkworm/common/endian.hpp>
 #include <silkworm/common/log.hpp>
 #include <silkworm/etl/collector.hpp>
-#include <silkworm/recsplit/function/DoubleEF.hpp>
-#include <silkworm/recsplit/function/RiceBitVector.hpp>
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wimplicit-fallthrough"
+#pragma GCC diagnostic ignored "-Wnon-virtual-dtor"
+#pragma GCC diagnostic ignored "-Wold-style-cast"
+#pragma GCC diagnostic ignored "-Wsign-conversion"
+#pragma GCC diagnostic ignored "-Wshadow"
+#pragma GCC diagnostic ignored "-Wunused-variable"
+#if defined(__clang__)
+#pragma GCC diagnostic ignored "-Winvalid-constexpr"
+#endif /* defined(__clang__) */
+#pragma GCC diagnostic ignored "-Wsign-compare"
+
+#include <silkworm/recsplit/function/elias_fano.hpp>
+#include <silkworm/recsplit/function/golomb_rice.hpp>
 #include <silkworm/recsplit/support/SpookyV2.hpp>  // TODO(canepat) remove
 #include <silkworm/recsplit/support/murmur_hash3.hpp>
 #include <silkworm/recsplit/util/Vector.hpp>
@@ -194,7 +207,7 @@ class SplittingStrategy {
         } else if (m > lower_aggr) {  // Second-level aggregation
             unit = lower_aggr;
             fanout = uint16_t(m + lower_aggr - 1) / lower_aggr;
-        } else {  // First-level aggregation
+        } else {  // First-level aggregation//
             unit = _leaf;
             fanout = uint16_t(m + _leaf - 1) / _leaf;
         }
@@ -236,51 +249,6 @@ class SplittingStrategy {
     inline size_t fanout() { return this->_fanout; }
 };
 
-// Generates the precomputed table of 32-bit values holding the Golomb-Rice code
-// of a splitting (upper 5 bits), the number of nodes in the associated subtree
-// (following 11 bits) and the sum of the Golomb-Rice codelengths in the same
-// subtree (lower 16 bits).
-
-template <size_t LEAF_SIZE>
-static constexpr void _fill_golomb_rice(const int m, array<uint32_t, MAX_BUCKET_SIZE>* memo) {
-    array<int, MAX_FANOUT> k{0};
-
-    size_t fanout = 0, unit = 0;
-    SplittingStrategy<LEAF_SIZE>::split_params(m, fanout, unit);
-
-    k[fanout - 1] = m;
-    for (size_t i = 0; i < fanout - 1; ++i) {
-        k[i] = unit;
-        k[fanout - 1] -= k[i];
-    }
-
-    double sqrt_prod = 1;
-    for (size_t i = 0; i < fanout; ++i) sqrt_prod *= sqrt(k[i]);
-
-    const double p = sqrt(m) / (pow(2 * M_PI, (fanout - 1.) / 2) * sqrt_prod);
-    auto golomb_rice_length = static_cast<uint32_t>(ceil(log2(-log((sqrt(5) + 1) / 2) / log1p(-p))));  // log2 Golomb modulus
-
-    assert(golomb_rice_length <= 0x1F);  // Golomb-Rice code, stored in the 5 upper bits
-    (*memo)[m] = golomb_rice_length << 27;
-    for (size_t i = 0; i < fanout; ++i) golomb_rice_length += (*memo)[k[i]] & 0xFFFF;
-    assert(golomb_rice_length <= 0xFFFF);  // Sum of Golomb-Rice codeslengths in the subtree, stored in the lower 16 bits
-    (*memo)[m] |= golomb_rice_length;
-
-    uint32_t nodes = 1;
-    for (size_t i = 0; i < fanout; ++i) nodes += ((*memo)[k[i]] >> 16) & 0x7FF;
-    assert(LEAF_SIZE < 3 || nodes <= 0x7FF);  // Number of nodes in the subtree, stored in the middle 11 bits
-    (*memo)[m] |= nodes << 16;
-}
-
-template <size_t LEAF_SIZE>
-static constexpr array<uint32_t, MAX_BUCKET_SIZE> fill_golomb_rice() {
-    array<uint32_t, MAX_BUCKET_SIZE> memo{0};
-    size_t s = 0;
-    for (; s <= LEAF_SIZE; ++s) memo[s] = bij_memo[s] << 27 | (s > 1) << 16 | bij_memo[s];
-    for (; s < MAX_BUCKET_SIZE; ++s) _fill_golomb_rice<LEAF_SIZE>(s, &memo);
-    return memo;
-}
-
 // Computes the Golomb modulu of a splitting (for statistics purposes only)
 
 template <size_t LEAF_SIZE>
@@ -313,7 +281,7 @@ static constexpr array<uint8_t, MAX_LEAF_SIZE> fill_bij_midstop() {
 }
 
 #define first_hash(k, len) spooky(k, len, 0)
-#define golomb_param(m) (memo[m] >> 27)
+// #define golomb_param(m) (memo[m] >> 27)
 #define skip_bits(m) (memo[m] & 0xFFFF)
 #define skip_nodes(m) ((memo[m] >> 16) & 0x7FF)
 
@@ -337,12 +305,58 @@ class RecSplit {
     using DoubleEliasFano = DoubleEF<AT>;
 
     static constexpr size_t _leaf = LEAF_SIZE;
-    static inline const size_t lower_aggr = SplitStrategy::lower_aggr;
-    static inline const size_t upper_aggr = SplitStrategy::upper_aggr;
+    static const size_t lower_aggr;
+    static const size_t upper_aggr;
+
+    static constexpr int golomb_param(const int m, const array<uint32_t, MAX_BUCKET_SIZE>& memo) {
+        return memo[m] >> 27;
+    }
+
+    // Generates the precomputed table of 32-bit values holding the Golomb-Rice code
+    // of a splitting (upper 5 bits), the number of nodes in the associated subtree
+    // (following 11 bits) and the sum of the Golomb-Rice codelengths in the same
+    // subtree (lower 16 bits).
+    static constexpr void _fill_golomb_rice(const int m, array<uint32_t, MAX_BUCKET_SIZE>* memo) {
+        array<int, MAX_FANOUT> k{0};
+
+        size_t fanout = 0, unit = 0;
+        SplittingStrategy<LEAF_SIZE>::split_params(m, fanout, unit);
+
+        k[fanout - 1] = m;
+        for (size_t i = 0; i < fanout - 1; ++i) {
+            k[i] = unit;
+            k[fanout - 1] -= k[i];
+        }
+
+        double sqrt_prod = 1;
+        for (size_t i = 0; i < fanout; ++i) sqrt_prod *= sqrt(k[i]);
+
+        const double p = sqrt(m) / (pow(2 * M_PI, (fanout - 1.) / 2) * sqrt_prod);
+        auto golomb_rice_length = static_cast<uint32_t>(ceil(log2(-log((sqrt(5) + 1) / 2) / log1p(-p))));  // log2 Golomb modulus
+
+        assert(golomb_rice_length <= 0x1F);  // Golomb-Rice code, stored in the 5 upper bits
+        (*memo)[m] = golomb_rice_length << 27;
+        for (size_t i = 0; i < fanout; ++i) golomb_rice_length += (*memo)[k[i]] & 0xFFFF;
+        assert(golomb_rice_length <= 0xFFFF);  // Sum of Golomb-Rice codeslengths in the subtree, stored in the lower 16 bits
+        (*memo)[m] |= golomb_rice_length;
+
+        uint32_t nodes = 1;
+        for (size_t i = 0; i < fanout; ++i) nodes += ((*memo)[k[i]] >> 16) & 0x7FF;
+        assert(LEAF_SIZE < 3 || nodes <= 0x7FF);  // Number of nodes in the subtree, stored in the middle 11 bits
+        (*memo)[m] |= nodes << 16;
+    }
+
+    static constexpr array<uint32_t, MAX_BUCKET_SIZE> fill_golomb_rice() {
+        array<uint32_t, MAX_BUCKET_SIZE> memo{0};
+        size_t s = 0;
+        for (; s <= LEAF_SIZE; ++s) memo[s] = bij_memo[s] << 27 | (s > 1) << 16 | bij_memo[s];
+        for (; s < MAX_BUCKET_SIZE; ++s) _fill_golomb_rice(s, &memo);
+        return memo;
+    }
 
     // For each bucket size, the Golomb-Rice parameter (upper 8 bits) and the number of bits to
     // skip in the fixed part of the tree (lower 24 bits).
-    static inline const array<uint32_t, MAX_BUCKET_SIZE> memo = fill_golomb_rice<LEAF_SIZE>();
+    static const array<uint32_t, MAX_BUCKET_SIZE> memo;
 
     size_t bucket_size;            // TODO(canepat) rename bucket_size_
     size_t keys_count;             // TODO(canepat) rename key_count_
@@ -754,7 +768,7 @@ class RecSplit {
                 }
             }
             salt -= start_seed[level];
-            const auto log2golomb = golomb_param(m);
+            const auto log2golomb = golomb_param(m, memo);
             gr_builder_.appendFixed(salt, log2golomb);
             unary.push_back(salt >> log2golomb);
         } else {
@@ -791,7 +805,7 @@ class RecSplit {
             delete[] count;  // TODO(canepat) remove with std::vector<std::size_t> count(fanout);
 
             salt -= start_seed[level];
-            const auto log2golomb = golomb_param(m);
+            const auto log2golomb = golomb_param(m, memo);
             gr_builder_.appendFixed(salt, log2golomb);
             unary.push_back(salt >> log2golomb);
 
@@ -888,7 +902,7 @@ class RecSplit {
         int level = 0;
 
         while (m > upper_aggr) {  // fanout = 2
-            const auto d = reader.readNext(golomb_param(m));
+            const auto d = reader.readNext(golomb_param(m, memo));
             const size_t hmod = remap16(remix(hash.second + d + start_seed[level]), m);
 
             const uint32_t split = ((uint16_t(m / 2 + upper_aggr - 1) / upper_aggr)) * upper_aggr;
@@ -902,7 +916,7 @@ class RecSplit {
             level++;
         }
         if (m > lower_aggr) {
-            const auto d = reader.readNext(golomb_param(m));
+            const auto d = reader.readNext(golomb_param(m, memo));
             const size_t hmod = remap16(remix(hash.second + d + start_seed[level]), m);
 
             const int part = uint16_t(hmod) / lower_aggr;
@@ -913,7 +927,7 @@ class RecSplit {
         }
 
         if (m > _leaf) {
-            const auto d = reader.readNext(golomb_param(m));
+            const auto d = reader.readNext(golomb_param(m, memo));
             const size_t hmod = remap16(remix(hash.second + d + start_seed[level]), m);
 
             const int part = uint16_t(hmod) / _leaf;
@@ -923,7 +937,7 @@ class RecSplit {
             level++;
         }
 
-        const auto b = reader.readNext(golomb_param(m));
+        const auto b = reader.readNext(golomb_param(m, memo));
         return cum_keys + remap16(remix(hash.second + b + start_seed[level]), m);
     }
 
@@ -994,7 +1008,7 @@ class RecSplit {
             time_bij += duration_cast<nanoseconds>(high_resolution_clock::now() - start_time).count();
 #endif
             x -= start_seed[level];
-            const auto log2golomb = golomb_param(m);
+            const auto log2golomb = golomb_param(m, memo);
             builder.appendFixed(x, log2golomb);
             unary.push_back(x >> log2golomb);
 #ifdef MORESTATS
@@ -1039,7 +1053,7 @@ class RecSplit {
                 }
                 copy(&temp[0], &temp[m], &bucket[start]);
                 x -= start_seed[level];
-                const auto log2golomb = golomb_param(m);
+                const auto log2golomb = golomb_param(m, memo);
                 builder.appendFixed(x, log2golomb);
                 unary.push_back(x >> log2golomb);
 
@@ -1077,7 +1091,7 @@ class RecSplit {
                 delete[] count;
 
                 x -= start_seed[level];
-                const auto log2golomb = golomb_param(m);
+                const auto log2golomb = golomb_param(m, memo);
                 builder.appendFixed(x, log2golomb);
                 unary.push_back(x >> log2golomb);
 
@@ -1124,7 +1138,7 @@ class RecSplit {
                 delete[] count;
 
                 x -= start_seed[level];
-                const auto log2golomb = golomb_param(m);
+                const auto log2golomb = golomb_param(m, memo);
                 builder.appendFixed(x, log2golomb);
                 unary.push_back(x >> log2golomb);
 
@@ -1343,4 +1357,12 @@ class RecSplit {
     }
 };
 
+constexpr std::size_t kLeafSize{8};
+using RecSplit8 = RecSplit<kLeafSize>;
+
+template <>
+const array<uint32_t, MAX_BUCKET_SIZE> RecSplit8::memo;
+
 }  // namespace sux::function
+
+#pragma GCC diagnostic pop

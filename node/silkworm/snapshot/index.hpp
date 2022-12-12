@@ -19,21 +19,7 @@
 #include <memory>
 #include <utility>
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wimplicit-fallthrough"
-#pragma GCC diagnostic ignored "-Wnon-virtual-dtor"
-#pragma GCC diagnostic ignored "-Wold-style-cast"
-#pragma GCC diagnostic ignored "-Wsign-conversion"
-#pragma GCC diagnostic ignored "-Wshadow"
-#pragma GCC diagnostic ignored "-Wunused-variable"
-#if defined(__clang__)
-#pragma GCC diagnostic ignored "-Winvalid-constexpr"
-#endif /* defined(__clang__) */
-#pragma GCC diagnostic ignored "-Wsign-compare"
-#include <silkworm/recsplit/function/RecSplit.hpp>
-// #include <sux/function/RecSplit.hpp>
-#pragma GCC diagnostic pop
-
+#include <silkworm/recsplit/function/rec_split.hpp>
 #include <silkworm/snapshot/decompressor.hpp>
 #include <silkworm/snapshot/repository.hpp>
 
@@ -42,8 +28,8 @@ namespace silkworm {
 using namespace sux;
 using namespace sux::function;
 
-constexpr std::size_t kLeafSize{8};
-using RecSplit8 = RecSplit<kLeafSize>;
+// constexpr std::size_t kLeafSize{8};
+// using RecSplit8 = RecSplit<kLeafSize>;
 
 class Index {
   public:

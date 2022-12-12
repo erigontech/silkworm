@@ -44,6 +44,7 @@
 
 #pragma once
 
+#include <bit>
 #include <cstdint>
 #include <cstring>
 #include <iostream>
@@ -52,6 +53,10 @@
 
 #include "../support/common.hpp"
 #include "../util/Vector.hpp"
+
+// EliasFano algo overview https://www.antoniomallia.it/sorted-integers-compression-with-elias-fano-encoding.html
+// P. Elias. Efficient storage and retrieval by content and address of static files. J. ACM, 21(2):246–260, 1974.
+// Partitioned Elias-Fano Indexes http://groups.di.unipi.it/~ottavian/files/elias_fano_sigir14.pdf
 
 #ifndef LOG2Q
 #define LOG2Q 8
@@ -62,6 +67,128 @@ namespace sux::function {
 using namespace sux;
 using namespace sux::util;
 
+static constexpr uint64_t log2q = LOG2Q;
+static constexpr uint64_t q = 1 << log2q;
+static constexpr uint64_t q_mask = q - 1;
+static constexpr uint64_t super_q = 1 << 14;
+static constexpr uint64_t super_q_mask = super_q - 1;
+static constexpr uint64_t q_per_super_q = super_q / q;
+static constexpr uint64_t super_q_size = 1 + q_per_super_q / 4;
+
+template <util::AllocType AT>
+__inline static void set(util::Vector<uint64_t, AT>& bits, const uint64_t pos) {
+    bits[pos / 64] |= 1ULL << pos % 64;
+}
+
+template <util::AllocType AT>
+__inline static void set_bits(util::Vector<uint64_t, AT>& bits, const uint64_t start, const int width, const uint64_t value) {
+    const uint64_t mask = ((UINT64_C(1) << width) - 1) << start % 8;
+    uint64_t t;
+    memcpy(&t, reinterpret_cast<uint8_t*>(&bits) + start / 8, 8);
+    t = (t & ~mask) | value << start % 8;
+    memcpy(reinterpret_cast<uint8_t*>(&bits) + start / 8, &t, 8);
+}
+
+// MonoEliasFano can be used to encode one monotone sequence
+template <util::AllocType AT = util::AllocType::MALLOC>
+class MonoEF {
+  public:
+    MonoEF(uint64_t count, uint64_t max_offset) {
+        if (count == 0) throw std::logic_error{"too small count: " + std::to_string(count)};
+        count_ = count - 1;
+        max_offset_ = max_offset;
+        u_ = max_offset + 1;
+        words_upper_bits_ = derive_fields();
+    }
+
+    [[nodiscard]] std::size_t count() const { return count_ + 1; }
+
+    [[nodiscard]] std::size_t max() const { return max_offset_; }
+
+    [[nodiscard]] std::size_t min() const { return get(0); }
+
+    [[nodiscard]] uint64_t get(uint64_t i) {
+        uint64_t lower = i * l_;
+        uint64_t idx64 = lower / 64;
+        uint64_t shift = lower % 64;
+        lower = lower_bits_[idx64] >> shift;
+        if (shift > 0) {
+            lower |= lower_bits_[idx64 + 1] << (64 - shift);
+        }
+
+        const uint64_t jump_super_q = (i / super_q) * super_q_size;
+        const uint64_t jump_inside_super_q = (i % super_q) * q;
+        idx64 = jump_super_q + 1 + (jump_inside_super_q >> 1);
+        shift = 32 * (jump_inside_super_q % 2);
+        const uint64_t mask = 0xffffffff << shift;
+        const uint64_t jump = jump_[jump_super_q] + ((jump_[idx64] & mask) >> shift);
+
+        uint64_t current_word = jump / 64;
+        const uint64_t window = upper_bits_[current_word] & (0xffffffffffffffff << (jump % 64));
+        uint64_t d = i & q_mask;
+
+        for (auto bit_count{std::popcount(window)}; bit_count <= d; bit_count = std::popcount(window)) {
+            current_word++;
+            window = upper_bits_[current_word];
+            d -= bit_count;
+        }
+
+        const uint64_t sel = select64(window, d);
+        const auto value = ((current_word * 64 + sel - i) << l_ | (lower & lower_bits_mask_));
+        return value;
+    }
+
+    void add_offset(uint64_t offset) {
+        if (l_ != 0) {
+            set_bits(lower_bits_, i_ * l_, l_, offset & lower_bits_mask_);
+        }
+        set(upper_bits_, (offset >> l_) + i_);
+        i_++;
+    }
+
+    void build() {
+        SILK_ERROR << "MonoEF::build not implemented";
+    }
+
+  private:
+    int derive_fields() {
+        l_ = u_ / (count_ + 1) == 0 ? 0 : 63 ^ std::countl_zero(u_ / (count_ + 1));
+        lower_bits_mask_ = (uint64_t(1) << l_) - 1;
+        int words_lower_bits = ((count_ + 1) * l_ + 63) / 64 + 1;
+        int words_upper_bits = ((count_ + 1) + (u_ >> l_) + 63) / 64;
+        int jump_words = jump_size_words();
+        int total_words = words_lower_bits + words_upper_bits + jump_words;
+        data_.reserve(total_words);
+        lower_bits_.size(words_lower_bits);
+        std::copy(&data_, &data_ + words_lower_bits, &lower_bits_);
+        upper_bits_.size(words_upper_bits);
+        std::copy(&data_ + words_lower_bits, &data_ + words_lower_bits + words_upper_bits, &upper_bits_);
+        jump_.size(jump_words);
+        std::copy(&data_ + words_lower_bits + words_upper_bits, &data_ + total_words, &jump_);
+        return words_upper_bits;
+    }
+
+    int jump_size_words() {
+        int size = ((count_ + 1) / super_q) * super_q_size;  // Whole blocks
+        if ((count_ + 1) % super_q != 0) {
+            size += 1 + (((count_ + 1) % super_q + q - 1) / q + 3) / 2;  // Partial block
+        }
+        return size;
+    }
+
+    Vector<uint64_t, AT> data_;
+    Vector<uint64_t, AT> lower_bits_;
+    Vector<uint64_t, AT> upper_bits_;
+    Vector<uint64_t, AT> jump_;
+    uint64_t lower_bits_mask_;
+    uint64_t count_;
+    uint64_t u_;
+    uint64_t l_;
+    uint64_t max_offset_;
+    uint64_t i_;
+    uint64_t words_upper_bits_;
+};
+
 /** A double Elias-Fano list.
  *
  * This class exists solely to implement RecSplit.
@@ -71,13 +198,6 @@ using namespace sux::util;
 template <util::AllocType AT = util::AllocType::MALLOC>
 class DoubleEF {
   private:
-    static constexpr uint64_t log2q = LOG2Q;
-    static constexpr uint64_t q = 1 << log2q;
-    static constexpr uint64_t q_mask = q - 1;
-    static constexpr uint64_t super_q = 1 << 14;
-    static constexpr uint64_t super_q_mask = super_q - 1;
-    static constexpr uint64_t q_per_super_q = super_q / q;
-    static constexpr uint64_t super_q_size = 1 + q_per_super_q / 4;
     Vector<uint64_t, AT> lower_bits, upper_bits_position, upper_bits_cum_keys, jump;
     uint64_t lower_bits_mask_cum_keys, lower_bits_mask_position;
 
@@ -85,16 +205,6 @@ class DoubleEF {
     uint64_t l_position, l_cum_keys;
     int64_t cum_keys_min_delta, min_diff;
     uint64_t bits_per_key_fixed_point;
-
-    __inline static void set(util::Vector<uint64_t, AT>& bits, const uint64_t pos) { bits[pos / 64] |= 1ULL << pos % 64; }
-
-    __inline static void set_bits(util::Vector<uint64_t, AT>& bits, const uint64_t start, const int width, const uint64_t value) {
-        const uint64_t mask = ((UINT64_C(1) << width) - 1) << start % 8;
-        uint64_t t;
-        memcpy(&t, reinterpret_cast<uint8_t*>(&bits) + start / 8, 8);
-        t = (t & ~mask) | value << start % 8;
-        memcpy(reinterpret_cast<uint8_t*>(&bits) + start / 8, &t, 8);
-    }
 
     __inline size_t lower_bits_size_words() const { return ((num_buckets + 1) * (l_cum_keys + l_position) + 63) / 64 + 1; }
 

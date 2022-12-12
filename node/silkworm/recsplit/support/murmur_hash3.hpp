@@ -41,13 +41,13 @@ typedef unsigned __int64 uint64_t;
 
 //-----------------------------------------------------------------------------
 
-void MurmurHash3_x64_128(const void* key, int len, uint32_t seed, void* out);
+void MurmurHash3_x64_128(const void* key, uint64_t len, uint32_t seed, void* out);
 
 class Murmur3 {
   public:
     explicit Murmur3(uint32_t seed) : seed_(seed) {}
 
-    void hash_x64_128(const void* key, int len, void* out) {
+    void hash_x64_128(const void* key, uint64_t len, void* out) const {
         MurmurHash3_x64_128(key, len, seed_, out);
     }
 

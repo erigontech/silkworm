@@ -242,7 +242,10 @@ inline uint64_t mask_lambda(uint64_t word) { return 0x8000000000000000ULL >> __b
  */
 inline uint64_t compact_bitmask(size_t count, size_t pos) { return static_cast<uint64_t>(-(count != 0ULL)) & (UINT64_MAX >> (64 - count)) << pos; }
 
+//! Convert the number x which is assumed to be uniformly distributed over the range [0..2^64) to a number that is uniformly
+//! distributed over the range [0..n), under assumption that n is less than 2^16
 static inline uint64_t remap16(uint64_t x, uint64_t n) {
+    SILKWORM_ASSERT(n < (1 << 16));
     static const int masklen = 48;
     static const uint64_t mask = (uint64_t(1) << masklen) - 1;
     return ((x & mask) * n) >> masklen;

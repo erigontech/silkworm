@@ -305,7 +305,7 @@ Stage::Result SyncLoop::run_cycle_forward(db::RWTxn& cycle_txn, Timer& log_timer
             }
 
             auto [_, stage_duration] = stages_stop_watch.lap();
-            if (stage_duration > std::chrono::milliseconds(10)) {
+            if (stage_duration > std::chrono::milliseconds(0)) {
                 log::Info(get_log_prefix(),
                           {"op", "Forward",
                            "done", StopWatch::format(stage_duration)});
@@ -344,7 +344,7 @@ Stage::Result SyncLoop::run_cycle_unwind(db::RWTxn& cycle_txn, Timer& log_timer)
             }
 
             auto [_, stage_duration] = stages_stop_watch.lap();
-            if (stage_duration > std::chrono::milliseconds(10)) {
+            if (stage_duration > std::chrono::milliseconds(0)) {
                 log::Info(get_log_prefix(),
                           {"op", "Unwind",
                            "done", StopWatch::format(stage_duration)});
@@ -383,7 +383,7 @@ Stage::Result SyncLoop::run_cycle_prune(db::RWTxn& cycle_txn, Timer& log_timer) 
             }
 
             auto [_, stage_duration] = stages_stop_watch.lap();
-            if (stage_duration > std::chrono::milliseconds(10)) {
+            if (stage_duration > std::chrono::milliseconds(0)) {
                 log::Info(get_log_prefix(),
                           {"op", "Prune",
                            "done", StopWatch::format(stage_duration)});

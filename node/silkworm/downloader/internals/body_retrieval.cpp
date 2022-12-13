@@ -25,7 +25,7 @@ BodyRetrieval::BodyRetrieval(db::ROAccess db_access) : db_tx_{db_access.start_ro
 std::vector<BlockBody> BodyRetrieval::recover(std::vector<Hash> request) {
     std::vector<BlockBody> response;
     size_t bytes = 0;
-    for (size_t i = 0; i <= request.size(); ++i) {
+    for (size_t i = 0; i < request.size(); ++i) {
         Hash& hash = request[i];
         BlockBody body;
         if (!db::read_body(db_tx_, hash, body)) {

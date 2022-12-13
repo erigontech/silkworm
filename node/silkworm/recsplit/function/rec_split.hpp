@@ -615,7 +615,7 @@ class RecSplit {
         bucket_size_accumulator_.resize(1);
         bucket_position_accumulator_.resize(1);
         salt_++;
-        hasher_ = std::make_unique<Murmur3>(salt_);
+        hasher_->reset_seed(salt_);
     }
 
     /** Returns the value associated with the given 128-bit hash.

@@ -47,6 +47,10 @@ class Murmur3 {
   public:
     explicit Murmur3(uint32_t seed) : seed_(seed) {}
 
+    void reset_seed(uint32_t seed) noexcept {
+        seed_ = seed;
+    }
+
     void hash_x64_128(const void* key, uint64_t len, void* out) const {
         MurmurHash3_x64_128(key, len, seed_, out);
     }

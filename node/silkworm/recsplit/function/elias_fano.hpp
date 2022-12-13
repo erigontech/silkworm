@@ -77,16 +77,20 @@ static constexpr uint64_t super_q_size = 1 + q_per_super_q / 4;
 
 template <util::AllocType AT>
 __inline static void set(util::Vector<uint64_t, AT>& bits, const uint64_t pos) {
-    bits[pos / 64] |= 1ULL << pos % 64;
+    bits[pos / 64] |= uint64_t(1) << (pos % 64);
 }
 
+//! This assumes that bits are set in monotonic order, so that we can skip the masking for the second word
 template <util::AllocType AT>
 __inline static void set_bits(util::Vector<uint64_t, AT>& bits, const uint64_t start, const int width, const uint64_t value) {
-    const uint64_t mask = ((UINT64_C(1) << width) - 1) << start % 8;
-    uint64_t t;
-    memcpy(&t, reinterpret_cast<uint8_t*>(&bits) + start / 8, 8);
-    t = (t & ~mask) | value << start % 8;
-    memcpy(reinterpret_cast<uint8_t*>(&bits) + start / 8, &t, 8);
+    const uint64_t shift = start & 63;
+    const uint64_t mask = ((uint64_t(1) << width) - 1) << shift;
+    const uint64_t idx64 = start >> 6;
+    bits[idx64] = (bits[idx64] & !mask) | (value << shift);
+    if (shift + width > 64) {
+        // changes two 64-bit words
+        bits[idx64 + 1] = value >> (64 - shift);
+    }
 }
 
 // MonoEliasFano can be used to encode one monotone sequence
@@ -147,7 +151,6 @@ class MonoEF {
     }
 
     void build() {
-        SILK_ERROR << "MonoEF::build not implemented";
         for (uint64_t i{0}, c{0}, last_super_q{0}; i < words_upper_bits_; ++i) {
             for (uint64_t b{0}; b < 64; ++b) {
                 if ((upper_bits_[i] & (uint64_t(1) << b)) != 0) {
@@ -210,13 +213,13 @@ class MonoEF {
     Vector<uint64_t, AT> lower_bits_;
     Vector<uint64_t, AT> upper_bits_;
     Vector<uint64_t, AT> jump_;
-    uint64_t lower_bits_mask_;
-    uint64_t count_;
-    uint64_t u_;
-    uint64_t l_;
-    uint64_t max_offset_;
-    uint64_t i_;
-    uint64_t words_upper_bits_;
+    uint64_t lower_bits_mask_{0};
+    uint64_t count_{0};
+    uint64_t u_{0};
+    uint64_t l_{0};
+    uint64_t max_offset_{0};
+    uint64_t i_{0};
+    uint64_t words_upper_bits_{0};
 };
 
 /** A double Elias-Fano list.

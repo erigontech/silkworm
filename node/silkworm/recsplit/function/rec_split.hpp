@@ -518,7 +518,7 @@ class RecSplit {
         const auto index_file_size = static_cast<long>(std::filesystem::file_size(tmp_index_path));
         SILK_DEBUG << "[index] index_file_size=" << index_file_size;
         std::vector<char> read_buffer;
-        read_buffer.reserve(index_file_size);
+        read_buffer.resize(index_file_size);
         index_input_stream.read(read_buffer.data(), index_file_size);
         index_input_stream.close();
         if (index_file_size != 17 + keys_added_ * bytes_per_record_) {

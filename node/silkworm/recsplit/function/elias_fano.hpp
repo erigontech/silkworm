@@ -148,6 +148,36 @@ class MonoEF {
 
     void build() {
         SILK_ERROR << "MonoEF::build not implemented";
+        for (uint64_t i{0}, c{0}, last_super_q{0}; i < words_upper_bits_; ++i) {
+            for (uint64_t b{0}; b < 64; ++b) {
+                if ((upper_bits_[i] & (uint64_t(1) << b)) != 0) {
+                    if ((c & super_q_mask) == 0) {
+                        /* When c is multiple of 2^14 (4096) */
+                        last_super_q = i * 64 + b;
+                        jump_[(c / super_q) * super_q_size] = last_super_q;
+                    }
+                    if ((c & q_mask) == 0) {
+                        /* When c is multiple of 2^8 (256) */
+                        // offset can be either 0, 256, 512, ..., up to 4096-256
+                        const uint64_t offset = i * 64 + b - last_super_q;
+                        // offset needs to be encoded as 16-bit integer, therefore the following check
+                        if (offset >= (uint64_t(1) << 32)) {
+                            SILK_CRIT << "MonoEF::build l=" << l_ << " u=" << u_ << " offset=" << offset
+                                      << " last_super_q=" << last_super_q << " i=" << i << " b=" << b << " c=" << c;
+                            SILKWORM_ASSERT(false);
+                        }
+                        // c % superQ is the bit index inside the group of 4096 bits
+                        const uint64_t jump_super_q = (c / super_q) * super_q_size;
+                        const uint64_t jump_inside_super_q = (c % super_q) / q;
+                        const uint64_t idx64 = jump_super_q + 1 + (jump_inside_super_q >> 1);
+                        const uint64_t shift = 32 * (jump_inside_super_q % 2);
+                        const uint64_t mask = uint64_t(0xffffffff) << shift;
+                        jump_[idx64] = (jump_[idx64] & !mask) | (offset << shift);
+                    }
+                    c++;
+                }
+            }
+        }
     }
 
   private:

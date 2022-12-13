@@ -99,7 +99,7 @@ static PatternTable::WordDistances build_word_distances() {
     PatternTable::WordDistances word_distances{};
     for (std::size_t i{1}; i < PatternTable::kNumPowers; ++i) {
         std::vector<int> distances{};
-        distances.reserve(static_cast<std::size_t>(1 << (PatternTable::kNumPowers - 1 - i)) - 1);
+        distances.reserve((std::size_t(1) << (PatternTable::kNumPowers - 1 - i)) - 1);
         for (int j{1 << i}; 0 < j && j < PatternTable::kMaxPower; j += (1 << i)) {
             distances.push_back(j);
         }
@@ -127,7 +127,7 @@ void PatternTable::set_condensed_table_bit_length_threshold(std::size_t condense
 
 PatternTable::PatternTable(std::size_t max_depth) : DecodingTable(max_depth) {
     if (bit_length_ <= condensed_table_bit_length_threshold_) {
-        codewords_.resize(1 << bit_length_);
+        codewords_.resize(std::size_t(1) << bit_length_);
     }
 }
 
@@ -137,7 +137,7 @@ std::size_t PatternTable::build_condensed(std::span<Pattern> patterns) {
 
 std::size_t PatternTable::build_condensed(std::span<Pattern> patterns, uint64_t highest_depth, uint16_t code, int bits, uint64_t depth) {
     SILK_DEBUG << "#patterns: " << patterns.size() << " highest_depth: " << highest_depth << " code: " << code
-               << " bits: " << std::bitset<CHAR_BIT>(static_cast<uint>(bits)) << " depth: " << depth;
+               << " bits: " << std::bitset<CHAR_BIT>(static_cast<unsigned int>(bits)) << " depth: " << depth;
     if (patterns.empty()) {
         return 0;
     }
@@ -228,9 +228,9 @@ bool PatternTable::check_distance(std::size_t power, int distance) {
 }
 
 PositionTable::PositionTable(std::size_t max_depth) : DecodingTable(max_depth) {
-    positions_.resize(1 << bit_length_);
-    lengths_.resize(1 << bit_length_);
-    children_.resize(1 << bit_length_);
+    positions_.resize(std::size_t(1) << bit_length_);
+    lengths_.resize(std::size_t(1) << bit_length_);
+    children_.resize(std::size_t(1) << bit_length_);
 }
 
 int PositionTable::build(std::span<Position> positions) {
@@ -239,7 +239,7 @@ int PositionTable::build(std::span<Position> positions) {
 
 int PositionTable::build_tree(std::span<Position> positions, uint64_t highest_depth, uint16_t code, int bits, uint64_t depth) {
     SILK_DEBUG << "build_tree #positions: " << positions.size() << " highest_depth: " << highest_depth << " code: " << code
-               << " bits: " << std::bitset<CHAR_BIT>(static_cast<uint>(bits)) << " depth: " << depth;
+               << " bits: " << std::bitset<CHAR_BIT>(static_cast<unsigned int>(bits)) << " depth: " << depth;
     if (positions.empty()) {
         return 0;
     }

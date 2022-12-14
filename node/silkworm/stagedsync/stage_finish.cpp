@@ -18,7 +18,7 @@
 
 #include <silkworm/common/cast.hpp>
 #include <silkworm/db/access_layer.hpp>
-#include "silkworm/downloader/internals/header_chain.hpp"
+#include <silkworm/downloader/internals/header_chain.hpp>
 
 namespace silkworm::stagedsync {
 

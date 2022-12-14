@@ -43,7 +43,7 @@ TEST_CASE("Consensus Engine factory") {
     std::unique_ptr<IEngine> consensus_engine;
     consensus_engine = engine_factory(kMainnetConfig);  // Ethash consensus engine
     CHECK(consensus_engine != nullptr);
-    consensus_engine = engine_factory(kRopstenConfig);  // Ethash consensus engine
+    consensus_engine = engine_factory(kSepoliaConfig);  // Ethash consensus engine
     CHECK(consensus_engine != nullptr);
     consensus_engine = engine_factory(test::kLondonConfig);  // Noproof consensus engine
     CHECK(consensus_engine != nullptr);

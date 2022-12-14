@@ -33,7 +33,7 @@ Stage::Result Finish::forward(db::RWTxn& txn) {
         auto execution_stage_progress{db::stages::read_stage_progress(*txn, db::stages::kExecutionKey)};
         if (previous_progress >= execution_stage_progress) {
             // Nothing to process
-            const auto stop_at_block = stop_at_block_from_env(); // User can specify to stop at some block
+            const auto stop_at_block = stop_at_block_from_env();  // User can specify to stop at some block
             if (stop_at_block && stop_at_block <= execution_stage_progress) return Stage::Result::kStoppedByEnv;
             return ret;
         } else if (previous_progress > execution_stage_progress) {

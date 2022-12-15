@@ -250,8 +250,8 @@ class RecSplit {
     using SplitStrategy = SplittingStrategy<LEAF_SIZE>;
     using GolombRiceVector = RiceBitVector<AT>;
     using GolombRiceBuilder = typename GolombRiceVector::Builder;
-    using EliasFano = MonoEF<AT>;
-    using DoubleEliasFano = DoubleEF<AT>;
+    using EliasFano = EliasFanoList<AT>;
+    using DoubleEliasFano = DoubleEliasFanoList<AT>;
 
     static constexpr size_t _leaf = LEAF_SIZE;
     static const size_t lower_aggr;

@@ -93,11 +93,11 @@ __inline static void set_bits(util::Vector<uint64_t, AT>& bits, const uint64_t s
     }
 }
 
-// MonoEliasFano can be used to encode one monotone sequence
+//! Elias-Fano list that can be used to encode one monotone non-decreasing sequence
 template <util::AllocType AT = util::AllocType::MALLOC>
-class MonoEF {
+class EliasFanoList {
   public:
-    MonoEF(uint64_t count, uint64_t max_offset) {
+    EliasFanoList(uint64_t count, uint64_t max_offset) {
         if (count == 0) throw std::logic_error{"too small count: " + std::to_string(count)};
         count_ = count - 1;
         max_offset_ = max_offset;
@@ -165,7 +165,7 @@ class MonoEF {
                         const uint64_t offset = i * 64 + b - last_super_q;
                         // offset needs to be encoded as 16-bit integer, therefore the following check
                         if (offset >= (uint64_t(1) << 32)) {
-                            SILK_CRIT << "MonoEF::build l=" << l_ << " u=" << u_ << " offset=" << offset
+                            SILK_CRIT << "EliasFanoList::build l=" << l_ << " u=" << u_ << " offset=" << offset
                                       << " last_super_q=" << last_super_q << " i=" << i << " b=" << b << " c=" << c;
                             SILKWORM_ASSERT(false);
                         }
@@ -222,14 +222,10 @@ class MonoEF {
     uint64_t words_upper_bits_{0};
 };
 
-/** A double Elias-Fano list.
- *
- * This class exists solely to implement RecSplit.
- * @tparam AT a type of memory allocation out of util::AllocType.
- */
-
+//! Double Elias-Fano list that used to encode *two* monotone non-decreasing sequences in RecSplit
+//! @tparam AT a type of memory allocation out of util::AllocType
 template <util::AllocType AT = util::AllocType::MALLOC>
-class DoubleEF {
+class DoubleEliasFanoList {
   private:
     Vector<uint64_t, AT> lower_bits, upper_bits_position, upper_bits_cum_keys, jump;
     uint64_t lower_bits_mask_cum_keys, lower_bits_mask_position;
@@ -251,7 +247,7 @@ class DoubleEF {
         return size;
     }
 
-    friend std::ostream& operator<<(std::ostream& os, const DoubleEF<AT>& ef) {
+    friend std::ostream& operator<<(std::ostream& os, const DoubleEliasFanoList<AT>& ef) {
         os.write(reinterpret_cast<char*>(&ef.num_buckets), sizeof(ef.num_buckets));
         os.write(reinterpret_cast<char*>(&ef.u_cum_keys), sizeof(ef.u_cum_keys));
         os.write(reinterpret_cast<char*>(&ef.u_position), sizeof(ef.u_position));
@@ -266,7 +262,7 @@ class DoubleEF {
         return os;
     }
 
-    friend std::istream& operator>>(std::istream& is, DoubleEF<AT>& ef) {
+    friend std::istream& operator>>(std::istream& is, DoubleEliasFanoList<AT>& ef) {
         is.read(reinterpret_cast<char*>(&ef.num_buckets), sizeof(ef.num_buckets));
         is.read(reinterpret_cast<char*>(&ef.u_cum_keys), sizeof(ef.u_cum_keys));
         is.read(reinterpret_cast<char*>(&ef.u_position), sizeof(ef.u_position));
@@ -289,9 +285,9 @@ class DoubleEF {
     }
 
   public:
-    DoubleEF() {}
+    DoubleEliasFanoList() {}
 
-    DoubleEF(const std::vector<uint64_t>& cum_keys, const std::vector<uint64_t>& position) {
+    DoubleEliasFanoList(const std::vector<uint64_t>& cum_keys, const std::vector<uint64_t>& position) {
         assert(cum_keys.size() == position.size());
         num_buckets = cum_keys.size() - 1;
 

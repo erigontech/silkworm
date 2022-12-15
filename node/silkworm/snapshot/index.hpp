@@ -28,9 +28,6 @@ namespace silkworm {
 using namespace sux;
 using namespace sux::function;
 
-// constexpr std::size_t kLeafSize{8};
-// using RecSplit8 = RecSplit<kLeafSize>;
-
 class Index {
   public:
     static constexpr uint64_t kPageSize{4096};

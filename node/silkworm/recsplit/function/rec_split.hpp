@@ -386,9 +386,9 @@ class RecSplit {
           keys_count(_keys_count),
           nbuckets((keys_count + bucket_size - 1) / bucket_size),
           base_data_id_(base_data_id),
-          index_path_(std::move(index_path)),
-          bucket_size_accumulator_(nbuckets + 1),
-          bucket_position_accumulator_(nbuckets + 1) {
+          index_path_(std::move(index_path)) {
+        bucket_size_accumulator_.reserve(nbuckets + 1);
+        bucket_position_accumulator_.reserve(nbuckets + 1);
         current_bucket_.reserve(bucket_size);
         current_bucket_offsets_.reserve(bucket_size);
 
@@ -538,10 +538,10 @@ class RecSplit {
             ef_offsets_->build();
         }
 
-        // Construct Elias-Fano index
+        // Construct double Elias-Fano index for bucket cumulative keys and bit positions
         vector<uint64_t> cumulative_keys{bucket_size_accumulator_.begin(), bucket_size_accumulator_.end()};
         vector<uint64_t> positions(bucket_position_accumulator_.begin(), bucket_position_accumulator_.end());
-        ef = DoubleEliasFano(cumulative_keys, positions);
+        ef.build(cumulative_keys, positions);
 
         built_ = true;
 
@@ -580,7 +580,7 @@ class RecSplit {
 
         // Write out Elias-Fano code for offsets (if any)
         if (double_enum_index_) {
-            // TODO(canepat) ef_offsets_->write(index_output_stream);
+            index_output_stream << ef_offsets_;
             SILK_DEBUG << "[index] written EF code for offsets [size: " << ef_offsets_->count() << "]";
         }
 
@@ -590,10 +590,11 @@ class RecSplit {
         SILK_DEBUG << "[index] written GR code size: " << descriptors.getBits();
 
         // Write out Golomb-Rice code
-        // TODO(canepat)
+        index_output_stream << descriptors;
 
-        // Write out Elias-Fano code for bucket cumulative keys and bit offsets
-        // TODO(canepat)
+        // Write out Elias-Fano code for bucket cumulative keys and bit positions
+        // TODO(canepat) check data vector size
+        index_output_stream << ef;
 
         index_output_stream.flush();
         index_output_stream.close();
@@ -685,10 +686,11 @@ class RecSplit {
     //! Compute and store the splittings and bijections of the current bucket
     bool recsplit_current_bucket(std::ofstream& index_output_stream) {
         // Extend bucket size accumulator to accommodate current bucket index + 1
-        while (bucket_size_accumulator_.size() <= current_bucket_id_ + 1) {
+        while (bucket_size_accumulator_.size() <= (current_bucket_id_ + 1)) {
             bucket_size_accumulator_.push_back(bucket_size_accumulator_.back());
         }
         bucket_size_accumulator_[current_bucket_id_ + 1] += current_bucket_.size();
+        SILKWORM_ASSERT(bucket_size_accumulator_[current_bucket_id_ + 1] >= bucket_size_accumulator_[current_bucket_id_]);
         // TODO(canepat) check bucket_size_accumulator_.back() += current_bucket_.size();
 
         // Sets of size 0 and 1 are not further processed, just write them to index
@@ -719,7 +721,8 @@ class RecSplit {
         while (bucket_position_accumulator_.size() <= current_bucket_id_ + 1) {
             bucket_position_accumulator_.push_back(bucket_position_accumulator_.back());
         }
-        bucket_position_accumulator_[current_bucket_id_ + 1] = descriptors.getBits();
+        bucket_position_accumulator_[current_bucket_id_ + 1] = gr_builder_.getBits();
+        SILKWORM_ASSERT(bucket_position_accumulator_[current_bucket_id_ + 1] >= bucket_position_accumulator_[current_bucket_id_]);
         // Clear for the next bucket
         current_bucket_.clear();
         current_bucket_offsets_.clear();

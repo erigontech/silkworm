@@ -44,7 +44,7 @@
 
 #pragma once
 
-#include <inttypes.h>
+#include <cinttypes>
 #include <x86intrin.h>
 
 #include <algorithm>
@@ -52,6 +52,8 @@
 #include <cstdint>
 #include <cstring>
 #include <memory>
+
+#include <silkworm/common/assert.hpp>
 
 // Macro stringification
 #define __STRINGIFY(s) #s

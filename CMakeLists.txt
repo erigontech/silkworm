@@ -125,6 +125,7 @@ add_library(evmone third_party/evmone/lib/evmone/advanced_analysis.cpp
                    third_party/evmone/lib/evmone/eof.hpp
                    third_party/evmone/lib/evmone/execution_state.hpp
                    third_party/evmone/lib/evmone/instructions_calls.cpp
+                   third_party/evmone/lib/evmone/instructions_opcodes.hpp
                    third_party/evmone/lib/evmone/instructions_storage.cpp
                    third_party/evmone/lib/evmone/instructions_traits.hpp
                    third_party/evmone/lib/evmone/instructions_xmacro.hpp
@@ -134,7 +135,7 @@ add_library(evmone third_party/evmone/lib/evmone/advanced_analysis.cpp
                    third_party/evmone/lib/evmone/tracing.hpp
                    third_party/evmone/lib/evmone/vm.cpp
                    third_party/evmone/lib/evmone/vm.hpp)
-set_source_files_properties(third_party/evmone/lib/evmone/vm.cpp PROPERTIES COMPILE_DEFINITIONS PROJECT_VERSION="0.9.0")
+set_source_files_properties(third_party/evmone/lib/evmone/vm.cpp PROPERTIES COMPILE_DEFINITIONS PROJECT_VERSION="0.10.0-dev")
 target_include_directories(evmone PUBLIC third_party/evmone/include third_party/evmone/lib)
 target_link_libraries(evmone PUBLIC evmc intx::intx PRIVATE evmc::instructions)
 

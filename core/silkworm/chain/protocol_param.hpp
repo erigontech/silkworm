@@ -31,33 +31,35 @@ namespace fee {
 
     inline constexpr uint64_t kGCodeDeposit{200};
 
+    inline constexpr uint64_t kGTransaction{21'000};
     inline constexpr uint64_t kGTxCreate{32'000};
     inline constexpr uint64_t kGTxDataZero{4};
     inline constexpr uint64_t kGTxDataNonZeroFrontier{68};
-    inline constexpr uint64_t kGTxDataNonZeroIstanbul{16};
-    inline constexpr uint64_t kGTransaction{21'000};
+    inline constexpr uint64_t kGTxDataNonZeroIstanbul{16};  // EIP-2028
+
+    inline constexpr uint64_t kInitCodeWordCost{2};  // EIP-3860
 
 }  // namespace fee
 
 namespace param {
 
-    // https://eips.ethereum.org/EIPS/eip-170
-    inline constexpr size_t kMaxCodeSize{0x6000};
+    inline constexpr size_t kMaxCodeSize{0x6000};                // EIP-170
+    inline constexpr size_t kMaxInitCodeSize{2 * kMaxCodeSize};  // EIP-3860
+
+    inline constexpr uint64_t kMaxExtraDataBytes{32};
 
     inline constexpr uint64_t kBlockRewardFrontier{5 * kEther};
-    inline constexpr uint64_t kBlockRewardByzantium{3 * kEther};
-    inline constexpr uint64_t kBlockRewardConstantinople{2 * kEther};
+    inline constexpr uint64_t kBlockRewardByzantium{3 * kEther};       // EIP-649
+    inline constexpr uint64_t kBlockRewardConstantinople{2 * kEther};  // EIP-1234
 
-    // https://eips.ethereum.org/EIPS/eip-3529
+    // EIP-3529: Reduction in refunds
     inline constexpr uint64_t kMaxRefundQuotientFrontier{2};
     inline constexpr uint64_t kMaxRefundQuotientLondon{5};
 
-    // https://eips.ethereum.org/EIPS/eip-1559
-    inline constexpr uint64_t kInitialBaseFee{1'000'000'000};
+    // EIP-1559: Fee market change for ETH 1.0 chain
+    inline constexpr uint64_t kInitialBaseFee{kGiga};
     inline constexpr uint64_t kBaseFeeMaxChangeDenominator{8};
     inline constexpr uint64_t kElasticityMultiplier{2};
-
-    inline constexpr uint64_t kMaxExtraDataBytes{32};
 
 }  // namespace param
 

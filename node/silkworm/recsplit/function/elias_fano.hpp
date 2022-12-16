@@ -322,119 +322,7 @@ class DoubleEliasFanoList {
                 }
             }
         }
-
-/*#ifndef NDEBUG
-        for (uint64_t i = 0; i < num_buckets_; i++) {
-            uint64_t x, x2, y;
-
-            get3(i, x, x2, y);
-            assert(x == cum_keys[i]);
-            assert(x2 == cum_keys[i + 1]);
-            assert(y == position[i]);
-
-            get2(i, x, y);
-            assert(x == cum_keys[i]);
-            assert(y == position[i]);
-        }
-#endif*/
     }
-
-    /*DoubleEliasFanoList(const std::vector<uint64_t>& cum_keys, const std::vector<uint64_t>& position) {
-        assert(cum_keys.size() == position.size());
-        num_buckets = cum_keys.size() - 1;
-
-        bits_per_key_fixed_point = (uint64_t(1) << 20) * (position[num_buckets] / static_cast<double>(cum_keys[num_buckets]));
-
-        min_diff = std::numeric_limits<int64_t>::max() / 2;
-        cum_keys_min_delta = std::numeric_limits<int64_t>::max() / 2;
-        int64_t prev_bucket_bits = 0;
-        for (size_t i = 1; i <= num_buckets; ++i) {
-            const int64_t nkeys_delta = cum_keys[i] - cum_keys[i - 1];
-            cum_keys_min_delta = min(cum_keys_min_delta, nkeys_delta);
-            const int64_t bucket_bits = int64_t(position[i]) - int64_t(bits_per_key_fixed_point * cum_keys[i] >> 20);
-            min_diff = min(min_diff, bucket_bits - prev_bucket_bits);
-            prev_bucket_bits = bucket_bits;
-        }
-
-        u_position = int64_t(position[num_buckets]) - int64_t(bits_per_key_fixed_point * cum_keys[num_buckets] >> 20) - int64_t(num_buckets * min_diff) + 1;
-        l_position = u_position / (num_buckets + 1) == 0 ? 0 : lambda(u_position / (num_buckets + 1));
-        u_cum_keys = cum_keys[num_buckets] - num_buckets * cum_keys_min_delta + 1;
-        l_cum_keys = u_cum_keys / (num_buckets + 1) == 0 ? 0 : lambda(u_cum_keys / (num_buckets + 1));
-        assert(l_cum_keys * 2 + l_position <= 56);  // To be able to perform a single unaligned read
-
-#ifdef MORESTATS
-        printf("Elias-Fano l (cumulative): %d\n", l_cum_keys);
-        printf("Elias-Fano l (positions): %d\n", l_position);
-        printf("Elias-Fano u (cumulative): %lld\n", u_cum_keys);
-        printf("Elias-Fano u (positions): %lld\n", u_position);
-#endif
-
-        lower_bits_mask_cum_keys = (UINT64_C(1) << l_cum_keys) - 1;
-        lower_bits_mask_position = (UINT64_C(1) << l_position) - 1;
-
-        const uint64_t words_lower_bits = lower_bits_size_words();
-        lower_bits.size(words_lower_bits);
-        const uint64_t words_cum_keys = cum_keys_size_words();
-        upper_bits_cum_keys.size(words_cum_keys);
-        const uint64_t words_position = position_size_words();
-        upper_bits_position.size(words_position);
-
-        for (uint64_t i = 0, cum_delta = 0, bit_delta = 0; i <= num_buckets; i++, cum_delta += cum_keys_min_delta, bit_delta += min_diff) {
-            if (l_cum_keys != 0) set_bits(lower_bits, i * (l_cum_keys + l_position), l_cum_keys, (cum_keys[i] - cum_delta) & lower_bits_mask_cum_keys);
-            set(upper_bits_cum_keys, ((cum_keys[i] - cum_delta) >> l_cum_keys) + i);
-
-            const auto pval = int64_t(position[i]) - int64_t(bits_per_key_fixed_point * cum_keys[i] >> 20);
-            if (l_position != 0) set_bits(lower_bits, i * (l_cum_keys + l_position) + l_cum_keys, l_position, (pval - bit_delta) & lower_bits_mask_position);
-            set(upper_bits_position, ((pval - bit_delta) >> l_position) + i);
-        }
-
-        const uint64_t jump_words = jump_size_words();
-        jump.size(jump_words);
-        if (jump_words == 0) return;
-
-        for (uint64_t i = 0, c = 0, last_super_q = 0; i < words_cum_keys; i++) {
-            for (int b = 0; b < 64; b++) {
-                if (upper_bits_cum_keys[i] & UINT64_C(1) << b) {
-                    if ((c & super_q_mask) == 0) jump[(c / super_q) * (super_q_size * 2)] = last_super_q = i * 64 + b;
-                    if ((c & q_mask) == 0) {
-                        const uint64_t offset = i * 64 + b - last_super_q;
-                        if (offset >= (1 << 16)) abort();
-                        (reinterpret_cast<uint16_t*>(&jump + (c / super_q) * (super_q_size * 2) + 2))[2 * ((c % super_q) / q)] = offset;
-                    }
-                    c++;
-                }
-            }
-        }
-
-        for (uint64_t i = 0, c = 0, last_super_q = 0; i < words_position; i++) {
-            for (int b = 0; b < 64; b++) {
-                if (upper_bits_position[i] & UINT64_C(1) << b) {
-                    if ((c & super_q_mask) == 0) jump[(c / super_q) * (super_q_size * 2) + 1] = last_super_q = i * 64 + b;
-                    if ((c & q_mask) == 0) {
-                        const uint64_t offset = i * 64 + b - last_super_q;
-                        if (offset >= (1 << 16)) abort();
-                        (reinterpret_cast<uint16_t*>(&jump + (c / super_q) * (super_q_size * 2) + 2))[2 * ((c % super_q) / q) + 1] = offset;
-                    }
-                    c++;
-                }
-            }
-        }
-
-#ifndef NDEBUG
-        for (uint64_t i = 0; i < num_buckets; i++) {
-            uint64_t x, x2, y;
-
-            get(i, x, x2, y);
-            assert(x == cum_keys[i]);
-            assert(x2 == cum_keys[i + 1]);
-            assert(y == position[i]);
-
-            get(i, x, y);
-            assert(x == cum_keys[i]);
-            assert(y == position[i]);
-        }
-#endif
-    }*/
 
     void get3(const uint64_t i, uint64_t& cum_keys, uint64_t& cum_keys_next, uint64_t& position) {
         uint64_t window_cum_keys{0}, select_cum_keys{0}, curr_word_cum_keys{0}, lower{0}, cum_delta{0};
@@ -567,8 +455,12 @@ class DoubleEliasFanoList {
     }
 
     [[nodiscard]] inline std::size_t jump_size_words() const {
-        size_t size = (num_buckets_ / super_q) * super_q_size * 2;                                         // Whole blocks
-        if (num_buckets_ % super_q != 0) size += (1 + ((num_buckets_ % super_q + q - 1) / q + 3) / 4) * 2;  // Partial block
+        // Compute whole blocks
+        std::size_t size = (num_buckets_ / super_q) * super_q_size * 2;
+        // Compute partial block (if any)
+        if (num_buckets_ % super_q != 0) {
+            size += (1 + ((num_buckets_ % super_q + q - 1) / q + 3) / 4) * 2;
+        }
         return size;
     }
 

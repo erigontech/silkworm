@@ -29,9 +29,9 @@ using DoubleEliasFanoList = sux::function::DoubleEliasFanoList<>;
 class DoubleEliasFanoList_ForTest : public DoubleEliasFanoList {
   public:
     using DoubleEliasFanoList::DoubleEliasFanoList;
-    using DoubleEliasFanoList::num_buckets;
-    using DoubleEliasFanoList::get3;
     using DoubleEliasFanoList::get2;
+    using DoubleEliasFanoList::get3;
+    using DoubleEliasFanoList::num_buckets;
 };
 
 TEST_CASE("DoubleEliasFanoList::build", "[silkworm][recsplit][elias_fano]") {

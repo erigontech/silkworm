@@ -44,11 +44,11 @@
 
 #pragma once
 
-#include <cinttypes>
 #include <x86intrin.h>
 
 #include <algorithm>
 #include <cassert>
+#include <cinttypes>
 #include <cstdint>
 #include <cstring>
 #include <memory>

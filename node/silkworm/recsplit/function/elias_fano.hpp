@@ -49,6 +49,7 @@
 #include <cstring>
 #include <iostream>
 #include <limits>
+#include <span>
 #include <vector>
 
 #include <silkworm/common/base.hpp>
@@ -75,31 +76,32 @@ static constexpr uint64_t q_mask = q - 1;
 static constexpr uint64_t super_q = 1 << 14;
 static constexpr uint64_t super_q_mask = super_q - 1;
 static constexpr uint64_t q_per_super_q = super_q / q;
-static constexpr uint64_t super_q_size = 1 + q_per_super_q / 4;
+static constexpr uint64_t kSuperQSize16 = 1 + q_per_super_q / 4;
+static constexpr uint64_t kSuperQSize32 = 1 + q_per_super_q / 2;
 
-template <util::AllocType AT>
-inline static void set(util::Vector<uint64_t, AT>& bits, const uint64_t pos) {
+template <class T, std::size_t Extent>
+inline static void set(std::span<T, Extent> bits, const uint64_t pos) {
     bits[pos / 64] |= uint64_t(1) << (pos % 64);
 }
 
 //! This assumes that bits are set in monotonic order, so that we can skip the masking for the second word
-template <util::AllocType AT>
-inline static void set_bits(util::Vector<uint64_t, AT>& bits, const uint64_t start, const uint64_t width, const uint64_t value) {
+template <class T, std::size_t Extent>
+inline static void set_bits(std::span<T, Extent> bits, const uint64_t start, const uint64_t width, const uint64_t value) {
     const uint64_t shift = start & 63;
     const uint64_t mask = ((uint64_t(1) << width) - 1) << shift;
     const uint64_t idx64 = start >> 6;
-    bits[idx64] = (bits[idx64] & !mask) | (value << shift);
+    bits[idx64] = (bits[idx64] & ~mask) | (value << shift);
     if (shift + width > 64) {
         // changes two 64-bit words
         bits[idx64 + 1] = value >> (64 - shift);
     }
 }
 
-//! Elias-Fano list that can be used to encode one monotone non-decreasing sequence
+//! 32-bit Elias-Fano list that can be used to encode one monotone non-decreasing sequence
 template <util::AllocType AT = util::AllocType::MALLOC>
-class EliasFanoList {
+class EliasFanoList32 {
   public:
-    EliasFanoList(uint64_t count, uint64_t max_offset) {
+    EliasFanoList32(uint64_t count, uint64_t max_offset) {
         if (count == 0) throw std::logic_error{"too small count: " + std::to_string(count)};
         count_ = count - 1;
         max_offset_ = max_offset;
@@ -113,7 +115,9 @@ class EliasFanoList {
 
     [[nodiscard]] std::size_t min() const { return get(0); }
 
-    [[nodiscard]] uint64_t get(uint64_t i) {
+    [[nodiscard]] const util::Vector<uint64_t, AT>& data() const { return data_; }
+
+    [[nodiscard]] uint64_t get(uint64_t i) const {
         uint64_t lower = i * l_;
         uint64_t idx64 = lower / 64;
         uint64_t shift = lower % 64;
@@ -122,21 +126,21 @@ class EliasFanoList {
             lower |= lower_bits_[idx64 + 1] << (64 - shift);
         }
 
-        const uint64_t jump_super_q = (i / super_q) * super_q_size;
-        const uint64_t jump_inside_super_q = (i % super_q) * q;
+        const uint64_t jump_super_q = (i / super_q) * kSuperQSize32;
+        const uint64_t jump_inside_super_q = (i % super_q) / q;
         idx64 = jump_super_q + 1 + (jump_inside_super_q >> 1);
         shift = 32 * (jump_inside_super_q % 2);
         const uint64_t mask = 0xffffffff << shift;
         const uint64_t jump = jump_[jump_super_q] + ((jump_[idx64] & mask) >> shift);
 
         uint64_t current_word = jump / 64;
-        const uint64_t window = upper_bits_[current_word] & (0xffffffffffffffff << (jump % 64));
+        uint64_t window = upper_bits_[current_word] & (0xffffffffffffffff << (jump % 64));
         uint64_t d = i & q_mask;
 
-        for (auto bit_count{std::popcount(window)}; bit_count <= d; bit_count = std::popcount(window)) {
+        for (auto bit_count{std::popcount(window)}; uint64_t(bit_count) <= d; bit_count = std::popcount(window)) {
             current_word++;
             window = upper_bits_[current_word];
-            d -= bit_count;
+            d -= uint64_t(bit_count);
         }
 
         const uint64_t sel = select64(window, d);
@@ -158,7 +162,7 @@ class EliasFanoList {
                 if ((upper_bits_[i] & (uint64_t(1) << b)) != 0) {
                     if ((c & super_q_mask) == 0) {
                         /* When c is multiple of 2^14 (4096) */
-                        jump_[(c / super_q) * super_q_size] = last_super_q = i * 64 + b;
+                        jump_[(c / super_q) * kSuperQSize32] = last_super_q = i * 64 + b;
                     }
                     if ((c & q_mask) == 0) {
                         /* When c is multiple of 2^8 (256) */
@@ -167,12 +171,12 @@ class EliasFanoList {
                         // offset needs to be encoded as 16-bit integer, therefore the following check
                         SILKWORM_ASSERT(offset < (uint64_t(1) << 32));
                         // c % superQ is the bit index inside the group of 4096 bits
-                        const uint64_t jump_super_q = (c / super_q) * super_q_size;
+                        const uint64_t jump_super_q = (c / super_q) * kSuperQSize32;
                         const uint64_t jump_inside_super_q = (c % super_q) / q;
                         const uint64_t idx64 = jump_super_q + 1 + (jump_inside_super_q >> 1);
                         const uint64_t shift = 32 * (jump_inside_super_q % 2);
                         const uint64_t mask = uint64_t(0xffffffff) << shift;
-                        jump_[idx64] = (jump_[idx64] & !mask) | (offset << shift);
+                        jump_[idx64] = (jump_[idx64] & ~mask) | (offset << shift);
                     }
                     c++;
                 }
@@ -180,7 +184,7 @@ class EliasFanoList {
         }
     }
 
-    friend std::ostream& operator<<(std::ostream& os, const EliasFanoList<AT>& ef) {
+    friend std::ostream& operator<<(std::ostream& os, const EliasFanoList32<AT>& ef) {
         silkworm::Bytes uint64_buffer(8, '\0');
 
         silkworm::endian::store_big_u64(uint64_buffer.data(), ef.count_);
@@ -189,30 +193,30 @@ class EliasFanoList {
         silkworm::endian::store_big_u64(uint64_buffer.data(), ef.u_);
         os.write(reinterpret_cast<const char*>(uint64_buffer.data()), sizeof(uint64_t));
 
-        os.write(reinterpret_cast<const char*>(&ef.data_), ef.data_.size() * sizeof(uint64_t));
+        os.write(reinterpret_cast<const char*>(&ef.data_), static_cast<std::streamsize>(ef.data_.size() * sizeof(uint64_t)));
         return os;
     }
 
   private:
-    int derive_fields() {
-        l_ = u_ / (count_ + 1) == 0 ? 0 : 63 ^ std::countl_zero(u_ / (count_ + 1));
+    uint64_t derive_fields() {
+        l_ = u_ / (count_ + 1) == 0 ? 0 : 63 ^ uint64_t(std::countl_zero(u_ / (count_ + 1)));
         lower_bits_mask_ = (uint64_t(1) << l_) - 1;
-        int words_lower_bits = ((count_ + 1) * l_ + 63) / 64 + 1;
-        int words_upper_bits = ((count_ + 1) + (u_ >> l_) + 63) / 64;
-        int jump_words = jump_size_words();
-        int total_words = words_lower_bits + words_upper_bits + jump_words;
-        data_.reserve(total_words);
-        lower_bits_.size(words_lower_bits);
-        std::copy(&data_, &data_ + words_lower_bits, &lower_bits_);  // TODO(canepat) necessary?
-        upper_bits_.size(words_upper_bits);
-        std::copy(&data_ + words_lower_bits, &data_ + words_lower_bits + words_upper_bits, &upper_bits_);  // TODO(canepat) necessary?
-        jump_.size(jump_words);
-        std::copy(&data_ + words_lower_bits + words_upper_bits, &data_ + total_words, &jump_);  // TODO(canepat) necessary?
+
+        uint64_t words_lower_bits = ((count_ + 1) * l_ + 63) / 64 + 1;
+        uint64_t words_upper_bits = ((count_ + 1) + (u_ >> l_) + 63) / 64;
+        uint64_t jump_words = jump_size_words();
+        uint64_t total_words = words_lower_bits + words_upper_bits + jump_words;
+        data_.resize(total_words);
+        std::span data_span{&data_, data_.size()};
+        lower_bits_ = data_span.subspan(0, words_lower_bits);
+        upper_bits_ = data_span.subspan(words_lower_bits, words_upper_bits);
+        jump_ = data_span.subspan(words_lower_bits + words_upper_bits, jump_words);
+
         return words_upper_bits;
     }
 
-    int jump_size_words() {
-        int size = ((count_ + 1) / super_q) * super_q_size;  // Whole blocks
+    [[nodiscard]] inline uint64_t jump_size_words() const {
+        uint64_t size = ((count_ + 1) / super_q) * kSuperQSize32;  // Whole blocks
         if ((count_ + 1) % super_q != 0) {
             size += 1 + (((count_ + 1) % super_q + q - 1) / q + 3) / 2;  // Partial block
         }
@@ -220,9 +224,9 @@ class EliasFanoList {
     }
 
     Vector<uint64_t, AT> data_;
-    Vector<uint64_t, AT> lower_bits_;
-    Vector<uint64_t, AT> upper_bits_;
-    Vector<uint64_t, AT> jump_;
+    std::span<uint64_t> lower_bits_;
+    std::span<uint64_t> upper_bits_;
+    std::span<uint64_t> jump_;
     uint64_t lower_bits_mask_{0};
     uint64_t count_{0};
     uint64_t u_{0};
@@ -232,12 +236,14 @@ class EliasFanoList {
     uint64_t words_upper_bits_{0};
 };
 
-//! Double Elias-Fano list that used to encode *two* monotone non-decreasing sequences in RecSplit
+//! 16-bit Double Elias-Fano list that used to encode *two* monotone non-decreasing sequences in RecSplit
 //! @tparam AT a type of memory allocation out of util::AllocType
 template <util::AllocType AT = util::AllocType::MALLOC>
-class DoubleEliasFanoList {
+class DoubleEliasFanoList16 {
   public:
-    DoubleEliasFanoList() = default;
+    DoubleEliasFanoList16() = default;
+
+    [[nodiscard]] const util::Vector<uint64_t, AT>& data() const { return data_; }
 
     [[nodiscard]] uint64_t num_buckets() const { return num_buckets_; }
 
@@ -281,7 +287,7 @@ class DoubleEliasFanoList {
                 if (upper_bits_cum_keys[i] & uint64_t(1) << b) {
                     if ((c & super_q_mask) == 0) {
                         /* When c is multiple of 2^14 (4096) */
-                        jump[(c / super_q) * (super_q_size * 2)] = last_super_q = i * 64 + b;
+                        jump[(c / super_q) * (kSuperQSize16 * 2)] = last_super_q = i * 64 + b;
                     }
                     if ((c & q_mask) == 0) {
                         /* When c is multiple of 2^8 (256) */
@@ -290,12 +296,12 @@ class DoubleEliasFanoList {
                         // offset needs to be encoded as 16-bit integer, therefore the following check
                         SILKWORM_ASSERT(offset < (1 << 16));
                         // c % superQ is the bit index inside the group of 4096 bits
-                        const uint64_t jump_super_q = (c / super_q) * (super_q_size * 2);
+                        const uint64_t jump_super_q = (c / super_q) * (kSuperQSize16 * 2);
                         const uint64_t jump_inside_super_q = 2 * (c % super_q) / q;
                         const uint64_t idx64 = jump_super_q + 2 + (jump_inside_super_q >> 2);
                         const uint64_t shift = 16 * (jump_inside_super_q % 4);
                         const uint64_t mask = uint64_t(0xffff) << shift;
-                        jump[idx64] = (jump[idx64] & !mask) | (offset << shift);
+                        jump[idx64] = (jump[idx64] & ~mask) | (offset << shift);
                     }
                     c++;
                 }
@@ -306,17 +312,17 @@ class DoubleEliasFanoList {
             for (uint64_t b = 0; b < 64; b++) {
                 if (upper_bits_position[i] & uint64_t(1) << b) {
                     if ((c & super_q_mask) == 0) {
-                        jump[(c / super_q) * (super_q_size * 2) + 1] = last_super_q = i * 64 + b;
+                        jump[(c / super_q) * (kSuperQSize16 * 2) + 1] = last_super_q = i * 64 + b;
                     }
                     if ((c & q_mask) == 0) {
                         const uint64_t offset = i * 64 + b - last_super_q;
                         SILKWORM_ASSERT(offset < (1 << 16));
-                        const uint64_t jump_super_q = (c / super_q) * (super_q_size * 2);
+                        const uint64_t jump_super_q = (c / super_q) * (kSuperQSize16 * 2);
                         const uint64_t jump_inside_super_q = 2 * (c % super_q) / q + 1;
                         const uint64_t idx64 = jump_super_q + 2 + (jump_inside_super_q >> 2);
                         const uint64_t shift = 16 * (jump_inside_super_q % 4);
                         const uint64_t mask = uint64_t(0xffff) << shift;
-                        jump[idx64] = (jump[idx64] & !mask) | (offset << shift);
+                        jump[idx64] = (jump[idx64] & ~mask) | (offset << shift);
                     }
                     c++;
                 }
@@ -324,7 +330,12 @@ class DoubleEliasFanoList {
         }
     }
 
-    void get3(const uint64_t i, uint64_t& cum_keys, uint64_t& cum_keys_next, uint64_t& position) {
+    void get2(const uint64_t i, uint64_t& cum_keys, uint64_t& position) const {
+        uint64_t window_cum_keys{0}, select_cum_keys{0}, curr_word_cum_keys{0}, lower{0}, cum_delta{0};
+        get(i, cum_keys, position, window_cum_keys, select_cum_keys, curr_word_cum_keys, lower, cum_delta);
+    }
+
+    void get3(const uint64_t i, uint64_t& cum_keys, uint64_t& cum_keys_next, uint64_t& position) const {
         uint64_t window_cum_keys{0}, select_cum_keys{0}, curr_word_cum_keys{0}, lower{0}, cum_delta{0};
         get(i, cum_keys, position, window_cum_keys, select_cum_keys, curr_word_cum_keys, lower, cum_delta);
         window_cum_keys &= (uint64_t(0xffffffffffffffff) << select_cum_keys) << 1;
@@ -334,11 +345,6 @@ class DoubleEliasFanoList {
         }
         lower >>= l_position;
         cum_keys_next = ((curr_word_cum_keys * 64 + static_cast<uint64_t>(rho(window_cum_keys)) - i - 1) << l_cum_keys | (lower & lower_bits_mask_cum_keys)) + cum_delta + cum_keys_min_delta_;
-    }
-
-    void get2(const uint64_t i, uint64_t& cum_keys, uint64_t& position) {
-        uint64_t window_cum_keys{0}, select_cum_keys{0}, curr_word_cum_keys{0}, lower{0}, cum_delta{0};
-        get(i, cum_keys, position, window_cum_keys, select_cum_keys, curr_word_cum_keys, lower, cum_delta);
     }
 
   private:
@@ -355,23 +361,21 @@ class DoubleEliasFanoList {
         const uint64_t words_position = position_size_words();
         const uint64_t jump_words = jump_size_words();
         const uint64_t total_words = words_lower_bits + words_cum_keys + words_position + jump_words;
-
-        data_.reserve(total_words);
-        lower_bits.size(words_lower_bits);
-        std::copy(&data_, &data_ + words_lower_bits, &lower_bits);  // TODO(canepat) necessary?
-        upper_bits_cum_keys.size(words_cum_keys);
-        std::copy(&data_ + words_lower_bits, &data_ + words_lower_bits + words_cum_keys, &upper_bits_cum_keys);  // TODO(canepat) necessary?
-        upper_bits_position.size(words_position);
-        std::copy(&data_ + words_lower_bits + words_cum_keys, &data_ + words_lower_bits + words_cum_keys + words_position,
-                  &upper_bits_position);  // TODO(canepat) necessary?
-        jump.size(jump_words);
-        std::copy(&data_ + words_lower_bits + words_cum_keys + words_position, &data_ + total_words, &jump);  // TODO(canepat) necessary?
+        data_.resize(total_words);
+        auto first = &data_;
+        lower_bits = std::span{first, first + words_lower_bits};
+        first += words_lower_bits;
+        upper_bits_cum_keys = std::span{first, first + words_cum_keys};
+        first += words_cum_keys;
+        upper_bits_position = std::span{first, first + words_position};
+        first += words_position;
+        jump = std::span{first, first + jump_words};
 
         return {words_cum_keys, words_position};
     }
 
     void get(const uint64_t i, uint64_t& cum_keys, uint64_t& position, uint64_t& window_cum_keys, uint64_t& select_cum_keys,
-             uint64_t& curr_word_cum_keys, uint64_t& lower, uint64_t& cum_delta) {
+             uint64_t& curr_word_cum_keys, uint64_t& lower, uint64_t& cum_delta) const {
         const uint64_t pos_lower = i * (l_cum_keys + l_position);
         uint64_t idx64 = pos_lower / 64;
         uint64_t shift = pos_lower % 64;
@@ -380,7 +384,7 @@ class DoubleEliasFanoList {
             lower |= lower_bits[idx64 + 1] << (64 - shift);
         }
 
-        const uint64_t jump_super_q = (i / super_q) * super_q_size * 2;
+        const uint64_t jump_super_q = (i / super_q) * kSuperQSize16 * 2;
         const uint64_t jump_inside_super_q = (i % super_q) / q;
         uint64_t idx16 = 4 * (jump_super_q + 2) + 2 * jump_inside_super_q;
         idx64 = idx16 / 4;
@@ -423,10 +427,10 @@ class DoubleEliasFanoList {
     }
 
     Vector<uint64_t, AT> data_;
-    Vector<uint64_t, AT> lower_bits;
-    Vector<uint64_t, AT> upper_bits_position;
-    Vector<uint64_t, AT> upper_bits_cum_keys;
-    Vector<uint64_t, AT> jump;
+    std::span<uint64_t> lower_bits;
+    std::span<uint64_t> upper_bits_position;
+    std::span<uint64_t> upper_bits_cum_keys;
+    std::span<uint64_t> jump;
     uint64_t lower_bits_mask_cum_keys{0};
     uint64_t lower_bits_mask_position{0};
 
@@ -456,7 +460,7 @@ class DoubleEliasFanoList {
 
     [[nodiscard]] inline std::size_t jump_size_words() const {
         // Compute whole blocks
-        std::size_t size = (num_buckets_ / super_q) * super_q_size * 2;
+        std::size_t size = (num_buckets_ / super_q) * kSuperQSize16 * 2;
         // Compute partial block (if any)
         if (num_buckets_ % super_q != 0) {
             size += (1 + ((num_buckets_ % super_q + q - 1) / q + 3) / 4) * 2;
@@ -464,7 +468,7 @@ class DoubleEliasFanoList {
         return size;
     }
 
-    friend std::ostream& operator<<(std::ostream& os, const DoubleEliasFanoList<AT>& ef) {
+    friend std::ostream& operator<<(std::ostream& os, const DoubleEliasFanoList16<AT>& ef) {
         os.write(reinterpret_cast<const char*>(&ef.num_buckets_), sizeof(ef.num_buckets_));
         os.write(reinterpret_cast<const char*>(&ef.u_cum_keys), sizeof(ef.u_cum_keys));
         os.write(reinterpret_cast<const char*>(&ef.u_position), sizeof(ef.u_position));
@@ -475,7 +479,7 @@ class DoubleEliasFanoList {
         return os;
     }
 
-    friend std::istream& operator>>(std::istream& is, DoubleEliasFanoList<AT>& ef) {
+    friend std::istream& operator>>(std::istream& is, DoubleEliasFanoList16<AT>& ef) {
         is.read(reinterpret_cast<char*>(&ef.num_buckets_), sizeof(ef.num_buckets_));
         is.read(reinterpret_cast<char*>(&ef.u_cum_keys), sizeof(ef.u_cum_keys));
         is.read(reinterpret_cast<char*>(&ef.u_position), sizeof(ef.u_position));

@@ -137,7 +137,7 @@ std::size_t PatternTable::build_condensed(std::span<Pattern> patterns) {
 
 std::size_t PatternTable::build_condensed(std::span<Pattern> patterns, uint64_t highest_depth, uint16_t code, int bits, uint64_t depth) {
     SILK_DEBUG << "#patterns: " << patterns.size() << " highest_depth: " << highest_depth << " code: " << code
-               << " bits: " << std::bitset<CHAR_BIT>(static_cast<uint>(bits)) << " depth: " << depth;
+               << " bits: " << std::bitset<CHAR_BIT>(static_cast<unsigned>(bits)) << " depth: " << depth;
     if (patterns.empty()) {
         return 0;
     }
@@ -239,7 +239,7 @@ int PositionTable::build(std::span<Position> positions) {
 
 int PositionTable::build_tree(std::span<Position> positions, uint64_t highest_depth, uint16_t code, int bits, uint64_t depth) {
     SILK_DEBUG << "build_tree #positions: " << positions.size() << " highest_depth: " << highest_depth << " code: " << code
-               << " bits: " << std::bitset<CHAR_BIT>(static_cast<uint>(bits)) << " depth: " << depth;
+               << " bits: " << std::bitset<CHAR_BIT>(static_cast<unsigned>(bits)) << " depth: " << depth;
     if (positions.empty()) {
         return 0;
     }

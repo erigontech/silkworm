@@ -400,7 +400,6 @@ class RecSplit {
         std::random_device rand_dev;
         std::mt19937 rand_gen32{rand_dev()};
         salt_ = salt != 0 ? salt : rand_gen32();
-        salt_ = 1;  // TODO(canepat) remove
         hasher_ = std::make_unique<Murmur3>(salt_);
     }
 

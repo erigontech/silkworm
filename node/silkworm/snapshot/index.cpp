@@ -18,6 +18,7 @@
 
 #include <silkworm/common/log.hpp>
 #include <silkworm/common/util.hpp>
+#include <silkworm/test/snapshot_files.hpp>
 
 namespace silkworm {
 
@@ -67,6 +68,17 @@ bool HeaderIndex::walk(RecSplit8& rec_split, uint64_t /*i*/, uint64_t offset, By
     const ByteView rlp_encoded_header{word.data() + 1, word.size() - 1};
     const ethash::hash256 hash = keccak256(rlp_encoded_header);
     rec_split.add_key(hash.bytes, kHashLength, offset);
+    return true;
+}
+
+bool BodyIndex::walk(RecSplit8& rec_split, uint64_t i, uint64_t offset, ByteView /*word*/) {
+    const auto size = test::encode_varint<uint64_t>(i, uint64_buffer_);
+    rec_split.add_key(uint64_buffer_.data(), size, offset);
+    uint64_buffer_.clear();
+    return true;
+}
+
+bool TransactionIndex::walk(RecSplit8& /*rec_split*/, uint64_t /*i*/, uint64_t /*offset*/, ByteView /*word*/) {
     return true;
 }
 

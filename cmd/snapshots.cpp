@@ -173,8 +173,26 @@ void create_index(const SnapSettings& settings, int repetitions) {
     const auto snap_file{SnapshotFile::parse(std::filesystem::path{settings.snapshot_file_name})};
     if (snap_file) {
         for (int i{0}; i < repetitions; ++i) {
-            HeaderIndex header_index{*snap_file};
-            header_index.build();
+            switch (snap_file->type()) {
+                case SnapshotType::headers: {
+                    HeaderIndex index{*snap_file};
+                    index.build();
+                    break;
+                }
+                case SnapshotType::bodies: {
+                    BodyIndex index{*snap_file};
+                    index.build();
+                    break;
+                }
+                case SnapshotType::transactions: {
+                    TransactionIndex index{*snap_file};
+                    index.build();
+                    break;
+                }
+                default: {
+                    SILKWORM_ASSERT(false);
+                }
+            }
         }
     } else {
         SILK_ERROR << "Invalid snapshot file: " << settings.snapshot_file_name;

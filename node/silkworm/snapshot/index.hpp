@@ -52,4 +52,23 @@ class HeaderIndex : public Index {
     bool walk(RecSplit8& rec_split, uint64_t i, uint64_t offset, ByteView word) override;
 };
 
+class BodyIndex : public Index {
+  public:
+    explicit BodyIndex(SnapshotFile path) : Index(std::move(path)), uint64_buffer_(8, '\0') {}
+
+  protected:
+    bool walk(RecSplit8& rec_split, uint64_t i, uint64_t offset, ByteView word) override;
+
+  private:
+    Bytes uint64_buffer_;
+};
+
+class TransactionIndex : public Index {
+  public:
+    explicit TransactionIndex(SnapshotFile path) : Index(std::move(path)) {}
+
+  protected:
+    bool walk(RecSplit8& rec_split, uint64_t i, uint64_t offset, ByteView word) override;
+};
+
 }  // namespace silkworm

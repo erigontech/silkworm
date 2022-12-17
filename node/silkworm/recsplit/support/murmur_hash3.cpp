@@ -20,6 +20,8 @@
 
 #include "murmur_hash3.hpp"
 
+#include <cstddef>
+
 //-----------------------------------------------------------------------------
 // Platform-specific functions and macros
 

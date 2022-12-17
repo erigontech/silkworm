@@ -76,7 +76,7 @@
 #define ULEQ_STEP_9(x, y) (((((((y) | MSBS_STEP_9) - ((x) & ~MSBS_STEP_9)) | (x ^ y)) ^ (x & ~y)) & MSBS_STEP_9) >> 8)
 #define ULEQ_STEP_16(x, y) (((((((y) | MSBS_STEP_16) - ((x) & ~MSBS_STEP_16)) | (x ^ y)) ^ (x & ~y)) & MSBS_STEP_16) >> 15)
 
-namespace sux {
+namespace silkworm::succinct {
 
 using std::memcpy;
 
@@ -487,4 +487,4 @@ T ltoh(T value) { return is_big_endian() ? swap_endian<T>(value) : value; }
 template <class T>
 T htol(T value) { return ltoh(value); }
 
-}  // namespace sux
+}  // namespace silkworm::succinct

@@ -51,10 +51,9 @@
 #include "../support/common.hpp"
 #include "../util/Vector.hpp"
 
-namespace sux::function {
+namespace silkworm::succinct {
 
 using namespace std;
-using namespace sux;
 
 /** Storage for Golomb-Rice codes of a RecSplit bucket.
  *
@@ -204,4 +203,4 @@ class RiceBitVector {
     Reader reader() { return Reader(data); }
 };
 
-}  // namespace sux::function
+}  // namespace silkworm::succinct

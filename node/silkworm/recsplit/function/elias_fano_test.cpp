@@ -23,7 +23,7 @@
 
 #include <silkworm/test/log.hpp>
 
-namespace silkworm {
+namespace silkworm::succinct {
 
 using EliasFanoList32 = sux::function::EliasFanoList32<>;
 class EliasFanoList32_ForTest : public EliasFanoList32 {
@@ -81,4 +81,4 @@ TEST_CASE("DoubleEliasFanoList::build", "[silkworm][recsplit][elias_fano]") {
     }
 }
 
-}  // namespace silkworm
+}  // namespace silkworm::succinct

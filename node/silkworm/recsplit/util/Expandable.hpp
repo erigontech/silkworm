@@ -53,7 +53,7 @@
 
 #include "../support/common.hpp"
 
-namespace sux::util {
+namespace silkworm::succinct::util {
 
 /** A generic interface for classes that have size (the current
  * number of elements) and capacity (the number of elements
@@ -114,4 +114,4 @@ class Expandable {
     void trimToFit() { trim(size()); };
 };
 
-}  // namespace sux::util
+}  // namespace silkworm::succinct::util

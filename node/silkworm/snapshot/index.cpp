@@ -22,6 +22,8 @@
 
 namespace silkworm {
 
+using RecSplit8 = succinct::RecSplit8;
+
 void Index::build() {
     SILK_TRACE << "Index::build path: " << segment_path_.path().string() << " start";
 

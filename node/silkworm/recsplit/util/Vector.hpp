@@ -55,7 +55,7 @@
 #include "../support/common.hpp"
 #include "Expandable.hpp"
 
-namespace sux::util {
+namespace silkworm::succinct::util {
 
 /** Possible types of memory allocation.
  *
@@ -312,4 +312,4 @@ class Vector : public Expandable {
     }
 };
 
-}  // namespace sux::util
+}  // namespace silkworm::succinct::util

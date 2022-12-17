@@ -25,9 +25,6 @@
 
 namespace silkworm {
 
-using namespace sux;
-using namespace sux::function;
-
 class Index {
   public:
     static constexpr uint64_t kPageSize{4096};
@@ -39,7 +36,7 @@ class Index {
     void build();
 
   protected:
-    virtual bool walk(RecSplit8& rec_split, uint64_t i, uint64_t offset, ByteView word) = 0;
+    virtual bool walk(succinct::RecSplit8& rec_split, uint64_t i, uint64_t offset, ByteView word) = 0;
 
     SnapshotFile segment_path_;
 };
@@ -49,7 +46,7 @@ class HeaderIndex : public Index {
     explicit HeaderIndex(SnapshotFile path) : Index(std::move(path)) {}
 
   protected:
-    bool walk(RecSplit8& rec_split, uint64_t i, uint64_t offset, ByteView word) override;
+    bool walk(succinct::RecSplit8& rec_split, uint64_t i, uint64_t offset, ByteView word) override;
 };
 
 class BodyIndex : public Index {
@@ -57,7 +54,7 @@ class BodyIndex : public Index {
     explicit BodyIndex(SnapshotFile path) : Index(std::move(path)), uint64_buffer_(8, '\0') {}
 
   protected:
-    bool walk(RecSplit8& rec_split, uint64_t i, uint64_t offset, ByteView word) override;
+    bool walk(succinct::RecSplit8& rec_split, uint64_t i, uint64_t offset, ByteView word) override;
 
   private:
     Bytes uint64_buffer_;
@@ -68,7 +65,7 @@ class TransactionIndex : public Index {
     explicit TransactionIndex(SnapshotFile path) : Index(std::move(path)) {}
 
   protected:
-    bool walk(RecSplit8& rec_split, uint64_t i, uint64_t offset, ByteView word) override;
+    bool walk(succinct::RecSplit8& rec_split, uint64_t i, uint64_t offset, ByteView word) override;
 };
 
 }  // namespace silkworm

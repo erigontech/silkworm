@@ -79,7 +79,7 @@
 #include <silkworm/recsplit/support/murmur_hash3.hpp>
 #include <silkworm/recsplit/util/Vector.hpp>
 
-namespace sux::function {
+namespace silkworm::succinct {
 
 using namespace std;
 using namespace std::chrono;
@@ -113,11 +113,11 @@ static uint64_t time_split[MAX_LEVEL_TIME];
 #endif
 
 // Starting seed at given distance from the root (extracted at random).
-static const uint64_t start_seed[] = {0x106393c187cae21a, 0x6453cec3f7376937, 0x643e521ddbd2be98, 0x3740c6412f6572cb, 0x717d47562f1ce470, 0x4cd6eb4c63befb7c, 0x9bfd8c5e18c8da73,
+static constexpr uint64_t kStartSeed[] = {0x106393c187cae21a, 0x6453cec3f7376937, 0x643e521ddbd2be98, 0x3740c6412f6572cb, 0x717d47562f1ce470, 0x4cd6eb4c63befb7c, 0x9bfd8c5e18c8da73,
                                       0x082f20e10092a9a3, 0x2ada2ce68d21defc, 0xe33cb4f3e7c6466b, 0x3980be458c509c59, 0xc466fd9584828e8c, 0x45f0aabe1a61ede6, 0xf6e7b8b33ad9b98d,
                                       0x4ef95e25f4b4983d, 0x81175195173b92d3, 0x4e50927d8dd15978, 0x1ea2099d1fafae7f, 0x425c8a06fbaaa815, 0xcd4216006c74052a};
 
-/** David Stafford's (http://zimbry.blogspot.com/2011/09/better-bit-mixing-improving-on.html)
+/** David Stafford's (http://zimbry.blogspot.com/2011/09/better-bit-mixingsuccinct::-improving-on.html)
  * 13th variant of the 64-bit finalizer function in Austin Appleby's
  * MurmurHash3 (https://github.com/aappleby/smhasher).
  *
@@ -281,7 +281,7 @@ class RecSplit {
         for (size_t i = 0; i < fanout; ++i) sqrt_prod *= sqrt(k[i]);
 
         const double p = sqrt(m) / (pow(2 * M_PI, (fanout - 1.) / 2) * sqrt_prod);
-        auto golomb_rice_length = static_cast<uint32_t>(ceil(log2(-log((sqrt(5) + 1) / 2) / log1p(-p))));  // log2 Golomb modulus
+        auto golomb_rice_length = static_cast<uint32_t>(ceil(log2(-std::log((sqrt(5) + 1) / 2) / log1p(-p))));  // log2 Golomb modulus
 
         assert(golomb_rice_length <= 0x1F);  // Golomb-Rice code, stored in the 5 upper bits
         (*memo)[m] = golomb_rice_length << 27;
@@ -567,15 +567,15 @@ class RecSplit {
         SILK_DEBUG << "[index] written murmur3 salt: " << salt_;
 
         // Write out start seeds
-        const uint8_t start_seed_length = sizeof(start_seed) / sizeof(uint64_t);
+        const uint8_t start_seed_length = sizeof(kStartSeed) / sizeof(uint64_t);
         index_output_stream.write(reinterpret_cast<const char*>(&start_seed_length), sizeof(uint8_t));
         SILK_DEBUG << "[index] written start seed length: " << int(start_seed_length);
 
-        for (const uint64_t s : start_seed) {
+        for (const uint64_t s : kStartSeed) {
             silkworm::endian::store_big_u64(uint64_buffer.data(), s);
             index_output_stream.write(reinterpret_cast<const char*>(uint64_buffer.data()), sizeof(uint64_t));
         }
-        SILK_DEBUG << "[index] written start seed: " << start_seed;
+        SILK_DEBUG << "[index] written start seed: " << kStartSeed;
 
         // Write out index flag
         const uint8_t enum_index_flag = double_enum_index_ ? 1 : 0;
@@ -641,7 +641,7 @@ class RecSplit {
 
         while (m > upper_aggr) {  // fanout = 2
             const auto d = reader.readNext(golomb_param(m, memo));
-            const size_t hmod = remap16(remix(hash.second + d + start_seed[level]), m);
+            const size_t hmod = remap16(remix(hash.second + d + kStartSeed[level]), m);
 
             const uint32_t split = ((uint16_t(m / 2 + upper_aggr - 1) / upper_aggr)) * upper_aggr;
             if (hmod < split) {
@@ -655,7 +655,7 @@ class RecSplit {
         }
         if (m > lower_aggr) {
             const auto d = reader.readNext(golomb_param(m, memo));
-            const size_t hmod = remap16(remix(hash.second + d + start_seed[level]), m);
+            const size_t hmod = remap16(remix(hash.second + d + kStartSeed[level]), m);
 
             const int part = uint16_t(hmod) / lower_aggr;
             m = min(lower_aggr, m - part * lower_aggr);
@@ -666,7 +666,7 @@ class RecSplit {
 
         if (m > _leaf) {
             const auto d = reader.readNext(golomb_param(m, memo));
-            const size_t hmod = remap16(remix(hash.second + d + start_seed[level]), m);
+            const size_t hmod = remap16(remix(hash.second + d + kStartSeed[level]), m);
 
             const int part = uint16_t(hmod) / _leaf;
             m = min(_leaf, m - part * _leaf);
@@ -676,7 +676,7 @@ class RecSplit {
         }
 
         const auto b = reader.readNext(golomb_param(m, memo));
-        return cum_keys + remap16(remix(hash.second + b + start_seed[level]), m);
+        return cum_keys + remap16(remix(hash.second + b + kStartSeed[level]), m);
     }
 
     //! Return the value associated with the given key
@@ -747,7 +747,7 @@ class RecSplit {
                   std::size_t end,
                   std::vector<uint32_t>& unary,
                   std::ofstream& index_ofs) {
-        uint64_t salt = start_seed[level];
+        uint64_t salt = kStartSeed[level];
         const uint16_t m = end - start;
         SILKWORM_ASSERT(m > 1);
         if (m <= _leaf) {
@@ -786,7 +786,7 @@ class RecSplit {
                     SILK_DEBUG << "[index] written offset: " << buffer_offsets_[i];
                 }
             }
-            salt -= start_seed[level];
+            salt -= kStartSeed[level];
             const auto log2golomb = golomb_param(m, memo);
             gr_builder_.appendFixed(salt, log2golomb);
             unary.push_back(salt >> log2golomb);
@@ -821,7 +821,7 @@ class RecSplit {
             std::copy(buffer_.data(), buffer_.data() + m, bucket.data() + start);
             std::copy(buffer_offsets_.data(), buffer_offsets_.data() + m, offsets.data() + start);
 
-            salt -= start_seed[level];
+            salt -= kStartSeed[level];
             const auto log2golomb = golomb_param(m, memo);
             gr_builder_.appendFixed(salt, log2golomb);
             unary.push_back(salt >> log2golomb);
@@ -883,8 +883,8 @@ constexpr std::size_t kLeafSize{8};
 using RecSplit8 = RecSplit<kLeafSize>;
 
 template <>
-const array<uint32_t, MAX_BUCKET_SIZE> RecSplit8::memo;
+const std::array<uint32_t, MAX_BUCKET_SIZE> RecSplit8::memo;
 
-}  // namespace sux::function
+}  // namespace silkworm::succinct
 
 #pragma GCC diagnostic pop

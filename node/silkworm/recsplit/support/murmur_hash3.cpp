@@ -14,7 +14,6 @@
    limitations under the License.
 */
 
-//-----------------------------------------------------------------------------
 // MurmurHash3 was written by Austin Appleby, and is placed in the public
 // domain. The author hereby disclaims copyright to this source code.
 
@@ -22,11 +21,11 @@
 
 #include <cstddef>
 
-//-----------------------------------------------------------------------------
+namespace silkworm::succinct {
+
 // Platform-specific functions and macros
 
 // Microsoft Visual Studio
-
 #if defined(_MSC_VER)
 
 #define FORCE_INLINE __forceinline
@@ -40,7 +39,6 @@
 // Other compilers
 
 #else  // defined(_MSC_VER)
-
 #define FORCE_INLINE inline __attribute__((always_inline))
 
 inline uint64_t rotl64(uint64_t x, int8_t r) {
@@ -48,12 +46,9 @@ inline uint64_t rotl64(uint64_t x, int8_t r) {
 }
 
 #define ROTL64(x, y) rotl64(x, y)
-
 #define BIG_CONSTANT(x) (x##LLU)
-
 #endif  // !defined(_MSC_VER)
 
-//-----------------------------------------------------------------------------
 // Block read - if your platform needs to do endian-swapping or can only
 // handle aligned reads, do the conversion here
 
@@ -61,7 +56,6 @@ FORCE_INLINE uint64_t getblock64(const uint64_t* p, std::size_t i) {
     return p[i];
 }
 
-//-----------------------------------------------------------------------------
 // Finalization mix - force all bits of a hash block to avalanche
 
 FORCE_INLINE uint64_t fmix64(uint64_t k) {
@@ -73,8 +67,6 @@ FORCE_INLINE uint64_t fmix64(uint64_t k) {
 
     return k;
 }
-
-//-----------------------------------------------------------------------------
 
 void MurmurHash3_x64_128(const void* key, const uint64_t len,
                          const uint32_t seed, void* out) {
@@ -198,4 +190,4 @@ void MurmurHash3_x64_128(const void* key, const uint64_t len,
     reinterpret_cast<uint64_t*>(out)[1] = h2;
 }
 
-//-----------------------------------------------------------------------------
+}  // namespace silkworm::succinct

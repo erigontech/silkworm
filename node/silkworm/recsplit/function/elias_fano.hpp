@@ -65,10 +65,9 @@
 #define LOG2Q 8
 #endif
 
-namespace sux::function {
+namespace silkworm::succinct {
 
-using namespace sux;
-using namespace sux::util;
+using namespace silkworm::succinct::util;
 
 static constexpr uint64_t log2q = LOG2Q;
 static constexpr uint64_t q = 1 << log2q;
@@ -498,4 +497,4 @@ class DoubleEliasFanoList16 {
     }
 };
 
-}  // namespace sux::function
+}  // namespace silkworm::succinct

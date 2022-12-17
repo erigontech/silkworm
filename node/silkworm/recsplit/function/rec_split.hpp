@@ -380,6 +380,9 @@ class RecSplit {
     //! Murmur3 hash factory
     std::unique_ptr<Murmur3> hasher_;
 
+    //!
+    std::vector<std::size_t> count_;
+
   public:
     RecSplit(const size_t _keys_count, const size_t _bucket_size, std::filesystem::path index_path, uint64_t base_data_id, uint32_t salt = 0)
         : bucket_size(_bucket_size),
@@ -391,6 +394,7 @@ class RecSplit {
         bucket_position_accumulator_.reserve(nbuckets + 1);
         current_bucket_.reserve(bucket_size);
         current_bucket_offsets_.reserve(bucket_size);
+        count_.reserve(lower_aggr);
 
         // Generate random salt for murmur3 hash
         std::random_device rand_dev;
@@ -793,32 +797,30 @@ class RecSplit {
 
             SILK_DEBUG << "[index] m > _leaf: m=" << m << " fanout=" << fanout << " unit=" << unit;
 
-            auto count = new std::size_t[fanout];  // Note that we never read count[fanout-1]
-            // TODO(canepat) std::vector<std::size_t> count(fanout);
             while (true) {
-                memset(count, 0, fanout * sizeof(std::size_t));
+                SILKWORM_ASSERT(fanout <= lower_aggr);
+                std::memset(count_.data(), 0, fanout * sizeof(std::size_t));
                 for (std::size_t i{0}; i < m; i++) {
-                    count[uint16_t(remap16(remix(bucket[start + i] + salt), m)) / unit]++;
+                    count_[uint16_t(remap16(remix(bucket[start + i] + salt), m)) / unit]++;
                 }
                 bool broken{false};
                 for (std::size_t i = 0; i < fanout - 1; i++) {
-                    broken = broken || (count[i] != unit);
+                    broken = broken || (count_[i] != unit);
                 }
                 if (!broken) break;
                 salt++;
             }
-            for (std::size_t i = 0, c = 0; i < fanout; i++, c += unit) {
-                count[i] = c;
+            for (std::size_t i{0}, c{0}; i < fanout; i++, c += unit) {
+                count_[i] = c;
             }
             for (std::size_t i{0}; i < m; i++) {
                 auto j = uint16_t(remap16(remix(bucket[start + i] + salt), m)) / unit;
-                buffer_[count[j]] = bucket[start + i];
-                buffer_offsets_[count[j]] = offsets[start + i];
-                count[j]++;
+                buffer_[count_[j]] = bucket[start + i];
+                buffer_offsets_[count_[j]] = offsets[start + i];
+                count_[j]++;
             }
             std::copy(buffer_.data(), buffer_.data() + m, bucket.data() + start);
             std::copy(buffer_offsets_.data(), buffer_offsets_.data() + m, offsets.data() + start);
-            delete[] count;  // TODO(canepat) remove with std::vector<std::size_t> count(fanout);
 
             salt -= start_seed[level];
             const auto log2golomb = golomb_param(m, memo);

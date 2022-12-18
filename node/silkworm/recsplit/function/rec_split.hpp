@@ -81,7 +81,6 @@
 
 namespace silkworm::succinct {
 
-using namespace std;
 using namespace std::chrono;
 
 // Assumed *maximum* size of a bucket. Works with high probability up to average bucket size ~2000.
@@ -165,24 +164,24 @@ static constexpr uint64_t bij_memo_golomb[] = {0, 0, 1, 3, 7, 18, 45, 113, 288, 
  *  into the generation code, which uses only the public fields SplittingStrategy::lower_aggr and SplittingStrategy::upper_aggr.
  */
 
-template <size_t LEAF_SIZE>
+template <std::size_t LEAF_SIZE>
 class SplittingStrategy {
     static constexpr size_t _leaf = LEAF_SIZE;
     static_assert(_leaf >= 1);
     static_assert(_leaf <= MAX_LEAF_SIZE);
-    size_t m, curr_unit, curr_index, last_unit;
-    size_t _fanout;
-    size_t unit;
+    std::size_t m, curr_unit, curr_index, last_unit;
+    std::size_t _fanout{0};
+    std::size_t unit{0};
 
-    inline size_t part_size() const { return (curr_index < _fanout - 1) ? unit : last_unit; }
+    [[nodiscard]] inline std::size_t part_size() const { return (curr_index < _fanout - 1) ? unit : last_unit; }
 
   public:
     /** The lower bound for primary (lower) key aggregation. */
-    static inline const size_t lower_aggr = _leaf * max(2, ceil(0.35 * _leaf + 1. / 2));
+    static inline const std::size_t lower_aggr = _leaf * max(2, ceil(0.35 * _leaf + 1. / 2));
     /** The lower bound for secondary (upper) key aggregation. */
-    static inline const size_t upper_aggr = lower_aggr * (_leaf < 7 ? 2 : ceil(0.21 * _leaf + 9. / 10));
+    static inline const std::size_t upper_aggr = lower_aggr * (_leaf < 7 ? 2 : ceil(0.21 * _leaf + 9. / 10));
 
-    static inline void split_params(const size_t m, size_t& fanout, size_t& unit) {
+    static inline void split_params(const std::size_t m, std::size_t& fanout, std::size_t& unit) {
         if (m > upper_aggr) {  // High-level aggregation (fanout 2)
             unit = upper_aggr * (uint16_t(m / 2 + upper_aggr - 1) / upper_aggr);
             fanout = 2;
@@ -196,39 +195,37 @@ class SplittingStrategy {
     }
 
     // Note that you can call this iterator only *once*.
-    class split_iterator {
+    class Iterator {
         SplittingStrategy* strat;
 
       public:
-        using value_type = size_t;
-        using difference_type = ptrdiff_t;
-        using pointer = size_t*;
-        using reference = size_t&;
-        using iterator_category = input_iterator_tag;
+        using value_type = std::size_t;
+        using difference_type = std::ptrdiff_t;
+        using pointer = std::size_t*;
+        using reference = std::size_t&;
 
-        split_iterator(SplittingStrategy* strategy) : strat(strategy) {}
-        size_t operator*() const { return strat->curr_unit; }
-        size_t* operator->() const { return &strat->curr_unit; }
-        split_iterator& operator++() {
+        explicit Iterator(SplittingStrategy* strategy) : strat(strategy) {}
+
+        std::size_t operator*() const { return strat->curr_unit; }
+        std::size_t* operator->() const { return &strat->curr_unit; }
+        Iterator& operator++() {
             ++strat->curr_index;
             strat->curr_unit = strat->part_size();
             strat->last_unit -= strat->curr_unit;
             return *this;
         }
-        bool operator==(const split_iterator& other) const { return strat == other.strat; }
-        bool operator!=(const split_iterator& other) const { return !(*this == other); }
+        bool operator==(const Iterator& other) const { return strat == other.strat; }
+        bool operator!=(const Iterator& other) const { return !(*this == other); }
     };
 
-    explicit SplittingStrategy(size_t mm) : m(mm), last_unit(mm), curr_index(0), curr_unit(0) {
+    explicit SplittingStrategy(std::size_t mm) : m(mm), last_unit(mm), curr_index(0), curr_unit(0) {
         split_params(m, _fanout, unit);
         this->curr_unit = part_size();
         this->last_unit -= this->curr_unit;
     }
 
-    split_iterator begin() { return split_iterator(this); }
-    split_iterator end() { return split_iterator(nullptr); }
-
-    inline size_t fanout() { return this->_fanout; }
+    Iterator begin() { return Iterator{this}; }
+    Iterator end() { return Iterator{nullptr}; }
 };
 
 #define skip_bits(m) (memo[m] & 0xFFFF)
@@ -257,7 +254,7 @@ class RecSplit {
     static const size_t lower_aggr;
     static const size_t upper_aggr;
 
-    static constexpr int golomb_param(const int m, const array<uint32_t, MAX_BUCKET_SIZE>& memo) {
+    static constexpr int golomb_param(const int m, const std::array<uint32_t, MAX_BUCKET_SIZE>& memo) {
         return memo[m] >> 27;
     }
 
@@ -265,8 +262,8 @@ class RecSplit {
     // of a splitting (upper 5 bits), the number of nodes in the associated subtree
     // (following 11 bits) and the sum of the Golomb-Rice codelengths in the same
     // subtree (lower 16 bits).
-    static constexpr void _fill_golomb_rice(const int m, array<uint32_t, MAX_BUCKET_SIZE>* memo) {
-        array<int, MAX_FANOUT> k{0};
+    static constexpr void _fill_golomb_rice(const int m, std::array<uint32_t, MAX_BUCKET_SIZE>* memo) {
+        std::array<int, MAX_FANOUT> k{0};
 
         size_t fanout = 0, unit = 0;
         SplittingStrategy<LEAF_SIZE>::split_params(m, fanout, unit);
@@ -295,8 +292,8 @@ class RecSplit {
         (*memo)[m] |= nodes << 16;
     }
 
-    static constexpr array<uint32_t, MAX_BUCKET_SIZE> fill_golomb_rice() {
-        array<uint32_t, MAX_BUCKET_SIZE> memo{0};
+    static constexpr std::array<uint32_t, MAX_BUCKET_SIZE> fill_golomb_rice() {
+        std::array<uint32_t, MAX_BUCKET_SIZE> memo{0};
         size_t s = 0;
         for (; s <= LEAF_SIZE; ++s) memo[s] = bij_memo[s] << 27 | (s > 1) << 16 | bij_memo[s];
         for (; s < MAX_BUCKET_SIZE; ++s) _fill_golomb_rice(s, &memo);
@@ -305,7 +302,7 @@ class RecSplit {
 
     // For each bucket size, the Golomb-Rice parameter (upper 8 bits) and the number of bits to
     // skip in the fixed part of the tree (lower 24 bits).
-    static const array<uint32_t, MAX_BUCKET_SIZE> memo;
+    static const std::array<uint32_t, MAX_BUCKET_SIZE> memo;
 
     size_t bucket_size;            // TODO(canepat) rename bucket_size_
     size_t keys_count;             // TODO(canepat) rename key_count_
@@ -442,7 +439,7 @@ class RecSplit {
         previous_offset_ = offset;
     }
 
-    void add_key(const string& key, uint64_t offset) {
+    void add_key(const std::string& key, uint64_t offset) {
         add_key(key.c_str(), key.size(), offset);
     }
 
@@ -512,7 +509,7 @@ class RecSplit {
             bool collision_detected = recsplit_current_bucket(index_output_stream);
             if (collision_detected) return true;
         }
-        gr_builder_.appendFixed(1, 1);  // Sentinel (avoids checking for parts of size 1)
+        gr_builder_.append_fixed(1, 1);  // Sentinel (avoids checking for parts of size 1)
         descriptors = gr_builder_.build();
 
 #ifndef NDEBUG
@@ -542,8 +539,8 @@ class RecSplit {
         }
 
         // Construct double Elias-Fano index for bucket cumulative keys and bit positions
-        vector<uint64_t> cumulative_keys{bucket_size_accumulator_.begin(), bucket_size_accumulator_.end()};
-        vector<uint64_t> positions(bucket_position_accumulator_.begin(), bucket_position_accumulator_.end());
+        std::vector<uint64_t> cumulative_keys{bucket_size_accumulator_.begin(), bucket_size_accumulator_.end()};
+        std::vector<uint64_t> positions(bucket_position_accumulator_.begin(), bucket_position_accumulator_.end());
         ef.build(cumulative_keys, positions);
 
         built_ = true;
@@ -588,9 +585,9 @@ class RecSplit {
         }
 
         // Write out the size of Golomb-Rice code params
-        silkworm::endian::store_big_u32(uint64_buffer.data(), descriptors.getBits());
+        silkworm::endian::store_big_u32(uint64_buffer.data(), descriptors.get_bits());
         index_output_stream.write(reinterpret_cast<const char*>(uint64_buffer.data()), sizeof(uint32_t));
-        SILK_DEBUG << "[index] written GR code size: " << descriptors.getBits();
+        SILK_DEBUG << "[index] written GR code size: " << descriptors.get_bits();
 
         // Write out Golomb-Rice code
         index_output_stream << descriptors;
@@ -636,51 +633,51 @@ class RecSplit {
         // Number of keys in this bucket
         size_t m = cum_keys_next - cum_keys;
         auto reader = descriptors.reader();
-        reader.readReset(bit_pos, skip_bits(m));
+        reader.read_reset(bit_pos, skip_bits(m));
         int level = 0;
 
         while (m > upper_aggr) {  // fanout = 2
-            const auto d = reader.readNext(golomb_param(m, memo));
+            const auto d = reader.read_next(golomb_param(m, memo));
             const size_t hmod = remap16(remix(hash.second + d + kStartSeed[level]), m);
 
             const uint32_t split = ((uint16_t(m / 2 + upper_aggr - 1) / upper_aggr)) * upper_aggr;
             if (hmod < split) {
                 m = split;
             } else {
-                reader.skipSubtree(skip_nodes(split), skip_bits(split));
+                reader.skip_subtree(skip_nodes(split), skip_bits(split));
                 m -= split;
                 cum_keys += split;
             }
             level++;
         }
         if (m > lower_aggr) {
-            const auto d = reader.readNext(golomb_param(m, memo));
+            const auto d = reader.read_next(golomb_param(m, memo));
             const size_t hmod = remap16(remix(hash.second + d + kStartSeed[level]), m);
 
             const int part = uint16_t(hmod) / lower_aggr;
             m = min(lower_aggr, m - part * lower_aggr);
             cum_keys += lower_aggr * part;
-            if (part) reader.skipSubtree(skip_nodes(lower_aggr) * part, skip_bits(lower_aggr) * part);
+            if (part) reader.skip_subtree(skip_nodes(lower_aggr) * part, skip_bits(lower_aggr) * part);
             level++;
         }
 
         if (m > _leaf) {
-            const auto d = reader.readNext(golomb_param(m, memo));
+            const auto d = reader.read_next(golomb_param(m, memo));
             const size_t hmod = remap16(remix(hash.second + d + kStartSeed[level]), m);
 
             const int part = uint16_t(hmod) / _leaf;
             m = min(_leaf, m - part * _leaf);
             cum_keys += _leaf * part;
-            if (part) reader.skipSubtree(part, skip_bits(_leaf) * part);
+            if (part) reader.skip_subtree(part, skip_bits(_leaf) * part);
             level++;
         }
 
-        const auto b = reader.readNext(golomb_param(m, memo));
+        const auto b = reader.read_next(golomb_param(m, memo));
         return cum_keys + remap16(remix(hash.second + b + kStartSeed[level]), m);
     }
 
     //! Return the value associated with the given key
-    size_t operator()(const string& key) const { return operator()(murmur_hash_3(key.c_str(), key.size())); }
+    size_t operator()(const std::string& key) const { return operator()(murmur_hash_3(key.c_str(), key.size())); }
 
     //! Return the number of keys used to build the RecSplit instance
     inline size_t size() const { return this->keys_count; }
@@ -709,9 +706,9 @@ class RecSplit {
             buffer_.resize(current_bucket_.size());
             buffer_offsets_.resize(current_bucket_.size());
 
-            vector<uint32_t> unary;
+            std::vector<uint32_t> unary;
             recsplit(current_bucket_, current_bucket_offsets_, unary, index_output_stream);
-            gr_builder_.appendUnaryAll(unary);
+            gr_builder_.append_unary_all(unary);
         } else {
             for (const auto offset : current_bucket_offsets_) {
                 silkworm::Bytes uint64_buffer(8, '\0');
@@ -724,7 +721,7 @@ class RecSplit {
         while (bucket_position_accumulator_.size() <= current_bucket_id_ + 1) {
             bucket_position_accumulator_.push_back(bucket_position_accumulator_.back());
         }
-        bucket_position_accumulator_[current_bucket_id_ + 1] = gr_builder_.getBits();
+        bucket_position_accumulator_[current_bucket_id_ + 1] = gr_builder_.get_bits();
         SILKWORM_ASSERT(bucket_position_accumulator_[current_bucket_id_ + 1] >= bucket_position_accumulator_[current_bucket_id_]);
         // Clear for the next bucket
         current_bucket_.clear();
@@ -788,7 +785,7 @@ class RecSplit {
             }
             salt -= kStartSeed[level];
             const auto log2golomb = golomb_param(m, memo);
-            gr_builder_.appendFixed(salt, log2golomb);
+            gr_builder_.append_fixed(salt, log2golomb);
             unary.push_back(salt >> log2golomb);
         } else {
             std::size_t fanout{0}, unit{0};
@@ -823,7 +820,7 @@ class RecSplit {
 
             salt -= kStartSeed[level];
             const auto log2golomb = golomb_param(m, memo);
-            gr_builder_.appendFixed(salt, log2golomb);
+            gr_builder_.append_fixed(salt, log2golomb);
             unary.push_back(salt >> log2golomb);
 
             std::size_t i;
@@ -852,7 +849,7 @@ class RecSplit {
     // Maps a 128-bit to a bucket using the first 64-bit half.
     inline uint64_t hash128_to_bucket(const hash128_t& hash) const { return remap128(hash.first, nbuckets); }
 
-    friend ostream& operator<<(ostream& os, const RecSplit<LEAF_SIZE, AT>& rs) {
+    friend std::ostream& operator<<(std::ostream& os, const RecSplit<LEAF_SIZE, AT>& rs) {
         size_t leaf_size = LEAF_SIZE;
         os.write(reinterpret_cast<char*>(&leaf_size), sizeof(leaf_size));
         os.write(reinterpret_cast<char*>(&rs.bucket_size), sizeof(rs.bucket_size));
@@ -862,7 +859,7 @@ class RecSplit {
         return os;
     }
 
-    friend istream& operator>>(istream& is, RecSplit<LEAF_SIZE, AT>& rs) {
+    friend std::istream& operator>>(std::istream& is, RecSplit<LEAF_SIZE, AT>& rs) {
         size_t leaf_size;
         is.read(reinterpret_cast<char*>(&leaf_size), sizeof(leaf_size));
         if (leaf_size != LEAF_SIZE) {

@@ -50,8 +50,8 @@
 #include <iostream>
 
 #include <silkworm/common/assert.hpp>
-#include <silkworm/recsplit/support/common.hpp>
 #include <silkworm/recsplit/sequence.hpp>
+#include <silkworm/recsplit/support/common.hpp>
 
 namespace silkworm::succinct {
 
@@ -66,9 +66,9 @@ class RiceBitVector {
 
         explicit Builder(const std::size_t allocated_words) : data(allocated_words) {}
 
-        void appendFixed(const uint64_t v, const int log2golomb) {
+        void append_fixed(const uint64_t v, const int log2golomb) {
             const uint64_t lower_bits = v & ((uint64_t(1) << log2golomb) - 1);
-            int used_bits = bit_count & 63;
+            std::size_t used_bits = bit_count & 63;
 
             data.resize((((bit_count + log2golomb + 7) / 8) + 7 + 7) / 8);
 
@@ -84,7 +84,7 @@ class RiceBitVector {
             bit_count += log2golomb;
         }
 
-        void appendUnaryAll(const Uint32Sequence& unary) {
+        void append_unary_all(const Uint32Sequence& unary) {
             std::size_t bit_inc = 0;
             for (const auto& u : unary) {
                 bit_inc += u + 1;
@@ -100,12 +100,13 @@ class RiceBitVector {
             }
         }
 
-        [[nodiscard]] uint64_t getBits() const { return bit_count; }
+        [[nodiscard]] uint64_t get_bits() const { return bit_count; }
 
         RiceBitVector build() {
             data.resize(data.size());
             return RiceBitVector{std::move(data)};
         }
+
       private:
         Uint64Sequence data;
         std::size_t bit_count{0};
@@ -114,13 +115,13 @@ class RiceBitVector {
     RiceBitVector() = default;
     explicit RiceBitVector(std::vector<uint64_t>&& input_data) : data(std::move(input_data)) {}
 
-    [[nodiscard]] size_t getBits() const { return data.size() * sizeof(uint64_t); }
+    [[nodiscard]] size_t get_bits() const { return data.size() * sizeof(uint64_t); }
 
     class Reader {
       public:
         explicit Reader(Uint64Sequence& input_data) : data(input_data) {}
 
-        uint64_t readNext(const int log2golomb) {
+        uint64_t read_next(const int log2golomb) {
             uint64_t result = 0;
 
             if (curr_window_unary == 0) {
@@ -149,7 +150,7 @@ class RiceBitVector {
             return result;
         }
 
-        void skipSubtree(const size_t nodes, const size_t fixed_len) {
+        void skip_subtree(const size_t nodes, const size_t fixed_len) {
             SILKWORM_ASSERT(nodes > 0);
             std::size_t missing = nodes, cnt;
             while ((cnt = nu(curr_window_unary)) < missing) {
@@ -165,7 +166,7 @@ class RiceBitVector {
             curr_fixed_offset += fixed_len;
         }
 
-        void readReset(const size_t bit_pos, const size_t unary_offset) {
+        void read_reset(const size_t bit_pos, const size_t unary_offset) {
             // assert(bit_pos < bit_count);
             curr_fixed_offset = bit_pos;
             size_t unary_pos = bit_pos + unary_offset;

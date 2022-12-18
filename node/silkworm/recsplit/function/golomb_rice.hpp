@@ -44,34 +44,27 @@
 
 #pragma once
 
+#include <cstddef>
 #include <cstdint>
 #include <cstdio>
 #include <iostream>
 
-#include "../support/common.hpp"
-#include "../util/Vector.hpp"
+#include <silkworm/common/assert.hpp>
+#include <silkworm/recsplit/support/common.hpp>
+#include <silkworm/recsplit/sequence.hpp>
 
 namespace silkworm::succinct {
 
-using namespace std;
-
-/** Storage for Golomb-Rice codes of a RecSplit bucket.
- *
- * This class exists solely to implement RecSplit.
- * @tparam AT a type of memory allocation out of util::AllocType.
- */
-
-template <util::AllocType AT = util::AllocType::MALLOC>
+//! Storage for Golomb-Rice codes of a RecSplit bucket.
 class RiceBitVector {
   public:
     class Builder {
-        util::Vector<uint64_t, AT> data;
-        size_t bit_count = 0;
-
       public:
-        Builder() : Builder(16) {}
+        static constexpr std::size_t kDefaultAllocatedWords{16};
 
-        Builder(const size_t alloc_words) : data(alloc_words) {}
+        Builder() : Builder(kDefaultAllocatedWords) {}
+
+        explicit Builder(const std::size_t allocated_words) : data(allocated_words) {}
 
         void appendFixed(const uint64_t v, const int log2golomb) {
             const uint64_t lower_bits = v & ((uint64_t(1) << log2golomb) - 1);
@@ -79,21 +72,20 @@ class RiceBitVector {
 
             data.resize((((bit_count + log2golomb + 7) / 8) + 7 + 7) / 8);
 
-            uint64_t* append_ptr = &data + bit_count / 64;
+            uint64_t* append_ptr = data.data() + bit_count / 64;
             uint64_t cur_word = *append_ptr;
 
             cur_word |= lower_bits << used_bits;
             if (used_bits + log2golomb > 64) {
                 *(append_ptr++) = cur_word;
                 cur_word = lower_bits >> (64 - used_bits);
-                used_bits += log2golomb - 64;
             }
             *append_ptr = cur_word;
             bit_count += log2golomb;
         }
 
-        void appendUnaryAll(const std::vector<uint32_t> unary) {
-            size_t bit_inc = 0;
+        void appendUnaryAll(const Uint32Sequence& unary) {
+            std::size_t bit_inc = 0;
             for (const auto& u : unary) {
                 bit_inc += u + 1;
             }
@@ -102,48 +94,31 @@ class RiceBitVector {
 
             for (const auto& u : unary) {
                 bit_count += u;
-                uint64_t* append_ptr = &data + bit_count / 64;
+                uint64_t* append_ptr = data.data() + bit_count / 64;
                 *append_ptr |= uint64_t(1) << (bit_count & 63);
                 ++bit_count;
             }
         }
 
-        uint64_t getBits() { return bit_count; }
+        [[nodiscard]] uint64_t getBits() const { return bit_count; }
 
-        RiceBitVector<AT> build() {
-            data.trimToFit();
-            return RiceBitVector(std::move(data));
+        RiceBitVector build() {
+            data.resize(data.size());
+            return RiceBitVector{std::move(data)};
         }
+      private:
+        Uint64Sequence data;
+        std::size_t bit_count{0};
     };
 
-  private:
-    util::Vector<uint64_t, AT> data;
+    RiceBitVector() = default;
+    explicit RiceBitVector(std::vector<uint64_t>&& input_data) : data(std::move(input_data)) {}
 
-    friend std::ostream& operator<<(std::ostream& os, const RiceBitVector<AT>& rbv) {
-        os << rbv.data;
-        return os;
-    }
-
-    friend std::istream& operator>>(std::istream& is, RiceBitVector<AT>& rbv) {
-        is >> rbv.data;
-        return is;
-    }
-
-  public:
-    RiceBitVector() {}
-    RiceBitVector(util::Vector<uint64_t, AT> input_data) : data(std::move(input_data)) {}
-
-    size_t getBits() const { return data.size() * sizeof(uint64_t); }
+    [[nodiscard]] size_t getBits() const { return data.size() * sizeof(uint64_t); }
 
     class Reader {
-        size_t curr_fixed_offset = 0;
-        uint64_t curr_window_unary = 0;
-        uint64_t* curr_ptr_unary;
-        int valid_lower_bits_unary = 0;
-        util::Vector<uint64_t, AT>& data;
-
       public:
-        Reader(util::Vector<uint64_t, AT>& input_data) : data(input_data) {}
+        explicit Reader(Uint64Sequence& input_data) : data(input_data) {}
 
         uint64_t readNext(const int log2golomb) {
             uint64_t result = 0;
@@ -158,7 +133,7 @@ class RiceBitVector {
                 }
             }
 
-            const size_t pos = rho(curr_window_unary);
+            const std::size_t pos = rho(curr_window_unary);
 
             curr_window_unary >>= pos;
             curr_window_unary >>= 1;
@@ -168,15 +143,15 @@ class RiceBitVector {
             result <<= log2golomb;
 
             uint64_t fixed;
-            memcpy(&fixed, static_cast<uint8_t*>(&data) + curr_fixed_offset / 8, 8);
+            std::memcpy(&fixed, reinterpret_cast<const uint8_t*>(data.data()) + curr_fixed_offset / 8, 8);
             result |= (fixed >> curr_fixed_offset % 8) & ((uint64_t(1) << log2golomb) - 1);
             curr_fixed_offset += log2golomb;
             return result;
         }
 
         void skipSubtree(const size_t nodes, const size_t fixed_len) {
-            assert(nodes > 0);
-            size_t missing = nodes, cnt;
+            SILKWORM_ASSERT(nodes > 0);
+            std::size_t missing = nodes, cnt;
             while ((cnt = nu(curr_window_unary)) < missing) {
                 curr_window_unary = *(curr_ptr_unary++);
                 missing -= cnt;
@@ -194,13 +169,33 @@ class RiceBitVector {
             // assert(bit_pos < bit_count);
             curr_fixed_offset = bit_pos;
             size_t unary_pos = bit_pos + unary_offset;
-            curr_ptr_unary = &data + unary_pos / 64;
+            curr_ptr_unary = data.data() + unary_pos / 64;
             curr_window_unary = *(curr_ptr_unary++) >> (unary_pos & 63);
             valid_lower_bits_unary = 64 - (unary_pos & 63);
         }
+
+      private:
+        Uint64Sequence& data;
+        std::size_t curr_fixed_offset{0};
+        uint64_t curr_window_unary{0};
+        uint64_t* curr_ptr_unary{nullptr};
+        std::size_t valid_lower_bits_unary{0};
     };
 
-    Reader reader() { return Reader(data); }
+    Reader reader() { return Reader{data}; }
+
+  private:
+    Uint64Sequence data;
+
+    friend std::ostream& operator<<(std::ostream& os, const RiceBitVector& rbv) {
+        os << rbv.data;
+        return os;
+    }
+
+    friend std::istream& operator>>(std::istream& is, RiceBitVector& rbv) {
+        is >> rbv.data;
+        return is;
+    }
 };
 
 }  // namespace silkworm::succinct

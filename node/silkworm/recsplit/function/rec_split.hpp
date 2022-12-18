@@ -114,8 +114,8 @@ static uint64_t time_split[MAX_LEVEL_TIME];
 
 // Starting seed at given distance from the root (extracted at random).
 static constexpr uint64_t kStartSeed[] = {0x106393c187cae21a, 0x6453cec3f7376937, 0x643e521ddbd2be98, 0x3740c6412f6572cb, 0x717d47562f1ce470, 0x4cd6eb4c63befb7c, 0x9bfd8c5e18c8da73,
-                                      0x082f20e10092a9a3, 0x2ada2ce68d21defc, 0xe33cb4f3e7c6466b, 0x3980be458c509c59, 0xc466fd9584828e8c, 0x45f0aabe1a61ede6, 0xf6e7b8b33ad9b98d,
-                                      0x4ef95e25f4b4983d, 0x81175195173b92d3, 0x4e50927d8dd15978, 0x1ea2099d1fafae7f, 0x425c8a06fbaaa815, 0xcd4216006c74052a};
+                                          0x082f20e10092a9a3, 0x2ada2ce68d21defc, 0xe33cb4f3e7c6466b, 0x3980be458c509c59, 0xc466fd9584828e8c, 0x45f0aabe1a61ede6, 0xf6e7b8b33ad9b98d,
+                                          0x4ef95e25f4b4983d, 0x81175195173b92d3, 0x4e50927d8dd15978, 0x1ea2099d1fafae7f, 0x425c8a06fbaaa815, 0xcd4216006c74052a};
 
 /** David Stafford's (http://zimbry.blogspot.com/2011/09/better-bit-mixingsuccinct::-improving-on.html)
  * 13th variant of the 64-bit finalizer function in Austin Appleby's
@@ -248,10 +248,10 @@ class SplittingStrategy {
 template <size_t LEAF_SIZE, util::AllocType AT = util::AllocType::MALLOC>
 class RecSplit {
     using SplitStrategy = SplittingStrategy<LEAF_SIZE>;
-    using GolombRiceVector = RiceBitVector<AT>;
+    using GolombRiceVector = RiceBitVector;
     using GolombRiceBuilder = typename GolombRiceVector::Builder;
-    using EliasFano = EliasFanoList32<AT>;
-    using DoubleEliasFano = DoubleEliasFanoList16<AT>;
+    using EliasFano = EliasFanoList32;
+    using DoubleEliasFano = DoubleEliasFanoList16;
 
     static constexpr size_t _leaf = LEAF_SIZE;
     static const size_t lower_aggr;
@@ -631,7 +631,7 @@ class RecSplit {
     size_t operator()(const hash128_t& hash) {
         const size_t bucket = hash128_to_bucket(hash);
         uint64_t cum_keys, cum_keys_next, bit_pos;
-        ef.get(bucket, cum_keys, cum_keys_next, bit_pos);
+        ef.get3(bucket, cum_keys, cum_keys_next, bit_pos);
 
         // Number of keys in this bucket
         size_t m = cum_keys_next - cum_keys;
@@ -844,7 +844,7 @@ class RecSplit {
     }
 
     hash128_t inline murmur_hash_3(const void* data, const size_t length) {
-        hash128_t h;
+        hash128_t h{};
         hasher_->hash_x64_128(data, length, &h);
         return h;
     }

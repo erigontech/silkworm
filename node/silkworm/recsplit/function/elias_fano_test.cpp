@@ -25,14 +25,12 @@
 
 namespace silkworm::succinct {
 
-using EliasFanoList32 = sux::function::EliasFanoList32<>;
 class EliasFanoList32_ForTest : public EliasFanoList32 {
   public:
     using EliasFanoList32::EliasFanoList32;
     using EliasFanoList32::get;
 };
 
-using DoubleEliasFanoList16 = sux::function::DoubleEliasFanoList16<>;
 class DoubleEliasFanoList16_ForTest : public DoubleEliasFanoList16 {
   public:
     using DoubleEliasFanoList16::DoubleEliasFanoList16;

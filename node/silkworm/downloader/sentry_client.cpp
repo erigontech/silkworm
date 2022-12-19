@@ -97,7 +97,7 @@ void SentryClient::hand_shake() {
     sentry::HandShakeReply reply = handshake_->reply();
 
     sentry::Protocol supported_protocol = reply.protocol();
-    if (supported_protocol != sentry::Protocol::ETH66) {
+    if (supported_protocol < sentry::Protocol::ETH66) {
         log::Critical("SentryClient") << "remote sentry do not support eth/66 protocol, stopping...";
         stop();
         throw SentryClientException("SentryClient exception, cause: sentry do not support eth/66 protocol");

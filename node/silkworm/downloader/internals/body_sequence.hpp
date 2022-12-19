@@ -76,6 +76,7 @@ class BodySequence {
     static /*constexpr*/ milliseconds_t kNoPeerDelay;            // = std::chrono::milliseconds(500);
                                                                  // delay when no peer accepted the last request
     static /*constexpr*/ size_t kPerPeerMaxOutstandingRequests;  // = 4;
+    static /*constexpr*/ size_t kMaxInMemoryRequests;            // = 300000;
     static /*constexpr*/ BlockNum kMaxBlocksPerMessage;          // = 128;               // go-ethereum client acceptance limit
     static constexpr BlockNum kMaxAnnouncedBlocks = 10000;
 

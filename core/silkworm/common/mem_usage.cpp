@@ -26,8 +26,8 @@ limitations under the License.
 #endif
 
 #ifdef _WINDOWS
-#include <Psapi.h>
 #include <windows.h>
+#include <Psapi.h>
 #else
 #include <sys/resource.h>
 #endif

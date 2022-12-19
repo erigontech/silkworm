@@ -41,17 +41,12 @@ struct Link {
     bool persisted = false;                   // Whether this link comes from the database record
     bool preverified = false;                 // Ancestor of pre-verified header
 
-    static inline std::atomic<long> counter{0};
-
     Link(BlockHeader h, bool persisted_) {
         blockHeight = h.number;
         hash = h.hash();  // save computation
         header = std::make_shared<BlockHeader>(std::move(h));
         persisted = persisted_;
         counter++;
-    }
-    ~Link() {
-        counter--;
     }
 
     void remove_child(const Link& child) {

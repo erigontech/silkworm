@@ -26,8 +26,8 @@ limitations under the License.
 #endif
 
 #ifdef _WINDOWS
-#include <windows.h>
 #include <Psapi.h>
+#include <windows.h>
 #else
 #include <sys/resource.h>
 #endif
@@ -37,9 +37,7 @@ limitations under the License.
 // The amount of memory currently being used by this process, in bytes.
 // if resident=true it will report the resident set in RAM (if supported on that OS)
 // otherwise returns the full virtual arena
-size_t get_mem_usage() {
-    bool resident = true;
-
+size_t get_mem_usage(bool resident) {
 #if defined(__linux__)
     // getrusage doesn't work well on Linux. Try grabbing info directly from the /proc pseudo-filesystem.
     // Reading from /proc/self/statm gives info on your own process, as one line of numbers that are:
@@ -48,10 +46,8 @@ size_t get_mem_usage() {
     size_t vm_size = 0, rm_size = 0;
     FILE* file = fopen("/proc/self/statm", "r");
     if (file) {
-        unsigned long vm = 0;
-        fscanf(file, "%lu", &vm);  // the first num: vm size
-        unsigned long rm = 0;
-        fscanf(file, "%lu", &rm);  // the second num: resident set size
+        unsigned long vm = 0, rm = 0;
+        fscanf(file, "%lu %lu", &vm, &rm);  // the first 2 num: vm size, resident set size
         fclose(file);
         vm_size = vm * static_cast<size_t>(getpagesize());
         rm_size = rm * static_cast<size_t>(getpagesize());
@@ -70,7 +66,7 @@ size_t get_mem_usage() {
     static HANDLE phandle{GetCurrentProcess()};
     PROCESS_MEMORY_COUNTERS_EX counters;
     if (K32GetProcessMemoryInfo(phandle, (PROCESS_MEMORY_COUNTERS*)&counters, sizeof(counters))) {
-        return counters.WorkingSetSize;  // maybe counters.PagefileUsage ?
+        return (resident ? counters.WorkingSetSize : counters.PagefileUsage);
     }
 
 #else

@@ -16,4 +16,4 @@ limitations under the License.
 
 #pragma once
 
-size_t get_mem_usage();
+size_t get_mem_usage(bool resident = true);

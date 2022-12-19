@@ -46,7 +46,6 @@ struct Link {
         hash = h.hash();  // save computation
         header = std::make_shared<BlockHeader>(std::move(h));
         persisted = persisted_;
-        counter++;
     }
 
     void remove_child(const Link& child) {

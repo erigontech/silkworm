@@ -947,6 +947,8 @@ int main(int argc, char* argv[]) {
         ->capture_default_str();
     app.add_option("--channels", num_channels,
                    "The number of gRPC channels to use as integer")
+        ->required()
+        ->check(CLI::PositiveNumber)
         ->capture_default_str();
     app.add_option("--interval", batch_options.interval_between_calls,
                    "The interval to wait between successive call batches as milliseconds")

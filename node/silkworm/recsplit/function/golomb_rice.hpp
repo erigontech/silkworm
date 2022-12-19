@@ -56,7 +56,7 @@
 namespace silkworm::succinct {
 
 //! Storage for Golomb-Rice codes of a RecSplit bucket.
-class RiceBitVector {
+class GolombRiceVector {
   public:
     class Builder {
       public:
@@ -102,9 +102,9 @@ class RiceBitVector {
 
         [[nodiscard]] uint64_t get_bits() const { return bit_count; }
 
-        RiceBitVector build() {
+        GolombRiceVector build() {
             data.resize(data.size());
-            return RiceBitVector{std::move(data)};
+            return GolombRiceVector{std::move(data)};
         }
 
       private:
@@ -112,8 +112,8 @@ class RiceBitVector {
         std::size_t bit_count{0};
     };
 
-    RiceBitVector() = default;
-    explicit RiceBitVector(std::vector<uint64_t>&& input_data) : data(std::move(input_data)) {}
+    GolombRiceVector() = default;
+    explicit GolombRiceVector(std::vector<uint64_t>&& input_data) : data(std::move(input_data)) {}
 
     [[nodiscard]] size_t get_bits() const { return data.size() * sizeof(uint64_t); }
 
@@ -188,12 +188,12 @@ class RiceBitVector {
   private:
     Uint64Sequence data;
 
-    friend std::ostream& operator<<(std::ostream& os, const RiceBitVector& rbv) {
+    friend std::ostream& operator<<(std::ostream& os, const GolombRiceVector& rbv) {
         os << rbv.data;
         return os;
     }
 
-    friend std::istream& operator>>(std::istream& is, RiceBitVector& rbv) {
+    friend std::istream& operator>>(std::istream& is, GolombRiceVector& rbv) {
         is >> rbv.data;
         return is;
     }

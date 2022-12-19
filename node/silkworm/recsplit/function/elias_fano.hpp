@@ -52,8 +52,10 @@
 #include <span>
 #include <vector>
 
+#include <silkworm/common/assert.hpp>
 #include <silkworm/common/base.hpp>
 #include <silkworm/common/endian.hpp>
+#include <silkworm/recsplit/sequence.hpp>
 #include <silkworm/recsplit/support/common.hpp>
 
 // EliasFano algo overview https://www.antoniomallia.it/sorted-integers-compression-with-elias-fano-encoding.html
@@ -89,7 +91,7 @@ inline static void set_bits(std::span<T, Extent> bits, const uint64_t start, con
     const uint64_t idx64 = start >> 6;
     bits[idx64] = (bits[idx64] & ~mask) | (value << shift);
     if (shift + width > 64) {
-        // changes two 64-bit words
+        // Change two 64-bit words
         bits[idx64 + 1] = value >> (64 - shift);
     }
 }
@@ -111,7 +113,7 @@ class EliasFanoList32 {
 
     [[nodiscard]] std::size_t min() const { return get(0); }
 
-    [[nodiscard]] const std::vector<uint64_t>& data() const { return data_; }
+    [[nodiscard]] const Uint64Sequence& data() const { return data_; }
 
     [[nodiscard]] uint64_t get(uint64_t i) const {
         uint64_t lower = i * l_;
@@ -181,15 +183,15 @@ class EliasFanoList32 {
     }
 
     friend std::ostream& operator<<(std::ostream& os, const EliasFanoList32& ef) {
-        silkworm::Bytes uint64_buffer(8, '\0');
+        Bytes uint64_buffer(8, '\0');
 
-        silkworm::endian::store_big_u64(uint64_buffer.data(), ef.count_);
+        endian::store_big_u64(uint64_buffer.data(), ef.count_);
         os.write(reinterpret_cast<const char*>(uint64_buffer.data()), sizeof(uint64_t));
 
-        silkworm::endian::store_big_u64(uint64_buffer.data(), ef.u_);
+        endian::store_big_u64(uint64_buffer.data(), ef.u_);
         os.write(reinterpret_cast<const char*>(uint64_buffer.data()), sizeof(uint64_t));
 
-        os.write(reinterpret_cast<const char*>(&ef.data_), static_cast<std::streamsize>(ef.data_.size() * sizeof(uint64_t)));
+        os.write(reinterpret_cast<const char*>(ef.data_.data()), static_cast<std::streamsize>(ef.data_.size() * sizeof(uint64_t)));
         return os;
     }
 
@@ -219,7 +221,7 @@ class EliasFanoList32 {
         return size;
     }
 
-    std::vector<uint64_t> data_;
+    Uint64Sequence data_;
     std::span<uint64_t> lower_bits_;
     std::span<uint64_t> upper_bits_;
     std::span<uint64_t> jump_;
@@ -238,11 +240,11 @@ class DoubleEliasFanoList16 {
   public:
     DoubleEliasFanoList16() = default;
 
-    [[nodiscard]] const std::vector<uint64_t>& data() const { return data_; }
+    [[nodiscard]] const Uint64Sequence& data() const { return data_; }
 
     [[nodiscard]] uint64_t num_buckets() const { return num_buckets_; }
 
-    void build(const std::vector<uint64_t>& cum_keys, const std::vector<uint64_t>& position) {
+    void build(const Uint64Sequence& cum_keys, const Uint64Sequence& position) {
         SILKWORM_ASSERT(cum_keys.size() == position.size());
 
         num_buckets_ = cum_keys.size() - 1;
@@ -421,7 +423,7 @@ class DoubleEliasFanoList16 {
         position = ((curr_word_position * 64 + select_position - i) << l_position | (lower & lower_bits_mask_position)) + bit_delta;
     }
 
-    std::vector<uint64_t> data_;
+    Uint64Sequence data_;
     std::span<uint64_t> lower_bits;
     std::span<uint64_t> upper_bits_position;
     std::span<uint64_t> upper_bits_cum_keys;
@@ -464,36 +466,53 @@ class DoubleEliasFanoList16 {
     }
 
     friend std::ostream& operator<<(std::ostream& os, const DoubleEliasFanoList16& ef) {
-        os.write(reinterpret_cast<const char*>(&ef.num_buckets_), sizeof(ef.num_buckets_));
-        os.write(reinterpret_cast<const char*>(&ef.u_cum_keys), sizeof(ef.u_cum_keys));
-        os.write(reinterpret_cast<const char*>(&ef.u_position), sizeof(ef.u_position));
-        os.write(reinterpret_cast<const char*>(&ef.cum_keys_min_delta_), sizeof(ef.cum_keys_min_delta_));
-        os.write(reinterpret_cast<const char*>(&ef.position_min_delta_), sizeof(ef.position_min_delta_));
+        Bytes uint64_buffer(8, '\0');
 
-        const uint64_t data_size = ef.data_.size();
-        os.write(reinterpret_cast<const char*>(&data_size), sizeof(uint64_t));
-        os.write(reinterpret_cast<const char*>(ef.data_.data()), static_cast<std::streamsize>(ef.data_.size() * sizeof(uint64_t)));
+        endian::store_big_u64(uint64_buffer.data(), ef.num_buckets_);
+        os.write(reinterpret_cast<const char*>(uint64_buffer.data()), sizeof(uint64_t));
+
+        endian::store_big_u64(uint64_buffer.data(), ef.u_cum_keys);
+        os.write(reinterpret_cast<const char*>(uint64_buffer.data()), sizeof(uint64_t));
+
+        endian::store_big_u64(uint64_buffer.data(), ef.u_position);
+        os.write(reinterpret_cast<const char*>(uint64_buffer.data()), sizeof(uint64_t));
+
+        endian::store_big_u64(uint64_buffer.data(), ef.cum_keys_min_delta_);
+        os.write(reinterpret_cast<const char*>(uint64_buffer.data()), sizeof(uint64_t));
+
+        endian::store_big_u64(uint64_buffer.data(), ef.position_min_delta_);
+        os.write(reinterpret_cast<const char*>(uint64_buffer.data()), sizeof(uint64_t));
+
+        os << ef.data_;
         return os;
     }
 
     friend std::istream& operator>>(std::istream& is, DoubleEliasFanoList16& ef) {
-        is.read(reinterpret_cast<char*>(&ef.num_buckets_), sizeof(ef.num_buckets_));
-        is.read(reinterpret_cast<char*>(&ef.u_cum_keys), sizeof(ef.u_cum_keys));
-        is.read(reinterpret_cast<char*>(&ef.u_position), sizeof(ef.u_position));
-        is.read(reinterpret_cast<char*>(&ef.cum_keys_min_delta_), sizeof(ef.cum_keys_min_delta_));
-        is.read(reinterpret_cast<char*>(&ef.position_min_delta_), sizeof(ef.position_min_delta_));
+        Bytes uint64_buffer(8, '\0');
+
+        is.read(reinterpret_cast<char*>(uint64_buffer.data()), sizeof(uint64_t));
+        ef.num_buckets_ = endian::load_big_u64(uint64_buffer.data());
+
+        is.read(reinterpret_cast<char*>(uint64_buffer.data()), sizeof(uint64_t));
+        ef.u_cum_keys = endian::load_big_u64(uint64_buffer.data());
+
+        is.read(reinterpret_cast<char*>(uint64_buffer.data()), sizeof(uint64_t));
+        ef.u_position = endian::load_big_u64(uint64_buffer.data());
+
+        is.read(reinterpret_cast<char*>(uint64_buffer.data()), sizeof(uint64_t));
+        ef.cum_keys_min_delta_ = endian::load_big_u64(uint64_buffer.data());
+
+        is.read(reinterpret_cast<char*>(uint64_buffer.data()), sizeof(uint64_t));
+        ef.position_min_delta_ = endian::load_big_u64(uint64_buffer.data());
 
         ef.l_position = ef.u_position / (ef.num_buckets_ + 1) == 0 ? 0 : static_cast<uint64_t>(lambda(ef.u_position / (ef.num_buckets_ + 1)));
         ef.l_cum_keys = ef.u_cum_keys / (ef.num_buckets_ + 1) == 0 ? 0 : static_cast<uint64_t>(lambda(ef.u_cum_keys / (ef.num_buckets_ + 1)));
-        assert(ef.l_cum_keys * 2 + ef.l_position <= 56);
+        SILKWORM_ASSERT(ef.l_cum_keys * 2 + ef.l_position <= 56);
 
-        ef.lower_bits_mask_cum_keys = (UINT64_C(1) << ef.l_cum_keys) - 1;
-        ef.lower_bits_mask_position = (UINT64_C(1) << ef.l_position) - 1;
+        ef.lower_bits_mask_cum_keys = (1UL << ef.l_cum_keys) - 1;
+        ef.lower_bits_mask_position = (1UL << ef.l_position) - 1;
 
-        uint64_t size{0};
-        is.read(reinterpret_cast<char*>(&size), sizeof(uint64_t));
-        ef.data_.resize(size);
-        is.read(reinterpret_cast<char*>(ef.data_.data()), static_cast<std::streamsize>(ef.data_.size() * sizeof(uint64_t)));
+        is >> ef.data_;
         return is;
     }
 };

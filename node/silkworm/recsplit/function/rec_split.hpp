@@ -112,9 +112,10 @@ static uint64_t time_split[MAX_LEVEL_TIME];
 #endif
 
 // Starting seed at given distance from the root (extracted at random).
-static constexpr uint64_t kStartSeed[] = {0x106393c187cae21a, 0x6453cec3f7376937, 0x643e521ddbd2be98, 0x3740c6412f6572cb, 0x717d47562f1ce470, 0x4cd6eb4c63befb7c, 0x9bfd8c5e18c8da73,
-                                          0x082f20e10092a9a3, 0x2ada2ce68d21defc, 0xe33cb4f3e7c6466b, 0x3980be458c509c59, 0xc466fd9584828e8c, 0x45f0aabe1a61ede6, 0xf6e7b8b33ad9b98d,
-                                          0x4ef95e25f4b4983d, 0x81175195173b92d3, 0x4e50927d8dd15978, 0x1ea2099d1fafae7f, 0x425c8a06fbaaa815, 0xcd4216006c74052a};
+static constexpr uint64_t kStartSeed[] = {
+    0x106393c187cae21a, 0x6453cec3f7376937, 0x643e521ddbd2be98, 0x3740c6412f6572cb, 0x717d47562f1ce470, 0x4cd6eb4c63befb7c, 0x9bfd8c5e18c8da73,
+    0x082f20e10092a9a3, 0x2ada2ce68d21defc, 0xe33cb4f3e7c6466b, 0x3980be458c509c59, 0xc466fd9584828e8c, 0x45f0aabe1a61ede6, 0xf6e7b8b33ad9b98d,
+    0x4ef95e25f4b4983d, 0x81175195173b92d3, 0x4e50927d8dd15978, 0x1ea2099d1fafae7f, 0x425c8a06fbaaa815, 0xcd4216006c74052a};
 
 /** David Stafford's (http://zimbry.blogspot.com/2011/09/better-bit-mixingsuccinct::-improving-on.html)
  * 13th variant of the 64-bit finalizer function in Austin Appleby's
@@ -245,7 +246,6 @@ class SplittingStrategy {
 template <size_t LEAF_SIZE, util::AllocType AT = util::AllocType::MALLOC>
 class RecSplit {
     using SplitStrategy = SplittingStrategy<LEAF_SIZE>;
-    using GolombRiceVector = RiceBitVector;
     using GolombRiceBuilder = typename GolombRiceVector::Builder;
     using EliasFano = EliasFanoList32;
     using DoubleEliasFano = DoubleEliasFanoList16;
@@ -354,10 +354,10 @@ class RecSplit {
     bool built_{false};
 
     //! The ETL collector sorting keys by offset
-    silkworm::etl::Collector offset_collector_{};
+    etl::Collector offset_collector_{};
 
     //! The ETL collector sorting keys by bucket
-    silkworm::etl::Collector bucket_collector_{};
+    etl::Collector bucket_collector_{};
 
     //! Accumulator for size of every bucket
     std::vector<int64_t> bucket_size_accumulator_;
@@ -410,11 +410,11 @@ class RecSplit {
             SILK_DEBUG << "[index] add key hash: first=" << key_hash.first << " second=" << key_hash.second << " offset=" << offset;
         }
 
-        silkworm::Bytes bucket_key(16, '\0');
-        silkworm::endian::store_big_u64(bucket_key.data(), hash128_to_bucket(key_hash));
-        silkworm::endian::store_big_u64(bucket_key.data() + sizeof(uint64_t), key_hash.second);
-        silkworm::Bytes offset_key(8, '\0');
-        silkworm::endian::store_big_u64(offset_key.data(), offset);
+        Bytes bucket_key(16, '\0');
+        endian::store_big_u64(bucket_key.data(), hash128_to_bucket(key_hash));
+        endian::store_big_u64(bucket_key.data() + sizeof(uint64_t), key_hash.second);
+        Bytes offset_key(8, '\0');
+        endian::store_big_u64(offset_key.data(), offset);
 
         if (offset > max_offset_) {
             max_offset_ = offset;
@@ -429,8 +429,8 @@ class RecSplit {
         if (double_enum_index_) {
             offset_collector_.collect({offset_key, {}});
 
-            silkworm::Bytes current_key_count(8, '\0');
-            silkworm::endian::store_big_u64(current_key_count.data(), keys_added_);
+            Bytes current_key_count(8, '\0');
+            endian::store_big_u64(current_key_count.data(), keys_added_);
             bucket_collector_.collect({bucket_key, current_key_count});
         } else {
             bucket_collector_.collect({bucket_key, offset_key});
@@ -458,13 +458,13 @@ class RecSplit {
         SILK_DEBUG << "[index] creating temporary index file: " << tmp_index_path.string();
 
         // Write minimal app-specific data ID in the index file
-        silkworm::Bytes uint64_buffer(8, '\0');
-        silkworm::endian::store_big_u64(uint64_buffer.data(), base_data_id_);
+        Bytes uint64_buffer(8, '\0');
+        endian::store_big_u64(uint64_buffer.data(), base_data_id_);
         index_output_stream.write(reinterpret_cast<const char*>(uint64_buffer.data()), sizeof(uint64_t));
         SILK_DEBUG << "[index] written base data ID: " << base_data_id_;
 
         // Write number of keys
-        silkworm::endian::store_big_u64(uint64_buffer.data(), keys_added_);
+        endian::store_big_u64(uint64_buffer.data(), keys_added_);
         index_output_stream.write(reinterpret_cast<const char*>(uint64_buffer.data()), sizeof(uint64_t));
         SILK_DEBUG << "[index] written number of keys: " << keys_added_;
 
@@ -487,9 +487,9 @@ class RecSplit {
         try {
             // Passing a void cursor is valid case for ETL when DB modification is not expected
             mdbx::cursor empty_cursor{};
-            bucket_collector_.load(empty_cursor, [&](const silkworm::etl::Entry& entry, mdbx::cursor&, MDBX_put_flags_t) {
+            bucket_collector_.load(empty_cursor, [&](const etl::Entry& entry, mdbx::cursor&, MDBX_put_flags_t) {
                 // k is the big-endian encoding of the bucket number and the v is the key that is assigned into that bucket
-                const uint64_t bucket_id = silkworm::endian::load_big_u64(entry.key.data());
+                const uint64_t bucket_id = endian::load_big_u64(entry.key.data());
                 SILK_TRACE << "[index] processing bucket_id=" << bucket_id;
                 if (current_bucket_id_ != bucket_id) {
                     if (current_bucket_id_ != std::numeric_limits<uint64_t>::max()) {
@@ -498,8 +498,8 @@ class RecSplit {
                     }
                     current_bucket_id_ = bucket_id;
                 }
-                current_bucket_.emplace_back(silkworm::endian::load_big_u64(entry.key.data() + sizeof(uint64_t)));
-                current_bucket_offsets_.emplace_back(silkworm::endian::load_big_u64(entry.value.data()));
+                current_bucket_.emplace_back(endian::load_big_u64(entry.key.data() + sizeof(uint64_t)));
+                current_bucket_offsets_.emplace_back(endian::load_big_u64(entry.value.data()));
             });
         } catch (const CollisionError& error) {
             SILK_WARN << "[index] collision detected for bucket=" << error.bucket_id;
@@ -531,8 +531,8 @@ class RecSplit {
         if (double_enum_index_) {
             ef_offsets_ = std::make_unique<EliasFano>(keys_added_, max_offset_);
             mdbx::cursor empty_cursor{};
-            offset_collector_.load(empty_cursor, [&](const silkworm::etl::Entry& entry, mdbx::cursor&, MDBX_put_flags_t) {
-                const uint64_t offset = silkworm::endian::load_big_u64(entry.key.data());
+            offset_collector_.load(empty_cursor, [&](const etl::Entry& entry, mdbx::cursor&, MDBX_put_flags_t) {
+                const uint64_t offset = endian::load_big_u64(entry.key.data());
                 ef_offsets_->add_offset(offset);
             });
             ef_offsets_->build();
@@ -546,20 +546,20 @@ class RecSplit {
         built_ = true;
 
         // Write out bucket count, bucket size, leaf size
-        silkworm::endian::store_big_u64(uint64_buffer.data(), nbuckets);
+        endian::store_big_u64(uint64_buffer.data(), nbuckets);
         index_output_stream.write(reinterpret_cast<const char*>(uint64_buffer.data()), sizeof(uint64_t));
         SILK_DEBUG << "[index] written bucket count: " << nbuckets;
 
-        silkworm::endian::store_big_u16(uint64_buffer.data(), bucket_size);
+        endian::store_big_u16(uint64_buffer.data(), bucket_size);
         index_output_stream.write(reinterpret_cast<const char*>(uint64_buffer.data()), sizeof(uint16_t));
         SILK_DEBUG << "[index] written bucket size: " << bucket_size;
 
-        silkworm::endian::store_big_u16(uint64_buffer.data(), _leaf);
+        endian::store_big_u16(uint64_buffer.data(), _leaf);
         index_output_stream.write(reinterpret_cast<const char*>(uint64_buffer.data()), sizeof(uint16_t));
         SILK_DEBUG << "[index] written leaf size: " << _leaf;
 
         // Write out salt
-        silkworm::endian::store_big_u32(uint64_buffer.data(), salt_);
+        endian::store_big_u32(uint64_buffer.data(), salt_);
         index_output_stream.write(reinterpret_cast<const char*>(uint64_buffer.data()), sizeof(uint32_t));
         SILK_DEBUG << "[index] written murmur3 salt: " << salt_;
 
@@ -569,7 +569,7 @@ class RecSplit {
         SILK_DEBUG << "[index] written start seed length: " << int(start_seed_length);
 
         for (const uint64_t s : kStartSeed) {
-            silkworm::endian::store_big_u64(uint64_buffer.data(), s);
+            endian::store_big_u64(uint64_buffer.data(), s);
             index_output_stream.write(reinterpret_cast<const char*>(uint64_buffer.data()), sizeof(uint64_t));
         }
         SILK_DEBUG << "[index] written start seed: " << kStartSeed;
@@ -585,7 +585,7 @@ class RecSplit {
         }
 
         // Write out the size of Golomb-Rice code params
-        silkworm::endian::store_big_u32(uint64_buffer.data(), descriptors.get_bits());
+        endian::store_big_u32(uint64_buffer.data(), descriptors.get_bits());
         index_output_stream.write(reinterpret_cast<const char*>(uint64_buffer.data()), sizeof(uint32_t));
         SILK_DEBUG << "[index] written GR code size: " << descriptors.get_bits();
 
@@ -711,8 +711,8 @@ class RecSplit {
             gr_builder_.append_unary_all(unary);
         } else {
             for (const auto offset : current_bucket_offsets_) {
-                silkworm::Bytes uint64_buffer(8, '\0');
-                silkworm::endian::store_big_u64(uint64_buffer.data(), offset);
+                Bytes uint64_buffer(8, '\0');
+                endian::store_big_u64(uint64_buffer.data(), offset);
                 index_output_stream.write(reinterpret_cast<const char*>(uint64_buffer.data()), 8);
                 SILK_DEBUG << "[index] written offset: " << offset;
             }
@@ -775,9 +775,9 @@ class RecSplit {
                 std::size_t j = remap16(remix(bucket[start + i] + salt), m);
                 buffer_offsets_[j] = offsets[start + i];
             }
-            silkworm::Bytes uint64_buffer(8, '\0');
+            Bytes uint64_buffer(8, '\0');
             for (auto i{0}; i < m; i++) {
-                silkworm::endian::store_big_u64(uint64_buffer.data(), buffer_offsets_[i]);
+                endian::store_big_u64(uint64_buffer.data(), buffer_offsets_[i]);
                 index_ofs.write(reinterpret_cast<const char*>(uint64_buffer.data() + (8 - bytes_per_record_)), bytes_per_record_);
                 if (level == 0) {
                     SILK_DEBUG << "[index] written offset: " << buffer_offsets_[i];
@@ -830,8 +830,8 @@ class RecSplit {
             if (m - i > 1) {
                 recsplit(level + 1, bucket, offsets, start + i, end, unary, index_ofs);
             } else if (m - i == 1) {
-                silkworm::Bytes uint64_buffer(8, '\0');
-                silkworm::endian::store_big_u64(uint64_buffer.data(), offsets[start + i]);
+                Bytes uint64_buffer(8, '\0');
+                endian::store_big_u64(uint64_buffer.data(), offsets[start + i]);
                 index_ofs.write(reinterpret_cast<const char*>(uint64_buffer.data() + (8 - bytes_per_record_)), bytes_per_record_);
                 if (level == 0) {
                     SILK_DEBUG << "[index] written offset: " << offsets[start + i];

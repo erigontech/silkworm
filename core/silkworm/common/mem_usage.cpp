@@ -26,8 +26,10 @@ limitations under the License.
 #endif
 
 #ifdef _WINDOWS
+// clang-format off
 #include <windows.h>
 #include <Psapi.h>
+// clang-format on
 #else
 #include <sys/resource.h>
 #endif

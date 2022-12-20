@@ -17,7 +17,8 @@
 #include <memory>
 
 #ifdef __linux__
-#include <sys/sysinfo.h>
+#include <unistd.h>
+#include <cstdio>
 #endif
 
 #ifdef __APPLE__
@@ -30,8 +31,6 @@
 #include <windows.h>
 #include <Psapi.h>
 // clang-format on
-#else
-#include <sys/resource.h>
 #endif
 
 // Inspired by: https://stackoverflow.com/questions/372484/how-do-i-programmatically-check-memory-use-in-a-fairly-portable-way-c-c

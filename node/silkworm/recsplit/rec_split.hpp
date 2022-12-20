@@ -74,8 +74,8 @@
 #endif /* defined(__clang__) */
 #pragma GCC diagnostic ignored "-Wsign-compare"
 
-#include <silkworm/recsplit/function/elias_fano.hpp>
-#include <silkworm/recsplit/function/golomb_rice.hpp>
+#include <silkworm/recsplit/encoding/elias_fano.hpp>
+#include <silkworm/recsplit/encoding/golomb_rice.hpp>
 #include <silkworm/recsplit/support/murmur_hash3.hpp>
 #include <silkworm/recsplit/util/Vector.hpp>
 

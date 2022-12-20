@@ -55,7 +55,7 @@
 #include <silkworm/common/assert.hpp>
 #include <silkworm/common/base.hpp>
 #include <silkworm/common/endian.hpp>
-#include <silkworm/recsplit/sequence.hpp>
+#include <silkworm/recsplit/encoding/sequence.hpp>
 #include <silkworm/recsplit/support/common.hpp>
 
 // EliasFano algo overview https://www.antoniomallia.it/sorted-integers-compression-with-elias-fano-encoding.html

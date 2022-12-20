@@ -50,7 +50,7 @@
 #include <iostream>
 
 #include <silkworm/common/assert.hpp>
-#include <silkworm/recsplit/sequence.hpp>
+#include <silkworm/recsplit/encoding/sequence.hpp>
 #include <silkworm/recsplit/support/common.hpp>
 
 namespace silkworm::succinct {

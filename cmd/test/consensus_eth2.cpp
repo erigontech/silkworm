@@ -93,7 +93,7 @@ struct SszStaticTestRunner : public TestRunner {
 
     explicit SszStaticTestRunner() {
         handlers_.emplace("AttestationData", round_trip<cl::AttestationData>);
-        // handlers_.emplace("AttesterSlashing", round_trip<cl::AttesterSlashing>);
+        handlers_.emplace("AttesterSlashing", round_trip<cl::AttesterSlashing>);
         handlers_.emplace("BeaconBlockHeader", round_trip<cl::BeaconBlockHeader>);
         handlers_.emplace("Checkpoint", round_trip<cl::Checkpoint>);
         handlers_.emplace("Eth1Data", round_trip<cl::Eth1Data>);

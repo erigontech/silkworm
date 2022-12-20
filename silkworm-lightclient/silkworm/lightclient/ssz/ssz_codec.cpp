@@ -37,37 +37,34 @@ void encode(evmc::bytes32& from, Bytes& to) noexcept {
     }
 }
 
-DecodingResult decode(ByteView& from, uint32_t& to) noexcept {
+DecodingResult decode(ByteView from, uint32_t& to) noexcept {
     if (from.size() < sizeof(uint32_t)) {
         return DecodingResult::kInputTooShort;
     }
     for (std::size_t i{0}; i < sizeof(uint32_t); ++i) {
         to += static_cast<uint32_t>(from[i]) << (i*8);
     }
-    from.remove_prefix(sizeof(uint32_t));
     return DecodingResult::kOk;
 }
 
-DecodingResult decode(ByteView& from, uint64_t& to) noexcept {
+DecodingResult decode(ByteView from, uint64_t& to) noexcept {
     if (from.size() < sizeof(uint64_t)) {
         return DecodingResult::kInputTooShort;
     }
     for (std::size_t i{0}; i < sizeof(uint64_t); ++i) {
         to += static_cast<uint64_t>(from[i]) << (i*8);
     }
-    from.remove_prefix(sizeof(uint64_t));
     return DecodingResult::kOk;
 }
 
 template <>
-DecodingResult decode(ByteView& from, evmc::bytes32& to) noexcept {
+DecodingResult decode(ByteView from, evmc::bytes32& to) noexcept {
     if (from.size() < kHashLength) {
         return DecodingResult::kInputTooShort;
     }
     for (std::size_t i{0}; i < kHashLength; ++i) {
         to.bytes[i] = from[i];
     }
-    from.remove_prefix(kHashLength);
     return DecodingResult::kOk;
 }
 
@@ -75,7 +72,7 @@ void encode_offset(uint32_t from, Bytes& to) noexcept {
     encode(from, to);
 }
 
-DecodingResult decode_offset(ByteView& from, uint32_t& to) noexcept {
+DecodingResult decode_offset(ByteView from, uint32_t& to) noexcept {
     return decode(from, to);
 }
 

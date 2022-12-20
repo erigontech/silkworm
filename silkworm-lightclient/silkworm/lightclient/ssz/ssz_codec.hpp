@@ -43,16 +43,16 @@ void encode(T (&from)[N], Bytes& to) noexcept {
 template <>
 void encode(evmc::bytes32& from, Bytes& to) noexcept;
 
-DecodingResult decode(ByteView& from, uint32_t& to) noexcept;
+DecodingResult decode(ByteView from, uint32_t& to) noexcept;
 
-DecodingResult decode(ByteView& from, uint64_t& to) noexcept;
+DecodingResult decode(ByteView from, uint64_t& to) noexcept;
 
 template <class T>
-DecodingResult decode(ByteView& from, T& to) noexcept;
+DecodingResult decode(ByteView from, T& to) noexcept;
 
 template <class T, std::size_t N>
 requires std::convertible_to<T, uint8_t>
-DecodingResult decode(ByteView& from, T (&to)[N]) noexcept {
+DecodingResult decode(ByteView from, T (&to)[N]) noexcept {
     if (from.size() < N) {
         return DecodingResult::kInputTooShort;
     }
@@ -64,10 +64,10 @@ DecodingResult decode(ByteView& from, T (&to)[N]) noexcept {
 }
 
 template <>
-DecodingResult decode(ByteView& from, evmc::bytes32& to) noexcept;
+DecodingResult decode(ByteView from, evmc::bytes32& to) noexcept;
 
 void encode_offset(uint32_t from, Bytes& to) noexcept;
 
-DecodingResult decode_offset(ByteView& from, uint32_t& to) noexcept;
+DecodingResult decode_offset(ByteView from, uint32_t& to) noexcept;
 
 }  // namespace silkworm::ssz

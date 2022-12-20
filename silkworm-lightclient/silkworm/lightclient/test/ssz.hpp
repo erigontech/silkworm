@@ -37,18 +37,16 @@ static bool encode_success(T& obj, ByteView encoded_view) {
 template <class T>
 static T decode_success(std::string_view encoded_hex) {
     Bytes encoded_bytes{*from_hex(encoded_hex)};
-    ByteView encoded_view{encoded_bytes};
     T res{};
-    REQUIRE(ssz::decode(encoded_view, res) == DecodingResult::kOk);
+    REQUIRE(ssz::decode(encoded_bytes, res) == DecodingResult::kOk);
     return res;
 }
 
 template <class T>
 static DecodingResult decode_failure(std::string_view encoded_hex) {
     Bytes encoded_bytes{*from_hex(encoded_hex)};
-    ByteView encoded_view{encoded_bytes};
     T res{};
-    return ssz::decode(encoded_view, res);
+    return ssz::decode(encoded_bytes, res);
 }
 
 template <class T>

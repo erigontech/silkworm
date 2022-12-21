@@ -527,7 +527,7 @@ TEST_CASE("ProposerSlashing SSZ") {
 }
 
 TEST_CASE("Attestation SSZ") {
-    SECTION("round-trip zero indices") {
+    SECTION("round-trip one bit") {
         Attestation a{
             {0x01},
             std::make_unique<AttestationData>(AttestationData{
@@ -560,7 +560,7 @@ TEST_CASE("Attestation SSZ") {
                        "01"));
         CHECK(test::decode_success<Attestation>(to_hex(b)) == a);
     }
-    SECTION("round-trip two indices") {
+    SECTION("round-trip two bits") {
         Attestation a{
             {0x01, 0x10},
             std::make_unique<AttestationData>(AttestationData{
@@ -636,6 +636,59 @@ TEST_CASE("Attestation SSZ") {
                                                 "0000000000000000000000000000000000000000000000000000000000000000"
                                                 "0000000000000000000000000000000000000000000000000000000000000000"
                                                 "0000000000000000000000000000000000000000000000000000000000000000")
+              == DecodingResult::kInputTooShort);
+    }
+}
+
+TEST_CASE("DepositData SSZ") {
+    SECTION("round-trip zero content") {
+        DepositData a{
+            {},
+            {},
+            0,
+            {}
+        };
+        Bytes b{};
+        ssz::encode(a, b);
+        CHECK(b == *from_hex(
+                       "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+                       "0000000000000000000000000000000000000000000000000000000000000000"
+                       "0000000000000000"
+                       "0000000000000000000000000000000000000000000000000000000000000000"
+                       "0000000000000000000000000000000000000000000000000000000000000000"
+                       "0000000000000000000000000000000000000000000000000000000000000000"));
+        CHECK(test::decode_success<DepositData>(to_hex(b)) == a);
+    }
+    SECTION("round-trip w/o signature") {
+        DepositData a{
+            {0xFF, 0, 0, 0, 0, 0, 0, 0, 0xFF, 0, 0xFF, 0, 0, 0, 0, 0, 0, 0,
+             0xFF, 0, 0, 0, 0, 0, 0, 0, 0xFF, 0, 0xFF, 0, 0, 0, 0, 0, 0, 0,
+             0xFF, 0, 0, 0, 0, 0, 0, 0, 0xFF, 0, 0xFF, 0},
+            {0xAA, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xBB},
+            16,
+            {}
+        };
+        Bytes b{};
+        ssz::encode(a, b);
+        CHECK(b == *from_hex(
+                       "FF00000000000000FF00FF00000000000000FF00000000000000FF00FF00000000000000FF00000000000000FF00FF00"
+                       "AA000000000000000000000000000000000000000000000000000000000000BB"
+                       "1000000000000000"
+                       "0000000000000000000000000000000000000000000000000000000000000000"
+                       "0000000000000000000000000000000000000000000000000000000000000000"
+                       "0000000000000000000000000000000000000000000000000000000000000000"));
+        CHECK(test::decode_success<DepositData>(to_hex(b)) == a);
+    }
+    SECTION("decoding error") {
+        CHECK(test::decode_failure<DepositData>("") == DecodingResult::kInputTooShort);
+        CHECK(test::decode_failure<DepositData>("00") == DecodingResult::kInputTooShort);
+        CHECK(test::decode_failure<DepositData>("FF00000000000000FF00FF00000000000000FF00000000000000FF00FF00000000000000FF00000000000000FF00FF00"
+                                                "AA000000000000000000000000000000000000000000000000000000000000BB"
+                                                "1000000000000000"
+                                                "0000000000000000000000000000000000000000000000000000000000000000"
+                                                "0000000000000000000000000000000000000000000000000000000000000000"
+                                                "00000000000000000000000000000000000000000000000000000000000000")
               == DecodingResult::kInputTooShort);
     }
 }

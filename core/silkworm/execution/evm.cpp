@@ -77,18 +77,15 @@ CallResult EVM::execute(const Transaction& txn, uint64_t gas) noexcept {
     const bool contract_creation{!txn.to.has_value()};
     const evmc::address destination{contract_creation ? evmc::address{} : *txn.to};
 
-    evmc_message message{
-        contract_creation ? EVMC_CREATE : EVMC_CALL,  // kind
-        0,                                            // flags
-        0,                                            // depth
-        static_cast<int64_t>(gas),                    // gas
-        destination,                                  // recipient
-        *txn.from,                                    // sender
-        &txn.data[0],                                 // input_data
-        txn.data.size(),                              // input_size
-        intx::be::store<evmc::uint256be>(txn.value),  // value
-        {},                                           // create2_salt
-        destination,                                  // code_address
+    const evmc_message message{
+        .kind = contract_creation ? EVMC_CREATE : EVMC_CALL,
+        .gas = static_cast<int64_t>(gas),
+        .recipient = destination,
+        .sender = *txn.from,
+        .input_data = txn.data.data(),
+        .input_size = txn.data.size(),
+        .value = intx::be::store<evmc::uint256be>(txn.value),
+        .code_address = destination,
     };
 
     evmc::Result res{contract_creation ? create(message) : call(message)};
@@ -146,15 +143,12 @@ evmc::Result EVM::create(const evmc_message& message) noexcept {
     state_.add_to_balance(contract_addr, value);
 
     const evmc_message deploy_message{
-        EVMC_CALL,       // kind
-        0,               // flags
-        message.depth,   // depth
-        message.gas,     // gas
-        contract_addr,   // recipient
-        message.sender,  // sender
-        nullptr,         // input_data
-        0,               // input_size
-        message.value,   // value
+        .kind = EVMC_CALL,
+        .depth = message.depth,
+        .gas = message.gas,
+        .recipient = contract_addr,
+        .sender = message.sender,
+        .value = message.value,
     };
 
     auto evm_res{execute(deploy_message, ByteView{message.input_data, message.input_size}, /*code_hash=*/nullptr)};

@@ -707,18 +707,17 @@ namespace db {
 
         auto canonical_hashes{db::open_cursor(txn, table::kCanonicalHashes)};
         const Bytes genesis_block_key{block_key(0)};
-        const auto ropsten_genesis_hash{0x41941023680923e0fe4d74a34bdac8141f2540e3ae90623718e47d66d1ca4a2d_bytes32};
-        canonical_hashes.upsert(to_slice(genesis_block_key), to_slice(ropsten_genesis_hash));
+        canonical_hashes.upsert(to_slice(genesis_block_key), to_slice(kSepoliaGenesisHash));
 
         const auto chain_config2{read_chain_config(txn)};
         CHECK(chain_config2 == std::nullopt);
 
         auto config_table{db::open_cursor(txn, table::kConfig)};
-        const std::string ropsten_config_json{kRopstenConfig.to_json().dump()};
-        config_table.upsert(to_slice(ropsten_genesis_hash), mdbx::slice{ropsten_config_json.c_str()});
+        const std::string sepolia_config_json{kSepoliaConfig.to_json().dump()};
+        config_table.upsert(to_slice(kSepoliaGenesisHash), mdbx::slice{sepolia_config_json.c_str()});
 
         const auto chain_config3{read_chain_config(txn)};
-        CHECK(chain_config3 == kRopstenConfig);
+        CHECK(chain_config3 == kSepoliaConfig);
     }
 
     TEST_CASE("Head header") {
@@ -726,9 +725,8 @@ namespace db {
         auto& txn{context.txn()};
 
         REQUIRE(db::read_head_header_hash(txn) == std::nullopt);
-        const auto ropsten_genesis_hash{0x41941023680923e0fe4d74a34bdac8141f2540e3ae90623718e47d66d1ca4a2d_bytes32};
-        REQUIRE_NOTHROW(db::write_head_header_hash(txn, ropsten_genesis_hash.bytes));
-        REQUIRE(db::read_head_header_hash(txn).value() == ropsten_genesis_hash);
+        REQUIRE_NOTHROW(db::write_head_header_hash(txn, kSepoliaGenesisHash));
+        REQUIRE(db::read_head_header_hash(txn).value() == kSepoliaGenesisHash);
     }
 
 }  // namespace db

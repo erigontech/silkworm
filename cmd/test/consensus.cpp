@@ -64,6 +64,9 @@ static const std::vector<fs::path> kFailingTests{
     // Geth excludes this test as well:
     // https://github.com/ethereum/go-ethereum/blob/v1.10.18/tests/transaction_test.go#L31
     kTransactionDir / "ttGasLimit" / "TransactionWithGasLimitxPriceOverflow.json",
+
+    // EOF is not implemented yet
+    kBlockchainDir / "GeneralStateTests" / "stEIP3540",
 };
 
 static constexpr size_t kColumnWidth{80};
@@ -187,13 +190,15 @@ static const std::map<std::string, ChainConfig> kNetworkConfig{
                  0,  // Istanbul
                  0,  // Berlin
                  0,  // London
-                 0,  // FORK_NEXT_VALUE (EIP-3675)
+                 0,  // Merge Netsplit (FORK_NEXT_VALUE)
              },
          .muir_glacier_block = 0,
          .arrow_glacier_block = 0,
          .gray_glacier_block = 0,
          .terminal_total_difficulty = 0,
      }},
+    {"Merge+3855", test::kShanghaiConfig},
+    {"Merge+3860", test::kShanghaiConfig},
     {"ArrowGlacierToMergeAtDiffC0000",
      {
          .chain_id = 1,
@@ -699,7 +704,7 @@ RunResults transaction_test(const nlohmann::json& j) {
 
         const auto expected_intrinsic_gas{intx::from_string<intx::uint256>(test["intrinsicGas"].get<std::string>())};
         const evmc_revision rev{config.revision(/*block_number=*/0)};
-        const auto calculated_intrinsic_gas{intrinsic_gas(txn, rev >= EVMC_HOMESTEAD, rev >= EVMC_ISTANBUL)};
+        const auto calculated_intrinsic_gas{intrinsic_gas(txn, rev)};
         if (calculated_intrinsic_gas != expected_intrinsic_gas) {
             std::cout << "Intrinsic gas mismatch for " << entry.key() << ":\n"
                       << intx::to_string(calculated_intrinsic_gas, /*base=*/16)

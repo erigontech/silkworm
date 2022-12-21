@@ -92,8 +92,8 @@ Transaction* new_transaction(const Bytes* rlp) {
 
 void delete_transaction(Transaction* x) { delete x; }
 
-bool check_intrinsic_gas(const Transaction* txn, bool homestead, bool istanbul) {
-    intx::uint128 g0{intrinsic_gas(*txn, homestead, istanbul)};
+bool check_intrinsic_gas(const Transaction* txn, evmc_revision rev) {
+    intx::uint128 g0{intrinsic_gas(*txn, rev)};
     return txn->gas_limit >= g0;
 }
 

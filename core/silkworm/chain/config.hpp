@@ -160,26 +160,6 @@ inline constexpr ChainConfig kMainnetConfig{
     .terminal_total_difficulty = intx::from_string<intx::uint256>("58750000000000000000000"),
 };
 
-inline constexpr evmc::bytes32 kRopstenGenesisHash{0x41941023680923e0fe4d74a34bdac8141f2540e3ae90623718e47d66d1ca4a2d_bytes32};
-inline constexpr ChainConfig kRopstenConfig{
-    .chain_id = 3,
-    .seal_engine = SealEngineType::kEthash,
-    .evmc_fork_blocks =
-        {
-            0,           // Homestead
-            0,           // Tangerine Whistle
-            10,          // Spurious Dragon
-            1'700'000,   // Byzantium
-            4'230'000,   // Constantinople
-            4'939'394,   // Petersburg
-            6'485'846,   // Istanbul
-            9'812'189,   // Berlin
-            10'499'401,  // London
-        },
-    .muir_glacier_block = 7'117'117,
-    .terminal_total_difficulty = 50000000000000000,
-};
-
 inline constexpr evmc::bytes32 kRinkebyGenesisHash{0x6341fd3daf94b748c72ced5a5b26028f2474f5f00d824504e4fa37a75767e177_bytes32};
 inline constexpr ChainConfig kRinkebyConfig{
     .chain_id = 4,

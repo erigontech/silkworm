@@ -90,7 +90,7 @@ TEST_CASE("SnapshotRepository::reopen_folder", "[silkworm][snapshot][snapshot]")
     test::TemporarySnapshotFile tmp_snapshot_1{"v1-014500-015000-headers.seg"};
     test::TemporarySnapshotFile tmp_snapshot_2{"v1-011500-012000-bodies.seg"};
     test::TemporarySnapshotFile tmp_snapshot_3{"v1-015000-015500-transactions.seg"};
-    SnapshotSettings settings{tmp_snapshot_1.path().parent_path()};  // this line doesn't compile on Windows if SnapshotSettings::repository_dir is a string because on MSVC the path is a wstring
+    SnapshotSettings settings{tmp_snapshot_1.path().parent_path().string()};
     SnapshotRepository repository{settings};
     CHECK_NOTHROW(repository.reopen_folder());
     CHECK(repository.header_snapshots_count() == 0);
@@ -105,7 +105,7 @@ TEST_CASE("SnapshotRepository::view", "[silkworm][snapshot][snapshot]") {
     test::TemporarySnapshotFile tmp_snapshot_1{"v1-014500-015000-headers.seg"};
     test::TemporarySnapshotFile tmp_snapshot_2{"v1-011500-012000-bodies.seg"};
     test::TemporarySnapshotFile tmp_snapshot_3{"v1-015000-015500-transactions.seg"};
-    SnapshotSettings settings{tmp_snapshot_1.path().parent_path()};
+    SnapshotSettings settings{tmp_snapshot_1.path().parent_path().string()};
     SnapshotRepository repository{settings};
     repository.reopen_folder();
 

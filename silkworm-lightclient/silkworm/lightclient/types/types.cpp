@@ -118,6 +118,16 @@ bool operator==(const DepositData& lhs, const DepositData& rhs) {
     return true;
 }
 
+bool operator==(const Deposit& lhs, const Deposit& rhs) {
+    for (std::size_t i{0}; i < kProofHashCount; ++i) {
+        if (lhs.proof[i] != rhs.proof[i]) return false;
+    }
+    if (!lhs.data && rhs.data) return false;
+    if (lhs.data && !rhs.data) return false;
+    if (lhs.data && rhs.data && *lhs.data != *rhs.data) return false;
+    return true;
+}
+
 }  // namespace silkworm::cl
 
 namespace silkworm::ssz {

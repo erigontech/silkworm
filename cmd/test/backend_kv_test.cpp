@@ -940,7 +940,7 @@ int main(int argc, char* argv[]) {
     CLI::App app{"ETHBACKEND & KV interface test"};
 
     std::string target_uri{"localhost:9090"};
-    int num_channels{0};
+    int num_channels{1};
     BatchOptions batch_options;
     silkworm::log::Level log_level{silkworm::log::Level::kCritical};
     app.add_option("--target", target_uri, "The address to connect to the ETHBACKEND & KV services")

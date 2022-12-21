@@ -27,7 +27,11 @@
 
 namespace silkworm::cl {
 
+static constexpr std::size_t kCredentialsSize{32};
+static constexpr std::size_t kPublicKeySize{48};
 static constexpr std::size_t kSignatureSize{96};
+
+static constexpr std::size_t kProofHashCount{33};
 
 //! Eth1Data represents the relevant ETH1 Data for block building.
 struct Eth1Data {
@@ -96,7 +100,7 @@ struct IndexedAttestation {
     static constexpr std::size_t kMinSize{AttestationData::kSize + kSignatureSize + sizeof(uint32_t)};
     static constexpr std::size_t kMaxSize{kMinSize + kMaxAttestingIndices * sizeof(uint64_t)};
 
-    [[nodiscard]] std::size_t size() const { return kMinSize + 8 * attesting_indices.size(); }
+    [[nodiscard]] std::size_t size() const { return kMinSize + sizeof(uint64_t) * attesting_indices.size(); }
 };
 
 bool operator==(const IndexedAttestation& lhs, const IndexedAttestation& rhs);
@@ -116,11 +120,47 @@ struct AttesterSlashing {
     std::shared_ptr<IndexedAttestation> attestation1;
     std::shared_ptr<IndexedAttestation> attestation2;
 
-    static constexpr std::size_t kMinSize{8};
+    static constexpr std::size_t kMinSize{2 * sizeof(uint32_t)};
     static constexpr std::size_t kMaxSize{2 * IndexedAttestation::kMaxSize};
 };
 
 bool operator==(const AttesterSlashing& lhs, const AttesterSlashing& rhs);
+
+//! Full signed attestation
+struct Attestation {
+    Bytes aggregration_bits;
+    std::shared_ptr<AttestationData> data;
+    uint8_t signature[kSignatureSize];
+
+    static constexpr std::size_t kMaxAggregationBits{2048};
+    static constexpr std::size_t kMinSize{sizeof(uint32_t) + AttestationData::kSize + kSignatureSize};
+    static constexpr std::size_t kMaxSize{kMinSize + kMaxAggregationBits};
+
+    [[nodiscard]] std::size_t size() const { return kMinSize + aggregration_bits.size(); }
+};
+
+bool operator==(const Attestation& lhs, const Attestation& rhs);
+
+struct DepositData {
+    uint8_t public_key[kPublicKeySize]{};
+    uint8_t withdrawal_credentials[kCredentialsSize]{};
+    uint64_t amount{0};
+    uint8_t signature[kSignatureSize]{};
+    evmc::bytes32 root;  // TODO(canepat) no SSZ, remove?
+
+    static constexpr std::size_t kSize{kPublicKeySize + kCredentialsSize + sizeof(uint64_t) + kSignatureSize};
+};
+
+bool operator==(const DepositData& lhs, const DepositData& rhs);
+
+struct Deposit {
+    evmc::bytes32 proof[kProofHashCount];
+    std::shared_ptr<DepositData> data;
+
+    static constexpr std::size_t kSize{kProofHashCount * kHashLength + cl::DepositData::kSize};
+};
+
+bool operator==(const Deposit& lhs, const Deposit& rhs);
 
 }  // namespace silkworm::cl
 
@@ -173,5 +213,23 @@ void encode(cl::AttesterSlashing& from, Bytes& to) noexcept;
 
 template <>
 DecodingResult decode(ByteView from, cl::AttesterSlashing& to) noexcept;
+
+template <>
+void encode(cl::Attestation& from, Bytes& to) noexcept;
+
+template <>
+DecodingResult decode(ByteView from, cl::Attestation& to) noexcept;
+
+template <>
+void encode(cl::DepositData& from, Bytes& to) noexcept;
+
+template <>
+DecodingResult decode(ByteView from, cl::DepositData& to) noexcept;
+
+template <>
+void encode(cl::Deposit& from, Bytes& to) noexcept;
+
+template <>
+DecodingResult decode(ByteView from, cl::Deposit& to) noexcept;
 
 }  // namespace silkworm::ssz

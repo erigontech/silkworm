@@ -16,6 +16,8 @@
 
 #include "ssz_codec.hpp"
 
+#include <bit>
+
 namespace silkworm::ssz {
 
 void encode(uint32_t from, Bytes& to) noexcept {
@@ -74,6 +76,38 @@ void encode_offset(uint32_t from, Bytes& to) noexcept {
 
 DecodingResult decode_offset(ByteView from, uint32_t& to) noexcept {
     return decode(from, to);
+}
+
+DecodingResult validate_bitlist(ByteView buffer, std::size_t bit_limit) noexcept {
+    const std::size_t size = buffer.size();
+    if (size == 0) {
+        return DecodingResult::kInputTooShort;  // TODO(canepat) kInvalidZeroLength
+    }
+
+    // Maximum possible bytes in a bitlist with provided bit limit
+    const std::size_t max_bytes = (bit_limit >> 3) + 1;
+    if (size > max_bytes) {
+        return DecodingResult::kUnexpectedLength;
+    }
+
+    // The most significant bit is present in the last byte in the array
+    const uint8_t last_byte = buffer[size - 1];
+    if (last_byte == 0) {
+        return DecodingResult::kInvalidFieldset;  // TODO(canepat) kTrailingByteIsZero
+    }
+
+    // Determine the position of the most significant bit i.e. the minimum number of bits to represent last byte
+    const uint8_t msb = std::bit_width(last_byte);
+
+    // The absolute position of the most significant bit will be the number of
+    // bits in the preceding bytes plus the position of the most significant
+    // bit. Subtract this value by 1 to determine the length of the bitlist
+    const auto num_of_bits = 8 * (size - 1) + msb - 1;
+    if (num_of_bits > bit_limit) {
+        return DecodingResult::kUnexpectedLength;
+    }
+
+    return DecodingResult::kOk;
 }
 
 }  // namespace silkworm::ssz

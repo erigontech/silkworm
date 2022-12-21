@@ -70,4 +70,6 @@ void encode_offset(uint32_t from, Bytes& to) noexcept;
 
 DecodingResult decode_offset(ByteView from, uint32_t& to) noexcept;
 
+DecodingResult validate_bitlist(ByteView from, std::size_t bit_limit) noexcept;
+
 }  // namespace silkworm::ssz

@@ -92,6 +92,7 @@ struct SszStaticTestRunner : public TestRunner {
     static inline const char* kValue{"value.yaml"};
 
     explicit SszStaticTestRunner() {
+        handlers_.emplace("Attestation", round_trip<cl::Attestation>);
         handlers_.emplace("AttestationData", round_trip<cl::AttestationData>);
         handlers_.emplace("AttesterSlashing", round_trip<cl::AttesterSlashing>);
         handlers_.emplace("BeaconBlockHeader", round_trip<cl::BeaconBlockHeader>);

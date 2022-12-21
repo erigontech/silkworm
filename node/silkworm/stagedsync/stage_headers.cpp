@@ -77,7 +77,7 @@ auto HeadersStage::forward(db::RWTxn& tx) -> Stage::Result {
         if (target_block_ && current_height_ >= *target_block_) {
             tx.commit();
             log::Info(log_prefix_) << "End, forward skipped due to target block (" << *target_block_ << ") reached";
-            return Stage::Result::kStoppedByEnv;
+            return Stage::Result::kSuccess;
         }
 
         RepeatedMeasure<BlockNum> height_progress(header_persistence.initial_height());

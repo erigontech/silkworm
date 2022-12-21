@@ -18,6 +18,7 @@
 
 #include <silkworm/common/cast.hpp>
 #include <silkworm/db/access_layer.hpp>
+#include <silkworm/downloader/internals/header_chain.hpp>
 
 namespace silkworm::stagedsync {
 
@@ -30,8 +31,10 @@ Stage::Result Finish::forward(db::RWTxn& txn) {
         // Check stage boundaries from previous execution and previous stage execution
         const auto previous_progress{get_progress(txn)};
         auto execution_stage_progress{db::stages::read_stage_progress(*txn, db::stages::kExecutionKey)};
-        if (previous_progress == execution_stage_progress) {
+        if (previous_progress >= execution_stage_progress) {
             // Nothing to process
+            const auto stop_at_block = stop_at_block_from_env();  // User can specify to stop at some block
+            if (stop_at_block && stop_at_block <= execution_stage_progress) return Stage::Result::kStoppedByEnv;
             return ret;
         } else if (previous_progress > execution_stage_progress) {
             // Something bad had happened.

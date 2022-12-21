@@ -172,6 +172,7 @@ Headers HeaderChain::withdraw_stable_headers() {
         // and cause insertion of headers in ascending order of height
         if (!link->next.empty()) {
             assessing_list.push_all(link->next);
+            link->next.clear();
         }
 
         // Make sure long insertions do not appear as a stuck stage headers

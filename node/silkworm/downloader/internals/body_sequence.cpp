@@ -27,6 +27,7 @@ namespace silkworm {
 seconds_t BodySequence::kRequestDeadline{std::chrono::seconds(30)};
 BlockNum BodySequence::kMaxBlocksPerMessage{128};
 size_t BodySequence::kPerPeerMaxOutstandingRequests{4};
+size_t BodySequence::kMaxInMemoryRequests{400000};
 milliseconds_t BodySequence::kNoPeerDelay{std::chrono::milliseconds(1000)};
 
 BodySequence::BodySequence(const db::ROAccess& dba)
@@ -151,6 +152,7 @@ auto BodySequence::request_more_bodies(time_point_t tp, uint64_t active_peers)
     auto outstanding_bodies = body_requests_.size() - ready_bodies_ - stale_requests;
 
     if (packet.request.size() < kMaxBlocksPerMessage &&  // if this condition is true stale_requests == 0
+        body_requests_.size() < kMaxInMemoryRequests &&
         outstanding_bodies < kPerPeerMaxOutstandingRequests * active_peers * kMaxBlocksPerMessage) {
         make_new_requests(packet, min_block, tp, timeout);
     }

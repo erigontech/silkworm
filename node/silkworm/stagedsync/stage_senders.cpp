@@ -30,11 +30,11 @@ namespace silkworm::stagedsync {
 
 Senders::Senders(NodeSettings* node_settings, SyncContext* sync_context)
     : Stage(sync_context, db::stages::kSendersKey, node_settings),
-      max_batch_size_{node_settings->batch_size / sizeof(AddressRecovery)},
+      max_batch_size_{node_settings->batch_size / std::thread::hardware_concurrency() / sizeof(AddressRecovery)},
       batch_{std::make_shared<std::vector<AddressRecovery>>()},
       collector_{node_settings} {
-    // Reserve more space than max size because we first add all txs in a block, then check batch size
-    batch_->reserve(max_batch_size_ + max_batch_size_ / 10);
+    // Reserve space for max batch in advance
+    batch_->reserve(max_batch_size_);
 }
 
 Stage::Result Senders::forward(db::RWTxn& txn) {
@@ -517,7 +517,7 @@ void Senders::recover_batch(secp256k1_context* context, BlockNum from) {
 
     // Swap the waiting batch w/ an empty one and submit a new recovery task to the worker pool
     std::shared_ptr<std::vector<AddressRecovery>> ready_batch{std::make_shared<std::vector<AddressRecovery>>()};
-    ready_batch->reserve(max_batch_size_ + max_batch_size_ / 10);
+    ready_batch->reserve(max_batch_size_);
     ready_batch.swap(batch_);
     auto batch_result = worker_pool_.submit([=]() {
         std::for_each(ready_batch->begin(), ready_batch->end(), [&](auto& package) {

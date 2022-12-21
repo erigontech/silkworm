@@ -14,13 +14,12 @@
    limitations under the License.
 */
 
-#include <regex>
-
 #include <CLI/CLI.hpp>
 
 #include <silkworm/backend/backend_kv_server.hpp>
 #include <silkworm/buildinfo.h>
 #include <silkworm/common/log.hpp>
+#include <silkworm/common/mem_usage.hpp>
 #include <silkworm/common/settings.hpp>
 #include <silkworm/common/stopwatch.hpp>
 #include <silkworm/concurrency/signal_handler.hpp>
@@ -31,46 +30,7 @@
 
 #include "common.hpp"
 
-#if defined(_WIN32)
-#include <Psapi.h>
-#endif
-
-#if defined(__linux__)
-#include <fstream>
-#include <regex>
-#endif
-
 using namespace silkworm;
-
-size_t get_mem_usage() {
-    size_t ret{0};
-#if defined(_WIN32)
-
-    static HANDLE phandle{GetCurrentProcess()};
-    PROCESS_MEMORY_COUNTERS_EX pmc;
-    (void)K32GetProcessMemoryInfo(phandle, (PROCESS_MEMORY_COUNTERS*)&pmc, sizeof(pmc));
-    ret = pmc.WorkingSetSize;
-
-#endif
-
-#if defined(__linux__)
-
-    static const std::regex pattern{R"(^VmRSS:\s*(\d*)\s*kB$)", std::regex_constants::icase};
-    std::smatch matches;
-    std::string line;
-    std::ifstream input("/proc/self/status");
-    while (std::getline(input, line)) {
-        if (std::regex_search(line, matches, pattern, std::regex_constants::match_default)) {
-            std::string int_part = matches[1].str();
-            auto value{std::strtoull(int_part.c_str(), nullptr, 10)};
-            ret = value * 1_Kibi;
-            break;
-        }
-    }
-
-#endif
-    return ret;
-}
 
 int main(int argc, char* argv[]) {
     using namespace boost::placeholders;
@@ -166,7 +126,7 @@ int main(int argc, char* argv[]) {
             }
 
             auto t2{std::chrono::steady_clock::now()};
-            if ((t2 - t1) > std::chrono::seconds(300)) {
+            if ((t2 - t1) > std::chrono::seconds(60)) {
                 t1 = std::chrono::steady_clock::now();
                 auto total_duration{t1 - start_time};
                 log::Info("Resource usage",

@@ -41,7 +41,7 @@ constexpr const char* kIdxExtension{".idx"};
 constexpr const char* kTmpExtension{".tmp"};
 
 struct SnapshotSettings {
-    std::string repository_dir{kDefaultSnapshotDir};
+    std::filesystem::path repository_dir{kDefaultSnapshotDir};
     bool enabled{false};
     bool verify_on_startup{true};
 };

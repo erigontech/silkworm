@@ -104,7 +104,7 @@ bool operator<(const SnapshotFile& lhs, const SnapshotFile& rhs) {
 SnapshotRepository::SnapshotRepository(SnapshotSettings settings) : settings_(std::move(settings)) {}
 
 void SnapshotRepository::reopen_folder() {
-    SILK_INFO << "Reopen snapshot repository folder: " << settings_.repository_dir;
+    SILK_INFO << "Reopen snapshot repository folder: " << settings_.repository_dir.string();
     SnapshotFileList segment_files = get_segment_files();
     reopen_list(segment_files, /*.optimistic=*/false);
 }
@@ -224,12 +224,11 @@ bool SnapshotRepository::reopen(SnapshotsByPath<T>& segments, const SnapshotFile
 }
 
 SnapshotFileList SnapshotRepository::get_files(const std::string& ext) const {
-    fs::path repository_path{settings_.repository_dir};
-    SILKWORM_ASSERT(fs::exists(repository_path) && fs::is_directory(repository_path));
+    SILKWORM_ASSERT(fs::exists(settings_.repository_dir) && fs::is_directory(settings_.repository_dir));
 
     // Load the resulting files w/ desired extension ensuring they are snapshots
     SnapshotFileList snapshot_files;
-    for (const auto& file : fs::directory_iterator{repository_path}) {
+    for (const auto& file : fs::directory_iterator{settings_.repository_dir}) {
         if (!fs::is_regular_file(file.path()) || file.path().extension().string() != ext) {
             continue;
         }

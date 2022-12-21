@@ -571,10 +571,17 @@ DecodingResult decode(ByteView from, cl::Deposit& to) noexcept {
         return DecodingResult::kUnexpectedLength;
     }
 
+    std::size_t pos{0};
     for (std::size_t i{0}; i < cl::kProofHashCount; ++i) {
-        if (auto err{ssz::decode(from.substr(i * kHashLength, kHashLength), to.proof[i])}; err != DecodingResult::kOk) {
+        if (auto err{ssz::decode(from.substr(pos, kHashLength), to.proof[i])}; err != DecodingResult::kOk) {
             return err;
         }
+        pos += kHashLength;
+    }
+
+    to.data = std::make_shared<cl::DepositData>();
+    if (auto err{ssz::decode(from.substr(pos, cl::DepositData::kSize), *to.data)}; err != DecodingResult::kOk) {
+        return err;
     }
 
     return DecodingResult::kOk;

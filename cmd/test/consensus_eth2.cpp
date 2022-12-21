@@ -103,6 +103,8 @@ struct SszStaticTestRunner : public TestRunner {
         handlers_.emplace("IndexedAttestation", round_trip<cl::IndexedAttestation>);
         handlers_.emplace("ProposerSlashing", round_trip<cl::ProposerSlashing>);
         handlers_.emplace("SignedBeaconBlockHeader", round_trip<cl::SignedBeaconBlockHeader>);
+        handlers_.emplace("VoluntaryExit", round_trip<cl::VoluntaryExit>);
+        handlers_.emplace("SignedVoluntaryExit", round_trip<cl::SignedVoluntaryExit>);
     }
 
     void run(const fs::path& test_case_dir) const override {

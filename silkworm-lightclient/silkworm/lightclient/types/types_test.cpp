@@ -759,4 +759,52 @@ TEST_CASE("Deposit SSZ") {
     }
 }
 
+TEST_CASE("VoluntaryExit SSZ") {
+    SECTION("round-trip") {
+        VoluntaryExit a{
+            21,
+            2,
+        };
+        Bytes b{};
+        ssz::encode(a, b);
+        CHECK(b == *from_hex("15000000000000000200000000000000"));
+        CHECK(test::decode_success<VoluntaryExit>(to_hex(b)) == a);
+    }
+    SECTION("decoding error") {
+        CHECK(test::decode_failure<VoluntaryExit>("") == DecodingResult::kUnexpectedLength);
+        CHECK(test::decode_failure<VoluntaryExit>("00") == DecodingResult::kUnexpectedLength);
+        CHECK(test::decode_failure<VoluntaryExit>("150000000000000002000000000000")
+              == DecodingResult::kUnexpectedLength);
+    }
+}
+
+TEST_CASE("SignedVoluntaryExit SSZ") {
+    SECTION("round-trip") {
+        SignedVoluntaryExit a{
+            std::make_shared<VoluntaryExit>(VoluntaryExit{
+                21,
+                2,
+            }),
+            {},
+        };
+        Bytes b{};
+        ssz::encode(a, b);
+        CHECK(b == *from_hex(
+                       "15000000000000000200000000000000"
+                       "0000000000000000000000000000000000000000000000000000000000000000"
+                       "0000000000000000000000000000000000000000000000000000000000000000"
+                       "0000000000000000000000000000000000000000000000000000000000000000"));
+        CHECK(test::decode_success<SignedVoluntaryExit>(to_hex(b)) == a);
+    }
+    SECTION("decoding error") {
+        CHECK(test::decode_failure<SignedVoluntaryExit>("") == DecodingResult::kUnexpectedLength);
+        CHECK(test::decode_failure<SignedVoluntaryExit>("00") == DecodingResult::kUnexpectedLength);
+        CHECK(test::decode_failure<SignedVoluntaryExit>("150000000000000002000000000000"
+                                                        "0000000000000000000000000000000000000000000000000000000000000000"
+                                                        "0000000000000000000000000000000000000000000000000000000000000000"
+                                                        "00000000000000000000000000000000000000000000000000000000000000")
+              == DecodingResult::kUnexpectedLength);
+    }
+}
+
 }  // namespace silkworm::cl

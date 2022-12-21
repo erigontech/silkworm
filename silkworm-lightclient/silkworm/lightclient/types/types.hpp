@@ -162,6 +162,24 @@ struct Deposit {
 
 bool operator==(const Deposit& lhs, const Deposit& rhs);
 
+struct VoluntaryExit {
+    uint64_t epoch{0};
+    uint64_t validator_index{0};
+
+    static constexpr std::size_t kSize{2 * sizeof(uint64_t)};
+};
+
+bool operator==(const VoluntaryExit& lhs, const VoluntaryExit& rhs);
+
+struct SignedVoluntaryExit {
+    std::shared_ptr<VoluntaryExit> voluntary_exit;
+    uint8_t signature[kSignatureSize]{};
+
+    static constexpr std::size_t kSize{cl::VoluntaryExit::kSize + kSignatureSize};
+};
+
+bool operator==(const SignedVoluntaryExit& lhs, const SignedVoluntaryExit& rhs);
+
 }  // namespace silkworm::cl
 
 namespace silkworm::ssz {
@@ -231,5 +249,17 @@ void encode(cl::Deposit& from, Bytes& to) noexcept;
 
 template <>
 DecodingResult decode(ByteView from, cl::Deposit& to) noexcept;
+
+template <>
+void encode(cl::VoluntaryExit& from, Bytes& to) noexcept;
+
+template <>
+DecodingResult decode(ByteView from, cl::VoluntaryExit& to) noexcept;
+
+template <>
+void encode(cl::SignedVoluntaryExit& from, Bytes& to) noexcept;
+
+template <>
+DecodingResult decode(ByteView from, cl::SignedVoluntaryExit& to) noexcept;
 
 }  // namespace silkworm::ssz

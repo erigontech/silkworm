@@ -128,6 +128,22 @@ bool operator==(const Deposit& lhs, const Deposit& rhs) {
     return true;
 }
 
+bool operator==(const VoluntaryExit& lhs, const VoluntaryExit& rhs) {
+    if (lhs.epoch != rhs.epoch) return false;
+    if (lhs.validator_index != rhs.validator_index) return false;
+    return true;
+}
+
+bool operator==(const SignedVoluntaryExit& lhs, const SignedVoluntaryExit& rhs) {
+    if (!lhs.voluntary_exit && rhs.voluntary_exit) return false;
+    if (lhs.voluntary_exit && !rhs.voluntary_exit) return false;
+    if (lhs.voluntary_exit && rhs.voluntary_exit && *lhs.voluntary_exit != *rhs.voluntary_exit) return false;
+    for (std::size_t i{0}; i < kSignatureSize; ++i) {
+        if (lhs.signature[i] != rhs.signature[i]) return false;
+    }
+    return true;
+}
+
 }  // namespace silkworm::cl
 
 namespace silkworm::ssz {
@@ -591,6 +607,60 @@ DecodingResult decode(ByteView from, cl::Deposit& to) noexcept {
 
     to.data = std::make_shared<cl::DepositData>();
     if (auto err{ssz::decode(from.substr(pos, cl::DepositData::kSize), *to.data)}; err != DecodingResult::kOk) {
+        return err;
+    }
+
+    return DecodingResult::kOk;
+}
+
+template <>
+void encode(cl::VoluntaryExit& from, Bytes& to) noexcept {
+    ssz::encode(from.epoch, to);
+    ssz::encode(from.validator_index, to);
+}
+
+template <>
+DecodingResult decode(ByteView from, cl::VoluntaryExit& to) noexcept {
+    if (from.size() != cl::VoluntaryExit::kSize) {
+        return DecodingResult::kUnexpectedLength;
+    }
+
+    std::size_t pos{0};
+    if (auto err{ssz::decode(from.substr(pos, sizeof(uint64_t)), to.epoch)}; err != DecodingResult::kOk) {
+        return err;
+    }
+
+    pos += sizeof(uint64_t);
+    if (auto err{ssz::decode(from.substr(pos, sizeof(uint64_t)), to.validator_index)}; err != DecodingResult::kOk) {
+        return err;
+    }
+
+    return DecodingResult::kOk;
+}
+
+template <>
+void encode(cl::SignedVoluntaryExit& from, Bytes& to) noexcept {
+    if (!from.voluntary_exit) {
+        from.voluntary_exit = std::make_shared<cl::VoluntaryExit>();
+    }
+    ssz::encode(*from.voluntary_exit, to);
+    ssz::encode(from.signature, to);
+}
+
+template <>
+DecodingResult decode(ByteView from, cl::SignedVoluntaryExit& to) noexcept {
+    if (from.size() != cl::SignedVoluntaryExit::kSize) {
+        return DecodingResult::kUnexpectedLength;
+    }
+
+    std::size_t pos{0};
+    to.voluntary_exit = std::make_shared<cl::VoluntaryExit>();
+    if (auto err{ssz::decode(from.substr(pos, cl::VoluntaryExit::kSize), *to.voluntary_exit)}; err != DecodingResult::kOk) {
+        return err;
+    }
+
+    pos += cl::VoluntaryExit::kSize;
+    if (auto err{ssz::decode(from.substr(pos, cl::kSignatureSize), to.signature)}; err != DecodingResult::kOk) {
         return err;
     }
 

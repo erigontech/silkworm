@@ -141,8 +141,8 @@ void encode(cl::Eth1Data& from, Bytes& to) noexcept {
 
 template <>
 DecodingResult decode(ByteView from, cl::Eth1Data& to) noexcept {
-    if (from.size() < cl::Eth1Data::kSize) {
-        return DecodingResult::kInputTooShort;
+    if (from.size() != cl::Eth1Data::kSize) {
+        return DecodingResult::kUnexpectedLength;
     }
 
     std::size_t pos{0};
@@ -173,8 +173,8 @@ void encode(cl::Checkpoint& from, Bytes& to) noexcept {
 
 template <>
 DecodingResult decode(ByteView from, cl::Checkpoint& to) noexcept {
-    if (from.size() < cl::Checkpoint::kSize) {
-        return DecodingResult::kInputTooShort;
+    if (from.size() != cl::Checkpoint::kSize) {
+        return DecodingResult::kUnexpectedLength;
     }
 
     std::size_t pos{0};
@@ -208,8 +208,8 @@ void encode(cl::AttestationData& from, Bytes& to) noexcept {
 
 template <>
 DecodingResult decode(ByteView from, cl::AttestationData& to) noexcept {
-    if (from.size() < cl::AttestationData::kSize) {
-        return DecodingResult::kInputTooShort;
+    if (from.size() != cl::AttestationData::kSize) {
+        return DecodingResult::kUnexpectedLength;
     }
 
     std::size_t pos{0};
@@ -252,8 +252,8 @@ void encode(cl::BeaconBlockHeader& from, Bytes& to) noexcept {
 
 template <>
 DecodingResult decode(ByteView from, cl::BeaconBlockHeader& to) noexcept {
-    if (from.size() < cl::BeaconBlockHeader::kSize) {
-        return DecodingResult::kInputTooShort;
+    if (from.size() != cl::BeaconBlockHeader::kSize) {
+        return DecodingResult::kUnexpectedLength;
     }
 
     std::size_t pos{0};
@@ -294,8 +294,8 @@ void encode(cl::SignedBeaconBlockHeader& from, Bytes& to) noexcept {
 
 template <>
 DecodingResult decode(ByteView from, cl::SignedBeaconBlockHeader& to) noexcept {
-    if (from.size() < cl::SignedBeaconBlockHeader::kSize) {
-        return DecodingResult::kInputTooShort;
+    if (from.size() != cl::SignedBeaconBlockHeader::kSize) {
+        return DecodingResult::kUnexpectedLength;
     }
 
     std::size_t pos{0};
@@ -385,8 +385,8 @@ void encode(cl::ProposerSlashing& from, Bytes& to) noexcept {
 
 template <>
 DecodingResult decode(ByteView from, cl::ProposerSlashing& to) noexcept {
-    if (from.size() < cl::ProposerSlashing::kSize) {
-        return DecodingResult::kInputTooShort;
+    if (from.size() != cl::ProposerSlashing::kSize) {
+        return DecodingResult::kUnexpectedLength;
     }
 
     std::size_t pos{0};
@@ -537,8 +537,8 @@ void encode(cl::DepositData& from, Bytes& to) noexcept {
 
 template <>
 DecodingResult decode(ByteView from, cl::DepositData& to) noexcept {
-    if (from.size() < cl::DepositData::kSize) {
-        return DecodingResult::kInputTooShort;
+    if (from.size() != cl::DepositData::kSize) {
+        return DecodingResult::kUnexpectedLength;
     }
 
     std::size_t pos{0};

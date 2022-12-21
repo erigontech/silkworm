@@ -40,12 +40,12 @@ TEST_CASE("Eth1Data SSZ") {
         CHECK(test::decode_success<Eth1Data>(to_hex(b)) == a);
     }
     SECTION("decoding error") {
-        CHECK(test::decode_failure<Eth1Data>("") == DecodingResult::kInputTooShort);
-        CHECK(test::decode_failure<Eth1Data>("00") == DecodingResult::kInputTooShort);
+        CHECK(test::decode_failure<Eth1Data>("") == DecodingResult::kUnexpectedLength);
+        CHECK(test::decode_failure<Eth1Data>("00") == DecodingResult::kUnexpectedLength);
         CHECK(test::decode_failure<Eth1Data>("FF000000000000000000EE00000000000000000000EE000000000000000000FF"
                                              "1F00000000000000"
                                              "FF000000000000000000EE00000000000000000000EE000000000000000000")
-              == DecodingResult::kInputTooShort);
+              == DecodingResult::kUnexpectedLength);
     }
 }
 
@@ -64,11 +64,11 @@ TEST_CASE("Checkpoint SSZ") {
         CHECK(test::decode_success<Checkpoint>(to_hex(b)) == a);
     }
     SECTION("decoding error") {
-        CHECK(test::decode_failure<Checkpoint>("") == DecodingResult::kInputTooShort);
-        CHECK(test::decode_failure<Checkpoint>("00") == DecodingResult::kInputTooShort);
+        CHECK(test::decode_failure<Checkpoint>("") == DecodingResult::kUnexpectedLength);
+        CHECK(test::decode_failure<Checkpoint>("00") == DecodingResult::kUnexpectedLength);
         CHECK(test::decode_failure<Checkpoint>("1F00000000000000"
                                              "FF000000000000000000EE00000000000000000000EE000000000000000000")
-              == DecodingResult::kInputTooShort);
+              == DecodingResult::kUnexpectedLength);
     }
 }
 
@@ -122,8 +122,8 @@ TEST_CASE("AttestationData SSZ") {
         CHECK(test::decode_success<AttestationData>(to_hex(b)) == a);
     }
     SECTION("decoding error") {
-        CHECK(test::decode_failure<AttestationData>("") == DecodingResult::kInputTooShort);
-        CHECK(test::decode_failure<AttestationData>("00") == DecodingResult::kInputTooShort);
+        CHECK(test::decode_failure<AttestationData>("") == DecodingResult::kUnexpectedLength);
+        CHECK(test::decode_failure<AttestationData>("00") == DecodingResult::kUnexpectedLength);
         CHECK(test::decode_failure<AttestationData>("7400000000000000"
                                                     "0600000000000000"
                                                     "FF000000000000000000EE00000000000000000000EE000000000000000000FF"
@@ -131,7 +131,7 @@ TEST_CASE("AttestationData SSZ") {
                                                     "FF000000000000000000EE00000000000000000000EE000000000000000000FF"
                                                     "1F00000000000000"
                                                     "FF000000000000000000EE00000000000000000000EE000000000000000000")
-              == DecodingResult::kInputTooShort);
+              == DecodingResult::kUnexpectedLength);
     }
 }
 
@@ -155,14 +155,14 @@ TEST_CASE("BeaconBlockHeader SSZ") {
         CHECK(test::decode_success<BeaconBlockHeader>(to_hex(b)) == a);
     }
     SECTION("decoding error") {
-        CHECK(test::decode_failure<BeaconBlockHeader>("") == DecodingResult::kInputTooShort);
-        CHECK(test::decode_failure<BeaconBlockHeader>("00") == DecodingResult::kInputTooShort);
+        CHECK(test::decode_failure<BeaconBlockHeader>("") == DecodingResult::kUnexpectedLength);
+        CHECK(test::decode_failure<BeaconBlockHeader>("00") == DecodingResult::kUnexpectedLength);
         CHECK(test::decode_failure<BeaconBlockHeader>("1500000000000000"
                                                       "7800000000000000"
                                                       "FF000000000000000000EE00000000000000000000EE000000000000000000FF"
                                                       "FF000000000000000000EE00000000000000000000EE000000000000000000FF"
                                                       "FF000000000000000000EE00000000000000000000EE000000000000000000")
-              == DecodingResult::kInputTooShort);
+              == DecodingResult::kUnexpectedLength);
     }
 }
 
@@ -212,8 +212,8 @@ TEST_CASE("SignedBeaconBlockHeader SSZ") {
         CHECK(test::decode_success<SignedBeaconBlockHeader>(to_hex(b)) == a);
     }
     SECTION("decoding error") {
-        CHECK(test::decode_failure<SignedBeaconBlockHeader>("") == DecodingResult::kInputTooShort);
-        CHECK(test::decode_failure<SignedBeaconBlockHeader>("00") == DecodingResult::kInputTooShort);
+        CHECK(test::decode_failure<SignedBeaconBlockHeader>("") == DecodingResult::kUnexpectedLength);
+        CHECK(test::decode_failure<SignedBeaconBlockHeader>("00") == DecodingResult::kUnexpectedLength);
         CHECK(test::decode_failure<SignedBeaconBlockHeader>("1500000000000000"
                                                             "7800000000000000"
                                                             "FF000000000000000000EE00000000000000000000EE000000000000000000FF"
@@ -222,7 +222,7 @@ TEST_CASE("SignedBeaconBlockHeader SSZ") {
                                                             "0000000000000000000000000000000000000000000000000000000000000000"
                                                             "0000000000000000000000000000000000000000000000000000000000000000"
                                                             "00000000000000000000000000000000000000000000000000000000000000")
-              == DecodingResult::kInputTooShort);
+              == DecodingResult::kUnexpectedLength);
     }
 }
 
@@ -519,10 +519,10 @@ TEST_CASE("ProposerSlashing SSZ") {
         CHECK(test::decode_success<ProposerSlashing>(to_hex(kSerialized)) == a);
     }
     SECTION("decoding error") {
-        CHECK(test::decode_failure<ProposerSlashing>("") == DecodingResult::kInputTooShort);
-        CHECK(test::decode_failure<ProposerSlashing>("00") == DecodingResult::kInputTooShort);
+        CHECK(test::decode_failure<ProposerSlashing>("") == DecodingResult::kUnexpectedLength);
+        CHECK(test::decode_failure<ProposerSlashing>("00") == DecodingResult::kUnexpectedLength);
         // Next check truncates the input *one byte before* the end of the first SignedBeaconBlockHeader producing a corrupt serialization
-        CHECK(test::decode_failure<ProposerSlashing>(kSerialized.substr(0, SignedBeaconBlockHeader::kSize - 1)) == DecodingResult::kInputTooShort);
+        CHECK(test::decode_failure<ProposerSlashing>(kSerialized.substr(0, SignedBeaconBlockHeader::kSize - 1)) == DecodingResult::kUnexpectedLength);
     }
 }
 
@@ -681,15 +681,15 @@ TEST_CASE("DepositData SSZ") {
         CHECK(test::decode_success<DepositData>(to_hex(b)) == a);
     }
     SECTION("decoding error") {
-        CHECK(test::decode_failure<DepositData>("") == DecodingResult::kInputTooShort);
-        CHECK(test::decode_failure<DepositData>("00") == DecodingResult::kInputTooShort);
+        CHECK(test::decode_failure<DepositData>("") == DecodingResult::kUnexpectedLength);
+        CHECK(test::decode_failure<DepositData>("00") == DecodingResult::kUnexpectedLength);
         CHECK(test::decode_failure<DepositData>("FF00000000000000FF00FF00000000000000FF00000000000000FF00FF00000000000000FF00000000000000FF00FF00"
                                                 "AA000000000000000000000000000000000000000000000000000000000000BB"
                                                 "1000000000000000"
                                                 "0000000000000000000000000000000000000000000000000000000000000000"
                                                 "0000000000000000000000000000000000000000000000000000000000000000"
                                                 "00000000000000000000000000000000000000000000000000000000000000")
-              == DecodingResult::kInputTooShort);
+              == DecodingResult::kUnexpectedLength);
     }
 }
 

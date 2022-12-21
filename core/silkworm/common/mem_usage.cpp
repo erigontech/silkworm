@@ -73,6 +73,7 @@ size_t get_mem_usage(bool resident) {
 
 #else
     // Unsupported platform
+    (void)resident;  // disable unused-parameter warning
     return 0;
 #endif
 }

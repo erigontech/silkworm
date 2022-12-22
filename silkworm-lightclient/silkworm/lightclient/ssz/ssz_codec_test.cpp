@@ -53,6 +53,22 @@ TEST_CASE("uint64_t SSZ") {
     }
 }
 
+TEST_CASE("evmc::address SSZ") {
+    SECTION("round-trip") {
+        evmc::address a{0xFF000000000000000000000000000000000000FF_address};
+        Bytes b{};
+        ssz::encode(a, b);
+        CHECK(b == *from_hex("0xFF000000000000000000000000000000000000FF"));
+        CHECK(test::decode_success<evmc::address>(to_hex(b)) == a);
+    }
+    SECTION("decoding error") {
+        CHECK(test::decode_failure<evmc::address>("") == DecodingResult::kInputTooShort);
+        CHECK(test::decode_failure<evmc::address>("00") == DecodingResult::kInputTooShort);
+        CHECK(test::decode_failure<evmc::address>(
+                  "0xFF000000000000000000000000000000000000") == DecodingResult::kInputTooShort);
+    }
+}
+
 TEST_CASE("evmc::bytes32 SSZ") {
     SECTION("round-trip") {
         evmc::bytes32 a{0xFF000000000000000000EE00000000000000000000EE000000000000000000FF_bytes32};

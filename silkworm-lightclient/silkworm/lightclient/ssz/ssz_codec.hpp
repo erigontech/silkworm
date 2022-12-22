@@ -41,6 +41,9 @@ void encode(T (&from)[N], Bytes& to) noexcept {
 }
 
 template <>
+void encode(evmc::address& from, Bytes& to) noexcept;
+
+template <>
 void encode(evmc::bytes32& from, Bytes& to) noexcept;
 
 DecodingResult decode(ByteView from, uint32_t& to) noexcept;
@@ -62,6 +65,9 @@ DecodingResult decode(ByteView from, T (&to)[N]) noexcept {
     from.remove_prefix(N);
     return DecodingResult::kOk;
 }
+
+template <>
+DecodingResult decode(ByteView from, evmc::address& to) noexcept;
 
 template <>
 DecodingResult decode(ByteView from, evmc::bytes32& to) noexcept;

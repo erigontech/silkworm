@@ -106,6 +106,7 @@ struct SszStaticTestRunner : public TestRunner {
         handlers_.emplace("VoluntaryExit", round_trip<cl::VoluntaryExit>);
         handlers_.emplace("SignedVoluntaryExit", round_trip<cl::SignedVoluntaryExit>);
         // handlers_.emplace("SyncAggregate", round_trip<cl::SyncAggregate>);  // TODO(canepat) commitee bits size 64 or 4? 64 => all consensus tests fail
+        // handlers_.emplace("ExecutionPayload", round_trip<cl::ExecutionPayload>);  // TODO(canepat) all test vectors fail
     }
 
     void run(const fs::path& test_case_dir) const override {

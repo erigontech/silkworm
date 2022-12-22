@@ -33,6 +33,13 @@ void encode(uint64_t from, Bytes& to) noexcept {
 }
 
 template <>
+void encode(evmc::address& from, Bytes& to) noexcept {
+    for (std::size_t i{0}; i < kAddressLength; ++i) {
+        to += from.bytes[i];
+    }
+}
+
+template <>
 void encode(evmc::bytes32& from, Bytes& to) noexcept {
     for (std::size_t i{0}; i < kHashLength; ++i) {
         to += from.bytes[i];
@@ -55,6 +62,17 @@ DecodingResult decode(ByteView from, uint64_t& to) noexcept {
     }
     for (std::size_t i{0}; i < sizeof(uint64_t); ++i) {
         to += static_cast<uint64_t>(from[i]) << (i*8);
+    }
+    return DecodingResult::kOk;
+}
+
+template <>
+DecodingResult decode(ByteView from, evmc::address& to) noexcept {
+    if (from.size() < kAddressLength) {
+        return DecodingResult::kInputTooShort;
+    }
+    for (std::size_t i{0}; i < kAddressLength; ++i) {
+        to.bytes[i] = from[i];
     }
     return DecodingResult::kOk;
 }

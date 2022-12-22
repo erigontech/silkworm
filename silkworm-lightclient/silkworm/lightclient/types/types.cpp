@@ -18,6 +18,8 @@
 
 #include <bit>
 
+#include <silkworm/common/assert.hpp>
+
 namespace silkworm::cl {
 
 bool operator==(const Eth1Data& lhs, const Eth1Data& rhs) {
@@ -162,6 +164,29 @@ int SyncAggregate::count_commitee_bits() const {
         sum += std::popcount(commitee_bits[i]);
     }
     return sum;
+}
+
+bool operator==(const ExecutionPayload& lhs, const ExecutionPayload& rhs) {
+    if (lhs.parent_hash != rhs.parent_hash) return false;
+    if (lhs.fee_recipient != rhs.fee_recipient) return false;
+    if (lhs.state_root != rhs.state_root) return false;
+    if (lhs.receipts_root != rhs.receipts_root) return false;
+    for (std::size_t i{0}; i < kLogsBloomSize; ++i) {
+        if (lhs.logs_bloom[i] != rhs.logs_bloom[i]) return false;
+    }
+    if (lhs.prev_randao != rhs.prev_randao) return false;
+    if (lhs.block_number != rhs.block_number) return false;
+    if (lhs.gas_limit != rhs.gas_limit) return false;
+    if (lhs.gas_used != rhs.gas_used) return false;
+    if (lhs.timestamp != rhs.timestamp) return false;
+    if (lhs.extra_data != rhs.extra_data) return false;
+    if (lhs.base_fee_per_gas != rhs.base_fee_per_gas) return false;
+    if (lhs.block_hash != rhs.block_hash) return false;
+    if (lhs.transactions.size() != rhs.transactions.size()) return false;
+    for (std::size_t i{0}; i < lhs.transactions.size(); ++i) {
+        if (lhs.transactions[i] != rhs.transactions[i]) return false;
+    }
+    return true;
 }
 
 }  // namespace silkworm::cl
@@ -708,6 +733,151 @@ DecodingResult decode(ByteView from, cl::SyncAggregate& to) noexcept {
     if (auto err{ssz::decode(from.substr(pos, cl::kSignatureSize), to.commitee_signature)}; err != DecodingResult::kOk) {
         return err;
     }
+
+    return DecodingResult::kOk;
+}
+
+template <>
+void encode(cl::ExecutionPayload& from, Bytes& to) noexcept {
+    ssz::encode(from.parent_hash, to);
+    ssz::encode(from.fee_recipient, to);
+    ssz::encode(from.state_root, to);
+    ssz::encode(from.receipts_root, to);
+    ssz::encode(from.logs_bloom, to);
+    ssz::encode(from.prev_randao, to);
+    ssz::encode(from.block_number, to);
+    ssz::encode(from.gas_limit, to);
+    ssz::encode(from.gas_used, to);
+    ssz::encode(from.timestamp, to);
+
+    uint32_t offset = cl::ExecutionPayload::kMinSize;
+    ssz::encode_offset(offset, to);
+
+    ssz::encode(from.base_fee_per_gas, to);
+    ssz::encode(from.block_hash, to);
+
+    offset += from.extra_data.size();
+    ssz::encode_offset(offset, to);
+
+    // TODO(canepat) support encoding errors
+    /*if (from.extra_data.size() > cl::ExecutionPayload::kMaxExtraDataSize) {
+        return EncodingResult::kTooManyElements;
+    }*/
+    to += from.extra_data;
+
+    // TODO(canepat) support encoding errors
+    /*if (from.transactions.size() > cl::ExecutionPayload::kMaxTransactionCount) {
+        return EncodingResult::kTooManyElements;
+    }*/
+    offset = sizeof(uint32_t) * from.transactions.size();
+    for (const auto& transaction : from.transactions) {
+        ssz::encode_offset(offset, to);
+        offset += transaction.size();
+    }
+    for (const auto& transaction : from.transactions) {
+        /*if (transaction.size() > cl::ExecutionPayload::kMaxTransactionSize) {
+            return EncodingResult::kTooManyElements;
+        }*/
+        to += transaction;
+    }
+}
+
+template <>
+DecodingResult decode(ByteView from, cl::ExecutionPayload& to) noexcept {
+    const auto size = from.size();
+    if (size < cl::ExecutionPayload::kMinSize) {
+        return DecodingResult::kInputTooShort;
+    }
+    if (size > cl::ExecutionPayload::kMaxSize) {
+        return DecodingResult::kUnexpectedLength;
+    }
+
+    std::size_t pos{0};
+    if (auto err{ssz::decode(from.substr(pos, kHashLength), to.parent_hash)}; err != DecodingResult::kOk) {
+        return err;
+    }
+    pos += kHashLength;
+
+    if (auto err{ssz::decode(from.substr(pos, kAddressLength), to.fee_recipient)}; err != DecodingResult::kOk) {
+        return err;
+    }
+    pos += kAddressLength;
+
+    if (auto err{ssz::decode(from.substr(pos, kHashLength), to.state_root)}; err != DecodingResult::kOk) {
+        return err;
+    }
+    pos += kHashLength;
+
+    if (auto err{ssz::decode(from.substr(pos, kHashLength), to.receipts_root)}; err != DecodingResult::kOk) {
+        return err;
+    }
+    pos += kHashLength;
+
+    if (auto err{ssz::decode(from.substr(pos, cl::kLogsBloomSize), to.logs_bloom)}; err != DecodingResult::kOk) {
+        return err;
+    }
+    pos += cl::kLogsBloomSize;
+
+    if (auto err{ssz::decode(from.substr(pos, kHashLength), to.prev_randao)}; err != DecodingResult::kOk) {
+        return err;
+    }
+    pos += kHashLength;
+
+    if (auto err{ssz::decode(from.substr(pos, sizeof(uint64_t)), to.block_number)}; err != DecodingResult::kOk) {
+        return err;
+    }
+    pos += sizeof(uint64_t);
+
+    if (auto err{ssz::decode(from.substr(pos, sizeof(uint64_t)), to.gas_limit)}; err != DecodingResult::kOk) {
+        return err;
+    }
+    pos += sizeof(uint64_t);
+
+    if (auto err{ssz::decode(from.substr(pos, sizeof(uint64_t)), to.gas_used)}; err != DecodingResult::kOk) {
+        return err;
+    }
+    pos += sizeof(uint64_t);
+
+    if (auto err{ssz::decode(from.substr(pos, sizeof(uint64_t)), to.timestamp)}; err != DecodingResult::kOk) {
+        return err;
+    }
+    pos += sizeof(uint64_t);
+
+    uint32_t offset10{0};
+        if (auto err{ssz::decode_offset(from.substr(pos, sizeof(uint32_t)), offset10)}; err != DecodingResult::kOk) {
+        return err;
+    }
+    if (offset10 < cl::ExecutionPayload::kMinSize || offset10 > size) {
+        return DecodingResult::kUnexpectedLength;
+    }
+    pos += sizeof(uint32_t);
+
+    if (auto err{ssz::decode(from.substr(pos, kHashLength), to.base_fee_per_gas)}; err != DecodingResult::kOk) {
+        return err;
+    }
+    pos += kHashLength;
+
+    if (auto err{ssz::decode(from.substr(pos, kHashLength), to.block_hash)}; err != DecodingResult::kOk) {
+        return err;
+    }
+    pos += kHashLength;
+
+    uint32_t offset13{0};
+    if (auto err{ssz::decode_offset(from.substr(pos, sizeof(uint32_t)), offset13)}; err != DecodingResult::kOk) {
+        return err;
+    }
+    if (offset13 < offset10 || offset13 > size) {
+        return DecodingResult::kUnexpectedLength;
+    }
+    pos += sizeof(uint32_t);
+    // SILKWORM_ASSERT(pos == offset10);
+
+    const std::size_t extra_data_size = offset13 - offset10;
+    to.extra_data.reserve(extra_data_size);
+    to.extra_data = from.substr(pos, extra_data_size);
+    pos += extra_data_size;
+
+    // ByteView transactions_buffer = from.substr(pos);
 
     return DecodingResult::kOk;
 }

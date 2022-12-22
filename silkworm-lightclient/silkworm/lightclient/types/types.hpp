@@ -31,6 +31,7 @@ static constexpr std::size_t kCommiteeBitsSize{64};
 static constexpr std::size_t kCredentialsSize{32};
 static constexpr std::size_t kPublicKeySize{48};
 static constexpr std::size_t kSignatureSize{96};
+static constexpr std::size_t kLogsBloomSize{256};
 
 static constexpr std::size_t kProofHashCount{33};
 
@@ -193,6 +194,43 @@ struct SyncAggregate {
 
 bool operator==(const SyncAggregate& lhs, const SyncAggregate& rhs);
 
+//! Execution payload is sent to EL once validation is done to request block execution.
+struct ExecutionPayload {
+    evmc::bytes32 parent_hash;
+    evmc::address fee_recipient;
+    evmc::bytes32 state_root;
+    evmc::bytes32 receipts_root;
+    uint8_t logs_bloom[kLogsBloomSize];
+    evmc::bytes32 prev_randao;
+    uint64_t block_number;
+    uint64_t gas_limit;
+    uint64_t gas_used;
+    uint64_t timestamp;
+    Bytes extra_data;
+    evmc::bytes32 base_fee_per_gas;
+    evmc::bytes32 block_hash;
+    std::vector<Bytes> transactions;
+
+    static constexpr std::size_t kMaxExtraDataSize{32};
+    static constexpr std::size_t kMaxTransactionCount{1'048'576};
+    static constexpr std::size_t kMaxTransactionSize{1'073'741'824};
+    static constexpr std::size_t kMinSize{6 * kHashLength + kAddressLength + kLogsBloomSize + 4 * sizeof(uint64_t) + 2 * sizeof(uint32_t)};
+    static constexpr std::size_t kMaxSize{kMinSize + kMaxExtraDataSize + kMaxTransactionCount * kMaxTransactionSize};
+
+    [[nodiscard]] std::size_t size() const { return kMinSize + extra_data.size() + size_transactions(); }
+
+  private:
+    [[nodiscard]] std::size_t size_transactions() const {
+        std::size_t size{0};
+        for (const auto& transaction : transactions) {
+            size += transaction.size();
+        }
+        return size;
+    }
+};
+
+bool operator==(const ExecutionPayload& lhs, const ExecutionPayload& rhs);
+
 }  // namespace silkworm::cl
 
 namespace silkworm::ssz {
@@ -280,5 +318,11 @@ void encode(cl::SyncAggregate& from, Bytes& to) noexcept;
 
 template <>
 DecodingResult decode(ByteView from, cl::SyncAggregate& to) noexcept;
+
+template <>
+void encode(cl::ExecutionPayload& from, Bytes& to) noexcept;
+
+template <>
+DecodingResult decode(ByteView from, cl::ExecutionPayload& to) noexcept;
 
 }  // namespace silkworm::ssz

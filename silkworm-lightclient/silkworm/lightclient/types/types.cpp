@@ -16,6 +16,8 @@
 
 #include "types.hpp"
 
+#include <bit>
+
 namespace silkworm::cl {
 
 bool operator==(const Eth1Data& lhs, const Eth1Data& rhs) {
@@ -142,6 +144,24 @@ bool operator==(const SignedVoluntaryExit& lhs, const SignedVoluntaryExit& rhs) 
         if (lhs.signature[i] != rhs.signature[i]) return false;
     }
     return true;
+}
+
+bool operator==(const SyncAggregate& lhs, const SyncAggregate& rhs) {
+    for (std::size_t i{0}; i < kCommiteeBitsSize; ++i) {
+        if (lhs.commitee_bits[i] != rhs.commitee_bits[i]) return false;
+    }
+    for (std::size_t i{0}; i < kSignatureSize; ++i) {
+        if (lhs.commitee_signature[i] != rhs.commitee_signature[i]) return false;
+    }
+    return true;
+}
+
+int SyncAggregate::count_commitee_bits() const {
+    int sum{0};
+    for (std::size_t i{0}; i < kCommiteeBitsSize; ++i) {
+        sum += std::popcount(commitee_bits[i]);
+    }
+    return sum;
 }
 
 }  // namespace silkworm::cl
@@ -661,6 +681,31 @@ DecodingResult decode(ByteView from, cl::SignedVoluntaryExit& to) noexcept {
 
     pos += cl::VoluntaryExit::kSize;
     if (auto err{ssz::decode(from.substr(pos, cl::kSignatureSize), to.signature)}; err != DecodingResult::kOk) {
+        return err;
+    }
+
+    return DecodingResult::kOk;
+}
+
+template <>
+void encode(cl::SyncAggregate& from, Bytes& to) noexcept {
+    ssz::encode(from.commitee_bits, to);
+    ssz::encode(from.commitee_signature, to);
+}
+
+template <>
+DecodingResult decode(ByteView from, cl::SyncAggregate& to) noexcept {
+    if (from.size() != cl::SyncAggregate::kSize) {
+        return DecodingResult::kUnexpectedLength;
+    }
+
+    std::size_t pos{0};
+    if (auto err{ssz::decode(from.substr(pos, cl::kCommiteeBitsSize), to.commitee_bits)}; err != DecodingResult::kOk) {
+        return err;
+    }
+
+    pos += cl::kCommiteeBitsSize;
+    if (auto err{ssz::decode(from.substr(pos, cl::kSignatureSize), to.commitee_signature)}; err != DecodingResult::kOk) {
         return err;
     }
 

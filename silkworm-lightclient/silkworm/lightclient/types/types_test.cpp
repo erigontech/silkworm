@@ -807,4 +807,39 @@ TEST_CASE("SignedVoluntaryExit SSZ") {
     }
 }
 
+TEST_CASE("SyncAggregate SSZ") {
+    const char* kEmptySerialized{
+        "0000000000000000000000000000000000000000000000000000000000000000"
+        "0000000000000000000000000000000000000000000000000000000000000000"
+        "0000000000000000000000000000000000000000000000000000000000000000"
+        "0000000000000000000000000000000000000000000000000000000000000000"
+        "0000000000000000000000000000000000000000000000000000000000000000"
+    };
+    SECTION("round-trip") {
+        SyncAggregate a{
+            {},
+            {},
+        };
+        CHECK(a.count_commitee_bits() == 0);
+        Bytes b{};
+        ssz::encode(a, b);
+        CHECK(b == *from_hex(kEmptySerialized));
+        CHECK(test::decode_success<SyncAggregate>(to_hex(b)) == a);
+    }
+    SECTION("decoding error") {
+        CHECK(test::decode_failure<SyncAggregate>("") == DecodingResult::kUnexpectedLength);
+        CHECK(test::decode_failure<SyncAggregate>("00") == DecodingResult::kUnexpectedLength);
+        Bytes empty_serialized_bytes = *from_hex(kEmptySerialized);
+        empty_serialized_bytes = empty_serialized_bytes.substr(0, empty_serialized_bytes.size() - 1);
+        CHECK(test::decode_failure<SyncAggregate>(to_hex(empty_serialized_bytes)) == DecodingResult::kUnexpectedLength);
+    }
+    SECTION("commitee bits") {
+        SyncAggregate a{
+            {0x7E, 0x12, 0xFF},
+            {},
+        };
+        CHECK(a.count_commitee_bits() == 16);
+    }
+}
+
 }  // namespace silkworm::cl

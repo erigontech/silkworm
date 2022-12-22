@@ -105,6 +105,7 @@ struct SszStaticTestRunner : public TestRunner {
         handlers_.emplace("SignedBeaconBlockHeader", round_trip<cl::SignedBeaconBlockHeader>);
         handlers_.emplace("VoluntaryExit", round_trip<cl::VoluntaryExit>);
         handlers_.emplace("SignedVoluntaryExit", round_trip<cl::SignedVoluntaryExit>);
+        // handlers_.emplace("SyncAggregate", round_trip<cl::SyncAggregate>);  // TODO(canepat) commitee bits size 64 or 4? 64 => all consensus tests fail
     }
 
     void run(const fs::path& test_case_dir) const override {
@@ -131,11 +132,12 @@ struct SszStaticTestRunner : public TestRunner {
                 case TestStatus::kFailed:
                     total_failed++;
                     if (trace_on_fail_) {
-                        SILK_ERROR << "test failed: " << test_case_dir.string();
+                        SILK_ERROR << "test failed: " << test_case_dir.string() << " input: "
+                                   << to_hex(snappy::decompress(serialized));
                     }
                     if (stop_at_fail_) {
-                        const auto err{test_handler + "_" + test_suite + "_" + test_case};
-                        throw std::logic_error{"first test failed: " + err};
+                        const auto test_name{test_handler + "_" + test_suite + "_" + test_case};
+                        throw std::logic_error{"first test failed: " + test_name};
                     }
                     break;
                 case TestStatus::kSkipped:
@@ -148,6 +150,9 @@ struct SszStaticTestRunner : public TestRunner {
   private:
     template <class T>
     static TestStatus round_trip(ByteView serialized_input) {
+        if (!snappy::is_valid_compressed_data(serialized_input)) {
+            return skip_snappy_fail_ ? TestStatus::kSkipped : TestStatus::kFailed;
+        }
         SILK_DEBUG << "serialized_input: " << silkworm::to_hex(serialized_input);
         Bytes uncompressed_input = snappy::decompress(serialized_input);
         SILK_DEBUG << "uncompressed_input: " << silkworm::to_hex(uncompressed_input);

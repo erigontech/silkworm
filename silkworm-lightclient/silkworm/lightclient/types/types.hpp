@@ -27,6 +27,7 @@
 
 namespace silkworm::cl {
 
+static constexpr std::size_t kCommiteeBitsSize{64};
 static constexpr std::size_t kCredentialsSize{32};
 static constexpr std::size_t kPublicKeySize{48};
 static constexpr std::size_t kSignatureSize{96};
@@ -180,6 +181,18 @@ struct SignedVoluntaryExit {
 
 bool operator==(const SignedVoluntaryExit& lhs, const SignedVoluntaryExit& rhs);
 
+//! Determine successful committee: bits shows active participants and signature is the aggregate BLS signature.
+struct SyncAggregate {
+    uint8_t commitee_bits[kCommiteeBitsSize]{};
+    uint8_t commitee_signature[kSignatureSize]{};
+
+    static constexpr std::size_t kSize{kCommiteeBitsSize + kSignatureSize};
+
+    [[nodiscard]] int count_commitee_bits() const;
+};
+
+bool operator==(const SyncAggregate& lhs, const SyncAggregate& rhs);
+
 }  // namespace silkworm::cl
 
 namespace silkworm::ssz {
@@ -261,5 +274,11 @@ void encode(cl::SignedVoluntaryExit& from, Bytes& to) noexcept;
 
 template <>
 DecodingResult decode(ByteView from, cl::SignedVoluntaryExit& to) noexcept;
+
+template <>
+void encode(cl::SyncAggregate& from, Bytes& to) noexcept;
+
+template <>
+DecodingResult decode(ByteView from, cl::SyncAggregate& to) noexcept;
 
 }  // namespace silkworm::ssz

@@ -156,7 +156,7 @@ namespace detail {
         if (const auto result{rlp::decode(from, to.txn_count)}; result != DecodingResult::kOk) {
             return result;
         }
-        if (const auto result{rlp::decode_vector(from, to.ommers)}; result != DecodingResult::kOk) {
+        if (const auto result{rlp::decode(from, to.ommers)}; result != DecodingResult::kOk) {
             return result;
         }
 

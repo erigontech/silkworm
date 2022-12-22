@@ -36,9 +36,6 @@ namespace rlp {
     template <>
     DecodingResult decode(ByteView& from, NewBlockHash& to) noexcept;
 
-    template <>
-    DecodingResult decode(ByteView& from, NewBlockHashesPacket& to) noexcept;
-
 }  // namespace rlp
 
 inline std::ostream& operator<<(std::ostream& os, const NewBlockHashesPacket& packet) {

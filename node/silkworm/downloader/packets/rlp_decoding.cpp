@@ -38,21 +38,6 @@ DecodingResult decode(ByteView& from, Hash& to) noexcept {
 }
 
 template <>
-DecodingResult decode(ByteView& from, BlockBodiesPacket& to) noexcept {
-    return rlp::decode_vector(from, to);
-}
-
-template <>
-DecodingResult decode(ByteView& from, BlockHeadersPacket& to) noexcept {
-    return rlp::decode_vector(from, to);
-}
-
-template <>
-DecodingResult decode(ByteView& from, GetBlockBodiesPacket& to) noexcept {
-    return rlp::decode_vector(from, to);
-}
-
-template <>
 DecodingResult decode(ByteView& from, NewBlockHash& to) noexcept {
     auto [rlp_head, err0]{decode_header(from)};
     if (err0 != DecodingResult::kOk) {
@@ -72,11 +57,6 @@ DecodingResult decode(ByteView& from, NewBlockHash& to) noexcept {
     }
 
     return from.length() == leftover ? DecodingResult::kOk : DecodingResult::kListLengthMismatch;
-}
-
-template <>
-DecodingResult decode(ByteView& from, NewBlockHashesPacket& to) noexcept {
-    return rlp::decode_vector(from, to);
 }
 
 template <>

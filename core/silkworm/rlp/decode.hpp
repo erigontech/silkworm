@@ -97,7 +97,7 @@ DecodingResult decode(ByteView& from, std::array<uint8_t, N>& to) noexcept {
 }
 
 template <class T>
-DecodingResult decode_vector(ByteView& from, std::vector<T>& to) noexcept {
+DecodingResult decode(ByteView& from, std::vector<T>& to) noexcept {
     auto [h, err]{decode_header(from)};
     if (err != DecodingResult::kOk) {
         return err;
@@ -118,11 +118,6 @@ DecodingResult decode_vector(ByteView& from, std::vector<T>& to) noexcept {
 
     from.remove_prefix(h.payload_length);
     return DecodingResult::kOk;
-}
-
-template <class T>
-DecodingResult decode(ByteView& from, std::vector<T>& to) noexcept {
-    return decode_vector(from, to);
 }
 
 template <typename Arg1, typename Arg2>

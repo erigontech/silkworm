@@ -25,13 +25,20 @@ namespace silkworm::test {
 template <class T>
 static bool encode_success(T& obj, std::string_view encoded_hex) {
     Bytes encoded_bytes{};
-    ssz::encode(obj, encoded_bytes);
+    REQUIRE(ssz::encode(obj, encoded_bytes) == EncodingResult::kOk);
     return to_hex(encoded_bytes) == encoded_hex;
 }
 
 template <class T>
 static bool encode_success(T& obj, ByteView encoded_view) {
     return encode_success<T>(obj, to_hex(encoded_view));
+}
+
+template <class T>
+static Bytes encode_success(T& obj) {
+    Bytes encoded_bytes{};
+    REQUIRE(ssz::encode(obj, encoded_bytes) == EncodingResult::kOk);
+    return encoded_bytes;
 }
 
 template <class T>

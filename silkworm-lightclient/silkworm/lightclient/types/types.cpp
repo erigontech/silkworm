@@ -18,8 +18,6 @@
 
 #include <bit>
 
-#include <silkworm/common/assert.hpp>
-
 namespace silkworm::cl {
 
 bool operator==(const Eth1Data& lhs, const Eth1Data& rhs) {
@@ -194,10 +192,11 @@ bool operator==(const ExecutionPayload& lhs, const ExecutionPayload& rhs) {
 namespace silkworm::ssz {
 
 template <>
-void encode(cl::Eth1Data& from, Bytes& to) noexcept {
+EncodingResult encode(cl::Eth1Data& from, Bytes& to) noexcept {
     ssz::encode(from.root, to);
     ssz::encode(from.deposit_count, to);
     ssz::encode(from.block_hash, to);
+    return EncodingResult::kOk;
 }
 
 template <>
@@ -227,9 +226,10 @@ DecodingResult decode(ByteView from, cl::Eth1Data& to) noexcept {
 }
 
 template <>
-void encode(cl::Checkpoint& from, Bytes& to) noexcept {
+EncodingResult encode(cl::Checkpoint& from, Bytes& to) noexcept {
     ssz::encode(from.epoch, to);
     ssz::encode(from.root, to);
+    return EncodingResult::kOk;
 }
 
 template <>
@@ -253,18 +253,19 @@ DecodingResult decode(ByteView from, cl::Checkpoint& to) noexcept {
 }
 
 template <>
-void encode(cl::AttestationData& from, Bytes& to) noexcept {
+EncodingResult encode(cl::AttestationData& from, Bytes& to) noexcept {
     ssz::encode(from.slot, to);
     ssz::encode(from.index, to);
     ssz::encode(from.beacon_block_hash, to);
     if (!from.source) {
         from.source = std::make_shared<cl::Checkpoint>();
     }
-    ssz::encode(*from.source, to);
+    (void)ssz::encode(*from.source, to);
     if (!from.target) {
         from.target = std::make_shared<cl::Checkpoint>();
     }
-    ssz::encode(*from.target, to);
+    (void)ssz::encode(*from.target, to);
+    return EncodingResult::kOk;
 }
 
 template <>
@@ -303,12 +304,13 @@ DecodingResult decode(ByteView from, cl::AttestationData& to) noexcept {
 }
 
 template <>
-void encode(cl::BeaconBlockHeader& from, Bytes& to) noexcept {
+EncodingResult encode(cl::BeaconBlockHeader& from, Bytes& to) noexcept {
     ssz::encode(from.slot, to);
     ssz::encode(from.proposer_index, to);
     ssz::encode(from.parent_root, to);
     ssz::encode(from.root, to);
     ssz::encode(from.body_root, to);
+    return EncodingResult::kOk;
 }
 
 template <>
@@ -345,12 +347,13 @@ DecodingResult decode(ByteView from, cl::BeaconBlockHeader& to) noexcept {
 }
 
 template <>
-void encode(cl::SignedBeaconBlockHeader& from, Bytes& to) noexcept {
+EncodingResult encode(cl::SignedBeaconBlockHeader& from, Bytes& to) noexcept {
     if (!from.header) {
         from.header = std::make_shared<cl::BeaconBlockHeader>();
     }
-    ssz::encode(*from.header, to);
-    ssz::encode(from.signature, to);
+    (void)ssz::encode(*from.header, to);
+    (void)ssz::encode(from.signature, to);
+    return EncodingResult::kOk;
 }
 
 template <>
@@ -373,21 +376,21 @@ DecodingResult decode(ByteView from, cl::SignedBeaconBlockHeader& to) noexcept {
 }
 
 template <>
-void encode(cl::IndexedAttestation& from, Bytes& to) noexcept {
+EncodingResult encode(cl::IndexedAttestation& from, Bytes& to) noexcept {
     ssz::encode_offset(cl::IndexedAttestation::kMinSize, to);
     if (!from.data) {
         from.data = std::make_shared<cl::AttestationData>();
     }
-    ssz::encode(*from.data, to);
-    ssz::encode(from.signature, to);
+    (void)ssz::encode(*from.data, to);
+    (void)ssz::encode(from.signature, to);
 
-    // TODO(canepat) support encoding errors
-    /*if (from.attesting_indices.size() > cl::IndexedAttestation::kMaxAttestingIndices) {
+    if (from.attesting_indices.size() > cl::IndexedAttestation::kMaxAttestingIndices) {
         return EncodingResult::kTooManyElements;
-    }*/
+    }
     for (const auto attesting_index : from.attesting_indices) {
         ssz::encode(attesting_index, to);
     }
+    return EncodingResult::kOk;
 }
 
 template <>
@@ -433,15 +436,16 @@ DecodingResult decode(ByteView from, cl::IndexedAttestation& to) noexcept {
 }
 
 template <>
-void encode(cl::ProposerSlashing& from, Bytes& to) noexcept {
+EncodingResult encode(cl::ProposerSlashing& from, Bytes& to) noexcept {
     if (!from.header1) {
         from.header1 = std::make_shared<cl::SignedBeaconBlockHeader>();
     }
-    ssz::encode(*from.header1, to);
+    (void)ssz::encode(*from.header1, to);
     if (!from.header2) {
         from.header2 = std::make_shared<cl::SignedBeaconBlockHeader>();
     }
-    ssz::encode(*from.header2, to);
+    (void)ssz::encode(*from.header2, to);
+    return EncodingResult::kOk;
 }
 
 template <>
@@ -466,7 +470,7 @@ DecodingResult decode(ByteView from, cl::ProposerSlashing& to) noexcept {
 }
 
 template <>
-void encode(cl::AttesterSlashing& from, Bytes& to) noexcept {
+EncodingResult encode(cl::AttesterSlashing& from, Bytes& to) noexcept {
     std::size_t offset = cl::AttesterSlashing::kMinSize;
     ssz::encode_offset(offset, to);
 
@@ -480,8 +484,9 @@ void encode(cl::AttesterSlashing& from, Bytes& to) noexcept {
         from.attestation2 = std::make_shared<cl::IndexedAttestation>();
     }
 
-    ssz::encode(*from.attestation1, to);
-    ssz::encode(*from.attestation2, to);
+    (void)ssz::encode(*from.attestation1, to);
+    (void)ssz::encode(*from.attestation2, to);
+    return EncodingResult::kOk;
 }
 
 template <>
@@ -528,20 +533,20 @@ DecodingResult decode(ByteView from, cl::AttesterSlashing& to) noexcept {
 }
 
 template <>
-void encode(cl::Attestation& from, Bytes& to) noexcept {
+EncodingResult encode(cl::Attestation& from, Bytes& to) noexcept {
     ssz::encode_offset(cl::Attestation::kMinSize, to);
 
     if (!from.data) {
         from.data = std::make_shared<cl::AttestationData>();
     }
-    ssz::encode(*from.data, to);
-    ssz::encode(from.signature, to);
+    (void)ssz::encode(*from.data, to);
+    (void)ssz::encode(from.signature, to);
 
-    // TODO(canepat) support encoding errors
-    /*if (from.aggregration_bits.size() > cl::Attestation::kMaxAggregationBits) {
+    if (from.aggregration_bits.size() > cl::Attestation::kMaxAggregationBits) {
         return EncodingResult::kTooManyElements;
-    }*/
+    }
     to += from.aggregration_bits;
+    return EncodingResult::kOk;
 }
 
 template <>
@@ -589,11 +594,12 @@ DecodingResult decode(ByteView from, cl::Attestation& to) noexcept {
 }
 
 template <>
-void encode(cl::DepositData& from, Bytes& to) noexcept {
-    ssz::encode(from.public_key, to);
-    ssz::encode(from.withdrawal_credentials, to);
+EncodingResult encode(cl::DepositData& from, Bytes& to) noexcept {
+    (void)ssz::encode(from.public_key, to);
+    (void)ssz::encode(from.withdrawal_credentials, to);
     ssz::encode(from.amount, to);
-    ssz::encode(from.signature, to);
+    (void)ssz::encode(from.signature, to);
+    return EncodingResult::kOk;
 }
 
 template <>
@@ -626,14 +632,15 @@ DecodingResult decode(ByteView from, cl::DepositData& to) noexcept {
 }
 
 template <>
-void encode(cl::Deposit& from, Bytes& to) noexcept {
+EncodingResult encode(cl::Deposit& from, Bytes& to) noexcept {
     for (auto& proof_element : from.proof) {
         ssz::encode(proof_element, to);
     }
     if (!from.data) {
         from.data = std::make_shared<cl::DepositData>();
     }
-    ssz::encode(*from.data, to);
+    (void)ssz::encode(*from.data, to);
+    return EncodingResult::kOk;
 }
 
 template <>
@@ -659,9 +666,10 @@ DecodingResult decode(ByteView from, cl::Deposit& to) noexcept {
 }
 
 template <>
-void encode(cl::VoluntaryExit& from, Bytes& to) noexcept {
+EncodingResult encode(cl::VoluntaryExit& from, Bytes& to) noexcept {
     ssz::encode(from.epoch, to);
     ssz::encode(from.validator_index, to);
+    return EncodingResult::kOk;
 }
 
 template <>
@@ -684,12 +692,13 @@ DecodingResult decode(ByteView from, cl::VoluntaryExit& to) noexcept {
 }
 
 template <>
-void encode(cl::SignedVoluntaryExit& from, Bytes& to) noexcept {
+EncodingResult encode(cl::SignedVoluntaryExit& from, Bytes& to) noexcept {
     if (!from.voluntary_exit) {
         from.voluntary_exit = std::make_shared<cl::VoluntaryExit>();
     }
-    ssz::encode(*from.voluntary_exit, to);
-    ssz::encode(from.signature, to);
+    (void)ssz::encode(*from.voluntary_exit, to);
+    (void)ssz::encode(from.signature, to);
+    return EncodingResult::kOk;
 }
 
 template <>
@@ -713,9 +722,10 @@ DecodingResult decode(ByteView from, cl::SignedVoluntaryExit& to) noexcept {
 }
 
 template <>
-void encode(cl::SyncAggregate& from, Bytes& to) noexcept {
-    ssz::encode(from.commitee_bits, to);
-    ssz::encode(from.commitee_signature, to);
+EncodingResult encode(cl::SyncAggregate& from, Bytes& to) noexcept {
+    (void)ssz::encode(from.commitee_bits, to);
+    (void)ssz::encode(from.commitee_signature, to);
+    return EncodingResult::kOk;
 }
 
 template <>
@@ -738,12 +748,12 @@ DecodingResult decode(ByteView from, cl::SyncAggregate& to) noexcept {
 }
 
 template <>
-void encode(cl::ExecutionPayload& from, Bytes& to) noexcept {
+EncodingResult encode(cl::ExecutionPayload& from, Bytes& to) noexcept {
     ssz::encode(from.parent_hash, to);
     ssz::encode(from.fee_recipient, to);
     ssz::encode(from.state_root, to);
     ssz::encode(from.receipts_root, to);
-    ssz::encode(from.logs_bloom, to);
+    (void)ssz::encode(from.logs_bloom, to);
     ssz::encode(from.prev_randao, to);
     ssz::encode(from.block_number, to);
     ssz::encode(from.gas_limit, to);
@@ -759,27 +769,27 @@ void encode(cl::ExecutionPayload& from, Bytes& to) noexcept {
     offset += from.extra_data.size();
     ssz::encode_offset(offset, to);
 
-    // TODO(canepat) support encoding errors
-    /*if (from.extra_data.size() > cl::ExecutionPayload::kMaxExtraDataSize) {
+    if (from.extra_data.size() > cl::ExecutionPayload::kMaxExtraDataSize) {
         return EncodingResult::kTooManyElements;
-    }*/
+    }
     to += from.extra_data;
 
-    // TODO(canepat) support encoding errors
-    /*if (from.transactions.size() > cl::ExecutionPayload::kMaxTransactionCount) {
+    if (from.transactions.size() > cl::ExecutionPayload::kMaxTransactionCount) {
         return EncodingResult::kTooManyElements;
-    }*/
+    }
     offset = sizeof(uint32_t) * from.transactions.size();
     for (const auto& transaction : from.transactions) {
         ssz::encode_offset(offset, to);
         offset += transaction.size();
     }
     for (const auto& transaction : from.transactions) {
-        /*if (transaction.size() > cl::ExecutionPayload::kMaxTransactionSize) {
+        if (transaction.size() > cl::ExecutionPayload::kMaxTransactionSize) {
             return EncodingResult::kTooManyElements;
-        }*/
+        }
         to += transaction;
     }
+
+    return EncodingResult::kOk;
 }
 
 template <>
@@ -870,12 +880,11 @@ DecodingResult decode(ByteView from, cl::ExecutionPayload& to) noexcept {
         return DecodingResult::kUnexpectedLength;
     }
     pos += sizeof(uint32_t);
-    // SILKWORM_ASSERT(pos == offset10);
 
     const std::size_t extra_data_size = offset13 - offset10;
     to.extra_data.reserve(extra_data_size);
     to.extra_data = from.substr(pos, extra_data_size);
-    pos += extra_data_size;
+    // pos += extra_data_size;
 
     // ByteView transactions_buffer = from.substr(pos);
 

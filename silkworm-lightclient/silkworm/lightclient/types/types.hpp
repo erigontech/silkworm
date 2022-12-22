@@ -236,91 +236,91 @@ bool operator==(const ExecutionPayload& lhs, const ExecutionPayload& rhs);
 namespace silkworm::ssz {
 
 template <>
-void encode(cl::Eth1Data& from, Bytes& to) noexcept;
+EncodingResult encode(cl::Eth1Data& from, Bytes& to) noexcept;
 
 template <>
 DecodingResult decode(ByteView from, cl::Eth1Data& to) noexcept;
 
 template <>
-void encode(cl::Checkpoint& from, Bytes& to) noexcept;
+EncodingResult encode(cl::Checkpoint& from, Bytes& to) noexcept;
 
 template <>
 DecodingResult decode(ByteView from, cl::Checkpoint& to) noexcept;
 
 template <>
-void encode(cl::AttestationData& from, Bytes& to) noexcept;
+EncodingResult encode(cl::AttestationData& from, Bytes& to) noexcept;
 
 template <>
 DecodingResult decode(ByteView from, cl::AttestationData& to) noexcept;
 
 template <>
-void encode(cl::BeaconBlockHeader& from, Bytes& to) noexcept;
+EncodingResult encode(cl::BeaconBlockHeader& from, Bytes& to) noexcept;
 
 template <>
 DecodingResult decode(ByteView from, cl::BeaconBlockHeader& to) noexcept;
 
 template <>
-void encode(cl::SignedBeaconBlockHeader& from, Bytes& to) noexcept;
+EncodingResult encode(cl::SignedBeaconBlockHeader& from, Bytes& to) noexcept;
 
 template <>
 DecodingResult decode(ByteView from, cl::SignedBeaconBlockHeader& to) noexcept;
 
 template <>
-void encode(cl::IndexedAttestation& from, Bytes& to) noexcept;
+EncodingResult encode(cl::IndexedAttestation& from, Bytes& to) noexcept;
 
 template <>
 DecodingResult decode(ByteView from, cl::IndexedAttestation& to) noexcept;
 
 template <>
-void encode(cl::ProposerSlashing& from, Bytes& to) noexcept;
+EncodingResult encode(cl::ProposerSlashing& from, Bytes& to) noexcept;
 
 template <>
 DecodingResult decode(ByteView from, cl::ProposerSlashing& to) noexcept;
 
 template <>
-void encode(cl::AttesterSlashing& from, Bytes& to) noexcept;
+EncodingResult encode(cl::AttesterSlashing& from, Bytes& to) noexcept;
 
 template <>
 DecodingResult decode(ByteView from, cl::AttesterSlashing& to) noexcept;
 
 template <>
-void encode(cl::Attestation& from, Bytes& to) noexcept;
+EncodingResult encode(cl::Attestation& from, Bytes& to) noexcept;
 
 template <>
 DecodingResult decode(ByteView from, cl::Attestation& to) noexcept;
 
 template <>
-void encode(cl::DepositData& from, Bytes& to) noexcept;
+EncodingResult encode(cl::DepositData& from, Bytes& to) noexcept;
 
 template <>
 DecodingResult decode(ByteView from, cl::DepositData& to) noexcept;
 
 template <>
-void encode(cl::Deposit& from, Bytes& to) noexcept;
+EncodingResult encode(cl::Deposit& from, Bytes& to) noexcept;
 
 template <>
 DecodingResult decode(ByteView from, cl::Deposit& to) noexcept;
 
 template <>
-void encode(cl::VoluntaryExit& from, Bytes& to) noexcept;
+EncodingResult encode(cl::VoluntaryExit& from, Bytes& to) noexcept;
 
 template <>
 DecodingResult decode(ByteView from, cl::VoluntaryExit& to) noexcept;
 
 template <>
-void encode(cl::SignedVoluntaryExit& from, Bytes& to) noexcept;
+EncodingResult encode(cl::SignedVoluntaryExit& from, Bytes& to) noexcept;
 
 template <>
 DecodingResult decode(ByteView from, cl::SignedVoluntaryExit& to) noexcept;
 
 template <>
-void encode(cl::SyncAggregate& from, Bytes& to) noexcept;
+EncodingResult encode(cl::SyncAggregate& from, Bytes& to) noexcept;
 
 template <>
 DecodingResult decode(ByteView from, cl::SyncAggregate& to) noexcept;
 
 template <>
-void encode(cl::ExecutionPayload& from, Bytes& to) noexcept;
+EncodingResult encode(cl::ExecutionPayload& from, Bytes& to) noexcept;
 
 template <>
 DecodingResult decode(ByteView from, cl::ExecutionPayload& to) noexcept;

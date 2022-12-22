@@ -32,14 +32,12 @@ void encode(uint64_t from, Bytes& to) noexcept {
     }
 }
 
-template <>
 void encode(evmc::address& from, Bytes& to) noexcept {
     for (std::size_t i{0}; i < kAddressLength; ++i) {
         to += from.bytes[i];
     }
 }
 
-template <>
 void encode(evmc::bytes32& from, Bytes& to) noexcept {
     for (std::size_t i{0}; i < kHashLength; ++i) {
         to += from.bytes[i];

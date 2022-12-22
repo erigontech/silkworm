@@ -159,13 +159,16 @@ struct SszStaticTestRunner : public TestRunner {
         SILK_DEBUG << "uncompressed_input: " << silkworm::to_hex(uncompressed_input);
         T data;
         ByteView uncompressed_input_view{uncompressed_input};
-        const DecodingResult result = ssz::decode<T>(uncompressed_input_view, data);
-        SILK_DEBUG << "result: " << magic_enum::enum_name(result);
-        if (result != DecodingResult::kOk) {
+        const DecodingResult decoding_result = ssz::decode<T>(uncompressed_input_view, data);
+        SILK_DEBUG << "decoding_result: " << magic_enum::enum_name(decoding_result);
+        if (decoding_result != DecodingResult::kOk) {
             return TestStatus::kFailed;
         }
         Bytes uncompressed_output;
-        ssz::encode<T>(data, uncompressed_output);
+        const EncodingResult encoding_result = ssz::encode<T>(data, uncompressed_output);
+        if (encoding_result != EncodingResult::kOk) {
+            return TestStatus::kFailed;
+        }
         SILK_DEBUG << "uncompressed_output: " << silkworm::to_hex(uncompressed_output);
         if (uncompressed_output != uncompressed_input) {
             return TestStatus::kFailed;

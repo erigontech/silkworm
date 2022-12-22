@@ -27,7 +27,7 @@ TEST_CASE("uint32_t SSZ") {
     SECTION("round-trip") {
         uint32_t a{4294967295};
         Bytes b{};
-        ssz::encode(a, b);
+        (void)ssz::encode(a, b);
         CHECK(b == *from_hex("0xFFFFFFFF"));
         CHECK(test::decode_success<uint32_t>(to_hex(b)) == a);
     }
@@ -42,7 +42,7 @@ TEST_CASE("uint64_t SSZ") {
     SECTION("round-trip") {
         uint64_t a{18446744073709551615u};
         Bytes b{};
-        ssz::encode(a, b);
+        (void)ssz::encode(a, b);
         CHECK(b == *from_hex("0xFFFFFFFFFFFFFFFF"));
         CHECK(test::decode_success<uint64_t>(to_hex(b)) == a);
     }
@@ -57,7 +57,7 @@ TEST_CASE("evmc::address SSZ") {
     SECTION("round-trip") {
         evmc::address a{0xFF000000000000000000000000000000000000FF_address};
         Bytes b{};
-        ssz::encode(a, b);
+        (void)ssz::encode(a, b);
         CHECK(b == *from_hex("0xFF000000000000000000000000000000000000FF"));
         CHECK(test::decode_success<evmc::address>(to_hex(b)) == a);
     }
@@ -73,7 +73,7 @@ TEST_CASE("evmc::bytes32 SSZ") {
     SECTION("round-trip") {
         evmc::bytes32 a{0xFF000000000000000000EE00000000000000000000EE000000000000000000FF_bytes32};
         Bytes b{};
-        ssz::encode(a, b);
+        (void)ssz::encode(a, b);
         CHECK(b == *from_hex("0xFF000000000000000000EE00000000000000000000EE000000000000000000FF"));
         CHECK(test::decode_success<evmc::bytes32>(to_hex(b)) == a);
     }

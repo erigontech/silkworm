@@ -22,6 +22,7 @@
 
 #include <silkworm/common/base.hpp>
 #include <silkworm/common/decoding_result.hpp>
+#include <silkworm/common/encoding_result.hpp>
 
 namespace silkworm::ssz {
 
@@ -30,20 +31,19 @@ void encode(uint32_t from, Bytes& to) noexcept;
 void encode(uint64_t from, Bytes& to) noexcept;
 
 template <class T>
-void encode(T& from, Bytes& to) noexcept;
+EncodingResult encode(T& from, Bytes& to) noexcept;
 
 template <class T, std::size_t N>
 requires std::convertible_to<T, uint8_t>
-void encode(T (&from)[N], Bytes& to) noexcept {
+EncodingResult encode(T (&from)[N], Bytes& to) noexcept {
     for (std::size_t i{0}; i < N; ++i) {
         to += from[i];
     }
+    return EncodingResult::kOk;
 }
 
-template <>
 void encode(evmc::address& from, Bytes& to) noexcept;
 
-template <>
 void encode(evmc::bytes32& from, Bytes& to) noexcept;
 
 DecodingResult decode(ByteView from, uint32_t& to) noexcept;

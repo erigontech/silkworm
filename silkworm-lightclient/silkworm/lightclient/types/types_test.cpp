@@ -31,7 +31,7 @@ TEST_CASE("Eth1Data SSZ") {
             0xFF000000000000000000EE00000000000000000000EE000000000000000000FF_bytes32
         };
         Bytes b{};
-        ssz::encode(a, b);
+        CHECK(ssz::encode(a, b) == EncodingResult::kOk);
         CHECK(b.size() == Eth1Data::kSize);
         CHECK(b == *from_hex(
                        "FF000000000000000000EE00000000000000000000EE000000000000000000FF"
@@ -56,7 +56,7 @@ TEST_CASE("Checkpoint SSZ") {
             0xFF000000000000000000EE00000000000000000000EE000000000000000000FF_bytes32
         };
         Bytes b{};
-        ssz::encode(a, b);
+        CHECK(ssz::encode(a, b) == EncodingResult::kOk);
         CHECK(b.size() == Checkpoint::kSize);
         CHECK(b == *from_hex(
                        "1500000000000000"
@@ -88,7 +88,7 @@ TEST_CASE("AttestationData SSZ") {
             }),
         };
         Bytes b{};
-        ssz::encode(a, b);
+        CHECK(ssz::encode(a, b) == EncodingResult::kOk);
         CHECK(b.size() == AttestationData::kSize);
         CHECK(b == *from_hex(
                        "7800000000000000"
@@ -109,7 +109,7 @@ TEST_CASE("AttestationData SSZ") {
             {},
         };
         Bytes b{};
-        ssz::encode(a, b);
+        CHECK(ssz::encode(a, b) == EncodingResult::kOk);
         CHECK(b.size() == AttestationData::kSize);
         CHECK(b == *from_hex(
                        "7800000000000000"
@@ -145,7 +145,7 @@ TEST_CASE("BeaconBlockHeader SSZ") {
             0xFF000000000000000000EE00000000000000000000EE000000000000000000FF_bytes32
         };
         Bytes b{};
-        ssz::encode(a, b);
+        CHECK(ssz::encode(a, b) == EncodingResult::kOk);
         CHECK(b == *from_hex(
                        "1500000000000000"
                        "7800000000000000"
@@ -179,7 +179,7 @@ TEST_CASE("SignedBeaconBlockHeader SSZ") {
             {}
         };
         Bytes b{};
-        ssz::encode(a, b);
+        CHECK(ssz::encode(a, b) == EncodingResult::kOk);
         CHECK(b.size() == SignedBeaconBlockHeader::kSize);
         CHECK(b == *from_hex(
                        "1500000000000000"
@@ -198,7 +198,7 @@ TEST_CASE("SignedBeaconBlockHeader SSZ") {
             {}
         };
         Bytes b{};
-        ssz::encode(a, b);
+        CHECK(ssz::encode(a, b) == EncodingResult::kOk);
         CHECK(b.size() == SignedBeaconBlockHeader::kSize);
         CHECK(b == *from_hex(
                        "0000000000000000"
@@ -244,7 +244,7 @@ TEST_CASE("IndexedAttestation SSZ") {
             {}
         };
         Bytes b{};
-        ssz::encode(a, b);
+        CHECK(ssz::encode(a, b) == EncodingResult::kOk);
         CHECK(b == *from_hex(
                        "E4000000"
                        "7800000000000000"
@@ -276,7 +276,7 @@ TEST_CASE("IndexedAttestation SSZ") {
             {}
         };
         Bytes b{};
-        ssz::encode(a, b);
+        CHECK(ssz::encode(a, b) == EncodingResult::kOk);
         CHECK(b == *from_hex(
                        "E4000000"
                        "7800000000000000"
@@ -306,7 +306,7 @@ TEST_CASE("IndexedAttestation SSZ") {
             {}
         };
         Bytes b{};
-        ssz::encode(a, b);
+        CHECK(ssz::encode(a, b) == EncodingResult::kOk);
         CHECK(b == *from_hex(
                        "E4000000"
                        "7800000000000000"
@@ -381,7 +381,7 @@ TEST_CASE("AttesterSlashing SSZ") {
             std::make_unique<IndexedAttestation>(IndexedAttestation{}),
         };
         Bytes b{};
-        ssz::encode(a, b);
+        CHECK(ssz::encode(a, b) == EncodingResult::kOk);
         CHECK(b == *from_hex("08000000" // 4 - offset0 attester slashing (8)
                              "ec000000" // 4 - offset1 attester slashing (8 + 228)
                              "e4000000" // 4 - offset0 indexed attestation (228)
@@ -472,7 +472,7 @@ TEST_CASE("ProposerSlashing SSZ") {
             std::make_unique<SignedBeaconBlockHeader>(),
         };
         Bytes b{};
-        ssz::encode(a, b);
+        CHECK(ssz::encode(a, b) == EncodingResult::kOk);
         CHECK(b == *from_hex("0000000000000000"
                        "0000000000000000"
                        "0000000000000000000000000000000000000000000000000000000000000000"
@@ -544,7 +544,7 @@ TEST_CASE("Attestation SSZ") {
             {}
         };
         Bytes b{};
-        ssz::encode(a, b);
+        CHECK(ssz::encode(a, b) == EncodingResult::kOk);
         CHECK(b == *from_hex(
                        "E4000000"
                        "7800000000000000"
@@ -577,7 +577,7 @@ TEST_CASE("Attestation SSZ") {
             {}
         };
         Bytes b{};
-        ssz::encode(a, b);
+        CHECK(ssz::encode(a, b) == EncodingResult::kOk);
         CHECK(b == *from_hex(
                        "E4000000"
                        "7800000000000000"
@@ -606,7 +606,7 @@ TEST_CASE("Attestation SSZ") {
             {}
         };
         Bytes b{};
-        ssz::encode(a, b);
+        CHECK(ssz::encode(a, b) == EncodingResult::kOk);
         CHECK(b == *from_hex(
                        "E4000000"
                        "7800000000000000"
@@ -649,7 +649,7 @@ TEST_CASE("DepositData SSZ") {
             {}
         };
         Bytes b{};
-        ssz::encode(a, b);
+        CHECK(ssz::encode(a, b) == EncodingResult::kOk);
         CHECK(b == *from_hex(
                        "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
                        "0000000000000000000000000000000000000000000000000000000000000000"
@@ -670,7 +670,7 @@ TEST_CASE("DepositData SSZ") {
             {}
         };
         Bytes b{};
-        ssz::encode(a, b);
+        CHECK(ssz::encode(a, b) == EncodingResult::kOk);
         CHECK(b == *from_hex(
                        "FF00000000000000FF00FF00000000000000FF00000000000000FF00FF00000000000000FF00000000000000FF00FF00"
                        "AA000000000000000000000000000000000000000000000000000000000000BB"
@@ -746,7 +746,7 @@ TEST_CASE("Deposit SSZ") {
             }),
         };
         Bytes b{};
-        ssz::encode(a, b);
+        CHECK(ssz::encode(a, b) == EncodingResult::kOk);
         CHECK(b == *from_hex(kEmptySerialized));
         CHECK(test::decode_success<Deposit>(to_hex(b)) == a);
     }
@@ -766,7 +766,7 @@ TEST_CASE("VoluntaryExit SSZ") {
             2,
         };
         Bytes b{};
-        ssz::encode(a, b);
+        CHECK(ssz::encode(a, b) == EncodingResult::kOk);
         CHECK(b == *from_hex("15000000000000000200000000000000"));
         CHECK(test::decode_success<VoluntaryExit>(to_hex(b)) == a);
     }
@@ -788,7 +788,7 @@ TEST_CASE("SignedVoluntaryExit SSZ") {
             {},
         };
         Bytes b{};
-        ssz::encode(a, b);
+        CHECK(ssz::encode(a, b) == EncodingResult::kOk);
         CHECK(b == *from_hex(
                        "15000000000000000200000000000000"
                        "0000000000000000000000000000000000000000000000000000000000000000"
@@ -822,7 +822,7 @@ TEST_CASE("SyncAggregate SSZ") {
         };
         CHECK(a.count_commitee_bits() == 0);
         Bytes b{};
-        ssz::encode(a, b);
+        CHECK(ssz::encode(a, b) == EncodingResult::kOk);
         CHECK(b == *from_hex(kEmptySerialized));
         CHECK(test::decode_success<SyncAggregate>(to_hex(b)) == a);
     }

@@ -29,9 +29,6 @@ struct GetBlockBodiesPacket66 {  // eth/66 version
 
 namespace rlp {
 
-    template <>
-    DecodingResult decode(ByteView& from, GetBlockBodiesPacket& to) noexcept;
-
     size_t length(const GetBlockBodiesPacket66& from) noexcept;
 
     void encode(Bytes& to, const GetBlockBodiesPacket66& from);

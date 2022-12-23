@@ -84,7 +84,7 @@ namespace rlp {
         if (DecodingResult err{decode(from, to.account.bytes)}; err != DecodingResult::kOk) {
             return err;
         }
-        if (DecodingResult err{decode_vector(from, to.storage_keys)}; err != DecodingResult::kOk) {
+        if (DecodingResult err{decode(from, to.storage_keys)}; err != DecodingResult::kOk) {
             return err;
         }
 
@@ -313,7 +313,7 @@ namespace rlp {
         if (DecodingResult err{decode(from, to.data)}; err != DecodingResult::kOk) {
             return err;
         }
-        if (DecodingResult err{decode_vector(from, to.access_list)}; err != DecodingResult::kOk) {
+        if (DecodingResult err{decode(from, to.access_list)}; err != DecodingResult::kOk) {
             return err;
         }
         if (DecodingResult err{decode(from, to.odd_y_parity)}; err != DecodingResult::kOk) {

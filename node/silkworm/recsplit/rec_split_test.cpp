@@ -42,6 +42,19 @@ TEST_CASE("RecSplit8", "[silkworm][recsplit]") {
         CHECK_NOTHROW(rs.add_key("second_key", 0));
         CHECK_NOTHROW(rs.build());
     }
+
+    SECTION("duplicated keys") {
+        RecSplit8 rs{
+            /*.keys_count =*/ 2,
+            /*.bucket_size =*/ 10,
+            /*.index_path =*/ index_file.path(),
+            /*.base_data_id =*/ 0,
+            /*.salt =*/ 1,
+        };
+        CHECK_NOTHROW(rs.add_key("first_key", 0));
+        CHECK_NOTHROW(rs.add_key("first_key", 0));
+        CHECK(rs.build() == true/*collision_detected*/);
+    }
 }
 
 }  // namespace silkworm::succinct

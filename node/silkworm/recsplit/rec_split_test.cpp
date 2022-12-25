@@ -31,11 +31,11 @@ TEST_CASE("RecSplit8", "[silkworm][recsplit]") {
 
     SECTION("keys") {
         RecSplit8 rs{
-            /*.keys_count =*/ 2,
-            /*.bucket_size =*/ 10,
-            /*.index_path =*/ index_file.path(),
-            /*.base_data_id =*/ 0,
-            /*.salt =*/ 1,
+            /*.keys_count=*/2,
+            /*.bucket_size=*/10,
+            /*.index_path=*/index_file.path(),
+            /*.base_data_id=*/0,
+            /*.salt=*/1,
         };
         CHECK_NOTHROW(rs.add_key("first_key", 0));
         CHECK_THROWS_AS(rs.build(), std::logic_error);
@@ -45,11 +45,11 @@ TEST_CASE("RecSplit8", "[silkworm][recsplit]") {
 
     SECTION("duplicated keys") {
         RecSplit8 rs{
-            /*.keys_count =*/ 2,
-            /*.bucket_size =*/ 10,
-            /*.index_path =*/ index_file.path(),
-            /*.base_data_id =*/ 0,
-            /*.salt =*/ 1,
+            /*.keys_count=*/2,
+            /*.bucket_size=*/10,
+            /*.index_path=*/index_file.path(),
+            /*.base_data_id=*/0,
+            /*.salt=*/1,
         };
         CHECK_NOTHROW(rs.add_key("first_key", 0));
         CHECK_NOTHROW(rs.add_key("first_key", 0));

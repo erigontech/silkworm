@@ -389,6 +389,8 @@ class RecSplit {
           index_path_(std::move(index_path)) {
         bucket_size_accumulator_.reserve(nbuckets + 1);
         bucket_position_accumulator_.reserve(nbuckets + 1);
+        bucket_size_accumulator_.resize(1);
+        bucket_position_accumulator_.resize(1);
         current_bucket_.reserve(bucket_size);
         current_bucket_offsets_.reserve(bucket_size);
         count_.reserve(lower_aggr);

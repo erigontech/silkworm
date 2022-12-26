@@ -241,11 +241,13 @@ class SplittingStrategy {
 
 template <size_t LEAF_SIZE, util::AllocType AT = util::AllocType::MALLOC>
 class RecSplit {
+  public:
     using SplitStrategy = SplittingStrategy<LEAF_SIZE>;
     using GolombRiceBuilder = typename GolombRiceVector::Builder;
     using EliasFano = EliasFanoList32;
     using DoubleEliasFano = DoubleEliasFanoList16;
 
+  private:
     static constexpr size_t _leaf = LEAF_SIZE;
     static const size_t lower_aggr;
     static const size_t upper_aggr;
@@ -398,12 +400,11 @@ class RecSplit {
         hasher_ = std::make_unique<Murmur3>(salt_);
     }
 
-    void add_key(const void* key_data, const size_t key_length, uint64_t offset) {
+    void add_key(const hash128_t& key_hash, uint64_t offset) {
         if (built_) {
             throw std::logic_error{"cannot add key after perfect hash function has been built"};
         }
 
-        const auto key_hash = murmur_hash_3(key_data, key_length);
         if (keys_added_ % 100'000 == 0) {
             SILK_DEBUG << "[index] add key hash: first=" << key_hash.first << " second=" << key_hash.second << " offset=" << offset;
         }
@@ -435,6 +436,15 @@ class RecSplit {
         }
         keys_added_++;
         previous_offset_ = offset;
+    }
+
+    void add_key(const void* key_data, const size_t key_length, uint64_t offset) {
+        if (built_) {
+            throw std::logic_error{"cannot add key after perfect hash function has been built"};
+        }
+
+        const auto key_hash = murmur_hash_3(key_data, key_length);
+        add_key(key_hash, offset);
     }
 
     void add_key(const std::string& key, uint64_t offset) {
@@ -624,6 +634,8 @@ class RecSplit {
      * @return the associated value.
      */
     size_t operator()(const hash128_t& hash) {
+        if (!built_) throw std::logic_error{"perfect hash function not built yet"};
+
         const size_t bucket = hash128_to_bucket(hash);
         uint64_t cum_keys, cum_keys_next, bit_pos;
         ef.get3(bucket, cum_keys, cum_keys_next, bit_pos);

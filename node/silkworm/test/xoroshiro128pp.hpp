@@ -36,8 +36,8 @@ static uint64_t next_pseudo_random() {
     const uint64_t result = rotl(s0 + s1, 17) + s0;
 
     s1 ^= s0;
-    s[0] = rotl(s0, 49) ^ s1 ^ (s1 << 21); // a, b
-    s[1] = rotl(s1, 28);                   // c
+    s[0] = rotl(s0, 49) ^ s1 ^ (s1 << 21);  // a, b
+    s[1] = rotl(s1, 28);                    // c
 
     return result;
 }

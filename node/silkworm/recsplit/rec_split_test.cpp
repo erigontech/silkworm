@@ -65,7 +65,7 @@ TEST_CASE("RecSplit8", "[silkworm][recsplit]") {
 
 template <typename RS>
 static void check_mphf(RS& rec_split, const std::vector<hash128_t>& keys) {
-    auto* recsplit_check = static_cast<uint64_t *>(calloc(keys.size(), sizeof(uint64_t)));
+    auto* recsplit_check = static_cast<uint64_t*>(calloc(keys.size(), sizeof(uint64_t)));
     uint64_t i{0};
     for (const auto& k : keys) {
         // Value associated to key in RecSplit must be unique

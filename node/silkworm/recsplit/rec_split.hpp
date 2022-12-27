@@ -803,9 +803,10 @@ class RecSplit {
 
             SILK_DEBUG << "[index] m > _leaf: m=" << m << " fanout=" << fanout << " unit=" << unit;
 
+            SILKWORM_ASSERT(fanout <= lower_aggr);
+            count_.resize(fanout);
             while (true) {
-                SILKWORM_ASSERT(fanout <= lower_aggr);
-                std::memset(count_.data(), 0, (fanout - 1) * sizeof(std::size_t));
+                std::fill(count_.begin(), count_.end(), 0);
                 for (std::size_t i{0}; i < m; i++) {
                     count_[uint16_t(remap16(remix(bucket[start + i] + salt), m)) / unit]++;
                 }

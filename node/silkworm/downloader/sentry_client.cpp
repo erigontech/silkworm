@@ -111,12 +111,15 @@ void SentryClient::execution_loop() {
 
     while (!is_stopping()) {
         try {
+            connected_ = false;
             log::Info("SentryClient", {"remote", sentry_addr_}) << " connecting ...";
 
             // send current status of the chain
             hand_shake();
             set_status();
 
+            connected_ = true;
+            connected_.notify_all();
             log::Info("SentryClient", {"remote", sentry_addr_}) << " connected";
 
             // send a message subscription
@@ -148,8 +151,7 @@ void SentryClient::stats_receiving_loop() {
 
     while (!is_stopping()) {
         try {
-            while (!is_stopping() && !is_connected())
-                continue;
+            connected_.wait(false);
 
             // send a stats subscription
             auto rpc = std::make_shared<rpc::ReceivePeerStats>();

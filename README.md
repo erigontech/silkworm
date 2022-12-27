@@ -56,7 +56,7 @@ git submodule update --init --recursive
 ## Building on Linux & macOS
 
 Building Silkworm requires:
-* C++20 compiler: [GCC](https://www.gnu.org/software/gcc/) >= 10.2.0 or [Clang](https://clang.llvm.org/) >= 12.0.0
+* C++20 compiler: [GCC](https://www.gnu.org/software/gcc/) >= 11.2.0 or [Clang](https://clang.llvm.org/) >= 12.0.0
 * [CMake]
 * Tools for [gmplib](https://gmplib.org/): `sudo apt-get install -y m4 texinfo bison`
 

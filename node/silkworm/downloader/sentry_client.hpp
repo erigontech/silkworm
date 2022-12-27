@@ -73,6 +73,7 @@ class SentryClient : public rpc::Client<sentry::Sentry>, public ActiveComponent 
     db::ROAccess db_access_;
     const ChainConfig& chain_config_;
 
+    std::atomic<bool> connected_{false};
     std::shared_ptr<rpc::HandShake> handshake_;
     std::shared_ptr<rpc::ReceiveMessages> receive_messages_;
     std::shared_ptr<rpc::ReceivePeerStats> receive_peer_stats_;

@@ -111,20 +111,6 @@ jobs:
       - build
       - test
 
-  linux-gcc-10-debug:
-    environment:
-      TOOLCHAIN: cxx20
-      BUILD_TYPE: Debug
-      CLANG_COVERAGE: OFF
-      SANITIZE: OFF
-    docker:
-      - image: ethereum/cpp-build-env:18-gcc-10
-    resource_class: xlarge
-    steps:
-      - checkout_with_submodules
-      - build
-      - test
-
   linux-gcc-12-release:
     environment:
       TOOLCHAIN: cxx20
@@ -285,7 +271,6 @@ workflows:
   version: 2
   silkworm:
     jobs:
-      - linux-gcc-10-debug
       - linux-gcc-12-release
       - linux-gcc-11-thread-sanitizer
       - linux-clang-13-coverage

@@ -180,7 +180,7 @@ class SplittingStrategy {
 
     static inline void split_params(const std::size_t m, std::size_t& fanout, std::size_t& unit) {
         if (m > upper_aggr) {  // High-level aggregation (fanout 2)
-            unit = upper_aggr * (uint16_t(m / 2 + upper_aggr - 1) / upper_aggr);
+            unit = upper_aggr * (uint16_t((m + 1) / 2 + upper_aggr - 1) / upper_aggr);
             fanout = 2;
         } else if (m > lower_aggr) {  // Second-level aggregation
             unit = lower_aggr;
@@ -650,7 +650,7 @@ class RecSplit {
             const auto d = reader.read_next(golomb_param(m, memo));
             const size_t hmod = remap16(remix(hash.second + d + kStartSeed[level]), m);
 
-            const uint32_t split = ((uint16_t(m / 2 + upper_aggr - 1) / upper_aggr)) * upper_aggr;
+            const uint32_t split = ((uint16_t((m + 1) / 2 + upper_aggr - 1) / upper_aggr)) * upper_aggr;
             if (hmod < split) {
                 m = split;
             } else {

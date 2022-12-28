@@ -17,7 +17,6 @@
 #include "rec_split.hpp"
 
 #include <cstdint>
-#include <cstdlib>
 #include <vector>
 
 #include <catch2/catch.hpp>
@@ -64,16 +63,25 @@ TEST_CASE("RecSplit8", "[silkworm][recsplit]") {
 }
 
 template <typename RS>
-static void check_mphf(RS& rec_split, const std::vector<hash128_t>& keys) {
-    auto* recsplit_check = static_cast<uint64_t*>(calloc(keys.size(), sizeof(uint64_t)));
+static void check_bijection(RS& rec_split, const std::vector<hash128_t>& keys) {
+    // RecSplit implements a MPHF K={k1...kN} -> V={0..N-1} so we must check all codomain is exhausted
+    std::vector<uint64_t> recsplit_values(keys.size());
+    // Fill the codomain values w/ zero, so we can easily check if a value is already used or not
+    std::fill(recsplit_values.begin(), recsplit_values.end(), 0);
+
     uint64_t i{0};
     for (const auto& k : keys) {
-        // Value associated to key in RecSplit must be unique
         uint64_t v = rec_split(k);
-        CHECK(recsplit_check[v] == 0);
-        recsplit_check[v] = ++i;
+        // Value associated to key in RecSplit must be unique (perfect: no collision)
+        CHECK(recsplit_values[v] == 0);
+        // Mark the value as used in codomain
+        recsplit_values[v] = ++i;
     }
-    free(recsplit_check);
+
+    // All codomain values must be used (minimal: rank(K) == rank(V))
+    for (const auto& v : recsplit_values) {
+        CHECK(v != 0);
+    }
 }
 
 constexpr int kTestLeaf{4};
@@ -121,7 +129,46 @@ TEST_CASE("RecSplit4: keys=1000 buckets=128", "[silkworm][recsplit]") {
             rs.add_key(hk, 0);
         }
         CHECK(rs.build() == false /*collision_detected*/);
-        check_mphf(rs, hashed_keys);
+        check_bijection(rs, hashed_keys);
+    }
+}
+
+TEST_CASE("RecSplit4: multiple keys-buckets", "[silkworm][recsplit]") {
+    test::SetLogVerbosityGuard guard{log::Level::kNone};
+    test::TemporaryFile index_file;
+
+    struct RecSplitParams{
+        std::size_t key_count{0};
+        std::size_t bucket_size{0};
+    };
+    std::vector<RecSplitParams> recsplit_params_sequence{
+        {1'000, 128},
+        {5'000, 512},
+        {10'000, 1024},
+        {20'000, 2048},
+        {40'000, 2048},
+    };
+    for (const auto [key_count, bucket_size] : recsplit_params_sequence) {
+        SECTION("random_hash128 OK [" + std::to_string(key_count) + "-" + std::to_string(bucket_size) + "]") {  // NOLINT
+            std::vector<hash128_t> hashed_keys;
+            for (std::size_t i{0}; i < key_count; ++i) {
+                hashed_keys.push_back({test::next_pseudo_random(), test::next_pseudo_random()});
+            }
+
+            RecSplit4 rs{
+                /*.keys_count=*/hashed_keys.size(),
+                /*.bucket_size=*/bucket_size,
+                /*.index_path=*/index_file.path(),
+                /*.base_data_id=*/0,
+                /*.salt=*/kTestSalt,
+            };
+
+            for (const auto& hk : hashed_keys) {
+                rs.add_key(hk, 0);
+            }
+            CHECK(rs.build() == false /*collision_detected*/);
+            check_bijection(rs, hashed_keys);
+        }
     }
 }
 

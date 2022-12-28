@@ -137,7 +137,7 @@ TEST_CASE("RecSplit4: multiple keys-buckets", "[silkworm][recsplit]") {
     test::SetLogVerbosityGuard guard{log::Level::kNone};
     test::TemporaryFile index_file;
 
-    struct RecSplitParams{
+    struct RecSplitParams {
         std::size_t key_count{0};
         std::size_t bucket_size{0};
     };

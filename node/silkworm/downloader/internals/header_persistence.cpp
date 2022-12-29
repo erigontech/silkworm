@@ -267,7 +267,7 @@ HeaderPersistence::remove_headers(BlockNum unwind_point, std::optional<Hash> bad
     }
 
     db::stages::write_stage_progress(tx, db::stages::kHeadersKey, new_height);
-    
+
     return {bad_headers, new_height};
 }
 

@@ -88,9 +88,9 @@ constexpr int kTestLeaf{4};
 
 using RecSplit4 = RecSplit<kTestLeaf>;
 template <>
-const std::size_t RecSplit4::lower_aggr = RecSplit4::SplitStrategy::lower_aggr;
+const std::size_t RecSplit4::kLowerAggregationBound = RecSplit4::SplitStrategy::kLowerAggregationBound;
 template <>
-const std::size_t RecSplit4::upper_aggr = RecSplit4::SplitStrategy::upper_aggr;
+const std::size_t RecSplit4::kUpperAggregationBound = RecSplit4::SplitStrategy::kUpperAggregationBound;
 template <>
 const std::array<uint32_t, kMaxBucketSize> RecSplit4::memo = RecSplit4::fill_golomb_rice();
 

@@ -118,8 +118,6 @@ class GolombRiceVector {
     GolombRiceVector() = default;
     explicit GolombRiceVector(std::vector<uint64_t>&& input_data) : data(std::move(input_data)) {}
 
-    [[nodiscard]] size_t get_bits() const { return data.size() * sizeof(uint64_t); }
-
     [[nodiscard]] size_t size() const { return data.size(); }
 
     class Reader {

@@ -53,6 +53,7 @@
 #include <limits>
 #include <random>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include <gsl/util>
@@ -94,87 +95,66 @@ static constexpr uint64_t kStartSeed[] = {
     0x082f20e10092a9a3, 0x2ada2ce68d21defc, 0xe33cb4f3e7c6466b, 0x3980be458c509c59, 0xc466fd9584828e8c, 0x45f0aabe1a61ede6, 0xf6e7b8b33ad9b98d,
     0x4ef95e25f4b4983d, 0x81175195173b92d3, 0x4e50927d8dd15978, 0x1ea2099d1fafae7f, 0x425c8a06fbaaa815, 0xcd4216006c74052a};
 
-/** David Stafford's (http://zimbry.blogspot.com/2011/09/better-bit-mixingsuccinct::-improving-on.html)
- * 13th variant of the 64-bit finalizer function in Austin Appleby's
- * MurmurHash3 (https://github.com/aappleby/smhasher).
- *
- * @param z a 64-bit integer.
- * @return a 64-bit integer obtained by mixing the bits of `z`.
- */
-
+//! David Stafford's (http://zimbry.blogspot.com/2011/09/better-bit-mixingsuccinct::-improving-on.html)
+//! 13th variant of the 64-bit finalizer function in Austin Appleby's MurmurHash3 (https://github.com/aappleby/smhasher)
+//! @param z a 64-bit integer
+//! @return a 64-bit integer obtained by mixing the bits of `z`
 uint64_t inline remix(uint64_t z) {
     z = (z ^ (z >> 30)) * 0xbf58476d1ce4e5b9;
     z = (z ^ (z >> 27)) * 0x94d049bb133111eb;
     return z ^ (z >> 31);
 }
 
-/** 128-bit hashes.
- *
- * In the construction of RecSplit, keys are replaced with instances
- * of this class using SpookyHash, first thing.
- * Moreover, it is possible to build and query RecSplit instances using 128-bit
- * random hashes only (mainly for benchmarking purposes).
- */
-
+//! 128-bit hash used in the construction of RecSplit (first of all keys are hashed using MurmurHash3)
+//! Moreover, it is possible to build and query RecSplit instances using 128-bit random hashes (mainly for test purposes)
 struct hash128_t {
-    uint64_t first, second;  // TODO(canepat) rename first->hi, second->lo
+    uint64_t first;   // The high 64-bit hash half
+    uint64_t second;  // The low 64-bit hash half
+
     bool operator<(const hash128_t& o) const { return first < o.first || second < o.second; }
 };
 
-// Quick replacements for min/max on not-so-large integers.
-
+// Quick replacements for min/max on not-so-large integers
 static constexpr inline uint64_t min(int64_t x, int64_t y) { return static_cast<uint64_t>(y + ((x - y) & ((x - y) >> 63))); }
 static constexpr inline uint64_t max(int64_t x, int64_t y) { return static_cast<uint64_t>(x - ((x - y) & ((x - y) >> 63))); }
 
-// Optimal Golomb-Rice parameters for leaves.
+// Optimal Golomb-Rice parameters for leaves
 static constexpr uint8_t bij_memo[] = {0, 0, 0, 1, 3, 4, 5, 7, 8, 10, 11, 12, 14, 15, 16, 18, 19, 21, 22, 23, 25, 26, 28, 29, 30};
 
-/** A class emboding the splitting strategy of RecSplit.
- *
- *  Note that this class is used _for statistics only_. The splitting strategy is embedded
- *  into the generation code, which uses only the public fields SplittingStrategy::lower_aggr and SplittingStrategy::upper_aggr.
- */
-
+//! The splitting strategy of Recsplit algorithm is embedded into the generation code, which uses only the public fields
+//! SplittingStrategy::lower_aggr and SplittingStrategy::upper_aggr.
 template <std::size_t LEAF_SIZE>
 class SplittingStrategy {
-    static constexpr size_t _leaf = LEAF_SIZE;
-    static_assert(_leaf >= 1);
-    static_assert(_leaf <= kMaxLeafSize);
+    static_assert(1 <= LEAF_SIZE && LEAF_SIZE <= kMaxLeafSize);
 
   public:
-    /** The lower bound for primary (lower) key aggregation. */
-    static inline const std::size_t lower_aggr = _leaf * max(2, ceil(0.35 * _leaf + 1. / 2));
-    /** The lower bound for secondary (upper) key aggregation. */
-    static inline const std::size_t upper_aggr = lower_aggr * (_leaf < 7 ? 2 : ceil(0.21 * _leaf + 9. / 10));
+    //! The lower bound for primary (lower) key aggregation
+    static inline const std::size_t kLowerAggregationBound = LEAF_SIZE * max(2, ceil(0.35 * LEAF_SIZE + 1. / 2));
 
-    static inline void split_params(const std::size_t m, std::size_t& fanout, std::size_t& unit) {
-        if (m > upper_aggr) {  // High-level aggregation (fanout 2)
-            unit = upper_aggr * (uint16_t((m + 1) / 2 + upper_aggr - 1) / upper_aggr);
+    //! The lower bound for secondary (upper) key aggregation
+    static inline const std::size_t kUpperAggregationBound = kLowerAggregationBound * (LEAF_SIZE < 7 ? 2 : ceil(0.21 * LEAF_SIZE + 9. / 10));
+
+    static inline std::pair<std::size_t, std::size_t> split_params(const std::size_t m) {
+        std::size_t fanout{0}, unit{0};
+        if (m > kUpperAggregationBound) {  // High-level aggregation (fanout 2)
+            unit = kUpperAggregationBound * (uint16_t((m + 1) / 2 + kUpperAggregationBound - 1) / kUpperAggregationBound);
             fanout = 2;
-        } else if (m > lower_aggr) {  // Second-level aggregation
-            unit = lower_aggr;
-            fanout = uint16_t(m + lower_aggr - 1) / lower_aggr;
-        } else {  // First-level aggregation//
-            unit = _leaf;
-            fanout = uint16_t(m + _leaf - 1) / _leaf;
+        } else if (m > kLowerAggregationBound) {  // Second-level aggregation
+            unit = kLowerAggregationBound;
+            fanout = uint16_t(m + kLowerAggregationBound - 1) / kLowerAggregationBound;
+        } else {  // First-level aggregation
+            unit = LEAF_SIZE;
+            fanout = uint16_t(m + LEAF_SIZE - 1) / LEAF_SIZE;
         }
+        return {fanout, unit};
     }
 };
 
-#define skip_bits(m) (memo[m] & 0xFFFF)
-#define skip_nodes(m) ((memo[m] >> 16) & 0x7FF)
-
-/**
- *
- * A class for storing minimal perfect hash functions. The template
- * parameter decides how large a leaf will be. Larger leaves imply
- * slower construction, but less space and faster evaluation.
- *
- * @tparam LEAF_SIZE the size of a leaf; typicals value range from 6 to 8
- * for fast, small maps, or up to 16 for very compact functions.
- * @tparam AT a type of memory allocation out of sux::util::AllocType.
- */
-
+//! Recursive splitting (RecSplit) is an efficient algorithm to identify minimal perfect hash functions.
+//! The template parameter LEAF_SIZE decides how large a leaf will be. Larger leaves imply slower construction, but less
+//! space and faster evaluation
+//! @tparam LEAF_SIZE the size of a leaf, typical value range from 6 to 8 for fast small maps or up to 16 for very compact functions
+//! @tparam AT a type of memory allocation out of sux::util::AllocType
 template <size_t LEAF_SIZE, util::AllocType AT = util::AllocType::MALLOC>
 class RecSplit {
   public:
@@ -183,151 +163,9 @@ class RecSplit {
     using EliasFano = EliasFanoList32;
     using DoubleEliasFano = DoubleEliasFanoList16;
 
-  private:
-    static constexpr size_t _leaf = LEAF_SIZE;
-    static const size_t lower_aggr;
-    static const size_t upper_aggr;
-    static inline uint16_t golomb_param_max_index_{0};
-
-    static constexpr uint64_t golomb_param(const int m, const std::array<uint32_t, kMaxBucketSize>& memo) {
-        if (m > golomb_param_max_index_) golomb_param_max_index_ = m;
-        return memo[m] >> 27;
-    }
-
-    // Generates the precomputed table of 32-bit values holding the Golomb-Rice code
-    // of a splitting (upper 5 bits), the number of nodes in the associated subtree
-    // (following 11 bits) and the sum of the Golomb-Rice codelengths in the same
-    // subtree (lower 16 bits).
-    static constexpr void precompute_golomb_rice(const int m, std::array<uint32_t, kMaxBucketSize>* memo) {
-        std::array<int, kMaxFanout> k{0};
-
-        size_t fanout = 0, unit = 0;
-        SplittingStrategy<LEAF_SIZE>::split_params(m, fanout, unit);
-
-        k[fanout - 1] = m;
-        for (size_t i = 0; i < fanout - 1; ++i) {
-            k[i] = unit;
-            k[fanout - 1] -= k[i];
-        }
-
-        double sqrt_prod = 1;
-        for (size_t i = 0; i < fanout; ++i) sqrt_prod *= sqrt(k[i]);
-
-        const double p = sqrt(m) / (pow(2 * M_PI, (fanout - 1.) / 2) * sqrt_prod);
-        auto golomb_rice_length = static_cast<uint32_t>(ceil(log2(-std::log((sqrt(5) + 1) / 2) / log1p(-p))));  // log2 Golomb modulus
-
-        SILKWORM_ASSERT(golomb_rice_length <= 0x1F);  // Golomb-Rice code, stored in the 5 upper bits
-        (*memo)[m] = golomb_rice_length << 27;
-        for (size_t i = 0; i < fanout; ++i) golomb_rice_length += (*memo)[k[i]] & 0xFFFF;
-        SILKWORM_ASSERT(golomb_rice_length <= 0xFFFF);  // Sum of Golomb-Rice codeslengths in the subtree, stored in the lower 16 bits
-        (*memo)[m] |= golomb_rice_length;
-
-        uint32_t nodes = 1;
-        for (size_t i = 0; i < fanout; ++i) nodes += ((*memo)[k[i]] >> 16) & 0x7FF;
-        SILKWORM_ASSERT(LEAF_SIZE < 3 || nodes <= 0x7FF);  // Number of nodes in the subtree, stored in the middle 11 bits
-        (*memo)[m] |= nodes << 16;
-    }
-
-    static constexpr std::array<uint32_t, kMaxBucketSize> fill_golomb_rice() {
-        std::array<uint32_t, kMaxBucketSize> memo{0};
-        size_t s = 0;
-        for (; s <= LEAF_SIZE; ++s) memo[s] = bij_memo[s] << 27 | (s > 1) << 16 | bij_memo[s];
-        for (; s < kMaxBucketSize; ++s) precompute_golomb_rice(s, &memo);
-        return memo;
-    }
-
-    //! For each bucket size, the Golomb-Rice parameter (upper 8 bits) and the number of bits to
-    //! skip in the fixed part of the tree (lower 24 bits).
-    static const std::array<uint32_t, kMaxBucketSize> memo;
-
-    //! The size in bytes of each Recsplit bucket (possibly except the last one)
-    std::size_t bucket_size_;
-
-    //! The number of keys for this Recsplit algorithm instance
-    std::size_t key_count_;
-
-    //! The number of buckets for this Recsplit algorithm instance
-    std::size_t bucket_count_;
-
-    //! The Golomb-Rice (GR) codes of splitting and bijection indices
-    GolombRiceVector golomb_rice_codes_;
-
-    //! Helper to build GR codes of splitting and bijection indices
-    GolombRiceBuilder gr_builder_;
-
-    //! Double Elias-Fano (EF) index for bucket cumulative keys and bit positions
-    DoubleEliasFano double_ef_index_;
-
-    //! Helper to encode the sequences of key offsets in the single EF code
-    std::unique_ptr<EliasFano> ef_offsets_;
-
-    //! Minimal app-specific ID of entries of this index - helps app understand what data stored in given shard - persistent field
-    uint64_t base_data_id_;
-
-    //! The path of the index file generated
-    std::filesystem::path index_path_;
-
-    //! The number of keys currently added
-    uint64_t keys_added_{0};
-
-    //! Minimum delta for Elias-Fano encoding of "enum -> offset" index
-    uint64_t min_delta_{0};
-
-    //! Last previously added offset (for calculating minimum delta for Elias-Fano encoding of "enum -> offset" index)
-    uint64_t previous_offset_{0};
-
-    //! Maximum value of offset used to decide how many bytes to use for Elias-Fano encoding
-    uint64_t max_offset_{0};
-
-    //! Number of bytes used per index record
-    uint8_t bytes_per_record_{0};
-
-    //! Identifier of the current bucket being accumulated
-    uint64_t current_bucket_id_{0};
-
-    //! 64-bit fingerprints of keys in the current bucket accumulated before the recsplit is performed for that bucket
-    std::vector<uint64_t> current_bucket_;
-
-    //! Index offsets for the current bucket
-    std::vector<uint64_t> current_bucket_offsets_;
-
-    //! Flag indicating if two-level index "recsplit -> enum" + "enum -> offset" is required
-    bool double_enum_index_{true};
-
-    //! Flag indicating that the MPHF has been built and no more keys can be added
-    bool built_{false};
-
-    //! The ETL collector sorting keys by offset
-    etl::Collector offset_collector_{};
-
-    //! The ETL collector sorting keys by bucket
-    etl::Collector bucket_collector_{};
-
-    //! Accumulator for size of every bucket
-    std::vector<int64_t> bucket_size_accumulator_;
-
-    //! Accumulator for position of every bucket in the encoding of the hash function
-    std::vector<int64_t> bucket_position_accumulator_;
-
-    //! Temporary buffer for current bucket
-    std::vector<uint64_t> buffer_bucket_;
-
-    //! Temporary buffer for current offsets
-    std::vector<uint64_t> buffer_offsets_;
-
-    //! Seed for Murmur3 hash used for converting keys to 64-bit values and assigning to buckets
-    uint32_t salt_{0};
-
-    //! Murmur3 hash factory
-    std::unique_ptr<Murmur3> hasher_;
-
-    //!
-    std::vector<std::size_t> count_;
-
-  public:
-    RecSplit(const size_t _keys_count, const size_t _bucket_size, std::filesystem::path index_path, uint64_t base_data_id, uint32_t salt = 0)
-        : bucket_size_(_bucket_size),
-          key_count_(_keys_count),
+    RecSplit(const size_t keys_count, const size_t bucket_size, std::filesystem::path index_path, uint64_t base_data_id, uint32_t salt = 0)
+        : bucket_size_(bucket_size),
+          key_count_(keys_count),
           bucket_count_((key_count_ + bucket_size_ - 1) / bucket_size_),
           base_data_id_(base_data_id),
           index_path_(std::move(index_path)) {
@@ -337,7 +175,7 @@ class RecSplit {
         bucket_position_accumulator_.resize(1);
         current_bucket_.reserve(bucket_size_);
         current_bucket_offsets_.reserve(bucket_size_);
-        count_.reserve(lower_aggr);
+        count_.reserve(kLowerAggregationBound);
 
         // Generate random salt for murmur3 hash
         std::random_device rand_dev;
@@ -492,9 +330,9 @@ class RecSplit {
         index_output_stream.write(reinterpret_cast<const char*>(uint64_buffer.data()), sizeof(uint16_t));
         SILK_DEBUG << "[index] written bucket size: " << bucket_size_;
 
-        endian::store_big_u16(uint64_buffer.data(), _leaf);
+        endian::store_big_u16(uint64_buffer.data(), LEAF_SIZE);
         index_output_stream.write(reinterpret_cast<const char*>(uint64_buffer.data()), sizeof(uint16_t));
-        SILK_DEBUG << "[index] written leaf size: " << _leaf;
+        SILK_DEBUG << "[index] written leaf size: " << LEAF_SIZE;
 
         // Write out salt
         endian::store_big_u32(uint64_buffer.data(), salt_);
@@ -565,21 +403,21 @@ class RecSplit {
     size_t operator()(const hash128_t& hash) {
         if (!built_) throw std::logic_error{"perfect hash function not built yet"};
 
-        const size_t bucket = hash128_to_bucket(hash);
+        const std::size_t bucket = hash128_to_bucket(hash);
         uint64_t cum_keys, cum_keys_next, bit_pos;
         double_ef_index_.get3(bucket, cum_keys, cum_keys_next, bit_pos);
 
         // Number of keys in this bucket
-        size_t m = cum_keys_next - cum_keys;
+        std::size_t m = cum_keys_next - cum_keys;
         auto reader = golomb_rice_codes_.reader();
         reader.read_reset(bit_pos, skip_bits(m));
         int level = 0;
 
-        while (m > upper_aggr) {  // fanout = 2
+        while (m > kUpperAggregationBound) {  // fanout = 2
             const auto d = reader.read_next(golomb_param(m, memo));
-            const size_t hmod = remap16(remix(hash.second + d + kStartSeed[level]), m);
+            const std::size_t hmod = remap16(remix(hash.second + d + kStartSeed[level]), m);
 
-            const uint32_t split = ((uint16_t((m + 1) / 2 + upper_aggr - 1) / upper_aggr)) * upper_aggr;
+            const uint32_t split = ((uint16_t((m + 1) / 2 + kUpperAggregationBound - 1) / kUpperAggregationBound)) * kUpperAggregationBound;
             if (hmod < split) {
                 m = split;
             } else {
@@ -589,25 +427,25 @@ class RecSplit {
             }
             level++;
         }
-        if (m > lower_aggr) {
+        if (m > kLowerAggregationBound) {
             const auto d = reader.read_next(golomb_param(m, memo));
             const size_t hmod = remap16(remix(hash.second + d + kStartSeed[level]), m);
 
-            const int part = uint16_t(hmod) / lower_aggr;
-            m = min(lower_aggr, m - part * lower_aggr);
-            cum_keys += lower_aggr * part;
-            if (part) reader.skip_subtree(skip_nodes(lower_aggr) * part, skip_bits(lower_aggr) * part);
+            const int part = uint16_t(hmod) / kLowerAggregationBound;
+            m = min(kLowerAggregationBound, m - part * kLowerAggregationBound);
+            cum_keys += kLowerAggregationBound * part;
+            if (part) reader.skip_subtree(skip_nodes(kLowerAggregationBound) * part, skip_bits(kLowerAggregationBound) * part);
             level++;
         }
 
-        if (m > _leaf) {
+        if (m > LEAF_SIZE) {
             const auto d = reader.read_next(golomb_param(m, memo));
             const size_t hmod = remap16(remix(hash.second + d + kStartSeed[level]), m);
 
-            const int part = uint16_t(hmod) / _leaf;
-            m = min(_leaf, m - part * _leaf);
-            cum_keys += _leaf * part;
-            if (part) reader.skip_subtree(part, skip_bits(_leaf) * part);
+            const int part = uint16_t(hmod) / LEAF_SIZE;
+            m = min(LEAF_SIZE, m - part * LEAF_SIZE);
+            cum_keys += LEAF_SIZE * part;
+            if (part) reader.skip_subtree(part, skip_bits(LEAF_SIZE) * part);
             level++;
         }
 
@@ -622,6 +460,66 @@ class RecSplit {
     inline size_t size() const { return key_count_; }
 
   private:
+    static inline std::size_t skip_bits(std::size_t m) { return memo[m] & 0xFFFF; }
+
+    static inline std::size_t skip_nodes(std::size_t m) { return (memo[m] >> 16) & 0x7FF; }
+
+    static constexpr uint64_t golomb_param(const std::size_t m, const std::array<uint32_t, kMaxBucketSize>& memo) {
+        if (m > golomb_param_max_index_) golomb_param_max_index_ = m;
+        return memo[m] >> 27;
+    }
+
+    // Generates the precomputed table of 32-bit values holding the Golomb-Rice code
+    // of a splitting (upper 5 bits), the number of nodes in the associated subtree
+    // (following 11 bits) and the sum of the Golomb-Rice code lengths in the same
+    // subtree (lower 16 bits).
+    static constexpr void precompute_golomb_rice(const int m, std::array<uint32_t, kMaxBucketSize>* memo) {
+        std::array<int, kMaxFanout> k{0};
+
+        const auto [fanout, unit] = SplittingStrategy<LEAF_SIZE>::split_params(m);
+
+        k[fanout - 1] = m;
+        for (std::size_t i{0}; i < fanout - 1; ++i) {
+            k[i] = unit;
+            k[fanout - 1] -= k[i];
+        }
+
+        double sqrt_prod = 1;
+        for (std::size_t i{0}; i < fanout; ++i) {
+            sqrt_prod *= sqrt(k[i]);
+        }
+
+        const double p = sqrt(m) / (pow(2 * M_PI, (fanout - 1.) / 2) * sqrt_prod);
+        auto golomb_rice_length = static_cast<uint32_t>(ceil(log2(-std::log((sqrt(5) + 1) / 2) / log1p(-p))));  // log2 Golomb modulus
+
+        SILKWORM_ASSERT(golomb_rice_length <= 0x1F);  // Golomb-Rice code, stored in the 5 upper bits
+        (*memo)[m] = golomb_rice_length << 27;
+        for (std::size_t i{0}; i < fanout; ++i) {
+            golomb_rice_length += (*memo)[k[i]] & 0xFFFF;
+        }
+        SILKWORM_ASSERT(golomb_rice_length <= 0xFFFF);  // Sum of Golomb-Rice code lengths in the subtree, stored in the lower 16 bits
+        (*memo)[m] |= golomb_rice_length;
+
+        uint32_t nodes = 1;
+        for (std::size_t i{0}; i < fanout; ++i) {
+            nodes += ((*memo)[k[i]] >> 16) & 0x7FF;
+        }
+        SILKWORM_ASSERT(LEAF_SIZE < 3 || nodes <= 0x7FF);  // Number of nodes in the subtree, stored in the middle 11 bits
+        (*memo)[m] |= nodes << 16;
+    }
+
+    static constexpr std::array<uint32_t, kMaxBucketSize> fill_golomb_rice() {
+        std::array<uint32_t, kMaxBucketSize> memo{0};
+        std::size_t s{0};
+        for (; s <= LEAF_SIZE; ++s) {
+            memo[s] = bij_memo[s] << 27 | (s > 1) << 16 | bij_memo[s];
+        }
+        for (; s < kMaxBucketSize; ++s) {
+            precompute_golomb_rice(static_cast<int>(s), &memo);
+        }
+        return memo;
+    }
+
     //! Compute and store the splittings and bijections of the current bucket
     bool recsplit_current_bucket(std::ofstream& index_output_stream) {
         // Extend bucket size accumulator to accommodate current bucket index + 1
@@ -685,7 +583,7 @@ class RecSplit {
         uint64_t salt = kStartSeed[level];
         const uint16_t m = end - start;
         SILKWORM_ASSERT(m > 1);
-        if (m <= _leaf) {
+        if (m <= LEAF_SIZE) {
             // No need to build aggregation levels - just find bijection
             if (level == 7) {
                 SILK_DEBUG << "[index] recsplit m: " << m << " salt: " << salt << " start: " << start << " bucket[start]=" << bucket[start]
@@ -694,9 +592,8 @@ class RecSplit {
                     SILK_DEBUG << "[index] buffer m: " << m << " start: " << start << " j: " << j << " bucket[start + j]=" << bucket[start + j];
                 }
             }
-            uint32_t mask{0};
             while (true) {
-                mask = 0;
+                uint32_t mask{0};
                 bool fail{false};
                 for (uint16_t i{0}; !fail && i < m; i++) {
                     uint32_t bit = uint32_t(1) << remap16(remix(bucket[start + i] + salt), m);
@@ -726,12 +623,11 @@ class RecSplit {
             gr_builder_.append_fixed(salt, log2golomb);
             unary.push_back(salt >> log2golomb);
         } else {
-            std::size_t fanout{0}, unit{0};
-            SplitStrategy::split_params(m, fanout, unit);
+            const auto [fanout, unit] = SplitStrategy::split_params(m);
 
             SILK_DEBUG << "[index] m > _leaf: m=" << m << " fanout=" << fanout << " unit=" << unit;
 
-            SILKWORM_ASSERT(fanout <= lower_aggr);
+            SILKWORM_ASSERT(fanout <= kLowerAggregationBound);
             count_.resize(fanout);
             while (true) {
                 std::fill(count_.begin(), count_.end(), 0);
@@ -813,6 +709,101 @@ class RecSplit {
         is >> rs.double_ef_index_;
         return is;
     }
+
+    static const std::size_t kLowerAggregationBound;
+
+    static const std::size_t kUpperAggregationBound;
+
+    //! The max index used in Golomb parameter array
+    static inline uint16_t golomb_param_max_index_{0};
+
+    //! For each bucket size, the Golomb-Rice parameter (upper 8 bits) and the number of bits to
+    //! skip in the fixed part of the tree (lower 24 bits).
+    static const std::array<uint32_t, kMaxBucketSize> memo;
+
+    //! The size in bytes of each Recsplit bucket (possibly except the last one)
+    std::size_t bucket_size_;
+
+    //! The number of keys for this Recsplit algorithm instance
+    std::size_t key_count_;
+
+    //! The number of buckets for this Recsplit algorithm instance
+    std::size_t bucket_count_;
+
+    //! The Golomb-Rice (GR) codes of splitting and bijection indices
+    GolombRiceVector golomb_rice_codes_;
+
+    //! Helper to build GR codes of splitting and bijection indices
+    GolombRiceBuilder gr_builder_;
+
+    //! Double Elias-Fano (EF) index for bucket cumulative keys and bit positions
+    DoubleEliasFano double_ef_index_;
+
+    //! Helper to encode the sequences of key offsets in the single EF code
+    std::unique_ptr<EliasFano> ef_offsets_;
+
+    //! Minimal app-specific ID of entries of this index - helps app understand what data stored in given shard - persistent field
+    uint64_t base_data_id_;
+
+    //! The path of the index file generated
+    std::filesystem::path index_path_;
+
+    //! The number of keys currently added
+    uint64_t keys_added_{0};
+
+    //! Minimum delta for Elias-Fano encoding of "enum -> offset" index
+    uint64_t min_delta_{0};
+
+    //! Last previously added offset (for calculating minimum delta for Elias-Fano encoding of "enum -> offset" index)
+    uint64_t previous_offset_{0};
+
+    //! Maximum value of offset used to decide how many bytes to use for Elias-Fano encoding
+    uint64_t max_offset_{0};
+
+    //! Number of bytes used per index record
+    uint8_t bytes_per_record_{0};
+
+    //! Identifier of the current bucket being accumulated
+    uint64_t current_bucket_id_{0};
+
+    //! 64-bit fingerprints of keys in the current bucket accumulated before the recsplit is performed for that bucket
+    std::vector<uint64_t> current_bucket_;
+
+    //! Index offsets for the current bucket
+    std::vector<uint64_t> current_bucket_offsets_;
+
+    //! Flag indicating if two-level index "recsplit -> enum" + "enum -> offset" is required
+    bool double_enum_index_{true};
+
+    //! Flag indicating that the MPHF has been built and no more keys can be added
+    bool built_{false};
+
+    //! The ETL collector sorting keys by offset
+    etl::Collector offset_collector_{};
+
+    //! The ETL collector sorting keys by bucket
+    etl::Collector bucket_collector_{};
+
+    //! Accumulator for size of every bucket
+    std::vector<int64_t> bucket_size_accumulator_;
+
+    //! Accumulator for position of every bucket in the encoding of the hash function
+    std::vector<int64_t> bucket_position_accumulator_;
+
+    //! Temporary buffer for current bucket
+    std::vector<uint64_t> buffer_bucket_;
+
+    //! Temporary buffer for current offsets
+    std::vector<uint64_t> buffer_offsets_;
+
+    //! Seed for Murmur3 hash used for converting keys to 64-bit values and assigning to buckets
+    uint32_t salt_{0};
+
+    //! Murmur3 hash factory
+    std::unique_ptr<Murmur3> hasher_;
+
+    //! Temporary counters of key remapped occurrences
+    std::vector<std::size_t> count_;
 };
 
 constexpr std::size_t kLeafSize{8};

@@ -92,7 +92,7 @@ const std::size_t RecSplit4::lower_aggr = RecSplit4::SplitStrategy::lower_aggr;
 template <>
 const std::size_t RecSplit4::upper_aggr = RecSplit4::SplitStrategy::upper_aggr;
 template <>
-const std::array<uint32_t, MAX_BUCKET_SIZE> RecSplit4::memo = RecSplit4::fill_golomb_rice();
+const std::array<uint32_t, kMaxBucketSize> RecSplit4::memo = RecSplit4::fill_golomb_rice();
 
 TEST_CASE("RecSplit4: keys=1000 buckets=128", "[silkworm][recsplit]") {
     test::SetLogVerbosityGuard guard{log::Level::kNone};

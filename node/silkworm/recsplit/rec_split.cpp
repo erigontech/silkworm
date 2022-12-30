@@ -23,6 +23,6 @@ const std::size_t RecSplit8::lower_aggr = RecSplit8::SplitStrategy::lower_aggr;
 template <>
 const std::size_t RecSplit8::upper_aggr = RecSplit8::SplitStrategy::upper_aggr;
 template <>
-const std::array<uint32_t, MAX_BUCKET_SIZE> RecSplit8::memo = RecSplit8::fill_golomb_rice();
+const std::array<uint32_t, kMaxBucketSize> RecSplit8::memo = RecSplit8::fill_golomb_rice();
 
 }  // namespace silkworm::succinct

@@ -79,35 +79,16 @@ namespace silkworm::succinct {
 
 using namespace std::chrono;
 
-// Assumed *maximum* size of a bucket. Works with high probability up to average bucket size ~2000.
-static const int MAX_BUCKET_SIZE = 3000;
+//! Assumed *maximum* size of a bucket. Works with high probability up to average bucket size ~2000
+static const int kMaxBucketSize = 3000;
 
-static const int MAX_LEAF_SIZE = 24;
-static const int MAX_FANOUT = 32;
+//! Assumed *maximum* size of splitting tree leaves
+static const int kMaxLeafSize = 24;
 
-#if defined(MORESTATS) && !defined(STATS)
-#define STATS
-#endif
+//! Assumed *maximum* size of splitting tree fanout
+static const int kMaxFanout = 32;
 
-#ifdef MORESTATS
-
-#define MAX_LEVEL_TIME (20)
-
-static constexpr double log2e = 1.44269504089;
-static uint64_t num_bij_trials[MAX_LEAF_SIZE], num_split_trials;
-static uint64_t num_bij_evals[MAX_LEAF_SIZE], num_split_evals;
-static uint64_t bij_count[MAX_LEAF_SIZE], split_count;
-static uint64_t expected_split_trials, expected_split_evals;
-static uint64_t bij_unary, bij_fixed, bij_unary_golomb, bij_fixed_golomb;
-static uint64_t split_unary, split_fixed, split_unary_golomb, split_fixed_golomb;
-static uint64_t max_split_code, min_split_code, sum_split_codes;
-static uint64_t max_bij_code, min_bij_code, sum_bij_codes;
-static uint64_t sum_depths;
-static uint64_t time_bij;
-static uint64_t time_split[MAX_LEVEL_TIME];
-#endif
-
-// Starting seed at given distance from the root (extracted at random).
+//! Starting seed at given distance from the root (extracted at random)
 static constexpr uint64_t kStartSeed[] = {
     0x106393c187cae21a, 0x6453cec3f7376937, 0x643e521ddbd2be98, 0x3740c6412f6572cb, 0x717d47562f1ce470, 0x4cd6eb4c63befb7c, 0x9bfd8c5e18c8da73,
     0x082f20e10092a9a3, 0x2ada2ce68d21defc, 0xe33cb4f3e7c6466b, 0x3980be458c509c59, 0xc466fd9584828e8c, 0x45f0aabe1a61ede6, 0xf6e7b8b33ad9b98d,
@@ -148,13 +129,6 @@ static constexpr inline uint64_t max(int64_t x, int64_t y) { return static_cast<
 // Optimal Golomb-Rice parameters for leaves.
 static constexpr uint8_t bij_memo[] = {0, 0, 0, 1, 3, 4, 5, 7, 8, 10, 11, 12, 14, 15, 16, 18, 19, 21, 22, 23, 25, 26, 28, 29, 30};
 
-#ifdef MORESTATS
-// Optimal Golomb code moduli for leaves (for stats).
-static constexpr uint64_t bij_memo_golomb[] = {0, 0, 1, 3, 7, 18, 45, 113, 288, 740,
-                                               1910, 4954, 12902, 33714, 88350, 232110, 611118, 1612087, 4259803, 11273253,
-                                               29874507, 79265963, 210551258, 559849470, 1490011429, 3968988882, 10580669970, 28226919646, 75354118356};
-#endif
-
 /** A class emboding the splitting strategy of RecSplit.
  *
  *  Note that this class is used _for statistics only_. The splitting strategy is embedded
@@ -165,12 +139,7 @@ template <std::size_t LEAF_SIZE>
 class SplittingStrategy {
     static constexpr size_t _leaf = LEAF_SIZE;
     static_assert(_leaf >= 1);
-    static_assert(_leaf <= MAX_LEAF_SIZE);
-    std::size_t m, curr_unit, curr_index, last_unit;
-    std::size_t _fanout{0};
-    std::size_t unit{0};
-
-    [[nodiscard]] inline std::size_t part_size() const { return (curr_index < _fanout - 1) ? unit : last_unit; }
+    static_assert(_leaf <= kMaxLeafSize);
 
   public:
     /** The lower bound for primary (lower) key aggregation. */
@@ -190,39 +159,6 @@ class SplittingStrategy {
             fanout = uint16_t(m + _leaf - 1) / _leaf;
         }
     }
-
-    // Note that you can call this iterator only *once*.
-    class Iterator {
-        SplittingStrategy* strat;
-
-      public:
-        using value_type = std::size_t;
-        using difference_type = std::ptrdiff_t;
-        using pointer = std::size_t*;
-        using reference = std::size_t&;
-
-        explicit Iterator(SplittingStrategy* strategy) : strat(strategy) {}
-
-        std::size_t operator*() const { return strat->curr_unit; }
-        std::size_t* operator->() const { return &strat->curr_unit; }
-        Iterator& operator++() {
-            ++strat->curr_index;
-            strat->curr_unit = strat->part_size();
-            strat->last_unit -= strat->curr_unit;
-            return *this;
-        }
-        bool operator==(const Iterator& other) const { return strat == other.strat; }
-        bool operator!=(const Iterator& other) const { return !(*this == other); }
-    };
-
-    explicit SplittingStrategy(std::size_t mm) : m(mm), last_unit(mm), curr_index(0), curr_unit(0) {
-        split_params(m, _fanout, unit);
-        this->curr_unit = part_size();
-        this->last_unit -= this->curr_unit;
-    }
-
-    Iterator begin() { return Iterator{this}; }
-    Iterator end() { return Iterator{nullptr}; }
 };
 
 #define skip_bits(m) (memo[m] & 0xFFFF)
@@ -253,7 +189,7 @@ class RecSplit {
     static const size_t upper_aggr;
     static inline uint16_t golomb_param_max_index_{0};
 
-    static constexpr int golomb_param(const int m, const std::array<uint32_t, MAX_BUCKET_SIZE>& memo) {
+    static constexpr uint64_t golomb_param(const int m, const std::array<uint32_t, kMaxBucketSize>& memo) {
         if (m > golomb_param_max_index_) golomb_param_max_index_ = m;
         return memo[m] >> 27;
     }
@@ -262,8 +198,8 @@ class RecSplit {
     // of a splitting (upper 5 bits), the number of nodes in the associated subtree
     // (following 11 bits) and the sum of the Golomb-Rice codelengths in the same
     // subtree (lower 16 bits).
-    static constexpr void precompute_golomb_rice(const int m, std::array<uint32_t, MAX_BUCKET_SIZE>* memo) {
-        std::array<int, MAX_FANOUT> k{0};
+    static constexpr void precompute_golomb_rice(const int m, std::array<uint32_t, kMaxBucketSize>* memo) {
+        std::array<int, kMaxFanout> k{0};
 
         size_t fanout = 0, unit = 0;
         SplittingStrategy<LEAF_SIZE>::split_params(m, fanout, unit);
@@ -292,29 +228,37 @@ class RecSplit {
         (*memo)[m] |= nodes << 16;
     }
 
-    static constexpr std::array<uint32_t, MAX_BUCKET_SIZE> fill_golomb_rice() {
-        std::array<uint32_t, MAX_BUCKET_SIZE> memo{0};
+    static constexpr std::array<uint32_t, kMaxBucketSize> fill_golomb_rice() {
+        std::array<uint32_t, kMaxBucketSize> memo{0};
         size_t s = 0;
         for (; s <= LEAF_SIZE; ++s) memo[s] = bij_memo[s] << 27 | (s > 1) << 16 | bij_memo[s];
-        for (; s < MAX_BUCKET_SIZE; ++s) precompute_golomb_rice(s, &memo);
+        for (; s < kMaxBucketSize; ++s) precompute_golomb_rice(s, &memo);
         return memo;
     }
 
-    // For each bucket size, the Golomb-Rice parameter (upper 8 bits) and the number of bits to
-    // skip in the fixed part of the tree (lower 24 bits).
-    static const std::array<uint32_t, MAX_BUCKET_SIZE> memo;
+    //! For each bucket size, the Golomb-Rice parameter (upper 8 bits) and the number of bits to
+    //! skip in the fixed part of the tree (lower 24 bits).
+    static const std::array<uint32_t, kMaxBucketSize> memo;
 
-    size_t bucket_size;            // TODO(canepat) rename bucket_size_
-    size_t keys_count;             // TODO(canepat) rename key_count_
-    size_t nbuckets;               // TODO(canepat) rename bucket_count_
-    GolombRiceVector descriptors;  // TODO(canepat) golomb_rice_codes_
+    //! The size in bytes of each Recsplit bucket (possibly except the last one)
+    std::size_t bucket_size_;
 
-    //! Helper to build Golomb-Rice (GR) codes of splitting and bijection indices
+    //! The number of keys for this Recsplit algorithm instance
+    std::size_t key_count_;
+
+    //! The number of buckets for this Recsplit algorithm instance
+    std::size_t bucket_count_;
+
+    //! The Golomb-Rice (GR) codes of splitting and bijection indices
+    GolombRiceVector golomb_rice_codes_;
+
+    //! Helper to build GR codes of splitting and bijection indices
     GolombRiceBuilder gr_builder_;
 
-    DoubleEliasFano ef;
+    //! Double Elias-Fano (EF) index for bucket cumulative keys and bit positions
+    DoubleEliasFano double_ef_index_;
 
-    //! Helper to encode the sequences of cumulative number of keys and cumulative bit offsets of buckets in the GR code
+    //! Helper to encode the sequences of key offsets in the single EF code
     std::unique_ptr<EliasFano> ef_offsets_;
 
     //! Minimal app-specific ID of entries of this index - helps app understand what data stored in given shard - persistent field
@@ -365,10 +309,10 @@ class RecSplit {
     //! Accumulator for position of every bucket in the encoding of the hash function
     std::vector<int64_t> bucket_position_accumulator_;
 
-    //!
-    std::vector<uint64_t> buffer_;  // TODO(canepat) rename buffer_bucket_
+    //! Temporary buffer for current bucket
+    std::vector<uint64_t> buffer_bucket_;
 
-    //!
+    //! Temporary buffer for current offsets
     std::vector<uint64_t> buffer_offsets_;
 
     //! Seed for Murmur3 hash used for converting keys to 64-bit values and assigning to buckets
@@ -382,17 +326,17 @@ class RecSplit {
 
   public:
     RecSplit(const size_t _keys_count, const size_t _bucket_size, std::filesystem::path index_path, uint64_t base_data_id, uint32_t salt = 0)
-        : bucket_size(_bucket_size),
-          keys_count(_keys_count),
-          nbuckets((keys_count + bucket_size - 1) / bucket_size),
+        : bucket_size_(_bucket_size),
+          key_count_(_keys_count),
+          bucket_count_((key_count_ + bucket_size_ - 1) / bucket_size_),
           base_data_id_(base_data_id),
           index_path_(std::move(index_path)) {
-        bucket_size_accumulator_.reserve(nbuckets + 1);
-        bucket_position_accumulator_.reserve(nbuckets + 1);
+        bucket_size_accumulator_.reserve(bucket_count_ + 1);
+        bucket_position_accumulator_.reserve(bucket_count_ + 1);
         bucket_size_accumulator_.resize(1);
         bucket_position_accumulator_.resize(1);
-        current_bucket_.reserve(bucket_size);
-        current_bucket_offsets_.reserve(bucket_size);
+        current_bucket_.reserve(bucket_size_);
+        current_bucket_offsets_.reserve(bucket_size_);
         count_.reserve(lower_aggr);
 
         // Generate random salt for murmur3 hash
@@ -459,12 +403,11 @@ class RecSplit {
         if (built_) {
             throw std::logic_error{"perfect hash function already built"};
         }
-        if (keys_added_ != keys_count) {
-            throw std::logic_error{"keys expected: " + std::to_string(keys_count) + " added: " + std::to_string(keys_added_)};
+        if (keys_added_ != key_count_) {
+            throw std::logic_error{"keys expected: " + std::to_string(key_count_) + " added: " + std::to_string(keys_added_)};
         }
         const auto tmp_index_path{std::filesystem::path{index_path_}.concat(".tmp")};
         std::ofstream index_output_stream{tmp_index_path, std::ios::binary};
-        auto index_output_stream_flush = gsl::finally([&]() { index_output_stream.flush(); });  // TODO(canepat) check if necessary
         SILK_DEBUG << "[index] creating temporary index file: " << tmp_index_path.string();
 
         // Write minimal app-specific data ID in the index file
@@ -520,24 +463,9 @@ class RecSplit {
             if (collision_detected) return true;
         }
         gr_builder_.append_fixed(1, 1);  // Sentinel (avoids checking for parts of size 1)
-        descriptors = gr_builder_.build();
+        golomb_rice_codes_ = gr_builder_.build();
 
-#ifndef NDEBUG
-        index_output_stream.flush();
-        std::ifstream index_input_stream{tmp_index_path, std::ios::binary};
-        const auto index_file_size = static_cast<long>(std::filesystem::file_size(tmp_index_path));
-        SILK_DEBUG << "[index] index_file_size=" << index_file_size;
-        std::vector<char> read_buffer;
-        read_buffer.resize(index_file_size);
-        index_input_stream.read(read_buffer.data(), index_file_size);
-        index_input_stream.close();
-        if (index_file_size != 17 + keys_added_ * bytes_per_record_) {
-            SILK_CRIT << "size expected=" << 17 + keys_added_ * bytes_per_record_ << " got=" << index_file_size;
-            SILKWORM_ASSERT(false);
-        }
-#endif
-
-        SILK_INFO << "[index] writing file=" << index_path_.string();
+        // Build Elias-Fano index for offsets (if any)
         if (double_enum_index_) {
             ef_offsets_ = std::make_unique<EliasFano>(keys_added_, max_offset_);
             mdbx::cursor empty_cursor{};
@@ -551,18 +479,18 @@ class RecSplit {
         // Construct double Elias-Fano index for bucket cumulative keys and bit positions
         std::vector<uint64_t> cumulative_keys{bucket_size_accumulator_.begin(), bucket_size_accumulator_.end()};
         std::vector<uint64_t> positions(bucket_position_accumulator_.begin(), bucket_position_accumulator_.end());
-        ef.build(cumulative_keys, positions);
+        double_ef_index_.build(cumulative_keys, positions);
 
         built_ = true;
 
         // Write out bucket count, bucket size, leaf size
-        endian::store_big_u64(uint64_buffer.data(), nbuckets);
+        endian::store_big_u64(uint64_buffer.data(), bucket_count_);
         index_output_stream.write(reinterpret_cast<const char*>(uint64_buffer.data()), sizeof(uint64_t));
-        SILK_DEBUG << "[index] written bucket count: " << nbuckets;
+        SILK_DEBUG << "[index] written bucket count: " << bucket_count_;
 
-        endian::store_big_u16(uint64_buffer.data(), bucket_size);
+        endian::store_big_u16(uint64_buffer.data(), bucket_size_);
         index_output_stream.write(reinterpret_cast<const char*>(uint64_buffer.data()), sizeof(uint16_t));
-        SILK_DEBUG << "[index] written bucket size: " << bucket_size;
+        SILK_DEBUG << "[index] written bucket size: " << bucket_size_;
 
         endian::store_big_u16(uint64_buffer.data(), _leaf);
         index_output_stream.write(reinterpret_cast<const char*>(uint64_buffer.data()), sizeof(uint16_t));
@@ -598,15 +526,14 @@ class RecSplit {
         endian::store_big_u16(uint64_buffer.data(), golomb_param_max_index_ + 1);
         // Erigon writes 4-instead-of-2 bytes here: 2 spurious come from previous buffer content, i.e. last seed value
         index_output_stream.write(reinterpret_cast<const char*>(uint64_buffer.data()), sizeof(uint32_t));
-        SILK_DEBUG << "[index] written GR params count: " << golomb_param_max_index_ + 1 << " code size: " << descriptors.size();
+        SILK_DEBUG << "[index] written GR params count: " << golomb_param_max_index_ + 1 << " code size: " << golomb_rice_codes_.size();
 
         // Write out Golomb-Rice code
-        index_output_stream << descriptors;
+        index_output_stream << golomb_rice_codes_;
 
         // Write out Elias-Fano code for bucket cumulative keys and bit positions
-        index_output_stream << ef;
+        index_output_stream << double_ef_index_;
 
-        index_output_stream.flush();
         index_output_stream.close();
 
         SILK_DEBUG << "[index] renaming " << tmp_index_path.string() << " as " << index_path_.string();
@@ -640,11 +567,11 @@ class RecSplit {
 
         const size_t bucket = hash128_to_bucket(hash);
         uint64_t cum_keys, cum_keys_next, bit_pos;
-        ef.get3(bucket, cum_keys, cum_keys_next, bit_pos);
+        double_ef_index_.get3(bucket, cum_keys, cum_keys_next, bit_pos);
 
         // Number of keys in this bucket
         size_t m = cum_keys_next - cum_keys;
-        auto reader = descriptors.reader();
+        auto reader = golomb_rice_codes_.reader();
         reader.read_reset(bit_pos, skip_bits(m));
         int level = 0;
 
@@ -692,7 +619,7 @@ class RecSplit {
     size_t operator()(const std::string& key) const { return operator()(murmur_hash_3(key.c_str(), key.size())); }
 
     //! Return the number of keys used to build the RecSplit instance
-    inline size_t size() const { return this->keys_count; }
+    inline size_t size() const { return key_count_; }
 
   private:
     //! Compute and store the splittings and bijections of the current bucket
@@ -701,9 +628,8 @@ class RecSplit {
         while (bucket_size_accumulator_.size() <= (current_bucket_id_ + 1)) {
             bucket_size_accumulator_.push_back(bucket_size_accumulator_.back());
         }
-        bucket_size_accumulator_[current_bucket_id_ + 1] += current_bucket_.size();
-        SILKWORM_ASSERT(bucket_size_accumulator_[current_bucket_id_ + 1] >= bucket_size_accumulator_[current_bucket_id_]);
-        // TODO(canepat) check bucket_size_accumulator_.back() += current_bucket_.size();
+        bucket_size_accumulator_.back() += current_bucket_.size();
+        SILKWORM_ASSERT(bucket_size_accumulator_.back() >= bucket_size_accumulator_[current_bucket_id_]);
 
         // Sets of size 0 and 1 are not further processed, just write them to index
         if (current_bucket_.size() > 1) {
@@ -713,9 +639,9 @@ class RecSplit {
                     return true;
                 }
             }
-            buffer_.reserve(current_bucket_.size());
+            buffer_bucket_.reserve(current_bucket_.size());
             buffer_offsets_.reserve(current_bucket_offsets_.size());
-            buffer_.resize(current_bucket_.size());
+            buffer_bucket_.resize(current_bucket_.size());
             buffer_offsets_.resize(current_bucket_.size());
 
             std::vector<uint32_t> unary;
@@ -733,8 +659,8 @@ class RecSplit {
         while (bucket_position_accumulator_.size() <= current_bucket_id_ + 1) {
             bucket_position_accumulator_.push_back(bucket_position_accumulator_.back());
         }
-        bucket_position_accumulator_[current_bucket_id_ + 1] = gr_builder_.get_bits();
-        SILKWORM_ASSERT(bucket_position_accumulator_[current_bucket_id_ + 1] >= bucket_position_accumulator_[current_bucket_id_]);
+        bucket_position_accumulator_.back() = gr_builder_.get_bits();
+        SILKWORM_ASSERT(bucket_position_accumulator_.back() >= bucket_position_accumulator_[current_bucket_id_]);
         // Clear for the next bucket
         current_bucket_.clear();
         current_bucket_offsets_.clear();
@@ -824,11 +750,11 @@ class RecSplit {
             }
             for (std::size_t i{0}; i < m; i++) {
                 auto j = uint16_t(remap16(remix(bucket[start + i] + salt), m)) / unit;
-                buffer_[count_[j]] = bucket[start + i];
+                buffer_bucket_[count_[j]] = bucket[start + i];
                 buffer_offsets_[count_[j]] = offsets[start + i];
                 count_[j]++;
             }
-            std::copy(buffer_.data(), buffer_.data() + m, bucket.data() + start);
+            std::copy(buffer_bucket_.data(), buffer_bucket_.data() + m, bucket.data() + start);
             std::copy(buffer_offsets_.data(), buffer_offsets_.data() + m, offsets.data() + start);
 
             salt -= kStartSeed[level];
@@ -860,15 +786,15 @@ class RecSplit {
     }
 
     // Maps a 128-bit to a bucket using the first 64-bit half.
-    inline uint64_t hash128_to_bucket(const hash128_t& hash) const { return remap128(hash.first, nbuckets); }
+    inline uint64_t hash128_to_bucket(const hash128_t& hash) const { return remap128(hash.first, bucket_count_); }
 
     friend std::ostream& operator<<(std::ostream& os, const RecSplit<LEAF_SIZE, AT>& rs) {
         size_t leaf_size = LEAF_SIZE;
         os.write(reinterpret_cast<char*>(&leaf_size), sizeof(leaf_size));
-        os.write(reinterpret_cast<char*>(&rs.bucket_size), sizeof(rs.bucket_size));
-        os.write(reinterpret_cast<char*>(&rs.keys_count), sizeof(rs.keys_count));
-        os << rs.descriptors;
-        os << rs.ef;
+        os.write(reinterpret_cast<char*>(&rs.bucket_size_), sizeof(rs.bucket_size_));
+        os.write(reinterpret_cast<char*>(&rs.key_count_), sizeof(rs.key_count_));
+        os << rs.golomb_rice_codes_;
+        os << rs.double_ef_index_;
         return os;
     }
 
@@ -879,12 +805,12 @@ class RecSplit {
             fprintf(stderr, "Serialized leaf size %d, code leaf size %d\n", int(leaf_size), int(LEAF_SIZE));
             abort();
         }
-        is.read(reinterpret_cast<char*>(&rs.bucket_size), sizeof(bucket_size));
-        is.read(reinterpret_cast<char*>(&rs.keys_count), sizeof(keys_count));
-        rs.nbuckets = max(1, (rs.keys_count + rs.bucket_size - 1) / rs.bucket_size);
+        is.read(reinterpret_cast<char*>(&rs.bucket_size_), sizeof(rs.bucket_size_));
+        is.read(reinterpret_cast<char*>(&rs.key_count_), sizeof(rs.key_count_));
+        rs.bucket_count_ = max(1, (rs.key_count_ + rs.bucket_size_ - 1) / rs.bucket_size_);
 
-        is >> rs.descriptors;
-        is >> rs.ef;
+        is >> rs.golomb_rice_codes_;
+        is >> rs.double_ef_index_;
         return is;
     }
 };
@@ -893,7 +819,7 @@ constexpr std::size_t kLeafSize{8};
 using RecSplit8 = RecSplit<kLeafSize>;
 
 template <>
-const std::array<uint32_t, MAX_BUCKET_SIZE> RecSplit8::memo;
+const std::array<uint32_t, kMaxBucketSize> RecSplit8::memo;
 
 }  // namespace silkworm::succinct
 

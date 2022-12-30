@@ -251,8 +251,10 @@ class RecSplit {
     static constexpr size_t _leaf = LEAF_SIZE;
     static const size_t lower_aggr;
     static const size_t upper_aggr;
+    static inline uint16_t golomb_param_max_index_{0};
 
     static constexpr int golomb_param(const int m, const std::array<uint32_t, MAX_BUCKET_SIZE>& memo) {
+        if (m > golomb_param_max_index_) golomb_param_max_index_ = m;
         return memo[m] >> 27;
     }
 
@@ -260,7 +262,7 @@ class RecSplit {
     // of a splitting (upper 5 bits), the number of nodes in the associated subtree
     // (following 11 bits) and the sum of the Golomb-Rice codelengths in the same
     // subtree (lower 16 bits).
-    static constexpr void _fill_golomb_rice(const int m, std::array<uint32_t, MAX_BUCKET_SIZE>* memo) {
+    static constexpr void precompute_golomb_rice(const int m, std::array<uint32_t, MAX_BUCKET_SIZE>* memo) {
         std::array<int, MAX_FANOUT> k{0};
 
         size_t fanout = 0, unit = 0;
@@ -278,15 +280,15 @@ class RecSplit {
         const double p = sqrt(m) / (pow(2 * M_PI, (fanout - 1.) / 2) * sqrt_prod);
         auto golomb_rice_length = static_cast<uint32_t>(ceil(log2(-std::log((sqrt(5) + 1) / 2) / log1p(-p))));  // log2 Golomb modulus
 
-        assert(golomb_rice_length <= 0x1F);  // Golomb-Rice code, stored in the 5 upper bits
+        SILKWORM_ASSERT(golomb_rice_length <= 0x1F);  // Golomb-Rice code, stored in the 5 upper bits
         (*memo)[m] = golomb_rice_length << 27;
         for (size_t i = 0; i < fanout; ++i) golomb_rice_length += (*memo)[k[i]] & 0xFFFF;
-        assert(golomb_rice_length <= 0xFFFF);  // Sum of Golomb-Rice codeslengths in the subtree, stored in the lower 16 bits
+        SILKWORM_ASSERT(golomb_rice_length <= 0xFFFF);  // Sum of Golomb-Rice codeslengths in the subtree, stored in the lower 16 bits
         (*memo)[m] |= golomb_rice_length;
 
         uint32_t nodes = 1;
         for (size_t i = 0; i < fanout; ++i) nodes += ((*memo)[k[i]] >> 16) & 0x7FF;
-        assert(LEAF_SIZE < 3 || nodes <= 0x7FF);  // Number of nodes in the subtree, stored in the middle 11 bits
+        SILKWORM_ASSERT(LEAF_SIZE < 3 || nodes <= 0x7FF);  // Number of nodes in the subtree, stored in the middle 11 bits
         (*memo)[m] |= nodes << 16;
     }
 
@@ -294,7 +296,7 @@ class RecSplit {
         std::array<uint32_t, MAX_BUCKET_SIZE> memo{0};
         size_t s = 0;
         for (; s <= LEAF_SIZE; ++s) memo[s] = bij_memo[s] << 27 | (s > 1) << 16 | bij_memo[s];
-        for (; s < MAX_BUCKET_SIZE; ++s) _fill_golomb_rice(s, &memo);
+        for (; s < MAX_BUCKET_SIZE; ++s) precompute_golomb_rice(s, &memo);
         return memo;
     }
 
@@ -569,7 +571,7 @@ class RecSplit {
         // Write out salt
         endian::store_big_u32(uint64_buffer.data(), salt_);
         index_output_stream.write(reinterpret_cast<const char*>(uint64_buffer.data()), sizeof(uint32_t));
-        SILK_DEBUG << "[index] written murmur3 salt: " << salt_;
+        SILK_DEBUG << "[index] written murmur3 salt: " << salt_ << " [" << to_hex(uint64_buffer) << "]";
 
         // Write out start seeds
         const uint8_t start_seed_length = sizeof(kStartSeed) / sizeof(uint64_t);
@@ -588,20 +590,20 @@ class RecSplit {
 
         // Write out Elias-Fano code for offsets (if any)
         if (double_enum_index_) {
-            index_output_stream << ef_offsets_;
-            SILK_DEBUG << "[index] written EF code for offsets [size: " << ef_offsets_->count() << "]";
+            index_output_stream << *ef_offsets_;
+            SILK_DEBUG << "[index] written EF code for offsets [size: " << ef_offsets_->count() - 1 << "]";
         }
 
-        // Write out the size of Golomb-Rice code params
-        endian::store_big_u32(uint64_buffer.data(), descriptors.get_bits());
+        // Write out the number of Golomb-Rice code params
+        endian::store_big_u16(uint64_buffer.data(), golomb_param_max_index_ + 1);
+        // Erigon writes 4-instead-of-2 bytes here: 2 spurious come from previous buffer content, i.e. last seed value
         index_output_stream.write(reinterpret_cast<const char*>(uint64_buffer.data()), sizeof(uint32_t));
-        SILK_DEBUG << "[index] written GR code size: " << descriptors.get_bits();
+        SILK_DEBUG << "[index] written GR params count: " << golomb_param_max_index_ + 1 << " code size: " << descriptors.size();
 
         // Write out Golomb-Rice code
         index_output_stream << descriptors;
 
         // Write out Elias-Fano code for bucket cumulative keys and bit positions
-        // TODO(canepat) check data vector size
         index_output_stream << ef;
 
         index_output_stream.flush();

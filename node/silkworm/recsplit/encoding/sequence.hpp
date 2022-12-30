@@ -21,6 +21,7 @@
 #include <vector>
 
 #include <silkworm/common/base.hpp>
+#include <silkworm/common/endian.hpp>
 
 namespace silkworm::succinct {
 
@@ -32,16 +33,25 @@ using Uint64Sequence = UnsignedIntegralSequence<uint64_t>;
 
 template <UnsignedIntegral T>
 std::ostream& operator<<(std::ostream& os, const UnsignedIntegralSequence<T>& s) {
+    // Serialize the integer sequence size using 8-bytes
     const uint64_t size = s.size();
-    os.write(reinterpret_cast<const char*>(&size), sizeof(T));
+    Bytes buffer(sizeof(uint64_t), '\0');
+    endian::store_big_u64(buffer.data(), size);
+    os.write(reinterpret_cast<const char*>(buffer.data()), sizeof(uint64_t));
+
+    // Serialize the integer sequence
     os.write(reinterpret_cast<const char*>(s.data()), static_cast<std::streamsize>(size * sizeof(T)));
     return os;
 }
 
 template <UnsignedIntegral T>
 std::istream& operator>>(std::istream& is, UnsignedIntegralSequence<T>& s) {
-    uint64_t size{0};
-    is.read(reinterpret_cast<char*>(&size), sizeof(T));
+    // Deserialize the integer sequence size using 8-bytes
+    Bytes buffer(sizeof(uint64_t), '\0');
+    is.read(reinterpret_cast<char*>(buffer.data()), sizeof(uint64_t));
+    uint64_t size = endian::load_big_u64(buffer.data());
+
+    // Deserialize the integer sequence
     s.resize(size);
     is.read(reinterpret_cast<char*>(s.data()), static_cast<std::streamsize>(size * sizeof(T)));
     return is;

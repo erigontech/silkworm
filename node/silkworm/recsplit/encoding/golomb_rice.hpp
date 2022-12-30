@@ -70,7 +70,7 @@ class GolombRiceVector {
             const uint64_t lower_bits = v & ((uint64_t(1) << log2golomb) - 1);
             std::size_t used_bits = bit_count & 63;
 
-            data.resize((((bit_count + log2golomb + 7) / 8) + 7 + 7) / 8);
+            data.resize((bit_count + log2golomb + 63) / 64);
 
             uint64_t* append_ptr = data.data() + bit_count / 64;
             uint64_t cur_word = *append_ptr;
@@ -86,13 +86,14 @@ class GolombRiceVector {
 
         void append_unary_all(const Uint32Sequence& unary) {
             std::size_t bit_inc = 0;
-            for (const auto& u : unary) {
+            for (const auto u : unary) {
+                // Each number u uses u+1 bits for its unary representation
                 bit_inc += u + 1;
             }
 
-            data.resize((((bit_count + bit_inc + 7) / 8) + 7 + 7) / 8);
+            data.resize((bit_count + bit_inc + 63) / 64);
 
-            for (const auto& u : unary) {
+            for (const auto u : unary) {
                 bit_count += u;
                 uint64_t* append_ptr = data.data() + bit_count / 64;
                 *append_ptr |= uint64_t(1) << (bit_count & 63);
@@ -116,6 +117,8 @@ class GolombRiceVector {
     explicit GolombRiceVector(std::vector<uint64_t>&& input_data) : data(std::move(input_data)) {}
 
     [[nodiscard]] size_t get_bits() const { return data.size() * sizeof(uint64_t); }
+
+    [[nodiscard]] size_t size() const { return data.size(); }
 
     class Reader {
       public:

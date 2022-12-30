@@ -55,6 +55,7 @@
 #include <silkworm/common/assert.hpp>
 #include <silkworm/common/base.hpp>
 #include <silkworm/common/endian.hpp>
+#include <silkworm/common/log.hpp>
 #include <silkworm/recsplit/encoding/sequence.hpp>
 #include <silkworm/recsplit/support/common.hpp>
 
@@ -187,9 +188,11 @@ class EliasFanoList32 {
 
         endian::store_big_u64(uint64_buffer.data(), ef.count_);
         os.write(reinterpret_cast<const char*>(uint64_buffer.data()), sizeof(uint64_t));
+        SILK_DEBUG << "[index] written EF code count: " << ef.count_;
 
         endian::store_big_u64(uint64_buffer.data(), ef.u_);
         os.write(reinterpret_cast<const char*>(uint64_buffer.data()), sizeof(uint64_t));
+        SILK_DEBUG << "[index] written EF upper: " << ef.u_;
 
         os.write(reinterpret_cast<const char*>(ef.data_.data()), static_cast<std::streamsize>(ef.data_.size() * sizeof(uint64_t)));
         return os;
@@ -457,10 +460,10 @@ class DoubleEliasFanoList16 {
 
     [[nodiscard]] inline std::size_t jump_size_words() const {
         // Compute whole blocks
-        std::size_t size = (num_buckets_ / kSuperQ) * kSuperQSize16 * 2;
+        std::size_t size = ((num_buckets_ + 1) / kSuperQ) * kSuperQSize16 * 2;
         // Compute partial block (if any)
-        if (num_buckets_ % kSuperQ != 0) {
-            size += (1 + ((num_buckets_ % kSuperQ + kQ - 1) / kQ + 3) / 4) * 2;
+        if ((num_buckets_ + 1) % kSuperQ != 0) {
+            size += (1 + (((num_buckets_ + 1) % kSuperQ + kQ - 1) / kQ + 3) / 4) * 2;
         }
         return size;
     }
@@ -483,7 +486,8 @@ class DoubleEliasFanoList16 {
         endian::store_big_u64(uint64_buffer.data(), ef.position_min_delta_);
         os.write(reinterpret_cast<const char*>(uint64_buffer.data()), sizeof(uint64_t));
 
-        os << ef.data_;
+        // Erigon does not write data size here
+        os.write(reinterpret_cast<const char*>(ef.data_.data()), static_cast<std::streamsize>(ef.data_.size() * sizeof(uint64_t)));
         return os;
     }
 
@@ -512,7 +516,12 @@ class DoubleEliasFanoList16 {
         ef.lower_bits_mask_cum_keys = (1UL << ef.l_cum_keys) - 1;
         ef.lower_bits_mask_position = (1UL << ef.l_position) - 1;
 
-        is >> ef.data_;
+        // Erigon assumes that data fills up the stream until the end
+        int read_count{0};
+        while (!is.eof()) {
+            is.read(reinterpret_cast<char*>(ef.data_.data() + read_count), static_cast<std::streamsize>(sizeof(uint64_t)));
+            ++read_count;
+        }
         return is;
     }
 };

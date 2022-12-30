@@ -67,6 +67,8 @@ class GolombRiceVector {
         explicit Builder(const std::size_t allocated_words) : data(allocated_words) {}
 
         void append_fixed(const uint64_t v, const uint64_t log2golomb) {
+            if (log2golomb == 0) return;
+
             const uint64_t lower_bits = v & ((uint64_t(1) << log2golomb) - 1);
             std::size_t used_bits = bit_count & 63;
 

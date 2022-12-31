@@ -410,7 +410,7 @@ void Decompressor::read_patterns(ByteView dict) {
     }
 
     SILK_INFO << "#codewords: " << pattern_dict_->num_codewords();
-    SILK_DEBUG << *pattern_dict_;
+    SILK_TRACE << *pattern_dict_;
 }
 
 void Decompressor::read_positions(ByteView dict) {
@@ -466,7 +466,7 @@ void Decompressor::read_positions(ByteView dict) {
     }
 
     SILK_INFO << "#positions: " << position_dict_->num_positions();
-    SILK_DEBUG << *position_dict_;
+    SILK_TRACE << *position_dict_;
 }
 
 Decompressor::Iterator::Iterator(const Decompressor* decoder) : decoder_(decoder) {}
@@ -483,7 +483,7 @@ uint64_t Decompressor::Iterator::next(Bytes& buffer) {
         throw std::runtime_error{"invalid zero word length in: " + decoder_->compressed_path().string()};
     }
     --word_length;  // because when we create HT we do ++ (0 is terminator)
-    SILK_DEBUG << "Iterator::next start_offset=" << start_offset << " word_length=" << word_length;
+    SILK_TRACE << "Iterator::next start_offset=" << start_offset << " word_length=" << word_length;
     if (word_length == 0) {
         if (bit_position_ > 0) {
             ++word_offset_;
@@ -499,14 +499,14 @@ uint64_t Decompressor::Iterator::next(Bytes& buffer) {
         buffer.reserve(buffer.length() + word_length);
     }
     buffer.resize(buffer.length() + word_length);
-    SILK_DEBUG << "Iterator::next buffer resized to: " << buffer.length();
+    SILK_TRACE << "Iterator::next buffer resized to: " << buffer.length();
 
     // Fill in the patterns
     for (auto pos{next_position(false)}; pos != 0; pos = next_position(false)) {
         // Positions where to insert are encoded relative to one another
         buffer_position += pos - 1;
         const ByteView pattern = next_pattern();
-        SILK_DEBUG << "Iterator::next data-from-patterns pos=" << pos << " pattern=" << to_hex(pattern);
+        SILK_TRACE << "Iterator::next data-from-patterns pos=" << pos << " pattern=" << to_hex(pattern);
         pattern.copy(buffer.data() + buffer_position, pattern.size(), 0);
     }
     if (bit_position_ > 0) {
@@ -528,7 +528,7 @@ uint64_t Decompressor::Iterator::next(Bytes& buffer) {
         buffer_position += pos - 1;
         if (buffer_position > last_uncovered) {
             uint64_t position_diff = buffer_position - last_uncovered;
-            SILK_DEBUG << "Iterator::next other-data pos=" << pos << " last_uncovered=" << last_uncovered
+            SILK_TRACE << "Iterator::next other-data pos=" << pos << " last_uncovered=" << last_uncovered
                        << " buffer_position=" << buffer_position << " position_diff=" << position_diff
                        << " data=" << to_hex(ByteView{data().data() + post_loop_offset, position_diff});
             data().copy(buffer.data() + last_uncovered, position_diff, post_loop_offset);
@@ -538,7 +538,7 @@ uint64_t Decompressor::Iterator::next(Bytes& buffer) {
     }
     if (word_length > last_uncovered) {
         uint64_t position_diff = word_length - last_uncovered;
-        SILK_DEBUG << "Iterator::next other-data last_uncovered=" << last_uncovered
+        SILK_TRACE << "Iterator::next other-data last_uncovered=" << last_uncovered
                    << " buffer_position=" << buffer_position << " position_diff=" << position_diff
                    << " data=" << to_hex(ByteView{data().data() + post_loop_offset, position_diff});
         data().copy(buffer.data() + last_uncovered, position_diff, post_loop_offset);
@@ -546,7 +546,7 @@ uint64_t Decompressor::Iterator::next(Bytes& buffer) {
     }
     word_offset_ = post_loop_offset;
     bit_position_ = 0;
-    SILK_DEBUG << "Iterator::next word_offset_=" << word_offset_;
+    SILK_TRACE << "Iterator::next word_offset_=" << word_offset_;
     return post_loop_offset;
 }
 

@@ -28,6 +28,7 @@
 #include <silkworm/buildinfo.h>
 #include <silkworm/common/log.hpp>
 #include <silkworm/snapshot/bittorrent.hpp>
+#include <silkworm/snapshot/index.hpp>
 #include <silkworm/snapshot/repository.hpp>
 #include <silkworm/snapshot/snapshot.hpp>
 
@@ -79,6 +80,7 @@ void parse_command_line(int argc, char* argv[], CLI::App& app, SnapshotToolboxSe
     std::map<std::string, SnapshotTool> snapshot_tool_mapping{
         {"count_bodies", SnapshotTool::count_bodies},
         {"count_headers", SnapshotTool::count_headers},
+        {"create_index", SnapshotTool::create_index},
         {"decode_segment", SnapshotTool::decode_segment},
         {"download", SnapshotTool::download},
     };
@@ -171,9 +173,29 @@ void create_index(const SnapSettings& settings, int repetitions) {
     const auto snap_file{SnapshotFile::parse(std::filesystem::path{settings.snapshot_file_name})};
     if (snap_file) {
         for (int i{0}; i < repetitions; ++i) {
-            HeaderSnapshot header_segment{snap_file->path(), snap_file->block_from(), snap_file->block_to()};
-            header_segment.reopen_index();
+            switch (snap_file->type()) {
+                case SnapshotType::headers: {
+                    HeaderIndex index{*snap_file};
+                    index.build();
+                    break;
+                }
+                case SnapshotType::bodies: {
+                    BodyIndex index{*snap_file};
+                    index.build();
+                    break;
+                }
+                case SnapshotType::transactions: {
+                    TransactionIndex index{*snap_file};
+                    index.build();
+                    break;
+                }
+                default: {
+                    SILKWORM_ASSERT(false);
+                }
+            }
         }
+    } else {
+        SILK_ERROR << "Invalid snapshot file: " << settings.snapshot_file_name;
     }
     std::chrono::duration elapsed{std::chrono::steady_clock::now() - start};
     const auto open_duration_micro = static_cast<uint64_t>(std::chrono::duration_cast<std::chrono::milliseconds>(elapsed).count());

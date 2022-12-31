@@ -80,6 +80,10 @@ class SnapshotFile {
         return seedable() && !exists_torrent_file();
     }
 
+    [[nodiscard]] SnapshotFile index_file() const {
+        return SnapshotFile(std::filesystem::path{path_}.replace_extension(kIdxExtension), version_, block_from_, block_to_, type_);
+    }
+
     friend bool operator<(const SnapshotFile& lhs, const SnapshotFile& rhs);
 
   private:

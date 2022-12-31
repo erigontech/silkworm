@@ -59,6 +59,7 @@ Options:
 
 Currently available tools are:
 - `count_headers`
+- `create_index`
 - `decode_segment`
 - `download`
 
@@ -73,11 +74,17 @@ cmd/snapshots --tool download --magnet "magnet:?xt=urn:btih:83112dec4bec180cff67
 Download all snapshots from the magnet links contained in magnet file and put them in torrent folder:
 
 ```
-cmd/snapshots --tool download --magnet_file .magnet_links --log.verbosity 5 --active_downloads 3
+cmd/snapshots --tool download --magnet_file .magnet_links --log.verbosity debug --active_downloads 3
 ```
 
 Count how many block headers are present in header snapshots under torrent folder:
 
 ```
-cmd/snapshots --tool count_headers --repetitions 1 --log.verbosity 4
+cmd/snapshots --tool count_headers --repetitions 1 --log.verbosity info
+```
+
+Create indexes for target snapshot under torrent folder:
+
+```
+cmd/snapshots --tool create_index --file v1-000000-000500-headers.seg --log.verbosity info
 ```

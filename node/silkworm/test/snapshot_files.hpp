@@ -20,6 +20,7 @@
 #include <fstream>
 
 #include <silkworm/common/endian.hpp>
+#include <silkworm/common/util.hpp>
 #include <silkworm/test/files.hpp>
 
 namespace silkworm::test {

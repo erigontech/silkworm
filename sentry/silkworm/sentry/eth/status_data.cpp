@@ -16,18 +16,18 @@
 
 #include "status_data.hpp"
 
-#include <silkworm/chain/identity.hpp>
+#include <silkworm/chain/config.hpp>
 
 namespace silkworm::sentry::eth {
 
 StatusData StatusData::test_instance() {
-    Bytes genesis_hash{kMainnetIdentity.genesis_hash};
-    auto fork_block_numbers = kMainnetIdentity.distinct_fork_numbers();
+    Bytes genesis_hash{*kMainnetConfig.genesis_hash};
+    auto fork_block_numbers = kMainnetConfig.distinct_fork_numbers();
     const BlockNum head_block_num = 0;
 
     auto message = StatusMessage{
         67,  // protocol version
-        kMainnetIdentity.config.chain_id,
+        kMainnetConfig.chain_id,
         17179869184,  // total difficulty
         genesis_hash,
         genesis_hash,

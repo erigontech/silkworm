@@ -17,12 +17,11 @@
 #include "fork_id.hpp"
 
 #include <limits>
-#include <utility>
 #include <vector>
 
 #include <catch2/catch.hpp>
 
-#include <silkworm/chain/identity.hpp>
+#include <silkworm/chain/config.hpp>
 #include <silkworm/common/util.hpp>
 
 namespace silkworm::sentry::eth {
@@ -48,8 +47,9 @@ struct ForksExampleSpec {
     ForkId fork_id;
 };
 
-static ForkId fork_id_at(BlockNum head_block_num, const ChainIdentity& chain) {
-    return ForkId{chain.genesis_hash, chain.distinct_fork_numbers(), head_block_num};
+static ForkId fork_id_at(BlockNum head_block_num, const ChainConfig& chain) {
+    REQUIRE(chain.genesis_hash.has_value());
+    return ForkId{ByteView{*chain.genesis_hash}, chain.distinct_fork_numbers(), head_block_num};
 }
 
 TEST_CASE("ForkId.forks.mainnet") {
@@ -82,35 +82,10 @@ TEST_CASE("ForkId.forks.mainnet") {
         {20000000, ForkId{0xf0afd0e3, 0}},         // Future Gray Glacier block
     };
 
+    auto chain_config{kMainnetConfig};
+    chain_config.genesis_hash.emplace(kMainnetGenesisHash);
     for (auto& example : examples) {
-        CHECK(fork_id_at(example.head_block_num, kMainnetIdentity) == example.fork_id);
-    }
-}
-
-TEST_CASE("ForkId.forks.ropsten") {
-    std::vector<ForksExampleSpec> examples = {
-        {0, ForkId{0x30c7ddbc, 10}},               // Unsynced, last Frontier, Homestead and first Tangerine block
-        {9, ForkId{0x30c7ddbc, 10}},               // Last Tangerine block
-        {10, ForkId{0x63760190, 1700000}},         // First Spurious block
-        {1699999, ForkId{0x63760190, 1700000}},    // Last Spurious block
-        {1700000, ForkId{0x3ea159c7, 4230000}},    // First Byzantium block
-        {4229999, ForkId{0x3ea159c7, 4230000}},    // Last Byzantium block
-        {4230000, ForkId{0x97b544f3, 4939394}},    // First Constantinople block
-        {4939393, ForkId{0x97b544f3, 4939394}},    // Last Constantinople block
-        {4939394, ForkId{0xd6e2149b, 6485846}},    // First Petersburg block
-        {6485845, ForkId{0xd6e2149b, 6485846}},    // Last Petersburg block
-        {6485846, ForkId{0x4bc66396, 7117117}},    // First Istanbul block
-        {7117116, ForkId{0x4bc66396, 7117117}},    // Last Istanbul block
-        {7117117, ForkId{0x6727ef90, 9812189}},    // First Muir Glacier block
-        {9812188, ForkId{0x6727ef90, 9812189}},    // Last Muir Glacier block
-        {9812189, ForkId{0xa157d377, 10499401}},   // First Berlin block
-        {10499400, ForkId{0xa157d377, 10499401}},  // Last Berlin block
-        {10499401, ForkId{0x7119b6b3, 0}},         // First London block
-        {11000000, ForkId{0x7119b6b3, 0}},         // Future London block
-    };
-
-    for (auto& example : examples) {
-        CHECK(fork_id_at(example.head_block_num, kRopstenIdentity) == example.fork_id);
+        CHECK(fork_id_at(example.head_block_num, chain_config) == example.fork_id);
     }
 }
 
@@ -135,8 +110,10 @@ TEST_CASE("ForkId.forks.rinkeby") {
         {10000000, ForkId{0x8E29F2F3, 0}},       // Future London block
     };
 
+    auto chain_config{kRinkebyConfig};
+    chain_config.genesis_hash.emplace(kRinkebyGenesisHash);
     for (auto& example : examples) {
-        CHECK(fork_id_at(example.head_block_num, kRinkebyIdentity) == example.fork_id);
+        CHECK(fork_id_at(example.head_block_num, chain_config) == example.fork_id);
     }
 }
 
@@ -152,8 +129,10 @@ TEST_CASE("ForkId.forks.goerli") {
         {6000000, ForkId{0xB8C6299D, 0}},        // Future London block
     };
 
+    auto chain_config{kGoerliConfig};
+    chain_config.genesis_hash.emplace(kGoerliGenesisHash);
     for (auto& example : examples) {
-        CHECK(fork_id_at(example.head_block_num, kGoerliIdentity) == example.fork_id);
+        CHECK(fork_id_at(example.head_block_num, chain_config) == example.fork_id);
     }
 }
 
@@ -164,8 +143,10 @@ TEST_CASE("ForkId.forks.sepolia") {
         {1735371, ForkId{0xb96cbd13, 0}},        // First MergeNetsplit block
     };
 
+    auto chain_config{kSepoliaConfig};
+    chain_config.genesis_hash.emplace(kSepoliaGenesisHash);
     for (auto& example : examples) {
-        CHECK(fork_id_at(example.head_block_num, kSepoliaIdentity) == example.fork_id);
+        CHECK(fork_id_at(example.head_block_num, chain_config) == example.fork_id);
     }
 }
 
@@ -240,8 +221,11 @@ TEST_CASE("ForkId.is_compatible_with") {
         {7279999, ForkId{0xa00bc324, 7279999}, false},
     };
 
-    Bytes genesis_hash{kMainnetIdentity.genesis_hash};
-    auto fork_block_numbers = kMainnetIdentity.distinct_fork_numbers();
+    auto chain_config{kMainnetConfig};
+    chain_config.genesis_hash.emplace(kMainnetGenesisHash);
+
+    ByteView genesis_hash{*chain_config.genesis_hash};
+    auto fork_block_numbers = chain_config.distinct_fork_numbers();
 
     for (auto& example : examples) {
         bool is_compatible = example.fork_id.is_compatible_with(

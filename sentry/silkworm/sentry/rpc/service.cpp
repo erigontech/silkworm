@@ -16,9 +16,16 @@
 
 #include "service.hpp"
 
+#include <algorithm>
+#include <optional>
+#include <vector>
+
+#include <silkworm/common/base.hpp>
 #include <silkworm/common/log.hpp>
+#include <silkworm/downloader/internals/sentry_type_casts.hpp>
 #include <silkworm/rpc/server/call.hpp>
 #include <silkworm/rpc/server/call_factory.hpp>
+#include <silkworm/sentry/eth/fork_id.hpp>
 
 namespace silkworm::sentry::rpc {
 
@@ -29,13 +36,44 @@ namespace proto_types = ::types;
 using AsyncService = proto::Sentry::AsyncService;
 namespace sw_rpc = silkworm::rpc;
 
+static ServiceState& state();
+
 // rpc SetStatus(StatusData) returns (SetStatusReply);
 class SetStatusCall : public sw_rpc::UnaryRpc<AsyncService, proto::StatusData, proto::SetStatusReply> {
   public:
     SetStatusCall(io_context& scheduler, AsyncService* service, grpc::ServerCompletionQueue* queue, Handlers handlers)
         : UnaryRpc<AsyncService, proto::StatusData, proto::SetStatusReply>(scheduler, service, queue, std::move(handlers)) {}
-    void process(const proto::StatusData* /*request*/) override {
-        finish_with_error(grpc::Status{grpc::StatusCode::UNIMPLEMENTED, ""});
+    void process(const proto::StatusData* data) override {
+        auto status = make_status_data(*data, state());
+        bool ok = state().status_channel.try_send(status);
+        if (!ok) {
+            log::Error() << "SetStatusCall: status_channel is clogged";
+        }
+        send_response(proto::SetStatusReply{});
+    }
+
+    static eth::StatusData make_status_data(const proto::StatusData& data, const ServiceState& state) {
+        auto& data_forks = data.fork_data().forks();
+        std::vector<BlockNum> fork_block_numbers;
+        fork_block_numbers.resize(static_cast<size_t>(data_forks.size()));
+        std::copy(data_forks.cbegin(), data_forks.cend(), fork_block_numbers.begin());
+
+        Bytes genesis_hash{hash_from_H256(data.fork_data().genesis())};
+
+        auto message = eth::StatusMessage{
+            state.eth_version,
+            data.network_id(),
+            uint256_from_H256(data.total_difficulty()),
+            Bytes{hash_from_H256(data.best_hash())},
+            genesis_hash,
+            eth::ForkId{genesis_hash, fork_block_numbers, data.max_block()},
+        };
+
+        return eth::StatusData{
+            std::move(fork_block_numbers),
+            data.max_block(),
+            std::move(message),
+        };
     }
 };
 
@@ -47,7 +85,10 @@ class HandshakeCall : public sw_rpc::UnaryRpc<AsyncService, protobuf::Empty, pro
     HandshakeCall(io_context& scheduler, AsyncService* service, grpc::ServerCompletionQueue* queue, Handlers handlers)
         : UnaryRpc<AsyncService, protobuf::Empty, proto::HandShakeReply>(scheduler, service, queue, std::move(handlers)) {}
     void process(const protobuf::Empty* /*request*/) override {
-        finish_with_error(grpc::Status{grpc::StatusCode::UNIMPLEMENTED, ""});
+        proto::HandShakeReply reply;
+        assert(proto::Protocol_MIN == proto::Protocol::ETH65);
+        reply.set_protocol(static_cast<proto::Protocol>(state().eth_version - 65));
+        send_response(reply);
     }
 };
 
@@ -58,7 +99,7 @@ class NodeInfoCall : public sw_rpc::UnaryRpc<AsyncService, protobuf::Empty, prot
     NodeInfoCall(io_context& scheduler, AsyncService* service, grpc::ServerCompletionQueue* queue, Handlers handlers)
         : UnaryRpc<AsyncService, protobuf::Empty, proto_types::NodeInfoReply>(scheduler, service, queue, std::move(handlers)) {}
     void process(const protobuf::Empty* /*request*/) override {
-        finish_with_error(grpc::Status{grpc::StatusCode::UNIMPLEMENTED, ""});
+        finish_with_error(grpc::Status{grpc::StatusCode::UNIMPLEMENTED, "NodeInfoCall"});
     }
 };
 
@@ -68,7 +109,7 @@ class SendMessageByIdCall : public sw_rpc::UnaryRpc<AsyncService, proto::SendMes
     SendMessageByIdCall(io_context& scheduler, AsyncService* service, grpc::ServerCompletionQueue* queue, Handlers handlers)
         : UnaryRpc<AsyncService, proto::SendMessageByIdRequest, proto::SentPeers>(scheduler, service, queue, std::move(handlers)) {}
     void process(const proto::SendMessageByIdRequest* /*request*/) override {
-        finish_with_error(grpc::Status{grpc::StatusCode::UNIMPLEMENTED, ""});
+        finish_with_error(grpc::Status{grpc::StatusCode::UNIMPLEMENTED, "SendMessageByIdCall"});
     }
 };
 
@@ -78,7 +119,7 @@ class SendMessageToRandomPeersCall : public sw_rpc::UnaryRpc<AsyncService, proto
     SendMessageToRandomPeersCall(io_context& scheduler, AsyncService* service, grpc::ServerCompletionQueue* queue, Handlers handlers)
         : UnaryRpc<AsyncService, proto::SendMessageToRandomPeersRequest, proto::SentPeers>(scheduler, service, queue, std::move(handlers)) {}
     void process(const proto::SendMessageToRandomPeersRequest* /*request*/) override {
-        finish_with_error(grpc::Status{grpc::StatusCode::UNIMPLEMENTED, ""});
+        finish_with_error(grpc::Status{grpc::StatusCode::UNIMPLEMENTED, "SendMessageToRandomPeersCall"});
     }
 };
 
@@ -88,7 +129,7 @@ class SendMessageToAllCall : public sw_rpc::UnaryRpc<AsyncService, proto::Outbou
     SendMessageToAllCall(io_context& scheduler, AsyncService* service, grpc::ServerCompletionQueue* queue, Handlers handlers)
         : UnaryRpc<AsyncService, proto::OutboundMessageData, proto::SentPeers>(scheduler, service, queue, std::move(handlers)) {}
     void process(const proto::OutboundMessageData* /*request*/) override {
-        finish_with_error(grpc::Status{grpc::StatusCode::UNIMPLEMENTED, ""});
+        finish_with_error(grpc::Status{grpc::StatusCode::UNIMPLEMENTED, "SendMessageToAllCall"});
     }
 };
 
@@ -98,7 +139,7 @@ class SendMessageByMinBlockCall : public sw_rpc::UnaryRpc<AsyncService, proto::S
     SendMessageByMinBlockCall(io_context& scheduler, AsyncService* service, grpc::ServerCompletionQueue* queue, Handlers handlers)
         : UnaryRpc<AsyncService, proto::SendMessageByMinBlockRequest, proto::SentPeers>(scheduler, service, queue, std::move(handlers)) {}
     void process(const proto::SendMessageByMinBlockRequest* /*request*/) override {
-        finish_with_error(grpc::Status{grpc::StatusCode::UNIMPLEMENTED, ""});
+        finish_with_error(grpc::Status{grpc::StatusCode::UNIMPLEMENTED, "SendMessageByMinBlockCall"});
     }
 };
 
@@ -108,7 +149,7 @@ class PeerMinBlockCall : public sw_rpc::UnaryRpc<AsyncService, proto::PeerMinBlo
     PeerMinBlockCall(io_context& scheduler, AsyncService* service, grpc::ServerCompletionQueue* queue, Handlers handlers)
         : UnaryRpc<AsyncService, proto::PeerMinBlockRequest, protobuf::Empty>(scheduler, service, queue, std::move(handlers)) {}
     void process(const proto::PeerMinBlockRequest* /*request*/) override {
-        finish_with_error(grpc::Status{grpc::StatusCode::UNIMPLEMENTED, ""});
+        finish_with_error(grpc::Status{grpc::StatusCode::UNIMPLEMENTED, "PeerMinBlockCall"});
     }
 };
 
@@ -121,7 +162,7 @@ class MessagesCall : public sw_rpc::ServerStreamingRpc<AsyncService, proto::Mess
     MessagesCall(io_context& scheduler, AsyncService* service, grpc::ServerCompletionQueue* queue, Handlers handlers)
         : ServerStreamingRpc<AsyncService, proto::MessagesRequest, proto::InboundMessage>(scheduler, service, queue, std::move(handlers)) {}
     void process(const proto::MessagesRequest* /*request*/) override {
-        const bool closed = close_with_error(grpc::Status{grpc::StatusCode::UNIMPLEMENTED, ""});
+        const bool closed = close_with_error(grpc::Status{grpc::StatusCode::UNIMPLEMENTED, "MessagesCall"});
         log::Trace() << "sentry::MessagesCall closed: " << closed;
     }
 };
@@ -132,7 +173,7 @@ class PeersCall : public sw_rpc::UnaryRpc<AsyncService, protobuf::Empty, proto::
     PeersCall(io_context& scheduler, AsyncService* service, grpc::ServerCompletionQueue* queue, Handlers handlers)
         : UnaryRpc<AsyncService, protobuf::Empty, proto::PeersReply>(scheduler, service, queue, std::move(handlers)) {}
     void process(const protobuf::Empty* /*request*/) override {
-        finish_with_error(grpc::Status{grpc::StatusCode::UNIMPLEMENTED, ""});
+        finish_with_error(grpc::Status{grpc::StatusCode::UNIMPLEMENTED, "PeersCall"});
     }
 };
 
@@ -142,7 +183,7 @@ class PeerCountCall : public sw_rpc::UnaryRpc<AsyncService, proto::PeerCountRequ
     PeerCountCall(io_context& scheduler, AsyncService* service, grpc::ServerCompletionQueue* queue, Handlers handlers)
         : UnaryRpc<AsyncService, proto::PeerCountRequest, proto::PeerCountReply>(scheduler, service, queue, std::move(handlers)) {}
     void process(const proto::PeerCountRequest* /*request*/) override {
-        finish_with_error(grpc::Status{grpc::StatusCode::UNIMPLEMENTED, ""});
+        finish_with_error(grpc::Status{grpc::StatusCode::UNIMPLEMENTED, "PeerCountCall"});
     }
 };
 
@@ -152,7 +193,7 @@ class PeerByIdCall : public sw_rpc::UnaryRpc<AsyncService, proto::PeerByIdReques
     PeerByIdCall(io_context& scheduler, AsyncService* service, grpc::ServerCompletionQueue* queue, Handlers handlers)
         : UnaryRpc<AsyncService, proto::PeerByIdRequest, proto::PeerByIdReply>(scheduler, service, queue, std::move(handlers)) {}
     void process(const proto::PeerByIdRequest* /*request*/) override {
-        finish_with_error(grpc::Status{grpc::StatusCode::UNIMPLEMENTED, ""});
+        finish_with_error(grpc::Status{grpc::StatusCode::UNIMPLEMENTED, "PeerByIdCall"});
     }
 };
 
@@ -162,7 +203,7 @@ class PenalizePeerCall : public sw_rpc::UnaryRpc<AsyncService, proto::PenalizePe
     PenalizePeerCall(io_context& scheduler, AsyncService* service, grpc::ServerCompletionQueue* queue, Handlers handlers)
         : UnaryRpc<AsyncService, proto::PenalizePeerRequest, protobuf::Empty>(scheduler, service, queue, std::move(handlers)) {}
     void process(const proto::PenalizePeerRequest* /*request*/) override {
-        finish_with_error(grpc::Status{grpc::StatusCode::UNIMPLEMENTED, ""});
+        finish_with_error(grpc::Status{grpc::StatusCode::UNIMPLEMENTED, "PenalizePeerCall"});
     }
 };
 
@@ -173,13 +214,17 @@ class PeerEventsCall : public sw_rpc::ServerStreamingRpc<AsyncService, proto::Pe
     PeerEventsCall(io_context& scheduler, AsyncService* service, grpc::ServerCompletionQueue* queue, Handlers handlers)
         : ServerStreamingRpc<AsyncService, proto::PeerEventsRequest, proto::PeerEvent>(scheduler, service, queue, std::move(handlers)) {}
     void process(const proto::PeerEventsRequest* /*request*/) override {
-        const bool closed = close_with_error(grpc::Status{grpc::StatusCode::UNIMPLEMENTED, ""});
+        const bool closed = close_with_error(grpc::Status{grpc::StatusCode::UNIMPLEMENTED, "PeerEventsCall"});
         log::Trace() << "sentry::PeerEventsCall closed: " << closed;
     }
 };
 
 class ServiceImpl final {
   public:
+    explicit ServiceImpl(ServiceState state) {
+        ServiceImpl::state_.emplace(state);
+    }
+
     void register_request_calls(
         boost::asio::io_context& scheduler,
         ::sentry::Sentry::AsyncService* async_service,
@@ -202,7 +247,11 @@ class ServiceImpl final {
         call_factory_peer_events_.create_rpc(scheduler, async_service, queue);
     }
 
+    [[nodiscard]] static ServiceState& state() { return state_.value(); }
+
   private:
+    static std::optional<ServiceState> state_;
+
     struct SetStatusCallFactory : public sw_rpc::CallFactory<AsyncService, SetStatusCall> {
         SetStatusCallFactory() : sw_rpc::CallFactory<AsyncService, SetStatusCall>(&AsyncService::RequestSetStatus) {}
     } call_factory_set_status_;
@@ -249,7 +298,14 @@ class ServiceImpl final {
     } call_factory_peer_events_;
 };
 
-Service::Service() : p_impl_(std::make_unique<ServiceImpl>()) {}
+std::optional<ServiceState> ServiceImpl::state_;
+
+static ServiceState& state() {
+    return ServiceImpl::state();
+}
+
+Service::Service(ServiceState state)
+    : p_impl_(std::make_unique<ServiceImpl>(state)) {}
 
 Service::~Service() {
     log::Trace() << "silkworm::sentry::Service::~Service";

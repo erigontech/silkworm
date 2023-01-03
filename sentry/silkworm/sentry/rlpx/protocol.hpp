@@ -16,34 +16,24 @@
 
 #pragma once
 
-#include <functional>
-#include <memory>
+#include <cstdint>
 #include <string>
+#include <utility>
 
-#include <silkworm/concurrency/coroutine.hpp>
-
-#include <boost/asio/awaitable.hpp>
-
-#include <silkworm/rpc/server/server_context_pool.hpp>
-#include <silkworm/sentry/common/ecc_key_pair.hpp>
-
-#include "protocol.hpp"
+#include <silkworm/sentry/common/message.hpp>
 
 namespace silkworm::sentry::rlpx {
 
-class Server final {
-  public:
-    Server(std::string host, uint16_t port);
+struct Protocol {
+    virtual ~Protocol() = default;
+    [[nodiscard]] virtual std::pair<std::string, uint8_t> capability() = 0;
+    [[nodiscard]] virtual common::Message first_message() = 0;
+    virtual void handle_peer_first_message(const common::Message& message) = 0;
 
-    boost::asio::awaitable<void> start(
-        silkworm::rpc::ServerContextPool& context_pool,
-        common::EccKeyPair node_key,
-        std::string client_id,
-        std::function<std::unique_ptr<Protocol>()> protocol_factory);
-
-  private:
-    std::string host_;
-    uint16_t port_;
+    class IncompatiblePeerError : public std::runtime_error {
+      public:
+        IncompatiblePeerError() : std::runtime_error("Protocol: incompatible peer") {}
+    };
 };
 
 }  // namespace silkworm::sentry::rlpx

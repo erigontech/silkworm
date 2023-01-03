@@ -22,13 +22,21 @@
 #include <grpcpp/grpcpp.h>
 #include <p2psentry/sentry.grpc.pb.h>
 
+#include <silkworm/sentry/common/channel.hpp>
+#include <silkworm/sentry/eth/status_data.hpp>
+
 namespace silkworm::sentry::rpc {
 
 class ServiceImpl;
 
+struct ServiceState {
+    uint8_t eth_version;
+    common::Channel<eth::StatusData>& status_channel;
+};
+
 class Service final {
   public:
-    Service();
+    explicit Service(ServiceState state);
     ~Service();
 
     Service(const Service&) = delete;

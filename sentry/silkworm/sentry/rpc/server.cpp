@@ -23,11 +23,13 @@ namespace silkworm::sentry::rpc {
 
 using namespace silkworm::log;
 
-Server::Server(const silkworm::rpc::ServerConfig& config)
+Server::Server(
+    const silkworm::rpc::ServerConfig& config,
+    ServiceState state)
     : silkworm::rpc::Server(config) {
     std::size_t num_contexts = config.num_contexts();
     for (std::size_t i = 0; i < num_contexts; i++) {
-        services_.push_back(std::make_unique<Service>());
+        services_.push_back(std::make_unique<Service>(state));
     }
     log::Info() << "Server created"
                 << " listening on: " << config.address_uri() << ";"

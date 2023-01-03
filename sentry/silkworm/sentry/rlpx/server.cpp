@@ -42,7 +42,8 @@ Server::Server(std::string host, uint16_t port) : host_(std::move(host)), port_(
 awaitable<void> Server::start(
     silkworm::rpc::ServerContextPool& context_pool,
     common::EccKeyPair node_key,
-    std::string client_id) {
+    std::string client_id,
+    std::function<std::unique_ptr<Protocol>()> protocol_factory) {
     auto executor = co_await this_coro::executor;
 
     ip::tcp::resolver resolver{executor};
@@ -82,6 +83,7 @@ awaitable<void> Server::start(
             node_key,
             client_id,
             port_,
+            protocol_factory(),
             std::nullopt);
         auto handler = co_spawn(client_context, peer->handle(), use_future);
 

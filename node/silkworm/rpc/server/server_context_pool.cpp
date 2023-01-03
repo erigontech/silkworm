@@ -132,6 +132,16 @@ ServerContextPool::ServerContextPool(std::size_t pool_size) : next_index_{0} {
     contexts_.reserve(pool_size);
 }
 
+ServerContextPool::ServerContextPool(
+    std::size_t pool_size,
+    WaitMode wait_mode,
+    const std::function<std::unique_ptr<grpc::ServerCompletionQueue>()>& queue_factory)
+    : ServerContextPool(pool_size) {
+    for (size_t i = 0; i < pool_size; i++) {
+        add_context(queue_factory(), wait_mode);
+    }
+}
+
 ServerContextPool::~ServerContextPool() {
     SILK_TRACE << "ServerContextPool::~ServerContextPool START " << this;
     stop();

@@ -28,7 +28,7 @@ SyncEngine::SyncEngine(NodeSettings&, db::ROAccess dba, BlockExchange& be, stage
 auto SyncEngine::forward_and_insert_blocks(HeadersStage& headers_stage, BodiesStage& bodies_stage) -> Stage::NewHeight {
     using NewHeight = Stage::NewHeight;
 
-    NewHeight as_far_as_possible{};
+    auto as_far_as_possible = std::nullopt;
 
     auto new_height = headers_stage.forward(as_far_as_possible);
 

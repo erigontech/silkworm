@@ -35,6 +35,35 @@
 
 using namespace silkworm;
 
+// progress log
+class ResourceUsageLog : public ActiveComponent {
+    NodeSettings& node_settings_;
+
+  public:
+    ResourceUsageLog(NodeSettings& settings) : node_settings_{settings} {}
+
+    void execution_loop() override {  // todo: this is only a trick, instead use asio timers
+        using namespace std::chrono;
+        log::set_thread_name("progress-log  ");
+        auto start_time = steady_clock::now();
+        auto last_update = start_time;
+        while (!is_stopping()) {
+            std::this_thread::sleep_for(500ms);
+
+            auto now = steady_clock::now();
+            if (now - last_update > 300s) {
+                log::Info("Resource usage",
+                          {"mem", human_size(get_mem_usage()),
+                           "chain", human_size(node_settings_.data_directory->chaindata().size()),
+                           "etl-tmp", human_size(node_settings_.data_directory->etl().size()),
+                           "uptime", StopWatch::format(now - start_time)});
+                last_update = now;
+            }
+        }
+    }
+};
+
+// main
 int main(int argc, char* argv[]) {
     using namespace boost::placeholders;
     using namespace std::chrono;
@@ -48,9 +77,6 @@ int main(int argc, char* argv[]) {
         cmd::parse_silkworm_command_line(cli, argc, argv, settings);
 
         auto& node_settings = settings.node_settings;
-
-        // Trap OS signals
-        SignalHandler::init();
 
         // Initialize logging with cli settings
         log::init(settings.log_settings);
@@ -95,6 +121,10 @@ int main(int argc, char* argv[]) {
             log::Trace("Boost Asio", {"state", "stopped"});
         }};
 
+        // Resource usage logging
+        ResourceUsageLog resource_usage_log(node_settings);
+        auto resource_usage_logging = std::thread([&resource_usage_log]() { resource_usage_log.execution_loop(); });
+
         // BackEnd & KV server
         const auto node_name{silkworm::cmd::get_node_name_from_build_info(build_info)};
         silkworm::EthereumBackEnd backend{node_settings, &chaindata_db};
@@ -119,23 +149,16 @@ int main(int argc, char* argv[]) {
         // ConsensusEngine drives headers and bodies sync, implementing fork choice rules
         silkworm::chainsync::SyncEngine sync{
             node_settings, db::ROAccess{chaindata_db}, block_exchange, execution};
-        auto chain_syncing = std::thread([&sync]() { sync.execution_loop(); });
 
-        // Keep waiting till user stops logging resource usage
-        auto last_update = steady_clock::now();
-        while (!SignalHandler::signalled()) {
-            std::this_thread::sleep_for(500ms);
+        // Trap OS signals
+        SignalHandler::init([&](int) {
+            log::Info() << "Requesting termination\n";
+            sync.stop();
+        });
 
-            auto now = steady_clock::now();
-            if (now - last_update > 300s) {
-                log::Info("Resource usage",
-                          {"mem", human_size(get_mem_usage()),
-                           "chain", human_size(node_settings.data_directory->chaindata().size()),
-                           "etl-tmp", human_size(node_settings.data_directory->etl().size()),
-                           "uptime", StopWatch::format(now - start_time)});
-                last_update = now;
-            }
-        }
+        // Sync main loop
+        sync.execution_loop();  // currently sync & execution are on the same process, sync calls execution so due to
+                                // limitations related to the db rw tx owned by execution they must run on the same thread
 
         // Close all resources
         backend.close();
@@ -145,10 +168,11 @@ int main(int argc, char* argv[]) {
         block_exchange.stop();
         sentry.stop();
         sync.stop();
+        resource_usage_log.stop();
         block_downloading.join();
         message_receiving.join();
         stats_receiving.join();
-        chain_syncing.join();
+        resource_usage_logging.join();
 
         asio_guard.reset();
         asio_thread.join();

@@ -19,7 +19,6 @@
 #include <thread>
 
 #include "chain_fork_view.hpp"
-
 #include "silkworm/common/as_range.hpp"
 #include "silkworm/common/environment.hpp"
 #include "silkworm/common/log.hpp"

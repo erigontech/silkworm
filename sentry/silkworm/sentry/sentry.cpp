@@ -162,7 +162,6 @@ boost::asio::awaitable<void> SentryImpl::run_tasks() {
 
     log::Info() << "Waiting for status message...";
     auto status = co_await status_channel_.receive();
-    // auto status = eth::StatusData::test_instance();
     status_.emplace(status);
     log::Info() << "Status received: network ID = " << status.message.network_id;
 

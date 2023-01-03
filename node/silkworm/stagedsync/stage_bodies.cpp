@@ -150,17 +150,16 @@ Stage::Result BodiesStage::forward(db::RWTxn& tx) {
 }
 
 Stage::Result BodiesStage::unwind(db::RWTxn& tx) {
-    Stage::Result result{Stage::Result::kSuccess};
-    operation_ = OperationType::Unwind;
-
     current_height_ = db::stages::read_stage_progress(tx, db::stages::kBlockBodiesKey);
     get_log_progress();  // this is a trick to set log progress initial value, please improve
 
-    if (!sync_context_->unwind_point.has_value()) {
-        operation_ = OperationType::None;
-        return result;
-    }
+    if (!sync_context_->unwind_point.has_value()) return Stage::Result::kSuccess;
+
     auto new_height = sync_context_->unwind_point.value();
+    if (current_height_ <= new_height) return Stage::Result::kSuccess;
+
+    Stage::Result result{Stage::Result::kSuccess};
+    operation_ = OperationType::Unwind;
 
     try {
         BodyDataModel::remove_bodies(new_height, sync_context_->bad_block_hash, tx);

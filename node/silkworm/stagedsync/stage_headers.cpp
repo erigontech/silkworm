@@ -153,23 +153,19 @@ auto HeadersStage::forward(db::RWTxn& tx) -> Stage::Result {
 }
 
 auto HeadersStage::unwind(db::RWTxn& tx) -> Stage::Result {
+    current_height_ = db::stages::read_stage_progress(tx, db::stages::kHeadersKey);
+    get_log_progress();  // this is a trick to set log progress initial value, please improve
+    
+    if (!sync_context_->unwind_point.has_value()) return Stage::Result::kSuccess;
+
+    auto new_height = sync_context_->unwind_point.value();
+    if (current_height_ <= new_height) return Stage::Result::kSuccess;
+
     Stage::Result result{Stage::Result::kSuccess};
     operation_ = OperationType::Unwind;
 
-    StopWatch timing;
-    timing.start();
-
     try {
-        current_height_ = db::stages::read_stage_progress(tx, db::stages::kHeadersKey);
-        get_log_progress();  // this is a trick to set log progress initial value, please improve
-
         //std::optional<Hash> bad_block = sync_context_->bad_block_hash;
-
-        if (!sync_context_->unwind_point.has_value()) {
-            operation_ = OperationType::None;
-            return result;
-        }
-        auto new_height = sync_context_->unwind_point.value();
 
         HeaderDataModel::remove_headers(new_height, tx);
 

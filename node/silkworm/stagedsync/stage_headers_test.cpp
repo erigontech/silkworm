@@ -73,7 +73,7 @@ TEST_CASE("HeadersStage - data model") {
         REQUIRE(hm.total_difficulty() == td);
 
         // check db content
-        //REQUIRE(db::read_head_header_hash(tx) == header1_hash);
+        // REQUIRE(db::read_head_header_hash(tx) == header1_hash);
         REQUIRE(db::read_total_difficulty(tx, header1.number, header1.hash()) == td);
         REQUIRE(db::read_block_number(tx, header1.hash()) == header1.number);
     }
@@ -126,7 +126,7 @@ TEST_CASE("HeadersStage - data model") {
         REQUIRE(hm.highest_hash() == header2_hash);
 
         // check db content
-        //REQUIRE(db::read_head_header_hash(tx) == header2_hash);
+        // REQUIRE(db::read_head_header_hash(tx) == header2_hash);
         REQUIRE(db::read_total_difficulty(tx, 2, header2.hash()) == expected_td);
 
         // Now we suppose CL triggers an unwind, resetting to h0
@@ -143,7 +143,7 @@ TEST_CASE("HeadersStage - data model") {
         REQUIRE(hm_fork.highest_hash() == header1b_hash);
 
         // check db content
-        //REQUIRE(db::read_head_header_hash(tx) == header1b_hash);
+        // REQUIRE(db::read_head_header_hash(tx) == header1b_hash);
         REQUIRE(db::read_total_difficulty(tx, 1, header1b_hash) == expected_td_fork);
         REQUIRE(db::read_total_difficulty(tx, 2, header2.hash()) == expected_td);  // this should remain
     }

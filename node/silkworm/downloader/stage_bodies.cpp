@@ -68,8 +68,8 @@ auto BodiesStage::forward(std::optional<NewHeight> new_height) -> NewHeight {
 
         // sync status
         BlockNum target_height = new_height->block_num;
-        auto sync_command = sync_body_sequence(initial_head.number, target_height);  // todo check if target_height is ok in place of headers height #######
-        sync_command->result().get();                                                // blocking
+        auto sync_command = sync_body_sequence(initial_head.number, target_height);
+        sync_command->result().get();  // blocking
 
         // prepare bodies, if any
         auto withdraw_command = withdraw_ready_bodies();

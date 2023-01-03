@@ -117,8 +117,16 @@ bool read_header(mdbx::txn& txn, const evmc::bytes32& hash, BlockNum number, Blo
     return true;
 }
 
+std::vector<BlockHeader> read_headers(mdbx::txn& txn, BlockNum height) {
+    std::vector<BlockHeader> headers;
+    process_headers_at_height(txn, height, [&](BlockHeader&& header) {
+       headers.emplace_back(std::move(header));
+    });
+    return headers;
+}
+
 // process headers at specific height
-size_t process_headers_at_height(mdbx::txn& txn, BlockNum height, std::function<void(BlockHeader&)> process_func) {
+size_t process_headers_at_height(mdbx::txn& txn, BlockNum height, std::function<void(BlockHeader&&)> process_func) {
     db::Cursor headers_table(txn, db::table::kHeaders);
     auto key_prefix{db::block_key(height)};
 
@@ -129,7 +137,7 @@ size_t process_headers_at_height(mdbx::txn& txn, BlockNum height, std::function<
             BlockHeader header;
             ByteView encoded_header{raw_header.data(), raw_header.length()};
             rlp::success_or_throw(rlp::decode(encoded_header, header));
-            process_func(header);
+            process_func(std::move(header));
         },
         db::CursorMoveDirection::Forward);
 

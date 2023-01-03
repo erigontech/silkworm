@@ -202,39 +202,40 @@ void BodySequence::make_new_requests(GetBlockBodiesPacket66& packet, BlockNum& m
     while (packet.request.size() < kMaxBlocksPerMessage && last_requested_block < headers_stage_height_) {
         BlockNum bn = last_requested_block + 1;
 
-        auto header = db::read_canonical_header(tx, bn);
-        if (!header) {
-            body_requests_.erase(bn);
-            throw std::logic_error(
-                "BodySequence exception, "
-                "cause: header of block " +
-                std::to_string(bn) + " expected in db");
+        auto headers = db::read_headers(tx, bn);
+        if (headers.empty()) {
+            throw std::logic_error("BodySequence exception, cause: no headers in db at height " + std::to_string(bn));
         }
 
-        BodyRequest new_request;
-        new_request.block_height = bn;
-        new_request.request_id = packet.requestId;
-        new_request.block_hash = header->hash();
-        new_request.request_time = tp;
+        if (packet.request.size() + headers.size() > kMaxBlocksPerMessage) break;  // will be processed at next cycle
 
-        std::optional<BlockBody> announced_body = announced_blocks_.remove(bn);
-        if (announced_body && is_valid_body(*header, *announced_body)) {
-            add_to_announcements(*header, *announced_body, tx);
+        for (auto& header: headers) {
 
-            new_request.body = std::move(*announced_body);
-            new_request.ready = true;
-            ready_bodies_ += 1;
-        } else {
-            packet.request.push_back(new_request.block_hash);
+            BodyRequest new_request;
+            new_request.block_height = bn;
+            new_request.request_id = packet.requestId;
+            new_request.block_hash = header.hash();
+            new_request.request_time = tp;
 
-            SILK_TRACE << "BodySequence: requested body block-num= " << new_request.block_height
-                       << ", hash= " << new_request.block_hash;
-            min_block = std::max(min_block, new_request.block_height);
+            std::optional<BlockBody> announced_body = announced_blocks_.remove(bn);
+            if (announced_body && is_valid_body(header, *announced_body)) {
+                add_to_announcements(header, *announced_body, tx);
+
+                new_request.body = std::move(*announced_body);
+                new_request.ready = true;
+                ready_bodies_ += 1;
+            } else {
+                packet.request.push_back(new_request.block_hash);
+
+                SILK_TRACE << "BodySequence: requested body block-num= " << new_request.block_height
+                           << ", hash= " << new_request.block_hash;
+                min_block = std::max(min_block, new_request.block_height);
+            }
+
+            new_request.header = std::move(header);
+
+            body_requests_.emplace(bn, std::move(new_request));
         }
-
-        new_request.header = std::move(*header);
-
-        body_requests_.emplace(bn, std::move(new_request));
 
         ++last_requested_block;
     }

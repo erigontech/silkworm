@@ -105,11 +105,11 @@ class BodySequence {
         size_t size();
 
       private:
-        std::map<BlockNum, Block> blocks_;
+        std::map<BlockNum, Block> blocks_;  // todo: only canonical blocks? check!
     };
 
     // using IncreasingHeightOrderedMap = std::map<BlockNum, BodyRequest>; // default ordering: less<BlockNum>
-    struct IncreasingHeightOrderedRequestContainer : public std::map<BlockNum, BodyRequest> {
+    struct IncreasingHeightOrderedRequestContainer : public std::multimap<BlockNum, BodyRequest> {
         using Impl = std::map<BlockNum, BodyRequest>;
         using Iter = Impl::iterator;
 

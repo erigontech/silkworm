@@ -209,8 +209,7 @@ void BodySequence::make_new_requests(GetBlockBodiesPacket66& packet, BlockNum& m
 
         if (packet.request.size() + headers.size() > kMaxBlocksPerMessage) break;  // will be processed at next cycle
 
-        for (auto& header: headers) {
-
+        for (auto& header : headers) {
             BodyRequest new_request;
             new_request.block_height = bn;
             new_request.request_id = packet.requestId;

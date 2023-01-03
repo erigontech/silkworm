@@ -120,7 +120,7 @@ bool read_header(mdbx::txn& txn, const evmc::bytes32& hash, BlockNum number, Blo
 std::vector<BlockHeader> read_headers(mdbx::txn& txn, BlockNum height) {
     std::vector<BlockHeader> headers;
     process_headers_at_height(txn, height, [&](BlockHeader&& header) {
-       headers.emplace_back(std::move(header));
+        headers.emplace_back(std::move(header));
     });
     return headers;
 }
@@ -371,8 +371,7 @@ size_t process_blocks_at_height(mdbx::txn& txn, BlockNum height, std::function<v
             // ...header
             auto [block_num, hash] = split_block_key(key);
             bool present = read_header(txn, hash, block_num, block.header);
-            if (!present) throw std::logic_error("header not found for body "
-                " number= " + std::to_string(block_num) + ", hash= " + to_hex(hash));
+            if (!present) throw std::logic_error("header not found for body number= " + std::to_string(block_num) + ", hash= " + to_hex(hash));
             // invoke handler
             process_func(block);
         },

@@ -55,7 +55,7 @@ std::optional<BlockHeader> read_header(mdbx::txn& txn, const evmc::bytes32& hash
 //! \brief Reads all headers at the specified height
 std::vector<BlockHeader> read_headers(mdbx::txn& txn, BlockNum height);
 
-    //! \brief Apply a user defined func to the headers at specific height
+//! \brief Apply a user defined func to the headers at specific height
 size_t process_headers_at_height(mdbx::txn& txn, BlockNum height, std::function<void(BlockHeader&&)> process_func);
 
 //! \brief Reads a header without rlp-decoding it

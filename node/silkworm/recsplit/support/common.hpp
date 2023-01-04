@@ -44,7 +44,9 @@
 
 #pragma once
 
+#if (__x86_64__ || __i386__)
 #include <x86intrin.h>
+#endif
 
 #include <algorithm>
 #include <cassert>
@@ -136,14 +138,14 @@ inline int lambda(uint64_t word) { return 63 ^ __builtin_clzll(word); }
 
 //! Convert the number x which is assumed to be uniformly distributed over the range [0..2^64) to a number that is uniformly
 //! distributed over the range [0..n), under assumption that n is less than 2^16
-static inline uint64_t remap16(uint64_t x, uint64_t n) {
+inline uint64_t remap16(uint64_t x, uint64_t n) {
     SILKWORM_ASSERT(n < (1 << 16));
     static const int masklen = 48;
     static const uint64_t mask = (uint64_t(1) << masklen) - 1;
     return ((x & mask) * n) >> masklen;
 }
 
-static inline uint64_t remap128(uint64_t x, uint64_t n) {
+inline uint64_t remap128(uint64_t x, uint64_t n) {
 #ifdef __SIZEOF_INT128__
     return static_cast<uint64_t>((static_cast<__uint128_t>(x) * static_cast<__uint128_t>(n)) >> 64);
 #else

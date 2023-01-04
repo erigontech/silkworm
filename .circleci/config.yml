@@ -89,7 +89,7 @@ commands:
       - run:
           name: "Ethereum consensus tests"
           working_directory: ~/build
-          no_output_timeout: 20m
+          no_output_timeout: 30m
           command: cmd/test/consensus --threads 4 # out of memory with 8 threads under thread sanitizer 
       - run:
           name: "Sentry unit tests"
@@ -171,7 +171,7 @@ jobs:
       - run:
           name: "Ethereum consensus tests"
           working_directory: ~/build
-          no_output_timeout: 20m
+          no_output_timeout: 30m
           command: |
             cmd/test/consensus
             mv default.profraw consensus.profraw

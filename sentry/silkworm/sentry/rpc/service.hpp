@@ -18,8 +18,9 @@
 
 #include <memory>
 
-#include <boost/asio/io_context.hpp>
-#include <grpcpp/grpcpp.h>
+#include <silkworm/concurrency/coroutine.hpp>
+
+#include <agrpc/grpc_context.hpp>
 #include <p2psentry/sentry.grpc.pb.h>
 
 #include <silkworm/sentry/common/channel.hpp>
@@ -43,9 +44,8 @@ class Service final {
     Service& operator=(const Service&) = delete;
 
     void register_request_calls(
-        boost::asio::io_context& scheduler,
-        ::sentry::Sentry::AsyncService* async_service,
-        grpc::ServerCompletionQueue* queue);
+        agrpc::GrpcContext* grpc_context,
+        ::sentry::Sentry::AsyncService* async_service);
 
   private:
     std::unique_ptr<ServiceImpl> p_impl_;

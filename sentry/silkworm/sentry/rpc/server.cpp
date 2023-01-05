@@ -45,9 +45,8 @@ void Server::register_async_services(grpc::ServerBuilder& builder) {
 void Server::register_request_calls() {
     for (auto& service : services_) {
         const auto& context = next_context();
-        const auto io_context = context.io_context();
-        const auto server_queue = context.server_queue();
-        service->register_request_calls(*io_context, &async_service_, server_queue);
+        const auto grpc_context = context.server_grpc_context();
+        service->register_request_calls(grpc_context, &async_service_);
     }
 }
 

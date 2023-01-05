@@ -31,7 +31,6 @@
 #include <silkworm/backend/rpc/sentry_client.hpp>
 #include <silkworm/chain/config.hpp>
 #include <silkworm/rpc/server/call.hpp>
-#include <silkworm/rpc/server/call_factory.hpp>
 #include <silkworm/rpc/server/server.hpp>
 #include <silkworm/rpc/server/server_context_pool.hpp>
 

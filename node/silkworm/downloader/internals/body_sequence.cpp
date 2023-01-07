@@ -30,13 +30,7 @@ size_t BodySequence::kPerPeerMaxOutstandingRequests{4};
 size_t BodySequence::kMaxInMemoryRequests{400000};
 milliseconds_t BodySequence::kNoPeerDelay{std::chrono::milliseconds(1000)};
 
-BodySequence::BodySequence(const db::ROAccess& dba)
-    : db_access_(dba) {
-    recover_initial_state();
-}
-
-void BodySequence::recover_initial_state() {
-    // does nothing
+BodySequence::BodySequence() {
 }
 
 BlockNum BodySequence::highest_block_in_db() const { return highest_body_in_db_; }
@@ -193,8 +187,6 @@ auto BodySequence::renew_stale_requests(GetBlockBodiesPacket66& packet, BlockNum
 
 //! Make requests of new bodies to get progress
 void BodySequence::make_new_requests(GetBlockBodiesPacket66& packet, BlockNum& min_block, time_point_t tp, seconds_t) {
-    auto tx = db_access_.start_ro_tx();
-
     BlockNum last_requested_block = highest_body_in_db_;
     if (!body_requests_.empty())
         last_requested_block = body_requests_.rbegin()->second.block_height;  // the last requested
@@ -202,7 +194,7 @@ void BodySequence::make_new_requests(GetBlockBodiesPacket66& packet, BlockNum& m
     while (packet.request.size() < kMaxBlocksPerMessage && last_requested_block < headers_stage_height_) {
         BlockNum bn = last_requested_block + 1;
 
-        auto headers = db::read_headers(tx, bn);
+        auto headers = execution->read_headers(bn);
         if (headers.empty()) {
             throw std::logic_error("BodySequence exception, cause: no headers in db at height " + std::to_string(bn));
         }
@@ -279,9 +271,9 @@ auto BodySequence::withdraw_ready_bodies() -> std::vector<std::shared_ptr<Block>
     return ready_bodies;
 }
 
-void BodySequence::add_to_announcements(BlockHeader header, BlockBody body, db::ROTxn& tx) {
+void BodySequence::add_to_announcements(BlockHeader header, BlockBody body) {
     // calculate total difficulty of the block
-    auto parent_td = db::read_total_difficulty(tx, header.number - 1, header.parent_hash);
+    auto parent_td = execution->read_total_difficulty(header.number - 1, header.parent_hash);  // todo: execution may not have computed td yet
     if (!parent_td) {
         log::Warning() << "BodySequence: dangling block " << std::to_string(header.number);
         return;  // non inserted in announcement list

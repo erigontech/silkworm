@@ -159,9 +159,8 @@ void ExecutionEngine::insert_headers(std::vector<std::shared_ptr<BlockHeader>>& 
 }
 
 void ExecutionEngine::insert_header(BlockHeader& header) {
-    // if (!db::has_header(tx_, header.number, header.hash())) { todo: hash() is computationally expensive
+    // skip 'if (!db::has_header(...header.hash())' to avoid hash computing (also write_header does an upsert)
     db::write_header(tx_, header, true);  // todo: move?
-    //}
 
     // header_cache_.put(header.hash(), header);
 }

@@ -33,7 +33,7 @@ BlockExchange::BlockExchange(SentryClient& sentry, const db::ROAccess& dba, cons
       chain_config_{chain_config},
       preverified_hashes_{PreverifiedHashes::load(chain_config.chain_id)},
       header_chain_{chain_config},
-      body_sequence_{dba} {
+      body_sequence_{} {
     auto tx = db_access_.start_ro_tx();
     header_chain_.recover_initial_state(tx);
     header_chain_.set_preverified_hashes(&preverified_hashes_);
@@ -79,13 +79,12 @@ void BlockExchange::execution_loop() {
         boost::signals2::scoped_connection c1(sentry_.announcements_subscription.connect(receive_message_callback));
         boost::signals2::scoped_connection c2(sentry_.requests_subscription.connect(receive_message_callback));
 
-        auto constexpr kShortInterval = 1000ms;
         time_point_t last_update = system_clock::now();
 
         while (!is_stopping() && !sentry_.is_stopping()) {
             // pop a message from the queue
             std::shared_ptr<Message> message;
-            bool present = messages_.timed_wait_and_pop(message, kShortInterval);
+            bool present = messages_.timed_wait_and_pop(message, 1000ms);
             if (!present) continue;  // timeout, needed to check exiting_
 
             // process the message (command pattern)

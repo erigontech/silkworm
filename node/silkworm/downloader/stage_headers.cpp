@@ -102,25 +102,25 @@ auto HeadersStage::forward(std::optional<NewHeight> desired_height) -> NewHeight
                 withdraw_command = withdraw_stable_headers();
             } else if (withdraw_command->result().wait_for(500ms) == std::future_status::ready) {
                 // check the result of withdrawal command
-                auto [stable_headers, in_sync] = withdraw_command->result().get();  // blocking
-                if (!stable_headers.empty()) {
-                    if (stable_headers.size() > 100000) {
+                auto [headers, in_sync] = withdraw_command->result().get();  // blocking
+                if (!headers.empty()) {
+                    if (headers.size() > 100000) {
                         log::Info(log_prefix_) << "Inserting headers...";
                     }
                     StopWatch insertion_timing;
                     insertion_timing.start();
 
                     // core activities
-                    as_range::for_each(stable_headers, [&chain_fork_view](const auto& header) {
+                    as_range::for_each(headers, [&chain_fork_view](const auto& header) {
                         chain_fork_view.add(*header);
                     });
-                    exec_engine_.insert_headers(stable_headers);
+                    exec_engine_.insert_headers(headers);
 
                     current_height_ = chain_fork_view.head_height();
 
-                    if (stable_headers.size() > 100000) {
-                        log::Info(log_prefix_) << "Inserted headers tot=" << stable_headers.size()
-                                               << " (duration=" << StopWatch::format(insertion_timing.lap_duration()) << "s)";
+                    if (headers.size() > 100000) {
+                        log::Info(log_prefix_) << "Inserted headers tot=" << headers.size()
+                            << " (duration=" << StopWatch::format(insertion_timing.lap_duration()) << "s)";
                     }
                 }
 
@@ -153,8 +153,6 @@ auto HeadersStage::forward(std::optional<NewHeight> desired_height) -> NewHeight
         log::Info(log_prefix_) << "Downloading completed, wrote " << headers_downloaded << " headers,"
                                << " last=" << chain_fork_view.head_height()
                                << " duration=" << StopWatch::format(timing.lap_duration());
-
-        log::Info(log_prefix_) << "Updating canonical chain";
 
         // todo: do we need a sentry.set_status() here?
 

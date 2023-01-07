@@ -36,7 +36,7 @@ namespace silkworm {
  */
 class BodySequence {
   public:
-    explicit BodySequence(const db::ROAccess&);
+    explicit BodySequence();
     ~BodySequence() = default;
 
     // sync current state - this must be done at body forward
@@ -81,11 +81,10 @@ class BodySequence {
     static constexpr BlockNum kMaxAnnouncedBlocks = 10000;
 
   protected:
-    void recover_initial_state();
     void make_new_requests(GetBlockBodiesPacket66&, MinBlock&, time_point_t tp, seconds_t timeout);
     auto renew_stale_requests(GetBlockBodiesPacket66&, MinBlock&, time_point_t tp, seconds_t timeout)
         -> std::vector<PeerPenalization>;
-    void add_to_announcements(BlockHeader, BlockBody, db::ROTxn&);
+    void add_to_announcements(BlockHeader, BlockBody);
 
     static bool is_valid_body(const BlockHeader&, const BlockBody&);
 
@@ -123,8 +122,6 @@ class BodySequence {
     IncreasingHeightOrderedRequestContainer body_requests_;
     AnnouncedBlocks announced_blocks_;
     std::list<NewBlockPacket> announcements_to_do_;
-
-    db::ROAccess db_access_;
 
     BlockNum highest_body_in_db_{0};
     BlockNum headers_stage_height_{0};

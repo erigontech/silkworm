@@ -70,7 +70,6 @@ int main(int argc, char* argv[]) {
 
     CLI::App cli("Silkworm node");
     cli.get_formatter()->column_width(50);
-    auto start_time = steady_clock::now();
 
     try {
         cmd::SilkwormCoreSettings settings;
@@ -147,8 +146,7 @@ int main(int argc, char* argv[]) {
         silkworm::stagedsync::ExecutionEngine execution{node_settings, db::RWAccess{chaindata_db}};
 
         // ConsensusEngine drives headers and bodies sync, implementing fork choice rules
-        silkworm::chainsync::SyncEngine sync{
-            node_settings, db::ROAccess{chaindata_db}, block_exchange, execution};
+        silkworm::chainsync::SyncEngine sync{block_exchange, execution};
 
         // Trap OS signals
         SignalHandler::init([&](int) {

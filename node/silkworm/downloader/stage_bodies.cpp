@@ -44,7 +44,6 @@ auto BodiesStage::forward(std::optional<NewHeight> new_height) -> NewHeight {
         throw std::logic_error("Consensus bodies stages need a target height");
     }
 
-    auto constexpr KShortInterval = 200ms;
     auto constexpr kProgressUpdateInterval = 30s;
 
     StopWatch timing;
@@ -84,19 +83,20 @@ auto BodiesStage::forward(std::optional<NewHeight> new_height) -> NewHeight {
             if (withdraw_command->completed_and_read()) {
                 // renew request
                 withdraw_command = withdraw_ready_bodies();
-            } else if (withdraw_command->result().wait_for(KShortInterval) == std::future_status::ready) {
+            } else if (withdraw_command->result().wait_for(200ms) == std::future_status::ready) {
                 // read response
                 auto bodies = withdraw_command->result().get();
+                if (!bodies.empty()) {
+                    // send bodies
+                    exec_engine_.insert_bodies(bodies);
 
-                // send bodies
-                exec_engine_.insert_bodies(bodies);
-
-                // compute new head
-                auto highest_block = std::max_element(bodies.begin(), bodies.end(), [](shared_ptr<Block>& a, shared_ptr<Block>& b) {
-                    return a->header.number < b->header.number;
-                });
-                if (highest_block->get()->header.number > current_head.number) {
-                    current_head = {.number = highest_block->get()->header.number, .hash = highest_block->get()->header.hash()};
+                    // compute new head
+                    auto highest_block = std::max_element(bodies.begin(), bodies.end(), [](shared_ptr<Block>& a, shared_ptr<Block>& b) {
+                        return a->header.number < b->header.number;
+                    });
+                    if (highest_block->get()->header.number > current_head.number) {
+                        current_head = {.number = highest_block->get()->header.number, .hash = highest_block->get()->header.hash()};
+                    }
                 }
 
                 // do announcements

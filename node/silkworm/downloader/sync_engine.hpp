@@ -29,7 +29,7 @@ namespace silkworm::chainsync {
 
 class SyncEngine : public ActiveComponent {
   public:
-    SyncEngine(NodeSettings&, db::ROAccess, BlockExchange&, stagedsync::ExecutionEngine&);
+    SyncEngine(BlockExchange&, stagedsync::ExecutionEngine&);
 
     void execution_loop() final; /*[[long_running]]*/
 
@@ -38,8 +38,6 @@ class SyncEngine : public ActiveComponent {
     void unwind(HeadersStage&, BodiesStage&, Stage::UnwindPoint);
     auto update_bad_headers(std::set<Hash>) -> std::shared_ptr<InternalMessage<void>>;
 
-    //NodeSettings& node_settings_;
-    db::ROAccess db_access_;
     BlockExchange& block_exchange_;
     stagedsync::ExecutionEngine& exec_engine_;
 };

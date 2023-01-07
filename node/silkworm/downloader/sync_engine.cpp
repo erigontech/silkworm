@@ -18,15 +18,13 @@ limitations under the License.
 
 namespace silkworm::chainsync {
 
-SyncEngine::SyncEngine(NodeSettings&, db::ROAccess dba, BlockExchange& be, stagedsync::ExecutionEngine& ee)
-    : //node_settings_{ns},
-      db_access_{dba},
-      block_exchange_{be},
+SyncEngine::SyncEngine(BlockExchange& be, stagedsync::ExecutionEngine& ee)
+    : block_exchange_{be},
       exec_engine_{ee} {
 }
 
 auto SyncEngine::forward_and_insert_blocks(HeadersStage& headers_stage, BodiesStage& bodies_stage) -> Stage::NewHeight {
-    using NewHeight = Stage::NewHeight;
+    //using NewHeight = Stage::NewHeight;
 
     auto as_far_as_possible = std::nullopt;
 

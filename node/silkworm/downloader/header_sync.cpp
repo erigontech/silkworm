@@ -13,7 +13,7 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 */
-#include "stage_headers.hpp"
+#include "header_sync.hpp"
 
 #include <chrono>
 #include <thread>
@@ -32,8 +32,8 @@
 
 namespace silkworm::chainsync {
 
-HeadersStage::HeadersStage(BlockExchange& bd, stagedsync::ExecutionEngine& ee)
-    : Stage(db::stages::kHeadersKey), block_downloader_(bd), exec_engine_{ee}, log_prefix_{"[Cons.Headers]"} {
+HeaderSync::HeaderSync(BlockExchange& bd, stagedsync::ExecutionEngine& ee)
+    : SyncTarget(db::stages::kHeadersKey), block_downloader_(bd), exec_engine_{ee}, log_prefix_{"[Cons.Headers]"} {
     // User can specify to stop downloading process at some block
     const auto stop_at_block = Environment::get_stop_at_block();
     if (stop_at_block.has_value()) {
@@ -42,16 +42,16 @@ HeadersStage::HeadersStage(BlockExchange& bd, stagedsync::ExecutionEngine& ee)
     }
 }
 
-HeadersStage::~HeadersStage() {
+HeaderSync::~HeaderSync() {
 }
 
-auto HeadersStage::forward(std::optional<NewHeight> desired_height) -> NewHeight {
+auto HeaderSync::forward(std::optional<NewHeight> desired_height) -> NewHeight {
     using std::shared_ptr;
     using namespace std::chrono_literals;
     using namespace std::chrono;
     using std::tie;
 
-    if (desired_height.has_value()) throw std::logic_error("consensus headers stage currently doesn't support target height");
+    if (desired_height.has_value()) throw std::logic_error("consensus headers sync currently doesn't support target height");
 
     bool new_height_reached = false;
     std::thread message_receiving;
@@ -167,12 +167,12 @@ auto HeadersStage::forward(std::optional<NewHeight> desired_height) -> NewHeight
     }
 }
 
-void HeadersStage::unwind(UnwindPoint unwind_point) {
+void HeaderSync::unwind(UnwindPoint unwind_point) {
     current_height_ = unwind_point.block_num;
 }
 
 // Request new headers from peers
-void HeadersStage::send_header_requests() {
+void HeaderSync::send_header_requests() {
     // if (!sentry_.ready()) return;
 
     auto message = std::make_shared<OutboundGetBlockHeaders>();
@@ -181,7 +181,7 @@ void HeadersStage::send_header_requests() {
 }
 
 // New block hash announcements propagation
-void HeadersStage::send_announcements() {
+void HeaderSync::send_announcements() {
     // if (!sentry_.ready()) return;
 
     auto message = std::make_shared<OutboundNewBlockHashes>();
@@ -189,7 +189,7 @@ void HeadersStage::send_announcements() {
     block_downloader_.accept(message);
 }
 
-auto HeadersStage::sync_header_chain(BlockNum highest_in_db) -> std::shared_ptr<InternalMessage<void>> {
+auto HeaderSync::sync_header_chain(BlockNum highest_in_db) -> std::shared_ptr<InternalMessage<void>> {
     auto message = std::make_shared<InternalMessage<void>>(
         [highest_in_db](HeaderChain& wc, BodySequence&) { wc.sync_current_state(highest_in_db); });
 
@@ -198,7 +198,7 @@ auto HeadersStage::sync_header_chain(BlockNum highest_in_db) -> std::shared_ptr<
     return message;
 }
 
-auto HeadersStage::withdraw_stable_headers() -> std::shared_ptr<InternalMessage<std::tuple<Headers, bool>>> {
+auto HeaderSync::withdraw_stable_headers() -> std::shared_ptr<InternalMessage<std::tuple<Headers, bool>>> {
     using result_t = std::tuple<Headers, bool>;
 
     auto message = std::make_shared<InternalMessage<result_t>>([](HeaderChain& wc, BodySequence&) {
@@ -212,7 +212,7 @@ auto HeadersStage::withdraw_stable_headers() -> std::shared_ptr<InternalMessage<
     return message;
 }
 
-std::vector<std::string> HeadersStage::get_log_progress() {  // implementation MUST be thread safe
+std::vector<std::string> HeaderSync::get_log_progress() {  // implementation MUST be thread safe
     static RepeatedMeasure<BlockNum> height_progress{0};
 
     height_progress.set(current_height_);

@@ -25,10 +25,10 @@ limitations under the License.
 
 namespace silkworm::chainsync {
 
-class Stage : public Stoppable {
+class SyncTarget : public Stoppable {
   public:
-    explicit Stage(std::string name);
-    virtual ~Stage() = default;
+    explicit SyncTarget(std::string name);
+    virtual ~SyncTarget() = default;
 
     struct NewHeight {BlockNum block_num; Hash hash;};
     struct UnwindPoint {BlockNum block_num; Hash hash; std::optional<Hash> bad_block;};

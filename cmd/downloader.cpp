@@ -27,19 +27,19 @@
 #include <silkworm/db/access_layer.hpp>
 
 #include "common.hpp"
-#include "silkworm/downloader/stage.hpp"
-#include "silkworm/downloader/stage_bodies.hpp"
-#include "silkworm/downloader/stage_headers.hpp"
+#include "silkworm/downloader/body_sync.hpp"
+#include "silkworm/downloader/header_sync.hpp"
+#include "silkworm/downloader/sync_target.hpp"
 
 using namespace silkworm;
 using namespace silkworm::stagedsync;
 /*
 // progress log
 class ProgressLog : public ActiveComponent {
-    std::vector<Stage*> stages_;
+    std::vector<SyncTarget*> stages_;
 
   public:
-    ProgressLog(std::vector<Stage*>& stages) : stages_(stages) {}
+    ProgressLog(std::vector<SyncTarget*>& stages) : stages_(stages) {}
 
     void execution_loop() override {  // this is only a trick to avoid using asio timers, this is only test code
         using namespace std::chrono;
@@ -132,8 +132,8 @@ int main(int argc, char* argv[]) {
 
         // Stages 1 & 2 - Headers and bodies downloading - example code
         db::RWAccess db_access(db);
-        stagedsync::consensus::HeadersStage header_stage{block_exchange, &node_settings};
-        stagedsync::consensus::BodiesStage body_stage{block_exchange, &node_settings};
+        stagedsync::consensus::HeaderSync header_stage{block_exchange, &node_settings};
+        stagedsync::consensus::BodySync body_stage{block_exchange, &node_settings};
 
         // Trap os signals
         SignalHandler::init();
@@ -152,7 +152,7 @@ int main(int argc, char* argv[]) {
             progress_log.execution_loop();
         });
 
-        Stage::Result result{Stage::Result::kUnspecified};
+        SyncTarget::Result result{SyncTarget::Result::kUnspecified};
         size_t last_stage = 0;
 
         do {

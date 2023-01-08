@@ -23,8 +23,8 @@ SyncEngine::SyncEngine(BlockExchange& be, stagedsync::ExecutionEngine& ee)
       exec_engine_{ee} {
 }
 
-auto SyncEngine::forward_and_insert_blocks(HeadersStage& headers_stage, BodiesStage& bodies_stage) -> Stage::NewHeight {
-    //using NewHeight = Stage::NewHeight;
+auto SyncEngine::forward_and_insert_blocks(HeaderSync& headers_stage, BodySync& bodies_stage) -> SyncTarget::NewHeight {
+    //using NewHeight = SyncTarget::NewHeight;
 
     auto as_far_as_possible = std::nullopt;
 
@@ -38,7 +38,7 @@ auto SyncEngine::forward_and_insert_blocks(HeadersStage& headers_stage, BodiesSt
     return new_height;
 }
 
-void SyncEngine::unwind(HeadersStage& headers_stage, BodiesStage& bodies_stage, Stage::UnwindPoint unwind_point) {
+void SyncEngine::unwind(HeaderSync& headers_stage, BodySync& bodies_stage, SyncTarget::UnwindPoint unwind_point) {
     bodies_stage.unwind(unwind_point);
 
     headers_stage.unwind(unwind_point);
@@ -49,12 +49,12 @@ void SyncEngine::execution_loop() {
     using ValidChain = ExecutionEngine::ValidChain;
     using ValidationError = ExecutionEngine::ValidationError;
     using InvalidChain = ExecutionEngine::InvalidChain;
-    using NewHeight = Stage::NewHeight;
-    //using UnwindPoint = Stage::UnwindPoint;
+    using NewHeight = SyncTarget::NewHeight;
+    //using UnwindPoint = SyncTarget::UnwindPoint;
 
     while (!is_stopping()) {
-        HeadersStage headers_stage{block_exchange_, exec_engine_};
-        BodiesStage bodies_stage{block_exchange_, exec_engine_};
+        HeaderSync headers_stage{block_exchange_, exec_engine_};
+        BodySync bodies_stage{block_exchange_, exec_engine_};
 
         NewHeight new_height = forward_and_insert_blocks(headers_stage, bodies_stage);
 

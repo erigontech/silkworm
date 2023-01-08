@@ -14,7 +14,7 @@
    limitations under the License.
 */
 
-#include "stage_bodies.hpp"
+#include "body_sync.hpp"
 
 #include <chrono>
 #include <thread>
@@ -28,20 +28,20 @@
 
 namespace silkworm::chainsync {
 
-BodiesStage::BodiesStage(BlockExchange& bd, stagedsync::ExecutionEngine& ee)
-    : Stage("consensus-bodies"), block_downloader_{bd}, exec_engine_{ee}, log_prefix_{"[Cons.Bodies]"} {
+BodySync::BodySync(BlockExchange& bd, stagedsync::ExecutionEngine& ee)
+    : SyncTarget("consensus-bodies"), block_downloader_{bd}, exec_engine_{ee}, log_prefix_{"[Cons.Bodies]"} {
 }
 
-BodiesStage::~BodiesStage() {
+BodySync::~BodySync() {
 }
 
-auto BodiesStage::forward(std::optional<NewHeight> new_height) -> NewHeight {
+auto BodySync::forward(std::optional<NewHeight> new_height) -> NewHeight {
     using std::shared_ptr;
     using namespace std::chrono_literals;
     using namespace std::chrono;
 
     if (!new_height.has_value()) {
-        throw std::logic_error("Consensus bodies stages need a target height");
+        throw std::logic_error("Consensus bodies sync need a target height");
     }
 
     auto constexpr kProgressUpdateInterval = 30s;
@@ -130,17 +130,17 @@ auto BodiesStage::forward(std::optional<NewHeight> new_height) -> NewHeight {
     }
 }
 
-void BodiesStage::unwind(UnwindPoint unwind_point) {
+void BodySync::unwind(UnwindPoint unwind_point) {
     current_height_ = unwind_point.block_num;
 }
 
-void BodiesStage::send_body_requests() {
+void BodySync::send_body_requests() {
     auto message = std::make_shared<OutboundGetBlockBodies>();
 
     block_downloader_.accept(message);
 }
 
-auto BodiesStage::sync_body_sequence(BlockNum highest_body, BlockNum highest_header)
+auto BodySync::sync_body_sequence(BlockNum highest_body, BlockNum highest_header)
     -> std::shared_ptr<InternalMessage<void>> {
     auto message = std::make_shared<InternalMessage<void>>(
         [highest_body, highest_header](HeaderChain&, BodySequence& bs) {
@@ -152,7 +152,7 @@ auto BodiesStage::sync_body_sequence(BlockNum highest_body, BlockNum highest_hea
     return message;
 }
 
-auto BodiesStage::withdraw_ready_bodies() -> std::shared_ptr<InternalMessage<std::vector<std::shared_ptr<Block>>>> {
+auto BodySync::withdraw_ready_bodies() -> std::shared_ptr<InternalMessage<std::vector<std::shared_ptr<Block>>>> {
     using result_t = std::vector<std::shared_ptr<Block>>;
 
     auto message = std::make_shared<InternalMessage<result_t>>([](HeaderChain&, BodySequence& bs) {
@@ -165,13 +165,13 @@ auto BodiesStage::withdraw_ready_bodies() -> std::shared_ptr<InternalMessage<std
 }
 
 // New block announcements propagation
-void BodiesStage::send_announcements() {
+void BodySync::send_announcements() {
     auto message = std::make_shared<OutboundNewBlock>();
 
     block_downloader_.accept(message);
 }
 
-std::vector<std::string> BodiesStage::get_log_progress() {  // implementation MUST be thread safe
+std::vector<std::string> BodySync::get_log_progress() {  // implementation MUST be thread safe
     static RepeatedMeasure<BlockNum> height_progress{0};
 
     height_progress.set(current_height_);

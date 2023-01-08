@@ -13,44 +13,41 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 */
+
 #pragma once
 
-#include <atomic>
-
 #include "block_exchange.hpp"
-#include "silkworm/common/measure.hpp"
+#include "silkworm/concurrency/containers.hpp"
 #include "silkworm/db/access_layer.hpp"
 #include "silkworm/downloader/internals/types.hpp"
 #include "silkworm/downloader/messages/internal_message.hpp"
 #include "silkworm/stagedsync/execution_engine.hpp"
-#include "stage.hpp"
+#include "sync_target.hpp"
 
 namespace silkworm::chainsync {
 
-class HeadersStage : public Stage {
+class BodySync : public SyncTarget {
   public:
-    HeadersStage(BlockExchange&, stagedsync::ExecutionEngine&);
-    HeadersStage(const HeadersStage&) = delete;  // not copyable
-    HeadersStage(HeadersStage&&) = delete;       // nor movable
-    ~HeadersStage();
+    BodySync(BlockExchange&, stagedsync::ExecutionEngine&);
+    BodySync(const BodySync&) = delete;  // not copyable
+    BodySync(BodySync&&) = delete;       // nor movable
+    ~BodySync();
 
-    NewHeight forward(std::optional<NewHeight>) override;  // go forward, downloading headers
-    void unwind(UnwindPoint) override;                     // go backward, unwinding headers to unwind point
+    NewHeight forward(std::optional<NewHeight>) override;  // go forward, downloading bodies
+    void unwind(UnwindPoint) override;                     // go backward, unwinding bodies to unwind point
 
   private:
-    void send_header_requests();  // send requests for more headers
+    void send_body_requests();  // send requests for more bodies
+    auto sync_body_sequence(BlockNum highest_body, BlockNum highest_header) -> std::shared_ptr<InternalMessage<void>>;
+    auto withdraw_ready_bodies() -> std::shared_ptr<InternalMessage<std::vector<std::shared_ptr<Block>>>>;
     void send_announcements();
-    auto sync_header_chain(BlockNum highest_in_db) -> std::shared_ptr<InternalMessage<void>>;
-    auto withdraw_stable_headers() -> std::shared_ptr<InternalMessage<std::tuple<Headers, bool>>>;
 
     std::vector<std::string> get_log_progress() override;  // thread safe
     std::atomic<BlockNum> current_height_{0};
 
-    std::optional<BlockNum> target_block_;
     BlockExchange& block_downloader_;
     stagedsync::ExecutionEngine& exec_engine_;
     std::string log_prefix_;
-    bool is_first_cycle_{true};
 };
 
 }  // namespace silkworm::chainsync

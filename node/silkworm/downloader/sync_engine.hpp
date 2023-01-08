@@ -17,13 +17,13 @@ limitations under the License.
 #pragma once
 
 #include "block_exchange.hpp"
+#include "body_sync.hpp"
+#include "header_sync.hpp"
 #include "silkworm/common/log.hpp"
 #include "silkworm/common/settings.hpp"
 #include "silkworm/concurrency/active_component.hpp"
 #include "silkworm/downloader/messages/internal_message.hpp"
 #include "silkworm/stagedsync/execution_engine.hpp"
-#include "stage_bodies.hpp"
-#include "stage_headers.hpp"
 
 namespace silkworm::chainsync {
 
@@ -34,8 +34,8 @@ class SyncEngine : public ActiveComponent {
     void execution_loop() final; /*[[long_running]]*/
 
   private:
-    auto forward_and_insert_blocks(HeadersStage&, BodiesStage&) -> Stage::NewHeight;
-    void unwind(HeadersStage&, BodiesStage&, Stage::UnwindPoint);
+    auto forward_and_insert_blocks(HeaderSync&, BodySync&) -> SyncTarget::NewHeight;
+    void unwind(HeaderSync&, BodySync&, SyncTarget::UnwindPoint);
     auto update_bad_headers(std::set<Hash>) -> std::shared_ptr<InternalMessage<void>>;
 
     BlockExchange& block_exchange_;

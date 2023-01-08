@@ -88,7 +88,33 @@ void BlockExchange::execution_loop() {
             if (!present) continue;  // timeout, needed to check exiting_
 
             // process the message (command pattern)
-            message->execute(db_access_, header_chain_, body_sequence_, sentry_);
+            if (present) {
+                message->execute(db_access_, header_chain_, body_sequence_, sentry_);
+                statistics_.processed_msgs++;
+            }
+
+            // request headers & bodies
+            constexpr auto only_one_request = 1;
+            auto outstanding_requests = BodySequence::kPerPeerMaxOutstandingRequests * sentry_.active_peers();
+
+            if (messages_.size() < outstanding_requests && body_sequence_.has_bodies_to_request(now, sentry_.active_peers())) {
+
+                auto request_message = std::make_shared<OutboundGetBlockBodies>(only_one_request);
+                request_message->execute(db_access_, header_chain_, body_sequence_, sentry_);
+
+                statistics_.tried_msgs += only_one_request;
+                statistics_.sent_msgs += request_message->sent_requests();
+                statistics_.nack_msgs += request_message->nack_requests();
+            }
+            if (messages_.size() < outstanding_requests && header_chain_.has_headers_to_request(now, sentry_.active_peers())) {
+
+                auto request_message = std::make_shared<OutboundGetBlockHeaders>(only_one_request);
+                request_message->execute(db_access_, header_chain_, body_sequence_, sentry_);
+
+                statistics_.tried_msgs += only_one_request;
+                statistics_.sent_msgs += request_message->sent_requests();
+                statistics_.nack_msgs += request_message->nack_requests();
+            }
 
             // log status
             auto now = system_clock::now();
@@ -96,6 +122,7 @@ void BlockExchange::execution_loop() {
                 log_status();
                 last_update = now;
             }
+
         }
 
         log::Warning("BlockExchange") << "execution_loop is stopping...";
@@ -107,25 +134,41 @@ void BlockExchange::execution_loop() {
 }
 
 void BlockExchange::log_status() {
-    log::Debug("BlockExchange") << "messages: " << std::setfill('_') << std::setw(5) << std::right << messages_.size()
-                                << " in queue";
+    static constexpr seconds_t interval_for_stats_{60};
+    static Network_Statistics prev_statistic{};
+
+    log::Debug() << "BlockExchange stats:" << std::setfill('_') << std::right
+                 << " in-queue:"   << std::setw(5) << messages_.size()
+                 << ", peers:"     << std::setw(2) << sentry_.active_peers()
+                 << ", " << Interval_Network_Statistics{prev_statistic, statistics_, interval_for_stats_};
 
     auto [min_anchor_height, max_anchor_height] = header_chain_.anchor_height_range();
-    log::Debug("BlockExchange") << "headers: " << std::setfill('_') << "links= " << std::setw(7) << std::right
-                                << header_chain_.pending_links() << ", anchors= " << std::setw(3) << std::right
-                                << header_chain_.anchors() << ", db-height= " << std::setw(10) << std::right
-                                << header_chain_.highest_block_in_db() << ", mem-height= " << std::setw(10) << std::right
-                                << min_anchor_height << "~" << std::setw(10) << std::right << max_anchor_height
-                                << ", net-height= " << std::setw(10) << std::right << header_chain_.top_seen_block_height()
-                                << "; stats: " << header_chain_.statistics();
+    log::Debug() << "BlockExchange headers: " << std::setfill('_') << std::right
+                 << "links= " << std::setw(7) << header_chain_.pending_links()
+                 << ", anchors= " << std::setw(3) << header_chain_.anchors()
+                 << ", db-height= " << std::setw(10) << header_chain_.highest_block_in_db()
+                 << ", mem-height= " << std::setw(10) << min_anchor_height
+                 << "~" << std::setw(10) << max_anchor_height
+                 << " (#" << std::setw(7) << std::showpos
+                 << max_anchor_height - min_anchor_height << ")"
+                 << ", net-height= " << std::setw(10) << header_chain_.top_seen_block_height();
 
-    log::Debug("BlockExchange") << "bodies:  " << std::setfill('_') << "outstanding bodies= " << std::setw(6)
-                                << std::right << body_sequence_.outstanding_bodies(std::chrono::system_clock::now()) << "  "
-                                << ", db-height= " << std::setw(10) << std::right << body_sequence_.highest_block_in_db()
-                                << ", mem-height= " << std::setw(10) << std::right << body_sequence_.lowest_block_in_memory()
-                                << "~" << std::setw(10) << std::right << body_sequence_.highest_block_in_memory()
-                                << ", net-height= " << std::setw(10) << std::right << body_sequence_.target_height()
-                                << "; stats: " << body_sequence_.statistics();
+    log::Debug() << "BlockExchange bodies:  " << std::setfill('_') << std::right
+                 << "outst= " << std::setw(7)
+                 << body_sequence_.outstanding_bodies(std::chrono::system_clock::now())
+                 << ", ready= " << std::setw(6) << body_sequence_.ready_bodies()
+                 << ", db-height= " << std::setw(10) << body_sequence_.highest_block_in_db()
+                 << ", mem-height= " << std::setw(10) << body_sequence_.lowest_block_in_memory()
+                 << "~" << std::setw(10) << body_sequence_.highest_block_in_memory()
+                 << " (#" << std::setw(7) << std::showpos
+                 << body_sequence_.highest_block_in_memory() - body_sequence_.lowest_block_in_memory() << ")"
+                 << ", net-height= " << std::setw(10) << body_sequence_.target_height();
+
+    log::Debug() << "BlockExchange header stats: " << header_chain_.statistics();
+
+    log::Debug() << "BlockExchange body   stats: " << body_sequence_.statistics();
+
+    prev_statistic.inaccurate_copy(statistics_); // save values
 }
 
 void BlockExchange::send_penalization(PeerId id, Penalty p) noexcept {

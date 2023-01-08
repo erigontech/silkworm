@@ -14,10 +14,10 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-#include "stage.hpp"
+#include "sync_target.hpp"
 
 namespace silkworm::chainsync {
 
-Stage::Stage(std::string name) : name_(name) {}
+SyncTarget::SyncTarget(std::string name) : name_(name) {}
 
 }  // namespace silkworm::chainsync

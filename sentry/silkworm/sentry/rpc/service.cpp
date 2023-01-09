@@ -24,7 +24,7 @@
 
 #include <silkworm/common/base.hpp>
 #include <silkworm/common/log.hpp>
-#include <silkworm/downloader/internals/sentry_type_casts.hpp>
+#include <silkworm/rpc/interfaces/types.hpp>
 #include <silkworm/rpc/server/call.hpp>
 #include <silkworm/sentry/eth/fork_id.hpp>
 

@@ -30,19 +30,11 @@ constexpr uint64_t& hi(intx::uint128& x) { return x[1]; }
 
 constexpr uint64_t hi(const intx::uint128& x) { return x[1]; }
 
-constexpr uint64_t& lo_lo(intx::uint256& x) { return x[0]; }
-
 constexpr uint64_t lo_lo(const intx::uint256& x) { return x[0]; }
-
-constexpr uint64_t& lo_hi(intx::uint256& x) { return x[1]; }
 
 constexpr uint64_t lo_hi(const intx::uint256& x) { return x[1]; }
 
-constexpr uint64_t& hi_lo(intx::uint256& x) { return x[2]; }
-
 constexpr uint64_t hi_lo(const intx::uint256& x) { return x[2]; }
-
-constexpr uint64_t& hi_hi(intx::uint256& x) { return x[3]; }
 
 constexpr uint64_t hi_hi(const intx::uint256& x) { return x[3]; }
 
@@ -66,18 +58,6 @@ std::unique_ptr<types::H256> to_H256(const intx::uint256& orig) {
     return dest;  // transfer ownership
 }
 
-intx::uint256 uint256_from_H256(const types::H256& orig) {
-    using types::H128, types::H256;
-
-    intx::uint256 dest;
-    hi_hi(dest) = orig.hi().hi();
-    hi_lo(dest) = orig.hi().lo();
-    lo_hi(dest) = orig.lo().hi();
-    lo_lo(dest) = orig.lo().lo();
-
-    return dest;
-}
-
 std::unique_ptr<types::H256> to_H256(const Hash& orig) {
     using types::H128, types::H256, evmc::load64be;
 
@@ -94,21 +74,6 @@ std::unique_ptr<types::H256> to_H256(const Hash& orig) {
     dest->set_allocated_lo(lo);  // take ownership
 
     return dest;  // transfer ownership
-}
-
-Hash hash_from_H256(const types::H256& orig) {
-    uint64_t hi_hi = orig.hi().hi();
-    uint64_t hi_lo = orig.hi().lo();
-    uint64_t lo_hi = orig.lo().hi();
-    uint64_t lo_lo = orig.lo().lo();
-
-    Hash dest;
-    endian::store_big_u64(dest.bytes + 0, hi_hi);
-    endian::store_big_u64(dest.bytes + 8, hi_lo);
-    endian::store_big_u64(dest.bytes + 16, lo_hi);
-    endian::store_big_u64(dest.bytes + 24, lo_lo);
-
-    return dest;
 }
 
 std::unique_ptr<types::H512> to_H512(const Bytes& orig) {

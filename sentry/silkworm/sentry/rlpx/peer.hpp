@@ -23,11 +23,16 @@
 #include <silkworm/concurrency/coroutine.hpp>
 
 #include <boost/asio/awaitable.hpp>
+#include <boost/asio/io_context.hpp>
 
+#include <silkworm/sentry/common/atomic_value.hpp>
+#include <silkworm/sentry/common/channel.hpp>
 #include <silkworm/sentry/common/ecc_key_pair.hpp>
 #include <silkworm/sentry/common/ecc_public_key.hpp>
+#include <silkworm/sentry/common/message.hpp>
 #include <silkworm/sentry/common/socket_stream.hpp>
 
+#include "framing/message_stream.hpp"
 #include "protocol.hpp"
 
 namespace silkworm::sentry::rlpx {
@@ -35,6 +40,7 @@ namespace silkworm::sentry::rlpx {
 class Peer {
   public:
     explicit Peer(
+        boost::asio::io_context& io_context,
         common::SocketStream stream,
         common::EccKeyPair node_key,
         std::string client_id,
@@ -46,20 +52,28 @@ class Peer {
           client_id_(std::move(client_id)),
           node_listen_port_(node_listen_port),
           protocol_(std::move(protocol)),
-          peer_public_key_(std::move(peer_public_key)) {}
-
-    Peer(Peer&&) = default;
-    Peer& operator=(Peer&&) = default;
+          peer_public_key_(std::move(peer_public_key)),
+          send_message_channel_(io_context) {}
 
     boost::asio::awaitable<void> handle();
 
+    boost::asio::awaitable<void> send_message(common::Message message);
+
+    std::optional<common::EccPublicKey> peer_public_key() {
+        return peer_public_key_.get();
+    }
+
   private:
+    boost::asio::awaitable<void> send_messages(framing::MessageStream& message_stream);
+
     common::SocketStream stream_;
     common::EccKeyPair node_key_;
     std::string client_id_;
     uint16_t node_listen_port_;
     std::unique_ptr<Protocol> protocol_;
-    std::optional<common::EccPublicKey> peer_public_key_;
+    common::AtomicValue<std::optional<common::EccPublicKey>> peer_public_key_;
+
+    common::Channel<common::Message> send_message_channel_;
 };
 
 }  // namespace silkworm::sentry::rlpx

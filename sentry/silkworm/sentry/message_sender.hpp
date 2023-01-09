@@ -20,43 +20,33 @@
 #include <tuple>
 #include <vector>
 
-#include <silkworm/concurrency/coroutine.hpp>
-
-#include <agrpc/grpc_context.hpp>
-#include <p2psentry/sentry.grpc.pb.h>
+#include <boost/asio/awaitable.hpp>
+#include <boost/asio/io_context.hpp>
 
 #include <silkworm/sentry/common/channel.hpp>
 #include <silkworm/sentry/common/ecc_public_key.hpp>
 #include <silkworm/sentry/common/message.hpp>
 #include <silkworm/sentry/common/peer_filter.hpp>
-#include <silkworm/sentry/eth/status_data.hpp>
+#include <silkworm/sentry/rlpx/client.hpp>
+#include <silkworm/sentry/rlpx/server.hpp>
 
-namespace silkworm::sentry::rpc {
+namespace silkworm::sentry {
 
-class ServiceImpl;
-
-struct ServiceState {
-    uint8_t eth_version;
-    common::Channel<eth::StatusData>& status_channel;
+class MessageSender {
+  public:
+    explicit MessageSender(boost::asio::io_context& io_context)
+        : send_message_channel_(io_context) {}
 
     using PeerKeys = std::vector<common::EccPublicKey>;
-    common::Channel<std::tuple<common::Message, common::PeerFilter, std::shared_ptr<common::Channel<PeerKeys>>>>& send_message_channel;
-};
 
-class Service final {
-  public:
-    explicit Service(ServiceState state);
-    ~Service();
+    common::Channel<std::tuple<common::Message, common::PeerFilter, std::shared_ptr<common::Channel<PeerKeys>>>>& send_message_channel() {
+        return send_message_channel_;
+    }
 
-    Service(const Service&) = delete;
-    Service& operator=(const Service&) = delete;
-
-    void register_request_calls(
-        agrpc::GrpcContext* grpc_context,
-        ::sentry::Sentry::AsyncService* async_service);
+    boost::asio::awaitable<void> start(rlpx::Server& server, rlpx::Client& client);
 
   private:
-    std::unique_ptr<ServiceImpl> p_impl_;
+    common::Channel<std::tuple<common::Message, common::PeerFilter, std::shared_ptr<common::Channel<PeerKeys>>>> send_message_channel_;
 };
 
-}  // namespace silkworm::sentry::rpc
+}  // namespace silkworm::sentry

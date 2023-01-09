@@ -16,10 +16,26 @@
 
 #pragma once
 
+#include <iterator>
+#include <list>
+#include <optional>
+#include <random>
+
 #include <silkworm/common/base.hpp>
 
 namespace silkworm::sentry::common {
 
 Bytes random_bytes(Bytes::size_type size);
+
+template <typename T>
+std::optional<typename std::list<T>::iterator> random_list_item(std::list<T>& l) {
+    if (l.empty())
+        return std::nullopt;
+
+    std::default_random_engine random_engine{std::random_device{}()};
+    std::uniform_int_distribution<size_t> random_distribution{0, l.size() - 1};
+    size_t offset = random_distribution(random_engine);
+    return std::optional{std::next(l.begin(), static_cast<typename std::list<T>::iterator::difference_type>(offset))};
+}
 
 }  // namespace silkworm::sentry::common

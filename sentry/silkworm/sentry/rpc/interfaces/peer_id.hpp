@@ -14,19 +14,14 @@
    limitations under the License.
 */
 
-#include "random.hpp"
+#pragma once
 
-namespace silkworm::sentry::common {
+#include <types/types.pb.h>
 
-Bytes random_bytes(Bytes::size_type size) {
-    std::default_random_engine random_engine{std::random_device{}()};
-    std::uniform_int_distribution<uint16_t> random_distribution{0, UINT8_MAX};
+#include <silkworm/sentry/common/ecc_public_key.hpp>
 
-    Bytes data(size, 0);
-    for (auto& d : data) {
-        d = random_distribution(random_engine);
-    }
-    return data;
-}
+namespace silkworm::sentry::rpc::interfaces {
 
-}  // namespace silkworm::sentry::common
+::types::H512 peer_id_from_public_key(const common::EccPublicKey& key);
+
+}  // namespace silkworm::sentry::rpc::interfaces

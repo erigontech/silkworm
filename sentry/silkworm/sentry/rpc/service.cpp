@@ -21,12 +21,15 @@
 #include <vector>
 
 #include <boost/asio/awaitable.hpp>
+#include <boost/asio/this_coro.hpp>
 
 #include <silkworm/common/base.hpp>
 #include <silkworm/common/log.hpp>
 #include <silkworm/rpc/interfaces/types.hpp>
 #include <silkworm/rpc/server/call.hpp>
 #include <silkworm/sentry/eth/fork_id.hpp>
+#include <silkworm/sentry/rpc/interfaces/message.hpp>
+#include <silkworm/sentry/rpc/interfaces/peer_id.hpp>
 
 namespace silkworm::sentry::rpc {
 
@@ -128,8 +131,23 @@ class SendMessageToAllCall : public sw_rpc::server::UnaryCall<proto::OutboundMes
   public:
     using Base::UnaryCall;
 
-    awaitable<void> operator()(const ServiceState& /*state*/) {
-        co_await agrpc::finish_with_error(responder_, grpc::Status{grpc::StatusCode::UNIMPLEMENTED, "SendMessageToAllCall"});
+    awaitable<void> operator()(const ServiceState& state) {
+        const proto::OutboundMessageData& request = request_;
+        auto message = interfaces::message_from_outbound_data(request);
+
+        auto executor = co_await boost::asio::this_coro::executor;
+        auto result_channel = std::make_shared<common::Channel<ServiceState::PeerKeys>>(executor);
+
+        co_await state.send_message_channel.send({message, {}, result_channel});
+
+        ServiceState::PeerKeys sent_peer_keys = co_await result_channel->receive();
+
+        proto::SentPeers reply;
+        for (auto& key : sent_peer_keys) {
+            reply.add_peers()->CopyFrom(interfaces::peer_id_from_public_key(key));
+        }
+
+        co_await agrpc::finish(responder_, reply, grpc::Status::OK);
     }
 };
 

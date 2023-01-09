@@ -14,19 +14,14 @@
    limitations under the License.
 */
 
-#include "random.hpp"
+#pragma once
 
-namespace silkworm::sentry::common {
+#include <p2psentry/sentry.grpc.pb.h>
 
-Bytes random_bytes(Bytes::size_type size) {
-    std::default_random_engine random_engine{std::random_device{}()};
-    std::uniform_int_distribution<uint16_t> random_distribution{0, UINT8_MAX};
+#include <silkworm/sentry/common/message.hpp>
 
-    Bytes data(size, 0);
-    for (auto& d : data) {
-        d = random_distribution(random_engine);
-    }
-    return data;
-}
+namespace silkworm::sentry::rpc::interfaces {
 
-}  // namespace silkworm::sentry::common
+common::Message message_from_outbound_data(const ::sentry::OutboundMessageData& message_data);
+
+}  // namespace silkworm::sentry::rpc::interfaces

@@ -48,7 +48,7 @@ class Handshake {
           is_initiator_(peer_public_key.has_value()),
           peer_public_key_(std::move(peer_public_key)) {}
 
-    boost::asio::awaitable<framing::MessageStream> execute(common::SocketStream& stream);
+    boost::asio::awaitable<std::pair<framing::MessageStream, common::EccPublicKey>> execute(common::SocketStream& stream);
 
     class DisconnectError : public std::runtime_error {
       public:

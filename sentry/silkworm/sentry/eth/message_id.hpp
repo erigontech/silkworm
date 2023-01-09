@@ -14,19 +14,26 @@
    limitations under the License.
 */
 
-#include "random.hpp"
+#pragma once
 
-namespace silkworm::sentry::common {
+namespace silkworm::sentry::eth {
 
-Bytes random_bytes(Bytes::size_type size) {
-    std::default_random_engine random_engine{std::random_device{}()};
-    std::uniform_int_distribution<uint16_t> random_distribution{0, UINT8_MAX};
+enum class MessageId : uint8_t {
+    kStatus,
+    kNewBlockHashes,
+    kTransactions,
+    kGetBlockHeaders,
+    kBlockHeaders,
+    kGetBlockBodies,
+    kBlockBodies,
+    kNewBlock,
+    kNewPooledTransactionHashes,
+    kGetPooledTransactions,
+    kPooledTransactions,
+    kGetNodeData = 0xD,  // removed in eth/67
+    kNodeData,           // removed in eth/67
+    kGetReceipts = 0xF,
+    kReceipts,
+};
 
-    Bytes data(size, 0);
-    for (auto& d : data) {
-        d = random_distribution(random_engine);
-    }
-    return data;
-}
-
-}  // namespace silkworm::sentry::common
+}  // namespace silkworm::sentry::eth

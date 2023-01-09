@@ -16,10 +16,7 @@
 
 #include "server.hpp"
 
-#include <future>
-#include <list>
 #include <memory>
-#include <utility>
 
 #include <boost/asio/co_spawn.hpp>
 #include <boost/asio/ip/tcp.hpp>
@@ -29,17 +26,31 @@
 
 #include <silkworm/common/log.hpp>
 #include <silkworm/sentry/common/enode_url.hpp>
+#include <silkworm/sentry/common/random.hpp>
 #include <silkworm/sentry/common/socket_stream.hpp>
-
-#include "peer.hpp"
 
 namespace silkworm::sentry::rlpx {
 
 using namespace boost::asio;
 
-Server::Server(std::string host, uint16_t port) : host_(std::move(host)), port_(port) {}
+Server::Server(
+    boost::asio::io_context& io_context,
+    std::string host,
+    uint16_t port)
+    : strand_(make_strand(io_context)),
+      host_(std::move(host)),
+      port_(port) {}
 
 awaitable<void> Server::start(
+    silkworm::rpc::ServerContextPool& context_pool,
+    common::EccKeyPair node_key,
+    std::string client_id,
+    std::function<std::unique_ptr<Protocol>()> protocol_factory) {
+    auto start = this->start_in_strand(context_pool, node_key, client_id, protocol_factory);
+    co_await co_spawn(strand_, std::move(start), use_awaitable);
+}
+
+awaitable<void> Server::start_in_strand(
     silkworm::rpc::ServerContextPool& context_pool,
     common::EccKeyPair node_key,
     std::string client_id,
@@ -67,7 +78,7 @@ awaitable<void> Server::start(
     common::EnodeUrl node_url{node_key.public_key(), endpoint.address(), port_};
     log::Info() << "RLPx server is listening at " << node_url.to_string();
 
-    std::list<std::pair<std::unique_ptr<Peer>, std::future<void>>> peers;
+    auto& peers = peers_;
 
     while (acceptor.is_open()) {
         auto& client_context = context_pool.next_io_context();
@@ -79,6 +90,7 @@ awaitable<void> Server::start(
                      << remote_endpoint.address().to_string() << ":" << remote_endpoint.port();
 
         auto peer = std::make_unique<Peer>(
+            client_context,
             std::move(stream),
             node_key,
             client_id,
@@ -96,6 +108,32 @@ awaitable<void> Server::start(
         // peer.first->disconnect();
         peer.second.wait();
         peers.pop_front();
+    }
+}
+
+awaitable<void> Server::enumerate_peers(std::function<awaitable<void>(Peer&)> callback) {
+    co_await co_spawn(strand_, enumerate_peers_in_strand(callback), use_awaitable);
+}
+
+awaitable<void> Server::enumerate_random_peer(std::function<awaitable<void>(Peer&)> callback) {
+    co_await co_spawn(strand_, enumerate_random_peer_in_strand(callback), use_awaitable);
+}
+
+awaitable<void> Server::enumerate_peers_in_strand(std::function<awaitable<void>(Peer&)> callback) {
+    // TODO: test if this is needed
+    [[maybe_unused]] auto executor = co_await this_coro::executor;
+    for (auto& peer : peers_) {
+        co_await callback(*peer.first);
+    }
+}
+
+awaitable<void> Server::enumerate_random_peer_in_strand(std::function<awaitable<void>(Peer&)> callback) {
+    // TODO: test if this is needed
+    [[maybe_unused]] auto executor = co_await this_coro::executor;
+    auto item_opt = common::random_list_item(peers_);
+    if (item_opt) {
+        auto& peer = *item_opt.value()->first;
+        co_await callback(peer);
     }
 }
 

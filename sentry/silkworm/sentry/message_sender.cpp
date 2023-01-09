@@ -1,0 +1,50 @@
+/*
+   Copyright 2022 The Silkworm Authors
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+*/
+
+#include "message_sender.hpp"
+
+#include "rlpx/peer.hpp"
+
+namespace silkworm::sentry {
+
+boost::asio::awaitable<void> MessageSender::start(rlpx::Server& server, rlpx::Client& client) {
+    while (true) {
+        auto [message, peer_filter, result_channel] = co_await send_message_channel_.receive();
+
+        PeerKeys sent_peer_keys;
+
+        auto sender = [&message = message, &sent_peer_keys, peer_filter = peer_filter](rlpx::Peer& peer) {
+            auto key_opt = peer.peer_public_key();
+            if (key_opt && (!peer_filter.peer_public_key || (key_opt.value() == peer_filter.peer_public_key.value()))) {
+                sent_peer_keys.push_back(key_opt.value());
+                return peer.send_message(message);
+            }
+            return boost::asio::awaitable<void>{};
+        };
+
+        if (peer_filter.single_peer && !peer_filter.peer_public_key) {
+            co_await server.enumerate_random_peer(sender);
+            co_await client.enumerate_random_peer(sender);
+        } else {
+            co_await server.enumerate_peers(sender);
+            co_await client.enumerate_peers(sender);
+        }
+
+        co_await result_channel->send(std::move(sent_peer_keys));
+    }
+}
+
+}  // namespace silkworm::sentry

@@ -65,8 +65,8 @@ static const std::vector<fs::path> kFailingTests{
     // https://github.com/ethereum/go-ethereum/blob/v1.10.18/tests/transaction_test.go#L31
     kTransactionDir / "ttGasLimit" / "TransactionWithGasLimitxPriceOverflow.json",
 
-    // EOF is not implemented yet
-    kBlockchainDir / "GeneralStateTests" / "stEIP3540",
+    // ShanghaiTime is not implemented yet
+    kBlockchainDir / "TransitionTests" / "bcMergeToShanghai" / "shanghaiBeforeTransition.json",
 };
 
 static constexpr size_t kColumnWidth{80};
@@ -522,7 +522,10 @@ RunResults blockchain_test(const nlohmann::json& json_test) {
     Bytes genesis_rlp{from_hex(json_test["genesisRLP"].get<std::string>()).value()};
     ByteView genesis_view{genesis_rlp};
     Block genesis_block;
-    rlp::success_or_throw(rlp::decode(genesis_view, genesis_block));
+    if (rlp::decode(genesis_view, genesis_block) != DecodingResult::kOk || !genesis_view.empty()) {
+        std::cout << "Failure to decode genesisRLP" << std::endl;
+        return Status::kFailed;
+    }
 
     std::string network{json_test["network"].get<std::string>()};
     const auto config_it{kNetworkConfig.find(network)};

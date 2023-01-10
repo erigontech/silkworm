@@ -17,6 +17,7 @@
 #pragma once
 
 #include <silkworm/common/base.hpp>
+#include <silkworm/rlp/decode.hpp>
 
 namespace silkworm {
 
@@ -25,10 +26,15 @@ struct Withdrawal {
     uint64_t validator_index{0};
     evmc::address address{};
     intx::uint256 amount{0};
+
+    friend bool operator==(const Withdrawal&, const Withdrawal&) = default;
 };
 
 namespace rlp {
+    size_t length(const Withdrawal&);
     void encode(Bytes& to, const Withdrawal&);
-}
+    template <>
+    DecodingResult decode(ByteView& from, Withdrawal& to) noexcept;
+}  // namespace rlp
 
 }  // namespace silkworm

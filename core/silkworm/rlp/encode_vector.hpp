@@ -43,7 +43,7 @@ void encode_items(Bytes& to, const std::vector<T>& v) {
 
 template <typename T>
 void encode(Bytes& to, const std::vector<T>& v) {
-    const Header h{/*list=*/true, /*payload_length=*/length_items(v)};
+    const Header h{.list = true, .payload_length = length_items(v)};
     to.reserve(to.size() + length_of_length(h.payload_length) + h.payload_length);
     encode_header(to, h);
     encode_items(to, v);

@@ -67,6 +67,9 @@ static const std::vector<fs::path> kFailingTests{
 
     // ShanghaiTime is not implemented yet
     kBlockchainDir / "TransitionTests" / "bcMergeToShanghai" / "shanghaiBeforeTransition.json",
+
+    // EOF is not implemented yet
+    kBlockchainDir / "GeneralStateTests" / "EIPTests" / "stEOF",
 };
 
 static constexpr size_t kColumnWidth{80};
@@ -198,7 +201,7 @@ static const std::map<std::string, ChainConfig> kNetworkConfig{
          .terminal_total_difficulty = 0,
      }},
     {"Merge+3855", test::kShanghaiConfig},
-    {"Merge+3860", test::kShanghaiConfig},
+    {"Shanghai", test::kShanghaiConfig},
     {"ArrowGlacierToMergeAtDiffC0000",
      {
          .chain_id = 1,

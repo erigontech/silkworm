@@ -29,12 +29,44 @@ static Header header(const Withdrawal& w) {
     return h;
 }
 
+size_t length(const Withdrawal& w) {
+    const Header rlp_head{header(w)};
+    return length_of_length(rlp_head.payload_length) + rlp_head.payload_length;
+}
+
 void encode(Bytes& to, const Withdrawal& w) {
     encode_header(to, header(w));
     encode(to, w.index);
     encode(to, w.validator_index);
     encode(to, w.address);
     encode(to, w.amount);
+}
+
+template <>
+DecodingResult decode(ByteView& from, Withdrawal& to) noexcept {
+    auto [rlp_head, err]{decode_header(from)};
+    if (err != DecodingResult::kOk) {
+        return err;
+    }
+    if (!rlp_head.list) {
+        return DecodingResult::kUnexpectedString;
+    }
+    uint64_t leftover{from.length() - rlp_head.payload_length};
+
+    if (err = decode(from, to.index); err != DecodingResult::kOk) {
+        return err;
+    }
+    if (err = decode(from, to.validator_index); err != DecodingResult::kOk) {
+        return err;
+    }
+    if (err = decode(from, to.address.bytes); err != DecodingResult::kOk) {
+        return err;
+    }
+    if (err = decode(from, to.amount); err != DecodingResult::kOk) {
+        return err;
+    }
+
+    return from.length() == leftover ? DecodingResult::kOk : DecodingResult::kListLengthMismatch;
 }
 
 }  // namespace silkworm::rlp

@@ -14,8 +14,6 @@
    limitations under the License.
 */
 
-#include "common.hpp"
-
 #include <filesystem>
 
 #include <CLI/CLI.hpp>
@@ -24,6 +22,8 @@
 #include <silkworm/buildinfo.h>
 #include <silkworm/lightclient/light_client.hpp>
 #include <silkworm/rpc/util.hpp>
+
+#include "common.hpp"
 
 using namespace silkworm;
 using namespace silkworm::cmd;

@@ -16,15 +16,17 @@
 
 #pragma once
 
-#include <optional>
+#include <silkworm/sentry/common/channel.hpp>
+#include <silkworm/sentry/eth/status_data.hpp>
 
-#include "ecc_public_key.hpp"
+#include "send_message_call.hpp"
 
-namespace silkworm::sentry::common {
+namespace silkworm::sentry::rpc::common {
 
-struct PeerFilter {
-    bool single_peer{false};
-    std::optional<EccPublicKey> peer_public_key;
+struct ServiceState {
+    uint8_t eth_version;
+    sentry::common::Channel<eth::StatusData>& status_channel;
+    sentry::common::Channel<SendMessageCall>& send_message_channel;
 };
 
-}  // namespace silkworm::sentry::common
+}  // namespace silkworm::sentry::rpc::common

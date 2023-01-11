@@ -103,10 +103,10 @@ static silkworm::rpc::ServerConfig make_server_config(const Settings& settings) 
     return config;
 }
 
-static rpc::ServiceState make_service_state(
+static rpc::common::ServiceState make_service_state(
     common::Channel<eth::StatusData>& status_channel,
     MessageSender& message_sender) {
-    return rpc::ServiceState{
+    return rpc::common::ServiceState{
         eth::Protocol::kVersion,
         status_channel,
         message_sender.send_message_channel(),

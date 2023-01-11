@@ -16,19 +16,15 @@
 
 #pragma once
 
-#include <memory>
-#include <tuple>
-#include <vector>
+#include <silkworm/concurrency/coroutine.hpp>
 
 #include <boost/asio/awaitable.hpp>
 #include <boost/asio/io_context.hpp>
 
 #include <silkworm/sentry/common/channel.hpp>
-#include <silkworm/sentry/common/ecc_public_key.hpp>
-#include <silkworm/sentry/common/message.hpp>
-#include <silkworm/sentry/common/peer_filter.hpp>
 #include <silkworm/sentry/rlpx/client.hpp>
 #include <silkworm/sentry/rlpx/server.hpp>
+#include <silkworm/sentry/rpc/common/send_message_call.hpp>
 
 namespace silkworm::sentry {
 
@@ -37,16 +33,14 @@ class MessageSender {
     explicit MessageSender(boost::asio::io_context& io_context)
         : send_message_channel_(io_context) {}
 
-    using PeerKeys = std::vector<common::EccPublicKey>;
-
-    common::Channel<std::tuple<common::Message, common::PeerFilter, std::shared_ptr<common::Channel<PeerKeys>>>>& send_message_channel() {
+    common::Channel<rpc::common::SendMessageCall>& send_message_channel() {
         return send_message_channel_;
     }
 
     boost::asio::awaitable<void> start(rlpx::Server& server, rlpx::Client& client);
 
   private:
-    common::Channel<std::tuple<common::Message, common::PeerFilter, std::shared_ptr<common::Channel<PeerKeys>>>> send_message_channel_;
+    common::Channel<rpc::common::SendMessageCall> send_message_channel_;
 };
 
 }  // namespace silkworm::sentry

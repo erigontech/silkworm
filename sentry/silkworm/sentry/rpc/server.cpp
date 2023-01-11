@@ -21,12 +21,12 @@
 #include <silkworm/concurrency/coroutine.hpp>
 
 #include <agrpc/grpc_context.hpp>
-#include <p2psentry/sentry.grpc.pb.h>
 #include <boost/asio/awaitable.hpp>
+#include <p2psentry/sentry.grpc.pb.h>
 
 #include <silkworm/common/log.hpp>
-#include <silkworm/rpc/server/server.hpp>
 #include <silkworm/rpc/server/call.hpp>
+#include <silkworm/rpc/server/server.hpp>
 
 #include "server_calls.hpp"
 
@@ -34,6 +34,7 @@ namespace silkworm::sentry::rpc {
 
 using namespace silkworm::log;
 using AsyncService = ::sentry::Sentry::AsyncService;
+using common::ServiceState;
 
 class ServerImpl final : public silkworm::rpc::Server {
   public:

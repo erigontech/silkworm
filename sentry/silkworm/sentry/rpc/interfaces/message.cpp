@@ -76,7 +76,7 @@ static Bytes bytes_from_string(const std::string& s) {
     return Bytes{reinterpret_cast<const uint8_t*>(s.data()), s.size()};
 }
 
-common::Message message_from_outbound_data(const proto::OutboundMessageData& message_data) {
+sentry::common::Message message_from_outbound_data(const proto::OutboundMessageData& message_data) {
     return {
         message_id(message_data.id()),
         bytes_from_string(message_data.data()),

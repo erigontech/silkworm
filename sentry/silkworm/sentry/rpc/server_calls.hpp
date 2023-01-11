@@ -27,9 +27,9 @@
 #include <silkworm/rpc/server/call.hpp>
 #include <silkworm/sentry/eth/fork_id.hpp>
 
+#include "common/service_state.hpp"
 #include "interfaces/message.hpp"
 #include "interfaces/peer_id.hpp"
-#include "service_state.hpp"
 
 namespace silkworm::sentry::rpc {
 
@@ -40,6 +40,7 @@ namespace proto = ::sentry;
 namespace proto_types = ::types;
 using AsyncService = proto::Sentry::AsyncService;
 namespace sw_rpc = silkworm::rpc;
+using common::ServiceState;
 
 // rpc SetStatus(StatusData) returns (SetStatusReply);
 class SetStatusCall : public sw_rpc::server::UnaryCall<proto::StatusData, proto::SetStatusReply> {
@@ -136,11 +137,11 @@ class SendMessageToAllCall : public sw_rpc::server::UnaryCall<proto::OutboundMes
         auto message = interfaces::message_from_outbound_data(request);
 
         auto executor = co_await boost::asio::this_coro::executor;
-        auto result_channel = std::make_shared<common::Channel<ServiceState::PeerKeys>>(executor);
+        common::SendMessageCall call{std::move(message), {}, executor};
 
-        co_await state.send_message_channel.send({message, {}, result_channel});
+        co_await state.send_message_channel.send(call);
 
-        ServiceState::PeerKeys sent_peer_keys = co_await result_channel->receive();
+        auto sent_peer_keys = co_await call.result();
 
         proto::SentPeers reply;
         for (auto& key : sent_peer_keys) {

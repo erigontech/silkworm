@@ -22,7 +22,7 @@ namespace silkworm::sentry::rpc::interfaces {
 
 namespace proto_types = ::types;
 
-proto_types::H512 peer_id_from_public_key(const common::EccPublicKey& key) {
+proto_types::H512 peer_id_from_public_key(const sentry::common::EccPublicKey& key) {
     return *to_H512(key.serialized());
 }
 

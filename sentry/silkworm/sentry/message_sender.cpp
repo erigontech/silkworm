@@ -22,11 +22,11 @@ namespace silkworm::sentry {
 
 boost::asio::awaitable<void> MessageSender::start(rlpx::Server& server, rlpx::Client& client) {
     while (true) {
-        auto [message, peer_filter, result_channel] = co_await send_message_channel_.receive();
+        auto call = co_await send_message_channel_.receive();
 
-        PeerKeys sent_peer_keys;
+        rpc::common::SendMessageCall::PeerKeys sent_peer_keys;
 
-        auto sender = [&message = message, &sent_peer_keys, peer_filter = peer_filter](rlpx::Peer& peer) {
+        auto sender = [&message = call.message(), &sent_peer_keys, peer_filter = call.peer_filter()](rlpx::Peer& peer) {
             auto key_opt = peer.peer_public_key();
             if (key_opt && (!peer_filter.peer_public_key || (key_opt.value() == peer_filter.peer_public_key.value()))) {
                 sent_peer_keys.push_back(key_opt.value());
@@ -35,7 +35,7 @@ boost::asio::awaitable<void> MessageSender::start(rlpx::Server& server, rlpx::Cl
             return boost::asio::awaitable<void>{};
         };
 
-        if (peer_filter.single_peer && !peer_filter.peer_public_key) {
+        if (call.peer_filter().single_peer && !call.peer_filter().peer_public_key) {
             co_await server.enumerate_random_peer(sender);
             co_await client.enumerate_random_peer(sender);
         } else {
@@ -43,7 +43,7 @@ boost::asio::awaitable<void> MessageSender::start(rlpx::Server& server, rlpx::Cl
             co_await client.enumerate_peers(sender);
         }
 
-        co_await result_channel->send(std::move(sent_peer_keys));
+        co_await call.set_result(std::move(sent_peer_keys));
     }
 }
 

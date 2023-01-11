@@ -20,7 +20,7 @@
 
 #include <silkworm/rpc/server/server_config.hpp>
 
-#include "service_state.hpp"
+#include "common/service_state.hpp"
 
 namespace silkworm::sentry::rpc {
 
@@ -30,7 +30,7 @@ class Server final {
   public:
     explicit Server(
         const silkworm::rpc::ServerConfig& config,
-        ServiceState state);
+        common::ServiceState state);
     ~Server();
 
     Server(const Server&) = delete;

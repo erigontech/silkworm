@@ -22,6 +22,6 @@
 
 namespace silkworm::sentry::rpc::interfaces {
 
-::types::H512 peer_id_from_public_key(const common::EccPublicKey& key);
+::types::H512 peer_id_from_public_key(const sentry::common::EccPublicKey& key);
 
 }  // namespace silkworm::sentry::rpc::interfaces

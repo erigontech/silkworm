@@ -22,6 +22,6 @@
 
 namespace silkworm::sentry::rpc::interfaces {
 
-common::Message message_from_outbound_data(const ::sentry::OutboundMessageData& message_data);
+sentry::common::Message message_from_outbound_data(const ::sentry::OutboundMessageData& message_data);
 
 }  // namespace silkworm::sentry::rpc::interfaces

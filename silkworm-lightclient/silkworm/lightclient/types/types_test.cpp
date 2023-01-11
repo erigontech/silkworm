@@ -21,6 +21,8 @@
 #include <silkworm/common/util.hpp>
 #include <silkworm/lightclient/test/ssz.hpp>
 
+#include <silkworm/lightclient/state/beacon-chain/beacon_block.hpp>
+
 namespace silkworm::cl {
 
 TEST_CASE("Eth1Data SSZ") {
@@ -164,6 +166,53 @@ TEST_CASE("BeaconBlockHeader SSZ") {
                                                       "FF000000000000000000EE00000000000000000000EE000000000000000000")
               == DecodingResult::kUnexpectedLength);
     }
+    /*SECTION("hash_tree_root") {
+        BeaconBlockHeader a{
+            4,
+            3,
+            0x56186d7d3ccb9f4b8ac734ca20659fad8e0156506320de524bf18dec9cea82ad_bytes32,
+            0xb72cec27c1d30034c03f2961a9b5570b78bc9ca7351ba59503780f2452ccbe09_bytes32,
+            0xaf161ca1794d0f6e97c6e766741b1ccd19ea02cb4d477efc546dd6eaf07fdc05_bytes32
+        };
+        Bytes b{};
+        CHECK(ssz::encode(a, b) == EncodingResult::kOk);
+        CHECK(b == *from_hex(
+                       "0400000000000000"
+                       "0300000000000000"
+                       "56186d7d3ccb9f4b8ac734ca20659fad8e0156506320de524bf18dec9cea82ad"
+                       "b72cec27c1d30034c03f2961a9b5570b78bc9ca7351ba59503780f2452ccbe09"
+                       "af161ca1794d0f6e97c6e766741b1ccd19ea02cb4d477efc546dd6eaf07fdc05"));
+        CHECK(to_hex(a.hash_tree_root()) == to_hex(0x35d6b35926d73de9ee914b75a01c899d10913c531b983f335e2914388353ca0c_bytes32));
+        ssz::HashTree t{*from_hex(
+            "0400000000000000000000000000000000000000000000000000000000000000"
+                "0300000000000000000000000000000000000000000000000000000000000000"
+                "56186d7d3ccb9f4b8ac734ca20659fad8e0156506320de524bf18dec9cea82ad"
+                "b72cec27c1d30034c03f2961a9b5570b78bc9ca7351ba59503780f2452ccbe09"
+                "af161ca1794d0f6e97c6e766741b1ccd19ea02cb4d477efc546dd6eaf07fdc05"
+                "0000000000000000000000000000000000000000000000000000000000000000"
+                "0000000000000000000000000000000000000000000000000000000000000000"
+                "0000000000000000000000000000000000000000000000000000000000000000"
+            )
+        };
+        CHECK(to_hex(t.root()) == to_hex(0x35d6b35926d73de9ee914b75a01c899d10913c531b983f335e2914388353ca0c_bytes32));
+        ssz::HashTree t{*from_hex(
+            "0400000000000000000000000000000000000000000000000000000000000000"
+            "0300000000000000000000000000000000000000000000000000000000000000"
+            )
+        };
+        CHECK(to_hex(t.root()) == to_hex(0x35d6b35926d73de9ee914b75a01c899d10913c531b983f335e2914388353ca0c_bytes32));
+
+        eth::BeaconBlockHeader aa{
+            eth::Slot(4),
+            eth::ValidatorIndex(3),
+            eth::Root("0x56186d7d3ccb9f4b8ac734ca20659fad8e0156506320de524bf18dec9cea82ad"),
+            eth::Root("0xb72cec27c1d30034c03f2961a9b5570b78bc9ca7351ba59503780f2452ccbe09"),
+            eth::Root("0xaf161ca1794d0f6e97c6e766741b1ccd19ea02cb4d477efc546dd6eaf07fdc05")
+        };
+        CHECK(to_hex(aa.hash_tree_root()) == to_hex(0x35d6b35926d73de9ee914b75a01c899d10913c531b983f335e2914388353ca0c_bytes32));
+        const auto s = aa.serialize();
+        CHECK(Bytes(s.cbegin(), s.cend()) == b);
+    }*/
 }
 
 TEST_CASE("SignedBeaconBlockHeader SSZ") {
@@ -843,3 +892,69 @@ TEST_CASE("SyncAggregate SSZ") {
 }
 
 }  // namespace silkworm::cl
+
+namespace {
+using namespace evmc;
+TEST_CASE("debug") {
+    /*ssz::HashTree t{*from_hex(
+        "0400000000000000000000000000000000000000000000000000000000000000"
+            "0300000000000000000000000000000000000000000000000000000000000000"
+            "56186d7d3ccb9f4b8ac734ca20659fad8e0156506320de524bf18dec9cea82ad"
+            "b72cec27c1d30034c03f2961a9b5570b78bc9ca7351ba59503780f2452ccbe09"
+            "af161ca1794d0f6e97c6e766741b1ccd19ea02cb4d477efc546dd6eaf07fdc05"
+            "0000000000000000000000000000000000000000000000000000000000000000"
+            "0000000000000000000000000000000000000000000000000000000000000000"
+            "0000000000000000000000000000000000000000000000000000000000000000"
+        )
+    };
+    CHECK(to_hex(t.root()) == to_hex(0x35d6b35926d73de9ee914b75a01c899d10913c531b983f335e2914388353ca0c_bytes32));*/
+    /*silkworm::Bytes bb = *from_hex(
+        "0400000000000000000000000000000000000000000000000000000000000000"
+        "0300000000000000000000000000000000000000000000000000000000000000"
+    );
+    std::vector<ssz::Chunk> v{
+        ssz::Chunk{
+            0x04, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        },
+        ssz::Chunk{
+            0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        },
+    };
+    ssz::HashTree t{v};
+    CHECK(silkworm::to_hex(t.hash_tree_root()) == silkworm::to_hex(0x35d6b35926d73de9ee914b75a01c899d10913c531b983f335e2914388353ca0c_bytes32));
+
+    eth::BeaconBlockHeader aa{
+        eth::Slot(4),
+        eth::ValidatorIndex(3),
+        eth::Root("0x56186d7d3ccb9f4b8ac734ca20659fad8e0156506320de524bf18dec9cea82ad"),
+        eth::Root("0xb72cec27c1d30034c03f2961a9b5570b78bc9ca7351ba59503780f2452ccbe09"),
+        eth::Root("0xaf161ca1794d0f6e97c6e766741b1ccd19ea02cb4d477efc546dd6eaf07fdc05")
+    };
+    CHECK(silkworm::to_hex(aa.hash_tree_root()) == silkworm::to_hex(0x35d6b35926d73de9ee914b75a01c899d10913c531b983f335e2914388353ca0c_bytes32));*/
+
+    /*silkworm::Bytes bb = *from_hex(
+        "0400000000000000000000000000000000000000000000000000000000000000"
+        "0300000000000000000000000000000000000000000000000000000000000000"
+    );
+    std::vector<ssz::Chunk> v{
+        ssz::Chunk{
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        },
+        ssz::Chunk{
+            0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        },
+    };
+    ssz::HashTree t{v};
+    CHECK(silkworm::to_hex(t.hash_tree_root()) == silkworm::to_hex(0x35d6b35926d73de9ee914b75a01c899d10913c531b983f335e2914388353ca0c_bytes32));*/
+
+    eth::Checkpoint cc{
+        eth::Epoch(0),
+        eth::Root("0xc34f14c267e03355b676b8de3fc091055f95d5cd68224e12f5c1a70e06f3eb9c")
+    };
+    CHECK(silkworm::to_hex(cc.hash_tree_root()) == silkworm::to_hex(0x329bf859ffe19c0e6759846e782132f65fc9e06e1d8a6618172d3a8eab5f33f5_bytes32));
+}
+}

@@ -187,6 +187,47 @@ bool operator==(const ExecutionPayload& lhs, const ExecutionPayload& rhs) {
     return true;
 }
 
+bool operator==(const SyncCommittee& lhs, const SyncCommittee& rhs) {
+    if (lhs.public_keys.size() != rhs.public_keys.size()) return false;
+    for (std::size_t i{0}; i < lhs.public_keys.size(); ++i) {
+        if (lhs.public_keys[i] != rhs.public_keys[i]) return false;
+    }
+    for (std::size_t i{0}; i < kPublicKeySize; ++i) {
+        if (lhs.aggregate_public_key[i] != rhs.aggregate_public_key[i]) return false;
+    }
+    return true;
+}
+
+bool operator==(const LightClientBootstrap& lhs, const LightClientBootstrap& rhs) {
+    if (!lhs.header && rhs.header) return false;
+    if (lhs.header && !rhs.header) return false;
+    if (lhs.header && rhs.header && *lhs.header != *rhs.header) return false;
+    if (!lhs.current_committee && rhs.current_committee) return false;
+    if (lhs.current_committee && !rhs.current_committee) return false;
+    if (lhs.current_committee && rhs.current_committee && *lhs.current_committee != *rhs.current_committee) return false;
+    if (lhs.current_committee_branch != rhs.current_committee_branch) return false;
+    return true;
+}
+
+bool operator==(const LightClientUpdate& lhs, const LightClientUpdate& rhs) {
+    if (!lhs.attested_header && rhs.attested_header) return false;
+    if (lhs.attested_header && !rhs.attested_header) return false;
+    if (lhs.attested_header && rhs.attested_header && *lhs.attested_header != *rhs.attested_header) return false;
+    if (!lhs.next_committee && rhs.next_committee) return false;
+    if (lhs.next_committee && !rhs.next_committee) return false;
+    if (lhs.next_committee && rhs.next_committee && *lhs.next_committee != *rhs.next_committee) return false;
+    if (lhs.next_committee_branch != rhs.next_committee_branch) return false;
+    if (!lhs.finalized_header && rhs.finalized_header) return false;
+    if (lhs.finalized_header && !rhs.finalized_header) return false;
+    if (lhs.finalized_header && rhs.finalized_header && *lhs.finalized_header != *rhs.finalized_header) return false;
+    if (lhs.finality_branch != rhs.finality_branch) return false;
+    if (!lhs.sync_aggregate && rhs.sync_aggregate) return false;
+    if (lhs.sync_aggregate && !rhs.sync_aggregate) return false;
+    if (lhs.sync_aggregate && rhs.sync_aggregate && *lhs.sync_aggregate != *rhs.sync_aggregate) return false;
+    if (lhs.signature_slot != rhs.signature_slot) return false;
+    return true;
+}
+
 }  // namespace silkworm::cl
 
 namespace silkworm::ssz {
@@ -802,59 +843,70 @@ DecodingResult decode(ByteView from, cl::ExecutionPayload& to) noexcept {
         return DecodingResult::kUnexpectedLength;
     }
 
+    // Field (0) 'parent_hash'
     std::size_t pos{0};
     if (auto err{ssz::decode(from.substr(pos, kHashLength), to.parent_hash)}; err != DecodingResult::kOk) {
         return err;
     }
     pos += kHashLength;
 
+    // Field (1) 'fee_recipient'
     if (auto err{ssz::decode(from.substr(pos, kAddressLength), to.fee_recipient)}; err != DecodingResult::kOk) {
         return err;
     }
     pos += kAddressLength;
 
+    // Field (2) 'state_root'
     if (auto err{ssz::decode(from.substr(pos, kHashLength), to.state_root)}; err != DecodingResult::kOk) {
         return err;
     }
     pos += kHashLength;
 
+    // Field (3) 'receipts_root'
     if (auto err{ssz::decode(from.substr(pos, kHashLength), to.receipts_root)}; err != DecodingResult::kOk) {
         return err;
     }
     pos += kHashLength;
 
+    // Field (4) 'logs_bloom'
     if (auto err{ssz::decode(from.substr(pos, cl::kLogsBloomSize), to.logs_bloom)}; err != DecodingResult::kOk) {
         return err;
     }
     pos += cl::kLogsBloomSize;
 
+    // Field (5) 'prev_randao'
     if (auto err{ssz::decode(from.substr(pos, kHashLength), to.prev_randao)}; err != DecodingResult::kOk) {
         return err;
     }
     pos += kHashLength;
 
+    // Field (6) 'block_number'
     if (auto err{ssz::decode(from.substr(pos, sizeof(uint64_t)), to.block_number)}; err != DecodingResult::kOk) {
         return err;
     }
     pos += sizeof(uint64_t);
 
+    // Field (7) 'gas_limit'
     if (auto err{ssz::decode(from.substr(pos, sizeof(uint64_t)), to.gas_limit)}; err != DecodingResult::kOk) {
         return err;
     }
     pos += sizeof(uint64_t);
 
+    // Field (8) 'gas_used'
     if (auto err{ssz::decode(from.substr(pos, sizeof(uint64_t)), to.gas_used)}; err != DecodingResult::kOk) {
         return err;
     }
     pos += sizeof(uint64_t);
 
+    // Field (9) 'timestamp'
     if (auto err{ssz::decode(from.substr(pos, sizeof(uint64_t)), to.timestamp)}; err != DecodingResult::kOk) {
         return err;
     }
     pos += sizeof(uint64_t);
 
+    // Offset (10) 'extra_data'
     uint32_t offset10{0};
-        if (auto err{ssz::decode_offset(from.substr(pos, sizeof(uint32_t)), offset10)}; err != DecodingResult::kOk) {
+    if (auto err{ssz::decode_offset(from.substr(pos, sizeof(uint32_t)), offset10)}; err != DecodingResult::kOk) {
         return err;
     }
     if (offset10 < cl::ExecutionPayload::kMinSize || offset10 > size) {
@@ -862,16 +914,19 @@ DecodingResult decode(ByteView from, cl::ExecutionPayload& to) noexcept {
     }
     pos += sizeof(uint32_t);
 
+    // Field (11) 'base_fee_per_gas'
     if (auto err{ssz::decode(from.substr(pos, kHashLength), to.base_fee_per_gas)}; err != DecodingResult::kOk) {
         return err;
     }
     pos += kHashLength;
 
+    // Field (12) 'block_hash'
     if (auto err{ssz::decode(from.substr(pos, kHashLength), to.block_hash)}; err != DecodingResult::kOk) {
         return err;
     }
     pos += kHashLength;
 
+    // Offset (13) 'transactions'
     uint32_t offset13{0};
     if (auto err{ssz::decode_offset(from.substr(pos, sizeof(uint32_t)), offset13)}; err != DecodingResult::kOk) {
         return err;
@@ -881,13 +936,59 @@ DecodingResult decode(ByteView from, cl::ExecutionPayload& to) noexcept {
     }
     pos += sizeof(uint32_t);
 
+    // Field (10) 'extra_data'
     const std::size_t extra_data_size = offset13 - offset10;
     to.extra_data.reserve(extra_data_size);
     to.extra_data = from.substr(pos, extra_data_size);
-    // pos += extra_data_size;
+    pos += extra_data_size;
 
-    // ByteView transactions_buffer = from.substr(pos);
+    // Field (13) `transactions`
+    std::size_t length{0};
+    if (auto err{ssz::decode_dynamic_length(from.substr(pos), 1048576, length)}; err != DecodingResult::kOk) {
+        return err;
+    }
+    to.transactions.resize(length);
+    if (auto err{ssz::decode_dynamic(from.substr(pos), length, [&](std::size_t index, ByteView buffer) {
+            if (buffer.size() > 1073741824) {
+                return DecodingResult::kUnexpectedLength;
+            }
+            to.transactions[index].resize(buffer.size());
+            std::copy(buffer.cbegin(), buffer.cend(), to.transactions[index].begin());
+            return DecodingResult::kOk;
+        })}; err != DecodingResult::kOk) {
+        return err;
+    }
 
+    return DecodingResult::kOk;
+}
+
+template <>
+EncodingResult encode(cl::SyncCommittee& /*from*/, Bytes& /*to*/) noexcept {
+    return EncodingResult::kOk;
+}
+
+template <>
+DecodingResult decode(ByteView /*from*/, cl::SyncCommittee& /*to*/) noexcept {
+    return DecodingResult::kOk;
+}
+
+template <>
+EncodingResult encode(cl::LightClientBootstrap& /*from*/, Bytes& /*to*/) noexcept {
+    return EncodingResult::kOk;
+}
+
+template <>
+DecodingResult decode(ByteView /*from*/, cl::LightClientBootstrap& /*to*/) noexcept {
+    return DecodingResult::kOk;
+}
+
+template <>
+EncodingResult encode(cl::LightClientUpdate& /*from*/, Bytes& /*to*/) noexcept {
+    return EncodingResult::kOk;
+}
+
+template <>
+DecodingResult decode(ByteView /*from*/, cl::LightClientUpdate& /*to*/) noexcept {
     return DecodingResult::kOk;
 }
 

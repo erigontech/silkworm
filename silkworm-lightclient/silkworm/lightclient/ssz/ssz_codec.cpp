@@ -18,6 +18,8 @@
 
 #include <bit>
 
+#include <silkworm/common/endian.hpp>
+
 namespace silkworm::ssz {
 
 void encode(uint32_t from, Bytes& to) noexcept {
@@ -92,6 +94,65 @@ void encode_offset(uint32_t from, Bytes& to) noexcept {
 
 DecodingResult decode_offset(ByteView from, uint32_t& to) noexcept {
     return decode(from, to);
+}
+
+DecodingResult decode_dynamic_length(ByteView from, std::size_t max_length, std::size_t& length) noexcept {
+    if (from.empty()) {
+        length = 0;
+    } else {
+        if (from.size() < sizeof(uint32_t)) {
+            return DecodingResult::kInputTooShort;
+        }
+        const auto offset = endian::load_little_u32(from.data());
+        if (offset % kBytesPerLengthOffset != 0) {
+            length = 0;
+            return DecodingResult::kUnexpectedLength;
+        }
+
+        length = offset / kBytesPerLengthOffset;
+        if (length > max_length) {
+            return DecodingResult::kUnexpectedLength;
+        }
+    }
+    return DecodingResult::kOk;
+}
+
+DecodingResult decode_dynamic(ByteView from, std::size_t length, const DynamicReader& read_one) noexcept {
+    if (length > 0) {
+        const std::size_t size = from.size();
+
+        std::size_t pos{0};
+
+        uint32_t offset{0}, end_offset{0};
+        if (auto err{decode_offset(from.substr(pos, sizeof(uint32_t)), offset)}; err != DecodingResult::kOk) {
+            return err;
+        }
+        pos += sizeof(uint32_t);
+
+        std::size_t index{0};
+        for (; length > 0; --length) {
+            if (length > 1) {
+                if (auto err{decode_offset(from.substr(pos, sizeof(uint32_t)), end_offset)}; err != DecodingResult::kOk) {
+                    return err;
+                }
+                pos += sizeof(uint32_t);
+            } else {
+                end_offset = size;
+            }
+            if (end_offset < offset || end_offset > size) {
+                return DecodingResult::kUnexpectedLength;
+            }
+
+            const std::size_t slice_size = end_offset - offset;
+            if (auto err{read_one(index, from.substr(offset, slice_size))}; err != DecodingResult::kOk) {
+                return err;
+            }
+            offset = end_offset;
+
+            ++index;
+        }
+    }
+    return DecodingResult::kOk;
 }
 
 DecodingResult validate_bitlist(ByteView buffer, std::size_t bit_limit) noexcept {

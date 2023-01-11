@@ -30,9 +30,9 @@ std::optional<std::string> get_checkpoint_sync_endpoint(uint64_t chain_id) noexc
     const auto endpoints = endpoint_it->second;
 
     // Randomly select one checkpoint sync endpoint for the chain
-    std::random_device random_dev;
-    std::mt19937 random_gen(random_dev());
-    std::uniform_int_distribution<std::size_t> distribution{0, endpoints.size()};
+    static std::random_device random_dev;
+    static std::mt19937 random_gen(random_dev());
+    static std::uniform_int_distribution<std::size_t> distribution{0, endpoints.size()};
     const std::size_t random_index = distribution(random_gen);
     SILKWORM_ASSERT(random_index < endpoints.size());
 

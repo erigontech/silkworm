@@ -14,46 +14,48 @@
    limitations under the License.
 */
 
+#include "common.hpp"
+
 #include <filesystem>
 
 #include <CLI/CLI.hpp>
 #include <boost/process/environment.hpp>
 
+#include <silkworm/lightclient/light_client.hpp>
 #include <silkworm/rpc/util.hpp>
 
-#include "common.hpp"
-
 using namespace silkworm;
-using namespace silkworm::cmd;
 
-void lightclient_main(/*Settings settings*/) {
-    log::Settings log_settings{};
-    log::init(log_settings /*settings.log_settings*/);
-    log::set_thread_name("main");
-    // TODO(canepat): this could be an option in Silkworm logging facility
-    silkworm::rpc::Grpc2SilkwormLogGuard log_guard;
-
-    // Sentry sentry{std::move(settings)};
-    // sentry.start();
-
-    const auto pid = boost::this_process::get_id();
-    const auto tid = std::this_thread::get_id();
-    log::Info() << "LightClient is now running [pid=" << pid << ", main thread=" << tid << "]";
-    // sentry.join();
-
-    log::Info() << "LightClient exiting [pid=" << pid << ", main thread=" << tid << "]";
+cl::Settings parse_cli_settings(int /*argc*/, char* /*argv*/[]) {
+    return cl::Settings{};
 }
 
-int main(int /*argc*/, char* /*argv*/[]) {
+int main(int argc, char* argv[]) {
     try {
-        lightclient_main(/*sentry_parse_cli_settings(argc, argv)*/);
+        cl::Settings settings = parse_cli_settings(argc, argv);
+
+        log::init(settings.log_settings);
+        log::set_thread_name("main");
+        // TODO(canepat): this could be an option in Silkworm logging facility
+        rpc::Grpc2SilkwormLogGuard log_guard;
+
+        cl::LightClient light_client{std::move(settings)};
+        light_client.start();
+
+        const auto pid = boost::this_process::get_id();
+        const auto tid = std::this_thread::get_id();
+        log::Info() << "[LightClient] LC is now running [pid=" << pid << ", main thread=" << tid << "]";
+
+        light_client.join();
+
+        log::Info() << "[LightClient] LC exiting [pid=" << pid << ", main thread=" << tid << "]";
     } catch (const CLI::ParseError& pe) {
         return -1;
     } catch (const std::exception& e) {
-        log::Critical() << "LightClient exiting due to exception: " << e.what();
+        log::Critical() << "[LightClient] LC exiting due to exception: " << e.what();
         return -2;
     } catch (...) {
-        log::Critical() << "LightClient exiting due to unexpected exception";
+        log::Critical() << "[LightClient] LC exiting due to unexpected exception";
         return -3;
     }
 }

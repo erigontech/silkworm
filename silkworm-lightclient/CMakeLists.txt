@@ -47,9 +47,10 @@ target_include_directories(silkworm_lightclient PUBLIC
         ${SILKWORM_MAIN_DIR}/third_party/cpp_ssz/include
         ${SILKWORM_MAIN_DIR}/third_party/magic_enum/include)
 
-set(SILKWORM_LIGHTCLIENT_PUBLIC_LIBS silkworm_core mdbx-static absl::flat_hash_map absl::flat_hash_set absl::btree roaring
+set(SILKWORM_LIGHTCLIENT_PUBLIC_LIBS silkworm_core silkworm_node mdbx-static absl::flat_hash_map absl::flat_hash_set absl::btree roaring
         nlohmann_json::nlohmann_json gRPC::grpc++ protobuf::libprotobuf Boost::container Boost::thread asio-grpc::asio-grpc
-        Snappy::snappy)
+        Snappy::snappy
+        silkworm_sentry) # Temporary TBR moving modules from sentry to node
 set(SILKWORM_LIGHTCLIENT_PRIVATE_LIBS "")
 
 if(MSVC)

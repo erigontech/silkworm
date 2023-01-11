@@ -17,14 +17,20 @@
 #pragma once
 
 #include <array>
+#include <functional>
 
 #include <evmc/evmc.hpp>
+#include <magic_enum.hpp>
 
 #include <silkworm/common/base.hpp>
 #include <silkworm/common/decoding_result.hpp>
 #include <silkworm/common/encoding_result.hpp>
+#include <silkworm/lightclient/ssz/hash_tree.hpp>
 
 namespace silkworm::ssz {
+
+//! Number of bytes per serialized length offset
+static constexpr uint32_t kBytesPerLengthOffset{sizeof(uint32_t)};
 
 void encode(uint32_t from, Bytes& to) noexcept;
 
@@ -76,6 +82,25 @@ void encode_offset(uint32_t from, Bytes& to) noexcept;
 
 DecodingResult decode_offset(ByteView from, uint32_t& to) noexcept;
 
+DecodingResult decode_dynamic_length(ByteView from, std::size_t max_length, std::size_t& length) noexcept;
+
+using DynamicReader = std::function<DecodingResult(std::size_t, ByteView)>;
+DecodingResult decode_dynamic(ByteView from, std::size_t length, const DynamicReader& read_one) noexcept;
+
 DecodingResult validate_bitlist(ByteView from, std::size_t bit_limit) noexcept;
+
+inline void success_or_throw(EncodingResult result) {
+    if (result != EncodingResult::kOk) {
+        throw std::runtime_error{"encoding error: " + std::string(magic_enum::enum_name(result))};
+    }
+}
+
+template <class T>
+[[nodiscard]] evmc::bytes32 hash_tree_root(T& object) {
+    Bytes ssz_serialization{};
+    success_or_throw(encode<T>(object, ssz_serialization));
+    HashTree hash_tree{ssz_serialization};
+    return hash_tree.root();
+}
 
 }  // namespace silkworm::ssz

@@ -94,4 +94,13 @@ const std::map<uint64_t, std::vector<std::string>> kCheckpointSyncEndpoints = {
 //! \brief Lookup a known checkpoint sync endpoint provided its chain ID
 std::optional<std::string> get_checkpoint_sync_endpoint(uint64_t chain_id) noexcept;
 
+struct BeaconChainConfig {
+};
+
+struct GenesisConfig {
+};
+
+struct NetworkConfig {
+};
+
 }  // namespace silkworm::cl

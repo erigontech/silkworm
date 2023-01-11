@@ -16,14 +16,15 @@
 
 #pragma once
 
+#include <array>
 #include <memory>
 #include <vector>
-
-#include <evmc/evmc.hpp>
 
 #include <silkworm/common/base.hpp>
 #include <silkworm/common/decoding_result.hpp>
 #include <silkworm/lightclient/ssz/ssz_codec.hpp>
+#include <silkworm/lightclient/util/hash32.hpp>
+#include <silkworm/lightclient/util/time.hpp>
 
 namespace silkworm::cl {
 
@@ -32,14 +33,16 @@ static constexpr std::size_t kCredentialsSize{32};
 static constexpr std::size_t kPublicKeySize{48};
 static constexpr std::size_t kSignatureSize{96};
 static constexpr std::size_t kLogsBloomSize{256};
+static constexpr std::size_t kSyncCommitteeBranchSize{5};
+static constexpr std::size_t kFinalityBranchSize{6};
 
 static constexpr std::size_t kProofHashCount{33};
 
-//! Eth1Data represents the relevant ETH1 Data for block building.
+//! Eth1Data represents the relevant ETH1 information for block building.
 struct Eth1Data {
-    evmc::bytes32 root;
+    Hash32 root;
     uint64_t deposit_count{0};
-    evmc::bytes32 block_hash;
+    Hash32 block_hash;
 
     static constexpr std::size_t kSize{2 * kHashLength + sizeof(uint64_t)};
 };
@@ -49,7 +52,7 @@ bool operator==(const Eth1Data& lhs, const Eth1Data& rhs);
 //! Checkpoint is used to create the initial store through checkpoint sync.
 struct Checkpoint {
     uint64_t epoch{0};
-    evmc::bytes32 root;
+    Hash32 root;
 
     static constexpr std::size_t kSize{sizeof(uint64_t) + kHashLength};
 };
@@ -60,7 +63,7 @@ bool operator==(const Checkpoint& lhs, const Checkpoint& rhs);
 struct AttestationData {
     uint64_t slot{0};
     uint64_t index{0};
-    evmc::bytes32 beacon_block_hash;
+    Hash32 beacon_block_hash;
     std::shared_ptr<Checkpoint> source;
     std::shared_ptr<Checkpoint> target;
 
@@ -69,15 +72,19 @@ struct AttestationData {
 
 bool operator==(const AttestationData& lhs, const AttestationData& rhs);
 
-//! BeaconBlockHeader contains the block body plus state root hashes and is validated in the lightclient.
+//! BeaconBlockHeader contains the block body plus state root hashes and is validated in the LC.
 struct BeaconBlockHeader {
     uint64_t slot{0};
     uint64_t proposer_index{0};
-    evmc::bytes32 parent_root;
-    evmc::bytes32 root;
-    evmc::bytes32 body_root;
+    Hash32 parent_root;
+    Hash32 root;
+    Hash32 body_root;
 
     static constexpr std::size_t kSize{3 * kHashLength + 2 * sizeof(uint64_t)};
+
+    [[nodiscard]] Hash32 hash_tree_root() {
+        return ssz::hash_tree_root(*this);
+    }
 };
 
 bool operator==(const BeaconBlockHeader& lhs, const BeaconBlockHeader& rhs);
@@ -148,7 +155,7 @@ struct DepositData {
     uint8_t withdrawal_credentials[kCredentialsSize]{};
     uint64_t amount{0};
     uint8_t signature[kSignatureSize]{};
-    evmc::bytes32 root;  // TODO(canepat) no SSZ, remove?
+    Hash32 root;  // TODO(canepat) no SSZ, remove?
 
     static constexpr std::size_t kSize{kPublicKeySize + kCredentialsSize + sizeof(uint64_t) + kSignatureSize};
 };
@@ -156,7 +163,7 @@ struct DepositData {
 bool operator==(const DepositData& lhs, const DepositData& rhs);
 
 struct Deposit {
-    evmc::bytes32 proof[kProofHashCount];
+    Hash32 proof[kProofHashCount];
     std::shared_ptr<DepositData> data;
 
     static constexpr std::size_t kSize{kProofHashCount * kHashLength + cl::DepositData::kSize};
@@ -196,19 +203,19 @@ bool operator==(const SyncAggregate& lhs, const SyncAggregate& rhs);
 
 //! Execution payload is sent to EL once validation is done to request block execution.
 struct ExecutionPayload {
-    evmc::bytes32 parent_hash;
+    Hash32 parent_hash;
     evmc::address fee_recipient;
-    evmc::bytes32 state_root;
-    evmc::bytes32 receipts_root;
+    Hash32 state_root;
+    Hash32 receipts_root;
     uint8_t logs_bloom[kLogsBloomSize];
-    evmc::bytes32 prev_randao;
-    uint64_t block_number;
-    uint64_t gas_limit;
-    uint64_t gas_used;
-    uint64_t timestamp;
+    Hash32 prev_randao;
+    uint64_t block_number{0};
+    uint64_t gas_limit{0};
+    uint64_t gas_used{0};
+    uint64_t timestamp{0};
     Bytes extra_data;
-    evmc::bytes32 base_fee_per_gas;
-    evmc::bytes32 block_hash;
+    Hash32 base_fee_per_gas;
+    Hash32 block_hash;
     std::vector<Bytes> transactions;
 
     static constexpr std::size_t kMaxExtraDataSize{32};
@@ -230,6 +237,52 @@ struct ExecutionPayload {
 };
 
 bool operator==(const ExecutionPayload& lhs, const ExecutionPayload& rhs);
+
+using PublicKey = std::array<uint8_t, kPublicKeySize>;
+
+//! Sync commitee public keys and their aggregate public keys.
+struct SyncCommittee {
+    std::vector<PublicKey> public_keys;
+    PublicKey aggregate_public_key;
+
+    [[nodiscard]] Hash32 hash_tree_root() {
+        return ssz::hash_tree_root(*this);
+    }
+};
+
+bool operator==(const SyncCommittee& lhs, const SyncCommittee& rhs);
+
+//! LightClientBootstrap is used to bootstrap the LC from checkpoint sync.
+struct LightClientBootstrap {
+    std::shared_ptr<BeaconBlockHeader> header;
+    std::shared_ptr<SyncCommittee> current_committee;
+    std::vector<Hash32> current_committee_branch;
+
+    [[nodiscard]] Hash32 hash_tree_root() const {
+        return ssz::hash_tree_root(*this);
+    }
+};
+
+bool operator==(const LightClientBootstrap& lhs, const LightClientBootstrap& rhs);
+
+//! LightClientUpdate is used to update the sync committee every 27 hours.
+struct LightClientUpdate {
+    std::shared_ptr<BeaconBlockHeader> attested_header;
+    std::shared_ptr<SyncCommittee> next_committee;
+    std::vector<Hash32> next_committee_branch;
+    std::shared_ptr<BeaconBlockHeader> finalized_header;
+    std::vector<Hash32> finality_branch;
+    std::shared_ptr<SyncAggregate> sync_aggregate;
+    uint64_t signature_slot{0};
+
+    [[nodiscard]] bool is_finality_update() const { return !finality_branch.empty(); }
+
+    [[nodiscard]] bool has_sync_finality() const {
+        return finalized_header && slot_to_period(attested_header->slot) == slot_to_period(finalized_header->slot);
+    }
+};
+
+bool operator==(const LightClientUpdate& lhs, const LightClientUpdate& rhs);
 
 }  // namespace silkworm::cl
 
@@ -324,5 +377,23 @@ EncodingResult encode(cl::ExecutionPayload& from, Bytes& to) noexcept;
 
 template <>
 DecodingResult decode(ByteView from, cl::ExecutionPayload& to) noexcept;
+
+template <>
+EncodingResult encode(cl::SyncCommittee& from, Bytes& to) noexcept;
+
+template <>
+DecodingResult decode(ByteView from, cl::SyncCommittee& to) noexcept;
+
+template <>
+EncodingResult encode(cl::LightClientBootstrap& from, Bytes& to) noexcept;
+
+template <>
+DecodingResult decode(ByteView from, cl::LightClientBootstrap& to) noexcept;
+
+template <>
+EncodingResult encode(cl::LightClientUpdate& from, Bytes& to) noexcept;
+
+template <>
+DecodingResult decode(ByteView from, cl::LightClientUpdate& to) noexcept;
 
 }  // namespace silkworm::ssz

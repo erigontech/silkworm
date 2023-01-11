@@ -85,4 +85,75 @@ TEST_CASE("evmc::bytes32 SSZ") {
     }
 }
 
+TEST_CASE("ssz::decode_dynamic_length") {
+    constexpr std::size_t kMaxLength{12};
+
+    SECTION("zero buffer") {
+        std::size_t length{0};
+        CHECK(ssz::decode_dynamic_length(Bytes{}, kMaxLength, length) == DecodingResult::kOk);
+        CHECK(length == 0);
+    }
+    SECTION("buffer too short") {
+        std::size_t length{0};
+        CHECK(ssz::decode_dynamic_length(*from_hex("0C"), kMaxLength, length) == DecodingResult::kInputTooShort);
+        CHECK(ssz::decode_dynamic_length(*from_hex("0C00"), kMaxLength, length) == DecodingResult::kInputTooShort);
+        CHECK(ssz::decode_dynamic_length(*from_hex("0C0000"), kMaxLength, length) == DecodingResult::kInputTooShort);
+    }
+    SECTION("invalid offset") {
+        std::size_t length{0};
+        CHECK(ssz::decode_dynamic_length(*from_hex("05000000"), kMaxLength, length) == DecodingResult::kUnexpectedLength);
+    }
+    SECTION("invalid offset") {
+        std::size_t length{0};
+        CHECK(ssz::decode_dynamic_length(*from_hex("32000000"), kMaxLength, length) == DecodingResult::kUnexpectedLength);
+    }
+    SECTION("OK") {
+        std::size_t length{0};
+        CHECK(ssz::decode_dynamic_length(*from_hex("0C000000"), kMaxLength, length) == DecodingResult::kOk);
+        CHECK(length == kMaxLength / kBytesPerLengthOffset);
+    }
+}
+
+TEST_CASE("ssz::decode_dynamic") {
+    const DynamicReader kEmptyReader{};
+    const DynamicReader kNopReader = [](std::size_t, ByteView) { return DecodingResult::kOk; };
+
+    SECTION("zero length") {
+        CHECK(ssz::decode_dynamic(Bytes{}, 0, kEmptyReader) == DecodingResult::kOk);
+    }
+    SECTION("buffer too short") {
+        CHECK(ssz::decode_dynamic(*from_hex("0C"), 1, kEmptyReader) == DecodingResult::kInputTooShort);
+        CHECK(ssz::decode_dynamic(*from_hex("0C00"), 1, kEmptyReader) == DecodingResult::kInputTooShort);
+        CHECK(ssz::decode_dynamic(*from_hex("0C0000"), 1, kEmptyReader) == DecodingResult::kInputTooShort);
+    }
+    SECTION("invalid end offset") {
+        CHECK(ssz::decode_dynamic(*from_hex("0C00000000000000"), 1, kEmptyReader) == DecodingResult::kUnexpectedLength);
+        CHECK(ssz::decode_dynamic(*from_hex("0C0000000D000000"), 2, kEmptyReader) == DecodingResult::kUnexpectedLength);
+        CHECK(ssz::decode_dynamic(*from_hex("0C0000000D000000FFFFFFFF"), 2, kEmptyReader) == DecodingResult::kUnexpectedLength);
+    }
+    SECTION("OK") {
+        CHECK(ssz::decode_dynamic(*from_hex("0C0000000C000000FFFFFFFF"), 2, kNopReader) == DecodingResult::kOk);
+        CHECK(ssz::decode_dynamic(*from_hex("0C0000000D000000FFFFFFFFFF"), 2, kNopReader) == DecodingResult::kOk);
+    }
+}
+
+TEST_CASE("ssz::success_or_throw") {
+    CHECK_NOTHROW(success_or_throw(EncodingResult::kOk));
+    CHECK_THROWS_AS(success_or_throw(EncodingResult::kTooManyElements), std::runtime_error);
+}
+
+struct A{
+    std::string s1;
+    std::string s2;
+};
+
+EncodingResult encode(A& /*from*/, Bytes& /*to*/) noexcept {
+    return EncodingResult::kOk;
+}
+
+TEST_CASE("ssz::hash_tree_root") {
+    A a;
+    //CHECK(ssz::hash_tree_root(a) == kEmptyHash);
+}
+
 }  // namespace silkworm::ssz

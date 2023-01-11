@@ -22,9 +22,12 @@
 #include <silkworm/common/log.hpp>
 #include <silkworm/rpc/server/server_context_pool.hpp>
 
+struct buildinfo;
+
 namespace silkworm::cl {
 
 struct Settings {
+    const buildinfo* build_info{nullptr};
     log::Settings log_settings;
     uint32_t num_contexts{1};
     rpc::WaitMode wait_mode{rpc::WaitMode::blocking};

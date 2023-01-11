@@ -33,7 +33,7 @@ awaitable<void> LocalClient::start() {
     co_await timeout();
 }
 
-awaitable<LightClientBootstrapPtr> LocalClient::bootstrap_request_v1(const Hash32& root) {
+awaitable<LightClientBootstrapPtr> LocalClient::bootstrap_request_v1(const Hash32& /*root*/) {
     RequestData request{};
     const ResponseData response = co_await local_server_->send_request(request);
 

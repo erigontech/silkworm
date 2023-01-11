@@ -28,6 +28,7 @@
 // #include "yaml-cpp/yaml.h"
 
 namespace eth {
+
 struct AttestationData : public ssz::Container {
     Slot slot;
     CommitteeIndex index;
@@ -86,4 +87,5 @@ struct Attestation : public ssz::Container {
     /*YAML::Node encode() const override;
     bool decode(const YAML::Node &node) override;*/
 };
-};  // namespace eth
+
+}  // namespace eth

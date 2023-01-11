@@ -17,7 +17,6 @@
 #include "snappy_codec.hpp"
 
 #include <catch2/catch.hpp>
-#include <snappy.h>
 
 #include <silkworm/common/util.hpp>
 

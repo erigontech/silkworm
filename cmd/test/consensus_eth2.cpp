@@ -31,8 +31,8 @@
 #include <silkworm/common/terminal.hpp>
 #include <silkworm/common/test_util.hpp>
 #include <silkworm/concurrency/thread_pool.hpp>
+#include <silkworm/lightclient/snappy/snappy_codec.hpp>
 #include <silkworm/lightclient/types/types.hpp>
-#include <silkworm/lightclient/util/snappy_codec.hpp>
 
 // See https://github.com/ethereum/consensus-specs/tests/formats/ssz_static/core.md
 

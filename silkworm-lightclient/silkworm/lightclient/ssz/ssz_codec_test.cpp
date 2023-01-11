@@ -142,18 +142,4 @@ TEST_CASE("ssz::success_or_throw") {
     CHECK_THROWS_AS(success_or_throw(EncodingResult::kTooManyElements), std::runtime_error);
 }
 
-struct A{
-    std::string s1;
-    std::string s2;
-};
-
-EncodingResult encode(A& /*from*/, Bytes& /*to*/) noexcept {
-    return EncodingResult::kOk;
-}
-
-TEST_CASE("ssz::hash_tree_root") {
-    A a;
-    //CHECK(ssz::hash_tree_root(a) == kEmptyHash);
-}
-
 }  // namespace silkworm::ssz

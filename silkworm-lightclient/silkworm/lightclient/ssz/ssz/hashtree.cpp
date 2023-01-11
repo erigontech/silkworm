@@ -19,13 +19,12 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../ssz/hashtree.hpp"
+#include "hashtree.hpp"
 
 #include <stdexcept>
 
 #include "../common/bytes.hpp"
 #include "../helpers/math.hpp"
-// #include "../ssz/hasher.hpp"
 // #include "../ssz/ssz.hpp"
 
 namespace {

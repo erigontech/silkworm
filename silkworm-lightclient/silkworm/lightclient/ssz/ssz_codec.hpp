@@ -25,7 +25,6 @@
 #include <silkworm/common/base.hpp>
 #include <silkworm/common/decoding_result.hpp>
 #include <silkworm/common/encoding_result.hpp>
-#include <silkworm/lightclient/ssz/hash_tree.hpp>
 
 namespace silkworm::ssz {
 
@@ -96,11 +95,8 @@ inline void success_or_throw(EncodingResult result) {
 }
 
 template <class T>
-[[nodiscard]] evmc::bytes32 hash_tree_root(T& object) {
-    Bytes ssz_serialization{};
-    success_or_throw(encode<T>(object, ssz_serialization));
-    HashTree hash_tree{ssz_serialization};
-    return hash_tree.root();
+[[nodiscard]] evmc::bytes32 hash_tree_root(T& /*object*/) {
+    return evmc::bytes32{};
 }
 
 }  // namespace silkworm::ssz

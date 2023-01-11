@@ -23,6 +23,8 @@
 #include <silkworm/downloader/internals/header_chain.hpp>
 #include <silkworm/downloader/messages/message.hpp>
 #include <silkworm/downloader/sentry_client.hpp>
+#include <silkworm/types/block.hpp>
+#include <variant>
 
 namespace silkworm {
 
@@ -32,8 +34,15 @@ class BlockExchange final : public ActiveComponent {
     BlockExchange(SentryClient&, const db::ROAccess&, const ChainConfig&);
     virtual ~BlockExchange() override;
 
-    void accept(std::shared_ptr<Message>); /*[[thread_safe]]*/
-    void execution_loop() final;           /*[[long_running]]*/
+    //void download_headers(parents, head, NewHeight);
+    //void download_bodies(headers);
+
+    using ResultQueue = ConcurrentQueue<std::variant<Headers, Blocks>>;
+    ResultQueue& result_queue();
+    bool in_sync();
+
+    void accept(std::shared_ptr<Message>);  /*[[thread_safe]]*/
+    void execution_loop();                  /*[[long_running]]*/
 
     const ChainConfig& chain_config() const;
     const PreverifiedHashes& preverified_hashes() const;
@@ -42,8 +51,13 @@ class BlockExchange final : public ActiveComponent {
   private:
     using MessageQueue = ConcurrentQueue<std::shared_ptr<Message>>;  // used internally to store new messages
 
+
     void receive_message(const sentry::InboundMessage& raw_message);
     void send_penalization(PeerId id, Penalty p) noexcept;
+    void request_headers();
+    void request_bodies();
+    void collect_headers();
+    void collect_bodies();
     void log_status();
 
     static constexpr seconds_t kRpcTimeout = std::chrono::seconds(1);
@@ -54,8 +68,11 @@ class BlockExchange final : public ActiveComponent {
     PreverifiedHashes preverified_hashes_;
     HeaderChain header_chain_;
     BodySequence body_sequence_;
-    MessageQueue messages_{};  // thread safe queue where to receive messages from sentry
     Network_Statistics statistics_;
+
+    ResultQueue results_{};
+    MessageQueue messages_{};  // thread safe queue where to receive messages from sentry
+    std::atomic_bool in_sync_{false};
 };
 
 }  // namespace silkworm

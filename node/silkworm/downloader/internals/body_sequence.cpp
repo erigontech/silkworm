@@ -210,7 +210,7 @@ void BodySequence::make_new_requests(GetBlockBodiesPacket66& packet, BlockNum& m
 
             std::optional<BlockBody> announced_body = announced_blocks_.remove(bn);
             if (announced_body && is_valid_body(header, *announced_body)) {
-                add_to_announcements(header, *announced_body, tx);
+                add_to_announcements(header, *announced_body);
 
                 new_request.body = std::move(*announced_body);
                 new_request.ready = true;
@@ -251,7 +251,7 @@ bool BodySequence::is_valid_body(const BlockHeader& header, const BlockBody& bod
     return true;
 }
 
-auto BodySequence::withdraw_ready_bodies() -> std::vector<std::shared_ptr<Block>> {
+Blocks BodySequence::withdraw_ready_bodies() {
     std::vector<std::shared_ptr<Block>> ready_bodies;
 
     auto curr_req = body_requests_.begin();

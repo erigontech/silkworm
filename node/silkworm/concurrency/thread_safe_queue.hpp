@@ -36,6 +36,14 @@ class ThreadSafeQueue {
         condition_variable_.notify_one();
     }
 
+    void push(T&& data) {
+        {
+            std::unique_lock lock(mutex_);
+            queue_.push_back(std::move(data));
+        }  // lock.unlock();
+        condition_variable_.notify_one();
+    }
+
     bool empty() const {
         std::unique_lock lock(mutex_);
         return queue_.empty();

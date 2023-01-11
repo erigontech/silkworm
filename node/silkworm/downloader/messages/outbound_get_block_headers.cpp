@@ -24,35 +24,37 @@
 
 namespace silkworm {
 
-OutboundGetBlockHeaders::OutboundGetBlockHeaders() {}
+OutboundGetBlockHeaders::OutboundGetBlockHeaders(size_t mr, uint64_t ap): max_reqs_{mr}, active_peers_{ap} {}
 
-int OutboundGetBlockHeaders::sent_request() const {
-    return sent_reqs_;
-}
+size_t OutboundGetBlockHeaders::sent_requests() const { return sent_reqs_; }
+size_t OutboundGetBlockHeaders::nack_requests() const { return nack_reqs_; }
 
 void OutboundGetBlockHeaders::execute(db::ROAccess, HeaderChain& hc, BodySequence&, SentryClient& sentry) {
     using namespace std::literals::chrono_literals;
 
     time_point_t now = std::chrono::system_clock::now();
     seconds_t timeout = 5s;
-    int max_requests = 64;  // limit the number of requests sent per round
 
     // anchor extension
     do {
+        if (!hc.has_headers_to_request(now, active_peers_)) break;
+
         auto [packet, penalizations] = hc.request_more_headers(now, timeout);
 
         if (packet == std::nullopt) break;
 
         auto send_outcome = send_packet(sentry, *packet, timeout);
 
-        packets_ += "o=" + std::to_string(std::get<BlockNum>(packet->request.origin)) + ",";  // todo: log level?
-        SILK_TRACE << "Headers request sent (" << *packet << "), received by " << send_outcome.peers_size()
-                   << " peer(s)";
+        packets_ += "o=" + std::to_string(std::get<BlockNum>(packet->request.origin)) + ",";
+        SILK_TRACE << "Headers request sent (" << *packet << "), received by " << send_outcome.peers_size() << " peer(s)";
 
         if (send_outcome.peers_size() == 0) {
             hc.request_nack(*packet);
+            ++nack_reqs_;
             break;
         }
+
+        requested_headers_ += packet->request.amount;
         ++sent_reqs_;
 
         for (auto& penalization : penalizations) {
@@ -60,8 +62,7 @@ void OutboundGetBlockHeaders::execute(db::ROAccess, HeaderChain& hc, BodySequenc
             send_penalization(sentry, penalization, 1s);
         }
 
-        --max_requests;
-    } while (max_requests > 0);  // && packet != std::nullopt && receiving_peers != nullptr
+    } while (sent_reqs_ < max_reqs_);  // && packet != std::nullopt && receiving_peers != nullptr
 
     // anchor collection
     auto packet = hc.request_skeleton();
@@ -69,9 +70,9 @@ void OutboundGetBlockHeaders::execute(db::ROAccess, HeaderChain& hc, BodySequenc
     if (packet != std::nullopt) {
         auto send_outcome = send_packet(sentry, *packet, timeout);
         sent_reqs_++;
-        packets_ += "SK o=" + std::to_string(std::get<BlockNum>(packet->request.origin)) + ",";  // todo: log level?
-        SILK_TRACE << "Headers skeleton request sent (" << *packet << "), received by " << send_outcome.peers_size()
-                   << " peer(s)";
+        requested_headers_ += packet->request.amount;
+        packets_ += "SK o=" + std::to_string(std::get<BlockNum>(packet->request.origin)) + ",";
+        SILK_TRACE << "Headers skeleton request sent (" << *packet << "), received by " << send_outcome.peers_size() << " peer(s)";
     }
 
     if (!packets_.empty()) {

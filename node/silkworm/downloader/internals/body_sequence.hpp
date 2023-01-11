@@ -28,6 +28,8 @@
 
 namespace silkworm {
 
+using Blocks = std::vector<std::shared_ptr<Block>>;
+
 /** BodySequence represents the sequence of body that we are downloading.
  *  It has these responsibilities:
  *    - decide what bodies request (to peers)
@@ -57,7 +59,7 @@ class BodySequence {
     Penalty accept_new_block(const Block&, const PeerId&);
 
     //! core functionalities: returns bodies that are ready to be persisted
-    auto withdraw_ready_bodies() -> std::vector<std::shared_ptr<Block>>;
+    Blocks withdraw_ready_bodies();
 
     //! minor functionalities
     std::list<NewBlockPacket>& announces_to_do();

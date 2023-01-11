@@ -23,6 +23,7 @@
 #include <silkworm/downloader/internals/preverified_hashes.hpp>
 #include <silkworm/downloader/messages/inbound_message.hpp>
 #include <silkworm/downloader/messages/outbound_get_block_bodies.hpp>
+#include <silkworm/downloader/messages/outbound_get_block_headers.hpp>
 #include <silkworm/downloader/rpc/penalize_peer.hpp>
 
 namespace silkworm {
@@ -47,6 +48,8 @@ const ChainConfig& BlockExchange::chain_config() const { return chain_config_; }
 
 const PreverifiedHashes& BlockExchange::preverified_hashes() const { return preverified_hashes_; }
 SentryClient& BlockExchange::sentry() const { return sentry_; }
+BlockExchange::ResultQueue& BlockExchange::result_queue() { return results_; }
+bool BlockExchange::in_sync() { return in_sync_; }
 
 void BlockExchange::accept(std::shared_ptr<Message> message) { messages_.push(message); }
 
@@ -87,34 +90,20 @@ void BlockExchange::execution_loop() {
             bool present = messages_.timed_wait_and_pop(message, 1000ms);
             if (!present) continue;  // timeout, needed to check exiting_
 
-            // process the message (command pattern)
+            // process the message (replay to remote peers)
             if (present) {
                 message->execute(db_access_, header_chain_, body_sequence_, sentry_);
                 statistics_.processed_msgs++;
             }
 
-            // request headers & bodies
-            constexpr auto only_one_request = 1;
-            auto outstanding_requests = BodySequence::kPerPeerMaxOutstandingRequests * sentry_.active_peers();
+            // request headers & bodies from remote peers
+            request_headers();
+            request_bodies();
 
-            if (messages_.size() < outstanding_requests && body_sequence_.has_bodies_to_request(now, sentry_.active_peers())) {
-
-                auto request_message = std::make_shared<OutboundGetBlockBodies>(only_one_request);
-                request_message->execute(db_access_, header_chain_, body_sequence_, sentry_);
-
-                statistics_.tried_msgs += only_one_request;
-                statistics_.sent_msgs += request_message->sent_requests();
-                statistics_.nack_msgs += request_message->nack_requests();
-            }
-            if (messages_.size() < outstanding_requests && header_chain_.has_headers_to_request(now, sentry_.active_peers())) {
-
-                auto request_message = std::make_shared<OutboundGetBlockHeaders>(only_one_request);
-                request_message->execute(db_access_, header_chain_, body_sequence_, sentry_);
-
-                statistics_.tried_msgs += only_one_request;
-                statistics_.sent_msgs += request_message->sent_requests();
-                statistics_.nack_msgs += request_message->nack_requests();
-            }
+            // collect downloaded headers & bodies
+            collect_headers();
+            collect_bodies();
+            in_sync_ = header_chain_.in_sync();
 
             // log status
             auto now = system_clock::now();
@@ -131,6 +120,44 @@ void BlockExchange::execution_loop() {
     }
 
     stop();
+}
+
+void BlockExchange::request_headers() {
+    constexpr auto only_one_request = 1;
+    if (messages_.size() < HeaderChain::kPerPeerMaxOutstandingRequests * sentry_.active_peers()) {
+
+        auto request_message = std::make_shared<OutboundGetBlockHeaders>(only_one_request, sentry_.active_peers());
+        request_message->execute(db_access_, header_chain_, body_sequence_, sentry_);
+
+        statistics_.tried_msgs += only_one_request;
+        statistics_.sent_msgs += request_message->sent_requests();
+        statistics_.nack_msgs += request_message->nack_requests();
+    }
+}
+
+void BlockExchange::request_bodies() {
+    constexpr auto only_one_request = 1;
+    if (messages_.size() < BodySequence::kPerPeerMaxOutstandingRequests * sentry_.active_peers()) {
+
+        auto request_message = std::make_shared<OutboundGetBlockBodies>(only_one_request, sentry_.active_peers());
+        request_message->execute(db_access_, header_chain_, body_sequence_, sentry_);
+
+        statistics_.tried_msgs += only_one_request;
+        statistics_.sent_msgs += request_message->sent_requests();
+        statistics_.nack_msgs += request_message->nack_requests();
+    }
+}
+
+void BlockExchange::collect_headers() {
+    auto just_downloaded = header_chain_.withdraw_stable_headers();
+    if (just_downloaded.empty()) return;
+    results_.push(std::move(just_downloaded));
+}
+
+void BlockExchange::collect_bodies() {
+    auto just_downloaded = body_sequence_.withdraw_ready_bodies();
+    if (just_downloaded.empty()) return;
+    results_.push(std::move(just_downloaded));
 }
 
 void BlockExchange::log_status() {

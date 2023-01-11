@@ -24,18 +24,20 @@
 
 namespace silkworm {
 
-OutboundGetBlockBodies::OutboundGetBlockBodies() {}
+OutboundGetBlockBodies::OutboundGetBlockBodies(size_t mr, uint64_t ap): max_reqs_{mr}, active_peers_{ap} {}
 
-int OutboundGetBlockBodies::sent_request() const { return sent_reqs_; }
+size_t OutboundGetBlockBodies::sent_requests() const { return sent_reqs_; }
+size_t OutboundGetBlockBodies::nack_requests() const { return nack_reqs_; }
 
 void OutboundGetBlockBodies::execute(db::ROAccess, HeaderChain&, BodySequence& bs, SentryClient& sentry) {
     using namespace std::literals::chrono_literals;
 
     seconds_t timeout = 1s;
-    int max_requests = 64;  // limit the number of requests sent per round
 
     do {
         time_point_t now = std::chrono::system_clock::now();
+
+        if (!bs.has_bodies_to_request(now, active_peers_)) break;
 
         auto [packet, penalizations, min_block] = bs.request_more_bodies(now, sentry.active_peers());
 
@@ -47,6 +49,7 @@ void OutboundGetBlockBodies::execute(db::ROAccess, HeaderChain&, BodySequence& b
 
         if (send_outcome.peers_size() == 0) {
             bs.request_nack(packet);
+            ++nack_reqs_;
             break;
         }
 
@@ -58,8 +61,7 @@ void OutboundGetBlockBodies::execute(db::ROAccess, HeaderChain&, BodySequence& b
             send_penalization(sentry, penalization, 1s);
         }
 
-        --max_requests;
-    } while (max_requests > 0);  // && packet != std::nullopt && receiving_peers != nullptr
+    } while (sent_reqs_ < max_reqs_);  // && packet != std::nullopt && receiving_peers != nullptr
 }
 
 sentry::SentPeers OutboundGetBlockBodies::send_packet(SentryClient& sentry, const GetBlockBodiesPacket66& packet_,

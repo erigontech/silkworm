@@ -26,6 +26,44 @@ SyncEngine::SyncEngine(BlockExchange& be, stagedsync::ExecutionEngine& ee)
 auto SyncEngine::forward_and_insert_blocks(HeaderSync& headers_stage, BodySync& bodies_stage) -> SyncTarget::NewHeight {
     //using NewHeight = SyncTarget::NewHeight;
 
+    Queue<Header> downloaded_headers;
+    Queue<Body> downloaded_bodies;
+
+    block_exchange_.download_headers(current_header_head, tip_of_the_chain, downloaded_headers);
+
+    while (!is_stopping() && not_in_sync) {
+
+        while (!downloaded_headers.empty()) {
+            as_range::for_each(headers, [&chain_fork_view](const auto& header) {
+                chain_fork_view.add(*header);
+            });
+            exec_engine_.insert_headers(headers);
+            current_height_ = chain_fork_view.head_height();
+
+            block_exchange_.download_bodies(downloaded_headers);
+
+            send_new_header_announcements();
+        }
+
+        while (!downloaded_bodies.empty()) {
+            exec_engine_.insert_bodies(bodies);
+
+            // compute new head
+            auto highest_block = std::max_element(bodies.begin(), bodies.end(), [](shared_ptr<Block>& a, shared_ptr<Block>& b) {
+                return a->header.number < b->header.number;
+            });
+            if (highest_block->get()->header.number > current_head.number) {
+                current_head = {.number = highest_block->get()->header.number, .hash = highest_block->get()->header.hash()};
+            }
+
+            send_new_block_announcements();
+        }
+
+        wait(downloaded_headers || downloaded_bodies);
+    };
+
+
+
     auto as_far_as_possible = std::nullopt;
 
     auto new_height = headers_stage.forward(as_far_as_possible);

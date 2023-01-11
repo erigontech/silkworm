@@ -16,32 +16,32 @@
 
 #pragma once
 
-#include <p2psentry/sentry.grpc.pb.h>
+#include <memory>
 
-#include <silkworm/rpc/server/server.hpp>
 #include <silkworm/rpc/server/server_config.hpp>
 
-#include "../settings.hpp"
-#include "service.hpp"
+#include "service_state.hpp"
 
 namespace silkworm::sentry::rpc {
 
-class Server final : public silkworm::rpc::Server {
+class ServerImpl;
+
+class Server final {
   public:
     explicit Server(
         const silkworm::rpc::ServerConfig& config,
         ServiceState state);
+    ~Server();
 
     Server(const Server&) = delete;
     Server& operator=(const Server&) = delete;
 
+    void build_and_start();
+    void join();
+    void shutdown();
+
   private:
-    void register_async_services(grpc::ServerBuilder& builder) override;
-    void register_request_calls() override;
-
-    ::sentry::Sentry::AsyncService async_service_;
-
-    std::vector<std::unique_ptr<Service>> services_;
+    std::unique_ptr<ServerImpl> p_impl_;
 };
 
 }  // namespace silkworm::sentry::rpc

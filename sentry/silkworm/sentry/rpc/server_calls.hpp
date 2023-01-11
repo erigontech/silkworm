@@ -14,8 +14,6 @@
    limitations under the License.
 */
 
-#include "service.hpp"
-
 #include <algorithm>
 #include <optional>
 #include <vector>
@@ -28,8 +26,10 @@
 #include <silkworm/rpc/interfaces/types.hpp>
 #include <silkworm/rpc/server/call.hpp>
 #include <silkworm/sentry/eth/fork_id.hpp>
-#include <silkworm/sentry/rpc/interfaces/message.hpp>
-#include <silkworm/sentry/rpc/interfaces/peer_id.hpp>
+
+#include "interfaces/message.hpp"
+#include "interfaces/peer_id.hpp"
+#include "service_state.hpp"
 
 namespace silkworm::sentry::rpc {
 
@@ -234,59 +234,5 @@ class PeerEventsCall : public sw_rpc::server::ServerStreamingCall<proto::PeerEve
         co_await agrpc::finish(responder_, grpc::Status{grpc::StatusCode::UNIMPLEMENTED, "PeerEventsCall"});
     }
 };
-
-class ServiceImpl final {
-  public:
-    explicit ServiceImpl(ServiceState state) : state_(state) {}
-
-    void register_request_calls(
-        agrpc::GrpcContext* grpc_context,
-        ::sentry::Sentry::AsyncService* async_service) {
-        request_repeatedly<SetStatusCall>(&AsyncService::RequestSetStatus, grpc_context, async_service);
-        request_repeatedly<HandshakeCall>(&AsyncService::RequestHandShake, grpc_context, async_service);
-        request_repeatedly<NodeInfoCall>(&AsyncService::RequestNodeInfo, grpc_context, async_service);
-
-        request_repeatedly<SendMessageByIdCall>(&AsyncService::RequestSendMessageById, grpc_context, async_service);
-        request_repeatedly<SendMessageToRandomPeersCall>(&AsyncService::RequestSendMessageToRandomPeers, grpc_context, async_service);
-        request_repeatedly<SendMessageToAllCall>(&AsyncService::RequestSendMessageToAll, grpc_context, async_service);
-        request_repeatedly<SendMessageByMinBlockCall>(&AsyncService::RequestSendMessageByMinBlock, grpc_context, async_service);
-        request_repeatedly<PeerMinBlockCall>(&AsyncService::RequestPeerMinBlock, grpc_context, async_service);
-        request_repeatedly<MessagesCall>(&AsyncService::RequestMessages, grpc_context, async_service);
-
-        request_repeatedly<PeersCall>(&AsyncService::RequestPeers, grpc_context, async_service);
-        request_repeatedly<PeerCountCall>(&AsyncService::RequestPeerCount, grpc_context, async_service);
-        request_repeatedly<PeerByIdCall>(&AsyncService::RequestPeerById, grpc_context, async_service);
-        request_repeatedly<PenalizePeerCall>(&AsyncService::RequestPenalizePeer, grpc_context, async_service);
-        request_repeatedly<PeerEventsCall>(&AsyncService::RequestPeerEvents, grpc_context, async_service);
-    }
-
-  private:
-    ServiceState state_;
-
-    // Register one requested call repeatedly for each RPC: asio-grpc will take care of re-registration on any incoming call
-    template <class RequestHandler, typename RPC>
-    void request_repeatedly(
-        RPC rpc,
-        agrpc::GrpcContext* grpc_context,
-        ::sentry::Sentry::AsyncService* async_service) {
-        const auto& state = state_;
-        sw_rpc::request_repeatedly(*grpc_context, async_service, rpc, [state](auto&&... args) -> boost::asio::awaitable<void> {
-            co_await RequestHandler{std::forward<decltype(args)>(args)...}(state);
-        });
-    }
-};
-
-Service::Service(ServiceState state)
-    : p_impl_(std::make_unique<ServiceImpl>(state)) {}
-
-Service::~Service() {
-    log::Trace() << "silkworm::sentry::Service::~Service";
-}
-
-void Service::register_request_calls(
-    agrpc::GrpcContext* grpc_context,
-    ::sentry::Sentry::AsyncService* async_service) {
-    p_impl_->register_request_calls(grpc_context, async_service);
-}
 
 }  // namespace silkworm::sentry::rpc

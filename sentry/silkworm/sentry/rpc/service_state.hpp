@@ -20,11 +20,6 @@
 #include <tuple>
 #include <vector>
 
-#include <silkworm/concurrency/coroutine.hpp>
-
-#include <agrpc/grpc_context.hpp>
-#include <p2psentry/sentry.grpc.pb.h>
-
 #include <silkworm/sentry/common/channel.hpp>
 #include <silkworm/sentry/common/ecc_public_key.hpp>
 #include <silkworm/sentry/common/message.hpp>
@@ -41,22 +36,6 @@ struct ServiceState {
 
     using PeerKeys = std::vector<common::EccPublicKey>;
     common::Channel<std::tuple<common::Message, common::PeerFilter, std::shared_ptr<common::Channel<PeerKeys>>>>& send_message_channel;
-};
-
-class Service final {
-  public:
-    explicit Service(ServiceState state);
-    ~Service();
-
-    Service(const Service&) = delete;
-    Service& operator=(const Service&) = delete;
-
-    void register_request_calls(
-        agrpc::GrpcContext* grpc_context,
-        ::sentry::Sentry::AsyncService* async_service);
-
-  private:
-    std::unique_ptr<ServiceImpl> p_impl_;
 };
 
 }  // namespace silkworm::sentry::rpc

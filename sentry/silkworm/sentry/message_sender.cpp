@@ -35,9 +35,10 @@ boost::asio::awaitable<void> MessageSender::start(rlpx::Server& server, rlpx::Cl
             return boost::asio::awaitable<void>{};
         };
 
-        if (call.peer_filter().single_peer && !call.peer_filter().peer_public_key) {
-            co_await server.enumerate_random_peer(sender);
-            co_await client.enumerate_random_peer(sender);
+        if (call.peer_filter().max_peers && !call.peer_filter().peer_public_key) {
+            size_t max_peers = call.peer_filter().max_peers.value();
+            co_await server.enumerate_random_peers(max_peers, sender);
+            co_await client.enumerate_random_peers(max_peers, sender);
         } else {
             co_await server.enumerate_peers(sender);
             co_await client.enumerate_peers(sender);

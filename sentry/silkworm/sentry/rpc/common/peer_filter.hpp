@@ -23,8 +23,16 @@
 namespace silkworm::sentry::rpc::common {
 
 struct PeerFilter {
-    bool single_peer{false};
+    std::optional<size_t> max_peers;
     std::optional<sentry::common::EccPublicKey> peer_public_key;
+
+    static PeerFilter with_max_peers(size_t max_peers) {
+        return {{max_peers}, std::nullopt};
+    }
+
+    static PeerFilter with_peer_public_key(sentry::common::EccPublicKey public_key) {
+        return {std::nullopt, {std::move(public_key)}};
+    }
 };
 
 }  // namespace silkworm::sentry::rpc::common

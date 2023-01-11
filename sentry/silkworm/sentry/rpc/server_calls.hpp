@@ -107,13 +107,38 @@ class NodeInfoCall : public sw_rpc::server::UnaryCall<protobuf::Empty, proto_typ
     }
 };
 
+awaitable<proto::SentPeers> do_send_message_call(
+    const ServiceState& state,
+    const proto::OutboundMessageData& request,
+    common::PeerFilter peer_filter) {
+    auto message = interfaces::message_from_outbound_data(request);
+
+    auto executor = co_await boost::asio::this_coro::executor;
+    common::SendMessageCall call{std::move(message), peer_filter, executor};
+
+    co_await state.send_message_channel.send(call);
+
+    auto sent_peer_keys = co_await call.result();
+
+    proto::SentPeers reply;
+    for (auto& key : sent_peer_keys) {
+        reply.add_peers()->CopyFrom(interfaces::peer_id_from_public_key(key));
+    }
+    co_return reply;
+}
+
 // rpc SendMessageById(SendMessageByIdRequest) returns (SentPeers);
 class SendMessageByIdCall : public sw_rpc::server::UnaryCall<proto::SendMessageByIdRequest, proto::SentPeers> {
   public:
     using Base::UnaryCall;
 
-    awaitable<void> operator()(const ServiceState& /*state*/) {
-        co_await agrpc::finish_with_error(responder_, grpc::Status{grpc::StatusCode::UNIMPLEMENTED, "SendMessageByIdCall"});
+    awaitable<void> operator()(const ServiceState& state) {
+        auto peer_public_key = interfaces::peer_public_key_from_id(request_.peer_id());
+        proto::SentPeers reply = co_await do_send_message_call(
+            state,
+            request_.data(),
+            common::PeerFilter::with_peer_public_key(peer_public_key));
+        co_await agrpc::finish(responder_, reply, grpc::Status::OK);
     }
 };
 
@@ -122,8 +147,12 @@ class SendMessageToRandomPeersCall : public sw_rpc::server::UnaryCall<proto::Sen
   public:
     using Base::UnaryCall;
 
-    awaitable<void> operator()(const ServiceState& /*state*/) {
-        co_await agrpc::finish_with_error(responder_, grpc::Status{grpc::StatusCode::UNIMPLEMENTED, "SendMessageToRandomPeersCall"});
+    awaitable<void> operator()(const ServiceState& state) {
+        proto::SentPeers reply = co_await do_send_message_call(
+            state,
+            request_.data(),
+            common::PeerFilter::with_max_peers(request_.max_peers()));
+        co_await agrpc::finish(responder_, reply, grpc::Status::OK);
     }
 };
 
@@ -133,21 +162,7 @@ class SendMessageToAllCall : public sw_rpc::server::UnaryCall<proto::OutboundMes
     using Base::UnaryCall;
 
     awaitable<void> operator()(const ServiceState& state) {
-        const proto::OutboundMessageData& request = request_;
-        auto message = interfaces::message_from_outbound_data(request);
-
-        auto executor = co_await boost::asio::this_coro::executor;
-        common::SendMessageCall call{std::move(message), {}, executor};
-
-        co_await state.send_message_channel.send(call);
-
-        auto sent_peer_keys = co_await call.result();
-
-        proto::SentPeers reply;
-        for (auto& key : sent_peer_keys) {
-            reply.add_peers()->CopyFrom(interfaces::peer_id_from_public_key(key));
-        }
-
+        proto::SentPeers reply = co_await do_send_message_call(state, request_, common::PeerFilter{});
         co_await agrpc::finish(responder_, reply, grpc::Status::OK);
     }
 };

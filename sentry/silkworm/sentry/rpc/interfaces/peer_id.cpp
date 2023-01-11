@@ -26,4 +26,8 @@ proto_types::H512 peer_id_from_public_key(const sentry::common::EccPublicKey& ke
     return *to_H512(key.serialized());
 }
 
+sentry::common::EccPublicKey peer_public_key_from_id(const ::types::H512& peer_id) {
+    return sentry::common::EccPublicKey::deserialize(bytes_from_H512(peer_id));
+}
+
 }  // namespace silkworm::sentry::rpc::interfaces

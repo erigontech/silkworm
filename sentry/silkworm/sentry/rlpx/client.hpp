@@ -53,7 +53,7 @@ class Client {
         std::function<std::unique_ptr<Protocol>()> protocol_factory);
 
     boost::asio::awaitable<void> enumerate_peers(std::function<boost::asio::awaitable<void>(Peer&)> callback);
-    boost::asio::awaitable<void> enumerate_random_peer(std::function<boost::asio::awaitable<void>(Peer&)> callback);
+    boost::asio::awaitable<void> enumerate_random_peers(size_t max_count, std::function<boost::asio::awaitable<void>(Peer&)> callback);
 
   private:
     boost::asio::awaitable<void> start_in_strand(
@@ -64,7 +64,7 @@ class Client {
         std::function<std::unique_ptr<Protocol>()> protocol_factory);
 
     boost::asio::awaitable<void> enumerate_peers_in_strand(std::function<boost::asio::awaitable<void>(Peer&)> callback);
-    boost::asio::awaitable<void> enumerate_random_peer_in_strand(std::function<boost::asio::awaitable<void>(Peer&)> callback);
+    boost::asio::awaitable<void> enumerate_random_peers_in_strand(size_t max_count, std::function<boost::asio::awaitable<void>(Peer&)> callback);
 
     boost::asio::strand<boost::asio::io_context::executor_type> strand_;
     const std::vector<common::EnodeUrl> peer_urls_;

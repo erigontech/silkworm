@@ -83,25 +83,19 @@ awaitable<void> Client::enumerate_peers(std::function<awaitable<void>(Peer&)> ca
     co_await co_spawn(strand_, enumerate_peers_in_strand(callback), use_awaitable);
 }
 
-awaitable<void> Client::enumerate_random_peer(std::function<awaitable<void>(Peer&)> callback) {
-    co_await co_spawn(strand_, enumerate_random_peer_in_strand(callback), use_awaitable);
+awaitable<void> Client::enumerate_random_peers(size_t max_count, std::function<awaitable<void>(Peer&)> callback) {
+    co_await co_spawn(strand_, enumerate_random_peers_in_strand(max_count, callback), use_awaitable);
 }
 
 awaitable<void> Client::enumerate_peers_in_strand(std::function<awaitable<void>(Peer&)> callback) {
-    // TODO: test if this is needed
-    [[maybe_unused]] auto executor = co_await this_coro::executor;
     for (auto& peer : peers_) {
         co_await callback(*peer);
     }
 }
 
-awaitable<void> Client::enumerate_random_peer_in_strand(std::function<awaitable<void>(Peer&)> callback) {
-    // TODO: test if this is needed
-    [[maybe_unused]] auto executor = co_await this_coro::executor;
-    auto item_opt = common::random_list_item(peers_);
-    if (item_opt) {
-        auto& peer = **item_opt.value();
-        co_await callback(peer);
+awaitable<void> Client::enumerate_random_peers_in_strand(size_t max_count, std::function<awaitable<void>(Peer&)> callback) {
+    for (auto peer_ptr : common::random_list_items(peers_, max_count)) {
+        co_await callback(**peer_ptr);
     }
 }
 

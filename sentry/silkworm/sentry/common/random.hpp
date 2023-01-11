@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <algorithm>
 #include <iterator>
 #include <list>
 #include <optional>
@@ -28,14 +29,40 @@ namespace silkworm::sentry::common {
 Bytes random_bytes(Bytes::size_type size);
 
 template <typename T>
-std::optional<typename std::list<T>::iterator> random_list_item(std::list<T>& l) {
-    if (l.empty())
-        return std::nullopt;
+std::list<T*> random_list_items(std::list<T>& l, size_t max_count) {
+    // an output iterator similar to std::back_insert_iterator,
+    // but it inserts pointers to the provided values instead of copying them to the target container
+    class BackInsertPtrIterator {
+      public:
+        [[maybe_unused]] typedef std::output_iterator_tag iterator_category;
+        [[maybe_unused]] typedef void value_type;
+        [[maybe_unused]] typedef void difference_type;
+        [[maybe_unused]] typedef void pointer;
+        [[maybe_unused]] typedef void reference;
 
+        explicit BackInsertPtrIterator(std::list<T*>& container) : container_(container) {}
+
+        BackInsertPtrIterator& operator=(T& value) {
+            container_.push_back(&value);
+            return *this;
+        }
+        BackInsertPtrIterator& operator=(T&& value) {
+            container_.push_back(&value);
+            return *this;
+        }
+
+        BackInsertPtrIterator& operator*() { return *this; }
+        BackInsertPtrIterator& operator++() { return *this; }
+        BackInsertPtrIterator operator++(int) { return *this; }
+
+      private:
+        std::list<T*>& container_;
+    };
+
+    std::list<T*> out;
     std::default_random_engine random_engine{std::random_device{}()};
-    std::uniform_int_distribution<size_t> random_distribution{0, l.size() - 1};
-    size_t offset = random_distribution(random_engine);
-    return std::optional{std::next(l.begin(), static_cast<typename std::list<T>::iterator::difference_type>(offset))};
+    std::sample(l.begin(), l.end(), BackInsertPtrIterator(out), max_count, random_engine);
+    return out;
 }
 
 }  // namespace silkworm::sentry::common

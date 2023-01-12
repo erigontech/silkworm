@@ -34,15 +34,22 @@ class BlockExchange final : public ActiveComponent {
     BlockExchange(SentryClient&, const db::ROAccess&, const ChainConfig&);
     virtual ~BlockExchange() override;
 
-    //void download_headers(parents, head, NewHeight);
-    //void download_bodies(headers);
+    void initial_state(const std::vector<BlockHeader>& last_headers);
+
+    static constexpr std::optional<BlockNum> kTipOfTheChain{std::nullopt};
+
+    void download_headers(BlockNum current_height, std::optional<BlockNum> target_height);
+    void download_bodies(const Headers& headers);
+
+    void stop_header_downloading();
+    void stop_body_downloading();
 
     using ResultQueue = ConcurrentQueue<std::variant<Headers, Blocks>>;
     ResultQueue& result_queue();
     bool in_sync();
 
     void accept(std::shared_ptr<Message>);  /*[[thread_safe]]*/
-    void execution_loop();                  /*[[long_running]]*/
+    void execution_loop() override;         /*[[long_running]]*/
 
     const ChainConfig& chain_config() const;
     const PreverifiedHashes& preverified_hashes() const;
@@ -62,7 +69,7 @@ class BlockExchange final : public ActiveComponent {
 
     static constexpr seconds_t kRpcTimeout = std::chrono::seconds(1);
 
-    db::ROAccess db_access_;
+    db::ROAccess db_access_;  // only to reply remote peer's requests
     SentryClient& sentry_;
     const ChainConfig& chain_config_;
     PreverifiedHashes preverified_hashes_;
@@ -73,6 +80,8 @@ class BlockExchange final : public ActiveComponent {
     ResultQueue results_{};
     MessageQueue messages_{};  // thread safe queue where to receive messages from sentry
     std::atomic_bool in_sync_{false};
+    std::atomic_bool header_downloading_active_{false};
+    std::atomic_bool body_downloading_active_{false};
 };
 
 }  // namespace silkworm

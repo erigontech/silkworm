@@ -61,11 +61,10 @@ class HeaderChain {
     using ConsensusEnginePtr = std::unique_ptr<consensus::IEngine>;
     explicit HeaderChain(ConsensusEnginePtr);  // alternative constructor
 
-    // load initial state from db - this must be done at creation time
-    void recover_initial_state(db::ROTxn&);
-
     // sync current state - this must be done at header forward
-    void sync_current_state(BlockNum highest_in_db);
+    void initial_state(const std::vector<BlockHeader>& last_headers);
+    void current_state(BlockNum highest_in_db);
+    //void downloading_target(BlockNum height) { downloading_target_ = height; }
 
     // status
     bool in_sync() const;
@@ -77,15 +76,17 @@ class HeaderChain {
     size_t anchors() const;
     const Download_Statistics& statistics() const;
 
-    // core functionalities: anchor collection
-    // to collect anchor more quickly we do a skeleton request i.e. a request of many headers equally distributed in a
-    // given range of block chain that we want to fill
-    auto request_skeleton() -> std::optional<GetBlockHeadersPacket66>;
+    // core functionalities: requesting new headers - NEW API -
+    // auto request_more_headers(time_point_t tp, seconds_t timeout)
+    //    -> std::tuple<std::vector<GetBlockHeadersPacket66>, std::vector<PeerPenalization>>;
 
-    // core functionalities: anchor extension
-    // to complete a range of block chain we need to do a request of headers to extend up or down an anchor or a segment
-    auto request_more_headers(time_point_t tp, seconds_t timeout)
+    // anchor collection: to collect headers more quickly we request headers in a wide range, as seed to grow later
+    auto anchor_skeleton_request() -> std::optional<GetBlockHeadersPacket66>;
+
+    // anchor extension: to extend an anchor we do a request of many headers that are children of the anchor
+    auto anchor_extension_request(time_point_t tp, seconds_t timeout)
         -> std::tuple<std::optional<GetBlockHeadersPacket66>, std::vector<PeerPenalization>>;
+
     // also we need to know if the request issued was not delivered
     void request_nack(const GetBlockHeadersPacket66& packet);
 
@@ -104,6 +105,8 @@ class HeaderChain {
     void add_bad_headers(const std::set<Hash>& bads);
     void set_preverified_hashes(const PreverifiedHashes*);
 
+    static constexpr size_t kPerPeerMaxOutstandingRequests = 4;
+
   protected:
     static constexpr BlockNum max_len = 192;
     static constexpr BlockNum stride = 8 * max_len;
@@ -112,6 +115,7 @@ class HeaderChain {
     static constexpr size_t persistent_link_limit = link_total / 16;
     static constexpr size_t link_limit = link_total - persistent_link_limit;
 
+    // process a segment of headers
     auto process_segment(const Segment&, bool is_a_new_block, const PeerId&) -> RequestMoreHeaders;
 
     using Start = size_t;

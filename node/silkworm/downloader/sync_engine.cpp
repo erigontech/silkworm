@@ -16,37 +16,47 @@ limitations under the License.
 
 #include "sync_engine.hpp"
 
+#include <silkworm/common/as_range.hpp>
+
 namespace silkworm::chainsync {
 
 SyncEngine::SyncEngine(BlockExchange& be, stagedsync::ExecutionEngine& ee)
     : block_exchange_{be},
-      exec_engine_{ee} {
+      exec_engine_{ee},
+      chain_fork_view_{ee.get_headers_head()} {
+
+    block_exchange_.initial_state(exec_engine_.get_last_headers(65536));
 }
 
-auto SyncEngine::forward_and_insert_blocks(HeaderSync& headers_stage, BodySync& bodies_stage) -> SyncTarget::NewHeight {
-    //using NewHeight = SyncTarget::NewHeight;
+auto SyncEngine::forward_and_insert_blocks() -> NewHeight {
+    using ResultQueue = BlockExchange::ResultQueue;
 
-    Queue<Header> downloaded_headers;
-    Queue<Body> downloaded_bodies;
+    ResultQueue& downloading = block_exchange_.result_queue();
 
-    block_exchange_.download_headers(current_header_head, tip_of_the_chain, downloaded_headers);
+    auto current_header_head = exec_engine_.get_headers_head();
+    block_exchange_.download_headers(current_header_head.number, BlockExchange::kTipOfTheChain);
 
-    while (!is_stopping() && not_in_sync) {
+    while (!is_stopping() && !block_exchange_.in_sync()) {
+        std::variant<Headers, Blocks> result;
+        bool present = downloading.timed_wait_and_pop(result, 100ms);
+        if (!present) continue;
 
-        while (!downloaded_headers.empty()) {
-            as_range::for_each(headers, [&chain_fork_view](const auto& header) {
-                chain_fork_view.add(*header);
+        if (std::holds_alternative<Headers>(result)) {
+            auto& headers = std::get<Headers>(result);
+            as_range::for_each(headers, [this](const auto& header) {
+                chain_fork_view_.add(*header);
             });
             exec_engine_.insert_headers(headers);
-            current_height_ = chain_fork_view.head_height();
+            current_height_ = chain_fork_view_.head_height();
 
-            block_exchange_.download_bodies(downloaded_headers);
+            block_exchange_.download_bodies(headers);
 
             send_new_header_announcements();
         }
 
-        while (!downloaded_bodies.empty()) {
-            exec_engine_.insert_bodies(bodies);
+        if (std::holds_alternative<Blocks>(result)) {
+            auto& blocks = std::get<Blocks>(result);
+            exec_engine_.insert_bodies(blocks);
 
             // compute new head
             auto highest_block = std::max_element(bodies.begin(), bodies.end(), [](shared_ptr<Block>& a, shared_ptr<Block>& b) {
@@ -58,25 +68,16 @@ auto SyncEngine::forward_and_insert_blocks(HeaderSync& headers_stage, BodySync& 
 
             send_new_block_announcements();
         }
-
-        wait(downloaded_headers || downloaded_bodies);
     };
 
+    block_exchange_.stop_header_downloading();
+    block_exchange_.stop_body_downloading();
 
 
-    auto as_far_as_possible = std::nullopt;
-
-    auto new_height = headers_stage.forward(as_far_as_possible);
-
-    auto bodies_height = bodies_stage.forward(new_height);
-    if (new_height.block_num != bodies_height.block_num) {
-        // ???
-    }
-
-    return new_height;
+    return {.new_head = current_head, .new_height = current_height_};
 }
 
-void SyncEngine::unwind(HeaderSync& headers_stage, BodySync& bodies_stage, SyncTarget::UnwindPoint unwind_point) {
+void SyncEngine::unwind(HeaderSync& headers_stage, BodySync& bodies_stage, UnwindPoint unwind_point) {
     bodies_stage.unwind(unwind_point);
 
     headers_stage.unwind(unwind_point);
@@ -87,14 +88,10 @@ void SyncEngine::execution_loop() {
     using ValidChain = ExecutionEngine::ValidChain;
     using ValidationError = ExecutionEngine::ValidationError;
     using InvalidChain = ExecutionEngine::InvalidChain;
-    using NewHeight = SyncTarget::NewHeight;
-    //using UnwindPoint = SyncTarget::UnwindPoint;
 
     while (!is_stopping()) {
-        HeaderSync headers_stage{block_exchange_, exec_engine_};
-        BodySync bodies_stage{block_exchange_, exec_engine_};
 
-        NewHeight new_height = forward_and_insert_blocks(headers_stage, bodies_stage);
+        NewHeight new_height = forward_and_insert_blocks();
 
         auto verification = exec_engine_.verify_chain(new_height.hash);
 

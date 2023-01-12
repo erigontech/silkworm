@@ -19,6 +19,7 @@ limitations under the License.
 
 #include <silkworm/common/as_range.hpp>
 #include <silkworm/db/access_layer.hpp>
+#include <silkworm/downloader/internals/db_utils.hpp>
 
 namespace silkworm::stagedsync {
 
@@ -34,8 +35,8 @@ ExecutionEngine::CanonicalChain::CanonicalChain(db::RWTxn& tx) : tx_{tx}, canoni
     current_head_ = initial_head_;
 }
 
-BlockIdPair ExecutionEngine::CanonicalChain::initial_head() { return initial_head_; }
-BlockIdPair ExecutionEngine::CanonicalChain::current_head() { return current_head_; }
+BlockId ExecutionEngine::CanonicalChain::initial_head() { return initial_head_; }
+BlockId ExecutionEngine::CanonicalChain::current_head() { return current_head_; }
 
 BlockNum ExecutionEngine::CanonicalChain::find_forking_point(db::RWTxn& tx, Hash header_hash) {
     BlockNum forking_point{};
@@ -345,7 +346,7 @@ auto ExecutionEngine::get_body(Hash header_hash) -> std::optional<BlockBody> {
     return body;
 }
 
-auto ExecutionEngine::get_headers_head() -> std::tuple<BlockNum, Hash, BigInt> {
+auto ExecutionEngine::get_headers_head() -> ChainHead {
     auto headers_head_height = db::stages::read_stage_progress(tx_, db::stages::kHeadersKey);
 
     auto headers_head_hash = db::read_canonical_hash(tx_, headers_head_height);
@@ -356,10 +357,10 @@ auto ExecutionEngine::get_headers_head() -> std::tuple<BlockNum, Hash, BigInt> {
     ensure_invariant(headers_head_td.has_value(),
                      "total difficulty of canonical hash at height " + std::to_string(headers_head_height) + " not found in db");
 
-    return {headers_head_height, *headers_head_hash, *headers_head_td};  // add headers_head_td
+    return {headers_head_height, *headers_head_hash, *headers_head_td};
 }
 
-auto ExecutionEngine::get_bodies_head() -> std::tuple<BlockNum, Hash> {
+auto ExecutionEngine::get_bodies_head() -> BlockId {
     auto bodies_head_height = db::stages::read_stage_progress(tx_, db::stages::kBlockBodiesKey);
     auto bodies_head_hash = db::read_canonical_hash(tx_, bodies_head_height);
     ensure_invariant(bodies_head_hash.has_value(),
@@ -367,8 +368,19 @@ auto ExecutionEngine::get_bodies_head() -> std::tuple<BlockNum, Hash> {
     return {bodies_head_height, *bodies_head_hash};
 }
 
-auto ExecutionEngine::get_canonical_head() -> std::tuple<BlockNum, Hash> {
-    return db::read_canonical_head(tx_);
+auto ExecutionEngine::get_canonical_head() -> BlockId {
+    auto [block_num, hash] = db::read_canonical_head(tx_);
+    return {block_num, hash};
+}
+
+auto ExecutionEngine::get_last_headers(BlockNum limit) -> std::vector<BlockHeader> {
+    std::vector<BlockHeader> headers;
+
+    read_headers_in_reverse_order(tx_, limit, [&headers](BlockHeader&& header) {
+        headers.emplace_back(std::move(header));
+    });
+
+    return headers;
 }
 
 }  // namespace silkworm::stagedsync

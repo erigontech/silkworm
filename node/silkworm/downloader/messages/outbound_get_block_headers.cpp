@@ -39,7 +39,7 @@ void OutboundGetBlockHeaders::execute(db::ROAccess, HeaderChain& hc, BodySequenc
     do {
         if (!hc.has_headers_to_request(now, active_peers_)) break;
 
-        auto [packet, penalizations] = hc.request_more_headers(now, timeout);
+        auto [packet, penalizations] = hc.anchor_extension_request(now, timeout);
 
         if (packet == std::nullopt) break;
 
@@ -65,7 +65,7 @@ void OutboundGetBlockHeaders::execute(db::ROAccess, HeaderChain& hc, BodySequenc
     } while (sent_reqs_ < max_reqs_);  // && packet != std::nullopt && receiving_peers != nullptr
 
     // anchor collection
-    auto packet = hc.request_skeleton();
+    auto packet = hc.anchor_skeleton_request();
 
     if (packet != std::nullopt) {
         auto send_outcome = send_packet(sentry, *packet, timeout);

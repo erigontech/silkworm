@@ -23,6 +23,7 @@
 #include <silkworm/downloader/packets/get_block_bodies_packet.hpp>
 #include <silkworm/downloader/packets/new_block_packet.hpp>
 
+#include "chain_elements.hpp"
 #include "statistics.hpp"
 #include "types.hpp"
 
@@ -41,8 +42,8 @@ class BodySequence {
     explicit BodySequence();
     ~BodySequence() = default;
 
-    // sync current state - this must be done at body forward
-    void sync_current_state(BlockNum highest_body_in_db, BlockNum highest_header_in_db);
+    // set a downloading target - this must be done at body forward
+    void downloading_target(const Headers& headers);
 
     //! core functionalities: trigger the internal algorithms to decide what bodies we miss
     using MinBlock = BlockNum;
@@ -69,24 +70,22 @@ class BodySequence {
     [[nodiscard]] BlockNum lowest_block_in_memory() const;
     [[nodiscard]] BlockNum target_height() const;
     [[nodiscard]] size_t outstanding_bodies(time_point_t tp) const;
+    [[nodiscard]] size_t ready_bodies() const;
 
     [[nodiscard]] const Download_Statistics& statistics() const;
 
     // downloading process tuning parameters
-    static /*constexpr*/ seconds_t kRequestDeadline;             // = std::chrono::seconds(30);
-                                                                 // after this a response is considered lost it is related to Sentry's peerDeadline
-    static /*constexpr*/ milliseconds_t kNoPeerDelay;            // = std::chrono::milliseconds(500);
-                                                                 // delay when no peer accepted the last request
-    static /*constexpr*/ size_t kPerPeerMaxOutstandingRequests;  // = 4;
-    static /*constexpr*/ size_t kMaxInMemoryRequests;            // = 300000;
-    static /*constexpr*/ BlockNum kMaxBlocksPerMessage;          // = 128;               // go-ethereum client acceptance limit
+    static constexpr seconds_t kRequestDeadline = std::chrono::seconds(30);  // after this a response is considered lost
+    static constexpr milliseconds_t kNoPeerDelay = std::chrono::milliseconds(1000);  // delay when no peer accepted the last request
+    static constexpr size_t kPerPeerMaxOutstandingRequests = 4;
+    static constexpr size_t kMaxInMemoryRequests = 400000;
+    static constexpr BlockNum kMaxBlocksPerMessage = 128;  // go-ethereum client acceptance limit
     static constexpr BlockNum kMaxAnnouncedBlocks = 10000;
 
   protected:
-    void make_new_requests(GetBlockBodiesPacket66&, MinBlock&, time_point_t tp, seconds_t timeout);
     auto renew_stale_requests(GetBlockBodiesPacket66&, MinBlock&, time_point_t tp, seconds_t timeout)
         -> std::vector<PeerPenalization>;
-    void add_to_announcements(BlockHeader, BlockBody);
+    void add_to_announcements(BlockHeader, BlockBody, Total_Difficulty);
 
     static bool is_valid_body(const BlockHeader&, const BlockBody&);
 
@@ -96,6 +95,7 @@ class BodySequence {
         BlockNum block_height{0};
         BlockHeader header;
         BlockBody body;
+        Total_Difficulty td;
         time_point_t request_time;
         bool ready{false};
     };

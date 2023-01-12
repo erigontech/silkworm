@@ -24,26 +24,16 @@
 
 namespace silkworm {
 
-seconds_t BodySequence::kRequestDeadline{std::chrono::seconds(30)};
-BlockNum BodySequence::kMaxBlocksPerMessage{128};
-size_t BodySequence::kPerPeerMaxOutstandingRequests{4};
-size_t BodySequence::kMaxInMemoryRequests{400000};
-milliseconds_t BodySequence::kNoPeerDelay{std::chrono::milliseconds(1000)};
+
 
 BodySequence::BodySequence() {
 }
 
-BlockNum BodySequence::highest_block_in_db() const { return highest_body_in_db_; }
-BlockNum BodySequence::target_height() const { return headers_stage_height_; }
+BlockNum BodySequence::highest_block_in_db() const { return ; }
+BlockNum BodySequence::target_height() const { return ; }
 BlockNum BodySequence::highest_block_in_memory() const { return body_requests_.highest_block(); }
 BlockNum BodySequence::lowest_block_in_memory() const { return body_requests_.lowest_block(); }
-
-void BodySequence::sync_current_state(BlockNum highest_body_in_db, BlockNum highest_header_in_db) {
-    highest_body_in_db_ = highest_body_in_db;
-    headers_stage_height_ = highest_header_in_db;
-
-    statistics_ = {};  // reset statistics
-}
+size_t BodySequence::ready_bodies() const { return ready_bodies_; }
 
 size_t BodySequence::outstanding_bodies(time_point_t tp) const {
     size_t requested_bodies{0};
@@ -186,49 +176,30 @@ auto BodySequence::renew_stale_requests(GetBlockBodiesPacket66& packet, BlockNum
 }
 
 //! Make requests of new bodies to get progress
-void BodySequence::make_new_requests(GetBlockBodiesPacket66& packet, BlockNum& min_block, time_point_t tp, seconds_t) {
-    BlockNum last_requested_block = highest_body_in_db_;
-    if (!body_requests_.empty())
-        last_requested_block = body_requests_.rbegin()->second.block_height;  // the last requested
+void BodySequence::downloading_target(const Headers& headers) {
 
-    while (packet.request.size() < kMaxBlocksPerMessage && last_requested_block < headers_stage_height_) {
-        BlockNum bn = last_requested_block + 1;
+    for (auto header: headers) {
+        BlockNum bn = header->number;
 
-        auto headers = execution->read_headers(bn);
-        if (headers.empty()) {
-            throw std::logic_error("BodySequence exception, cause: no headers in db at height " + std::to_string(bn));
+        BodyRequest new_request;
+        new_request.block_height = header->number;
+        new_request.request_id = 0;  // new request
+        new_request.block_hash = header->hash();
+        new_request.td = header->difficulty + parent->total_difficulty;
+        //new_request.request_time
+
+        std::optional<BlockBody> announced_body = announced_blocks_.remove(bn);
+        if (announced_body && is_valid_body(*header, *announced_body)) {
+            add_to_announcements(*header, *announced_body);
+
+            new_request.body = std::move(*announced_body);
+            new_request.ready = true;
+            ready_bodies_ += 1;
         }
 
-        if (packet.request.size() + headers.size() > kMaxBlocksPerMessage) break;  // will be processed at next cycle
+        new_request.header = *header;
 
-        for (auto& header : headers) {
-            BodyRequest new_request;
-            new_request.block_height = bn;
-            new_request.request_id = packet.requestId;
-            new_request.block_hash = header.hash();
-            new_request.request_time = tp;
-
-            std::optional<BlockBody> announced_body = announced_blocks_.remove(bn);
-            if (announced_body && is_valid_body(header, *announced_body)) {
-                add_to_announcements(header, *announced_body);
-
-                new_request.body = std::move(*announced_body);
-                new_request.ready = true;
-                ready_bodies_ += 1;
-            } else {
-                packet.request.push_back(new_request.block_hash);
-
-                SILK_TRACE << "BodySequence: requested body block-num= " << new_request.block_height
-                           << ", hash= " << new_request.block_hash;
-                min_block = std::max(min_block, new_request.block_height);
-            }
-
-            new_request.header = std::move(header);
-
-            body_requests_.emplace(bn, std::move(new_request));
-        }
-
-        ++last_requested_block;
+        body_requests_.emplace(bn, std::move(new_request));
     }
 }
 
@@ -271,18 +242,7 @@ Blocks BodySequence::withdraw_ready_bodies() {
     return ready_bodies;
 }
 
-void BodySequence::add_to_announcements(BlockHeader header, BlockBody body) {
-    // calculate total difficulty of the block
-    auto parent_td = execution->read_total_difficulty(header.number - 1, header.parent_hash);  // todo: execution may not have computed td yet
-    if (!parent_td) {
-        log::Warning() << "BodySequence: dangling block " << std::to_string(header.number);
-        return;  // non inserted in announcement list
-    }
-
-    auto td = *parent_td + header.difficulty;
-
-    // auto td = parent_td + canonical_difficulty(header.number, header.timestamp,
-    //                                            parent_td, parent_ts, parent_has_uncle, chain_config_);
+void BodySequence::add_to_announcements(BlockHeader header, BlockBody body, Total_Difficulty td) {
 
     NewBlockPacket packet{{std::move(body), std::move(header)}, td};
 

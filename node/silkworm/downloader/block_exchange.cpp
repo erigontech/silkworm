@@ -22,6 +22,7 @@
 #include <silkworm/common/log.hpp>
 #include <silkworm/downloader/internals/preverified_hashes.hpp>
 #include <silkworm/downloader/messages/inbound_message.hpp>
+#include <silkworm/downloader/messages/internal_message.hpp>
 #include <silkworm/downloader/messages/outbound_get_block_bodies.hpp>
 #include <silkworm/downloader/messages/outbound_get_block_headers.hpp>
 #include <silkworm/downloader/rpc/penalize_peer.hpp>
@@ -35,8 +36,6 @@ BlockExchange::BlockExchange(SentryClient& sentry, const db::ROAccess& dba, cons
       preverified_hashes_{PreverifiedHashes::load(chain_config.chain_id)},
       header_chain_{chain_config},
       body_sequence_{} {
-    auto tx = db_access_.start_ro_tx();
-    header_chain_.recover_initial_state(tx);
     header_chain_.set_preverified_hashes(&preverified_hashes_);
 }
 
@@ -90,7 +89,7 @@ void BlockExchange::execution_loop() {
             bool present = messages_.timed_wait_and_pop(message, 1000ms);
             if (!present) continue;  // timeout, needed to check exiting_
 
-            // process the message (replay to remote peers)
+            // process an external message (replay to remote peers) or an internal message
             if (present) {
                 message->execute(db_access_, header_chain_, body_sequence_, sentry_);
                 statistics_.processed_msgs++;
@@ -123,6 +122,8 @@ void BlockExchange::execution_loop() {
 }
 
 void BlockExchange::request_headers() {
+    if (!header_downloading_active_) return;
+
     constexpr auto only_one_request = 1;
     if (messages_.size() < HeaderChain::kPerPeerMaxOutstandingRequests * sentry_.active_peers()) {
 
@@ -136,6 +137,8 @@ void BlockExchange::request_headers() {
 }
 
 void BlockExchange::request_bodies() {
+    if (!body_downloading_active_) return;
+
     constexpr auto only_one_request = 1;
     if (messages_.size() < BodySequence::kPerPeerMaxOutstandingRequests * sentry_.active_peers()) {
 
@@ -149,12 +152,16 @@ void BlockExchange::request_bodies() {
 }
 
 void BlockExchange::collect_headers() {
+    if (!header_downloading_active_) return;
+
     auto just_downloaded = header_chain_.withdraw_stable_headers();
     if (just_downloaded.empty()) return;
     results_.push(std::move(just_downloaded));
 }
 
 void BlockExchange::collect_bodies() {
+    if (!body_downloading_active_) return;
+
     auto just_downloaded = body_sequence_.withdraw_ready_bodies();
     if (just_downloaded.empty()) return;
     results_.push(std::move(just_downloaded));
@@ -204,6 +211,46 @@ void BlockExchange::send_penalization(PeerId id, Penalty p) noexcept {
     penalize_peer.timeout(kRpcTimeout);
 
     sentry_.exec_remotely(penalize_peer);
+}
+
+void BlockExchange::initial_state(const std::vector<BlockHeader>& last_headers) {
+    auto message = std::make_shared<InternalMessage<void>>(
+        [&](HeaderChain& hc, BodySequence&) {
+            hc.initial_state(last_headers);
+        });
+
+    accept(message);
+}
+
+void BlockExchange::download_headers(BlockNum current_height, [[maybe_unused]] std::optional<BlockNum> target_height) {
+    // todo: use target_height, if it is not present use target_height = tip of the chain
+
+    auto message = std::make_shared<InternalMessage<void>>(
+        [=](HeaderChain& hc, BodySequence&) {
+            hc.current_state(current_height);
+            header_downloading_active_ = true;  // must be done after sync_current_state
+        });
+
+    accept(message);
+}
+
+void BlockExchange::download_bodies(const Headers& headers) {
+
+    auto message = std::make_shared<InternalMessage<void>>(
+        [this, &headers](HeaderChain&, BodySequence& bs) {
+            bs.downloading_target(headers);
+            body_downloading_active_ = true;  // must be done after downloading_target
+        });
+
+    accept(message);
+}
+
+void BlockExchange::stop_header_downloading() {
+    header_downloading_active_ = false;
+}
+
+void BlockExchange::stop_body_downloading() {
+    body_downloading_active_ = false;
 }
 
 }  // namespace silkworm

@@ -21,20 +21,17 @@ limitations under the License.
 
 namespace silkworm::chainsync {
 
-ChainForkView::ChainForkView(stagedsync::ExecutionEngine& ee) : exec_engine_{ee}, td_fork_view_{kCacheSize} {
-    std::tie(initial_head_.number, initial_head_.hash, initial_head_td_) = exec_engine_.get_headers_head();
-
-    current_head_td_ = initial_head_td_;
+ChainForkView::ChainForkView(ChainHead head) : initial_head_{head}, td_cache_{kCacheSize} {
     current_head_ = initial_head_;
 }
 
-bool ChainForkView::head_changed() const { return current_head_td_ != initial_head_td_; }
+bool ChainForkView::head_changed() const { return current_head_.total_difficulty != initial_head_.total_difficulty; }
 
 BlockNum ChainForkView::head_height() const { return current_head_.number; }
 
 Hash ChainForkView::head_hash() const { return current_head_.hash; }
 
-BigInt ChainForkView::head_total_difficulty() const { return current_head_td_; }
+BigInt ChainForkView::head_total_difficulty() const { return current_head_.total_difficulty; }
 
 void ChainForkView::add(const BlockHeader& header) {  // try to modularize this method
 
@@ -43,7 +40,7 @@ void ChainForkView::add(const BlockHeader& header) {  // try to modularize this 
     if (hash == previous_hash_) return;  // skip duplicates
 
     // Calculate total difficulty
-    auto parent_td = td_fork_view_.get_as_copy(header.parent_hash);  // find in cache
+    auto parent_td = td_cache_.get_as_copy(header.parent_hash);  // find in cache
     if (!parent_td)
         parent_td = exec_engine_.get_header_td(height - 1, header.parent_hash);  // ask execution engine
     if (!parent_td) {
@@ -57,15 +54,15 @@ void ChainForkView::add(const BlockHeader& header) {  // try to modularize this 
     auto td = *parent_td + header.difficulty;  // calculated total difficulty of this header
 
     // Now we can decide whether this header will create a change in the canonical head
-    if (td > current_head_td_) {
+    if (td > current_head_.total_difficulty) {
         // Save progress
         current_head_.number = height;
         current_head_.hash = hash;
-        current_head_td_ = td;  // this makes sure we end up choosing the chain with the max total difficulty
+        current_head_.total_difficulty = td;  // this makes sure we end up choosing the chain with the max total difficulty
     }
 
     previous_hash_ = hash;
-    td_fork_view_.put(hash, td);
+    td_cache_.put(hash, td);
 }
 
 }  // namespace silkworm::chainsync

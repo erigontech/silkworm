@@ -31,7 +31,7 @@ namespace silkworm::chainsync {
 
 class ChainForkView {
   public:
-    ChainForkView(stagedsync::ExecutionEngine&);
+    ChainForkView(ChainHead headers_head);
 
     void add(const BlockHeader&);
 
@@ -42,15 +42,12 @@ class ChainForkView {
     bool head_changed() const;
 
   private:
-    stagedsync::ExecutionEngine& exec_engine_;
-
-    BlockIdPair initial_head_{};
-    BlockIdPair current_head_{};
-    Total_Difficulty initial_head_td_, current_head_td_;
+    ChainHead initial_head_{};
+    ChainHead current_head_{};  // current head of the chain
     Hash previous_hash_;
 
     static constexpr size_t kCacheSize = 4096;
-    lru_cache<Hash, Total_Difficulty> td_fork_view_;  // this is not for performance
+    lru_cache<Hash, Total_Difficulty> td_cache_;  // this is not for performance
 };
 
 }  // namespace silkworm::chainsync

@@ -34,7 +34,9 @@ using BigInt = intx::uint256;  // use intx::to_string, from_string, ...
 
 using Total_Difficulty = BigInt;
 
-struct BlockIdPair {BlockNum number; Hash hash;};
+struct BlockId {BlockNum number{}; Hash hash;};
+
+struct ChainHead {BlockNum number{}; Hash hash; Total_Difficulty total_difficulty;};
 
 // using Bytes = std::basic_string<uint8_t>; already defined elsewhere
 // using std::string to_hex(ByteView bytes);

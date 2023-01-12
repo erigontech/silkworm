@@ -92,23 +92,22 @@ void HeaderChain::add_bad_headers(const std::set<Hash>& bads) {
     bad_headers_.insert(bads.begin(), bads.end());  // todo: use set_union or merge?
 }
 
-void HeaderChain::recover_initial_state(db::ROTxn& tx) {
-    reduce_persisted_links_to(0);  // drain persistedLinksQueue and remove links
-
-    read_headers_in_reverse_order(tx, persistent_link_limit, [this](BlockHeader&& header) {
-        this->add_header_as_link(header, true);  // todo: optimize add_header_as_link to use Header&&
-    });
-
-    // highest_in_db_ = tx.read_stage_progress(db::stages::kHeadersKey); // will be done by sync_current_state
-}
-
-void HeaderChain::sync_current_state(BlockNum highest_in_db) {
-    highest_in_db_ = highest_in_db;
-
+void HeaderChain::initial_state(const std::vector<BlockHeader>& last_headers) {
     statistics_ = {};  // reset statistics
 
     // we also need here all the headers with height == highest_in_db to init chain_state_
-    // currently chain_state_ find them in persisted_link_queue_ but it is not clear if it will find them all
+    for (auto&& header: last_headers) {
+        this->add_header_as_link(header, true);  // todo: optimize add_header_as_link to use Header&&
+        highest_in_db_ = std::max(highest_in_db_, header.number);
+    }
+
+    reduce_persisted_links_to(persistent_link_limit);  // resize persisted_link_queue removing old links
+}
+
+void HeaderChain::current_state(BlockNum highest_in_db) {
+    highest_in_db_ = highest_in_db;
+
+    statistics_ = {};  // reset statistics
 }
 
 Headers HeaderChain::withdraw_stable_headers() {
@@ -241,6 +240,12 @@ void HeaderChain::reduce_persisted_links_to(size_t limit) {
 
 // Note: Erigon's HeadersForward is implemented in OutboundGetBlockHeaders message
 
+//auto HeaderChain::request_more_headers(time_point_t tp, seconds_t timeout)
+//    -> std::tuple<std::vector<GetBlockHeadersPacket66>, std::vector<PeerPenalization>>
+//{
+//    // if distance(target_height, top_anchor) < stride then request the anchor at target_height
+//}
+
 /*
  * Skeleton query.
  * Request "seed" headers that can became anchors.
@@ -248,7 +253,8 @@ void HeaderChain::reduce_persisted_links_to(size_t limit) {
  * If there is an anchor at height < topSeenHeight this will be the top limit: this way we prioritize the fill of a big
  * hole near the bottom. If the lowest hole is not so big we do not need a skeleton query yet.
  */
-std::optional<GetBlockHeadersPacket66> HeaderChain::request_skeleton() {
+auto HeaderChain::anchor_skeleton_request(/*time_point_t tp, seconds_t timeout*/)
+    -> std::optional<GetBlockHeadersPacket66> {
     using namespace std::chrono_literals;
 
     if (anchors_.size() > 64) {
@@ -256,6 +262,13 @@ std::optional<GetBlockHeadersPacket66> HeaderChain::request_skeleton() {
         return std::nullopt;
     }
 
+//    // if last skeleton request was too recent, do not request another one
+//    if (tp - last_skeleton_request_ < timeout) {
+//        skeleton_condition_ = "too recent";
+//        return std::nullopt;
+//    }
+
+    //BlockNum top = target_height ? std::min(top_seen_height_, *target_height) : top_seen_height_;
     BlockNum top = top_seen_height_;
     BlockNum bottom = highest_in_db_ + stride;  // warning: this can be inside a chain in memory
     if (top <= bottom) {
@@ -334,7 +347,7 @@ std::shared_ptr<Anchor> HeaderChain::highest_anchor() {
  * and all its descendants get deleted from consideration (invalidate_anchor function). This would happen if anchor
  * was "fake", i.e. it corresponds to a header without existing ancestors.
  */
-auto HeaderChain::request_more_headers(time_point_t time_point, seconds_t timeout)
+auto HeaderChain::anchor_extension_request(time_point_t time_point, seconds_t timeout)
     -> std::tuple<std::optional<GetBlockHeadersPacket66>, std::vector<PeerPenalization>> {
     using std::nullopt;
 
@@ -949,6 +962,7 @@ uint64_t HeaderChain::is_valid_request_id(uint64_t request_id) {
 }
 
 const Download_Statistics& HeaderChain::statistics() const { return statistics_; }
+
 /*
 std::string HeaderChain::dump_chain_bundles() const {
     // anchor list

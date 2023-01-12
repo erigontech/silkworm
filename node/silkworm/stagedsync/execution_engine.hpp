@@ -58,11 +58,12 @@ class ExecutionEngine : public Stoppable {
     auto get_header(Hash) -> std::optional<BlockHeader>;
     auto get_header(BlockNum, Hash) -> std::optional<BlockHeader>;
     auto get_canonical_hash(BlockNum) -> std::optional<Hash>;
-    auto get_header_td(BlockNum, Hash) -> std::optional<BigInt>;
+    auto get_header_td(BlockNum, Hash) -> std::optional<Total_Difficulty>;
     auto get_body(Hash) -> std::optional<BlockBody>;
-    auto get_headers_head() -> std::tuple<BlockNum, Hash, BigInt>;
-    auto get_bodies_head() -> std::tuple<BlockNum, Hash>;
-    auto get_canonical_head() -> std::tuple<BlockNum, Hash>;
+    auto get_headers_head() -> ChainHead;
+    auto get_bodies_head() -> BlockId;
+    auto get_canonical_head() -> BlockId;
+    auto get_last_headers(BlockNum limit) -> std::vector<BlockHeader>;
 
   protected:
     std::set<Hash> collect_bad_headers(db::RWTxn& tx, InvalidChain& invalid_chain);
@@ -84,16 +85,16 @@ class ExecutionEngine : public Stoppable {
         void update_up_to(BlockNum height, Hash header_hash);
         void delete_down_to(BlockNum unwind_point);
 
-        BlockIdPair initial_head();
-        BlockIdPair current_head();
+        BlockId initial_head();
+        BlockId current_head();
 
         auto get_hash(BlockNum height) -> std::optional<Hash>;
 
       private:
         db::RWTxn& tx_;
 
-        BlockIdPair initial_head_{};
-        BlockIdPair current_head_{};
+        BlockId initial_head_{};
+        BlockId current_head_{};
 
         static constexpr size_t kCacheSize = 1000;
         lru_cache<BlockNum, Hash> canonical_cache_;

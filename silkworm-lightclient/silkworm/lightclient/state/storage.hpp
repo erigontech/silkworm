@@ -16,35 +16,39 @@
 
 #pragma once
 
-#include <memory>
-
-#include "silkworm/lightclient/types/types.hpp"
-#include "silkworm/lightclient/util/hash32.hpp"
+#include <silkworm/lightclient/ssz/common/bytes.hpp>
+#include <silkworm/lightclient/state/beacon-chain/beacon_block.hpp>
+#include <silkworm/lightclient/state/beacon-chain/light_client_bootstrap.hpp>
+#include <silkworm/lightclient/state/beacon-chain/light_client_update.hpp>
+#include <silkworm/lightclient/state/beacon-chain/sync_committee.hpp>
+#include <silkworm/lightclient/types/types.hpp>
 
 namespace silkworm::cl {
 
 //! State storage initialized with a received bootstrap derived from a given trusted block root
 class Storage {
   public:
-    explicit Storage(const Hash32& trusted_root, const cl::LightClientBootstrap& bootstrap);
+    explicit Storage(const eth::Root& trusted_root, const eth::LightClientBootstrap& bootstrap);
 
-    [[nodiscard]] const cl::BeaconBlockHeader* finalized_header() const { return finalized_header_.get(); }
+    [[nodiscard]] const auto& finalized_header() const { return finalized_header_; }
+    [[nodiscard]] const auto& optimistic_header() const { return optimistic_header_; }
+    [[nodiscard]] const auto& current_committee() const { return current_committee_; }
 
   private:
     //! Most recent finalized Beacon block header
-    std::shared_ptr<cl::BeaconBlockHeader> finalized_header_;
+    eth::BeaconBlockHeader finalized_header_;
 
     //! Most recent available reasonably-safe Beacon block header
-    std::shared_ptr<cl::BeaconBlockHeader> optimistic_header_;
+    eth::BeaconBlockHeader optimistic_header_;
 
     //! Current sync committee corresponding to the headers
-    std::shared_ptr<cl::SyncCommittee> current_committee_;
+    eth::SyncCommittee current_committee_;
 
     //! Next sync committee corresponding to the headers
-    std::shared_ptr<cl::SyncCommittee> next_committee_;
+    eth::SyncCommittee next_committee_;
 
     //! Best available header to switch finalized head to if we see nothing else
-    std::unique_ptr<cl::LightClientUpdate> best_valid_update_;
+    eth::LightClientUpdate best_valid_update_;
 
     //! Max number of active participants in previous sync committee (used to calculate safety threshold)
     // uint64_t previous_max_active_participants_{0};

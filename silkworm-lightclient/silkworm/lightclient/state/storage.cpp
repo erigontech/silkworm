@@ -16,25 +16,26 @@
 
 #include "storage.hpp"
 
-#include "silkworm/common/util.hpp"
-#include "silkworm/lightclient/util/merkle.hpp"
+#include <silkworm/common/util.hpp>
+#include <silkworm/lightclient/util/merkle.hpp>
 
 namespace silkworm::cl {
 
-Storage::Storage(const Hash32& trusted_root, const cl::LightClientBootstrap& bootstrap) {
-    const auto header_root = bootstrap.header->hash_tree_root();
-    if (header_root != trusted_root) {
-        throw std::runtime_error{"root mismatch: trusted_root=" + to_hex(trusted_root) +
+Storage::Storage(const eth::Root& trusted_root, const eth::LightClientBootstrap& bootstrap) {
+    const auto header_root = bootstrap.header().hash_tree_root();
+    if (header_root != trusted_root.to_array()) {
+        throw std::runtime_error{"root mismatch: trusted_root=" + to_hex(trusted_root.to_array()) +
                                  " header_root=" + to_hex(header_root)};
     }
-    const auto sync_committee_root = bootstrap.current_committee->hash_tree_root();
-    const auto& current_committee_branch = bootstrap.current_committee_branch;
-    if (!is_valid_merkle_branch(sync_committee_root, current_committee_branch, 5, 22, bootstrap.header->root)) {
+    // TODO(canepat) refactor is_valid_merkle_branch
+    /*const auto sync_committee_root = bootstrap.current_sync_committee().hash_tree_root();
+    const auto& current_committee_branch = bootstrap.current_sync_committee_branch();
+    if (!is_valid_merkle_branch(sync_committee_root, current_committee_branch, 5, 22, bootstrap.header().state_root)) {
         throw std::runtime_error{"invalid sync committee"};
-    }
-    finalized_header_ = bootstrap.header;
-    current_committee_ = bootstrap.current_committee;
-    optimistic_header_ = bootstrap.header;
+    }*/
+    finalized_header_ = bootstrap.header();
+    current_committee_ = bootstrap.current_sync_committee();
+    optimistic_header_ = bootstrap.header();
 }
 
 }  // namespace silkworm::cl

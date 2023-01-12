@@ -85,7 +85,7 @@ std::string Bitlist::to_string() const {
     for (auto i = serial.cbegin(); i != serial.cend(); ++i) os << std::setfill('0') << std::setw(2) << std::hex << *i;
     std::cout.flags(save);
     return os.str();
-};
+}
 
 /*YAML::Node Bitlist::encode() const {
     auto str = this->to_string();

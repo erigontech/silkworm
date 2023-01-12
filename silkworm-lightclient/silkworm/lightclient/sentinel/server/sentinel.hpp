@@ -16,11 +16,12 @@
 
 #pragma once
 
+#include <silkworm/concurrency/coroutine.hpp>
+
 #include <boost/asio/awaitable.hpp>
 
-#include "silkworm/concurrency/coroutine.hpp"
-#include "silkworm/lightclient/types/types.hpp"
-#include "silkworm/lightclient/util/hash32.hpp"
+#include <silkworm/lightclient/types/types.hpp>
+#include <silkworm/lightclient/util/hash32.hpp>
 
 namespace silkworm::cl::sentinel {
 

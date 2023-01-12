@@ -16,7 +16,7 @@
 
 #include "sentinel.hpp"
 
-#include "silkworm/sentry/common/timeout.hpp"
+#include <silkworm/sentry/common/timeout.hpp>
 
 namespace silkworm::cl::sentinel {
 

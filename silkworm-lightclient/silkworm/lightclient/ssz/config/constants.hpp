@@ -104,4 +104,9 @@ constexpr uint64_t INACTIVITY_SCORE_REGISTRY_LIMIT = 1099511627776;
 constexpr uint MAX_PUB_KEYS_PER_COMMITTEE = 512;
 constexpr uint MAX_LOGS_BLOOM = 256;
 
+constexpr uint kSyncCommitteeBranchSize{5};
+constexpr uint kFinalityBranchSize{6};
+
+static constexpr std::size_t kCommiteeBitsSize{64};
+
 } // namespace constants

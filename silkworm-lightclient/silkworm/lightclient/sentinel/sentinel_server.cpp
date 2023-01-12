@@ -16,6 +16,8 @@
 
 #include "sentinel_server.hpp"
 
+#include <thread>
+
 #include <silkworm/sentry/common/timeout.hpp>
 
 namespace silkworm::cl::sentinel {
@@ -29,6 +31,8 @@ awaitable<void> Server::start() {
 }
 
 awaitable<ResponseData> Server::send_request(const RequestData& /*request*/) {
+    using namespace std::chrono_literals;
+    std::this_thread::sleep_for(1s);
     co_return ResponseData{};
 }
 

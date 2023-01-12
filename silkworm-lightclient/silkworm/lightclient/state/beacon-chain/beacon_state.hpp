@@ -242,9 +242,6 @@ class BeaconStateBellatrix : public ssz::Container {
     ListFixedSizedParts<Gwei> balances_{constants::BALANCE_REGISTRY_LIMIT};
     VectorFixedSizedParts<Bytes32, constants::EPOCHS_PER_HISTORICAL_VECTOR> randao_mixes_;
     VectorFixedSizedParts<Gwei, constants::EPOCHS_PER_SLASHINGS_VECTOR> slashings_;
-    /*ListVariableSizedParts<PendingAttestation> previous_epoch_attestations_{constants::MAX_ATTESTATIONS *
-                                                                            constants::SLOTS_PER_EPOCH},
-        current_epoch_attestations_{constants::MAX_ATTESTATIONS * constants::SLOTS_PER_EPOCH};*/
     ListFixedSizedParts<Participation> previous_epoch_participations_{constants::PARTICIPATION_REGISTRY_LIMIT};
     ListFixedSizedParts<Participation> current_epoch_participations_{constants::PARTICIPATION_REGISTRY_LIMIT};
     Bitvector<constants::JUSTIFICATION_BITS_LENGTH> justification_bits_;

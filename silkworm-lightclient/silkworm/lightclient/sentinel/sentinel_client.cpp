@@ -16,15 +16,15 @@
 
 #include "sentinel_client.hpp"
 
-#include <thread>
-
-#include <silkworm/common/log.hpp>
 #include <silkworm/sentry/common/timeout.hpp>
+#include <silkworm/lightclient/sentinel/topic.hpp>
 
 namespace silkworm::cl::sentinel {
 
 using namespace std::chrono;
 using namespace boost::asio;
+
+using LightClientBootstrapPtr = std::shared_ptr<eth::LightClientBootstrap>;
 
 LocalClient::LocalClient(Server* local_server) : local_server_(local_server) {}
 
@@ -33,17 +33,20 @@ awaitable<void> LocalClient::start() {
     co_await timeout();
 }
 
-awaitable<LightClientBootstrapPtr> LocalClient::bootstrap_request_v1(const Hash32& /*root*/) {
-    RequestData request{};
+awaitable<LightClientBootstrapPtr> LocalClient::bootstrap_request_v1(const eth::Root& root) {
+    const auto serialized_root = root.serialize();
+    RequestData request{
+        {serialized_root.cbegin(), serialized_root.cend()},
+        kLightClientBootstrapV1
+    };
     const ResponseData response = co_await local_server_->send_request(request);
 
-    log::Info() << "BEFORE timeout 1s";
-    using namespace std::chrono_literals;
-    std::this_thread::sleep_for(1s);
-    log::Info() << "AFTER timeout 1s";
-
-    // TODO(canepat) implement
-    co_return LightClientBootstrapPtr{};
+    auto bootstrap = std::make_shared<eth::LightClientBootstrap>();
+    const bool ok = bootstrap->deserialize(response.data.cbegin(), response.data.cend());
+    if (!ok) {
+        co_return LightClientBootstrapPtr{};
+    }
+    co_return bootstrap;
 }
 
 awaitable<void> RemoteClient::start() {
@@ -51,7 +54,7 @@ awaitable<void> RemoteClient::start() {
     co_await timeout();
 }
 
-awaitable<LightClientBootstrapPtr> RemoteClient::bootstrap_request_v1(const Hash32& /*root*/) {
+awaitable<LightClientBootstrapPtr> RemoteClient::bootstrap_request_v1(const eth::Root& /*root*/) {
     // TODO(canepat) implement
     co_return LightClientBootstrapPtr{};
 }

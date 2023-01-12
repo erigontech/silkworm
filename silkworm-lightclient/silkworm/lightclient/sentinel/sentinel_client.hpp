@@ -24,12 +24,12 @@
 
 #include <silkworm/lightclient/sentinel/sentinel_server.hpp>
 #include <silkworm/lightclient/types/types.hpp>
-#include <silkworm/lightclient/util/hash32.hpp>
+#include <silkworm/lightclient/ssz/common/bytes.hpp>
+#include <silkworm/lightclient/state/beacon-chain/light_client_bootstrap.hpp>
 
 namespace silkworm::cl::sentinel {
 
 using boost::asio::awaitable;
-using LightClientBootstrapPtr = std::shared_ptr<cl::LightClientBootstrap>;
 
 class Client {
   public:
@@ -37,7 +37,7 @@ class Client {
 
     virtual awaitable<void> start() = 0;
 
-    virtual awaitable<LightClientBootstrapPtr> bootstrap_request_v1(const Hash32& root) = 0;
+    virtual awaitable<std::shared_ptr<eth::LightClientBootstrap>> bootstrap_request_v1(const eth::Root& root) = 0;
 };
 
 class LocalClient : public Client {
@@ -46,7 +46,7 @@ class LocalClient : public Client {
 
     awaitable<void> start() override;
 
-    awaitable<LightClientBootstrapPtr> bootstrap_request_v1(const Hash32& root) override;
+    awaitable<std::shared_ptr<eth::LightClientBootstrap>> bootstrap_request_v1(const eth::Root& root) override;
 
   private:
     Server* local_server_;
@@ -56,7 +56,7 @@ class RemoteClient : public Client {
   public:
     awaitable<void> start() override;
 
-    awaitable<LightClientBootstrapPtr> bootstrap_request_v1(const Hash32& root) override;
+    awaitable<std::shared_ptr<eth::LightClientBootstrap>> bootstrap_request_v1(const eth::Root& root) override;
 };
 
 }  // namespace silkworm::cl::sentinel

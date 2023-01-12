@@ -56,7 +56,7 @@ class LightClientImpl final {
 
     awaitable<void> run_tasks();
 
-    awaitable<bool> bootstrap_checkpoint(const Hash32& finalized_root);
+    awaitable<bool> bootstrap_checkpoint(const eth::Root& finalized_root);
 
     Settings settings_;
 
@@ -157,13 +157,11 @@ awaitable<void> LightClientImpl::run_tasks() {
     log::Info() << "[LightClient] Waiting for bootstrap sequence...";
 
     const std::string checkpoint_uri{"https://mainnet-checkpoint-sync.stakely.io/eth/v2/debug/beacon/states/finalized"};
-    auto beacon_state = co_await retrieve_beacon_state(checkpoint_uri);
+    const auto beacon_state = co_await retrieve_beacon_state(checkpoint_uri);
 
-    auto root = beacon_state->finalized_checkpoint().root;
-    Hash32 root_hash{};
-    std::copy(root.cbegin(), root.cend(), root_hash.bytes);
+    const auto finalized_root = beacon_state->finalized_checkpoint().root;
 
-    const bool result = co_await bootstrap_checkpoint(root_hash);
+    const bool result = co_await bootstrap_checkpoint(finalized_root);
     log::Info() << "[LightClient] Bootstrap sequence completed [result=" << result << "]";
 
     const auto digest = compute_fork_digest(beacon_config_, genesis_config_);
@@ -171,21 +169,18 @@ awaitable<void> LightClientImpl::run_tasks() {
     co_await (sentinel_server_->start() && sentinel_client_->start());
 }
 
-awaitable<bool> LightClientImpl::bootstrap_checkpoint(const Hash32& finalized_root) {
-    log::Info() << "[Checkpoint Sync] Retrieving boostrap from sentinel [root: " << to_hex(finalized_root) << "]";
+awaitable<bool> LightClientImpl::bootstrap_checkpoint(const eth::Root& finalized_root) {
+    log::Info() << "[Checkpoint Sync] Retrieving boostrap from sentinel [root: " << to_hex({finalized_root.to_array()}) << "]";
 
-    int retries{0};
-    std::shared_ptr<LightClientBootstrap> bootstrap;
+    std::shared_ptr<eth::LightClientBootstrap> bootstrap;
     do {
         bootstrap = co_await sentinel_client_->bootstrap_request_v1(finalized_root);
-        ++retries;
-    } while (!bootstrap && retries <= 1);
+        log::Info() << "[Checkpoint Sync] Boostrap retrieval from sentinel [result: " << bool(bootstrap) << "]";
+    } while (!bootstrap);
 
-    if (bootstrap) {  // TODO(canepat) after implementation remove retries and this check
-        storage_ = std::make_unique<Storage>(finalized_root, *bootstrap);
-        log::Info() << "[LightClient] Store initialized successfully [slot: " << storage_->finalized_header()->slot
-                    << " root: " << to_hex(storage_->finalized_header()->root) << "]";
-    }
+    storage_ = std::make_unique<Storage>(finalized_root, *bootstrap);
+    log::Info() << "[LightClient] Store initialized successfully [slot: " << storage_->finalized_header().slot
+                << " root: " << to_hex(storage_->finalized_header().state_root.to_array()) << "]";
 
     co_return true;
 }

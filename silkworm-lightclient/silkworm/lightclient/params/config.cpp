@@ -18,7 +18,7 @@
 
 #include <random>
 
-#include "silkworm/common/assert.hpp"
+#include <silkworm/common/assert.hpp>
 
 namespace silkworm::cl {
 
@@ -32,7 +32,7 @@ std::optional<std::string> get_checkpoint_sync_endpoint(uint64_t chain_id) noexc
     // Randomly select one checkpoint sync endpoint for the chain
     static std::random_device random_dev;
     static std::mt19937 random_gen(random_dev());
-    static std::uniform_int_distribution<std::size_t> distribution{0, endpoints.size()};
+    static std::uniform_int_distribution<std::size_t> distribution{0, endpoints.size() - 1};
     const std::size_t random_index = distribution(random_gen);
     SILKWORM_ASSERT(random_index < endpoints.size());
 

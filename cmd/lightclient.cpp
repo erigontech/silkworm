@@ -37,6 +37,7 @@ cl::Settings parse_cli_settings(int argc, char* argv[]) {
         add_logging_options(cli, settings.log_settings);
         add_option_num_contexts(cli, settings.num_contexts);
         add_option_wait_mode(cli, settings.wait_mode);
+        add_option_chain(cli, settings.chain_id);
 
         cli.parse(argc, argv);
 

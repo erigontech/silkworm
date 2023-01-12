@@ -28,15 +28,15 @@
 #include <boost/asio/experimental/awaitable_operators.hpp>
 #include <boost/asio/signal_set.hpp>
 
+#include <silkworm/common/assert.hpp>
 #include <silkworm/common/log.hpp>
 #include <silkworm/lightclient/fork/fork.hpp>
+#include <silkworm/lightclient/params/config.hpp>
 #include <silkworm/lightclient/sentinel/sentinel_client.hpp>
 #include <silkworm/lightclient/sentinel/sentinel_server.hpp>
 #include <silkworm/lightclient/state/beacon-chain/beacon_state.hpp>
 #include <silkworm/lightclient/state/checkpoint.hpp>
 #include <silkworm/lightclient/state/storage.hpp>
-
-#include <silkworm/lightclient/util/http_session.hpp>
 
 namespace silkworm::cl {
 
@@ -156,8 +156,9 @@ awaitable<void> LightClientImpl::run_tasks() {
 
     log::Info() << "[LightClient] Waiting for bootstrap sequence...";
 
-    const std::string checkpoint_uri{"https://mainnet-checkpoint-sync.stakely.io/eth/v2/debug/beacon/states/finalized"};
-    const auto beacon_state = co_await retrieve_beacon_state(checkpoint_uri);
+    const auto checkpoint_uri = get_checkpoint_sync_endpoint(settings_.chain_id);
+    SILKWORM_ASSERT(checkpoint_uri);
+    const auto beacon_state = co_await retrieve_beacon_state(*checkpoint_uri);
 
     const auto finalized_root = beacon_state->finalized_checkpoint().root;
 

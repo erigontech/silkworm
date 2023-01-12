@@ -18,7 +18,7 @@
 
 #include <memory>
 
-#include <silkworm/concurrency/coroutine.hpp>
+#include <silkworm/chain/config.hpp>
 #include <silkworm/common/log.hpp>
 #include <silkworm/rpc/server/server_context_pool.hpp>
 
@@ -31,6 +31,7 @@ struct Settings {
     log::Settings log_settings;
     uint32_t num_contexts{1};
     rpc::WaitMode wait_mode{rpc::WaitMode::blocking};
+    uint64_t chain_id{kMainnetConfig.chain_id};
 };
 
 class LightClientImpl;

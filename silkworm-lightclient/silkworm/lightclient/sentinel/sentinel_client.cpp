@@ -40,9 +40,10 @@ awaitable<LightClientBootstrapPtr> LocalClient::bootstrap_request_v1(const eth::
         kLightClientBootstrapV1
     };
     const ResponseData response = co_await local_server_->send_request(request);
+    const std::vector<uint8_t> data{response.data.cbegin(), response.data.cend()};
 
     auto bootstrap = std::make_shared<eth::LightClientBootstrap>();
-    const bool ok = bootstrap->deserialize(response.data.cbegin(), response.data.cend());
+    const bool ok = bootstrap->deserialize(data.cbegin(), data.cend());
     if (!ok) {
         co_return LightClientBootstrapPtr{};
     }

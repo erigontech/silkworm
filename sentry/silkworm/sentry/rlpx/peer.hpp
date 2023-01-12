@@ -28,6 +28,8 @@
 #include <silkworm/sentry/common/ecc_public_key.hpp>
 #include <silkworm/sentry/common/socket_stream.hpp>
 
+#include "protocol.hpp"
+
 namespace silkworm::sentry::rlpx {
 
 class Peer {
@@ -37,11 +39,13 @@ class Peer {
         common::EccKeyPair node_key,
         std::string client_id,
         uint16_t node_listen_port,
+        std::unique_ptr<Protocol> protocol,
         std::optional<common::EccPublicKey> peer_public_key)
         : stream_(std::move(stream)),
           node_key_(std::move(node_key)),
           client_id_(std::move(client_id)),
           node_listen_port_(node_listen_port),
+          protocol_(std::move(protocol)),
           peer_public_key_(std::move(peer_public_key)) {}
 
     Peer(Peer&&) = default;
@@ -54,6 +58,7 @@ class Peer {
     common::EccKeyPair node_key_;
     std::string client_id_;
     uint16_t node_listen_port_;
+    std::unique_ptr<Protocol> protocol_;
     std::optional<common::EccPublicKey> peer_public_key_;
 };
 

@@ -25,30 +25,10 @@
 #include <silkworm/rlp/decode.hpp>
 #include <silkworm/rlp/encode.hpp>
 #include <silkworm/types/block.hpp>
+#include <silkworm/types/hash.hpp>
 #include <silkworm/types/transaction.hpp>
 
 namespace silkworm {
-
-class Hash : public evmc::bytes32 {
-  public:
-    using evmc::bytes32::bytes32;
-
-    Hash() = default;
-    Hash(ByteView bv) {
-        std::memcpy(bytes, bv.data(), length());
-        SILKWORM_ASSERT(bv.length() == length());
-    }
-
-    static constexpr size_t length() { return sizeof(evmc::bytes32); }
-
-    std::string to_hex() { return silkworm::to_hex(*this); }
-    static Hash from_hex(const std::string& hex) { return {evmc::from_hex<Hash>(hex).value()}; }
-
-    // conversion to ByteView is handled in ByteView class,
-    // conversion operator Byte() { return {bytes, length()}; } is handled elsewhere
-
-    static_assert(sizeof(evmc::bytes32) == 32);
-};
 
 using BigInt = intx::uint256;  // use intx::to_string, from_string, ...
 

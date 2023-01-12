@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include <functional>
+#include <memory>
 #include <string>
 
 #include <silkworm/concurrency/coroutine.hpp>
@@ -24,6 +26,8 @@
 
 #include <silkworm/rpc/server/server_context_pool.hpp>
 #include <silkworm/sentry/common/ecc_key_pair.hpp>
+
+#include "protocol.hpp"
 
 namespace silkworm::sentry::rlpx {
 
@@ -34,7 +38,8 @@ class Server final {
     boost::asio::awaitable<void> start(
         silkworm::rpc::ServerContextPool& context_pool,
         common::EccKeyPair node_key,
-        std::string client_id);
+        std::string client_id,
+        std::function<std::unique_ptr<Protocol>()> protocol_factory);
 
   private:
     std::string host_;

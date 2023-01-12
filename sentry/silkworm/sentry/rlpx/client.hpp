@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include <functional>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -25,6 +27,8 @@
 
 #include <silkworm/sentry/common/ecc_key_pair.hpp>
 #include <silkworm/sentry/common/enode_url.hpp>
+
+#include "protocol.hpp"
 
 namespace silkworm::sentry::rlpx {
 
@@ -36,7 +40,8 @@ class Client {
     boost::asio::awaitable<void> start(
         common::EccKeyPair node_key,
         std::string client_id,
-        uint16_t node_listen_port);
+        uint16_t node_listen_port,
+        std::function<std::unique_ptr<Protocol>()> protocol_factory);
 
   private:
     const std::vector<common::EnodeUrl> peer_urls_;

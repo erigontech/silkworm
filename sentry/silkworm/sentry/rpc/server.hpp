@@ -28,7 +28,9 @@ namespace silkworm::sentry::rpc {
 
 class Server final : public silkworm::rpc::Server {
   public:
-    explicit Server(const silkworm::rpc::ServerConfig& config);
+    explicit Server(
+        const silkworm::rpc::ServerConfig& config,
+        ServiceState state);
 
     Server(const Server&) = delete;
     Server& operator=(const Server&) = delete;

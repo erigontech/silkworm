@@ -32,7 +32,8 @@ using namespace boost::asio;
 awaitable<void> Client::start(
     common::EccKeyPair node_key,
     std::string client_id,
-    uint16_t node_listen_port) {
+    uint16_t node_listen_port,
+    std::function<std::unique_ptr<Protocol>()> protocol_factory) {
     if (peer_urls_.empty()) {
         co_return;
     }
@@ -59,6 +60,7 @@ awaitable<void> Client::start(
         node_key,
         client_id,
         node_listen_port,
+        protocol_factory(),
         {peer_url.public_key()},
     };
 

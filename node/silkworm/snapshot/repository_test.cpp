@@ -75,6 +75,13 @@ TEST_CASE("SnapshotFile::SnapshotFile", "[silkworm][snapshot][snapshot]") {
                 CHECK(snapshot_file->seedable());
                 CHECK(!snapshot_file->exists_torrent_file());
                 CHECK(snapshot_file->torrent_file_needed());
+                const SnapshotFile index_file = snapshot_file->index_file();
+                CHECK(index_file.path().stem() == snapshot_file->path().stem());
+                CHECK(index_file.path().extension() == kIdxExtension);
+                CHECK(index_file.version() == 1);
+                CHECK(index_file.block_from() == filename_expectation.block_from);
+                CHECK(index_file.block_to() == filename_expectation.block_to);
+                CHECK(index_file.type() == filename_expectation.type);
             }
         }
     }

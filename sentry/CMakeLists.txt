@@ -39,6 +39,7 @@ list(PREPEND GRPC_SRC "${MAIN_DIR}/interfaces/types/types.pb.h")
 list(PREPEND SRC ${GRPC_SRC})
 
 list(PREPEND SRC "${MAIN_DIR}/third_party/stbrumme-keccak/keccak.cpp")
+list(PREPEND SRC "${MAIN_DIR}/third_party/stbrumme-crc32/Crc32.cpp")
 
 add_library(${TARGET} ${SRC})
 
@@ -59,6 +60,7 @@ target_include_directories(${TARGET} PUBLIC
   ${CMAKE_CURRENT_SOURCE_DIR}
   "${MAIN_DIR}/interfaces"
   "${MAIN_DIR}/third_party/stbrumme-keccak"
+  "${MAIN_DIR}/third_party/stbrumme-crc32"
 )
 
 set(LIBS

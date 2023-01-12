@@ -18,26 +18,34 @@
 
 #include <memory>
 
-#include <boost/asio/io_context.hpp>
-#include <grpcpp/grpcpp.h>
+#include <silkworm/concurrency/coroutine.hpp>
+
+#include <agrpc/grpc_context.hpp>
 #include <p2psentry/sentry.grpc.pb.h>
+
+#include <silkworm/sentry/common/channel.hpp>
+#include <silkworm/sentry/eth/status_data.hpp>
 
 namespace silkworm::sentry::rpc {
 
 class ServiceImpl;
 
+struct ServiceState {
+    uint8_t eth_version;
+    common::Channel<eth::StatusData>& status_channel;
+};
+
 class Service final {
   public:
-    Service();
+    explicit Service(ServiceState state);
     ~Service();
 
     Service(const Service&) = delete;
     Service& operator=(const Service&) = delete;
 
     void register_request_calls(
-        boost::asio::io_context& scheduler,
-        ::sentry::Sentry::AsyncService* async_service,
-        grpc::ServerCompletionQueue* queue);
+        agrpc::GrpcContext* grpc_context,
+        ::sentry::Sentry::AsyncService* async_service);
 
   private:
     std::unique_ptr<ServiceImpl> p_impl_;

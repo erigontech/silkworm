@@ -1452,7 +1452,7 @@ void do_trie_root(db::EnvConfig& config) {
     }
 }
 
-void do_reset_to_download(db::EnvConfig& config) {
+void do_reset_to_download(db::EnvConfig& config, bool keep_senders) {
     if (!config.exclusive) {
         throw std::runtime_error("Function requires exclusive access to database");
     }
@@ -1620,15 +1620,17 @@ void do_reset_to_download(db::EnvConfig& config) {
     txn.commit(/*renew=*/true);
     log::Info(db::stages::kExecutionKey, {"new height", "0", "in", StopWatch::format(sw.lap().second)});
 
-    // Void Senders stage
-    log::Info(db::stages::kSendersKey, {"table", db::table::kSenders.name}) << " truncating ...";
-    source.bind(*txn, db::table::kSenders);
-    txn->clear_map(source.map());
-    db::stages::write_stage_progress(*txn, db::stages::kSendersKey, 0);
-    db::stages::write_stage_prune_progress(*txn, db::stages::kSendersKey, 0);
-    txn.commit(/*renew=*/true);
-    log::Info(db::stages::kSendersKey, {"new height", "0", "in", StopWatch::format(sw.lap().second)});
-    if (SignalHandler::signalled()) throw std::runtime_error("Aborted");
+    if (!keep_senders) {
+        // Void Senders stage
+        log::Info(db::stages::kSendersKey, {"table", db::table::kSenders.name}) << " truncating ...";
+        source.bind(*txn, db::table::kSenders);
+        txn->clear_map(source.map());
+        db::stages::write_stage_progress(*txn, db::stages::kSendersKey, 0);
+        db::stages::write_stage_prune_progress(*txn, db::stages::kSendersKey, 0);
+        txn.commit(/*renew=*/true);
+        log::Info(db::stages::kSendersKey, {"new height", "0", "in", StopWatch::format(sw.lap().second)});
+        if (SignalHandler::signalled()) throw std::runtime_error("Aborted");
+    }
 
     auto [tp, _]{sw.stop()};
     auto duration{sw.since_start(tp)};
@@ -1766,6 +1768,8 @@ int main(int argc, char* argv[]) {
     // Truncates all the work done beyond download stages
     auto cmd_reset_to_download =
         app_main.add_subcommand("reset-to-download", "Reset all work and data written after bodies download");
+    auto cmd_reset_to_download_keep_senders_opt =
+        cmd_reset_to_download->add_flag("--keep-senders", "Keep the recovered transaction senders");
 
     /*
      * Parse arguments and validate
@@ -1860,7 +1864,7 @@ int main(int argc, char* argv[]) {
         } else if (*cmd_trie_root) {
             do_trie_root(src_config);
         } else if (*cmd_reset_to_download) {
-            do_reset_to_download(src_config);
+            do_reset_to_download(src_config, static_cast<bool>(*cmd_reset_to_download_keep_senders_opt));
         }
 
         return 0;

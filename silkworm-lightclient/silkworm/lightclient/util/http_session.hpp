@@ -26,7 +26,7 @@ Licensed under the Apache License, Version 2.0 (the "License");
 
 namespace silkworm {
 
-//! Create a short-lived HTTP session to perform an HTTP GET and return the result
+//! \brief Create a short-lived HTTP session to perform an HTTP GET and return the result
 boost::asio::awaitable<Bytes> do_http_session(const std::string& uri);
 
 }  // namespace silkworm

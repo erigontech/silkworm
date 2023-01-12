@@ -3994,7 +3994,7 @@ inline void load_root_certificates(ssl::context& ctx, boost::system::error_code&
 
 } // detail
 
-// Load the root certificates into a ssl::context
+//! \brief Load the root certificates into a ssl::context
 inline void load_root_certificates(ssl::context& ctx) {
     boost::system::error_code ec;
     detail::load_root_certificates(ctx, ec);
@@ -4005,18 +4005,15 @@ namespace silkworm {
 
 namespace net = boost::asio;
 
-// Report a failure
-/*void fail(beast::error_code ec, char const* what) {
-    std::cerr << what << ": " << ec.message() << "\n";
-}*/
+static constexpr int kHttpVersion11{11};
+static constexpr const char* kMimeOctetStream{"application/octet-stream"};
 
-// Performs an HTTP GET and prints the response
 net::awaitable<Bytes> do_http_session(const std::string& uri) {
     const auto u = detail::parse_url(uri);
     std::string host{u.host};
     std::string port{u.port};
     std::string target{u.target};
-    const int version{11};
+    const int version{kHttpVersion11};
 
     // The SSL context is required, and holds certificates
     ssl::context ctx{ssl::context::tlsv12_client};
@@ -4063,7 +4060,7 @@ net::awaitable<Bytes> do_http_session(const std::string& uri) {
     http::request<http::string_body> request{http::verb::get, target, version};
     request.set(http::field::host, host);
     request.set(http::field::user_agent, BOOST_BEAST_VERSION_STRING);
-    request.set(http::field::accept, "application/octet-stream");
+    request.set(http::field::accept, kMimeOctetStream);
 
     // Set the timeout.
     tcp_stream.expires_after(std::chrono::seconds(30));

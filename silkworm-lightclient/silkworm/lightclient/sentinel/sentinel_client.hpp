@@ -25,7 +25,7 @@
 #include <silkworm/lightclient/sentinel/sentinel_server.hpp>
 #include <silkworm/lightclient/types/types.hpp>
 #include <silkworm/lightclient/ssz/common/bytes.hpp>
-#include <silkworm/lightclient/state/beacon-chain/light_client_bootstrap.hpp>
+#include <silkworm/lightclient/ssz/beacon-chain/light_client_bootstrap.hpp>
 
 namespace silkworm::cl::sentinel {
 

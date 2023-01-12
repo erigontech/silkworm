@@ -16,25 +16,24 @@
 
 #pragma once
 
-#include <silkworm/lightclient/ssz/common/boolean.hpp>
+#include <silkworm/lightclient/ssz/beacon-chain/beacon_block.hpp>
+#include <silkworm/lightclient/ssz/beacon-chain/sync_committee.hpp>
 #include <silkworm/lightclient/ssz/common/containers.hpp>
-#include <silkworm/lightclient/ssz/common/slot.hpp>
 #include <silkworm/lightclient/ssz/config/constants.hpp>
 #include <silkworm/lightclient/ssz/ssz/ssz_container.hpp>
 
 namespace eth {
-class SyncAggregate : public ssz::Container {
+class LightClientBootstrap : public ssz::Container {
   private:
-    VectorFixedSizedParts<Bytes1, constants::kCommiteeBitsSize> sync_committee_bits_;
-    BLSSignature sync_committee_signature_;
+    BeaconBlockHeader header_;
+    SyncCommittee current_sync_committee_;
+    VectorFixedSizedParts<Hash32, constants::kSyncCommitteeBranchSize> current_sync_committee_branch_;
 
   public:
-    [[nodiscard]] const auto& sync_committee_bits() const { return sync_committee_bits_; }
-    [[nodiscard]] const auto& sync_committee_signature() const { return sync_committee_signature_; }
+    [[nodiscard]] const auto& header() const { return header_; }
+    [[nodiscard]] const auto& current_sync_committee() const { return current_sync_committee_; }
+    [[nodiscard]] const auto& current_sync_committee_branch() const { return current_sync_committee_branch_; }
 
-    [[nodiscard]] std::size_t get_ssz_size() const override {
-        return sync_committee_bits_.get_ssz_size() + sync_committee_signature_.get_ssz_size();
-    }
     [[nodiscard]] std::vector<ssz::Chunk> hash_tree() const override;
     [[nodiscard]] BytesVector serialize() const override;
     bool deserialize(ssz::SSZIterator it, ssz::SSZIterator end) override;

@@ -23,7 +23,7 @@
 
 #include <boost/asio/awaitable.hpp>
 
-#include <silkworm/lightclient/state/beacon-chain/beacon_state.hpp>
+#include <silkworm/lightclient/ssz/beacon-chain/beacon_state.hpp>
 
 namespace silkworm::cl {
 

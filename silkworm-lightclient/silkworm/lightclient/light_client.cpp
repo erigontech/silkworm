@@ -34,7 +34,7 @@
 #include <silkworm/lightclient/params/config.hpp>
 #include <silkworm/lightclient/sentinel/sentinel_client.hpp>
 #include <silkworm/lightclient/sentinel/sentinel_server.hpp>
-#include <silkworm/lightclient/state/beacon-chain/beacon_state.hpp>
+#include <silkworm/lightclient/ssz/beacon-chain/beacon_state.hpp>
 #include <silkworm/lightclient/state/checkpoint.hpp>
 #include <silkworm/lightclient/state/storage.hpp>
 

@@ -23,13 +23,12 @@
 
 #include <utility>
 
-#include "attestation.hpp"
-#include "deposits.hpp"
-#include "eth1data.hpp"
-#include "silkworm/lightclient/ssz/common/slot.hpp"
-// #include "include/config.hpp"
-#include "silkworm/lightclient/ssz/ssz/ssz.hpp"
-#include "silkworm/lightclient/ssz/ssz/ssz_container.hpp"
+#include <silkworm/lightclient/ssz/beacon-chain/attestation.hpp>
+#include <silkworm/lightclient/ssz/beacon-chain/deposits.hpp>
+#include <silkworm/lightclient/ssz/beacon-chain/eth1data.hpp>
+#include <silkworm/lightclient/ssz/common/slot.hpp>
+#include <silkworm/lightclient/ssz/ssz/ssz.hpp>
+#include <silkworm/lightclient/ssz/ssz/ssz_container.hpp>
 // #include "yaml-cpp/yaml.h"
 
 namespace eth {

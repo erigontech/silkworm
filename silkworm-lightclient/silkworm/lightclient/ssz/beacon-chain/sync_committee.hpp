@@ -16,9 +16,8 @@
 
 #pragma once
 
-#include <silkworm/lightclient/ssz/common/boolean.hpp>
+#include <silkworm/lightclient/ssz/common/bytes.hpp>
 #include <silkworm/lightclient/ssz/common/containers.hpp>
-#include <silkworm/lightclient/ssz/common/slot.hpp>
 #include <silkworm/lightclient/ssz/config/constants.hpp>
 #include <silkworm/lightclient/ssz/ssz/ssz_container.hpp>
 

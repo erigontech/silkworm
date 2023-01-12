@@ -21,8 +21,6 @@
 #include <silkworm/common/util.hpp>
 #include <silkworm/lightclient/test/ssz.hpp>
 
-#include <silkworm/lightclient/state/beacon-chain/beacon_block.hpp>
-
 namespace silkworm::cl {
 
 TEST_CASE("Eth1Data SSZ") {

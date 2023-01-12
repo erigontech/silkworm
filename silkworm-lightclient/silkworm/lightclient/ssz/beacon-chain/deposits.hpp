@@ -20,12 +20,10 @@
  */
 
 #pragma once
-#include <numeric>
 
-#include "silkworm/lightclient/ssz/common/containers.hpp"
-#include "silkworm/lightclient/ssz/config/constants.hpp"
-// #include "include/config.hpp"
-#include "silkworm/lightclient/ssz/ssz/ssz_container.hpp"
+#include <silkworm/lightclient/ssz/common/bytes.hpp>
+#include <silkworm/lightclient/ssz/config/constants.hpp>
+#include <silkworm/lightclient/ssz/ssz/ssz_container.hpp>
 // #include "yaml-cpp/yaml.h"
 
 namespace eth {

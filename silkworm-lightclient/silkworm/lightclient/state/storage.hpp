@@ -17,10 +17,10 @@
 #pragma once
 
 #include <silkworm/lightclient/ssz/common/bytes.hpp>
-#include <silkworm/lightclient/state/beacon-chain/beacon_block.hpp>
-#include <silkworm/lightclient/state/beacon-chain/light_client_bootstrap.hpp>
-#include <silkworm/lightclient/state/beacon-chain/light_client_update.hpp>
-#include <silkworm/lightclient/state/beacon-chain/sync_committee.hpp>
+#include <silkworm/lightclient/ssz/beacon-chain/beacon_block.hpp>
+#include <silkworm/lightclient/ssz/beacon-chain/light_client_bootstrap.hpp>
+#include <silkworm/lightclient/ssz/beacon-chain/light_client_update.hpp>
+#include <silkworm/lightclient/ssz/beacon-chain/sync_committee.hpp>
 #include <silkworm/lightclient/types/types.hpp>
 
 namespace silkworm::cl {

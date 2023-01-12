@@ -37,8 +37,6 @@ void OutboundGetBlockHeaders::execute(db::ROAccess, HeaderChain& hc, BodySequenc
 
     // anchor extension
     do {
-        if (!hc.has_headers_to_request(now, active_peers_)) break;
-
         auto [packet, penalizations] = hc.anchor_extension_request(now, timeout);
 
         if (packet == std::nullopt) break;

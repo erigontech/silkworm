@@ -38,13 +38,10 @@ class BlockExchange final : public ActiveComponent {
 
     static constexpr std::optional<BlockNum> kTipOfTheChain{std::nullopt};
 
-    void download_headers(BlockNum current_height, std::optional<BlockNum> target_height);
-    void download_bodies(const Headers& headers);
+    void download_blocks(BlockNum current_height, std::optional<BlockNum> target_height);
+    void stop_downloading();
 
-    void stop_header_downloading();
-    void stop_body_downloading();
-
-    using ResultQueue = ConcurrentQueue<std::variant<Headers, Blocks>>;
+    using ResultQueue = ConcurrentQueue<Blocks>;
     ResultQueue& result_queue();
     bool in_sync();
 
@@ -80,8 +77,7 @@ class BlockExchange final : public ActiveComponent {
     ResultQueue results_{};
     MessageQueue messages_{};  // thread safe queue where to receive messages from sentry
     std::atomic_bool in_sync_{false};
-    std::atomic_bool header_downloading_active_{false};
-    std::atomic_bool body_downloading_active_{false};
+    std::atomic_bool downloading_active_{false};
 };
 
 }  // namespace silkworm

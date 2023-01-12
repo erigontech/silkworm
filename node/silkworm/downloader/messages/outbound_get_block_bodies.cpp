@@ -37,9 +37,7 @@ void OutboundGetBlockBodies::execute(db::ROAccess, HeaderChain&, BodySequence& b
     do {
         time_point_t now = std::chrono::system_clock::now();
 
-        if (!bs.has_bodies_to_request(now, active_peers_)) break;
-
-        auto [packet, penalizations, min_block] = bs.request_more_bodies(now, sentry.active_peers());
+        auto [packet, penalizations, min_block] = bs.request_more_bodies(now, active_peers_);
 
         if (packet.request.empty()) break;
 

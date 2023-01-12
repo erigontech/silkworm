@@ -43,7 +43,7 @@ class BodySequence {
     ~BodySequence() = default;
 
     // set a downloading target - this must be done at body forward
-    void downloading_target(const Headers& headers);
+    void download_bodies(const Headers& headers);
 
     //! core functionalities: trigger the internal algorithms to decide what bodies we miss
     using MinBlock = BlockNum;
@@ -71,6 +71,7 @@ class BodySequence {
     [[nodiscard]] BlockNum target_height() const;
     [[nodiscard]] size_t outstanding_bodies(time_point_t tp) const;
     [[nodiscard]] size_t ready_bodies() const;
+    [[nodiscard]] size_t requests() const;
 
     [[nodiscard]] const Download_Statistics& statistics() const;
 
@@ -126,7 +127,6 @@ class BodySequence {
     std::list<NewBlockPacket> announcements_to_do_;
 
     BlockNum highest_body_in_db_{0};
-    BlockNum headers_stage_height_{0};
     time_point_t last_nack_;
     size_t ready_bodies_{0};
     Download_Statistics statistics_;

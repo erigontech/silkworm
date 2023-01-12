@@ -102,7 +102,7 @@ void BlockExchange::execution_loop() {
             // collect downloaded headers & bodies
             collect_headers();
             collect_bodies();
-            in_sync_ = header_chain_.in_sync();
+            in_sync_ = header_chain_.in_sync() && body_sequence_.in_sync();
 
             // log status
             auto now = system_clock::now();
@@ -122,10 +122,12 @@ void BlockExchange::execution_loop() {
 }
 
 void BlockExchange::request_headers() {
-    if (!header_downloading_active_) return;
-
     constexpr auto only_one_request = 1;
-    if (messages_.size() < HeaderChain::kPerPeerMaxOutstandingRequests * sentry_.active_peers()) {
+
+    if (!downloading_active_) return;
+
+    if (messages_.size() < HeaderChain::kPerPeerMaxOutstandingRequests * sentry_.active_peers() &&
+        body_sequence_.requests() < BodySequence::kMaxInMemoryRequests) {  // back pressure from body_sequence to header_chain
 
         auto request_message = std::make_shared<OutboundGetBlockHeaders>(only_one_request, sentry_.active_peers());
         request_message->execute(db_access_, header_chain_, body_sequence_, sentry_);
@@ -137,9 +139,10 @@ void BlockExchange::request_headers() {
 }
 
 void BlockExchange::request_bodies() {
-    if (!body_downloading_active_) return;
-
     constexpr auto only_one_request = 1;
+
+    if (!downloading_active_) return;
+
     if (messages_.size() < BodySequence::kPerPeerMaxOutstandingRequests * sentry_.active_peers()) {
 
         auto request_message = std::make_shared<OutboundGetBlockBodies>(only_one_request, sentry_.active_peers());
@@ -152,19 +155,21 @@ void BlockExchange::request_bodies() {
 }
 
 void BlockExchange::collect_headers() {
-    if (!header_downloading_active_) return;
+    if (!downloading_active_) return;
 
-    auto just_downloaded = header_chain_.withdraw_stable_headers();
-    if (just_downloaded.empty()) return;
-    results_.push(std::move(just_downloaded));
+    auto ready_headers = header_chain_.withdraw_stable_headers();
+    if (ready_headers.empty()) return;
+
+    body_sequence_.download_bodies(ready_headers);
 }
 
 void BlockExchange::collect_bodies() {
-    if (!body_downloading_active_) return;
+    if (!downloading_active_) return;
 
-    auto just_downloaded = body_sequence_.withdraw_ready_bodies();
-    if (just_downloaded.empty()) return;
-    results_.push(std::move(just_downloaded));
+    auto ready_blocks = body_sequence_.withdraw_ready_bodies();
+    if (ready_blocks.empty()) return;
+
+    results_.push(std::move(ready_blocks));
 }
 
 void BlockExchange::log_status() {
@@ -222,35 +227,20 @@ void BlockExchange::initial_state(const std::vector<BlockHeader>& last_headers) 
     accept(message);
 }
 
-void BlockExchange::download_headers(BlockNum current_height, [[maybe_unused]] std::optional<BlockNum> target_height) {
+void BlockExchange::download_blocks(BlockNum current_height, [[maybe_unused]] std::optional<BlockNum> target_height) {
     // todo: use target_height, if it is not present use target_height = tip of the chain
 
     auto message = std::make_shared<InternalMessage<void>>(
         [=](HeaderChain& hc, BodySequence&) {
             hc.current_state(current_height);
-            header_downloading_active_ = true;  // must be done after sync_current_state
+            downloading_active_ = true;  // must be done after sync current_state
         });
 
     accept(message);
 }
 
-void BlockExchange::download_bodies(const Headers& headers) {
-
-    auto message = std::make_shared<InternalMessage<void>>(
-        [this, &headers](HeaderChain&, BodySequence& bs) {
-            bs.downloading_target(headers);
-            body_downloading_active_ = true;  // must be done after downloading_target
-        });
-
-    accept(message);
-}
-
-void BlockExchange::stop_header_downloading() {
-    header_downloading_active_ = false;
-}
-
-void BlockExchange::stop_body_downloading() {
-    body_downloading_active_ = false;
+void BlockExchange::stop_downloading() {
+    downloading_active_ = false;
 }
 
 }  // namespace silkworm

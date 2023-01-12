@@ -34,6 +34,7 @@ BlockNum BodySequence::target_height() const { return ; }
 BlockNum BodySequence::highest_block_in_memory() const { return body_requests_.highest_block(); }
 BlockNum BodySequence::lowest_block_in_memory() const { return body_requests_.lowest_block(); }
 size_t BodySequence::ready_bodies() const { return ready_bodies_; }
+size_t BodySequence::requests() const { return body_requests_.size(); }
 
 size_t BodySequence::outstanding_bodies(time_point_t tp) const {
     size_t requested_bodies{0};
@@ -176,7 +177,7 @@ auto BodySequence::renew_stale_requests(GetBlockBodiesPacket66& packet, BlockNum
 }
 
 //! Make requests of new bodies to get progress
-void BodySequence::downloading_target(const Headers& headers) {
+void BodySequence::download_bodies(const Headers& headers) {
 
     for (auto header: headers) {
         BlockNum bn = header->number;

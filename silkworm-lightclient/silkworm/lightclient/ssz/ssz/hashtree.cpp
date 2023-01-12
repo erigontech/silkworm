@@ -76,7 +76,7 @@ std::vector<Chunk> pack_and_pad(const std::vector<std::uint8_t>& vec) {
 void merkleize(const std::vector<Chunk>& vec, std::vector<Chunk>& hash_tree, std::size_t limit, const Hasher& hasher) {
     auto depth = std::ceil(std::log2(limit));
     auto first = hash_tree.begin();
-    auto last = first + (vec.size() + 1) / 2;  // NOLINT
+    auto last = first + std::vector<Chunk>::difference_type(vec.size() + 1) / 2;  // NOLINT
     if (vec.size() > 1) hasher.hash_64b_blocks(hash_tree[0].begin(), vec[0].begin(), vec.size() / 2);
     if (vec.size() % 2) *std::prev(last) = hash_2_chunks(vec.back(), zero_hash, hasher);
     auto dist = std::distance(first, last);
@@ -101,9 +101,7 @@ void merkleize(const std::vector<Chunk>& vec, std::vector<Chunk>& hash_tree, std
 }  // namespace
 
 namespace ssz {
-#ifndef CUSTOM_HASHER
-const auto HashTree::hasher = Hasher{};
-#endif
+
 HashTree::HashTree(const std::vector<Chunk>& chunks, std::uint64_t limit) {
     // return early if only one chunk:
     if (limit <= 1 && chunks.size() == 1)

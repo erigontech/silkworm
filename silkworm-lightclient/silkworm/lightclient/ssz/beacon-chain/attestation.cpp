@@ -121,4 +121,4 @@ namespace eth {
     bool Attestation::decode(const YAML::Node &node) {
         return decode_(node, {{"aggregation_bits", &aggregation_bits}, {"data", &data}, {"signature", &signature}});
     }*/
-};  // namespace eth
+}  // namespace eth

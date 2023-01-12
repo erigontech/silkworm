@@ -21,7 +21,7 @@
 
 #pragma once
 
-#include "../common/slot.hpp"
+#include <silkworm/lightclient/ssz/common/slot.hpp>
 
 namespace constants {
 constexpr auto GENESIS_SLOT = eth::Slot{0};
@@ -60,8 +60,7 @@ constexpr std::uint64_t CHURN_LIMIT_QUOTIENT = 65536;
 
 constexpr int DEPOSIT_CHAIN_ID = 1;
 constexpr int DEPOSIT_NETWORK_ID = 1;
-constexpr eth::Eth1Address DEPOSIT_CONTRACT_ADDRESS{
-    "0x00000000219ab540356cBB839Cbe05303d7705Fa"};
+constexpr eth::Eth1Address DEPOSIT_CONTRACT_ADDRESS{"0x00000000219ab540356cBB839Cbe05303d7705Fa"};
 
 constexpr auto TEST_VECTORS_PATH = "@CMAKE_SOURCE_DIR@/eth2.0-spec-tests/tests/mainnet/phase0/ssz_static/";
 constexpr auto TEST_VECTORS_GENERAL_PATH = "@CMAKE_SOURCE_DIR@/eth2.0-spec-tests/tests/general/phase0/ssz_generic/";

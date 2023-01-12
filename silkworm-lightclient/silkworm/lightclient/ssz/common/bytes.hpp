@@ -21,6 +21,7 @@
 
 #pragma once
 
+#include <algorithm>
 #include <array>
 #include <bit>
 #include <concepts>
@@ -32,31 +33,9 @@
 #include <stdexcept>
 #include <vector>
 
-#include "../helpers/bytes_to_int.hpp"
-// #include "../helpers/bytes_to_string.hpp"
-#include "../ssz/ssz_container.hpp"
+#include <silkworm/lightclient/ssz/ssz_container.hpp>
+#include <silkworm/lightclient/ssz/helpers/bytes_to_int.hpp>
 // #include "yaml-cpp/yaml.h"
-
-/*#ifdef __APPLE__
-namespace std {
-template <class To, class From>
-std::enable_if_t<
-    sizeof(To) == sizeof(From) &&
-        std::is_trivially_copyable_v<From> &&
-        std::is_trivially_copyable_v<To>,
-    To>
-// constexpr support needs compiler magic
-bit_cast(const From& src) noexcept {
-    static_assert(std::is_trivially_constructible_v<To>,
-                  "This implementation additionally requires "
-                  "destination type to be trivially constructible");
-
-    To dst;
-    std::memcpy(&dst, &src, sizeof(To));
-    return dst;
-}
-}
-#endif*/
 
 namespace eth {
 template <std::size_t N>
@@ -67,10 +46,9 @@ class Bytes : public ssz::Container {
     // cppcheck-suppress unusedPrivateFunction
     static constexpr auto bytes_from_int(std::integral auto value) {
         std::array<std::uint8_t, N> ret{};
-        // std::array<std::uint8_t, N> as_bytes{reinterpret_cast<const uint8_t*>(&value), sizeof(value)};
+        // TODO(canepat) std::bit_cast is not found in Apple Clang 14
         // auto as_bytes = std::bit_cast<std::array<std::uint8_t, sizeof(value)>>(value);
         std::span as_bytes{reinterpret_cast<uint8_t*>(&value), sizeof(value)};
-        // std::array<std::uint8_t, sizeof(value)> as_bytes{};
         if constexpr (std::endian::native == std::endian::big)
             std::reverse_copy(as_bytes.begin(), as_bytes.end(), ret.begin());
         else

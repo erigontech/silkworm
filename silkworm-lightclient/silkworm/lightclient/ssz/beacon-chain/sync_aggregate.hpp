@@ -16,10 +16,10 @@
 
 #pragma once
 
+#include <silkworm/lightclient/ssz/constants.hpp>
+#include <silkworm/lightclient/ssz/ssz_container.hpp>
 #include <silkworm/lightclient/ssz/common/containers.hpp>
 #include <silkworm/lightclient/ssz/common/slot.hpp>
-#include <silkworm/lightclient/ssz/config/constants.hpp>
-#include <silkworm/lightclient/ssz/ssz/ssz_container.hpp>
 
 namespace eth {
 class SyncAggregate : public ssz::Container {

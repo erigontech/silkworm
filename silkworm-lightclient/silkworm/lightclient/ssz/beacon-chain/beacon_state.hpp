@@ -21,14 +21,14 @@
 
 #pragma once
 
+#include <silkworm/lightclient/ssz/constants.hpp>
+#include <silkworm/lightclient/ssz/ssz_container.hpp>
 #include <silkworm/lightclient/ssz/beacon-chain/beacon_block.hpp>
 #include <silkworm/lightclient/ssz/beacon-chain/execution_header.hpp>
 #include <silkworm/lightclient/ssz/beacon-chain/sync_committee.hpp>
 #include <silkworm/lightclient/ssz/beacon-chain/validator.hpp>
 #include <silkworm/lightclient/ssz/common/bitlist.hpp>
 #include <silkworm/lightclient/ssz/common/bitvector.hpp>
-#include <silkworm/lightclient/ssz/config/constants.hpp>
-#include <silkworm/lightclient/ssz/ssz/ssz_container.hpp>
 
 namespace eth {
 class BeaconStatePhase0 : public ssz::Container {

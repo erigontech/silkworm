@@ -23,9 +23,10 @@
 
 #include <cstdint>
 
-#include "bytes.hpp"
-#include "../helpers/bytes_to_int.hpp"
-#include "../ssz/ssz_container.hpp"
+#include <silkworm/lightclient/ssz/constants.hpp>
+#include <silkworm/lightclient/ssz/ssz_container.hpp>
+#include <silkworm/lightclient/ssz/common/bytes.hpp>
+#include <silkworm/lightclient/ssz/helpers/bytes_to_int.hpp>
 // #include "yaml-cpp/yaml.h"
 
 namespace eth {

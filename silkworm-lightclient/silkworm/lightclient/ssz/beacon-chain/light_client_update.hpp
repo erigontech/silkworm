@@ -16,13 +16,13 @@
 
 #pragma once
 
+#include <silkworm/lightclient/ssz/constants.hpp>
+#include <silkworm/lightclient/ssz/ssz_container.hpp>
 #include <silkworm/lightclient/ssz/beacon-chain/beacon_block.hpp>
 #include <silkworm/lightclient/ssz/beacon-chain/sync_aggregate.hpp>
 #include <silkworm/lightclient/ssz/beacon-chain/sync_committee.hpp>
 #include <silkworm/lightclient/ssz/common/containers.hpp>
 #include <silkworm/lightclient/ssz/common/slot.hpp>
-#include <silkworm/lightclient/ssz/config/constants.hpp>
-#include <silkworm/lightclient/ssz/ssz/ssz_container.hpp>
 
 namespace eth {
 class LightClientUpdate : public ssz::Container {

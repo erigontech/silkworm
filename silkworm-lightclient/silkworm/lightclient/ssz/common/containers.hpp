@@ -20,15 +20,16 @@
  */
 
 #pragma once
+
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
 #include <iterator>
 
-#include "../common/slot.hpp"
-#include "../ssz/hashtree.hpp"
-#include "../ssz/ssz.hpp"
-#include "../ssz/ssz_container.hpp"
+#include <silkworm/lightclient/ssz/ssz_container.hpp>
+#include <silkworm/lightclient/ssz/common/slot.hpp>
+#include <silkworm/lightclient/ssz/ssz/hashtree.hpp>
+#include <silkworm/lightclient/ssz/ssz/ssz.hpp>
 // #include "yaml-cpp/yaml.h"
 
 namespace eth

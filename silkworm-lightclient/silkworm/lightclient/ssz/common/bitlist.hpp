@@ -20,10 +20,11 @@
  */
 
 #pragma once
+
 #include <ostream>
 #include <vector>
 
-#include "../ssz/ssz_container.hpp"
+#include <silkworm/lightclient/ssz/ssz_container.hpp>
 // #include "yaml-cpp/yaml.h"
 
 namespace eth {

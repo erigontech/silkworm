@@ -21,18 +21,20 @@
  */
 
 #pragma once
+
 #include <array>
 #include <cassert>
 #include <iomanip>
 #include <iostream>
 #include <sstream>
 
-#include "../common/bytes.hpp"
-#include "../ssz/ssz.hpp"
-#include "../ssz/ssz_container.hpp"
+#include <silkworm/lightclient/ssz/ssz_container.hpp>
+#include <silkworm/lightclient/ssz/common/bytes.hpp>
+#include <silkworm/lightclient/ssz/ssz/ssz.hpp>
 // #include "yaml-cpp/yaml.h"
 
 namespace eth {
+
 template <unsigned N>
 class Bitvector : public ssz::Container {
    private:
@@ -40,7 +42,7 @@ class Bitvector : public ssz::Container {
 
    public:
     static constexpr std::size_t ssz_size = (N + constants::BITS_PER_BYTE - 1) / constants::BITS_PER_BYTE;
-    std::size_t get_ssz_size() const override { return ssz_size; }
+    [[nodiscard]] std::size_t get_ssz_size() const override { return ssz_size; }
 
     Bitvector() = default;
     explicit constexpr Bitvector(std::array<bool, N> vec) : m_arr{vec} {};
@@ -102,4 +104,5 @@ class Bitvector : public ssz::Container {
         return true;
     }*/
 };
+
 }  // namespace eth

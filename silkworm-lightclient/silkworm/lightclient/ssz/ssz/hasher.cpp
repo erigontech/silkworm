@@ -52,7 +52,7 @@ void Hasher::sha256_basic(unsigned char* output, const unsigned char* input, std
 Hasher::IMPL Hasher::implemented() {
     IMPL ret = IMPL::NONE;
 #if (__x86_64__ || __i386__)
-    std::uint32_t a, b, c, d;  // NOLINT
+    std::uint32_t a{0}, b{0}, c{0}, d{0};
     __get_cpuid_count(CPUID_LEAF, 0, &a, &b, &c, &d);
     if (b & bit_SHA) ret = ret | IMPL::SHA;
     if (b & bit_AVX2) ret = ret | IMPL::AVX2;

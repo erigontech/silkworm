@@ -29,8 +29,6 @@
 #include <silkworm/common/base.hpp>
 #include <silkworm/sentry/rlpx/crypto/sha3_hasher.hpp>
 
-extern "C" void sha256_1_avx(unsigned char* output, const unsigned char* input);
-
 #if (__x86_64__ || __i386__)
 namespace {
 constexpr auto CPUID_LEAF = 7;
@@ -38,17 +36,6 @@ constexpr auto CPUID_LEAF = 7;
 #endif
 
 namespace ssz {
-
-#if (__x86_64__ || __i386__)
-void Hasher::sha256_sse(unsigned char* output, const unsigned char* input, std::size_t blocks) {
-    while (blocks) {
-        sha256_1_avx(output, input);
-        input += 2*constants::BYTES_PER_CHUNK;
-        output += constants::BYTES_PER_CHUNK;
-        blocks--;
-    }
-}
-#endif
 
 void Hasher::sha256_basic(unsigned char* output, const unsigned char* input, std::size_t blocks) {
     silkworm::sentry::rlpx::crypto::Sha3Hasher hasher;
@@ -78,34 +65,7 @@ Hasher::IMPL Hasher::implemented() {
 }
 
 Hasher::SHA256_hasher Hasher::best_sha256_implementation() {
-    auto impl = implemented();
-#if (__x86_64__ || __i386__)
-    if (!!(impl & IMPL::SHA)) return &::sha256_shani;
-    if (!!(impl & IMPL::AVX2)) return &::sha256_8_avx2;
-    if (!!(impl & IMPL::AVX)) return &::sha256_4_avx;
-    if (!!(impl & IMPL::SSE)) return &sha256_sse;
-#else
-    (void)impl;
-#endif
     return &sha256_basic;
 }
 
-/*Hasher::Hasher(Hasher::IMPL impl) {
-    switch (impl) {
-        case IMPL::SHA:
-            _hash_64b_blocks = sha256_shani;
-            break;
-        case IMPL::AVX2:
-            _hash_64b_blocks = sha256_8_avx2;
-            break;
-        case IMPL::AVX: 
-            _hash_64b_blocks = sha256_4_avx;
-            break;
-        case IMPL::SSE:
-            _hash_64b_blocks = &sha256_sse;
-            break;
-        default:
-            _hash_64b_blocks = best_sha256_implementation();
-    }
-}*/
 }  // namespace ssz

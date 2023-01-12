@@ -24,10 +24,6 @@
 #include <cstdint>
 #include <cstddef>
 
-extern "C" void sha256_4_avx(unsigned char* output, const unsigned char* input, std::size_t blocks);
-extern "C" void sha256_8_avx2(unsigned char* output, const unsigned char* input, std::size_t blocks);
-extern "C" void sha256_shani(unsigned char* output, const unsigned char* input, std::size_t blocks);
-
 namespace ssz {
 
 class Hasher {
@@ -52,27 +48,17 @@ class Hasher {
         inline friend bool operator !(IMPL a) noexcept { return a == IMPL::NONE; };
 
         Hasher() : _hash_64b_blocks { best_sha256_implementation() } {};
-        // Hasher(IMPL impl);
         
         inline constexpr void hash_64b_blocks(unsigned char* output, const unsigned char* input, std::size_t blocks) const {
             _hash_64b_blocks(output, input, blocks);
         }
         
         static IMPL implemented();
-        
-
-
     private:
         typedef void (*SHA256_hasher)(unsigned char*, const unsigned char*, std::size_t);
         SHA256_hasher _hash_64b_blocks;
         
         static SHA256_hasher best_sha256_implementation();
-#if (__x86_64__ || __i386__)
-        static constexpr auto sha256_4_avx = ::sha256_4_avx;
-        static constexpr auto sha256_8_avx2 = ::sha256_8_avx2;
-        static constexpr auto sha256_shani = ::sha256_shani;
-        static void sha256_sse(unsigned char* output, const unsigned char* input, std::size_t blocks);
-#endif
         static void sha256_basic(unsigned char* output, const unsigned char* input, std::size_t blocks);
 };
 

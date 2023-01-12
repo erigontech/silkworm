@@ -51,7 +51,7 @@ awaitable<void> RemoteClient::start() {
     co_await timeout();
 }
 
-awaitable<LightClientBootstrapPtr> RemoteClient::bootstrap_request_v1(const Hash32& root) {
+awaitable<LightClientBootstrapPtr> RemoteClient::bootstrap_request_v1(const Hash32& /*root*/) {
     // TODO(canepat) implement
     co_return LightClientBootstrapPtr{};
 }

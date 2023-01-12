@@ -35,6 +35,7 @@ class ChainForkView {
 
     void add(const BlockHeader&);
 
+    ChainHead head() const;
     BlockNum head_height() const;
     Hash head_hash() const;
     Total_Difficulty head_total_difficulty() const;

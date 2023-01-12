@@ -186,15 +186,13 @@ void BodySequence::download_bodies(const Headers& headers) {
         new_request.block_height = header->number;
         new_request.request_id = 0;  // new request
         new_request.block_hash = header->hash();
-        new_request.td = header->difficulty + parent->total_difficulty;
         //new_request.request_time
 
         std::optional<BlockBody> announced_body = announced_blocks_.remove(bn);
         if (announced_body && is_valid_body(*header, *announced_body)) {
-            add_to_announcements(*header, *announced_body);
-
             new_request.body = std::move(*announced_body);
             new_request.ready = true;
+            new_request.to_announce = true;
             ready_bodies_ += 1;
         }
 
@@ -224,7 +222,7 @@ bool BodySequence::is_valid_body(const BlockHeader& header, const BlockBody& bod
 }
 
 Blocks BodySequence::withdraw_ready_bodies() {
-    std::vector<std::shared_ptr<Block>> ready_bodies;
+    Blocks ready_bodies;
 
     auto curr_req = body_requests_.begin();
     while (curr_req != body_requests_.end()) {
@@ -234,6 +232,9 @@ Blocks BodySequence::withdraw_ready_bodies() {
 
         highest_body_in_db_ = std::max(highest_body_in_db_, past_request.block_height);
         std::shared_ptr<Block> b{new Block{std::move(past_request.body), std::move(past_request.header)}};
+
+        b.to_announce = past_request.to_announce;
+
         ready_bodies.push_back(b);
 
         curr_req = body_requests_.erase(curr_req);  // erase curr_req and update curr_req to point to the next request
@@ -241,14 +242,6 @@ Blocks BodySequence::withdraw_ready_bodies() {
 
     ready_bodies_ -= ready_bodies.size();
     return ready_bodies;
-}
-
-void BodySequence::add_to_announcements(BlockHeader header, BlockBody body, Total_Difficulty td) {
-
-    NewBlockPacket packet{{std::move(body), std::move(header)}, td};
-
-    // add to list
-    announcements_to_do_.push_back(std::move(packet));
 }
 
 void BodySequence::AnnouncedBlocks::add(Block block) {

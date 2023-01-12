@@ -31,6 +31,8 @@ namespace silkworm {
 
 using Blocks = std::vector<std::shared_ptr<Block>>;
 
+using BlockAnnouncements = std::list<Hash>;
+
 /** BodySequence represents the sequence of body that we are downloading.
  *  It has these responsibilities:
  *    - decide what bodies request (to peers)
@@ -60,11 +62,9 @@ class BodySequence {
     Penalty accept_new_block(const Block&, const PeerId&);
 
     //! core functionalities: returns bodies that are ready to be persisted
-    Blocks withdraw_ready_bodies();
+    std::tuple<Blocks, BlockAnnouncements> withdraw_ready_bodies();
 
     //! minor functionalities
-    std::list<NewBlockPacket>& announces_to_do();
-
     [[nodiscard]] BlockNum highest_block_in_db() const;
     [[nodiscard]] BlockNum highest_block_in_memory() const;
     [[nodiscard]] BlockNum lowest_block_in_memory() const;
@@ -86,7 +86,6 @@ class BodySequence {
   protected:
     auto renew_stale_requests(GetBlockBodiesPacket66&, MinBlock&, time_point_t tp, seconds_t timeout)
         -> std::vector<PeerPenalization>;
-    void add_to_announcements(BlockHeader, BlockBody, Total_Difficulty);
 
     static bool is_valid_body(const BlockHeader&, const BlockBody&);
 
@@ -96,9 +95,9 @@ class BodySequence {
         BlockNum block_height{0};
         BlockHeader header;
         BlockBody body;
-        Total_Difficulty td;
         time_point_t request_time;
         bool ready{false};
+        bool to_announce{false};
     };
 
     struct AnnouncedBlocks {
@@ -124,7 +123,6 @@ class BodySequence {
 
     IncreasingHeightOrderedRequestContainer body_requests_;
     AnnouncedBlocks announced_blocks_;
-    std::list<NewBlockPacket> announcements_to_do_;
 
     BlockNum highest_body_in_db_{0};
     time_point_t last_nack_;

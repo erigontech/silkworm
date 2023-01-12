@@ -33,6 +33,8 @@ void OutboundNewBlock::execute(db::ROAccess, HeaderChain&, BodySequence& bs, Sen
         return;
     }
 
+    NewBlockPacket packet{{std::move(body), std::move(header)}, td};
+
     seconds_t timeout = 1s;
     while (!announces_to_do.empty()) {
         auto& announce = *announces_to_do.begin();

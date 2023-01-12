@@ -34,53 +34,38 @@ auto SyncEngine::forward_and_insert_blocks() -> NewHeight {
     ResultQueue& downloading = block_exchange_.result_queue();
 
     auto current_header_head = exec_engine_.get_headers_head();
-    block_exchange_.download_headers(current_header_head.number, BlockExchange::kTipOfTheChain);
+    block_exchange_.download_blocks(current_header_head.number, BlockExchange::kTipOfTheChain);
 
     while (!is_stopping() && !block_exchange_.in_sync()) {
-        std::variant<Headers, Blocks> result;
-        bool present = downloading.timed_wait_and_pop(result, 100ms);
+        Blocks blocks;
+
+        // wait for a batch of blocks
+        bool present = downloading.timed_wait_and_pop(blocks, 100ms);
         if (!present) continue;
 
-        if (std::holds_alternative<Headers>(result)) {
-            auto& headers = std::get<Headers>(result);
-            as_range::for_each(headers, [this](const auto& header) {
-                chain_fork_view_.add(*header);
-            });
-            exec_engine_.insert_headers(headers);
-            current_height_ = chain_fork_view_.head_height();
+        // compute head of chain applying fork choice rule
+        as_range::for_each(blocks, [this](const auto& block) {
+            auto block->td = chain_fork_view_.add(block->header);
+            if (to_announce)
+                announcements_to_do_.add(block);
+        });
 
-            block_exchange_.download_bodies(headers);
+        // insert blocks into database
+        exec_engine_.insert_blocks(blocks);
 
-            send_new_header_announcements();
-        }
+        // send announcement to peers
+        send_new_block_announcements(announcements);  // according to eth/67 it must be done here, after simple header verification
 
-        if (std::holds_alternative<Blocks>(result)) {
-            auto& blocks = std::get<Blocks>(result);
-            exec_engine_.insert_bodies(blocks);
-
-            // compute new head
-            auto highest_block = std::max_element(bodies.begin(), bodies.end(), [](shared_ptr<Block>& a, shared_ptr<Block>& b) {
-                return a->header.number < b->header.number;
-            });
-            if (highest_block->get()->header.number > current_head.number) {
-                current_head = {.number = highest_block->get()->header.number, .hash = highest_block->get()->header.hash()};
-            }
-
-            send_new_block_announcements();
-        }
+        send_new_block_hash_announcements();  // todo: according to eth/67 it must be done after a full block verification
     };
 
-    block_exchange_.stop_header_downloading();
-    block_exchange_.stop_body_downloading();
+    block_exchange_.stop_downloading();
 
-
-    return {.new_head = current_head, .new_height = current_height_};
+    return {.block_num = chain_fork_view_.head_height(), .hash = chain_fork_view_.head_hash()};
 }
 
-void SyncEngine::unwind(HeaderSync& headers_stage, BodySync& bodies_stage, UnwindPoint unwind_point) {
-    bodies_stage.unwind(unwind_point);
-
-    headers_stage.unwind(unwind_point);
+void SyncEngine::unwind(UnwindPoint) {
+    // does nothing
 }
 
 void SyncEngine::execution_loop() {
@@ -98,7 +83,7 @@ void SyncEngine::execution_loop() {
         if (std::holds_alternative<InvalidChain>(verification)) {
             auto invalid_chain = std::get<InvalidChain>(verification);
 
-            unwind(headers_stage, bodies_stage, {invalid_chain.unwind_point});
+            unwind({invalid_chain.unwind_point});
 
             if (!invalid_chain.bad_headers.empty()) {
                 update_bad_headers(std::move(invalid_chain.bad_headers));
@@ -123,11 +108,28 @@ void SyncEngine::execution_loop() {
 
 auto SyncEngine::update_bad_headers(std::set<Hash> bad_headers) -> std::shared_ptr<InternalMessage<void>> {
     auto message = std::make_shared<InternalMessage<void>>(
-        [bads = std::move(bad_headers)](HeaderChain& wc, BodySequence&) { wc.add_bad_headers(bads); });
+        [bads = std::move(bad_headers)](HeaderChain& hc, BodySequence&) { hc.add_bad_headers(bads); });
 
     block_exchange_.accept(message);
 
     return message;
+}
+
+// New block hash announcements propagation
+void SyncEngine::send_new_block_hash_announcements() {
+    // if (!sentry_.ready()) return;
+
+    auto message = std::make_shared<OutboundNewBlockHashes>();
+
+    block_exchange_.accept(message);
+}
+
+// New block announcements propagation
+void SyncEngine::send_new_block_announcements() {
+
+    auto message = std::make_shared<OutboundNewBlock>(announcements_to_do_);
+
+    block_exchange_.accept(message);
 }
 
 }  // namespace silkworm::chainsync

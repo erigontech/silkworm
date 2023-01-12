@@ -33,6 +33,8 @@ Hash ChainForkView::head_hash() const { return current_head_.hash; }
 
 BigInt ChainForkView::head_total_difficulty() const { return current_head_.total_difficulty; }
 
+ChainHead ChainForkView::head() const { return current_head_; }
+
 void ChainForkView::add(const BlockHeader& header) {  // try to modularize this method
 
     auto height = header.number;

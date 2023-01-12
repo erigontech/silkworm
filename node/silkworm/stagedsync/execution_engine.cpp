@@ -152,25 +152,11 @@ auto ExecutionEngine::current_status() -> VerificationResult {
     return current_status_;
 }
 
-void ExecutionEngine::insert_headers(std::vector<std::shared_ptr<BlockHeader>>& headers) {
-    SILK_TRACE << "ExecutionEngine: inserting " << headers.size() << " headers";
-    if (headers.empty()) return;
-
-    as_range::for_each(headers, [&, this](const auto& header) { insert_header( *header); });
-}
-
 void ExecutionEngine::insert_header(BlockHeader& header) {
     // skip 'if (!db::has_header(...header.hash())' to avoid hash computing (also write_header does an upsert)
     db::write_header(tx_, header, true);  // todo: move?
 
     // header_cache_.put(header.hash(), header);
-}
-
-void ExecutionEngine::insert_bodies(std::vector<std::shared_ptr<Block>>& bodies) {
-    SILK_TRACE << "ExecutionEngine: inserting " << bodies.size() << " bodies";
-    if (bodies.empty()) return;
-
-    as_range::for_each(bodies, [&, this](const auto& body) { insert_body(*body); });
 }
 
 void ExecutionEngine::insert_body(Block& block) {
@@ -180,6 +166,16 @@ void ExecutionEngine::insert_body(Block& block) {
     if (!db::has_body(tx_, block_num, block_hash)) {
         db::write_body(tx_, block, block_hash, block_num);
     }
+}
+
+void ExecutionEngine::insert_blocks(std::vector<std::shared_ptr<Block>>& blocks) {
+    SILK_TRACE << "ExecutionEngine: inserting " << blocks.size() << " blocks";
+    if (blocks.empty()) return;
+
+    as_range::for_each(blocks, [&, this](const auto& block) {
+        insert_header(block->header);
+        insert_body(*block);
+    });
 }
 
 auto ExecutionEngine::verify_chain(Hash head_block_hash) -> VerificationResult {

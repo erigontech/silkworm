@@ -28,7 +28,7 @@ namespace silkworm::consensus {
 ValidationResult EngineBase::pre_validate_block_body(const Block& block, const BlockState& state) {
     const BlockHeader& header{block.header};
 
-    evmc::bytes32 txn_root = compute_transaction_root(block);
+    const evmc::bytes32 txn_root{compute_transaction_root(block)};
     if (txn_root != header.transactions_root) {
         return ValidationResult::kWrongTransactionsRoot;
     }
@@ -46,10 +46,20 @@ ValidationResult EngineBase::pre_validate_block_body(const Block& block, const B
         return ValidationResult::kTooManyOmmers;
     }
 
-    evmc::bytes32 ommers_hash = compute_ommers_hash(block);
+    const evmc::bytes32 ommers_hash{compute_ommers_hash(block)};
     if (ByteView{ommers_hash.bytes} != ByteView{header.ommers_hash}) {
         return ValidationResult::kWrongOmmersHash;
     }
+
+    const evmc_revision rev{chain_config_.revision(header.number)};
+    if (rev < EVMC_SHANGHAI && block.withdrawals) {
+        return ValidationResult::kUnexpectedWithdrawals;
+    }
+    if (rev >= EVMC_SHANGHAI && !block.withdrawals) {
+        return ValidationResult::kMissingWithdrawals;
+    }
+
+    // TODO(yperbasis): validate withdrawals_root
 
     return validate_ommers(block, state);
 }
@@ -153,6 +163,14 @@ ValidationResult EngineBase::validate_block_header(const BlockHeader& header, co
         return ValidationResult::kWrongBaseFee;
     }
 
+    const evmc_revision rev{chain_config_.revision(header.number)};
+    if (rev < EVMC_SHANGHAI && header.withdrawals_root) {
+        return ValidationResult::kUnexpectedWithdrawals;
+    }
+    if (rev >= EVMC_SHANGHAI && !header.withdrawals_root) {
+        return ValidationResult::kMissingWithdrawals;
+    }
+
     return validate_seal(header);
 }
 
@@ -232,17 +250,10 @@ std::optional<intx::uint256> EngineBase::expected_base_fee_per_gas(const BlockHe
 }
 
 evmc::bytes32 EngineBase::compute_transaction_root(const BlockBody& body) {
-    if (body.transactions.empty()) {
-        return kEmptyRoot;
-    }
-
     static constexpr auto kEncoder = [](Bytes& to, const Transaction& txn) {
         rlp::encode(to, txn, /*for_signing=*/false, /*wrap_eip2718_into_string=*/false);
     };
-
-    evmc::bytes32 txn_root{trie::root_hash(body.transactions, kEncoder)};
-
-    return txn_root;
+    return trie::root_hash(body.transactions, kEncoder);
 }
 
 evmc::bytes32 EngineBase::compute_ommers_hash(const BlockBody& body) {

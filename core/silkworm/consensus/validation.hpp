@@ -19,19 +19,19 @@
 namespace silkworm {
 
 // Classification of invalid transactions and blocks.
-enum class [[nodiscard]] ValidationResult{
+enum class [[nodiscard]] ValidationResult {
     kOk,                      // All checks passed
     kUnknownConsensusEngine,  // Undetectable consensus engine
     kFutureBlock,             // Block has a timestamp in the future
 
-    // See [YP] Section 4.3.2 "Holistic Validity", Eq (31)
+    // [YP] Section 4.3.2 "Holistic Validity", Eq (31)
     kWrongStateRoot,         // wrong Hr
     kWrongOmmersHash,        // wrong Ho
     kWrongTransactionsRoot,  // wrong Ht
     kWrongReceiptsRoot,      // wrong He
     kWrongLogsBloom,         // wrong Hb
 
-    // See [YP] Section 4.3.4 "Block Header Validity", Eq (50)
+    // [YP] Section 4.3.4 "Block Header Validity", Eq (50)
     kUnknownParent,                 // P(H) = ∅ ∨ Hi ≠ P(H)Hi + 1
     kUnknownParentTotalDifficulty,  // failed to look up parent's total difficulty
     kWrongDifficulty,               // Hd ≠ D(H)
@@ -44,7 +44,7 @@ enum class [[nodiscard]] ValidationResult{
     kInvalidSeal,                   // Nonce or mix_hash (invalid Proof of Work)
     kInvalidNonce,                  // Hn != 0 (Proof of State, EIP-3675)
 
-    // See [YP] Section 6.2 "Execution", Eq (58)
+    // [YP] Section 6.2 "Execution", Eq (58)
     kMissingSender,          // S(T) = ∅
     kSenderNoEOA,            // EIP-3607: σ[S(T)]c ≠ KEC( () )
     kWrongNonce,             // Tn ≠ σ[S(T)]n
@@ -60,21 +60,25 @@ enum class [[nodiscard]] ValidationResult{
     kUnsupportedTransactionType,    // EIP-2718
     kNonceTooHigh,                  // Tn ≥ 2^64 - 1 (EIP-2681)
 
-    // See [YP] Section 11.1 "Ommer Validation", Eq (157)
+    // [YP] Section 11.1 "Ommer Validation", Eq (157)
     kTooManyOmmers,       // ‖BU‖ > 2
     kInvalidOmmerHeader,  // ¬V(U)
     kNotAnOmmer,          // ¬k(U, P(BH)H, 6)
     kDuplicateOmmer,      // not well covered by the YP actually
 
-    // See [YP] Section 11.2 "Transaction Validation", Eq (160)
+    // [YP] Section 11.2 "Transaction Validation", Eq (160)
     kWrongBlockGas,  // BHg ≠ l(BR)u
 
-    // See EIP-3675: Upgrade consensus to Proof-of-Stake
+    // EIP-3675: Upgrade consensus to Proof-of-Stake
     kPoSBlockBeforeMerge,
     kPoWBlockAfterMerge,
 
-    // See EIP-3860: Limit and meter initcode
+    // EIP-3860: Limit and meter initcode
     kMaxInitCodeSizeExceeded,
+
+    // EIP-4895: Beacon chain push withdrawals as operations
+    kMissingWithdrawals,
+    kUnexpectedWithdrawals,
 };
 
 }  // namespace silkworm

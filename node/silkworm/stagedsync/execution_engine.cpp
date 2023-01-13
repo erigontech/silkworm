@@ -21,6 +21,8 @@ limitations under the License.
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/downloader/internals/db_utils.hpp>
 
+#include <silkworm/downloader/internals/body_sequence.hpp>
+
 namespace silkworm::stagedsync {
 
 void ensure_invariant(bool condition, std::string message) {
@@ -179,6 +181,8 @@ void ExecutionEngine::insert_blocks(std::vector<std::shared_ptr<BLOCK>>& blocks)
         insert_body(*block);
     });
 }
+
+template void ExecutionEngine::insert_blocks<BlockEx>(std::vector<std::shared_ptr<BlockEx>>& blocks); // explicit instantiation.
 
 auto ExecutionEngine::verify_chain(Hash head_block_hash) -> VerificationResult {
     // "nothing to do" condition

@@ -29,9 +29,14 @@
 
 namespace silkworm {
 
-using Blocks = std::vector<std::shared_ptr<Block>>;
+struct BlockEx: public Block {
+    Hash hash;
+    Total_Difficulty td;
+    bool to_announce{false};
+};
 
-using BlockAnnouncements = std::list<Hash>;
+using Blocks = std::vector<std::shared_ptr<BlockEx>>;
+
 
 /** BodySequence represents the sequence of body that we are downloading.
  *  It has these responsibilities:
@@ -62,7 +67,7 @@ class BodySequence {
     Penalty accept_new_block(const Block&, const PeerId&);
 
     //! core functionalities: returns bodies that are ready to be persisted
-    std::tuple<Blocks, BlockAnnouncements> withdraw_ready_bodies();
+    Blocks withdraw_ready_bodies();
 
     //! minor functionalities
     [[nodiscard]] BlockNum highest_block_in_db() const;

@@ -49,10 +49,6 @@ size_t BodySequence::outstanding_bodies(time_point_t tp) const {
     return requested_bodies;
 }
 
-std::list<NewBlockPacket>& BodySequence::announces_to_do() {
-    return announcements_to_do_;
-}
-
 Penalty BodySequence::accept_requested_bodies(BlockBodiesPacket66& packet, const PeerId&) {
     Penalty penalty = NoPenalty;
 
@@ -231,9 +227,9 @@ Blocks BodySequence::withdraw_ready_bodies() {
             break;  // it needs to return the first range of consecutive blocks, so it stops at the first non ready
 
         highest_body_in_db_ = std::max(highest_body_in_db_, past_request.block_height);
-        std::shared_ptr<Block> b{new Block{std::move(past_request.body), std::move(past_request.header)}};
 
-        b.to_announce = past_request.to_announce;
+        std::shared_ptr<BlockEx> b{new BlockEx{std::move(past_request.body), std::move(past_request.header)}};
+        b->to_announce = past_request.to_announce;
 
         ready_bodies.push_back(b);
 

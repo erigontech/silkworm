@@ -17,6 +17,8 @@ limitations under the License.
 #include "sync_engine.hpp"
 
 #include <silkworm/common/as_range.hpp>
+#include <silkworm/downloader/messages/outbound_new_block.hpp>
+#include <silkworm/downloader/messages/outbound_new_block_hashes.hpp>
 
 namespace silkworm::chainsync {
 
@@ -43,20 +45,20 @@ auto SyncEngine::forward_and_insert_blocks() -> NewHeight {
         bool present = downloading.timed_wait_and_pop(blocks, 100ms);
         if (!present) continue;
 
+        Blocks announcements_to_do;
+
         // compute head of chain applying fork choice rule
-        as_range::for_each(blocks, [this](const auto& block) {
-            auto block->td = chain_fork_view_.add(block->header);
-            if (to_announce)
-                announcements_to_do_.add(block);
+        as_range::for_each(blocks, [this, &announcements_to_do](const auto& block) {
+            block->td = chain_fork_view_.add(block->header);
+            if (block->to_announce) announcements_to_do.push_back(block);
         });
 
         // insert blocks into database
         exec_engine_.insert_blocks(blocks);
 
         // send announcement to peers
-        send_new_block_announcements(announcements);  // according to eth/67 it must be done here, after simple header verification
-
-        send_new_block_hash_announcements();  // todo: according to eth/67 it must be done after a full block verification
+        send_new_block_announcements(announcements_to_do);  // according to eth/67 they must be done here,
+                                                            // after simple header verification
     };
 
     block_exchange_.stop_downloading();
@@ -103,6 +105,8 @@ void SyncEngine::execution_loop() {
         }
 
         exec_engine_.notify_fork_choice_updated(new_height.hash);
+
+        send_new_block_hash_announcements();  // according to eth/67 they must be done after a full block verification
     }
 };
 
@@ -117,17 +121,16 @@ auto SyncEngine::update_bad_headers(std::set<Hash> bad_headers) -> std::shared_p
 
 // New block hash announcements propagation
 void SyncEngine::send_new_block_hash_announcements() {
-    // if (!sentry_.ready()) return;
-
     auto message = std::make_shared<OutboundNewBlockHashes>();
 
     block_exchange_.accept(message);
 }
 
 // New block announcements propagation
-void SyncEngine::send_new_block_announcements() {
+void SyncEngine::send_new_block_announcements(const Blocks& blocks) {
+    if (blocks.empty()) return;
 
-    auto message = std::make_shared<OutboundNewBlock>(announcements_to_do_);
+    auto message = std::make_shared<OutboundNewBlock>(blocks);
 
     block_exchange_.accept(message);
 }

@@ -35,7 +35,7 @@ BigInt ChainForkView::head_total_difficulty() const { return current_head_.total
 
 ChainHead ChainForkView::head() const { return current_head_; }
 
-void ChainForkView::add(const BlockHeader& header) {  // try to modularize this method
+Total_Difficulty ChainForkView::add(const BlockHeader& header) {  // try to modularize this method
 
     auto height = header.number;
     Hash hash = header.hash();
@@ -65,6 +65,8 @@ void ChainForkView::add(const BlockHeader& header) {  // try to modularize this 
 
     previous_hash_ = hash;
     td_cache_.put(hash, td);
+
+    return td;
 }
 
 }  // namespace silkworm::chainsync

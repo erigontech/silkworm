@@ -21,30 +21,16 @@
 
 namespace silkworm {
 
-OutboundNewBlock::OutboundNewBlock() {}
+OutboundNewBlock::OutboundNewBlock(const Blocks& b): blocks_to_announce_{b} {}
 
 void OutboundNewBlock::execute(db::ROAccess, HeaderChain&, BodySequence& bs, SentryClient& sentry) {
     using namespace std::literals::chrono_literals;
 
-    auto& announces_to_do = bs.announces_to_do();
+    for (auto& block: blocks_to_announce_) {
+        NewBlockPacket packet{{block, block->header}, block->td};
+        auto peers = send_packet(sentry, packet, 1s);
 
-    if (announces_to_do.empty()) {
-        SILK_TRACE << "No OutboundNewBlock (announcements) message to send";
-        return;
-    }
-
-    NewBlockPacket packet{{std::move(body), std::move(header)}, td};
-
-    seconds_t timeout = 1s;
-    while (!announces_to_do.empty()) {
-        auto& announce = *announces_to_do.begin();
-
-        auto peers = send_packet(sentry, announce, timeout);
-
-        if (peers.peers_size() == 0)
-            break;  // no peer available
-
-        announces_to_do.erase(announces_to_do.begin());  // clear announce from the queue
+        if (peers.peers_size() == 0) break;  // no peer available
     }
 }
 

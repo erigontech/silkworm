@@ -42,7 +42,9 @@ class ExecutionEngine : public Stoppable {
     using VerificationResult = std::variant<ValidChain, InvalidChain, ValidationError>;
 
     // actions
-    void insert_blocks(std::vector<std::shared_ptr<Block>>&);
+    template <typename BLOCK>
+        requires std::is_base_of_v<Block, BLOCK>
+    void insert_blocks(std::vector<std::shared_ptr<BLOCK>>&);
 
     auto verify_chain(Hash head_block_hash) -> VerificationResult;
 

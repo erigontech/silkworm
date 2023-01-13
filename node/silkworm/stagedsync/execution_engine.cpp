@@ -168,7 +168,9 @@ void ExecutionEngine::insert_body(Block& block) {
     }
 }
 
-void ExecutionEngine::insert_blocks(std::vector<std::shared_ptr<Block>>& blocks) {
+template <typename BLOCK>
+    requires std::is_base_of_v<Block, BLOCK>
+void ExecutionEngine::insert_blocks(std::vector<std::shared_ptr<BLOCK>>& blocks) {
     SILK_TRACE << "ExecutionEngine: inserting " << blocks.size() << " blocks";
     if (blocks.empty()) return;
 

@@ -25,9 +25,12 @@ static const char* ETHBACKEND_method_names[] = {
   "/remote.ETHBACKEND/Etherbase",
   "/remote.ETHBACKEND/NetVersion",
   "/remote.ETHBACKEND/NetPeerCount",
-  "/remote.ETHBACKEND/EngineGetPayloadV1",
   "/remote.ETHBACKEND/EngineNewPayloadV1",
+  "/remote.ETHBACKEND/EngineNewPayloadV2",
   "/remote.ETHBACKEND/EngineForkChoiceUpdatedV1",
+  "/remote.ETHBACKEND/EngineForkChoiceUpdatedV2",
+  "/remote.ETHBACKEND/EngineGetPayloadV1",
+  "/remote.ETHBACKEND/EngineGetPayloadV2",
   "/remote.ETHBACKEND/Version",
   "/remote.ETHBACKEND/ProtocolVersion",
   "/remote.ETHBACKEND/ClientVersion",
@@ -37,6 +40,7 @@ static const char* ETHBACKEND_method_names[] = {
   "/remote.ETHBACKEND/TxnLookup",
   "/remote.ETHBACKEND/NodeInfo",
   "/remote.ETHBACKEND/Peers",
+  "/remote.ETHBACKEND/PendingBlock",
 };
 
 std::unique_ptr< ETHBACKEND::Stub> ETHBACKEND::NewStub(const std::shared_ptr< ::grpc::ChannelInterface>& channel, const ::grpc::StubOptions& options) {
@@ -49,18 +53,22 @@ ETHBACKEND::Stub::Stub(const std::shared_ptr< ::grpc::ChannelInterface>& channel
   : channel_(channel), rpcmethod_Etherbase_(ETHBACKEND_method_names[0], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
   , rpcmethod_NetVersion_(ETHBACKEND_method_names[1], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
   , rpcmethod_NetPeerCount_(ETHBACKEND_method_names[2], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
-  , rpcmethod_EngineGetPayloadV1_(ETHBACKEND_method_names[3], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
-  , rpcmethod_EngineNewPayloadV1_(ETHBACKEND_method_names[4], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_EngineNewPayloadV1_(ETHBACKEND_method_names[3], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_EngineNewPayloadV2_(ETHBACKEND_method_names[4], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
   , rpcmethod_EngineForkChoiceUpdatedV1_(ETHBACKEND_method_names[5], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
-  , rpcmethod_Version_(ETHBACKEND_method_names[6], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
-  , rpcmethod_ProtocolVersion_(ETHBACKEND_method_names[7], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
-  , rpcmethod_ClientVersion_(ETHBACKEND_method_names[8], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
-  , rpcmethod_Subscribe_(ETHBACKEND_method_names[9], options.suffix_for_stats(),::grpc::internal::RpcMethod::SERVER_STREAMING, channel)
-  , rpcmethod_SubscribeLogs_(ETHBACKEND_method_names[10], options.suffix_for_stats(),::grpc::internal::RpcMethod::BIDI_STREAMING, channel)
-  , rpcmethod_Block_(ETHBACKEND_method_names[11], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
-  , rpcmethod_TxnLookup_(ETHBACKEND_method_names[12], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
-  , rpcmethod_NodeInfo_(ETHBACKEND_method_names[13], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
-  , rpcmethod_Peers_(ETHBACKEND_method_names[14], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_EngineForkChoiceUpdatedV2_(ETHBACKEND_method_names[6], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_EngineGetPayloadV1_(ETHBACKEND_method_names[7], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_EngineGetPayloadV2_(ETHBACKEND_method_names[8], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_Version_(ETHBACKEND_method_names[9], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_ProtocolVersion_(ETHBACKEND_method_names[10], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_ClientVersion_(ETHBACKEND_method_names[11], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_Subscribe_(ETHBACKEND_method_names[12], options.suffix_for_stats(),::grpc::internal::RpcMethod::SERVER_STREAMING, channel)
+  , rpcmethod_SubscribeLogs_(ETHBACKEND_method_names[13], options.suffix_for_stats(),::grpc::internal::RpcMethod::BIDI_STREAMING, channel)
+  , rpcmethod_Block_(ETHBACKEND_method_names[14], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_TxnLookup_(ETHBACKEND_method_names[15], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_NodeInfo_(ETHBACKEND_method_names[16], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_Peers_(ETHBACKEND_method_names[17], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_PendingBlock_(ETHBACKEND_method_names[18], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
   {}
 
 ::grpc::Status ETHBACKEND::Stub::Etherbase(::grpc::ClientContext* context, const ::remote::EtherbaseRequest& request, ::remote::EtherbaseReply* response) {
@@ -132,29 +140,6 @@ void ETHBACKEND::Stub::async::NetPeerCount(::grpc::ClientContext* context, const
   return result;
 }
 
-::grpc::Status ETHBACKEND::Stub::EngineGetPayloadV1(::grpc::ClientContext* context, const ::remote::EngineGetPayloadRequest& request, ::types::ExecutionPayload* response) {
-  return ::grpc::internal::BlockingUnaryCall< ::remote::EngineGetPayloadRequest, ::types::ExecutionPayload, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), rpcmethod_EngineGetPayloadV1_, context, request, response);
-}
-
-void ETHBACKEND::Stub::async::EngineGetPayloadV1(::grpc::ClientContext* context, const ::remote::EngineGetPayloadRequest* request, ::types::ExecutionPayload* response, std::function<void(::grpc::Status)> f) {
-  ::grpc::internal::CallbackUnaryCall< ::remote::EngineGetPayloadRequest, ::types::ExecutionPayload, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_EngineGetPayloadV1_, context, request, response, std::move(f));
-}
-
-void ETHBACKEND::Stub::async::EngineGetPayloadV1(::grpc::ClientContext* context, const ::remote::EngineGetPayloadRequest* request, ::types::ExecutionPayload* response, ::grpc::ClientUnaryReactor* reactor) {
-  ::grpc::internal::ClientCallbackUnaryFactory::Create< ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_EngineGetPayloadV1_, context, request, response, reactor);
-}
-
-::grpc::ClientAsyncResponseReader< ::types::ExecutionPayload>* ETHBACKEND::Stub::PrepareAsyncEngineGetPayloadV1Raw(::grpc::ClientContext* context, const ::remote::EngineGetPayloadRequest& request, ::grpc::CompletionQueue* cq) {
-  return ::grpc::internal::ClientAsyncResponseReaderHelper::Create< ::types::ExecutionPayload, ::remote::EngineGetPayloadRequest, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), cq, rpcmethod_EngineGetPayloadV1_, context, request);
-}
-
-::grpc::ClientAsyncResponseReader< ::types::ExecutionPayload>* ETHBACKEND::Stub::AsyncEngineGetPayloadV1Raw(::grpc::ClientContext* context, const ::remote::EngineGetPayloadRequest& request, ::grpc::CompletionQueue* cq) {
-  auto* result =
-    this->PrepareAsyncEngineGetPayloadV1Raw(context, request, cq);
-  result->StartCall();
-  return result;
-}
-
 ::grpc::Status ETHBACKEND::Stub::EngineNewPayloadV1(::grpc::ClientContext* context, const ::types::ExecutionPayload& request, ::remote::EnginePayloadStatus* response) {
   return ::grpc::internal::BlockingUnaryCall< ::types::ExecutionPayload, ::remote::EnginePayloadStatus, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), rpcmethod_EngineNewPayloadV1_, context, request, response);
 }
@@ -178,6 +163,29 @@ void ETHBACKEND::Stub::async::EngineNewPayloadV1(::grpc::ClientContext* context,
   return result;
 }
 
+::grpc::Status ETHBACKEND::Stub::EngineNewPayloadV2(::grpc::ClientContext* context, const ::types::ExecutionPayloadV2& request, ::remote::EnginePayloadStatus* response) {
+  return ::grpc::internal::BlockingUnaryCall< ::types::ExecutionPayloadV2, ::remote::EnginePayloadStatus, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), rpcmethod_EngineNewPayloadV2_, context, request, response);
+}
+
+void ETHBACKEND::Stub::async::EngineNewPayloadV2(::grpc::ClientContext* context, const ::types::ExecutionPayloadV2* request, ::remote::EnginePayloadStatus* response, std::function<void(::grpc::Status)> f) {
+  ::grpc::internal::CallbackUnaryCall< ::types::ExecutionPayloadV2, ::remote::EnginePayloadStatus, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_EngineNewPayloadV2_, context, request, response, std::move(f));
+}
+
+void ETHBACKEND::Stub::async::EngineNewPayloadV2(::grpc::ClientContext* context, const ::types::ExecutionPayloadV2* request, ::remote::EnginePayloadStatus* response, ::grpc::ClientUnaryReactor* reactor) {
+  ::grpc::internal::ClientCallbackUnaryFactory::Create< ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_EngineNewPayloadV2_, context, request, response, reactor);
+}
+
+::grpc::ClientAsyncResponseReader< ::remote::EnginePayloadStatus>* ETHBACKEND::Stub::PrepareAsyncEngineNewPayloadV2Raw(::grpc::ClientContext* context, const ::types::ExecutionPayloadV2& request, ::grpc::CompletionQueue* cq) {
+  return ::grpc::internal::ClientAsyncResponseReaderHelper::Create< ::remote::EnginePayloadStatus, ::types::ExecutionPayloadV2, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), cq, rpcmethod_EngineNewPayloadV2_, context, request);
+}
+
+::grpc::ClientAsyncResponseReader< ::remote::EnginePayloadStatus>* ETHBACKEND::Stub::AsyncEngineNewPayloadV2Raw(::grpc::ClientContext* context, const ::types::ExecutionPayloadV2& request, ::grpc::CompletionQueue* cq) {
+  auto* result =
+    this->PrepareAsyncEngineNewPayloadV2Raw(context, request, cq);
+  result->StartCall();
+  return result;
+}
+
 ::grpc::Status ETHBACKEND::Stub::EngineForkChoiceUpdatedV1(::grpc::ClientContext* context, const ::remote::EngineForkChoiceUpdatedRequest& request, ::remote::EngineForkChoiceUpdatedReply* response) {
   return ::grpc::internal::BlockingUnaryCall< ::remote::EngineForkChoiceUpdatedRequest, ::remote::EngineForkChoiceUpdatedReply, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), rpcmethod_EngineForkChoiceUpdatedV1_, context, request, response);
 }
@@ -197,6 +205,75 @@ void ETHBACKEND::Stub::async::EngineForkChoiceUpdatedV1(::grpc::ClientContext* c
 ::grpc::ClientAsyncResponseReader< ::remote::EngineForkChoiceUpdatedReply>* ETHBACKEND::Stub::AsyncEngineForkChoiceUpdatedV1Raw(::grpc::ClientContext* context, const ::remote::EngineForkChoiceUpdatedRequest& request, ::grpc::CompletionQueue* cq) {
   auto* result =
     this->PrepareAsyncEngineForkChoiceUpdatedV1Raw(context, request, cq);
+  result->StartCall();
+  return result;
+}
+
+::grpc::Status ETHBACKEND::Stub::EngineForkChoiceUpdatedV2(::grpc::ClientContext* context, const ::remote::EngineForkChoiceUpdatedRequestV2& request, ::remote::EngineForkChoiceUpdatedReply* response) {
+  return ::grpc::internal::BlockingUnaryCall< ::remote::EngineForkChoiceUpdatedRequestV2, ::remote::EngineForkChoiceUpdatedReply, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), rpcmethod_EngineForkChoiceUpdatedV2_, context, request, response);
+}
+
+void ETHBACKEND::Stub::async::EngineForkChoiceUpdatedV2(::grpc::ClientContext* context, const ::remote::EngineForkChoiceUpdatedRequestV2* request, ::remote::EngineForkChoiceUpdatedReply* response, std::function<void(::grpc::Status)> f) {
+  ::grpc::internal::CallbackUnaryCall< ::remote::EngineForkChoiceUpdatedRequestV2, ::remote::EngineForkChoiceUpdatedReply, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_EngineForkChoiceUpdatedV2_, context, request, response, std::move(f));
+}
+
+void ETHBACKEND::Stub::async::EngineForkChoiceUpdatedV2(::grpc::ClientContext* context, const ::remote::EngineForkChoiceUpdatedRequestV2* request, ::remote::EngineForkChoiceUpdatedReply* response, ::grpc::ClientUnaryReactor* reactor) {
+  ::grpc::internal::ClientCallbackUnaryFactory::Create< ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_EngineForkChoiceUpdatedV2_, context, request, response, reactor);
+}
+
+::grpc::ClientAsyncResponseReader< ::remote::EngineForkChoiceUpdatedReply>* ETHBACKEND::Stub::PrepareAsyncEngineForkChoiceUpdatedV2Raw(::grpc::ClientContext* context, const ::remote::EngineForkChoiceUpdatedRequestV2& request, ::grpc::CompletionQueue* cq) {
+  return ::grpc::internal::ClientAsyncResponseReaderHelper::Create< ::remote::EngineForkChoiceUpdatedReply, ::remote::EngineForkChoiceUpdatedRequestV2, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), cq, rpcmethod_EngineForkChoiceUpdatedV2_, context, request);
+}
+
+::grpc::ClientAsyncResponseReader< ::remote::EngineForkChoiceUpdatedReply>* ETHBACKEND::Stub::AsyncEngineForkChoiceUpdatedV2Raw(::grpc::ClientContext* context, const ::remote::EngineForkChoiceUpdatedRequestV2& request, ::grpc::CompletionQueue* cq) {
+  auto* result =
+    this->PrepareAsyncEngineForkChoiceUpdatedV2Raw(context, request, cq);
+  result->StartCall();
+  return result;
+}
+
+::grpc::Status ETHBACKEND::Stub::EngineGetPayloadV1(::grpc::ClientContext* context, const ::remote::EngineGetPayloadRequest& request, ::types::ExecutionPayload* response) {
+  return ::grpc::internal::BlockingUnaryCall< ::remote::EngineGetPayloadRequest, ::types::ExecutionPayload, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), rpcmethod_EngineGetPayloadV1_, context, request, response);
+}
+
+void ETHBACKEND::Stub::async::EngineGetPayloadV1(::grpc::ClientContext* context, const ::remote::EngineGetPayloadRequest* request, ::types::ExecutionPayload* response, std::function<void(::grpc::Status)> f) {
+  ::grpc::internal::CallbackUnaryCall< ::remote::EngineGetPayloadRequest, ::types::ExecutionPayload, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_EngineGetPayloadV1_, context, request, response, std::move(f));
+}
+
+void ETHBACKEND::Stub::async::EngineGetPayloadV1(::grpc::ClientContext* context, const ::remote::EngineGetPayloadRequest* request, ::types::ExecutionPayload* response, ::grpc::ClientUnaryReactor* reactor) {
+  ::grpc::internal::ClientCallbackUnaryFactory::Create< ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_EngineGetPayloadV1_, context, request, response, reactor);
+}
+
+::grpc::ClientAsyncResponseReader< ::types::ExecutionPayload>* ETHBACKEND::Stub::PrepareAsyncEngineGetPayloadV1Raw(::grpc::ClientContext* context, const ::remote::EngineGetPayloadRequest& request, ::grpc::CompletionQueue* cq) {
+  return ::grpc::internal::ClientAsyncResponseReaderHelper::Create< ::types::ExecutionPayload, ::remote::EngineGetPayloadRequest, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), cq, rpcmethod_EngineGetPayloadV1_, context, request);
+}
+
+::grpc::ClientAsyncResponseReader< ::types::ExecutionPayload>* ETHBACKEND::Stub::AsyncEngineGetPayloadV1Raw(::grpc::ClientContext* context, const ::remote::EngineGetPayloadRequest& request, ::grpc::CompletionQueue* cq) {
+  auto* result =
+    this->PrepareAsyncEngineGetPayloadV1Raw(context, request, cq);
+  result->StartCall();
+  return result;
+}
+
+::grpc::Status ETHBACKEND::Stub::EngineGetPayloadV2(::grpc::ClientContext* context, const ::remote::EngineGetPayloadRequest& request, ::types::ExecutionPayloadV2* response) {
+  return ::grpc::internal::BlockingUnaryCall< ::remote::EngineGetPayloadRequest, ::types::ExecutionPayloadV2, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), rpcmethod_EngineGetPayloadV2_, context, request, response);
+}
+
+void ETHBACKEND::Stub::async::EngineGetPayloadV2(::grpc::ClientContext* context, const ::remote::EngineGetPayloadRequest* request, ::types::ExecutionPayloadV2* response, std::function<void(::grpc::Status)> f) {
+  ::grpc::internal::CallbackUnaryCall< ::remote::EngineGetPayloadRequest, ::types::ExecutionPayloadV2, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_EngineGetPayloadV2_, context, request, response, std::move(f));
+}
+
+void ETHBACKEND::Stub::async::EngineGetPayloadV2(::grpc::ClientContext* context, const ::remote::EngineGetPayloadRequest* request, ::types::ExecutionPayloadV2* response, ::grpc::ClientUnaryReactor* reactor) {
+  ::grpc::internal::ClientCallbackUnaryFactory::Create< ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_EngineGetPayloadV2_, context, request, response, reactor);
+}
+
+::grpc::ClientAsyncResponseReader< ::types::ExecutionPayloadV2>* ETHBACKEND::Stub::PrepareAsyncEngineGetPayloadV2Raw(::grpc::ClientContext* context, const ::remote::EngineGetPayloadRequest& request, ::grpc::CompletionQueue* cq) {
+  return ::grpc::internal::ClientAsyncResponseReaderHelper::Create< ::types::ExecutionPayloadV2, ::remote::EngineGetPayloadRequest, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), cq, rpcmethod_EngineGetPayloadV2_, context, request);
+}
+
+::grpc::ClientAsyncResponseReader< ::types::ExecutionPayloadV2>* ETHBACKEND::Stub::AsyncEngineGetPayloadV2Raw(::grpc::ClientContext* context, const ::remote::EngineGetPayloadRequest& request, ::grpc::CompletionQueue* cq) {
+  auto* result =
+    this->PrepareAsyncEngineGetPayloadV2Raw(context, request, cq);
   result->StartCall();
   return result;
 }
@@ -394,6 +471,29 @@ void ETHBACKEND::Stub::async::Peers(::grpc::ClientContext* context, const ::goog
   return result;
 }
 
+::grpc::Status ETHBACKEND::Stub::PendingBlock(::grpc::ClientContext* context, const ::google::protobuf::Empty& request, ::remote::PendingBlockReply* response) {
+  return ::grpc::internal::BlockingUnaryCall< ::google::protobuf::Empty, ::remote::PendingBlockReply, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), rpcmethod_PendingBlock_, context, request, response);
+}
+
+void ETHBACKEND::Stub::async::PendingBlock(::grpc::ClientContext* context, const ::google::protobuf::Empty* request, ::remote::PendingBlockReply* response, std::function<void(::grpc::Status)> f) {
+  ::grpc::internal::CallbackUnaryCall< ::google::protobuf::Empty, ::remote::PendingBlockReply, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_PendingBlock_, context, request, response, std::move(f));
+}
+
+void ETHBACKEND::Stub::async::PendingBlock(::grpc::ClientContext* context, const ::google::protobuf::Empty* request, ::remote::PendingBlockReply* response, ::grpc::ClientUnaryReactor* reactor) {
+  ::grpc::internal::ClientCallbackUnaryFactory::Create< ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_PendingBlock_, context, request, response, reactor);
+}
+
+::grpc::ClientAsyncResponseReader< ::remote::PendingBlockReply>* ETHBACKEND::Stub::PrepareAsyncPendingBlockRaw(::grpc::ClientContext* context, const ::google::protobuf::Empty& request, ::grpc::CompletionQueue* cq) {
+  return ::grpc::internal::ClientAsyncResponseReaderHelper::Create< ::remote::PendingBlockReply, ::google::protobuf::Empty, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), cq, rpcmethod_PendingBlock_, context, request);
+}
+
+::grpc::ClientAsyncResponseReader< ::remote::PendingBlockReply>* ETHBACKEND::Stub::AsyncPendingBlockRaw(::grpc::ClientContext* context, const ::google::protobuf::Empty& request, ::grpc::CompletionQueue* cq) {
+  auto* result =
+    this->PrepareAsyncPendingBlockRaw(context, request, cq);
+  result->StartCall();
+  return result;
+}
+
 ETHBACKEND::Service::Service() {
   AddMethod(new ::grpc::internal::RpcServiceMethod(
       ETHBACKEND_method_names[0],
@@ -428,22 +528,22 @@ ETHBACKEND::Service::Service() {
   AddMethod(new ::grpc::internal::RpcServiceMethod(
       ETHBACKEND_method_names[3],
       ::grpc::internal::RpcMethod::NORMAL_RPC,
-      new ::grpc::internal::RpcMethodHandler< ETHBACKEND::Service, ::remote::EngineGetPayloadRequest, ::types::ExecutionPayload, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
-          [](ETHBACKEND::Service* service,
-             ::grpc::ServerContext* ctx,
-             const ::remote::EngineGetPayloadRequest* req,
-             ::types::ExecutionPayload* resp) {
-               return service->EngineGetPayloadV1(ctx, req, resp);
-             }, this)));
-  AddMethod(new ::grpc::internal::RpcServiceMethod(
-      ETHBACKEND_method_names[4],
-      ::grpc::internal::RpcMethod::NORMAL_RPC,
       new ::grpc::internal::RpcMethodHandler< ETHBACKEND::Service, ::types::ExecutionPayload, ::remote::EnginePayloadStatus, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
           [](ETHBACKEND::Service* service,
              ::grpc::ServerContext* ctx,
              const ::types::ExecutionPayload* req,
              ::remote::EnginePayloadStatus* resp) {
                return service->EngineNewPayloadV1(ctx, req, resp);
+             }, this)));
+  AddMethod(new ::grpc::internal::RpcServiceMethod(
+      ETHBACKEND_method_names[4],
+      ::grpc::internal::RpcMethod::NORMAL_RPC,
+      new ::grpc::internal::RpcMethodHandler< ETHBACKEND::Service, ::types::ExecutionPayloadV2, ::remote::EnginePayloadStatus, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
+          [](ETHBACKEND::Service* service,
+             ::grpc::ServerContext* ctx,
+             const ::types::ExecutionPayloadV2* req,
+             ::remote::EnginePayloadStatus* resp) {
+               return service->EngineNewPayloadV2(ctx, req, resp);
              }, this)));
   AddMethod(new ::grpc::internal::RpcServiceMethod(
       ETHBACKEND_method_names[5],
@@ -458,6 +558,36 @@ ETHBACKEND::Service::Service() {
   AddMethod(new ::grpc::internal::RpcServiceMethod(
       ETHBACKEND_method_names[6],
       ::grpc::internal::RpcMethod::NORMAL_RPC,
+      new ::grpc::internal::RpcMethodHandler< ETHBACKEND::Service, ::remote::EngineForkChoiceUpdatedRequestV2, ::remote::EngineForkChoiceUpdatedReply, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
+          [](ETHBACKEND::Service* service,
+             ::grpc::ServerContext* ctx,
+             const ::remote::EngineForkChoiceUpdatedRequestV2* req,
+             ::remote::EngineForkChoiceUpdatedReply* resp) {
+               return service->EngineForkChoiceUpdatedV2(ctx, req, resp);
+             }, this)));
+  AddMethod(new ::grpc::internal::RpcServiceMethod(
+      ETHBACKEND_method_names[7],
+      ::grpc::internal::RpcMethod::NORMAL_RPC,
+      new ::grpc::internal::RpcMethodHandler< ETHBACKEND::Service, ::remote::EngineGetPayloadRequest, ::types::ExecutionPayload, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
+          [](ETHBACKEND::Service* service,
+             ::grpc::ServerContext* ctx,
+             const ::remote::EngineGetPayloadRequest* req,
+             ::types::ExecutionPayload* resp) {
+               return service->EngineGetPayloadV1(ctx, req, resp);
+             }, this)));
+  AddMethod(new ::grpc::internal::RpcServiceMethod(
+      ETHBACKEND_method_names[8],
+      ::grpc::internal::RpcMethod::NORMAL_RPC,
+      new ::grpc::internal::RpcMethodHandler< ETHBACKEND::Service, ::remote::EngineGetPayloadRequest, ::types::ExecutionPayloadV2, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
+          [](ETHBACKEND::Service* service,
+             ::grpc::ServerContext* ctx,
+             const ::remote::EngineGetPayloadRequest* req,
+             ::types::ExecutionPayloadV2* resp) {
+               return service->EngineGetPayloadV2(ctx, req, resp);
+             }, this)));
+  AddMethod(new ::grpc::internal::RpcServiceMethod(
+      ETHBACKEND_method_names[9],
+      ::grpc::internal::RpcMethod::NORMAL_RPC,
       new ::grpc::internal::RpcMethodHandler< ETHBACKEND::Service, ::google::protobuf::Empty, ::types::VersionReply, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
           [](ETHBACKEND::Service* service,
              ::grpc::ServerContext* ctx,
@@ -466,7 +596,7 @@ ETHBACKEND::Service::Service() {
                return service->Version(ctx, req, resp);
              }, this)));
   AddMethod(new ::grpc::internal::RpcServiceMethod(
-      ETHBACKEND_method_names[7],
+      ETHBACKEND_method_names[10],
       ::grpc::internal::RpcMethod::NORMAL_RPC,
       new ::grpc::internal::RpcMethodHandler< ETHBACKEND::Service, ::remote::ProtocolVersionRequest, ::remote::ProtocolVersionReply, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
           [](ETHBACKEND::Service* service,
@@ -476,7 +606,7 @@ ETHBACKEND::Service::Service() {
                return service->ProtocolVersion(ctx, req, resp);
              }, this)));
   AddMethod(new ::grpc::internal::RpcServiceMethod(
-      ETHBACKEND_method_names[8],
+      ETHBACKEND_method_names[11],
       ::grpc::internal::RpcMethod::NORMAL_RPC,
       new ::grpc::internal::RpcMethodHandler< ETHBACKEND::Service, ::remote::ClientVersionRequest, ::remote::ClientVersionReply, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
           [](ETHBACKEND::Service* service,
@@ -486,7 +616,7 @@ ETHBACKEND::Service::Service() {
                return service->ClientVersion(ctx, req, resp);
              }, this)));
   AddMethod(new ::grpc::internal::RpcServiceMethod(
-      ETHBACKEND_method_names[9],
+      ETHBACKEND_method_names[12],
       ::grpc::internal::RpcMethod::SERVER_STREAMING,
       new ::grpc::internal::ServerStreamingHandler< ETHBACKEND::Service, ::remote::SubscribeRequest, ::remote::SubscribeReply>(
           [](ETHBACKEND::Service* service,
@@ -496,7 +626,7 @@ ETHBACKEND::Service::Service() {
                return service->Subscribe(ctx, req, writer);
              }, this)));
   AddMethod(new ::grpc::internal::RpcServiceMethod(
-      ETHBACKEND_method_names[10],
+      ETHBACKEND_method_names[13],
       ::grpc::internal::RpcMethod::BIDI_STREAMING,
       new ::grpc::internal::BidiStreamingHandler< ETHBACKEND::Service, ::remote::LogsFilterRequest, ::remote::SubscribeLogsReply>(
           [](ETHBACKEND::Service* service,
@@ -506,7 +636,7 @@ ETHBACKEND::Service::Service() {
                return service->SubscribeLogs(ctx, stream);
              }, this)));
   AddMethod(new ::grpc::internal::RpcServiceMethod(
-      ETHBACKEND_method_names[11],
+      ETHBACKEND_method_names[14],
       ::grpc::internal::RpcMethod::NORMAL_RPC,
       new ::grpc::internal::RpcMethodHandler< ETHBACKEND::Service, ::remote::BlockRequest, ::remote::BlockReply, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
           [](ETHBACKEND::Service* service,
@@ -516,7 +646,7 @@ ETHBACKEND::Service::Service() {
                return service->Block(ctx, req, resp);
              }, this)));
   AddMethod(new ::grpc::internal::RpcServiceMethod(
-      ETHBACKEND_method_names[12],
+      ETHBACKEND_method_names[15],
       ::grpc::internal::RpcMethod::NORMAL_RPC,
       new ::grpc::internal::RpcMethodHandler< ETHBACKEND::Service, ::remote::TxnLookupRequest, ::remote::TxnLookupReply, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
           [](ETHBACKEND::Service* service,
@@ -526,7 +656,7 @@ ETHBACKEND::Service::Service() {
                return service->TxnLookup(ctx, req, resp);
              }, this)));
   AddMethod(new ::grpc::internal::RpcServiceMethod(
-      ETHBACKEND_method_names[13],
+      ETHBACKEND_method_names[16],
       ::grpc::internal::RpcMethod::NORMAL_RPC,
       new ::grpc::internal::RpcMethodHandler< ETHBACKEND::Service, ::remote::NodesInfoRequest, ::remote::NodesInfoReply, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
           [](ETHBACKEND::Service* service,
@@ -536,7 +666,7 @@ ETHBACKEND::Service::Service() {
                return service->NodeInfo(ctx, req, resp);
              }, this)));
   AddMethod(new ::grpc::internal::RpcServiceMethod(
-      ETHBACKEND_method_names[14],
+      ETHBACKEND_method_names[17],
       ::grpc::internal::RpcMethod::NORMAL_RPC,
       new ::grpc::internal::RpcMethodHandler< ETHBACKEND::Service, ::google::protobuf::Empty, ::remote::PeersReply, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
           [](ETHBACKEND::Service* service,
@@ -544,6 +674,16 @@ ETHBACKEND::Service::Service() {
              const ::google::protobuf::Empty* req,
              ::remote::PeersReply* resp) {
                return service->Peers(ctx, req, resp);
+             }, this)));
+  AddMethod(new ::grpc::internal::RpcServiceMethod(
+      ETHBACKEND_method_names[18],
+      ::grpc::internal::RpcMethod::NORMAL_RPC,
+      new ::grpc::internal::RpcMethodHandler< ETHBACKEND::Service, ::google::protobuf::Empty, ::remote::PendingBlockReply, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
+          [](ETHBACKEND::Service* service,
+             ::grpc::ServerContext* ctx,
+             const ::google::protobuf::Empty* req,
+             ::remote::PendingBlockReply* resp) {
+               return service->PendingBlock(ctx, req, resp);
              }, this)));
 }
 
@@ -571,13 +711,6 @@ ETHBACKEND::Service::~Service() {
   return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
 }
 
-::grpc::Status ETHBACKEND::Service::EngineGetPayloadV1(::grpc::ServerContext* context, const ::remote::EngineGetPayloadRequest* request, ::types::ExecutionPayload* response) {
-  (void) context;
-  (void) request;
-  (void) response;
-  return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
-}
-
 ::grpc::Status ETHBACKEND::Service::EngineNewPayloadV1(::grpc::ServerContext* context, const ::types::ExecutionPayload* request, ::remote::EnginePayloadStatus* response) {
   (void) context;
   (void) request;
@@ -585,7 +718,35 @@ ETHBACKEND::Service::~Service() {
   return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
 }
 
+::grpc::Status ETHBACKEND::Service::EngineNewPayloadV2(::grpc::ServerContext* context, const ::types::ExecutionPayloadV2* request, ::remote::EnginePayloadStatus* response) {
+  (void) context;
+  (void) request;
+  (void) response;
+  return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+}
+
 ::grpc::Status ETHBACKEND::Service::EngineForkChoiceUpdatedV1(::grpc::ServerContext* context, const ::remote::EngineForkChoiceUpdatedRequest* request, ::remote::EngineForkChoiceUpdatedReply* response) {
+  (void) context;
+  (void) request;
+  (void) response;
+  return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+}
+
+::grpc::Status ETHBACKEND::Service::EngineForkChoiceUpdatedV2(::grpc::ServerContext* context, const ::remote::EngineForkChoiceUpdatedRequestV2* request, ::remote::EngineForkChoiceUpdatedReply* response) {
+  (void) context;
+  (void) request;
+  (void) response;
+  return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+}
+
+::grpc::Status ETHBACKEND::Service::EngineGetPayloadV1(::grpc::ServerContext* context, const ::remote::EngineGetPayloadRequest* request, ::types::ExecutionPayload* response) {
+  (void) context;
+  (void) request;
+  (void) response;
+  return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+}
+
+::grpc::Status ETHBACKEND::Service::EngineGetPayloadV2(::grpc::ServerContext* context, const ::remote::EngineGetPayloadRequest* request, ::types::ExecutionPayloadV2* response) {
   (void) context;
   (void) request;
   (void) response;
@@ -648,6 +809,13 @@ ETHBACKEND::Service::~Service() {
 }
 
 ::grpc::Status ETHBACKEND::Service::Peers(::grpc::ServerContext* context, const ::google::protobuf::Empty* request, ::remote::PeersReply* response) {
+  (void) context;
+  (void) request;
+  (void) response;
+  return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+}
+
+::grpc::Status ETHBACKEND::Service::PendingBlock(::grpc::ServerContext* context, const ::google::protobuf::Empty* request, ::remote::PendingBlockReply* response) {
   (void) context;
   (void) request;
   (void) response;

@@ -63,8 +63,11 @@ boost::asio::awaitable<SetStatusResult> RemoteSentryClient::set_status(SentrySta
     request.set_allocated_best_hash(rpc::H256_from_bytes32(sentry_status.head_hash).release());
     auto* forks = new sentry::Forks{};
     forks->set_allocated_genesis(rpc::H256_from_bytes32(sentry_status.genesis_hash).release());
-    for (uint64_t block : sentry_status.forks) {
-        forks->add_forks(block);
+    for (uint64_t block : sentry_status.height_forks) {
+        forks->add_height_forks(block);
+    }
+    for (uint64_t block : sentry_status.time_forks) {
+        forks->add_time_forks(block);
     }
     request.set_allocated_fork_data(forks);
     sentry::SetStatusReply reply;

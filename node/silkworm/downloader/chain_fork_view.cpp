@@ -21,7 +21,8 @@ limitations under the License.
 
 namespace silkworm::chainsync {
 
-ChainForkView::ChainForkView(ChainHead head) : initial_head_{head}, td_cache_{kCacheSize} {
+ChainForkView::ChainForkView(ChainHead head, stagedsync::ExecutionEngine& ee)
+    : initial_head_{head}, exec_engine_{ee}, td_cache_{kCacheSize} {
     current_head_ = initial_head_;
 }
 
@@ -39,7 +40,6 @@ Total_Difficulty ChainForkView::add(const BlockHeader& header) {  // try to modu
 
     auto height = header.number;
     Hash hash = header.hash();
-    if (hash == previous_hash_) return;  // skip duplicates
 
     // Calculate total difficulty
     auto parent_td = td_cache_.get_as_copy(header.parent_hash);  // find in cache

@@ -31,7 +31,7 @@ namespace silkworm::chainsync {
 
 class ChainForkView {
   public:
-    ChainForkView(ChainHead headers_head);
+    ChainForkView(ChainHead headers_head, stagedsync::ExecutionEngine&);
 
     Total_Difficulty add(const BlockHeader&);
 
@@ -46,6 +46,8 @@ class ChainForkView {
     ChainHead initial_head_{};
     ChainHead current_head_{};  // current head of the chain
     Hash previous_hash_;
+
+    stagedsync::ExecutionEngine& exec_engine_;
 
     static constexpr size_t kCacheSize = 4096;
     lru_cache<Hash, Total_Difficulty> td_cache_;  // this is not for performance

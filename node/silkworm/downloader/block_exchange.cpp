@@ -102,7 +102,8 @@ void BlockExchange::execution_loop() {
             // collect downloaded headers & bodies
             collect_headers();
             collect_bodies();
-            in_sync_ = header_chain_.in_sync() && body_sequence_.in_sync();
+
+            in_sync_ = header_chain_.in_sync() && body_sequence_.has_completed();
 
             // log status
             auto now = system_clock::now();
@@ -125,6 +126,7 @@ void BlockExchange::request_headers() {
     constexpr auto only_one_request = 1;
 
     if (!downloading_active_) return;
+    if (header_chain_.in_sync()) return;
 
     if (messages_.size() < HeaderChain::kPerPeerMaxOutstandingRequests * sentry_.active_peers() &&
         body_sequence_.requests() < BodySequence::kMaxInMemoryRequests) {  // back pressure from body_sequence to header_chain
@@ -143,7 +145,8 @@ void BlockExchange::request_bodies() {
 
     if (!downloading_active_) return;
 
-    if (messages_.size() < BodySequence::kPerPeerMaxOutstandingRequests * sentry_.active_peers()) {
+    if (body_sequence_.requests() < BodySequence::kMaxInMemoryRequests &&  // back pressure from body_sequence to header_chain
+        messages_.size() < BodySequence::kPerPeerMaxOutstandingRequests * sentry_.active_peers()) {
 
         auto request_message = std::make_shared<OutboundGetBlockBodies>(only_one_request, sentry_.active_peers());
         request_message->execute(db_access_, header_chain_, body_sequence_, sentry_);

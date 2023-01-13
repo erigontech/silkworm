@@ -26,8 +26,9 @@ OutboundNewBlock::OutboundNewBlock(const Blocks& b): blocks_to_announce_{b} {}
 void OutboundNewBlock::execute(db::ROAccess, HeaderChain&, BodySequence& bs, SentryClient& sentry) {
     using namespace std::literals::chrono_literals;
 
-    for (auto& block: blocks_to_announce_) {
-        NewBlockPacket packet{{block, block->header}, block->td};
+    for (auto& block_ptr: blocks_to_announce_) {
+        const BlockEx& block = *block_ptr;
+        NewBlockPacket packet{{block, block.header}, block.td};
         auto peers = send_packet(sentry, packet, 1s);
 
         if (peers.peers_size() == 0) break;  // no peer available

@@ -29,18 +29,23 @@ namespace silkworm {
 BodySequence::BodySequence() {
 }
 
-BlockNum BodySequence::highest_block_in_db() const { return ; }
-BlockNum BodySequence::target_height() const { return ; }
+BlockNum BodySequence::highest_block_in_db() const { return highest_body_in_db_; }
+BlockNum BodySequence::target_height() const { return target_height_; }
 BlockNum BodySequence::highest_block_in_memory() const { return body_requests_.highest_block(); }
 BlockNum BodySequence::lowest_block_in_memory() const { return body_requests_.lowest_block(); }
 size_t BodySequence::ready_bodies() const { return ready_bodies_; }
 size_t BodySequence::requests() const { return body_requests_.size(); }
+bool BodySequence::has_completed() const {
+    return requests() == 0 &&   // no more requests
+           highest_block_in_memory() == target_height_;  // all bodies withdrawn
+}
 
 size_t BodySequence::outstanding_bodies(time_point_t tp) const {
     size_t requested_bodies{0};
 
     for (auto& br : body_requests_) {
         const BodyRequest& past_request = br.second;
+        if (past_request.request_id == 0) break;  // not yet requested, so the following
         if (!past_request.ready &&
             (tp - past_request.request_time < kRequestDeadline))
             requested_bodies++;
@@ -129,13 +134,14 @@ auto BodySequence::request_more_bodies(time_point_t tp, uint64_t active_peers)
 
     auto penalizations = renew_stale_requests(packet, min_block, tp, timeout);
 
-    size_t stale_requests = 0;  // see below
-    auto outstanding_bodies = body_requests_.size() - ready_bodies_ - stale_requests;
+    if (packet.request.size() < kMaxBlocksPerMessage) {  // not full yet
+        //size_t stale_requests = packet.request.size();
+        //auto outstanding_bodies = body_requests_.size() - ready_bodies_ - stale_requests;  // approximate calculation
+        auto requested_bodies = outstanding_bodies(tp);
 
-    if (packet.request.size() < kMaxBlocksPerMessage &&  // if this condition is true stale_requests == 0
-        body_requests_.size() < kMaxInMemoryRequests &&
-        outstanding_bodies < kPerPeerMaxOutstandingRequests * active_peers * kMaxBlocksPerMessage) {
-        make_new_requests(packet, min_block, tp, timeout);
+        if (requested_bodies < kPerPeerMaxOutstandingRequests * active_peers * kMaxBlocksPerMessage) {
+            make_new_requests(packet, min_block, tp, timeout);
+        }
     }
 
     statistics_.requested_items += packet.request.size();
@@ -172,7 +178,28 @@ auto BodySequence::renew_stale_requests(GetBlockBodiesPacket66& packet, BlockNum
     return penalizations;
 }
 
-//! Make requests of new bodies to get progress
+void BodySequence::make_new_requests(GetBlockBodiesPacket66& packet, BlockNum& min_block,
+                                     time_point_t tp, seconds_t) {
+    for (auto& br : body_requests_) {
+        BodyRequest& new_request = br.second;
+
+        if (new_request.request_id != 0)  // already requested
+            continue;
+
+        packet.request.push_back(new_request.block_hash);
+        new_request.request_time = tp;
+        new_request.request_id = packet.requestId;
+
+        SILK_TRACE << "BodySequence: requested body block-num= " << new_request.block_height
+                   << ", hash= " << new_request.block_hash;
+
+        min_block = std::max(min_block, new_request.block_height);
+
+        if (packet.request.size() >= kMaxBlocksPerMessage) break;
+    }
+}
+
+//! Save headers of witch it has to download bodies
 void BodySequence::download_bodies(const Headers& headers) {
 
     for (auto header: headers) {
@@ -180,7 +207,7 @@ void BodySequence::download_bodies(const Headers& headers) {
 
         BodyRequest new_request;
         new_request.block_height = header->number;
-        new_request.request_id = 0;  // new request
+        new_request.request_id = 0;  // no request yet
         new_request.block_hash = header->hash();
         //new_request.request_time
 
@@ -195,6 +222,8 @@ void BodySequence::download_bodies(const Headers& headers) {
         new_request.header = *header;
 
         body_requests_.emplace(bn, std::move(new_request));
+
+        target_height_ = std::max(target_height_, bn);
     }
 }
 

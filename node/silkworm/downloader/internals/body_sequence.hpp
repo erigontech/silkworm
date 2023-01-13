@@ -70,6 +70,7 @@ class BodySequence {
     Blocks withdraw_ready_bodies();
 
     //! minor functionalities
+    [[nodiscard]] bool has_completed() const;
     [[nodiscard]] BlockNum highest_block_in_db() const;
     [[nodiscard]] BlockNum highest_block_in_memory() const;
     [[nodiscard]] BlockNum lowest_block_in_memory() const;
@@ -89,8 +90,9 @@ class BodySequence {
     static constexpr BlockNum kMaxAnnouncedBlocks = 10000;
 
   protected:
-    auto renew_stale_requests(GetBlockBodiesPacket66&, MinBlock&, time_point_t tp, seconds_t timeout)
+    auto renew_stale_requests(GetBlockBodiesPacket66&, MinBlock&, time_point_t, seconds_t timeout)
         -> std::vector<PeerPenalization>;
+    void make_new_requests(GetBlockBodiesPacket66&, BlockNum&, time_point_t, seconds_t timeout);
 
     static bool is_valid_body(const BlockHeader&, const BlockBody&);
 
@@ -130,6 +132,7 @@ class BodySequence {
     AnnouncedBlocks announced_blocks_;
 
     BlockNum highest_body_in_db_{0};
+    BlockNum target_height_{0};
     time_point_t last_nack_;
     size_t ready_bodies_{0};
     Download_Statistics statistics_;

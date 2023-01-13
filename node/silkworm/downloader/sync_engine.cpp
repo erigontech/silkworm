@@ -25,7 +25,7 @@ namespace silkworm::chainsync {
 SyncEngine::SyncEngine(BlockExchange& be, stagedsync::ExecutionEngine& ee)
     : block_exchange_{be},
       exec_engine_{ee},
-      chain_fork_view_{ee.get_headers_head()} {
+      chain_fork_view_{ee.get_headers_head(), ee} {
 
     block_exchange_.initial_state(exec_engine_.get_last_headers(65536));
 }

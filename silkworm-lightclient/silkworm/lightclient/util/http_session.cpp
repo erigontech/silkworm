@@ -4007,6 +4007,7 @@ namespace net = boost::asio;
 
 static constexpr int kHttpVersion11{11};
 static constexpr const char* kMimeOctetStream{"application/octet-stream"};
+static constexpr std::chrono::seconds kTimeoutSecs{30};
 
 net::awaitable<Bytes> do_http_session(const std::string& uri) {
     const auto u = detail::parse_url(uri);
@@ -4015,7 +4016,7 @@ net::awaitable<Bytes> do_http_session(const std::string& uri) {
     std::string target{u.target};
     const int version{kHttpVersion11};
 
-    // The SSL context is required, and holds certificates
+    // The SSL context is required and holds certificates
     ssl::context ctx{ssl::context::tlsv12_client};
 
     // This holds the root certificate used for verification
@@ -4025,14 +4026,13 @@ net::awaitable<Bytes> do_http_session(const std::string& uri) {
     ctx.set_verify_mode(ssl::verify_peer);
 
     // These objects perform our I/O
-    auto resolver =
-        net::use_awaitable_t<net::any_io_executor>::as_default_on(tcp::resolver(co_await net::this_coro::executor));
-    // auto stream = net::use_awaitable.as_default_on(beast::tcp_stream(co_await net::this_coro::executor));
+    tcp::resolver resolver{co_await net::this_coro::executor};
 
-    // beast::tcp_stream stream(co_await net::this_coro::executor);
     beast::ssl_stream<beast::tcp_stream> ssl_stream(co_await net::this_coro::executor, ctx);
     beast::tcp_stream& tcp_stream = beast::get_lowest_layer(ssl_stream);
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wold-style-cast"
     // Set SNI Hostname (many hosts need this to handshake successfully)
     beast::error_code ec;
     if (!SSL_set_tlsext_host_name(ssl_stream.native_handle(), host.c_str())) {
@@ -4040,20 +4040,17 @@ net::awaitable<Bytes> do_http_session(const std::string& uri) {
         std::cerr << ec.message() << "\n";
         throw boost::system::system_error(ec, "error setting SNI hostname");
     }
+#pragma GCC diagnostic pop
 
     // Lookup the domain name
-    auto const resolve_results = co_await resolver.async_resolve(host, port);
-
-    // Set the timeout.
-    tcp_stream.expires_after(std::chrono::seconds(30));
+    auto const resolve_results = co_await resolver.async_resolve(host, port, net::use_awaitable);
 
     // Make the connection on the IP address we get from a lookup
+    tcp_stream.expires_after(kTimeoutSecs);
     co_await tcp_stream.async_connect(resolve_results, net::use_awaitable);
 
-    // Set the timeout.
-    tcp_stream.expires_after(std::chrono::seconds(30));
-
     // Perform the SSL handshake
+    tcp_stream.expires_after(kTimeoutSecs);
     co_await ssl_stream.async_handshake(ssl::stream_base::client, net::use_awaitable);
 
     // Set up an HTTP GET request message
@@ -4062,10 +4059,8 @@ net::awaitable<Bytes> do_http_session(const std::string& uri) {
     request.set(http::field::user_agent, BOOST_BEAST_VERSION_STRING);
     request.set(http::field::accept, kMimeOctetStream);
 
-    // Set the timeout.
-    tcp_stream.expires_after(std::chrono::seconds(30));
-
     // Send the HTTP request to the remote host
+    tcp_stream.expires_after(kTimeoutSecs);
     co_await http::async_write(ssl_stream, request, net::use_awaitable);
 
     // This buffer is used for reading and must be persisted
@@ -4084,7 +4079,7 @@ net::awaitable<Bytes> do_http_session(const std::string& uri) {
     // Gracefully close the socket
     tcp_stream.socket().shutdown(tcp::socket::shutdown_both, ec);
 
-    // not_connected happens sometimes so don't bother reporting it.
+    // not_connected happens sometimes so don't bother reporting it
     if (ec && ec != beast::errc::not_connected) {
         throw boost::system::system_error(ec, "shutdown");
     }

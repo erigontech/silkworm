@@ -26,8 +26,8 @@
 #include <cstring>
 #include <vector>
 
-#include "../ssz/hasher.hpp"
-#include "../ssz/ssz.hpp"
+#include <silkworm/lightclient/ssz/chunk.hpp>
+#include <silkworm/lightclient/ssz/ssz/hasher.hpp>
 
 namespace ssz {
 

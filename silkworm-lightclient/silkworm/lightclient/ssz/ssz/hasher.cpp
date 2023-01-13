@@ -23,10 +23,9 @@
 #include <cpuid.h>
 #endif
 
-#include "../ssz/hasher.hpp"
-#include "../ssz/ssz.hpp"
-
 #include <silkworm/common/base.hpp>
+#include <silkworm/lightclient/ssz/chunk.hpp>
+#include <silkworm/lightclient/ssz/ssz/hasher.hpp>
 #include <silkworm/sentry/rlpx/crypto/sha3_hasher.hpp>
 
 #if (__x86_64__ || __i386__)

@@ -21,8 +21,6 @@
 
 #include "beacon_block.hpp"
 
-#include "silkworm/lightclient/ssz/ssz/ssz.hpp"
-
 /*
 namespace eth {
 // cppcheck-suppress unusedFunction

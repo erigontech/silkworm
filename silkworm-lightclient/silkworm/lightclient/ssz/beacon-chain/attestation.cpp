@@ -23,8 +23,6 @@
 
 #include <algorithm>
 
-#include "beacon_state.hpp"
-
 namespace eth {
     std::vector<ssz::Chunk> AttestationData::hash_tree() const {
         return hash_tree_({&slot, &index, &beacon_block_root, &source, &target});

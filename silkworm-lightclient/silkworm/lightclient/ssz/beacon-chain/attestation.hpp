@@ -21,10 +21,10 @@
 
 #pragma once
 
+#include <silkworm/lightclient/ssz/chunk.hpp>
 #include <silkworm/lightclient/ssz/constants.hpp>
 #include <silkworm/lightclient/ssz/common/bitlist.hpp>
 #include <silkworm/lightclient/ssz/common/containers.hpp>
-#include <silkworm/lightclient/ssz/ssz/ssz.hpp>
 // #include "yaml-cpp/yaml.h"
 
 namespace eth {

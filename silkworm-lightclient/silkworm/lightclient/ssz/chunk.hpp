@@ -20,15 +20,14 @@
  */
 
 #pragma once
-#include <array>
-#include <cstdint>
 
-namespace constants {
-constexpr std::uint32_t BYTES_PER_LENGTH_OFFSET = 4;
-constexpr unsigned int BYTES_PER_CHUNK = 32;
-constexpr unsigned int BITS_PER_BYTE = 8;
-}  // namespace constants
+#include <array>
+#include <cstddef>
+
+#include <silkworm/lightclient/ssz/constants.hpp>
 
 namespace ssz {
-using Chunk = std::array<std::uint8_t, constants::BYTES_PER_CHUNK>;
-}
+
+using Chunk = std::array<uint8_t, constants::BYTES_PER_CHUNK>;
+
+}  // namespace ssz

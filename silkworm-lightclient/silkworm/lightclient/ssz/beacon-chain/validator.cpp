@@ -22,49 +22,56 @@
 #include "validator.hpp"
 
 namespace eth {
-    std::vector<ssz::Chunk>  Validator::hash_tree() const {
-        return hash_tree_({&pubkey, &withdrawal_credentials, &effective_balance, &slashed,
-                           &activation_eligibility_epoch, &activation_epoch, &exit_epoch, &withdrawable_epoch});
-    }
-    BytesVector Validator::serialize() const {
-        return serialize_({&pubkey, &withdrawal_credentials, &effective_balance, &slashed,
-                           &activation_eligibility_epoch, &activation_epoch, &exit_epoch, &withdrawable_epoch});
-    }
 
-    bool Validator::deserialize(ssz::SSZIterator it, ssz::SSZIterator end) {
-        return deserialize_(it, end,
-                            {&pubkey, &withdrawal_credentials, &effective_balance, &slashed,
-                             &activation_eligibility_epoch, &activation_epoch, &exit_epoch, &withdrawable_epoch});
-    }
-    bool Validator::is_active(const Epoch& epoch) const noexcept {
-        return activation_epoch <= epoch && epoch < exit_epoch;
-    }
-    bool Validator::is_eligible_for_activation_queue() const noexcept {
-        return activation_eligibility_epoch == constants::FAR_FUTURE_EPOCH && 
-            effective_balance  == constants::MAX_EFFECTIVE_BALANCE; 
-    }
-    bool Validator::is_slashable(const Epoch& epoch) const noexcept {
-        return (!slashed) && (activation_epoch <= epoch) && (epoch < withdrawable_epoch);
-    }
+constexpr auto FAR_FUTURE_EPOCH = eth::Epoch{0xffffffffffffffffull};
+constexpr auto MAX_EFFECTIVE_BALANCE = eth::Gwei{32000000000};
 
-    /*YAML::Node Validator::encode() const {
-        return encode_({{"pubkey", &pubkey},
-                        {"withdrawal_credentials", &withdrawal_credentials},
-                        {"effective_balance", &effective_balance},
-                        {"slashed", &slashed},
-                        {"activation_eligibility_epoch", &activation_eligibility_epoch},
-                        {"activation_epoch", &activation_epoch},
-                        {"exit_epoch", &exit_epoch},
-                        {"withdrawable_epoch", &withdrawable_epoch}});
-    }
-    bool Validator::decode(const YAML::Node &node) {
-        return decode_(node, {{"pubkey", &pubkey},
-                              {"withdrawal_credentials", &withdrawal_credentials},
-                              {"effective_balance", &effective_balance},
-                              {"slashed", &slashed},
-                              {"activation_eligibility_epoch", &activation_eligibility_epoch},
-                              {"activation_epoch", &activation_epoch},
-                              {"exit_epoch", &exit_epoch},
-                              {"withdrawable_epoch", &withdrawable_epoch}});
-    }*/
+std::vector<ssz::Chunk>  Validator::hash_tree() const {
+    return hash_tree_({&pubkey, &withdrawal_credentials, &effective_balance, &slashed,
+                       &activation_eligibility_epoch, &activation_epoch, &exit_epoch, &withdrawable_epoch});
+}
+
+BytesVector Validator::serialize() const {
+    return serialize_({&pubkey, &withdrawal_credentials, &effective_balance, &slashed,
+                       &activation_eligibility_epoch, &activation_epoch, &exit_epoch, &withdrawable_epoch});
+}
+
+bool Validator::deserialize(ssz::SSZIterator it, ssz::SSZIterator end) {
+    return deserialize_(it, end,
+                        {&pubkey, &withdrawal_credentials, &effective_balance, &slashed,
+                         &activation_eligibility_epoch, &activation_epoch, &exit_epoch, &withdrawable_epoch});
+}
+
+bool Validator::is_active(const Epoch& epoch) const noexcept {
+    return activation_epoch <= epoch && epoch < exit_epoch;
+}
+
+bool Validator::is_eligible_for_activation_queue() const noexcept {
+    return activation_eligibility_epoch == FAR_FUTURE_EPOCH && effective_balance  == MAX_EFFECTIVE_BALANCE;
+}
+
+[[maybe_unused]] bool Validator::is_slashable(const Epoch& epoch) const noexcept {
+    return (!slashed) && (activation_epoch <= epoch) && (epoch < withdrawable_epoch);
+}
+
+/*YAML::Node Validator::encode() const {
+    return encode_({{"pubkey", &pubkey},
+                    {"withdrawal_credentials", &withdrawal_credentials},
+                    {"effective_balance", &effective_balance},
+                    {"slashed", &slashed},
+                    {"activation_eligibility_epoch", &activation_eligibility_epoch},
+                    {"activation_epoch", &activation_epoch},
+                    {"exit_epoch", &exit_epoch},
+                    {"withdrawable_epoch", &withdrawable_epoch}});
+}
+bool Validator::decode(const YAML::Node &node) {
+    return decode_(node, {{"pubkey", &pubkey},
+                          {"withdrawal_credentials", &withdrawal_credentials},
+                          {"effective_balance", &effective_balance},
+                          {"slashed", &slashed},
+                          {"activation_eligibility_epoch", &activation_eligibility_epoch},
+                          {"activation_epoch", &activation_epoch},
+                          {"exit_epoch", &exit_epoch},
+                          {"withdrawable_epoch", &withdrawable_epoch}});
+}*/
 } // namespace eth

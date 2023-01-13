@@ -23,6 +23,7 @@
 
 #include <cstdint>
 
+#include <silkworm/lightclient/ssz/chunk.hpp>
 #include <silkworm/lightclient/ssz/constants.hpp>
 #include <silkworm/lightclient/ssz/ssz_container.hpp>
 #include <silkworm/lightclient/ssz/common/bytes.hpp>

@@ -40,10 +40,11 @@
 #include <string>
 #include <vector>
 
-#include <silkworm/lightclient/ssz/ssz/ssz.hpp>
+#include <silkworm/lightclient/ssz/chunk.hpp>
 // #include "yaml-cpp/yaml.h"
 
 namespace ssz {
+
 class Container;
 using Part = std::pair<std::string, Container *>;
 using ConstPart = std::pair<std::string, const Container *>;

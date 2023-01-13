@@ -27,6 +27,7 @@
 #include <silkworm/lightclient/ssz/common/slot.hpp>
 
 namespace eth {
+
 class Validator : public ssz::Container {
    private:
     BLSPubkey pubkey;
@@ -49,4 +50,5 @@ class Validator : public ssz::Container {
     /*YAML::Node encode() const override;
     bool decode(const YAML::Node &node) override;*/
 };
+
 }  // namespace eth

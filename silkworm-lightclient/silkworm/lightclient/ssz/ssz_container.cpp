@@ -38,10 +38,10 @@
 
 #include <algorithm>
 
+#include <silkworm/lightclient/ssz/chunk.hpp>
 #include <silkworm/lightclient/ssz/common/bytes.hpp>
 #include <silkworm/lightclient/ssz/helpers/bytes_to_int.hpp>
 #include <silkworm/lightclient/ssz/ssz/hashtree.hpp>
-#include <silkworm/lightclient/ssz/ssz/ssz.hpp>
 
 //! Compute the fixed length of specified parts in SSZ representation
 template <typename T>
@@ -128,7 +128,7 @@ std::vector<Chunk> Container::hash_tree() const {
 
 std::vector<Chunk> Container::hash_tree_(const std::vector<const Container *> &parts) {
     // This will throw when accessing hash_tree_root
-    if (parts.size() == 0) return {};
+    if (parts.empty()) return {};
 
     std::vector<Chunk> chunks;
     chunks.reserve(parts.size());

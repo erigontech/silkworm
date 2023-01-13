@@ -23,13 +23,13 @@
 
 #include <utility>
 
+#include <silkworm/lightclient/ssz/chunk.hpp>
 #include <silkworm/lightclient/ssz/constants.hpp>
 #include <silkworm/lightclient/ssz/ssz_container.hpp>
 #include <silkworm/lightclient/ssz/beacon-chain/attestation.hpp>
 #include <silkworm/lightclient/ssz/beacon-chain/deposits.hpp>
 #include <silkworm/lightclient/ssz/beacon-chain/eth1data.hpp>
 #include <silkworm/lightclient/ssz/common/slot.hpp>
-#include <silkworm/lightclient/ssz/ssz/ssz.hpp>
 // #include "yaml-cpp/yaml.h"
 
 namespace eth {

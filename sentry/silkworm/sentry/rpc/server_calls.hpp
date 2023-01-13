@@ -57,7 +57,7 @@ class SetStatusCall : public sw_rpc::server::UnaryCall<proto::StatusData, proto:
     }
 
     static eth::StatusData make_status_data(const proto::StatusData& data, const ServiceState& state) {
-        auto& data_forks = data.fork_data().forks();
+        auto& data_forks = data.fork_data().height_forks();  // TODO handle time_forks
         std::vector<BlockNum> fork_block_numbers;
         fork_block_numbers.resize(static_cast<size_t>(data_forks.size()));
         std::copy(data_forks.cbegin(), data_forks.cend(), fork_block_numbers.begin());
@@ -70,12 +70,12 @@ class SetStatusCall : public sw_rpc::server::UnaryCall<proto::StatusData, proto:
             uint256_from_H256(data.total_difficulty()),
             Bytes{hash_from_H256(data.best_hash())},
             genesis_hash,
-            eth::ForkId{genesis_hash, fork_block_numbers, data.max_block()},
+            eth::ForkId{genesis_hash, fork_block_numbers, data.max_block_height()},  // TODO handle max_block_time
         };
 
         return eth::StatusData{
             std::move(fork_block_numbers),
-            data.max_block(),
+            data.max_block_height(),  // TODO handle max_block_time
             std::move(message),
         };
     }

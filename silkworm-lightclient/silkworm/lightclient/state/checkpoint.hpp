@@ -27,6 +27,7 @@
 
 namespace silkworm::cl {
 
+//! \brief Get the beacon-chain state using checkpoint sync
 boost::asio::awaitable<std::unique_ptr<eth::BeaconState>> retrieve_beacon_state(const std::string& checkpoint_uri);
 
 }  // namespace silkworm::cl

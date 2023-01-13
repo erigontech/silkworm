@@ -23,9 +23,13 @@
 namespace silkworm::cl {
 
 boost::asio::awaitable<std::unique_ptr<eth::BeaconState>> retrieve_beacon_state(const std::string& checkpoint_uri) {
-    const auto content = co_await do_http_session(checkpoint_uri);
+    // Get the beacon-chain state using checkpoint sync via HTTPS
+    const auto rsp_content = co_await do_http_session(checkpoint_uri);
+    const std::vector<uint8_t> beacon_state_data{rsp_content.cbegin(), rsp_content.cend()};
+
+    // Decode the response content as beacon-chain state
     auto beacon_state{std::make_unique<eth::BeaconState>()};
-    const bool ok = beacon_state->deserialize(content.cbegin(), content.cend());
+    const bool ok = beacon_state->deserialize(beacon_state_data.cbegin(), beacon_state_data.cend());
     if (!ok) throw std::runtime_error{"Cannot deserialize BeaconState received from: " + checkpoint_uri};
     co_return beacon_state;
 }

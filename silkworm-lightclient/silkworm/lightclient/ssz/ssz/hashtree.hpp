@@ -41,8 +41,8 @@ class HashTree {
     explicit HashTree(const std::vector<std::uint8_t>& vec, std::uint64_t limit = 0);
 
     void mix_in(std::size_t length);
-    std::vector<Chunk> hash_tree() const { return hash_tree_; }
-    const Chunk hash_tree_root() const { return hash_tree_.back(); }
+    [[nodiscard]] std::vector<Chunk> hash_tree() const { return hash_tree_; }
+    [[nodiscard]] Chunk hash_tree_root() const { return hash_tree_.back(); }
 };
 
 }  // namespace ssz

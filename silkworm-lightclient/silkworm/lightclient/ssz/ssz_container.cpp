@@ -41,7 +41,7 @@
 #include <silkworm/lightclient/ssz/chunk.hpp>
 #include <silkworm/lightclient/ssz/common/bytes.hpp>
 #include <silkworm/lightclient/ssz/helpers/bytes_to_int.hpp>
-#include <silkworm/lightclient/ssz/ssz/hashtree.hpp>
+#include <silkworm/lightclient/ssz/hashtree.hpp>
 
 //! Compute the fixed length of specified parts in SSZ representation
 template <typename T>

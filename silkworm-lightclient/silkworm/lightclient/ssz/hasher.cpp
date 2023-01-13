@@ -25,7 +25,7 @@
 
 #include <silkworm/common/base.hpp>
 #include <silkworm/lightclient/ssz/chunk.hpp>
-#include <silkworm/lightclient/ssz/ssz/hasher.hpp>
+#include <silkworm/lightclient/ssz/hasher.hpp>
 #include <silkworm/sentry/rlpx/crypto/sha3_hasher.hpp>
 
 #if (__x86_64__ || __i386__)

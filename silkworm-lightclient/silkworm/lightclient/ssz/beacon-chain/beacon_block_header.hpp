@@ -19,55 +19,37 @@
 #include <utility>
 
 #include <silkworm/lightclient/ssz/chunk.hpp>
-#include <silkworm/lightclient/ssz/constants.hpp>
 #include <silkworm/lightclient/ssz/ssz_container.hpp>
-#include <silkworm/lightclient/ssz/beacon-chain/attestation.hpp>
-#include <silkworm/lightclient/ssz/beacon-chain/deposits.hpp>
-#include <silkworm/lightclient/ssz/beacon-chain/eth1data.hpp>
-#include <silkworm/lightclient/ssz/beacon-chain/slashing.hpp>
-#include <silkworm/lightclient/ssz/beacon-chain/volutary_exit.hpp>
 #include <silkworm/lightclient/ssz/common/slot.hpp>
 // #include "yaml-cpp/yaml.h"
 
 namespace eth {
 
-class BeaconBlockBody : public ssz::Container {
-   private:
-    BLSSignature randao_reveal;
-    Eth1Data eth1_data;
-    Bytes32 graffiti;
-    ListFixedSizedParts<ProposerSlashing> proposer_slashings{constants::MAX_PROPOSER_SLASHINGS};
-    ListVariableSizedParts<AttesterSlashing> attester_slashings{constants::MAX_ATTESTER_SLASHINGS};
-    ListVariableSizedParts<Attestation> attestations{constants::MAX_ATTESTATIONS};
-    ListFixedSizedParts<Deposit> deposits{constants::MAX_DEPOSITS};
-    ListFixedSizedParts<SignedVoluntaryExit> voluntary_exits{constants::MAX_VOLUNTARY_EXITS};
-
-    std::vector<ssz::Chunk> hash_tree() const override;
-    BytesVector serialize() const override;
-    bool deserialize(ssz::SSZIterator it, ssz::SSZIterator end) override;
-
-    /*YAML::Node encode() const override;
-    bool decode(const YAML::Node &node) override;*/
-};
-
-class BeaconBlock : public ssz::Container {
+struct BeaconBlockHeader : public ssz::Container {
     Slot slot;
     ValidatorIndex proposer_index;
     Root parent_root;
     Root state_root;
-    BeaconBlockBody body;
+    Root body_root;
+
+    static constexpr std::size_t ssz_size = 112;
+    [[nodiscard]] std::size_t get_ssz_size() const override { return ssz_size; }
 
     [[nodiscard]] std::vector<ssz::Chunk> hash_tree() const override;
     [[nodiscard]] BytesVector serialize() const override;
     bool deserialize(ssz::SSZIterator it, ssz::SSZIterator end) override;
+    bool operator==(const BeaconBlockHeader &) const = default;
 
     /*YAML::Node encode() const override;
     bool decode(const YAML::Node &node) override;*/
 };
 
-struct SignedBeaconBlock : public ssz::Container {
-    BeaconBlock message;
+struct SignedBeaconBlockHeader : public ssz::Container {
+    BeaconBlockHeader message;
     BLSSignature signature;
+
+    static constexpr std::size_t ssz_size = 208;
+    [[nodiscard]] std::size_t get_ssz_size() const override { return ssz_size; }
 
     [[nodiscard]] std::vector<ssz::Chunk> hash_tree() const override;
     [[nodiscard]] BytesVector serialize() const override;

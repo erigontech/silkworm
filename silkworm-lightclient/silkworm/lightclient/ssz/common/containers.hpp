@@ -27,9 +27,9 @@
 #include <iterator>
 
 #include <silkworm/lightclient/ssz/chunk.hpp>
-#include <silkworm/lightclient/ssz/ssz_container.hpp>
 #include <silkworm/lightclient/ssz/common/slot.hpp>
-#include <silkworm/lightclient/ssz/ssz/hashtree.hpp>
+#include <silkworm/lightclient/ssz/hashtree.hpp>
+#include <silkworm/lightclient/ssz/ssz_container.hpp>
 // #include "yaml-cpp/yaml.h"
 
 namespace eth

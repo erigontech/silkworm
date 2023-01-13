@@ -27,11 +27,11 @@
 #include <iostream>
 #include <sstream>
 
-// #include "config.hpp"
-#include "../helpers/bytes_to_int.hpp"
-#include "../ssz/hashtree.hpp"
+#include <silkworm/lightclient/ssz/hashtree.hpp>
+#include <silkworm/lightclient/ssz/helpers/bytes_to_int.hpp>
 
 namespace eth {
+
 std::vector<ssz::Chunk> Bitlist::hash_tree() const {
     using namespace constants;
     std::vector<std::uint8_t> ret((m_arr.size() + BITS_PER_BYTE - 1) / BITS_PER_BYTE, 0);
@@ -49,6 +49,7 @@ std::vector<std::uint8_t> Bitlist::serialize() const {
     ret.back() |= 1 << (m_arr.size() % constants::BITS_PER_BYTE);
     return ret;
 }
+
 bool Bitlist::deserialize(ssz::SSZIterator it, ssz::SSZIterator end) {
     auto last = end;
     --last;

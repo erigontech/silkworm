@@ -23,11 +23,11 @@
 
 #include <stdexcept>
 
-#include "../common/bytes.hpp"
-#include "../helpers/math.hpp"
-// #include "../ssz/ssz.hpp"
+#include <silkworm/lightclient/ssz/common/bytes.hpp>
+#include <silkworm/lightclient/ssz/helpers/math.hpp>
 
 namespace {
+
 using namespace ssz;
 Chunk hash_2_chunks(const Chunk& first, const Chunk& second, const Hasher& hasher) {
     std::array<std::uint8_t, 2 * constants::BYTES_PER_CHUNK> sum;  // NOLINT
@@ -37,6 +37,7 @@ Chunk hash_2_chunks(const Chunk& first, const Chunk& second, const Hasher& hashe
     hasher.hash_64b_blocks(ret.data(), sum.data(), 1);
     return ret;
 }
+
 // clang-format off
 const auto ZERO_HASH_DEPTH{42};
 constexpr Chunk zero_hash{};

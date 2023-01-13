@@ -27,7 +27,7 @@
 #include <vector>
 
 #include <silkworm/lightclient/ssz/chunk.hpp>
-#include <silkworm/lightclient/ssz/ssz/hasher.hpp>
+#include <silkworm/lightclient/ssz/hasher.hpp>
 
 namespace ssz {
 

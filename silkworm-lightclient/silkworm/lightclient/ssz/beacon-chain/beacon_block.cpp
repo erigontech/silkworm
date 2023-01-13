@@ -21,38 +21,110 @@
 
 #include "beacon_block.hpp"
 
-/*
 namespace eth {
-// cppcheck-suppress unusedFunction
-void BeaconBlockBody::randao_reveal(BLSSignature &&s) { randao_reveal_ = s; }
-// cppcheck-suppress unusedFunction
-void BeaconBlockBody::eth1_data(Eth1Data &&data) { eth1_data_ = data; }
-// cppcheck-suppress unusedFunction
-void BeaconBlockBody::graffiti(Bytes32 &&g) { graffiti_ = g; }
-// cppcheck-suppress unusedFunction
-void BeaconBlockBody::proposer_slashings(ListFixedSizedParts<ProposerSlashing> &&p) {
-    proposer_slashings_ = p;
-}
-// cppcheck-suppress unusedFunction
-void BeaconBlockBody::attester_slashings(ListVariableSizedParts<AttesterSlashing> &&a) {
-    attester_slashings_ = a;
-}
-// cppcheck-suppress unusedFunction
-void BeaconBlockBody::attestations(ListVariableSizedParts<Attestation> &&a) { attestations_ = a; }
-// cppcheck-suppress unusedFunction
-void BeaconBlockBody::deposits(ListFixedSizedParts<Deposit> &&d) { deposits_ = d; }
-// cppcheck-suppress unusedFunction
-void BeaconBlockBody::voluntary_exits(ListFixedSizedParts<SignedVoluntaryExit> &&s) { voluntary_exits_ = s; }
 
-// cppcheck-suppress unusedFunction
-void BeaconBlock::slot(Slot &&s) { slot_ = s; }
-// cppcheck-suppress unusedFunction
-void BeaconBlock::proposer_index(ValidatorIndex &&idx) { proposer_index_ = idx; }
-// cppcheck-suppress unusedFunction
-void BeaconBlock::parent_root(Root &&r) { parent_root_ = r; }
-// cppcheck-suppress unusedFunction
-void BeaconBlock::state_root(Root &&r) { state_root_ = r; }
-// cppcheck-suppress unusedFunction
-void BeaconBlock::body(BeaconBlockBody &&b) { body_ = b; }
+std::vector<ssz::Chunk> BeaconBlockBody::hash_tree() const {
+    return hash_tree_({&randao_reveal,
+                       &eth1_data,
+                       &graffiti,
+                       &proposer_slashings,
+                       &attester_slashings,
+                       &attestations,
+                       &deposits,
+                       &voluntary_exits});
+}
+
+BytesVector BeaconBlockBody::serialize() const {
+    return serialize_({&randao_reveal,
+                       &eth1_data,
+                       &graffiti,
+                       &proposer_slashings,
+                       &attester_slashings,
+                       &attestations,
+                       &deposits,
+                       &voluntary_exits});
+}
+
+bool BeaconBlockBody::deserialize(ssz::SSZIterator it, ssz::SSZIterator end) {
+    return deserialize_(it, end,
+                        {&randao_reveal,
+                         &eth1_data,
+                         &graffiti,
+                         &proposer_slashings,
+                         &attester_slashings,
+                         &attestations,
+                         &deposits,
+                         &voluntary_exits});
+}
+
+/*YAML::Node BeaconBlockBody::encode() const {
+    return encode_({{"randao_reveal", &randao_reveal},
+                    {"eth1_data", &eth1_data},
+                    {"graffiti", &graffiti},
+                    {"proposer_slashings", &proposer_slashings},
+                    {"attester_slashings", &attester_slashings},
+                    {"attestations", &attestations},
+                    {"deposits", &deposits},
+                    {"voluntary_exits", &voluntary_exits}});
+}
+
+bool BeaconBlockBody::decode(const YAML::Node &node) {
+    return decode_(node, {{"randao_reveal", &randao_reveal},
+                          {"eth1_data", &eth1_data},
+                          {"graffiti", &graffiti},
+                          {"proposer_slashings", &proposer_slashings},
+                          {"attester_slashings", &attester_slashings},
+                          {"attestations", &attestations},
+                          {"deposits", &deposits},
+                          {"voluntary_exits", &voluntary_exits}});
+}*/
+
+std::vector<ssz::Chunk> BeaconBlock::hash_tree() const {
+    return hash_tree_({&slot, &proposer_index, &parent_root, &state_root, &body});
+}
+
+BytesVector BeaconBlock::serialize() const {
+    return serialize_({&slot, &proposer_index, &parent_root, &state_root, &body});
+}
+
+bool BeaconBlock::deserialize(ssz::SSZIterator it, ssz::SSZIterator end) {
+    return deserialize_(it, end, {&slot, &proposer_index, &parent_root, &state_root, &body});
+}
+
+/*YAML::Node BeaconBlock::encode() const {
+    return encode_({{"slot", &slot_},
+                    {"proposer_index", &proposer_index_},
+                    {"parent_root", &parent_root_},
+                    {"state_root", &state_root_},
+                    {"body", &body_}});
+}
+
+bool BeaconBlock::decode(const YAML::Node &node) {
+    return decode_(node, {{"slot", &slot_},
+                          {"proposer_index", &proposer_index_},
+                          {"parent_root", &parent_root_},
+                          {"state_root", &state_root_},
+                          {"body", &body_}});
+}*/
+
+std::vector<ssz::Chunk> SignedBeaconBlock::hash_tree() const {
+    return hash_tree_({&message, &signature});
+}
+
+BytesVector SignedBeaconBlock::serialize() const {
+    return serialize_({&message, &signature});
+}
+
+bool SignedBeaconBlock::deserialize(ssz::SSZIterator it, ssz::SSZIterator end) {
+    return deserialize_(it, end, {&message, &signature});
+}
+
+/*YAML::Node SignedBeaconBlock::encode() const {
+    return encode_({{"message", &message}, {"signature", &signature}});
+}
+
+bool SignedBeaconBlock::decode(const YAML::Node &node) {
+    return decode_(node, {{"message", &message}, {"signature", &signature}});
+}*/
+
 }  // namespace eth
-*/

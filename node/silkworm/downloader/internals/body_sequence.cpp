@@ -257,7 +257,7 @@ Blocks BodySequence::withdraw_ready_bodies() {
 
         highest_body_in_db_ = std::max(highest_body_in_db_, past_request.block_height);
 
-        std::shared_ptr<BlockEx> b{new BlockEx{std::move(past_request.body), std::move(past_request.header)}};
+        std::shared_ptr<BlockEx> b{new BlockEx{{std::move(past_request.body), std::move(past_request.header)}}};
         b->to_announce = past_request.to_announce;
 
         ready_bodies.push_back(b);

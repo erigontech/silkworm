@@ -43,7 +43,8 @@ void OutboundGetBlockBodies::execute(db::ROAccess, HeaderChain&, BodySequence& b
 
         auto send_outcome = send_packet(sentry, packet, min_block, timeout);
 
-        SILK_TRACE << "Bodies request sent (" << packet << "), received by " << send_outcome.peers_size() << " peer(s)";
+        SILK_TRACE << "Bodies request sent (" << packet << "), received by " << send_outcome.peers_size()
+                   << "/" << active_peers_ << " peer(s)";
 
         if (send_outcome.peers_size() == 0) {
             bs.request_nack(packet);

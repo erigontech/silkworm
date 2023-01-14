@@ -44,7 +44,8 @@ void OutboundGetBlockHeaders::execute(db::ROAccess, HeaderChain& hc, BodySequenc
         auto send_outcome = send_packet(sentry, *packet, timeout);
 
         packets_ += "o=" + std::to_string(std::get<BlockNum>(packet->request.origin)) + ",";
-        SILK_TRACE << "Headers request sent (" << *packet << "), received by " << send_outcome.peers_size() << " peer(s)";
+        SILK_TRACE << "Headers request sent (" << *packet << "), received by " << send_outcome.peers_size()
+                   << "/" << active_peers_ << " peer(s)";
 
         if (send_outcome.peers_size() == 0) {
             hc.request_nack(*packet);
@@ -70,7 +71,8 @@ void OutboundGetBlockHeaders::execute(db::ROAccess, HeaderChain& hc, BodySequenc
         sent_reqs_++;
         requested_headers_ += packet->request.amount;
         packets_ += "SK o=" + std::to_string(std::get<BlockNum>(packet->request.origin)) + ",";
-        SILK_TRACE << "Headers skeleton request sent (" << *packet << "), received by " << send_outcome.peers_size() << " peer(s)";
+        SILK_TRACE << "Headers skeleton request sent (" << *packet << "), received by " << send_outcome.peers_size()
+                   << "/" << active_peers_ << " peer(s)";
     }
 
     if (!packets_.empty()) {

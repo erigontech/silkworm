@@ -23,7 +23,7 @@ namespace silkworm {
 
 OutboundNewBlock::OutboundNewBlock(const Blocks& b): blocks_to_announce_{b} {}
 
-void OutboundNewBlock::execute(db::ROAccess, HeaderChain&, BodySequence& bs, SentryClient& sentry) {
+void OutboundNewBlock::execute(db::ROAccess, HeaderChain&, BodySequence&, SentryClient& sentry) {
     using namespace std::literals::chrono_literals;
 
     for (auto& block_ptr: blocks_to_announce_) {

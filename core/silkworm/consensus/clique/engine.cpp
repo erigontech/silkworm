@@ -22,11 +22,11 @@ namespace silkworm::consensus {
 
 ValidationResult CliqueEngine::validate_seal(const BlockHeader&) { return ValidationResult::kOk; }
 
-evmc::address CliqueEngine::get_beneficiary(const BlockHeader& header) { 
-      return ecrecover(header);
+evmc::address CliqueEngine::get_beneficiary(const BlockHeader& header) {
+    return ecrecover(header);
 }
 
-evmc::address 
+evmc::address
 CliqueEngine::ecrecover(const BlockHeader& header) {
     evmc::address beneficiary = evmc::address{};
 

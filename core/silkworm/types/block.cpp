@@ -21,9 +21,9 @@
 
 namespace silkworm {
 
-evmc::bytes32 BlockHeader::hash(bool for_sealing) const {
+evmc::bytes32 BlockHeader::hash(bool for_sealing, bool eip225) const {
     Bytes rlp;
-    rlp::encode(rlp, *this, for_sealing);
+    rlp::encode(rlp, *this, for_sealing, eip225);
     return bit_cast<evmc_bytes32>(keccak256(rlp));
 }
 
@@ -44,7 +44,7 @@ void Block::recover_senders() {
 
 namespace rlp {
 
-    static Header rlp_header(const BlockHeader& header, bool for_sealing = false) {
+    static Header rlp_header(const BlockHeader& header, bool for_sealing = false, bool eip225=false) {
         Header rlp_head{true, 0};
         rlp_head.payload_length += kHashLength + 1;                                        // parent_hash
         rlp_head.payload_length += kHashLength + 1;                                        // ommers_hash
@@ -58,7 +58,11 @@ namespace rlp {
         rlp_head.payload_length += length(header.gas_limit);                               // gas_limit
         rlp_head.payload_length += length(header.gas_used);                                // gas_used
         rlp_head.payload_length += length(header.timestamp);                               // timestamp
-        rlp_head.payload_length += length(header.extra_data);                              // extra_data
+        if (eip225) {
+            rlp_head.payload_length += length(header.extra_data) - (kEntraSealSize+1);    // extra_data -signature
+        } else {
+            rlp_head.payload_length += length(header.extra_data);                          // extra_data
+        }
         if (!for_sealing) {
             rlp_head.payload_length += kHashLength + 1;  // mix_hash
             rlp_head.payload_length += 8 + 1;            // nonce
@@ -74,7 +78,7 @@ namespace rlp {
         return length_of_length(rlp_head.payload_length) + rlp_head.payload_length;
     }
 
-    void encode(Bytes& to, const BlockHeader& header, bool for_sealing) {
+    void encode(Bytes& to, const BlockHeader& header, bool for_sealing, bool eip225) {
         encode_header(to, rlp_header(header, for_sealing));
         encode(to, header.parent_hash.bytes);
         encode(to, header.ommers_hash.bytes);
@@ -88,7 +92,12 @@ namespace rlp {
         encode(to, header.gas_limit);
         encode(to, header.gas_used);
         encode(to, header.timestamp);
-        encode(to, header.extra_data);
+        if (eip225) {
+            auto extra_data_no_signature = header.extra_data.substr(0, header.extra_data.length() - kEntraSealSize);
+            encode(to, extra_data_no_signature);
+        } else {
+            encode(to, header.extra_data);
+        }
         if (!for_sealing) {
             encode(to, header.mix_hash.bytes);
             encode(to, header.nonce);

@@ -48,9 +48,9 @@ TEST_CASE("Consensus Engine factory") {
     consensus_engine = engine_factory(test::kLondonConfig);  // Noproof consensus engine
     CHECK(consensus_engine != nullptr);
     consensus_engine = engine_factory(kRinkebyConfig);  // Clique consensus engine
-    CHECK(consensus_engine == nullptr);
+    CHECK(consensus_engine != nullptr);
     consensus_engine = engine_factory(kGoerliConfig);  // Clique consensus engine
-    CHECK(consensus_engine == nullptr);
+    CHECK(consensus_engine != nullptr);
 }
 
 TEST_CASE("Consensus Engine Seal") {

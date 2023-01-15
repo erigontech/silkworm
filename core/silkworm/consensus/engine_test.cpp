@@ -51,6 +51,8 @@ TEST_CASE("Consensus Engine factory") {
     CHECK(consensus_engine != nullptr);
     consensus_engine = engine_factory(kGoerliConfig);  // Clique consensus engine
     CHECK(consensus_engine != nullptr);
+    consensus_engine = engine_factory(ChainConfig{.seal_engine = SealEngineType::kAuRA});
+    CHECK(consensus_engine == nullptr);
 }
 
 TEST_CASE("Consensus Engine Seal") {

@@ -60,9 +60,9 @@ namespace rlp {
         rlp_head.payload_length += length(header.timestamp);                               // timestamp
         if (eip225) {
             const auto extra_data_no_signature = header.extra_data.substr(0, header.extra_data.length() - kEntraSealSize);
-            rlp_head.payload_length += length(extra_data_no_signature);                    // extra_data -signature
+            rlp_head.payload_length += length(extra_data_no_signature);  // extra_data -signature
         } else {
-            rlp_head.payload_length += length(header.extra_data);                          // extra_data
+            rlp_head.payload_length += length(header.extra_data);  // extra_data
         }
         if (!for_sealing) {
             rlp_head.payload_length += kHashLength + 1;  // mix_hash

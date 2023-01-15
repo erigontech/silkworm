@@ -44,7 +44,7 @@ void Block::recover_senders() {
 
 namespace rlp {
 
-    static Header rlp_header(const BlockHeader& header, bool for_sealing = false, bool eip225=false) {
+    static Header rlp_header(const BlockHeader& header, bool for_sealing = false, bool eip225 = false) {
         Header rlp_head{true, 0};
         rlp_head.payload_length += kHashLength + 1;                                        // parent_hash
         rlp_head.payload_length += kHashLength + 1;                                        // ommers_hash

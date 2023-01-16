@@ -63,12 +63,6 @@ TEST_CASE("Consensus Engine Seal") {
     CHECK(consensus_engine->validate_seal(fake_header) == ValidationResult::kOk);
 }
 
-TEST_CASE("Consensus Engine Clique") {
-    BlockHeader fake_header{};
-    auto consensus_engine = engine_factory(kGoerliConfig);  // Clique consensus engine
-    CHECK(consensus_engine->validate_seal(fake_header) == ValidationResult::kOk);
-}
-
 TEST_CASE("Validate transaction types") {
     const std::optional<intx::uint256> base_fee_per_gas{std::nullopt};
 

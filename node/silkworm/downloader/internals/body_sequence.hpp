@@ -49,7 +49,10 @@ class BodySequence {
     explicit BodySequence();
     ~BodySequence() = default;
 
-    // set a downloading target - this must be done at body forward
+    // sync current state - this must be done at header forward
+    void current_state(BlockNum highest_in_db);
+
+        // set a downloading target - this must be done at body forward
     void download_bodies(const Headers& headers);
 
     //! core functionalities: trigger the internal algorithms to decide what bodies we miss
@@ -71,7 +74,7 @@ class BodySequence {
 
     //! minor functionalities
     [[nodiscard]] bool has_completed() const;
-    [[nodiscard]] BlockNum highest_block_in_db() const;
+    [[nodiscard]] BlockNum highest_block_in_output() const;
     [[nodiscard]] BlockNum highest_block_in_memory() const;
     [[nodiscard]] BlockNum lowest_block_in_memory() const;
     [[nodiscard]] BlockNum target_height() const;
@@ -107,6 +110,8 @@ class BodySequence {
         bool to_announce{false};
     };
 
+    bool fulfill_from_announcements(BodyRequest&);
+
     struct AnnouncedBlocks {
         void add(Block block);
         std::optional<BlockBody> remove(BlockNum bn);
@@ -131,7 +136,7 @@ class BodySequence {
     IncreasingHeightOrderedRequestContainer body_requests_;
     AnnouncedBlocks announced_blocks_;
 
-    BlockNum highest_body_in_db_{0};
+    BlockNum highest_body_in_output_{0};
     BlockNum target_height_{0};
     time_point_t last_nack_;
     size_t ready_bodies_{0};

@@ -40,12 +40,13 @@ class SyncEngine : public ActiveComponent {
     void unwind(UnwindPoint);
     auto update_bad_headers(std::set<Hash>) -> std::shared_ptr<InternalMessage<void>>;
 
-    void send_new_block_announcements(const Blocks& blocks);
+    void send_new_block_announcements(Blocks&& blocks);
     void send_new_block_hash_announcements();
 
     BlockExchange& block_exchange_;
     stagedsync::ExecutionEngine& exec_engine_;
     ChainForkView chain_fork_view_;
+    bool is_first_sync_{true};
 };
 
 }  // namespace silkworm::chainsync

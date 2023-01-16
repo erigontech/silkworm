@@ -41,6 +41,7 @@ class HeaderChain_ForTest : public HeaderChain {
 
 class ExecutionEngine_ForTest : public stagedsync::ExecutionEngine {
   public:
+    using stagedsync::ExecutionEngine::insert_header;
     using stagedsync::ExecutionEngine::canonical_chain_;
     using stagedsync::ExecutionEngine::CanonicalChain;
     using stagedsync::ExecutionEngine::ExecutionEngine;
@@ -76,20 +77,27 @@ TEST_CASE("Headers receiving and saving") {
 
     // creating the ExecutionEngine
     ExecutionEngine_ForTest exec_engine{context.node_settings(), db_access};
-
     auto& tx = exec_engine.tx_;  // mdbx refuses to open a ROTxn when there is a RWTxn in the same thread
+
+    auto headers_head = exec_engine.get_headers_head();
+    REQUIRE(headers_head.number == 0);
+
+    std::vector<BlockHeader> last_headers = exec_engine.get_last_headers(1);
+    REQUIRE(last_headers.size() == 1);
+    REQUIRE(last_headers[0].number == headers_head.number);
+    REQUIRE(last_headers[0].hash() == headers_head.hash);
 
     using ValidChain = stagedsync::ExecutionEngine::ValidChain;
     //using InvalidChain = stagedsync::ExecutionEngine::InvalidChain;
 
     // creating the chain-fork-view to simulate a bit of the HeaderStage
-    chainsync::ChainForkView chain_fork_view{exec_engine};
+    chainsync::ChainForkView chain_fork_view{headers_head, exec_engine};
 
     // creating the working chain to simulate a bit of the downloader
     BlockNum highest_in_db = 0;
     HeaderChain_ForTest header_chain(std::make_unique<DummyConsensusEngine>());
-    header_chain.recover_initial_state(tx);
-    header_chain.sync_current_state(highest_in_db);
+    header_chain.initial_state(last_headers);
+    header_chain.current_state(highest_in_db);
     auto request_id = header_chain.generate_request_id();
 
     // reading genesis
@@ -149,10 +157,10 @@ TEST_CASE("Headers receiving and saving") {
         // saving headers ready to persist as the header downloader does in the forward() method
         Headers headers_to_persist = header_chain.withdraw_stable_headers();
 
-        as_range::for_each(headers_to_persist, [&chain_fork_view](const auto& header) {
+        as_range::for_each(headers_to_persist, [&](const auto& header) {
             chain_fork_view.add(*header);
+            exec_engine.insert_header(*header);
         });
-        exec_engine.insert_headers(headers_to_persist);
 
         // check internal status
         BigInt expected_td = header0->difficulty + header1.difficulty + header2.difficulty;
@@ -229,10 +237,10 @@ TEST_CASE("Headers receiving and saving") {
         // saving headers ready to persist as the header downloader does in the forward() method
         Headers headers_to_persist = header_chain.withdraw_stable_headers();
 
-        as_range::for_each(headers_to_persist, [&chain_fork_view](const auto& header) {
+        as_range::for_each(headers_to_persist, [&](const auto& header) {
             chain_fork_view.add(*header);
+            exec_engine.insert_header(*header);
         });
-        exec_engine.insert_headers(headers_to_persist);
 
         // check internal status
         BigInt expected_td = header0->difficulty + header1.difficulty + header2.difficulty;
@@ -275,10 +283,10 @@ TEST_CASE("Headers receiving and saving") {
         // saving headers ready to persist as the header downloader does in the forward() method
         Headers headers_to_persist_bis = header_chain.withdraw_stable_headers();
 
-        as_range::for_each(headers_to_persist_bis, [&chain_fork_view](const auto& header) {
+        as_range::for_each(headers_to_persist_bis, [&](const auto& header) {
             chain_fork_view.add(*header);
+            exec_engine.insert_header(*header);
         });
-        exec_engine.insert_headers(headers_to_persist_bis);
 
         // status and db content must be as before because the new header is not in the canonical chain
         REQUIRE(chain_fork_view.head_total_difficulty() == expected_td);
@@ -346,10 +354,10 @@ TEST_CASE("Headers receiving and saving") {
         // saving headers ready to persist as the header downloader does in the forward() method
         Headers headers_to_persist = header_chain.withdraw_stable_headers();
 
-        as_range::for_each(headers_to_persist, [&chain_fork_view](const auto& header) {
+        as_range::for_each(headers_to_persist, [&](const auto& header) {
             chain_fork_view.add(*header);
+            exec_engine.insert_header(*header);
         });
-        exec_engine.insert_headers(headers_to_persist);
 
         // check internal status
         BigInt expected_td = header0->difficulty + header1.difficulty + header2.difficulty;
@@ -392,10 +400,10 @@ TEST_CASE("Headers receiving and saving") {
         // saving headers ready to persist as the header downloader does in the forward() method
         Headers headers_to_persist_bis = header_chain.withdraw_stable_headers();
 
-        as_range::for_each(headers_to_persist_bis, [&chain_fork_view](const auto& header) {
+        as_range::for_each(headers_to_persist_bis, [&](const auto& header) {
             chain_fork_view.add(*header);
+            exec_engine.insert_header(*header);
         });
-        exec_engine.insert_headers(headers_to_persist_bis);
 
         // the canonical is changed, check the new status
         auto new_expected_td = header0->difficulty + header1b.difficulty;
@@ -462,10 +470,10 @@ TEST_CASE("Headers receiving and saving") {
         // saving headers ready to persist as the header downloader does in the forward() method
         Headers headers_to_persist = header_chain.withdraw_stable_headers();
 
-        as_range::for_each(headers_to_persist, [&chain_fork_view](const auto& header) {
+        as_range::for_each(headers_to_persist, [&](const auto& header) {
             chain_fork_view.add(*header);
+            exec_engine.insert_header(*header);
         });
-        exec_engine.insert_headers(headers_to_persist);
 
         // check internal status
         BigInt expected_td = header0->difficulty + header1b.difficulty;
@@ -511,10 +519,10 @@ TEST_CASE("Headers receiving and saving") {
         // saving headers ready to persist as the header downloader does in the forward() method
         Headers headers_to_persist_bis = header_chain.withdraw_stable_headers();
 
-        as_range::for_each(headers_to_persist_bis, [&chain_fork_view](const auto& header) {
+        as_range::for_each(headers_to_persist_bis, [&](const auto& header) {
             chain_fork_view.add(*header);
+            exec_engine.insert_header(*header);
         });
-        exec_engine.insert_headers(headers_to_persist_bis);
 
         // check internal status
         BigInt expected_td_bis = header0->difficulty + header1.difficulty + header2.difficulty;

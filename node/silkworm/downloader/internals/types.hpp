@@ -47,6 +47,24 @@ using duration_t = std::chrono::system_clock::duration;
 using seconds_t = std::chrono::seconds;
 using milliseconds_t = std::chrono::milliseconds;
 
+// operator ==
+inline bool operator==(const BlockId& a, const BlockId& b) {
+    return a.number == b.number && a.hash == b.hash;
+}
+
+inline bool operator==(const ChainHead& a, const BlockId& b) {
+    return a.number == b.number && a.hash == b.hash;
+}
+
+inline bool operator==(const BlockId& a, const ChainHead& b) {
+    return a.number == b.number && a.hash == b.hash;
+}
+
+inline bool operator==(const ChainHead& a, const ChainHead& b) {
+    return a.number == b.number && a.hash == b.hash && a.total_difficulty == b.total_difficulty;
+}
+
+// stream operator <<
 inline std::ostream& operator<<(std::ostream& out, const silkworm::ByteView& bytes) {
     out << silkworm::to_hex(bytes);
     return out;
@@ -62,6 +80,7 @@ inline std::ostream& operator<<(std::ostream& out, const evmc::bytes32& b32) {
     return out;
 }
 
+// Peers
 using PeerId = Bytes;
 
 // Bytes already has operator<<, so PeerId but PeerId is too long
@@ -98,6 +117,7 @@ struct Announce {
     BlockNum number = 0;
 };
 
+// RLP
 namespace rlp {
     inline size_t length(const Hash&) { return kHashLength + 1; }
 

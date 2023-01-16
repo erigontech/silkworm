@@ -199,7 +199,7 @@ void BlockExchange::log_status() {
                  << "outst= " << std::setw(7)
                  << body_sequence_.outstanding_bodies(std::chrono::system_clock::now())
                  << ", ready= " << std::setw(6) << body_sequence_.ready_bodies()
-                 << ", db-height= " << std::setw(10) << body_sequence_.highest_block_in_db()
+                 << ", db-height= " << std::setw(10) << body_sequence_.highest_block_in_output()
                  << ", mem-height= " << std::setw(10) << body_sequence_.lowest_block_in_memory()
                  << "~" << std::setw(10) << body_sequence_.highest_block_in_memory()
                  << " (#" << std::setw(7) << std::showpos
@@ -234,8 +234,9 @@ void BlockExchange::download_blocks(BlockNum current_height, [[maybe_unused]] st
     // todo: use target_height, if it is not present use target_height = tip of the chain
 
     auto message = std::make_shared<InternalMessage<void>>(
-        [=](HeaderChain& hc, BodySequence&) {
+        [=](HeaderChain& hc, BodySequence& bc) {
             hc.current_state(current_height);
+            bc.current_state(current_height);
             downloading_active_ = true;  // must be done after sync current_state
         });
 

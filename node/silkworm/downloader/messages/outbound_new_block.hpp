@@ -25,7 +25,7 @@ namespace silkworm {
 
 class OutboundNewBlock : public OutboundMessage {
   public:
-    OutboundNewBlock(const Blocks&);
+    OutboundNewBlock(Blocks, bool is_first_sync);
 
     std::string name() const override { return "OutboundNewBlock"; }
     std::string content() const override;
@@ -39,6 +39,7 @@ class OutboundNewBlock : public OutboundMessage {
 
     long sent_packets_{0};
     Blocks blocks_to_announce_;
+    bool is_first_sync_;
     // NewBlockPacket packet_;
 };
 

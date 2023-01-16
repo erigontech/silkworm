@@ -57,11 +57,12 @@ auto SyncEngine::forward_and_insert_blocks() -> NewHeight {
         exec_engine_.insert_blocks(blocks);
 
         // send announcement to peers
-        send_new_block_announcements(announcements_to_do);  // according to eth/67 they must be done here,
-                                                            // after simple header verification
+        send_new_block_announcements(std::move(announcements_to_do));  // according to eth/67 they must be done here,
+                                                                             // after simple header verification
     };
 
     block_exchange_.stop_downloading();
+    is_first_sync_ = false;
 
     return {.block_num = chain_fork_view_.head_height(), .hash = chain_fork_view_.head_hash()};
 }
@@ -106,7 +107,8 @@ void SyncEngine::execution_loop() {
 
         exec_engine_.notify_fork_choice_updated(new_height.hash);
 
-        send_new_block_hash_announcements();  // according to eth/67 they must be done after a full block verification
+        if (!is_first_sync_)
+            send_new_block_hash_announcements();  // according to eth/67 they must be done after a full block verification
     }
 };
 
@@ -121,16 +123,16 @@ auto SyncEngine::update_bad_headers(std::set<Hash> bad_headers) -> std::shared_p
 
 // New block hash announcements propagation
 void SyncEngine::send_new_block_hash_announcements() {
-    auto message = std::make_shared<OutboundNewBlockHashes>();
+    auto message = std::make_shared<OutboundNewBlockHashes>(is_first_sync_);
 
     block_exchange_.accept(message);
 }
 
 // New block announcements propagation
-void SyncEngine::send_new_block_announcements(const Blocks& blocks) {
+void SyncEngine::send_new_block_announcements(Blocks&& blocks) {
     if (blocks.empty()) return;
 
-    auto message = std::make_shared<OutboundNewBlock>(blocks);
+    auto message = std::make_shared<OutboundNewBlock>(std::move(blocks), is_first_sync_);
 
     block_exchange_.accept(message);
 }

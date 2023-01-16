@@ -25,7 +25,7 @@ namespace silkworm {
 
 class OutboundNewBlockHashes : public OutboundMessage {
   public:
-    OutboundNewBlockHashes();
+    OutboundNewBlockHashes(bool is_first_sync);
 
     std::string name() const override { return "OutboundNewBlockHashes"; }
     std::string content() const override;
@@ -34,6 +34,7 @@ class OutboundNewBlockHashes : public OutboundMessage {
 
   private:
     NewBlockHashesPacket packet_;
+    bool is_first_sync_;
 };
 
 }  // namespace silkworm

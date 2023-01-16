@@ -1259,7 +1259,7 @@ TEST_CASE("HeaderChain - process_segment - (7) invalidating anchor") {
         anchor->timeouts = 10;
         anchor->timestamp = now - timeout;
 
-        auto [packet, penalizations] = chain.request_more_headers(now, timeout);
+        auto [packet, penalizations] = chain.anchor_extension_request(now, timeout);
 
         REQUIRE(packet == std::nullopt);
         REQUIRE(!penalizations.empty());
@@ -1441,7 +1441,7 @@ TEST_CASE("HeaderChain - process_segment - (8) sibling with anchor invalidation 
 
         chain.anchor_queue_.fix();
 
-        auto [packet, penalizations] = chain.request_more_headers(now, timeout);  // invalidate (=erase) anchor1
+        auto [packet, penalizations] = chain.anchor_extension_request(now, timeout);  // invalidate (=erase) anchor1
 
         REQUIRE(packet == std::nullopt);
         REQUIRE(!penalizations.empty());

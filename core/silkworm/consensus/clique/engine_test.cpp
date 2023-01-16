@@ -37,8 +37,8 @@ TEST_CASE("Clique engine validate_seal") {
     header.state_root = 0xfc1023291dad0aa01fdd9035ca2664e9258db0e525bd347f2e3ee0b908b6977d_bytes32;
     header.transactions_root = 0xbbb32657bbc901fcd52ca0ff341c3e904015d7330e7f8a59c8726e5fe4cef279_bytes32;
     header.receipts_root = 0x05c30736b9fea585167275a47d6752c68b3277bb0b6cc3ec7702e014a9acbde9_bytes32;
-    header.number = 6257904; 
-    header.difficulty = 2; 
+    header.number = 6257904;
+    header.difficulty = 2;
     header.gas_limit = 29999972;
     header.gas_used = 798242;
     header.timestamp = 1643045393;
@@ -56,8 +56,8 @@ TEST_CASE("get_beneficiary() && extra_data with seal") {
     header.state_root = 0xfc1023291dad0aa01fdd9035ca2664e9258db0e525bd347f2e3ee0b908b6977d_bytes32;
     header.transactions_root = 0xbbb32657bbc901fcd52ca0ff341c3e904015d7330e7f8a59c8726e5fe4cef279_bytes32;
     header.receipts_root = 0x05c30736b9fea585167275a47d6752c68b3277bb0b6cc3ec7702e014a9acbde9_bytes32;
-    header.number = 6257904; 
-    header.difficulty = 2; 
+    header.number = 6257904;
+    header.difficulty = 2;
     header.gas_limit = 29999972;
     header.gas_used = 798242;
     header.timestamp = 1643045393;
@@ -68,7 +68,7 @@ TEST_CASE("get_beneficiary() && extra_data with seal") {
 
     auto consensus_engine = engine_factory(ChainConfig{.seal_engine = SealEngineType::kClique});  // Clique consensus engine
     auto address = consensus_engine->get_beneficiary(header);
-    CHECK(address == 0x0000000000000000000000000000000000000000_address); // temporary
+    CHECK(address == 0x0000000000000000000000000000000000000000_address);  // temporary
 }
 
 TEST_CASE("get_beneficiary() && extra_data no seal") {
@@ -78,8 +78,8 @@ TEST_CASE("get_beneficiary() && extra_data no seal") {
     header.state_root = 0xfc1023291dad0aa01fdd9035ca2664e9258db0e525bd347f2e3ee0b908b6977d_bytes32;
     header.transactions_root = 0xbbb32657bbc901fcd52ca0ff341c3e904015d7330e7f8a59c8726e5fe4cef279_bytes32;
     header.receipts_root = 0x05c30736b9fea585167275a47d6752c68b3277bb0b6cc3ec7702e014a9acbde9_bytes32;
-    header.number = 6257904; 
-    header.difficulty = 2; 
+    header.number = 6257904;
+    header.difficulty = 2;
     header.gas_limit = 29999972;
     header.gas_used = 798242;
     header.timestamp = 1643045393;
@@ -91,6 +91,5 @@ TEST_CASE("get_beneficiary() && extra_data no seal") {
     auto address = consensus_engine->get_beneficiary(header);
     CHECK(address == 0x0000000000000000000000000000000000000000_address);
 }
-
 
 }  // namespace silkworm::consensus

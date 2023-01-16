@@ -150,6 +150,16 @@ class SplittingStrategy {
     }
 };
 
+//! Parameters for modified Recursive splitting (RecSplit) algorithm.
+struct RecSplitSettings{
+    std::size_t keys_count;                                 // The total number of keys in the RecSplit
+    std::size_t bucket_size;                                // The number of keys in each bucket (except probably last one)
+    std::filesystem::path index_path;                       // The path of the generated RecSplit index file
+    uint64_t base_data_id;                                  // Application-specific base data ID written in index header
+    bool double_enum_index{true};                           // Flag indicating if 2-level index is required
+    std::size_t etl_optimal_size{etl::kOptimalBufferSize};  // Optimal size for offset and bucket ETL collectors
+};
+
 //! Recursive splitting (RecSplit) is an efficient algorithm to identify minimal perfect hash functions.
 //! The template parameter LEAF_SIZE decides how large a leaf will be. Larger leaves imply slower construction, but less
 //! space and faster evaluation
@@ -162,6 +172,30 @@ class RecSplit {
     using GolombRiceBuilder = typename GolombRiceVector::Builder;
     using EliasFano = EliasFanoList32;
     using DoubleEliasFano = DoubleEliasFanoList16;
+
+    RecSplit(const RecSplitSettings& settings, uint32_t salt = 0)
+        : bucket_size_(settings.bucket_size),
+          key_count_(settings.keys_count),
+          bucket_count_((key_count_ + bucket_size_ - 1) / bucket_size_),
+          base_data_id_(settings.base_data_id),
+          index_path_(settings.index_path),
+          double_enum_index_(settings.double_enum_index),
+          offset_collector_(settings.etl_optimal_size),
+          bucket_collector_(settings.etl_optimal_size) {
+        bucket_size_accumulator_.reserve(bucket_count_ + 1);
+        bucket_position_accumulator_.reserve(bucket_count_ + 1);
+        bucket_size_accumulator_.resize(1);      // Start with 0 as bucket accumulated size
+        bucket_position_accumulator_.resize(1);  // Start with 0 as bucket accumulated position
+        current_bucket_.reserve(bucket_size_);
+        current_bucket_offsets_.reserve(bucket_size_);
+        count_.reserve(kLowerAggregationBound);
+
+        // Generate random salt for murmur3 hash
+        std::random_device rand_dev;
+        std::mt19937 rand_gen32{rand_dev()};
+        salt_ = salt != 0 ? salt : rand_gen32();
+        hasher_ = std::make_unique<Murmur3>(salt_);
+    }
 
     RecSplit(const size_t keys_count, const size_t bucket_size, std::filesystem::path index_path, uint64_t base_data_id, uint32_t salt = 0)
         : bucket_size_(bucket_size),

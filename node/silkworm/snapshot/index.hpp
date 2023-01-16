@@ -33,7 +33,7 @@ class Index {
     explicit Index(SnapshotFile segment_path) : segment_path_(std::move(segment_path)) {}
     virtual ~Index() = default;
 
-    void build();
+    virtual void build();
 
   protected:
     virtual bool walk(succinct::RecSplit8& rec_split, uint64_t i, uint64_t offset, ByteView word) = 0;
@@ -43,7 +43,7 @@ class Index {
 
 class HeaderIndex : public Index {
   public:
-    explicit HeaderIndex(SnapshotFile path) : Index(std::move(path)) {}
+    explicit HeaderIndex(SnapshotFile segment_path) : Index(std::move(segment_path)) {}
 
   protected:
     bool walk(succinct::RecSplit8& rec_split, uint64_t i, uint64_t offset, ByteView word) override;
@@ -62,7 +62,9 @@ class BodyIndex : public Index {
 
 class TransactionIndex : public Index {
   public:
-    explicit TransactionIndex(SnapshotFile path) : Index(std::move(path)) {}
+    explicit TransactionIndex(SnapshotFile segment_path) : Index(std::move(segment_path)) {}
+
+    void build() override;
 
   protected:
     bool walk(succinct::RecSplit8& rec_split, uint64_t i, uint64_t offset, ByteView word) override;

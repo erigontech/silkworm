@@ -20,9 +20,14 @@
 
 namespace silkworm::consensus {
 
-ValidationResult CliqueEngine::validate_seal(const BlockHeader&) { return ValidationResult::kOk; }
+ValidationResult CliqueEngine::validate_seal(const BlockHeader&) { 
+    return ValidationResult::kOk; 
+}
 
 evmc::address CliqueEngine::get_beneficiary(const BlockHeader& header) {
+    if (header.extra_data.length() < kExtraSealSize) {
+       return EngineBase::get_beneficiary(header);
+    }
     return ecrecover(header);
 }
 
@@ -31,8 +36,8 @@ CliqueEngine::ecrecover(const BlockHeader& header) {
     evmc::address beneficiary = evmc::address{};
 
     evmc::bytes32 seal_hash = header.hash(false, true);
-    Bytes signature = header.extra_data.substr(header.extra_data.length() - kEntraSealSize, kEntraSealSize - 1);
-    bool odd_y_parity = header.extra_data[header.extra_data.length() - 1] == 1;
+    Bytes signature = header.extra_data.substr(header.extra_data.length() - kExtraSealSize, kExtraSealSize - 1);
+    bool odd_y_parity = header.extra_data[header.extra_data.length() - 1] != 0;
 
     static secp256k1_context* context{secp256k1_context_create(SILKPRE_SECP256K1_CONTEXT_FLAGS)};
     if (!silkpre_recover_address(beneficiary.bytes, seal_hash.bytes, signature.c_str(), odd_y_parity, context)) {

@@ -24,4 +24,8 @@ namespace silkworm::sentry::rpc::interfaces {
 
 sentry::common::Message message_from_outbound_data(const ::sentry::OutboundMessageData& message_data);
 
+::sentry::InboundMessage inbound_message_from_message(const sentry::common::Message& message);
+
+uint8_t message_id(::sentry::MessageId proto_id);
+
 }  // namespace silkworm::sentry::rpc::interfaces

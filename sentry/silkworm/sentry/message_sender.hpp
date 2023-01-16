@@ -22,8 +22,6 @@
 #include <boost/asio/io_context.hpp>
 
 #include <silkworm/sentry/common/channel.hpp>
-#include <silkworm/sentry/rlpx/client.hpp>
-#include <silkworm/sentry/rlpx/server.hpp>
 #include <silkworm/sentry/rpc/common/send_message_call.hpp>
 
 #include "peer_manager.hpp"

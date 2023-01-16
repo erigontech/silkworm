@@ -20,6 +20,7 @@
 
 #include <boost/asio/awaitable.hpp>
 #include <boost/asio/this_coro.hpp>
+#include <gsl/util>
 
 #include <silkworm/common/base.hpp>
 #include <silkworm/common/log.hpp>
@@ -27,6 +28,8 @@
 #include <silkworm/rpc/server/call.hpp>
 #include <silkworm/sentry/eth/fork_id.hpp>
 
+#include "common/messages_call.hpp"
+#include "common/send_message_call.hpp"
 #include "common/service_state.hpp"
 #include "interfaces/message.hpp"
 #include "interfaces/peer_id.hpp"
@@ -195,8 +198,41 @@ class MessagesCall : public sw_rpc::server::ServerStreamingCall<proto::MessagesR
   public:
     using Base::ServerStreamingCall;
 
-    awaitable<void> operator()(const ServiceState& /*state*/) {
-        co_await agrpc::finish(responder_, grpc::Status{grpc::StatusCode::UNIMPLEMENTED, "MessagesCall"});
+    awaitable<void> operator()(const ServiceState& state) {
+        auto executor = co_await boost::asio::this_coro::executor;
+        common::MessagesCall call{
+            make_message_id_filter(request_),
+            executor,
+        };
+
+        auto unsubscribe_signal_channel = call.unsubscribe_signal_channel();
+        auto _ = gsl::finally([=]() { unsubscribe_signal_channel->close(); });
+
+        co_await state.message_calls_channel.send(call);
+        auto messages_channel = co_await call.result();
+
+        bool write_ok = true;
+        while (write_ok) {
+            auto message = co_await messages_channel->receive();
+
+            proto::InboundMessage reply = interfaces::inbound_message_from_message(message.message);
+            if (message.peer_public_key) {
+                *reply.mutable_peer_id() = interfaces::peer_id_from_public_key(message.peer_public_key.value());
+            }
+
+            write_ok = co_await agrpc::write(responder_, reply);
+        }
+
+        co_await agrpc::finish(responder_, grpc::Status::OK);
+    }
+
+    static common::MessagesCall::MessageIdSet make_message_id_filter(const proto::MessagesRequest& request) {
+        common::MessagesCall::MessageIdSet filter;
+        for (int i = 0; i < request.ids_size(); i++) {
+            auto id = request.ids(i);
+            filter.insert(interfaces::message_id(id));
+        }
+        return filter;
     }
 };
 

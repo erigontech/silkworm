@@ -20,7 +20,7 @@
 
 namespace silkworm::sentry {
 
-boost::asio::awaitable<void> MessageSender::start(rlpx::Server& server, rlpx::Client& client) {
+boost::asio::awaitable<void> MessageSender::start(PeerManager& peer_manager) {
     while (true) {
         auto call = co_await send_message_channel_.receive();
 
@@ -37,11 +37,9 @@ boost::asio::awaitable<void> MessageSender::start(rlpx::Server& server, rlpx::Cl
 
         if (call.peer_filter().max_peers && !call.peer_filter().peer_public_key) {
             size_t max_peers = call.peer_filter().max_peers.value();
-            co_await server.enumerate_random_peers(max_peers, sender);
-            co_await client.enumerate_random_peers(max_peers, sender);
+            co_await peer_manager.enumerate_random_peers(max_peers, sender);
         } else {
-            co_await server.enumerate_peers(sender);
-            co_await client.enumerate_peers(sender);
+            co_await peer_manager.enumerate_peers(sender);
         }
 
         co_await call.set_result(std::move(sent_peer_keys));

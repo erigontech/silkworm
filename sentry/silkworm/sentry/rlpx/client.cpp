@@ -16,13 +16,10 @@
 
 #include "client.hpp"
 
-#include <boost/asio/co_spawn.hpp>
 #include <boost/asio/ip/tcp.hpp>
-#include <boost/asio/this_coro.hpp>
 #include <boost/asio/use_awaitable.hpp>
 
 #include <silkworm/common/log.hpp>
-#include <silkworm/sentry/common/random.hpp>
 #include <silkworm/sentry/common/socket_stream.hpp>
 
 namespace silkworm::sentry::rlpx {
@@ -35,17 +32,6 @@ awaitable<void> Client::start(
     std::string client_id,
     uint16_t node_listen_port,
     std::function<std::unique_ptr<Protocol>()> protocol_factory) {
-    auto start = this->start_in_strand(context_pool, node_key, client_id, node_listen_port, protocol_factory);
-    co_await co_spawn(strand_, std::move(start), use_awaitable);
-}
-
-awaitable<void> Client::start_in_strand(
-    silkworm::rpc::ServerContextPool& context_pool,
-    common::EccKeyPair node_key,
-    std::string client_id,
-    uint16_t node_listen_port,
-    std::function<std::unique_ptr<Protocol>()> protocol_factory) {
-    auto& peers = peers_;
     if (peer_urls_.empty()) {
         co_return;
     }
@@ -74,29 +60,8 @@ awaitable<void> Client::start_in_strand(
         node_listen_port,
         protocol_factory(),
         std::optional{peer_url.public_key()});
-    peers.emplace_back(std::move(peer));
 
-    co_await peers.front()->handle();
-}
-
-awaitable<void> Client::enumerate_peers(std::function<awaitable<void>(Peer&)> callback) {
-    co_await co_spawn(strand_, enumerate_peers_in_strand(callback), use_awaitable);
-}
-
-awaitable<void> Client::enumerate_random_peers(size_t max_count, std::function<awaitable<void>(Peer&)> callback) {
-    co_await co_spawn(strand_, enumerate_random_peers_in_strand(max_count, callback), use_awaitable);
-}
-
-awaitable<void> Client::enumerate_peers_in_strand(std::function<awaitable<void>(Peer&)> callback) {
-    for (auto& peer : peers_) {
-        co_await callback(*peer);
-    }
-}
-
-awaitable<void> Client::enumerate_random_peers_in_strand(size_t max_count, std::function<awaitable<void>(Peer&)> callback) {
-    for (auto peer_ptr : common::random_list_items(peers_, max_count)) {
-        co_await callback(**peer_ptr);
-    }
+    co_await peer_channel_.send(std::move(peer));
 }
 
 }  // namespace silkworm::sentry::rlpx

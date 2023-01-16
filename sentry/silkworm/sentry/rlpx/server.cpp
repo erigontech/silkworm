@@ -16,17 +16,12 @@
 
 #include "server.hpp"
 
-#include <memory>
-
-#include <boost/asio/co_spawn.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/this_coro.hpp>
 #include <boost/asio/use_awaitable.hpp>
-#include <boost/asio/use_future.hpp>
 
 #include <silkworm/common/log.hpp>
 #include <silkworm/sentry/common/enode_url.hpp>
-#include <silkworm/sentry/common/random.hpp>
 #include <silkworm/sentry/common/socket_stream.hpp>
 
 namespace silkworm::sentry::rlpx {
@@ -37,20 +32,11 @@ Server::Server(
     boost::asio::io_context& io_context,
     std::string host,
     uint16_t port)
-    : strand_(make_strand(io_context)),
-      host_(std::move(host)),
-      port_(port) {}
+    : host_(std::move(host)),
+      port_(port),
+      peer_channel_(io_context) {}
 
 awaitable<void> Server::start(
-    silkworm::rpc::ServerContextPool& context_pool,
-    common::EccKeyPair node_key,
-    std::string client_id,
-    std::function<std::unique_ptr<Protocol>()> protocol_factory) {
-    auto start = this->start_in_strand(context_pool, node_key, client_id, protocol_factory);
-    co_await co_spawn(strand_, std::move(start), use_awaitable);
-}
-
-awaitable<void> Server::start_in_strand(
     silkworm::rpc::ServerContextPool& context_pool,
     common::EccKeyPair node_key,
     std::string client_id,
@@ -78,8 +64,6 @@ awaitable<void> Server::start_in_strand(
     common::EnodeUrl node_url{node_key.public_key(), endpoint.address(), port_};
     log::Info() << "RLPx server is listening at " << node_url.to_string();
 
-    auto& peers = peers_;
-
     while (acceptor.is_open()) {
         auto& client_context = context_pool.next_io_context();
         common::SocketStream stream{client_context};
@@ -89,7 +73,7 @@ awaitable<void> Server::start_in_strand(
         log::Debug() << "RLPx server client connected from "
                      << remote_endpoint.address().to_string() << ":" << remote_endpoint.port();
 
-        auto peer = std::make_unique<Peer>(
+        auto peer = std::make_shared<Peer>(
             client_context,
             std::move(stream),
             node_key,
@@ -97,37 +81,8 @@ awaitable<void> Server::start_in_strand(
             port_,
             protocol_factory(),
             std::nullopt);
-        auto handler = co_spawn(client_context, peer->handle(), use_future);
 
-        peers.emplace_back(std::move(peer), std::move(handler));
-    }
-
-    while (!peers.empty()) {
-        auto& peer = peers.front();
-        // TODO: graceful shutdown
-        // peer.first->disconnect();
-        peer.second.wait();
-        peers.pop_front();
-    }
-}
-
-awaitable<void> Server::enumerate_peers(std::function<awaitable<void>(Peer&)> callback) {
-    co_await co_spawn(strand_, enumerate_peers_in_strand(callback), use_awaitable);
-}
-
-awaitable<void> Server::enumerate_random_peers(size_t max_count, std::function<awaitable<void>(Peer&)> callback) {
-    co_await co_spawn(strand_, enumerate_random_peers_in_strand(max_count, callback), use_awaitable);
-}
-
-awaitable<void> Server::enumerate_peers_in_strand(std::function<awaitable<void>(Peer&)> callback) {
-    for (auto& peer : peers_) {
-        co_await callback(*peer.first);
-    }
-}
-
-awaitable<void> Server::enumerate_random_peers_in_strand(size_t max_count, std::function<awaitable<void>(Peer&)> callback) {
-    for (auto peer_ptr : common::random_list_items(peers_, max_count)) {
-        co_await callback(*peer_ptr->first);
+        co_await peer_channel_.send(std::move(peer));
     }
 }
 

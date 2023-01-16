@@ -16,6 +16,8 @@
 
 #include "peer.hpp"
 
+#include <boost/asio/co_spawn.hpp>
+#include <boost/asio/detached.hpp>
 #include <boost/asio/error.hpp>
 #include <boost/system/system_error.hpp>
 
@@ -24,6 +26,10 @@
 #include "auth/handshake.hpp"
 
 namespace silkworm::sentry::rlpx {
+
+void Peer::start_detached() {
+    boost::asio::co_spawn(strand_, handle(), boost::asio::detached);
+}
 
 boost::asio::awaitable<void> Peer::handle() {
     try {

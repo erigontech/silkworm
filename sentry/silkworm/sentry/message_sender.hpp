@@ -26,6 +26,8 @@
 #include <silkworm/sentry/rlpx/server.hpp>
 #include <silkworm/sentry/rpc/common/send_message_call.hpp>
 
+#include "peer_manager.hpp"
+
 namespace silkworm::sentry {
 
 class MessageSender {
@@ -37,7 +39,7 @@ class MessageSender {
         return send_message_channel_;
     }
 
-    boost::asio::awaitable<void> start(rlpx::Server& server, rlpx::Client& client);
+    boost::asio::awaitable<void> start(PeerManager& peer_manager);
 
   private:
     common::Channel<rpc::common::SendMessageCall> send_message_channel_;

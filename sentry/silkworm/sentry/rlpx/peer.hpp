@@ -24,6 +24,7 @@
 
 #include <boost/asio/awaitable.hpp>
 #include <boost/asio/io_context.hpp>
+#include <boost/asio/strand.hpp>
 
 #include <silkworm/sentry/common/atomic_value.hpp>
 #include <silkworm/sentry/common/channel.hpp>
@@ -53,9 +54,10 @@ class Peer {
           node_listen_port_(node_listen_port),
           protocol_(std::move(protocol)),
           peer_public_key_(std::move(peer_public_key)),
+          strand_(boost::asio::make_strand(io_context)),
           send_message_channel_(io_context) {}
 
-    boost::asio::awaitable<void> handle();
+    void start_detached();
 
     boost::asio::awaitable<void> send_message(common::Message message);
 
@@ -64,6 +66,8 @@ class Peer {
     }
 
   private:
+    boost::asio::awaitable<void> handle();
+
     boost::asio::awaitable<void> send_messages(framing::MessageStream& message_stream);
 
     common::SocketStream stream_;
@@ -73,6 +77,7 @@ class Peer {
     std::unique_ptr<Protocol> protocol_;
     common::AtomicValue<std::optional<common::EccPublicKey>> peer_public_key_;
 
+    boost::asio::strand<boost::asio::io_context::executor_type> strand_;
     common::Channel<common::Message> send_message_channel_;
 };
 

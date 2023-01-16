@@ -17,7 +17,6 @@
 #pragma once
 
 #include <functional>
-#include <list>
 #include <memory>
 #include <string>
 #include <vector>
@@ -26,9 +25,9 @@
 
 #include <boost/asio/awaitable.hpp>
 #include <boost/asio/io_context.hpp>
-#include <boost/asio/strand.hpp>
 
 #include <silkworm/rpc/server/server_context_pool.hpp>
+#include <silkworm/sentry/common/channel.hpp>
 #include <silkworm/sentry/common/ecc_key_pair.hpp>
 #include <silkworm/sentry/common/enode_url.hpp>
 
@@ -42,8 +41,8 @@ class Client {
     explicit Client(
         boost::asio::io_context& io_context,
         std::vector<common::EnodeUrl> peer_urls)
-        : strand_(boost::asio::make_strand(io_context)),
-          peer_urls_(std::move(peer_urls)) {}
+        : peer_urls_(std::move(peer_urls)),
+          peer_channel_(io_context) {}
 
     boost::asio::awaitable<void> start(
         silkworm::rpc::ServerContextPool& context_pool,
@@ -52,24 +51,13 @@ class Client {
         uint16_t node_listen_port,
         std::function<std::unique_ptr<Protocol>()> protocol_factory);
 
-    boost::asio::awaitable<void> enumerate_peers(std::function<boost::asio::awaitable<void>(Peer&)> callback);
-    boost::asio::awaitable<void> enumerate_random_peers(size_t max_count, std::function<boost::asio::awaitable<void>(Peer&)> callback);
+    common::Channel<std::shared_ptr<Peer>>& peer_channel() {
+        return peer_channel_;
+    }
 
   private:
-    boost::asio::awaitable<void> start_in_strand(
-        silkworm::rpc::ServerContextPool& context_pool,
-        common::EccKeyPair node_key,
-        std::string client_id,
-        uint16_t node_listen_port,
-        std::function<std::unique_ptr<Protocol>()> protocol_factory);
-
-    boost::asio::awaitable<void> enumerate_peers_in_strand(std::function<boost::asio::awaitable<void>(Peer&)> callback);
-    boost::asio::awaitable<void> enumerate_random_peers_in_strand(size_t max_count, std::function<boost::asio::awaitable<void>(Peer&)> callback);
-
-    boost::asio::strand<boost::asio::io_context::executor_type> strand_;
     const std::vector<common::EnodeUrl> peer_urls_;
-
-    std::list<std::unique_ptr<Peer>> peers_;
+    common::Channel<std::shared_ptr<Peer>> peer_channel_;
 };
 
 }  // namespace silkworm::sentry::rlpx

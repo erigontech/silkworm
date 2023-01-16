@@ -20,13 +20,13 @@
 
 namespace silkworm::consensus {
 
-ValidationResult CliqueEngine::validate_seal(const BlockHeader&) { 
-    return ValidationResult::kOk; 
+ValidationResult CliqueEngine::validate_seal(const BlockHeader&) {
+    return ValidationResult::kOk;
 }
 
 evmc::address CliqueEngine::get_beneficiary(const BlockHeader& header) {
     if (header.extra_data.length() < kExtraSealSize) {
-       return EngineBase::get_beneficiary(header);
+        return EngineBase::get_beneficiary(header);
     }
     return ecrecover(header);
 }

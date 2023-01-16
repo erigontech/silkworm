@@ -57,8 +57,9 @@ class Peer {
           strand_(boost::asio::make_strand(io_context)),
           send_message_channel_(io_context) {}
 
-    void start_detached();
+    static void start_detached(const std::shared_ptr<Peer>& peer);
 
+    static void send_message_detached(const std::shared_ptr<Peer>& peer, const common::Message& message);
     boost::asio::awaitable<void> send_message(common::Message message);
 
     std::optional<common::EccPublicKey> peer_public_key() {
@@ -66,8 +67,10 @@ class Peer {
     }
 
   private:
+    static boost::asio::awaitable<void> handle(std::shared_ptr<Peer> peer);
     boost::asio::awaitable<void> handle();
 
+    static boost::asio::awaitable<void> send_message(std::shared_ptr<Peer> peer, common::Message message);
     boost::asio::awaitable<void> send_messages(framing::MessageStream& message_stream);
 
     common::SocketStream stream_;

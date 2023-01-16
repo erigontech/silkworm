@@ -34,28 +34,30 @@ awaitable<void> PeerManager::start_in_strand(common::Channel<std::shared_ptr<rlp
     while (true) {
         auto peer = co_await peer_channel.receive();
         peers_.push_back(peer);
-        peer->start_detached();
+        rlpx::Peer::start_detached(peer);
     }
 }
 
-awaitable<void> PeerManager::enumerate_peers(std::function<awaitable<void>(rlpx::Peer&)> callback) {
+awaitable<void> PeerManager::enumerate_peers(EnumeratePeersCallback callback) {
     co_await co_spawn(strand_, enumerate_peers_in_strand(callback), use_awaitable);
 }
 
-awaitable<void> PeerManager::enumerate_random_peers(size_t max_count, std::function<awaitable<void>(rlpx::Peer&)> callback) {
+awaitable<void> PeerManager::enumerate_random_peers(size_t max_count, EnumeratePeersCallback callback) {
     co_await co_spawn(strand_, enumerate_random_peers_in_strand(max_count, callback), use_awaitable);
 }
 
-awaitable<void> PeerManager::enumerate_peers_in_strand(std::function<awaitable<void>(rlpx::Peer&)> callback) {
+awaitable<void> PeerManager::enumerate_peers_in_strand(EnumeratePeersCallback callback) {
     for (auto& peer : peers_) {
-        co_await callback(*peer);
+        callback(peer);
     }
+    co_return;
 }
 
-awaitable<void> PeerManager::enumerate_random_peers_in_strand(size_t max_count, std::function<awaitable<void>(rlpx::Peer&)> callback) {
+awaitable<void> PeerManager::enumerate_random_peers_in_strand(size_t max_count, EnumeratePeersCallback callback) {
     for (auto peer_ptr : common::random_list_items(peers_, max_count)) {
-        co_await callback(**peer_ptr);
+        callback(*peer_ptr);
     }
+    co_return;
 }
 
 }  // namespace silkworm::sentry

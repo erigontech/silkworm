@@ -16,6 +16,8 @@
 
 #include "message_sender.hpp"
 
+#include <memory>
+
 #include "rlpx/peer.hpp"
 
 namespace silkworm::sentry {
@@ -26,13 +28,12 @@ boost::asio::awaitable<void> MessageSender::start(PeerManager& peer_manager) {
 
         rpc::common::SendMessageCall::PeerKeys sent_peer_keys;
 
-        auto sender = [&message = call.message(), &sent_peer_keys, peer_filter = call.peer_filter()](rlpx::Peer& peer) {
-            auto key_opt = peer.peer_public_key();
+        auto sender = [&message = call.message(), &sent_peer_keys, peer_filter = call.peer_filter()](std::shared_ptr<rlpx::Peer> peer) {
+            auto key_opt = peer->peer_public_key();
             if (key_opt && (!peer_filter.peer_public_key || (key_opt.value() == peer_filter.peer_public_key.value()))) {
                 sent_peer_keys.push_back(key_opt.value());
-                return peer.send_message(message);
+                rlpx::Peer::send_message_detached(peer, message);
             }
-            return boost::asio::awaitable<void>{};
         };
 
         if (call.peer_filter().max_peers && !call.peer_filter().peer_public_key) {

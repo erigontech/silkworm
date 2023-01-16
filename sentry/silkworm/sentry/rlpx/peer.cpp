@@ -27,8 +27,12 @@
 
 namespace silkworm::sentry::rlpx {
 
-void Peer::start_detached() {
-    boost::asio::co_spawn(strand_, handle(), boost::asio::detached);
+void Peer::start_detached(const std::shared_ptr<Peer>& peer) {
+    boost::asio::co_spawn(peer->strand_, Peer::handle(peer), boost::asio::detached);
+}
+
+boost::asio::awaitable<void> Peer::handle(std::shared_ptr<Peer> peer) {
+    co_await peer->handle();
 }
 
 boost::asio::awaitable<void> Peer::handle() {
@@ -77,6 +81,14 @@ boost::asio::awaitable<void> Peer::handle() {
         log::Error() << "Peer::handle exception: " << ex.what();
         throw;
     }
+}
+
+void Peer::send_message_detached(const std::shared_ptr<Peer>& peer, const common::Message& message) {
+    boost::asio::co_spawn(peer->strand_, Peer::send_message(peer, message), boost::asio::detached);
+}
+
+boost::asio::awaitable<void> Peer::send_message(std::shared_ptr<Peer> peer, common::Message message) {
+    co_await peer->send_message(message);
 }
 
 boost::asio::awaitable<void> Peer::send_message(common::Message message) {

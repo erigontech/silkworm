@@ -40,14 +40,16 @@ class PeerManager {
 
     boost::asio::awaitable<void> start(rlpx::Server& server, rlpx::Client& client);
 
-    boost::asio::awaitable<void> enumerate_peers(std::function<boost::asio::awaitable<void>(rlpx::Peer&)> callback);
-    boost::asio::awaitable<void> enumerate_random_peers(size_t max_count, std::function<boost::asio::awaitable<void>(rlpx::Peer&)> callback);
+    using EnumeratePeersCallback = std::function<void(std::shared_ptr<rlpx::Peer>)>;
+
+    boost::asio::awaitable<void> enumerate_peers(EnumeratePeersCallback callback);
+    boost::asio::awaitable<void> enumerate_random_peers(size_t max_count, EnumeratePeersCallback callback);
 
   private:
     boost::asio::awaitable<void> start_in_strand(common::Channel<std::shared_ptr<rlpx::Peer>>& peer_channel);
 
-    boost::asio::awaitable<void> enumerate_peers_in_strand(std::function<boost::asio::awaitable<void>(rlpx::Peer&)> callback);
-    boost::asio::awaitable<void> enumerate_random_peers_in_strand(size_t max_count, std::function<boost::asio::awaitable<void>(rlpx::Peer&)> callback);
+    boost::asio::awaitable<void> enumerate_peers_in_strand(EnumeratePeersCallback callback);
+    boost::asio::awaitable<void> enumerate_random_peers_in_strand(size_t max_count, EnumeratePeersCallback callback);
 
     std::list<std::shared_ptr<rlpx::Peer>> peers_;
     boost::asio::strand<boost::asio::io_context::executor_type> strand_;

@@ -43,7 +43,7 @@ boost::asio::awaitable<AuthKeys> Handshake::auth(common::SocketStream& stream) {
     }
 }
 
-boost::asio::awaitable<framing::MessageStream> Handshake::execute(common::SocketStream& stream) {
+boost::asio::awaitable<std::pair<framing::MessageStream, common::EccPublicKey>> Handshake::execute(common::SocketStream& stream) {
     auto auth_keys = co_await auth(stream);
     log::Debug() << "AuthKeys.peer_ephemeral_public_key: " << auth_keys.peer_ephemeral_public_key.hex();
 
@@ -92,7 +92,7 @@ boost::asio::awaitable<framing::MessageStream> Handshake::execute(common::Socket
 
     message_stream.enable_compression();
 
-    co_return message_stream;
+    co_return std::pair{std::move(message_stream), std::move(auth_keys.peer_public_key)};
 }
 
 }  // namespace silkworm::sentry::rlpx::auth

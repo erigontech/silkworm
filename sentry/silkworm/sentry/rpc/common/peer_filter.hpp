@@ -16,13 +16,23 @@
 
 #pragma once
 
-#include <silkworm/common/base.hpp>
+#include <optional>
 
-namespace silkworm::sentry::common {
+#include <silkworm/sentry/common/ecc_public_key.hpp>
 
-struct Message {
-    uint8_t id{0};
-    Bytes data;
+namespace silkworm::sentry::rpc::common {
+
+struct PeerFilter {
+    std::optional<size_t> max_peers;
+    std::optional<sentry::common::EccPublicKey> peer_public_key;
+
+    static PeerFilter with_max_peers(size_t max_peers) {
+        return {{max_peers}, std::nullopt};
+    }
+
+    static PeerFilter with_peer_public_key(sentry::common::EccPublicKey public_key) {
+        return {std::nullopt, {std::move(public_key)}};
+    }
 };
 
-}  // namespace silkworm::sentry::common
+}  // namespace silkworm::sentry::rpc::common

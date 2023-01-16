@@ -16,13 +16,24 @@
 
 #pragma once
 
-#include <silkworm/common/base.hpp>
+namespace silkworm::sentry::eth {
 
-namespace silkworm::sentry::common {
-
-struct Message {
-    uint8_t id{0};
-    Bytes data;
+enum class MessageId : uint8_t {
+    kStatus,
+    kNewBlockHashes,
+    kTransactions,
+    kGetBlockHeaders,
+    kBlockHeaders,
+    kGetBlockBodies,
+    kBlockBodies,
+    kNewBlock,
+    kNewPooledTransactionHashes,
+    kGetPooledTransactions,
+    kPooledTransactions,
+    kGetNodeData = 0xD,  // removed in eth/67
+    kNodeData,           // removed in eth/67
+    kGetReceipts = 0xF,
+    kReceipts,
 };
 
-}  // namespace silkworm::sentry::common
+}  // namespace silkworm::sentry::eth

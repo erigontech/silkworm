@@ -14,15 +14,20 @@
    limitations under the License.
 */
 
-#pragma once
+#include "peer_id.hpp"
 
-#include <silkworm/common/base.hpp>
+#include <silkworm/rpc/interfaces/types.hpp>
 
-namespace silkworm::sentry::common {
+namespace silkworm::sentry::rpc::interfaces {
 
-struct Message {
-    uint8_t id{0};
-    Bytes data;
-};
+namespace proto_types = ::types;
 
-}  // namespace silkworm::sentry::common
+proto_types::H512 peer_id_from_public_key(const sentry::common::EccPublicKey& key) {
+    return *to_H512(key.serialized());
+}
+
+sentry::common::EccPublicKey peer_public_key_from_id(const ::types::H512& peer_id) {
+    return sentry::common::EccPublicKey::deserialize(bytes_from_H512(peer_id));
+}
+
+}  // namespace silkworm::sentry::rpc::interfaces

@@ -16,6 +16,8 @@
 
 #include "peer.hpp"
 
+#include <boost/asio/co_spawn.hpp>
+#include <boost/asio/detached.hpp>
 #include <boost/asio/error.hpp>
 #include <boost/system/system_error.hpp>
 
@@ -24,6 +26,14 @@
 #include "auth/handshake.hpp"
 
 namespace silkworm::sentry::rlpx {
+
+void Peer::start_detached(const std::shared_ptr<Peer>& peer) {
+    boost::asio::co_spawn(peer->strand_, Peer::handle(peer), boost::asio::detached);
+}
+
+boost::asio::awaitable<void> Peer::handle(std::shared_ptr<Peer> peer) {
+    co_await peer->handle();
+}
 
 boost::asio::awaitable<void> Peer::handle() {
     try {
@@ -34,15 +44,18 @@ boost::asio::awaitable<void> Peer::handle() {
             client_id_,
             node_listen_port_,
             protocol_->capability(),
-            peer_public_key_,
+            peer_public_key_.get(),
         };
-        auto message_stream = co_await handshake.execute(stream_);
+        auto [message_stream, peer_public_key] = co_await handshake.execute(stream_);
+        peer_public_key_.set(peer_public_key);
 
         co_await message_stream.send(protocol_->first_message());
         auto first_message = co_await message_stream.receive();
         log::Debug() << "Peer::handle first_message: " << int(first_message.id);
 
         protocol_->handle_peer_first_message(first_message);
+
+        co_await send_messages(message_stream);
 
     } catch (const auth::Handshake::DisconnectError&) {
         // TODO: handle disconnect
@@ -67,6 +80,25 @@ boost::asio::awaitable<void> Peer::handle() {
     } catch (const std::exception& ex) {
         log::Error() << "Peer::handle exception: " << ex.what();
         throw;
+    }
+}
+
+void Peer::send_message_detached(const std::shared_ptr<Peer>& peer, const common::Message& message) {
+    boost::asio::co_spawn(peer->strand_, Peer::send_message(peer, message), boost::asio::detached);
+}
+
+boost::asio::awaitable<void> Peer::send_message(std::shared_ptr<Peer> peer, common::Message message) {
+    co_await peer->send_message(message);
+}
+
+boost::asio::awaitable<void> Peer::send_message(common::Message message) {
+    co_await send_message_channel_.send(message);
+}
+
+boost::asio::awaitable<void> Peer::send_messages(framing::MessageStream& message_stream) {
+    while (true) {
+        auto message = co_await send_message_channel_.receive();
+        co_await message_stream.send(std::move(message));
     }
 }
 

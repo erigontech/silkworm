@@ -49,7 +49,9 @@
 #include <iostream>
 #include <string>
 
+#if (!defined(_MSC_VER))
 #include <sys/mman.h>
+#endif
 
 #include "../support/common.hpp"
 

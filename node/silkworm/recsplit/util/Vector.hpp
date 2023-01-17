@@ -50,7 +50,9 @@
 #include <string>
 #include <utility>
 
+#if (!defined(_MSC_VER))
 #include <sys/mman.h>
+#endif
 
 #include "../support/common.hpp"
 #include "Expandable.hpp"

@@ -36,9 +36,8 @@ TEST_CASE("RecSplit8", "[silkworm][recsplit]") {
     RecSplitSettings settings{
         .keys_count = 2,
         .bucket_size = 10,
-        .index_path =  index_file.path(),
-        .base_data_id = 0
-    };
+        .index_path = index_file.path(),
+        .base_data_id = 0};
     RecSplit8 rs{settings, /*.salt=*/kTestSalt};
 
     SECTION("keys") {
@@ -102,9 +101,8 @@ TEST_CASE("RecSplit4: keys=1000 buckets=128", "[silkworm][recsplit]") {
     RecSplitSettings settings{
         .keys_count = hashed_keys.size(),
         .bucket_size = kTestBucketSize,
-        .index_path =  index_file.path(),
-        .base_data_id = 0
-    };
+        .index_path = index_file.path(),
+        .base_data_id = 0};
     RecSplit4 rs{settings, /*.salt=*/kTestSalt};
 
     SECTION("random_hash128 KO: not built") {
@@ -151,9 +149,8 @@ TEST_CASE("RecSplit4: multiple keys-buckets", "[silkworm][recsplit]") {
             RecSplitSettings settings{
                 .keys_count = key_count,
                 .bucket_size = bucket_size,
-                .index_path =  index_file.path(),
-                .base_data_id = 0
-            };
+                .index_path = index_file.path(),
+                .base_data_id = 0};
             RecSplit4 rs{settings, /*.salt=*/kTestSalt};
 
             for (const auto& hk : hashed_keys) {

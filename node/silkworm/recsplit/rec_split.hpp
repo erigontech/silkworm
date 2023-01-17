@@ -151,7 +151,7 @@ class SplittingStrategy {
 };
 
 //! Parameters for modified Recursive splitting (RecSplit) algorithm.
-struct RecSplitSettings{
+struct RecSplitSettings {
     std::size_t keys_count;                                 // The total number of keys in the RecSplit
     std::size_t bucket_size;                                // The number of keys in each bucket (except probably last one)
     std::filesystem::path index_path;                       // The path of the generated RecSplit index file

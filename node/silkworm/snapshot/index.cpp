@@ -18,7 +18,6 @@
 
 #include <magic_enum.hpp>
 
-#include <silkworm/common/decoding_result.hpp>
 #include <silkworm/common/endian.hpp>
 #include <silkworm/common/log.hpp>
 #include <silkworm/common/util.hpp>
@@ -114,25 +113,25 @@ void TransactionIndex::build() {
 
     const SnapshotFile tx_idx_file = segment_path_.index_file();
     SILK_INFO << "TransactionIndex::build tx_idx_file path: " << tx_idx_file.path().string();
-    RecSplit8 tx_hash_rs{RecSplitSettings{
+    RecSplitSettings tx_hash_rs_settings{
         .keys_count = txs_decoder.words_count(),
         .bucket_size = kBucketSize,
-        .index_path =  tx_idx_file.path(),
+        .index_path = tx_idx_file.path(),
         .base_data_id = first_tx_id,
         .double_enum_index = true,
-        .etl_optimal_size = etl::kOptimalBufferSize / 2
-    }, 1};
+        .etl_optimal_size = etl::kOptimalBufferSize / 2};
+    RecSplit8 tx_hash_rs{tx_hash_rs_settings, 1};
 
     const SnapshotFile tx2block_idx_file = segment_path_.index_file_for_type(SnapshotType::transactions2block);
     SILK_INFO << "TransactionIndex::build tx2block_idx_file path: " << tx2block_idx_file.path().string();
-    RecSplit8 tx_hash_2_block_number_rs{RecSplitSettings{
+    RecSplitSettings tx_hash_to_block_rs_settings{
         .keys_count = txs_decoder.words_count(),
         .bucket_size = kBucketSize,
-        .index_path =  tx2block_idx_file.path(),
+        .index_path = tx2block_idx_file.path(),
         .base_data_id = first_block_num,
         .double_enum_index = false,
-        .etl_optimal_size = etl::kOptimalBufferSize / 2
-    }, 1};
+        .etl_optimal_size = etl::kOptimalBufferSize / 2};
+    RecSplit8 tx_hash_to_block_rs{tx_hash_to_block_rs_settings, 1};
 
     Decompressor bodies_decoder{bodies_segment.path()};
     bodies_decoder.open();
@@ -152,64 +151,65 @@ void TransactionIndex::build() {
     do {
         iterations++;
         SILK_INFO << "Process snapshot items to prepare index build for: " << segment_path_.path().string();
-        const bool read_ok = double_read_ahead([&](Decompressor::Iterator tx_it, Decompressor::Iterator body_it) -> bool {
-            BlockNum block_number = first_block_num;
+        const bool read_ok = double_read_ahead(
+            [&, first_tx_id = first_tx_id, expected_tx_count = expected_tx_count](auto tx_it, auto body_it) -> bool {
+                BlockNum block_number = first_block_num;
 
-            db::detail::BlockBodyForStorage body;
+                db::detail::BlockBodyForStorage body;
 
-            Bytes tx_buffer{}, body_buffer{};
-            tx_buffer.reserve(kPageSize);
-            body_buffer.reserve(kPageSize);
+                Bytes tx_buffer{}, body_buffer{};
+                tx_buffer.reserve(kPageSize);
+                body_buffer.reserve(kPageSize);
 
-            body_it.next(body_buffer);
-            ByteView body_rlp{body_buffer.data(), body_buffer.length()};
-            SILK_DEBUG << "double_read_ahead block_number: " << block_number << " body_rlp: " << to_hex(body_rlp);
-            auto decode_result = db::detail::decode_stored_block_body(body_rlp, body);
-            SILK_DEBUG << "double_read_ahead decode_result: " << magic_enum::enum_name<>(decode_result);
-            body_buffer.clear();
+                body_it.next(body_buffer);
+                ByteView body_rlp{body_buffer.data(), body_buffer.length()};
+                SILK_DEBUG << "double_read_ahead block_number: " << block_number << " body_rlp: " << to_hex(body_rlp);
+                auto decode_result = db::detail::decode_stored_block_body(body_rlp, body);
+                SILK_DEBUG << "double_read_ahead decode_result: " << magic_enum::enum_name<>(decode_result);
+                body_buffer.clear();
 
-            uint64_t i{0}, offset{0};
-            while (tx_it.has_next()) {
-                uint64_t next_position = tx_it.next(tx_buffer);
-                while (body.base_txn_id + body.txn_count <= first_tx_id + i) {
-                    if (!body_it.has_next()) return false;
-                    body_it.next(body_buffer);
-                    body_rlp = ByteView{body_buffer.data(), body_buffer.length()};
-                    SILK_DEBUG << "double_read_ahead block_number: " << block_number << " body_rlp: " << to_hex(body_rlp);
-                    decode_result = db::detail::decode_stored_block_body(body_rlp, body);
-                    SILK_DEBUG << "double_read_ahead decode_result: " << magic_enum::enum_name<>(decode_result);
-                    body_buffer.clear();
-                    ++block_number;
+                uint64_t i{0}, offset{0};
+                while (tx_it.has_next()) {
+                    uint64_t next_position = tx_it.next(tx_buffer);
+                    while (body.base_txn_id + body.txn_count <= first_tx_id + i) {
+                        if (!body_it.has_next()) return false;
+                        body_it.next(body_buffer);
+                        body_rlp = ByteView{body_buffer.data(), body_buffer.length()};
+                        SILK_DEBUG << "double_read_ahead block_number: " << block_number << " body_rlp: " << to_hex(body_rlp);
+                        decode_result = db::detail::decode_stored_block_body(body_rlp, body);
+                        SILK_DEBUG << "double_read_ahead decode_result: " << magic_enum::enum_name<>(decode_result);
+                        body_buffer.clear();
+                        ++block_number;
+                    }
+                    const bool is_system_tx{tx_buffer.empty()};
+                    if (is_system_tx) {
+                        // system-txs: hash:pad32(txnID)
+                        Hash tx_hash;
+                        endian::store_big_u64(tx_hash.bytes, first_tx_id + i);
+
+                        tx_hash_rs.add_key(tx_hash.bytes, kHashLength, offset);
+                        tx_hash_to_block_rs.add_key(tx_hash.bytes, kHashLength, block_number);
+                    } else {
+                        // Skip first byte plus address length in transaction encoding
+                        constexpr int kTxFirstByteAndAddressLength{1 + kAddressLength};
+                        const auto tx_hash{keccak256(tx_buffer.substr(kTxFirstByteAndAddressLength))};
+
+                        tx_hash_rs.add_key(tx_hash.bytes, kHashLength, offset);
+                        tx_hash_to_block_rs.add_key(tx_hash.bytes, kHashLength, block_number);
+                    }
+
+                    ++i;
+                    offset = next_position;
+                    tx_buffer.clear();
                 }
-                const bool is_system_tx{tx_buffer.empty()};
-                if (is_system_tx) {
-                    // system-txs: hash:pad32(txnID)
-                    Hash tx_hash;
-                    endian::store_big_u64(tx_hash.bytes, first_tx_id + i);
 
-                    tx_hash_rs.add_key(tx_hash.bytes, kHashLength, offset);
-                    tx_hash_2_block_number_rs.add_key(tx_hash.bytes, kHashLength, block_number);
-                } else {
-                    // Skip first byte plus address length in transaction encoding
-                    constexpr int kTxFirstByteAndAddressLength{1 + kAddressLength};
-                    const auto tx_hash{keccak256(tx_buffer.substr(kTxFirstByteAndAddressLength))};
-
-                    tx_hash_rs.add_key(tx_hash.bytes, kHashLength, offset);
-                    tx_hash_2_block_number_rs.add_key(tx_hash.bytes, kHashLength, block_number);
+                if (i != expected_tx_count) {
+                    throw std::runtime_error{"tx count mismatch: expected=" + std::to_string(expected_tx_count) +
+                                             " got=" + std::to_string(i)};
                 }
 
-                ++i;
-                offset = next_position;
-                tx_buffer.clear();
-            }
-
-            if (i != expected_tx_count) {
-                throw std::runtime_error{"tx count mismatch: expected=" + std::to_string(expected_tx_count) +
-                                         " got=" + std::to_string(i)};
-            }
-
-            return true;
-        });
+                return true;
+            });
         if (!read_ok) throw std::runtime_error{"cannot build index for: " + segment_path_.path().string()};
 
         SILK_INFO << "Build tx_hash RecSplit index for: " << segment_path_.path().string() << " [" << iterations << "]";
@@ -217,12 +217,12 @@ void TransactionIndex::build() {
         SILK_DEBUG << "Build tx_hash RecSplit index collision_detected: " << collision_detected << " [" << iterations << "]";
 
         SILK_INFO << "Build tx_hash_2_bn RecSplit index for: " << segment_path_.path().string() << " [" << iterations << "]";
-        collision_detected = tx_hash_2_block_number_rs.build();
+        collision_detected = tx_hash_to_block_rs.build();
         SILK_DEBUG << "Build tx_hash_2_bn RecSplit index collision_detected: " << collision_detected << " [" << iterations << "]";
 
         if (collision_detected) {
             tx_hash_rs.reset_new_salt();
-            tx_hash_2_block_number_rs.reset_new_salt();
+            tx_hash_to_block_rs.reset_new_salt();
         }
     } while (collision_detected);
     SILK_INFO << "Build index for: " << segment_path_.path().string() << " end [iterations=" << iterations << "]";

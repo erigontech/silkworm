@@ -93,8 +93,7 @@ void BlockExchange::execution_loop() {
         while (!is_stopping() && !sentry_.is_stopping()) {
             // pop a message from the queue
             std::shared_ptr<Message> message;
-            bool present = messages_.timed_wait_and_pop(message, 1000ms);
-            if (!present) continue;  // timeout, needed to check exiting_
+            bool present = messages_.timed_wait_and_pop(message, 100ms);
 
             // process an external message (replay to remote peers) or an internal message
             if (present) {
@@ -241,7 +240,7 @@ void BlockExchange::download_blocks(BlockNum current_height, [[maybe_unused]] st
     // todo: use target_height, if it is not present use target_height = tip of the chain
 
     auto message = std::make_shared<InternalMessage<void>>(
-        [=](HeaderChain& hc, BodySequence& bc) {
+        [=, this](HeaderChain& hc, BodySequence& bc) {
             hc.current_state(current_height);
             bc.current_state(current_height);
             downloading_active_ = true;  // must be done after sync current_state

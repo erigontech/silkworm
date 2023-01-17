@@ -731,10 +731,8 @@ void HeaderChain::connect(std::shared_ptr<Link> attachment_link, Segment::Slice 
         invalidate(anchor);
         // todo: return []PenaltyItem := append(penalties, PenaltyItem{Penalty: AbandonedAnchorPenalty, PeerID:
         // anchor.peerID})
-        throw segment_cut_and_paste_error(
-            "anchor connected to bad headers, "
-            "height=" +
-            std::to_string(anchor->blockHeight) + " parent hash=" + to_hex(anchor->parentHash));
+        throw segment_cut_and_paste_error("anchor connected to bad headers, "
+            "height=" + std::to_string(anchor->blockHeight) + " parent hash=" + to_hex(anchor->parentHash));
     }
 
     // Iterate over headers backwards (from parents towards children)

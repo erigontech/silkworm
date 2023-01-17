@@ -65,6 +65,7 @@ void BlockExchange::receive_message(const sentry::InboundMessage& raw_message) {
                                       << ", msg-id= " << raw_message.id() << "/" << sentry::MessageId_Name(raw_message.id())
                                       << " - " << error.what();
         send_penalization(peer_id, BadBlockPenalty);
+        statistics_.malformed_msgs++;
     }
 }
 
@@ -73,13 +74,19 @@ void BlockExchange::execution_loop() {
     using namespace std::chrono_literals;
     log::set_thread_name("block-exchange");
 
-    auto receive_message_callback = [this](const sentry::InboundMessage& msg) {
+    auto announcement_receiving_callback = [this](const sentry::InboundMessage& msg) {
+        statistics_.nonsolic_msgs++;
+        receive_message(msg);
+    };
+    auto response_receiving_callback = [this](const sentry::InboundMessage& msg) {
+        statistics_.received_msgs++;
+        statistics_.received_bytes += msg.ByteSizeLong();
         receive_message(msg);
     };
 
     try {
-        boost::signals2::scoped_connection c1(sentry_.announcements_subscription.connect(receive_message_callback));
-        boost::signals2::scoped_connection c2(sentry_.requests_subscription.connect(receive_message_callback));
+        boost::signals2::scoped_connection c1(sentry_.announcements_subscription.connect(announcement_receiving_callback));
+        boost::signals2::scoped_connection c2(sentry_.requests_subscription.connect(response_receiving_callback));
 
         time_point_t last_update = system_clock::now();
 
@@ -179,10 +186,10 @@ void BlockExchange::log_status() {
     static constexpr seconds_t interval_for_stats_{60};
     static Network_Statistics prev_statistic{};
 
-    log::Debug() << "BlockExchange stats:" << std::setfill('_') << std::right
+    log::Debug() << "BlockExchange msgs:" << std::setfill('_') << std::right
                  << " in-queue:"   << std::setw(5) << messages_.size()
-                 << ", peers:"     << std::setw(2) << sentry_.active_peers()
-                 << ", " << Interval_Network_Statistics{prev_statistic, statistics_, interval_for_stats_};
+                 //<< ", peers:"     << std::setw(2) << sentry_.active_peers()
+                 << Interval_Network_Statistics{prev_statistic, statistics_, interval_for_stats_};
 
     auto [min_anchor_height, max_anchor_height] = header_chain_.anchor_height_range();
     log::Debug() << "BlockExchange headers: " << std::setfill('_') << std::right
@@ -198,7 +205,7 @@ void BlockExchange::log_status() {
     log::Debug() << "BlockExchange bodies:  " << std::setfill('_') << std::right
                  << "outst= " << std::setw(7)
                  << body_sequence_.outstanding_bodies(std::chrono::system_clock::now())
-                 << ", ready= " << std::setw(6) << body_sequence_.ready_bodies()
+                 << ", ready= " << std::setw(5) << body_sequence_.ready_bodies()
                  << ", db-height= " << std::setw(10) << body_sequence_.highest_block_in_output()
                  << ", mem-height= " << std::setw(10) << body_sequence_.lowest_block_in_memory()
                  << "~" << std::setw(10) << body_sequence_.highest_block_in_memory()
@@ -221,10 +228,10 @@ void BlockExchange::send_penalization(PeerId id, Penalty p) noexcept {
     sentry_.exec_remotely(penalize_peer);
 }
 
-void BlockExchange::initial_state(const std::vector<BlockHeader>& last_headers) {
+void BlockExchange::initial_state(std::vector<BlockHeader> last_headers) {
     auto message = std::make_shared<InternalMessage<void>>(
-        [&](HeaderChain& hc, BodySequence&) {
-            hc.initial_state(last_headers);
+        [h = std::move(last_headers)](HeaderChain& hc, BodySequence&) {
+            hc.initial_state(h);
         });
 
     accept(message);

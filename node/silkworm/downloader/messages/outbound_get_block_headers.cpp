@@ -33,15 +33,16 @@ void OutboundGetBlockHeaders::execute(db::ROAccess, HeaderChain& hc, BodySequenc
     using namespace std::literals::chrono_literals;
 
     time_point_t now = std::chrono::system_clock::now();
-    seconds_t timeout = 5s;
+    seconds_t request_timeout = 10s;
+    seconds_t response_timeout = 1s;
 
     // anchor extension
     do {
-        auto [packet, penalizations] = hc.anchor_extension_request(now, timeout);
+        auto [packet, penalizations] = hc.anchor_extension_request(now, request_timeout);
 
         if (packet == std::nullopt) break;
 
-        auto send_outcome = send_packet(sentry, *packet, timeout);
+        auto send_outcome = send_packet(sentry, *packet, response_timeout);
 
         packets_ += "o=" + std::to_string(std::get<BlockNum>(packet->request.origin)) + ",";
         SILK_TRACE << "Headers request sent (" << *packet << "), received by " << send_outcome.peers_size()
@@ -64,10 +65,10 @@ void OutboundGetBlockHeaders::execute(db::ROAccess, HeaderChain& hc, BodySequenc
     } while (sent_reqs_ < max_reqs_);  // && packet != std::nullopt && receiving_peers != nullptr
 
     // anchor collection
-    auto packet = hc.anchor_skeleton_request();
+    auto packet = hc.anchor_skeleton_request(now, request_timeout);
 
     if (packet != std::nullopt) {
-        auto send_outcome = send_packet(sentry, *packet, timeout);
+        auto send_outcome = send_packet(sentry, *packet, response_timeout);
         sent_reqs_++;
         requested_headers_ += packet->request.amount;
         packets_ += "SK o=" + std::to_string(std::get<BlockNum>(packet->request.origin)) + ",";

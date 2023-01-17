@@ -253,7 +253,7 @@ void HeaderChain::reduce_persisted_links_to(size_t limit) {
  * If there is an anchor at height < topSeenHeight this will be the top limit: this way we prioritize the fill of a big
  * hole near the bottom. If the lowest hole is not so big we do not need a skeleton query yet.
  */
-auto HeaderChain::anchor_skeleton_request(/*time_point_t tp, seconds_t timeout*/)
+auto HeaderChain::anchor_skeleton_request(time_point_t tp, seconds_t timeout)
     -> std::optional<GetBlockHeadersPacket66> {
     using namespace std::chrono_literals;
 
@@ -262,11 +262,11 @@ auto HeaderChain::anchor_skeleton_request(/*time_point_t tp, seconds_t timeout*/
         return std::nullopt;
     }
 
-//    // if last skeleton request was too recent, do not request another one
-//    if (tp - last_skeleton_request_ < timeout) {
-//        skeleton_condition_ = "too recent";
-//        return std::nullopt;
-//    }
+    // if last skeleton request was too recent, do not request another one
+    if (tp - last_skeleton_request_ < timeout) {
+        skeleton_condition_ = "too recent";
+        return std::nullopt;
+    }
 
     //BlockNum top = target_height ? std::min(top_seen_height_, *target_height) : top_seen_height_;
     BlockNum top = top_seen_height_;
@@ -307,6 +307,7 @@ auto HeaderChain::anchor_skeleton_request(/*time_point_t tp, seconds_t timeout*/
 
     statistics_.requested_items += length;
     skeleton_condition_ = "ok";
+    last_skeleton_request_ = tp;
 
     return {packet};
 }

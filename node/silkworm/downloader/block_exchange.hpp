@@ -34,7 +34,7 @@ class BlockExchange final : public ActiveComponent {
     BlockExchange(SentryClient&, const db::ROAccess&, const ChainConfig&);
     virtual ~BlockExchange() override;
 
-    void initial_state(const std::vector<BlockHeader>& last_headers);
+    void initial_state(std::vector<BlockHeader> last_headers);
 
     static constexpr std::optional<BlockNum> kTipOfTheChain{std::nullopt};
 

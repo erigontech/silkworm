@@ -81,7 +81,7 @@ class HeaderChain {
     //    -> std::tuple<std::vector<GetBlockHeadersPacket66>, std::vector<PeerPenalization>>;
 
     // anchor collection: to collect headers more quickly we request headers in a wide range, as seed to grow later
-    auto anchor_skeleton_request() -> std::optional<GetBlockHeadersPacket66>;
+    auto anchor_skeleton_request(time_point_t tp, seconds_t timeout) -> std::optional<GetBlockHeadersPacket66>;
 
     // anchor extension: to extend an anchor we do a request of many headers that are children of the anchor
     auto anchor_extension_request(time_point_t tp, seconds_t timeout)
@@ -169,7 +169,7 @@ class HeaderChain {
     std::vector<Announce> announces_to_do_;
     ConsensusEnginePtr consensus_engine_;
     CustomHeaderOnlyChainState chain_state_;
-    time_point_t last_skeleton_request;
+    time_point_t last_skeleton_request_;
 
     uint64_t generate_request_id();
     uint64_t is_valid_request_id(uint64_t request_id);

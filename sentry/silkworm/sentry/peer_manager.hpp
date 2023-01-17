@@ -19,6 +19,7 @@
 #include <functional>
 #include <list>
 #include <memory>
+#include <mutex>
 
 #include <silkworm/concurrency/coroutine.hpp>
 
@@ -33,9 +34,11 @@
 
 namespace silkworm::sentry {
 
+class PeerManagerObserver;
+
 class PeerManager {
   public:
-    PeerManager(boost::asio::io_context& io_context)
+    explicit PeerManager(boost::asio::io_context& io_context)
         : strand_(boost::asio::make_strand(io_context)) {}
 
     boost::asio::awaitable<void> start(rlpx::Server& server, rlpx::Client& client);
@@ -45,14 +48,30 @@ class PeerManager {
     boost::asio::awaitable<void> enumerate_peers(EnumeratePeersCallback callback);
     boost::asio::awaitable<void> enumerate_random_peers(size_t max_count, EnumeratePeersCallback callback);
 
+    void add_observer(std::weak_ptr<PeerManagerObserver> observer);
+
   private:
     boost::asio::awaitable<void> start_in_strand(common::Channel<std::shared_ptr<rlpx::Peer>>& peer_channel);
 
     boost::asio::awaitable<void> enumerate_peers_in_strand(EnumeratePeersCallback callback);
     boost::asio::awaitable<void> enumerate_random_peers_in_strand(size_t max_count, EnumeratePeersCallback callback);
 
+    [[nodiscard]] std::list<std::shared_ptr<PeerManagerObserver>> observers();
+    void on_peer_added(std::shared_ptr<rlpx::Peer> peer);
+    void on_peer_removed(std::shared_ptr<rlpx::Peer> peer);
+
     std::list<std::shared_ptr<rlpx::Peer>> peers_;
     boost::asio::strand<boost::asio::io_context::executor_type> strand_;
+
+    std::list<std::weak_ptr<PeerManagerObserver>> observers_;
+    std::mutex observers_mutex_;
+};
+
+class PeerManagerObserver {
+  public:
+    virtual ~PeerManagerObserver() = default;
+    virtual void on_peer_added(std::shared_ptr<rlpx::Peer> peer) = 0;
+    virtual void on_peer_removed(std::shared_ptr<rlpx::Peer> peer) = 0;
 };
 
 }  // namespace silkworm::sentry

@@ -54,6 +54,10 @@ class Channel {
         }
     }
 
+    void close() {
+        channel_.close();
+    }
+
   private:
     boost::asio::experimental::concurrent_channel<void(boost::system::error_code, T)> channel_;
 };

@@ -16,39 +16,17 @@
 
 #pragma once
 
-#include <memory>
-
-#include <silkworm/concurrency/coroutine.hpp>
-
-#include <agrpc/grpc_context.hpp>
-#include <p2psentry/sentry.grpc.pb.h>
-
 #include <silkworm/sentry/common/channel.hpp>
 #include <silkworm/sentry/eth/status_data.hpp>
 
-namespace silkworm::sentry::rpc {
+#include "send_message_call.hpp"
 
-class ServiceImpl;
+namespace silkworm::sentry::rpc::common {
 
 struct ServiceState {
     uint8_t eth_version;
-    common::Channel<eth::StatusData>& status_channel;
+    sentry::common::Channel<eth::StatusData>& status_channel;
+    sentry::common::Channel<SendMessageCall>& send_message_channel;
 };
 
-class Service final {
-  public:
-    explicit Service(ServiceState state);
-    ~Service();
-
-    Service(const Service&) = delete;
-    Service& operator=(const Service&) = delete;
-
-    void register_request_calls(
-        agrpc::GrpcContext* grpc_context,
-        ::sentry::Sentry::AsyncService* async_service);
-
-  private:
-    std::unique_ptr<ServiceImpl> p_impl_;
-};
-
-}  // namespace silkworm::sentry::rpc
+}  // namespace silkworm::sentry::rpc::common

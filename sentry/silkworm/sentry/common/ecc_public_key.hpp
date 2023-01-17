@@ -38,6 +38,8 @@ class EccPublicKey {
     [[nodiscard]] static EccPublicKey deserialize(ByteView serialized_data);
     [[nodiscard]] static EccPublicKey deserialize_hex(std::string_view hex);
 
+    friend bool operator==(const EccPublicKey&, const EccPublicKey&) = default;
+
   private:
     Bytes data_;
 };

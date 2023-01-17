@@ -16,8 +16,6 @@
 
 #include "random.hpp"
 
-#include <random>
-
 namespace silkworm::sentry::common {
 
 Bytes random_bytes(Bytes::size_type size) {

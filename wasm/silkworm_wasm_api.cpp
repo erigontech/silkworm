@@ -65,10 +65,6 @@ ChainConfig* new_config(uint64_t chain_id) {
 
 void delete_config(ChainConfig* x) { delete x; }
 
-void config_set_fork_block(ChainConfig* config, evmc_revision fork, uint64_t block) {
-    config->set_revision_block(fork, block);
-}
-
 void config_set_muir_glacier_block(ChainConfig* config, uint64_t block) { config->muir_glacier_block = block; }
 
 void config_set_dao_block(ChainConfig* config, uint64_t block) { config->dao_block = block; }

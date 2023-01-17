@@ -22,23 +22,6 @@
 
 namespace silkworm::consensus {
 
-static const ChainConfig kTestConfig{
-    1,             // chain_id
-    std::nullopt,  // genesis_hash
-    SealEngineType::kNoProof,
-    {
-        EVMC_HOMESTEAD,
-        EVMC_TANGERINE_WHISTLE,
-        EVMC_SPURIOUS_DRAGON,
-        EVMC_BYZANTIUM,
-        EVMC_CONSTANTINOPLE,
-        EVMC_PETERSBURG,
-        EVMC_ISTANBUL,
-        EVMC_BERLIN,
-        EVMC_LONDON,
-    },
-};
-
 TEST_CASE("Consensus Engine factory") {
     std::unique_ptr<IEngine> consensus_engine;
     consensus_engine = engine_factory(kMainnetConfig);  // Ethash consensus engine
@@ -66,35 +49,35 @@ TEST_CASE("Validate transaction types") {
 
     Transaction txn;
     txn.type = Transaction::Type::kLegacy;
-    CHECK(pre_validate_transaction(txn, EVMC_ISTANBUL, kTestConfig, base_fee_per_gas) !=
+    CHECK(pre_validate_transaction(txn, EVMC_ISTANBUL, 1, base_fee_per_gas) !=
           ValidationResult::kUnsupportedTransactionType);
-    CHECK(pre_validate_transaction(txn, EVMC_BERLIN, kTestConfig, base_fee_per_gas) !=
+    CHECK(pre_validate_transaction(txn, EVMC_BERLIN, 1, base_fee_per_gas) !=
           ValidationResult::kUnsupportedTransactionType);
-    CHECK(pre_validate_transaction(txn, EVMC_LONDON, kTestConfig, base_fee_per_gas) !=
+    CHECK(pre_validate_transaction(txn, EVMC_LONDON, 1, base_fee_per_gas) !=
           ValidationResult::kUnsupportedTransactionType);
 
     txn.type = static_cast<Transaction::Type>(0x03);  // unsupported transaction type
-    CHECK(pre_validate_transaction(txn, EVMC_ISTANBUL, kTestConfig, base_fee_per_gas) ==
+    CHECK(pre_validate_transaction(txn, EVMC_ISTANBUL, 1, base_fee_per_gas) ==
           ValidationResult::kUnsupportedTransactionType);
-    CHECK(pre_validate_transaction(txn, EVMC_BERLIN, kTestConfig, base_fee_per_gas) ==
+    CHECK(pre_validate_transaction(txn, EVMC_BERLIN, 1, base_fee_per_gas) ==
           ValidationResult::kUnsupportedTransactionType);
-    CHECK(pre_validate_transaction(txn, EVMC_LONDON, kTestConfig, base_fee_per_gas) ==
+    CHECK(pre_validate_transaction(txn, EVMC_LONDON, 1, base_fee_per_gas) ==
           ValidationResult::kUnsupportedTransactionType);
 
     txn.type = Transaction::Type::kEip2930;
-    CHECK(pre_validate_transaction(txn, EVMC_ISTANBUL, kTestConfig, base_fee_per_gas) ==
+    CHECK(pre_validate_transaction(txn, EVMC_ISTANBUL, 1, base_fee_per_gas) ==
           ValidationResult::kUnsupportedTransactionType);
-    CHECK(pre_validate_transaction(txn, EVMC_BERLIN, kTestConfig, base_fee_per_gas) !=
+    CHECK(pre_validate_transaction(txn, EVMC_BERLIN, 1, base_fee_per_gas) !=
           ValidationResult::kUnsupportedTransactionType);
-    CHECK(pre_validate_transaction(txn, EVMC_LONDON, kTestConfig, base_fee_per_gas) !=
+    CHECK(pre_validate_transaction(txn, EVMC_LONDON, 1, base_fee_per_gas) !=
           ValidationResult::kUnsupportedTransactionType);
 
     txn.type = Transaction::Type::kEip1559;
-    CHECK(pre_validate_transaction(txn, EVMC_ISTANBUL, kTestConfig, base_fee_per_gas) ==
+    CHECK(pre_validate_transaction(txn, EVMC_ISTANBUL, 1, base_fee_per_gas) ==
           ValidationResult::kUnsupportedTransactionType);
-    CHECK(pre_validate_transaction(txn, EVMC_BERLIN, kTestConfig, base_fee_per_gas) ==
+    CHECK(pre_validate_transaction(txn, EVMC_BERLIN, 1, base_fee_per_gas) ==
           ValidationResult::kUnsupportedTransactionType);
-    CHECK(pre_validate_transaction(txn, EVMC_LONDON, kTestConfig, base_fee_per_gas) !=
+    CHECK(pre_validate_transaction(txn, EVMC_LONDON, 1, base_fee_per_gas) !=
           ValidationResult::kUnsupportedTransactionType);
 }
 
@@ -106,22 +89,22 @@ TEST_CASE("Validate max_fee_per_gas") {
 
     txn.max_priority_fee_per_gas = 500'000'000;
     txn.max_fee_per_gas = 700'000'000;
-    CHECK(pre_validate_transaction(txn, EVMC_LONDON, kTestConfig, base_fee_per_gas) ==
+    CHECK(pre_validate_transaction(txn, EVMC_LONDON, 1, base_fee_per_gas) ==
           ValidationResult::kMaxFeeLessThanBase);
 
     txn.max_priority_fee_per_gas = 3'000'000'000;
     txn.max_fee_per_gas = 2'000'000'000;
-    CHECK(pre_validate_transaction(txn, EVMC_LONDON, kTestConfig, base_fee_per_gas) ==
+    CHECK(pre_validate_transaction(txn, EVMC_LONDON, 1, base_fee_per_gas) ==
           ValidationResult::kMaxPriorityFeeGreaterThanMax);
 
     txn.max_priority_fee_per_gas = 2'000'000'000;
     txn.max_fee_per_gas = 2'000'000'000;
-    CHECK(pre_validate_transaction(txn, EVMC_LONDON, kTestConfig, base_fee_per_gas) !=
+    CHECK(pre_validate_transaction(txn, EVMC_LONDON, 1, base_fee_per_gas) !=
           ValidationResult::kMaxPriorityFeeGreaterThanMax);
 
     txn.max_priority_fee_per_gas = 1'000'000'000;
     txn.max_fee_per_gas = 2'000'000'000;
-    CHECK(pre_validate_transaction(txn, EVMC_LONDON, kTestConfig, base_fee_per_gas) !=
+    CHECK(pre_validate_transaction(txn, EVMC_LONDON, 1, base_fee_per_gas) !=
           ValidationResult::kMaxPriorityFeeGreaterThanMax);
 }
 

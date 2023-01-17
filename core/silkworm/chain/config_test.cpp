@@ -18,6 +18,8 @@
 
 #include <catch2/catch.hpp>
 
+#include <silkworm/common/test_util.hpp>
+
 using namespace evmc::literals;
 
 namespace silkworm {
@@ -44,61 +46,52 @@ TEST_CASE("Config lookup") {
 }
 
 TEST_CASE("Config revision") {
-    CHECK(kMainnetConfig.revision_block(EVMC_FRONTIER) == 0);
-    CHECK(kMainnetConfig.revision_block(EVMC_HOMESTEAD) == 1'150'000);
-    CHECK(kMainnetConfig.revision_block(EVMC_TANGERINE_WHISTLE) == 2'463'000);
-    CHECK(kMainnetConfig.revision_block(EVMC_SPURIOUS_DRAGON) == 2'675'000);
-    CHECK(kMainnetConfig.revision_block(EVMC_BYZANTIUM) == 4'370'000);
-    CHECK(kMainnetConfig.revision_block(EVMC_CONSTANTINOPLE) == 7'280'000);
-    CHECK(kMainnetConfig.revision_block(EVMC_PETERSBURG) == 7'280'000);
-    CHECK(kMainnetConfig.revision_block(EVMC_ISTANBUL) == 9'069'000);
-    CHECK(kMainnetConfig.revision_block(EVMC_BERLIN) == 12'244'000);
-    CHECK(kMainnetConfig.revision_block(EVMC_LONDON) == 12'965'000);
-    CHECK(kMainnetConfig.revision_block(EVMC_SHANGHAI) == std::nullopt);
+    CHECK(kMainnetConfig.revision(0, 0) == EVMC_FRONTIER);
+    CHECK(kMainnetConfig.revision(1, 0) == EVMC_FRONTIER);
+    CHECK(kMainnetConfig.revision(200'000, 0) == EVMC_FRONTIER);
+    CHECK(kMainnetConfig.revision(1'000'000, 0) == EVMC_FRONTIER);
+    CHECK(kMainnetConfig.revision(1'149'999, 0) == EVMC_FRONTIER);
+    CHECK(kMainnetConfig.revision(1'150'000, 0) == EVMC_HOMESTEAD);
+    CHECK(kMainnetConfig.revision(1'150'001, 0) == EVMC_HOMESTEAD);
+    CHECK(kMainnetConfig.revision(2'000'000, 0) == EVMC_HOMESTEAD);
+    CHECK(kMainnetConfig.revision(2'462'999, 0) == EVMC_HOMESTEAD);
+    CHECK(kMainnetConfig.revision(2'463'000, 0) == EVMC_TANGERINE_WHISTLE);
+    CHECK(kMainnetConfig.revision(2'463'001, 0) == EVMC_TANGERINE_WHISTLE);
+    CHECK(kMainnetConfig.revision(2'674'999, 0) == EVMC_TANGERINE_WHISTLE);
+    CHECK(kMainnetConfig.revision(2'675'000, 0) == EVMC_SPURIOUS_DRAGON);
+    CHECK(kMainnetConfig.revision(2'675'001, 0) == EVMC_SPURIOUS_DRAGON);
+    CHECK(kMainnetConfig.revision(3'000'000, 0) == EVMC_SPURIOUS_DRAGON);
+    CHECK(kMainnetConfig.revision(4'000'000, 0) == EVMC_SPURIOUS_DRAGON);
+    CHECK(kMainnetConfig.revision(4'369'999, 0) == EVMC_SPURIOUS_DRAGON);
+    CHECK(kMainnetConfig.revision(4'370'000, 0) == EVMC_BYZANTIUM);
+    CHECK(kMainnetConfig.revision(4'370'001, 0) == EVMC_BYZANTIUM);
+    CHECK(kMainnetConfig.revision(5'000'000, 0) == EVMC_BYZANTIUM);
+    CHECK(kMainnetConfig.revision(6'000'000, 0) == EVMC_BYZANTIUM);
+    CHECK(kMainnetConfig.revision(7'000'000, 0) == EVMC_BYZANTIUM);
+    CHECK(kMainnetConfig.revision(7'279'999, 0) == EVMC_BYZANTIUM);
+    CHECK(kMainnetConfig.revision(7'280'000, 0) == EVMC_PETERSBURG);
+    CHECK(kMainnetConfig.revision(7'280'001, 0) == EVMC_PETERSBURG);
+    CHECK(kMainnetConfig.revision(8'000'000, 0) == EVMC_PETERSBURG);
+    CHECK(kMainnetConfig.revision(9'000'000, 0) == EVMC_PETERSBURG);
+    CHECK(kMainnetConfig.revision(9'068'999, 0) == EVMC_PETERSBURG);
+    CHECK(kMainnetConfig.revision(9'069'000, 0) == EVMC_ISTANBUL);
+    CHECK(kMainnetConfig.revision(9'069'001, 0) == EVMC_ISTANBUL);
+    CHECK(kMainnetConfig.revision(9'200'000, 0) == EVMC_ISTANBUL);  // Muir Glacier doesn't have an evmc_revision
+    CHECK(kMainnetConfig.revision(10'000'000, 0) == EVMC_ISTANBUL);
+    CHECK(kMainnetConfig.revision(11'000'000, 0) == EVMC_ISTANBUL);
+    CHECK(kMainnetConfig.revision(12'000'000, 0) == EVMC_ISTANBUL);
+    CHECK(kMainnetConfig.revision(12'243'999, 0) == EVMC_ISTANBUL);
+    CHECK(kMainnetConfig.revision(12'244'000, 0) == EVMC_BERLIN);
+    CHECK(kMainnetConfig.revision(12'244'001, 0) == EVMC_BERLIN);
+    CHECK(kMainnetConfig.revision(12'964'999, 0) == EVMC_BERLIN);
+    CHECK(kMainnetConfig.revision(12'965'000, 0) == EVMC_LONDON);
+    CHECK(kMainnetConfig.revision(12'965'001, 0) == EVMC_LONDON);
+    CHECK(kMainnetConfig.revision(13'000'000, 0) == EVMC_LONDON);
+    CHECK(kMainnetConfig.revision(13'773'000, 0) == EVMC_LONDON);  // Arrow Glacier doesn't have an evmc_revision
+    CHECK(kMainnetConfig.revision(14'000'000, 0) == EVMC_LONDON);
 
-    CHECK(kMainnetConfig.revision(0) == EVMC_FRONTIER);
-    CHECK(kMainnetConfig.revision(1) == EVMC_FRONTIER);
-    CHECK(kMainnetConfig.revision(200'000) == EVMC_FRONTIER);
-    CHECK(kMainnetConfig.revision(1'000'000) == EVMC_FRONTIER);
-    CHECK(kMainnetConfig.revision(1'149'999) == EVMC_FRONTIER);
-    CHECK(kMainnetConfig.revision(1'150'000) == EVMC_HOMESTEAD);
-    CHECK(kMainnetConfig.revision(1'150'001) == EVMC_HOMESTEAD);
-    CHECK(kMainnetConfig.revision(2'000'000) == EVMC_HOMESTEAD);
-    CHECK(kMainnetConfig.revision(2'462'999) == EVMC_HOMESTEAD);
-    CHECK(kMainnetConfig.revision(2'463'000) == EVMC_TANGERINE_WHISTLE);
-    CHECK(kMainnetConfig.revision(2'463'001) == EVMC_TANGERINE_WHISTLE);
-    CHECK(kMainnetConfig.revision(2'674'999) == EVMC_TANGERINE_WHISTLE);
-    CHECK(kMainnetConfig.revision(2'675'000) == EVMC_SPURIOUS_DRAGON);
-    CHECK(kMainnetConfig.revision(2'675'001) == EVMC_SPURIOUS_DRAGON);
-    CHECK(kMainnetConfig.revision(3'000'000) == EVMC_SPURIOUS_DRAGON);
-    CHECK(kMainnetConfig.revision(4'000'000) == EVMC_SPURIOUS_DRAGON);
-    CHECK(kMainnetConfig.revision(4'369'999) == EVMC_SPURIOUS_DRAGON);
-    CHECK(kMainnetConfig.revision(4'370'000) == EVMC_BYZANTIUM);
-    CHECK(kMainnetConfig.revision(4'370'001) == EVMC_BYZANTIUM);
-    CHECK(kMainnetConfig.revision(5'000'000) == EVMC_BYZANTIUM);
-    CHECK(kMainnetConfig.revision(6'000'000) == EVMC_BYZANTIUM);
-    CHECK(kMainnetConfig.revision(7'000'000) == EVMC_BYZANTIUM);
-    CHECK(kMainnetConfig.revision(7'279'999) == EVMC_BYZANTIUM);
-    CHECK(kMainnetConfig.revision(7'280'000) == EVMC_PETERSBURG);
-    CHECK(kMainnetConfig.revision(7'280'001) == EVMC_PETERSBURG);
-    CHECK(kMainnetConfig.revision(8'000'000) == EVMC_PETERSBURG);
-    CHECK(kMainnetConfig.revision(9'000'000) == EVMC_PETERSBURG);
-    CHECK(kMainnetConfig.revision(9'068'999) == EVMC_PETERSBURG);
-    CHECK(kMainnetConfig.revision(9'069'000) == EVMC_ISTANBUL);
-    CHECK(kMainnetConfig.revision(9'069'001) == EVMC_ISTANBUL);
-    CHECK(kMainnetConfig.revision(9'200'000) == EVMC_ISTANBUL);  // Muir Glacier doesn't have an evmc_revision
-    CHECK(kMainnetConfig.revision(10'000'000) == EVMC_ISTANBUL);
-    CHECK(kMainnetConfig.revision(11'000'000) == EVMC_ISTANBUL);
-    CHECK(kMainnetConfig.revision(12'000'000) == EVMC_ISTANBUL);
-    CHECK(kMainnetConfig.revision(12'243'999) == EVMC_ISTANBUL);
-    CHECK(kMainnetConfig.revision(12'244'000) == EVMC_BERLIN);
-    CHECK(kMainnetConfig.revision(12'244'001) == EVMC_BERLIN);
-    CHECK(kMainnetConfig.revision(12'964'999) == EVMC_BERLIN);
-    CHECK(kMainnetConfig.revision(12'965'000) == EVMC_LONDON);
-    CHECK(kMainnetConfig.revision(12'965'001) == EVMC_LONDON);
-    CHECK(kMainnetConfig.revision(13'000'000) == EVMC_LONDON);
-    CHECK(kMainnetConfig.revision(13'773'000) == EVMC_LONDON);  // Arrow Glacier doesn't have an evmc_revision
-    CHECK(kMainnetConfig.revision(14'000'000) == EVMC_LONDON);
+    CHECK(test::kLondonConfig.revision(0, 0) == EVMC_LONDON);
+    CHECK(test::kShanghaiConfig.revision(0, 0) == EVMC_SHANGHAI);
 }
 
 TEST_CASE("distinct_fork_numbers") {
@@ -175,8 +168,6 @@ TEST_CASE("JSON serialization") {
             "berlinBlock":0,
             "londonBlock":0,
             "terminalTotalDifficulty":"39387012740608862000000",
-            "terminalBlockNumber":10000,
-            "terminalBlockHash":"0x6dc57fd586f41ee340124c3a005642af7731a9ca7a7b70d989a7e2833e4ab740",
             "mergeNetsplitBlock":10000
         })");
 
@@ -184,9 +175,7 @@ TEST_CASE("JSON serialization") {
 
     REQUIRE(config2);
     CHECK(config2->terminal_total_difficulty == intx::from_string<intx::uint256>("39387012740608862000000"));
-    CHECK(config2->terminal_block_number == 10000);
-    CHECK(config2->terminal_block_hash == 0x6dc57fd586f41ee340124c3a005642af7731a9ca7a7b70d989a7e2833e4ab740_bytes32);
-    CHECK(config2->revision_block(EVMC_PARIS) == 10000);
+    CHECK(config2->merge_netsplit_block == 10000);
 
     CHECK(config2->to_json() == merge_test_json);
 }

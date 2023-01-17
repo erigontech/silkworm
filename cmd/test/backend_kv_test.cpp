@@ -766,7 +766,7 @@ class AsyncStateChangesCall
 
     void handle_read() override {
         SILK_INFO << "StateChanges batch: change batch size=" << reply_.changebatch_size()
-                  << " database view id=" << reply_.databaseviewid()
+                  << " state version id=" << reply_.stateversionid()
                   << " pending block base fee=" << reply_.pendingblockbasefee()
                   << " block gas limit=" << reply_.blockgaslimit();
     }

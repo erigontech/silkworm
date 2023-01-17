@@ -47,7 +47,7 @@ struct TableStruct_types_2ftypes_2eproto {
     PROTOBUF_SECTION_VARIABLE(protodesc_cold);
   static const ::PROTOBUF_NAMESPACE_ID::internal::AuxiliaryParseTableField aux[]
     PROTOBUF_SECTION_VARIABLE(protodesc_cold);
-  static const ::PROTOBUF_NAMESPACE_ID::internal::ParseTable schema[11]
+  static const ::PROTOBUF_NAMESPACE_ID::internal::ParseTable schema[13]
     PROTOBUF_SECTION_VARIABLE(protodesc_cold);
   static const ::PROTOBUF_NAMESPACE_ID::internal::FieldMetadata field_metadata[];
   static const ::PROTOBUF_NAMESPACE_ID::internal::SerializationTable serialization_table[];
@@ -58,6 +58,9 @@ namespace types {
 class ExecutionPayload;
 class ExecutionPayloadDefaultTypeInternal;
 extern ExecutionPayloadDefaultTypeInternal _ExecutionPayload_default_instance_;
+class ExecutionPayloadV2;
+class ExecutionPayloadV2DefaultTypeInternal;
+extern ExecutionPayloadV2DefaultTypeInternal _ExecutionPayloadV2_default_instance_;
 class H1024;
 class H1024DefaultTypeInternal;
 extern H1024DefaultTypeInternal _H1024_default_instance_;
@@ -88,9 +91,13 @@ extern PeerInfoDefaultTypeInternal _PeerInfo_default_instance_;
 class VersionReply;
 class VersionReplyDefaultTypeInternal;
 extern VersionReplyDefaultTypeInternal _VersionReply_default_instance_;
+class Withdrawal;
+class WithdrawalDefaultTypeInternal;
+extern WithdrawalDefaultTypeInternal _Withdrawal_default_instance_;
 }  // namespace types
 PROTOBUF_NAMESPACE_OPEN
 template<> ::types::ExecutionPayload* Arena::CreateMaybeMessage<::types::ExecutionPayload>(Arena*);
+template<> ::types::ExecutionPayloadV2* Arena::CreateMaybeMessage<::types::ExecutionPayloadV2>(Arena*);
 template<> ::types::H1024* Arena::CreateMaybeMessage<::types::H1024>(Arena*);
 template<> ::types::H128* Arena::CreateMaybeMessage<::types::H128>(Arena*);
 template<> ::types::H160* Arena::CreateMaybeMessage<::types::H160>(Arena*);
@@ -101,6 +108,7 @@ template<> ::types::NodeInfoPorts* Arena::CreateMaybeMessage<::types::NodeInfoPo
 template<> ::types::NodeInfoReply* Arena::CreateMaybeMessage<::types::NodeInfoReply>(Arena*);
 template<> ::types::PeerInfo* Arena::CreateMaybeMessage<::types::PeerInfo>(Arena*);
 template<> ::types::VersionReply* Arena::CreateMaybeMessage<::types::VersionReply>(Arena*);
+template<> ::types::Withdrawal* Arena::CreateMaybeMessage<::types::Withdrawal>(Arena*);
 PROTOBUF_NAMESPACE_CLOSE
 namespace types {
 
@@ -1600,6 +1608,358 @@ class ExecutionPayload PROTOBUF_FINAL :
 };
 // -------------------------------------------------------------------
 
+class Withdrawal PROTOBUF_FINAL :
+    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:types.Withdrawal) */ {
+ public:
+  inline Withdrawal() : Withdrawal(nullptr) {}
+  virtual ~Withdrawal();
+
+  Withdrawal(const Withdrawal& from);
+  Withdrawal(Withdrawal&& from) noexcept
+    : Withdrawal() {
+    *this = ::std::move(from);
+  }
+
+  inline Withdrawal& operator=(const Withdrawal& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  inline Withdrawal& operator=(Withdrawal&& from) noexcept {
+    if (GetArena() == from.GetArena()) {
+      if (this != &from) InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* descriptor() {
+    return GetDescriptor();
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* GetDescriptor() {
+    return GetMetadataStatic().descriptor;
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Reflection* GetReflection() {
+    return GetMetadataStatic().reflection;
+  }
+  static const Withdrawal& default_instance();
+
+  static inline const Withdrawal* internal_default_instance() {
+    return reinterpret_cast<const Withdrawal*>(
+               &_Withdrawal_default_instance_);
+  }
+  static constexpr int kIndexInFileMessages =
+    8;
+
+  friend void swap(Withdrawal& a, Withdrawal& b) {
+    a.Swap(&b);
+  }
+  inline void Swap(Withdrawal* other) {
+    if (other == this) return;
+    if (GetArena() == other->GetArena()) {
+      InternalSwap(other);
+    } else {
+      ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
+    }
+  }
+  void UnsafeArenaSwap(Withdrawal* other) {
+    if (other == this) return;
+    GOOGLE_DCHECK(GetArena() == other->GetArena());
+    InternalSwap(other);
+  }
+
+  // implements Message ----------------------------------------------
+
+  inline Withdrawal* New() const final {
+    return CreateMaybeMessage<Withdrawal>(nullptr);
+  }
+
+  Withdrawal* New(::PROTOBUF_NAMESPACE_ID::Arena* arena) const final {
+    return CreateMaybeMessage<Withdrawal>(arena);
+  }
+  void CopyFrom(const ::PROTOBUF_NAMESPACE_ID::Message& from) final;
+  void MergeFrom(const ::PROTOBUF_NAMESPACE_ID::Message& from) final;
+  void CopyFrom(const Withdrawal& from);
+  void MergeFrom(const Withdrawal& from);
+  PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
+  bool IsInitialized() const final;
+
+  size_t ByteSizeLong() const final;
+  const char* _InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) final;
+  ::PROTOBUF_NAMESPACE_ID::uint8* _InternalSerialize(
+      ::PROTOBUF_NAMESPACE_ID::uint8* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const final;
+  int GetCachedSize() const final { return _cached_size_.Get(); }
+
+  private:
+  inline void SharedCtor();
+  inline void SharedDtor();
+  void SetCachedSize(int size) const final;
+  void InternalSwap(Withdrawal* other);
+  friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
+  static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
+    return "types.Withdrawal";
+  }
+  protected:
+  explicit Withdrawal(::PROTOBUF_NAMESPACE_ID::Arena* arena);
+  private:
+  static void ArenaDtor(void* object);
+  inline void RegisterArenaDtor(::PROTOBUF_NAMESPACE_ID::Arena* arena);
+  public:
+
+  ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadata() const final;
+  private:
+  static ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadataStatic() {
+    ::PROTOBUF_NAMESPACE_ID::internal::AssignDescriptors(&::descriptor_table_types_2ftypes_2eproto);
+    return ::descriptor_table_types_2ftypes_2eproto.file_level_metadata[kIndexInFileMessages];
+  }
+
+  public:
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  enum : int {
+    kAddressFieldNumber = 3,
+    kAmountFieldNumber = 4,
+    kIndexFieldNumber = 1,
+    kValidatorIndexFieldNumber = 2,
+  };
+  // .types.H160 address = 3;
+  bool has_address() const;
+  private:
+  bool _internal_has_address() const;
+  public:
+  void clear_address();
+  const ::types::H160& address() const;
+  ::types::H160* release_address();
+  ::types::H160* mutable_address();
+  void set_allocated_address(::types::H160* address);
+  private:
+  const ::types::H160& _internal_address() const;
+  ::types::H160* _internal_mutable_address();
+  public:
+  void unsafe_arena_set_allocated_address(
+      ::types::H160* address);
+  ::types::H160* unsafe_arena_release_address();
+
+  // .types.H256 amount = 4;
+  bool has_amount() const;
+  private:
+  bool _internal_has_amount() const;
+  public:
+  void clear_amount();
+  const ::types::H256& amount() const;
+  ::types::H256* release_amount();
+  ::types::H256* mutable_amount();
+  void set_allocated_amount(::types::H256* amount);
+  private:
+  const ::types::H256& _internal_amount() const;
+  ::types::H256* _internal_mutable_amount();
+  public:
+  void unsafe_arena_set_allocated_amount(
+      ::types::H256* amount);
+  ::types::H256* unsafe_arena_release_amount();
+
+  // uint64 index = 1;
+  void clear_index();
+  ::PROTOBUF_NAMESPACE_ID::uint64 index() const;
+  void set_index(::PROTOBUF_NAMESPACE_ID::uint64 value);
+  private:
+  ::PROTOBUF_NAMESPACE_ID::uint64 _internal_index() const;
+  void _internal_set_index(::PROTOBUF_NAMESPACE_ID::uint64 value);
+  public:
+
+  // uint64 validatorIndex = 2;
+  void clear_validatorindex();
+  ::PROTOBUF_NAMESPACE_ID::uint64 validatorindex() const;
+  void set_validatorindex(::PROTOBUF_NAMESPACE_ID::uint64 value);
+  private:
+  ::PROTOBUF_NAMESPACE_ID::uint64 _internal_validatorindex() const;
+  void _internal_set_validatorindex(::PROTOBUF_NAMESPACE_ID::uint64 value);
+  public:
+
+  // @@protoc_insertion_point(class_scope:types.Withdrawal)
+ private:
+  class _Internal;
+
+  template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
+  typedef void InternalArenaConstructable_;
+  typedef void DestructorSkippable_;
+  ::types::H160* address_;
+  ::types::H256* amount_;
+  ::PROTOBUF_NAMESPACE_ID::uint64 index_;
+  ::PROTOBUF_NAMESPACE_ID::uint64 validatorindex_;
+  mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
+  friend struct ::TableStruct_types_2ftypes_2eproto;
+};
+// -------------------------------------------------------------------
+
+class ExecutionPayloadV2 PROTOBUF_FINAL :
+    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:types.ExecutionPayloadV2) */ {
+ public:
+  inline ExecutionPayloadV2() : ExecutionPayloadV2(nullptr) {}
+  virtual ~ExecutionPayloadV2();
+
+  ExecutionPayloadV2(const ExecutionPayloadV2& from);
+  ExecutionPayloadV2(ExecutionPayloadV2&& from) noexcept
+    : ExecutionPayloadV2() {
+    *this = ::std::move(from);
+  }
+
+  inline ExecutionPayloadV2& operator=(const ExecutionPayloadV2& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  inline ExecutionPayloadV2& operator=(ExecutionPayloadV2&& from) noexcept {
+    if (GetArena() == from.GetArena()) {
+      if (this != &from) InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* descriptor() {
+    return GetDescriptor();
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* GetDescriptor() {
+    return GetMetadataStatic().descriptor;
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Reflection* GetReflection() {
+    return GetMetadataStatic().reflection;
+  }
+  static const ExecutionPayloadV2& default_instance();
+
+  static inline const ExecutionPayloadV2* internal_default_instance() {
+    return reinterpret_cast<const ExecutionPayloadV2*>(
+               &_ExecutionPayloadV2_default_instance_);
+  }
+  static constexpr int kIndexInFileMessages =
+    9;
+
+  friend void swap(ExecutionPayloadV2& a, ExecutionPayloadV2& b) {
+    a.Swap(&b);
+  }
+  inline void Swap(ExecutionPayloadV2* other) {
+    if (other == this) return;
+    if (GetArena() == other->GetArena()) {
+      InternalSwap(other);
+    } else {
+      ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
+    }
+  }
+  void UnsafeArenaSwap(ExecutionPayloadV2* other) {
+    if (other == this) return;
+    GOOGLE_DCHECK(GetArena() == other->GetArena());
+    InternalSwap(other);
+  }
+
+  // implements Message ----------------------------------------------
+
+  inline ExecutionPayloadV2* New() const final {
+    return CreateMaybeMessage<ExecutionPayloadV2>(nullptr);
+  }
+
+  ExecutionPayloadV2* New(::PROTOBUF_NAMESPACE_ID::Arena* arena) const final {
+    return CreateMaybeMessage<ExecutionPayloadV2>(arena);
+  }
+  void CopyFrom(const ::PROTOBUF_NAMESPACE_ID::Message& from) final;
+  void MergeFrom(const ::PROTOBUF_NAMESPACE_ID::Message& from) final;
+  void CopyFrom(const ExecutionPayloadV2& from);
+  void MergeFrom(const ExecutionPayloadV2& from);
+  PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
+  bool IsInitialized() const final;
+
+  size_t ByteSizeLong() const final;
+  const char* _InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) final;
+  ::PROTOBUF_NAMESPACE_ID::uint8* _InternalSerialize(
+      ::PROTOBUF_NAMESPACE_ID::uint8* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const final;
+  int GetCachedSize() const final { return _cached_size_.Get(); }
+
+  private:
+  inline void SharedCtor();
+  inline void SharedDtor();
+  void SetCachedSize(int size) const final;
+  void InternalSwap(ExecutionPayloadV2* other);
+  friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
+  static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
+    return "types.ExecutionPayloadV2";
+  }
+  protected:
+  explicit ExecutionPayloadV2(::PROTOBUF_NAMESPACE_ID::Arena* arena);
+  private:
+  static void ArenaDtor(void* object);
+  inline void RegisterArenaDtor(::PROTOBUF_NAMESPACE_ID::Arena* arena);
+  public:
+
+  ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadata() const final;
+  private:
+  static ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadataStatic() {
+    ::PROTOBUF_NAMESPACE_ID::internal::AssignDescriptors(&::descriptor_table_types_2ftypes_2eproto);
+    return ::descriptor_table_types_2ftypes_2eproto.file_level_metadata[kIndexInFileMessages];
+  }
+
+  public:
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  enum : int {
+    kWithdrawalsFieldNumber = 2,
+    kPayloadFieldNumber = 1,
+  };
+  // repeated .types.Withdrawal withdrawals = 2;
+  int withdrawals_size() const;
+  private:
+  int _internal_withdrawals_size() const;
+  public:
+  void clear_withdrawals();
+  ::types::Withdrawal* mutable_withdrawals(int index);
+  ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::types::Withdrawal >*
+      mutable_withdrawals();
+  private:
+  const ::types::Withdrawal& _internal_withdrawals(int index) const;
+  ::types::Withdrawal* _internal_add_withdrawals();
+  public:
+  const ::types::Withdrawal& withdrawals(int index) const;
+  ::types::Withdrawal* add_withdrawals();
+  const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::types::Withdrawal >&
+      withdrawals() const;
+
+  // .types.ExecutionPayload payload = 1;
+  bool has_payload() const;
+  private:
+  bool _internal_has_payload() const;
+  public:
+  void clear_payload();
+  const ::types::ExecutionPayload& payload() const;
+  ::types::ExecutionPayload* release_payload();
+  ::types::ExecutionPayload* mutable_payload();
+  void set_allocated_payload(::types::ExecutionPayload* payload);
+  private:
+  const ::types::ExecutionPayload& _internal_payload() const;
+  ::types::ExecutionPayload* _internal_mutable_payload();
+  public:
+  void unsafe_arena_set_allocated_payload(
+      ::types::ExecutionPayload* payload);
+  ::types::ExecutionPayload* unsafe_arena_release_payload();
+
+  // @@protoc_insertion_point(class_scope:types.ExecutionPayloadV2)
+ private:
+  class _Internal;
+
+  template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
+  typedef void InternalArenaConstructable_;
+  typedef void DestructorSkippable_;
+  ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::types::Withdrawal > withdrawals_;
+  ::types::ExecutionPayload* payload_;
+  mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
+  friend struct ::TableStruct_types_2ftypes_2eproto;
+};
+// -------------------------------------------------------------------
+
 class NodeInfoPorts PROTOBUF_FINAL :
     public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:types.NodeInfoPorts) */ {
  public:
@@ -1641,7 +2001,7 @@ class NodeInfoPorts PROTOBUF_FINAL :
                &_NodeInfoPorts_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    8;
+    10;
 
   friend void swap(NodeInfoPorts& a, NodeInfoPorts& b) {
     a.Swap(&b);
@@ -1788,7 +2148,7 @@ class NodeInfoReply PROTOBUF_FINAL :
                &_NodeInfoReply_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    9;
+    11;
 
   friend void swap(NodeInfoReply& a, NodeInfoReply& b) {
     a.Swap(&b);
@@ -2041,7 +2401,7 @@ class PeerInfo PROTOBUF_FINAL :
                &_PeerInfo_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    10;
+    12;
 
   friend void swap(PeerInfo& a, PeerInfo& b) {
     a.Swap(&b);
@@ -4089,6 +4449,342 @@ ExecutionPayload::mutable_transactions() {
 
 // -------------------------------------------------------------------
 
+// Withdrawal
+
+// uint64 index = 1;
+inline void Withdrawal::clear_index() {
+  index_ = PROTOBUF_ULONGLONG(0);
+}
+inline ::PROTOBUF_NAMESPACE_ID::uint64 Withdrawal::_internal_index() const {
+  return index_;
+}
+inline ::PROTOBUF_NAMESPACE_ID::uint64 Withdrawal::index() const {
+  // @@protoc_insertion_point(field_get:types.Withdrawal.index)
+  return _internal_index();
+}
+inline void Withdrawal::_internal_set_index(::PROTOBUF_NAMESPACE_ID::uint64 value) {
+  
+  index_ = value;
+}
+inline void Withdrawal::set_index(::PROTOBUF_NAMESPACE_ID::uint64 value) {
+  _internal_set_index(value);
+  // @@protoc_insertion_point(field_set:types.Withdrawal.index)
+}
+
+// uint64 validatorIndex = 2;
+inline void Withdrawal::clear_validatorindex() {
+  validatorindex_ = PROTOBUF_ULONGLONG(0);
+}
+inline ::PROTOBUF_NAMESPACE_ID::uint64 Withdrawal::_internal_validatorindex() const {
+  return validatorindex_;
+}
+inline ::PROTOBUF_NAMESPACE_ID::uint64 Withdrawal::validatorindex() const {
+  // @@protoc_insertion_point(field_get:types.Withdrawal.validatorIndex)
+  return _internal_validatorindex();
+}
+inline void Withdrawal::_internal_set_validatorindex(::PROTOBUF_NAMESPACE_ID::uint64 value) {
+  
+  validatorindex_ = value;
+}
+inline void Withdrawal::set_validatorindex(::PROTOBUF_NAMESPACE_ID::uint64 value) {
+  _internal_set_validatorindex(value);
+  // @@protoc_insertion_point(field_set:types.Withdrawal.validatorIndex)
+}
+
+// .types.H160 address = 3;
+inline bool Withdrawal::_internal_has_address() const {
+  return this != internal_default_instance() && address_ != nullptr;
+}
+inline bool Withdrawal::has_address() const {
+  return _internal_has_address();
+}
+inline void Withdrawal::clear_address() {
+  if (GetArena() == nullptr && address_ != nullptr) {
+    delete address_;
+  }
+  address_ = nullptr;
+}
+inline const ::types::H160& Withdrawal::_internal_address() const {
+  const ::types::H160* p = address_;
+  return p != nullptr ? *p : reinterpret_cast<const ::types::H160&>(
+      ::types::_H160_default_instance_);
+}
+inline const ::types::H160& Withdrawal::address() const {
+  // @@protoc_insertion_point(field_get:types.Withdrawal.address)
+  return _internal_address();
+}
+inline void Withdrawal::unsafe_arena_set_allocated_address(
+    ::types::H160* address) {
+  if (GetArena() == nullptr) {
+    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(address_);
+  }
+  address_ = address;
+  if (address) {
+    
+  } else {
+    
+  }
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:types.Withdrawal.address)
+}
+inline ::types::H160* Withdrawal::release_address() {
+  
+  ::types::H160* temp = address_;
+  address_ = nullptr;
+  if (GetArena() != nullptr) {
+    temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  }
+  return temp;
+}
+inline ::types::H160* Withdrawal::unsafe_arena_release_address() {
+  // @@protoc_insertion_point(field_release:types.Withdrawal.address)
+  
+  ::types::H160* temp = address_;
+  address_ = nullptr;
+  return temp;
+}
+inline ::types::H160* Withdrawal::_internal_mutable_address() {
+  
+  if (address_ == nullptr) {
+    auto* p = CreateMaybeMessage<::types::H160>(GetArena());
+    address_ = p;
+  }
+  return address_;
+}
+inline ::types::H160* Withdrawal::mutable_address() {
+  // @@protoc_insertion_point(field_mutable:types.Withdrawal.address)
+  return _internal_mutable_address();
+}
+inline void Withdrawal::set_allocated_address(::types::H160* address) {
+  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArena();
+  if (message_arena == nullptr) {
+    delete address_;
+  }
+  if (address) {
+    ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
+      ::PROTOBUF_NAMESPACE_ID::Arena::GetArena(address);
+    if (message_arena != submessage_arena) {
+      address = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, address, submessage_arena);
+    }
+    
+  } else {
+    
+  }
+  address_ = address;
+  // @@protoc_insertion_point(field_set_allocated:types.Withdrawal.address)
+}
+
+// .types.H256 amount = 4;
+inline bool Withdrawal::_internal_has_amount() const {
+  return this != internal_default_instance() && amount_ != nullptr;
+}
+inline bool Withdrawal::has_amount() const {
+  return _internal_has_amount();
+}
+inline void Withdrawal::clear_amount() {
+  if (GetArena() == nullptr && amount_ != nullptr) {
+    delete amount_;
+  }
+  amount_ = nullptr;
+}
+inline const ::types::H256& Withdrawal::_internal_amount() const {
+  const ::types::H256* p = amount_;
+  return p != nullptr ? *p : reinterpret_cast<const ::types::H256&>(
+      ::types::_H256_default_instance_);
+}
+inline const ::types::H256& Withdrawal::amount() const {
+  // @@protoc_insertion_point(field_get:types.Withdrawal.amount)
+  return _internal_amount();
+}
+inline void Withdrawal::unsafe_arena_set_allocated_amount(
+    ::types::H256* amount) {
+  if (GetArena() == nullptr) {
+    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(amount_);
+  }
+  amount_ = amount;
+  if (amount) {
+    
+  } else {
+    
+  }
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:types.Withdrawal.amount)
+}
+inline ::types::H256* Withdrawal::release_amount() {
+  
+  ::types::H256* temp = amount_;
+  amount_ = nullptr;
+  if (GetArena() != nullptr) {
+    temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  }
+  return temp;
+}
+inline ::types::H256* Withdrawal::unsafe_arena_release_amount() {
+  // @@protoc_insertion_point(field_release:types.Withdrawal.amount)
+  
+  ::types::H256* temp = amount_;
+  amount_ = nullptr;
+  return temp;
+}
+inline ::types::H256* Withdrawal::_internal_mutable_amount() {
+  
+  if (amount_ == nullptr) {
+    auto* p = CreateMaybeMessage<::types::H256>(GetArena());
+    amount_ = p;
+  }
+  return amount_;
+}
+inline ::types::H256* Withdrawal::mutable_amount() {
+  // @@protoc_insertion_point(field_mutable:types.Withdrawal.amount)
+  return _internal_mutable_amount();
+}
+inline void Withdrawal::set_allocated_amount(::types::H256* amount) {
+  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArena();
+  if (message_arena == nullptr) {
+    delete amount_;
+  }
+  if (amount) {
+    ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
+      ::PROTOBUF_NAMESPACE_ID::Arena::GetArena(amount);
+    if (message_arena != submessage_arena) {
+      amount = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, amount, submessage_arena);
+    }
+    
+  } else {
+    
+  }
+  amount_ = amount;
+  // @@protoc_insertion_point(field_set_allocated:types.Withdrawal.amount)
+}
+
+// -------------------------------------------------------------------
+
+// ExecutionPayloadV2
+
+// .types.ExecutionPayload payload = 1;
+inline bool ExecutionPayloadV2::_internal_has_payload() const {
+  return this != internal_default_instance() && payload_ != nullptr;
+}
+inline bool ExecutionPayloadV2::has_payload() const {
+  return _internal_has_payload();
+}
+inline void ExecutionPayloadV2::clear_payload() {
+  if (GetArena() == nullptr && payload_ != nullptr) {
+    delete payload_;
+  }
+  payload_ = nullptr;
+}
+inline const ::types::ExecutionPayload& ExecutionPayloadV2::_internal_payload() const {
+  const ::types::ExecutionPayload* p = payload_;
+  return p != nullptr ? *p : reinterpret_cast<const ::types::ExecutionPayload&>(
+      ::types::_ExecutionPayload_default_instance_);
+}
+inline const ::types::ExecutionPayload& ExecutionPayloadV2::payload() const {
+  // @@protoc_insertion_point(field_get:types.ExecutionPayloadV2.payload)
+  return _internal_payload();
+}
+inline void ExecutionPayloadV2::unsafe_arena_set_allocated_payload(
+    ::types::ExecutionPayload* payload) {
+  if (GetArena() == nullptr) {
+    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(payload_);
+  }
+  payload_ = payload;
+  if (payload) {
+    
+  } else {
+    
+  }
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:types.ExecutionPayloadV2.payload)
+}
+inline ::types::ExecutionPayload* ExecutionPayloadV2::release_payload() {
+  
+  ::types::ExecutionPayload* temp = payload_;
+  payload_ = nullptr;
+  if (GetArena() != nullptr) {
+    temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  }
+  return temp;
+}
+inline ::types::ExecutionPayload* ExecutionPayloadV2::unsafe_arena_release_payload() {
+  // @@protoc_insertion_point(field_release:types.ExecutionPayloadV2.payload)
+  
+  ::types::ExecutionPayload* temp = payload_;
+  payload_ = nullptr;
+  return temp;
+}
+inline ::types::ExecutionPayload* ExecutionPayloadV2::_internal_mutable_payload() {
+  
+  if (payload_ == nullptr) {
+    auto* p = CreateMaybeMessage<::types::ExecutionPayload>(GetArena());
+    payload_ = p;
+  }
+  return payload_;
+}
+inline ::types::ExecutionPayload* ExecutionPayloadV2::mutable_payload() {
+  // @@protoc_insertion_point(field_mutable:types.ExecutionPayloadV2.payload)
+  return _internal_mutable_payload();
+}
+inline void ExecutionPayloadV2::set_allocated_payload(::types::ExecutionPayload* payload) {
+  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArena();
+  if (message_arena == nullptr) {
+    delete payload_;
+  }
+  if (payload) {
+    ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
+      ::PROTOBUF_NAMESPACE_ID::Arena::GetArena(payload);
+    if (message_arena != submessage_arena) {
+      payload = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, payload, submessage_arena);
+    }
+    
+  } else {
+    
+  }
+  payload_ = payload;
+  // @@protoc_insertion_point(field_set_allocated:types.ExecutionPayloadV2.payload)
+}
+
+// repeated .types.Withdrawal withdrawals = 2;
+inline int ExecutionPayloadV2::_internal_withdrawals_size() const {
+  return withdrawals_.size();
+}
+inline int ExecutionPayloadV2::withdrawals_size() const {
+  return _internal_withdrawals_size();
+}
+inline void ExecutionPayloadV2::clear_withdrawals() {
+  withdrawals_.Clear();
+}
+inline ::types::Withdrawal* ExecutionPayloadV2::mutable_withdrawals(int index) {
+  // @@protoc_insertion_point(field_mutable:types.ExecutionPayloadV2.withdrawals)
+  return withdrawals_.Mutable(index);
+}
+inline ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::types::Withdrawal >*
+ExecutionPayloadV2::mutable_withdrawals() {
+  // @@protoc_insertion_point(field_mutable_list:types.ExecutionPayloadV2.withdrawals)
+  return &withdrawals_;
+}
+inline const ::types::Withdrawal& ExecutionPayloadV2::_internal_withdrawals(int index) const {
+  return withdrawals_.Get(index);
+}
+inline const ::types::Withdrawal& ExecutionPayloadV2::withdrawals(int index) const {
+  // @@protoc_insertion_point(field_get:types.ExecutionPayloadV2.withdrawals)
+  return _internal_withdrawals(index);
+}
+inline ::types::Withdrawal* ExecutionPayloadV2::_internal_add_withdrawals() {
+  return withdrawals_.Add();
+}
+inline ::types::Withdrawal* ExecutionPayloadV2::add_withdrawals() {
+  // @@protoc_insertion_point(field_add:types.ExecutionPayloadV2.withdrawals)
+  return _internal_add_withdrawals();
+}
+inline const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::types::Withdrawal >&
+ExecutionPayloadV2::withdrawals() const {
+  // @@protoc_insertion_point(field_list:types.ExecutionPayloadV2.withdrawals)
+  return withdrawals_;
+}
+
+// -------------------------------------------------------------------
+
 // NodeInfoPorts
 
 // uint32 discovery = 1;
@@ -5091,6 +5787,10 @@ inline void PeerInfo::set_connisstatic(bool value) {
 #ifdef __GNUC__
   #pragma GCC diagnostic pop
 #endif  // __GNUC__
+// -------------------------------------------------------------------
+
+// -------------------------------------------------------------------
+
 // -------------------------------------------------------------------
 
 // -------------------------------------------------------------------

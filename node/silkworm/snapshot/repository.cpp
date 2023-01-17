@@ -35,9 +35,6 @@ namespace silkworm {
 //! The scale factor to convert the block numbers to/from the values in snapshot file names
 constexpr int kFileNameBlockScaleFactor{1'000};
 
-//! The number of digits to represent the to/from block numbers in snapshot file names
-constexpr int kFileNameBlockDigits{6};
-
 namespace fs = std::filesystem;
 
 std::optional<SnapshotFile> SnapshotFile::parse(fs::path path) {

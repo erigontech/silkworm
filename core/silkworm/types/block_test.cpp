@@ -13,7 +13,6 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 */
-
 #include "block.hpp"
 
 #include <catch2/catch.hpp>
@@ -209,14 +208,17 @@ TEST_CASE("Hash header boundary computation when the difficulty is equal to 0") 
 }
 
 TEST_CASE("Hash of blockHeader") {
-    BlockHeader header;
-    header.extra_data = string_view_to_byte_view(
-        "d883010a0d846765746888676f312e31372e33856c696e7578000000000000002ab85c52944f7ced556a\
-                         389a8044be45c006fca6ab41adf927f05f8c66a5debd68218cc4cf4e578581ca7db3c77efd6bbdabf0d435c5cfa68b5e80aa0798fece01");
-    evmc::bytes32 hash = header.hash();
-    evmc::bytes32 seal_hash = header.hash(false, true);
-    CHECK(0x20a91f46d6e9724f8f3dda757af45cffb0fc90be812c7d2ac918216c595507ca_bytes32 == hash);
-    CHECK(0xc62002e582b1fa494d9dd26b720c41f359eb085963410c7679e208f388c9631d_bytes32 == seal_hash);
+    BlockHeader header{};
+    CHECK(0xc3bd2d00745c03048a5616146a96f5ff78e54efb9e5b04af208cdaff6f3830ee_bytes32 == header.hash());
 }
+
+TEST_CASE("seal-Hash of blockHeader") {
+    BlockHeader header{};
+    std::string extra_data_str = "d883010a0d846765746888676f312e31372e33856c696e7578000000000000002ab85c52944f7ced556a";
+    extra_data_str.append("389a8044be45c006fca6ab41adf927f05f8c66a5debd68218cc4cf4e578581ca7db3c77efd6bbdabf0d435c5cfa68b5e80aa0798fece01");
+    header.extra_data = *from_hex(extra_data_str);
+    CHECK(0xe51e771dd421882055b1bab665bea9bb598388933b21b4cddb94186a53a9fe43_bytes32 == header.hash(false, true));
+}
+
 
 }  // namespace silkworm

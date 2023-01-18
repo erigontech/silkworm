@@ -45,7 +45,8 @@ struct SentryStatus {
     evmc::bytes32 head_hash;
     intx::uint256 head_td;
     evmc::bytes32 genesis_hash;
-    std::vector<BlockNum> forks;
+    std::vector<BlockNum> height_forks;
+    std::vector<BlockNum> time_forks;
 };
 
 class SentryClient {

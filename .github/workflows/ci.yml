@@ -1,0 +1,194 @@
+#   Copyright 2023 The Silkworm Authors
+#
+#   Licensed under the Apache License, Version 2.0 (the "License");
+#   you may not use this file except in compliance with the License.
+#   You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#   Unless required by applicable law or agreed to in writing, software
+#   distributed under the License is distributed on an "AS IS" BASIS,
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#   See the License for the specific language governing permissions and
+#   limitations under the License.
+
+name: Continuous integration
+on: [ push, pull_request ]
+jobs:
+  linux_x64:
+    if: ${{ false }}  # disable for now
+    runs-on: [ubuntu-latest]
+    strategy:
+      matrix:
+        config:
+          - {cc: gcc-11, cxx: g++-11, build_type: "Debug", cmake_args: "-DSILKWORM_SANITIZE=address"}
+          - {cc: gcc-11, cxx: g++-11, build_type: "Release", cmake_args: "-DSILKWORM_SANITIZE=thread"}
+#         - {cc: clang-12, cxx: clang++-12, build_type: "Debug", cmake_args: "-DSILKWORM_SANITIZE=thread"}
+#         - {cc: clang-12, cxx: clang++-12, build_type: "Release", cmake_args: "-DSILKWORM_SANITIZE=address"}
+
+      fail-fast: false # This makes it so that if 1 of the tests in the matrix fail, they don't all fail
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        submodules: recursive
+        fetch-depth: "0"
+
+    - name: Install GMP
+      run: sudo apt-get install -y libgmp3-dev
+
+    - name: Install mimalloc
+      run: |
+        git clone https://github.com/microsoft/mimalloc
+        cd mimalloc
+        git checkout tags/v1.4.0 -b v1.4.0
+        mkdir -p out
+        cd out
+        cmake .. -DCMAKE_BUILD_TYPE=${{ matrix.config.build_type }}
+        make
+        sudo make install
+
+    - name: Create Build Environment
+      # Some projects don't allow in-source building, so create a separate build directory
+      # We'll use this as our working directory for all subsequent commands
+      run: cmake -E make_directory ${{runner.workspace}}/build
+
+    - name: ccache
+      uses: hendrikmuhs/ccache-action@v1.2
+      with:
+        key: ${{ github.job }}-${{ matrix.os }}-${{ matrix.config.cc }}-${{ matrix.config.build_type }}  # Eg. "linux_x64-ubuntu-latest-clang-12-Debug"
+
+    - name: Configure CMake
+      # Use a bash shell so we can use the same syntax for environment variable
+      # access regardless of the host operating system
+      shell: bash
+      working-directory: ${{runner.workspace}}/build
+      env:
+        CC: ${{ matrix.config.cc}}
+        CXX: ${{ matrix.config.cxx}}
+      run: |
+        export PATH="/usr/lib/ccache:/usr/local/opt/ccache/libexec:$PATH"
+        cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=${{ matrix.config.build_type }} ${{ matrix.config.cmake_args }}
+
+    - name: Build
+      working-directory: ${{runner.workspace}}/build
+      shell: bash
+      # Execute the build. You can specify a specific target with "--target <NAME>"
+      run: cmake --build . --config ${{ matrix.config.build_type }} -j 2
+
+    - name: Test
+      working-directory: ${{runner.workspace}}/build
+      shell: bash
+      run: |
+        cmd/test/core_test
+        cmd/test/node_test
+        cmd/test/consensus --threads 4
+        cmd/test/sentry_test
+
+  osx:
+    runs-on: macOS-latest
+    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository
+    strategy:
+      matrix:
+        config:
+#          - {build_type: "Debug"}
+          - {build_type: "Release"}
+      fail-fast: false # This makes it so that if 1 of the tests in the matrix fail, they don't all fail
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        submodules: recursive
+        fetch-depth: "0"
+
+    - name: Install GMP & mimalloc
+      run: brew install gmp mimalloc
+
+    - name: Create Build Environment
+      # Some projects don't allow in-source building, so create a separate build directory
+      # We'll use this as our working directory for all subsequent commands
+      run: cmake -E make_directory ${{runner.workspace}}/build
+
+    - name: ccache
+      uses: hendrikmuhs/ccache-action@v1.2
+      with:
+        key: ${{ github.job }}-${{ matrix.os }}-${{ matrix.config.cc }}-${{ matrix.config.build_type }}  # Eg. "linux_x64-ubuntu-latest-clang-12-Debug"
+
+    - name: Configure CMake
+      # Use a bash shell so we can use the same syntax for environment variable
+      # access regardless of the host operating system
+      shell: bash
+      working-directory: ${{runner.workspace}}/build
+      env:
+        CC: ${{ matrix.config.cc}}
+        CXX: ${{ matrix.config.cxx}}
+      run: |
+        export PATH="/usr/lib/ccache:/usr/local/opt/ccache/libexec:$PATH"
+        cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=${{ matrix.config.build_type }}
+
+    - name: Build
+      working-directory: ${{runner.workspace}}/build
+      shell: bash
+      # Execute the build.  You can specify a specific target with "--target <NAME>"
+      run: cmake --build . --config ${{ matrix.config.build_type }} -j 2
+
+    - name: Test
+      working-directory: ${{runner.workspace}}/build
+      shell: bash
+      run: |
+        cmd/test/core_test
+        cmd/test/node_test
+        cmd/test/consensus --threads 4
+        cmd/test/sentry_test
+
+  windows:
+    runs-on: windows-latest
+    # Needed for the build test on Windows as first one fails
+    strategy:
+      matrix:
+        config:
+#          - {build_type: "Debug"}
+          - {build_type: "Release"}
+      fail-fast: false # This makes it so that if 1 of the tests in the matrix fail, they don't all fail
+    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        submodules: recursive
+        fetch-depth: "0"
+
+    - name: ccache
+      uses: hendrikmuhs/ccache-action@v1.2
+      with:
+        key: ${{ github.job }}-${{ matrix.config.build_type }}  # Eg. "windows-Debug"
+
+    - name: vcpkg build
+      uses: johnwason/vcpkg-action@v4
+      id: vcpkg
+      with:
+        pkgs: mpir mimalloc
+        triplet: x64-windows
+        token: ${{ github.token }}
+
+    - name: Create Build Environment
+      # Some projects don't allow in-source building, so create a separate build directory
+      # We'll use this as our working directory for all subsequent commands
+      run: cmake -E make_directory ${{runner.workspace}}/build
+
+    - name: Configure CMake
+      working-directory: ${{runner.workspace}}/build
+      run: |
+        echo "${{runner.workspace}}\silkworm\vcpkg\installed\x64-windows\bin" >> $GITHUB_PATH
+        $env:INCLUDE += ';${{runner.workspace}}\silkworm\vcpkg\installed\x64-windows\include'
+        cmake ..\silkworm -DCMAKE_BUILD_TYPE=${{ matrix.config.build_type }}
+
+    - name: Build
+      working-directory: ${{runner.workspace}}/build
+      # Execute the build. You can specify a specific target with "--target <NAME>"
+      run: cmake --build . --config ${{ matrix.config.build_type }} -j 2
+
+    - name: Test
+      working-directory: ${{runner.workspace}}/build
+      run: |
+        cmd/test/core_test
+        cmd/test/node_test
+        cmd/test/consensus --threads 4
+        cmd/test/sentry_test

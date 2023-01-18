@@ -29,7 +29,7 @@ SetStatus::SetStatus(const ChainConfig& chain_config, Hash best_hash, BigInt tot
     auto* forks = new sentry::Forks{};
     forks->set_allocated_genesis(to_H256(chain_config.genesis_hash.value()).release());
     auto hard_forks = chain_config.distinct_fork_numbers();
-    for (uint64_t block : hard_forks) forks->add_forks(block);
+    for (uint64_t block : hard_forks) forks->add_height_forks(block);
     request_.set_allocated_fork_data(forks);  // take ownership
 }
 

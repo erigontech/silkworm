@@ -23,17 +23,23 @@
 #include <silkworm/concurrency/coroutine.hpp>
 
 #include <boost/asio/awaitable.hpp>
+#include <boost/asio/io_context.hpp>
 
 #include <silkworm/rpc/server/server_context_pool.hpp>
+#include <silkworm/sentry/common/channel.hpp>
 #include <silkworm/sentry/common/ecc_key_pair.hpp>
 
+#include "peer.hpp"
 #include "protocol.hpp"
 
 namespace silkworm::sentry::rlpx {
 
 class Server final {
   public:
-    Server(std::string host, uint16_t port);
+    Server(
+        boost::asio::io_context& io_context,
+        std::string host,
+        uint16_t port);
 
     boost::asio::awaitable<void> start(
         silkworm::rpc::ServerContextPool& context_pool,
@@ -41,9 +47,14 @@ class Server final {
         std::string client_id,
         std::function<std::unique_ptr<Protocol>()> protocol_factory);
 
+    common::Channel<std::shared_ptr<Peer>>& peer_channel() {
+        return peer_channel_;
+    }
+
   private:
     std::string host_;
     uint16_t port_;
+    common::Channel<std::shared_ptr<Peer>> peer_channel_;
 };
 
 }  // namespace silkworm::sentry::rlpx

@@ -16,39 +16,31 @@
 
 #pragma once
 
-#include <memory>
-
 #include <silkworm/concurrency/coroutine.hpp>
 
-#include <agrpc/grpc_context.hpp>
-#include <p2psentry/sentry.grpc.pb.h>
+#include <boost/asio/awaitable.hpp>
+#include <boost/asio/io_context.hpp>
 
 #include <silkworm/sentry/common/channel.hpp>
-#include <silkworm/sentry/eth/status_data.hpp>
+#include <silkworm/sentry/rpc/common/send_message_call.hpp>
 
-namespace silkworm::sentry::rpc {
+#include "peer_manager.hpp"
 
-class ServiceImpl;
+namespace silkworm::sentry {
 
-struct ServiceState {
-    uint8_t eth_version;
-    common::Channel<eth::StatusData>& status_channel;
-};
-
-class Service final {
+class MessageSender {
   public:
-    explicit Service(ServiceState state);
-    ~Service();
+    explicit MessageSender(boost::asio::io_context& io_context)
+        : send_message_channel_(io_context) {}
 
-    Service(const Service&) = delete;
-    Service& operator=(const Service&) = delete;
+    common::Channel<rpc::common::SendMessageCall>& send_message_channel() {
+        return send_message_channel_;
+    }
 
-    void register_request_calls(
-        agrpc::GrpcContext* grpc_context,
-        ::sentry::Sentry::AsyncService* async_service);
+    boost::asio::awaitable<void> start(PeerManager& peer_manager);
 
   private:
-    std::unique_ptr<ServiceImpl> p_impl_;
+    common::Channel<rpc::common::SendMessageCall> send_message_channel_;
 };
 
-}  // namespace silkworm::sentry::rpc
+}  // namespace silkworm::sentry

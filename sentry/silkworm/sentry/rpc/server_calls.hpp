@@ -14,19 +14,25 @@
    limitations under the License.
 */
 
-#include "service.hpp"
-
 #include <algorithm>
 #include <optional>
 #include <vector>
 
 #include <boost/asio/awaitable.hpp>
+#include <boost/asio/this_coro.hpp>
+#include <gsl/util>
 
 #include <silkworm/common/base.hpp>
 #include <silkworm/common/log.hpp>
 #include <silkworm/rpc/interfaces/types.hpp>
 #include <silkworm/rpc/server/call.hpp>
 #include <silkworm/sentry/eth/fork_id.hpp>
+
+#include "common/messages_call.hpp"
+#include "common/send_message_call.hpp"
+#include "common/service_state.hpp"
+#include "interfaces/message.hpp"
+#include "interfaces/peer_id.hpp"
 
 namespace silkworm::sentry::rpc {
 
@@ -37,6 +43,7 @@ namespace proto = ::sentry;
 namespace proto_types = ::types;
 using AsyncService = proto::Sentry::AsyncService;
 namespace sw_rpc = silkworm::rpc;
+using common::ServiceState;
 
 // rpc SetStatus(StatusData) returns (SetStatusReply);
 class SetStatusCall : public sw_rpc::server::UnaryCall<proto::StatusData, proto::SetStatusReply> {
@@ -53,7 +60,7 @@ class SetStatusCall : public sw_rpc::server::UnaryCall<proto::StatusData, proto:
     }
 
     static eth::StatusData make_status_data(const proto::StatusData& data, const ServiceState& state) {
-        auto& data_forks = data.fork_data().forks();
+        auto& data_forks = data.fork_data().height_forks();  // TODO handle time_forks
         std::vector<BlockNum> fork_block_numbers;
         fork_block_numbers.resize(static_cast<size_t>(data_forks.size()));
         std::copy(data_forks.cbegin(), data_forks.cend(), fork_block_numbers.begin());
@@ -66,12 +73,12 @@ class SetStatusCall : public sw_rpc::server::UnaryCall<proto::StatusData, proto:
             uint256_from_H256(data.total_difficulty()),
             Bytes{hash_from_H256(data.best_hash())},
             genesis_hash,
-            eth::ForkId{genesis_hash, fork_block_numbers, data.max_block()},
+            eth::ForkId{genesis_hash, fork_block_numbers, data.max_block_height()},  // TODO handle max_block_time
         };
 
         return eth::StatusData{
             std::move(fork_block_numbers),
-            data.max_block(),
+            data.max_block_height(),  // TODO handle max_block_time
             std::move(message),
         };
     }
@@ -103,13 +110,38 @@ class NodeInfoCall : public sw_rpc::server::UnaryCall<protobuf::Empty, proto_typ
     }
 };
 
+awaitable<proto::SentPeers> do_send_message_call(
+    const ServiceState& state,
+    const proto::OutboundMessageData& request,
+    common::PeerFilter peer_filter) {
+    auto message = interfaces::message_from_outbound_data(request);
+
+    auto executor = co_await boost::asio::this_coro::executor;
+    common::SendMessageCall call{std::move(message), peer_filter, executor};
+
+    co_await state.send_message_channel.send(call);
+
+    auto sent_peer_keys = co_await call.result();
+
+    proto::SentPeers reply;
+    for (auto& key : sent_peer_keys) {
+        reply.add_peers()->CopyFrom(interfaces::peer_id_from_public_key(key));
+    }
+    co_return reply;
+}
+
 // rpc SendMessageById(SendMessageByIdRequest) returns (SentPeers);
 class SendMessageByIdCall : public sw_rpc::server::UnaryCall<proto::SendMessageByIdRequest, proto::SentPeers> {
   public:
     using Base::UnaryCall;
 
-    awaitable<void> operator()(const ServiceState& /*state*/) {
-        co_await agrpc::finish_with_error(responder_, grpc::Status{grpc::StatusCode::UNIMPLEMENTED, "SendMessageByIdCall"});
+    awaitable<void> operator()(const ServiceState& state) {
+        auto peer_public_key = interfaces::peer_public_key_from_id(request_.peer_id());
+        proto::SentPeers reply = co_await do_send_message_call(
+            state,
+            request_.data(),
+            common::PeerFilter::with_peer_public_key(peer_public_key));
+        co_await agrpc::finish(responder_, reply, grpc::Status::OK);
     }
 };
 
@@ -118,8 +150,12 @@ class SendMessageToRandomPeersCall : public sw_rpc::server::UnaryCall<proto::Sen
   public:
     using Base::UnaryCall;
 
-    awaitable<void> operator()(const ServiceState& /*state*/) {
-        co_await agrpc::finish_with_error(responder_, grpc::Status{grpc::StatusCode::UNIMPLEMENTED, "SendMessageToRandomPeersCall"});
+    awaitable<void> operator()(const ServiceState& state) {
+        proto::SentPeers reply = co_await do_send_message_call(
+            state,
+            request_.data(),
+            common::PeerFilter::with_max_peers(request_.max_peers()));
+        co_await agrpc::finish(responder_, reply, grpc::Status::OK);
     }
 };
 
@@ -128,8 +164,9 @@ class SendMessageToAllCall : public sw_rpc::server::UnaryCall<proto::OutboundMes
   public:
     using Base::UnaryCall;
 
-    awaitable<void> operator()(const ServiceState& /*state*/) {
-        co_await agrpc::finish_with_error(responder_, grpc::Status{grpc::StatusCode::UNIMPLEMENTED, "SendMessageToAllCall"});
+    awaitable<void> operator()(const ServiceState& state) {
+        proto::SentPeers reply = co_await do_send_message_call(state, request_, common::PeerFilter{});
+        co_await agrpc::finish(responder_, reply, grpc::Status::OK);
     }
 };
 
@@ -161,8 +198,41 @@ class MessagesCall : public sw_rpc::server::ServerStreamingCall<proto::MessagesR
   public:
     using Base::ServerStreamingCall;
 
-    awaitable<void> operator()(const ServiceState& /*state*/) {
-        co_await agrpc::finish(responder_, grpc::Status{grpc::StatusCode::UNIMPLEMENTED, "MessagesCall"});
+    awaitable<void> operator()(const ServiceState& state) {
+        auto executor = co_await boost::asio::this_coro::executor;
+        common::MessagesCall call{
+            make_message_id_filter(request_),
+            executor,
+        };
+
+        auto unsubscribe_signal_channel = call.unsubscribe_signal_channel();
+        auto _ = gsl::finally([=]() { unsubscribe_signal_channel->close(); });
+
+        co_await state.message_calls_channel.send(call);
+        auto messages_channel = co_await call.result();
+
+        bool write_ok = true;
+        while (write_ok) {
+            auto message = co_await messages_channel->receive();
+
+            proto::InboundMessage reply = interfaces::inbound_message_from_message(message.message);
+            if (message.peer_public_key) {
+                *reply.mutable_peer_id() = interfaces::peer_id_from_public_key(message.peer_public_key.value());
+            }
+
+            write_ok = co_await agrpc::write(responder_, reply);
+        }
+
+        co_await agrpc::finish(responder_, grpc::Status::OK);
+    }
+
+    static common::MessagesCall::MessageIdSet make_message_id_filter(const proto::MessagesRequest& request) {
+        common::MessagesCall::MessageIdSet filter;
+        for (int i = 0; i < request.ids_size(); i++) {
+            auto id = request.ids(i);
+            filter.insert(interfaces::message_id(id));
+        }
+        return filter;
     }
 };
 
@@ -216,59 +286,5 @@ class PeerEventsCall : public sw_rpc::server::ServerStreamingCall<proto::PeerEve
         co_await agrpc::finish(responder_, grpc::Status{grpc::StatusCode::UNIMPLEMENTED, "PeerEventsCall"});
     }
 };
-
-class ServiceImpl final {
-  public:
-    explicit ServiceImpl(ServiceState state) : state_(state) {}
-
-    void register_request_calls(
-        agrpc::GrpcContext* grpc_context,
-        ::sentry::Sentry::AsyncService* async_service) {
-        request_repeatedly<SetStatusCall>(&AsyncService::RequestSetStatus, grpc_context, async_service);
-        request_repeatedly<HandshakeCall>(&AsyncService::RequestHandShake, grpc_context, async_service);
-        request_repeatedly<NodeInfoCall>(&AsyncService::RequestNodeInfo, grpc_context, async_service);
-
-        request_repeatedly<SendMessageByIdCall>(&AsyncService::RequestSendMessageById, grpc_context, async_service);
-        request_repeatedly<SendMessageToRandomPeersCall>(&AsyncService::RequestSendMessageToRandomPeers, grpc_context, async_service);
-        request_repeatedly<SendMessageToAllCall>(&AsyncService::RequestSendMessageToAll, grpc_context, async_service);
-        request_repeatedly<SendMessageByMinBlockCall>(&AsyncService::RequestSendMessageByMinBlock, grpc_context, async_service);
-        request_repeatedly<PeerMinBlockCall>(&AsyncService::RequestPeerMinBlock, grpc_context, async_service);
-        request_repeatedly<MessagesCall>(&AsyncService::RequestMessages, grpc_context, async_service);
-
-        request_repeatedly<PeersCall>(&AsyncService::RequestPeers, grpc_context, async_service);
-        request_repeatedly<PeerCountCall>(&AsyncService::RequestPeerCount, grpc_context, async_service);
-        request_repeatedly<PeerByIdCall>(&AsyncService::RequestPeerById, grpc_context, async_service);
-        request_repeatedly<PenalizePeerCall>(&AsyncService::RequestPenalizePeer, grpc_context, async_service);
-        request_repeatedly<PeerEventsCall>(&AsyncService::RequestPeerEvents, grpc_context, async_service);
-    }
-
-  private:
-    ServiceState state_;
-
-    // Register one requested call repeatedly for each RPC: asio-grpc will take care of re-registration on any incoming call
-    template <class RequestHandler, typename RPC>
-    void request_repeatedly(
-        RPC rpc,
-        agrpc::GrpcContext* grpc_context,
-        ::sentry::Sentry::AsyncService* async_service) {
-        const auto& state = state_;
-        sw_rpc::request_repeatedly(*grpc_context, async_service, rpc, [state](auto&&... args) -> boost::asio::awaitable<void> {
-            co_await RequestHandler{std::forward<decltype(args)>(args)...}(state);
-        });
-    }
-};
-
-Service::Service(ServiceState state)
-    : p_impl_(std::make_unique<ServiceImpl>(state)) {}
-
-Service::~Service() {
-    log::Trace() << "silkworm::sentry::Service::~Service";
-}
-
-void Service::register_request_calls(
-    agrpc::GrpcContext* grpc_context,
-    ::sentry::Sentry::AsyncService* async_service) {
-    p_impl_->register_request_calls(grpc_context, async_service);
-}
 
 }  // namespace silkworm::sentry::rpc

@@ -16,13 +16,19 @@
 
 #pragma once
 
-#include <silkworm/common/base.hpp>
+#include <silkworm/sentry/common/channel.hpp>
+#include <silkworm/sentry/eth/status_data.hpp>
 
-namespace silkworm::sentry::common {
+#include "messages_call.hpp"
+#include "send_message_call.hpp"
 
-struct Message {
-    uint8_t id{0};
-    Bytes data;
+namespace silkworm::sentry::rpc::common {
+
+struct ServiceState {
+    uint8_t eth_version;
+    sentry::common::Channel<eth::StatusData>& status_channel;
+    sentry::common::Channel<SendMessageCall>& send_message_channel;
+    sentry::common::Channel<MessagesCall>& message_calls_channel;
 };
 
-}  // namespace silkworm::sentry::common
+}  // namespace silkworm::sentry::rpc::common

@@ -25,6 +25,7 @@ static const char* Sentry_method_names[] = {
   "/sentry.Sentry/SetStatus",
   "/sentry.Sentry/PenalizePeer",
   "/sentry.Sentry/PeerMinBlock",
+  "/sentry.Sentry/PeerUseless",
   "/sentry.Sentry/HandShake",
   "/sentry.Sentry/SendMessageByMinBlock",
   "/sentry.Sentry/SendMessageById",
@@ -48,17 +49,18 @@ Sentry::Stub::Stub(const std::shared_ptr< ::grpc::ChannelInterface>& channel, co
   : channel_(channel), rpcmethod_SetStatus_(Sentry_method_names[0], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
   , rpcmethod_PenalizePeer_(Sentry_method_names[1], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
   , rpcmethod_PeerMinBlock_(Sentry_method_names[2], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
-  , rpcmethod_HandShake_(Sentry_method_names[3], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
-  , rpcmethod_SendMessageByMinBlock_(Sentry_method_names[4], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
-  , rpcmethod_SendMessageById_(Sentry_method_names[5], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
-  , rpcmethod_SendMessageToRandomPeers_(Sentry_method_names[6], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
-  , rpcmethod_SendMessageToAll_(Sentry_method_names[7], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
-  , rpcmethod_Messages_(Sentry_method_names[8], options.suffix_for_stats(),::grpc::internal::RpcMethod::SERVER_STREAMING, channel)
-  , rpcmethod_Peers_(Sentry_method_names[9], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
-  , rpcmethod_PeerCount_(Sentry_method_names[10], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
-  , rpcmethod_PeerById_(Sentry_method_names[11], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
-  , rpcmethod_PeerEvents_(Sentry_method_names[12], options.suffix_for_stats(),::grpc::internal::RpcMethod::SERVER_STREAMING, channel)
-  , rpcmethod_NodeInfo_(Sentry_method_names[13], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_PeerUseless_(Sentry_method_names[3], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_HandShake_(Sentry_method_names[4], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_SendMessageByMinBlock_(Sentry_method_names[5], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_SendMessageById_(Sentry_method_names[6], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_SendMessageToRandomPeers_(Sentry_method_names[7], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_SendMessageToAll_(Sentry_method_names[8], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_Messages_(Sentry_method_names[9], options.suffix_for_stats(),::grpc::internal::RpcMethod::SERVER_STREAMING, channel)
+  , rpcmethod_Peers_(Sentry_method_names[10], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_PeerCount_(Sentry_method_names[11], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_PeerById_(Sentry_method_names[12], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_PeerEvents_(Sentry_method_names[13], options.suffix_for_stats(),::grpc::internal::RpcMethod::SERVER_STREAMING, channel)
+  , rpcmethod_NodeInfo_(Sentry_method_names[14], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
   {}
 
 ::grpc::Status Sentry::Stub::SetStatus(::grpc::ClientContext* context, const ::sentry::StatusData& request, ::sentry::SetStatusReply* response) {
@@ -126,6 +128,29 @@ void Sentry::Stub::async::PeerMinBlock(::grpc::ClientContext* context, const ::s
 ::grpc::ClientAsyncResponseReader< ::google::protobuf::Empty>* Sentry::Stub::AsyncPeerMinBlockRaw(::grpc::ClientContext* context, const ::sentry::PeerMinBlockRequest& request, ::grpc::CompletionQueue* cq) {
   auto* result =
     this->PrepareAsyncPeerMinBlockRaw(context, request, cq);
+  result->StartCall();
+  return result;
+}
+
+::grpc::Status Sentry::Stub::PeerUseless(::grpc::ClientContext* context, const ::sentry::PeerUselessRequest& request, ::google::protobuf::Empty* response) {
+  return ::grpc::internal::BlockingUnaryCall< ::sentry::PeerUselessRequest, ::google::protobuf::Empty, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), rpcmethod_PeerUseless_, context, request, response);
+}
+
+void Sentry::Stub::async::PeerUseless(::grpc::ClientContext* context, const ::sentry::PeerUselessRequest* request, ::google::protobuf::Empty* response, std::function<void(::grpc::Status)> f) {
+  ::grpc::internal::CallbackUnaryCall< ::sentry::PeerUselessRequest, ::google::protobuf::Empty, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_PeerUseless_, context, request, response, std::move(f));
+}
+
+void Sentry::Stub::async::PeerUseless(::grpc::ClientContext* context, const ::sentry::PeerUselessRequest* request, ::google::protobuf::Empty* response, ::grpc::ClientUnaryReactor* reactor) {
+  ::grpc::internal::ClientCallbackUnaryFactory::Create< ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_PeerUseless_, context, request, response, reactor);
+}
+
+::grpc::ClientAsyncResponseReader< ::google::protobuf::Empty>* Sentry::Stub::PrepareAsyncPeerUselessRaw(::grpc::ClientContext* context, const ::sentry::PeerUselessRequest& request, ::grpc::CompletionQueue* cq) {
+  return ::grpc::internal::ClientAsyncResponseReaderHelper::Create< ::google::protobuf::Empty, ::sentry::PeerUselessRequest, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), cq, rpcmethod_PeerUseless_, context, request);
+}
+
+::grpc::ClientAsyncResponseReader< ::google::protobuf::Empty>* Sentry::Stub::AsyncPeerUselessRaw(::grpc::ClientContext* context, const ::sentry::PeerUselessRequest& request, ::grpc::CompletionQueue* cq) {
+  auto* result =
+    this->PrepareAsyncPeerUselessRaw(context, request, cq);
   result->StartCall();
   return result;
 }
@@ -403,6 +428,16 @@ Sentry::Service::Service() {
   AddMethod(new ::grpc::internal::RpcServiceMethod(
       Sentry_method_names[3],
       ::grpc::internal::RpcMethod::NORMAL_RPC,
+      new ::grpc::internal::RpcMethodHandler< Sentry::Service, ::sentry::PeerUselessRequest, ::google::protobuf::Empty, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
+          [](Sentry::Service* service,
+             ::grpc::ServerContext* ctx,
+             const ::sentry::PeerUselessRequest* req,
+             ::google::protobuf::Empty* resp) {
+               return service->PeerUseless(ctx, req, resp);
+             }, this)));
+  AddMethod(new ::grpc::internal::RpcServiceMethod(
+      Sentry_method_names[4],
+      ::grpc::internal::RpcMethod::NORMAL_RPC,
       new ::grpc::internal::RpcMethodHandler< Sentry::Service, ::google::protobuf::Empty, ::sentry::HandShakeReply, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
           [](Sentry::Service* service,
              ::grpc::ServerContext* ctx,
@@ -411,7 +446,7 @@ Sentry::Service::Service() {
                return service->HandShake(ctx, req, resp);
              }, this)));
   AddMethod(new ::grpc::internal::RpcServiceMethod(
-      Sentry_method_names[4],
+      Sentry_method_names[5],
       ::grpc::internal::RpcMethod::NORMAL_RPC,
       new ::grpc::internal::RpcMethodHandler< Sentry::Service, ::sentry::SendMessageByMinBlockRequest, ::sentry::SentPeers, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
           [](Sentry::Service* service,
@@ -421,7 +456,7 @@ Sentry::Service::Service() {
                return service->SendMessageByMinBlock(ctx, req, resp);
              }, this)));
   AddMethod(new ::grpc::internal::RpcServiceMethod(
-      Sentry_method_names[5],
+      Sentry_method_names[6],
       ::grpc::internal::RpcMethod::NORMAL_RPC,
       new ::grpc::internal::RpcMethodHandler< Sentry::Service, ::sentry::SendMessageByIdRequest, ::sentry::SentPeers, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
           [](Sentry::Service* service,
@@ -431,7 +466,7 @@ Sentry::Service::Service() {
                return service->SendMessageById(ctx, req, resp);
              }, this)));
   AddMethod(new ::grpc::internal::RpcServiceMethod(
-      Sentry_method_names[6],
+      Sentry_method_names[7],
       ::grpc::internal::RpcMethod::NORMAL_RPC,
       new ::grpc::internal::RpcMethodHandler< Sentry::Service, ::sentry::SendMessageToRandomPeersRequest, ::sentry::SentPeers, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
           [](Sentry::Service* service,
@@ -441,7 +476,7 @@ Sentry::Service::Service() {
                return service->SendMessageToRandomPeers(ctx, req, resp);
              }, this)));
   AddMethod(new ::grpc::internal::RpcServiceMethod(
-      Sentry_method_names[7],
+      Sentry_method_names[8],
       ::grpc::internal::RpcMethod::NORMAL_RPC,
       new ::grpc::internal::RpcMethodHandler< Sentry::Service, ::sentry::OutboundMessageData, ::sentry::SentPeers, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
           [](Sentry::Service* service,
@@ -451,7 +486,7 @@ Sentry::Service::Service() {
                return service->SendMessageToAll(ctx, req, resp);
              }, this)));
   AddMethod(new ::grpc::internal::RpcServiceMethod(
-      Sentry_method_names[8],
+      Sentry_method_names[9],
       ::grpc::internal::RpcMethod::SERVER_STREAMING,
       new ::grpc::internal::ServerStreamingHandler< Sentry::Service, ::sentry::MessagesRequest, ::sentry::InboundMessage>(
           [](Sentry::Service* service,
@@ -461,7 +496,7 @@ Sentry::Service::Service() {
                return service->Messages(ctx, req, writer);
              }, this)));
   AddMethod(new ::grpc::internal::RpcServiceMethod(
-      Sentry_method_names[9],
+      Sentry_method_names[10],
       ::grpc::internal::RpcMethod::NORMAL_RPC,
       new ::grpc::internal::RpcMethodHandler< Sentry::Service, ::google::protobuf::Empty, ::sentry::PeersReply, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
           [](Sentry::Service* service,
@@ -471,7 +506,7 @@ Sentry::Service::Service() {
                return service->Peers(ctx, req, resp);
              }, this)));
   AddMethod(new ::grpc::internal::RpcServiceMethod(
-      Sentry_method_names[10],
+      Sentry_method_names[11],
       ::grpc::internal::RpcMethod::NORMAL_RPC,
       new ::grpc::internal::RpcMethodHandler< Sentry::Service, ::sentry::PeerCountRequest, ::sentry::PeerCountReply, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
           [](Sentry::Service* service,
@@ -481,7 +516,7 @@ Sentry::Service::Service() {
                return service->PeerCount(ctx, req, resp);
              }, this)));
   AddMethod(new ::grpc::internal::RpcServiceMethod(
-      Sentry_method_names[11],
+      Sentry_method_names[12],
       ::grpc::internal::RpcMethod::NORMAL_RPC,
       new ::grpc::internal::RpcMethodHandler< Sentry::Service, ::sentry::PeerByIdRequest, ::sentry::PeerByIdReply, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
           [](Sentry::Service* service,
@@ -491,7 +526,7 @@ Sentry::Service::Service() {
                return service->PeerById(ctx, req, resp);
              }, this)));
   AddMethod(new ::grpc::internal::RpcServiceMethod(
-      Sentry_method_names[12],
+      Sentry_method_names[13],
       ::grpc::internal::RpcMethod::SERVER_STREAMING,
       new ::grpc::internal::ServerStreamingHandler< Sentry::Service, ::sentry::PeerEventsRequest, ::sentry::PeerEvent>(
           [](Sentry::Service* service,
@@ -501,7 +536,7 @@ Sentry::Service::Service() {
                return service->PeerEvents(ctx, req, writer);
              }, this)));
   AddMethod(new ::grpc::internal::RpcServiceMethod(
-      Sentry_method_names[13],
+      Sentry_method_names[14],
       ::grpc::internal::RpcMethod::NORMAL_RPC,
       new ::grpc::internal::RpcMethodHandler< Sentry::Service, ::google::protobuf::Empty, ::types::NodeInfoReply, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
           [](Sentry::Service* service,
@@ -530,6 +565,13 @@ Sentry::Service::~Service() {
 }
 
 ::grpc::Status Sentry::Service::PeerMinBlock(::grpc::ServerContext* context, const ::sentry::PeerMinBlockRequest* request, ::google::protobuf::Empty* response) {
+  (void) context;
+  (void) request;
+  (void) response;
+  return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+}
+
+::grpc::Status Sentry::Service::PeerUseless(::grpc::ServerContext* context, const ::sentry::PeerUselessRequest* request, ::google::protobuf::Empty* response) {
   (void) context;
   (void) request;
   (void) response;

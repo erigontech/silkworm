@@ -19,9 +19,13 @@
 #include <intx/intx.hpp>
 #include <types/types.pb.h>
 
+#include <silkworm/common/base.hpp>
 #include <silkworm/types/hash.hpp>
 
 namespace silkworm {
+
+std::unique_ptr<types::H512> to_H512(const Bytes& orig);
+Bytes bytes_from_H512(const types::H512& orig);
 
 Hash hash_from_H256(const types::H256& orig);
 intx::uint256 uint256_from_H256(const types::H256& orig);

@@ -40,7 +40,10 @@
 
 #include "eth/protocol.hpp"
 #include "eth/status_data.hpp"
+#include "message_receiver.hpp"
+#include "message_sender.hpp"
 #include "node_key_config.hpp"
+#include "peer_manager.hpp"
 #include "rlpx/client.hpp"
 #include "rlpx/protocol.hpp"
 #include "rlpx/server.hpp"
@@ -69,6 +72,9 @@ class SentryImpl final {
     boost::asio::awaitable<void> run_tasks();
     boost::asio::awaitable<void> start_server();
     boost::asio::awaitable<void> start_client();
+    boost::asio::awaitable<void> start_peer_manager();
+    boost::asio::awaitable<void> start_message_sender();
+    boost::asio::awaitable<void> start_message_receiver();
     std::unique_ptr<rlpx::Protocol> make_protocol();
     std::function<std::unique_ptr<rlpx::Protocol>()> protocol_factory();
     [[nodiscard]] std::string client_id() const;
@@ -79,6 +85,10 @@ class SentryImpl final {
 
     common::Channel<eth::StatusData> status_channel_;
     optional<common::AtomicValue<eth::StatusData>> status_;
+
+    PeerManager peer_manager_;
+    MessageSender message_sender_;
+    std::shared_ptr<MessageReceiver> message_receiver_;
 
     std::promise<void> tasks_promise_;
     asio::cancellation_signal tasks_stop_signal_;
@@ -99,10 +109,15 @@ static silkworm::rpc::ServerConfig make_server_config(const Settings& settings) 
     return config;
 }
 
-static rpc::ServiceState make_service_state(common::Channel<eth::StatusData>& status_channel) {
-    return rpc::ServiceState{
+static rpc::common::ServiceState make_service_state(
+    common::Channel<eth::StatusData>& status_channel,
+    MessageSender& message_sender,
+    MessageReceiver& message_receiver) {
+    return rpc::common::ServiceState{
         eth::Protocol::kVersion,
         status_channel,
+        message_sender.send_message_channel(),
+        message_receiver.message_calls_channel(),
     };
 }
 
@@ -124,9 +139,12 @@ SentryImpl::SentryImpl(Settings settings)
     : settings_(std::move(settings)),
       context_pool_(settings_.num_contexts, settings_.wait_mode, [] { return make_unique<DummyServerCompletionQueue>(); }),
       status_channel_(context_pool_.next_io_context()),
-      rlpx_server_("0.0.0.0", settings_.port),
-      rlpx_client_(settings_.static_peers),
-      rpc_server_(make_server_config(settings_), make_service_state(status_channel_)) {
+      peer_manager_(context_pool_.next_io_context()),
+      message_sender_(context_pool_.next_io_context()),
+      message_receiver_(std::make_shared<MessageReceiver>(context_pool_.next_io_context())),
+      rlpx_server_(context_pool_.next_io_context(), "0.0.0.0", settings_.port),
+      rlpx_client_(context_pool_.next_io_context(), settings_.static_peers),
+      rpc_server_(make_server_config(settings_), make_service_state(status_channel_, message_sender_, *message_receiver_)) {
 }
 
 void SentryImpl::start() {
@@ -165,7 +183,12 @@ boost::asio::awaitable<void> SentryImpl::run_tasks() {
     status_.emplace(status);
     log::Info() << "Status received: network ID = " << status.message.network_id;
 
-    co_await (start_server() && start_client());
+    co_await (
+        start_server() &&
+        start_client() &&
+        start_peer_manager() &&
+        start_message_sender() &&
+        start_message_receiver());
 }
 
 std::unique_ptr<rlpx::Protocol> SentryImpl::make_protocol() {
@@ -181,7 +204,19 @@ boost::asio::awaitable<void> SentryImpl::start_server() {
 }
 
 boost::asio::awaitable<void> SentryImpl::start_client() {
-    return rlpx_client_.start(node_key_.value(), client_id(), settings_.port, protocol_factory());
+    return rlpx_client_.start(context_pool_, node_key_.value(), client_id(), settings_.port, protocol_factory());
+}
+
+boost::asio::awaitable<void> SentryImpl::start_peer_manager() {
+    return peer_manager_.start(rlpx_server_, rlpx_client_);
+}
+
+boost::asio::awaitable<void> SentryImpl::start_message_sender() {
+    return message_sender_.start(peer_manager_);
+}
+
+boost::asio::awaitable<void> SentryImpl::start_message_receiver() {
+    return MessageReceiver::start(message_receiver_, peer_manager_);
 }
 
 void SentryImpl::stop() {

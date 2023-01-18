@@ -16,13 +16,16 @@
 
 #pragma once
 
-#include <silkworm/common/base.hpp>
+#include <p2psentry/sentry.grpc.pb.h>
 
-namespace silkworm::sentry::common {
+#include <silkworm/sentry/common/message.hpp>
 
-struct Message {
-    uint8_t id{0};
-    Bytes data;
-};
+namespace silkworm::sentry::rpc::interfaces {
 
-}  // namespace silkworm::sentry::common
+sentry::common::Message message_from_outbound_data(const ::sentry::OutboundMessageData& message_data);
+
+::sentry::InboundMessage inbound_message_from_message(const sentry::common::Message& message);
+
+uint8_t message_id(::sentry::MessageId proto_id);
+
+}  // namespace silkworm::sentry::rpc::interfaces

@@ -37,7 +37,8 @@ void ProofOfStakeEngine::finalize(IntraBlockState& state, const Block& block, ev
 
     // See EIP-4895: Beacon chain push withdrawals as operations
     for (const Withdrawal& w : *block.withdrawals) {
-        state.add_to_balance(w.address, w.amount);
+        const auto amount_in_wei{intx::uint256{w.amount} * intx::uint256{kGiga}};
+        state.add_to_balance(w.address, amount_in_wei);
     }
 }
 

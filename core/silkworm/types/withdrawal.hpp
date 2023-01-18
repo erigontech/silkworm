@@ -25,7 +25,7 @@ struct Withdrawal {
     uint64_t index{0};
     uint64_t validator_index{0};
     evmc::address address{};
-    intx::uint256 amount{0};
+    uint64_t amount{0};  // in GWei
 
     friend bool operator==(const Withdrawal&, const Withdrawal&) = default;
 };

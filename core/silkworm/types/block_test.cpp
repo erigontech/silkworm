@@ -220,5 +220,4 @@ TEST_CASE("seal-Hash of blockHeader") {
     CHECK(0xe51e771dd421882055b1bab665bea9bb598388933b21b4cddb94186a53a9fe43_bytes32 == header.hash(false, true));
 }
 
-
 }  // namespace silkworm

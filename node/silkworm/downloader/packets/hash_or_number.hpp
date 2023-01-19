@@ -47,22 +47,24 @@ namespace rlp {
 
     inline DecodingResult decode(ByteView& from, HashOrNumber& to) noexcept {
         ByteView copy(from);                  // a copy because we need only decode header and not consume it
-        auto [h, err] = decode_header(copy);  // so we can use full implementation of decode below
-        if (err != DecodingResult::kOk) return err;
+        auto [h, res] = decode_header(copy);  // so we can use full implementation of decode below
+        if (error(res)) {
+            return res;
+        }
         if (h.list) return DecodingResult::kUnexpectedList;
 
         if (h.payload_length == 32) {
             Hash hash;
-            err = rlp::decode(from, dynamic_cast<evmc::bytes32&>(hash));  // consume header
+            res = rlp::decode(from, dynamic_cast<evmc::bytes32&>(hash));  // consume header
             to = hash;
         } else if (h.payload_length <= 8) {
             BlockNum number{};
-            err = rlp::decode(from, number);  // consume header
+            res = rlp::decode(from, number);  // consume header
             to = number;
         } else {
-            err = DecodingResult::kUnexpectedLength;
+            res = DecodingResult::kUnexpectedLength;
         }
-        return err;
+        return res;
     }
 
 }  // namespace rlp

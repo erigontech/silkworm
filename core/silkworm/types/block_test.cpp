@@ -49,7 +49,7 @@ TEST_CASE("BlockBody RLP") {
     ByteView in{rlp_bytes};
     BlockBody bb{};
 
-    REQUIRE(rlp::decode(in, bb) == DecodingResult::kOk);
+    REQUIRE(!error(rlp::decode(in, bb)));
 
     CHECK(bb.transactions.empty());
     REQUIRE(bb.ommers.size() == 1);
@@ -109,7 +109,7 @@ TEST_CASE("BlockBody RLP 2") {
 
     ByteView view{rlp};
     BlockBody decoded{};
-    REQUIRE(rlp::decode(view, decoded) == DecodingResult::kOk);
+    REQUIRE(!error(rlp::decode(view, decoded)));
 
     CHECK(view.empty());
     CHECK(decoded == body);
@@ -135,7 +135,7 @@ TEST_CASE("Invalid Block RLP") {
     ByteView view{rlp_bytes};
     Block block;
 
-    CHECK(rlp::decode(view, block) != DecodingResult::kOk);
+    CHECK(error(rlp::decode(view, block)));
 }
 
 TEST_CASE("EIP-2718 Block RLP") {
@@ -160,7 +160,7 @@ TEST_CASE("EIP-2718 Block RLP") {
     ByteView view{rlp_bytes};
     Block block;
 
-    REQUIRE(rlp::decode(view, block) == DecodingResult::kOk);
+    REQUIRE(!error(rlp::decode(view, block)));
     CHECK(view.empty());
 
     REQUIRE(block.transactions.size() == 2);
@@ -182,7 +182,7 @@ TEST_CASE("EIP-1559 Header RLP") {
 
     ByteView view{rlp};
     BlockHeader decoded;
-    REQUIRE(rlp::decode(view, decoded) == DecodingResult::kOk);
+    REQUIRE(!error(rlp::decode(view, decoded)));
 
     CHECK(view.empty());
     CHECK(decoded == h);

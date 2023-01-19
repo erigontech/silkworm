@@ -65,9 +65,9 @@ inline size_t length_eth66_packet(const T& from) noexcept {
 
 template <typename T>
 inline DecodingResult decode_eth66_packet(ByteView& from, T& to) noexcept {
-    auto [rlp_head, err0]{rlp::decode_header(from)};
-    if (err0 != DecodingResult::kOk) {
-        return err0;
+    auto [rlp_head, res]{rlp::decode_header(from)};
+    if (error(res)) {
+        return res;
     }
     if (!rlp_head.list) {
         return DecodingResult::kUnexpectedString;
@@ -75,11 +75,11 @@ inline DecodingResult decode_eth66_packet(ByteView& from, T& to) noexcept {
 
     uint64_t leftover{from.length() - rlp_head.payload_length};
 
-    if (DecodingResult err{rlp::decode(from, to.requestId)}; err != DecodingResult::kOk) {
-        return err;
+    if (res = rlp::decode(from, to.requestId); error(res)) {
+        return res;
     }
-    if (DecodingResult err{rlp::decode(from, to.request)}; err != DecodingResult::kOk) {
-        return err;
+    if (res = rlp::decode(from, to.request); error(res)) {
+        return res;
     }
 
     return from.length() == leftover ? DecodingResult::kOk : DecodingResult::kListLengthMismatch;

@@ -35,7 +35,10 @@ enum class [[nodiscard]] DecodingResult{
     kUnexpectedEip2718Serialization,
     kInvalidHashesLength,  // trie::Node decoding
     kInvalidMasksSubsets,  // trie::Node decoding
-
 };
+
+[[nodiscard]] inline bool error(DecodingResult x) {
+    return x != DecodingResult::kOk;
+}
 
 }  // namespace silkworm

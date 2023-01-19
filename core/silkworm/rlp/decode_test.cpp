@@ -27,7 +27,7 @@ static T decode_success(std::string_view hex) {
     Bytes bytes{*from_hex(hex)};
     ByteView view{bytes};
     T res;
-    REQUIRE(decode<T>(view, res) == DecodingResult::kOk);
+    REQUIRE(!error(decode<T>(view, res)));
     CHECK(view.empty());  // check that the entire input was consumed
     return res;
 }
@@ -45,7 +45,7 @@ static std::vector<T> decode_vector_success(std::string_view hex) {
     Bytes bytes{*from_hex(hex)};
     ByteView view{bytes};
     std::vector<T> res;
-    REQUIRE(decode<T>(view, res) == DecodingResult::kOk);
+    REQUIRE(!error(decode<T>(view, res)));
     CHECK(view.empty());  // check that the entire input was consumed
     return res;
 }

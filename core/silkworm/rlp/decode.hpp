@@ -48,16 +48,16 @@ DecodingResult decode(ByteView& from, Bytes& to) noexcept;
 
 template <UnsignedIntegral T>
 DecodingResult decode(ByteView& from, T& to) noexcept {
-    auto [h, err]{decode_header(from)};
-    if (err != DecodingResult::kOk) {
-        return err;
+    auto [h, res]{decode_header(from)};
+    if (error(res)) {
+        return res;
     }
     if (h.list) {
         return DecodingResult::kUnexpectedList;
     }
-    err = endian::from_big_compact(from.substr(0, h.payload_length), to);
-    if (err != DecodingResult::kOk) {
-        return err;
+    res = endian::from_big_compact(from.substr(0, h.payload_length), to);
+    if (error(res)) {
+        return res;
     }
     from.remove_prefix(h.payload_length);
     return DecodingResult::kOk;
@@ -70,9 +70,9 @@ template <size_t N>
 DecodingResult decode(ByteView& from, std::span<uint8_t, N> to) noexcept {
     static_assert(N != std::dynamic_extent);
 
-    auto [h, err]{decode_header(from)};
-    if (err != DecodingResult::kOk) {
-        return err;
+    auto [h, res]{decode_header(from)};
+    if (error(res)) {
+        return res;
     }
     if (h.list) {
         return DecodingResult::kUnexpectedList;
@@ -98,9 +98,9 @@ DecodingResult decode(ByteView& from, std::array<uint8_t, N>& to) noexcept {
 
 template <class T>
 DecodingResult decode(ByteView& from, std::vector<T>& to) noexcept {
-    auto [h, err]{decode_header(from)};
-    if (err != DecodingResult::kOk) {
-        return err;
+    auto [h, res]{decode_header(from)};
+    if (error(res)) {
+        return res;
     }
     if (!h.list) {
         return DecodingResult::kUnexpectedString;
@@ -111,8 +111,8 @@ DecodingResult decode(ByteView& from, std::vector<T>& to) noexcept {
     ByteView payload_view{from.substr(0, h.payload_length)};
     while (!payload_view.empty()) {
         to.emplace_back();
-        if (err = decode(payload_view, to.back()); err != DecodingResult::kOk) {
-            return err;
+        if (res = decode(payload_view, to.back()); error(res)) {
+            return res;
         }
     }
 
@@ -122,25 +122,25 @@ DecodingResult decode(ByteView& from, std::vector<T>& to) noexcept {
 
 template <typename Arg1, typename Arg2>
 DecodingResult decode_items(ByteView& from, Arg1& arg1, Arg2& arg2) noexcept {
-    DecodingResult err = decode(from, arg1);
-    if (err != DecodingResult::kOk)
-        return err;
+    if (DecodingResult res = decode(from, arg1); error(res)) {
+        return res;
+    }
     return decode(from, arg2);
 }
 
 template <typename Arg1, typename Arg2, typename... Args>
 DecodingResult decode_items(ByteView& from, Arg1& arg1, Arg2& arg2, Args&... args) noexcept {
-    DecodingResult err = decode(from, arg1);
-    if (err != DecodingResult::kOk)
-        return err;
+    if (DecodingResult res = decode(from, arg1); error(res)) {
+        return res;
+    }
     return decode_items(from, arg2, args...);
 }
 
 template <typename Arg1, typename Arg2, typename... Args>
 DecodingResult decode(ByteView& from, Arg1& arg1, Arg2& arg2, Args&... args) noexcept {
-    auto [header, err] = decode_header(from);
-    if (err != DecodingResult::kOk) {
-        return err;
+    auto [header, res] = decode_header(from);
+    if (error(res)) {
+        return res;
     }
     if (!header.list) {
         return DecodingResult::kUnexpectedString;

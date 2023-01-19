@@ -50,9 +50,9 @@ std::pair<Header, DecodingResult> decode_header(ByteView& from) noexcept {
             return {h, DecodingResult::kInputTooShort};
         }
         uint64_t len{0};
-        DecodingResult err{endian::from_big_compact(from.substr(0, len_of_len), len)};
-        if (err != DecodingResult::kOk) {
-            return {h, err};
+        DecodingResult res{endian::from_big_compact(from.substr(0, len_of_len), len)};
+        if (error(res)) {
+            return {h, res};
         }
         h.payload_length = static_cast<size_t>(len);
         from.remove_prefix(len_of_len);
@@ -71,9 +71,9 @@ std::pair<Header, DecodingResult> decode_header(ByteView& from) noexcept {
             return {h, DecodingResult::kInputTooShort};
         }
         uint64_t len{0};
-        DecodingResult err{endian::from_big_compact(from.substr(0, len_of_len), len)};
-        if (err != DecodingResult::kOk) {
-            return {h, err};
+        DecodingResult res{endian::from_big_compact(from.substr(0, len_of_len), len)};
+        if (error(res)) {
+            return {h, res};
         }
         h.payload_length = static_cast<size_t>(len);
         from.remove_prefix(len_of_len);
@@ -96,9 +96,9 @@ DecodingResult decode(ByteView& from, evmc::bytes32& to) noexcept {
 
 template <>
 DecodingResult decode(ByteView& from, Bytes& to) noexcept {
-    auto [h, err]{decode_header(from)};
-    if (err != DecodingResult::kOk) {
-        return err;
+    auto [h, res]{decode_header(from)};
+    if (error(res)) {
+        return res;
     }
     if (h.list) {
         return DecodingResult::kUnexpectedList;
@@ -111,8 +111,8 @@ DecodingResult decode(ByteView& from, Bytes& to) noexcept {
 template <>
 DecodingResult decode(ByteView& from, bool& to) noexcept {
     uint64_t i{0};
-    if (DecodingResult err{decode(from, i)}; err != DecodingResult::kOk) {
-        return err;
+    if (DecodingResult res{decode(from, i)}; error(res)) {
+        return res;
     }
     if (i > 1) {
         return DecodingResult::kOverflow;

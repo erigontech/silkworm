@@ -16,6 +16,7 @@
 
 #include "status_message.hpp"
 
+#include <silkworm/common/rlp_err.hpp>
 #include <silkworm/rlp/decode.hpp>
 #include <silkworm/rlp/encode_vector.hpp>
 
@@ -40,16 +41,14 @@ Bytes StatusMessage::rlp_encode() const {
 
 StatusMessage StatusMessage::rlp_decode(ByteView data) {
     StatusMessage message;
-    auto err = rlp::decode(
+    rlp::success_or_throw(rlp::decode(
         data,
         message.version,
         message.network_id,
         message.total_difficulty,
         message.best_block_hash,
         message.genesis_hash,
-        message.fork_id);
-    if (err != DecodingResult::kOk)
-        throw std::runtime_error("Failed to decode StatusMessage RLP");
+        message.fork_id));
     return message;
 }
 

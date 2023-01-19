@@ -36,9 +36,9 @@ class DecodingError : public std::exception {
     std::string message_;
 };
 
-inline void success_or_throw(DecodingResult err) {
-    if (err != DecodingResult::kOk) {
-        throw DecodingError(err);
+inline void success_or_throw(DecodingResult res) {
+    if (error(res)) {
+        throw DecodingError(res);
     }
 }
 

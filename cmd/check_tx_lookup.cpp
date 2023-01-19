@@ -100,7 +100,7 @@ int main(int argc, char* argv[]) {
                     // Erigon stores block height as compact (no leading zeroes)
                     auto lookup_block_value{db::from_slice(lookup_data.value)};
                     uint64_t actual_block_number{0};
-                    if (endian::from_big_compact(lookup_block_value, actual_block_number) != DecodingResult::kOk) {
+                    if (error(endian::from_big_compact(lookup_block_value, actual_block_number))) {
                         log::Error() << "Failed to read expected block number from: " << to_hex(lookup_block_value);
                     } else if (actual_block_number != expected_block_number) {
                         log::Error() << "Mismatch: Expected block number for tx with hash: " << to_hex(transaction_view)

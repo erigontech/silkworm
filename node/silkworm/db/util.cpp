@@ -143,21 +143,23 @@ namespace detail {
     }
 
     DecodingResult decode_stored_block_body(ByteView& from, BlockBodyForStorage& to) {
-        auto [header, err]{rlp::decode_header(from)};
-        rlp::success_or_throw(err);
+        auto [header, res]{rlp::decode_header(from)};
+        if (error(res)) {
+            return res;
+        }
         if (!header.list) {
             return DecodingResult::kUnexpectedString;
         }
         uint64_t leftover{from.length() - header.payload_length};
 
-        if (const auto result{rlp::decode(from, to.base_txn_id)}; result != DecodingResult::kOk) {
-            return result;
+        if (res = rlp::decode(from, to.base_txn_id); error(res)) {
+            return res;
         }
-        if (const auto result{rlp::decode(from, to.txn_count)}; result != DecodingResult::kOk) {
-            return result;
+        if (res = rlp::decode(from, to.txn_count); error(res)) {
+            return res;
         }
-        if (const auto result{rlp::decode(from, to.ommers)}; result != DecodingResult::kOk) {
-            return result;
+        if (res = rlp::decode(from, to.ommers); error(res)) {
+            return res;
         }
 
         if (from.length() != leftover) {

@@ -25,8 +25,8 @@ namespace silkworm {
 TEST_CASE("Decode account from storage") {
     SECTION("Correct payload") {
         Bytes encoded{*from_hex("0f01020203e8010520f1885eda54b7a053318cd41e2093220dab15d65381b1157a3633a83bfd5c9239")};
-        auto [decoded, err]{Account::from_encoded_storage(encoded)};
-        REQUIRE(err == DecodingResult::kOk);
+        auto [decoded, res]{Account::from_encoded_storage(encoded)};
+        REQUIRE(!error(res));
 
         CHECK(decoded.nonce == 2);
         CHECK(decoded.balance == 1000);
@@ -39,15 +39,15 @@ TEST_CASE("Decode account from storage") {
 
     SECTION("Correct payload only incarnation") {
         Bytes encoded{*from_hex("0f01020203e8010520f1885eda54b7a053318cd41e2093220dab15d65381b1157a3633a83bfd5c9239")};
-        auto [incarnation, err]{Account::incarnation_from_encoded_storage(encoded)};
-        REQUIRE(err == DecodingResult::kOk);
+        auto [incarnation, res]{Account::incarnation_from_encoded_storage(encoded)};
+        REQUIRE(!error(res));
         REQUIRE(incarnation == 5);
     }
 
     SECTION("Empty payload") {
         Bytes encoded{};
-        auto [decoded, err]{Account::from_encoded_storage(encoded)};
-        REQUIRE(err == DecodingResult::kOk);
+        auto [decoded, res]{Account::from_encoded_storage(encoded)};
+        REQUIRE(!error(res));
 
         CHECK(decoded.nonce == 0);
         CHECK(decoded.balance == 0);
@@ -57,8 +57,8 @@ TEST_CASE("Decode account from storage") {
 
     SECTION("One zero byte payload") {
         Bytes encoded{*from_hex("00")};
-        auto [decoded, err]{Account::from_encoded_storage(encoded)};
-        REQUIRE(err == DecodingResult::kOk);
+        auto [decoded, res]{Account::from_encoded_storage(encoded)};
+        REQUIRE(!error(res));
     }
 
     SECTION("One non-zero byte payload") {

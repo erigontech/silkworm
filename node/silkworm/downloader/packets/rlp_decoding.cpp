@@ -39,9 +39,9 @@ DecodingResult decode(ByteView& from, Hash& to) noexcept {
 
 template <>
 DecodingResult decode(ByteView& from, NewBlockHash& to) noexcept {
-    auto [rlp_head, err0]{decode_header(from)};
-    if (err0 != DecodingResult::kOk) {
-        return err0;
+    auto [rlp_head, res]{decode_header(from)};
+    if (error(res)) {
+        return res;
     }
     if (!rlp_head.list) {
         return DecodingResult::kUnexpectedString;
@@ -49,11 +49,11 @@ DecodingResult decode(ByteView& from, NewBlockHash& to) noexcept {
 
     uint64_t leftover{from.length() - rlp_head.payload_length};
 
-    if (DecodingResult err{rlp::decode(from, to.hash)}; err != DecodingResult::kOk) {
-        return err;
+    if (res = rlp::decode(from, to.hash); error(res)) {
+        return res;
     }
-    if (DecodingResult err{rlp::decode(from, to.number)}; err != DecodingResult::kOk) {
-        return err;
+    if (res = rlp::decode(from, to.number); error(res)) {
+        return res;
     }
 
     return from.length() == leftover ? DecodingResult::kOk : DecodingResult::kListLengthMismatch;
@@ -61,9 +61,9 @@ DecodingResult decode(ByteView& from, NewBlockHash& to) noexcept {
 
 template <>
 DecodingResult decode(ByteView& from, NewBlockPacket& to) noexcept {
-    auto [rlp_head, err0]{decode_header(from)};
-    if (err0 != DecodingResult::kOk) {
-        return err0;
+    auto [rlp_head, res]{decode_header(from)};
+    if (error(res)) {
+        return res;
     }
     if (!rlp_head.list) {
         return DecodingResult::kUnexpectedString;
@@ -71,11 +71,11 @@ DecodingResult decode(ByteView& from, NewBlockPacket& to) noexcept {
 
     uint64_t leftover{from.length() - rlp_head.payload_length};
 
-    if (DecodingResult err{rlp::decode(from, to.block)}; err != DecodingResult::kOk) {
-        return err;
+    if (res = rlp::decode(from, to.block); error(res)) {
+        return res;
     }
-    if (DecodingResult err{rlp::decode(from, to.td)}; err != DecodingResult::kOk) {
-        return err;
+    if (res = rlp::decode(from, to.td); error(res)) {
+        return res;
     }
 
     return from.length() == leftover ? DecodingResult::kOk : DecodingResult::kListLengthMismatch;
@@ -103,11 +103,9 @@ DecodingResult decode(ByteView& from, GetBlockBodiesPacket66& to) noexcept {
 
 template <>
 DecodingResult decode(ByteView& from, GetBlockHeadersPacket& to) noexcept {
-    using namespace rlp;
-
-    auto [rlp_head, err0]{decode_header(from)};
-    if (err0 != DecodingResult::kOk) {
-        return err0;
+    auto [rlp_head, res]{decode_header(from)};
+    if (error(res)) {
+        return res;
     }
     if (!rlp_head.list) {
         return DecodingResult::kUnexpectedString;
@@ -115,17 +113,17 @@ DecodingResult decode(ByteView& from, GetBlockHeadersPacket& to) noexcept {
 
     uint64_t leftover{from.length() - rlp_head.payload_length};
 
-    if (DecodingResult err{rlp::decode(from, to.origin)}; err != DecodingResult::kOk) {
-        return err;
+    if (res = rlp::decode(from, to.origin); error(res)) {
+        return res;
     }
-    if (DecodingResult err{rlp::decode(from, to.amount)}; err != DecodingResult::kOk) {
-        return err;
+    if (res = rlp::decode(from, to.amount); error(res)) {
+        return res;
     }
-    if (DecodingResult err{rlp::decode(from, to.skip)}; err != DecodingResult::kOk) {
-        return err;
+    if (res = rlp::decode(from, to.skip); error(res)) {
+        return res;
     }
-    if (DecodingResult err{rlp::decode(from, to.reverse)}; err != DecodingResult::kOk) {
-        return err;
+    if (res = rlp::decode(from, to.reverse); error(res)) {
+        return res;
     }
 
     return from.length() == leftover ? DecodingResult::kOk : DecodingResult::kListLengthMismatch;

@@ -85,15 +85,15 @@ TEST_CASE("Stage Transaction Lookups") {
         REQUIRE(lookup_data.done);
         REQUIRE(lookup_data.value.size());
         BlockNum lookup_data_block_num{0};
-        REQUIRE(endian::from_big_compact(
-                    db::from_slice(lookup_data.value), lookup_data_block_num) == DecodingResult::kOk);
+        REQUIRE(!error(endian::from_big_compact(
+            db::from_slice(lookup_data.value), lookup_data_block_num)));
         REQUIRE(lookup_data_block_num == 1u);
 
         lookup_data = lookup_table.find(db::to_slice(tx_hash_2.bytes), false);
         REQUIRE(lookup_data.done);
         REQUIRE(lookup_data.value.size());
-        REQUIRE(endian::from_big_compact(
-                    db::from_slice(lookup_data.value), lookup_data_block_num) == DecodingResult::kOk);
+        REQUIRE(!error(endian::from_big_compact(
+            db::from_slice(lookup_data.value), lookup_data_block_num)));
         REQUIRE(lookup_data_block_num == 2u);
 
         // Execute stage unwind to block 1
@@ -105,8 +105,8 @@ TEST_CASE("Stage Transaction Lookups") {
         lookup_data = lookup_table.find(db::to_slice(tx_hash_1.bytes), false);
         REQUIRE(lookup_data.done);
         REQUIRE(lookup_data.value.size());
-        REQUIRE(endian::from_big_compact(
-                    db::from_slice(lookup_data.value), lookup_data_block_num) == DecodingResult::kOk);
+        REQUIRE(!error(endian::from_big_compact(
+            db::from_slice(lookup_data.value), lookup_data_block_num)));
         REQUIRE(lookup_data_block_num == 1u);
 
         // Block 2 must be absent due to unwind
@@ -141,8 +141,8 @@ TEST_CASE("Stage Transaction Lookups") {
         REQUIRE(lookup_data.done);
         REQUIRE(lookup_data.value.size());
         BlockNum lookup_data_block_num{0};
-        REQUIRE(endian::from_big_compact(
-                    db::from_slice(lookup_data.value), lookup_data_block_num) == DecodingResult::kOk);
+        REQUIRE(!error(endian::from_big_compact(
+            db::from_slice(lookup_data.value), lookup_data_block_num)));
         REQUIRE(lookup_data_block_num == 2u);
     }
 }

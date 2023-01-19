@@ -110,66 +110,66 @@ namespace rlp {
 
     template <>
     DecodingResult decode(ByteView& from, BlockHeader& to) noexcept {
-        auto [rlp_head, err1]{decode_header(from)};
-        if (err1 != DecodingResult::kOk) {
-            return err1;
+        auto [rlp_head, res]{decode_header(from)};
+        if (error(res)) {
+            return res;
         }
         if (!rlp_head.list) {
             return DecodingResult::kUnexpectedString;
         }
         uint64_t leftover{from.length() - rlp_head.payload_length};
 
-        if (DecodingResult err{decode(from, to.parent_hash.bytes)}; err != DecodingResult::kOk) {
-            return err;
+        if (res = decode(from, to.parent_hash.bytes); error(res)) {
+            return res;
         }
-        if (DecodingResult err{decode(from, to.ommers_hash.bytes)}; err != DecodingResult::kOk) {
-            return err;
+        if (res = decode(from, to.ommers_hash.bytes); error(res)) {
+            return res;
         }
-        if (DecodingResult err{decode(from, to.beneficiary.bytes)}; err != DecodingResult::kOk) {
-            return err;
+        if (res = decode(from, to.beneficiary.bytes); error(res)) {
+            return res;
         }
-        if (DecodingResult err{decode(from, to.state_root.bytes)}; err != DecodingResult::kOk) {
-            return err;
+        if (res = decode(from, to.state_root.bytes); error(res)) {
+            return res;
         }
-        if (DecodingResult err{decode(from, to.transactions_root.bytes)}; err != DecodingResult::kOk) {
-            return err;
+        if (res = decode(from, to.transactions_root.bytes); error(res)) {
+            return res;
         }
-        if (DecodingResult err{decode(from, to.receipts_root.bytes)}; err != DecodingResult::kOk) {
-            return err;
+        if (res = decode(from, to.receipts_root.bytes); error(res)) {
+            return res;
         }
-        if (DecodingResult err{decode(from, to.logs_bloom)}; err != DecodingResult::kOk) {
-            return err;
+        if (res = decode(from, to.logs_bloom); error(res)) {
+            return res;
         }
-        if (DecodingResult err{decode(from, to.difficulty)}; err != DecodingResult::kOk) {
-            return err;
+        if (res = decode(from, to.difficulty); error(res)) {
+            return res;
         }
-        if (DecodingResult err{decode(from, to.number)}; err != DecodingResult::kOk) {
-            return err;
+        if (res = decode(from, to.number); error(res)) {
+            return res;
         }
-        if (DecodingResult err{decode(from, to.gas_limit)}; err != DecodingResult::kOk) {
-            return err;
+        if (res = decode(from, to.gas_limit); error(res)) {
+            return res;
         }
-        if (DecodingResult err{decode(from, to.gas_used)}; err != DecodingResult::kOk) {
-            return err;
+        if (res = decode(from, to.gas_used); error(res)) {
+            return res;
         }
-        if (DecodingResult err{decode(from, to.timestamp)}; err != DecodingResult::kOk) {
-            return err;
+        if (res = decode(from, to.timestamp); error(res)) {
+            return res;
         }
-        if (DecodingResult err{decode(from, to.extra_data)}; err != DecodingResult::kOk) {
-            return err;
+        if (res = decode(from, to.extra_data); error(res)) {
+            return res;
         }
-        if (DecodingResult err{decode(from, to.mix_hash.bytes)}; err != DecodingResult::kOk) {
-            return err;
+        if (res = decode(from, to.mix_hash.bytes); error(res)) {
+            return res;
         }
-        if (DecodingResult err{decode(from, to.nonce)}; err != DecodingResult::kOk) {
-            return err;
+        if (res = decode(from, to.nonce); error(res)) {
+            return res;
         }
 
         to.base_fee_per_gas = std::nullopt;
         if (from.length() > leftover) {
             intx::uint256 base_fee_per_gas;
-            if (DecodingResult err{decode(from, base_fee_per_gas)}; err != DecodingResult::kOk) {
-                return err;
+            if (res = decode(from, base_fee_per_gas); error(res)) {
+                return res;
             }
             to.base_fee_per_gas = base_fee_per_gas;
         }
@@ -196,20 +196,20 @@ namespace rlp {
 
     template <>
     DecodingResult decode(ByteView& from, BlockBody& to) noexcept {
-        auto [rlp_head, err]{decode_header(from)};
-        if (err != DecodingResult::kOk) {
-            return err;
+        auto [rlp_head, res]{decode_header(from)};
+        if (error(res)) {
+            return res;
         }
         if (!rlp_head.list) {
             return DecodingResult::kUnexpectedString;
         }
         uint64_t leftover{from.length() - rlp_head.payload_length};
 
-        if (err = decode(from, to.transactions); err != DecodingResult::kOk) {
-            return err;
+        if (res = decode(from, to.transactions); error(res)) {
+            return res;
         }
-        if (err = decode(from, to.ommers); err != DecodingResult::kOk) {
-            return err;
+        if (res = decode(from, to.ommers); error(res)) {
+            return res;
         }
 
         return from.length() == leftover ? DecodingResult::kOk : DecodingResult::kListLengthMismatch;
@@ -217,23 +217,23 @@ namespace rlp {
 
     template <>
     DecodingResult decode(ByteView& from, Block& to) noexcept {
-        auto [rlp_head, err]{decode_header(from)};
-        if (err != DecodingResult::kOk) {
-            return err;
+        auto [rlp_head, res]{decode_header(from)};
+        if (error(res)) {
+            return res;
         }
         if (!rlp_head.list) {
             return DecodingResult::kUnexpectedString;
         }
         uint64_t leftover{from.length() - rlp_head.payload_length};
 
-        if (err = decode(from, to.header); err != DecodingResult::kOk) {
-            return err;
+        if (res = decode(from, to.header); error(res)) {
+            return res;
         }
-        if (err = decode(from, to.transactions); err != DecodingResult::kOk) {
-            return err;
+        if (res = decode(from, to.transactions); error(res)) {
+            return res;
         }
-        if (err = decode(from, to.ommers); err != DecodingResult::kOk) {
-            return err;
+        if (res = decode(from, to.ommers); error(res)) {
+            return res;
         }
 
         return from.length() == leftover ? DecodingResult::kOk : DecodingResult::kListLengthMismatch;

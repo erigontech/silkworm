@@ -58,7 +58,7 @@ Bytes Node::encode_for_storage() const {
 
 std::optional<Node> Node::decode_from_storage(ByteView raw) {
     Node node;
-    if (decode_from_storage(raw, node) == DecodingResult::kOk) {
+    if (!error(decode_from_storage(raw, node))) {
         return node;
     }
     return std::nullopt;

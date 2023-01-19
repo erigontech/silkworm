@@ -116,9 +116,8 @@ TEST_CASE("BodyPersistence - body persistence") {
 
         Block block1;
         ByteView encoded_view = encoded_header1.value();
-        auto decoding_result = rlp::decode(encoded_view, block1.header);
+        REQUIRE(!error(rlp::decode(encoded_view, block1.header)));
         // Note: block1 has zero transactions and zero ommers on mainnet
-        REQUIRE(decoding_result == DecodingResult::kOk);
 
         BodyPersistence bp(tx, chain_config);
 

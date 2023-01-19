@@ -343,7 +343,7 @@ Status run_block(const nlohmann::json& json_block, Blockchain& blockchain) {
 
     Block block;
     ByteView view{*rlp};
-    if (rlp::decode(view, block) != DecodingResult::kOk || !view.empty()) {
+    if (error(rlp::decode(view, block)) || !view.empty()) {
         if (invalid) {
             return Status::kPassed;
         }
@@ -571,7 +571,7 @@ RunResults transaction_test(const nlohmann::json& j) {
     std::optional<Bytes> rlp{from_hex(j["txbytes"].get<std::string>())};
     if (rlp) {
         ByteView view{*rlp};
-        if (rlp::decode_transaction(view, txn, rlp::Eip2718Wrapping::kNone) == DecodingResult::kOk) {
+        if (!error(rlp::decode_transaction(view, txn, rlp::Eip2718Wrapping::kNone))) {
             decoded = view.empty();
         }
     }

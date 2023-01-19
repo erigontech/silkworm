@@ -50,9 +50,8 @@ TEST_CASE("NewBlockHashesPacket decoding") {
     NewBlockHashesPacket packet;
 
     ByteView encoded_view = encoded.value();
-    DecodingResult result = rlp::decode(encoded_view, packet);
+    REQUIRE(!error(rlp::decode(encoded_view, packet)));
 
-    REQUIRE(result == DecodingResult::kOk);
     REQUIRE(packet.size() == 1);
     REQUIRE(packet[0].hash == Hash::from_hex("eb2c33963824bf97d01cff8a65f00dc402fbf64f473cb4778a547ac08cebc354"));
     REQUIRE(packet[0].number == 12'420'112);
@@ -855,10 +854,9 @@ TEST_CASE("NewBlockPacket decoding/encoding") {
     // decoding
     NewBlockPacket packet;
     ByteView encoded_view = encoded.value();
-    DecodingResult result = rlp::decode(encoded_view, packet);
+    REQUIRE(!error(rlp::decode(encoded_view, packet)));
 
     // testing block data compared to etherscan
-    REQUIRE(result == DecodingResult::kOk);
     REQUIRE(packet.block.header.number == 12593055);
     REQUIRE(packet.block.header.gas_limit == 14919562);
     REQUIRE(packet.block.header.gas_used == 14908529);
@@ -900,10 +898,9 @@ TEST_CASE("GetBlockHeadersPacket (eth/65) decoding") {
     GetBlockHeadersPacket packet;
 
     ByteView encoded_view = encoded.value();
-    DecodingResult result = rlp::decode(encoded_view, packet);
+    REQUIRE(!error(rlp::decode(encoded_view, packet)));
 
-    REQUIRE(result == DecodingResult::kOk);
-    REQUIRE(std::holds_alternative<BlockNum>(packet.origin) == true);
+    REQUIRE(std::holds_alternative<BlockNum>(packet.origin));
     REQUIRE(std::get<BlockNum>(packet.origin) == 12189695);  // intx::from_string("0xb9ffff"));
     REQUIRE(packet.amount == 1);
     REQUIRE(packet.skip == 0);
@@ -956,9 +953,8 @@ TEST_CASE("GetBlockHeadersPacket (eth/66) decoding") {
     GetBlockHeadersPacket66 packet;
 
     ByteView encoded_view = encoded.value();
-    DecodingResult result = rlp::decode(encoded_view, packet);
+    REQUIRE(!error(rlp::decode(encoded_view, packet)));
 
-    REQUIRE(result == DecodingResult::kOk);
     REQUIRE(packet.requestId == 0x6b1a456ba6e2f81d);
     REQUIRE(std::holds_alternative<BlockNum>(packet.request.origin) == true);
     REQUIRE(std::get<BlockNum>(packet.request.origin) == 0xb9ffff);  // 12189695
@@ -1014,9 +1010,8 @@ TEST_CASE("GetBlockBodiesPacket (eth/66) decoding") {
     GetBlockBodiesPacket66 packet;
 
     ByteView encoded_view = encoded.value();
-    DecodingResult result = rlp::decode(encoded_view, packet);
+    REQUIRE(!error(rlp::decode(encoded_view, packet)));
 
-    REQUIRE(result == DecodingResult::kOk);
     REQUIRE(packet.requestId == 0xae9405dbeebf3f01);
     REQUIRE(packet.request.size() == 2);
     REQUIRE(packet.request[0] == Hash::from_hex("a36b1595c5acd878b63f83d3b62f6882edd27b757582f5319aebc17bc3e98246"));
@@ -1080,10 +1075,9 @@ TEST_CASE("BlockHeadersPacket (eth/66) decoding/encoding") {
     // decoding
     BlockHeadersPacket66 packet;
     ByteView encoded_view = encoded.value();
-    DecodingResult result = rlp::decode(encoded_view, packet);
+    REQUIRE(!error(rlp::decode(encoded_view, packet)));
 
     // packet values from etherscan
-    REQUIRE(result == DecodingResult::kOk);
     REQUIRE(packet.requestId == 0x81fb'063b'42d7'd3a1);
     REQUIRE(packet.request.size() == 1);
     REQUIRE(packet.request[0].number == 12593053);

@@ -72,20 +72,20 @@ namespace rlp {
 
     template <>
     DecodingResult decode(ByteView& from, AccessListEntry& to) noexcept {
-        auto [rlp_head, err0]{decode_header(from)};
-        if (err0 != DecodingResult::kOk) {
-            return err0;
+        auto [rlp_head, res]{decode_header(from)};
+        if (error(res)) {
+            return res;
         }
         if (!rlp_head.list) {
             return DecodingResult::kUnexpectedString;
         }
         uint64_t leftover{from.length() - rlp_head.payload_length};
 
-        if (DecodingResult err{decode(from, to.account.bytes)}; err != DecodingResult::kOk) {
-            return err;
+        if (res = decode(from, to.account.bytes); error(res)) {
+            return res;
         }
-        if (DecodingResult err{decode(from, to.storage_keys)}; err != DecodingResult::kOk) {
-            return err;
+        if (res = decode(from, to.storage_keys); error(res)) {
+            return res;
         }
 
         return from.length() == leftover ? DecodingResult::kOk : DecodingResult::kListLengthMismatch;
@@ -211,17 +211,17 @@ namespace rlp {
     }
 
     static DecodingResult legacy_decode(ByteView& from, Transaction& to) noexcept {
-        if (DecodingResult err{decode(from, to.nonce)}; err != DecodingResult::kOk) {
-            return err;
+        if (DecodingResult res{decode(from, to.nonce)}; error(res)) {
+            return res;
         }
 
-        if (DecodingResult err{decode(from, to.max_priority_fee_per_gas)}; err != DecodingResult::kOk) {
-            return err;
+        if (DecodingResult res{decode(from, to.max_priority_fee_per_gas)}; error(res)) {
+            return res;
         }
         to.max_fee_per_gas = to.max_priority_fee_per_gas;
 
-        if (DecodingResult err{decode(from, to.gas_limit)}; err != DecodingResult::kOk) {
-            return err;
+        if (DecodingResult res{decode(from, to.gas_limit)}; error(res)) {
+            return res;
         }
 
         if (from[0] == kEmptyStringCode) {
@@ -229,31 +229,31 @@ namespace rlp {
             from.remove_prefix(1);
         } else {
             to.to = evmc::address{};
-            if (DecodingResult err{decode(from, to.to->bytes)}; err != DecodingResult::kOk) {
-                return err;
+            if (DecodingResult res{decode(from, to.to->bytes)}; error(res)) {
+                return res;
             }
         }
 
-        if (DecodingResult err{decode(from, to.value)}; err != DecodingResult::kOk) {
-            return err;
+        if (DecodingResult res{decode(from, to.value)}; error(res)) {
+            return res;
         }
-        if (DecodingResult err{decode(from, to.data)}; err != DecodingResult::kOk) {
-            return err;
+        if (DecodingResult res{decode(from, to.data)}; error(res)) {
+            return res;
         }
 
         intx::uint256 v;
-        if (DecodingResult err{decode(from, v)}; err != DecodingResult::kOk) {
-            return err;
+        if (DecodingResult res{decode(from, v)}; error(res)) {
+            return res;
         }
         if (!to.set_v(v)) {
             return DecodingResult::kInvalidVInSignature;
         }
 
-        if (DecodingResult err{decode(from, to.r)}; err != DecodingResult::kOk) {
-            return err;
+        if (DecodingResult res{decode(from, to.r)}; error(res)) {
+            return res;
         }
-        if (DecodingResult err{decode(from, to.s)}; err != DecodingResult::kOk) {
-            return err;
+        if (DecodingResult res{decode(from, to.s)}; error(res)) {
+            return res;
         }
 
         to.access_list.clear();
@@ -266,35 +266,35 @@ namespace rlp {
             return DecodingResult::kUnsupportedTransactionType;
         }
 
-        auto [h, err0]{decode_header(from)};
-        if (err0 != DecodingResult::kOk) {
-            return err0;
+        auto [h, res]{decode_header(from)};
+        if (error(res)) {
+            return res;
         }
         if (!h.list) {
             return DecodingResult::kUnexpectedString;
         }
 
         intx::uint256 chain_id;
-        if (DecodingResult err{decode(from, chain_id)}; err != DecodingResult::kOk) {
-            return err;
+        if (res = decode(from, chain_id); error(res)) {
+            return res;
         }
         to.chain_id = chain_id;
 
-        if (DecodingResult err{decode(from, to.nonce)}; err != DecodingResult::kOk) {
-            return err;
+        if (res = decode(from, to.nonce); error(res)) {
+            return res;
         }
 
-        if (DecodingResult err{decode(from, to.max_priority_fee_per_gas)}; err != DecodingResult::kOk) {
-            return err;
+        if (res = decode(from, to.max_priority_fee_per_gas); error(res)) {
+            return res;
         }
         if (to.type == Transaction::Type::kEip2930) {
             to.max_fee_per_gas = to.max_priority_fee_per_gas;
-        } else if (DecodingResult err{decode(from, to.max_fee_per_gas)}; err != DecodingResult::kOk) {
-            return err;
+        } else if (res = decode(from, to.max_fee_per_gas); error(res)) {
+            return res;
         }
 
-        if (DecodingResult err{decode(from, to.gas_limit)}; err != DecodingResult::kOk) {
-            return err;
+        if (res = decode(from, to.gas_limit); error(res)) {
+            return res;
         }
 
         if (from[0] == kEmptyStringCode) {
@@ -302,28 +302,28 @@ namespace rlp {
             from.remove_prefix(1);
         } else {
             to.to = evmc::address{};
-            if (DecodingResult err{decode(from, to.to->bytes)}; err != DecodingResult::kOk) {
-                return err;
+            if (res = decode(from, to.to->bytes); error(res)) {
+                return res;
             }
         }
 
-        if (DecodingResult err{decode(from, to.value)}; err != DecodingResult::kOk) {
-            return err;
+        if (res = decode(from, to.value); error(res)) {
+            return res;
         }
-        if (DecodingResult err{decode(from, to.data)}; err != DecodingResult::kOk) {
-            return err;
+        if (res = decode(from, to.data); error(res)) {
+            return res;
         }
-        if (DecodingResult err{decode(from, to.access_list)}; err != DecodingResult::kOk) {
-            return err;
+        if (res = decode(from, to.access_list); error(res)) {
+            return res;
         }
-        if (DecodingResult err{decode(from, to.odd_y_parity)}; err != DecodingResult::kOk) {
-            return err;
+        if (res = decode(from, to.odd_y_parity); error(res)) {
+            return res;
         }
-        if (DecodingResult err{decode(from, to.r)}; err != DecodingResult::kOk) {
-            return err;
+        if (res = decode(from, to.r); error(res)) {
+            return res;
         }
-        if (DecodingResult err{decode(from, to.s)}; err != DecodingResult::kOk) {
-            return err;
+        if (res = decode(from, to.s); error(res)) {
+            return res;
         }
 
         return DecodingResult::kOk;
@@ -347,16 +347,16 @@ namespace rlp {
             return eip2718_decode(from, to);
         }
 
-        auto [h, err0]{decode_header(from)};
-        if (err0 != DecodingResult::kOk) {
-            return err0;
+        auto [h, res]{decode_header(from)};
+        if (error(res)) {
+            return res;
         }
 
         if (h.list) {  // Legacy transaction
             to.type = Transaction::Type::kLegacy;
             uint64_t leftover{from.length() - h.payload_length};
-            if (DecodingResult err{legacy_decode(from, to)}; err != DecodingResult::kOk) {
-                return err;
+            if (res = legacy_decode(from, to); error(res)) {
+                return res;
             }
             return from.length() == leftover ? DecodingResult::kOk : DecodingResult::kListLengthMismatch;
         }
@@ -376,8 +376,8 @@ namespace rlp {
 
         ByteView eip2718_view{from.substr(0, h.payload_length - 1)};
 
-        if (DecodingResult err{eip2718_decode(eip2718_view, to)}; err != DecodingResult::kOk) {
-            return err;
+        if (res = eip2718_decode(eip2718_view, to); error(res)) {
+            return res;
         }
 
         if (!eip2718_view.empty()) {

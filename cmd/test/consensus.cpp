@@ -83,122 +83,94 @@ static const std::map<std::string, ChainConfig> kNetworkConfig{
      {
          .chain_id = 1,
          .seal_engine = SealEngineType::kNoProof,
-         .evmc_fork_blocks =
-             {
-                 0,  // Homestead
-             },
+         .homestead_block = 0,
      }},
     {"EIP150",
      {
          .chain_id = 1,
          .seal_engine = SealEngineType::kNoProof,
-         .evmc_fork_blocks =
-             {
-                 0,  // Homestead
-                 0,  // Tangerine Whistle
-             },
+         .homestead_block = 0,
+         .tangerine_whistle_block = 0,
      }},
     {"EIP158",
      {
          .chain_id = 1,
          .seal_engine = SealEngineType::kNoProof,
-         .evmc_fork_blocks =
-             {
-                 0,  // Homestead
-                 0,  // Tangerine Whistle
-                 0,  // Spurious Dragon
-             },
+         .homestead_block = 0,
+         .tangerine_whistle_block = 0,
+         .spurious_dragon_block = 0,
      }},
     {"Byzantium",
      {
          .chain_id = 1,
          .seal_engine = SealEngineType::kNoProof,
-         .evmc_fork_blocks =
-             {
-                 0,  // Homestead
-                 0,  // Tangerine Whistle
-                 0,  // Spurious Dragon
-                 0,  // Byzantium
-             },
+         .homestead_block = 0,
+         .tangerine_whistle_block = 0,
+         .spurious_dragon_block = 0,
+         .byzantium_block = 0,
      }},
     {"Constantinople",
      {
          .chain_id = 1,
          .seal_engine = SealEngineType::kNoProof,
-         .evmc_fork_blocks =
-             {
-                 0,  // Homestead
-                 0,  // Tangerine Whistle
-                 0,  // Spurious Dragon
-                 0,  // Byzantium
-                 0,  // Constantinople
-             },
+         .homestead_block = 0,
+         .tangerine_whistle_block = 0,
+         .spurious_dragon_block = 0,
+         .byzantium_block = 0,
+         .constantinople_block = 0,
      }},
     {"ConstantinopleFix",
      {
          .chain_id = 1,
          .seal_engine = SealEngineType::kNoProof,
-         .evmc_fork_blocks =
-             {
-                 0,  // Homestead
-                 0,  // Tangerine Whistle
-                 0,  // Spurious Dragon
-                 0,  // Byzantium
-                 0,  // Constantinople
-                 0,  // Petersburg
-             },
+         .homestead_block = 0,
+         .tangerine_whistle_block = 0,
+         .spurious_dragon_block = 0,
+         .byzantium_block = 0,
+         .constantinople_block = 0,
+         .petersburg_block = 0,
      }},
     {"Istanbul",
      {
          .chain_id = 1,
          .seal_engine = SealEngineType::kNoProof,
-         .evmc_fork_blocks =
-             {
-                 0,  // Homestead
-                 0,  // Tangerine Whistle
-                 0,  // Spurious Dragon
-                 0,  // Byzantium
-                 0,  // Constantinople
-                 0,  // Petersburg
-                 0,  // Istanbul
-             },
+         .homestead_block = 0,
+         .tangerine_whistle_block = 0,
+         .spurious_dragon_block = 0,
+         .byzantium_block = 0,
+         .constantinople_block = 0,
+         .petersburg_block = 0,
+         .istanbul_block = 0,
      }},
     {"Berlin",
      {
          .chain_id = 1,
          .seal_engine = SealEngineType::kNoProof,
-         .evmc_fork_blocks =
-             {
-                 0,  // Homestead
-                 0,  // Tangerine Whistle
-                 0,  // Spurious Dragon
-                 0,  // Byzantium
-                 0,  // Constantinople
-                 0,  // Petersburg
-                 0,  // Istanbul
-                 0,  // Berlin
-             },
+         .homestead_block = 0,
+         .tangerine_whistle_block = 0,
+         .spurious_dragon_block = 0,
+         .byzantium_block = 0,
+         .constantinople_block = 0,
+         .petersburg_block = 0,
+         .istanbul_block = 0,
          .muir_glacier_block = 0,
+         .berlin_block = 0,
      }},
     {"London", test::kLondonConfig},
     {"Merge",
      {
          .chain_id = 1,
          .seal_engine = SealEngineType::kNoProof,
-         .evmc_fork_blocks =
-             {
-                 0,  // Homestead
-                 0,  // Tangerine Whistle
-                 0,  // Spurious Dragon
-                 0,  // Byzantium
-                 0,  // Constantinople
-                 0,  // Petersburg
-                 0,  // Istanbul
-                 0,  // Berlin
-                 0,  // London
-                 0,  // Merge Netsplit (FORK_NEXT_VALUE)
-             },
+         .homestead_block = 0,
+         .tangerine_whistle_block = 0,
+         .spurious_dragon_block = 0,
+         .byzantium_block = 0,
+         .constantinople_block = 0,
+         .petersburg_block = 0,
+         .istanbul_block = 0,
          .muir_glacier_block = 0,
+         .berlin_block = 0,
+         .london_block = 0,
          .arrow_glacier_block = 0,
          .gray_glacier_block = 0,
          .terminal_total_difficulty = 0,
@@ -208,19 +180,16 @@ static const std::map<std::string, ChainConfig> kNetworkConfig{
      {
          .chain_id = 1,
          .seal_engine = SealEngineType::kNoProof,
-         .evmc_fork_blocks =
-             {
-                 0,  // Homestead
-                 0,  // Tangerine Whistle
-                 0,  // Spurious Dragon
-                 0,  // Byzantium
-                 0,  // Constantinople
-                 0,  // Petersburg
-                 0,  // Istanbul
-                 0,  // Berlin
-                 0,  // London
-             },
+         .homestead_block = 0,
+         .tangerine_whistle_block = 0,
+         .spurious_dragon_block = 0,
+         .byzantium_block = 0,
+         .constantinople_block = 0,
+         .petersburg_block = 0,
+         .istanbul_block = 0,
          .muir_glacier_block = 0,
+         .berlin_block = 0,
+         .london_block = 0,
          .arrow_glacier_block = 0,
          .terminal_total_difficulty = 0xC0000,
      }},
@@ -228,126 +197,100 @@ static const std::map<std::string, ChainConfig> kNetworkConfig{
      {
          .chain_id = 1,
          .seal_engine = SealEngineType::kNoProof,
-         .evmc_fork_blocks =
-             {
-                 5,  // Homestead
-             },
+         .homestead_block = 5,
      }},
     {"HomesteadToEIP150At5",
      {
          .chain_id = 1,
          .seal_engine = SealEngineType::kNoProof,
-         .evmc_fork_blocks =
-             {
-                 0,  // Homestead
-                 5,  // Tangerine Whistle
-             },
+         .homestead_block = 0,
+         .tangerine_whistle_block = 5,
      }},
     {"HomesteadToDaoAt5",
      {
          .chain_id = 1,
          .seal_engine = SealEngineType::kNoProof,
-         .evmc_fork_blocks =
-             {
-                 0,  // Homestead
-             },
+         .homestead_block = 0,
          .dao_block = 5,
      }},
     {"EIP158ToByzantiumAt5",
      {
          .chain_id = 1,
          .seal_engine = SealEngineType::kNoProof,
-         .evmc_fork_blocks =
-             {
-                 0,  // Homestead
-                 0,  // Tangerine Whistle
-                 0,  // Spurious Dragon
-                 5,  // Byzantium
-             },
+         .homestead_block = 0,
+         .tangerine_whistle_block = 0,
+         .spurious_dragon_block = 0,
+         .byzantium_block = 5,
      }},
     {"ByzantiumToConstantinopleFixAt5",
      {
          .chain_id = 1,
          .seal_engine = SealEngineType::kNoProof,
-         .evmc_fork_blocks =
-             {
-                 0,  // Homestead
-                 0,  // Tangerine Whistle
-                 0,  // Spurious Dragon
-                 0,  // Byzantium
-                 5,  // Constantinople
-                 5,  // Petersburg
-             },
+         .homestead_block = 0,
+         .tangerine_whistle_block = 0,
+         .spurious_dragon_block = 0,
+         .byzantium_block = 0,
+         .constantinople_block = 5,
+         .petersburg_block = 5,
      }},
     {"BerlinToLondonAt5",
      {
          .chain_id = 1,
          .seal_engine = SealEngineType::kNoProof,
-         .evmc_fork_blocks =
-             {
-                 0,  // Homestead
-                 0,  // Tangerine Whistle
-                 0,  // Spurious Dragon
-                 0,  // Byzantium
-                 0,  // Constantinople
-                 0,  // Petersburg
-                 0,  // Istanbul
-                 0,  // Berlin
-                 5,  // London
-             },
+         .homestead_block = 0,
+         .tangerine_whistle_block = 0,
+         .spurious_dragon_block = 0,
+         .byzantium_block = 0,
+         .constantinople_block = 0,
+         .petersburg_block = 0,
+         .istanbul_block = 0,
+         .muir_glacier_block = 0,
+         .berlin_block = 0,
+         .london_block = 5,
      }},
     {"EIP2384",
      {
          .chain_id = 1,
          .seal_engine = SealEngineType::kNoProof,
-         .evmc_fork_blocks =
-             {
-                 0,  // Homestead
-                 0,  // Tangerine Whistle
-                 0,  // Spurious Dragon
-                 0,  // Byzantium
-                 0,  // Constantinople
-                 0,  // Petersburg
-                 0,  // Istanbul
-             },
+         .homestead_block = 0,
+         .tangerine_whistle_block = 0,
+         .spurious_dragon_block = 0,
+         .byzantium_block = 0,
+         .constantinople_block = 0,
+         .petersburg_block = 0,
+         .istanbul_block = 0,
          .muir_glacier_block = 0,
      }},
     {"ArrowGlacier",
      {
          .chain_id = 1,
          .seal_engine = SealEngineType::kNoProof,
-         .evmc_fork_blocks =
-             {
-                 0,  // Homestead
-                 0,  // Tangerine Whistle
-                 0,  // Spurious Dragon
-                 0,  // Byzantium
-                 0,  // Constantinople
-                 0,  // Petersburg
-                 0,  // Istanbul
-                 0,  // Berlin
-                 0,  // London
-             },
+         .homestead_block = 0,
+         .tangerine_whistle_block = 0,
+         .spurious_dragon_block = 0,
+         .byzantium_block = 0,
+         .constantinople_block = 0,
+         .petersburg_block = 0,
+         .istanbul_block = 0,
          .muir_glacier_block = 0,
+         .berlin_block = 0,
+         .london_block = 0,
          .arrow_glacier_block = 0,
      }},
     {"GrayGlacier",
      {
          .chain_id = 1,
          .seal_engine = SealEngineType::kNoProof,
-         .evmc_fork_blocks =
-             {
-                 0,  // Homestead
-                 0,  // Tangerine Whistle
-                 0,  // Spurious Dragon
-                 0,  // Byzantium
-                 0,  // Constantinople
-                 0,  // Petersburg
-                 0,  // Istanbul
-                 0,  // Berlin
-                 0,  // London
-             },
+         .homestead_block = 0,
+         .tangerine_whistle_block = 0,
+         .spurious_dragon_block = 0,
+         .byzantium_block = 0,
+         .constantinople_block = 0,
+         .petersburg_block = 0,
+         .istanbul_block = 0,
          .muir_glacier_block = 0,
+         .berlin_block = 0,
+         .london_block = 0,
          .arrow_glacier_block = 0,
          .gray_glacier_block = 0,
      }},
@@ -655,6 +598,7 @@ RunResults transaction_test(const nlohmann::json& j) {
         }
 
         const ChainConfig& config{kNetworkConfig.at(entry.key())};
+        const evmc_revision rev{config.revision(/*block_number=*/0, /*block_time=*/0)};
 
         /* pre_validate_transaction checks for invalid signature only if from is empty, which means sender recovery
          * phase (which btw also verifies signature) was not triggered yet. In the context of tests, instead, from is
@@ -665,7 +609,7 @@ RunResults transaction_test(const nlohmann::json& j) {
         txn.from.reset();
 
         if (ValidationResult err{
-                pre_validate_transaction(txn, /*block_number=*/0, config, /*base_fee_per_gas=*/std::nullopt)};
+                pre_validate_transaction(txn, rev, config.chain_id, /*base_fee_per_gas=*/std::nullopt)};
             err != ValidationResult::kOk) {
             if (should_be_valid) {
                 std::cout << "Validation error " << magic_enum::enum_name<ValidationResult>(err) << std::endl;
@@ -711,7 +655,6 @@ RunResults transaction_test(const nlohmann::json& j) {
         }
 
         const auto expected_intrinsic_gas{intx::from_string<intx::uint256>(test["intrinsicGas"].get<std::string>())};
-        const evmc_revision rev{config.revision(/*block_number=*/0)};
         const auto calculated_intrinsic_gas{intrinsic_gas(txn, rev)};
         if (calculated_intrinsic_gas != expected_intrinsic_gas) {
             std::cout << "Intrinsic gas mismatch for " << entry.key() << ":\n"

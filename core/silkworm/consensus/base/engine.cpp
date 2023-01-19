@@ -33,8 +33,9 @@ ValidationResult EngineBase::pre_validate_block_body(const Block& block, const B
         return ValidationResult::kWrongTransactionsRoot;
     }
 
+    const evmc_revision rev{chain_config_.revision(header.number, header.timestamp)};
     for (const Transaction& txn : block.transactions) {
-        if (ValidationResult err{pre_validate_transaction(txn, header.number, chain_config_, header.base_fee_per_gas)};
+        if (ValidationResult err{pre_validate_transaction(txn, rev, chain_config_.chain_id, header.base_fee_per_gas)};
             err != ValidationResult::kOk) {
             return err;
         }
@@ -51,7 +52,6 @@ ValidationResult EngineBase::pre_validate_block_body(const Block& block, const B
         return ValidationResult::kWrongOmmersHash;
     }
 
-    const evmc_revision rev{chain_config_.revision(header.number)};
     if (rev < EVMC_SHANGHAI && block.withdrawals) {
         return ValidationResult::kUnexpectedWithdrawals;
     }
@@ -136,7 +136,7 @@ ValidationResult EngineBase::validate_block_header(const BlockHeader& header, co
     }
 
     uint64_t parent_gas_limit{parent->gas_limit};
-    if (header.number == chain_config_.revision_block(EVMC_LONDON)) {
+    if (header.number == chain_config_.london_block) {
         parent_gas_limit = parent->gas_limit * param::kElasticityMultiplier;  // EIP-1559
     }
 
@@ -163,7 +163,7 @@ ValidationResult EngineBase::validate_block_header(const BlockHeader& header, co
         return ValidationResult::kWrongBaseFee;
     }
 
-    const evmc_revision rev{chain_config_.revision(header.number)};
+    const evmc_revision rev{chain_config_.revision(header.number, header.timestamp)};
     if (rev < EVMC_SHANGHAI && header.withdrawals_root) {
         return ValidationResult::kUnexpectedWithdrawals;
     }
@@ -212,11 +212,11 @@ evmc::address EngineBase::get_beneficiary(const BlockHeader& header) { return he
 
 std::optional<intx::uint256> EngineBase::expected_base_fee_per_gas(const BlockHeader& header,
                                                                    const BlockHeader& parent) {
-    if (chain_config_.revision(header.number) < EVMC_LONDON) {
+    if (chain_config_.revision(header.number, header.timestamp) < EVMC_LONDON) {
         return std::nullopt;
     }
 
-    if (header.number == chain_config_.revision_block(EVMC_LONDON)) {
+    if (header.number == chain_config_.london_block) {
         return param::kInitialBaseFee;
     }
 

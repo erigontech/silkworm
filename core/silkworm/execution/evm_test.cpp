@@ -337,11 +337,11 @@ TEST_CASE("Contract overwrite") {
 }
 
 TEST_CASE("EIP-3541: Reject new contracts starting with the 0xEF byte") {
-    ChainConfig config{kMainnetConfig};
-    config.set_revision_block(EVMC_LONDON, 13'000'000);
+    const ChainConfig& config{kMainnetConfig};
 
     Block block;
     block.header.number = 13'500'000;
+    REQUIRE(config.revision(block.header.number, block.header.timestamp) == EVMC_LONDON);
 
     InMemoryState db;
     IntraBlockState state{db};

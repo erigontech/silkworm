@@ -20,7 +20,7 @@
 
 #include <silkworm/rlp/decode.hpp>
 
-namespace silkworm::rlp {
+namespace silkworm {
 
 class DecodingError : public std::exception {
   public:
@@ -42,4 +42,4 @@ inline void success_or_throw(DecodingResult res) {
     }
 }
 
-}  // namespace silkworm::rlp
+}  // namespace silkworm

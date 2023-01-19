@@ -18,7 +18,7 @@
 
 #include <vector>
 
-#include <silkworm/common/rlp_err.hpp>
+#include <silkworm/common/decoding_err.hpp>
 #include <silkworm/rlp/decode.hpp>
 #include <silkworm/rlp/encode_vector.hpp>
 
@@ -36,7 +36,7 @@ Bytes DisconnectMessage::rlp_encode() const {
 
 DisconnectMessage DisconnectMessage::rlp_decode(ByteView data) {
     std::vector<uint8_t> reason;
-    rlp::success_or_throw(rlp::decode(data, reason));
+    success_or_throw(rlp::decode(data, reason));
     DisconnectMessage message;
     if (!reason.empty()) {
         message.reason = reason.front();

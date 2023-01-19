@@ -1570,11 +1570,11 @@ void do_reset_to_download(db::EnvConfig& config, bool keep_senders) {
             if (unique_addresses_it != unique_addresses.end()) {
                 value_view.remove_prefix(kAddressLength);
                 if (value_view.empty()) {
-                    (void)unique_addresses.emplace(address, std::nullopt);
+                    unique_addresses.emplace(address, std::nullopt);
                 } else {
                     auto [account, err]{Account::from_encoded_storage(value_view)};
-                    rlp::success_or_throw(err);
-                    (void)unique_addresses.emplace(address, account);
+                    success_or_throw(err);
+                    unique_addresses.emplace(address, account);
                 }
             }
             data = account_changeset.to_next(/*throw_notfound=*/false);

@@ -20,7 +20,7 @@
 
 #include <string>
 
-#include <silkworm/common/rlp_err.hpp>
+#include <silkworm/common/decoding_err.hpp>
 #include <silkworm/rlp/decode.hpp>
 #include <silkworm/rlp/encode.hpp>
 
@@ -90,7 +90,7 @@ Message MessageFrameCodec::decode(ByteView frame_data) const {
 
     uint8_t id;
     auto id_data = ByteView{frame_data.substr(0, 1)};
-    rlp::success_or_throw(rlp::decode(id_data, id));
+    success_or_throw(rlp::decode(id_data, id));
     Bytes data;
     if (!is_compression_enabled_) {
         data = Bytes{frame_data.substr(1)};

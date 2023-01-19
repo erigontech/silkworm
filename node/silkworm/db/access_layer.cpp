@@ -83,7 +83,7 @@ std::optional<BlockHeader> read_header(mdbx::txn& txn, ByteView key) {
     }
     BlockHeader header;
     ByteView encoded_header{raw_header.data(), raw_header.length()};
-    rlp::success_or_throw(rlp::decode(encoded_header, header));
+    success_or_throw(rlp::decode(encoded_header, header));
     return header;
 }
 
@@ -174,7 +174,7 @@ std::optional<intx::uint256> read_total_difficulty(mdbx::txn& txn, ByteView key)
     }
     intx::uint256 td{0};
     ByteView data_view{from_slice(data.value)};
-    rlp::success_or_throw(rlp::decode(data_view, td));
+    success_or_throw(rlp::decode(data_view, td));
     return td;
 }
 
@@ -259,7 +259,7 @@ void read_transactions(mdbx::cursor& txn_table, uint64_t base_id, uint64_t count
     for (auto data{txn_table.find(to_slice(key), false)}; data.done && i < count;
          data = txn_table.to_next(/*throw_notfound = */ false), ++i) {
         ByteView data_view{from_slice(data.value)};
-        rlp::success_or_throw(rlp::decode(data_view, v.at(i)));
+        success_or_throw(rlp::decode(data_view, v.at(i)));
     }
     SILKWORM_ASSERT(i == count);
 }
@@ -285,7 +285,7 @@ bool read_block(mdbx::txn& txn, std::span<const uint8_t, kHashLength> hash, Bloc
         return false;
     }
     ByteView raw_header_view(raw_header);
-    rlp::success_or_throw(rlp::decode(raw_header_view, block.header));
+    success_or_throw(rlp::decode(raw_header_view, block.header));
 
     return read_body(txn, key, read_senders, block);
 }
@@ -471,7 +471,7 @@ std::optional<Account> read_account(mdbx::txn& txn, const evmc::address& address
     }
 
     auto [acc, err]{Account::from_encoded_storage(encoded.value())};
-    rlp::success_or_throw(err);
+    success_or_throw(err);
 
     if (acc.incarnation > 0 && acc.code_hash == kEmptyHash) {
         // restore code hash

@@ -16,7 +16,7 @@
 
 #include "trie_loader.hpp"
 
-#include <silkworm/common/rlp_err.hpp>
+#include <silkworm/common/decoding_err.hpp>
 #include <silkworm/concurrency/signal_handler.hpp>
 #include <silkworm/db/tables.hpp>
 #include <silkworm/trie/nibbles.hpp>
@@ -104,8 +104,8 @@ evmc::bytes32 TrieLoader::calculate_root() {
                 }
 
                 // Retrieve account data
-                const auto [account, err]{Account::from_encoded_storage(db::from_slice(hashed_account_data.value))};
-                rlp::success_or_throw(err);
+                const auto [account, res]{Account::from_encoded_storage(db::from_slice(hashed_account_data.value))};
+                success_or_throw(res);
 
                 evmc::bytes32 storage_root{kEmptyRoot};
                 if (account.incarnation) {

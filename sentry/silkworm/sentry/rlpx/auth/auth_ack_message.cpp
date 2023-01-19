@@ -16,7 +16,7 @@
 
 #include "auth_ack_message.hpp"
 
-#include <silkworm/common/rlp_err.hpp>
+#include <silkworm/common/decoding_err.hpp>
 #include <silkworm/rlp/decode.hpp>
 #include <silkworm/rlp/encode_vector.hpp>
 #include <silkworm/sentry/common/random.hpp>
@@ -51,7 +51,7 @@ Bytes AuthAckMessage::body_as_rlp() const {
 
 void AuthAckMessage::init_from_rlp(ByteView data) {
     Bytes public_key_data;
-    rlp::success_or_throw(rlp::decode(data, public_key_data, nonce_));
+    success_or_throw(rlp::decode(data, public_key_data, nonce_));
     ephemeral_public_key_ = common::EccPublicKey::deserialize(public_key_data);
 }
 

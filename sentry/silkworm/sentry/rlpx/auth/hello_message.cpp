@@ -19,7 +19,7 @@
 #include <sstream>
 
 #include <silkworm/common/as_range.hpp>
-#include <silkworm/common/rlp_err.hpp>
+#include <silkworm/common/decoding_err.hpp>
 #include <silkworm/rlp/decode.hpp>
 #include <silkworm/rlp/encode_vector.hpp>
 
@@ -73,7 +73,7 @@ Bytes HelloMessage::rlp_encode() const {
 
 HelloMessage HelloMessage::rlp_decode(ByteView data) {
     HelloMessage message;
-    rlp::success_or_throw(rlp::decode(
+    success_or_throw(rlp::decode(
         data,
         message.protocol_version_,
         message.client_id_bytes_,

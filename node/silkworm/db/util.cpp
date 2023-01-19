@@ -19,8 +19,8 @@
 #include <cstring>
 
 #include <silkworm/common/assert.hpp>
+#include <silkworm/common/decoding_err.hpp>
 #include <silkworm/common/endian.hpp>
-#include <silkworm/common/rlp_err.hpp>
 #include <silkworm/rlp/encode_vector.hpp>
 
 namespace silkworm::db {
@@ -171,7 +171,7 @@ namespace detail {
 
     BlockBodyForStorage decode_stored_block_body(ByteView& from) {
         BlockBodyForStorage to;
-        rlp::success_or_throw(decode_stored_block_body(from, to));
+        success_or_throw(decode_stored_block_body(from, to));
         return to;
     }
 

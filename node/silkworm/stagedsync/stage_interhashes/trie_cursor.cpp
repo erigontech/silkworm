@@ -19,7 +19,7 @@
 #include <bit>
 
 #include <silkworm/common/log.hpp>
-#include <silkworm/common/rlp_err.hpp>
+#include <silkworm/common/decoding_err.hpp>
 #include <silkworm/trie/nibbles.hpp>
 
 namespace silkworm::trie {
@@ -63,7 +63,7 @@ void SubNode::parse(ByteView k, ByteView v) {
     key = k;
     value = v;
 
-    rlp::success_or_throw(Node::decode_from_storage(v, *this));
+    success_or_throw(Node::decode_from_storage(v, *this));
 
     child_id = static_cast<int8_t>(std::countr_zero(state_mask_)) - 1;
     max_child_id = static_cast<int8_t>(std::bit_width(state_mask_));

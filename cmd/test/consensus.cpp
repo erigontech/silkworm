@@ -32,7 +32,7 @@
 #include <silkworm/common/as_range.hpp>
 #include <silkworm/common/cast.hpp>
 #include <silkworm/common/endian.hpp>
-#include <silkworm/common/rlp_err.hpp>
+#include <silkworm/common/decoding_err.hpp>
 #include <silkworm/common/stopwatch.hpp>
 #include <silkworm/common/terminal.hpp>
 #include <silkworm/common/test_util.hpp>
@@ -465,7 +465,7 @@ RunResults blockchain_test(const nlohmann::json& json_test) {
     Bytes genesis_rlp{from_hex(json_test["genesisRLP"].get<std::string>()).value()};
     ByteView genesis_view{genesis_rlp};
     Block genesis_block;
-    rlp::success_or_throw(rlp::decode(genesis_view, genesis_block));
+    success_or_throw(rlp::decode(genesis_view, genesis_block));
 
     std::string network{json_test["network"].get<std::string>()};
     const auto config_it{kNetworkConfig.find(network)};

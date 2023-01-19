@@ -792,8 +792,8 @@ Stage::Result HashState::write_changes_from_changed_addresses(db::RWTxn& txn, co
             target_hashed_accounts.upsert(db::to_slice(address_hash.bytes), db::to_slice(current_encoded_value));
 
             // Lookup value in PlainCodeHash for Contract
-            auto [incarnation, err]{Account::incarnation_from_encoded_storage(current_encoded_value)};
-            rlp::success_or_throw(err);
+            auto [incarnation, res]{Account::incarnation_from_encoded_storage(current_encoded_value)};
+            success_or_throw(res);
             if (incarnation) {
                 std::memcpy(&plain_code_key[0], address.bytes, kAddressLength);
                 std::memcpy(&hashed_code_key[0], address_hash.bytes, kHashLength);

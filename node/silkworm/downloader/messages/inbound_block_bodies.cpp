@@ -29,7 +29,7 @@ InboundBlockBodies::InboundBlockBodies(const sentry::InboundMessage& msg) {
     peerId_ = bytes_from_H512(msg.peer_id());
 
     ByteView data = string_view_to_byte_view(msg.data());  // copy for consumption
-    rlp::success_or_throw(rlp::decode(data, packet_));
+    success_or_throw(rlp::decode(data, packet_));
 
     SILK_TRACE << "Received message " << *this;
 }

@@ -20,8 +20,8 @@
 
 #include <optional>
 
+#include <silkworm/common/decoding_err.hpp>
 #include <silkworm/common/endian.hpp>
-#include <silkworm/common/rlp_err.hpp>
 #include <silkworm/rlp/decode.hpp>
 #include <silkworm/rlp/encode_vector.hpp>
 
@@ -81,7 +81,7 @@ Bytes ForkId::rlp_encode() const {
 
 ForkId ForkId::rlp_decode(ByteView data) {
     ForkId value;
-    rlp::success_or_throw(decode(data, value));
+    success_or_throw(decode(data, value));
     return value;
 }
 

@@ -18,8 +18,8 @@
 
 #include <bit>
 
-#include <silkworm/common/log.hpp>
 #include <silkworm/common/decoding_err.hpp>
+#include <silkworm/common/log.hpp>
 #include <silkworm/trie/nibbles.hpp>
 
 namespace silkworm::trie {

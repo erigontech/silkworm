@@ -14,8 +14,11 @@
    limitations under the License.
 */
 
-#include "sentinel_client.hpp"
+#include "remote_client.hpp"
 
+#include <silkworm/common/log.hpp>
+#include <silkworm/rpc/common/conversion.hpp>
+#include <silkworm/rpc/client/call.hpp>
 #include <silkworm/sentry/common/timeout.hpp>
 #include <silkworm/lightclient/sentinel/topic.hpp>
 
@@ -26,21 +29,27 @@ using namespace boost::asio;
 
 using LightClientBootstrapPtr = std::shared_ptr<eth::LightClientBootstrap>;
 
-LocalClient::LocalClient(Server* local_server) : local_server_(local_server) {}
+RemoteClient::RemoteClient(agrpc::GrpcContext& grpc_context, const std::shared_ptr<grpc::Channel>& channel)
+    : grpc_context_(grpc_context), stub_(::sentinel::Sentinel::NewStub(channel)) {}
 
-awaitable<void> LocalClient::start() {
+awaitable<void> RemoteClient::start() {
     sentry::common::Timeout timeout{1'000'000s};
     co_await timeout();
 }
 
-awaitable<LightClientBootstrapPtr> LocalClient::bootstrap_request_v1(const eth::Root& root) {
+awaitable<LightClientBootstrapPtr> RemoteClient::bootstrap_request_v1(const eth::Root& root) {
     const auto serialized_root = root.serialize();
-    RequestData request{
-        {serialized_root.cbegin(), serialized_root.cend()},
-        kLightClientBootstrapV1
-    };
-    const ResponseData response = co_await local_server_->send_request(request);
-    const std::vector<uint8_t> data{response.data.cbegin(), response.data.cend()};
+    ::sentinel::RequestData request;
+    request.set_data(serialized_root.data(), serialized_root.size());
+    request.set_topic(kLightClientBootstrapV1);
+    ::sentinel::ResponseData response;
+    const auto status = co_await rpc::unary_rpc(
+        &::sentinel::Sentinel::Stub::AsyncSendRequest,stub_, request, response, grpc_context_);
+    if (!status.ok()) {
+        log::Warning() << "Bootstrap request V1 error: " << status.error_message();
+        co_return LightClientBootstrapPtr{};
+    }
+    const std::vector<uint8_t> data{response.data().cbegin(), response.data().cend()};
 
     auto bootstrap = std::make_shared<eth::LightClientBootstrap>();
     const bool ok = bootstrap->deserialize(data.cbegin(), data.cend());

@@ -20,36 +20,26 @@
 
 #include <silkworm/concurrency/coroutine.hpp>
 
+#include <agrpc/asio_grpc.hpp>
 #include <boost/asio/awaitable.hpp>
+#include <grpcpp/grpcpp.h>
+#include <p2psentinel/sentinel.grpc.pb.h>
 
-#include <silkworm/lightclient/sentinel/sentinel_server.hpp>
-#include <silkworm/lightclient/types/types.hpp>
-#include <silkworm/lightclient/ssz/common/bytes.hpp>
-#include <silkworm/lightclient/ssz/beacon-chain/light_client_bootstrap.hpp>
+#include <silkworm/lightclient/sentinel/sentinel_client.hpp>
 
 namespace silkworm::cl::sentinel {
 
-using boost::asio::awaitable;
-
-class Client {
+class RemoteClient : public Client {
   public:
-    virtual ~Client() = default;
+    RemoteClient(agrpc::GrpcContext& grpc_context, const std::shared_ptr<grpc::Channel>& channel);
 
-    virtual awaitable<void> start() = 0;
+    boost::asio::awaitable<void> start() override;
 
-    virtual awaitable<std::shared_ptr<eth::LightClientBootstrap>> bootstrap_request_v1(const eth::Root& root) = 0;
-};
-
-class LocalClient : public Client {
-  public:
-    explicit LocalClient(Server* local_server);
-
-    awaitable<void> start() override;
-
-    awaitable<std::shared_ptr<eth::LightClientBootstrap>> bootstrap_request_v1(const eth::Root& root) override;
+    boost::asio::awaitable<std::shared_ptr<eth::LightClientBootstrap>> bootstrap_request_v1(const eth::Root& root) override;
 
   private:
-    Server* local_server_;
+    agrpc::GrpcContext& grpc_context_;
+    std::unique_ptr<::sentinel::Sentinel::Stub> stub_;
 };
 
 }  // namespace silkworm::cl::sentinel

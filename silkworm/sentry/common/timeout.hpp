@@ -27,7 +27,8 @@ namespace silkworm::sentry::common {
 
 class Timeout {
   public:
-    explicit Timeout(std::chrono::milliseconds duration) : duration_(duration) {}
+    explicit Timeout(std::chrono::milliseconds duration, bool no_throw = false)
+        : duration_(duration), no_throw_(no_throw) {}
 
     Timeout(const Timeout&) = delete;
     Timeout& operator=(const Timeout&) = delete;
@@ -47,6 +48,7 @@ class Timeout {
 
   private:
     std::chrono::milliseconds duration_;
+    bool no_throw_;
 };
 
 }  // namespace silkworm::sentry::common

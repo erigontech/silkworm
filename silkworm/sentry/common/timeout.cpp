@@ -39,7 +39,7 @@ boost::asio::awaitable<void> Timeout::schedule() const {
         throw;
     }
 
-    throw ExpiredError();
+    if (!no_throw_) throw ExpiredError();
 }
 
 }  // namespace silkworm::sentry::common

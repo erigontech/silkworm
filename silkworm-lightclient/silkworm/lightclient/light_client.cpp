@@ -34,13 +34,16 @@
 #include <silkworm/lightclient/params/config.hpp>
 #include <silkworm/lightclient/sentinel/sentinel_client.hpp>
 #include <silkworm/lightclient/sentinel/sentinel_server.hpp>
+#include <silkworm/lightclient/sentinel/remote_client.hpp>
 #include <silkworm/lightclient/ssz/beacon-chain/beacon_state.hpp>
 #include <silkworm/lightclient/state/checkpoint.hpp>
 #include <silkworm/lightclient/state/storage.hpp>
+#include <silkworm/sentry/common/timeout.hpp>
 
 namespace silkworm::cl {
 
 using namespace boost::asio;
+using namespace std::chrono_literals;
 
 class LightClientImpl final {
   public:
@@ -108,10 +111,17 @@ class DummyServerCompletionQueue : public grpc::ServerCompletionQueue {
 LightClientImpl::LightClientImpl(Settings&& settings)
     : settings_(std::move(settings)),
       sentinel_server_{std::make_unique<sentinel::Server>()},
-      sentinel_client_{std::make_unique<sentinel::LocalClient>(sentinel_server_.get())},
       context_pool_{settings_.num_contexts} {
     for (std::size_t i{0}; i < settings_.num_contexts; ++i) {
         context_pool_.add_context(std::make_unique<DummyServerCompletionQueue>(), settings_.wait_mode);
+    }
+
+    const auto& sentinel_address = settings_.sentinel_address;
+    if (sentinel_address.empty()) {
+        sentinel_client_ = std::make_unique<sentinel::LocalClient>(sentinel_server_.get());
+    } else {
+        auto channel = grpc::CreateChannel(sentinel_address, grpc::InsecureChannelCredentials());
+        sentinel_client_ = std::make_unique<sentinel::RemoteClient>(*context_pool_.next_context().client_grpc_context(), channel);
     }
 }
 
@@ -173,11 +183,14 @@ awaitable<void> LightClientImpl::run_tasks() {
 awaitable<bool> LightClientImpl::bootstrap_checkpoint(const eth::Root& finalized_root) {
     log::Info() << "[Checkpoint Sync] Retrieving boostrap from sentinel [root: " << to_hex({finalized_root.to_array()}) << "]";
 
+    constexpr auto kRetryInterval{5s};
+    sentry::common::Timeout timeout{kRetryInterval, /*no_throw*/true};
     std::shared_ptr<eth::LightClientBootstrap> bootstrap;
     do {
         bootstrap = co_await sentinel_client_->bootstrap_request_v1(finalized_root);
-        log::Info() << "[Checkpoint Sync] Boostrap retrieval from sentinel [result: " << bool(bootstrap) << "]";
+        if (!bootstrap) co_await timeout();
     } while (!bootstrap);
+    log::Info() << "[Checkpoint Sync] Boostrap retrieved [header_root: " << to_hex(bootstrap->header().hash_tree_root()) << "]";
 
     storage_ = std::make_unique<Storage>(finalized_root, *bootstrap);
     log::Info() << "[LightClient] Store initialized successfully [slot: " << storage_->finalized_header().slot

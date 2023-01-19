@@ -31,8 +31,8 @@
 #include <silkworm/chain/intrinsic_gas.hpp>
 #include <silkworm/common/as_range.hpp>
 #include <silkworm/common/cast.hpp>
-#include <silkworm/common/endian.hpp>
 #include <silkworm/common/decoding_err.hpp>
+#include <silkworm/common/endian.hpp>
 #include <silkworm/common/stopwatch.hpp>
 #include <silkworm/common/terminal.hpp>
 #include <silkworm/common/test_util.hpp>

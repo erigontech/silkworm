@@ -33,8 +33,8 @@
 #include <silkworm/concurrency/thread_pool.hpp>
 #include <silkworm/lightclient/snappy/snappy_codec.hpp>
 #include <silkworm/lightclient/ssz/beacon-chain/attestation.hpp>
-#include <silkworm/lightclient/ssz/beacon-chain/beacon_block_header.hpp>
 #include <silkworm/lightclient/ssz/beacon-chain/beacon_block.hpp>
+#include <silkworm/lightclient/ssz/beacon-chain/beacon_block_header.hpp>
 #include <silkworm/lightclient/ssz/beacon-chain/deposits.hpp>
 #include <silkworm/lightclient/ssz/beacon-chain/eth1data.hpp>
 #include <silkworm/lightclient/ssz/beacon-chain/execution_payload.hpp>

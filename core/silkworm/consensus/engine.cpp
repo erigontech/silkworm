@@ -22,6 +22,7 @@
 
 #include <silkworm/chain/intrinsic_gas.hpp>
 #include <silkworm/chain/protocol_param.hpp>
+#include <silkworm/consensus/clique/engine.hpp>
 #include <silkworm/consensus/ethash/engine.hpp>
 #include <silkworm/consensus/merge/engine.hpp>
 #include <silkworm/consensus/noproof/engine.hpp>
@@ -93,6 +94,8 @@ static std::unique_ptr<IEngine> pre_merge_engine(const ChainConfig& chain_config
             return std::make_unique<EthashEngine>(chain_config);
         case SealEngineType::kNoProof:
             return std::make_unique<NoProofEngine>(chain_config);
+        case SealEngineType::kClique:
+            return std::make_unique<CliqueEngine>(chain_config);
         default:
             return nullptr;
     }

@@ -68,7 +68,7 @@ class IEngine {
 //! \return Any of kIntrinsicGas, kInvalidSignature, kWrongChainId, kUnsupportedTransactionType, or kOk.
 //! \remarks Should sender of transaction not yet recovered a check on signature's validity is performed
 //! \remarks These function is agnostic to whole block validity
-ValidationResult pre_validate_transaction(const Transaction& txn, uint64_t block_number, const ChainConfig& config,
+ValidationResult pre_validate_transaction(const Transaction& txn, evmc_revision revision, uint64_t chain_id,
                                           const std::optional<intx::uint256>& base_fee_per_gas);
 
 //! \brief Creates an instance of proper Consensus Engine on behalf of chain configuration

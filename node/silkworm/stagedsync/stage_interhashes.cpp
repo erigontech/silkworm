@@ -20,9 +20,9 @@
 
 #include <absl/container/btree_set.h>
 
+#include <silkworm/common/decoding_err.hpp>
 #include <silkworm/common/endian.hpp>
 #include <silkworm/common/lru_cache.hpp>
-#include <silkworm/common/decoding_err.hpp>
 #include <silkworm/common/stopwatch.hpp>
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/trie/nibbles.hpp>

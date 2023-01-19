@@ -26,13 +26,21 @@ get_filename_component(SILKWORM_MAIN_DIR ../ ABSOLUTE)
 file(GLOB_RECURSE SILKWORM_LIGHTCLIENT_SRC CONFIGURE_DEPENDS "*.cpp" "*.hpp" "*.c" "*.h" "*.cc")
 list(FILTER SILKWORM_LIGHTCLIENT_SRC EXCLUDE REGEX "_test\\.cpp$")
 
-add_library(silkworm_lightclient ${SILKWORM_LIGHTCLIENT_SRC})
+set(SILKWORM_LIGHTCLIENT_INTERFACE_SRC
+        ${SILKWORM_MAIN_DIR}/interfaces/p2psentinel/sentinel.grpc.pb.cc
+        ${SILKWORM_MAIN_DIR}/interfaces/p2psentinel/sentinel.grpc.pb.h
+        ${SILKWORM_MAIN_DIR}/interfaces/p2psentinel/sentinel.pb.cc
+        ${SILKWORM_MAIN_DIR}/interfaces/p2psentinel/sentinel.pb.h
+        ${SILKWORM_MAIN_DIR}/interfaces/types/types.pb.cc
+        ${SILKWORM_MAIN_DIR}/interfaces/types/types.pb.h)
+
+add_library(silkworm_lightclient ${SILKWORM_LIGHTCLIENT_SRC} ${SILKWORM_LIGHTCLIENT_INTERFACE_SRC})
 
 add_dependencies(silkworm_lightclient generate_ethbackend_grpc generate_kv_grpc generate_sentry_grpc)
 
-set_source_files_properties(${SILKWORM_INTERFACE_SRC} PROPERTIES GENERATED TRUE)
+set_source_files_properties(${SILKWORM_LIGHTCLIENT_INTERFACE_SRC} PROPERTIES GENERATED TRUE)
 if(NOT MSVC)
-  set_source_files_properties(${SILKWORM_INTERFACE_SRC} PROPERTIES COMPILE_FLAGS -Wno-sign-conversion)
+  set_source_files_properties(${SILKWORM_LIGHTCLIENT_INTERFACE_SRC} PROPERTIES COMPILE_FLAGS -Wno-sign-conversion)
 endif(NOT MSVC)
 
 # Suppress ASAN/TSAN in gRPC to avoid ODR violation when building Silkworm with sanitizers

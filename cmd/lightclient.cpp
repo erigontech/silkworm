@@ -21,7 +21,7 @@
 
 #include <silkworm/buildinfo.h>
 #include <silkworm/lightclient/light_client.hpp>
-#include <silkworm/rpc/util.hpp>
+#include <silkworm/rpc/common/util.hpp>
 
 #include "common.hpp"
 

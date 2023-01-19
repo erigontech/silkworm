@@ -53,6 +53,8 @@ add_custom_command(
     DEPENDS "${TYPES_PROTO}"
 )
 
+add_custom_target(generate_types_proto DEPENDS "${TYPES_PROTO_SOURCES}" "${TYPES_PROTO_HEADERS}")
+
 # ---------------------------------------------------------------------------------------------------------------------
 # Sentry
 # ---------------------------------------------------------------------------------------------------------------------
@@ -71,8 +73,6 @@ add_custom_command(
     ARGS ${PROTOC_ARGS_GRPC} "${SENTRY_PROTO}"
     DEPENDS "${SENTRY_PROTO}"
 )
-
-add_custom_target(generate_types_proto DEPENDS "${TYPES_PROTO_SOURCES}" "${TYPES_PROTO_HEADERS}")
 
 add_custom_target(
     generate_sentry_grpc
@@ -130,4 +130,29 @@ add_custom_target(
     generate_ethbackend_grpc
     DEPENDS "${ETHBACKEND_PROTO_SOURCES}" "${ETHBACKEND_PROTO_HEADERS}" "${ETHBACKEND_GRPC_SOURCES}" "${ETHBACKEND_GRPC_HEADERS}"
             generate_types_proto
+)
+
+# ---------------------------------------------------------------------------------------------------------------------
+# Sentinel
+# ---------------------------------------------------------------------------------------------------------------------
+# gRPC protocol interface file
+set(SENTINEL_PROTO "${PROTO_PATH}/p2psentinel/sentinel.proto")
+
+# Generate sources
+set(SENTINEL_PROTO_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/p2psentinel/sentinel.pb.cc")
+set(SENTINEL_PROTO_HEADERS "${CMAKE_CURRENT_SOURCE_DIR}/p2psentinel/sentinel.pb.h")
+set(SENTINEL_GRPC_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/p2psentinel/sentinel.grpc.pb.cc")
+set(SENTINEL_GRPC_HEADERS "${CMAKE_CURRENT_SOURCE_DIR}/p2psentinel/sentinel.grpc.pb.h")
+
+add_custom_command(
+        OUTPUT "${SENTINEL_PROTO_SOURCES}" "${SENTINEL_PROTO_HEADERS}" "${SENTINEL_GRPC_SOURCES}" "${SENTINEL_GRPC_HEADERS}"
+        COMMAND ${PROTOBUF_PROTOC}
+        ARGS ${PROTOC_ARGS_GRPC} "${SENTINEL_PROTO}"
+        DEPENDS "${SENTINEL_PROTO}"
+)
+
+add_custom_target(
+        generate_sentinel_grpc
+        DEPENDS "${SENTINEL_PROTO_SOURCES}" "${SENTINEL_PROTO_HEADERS}" "${SENTINEL_GRPC_SOURCES}" "${SENTINEL_GRPC_HEADERS}"
+        generate_types_proto
 )

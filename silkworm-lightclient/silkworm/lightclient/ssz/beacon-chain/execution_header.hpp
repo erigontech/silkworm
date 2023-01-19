@@ -34,8 +34,8 @@ class ExecutionHeader : public ssz::Container {
     Counter gas_limit_;
     Counter gas_used_;
     UnixTime timestamp_;
-    ListFixedSizedParts<Bytes1> extra_data_;
-    VectorFixedSizedParts<Bytes1, constants::SLOTS_PER_EPOCH> base_fee_per_gas_;
+    ListFixedSizedParts<Byte> extra_data_;
+    VectorFixedSizedParts<Byte, constants::SLOTS_PER_EPOCH> base_fee_per_gas_;
     Hash32 block_hash_;
     Root transient_root_;
 

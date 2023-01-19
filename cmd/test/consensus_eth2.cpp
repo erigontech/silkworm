@@ -20,10 +20,10 @@
 #include <map>
 #include <optional>
 #include <string>
+#include <type_traits>
 #include <vector>
 
 #include <CLI/CLI.hpp>
-#include <gsl/util>
 #include <magic_enum.hpp>
 
 #include <silkworm/common/log.hpp>
@@ -32,7 +32,16 @@
 #include <silkworm/common/test_util.hpp>
 #include <silkworm/concurrency/thread_pool.hpp>
 #include <silkworm/lightclient/snappy/snappy_codec.hpp>
-#include <silkworm/lightclient/types/types.hpp>
+#include <silkworm/lightclient/ssz/beacon-chain/attestation.hpp>
+#include <silkworm/lightclient/ssz/beacon-chain/beacon_block_header.hpp>
+#include <silkworm/lightclient/ssz/beacon-chain/beacon_block.hpp>
+#include <silkworm/lightclient/ssz/beacon-chain/deposits.hpp>
+#include <silkworm/lightclient/ssz/beacon-chain/eth1data.hpp>
+#include <silkworm/lightclient/ssz/beacon-chain/execution_payload.hpp>
+#include <silkworm/lightclient/ssz/beacon-chain/slashing.hpp>
+#include <silkworm/lightclient/ssz/beacon-chain/sync_aggregate.hpp>
+#include <silkworm/lightclient/ssz/beacon-chain/volutary_exit.hpp>
+#include <silkworm/lightclient/ssz/ssz_container.hpp>
 
 // See https://github.com/ethereum/consensus-specs/tests/formats/ssz_static/core.md
 
@@ -44,6 +53,7 @@ static const fs::path kGeneralTestConfigDir{"general"};
 static const fs::path kMainnetTestConfigDir{"mainnet"};
 static const fs::path kMinimalTestConfigDir{"minimal"};
 
+// static const char* kSszGeneric{"ssz_generic"};
 static const char* kSszStatic{"ssz_static"};
 
 std::atomic<size_t> total_passed{0};
@@ -71,7 +81,6 @@ struct TestRunner {
     static silkworm::Bytes read_file(const fs::path& binary_file) {
         std::ifstream ifs{binary_file, std::ios ::binary};
         if (!ifs) throw std::runtime_error{"cannot open file: " + binary_file.string()};
-        auto _ = gsl::finally([&ifs]() { ifs.close(); });
         return {std::istreambuf_iterator<char>(ifs), std::istreambuf_iterator<char>()};
     }
 
@@ -86,27 +95,31 @@ bool TestRunner::stop_at_fail_{false};
 bool TestRunner::trace_on_fail_{false};
 bool TestRunner::skip_snappy_fail_{true};
 
+template <typename T>
+concept SszObject = std::is_base_of<::ssz::Container, T>::value;
+
 struct SszStaticTestRunner : public TestRunner {
     static inline const char* kRoots{"roots.yaml"};
     static inline const char* kSerialized{"serialized.ssz_snappy"};
     static inline const char* kValue{"value.yaml"};
 
     explicit SszStaticTestRunner() {
-        handlers_.emplace("Attestation", round_trip<cl::Attestation>);
-        handlers_.emplace("AttestationData", round_trip<cl::AttestationData>);
-        handlers_.emplace("AttesterSlashing", round_trip<cl::AttesterSlashing>);
-        handlers_.emplace("BeaconBlockHeader", round_trip<cl::BeaconBlockHeader>);
-        handlers_.emplace("Checkpoint", round_trip<cl::Checkpoint>);
-        handlers_.emplace("Deposit", round_trip<cl::Deposit>);
-        handlers_.emplace("DepositData", round_trip<cl::DepositData>);
-        handlers_.emplace("Eth1Data", round_trip<cl::Eth1Data>);
-        handlers_.emplace("IndexedAttestation", round_trip<cl::IndexedAttestation>);
-        handlers_.emplace("ProposerSlashing", round_trip<cl::ProposerSlashing>);
-        handlers_.emplace("SignedBeaconBlockHeader", round_trip<cl::SignedBeaconBlockHeader>);
-        handlers_.emplace("VoluntaryExit", round_trip<cl::VoluntaryExit>);
-        handlers_.emplace("SignedVoluntaryExit", round_trip<cl::SignedVoluntaryExit>);
-        // handlers_.emplace("SyncAggregate", round_trip<cl::SyncAggregate>);  // TODO(canepat) commitee bits size 64 or 4? 64 => all consensus tests fail
-        // handlers_.emplace("ExecutionPayload", round_trip<cl::ExecutionPayload>);  // TODO(canepat) all test vectors fail
+        handlers_.emplace("Attestation", round_trip<eth::Attestation>);
+        handlers_.emplace("AttestationData", round_trip<eth::AttestationData>);
+        handlers_.emplace("AttesterSlashing", round_trip<eth::AttesterSlashing>);
+        handlers_.emplace("BeaconBlockHeader", round_trip<eth::BeaconBlockHeader>);
+        handlers_.emplace("BeaconBlockBody", round_trip<eth::BeaconBlockBody>);  // TODO(canepat) test vectors: 5 pass, 20 fail
+        handlers_.emplace("Checkpoint", round_trip<eth::Checkpoint>);
+        handlers_.emplace("Deposit", round_trip<eth::Deposit>);
+        handlers_.emplace("DepositData", round_trip<eth::DepositData>);
+        handlers_.emplace("Eth1Data", round_trip<eth::Eth1Data>);
+        handlers_.emplace("IndexedAttestation", round_trip<eth::IndexedAttestation>);
+        handlers_.emplace("ProposerSlashing", round_trip<eth::ProposerSlashing>);
+        handlers_.emplace("SignedBeaconBlockHeader", round_trip<eth::SignedBeaconBlockHeader>);
+        handlers_.emplace("VoluntaryExit", round_trip<eth::VoluntaryExit>);
+        handlers_.emplace("SignedVoluntaryExit", round_trip<eth::SignedVoluntaryExit>);
+        handlers_.emplace("SyncAggregate", round_trip<eth::SyncAggregate>);  // TODO(canepat) commitee bits size 64 or 4? 64 => all consensus tests fail in minimal
+        // handlers_.emplace("ExecutionPayload", round_trip<eth::ExecutionPayload>);  // TODO(canepat) all test vectors fail
     }
 
     void run(const fs::path& test_case_dir) const override {
@@ -149,7 +162,7 @@ struct SszStaticTestRunner : public TestRunner {
     }
 
   private:
-    template <class T>
+    template <SszObject T>
     static TestStatus round_trip(ByteView serialized_input) {
         if (!snappy::is_valid_compressed_data(serialized_input)) {
             return skip_snappy_fail_ ? TestStatus::kSkipped : TestStatus::kFailed;
@@ -157,18 +170,15 @@ struct SszStaticTestRunner : public TestRunner {
         SILK_DEBUG << "serialized_input: " << silkworm::to_hex(serialized_input);
         Bytes uncompressed_input = snappy::decompress(serialized_input);
         SILK_DEBUG << "uncompressed_input: " << silkworm::to_hex(uncompressed_input);
-        T data;
-        ByteView uncompressed_input_view{uncompressed_input};
-        const DecodingResult decoding_result = ssz::decode<T>(uncompressed_input_view, data);
-        SILK_DEBUG << "decoding_result: " << magic_enum::enum_name(decoding_result);
-        if (decoding_result != DecodingResult::kOk) {
+        auto data = std::make_unique<T>();
+        std::vector<uint8_t> uncompressed_input_v{uncompressed_input.cbegin(), uncompressed_input.cend()};
+        const auto decoding_ok = data->deserialize(uncompressed_input_v.cbegin(), uncompressed_input_v.cend());
+        SILK_DEBUG << "decoding_result: " << decoding_ok;
+        if (!decoding_ok) {
             return TestStatus::kFailed;
         }
-        Bytes uncompressed_output;
-        const EncodingResult encoding_result = ssz::encode<T>(data, uncompressed_output);
-        if (encoding_result != EncodingResult::kOk) {
-            return TestStatus::kFailed;
-        }
+        const std::vector<uint8_t> uncompressed_output_v = data->serialize();
+        Bytes uncompressed_output{uncompressed_output_v.cbegin(), uncompressed_output_v.cend()};
         SILK_DEBUG << "uncompressed_output: " << silkworm::to_hex(uncompressed_output);
         if (uncompressed_output != uncompressed_input) {
             return TestStatus::kFailed;
@@ -220,7 +230,7 @@ int main(int argc, char* argv[]) {
     StopWatch sw;
     sw.start();
 
-    CLI::App app{"Run Ethereum 2.0 Beacon consensus tests"};
+    CLI::App app{"Ethereum beacon-chain consensus tests"};
 
     std::string tests_path{SILKWORM_CONSENSUS_ETH2_TEST_DIR};
     app.add_option("--tests", tests_path, "Path to Eth2.0 consensus tests")
@@ -245,11 +255,13 @@ int main(int argc, char* argv[]) {
 #ifdef NDEBUG
     stack_size = 16 * kMebi;
 #endif
-    thread_pool thread_pool{num_threads, stack_size};
+    thread_pool workers{num_threads, stack_size};
 
     const fs::path root_dir{tests_path};
     static const std::vector<fs::path> kTestConfigs{
-        kMinimalTestConfigDir,
+        // kGeneralTestConfigDir,
+        kMainnetTestConfigDir,
+        // kMinimalTestConfigDir,
     };
 
     TestRunner::set_stop_at_fail(stop_at_fail);
@@ -257,6 +269,7 @@ int main(int argc, char* argv[]) {
     TestRunner::set_skip_snappy_fail(skip_snappy_fail);
 
     std::map<std::string, std::unique_ptr<TestRunner>> test_runners;
+    // test_runners.emplace(kSszGeneric, std::make_unique<SszGenericTestRunner>());
     test_runners.emplace(kSszStatic, std::make_unique<SszStaticTestRunner>());
 
     for (const auto& test_config : kTestConfigs) {
@@ -266,12 +279,14 @@ int main(int argc, char* argv[]) {
             SILK_TRACE << "fork or phase dir: " << p->path().string();
             for (const auto& test_runner : test_runners) {
                 const auto runner_dir{p->path() / test_runner.first};
-                add_test_runner(thread_pool, runner_dir, test_runner.second.get());
+                if (fs::exists(runner_dir)) {
+                    add_test_runner(workers, runner_dir, test_runner.second.get());
+                }
             }
         }
     }
 
-    thread_pool.wait_for_tasks();
+    workers.wait_for_tasks();
 
     std::cout << kColorGreen << total_passed << " tests passed" << kColorReset << ", ";
     if (total_failed != 0) {

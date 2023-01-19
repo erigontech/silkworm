@@ -38,6 +38,47 @@
 // #include "yaml-cpp/yaml.h"
 
 namespace eth {
+
+class Byte : public ssz::Container {
+  private:
+    uint8_t value;
+
+  public:
+    constexpr Byte() : value{} {};
+    constexpr ~Byte() = default;
+
+    [[nodiscard]] std::vector<std::uint8_t> serialize() const override {
+        std::vector<std::uint8_t> ret{value};
+        return ret;
+    }
+
+    bool deserialize(ssz::SSZIterator it, ssz::SSZIterator end) override {
+        if (std::distance(it, end) != 1) return false;
+        value = *it;
+        return true;
+    }
+
+    explicit operator std::vector<std::uint8_t>() {
+        std::vector<std::uint8_t> ret{value};
+        return ret;
+    }
+
+    static constexpr std::size_t ssz_size = 1;
+    static constexpr std::size_t size() { return 1; }
+    [[nodiscard]] constexpr std::size_t get_ssz_size() const override { return 1; }
+
+    /*YAML::Node encode() const override {
+        auto str = this->to_string();
+        return YAML::convert<std::string>::encode(str);
+    }
+    bool decode(const YAML::Node &node) override {
+        std::string str;
+        if (!YAML::convert<std::string>::decode(node, str)) return false;
+        this->from_string(str);
+        return true;
+    }*/
+};
+
 template <std::size_t N>
 class Bytes : public ssz::Container {
    private:
@@ -184,6 +225,6 @@ using Domain = Bytes32;
 using BLSPubkey = Bytes48;
 using BLSSignature = Bytes96;
 using Eth1Address = Bytes20;
-using Participation = Bytes1;
+using Participation = Byte;
 
 }  // namespace eth

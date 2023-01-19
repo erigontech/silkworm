@@ -19,7 +19,7 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "hashtree.hpp"
+#include "hash_tree.hpp"
 
 #include <stdexcept>
 

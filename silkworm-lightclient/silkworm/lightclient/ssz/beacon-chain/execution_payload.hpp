@@ -16,7 +16,6 @@
 
 #pragma once
 
-#include <silkworm/lightclient/ssz/chunk.hpp>
 #include <silkworm/lightclient/ssz/constants.hpp>
 #include <silkworm/lightclient/ssz/ssz_container.hpp>
 #include <silkworm/lightclient/ssz/common/containers.hpp>
@@ -24,14 +23,23 @@
 
 namespace eth {
 
-//! \brief Determine successful committee: bits shows active participants and signature is the aggregate BLS signature
-struct SyncAggregate : public ssz::Container {
-    VectorFixedSizedParts<Byte, constants::kCommiteeBitsSize> sync_committee_bits;
-    BLSSignature sync_committee_signature;
+//! Execution payload is sent to EL once validation is done to request block execution.
+struct ExecutionPayload : public ssz::Container {
+    Hash32 parent_hash;
+    Eth1Address fee_recipient;
+    Root state_root;
+    Root receipts_root;
+    Bytes256 logs_bloom;
+    Hash32 prev_randao;
+    Counter block_number;
+    Counter gas_limit;
+    Counter gas_used;
+    UnixTime timestamp;
+    ListFixedSizedParts<Byte> extra_data;
+    VectorFixedSizedParts<Byte, constants::SLOTS_PER_EPOCH> base_fee_per_gas;
+    Hash32 block_hash;
+    ListVariableSizedParts<ListFixedSizedParts<Byte>> transactions;
 
-    [[nodiscard]] std::size_t get_ssz_size() const override {
-        return sync_committee_bits.get_ssz_size() + sync_committee_signature.get_ssz_size();
-    }
     [[nodiscard]] std::vector<ssz::Chunk> hash_tree() const override;
     [[nodiscard]] BytesVector serialize() const override;
     bool deserialize(ssz::SSZIterator it, ssz::SSZIterator end) override;

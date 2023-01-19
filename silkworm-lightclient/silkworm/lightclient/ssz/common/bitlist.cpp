@@ -22,12 +22,11 @@
 #include "bitlist.hpp"
 
 #include <bit>
-#include <cstdint>
 #include <iomanip>
 #include <iostream>
 #include <sstream>
 
-#include <silkworm/lightclient/ssz/hashtree.hpp>
+#include <silkworm/lightclient/ssz/hash_tree.hpp>
 #include <silkworm/lightclient/ssz/helpers/bytes_to_int.hpp>
 
 namespace eth {

@@ -18,17 +18,17 @@
 
 namespace eth {
     std::vector<ssz::Chunk> SyncAggregate::hash_tree() const {
-        return hash_tree_({&sync_committee_bits_,
-                           &sync_committee_signature_});
+        return hash_tree_({&sync_committee_bits,
+                           &sync_committee_signature});
     }
     BytesVector SyncAggregate::serialize() const {
-        return serialize_({&sync_committee_bits_,
-                           &sync_committee_signature_});
+        return serialize_({&sync_committee_bits,
+                           &sync_committee_signature});
     }
 
     bool SyncAggregate::deserialize(ssz::SSZIterator it, ssz::SSZIterator end) {
-        return deserialize_(it, end, {&sync_committee_bits_,
-                                      &sync_committee_signature_});
+        return deserialize_(it, end, {&sync_committee_bits,
+                                      &sync_committee_signature});
     }
 
     /*YAML::Node SyncAggregate::encode() const {

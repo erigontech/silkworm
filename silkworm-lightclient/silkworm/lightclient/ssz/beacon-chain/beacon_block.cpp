@@ -31,7 +31,9 @@ std::vector<ssz::Chunk> BeaconBlockBody::hash_tree() const {
                        &attester_slashings,
                        &attestations,
                        &deposits,
-                       &voluntary_exits});
+                       &voluntary_exits,
+                       &sync_aggregate,
+                       &execution_payload});
 }
 
 BytesVector BeaconBlockBody::serialize() const {
@@ -42,7 +44,9 @@ BytesVector BeaconBlockBody::serialize() const {
                        &attester_slashings,
                        &attestations,
                        &deposits,
-                       &voluntary_exits});
+                       &voluntary_exits,
+                       &sync_aggregate,
+                       &execution_payload});
 }
 
 bool BeaconBlockBody::deserialize(ssz::SSZIterator it, ssz::SSZIterator end) {
@@ -54,7 +58,9 @@ bool BeaconBlockBody::deserialize(ssz::SSZIterator it, ssz::SSZIterator end) {
                          &attester_slashings,
                          &attestations,
                          &deposits,
-                         &voluntary_exits});
+                         &voluntary_exits,
+                         &sync_aggregate,
+                         &execution_payload});
 }
 
 /*YAML::Node BeaconBlockBody::encode() const {
@@ -65,7 +71,9 @@ bool BeaconBlockBody::deserialize(ssz::SSZIterator it, ssz::SSZIterator end) {
                     {"attester_slashings", &attester_slashings},
                     {"attestations", &attestations},
                     {"deposits", &deposits},
-                    {"voluntary_exits", &voluntary_exits}});
+                    {"voluntary_exits", &voluntary_exits},
+                    {"sync_aggregate", &sync_aggregate},
+                    {"execution_payload", &execution_payload}});
 }
 
 bool BeaconBlockBody::decode(const YAML::Node &node) {
@@ -76,7 +84,9 @@ bool BeaconBlockBody::decode(const YAML::Node &node) {
                           {"attester_slashings", &attester_slashings},
                           {"attestations", &attestations},
                           {"deposits", &deposits},
-                          {"voluntary_exits", &voluntary_exits}});
+                          {"voluntary_exits", &voluntary_exits},
+                          {"sync_aggregate", &sync_aggregate},
+                          {"execution_payload", &execution_payload}});
 }*/
 
 std::vector<ssz::Chunk> BeaconBlock::hash_tree() const {

@@ -164,7 +164,7 @@ auto BodySequence::renew_stale_requests(GetBlockBodiesPacket66& packet, BlockNum
     for (auto& br : body_requests_) {
         BodyRequest& past_request = br.second;
 
-        if (past_request.ready || tp - past_request.request_time < timeout)
+        if (past_request.request_id == 0 || past_request.ready || tp - past_request.request_time < timeout)
             continue;
 
         if (!fulfill_from_announcements(past_request)) {

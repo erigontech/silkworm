@@ -33,10 +33,13 @@ SyncEngine::SyncEngine(BlockExchange& be, stagedsync::ExecutionEngine& ee)
 auto SyncEngine::forward_and_insert_blocks() -> NewHeight {
     using ResultQueue = BlockExchange::ResultQueue;
 
+    StopWatch timing; timing.start();
     ResultQueue& downloading = block_exchange_.result_queue();
 
-    auto current_header_head = exec_engine_.get_headers_head();
-    block_exchange_.download_blocks(current_header_head.number, BlockExchange::kTipOfTheChain);
+    auto initial_header_head = exec_engine_.get_headers_head();
+    block_exchange_.download_blocks(initial_header_head.number, BlockExchange::kTipOfTheChain);
+
+    log::Info("Sync") << "Waiting for blocks... from=" << initial_header_head.number;
 
     while (!is_stopping() && !block_exchange_.in_sync()) {
         Blocks blocks;
@@ -58,8 +61,15 @@ auto SyncEngine::forward_and_insert_blocks() -> NewHeight {
 
         // send announcement to peers
         send_new_block_announcements(std::move(announcements_to_do));  // according to eth/67 they must be done here,
-                                                                             // after simple header verification
+                                                                       // after simple header verification
+
+        auto headers_downloaded = chain_fork_view_.head_height() - initial_header_head.number;
+        log::Info("Sync") << "Downloading progress: " << headers_downloaded << " blocks downloaded,"
+                               << " last=" << chain_fork_view_.head_height()
+                               << " duration=" << StopWatch::format(timing.lap_duration());
     };
+
+    log::Info("Sync") << "Downloading completed, last=" << chain_fork_view_.head_height();
 
     block_exchange_.stop_downloading();
     is_first_sync_ = false;
@@ -81,10 +91,12 @@ void SyncEngine::execution_loop() {
 
         NewHeight new_height = forward_and_insert_blocks();
 
+        log::Info("Sync") << "Verifying chain, head=" << new_height.block_num;
         auto verification = exec_engine_.verify_chain(new_height.hash);
 
         if (std::holds_alternative<InvalidChain>(verification)) {
             auto invalid_chain = std::get<InvalidChain>(verification);
+            log::Info("Sync") << "Invalid chain, unwinding down to=" << invalid_chain.unwind_point;
 
             unwind({invalid_chain.unwind_point});
 
@@ -92,6 +104,7 @@ void SyncEngine::execution_loop() {
                 update_bad_headers(std::move(invalid_chain.bad_headers));
             }
 
+            log::Info("Sync") << "Notifying fork choice updated, head=" << invalid_chain.unwind_point;
             exec_engine_.notify_fork_choice_updated(invalid_chain.unwind_head);
 
             continue;
@@ -100,11 +113,13 @@ void SyncEngine::execution_loop() {
         }
 
         auto valid_chain = std::get<ValidChain>(verification);
+        log::Info("Sync") << "Valid chain, new head=" << valid_chain.current_point;
 
         if (valid_chain.current_point != new_height.block_num) {
             // ???
         }
 
+        log::Info("Sync") << "Notifying fork choice updated, new head=" << new_height.block_num;
         exec_engine_.notify_fork_choice_updated(new_height.hash);
 
         if (!is_first_sync_)

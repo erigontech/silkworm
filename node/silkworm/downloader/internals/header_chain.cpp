@@ -113,11 +113,11 @@ void HeaderChain::current_state(BlockNum highest_in_db) {
 Headers HeaderChain::withdraw_stable_headers() {
     Headers stable_headers;
 
+    if (insert_list_.empty()) return {};
+
     auto initial_highest_in_db = highest_in_db_;
     SILK_TRACE << "HeaderChain: finding headers to persist on top of " << highest_in_db_ << " (" << insert_list_.size()
                << " waiting in queue)";
-
-    if (insert_list_.empty()) return {};
 
     OldestFirstLinkQueue assessing_list = insert_list_;  // use move() operation if it is assured that after the move
     insert_list_.clear();                                // the container is empty and can be reused

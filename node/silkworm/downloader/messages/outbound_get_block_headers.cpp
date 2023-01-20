@@ -33,7 +33,7 @@ void OutboundGetBlockHeaders::execute(db::ROAccess, HeaderChain& hc, BodySequenc
     using namespace std::literals::chrono_literals;
 
     time_point_t now = std::chrono::system_clock::now();
-    seconds_t request_timeout = 10s;
+    seconds_t request_timeout = 30s;
     seconds_t response_timeout = 1s;
 
     // anchor extension

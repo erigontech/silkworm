@@ -50,10 +50,16 @@ SentryClient& BlockExchange::sentry() const { return sentry_; }
 BlockExchange::ResultQueue& BlockExchange::result_queue() { return results_; }
 bool BlockExchange::in_sync() { return in_sync_; }
 
-void BlockExchange::accept(std::shared_ptr<Message> message) { messages_.push(message); }
+void BlockExchange::accept(std::shared_ptr<Message> message) {
+    statistics_.internal_msgs++;
+    messages_.push(message);
+}
 
 void BlockExchange::receive_message(const sentry::InboundMessage& raw_message) {
     try {
+        statistics_.received_msgs++;
+        statistics_.received_bytes += raw_message.ByteSizeLong();
+
         auto message = InboundMessage::make(raw_message);
 
         SILK_TRACE << "BlockExchange received message " << *message;
@@ -79,8 +85,6 @@ void BlockExchange::execution_loop() {
         receive_message(msg);
     };
     auto response_receiving_callback = [this](const sentry::InboundMessage& msg) {
-        statistics_.received_msgs++;
-        statistics_.received_bytes += msg.ByteSizeLong();
         receive_message(msg);
     };
 

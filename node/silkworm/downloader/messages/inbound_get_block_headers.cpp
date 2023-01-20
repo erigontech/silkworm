@@ -91,6 +91,7 @@ uint64_t InboundGetBlockHeaders::reqId() const { return packet_.requestId; }
 
 std::string InboundGetBlockHeaders::content() const {
     std::stringstream content;
+    log::prepare_for_logging(content);
     content << packet_;
     return content.str();
 }

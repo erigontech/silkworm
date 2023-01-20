@@ -71,6 +71,7 @@ sentry::SentPeers OutboundNewBlock::send_packet(SentryClient& sentry, const NewB
 std::string OutboundNewBlock::content() const {
     if (sent_packets_ == 0) return "- no block announcements -";
     std::stringstream content;
+    log::prepare_for_logging(content);
     content << sent_packets_ << " block announcements";
     return content.str();
 }

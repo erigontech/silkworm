@@ -78,6 +78,7 @@ void OutboundNewBlockHashes::execute(db::ROAccess, HeaderChain& hc, BodySequence
 std::string OutboundNewBlockHashes::content() const {
     if (packet_.empty()) return "- no block hash announcements to do, not sent -";
     std::stringstream content;
+    log::prepare_for_logging(content);
     content << packet_;
     return content.str();
 }

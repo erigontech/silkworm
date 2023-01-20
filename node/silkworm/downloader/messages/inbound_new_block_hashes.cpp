@@ -94,6 +94,7 @@ uint64_t InboundNewBlockHashes::reqId() const { return reqId_; }
 
 std::string InboundNewBlockHashes::content() const {
     std::stringstream content;
+    log::prepare_for_logging(content);
     content << packet_;
     return content.str();
 }

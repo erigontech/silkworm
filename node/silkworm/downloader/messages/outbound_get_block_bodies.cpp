@@ -105,6 +105,7 @@ void OutboundGetBlockBodies::send_penalization(SentryClient& sentry, const PeerP
 
 std::string OutboundGetBlockBodies::content() const {
     std::stringstream content;
+    log::prepare_for_logging(content);
     if (requested_bodies_ > 0)
         content << "OutboundGetBlockBodiesPackets " << requested_bodies_ << " bodies requested in " << sent_reqs_
                 << " packets";

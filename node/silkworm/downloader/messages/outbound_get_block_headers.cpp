@@ -86,6 +86,10 @@ sentry::SentPeers OutboundGetBlockHeaders::send_packet(SentryClient& sentry,
     if (std::holds_alternative<Hash>(packet_.request.origin))
         throw std::logic_error("OutboundGetBlockHeaders expects block number not hash");
 
+    if (std::get<BlockNum>(packet_.request.origin) == 0 ||
+        packet_.request.amount == 0)
+        throw std::logic_error("OutboundGetBlockHeaders expects block number > 0 and amount > 0");
+
     BlockNum min_block = std::get<BlockNum>(packet_.request.origin);  // choose target peer
     if (!packet_.request.reverse) min_block += packet_.request.amount * packet_.request.skip;
 
@@ -128,6 +132,7 @@ void OutboundGetBlockHeaders::send_penalization(SentryClient& sentry, const Peer
 
 std::string OutboundGetBlockHeaders::content() const {
     std::stringstream content;
+    log::prepare_for_logging(content);
     if (!packets_.empty())
         content << "GetBlockHeadersPackets " << packets_;
     else

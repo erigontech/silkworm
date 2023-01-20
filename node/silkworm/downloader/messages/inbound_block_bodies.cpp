@@ -52,6 +52,7 @@ uint64_t InboundBlockBodies::reqId() const { return packet_.requestId; }
 
 std::string InboundBlockBodies::content() const {
     std::stringstream content;
+    log::prepare_for_logging(content);
     content << packet_;
     return content.str();
 }

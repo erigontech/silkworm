@@ -54,6 +54,7 @@ uint64_t InboundNewBlock::reqId() const { return reqId_; }
 
 std::string InboundNewBlock::content() const {
     std::stringstream content;
+    log::prepare_for_logging(content);
     content << packet_;
     return content.str();
 }

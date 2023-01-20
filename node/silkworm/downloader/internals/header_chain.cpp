@@ -384,8 +384,7 @@ auto HeaderChain::anchor_extension_request(time_point_t time_point, seconds_t ti
             statistics_.requested_items += max_len;
 
             SILK_TRACE << "HeaderChain: trying to extend anchor " << anchor->blockHeight
-                       << " (chain bundle len = " << anchor->chainLength() << ", last link = " << anchor->lastLinkHeight
-                       << " )";
+                       << " (chain bundle len = " << anchor->chainLength() << ", last link = " << anchor->lastLinkHeight << " )";
 
             return {std::move(packet), std::move(penalties)};  // try (again) to extend this anchor
         } else {
@@ -472,7 +471,11 @@ auto HeaderChain::accept_headers(const std::vector<BlockHeader>& headers, uint64
     -> std::tuple<Penalty, RequestMoreHeaders> {
     bool request_more_headers = false;
 
-    if (headers.empty()) return {Penalty::NoPenalty, request_more_headers};
+    if (headers.empty()) {
+        statistics_.reject_causes.invalid++;
+        return {Penalty::DuplicateHeaderPenalty, request_more_headers};
+    }
+
     statistics_.received_items += headers.size();
 
     if (headers.begin()->number < top_seen_height_ &&  // an old header announcement? .

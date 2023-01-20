@@ -61,6 +61,7 @@ TEST_CASE("get_beneficiary() && extra_data with seal") {
     header.gas_limit = 29999972;
     header.gas_used = 798242;
     header.timestamp = 1643045393;
+    header.base_fee_per_gas = 8;
     std::string bloom_str = "0020000000000080100920000000000008000000000000000000000000100000000002000010100000000410000000000000000000000400000";
     bloom_str.append("0080010200000000000004000001021000048000000000000000000000400000000080000002000030000040010808000000000");
     bloom_str.append("0001000000200000000080800000100002000800000100000000002000400000800000000020000000000000900800200000804200400");
@@ -72,7 +73,7 @@ TEST_CASE("get_beneficiary() && extra_data with seal") {
     extra_data_str.append("389a8044be45c006fca6ab41adf927f05f8c66a5debd68218cc4cf4e578581ca7db3c77efd6bbdabf0d435c5cfa68b5e80aa0798fece01");
     header.extra_data = *from_hex(extra_data_str);
     auto consensus_engine = engine_factory(ChainConfig{.seal_engine = SealEngineType::kClique});  // Clique consensus engine
-    CHECK(consensus_engine->get_beneficiary(header) == 0x6db839fd90ad468df541d3405fea73e6b85ff61f_address);
+    CHECK(consensus_engine->get_beneficiary(header) == 0xa6dd2974b96e959f2c8930024451a30afec24203_address);
 }
 
 TEST_CASE("get_beneficiary() && extra_data no seal") {

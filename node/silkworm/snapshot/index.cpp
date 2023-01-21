@@ -208,7 +208,7 @@ void TransactionIndex::build() {
                         ByteView encoded_tx{tx_payload};
                         decode_result = rlp::decode(encoded_tx, tx);
                         if (decode_result != DecodingResult::kOk) {
-                            SILK_ERROR << "cannot decode tx in block: " << block_number << " payload: "<< to_hex(tx_payload)
+                            SILK_ERROR << "cannot decode tx in block: " << block_number << " payload: " << to_hex(tx_payload)
                                        << " i: " << i << " result: " << magic_enum::enum_name<>(decode_result);
                             return false;
                         }

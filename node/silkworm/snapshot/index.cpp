@@ -36,7 +36,12 @@ void Index::build() {
     decoder.open();
 
     const SnapshotFile index_file = segment_path_.index_file();
-    RecSplit8 rec_split{decoder.words_count(), kBucketSize, index_file.path(), index_file.block_from()};
+    RecSplitSettings rec_split_settings{
+        .keys_count = decoder.words_count(),
+        .bucket_size = kBucketSize,
+        .index_path = index_file.path(),
+        .base_data_id = index_file.block_from()};
+    RecSplit8 rec_split{rec_split_settings};
 
     SILK_INFO << "Build index for: " << segment_path_.path().string() << " start";
     uint64_t iterations{0};
@@ -120,7 +125,7 @@ void TransactionIndex::build() {
         .base_data_id = first_tx_id,
         .double_enum_index = true,
         .etl_optimal_size = etl::kOptimalBufferSize / 2};
-    RecSplit8 tx_hash_rs{tx_hash_rs_settings, 1};
+    RecSplit8 tx_hash_rs{tx_hash_rs_settings};
 
     const SnapshotFile tx2block_idx_file = segment_path_.index_file_for_type(SnapshotType::transactions2block);
     SILK_INFO << "TransactionIndex::build tx2block_idx_file path: " << tx2block_idx_file.path().string();
@@ -131,7 +136,7 @@ void TransactionIndex::build() {
         .base_data_id = first_block_num,
         .double_enum_index = false,
         .etl_optimal_size = etl::kOptimalBufferSize / 2};
-    RecSplit8 tx_hash_to_block_rs{tx_hash_to_block_rs_settings, 1};
+    RecSplit8 tx_hash_to_block_rs{tx_hash_to_block_rs_settings};
 
     Decompressor bodies_decoder{bodies_segment.path()};
     bodies_decoder.open();
@@ -147,6 +152,7 @@ void TransactionIndex::build() {
 
     SILK_INFO << "Build index for: " << segment_path_.path().string() << " start";
     uint64_t iterations{0};
+    Hash tx_hash;
     bool collision_detected{false};
     do {
         iterations++;
@@ -165,7 +171,10 @@ void TransactionIndex::build() {
                 ByteView body_rlp{body_buffer.data(), body_buffer.length()};
                 SILK_DEBUG << "double_read_ahead block_number: " << block_number << " body_rlp: " << to_hex(body_rlp);
                 auto decode_result = db::detail::decode_stored_block_body(body_rlp, body);
-                SILK_DEBUG << "double_read_ahead decode_result: " << magic_enum::enum_name<>(decode_result);
+                if (decode_result != DecodingResult::kOk) {
+                    SILK_ERROR << "cannot decode block " << block_number << " body: " << to_hex(body_rlp) << " result: " << int(decode_result);
+                    return false;
+                }
                 body_buffer.clear();
 
                 uint64_t i{0}, offset{0};
@@ -175,25 +184,45 @@ void TransactionIndex::build() {
                         if (!body_it.has_next()) return false;
                         body_it.next(body_buffer);
                         body_rlp = ByteView{body_buffer.data(), body_buffer.length()};
-                        SILK_DEBUG << "double_read_ahead block_number: " << block_number << " body_rlp: " << to_hex(body_rlp);
                         decode_result = db::detail::decode_stored_block_body(body_rlp, body);
-                        SILK_DEBUG << "double_read_ahead decode_result: " << magic_enum::enum_name<>(decode_result);
+                        if (decode_result != DecodingResult::kOk) {
+                            SILK_ERROR << "cannot decode block " << block_number << " body: " << to_hex(body_rlp) << " i: " << i
+                                       << " result: " << int(decode_result);
+                            return false;
+                        }
                         body_buffer.clear();
                         ++block_number;
                     }
                     const bool is_system_tx{tx_buffer.empty()};
                     if (is_system_tx) {
                         // system-txs: hash:pad32(txnID)
-                        Hash tx_hash;
                         endian::store_big_u64(tx_hash.bytes, first_tx_id + i);
 
                         tx_hash_rs.add_key(tx_hash.bytes, kHashLength, offset);
                         tx_hash_to_block_rs.add_key(tx_hash.bytes, kHashLength, block_number);
                     } else {
-                        // Skip first byte plus address length in transaction encoding
+                        // Skip first byte plus address length for transaction decoding
                         constexpr int kTxFirstByteAndAddressLength{1 + kAddressLength};
-                        const auto tx_hash{keccak256(tx_buffer.substr(kTxFirstByteAndAddressLength))};
+                        Transaction tx{};
+                        const auto tx_payload = tx_buffer.substr(kTxFirstByteAndAddressLength);
+                        ByteView encoded_tx{tx_payload};
+                        decode_result = rlp::decode(encoded_tx, tx);
+                        if (decode_result != DecodingResult::kOk) {
+                            SILK_ERROR << "cannot decode tx in block: " << block_number << " payload: "<< to_hex(tx_payload)
+                                       << " i: " << i << " result: " << magic_enum::enum_name<>(decode_result);
+                            return false;
+                        }
 
+                        // Extract the transaction envelope based on type for hashing
+                        // TODO(canepat) check if correct and try to improve, see Erigon rlp.Prefix
+                        const std::size_t tx_envelope_offset = tx.type == Transaction::Type::kLegacy ? 0 : 2;
+                        const std::size_t tx_envelope_position = kTxFirstByteAndAddressLength + tx_envelope_offset;
+
+                        const Bytes tx_envelope{tx_buffer.substr(tx_envelope_position)};
+                        const auto h256{keccak256(tx_envelope)};
+                        std::copy(std::begin(h256.bytes), std::begin(h256.bytes) + kHashLength, std::begin(tx_hash.bytes));
+                        SILK_DEBUG << "type: " << int(tx.type) << " i: " << i << " tx_envelope: " << to_hex(tx_envelope)
+                                   << " h256: " << to_hex(h256.bytes, kHashLength);
                         tx_hash_rs.add_key(tx_hash.bytes, kHashLength, offset);
                         tx_hash_to_block_rs.add_key(tx_hash.bytes, kHashLength, block_number);
                     }
@@ -217,7 +246,7 @@ void TransactionIndex::build() {
         SILK_DEBUG << "Build tx_hash RecSplit index collision_detected: " << collision_detected << " [" << iterations << "]";
 
         SILK_INFO << "Build tx_hash_2_bn RecSplit index for: " << segment_path_.path().string() << " [" << iterations << "]";
-        collision_detected = tx_hash_to_block_rs.build();
+        collision_detected |= tx_hash_to_block_rs.build();
         SILK_DEBUG << "Build tx_hash_2_bn RecSplit index collision_detected: " << collision_detected << " [" << iterations << "]";
 
         if (collision_detected) {

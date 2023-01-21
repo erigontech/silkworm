@@ -173,7 +173,7 @@ class RecSplit {
     using EliasFano = EliasFanoList32;
     using DoubleEliasFano = DoubleEliasFanoList16;
 
-    RecSplit(const RecSplitSettings& settings, uint32_t salt = 0)
+    explicit RecSplit(const RecSplitSettings& settings, uint32_t salt = 0)
         : bucket_size_(settings.bucket_size),
           key_count_(settings.keys_count),
           bucket_count_((key_count_ + bucket_size_ - 1) / bucket_size_),
@@ -186,27 +186,6 @@ class RecSplit {
         bucket_position_accumulator_.reserve(bucket_count_ + 1);
         bucket_size_accumulator_.resize(1);      // Start with 0 as bucket accumulated size
         bucket_position_accumulator_.resize(1);  // Start with 0 as bucket accumulated position
-        current_bucket_.reserve(bucket_size_);
-        current_bucket_offsets_.reserve(bucket_size_);
-        count_.reserve(kLowerAggregationBound);
-
-        // Generate random salt for murmur3 hash
-        std::random_device rand_dev;
-        std::mt19937 rand_gen32{rand_dev()};
-        salt_ = salt != 0 ? salt : rand_gen32();
-        hasher_ = std::make_unique<Murmur3>(salt_);
-    }
-
-    RecSplit(const size_t keys_count, const size_t bucket_size, std::filesystem::path index_path, uint64_t base_data_id, uint32_t salt = 0)
-        : bucket_size_(bucket_size),
-          key_count_(keys_count),
-          bucket_count_((key_count_ + bucket_size_ - 1) / bucket_size_),
-          base_data_id_(base_data_id),
-          index_path_(std::move(index_path)) {
-        bucket_size_accumulator_.reserve(bucket_count_ + 1);
-        bucket_position_accumulator_.reserve(bucket_count_ + 1);
-        bucket_size_accumulator_.resize(1);
-        bucket_position_accumulator_.resize(1);
         current_bucket_.reserve(bucket_size_);
         current_bucket_offsets_.reserve(bucket_size_);
         count_.reserve(kLowerAggregationBound);
@@ -259,6 +238,10 @@ class RecSplit {
     void add_key(const void* key_data, const size_t key_length, uint64_t offset) {
         if (built_) {
             throw std::logic_error{"cannot add key after perfect hash function has been built"};
+        }
+
+        if (keys_added_ % 100'000 == 0) {
+            SILK_DEBUG << "[index] add key: " << to_hex(ByteView{reinterpret_cast<const uint8_t*>(key_data), key_length});
         }
 
         const auto key_hash = murmur_hash_3(key_data, key_length);

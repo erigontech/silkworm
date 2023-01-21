@@ -62,7 +62,7 @@ namespace ssz {
 
 std::vector<std::uint8_t> Container::serialize_(const std::vector<const Container*>& parts) {
     // Check if we are one of the basic types
-    if (parts.size() == 0) return {};
+    if (parts.empty()) return {};
 
     // Compute the length of the fixed sized parts;
     auto fixed_length = compute_fixed_length(parts);
@@ -87,8 +87,8 @@ std::vector<std::uint8_t> Container::serialize_(const std::vector<const Containe
 
 bool Container::deserialize_(SSZIterator it, SSZIterator end, const std::vector<Container *> &parts) {
     auto fixed_length = compute_fixed_length(parts);
-    SSZIterator begin = it;
-    // We are hardcoding BYTES_PER_LENGTH_OFFSET = 4 here
+    auto begin = it;
+    // We are hard-coding BYTES_PER_LENGTH_OFFSET = 4 here
     std::uint32_t last_offset = 0;
     Container *last_variable_part = nullptr;
 

@@ -32,7 +32,7 @@ struct Settings {
     uint32_t num_contexts{1};
     rpc::WaitMode wait_mode{rpc::WaitMode::blocking};
     uint64_t chain_id{kMainnetConfig.chain_id};
-    std::string sentinel_address{"localhost:5555"};
+    std::string sentinel_address{"localhost:7777"};
 };
 
 class LightClientImpl;

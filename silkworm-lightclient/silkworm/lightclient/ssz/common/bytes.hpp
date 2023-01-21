@@ -45,7 +45,7 @@ class Byte : public ssz::Container {
 
   public:
     constexpr Byte() : value{} {};
-    constexpr ~Byte() = default;
+    constexpr ~Byte() override = default;
 
     [[nodiscard]] std::vector<std::uint8_t> serialize() const override {
         std::vector<std::uint8_t> ret{value};
@@ -90,7 +90,7 @@ class Bytes : public ssz::Container {
         // TODO(canepat) std::bit_cast is not found in Apple Clang 14
         // auto as_bytes = std::bit_cast<std::array<std::uint8_t, sizeof(value)>>(value);
         std::span as_bytes{reinterpret_cast<uint8_t*>(&value), sizeof(value)};
-        if constexpr (std::endian::native == std::endian::big)
+        if constexpr (std::endian::native == std::endian::big)  // NOLINT
             std::reverse_copy(as_bytes.begin(), as_bytes.end(), ret.begin());
         else
             std::copy(as_bytes.begin(), as_bytes.end(), ret.begin());
@@ -118,9 +118,9 @@ class Bytes : public ssz::Container {
     explicit constexpr Bytes(const std::integral auto value) requires(sizeof(value) <= N)
         : m_arr{bytes_from_int(value)} {};
     explicit constexpr Bytes(std::array<std::uint8_t, N> arr) : m_arr{arr} {};
-    constexpr ~Bytes() = default;
+    constexpr ~Bytes() override = default;
 
-    std::vector<std::uint8_t> serialize() const override {
+    [[nodiscard]] std::vector<std::uint8_t> serialize() const override {
         std::vector<std::uint8_t> ret(m_arr.cbegin(), m_arr.cend());
         return ret;
     }
@@ -131,7 +131,7 @@ class Bytes : public ssz::Container {
         return true;
     }
 
-    operator std::vector<std::uint8_t>() {
+    explicit operator std::vector<std::uint8_t>() {
         std::vector<std::uint8_t> ret(m_arr.begin(), m_arr.end());
         return ret;
     }
@@ -184,7 +184,7 @@ class Bytes : public ssz::Container {
 
     static constexpr std::size_t ssz_size = N;
     static constexpr std::size_t size() { return N; }
-    constexpr std::size_t get_ssz_size() const override { return N; }
+    [[nodiscard]] constexpr std::size_t get_ssz_size() const override { return N; }
 
     constexpr typename std::array<std::uint8_t, N>::iterator begin() noexcept { return m_arr.begin(); }
 

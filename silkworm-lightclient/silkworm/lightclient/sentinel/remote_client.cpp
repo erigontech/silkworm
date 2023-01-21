@@ -17,10 +17,11 @@
 #include "remote_client.hpp"
 
 #include <silkworm/common/log.hpp>
-#include <silkworm/rpc/common/conversion.hpp>
 #include <silkworm/rpc/client/call.hpp>
 #include <silkworm/sentry/common/timeout.hpp>
+#include <silkworm/lightclient/rpc/protocol.hpp>
 #include <silkworm/lightclient/sentinel/topic.hpp>
+#include <silkworm/lightclient/snappy/snappy_codec.hpp>
 
 namespace silkworm::cl::sentinel {
 
@@ -38,9 +39,9 @@ awaitable<void> RemoteClient::start() {
 }
 
 awaitable<LightClientBootstrapPtr> RemoteClient::bootstrap_request_v1(const eth::Root& root) {
-    const auto serialized_root = root.serialize();
+    Bytes request_data = encode_and_write(root);
     ::sentinel::RequestData request;
-    request.set_data(serialized_root.data(), serialized_root.size());
+    request.set_data(request_data.data(), request_data.size());
     request.set_topic(kLightClientBootstrapV1);
     ::sentinel::ResponseData response;
     const auto status = co_await rpc::unary_rpc(
@@ -49,14 +50,11 @@ awaitable<LightClientBootstrapPtr> RemoteClient::bootstrap_request_v1(const eth:
         log::Warning() << "Bootstrap request V1 error: " << status.error_message();
         co_return LightClientBootstrapPtr{};
     }
-    const std::vector<uint8_t> data{response.data().cbegin(), response.data().cend()};
-
+    const std::vector<uint8_t> compressed_rsp{response.data().cbegin(), response.data().cend()};
+    ByteView compressed_bootstrap{compressed_rsp.data(), compressed_rsp.size()};
     auto bootstrap = std::make_shared<eth::LightClientBootstrap>();
-    const bool ok = bootstrap->deserialize(data.cbegin(), data.cend());
-    if (!ok) {
-        co_return LightClientBootstrapPtr{};
-    }
-    co_return bootstrap;
+    const bool ok = decode_and_read(compressed_bootstrap, *bootstrap);
+    co_return ok ? bootstrap : LightClientBootstrapPtr{};
 }
 
 }  // namespace silkworm::cl::sentinel

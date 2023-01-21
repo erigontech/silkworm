@@ -38,32 +38,31 @@ namespace eth {
 template <unsigned N>
 class Bitvector : public ssz::Container {
    private:
-    std::array<bool, N> m_arr;
+    std::array<bool, N> bits_;
 
    public:
     static constexpr std::size_t ssz_size = (N + constants::BITS_PER_BYTE - 1) / constants::BITS_PER_BYTE;
     [[nodiscard]] std::size_t get_ssz_size() const override { return ssz_size; }
 
     Bitvector() = default;
-    explicit constexpr Bitvector(std::array<bool, N> vec) : m_arr{vec} {};
+    explicit constexpr Bitvector(std::array<bool, N> vec) : bits_{vec} {};
 
-    void from_hexstring(const std::string &str) {
+    void from_hexstring(const std::string& str) {
         if (!str.starts_with("0x")) throw std::invalid_argument("string not prepended with 0x");
         if (str.length() % 2 != 0) throw std::invalid_argument("string of odd length");
 
-        std::uint8_t buffer = 0;
         std::vector<std::uint8_t> hex;
         for (std::size_t offset = 2; offset < str.length(); offset += 2) {
-            buffer = (helpers::hextoint(str[offset]) << 4) + helpers::hextoint(str[offset + 1]);
+            uint8_t buffer = (helpers::hextoint(str[offset]) << 4) + helpers::hextoint(str[offset + 1]);
             hex.push_back(buffer);
         }
-        m_arr.fill(0);
+        bits_.fill(0);
         for (int i = 0; i < hex.size(); ++i)
             for (int j = 0; j < int(constants::BITS_PER_BYTE) && constants::BITS_PER_BYTE * i + j < N; ++j)
-                m_arr[constants::BITS_PER_BYTE * i + j] = ((hex[i] >> j) & 1);
+                bits_[constants::BITS_PER_BYTE * i + j] = ((hex[i] >> j) & 1);
     }
 
-    std::string to_string() const {
+    [[nodiscard]] std::string to_string() const {
         std::stringstream os;
         std::ios_base::fmtflags save = std::cout.flags();
         auto serial = this->serialize();
@@ -74,21 +73,21 @@ class Bitvector : public ssz::Container {
         return os.str();
     };
 
-    friend std::ostream &operator<<(std::ostream &os, const Bitvector<N> &m_bits) {
-        for (auto const &b : m_bits.m_arr) os << b;
+    friend std::ostream &operator<<(std::ostream &os, const Bitvector<N> &bv) {
+        for (auto const &b : bv.bits_) os << b;
         return os;
     };
-    std::vector<std::uint8_t> serialize() const override {
+    [[nodiscard]] std::vector<std::uint8_t> serialize() const override {
         Bytes<(N + constants::BITS_PER_BYTE - 1) / constants::BITS_PER_BYTE> ret{};
-        for (size_t i = 0; i < N; ++i) ret[i / constants::BITS_PER_BYTE] |= m_arr[i] << (i % constants::BITS_PER_BYTE);
-        return ret;
+        for (size_t i = 0; i < N; ++i) ret[i / constants::BITS_PER_BYTE] |= bits_[i] << (i % constants::BITS_PER_BYTE);
+        return std::vector<std::uint8_t>(ret);
     }
     bool deserialize(ssz::SSZIterator it, ssz::SSZIterator end) override {
         if (std::distance(it, end) != (N + constants::BITS_PER_BYTE - 1) / constants::BITS_PER_BYTE) return false;
         for (auto i = it; i != end; ++i)
             for (int j = 0; j < int(constants::BITS_PER_BYTE) && constants::BITS_PER_BYTE * std::distance(it, i) + j < N;
                  ++j)
-                m_arr[size_t(constants::BITS_PER_BYTE * std::distance(it, i) + j)] = *i & (1 << j);
+                bits_[size_t(constants::BITS_PER_BYTE * std::distance(it, i) + j)] = *i & (1 << j);
         return true;
     }
     bool operator==(const Bitvector &) const = default;

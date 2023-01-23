@@ -58,8 +58,8 @@ class BlockExchange final : public ActiveComponent {
 
     void receive_message(const sentry::InboundMessage& raw_message);
     void send_penalization(PeerId id, Penalty p) noexcept;
-    void request_headers();
-    void request_bodies();
+    size_t request_headers(size_t max_requests);
+    size_t request_bodies(size_t max_requests);
     void collect_headers();
     void collect_bodies();
     void log_status();

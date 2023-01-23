@@ -105,6 +105,11 @@ void BlockExchange::execution_loop() {
                 statistics_.processed_msgs++;
             }
 
+            // if we have too many messages in the queue, let's process them
+            if (messages_.size() > 2 * SentryClient::kPerPeerMaxOutstandingRequests * sentry_.active_peers()) {
+                continue;
+            }
+
             auto now = system_clock::now();
 
             // request headers & bodies from remote peers
@@ -115,13 +120,15 @@ void BlockExchange::execution_loop() {
 
             if (header_chain_.current_heigth() - body_sequence_.current_heigth() > stride) {
                 // prioritize body requests
-                request_bodies(room_for_new_requests);
+                room_for_new_requests -= request_bodies(room_for_new_requests);
+                if (room_for_new_requests > 0) {
+                    request_headers(room_for_new_requests);
+                }
             }
             else {
                 // request headers & bodies in equal proportions
-                size_t half = room_for_new_requests / 2;
-                request_headers(half);
-                request_bodies(room_for_new_requests - half);
+                room_for_new_requests -= request_headers(room_for_new_requests / 2);
+                request_bodies(room_for_new_requests);
             }
 
             // collect downloaded headers & bodies
@@ -146,39 +153,34 @@ void BlockExchange::execution_loop() {
     stop();
 }
 
-void BlockExchange::request_headers() {
-    constexpr auto only_one_request = 1;
+size_t BlockExchange::request_headers(size_t max_nr_of_requests) {
+    if (max_nr_of_requests == 0) return 0;
+    if (!downloading_active_) return 0;
+    if (header_chain_.in_sync()) return 0;
 
-    if (!downloading_active_) return;
-    if (header_chain_.in_sync()) return;
+    auto request_message = std::make_shared<OutboundGetBlockHeaders>(max_nr_of_requests, sentry_.active_peers());
+    request_message->execute(db_access_, header_chain_, body_sequence_, sentry_);
 
-    if (messages_.size() < HeaderChain::kPerPeerMaxOutstandingRequests * sentry_.active_peers() &&
-        body_sequence_.requests() < BodySequence::kMaxInMemoryRequests) {  // back pressure from body_sequence to header_chain
+    statistics_.tried_msgs += max_nr_of_requests;
+    statistics_.sent_msgs += request_message->sent_requests();
+    statistics_.nack_msgs += request_message->nack_requests();
 
-        auto request_message = std::make_shared<OutboundGetBlockHeaders>(only_one_request, sentry_.active_peers());
-        request_message->execute(db_access_, header_chain_, body_sequence_, sentry_);
-
-        statistics_.tried_msgs += only_one_request;
-        statistics_.sent_msgs += request_message->sent_requests();
-        statistics_.nack_msgs += request_message->nack_requests();
-    }
+    return request_message->sent_requests();
 }
 
-void BlockExchange::request_bodies() {
-    constexpr auto only_one_request = 1;
+size_t BlockExchange::request_bodies(size_t max_nr_of_requests) {
+    if (max_nr_of_requests == 0) return 0;
+    if (!downloading_active_) return 0;
+    if (body_sequence_.has_completed()) return 0;
 
-    if (!downloading_active_) return;
+    auto request_message = std::make_shared<OutboundGetBlockBodies>(max_nr_of_requests, sentry_.active_peers());
+    request_message->execute(db_access_, header_chain_, body_sequence_, sentry_);
 
-    if (body_sequence_.requests() < BodySequence::kMaxInMemoryRequests &&  // back pressure from body_sequence to header_chain
-        messages_.size() < BodySequence::kPerPeerMaxOutstandingRequests * sentry_.active_peers()) {
+    statistics_.tried_msgs += max_nr_of_requests;
+    statistics_.sent_msgs += request_message->sent_requests();
+    statistics_.nack_msgs += request_message->nack_requests();
 
-        auto request_message = std::make_shared<OutboundGetBlockBodies>(only_one_request, sentry_.active_peers());
-        request_message->execute(db_access_, header_chain_, body_sequence_, sentry_);
-
-        statistics_.tried_msgs += only_one_request;
-        statistics_.sent_msgs += request_message->sent_requests();
-        statistics_.nack_msgs += request_message->nack_requests();
-    }
+    return request_message->sent_requests();
 }
 
 void BlockExchange::collect_headers() {
@@ -202,6 +204,7 @@ void BlockExchange::collect_bodies() {
 void BlockExchange::log_status() {
     static constexpr seconds_t interval_for_stats_{60};
     static Network_Statistics prev_statistic{};
+    auto now = std::chrono::system_clock::now();
 
     log::Debug() << "BlockExchange msgs:" << std::setfill('_') << std::right
                  << " in-queue:"   << std::setw(5) << messages_.size()
@@ -221,7 +224,7 @@ void BlockExchange::log_status() {
 
     log::Debug() << "BlockExchange bodies:  " << std::setfill('_') << std::right
                  << "outst= " << std::setw(7)
-                 << body_sequence_.outstanding_bodies(std::chrono::system_clock::now())
+                 << body_sequence_.outstanding_requests(now) * BodySequence::kMaxBlocksPerMessage
                  << ", ready= " << std::setw(5) << body_sequence_.ready_bodies()
                  << ", db-height= " << std::setw(10) << body_sequence_.highest_block_in_output()
                  << ", mem-height= " << std::setw(10) << body_sequence_.lowest_block_in_memory()

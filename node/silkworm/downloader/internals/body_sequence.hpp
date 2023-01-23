@@ -57,7 +57,7 @@ class BodySequence {
 
     //! core functionalities: trigger the internal algorithms to decide what bodies we miss
     using MinBlock = BlockNum;
-    auto request_more_bodies(time_point_t tp, uint64_t active_peers)
+    auto request_more_bodies(time_point_t tp)
         -> std::tuple<GetBlockBodiesPacket66, std::vector<PeerPenalization>, MinBlock>;
 
     //! it needs to know if the request issued was not delivered

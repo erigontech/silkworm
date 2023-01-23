@@ -106,8 +106,6 @@ class HeaderChain {
     void add_bad_headers(const std::set<Hash>& bads);
     void set_preverified_hashes(const PreverifiedHashes*);
 
-    static constexpr size_t kPerPeerMaxOutstandingRequests = 4;
-
   protected:
     static constexpr BlockNum max_len = 192;
     static constexpr BlockNum stride = 8 * max_len;

@@ -128,7 +128,7 @@ Penalty BodySequence::accept_new_block(const Block& block, const PeerId&) {
     return Penalty::NoPenalty;
 }
 
-auto BodySequence::request_more_bodies(time_point_t tp, uint64_t active_peers)
+auto BodySequence::request_more_bodies(time_point_t tp)
     -> std::tuple<GetBlockBodiesPacket66, std::vector<PeerPenalization>, MinBlock> {
     GetBlockBodiesPacket66 packet;
     packet.requestId = RANDOM_NUMBER.generate_one();
@@ -142,7 +142,8 @@ auto BodySequence::request_more_bodies(time_point_t tp, uint64_t active_peers)
 
     auto penalizations = renew_stale_requests(packet, min_block, tp, timeout);
 
-    if (packet.request.size() < kMaxBlocksPerMessage) {  // not full yet
+    if (packet.request.size() < kMaxBlocksPerMessage && // not full yet
+        requests() < kMaxInMemoryRequests) {  // not too many requests in memory
         make_new_requests(packet, min_block, tp, timeout);
     }
 
@@ -247,7 +248,7 @@ bool BodySequence::fulfill_from_announcements(BodyRequest& request) {
 
 
 void BodySequence::request_nack(const GetBlockBodiesPacket66& packet) {
-    seconds_t timeout = BodySequence::kRequestDeadline;
+    seconds_t timeout = SentryClient::kRequestDeadline;
     for (auto& br : body_requests_) {
         BodyRequest& past_request = br.second;
         if (past_request.request_id == packet.requestId)

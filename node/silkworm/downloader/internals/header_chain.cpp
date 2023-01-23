@@ -88,6 +88,13 @@ size_t HeaderChain::anchors() const { return anchors_.size(); }
 
 std::vector<Announce>& HeaderChain::announces_to_do() { return announces_to_do_; }
 
+size_t HeaderChain::outstanding_requests(time_point_t tp) const {
+    auto it = std::find_if(anchor_queue_.begin(), anchor_queue_.end(), [tp](const auto& anchor) {
+            return anchor->timestamp > tp;  // anchor_queue_ is sorted by timestamp
+    });
+    return std::distance(it, anchor_queue_.end());  // skip adding (last_skeleton_request_ < tp ? 1 : 0)
+}                                                   // because we cannot say here if it has already been replied
+
 void HeaderChain::add_bad_headers(const std::set<Hash>& bads) {
     bad_headers_.insert(bads.begin(), bads.end());  // todo: use set_union or merge?
 }

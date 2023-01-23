@@ -78,16 +78,13 @@ class BodySequence {
     [[nodiscard]] BlockNum highest_block_in_memory() const;
     [[nodiscard]] BlockNum lowest_block_in_memory() const;
     [[nodiscard]] BlockNum target_height() const;
-    [[nodiscard]] size_t outstanding_bodies(time_point_t tp) const;
+    [[nodiscard]] size_t outstanding_requests(time_point_t tp) const;
     [[nodiscard]] size_t ready_bodies() const;
     [[nodiscard]] size_t requests() const;
 
     [[nodiscard]] const Download_Statistics& statistics() const;
 
     // downloading process tuning parameters
-    static constexpr seconds_t kRequestDeadline = std::chrono::seconds(30);  // after this a response is considered lost
-    static constexpr milliseconds_t kNoPeerDelay = std::chrono::milliseconds(1000);  // delay when no peer accepted the last request
-    static constexpr size_t kPerPeerMaxOutstandingRequests = 4;
     static constexpr size_t kMaxInMemoryRequests = 400000;
     static constexpr BlockNum kMaxBlocksPerMessage = 128;  // go-ethereum client acceptance limit
     static constexpr BlockNum kMaxAnnouncedBlocks = 10000;

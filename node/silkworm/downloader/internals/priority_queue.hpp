@@ -68,6 +68,14 @@ class heap_based_priority_queue : public std::priority_queue<T, SEQ, CMP> {
 
     // restore the priority_queue invariant (e.g. after an item external modify)
     void fix() { std::make_heap(this->c.begin(), this->c.end(), this->comp); }
+
+    // return begin iterator
+    typename SEQ::iterator begin() { return this->c.begin(); }
+    typename SEQ::const_iterator begin() const { return this->c.begin(); }
+
+    // return end iterator
+    typename SEQ::iterator end() { return this->c.end(); }
+    typename SEQ::const_iterator end() const { return this->c.end(); }
 };
 
 /*

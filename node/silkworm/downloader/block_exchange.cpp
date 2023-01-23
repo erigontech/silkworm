@@ -105,9 +105,24 @@ void BlockExchange::execution_loop() {
                 statistics_.processed_msgs++;
             }
 
+            auto now = system_clock::now();
+
             // request headers & bodies from remote peers
-            request_headers();
-            request_bodies();
+            size_t outstanding_requests = header_chain_.outstanding_requests(now) +
+                                          body_sequence_.outstanding_requests(now);
+            size_t room_for_new_requests = SentryClient::kPerPeerMaxOutstandingRequests * sentry_.active_peers() -
+                                           outstanding_requests;
+
+            if (header_chain_.current_heigth() - body_sequence_.current_heigth() > stride) {
+                // prioritize body requests
+                request_bodies(room_for_new_requests);
+            }
+            else {
+                // request headers & bodies in equal proportions
+                size_t half = room_for_new_requests / 2;
+                request_headers(half);
+                request_bodies(room_for_new_requests - half);
+            }
 
             // collect downloaded headers & bodies
             collect_headers();
@@ -116,7 +131,6 @@ void BlockExchange::execution_loop() {
             in_sync_ = header_chain_.in_sync() && body_sequence_.has_completed();
 
             // log status
-            auto now = system_clock::now();
             if (silkworm::log::test_verbosity(silkworm::log::Level::kDebug) && now - last_update > 30s) {
                 log_status();
                 last_update = now;

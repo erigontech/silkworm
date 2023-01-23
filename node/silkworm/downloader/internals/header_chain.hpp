@@ -74,6 +74,7 @@ class HeaderChain {
     std::pair<BlockNum, BlockNum> anchor_height_range() const;
     size_t pending_links() const;
     size_t anchors() const;
+    size_t outstanding_requests(time_point_t tp) const;
     const Download_Statistics& statistics() const;
 
     // core functionalities: requesting new headers - NEW API -

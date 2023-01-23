@@ -19,6 +19,7 @@
 #include <silkworm/chain/difficulty.hpp>
 #include <silkworm/common/log.hpp>
 #include <silkworm/consensus/base/engine.hpp>
+#include <silkworm/downloader/sentry_client.hpp>
 
 #include "random_number.hpp"
 
@@ -46,18 +47,18 @@ bool BodySequence::has_completed() const {
            highest_block_in_memory() == target_height_;  // all bodies withdrawn
 }
 
-size_t BodySequence::outstanding_bodies(time_point_t tp) const {
+size_t BodySequence::outstanding_requests(time_point_t tp) const {
     size_t requested_bodies{0};
 
     for (auto& br : body_requests_) {
         const BodyRequest& past_request = br.second;
         if (past_request.request_id == 0) break;  // not yet requested, so the following
         if (!past_request.ready &&
-            (tp - past_request.request_time < kRequestDeadline))
+            (tp - past_request.request_time < SentryClient::kRequestDeadline))
             requested_bodies++;
     }
 
-    return requested_bodies;
+    return requested_bodies / kMaxBlocksPerMessage;  // it is an estimate
 }
 
 Penalty BodySequence::accept_requested_bodies(BlockBodiesPacket66& packet, const PeerId&) {
@@ -132,23 +133,17 @@ auto BodySequence::request_more_bodies(time_point_t tp, uint64_t active_peers)
     GetBlockBodiesPacket66 packet;
     packet.requestId = RANDOM_NUMBER.generate_one();
 
-    seconds_t timeout = BodySequence::kRequestDeadline;
+    seconds_t timeout = SentryClient::kRequestDeadline;
 
     BlockNum min_block{0};
 
-    if (tp - last_nack_ < kNoPeerDelay)
+    if (tp - last_nack_ < SentryClient::kNoPeerDelay)
         return {};
 
     auto penalizations = renew_stale_requests(packet, min_block, tp, timeout);
 
     if (packet.request.size() < kMaxBlocksPerMessage) {  // not full yet
-        //size_t stale_requests = packet.request.size();
-        //auto outstanding_bodies = body_requests_.size() - ready_bodies_ - stale_requests;  // approximate calculation
-        auto requested_bodies = outstanding_bodies(tp);
-
-        if (requested_bodies < kPerPeerMaxOutstandingRequests * active_peers * kMaxBlocksPerMessage) {
-            make_new_requests(packet, min_block, tp, timeout);
-        }
+        make_new_requests(packet, min_block, tp, timeout);
     }
 
     statistics_.requested_items += packet.request.size();

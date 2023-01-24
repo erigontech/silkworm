@@ -92,7 +92,7 @@ void Peer::send_message_detached(const std::shared_ptr<Peer>& peer, const common
 
 boost::asio::awaitable<void> Peer::send_message(std::shared_ptr<Peer> peer, common::Message message) {
     try {
-        co_await peer->send_message(message);
+        co_await peer->send_message(std::move(message));
     } catch (const std::exception& ex) {
         log::Error() << "Peer::send_message exception: " << ex.what();
         throw;
@@ -100,7 +100,7 @@ boost::asio::awaitable<void> Peer::send_message(std::shared_ptr<Peer> peer, comm
 }
 
 boost::asio::awaitable<void> Peer::send_message(common::Message message) {
-    co_await send_message_channel_.send(message);
+    co_await send_message_channel_.send(std::move(message));
 }
 
 boost::asio::awaitable<void> Peer::send_messages(framing::MessageStream& message_stream) {

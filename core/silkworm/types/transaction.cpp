@@ -17,7 +17,6 @@
 #include "transaction.hpp"
 
 #include <cassert>
-#include <cstring>
 
 #include <ethash/keccak.hpp>
 #include <silkpre/ecdsa.h>
@@ -385,6 +384,32 @@ namespace rlp {
         }
 
         from.remove_prefix(h.payload_length - 1);
+        return DecodingResult::kOk;
+    }
+
+    DecodingResult decode_header_and_transaction_type(ByteView& from, Header& header, Transaction::Type& type) noexcept {
+        if (from.empty()) {
+            return DecodingResult::kInputTooShort;
+        }
+
+        DecodingResult result;
+        std::tie(header, result) = decode_header(from);
+        if (result != DecodingResult::kOk) {
+            return result;
+        }
+
+        if (header.list) {  // Legacy transaction
+            type = Transaction::Type::kLegacy;
+            return DecodingResult::kOk;
+        }
+
+        // String-wrapped typed transaction
+        if (header.payload_length == 0) {
+            return DecodingResult::kInputTooShort;
+        }
+
+        type = static_cast<Transaction::Type>(from[0]);
+        from.remove_prefix(1);
         return DecodingResult::kOk;
     }
 

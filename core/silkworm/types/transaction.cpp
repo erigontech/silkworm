@@ -387,7 +387,7 @@ namespace rlp {
         return DecodingResult::kOk;
     }
 
-    DecodingResult decode_header_and_transaction_type(ByteView& from, Header& header, Transaction::Type& type) noexcept {
+    DecodingResult decode_transaction_header_and_type(ByteView& from, Header& header, Transaction::Type& type) noexcept {
         if (from.empty()) {
             return DecodingResult::kInputTooShort;
         }

@@ -207,7 +207,7 @@ void TransactionIndex::build() {
 
                         rlp::Header tx_header;
                         Transaction::Type tx_type;
-                        decode_result = rlp::decode_header_and_transaction_type(tx_envelope_view, tx_header, tx_type);
+                        decode_result = rlp::decode_transaction_header_and_type(tx_envelope_view, tx_header, tx_type);
                         if (decode_result != DecodingResult::kOk) {
                             SILK_ERROR << "cannot decode tx envelope: " << to_hex(tx_envelope) << " i: " << i << " result: " << int(decode_result);
                             return false;

@@ -83,20 +83,20 @@ class SentryImpl final {
     std::optional<NodeKey> node_key_;
     silkworm::rpc::ServerContextPool context_pool_;
 
+    rlpx::Server rlpx_server_;
+    rlpx::Client rlpx_client_;
+    PeerManager peer_manager_;
+
     common::Channel<eth::StatusData> status_channel_;
     optional<common::AtomicValue<eth::StatusData>> status_;
 
-    PeerManager peer_manager_;
     MessageSender message_sender_;
     std::shared_ptr<MessageReceiver> message_receiver_;
 
+    rpc::Server rpc_server_;
+
     std::promise<void> tasks_promise_;
     asio::cancellation_signal tasks_stop_signal_;
-
-    rlpx::Server rlpx_server_;
-    rlpx::Client rlpx_client_;
-
-    rpc::Server rpc_server_;
 
     optional<unique_ptr<asio::signal_set>> shutdown_signals_;
 };
@@ -121,14 +121,19 @@ static rpc::common::ServiceState make_service_state(
     };
 }
 
-static void rethrow_unless_cancelled(const std::exception_ptr& ex_ptr) {
+static void rethrow_unless_cancelled(const std::exception_ptr& ex_ptr, const std::string& log_message) {
     if (!ex_ptr)
         return;
     try {
         std::rethrow_exception(ex_ptr);
     } catch (const boost::system::system_error& e) {
-        if (e.code() != boost::system::errc::operation_canceled)
+        if (e.code() != boost::system::errc::operation_canceled) {
+            log::Error() << log_message << " system_error: " << e.what();
             throw;
+        }
+    } catch (const std::exception& e) {
+        log::Error() << log_message << " exception: " << e.what();
+        throw;
     }
 }
 
@@ -138,12 +143,12 @@ class DummyServerCompletionQueue : public grpc::ServerCompletionQueue {
 SentryImpl::SentryImpl(Settings settings)
     : settings_(std::move(settings)),
       context_pool_(settings_.num_contexts, settings_.wait_mode, [] { return make_unique<DummyServerCompletionQueue>(); }),
-      status_channel_(context_pool_.next_io_context()),
-      peer_manager_(context_pool_.next_io_context()),
-      message_sender_(context_pool_.next_io_context()),
-      message_receiver_(std::make_shared<MessageReceiver>(context_pool_.next_io_context())),
       rlpx_server_(context_pool_.next_io_context(), "0.0.0.0", settings_.port),
       rlpx_client_(context_pool_.next_io_context(), settings_.static_peers),
+      peer_manager_(context_pool_.next_io_context()),
+      status_channel_(context_pool_.next_io_context()),
+      message_sender_(context_pool_.next_io_context()),
+      message_receiver_(std::make_shared<MessageReceiver>(context_pool_.next_io_context())),
       rpc_server_(make_server_config(settings_), make_service_state(status_channel_, message_sender_, *message_receiver_)) {
 }
 
@@ -166,7 +171,7 @@ void SentryImpl::setup_node_key() {
 
 void SentryImpl::spawn_run_tasks() {
     auto completion = [&](const std::exception_ptr& ex_ptr) {
-        rethrow_unless_cancelled(ex_ptr);
+        rethrow_unless_cancelled(ex_ptr, "SentryImpl::run_tasks");
         this->tasks_promise_.set_value();
     };
     asio::co_spawn(

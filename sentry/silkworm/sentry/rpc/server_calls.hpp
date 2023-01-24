@@ -53,10 +53,7 @@ class SetStatusCall : public sw_rpc::server::UnaryCall<proto::StatusData, proto:
 
     awaitable<void> operator()(const ServiceState& state) {
         auto status = make_status_data(request_, state);
-        bool ok = state.status_channel.try_send(status);
-        if (!ok) {
-            log::Error() << "SetStatusCall: status_channel is clogged";
-        }
+        co_await state.status_channel.send(status);
         co_await agrpc::finish(responder_, proto::SetStatusReply{}, grpc::Status::OK);
     }
 

@@ -169,6 +169,7 @@ class HeaderChain {
     ConsensusEnginePtr consensus_engine_;
     CustomHeaderOnlyChainState chain_state_;
     time_point_t last_skeleton_request_;
+    time_point_t last_nack_;
 
     uint64_t generate_request_id();
     uint64_t is_valid_request_id(uint64_t request_id);

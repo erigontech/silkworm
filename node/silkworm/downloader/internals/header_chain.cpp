@@ -19,6 +19,7 @@
 #include <silkworm/common/as_range.hpp>
 #include <silkworm/common/log.hpp>
 #include <silkworm/common/environment.hpp>
+#include <silkworm/downloader/sentry_client.hpp>
 
 #include "algorithm.hpp"
 #include "db_utils.hpp"
@@ -364,6 +365,9 @@ auto HeaderChain::anchor_extension_request(time_point_t time_point, seconds_t ti
     -> std::tuple<std::optional<GetBlockHeadersPacket66>, std::vector<PeerPenalization>> {
     using std::nullopt;
 
+    if (time_point - last_nack_ < SentryClient::kNoPeerDelay)
+        return {};
+
     if (anchor_queue_.empty()) {
         SILK_TRACE << "HeaderChain, no more headers to request: empty anchor queue";
         return {};
@@ -430,8 +434,9 @@ void HeaderChain::save_external_announce(Hash h) {
 }
 
 void HeaderChain::request_nack(const GetBlockHeadersPacket66& packet) {
-    std::shared_ptr<Anchor> anchor;
+    last_nack_ = std::chrono::system_clock::now();
 
+    std::shared_ptr<Anchor> anchor;
     if (std::holds_alternative<Hash>(packet.request.origin)) {
         Hash hash = std::get<Hash>(packet.request.origin);
         auto anchor_it = anchors_.find(hash);
@@ -484,6 +489,7 @@ auto HeaderChain::accept_headers(const std::vector<BlockHeader>& headers, uint64
     bool request_more_headers = false;
 
     if (headers.empty()) {
+        statistics_.received_items += 1;
         statistics_.reject_causes.invalid++;
         return {Penalty::DuplicateHeaderPenalty, request_more_headers};
     }

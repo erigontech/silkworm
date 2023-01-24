@@ -19,6 +19,7 @@ limitations under the License.
 #include <silkworm/common/as_range.hpp>
 #include <silkworm/downloader/messages/outbound_new_block.hpp>
 #include <silkworm/downloader/messages/outbound_new_block_hashes.hpp>
+#include <silkworm/common/measure.hpp>
 
 namespace silkworm::chainsync {
 
@@ -33,12 +34,13 @@ SyncEngine::SyncEngine(BlockExchange& be, stagedsync::ExecutionEngine& ee)
 auto SyncEngine::forward_and_insert_blocks() -> NewHeight {
     using ResultQueue = BlockExchange::ResultQueue;
 
-    StopWatch timing; timing.start();
     ResultQueue& downloading = block_exchange_.result_queue();
 
     auto initial_header_head = exec_engine_.get_headers_head();
     block_exchange_.download_blocks(initial_header_head.number, BlockExchange::kTipOfTheChain);
 
+    StopWatch timing; timing.start();
+    RepeatedMeasure<BlockNum> downloaded_headers(initial_header_head.number);
     log::Info("Sync") << "Waiting for blocks... from=" << initial_header_head.number;
 
     while (!is_stopping() && !block_exchange_.in_sync()) {
@@ -63,10 +65,11 @@ auto SyncEngine::forward_and_insert_blocks() -> NewHeight {
         send_new_block_announcements(std::move(announcements_to_do));  // according to eth/67 they must be done here,
                                                                        // after simple header verification
 
-        auto headers_downloaded = chain_fork_view_.head_height() - initial_header_head.number;
-        log::Info("Sync") << "Downloading progress: " << headers_downloaded << " blocks downloaded,"
-                               << " last=" << chain_fork_view_.head_height()
-                               << " duration=" << StopWatch::format(timing.lap_duration());
+        downloaded_headers.set(chain_fork_view_.head_height());
+        log::Info("Sync") << "Downloading progress: +" << downloaded_headers.delta() << " blocks downloaded, "
+                          << downloaded_headers.throughput() << " headers/secs,"
+                          << " last=" << downloaded_headers.get()
+                          << " tot.duration=" << StopWatch::format(timing.lap_duration());
     };
 
     log::Info("Sync") << "Downloading completed, last=" << chain_fork_view_.head_height();

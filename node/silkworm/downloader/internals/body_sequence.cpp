@@ -149,6 +149,10 @@ auto BodySequence::request_more_bodies(time_point_t tp)
 
     statistics_.requested_items += packet.request.size();
 
+    if (packet.request.size() == 0) {
+        SILK_TRACE << "BodySequence, no more bodies to request";
+    }
+
     return {std::move(packet), std::move(penalizations), min_block};
 }
 

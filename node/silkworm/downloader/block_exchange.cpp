@@ -26,6 +26,7 @@
 #include <silkworm/downloader/messages/outbound_get_block_bodies.hpp>
 #include <silkworm/downloader/messages/outbound_get_block_headers.hpp>
 #include <silkworm/downloader/rpc/penalize_peer.hpp>
+#include <silkworm/downloader/internals/random_number.hpp>
 
 namespace silkworm {
 
@@ -106,7 +107,7 @@ void BlockExchange::execution_loop() {
             }
 
             // if we have too many messages in the queue, let's process them
-            if (messages_.size() > 2 * SentryClient::kPerPeerMaxOutstandingRequests * sentry_.active_peers()) {
+            if (messages_.size() >= 2 * SentryClient::kPerPeerMaxOutstandingRequests * sentry_.active_peers()) {
                 continue;
             }
 
@@ -119,7 +120,7 @@ void BlockExchange::execution_loop() {
                                            outstanding_requests;
 
             auto body_requests = room_for_new_requests == 1
-                                     ? std::rand() % 2  // 50% chance to request a body
+                                     ? RANDOM_NUMBER.generate_one() % 2  // 50% chance to request a body
                                      : room_for_new_requests / 2;  // a slight bias towards headers
 
             room_for_new_requests -= request_bodies(body_requests);  // do the computed nr. of body requests

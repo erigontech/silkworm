@@ -61,7 +61,6 @@ class Peer {
     static void start_detached(const std::shared_ptr<Peer>& peer);
 
     static void send_message_detached(const std::shared_ptr<Peer>& peer, const common::Message& message);
-    boost::asio::awaitable<void> send_message(common::Message message);
     boost::asio::awaitable<common::Message> receive_message();
 
     std::optional<common::EccPublicKey> peer_public_key() {
@@ -73,6 +72,7 @@ class Peer {
     boost::asio::awaitable<void> handle();
 
     static boost::asio::awaitable<void> send_message(std::shared_ptr<Peer> peer, common::Message message);
+    boost::asio::awaitable<void> send_message(common::Message message);
     boost::asio::awaitable<void> send_messages(framing::MessageStream& message_stream);
     boost::asio::awaitable<void> receive_messages(framing::MessageStream& message_stream);
 

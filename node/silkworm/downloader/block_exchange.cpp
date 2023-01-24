@@ -118,18 +118,16 @@ void BlockExchange::execution_loop() {
             size_t room_for_new_requests = SentryClient::kPerPeerMaxOutstandingRequests * sentry_.active_peers() -
                                            outstanding_requests;
 
-            if (header_chain_.current_heigth() - body_sequence_.current_heigth() > stride) {
-                // prioritize body requests
-                room_for_new_requests -= request_bodies(room_for_new_requests);
-                if (room_for_new_requests > 0) {
-                    request_headers(room_for_new_requests);
-                }
-            }
-            else {
-                // request headers & bodies in equal proportions
-                room_for_new_requests -= request_headers(room_for_new_requests / 2);
-                request_bodies(room_for_new_requests);
-            }
+            auto body_requests = room_for_new_requests == 1
+                                     ? std::rand() % 2  // 50% chance to request a body
+                                     : room_for_new_requests / 2;  // a slight bias towards headers
+
+            room_for_new_requests -= request_bodies(body_requests);  // do the computed nr. of body requests
+            room_for_new_requests -= request_headers(room_for_new_requests);  // do the remaining nr. of header requests
+            request_bodies(room_for_new_requests);  // if headers do not used all the room we use it for body requests
+
+            // todo: check if it is better to apply a policy based on the current sync status
+            // for example: if (header_chain_.current_heigth() - body_sequence_.current_heigth() > stride) { ... }
 
             // collect downloaded headers & bodies
             collect_headers();

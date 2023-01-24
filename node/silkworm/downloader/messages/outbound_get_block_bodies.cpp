@@ -37,13 +37,13 @@ void OutboundGetBlockBodies::execute(db::ROAccess, HeaderChain&, BodySequence& b
     do {
         time_point_t now = std::chrono::system_clock::now();
 
-        auto [packet, penalizations, min_block] = bs.request_more_bodies(now, active_peers_);
+        auto [packet, penalizations, min_block] = bs.request_more_bodies(now);
 
         if (packet.request.empty()) break;
 
         auto send_outcome = send_packet(sentry, packet, min_block, timeout);
 
-        SILK_TRACE << "Bodies request sent (" << packet << "), min_block " << min_block
+        SILK_TRACE << "Bodies request sent (OutboundGetBlockBodies/" << packet << "), min_block " << min_block
                    << ", received by " << send_outcome.peers_size() << "/" << active_peers_ << " peer(s)";
 
         if (send_outcome.peers_size() == 0) {
@@ -73,7 +73,7 @@ sentry::SentPeers OutboundGetBlockBodies::send_packet(SentryClient& sentry, cons
     rlp::encode(rlp_encoding, packet_);
     request->set_data(rlp_encoding.data(), rlp_encoding.length());  // copy
 
-    SILK_TRACE << "Sending message OutboundGetBlockBodies with send_message_by_min_block, content:" << packet_;
+    //SILK_TRACE << "Sending message OutboundGetBlockBodies with send_message_by_min_block, content:" << packet_;
 
     rpc::SendMessageByMinBlock rpc{min_block, std::move(request)};
 
@@ -88,8 +88,8 @@ sentry::SentPeers OutboundGetBlockBodies::send_packet(SentryClient& sentry, cons
     }
 
     sentry::SentPeers peers = rpc.reply();
-    SILK_TRACE << "Received rpc result of OutboundGetBlockBodies reqId=" << packet_.requestId << ": "
-               << std::to_string(peers.peers_size()) + " peer(s)";
+    //SILK_TRACE << "Received rpc result of OutboundGetBlockBodies reqId=" << packet_.requestId << ": "
+    //           << std::to_string(peers.peers_size()) + " peer(s)";
 
     return peers;
 }

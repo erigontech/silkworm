@@ -45,7 +45,7 @@ void OutboundGetBlockHeaders::execute(db::ROAccess, HeaderChain& hc, BodySequenc
         auto send_outcome = send_packet(sentry, *packet, response_timeout);
 
         packets_ += "o=" + std::to_string(std::get<BlockNum>(packet->request.origin)) + ",";
-        SILK_TRACE << "Headers request sent (" << *packet << "), received by " << send_outcome.peers_size()
+        SILK_TRACE << "Headers request sent (OutboundGetBlockHeaders/" << *packet << "), received by " << send_outcome.peers_size()
                    << "/" << active_peers_ << " peer(s)";
 
         if (send_outcome.peers_size() == 0) {
@@ -101,7 +101,7 @@ sentry::SentPeers OutboundGetBlockHeaders::send_packet(SentryClient& sentry,
     rlp::encode(rlp_encoding, packet_);
     request->set_data(rlp_encoding.data(), rlp_encoding.length());  // copy
 
-    SILK_TRACE << "Sending message OutboundGetBlockHeaders with send_message_by_min_block, content:" << packet_;
+    //SILK_TRACE << "Sending message OutboundGetBlockHeaders with send_message_by_min_block, content:" << packet_;
 
     rpc::SendMessageByMinBlock rpc{min_block, std::move(request)};
 
@@ -111,13 +111,13 @@ sentry::SentPeers OutboundGetBlockHeaders::send_packet(SentryClient& sentry,
     sentry.exec_remotely(rpc);
 
     if (!rpc.status().ok()) {
-        SILK_TRACE << "Failure of rpc OutboundNewBlockHashes " << packet_ << ": " << rpc.status().error_message();
+        SILK_TRACE << "Failure of rpc OutboundGetBlockHeaders " << packet_ << ": " << rpc.status().error_message();
         return {};
     }
 
     sentry::SentPeers peers = rpc.reply();
-    SILK_TRACE << "Received rpc result of OutboundGetBlockHeaders reqId=" << packet_.requestId << ": "
-               << std::to_string(peers.peers_size()) + " peer(s)";
+    //SILK_TRACE << "Received rpc result of OutboundGetBlockHeaders reqId=" << packet_.requestId << ": "
+    //           << std::to_string(peers.peers_size()) + " peer(s)";
 
     return peers;
 }

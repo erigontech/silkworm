@@ -63,6 +63,7 @@ size_t BodySequence::outstanding_requests(time_point_t tp) const {
 
 Penalty BodySequence::accept_requested_bodies(BlockBodiesPacket66& packet, const PeerId&) {
     Penalty penalty = NoPenalty;
+    size_t count = 0, start_block = std::numeric_limits<size_t>::max();
 
     statistics_.received_items += packet.request.size();
 
@@ -104,11 +105,17 @@ Penalty BodySequence::accept_requested_bodies(BlockBodiesPacket66& packet, const
             request.ready = true;
             ready_bodies_ += 1;
             statistics_.accepted_items += 1;
-            SILK_TRACE << "BodySequence: body accepted, block_num=" << request.block_height;
+
+            start_block = std::min(start_block, request.block_height);
+            count += 1;
+            //SILK_TRACE << "BodySequence: body accepted, block_num=" << request.block_height;
         } else {
             statistics_.reject_causes.duplicated += 1;
         }
     }
+
+    SILK_TRACE << "BodySequence: " << count << " body accepted from block " << start_block << " out of "
+               << packet.request.size() << " received";
 
     // Process remaining elements in matching_requests invalidating corresponding BodyRequest
     for (auto& elem : matching_requests) {
@@ -160,6 +167,7 @@ auto BodySequence::request_more_bodies(time_point_t tp)
 auto BodySequence::renew_stale_requests(GetBlockBodiesPacket66& packet, BlockNum& min_block,
                                         time_point_t tp, seconds_t timeout) -> std::vector<PeerPenalization> {
     std::vector<PeerPenalization> penalizations;
+    size_t count = 0, start_block = std::numeric_limits<size_t>::max();
 
     for (auto& br : body_requests_) {
         BodyRequest& past_request = br.second;
@@ -172,23 +180,29 @@ auto BodySequence::renew_stale_requests(GetBlockBodiesPacket66& packet, BlockNum
             past_request.request_time = tp;
             past_request.request_id = packet.requestId;
 
+            min_block = std::max(min_block, past_request.block_height);
+
             // Erigon increment a penalization counter for the peer, but it doesn't use it
             // penalizations.emplace_back({Penalty::BadBlockPenalty, });
 
-            SILK_TRACE << "BodySequence: renewed request block num= " << past_request.block_height
-                       << ", hash= " << past_request.block_hash;
+            start_block = std::min(start_block, past_request.block_height);
+            count++;
+            //SILK_TRACE << "BodySequence: renewed request block num= " << past_request.block_height
+            //           << ", hash= " << past_request.block_hash;
         }
-
-        min_block = std::max(min_block, past_request.block_height);
 
         if (packet.request.size() >= kMaxBlocksPerMessage) break;
     }
+
+    SILK_TRACE << "BodySequence: renewing body requests from block-num " << start_block << " for " << count << " blocks";
 
     return penalizations;
 }
 
 void BodySequence::make_new_requests(GetBlockBodiesPacket66& packet, BlockNum& min_block,
                                      time_point_t tp, seconds_t) {
+    size_t count = 0, start_block = std::numeric_limits<size_t>::max();
+
     for (auto& br : body_requests_) {
         BodyRequest& new_request = br.second;
 
@@ -200,16 +214,20 @@ void BodySequence::make_new_requests(GetBlockBodiesPacket66& packet, BlockNum& m
             new_request.request_time = tp;
             new_request.request_id = packet.requestId;
 
-            SILK_TRACE << "BodySequence: requested body block-num= " << new_request.block_height
-                       << ", hash= " << new_request.block_hash;
+            min_block = std::max(min_block, new_request.block_height);  // the min block the peer must have (so it is our max)
+
+            start_block = std::min(start_block, new_request.block_height);
+            count++;
+            //SILK_TRACE << "BodySequence: requested body block-num= " << new_request.block_height
+            //           << ", hash= " << new_request.block_hash;
         }
 
         new_request.request_id = packet.requestId;
 
-        min_block = std::max(min_block, new_request.block_height);
-
         if (packet.request.size() >= kMaxBlocksPerMessage) break;
     }
+
+    SILK_TRACE << "BodySequence: requesting new bodies from block-num " << start_block << " for " << count << " blocks";
 }
 
 //! Save headers of witch it has to download bodies

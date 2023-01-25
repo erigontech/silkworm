@@ -71,10 +71,17 @@ class RepeatedMeasure {
         return duration_cast<Duration>(curr_value_.time() - prev_value_.time());
     }
 
-    auto high_res_throughput() {
+    double high_res_throughput() {
         auto nano_elapsed = static_cast<unsigned long>(high_res_elapsed().count());
         if (nano_elapsed == 0) nano_elapsed = 1;
-        return delta() / nano_elapsed;
+        return delta() / static_cast<double>(nano_elapsed);
+    }
+
+    template <typename DURATION = Duration>
+    double high_res_throughput() {
+        auto nano_elapsed = static_cast<unsigned long>(high_res_elapsed().count());
+        if (nano_elapsed == 0) nano_elapsed = 1;
+        return (delta() / static_cast<double>(nano_elapsed)) * DURATION::den / DURATION::num;
     }
 
     std::chrono::seconds elapsed() {

@@ -21,6 +21,7 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
+#include <array>
 #include <exception>
 #include <variant>
 
@@ -32,7 +33,6 @@
 #include <boost/asio/experimental/awaitable_operators.hpp>
 #include <boost/asio/experimental/deferred.hpp>
 #include <boost/asio/experimental/parallel_group.hpp>
-#include <boost/asio/multiple_exceptions.hpp>
 #include <boost/asio/this_coro.hpp>
 #include <boost/asio/use_awaitable.hpp>
 
@@ -56,9 +56,10 @@ namespace detail {
     using boost::asio::experimental::awaitable_operators::detail::awaitable_unwrap;
     using boost::asio::experimental::awaitable_operators::detail::awaitable_wrap;
     using boost::asio::experimental::awaitable_operators::detail::widen_variant;
-}  // namespace detail
 
-using boost::asio::multiple_exceptions;
+    void rethrow_exceptions(const std::exception_ptr& ex0, const std::exception_ptr& ex1, const std::array<std::size_t, 2>& order);
+
+}  // namespace detail
 
 /// Wait for both operations to succeed.
 /**
@@ -78,12 +79,7 @@ awaitable<void, Executor> operator&&(
                 wait_for_one_error(),
                 use_awaitable_t<Executor>{});
 
-    if (ex0 && ex1)
-        throw multiple_exceptions(ex0);
-    if (ex0)
-        std::rethrow_exception(ex0);
-    if (ex1)
-        std::rethrow_exception(ex1);
+    detail::rethrow_exceptions(ex0, ex1, order);
     co_return;
 }
 
@@ -105,12 +101,7 @@ awaitable<U, Executor> operator&&(
                 wait_for_one_error(),
                 use_awaitable_t<Executor>{});
 
-    if (ex0 && ex1)
-        throw multiple_exceptions(ex0);
-    if (ex0)
-        std::rethrow_exception(ex0);
-    if (ex1)
-        std::rethrow_exception(ex1);
+    detail::rethrow_exceptions(ex0, ex1, order);
     co_return std::move(detail::awaitable_unwrap<U>(r1));
 }
 
@@ -132,12 +123,7 @@ awaitable<T, Executor> operator&&(
                 wait_for_one_error(),
                 use_awaitable_t<Executor>{});
 
-    if (ex0 && ex1)
-        throw multiple_exceptions(ex0);
-    if (ex0)
-        std::rethrow_exception(ex0);
-    if (ex1)
-        std::rethrow_exception(ex1);
+    detail::rethrow_exceptions(ex0, ex1, order);
     co_return std::move(detail::awaitable_unwrap<T>(r0));
 }
 
@@ -159,12 +145,7 @@ awaitable<std::tuple<T, U>, Executor> operator&&(
                 wait_for_one_error(),
                 use_awaitable_t<Executor>{});
 
-    if (ex0 && ex1)
-        throw multiple_exceptions(ex0);
-    if (ex0)
-        std::rethrow_exception(ex0);
-    if (ex1)
-        std::rethrow_exception(ex1);
+    detail::rethrow_exceptions(ex0, ex1, order);
     co_return std::make_tuple(
         std::move(detail::awaitable_unwrap<T>(r0)),
         std::move(detail::awaitable_unwrap<U>(r1)));
@@ -188,12 +169,7 @@ awaitable<std::tuple<T..., std::monostate>, Executor> operator&&(
                 wait_for_one_error(),
                 use_awaitable_t<Executor>{});
 
-    if (ex0 && ex1)
-        throw multiple_exceptions(ex0);
-    if (ex0)
-        std::rethrow_exception(ex0);
-    if (ex1)
-        std::rethrow_exception(ex1);
+    detail::rethrow_exceptions(ex0, ex1, order);
     co_return std::move(detail::awaitable_unwrap<std::tuple<T...>>(r0));
 }
 
@@ -215,12 +191,7 @@ awaitable<std::tuple<T..., U>, Executor> operator&&(
                 wait_for_one_error(),
                 use_awaitable_t<Executor>{});
 
-    if (ex0 && ex1)
-        throw multiple_exceptions(ex0);
-    if (ex0)
-        std::rethrow_exception(ex0);
-    if (ex1)
-        std::rethrow_exception(ex1);
+    detail::rethrow_exceptions(ex0, ex1, order);
     co_return std::tuple_cat(
         std::move(detail::awaitable_unwrap<std::tuple<T...>>(r0)),
         std::make_tuple(std::move(detail::awaitable_unwrap<U>(r1))));

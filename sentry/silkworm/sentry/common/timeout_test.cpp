@@ -16,6 +16,8 @@
 
 #include "timeout.hpp"
 
+#include <exception>
+
 #include <silkworm/concurrency/coroutine.hpp>
 
 #include <boost/asio/awaitable.hpp>
@@ -27,6 +29,7 @@
 #include <boost/asio/this_coro.hpp>
 #include <boost/asio/use_future.hpp>
 #include <boost/date_time/posix_time/posix_time_duration.hpp>
+#include <boost/system/system_error.hpp>
 #include <catch2/catch.hpp>
 
 #include "awaitable_wait_for_all.hpp"
@@ -72,6 +75,22 @@ awaitable<void> wait_until_cancelled() {
     deadline_timer timer(executor);
     timer.expires_from_now(boost::posix_time::hours(1));
     co_await timer.async_wait(use_awaitable);
+}
+
+class BadCancelException : public std::runtime_error {
+  public:
+    BadCancelException() : std::runtime_error("BadCancelException") {}
+};
+
+awaitable<void> wait_until_cancelled_bad() {
+    try {
+        auto executor = co_await this_coro::executor;
+        deadline_timer timer(executor);
+        timer.expires_from_now(boost::posix_time::hours(1));
+        co_await timer.async_wait(use_awaitable);
+    } catch (const boost::system::system_error& ex) {
+        throw BadCancelException();
+    }
 }
 
 template <typename TResult>
@@ -211,6 +230,28 @@ TEST_CASE("Timeout.wait_for_all.cancel_and_throw") {
 TEST_CASE("Timeout.wait_for_all.throw_and_cancel") {
     using namespace awaitable_wait_for_all;
     CHECK_THROWS_AS(run(async_throw() && wait_until_cancelled()), TestException);
+}
+
+TEST_CASE("Timeout.wait_for_all.bad_cancel_and_throw") {
+    using namespace awaitable_wait_for_all;
+    try {
+        run(wait_until_cancelled_bad() && async_throw());
+        CHECK(false);
+    } catch (const std::exception& ex) {
+        CHECK(std::string(ex.what()) == "BadCancelException");
+        CHECK_THROWS_AS(std::rethrow_if_nested(ex), TestException);
+    }
+}
+
+TEST_CASE("Timeout.wait_for_all.throw_and_bad_cancel") {
+    using namespace awaitable_wait_for_all;
+    try {
+        run(async_throw() && wait_until_cancelled_bad());
+        CHECK(false);
+    } catch (const std::exception& ex) {
+        CHECK(std::string(ex.what()) == "BadCancelException");
+        CHECK_THROWS_AS(std::rethrow_if_nested(ex), TestException);
+    }
 }
 
 }  // namespace silkworm::sentry::common

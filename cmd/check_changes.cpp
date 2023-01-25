@@ -14,6 +14,8 @@
    limitations under the License.
 */
 
+#include <stdexcept>
+
 #include <CLI/CLI.hpp>
 #include <absl/container/flat_hash_set.h>
 

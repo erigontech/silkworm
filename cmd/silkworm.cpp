@@ -14,6 +14,8 @@
    limitations under the License.
 */
 
+#include <stdexcept>
+
 #include <CLI/CLI.hpp>
 
 #include <silkworm/backend/backend_kv_server.hpp>

@@ -17,6 +17,7 @@
 #include "timeout.hpp"
 
 #include <exception>
+#include <stdexcept>
 
 #include <silkworm/concurrency/coroutine.hpp>
 

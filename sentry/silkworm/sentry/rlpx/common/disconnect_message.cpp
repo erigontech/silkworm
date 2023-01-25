@@ -16,6 +16,7 @@
 
 #include "disconnect_message.hpp"
 
+#include <stdexcept>
 #include <vector>
 
 #include <silkworm/rlp/decode.hpp>

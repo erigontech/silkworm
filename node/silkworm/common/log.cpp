@@ -19,6 +19,7 @@
 #include <mutex>
 #include <ostream>
 #include <regex>
+#include <stdexcept>
 #include <thread>
 
 #include <absl/time/clock.h>

@@ -45,35 +45,25 @@ void InboundNewBlockHashes::execute(db::ROAccess, HeaderChain& hc, BodySequence&
 
     SILK_TRACE << "Processing message " << *this;
 
-    // todo: Erigon apparently processes this message even if it is not in a fetching phase BUT is in request-chaining
-    // mode - do we need the same?
-
     BlockNum max = hc.top_seen_block_height();
 
     for (size_t i = 0; i < packet_.size(); i++) {
         Hash hash = packet_[i].hash;
 
         // save announcement
-        hc.save_external_announce(hash);
-        if (hc.has_link(hash)) continue;
+        auto packet = hc.save_external_announce(hash);
+        if (!packet) continue;
 
         // request header
-        GetBlockHeadersPacket66 reply;
-        reply.requestId = RANDOM_NUMBER.generate_one();
-        reply.request.origin = hash;
-        reply.request.amount = 1;
-        reply.request.skip = 0;
-        reply.request.reverse = false;
-
         Bytes rlp_encoding;
-        rlp::encode(rlp_encoding, reply);
+        rlp::encode(rlp_encoding, *packet);
 
         auto msg_reply = std::make_unique<sentry::OutboundMessageData>();
         msg_reply->set_id(sentry::MessageId::GET_BLOCK_HEADERS_66);
         msg_reply->set_data(rlp_encoding.data(), rlp_encoding.length());  // copy
 
         // send msg_reply
-        SILK_TRACE << "Replying to " << identify(*this) << " with send_message_by_id, content: " << reply;
+        SILK_TRACE << "Replying to " << identify(*this) << " requesting header with send_message_by_id, content: " << *packet;
         rpc::SendMessageById rpc(peerId_, std::move(msg_reply));
         rpc.do_not_throw_on_failure();
 

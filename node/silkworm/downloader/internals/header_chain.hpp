@@ -96,11 +96,13 @@ class HeaderChain {
     using RequestMoreHeaders = bool;
     auto accept_headers(const std::vector<BlockHeader>&, uint64_t requestId, const PeerId&) -> std::tuple<Penalty, RequestMoreHeaders>;
 
+    // core functionalities: process header announcement
+    std::optional<GetBlockHeadersPacket66> save_external_announce(Hash hash);
+
     // core functionalities: persist new headers that have persisted parent
     auto withdraw_stable_headers() -> Headers;
 
     // minor functionalities
-    void save_external_announce(Hash hash);
     bool has_link(Hash hash);
     std::vector<Announce>& announces_to_do();
     void add_bad_headers(const std::set<Hash>& bads);

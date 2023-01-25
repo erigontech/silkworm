@@ -429,8 +429,21 @@ void HeaderChain::invalidate(std::shared_ptr<Anchor> anchor) {
 }
 
 // SaveExternalAnnounce - does mark hash as seen in external announcement, only such hashes will broadcast further after
-void HeaderChain::save_external_announce(Hash h) {
-    seen_announces_.put(h, 0);  // we ignore the value in the map (zero here), we only need the key
+auto HeaderChain::save_external_announce(Hash hash) -> std::optional<GetBlockHeadersPacket66> {
+    if (target_block_.has_value()) return std::nullopt; // with stop_at_block we do not use announcements
+
+    seen_announces_.put(hash, 0);  // we ignore the value in the map (zero here), we only need the key
+
+    if (has_link(hash)) return std::nullopt;  // we already have this link, no need to request it
+
+    GetBlockHeadersPacket66 request;
+    request.requestId = RANDOM_NUMBER.generate_one();
+    request.request.origin = hash;
+    request.request.amount = 1;
+    request.request.skip = 0;
+    request.request.reverse = false;
+
+    return {std::move(request)};
 }
 
 void HeaderChain::request_nack(const GetBlockHeadersPacket66& packet) {

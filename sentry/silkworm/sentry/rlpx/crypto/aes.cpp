@@ -16,6 +16,8 @@
 
 #include "aes.hpp"
 
+#include <stdexcept>
+
 #include <gsl/util>
 #include <openssl/aes.h>
 #include <openssl/evp.h>

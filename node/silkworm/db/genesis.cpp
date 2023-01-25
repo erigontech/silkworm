@@ -16,6 +16,8 @@
 
 #include "genesis.hpp"
 
+#include <stdexcept>
+
 #include <silkworm/chain/genesis.hpp>
 #include <silkworm/state/in_memory_state.hpp>
 #include <silkworm/trie/hash_builder.hpp>

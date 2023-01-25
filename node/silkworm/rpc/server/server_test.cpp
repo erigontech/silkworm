@@ -16,6 +16,7 @@
 
 #include "server.hpp"
 
+#include <stdexcept>
 #include <thread>
 
 #include <catch2/catch.hpp>

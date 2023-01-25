@@ -17,6 +17,7 @@
 #include "stage_execution.hpp"
 
 #include <span>
+#include <stdexcept>
 
 #include <silkworm/common/endian.hpp>
 #include <silkworm/common/stopwatch.hpp>

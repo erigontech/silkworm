@@ -17,6 +17,7 @@
 #include "common.hpp"
 
 #include <regex>
+#include <stdexcept>
 
 #include <boost/asio/ip/address.hpp>
 

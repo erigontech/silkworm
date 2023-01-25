@@ -67,7 +67,7 @@ auto SyncEngine::forward_and_insert_blocks() -> NewHeight {
 
         downloaded_headers.set(chain_fork_view_.head_height());
         log::Info("Sync") << "Downloading progress: +" << downloaded_headers.delta() << " blocks downloaded, "
-                          << downloaded_headers.high_res_throughput() * std::nano::den << " headers/secs,"
+                          << downloaded_headers.high_res_throughput<seconds_t>() << " headers/secs,"
                           << " last=" << downloaded_headers.get()
                           << " tot.duration=" << StopWatch::format(timing.lap_duration());
     };

@@ -117,7 +117,7 @@ void BlockExchange::execution_loop() {
             size_t outstanding_requests = header_chain_.outstanding_requests(now) +
                                           body_sequence_.outstanding_requests(now);
             size_t peers_capacity = SentryClient::kPerPeerMaxOutstandingRequests * sentry_.active_peers();
-            size_t room_for_new_requests = std::max<signed long>(0, peers_capacity - outstanding_requests);
+            size_t room_for_new_requests = peers_capacity > outstanding_requests ? peers_capacity - outstanding_requests : 0;
 
             auto body_requests = room_for_new_requests == 1
                                      ? RANDOM_NUMBER.generate_one() % 2  // 50% chance to request a body

@@ -63,7 +63,8 @@ size_t BodySequence::outstanding_requests(time_point_t tp) const {
 
 Penalty BodySequence::accept_requested_bodies(BlockBodiesPacket66& packet, const PeerId&) {
     Penalty penalty = NoPenalty;
-    size_t count = 0, start_block = std::numeric_limits<size_t>::max();
+    BlockNum start_block = std::numeric_limits<BlockNum>::max();
+    size_t count = 0;
 
     statistics_.received_items += packet.request.size();
 
@@ -167,7 +168,8 @@ auto BodySequence::request_more_bodies(time_point_t tp)
 auto BodySequence::renew_stale_requests(GetBlockBodiesPacket66& packet, BlockNum& min_block,
                                         time_point_t tp, seconds_t timeout) -> std::vector<PeerPenalization> {
     std::vector<PeerPenalization> penalizations;
-    size_t count = 0, start_block = std::numeric_limits<size_t>::max();
+    BlockNum start_block = std::numeric_limits<BlockNum>::max();
+    size_t count = 0;
 
     for (auto& br : body_requests_) {
         BodyRequest& past_request = br.second;
@@ -201,7 +203,8 @@ auto BodySequence::renew_stale_requests(GetBlockBodiesPacket66& packet, BlockNum
 
 void BodySequence::make_new_requests(GetBlockBodiesPacket66& packet, BlockNum& min_block,
                                      time_point_t tp, seconds_t) {
-    size_t count = 0, start_block = std::numeric_limits<size_t>::max();
+    BlockNum start_block = std::numeric_limits<BlockNum>::max();
+    size_t count = 0;
 
     for (auto& br : body_requests_) {
         BodyRequest& new_request = br.second;

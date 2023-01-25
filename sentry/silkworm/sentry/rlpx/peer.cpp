@@ -19,10 +19,10 @@
 #include <boost/asio/co_spawn.hpp>
 #include <boost/asio/detached.hpp>
 #include <boost/asio/error.hpp>
-#include <boost/asio/experimental/awaitable_operators.hpp>
 #include <boost/system/system_error.hpp>
 
 #include <silkworm/common/log.hpp>
+#include <silkworm/sentry/common/awaitable_wait_for_all.hpp>
 
 #include "auth/handshake.hpp"
 
@@ -37,7 +37,7 @@ boost::asio::awaitable<void> Peer::handle(std::shared_ptr<Peer> peer) {
 }
 
 boost::asio::awaitable<void> Peer::handle() {
-    using namespace boost::asio::experimental::awaitable_operators;
+    using namespace common::awaitable_wait_for_all;
 
     try {
         log::Debug() << "Peer::handle";

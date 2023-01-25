@@ -27,7 +27,6 @@
 #include <boost/asio/bind_cancellation_slot.hpp>
 #include <boost/asio/cancellation_signal.hpp>
 #include <boost/asio/co_spawn.hpp>
-#include <boost/asio/experimental/awaitable_operators.hpp>
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/signal_set.hpp>
 
@@ -35,6 +34,7 @@
 #include <silkworm/common/directories.hpp>
 #include <silkworm/common/log.hpp>
 #include <silkworm/rpc/server/server_context_pool.hpp>
+#include <silkworm/sentry/common/awaitable_wait_for_all.hpp>
 
 #include "eth/protocol.hpp"
 #include "message_receiver.hpp"
@@ -179,7 +179,7 @@ void SentryImpl::spawn_run_tasks() {
 }
 
 boost::asio::awaitable<void> SentryImpl::run_tasks() {
-    using namespace boost::asio::experimental::awaitable_operators;
+    using namespace common::awaitable_wait_for_all;
 
     log::Info() << "Waiting for status message...";
     co_await status_manager_.wait_for_status();

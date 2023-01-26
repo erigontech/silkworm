@@ -90,7 +90,8 @@ Message MessageFrameCodec::decode(ByteView frame_data) const {
 
     uint8_t id;
     auto id_data = ByteView{frame_data.substr(0, 1)};
-    success_or_throw(rlp::decode(id_data, id));
+    success_or_throw(rlp::decode(id_data, id),
+                     "MessageFrameCodec: failed to decode a message ID");
     Bytes data;
     if (!is_compression_enabled_) {
         data = Bytes{frame_data.substr(1)};

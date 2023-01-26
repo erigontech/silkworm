@@ -42,13 +42,14 @@ Bytes StatusMessage::rlp_encode() const {
 StatusMessage StatusMessage::rlp_decode(ByteView data) {
     StatusMessage message;
     success_or_throw(rlp::decode(
-        data,
-        message.version,
-        message.network_id,
-        message.total_difficulty,
-        message.best_block_hash,
-        message.genesis_hash,
-        message.fork_id));
+                         data,
+                         message.version,
+                         message.network_id,
+                         message.total_difficulty,
+                         message.best_block_hash,
+                         message.genesis_hash,
+                         message.fork_id),
+                     "Failed to decode StatusMessage RLP");
     return message;
 }
 

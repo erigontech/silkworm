@@ -81,7 +81,7 @@ Bytes ForkId::rlp_encode() const {
 
 ForkId ForkId::rlp_decode(ByteView data) {
     ForkId value;
-    success_or_throw(decode(data, value));
+    success_or_throw(decode(data, value), "Failed to decode ForkId RLP");
     return value;
 }
 

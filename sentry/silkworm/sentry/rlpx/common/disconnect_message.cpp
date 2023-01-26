@@ -36,7 +36,8 @@ Bytes DisconnectMessage::rlp_encode() const {
 
 DisconnectMessage DisconnectMessage::rlp_decode(ByteView data) {
     std::vector<uint8_t> reason;
-    success_or_throw(rlp::decode(data, reason));
+    success_or_throw(rlp::decode(data, reason),
+                     "Failed to decode DisconnectMessage RLP");
     DisconnectMessage message;
     if (!reason.empty()) {
         message.reason = reason.front();

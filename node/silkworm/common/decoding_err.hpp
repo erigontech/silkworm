@@ -16,29 +16,26 @@
 
 #pragma once
 
-#include <magic_enum.hpp>
+#include <stdexcept>
+#include <string>
 
-#include <silkworm/rlp/decode.hpp>
+#include <silkworm/common/decoding_result.hpp>
 
 namespace silkworm {
 
-class DecodingError : public std::exception {
+class DecodingError : public std::runtime_error {
   public:
-    explicit DecodingError(DecodingResult err)
-        : err_{magic_enum::enum_integer<DecodingResult>(err)},
-          message_{"Decoding error : " + std::string(magic_enum::enum_name<DecodingResult>(err))} {};
-    ~DecodingError() noexcept override = default;
-    [[nodiscard]] const char* what() const noexcept override { return message_.c_str(); }
-    [[nodiscard]] int err() const noexcept { return err_; }
+    explicit DecodingError(DecodingResult err, const std::string& message = "");
+
+    [[nodiscard]] DecodingResult err() const noexcept { return err_; }
 
   protected:
-    int err_;
-    std::string message_;
+    DecodingResult err_;
 };
 
-inline void success_or_throw(DecodingResult res) {
+inline void success_or_throw(DecodingResult res, const std::string& message = "") {
     if (error(res)) {
-        throw DecodingError(res);
+        throw DecodingError(res, message);
     }
 }
 

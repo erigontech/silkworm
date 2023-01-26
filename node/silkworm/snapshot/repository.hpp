@@ -99,7 +99,7 @@ class SnapshotFile {
 
     friend bool operator<(const SnapshotFile& lhs, const SnapshotFile& rhs);
 
-  private:
+  protected:
     static std::filesystem::path build_filename(uint8_t version, BlockNum block_from, BlockNum block_to, SnapshotType type);
 
     explicit SnapshotFile(std::filesystem::path path, uint8_t version, BlockNum block_from, BlockNum block_to, SnapshotType type);

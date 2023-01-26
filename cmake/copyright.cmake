@@ -36,7 +36,9 @@ function(check file_path)
     string(LENGTH "${COPYRIGHT_HEADER}" header_len)
     file(READ "${file_path}" header LIMIT ${header_len})
 
-    if(NOT (header STREQUAL COPYRIGHT_HEADER))
+    string(REPLACE "2022" "2023" COPYRIGHT_HEADER_23 "${COPYRIGHT_HEADER}")
+
+    if(NOT ((header STREQUAL COPYRIGHT_HEADER) OR (header STREQUAL COPYRIGHT_HEADER_23)))
         message(SEND_ERROR "${file_path}: the copyright header differs from the other files")
     endif()
 endfunction()

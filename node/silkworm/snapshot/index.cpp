@@ -16,6 +16,8 @@
 
 #include "index.hpp"
 
+#include <stdexcept>
+
 #include <magic_enum.hpp>
 
 #include <silkworm/common/endian.hpp>

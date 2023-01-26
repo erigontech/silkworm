@@ -71,12 +71,11 @@ class SampleTransactionSnapshotFile : public test::TemporarySnapshotFile {
                       {1, 114}  // 1: position 114: unencoded data length (including position encoding)
                   }},
               test::SnapshotBody{
-                  *from_hex(
-                      "01"  // 0x01: position
-                      "f86f828f938504a817c80083015f9094e9ae6ec1117bbfeb89302ce7e632597b"
-                      "c595efae880e61a774f297bb80801ca031131812a9b210cf6033e9420478b72f"
-                      "08251d8c7323dd88bd3a180679fa90b5a028a6d676d77923b19506c7aaae5f1d"
-                      "c2f2244855aabb6672401c1b55b0d844ff")  // 0xf86f...44ff: RLP encoding for transaction
+                  *from_hex("01"  // 0x01: position
+                            "f86f828f938504a817c80083015f9094e9ae6ec1117bbfeb89302ce7e632597b"
+                            "c595efae880e61a774f297bb80801ca031131812a9b210cf6033e9420478b72f"
+                            "08251d8c7323dd88bd3a180679fa90b5a028a6d676d77923b19506c7aaae5f1d"
+                            "c2f2244855aabb6672401c1b55b0d844ff")  // 0xf86f...44ff: RLP encoding for transaction
               }} {}
 };
 
@@ -98,12 +97,9 @@ TEST_CASE("TransactionIndex::build KO: invalid snapshot", "[silkworm][snapshot][
                 .words_count = 0,
                 .empty_words_count = 0,
                 .patterns = {},
-                .positions = {}
-            },
+                .positions = {}},
             test::SnapshotBody{
-                *from_hex("0000000000000000")
-            }
-        };
+                *from_hex("0000000000000000")}};
         test::TemporarySnapshotFile txs_snapshot_file{kTransactionsSnapshotFileName};
         TransactionIndex tx_index{*SnapshotFile::parse(txs_snapshot_file.path().string())};
         CHECK_THROWS_AS(tx_index.build(), std::runtime_error);
@@ -115,8 +111,7 @@ TEST_CASE("TransactionIndex::build KO: invalid snapshot", "[silkworm][snapshot][
             "c100010801c6837004d980c001c6837004d980c001c6837004d980c001c68370"  // {c1, 00} <-
             "04d980c001c6837004d980c001c6837004d980c001c6837004d980c001c68370"
             "04d980c001c6837004d980c001c6837004d980c001c6837004d980c001c68370"
-            "04d980c001c6837004d980c001c6837004d901c0"
-        };
+            "04d980c001c6837004d980c001c6837004d901c0"};
         SampleTransactionSnapshotFile txs_snapshot_file{};
         SampleTransactionSnapshotPath txs_snapshot_path{txs_snapshot_file.path()};  // necessary to tweak the block numbers
         TransactionIndex tx_index{txs_snapshot_path};
@@ -129,8 +124,7 @@ TEST_CASE("TransactionIndex::build KO: invalid snapshot", "[silkworm][snapshot][
             "01ff010801c6837004d980c001c6837004d980c001c6837004d980c001c68370"  // {01, ff} <-
             "04d980c001c6837004d980c001c6837004d980c001c6837004d980c001c68370"
             "04d980c001c6837004d980c001c6837004d980c001c6837004d980c001c68370"
-            "04d980c001c6837004d980c001c6837004d901c0"
-        };
+            "04d980c001c6837004d980c001c6837004d901c0"};
         SampleTransactionSnapshotFile txs_snapshot_file{};
         SampleTransactionSnapshotPath txs_snapshot_path{txs_snapshot_file.path()};  // necessary to tweak the block numbers
         TransactionIndex tx_index{txs_snapshot_path};
@@ -143,8 +137,7 @@ TEST_CASE("TransactionIndex::build KO: invalid snapshot", "[silkworm][snapshot][
             "0100010801c6837004d980c001c6837004d980c001c6837004d980c001c68370"
             "04d980c001c6837004d980c001c6837004d980c001c6837004d980c001c68370"
             "04d980c001c6837004d980c001c6837004d980c001c6837004d980c001c68370"
-            "04d980c001c6837004d980c001c6837004d901c0"
-        };
+            "04d980c001c6837004d980c001c6837004d901c0"};
         SampleTransactionSnapshotFile txs_snapshot_file{};
         SampleTransactionSnapshotPath txs_snapshot_path{txs_snapshot_file.path()};  // necessary to tweak the block numbers
         TransactionIndex tx_index{txs_snapshot_path};
@@ -157,8 +150,7 @@ TEST_CASE("TransactionIndex::build KO: invalid snapshot", "[silkworm][snapshot][
             "0100010801c6837004d980c001c6837004d980c001c6837004d980c001c68370"
             "04d980c001c6837004d980c001c6837004d980c001c6837004d980c001c78370"  // {01, c7837004d980c0}
             "04d980c001c6837004d980c001c6837004d980c001c6837004d980c001c68370"
-            "04d980c001c6837004d980c001c6837004d901c0"
-        };
+            "04d980c001c6837004d980c001c6837004d901c0"};
         SampleTransactionSnapshotFile txs_snapshot_file{};
         SampleTransactionSnapshotPath txs_snapshot_path{txs_snapshot_file.path()};  // necessary to tweak the block numbers
         TransactionIndex tx_index{txs_snapshot_path};

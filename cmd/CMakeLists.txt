@@ -65,9 +65,6 @@ if(NOT SILKWORM_CORE_ONLY)
   add_executable(snapshots snapshots.cpp common.cpp)
   target_link_libraries(snapshots PRIVATE silkworm_node silkworm-buildinfo CLI11::CLI11 torrent-rasterbar)
 
-  add_executable(downloader downloader.cpp common.cpp)
-  target_link_libraries(downloader PRIVATE silkworm_node silkworm-buildinfo CLI11::CLI11)
-
   add_executable(sentry sentry.cpp common.cpp)
   target_link_libraries(sentry PRIVATE silkworm_node silkworm-buildinfo CLI11::CLI11 silkworm_sentry)
 

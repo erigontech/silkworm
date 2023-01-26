@@ -55,12 +55,13 @@ class Peer {
           protocol_(std::move(protocol)),
           peer_public_key_(std::move(peer_public_key)),
           strand_(boost::asio::make_strand(io_context)),
-          send_message_channel_(io_context) {}
+          send_message_channel_(io_context),
+          receive_message_channel_(io_context) {}
 
     static void start_detached(const std::shared_ptr<Peer>& peer);
 
     static void send_message_detached(const std::shared_ptr<Peer>& peer, const common::Message& message);
-    boost::asio::awaitable<void> send_message(common::Message message);
+    boost::asio::awaitable<common::Message> receive_message();
 
     std::optional<common::EccPublicKey> peer_public_key() {
         return peer_public_key_.get();
@@ -71,7 +72,9 @@ class Peer {
     boost::asio::awaitable<void> handle();
 
     static boost::asio::awaitable<void> send_message(std::shared_ptr<Peer> peer, common::Message message);
+    boost::asio::awaitable<void> send_message(common::Message message);
     boost::asio::awaitable<void> send_messages(framing::MessageStream& message_stream);
+    boost::asio::awaitable<void> receive_messages(framing::MessageStream& message_stream);
 
     common::SocketStream stream_;
     common::EccKeyPair node_key_;
@@ -82,6 +85,7 @@ class Peer {
 
     boost::asio::strand<boost::asio::io_context::executor_type> strand_;
     common::Channel<common::Message> send_message_channel_;
+    common::Channel<common::Message> receive_message_channel_;
 };
 
 }  // namespace silkworm::sentry::rlpx

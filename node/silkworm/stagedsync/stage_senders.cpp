@@ -17,6 +17,7 @@
 #include "stage_senders.hpp"
 
 #include <algorithm>
+#include <stdexcept>
 #include <thread>
 
 #include <gsl/util>
@@ -444,7 +445,8 @@ Stage::Result Senders::add_to_batch(BlockNum block_num, std::vector<Transaction>
         return Stage::Result::kAborted;
     }
 
-    const evmc_revision rev{node_settings_->chain_config->revision(block_num)};
+    // We're only interested in revisions up to London, so it's OK to not detect time-based forks.
+    const evmc_revision rev{node_settings_->chain_config->revision(block_num, /*block_time=*/0)};
     const bool has_homestead{rev >= EVMC_HOMESTEAD};
     const bool has_spurious_dragon{rev >= EVMC_SPURIOUS_DRAGON};
     const bool has_berlin{rev >= EVMC_BERLIN};

@@ -16,6 +16,8 @@
 
 #include "framing_cipher.hpp"
 
+#include <stdexcept>
+
 #include <silkworm/common/endian.hpp>
 #include <silkworm/rlp/encode_vector.hpp>
 #include <silkworm/sentry/rlpx/crypto/aes.hpp>

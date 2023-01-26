@@ -32,9 +32,6 @@ ExecutionProcessor::ExecutionProcessor(const Block& block, consensus::IEngine& c
 }
 
 ValidationResult ExecutionProcessor::validate_transaction(const Transaction& txn) const noexcept {
-    assert(consensus::pre_validate_transaction(txn, evm_.block().header.number, evm_.config(),
-                                               evm_.block().header.base_fee_per_gas) == ValidationResult::kOk);
-
     if (!txn.from.has_value()) {
         return ValidationResult::kMissingSender;
     }

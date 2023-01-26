@@ -16,6 +16,8 @@
 
 #include "ecc_key_pair.hpp"
 
+#include <stdexcept>
+
 #include <silkworm/common/secp256k1_context.hpp>
 #include <silkworm/common/util.hpp>
 #include <silkworm/sentry/common/random.hpp>

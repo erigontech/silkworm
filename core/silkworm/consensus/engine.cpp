@@ -22,6 +22,7 @@
 
 #include <silkworm/chain/intrinsic_gas.hpp>
 #include <silkworm/chain/protocol_param.hpp>
+#include <silkworm/consensus/clique/engine.hpp>
 #include <silkworm/consensus/ethash/engine.hpp>
 #include <silkworm/consensus/merge/engine.hpp>
 #include <silkworm/consensus/noproof/engine.hpp>
@@ -30,12 +31,10 @@ namespace silkworm::consensus {
 
 void IEngine::finalize(IntraBlockState&, const Block&, evmc_revision) {}
 
-ValidationResult pre_validate_transaction(const Transaction& txn, uint64_t block_number, const ChainConfig& config,
+ValidationResult pre_validate_transaction(const Transaction& txn, const evmc_revision rev, const uint64_t chain_id,
                                           const std::optional<intx::uint256>& base_fee_per_gas) {
-    const evmc_revision rev{config.revision(block_number)};
-
     if (txn.chain_id.has_value()) {
-        if (rev < EVMC_SPURIOUS_DRAGON || txn.chain_id.value() != config.chain_id) {
+        if (rev < EVMC_SPURIOUS_DRAGON || txn.chain_id.value() != chain_id) {
             return ValidationResult::kWrongChainId;
         }
     }
@@ -93,6 +92,8 @@ static std::unique_ptr<IEngine> pre_merge_engine(const ChainConfig& chain_config
             return std::make_unique<EthashEngine>(chain_config);
         case SealEngineType::kNoProof:
             return std::make_unique<NoProofEngine>(chain_config);
+        case SealEngineType::kClique:
+            return std::make_unique<CliqueEngine>(chain_config);
         default:
             return nullptr;
     }

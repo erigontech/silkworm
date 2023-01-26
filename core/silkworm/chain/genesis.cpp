@@ -94,7 +94,7 @@ BlockHeader read_genesis_header(const nlohmann::json& genesis_json, const evmc::
 
     const std::optional<ChainConfig> chain_config{ChainConfig::from_json(genesis_json["config"])};
     SILKWORM_ASSERT(chain_config.has_value());
-    if (chain_config->revision(0) >= EVMC_LONDON) {
+    if (chain_config->revision(0, header.timestamp) >= EVMC_LONDON) {
         header.base_fee_per_gas = param::kInitialBaseFee;
     }
 

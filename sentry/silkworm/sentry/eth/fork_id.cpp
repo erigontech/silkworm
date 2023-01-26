@@ -19,6 +19,7 @@
 #include <Crc32.h>
 
 #include <optional>
+#include <stdexcept>
 
 #include <silkworm/common/endian.hpp>
 #include <silkworm/rlp/decode.hpp>

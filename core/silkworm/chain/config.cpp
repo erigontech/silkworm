@@ -31,9 +31,6 @@ static const std::vector<std::pair<std::string, const ChainConfig*>> kKnownChain
 };
 
 constexpr const char* kTerminalTotalDifficulty{"terminalTotalDifficulty"};
-constexpr const char* kTerminalBlockNumber{"terminalBlockNumber"};
-constexpr const char* kTerminalBlockHash{"terminalBlockHash"};
-constexpr const char* kGenesisHash{"genesisBlockHash"};
 
 static inline void member_to_json(nlohmann::json& json, const std::string& key, const std::optional<uint64_t>& source) {
     if (source.has_value()) {
@@ -68,27 +65,31 @@ nlohmann::json ChainConfig::to_json() const noexcept {
             break;
     }
 
-    for (size_t i{0}; i < EVMC_MAX_REVISION; ++i) {
-        member_to_json(ret, kJsonForkNames[i], evmc_fork_blocks[i]);
-    }
-
+    member_to_json(ret, "homesteadBlock", homestead_block);
     member_to_json(ret, "daoForkBlock", dao_block);
+    member_to_json(ret, "eip150Block", tangerine_whistle_block);
+    member_to_json(ret, "eip155Block", spurious_dragon_block);
+    member_to_json(ret, "byzantiumBlock", byzantium_block);
+    member_to_json(ret, "constantinopleBlock", constantinople_block);
+    member_to_json(ret, "petersburgBlock", petersburg_block);
+    member_to_json(ret, "istanbulBlock", istanbul_block);
     member_to_json(ret, "muirGlacierBlock", muir_glacier_block);
+    member_to_json(ret, "berlinBlock", berlin_block);
+    member_to_json(ret, "londonBlock", london_block);
     member_to_json(ret, "arrowGlacierBlock", arrow_glacier_block);
     member_to_json(ret, "grayGlacierBlock", gray_glacier_block);
-    member_to_json(ret, kTerminalBlockNumber, terminal_block_number);
 
     if (terminal_total_difficulty.has_value()) {
         // TODO (Andrew) geth probably treats terminalTotalDifficulty as a JSON number
         ret[kTerminalTotalDifficulty] = to_string(*terminal_total_difficulty);
     }
 
-    if (terminal_block_hash.has_value()) {
-        ret[kTerminalBlockHash] = to_hex(*terminal_block_hash, /*with_prefix=*/true);
-    }
+    member_to_json(ret, "mergeNetsplitBlock", merge_netsplit_block);
+    member_to_json(ret, "shanghaiTime", shanghai_time);
+    member_to_json(ret, "cancunTime", cancun_time);
 
     if (genesis_hash.has_value()) {
-        ret[kGenesisHash] = to_hex(*genesis_hash, /*with_prefix=*/true);
+        ret["genesisBlockHash"] = to_hex(*genesis_hash, /*with_prefix=*/true);
     }
 
     return ret;
@@ -112,15 +113,19 @@ std::optional<ChainConfig> ChainConfig::from_json(const nlohmann::json& json) no
         config.seal_engine = SealEngineType::kNoProof;
     }
 
-    for (size_t i{0}; i < EVMC_MAX_REVISION; ++i) {
-        read_json_config_member(json, kJsonForkNames[i], config.evmc_fork_blocks[i]);
-    }
-
+    read_json_config_member(json, "homesteadBlock", config.homestead_block);
     read_json_config_member(json, "daoForkBlock", config.dao_block);
+    read_json_config_member(json, "eip150Block", config.tangerine_whistle_block);
+    read_json_config_member(json, "eip155Block", config.spurious_dragon_block);
+    read_json_config_member(json, "byzantiumBlock", config.byzantium_block);
+    read_json_config_member(json, "constantinopleBlock", config.constantinople_block);
+    read_json_config_member(json, "petersburgBlock", config.petersburg_block);
+    read_json_config_member(json, "istanbulBlock", config.istanbul_block);
     read_json_config_member(json, "muirGlacierBlock", config.muir_glacier_block);
+    read_json_config_member(json, "berlinBlock", config.berlin_block);
+    read_json_config_member(json, "londonBlock", config.london_block);
     read_json_config_member(json, "arrowGlacierBlock", config.arrow_glacier_block);
     read_json_config_member(json, "grayGlacierBlock", config.gray_glacier_block);
-    read_json_config_member(json, kTerminalBlockNumber, config.terminal_block_number);
 
     if (json.contains(kTerminalTotalDifficulty)) {
         // We handle terminalTotalDifficulty serialized both as JSON string *and* as JSON number
@@ -137,12 +142,9 @@ std::optional<ChainConfig> ChainConfig::from_json(const nlohmann::json& json) no
         }
     }
 
-    if (json.contains(kTerminalBlockHash)) {
-        auto terminal_block_hash_bytes{from_hex(json[kTerminalBlockHash].get<std::string>())};
-        if (terminal_block_hash_bytes.has_value()) {
-            config.terminal_block_hash = to_bytes32(*terminal_block_hash_bytes);
-        }
-    }
+    read_json_config_member(json, "mergeNetsplitBlock", config.merge_netsplit_block);
+    read_json_config_member(json, "shanghaiTime", config.shanghai_time);
+    read_json_config_member(json, "cancunTime", config.cancun_time);
 
     /* Note ! genesis_hash is purposely omitted. It must be loaded from db after the
      * effective genesis block has been persisted */
@@ -150,30 +152,41 @@ std::optional<ChainConfig> ChainConfig::from_json(const nlohmann::json& json) no
     return config;
 }
 
-std::optional<uint64_t> ChainConfig::revision_block(evmc_revision rev) const noexcept {
-    if (rev == EVMC_FRONTIER) {
-        return 0;
-    }
-    size_t i{static_cast<size_t>(rev) - 1};
-    return evmc_fork_blocks.at(i);
+evmc_revision ChainConfig::revision(uint64_t block_number, uint64_t block_time) const noexcept {
+    if (cancun_time && block_time >= cancun_time) return EVMC_CANCUN;
+    if (shanghai_time && block_time >= shanghai_time) return EVMC_SHANGHAI;
+
+    if (london_block && block_number >= london_block) return EVMC_LONDON;
+    if (berlin_block && block_number >= berlin_block) return EVMC_BERLIN;
+    if (istanbul_block && block_number >= istanbul_block) return EVMC_ISTANBUL;
+    if (petersburg_block && block_number >= petersburg_block) return EVMC_PETERSBURG;
+    if (constantinople_block && block_number >= constantinople_block) return EVMC_CONSTANTINOPLE;
+    if (byzantium_block && block_number >= byzantium_block) return EVMC_BYZANTIUM;
+    if (spurious_dragon_block && block_number >= spurious_dragon_block) return EVMC_SPURIOUS_DRAGON;
+    if (tangerine_whistle_block && block_number >= tangerine_whistle_block) return EVMC_TANGERINE_WHISTLE;
+    if (homestead_block && block_number >= homestead_block) return EVMC_HOMESTEAD;
+
+    return EVMC_FRONTIER;
 }
 
-void ChainConfig::set_revision_block(evmc_revision rev, std::optional<uint64_t> block) {
-    if (rev > 0) {  // Frontier block is always 0
-        evmc_fork_blocks[static_cast<size_t>(rev) - 1] = block;
-    }
-}
+// TODO (Andrew) extend fork ID to time-triggered forks
 std::vector<BlockNum> ChainConfig::distinct_fork_numbers() const {
     std::set<BlockNum> ret;
 
-    for (const auto& block_number : evmc_fork_blocks) {
-        (void)ret.insert(block_number.value_or(0));
-    }
-
-    (void)ret.insert(dao_block.value_or(0));
-    (void)ret.insert(muir_glacier_block.value_or(0));
-    (void)ret.insert(arrow_glacier_block.value_or(0));
-    (void)ret.insert(gray_glacier_block.value_or(0));
+    ret.insert(homestead_block.value_or(0));
+    ret.insert(dao_block.value_or(0));
+    ret.insert(tangerine_whistle_block.value_or(0));
+    ret.insert(spurious_dragon_block.value_or(0));
+    ret.insert(byzantium_block.value_or(0));
+    ret.insert(constantinople_block.value_or(0));
+    ret.insert(petersburg_block.value_or(0));
+    ret.insert(istanbul_block.value_or(0));
+    ret.insert(muir_glacier_block.value_or(0));
+    ret.insert(berlin_block.value_or(0));
+    ret.insert(london_block.value_or(0));
+    ret.insert(arrow_glacier_block.value_or(0));
+    ret.insert(gray_glacier_block.value_or(0));
+    ret.insert(merge_netsplit_block.value_or(0));
 
     ret.erase(0);  // Block 0 is not a fork number
     return {ret.cbegin(), ret.cend()};

@@ -36,9 +36,9 @@ boost::asio::awaitable<void> MessageSender::start(PeerManager& peer_manager) {
             }
         };
 
-        if (call.peer_filter().max_peers && !call.peer_filter().peer_public_key) {
-            size_t max_peers = call.peer_filter().max_peers.value();
-            co_await peer_manager.enumerate_random_peers(max_peers, sender);
+        auto max_peers = call.peer_filter().max_peers;
+        if (max_peers && (max_peers.value() > 0) && !call.peer_filter().peer_public_key) {
+            co_await peer_manager.enumerate_random_peers(max_peers.value(), sender);
         } else {
             co_await peer_manager.enumerate_peers(sender);
         }

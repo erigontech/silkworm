@@ -21,7 +21,7 @@ namespace silkworm {
 intx::uint256 canonical_difficulty(uint64_t block_number, const uint64_t block_timestamp,
                                    const intx::uint256& parent_difficulty, const uint64_t parent_timestamp,
                                    const bool parent_has_uncles, const ChainConfig& config) {
-    const evmc_revision rev{config.revision(block_number)};
+    const evmc_revision rev{config.revision(block_number, block_timestamp)};
 
     intx::uint256 difficulty{parent_difficulty};
 

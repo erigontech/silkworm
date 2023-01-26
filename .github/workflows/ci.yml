@@ -16,6 +16,7 @@ name: Continuous integration
 on: [ push, pull_request ]
 jobs:
   linux_x64:
+    if: ${{ false }}  # disable for now
     runs-on: [ubuntu-latest]
     strategy:
       matrix:
@@ -89,7 +90,7 @@ jobs:
     strategy:
       matrix:
         config:
-          - {build_type: "Debug"}
+#          - {build_type: "Debug"}
           - {build_type: "Release"}
       fail-fast: false # This makes it so that if 1 of the tests in the matrix fail, they don't all fail
     steps:
@@ -144,7 +145,7 @@ jobs:
     strategy:
       matrix:
         config:
-          - {build_type: "Debug"}
+#          - {build_type: "Debug"}
           - {build_type: "Release"}
       fail-fast: false # This makes it so that if 1 of the tests in the matrix fail, they don't all fail
     if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository

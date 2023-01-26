@@ -57,6 +57,13 @@ class Sentry final {
     std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::google::protobuf::Empty>> PrepareAsyncPeerMinBlock(::grpc::ClientContext* context, const ::sentry::PeerMinBlockRequest& request, ::grpc::CompletionQueue* cq) {
       return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::google::protobuf::Empty>>(PrepareAsyncPeerMinBlockRaw(context, request, cq));
     }
+    virtual ::grpc::Status PeerUseless(::grpc::ClientContext* context, const ::sentry::PeerUselessRequest& request, ::google::protobuf::Empty* response) = 0;
+    std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::google::protobuf::Empty>> AsyncPeerUseless(::grpc::ClientContext* context, const ::sentry::PeerUselessRequest& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::google::protobuf::Empty>>(AsyncPeerUselessRaw(context, request, cq));
+    }
+    std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::google::protobuf::Empty>> PrepareAsyncPeerUseless(::grpc::ClientContext* context, const ::sentry::PeerUselessRequest& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::google::protobuf::Empty>>(PrepareAsyncPeerUselessRaw(context, request, cq));
+    }
     // HandShake - pre-requirement for all Send* methods - returns ETH protocol version,
     // without knowledge of protocol - impossible encode correct P2P message
     virtual ::grpc::Status HandShake(::grpc::ClientContext* context, const ::google::protobuf::Empty& request, ::sentry::HandShakeReply* response) = 0;
@@ -155,6 +162,8 @@ class Sentry final {
       virtual void PenalizePeer(::grpc::ClientContext* context, const ::sentry::PenalizePeerRequest* request, ::google::protobuf::Empty* response, ::grpc::ClientUnaryReactor* reactor) = 0;
       virtual void PeerMinBlock(::grpc::ClientContext* context, const ::sentry::PeerMinBlockRequest* request, ::google::protobuf::Empty* response, std::function<void(::grpc::Status)>) = 0;
       virtual void PeerMinBlock(::grpc::ClientContext* context, const ::sentry::PeerMinBlockRequest* request, ::google::protobuf::Empty* response, ::grpc::ClientUnaryReactor* reactor) = 0;
+      virtual void PeerUseless(::grpc::ClientContext* context, const ::sentry::PeerUselessRequest* request, ::google::protobuf::Empty* response, std::function<void(::grpc::Status)>) = 0;
+      virtual void PeerUseless(::grpc::ClientContext* context, const ::sentry::PeerUselessRequest* request, ::google::protobuf::Empty* response, ::grpc::ClientUnaryReactor* reactor) = 0;
       // HandShake - pre-requirement for all Send* methods - returns ETH protocol version,
       // without knowledge of protocol - impossible encode correct P2P message
       virtual void HandShake(::grpc::ClientContext* context, const ::google::protobuf::Empty* request, ::sentry::HandShakeReply* response, std::function<void(::grpc::Status)>) = 0;
@@ -193,6 +202,8 @@ class Sentry final {
     virtual ::grpc::ClientAsyncResponseReaderInterface< ::google::protobuf::Empty>* PrepareAsyncPenalizePeerRaw(::grpc::ClientContext* context, const ::sentry::PenalizePeerRequest& request, ::grpc::CompletionQueue* cq) = 0;
     virtual ::grpc::ClientAsyncResponseReaderInterface< ::google::protobuf::Empty>* AsyncPeerMinBlockRaw(::grpc::ClientContext* context, const ::sentry::PeerMinBlockRequest& request, ::grpc::CompletionQueue* cq) = 0;
     virtual ::grpc::ClientAsyncResponseReaderInterface< ::google::protobuf::Empty>* PrepareAsyncPeerMinBlockRaw(::grpc::ClientContext* context, const ::sentry::PeerMinBlockRequest& request, ::grpc::CompletionQueue* cq) = 0;
+    virtual ::grpc::ClientAsyncResponseReaderInterface< ::google::protobuf::Empty>* AsyncPeerUselessRaw(::grpc::ClientContext* context, const ::sentry::PeerUselessRequest& request, ::grpc::CompletionQueue* cq) = 0;
+    virtual ::grpc::ClientAsyncResponseReaderInterface< ::google::protobuf::Empty>* PrepareAsyncPeerUselessRaw(::grpc::ClientContext* context, const ::sentry::PeerUselessRequest& request, ::grpc::CompletionQueue* cq) = 0;
     virtual ::grpc::ClientAsyncResponseReaderInterface< ::sentry::HandShakeReply>* AsyncHandShakeRaw(::grpc::ClientContext* context, const ::google::protobuf::Empty& request, ::grpc::CompletionQueue* cq) = 0;
     virtual ::grpc::ClientAsyncResponseReaderInterface< ::sentry::HandShakeReply>* PrepareAsyncHandShakeRaw(::grpc::ClientContext* context, const ::google::protobuf::Empty& request, ::grpc::CompletionQueue* cq) = 0;
     virtual ::grpc::ClientAsyncResponseReaderInterface< ::sentry::SentPeers>* AsyncSendMessageByMinBlockRaw(::grpc::ClientContext* context, const ::sentry::SendMessageByMinBlockRequest& request, ::grpc::CompletionQueue* cq) = 0;
@@ -241,6 +252,13 @@ class Sentry final {
     }
     std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::google::protobuf::Empty>> PrepareAsyncPeerMinBlock(::grpc::ClientContext* context, const ::sentry::PeerMinBlockRequest& request, ::grpc::CompletionQueue* cq) {
       return std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::google::protobuf::Empty>>(PrepareAsyncPeerMinBlockRaw(context, request, cq));
+    }
+    ::grpc::Status PeerUseless(::grpc::ClientContext* context, const ::sentry::PeerUselessRequest& request, ::google::protobuf::Empty* response) override;
+    std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::google::protobuf::Empty>> AsyncPeerUseless(::grpc::ClientContext* context, const ::sentry::PeerUselessRequest& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::google::protobuf::Empty>>(AsyncPeerUselessRaw(context, request, cq));
+    }
+    std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::google::protobuf::Empty>> PrepareAsyncPeerUseless(::grpc::ClientContext* context, const ::sentry::PeerUselessRequest& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::google::protobuf::Empty>>(PrepareAsyncPeerUselessRaw(context, request, cq));
     }
     ::grpc::Status HandShake(::grpc::ClientContext* context, const ::google::protobuf::Empty& request, ::sentry::HandShakeReply* response) override;
     std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::sentry::HandShakeReply>> AsyncHandShake(::grpc::ClientContext* context, const ::google::protobuf::Empty& request, ::grpc::CompletionQueue* cq) {
@@ -332,6 +350,8 @@ class Sentry final {
       void PenalizePeer(::grpc::ClientContext* context, const ::sentry::PenalizePeerRequest* request, ::google::protobuf::Empty* response, ::grpc::ClientUnaryReactor* reactor) override;
       void PeerMinBlock(::grpc::ClientContext* context, const ::sentry::PeerMinBlockRequest* request, ::google::protobuf::Empty* response, std::function<void(::grpc::Status)>) override;
       void PeerMinBlock(::grpc::ClientContext* context, const ::sentry::PeerMinBlockRequest* request, ::google::protobuf::Empty* response, ::grpc::ClientUnaryReactor* reactor) override;
+      void PeerUseless(::grpc::ClientContext* context, const ::sentry::PeerUselessRequest* request, ::google::protobuf::Empty* response, std::function<void(::grpc::Status)>) override;
+      void PeerUseless(::grpc::ClientContext* context, const ::sentry::PeerUselessRequest* request, ::google::protobuf::Empty* response, ::grpc::ClientUnaryReactor* reactor) override;
       void HandShake(::grpc::ClientContext* context, const ::google::protobuf::Empty* request, ::sentry::HandShakeReply* response, std::function<void(::grpc::Status)>) override;
       void HandShake(::grpc::ClientContext* context, const ::google::protobuf::Empty* request, ::sentry::HandShakeReply* response, ::grpc::ClientUnaryReactor* reactor) override;
       void SendMessageByMinBlock(::grpc::ClientContext* context, const ::sentry::SendMessageByMinBlockRequest* request, ::sentry::SentPeers* response, std::function<void(::grpc::Status)>) override;
@@ -369,6 +389,8 @@ class Sentry final {
     ::grpc::ClientAsyncResponseReader< ::google::protobuf::Empty>* PrepareAsyncPenalizePeerRaw(::grpc::ClientContext* context, const ::sentry::PenalizePeerRequest& request, ::grpc::CompletionQueue* cq) override;
     ::grpc::ClientAsyncResponseReader< ::google::protobuf::Empty>* AsyncPeerMinBlockRaw(::grpc::ClientContext* context, const ::sentry::PeerMinBlockRequest& request, ::grpc::CompletionQueue* cq) override;
     ::grpc::ClientAsyncResponseReader< ::google::protobuf::Empty>* PrepareAsyncPeerMinBlockRaw(::grpc::ClientContext* context, const ::sentry::PeerMinBlockRequest& request, ::grpc::CompletionQueue* cq) override;
+    ::grpc::ClientAsyncResponseReader< ::google::protobuf::Empty>* AsyncPeerUselessRaw(::grpc::ClientContext* context, const ::sentry::PeerUselessRequest& request, ::grpc::CompletionQueue* cq) override;
+    ::grpc::ClientAsyncResponseReader< ::google::protobuf::Empty>* PrepareAsyncPeerUselessRaw(::grpc::ClientContext* context, const ::sentry::PeerUselessRequest& request, ::grpc::CompletionQueue* cq) override;
     ::grpc::ClientAsyncResponseReader< ::sentry::HandShakeReply>* AsyncHandShakeRaw(::grpc::ClientContext* context, const ::google::protobuf::Empty& request, ::grpc::CompletionQueue* cq) override;
     ::grpc::ClientAsyncResponseReader< ::sentry::HandShakeReply>* PrepareAsyncHandShakeRaw(::grpc::ClientContext* context, const ::google::protobuf::Empty& request, ::grpc::CompletionQueue* cq) override;
     ::grpc::ClientAsyncResponseReader< ::sentry::SentPeers>* AsyncSendMessageByMinBlockRaw(::grpc::ClientContext* context, const ::sentry::SendMessageByMinBlockRequest& request, ::grpc::CompletionQueue* cq) override;
@@ -396,6 +418,7 @@ class Sentry final {
     const ::grpc::internal::RpcMethod rpcmethod_SetStatus_;
     const ::grpc::internal::RpcMethod rpcmethod_PenalizePeer_;
     const ::grpc::internal::RpcMethod rpcmethod_PeerMinBlock_;
+    const ::grpc::internal::RpcMethod rpcmethod_PeerUseless_;
     const ::grpc::internal::RpcMethod rpcmethod_HandShake_;
     const ::grpc::internal::RpcMethod rpcmethod_SendMessageByMinBlock_;
     const ::grpc::internal::RpcMethod rpcmethod_SendMessageById_;
@@ -418,6 +441,7 @@ class Sentry final {
     virtual ::grpc::Status SetStatus(::grpc::ServerContext* context, const ::sentry::StatusData* request, ::sentry::SetStatusReply* response);
     virtual ::grpc::Status PenalizePeer(::grpc::ServerContext* context, const ::sentry::PenalizePeerRequest* request, ::google::protobuf::Empty* response);
     virtual ::grpc::Status PeerMinBlock(::grpc::ServerContext* context, const ::sentry::PeerMinBlockRequest* request, ::google::protobuf::Empty* response);
+    virtual ::grpc::Status PeerUseless(::grpc::ServerContext* context, const ::sentry::PeerUselessRequest* request, ::google::protobuf::Empty* response);
     // HandShake - pre-requirement for all Send* methods - returns ETH protocol version,
     // without knowledge of protocol - impossible encode correct P2P message
     virtual ::grpc::Status HandShake(::grpc::ServerContext* context, const ::google::protobuf::Empty* request, ::sentry::HandShakeReply* response);
@@ -498,12 +522,32 @@ class Sentry final {
     }
   };
   template <class BaseClass>
+  class WithAsyncMethod_PeerUseless : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithAsyncMethod_PeerUseless() {
+      ::grpc::Service::MarkMethodAsync(3);
+    }
+    ~WithAsyncMethod_PeerUseless() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status PeerUseless(::grpc::ServerContext* /*context*/, const ::sentry::PeerUselessRequest* /*request*/, ::google::protobuf::Empty* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    void RequestPeerUseless(::grpc::ServerContext* context, ::sentry::PeerUselessRequest* request, ::grpc::ServerAsyncResponseWriter< ::google::protobuf::Empty>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
+      ::grpc::Service::RequestAsyncUnary(3, context, request, response, new_call_cq, notification_cq, tag);
+    }
+  };
+  template <class BaseClass>
   class WithAsyncMethod_HandShake : public BaseClass {
    private:
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithAsyncMethod_HandShake() {
-      ::grpc::Service::MarkMethodAsync(3);
+      ::grpc::Service::MarkMethodAsync(4);
     }
     ~WithAsyncMethod_HandShake() override {
       BaseClassMustBeDerivedFromService(this);
@@ -514,7 +558,7 @@ class Sentry final {
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
     void RequestHandShake(::grpc::ServerContext* context, ::google::protobuf::Empty* request, ::grpc::ServerAsyncResponseWriter< ::sentry::HandShakeReply>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
-      ::grpc::Service::RequestAsyncUnary(3, context, request, response, new_call_cq, notification_cq, tag);
+      ::grpc::Service::RequestAsyncUnary(4, context, request, response, new_call_cq, notification_cq, tag);
     }
   };
   template <class BaseClass>
@@ -523,7 +567,7 @@ class Sentry final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithAsyncMethod_SendMessageByMinBlock() {
-      ::grpc::Service::MarkMethodAsync(4);
+      ::grpc::Service::MarkMethodAsync(5);
     }
     ~WithAsyncMethod_SendMessageByMinBlock() override {
       BaseClassMustBeDerivedFromService(this);
@@ -534,7 +578,7 @@ class Sentry final {
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
     void RequestSendMessageByMinBlock(::grpc::ServerContext* context, ::sentry::SendMessageByMinBlockRequest* request, ::grpc::ServerAsyncResponseWriter< ::sentry::SentPeers>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
-      ::grpc::Service::RequestAsyncUnary(4, context, request, response, new_call_cq, notification_cq, tag);
+      ::grpc::Service::RequestAsyncUnary(5, context, request, response, new_call_cq, notification_cq, tag);
     }
   };
   template <class BaseClass>
@@ -543,7 +587,7 @@ class Sentry final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithAsyncMethod_SendMessageById() {
-      ::grpc::Service::MarkMethodAsync(5);
+      ::grpc::Service::MarkMethodAsync(6);
     }
     ~WithAsyncMethod_SendMessageById() override {
       BaseClassMustBeDerivedFromService(this);
@@ -554,7 +598,7 @@ class Sentry final {
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
     void RequestSendMessageById(::grpc::ServerContext* context, ::sentry::SendMessageByIdRequest* request, ::grpc::ServerAsyncResponseWriter< ::sentry::SentPeers>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
-      ::grpc::Service::RequestAsyncUnary(5, context, request, response, new_call_cq, notification_cq, tag);
+      ::grpc::Service::RequestAsyncUnary(6, context, request, response, new_call_cq, notification_cq, tag);
     }
   };
   template <class BaseClass>
@@ -563,7 +607,7 @@ class Sentry final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithAsyncMethod_SendMessageToRandomPeers() {
-      ::grpc::Service::MarkMethodAsync(6);
+      ::grpc::Service::MarkMethodAsync(7);
     }
     ~WithAsyncMethod_SendMessageToRandomPeers() override {
       BaseClassMustBeDerivedFromService(this);
@@ -574,7 +618,7 @@ class Sentry final {
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
     void RequestSendMessageToRandomPeers(::grpc::ServerContext* context, ::sentry::SendMessageToRandomPeersRequest* request, ::grpc::ServerAsyncResponseWriter< ::sentry::SentPeers>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
-      ::grpc::Service::RequestAsyncUnary(6, context, request, response, new_call_cq, notification_cq, tag);
+      ::grpc::Service::RequestAsyncUnary(7, context, request, response, new_call_cq, notification_cq, tag);
     }
   };
   template <class BaseClass>
@@ -583,7 +627,7 @@ class Sentry final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithAsyncMethod_SendMessageToAll() {
-      ::grpc::Service::MarkMethodAsync(7);
+      ::grpc::Service::MarkMethodAsync(8);
     }
     ~WithAsyncMethod_SendMessageToAll() override {
       BaseClassMustBeDerivedFromService(this);
@@ -594,7 +638,7 @@ class Sentry final {
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
     void RequestSendMessageToAll(::grpc::ServerContext* context, ::sentry::OutboundMessageData* request, ::grpc::ServerAsyncResponseWriter< ::sentry::SentPeers>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
-      ::grpc::Service::RequestAsyncUnary(7, context, request, response, new_call_cq, notification_cq, tag);
+      ::grpc::Service::RequestAsyncUnary(8, context, request, response, new_call_cq, notification_cq, tag);
     }
   };
   template <class BaseClass>
@@ -603,7 +647,7 @@ class Sentry final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithAsyncMethod_Messages() {
-      ::grpc::Service::MarkMethodAsync(8);
+      ::grpc::Service::MarkMethodAsync(9);
     }
     ~WithAsyncMethod_Messages() override {
       BaseClassMustBeDerivedFromService(this);
@@ -614,7 +658,7 @@ class Sentry final {
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
     void RequestMessages(::grpc::ServerContext* context, ::sentry::MessagesRequest* request, ::grpc::ServerAsyncWriter< ::sentry::InboundMessage>* writer, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
-      ::grpc::Service::RequestAsyncServerStreaming(8, context, request, writer, new_call_cq, notification_cq, tag);
+      ::grpc::Service::RequestAsyncServerStreaming(9, context, request, writer, new_call_cq, notification_cq, tag);
     }
   };
   template <class BaseClass>
@@ -623,7 +667,7 @@ class Sentry final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithAsyncMethod_Peers() {
-      ::grpc::Service::MarkMethodAsync(9);
+      ::grpc::Service::MarkMethodAsync(10);
     }
     ~WithAsyncMethod_Peers() override {
       BaseClassMustBeDerivedFromService(this);
@@ -634,7 +678,7 @@ class Sentry final {
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
     void RequestPeers(::grpc::ServerContext* context, ::google::protobuf::Empty* request, ::grpc::ServerAsyncResponseWriter< ::sentry::PeersReply>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
-      ::grpc::Service::RequestAsyncUnary(9, context, request, response, new_call_cq, notification_cq, tag);
+      ::grpc::Service::RequestAsyncUnary(10, context, request, response, new_call_cq, notification_cq, tag);
     }
   };
   template <class BaseClass>
@@ -643,7 +687,7 @@ class Sentry final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithAsyncMethod_PeerCount() {
-      ::grpc::Service::MarkMethodAsync(10);
+      ::grpc::Service::MarkMethodAsync(11);
     }
     ~WithAsyncMethod_PeerCount() override {
       BaseClassMustBeDerivedFromService(this);
@@ -654,7 +698,7 @@ class Sentry final {
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
     void RequestPeerCount(::grpc::ServerContext* context, ::sentry::PeerCountRequest* request, ::grpc::ServerAsyncResponseWriter< ::sentry::PeerCountReply>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
-      ::grpc::Service::RequestAsyncUnary(10, context, request, response, new_call_cq, notification_cq, tag);
+      ::grpc::Service::RequestAsyncUnary(11, context, request, response, new_call_cq, notification_cq, tag);
     }
   };
   template <class BaseClass>
@@ -663,7 +707,7 @@ class Sentry final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithAsyncMethod_PeerById() {
-      ::grpc::Service::MarkMethodAsync(11);
+      ::grpc::Service::MarkMethodAsync(12);
     }
     ~WithAsyncMethod_PeerById() override {
       BaseClassMustBeDerivedFromService(this);
@@ -674,7 +718,7 @@ class Sentry final {
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
     void RequestPeerById(::grpc::ServerContext* context, ::sentry::PeerByIdRequest* request, ::grpc::ServerAsyncResponseWriter< ::sentry::PeerByIdReply>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
-      ::grpc::Service::RequestAsyncUnary(11, context, request, response, new_call_cq, notification_cq, tag);
+      ::grpc::Service::RequestAsyncUnary(12, context, request, response, new_call_cq, notification_cq, tag);
     }
   };
   template <class BaseClass>
@@ -683,7 +727,7 @@ class Sentry final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithAsyncMethod_PeerEvents() {
-      ::grpc::Service::MarkMethodAsync(12);
+      ::grpc::Service::MarkMethodAsync(13);
     }
     ~WithAsyncMethod_PeerEvents() override {
       BaseClassMustBeDerivedFromService(this);
@@ -694,7 +738,7 @@ class Sentry final {
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
     void RequestPeerEvents(::grpc::ServerContext* context, ::sentry::PeerEventsRequest* request, ::grpc::ServerAsyncWriter< ::sentry::PeerEvent>* writer, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
-      ::grpc::Service::RequestAsyncServerStreaming(12, context, request, writer, new_call_cq, notification_cq, tag);
+      ::grpc::Service::RequestAsyncServerStreaming(13, context, request, writer, new_call_cq, notification_cq, tag);
     }
   };
   template <class BaseClass>
@@ -703,7 +747,7 @@ class Sentry final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithAsyncMethod_NodeInfo() {
-      ::grpc::Service::MarkMethodAsync(13);
+      ::grpc::Service::MarkMethodAsync(14);
     }
     ~WithAsyncMethod_NodeInfo() override {
       BaseClassMustBeDerivedFromService(this);
@@ -714,10 +758,10 @@ class Sentry final {
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
     void RequestNodeInfo(::grpc::ServerContext* context, ::google::protobuf::Empty* request, ::grpc::ServerAsyncResponseWriter< ::types::NodeInfoReply>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
-      ::grpc::Service::RequestAsyncUnary(13, context, request, response, new_call_cq, notification_cq, tag);
+      ::grpc::Service::RequestAsyncUnary(14, context, request, response, new_call_cq, notification_cq, tag);
     }
   };
-  typedef WithAsyncMethod_SetStatus<WithAsyncMethod_PenalizePeer<WithAsyncMethod_PeerMinBlock<WithAsyncMethod_HandShake<WithAsyncMethod_SendMessageByMinBlock<WithAsyncMethod_SendMessageById<WithAsyncMethod_SendMessageToRandomPeers<WithAsyncMethod_SendMessageToAll<WithAsyncMethod_Messages<WithAsyncMethod_Peers<WithAsyncMethod_PeerCount<WithAsyncMethod_PeerById<WithAsyncMethod_PeerEvents<WithAsyncMethod_NodeInfo<Service > > > > > > > > > > > > > > AsyncService;
+  typedef WithAsyncMethod_SetStatus<WithAsyncMethod_PenalizePeer<WithAsyncMethod_PeerMinBlock<WithAsyncMethod_PeerUseless<WithAsyncMethod_HandShake<WithAsyncMethod_SendMessageByMinBlock<WithAsyncMethod_SendMessageById<WithAsyncMethod_SendMessageToRandomPeers<WithAsyncMethod_SendMessageToAll<WithAsyncMethod_Messages<WithAsyncMethod_Peers<WithAsyncMethod_PeerCount<WithAsyncMethod_PeerById<WithAsyncMethod_PeerEvents<WithAsyncMethod_NodeInfo<Service > > > > > > > > > > > > > > > AsyncService;
   template <class BaseClass>
   class WithCallbackMethod_SetStatus : public BaseClass {
    private:
@@ -800,18 +844,45 @@ class Sentry final {
       ::grpc::CallbackServerContext* /*context*/, const ::sentry::PeerMinBlockRequest* /*request*/, ::google::protobuf::Empty* /*response*/)  { return nullptr; }
   };
   template <class BaseClass>
+  class WithCallbackMethod_PeerUseless : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithCallbackMethod_PeerUseless() {
+      ::grpc::Service::MarkMethodCallback(3,
+          new ::grpc::internal::CallbackUnaryHandler< ::sentry::PeerUselessRequest, ::google::protobuf::Empty>(
+            [this](
+                   ::grpc::CallbackServerContext* context, const ::sentry::PeerUselessRequest* request, ::google::protobuf::Empty* response) { return this->PeerUseless(context, request, response); }));}
+    void SetMessageAllocatorFor_PeerUseless(
+        ::grpc::MessageAllocator< ::sentry::PeerUselessRequest, ::google::protobuf::Empty>* allocator) {
+      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(3);
+      static_cast<::grpc::internal::CallbackUnaryHandler< ::sentry::PeerUselessRequest, ::google::protobuf::Empty>*>(handler)
+              ->SetMessageAllocator(allocator);
+    }
+    ~WithCallbackMethod_PeerUseless() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status PeerUseless(::grpc::ServerContext* /*context*/, const ::sentry::PeerUselessRequest* /*request*/, ::google::protobuf::Empty* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    virtual ::grpc::ServerUnaryReactor* PeerUseless(
+      ::grpc::CallbackServerContext* /*context*/, const ::sentry::PeerUselessRequest* /*request*/, ::google::protobuf::Empty* /*response*/)  { return nullptr; }
+  };
+  template <class BaseClass>
   class WithCallbackMethod_HandShake : public BaseClass {
    private:
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithCallbackMethod_HandShake() {
-      ::grpc::Service::MarkMethodCallback(3,
+      ::grpc::Service::MarkMethodCallback(4,
           new ::grpc::internal::CallbackUnaryHandler< ::google::protobuf::Empty, ::sentry::HandShakeReply>(
             [this](
                    ::grpc::CallbackServerContext* context, const ::google::protobuf::Empty* request, ::sentry::HandShakeReply* response) { return this->HandShake(context, request, response); }));}
     void SetMessageAllocatorFor_HandShake(
         ::grpc::MessageAllocator< ::google::protobuf::Empty, ::sentry::HandShakeReply>* allocator) {
-      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(3);
+      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(4);
       static_cast<::grpc::internal::CallbackUnaryHandler< ::google::protobuf::Empty, ::sentry::HandShakeReply>*>(handler)
               ->SetMessageAllocator(allocator);
     }
@@ -832,13 +903,13 @@ class Sentry final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithCallbackMethod_SendMessageByMinBlock() {
-      ::grpc::Service::MarkMethodCallback(4,
+      ::grpc::Service::MarkMethodCallback(5,
           new ::grpc::internal::CallbackUnaryHandler< ::sentry::SendMessageByMinBlockRequest, ::sentry::SentPeers>(
             [this](
                    ::grpc::CallbackServerContext* context, const ::sentry::SendMessageByMinBlockRequest* request, ::sentry::SentPeers* response) { return this->SendMessageByMinBlock(context, request, response); }));}
     void SetMessageAllocatorFor_SendMessageByMinBlock(
         ::grpc::MessageAllocator< ::sentry::SendMessageByMinBlockRequest, ::sentry::SentPeers>* allocator) {
-      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(4);
+      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(5);
       static_cast<::grpc::internal::CallbackUnaryHandler< ::sentry::SendMessageByMinBlockRequest, ::sentry::SentPeers>*>(handler)
               ->SetMessageAllocator(allocator);
     }
@@ -859,13 +930,13 @@ class Sentry final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithCallbackMethod_SendMessageById() {
-      ::grpc::Service::MarkMethodCallback(5,
+      ::grpc::Service::MarkMethodCallback(6,
           new ::grpc::internal::CallbackUnaryHandler< ::sentry::SendMessageByIdRequest, ::sentry::SentPeers>(
             [this](
                    ::grpc::CallbackServerContext* context, const ::sentry::SendMessageByIdRequest* request, ::sentry::SentPeers* response) { return this->SendMessageById(context, request, response); }));}
     void SetMessageAllocatorFor_SendMessageById(
         ::grpc::MessageAllocator< ::sentry::SendMessageByIdRequest, ::sentry::SentPeers>* allocator) {
-      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(5);
+      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(6);
       static_cast<::grpc::internal::CallbackUnaryHandler< ::sentry::SendMessageByIdRequest, ::sentry::SentPeers>*>(handler)
               ->SetMessageAllocator(allocator);
     }
@@ -886,13 +957,13 @@ class Sentry final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithCallbackMethod_SendMessageToRandomPeers() {
-      ::grpc::Service::MarkMethodCallback(6,
+      ::grpc::Service::MarkMethodCallback(7,
           new ::grpc::internal::CallbackUnaryHandler< ::sentry::SendMessageToRandomPeersRequest, ::sentry::SentPeers>(
             [this](
                    ::grpc::CallbackServerContext* context, const ::sentry::SendMessageToRandomPeersRequest* request, ::sentry::SentPeers* response) { return this->SendMessageToRandomPeers(context, request, response); }));}
     void SetMessageAllocatorFor_SendMessageToRandomPeers(
         ::grpc::MessageAllocator< ::sentry::SendMessageToRandomPeersRequest, ::sentry::SentPeers>* allocator) {
-      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(6);
+      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(7);
       static_cast<::grpc::internal::CallbackUnaryHandler< ::sentry::SendMessageToRandomPeersRequest, ::sentry::SentPeers>*>(handler)
               ->SetMessageAllocator(allocator);
     }
@@ -913,13 +984,13 @@ class Sentry final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithCallbackMethod_SendMessageToAll() {
-      ::grpc::Service::MarkMethodCallback(7,
+      ::grpc::Service::MarkMethodCallback(8,
           new ::grpc::internal::CallbackUnaryHandler< ::sentry::OutboundMessageData, ::sentry::SentPeers>(
             [this](
                    ::grpc::CallbackServerContext* context, const ::sentry::OutboundMessageData* request, ::sentry::SentPeers* response) { return this->SendMessageToAll(context, request, response); }));}
     void SetMessageAllocatorFor_SendMessageToAll(
         ::grpc::MessageAllocator< ::sentry::OutboundMessageData, ::sentry::SentPeers>* allocator) {
-      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(7);
+      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(8);
       static_cast<::grpc::internal::CallbackUnaryHandler< ::sentry::OutboundMessageData, ::sentry::SentPeers>*>(handler)
               ->SetMessageAllocator(allocator);
     }
@@ -940,7 +1011,7 @@ class Sentry final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithCallbackMethod_Messages() {
-      ::grpc::Service::MarkMethodCallback(8,
+      ::grpc::Service::MarkMethodCallback(9,
           new ::grpc::internal::CallbackServerStreamingHandler< ::sentry::MessagesRequest, ::sentry::InboundMessage>(
             [this](
                    ::grpc::CallbackServerContext* context, const ::sentry::MessagesRequest* request) { return this->Messages(context, request); }));
@@ -962,13 +1033,13 @@ class Sentry final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithCallbackMethod_Peers() {
-      ::grpc::Service::MarkMethodCallback(9,
+      ::grpc::Service::MarkMethodCallback(10,
           new ::grpc::internal::CallbackUnaryHandler< ::google::protobuf::Empty, ::sentry::PeersReply>(
             [this](
                    ::grpc::CallbackServerContext* context, const ::google::protobuf::Empty* request, ::sentry::PeersReply* response) { return this->Peers(context, request, response); }));}
     void SetMessageAllocatorFor_Peers(
         ::grpc::MessageAllocator< ::google::protobuf::Empty, ::sentry::PeersReply>* allocator) {
-      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(9);
+      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(10);
       static_cast<::grpc::internal::CallbackUnaryHandler< ::google::protobuf::Empty, ::sentry::PeersReply>*>(handler)
               ->SetMessageAllocator(allocator);
     }
@@ -989,13 +1060,13 @@ class Sentry final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithCallbackMethod_PeerCount() {
-      ::grpc::Service::MarkMethodCallback(10,
+      ::grpc::Service::MarkMethodCallback(11,
           new ::grpc::internal::CallbackUnaryHandler< ::sentry::PeerCountRequest, ::sentry::PeerCountReply>(
             [this](
                    ::grpc::CallbackServerContext* context, const ::sentry::PeerCountRequest* request, ::sentry::PeerCountReply* response) { return this->PeerCount(context, request, response); }));}
     void SetMessageAllocatorFor_PeerCount(
         ::grpc::MessageAllocator< ::sentry::PeerCountRequest, ::sentry::PeerCountReply>* allocator) {
-      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(10);
+      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(11);
       static_cast<::grpc::internal::CallbackUnaryHandler< ::sentry::PeerCountRequest, ::sentry::PeerCountReply>*>(handler)
               ->SetMessageAllocator(allocator);
     }
@@ -1016,13 +1087,13 @@ class Sentry final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithCallbackMethod_PeerById() {
-      ::grpc::Service::MarkMethodCallback(11,
+      ::grpc::Service::MarkMethodCallback(12,
           new ::grpc::internal::CallbackUnaryHandler< ::sentry::PeerByIdRequest, ::sentry::PeerByIdReply>(
             [this](
                    ::grpc::CallbackServerContext* context, const ::sentry::PeerByIdRequest* request, ::sentry::PeerByIdReply* response) { return this->PeerById(context, request, response); }));}
     void SetMessageAllocatorFor_PeerById(
         ::grpc::MessageAllocator< ::sentry::PeerByIdRequest, ::sentry::PeerByIdReply>* allocator) {
-      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(11);
+      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(12);
       static_cast<::grpc::internal::CallbackUnaryHandler< ::sentry::PeerByIdRequest, ::sentry::PeerByIdReply>*>(handler)
               ->SetMessageAllocator(allocator);
     }
@@ -1043,7 +1114,7 @@ class Sentry final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithCallbackMethod_PeerEvents() {
-      ::grpc::Service::MarkMethodCallback(12,
+      ::grpc::Service::MarkMethodCallback(13,
           new ::grpc::internal::CallbackServerStreamingHandler< ::sentry::PeerEventsRequest, ::sentry::PeerEvent>(
             [this](
                    ::grpc::CallbackServerContext* context, const ::sentry::PeerEventsRequest* request) { return this->PeerEvents(context, request); }));
@@ -1065,13 +1136,13 @@ class Sentry final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithCallbackMethod_NodeInfo() {
-      ::grpc::Service::MarkMethodCallback(13,
+      ::grpc::Service::MarkMethodCallback(14,
           new ::grpc::internal::CallbackUnaryHandler< ::google::protobuf::Empty, ::types::NodeInfoReply>(
             [this](
                    ::grpc::CallbackServerContext* context, const ::google::protobuf::Empty* request, ::types::NodeInfoReply* response) { return this->NodeInfo(context, request, response); }));}
     void SetMessageAllocatorFor_NodeInfo(
         ::grpc::MessageAllocator< ::google::protobuf::Empty, ::types::NodeInfoReply>* allocator) {
-      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(13);
+      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(14);
       static_cast<::grpc::internal::CallbackUnaryHandler< ::google::protobuf::Empty, ::types::NodeInfoReply>*>(handler)
               ->SetMessageAllocator(allocator);
     }
@@ -1086,7 +1157,7 @@ class Sentry final {
     virtual ::grpc::ServerUnaryReactor* NodeInfo(
       ::grpc::CallbackServerContext* /*context*/, const ::google::protobuf::Empty* /*request*/, ::types::NodeInfoReply* /*response*/)  { return nullptr; }
   };
-  typedef WithCallbackMethod_SetStatus<WithCallbackMethod_PenalizePeer<WithCallbackMethod_PeerMinBlock<WithCallbackMethod_HandShake<WithCallbackMethod_SendMessageByMinBlock<WithCallbackMethod_SendMessageById<WithCallbackMethod_SendMessageToRandomPeers<WithCallbackMethod_SendMessageToAll<WithCallbackMethod_Messages<WithCallbackMethod_Peers<WithCallbackMethod_PeerCount<WithCallbackMethod_PeerById<WithCallbackMethod_PeerEvents<WithCallbackMethod_NodeInfo<Service > > > > > > > > > > > > > > CallbackService;
+  typedef WithCallbackMethod_SetStatus<WithCallbackMethod_PenalizePeer<WithCallbackMethod_PeerMinBlock<WithCallbackMethod_PeerUseless<WithCallbackMethod_HandShake<WithCallbackMethod_SendMessageByMinBlock<WithCallbackMethod_SendMessageById<WithCallbackMethod_SendMessageToRandomPeers<WithCallbackMethod_SendMessageToAll<WithCallbackMethod_Messages<WithCallbackMethod_Peers<WithCallbackMethod_PeerCount<WithCallbackMethod_PeerById<WithCallbackMethod_PeerEvents<WithCallbackMethod_NodeInfo<Service > > > > > > > > > > > > > > > CallbackService;
   typedef CallbackService ExperimentalCallbackService;
   template <class BaseClass>
   class WithGenericMethod_SetStatus : public BaseClass {
@@ -1140,12 +1211,29 @@ class Sentry final {
     }
   };
   template <class BaseClass>
+  class WithGenericMethod_PeerUseless : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithGenericMethod_PeerUseless() {
+      ::grpc::Service::MarkMethodGeneric(3);
+    }
+    ~WithGenericMethod_PeerUseless() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status PeerUseless(::grpc::ServerContext* /*context*/, const ::sentry::PeerUselessRequest* /*request*/, ::google::protobuf::Empty* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+  };
+  template <class BaseClass>
   class WithGenericMethod_HandShake : public BaseClass {
    private:
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithGenericMethod_HandShake() {
-      ::grpc::Service::MarkMethodGeneric(3);
+      ::grpc::Service::MarkMethodGeneric(4);
     }
     ~WithGenericMethod_HandShake() override {
       BaseClassMustBeDerivedFromService(this);
@@ -1162,7 +1250,7 @@ class Sentry final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithGenericMethod_SendMessageByMinBlock() {
-      ::grpc::Service::MarkMethodGeneric(4);
+      ::grpc::Service::MarkMethodGeneric(5);
     }
     ~WithGenericMethod_SendMessageByMinBlock() override {
       BaseClassMustBeDerivedFromService(this);
@@ -1179,7 +1267,7 @@ class Sentry final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithGenericMethod_SendMessageById() {
-      ::grpc::Service::MarkMethodGeneric(5);
+      ::grpc::Service::MarkMethodGeneric(6);
     }
     ~WithGenericMethod_SendMessageById() override {
       BaseClassMustBeDerivedFromService(this);
@@ -1196,7 +1284,7 @@ class Sentry final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithGenericMethod_SendMessageToRandomPeers() {
-      ::grpc::Service::MarkMethodGeneric(6);
+      ::grpc::Service::MarkMethodGeneric(7);
     }
     ~WithGenericMethod_SendMessageToRandomPeers() override {
       BaseClassMustBeDerivedFromService(this);
@@ -1213,7 +1301,7 @@ class Sentry final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithGenericMethod_SendMessageToAll() {
-      ::grpc::Service::MarkMethodGeneric(7);
+      ::grpc::Service::MarkMethodGeneric(8);
     }
     ~WithGenericMethod_SendMessageToAll() override {
       BaseClassMustBeDerivedFromService(this);
@@ -1230,7 +1318,7 @@ class Sentry final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithGenericMethod_Messages() {
-      ::grpc::Service::MarkMethodGeneric(8);
+      ::grpc::Service::MarkMethodGeneric(9);
     }
     ~WithGenericMethod_Messages() override {
       BaseClassMustBeDerivedFromService(this);
@@ -1247,7 +1335,7 @@ class Sentry final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithGenericMethod_Peers() {
-      ::grpc::Service::MarkMethodGeneric(9);
+      ::grpc::Service::MarkMethodGeneric(10);
     }
     ~WithGenericMethod_Peers() override {
       BaseClassMustBeDerivedFromService(this);
@@ -1264,7 +1352,7 @@ class Sentry final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithGenericMethod_PeerCount() {
-      ::grpc::Service::MarkMethodGeneric(10);
+      ::grpc::Service::MarkMethodGeneric(11);
     }
     ~WithGenericMethod_PeerCount() override {
       BaseClassMustBeDerivedFromService(this);
@@ -1281,7 +1369,7 @@ class Sentry final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithGenericMethod_PeerById() {
-      ::grpc::Service::MarkMethodGeneric(11);
+      ::grpc::Service::MarkMethodGeneric(12);
     }
     ~WithGenericMethod_PeerById() override {
       BaseClassMustBeDerivedFromService(this);
@@ -1298,7 +1386,7 @@ class Sentry final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithGenericMethod_PeerEvents() {
-      ::grpc::Service::MarkMethodGeneric(12);
+      ::grpc::Service::MarkMethodGeneric(13);
     }
     ~WithGenericMethod_PeerEvents() override {
       BaseClassMustBeDerivedFromService(this);
@@ -1315,7 +1403,7 @@ class Sentry final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithGenericMethod_NodeInfo() {
-      ::grpc::Service::MarkMethodGeneric(13);
+      ::grpc::Service::MarkMethodGeneric(14);
     }
     ~WithGenericMethod_NodeInfo() override {
       BaseClassMustBeDerivedFromService(this);
@@ -1387,12 +1475,32 @@ class Sentry final {
     }
   };
   template <class BaseClass>
+  class WithRawMethod_PeerUseless : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithRawMethod_PeerUseless() {
+      ::grpc::Service::MarkMethodRaw(3);
+    }
+    ~WithRawMethod_PeerUseless() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status PeerUseless(::grpc::ServerContext* /*context*/, const ::sentry::PeerUselessRequest* /*request*/, ::google::protobuf::Empty* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    void RequestPeerUseless(::grpc::ServerContext* context, ::grpc::ByteBuffer* request, ::grpc::ServerAsyncResponseWriter< ::grpc::ByteBuffer>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
+      ::grpc::Service::RequestAsyncUnary(3, context, request, response, new_call_cq, notification_cq, tag);
+    }
+  };
+  template <class BaseClass>
   class WithRawMethod_HandShake : public BaseClass {
    private:
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithRawMethod_HandShake() {
-      ::grpc::Service::MarkMethodRaw(3);
+      ::grpc::Service::MarkMethodRaw(4);
     }
     ~WithRawMethod_HandShake() override {
       BaseClassMustBeDerivedFromService(this);
@@ -1403,7 +1511,7 @@ class Sentry final {
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
     void RequestHandShake(::grpc::ServerContext* context, ::grpc::ByteBuffer* request, ::grpc::ServerAsyncResponseWriter< ::grpc::ByteBuffer>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
-      ::grpc::Service::RequestAsyncUnary(3, context, request, response, new_call_cq, notification_cq, tag);
+      ::grpc::Service::RequestAsyncUnary(4, context, request, response, new_call_cq, notification_cq, tag);
     }
   };
   template <class BaseClass>
@@ -1412,7 +1520,7 @@ class Sentry final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithRawMethod_SendMessageByMinBlock() {
-      ::grpc::Service::MarkMethodRaw(4);
+      ::grpc::Service::MarkMethodRaw(5);
     }
     ~WithRawMethod_SendMessageByMinBlock() override {
       BaseClassMustBeDerivedFromService(this);
@@ -1423,7 +1531,7 @@ class Sentry final {
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
     void RequestSendMessageByMinBlock(::grpc::ServerContext* context, ::grpc::ByteBuffer* request, ::grpc::ServerAsyncResponseWriter< ::grpc::ByteBuffer>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
-      ::grpc::Service::RequestAsyncUnary(4, context, request, response, new_call_cq, notification_cq, tag);
+      ::grpc::Service::RequestAsyncUnary(5, context, request, response, new_call_cq, notification_cq, tag);
     }
   };
   template <class BaseClass>
@@ -1432,7 +1540,7 @@ class Sentry final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithRawMethod_SendMessageById() {
-      ::grpc::Service::MarkMethodRaw(5);
+      ::grpc::Service::MarkMethodRaw(6);
     }
     ~WithRawMethod_SendMessageById() override {
       BaseClassMustBeDerivedFromService(this);
@@ -1443,7 +1551,7 @@ class Sentry final {
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
     void RequestSendMessageById(::grpc::ServerContext* context, ::grpc::ByteBuffer* request, ::grpc::ServerAsyncResponseWriter< ::grpc::ByteBuffer>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
-      ::grpc::Service::RequestAsyncUnary(5, context, request, response, new_call_cq, notification_cq, tag);
+      ::grpc::Service::RequestAsyncUnary(6, context, request, response, new_call_cq, notification_cq, tag);
     }
   };
   template <class BaseClass>
@@ -1452,7 +1560,7 @@ class Sentry final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithRawMethod_SendMessageToRandomPeers() {
-      ::grpc::Service::MarkMethodRaw(6);
+      ::grpc::Service::MarkMethodRaw(7);
     }
     ~WithRawMethod_SendMessageToRandomPeers() override {
       BaseClassMustBeDerivedFromService(this);
@@ -1463,7 +1571,7 @@ class Sentry final {
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
     void RequestSendMessageToRandomPeers(::grpc::ServerContext* context, ::grpc::ByteBuffer* request, ::grpc::ServerAsyncResponseWriter< ::grpc::ByteBuffer>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
-      ::grpc::Service::RequestAsyncUnary(6, context, request, response, new_call_cq, notification_cq, tag);
+      ::grpc::Service::RequestAsyncUnary(7, context, request, response, new_call_cq, notification_cq, tag);
     }
   };
   template <class BaseClass>
@@ -1472,7 +1580,7 @@ class Sentry final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithRawMethod_SendMessageToAll() {
-      ::grpc::Service::MarkMethodRaw(7);
+      ::grpc::Service::MarkMethodRaw(8);
     }
     ~WithRawMethod_SendMessageToAll() override {
       BaseClassMustBeDerivedFromService(this);
@@ -1483,7 +1591,7 @@ class Sentry final {
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
     void RequestSendMessageToAll(::grpc::ServerContext* context, ::grpc::ByteBuffer* request, ::grpc::ServerAsyncResponseWriter< ::grpc::ByteBuffer>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
-      ::grpc::Service::RequestAsyncUnary(7, context, request, response, new_call_cq, notification_cq, tag);
+      ::grpc::Service::RequestAsyncUnary(8, context, request, response, new_call_cq, notification_cq, tag);
     }
   };
   template <class BaseClass>
@@ -1492,7 +1600,7 @@ class Sentry final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithRawMethod_Messages() {
-      ::grpc::Service::MarkMethodRaw(8);
+      ::grpc::Service::MarkMethodRaw(9);
     }
     ~WithRawMethod_Messages() override {
       BaseClassMustBeDerivedFromService(this);
@@ -1503,7 +1611,7 @@ class Sentry final {
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
     void RequestMessages(::grpc::ServerContext* context, ::grpc::ByteBuffer* request, ::grpc::ServerAsyncWriter< ::grpc::ByteBuffer>* writer, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
-      ::grpc::Service::RequestAsyncServerStreaming(8, context, request, writer, new_call_cq, notification_cq, tag);
+      ::grpc::Service::RequestAsyncServerStreaming(9, context, request, writer, new_call_cq, notification_cq, tag);
     }
   };
   template <class BaseClass>
@@ -1512,7 +1620,7 @@ class Sentry final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithRawMethod_Peers() {
-      ::grpc::Service::MarkMethodRaw(9);
+      ::grpc::Service::MarkMethodRaw(10);
     }
     ~WithRawMethod_Peers() override {
       BaseClassMustBeDerivedFromService(this);
@@ -1523,7 +1631,7 @@ class Sentry final {
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
     void RequestPeers(::grpc::ServerContext* context, ::grpc::ByteBuffer* request, ::grpc::ServerAsyncResponseWriter< ::grpc::ByteBuffer>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
-      ::grpc::Service::RequestAsyncUnary(9, context, request, response, new_call_cq, notification_cq, tag);
+      ::grpc::Service::RequestAsyncUnary(10, context, request, response, new_call_cq, notification_cq, tag);
     }
   };
   template <class BaseClass>
@@ -1532,7 +1640,7 @@ class Sentry final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithRawMethod_PeerCount() {
-      ::grpc::Service::MarkMethodRaw(10);
+      ::grpc::Service::MarkMethodRaw(11);
     }
     ~WithRawMethod_PeerCount() override {
       BaseClassMustBeDerivedFromService(this);
@@ -1543,7 +1651,7 @@ class Sentry final {
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
     void RequestPeerCount(::grpc::ServerContext* context, ::grpc::ByteBuffer* request, ::grpc::ServerAsyncResponseWriter< ::grpc::ByteBuffer>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
-      ::grpc::Service::RequestAsyncUnary(10, context, request, response, new_call_cq, notification_cq, tag);
+      ::grpc::Service::RequestAsyncUnary(11, context, request, response, new_call_cq, notification_cq, tag);
     }
   };
   template <class BaseClass>
@@ -1552,7 +1660,7 @@ class Sentry final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithRawMethod_PeerById() {
-      ::grpc::Service::MarkMethodRaw(11);
+      ::grpc::Service::MarkMethodRaw(12);
     }
     ~WithRawMethod_PeerById() override {
       BaseClassMustBeDerivedFromService(this);
@@ -1563,7 +1671,7 @@ class Sentry final {
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
     void RequestPeerById(::grpc::ServerContext* context, ::grpc::ByteBuffer* request, ::grpc::ServerAsyncResponseWriter< ::grpc::ByteBuffer>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
-      ::grpc::Service::RequestAsyncUnary(11, context, request, response, new_call_cq, notification_cq, tag);
+      ::grpc::Service::RequestAsyncUnary(12, context, request, response, new_call_cq, notification_cq, tag);
     }
   };
   template <class BaseClass>
@@ -1572,7 +1680,7 @@ class Sentry final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithRawMethod_PeerEvents() {
-      ::grpc::Service::MarkMethodRaw(12);
+      ::grpc::Service::MarkMethodRaw(13);
     }
     ~WithRawMethod_PeerEvents() override {
       BaseClassMustBeDerivedFromService(this);
@@ -1583,7 +1691,7 @@ class Sentry final {
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
     void RequestPeerEvents(::grpc::ServerContext* context, ::grpc::ByteBuffer* request, ::grpc::ServerAsyncWriter< ::grpc::ByteBuffer>* writer, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
-      ::grpc::Service::RequestAsyncServerStreaming(12, context, request, writer, new_call_cq, notification_cq, tag);
+      ::grpc::Service::RequestAsyncServerStreaming(13, context, request, writer, new_call_cq, notification_cq, tag);
     }
   };
   template <class BaseClass>
@@ -1592,7 +1700,7 @@ class Sentry final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithRawMethod_NodeInfo() {
-      ::grpc::Service::MarkMethodRaw(13);
+      ::grpc::Service::MarkMethodRaw(14);
     }
     ~WithRawMethod_NodeInfo() override {
       BaseClassMustBeDerivedFromService(this);
@@ -1603,7 +1711,7 @@ class Sentry final {
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
     void RequestNodeInfo(::grpc::ServerContext* context, ::grpc::ByteBuffer* request, ::grpc::ServerAsyncResponseWriter< ::grpc::ByteBuffer>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
-      ::grpc::Service::RequestAsyncUnary(13, context, request, response, new_call_cq, notification_cq, tag);
+      ::grpc::Service::RequestAsyncUnary(14, context, request, response, new_call_cq, notification_cq, tag);
     }
   };
   template <class BaseClass>
@@ -1673,12 +1781,34 @@ class Sentry final {
       ::grpc::CallbackServerContext* /*context*/, const ::grpc::ByteBuffer* /*request*/, ::grpc::ByteBuffer* /*response*/)  { return nullptr; }
   };
   template <class BaseClass>
+  class WithRawCallbackMethod_PeerUseless : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithRawCallbackMethod_PeerUseless() {
+      ::grpc::Service::MarkMethodRawCallback(3,
+          new ::grpc::internal::CallbackUnaryHandler< ::grpc::ByteBuffer, ::grpc::ByteBuffer>(
+            [this](
+                   ::grpc::CallbackServerContext* context, const ::grpc::ByteBuffer* request, ::grpc::ByteBuffer* response) { return this->PeerUseless(context, request, response); }));
+    }
+    ~WithRawCallbackMethod_PeerUseless() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status PeerUseless(::grpc::ServerContext* /*context*/, const ::sentry::PeerUselessRequest* /*request*/, ::google::protobuf::Empty* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    virtual ::grpc::ServerUnaryReactor* PeerUseless(
+      ::grpc::CallbackServerContext* /*context*/, const ::grpc::ByteBuffer* /*request*/, ::grpc::ByteBuffer* /*response*/)  { return nullptr; }
+  };
+  template <class BaseClass>
   class WithRawCallbackMethod_HandShake : public BaseClass {
    private:
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithRawCallbackMethod_HandShake() {
-      ::grpc::Service::MarkMethodRawCallback(3,
+      ::grpc::Service::MarkMethodRawCallback(4,
           new ::grpc::internal::CallbackUnaryHandler< ::grpc::ByteBuffer, ::grpc::ByteBuffer>(
             [this](
                    ::grpc::CallbackServerContext* context, const ::grpc::ByteBuffer* request, ::grpc::ByteBuffer* response) { return this->HandShake(context, request, response); }));
@@ -1700,7 +1830,7 @@ class Sentry final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithRawCallbackMethod_SendMessageByMinBlock() {
-      ::grpc::Service::MarkMethodRawCallback(4,
+      ::grpc::Service::MarkMethodRawCallback(5,
           new ::grpc::internal::CallbackUnaryHandler< ::grpc::ByteBuffer, ::grpc::ByteBuffer>(
             [this](
                    ::grpc::CallbackServerContext* context, const ::grpc::ByteBuffer* request, ::grpc::ByteBuffer* response) { return this->SendMessageByMinBlock(context, request, response); }));
@@ -1722,7 +1852,7 @@ class Sentry final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithRawCallbackMethod_SendMessageById() {
-      ::grpc::Service::MarkMethodRawCallback(5,
+      ::grpc::Service::MarkMethodRawCallback(6,
           new ::grpc::internal::CallbackUnaryHandler< ::grpc::ByteBuffer, ::grpc::ByteBuffer>(
             [this](
                    ::grpc::CallbackServerContext* context, const ::grpc::ByteBuffer* request, ::grpc::ByteBuffer* response) { return this->SendMessageById(context, request, response); }));
@@ -1744,7 +1874,7 @@ class Sentry final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithRawCallbackMethod_SendMessageToRandomPeers() {
-      ::grpc::Service::MarkMethodRawCallback(6,
+      ::grpc::Service::MarkMethodRawCallback(7,
           new ::grpc::internal::CallbackUnaryHandler< ::grpc::ByteBuffer, ::grpc::ByteBuffer>(
             [this](
                    ::grpc::CallbackServerContext* context, const ::grpc::ByteBuffer* request, ::grpc::ByteBuffer* response) { return this->SendMessageToRandomPeers(context, request, response); }));
@@ -1766,7 +1896,7 @@ class Sentry final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithRawCallbackMethod_SendMessageToAll() {
-      ::grpc::Service::MarkMethodRawCallback(7,
+      ::grpc::Service::MarkMethodRawCallback(8,
           new ::grpc::internal::CallbackUnaryHandler< ::grpc::ByteBuffer, ::grpc::ByteBuffer>(
             [this](
                    ::grpc::CallbackServerContext* context, const ::grpc::ByteBuffer* request, ::grpc::ByteBuffer* response) { return this->SendMessageToAll(context, request, response); }));
@@ -1788,7 +1918,7 @@ class Sentry final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithRawCallbackMethod_Messages() {
-      ::grpc::Service::MarkMethodRawCallback(8,
+      ::grpc::Service::MarkMethodRawCallback(9,
           new ::grpc::internal::CallbackServerStreamingHandler< ::grpc::ByteBuffer, ::grpc::ByteBuffer>(
             [this](
                    ::grpc::CallbackServerContext* context, const::grpc::ByteBuffer* request) { return this->Messages(context, request); }));
@@ -1810,7 +1940,7 @@ class Sentry final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithRawCallbackMethod_Peers() {
-      ::grpc::Service::MarkMethodRawCallback(9,
+      ::grpc::Service::MarkMethodRawCallback(10,
           new ::grpc::internal::CallbackUnaryHandler< ::grpc::ByteBuffer, ::grpc::ByteBuffer>(
             [this](
                    ::grpc::CallbackServerContext* context, const ::grpc::ByteBuffer* request, ::grpc::ByteBuffer* response) { return this->Peers(context, request, response); }));
@@ -1832,7 +1962,7 @@ class Sentry final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithRawCallbackMethod_PeerCount() {
-      ::grpc::Service::MarkMethodRawCallback(10,
+      ::grpc::Service::MarkMethodRawCallback(11,
           new ::grpc::internal::CallbackUnaryHandler< ::grpc::ByteBuffer, ::grpc::ByteBuffer>(
             [this](
                    ::grpc::CallbackServerContext* context, const ::grpc::ByteBuffer* request, ::grpc::ByteBuffer* response) { return this->PeerCount(context, request, response); }));
@@ -1854,7 +1984,7 @@ class Sentry final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithRawCallbackMethod_PeerById() {
-      ::grpc::Service::MarkMethodRawCallback(11,
+      ::grpc::Service::MarkMethodRawCallback(12,
           new ::grpc::internal::CallbackUnaryHandler< ::grpc::ByteBuffer, ::grpc::ByteBuffer>(
             [this](
                    ::grpc::CallbackServerContext* context, const ::grpc::ByteBuffer* request, ::grpc::ByteBuffer* response) { return this->PeerById(context, request, response); }));
@@ -1876,7 +2006,7 @@ class Sentry final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithRawCallbackMethod_PeerEvents() {
-      ::grpc::Service::MarkMethodRawCallback(12,
+      ::grpc::Service::MarkMethodRawCallback(13,
           new ::grpc::internal::CallbackServerStreamingHandler< ::grpc::ByteBuffer, ::grpc::ByteBuffer>(
             [this](
                    ::grpc::CallbackServerContext* context, const::grpc::ByteBuffer* request) { return this->PeerEvents(context, request); }));
@@ -1898,7 +2028,7 @@ class Sentry final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithRawCallbackMethod_NodeInfo() {
-      ::grpc::Service::MarkMethodRawCallback(13,
+      ::grpc::Service::MarkMethodRawCallback(14,
           new ::grpc::internal::CallbackUnaryHandler< ::grpc::ByteBuffer, ::grpc::ByteBuffer>(
             [this](
                    ::grpc::CallbackServerContext* context, const ::grpc::ByteBuffer* request, ::grpc::ByteBuffer* response) { return this->NodeInfo(context, request, response); }));
@@ -1996,12 +2126,39 @@ class Sentry final {
     virtual ::grpc::Status StreamedPeerMinBlock(::grpc::ServerContext* context, ::grpc::ServerUnaryStreamer< ::sentry::PeerMinBlockRequest,::google::protobuf::Empty>* server_unary_streamer) = 0;
   };
   template <class BaseClass>
+  class WithStreamedUnaryMethod_PeerUseless : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithStreamedUnaryMethod_PeerUseless() {
+      ::grpc::Service::MarkMethodStreamed(3,
+        new ::grpc::internal::StreamedUnaryHandler<
+          ::sentry::PeerUselessRequest, ::google::protobuf::Empty>(
+            [this](::grpc::ServerContext* context,
+                   ::grpc::ServerUnaryStreamer<
+                     ::sentry::PeerUselessRequest, ::google::protobuf::Empty>* streamer) {
+                       return this->StreamedPeerUseless(context,
+                         streamer);
+                  }));
+    }
+    ~WithStreamedUnaryMethod_PeerUseless() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable regular version of this method
+    ::grpc::Status PeerUseless(::grpc::ServerContext* /*context*/, const ::sentry::PeerUselessRequest* /*request*/, ::google::protobuf::Empty* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    // replace default version of method with streamed unary
+    virtual ::grpc::Status StreamedPeerUseless(::grpc::ServerContext* context, ::grpc::ServerUnaryStreamer< ::sentry::PeerUselessRequest,::google::protobuf::Empty>* server_unary_streamer) = 0;
+  };
+  template <class BaseClass>
   class WithStreamedUnaryMethod_HandShake : public BaseClass {
    private:
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithStreamedUnaryMethod_HandShake() {
-      ::grpc::Service::MarkMethodStreamed(3,
+      ::grpc::Service::MarkMethodStreamed(4,
         new ::grpc::internal::StreamedUnaryHandler<
           ::google::protobuf::Empty, ::sentry::HandShakeReply>(
             [this](::grpc::ServerContext* context,
@@ -2028,7 +2185,7 @@ class Sentry final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithStreamedUnaryMethod_SendMessageByMinBlock() {
-      ::grpc::Service::MarkMethodStreamed(4,
+      ::grpc::Service::MarkMethodStreamed(5,
         new ::grpc::internal::StreamedUnaryHandler<
           ::sentry::SendMessageByMinBlockRequest, ::sentry::SentPeers>(
             [this](::grpc::ServerContext* context,
@@ -2055,7 +2212,7 @@ class Sentry final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithStreamedUnaryMethod_SendMessageById() {
-      ::grpc::Service::MarkMethodStreamed(5,
+      ::grpc::Service::MarkMethodStreamed(6,
         new ::grpc::internal::StreamedUnaryHandler<
           ::sentry::SendMessageByIdRequest, ::sentry::SentPeers>(
             [this](::grpc::ServerContext* context,
@@ -2082,7 +2239,7 @@ class Sentry final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithStreamedUnaryMethod_SendMessageToRandomPeers() {
-      ::grpc::Service::MarkMethodStreamed(6,
+      ::grpc::Service::MarkMethodStreamed(7,
         new ::grpc::internal::StreamedUnaryHandler<
           ::sentry::SendMessageToRandomPeersRequest, ::sentry::SentPeers>(
             [this](::grpc::ServerContext* context,
@@ -2109,7 +2266,7 @@ class Sentry final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithStreamedUnaryMethod_SendMessageToAll() {
-      ::grpc::Service::MarkMethodStreamed(7,
+      ::grpc::Service::MarkMethodStreamed(8,
         new ::grpc::internal::StreamedUnaryHandler<
           ::sentry::OutboundMessageData, ::sentry::SentPeers>(
             [this](::grpc::ServerContext* context,
@@ -2136,7 +2293,7 @@ class Sentry final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithStreamedUnaryMethod_Peers() {
-      ::grpc::Service::MarkMethodStreamed(9,
+      ::grpc::Service::MarkMethodStreamed(10,
         new ::grpc::internal::StreamedUnaryHandler<
           ::google::protobuf::Empty, ::sentry::PeersReply>(
             [this](::grpc::ServerContext* context,
@@ -2163,7 +2320,7 @@ class Sentry final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithStreamedUnaryMethod_PeerCount() {
-      ::grpc::Service::MarkMethodStreamed(10,
+      ::grpc::Service::MarkMethodStreamed(11,
         new ::grpc::internal::StreamedUnaryHandler<
           ::sentry::PeerCountRequest, ::sentry::PeerCountReply>(
             [this](::grpc::ServerContext* context,
@@ -2190,7 +2347,7 @@ class Sentry final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithStreamedUnaryMethod_PeerById() {
-      ::grpc::Service::MarkMethodStreamed(11,
+      ::grpc::Service::MarkMethodStreamed(12,
         new ::grpc::internal::StreamedUnaryHandler<
           ::sentry::PeerByIdRequest, ::sentry::PeerByIdReply>(
             [this](::grpc::ServerContext* context,
@@ -2217,7 +2374,7 @@ class Sentry final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithStreamedUnaryMethod_NodeInfo() {
-      ::grpc::Service::MarkMethodStreamed(13,
+      ::grpc::Service::MarkMethodStreamed(14,
         new ::grpc::internal::StreamedUnaryHandler<
           ::google::protobuf::Empty, ::types::NodeInfoReply>(
             [this](::grpc::ServerContext* context,
@@ -2238,14 +2395,14 @@ class Sentry final {
     // replace default version of method with streamed unary
     virtual ::grpc::Status StreamedNodeInfo(::grpc::ServerContext* context, ::grpc::ServerUnaryStreamer< ::google::protobuf::Empty,::types::NodeInfoReply>* server_unary_streamer) = 0;
   };
-  typedef WithStreamedUnaryMethod_SetStatus<WithStreamedUnaryMethod_PenalizePeer<WithStreamedUnaryMethod_PeerMinBlock<WithStreamedUnaryMethod_HandShake<WithStreamedUnaryMethod_SendMessageByMinBlock<WithStreamedUnaryMethod_SendMessageById<WithStreamedUnaryMethod_SendMessageToRandomPeers<WithStreamedUnaryMethod_SendMessageToAll<WithStreamedUnaryMethod_Peers<WithStreamedUnaryMethod_PeerCount<WithStreamedUnaryMethod_PeerById<WithStreamedUnaryMethod_NodeInfo<Service > > > > > > > > > > > > StreamedUnaryService;
+  typedef WithStreamedUnaryMethod_SetStatus<WithStreamedUnaryMethod_PenalizePeer<WithStreamedUnaryMethod_PeerMinBlock<WithStreamedUnaryMethod_PeerUseless<WithStreamedUnaryMethod_HandShake<WithStreamedUnaryMethod_SendMessageByMinBlock<WithStreamedUnaryMethod_SendMessageById<WithStreamedUnaryMethod_SendMessageToRandomPeers<WithStreamedUnaryMethod_SendMessageToAll<WithStreamedUnaryMethod_Peers<WithStreamedUnaryMethod_PeerCount<WithStreamedUnaryMethod_PeerById<WithStreamedUnaryMethod_NodeInfo<Service > > > > > > > > > > > > > StreamedUnaryService;
   template <class BaseClass>
   class WithSplitStreamingMethod_Messages : public BaseClass {
    private:
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithSplitStreamingMethod_Messages() {
-      ::grpc::Service::MarkMethodStreamed(8,
+      ::grpc::Service::MarkMethodStreamed(9,
         new ::grpc::internal::SplitServerStreamingHandler<
           ::sentry::MessagesRequest, ::sentry::InboundMessage>(
             [this](::grpc::ServerContext* context,
@@ -2272,7 +2429,7 @@ class Sentry final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithSplitStreamingMethod_PeerEvents() {
-      ::grpc::Service::MarkMethodStreamed(12,
+      ::grpc::Service::MarkMethodStreamed(13,
         new ::grpc::internal::SplitServerStreamingHandler<
           ::sentry::PeerEventsRequest, ::sentry::PeerEvent>(
             [this](::grpc::ServerContext* context,
@@ -2294,7 +2451,7 @@ class Sentry final {
     virtual ::grpc::Status StreamedPeerEvents(::grpc::ServerContext* context, ::grpc::ServerSplitStreamer< ::sentry::PeerEventsRequest,::sentry::PeerEvent>* server_split_streamer) = 0;
   };
   typedef WithSplitStreamingMethod_Messages<WithSplitStreamingMethod_PeerEvents<Service > > SplitStreamedService;
-  typedef WithStreamedUnaryMethod_SetStatus<WithStreamedUnaryMethod_PenalizePeer<WithStreamedUnaryMethod_PeerMinBlock<WithStreamedUnaryMethod_HandShake<WithStreamedUnaryMethod_SendMessageByMinBlock<WithStreamedUnaryMethod_SendMessageById<WithStreamedUnaryMethod_SendMessageToRandomPeers<WithStreamedUnaryMethod_SendMessageToAll<WithSplitStreamingMethod_Messages<WithStreamedUnaryMethod_Peers<WithStreamedUnaryMethod_PeerCount<WithStreamedUnaryMethod_PeerById<WithSplitStreamingMethod_PeerEvents<WithStreamedUnaryMethod_NodeInfo<Service > > > > > > > > > > > > > > StreamedService;
+  typedef WithStreamedUnaryMethod_SetStatus<WithStreamedUnaryMethod_PenalizePeer<WithStreamedUnaryMethod_PeerMinBlock<WithStreamedUnaryMethod_PeerUseless<WithStreamedUnaryMethod_HandShake<WithStreamedUnaryMethod_SendMessageByMinBlock<WithStreamedUnaryMethod_SendMessageById<WithStreamedUnaryMethod_SendMessageToRandomPeers<WithStreamedUnaryMethod_SendMessageToAll<WithSplitStreamingMethod_Messages<WithStreamedUnaryMethod_Peers<WithStreamedUnaryMethod_PeerCount<WithStreamedUnaryMethod_PeerById<WithSplitStreamingMethod_PeerEvents<WithStreamedUnaryMethod_NodeInfo<Service > > > > > > > > > > > > > > > StreamedService;
 };
 
 }  // namespace sentry

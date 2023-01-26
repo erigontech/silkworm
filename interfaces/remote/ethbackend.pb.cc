@@ -16,11 +16,13 @@
 #include <google/protobuf/port_def.inc>
 extern PROTOBUF_INTERNAL_EXPORT_remote_2fethbackend_2eproto ::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<1> scc_info_EngineForkChoiceState_remote_2fethbackend_2eproto;
 extern PROTOBUF_INTERNAL_EXPORT_remote_2fethbackend_2eproto ::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<2> scc_info_EnginePayloadAttributes_remote_2fethbackend_2eproto;
+extern PROTOBUF_INTERNAL_EXPORT_remote_2fethbackend_2eproto ::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<2> scc_info_EnginePayloadAttributesV2_remote_2fethbackend_2eproto;
 extern PROTOBUF_INTERNAL_EXPORT_remote_2fethbackend_2eproto ::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<1> scc_info_EnginePayloadStatus_remote_2fethbackend_2eproto;
 extern PROTOBUF_INTERNAL_EXPORT_types_2ftypes_2eproto ::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<1> scc_info_H160_types_2ftypes_2eproto;
 extern PROTOBUF_INTERNAL_EXPORT_types_2ftypes_2eproto ::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<1> scc_info_H256_types_2ftypes_2eproto;
 extern PROTOBUF_INTERNAL_EXPORT_types_2ftypes_2eproto ::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<1> scc_info_NodeInfoReply_types_2ftypes_2eproto;
 extern PROTOBUF_INTERNAL_EXPORT_types_2ftypes_2eproto ::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<0> scc_info_PeerInfo_types_2ftypes_2eproto;
+extern PROTOBUF_INTERNAL_EXPORT_types_2ftypes_2eproto ::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<2> scc_info_Withdrawal_types_2ftypes_2eproto;
 namespace remote {
 class EtherbaseRequestDefaultTypeInternal {
  public:
@@ -66,6 +68,14 @@ class EngineForkChoiceUpdatedRequestDefaultTypeInternal {
  public:
   ::PROTOBUF_NAMESPACE_ID::internal::ExplicitlyConstructed<EngineForkChoiceUpdatedRequest> _instance;
 } _EngineForkChoiceUpdatedRequest_default_instance_;
+class EnginePayloadAttributesV2DefaultTypeInternal {
+ public:
+  ::PROTOBUF_NAMESPACE_ID::internal::ExplicitlyConstructed<EnginePayloadAttributesV2> _instance;
+} _EnginePayloadAttributesV2_default_instance_;
+class EngineForkChoiceUpdatedRequestV2DefaultTypeInternal {
+ public:
+  ::PROTOBUF_NAMESPACE_ID::internal::ExplicitlyConstructed<EngineForkChoiceUpdatedRequestV2> _instance;
+} _EngineForkChoiceUpdatedRequestV2_default_instance_;
 class EngineForkChoiceUpdatedReplyDefaultTypeInternal {
  public:
   ::PROTOBUF_NAMESPACE_ID::internal::ExplicitlyConstructed<EngineForkChoiceUpdatedReply> _instance;
@@ -130,6 +140,10 @@ class PeersReplyDefaultTypeInternal {
  public:
   ::PROTOBUF_NAMESPACE_ID::internal::ExplicitlyConstructed<PeersReply> _instance;
 } _PeersReply_default_instance_;
+class PendingBlockReplyDefaultTypeInternal {
+ public:
+  ::PROTOBUF_NAMESPACE_ID::internal::ExplicitlyConstructed<PendingBlockReply> _instance;
+} _PendingBlockReply_default_instance_;
 }  // namespace remote
 static void InitDefaultsscc_info_BlockReply_remote_2fethbackend_2eproto() {
   GOOGLE_PROTOBUF_VERIFY_VERSION;
@@ -227,6 +241,21 @@ static void InitDefaultsscc_info_EngineForkChoiceUpdatedRequest_remote_2fethback
       &scc_info_EngineForkChoiceState_remote_2fethbackend_2eproto.base,
       &scc_info_EnginePayloadAttributes_remote_2fethbackend_2eproto.base,}};
 
+static void InitDefaultsscc_info_EngineForkChoiceUpdatedRequestV2_remote_2fethbackend_2eproto() {
+  GOOGLE_PROTOBUF_VERIFY_VERSION;
+
+  {
+    void* ptr = &::remote::_EngineForkChoiceUpdatedRequestV2_default_instance_;
+    new (ptr) ::remote::EngineForkChoiceUpdatedRequestV2();
+    ::PROTOBUF_NAMESPACE_ID::internal::OnShutdownDestroyMessage(ptr);
+  }
+}
+
+::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<2> scc_info_EngineForkChoiceUpdatedRequestV2_remote_2fethbackend_2eproto =
+    {{ATOMIC_VAR_INIT(::PROTOBUF_NAMESPACE_ID::internal::SCCInfoBase::kUninitialized), 2, 0, InitDefaultsscc_info_EngineForkChoiceUpdatedRequestV2_remote_2fethbackend_2eproto}, {
+      &scc_info_EngineForkChoiceState_remote_2fethbackend_2eproto.base,
+      &scc_info_EnginePayloadAttributesV2_remote_2fethbackend_2eproto.base,}};
+
 static void InitDefaultsscc_info_EngineGetPayloadRequest_remote_2fethbackend_2eproto() {
   GOOGLE_PROTOBUF_VERIFY_VERSION;
 
@@ -254,6 +283,21 @@ static void InitDefaultsscc_info_EnginePayloadAttributes_remote_2fethbackend_2ep
     {{ATOMIC_VAR_INIT(::PROTOBUF_NAMESPACE_ID::internal::SCCInfoBase::kUninitialized), 2, 0, InitDefaultsscc_info_EnginePayloadAttributes_remote_2fethbackend_2eproto}, {
       &scc_info_H256_types_2ftypes_2eproto.base,
       &scc_info_H160_types_2ftypes_2eproto.base,}};
+
+static void InitDefaultsscc_info_EnginePayloadAttributesV2_remote_2fethbackend_2eproto() {
+  GOOGLE_PROTOBUF_VERIFY_VERSION;
+
+  {
+    void* ptr = &::remote::_EnginePayloadAttributesV2_default_instance_;
+    new (ptr) ::remote::EnginePayloadAttributesV2();
+    ::PROTOBUF_NAMESPACE_ID::internal::OnShutdownDestroyMessage(ptr);
+  }
+}
+
+::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<2> scc_info_EnginePayloadAttributesV2_remote_2fethbackend_2eproto =
+    {{ATOMIC_VAR_INIT(::PROTOBUF_NAMESPACE_ID::internal::SCCInfoBase::kUninitialized), 2, 0, InitDefaultsscc_info_EnginePayloadAttributesV2_remote_2fethbackend_2eproto}, {
+      &scc_info_EnginePayloadAttributes_remote_2fethbackend_2eproto.base,
+      &scc_info_Withdrawal_types_2ftypes_2eproto.base,}};
 
 static void InitDefaultsscc_info_EnginePayloadStatus_remote_2fethbackend_2eproto() {
   GOOGLE_PROTOBUF_VERIFY_VERSION;
@@ -404,6 +448,19 @@ static void InitDefaultsscc_info_PeersReply_remote_2fethbackend_2eproto() {
     {{ATOMIC_VAR_INIT(::PROTOBUF_NAMESPACE_ID::internal::SCCInfoBase::kUninitialized), 1, 0, InitDefaultsscc_info_PeersReply_remote_2fethbackend_2eproto}, {
       &scc_info_PeerInfo_types_2ftypes_2eproto.base,}};
 
+static void InitDefaultsscc_info_PendingBlockReply_remote_2fethbackend_2eproto() {
+  GOOGLE_PROTOBUF_VERIFY_VERSION;
+
+  {
+    void* ptr = &::remote::_PendingBlockReply_default_instance_;
+    new (ptr) ::remote::PendingBlockReply();
+    ::PROTOBUF_NAMESPACE_ID::internal::OnShutdownDestroyMessage(ptr);
+  }
+}
+
+::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<0> scc_info_PendingBlockReply_remote_2fethbackend_2eproto =
+    {{ATOMIC_VAR_INIT(::PROTOBUF_NAMESPACE_ID::internal::SCCInfoBase::kUninitialized), 0, 0, InitDefaultsscc_info_PendingBlockReply_remote_2fethbackend_2eproto}, {}};
+
 static void InitDefaultsscc_info_ProtocolVersionReply_remote_2fethbackend_2eproto() {
   GOOGLE_PROTOBUF_VERIFY_VERSION;
 
@@ -498,7 +555,7 @@ static void InitDefaultsscc_info_TxnLookupRequest_remote_2fethbackend_2eproto() 
     {{ATOMIC_VAR_INIT(::PROTOBUF_NAMESPACE_ID::internal::SCCInfoBase::kUninitialized), 1, 0, InitDefaultsscc_info_TxnLookupRequest_remote_2fethbackend_2eproto}, {
       &scc_info_H256_types_2ftypes_2eproto.base,}};
 
-static ::PROTOBUF_NAMESPACE_ID::Metadata file_level_metadata_remote_2fethbackend_2eproto[27];
+static ::PROTOBUF_NAMESPACE_ID::Metadata file_level_metadata_remote_2fethbackend_2eproto[30];
 static const ::PROTOBUF_NAMESPACE_ID::EnumDescriptor* file_level_enum_descriptors_remote_2fethbackend_2eproto[2];
 static constexpr ::PROTOBUF_NAMESPACE_ID::ServiceDescriptor const** file_level_service_descriptors_remote_2fethbackend_2eproto = nullptr;
 
@@ -573,6 +630,20 @@ const ::PROTOBUF_NAMESPACE_ID::uint32 TableStruct_remote_2fethbackend_2eproto::o
   ~0u,  // no _weak_field_map_
   PROTOBUF_FIELD_OFFSET(::remote::EngineForkChoiceUpdatedRequest, forkchoicestate_),
   PROTOBUF_FIELD_OFFSET(::remote::EngineForkChoiceUpdatedRequest, payloadattributes_),
+  ~0u,  // no _has_bits_
+  PROTOBUF_FIELD_OFFSET(::remote::EnginePayloadAttributesV2, _internal_metadata_),
+  ~0u,  // no _extensions_
+  ~0u,  // no _oneof_case_
+  ~0u,  // no _weak_field_map_
+  PROTOBUF_FIELD_OFFSET(::remote::EnginePayloadAttributesV2, attributes_),
+  PROTOBUF_FIELD_OFFSET(::remote::EnginePayloadAttributesV2, withdrawals_),
+  ~0u,  // no _has_bits_
+  PROTOBUF_FIELD_OFFSET(::remote::EngineForkChoiceUpdatedRequestV2, _internal_metadata_),
+  ~0u,  // no _extensions_
+  ~0u,  // no _oneof_case_
+  ~0u,  // no _weak_field_map_
+  PROTOBUF_FIELD_OFFSET(::remote::EngineForkChoiceUpdatedRequestV2, forkchoicestate_),
+  PROTOBUF_FIELD_OFFSET(::remote::EngineForkChoiceUpdatedRequestV2, payloadattributes_),
   ~0u,  // no _has_bits_
   PROTOBUF_FIELD_OFFSET(::remote::EngineForkChoiceUpdatedReply, _internal_metadata_),
   ~0u,  // no _extensions_
@@ -682,6 +753,12 @@ const ::PROTOBUF_NAMESPACE_ID::uint32 TableStruct_remote_2fethbackend_2eproto::o
   ~0u,  // no _oneof_case_
   ~0u,  // no _weak_field_map_
   PROTOBUF_FIELD_OFFSET(::remote::PeersReply, peers_),
+  ~0u,  // no _has_bits_
+  PROTOBUF_FIELD_OFFSET(::remote::PendingBlockReply, _internal_metadata_),
+  ~0u,  // no _extensions_
+  ~0u,  // no _oneof_case_
+  ~0u,  // no _weak_field_map_
+  PROTOBUF_FIELD_OFFSET(::remote::PendingBlockReply, blockrlp_),
 };
 static const ::PROTOBUF_NAMESPACE_ID::internal::MigrationSchema schemas[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) = {
   { 0, -1, sizeof(::remote::EtherbaseRequest)},
@@ -695,22 +772,25 @@ static const ::PROTOBUF_NAMESPACE_ID::internal::MigrationSchema schemas[] PROTOB
   { 47, -1, sizeof(::remote::EnginePayloadAttributes)},
   { 55, -1, sizeof(::remote::EngineForkChoiceState)},
   { 63, -1, sizeof(::remote::EngineForkChoiceUpdatedRequest)},
-  { 70, -1, sizeof(::remote::EngineForkChoiceUpdatedReply)},
-  { 77, -1, sizeof(::remote::ProtocolVersionRequest)},
-  { 82, -1, sizeof(::remote::ProtocolVersionReply)},
-  { 88, -1, sizeof(::remote::ClientVersionRequest)},
-  { 93, -1, sizeof(::remote::ClientVersionReply)},
-  { 99, -1, sizeof(::remote::SubscribeRequest)},
-  { 105, -1, sizeof(::remote::SubscribeReply)},
-  { 112, -1, sizeof(::remote::LogsFilterRequest)},
-  { 121, -1, sizeof(::remote::SubscribeLogsReply)},
-  { 135, -1, sizeof(::remote::BlockRequest)},
-  { 142, -1, sizeof(::remote::BlockReply)},
-  { 149, -1, sizeof(::remote::TxnLookupRequest)},
-  { 155, -1, sizeof(::remote::TxnLookupReply)},
-  { 161, -1, sizeof(::remote::NodesInfoRequest)},
-  { 167, -1, sizeof(::remote::NodesInfoReply)},
-  { 173, -1, sizeof(::remote::PeersReply)},
+  { 70, -1, sizeof(::remote::EnginePayloadAttributesV2)},
+  { 77, -1, sizeof(::remote::EngineForkChoiceUpdatedRequestV2)},
+  { 84, -1, sizeof(::remote::EngineForkChoiceUpdatedReply)},
+  { 91, -1, sizeof(::remote::ProtocolVersionRequest)},
+  { 96, -1, sizeof(::remote::ProtocolVersionReply)},
+  { 102, -1, sizeof(::remote::ClientVersionRequest)},
+  { 107, -1, sizeof(::remote::ClientVersionReply)},
+  { 113, -1, sizeof(::remote::SubscribeRequest)},
+  { 119, -1, sizeof(::remote::SubscribeReply)},
+  { 126, -1, sizeof(::remote::LogsFilterRequest)},
+  { 135, -1, sizeof(::remote::SubscribeLogsReply)},
+  { 149, -1, sizeof(::remote::BlockRequest)},
+  { 156, -1, sizeof(::remote::BlockReply)},
+  { 163, -1, sizeof(::remote::TxnLookupRequest)},
+  { 169, -1, sizeof(::remote::TxnLookupReply)},
+  { 175, -1, sizeof(::remote::NodesInfoRequest)},
+  { 181, -1, sizeof(::remote::NodesInfoReply)},
+  { 187, -1, sizeof(::remote::PeersReply)},
+  { 193, -1, sizeof(::remote::PendingBlockReply)},
 };
 
 static ::PROTOBUF_NAMESPACE_ID::Message const * const file_default_instances[] = {
@@ -725,6 +805,8 @@ static ::PROTOBUF_NAMESPACE_ID::Message const * const file_default_instances[] =
   reinterpret_cast<const ::PROTOBUF_NAMESPACE_ID::Message*>(&::remote::_EnginePayloadAttributes_default_instance_),
   reinterpret_cast<const ::PROTOBUF_NAMESPACE_ID::Message*>(&::remote::_EngineForkChoiceState_default_instance_),
   reinterpret_cast<const ::PROTOBUF_NAMESPACE_ID::Message*>(&::remote::_EngineForkChoiceUpdatedRequest_default_instance_),
+  reinterpret_cast<const ::PROTOBUF_NAMESPACE_ID::Message*>(&::remote::_EnginePayloadAttributesV2_default_instance_),
+  reinterpret_cast<const ::PROTOBUF_NAMESPACE_ID::Message*>(&::remote::_EngineForkChoiceUpdatedRequestV2_default_instance_),
   reinterpret_cast<const ::PROTOBUF_NAMESPACE_ID::Message*>(&::remote::_EngineForkChoiceUpdatedReply_default_instance_),
   reinterpret_cast<const ::PROTOBUF_NAMESPACE_ID::Message*>(&::remote::_ProtocolVersionRequest_default_instance_),
   reinterpret_cast<const ::PROTOBUF_NAMESPACE_ID::Message*>(&::remote::_ProtocolVersionReply_default_instance_),
@@ -741,6 +823,7 @@ static ::PROTOBUF_NAMESPACE_ID::Message const * const file_default_instances[] =
   reinterpret_cast<const ::PROTOBUF_NAMESPACE_ID::Message*>(&::remote::_NodesInfoRequest_default_instance_),
   reinterpret_cast<const ::PROTOBUF_NAMESPACE_ID::Message*>(&::remote::_NodesInfoReply_default_instance_),
   reinterpret_cast<const ::PROTOBUF_NAMESPACE_ID::Message*>(&::remote::_PeersReply_default_instance_),
+  reinterpret_cast<const ::PROTOBUF_NAMESPACE_ID::Message*>(&::remote::_PendingBlockReply_default_instance_),
 };
 
 const char descriptor_table_protodef_remote_2fethbackend_2eproto[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) =
@@ -765,70 +848,87 @@ const char descriptor_table_protodef_remote_2fethbackend_2eproto[] PROTOBUF_SECT
   "Request\0226\n\017forkchoiceState\030\001 \001(\0132\035.remot"
   "e.EngineForkChoiceState\022:\n\021payloadAttrib"
   "utes\030\002 \001(\0132\037.remote.EnginePayloadAttribu"
-  "tes\"e\n\034EngineForkChoiceUpdatedReply\0222\n\rp"
-  "ayloadStatus\030\001 \001(\0132\033.remote.EnginePayloa"
-  "dStatus\022\021\n\tpayloadId\030\002 \001(\004\"\030\n\026ProtocolVe"
-  "rsionRequest\"\"\n\024ProtocolVersionReply\022\n\n\002"
-  "id\030\001 \001(\004\"\026\n\024ClientVersionRequest\"&\n\022Clie"
-  "ntVersionReply\022\020\n\010nodeName\030\001 \001(\t\"/\n\020Subs"
-  "cribeRequest\022\033\n\004type\030\001 \001(\0162\r.remote.Even"
-  "t\";\n\016SubscribeReply\022\033\n\004type\030\001 \001(\0162\r.remo"
-  "te.Event\022\014\n\004data\030\002 \001(\014\"y\n\021LogsFilterRequ"
-  "est\022\024\n\014allAddresses\030\001 \001(\010\022\036\n\taddresses\030\002"
-  " \003(\0132\013.types.H160\022\021\n\tallTopics\030\003 \001(\010\022\033\n\006"
-  "topics\030\004 \003(\0132\013.types.H256\"\365\001\n\022SubscribeL"
-  "ogsReply\022\034\n\007address\030\001 \001(\0132\013.types.H160\022\036"
-  "\n\tblockHash\030\002 \001(\0132\013.types.H256\022\023\n\013blockN"
-  "umber\030\003 \001(\004\022\014\n\004data\030\004 \001(\014\022\020\n\010logIndex\030\005 "
-  "\001(\004\022\033\n\006topics\030\006 \003(\0132\013.types.H256\022$\n\017tran"
-  "sactionHash\030\007 \001(\0132\013.types.H256\022\030\n\020transa"
-  "ctionIndex\030\010 \001(\004\022\017\n\007removed\030\t \001(\010\"C\n\014Blo"
-  "ckRequest\022\023\n\013blockHeight\030\002 \001(\004\022\036\n\tblockH"
-  "ash\030\003 \001(\0132\013.types.H256\"/\n\nBlockReply\022\020\n\010"
-  "blockRlp\030\001 \001(\014\022\017\n\007senders\030\002 \001(\014\"0\n\020TxnLo"
-  "okupRequest\022\034\n\007txnHash\030\001 \001(\0132\013.types.H25"
-  "6\"%\n\016TxnLookupReply\022\023\n\013blockNumber\030\001 \001(\004"
-  "\"!\n\020NodesInfoRequest\022\r\n\005limit\030\001 \001(\r\"9\n\016N"
-  "odesInfoReply\022\'\n\tnodesInfo\030\001 \003(\0132\024.types"
-  ".NodeInfoReply\",\n\nPeersReply\022\036\n\005peers\030\001 "
-  "\003(\0132\017.types.PeerInfo*J\n\005Event\022\n\n\006HEADER\020"
-  "\000\022\020\n\014PENDING_LOGS\020\001\022\021\n\rPENDING_BLOCK\020\002\022\020"
-  "\n\014NEW_SNAPSHOT\020\003*Y\n\014EngineStatus\022\t\n\005VALI"
-  "D\020\000\022\013\n\007INVALID\020\001\022\013\n\007SYNCING\020\002\022\014\n\010ACCEPTE"
-  "D\020\003\022\026\n\022INVALID_BLOCK_HASH\020\0042\242\010\n\nETHBACKE"
-  "ND\022=\n\tEtherbase\022\030.remote.EtherbaseReques"
-  "t\032\026.remote.EtherbaseReply\022@\n\nNetVersion\022"
-  "\031.remote.NetVersionRequest\032\027.remote.NetV"
-  "ersionReply\022F\n\014NetPeerCount\022\033.remote.Net"
-  "PeerCountRequest\032\031.remote.NetPeerCountRe"
-  "ply\022N\n\022EngineGetPayloadV1\022\037.remote.Engin"
-  "eGetPayloadRequest\032\027.types.ExecutionPayl"
-  "oad\022J\n\022EngineNewPayloadV1\022\027.types.Execut"
-  "ionPayload\032\033.remote.EnginePayloadStatus\022"
-  "i\n\031EngineForkChoiceUpdatedV1\022&.remote.En"
-  "gineForkChoiceUpdatedRequest\032$.remote.En"
-  "gineForkChoiceUpdatedReply\0226\n\007Version\022\026."
-  "google.protobuf.Empty\032\023.types.VersionRep"
-  "ly\022O\n\017ProtocolVersion\022\036.remote.ProtocolV"
-  "ersionRequest\032\034.remote.ProtocolVersionRe"
-  "ply\022I\n\rClientVersion\022\034.remote.ClientVers"
-  "ionRequest\032\032.remote.ClientVersionReply\022\?"
-  "\n\tSubscribe\022\030.remote.SubscribeRequest\032\026."
-  "remote.SubscribeReply0\001\022J\n\rSubscribeLogs"
-  "\022\031.remote.LogsFilterRequest\032\032.remote.Sub"
-  "scribeLogsReply(\0010\001\0221\n\005Block\022\024.remote.Bl"
-  "ockRequest\032\022.remote.BlockReply\022=\n\tTxnLoo"
-  "kup\022\030.remote.TxnLookupRequest\032\026.remote.T"
-  "xnLookupReply\022<\n\010NodeInfo\022\030.remote.Nodes"
-  "InfoRequest\032\026.remote.NodesInfoReply\0223\n\005P"
-  "eers\022\026.google.protobuf.Empty\032\022.remote.Pe"
-  "ersReplyB\021Z\017./remote;remoteb\006proto3"
+  "tes\"x\n\031EnginePayloadAttributesV2\0223\n\nattr"
+  "ibutes\030\001 \001(\0132\037.remote.EnginePayloadAttri"
+  "butes\022&\n\013withdrawals\030\002 \003(\0132\021.types.Withd"
+  "rawal\"\230\001\n EngineForkChoiceUpdatedRequest"
+  "V2\0226\n\017forkchoiceState\030\001 \001(\0132\035.remote.Eng"
+  "ineForkChoiceState\022<\n\021payloadAttributes\030"
+  "\002 \001(\0132!.remote.EnginePayloadAttributesV2"
+  "\"e\n\034EngineForkChoiceUpdatedReply\0222\n\rpayl"
+  "oadStatus\030\001 \001(\0132\033.remote.EnginePayloadSt"
+  "atus\022\021\n\tpayloadId\030\002 \001(\004\"\030\n\026ProtocolVersi"
+  "onRequest\"\"\n\024ProtocolVersionReply\022\n\n\002id\030"
+  "\001 \001(\004\"\026\n\024ClientVersionRequest\"&\n\022ClientV"
+  "ersionReply\022\020\n\010nodeName\030\001 \001(\t\"/\n\020Subscri"
+  "beRequest\022\033\n\004type\030\001 \001(\0162\r.remote.Event\";"
+  "\n\016SubscribeReply\022\033\n\004type\030\001 \001(\0162\r.remote."
+  "Event\022\014\n\004data\030\002 \001(\014\"y\n\021LogsFilterRequest"
+  "\022\024\n\014allAddresses\030\001 \001(\010\022\036\n\taddresses\030\002 \003("
+  "\0132\013.types.H160\022\021\n\tallTopics\030\003 \001(\010\022\033\n\006top"
+  "ics\030\004 \003(\0132\013.types.H256\"\365\001\n\022SubscribeLogs"
+  "Reply\022\034\n\007address\030\001 \001(\0132\013.types.H160\022\036\n\tb"
+  "lockHash\030\002 \001(\0132\013.types.H256\022\023\n\013blockNumb"
+  "er\030\003 \001(\004\022\014\n\004data\030\004 \001(\014\022\020\n\010logIndex\030\005 \001(\004"
+  "\022\033\n\006topics\030\006 \003(\0132\013.types.H256\022$\n\017transac"
+  "tionHash\030\007 \001(\0132\013.types.H256\022\030\n\020transacti"
+  "onIndex\030\010 \001(\004\022\017\n\007removed\030\t \001(\010\"C\n\014BlockR"
+  "equest\022\023\n\013blockHeight\030\002 \001(\004\022\036\n\tblockHash"
+  "\030\003 \001(\0132\013.types.H256\"/\n\nBlockReply\022\020\n\010blo"
+  "ckRlp\030\001 \001(\014\022\017\n\007senders\030\002 \001(\014\"0\n\020TxnLooku"
+  "pRequest\022\034\n\007txnHash\030\001 \001(\0132\013.types.H256\"%"
+  "\n\016TxnLookupReply\022\023\n\013blockNumber\030\001 \001(\004\"!\n"
+  "\020NodesInfoRequest\022\r\n\005limit\030\001 \001(\r\"9\n\016Node"
+  "sInfoReply\022\'\n\tnodesInfo\030\001 \003(\0132\024.types.No"
+  "deInfoReply\",\n\nPeersReply\022\036\n\005peers\030\001 \003(\013"
+  "2\017.types.PeerInfo\"%\n\021PendingBlockReply\022\020"
+  "\n\010blockRlp\030\001 \001(\014*J\n\005Event\022\n\n\006HEADER\020\000\022\020\n"
+  "\014PENDING_LOGS\020\001\022\021\n\rPENDING_BLOCK\020\002\022\020\n\014NE"
+  "W_SNAPSHOT\020\003*Y\n\014EngineStatus\022\t\n\005VALID\020\000\022"
+  "\013\n\007INVALID\020\001\022\013\n\007SYNCING\020\002\022\014\n\010ACCEPTED\020\003\022"
+  "\026\n\022INVALID_BLOCK_HASH\020\0042\362\n\n\nETHBACKEND\022="
+  "\n\tEtherbase\022\030.remote.EtherbaseRequest\032\026."
+  "remote.EtherbaseReply\022@\n\nNetVersion\022\031.re"
+  "mote.NetVersionRequest\032\027.remote.NetVersi"
+  "onReply\022F\n\014NetPeerCount\022\033.remote.NetPeer"
+  "CountRequest\032\031.remote.NetPeerCountReply\022"
+  "J\n\022EngineNewPayloadV1\022\027.types.ExecutionP"
+  "ayload\032\033.remote.EnginePayloadStatus\022L\n\022E"
+  "ngineNewPayloadV2\022\031.types.ExecutionPaylo"
+  "adV2\032\033.remote.EnginePayloadStatus\022i\n\031Eng"
+  "ineForkChoiceUpdatedV1\022&.remote.EngineFo"
+  "rkChoiceUpdatedRequest\032$.remote.EngineFo"
+  "rkChoiceUpdatedReply\022k\n\031EngineForkChoice"
+  "UpdatedV2\022(.remote.EngineForkChoiceUpdat"
+  "edRequestV2\032$.remote.EngineForkChoiceUpd"
+  "atedReply\022N\n\022EngineGetPayloadV1\022\037.remote"
+  ".EngineGetPayloadRequest\032\027.types.Executi"
+  "onPayload\022P\n\022EngineGetPayloadV2\022\037.remote"
+  ".EngineGetPayloadRequest\032\031.types.Executi"
+  "onPayloadV2\0226\n\007Version\022\026.google.protobuf"
+  ".Empty\032\023.types.VersionReply\022O\n\017ProtocolV"
+  "ersion\022\036.remote.ProtocolVersionRequest\032\034"
+  ".remote.ProtocolVersionReply\022I\n\rClientVe"
+  "rsion\022\034.remote.ClientVersionRequest\032\032.re"
+  "mote.ClientVersionReply\022\?\n\tSubscribe\022\030.r"
+  "emote.SubscribeRequest\032\026.remote.Subscrib"
+  "eReply0\001\022J\n\rSubscribeLogs\022\031.remote.LogsF"
+  "ilterRequest\032\032.remote.SubscribeLogsReply"
+  "(\0010\001\0221\n\005Block\022\024.remote.BlockRequest\032\022.re"
+  "mote.BlockReply\022=\n\tTxnLookup\022\030.remote.Tx"
+  "nLookupRequest\032\026.remote.TxnLookupReply\022<"
+  "\n\010NodeInfo\022\030.remote.NodesInfoRequest\032\026.r"
+  "emote.NodesInfoReply\0223\n\005Peers\022\026.google.p"
+  "rotobuf.Empty\032\022.remote.PeersReply\022A\n\014Pen"
+  "dingBlock\022\026.google.protobuf.Empty\032\031.remo"
+  "te.PendingBlockReplyB\021Z\017./remote;remoteb"
+  "\006proto3"
   ;
 static const ::PROTOBUF_NAMESPACE_ID::internal::DescriptorTable*const descriptor_table_remote_2fethbackend_2eproto_deps[2] = {
   &::descriptor_table_google_2fprotobuf_2fempty_2eproto,
   &::descriptor_table_types_2ftypes_2eproto,
 };
-static ::PROTOBUF_NAMESPACE_ID::internal::SCCInfoBase*const descriptor_table_remote_2fethbackend_2eproto_sccs[27] = {
+static ::PROTOBUF_NAMESPACE_ID::internal::SCCInfoBase*const descriptor_table_remote_2fethbackend_2eproto_sccs[30] = {
   &scc_info_BlockReply_remote_2fethbackend_2eproto.base,
   &scc_info_BlockRequest_remote_2fethbackend_2eproto.base,
   &scc_info_ClientVersionReply_remote_2fethbackend_2eproto.base,
@@ -836,8 +936,10 @@ static ::PROTOBUF_NAMESPACE_ID::internal::SCCInfoBase*const descriptor_table_rem
   &scc_info_EngineForkChoiceState_remote_2fethbackend_2eproto.base,
   &scc_info_EngineForkChoiceUpdatedReply_remote_2fethbackend_2eproto.base,
   &scc_info_EngineForkChoiceUpdatedRequest_remote_2fethbackend_2eproto.base,
+  &scc_info_EngineForkChoiceUpdatedRequestV2_remote_2fethbackend_2eproto.base,
   &scc_info_EngineGetPayloadRequest_remote_2fethbackend_2eproto.base,
   &scc_info_EnginePayloadAttributes_remote_2fethbackend_2eproto.base,
+  &scc_info_EnginePayloadAttributesV2_remote_2fethbackend_2eproto.base,
   &scc_info_EnginePayloadStatus_remote_2fethbackend_2eproto.base,
   &scc_info_EtherbaseReply_remote_2fethbackend_2eproto.base,
   &scc_info_EtherbaseRequest_remote_2fethbackend_2eproto.base,
@@ -849,6 +951,7 @@ static ::PROTOBUF_NAMESPACE_ID::internal::SCCInfoBase*const descriptor_table_rem
   &scc_info_NodesInfoReply_remote_2fethbackend_2eproto.base,
   &scc_info_NodesInfoRequest_remote_2fethbackend_2eproto.base,
   &scc_info_PeersReply_remote_2fethbackend_2eproto.base,
+  &scc_info_PendingBlockReply_remote_2fethbackend_2eproto.base,
   &scc_info_ProtocolVersionReply_remote_2fethbackend_2eproto.base,
   &scc_info_ProtocolVersionRequest_remote_2fethbackend_2eproto.base,
   &scc_info_SubscribeLogsReply_remote_2fethbackend_2eproto.base,
@@ -859,10 +962,10 @@ static ::PROTOBUF_NAMESPACE_ID::internal::SCCInfoBase*const descriptor_table_rem
 };
 static ::PROTOBUF_NAMESPACE_ID::internal::once_flag descriptor_table_remote_2fethbackend_2eproto_once;
 const ::PROTOBUF_NAMESPACE_ID::internal::DescriptorTable descriptor_table_remote_2fethbackend_2eproto = {
-  false, false, descriptor_table_protodef_remote_2fethbackend_2eproto, "remote/ethbackend.proto", 3155,
-  &descriptor_table_remote_2fethbackend_2eproto_once, descriptor_table_remote_2fethbackend_2eproto_sccs, descriptor_table_remote_2fethbackend_2eproto_deps, 27, 2,
+  false, false, descriptor_table_protodef_remote_2fethbackend_2eproto, "remote/ethbackend.proto", 3807,
+  &descriptor_table_remote_2fethbackend_2eproto_once, descriptor_table_remote_2fethbackend_2eproto_sccs, descriptor_table_remote_2fethbackend_2eproto_deps, 30, 2,
   schemas, file_default_instances, TableStruct_remote_2fethbackend_2eproto::offsets,
-  file_level_metadata_remote_2fethbackend_2eproto, 27, file_level_enum_descriptors_remote_2fethbackend_2eproto, file_level_service_descriptors_remote_2fethbackend_2eproto,
+  file_level_metadata_remote_2fethbackend_2eproto, 30, file_level_enum_descriptors_remote_2fethbackend_2eproto, file_level_service_descriptors_remote_2fethbackend_2eproto,
 };
 
 // Force running AddDescriptors() at dynamic initialization time.
@@ -3339,6 +3442,509 @@ void EngineForkChoiceUpdatedRequest::InternalSwap(EngineForkChoiceUpdatedRequest
 }
 
 ::PROTOBUF_NAMESPACE_ID::Metadata EngineForkChoiceUpdatedRequest::GetMetadata() const {
+  return GetMetadataStatic();
+}
+
+
+// ===================================================================
+
+class EnginePayloadAttributesV2::_Internal {
+ public:
+  static const ::remote::EnginePayloadAttributes& attributes(const EnginePayloadAttributesV2* msg);
+};
+
+const ::remote::EnginePayloadAttributes&
+EnginePayloadAttributesV2::_Internal::attributes(const EnginePayloadAttributesV2* msg) {
+  return *msg->attributes_;
+}
+void EnginePayloadAttributesV2::clear_withdrawals() {
+  withdrawals_.Clear();
+}
+EnginePayloadAttributesV2::EnginePayloadAttributesV2(::PROTOBUF_NAMESPACE_ID::Arena* arena)
+  : ::PROTOBUF_NAMESPACE_ID::Message(arena),
+  withdrawals_(arena) {
+  SharedCtor();
+  RegisterArenaDtor(arena);
+  // @@protoc_insertion_point(arena_constructor:remote.EnginePayloadAttributesV2)
+}
+EnginePayloadAttributesV2::EnginePayloadAttributesV2(const EnginePayloadAttributesV2& from)
+  : ::PROTOBUF_NAMESPACE_ID::Message(),
+      withdrawals_(from.withdrawals_) {
+  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+  if (from._internal_has_attributes()) {
+    attributes_ = new ::remote::EnginePayloadAttributes(*from.attributes_);
+  } else {
+    attributes_ = nullptr;
+  }
+  // @@protoc_insertion_point(copy_constructor:remote.EnginePayloadAttributesV2)
+}
+
+void EnginePayloadAttributesV2::SharedCtor() {
+  ::PROTOBUF_NAMESPACE_ID::internal::InitSCC(&scc_info_EnginePayloadAttributesV2_remote_2fethbackend_2eproto.base);
+  attributes_ = nullptr;
+}
+
+EnginePayloadAttributesV2::~EnginePayloadAttributesV2() {
+  // @@protoc_insertion_point(destructor:remote.EnginePayloadAttributesV2)
+  SharedDtor();
+  _internal_metadata_.Delete<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
+}
+
+void EnginePayloadAttributesV2::SharedDtor() {
+  GOOGLE_DCHECK(GetArena() == nullptr);
+  if (this != internal_default_instance()) delete attributes_;
+}
+
+void EnginePayloadAttributesV2::ArenaDtor(void* object) {
+  EnginePayloadAttributesV2* _this = reinterpret_cast< EnginePayloadAttributesV2* >(object);
+  (void)_this;
+}
+void EnginePayloadAttributesV2::RegisterArenaDtor(::PROTOBUF_NAMESPACE_ID::Arena*) {
+}
+void EnginePayloadAttributesV2::SetCachedSize(int size) const {
+  _cached_size_.Set(size);
+}
+const EnginePayloadAttributesV2& EnginePayloadAttributesV2::default_instance() {
+  ::PROTOBUF_NAMESPACE_ID::internal::InitSCC(&::scc_info_EnginePayloadAttributesV2_remote_2fethbackend_2eproto.base);
+  return *internal_default_instance();
+}
+
+
+void EnginePayloadAttributesV2::Clear() {
+// @@protoc_insertion_point(message_clear_start:remote.EnginePayloadAttributesV2)
+  ::PROTOBUF_NAMESPACE_ID::uint32 cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  withdrawals_.Clear();
+  if (GetArena() == nullptr && attributes_ != nullptr) {
+    delete attributes_;
+  }
+  attributes_ = nullptr;
+  _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
+}
+
+const char* EnginePayloadAttributesV2::_InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) {
+#define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
+  while (!ctx->Done(&ptr)) {
+    ::PROTOBUF_NAMESPACE_ID::uint32 tag;
+    ptr = ::PROTOBUF_NAMESPACE_ID::internal::ReadTag(ptr, &tag);
+    CHK_(ptr);
+    switch (tag >> 3) {
+      // .remote.EnginePayloadAttributes attributes = 1;
+      case 1:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 10)) {
+          ptr = ctx->ParseMessage(_internal_mutable_attributes(), ptr);
+          CHK_(ptr);
+        } else goto handle_unusual;
+        continue;
+      // repeated .types.Withdrawal withdrawals = 2;
+      case 2:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 18)) {
+          ptr -= 1;
+          do {
+            ptr += 1;
+            ptr = ctx->ParseMessage(_internal_add_withdrawals(), ptr);
+            CHK_(ptr);
+            if (!ctx->DataAvailable(ptr)) break;
+          } while (::PROTOBUF_NAMESPACE_ID::internal::ExpectTag<18>(ptr));
+        } else goto handle_unusual;
+        continue;
+      default: {
+      handle_unusual:
+        if ((tag & 7) == 4 || tag == 0) {
+          ctx->SetLastTag(tag);
+          goto success;
+        }
+        ptr = UnknownFieldParse(tag,
+            _internal_metadata_.mutable_unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(),
+            ptr, ctx);
+        CHK_(ptr != nullptr);
+        continue;
+      }
+    }  // switch
+  }  // while
+success:
+  return ptr;
+failure:
+  ptr = nullptr;
+  goto success;
+#undef CHK_
+}
+
+::PROTOBUF_NAMESPACE_ID::uint8* EnginePayloadAttributesV2::_InternalSerialize(
+    ::PROTOBUF_NAMESPACE_ID::uint8* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
+  // @@protoc_insertion_point(serialize_to_array_start:remote.EnginePayloadAttributesV2)
+  ::PROTOBUF_NAMESPACE_ID::uint32 cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  // .remote.EnginePayloadAttributes attributes = 1;
+  if (this->has_attributes()) {
+    target = stream->EnsureSpace(target);
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
+      InternalWriteMessage(
+        1, _Internal::attributes(this), target, stream);
+  }
+
+  // repeated .types.Withdrawal withdrawals = 2;
+  for (unsigned int i = 0,
+      n = static_cast<unsigned int>(this->_internal_withdrawals_size()); i < n; i++) {
+    target = stream->EnsureSpace(target);
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
+      InternalWriteMessage(2, this->_internal_withdrawals(i), target, stream);
+  }
+
+  if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormat::InternalSerializeUnknownFieldsToArray(
+        _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
+  }
+  // @@protoc_insertion_point(serialize_to_array_end:remote.EnginePayloadAttributesV2)
+  return target;
+}
+
+size_t EnginePayloadAttributesV2::ByteSizeLong() const {
+// @@protoc_insertion_point(message_byte_size_start:remote.EnginePayloadAttributesV2)
+  size_t total_size = 0;
+
+  ::PROTOBUF_NAMESPACE_ID::uint32 cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  // repeated .types.Withdrawal withdrawals = 2;
+  total_size += 1UL * this->_internal_withdrawals_size();
+  for (const auto& msg : this->withdrawals_) {
+    total_size +=
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(msg);
+  }
+
+  // .remote.EnginePayloadAttributes attributes = 1;
+  if (this->has_attributes()) {
+    total_size += 1 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
+        *attributes_);
+  }
+
+  if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
+    return ::PROTOBUF_NAMESPACE_ID::internal::ComputeUnknownFieldsSize(
+        _internal_metadata_, total_size, &_cached_size_);
+  }
+  int cached_size = ::PROTOBUF_NAMESPACE_ID::internal::ToCachedSize(total_size);
+  SetCachedSize(cached_size);
+  return total_size;
+}
+
+void EnginePayloadAttributesV2::MergeFrom(const ::PROTOBUF_NAMESPACE_ID::Message& from) {
+// @@protoc_insertion_point(generalized_merge_from_start:remote.EnginePayloadAttributesV2)
+  GOOGLE_DCHECK_NE(&from, this);
+  const EnginePayloadAttributesV2* source =
+      ::PROTOBUF_NAMESPACE_ID::DynamicCastToGenerated<EnginePayloadAttributesV2>(
+          &from);
+  if (source == nullptr) {
+  // @@protoc_insertion_point(generalized_merge_from_cast_fail:remote.EnginePayloadAttributesV2)
+    ::PROTOBUF_NAMESPACE_ID::internal::ReflectionOps::Merge(from, this);
+  } else {
+  // @@protoc_insertion_point(generalized_merge_from_cast_success:remote.EnginePayloadAttributesV2)
+    MergeFrom(*source);
+  }
+}
+
+void EnginePayloadAttributesV2::MergeFrom(const EnginePayloadAttributesV2& from) {
+// @@protoc_insertion_point(class_specific_merge_from_start:remote.EnginePayloadAttributesV2)
+  GOOGLE_DCHECK_NE(&from, this);
+  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+  ::PROTOBUF_NAMESPACE_ID::uint32 cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  withdrawals_.MergeFrom(from.withdrawals_);
+  if (from.has_attributes()) {
+    _internal_mutable_attributes()->::remote::EnginePayloadAttributes::MergeFrom(from._internal_attributes());
+  }
+}
+
+void EnginePayloadAttributesV2::CopyFrom(const ::PROTOBUF_NAMESPACE_ID::Message& from) {
+// @@protoc_insertion_point(generalized_copy_from_start:remote.EnginePayloadAttributesV2)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+void EnginePayloadAttributesV2::CopyFrom(const EnginePayloadAttributesV2& from) {
+// @@protoc_insertion_point(class_specific_copy_from_start:remote.EnginePayloadAttributesV2)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+bool EnginePayloadAttributesV2::IsInitialized() const {
+  return true;
+}
+
+void EnginePayloadAttributesV2::InternalSwap(EnginePayloadAttributesV2* other) {
+  using std::swap;
+  _internal_metadata_.Swap<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(&other->_internal_metadata_);
+  withdrawals_.InternalSwap(&other->withdrawals_);
+  swap(attributes_, other->attributes_);
+}
+
+::PROTOBUF_NAMESPACE_ID::Metadata EnginePayloadAttributesV2::GetMetadata() const {
+  return GetMetadataStatic();
+}
+
+
+// ===================================================================
+
+class EngineForkChoiceUpdatedRequestV2::_Internal {
+ public:
+  static const ::remote::EngineForkChoiceState& forkchoicestate(const EngineForkChoiceUpdatedRequestV2* msg);
+  static const ::remote::EnginePayloadAttributesV2& payloadattributes(const EngineForkChoiceUpdatedRequestV2* msg);
+};
+
+const ::remote::EngineForkChoiceState&
+EngineForkChoiceUpdatedRequestV2::_Internal::forkchoicestate(const EngineForkChoiceUpdatedRequestV2* msg) {
+  return *msg->forkchoicestate_;
+}
+const ::remote::EnginePayloadAttributesV2&
+EngineForkChoiceUpdatedRequestV2::_Internal::payloadattributes(const EngineForkChoiceUpdatedRequestV2* msg) {
+  return *msg->payloadattributes_;
+}
+EngineForkChoiceUpdatedRequestV2::EngineForkChoiceUpdatedRequestV2(::PROTOBUF_NAMESPACE_ID::Arena* arena)
+  : ::PROTOBUF_NAMESPACE_ID::Message(arena) {
+  SharedCtor();
+  RegisterArenaDtor(arena);
+  // @@protoc_insertion_point(arena_constructor:remote.EngineForkChoiceUpdatedRequestV2)
+}
+EngineForkChoiceUpdatedRequestV2::EngineForkChoiceUpdatedRequestV2(const EngineForkChoiceUpdatedRequestV2& from)
+  : ::PROTOBUF_NAMESPACE_ID::Message() {
+  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+  if (from._internal_has_forkchoicestate()) {
+    forkchoicestate_ = new ::remote::EngineForkChoiceState(*from.forkchoicestate_);
+  } else {
+    forkchoicestate_ = nullptr;
+  }
+  if (from._internal_has_payloadattributes()) {
+    payloadattributes_ = new ::remote::EnginePayloadAttributesV2(*from.payloadattributes_);
+  } else {
+    payloadattributes_ = nullptr;
+  }
+  // @@protoc_insertion_point(copy_constructor:remote.EngineForkChoiceUpdatedRequestV2)
+}
+
+void EngineForkChoiceUpdatedRequestV2::SharedCtor() {
+  ::PROTOBUF_NAMESPACE_ID::internal::InitSCC(&scc_info_EngineForkChoiceUpdatedRequestV2_remote_2fethbackend_2eproto.base);
+  ::memset(reinterpret_cast<char*>(this) + static_cast<size_t>(
+      reinterpret_cast<char*>(&forkchoicestate_) - reinterpret_cast<char*>(this)),
+      0, static_cast<size_t>(reinterpret_cast<char*>(&payloadattributes_) -
+      reinterpret_cast<char*>(&forkchoicestate_)) + sizeof(payloadattributes_));
+}
+
+EngineForkChoiceUpdatedRequestV2::~EngineForkChoiceUpdatedRequestV2() {
+  // @@protoc_insertion_point(destructor:remote.EngineForkChoiceUpdatedRequestV2)
+  SharedDtor();
+  _internal_metadata_.Delete<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
+}
+
+void EngineForkChoiceUpdatedRequestV2::SharedDtor() {
+  GOOGLE_DCHECK(GetArena() == nullptr);
+  if (this != internal_default_instance()) delete forkchoicestate_;
+  if (this != internal_default_instance()) delete payloadattributes_;
+}
+
+void EngineForkChoiceUpdatedRequestV2::ArenaDtor(void* object) {
+  EngineForkChoiceUpdatedRequestV2* _this = reinterpret_cast< EngineForkChoiceUpdatedRequestV2* >(object);
+  (void)_this;
+}
+void EngineForkChoiceUpdatedRequestV2::RegisterArenaDtor(::PROTOBUF_NAMESPACE_ID::Arena*) {
+}
+void EngineForkChoiceUpdatedRequestV2::SetCachedSize(int size) const {
+  _cached_size_.Set(size);
+}
+const EngineForkChoiceUpdatedRequestV2& EngineForkChoiceUpdatedRequestV2::default_instance() {
+  ::PROTOBUF_NAMESPACE_ID::internal::InitSCC(&::scc_info_EngineForkChoiceUpdatedRequestV2_remote_2fethbackend_2eproto.base);
+  return *internal_default_instance();
+}
+
+
+void EngineForkChoiceUpdatedRequestV2::Clear() {
+// @@protoc_insertion_point(message_clear_start:remote.EngineForkChoiceUpdatedRequestV2)
+  ::PROTOBUF_NAMESPACE_ID::uint32 cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  if (GetArena() == nullptr && forkchoicestate_ != nullptr) {
+    delete forkchoicestate_;
+  }
+  forkchoicestate_ = nullptr;
+  if (GetArena() == nullptr && payloadattributes_ != nullptr) {
+    delete payloadattributes_;
+  }
+  payloadattributes_ = nullptr;
+  _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
+}
+
+const char* EngineForkChoiceUpdatedRequestV2::_InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) {
+#define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
+  while (!ctx->Done(&ptr)) {
+    ::PROTOBUF_NAMESPACE_ID::uint32 tag;
+    ptr = ::PROTOBUF_NAMESPACE_ID::internal::ReadTag(ptr, &tag);
+    CHK_(ptr);
+    switch (tag >> 3) {
+      // .remote.EngineForkChoiceState forkchoiceState = 1;
+      case 1:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 10)) {
+          ptr = ctx->ParseMessage(_internal_mutable_forkchoicestate(), ptr);
+          CHK_(ptr);
+        } else goto handle_unusual;
+        continue;
+      // .remote.EnginePayloadAttributesV2 payloadAttributes = 2;
+      case 2:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 18)) {
+          ptr = ctx->ParseMessage(_internal_mutable_payloadattributes(), ptr);
+          CHK_(ptr);
+        } else goto handle_unusual;
+        continue;
+      default: {
+      handle_unusual:
+        if ((tag & 7) == 4 || tag == 0) {
+          ctx->SetLastTag(tag);
+          goto success;
+        }
+        ptr = UnknownFieldParse(tag,
+            _internal_metadata_.mutable_unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(),
+            ptr, ctx);
+        CHK_(ptr != nullptr);
+        continue;
+      }
+    }  // switch
+  }  // while
+success:
+  return ptr;
+failure:
+  ptr = nullptr;
+  goto success;
+#undef CHK_
+}
+
+::PROTOBUF_NAMESPACE_ID::uint8* EngineForkChoiceUpdatedRequestV2::_InternalSerialize(
+    ::PROTOBUF_NAMESPACE_ID::uint8* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
+  // @@protoc_insertion_point(serialize_to_array_start:remote.EngineForkChoiceUpdatedRequestV2)
+  ::PROTOBUF_NAMESPACE_ID::uint32 cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  // .remote.EngineForkChoiceState forkchoiceState = 1;
+  if (this->has_forkchoicestate()) {
+    target = stream->EnsureSpace(target);
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
+      InternalWriteMessage(
+        1, _Internal::forkchoicestate(this), target, stream);
+  }
+
+  // .remote.EnginePayloadAttributesV2 payloadAttributes = 2;
+  if (this->has_payloadattributes()) {
+    target = stream->EnsureSpace(target);
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
+      InternalWriteMessage(
+        2, _Internal::payloadattributes(this), target, stream);
+  }
+
+  if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormat::InternalSerializeUnknownFieldsToArray(
+        _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
+  }
+  // @@protoc_insertion_point(serialize_to_array_end:remote.EngineForkChoiceUpdatedRequestV2)
+  return target;
+}
+
+size_t EngineForkChoiceUpdatedRequestV2::ByteSizeLong() const {
+// @@protoc_insertion_point(message_byte_size_start:remote.EngineForkChoiceUpdatedRequestV2)
+  size_t total_size = 0;
+
+  ::PROTOBUF_NAMESPACE_ID::uint32 cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  // .remote.EngineForkChoiceState forkchoiceState = 1;
+  if (this->has_forkchoicestate()) {
+    total_size += 1 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
+        *forkchoicestate_);
+  }
+
+  // .remote.EnginePayloadAttributesV2 payloadAttributes = 2;
+  if (this->has_payloadattributes()) {
+    total_size += 1 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
+        *payloadattributes_);
+  }
+
+  if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
+    return ::PROTOBUF_NAMESPACE_ID::internal::ComputeUnknownFieldsSize(
+        _internal_metadata_, total_size, &_cached_size_);
+  }
+  int cached_size = ::PROTOBUF_NAMESPACE_ID::internal::ToCachedSize(total_size);
+  SetCachedSize(cached_size);
+  return total_size;
+}
+
+void EngineForkChoiceUpdatedRequestV2::MergeFrom(const ::PROTOBUF_NAMESPACE_ID::Message& from) {
+// @@protoc_insertion_point(generalized_merge_from_start:remote.EngineForkChoiceUpdatedRequestV2)
+  GOOGLE_DCHECK_NE(&from, this);
+  const EngineForkChoiceUpdatedRequestV2* source =
+      ::PROTOBUF_NAMESPACE_ID::DynamicCastToGenerated<EngineForkChoiceUpdatedRequestV2>(
+          &from);
+  if (source == nullptr) {
+  // @@protoc_insertion_point(generalized_merge_from_cast_fail:remote.EngineForkChoiceUpdatedRequestV2)
+    ::PROTOBUF_NAMESPACE_ID::internal::ReflectionOps::Merge(from, this);
+  } else {
+  // @@protoc_insertion_point(generalized_merge_from_cast_success:remote.EngineForkChoiceUpdatedRequestV2)
+    MergeFrom(*source);
+  }
+}
+
+void EngineForkChoiceUpdatedRequestV2::MergeFrom(const EngineForkChoiceUpdatedRequestV2& from) {
+// @@protoc_insertion_point(class_specific_merge_from_start:remote.EngineForkChoiceUpdatedRequestV2)
+  GOOGLE_DCHECK_NE(&from, this);
+  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+  ::PROTOBUF_NAMESPACE_ID::uint32 cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  if (from.has_forkchoicestate()) {
+    _internal_mutable_forkchoicestate()->::remote::EngineForkChoiceState::MergeFrom(from._internal_forkchoicestate());
+  }
+  if (from.has_payloadattributes()) {
+    _internal_mutable_payloadattributes()->::remote::EnginePayloadAttributesV2::MergeFrom(from._internal_payloadattributes());
+  }
+}
+
+void EngineForkChoiceUpdatedRequestV2::CopyFrom(const ::PROTOBUF_NAMESPACE_ID::Message& from) {
+// @@protoc_insertion_point(generalized_copy_from_start:remote.EngineForkChoiceUpdatedRequestV2)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+void EngineForkChoiceUpdatedRequestV2::CopyFrom(const EngineForkChoiceUpdatedRequestV2& from) {
+// @@protoc_insertion_point(class_specific_copy_from_start:remote.EngineForkChoiceUpdatedRequestV2)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+bool EngineForkChoiceUpdatedRequestV2::IsInitialized() const {
+  return true;
+}
+
+void EngineForkChoiceUpdatedRequestV2::InternalSwap(EngineForkChoiceUpdatedRequestV2* other) {
+  using std::swap;
+  _internal_metadata_.Swap<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(&other->_internal_metadata_);
+  ::PROTOBUF_NAMESPACE_ID::internal::memswap<
+      PROTOBUF_FIELD_OFFSET(EngineForkChoiceUpdatedRequestV2, payloadattributes_)
+      + sizeof(EngineForkChoiceUpdatedRequestV2::payloadattributes_)
+      - PROTOBUF_FIELD_OFFSET(EngineForkChoiceUpdatedRequestV2, forkchoicestate_)>(
+          reinterpret_cast<char*>(&forkchoicestate_),
+          reinterpret_cast<char*>(&other->forkchoicestate_));
+}
+
+::PROTOBUF_NAMESPACE_ID::Metadata EngineForkChoiceUpdatedRequestV2::GetMetadata() const {
   return GetMetadataStatic();
 }
 
@@ -7003,6 +7609,207 @@ void PeersReply::InternalSwap(PeersReply* other) {
 }
 
 
+// ===================================================================
+
+class PendingBlockReply::_Internal {
+ public:
+};
+
+PendingBlockReply::PendingBlockReply(::PROTOBUF_NAMESPACE_ID::Arena* arena)
+  : ::PROTOBUF_NAMESPACE_ID::Message(arena) {
+  SharedCtor();
+  RegisterArenaDtor(arena);
+  // @@protoc_insertion_point(arena_constructor:remote.PendingBlockReply)
+}
+PendingBlockReply::PendingBlockReply(const PendingBlockReply& from)
+  : ::PROTOBUF_NAMESPACE_ID::Message() {
+  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+  blockrlp_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+  if (!from._internal_blockrlp().empty()) {
+    blockrlp_.Set(::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, from._internal_blockrlp(), 
+      GetArena());
+  }
+  // @@protoc_insertion_point(copy_constructor:remote.PendingBlockReply)
+}
+
+void PendingBlockReply::SharedCtor() {
+  ::PROTOBUF_NAMESPACE_ID::internal::InitSCC(&scc_info_PendingBlockReply_remote_2fethbackend_2eproto.base);
+  blockrlp_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+}
+
+PendingBlockReply::~PendingBlockReply() {
+  // @@protoc_insertion_point(destructor:remote.PendingBlockReply)
+  SharedDtor();
+  _internal_metadata_.Delete<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
+}
+
+void PendingBlockReply::SharedDtor() {
+  GOOGLE_DCHECK(GetArena() == nullptr);
+  blockrlp_.DestroyNoArena(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+}
+
+void PendingBlockReply::ArenaDtor(void* object) {
+  PendingBlockReply* _this = reinterpret_cast< PendingBlockReply* >(object);
+  (void)_this;
+}
+void PendingBlockReply::RegisterArenaDtor(::PROTOBUF_NAMESPACE_ID::Arena*) {
+}
+void PendingBlockReply::SetCachedSize(int size) const {
+  _cached_size_.Set(size);
+}
+const PendingBlockReply& PendingBlockReply::default_instance() {
+  ::PROTOBUF_NAMESPACE_ID::internal::InitSCC(&::scc_info_PendingBlockReply_remote_2fethbackend_2eproto.base);
+  return *internal_default_instance();
+}
+
+
+void PendingBlockReply::Clear() {
+// @@protoc_insertion_point(message_clear_start:remote.PendingBlockReply)
+  ::PROTOBUF_NAMESPACE_ID::uint32 cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  blockrlp_.ClearToEmpty();
+  _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
+}
+
+const char* PendingBlockReply::_InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) {
+#define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
+  while (!ctx->Done(&ptr)) {
+    ::PROTOBUF_NAMESPACE_ID::uint32 tag;
+    ptr = ::PROTOBUF_NAMESPACE_ID::internal::ReadTag(ptr, &tag);
+    CHK_(ptr);
+    switch (tag >> 3) {
+      // bytes blockRlp = 1;
+      case 1:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 10)) {
+          auto str = _internal_mutable_blockrlp();
+          ptr = ::PROTOBUF_NAMESPACE_ID::internal::InlineGreedyStringParser(str, ptr, ctx);
+          CHK_(ptr);
+        } else goto handle_unusual;
+        continue;
+      default: {
+      handle_unusual:
+        if ((tag & 7) == 4 || tag == 0) {
+          ctx->SetLastTag(tag);
+          goto success;
+        }
+        ptr = UnknownFieldParse(tag,
+            _internal_metadata_.mutable_unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(),
+            ptr, ctx);
+        CHK_(ptr != nullptr);
+        continue;
+      }
+    }  // switch
+  }  // while
+success:
+  return ptr;
+failure:
+  ptr = nullptr;
+  goto success;
+#undef CHK_
+}
+
+::PROTOBUF_NAMESPACE_ID::uint8* PendingBlockReply::_InternalSerialize(
+    ::PROTOBUF_NAMESPACE_ID::uint8* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
+  // @@protoc_insertion_point(serialize_to_array_start:remote.PendingBlockReply)
+  ::PROTOBUF_NAMESPACE_ID::uint32 cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  // bytes blockRlp = 1;
+  if (this->blockrlp().size() > 0) {
+    target = stream->WriteBytesMaybeAliased(
+        1, this->_internal_blockrlp(), target);
+  }
+
+  if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormat::InternalSerializeUnknownFieldsToArray(
+        _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
+  }
+  // @@protoc_insertion_point(serialize_to_array_end:remote.PendingBlockReply)
+  return target;
+}
+
+size_t PendingBlockReply::ByteSizeLong() const {
+// @@protoc_insertion_point(message_byte_size_start:remote.PendingBlockReply)
+  size_t total_size = 0;
+
+  ::PROTOBUF_NAMESPACE_ID::uint32 cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  // bytes blockRlp = 1;
+  if (this->blockrlp().size() > 0) {
+    total_size += 1 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::BytesSize(
+        this->_internal_blockrlp());
+  }
+
+  if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
+    return ::PROTOBUF_NAMESPACE_ID::internal::ComputeUnknownFieldsSize(
+        _internal_metadata_, total_size, &_cached_size_);
+  }
+  int cached_size = ::PROTOBUF_NAMESPACE_ID::internal::ToCachedSize(total_size);
+  SetCachedSize(cached_size);
+  return total_size;
+}
+
+void PendingBlockReply::MergeFrom(const ::PROTOBUF_NAMESPACE_ID::Message& from) {
+// @@protoc_insertion_point(generalized_merge_from_start:remote.PendingBlockReply)
+  GOOGLE_DCHECK_NE(&from, this);
+  const PendingBlockReply* source =
+      ::PROTOBUF_NAMESPACE_ID::DynamicCastToGenerated<PendingBlockReply>(
+          &from);
+  if (source == nullptr) {
+  // @@protoc_insertion_point(generalized_merge_from_cast_fail:remote.PendingBlockReply)
+    ::PROTOBUF_NAMESPACE_ID::internal::ReflectionOps::Merge(from, this);
+  } else {
+  // @@protoc_insertion_point(generalized_merge_from_cast_success:remote.PendingBlockReply)
+    MergeFrom(*source);
+  }
+}
+
+void PendingBlockReply::MergeFrom(const PendingBlockReply& from) {
+// @@protoc_insertion_point(class_specific_merge_from_start:remote.PendingBlockReply)
+  GOOGLE_DCHECK_NE(&from, this);
+  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+  ::PROTOBUF_NAMESPACE_ID::uint32 cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  if (from.blockrlp().size() > 0) {
+    _internal_set_blockrlp(from._internal_blockrlp());
+  }
+}
+
+void PendingBlockReply::CopyFrom(const ::PROTOBUF_NAMESPACE_ID::Message& from) {
+// @@protoc_insertion_point(generalized_copy_from_start:remote.PendingBlockReply)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+void PendingBlockReply::CopyFrom(const PendingBlockReply& from) {
+// @@protoc_insertion_point(class_specific_copy_from_start:remote.PendingBlockReply)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+bool PendingBlockReply::IsInitialized() const {
+  return true;
+}
+
+void PendingBlockReply::InternalSwap(PendingBlockReply* other) {
+  using std::swap;
+  _internal_metadata_.Swap<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(&other->_internal_metadata_);
+  blockrlp_.Swap(&other->blockrlp_, &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+}
+
+::PROTOBUF_NAMESPACE_ID::Metadata PendingBlockReply::GetMetadata() const {
+  return GetMetadataStatic();
+}
+
+
 // @@protoc_insertion_point(namespace_scope)
 }  // namespace remote
 PROTOBUF_NAMESPACE_OPEN
@@ -7038,6 +7845,12 @@ template<> PROTOBUF_NOINLINE ::remote::EngineForkChoiceState* Arena::CreateMaybe
 }
 template<> PROTOBUF_NOINLINE ::remote::EngineForkChoiceUpdatedRequest* Arena::CreateMaybeMessage< ::remote::EngineForkChoiceUpdatedRequest >(Arena* arena) {
   return Arena::CreateMessageInternal< ::remote::EngineForkChoiceUpdatedRequest >(arena);
+}
+template<> PROTOBUF_NOINLINE ::remote::EnginePayloadAttributesV2* Arena::CreateMaybeMessage< ::remote::EnginePayloadAttributesV2 >(Arena* arena) {
+  return Arena::CreateMessageInternal< ::remote::EnginePayloadAttributesV2 >(arena);
+}
+template<> PROTOBUF_NOINLINE ::remote::EngineForkChoiceUpdatedRequestV2* Arena::CreateMaybeMessage< ::remote::EngineForkChoiceUpdatedRequestV2 >(Arena* arena) {
+  return Arena::CreateMessageInternal< ::remote::EngineForkChoiceUpdatedRequestV2 >(arena);
 }
 template<> PROTOBUF_NOINLINE ::remote::EngineForkChoiceUpdatedReply* Arena::CreateMaybeMessage< ::remote::EngineForkChoiceUpdatedReply >(Arena* arena) {
   return Arena::CreateMessageInternal< ::remote::EngineForkChoiceUpdatedReply >(arena);
@@ -7086,6 +7899,9 @@ template<> PROTOBUF_NOINLINE ::remote::NodesInfoReply* Arena::CreateMaybeMessage
 }
 template<> PROTOBUF_NOINLINE ::remote::PeersReply* Arena::CreateMaybeMessage< ::remote::PeersReply >(Arena* arena) {
   return Arena::CreateMessageInternal< ::remote::PeersReply >(arena);
+}
+template<> PROTOBUF_NOINLINE ::remote::PendingBlockReply* Arena::CreateMaybeMessage< ::remote::PendingBlockReply >(Arena* arena) {
+  return Arena::CreateMessageInternal< ::remote::PendingBlockReply >(arena);
 }
 PROTOBUF_NAMESPACE_CLOSE
 

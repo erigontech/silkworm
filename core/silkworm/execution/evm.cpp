@@ -337,7 +337,9 @@ evmc_result EVM::execute_with_advanced_interpreter(evmc_revision rev, const evmc
     return res;
 }
 
-evmc_revision EVM::revision() const noexcept { return config().revision(block_.header.number); }
+evmc_revision EVM::revision() const noexcept {
+    return config().revision(block_.header.number, block_.header.timestamp);
+}
 
 void EVM::add_tracer(EvmTracer& tracer) noexcept {
     assert(advanced_analysis_cache == nullptr);

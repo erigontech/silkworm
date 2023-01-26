@@ -18,6 +18,7 @@
 
 #include <snappy.h>
 
+#include <stdexcept>
 #include <string>
 
 #include <silkworm/rlp/decode.hpp>

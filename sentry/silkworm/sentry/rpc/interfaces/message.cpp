@@ -63,13 +63,59 @@ static std::optional<eth::MessageId> eth_message_id(proto::MessageId proto_id) {
     }
 }
 
-static uint8_t message_id(proto::MessageId proto_id) {
+static proto::MessageId proto_message_id_from_eth_id(eth::MessageId eth_id) {
+    switch (eth_id) {
+        case eth::MessageId::kStatus:
+            return proto::STATUS_66;
+        case eth::MessageId::kNewBlockHashes:
+            return proto::NEW_BLOCK_HASHES_66;
+        case eth::MessageId::kNewBlock:
+            return proto::NEW_BLOCK_66;
+        case eth::MessageId::kTransactions:
+            return proto::TRANSACTIONS_66;
+        case eth::MessageId::kNewPooledTransactionHashes:
+            return proto::NEW_POOLED_TRANSACTION_HASHES_66;
+        case eth::MessageId::kGetBlockHeaders:
+            return proto::GET_BLOCK_HEADERS_66;
+        case eth::MessageId::kGetBlockBodies:
+            return proto::GET_BLOCK_BODIES_66;
+        case eth::MessageId::kGetNodeData:
+            return proto::GET_NODE_DATA_66;
+        case eth::MessageId::kGetReceipts:
+            return proto::GET_RECEIPTS_66;
+        case eth::MessageId::kGetPooledTransactions:
+            return proto::GET_POOLED_TRANSACTIONS_66;
+        case eth::MessageId::kBlockHeaders:
+            return proto::BLOCK_HEADERS_66;
+        case eth::MessageId::kBlockBodies:
+            return proto::BLOCK_BODIES_66;
+        case eth::MessageId::kNodeData:
+            return proto::NODE_DATA_66;
+        case eth::MessageId::kReceipts:
+            return proto::RECEIPTS_66;
+        case eth::MessageId::kPooledTransactions:
+            return proto::POOLED_TRANSACTIONS_66;
+        default:
+            assert(false);
+            return proto::STATUS_66;
+    }
+}
+
+uint8_t message_id(proto::MessageId proto_id) {
     auto eth_id = eth_message_id(proto_id);
     assert(eth_id.has_value());
     if (!eth_id)
         return eth::StatusMessage::kId;
 
     return (static_cast<uint8_t>(eth_id.value()) + eth::StatusMessage::kId);
+}
+
+static proto::MessageId proto_message_id(uint8_t message_id) {
+    assert(message_id >= eth::StatusMessage::kId);
+    if (message_id < eth::StatusMessage::kId)
+        return proto::STATUS_66;
+
+    return proto_message_id_from_eth_id(static_cast<eth::MessageId>(message_id - eth::StatusMessage::kId));
 }
 
 static Bytes bytes_from_string(const std::string& s) {
@@ -81,6 +127,13 @@ sentry::common::Message message_from_outbound_data(const proto::OutboundMessageD
         message_id(message_data.id()),
         bytes_from_string(message_data.data()),
     };
+}
+
+proto::InboundMessage inbound_message_from_message(const sentry::common::Message& message) {
+    proto::InboundMessage result;
+    result.set_id(proto_message_id(message.id));
+    result.set_data(message.data.data(), message.data.size());
+    return result;
 }
 
 }  // namespace silkworm::sentry::rpc::interfaces

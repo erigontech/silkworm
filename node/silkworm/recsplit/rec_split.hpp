@@ -52,6 +52,7 @@
 #include <fstream>
 #include <limits>
 #include <random>
+#include <stdexcept>
 #include <string>
 #include <utility>
 #include <vector>

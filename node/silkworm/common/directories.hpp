@@ -17,6 +17,7 @@
 #pragma once
 
 #include <filesystem>
+#include <stdexcept>
 
 namespace silkworm {
 

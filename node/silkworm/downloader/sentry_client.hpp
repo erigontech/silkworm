@@ -17,6 +17,7 @@
 #pragma once
 
 #include <atomic>
+#include <stdexcept>
 
 #include <boost/signals2.hpp>
 #include <p2psentry/sentry.grpc.pb.h>

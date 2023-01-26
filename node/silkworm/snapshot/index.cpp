@@ -18,8 +18,6 @@
 
 #include <stdexcept>
 
-#include <magic_enum.hpp>
-
 #include <silkworm/common/endian.hpp>
 #include <silkworm/common/log.hpp>
 #include <silkworm/common/util.hpp>

@@ -16,6 +16,7 @@
 
 #include "disconnect_message.hpp"
 
+#include <stdexcept>
 #include <vector>
 
 #include <silkworm/common/decoding_err.hpp>

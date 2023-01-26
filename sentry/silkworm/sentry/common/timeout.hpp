@@ -17,6 +17,7 @@
 #pragma once
 
 #include <chrono>
+#include <stdexcept>
 
 #include <silkworm/concurrency/coroutine.hpp>
 

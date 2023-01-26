@@ -16,6 +16,8 @@
 
 #include "trie_loader.hpp"
 
+#include <stdexcept>
+
 #include <silkworm/common/decoding_err.hpp>
 #include <silkworm/concurrency/signal_handler.hpp>
 #include <silkworm/db/tables.hpp>

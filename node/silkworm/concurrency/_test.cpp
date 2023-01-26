@@ -15,6 +15,7 @@
 */
 
 #include <csignal>
+#include <stdexcept>
 
 #include <catch2/catch.hpp>
 

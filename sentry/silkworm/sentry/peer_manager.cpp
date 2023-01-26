@@ -16,7 +16,7 @@
 
 #include "peer_manager.hpp"
 
-#include <silkworm/sentry/common/awaitable_wait_for_one.hpp>
+#include <silkworm/sentry/common/awaitable_wait_for_all.hpp>
 #include <silkworm/sentry/common/random.hpp>
 
 namespace silkworm::sentry {
@@ -24,9 +24,9 @@ namespace silkworm::sentry {
 using namespace boost::asio;
 
 awaitable<void> PeerManager::start(rlpx::Server& server, rlpx::Client& client) {
-    using namespace common::awaitable_wait_for_one;
+    using namespace common::awaitable_wait_for_all;
 
-    auto start = start_in_strand(server.peer_channel()) || start_in_strand(client.peer_channel());
+    auto start = start_in_strand(server.peer_channel()) && start_in_strand(client.peer_channel());
     co_await co_spawn(strand_, std::move(start), use_awaitable);
 }
 

@@ -16,6 +16,8 @@
 
 #include "access_layer.hpp"
 
+#include <stdexcept>
+
 #include <silkworm/common/assert.hpp>
 #include <silkworm/common/cast.hpp>
 #include <silkworm/common/endian.hpp>

@@ -16,6 +16,8 @@
 
 #include "message_stream.hpp"
 
+#include <stdexcept>
+
 #include "message_frame_codec.hpp"
 
 namespace silkworm::sentry::rlpx::framing {

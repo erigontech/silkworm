@@ -16,6 +16,8 @@
 
 #include "prune_mode.hpp"
 
+#include <stdexcept>
+
 #include <silkworm/common/endian.hpp>
 
 namespace silkworm::db {

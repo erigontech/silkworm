@@ -19,6 +19,7 @@
 #include <filesystem>
 #include <iomanip>
 #include <queue>
+#include <stdexcept>
 
 #include <silkworm/common/directories.hpp>
 #include <silkworm/common/log.hpp>

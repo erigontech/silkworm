@@ -80,7 +80,7 @@ namespace rlp {
     }
 
     void encode(Bytes& to, const BlockHeader& header, bool for_sealing, bool exclude_extra_data_sig) {
-        encode_header(to, rlp_header(header, for_sealing));
+        encode_header(to, rlp_header(header, for_sealing, exclude_extra_data_sig));
         encode(to, header.parent_hash.bytes);
         encode(to, header.ommers_hash.bytes);
         encode(to, header.beneficiary.bytes);

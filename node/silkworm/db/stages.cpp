@@ -16,6 +16,8 @@
 
 #include "stages.hpp"
 
+#include <stdexcept>
+
 #include <silkworm/common/endian.hpp>
 
 namespace silkworm::db::stages {

@@ -16,6 +16,7 @@
 
 #include "stage_interhashes.hpp"
 
+#include <stdexcept>
 #include <utility>
 
 #include <absl/container/btree_set.h>

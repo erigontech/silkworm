@@ -17,6 +17,7 @@
 #include "stage_senders.hpp"
 
 #include <algorithm>
+#include <stdexcept>
 #include <thread>
 
 #include <gsl/util>

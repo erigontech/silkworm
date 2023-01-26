@@ -16,6 +16,8 @@
 
 #include "index.hpp"
 
+#include <stdexcept>
+
 #include <silkworm/common/log.hpp>
 #include <silkworm/common/util.hpp>
 #include <silkworm/test/snapshot_files.hpp>

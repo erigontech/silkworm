@@ -16,6 +16,8 @@
 
 #include "sync_loop.hpp"
 
+#include <stdexcept>
+
 #include <boost/format.hpp>
 
 #include <silkworm/stagedsync/stage_blockhashes.hpp>

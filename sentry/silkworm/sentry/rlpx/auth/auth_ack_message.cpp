@@ -16,6 +16,8 @@
 
 #include "auth_ack_message.hpp"
 
+#include <stdexcept>
+
 #include <silkworm/common/decoding_err.hpp>
 #include <silkworm/rlp/decode.hpp>
 #include <silkworm/rlp/encode_vector.hpp>

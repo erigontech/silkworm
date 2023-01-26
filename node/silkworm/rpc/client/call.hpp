@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <stdexcept>
 #include <utility>  // for std::exchange in Boost 1.78, fixed in Boost 1.79
 
 #include <agrpc/detail/rpc.hpp>

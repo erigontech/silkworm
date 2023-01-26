@@ -22,7 +22,7 @@
 #include <boost/system/system_error.hpp>
 
 #include <silkworm/common/log.hpp>
-#include <silkworm/sentry/common/awaitable_wait_for_one.hpp>
+#include <silkworm/sentry/common/awaitable_wait_for_all.hpp>
 
 #include "auth/handshake.hpp"
 
@@ -37,7 +37,7 @@ boost::asio::awaitable<void> Peer::handle(std::shared_ptr<Peer> peer) {
 }
 
 boost::asio::awaitable<void> Peer::handle() {
-    using namespace common::awaitable_wait_for_one;
+    using namespace common::awaitable_wait_for_all;
 
     try {
         log::Debug() << "Peer::handle";
@@ -58,7 +58,7 @@ boost::asio::awaitable<void> Peer::handle() {
 
         protocol_->handle_peer_first_message(first_message);
 
-        co_await (send_messages(message_stream) || receive_messages(message_stream));
+        co_await (send_messages(message_stream) && receive_messages(message_stream));
 
     } catch (const auth::Handshake::DisconnectError&) {
         // TODO: handle disconnect
@@ -91,11 +91,16 @@ void Peer::send_message_detached(const std::shared_ptr<Peer>& peer, const common
 }
 
 boost::asio::awaitable<void> Peer::send_message(std::shared_ptr<Peer> peer, common::Message message) {
-    co_await peer->send_message(message);
+    try {
+        co_await peer->send_message(std::move(message));
+    } catch (const std::exception& ex) {
+        log::Error() << "Peer::send_message exception: " << ex.what();
+        throw;
+    }
 }
 
 boost::asio::awaitable<void> Peer::send_message(common::Message message) {
-    co_await send_message_channel_.send(message);
+    co_await send_message_channel_.send(std::move(message));
 }
 
 boost::asio::awaitable<void> Peer::send_messages(framing::MessageStream& message_stream) {

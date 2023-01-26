@@ -16,6 +16,8 @@
 
 #include "protocol.hpp"
 
+#include <stdexcept>
+
 namespace silkworm::sentry::eth {
 
 const uint8_t Protocol::kVersion = 67;

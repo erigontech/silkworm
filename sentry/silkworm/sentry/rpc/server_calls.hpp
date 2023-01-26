@@ -26,6 +26,7 @@
 #include <silkworm/common/log.hpp>
 #include <silkworm/rpc/interfaces/types.hpp>
 #include <silkworm/rpc/server/call.hpp>
+#include <silkworm/sentry/common/timeout.hpp>
 #include <silkworm/sentry/eth/fork_id.hpp>
 
 #include "common/messages_call.hpp"
@@ -52,10 +53,7 @@ class SetStatusCall : public sw_rpc::server::UnaryCall<proto::StatusData, proto:
 
     awaitable<void> operator()(const ServiceState& state) {
         auto status = make_status_data(request_, state);
-        bool ok = state.status_channel.try_send(status);
-        if (!ok) {
-            log::Error() << "SetStatusCall: status_channel is clogged";
-        }
+        co_await state.status_channel.send(status);
         co_await agrpc::finish(responder_, proto::SetStatusReply{}, grpc::Status::OK);
     }
 
@@ -175,8 +173,13 @@ class SendMessageByMinBlockCall : public sw_rpc::server::UnaryCall<proto::SendMe
   public:
     using Base::UnaryCall;
 
-    awaitable<void> operator()(const ServiceState& /*state*/) {
-        co_await agrpc::finish_with_error(responder_, grpc::Status{grpc::StatusCode::UNIMPLEMENTED, "SendMessageByMinBlockCall"});
+    awaitable<void> operator()(const ServiceState& state) {
+        // TODO: use request_.min_block()
+        proto::SentPeers reply = co_await do_send_message_call(
+            state,
+            request_.data(),
+            common::PeerFilter::with_max_peers(request_.max_peers()));
+        co_await agrpc::finish(responder_, reply, grpc::Status::OK);
     }
 };
 
@@ -186,7 +189,8 @@ class PeerMinBlockCall : public sw_rpc::server::UnaryCall<proto::PeerMinBlockReq
     using Base::UnaryCall;
 
     awaitable<void> operator()(const ServiceState& /*state*/) {
-        co_await agrpc::finish_with_error(responder_, grpc::Status{grpc::StatusCode::UNIMPLEMENTED, "PeerMinBlockCall"});
+        // TODO: implement
+        co_await agrpc::finish(responder_, protobuf::Empty{}, grpc::Status::OK);
     }
 };
 
@@ -283,6 +287,11 @@ class PeerEventsCall : public sw_rpc::server::ServerStreamingCall<proto::PeerEve
     using Base::ServerStreamingCall;
 
     awaitable<void> operator()(const ServiceState& /*state*/) {
+        // TODO: implement
+        using namespace std::chrono_literals;
+        silkworm::sentry::common::Timeout timeout(1h);
+        co_await timeout();
+
         co_await agrpc::finish(responder_, grpc::Status{grpc::StatusCode::UNIMPLEMENTED, "PeerEventsCall"});
     }
 };

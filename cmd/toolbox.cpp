@@ -20,6 +20,7 @@
 #include <fstream>
 #include <iostream>
 #include <regex>
+#include <stdexcept>
 #include <string>
 
 #include <CLI/CLI.hpp>

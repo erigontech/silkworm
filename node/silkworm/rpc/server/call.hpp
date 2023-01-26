@@ -19,6 +19,7 @@
 #include <atomic>
 #include <functional>
 #include <list>
+#include <stdexcept>
 #include <utility>
 
 #include <agrpc/repeatedly_request.hpp>

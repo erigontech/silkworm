@@ -37,7 +37,13 @@ class Channel {
     explicit Channel(boost::asio::any_io_executor& executor) : channel_(executor) {}
 
     boost::asio::awaitable<void> send(T value) {
-        co_await channel_.async_send(boost::system::error_code(), value, boost::asio::use_awaitable);
+        try {
+            co_await channel_.async_send(boost::system::error_code(), value, boost::asio::use_awaitable);
+        } catch (const boost::system::system_error& ex) {
+            if (ex.code() == boost::asio::experimental::error::channel_cancelled)
+                throw boost::system::system_error(make_error_code(boost::system::errc::operation_canceled));
+            throw;
+        }
     }
 
     bool try_send(T value) {

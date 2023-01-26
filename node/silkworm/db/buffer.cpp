@@ -18,6 +18,7 @@
 
 #include <algorithm>
 #include <iostream>
+#include <stdexcept>
 
 #include <absl/container/btree_set.h>
 

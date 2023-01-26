@@ -17,6 +17,7 @@
 #include "util.hpp"
 
 #include <cstring>
+#include <stdexcept>
 
 #include <silkworm/common/assert.hpp>
 #include <silkworm/common/decoding_err.hpp>

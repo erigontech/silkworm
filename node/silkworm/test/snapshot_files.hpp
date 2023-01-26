@@ -116,19 +116,27 @@ struct SnapshotBody {
 class TemporarySnapshotFile {
   public:
     explicit TemporarySnapshotFile(const SnapshotHeader& header, const SnapshotBody& body = {}) {
-        silkworm::Bytes data{};
+        Bytes data{};
         header.encode(data);
         body.encode(data);
         file_.write(data);
     }
+    TemporarySnapshotFile(const std::filesystem::path& tmp_dir,
+                          const std::string& filename,
+                          const SnapshotHeader& header,
+                          const SnapshotBody& body = {})
+        : file_(tmp_dir, filename) {
+        Bytes data{};
+        header.encode(data);
+        body.encode(data);
+        file_.write(data);
+    }
+    TemporarySnapshotFile(const std::filesystem::path& tmp_dir, const std::string& filename)
+        : TemporarySnapshotFile(tmp_dir, filename, {}, {}) {}
     TemporarySnapshotFile(const std::string& filename, const SnapshotHeader& header, const SnapshotBody& body = {})
-        : file_(filename) {
-        silkworm::Bytes data{};
-        header.encode(data);
-        body.encode(data);
-        file_.write(data);
-    }
-    explicit TemporarySnapshotFile(const std::string& filename) : TemporarySnapshotFile(filename, {}, {}) {}
+        : TemporarySnapshotFile(TemporaryDirectory::get_os_temporary_path(), filename, header, body) {}
+    TemporarySnapshotFile(const std::string& filename)
+        : TemporarySnapshotFile(TemporaryDirectory::get_os_temporary_path(), filename, {}, {}) {}
 
     const std::filesystem::path& path() const { return file_.path(); }
 

@@ -32,4 +32,37 @@ TEST_CASE("Index::Index", "[silkworm][snapshot][index]") {
     CHECK_THROWS_AS(header_index.build(), std::logic_error);
 }
 
+TEST_CASE("TransactionIndex::build KO: empty body snapshot", "[silkworm][snapshot][index]") {
+    test::SetLogVerbosityGuard guard{log::Level::kNone};
+    constexpr const char* kBodiesSnapshotFileName{"v1-014500-015000-bodies.seg"};
+    constexpr const char* kTransactionsSnapshotFileName{"v1-014500-015000-transactions.seg"};
+
+    SECTION("KO: empty snapshots", "[.]") {
+        test::TemporarySnapshotFile bodies_snapshot_file{kBodiesSnapshotFileName};
+        test::TemporarySnapshotFile txs_snapshot_file{kTransactionsSnapshotFileName};
+        TransactionIndex tx_index{*SnapshotFile::parse(txs_snapshot_file.path().string())};
+        CHECK_THROWS_AS(tx_index.build(), std::runtime_error);
+    }
+}
+
+TEST_CASE("TransactionIndex::build KO: invalid snapshot", "[silkworm][snapshot][index]") {
+    test::SetLogVerbosityGuard guard{log::Level::kNone};
+    constexpr const char* kTransactionsSnapshotFileName{"v1-015000-015500-transactions.seg"};
+
+    SECTION("KO: invalid zero word length") {
+        test::TemporarySnapshotFile bodies_snapshot_file{
+            "v1-015000-015500-bodies.seg",
+            test::SnapshotHeader{
+                .words_count = 0,
+                .empty_words_count = 0,
+                .patterns = {},
+                .positions = {}},
+            test::SnapshotBody{
+                *from_hex("0000000000000000")}};
+        test::TemporarySnapshotFile txs_snapshot_file{kTransactionsSnapshotFileName};
+        TransactionIndex tx_index{*SnapshotFile::parse(txs_snapshot_file.path().string())};
+        CHECK_THROWS_AS(tx_index.build(), std::runtime_error);
+    }
+}
+
 }  // namespace silkworm

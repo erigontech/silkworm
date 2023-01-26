@@ -24,6 +24,7 @@
 #include <silkworm/common/cast.hpp>
 #include <silkworm/common/test_context.hpp>
 #include <silkworm/db/genesis.hpp>
+#include <silkworm/downloader/sentry_client.hpp>
 
 namespace silkworm {
 // Useful definitions
@@ -88,8 +89,7 @@ TEST_CASE("body downloading", "[silkworm][downloader][BodySequence]") {
     bs.download_bodies({make_shared<BlockHeader>(header1)});
 
     time_point_t tp = std::chrono::system_clock::now();
-    seconds_t request_timeout = BodySequence::kRequestDeadline;
-    uint64_t active_peers = 1;
+    seconds_t request_timeout = SentryClient::kRequestDeadline;
 
     SECTION("should request block 1 & should accept it") {
         // check status
@@ -99,7 +99,7 @@ TEST_CASE("body downloading", "[silkworm][downloader][BodySequence]") {
         REQUIRE(bs.lowest_block_in_memory() == highest_header);
 
         // requesting
-        auto [packet, penalizations, min_block] = bs.request_more_bodies(tp, active_peers);
+        auto [packet, penalizations, min_block] = bs.request_more_bodies(tp);
 
         REQUIRE(penalizations.empty());
         REQUIRE(min_block > 0);
@@ -107,7 +107,7 @@ TEST_CASE("body downloading", "[silkworm][downloader][BodySequence]") {
 
         std::vector<Hash>& block_requested = packet.request;
         REQUIRE(!block_requested.empty());
-        REQUIRE(bs.outstanding_bodies(tp) > 0);
+        REQUIRE(bs.outstanding_requests(tp) > 0);
 
         REQUIRE(block_requested[0] == header1_hash);
 
@@ -156,7 +156,7 @@ TEST_CASE("body downloading", "[silkworm][downloader][BodySequence]") {
 
     SECTION("should renew the request of block 1") {
         // requesting
-        auto [packet1, penalizations1, min_block1] = bs.request_more_bodies(tp, active_peers);
+        auto [packet1, penalizations1, min_block1] = bs.request_more_bodies(tp);
 
         auto rs = bs.body_requests_.find(header1.number);
         REQUIRE(rs != bs.body_requests_.end());
@@ -169,7 +169,7 @@ TEST_CASE("body downloading", "[silkworm][downloader][BodySequence]") {
         request_status1.request_time -= request_timeout;  // make request stale
 
         // make another request
-        auto [packet2, penalizations2, min_block2] = bs.request_more_bodies(tp, active_peers);
+        auto [packet2, penalizations2, min_block2] = bs.request_more_bodies(tp);
 
         rs = bs.body_requests_.find(1);
         REQUIRE(rs != bs.body_requests_.end());
@@ -193,7 +193,7 @@ TEST_CASE("body downloading", "[silkworm][downloader][BodySequence]") {
 
     SECTION("should ignore response with non requested bodies") {
         // requesting
-        auto [packet, penalizations, min_block] = bs.request_more_bodies(tp, active_peers);
+        auto [packet, penalizations, min_block] = bs.request_more_bodies(tp);
 
         auto rs = bs.body_requests_.find(header1.number);
         REQUIRE(rs != bs.body_requests_.end());
@@ -232,7 +232,7 @@ TEST_CASE("body downloading", "[silkworm][downloader][BodySequence]") {
 
     SECTION("should ignore response with already received bodies") {
         // requesting
-        auto [packet, penalizations, min_block] = bs.request_more_bodies(tp, active_peers);
+        auto [packet, penalizations, min_block] = bs.request_more_bodies(tp);
 
         auto rs = bs.body_requests_.find(header1.number);
         REQUIRE(rs != bs.body_requests_.end());
@@ -268,7 +268,7 @@ TEST_CASE("body downloading", "[silkworm][downloader][BodySequence]") {
 
     SECTION("should accept response with wrong request id (slow peer, request renewed)") {
         // requesting
-        auto [packet, penalizations, min_block] = bs.request_more_bodies(tp, active_peers);
+        auto [packet, penalizations, min_block] = bs.request_more_bodies(tp);
 
         auto rs = bs.body_requests_.find(header1.number);
         REQUIRE(rs != bs.body_requests_.end());
@@ -305,12 +305,12 @@ TEST_CASE("body downloading", "[silkworm][downloader][BodySequence]") {
         REQUIRE(highest_header == 1);  // test pre-requisite
 
         // requesting
-        auto [packet1, penalizations1, min_block1] = bs.request_more_bodies(tp, active_peers);
+        auto [packet1, penalizations1, min_block1] = bs.request_more_bodies(tp);
 
         REQUIRE(bs.body_requests_.size() == 1);
 
         // make another request in the same time
-        auto [packet2, penalizations2, min_block2] = bs.request_more_bodies(tp, active_peers);
+        auto [packet2, penalizations2, min_block2] = bs.request_more_bodies(tp);
 
         REQUIRE(packet2.request.empty());  // no new request, highest_header == 1 and we already requested body 1
         REQUIRE(bs.body_requests_.size() == 1);
@@ -335,7 +335,7 @@ TEST_CASE("body downloading", "[silkworm][downloader][BodySequence]") {
         REQUIRE(highest_header == 1);  // test pre-requisite
 
         // requesting
-        auto [packet1, penalizations1, min_block1] = bs.request_more_bodies(tp, active_peers);
+        auto [packet1, penalizations1, min_block1] = bs.request_more_bodies(tp);
 
         REQUIRE(bs.body_requests_.size() == 1);
         auto rs = bs.body_requests_.find(header1.number);
@@ -355,7 +355,7 @@ TEST_CASE("body downloading", "[silkworm][downloader][BodySequence]") {
         REQUIRE(statistic.requested_items == 0);  // reset
 
         // make another request in the same time
-        auto [packet2, penalizations2, min_block2] = bs.request_more_bodies(tp, active_peers);
+        auto [packet2, penalizations2, min_block2] = bs.request_more_bodies(tp);
 
         REQUIRE(packet2.request.empty());  // no new request, last was a nack
         REQUIRE(bs.body_requests_.size() == 1);
@@ -371,7 +371,7 @@ TEST_CASE("body downloading", "[silkworm][downloader][BodySequence]") {
         REQUIRE(highest_header == 1);  // test pre-requisite
 
         // requesting
-        auto [packet1, penalizations1, min_block1] = bs.request_more_bodies(tp, active_peers);
+        auto [packet1, penalizations1, min_block1] = bs.request_more_bodies(tp);
 
         REQUIRE(bs.body_requests_.size() == 1);
         auto rs = bs.body_requests_.find(header1.number);
@@ -379,10 +379,10 @@ TEST_CASE("body downloading", "[silkworm][downloader][BodySequence]") {
         BodySequence_ForTest::BodyRequest& request_status = rs->second;
 
         request_status.ready = true;               // mark as ready
-        tp += 2 * BodySequence::kRequestDeadline;  // make it stale
+        tp += 2 * SentryClient::kRequestDeadline;  // make it stale
 
         // make another request in the same time
-        auto [packet2, penalizations2, min_block2] = bs.request_more_bodies(tp, active_peers);
+        auto [packet2, penalizations2, min_block2] = bs.request_more_bodies(tp);
 
         REQUIRE(packet2.request.empty());  // no new request, highest_header == 1 and we already requested body 1
         REQUIRE(bs.body_requests_.size() == 1);
@@ -390,7 +390,7 @@ TEST_CASE("body downloading", "[silkworm][downloader][BodySequence]") {
 
     SECTION("should not renew recent requests but make new requests") {
         // requesting
-        auto [packet1, penalizations1, min_block1] = bs.request_more_bodies(tp, active_peers);
+        auto [packet1, penalizations1, min_block1] = bs.request_more_bodies(tp);
 
         REQUIRE(bs.body_requests_.size() == 1);
         auto rs = bs.body_requests_.find(header1.number);
@@ -408,7 +408,7 @@ TEST_CASE("body downloading", "[silkworm][downloader][BodySequence]") {
         txn2.commit();
         bs.download_bodies({make_shared<BlockHeader>(header2)});
 
-        auto [packet2, penalizations2, min_block2] = bs.request_more_bodies(tp, active_peers);
+        auto [packet2, penalizations2, min_block2] = bs.request_more_bodies(tp);
 
         REQUIRE(!packet2.request.empty());
         REQUIRE(bs.body_requests_.size() == 2);
@@ -434,7 +434,7 @@ TEST_CASE("body downloading", "[silkworm][downloader][BodySequence]") {
         REQUIRE(bs.announced_blocks_.size() == 1);
 
         // requesting block 1 and finding it in announcements
-        auto [packet, penalizations, min_block] = bs.request_more_bodies(tp, active_peers);
+        auto [packet, penalizations, min_block] = bs.request_more_bodies(tp);
 
         REQUIRE(penalizations.empty());
         REQUIRE(packet.request.empty());  // no new request, we reached highest_header (=1)

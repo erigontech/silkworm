@@ -58,7 +58,8 @@ size_t BodySequence::outstanding_requests(time_point_t tp) const {
             requested_bodies++;
     }
 
-    return requested_bodies / kMaxBlocksPerMessage;  // it is an estimate
+    // return requested_bodies / kMaxBlocksPerMessage rounded up
+    return (requested_bodies + kMaxBlocksPerMessage - 1) / kMaxBlocksPerMessage;
 }
 
 Penalty BodySequence::accept_requested_bodies(BlockBodiesPacket66& packet, const PeerId&) {

@@ -21,6 +21,7 @@
 
 #include <silkworm/common/endian.hpp>
 #include <silkworm/common/util.hpp>
+#include <silkworm/snapshot/repository.hpp>
 #include <silkworm/test/files.hpp>
 
 namespace silkworm::test {
@@ -133,9 +134,13 @@ class TemporarySnapshotFile {
     }
     TemporarySnapshotFile(const std::filesystem::path& tmp_dir, const std::string& filename)
         : TemporarySnapshotFile(tmp_dir, filename, {}, {}) {}
+    TemporarySnapshotFile(const std::string& filename, ByteView data)
+        : file_(TemporaryDirectory::get_os_temporary_path(), filename) {
+        file_.write(data);
+    }
     TemporarySnapshotFile(const std::string& filename, const SnapshotHeader& header, const SnapshotBody& body = {})
         : TemporarySnapshotFile(TemporaryDirectory::get_os_temporary_path(), filename, header, body) {}
-    TemporarySnapshotFile(const std::string& filename)
+    explicit TemporarySnapshotFile(const std::string& filename)
         : TemporarySnapshotFile(TemporaryDirectory::get_os_temporary_path(), filename, {}, {}) {}
 
     const std::filesystem::path& path() const { return file_.path(); }
@@ -161,4 +166,23 @@ class HelloWorldSnapshotFile : public TemporarySnapshotFile {
                   *from_hex("0168656C6C6F2C20776F726C64")  // 0x01: position 0x68656C6C6F2C20776F726C64: "hello, world"
               }} {}
 };
+
+class HeaderSnapshotPath : public SnapshotFile {
+  public:
+    HeaderSnapshotPath(std::filesystem::path path, BlockNum from, BlockNum to)
+        : SnapshotFile(std::move(path), /*.version=*/ 1, from ,to, SnapshotType::headers) {}
+};
+
+class BodySnapshotPath : public SnapshotFile {
+  public:
+    BodySnapshotPath(std::filesystem::path path, BlockNum from, BlockNum to)
+        : SnapshotFile(std::move(path), /*.version=*/ 1, from ,to, SnapshotType::bodies) {}
+};
+
+class TransactionSnapshotPath : public SnapshotFile {
+  public:
+    TransactionSnapshotPath(std::filesystem::path path, BlockNum from, BlockNum to)
+        : SnapshotFile(std::move(path), /*.version=*/ 1, from ,to, SnapshotType::transactions) {}
+};
+
 }  // namespace silkworm::test

@@ -47,7 +47,7 @@ class BodiesStage : public Stage {
         explicit BodyDataModel(db::RWTxn&, BlockNum bodies_stage_height, const ChainConfig&);
         ~BodyDataModel() = default;
 
-        void update_tables(const Block&); // make a pre-verification of the body and update body related tables
+        void update_tables(const Block&);  // make a pre-verification of the body and update body related tables
         void close();
 
         // remove body data from tables, used in unwind phase

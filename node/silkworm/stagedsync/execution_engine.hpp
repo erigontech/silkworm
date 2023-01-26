@@ -43,7 +43,7 @@ class ExecutionEngine : public Stoppable {
 
     // actions
     template <typename BLOCK>
-        requires std::is_base_of_v<Block, BLOCK>
+    requires std::is_base_of_v<Block, BLOCK>
     void insert_blocks(std::vector<std::shared_ptr<BLOCK>>&);
 
     auto verify_chain(Hash head_block_hash) -> VerificationResult;

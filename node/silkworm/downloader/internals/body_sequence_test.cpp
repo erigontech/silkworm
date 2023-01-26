@@ -444,7 +444,7 @@ TEST_CASE("body downloading", "[silkworm][downloader][BodySequence]") {
         REQUIRE(rs != bs.body_requests_.end());
         BodySequence_ForTest::BodyRequest& request_status = rs->second;
 
-        REQUIRE(request_status.ready == true);  // found on announcements
+        REQUIRE(request_status.ready == true);        // found on announcements
         REQUIRE(request_status.to_announce == true);  // to announce
 
         REQUIRE(bs.announced_blocks_.size() == 0);

@@ -64,7 +64,7 @@ class HeaderChain {
     // sync current state - this must be done at header forward
     void initial_state(const std::vector<BlockHeader>& last_headers);
     void current_state(BlockNum highest_in_db);
-    //void downloading_target(BlockNum height) { downloading_target_ = height; }
+    // void downloading_target(BlockNum height) { downloading_target_ = height; }
 
     // status
     bool in_sync() const;

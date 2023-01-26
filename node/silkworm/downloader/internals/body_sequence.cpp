@@ -25,8 +25,6 @@
 
 namespace silkworm {
 
-
-
 BodySequence::BodySequence() {
 }
 
@@ -43,7 +41,7 @@ BlockNum BodySequence::lowest_block_in_memory() const { return body_requests_.lo
 size_t BodySequence::ready_bodies() const { return ready_bodies_; }
 size_t BodySequence::requests() const { return body_requests_.size(); }
 bool BodySequence::has_completed() const {
-    return requests() == 0 &&   // no more requests
+    return requests() == 0 &&                            // no more requests
            highest_block_in_memory() == target_height_;  // all bodies withdrawn
 }
 
@@ -110,7 +108,7 @@ Penalty BodySequence::accept_requested_bodies(BlockBodiesPacket66& packet, const
 
             start_block = std::min(start_block, request.block_height);
             count += 1;
-            //SILK_TRACE << "BodySequence: body accepted, block_num=" << request.block_height;
+            // SILK_TRACE << "BodySequence: body accepted, block_num=" << request.block_height;
         } else {
             statistics_.reject_causes.duplicated += 1;
         }
@@ -151,8 +149,8 @@ auto BodySequence::request_more_bodies(time_point_t tp)
 
     auto penalizations = renew_stale_requests(packet, min_block, tp, timeout);
 
-    if (packet.request.size() < kMaxBlocksPerMessage && // not full yet
-        requests() < kMaxInMemoryRequests) {  // not too many requests in memory
+    if (packet.request.size() < kMaxBlocksPerMessage &&  // not full yet
+        requests() < kMaxInMemoryRequests) {             // not too many requests in memory
         make_new_requests(packet, min_block, tp, timeout);
     }
 
@@ -190,8 +188,8 @@ auto BodySequence::renew_stale_requests(GetBlockBodiesPacket66& packet, BlockNum
 
             start_block = std::min(start_block, past_request.block_height);
             count++;
-            //SILK_TRACE << "BodySequence: renewed request block num= " << past_request.block_height
-            //           << ", hash= " << past_request.block_hash;
+            // SILK_TRACE << "BodySequence: renewed request block num= " << past_request.block_height
+            //            << ", hash= " << past_request.block_hash;
         }
 
         if (packet.request.size() >= kMaxBlocksPerMessage) break;
@@ -222,8 +220,8 @@ void BodySequence::make_new_requests(GetBlockBodiesPacket66& packet, BlockNum& m
 
             start_block = std::min(start_block, new_request.block_height);
             count++;
-            //SILK_TRACE << "BodySequence: requested body block-num= " << new_request.block_height
-            //           << ", hash= " << new_request.block_hash;
+            // SILK_TRACE << "BodySequence: requested body block-num= " << new_request.block_height
+            //            << ", hash= " << new_request.block_hash;
         }
 
         new_request.request_id = packet.requestId;
@@ -236,15 +234,14 @@ void BodySequence::make_new_requests(GetBlockBodiesPacket66& packet, BlockNum& m
 
 //! Save headers of witch it has to download bodies
 void BodySequence::download_bodies(const Headers& headers) {
-
-    for (auto header: headers) {
+    for (auto header : headers) {
         BlockNum bn = header->number;
 
         BodyRequest new_request;
         new_request.block_height = header->number;
         new_request.request_id = 0;  // no request yet
         new_request.block_hash = header->hash();
-        //new_request.request_time
+        // new_request.request_time
 
         fulfill_from_announcements(new_request);
 
@@ -271,7 +268,6 @@ bool BodySequence::fulfill_from_announcements(BodyRequest& request) {
 
     return false;
 }
-
 
 void BodySequence::request_nack(const GetBlockBodiesPacket66& packet) {
     seconds_t timeout = SentryClient::kRequestDeadline;

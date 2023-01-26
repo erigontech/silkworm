@@ -19,9 +19,8 @@ limitations under the License.
 
 #include <silkworm/common/as_range.hpp>
 #include <silkworm/db/access_layer.hpp>
-#include <silkworm/downloader/internals/db_utils.hpp>
-
 #include <silkworm/downloader/internals/body_sequence.hpp>
+#include <silkworm/downloader/internals/db_utils.hpp>
 
 namespace silkworm::stagedsync {
 
@@ -171,7 +170,7 @@ void ExecutionEngine::insert_body(Block& block) {
 }
 
 template <typename BLOCK>
-    requires std::is_base_of_v<Block, BLOCK>
+requires std::is_base_of_v<Block, BLOCK>
 void ExecutionEngine::insert_blocks(std::vector<std::shared_ptr<BLOCK>>& blocks) {
     SILK_TRACE << "ExecutionEngine: inserting " << blocks.size() << " blocks";
     if (blocks.empty()) return;
@@ -182,7 +181,7 @@ void ExecutionEngine::insert_blocks(std::vector<std::shared_ptr<BLOCK>>& blocks)
     });
 }
 
-template void ExecutionEngine::insert_blocks<BlockEx>(std::vector<std::shared_ptr<BlockEx>>& blocks); // explicit instantiation.
+template void ExecutionEngine::insert_blocks<BlockEx>(std::vector<std::shared_ptr<BlockEx>>& blocks);  // explicit instantiation.
 
 auto ExecutionEngine::verify_chain(Hash head_block_hash) -> VerificationResult {
     // "nothing to do" condition
@@ -272,7 +271,7 @@ bool ExecutionEngine::notify_fork_choice_updated(Hash head_block_hash) {
         // remove last part of canonical
         canonical_chain_.delete_down_to(forking_point);
 
-        current_status_ = ValidChain{.current_point=forking_point};
+        current_status_ = ValidChain{.current_point = forking_point};
     }
 
     is_first_sync = false;

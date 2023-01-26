@@ -21,12 +21,12 @@
 
 #include <silkworm/common/log.hpp>
 #include <silkworm/downloader/internals/preverified_hashes.hpp>
+#include <silkworm/downloader/internals/random_number.hpp>
 #include <silkworm/downloader/messages/inbound_message.hpp>
 #include <silkworm/downloader/messages/internal_message.hpp>
 #include <silkworm/downloader/messages/outbound_get_block_bodies.hpp>
 #include <silkworm/downloader/messages/outbound_get_block_headers.hpp>
 #include <silkworm/downloader/rpc/penalize_peer.hpp>
-#include <silkworm/downloader/internals/random_number.hpp>
 
 namespace silkworm {
 
@@ -121,9 +121,9 @@ void BlockExchange::execution_loop() {
 
             auto body_requests = room_for_new_requests == 1
                                      ? RANDOM_NUMBER.generate_one() % 2  // 50% chance to request a body
-                                     : room_for_new_requests / 2;  // a slight bias towards headers
+                                     : room_for_new_requests / 2;        // a slight bias towards headers
 
-            room_for_new_requests -= request_bodies(body_requests);  // do the computed nr. of body requests
+            room_for_new_requests -= request_bodies(body_requests);           // do the computed nr. of body requests
             room_for_new_requests -= request_headers(room_for_new_requests);  // do the remaining nr. of header requests
             request_bodies(room_for_new_requests);  // if headers do not used all the room we use it for body requests
 
@@ -141,7 +141,6 @@ void BlockExchange::execution_loop() {
                 log_status();
                 last_update = now;
             }
-
         }
 
         log::Warning("BlockExchange") << "execution_loop is stopping...";
@@ -206,7 +205,7 @@ void BlockExchange::log_status() {
     auto now = std::chrono::system_clock::now();
 
     log::Debug() << "BlockExchange msgs:" << std::setfill('_') << std::right
-                 << " in-queue:"   << std::setw(5) << messages_.size()
+                 << " in-queue:" << std::setw(5) << messages_.size()
                  //<< ", peers:"     << std::setw(2) << sentry_.active_peers()
                  << Interval_Network_Statistics{prev_statistic, statistics_, interval_for_stats_};
 
@@ -236,7 +235,7 @@ void BlockExchange::log_status() {
 
     log::Debug() << "BlockExchange body   stats: " << body_sequence_.statistics();
 
-    prev_statistic.inaccurate_copy(statistics_); // save values
+    prev_statistic.inaccurate_copy(statistics_);  // save values
 }
 
 void BlockExchange::send_penalization(PeerId id, Penalty p) noexcept {

@@ -76,12 +76,11 @@ void Network_Statistics::inaccurate_copy(const Network_Statistics& other) {
     malformed_msgs = other.malformed_msgs.load();
 }
 
-#define SHOW(LABEL, VARIABLE, FACTOR) \
-    ( os << std::setfill('_') << std::right \
-         << ", " LABEL ":"  << std::setw(5) << curr.VARIABLE.load()/FACTOR \
-         << "(+"  << std::setw(2) << (curr.VARIABLE.load() - prev.VARIABLE.load())/FACTOR \
-         << ", +" << std::setw(2) << (curr.VARIABLE.load() - prev.VARIABLE.load())/FACTOR/elapsed_s << "/s)" \
-    )
+#define SHOW(LABEL, VARIABLE, FACTOR)                                                     \
+    (os << std::setfill('_') << std::right                                                \
+        << ", " LABEL ":" << std::setw(5) << curr.VARIABLE.load() / FACTOR                \
+        << "(+" << std::setw(2) << (curr.VARIABLE.load() - prev.VARIABLE.load()) / FACTOR \
+        << ", +" << std::setw(2) << (curr.VARIABLE.load() - prev.VARIABLE.load()) / FACTOR / elapsed_s << "/s)")
 
 std::ostream& operator<<(std::ostream& os, std::tuple<Network_Statistics&, Network_Statistics&, seconds_t> stats) {
     Network_Statistics& prev = get<0>(stats);
@@ -91,15 +90,15 @@ std::ostream& operator<<(std::ostream& os, std::tuple<Network_Statistics&, Netwo
 
     os << std::setfill('_') << std::right;
 
-    SHOW("received",  received_msgs,     1);
-    SHOW("recv-kb",   received_bytes, 1000);
-    SHOW("processed", processed_msgs,    1);
-    SHOW("tried",     tried_msgs,        1);
-    SHOW("sent",      sent_msgs,         1);
-    SHOW("nack",      nack_msgs,         1);
-    SHOW("nonsolic",  nonsolic_msgs,     1);
-    SHOW("internal",  internal_msgs,     1);
-    SHOW("malformed", malformed_msgs,    1);
+    SHOW("received", received_msgs, 1);
+    SHOW("recv-kb", received_bytes, 1000);
+    SHOW("processed", processed_msgs, 1);
+    SHOW("tried", tried_msgs, 1);
+    SHOW("sent", sent_msgs, 1);
+    SHOW("nack", nack_msgs, 1);
+    SHOW("nonsolic", nonsolic_msgs, 1);
+    SHOW("internal", internal_msgs, 1);
+    SHOW("malformed", malformed_msgs, 1);
 
     os << " [last_update=" << elapsed.count() << "s]";
 

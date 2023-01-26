@@ -41,10 +41,10 @@ class HeaderChain_ForTest : public HeaderChain {
 
 class ExecutionEngine_ForTest : public stagedsync::ExecutionEngine {
   public:
-    using stagedsync::ExecutionEngine::insert_header;
     using stagedsync::ExecutionEngine::canonical_chain_;
     using stagedsync::ExecutionEngine::CanonicalChain;
     using stagedsync::ExecutionEngine::ExecutionEngine;
+    using stagedsync::ExecutionEngine::insert_header;
     using stagedsync::ExecutionEngine::pipeline_;
     using stagedsync::ExecutionEngine::tx_;
 };
@@ -88,7 +88,7 @@ TEST_CASE("Headers receiving and saving") {
     REQUIRE(last_headers[0].hash() == headers_head.hash);
 
     using ValidChain = stagedsync::ExecutionEngine::ValidChain;
-    //using InvalidChain = stagedsync::ExecutionEngine::InvalidChain;
+    // using InvalidChain = stagedsync::ExecutionEngine::InvalidChain;
 
     // creating the chain-fork-view to simulate a bit of the HeaderStage
     chainsync::ChainForkView chain_fork_view{headers_head, exec_engine};

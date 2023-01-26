@@ -20,8 +20,8 @@ limitations under the License.
 #include "silkworm/common/log.hpp"
 #include "silkworm/common/settings.hpp"
 #include "silkworm/concurrency/active_component.hpp"
-#include "silkworm/downloader/messages/internal_message.hpp"
 #include "silkworm/downloader/chain_fork_view.hpp"
+#include "silkworm/downloader/messages/internal_message.hpp"
 #include "silkworm/stagedsync/execution_engine.hpp"
 
 namespace silkworm::chainsync {

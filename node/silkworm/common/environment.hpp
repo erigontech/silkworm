@@ -32,4 +32,4 @@ class Environment {
     static void set_pre_verified_hashes_disabled();
 };
 
-}
+}  // namespace silkworm

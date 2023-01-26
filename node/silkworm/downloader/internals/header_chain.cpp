@@ -17,8 +17,8 @@
 #include "header_chain.hpp"
 
 #include <silkworm/common/as_range.hpp>
-#include <silkworm/common/log.hpp>
 #include <silkworm/common/environment.hpp>
+#include <silkworm/common/log.hpp>
 #include <silkworm/downloader/sentry_client.hpp>
 
 #include "algorithm.hpp"
@@ -91,15 +91,14 @@ std::vector<Announce>& HeaderChain::announces_to_do() { return announces_to_do_;
 
 size_t HeaderChain::outstanding_requests(time_point_t tp) const {
     auto it = std::find_if(anchor_queue_.begin(), anchor_queue_.end(), [tp](const auto& anchor) {
-            return anchor->timestamp > tp;  // anchor_queue_ is sorted by timestamp
+        return anchor->timestamp > tp;  // anchor_queue_ is sorted by timestamp
     });
     auto distance = std::distance(it, anchor_queue_.end());  // skip adding (last_skeleton_request_ < tp ? 1 : 0)
-                                                         // because we cannot say here if it has already been replied
+                                                             // because we cannot say here if it has already been replied
     if (distance < 0) throw std::logic_error("HeaderChain::outstanding_requests() distance < 0");
 
     return static_cast<size_t>(distance);
 }
-
 
 void HeaderChain::add_bad_headers(const std::set<Hash>& bads) {
     bad_headers_.insert(bads.begin(), bads.end());  // todo: use set_union or merge?
@@ -109,7 +108,7 @@ void HeaderChain::initial_state(const std::vector<BlockHeader>& last_headers) {
     statistics_ = {};  // reset statistics
 
     // we also need here all the headers with height == highest_in_db to init chain_state_
-    for (auto&& header: last_headers) {
+    for (auto&& header : last_headers) {
         this->add_header_as_link(header, true);  // todo: optimize add_header_as_link to use Header&&
         highest_in_db_ = std::max(highest_in_db_, header.number);
     }
@@ -253,11 +252,11 @@ void HeaderChain::reduce_persisted_links_to(size_t limit) {
 
 // Note: Erigon's HeadersForward is implemented in OutboundGetBlockHeaders message
 
-//auto HeaderChain::request_more_headers(time_point_t tp, seconds_t timeout)
-//    -> std::tuple<std::vector<GetBlockHeadersPacket66>, std::vector<PeerPenalization>>
+// auto HeaderChain::request_more_headers(time_point_t tp, seconds_t timeout)
+//     -> std::tuple<std::vector<GetBlockHeadersPacket66>, std::vector<PeerPenalization>>
 //{
-//    // if distance(target_height, top_anchor) < stride then request the anchor at target_height
-//}
+//     // if distance(target_height, top_anchor) < stride then request the anchor at target_height
+// }
 
 /*
  * Skeleton query.
@@ -281,7 +280,7 @@ auto HeaderChain::anchor_skeleton_request(time_point_t tp, seconds_t timeout)
         return std::nullopt;
     }
 
-    //BlockNum top = target_height ? std::min(top_seen_height_, *target_height) : top_seen_height_;
+    // BlockNum top = target_height ? std::min(top_seen_height_, *target_height) : top_seen_height_;
     BlockNum top = top_seen_height_;
     BlockNum bottom = highest_in_db_ + stride;  // warning: this can be inside a chain in memory
     if (top <= bottom) {
@@ -430,7 +429,7 @@ void HeaderChain::invalidate(std::shared_ptr<Anchor> anchor) {
 
 // SaveExternalAnnounce - does mark hash as seen in external announcement, only such hashes will broadcast further after
 auto HeaderChain::save_external_announce(Hash hash) -> std::optional<GetBlockHeadersPacket66> {
-    if (target_block_.has_value()) return std::nullopt; // with stop_at_block we do not use announcements
+    if (target_block_.has_value()) return std::nullopt;  // with stop_at_block we do not use announcements
 
     seen_announces_.put(hash, 0);  // we ignore the value in the map (zero here), we only need the key
 

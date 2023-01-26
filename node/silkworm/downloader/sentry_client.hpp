@@ -66,12 +66,11 @@ class SentryClient : public rpc::Client<sentry::Sentry>, public ActiveComponent 
 
     static rpc::ReceiveMessages::Scope scope(const sentry::InboundMessage& message);  // find the scope of the message
 
-
-    static constexpr seconds_t kRequestDeadline = std::chrono::seconds(30);  // time beyond which the remote sentry
-                                                                             // considers an answer lost
+    static constexpr seconds_t kRequestDeadline = std::chrono::seconds(30);          // time beyond which the remote sentry
+                                                                                     // considers an answer lost
     static constexpr milliseconds_t kNoPeerDelay = std::chrono::milliseconds(3000);  // chosen delay when no peer
                                                                                      // accepted the last request
-    static constexpr size_t kPerPeerMaxOutstandingRequests = 4;  // max number of outstanding requests per peer
+    static constexpr size_t kPerPeerMaxOutstandingRequests = 4;                      // max number of outstanding requests per peer
 
   protected:
     void publish(const sentry::InboundMessage&);  // notifying registered subscribers

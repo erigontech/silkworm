@@ -29,14 +29,13 @@
 
 namespace silkworm {
 
-struct BlockEx: public Block {
+struct BlockEx : public Block {
     Hash hash;
     Total_Difficulty td;
     bool to_announce{false};
 };
 
 using Blocks = std::vector<std::shared_ptr<BlockEx>>;
-
 
 /** BodySequence represents the sequence of body that we are downloading.
  *  It has these responsibilities:
@@ -52,7 +51,7 @@ class BodySequence {
     // sync current state - this must be done at header forward
     void current_state(BlockNum highest_in_db);
 
-        // set a downloading target - this must be done at body forward
+    // set a downloading target - this must be done at body forward
     void download_bodies(const Headers& headers);
 
     //! core functionalities: trigger the internal algorithms to decide what bodies we miss

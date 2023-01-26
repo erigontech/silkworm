@@ -60,7 +60,7 @@ void HeadersStage::HeaderDataModel::update_tables(const BlockHeader& header) {
 
     // Save progress
     db::write_total_difficulty(tx_, height, hash, td);  // maybe it should be moved to ExecEngine
-                                                                        // insert_headers to write td for every header
+                                                        // insert_headers to write td for every header
     // Save header number
     db::write_header_number(tx_, hash.bytes, header.number);  // maybe it should be moved to ExecEngine
 
@@ -165,7 +165,7 @@ auto HeadersStage::unwind(db::RWTxn& tx) -> Stage::Result {
     operation_ = OperationType::Unwind;
 
     try {
-        //std::optional<Hash> bad_block = sync_context_->bad_block_hash;
+        // std::optional<Hash> bad_block = sync_context_->bad_block_hash;
 
         HeaderDataModel::remove_headers(new_height, tx);
 

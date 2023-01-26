@@ -21,14 +21,14 @@
 
 namespace silkworm {
 
-OutboundNewBlock::OutboundNewBlock(Blocks b, bool f): blocks_to_announce_{std::move(b)}, is_first_sync_{f} {}
+OutboundNewBlock::OutboundNewBlock(Blocks b, bool f) : blocks_to_announce_{std::move(b)}, is_first_sync_{f} {}
 
 void OutboundNewBlock::execute(db::ROAccess, HeaderChain&, BodySequence&, SentryClient& sentry) {
     using namespace std::literals::chrono_literals;
 
     if (is_first_sync_) return;  // Don't announce blocks during first sync
 
-    for (auto& block_ptr: blocks_to_announce_) {
+    for (auto& block_ptr : blocks_to_announce_) {
         const BlockEx& block = *block_ptr;
         NewBlockPacket packet{{block, block.header}, block.td};
         auto peers = send_packet(sentry, packet, 1s);

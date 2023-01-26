@@ -61,7 +61,7 @@ namespace db {
             auto genesis_json = nlohmann::json::parse(source_data, nullptr, /*allow_exceptions=*/false);
             REQUIRE_THROWS(db::initialize_genesis(txn, genesis_json, /*allow_exceptions=*/true));
         }
-#if defined(__clang__) && !defined (NDEBUG)
+#if defined(__clang__) && !defined(NDEBUG)
         // clang has a defect so throw-ing T (a generic exception) is not catch-ed
 #else
         SECTION("Initialize with errors in Json payload") {

@@ -31,11 +31,11 @@ namespace silkworm {
 
 class ExecutionEngine_ForTest : public stagedsync::ExecutionEngine {
   public:
-    using stagedsync::ExecutionEngine::insert_header;
-    using stagedsync::ExecutionEngine::insert_body;
     using stagedsync::ExecutionEngine::canonical_chain_;
     using stagedsync::ExecutionEngine::CanonicalChain;
     using stagedsync::ExecutionEngine::ExecutionEngine;
+    using stagedsync::ExecutionEngine::insert_body;
+    using stagedsync::ExecutionEngine::insert_header;
     using stagedsync::ExecutionEngine::pipeline_;
     using stagedsync::ExecutionEngine::tx_;
 };
@@ -94,7 +94,7 @@ TEST_CASE("ExecutionEngine") {
         // inserting headers
         execution_engine.insert_header(block1.header);
 
-        auto final_headers_head= execution_engine.get_headers_head();
+        auto final_headers_head = execution_engine.get_headers_head();
         REQUIRE(final_headers_head.number == 0);            // doesn't change
         REQUIRE(final_headers_head.hash == *header0_hash);  // doesn't change
         REQUIRE(final_headers_head.total_difficulty == header0->difficulty);
@@ -216,7 +216,7 @@ TEST_CASE("ExecutionEngine") {
         REQUIRE(execution_engine.pipeline_.head_header_number() == block1.header.number);
         REQUIRE(execution_engine.pipeline_.head_header_hash() == block1.header.hash());
 
-        auto final_headers_head= execution_engine.get_headers_head();
+        auto final_headers_head = execution_engine.get_headers_head();
         REQUIRE(final_headers_head.number == block1.header.number);
         REQUIRE(final_headers_head.hash == block1.header.hash());
         REQUIRE(final_headers_head.total_difficulty > initial_headers_head.total_difficulty);

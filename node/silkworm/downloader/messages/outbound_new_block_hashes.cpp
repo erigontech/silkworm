@@ -22,7 +22,7 @@
 
 namespace silkworm {
 
-OutboundNewBlockHashes::OutboundNewBlockHashes(bool f): is_first_sync_{f} {}
+OutboundNewBlockHashes::OutboundNewBlockHashes(bool f) : is_first_sync_{f} {}
 
 void OutboundNewBlockHashes::execute(db::ROAccess, HeaderChain& hc, BodySequence&, SentryClient& sentry) {
     using namespace std::literals::chrono_literals;

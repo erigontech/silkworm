@@ -14,6 +14,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+#include "execution_pipeline.hpp"
+
 #include <boost/format.hpp>
 
 #include <silkworm/common/environment.hpp>
@@ -29,14 +31,12 @@ limitations under the License.
 #include <silkworm/stagedsync/stage_senders.hpp>
 #include <silkworm/stagedsync/stage_tx_lookup.hpp>
 
-#include "execution_pipeline.hpp"
-
 namespace silkworm::stagedsync {
 
 #if defined(NDEBUG)
-    static const std::chrono::milliseconds kStageDurationThresholdForLog{10};
+static const std::chrono::milliseconds kStageDurationThresholdForLog{10};
 #else
-    static const std::chrono::milliseconds kStageDurationThresholdForLog{0};
+static const std::chrono::milliseconds kStageDurationThresholdForLog{0};
 #endif
 
 class ExecutionPipeline::LogTimer : public Timer {

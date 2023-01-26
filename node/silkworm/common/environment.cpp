@@ -63,4 +63,4 @@ void Environment::set_pre_verified_hashes_disabled() {
     environment["DISABLE_PRE_VERIFIED_HASHES"] = "1";
 }
 
-}
+}  // namespace silkworm

@@ -24,7 +24,7 @@
 
 namespace silkworm {
 
-OutboundGetBlockHeaders::OutboundGetBlockHeaders(size_t mr, uint64_t ap): max_reqs_{mr}, active_peers_{ap} {}
+OutboundGetBlockHeaders::OutboundGetBlockHeaders(size_t mr, uint64_t ap) : max_reqs_{mr}, active_peers_{ap} {}
 
 size_t OutboundGetBlockHeaders::sent_requests() const { return sent_reqs_; }
 size_t OutboundGetBlockHeaders::nack_requests() const { return nack_reqs_; }
@@ -101,7 +101,7 @@ sentry::SentPeers OutboundGetBlockHeaders::send_packet(SentryClient& sentry,
     rlp::encode(rlp_encoding, packet_);
     request->set_data(rlp_encoding.data(), rlp_encoding.length());  // copy
 
-    //SILK_TRACE << "Sending message OutboundGetBlockHeaders with send_message_by_min_block, content:" << packet_;
+    // SILK_TRACE << "Sending message OutboundGetBlockHeaders with send_message_by_min_block, content:" << packet_;
 
     rpc::SendMessageByMinBlock rpc{min_block, std::move(request)};
 
@@ -116,8 +116,8 @@ sentry::SentPeers OutboundGetBlockHeaders::send_packet(SentryClient& sentry,
     }
 
     sentry::SentPeers peers = rpc.reply();
-    //SILK_TRACE << "Received rpc result of OutboundGetBlockHeaders reqId=" << packet_.requestId << ": "
-    //           << std::to_string(peers.peers_size()) + " peer(s)";
+    // SILK_TRACE << "Received rpc result of OutboundGetBlockHeaders reqId=" << packet_.requestId << ": "
+    //            << std::to_string(peers.peers_size()) + " peer(s)";
 
     return peers;
 }

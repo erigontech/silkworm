@@ -518,11 +518,11 @@ namespace db {
             BlockBody body2{sample_block_body()};
             header.extra_data = string_view_to_byte_view("I'm different");
             CHECK_NOTHROW(write_header(txn, header, /*with_header_numbers=*/true));
-            CHECK_NOTHROW(write_body(txn, body, header.hash(), header.number)); // another body at same height
+            CHECK_NOTHROW(write_body(txn, body, header.hash(), header.number));  // another body at same height
             BlockBody body3{sample_block_body()};
             header.number = header.number + 1;
             CHECK_NOTHROW(write_header(txn, header, /*with_header_numbers=*/true));
-            CHECK_NOTHROW(write_body(txn, body, hash.bytes, header.number)); // another body after the prev two
+            CHECK_NOTHROW(write_body(txn, body, hash.bytes, header.number));  // another body after the prev two
 
             count = 0;
             processed = db::process_blocks_at_height(

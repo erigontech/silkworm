@@ -329,18 +329,15 @@ Stage::Result ExecutionPipeline::prune(db::RWTxn& cycle_txn) {
             log_timer.reset();  // Resets the interval for next log line from now
             const auto stage_result{current_stage_->second->prune(cycle_txn)};
             if (stage_result != Stage::Result::kSuccess) {
-                log::Error(get_log_prefix(),
-                           {"op", "Prune",
-                            "returned", std::string(magic_enum::enum_name<Stage::Result>(stage_result))});
+                log::Error(get_log_prefix(), {"op", "Prune", "returned",
+                                              std::string(magic_enum::enum_name<Stage::Result>(stage_result))});
                 log::Error("ExecPipeline") << "Prune interrupted due to stage " << current_stage_->first << " failure";
                 return stage_result;
             }
 
             auto [_, stage_duration] = stages_stop_watch.lap();
             if (stage_duration > kStageDurationThresholdForLog) {
-                log::Info(get_log_prefix(),
-                          {"op", "Prune",
-                           "done", StopWatch::format(stage_duration)});
+                log::Info(get_log_prefix(), {"op", "Prune", "done", StopWatch::format(stage_duration)});
             }
         }
 

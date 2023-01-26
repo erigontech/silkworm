@@ -131,8 +131,8 @@ class GolombRiceVector {
                 result += valid_lower_bits_unary;
                 curr_window_unary = *(curr_ptr_unary++);
                 valid_lower_bits_unary = 64;
-                while (curr_window_unary == 0) { [[unlikely]]
-                    result += 64;
+                while (curr_window_unary == 0) {
+                    [[unlikely]] result += 64;
                     curr_window_unary = *(curr_ptr_unary++);
                 }
             }

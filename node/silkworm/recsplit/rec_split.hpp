@@ -44,8 +44,10 @@
 
 #pragma once
 
+/* clang-format off */
 #define _USE_MATH_DEFINES
 #include <cmath>
+/* clang-format on */
 
 #include <array>
 #include <bit>

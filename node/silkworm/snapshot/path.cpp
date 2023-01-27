@@ -36,7 +36,7 @@ constexpr int kFileNameBlockScaleFactor{1'000};
 
 namespace fs = std::filesystem;
 
-std::optional<SnapshotFile> SnapshotFile::parse(fs::path path) {
+std::optional<SnapshotPath> SnapshotPath::parse(fs::path path) {
     const std::string filename_no_ext = path.stem().string();
 
     // Expected stem format: <version>-<6_digit_block_from>-<6_digit_block_to>-<tag>
@@ -79,15 +79,15 @@ std::optional<SnapshotFile> SnapshotFile::parse(fs::path path) {
         return std::nullopt;
     }
 
-    return SnapshotFile{std::move(path), version, block_from, block_to, *type};
+    return SnapshotPath{std::move(path), version, block_from, block_to, *type};
 }
 
-SnapshotFile SnapshotFile::from(const fs::path& dir, uint8_t version, BlockNum block_from, BlockNum block_to, SnapshotType type) {
-    const auto filename = SnapshotFile::build_filename(version, block_from, block_to, type);
-    return SnapshotFile{dir / filename, version, block_from, block_to, type};
+SnapshotPath SnapshotPath::from(const fs::path& dir, uint8_t version, BlockNum block_from, BlockNum block_to, SnapshotType type) {
+    const auto filename = SnapshotPath::build_filename(version, block_from, block_to, type);
+    return SnapshotPath{dir / filename, version, block_from, block_to, type};
 }
 
-fs::path SnapshotFile::build_filename(uint8_t version, BlockNum block_from, BlockNum block_to, SnapshotType type) {
+fs::path SnapshotPath::build_filename(uint8_t version, BlockNum block_from, BlockNum block_to, SnapshotType type) {
     std::string filename{"v"};
     filename.append(std::to_string(version));
     filename.append("-");
@@ -100,10 +100,10 @@ fs::path SnapshotFile::build_filename(uint8_t version, BlockNum block_from, Bloc
     return fs::path{filename};
 }
 
-SnapshotFile::SnapshotFile(fs::path path, uint8_t version, BlockNum block_from, BlockNum block_to, SnapshotType type)
+SnapshotPath::SnapshotPath(fs::path path, uint8_t version, BlockNum block_from, BlockNum block_to, SnapshotType type)
     : path_(std::move(path)), version_(version), block_from_(block_from), block_to_(block_to), type_(type) {}
 
-bool operator<(const SnapshotFile& lhs, const SnapshotFile& rhs) {
+bool operator<(const SnapshotPath& lhs, const SnapshotPath& rhs) {
     if (lhs.version_ != rhs.version_) {
         return lhs.version_ < rhs.version_;
     }

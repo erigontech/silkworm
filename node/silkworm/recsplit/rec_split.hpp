@@ -44,11 +44,13 @@
 
 #pragma once
 
+#define _USE_MATH_DEFINES
+#include <cmath>
+
 #include <array>
 #include <bit>
 #include <cassert>
 #include <chrono>
-#include <cmath>
 #include <fstream>
 #include <limits>
 #include <random>
@@ -74,7 +76,6 @@
 #include <silkworm/recsplit/encoding/elias_fano.hpp>
 #include <silkworm/recsplit/encoding/golomb_rice.hpp>
 #include <silkworm/recsplit/support/murmur_hash3.hpp>
-#include <silkworm/recsplit/util/Vector.hpp>
 
 namespace silkworm::succinct {
 
@@ -154,8 +155,7 @@ class SplittingStrategy {
 //! The template parameter LEAF_SIZE decides how large a leaf will be. Larger leaves imply slower construction, but less
 //! space and faster evaluation
 //! @tparam LEAF_SIZE the size of a leaf, typical value range from 6 to 8 for fast small maps or up to 16 for very compact functions
-//! @tparam AT a type of memory allocation out of sux::util::AllocType
-template <size_t LEAF_SIZE, util::AllocType AT = util::AllocType::MALLOC>
+template <size_t LEAF_SIZE>
 class RecSplit {
   public:
     using SplitStrategy = SplittingStrategy<LEAF_SIZE>;
@@ -684,7 +684,7 @@ class RecSplit {
     // Maps a 128-bit to a bucket using the first 64-bit half.
     inline uint64_t hash128_to_bucket(const hash128_t& hash) const { return remap128(hash.first, bucket_count_); }
 
-    friend std::ostream& operator<<(std::ostream& os, const RecSplit<LEAF_SIZE, AT>& rs) {
+    friend std::ostream& operator<<(std::ostream& os, const RecSplit<LEAF_SIZE>& rs) {
         size_t leaf_size = LEAF_SIZE;
         os.write(reinterpret_cast<char*>(&leaf_size), sizeof(leaf_size));
         os.write(reinterpret_cast<char*>(&rs.bucket_size_), sizeof(rs.bucket_size_));
@@ -694,7 +694,7 @@ class RecSplit {
         return os;
     }
 
-    friend std::istream& operator>>(std::istream& is, RecSplit<LEAF_SIZE, AT>& rs) {
+    friend std::istream& operator>>(std::istream& is, RecSplit<LEAF_SIZE>& rs) {
         size_t leaf_size;
         is.read(reinterpret_cast<char*>(&leaf_size), sizeof(leaf_size));
         if (leaf_size != LEAF_SIZE) {

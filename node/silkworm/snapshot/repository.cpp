@@ -114,15 +114,15 @@ void SnapshotRepository::reopen_list(const SnapshotFileList& segment_files, bool
     idx_max_block_ = max_idx_available();
 }
 
-bool SnapshotRepository::reopen_header(const SnapshotFile& seg_file) {
+bool SnapshotRepository::reopen_header(const SnapshotPath& seg_file) {
     return reopen(header_segments_, seg_file);
 }
 
-bool SnapshotRepository::reopen_body(const SnapshotFile& seg_file) {
+bool SnapshotRepository::reopen_body(const SnapshotPath& seg_file) {
     return reopen(body_segments_, seg_file);
 }
 
-bool SnapshotRepository::reopen_transaction(const SnapshotFile& seg_file) {
+bool SnapshotRepository::reopen_transaction(const SnapshotPath& seg_file) {
     return reopen(tx_segments_, seg_file);
 }
 
@@ -143,7 +143,7 @@ SnapshotRepository::ViewResult SnapshotRepository::view(const SnapshotsByPath<T>
 }
 
 template <ConcreteSnapshot T>
-bool SnapshotRepository::reopen(SnapshotsByPath<T>& segments, const SnapshotFile& seg_file) {
+bool SnapshotRepository::reopen(SnapshotsByPath<T>& segments, const SnapshotPath& seg_file) {
     if (segments.find(seg_file.path()) == segments.end()) {
         auto segment = std::make_unique<T>(seg_file.path(), seg_file.block_from(), seg_file.block_to());
         segment->reopen_segment();
@@ -166,7 +166,7 @@ SnapshotFileList SnapshotRepository::get_files(const std::string& ext) const {
             continue;
         }
         SILK_DEBUG << "Path: " << file.path() << " name: " << file.path().filename();
-        const auto snapshot_file = SnapshotFile::parse(file);
+        const auto snapshot_file = SnapshotPath::parse(file);
         if (snapshot_file) {
             snapshot_files.push_back(snapshot_file.value());
         } else {

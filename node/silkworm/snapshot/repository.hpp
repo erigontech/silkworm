@@ -81,9 +81,9 @@ class SnapshotRepository {
   private:
     void reopen_list(const SnapshotFileList& segment_files, bool optimistic);
 
-    bool reopen_header(const SnapshotFile& seg_file);
-    bool reopen_body(const SnapshotFile& seg_file);
-    bool reopen_transaction(const SnapshotFile& seg_file);
+    bool reopen_header(const SnapshotPath& seg_file);
+    bool reopen_body(const SnapshotPath& seg_file);
+    bool reopen_transaction(const SnapshotPath& seg_file);
 
     void close_segments_not_in_list(const SnapshotFileList& segment_files);
 
@@ -91,7 +91,7 @@ class SnapshotRepository {
     static ViewResult view(const SnapshotsByPath<T>& segments, BlockNum number, const SnapshotWalker<T>& walker);
 
     template <ConcreteSnapshot T>
-    static bool reopen(SnapshotsByPath<T>& segments, const SnapshotFile& seg_file);
+    static bool reopen(SnapshotsByPath<T>& segments, const SnapshotPath& seg_file);
 
     [[nodiscard]] SnapshotFileList get_segment_files() const {
         return get_files(kSegmentExtension);

@@ -47,11 +47,11 @@ enum SnapshotType {
     transactions2block = 3,
 };
 
-class SnapshotFile {
+class SnapshotPath {
   public:
-    [[nodiscard]] static std::optional<SnapshotFile> parse(std::filesystem::path path);
+    [[nodiscard]] static std::optional<SnapshotPath> parse(std::filesystem::path path);
 
-    [[nodiscard]] static SnapshotFile from(const std::filesystem::path& dir,
+    [[nodiscard]] static SnapshotPath from(const std::filesystem::path& dir,
                                            uint8_t version,
                                            BlockNum block_from,
                                            BlockNum block_to,
@@ -79,22 +79,22 @@ class SnapshotFile {
         return seedable() && !exists_torrent_file();
     }
 
-    [[nodiscard]] SnapshotFile index_file() const {
-        return SnapshotFile(std::filesystem::path{path_}.replace_extension(kIdxExtension), version_, block_from_, block_to_, type_);
+    [[nodiscard]] SnapshotPath index_file() const {
+        return SnapshotPath(std::filesystem::path{path_}.replace_extension(kIdxExtension), version_, block_from_, block_to_, type_);
     }
 
-    [[nodiscard]] SnapshotFile index_file_for_type(SnapshotType type) const {
+    [[nodiscard]] SnapshotPath index_file_for_type(SnapshotType type) const {
         std::filesystem::path index_path{path_};
         index_path.replace_filename(build_filename(version_, block_from_, block_to_, type));
-        return SnapshotFile(index_path.replace_extension(kIdxExtension), version_, block_from_, block_to_, type);
+        return SnapshotPath(index_path.replace_extension(kIdxExtension), version_, block_from_, block_to_, type);
     }
 
-    friend bool operator<(const SnapshotFile& lhs, const SnapshotFile& rhs);
+    friend bool operator<(const SnapshotPath& lhs, const SnapshotPath& rhs);
 
   protected:
     static std::filesystem::path build_filename(uint8_t version, BlockNum block_from, BlockNum block_to, SnapshotType type);
 
-    explicit SnapshotFile(std::filesystem::path path, uint8_t version, BlockNum block_from, BlockNum block_to, SnapshotType type);
+    explicit SnapshotPath(std::filesystem::path path, uint8_t version, BlockNum block_from, BlockNum block_to, SnapshotType type);
 
     std::filesystem::path path_;
     uint8_t version_{0};
@@ -103,6 +103,6 @@ class SnapshotFile {
     SnapshotType type_;
 };
 
-using SnapshotFileList = std::vector<SnapshotFile>;
+using SnapshotFileList = std::vector<SnapshotPath>;
 
 }  // namespace silkworm

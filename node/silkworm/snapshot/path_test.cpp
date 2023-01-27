@@ -23,7 +23,7 @@
 
 namespace silkworm {
 
-TEST_CASE("SnapshotFile::SnapshotFile", "[silkworm][snapshot][snapshot]") {
+TEST_CASE("SnapshotPath::SnapshotPath", "[silkworm][snapshot][snapshot]") {
     SECTION("invalid") {
         const char* invalid_filenames[]{
             "",
@@ -46,7 +46,7 @@ TEST_CASE("SnapshotFile::SnapshotFile", "[silkworm][snapshot][snapshot]") {
             "v1-014500-015000-headers.seg.seg",
         };
         for (const char* filename : invalid_filenames) {
-            CHECK_NOTHROW(SnapshotFile::parse(filename) == std::nullopt);
+            CHECK_NOTHROW(SnapshotPath::parse(filename) == std::nullopt);
         }
     }
     SECTION("valid") {
@@ -62,7 +62,7 @@ TEST_CASE("SnapshotFile::SnapshotFile", "[silkworm][snapshot][snapshot]") {
             {"v1-015000-015500-transactions.seg", 15'000'000, 15'500'000, SnapshotType::transactions},
         };
         for (const auto& filename_expectation : valid_filenames) {
-            const auto snapshot_file = SnapshotFile::parse(filename_expectation.filename);
+            const auto snapshot_file = SnapshotPath::parse(filename_expectation.filename);
             CHECK(snapshot_file != std::nullopt);
             if (snapshot_file) {
                 CHECK(snapshot_file->path() == filename_expectation.filename);
@@ -73,7 +73,7 @@ TEST_CASE("SnapshotFile::SnapshotFile", "[silkworm][snapshot][snapshot]") {
                 CHECK(snapshot_file->seedable());
                 CHECK(!snapshot_file->exists_torrent_file());
                 CHECK(snapshot_file->torrent_file_needed());
-                const SnapshotFile index_file = snapshot_file->index_file();
+                const SnapshotPath index_file = snapshot_file->index_file();
                 CHECK(index_file.path().stem() == snapshot_file->path().stem());
                 CHECK(index_file.path().extension() == kIdxExtension);
                 CHECK(index_file.version() == 1);

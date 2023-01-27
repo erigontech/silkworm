@@ -62,8 +62,9 @@ BlockNum ExecutionEngine::CanonicalChain::find_forking_point(db::RWTxn& tx, Hash
     // Going further back
     else {
         auto parent = db::read_header(tx, height - 1, parent_hash);  // todo: maybe use parent cache?
-        ensure_invariant(parent.has_value(), "CanonicalChain could not find parent with hash " + to_hex(parent_hash) +
-                        " and height " + std::to_string(height - 1) + " for header " + to_hex(header->hash()));
+        ensure_invariant(parent.has_value(),
+                         "CanonicalChain could not find parent with hash " + to_hex(parent_hash) +
+                             " and height " + std::to_string(height - 1) + " for header " + to_hex(header->hash()));
 
         auto ancestor_hash = parent->parent_hash;
         auto ancestor_height = height - 2;
@@ -98,16 +99,16 @@ void ExecutionEngine::CanonicalChain::update_up_to(BlockNum height, Hash hash) {
     auto ancestor_height = height;
 
     std::optional<Hash> persisted_canon_hash = db::read_canonical_hash(tx_, ancestor_height);
+    // while (persisted_canon_hash != ancestor_hash) { // better but gcc12 release erroneously raises a maybe-uninitialized warn
     while (!persisted_canon_hash ||
            std::memcmp(persisted_canon_hash.value().bytes, ancestor_hash.bytes, kHashLength) != 0) {
-        // while (persisted_canon_hash != ancestor_hash) { // better but gcc12 release erroneously raises a maybe-uninitialized warn
-
         db::write_canonical_hash(tx_, ancestor_height, ancestor_hash);
         canonical_cache_.put(ancestor_height, ancestor_hash);
 
         auto ancestor = db::read_header(tx_, ancestor_height, ancestor_hash);  // todo: maybe use parent cache?
-        ensure_invariant(ancestor.has_value(), "fix canonical chain failed at "
-            "ancestor= " + std::to_string(ancestor_height) + " hash=" + ancestor_hash.to_hex());
+        ensure_invariant(ancestor.has_value(),
+                         "fix canonical chain failed at ancestor= " + std::to_string(ancestor_height) +
+                             " hash=" + ancestor_hash.to_hex());
 
         ancestor_hash = ancestor->parent_hash;
         --ancestor_height;
@@ -170,7 +171,7 @@ void ExecutionEngine::insert_body(Block& block) {
 }
 
 template <typename BLOCK>
-requires std::is_base_of_v<Block, BLOCK>
+    requires std::is_base_of_v<Block, BLOCK>
 void ExecutionEngine::insert_blocks(std::vector<std::shared_ptr<BLOCK>>& blocks) {
     SILK_TRACE << "ExecutionEngine: inserting " << blocks.size() << " blocks";
     if (blocks.empty()) return;
@@ -181,7 +182,8 @@ void ExecutionEngine::insert_blocks(std::vector<std::shared_ptr<BLOCK>>& blocks)
     });
 }
 
-template void ExecutionEngine::insert_blocks<BlockEx>(std::vector<std::shared_ptr<BlockEx>>& blocks);  // explicit instantiation.
+// we need template explicit instantiation
+template void ExecutionEngine::insert_blocks<BlockEx>(std::vector<std::shared_ptr<BlockEx>>& blocks);
 
 auto ExecutionEngine::verify_chain(Hash head_block_hash) -> VerificationResult {
     // "nothing to do" condition
@@ -200,6 +202,7 @@ auto ExecutionEngine::verify_chain(Hash head_block_hash) -> VerificationResult {
 
     // the new head is on a new fork?
     BlockNum forking_point = canonical_chain_.find_forking_point(tx_, head_block_hash);  // the forking origin
+
     if (forking_point < canonical_chain_.current_head().number) {  // if the forking is behind the current head
         // we need to do unwind to change canonical
         auto unwind_result = pipeline_.unwind(tx_, forking_point);
@@ -228,7 +231,8 @@ auto ExecutionEngine::verify_chain(Hash head_block_hash) -> VerificationResult {
         case Stage::Result::kWrongFork:
         case Stage::Result::kInvalidBlock:
         case Stage::Result::kWrongStateRoot: {
-            ensure_invariant(pipeline_.unwind_point().has_value(), "unwind point from pipeline requested when forward fails");
+            ensure_invariant(pipeline_.unwind_point().has_value(),
+                             "unwind point from pipeline requested when forward fails");
             InvalidChain invalid_chain = {*pipeline_.unwind_point()};
             invalid_chain.unwind_head = *canonical_chain_.get_hash(*pipeline_.unwind_point());
             if (pipeline_.bad_block()) {

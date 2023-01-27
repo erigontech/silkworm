@@ -45,13 +45,13 @@ Total_Difficulty ChainForkView::add(const BlockHeader& header) {  // try to modu
     auto parent_td = td_cache_.get_as_copy(header.parent_hash);  // find in cache
     if (!parent_td)
         parent_td = exec_engine_.get_header_td(height - 1, header.parent_hash);  // ask execution engine
-    if (!parent_td) {
+    if (!parent_td) {                                                            /* clang-format off */
         std::string error_message = "Consensus: parent's total difficulty not found on Execution,"
             " hash= " + to_hex(header.parent_hash) +
             " height= " + std::to_string(height - 1) +
             " for header= " + hash.to_hex();
         log::Error("Consensus") << error_message;
-        throw std::logic_error(error_message);  // unexpected condition, bug?
+        throw std::logic_error(error_message);  // unexpected condition, bug?  /* clang-format on */
     }
     auto td = *parent_td + header.difficulty;  // calculated total difficulty of this header
 

@@ -209,17 +209,17 @@ Stage::Result ExecutionPipeline::forward(db::RWTxn& cycle_txn, BlockNum target_h
             // forward
             const auto stage_result = current_stage_->second->forward(cycle_txn);
 
-            if (stage_result != Stage::Result::kSuccess) {
+            if (stage_result != Stage::Result::kSuccess) { /* clang-format off */
                 auto result_description = std::string(magic_enum::enum_name<Stage::Result>(stage_result));
                 log::Error(get_log_prefix(), {"op", "Forward", "returned", });
                 log::Error("ExecPipeline") << "Forward interrupted due to stage " << current_stage_->first << " failure";
                 return stage_result;
-            }
+            } /* clang-format on */
 
             auto stage_head_number_ = db::stages::read_stage_progress(cycle_txn, current_stage_->first);
             if (stage_head_number_ != target_height) {
-                throw std::logic_error("Sync pipeline: stage returned success with an height different from target"
-                    " target= " + to_string(target_height) + " reached= " + to_string(stage_head_number_));
+                throw std::logic_error("Sync pipeline: stage returned success with an height different from target=" +
+                                       to_string(target_height) + " reached= " + to_string(stage_head_number_));
             }
 
             auto [_, stage_duration] = stages_stop_watch.lap();
@@ -233,9 +233,8 @@ Stage::Result ExecutionPipeline::forward(db::RWTxn& cycle_txn, BlockNum target_h
         if (!head_header) throw std::logic_error("Sync pipeline, missing head header hash " + to_hex(head_header_hash_));
         head_header_number_ = head_header->number;
         if (head_header_number_ != target_height) {
-            throw std::logic_error("Sync pipeline: head header not at target height "
-                " target_height= " + to_string(target_height) +
-                " head_header_height= " + to_string(head_header_number_));
+            throw std::logic_error("Sync pipeline: head header not at target height " + to_string(target_height) +
+                                   ", head_header_height= " + to_string(head_header_number_));
         }
 
         log::Info("ExecPipeline") << "Forward done ---------------------------";
@@ -290,9 +289,8 @@ Stage::Result ExecutionPipeline::unwind(db::RWTxn& cycle_txn, BlockNum unwind_po
         if (!head_header) throw std::logic_error("Sync pipeline, missing head header hash " + to_hex(head_header_hash_));
         head_header_number_ = head_header->number;
         if (head_header_number_ != unwind_point) {
-            throw std::logic_error("Sync pipeline: head header not at unwind point "
-                " unwind_point= " + to_string(unwind_point) +
-                " head_header_height= " + to_string(head_header_number_));
+            throw std::logic_error("Sync pipeline: head header not at unwind point " + to_string(unwind_point) +
+                                   ", head_header_height=" + to_string(head_header_number_));
         }
 
         // Clear context

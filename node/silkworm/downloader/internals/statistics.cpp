@@ -25,8 +25,8 @@ std::ostream& operator<<(std::ostream& os, const Download_Statistics& stats) {
     uint64_t perc_received = stats.requested_items > 0 ? stats.received_items * 100 / stats.requested_items : 0;
     uint64_t perc_accepted = stats.received_items > 0 ? stats.accepted_items * 100 / stats.received_items : 0;
     uint64_t perc_rejected = stats.received_items > 0 ? stats.rejected_items() * 100 / stats.received_items : 0;
-    uint64_t unknown = stats.rejected_items() - stats.reject_causes.not_requested - stats.reject_causes.duplicated
-                       - stats.reject_causes.invalid - stats.reject_causes.bad;
+    uint64_t unknown = stats.rejected_items() - stats.reject_causes.not_requested - stats.reject_causes.duplicated -
+                       stats.reject_causes.invalid - stats.reject_causes.bad;
 
     os << std::setfill('_')
        << "req=" << std::setw(7) << std::right << stats.requested_items << ", "

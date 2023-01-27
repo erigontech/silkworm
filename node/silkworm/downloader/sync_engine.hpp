@@ -33,8 +33,15 @@ class SyncEngine : public ActiveComponent {
     void execution_loop() final; /*[[long_running]]*/
 
   private:
-    struct NewHeight {BlockNum block_num; Hash hash;};
-    struct UnwindPoint {BlockNum block_num; Hash hash; std::optional<Hash> bad_block;};
+    struct NewHeight {
+        BlockNum block_num;
+        Hash hash;
+    };
+    struct UnwindPoint {
+        BlockNum block_num;
+        Hash hash;
+        std::optional<Hash> bad_block;
+    };
 
     auto forward_and_insert_blocks() -> NewHeight;
     void unwind(UnwindPoint);

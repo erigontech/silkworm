@@ -764,8 +764,10 @@ void HeaderChain::connect(std::shared_ptr<Link> attachment_link, Segment::Slice 
         invalidate(anchor);
         // todo: return []PenaltyItem := append(penalties, PenaltyItem{Penalty: AbandonedAnchorPenalty, PeerID:
         // anchor.peerID})
-        throw segment_cut_and_paste_error("anchor connected to bad headers, "
-            "height=" + std::to_string(anchor->blockHeight) + " parent hash=" + to_hex(anchor->parentHash));
+        throw segment_cut_and_paste_error(
+            "anchor connected to bad headers, "
+            "height=" +
+            std::to_string(anchor->blockHeight) + " parent hash=" + to_hex(anchor->parentHash));
     }
 
     // Iterate over headers backwards (from parents towards children)
@@ -853,8 +855,10 @@ void HeaderChain::extend_up(std::shared_ptr<Link> attachment_link, Segment::Slic
     // Search for bad headers
     if (bad_headers_.contains(attachment_link->hash)) {
         // todo: return penalties
-        throw segment_cut_and_paste_error("connection to bad headers,"
-            " height=" + std::to_string(attachment_link->blockHeight) +
+        throw segment_cut_and_paste_error(
+            "connection to bad headers,"
+            " height=" +
+            std::to_string(attachment_link->blockHeight) +
             " hash=" + to_hex(attachment_link->hash));
     }
 

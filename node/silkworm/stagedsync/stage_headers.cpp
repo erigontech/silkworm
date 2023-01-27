@@ -52,7 +52,7 @@ void HeadersStage::HeaderDataModel::update_tables(const BlockHeader& header) {
     // Admittance conditions
     if (header.parent_hash != previous_hash_) {
         throw std::logic_error("HeadersStage invariant violation: headers to process must be consecutive, at height=" +
-            std::to_string(height) + ", prev.hash=" + previous_hash_.to_hex() + ", curr.hash=" + hash.to_hex());
+                               std::to_string(height) + ", prev.hash=" + previous_hash_.to_hex() + ", curr.hash=" + hash.to_hex());
     }
 
     // Calculate total difficulty of this header

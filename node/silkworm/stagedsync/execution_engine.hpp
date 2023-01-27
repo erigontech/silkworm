@@ -29,6 +29,8 @@ limitations under the License.
 
 #include "execution_pipeline.hpp"
 
+/* clang-format off */
+
 namespace silkworm::stagedsync {
 
 class ExecutionEngine : public Stoppable {

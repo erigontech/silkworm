@@ -29,7 +29,7 @@ namespace silkworm {
 TEST_CASE("Index::Index", "[silkworm][snapshot][index]") {
     test::SetLogVerbosityGuard guard{log::Level::kNone};
     test::TemporarySnapshotFile tmp_snapshot_file{"v1-014500-015000-headers.seg"};
-    HeaderIndex header_index{*SnapshotFile::parse(tmp_snapshot_file.path().string())};
+    HeaderIndex header_index{*SnapshotPath::parse(tmp_snapshot_file.path().string())};
     CHECK_THROWS_AS(header_index.build(), std::logic_error);
 }
 
@@ -41,7 +41,7 @@ TEST_CASE("TransactionIndex::build KO: empty snapshot", "[silkworm][snapshot][in
     SECTION("KO: empty body snapshot", "[.]") {
         test::TemporarySnapshotFile bodies_snapshot_file{kBodiesSnapshotFileName};
         test::TemporarySnapshotFile txs_snapshot_file{kTransactionsSnapshotFileName};
-        TransactionIndex tx_index{*SnapshotFile::parse(txs_snapshot_file.path().string())};
+        TransactionIndex tx_index{*SnapshotPath::parse(txs_snapshot_file.path().string())};
         CHECK_THROWS_AS(tx_index.build(), std::runtime_error);
     }
 }
@@ -108,7 +108,7 @@ TEST_CASE("TransactionIndex::build KO: invalid snapshot", "[silkworm][snapshot][
             test::SnapshotBody{
                 *from_hex("0000000000000000")}};
         test::TemporarySnapshotFile txs_snapshot_file{kTransactionsSnapshotFileName};
-        TransactionIndex tx_index{*SnapshotFile::parse(txs_snapshot_file.path().string())};
+        TransactionIndex tx_index{*SnapshotPath::parse(txs_snapshot_file.path().string())};
         CHECK_THROWS_AS(tx_index.build(), std::runtime_error);
     }
 

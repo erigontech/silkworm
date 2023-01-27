@@ -167,22 +167,22 @@ class HelloWorldSnapshotFile : public TemporarySnapshotFile {
               }} {}
 };
 
-class HeaderSnapshotPath : public SnapshotFile {
+class HeaderSnapshotPath : public SnapshotPath {
   public:
     HeaderSnapshotPath(std::filesystem::path path, BlockNum from, BlockNum to)
-        : SnapshotFile(std::move(path), /*.version=*/1, from, to, SnapshotType::headers) {}
+        : SnapshotPath(std::move(path), /*.version=*/1, from, to, SnapshotType::headers) {}
 };
 
-class BodySnapshotPath : public SnapshotFile {
+class BodySnapshotPath : public SnapshotPath {
   public:
     BodySnapshotPath(std::filesystem::path path, BlockNum from, BlockNum to)
-        : SnapshotFile(std::move(path), /*.version=*/1, from, to, SnapshotType::bodies) {}
+        : SnapshotPath(std::move(path), /*.version=*/1, from, to, SnapshotType::bodies) {}
 };
 
-class TransactionSnapshotPath : public SnapshotFile {
+class TransactionSnapshotPath : public SnapshotPath {
   public:
     TransactionSnapshotPath(std::filesystem::path path, BlockNum from, BlockNum to)
-        : SnapshotFile(std::move(path), /*.version=*/1, from, to, SnapshotType::transactions) {}
+        : SnapshotPath(std::move(path), /*.version=*/1, from, to, SnapshotType::transactions) {}
 };
 
 }  // namespace silkworm::test

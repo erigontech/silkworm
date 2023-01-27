@@ -26,8 +26,8 @@
 #include <magic_enum.hpp>
 
 #include <silkworm/buildinfo.h>
+#include <silkworm/bittorrent/bittorrent.hpp>
 #include <silkworm/common/log.hpp>
-#include <silkworm/snapshot/bittorrent.hpp>
 #include <silkworm/snapshot/index.hpp>
 #include <silkworm/snapshot/repository.hpp>
 #include <silkworm/snapshot/snapshot.hpp>

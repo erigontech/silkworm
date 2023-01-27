@@ -33,16 +33,16 @@ TEST_CASE("Index::Index", "[silkworm][snapshot][index]") {
     CHECK_THROWS_AS(header_index.build(), std::logic_error);
 }
 
-TEST_CASE("TransactionIndex::build KO: empty body snapshot", "[silkworm][snapshot][index]") {
+TEST_CASE("TransactionIndex::build KO: empty snapshot", "[silkworm][snapshot][index]") {
     test::SetLogVerbosityGuard guard{log::Level::kNone};
     constexpr const char* kBodiesSnapshotFileName{"v1-014500-015000-bodies.seg"};
     constexpr const char* kTransactionsSnapshotFileName{"v1-014500-015000-transactions.seg"};
 
-    SECTION("KO: empty snapshots", "[.]") {
+    SECTION("KO: empty body snapshot", "[.]") {
         test::TemporarySnapshotFile bodies_snapshot_file{kBodiesSnapshotFileName};
         test::TemporarySnapshotFile txs_snapshot_file{kTransactionsSnapshotFileName};
         TransactionIndex tx_index{*SnapshotFile::parse(txs_snapshot_file.path().string())};
-        CHECK_THROWS_AS(tx_index.build(), std::logic_error);
+        CHECK_THROWS_AS(tx_index.build(), std::runtime_error);
     }
 }
 

@@ -50,8 +50,20 @@ TEST_CASE("TransactionIndex::build KO: empty snapshot", "[silkworm][snapshot][in
 class SampleBodySnapshotFile : public test::TemporarySnapshotFile {
   public:
     inline static constexpr const char* kBodiesSnapshotFileName{"v1-001500-001500-bodies.seg"};
+
+    //! This ctor lets you pass any snapshot content and is used to produce broken snapshots
     explicit SampleBodySnapshotFile(std::string_view hex)
         : TemporarySnapshotFile{kBodiesSnapshotFileName, *from_hex(hex)} {}
+
+    //! This empty ctor captures the correct sample snapshot content once for all
+    explicit SampleBodySnapshotFile()
+        : SampleBodySnapshotFile(
+              "000000000000000e000000000000000000000000000000000000000000000004"  // WC=14 EWC=0 PATTERNS=0 POSITIONS=4
+              "0100010801c6837004d980c001c6837004d980c001c6837004d980c001c68370"  // {01, 00}, {01, 08}
+              "04d980c001c6837004d980c001c6837004d980c001c6837004d980c001c68370"  // {01, c6837004d980c0}
+              "04d980c001c6837004d980c001c6837004d980c001c6837004d980c001c68370"  // ...
+              "04d980c001c6837004d980c001c6837004d901c0"                          // {01, c6837004d901c0}
+          ) {}
 };
 
 //! Sample Transactions snapshot file: it contains transactions for block 1'500'013 on mainnet (a block with 1 tx)
@@ -59,24 +71,19 @@ class SampleTransactionSnapshotFile : public test::TemporarySnapshotFile {
   public:
     inline static constexpr const char* kTransactionsSnapshotFileName{"v1-001500-001500-transactions.seg"};
 
+    //! This ctor lets you pass any snapshot content and is used to produce broken snapshots
+    explicit SampleTransactionSnapshotFile(std::string_view hex)
+        : TemporarySnapshotFile{kTransactionsSnapshotFileName, *from_hex(hex)} {}
+
+    //! This empty ctor captures the correct sample snapshot content once for all
     explicit SampleTransactionSnapshotFile()
-        : TemporarySnapshotFile{
-              kTransactionsSnapshotFileName,
-              test::SnapshotHeader{
-                  .words_count = 1,  // number of non-empty words
-                  .empty_words_count = 0,
-                  .patterns = std::vector<test::SnapshotPattern>{},
-                  .positions = std::vector<test::SnapshotPosition>{
-                      {1, 0},   // 1: position 0: zero encoded data (no pattern)
-                      {1, 114}  // 1: position 114: unencoded data length (including position encoding)
-                  }},
-              test::SnapshotBody{
-                  *from_hex("01"  // 0x01: position
-                            "f86f828f938504a817c80083015f9094e9ae6ec1117bbfeb89302ce7e632597b"
-                            "c595efae880e61a774f297bb80801ca031131812a9b210cf6033e9420478b72f"
-                            "08251d8c7323dd88bd3a180679fa90b5a028a6d676d77923b19506c7aaae5f1d"
-                            "c2f2244855aabb6672401c1b55b0d844ff")  // 0xf86f...44ff: RLP encoding for transaction
-              }} {}
+        : SampleTransactionSnapshotFile(
+              "0000000000000001000000000000000000000000000000000000000000000004"  // WC=1 EWC=0 PATTERNS=0 POSITIONS=4
+              "0100017201f86f828f938504a817c80083015f9094e9ae6ec1117bbfeb89302c"  // {01, 00}, {01, 72}, {01, f86f...
+              "e7e632597bc595efae880e61a774f297bb80801ca031131812a9b210cf6033e9"  // ...
+              "420478b72f08251d8c7323dd88bd3a180679fa90b5a028a6d676d77923b19506"  // ...
+              "c7aaae5f1dc2f2244855aabb6672401c1b55b0d844ff"                      // ...44ff}
+          ) {}
 };
 
 //! Sample Transaction snapshot path injecting custom from/to blocks to override 500'000 block range
@@ -106,53 +113,53 @@ TEST_CASE("TransactionIndex::build KO: invalid snapshot", "[silkworm][snapshot][
     }
 
     SECTION("KO: invalid position depth") {
-        SampleBodySnapshotFile bodies_snapshot_file{
+        SampleBodySnapshotFile invalid_bodies_snapshot{
             "000000000000000e000000000000000000000000000000000000000000000004"
-            "c100010801c6837004d980c001c6837004d980c001c6837004d980c001c68370"  // {c1, 00} <-
+            "c100010801c6837004d980c001c6837004d980c001c6837004d980c001c68370"  // {c1, 00} <- c1 instead of 01
             "04d980c001c6837004d980c001c6837004d980c001c6837004d980c001c68370"
             "04d980c001c6837004d980c001c6837004d980c001c6837004d980c001c68370"
             "04d980c001c6837004d980c001c6837004d901c0"};
-        SampleTransactionSnapshotFile txs_snapshot_file{};
-        SampleTransactionSnapshotPath txs_snapshot_path{txs_snapshot_file.path()};  // necessary to tweak the block numbers
+        SampleTransactionSnapshotFile valid_txs_snapshot{};
+        SampleTransactionSnapshotPath txs_snapshot_path{valid_txs_snapshot.path()};  // necessary to tweak the block numbers
         TransactionIndex tx_index{txs_snapshot_path};
         CHECK_THROWS_AS(tx_index.build(), std::runtime_error);
     }
 
     SECTION("KO: invalid position value") {
-        SampleBodySnapshotFile bodies_snapshot_file{
+        SampleBodySnapshotFile invalid_bodies_snapshot{
             "000000000000000e000000000000000000000000000000000000000000000004"
-            "01ff010801c6837004d980c001c6837004d980c001c6837004d980c001c68370"  // {01, ff} <-
+            "01ff010801c6837004d980c001c6837004d980c001c6837004d980c001c68370"  // {01, ff} <- ff instead of 00
             "04d980c001c6837004d980c001c6837004d980c001c6837004d980c001c68370"
             "04d980c001c6837004d980c001c6837004d980c001c6837004d980c001c68370"
             "04d980c001c6837004d980c001c6837004d901c0"};
-        SampleTransactionSnapshotFile txs_snapshot_file{};
-        SampleTransactionSnapshotPath txs_snapshot_path{txs_snapshot_file.path()};  // necessary to tweak the block numbers
+        SampleTransactionSnapshotFile valid_txs_snapshot{};
+        SampleTransactionSnapshotPath txs_snapshot_path{valid_txs_snapshot.path()};  // necessary to tweak the block numbers
         TransactionIndex tx_index{txs_snapshot_path};
         CHECK_THROWS_AS(tx_index.build(), std::runtime_error);
     }
 
     SECTION("KO: invalid positions count") {
-        SampleBodySnapshotFile bodies_snapshot_file{
-            "000000000000000e000000000000000000000000000000000000000000000005"  // POSITIONS=5 <-
+        SampleBodySnapshotFile invalid_bodies_snapshot{
+            "000000000000000e000000000000000000000000000000000000000000000005"  // POSITIONS=5 <- 5 instead of 4
             "0100010801c6837004d980c001c6837004d980c001c6837004d980c001c68370"
             "04d980c001c6837004d980c001c6837004d980c001c6837004d980c001c68370"
             "04d980c001c6837004d980c001c6837004d980c001c6837004d980c001c68370"
             "04d980c001c6837004d980c001c6837004d901c0"};
-        SampleTransactionSnapshotFile txs_snapshot_file{};
-        SampleTransactionSnapshotPath txs_snapshot_path{txs_snapshot_file.path()};  // necessary to tweak the block numbers
+        SampleTransactionSnapshotFile valid_txs_snapshot{};
+        SampleTransactionSnapshotPath txs_snapshot_path{valid_txs_snapshot.path()};  // necessary to tweak the block numbers
         TransactionIndex tx_index{txs_snapshot_path};
         CHECK_THROWS_AS(tx_index.build(), std::runtime_error);
     }
 
     SECTION("KO: invalid RLP") {
-        SampleBodySnapshotFile bodies_snapshot_file{
+        SampleBodySnapshotFile invalid_bodies_snapshot{
             "000000000000000e000000000000000000000000000000000000000000000004"
             "0100010801c6837004d980c001c6837004d980c001c6837004d980c001c68370"
-            "04d980c001c6837004d980c001c6837004d980c001c6837004d980c001c78370"  // {01, c7837004d980c0}
+            "04d980c001c6837004d980c001c6837004d980c001c6837004d980c001c78370"  // {01, c7837004d980c0} <- c7 instead of c6
             "04d980c001c6837004d980c001c6837004d980c001c6837004d980c001c68370"
             "04d980c001c6837004d980c001c6837004d901c0"};
-        SampleTransactionSnapshotFile txs_snapshot_file{};
-        SampleTransactionSnapshotPath txs_snapshot_path{txs_snapshot_file.path()};  // necessary to tweak the block numbers
+        SampleTransactionSnapshotFile valid_txs_snapshot{};
+        SampleTransactionSnapshotPath txs_snapshot_path{valid_txs_snapshot.path()};  // necessary to tweak the block numbers
         TransactionIndex tx_index{txs_snapshot_path};
         CHECK_THROWS_AS(tx_index.build(), rlp::DecodingError);
     }
@@ -160,15 +167,9 @@ TEST_CASE("TransactionIndex::build KO: invalid snapshot", "[silkworm][snapshot][
 
 TEST_CASE("TransactionIndex::build OK", "[silkworm][snapshot][index]") {
     test::SetLogVerbosityGuard guard{log::Level::kNone};
-    SampleBodySnapshotFile bodies_snapshot_file{
-        "000000000000000e000000000000000000000000000000000000000000000004"  // WC=14 EWC=0 PATTERNS=0 POSITIONS=4
-        "0100010801c6837004d980c001c6837004d980c001c6837004d980c001c68370"  // {01, 00}, {01, 08}
-        "04d980c001c6837004d980c001c6837004d980c001c6837004d980c001c68370"  // {01, c6837004d980c0}
-        "04d980c001c6837004d980c001c6837004d980c001c6837004d980c001c68370"  // ...
-        "04d980c001c6837004d980c001c6837004d901c0"                          // {01, c6837004d901c0}
-    };
-    SampleTransactionSnapshotFile txs_snapshot_file{};
-    SampleTransactionSnapshotPath txs_snapshot_path{txs_snapshot_file.path()};  // necessary to tweak the block numbers
+    SampleBodySnapshotFile valid_bodies_snapshot{};
+    SampleTransactionSnapshotFile valid_txs_snapshot{};
+    SampleTransactionSnapshotPath txs_snapshot_path{valid_txs_snapshot.path()};  // necessary to tweak the block numbers
     TransactionIndex tx_index{txs_snapshot_path};
     CHECK_NOTHROW(tx_index.build());
 }

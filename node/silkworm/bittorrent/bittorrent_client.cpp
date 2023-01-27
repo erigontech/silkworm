@@ -14,7 +14,7 @@
    limitations under the License.
 */
 
-#include "bittorrent.hpp"
+#include "bittorrent_client.hpp"
 
 #include <ctime>
 #include <fstream>

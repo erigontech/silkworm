@@ -23,6 +23,7 @@
 #include <utility>
 
 #include <absl/strings/str_split.h>
+#include <boost/format.hpp>
 #include <magic_enum.hpp>
 
 #include <silkworm/common/assert.hpp>
@@ -36,7 +37,7 @@ constexpr int kFileNameBlockScaleFactor{1'000};
 
 namespace fs = std::filesystem;
 
-std::optional<SnapshotFile> SnapshotFile::parse(std::filesystem::path path) {
+std::optional<SnapshotFile> SnapshotFile::parse(fs::path path) {
     const std::string filename_no_ext = path.stem().string();
 
     // Expected stem format: <version>-<6_digit_block_from>-<6_digit_block_to>-<tag>
@@ -82,7 +83,25 @@ std::optional<SnapshotFile> SnapshotFile::parse(std::filesystem::path path) {
     return SnapshotFile{std::move(path), version, block_from, block_to, *type};
 }
 
-SnapshotFile::SnapshotFile(std::filesystem::path path, uint8_t version, BlockNum block_from, BlockNum block_to, SnapshotType type)
+SnapshotFile SnapshotFile::from(const fs::path& dir, uint8_t version, BlockNum block_from, BlockNum block_to, SnapshotType type) {
+    const auto filename = SnapshotFile::build_filename(version, block_from, block_to, type);
+    return SnapshotFile{dir / filename, version, block_from, block_to, type};
+}
+
+fs::path SnapshotFile::build_filename(uint8_t version, BlockNum block_from, BlockNum block_to, SnapshotType type) {
+    std::string filename{"v"};
+    filename.append(std::to_string(version));
+    filename.append("-");
+    filename.append((boost::format("%06d") % (block_from / kFileNameBlockScaleFactor)).str());
+    filename.append("-");
+    filename.append((boost::format("%06d") % (block_to / kFileNameBlockScaleFactor)).str());
+    filename.append("-");
+    filename.append(magic_enum::enum_name(type));
+    filename.append(kSegmentExtension);
+    return fs::path{filename};
+}
+
+SnapshotFile::SnapshotFile(fs::path path, uint8_t version, BlockNum block_from, BlockNum block_to, SnapshotType type)
     : path_(std::move(path)), version_(version), block_from_(block_from), block_to_(block_to), type_(type) {}
 
 bool operator<(const SnapshotFile& lhs, const SnapshotFile& rhs) {

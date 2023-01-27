@@ -52,11 +52,18 @@ enum SnapshotType {
     headers = 0,
     bodies = 1,
     transactions = 2,
+    transactions2block = 3,
 };
 
 class SnapshotFile {
   public:
     [[nodiscard]] static std::optional<SnapshotFile> parse(std::filesystem::path path);
+
+    [[nodiscard]] static SnapshotFile from(const std::filesystem::path& dir,
+                                           uint8_t version,
+                                           BlockNum block_from,
+                                           BlockNum block_to,
+                                           SnapshotType type);
 
     [[nodiscard]] std::filesystem::path path() const { return path_; }
 
@@ -84,9 +91,17 @@ class SnapshotFile {
         return SnapshotFile(std::filesystem::path{path_}.replace_extension(kIdxExtension), version_, block_from_, block_to_, type_);
     }
 
+    [[nodiscard]] SnapshotFile index_file_for_type(SnapshotType type) const {
+        std::filesystem::path index_path{path_};
+        index_path.replace_filename(build_filename(version_, block_from_, block_to_, type));
+        return SnapshotFile(index_path.replace_extension(kIdxExtension), version_, block_from_, block_to_, type);
+    }
+
     friend bool operator<(const SnapshotFile& lhs, const SnapshotFile& rhs);
 
-  private:
+  protected:
+    static std::filesystem::path build_filename(uint8_t version, BlockNum block_from, BlockNum block_to, SnapshotType type);
+
     explicit SnapshotFile(std::filesystem::path path, uint8_t version, BlockNum block_from, BlockNum block_to, SnapshotType type);
 
     std::filesystem::path path_;

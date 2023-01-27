@@ -94,9 +94,11 @@ TEST_CASE("SnapshotRepository::SnapshotRepository", "[silkworm][snapshot][snapsh
 TEST_CASE("SnapshotRepository::reopen_folder", "[silkworm][snapshot][snapshot]") {
     test::SetLogVerbosityGuard guard{log::Level::kNone};
 
-    test::TemporarySnapshotFile tmp_snapshot_1{"v1-014500-015000-headers.seg"};
-    test::TemporarySnapshotFile tmp_snapshot_2{"v1-011500-012000-bodies.seg"};
-    test::TemporarySnapshotFile tmp_snapshot_3{"v1-015000-015500-transactions.seg"};
+    const auto tmp_dir = TemporaryDirectory::get_unique_temporary_path();
+    std::filesystem::create_directories(tmp_dir);
+    test::TemporarySnapshotFile tmp_snapshot_1{tmp_dir, "v1-014500-015000-headers.seg"};
+    test::TemporarySnapshotFile tmp_snapshot_2{tmp_dir, "v1-011500-012000-bodies.seg"};
+    test::TemporarySnapshotFile tmp_snapshot_3{tmp_dir, "v1-015000-015500-transactions.seg"};
     SnapshotSettings settings{tmp_snapshot_1.path().parent_path()};
     SnapshotRepository repository{settings};
     CHECK_NOTHROW(repository.reopen_folder());
@@ -109,9 +111,11 @@ TEST_CASE("SnapshotRepository::reopen_folder", "[silkworm][snapshot][snapshot]")
 TEST_CASE("SnapshotRepository::view", "[silkworm][snapshot][snapshot]") {
     test::SetLogVerbosityGuard guard{log::Level::kNone};
 
-    test::TemporarySnapshotFile tmp_snapshot_1{"v1-014500-015000-headers.seg"};
-    test::TemporarySnapshotFile tmp_snapshot_2{"v1-011500-012000-bodies.seg"};
-    test::TemporarySnapshotFile tmp_snapshot_3{"v1-015000-015500-transactions.seg"};
+    const auto tmp_dir = TemporaryDirectory::get_unique_temporary_path();
+    std::filesystem::create_directories(tmp_dir);
+    test::TemporarySnapshotFile tmp_snapshot_1{tmp_dir, "v1-014500-015000-headers.seg"};
+    test::TemporarySnapshotFile tmp_snapshot_2{tmp_dir, "v1-011500-012000-bodies.seg"};
+    test::TemporarySnapshotFile tmp_snapshot_3{tmp_dir, "v1-015000-015500-transactions.seg"};
     SnapshotSettings settings{tmp_snapshot_1.path().parent_path()};
     SnapshotRepository repository{settings};
     repository.reopen_folder();

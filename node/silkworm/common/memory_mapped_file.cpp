@@ -158,10 +158,6 @@ void MemoryMappedFile::advise_sequential() {
 void* MemoryMappedFile::mmap(FileDescriptor fd, bool read_only) {
     int flags = MAP_SHARED;
 
-#ifdef __linux__
-    flags = flags | MAP_POPULATE;
-#endif
-
     const auto address = ::mmap(nullptr, length_, read_only ? PROT_READ : (PROT_READ | PROT_WRITE), flags, fd, 0);
     if (address == MAP_FAILED) {
         throw std::runtime_error{"mmap failed for: " + std::string{path_} + " error: " + strerror(errno)};

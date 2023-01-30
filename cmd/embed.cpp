@@ -72,8 +72,8 @@ int main(int argc, char* argv[]) {
             output << "static const char " << output_file_name << "_data[] = {\n";
             auto count{1u};
             for (auto& b : bytes) {
-                output << "0x" << std::hex << static_cast<int>(b) << ((count == bytes.size()) ? "" : ",")
-                       << ((count % 16 == 0) ? "\n" : " ");
+                output << "0x" << std::setfill('0') << std::hex << std::setw(2) << static_cast<int>(b)
+                       << ((count == bytes.size()) ? "" : ",") << ((count % 16 == 0) ? "\n" : " ");
                 ++count;
             }
             output << "};\n\n";

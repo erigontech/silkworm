@@ -25,11 +25,11 @@ namespace silkworm::snapshot {
 
 PreverifiedList from_toml(std::string_view preverified_toml_doc) {
     const auto table = toml::parse(preverified_toml_doc);
-    SILK_LOG << "from_toml #preverified_toml_doc: " << preverified_toml_doc.size();
+    SILK_DEBUG << "from_toml #size: " << preverified_toml_doc.size() << " #snapshots: " << table.size();
 
-    PreverifiedList preverified{table.size()};
+    PreverifiedList preverified;
+    preverified.reserve(table.size());
     for (auto&& [key, value] : table) {
-        SILK_LOG << "k: " << key << " v: " << value.as_string();
         preverified.emplace_back(PreverifiedEntry{
             {key.begin(), key.end()},
             value.as_string()->get()});
@@ -37,7 +37,7 @@ PreverifiedList from_toml(std::string_view preverified_toml_doc) {
     std::sort(preverified.begin(), preverified.end(), [](auto& p1, auto& p2) { return p1.name < p2.name; });
 
     std::for_each(preverified.begin(), preverified.end(), [](auto& p) {
-        SILK_LOG << "name: " << p.name << " hash: " << p.hash;
+        SILK_DEBUG << "name: " << p.name << " hash: " << p.hash;
     });
 
     return preverified;

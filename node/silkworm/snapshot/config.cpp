@@ -32,8 +32,7 @@ PreverifiedList from_toml(std::string_view preverified_toml_doc) {
         SILK_LOG << "k: " << key << " v: " << value.as_string();
         preverified.emplace_back(PreverifiedEntry{
             {key.begin(), key.end()},
-            value.as_string()->get()
-        });
+            value.as_string()->get()});
     }
     std::sort(preverified.begin(), preverified.end(), [](auto& p1, auto& p2) { return p1.name < p2.name; });
 

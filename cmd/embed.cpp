@@ -37,14 +37,14 @@ int main(int argc, char* argv[]) {
     // Parse the command line arguments
     try {
         app.parse(argc, argv);
-    } catch (const CLI::ParseError &e) {
+    } catch (const CLI::ParseError& e) {
         return app.exit(e);
     }
 
     const std::regex hyphen_re{"-"};
 
     // Iterating through all the files in the input folder
-    for (const auto &entry : fs::recursive_directory_iterator(input_folder)) {
+    for (const auto& entry : fs::recursive_directory_iterator(input_folder)) {
         const fs::path& entry_path = entry.path();
         if (entry_path.extension() == extension) {
             // Open the input .toml file
@@ -73,7 +73,7 @@ int main(int argc, char* argv[]) {
             auto count{1u};
             for (auto& b : bytes) {
                 output << "0x" << std::hex << static_cast<int>(b) << ((count == bytes.size()) ? "" : ",")
-                           << ((count % 16 == 0) ? "\n" : " ");
+                       << ((count % 16 == 0) ? "\n" : " ");
                 ++count;
             }
             output << "};\n\n";

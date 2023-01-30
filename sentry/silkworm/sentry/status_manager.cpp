@@ -27,6 +27,7 @@ boost::asio::awaitable<void> StatusManager::wait_for_status() {
 }
 
 boost::asio::awaitable<void> StatusManager::start() {
+    // loop until wait_for_status() throws a cancelled exception
     while (true) {
         co_await wait_for_status();
     }

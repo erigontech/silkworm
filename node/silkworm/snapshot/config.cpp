@@ -18,8 +18,9 @@
 
 #include <algorithm>
 
+#include <toml.hpp>
+
 #include <silkworm/common/log.hpp>
-#include <silkworm/snapshot/toml.hpp>
 
 namespace silkworm::snapshot {
 

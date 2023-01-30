@@ -36,3 +36,6 @@
 [submodule "third_party/erigon-snapshot"]
 	path = third_party/erigon-snapshot
 	url = https://github.com/ledgerwatch/erigon-snapshot
+[submodule "third_party/tomlplusplus"]
+	path = third_party/tomlplusplus
+	url = https://github.com/marzer/tomlplusplus.git

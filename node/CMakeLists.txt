@@ -22,6 +22,26 @@ find_package(gRPC CONFIG REQUIRED)
 
 get_filename_component(SILKWORM_MAIN_DIR ../ ABSOLUTE)
 
+# Generate source files containing snapshot TOML files as binary data
+set(SILKWORM_EMBED embed)
+find_package(CLI11 CONFIG REQUIRED)
+add_executable(${SILKWORM_EMBED} ${SILKWORM_MAIN_DIR}/cmd/embed.cpp)
+target_link_libraries(${SILKWORM_EMBED} PRIVATE CLI11::CLI11)
+
+set(SILKWORM_TOML_SRC_DIR "${SILKWORM_MAIN_DIR}/third_party/erigon-snapshot")
+set(SILKWORM_TOML_SRC "${SILKWORM_TOML_SRC_DIR}/mainnet.toml")
+set(SILKWORM_TOML_CPP_SRC_DIR "${SILKWORM_MAIN_DIR}/node/silkworm/snapshot/config")
+set(SILKWORM_TOML_CPP_SOURCES "${SILKWORM_TOML_CPP_SRC_DIR}/mainnet.cpp")
+
+add_custom_command(
+        OUTPUT "${SILKWORM_TOML_CPP_SOURCES}"
+        COMMAND "${SILKWORM_EMBED}"
+        ARGS -i "${SILKWORM_TOML_SRC_DIR}" -o "${SILKWORM_TOML_CPP_SRC_DIR}" -e ".toml" -s "toml"
+        DEPENDS "${SILKWORM_EMBED}"
+)
+
+add_custom_target(generate_toml DEPENDS "${SILKWORM_TOML_CPP_SOURCES}")
+
 file(GLOB_RECURSE SILKWORM_NODE_SRC CONFIGURE_DEPENDS "*.cpp" "*.hpp" "*.c" "*.h" "*.cc")
 list(FILTER SILKWORM_NODE_SRC EXCLUDE REGEX "_test\\.cpp$")
 
@@ -41,9 +61,19 @@ set(SILKWORM_INTERFACE_SRC
         ${SILKWORM_MAIN_DIR}/interfaces/types/types.pb.cc
         ${SILKWORM_MAIN_DIR}/interfaces/types/types.pb.h)
 
-add_library(silkworm_node ${SILKWORM_NODE_SRC} ${SILKWORM_INTERFACE_SRC})
+set(SILKWORM_TOML_CPP_SRC
+        ${SILKWORM_TOML_CPP_SRC_DIR}/bor_mainnet.cpp
+        ${SILKWORM_TOML_CPP_SRC_DIR}/bsc.cpp
+        ${SILKWORM_TOML_CPP_SRC_DIR}/gnosis.cpp
+        ${SILKWORM_TOML_CPP_SRC_DIR}/goerli.cpp
+        ${SILKWORM_TOML_CPP_SRC_DIR}/mainnet.cpp
+        ${SILKWORM_TOML_CPP_SRC_DIR}/mumbai.cpp
+        ${SILKWORM_TOML_CPP_SRC_DIR}/ropsten.cpp
+        ${SILKWORM_TOML_CPP_SRC_DIR}/sepolia.cpp)
 
-add_dependencies(silkworm_node generate_ethbackend_grpc generate_kv_grpc generate_sentry_grpc)
+add_library(silkworm_node ${SILKWORM_NODE_SRC} ${SILKWORM_INTERFACE_SRC} ${SILKWORM_TOML_CPP_SRC})
+
+add_dependencies(silkworm_node generate_ethbackend_grpc generate_kv_grpc generate_sentry_grpc generate_toml)
 
 set_source_files_properties(${SILKWORM_INTERFACE_SRC} PROPERTIES GENERATED TRUE)
 if(NOT MSVC)

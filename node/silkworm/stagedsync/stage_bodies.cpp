@@ -110,7 +110,7 @@ Stage::Result BodiesStage::forward(db::RWTxn& tx) {
         RepeatedMeasure<BlockNum> height_progress(current_height_);
 
         // block processing
-        while (current_height_ < target_height && !is_stopping()) {
+        while (current_height_ < target_height && !body_persistence.unwind_needed() && !is_stopping()) {
             current_height_++;
 
             // process header and ommers at current height

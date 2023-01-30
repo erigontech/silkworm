@@ -185,6 +185,7 @@ if(NOT SILKWORM_CORE_ONLY)
 endif()
 
 add_subdirectory(third_party/silkpre)
+add_subdirectory(third_party/tomlplusplus)
 
 if(NOT MSVC)
   add_dependencies(silkpre gmplib)

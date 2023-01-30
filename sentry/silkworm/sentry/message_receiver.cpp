@@ -41,6 +41,7 @@ awaitable<void> MessageReceiver::start(std::shared_ptr<MessageReceiver> self, Pe
 awaitable<void> MessageReceiver::handle_calls() {
     auto executor = co_await this_coro::executor;
 
+    // loop until receive() throws a cancelled exception
     while (true) {
         auto call = co_await message_calls_channel_.receive();
 
@@ -81,8 +82,14 @@ awaitable<void> MessageReceiver::unsubscribe_on_signal(std::shared_ptr<common::C
 }
 
 awaitable<void> MessageReceiver::receive_messages(std::shared_ptr<rlpx::Peer> peer) {
+    // loop until DisconnectedError
     while (true) {
-        auto message = co_await peer->receive_message();
+        common::Message message;
+        try {
+            message = co_await peer->receive_message();
+        } catch (const rlpx::Peer::DisconnectedError& ex) {
+            break;
+        }
 
         rpc::common::MessagesCall::MessageFromPeer message_from_peer{
             std::move(message),

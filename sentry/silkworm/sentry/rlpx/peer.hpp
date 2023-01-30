@@ -57,11 +57,17 @@ class Peer {
           strand_(boost::asio::make_strand(io_context)),
           send_message_channel_(io_context),
           receive_message_channel_(io_context) {}
+    ~Peer();
 
-    static void start_detached(const std::shared_ptr<Peer>& peer);
+    static boost::asio::awaitable<void> start(const std::shared_ptr<Peer>& peer);
 
     static void send_message_detached(const std::shared_ptr<Peer>& peer, const common::Message& message);
     boost::asio::awaitable<common::Message> receive_message();
+
+    class DisconnectedError : public std::runtime_error {
+      public:
+        DisconnectedError() : std::runtime_error("Peer is disconnected") {}
+    };
 
     std::optional<common::EccPublicKey> peer_public_key() {
         return peer_public_key_.get();
@@ -70,6 +76,7 @@ class Peer {
   private:
     static boost::asio::awaitable<void> handle(std::shared_ptr<Peer> peer);
     boost::asio::awaitable<void> handle();
+    void close();
 
     static boost::asio::awaitable<void> send_message(std::shared_ptr<Peer> peer, common::Message message);
     boost::asio::awaitable<void> send_message(common::Message message);

@@ -16,11 +16,6 @@
 
 #pragma once
 
-// The utility header is required to resolve an issue with boost asio:
-// https://github.com/boostorg/asio/commit/71964b22c7fade69cc4caa1c869a868e3a32cc97
-// It could be removed after upgrading to Boost 1.79.
-#include <utility>
-
 #if __has_include(<coroutine>)
 #include <coroutine>
 

@@ -47,6 +47,9 @@
 /* clang-format off */
 #define _USE_MATH_DEFINES
 #include <cmath>
+#if !defined(M_PI) && defined(_MSC_VER)
+#include <corecrt_math_defines.h>
+#endif
 /* clang-format on */
 
 #include <array>

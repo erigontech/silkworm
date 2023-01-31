@@ -42,7 +42,7 @@ size_t BodySequence::ready_bodies() const { return ready_bodies_; }
 size_t BodySequence::requests() const { return body_requests_.size(); }
 bool BodySequence::has_completed() const {
     return requests() == 0 &&                            // no more requests
-           highest_block_in_memory() == target_height_;  // all bodies withdrawn
+           highest_block_in_output() == target_height_;  // all bodies withdrawn
 }
 
 size_t BodySequence::outstanding_requests(time_point_t tp) const {

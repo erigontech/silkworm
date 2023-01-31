@@ -50,6 +50,7 @@ class SentryClient : public rpc::Client<sentry::Sentry>, public ActiveComponent 
     void set_status();              // init the remote sentry
     void hand_shake();              // hand_shake & check of the protocol version
     uint64_t count_active_peers();  // ask the remote sentry for active peers
+    std::string request_peer_info(PeerId id);  // ask the remote sentry for peer info
 
     uint64_t active_peers();  // return cached peers count
 

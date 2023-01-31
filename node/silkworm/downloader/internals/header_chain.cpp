@@ -52,7 +52,7 @@ HeaderChain::HeaderChain(ConsensusEnginePtr consensus_engine)
     const auto stop_at_block = Environment::get_stop_at_block();
     if (stop_at_block.has_value()) {
         target_block_ = stop_at_block;
-        top_seen_height_ = target_block_.value() + 2 * stride;  // needed if no header announcements on p2p network
+        top_seen_height_ = target_block_.value();  // needed if no header announcements on p2p network
         SILK_TRACE << "HeaderChain target block=" << target_block_.value();
     }
 
@@ -281,11 +281,20 @@ auto HeaderChain::anchor_skeleton_request(time_point_t tp, seconds_t timeout)
     }
 
     // BlockNum top = target_height ? std::min(top_seen_height_, *target_height) : top_seen_height_;
-    BlockNum top = top_seen_height_;
+    BlockNum top = target_block_ ? std::min(top_seen_height_, *target_block_) : top_seen_height_;
     BlockNum bottom = highest_in_db_ + stride;  // warning: this can be inside a chain in memory
     if (top <= bottom) {
         skeleton_condition_ = "end";
         return std::nullopt;
+    }
+
+    if (anchors_.size() == 0 && top - bottom < stride) {
+        // request top header only
+        GetBlockHeadersPacket66 packet{
+            generate_request_id(),
+            {top, max_len, 0,true}}
+        ;
+        return packet;
     }
 
     BlockNum lowest_anchor = lowest_anchor_within_range(highest_in_db_, top + 1);
@@ -311,7 +320,7 @@ auto HeaderChain::anchor_skeleton_request(time_point_t tp, seconds_t timeout)
     }
 
     GetBlockHeadersPacket66 packet;
-    packet.requestId = generate_request_id();  // RANDOM_NUMBER.generate_one();
+    packet.requestId = generate_request_id();
     packet.request.origin = bottom;
     packet.request.amount = length;
     packet.request.skip = stride - 1;
@@ -503,7 +512,7 @@ auto HeaderChain::accept_headers(const std::vector<BlockHeader>& headers, uint64
     if (headers.empty()) {
         statistics_.received_items += 1;
         statistics_.reject_causes.invalid++;
-        return {Penalty::DuplicateHeaderPenalty, request_more_headers};
+        return {Penalty::DuplicateHeaderPenalty, request_more_headers}; // todo: use UselessPeer message
     }
 
     statistics_.received_items += headers.size();
@@ -530,6 +539,7 @@ auto HeaderChain::accept_headers(const std::vector<BlockHeader>& headers, uint64
     }
 
     for (auto& segment : segments) {
+        if (target_block_) segment.remove_headers_higher_than(*target_block_);
         request_more_headers |= process_segment(segment, false, peer_id);
     }
 
@@ -604,7 +614,6 @@ auto HeaderList::split_into_segments() -> std::tuple<std::vector<Segment>, Penal
         }
 
         segments[segmentIdx].push_back(header);
-        // segments[segmentIdx].headersRaw.push_back(headersRaw[i]); // todo: do we need this?
 
         segmentMap[header->parent_hash] = segmentIdx;
 
@@ -636,8 +645,14 @@ auto HeaderChain::process_segment(const Segment& segment, bool is_a_new_block, c
 
     auto highest_header = segment.front();
     auto height = highest_header->number;
-    if (height > top_seen_height_ && (is_a_new_block || seen_announces_.get(Hash(highest_header->hash())) != nullptr)) {
-        top_seen_height_ = height;
+    if (height > top_seen_height_) {
+        if (is_a_new_block) {
+            top_seen_block_height(height);
+        }
+        else if (seen_announces_.size() != 0) {
+            auto hash = highest_header->hash();
+            if (seen_announces_.get(hash) != nullptr) top_seen_block_height(height);
+        }
     }
 
     auto startNum = segment[start]->number;

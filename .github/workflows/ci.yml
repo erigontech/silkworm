@@ -185,7 +185,7 @@ jobs:
     - name: Test
       working-directory: ${{runner.workspace}}/build
       run: |
-        cmd/test/core_test
-        cmd/test/node_test
-        cmd/test/consensus --threads 4
-        cmd/test/sentry_test
+        cmd/test/${{ matrix.config.build_type }}/core_test
+        cmd/test/${{ matrix.config.build_type }}/node_test
+        cmd/test/${{ matrix.config.build_type }}/consensus --threads 4
+        cmd/test/${{ matrix.config.build_type }}/sentry_test

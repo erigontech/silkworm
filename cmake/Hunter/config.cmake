@@ -34,10 +34,15 @@ hunter_config(
 )
 
 hunter_config(
+  Boost
+  URL https://boostorg.jfrog.io/artifactory/main/release/1.81.0/source/boost_1_81_0.tar.bz2
+  SHA1 898469f1ae407f5cbfca84f63ad602962eebf4cc
+)
+
+hunter_config(
   asio-grpc
-  VERSION 2.0.0
-  URL https://github.com/Tradias/asio-grpc/archive/refs/tags/v2.0.0.tar.gz
-  SHA1 a727806a5c93c811e8f73ecb1e733efc4739d5ff
+  URL https://github.com/Tradias/asio-grpc/archive/refs/tags/v2.4.0.tar.gz
+  SHA1 85021b69a6ac3e6341813ee67f7142bf63ce5720
   CMAKE_ARGS ASIO_GRPC_USE_BOOST_CONTAINER=ON
 )
 

@@ -40,14 +40,14 @@ std::list<T*> random_list_items(std::list<T>& l, size_t max_count) {
         [[maybe_unused]] typedef void pointer;
         [[maybe_unused]] typedef void reference;
 
-        explicit BackInsertPtrIterator(std::list<T*>& container) : container_(container) {}
+        explicit BackInsertPtrIterator(std::list<T*>& container) : container_(&container) {}
 
         BackInsertPtrIterator& operator=(T& value) {
-            container_.push_back(&value);
+            container_->push_back(&value);
             return *this;
         }
         BackInsertPtrIterator& operator=(T&& value) {
-            container_.push_back(&value);
+            container_->push_back(&value);
             return *this;
         }
 
@@ -56,7 +56,7 @@ std::list<T*> random_list_items(std::list<T>& l, size_t max_count) {
         BackInsertPtrIterator operator++(int) { return *this; }
 
       private:
-        std::list<T*>& container_;
+        std::list<T*>* container_;
     };
 
     std::list<T*> out;

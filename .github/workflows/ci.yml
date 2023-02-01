@@ -161,11 +161,6 @@ jobs:
         submodules: recursive
         fetch-depth: "0"
 
-    - name: ccache
-      uses: hendrikmuhs/ccache-action@v1.2
-      with:
-        key: ${{ github.job }}-${{ matrix.config.build_type }}  # Eg. "windows-Debug"
-
     - name: vcpkg build
       uses: johnwason/vcpkg-action@v4
       id: vcpkg
@@ -177,24 +172,26 @@ jobs:
     - name: Create Build Environment
       # Some projects don't allow in-source building, so create a separate build directory
       # We'll use this as our working directory for all subsequent commands
-      run: cmake -E make_directory ${{runner.workspace}}/build
+      run: cmake -E make_directory C:\build
+
+    - name: Add VCPKG libs to environment
+      run: |
+        Add-Content $env:GITHUB_PATH "${{runner.workspace}}\silkworm\vcpkg\installed\x64-windows\bin"
+        Add-Content $env:GITHUB_ENV "INCLUDE=${{runner.workspace}}\silkworm\vcpkg\installed\x64-windows\include"
 
     - name: Configure CMake
-      working-directory: ${{runner.workspace}}/build
-      run: |
-        echo "${{runner.workspace}}\silkworm\vcpkg\installed\x64-windows\bin" >> $GITHUB_PATH
-        $env:INCLUDE += ';${{runner.workspace}}\silkworm\vcpkg\installed\x64-windows\include'
-        cmake ..\silkworm -DCMAKE_BUILD_TYPE=${{ matrix.config.build_type }}
+      working-directory: C:\build
+      run: cmake ${{runner.workspace}}\silkworm -DCMAKE_BUILD_TYPE=${{ matrix.config.build_type }}
 
     - name: Build
-      working-directory: ${{runner.workspace}}/build
+      working-directory: C:\build
       # Execute the build. You can specify a specific target with "--target <NAME>"
       run: cmake --build . --config ${{ matrix.config.build_type }} -j 2
 
     - name: Test
-      working-directory: ${{runner.workspace}}/build
+      working-directory: C:\build
       run: |
-        cmd/test/core_test
-        cmd/test/node_test
-        cmd/test/consensus --threads 4
-        cmd/test/sentry_test
+        cmd/test/${{ matrix.config.build_type }}/core_test
+        cmd/test/${{ matrix.config.build_type }}/node_test
+        cmd/test/${{ matrix.config.build_type }}/consensus --threads 4
+        cmd/test/${{ matrix.config.build_type }}/sentry_test

@@ -17,7 +17,8 @@
 #include "peer_manager.hpp"
 
 #include <boost/asio/co_spawn.hpp>
-#include <boost/asio/detached.hpp>
+#include <boost/system/errc.hpp>
+#include <boost/system/system_error.hpp>
 
 #include <silkworm/common/log.hpp>
 #include <silkworm/sentry/common/awaitable_wait_for_all.hpp>
@@ -30,7 +31,10 @@ using namespace boost::asio;
 awaitable<void> PeerManager::start(rlpx::Server& server, rlpx::Client& client) {
     using namespace common::awaitable_wait_for_all;
 
-    auto start = start_in_strand(server.peer_channel()) && start_in_strand(client.peer_channel());
+    auto start =
+        start_in_strand(server.peer_channel()) &&
+        start_in_strand(client.peer_channel()) &&
+        peer_tasks_.wait();
     co_await co_spawn(strand_, std::move(start), use_awaitable);
 }
 
@@ -40,13 +44,19 @@ awaitable<void> PeerManager::start_in_strand(common::Channel<std::shared_ptr<rlp
         auto peer = co_await peer_channel.receive();
         peers_.push_back(peer);
         on_peer_added(peer);
-        co_spawn(strand_, start_peer(peer), detached);
+        peer_tasks_.spawn(strand_, start_peer(peer));
     }
 }
 
 boost::asio::awaitable<void> PeerManager::start_peer(const std::shared_ptr<rlpx::Peer>& peer) {
     try {
         co_await rlpx::Peer::start(peer);
+    } catch (const boost::system::system_error& ex) {
+        if (ex.code() == boost::system::errc::operation_canceled) {
+            log::Debug() << "PeerManager::start_peer Peer::start cancelled";
+        } else {
+            log::Error() << "PeerManager::start_peer Peer::start system_error: " << ex.what();
+        }
     } catch (const std::exception& ex) {
         log::Error() << "PeerManager::start_peer Peer::start exception: " << ex.what();
     }

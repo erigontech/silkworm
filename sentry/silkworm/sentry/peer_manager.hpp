@@ -28,6 +28,7 @@
 #include <boost/asio/strand.hpp>
 
 #include <silkworm/sentry/common/channel.hpp>
+#include <silkworm/sentry/common/task_group.hpp>
 #include <silkworm/sentry/rlpx/client.hpp>
 #include <silkworm/sentry/rlpx/peer.hpp>
 #include <silkworm/sentry/rlpx/server.hpp>
@@ -38,8 +39,9 @@ class PeerManagerObserver;
 
 class PeerManager {
   public:
-    explicit PeerManager(boost::asio::io_context& io_context)
-        : strand_(boost::asio::make_strand(io_context)) {}
+    PeerManager(boost::asio::io_context& io_context, size_t max_peers)
+        : strand_(boost::asio::make_strand(io_context)),
+          peer_tasks_(strand_, max_peers) {}
 
     boost::asio::awaitable<void> start(rlpx::Server& server, rlpx::Client& client);
 
@@ -63,6 +65,7 @@ class PeerManager {
 
     std::list<std::shared_ptr<rlpx::Peer>> peers_;
     boost::asio::strand<boost::asio::io_context::executor_type> strand_;
+    common::TaskGroup peer_tasks_;
 
     std::list<std::weak_ptr<PeerManagerObserver>> observers_;
     std::mutex observers_mutex_;

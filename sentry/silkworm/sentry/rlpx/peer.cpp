@@ -17,9 +17,9 @@
 #include "peer.hpp"
 
 #include <boost/asio/co_spawn.hpp>
-#include <boost/asio/detached.hpp>
 #include <boost/asio/error.hpp>
 #include <boost/asio/experimental/channel_error.hpp>
+#include <boost/system/errc.hpp>
 #include <boost/system/system_error.hpp>
 #include <gsl/util>
 
@@ -35,7 +35,10 @@ Peer::~Peer() {
 }
 
 boost::asio::awaitable<void> Peer::start(const std::shared_ptr<Peer>& peer) {
-    return boost::asio::co_spawn(peer->strand_, Peer::handle(peer), boost::asio::use_awaitable);
+    using namespace common::awaitable_wait_for_all;
+
+    auto start = Peer::handle(peer) && Peer::send_message_tasks_wait(peer);
+    return boost::asio::co_spawn(peer->strand_, std::move(start), boost::asio::use_awaitable);
 }
 
 boost::asio::awaitable<void> Peer::handle(std::shared_ptr<Peer> peer) {
@@ -84,6 +87,9 @@ boost::asio::awaitable<void> Peer::handle() {
         } else if (ex.code() == boost::asio::error::broken_pipe) {
             log::Debug() << "Peer::handle broken pipe";
             co_return;
+        } else if (ex.code() == boost::system::errc::operation_canceled) {
+            log::Debug() << "Peer::handle cancelled";
+            co_return;
         }
         log::Error() << "Peer::handle system_error: " << ex.what();
         throw;
@@ -102,8 +108,12 @@ void Peer::close() {
     }
 }
 
-void Peer::send_message_detached(const std::shared_ptr<Peer>& peer, const common::Message& message) {
-    boost::asio::co_spawn(peer->strand_, Peer::send_message(peer, message), boost::asio::detached);
+void Peer::post_message(const std::shared_ptr<Peer>& peer, const common::Message& message) {
+    peer->send_message_tasks_.spawn(peer->strand_, Peer::send_message(peer, message));
+}
+
+boost::asio::awaitable<void> Peer::send_message_tasks_wait(std::shared_ptr<Peer> self) {
+    co_await self->send_message_tasks_.wait();
 }
 
 boost::asio::awaitable<void> Peer::send_message(std::shared_ptr<Peer> peer, common::Message message) {
@@ -111,6 +121,13 @@ boost::asio::awaitable<void> Peer::send_message(std::shared_ptr<Peer> peer, comm
         co_await peer->send_message(std::move(message));
     } catch (const DisconnectedError& ex) {
         log::Debug() << "Peer::send_message: " << ex.what();
+    } catch (const boost::system::system_error& ex) {
+        if (ex.code() == boost::system::errc::operation_canceled) {
+            log::Debug() << "Peer::send_message cancelled";
+            co_return;
+        }
+        log::Error() << "Peer::send_message system_error: " << ex.what();
+        throw;
     } catch (const std::exception& ex) {
         log::Error() << "Peer::send_message exception: " << ex.what();
         throw;

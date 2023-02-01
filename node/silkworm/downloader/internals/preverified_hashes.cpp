@@ -21,13 +21,15 @@
 extern const uint64_t* preverified_hashes_mainnet_data();
 extern size_t sizeof_preverified_hashes_mainnet_data();
 extern uint64_t preverified_hashes_mainnet_height();
+extern uint64_t preverified_hashes_mainnet_step();
 
 namespace silkworm {
 
 PreverifiedHashes PreverifiedHashes::none = {};
 
 void load_preverified_hashes(PreverifiedHashes& destination, const uint64_t* (*preverified_hashes_data)(),
-                             size_t (*sizeof_preverified_hashes_data)(), uint64_t (*preverified_hashes_height)()) {
+                             size_t (*sizeof_preverified_hashes_data)(), uint64_t (*preverified_hashes_height)(),
+                             uint64_t (*preverified_hashes_step)()) {
     auto data_size = sizeof_preverified_hashes_data();
     if (data_size == 0) return;
 
@@ -39,6 +41,7 @@ void load_preverified_hashes(PreverifiedHashes& destination, const uint64_t* (*p
     }
 
     destination.height = preverified_hashes_height();
+    destination.step = preverified_hashes_step();
 }
 
 PreverifiedHashes PreverifiedHashes::load(uint64_t chain_id) {
@@ -50,7 +53,7 @@ PreverifiedHashes PreverifiedHashes::load(uint64_t chain_id) {
 
     if (chain_id == 1) {
         load_preverified_hashes(result, preverified_hashes_mainnet_data, sizeof_preverified_hashes_mainnet_data,
-                                preverified_hashes_mainnet_height);
+                                preverified_hashes_mainnet_height, preverified_hashes_mainnet_step);
     }
 
     return result;
@@ -66,6 +69,10 @@ uint64_t PreverifiedHashes::max_height(uint64_t chain_id) {
     }
 
     return 0;
+}
+
+bool PreverifiedHashes::contains(const evmc::bytes32& hash) const {
+    return hashes.find(hash) != hashes.end();
 }
 
 }  // namespace silkworm

@@ -138,9 +138,11 @@ class HeaderChain {
     auto add_anchor_if_not_present(const BlockHeader& header, PeerId, bool check_limits)
         -> std::tuple<std::shared_ptr<Anchor>, Pre_Existing>;
     void mark_as_preverified(std::shared_ptr<Link>);
+    void compute_last_preverified_hash();
     size_t anchors_within_range(BlockNum max);
-    BlockNum lowest_anchor_within_range(BlockNum bottom, BlockNum top);
+    std::optional<BlockNum> lowest_anchor_within_range(BlockNum bottom, BlockNum top);
     std::shared_ptr<Anchor> highest_anchor();
+    void set_target_block(BlockNum);
 
     enum VerificationResult {
         Preverified,
@@ -165,6 +167,7 @@ class HeaderChain {
     std::optional<BlockNum> target_block_;
     std::set<Hash> bad_headers_;
     const PreverifiedHashes* preverified_hashes_;  // Set of hashes that are known to belong to canonical chain
+    BlockNum last_preverified_hash_{0};
     using Ignore = int;
     lru_cache<Hash, Ignore> seen_announces_;
     std::vector<Announce> announces_to_do_;

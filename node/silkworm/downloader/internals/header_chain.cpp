@@ -16,6 +16,8 @@
 
 #include "header_chain.hpp"
 
+#include <gsl/util>
+
 #include <silkworm/common/as_range.hpp>
 #include <silkworm/common/environment.hpp>
 #include <silkworm/common/log.hpp>
@@ -51,14 +53,26 @@ HeaderChain::HeaderChain(ConsensusEnginePtr consensus_engine)
     // User can specify to stop downloading process at some block
     const auto stop_at_block = Environment::get_stop_at_block();
     if (stop_at_block.has_value()) {
-        target_block_ = stop_at_block;
-        top_seen_height_ = target_block_.value();  // needed if no header announcements on p2p network
+        set_target_block(stop_at_block.value());
         SILK_TRACE << "HeaderChain target block=" << target_block_.value();
     }
 
     RandomNumber random(100'000'000, 1'000'000'000);
     request_id_prefix = random.generate_one();
     SILK_TRACE << "HeaderChain: request id prefix=" << request_id_prefix;
+}
+
+void HeaderChain::set_target_block(BlockNum target_block) {
+    target_block_ = target_block;
+    top_seen_height_ = target_block;  // needed if no header announcements on p2p network
+
+    compute_last_preverified_hash();
+}
+
+void HeaderChain::compute_last_preverified_hash() {
+    last_preverified_hash_ = preverified_hashes_->height;
+    if (target_block_)
+        last_preverified_hash_ = (*target_block_ / preverified_hashes_->step) * preverified_hashes_->step;
 }
 
 BlockNum HeaderChain::highest_block_in_db() const { return highest_in_db_; }
@@ -140,9 +154,8 @@ Headers HeaderChain::withdraw_stable_headers() {
         assessing_list.pop();
 
         // If it is in the pre-verified headers range do not verify it, wait for pre-verification
-        if (link->blockHeight <= preverified_hashes_->height && !link->preverified) {
+        if (link->blockHeight <= last_preverified_hash_ && !link->preverified) {
             insert_list_.push(link);
-            SILK_TRACE << "HeaderChain: wait for pre-verification of " << link->blockHeight;
             continue;  // header should be pre-verified, but not yet, try again later
         }
 
@@ -269,66 +282,78 @@ auto HeaderChain::anchor_skeleton_request(time_point_t tp, seconds_t timeout)
     -> std::optional<GetBlockHeadersPacket66> {
     using namespace std::chrono_literals;
 
-    if (anchors_.size() > 64) {
-        skeleton_condition_ = "busy";
-        return std::nullopt;
-    }
-
     // if last skeleton request was too recent, do not request another one
     if (tp - last_skeleton_request_ < timeout) {
         skeleton_condition_ = "too recent";
         return std::nullopt;
     }
 
+    last_skeleton_request_ = tp;
+
     // BlockNum top = target_height ? std::min(top_seen_height_, *target_height) : top_seen_height_;
     BlockNum top = target_block_ ? std::min(top_seen_height_, *target_block_) : top_seen_height_;
-    BlockNum bottom = highest_in_db_ + stride;  // warning: this can be inside a chain in memory
-    if (top <= bottom) {
+
+    auto at_exit = gsl::finally([&] {
+        SILK_TRACE << "HeaderChain, skeleton request, condition = " << skeleton_condition_
+                   << ", anchors = " << anchors_.size()
+                   << ", target = " << top
+                   << ", highest_in_db = " << highest_in_db_ << ")";
+    });
+
+    if (anchors_.size() > 64) {
+        skeleton_condition_ = "busy";
+        return std::nullopt;
+    }
+
+    if (top <= highest_in_db_) {
         skeleton_condition_ = "end";
         return std::nullopt;
     }
 
-    if (anchors_.size() == 0 && top - bottom < stride) {
-        // request top header only
-        GetBlockHeadersPacket66 packet{
-            generate_request_id(),
-            {top, max_len, 0,true}}
-        ;
-        return packet;
-    }
-
-    BlockNum lowest_anchor = lowest_anchor_within_range(highest_in_db_, top + 1);
+    auto lowest_anchor = lowest_anchor_within_range(highest_in_db_, top + 1);
     // using bottom variable in place of highest_in_db_ in the range is wrong because if there is an anchor under
     // bottom we issue a wrong request, f.e. if the anchor=1536 was extended down we would request again origin=1536
 
-    if (lowest_anchor <= bottom) {
-        log::Trace() << "HeaderChain, no need for skeleton request (lowest_anchor = " << lowest_anchor
-                     << ", highest_in_db = " << highest_in_db_ << ")";
-        skeleton_condition_ = "deep";
-        return std::nullopt;
+    BlockNum next_target = top;
+    if (lowest_anchor) {
+        if (*lowest_anchor - highest_in_db_ <= stride) {  // the lowest_anchor is too close to highest_in_db
+            skeleton_condition_ = "working";
+            return std::nullopt;
+        } else
+            next_target = *lowest_anchor;
+    } else {                                   // there are no anchors
+        if (top - highest_in_db_ <= stride) {  // the top is too close to highest_in_db
+            if (target_block_) {               // we are syncing to a specific block
+                skeleton_condition_ = "near the top";
+                GetBlockHeadersPacket66 packet{// request top header only
+                                               generate_request_id(),
+                                               {top, max_len, 0, true}};
+                return packet;
+            } else {
+                skeleton_condition_ = "wait tip announce";
+                return std::nullopt;
+            }
+        }
     }
 
-    BlockNum length = (lowest_anchor - bottom) / stride;
+    BlockNum length = (next_target - highest_in_db_) / stride;
 
     if (length > max_len) length = max_len;
 
     if (length == 0) {
-        log::Trace() << "HeaderChain, no need for skeleton request (lowest_anchor = " << lowest_anchor
-                     << ", highest_in_db = " << highest_in_db_ << ")";
         skeleton_condition_ = "low";
         return std::nullopt;
     }
 
     GetBlockHeadersPacket66 packet;
     packet.requestId = generate_request_id();
-    packet.request.origin = bottom;
+    packet.request.origin = highest_in_db_ + stride;
     packet.request.amount = length;
     packet.request.skip = stride - 1;
     packet.request.reverse = false;
 
     statistics_.requested_items += length;
     skeleton_condition_ = "ok";
-    last_skeleton_request_ = tp;
 
     return {packet};
 }
@@ -338,14 +363,16 @@ size_t HeaderChain::anchors_within_range(BlockNum max) {
         as_range::count_if(anchors_, [&max](const auto& anchor) { return anchor.second->blockHeight < max; }));
 }
 
-BlockNum HeaderChain::lowest_anchor_within_range(BlockNum bottom, BlockNum top) {
+std::optional<BlockNum> HeaderChain::lowest_anchor_within_range(BlockNum bottom, BlockNum top) {
     BlockNum lowest = top;
+    bool present = false;
     for (const auto& anchor : anchors_) {
         if (anchor.second->blockHeight >= bottom && anchor.second->blockHeight < lowest) {
             lowest = anchor.second->blockHeight;
+            present = true;
         }
     }
-    return lowest;
+    return present ? std::optional{lowest} : std::nullopt;
 }
 
 std::shared_ptr<Anchor> HeaderChain::highest_anchor() {
@@ -512,7 +539,7 @@ auto HeaderChain::accept_headers(const std::vector<BlockHeader>& headers, uint64
     if (headers.empty()) {
         statistics_.received_items += 1;
         statistics_.reject_causes.invalid++;
-        return {Penalty::DuplicateHeaderPenalty, request_more_headers}; // todo: use UselessPeer message
+        return {Penalty::DuplicateHeaderPenalty, request_more_headers};  // todo: use UselessPeer message
     }
 
     statistics_.received_items += headers.size();
@@ -648,8 +675,7 @@ auto HeaderChain::process_segment(const Segment& segment, bool is_a_new_block, c
     if (height > top_seen_height_) {
         if (is_a_new_block) {
             top_seen_block_height(height);
-        }
-        else if (seen_announces_.size() != 0) {
+        } else if (seen_announces_.size() != 0) {
             auto hash = highest_header->hash();
             if (seen_announces_.get(hash) != nullptr) top_seen_block_height(height);
         }
@@ -703,17 +729,17 @@ void HeaderChain::reduce_links_to(size_t limit) {
 
     invalidate(victim_anchor);
 
-    log::Info("HeaderStage") << "LinkQueue has too many links, cut down from " << initial_size << " to " << pending_links()
+    log::Info("HeaderStage") << "LinkQueue has too many links, cut down from " << initial_size
+                             << " to " << pending_links()
                              << " (removed chain bundle start=" << victim_anchor->blockHeight
                              << " end=" << victim_anchor->lastLinkHeight << ")";
 }
 
 // find_anchors tries to find the highest link the in the new segment that can be attached to an existing anchor
-auto HeaderChain::find_anchor(const Segment& segment) const
-    -> std::tuple<std::optional<std::shared_ptr<Anchor>>, Start> {
+auto HeaderChain::find_anchor(const Segment& segment) const -> std::tuple<std::optional<std::shared_ptr<Anchor>>, Start> {
     for (size_t i = 0; i < segment.size(); i++) {
-        auto a = anchors_.find(segment[i]->hash());  // todo: hash() compute the value, save cpu
-        if (a != anchors_.end()) {                   // segment[i]->hash() == anchor.parent_hash
+        auto a = anchors_.find(segment[i]->hash());
+        if (a != anchors_.end()) {  // segment[i]->hash() == anchor.parent_hash
             return {a->second, i};
         }
     }
@@ -722,8 +748,7 @@ auto HeaderChain::find_anchor(const Segment& segment) const
 }
 
 // find_link find the highest existing link (from start) that the new segment can be attached to
-auto HeaderChain::find_link(const Segment& segment, size_t start) const
-    -> std::tuple<std::optional<std::shared_ptr<Link>>, End> {
+auto HeaderChain::find_link(const Segment& segment, size_t start) const -> std::tuple<std::optional<std::shared_ptr<Link>>, End> {
     auto duplicate_link = get_link(segment[start]->hash());
     if (duplicate_link) return {std::nullopt, 0};
 
@@ -955,7 +980,8 @@ auto HeaderChain::add_anchor_if_not_present(const BlockHeader& anchor_header, Pe
             throw segment_cut_and_paste_error(
                 "precondition not meet,"
                 " new anchor too far in the past: " +
-                to_string(anchor_header.number) + ", latest header in db: " + to_string(highest_in_db_));
+                to_string(anchor_header.number) +
+                ", latest header in db: " + to_string(highest_in_db_));
         if (anchors_.size() >= anchor_limit)
             throw segment_cut_and_paste_error("too many anchors: " + to_string(anchors_.size()) +
                                               ", limit: " + to_string(anchor_limit));
@@ -999,6 +1025,7 @@ void HeaderChain::mark_as_preverified(std::shared_ptr<Link> link) {
 
 void HeaderChain::set_preverified_hashes(const PreverifiedHashes* preverified_hashes) {
     preverified_hashes_ = preverified_hashes;
+    compute_last_preverified_hash();
 }
 
 uint64_t HeaderChain::generate_request_id() {

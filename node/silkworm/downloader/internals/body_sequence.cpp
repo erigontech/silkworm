@@ -30,7 +30,7 @@ BodySequence::BodySequence() {
 
 void BodySequence::current_state(BlockNum highest_in_db) {
     highest_body_in_output_ = highest_in_db;
-
+    target_height_ = highest_in_db;
     statistics_ = {};  // reset statistics
 }
 

@@ -49,7 +49,8 @@ const ChainConfig& BlockExchange::chain_config() const { return chain_config_; }
 const PreverifiedHashes& BlockExchange::preverified_hashes() const { return preverified_hashes_; }
 SentryClient& BlockExchange::sentry() const { return sentry_; }
 BlockExchange::ResultQueue& BlockExchange::result_queue() { return results_; }
-bool BlockExchange::in_sync() { return in_sync_; }
+bool BlockExchange::in_sync() const { return in_sync_; }
+BlockNum BlockExchange::current_height() const { return current_height_; }
 
 void BlockExchange::accept(std::shared_ptr<Message> message) {
     statistics_.internal_msgs++;
@@ -135,6 +136,7 @@ void BlockExchange::execution_loop() {
             collect_bodies();
 
             in_sync_ = header_chain_.in_sync() && body_sequence_.has_completed();
+            current_height_ = body_sequence_.highest_block_in_output();
 
             // log status
             if (silkworm::log::test_verbosity(silkworm::log::Level::kDebug) && now - last_update > 30s) {

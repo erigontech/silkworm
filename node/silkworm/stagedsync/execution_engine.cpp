@@ -196,8 +196,8 @@ auto ExecutionEngine::verify_chain(Hash head_block_hash) -> VerificationResult {
     ensure_invariant(header.has_value(), "header to verify non present");
 
     // db commit policy
-    bool cycle_in_one_tx = !is_first_sync || header->number - canonical_chain_.current_head().number > 4096;
-    if (!cycle_in_one_tx)
+    bool cycle_in_one_tx = !is_first_sync && header->number - canonical_chain_.current_head().number < 4096;
+    if (cycle_in_one_tx)
         tx_.disable_commit();
 
     // the new head is on a new fork?
@@ -260,7 +260,7 @@ bool ExecutionEngine::notify_fork_choice_updated(Hash head_block_hash) {
     // db commit policy
     bool cycle_in_one_tx = !is_first_sync;
     std::unique_ptr<db::RWTxn> inner_tx{nullptr};
-    if (!cycle_in_one_tx)
+    if (cycle_in_one_tx)
         tx_.disable_commit();
 
     if (canonical_chain_.current_head().hash != head_block_hash) {  // todo for PoS: choose the corresponding overlay and do commit

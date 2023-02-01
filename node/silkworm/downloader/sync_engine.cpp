@@ -44,7 +44,8 @@ auto SyncEngine::forward_and_insert_blocks() -> NewHeight {
     RepeatedMeasure<BlockNum> downloaded_headers(initial_header_head.number);
     log::Info("Sync") << "Waiting for blocks... from=" << initial_header_head.number;
 
-    while (!is_stopping() && !block_exchange_.in_sync()) {
+    while (!is_stopping() &&
+           !(block_exchange_.in_sync() && chain_fork_view_.head_height() == block_exchange_.current_height())) {
         Blocks blocks;
 
         // wait for a batch of blocks

@@ -44,7 +44,8 @@ class BlockExchange final : public ActiveComponent {
 
     using ResultQueue = ConcurrentQueue<Blocks>;
     ResultQueue& result_queue();
-    bool in_sync();
+    bool in_sync() const;
+    BlockNum current_height() const;
 
     void accept(std::shared_ptr<Message>); /*[[thread_safe]]*/
     void execution_loop() override;        /*[[long_running]]*/
@@ -78,6 +79,7 @@ class BlockExchange final : public ActiveComponent {
     MessageQueue messages_{};  // thread safe queue where to receive messages from sentry
     std::atomic_bool in_sync_{false};
     std::atomic_bool downloading_active_{false};
+    std::atomic<BlockNum> current_height_{0};
 };
 
 }  // namespace silkworm

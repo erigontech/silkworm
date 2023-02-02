@@ -41,6 +41,22 @@ ValidationResult EngineBase::pre_validate_block_body(const Block& block, const B
         }
     }
 
+    if (rev < EVMC_SHANGHAI && block.withdrawals) {
+        return ValidationResult::kUnexpectedWithdrawals;
+    }
+    if (rev >= EVMC_SHANGHAI && !block.withdrawals) {
+        return ValidationResult::kMissingWithdrawals;
+    }
+
+    if (block.withdrawals) {
+        const evmc::bytes32 withdrawals_root{trie::root_hash(*block.withdrawals, [](Bytes& to, const Withdrawal& w) {
+            rlp::encode(to, w);
+        })};
+        if (withdrawals_root != header.withdrawals_root) {
+            return ValidationResult::kWrongWithdrawalsRoot;
+        }
+    }
+
     if (block.ommers.empty()) {
         return header.ommers_hash == kEmptyListHash ? ValidationResult::kOk : ValidationResult::kWrongOmmersHash;
     } else if (prohibit_ommers_) {
@@ -51,15 +67,6 @@ ValidationResult EngineBase::pre_validate_block_body(const Block& block, const B
     if (ByteView{ommers_hash.bytes} != ByteView{header.ommers_hash}) {
         return ValidationResult::kWrongOmmersHash;
     }
-
-    if (rev < EVMC_SHANGHAI && block.withdrawals) {
-        return ValidationResult::kUnexpectedWithdrawals;
-    }
-    if (rev >= EVMC_SHANGHAI && !block.withdrawals) {
-        return ValidationResult::kMissingWithdrawals;
-    }
-
-    // TODO(yperbasis): validate withdrawals_root
 
     return validate_ommers(block, state);
 }

@@ -79,6 +79,7 @@ enum class [[nodiscard]] ValidationResult{
     // EIP-4895: Beacon chain push withdrawals as operations
     kMissingWithdrawals,
     kUnexpectedWithdrawals,
+    kWrongWithdrawalsRoot,
 };
 
 }  // namespace silkworm

@@ -349,7 +349,7 @@ auto HeaderChain::anchor_skeleton_request(time_point_t tp, seconds_t timeout)
     packet.requestId = generate_request_id();
     packet.request.origin = highest_in_db_ + stride;
     packet.request.amount = length;
-    packet.request.skip = stride - 1;
+    packet.request.skip = length > 1 ? stride - 1 : 0;
     packet.request.reverse = false;
 
     statistics_.requested_items += length;

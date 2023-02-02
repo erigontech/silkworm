@@ -164,7 +164,12 @@ ValidationResult ExecutionProcessor::execute_block_no_post_validation(std::vecto
         ++receipt_it;
     }
 
-    consensus_engine_.finalize(state_, block, evm_.revision());
+    const evmc_revision rev{evm_.revision()};
+    consensus_engine_.finalize(state_, block, rev);
+
+    if (rev >= EVMC_SPURIOUS_DRAGON) {
+        state_.destruct_touched_dead();
+    }
 
     return ValidationResult::kOk;
 }

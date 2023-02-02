@@ -17,6 +17,7 @@
 #include "hello_message.hpp"
 
 #include <sstream>
+#include <stdexcept>
 
 #include <silkworm/common/as_range.hpp>
 #include <silkworm/rlp/decode.hpp>

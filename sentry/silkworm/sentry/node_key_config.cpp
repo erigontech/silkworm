@@ -17,6 +17,7 @@
 #include "node_key_config.hpp"
 
 #include <fstream>
+#include <stdexcept>
 
 #include <silkworm/common/util.hpp>
 

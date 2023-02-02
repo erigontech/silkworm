@@ -16,6 +16,8 @@
 
 #include "access_layer.hpp"
 
+#include <stdexcept>
+
 #include <catch2/catch.hpp>
 
 #include <silkworm/chain/genesis.hpp>

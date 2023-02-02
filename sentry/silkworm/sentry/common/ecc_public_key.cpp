@@ -16,6 +16,8 @@
 
 #include "ecc_public_key.hpp"
 
+#include <stdexcept>
+
 #include <silkworm/common/secp256k1_context.hpp>
 #include <silkworm/common/util.hpp>
 

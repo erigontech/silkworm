@@ -21,6 +21,7 @@
 
 #include <silkworm/common/endian.hpp>
 #include <silkworm/common/util.hpp>
+#include <silkworm/snapshot/repository.hpp>
 #include <silkworm/test/files.hpp>
 
 namespace silkworm::test {
@@ -116,19 +117,31 @@ struct SnapshotBody {
 class TemporarySnapshotFile {
   public:
     explicit TemporarySnapshotFile(const SnapshotHeader& header, const SnapshotBody& body = {}) {
-        silkworm::Bytes data{};
+        Bytes data{};
         header.encode(data);
         body.encode(data);
+        file_.write(data);
+    }
+    TemporarySnapshotFile(const std::filesystem::path& tmp_dir,
+                          const std::string& filename,
+                          const SnapshotHeader& header,
+                          const SnapshotBody& body = {})
+        : file_(tmp_dir, filename) {
+        Bytes data{};
+        header.encode(data);
+        body.encode(data);
+        file_.write(data);
+    }
+    TemporarySnapshotFile(const std::filesystem::path& tmp_dir, const std::string& filename)
+        : TemporarySnapshotFile(tmp_dir, filename, {}, {}) {}
+    TemporarySnapshotFile(const std::string& filename, ByteView data)
+        : file_(TemporaryDirectory::get_os_temporary_path(), filename) {
         file_.write(data);
     }
     TemporarySnapshotFile(const std::string& filename, const SnapshotHeader& header, const SnapshotBody& body = {})
-        : file_(filename) {
-        silkworm::Bytes data{};
-        header.encode(data);
-        body.encode(data);
-        file_.write(data);
-    }
-    explicit TemporarySnapshotFile(const std::string& filename) : TemporarySnapshotFile(filename, {}, {}) {}
+        : TemporarySnapshotFile(TemporaryDirectory::get_os_temporary_path(), filename, header, body) {}
+    explicit TemporarySnapshotFile(const std::string& filename)
+        : TemporarySnapshotFile(TemporaryDirectory::get_os_temporary_path(), filename, {}, {}) {}
 
     const std::filesystem::path& path() const { return file_.path(); }
 
@@ -153,4 +166,23 @@ class HelloWorldSnapshotFile : public TemporarySnapshotFile {
                   *from_hex("0168656C6C6F2C20776F726C64")  // 0x01: position 0x68656C6C6F2C20776F726C64: "hello, world"
               }} {}
 };
+
+class HeaderSnapshotPath : public SnapshotPath {
+  public:
+    HeaderSnapshotPath(std::filesystem::path path, BlockNum from, BlockNum to)
+        : SnapshotPath(std::move(path), /*.version=*/1, from, to, SnapshotType::headers) {}
+};
+
+class BodySnapshotPath : public SnapshotPath {
+  public:
+    BodySnapshotPath(std::filesystem::path path, BlockNum from, BlockNum to)
+        : SnapshotPath(std::move(path), /*.version=*/1, from, to, SnapshotType::bodies) {}
+};
+
+class TransactionSnapshotPath : public SnapshotPath {
+  public:
+    TransactionSnapshotPath(std::filesystem::path path, BlockNum from, BlockNum to)
+        : SnapshotPath(std::move(path), /*.version=*/1, from, to, SnapshotType::transactions) {}
+};
+
 }  // namespace silkworm::test

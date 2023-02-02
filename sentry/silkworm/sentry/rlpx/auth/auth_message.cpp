@@ -16,6 +16,8 @@
 
 #include "auth_message.hpp"
 
+#include <stdexcept>
+
 #include <silkworm/common/endian.hpp>
 #include <silkworm/common/secp256k1_context.hpp>
 #include <silkworm/rlp/decode.hpp>

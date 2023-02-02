@@ -18,12 +18,16 @@
 
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/use_awaitable.hpp>
+#include <boost/system/errc.hpp>
+#include <boost/system/system_error.hpp>
 
 #include <silkworm/common/log.hpp>
 #include <silkworm/sentry/common/socket_stream.hpp>
+#include <silkworm/sentry/common/timeout.hpp>
 
 namespace silkworm::sentry::rlpx {
 
+using namespace std::chrono_literals;
 using namespace boost::asio;
 
 awaitable<void> Client::start(
@@ -46,7 +50,27 @@ awaitable<void> Client::start(
     const ip::tcp::endpoint& endpoint = *endpoints.cbegin();
 
     common::SocketStream stream{client_context};
-    co_await stream.socket().async_connect(endpoint, use_awaitable);
+
+    bool is_connected = false;
+    while (!is_connected) {
+        try {
+            co_await stream.socket().async_connect(endpoint, use_awaitable);
+            is_connected = true;
+        } catch (const boost::system::system_error& ex) {
+            if (ex.code() == boost::system::errc::operation_canceled)
+                throw;
+            log::Debug() << "RLPx client connect exception: " << ex.what();
+        }
+        if (!is_connected) {
+            stream = common::SocketStream{client_context};
+            log::Warning() << "Failed to connect to " << peer_url.to_string() << ", reconnecting...";
+            common::Timeout timeout(10s);
+            try {
+                co_await timeout();
+            } catch (const common::Timeout::ExpiredError&) {
+            }
+        }
+    }
 
     auto remote_endpoint = stream.socket().remote_endpoint();
     log::Debug() << "RLPx client connected to "

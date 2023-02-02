@@ -16,6 +16,8 @@
 
 #include "mdbx.hpp"
 
+#include <stdexcept>
+
 namespace silkworm::db {
 
 //! \brief Returns data of current cursor position or moves it to the beginning or the end of the table based on

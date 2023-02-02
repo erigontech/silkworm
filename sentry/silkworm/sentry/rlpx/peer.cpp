@@ -19,17 +19,23 @@
 #include <boost/asio/co_spawn.hpp>
 #include <boost/asio/detached.hpp>
 #include <boost/asio/error.hpp>
+#include <boost/asio/experimental/channel_error.hpp>
 #include <boost/system/system_error.hpp>
+#include <gsl/util>
 
 #include <silkworm/common/log.hpp>
-#include <silkworm/sentry/common/awaitable_wait_for_one.hpp>
+#include <silkworm/sentry/common/awaitable_wait_for_all.hpp>
 
 #include "auth/handshake.hpp"
 
 namespace silkworm::sentry::rlpx {
 
-void Peer::start_detached(const std::shared_ptr<Peer>& peer) {
-    boost::asio::co_spawn(peer->strand_, Peer::handle(peer), boost::asio::detached);
+Peer::~Peer() {
+    log::Debug() << "silkworm::sentry::rlpx::Peer::~Peer";
+}
+
+boost::asio::awaitable<void> Peer::start(const std::shared_ptr<Peer>& peer) {
+    return boost::asio::co_spawn(peer->strand_, Peer::handle(peer), boost::asio::use_awaitable);
 }
 
 boost::asio::awaitable<void> Peer::handle(std::shared_ptr<Peer> peer) {
@@ -37,7 +43,9 @@ boost::asio::awaitable<void> Peer::handle(std::shared_ptr<Peer> peer) {
 }
 
 boost::asio::awaitable<void> Peer::handle() {
-    using namespace common::awaitable_wait_for_one;
+    using namespace common::awaitable_wait_for_all;
+
+    auto _ = gsl::finally([this] { this->close(); });
 
     try {
         log::Debug() << "Peer::handle";
@@ -58,24 +66,23 @@ boost::asio::awaitable<void> Peer::handle() {
 
         protocol_->handle_peer_first_message(first_message);
 
-        co_await (send_messages(message_stream) || receive_messages(message_stream));
+        co_await (send_messages(message_stream) && receive_messages(message_stream));
 
     } catch (const auth::Handshake::DisconnectError&) {
-        // TODO: handle disconnect
         log::Debug() << "Peer::handle DisconnectError";
         co_return;
     } catch (const Protocol::IncompatiblePeerError&) {
-        // TODO: handle disconnect: send reason 0x03 Useless peer
         log::Debug() << "Peer::handle IncompatiblePeerError";
         co_return;
     } catch (const boost::system::system_error& ex) {
         if (ex.code() == boost::asio::error::eof) {
-            // TODO: handle disconnect
             log::Debug() << "Peer::handle EOF";
             co_return;
         } else if (ex.code() == boost::asio::error::connection_reset) {
-            // TODO: handle disconnect
             log::Debug() << "Peer::handle connection reset";
+            co_return;
+        } else if (ex.code() == boost::asio::error::broken_pipe) {
+            log::Debug() << "Peer::handle broken pipe";
             co_return;
         }
         log::Error() << "Peer::handle system_error: " << ex.what();
@@ -86,19 +93,42 @@ boost::asio::awaitable<void> Peer::handle() {
     }
 }
 
+void Peer::close() {
+    try {
+        send_message_channel_.close();
+        receive_message_channel_.close();
+    } catch (const std::exception& ex) {
+        log::Warning() << "Peer::close exception: " << ex.what();
+    }
+}
+
 void Peer::send_message_detached(const std::shared_ptr<Peer>& peer, const common::Message& message) {
     boost::asio::co_spawn(peer->strand_, Peer::send_message(peer, message), boost::asio::detached);
 }
 
 boost::asio::awaitable<void> Peer::send_message(std::shared_ptr<Peer> peer, common::Message message) {
-    co_await peer->send_message(message);
+    try {
+        co_await peer->send_message(std::move(message));
+    } catch (const DisconnectedError& ex) {
+        log::Debug() << "Peer::send_message: " << ex.what();
+    } catch (const std::exception& ex) {
+        log::Error() << "Peer::send_message exception: " << ex.what();
+        throw;
+    }
 }
 
 boost::asio::awaitable<void> Peer::send_message(common::Message message) {
-    co_await send_message_channel_.send(message);
+    try {
+        co_await send_message_channel_.send(std::move(message));
+    } catch (const boost::system::system_error& ex) {
+        if (ex.code() == boost::asio::experimental::error::channel_closed)
+            throw DisconnectedError();
+        throw;
+    }
 }
 
 boost::asio::awaitable<void> Peer::send_messages(framing::MessageStream& message_stream) {
+    // loop until message_stream exception
     while (true) {
         auto message = co_await send_message_channel_.receive();
         co_await message_stream.send(std::move(message));
@@ -106,10 +136,17 @@ boost::asio::awaitable<void> Peer::send_messages(framing::MessageStream& message
 }
 
 boost::asio::awaitable<common::Message> Peer::receive_message() {
-    return receive_message_channel_.receive();
+    try {
+        co_return (co_await receive_message_channel_.receive());
+    } catch (const boost::system::system_error& ex) {
+        if (ex.code() == boost::asio::experimental::error::channel_closed)
+            throw DisconnectedError();
+        throw;
+    }
 }
 
 boost::asio::awaitable<void> Peer::receive_messages(framing::MessageStream& message_stream) {
+    // loop until message_stream exception
     while (true) {
         auto message = co_await message_stream.receive();
         co_await receive_message_channel_.send(std::move(message));

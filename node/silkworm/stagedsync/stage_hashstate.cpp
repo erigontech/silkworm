@@ -16,6 +16,8 @@
 
 #include "stage_hashstate.hpp"
 
+#include <stdexcept>
+
 #include <silkworm/common/endian.hpp>
 #include <silkworm/db/access_layer.hpp>
 

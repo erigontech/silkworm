@@ -18,6 +18,7 @@
 
 #include <cassert>
 #include <memory>
+#include <stdexcept>
 
 #include <silkworm/common/endian.hpp>
 #include <silkworm/common/secp256k1_context.hpp>

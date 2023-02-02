@@ -33,15 +33,14 @@ constexpr int kTestSalt{1};
 TEST_CASE("RecSplit8", "[silkworm][recsplit]") {
     test::SetLogVerbosityGuard guard{log::Level::kNone};
     test::TemporaryFile index_file;
+    RecSplitSettings settings{
+        .keys_count = 2,
+        .bucket_size = 10,
+        .index_path = index_file.path(),
+        .base_data_id = 0};
+    RecSplit8 rs{settings, /*.salt=*/kTestSalt};
 
     SECTION("keys") {
-        RecSplit8 rs{
-            /*.keys_count=*/2,
-            /*.bucket_size=*/10,
-            /*.index_path=*/index_file.path(),
-            /*.base_data_id=*/0,
-            /*.salt=*/kTestSalt,
-        };
         CHECK_NOTHROW(rs.add_key("first_key", 0));
         CHECK_THROWS_AS(rs.build(), std::logic_error);
         CHECK_NOTHROW(rs.add_key("second_key", 0));
@@ -49,13 +48,6 @@ TEST_CASE("RecSplit8", "[silkworm][recsplit]") {
     }
 
     SECTION("duplicated keys") {
-        RecSplit8 rs{
-            /*.keys_count=*/2,
-            /*.bucket_size=*/10,
-            /*.index_path=*/index_file.path(),
-            /*.base_data_id=*/0,
-            /*.salt=*/kTestSalt,
-        };
         CHECK_NOTHROW(rs.add_key("first_key", 0));
         CHECK_NOTHROW(rs.add_key("first_key", 0));
         CHECK(rs.build() == true /*collision_detected*/);
@@ -106,13 +98,12 @@ TEST_CASE("RecSplit4: keys=1000 buckets=128", "[silkworm][recsplit]") {
         hashed_keys.push_back({test::next_pseudo_random(), test::next_pseudo_random()});
     }
 
-    RecSplit4 rs{
-        /*.keys_count=*/hashed_keys.size(),
-        /*.bucket_size=*/kTestBucketSize,
-        /*.index_path=*/index_file.path(),
-        /*.base_data_id=*/0,
-        /*.salt=*/kTestSalt,
-    };
+    RecSplitSettings settings{
+        .keys_count = hashed_keys.size(),
+        .bucket_size = kTestBucketSize,
+        .index_path = index_file.path(),
+        .base_data_id = 0};
+    RecSplit4 rs{settings, /*.salt=*/kTestSalt};
 
     SECTION("random_hash128 KO: not built") {
         for (const auto& hk : hashed_keys) {
@@ -155,13 +146,12 @@ TEST_CASE("RecSplit4: multiple keys-buckets", "[silkworm][recsplit]") {
                 hashed_keys.push_back({test::next_pseudo_random(), test::next_pseudo_random()});
             }
 
-            RecSplit4 rs{
-                /*.keys_count=*/hashed_keys.size(),
-                /*.bucket_size=*/bucket_size,
-                /*.index_path=*/index_file.path(),
-                /*.base_data_id=*/0,
-                /*.salt=*/kTestSalt,
-            };
+            RecSplitSettings settings{
+                .keys_count = key_count,
+                .bucket_size = bucket_size,
+                .index_path = index_file.path(),
+                .base_data_id = 0};
+            RecSplit4 rs{settings, /*.salt=*/kTestSalt};
 
             for (const auto& hk : hashed_keys) {
                 rs.add_key(hk, 0);

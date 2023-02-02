@@ -16,6 +16,8 @@
 
 #include "status_message.hpp"
 
+#include <stdexcept>
+
 #include <silkworm/rlp/decode.hpp>
 #include <silkworm/rlp/encode_vector.hpp>
 

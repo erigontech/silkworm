@@ -16,6 +16,8 @@
 
 #include "bitmap.hpp"
 
+#include <stdexcept>
+
 #include <silkworm/common/binary_search.hpp>
 #include <silkworm/common/cast.hpp>
 #include <silkworm/concurrency/signal_handler.hpp>

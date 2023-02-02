@@ -104,6 +104,27 @@ bool BodySnapshot::for_each_body(const Walker& walker) {
     });
 }
 
+std::pair<uint64_t, uint64_t> BodySnapshot::compute_txs_amount() {
+    uint64_t first_tx_id{0}, last_tx_id{0}, last_txs_amount{0};
+
+    const bool read_ok = for_each_body([&](BlockNum number, const db::detail::BlockBodyForStorage* body) {
+        if (number == block_from_) {
+            first_tx_id = body->base_txn_id;
+        }
+        if (number == block_to_ - 1) {
+            last_tx_id = body->base_txn_id;
+            last_txs_amount = body->txn_count;
+        }
+        return true;
+    });
+    if (!read_ok) throw std::runtime_error{"error computing txs amount in: " + path_.string()};
+    if (first_tx_id == 0 && last_tx_id == 0) throw std::runtime_error{"empty body snapshot: " + path_.string()};
+
+    SILK_DEBUG << "first_tx_id: " << first_tx_id << " last_tx_id: " << last_tx_id << " last_txs_amount: " << last_txs_amount;
+
+    return {first_tx_id, last_tx_id + last_txs_amount - first_tx_id};
+}
+
 void BodySnapshot::reopen_index() {
     // TODO(canepat): implement
 }

@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include <stdexcept>
+
 #include <cbor/cbor.h>
 
 #include <silkworm/db/bitmap.hpp>

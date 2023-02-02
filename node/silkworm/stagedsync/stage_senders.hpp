@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <future>
 #include <memory>
 #include <mutex>
 #include <vector>
@@ -56,7 +57,7 @@ class Senders final : public Stage {
 
     Stage::Result read_canonical_hashes(db::ROTxn& txn, BlockNum from, BlockNum to) noexcept;
     Stage::Result add_to_batch(BlockNum block_num, std::vector<Transaction>&& transactions);
-    void recover_batch(secp256k1_context* context, BlockNum from);
+    void recover_batch(thread_pool& worker_pool, secp256k1_context* context, BlockNum from);
     void collect_senders(BlockNum from);
     void collect_senders(BlockNum from, std::shared_ptr<AddressRecoveryBatch>& batch);
     void store_senders(db::RWTxn& txn);
@@ -81,9 +82,6 @@ class Senders final : public Stage {
 
     //! ETL collector writing recovered senders in bulk
     etl::Collector collector_;
-
-    //! The pool of worker thread crunching the address recovery tasks
-    thread_pool worker_pool_;
 
     // Stats
     std::mutex mutex_{};

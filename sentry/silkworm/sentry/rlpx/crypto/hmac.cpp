@@ -16,6 +16,8 @@
 
 #include "hmac.hpp"
 
+#include <stdexcept>
+
 #include <gsl/util>
 #include <openssl/hmac.h>
 

@@ -113,6 +113,7 @@ namespace rlp {
         return decode_transaction(from, to, Eip2718Wrapping::kString);
     }
 
+    DecodingResult decode_transaction_header_and_type(ByteView& from, Header& header, Transaction::Type& type) noexcept;
 }  // namespace rlp
 
 }  // namespace silkworm

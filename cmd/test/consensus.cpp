@@ -65,9 +65,6 @@ static const std::vector<fs::path> kFailingTests{
     // https://github.com/ethereum/go-ethereum/blob/v1.10.18/tests/transaction_test.go#L31
     kTransactionDir / "ttGasLimit" / "TransactionWithGasLimitxPriceOverflow.json",
 
-    // Waiting for the tests to be refilled with Shanghai instead of Merge+3855
-    kBlockchainDir / "GeneralStateTests" / "EIPTests" / "stEIP3855",
-
     // EOF is not implemented yet
     kBlockchainDir / "GeneralStateTests" / "EIPTests" / "stEOF",
 };

@@ -28,7 +28,7 @@ ChainForkView::ChainForkView(ChainHead head, stagedsync::ExecutionEngine& ee)
 
 bool ChainForkView::head_changed() const { return current_head_.total_difficulty != initial_head_.total_difficulty; }
 
-BlockNum ChainForkView::head_height() const { return current_head_.number; }
+BlockNum ChainForkView::head_height() const { return current_head_.height; }
 
 Hash ChainForkView::head_hash() const { return current_head_.hash; }
 
@@ -58,7 +58,7 @@ Total_Difficulty ChainForkView::add(const BlockHeader& header) {  // try to modu
     // Now we can decide whether this header will create a change in the canonical head
     if (td > current_head_.total_difficulty) {
         // Save progress
-        current_head_.number = height;
+        current_head_.height = height;
         current_head_.hash = hash;
         current_head_.total_difficulty = td;  // this makes sure we end up choosing the chain with the max total difficulty
     }

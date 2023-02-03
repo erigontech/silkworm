@@ -23,12 +23,57 @@ limitations under the License.
 
 namespace silkworm::chainsync {
 
+static void ensure_invariant(bool condition, std::string message) {
+    if (!condition)
+        throw std::logic_error("Consensus invariant violation: " + message);
+}
+
 SyncEngine::SyncEngine(BlockExchange& be, stagedsync::ExecutionEngine& ee)
     : block_exchange_{be},
       exec_engine_{ee},
-      chain_fork_view_{ee.get_headers_head(), ee} {
+      chain_fork_view_{ee.get_canonical_head(), ee} {
     // BlockExchange need a starting point to start downloading from
     block_exchange_.initial_state(exec_engine_.get_last_headers(65536));
+}
+
+auto SyncEngine::resume() -> NewHeight {
+    auto canonical_head = exec_engine_.get_canonical_head();
+    auto block_progress = exec_engine_.get_block_progress();
+
+    ensure_invariant(block_progress < canonical_head.height, "canonical head beyond block progress");
+
+    // if canonical and header progress match we are sure that last cycle was completed
+
+    if (block_progress == canonical_head.height) {
+        return {canonical_head.height, canonical_head.hash};
+    }
+
+    // else we have to check if the mismatch is due only to consensus rules or the last cycle was not completed
+
+    auto farther_forking_point = find_farther_forking_point(block_progress);
+    ensure_invariant(farther_forking_point.has_value(), "");
+
+    auto prev_headers = exec_engine_.get_last_headers(block_progress - *farther_forking_point + 1);
+    as_range::for_each(prev_headers, [&, this](const auto& header) {
+        chain_fork_view_.add(header);
+    });
+
+    return {chain_fork_view_.head().height, chain_fork_view_.head().hash};
+}
+
+std::optional<BlockNum> SyncEngine::find_farther_forking_point(BlockNum starting_point) {
+    auto top_headers = exec_engine_.get_headers_at(starting_point);  // todo: are enough?
+    BlockNum farther_forking_point{std::numeric_limits<BlockNum>::max()};
+    for(auto& header : top_headers) {
+        auto forking_point = exec_engine_.get_forking_point(header.hash());
+        if (forking_point.has_value()) {
+            farther_forking_point = std::min(forking_point.value(), farther_forking_point);
+        }
+    }
+    if (farther_forking_point == std::numeric_limits<BlockNum>::max()) {
+        return std::nullopt;
+    }
+    return farther_forking_point;
 }
 
 auto SyncEngine::forward_and_insert_blocks() -> NewHeight {
@@ -36,16 +81,17 @@ auto SyncEngine::forward_and_insert_blocks() -> NewHeight {
 
     ResultQueue& downloading = block_exchange_.result_queue();
 
-    auto initial_header_head = exec_engine_.get_headers_head();
-    block_exchange_.download_blocks(initial_header_head.number, BlockExchange::kTipOfTheChain);
+    auto initial_block_progress = exec_engine_.get_block_progress();
+    auto block_progress = initial_block_progress;
 
-    StopWatch timing;
-    timing.start();
-    RepeatedMeasure<BlockNum> downloaded_headers(initial_header_head.number);
-    log::Info("Sync") << "Waiting for blocks... from=" << initial_header_head.number;
+    block_exchange_.download_blocks(initial_block_progress, BlockExchange::kTipOfTheChain);
+
+    StopWatch timing(StopWatch::kStart);
+    RepeatedMeasure<BlockNum> downloaded_headers(initial_block_progress);
+    log::Info("Sync") << "Waiting for blocks... from=" << initial_block_progress;
 
     while (!is_stopping() &&
-           !(block_exchange_.in_sync() && chain_fork_view_.head_height() == block_exchange_.current_height())) {
+           !(block_exchange_.in_sync() && block_progress == block_exchange_.current_height())) {
         Blocks blocks;
 
         // wait for a batch of blocks
@@ -55,8 +101,9 @@ auto SyncEngine::forward_and_insert_blocks() -> NewHeight {
         Blocks announcements_to_do;
 
         // compute head of chain applying fork choice rule
-        as_range::for_each(blocks, [this, &announcements_to_do](const auto& block) {
+        as_range::for_each(blocks, [&, this](const auto& block) {
             block->td = chain_fork_view_.add(block->header);
+            block_progress = std::max(block_progress, block->header.number);
             if (block->to_announce) announcements_to_do.push_back(block);
         });
 
@@ -67,17 +114,20 @@ auto SyncEngine::forward_and_insert_blocks() -> NewHeight {
         send_new_block_announcements(std::move(announcements_to_do));  // according to eth/67 they must be done here,
                                                                        // after simple header verification
 
-        downloaded_headers.set(chain_fork_view_.head_height());
+        downloaded_headers.set(block_progress);
         log::Info("Sync") << "Downloading progress: +" << downloaded_headers.delta() << " blocks downloaded, "
                           << downloaded_headers.high_res_throughput<seconds_t>() << " headers/secs"
                           << ", last=" << downloaded_headers.get()
-                          << ", tot.duration=" << StopWatch::format(timing.lap_duration());
+                          << ", head=" << chain_fork_view_.head_height()
+                          << ", lap.duration=" << StopWatch::format(timing.since_start());
     };
 
-    log::Info("Sync") << "Downloading completed, last=" << chain_fork_view_.head_height();
-
     block_exchange_.stop_downloading();
-    is_first_sync_ = false;
+
+    auto [tp, duration] = timing.stop();
+    log::Info("Sync") << "Downloading completed, last=" << block_progress
+                      << ", head=" << chain_fork_view_.head_height()
+                      << ", tot.duration=" << StopWatch::format(duration);
 
     return {.block_num = chain_fork_view_.head_height(), .hash = chain_fork_view_.head_hash()};
 }
@@ -91,9 +141,18 @@ void SyncEngine::execution_loop() {
     using ValidChain = ExecutionEngine::ValidChain;
     using ValidationError = ExecutionEngine::ValidationError;
     using InvalidChain = ExecutionEngine::InvalidChain;
+    bool is_start_up_ = true;
 
     while (!is_stopping()) {
-        NewHeight new_height = forward_and_insert_blocks();
+        NewHeight new_height;
+        if (is_start_up_) {
+            new_height = resume();  // resume from last known state, we will redo a verify_chain to check all stages are ok
+            is_start_up_ = false;
+        }
+        else {
+            new_height = forward_and_insert_blocks();
+            is_first_sync_ = false;
+        }
 
         log::Info("Sync") << "Verifying chain, head=" << new_height.block_num;
         auto verification = exec_engine_.verify_chain(new_height.hash);
@@ -110,24 +169,25 @@ void SyncEngine::execution_loop() {
 
             log::Info("Sync") << "Notifying fork choice updated, head=" << invalid_chain.unwind_point;
             exec_engine_.notify_fork_choice_updated(invalid_chain.unwind_head);
-
-            continue;
-        } else if (std::holds_alternative<ValidationError>(verification)) {
-            throw std::logic_error("Consensus, validation error");
         }
+        else if (std::holds_alternative<ValidChain>(verification)) {
+            auto valid_chain = std::get<ValidChain>(verification);
+            log::Info("Sync") << "Valid chain, new head=" << valid_chain.current_point;
 
-        auto valid_chain = std::get<ValidChain>(verification);
-        log::Info("Sync") << "Valid chain, new head=" << valid_chain.current_point;
+            ensure_invariant(valid_chain.current_point == new_height.block_num, "Invalid verify_chain result");
 
-        if (valid_chain.current_point != new_height.block_num) {
-            // ???
-        }
+            log::Info("Sync") << "Notifying fork choice updated, new head=" << new_height.block_num;
+            exec_engine_.notify_fork_choice_updated(new_height.hash);
 
-        log::Info("Sync") << "Notifying fork choice updated, new head=" << new_height.block_num;
-        exec_engine_.notify_fork_choice_updated(new_height.hash);
-
-        if (!is_first_sync_)
             send_new_block_hash_announcements();  // according to eth/67 they must be done after a full block verification
+        }
+        else if (std::holds_alternative<ValidationError>(verification)) {
+            auto error = std::get<ValidationError>(verification);
+            throw std::logic_error("Consensus, validation error, last point=" + std::to_string(error.last_point));
+        }
+        else {
+            throw std::logic_error("Consensus, unknown error");
+        }
     }
 };
 

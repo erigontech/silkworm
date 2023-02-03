@@ -40,7 +40,7 @@ struct BlockId {
 };
 
 struct ChainHead {
-    BlockNum number{};
+    BlockNum height{};
     Hash hash;
     Total_Difficulty total_difficulty;
 };
@@ -60,15 +60,15 @@ inline bool operator==(const BlockId& a, const BlockId& b) {
 }
 
 inline bool operator==(const ChainHead& a, const BlockId& b) {
-    return a.number == b.number && a.hash == b.hash;
+    return a.height == b.number && a.hash == b.hash;
 }
 
 inline bool operator==(const BlockId& a, const ChainHead& b) {
-    return a.number == b.number && a.hash == b.hash;
+    return a.number == b.height && a.hash == b.hash;
 }
 
 inline bool operator==(const ChainHead& a, const ChainHead& b) {
-    return a.number == b.number && a.hash == b.hash && a.total_difficulty == b.total_difficulty;
+    return a.height == b.height && a.hash == b.hash && a.total_difficulty == b.total_difficulty;
 }
 
 // stream operator <<

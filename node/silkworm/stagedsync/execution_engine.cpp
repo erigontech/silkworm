@@ -24,7 +24,7 @@ limitations under the License.
 
 namespace silkworm::stagedsync {
 
-void ensure_invariant(bool condition, std::string message) {
+static void ensure_invariant(bool condition, std::string message) {
     if (!condition)
         throw std::logic_error("Execution invariant violation: " + message);
 }
@@ -351,31 +351,25 @@ auto ExecutionEngine::get_body(Hash header_hash) -> std::optional<BlockBody> {
     return body;
 }
 
-auto ExecutionEngine::get_headers_head() -> ChainHead {
-    auto headers_head_height = db::stages::read_stage_progress(tx_, db::stages::kHeadersKey);
-
-    auto headers_head_hash = db::read_canonical_hash(tx_, headers_head_height);
-    ensure_invariant(headers_head_hash.has_value(),
-                     "headers stage height not present on canonical, height=" + std::to_string(headers_head_height));
-
-    std::optional<BigInt> headers_head_td = db::read_total_difficulty(tx_, headers_head_height, *headers_head_hash);
-    ensure_invariant(headers_head_td.has_value(),
-                     "total difficulty of canonical hash at height " + std::to_string(headers_head_height) + " not found in db");
-
-    return {headers_head_height, *headers_head_hash, *headers_head_td};
+auto ExecutionEngine::get_block_progress() -> BlockNum {
+    // header progress
+    auto header_progress = db::stages::read_stage_progress(tx_, db::stages::kHeadersKey);
+    // body progress must be the same for bodies, here we read it only to check the invariant
+    auto body_progress = db::stages::read_stage_progress(tx_, db::stages::kBlockBodiesKey);
+    ensure_invariant(header_progress == body_progress, "header and body progress mismatch: " +
+                     std::to_string(header_progress) + " != " + std::to_string(body_progress));
+    // return one
+    return header_progress;
 }
 
-auto ExecutionEngine::get_bodies_head() -> BlockId {
-    auto bodies_head_height = db::stages::read_stage_progress(tx_, db::stages::kBlockBodiesKey);
-    auto bodies_head_hash = db::read_canonical_hash(tx_, bodies_head_height);
-    ensure_invariant(bodies_head_hash.has_value(),
-                     "body must have canonical header at same height (" + std::to_string(bodies_head_height) + ")");
-    return {bodies_head_height, *bodies_head_hash};
-}
+auto ExecutionEngine::get_canonical_head() -> ChainHead {
+    auto [height, hash] = db::read_canonical_head(tx_);
 
-auto ExecutionEngine::get_canonical_head() -> BlockId {
-    auto [block_num, hash] = db::read_canonical_head(tx_);
-    return {block_num, hash};
+    std::optional<BigInt> td = db::read_total_difficulty(tx_, height, hash);
+    ensure_invariant(td.has_value(),
+                     "total difficulty of canonical hash at height " + std::to_string(height) + " not found in db");
+
+    return {height, hash, *td};
 }
 
 auto ExecutionEngine::get_last_headers(BlockNum limit) -> std::vector<BlockHeader> {

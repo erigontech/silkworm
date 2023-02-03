@@ -43,9 +43,11 @@ class SyncEngine : public ActiveComponent {
         std::optional<Hash> bad_block;
     };
 
+    auto resume() -> NewHeight;
     auto forward_and_insert_blocks() -> NewHeight;
     void unwind(UnwindPoint);
     auto update_bad_headers(std::set<Hash>) -> std::shared_ptr<InternalMessage<void>>;
+    auto find_farther_forking_point(BlockNum starting_point) -> std::optional<BlockNum>;
 
     void send_new_block_announcements(Blocks&& blocks);
     void send_new_block_hash_announcements();

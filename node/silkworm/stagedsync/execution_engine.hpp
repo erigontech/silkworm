@@ -54,15 +54,17 @@ class ExecutionEngine : public Stoppable {
 
     // state
     VerificationResult current_status();
+    auto get_canonical_head() -> ChainHead;
+    auto get_block_progress() -> BlockNum;
+
+    auto get_forking_point(Hash header_hash) -> std::optional<BlockNum>;
 
     auto get_header(Hash) -> std::optional<BlockHeader>;
     auto get_header(BlockNum, Hash) -> std::optional<BlockHeader>;
     auto get_canonical_hash(BlockNum) -> std::optional<Hash>;
     auto get_header_td(BlockNum, Hash) -> std::optional<Total_Difficulty>;
     auto get_body(Hash) -> std::optional<BlockBody>;
-    auto get_headers_head() -> ChainHead;
-    auto get_bodies_head() -> BlockId;
-    auto get_canonical_head() -> BlockId;
+    auto get_headers_at(BlockNum) -> std::vector<BlockHeader>;
     auto get_last_headers(BlockNum limit) -> std::vector<BlockHeader>;
 
   protected:

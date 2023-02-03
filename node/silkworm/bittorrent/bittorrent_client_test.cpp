@@ -110,7 +110,7 @@ static inline std::vector<char> test_resume_data() {
 TEST_CASE("BitTorrentSettings", "[silkworm][snapshot][bittorrent]") {
     BitTorrentSettings settings{};
     CHECK(settings.repository_path == BitTorrentSettings::kDefaultTorrentRepoPath);
-    CHECK(settings.magnets_file_path == BitTorrentSettings::kDefaultMagnetsFilePath);
+    CHECK(!settings.magnets_file_path);
     CHECK(settings.wait_between_alert_polls == BitTorrentSettings::kDefaultWaitBetweenAlertPolls);
     CHECK(settings.resume_data_save_interval == BitTorrentSettings::kDefaultResumeDataSaveInterval);
     CHECK(settings.seeding == BitTorrentSettings::kDefaultSeeding);
@@ -150,6 +150,37 @@ TEST_CASE("BitTorrentClient::BitTorrentClient", "[silkworm][snapshot][bittorrent
         std::vector<char> resume_data{test_resume_data()};
         BitTorrentClient_ForTest::save_file(valid_resume_file, resume_data);
         CHECK_NOTHROW(BitTorrentClient{settings});
+    }
+}
+
+TEST_CASE("BitTorrentClient::add_info_hash", "[silkworm][snapshot][bittorrent]") {
+    test::SetLogVerbosityGuard guard{log::Level::kNone};
+
+    TestRepository repo;
+    BitTorrentSettings settings{};
+    settings.repository_path = repo.path().string();
+
+    SECTION("no info hash") {
+        BitTorrentClient client{settings};
+        CHECK_NOTHROW(client.execute_loop());
+    }
+
+    SECTION("invalid info hash") {
+        BitTorrentClient client{settings};
+        client.add_info_hash("test.seg", "df09957d8a28af3bc5137478885a8003677ca8");
+        std::thread client_thread{[&client]() { client.execute_loop(); }};
+        std::this_thread::sleep_for(50ms);
+        CHECK_NOTHROW(client.stop());
+        client_thread.join();
+    }
+
+    SECTION("valid info hash") {
+        BitTorrentClient client{settings};
+        client.add_info_hash("test.seg", "df09957d8a28af3bc5137478885a8003677ca878");
+        std::thread client_thread{[&client]() { client.execute_loop(); }};
+        std::this_thread::sleep_for(50ms);
+        CHECK_NOTHROW(client.stop());
+        client_thread.join();
     }
 }
 

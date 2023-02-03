@@ -76,7 +76,7 @@ std::vector<std::string> read_snapshots(mdbx::txn& txn) {
     }
     const auto data{db_info_cursor.current()};
     // https://github.com/nlohmann/json/issues/2204
-    const auto json = nlohmann::json::parse(data.value.as_string(), nullptr, /*.allow_exceptions=*/ false);
+    const auto json = nlohmann::json::parse(data.value.as_string(), nullptr, /*.allow_exceptions=*/false);
     return json.get<std::vector<std::string>>();
 }
 

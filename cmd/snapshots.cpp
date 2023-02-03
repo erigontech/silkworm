@@ -221,9 +221,9 @@ void download(const BitTorrentSettings& settings, int /*repetitions*/) {
         std::thread scheduler_thread{[&scheduler]() { scheduler.run(); }};
         SILK_DEBUG << "Signals registered on scheduler " << &scheduler;
 
-        SILK_INFO << "Bittorrent async download started for magnet file: " << settings.magnets_file_path;
+        SILK_INFO << "Bittorrent async download started for magnet file: " << *settings.magnets_file_path;
         client.execute_loop();
-        SILK_INFO << "Bittorrent async download completed for magnet file: " << settings.magnets_file_path;
+        SILK_INFO << "Bittorrent async download completed for magnet file: " << *settings.magnets_file_path;
 
         scheduler_thread.join();
     } catch (...) {

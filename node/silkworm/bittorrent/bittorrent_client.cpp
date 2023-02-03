@@ -187,13 +187,12 @@ bool BitTorrentClient::exists_resume_file(const lt::info_hash_t& info_hashes) co
 }
 
 bool BitTorrentClient::all_torrents_seeding() const {
-    /*for (const auto& torrent_handle : session_.get_torrents()) {
+    for (const auto& torrent_handle : session_.get_torrents()) {  // NOLINT(readability-use-anyofallof)
         if (!torrent_handle.status().is_seeding) {
             return false;
         }
     }
-    return true;*/
-    return std::ranges::all_of(session_.get_torrents(), [](auto& handle) { return handle.status().is_seeding; });
+    return true;
 }
 
 void BitTorrentClient::execute_loop() {

@@ -139,9 +139,7 @@ TEST_CASE("anchors") {
     }
 }
 
-
 TEST_CASE("segments") {
-
     std::vector<BlockHeader> headers(10);
     for (size_t i = 0; i < headers.size(); i++) {  // skip first header for simplicity
         headers[i].number = i;
@@ -157,9 +155,9 @@ TEST_CASE("segments") {
 
     Segment segment = segments[0];
     REQUIRE(segment.lowest_header()->number == headers[0].number);
-    REQUIRE(segment.highest_header()->number == headers[headers.size()-1].number);
-    REQUIRE(segment[0]->number == headers[headers.size()-1].number);  // segment is reversed
-    REQUIRE(segment[segment.size()-1]->number == headers[0].number);  // "
+    REQUIRE(segment.highest_header()->number == headers[headers.size() - 1].number);
+    REQUIRE(segment[0]->number == headers[headers.size() - 1].number);  // segment is reversed
+    REQUIRE(segment[segment.size() - 1]->number == headers[0].number);  // "
 
     size_t start = 2;
     size_t end = 5;
@@ -168,15 +166,15 @@ TEST_CASE("segments") {
 
     Segment::Slice segment_slice = segment.slice(start, end);
     REQUIRE(segment_slice.size() == end - start);
-    REQUIRE(segment_slice[0]->number == startNum);  // headers in segment are ordered from highest to lowest
-    REQUIRE(segment_slice[segment_slice.size()-1]->number == endNum);  // "
+    REQUIRE(segment_slice[0]->number == startNum);                       // headers in segment are ordered from highest to lowest
+    REQUIRE(segment_slice[segment_slice.size() - 1]->number == endNum);  // "
 
     segment.remove_headers_higher_than(3);
     REQUIRE(segment.size() == 4);
     REQUIRE(segment.lowest_header()->number == headers[0].number);
     REQUIRE(segment.highest_header()->number == 3);
     REQUIRE(segment[0]->number == 3);
-    REQUIRE(segment[segment.size()-1]->number == headers[0].number);
+    REQUIRE(segment[segment.size() - 1]->number == headers[0].number);
 }
 
 }  // namespace silkworm

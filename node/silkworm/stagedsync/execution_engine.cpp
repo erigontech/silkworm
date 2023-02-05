@@ -176,7 +176,7 @@ void ExecutionEngine::insert_block(const Block& block) {
 }
 
 template <typename BLOCK>
-    requires std::is_base_of_v<Block, BLOCK>
+requires std::is_base_of_v<Block, BLOCK>
 void ExecutionEngine::insert_blocks(std::vector<std::shared_ptr<BLOCK>>& blocks) {
     SILK_TRACE << "ExecutionEngine: inserting " << blocks.size() << " blocks";
     if (blocks.empty()) return;
@@ -362,7 +362,7 @@ auto ExecutionEngine::get_block_progress() -> BlockNum {
     // body progress must be the same for bodies, here we read it only to check the invariant
     auto body_progress = db::stages::read_stage_progress(tx_, db::stages::kBlockBodiesKey);
     ensure_invariant(header_progress == body_progress, "header and body progress mismatch: " +
-                     std::to_string(header_progress) + " != " + std::to_string(body_progress));
+                                                           std::to_string(header_progress) + " != " + std::to_string(body_progress));
     // return one
     return header_progress;
 }

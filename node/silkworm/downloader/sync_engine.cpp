@@ -40,7 +40,7 @@ auto SyncEngine::resume() -> NewHeight {  // find the point (head) where we left
     auto canonical_head = exec_engine_.get_canonical_head();
     auto block_progress = exec_engine_.get_block_progress();
 
-    ensure_invariant( canonical_head.height <= block_progress, "canonical head beyond block progress");
+    ensure_invariant(canonical_head.height <= block_progress, "canonical head beyond block progress");
 
     // if canonical and header progress match than canonical head was updated, we only need to do a forward sync...
 
@@ -125,7 +125,7 @@ void SyncEngine::execution_loop() {
     using InvalidChain = ExecutionEngine::InvalidChain;
     bool is_starting_up = true;
 
-    while (!is_stopping()) {// resume from last known state, we will redo a verify_chain to check all stages are ok
+    while (!is_stopping()) {  // resume from last known state, we will redo a verify_chain to check all stages are ok
         NewHeight new_height = is_starting_up ? resume() : forward_and_insert_blocks();
 
         log::Info("Sync") << "Verifying chain, head=" << new_height.block_num;
@@ -143,8 +143,7 @@ void SyncEngine::execution_loop() {
 
             log::Info("Sync") << "Notifying fork choice updated, head=" << invalid_chain.unwind_point;
             exec_engine_.notify_fork_choice_updated(invalid_chain.unwind_head);
-        }
-        else if (std::holds_alternative<ValidChain>(verification)) {
+        } else if (std::holds_alternative<ValidChain>(verification)) {
             auto valid_chain = std::get<ValidChain>(verification);
             log::Info("Sync") << "Valid chain, new head=" << valid_chain.current_point;
 
@@ -154,12 +153,10 @@ void SyncEngine::execution_loop() {
             exec_engine_.notify_fork_choice_updated(new_height.hash);
 
             send_new_block_hash_announcements();  // according to eth/67 they must be done after a full block verification
-        }
-        else if (std::holds_alternative<ValidationError>(verification)) {
+        } else if (std::holds_alternative<ValidationError>(verification)) {
             auto error = std::get<ValidationError>(verification);
             throw std::logic_error("Consensus, validation error, last point=" + std::to_string(error.last_point));
-        }
-        else {
+        } else {
             throw std::logic_error("Consensus, unknown error");
         }
 

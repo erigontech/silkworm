@@ -82,7 +82,7 @@ class RepeatedMeasure {
         auto nano_elapsed = static_cast<unsigned long>(high_res_elapsed().count());
         if (nano_elapsed == 0) nano_elapsed = 1;
         using conversion = std::ratio_divide<std::nano, typename DURATION::period>;
-        return (delta() / static_cast<double>(nano_elapsed)) * conversion::den / conversion::num;;
+        return (delta() / static_cast<double>(nano_elapsed)) * conversion::den / conversion::num;
     }
 
     std::chrono::seconds elapsed() {

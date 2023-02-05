@@ -17,13 +17,9 @@
 #include "repository.hpp"
 
 #include <algorithm>
-#include <charconv>
-#include <ranges>
 #include <string_view>
 #include <utility>
 
-#include <absl/strings/str_split.h>
-#include <boost/format.hpp>
 #include <magic_enum.hpp>
 
 #include <silkworm/common/assert.hpp>
@@ -38,8 +34,23 @@ SnapshotRepository::SnapshotRepository(SnapshotSettings settings) : settings_(st
 
 void SnapshotRepository::reopen_folder() {
     SILK_INFO << "Reopen snapshot repository folder: " << settings_.repository_dir.string();
-    SnapshotFileList segment_files = get_segment_files();
+    SnapshotPathList segment_files = get_segment_files();
     reopen_list(segment_files, /*.optimistic=*/false);
+}
+
+std::vector<BlockNumRange> SnapshotRepository::missing_block_ranges() const {
+    const auto ordered_segments = get_segment_files();
+
+    std::vector<BlockNumRange> missing_ranges;
+    BlockNum previous_to{0};
+    for (const auto& segment : ordered_segments) {
+        if (segment.block_to() <= previous_to) continue;
+        if (segment.block_from() != previous_to) {
+            missing_ranges.emplace_back(previous_to, segment.block_from());
+        }
+        previous_to = segment.block_to();
+    }
+    return missing_ranges;
 }
 
 bool SnapshotRepository::for_each_header(const HeaderSnapshot::Walker& fn) {
@@ -76,7 +87,7 @@ SnapshotRepository::ViewResult SnapshotRepository::view_tx_segment(BlockNum numb
     return view(tx_segments_, number, walker);
 }
 
-void SnapshotRepository::reopen_list(const SnapshotFileList& segment_files, bool optimistic) {
+void SnapshotRepository::reopen_list(const SnapshotPathList& segment_files, bool optimistic) {
     close_segments_not_in_list(segment_files);
 
     BlockNum segment_max_block{0};
@@ -126,7 +137,7 @@ bool SnapshotRepository::reopen_transaction(const SnapshotPath& seg_file) {
     return reopen(tx_segments_, seg_file);
 }
 
-void SnapshotRepository::close_segments_not_in_list(const SnapshotFileList& /*segment_files*/) {
+void SnapshotRepository::close_segments_not_in_list(const SnapshotPathList& /*segment_files*/) {
     // TODO(canepat): implement
 }
 
@@ -156,11 +167,11 @@ bool SnapshotRepository::reopen(SnapshotsByPath<T>& segments, const SnapshotPath
     return true;
 }
 
-SnapshotFileList SnapshotRepository::get_files(const std::string& ext) const {
+SnapshotPathList SnapshotRepository::get_files(const std::string& ext) const {
     SILKWORM_ASSERT(fs::exists(settings_.repository_dir) && fs::is_directory(settings_.repository_dir));
 
     // Load the resulting files w/ desired extension ensuring they are snapshots
-    SnapshotFileList snapshot_files;
+    SnapshotPathList snapshot_files;
     for (const auto& file : fs::directory_iterator{settings_.repository_dir}) {
         if (!fs::is_regular_file(file.path()) || file.path().extension().string() != ext) {
             continue;

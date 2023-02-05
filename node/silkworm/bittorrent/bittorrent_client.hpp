@@ -18,8 +18,11 @@
 
 #include <atomic>
 #include <chrono>
+#include <condition_variable>
 #include <filesystem>
 #include <memory>
+#include <mutex>
+#include <optional>
 #include <set>
 #include <string>
 #include <thread>
@@ -38,9 +41,8 @@ namespace silkworm {
 
 //! The settings for handling BitTorrent protocol
 struct BitTorrentSettings {
-    constexpr static const char* kDefaultTorrentRepoPath{".torrent"};
-    constexpr static const char* kDefaultMagnetsFilePath{".magnet_links"};
-    constexpr static std::chrono::milliseconds kDefaultWaitBetweenAlertPolls{100};
+    inline const static std::filesystem::path kDefaultTorrentRepoPath{".torrent"};
+    constexpr static std::chrono::seconds kDefaultWaitBetweenAlertPolls{10};
     constexpr static std::chrono::seconds kDefaultResumeDataSaveInterval{60};
     constexpr static bool kDefaultSeeding{false};
 
@@ -53,11 +55,11 @@ struct BitTorrentSettings {
 
     /* BitTorrentClient configuration settings */
     //! Directory path where torrent files will be stored
-    std::string repository_path{kDefaultTorrentRepoPath};
+    std::filesystem::path repository_path{kDefaultTorrentRepoPath};
     //! Path for magnet links
-    std::string magnets_file_path{kDefaultMagnetsFilePath};
+    std::optional<std::string> magnets_file_path;
     //! Time interval between two alert polling loops
-    std::chrono::milliseconds wait_between_alert_polls{kDefaultWaitBetweenAlertPolls};
+    std::chrono::seconds wait_between_alert_polls{kDefaultWaitBetweenAlertPolls};
     //! Time interval between two resume data savings
     std::chrono::seconds resume_data_save_interval{kDefaultResumeDataSaveInterval};
     //! Flag indicating if the client should seed torrents when done or not
@@ -79,8 +81,11 @@ class BitTorrentClient {
     constexpr static const char* kResumeDirName{".resume"};
     constexpr static const char* kResumeFileExt{".resume"};
 
-    explicit BitTorrentClient(BitTorrentSettings settings);
+    explicit BitTorrentClient(BitTorrentSettings settings = {});
     ~BitTorrentClient();
+
+    //! Add the specified info hash to the download list
+    void add_info_hash(const std::string& name, const std::string& info_hash);
 
     //! Run the client execution loop until it is stopped or has finished downloading and seeding is not required
     void execute_loop();
@@ -96,6 +101,7 @@ class BitTorrentClient {
     [[nodiscard]] std::vector<lt::add_torrent_params> resume_or_create_magnets() const;
     [[nodiscard]] std::filesystem::path resume_file_path(const lt::info_hash_t& info_hashes) const;
     [[nodiscard]] bool exists_resume_file(const lt::info_hash_t& info_hashes) const;
+    [[nodiscard]] inline bool all_torrents_seeding() const;
 
     void request_torrent_updates();
     void request_save_resume_data(lt::resume_data_flags_t flags);
@@ -121,8 +127,14 @@ class BitTorrentClient {
     //! The last time when resume state has been saved
     std::chrono::steady_clock::time_point last_save_resume_;
 
-    //! Flag indicating that the client should stop
-    std::atomic<bool> stop_token_{false};
+    //! Mutual exclusion access to the stop condition
+    std::mutex stop_mutex_;
+
+    //! Condition indicating that the client should stop
+    std::condition_variable stop_condition_;
+
+    //! Flag indicating stop protected by mutex and signalled by condition variable
+    bool stop_requested_{false};
 };
 
 }  // namespace silkworm

@@ -25,16 +25,11 @@
 
 #include <silkworm/common/base.hpp>
 #include <silkworm/snapshot/path.hpp>
+#include <silkworm/snapshot/settings.hpp>
 #include <silkworm/snapshot/snapshot.hpp>
 #include <silkworm/types/block.hpp>
 
 namespace silkworm {
-
-struct SnapshotSettings {
-    std::filesystem::path repository_dir{kDefaultSnapshotDir};
-    bool enabled{false};
-    bool verify_on_startup{true};
-};
 
 template <typename T>
 concept ConcreteSnapshot = std::is_base_of<Snapshot, T>::value;
@@ -56,11 +51,13 @@ using TransactionSnapshotWalker = SnapshotWalker<TransactionSnapshot>;
 //! - segments have [from:to) semantic
 class SnapshotRepository {
   public:
-    explicit SnapshotRepository(SnapshotSettings settings);
+    explicit SnapshotRepository(SnapshotSettings settings = {});
 
     [[nodiscard]] BlockNum max_block_available() const { return std::min(segment_max_block_, idx_max_block_); }
 
     void reopen_folder();
+
+    [[nodiscard]] std::filesystem::path path() const { return settings_.repository_dir; }
 
     bool for_each_header(const HeaderSnapshot::Walker& fn);
     bool for_each_body(const BodySnapshot::Walker& fn);
@@ -69,6 +66,7 @@ class SnapshotRepository {
     [[nodiscard]] std::size_t body_snapshots_count() const { return body_segments_.size(); }
     [[nodiscard]] std::size_t tx_snapshots_count() const { return tx_segments_.size(); }
 
+    [[nodiscard]] std::vector<BlockNumRange> missing_block_ranges() const;
     enum ViewResult {
         kSnapshotNotFound,
         kWalkFailed,
@@ -78,14 +76,17 @@ class SnapshotRepository {
     ViewResult view_body_segment(BlockNum number, const BodySnapshotWalker& walker);
     ViewResult view_tx_segment(BlockNum number, const TransactionSnapshotWalker& walker);
 
+    [[nodiscard]] BlockNum segment_max_block() const { return segment_max_block_; }
+    [[nodiscard]] BlockNum idx_max_block() const { return idx_max_block_; }
+
   private:
-    void reopen_list(const SnapshotFileList& segment_files, bool optimistic);
+    void reopen_list(const SnapshotPathList& segment_files, bool optimistic);
 
     bool reopen_header(const SnapshotPath& seg_file);
     bool reopen_body(const SnapshotPath& seg_file);
     bool reopen_transaction(const SnapshotPath& seg_file);
 
-    void close_segments_not_in_list(const SnapshotFileList& segment_files);
+    void close_segments_not_in_list(const SnapshotPathList& segment_files);
 
     template <ConcreteSnapshot T>
     static ViewResult view(const SnapshotsByPath<T>& segments, BlockNum number, const SnapshotWalker<T>& walker);
@@ -93,15 +94,15 @@ class SnapshotRepository {
     template <ConcreteSnapshot T>
     static bool reopen(SnapshotsByPath<T>& segments, const SnapshotPath& seg_file);
 
-    [[nodiscard]] SnapshotFileList get_segment_files() const {
+    [[nodiscard]] SnapshotPathList get_segment_files() const {
         return get_files(kSegmentExtension);
     }
 
-    [[nodiscard]] SnapshotFileList get_idx_files() const {
+    [[nodiscard]] SnapshotPathList get_idx_files() const {
         return get_files(kIdxExtension);
     }
 
-    [[nodiscard]] SnapshotFileList get_files(const std::string& ext) const;
+    [[nodiscard]] SnapshotPathList get_files(const std::string& ext) const;
 
     [[nodiscard]] uint64_t max_idx_available() const;
 

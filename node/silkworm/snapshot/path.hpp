@@ -30,8 +30,14 @@ namespace silkworm {
 
 constexpr const char* kDefaultSnapshotDir{"snapshots"};
 
+//! The scale factor to convert the block numbers to/from the values in snapshot file names
+constexpr int kFileNameBlockScaleFactor{1'000};
+
+//! The segment size measured as number of blocks included in each segment
 constexpr uint64_t kDefaultSegmentSize{500'000};
-constexpr uint64_t kMinimumSegmentSize{1'000};
+
+//! The minimum segment size measured as number of blocks included in each segment
+constexpr uint64_t kMinimumSegmentSize{kFileNameBlockScaleFactor};
 
 constexpr const char* kTorrentExtension{".torrent"};
 constexpr const char* kSegmentExtension{".seg"};
@@ -47,8 +53,13 @@ enum SnapshotType {
     transactions2block = 3,
 };
 
+//! The snapshot version 1 aka v1
+constexpr uint8_t kSnapshotV1{1};
+
 class SnapshotPath {
   public:
+    [[nodiscard]] static uint64_t segment_size() { return segment_size_; }
+
     [[nodiscard]] static std::optional<SnapshotPath> parse(std::filesystem::path path);
 
     [[nodiscard]] static SnapshotPath from(const std::filesystem::path& dir,
@@ -67,12 +78,14 @@ class SnapshotPath {
 
     [[nodiscard]] SnapshotType type() const { return type_; }
 
+    [[nodiscard]] bool is_segment() const { return path_.extension().string() == kSegmentExtension; }
+
     [[nodiscard]] bool exists_torrent_file() const {
         return std::filesystem::exists(std::filesystem::path{path_ / kTorrentExtension});
     }
 
     [[nodiscard]] bool seedable() const {
-        return block_to_ - block_from_ == kDefaultSegmentSize;
+        return block_to_ - block_from_ == segment_size_;
     }
 
     [[nodiscard]] bool torrent_file_needed() const {
@@ -94,6 +107,8 @@ class SnapshotPath {
   protected:
     static std::filesystem::path build_filename(uint8_t version, BlockNum block_from, BlockNum block_to, SnapshotType type);
 
+    inline static uint64_t segment_size_{kDefaultSegmentSize};
+
     explicit SnapshotPath(std::filesystem::path path, uint8_t version, BlockNum block_from, BlockNum block_to, SnapshotType type);
 
     std::filesystem::path path_;
@@ -103,6 +118,6 @@ class SnapshotPath {
     SnapshotType type_;
 };
 
-using SnapshotFileList = std::vector<SnapshotPath>;
+using SnapshotPathList = std::vector<SnapshotPath>;
 
 }  // namespace silkworm

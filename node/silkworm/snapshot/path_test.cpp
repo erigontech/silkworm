@@ -23,6 +23,10 @@
 
 namespace silkworm {
 
+TEST_CASE("SnapshotPath::segment_size", "[silkworm][snapshot][snapshot]") {
+    CHECK(SnapshotPath::segment_size() == kDefaultSegmentSize);
+}
+
 TEST_CASE("SnapshotPath::SnapshotPath", "[silkworm][snapshot][snapshot]") {
     SECTION("invalid") {
         const char* invalid_filenames[]{

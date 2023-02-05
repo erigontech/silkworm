@@ -154,20 +154,25 @@ auto ExecutionEngine::current_status() -> VerificationResult {
     return current_status_;
 }
 
-void ExecutionEngine::insert_header(BlockHeader& header) {
+void ExecutionEngine::insert_header(const BlockHeader& header) {
     // skip 'if (!db::has_header(...header.hash())' to avoid hash computing (also write_header does an upsert)
     db::write_header(tx_, header, true);  // todo: move?
 
     // header_cache_.put(header.hash(), header);
 }
 
-void ExecutionEngine::insert_body(Block& block) {
+void ExecutionEngine::insert_body(const Block& block) {
     Hash block_hash = block.header.hash();  // todo: hash() is computationally expensive
     BlockNum block_num = block.header.number;
 
     if (!db::has_body(tx_, block_num, block_hash)) {
         db::write_body(tx_, block, block_hash, block_num);
     }
+}
+
+void ExecutionEngine::insert_block(const Block& block) {
+    insert_header(block.header);
+    insert_body(block);
 }
 
 template <typename BLOCK>

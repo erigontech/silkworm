@@ -34,8 +34,7 @@ class ExecutionEngine_ForTest : public stagedsync::ExecutionEngine {
     using stagedsync::ExecutionEngine::canonical_chain_;
     using stagedsync::ExecutionEngine::CanonicalChain;
     using stagedsync::ExecutionEngine::ExecutionEngine;
-    using stagedsync::ExecutionEngine::insert_body;
-    using stagedsync::ExecutionEngine::insert_header;
+    using stagedsync::ExecutionEngine::insert_block;
     using stagedsync::ExecutionEngine::pipeline_;
     using stagedsync::ExecutionEngine::tx_;
 };
@@ -78,33 +77,25 @@ TEST_CASE("ExecutionEngine") {
         block1.ommers.push_back(BlockHeader{});  // generate error InvalidOmmerHeader
 
         // getting initial status
-        auto initial_headers_head = execution_engine.get_headers_head();
-        REQUIRE(initial_headers_head.number == 0);
-        REQUIRE(initial_headers_head.hash == *header0_hash);
-        REQUIRE(initial_headers_head.total_difficulty == header0->difficulty);
-
-        auto initial_bodies_head = execution_engine.get_bodies_head();
-        REQUIRE(initial_bodies_head.number == 0);
-        REQUIRE(initial_bodies_head.hash == *header0_hash);
+        auto initial_progress = execution_engine.get_block_progress();
+        REQUIRE(initial_progress == 0);
 
         auto initial_canonical_head = execution_engine.get_canonical_head();
-        REQUIRE(initial_canonical_head == initial_headers_head);
-        REQUIRE(execution_engine.canonical_chain_.current_head() == initial_headers_head);
+        REQUIRE(initial_canonical_head.height == 0);
+        REQUIRE(initial_canonical_head.hash == *header0_hash);
+        REQUIRE(initial_canonical_head.total_difficulty == header0->difficulty);
 
-        // inserting headers
-        execution_engine.insert_header(block1.header);
+        REQUIRE(initial_canonical_head.height == initial_progress);
+        REQUIRE(execution_engine.canonical_chain_.current_head() == initial_canonical_head);
 
-        auto final_headers_head = execution_engine.get_headers_head();
-        REQUIRE(final_headers_head.number == 0);            // doesn't change
-        REQUIRE(final_headers_head.hash == *header0_hash);  // doesn't change
-        REQUIRE(final_headers_head.total_difficulty == header0->difficulty);
+        // inserting headers & bodies
+        execution_engine.insert_block(block1);
 
-        // inserting bodies
-        execution_engine.insert_body(block1);
+        auto progress = execution_engine.get_block_progress();
+        REQUIRE(progress == initial_progress);  // headers and bodies progress will change with pipeline execution
 
-        auto final_bodies_head = execution_engine.get_bodies_head();
-        REQUIRE(final_bodies_head.number == 0);
-        REQUIRE(final_bodies_head.hash == *header0_hash);
+        auto canonical_head = execution_engine.get_canonical_head();
+        REQUIRE(canonical_head == initial_canonical_head);  // doesn't change
 
         // verifying the chain
         auto verification = execution_engine.verify_chain(block1.header.hash());
@@ -120,17 +111,11 @@ TEST_CASE("ExecutionEngine") {
         REQUIRE(*(invalid_chain.bad_headers.begin()) == block1.header.hash());
 
         // check status
-        final_headers_head = execution_engine.get_headers_head();
-        REQUIRE(final_headers_head.number == block1.header.number);
-        REQUIRE(final_headers_head.hash == block1.header.hash());
-        REQUIRE(final_headers_head.total_difficulty > initial_headers_head.total_difficulty);
-
-        final_bodies_head = execution_engine.get_bodies_head();
-        REQUIRE(final_bodies_head.number == block1.header.number);
-        REQUIRE(final_bodies_head.hash == block1.header.hash());
+        auto final_progress = execution_engine.get_block_progress();
+        REQUIRE(final_progress == block1.header.number);
 
         auto final_canonical_head = execution_engine.get_canonical_head();
-        REQUIRE(final_canonical_head.number == block1.header.number);
+        REQUIRE(final_canonical_head.height == block1.header.number);
         REQUIRE(final_canonical_head.hash == block1.header.hash());
         REQUIRE(execution_engine.canonical_chain_.current_head().number == block1.header.number);
         REQUIRE(execution_engine.canonical_chain_.current_head().hash == block1.header.hash());
@@ -155,7 +140,7 @@ TEST_CASE("ExecutionEngine") {
 
         final_canonical_head = execution_engine.get_canonical_head();
         REQUIRE(final_canonical_head == initial_canonical_head);
-        REQUIRE(execution_engine.canonical_chain_.current_head() == initial_headers_head);
+        REQUIRE(execution_engine.canonical_chain_.current_head() == initial_canonical_head);
 
         current_status = execution_engine.current_status();
         REQUIRE(holds_alternative<ValidChain>(current_status));
@@ -190,22 +175,19 @@ TEST_CASE("ExecutionEngine") {
         REQUIRE(decoding_result == DecodingResult::kOk);
 
         // getting initial status
-        auto initial_headers_head = execution_engine.get_headers_head();
-        REQUIRE(initial_headers_head.number == 0);
-        REQUIRE(initial_headers_head.hash == *header0_hash);
-        REQUIRE(initial_headers_head.total_difficulty == header0->difficulty);
-
-        auto initial_bodies_head = execution_engine.get_bodies_head();
-        REQUIRE(initial_bodies_head.number == 0);
-        REQUIRE(initial_bodies_head.hash == *header0_hash);
+        auto initial_progress = execution_engine.get_block_progress();
+        REQUIRE(initial_progress == 0);
 
         auto initial_canonical_head = execution_engine.get_canonical_head();
-        REQUIRE(initial_canonical_head == initial_headers_head);
-        REQUIRE(execution_engine.canonical_chain_.current_head() == initial_headers_head);
+        REQUIRE(initial_canonical_head.height == 0);
+        REQUIRE(initial_canonical_head.hash == *header0_hash);
+        REQUIRE(initial_canonical_head.total_difficulty == header0->difficulty);
+
+        REQUIRE(initial_canonical_head.height == initial_progress);
+        REQUIRE(execution_engine.canonical_chain_.current_head() == initial_canonical_head);
 
         // inserting & verifying the block
-        execution_engine.insert_header(block1.header);
-        execution_engine.insert_body(block1);
+        execution_engine.insert_block(block1);
         auto verification = execution_engine.verify_chain(block1.header.hash());
 
         REQUIRE(holds_alternative<ValidChain>(verification));
@@ -216,18 +198,11 @@ TEST_CASE("ExecutionEngine") {
         REQUIRE(execution_engine.pipeline_.head_header_number() == block1.header.number);
         REQUIRE(execution_engine.pipeline_.head_header_hash() == block1.header.hash());
 
-        auto final_headers_head = execution_engine.get_headers_head();
-        REQUIRE(final_headers_head.number == block1.header.number);
-        REQUIRE(final_headers_head.hash == block1.header.hash());
-        REQUIRE(final_headers_head.total_difficulty > initial_headers_head.total_difficulty);
-
-        auto final_bodies_head = execution_engine.get_bodies_head();
-        REQUIRE(final_bodies_head.number == block1.header.number);
-        REQUIRE(final_bodies_head.hash == block1.header.hash());
-
         auto final_canonical_head = execution_engine.get_canonical_head();
-        REQUIRE(final_canonical_head.number == block1.header.number);
+        REQUIRE(final_canonical_head.height == block1.header.number);
         REQUIRE(final_canonical_head.hash == block1.header.hash());
+        REQUIRE(final_canonical_head.total_difficulty > initial_canonical_head.total_difficulty);
+
         REQUIRE(execution_engine.canonical_chain_.current_head().number == block1.header.number);
         REQUIRE(execution_engine.canonical_chain_.current_head().hash == block1.header.hash());
 
@@ -251,7 +226,7 @@ TEST_CASE("ExecutionEngine") {
         REQUIRE(present_in_canonical);
 
         final_canonical_head = execution_engine.get_canonical_head();
-        REQUIRE(final_canonical_head.number == block1.header.number);
+        REQUIRE(final_canonical_head.height == block1.header.number);
         REQUIRE(final_canonical_head.hash == block1.header.hash());
         REQUIRE(execution_engine.canonical_chain_.current_head().number == block1.header.number);
         REQUIRE(execution_engine.canonical_chain_.current_head().hash == block1.header.hash());

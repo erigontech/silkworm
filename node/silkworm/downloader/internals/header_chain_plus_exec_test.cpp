@@ -23,11 +23,11 @@
 #include <silkworm/common/test_context.hpp>
 #include <silkworm/consensus/engine.hpp>
 #include <silkworm/db/genesis.hpp>
-#include <silkworm/downloader/chain_fork_view.hpp>
 #include <silkworm/stagedsync/execution_engine.hpp>
 #include <silkworm/test/log.hpp>
 #include <silkworm/types/block.hpp>
 
+#include "chain_fork_view.hpp"
 #include "header_chain.hpp"
 #include "silkworm/common/as_range.hpp"
 
@@ -79,19 +79,18 @@ TEST_CASE("Headers receiving and saving") {
     ExecutionEngine_ForTest exec_engine{context.node_settings(), db_access};
     auto& tx = exec_engine.tx_;  // mdbx refuses to open a ROTxn when there is a RWTxn in the same thread
 
-    auto headers_head = exec_engine.get_headers_head();
-    REQUIRE(headers_head.number == 0);
+    auto head = exec_engine.get_canonical_head();
+    REQUIRE(head.height == 0);
 
     std::vector<BlockHeader> last_headers = exec_engine.get_last_headers(1);
     REQUIRE(last_headers.size() == 1);
-    REQUIRE(last_headers[0].number == headers_head.number);
-    REQUIRE(last_headers[0].hash() == headers_head.hash);
+    REQUIRE(last_headers[0].number == head.height);
+    REQUIRE(last_headers[0].hash() == head.hash);
 
     using ValidChain = stagedsync::ExecutionEngine::ValidChain;
-    // using InvalidChain = stagedsync::ExecutionEngine::InvalidChain;
 
     // creating the chain-fork-view to simulate a bit of the HeaderStage
-    chainsync::ChainForkView chain_fork_view{headers_head, exec_engine};
+    chainsync::ChainForkView chain_fork_view{head, exec_engine};
 
     // creating the working chain to simulate a bit of the downloader
     BlockNum highest_in_db = 0;

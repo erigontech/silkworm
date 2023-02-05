@@ -36,44 +36,26 @@ SyncEngine::SyncEngine(BlockExchange& be, stagedsync::ExecutionEngine& ee)
     block_exchange_.initial_state(exec_engine_.get_last_headers(65536));
 }
 
-auto SyncEngine::resume() -> NewHeight {
+auto SyncEngine::resume() -> NewHeight {  // find the point (head) where we left off
     auto canonical_head = exec_engine_.get_canonical_head();
     auto block_progress = exec_engine_.get_block_progress();
 
-    ensure_invariant(block_progress < canonical_head.height, "canonical head beyond block progress");
+    ensure_invariant( canonical_head.height <= block_progress, "canonical head beyond block progress");
 
-    // if canonical and header progress match we are sure that last cycle was completed
+    // if canonical and header progress match than canonical head was updated, we only need to do a forward sync...
 
     if (block_progress == canonical_head.height) {
         return {canonical_head.height, canonical_head.hash};
     }
 
-    // else we have to check if the mismatch is due only to consensus rules or the last cycle was not completed
+    // ... else we have to re-compute the canonical head parsing the last N headers
 
-    auto farther_forking_point = find_farther_forking_point(block_progress);
-    ensure_invariant(farther_forking_point.has_value(), "");
-
-    auto prev_headers = exec_engine_.get_last_headers(block_progress - *farther_forking_point + 1);
+    auto prev_headers = exec_engine_.get_last_headers(128);  // are 128 headers enough?
     as_range::for_each(prev_headers, [&, this](const auto& header) {
         chain_fork_view_.add(header);
     });
 
     return {chain_fork_view_.head().height, chain_fork_view_.head().hash};
-}
-
-std::optional<BlockNum> SyncEngine::find_farther_forking_point(BlockNum starting_point) {
-    auto top_headers = exec_engine_.get_headers_at(starting_point);  // todo: are enough?
-    BlockNum farther_forking_point{std::numeric_limits<BlockNum>::max()};
-    for(auto& header : top_headers) {
-        auto forking_point = exec_engine_.get_forking_point(header.hash());
-        if (forking_point.has_value()) {
-            farther_forking_point = std::min(forking_point.value(), farther_forking_point);
-        }
-    }
-    if (farther_forking_point == std::numeric_limits<BlockNum>::max()) {
-        return std::nullopt;
-    }
-    return farther_forking_point;
 }
 
 auto SyncEngine::forward_and_insert_blocks() -> NewHeight {
@@ -141,18 +123,10 @@ void SyncEngine::execution_loop() {
     using ValidChain = ExecutionEngine::ValidChain;
     using ValidationError = ExecutionEngine::ValidationError;
     using InvalidChain = ExecutionEngine::InvalidChain;
-    bool is_start_up_ = true;
+    bool is_starting_up = true;
 
-    while (!is_stopping()) {
-        NewHeight new_height;
-        if (is_start_up_) {
-            new_height = resume();  // resume from last known state, we will redo a verify_chain to check all stages are ok
-            is_start_up_ = false;
-        }
-        else {
-            new_height = forward_and_insert_blocks();
-            is_first_sync_ = false;
-        }
+    while (!is_stopping()) {// resume from last known state, we will redo a verify_chain to check all stages are ok
+        NewHeight new_height = is_starting_up ? resume() : forward_and_insert_blocks();
 
         log::Info("Sync") << "Verifying chain, head=" << new_height.block_num;
         auto verification = exec_engine_.verify_chain(new_height.hash);
@@ -188,6 +162,9 @@ void SyncEngine::execution_loop() {
         else {
             throw std::logic_error("Consensus, unknown error");
         }
+
+        is_first_sync_ = is_starting_up ? true : false;
+        is_starting_up = false;
     }
 };
 

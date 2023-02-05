@@ -48,6 +48,7 @@ class ExecutionEngine : public Stoppable {
     requires std::is_base_of_v<Block, BLOCK>
     void insert_blocks(std::vector<std::shared_ptr<BLOCK>>&);
 
+
     auto verify_chain(Hash head_block_hash) -> VerificationResult;
 
     bool notify_fork_choice_updated(Hash head_block_hash);
@@ -57,19 +58,17 @@ class ExecutionEngine : public Stoppable {
     auto get_canonical_head() -> ChainHead;
     auto get_block_progress() -> BlockNum;
 
-    auto get_forking_point(Hash header_hash) -> std::optional<BlockNum>;
-
     auto get_header(Hash) -> std::optional<BlockHeader>;
     auto get_header(BlockNum, Hash) -> std::optional<BlockHeader>;
     auto get_canonical_hash(BlockNum) -> std::optional<Hash>;
     auto get_header_td(BlockNum, Hash) -> std::optional<Total_Difficulty>;
     auto get_body(Hash) -> std::optional<BlockBody>;
-    auto get_headers_at(BlockNum) -> std::vector<BlockHeader>;
     auto get_last_headers(BlockNum limit) -> std::vector<BlockHeader>;
 
   protected:
-    void insert_header(BlockHeader&);
-    void insert_body(Block&);
+    void insert_header(const BlockHeader&);
+    void insert_body(const Block&);
+    void insert_block(const Block& block);
 
     std::set<Hash> collect_bad_headers(db::RWTxn& tx, InvalidChain& invalid_chain);
 

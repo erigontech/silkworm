@@ -20,7 +20,7 @@ limitations under the License.
 #include "silkworm/common/log.hpp"
 #include "silkworm/common/settings.hpp"
 #include "silkworm/concurrency/active_component.hpp"
-#include "silkworm/downloader/chain_fork_view.hpp"
+#include "silkworm/downloader/internals/chain_fork_view.hpp"
 #include "silkworm/downloader/messages/internal_message.hpp"
 #include "silkworm/stagedsync/execution_engine.hpp"
 
@@ -47,7 +47,6 @@ class SyncEngine : public ActiveComponent {
     auto forward_and_insert_blocks() -> NewHeight;
     void unwind(UnwindPoint);
     auto update_bad_headers(std::set<Hash>) -> std::shared_ptr<InternalMessage<void>>;
-    auto find_farther_forking_point(BlockNum starting_point) -> std::optional<BlockNum>;
 
     void send_new_block_announcements(Blocks&& blocks);
     void send_new_block_hash_announcements();

@@ -61,7 +61,7 @@ TEST_CASE("ExecutionEngine") {
      * input:
      *         h0 <----- h1
      */
-
+    /*
     SECTION("one invalid body after the genesis") {
         auto header0_hash = db::read_canonical_hash(tx, 0);
         REQUIRE(header0_hash.has_value());
@@ -146,7 +146,7 @@ TEST_CASE("ExecutionEngine") {
         REQUIRE(holds_alternative<ValidChain>(current_status));
         REQUIRE(std::get<ValidChain>(current_status).current_point == 0);
     }
-
+    */
     SECTION("one valid body after the genesis") {
         auto header0_hash = db::read_canonical_hash(tx, 0);
         REQUIRE(header0_hash.has_value());

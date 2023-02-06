@@ -51,7 +51,6 @@ class BlockExchange final : public ActiveComponent {
     void execution_loop() override;        /*[[long_running]]*/
 
     const ChainConfig& chain_config() const;
-    const PreverifiedHashes& preverified_hashes() const;
     SentryClient& sentry() const;
 
   private:
@@ -70,7 +69,6 @@ class BlockExchange final : public ActiveComponent {
     db::ROAccess db_access_;  // only to reply remote peer's requests
     SentryClient& sentry_;
     const ChainConfig& chain_config_;
-    PreverifiedHashes preverified_hashes_;
     HeaderChain header_chain_;
     BodySequence body_sequence_;
     Network_Statistics statistics_;

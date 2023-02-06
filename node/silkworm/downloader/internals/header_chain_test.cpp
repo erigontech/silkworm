@@ -889,7 +889,7 @@ TEST_CASE("HeaderChain - process_segment - (4) pre-verified hashes on canonical 
         headers[9].number                        // height
     };
 
-    chain.set_preverified_hashes(&mynet_preverified_hashes);
+    chain.set_preverified_hashes(mynet_preverified_hashes);
 
     // building the first part of the chain
     chain.accept_headers({headers[1], headers[2], headers[3], h3a, h4a}, request_id, peer_id);
@@ -950,7 +950,7 @@ TEST_CASE("HeaderChain - process_segment - (5) pre-verified hashes") {
         headers[6].number     // height
     };
 
-    chain.set_preverified_hashes(&mynet_preverified_hashes);
+    chain.set_preverified_hashes(mynet_preverified_hashes);
 
     // building the first chain segment
     chain.accept_headers({headers[1]}, request_id, peer_id);
@@ -1037,7 +1037,7 @@ TEST_CASE("HeaderChain - process_segment - (5') pre-verified hashes with canonic
         b_headers[6].number     // height
     };
 
-    chain.set_preverified_hashes(&mynet_preverified_hashes);
+    chain.set_preverified_hashes(mynet_preverified_hashes);
 
     // building the first branch of the chain
     chain.accept_headers({a_headers[1], a_headers[2], a_headers[3], a_headers[4], a_headers[5]}, request_id, peer_id);

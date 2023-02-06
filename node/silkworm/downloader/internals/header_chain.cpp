@@ -41,7 +41,7 @@ HeaderChain::HeaderChain(const ChainConfig& chain_config) : HeaderChain(consensu
 HeaderChain::HeaderChain(ConsensusEnginePtr consensus_engine)
     : highest_in_db_(0),
       top_seen_height_(0),
-      preverified_hashes_(&PreverifiedHashes::none),
+      preverified_hashes_(PreverifiedHashes::current),
       seen_announces_(1000),
       consensus_engine_{std::move(consensus_engine)},
       chain_state_(persisted_link_queue_) {  // Erigon reads past headers from db, we hope to find them from this queue
@@ -70,9 +70,9 @@ void HeaderChain::set_target_block(BlockNum target_block) {
 }
 
 void HeaderChain::compute_last_preverified_hash() {
-    last_preverified_hash_ = preverified_hashes_->height;
-    if (target_block_ && preverified_hashes_->step)
-        last_preverified_hash_ = (*target_block_ / preverified_hashes_->step) * preverified_hashes_->step;
+    last_preverified_hash_ = preverified_hashes_.height;
+    if (target_block_ && preverified_hashes_.step)
+        last_preverified_hash_ = (*target_block_ / preverified_hashes_.step) * preverified_hashes_.step;
 }
 
 BlockNum HeaderChain::highest_block_in_db() const { return highest_in_db_; }
@@ -93,7 +93,7 @@ std::pair<BlockNum, BlockNum> HeaderChain::anchor_height_range() const {
 }
 
 bool HeaderChain::in_sync() const {
-    BlockNum tip_block = target_block_ ? target_block_.value() : std::max(preverified_hashes_->height, top_seen_height_);
+    BlockNum tip_block = target_block_ ? target_block_.value() : std::max(preverified_hashes_.height, top_seen_height_);
     return top_seen_height_ > 0 && highest_in_db_ >= tip_block;
 }
 
@@ -819,7 +819,7 @@ void HeaderChain::connect(std::shared_ptr<Link> attachment_link, Segment::Slice 
         if (prev_link->persisted) insert_list_.push(link);
         prev_link->next.push_back(link);  // add link as next of the preceding
         prev_link = link;
-        if (preverified_hashes_->contains(link->hash)) mark_as_preverified(link);
+        if (preverified_hashes_.contains(link->hash)) mark_as_preverified(link);
     }
 
     // Update deepest anchor
@@ -872,7 +872,7 @@ auto HeaderChain::extend_down(Segment::Slice segment_slice, std::shared_ptr<Anch
         else
             prev_link->next.push_back(link);  // add link as next of the preceding
         prev_link = link;
-        if (preverified_hashes_->contains(link->hash)) mark_as_preverified(link);
+        if (preverified_hashes_.contains(link->hash)) mark_as_preverified(link);
     }
 
     new_anchor->lastLinkHeight = std::max(new_anchor->lastLinkHeight, anchor->lastLinkHeight);
@@ -911,7 +911,7 @@ void HeaderChain::extend_up(std::shared_ptr<Link> attachment_link, Segment::Slic
         if (prev_link->persisted) insert_list_.push(link);
         prev_link->next.push_back(link);  // add link as next of the preceding
         prev_link = link;
-        if (preverified_hashes_->contains(link->hash)) mark_as_preverified(link);
+        if (preverified_hashes_.contains(link->hash)) mark_as_preverified(link);
     }
 
     // Update deepest anchor
@@ -951,7 +951,7 @@ auto HeaderChain::new_anchor(Segment::Slice segment_slice, PeerId peerId) -> Req
         else
             prev_link->next.push_back(link);  // add link as next of the preceding
         prev_link = link;
-        if (preverified_hashes_->contains(link->hash)) mark_as_preverified(link);
+        if (preverified_hashes_.contains(link->hash)) mark_as_preverified(link);
     }
 
     anchor->lastLinkHeight = std::max(anchor->lastLinkHeight, prev_link->blockHeight);
@@ -1023,8 +1023,8 @@ void HeaderChain::mark_as_preverified(std::shared_ptr<Link> link) {
     }
 }
 
-void HeaderChain::set_preverified_hashes(const PreverifiedHashes* preverified_hashes) {
-    preverified_hashes_ = preverified_hashes;
+void HeaderChain::set_preverified_hashes(PreverifiedHashes& ph) {
+    preverified_hashes_ = ph;
     compute_last_preverified_hash();
 }
 

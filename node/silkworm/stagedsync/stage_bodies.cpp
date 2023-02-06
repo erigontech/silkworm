@@ -104,7 +104,7 @@ Stage::Result BodiesStage::forward(db::RWTxn& tx) {
         BlockNum target_height = db::stages::read_stage_progress(tx, db::stages::kHeadersKey);
 
         BodyDataModel body_persistence(tx, current_height_, node_settings_->chain_config.value());
-        body_persistence.set_preverified_height(PreverifiedHashes::max_height(node_settings_->network_id));
+        body_persistence.set_preverified_height(PreverifiedHashes::current.height);
 
         get_log_progress();  // this is a trick to set log progress initial value, please improve
         RepeatedMeasure<BlockNum> height_progress(current_height_);

@@ -44,7 +44,7 @@ class ExecutionEngine_ForTest : public stagedsync::ExecutionEngine {
     using stagedsync::ExecutionEngine::canonical_chain_;
     using stagedsync::ExecutionEngine::CanonicalChain;
     using stagedsync::ExecutionEngine::ExecutionEngine;
-    using stagedsync::ExecutionEngine::insert_header;
+    using stagedsync::ExecutionEngine::insert_block;
     using stagedsync::ExecutionEngine::pipeline_;
     using stagedsync::ExecutionEngine::tx_;
 };
@@ -71,7 +71,7 @@ TEST_CASE("Headers receiving and saving") {
     context.add_genesis_data();
     context.commit_txn();
 
-    Environment::set_pre_verified_hashes_disabled();
+    PreverifiedHashes::current.height = 1000;  // we need to skip header/block verification because we use fake blocks
 
     db::RWAccess db_access{context.env()};
 
@@ -158,7 +158,8 @@ TEST_CASE("Headers receiving and saving") {
 
         as_range::for_each(headers_to_persist, [&](const auto& header) {
             chain_fork_view.add(*header);
-            exec_engine.insert_header(*header);
+            Block fake_block{{}, *header};
+            exec_engine.insert_block(fake_block);
         });
 
         // check internal status
@@ -237,8 +238,8 @@ TEST_CASE("Headers receiving and saving") {
         Headers headers_to_persist = header_chain.withdraw_stable_headers();
 
         as_range::for_each(headers_to_persist, [&](const auto& header) {
-            chain_fork_view.add(*header);
-            exec_engine.insert_header(*header);
+            Block fake_block{{}, *header};
+            exec_engine.insert_block(fake_block);
         });
 
         // check internal status
@@ -283,8 +284,8 @@ TEST_CASE("Headers receiving and saving") {
         Headers headers_to_persist_bis = header_chain.withdraw_stable_headers();
 
         as_range::for_each(headers_to_persist_bis, [&](const auto& header) {
-            chain_fork_view.add(*header);
-            exec_engine.insert_header(*header);
+            Block fake_block{{}, *header};
+            exec_engine.insert_block(fake_block);
         });
 
         // status and db content must be as before because the new header is not in the canonical chain
@@ -354,8 +355,8 @@ TEST_CASE("Headers receiving and saving") {
         Headers headers_to_persist = header_chain.withdraw_stable_headers();
 
         as_range::for_each(headers_to_persist, [&](const auto& header) {
-            chain_fork_view.add(*header);
-            exec_engine.insert_header(*header);
+            Block fake_block{{}, *header};
+            exec_engine.insert_block(fake_block);
         });
 
         // check internal status
@@ -400,8 +401,8 @@ TEST_CASE("Headers receiving and saving") {
         Headers headers_to_persist_bis = header_chain.withdraw_stable_headers();
 
         as_range::for_each(headers_to_persist_bis, [&](const auto& header) {
-            chain_fork_view.add(*header);
-            exec_engine.insert_header(*header);
+            Block fake_block{{}, *header};
+            exec_engine.insert_block(fake_block);
         });
 
         // the canonical is changed, check the new status
@@ -470,8 +471,8 @@ TEST_CASE("Headers receiving and saving") {
         Headers headers_to_persist = header_chain.withdraw_stable_headers();
 
         as_range::for_each(headers_to_persist, [&](const auto& header) {
-            chain_fork_view.add(*header);
-            exec_engine.insert_header(*header);
+            Block fake_block{{}, *header};
+            exec_engine.insert_block(fake_block);
         });
 
         // check internal status
@@ -519,8 +520,8 @@ TEST_CASE("Headers receiving and saving") {
         Headers headers_to_persist_bis = header_chain.withdraw_stable_headers();
 
         as_range::for_each(headers_to_persist_bis, [&](const auto& header) {
-            chain_fork_view.add(*header);
-            exec_engine.insert_header(*header);
+            Block fake_block{{}, *header};
+            exec_engine.insert_block(fake_block);
         });
 
         // check internal status

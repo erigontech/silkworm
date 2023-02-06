@@ -34,10 +34,8 @@ BlockExchange::BlockExchange(SentryClient& sentry, const db::ROAccess& dba, cons
     : db_access_{dba},
       sentry_{sentry},
       chain_config_{chain_config},
-      preverified_hashes_{PreverifiedHashes::load(chain_config.chain_id)},
       header_chain_{chain_config},
       body_sequence_{} {
-    header_chain_.set_preverified_hashes(&preverified_hashes_);
 }
 
 BlockExchange::~BlockExchange() {
@@ -46,7 +44,6 @@ BlockExchange::~BlockExchange() {
 
 const ChainConfig& BlockExchange::chain_config() const { return chain_config_; }
 
-const PreverifiedHashes& BlockExchange::preverified_hashes() const { return preverified_hashes_; }
 SentryClient& BlockExchange::sentry() const { return sentry_; }
 BlockExchange::ResultQueue& BlockExchange::result_queue() { return results_; }
 bool BlockExchange::in_sync() const { return in_sync_; }

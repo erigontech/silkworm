@@ -27,6 +27,8 @@
 #include <silkworm/test/log.hpp>
 #include <silkworm/types/block.hpp>
 
+#include "silkworm/downloader/internals/preverified_hashes.hpp"
+
 namespace silkworm {
 
 class ExecutionEngine_ForTest : public stagedsync::ExecutionEngine {
@@ -46,7 +48,7 @@ TEST_CASE("ExecutionEngine") {
     context.add_genesis_data();
     context.commit_txn();
 
-    Environment::set_pre_verified_hashes_disabled();
+    PreverifiedHashes::current.clear();  // disable preverified hashes
 
     db::RWAccess db_access{context.env()};
     ExecutionEngine_ForTest execution_engine{context.node_settings(), db_access};
@@ -54,14 +56,14 @@ TEST_CASE("ExecutionEngine") {
     auto& tx = execution_engine.tx_;  // mdbx refuses to open a ROTxn when there is a RWTxn in the same thread
 
     using ValidChain = stagedsync::ExecutionEngine::ValidChain;
-    //using InvalidChain = stagedsync::ExecutionEngine::InvalidChain;
+    using InvalidChain = stagedsync::ExecutionEngine::InvalidChain;
 
     /* status:
      *         h0
      * input:
      *         h0 <----- h1
      */
-    /*
+
     SECTION("one invalid body after the genesis") {
         auto header0_hash = db::read_canonical_hash(tx, 0);
         REQUIRE(header0_hash.has_value());
@@ -146,7 +148,7 @@ TEST_CASE("ExecutionEngine") {
         REQUIRE(holds_alternative<ValidChain>(current_status));
         REQUIRE(std::get<ValidChain>(current_status).current_point == 0);
     }
-    */
+
     SECTION("one valid body after the genesis") {
         auto header0_hash = db::read_canonical_hash(tx, 0);
         REQUIRE(header0_hash.has_value());

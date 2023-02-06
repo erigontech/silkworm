@@ -16,6 +16,10 @@
 
 #include "peer_manager.hpp"
 
+#include <boost/asio/co_spawn.hpp>
+#include <boost/asio/detached.hpp>
+
+#include <silkworm/common/log.hpp>
 #include <silkworm/sentry/common/awaitable_wait_for_all.hpp>
 #include <silkworm/sentry/common/random.hpp>
 
@@ -31,12 +35,24 @@ awaitable<void> PeerManager::start(rlpx::Server& server, rlpx::Client& client) {
 }
 
 awaitable<void> PeerManager::start_in_strand(common::Channel<std::shared_ptr<rlpx::Peer>>& peer_channel) {
+    // loop until receive() throws a cancelled exception
     while (true) {
         auto peer = co_await peer_channel.receive();
         peers_.push_back(peer);
         on_peer_added(peer);
-        rlpx::Peer::start_detached(peer);
+        co_spawn(strand_, start_peer(peer), detached);
     }
+}
+
+boost::asio::awaitable<void> PeerManager::start_peer(const std::shared_ptr<rlpx::Peer>& peer) {
+    try {
+        co_await rlpx::Peer::start(peer);
+    } catch (const std::exception& ex) {
+        log::Error() << "PeerManager::start_peer Peer::start exception: " << ex.what();
+    }
+
+    peers_.remove(peer);
+    on_peer_removed(peer);
 }
 
 awaitable<void> PeerManager::enumerate_peers(EnumeratePeersCallback callback) {

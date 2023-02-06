@@ -31,7 +31,7 @@
 #include <silkworm/common/endian.hpp>
 #include <silkworm/common/util.hpp>
 #include <silkworm/test/log.hpp>
-#include <silkworm/test/snapshot_files.hpp>
+#include <silkworm/test/snapshots.hpp>
 
 using Catch::Matchers::Message;
 

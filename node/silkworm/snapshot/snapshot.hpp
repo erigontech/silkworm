@@ -25,7 +25,7 @@
 
 #include <silkworm/common/base.hpp>
 #include <silkworm/db/util.hpp>
-#include <silkworm/snapshot/decompressor.hpp>
+#include <silkworm/huffman/decompressor.hpp>
 #include <silkworm/types/block.hpp>
 
 namespace silkworm {
@@ -99,6 +99,8 @@ class BodySnapshot : public Snapshot {
 
     using Walker = std::function<bool(BlockNum number, const db::detail::BlockBodyForStorage* body)>;
     bool for_each_body(const Walker& walker);
+
+    std::pair<uint64_t, uint64_t> compute_txs_amount();
 
     void reopen_index() override;
 

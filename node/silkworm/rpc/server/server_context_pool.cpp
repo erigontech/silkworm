@@ -95,6 +95,7 @@ void ServerContext::execute_loop_multi_threaded() {
 
     server_grpc_context_work_.reset();
     client_grpc_context_work_.reset();
+    server_grpc_context_->stop();
     client_grpc_context_->stop();
     server_grpc_context_thread.join();
     client_grpc_context_thread.join();

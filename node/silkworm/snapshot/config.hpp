@@ -14,23 +14,26 @@
    limitations under the License.
 */
 
-#include "status_manager.hpp"
+#pragma once
 
-#include <silkworm/common/log.hpp>
+#include <string>
+#include <string_view>
+#include <vector>
 
-namespace silkworm::sentry {
+namespace silkworm::snapshot {
 
-boost::asio::awaitable<void> StatusManager::wait_for_status() {
-    auto status = co_await status_channel_.receive();
-    status_.set(status);
-    log::Info() << "Status received: network ID = " << status.message.network_id;
-}
+struct PreverifiedEntry {
+    std::string name;
+    std::string hash;
+};
 
-boost::asio::awaitable<void> StatusManager::start() {
-    // loop until wait_for_status() throws a cancelled exception
-    while (true) {
-        co_await wait_for_status();
-    }
-}
+using PreverifiedList = std::vector<PreverifiedEntry>;
 
-}  // namespace silkworm::sentry
+PreverifiedList from_toml(std::string_view preverified_toml_doc);
+
+class SnapshotConfig {
+  public:
+    SnapshotConfig() = default;
+};
+
+}  // namespace silkworm::snapshot

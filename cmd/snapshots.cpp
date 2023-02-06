@@ -25,9 +25,9 @@
 #include <boost/process/environment.hpp>
 #include <magic_enum.hpp>
 
+#include <silkworm/bittorrent/bittorrent_client.hpp>
 #include <silkworm/buildinfo.h>
 #include <silkworm/common/log.hpp>
-#include <silkworm/snapshot/bittorrent.hpp>
 #include <silkworm/snapshot/index.hpp>
 #include <silkworm/snapshot/repository.hpp>
 #include <silkworm/snapshot/snapshot.hpp>
@@ -118,7 +118,7 @@ void parse_command_line(int argc, char* argv[], CLI::App& app, SnapshotToolboxSe
 
 void decode_segment(const SnapSettings& settings, int repetitions) {
     std::chrono::time_point start{std::chrono::steady_clock::now()};
-    const auto snap_file{SnapshotFile::parse(std::filesystem::path{settings.snapshot_file_name})};
+    const auto snap_file{SnapshotPath::parse(std::filesystem::path{settings.snapshot_file_name})};
     if (snap_file) {
         for (int i{0}; i < repetitions; ++i) {
             HeaderSnapshot header_segment{snap_file->path(), snap_file->block_from(), snap_file->block_to()};
@@ -170,7 +170,7 @@ void count_headers(int repetitions) {
 
 void create_index(const SnapSettings& settings, int repetitions) {
     std::chrono::time_point start{std::chrono::steady_clock::now()};
-    const auto snap_file{SnapshotFile::parse(std::filesystem::path{settings.snapshot_file_name})};
+    const auto snap_file{SnapshotPath::parse(std::filesystem::path{settings.snapshot_file_name})};
     if (snap_file) {
         for (int i{0}; i < repetitions; ++i) {
             switch (snap_file->type()) {
@@ -221,9 +221,9 @@ void download(const BitTorrentSettings& settings, int /*repetitions*/) {
         std::thread scheduler_thread{[&scheduler]() { scheduler.run(); }};
         SILK_DEBUG << "Signals registered on scheduler " << &scheduler;
 
-        SILK_INFO << "Bittorrent async download started for magnet file: " << settings.magnets_file_path;
+        SILK_INFO << "Bittorrent async download started for magnet file: " << *settings.magnets_file_path;
         client.execute_loop();
-        SILK_INFO << "Bittorrent async download completed for magnet file: " << settings.magnets_file_path;
+        SILK_INFO << "Bittorrent async download completed for magnet file: " << *settings.magnets_file_path;
 
         scheduler_thread.join();
     } catch (...) {

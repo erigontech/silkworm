@@ -24,79 +24,12 @@
 #include <vector>
 
 #include <silkworm/common/base.hpp>
+#include <silkworm/snapshot/path.hpp>
+#include <silkworm/snapshot/settings.hpp>
+#include <silkworm/snapshot/snapshot.hpp>
 #include <silkworm/types/block.hpp>
 
-#include "snapshot.hpp"
-
 namespace silkworm {
-
-constexpr const char* kDefaultSnapshotDir{"snapshots"};
-
-constexpr uint64_t kDefaultSegmentSize{500'000};
-constexpr uint64_t kMinimumSegmentSize{1'000};
-
-constexpr const char* kTorrentExtension{".torrent"};
-constexpr const char* kSegmentExtension{".seg"};
-constexpr const char* kIdxExtension{".idx"};
-constexpr const char* kTmpExtension{".tmp"};
-
-struct SnapshotSettings {
-    std::filesystem::path repository_dir{kDefaultSnapshotDir};
-    bool enabled{false};
-    bool verify_on_startup{true};
-};
-
-//! The snapshot category
-//! @remark item names do NOT follow Google style just to make magic_enum work
-enum SnapshotType {
-    headers = 0,
-    bodies = 1,
-    transactions = 2,
-};
-
-class SnapshotFile {
-  public:
-    [[nodiscard]] static std::optional<SnapshotFile> parse(std::filesystem::path path);
-
-    [[nodiscard]] std::filesystem::path path() const { return path_; }
-
-    [[nodiscard]] uint8_t version() const { return version_; }
-
-    [[nodiscard]] BlockNum block_from() const { return block_from_; }
-
-    [[nodiscard]] BlockNum block_to() const { return block_to_; }
-
-    [[nodiscard]] SnapshotType type() const { return type_; }
-
-    [[nodiscard]] bool exists_torrent_file() const {
-        return std::filesystem::exists(std::filesystem::path{path_ / kTorrentExtension});
-    }
-
-    [[nodiscard]] bool seedable() const {
-        return block_to_ - block_from_ == kDefaultSegmentSize;
-    }
-
-    [[nodiscard]] bool torrent_file_needed() const {
-        return seedable() && !exists_torrent_file();
-    }
-
-    [[nodiscard]] SnapshotFile index_file() const {
-        return SnapshotFile(std::filesystem::path{path_}.replace_extension(kIdxExtension), version_, block_from_, block_to_, type_);
-    }
-
-    friend bool operator<(const SnapshotFile& lhs, const SnapshotFile& rhs);
-
-  private:
-    explicit SnapshotFile(std::filesystem::path path, uint8_t version, BlockNum block_from, BlockNum block_to, SnapshotType type);
-
-    std::filesystem::path path_;
-    uint8_t version_{0};
-    BlockNum block_from_{0};
-    BlockNum block_to_{0};
-    SnapshotType type_;
-};
-
-using SnapshotFileList = std::vector<SnapshotFile>;
 
 template <typename T>
 concept ConcreteSnapshot = std::is_base_of<Snapshot, T>::value;
@@ -118,11 +51,13 @@ using TransactionSnapshotWalker = SnapshotWalker<TransactionSnapshot>;
 //! - segments have [from:to) semantic
 class SnapshotRepository {
   public:
-    explicit SnapshotRepository(SnapshotSettings settings);
+    explicit SnapshotRepository(SnapshotSettings settings = {});
 
     [[nodiscard]] BlockNum max_block_available() const { return std::min(segment_max_block_, idx_max_block_); }
 
     void reopen_folder();
+
+    [[nodiscard]] std::filesystem::path path() const { return settings_.repository_dir; }
 
     bool for_each_header(const HeaderSnapshot::Walker& fn);
     bool for_each_body(const BodySnapshot::Walker& fn);
@@ -131,6 +66,7 @@ class SnapshotRepository {
     [[nodiscard]] std::size_t body_snapshots_count() const { return body_segments_.size(); }
     [[nodiscard]] std::size_t tx_snapshots_count() const { return tx_segments_.size(); }
 
+    [[nodiscard]] std::vector<BlockNumRange> missing_block_ranges() const;
     enum ViewResult {
         kSnapshotNotFound,
         kWalkFailed,
@@ -140,30 +76,33 @@ class SnapshotRepository {
     ViewResult view_body_segment(BlockNum number, const BodySnapshotWalker& walker);
     ViewResult view_tx_segment(BlockNum number, const TransactionSnapshotWalker& walker);
 
+    [[nodiscard]] BlockNum segment_max_block() const { return segment_max_block_; }
+    [[nodiscard]] BlockNum idx_max_block() const { return idx_max_block_; }
+
   private:
-    void reopen_list(const SnapshotFileList& segment_files, bool optimistic);
+    void reopen_list(const SnapshotPathList& segment_files, bool optimistic);
 
-    bool reopen_header(const SnapshotFile& seg_file);
-    bool reopen_body(const SnapshotFile& seg_file);
-    bool reopen_transaction(const SnapshotFile& seg_file);
+    bool reopen_header(const SnapshotPath& seg_file);
+    bool reopen_body(const SnapshotPath& seg_file);
+    bool reopen_transaction(const SnapshotPath& seg_file);
 
-    void close_segments_not_in_list(const SnapshotFileList& segment_files);
+    void close_segments_not_in_list(const SnapshotPathList& segment_files);
 
     template <ConcreteSnapshot T>
     static ViewResult view(const SnapshotsByPath<T>& segments, BlockNum number, const SnapshotWalker<T>& walker);
 
     template <ConcreteSnapshot T>
-    static bool reopen(SnapshotsByPath<T>& segments, const SnapshotFile& seg_file);
+    static bool reopen(SnapshotsByPath<T>& segments, const SnapshotPath& seg_file);
 
-    [[nodiscard]] SnapshotFileList get_segment_files() const {
+    [[nodiscard]] SnapshotPathList get_segment_files() const {
         return get_files(kSegmentExtension);
     }
 
-    [[nodiscard]] SnapshotFileList get_idx_files() const {
+    [[nodiscard]] SnapshotPathList get_idx_files() const {
         return get_files(kIdxExtension);
     }
 
-    [[nodiscard]] SnapshotFileList get_files(const std::string& ext) const;
+    [[nodiscard]] SnapshotPathList get_files(const std::string& ext) const;
 
     [[nodiscard]] uint64_t max_idx_available() const;
 

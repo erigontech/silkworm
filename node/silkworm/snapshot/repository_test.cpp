@@ -21,71 +21,9 @@
 #include <silkworm/common/directories.hpp>
 #include <silkworm/common/log.hpp>
 #include <silkworm/test/log.hpp>
-#include <silkworm/test/snapshot_files.hpp>
+#include <silkworm/test/snapshots.hpp>
 
 namespace silkworm {
-
-TEST_CASE("SnapshotFile::SnapshotFile", "[silkworm][snapshot][snapshot]") {
-    SECTION("invalid") {
-        const char* invalid_filenames[]{
-            "",
-            ".segment",
-            ".seg",
-            "u1-014500-015000-headers.seg",
-            "-014500-015000-headers.seg",
-            "1-014500-015000-headers.seg",
-            "v-014500-015000-headers.seg",
-            "v1014500-015000-headers.seg",
-            "v1-0-015000-headers.seg",
-            "v1--015000-headers.seg",
-            "v1-014500015000-headers.seg",
-            "v1-014500-1-headers.seg",
-            "v1-014500--headers.seg",
-            "v1-014500-01500a-headers.seg",
-            "v1-014500-015000-.seg",
-            "v1-014500-015000-unknown.seg",
-            "v1-014500-015000headers.seg",
-            "v1-014500-015000-headers.seg.seg",
-        };
-        for (const char* filename : invalid_filenames) {
-            CHECK_NOTHROW(SnapshotFile::parse(filename) == std::nullopt);
-        }
-    }
-    SECTION("valid") {
-        struct ValidFilenameExpectation {
-            const char* filename;
-            BlockNum block_from;
-            BlockNum block_to;
-            SnapshotType type;
-        };
-        const ValidFilenameExpectation valid_filenames[]{
-            {"v1-014500-015000-headers.seg", 14'500'000, 15'000'000, SnapshotType::headers},
-            {"v1-011500-012000-bodies.seg", 11'500'000, 12'000'000, SnapshotType::bodies},
-            {"v1-015000-015500-transactions.seg", 15'000'000, 15'500'000, SnapshotType::transactions},
-        };
-        for (const auto& filename_expectation : valid_filenames) {
-            const auto snapshot_file = SnapshotFile::parse(filename_expectation.filename);
-            CHECK(snapshot_file != std::nullopt);
-            if (snapshot_file) {
-                CHECK(snapshot_file->path() == filename_expectation.filename);
-                CHECK(snapshot_file->version() == 1);
-                CHECK(snapshot_file->block_from() == filename_expectation.block_from);
-                CHECK(snapshot_file->block_to() == filename_expectation.block_to);
-                CHECK(snapshot_file->type() == filename_expectation.type);
-                CHECK(snapshot_file->seedable());
-                CHECK(!snapshot_file->exists_torrent_file());
-                CHECK(snapshot_file->torrent_file_needed());
-                const SnapshotFile index_file = snapshot_file->index_file();
-                CHECK(index_file.path().stem() == snapshot_file->path().stem());
-                CHECK(index_file.path().extension() == kIdxExtension);
-                CHECK(index_file.version() == 1);
-                CHECK(index_file.block_from() == filename_expectation.block_from);
-                CHECK(index_file.block_to() == filename_expectation.block_to);
-                CHECK(index_file.type() == filename_expectation.type);
-            }
-        }
-    }
-}
 
 TEST_CASE("SnapshotRepository::SnapshotRepository", "[silkworm][snapshot][snapshot]") {
     CHECK_NOTHROW(SnapshotRepository{SnapshotSettings{}});
@@ -94,9 +32,11 @@ TEST_CASE("SnapshotRepository::SnapshotRepository", "[silkworm][snapshot][snapsh
 TEST_CASE("SnapshotRepository::reopen_folder", "[silkworm][snapshot][snapshot]") {
     test::SetLogVerbosityGuard guard{log::Level::kNone};
 
-    test::TemporarySnapshotFile tmp_snapshot_1{"v1-014500-015000-headers.seg"};
-    test::TemporarySnapshotFile tmp_snapshot_2{"v1-011500-012000-bodies.seg"};
-    test::TemporarySnapshotFile tmp_snapshot_3{"v1-015000-015500-transactions.seg"};
+    const auto tmp_dir = TemporaryDirectory::get_unique_temporary_path();
+    std::filesystem::create_directories(tmp_dir);
+    test::TemporarySnapshotFile tmp_snapshot_1{tmp_dir, "v1-014500-015000-headers.seg"};
+    test::TemporarySnapshotFile tmp_snapshot_2{tmp_dir, "v1-011500-012000-bodies.seg"};
+    test::TemporarySnapshotFile tmp_snapshot_3{tmp_dir, "v1-015000-015500-transactions.seg"};
     SnapshotSettings settings{tmp_snapshot_1.path().parent_path()};
     SnapshotRepository repository{settings};
     CHECK_NOTHROW(repository.reopen_folder());
@@ -108,18 +48,65 @@ TEST_CASE("SnapshotRepository::reopen_folder", "[silkworm][snapshot][snapshot]")
 
 TEST_CASE("SnapshotRepository::view", "[silkworm][snapshot][snapshot]") {
     test::SetLogVerbosityGuard guard{log::Level::kNone};
-
-    test::TemporarySnapshotFile tmp_snapshot_1{"v1-014500-015000-headers.seg"};
-    test::TemporarySnapshotFile tmp_snapshot_2{"v1-011500-012000-bodies.seg"};
-    test::TemporarySnapshotFile tmp_snapshot_3{"v1-015000-015500-transactions.seg"};
-    SnapshotSettings settings{tmp_snapshot_1.path().parent_path()};
+    const auto tmp_dir = TemporaryDirectory::get_unique_temporary_path();
+    std::filesystem::create_directories(tmp_dir);
+    SnapshotSettings settings{tmp_dir};
     SnapshotRepository repository{settings};
-    repository.reopen_folder();
+    auto failing_walk = [](const auto&) { return false; };
+    auto successful_walk = [](const auto&) { return true; };
 
-    using ViewResult = SnapshotRepository::ViewResult;
-    CHECK(repository.view_header_segment(14'500'000, [](const auto&) { return false; }) == ViewResult::kSnapshotNotFound);
-    CHECK(repository.view_body_segment(11'500'000, [](const auto&) { return false; }) == ViewResult::kSnapshotNotFound);
-    CHECK(repository.view_tx_segment(15'000'000, [](const auto&) { return false; }) == ViewResult::kSnapshotNotFound);
+    SECTION("no snapshots") {
+        repository.reopen_folder();
+
+        using ViewResult = SnapshotRepository::ViewResult;
+        CHECK(repository.view_header_segment(14'500'000, successful_walk) == ViewResult::kSnapshotNotFound);
+        CHECK(repository.view_body_segment(11'500'000, successful_walk) == ViewResult::kSnapshotNotFound);
+        CHECK(repository.view_tx_segment(15'000'000, successful_walk) == ViewResult::kSnapshotNotFound);
+    }
+
+    SECTION("empty snapshots") {
+        test::TemporarySnapshotFile tmp_snapshot_1{tmp_dir, "v1-014500-015000-headers.seg"};
+        test::TemporarySnapshotFile tmp_snapshot_2{tmp_dir, "v1-011500-012000-bodies.seg"};
+        test::TemporarySnapshotFile tmp_snapshot_3{tmp_dir, "v1-015000-015500-transactions.seg"};
+        repository.reopen_folder();
+
+        using ViewResult = SnapshotRepository::ViewResult;
+        CHECK(repository.view_header_segment(14'500'000, successful_walk) == ViewResult::kSnapshotNotFound);
+        CHECK(repository.view_body_segment(11'500'000, successful_walk) == ViewResult::kSnapshotNotFound);
+        CHECK(repository.view_tx_segment(15'000'000, successful_walk) == ViewResult::kSnapshotNotFound);
+    }
+
+    SECTION("non-empty snapshots") {
+        test::HelloWorldSnapshotFile tmp_snapshot_1{tmp_dir, "v1-014500-015000-headers.seg"};
+        test::HelloWorldSnapshotFile tmp_snapshot_2{tmp_dir, "v1-011500-012000-bodies.seg"};
+        test::HelloWorldSnapshotFile tmp_snapshot_3{tmp_dir, "v1-015000-015500-transactions.seg"};
+        repository.reopen_folder();
+
+        using ViewResult = SnapshotRepository::ViewResult;
+        CHECK(repository.view_header_segment(14'500'000, failing_walk) == ViewResult::kWalkFailed);
+        CHECK(repository.view_body_segment(11'500'000, failing_walk) == ViewResult::kWalkFailed);
+        CHECK(repository.view_tx_segment(15'000'000, failing_walk) == ViewResult::kWalkFailed);
+
+        CHECK(repository.view_header_segment(14'500'000, successful_walk) == ViewResult::kWalkSuccess);
+        CHECK(repository.view_body_segment(11'500'000, successful_walk) == ViewResult::kWalkSuccess);
+        CHECK(repository.view_tx_segment(15'000'000, successful_walk) == ViewResult::kWalkSuccess);
+    }
+}
+
+TEST_CASE("SnapshotRepository::missing_block_ranges", "[silkworm][snapshot][snapshot]") {
+    test::SetLogVerbosityGuard guard{log::Level::kNone};
+    const auto tmp_dir = TemporaryDirectory::get_unique_temporary_path();
+    std::filesystem::create_directories(tmp_dir);
+    SnapshotSettings settings{tmp_dir};
+    SnapshotRepository repository{settings};
+
+    test::HelloWorldSnapshotFile tmp_snapshot_1{tmp_dir, "v1-014500-015000-headers.seg"};
+    test::HelloWorldSnapshotFile tmp_snapshot_2{tmp_dir, "v1-011500-012000-bodies.seg"};
+    test::HelloWorldSnapshotFile tmp_snapshot_3{tmp_dir, "v1-015000-015500-transactions.seg"};
+    repository.reopen_folder();
+    CHECK(repository.missing_block_ranges() == std::vector<BlockNumRange>{
+                                                   BlockNumRange{0, 11'500'000},
+                                                   BlockNumRange{12'000'000, 14'500'000}});
 }
 
 }  // namespace silkworm

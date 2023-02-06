@@ -19,8 +19,8 @@
 #include <memory>
 #include <utility>
 
+#include <silkworm/huffman/decompressor.hpp>
 #include <silkworm/recsplit/rec_split.hpp>
-#include <silkworm/snapshot/decompressor.hpp>
 #include <silkworm/snapshot/repository.hpp>
 
 namespace silkworm {
@@ -30,20 +30,20 @@ class Index {
     static constexpr uint64_t kPageSize{4096};
     static constexpr std::size_t kBucketSize{2'000};
 
-    explicit Index(SnapshotFile segment_path) : segment_path_(std::move(segment_path)) {}
+    explicit Index(SnapshotPath segment_path) : segment_path_(std::move(segment_path)) {}
     virtual ~Index() = default;
 
-    void build();
+    virtual void build();
 
   protected:
     virtual bool walk(succinct::RecSplit8& rec_split, uint64_t i, uint64_t offset, ByteView word) = 0;
 
-    SnapshotFile segment_path_;
+    SnapshotPath segment_path_;
 };
 
 class HeaderIndex : public Index {
   public:
-    explicit HeaderIndex(SnapshotFile path) : Index(std::move(path)) {}
+    explicit HeaderIndex(SnapshotPath segment_path) : Index(std::move(segment_path)) {}
 
   protected:
     bool walk(succinct::RecSplit8& rec_split, uint64_t i, uint64_t offset, ByteView word) override;
@@ -51,7 +51,7 @@ class HeaderIndex : public Index {
 
 class BodyIndex : public Index {
   public:
-    explicit BodyIndex(SnapshotFile path) : Index(std::move(path)), uint64_buffer_(8, '\0') {}
+    explicit BodyIndex(SnapshotPath path) : Index(std::move(path)), uint64_buffer_(8, '\0') {}
 
   protected:
     bool walk(succinct::RecSplit8& rec_split, uint64_t i, uint64_t offset, ByteView word) override;
@@ -62,7 +62,9 @@ class BodyIndex : public Index {
 
 class TransactionIndex : public Index {
   public:
-    explicit TransactionIndex(SnapshotFile path) : Index(std::move(path)) {}
+    explicit TransactionIndex(SnapshotPath segment_path) : Index(std::move(segment_path)) {}
+
+    void build() override;
 
   protected:
     bool walk(succinct::RecSplit8& rec_split, uint64_t i, uint64_t offset, ByteView word) override;

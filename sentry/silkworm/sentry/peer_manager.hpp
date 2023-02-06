@@ -52,6 +52,7 @@ class PeerManager {
 
   private:
     boost::asio::awaitable<void> start_in_strand(common::Channel<std::shared_ptr<rlpx::Peer>>& peer_channel);
+    boost::asio::awaitable<void> start_peer(const std::shared_ptr<rlpx::Peer>& peer);
 
     boost::asio::awaitable<void> enumerate_peers_in_strand(EnumeratePeersCallback callback);
     boost::asio::awaitable<void> enumerate_random_peers_in_strand(size_t max_count, EnumeratePeersCallback callback);

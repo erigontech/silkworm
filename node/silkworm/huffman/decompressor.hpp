@@ -172,7 +172,7 @@ class Decompressor {
     constexpr static std::size_t kMaxTablePatterns = (1 << DecodingTable::kMaxTableBitLength) * 100;
 
     //! The max number of positions in decoding tables
-    constexpr static std::size_t kMaxTablePositions = 1 << DecodingTable::kMaxTableBitLength;
+    constexpr static std::size_t kMaxTablePositions = (1 << DecodingTable::kMaxTableBitLength) * 100;
 
     //! Read-only access to the file data stream
     class Iterator {

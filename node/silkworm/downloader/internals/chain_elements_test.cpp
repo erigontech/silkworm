@@ -19,6 +19,7 @@
 #include <algorithm>
 
 #include <catch2/catch.hpp>
+#include <evmc/evmc.hpp>
 
 #include <silkworm/common/cast.hpp>
 
@@ -144,7 +145,7 @@ TEST_CASE("segments") {
     for (size_t i = 0; i < headers.size(); i++) {  // skip first header for simplicity
         headers[i].number = i;
         headers[i].difficulty = i * 100;  // improve!
-        headers[i].parent_hash = headers[i - 1].hash();
+        headers[i].parent_hash = (i != 0) ? headers[i - 1].hash() : evmc::bytes32{0};
     }
 
     auto header_list = HeaderList::make(headers);

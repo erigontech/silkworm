@@ -71,7 +71,7 @@ void HeaderChain::set_target_block(BlockNum target_block) {
 
 void HeaderChain::compute_last_preverified_hash() {
     last_preverified_hash_ = preverified_hashes_->height;
-    if (target_block_)
+    if (target_block_ && preverified_hashes_->step)
         last_preverified_hash_ = (*target_block_ / preverified_hashes_->step) * preverified_hashes_->step;
 }
 

@@ -116,7 +116,8 @@ namespace db {
                 CHECK(errors.size() == 1);
             }
         }
-#endif
+#endif  // non-clang
+
         SECTION("Update chain config") {
             SECTION("Without genesis block") {
                 // Nothing should happen

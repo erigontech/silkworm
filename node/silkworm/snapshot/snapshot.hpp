@@ -25,7 +25,7 @@
 
 #include <silkworm/common/base.hpp>
 #include <silkworm/db/util.hpp>
-#include <silkworm/snapshot/decompressor.hpp>
+#include <silkworm/huffman/decompressor.hpp>
 #include <silkworm/types/block.hpp>
 
 namespace silkworm {

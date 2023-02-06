@@ -54,7 +54,7 @@ TEST_CASE("ExecutionEngine") {
     auto& tx = execution_engine.tx_;  // mdbx refuses to open a ROTxn when there is a RWTxn in the same thread
 
     using ValidChain = stagedsync::ExecutionEngine::ValidChain;
-    using InvalidChain = stagedsync::ExecutionEngine::InvalidChain;
+    //using InvalidChain = stagedsync::ExecutionEngine::InvalidChain;
 
     /* status:
      *         h0

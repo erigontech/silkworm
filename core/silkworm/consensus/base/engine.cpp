@@ -37,6 +37,7 @@ ValidationResult EngineBase::pre_validate_block_body(const Block& block, const B
         return err;
     }
 
+    const evmc_revision rev{chain_config_.revision(header.number, header.timestamp)};
     if (rev < EVMC_SHANGHAI && block.withdrawals) {
         return ValidationResult::kUnexpectedWithdrawals;
     }

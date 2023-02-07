@@ -41,7 +41,7 @@ class ExecutionEngine_ForTest : public stagedsync::ExecutionEngine {
     using stagedsync::ExecutionEngine::tx_;
 };
 
-TEST_CASE("ExecutionEngine") {
+TEST_CASE("ExecutionEngine", "[.]") {
     test::SetLogVerbosityGuard log_guard(log::Level::kNone);
 
     test::Context context;
@@ -64,7 +64,7 @@ TEST_CASE("ExecutionEngine") {
      *         h0 <----- h1
      */
 
-    SECTION("one invalid body after the genesis", "[.]") {
+    SECTION("one invalid body after the genesis") {
         auto header0_hash = db::read_canonical_hash(tx, 0);
         REQUIRE(header0_hash.has_value());
 

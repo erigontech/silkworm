@@ -266,6 +266,9 @@ Stage::Result Senders::parallel_recover(db::RWTxn& txn) {
 
         success_or_throw(read_canonical_hashes(txn, from, target_progress));
 
+        // Create the pool of worker threads crunching the address recovery tasks
+        thread_pool worker_pool;
+
         // Load block transactions from db and recover tx senders in batches
         log::Trace(log_prefix_, {"op", "read bodies", "from", std::to_string(from), "to", std::to_string(target_progress)});
 
@@ -317,7 +320,7 @@ Stage::Result Senders::parallel_recover(db::RWTxn& txn) {
                 // Process batch in parallel if max size has been reached
                 if (batch_->size() >= max_batch_size_) {
                     increment_total_collected_transactions(batch_->size());
-                    recover_batch(context, from);
+                    recover_batch(worker_pool, context, from);
                 }
             }
 
@@ -333,7 +336,7 @@ Stage::Result Senders::parallel_recover(db::RWTxn& txn) {
         // Recover last incomplete batch [likely]
         if (!batch_->empty()) {
             increment_total_collected_transactions(batch_->size());
-            recover_batch(context, from);
+            recover_batch(worker_pool, context, from);
         }
 
         // Wait for all senders to be recovered and collected in ETL
@@ -504,7 +507,7 @@ Stage::Result Senders::add_to_batch(BlockNum block_num, std::vector<Transaction>
     return is_stopping() ? Stage::Result::kAborted : Stage::Result::kSuccess;
 }
 
-void Senders::recover_batch(secp256k1_context* context, BlockNum from) {
+void Senders::recover_batch(thread_pool& worker_pool, secp256k1_context* context, BlockNum from) {
     // Launch parallel senders recovery
     log::Trace(log_prefix_, {"op", "recover_batch", "first", std::to_string(batch_->cbegin()->block_num)});
 
@@ -512,8 +515,8 @@ void Senders::recover_batch(secp256k1_context* context, BlockNum from) {
     const auto start = sw.start();
 
     // Wait until total unfinished tasks in worker pool falls below 2 * num workers
-    static const auto kMaxUnfinishedTasks{2 * worker_pool_.get_thread_count()};
-    while (worker_pool_.get_tasks_total() >= kMaxUnfinishedTasks) {
+    static const auto kMaxUnfinishedTasks{2 * worker_pool.get_thread_count()};
+    while (worker_pool.get_tasks_total() >= kMaxUnfinishedTasks) {
         std::this_thread::sleep_for(std::chrono::seconds(1));
     }
 
@@ -521,7 +524,7 @@ void Senders::recover_batch(secp256k1_context* context, BlockNum from) {
     std::shared_ptr<std::vector<AddressRecovery>> ready_batch{std::make_shared<std::vector<AddressRecovery>>()};
     ready_batch->reserve(max_batch_size_);
     ready_batch.swap(batch_);
-    auto batch_result = worker_pool_.submit([=]() {
+    auto batch_result = worker_pool.submit([=]() {
         std::for_each(ready_batch->begin(), ready_batch->end(), [&](auto& package) {
             const auto tx_hash{keccak256(package.rlp)};
             const bool ok = silkpre_recover_address(package.tx_from.bytes, tx_hash.bytes, package.tx_signature, package.odd_y_parity, context);

@@ -139,7 +139,7 @@ namespace db {
         std::vector<std::string> table_names{};
 
         const auto walk_func{[&table_names](ByteView key, ByteView) {
-            table_names.push_back(byte_ptr_cast(key.data()));
+            table_names.emplace_back(byte_ptr_cast(key.data()));
         }};
 
         main_crs.to_first();
@@ -170,23 +170,30 @@ namespace db {
         auto& txn{context.txn()};
 
         auto val1{read_map_sequence(txn, table::kBlockTransactions.name)};
-        REQUIRE(val1 == 0);
+        CHECK(val1 == 0);
 
         auto val2{increment_map_sequence(txn, table::kBlockTransactions.name, 5)};
-        REQUIRE(val2 == 0);
+        CHECK(val2 == 0);
         auto val3{read_map_sequence(txn, table::kBlockTransactions.name)};
-        REQUIRE((val3 == 5));
+        CHECK(val3 == 5);
 
         auto val4{increment_map_sequence(txn, table::kBlockTransactions.name, 3)};
-        REQUIRE(val4 == 5);
+        CHECK(val4 == 5);
         auto val5{read_map_sequence(txn, table::kBlockTransactions.name)};
-        REQUIRE((val5 == 8));
+        CHECK(val5 == 8);
 
         context.commit_and_renew_txn();
         auto& txn2{context.txn()};
 
         auto val6{read_map_sequence(txn2, table::kBlockTransactions.name)};
-        REQUIRE((val6 == 8));
+        CHECK(val6 == 8);
+
+        // Reset sequence
+        auto val7{reset_map_sequence(txn2, table::kBlockTransactions.name, 19)};
+        CHECK(val7 == 8);
+
+        auto val8{read_map_sequence(txn2, table::kBlockTransactions.name)};
+        CHECK(val8 == 19);
 
         // Tamper with sequence
         Bytes fake_value(sizeof(uint32_t), '\0');
@@ -201,7 +208,7 @@ namespace db {
             REQUIRE(std::string(ex.what()) == "Bad sequence value in db");
             thrown = true;
         }
-        REQUIRE(thrown);
+        CHECK(thrown);
     }
 
     TEST_CASE("Schema Version") {
@@ -229,8 +236,8 @@ namespace db {
 
         SECTION("Incompatible schema") {
             // Reduce compat schema version
-            auto incompat_version = VersionBase{db::table::kRequiredSchemaVersion.Major - 1, 0, 0};
-            REQUIRE_NOTHROW(db::write_schema_version(context.txn(), incompat_version));
+            auto incompatible_version = VersionBase{db::table::kRequiredSchemaVersion.Major - 1, 0, 0};
+            REQUIRE_NOTHROW(db::write_schema_version(context.txn(), incompatible_version));
             REQUIRE_THROWS(db::table::check_or_create_chaindata_tables(context.txn()));
         }
 
@@ -405,6 +412,20 @@ namespace db {
         CHECK(stages::read_stage_prune_progress(txn, stages::kBlockBodiesKey) == 0);
     }
 
+    TEST_CASE("Snapshots") {
+        test::Context context;
+        auto& txn{context.txn()};
+
+        const std::vector<std::string> snapshot_list{
+            "v1-000000-000500-bodies.seg",
+            "v1-000000-000500-headers.seg",
+            "v1-000000-000500-transactions.seg",
+        };
+
+        CHECK_NOTHROW(write_snapshots(txn, snapshot_list));
+        CHECK(read_snapshots(txn) == snapshot_list);
+    }
+
     TEST_CASE("Difficulty") {
         test::Context context;
         auto& txn{context.txn()};
@@ -449,7 +470,7 @@ namespace db {
         REQUIRE(head_block_num == header.number);
         REQUIRE(head_hash == header.hash());
 
-        // Read non existent canonical header hash
+        // Read non-existent canonical header hash
         db_hash = read_canonical_header_hash(txn, block_num + 1);
         REQUIRE(db_hash.has_value() == false);
 

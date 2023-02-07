@@ -26,7 +26,7 @@
 #include <silkworm/common/endian.hpp>
 #include <silkworm/common/log.hpp>
 #include <silkworm/test/log.hpp>
-#include <silkworm/test/snapshot_files.hpp>
+#include <silkworm/test/snapshots.hpp>
 
 namespace silkworm {
 

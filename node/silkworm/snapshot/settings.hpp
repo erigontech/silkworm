@@ -14,23 +14,19 @@
    limitations under the License.
 */
 
-#include "status_manager.hpp"
+#pragma once
 
-#include <silkworm/common/log.hpp>
+#include <filesystem>
 
-namespace silkworm::sentry {
+#include <silkworm/snapshot/path.hpp>
 
-boost::asio::awaitable<void> StatusManager::wait_for_status() {
-    auto status = co_await status_channel_.receive();
-    status_.set(status);
-    log::Info() << "Status received: network ID = " << status.message.network_id;
-}
+namespace silkworm {
 
-boost::asio::awaitable<void> StatusManager::start() {
-    // loop until wait_for_status() throws a cancelled exception
-    while (true) {
-        co_await wait_for_status();
-    }
-}
+struct SnapshotSettings {
+    std::filesystem::path repository_dir{kDefaultSnapshotDir};  // Path to the snapshot repository on disk
+    bool enabled{true};                                         // Flag indicating if snapshots are enabled
+    bool no_downloader{false};                                  // Flag indicating if snapshots download is disabled
+    uint64_t segment_size{kDefaultSegmentSize};                 // The segment size measured as number of blocks
+};
 
-}  // namespace silkworm::sentry
+}  // namespace silkworm

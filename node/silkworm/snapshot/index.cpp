@@ -21,7 +21,7 @@
 #include <silkworm/common/endian.hpp>
 #include <silkworm/common/log.hpp>
 #include <silkworm/common/util.hpp>
-#include <silkworm/test/snapshot_files.hpp>
+#include <silkworm/test/snapshots.hpp>
 #include <silkworm/types/hash.hpp>
 
 namespace silkworm {
@@ -35,7 +35,7 @@ void Index::build() {
     Decompressor decoder{segment_path_.path()};
     decoder.open();
 
-    const SnapshotFile index_file = segment_path_.index_file();
+    const SnapshotPath index_file = segment_path_.index_file();
     RecSplitSettings rec_split_settings{
         .keys_count = decoder.words_count(),
         .bucket_size = kBucketSize,
@@ -93,7 +93,7 @@ bool BodyIndex::walk(RecSplit8& rec_split, uint64_t i, uint64_t offset, ByteView
 void TransactionIndex::build() {
     SILK_INFO << "TransactionIndex::build path: " << segment_path_.path().string() << " start";
 
-    const SnapshotFile bodies_segment = SnapshotFile::from(segment_path_.path().parent_path(),
+    const SnapshotPath bodies_segment = SnapshotPath::from(segment_path_.path().parent_path(),
                                                            segment_path_.version(),
                                                            segment_path_.block_from(),
                                                            segment_path_.block_to(),
@@ -116,7 +116,7 @@ void TransactionIndex::build() {
 
     const BlockNum first_block_num{segment_path_.block_from()};
 
-    const SnapshotFile tx_idx_file = segment_path_.index_file();
+    const SnapshotPath tx_idx_file = segment_path_.index_file();
     SILK_INFO << "TransactionIndex::build tx_idx_file path: " << tx_idx_file.path().string();
     RecSplitSettings tx_hash_rs_settings{
         .keys_count = txs_decoder.words_count(),
@@ -127,7 +127,7 @@ void TransactionIndex::build() {
         .etl_optimal_size = etl::kOptimalBufferSize / 2};
     RecSplit8 tx_hash_rs{tx_hash_rs_settings, 1};
 
-    const SnapshotFile tx2block_idx_file = segment_path_.index_file_for_type(SnapshotType::transactions2block);
+    const SnapshotPath tx2block_idx_file = segment_path_.index_file_for_type(SnapshotType::transactions2block);
     SILK_INFO << "TransactionIndex::build tx2block_idx_file path: " << tx2block_idx_file.path().string();
     RecSplitSettings tx_hash_to_block_rs_settings{
         .keys_count = txs_decoder.words_count(),

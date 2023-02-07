@@ -45,5 +45,7 @@ file(
 list(FILTER SRC EXCLUDE REGEX "core/silkworm/chain/genesis_[a-z]+.cpp\$")
 list(FILTER SRC EXCLUDE REGEX "core/silkworm/chain/dao.hpp$")
 list(FILTER SRC EXCLUDE REGEX "node/silkworm/downloader/internals/preverified_hashes_[a-z]+.cpp\$")
+list(FILTER SRC EXCLUDE REGEX "node/silkworm/snapshot/config/[a-z_]+.cpp\$")
+list(FILTER SRC EXCLUDE REGEX "node/silkworm/snapshot/toml.hpp$$")
 
 execute_process(COMMAND ${CLANG_FORMAT} -style=file -i ${SRC})

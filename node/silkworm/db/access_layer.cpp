@@ -69,6 +69,23 @@ void write_build_info_height(mdbx::txn& txn, Bytes key, BlockNum height) {
     tgt.upsert(db::to_slice(key), db::to_slice(value));
 }
 
+std::vector<std::string> read_snapshots(mdbx::txn& txn) {
+    Cursor db_info_cursor{txn, table::kDatabaseInfo};
+    if (!db_info_cursor.seek(mdbx::slice{kDbSnapshotsKey})) {
+        return {};
+    }
+    const auto data{db_info_cursor.current()};
+    // https://github.com/nlohmann/json/issues/2204
+    const auto json = nlohmann::json::parse(data.value.as_string(), nullptr, /*.allow_exceptions=*/false);
+    return json.get<std::vector<std::string>>();
+}
+
+void write_snapshots(mdbx::txn& txn, const std::vector<std::string>& snapshot_file_names) {
+    Cursor db_info_cursor{txn, table::kDatabaseInfo};
+    nlohmann::json json_value = snapshot_file_names;
+    db_info_cursor.upsert(mdbx::slice{kDbSnapshotsKey}, mdbx::slice(json_value.dump().data()));
+}
+
 std::optional<BlockHeader> read_header(mdbx::txn& txn, BlockNum block_number, const evmc::bytes32& hash) {
     return read_header(txn, block_number, hash.bytes);
 }
@@ -785,6 +802,18 @@ uint64_t read_map_sequence(mdbx::txn& txn, const char* map_name) {
         throw std::length_error("Bad sequence value in db");
     }
     return endian::load_big_u64(from_slice(data.value).data());
+}
+
+uint64_t reset_map_sequence(mdbx::txn& txn, const char* map_name, uint64_t new_sequence) {
+    uint64_t current_sequence{read_map_sequence(txn, map_name)};
+    if (new_sequence != current_sequence) {
+        Cursor target(txn, table::kSequence);
+        mdbx::slice key(map_name);
+        Bytes new_sequence_buffer(sizeof(uint64_t), '\0');
+        endian::store_big_u64(new_sequence_buffer.data(), new_sequence);
+        target.upsert(key, to_slice(new_sequence_buffer));
+    }
+    return current_sequence;
 }
 
 }  // namespace silkworm::db

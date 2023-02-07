@@ -49,8 +49,11 @@ struct VersionBase {
 
 /* Common Keys */
 
-// Key for DbInfo bucket storing db schema version
+//! Key for DbInfo bucket storing db schema version
 inline constexpr const char* kDbSchemaVersionKey{"dbVersion"};
+
+//! Key for DbInfo bucket storing snapshot file names
+inline constexpr const char* kDbSnapshotsKey{"snapshots"};
 
 inline constexpr size_t kIncarnationLength{8};
 inline constexpr size_t kLocationLength{32};

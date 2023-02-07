@@ -156,6 +156,14 @@ cmd/silkworm --datadir <same-datadir-path-used-for-erigon>
 
 Silkworm uses Hunter as package manager, but will soon switch to Conan (https://conan.io/).
 
+Install Conan using:
+
+    pip3 install --user conan
+
+and add its binary to PATH:
+
+    export "PATH=$HOME/Library/Python/3.9/bin:$PATH"
+
 To use Conan at this experimental stage add the `-DCONAN_PACKAGE_MANAGER` option set to `ON`, and optionally the Conan profile with the `-DCONAN_PROFILE` option, with the name of the profile to use.
 
 Example: 

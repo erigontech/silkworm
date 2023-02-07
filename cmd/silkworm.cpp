@@ -110,7 +110,7 @@ int main(int argc, char* argv[]) {
 
         auto chaindata_db{silkworm::db::open_env(node_settings.chaindata_env_config)};
 
-        PreverifiedHashes::load(node_settings.chain_config);
+        PreverifiedHashes::load(node_settings.chain_config->chain_id);
 
         // Start boost asio
         using asio_guard_type = boost::asio::executor_work_guard<boost::asio::io_context::executor_type>;

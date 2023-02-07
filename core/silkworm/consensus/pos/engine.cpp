@@ -16,6 +16,8 @@
 
 #include "engine.hpp"
 
+#include <silkworm/common/assert.hpp>
+
 namespace silkworm::consensus {
 
 ValidationResult ProofOfStakeEngine::validate_seal(const BlockHeader& header) {
@@ -24,6 +26,20 @@ ValidationResult ProofOfStakeEngine::validate_seal(const BlockHeader& header) {
 
 ValidationResult ProofOfStakeEngine::validate_difficulty(const BlockHeader& header, const BlockHeader&) {
     return header.difficulty == 0 ? ValidationResult::kOk : ValidationResult::kWrongDifficulty;
+}
+
+void ProofOfStakeEngine::finalize(IntraBlockState& state, const Block& block, evmc_revision revision) {
+    if (revision < EVMC_SHANGHAI) {
+        return;
+    }
+
+    SILKWORM_ASSERT(block.withdrawals);
+
+    // See EIP-4895: Beacon chain push withdrawals as operations
+    for (const Withdrawal& w : *block.withdrawals) {
+        const auto amount_in_wei{intx::uint256{w.amount} * intx::uint256{kGiga}};
+        state.add_to_balance(w.address, amount_in_wei);
+    }
 }
 
 }  // namespace silkworm::consensus

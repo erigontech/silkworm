@@ -29,6 +29,8 @@ class ProofOfStakeEngine : public EngineBase {
     ValidationResult validate_seal(const BlockHeader& header) override;
 
     ValidationResult validate_difficulty(const BlockHeader& header, const BlockHeader& parent) override;
+
+    void finalize(IntraBlockState& state, const Block& block, evmc_revision revision) override;
 };
 
 }  // namespace silkworm::consensus

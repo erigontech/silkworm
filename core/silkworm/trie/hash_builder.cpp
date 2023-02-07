@@ -54,7 +54,7 @@ static Bytes encode_path(ByteView nibbles, bool terminating) {
 ByteView HashBuilder::leaf_node_rlp(ByteView path, ByteView value) {
     Bytes encoded_path{encode_path(path, /*terminating=*/true)};
     rlp_buffer_.clear();
-    rlp::Header h{/*list=*/true, /*payload_length=*/rlp::length(encoded_path) + rlp::length(value)};
+    rlp::Header h{.list = true, .payload_length = rlp::length(encoded_path) + rlp::length(value)};
     rlp::encode_header(rlp_buffer_, h);
     rlp::encode(rlp_buffer_, encoded_path);
     rlp::encode(rlp_buffer_, value);
@@ -64,7 +64,7 @@ ByteView HashBuilder::leaf_node_rlp(ByteView path, ByteView value) {
 ByteView HashBuilder::extension_node_rlp(ByteView path, ByteView child_ref) {
     Bytes encoded_path{encode_path(path, /*terminating=*/false)};
     rlp_buffer_.clear();
-    rlp::Header h{/*list=*/true, /*payload_length=*/rlp::length(encoded_path) + child_ref.length()};
+    rlp::Header h{.list = true, .payload_length = rlp::length(encoded_path) + child_ref.length()};
     rlp::encode_header(rlp_buffer_, h);
     rlp::encode(rlp_buffer_, encoded_path);
     rlp_buffer_.append(child_ref);
@@ -263,8 +263,8 @@ std::vector<Bytes> HashBuilder::branch_ref(uint16_t state_mask, uint16_t hash_ma
 
     const size_t first_child_idx{stack_.size() - static_cast<size_t>(std::popcount(state_mask))};
 
-    // Length for the nil value added below
-    rlp::Header h{/*list=*/true, /*payload_length=*/1};
+    // Length of 1 for the nil value added below
+    rlp::Header h{.list = true, .payload_length = 1};
 
     for (size_t i{first_child_idx}, digit{0}; digit < 16; ++digit) {
         if (state_mask & (1u << digit)) {

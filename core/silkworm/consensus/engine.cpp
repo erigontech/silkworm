@@ -29,8 +29,6 @@
 
 namespace silkworm::consensus {
 
-void IEngine::finalize(IntraBlockState&, const Block&, evmc_revision) {}
-
 ValidationResult pre_validate_transaction(const Transaction& txn, const evmc_revision rev, const uint64_t chain_id,
                                           const std::optional<intx::uint256>& base_fee_per_gas) {
     if (txn.chain_id.has_value()) {

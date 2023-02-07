@@ -38,7 +38,6 @@ inline constexpr ChainConfig kLondonConfig{
     .constantinople_block = 0,
     .petersburg_block = 0,
     .istanbul_block = 0,
-    .muir_glacier_block = 0,
     .berlin_block = 0,
     .london_block = 0,
 };
@@ -54,11 +53,8 @@ inline constexpr ChainConfig kShanghaiConfig{
     .constantinople_block = 0,
     .petersburg_block = 0,
     .istanbul_block = 0,
-    .muir_glacier_block = 0,
     .berlin_block = 0,
     .london_block = 0,
-    .arrow_glacier_block = 0,
-    .gray_glacier_block = 0,
     .terminal_total_difficulty = 0,
     .shanghai_time = 0,
 };

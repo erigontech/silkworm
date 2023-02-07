@@ -29,6 +29,7 @@
 #include <silkworm/rlp/decode.hpp>
 #include <silkworm/types/bloom.hpp>
 #include <silkworm/types/transaction.hpp>
+#include <silkworm/types/withdrawal.hpp>
 
 namespace silkworm {
 
@@ -54,6 +55,7 @@ struct BlockHeader {
     NonceType nonce{};
 
     std::optional<intx::uint256> base_fee_per_gas{std::nullopt};  // EIP-1559
+    std::optional<evmc::bytes32> withdrawals_root{std::nullopt};  // EIP-4895
 
     [[nodiscard]] evmc::bytes32 hash(bool for_sealing = false, bool exclude_extra_data_sig = false) const;
 
@@ -70,6 +72,7 @@ struct BlockHeader {
 struct BlockBody {
     std::vector<Transaction> transactions;
     std::vector<BlockHeader> ommers;
+    std::optional<std::vector<Withdrawal>> withdrawals{std::nullopt};
 
     friend bool operator==(const BlockBody&, const BlockBody&) = default;
 };

@@ -86,6 +86,10 @@ elseif("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU")
     add_compile_options(-g1)
   endif()
 
+  # gcc can issue bogus -Wmaybe-uninitialized warnings with std::optional
+  # https://gcc.gnu.org/bugzilla/show_bug.cgi?id=80635
+  add_compile_options(-Wno-error=maybe-uninitialized)
+
 elseif("${CMAKE_CXX_COMPILER_ID}" MATCHES ".*Clang$")
 
   if(SILKWORM_CLANG_COVERAGE)

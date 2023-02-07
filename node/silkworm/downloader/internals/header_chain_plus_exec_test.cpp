@@ -61,6 +61,8 @@ class DummyConsensusEngine : public consensus::IEngine {
 
     ValidationResult validate_seal(const BlockHeader&) override { return ValidationResult::kOk; }
 
+    void finalize(IntraBlockState&, const Block&, evmc_revision) override {}
+
     evmc::address get_beneficiary(const BlockHeader&) override { return {}; }
 };
 

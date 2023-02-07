@@ -45,7 +45,7 @@ void Block::recover_senders() {
 namespace rlp {
 
     static Header rlp_header(const BlockHeader& header, bool for_sealing = false, bool exclude_extra_data_sig = false) {
-        Header rlp_head{true, 0};
+        Header rlp_head{.list = true};
         rlp_head.payload_length += kHashLength + 1;                                        // parent_hash
         rlp_head.payload_length += kHashLength + 1;                                        // ommers_hash
         rlp_head.payload_length += kAddressLength + 1;                                     // beneficiary
@@ -68,14 +68,17 @@ namespace rlp {
             rlp_head.payload_length += kHashLength + 1;  // mix_hash
             rlp_head.payload_length += 8 + 1;            // nonce
         }
-        if (header.base_fee_per_gas.has_value()) {
+        if (header.base_fee_per_gas) {
             rlp_head.payload_length += length(*header.base_fee_per_gas);
+        }
+        if (header.withdrawals_root) {
+            rlp_head.payload_length += kHashLength + 1;
         }
         return rlp_head;
     }
 
     size_t length(const BlockHeader& header) {
-        Header rlp_head{rlp_header(header)};
+        const Header rlp_head{rlp_header(header)};
         return length_of_length(rlp_head.payload_length) + rlp_head.payload_length;
     }
 
@@ -103,8 +106,11 @@ namespace rlp {
             encode(to, header.mix_hash.bytes);
             encode(to, header.nonce);
         }
-        if (header.base_fee_per_gas.has_value()) {
+        if (header.base_fee_per_gas) {
             encode(to, *header.base_fee_per_gas);
+        }
+        if (header.withdrawals_root) {
+            encode(to, *header.withdrawals_root);
         }
     }
 
@@ -174,24 +180,40 @@ namespace rlp {
             to.base_fee_per_gas = base_fee_per_gas;
         }
 
+        to.withdrawals_root = std::nullopt;
+        if (from.length() > leftover) {
+            evmc::bytes32 withdrawals_root;
+            if (DecodingResult err{decode(from, withdrawals_root)}; err != DecodingResult::kOk) {
+                return err;
+            }
+            to.withdrawals_root = withdrawals_root;
+        }
+
         return from.length() == leftover ? DecodingResult::kOk : DecodingResult::kListLengthMismatch;
     }
 
-    size_t length(const BlockBody& block_body) {
-        Header rlp_head{true, 0};
-        rlp_head.payload_length += length(block_body.transactions);
-        rlp_head.payload_length += length(block_body.ommers);
+    static Header rlp_header_body(const BlockBody& b) {
+        Header rlp_head{.list = true};
+        rlp_head.payload_length += length(b.transactions);
+        rlp_head.payload_length += length(b.ommers);
+        if (b.withdrawals) {
+            rlp_head.payload_length += length(*b.withdrawals);
+        }
+        return rlp_head;
+    }
 
+    size_t length(const BlockBody& block_body) {
+        const Header rlp_head{rlp_header_body(block_body)};
         return length_of_length(rlp_head.payload_length) + rlp_head.payload_length;
     }
 
     void encode(Bytes& to, const BlockBody& block_body) {
-        Header rlp_head{true, 0};
-        rlp_head.payload_length += length(block_body.transactions);
-        rlp_head.payload_length += length(block_body.ommers);
-        encode_header(to, rlp_head);
+        encode_header(to, rlp_header_body(block_body));
         encode(to, block_body.transactions);
         encode(to, block_body.ommers);
+        if (block_body.withdrawals) {
+            encode(to, *block_body.withdrawals);
+        }
     }
 
     template <>
@@ -210,6 +232,15 @@ namespace rlp {
         }
         if (err = decode(from, to.ommers); err != DecodingResult::kOk) {
             return err;
+        }
+
+        to.withdrawals = std::nullopt;
+        if (from.length() > leftover) {
+            std::vector<Withdrawal> withdrawals;
+            if (err = decode(from, withdrawals); err != DecodingResult::kOk) {
+                return err;
+            }
+            to.withdrawals = withdrawals;
         }
 
         return from.length() == leftover ? DecodingResult::kOk : DecodingResult::kListLengthMismatch;
@@ -236,27 +267,37 @@ namespace rlp {
             return err;
         }
 
+        to.withdrawals = std::nullopt;
+        if (from.length() > leftover) {
+            std::vector<Withdrawal> withdrawals;
+            if (err = decode(from, withdrawals); err != DecodingResult::kOk) {
+                return err;
+            }
+            to.withdrawals = withdrawals;
+        }
+
         return from.length() == leftover ? DecodingResult::kOk : DecodingResult::kListLengthMismatch;
     }
 
-    size_t length(const Block& block) {
-        Header rlp_head{true, 0};
-        rlp_head.payload_length += length(block.header);
-        rlp_head.payload_length += length(block.transactions);
-        rlp_head.payload_length += length(block.ommers);
+    static Header rlp_header(const Block& b) {
+        Header rlp_head{rlp_header_body(b)};
+        rlp_head.payload_length += length(b.header);
+        return rlp_head;
+    }
 
+    size_t length(const Block& block) {
+        const Header rlp_head{rlp_header(block)};
         return length_of_length(rlp_head.payload_length) + rlp_head.payload_length;
     }
 
     void encode(Bytes& to, const Block& block) {
-        Header rlp_head{true, 0};
-        rlp_head.payload_length += length(block.header);
-        rlp_head.payload_length += length(block.transactions);
-        rlp_head.payload_length += length(block.ommers);
-        encode_header(to, rlp_head);
+        encode_header(to, rlp_header(block));
         encode(to, block.header);
         encode(to, block.transactions);
         encode(to, block.ommers);
+        if (block.withdrawals) {
+            encode(to, *block.withdrawals);
+        }
     }
 
 }  // namespace rlp

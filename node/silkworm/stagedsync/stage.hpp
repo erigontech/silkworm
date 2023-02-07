@@ -27,6 +27,7 @@
 #include <silkworm/concurrency/stoppable.hpp>
 #include <silkworm/db/stages.hpp>
 #include <silkworm/db/tables.hpp>
+#include <silkworm/downloader/internals/types.hpp>
 #include <silkworm/etl/collector.hpp>
 
 namespace silkworm::stagedsync {
@@ -38,21 +39,17 @@ struct SyncContext {
     SyncContext() = default;
     ~SyncContext() = default;
 
-    // Not copyable nor movable
-    SyncContext(const SyncContext&) = delete;
-    SyncContext& operator=(const SyncContext&) = delete;
+    SyncContext(const SyncContext&) = delete;             // not copyable
+    SyncContext& operator=(const SyncContext&) = delete;  // not copyable
 
-    //! \brief Whether this is first cycle
-    bool is_first_cycle{false};
+    bool is_first_cycle{true};  // true at start-up (fist sync or sync after a long pause)
 
-    //! \brief If an unwind operation is requested this member is valued
-    std::optional<BlockNum> unwind_point;
+    BlockNum target_height{0};
 
-    //! \brief After an unwind operation this is valued to last unwind point
+    std::optional<BlockNum> unwind_point;  // if valued sync requires an unwind to this point
     std::optional<BlockNum> previous_unwind_point;
 
-    //! \brief If an unwind operation is requested this member is valued
-    std::optional<evmc::bytes32> bad_block_hash;
+    std::optional<evmc::bytes32> bad_block_hash;  // valued if we encountered a bad block
 };
 
 //! \brief Base Stage interface. All stages MUST inherit from this class and MUST override forward / unwind /
@@ -158,12 +155,19 @@ class StageError : public std::exception {
     std::string message_;
 };
 
-//! \brief Throws StageError exception when code =! Result::kSuccess
-//! \param [in] code : The result of a stage operation
+// Throw StageError exception when result indicates a failure
 inline void success_or_throw(Stage::Result code) {
     if (code != Stage::Result::kSuccess) {
         throw StageError(code);
     }
+}
+// Return true if result indicates that an unwind operation is needed
+inline bool unwind_needed(Stage::Result result) {
+    return (result == Stage::Result::kWrongFork || result == Stage::Result::kInvalidBlock);
+}
+// Return true if result indicates that an error or abortion happened
+inline bool error_or_abort(Stage::Result result) {
+    return (result == Stage::Result::kUnexpectedError || result == Stage::Result::kAborted);
 }
 
 }  // namespace silkworm::stagedsync

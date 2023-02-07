@@ -14,37 +14,32 @@
    limitations under the License.
 */
 
-#include "body_persistence.hpp"
+#include "stage_bodies.hpp"
 
-#include <algorithm>
 #include <iostream>
 
 #include <catch2/catch.hpp>
 
-#include <silkworm/chain/genesis.hpp>
-#include <silkworm/common/cast.hpp>
-#include <silkworm/common/test_context.hpp>
-#include <silkworm/db/genesis.hpp>
-#include <silkworm/db/stages.hpp>
-#include <silkworm/types/block.hpp>
-
-#include "body_sequence.hpp"
+#include "silkworm/common/cast.hpp"
+#include "silkworm/common/test_context.hpp"
+#include "silkworm/db/genesis.hpp"
+#include "silkworm/db/stages.hpp"
+#include "silkworm/types/block.hpp"
 
 namespace silkworm {
 
-TEST_CASE("BodyPersistence - body persistence") {
+class BodiesStage_ForTest : public stagedsync::BodiesStage {
+  public:
+    using stagedsync::BodiesStage::BodyDataModel;
+};
+using BodyDataModel_ForTest = BodiesStage_ForTest::BodyDataModel;
+
+TEST_CASE("BodiesStage - data model") {
     test::Context context;
-    auto& txn{context.txn()};
-
-    bool allow_exceptions = false;
-
-    auto chain_config{kMainnetConfig};
-    chain_config.genesis_hash.emplace(kMainnetGenesisHash);
-
-    auto source_data = silkworm::read_genesis_data(chain_config.chain_id);
-    auto genesis_json = nlohmann::json::parse(source_data, nullptr, allow_exceptions);
-    db::initialize_genesis(txn, genesis_json, allow_exceptions);
+    context.add_genesis_data();
     context.commit_txn();
+
+    auto chain_config = *context.node_settings().chain_config;
 
     /* status:
      *         h0
@@ -67,28 +62,23 @@ TEST_CASE("BodyPersistence - body persistence") {
         auto header1_hash = block1.header.hash();
         block1.ommers.push_back(BlockHeader{});  // generate error InvalidOmmerHeader
 
-        BodyPersistence bp(tx, chain_config);
+        BlockNum bodies_stage_height = 0;
+        BodyDataModel_ForTest bm(tx, bodies_stage_height, chain_config);
 
-        REQUIRE(bp.initial_height() == 0);
-        REQUIRE(bp.highest_height() == 0);
-        REQUIRE(bp.unwind_needed() == false);
-        REQUIRE(bp.unwind_point() == 0);
+        REQUIRE(bm.initial_height() == 0);
+        REQUIRE(bm.highest_height() == 0);
+        REQUIRE(bm.unwind_needed() == false);
+        REQUIRE(bm.unwind_point() == 0);
 
-        bp.persist(block1);
+        bm.update_tables(block1);
 
         // check internal status
-        REQUIRE(bp.highest_height() == 0);    // block is not valid so no progress
-        REQUIRE(bp.unwind_needed() == true);  // block is not valid -> unwind
-        REQUIRE(bp.unwind_point() == 0);      // block-num - 1
-        REQUIRE(bp.bad_block() == header1_hash);
+        REQUIRE(bm.highest_height() == 0);    // block is not valid so no progress
+        REQUIRE(bm.unwind_needed() == true);  // block is not valid -> unwind
+        REQUIRE(bm.unwind_point() == 0);      // block-num - 1
+        REQUIRE(bm.bad_block() == header1_hash);
 
-        // check db content
-        BlockBody saved_body;
-        bool present = db::read_body(tx, block1.header.hash(), saved_body);
-
-        REQUIRE(!present);
-
-        bp.close();
+        bm.close();
     }
 
     SECTION("one valid body after the genesis") {
@@ -120,52 +110,24 @@ TEST_CASE("BodyPersistence - body persistence") {
         // Note: block1 has zero transactions and zero ommers on mainnet
         REQUIRE(decoding_result == DecodingResult::kOk);
 
-        BodyPersistence bp(tx, chain_config);
+        BlockNum bodies_stage_height = 0;
+        BodyDataModel_ForTest bm(tx, bodies_stage_height, chain_config);
 
         // check internal status
-        REQUIRE(bp.initial_height() == 0);
-        REQUIRE(bp.highest_height() == 0);
-        REQUIRE(bp.unwind_needed() == false);
-        REQUIRE(bp.unwind_point() == 0);
+        REQUIRE(bm.initial_height() == 0);
+        REQUIRE(bm.highest_height() == 0);
+        REQUIRE(bm.unwind_needed() == false);
+        REQUIRE(bm.unwind_point() == 0);
 
-        bp.persist(block1);  // validation must pass
+        bm.update_tables(block1);  // validation must pass
 
         // check internal status
-        REQUIRE(bp.highest_height() == 1);
-        REQUIRE(bp.unwind_needed() == false);
-        REQUIRE(bp.unwind_point() == 0);
-
-        // check db content
-        BlockBody saved_body;
-        bool present = db::read_body(tx, block1.header.hash(), block1.header.number, saved_body);
-
-        REQUIRE(present);
-        REQUIRE(saved_body == block1);
-
-        auto bodies_stage_height = db::stages::read_stage_progress(tx, db::stages::kBlockBodiesKey);
-
-        REQUIRE(bodies_stage_height == block1.header.number);
+        REQUIRE(bm.highest_height() == 1);
+        REQUIRE(bm.unwind_needed() == false);
+        REQUIRE(bm.unwind_point() == 0);
 
         // close
-        bp.close();
-
-        // re-opening
-        BodyPersistence bp2(tx, chain_config);
-
-        // check internal status
-        REQUIRE(bp2.initial_height() == 1);
-        REQUIRE(bp2.highest_height() == 1);
-
-        // close
-        bp2.close();
-
-        // removing a block
-        BodyPersistence::remove_bodies(0, block1.header.hash(), tx);
-
-        // check internal status
-        BodyPersistence bp3(tx, chain_config);
-        REQUIRE(bp3.initial_height() == 0);
-        REQUIRE(bp3.highest_height() == 0);
+        bm.close();
     }
 }
 

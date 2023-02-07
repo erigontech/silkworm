@@ -19,57 +19,51 @@
 #include <silkworm/chain/difficulty.hpp>
 #include <silkworm/common/log.hpp>
 #include <silkworm/consensus/base/engine.hpp>
+#include <silkworm/downloader/sentry_client.hpp>
 
 #include "random_number.hpp"
 
 namespace silkworm {
 
-seconds_t BodySequence::kRequestDeadline{std::chrono::seconds(30)};
-BlockNum BodySequence::kMaxBlocksPerMessage{128};
-size_t BodySequence::kPerPeerMaxOutstandingRequests{4};
-size_t BodySequence::kMaxInMemoryRequests{400000};
-milliseconds_t BodySequence::kNoPeerDelay{std::chrono::milliseconds(1000)};
-
-BodySequence::BodySequence(const db::ROAccess& dba)
-    : db_access_(dba) {
-    recover_initial_state();
+BodySequence::BodySequence() {
 }
 
-void BodySequence::recover_initial_state() {
-    // does nothing
-}
-
-BlockNum BodySequence::highest_block_in_db() const { return highest_body_in_db_; }
-BlockNum BodySequence::target_height() const { return headers_stage_height_; }
-BlockNum BodySequence::highest_block_in_memory() const { return body_requests_.highest_block(); }
-BlockNum BodySequence::lowest_block_in_memory() const { return body_requests_.lowest_block(); }
-
-void BodySequence::sync_current_state(BlockNum highest_body_in_db, BlockNum highest_header_in_db) {
-    highest_body_in_db_ = highest_body_in_db;
-    headers_stage_height_ = highest_header_in_db;
-
+void BodySequence::current_state(BlockNum highest_in_db) {
+    highest_body_in_output_ = highest_in_db;
+    target_height_ = highest_in_db;
     statistics_ = {};  // reset statistics
 }
 
-size_t BodySequence::outstanding_bodies(time_point_t tp) const {
+BlockNum BodySequence::highest_block_in_output() const { return highest_body_in_output_; }
+BlockNum BodySequence::target_height() const { return target_height_; }
+BlockNum BodySequence::highest_block_in_memory() const { return body_requests_.highest_block(); }
+BlockNum BodySequence::lowest_block_in_memory() const { return body_requests_.lowest_block(); }
+size_t BodySequence::ready_bodies() const { return ready_bodies_; }
+size_t BodySequence::requests() const { return body_requests_.size(); }
+bool BodySequence::has_completed() const {
+    return requests() == 0 &&                            // no more requests
+           highest_block_in_output() == target_height_;  // all bodies withdrawn
+}
+
+size_t BodySequence::outstanding_requests(time_point_t tp) const {
     size_t requested_bodies{0};
 
     for (auto& br : body_requests_) {
         const BodyRequest& past_request = br.second;
+        if (past_request.request_id == 0) break;  // not yet requested, so the following
         if (!past_request.ready &&
-            (tp - past_request.request_time < kRequestDeadline))
+            (tp - past_request.request_time < SentryClient::kRequestDeadline))
             requested_bodies++;
     }
 
-    return requested_bodies;
-}
-
-std::list<NewBlockPacket>& BodySequence::announces_to_do() {
-    return announcements_to_do_;
+    // return requested_bodies / kMaxBlocksPerMessage rounded up
+    return (requested_bodies + kMaxBlocksPerMessage - 1) / kMaxBlocksPerMessage;
 }
 
 Penalty BodySequence::accept_requested_bodies(BlockBodiesPacket66& packet, const PeerId&) {
     Penalty penalty = NoPenalty;
+    BlockNum start_block = std::numeric_limits<BlockNum>::max();
+    size_t count = 0;
 
     statistics_.received_items += packet.request.size();
 
@@ -111,11 +105,17 @@ Penalty BodySequence::accept_requested_bodies(BlockBodiesPacket66& packet, const
             request.ready = true;
             ready_bodies_ += 1;
             statistics_.accepted_items += 1;
-            SILK_TRACE << "BodySequence: body accepted, block_num=" << request.block_height;
+
+            start_block = std::min(start_block, request.block_height);
+            count += 1;
+            // SILK_TRACE << "BodySequence: body accepted, block_num=" << request.block_height;
         } else {
             statistics_.reject_causes.duplicated += 1;
         }
     }
+
+    SILK_TRACE << "BodySequence: " << count << " body accepted from block " << start_block << " out of "
+               << packet.request.size() << " received";
 
     // Process remaining elements in matching_requests invalidating corresponding BodyRequest
     for (auto& elem : matching_requests) {
@@ -128,36 +128,37 @@ Penalty BodySequence::accept_requested_bodies(BlockBodiesPacket66& packet, const
 }
 
 Penalty BodySequence::accept_new_block(const Block& block, const PeerId&) {
-    // save for later usage
-    announced_blocks_.add(block);
+    if (block.header.number <= highest_body_in_output_) return Penalty::NoPenalty;  // already in db, ignore
+
+    announced_blocks_.add(block);  // save for later usage
 
     return Penalty::NoPenalty;
 }
 
-auto BodySequence::request_more_bodies(time_point_t tp, uint64_t active_peers)
+auto BodySequence::request_more_bodies(time_point_t tp)
     -> std::tuple<GetBlockBodiesPacket66, std::vector<PeerPenalization>, MinBlock> {
     GetBlockBodiesPacket66 packet;
     packet.requestId = RANDOM_NUMBER.generate_one();
 
-    seconds_t timeout = BodySequence::kRequestDeadline;
+    seconds_t timeout = SentryClient::kRequestDeadline;
 
     BlockNum min_block{0};
 
-    if (tp - last_nack_ < kNoPeerDelay)
+    if (tp - last_nack_ < SentryClient::kNoPeerDelay)
         return {};
 
     auto penalizations = renew_stale_requests(packet, min_block, tp, timeout);
 
-    size_t stale_requests = 0;  // see below
-    auto outstanding_bodies = body_requests_.size() - ready_bodies_ - stale_requests;
-
-    if (packet.request.size() < kMaxBlocksPerMessage &&  // if this condition is true stale_requests == 0
-        body_requests_.size() < kMaxInMemoryRequests &&
-        outstanding_bodies < kPerPeerMaxOutstandingRequests * active_peers * kMaxBlocksPerMessage) {
+    if (packet.request.size() < kMaxBlocksPerMessage &&  // not full yet
+        requests() < kMaxInMemoryRequests) {             // not too many requests in memory
         make_new_requests(packet, min_block, tp, timeout);
     }
 
     statistics_.requested_items += packet.request.size();
+
+    if (packet.request.size() == 0) {
+        SILK_TRACE << "BodySequence, no more bodies to request";
+    }
 
     return {std::move(packet), std::move(penalizations), min_block};
 }
@@ -166,82 +167,110 @@ auto BodySequence::request_more_bodies(time_point_t tp, uint64_t active_peers)
 auto BodySequence::renew_stale_requests(GetBlockBodiesPacket66& packet, BlockNum& min_block,
                                         time_point_t tp, seconds_t timeout) -> std::vector<PeerPenalization> {
     std::vector<PeerPenalization> penalizations;
+    BlockNum start_block = std::numeric_limits<BlockNum>::max();
+    size_t count = 0;
 
     for (auto& br : body_requests_) {
         BodyRequest& past_request = br.second;
 
-        if (past_request.ready || tp - past_request.request_time < timeout)
+        if (past_request.request_id == 0 || past_request.ready || tp - past_request.request_time < timeout)
             continue;
 
-        packet.request.push_back(past_request.block_hash);
-        past_request.request_time = tp;
-        past_request.request_id = packet.requestId;
+        if (!fulfill_from_announcements(past_request)) {
+            packet.request.push_back(past_request.block_hash);
+            past_request.request_time = tp;
+            past_request.request_id = packet.requestId;
 
-        // Erigon increment a penalization counter for the peer, but it doesn't use it
-        // penalizations.emplace_back({Penalty::BadBlockPenalty, });
+            min_block = std::max(min_block, past_request.block_height);
 
-        SILK_TRACE << "BodySequence: renewed request block num= " << past_request.block_height
-                   << ", hash= " << past_request.block_hash;
+            // Erigon increment a penalization counter for the peer, but it doesn't use it
+            // penalizations.emplace_back({Penalty::BadBlockPenalty, });
 
-        min_block = std::max(min_block, past_request.block_height);
+            start_block = std::min(start_block, past_request.block_height);
+            count++;
+            // SILK_TRACE << "BodySequence: renewed request block num= " << past_request.block_height
+            //            << ", hash= " << past_request.block_hash;
+        }
 
         if (packet.request.size() >= kMaxBlocksPerMessage) break;
     }
 
+    SILK_TRACE << "BodySequence: renewing body requests from block-num " << start_block << " for " << count << " blocks";
+
     return penalizations;
 }
 
-//! Make requests of new bodies to get progress
-void BodySequence::make_new_requests(GetBlockBodiesPacket66& packet, BlockNum& min_block, time_point_t tp, seconds_t) {
-    auto tx = db_access_.start_ro_tx();
+void BodySequence::make_new_requests(GetBlockBodiesPacket66& packet, BlockNum& min_block,
+                                     time_point_t tp, seconds_t) {
+    BlockNum start_block = std::numeric_limits<BlockNum>::max();
+    size_t count = 0;
 
-    BlockNum last_requested_block = highest_body_in_db_;
-    if (!body_requests_.empty())
-        last_requested_block = body_requests_.rbegin()->second.block_height;  // the last requested
+    for (auto& br : body_requests_) {
+        BodyRequest& new_request = br.second;
 
-    while (packet.request.size() < kMaxBlocksPerMessage && last_requested_block < headers_stage_height_) {
-        BlockNum bn = last_requested_block + 1;
+        if (new_request.request_id != 0 || new_request.ready)  // already requested or ready
+            continue;
 
-        auto header = db::read_canonical_header(tx, bn);
-        if (!header) {
-            body_requests_.erase(bn);
-            throw std::logic_error(
-                "BodySequence exception, "
-                "cause: header of block " +
-                std::to_string(bn) + " expected in db");
+        if (!fulfill_from_announcements(new_request)) {
+            packet.request.push_back(new_request.block_hash);
+            new_request.request_time = tp;
+            new_request.request_id = packet.requestId;
+
+            min_block = std::max(min_block, new_request.block_height);  // the min block the peer must have (so it is our max)
+
+            start_block = std::min(start_block, new_request.block_height);
+            count++;
+            // SILK_TRACE << "BodySequence: requested body block-num= " << new_request.block_height
+            //            << ", hash= " << new_request.block_hash;
         }
+
+        new_request.request_id = packet.requestId;
+
+        if (packet.request.size() >= kMaxBlocksPerMessage) break;
+    }
+
+    SILK_TRACE << "BodySequence: requesting new bodies from block-num " << start_block << " for " << count << " blocks";
+}
+
+//! Save headers of witch it has to download bodies
+void BodySequence::download_bodies(const Headers& headers) {
+    for (auto header : headers) {
+        BlockNum bn = header->number;
 
         BodyRequest new_request;
-        new_request.block_height = bn;
-        new_request.request_id = packet.requestId;
+        new_request.block_height = header->number;
+        new_request.request_id = 0;  // no request yet
         new_request.block_hash = header->hash();
-        new_request.request_time = tp;
+        // new_request.request_time
 
-        std::optional<BlockBody> announced_body = announced_blocks_.remove(bn);
-        if (announced_body && is_valid_body(*header, *announced_body)) {
-            add_to_announcements(*header, *announced_body, tx);
+        fulfill_from_announcements(new_request);
 
-            new_request.body = std::move(*announced_body);
-            new_request.ready = true;
-            ready_bodies_ += 1;
-        } else {
-            packet.request.push_back(new_request.block_hash);
-
-            SILK_TRACE << "BodySequence: requested body block-num= " << new_request.block_height
-                       << ", hash= " << new_request.block_hash;
-            min_block = std::max(min_block, new_request.block_height);
-        }
-
-        new_request.header = std::move(*header);
+        new_request.header = *header;
 
         body_requests_.emplace(bn, std::move(new_request));
 
-        ++last_requested_block;
+        target_height_ = std::max(target_height_, bn);
     }
 }
 
+// fill BodyRequest from announced_blocks_
+bool BodySequence::fulfill_from_announcements(BodyRequest& request) {
+    if (request.ready) return false;
+
+    std::optional<BlockBody> announced_body = announced_blocks_.remove(request.block_height);
+    if (announced_body && is_valid_body(request.header, *announced_body)) {
+        request.body = std::move(*announced_body);
+        request.ready = true;
+        request.to_announce = true;
+        ready_bodies_ += 1;
+        return true;
+    }
+
+    return false;
+}
+
 void BodySequence::request_nack(const GetBlockBodiesPacket66& packet) {
-    seconds_t timeout = BodySequence::kRequestDeadline;
+    seconds_t timeout = SentryClient::kRequestDeadline;
     for (auto& br : body_requests_) {
         BodyRequest& past_request = br.second;
         if (past_request.request_id == packet.requestId)
@@ -259,8 +288,8 @@ bool BodySequence::is_valid_body(const BlockHeader& header, const BlockBody& bod
     return true;
 }
 
-auto BodySequence::withdraw_ready_bodies() -> std::vector<Block> {
-    std::vector<Block> ready_bodies;
+Blocks BodySequence::withdraw_ready_bodies() {
+    Blocks ready_bodies;
 
     auto curr_req = body_requests_.begin();
     while (curr_req != body_requests_.end()) {
@@ -268,33 +297,18 @@ auto BodySequence::withdraw_ready_bodies() -> std::vector<Block> {
         if (!past_request.ready)
             break;  // it needs to return the first range of consecutive blocks, so it stops at the first non ready
 
-        highest_body_in_db_ = std::max(highest_body_in_db_, past_request.block_height);
-        ready_bodies.push_back({std::move(past_request.body), std::move(past_request.header)});
+        highest_body_in_output_ = std::max(highest_body_in_output_, past_request.block_height);
+
+        std::shared_ptr<BlockEx> b{new BlockEx{{std::move(past_request.body), std::move(past_request.header)}}};
+        b->to_announce = past_request.to_announce;
+
+        ready_bodies.push_back(b);
 
         curr_req = body_requests_.erase(curr_req);  // erase curr_req and update curr_req to point to the next request
     }
 
     ready_bodies_ -= ready_bodies.size();
     return ready_bodies;
-}
-
-void BodySequence::add_to_announcements(BlockHeader header, BlockBody body, db::ROTxn& tx) {
-    // calculate total difficulty of the block
-    auto parent_td = db::read_total_difficulty(tx, header.number - 1, header.parent_hash);
-    if (!parent_td) {
-        log::Warning() << "BodySequence: dangling block " << std::to_string(header.number);
-        return;  // non inserted in announcement list
-    }
-
-    auto td = *parent_td + header.difficulty;
-
-    // auto td = parent_td + canonical_difficulty(header.number, header.timestamp,
-    //                                            parent_td, parent_ts, parent_has_uncle, chain_config_);
-
-    NewBlockPacket packet{{std::move(body), std::move(header)}, td};
-
-    // add to list
-    announcements_to_do_.push_back(std::move(packet));
 }
 
 void BodySequence::AnnouncedBlocks::add(Block block) {

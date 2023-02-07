@@ -30,7 +30,8 @@ TEST_CASE("Stage Transaction Lookups") {
     static constexpr evmc::bytes32 hash_1{0xb5553de315e0edf504d9150af82dafa5c4667fa618ed0a6f19c69b41166c5510_bytes32};
 
     test::Context context;
-    db::RWTxn txn{context.txn()};
+    db::RWTxn& txn{context.rw_txn()};
+    txn.disable_commit();
     log::Settings log_settings;
     log_settings.log_std_out = true;
     log::init(log_settings);

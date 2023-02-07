@@ -19,6 +19,7 @@
 #include <silkworm/common/log.hpp>
 #include <silkworm/downloader/internals/header_retrieval.hpp>
 #include <silkworm/downloader/rpc/hand_shake.hpp>
+#include <silkworm/downloader/rpc/peer_by_id.hpp>
 #include <silkworm/downloader/rpc/peer_count.hpp>
 #include <silkworm/downloader/rpc/receive_messages.hpp>
 #include <silkworm/downloader/rpc/set_status.hpp>
@@ -148,6 +149,7 @@ void SentryClient::execution_loop() {
 
 void SentryClient::stats_receiving_loop() {
     log::set_thread_name("sentry-stats  ");
+    std::map<PeerId, std::string> peer_infos;
 
     while (!is_stopping()) {
         try {
@@ -169,15 +171,24 @@ void SentryClient::stats_receiving_loop() {
 
                 auto peerId = bytes_from_H512(stat.peer_id());
                 const char* event = "";
+                std::string info;
                 if (stat.event_id() == sentry::PeerEvent::Connect) {
                     event = "connected";
                     active_peers_++;
+
+                    info = request_peer_info(peerId);
+                    peer_infos[peerId] = info;
                 } else {
                     event = "disconnected";
-                    if (active_peers_ > 0) active_peers_--;  // workaround, to fix this we need to improve the interface
-                }                                            // or issue a count_active_peers()
+                    if (active_peers_ > 0) active_peers_--;
 
-                log::Debug("SentryClient") << "Peer " << human_readable_id(peerId) << " " << event << ", active " << active_peers_;
+                    info = peer_infos[peerId];
+                    peer_infos.erase(peerId);
+                }
+
+                log::Info("SentryClient") << "Peer " << human_readable_id(peerId) << " " << event
+                                          << ", active " << active_peers_
+                                          << ", info: " << info;
             }
 
         } catch (const std::exception& e) {
@@ -206,6 +217,27 @@ uint64_t SentryClient::count_active_peers() {
     active_peers_.store(peers.count());
 
     return peers.count();
+}
+
+std::string SentryClient::request_peer_info(PeerId id) {
+    rpc::PeerById rpc(id);
+    rpc.timeout(std::chrono::seconds(1));
+    rpc.do_not_throw_on_failure();
+
+    exec_remotely(rpc);
+
+    if (!rpc.status().ok()) {
+        SILK_TRACE << "Failure of rpc PeerById: " << rpc.status().error_message();
+        return "-info-retrieval-failure-";
+    }
+
+    sentry::PeerByIdReply reply = rpc.reply();
+
+    if (!reply.has_peer()) return "-info-not-found-";
+
+    std::string info = "name=" + reply.peer().name() + " / enode=" + reply.peer().enode();
+
+    return info;
 }
 
 uint64_t SentryClient::active_peers() {

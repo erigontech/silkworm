@@ -32,6 +32,10 @@ class StopWatch {
     using TimePoint = std::chrono::time_point<std::chrono::high_resolution_clock>;
     using Duration = std::chrono::nanoseconds;
 
+    static inline bool kStart = true;
+    static inline bool kNostart = false;
+    static inline bool kReset = true;
+
     //! \brief Creates a new instance
     explicit StopWatch(bool auto_start = false) {
         if (auto_start) start();
@@ -54,6 +58,10 @@ class StopWatch {
     //! \param origin [in] : An origin timepoint
     //! \return  Duration
     Duration since_start(const TimePoint& origin) noexcept;
+
+    //! \brief Computes the duration amongst now and the start time
+    //! \return  Duration
+    Duration since_start() noexcept;
 
     //! \brief Stops the watch
     //! \return The timepoint of stop and the duration since start (if no laptimes) or the duration from previous

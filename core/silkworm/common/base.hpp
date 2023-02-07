@@ -23,6 +23,7 @@
 #include <cstdint>
 #include <string>
 #include <string_view>
+#include <tuple>
 
 #include <evmc/evmc.hpp>
 #include <intx/intx.hpp>
@@ -70,6 +71,7 @@ class ByteView : public std::basic_string_view<uint8_t> {
 };
 
 using BlockNum = uint64_t;
+using BlockNumRange = std::pair<BlockNum, BlockNum>;
 
 inline constexpr size_t kAddressLength{20};
 

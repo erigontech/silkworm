@@ -19,7 +19,6 @@
 #include <future>
 
 #include <silkworm/downloader/internals/header_chain.hpp>
-#include <silkworm/downloader/internals/header_persistence.hpp>
 
 #include "message.hpp"
 

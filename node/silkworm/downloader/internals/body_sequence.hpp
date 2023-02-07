@@ -23,10 +23,19 @@
 #include <silkworm/downloader/packets/get_block_bodies_packet.hpp>
 #include <silkworm/downloader/packets/new_block_packet.hpp>
 
+#include "chain_elements.hpp"
 #include "statistics.hpp"
 #include "types.hpp"
 
 namespace silkworm {
+
+struct BlockEx : public Block {
+    Hash hash;
+    Total_Difficulty td;
+    bool to_announce{false};
+};
+
+using Blocks = std::vector<std::shared_ptr<BlockEx>>;
 
 /** BodySequence represents the sequence of body that we are downloading.
  *  It has these responsibilities:
@@ -36,15 +45,18 @@ namespace silkworm {
  */
 class BodySequence {
   public:
-    explicit BodySequence(const db::ROAccess&);
+    explicit BodySequence();
     ~BodySequence() = default;
 
-    // sync current state - this must be done at body forward
-    void sync_current_state(BlockNum highest_body_in_db, BlockNum highest_header_in_db);
+    // sync current state - this must be done at header forward
+    void current_state(BlockNum highest_in_db);
+
+    // set a downloading target - this must be done at body forward
+    void download_bodies(const Headers& headers);
 
     //! core functionalities: trigger the internal algorithms to decide what bodies we miss
     using MinBlock = BlockNum;
-    auto request_more_bodies(time_point_t tp, uint64_t active_peers)
+    auto request_more_bodies(time_point_t tp)
         -> std::tuple<GetBlockBodiesPacket66, std::vector<PeerPenalization>, MinBlock>;
 
     //! it needs to know if the request issued was not delivered
@@ -57,35 +69,29 @@ class BodySequence {
     Penalty accept_new_block(const Block&, const PeerId&);
 
     //! core functionalities: returns bodies that are ready to be persisted
-    auto withdraw_ready_bodies() -> std::vector<Block>;
+    Blocks withdraw_ready_bodies();
 
     //! minor functionalities
-    std::list<NewBlockPacket>& announces_to_do();
-
-    [[nodiscard]] BlockNum highest_block_in_db() const;
+    [[nodiscard]] bool has_completed() const;
+    [[nodiscard]] BlockNum highest_block_in_output() const;
     [[nodiscard]] BlockNum highest_block_in_memory() const;
     [[nodiscard]] BlockNum lowest_block_in_memory() const;
     [[nodiscard]] BlockNum target_height() const;
-    [[nodiscard]] size_t outstanding_bodies(time_point_t tp) const;
+    [[nodiscard]] size_t outstanding_requests(time_point_t tp) const;
+    [[nodiscard]] size_t ready_bodies() const;
+    [[nodiscard]] size_t requests() const;
 
     [[nodiscard]] const Download_Statistics& statistics() const;
 
     // downloading process tuning parameters
-    static /*constexpr*/ seconds_t kRequestDeadline;             // = std::chrono::seconds(30);
-                                                                 // after this a response is considered lost it is related to Sentry's peerDeadline
-    static /*constexpr*/ milliseconds_t kNoPeerDelay;            // = std::chrono::milliseconds(500);
-                                                                 // delay when no peer accepted the last request
-    static /*constexpr*/ size_t kPerPeerMaxOutstandingRequests;  // = 4;
-    static /*constexpr*/ size_t kMaxInMemoryRequests;            // = 300000;
-    static /*constexpr*/ BlockNum kMaxBlocksPerMessage;          // = 128;               // go-ethereum client acceptance limit
+    static constexpr size_t kMaxInMemoryRequests = 400000;
+    static constexpr BlockNum kMaxBlocksPerMessage = 128;  // go-ethereum client acceptance limit
     static constexpr BlockNum kMaxAnnouncedBlocks = 10000;
 
   protected:
-    void recover_initial_state();
-    void make_new_requests(GetBlockBodiesPacket66&, MinBlock&, time_point_t tp, seconds_t timeout);
-    auto renew_stale_requests(GetBlockBodiesPacket66&, MinBlock&, time_point_t tp, seconds_t timeout)
+    auto renew_stale_requests(GetBlockBodiesPacket66&, MinBlock&, time_point_t, seconds_t timeout)
         -> std::vector<PeerPenalization>;
-    void add_to_announcements(BlockHeader, BlockBody, db::ROTxn&);
+    void make_new_requests(GetBlockBodiesPacket66&, BlockNum&, time_point_t, seconds_t timeout);
 
     static bool is_valid_body(const BlockHeader&, const BlockBody&);
 
@@ -97,7 +103,10 @@ class BodySequence {
         BlockBody body;
         time_point_t request_time;
         bool ready{false};
+        bool to_announce{false};
     };
+
+    bool fulfill_from_announcements(BodyRequest&);
 
     struct AnnouncedBlocks {
         void add(Block block);
@@ -105,11 +114,11 @@ class BodySequence {
         size_t size();
 
       private:
-        std::map<BlockNum, Block> blocks_;
+        std::map<BlockNum, Block> blocks_;  // todo: only canonical blocks? check!
     };
 
     // using IncreasingHeightOrderedMap = std::map<BlockNum, BodyRequest>; // default ordering: less<BlockNum>
-    struct IncreasingHeightOrderedRequestContainer : public std::map<BlockNum, BodyRequest> {
+    struct IncreasingHeightOrderedRequestContainer : public std::multimap<BlockNum, BodyRequest> {
         using Impl = std::map<BlockNum, BodyRequest>;
         using Iter = Impl::iterator;
 
@@ -122,12 +131,9 @@ class BodySequence {
 
     IncreasingHeightOrderedRequestContainer body_requests_;
     AnnouncedBlocks announced_blocks_;
-    std::list<NewBlockPacket> announcements_to_do_;
 
-    db::ROAccess db_access_;
-
-    BlockNum highest_body_in_db_{0};
-    BlockNum headers_stage_height_{0};
+    BlockNum highest_body_in_output_{0};
+    BlockNum target_height_{0};
     time_point_t last_nack_;
     size_t ready_bodies_{0};
     Download_Statistics statistics_;

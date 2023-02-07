@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <atomic>
 #include <cstdint>
 #include <ostream>
 #include <string>
@@ -42,5 +43,24 @@ struct Download_Statistics {
 };
 
 std::ostream& operator<<(std::ostream& os, const Download_Statistics& stats);
+
+struct Network_Statistics {
+    std::atomic<uint64_t> received_msgs{0};
+    std::atomic<uint64_t> received_bytes{0};
+    std::atomic<uint64_t> nonsolic_msgs{0};
+    std::atomic<uint64_t> internal_msgs{0};
+    std::atomic<uint64_t> tried_msgs{0};
+    std::atomic<uint64_t> sent_msgs{0};
+    std::atomic<uint64_t> processed_msgs{0};
+    std::atomic<uint64_t> nack_msgs{0};
+    std::atomic<uint64_t> malformed_msgs{0};
+
+    void inaccurate_reset();
+    void inaccurate_copy(const Network_Statistics&);
+};
+
+using Interval_Network_Statistics = std::tuple<Network_Statistics&, Network_Statistics&, seconds_t>;
+
+std::ostream& operator<<(std::ostream& os, Interval_Network_Statistics prev_and_curr_stats);
 
 }  // namespace silkworm

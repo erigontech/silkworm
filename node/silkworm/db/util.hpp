@@ -49,8 +49,11 @@ struct VersionBase {
 
 /* Common Keys */
 
-// Key for DbInfo bucket storing db schema version
+//! Key for DbInfo bucket storing db schema version
 inline constexpr const char* kDbSchemaVersionKey{"dbVersion"};
+
+//! Key for DbInfo bucket storing snapshot file names
+inline constexpr const char* kDbSnapshotsKey{"snapshots"};
 
 inline constexpr size_t kIncarnationLength{8};
 inline constexpr size_t kLocationLength{32};
@@ -75,6 +78,9 @@ Bytes block_key(BlockNum block_number);
 
 // Erigon HeaderKey & BlockBodyKey
 Bytes block_key(BlockNum block_number, std::span<const uint8_t, kHashLength> hash);
+
+// Split a block key in BlockNum and Hash
+auto split_block_key(ByteView key) -> std::tuple<BlockNum, evmc::bytes32>;
 
 Bytes storage_change_key(BlockNum block_number, const evmc::address& address, uint64_t incarnation);
 

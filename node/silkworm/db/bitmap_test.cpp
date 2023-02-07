@@ -111,7 +111,7 @@ TEST_CASE("Roaring Bitmaps") {
 
 TEST_CASE("Bitmap Index Loader") {
     test::Context context;
-    db::RWTxn txn{context.txn()};
+    db::RWTxn& txn{context.rw_txn()};
 
     const auto address1{0x00000000000000000001_address};
     const auto address2{0x00000000000000000002_address};

@@ -22,12 +22,17 @@
 
 namespace silkworm {
 
-OutboundNewBlockHashes::OutboundNewBlockHashes() {}
+OutboundNewBlockHashes::OutboundNewBlockHashes(bool f) : is_first_sync_{f} {}
 
 void OutboundNewBlockHashes::execute(db::ROAccess, HeaderChain& hc, BodySequence&, SentryClient& sentry) {
     using namespace std::literals::chrono_literals;
 
     auto& announces_to_do = hc.announces_to_do();
+
+    if (is_first_sync_) {
+        announces_to_do.clear();  // We don't want to send announces to peers during first sync
+        return;
+    }
 
     if (announces_to_do.empty()) {
         SILK_TRACE << "No OutboundNewBlockHashes (announcements) message to send";
@@ -73,6 +78,7 @@ void OutboundNewBlockHashes::execute(db::ROAccess, HeaderChain& hc, BodySequence
 std::string OutboundNewBlockHashes::content() const {
     if (packet_.empty()) return "- no block hash announcements to do, not sent -";
     std::stringstream content;
+    log::prepare_for_logging(content);
     content << packet_;
     return content.str();
 }

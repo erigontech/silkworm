@@ -47,9 +47,10 @@ class SentryClient : public rpc::Client<sentry::Sentry>, public ActiveComponent 
     SentryClient(const SentryClient&) = delete;
     SentryClient(SentryClient&&) = delete;
 
-    void set_status();              // init the remote sentry
-    void hand_shake();              // hand_shake & check of the protocol version
-    uint64_t count_active_peers();  // ask the remote sentry for active peers
+    void set_status();                         // init the remote sentry
+    void hand_shake();                         // hand_shake & check of the protocol version
+    uint64_t count_active_peers();             // ask the remote sentry for active peers
+    std::string request_peer_info(PeerId id);  // ask the remote sentry for peer info
 
     uint64_t active_peers();  // return cached peers count
 
@@ -65,6 +66,12 @@ class SentryClient : public rpc::Client<sentry::Sentry>, public ActiveComponent 
     /*[[long_running]]*/ void stats_receiving_loop();     // do a long-running loop to wait for peer statistics
 
     static rpc::ReceiveMessages::Scope scope(const sentry::InboundMessage& message);  // find the scope of the message
+
+    static constexpr seconds_t kRequestDeadline = std::chrono::seconds(30);          // time beyond which the remote sentry
+                                                                                     // considers an answer lost
+    static constexpr milliseconds_t kNoPeerDelay = std::chrono::milliseconds(3000);  // chosen delay when no peer
+                                                                                     // accepted the last request
+    static constexpr size_t kPerPeerMaxOutstandingRequests = 4;                      // max number of outstanding requests per peer
 
   protected:
     void publish(const sentry::InboundMessage&);  // notifying registered subscribers

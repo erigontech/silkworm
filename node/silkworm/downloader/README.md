@@ -4,7 +4,7 @@ The block downloader is the component that has the responsibility to download bl
 
 It is always active and performs some operations on its own (e.g. handling connection to the Sentry component, replying to received devp2p messages...), some other operations (e.g. making new requests to download more headers or bodies) are instead driven by the stage-loop.
 
-## Architecture
+## Architecture [outdated]
 
 The following diagram depicts the overall architecture:
 

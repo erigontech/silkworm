@@ -19,6 +19,7 @@
 #include <algorithm>
 
 #include <catch2/catch.hpp>
+#include <evmc/evmc.hpp>
 
 #include <silkworm/common/cast.hpp>
 
@@ -137,6 +138,44 @@ TEST_CASE("anchors") {
         auto link3_it = anchor.find_child(links[3]->hash);
         REQUIRE(link3_it == anchor.links.end());
     }
+}
+
+TEST_CASE("segments") {
+    std::vector<BlockHeader> headers(10);
+    for (size_t i = 0; i < headers.size(); i++) {  // skip first header for simplicity
+        headers[i].number = i;
+        headers[i].difficulty = i * 100;  // improve!
+        headers[i].parent_hash = (i != 0) ? headers[i - 1].hash() : evmc::bytes32{0};
+    }
+
+    auto header_list = HeaderList::make(headers);
+
+    auto [segments, penality] = header_list->split_into_segments();
+    REQUIRE(segments.size() == 1);
+    REQUIRE(penality == NoPenalty);
+
+    Segment segment = segments[0];
+    REQUIRE(segment.lowest_header()->number == headers[0].number);
+    REQUIRE(segment.highest_header()->number == headers[headers.size() - 1].number);
+    REQUIRE(segment[0]->number == headers[headers.size() - 1].number);  // segment is reversed
+    REQUIRE(segment[segment.size() - 1]->number == headers[0].number);  // "
+
+    size_t start = 2;
+    size_t end = 5;
+    auto startNum = segment[start]->number;
+    auto endNum = segment[end - 1]->number;
+
+    Segment::Slice segment_slice = segment.slice(start, end);
+    REQUIRE(segment_slice.size() == end - start);
+    REQUIRE(segment_slice[0]->number == startNum);                       // headers in segment are ordered from highest to lowest
+    REQUIRE(segment_slice[segment_slice.size() - 1]->number == endNum);  // "
+
+    segment.remove_headers_higher_than(3);
+    REQUIRE(segment.size() == 4);
+    REQUIRE(segment.lowest_header()->number == headers[0].number);
+    REQUIRE(segment.highest_header()->number == 3);
+    REQUIRE(segment[0]->number == 3);
+    REQUIRE(segment[segment.size() - 1]->number == headers[0].number);
 }
 
 }  // namespace silkworm

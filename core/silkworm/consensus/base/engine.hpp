@@ -46,6 +46,11 @@ class EngineBase : public IEngine {
     //! \param [in] state: current state.
     ValidationResult validate_ommers(const Block& block, const BlockState& state) override;
 
+    //! \brief Performs pre-validation of transactions only.
+    //! \param [in] block: block to validate.
+    //! \param [in] state: current state.
+    ValidationResult pre_validate_transactions(const Block& block) override;
+
     //! \brief See [YP] Section 11.3 "Reward Application".
     //! \param [in] header: Current block to get beneficiary from
     evmc::address get_beneficiary(const BlockHeader& header) override;

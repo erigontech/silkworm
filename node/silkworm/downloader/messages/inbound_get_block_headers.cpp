@@ -42,7 +42,7 @@ void InboundGetBlockHeaders::execute(db::ROAccess db, HeaderChain&, BodySequence
 
     SILK_TRACE << "Processing message " << *this;
 
-    if (bs.highest_block_in_db() == 0)  // skip requests in the first sync even if we already saved some headers
+    if (bs.highest_block_in_output() == 0)  // skip requests in the first sync even if we already saved some headers
         return;
 
     HeaderRetrieval header_retrieval(db);
@@ -91,6 +91,7 @@ uint64_t InboundGetBlockHeaders::reqId() const { return packet_.requestId; }
 
 std::string InboundGetBlockHeaders::content() const {
     std::stringstream content;
+    log::prepare_for_logging(content);
     content << packet_;
     return content.str();
 }

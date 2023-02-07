@@ -52,6 +52,11 @@ class IEngine {
     //! \param [in] state: current state.
     virtual ValidationResult validate_ommers(const Block& block, const BlockState& state) = 0;
 
+    //! \brief Performs pre-validation of transactions only.
+    //! \param [in] block: block to validate.
+    //! \param [in] state: current state.
+    virtual ValidationResult pre_validate_transactions(const Block& block) = 0;
+
     //! \brief Finalizes block execution by applying changes in the state of accounts or of the consensus itself
     //! \param [in] state: current state.
     //! \param [in] block: current block to apply rewards for.

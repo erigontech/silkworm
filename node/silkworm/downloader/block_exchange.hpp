@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include <variant>
+
 #include <silkworm/concurrency/active_component.hpp>
 #include <silkworm/concurrency/containers.hpp>
 #include <silkworm/db/access_layer.hpp>
@@ -23,6 +25,7 @@
 #include <silkworm/downloader/internals/header_chain.hpp>
 #include <silkworm/downloader/messages/message.hpp>
 #include <silkworm/downloader/sentry_client.hpp>
+#include <silkworm/types/block.hpp>
 
 namespace silkworm {
 
@@ -32,11 +35,22 @@ class BlockExchange final : public ActiveComponent {
     BlockExchange(SentryClient&, const db::ROAccess&, const ChainConfig&);
     virtual ~BlockExchange() override;
 
+    void initial_state(std::vector<BlockHeader> last_headers);
+
+    static constexpr std::optional<BlockNum> kTipOfTheChain{std::nullopt};
+
+    void download_blocks(BlockNum current_height, std::optional<BlockNum> target_height);
+    void stop_downloading();
+
+    using ResultQueue = ConcurrentQueue<Blocks>;
+    ResultQueue& result_queue();
+    bool in_sync() const;
+    BlockNum current_height() const;
+
     void accept(std::shared_ptr<Message>); /*[[thread_safe]]*/
-    void execution_loop() final;           /*[[long_running]]*/
+    void execution_loop() override;        /*[[long_running]]*/
 
     const ChainConfig& chain_config() const;
-    const PreverifiedHashes& preverified_hashes() const;
     SentryClient& sentry() const;
 
   private:
@@ -44,17 +58,26 @@ class BlockExchange final : public ActiveComponent {
 
     void receive_message(const sentry::InboundMessage& raw_message);
     void send_penalization(PeerId id, Penalty p) noexcept;
+    size_t request_headers(size_t max_requests);
+    size_t request_bodies(size_t max_requests);
+    void collect_headers();
+    void collect_bodies();
     void log_status();
 
     static constexpr seconds_t kRpcTimeout = std::chrono::seconds(1);
 
-    db::ROAccess db_access_;
+    db::ROAccess db_access_;  // only to reply remote peer's requests
     SentryClient& sentry_;
     const ChainConfig& chain_config_;
-    PreverifiedHashes preverified_hashes_;
     HeaderChain header_chain_;
     BodySequence body_sequence_;
+    Network_Statistics statistics_;
+
+    ResultQueue results_{};
     MessageQueue messages_{};  // thread safe queue where to receive messages from sentry
+    std::atomic_bool in_sync_{false};
+    std::atomic_bool downloading_active_{false};
+    std::atomic<BlockNum> current_height_{0};
 };
 
 }  // namespace silkworm

@@ -33,12 +33,8 @@ ValidationResult EngineBase::pre_validate_block_body(const Block& block, const B
         return ValidationResult::kWrongTransactionsRoot;
     }
 
-    const evmc_revision rev{chain_config_.revision(header.number, header.timestamp)};
-    for (const Transaction& txn : block.transactions) {
-        if (ValidationResult err{pre_validate_transaction(txn, rev, chain_config_.chain_id, header.base_fee_per_gas)};
-            err != ValidationResult::kOk) {
-            return err;
-        }
+    if (ValidationResult err{pre_validate_transactions(block)}; err != ValidationResult::kOk) {
+        return err;
     }
 
     if (rev < EVMC_SHANGHAI && block.withdrawals) {
@@ -69,6 +65,20 @@ ValidationResult EngineBase::pre_validate_block_body(const Block& block, const B
     }
 
     return validate_ommers(block, state);
+}
+
+ValidationResult EngineBase::pre_validate_transactions(const Block& block) {
+    const BlockHeader& header{block.header};
+
+    const evmc_revision rev{chain_config_.revision(header.number, header.timestamp)};
+    for (const Transaction& txn : block.transactions) {
+        if (ValidationResult err{pre_validate_transaction(txn, rev, chain_config_.chain_id, header.base_fee_per_gas)};
+            err != ValidationResult::kOk) {
+            return err;
+        }
+    }
+
+    return ValidationResult::kOk;
 }
 
 ValidationResult EngineBase::validate_ommers(const Block& block, const BlockState& state) {

@@ -21,6 +21,7 @@
 
 #include <optional>
 #include <span>
+#include <string>
 #include <vector>
 
 #include <silkworm/chain/config.hpp>
@@ -43,6 +44,12 @@ void write_schema_version(mdbx::txn& txn, const VersionBase& schema_version);
 //! upgrades or downgrades of Silkworm's build
 void write_build_info_height(mdbx::txn& txn, Bytes key, BlockNum height);
 
+//! \brief Read the list of snapshot file names
+std::vector<std::string> read_snapshots(mdbx::txn& txn);
+
+//! \brief Write the list of snapshot file names
+void write_snapshots(mdbx::txn& txn, const std::vector<std::string>& snapshot_file_names);
+
 //! \brief Reads a header with the specified key (block number, hash)
 std::optional<BlockHeader> read_header(mdbx::txn& txn, BlockNum block_number, const uint8_t (&hash)[kHashLength]);
 std::optional<BlockHeader> read_header(mdbx::txn& txn, BlockNum block_number, const evmc::bytes32&);
@@ -52,8 +59,17 @@ Bytes read_header_raw(mdbx::txn& txn, ByteView key);
 //! \brief Reads a header with the specified hash
 std::optional<BlockHeader> read_header(mdbx::txn& txn, const evmc::bytes32& hash);
 
+//! \brief Reads all headers at the specified height
+std::vector<BlockHeader> read_headers(mdbx::txn& txn, BlockNum height);
+
+//! \brief Apply a user defined func to the headers at specific height
+size_t process_headers_at_height(mdbx::txn& txn, BlockNum height, std::function<void(BlockHeader&&)> process_func);
+
 //! \brief Reads a header without rlp-decoding it
 std::optional<ByteView> read_rlp_encoded_header(mdbx::txn& txn, BlockNum bn, const evmc::bytes32& hash);
+
+//! \brief Reads the canonical head
+std::tuple<BlockNum, evmc::bytes32> read_canonical_head(mdbx::txn& txn);
 
 //! \brief Reads the canonical header from a block number
 std::optional<BlockHeader> read_canonical_header(mdbx::txn& txn, BlockNum b);
@@ -83,6 +99,13 @@ void write_canonical_header_hash(mdbx::txn& txn, const uint8_t (&hash)[kHashLeng
 [[nodiscard]] bool read_body(mdbx::txn& txn, const evmc::bytes32& hash, BlockNum bn, BlockBody& body);
 [[nodiscard]] bool read_body(mdbx::txn& txn, const evmc::bytes32& hash, BlockBody& body);
 
+//! \brief Read the canonical block at specified height
+[[nodiscard]] bool read_canonical_block(mdbx::txn& txn, BlockNum height, Block& block);
+
+//! \brief Apply a user defined func to the bodies at specific height
+size_t process_blocks_at_height(mdbx::txn& txn, BlockNum height, std::function<void(Block&)> process_func,
+                                bool read_senders = false);
+
 //! \brief Check the presence of a block body using block number and hash
 [[nodiscard]] bool has_body(mdbx::txn& txn, BlockNum block_number, const uint8_t (&hash)[kHashLength]);
 [[nodiscard]] bool has_body(mdbx::txn& txn, BlockNum block_number, const evmc::bytes32& hash);
@@ -109,6 +132,7 @@ void write_total_difficulty(mdbx::txn& txn, const Bytes& key, const intx::uint25
 // Returns true on success and false on missing block.
 [[nodiscard]] bool read_block(mdbx::txn& txn, std::span<const uint8_t, kHashLength> hash, BlockNum number,
                               bool read_senders, Block& out);
+[[nodiscard]] bool read_block(mdbx::txn& txn, const evmc::bytes32& hash, BlockNum number, Block& block);
 
 // See Erigon ReadSenders
 std::vector<evmc::address> read_senders(mdbx::txn& txn, const Bytes& key);
@@ -179,5 +203,14 @@ uint64_t increment_map_sequence(mdbx::txn& txn, const char* map_name, uint64_t i
 //! \remarks If the key is not present in Sequence bucket the return value is 0
 //! \throws std::std::length_error on badly recorded value
 uint64_t read_map_sequence(mdbx::txn& txn, const char* map_name);
+
+//! \brief Reset the sequence value for a given map (bucket)
+//! \param [in] map_name : the name of the map to reset the sequence for
+//! \param [in] new_sequence : the value to set the sequence to
+//! \returns The old value of the sequence
+//! \throws std::std::length_error on badly recorded value
+//! \remarks Initial sequence for any key (also unset) is 0. Changes to sequences are invisible until the transaction is
+//! committed
+uint64_t reset_map_sequence(mdbx::txn& txn, const char* map_name, uint64_t new_sequence);
 
 }  // namespace silkworm::db

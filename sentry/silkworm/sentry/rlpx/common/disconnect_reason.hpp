@@ -16,22 +16,10 @@
 
 #pragma once
 
-#include <silkworm/common/base.hpp>
-#include <silkworm/sentry/common/message.hpp>
+#include <cstdint>
 
-#include "disconnect_reason.hpp"
-
-namespace silkworm::sentry::rlpx {
-
-struct DisconnectMessage {
-    [[nodiscard]] Bytes rlp_encode() const;
-    [[nodiscard]] static DisconnectMessage rlp_decode(ByteView data);
-
-    [[nodiscard]] sentry::common::Message to_message() const;
-    [[nodiscard]] static DisconnectMessage from_message(const sentry::common::Message& message);
-
-    static const uint8_t kId;
-    DisconnectReason reason{DisconnectReason::DisconnectRequested};
+enum class DisconnectReason : uint8_t {
+    DisconnectRequested = 0,
+    UselessPeer = 3,
+    TooManyPeers = 4,
 };
-
-}  // namespace silkworm::sentry::rlpx

@@ -42,6 +42,12 @@ awaitable<void> PeerManager::start_in_strand(common::Channel<std::shared_ptr<rlp
     // loop until receive() throws a cancelled exception
     while (true) {
         auto peer = co_await peer_channel.receive();
+
+        if (peers_.size() >= max_peers_) {
+            peer_tasks_.spawn(strand_, drop_peer(peer, DisconnectReason::TooManyPeers));
+            continue;
+        }
+
         peers_.push_back(peer);
         on_peer_added(peer);
         peer_tasks_.spawn(strand_, start_peer(peer));
@@ -63,6 +69,27 @@ boost::asio::awaitable<void> PeerManager::start_peer(const std::shared_ptr<rlpx:
 
     peers_.remove(peer);
     on_peer_removed(peer);
+}
+
+boost::asio::awaitable<void> PeerManager::drop_peer(
+    const std::shared_ptr<rlpx::Peer>& peer,
+    DisconnectReason reason) {
+    try {
+        co_await rlpx::Peer::drop(peer, reason);
+    } catch (const boost::system::system_error& ex) {
+        if (ex.code() == boost::system::errc::operation_canceled) {
+            log::Debug() << "PeerManager::drop_peer Peer::drop cancelled";
+        } else {
+            log::Error() << "PeerManager::drop_peer Peer::drop system_error: " << ex.what();
+        }
+    } catch (const std::exception& ex) {
+        log::Error() << "PeerManager::drop_peer Peer::drop exception: " << ex.what();
+    }
+}
+
+size_t PeerManager::max_peer_tasks(size_t max_peers) {
+    static const size_t kMaxSimultaneousDropPeerTasks = 10;
+    return max_peers + kMaxSimultaneousDropPeerTasks;
 }
 
 awaitable<void> PeerManager::enumerate_peers(EnumeratePeersCallback callback) {

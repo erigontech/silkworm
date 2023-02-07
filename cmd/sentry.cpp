@@ -96,6 +96,11 @@ Settings sentry_parse_cli_settings(int argc, char* argv[]) {
     static_peers_option->description("Peers enode URLs to connect to without discovery");
     static_peers_option->type_size(1, INT_MAX);
 
+    cli.add_option("--maxpeers", settings.max_peers)
+        ->description("Maximum number of P2P network peers")
+        ->check(CLI::Range(0, 1000))
+        ->capture_default_str();
+
     try {
         cli.parse(argc, argv);
     } catch (const CLI::ParseError& pe) {

@@ -55,6 +55,8 @@ struct Settings {
 
     std::vector<common::EnodeUrl> static_peers;
 
+    size_t max_peers{100};
+
     Settings();
 };
 

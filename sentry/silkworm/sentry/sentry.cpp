@@ -138,18 +138,15 @@ static void rethrow_unless_cancelled(const std::exception_ptr& ex_ptr, const std
 class DummyServerCompletionQueue : public grpc::ServerCompletionQueue {
 };
 
-// TODO: max_peers
-constexpr size_t max_peers = 101;
-
 SentryImpl::SentryImpl(Settings settings)
     : settings_(std::move(settings)),
       context_pool_(settings_.num_contexts, settings_.wait_mode, [] { return make_unique<DummyServerCompletionQueue>(); }),
       status_manager_(context_pool_.next_io_context()),
       rlpx_server_(context_pool_.next_io_context(), "0.0.0.0", settings_.port),
       rlpx_client_(context_pool_.next_io_context(), settings_.static_peers),
-      peer_manager_(context_pool_.next_io_context(), max_peers),
+      peer_manager_(context_pool_.next_io_context(), settings_.max_peers),
       message_sender_(context_pool_.next_io_context()),
-      message_receiver_(std::make_shared<MessageReceiver>(context_pool_.next_io_context(), max_peers)),
+      message_receiver_(std::make_shared<MessageReceiver>(context_pool_.next_io_context(), settings_.max_peers)),
       rpc_server_(make_server_config(settings_), make_service_state(status_manager_.status_channel(), message_sender_, *message_receiver_)) {
 }
 

@@ -123,6 +123,44 @@ std::optional<BlockHeader> read_header(mdbx::txn& txn, const evmc::bytes32& hash
     return read_header(txn, *block_num, hash.bytes);
 }
 
+bool read_header(mdbx::txn& txn, const evmc::bytes32& hash, BlockNum number, BlockHeader& header) {
+    const Bytes key{block_key(number, hash.bytes)};
+    const auto raw_header{read_header_raw(txn, key)};
+    if (raw_header.empty()) {
+        return false;
+    }
+    ByteView raw_header_view(raw_header);
+    rlp::success_or_throw(rlp::decode(raw_header_view, header));
+    return true;
+}
+
+std::vector<BlockHeader> read_headers(mdbx::txn& txn, BlockNum height) {
+    std::vector<BlockHeader> headers;
+    process_headers_at_height(txn, height, [&](BlockHeader&& header) {
+        headers.emplace_back(std::move(header));
+    });
+    return headers;
+}
+
+// process headers at specific height
+size_t process_headers_at_height(mdbx::txn& txn, BlockNum height, std::function<void(BlockHeader&&)> process_func) {
+    db::Cursor headers_table(txn, db::table::kHeaders);
+    auto key_prefix{db::block_key(height)};
+
+    auto count = db::cursor_for_prefix(
+        headers_table, key_prefix,
+        [&process_func]([[maybe_unused]] ByteView key, ByteView raw_header) {
+            if (raw_header.empty()) throw std::logic_error("empty header in table Headers");
+            BlockHeader header;
+            ByteView encoded_header{raw_header.data(), raw_header.length()};
+            rlp::success_or_throw(rlp::decode(encoded_header, header));
+            process_func(std::move(header));
+        },
+        db::CursorMoveDirection::Forward);
+
+    return count;
+}
+
 void write_header(mdbx::txn& txn, const BlockHeader& header, bool with_header_numbers) {
     Bytes value{};
     rlp::encode(value, header);
@@ -218,6 +256,16 @@ void write_total_difficulty(mdbx::txn& txn, BlockNum block_number, const evmc::b
     write_total_difficulty(txn, key, total_difficulty);
 }
 
+std::tuple<BlockNum, evmc::bytes32> read_canonical_head(mdbx::txn& txn) {
+    Cursor cursor(txn, table::kCanonicalHashes);
+    auto data = cursor.to_last();
+    if (!data) return {};
+    evmc::bytes32 hash{};
+    std::memcpy(hash.bytes, data.value.data(), kHashLength);
+    BlockNum bn = endian::load_big_u64(static_cast<const unsigned char*>(data.key.data()));
+    return {bn, hash};
+}
+
 std::optional<evmc::bytes32> read_canonical_header_hash(mdbx::txn& txn, BlockNum number) {
     Cursor source(txn, table::kCanonicalHashes);
     auto key{db::block_key(number)};
@@ -295,6 +343,13 @@ bool read_block_by_number(mdbx::txn& txn, BlockNum number, bool read_senders, Bl
     return read_block(txn, std::span<const uint8_t, kHashLength>{hash_ptr, kHashLength}, number, read_senders, block);
 }
 
+bool read_block(mdbx::txn& txn, const evmc::bytes32& hash, BlockNum number, Block& block) {
+    // Read header
+    read_header(txn, hash, number, block.header);
+    // Read body
+    return read_body(txn, hash, number, block);  // read_senders == false
+}
+
 bool read_block(mdbx::txn& txn, std::span<const uint8_t, kHashLength> hash, BlockNum number, bool read_senders,
                 Block& block) {
     // Read header
@@ -307,6 +362,39 @@ bool read_block(mdbx::txn& txn, std::span<const uint8_t, kHashLength> hash, Bloc
     rlp::success_or_throw(rlp::decode(raw_header_view, block.header));
 
     return read_body(txn, key, read_senders, block);
+}
+
+// process blocks at specific height
+size_t process_blocks_at_height(mdbx::txn& txn, BlockNum height, std::function<void(Block&)> process_func, bool read_senders) {
+    db::Cursor bodies_table(txn, db::table::kBlockBodies);
+    auto key_prefix{db::block_key(height)};
+
+    auto count = db::cursor_for_prefix(
+        bodies_table, key_prefix,
+        [&process_func, &txn, &read_senders](ByteView key, ByteView raw_body) {
+            if (raw_body.empty()) throw std::logic_error("empty header in table Headers");
+            // read block...
+            Block block;
+            // ...ommers
+            auto body_for_storage = detail::decode_stored_block_body(raw_body);
+            std::swap(block.ommers, body_for_storage.ommers);
+            // ...transactions
+            read_transactions(txn, body_for_storage.base_txn_id, body_for_storage.txn_count, block.transactions);
+            // ...senders
+            if (!block.transactions.empty() && read_senders) {
+                Bytes kkey{key.data(), key.length()};
+                db::parse_senders(txn, kkey, block.transactions);
+            }
+            // ...header
+            auto [block_num, hash] = split_block_key(key);
+            bool present = read_header(txn, hash, block_num, block.header);
+            if (!present) throw std::logic_error("header not found for body number= " + std::to_string(block_num) + ", hash= " + to_hex(hash));
+            // invoke handler
+            process_func(block);
+        },
+        db::CursorMoveDirection::Forward);
+
+    return count;
 }
 
 bool read_body(mdbx::txn& txn, const evmc::bytes32& h, BlockNum bn, BlockBody& body) {
@@ -342,6 +430,16 @@ bool read_body(mdbx::txn& txn, const evmc::bytes32& h, BlockBody& body) {
         return false;
     }
     return db::read_body(txn, *block_num, h.bytes, /*read_senders=*/false, body);
+}
+
+bool read_canonical_block(mdbx::txn& txn, BlockNum height, Block& block) {
+    std::optional<evmc::bytes32> h = read_canonical_hash(txn, height);
+    if (!h) return false;
+
+    bool present = read_header(txn, *h, height, block.header);
+    if (!present) return false;
+
+    return read_body(txn, *h, height, block);
 }
 
 bool has_body(mdbx::txn& txn, BlockNum block_number, const uint8_t (&hash)[kHashLength]) {

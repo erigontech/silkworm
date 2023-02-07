@@ -374,7 +374,7 @@ namespace db {
         }
     }
 
-    TEST_CASE("read_stages") {
+    TEST_CASE("Stages") {
         test::Context context;
         auto& txn{context.txn()};
 
@@ -412,7 +412,7 @@ namespace db {
         CHECK(stages::read_stage_prune_progress(txn, stages::kBlockBodiesKey) == 0);
     }
 
-    TEST_CASE("read_snapshots") {
+    TEST_CASE("Snapshots") {
         test::Context context;
         auto& txn{context.txn()};
 
@@ -426,7 +426,7 @@ namespace db {
         CHECK(read_snapshots(txn) == snapshot_list);
     }
 
-    TEST_CASE("read_difficulty") {
+    TEST_CASE("Difficulty") {
         test::Context context;
         auto& txn{context.txn()};
 
@@ -438,7 +438,7 @@ namespace db {
         CHECK(read_total_difficulty(txn, block_num, hash) == difficulty);
     }
 
-    TEST_CASE("read_header") {
+    TEST_CASE("Headers and bodies") {
         test::Context context;
         auto& txn{context.txn()};
 
@@ -464,6 +464,11 @@ namespace db {
         auto db_hash{read_canonical_header_hash(txn, block_num)};
         REQUIRE(db_hash.has_value());
         REQUIRE(memcmp(hash.bytes, db_hash.value().bytes, sizeof(hash)) == 0);
+
+        // Read canonical head
+        auto [head_block_num, head_hash] = read_canonical_head(txn);
+        REQUIRE(head_block_num == header.number);
+        REQUIRE(head_hash == header.hash());
 
         // Read non-existent canonical header hash
         db_hash = read_canonical_header_hash(txn, block_num + 1);
@@ -508,12 +513,54 @@ namespace db {
 
             CHECK(block.transactions[0].from == 0x5a0b54d5dc17e0aadc383d2db43b0a0d3e029c4c_address);
             CHECK(block.transactions[1].from == 0x941591b6ca8e8dd05c69efdec02b77c72dac1496_address);
+
+            auto [b, h] = split_block_key(key);
+            REQUIRE(b == header.number);
+            REQUIRE(h == header.hash());
+        }
+
+        SECTION("process_blocks_at_height") {
+            BlockNum height = header.number;
+
+            BlockBody body{sample_block_body()};
+            CHECK_NOTHROW(write_body(txn, body, header.hash(), header.number));
+
+            size_t count = 0;
+            auto processed = db::process_blocks_at_height(
+                txn,
+                height,
+                [&count, &height](const Block& block) {
+                    REQUIRE(block.header.number == height);
+                    count++;
+                });
+            REQUIRE(processed == 1);
+            REQUIRE(processed == count);
+
+            BlockBody body2{sample_block_body()};
+            header.extra_data = string_view_to_byte_view("I'm different");
+            CHECK_NOTHROW(write_header(txn, header, /*with_header_numbers=*/true));
+            CHECK_NOTHROW(write_body(txn, body, header.hash(), header.number));  // another body at same height
+            BlockBody body3{sample_block_body()};
+            header.number = header.number + 1;
+            CHECK_NOTHROW(write_header(txn, header, /*with_header_numbers=*/true));
+            CHECK_NOTHROW(write_body(txn, body, hash.bytes, header.number));  // another body after the prev two
+
+            count = 0;
+            processed = db::process_blocks_at_height(
+                txn,
+                height,
+                [&count, &height](const Block& block) {
+                    REQUIRE(block.header.number == height);
+                    count++;
+                });
+            REQUIRE(processed == 2);
+            REQUIRE(processed == count);
         }
     }
 
-    TEST_CASE("read_account") {
+    TEST_CASE("Account") {
         test::Context context;
-        auto& txn{context.txn()};
+        db::RWTxn& txn{context.rw_txn()};
 
         Buffer buffer{txn, 0};
 
@@ -541,10 +588,9 @@ namespace db {
         buffer.write_to_db();
         db::stages::write_stage_progress(txn, db::stages::kExecutionKey, 3);
 
-        db::RWTxn tm{txn};
         stagedsync::SyncContext sync_context{};
         stagedsync::HistoryIndex stage_history_index(&context.node_settings(), &sync_context);
-        REQUIRE(stage_history_index.forward(tm) == stagedsync::Stage::Result::kSuccess);
+        REQUIRE(stage_history_index.forward(txn) == stagedsync::Stage::Result::kSuccess);
 
         std::optional<Account> current_account{read_account(txn, miner_a)};
         REQUIRE(current_account.has_value());
@@ -555,7 +601,7 @@ namespace db {
         CHECK(intx::to_string(historical_account->balance) == std::to_string(param::kBlockRewardFrontier));
     }
 
-    TEST_CASE("read_storage") {
+    TEST_CASE("Storage") {
         test::Context context;
         auto& txn{context.txn()};
 
@@ -583,7 +629,7 @@ namespace db {
         CHECK(db::read_storage(txn, addr, kDefaultIncarnation, loc4) == evmc::bytes32{});
     }
 
-    TEST_CASE("read_account_changes") {
+    TEST_CASE("Account_changes") {
         test::Context context;
         auto& txn{context.txn()};
 
@@ -642,7 +688,7 @@ namespace db {
         CHECK(changes.empty());
     }
 
-    TEST_CASE("read_storage_changes") {
+    TEST_CASE("Storage changes") {
         test::Context context;
         auto& txn{context.txn()};
 
@@ -721,7 +767,7 @@ namespace db {
         CHECK(db_changes == expected_changes3);
     }
 
-    TEST_CASE("read_chain_config") {
+    TEST_CASE("Chain config") {
         test::Context context;
         auto& txn{context.txn()};
 

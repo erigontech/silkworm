@@ -16,13 +16,15 @@
 
 #include "preverified_hashes.hpp"
 
+#include <silkworm/common/environment.hpp>
+
 extern const uint64_t* preverified_hashes_mainnet_data();
 extern size_t sizeof_preverified_hashes_mainnet_data();
 extern uint64_t preverified_hashes_mainnet_height();
 
 namespace silkworm {
 
-PreverifiedHashes PreverifiedHashes::none = {};
+PreverifiedHashes PreverifiedHashes::current = {};
 
 void load_preverified_hashes(PreverifiedHashes& destination, const uint64_t* (*preverified_hashes_data)(),
                              size_t (*sizeof_preverified_hashes_data)(), uint64_t (*preverified_hashes_height)()) {
@@ -37,17 +39,31 @@ void load_preverified_hashes(PreverifiedHashes& destination, const uint64_t* (*p
     }
 
     destination.height = preverified_hashes_height();
+    destination.step = preverified_hashes_height() / (num_elements - 1);
 }
 
-PreverifiedHashes PreverifiedHashes::load(uint64_t chain_id) {
-    PreverifiedHashes result{};
+PreverifiedHashes& PreverifiedHashes::load(uint64_t chain_id) {
+    if (Environment::are_pre_verified_hashes_disabled()) {
+        return current;
+    }
 
     if (chain_id == 1) {
-        load_preverified_hashes(result, preverified_hashes_mainnet_data, sizeof_preverified_hashes_mainnet_data,
+        load_preverified_hashes(current, preverified_hashes_mainnet_data,
+                                sizeof_preverified_hashes_mainnet_data,
                                 preverified_hashes_mainnet_height);
     }
 
-    return result;
+    return current;
+}
+
+bool PreverifiedHashes::contains(const evmc::bytes32& hash) const {
+    return hashes.find(hash) != hashes.end();
+}
+
+void PreverifiedHashes::clear() {
+    hashes.clear();
+    height = 0;
+    step = 0;
 }
 
 }  // namespace silkworm

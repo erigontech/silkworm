@@ -61,11 +61,10 @@ class HeaderChain {
     using ConsensusEnginePtr = std::unique_ptr<consensus::IEngine>;
     explicit HeaderChain(ConsensusEnginePtr);  // alternative constructor
 
-    // load initial state from db - this must be done at creation time
-    void recover_initial_state(db::ROTxn&);
-
     // sync current state - this must be done at header forward
-    void sync_current_state(BlockNum highest_in_db);
+    void initial_state(const std::vector<BlockHeader>& last_headers);
+    void current_state(BlockNum highest_in_db);
+    // void downloading_target(BlockNum height) { downloading_target_ = height; }
 
     // status
     bool in_sync() const;
@@ -75,17 +74,20 @@ class HeaderChain {
     std::pair<BlockNum, BlockNum> anchor_height_range() const;
     size_t pending_links() const;
     size_t anchors() const;
+    size_t outstanding_requests(time_point_t tp) const;
     const Download_Statistics& statistics() const;
 
-    // core functionalities: anchor collection
-    // to collect anchor more quickly we do a skeleton request i.e. a request of many headers equally distributed in a
-    // given range of block chain that we want to fill
-    auto request_skeleton() -> std::optional<GetBlockHeadersPacket66>;
+    // core functionalities: requesting new headers - NEW API -
+    // auto request_more_headers(time_point_t tp, seconds_t timeout)
+    //    -> std::tuple<std::vector<GetBlockHeadersPacket66>, std::vector<PeerPenalization>>;
 
-    // core functionalities: anchor extension
-    // to complete a range of block chain we need to do a request of headers to extend up or down an anchor or a segment
-    auto request_more_headers(time_point_t tp, seconds_t timeout)
+    // anchor collection: to collect headers more quickly we request headers in a wide range, as seed to grow later
+    auto anchor_skeleton_request(time_point_t tp, seconds_t timeout) -> std::optional<GetBlockHeadersPacket66>;
+
+    // anchor extension: to extend an anchor we do a request of many headers that are children of the anchor
+    auto anchor_extension_request(time_point_t tp, seconds_t timeout)
         -> std::tuple<std::optional<GetBlockHeadersPacket66>, std::vector<PeerPenalization>>;
+
     // also we need to know if the request issued was not delivered
     void request_nack(const GetBlockHeadersPacket66& packet);
 
@@ -94,15 +96,17 @@ class HeaderChain {
     using RequestMoreHeaders = bool;
     auto accept_headers(const std::vector<BlockHeader>&, uint64_t requestId, const PeerId&) -> std::tuple<Penalty, RequestMoreHeaders>;
 
+    // core functionalities: process header announcement
+    std::optional<GetBlockHeadersPacket66> save_external_announce(Hash hash);
+
     // core functionalities: persist new headers that have persisted parent
     auto withdraw_stable_headers() -> Headers;
 
     // minor functionalities
-    void save_external_announce(Hash hash);
     bool has_link(Hash hash);
     std::vector<Announce>& announces_to_do();
     void add_bad_headers(const std::set<Hash>& bads);
-    void set_preverified_hashes(const PreverifiedHashes*);
+    void set_preverified_hashes(PreverifiedHashes&);
 
   protected:
     static constexpr BlockNum max_len = 192;
@@ -112,6 +116,7 @@ class HeaderChain {
     static constexpr size_t persistent_link_limit = link_total / 16;
     static constexpr size_t link_limit = link_total - persistent_link_limit;
 
+    // process a segment of headers
     auto process_segment(const Segment&, bool is_a_new_block, const PeerId&) -> RequestMoreHeaders;
 
     using Start = size_t;
@@ -133,9 +138,11 @@ class HeaderChain {
     auto add_anchor_if_not_present(const BlockHeader& header, PeerId, bool check_limits)
         -> std::tuple<std::shared_ptr<Anchor>, Pre_Existing>;
     void mark_as_preverified(std::shared_ptr<Link>);
+    void compute_last_preverified_hash();
     size_t anchors_within_range(BlockNum max);
-    BlockNum lowest_anchor_within_range(BlockNum bottom, BlockNum top);
+    std::optional<BlockNum> lowest_anchor_within_range(BlockNum bottom, BlockNum top);
     std::shared_ptr<Anchor> highest_anchor();
+    void set_target_block(BlockNum);
 
     enum VerificationResult {
         Preverified,
@@ -159,13 +166,15 @@ class HeaderChain {
     BlockNum top_seen_height_;
     std::optional<BlockNum> target_block_;
     std::set<Hash> bad_headers_;
-    const PreverifiedHashes* preverified_hashes_;  // Set of hashes that are known to belong to canonical chain
+    PreverifiedHashes& preverified_hashes_;  // Set of hashes that are known to belong to canonical chain
+    BlockNum last_preverified_hash_{0};
     using Ignore = int;
     lru_cache<Hash, Ignore> seen_announces_;
     std::vector<Announce> announces_to_do_;
     ConsensusEnginePtr consensus_engine_;
     CustomHeaderOnlyChainState chain_state_;
-    time_point_t last_skeleton_request;
+    time_point_t last_skeleton_request_;
+    time_point_t last_nack_;
 
     uint64_t generate_request_id();
     uint64_t is_valid_request_id(uint64_t request_id);
@@ -176,7 +185,5 @@ class HeaderChain {
     Download_Statistics statistics_;
     std::string skeleton_condition_;
 };
-
-std::optional<BlockNum> stop_at_block_from_env();
 
 }  // namespace silkworm

@@ -63,6 +63,10 @@ StopWatch::Duration StopWatch::since_start(const TimePoint& origin) noexcept {
     return Duration(origin - start_time_);
 }
 
+StopWatch::Duration StopWatch::since_start() noexcept {
+    return since_start(std::chrono::high_resolution_clock::now());
+}
+
 std::pair<StopWatch::TimePoint, StopWatch::Duration> StopWatch::stop() noexcept {
     if (!started_) {
         return {};

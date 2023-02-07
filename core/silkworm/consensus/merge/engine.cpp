@@ -113,4 +113,12 @@ ValidationResult MergeEngine::validate_ommers(const Block& block, const BlockSta
     }
 }
 
+ValidationResult MergeEngine::pre_validate_transactions(const Block& block) {
+    if (block.header.difficulty != 0) {
+        return pre_merge_engine_->pre_validate_transactions(block);
+    } else {
+        return post_merge_engine_.pre_validate_transactions(block);
+    }
+}
+
 }  // namespace silkworm::consensus

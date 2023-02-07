@@ -16,6 +16,8 @@
 
 #include "test_context.hpp"
 
+#include <silkworm/chain/genesis.hpp>
+#include <silkworm/db/genesis.hpp>
 #include <silkworm/db/tables.hpp>
 
 namespace silkworm::test {
@@ -23,6 +25,7 @@ namespace silkworm::test {
 Context::Context(bool with_create_tables, bool inmemory) {
     node_settings_.data_directory = std::make_unique<DataDirectory>(tmp_dir_.path(), /*create=*/true);
     node_settings_.chain_config = silkworm::kMainnetConfig;
+    node_settings_.chain_config->genesis_hash.emplace(kMainnetGenesisHash);
     node_settings_.chaindata_env_config =
         db::EnvConfig{node_settings_.data_directory->chaindata().path().string(),
                       /*create=*/true,
@@ -31,10 +34,17 @@ Context::Context(bool with_create_tables, bool inmemory) {
                       /*inmemory=*/inmemory};
     node_settings_.prune_mode = std::make_unique<db::PruneMode>();
     env_ = db::open_env(node_settings_.chaindata_env_config);
-    txn_ = env_.start_write();
+    txn_ = std::make_unique<db::RWTxn>(env_);
     if (with_create_tables) {
-        db::table::check_or_create_chaindata_tables(txn_);
+        db::table::check_or_create_chaindata_tables(*txn_);
     }
+}
+
+void Context::add_genesis_data() {
+    bool allow_exceptions = false;
+    auto source_data = silkworm::read_genesis_data(node_settings_.chain_config->chain_id);
+    auto genesis_json = nlohmann::json::parse(source_data, nullptr, allow_exceptions);
+    db::initialize_genesis(*txn_, genesis_json, allow_exceptions);
 }
 
 }  // namespace silkworm::test

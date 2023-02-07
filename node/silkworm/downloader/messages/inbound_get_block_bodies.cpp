@@ -52,7 +52,7 @@ void InboundGetBlockBodies::execute(db::ROAccess db, HeaderChain&, BodySequence&
 
     SILK_TRACE << "Processing message " << *this;
 
-    if (bs.highest_block_in_db() == 0)
+    if (bs.highest_block_in_output() == 0)
         return;
 
     BodyRetrieval body_retrieval(db);
@@ -94,6 +94,7 @@ uint64_t InboundGetBlockBodies::reqId() const { return packet_.requestId; }
 
 std::string InboundGetBlockBodies::content() const {
     std::stringstream content;
+    log::prepare_for_logging(content);
     content << packet_;
     return content.str();
 }

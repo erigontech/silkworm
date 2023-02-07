@@ -21,28 +21,19 @@
 
 namespace silkworm {
 
-OutboundNewBlock::OutboundNewBlock() {}
+OutboundNewBlock::OutboundNewBlock(Blocks b, bool f) : blocks_to_announce_{std::move(b)}, is_first_sync_{f} {}
 
-void OutboundNewBlock::execute(db::ROAccess, HeaderChain&, BodySequence& bs, SentryClient& sentry) {
+void OutboundNewBlock::execute(db::ROAccess, HeaderChain&, BodySequence&, SentryClient& sentry) {
     using namespace std::literals::chrono_literals;
 
-    auto& announces_to_do = bs.announces_to_do();
+    if (is_first_sync_) return;  // Don't announce blocks during first sync
 
-    if (announces_to_do.empty()) {
-        SILK_TRACE << "No OutboundNewBlock (announcements) message to send";
-        return;
-    }
+    for (auto& block_ptr : blocks_to_announce_) {
+        const BlockEx& block = *block_ptr;
+        NewBlockPacket packet{{block, block.header}, block.td};
+        auto peers = send_packet(sentry, packet, 1s);
 
-    seconds_t timeout = 1s;
-    while (!announces_to_do.empty()) {
-        auto& announce = *announces_to_do.begin();
-
-        auto peers = send_packet(sentry, announce, timeout);
-
-        if (peers.peers_size() == 0)
-            break;  // no peer available
-
-        announces_to_do.erase(announces_to_do.begin());  // clear announce from the queue
+        if (peers.peers_size() == 0) break;  // no peer available
     }
 }
 
@@ -80,6 +71,7 @@ sentry::SentPeers OutboundNewBlock::send_packet(SentryClient& sentry, const NewB
 std::string OutboundNewBlock::content() const {
     if (sent_packets_ == 0) return "- no block announcements -";
     std::stringstream content;
+    log::prepare_for_logging(content);
     content << sent_packets_ << " block announcements";
     return content.str();
 }

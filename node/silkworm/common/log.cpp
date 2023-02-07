@@ -92,6 +92,12 @@ struct separate_thousands : std::numpunct<char> {
     string_type do_grouping() const override { return "\3"; }  // groups of 3 digit
 };
 
+void prepare_for_logging(std::ostream& ss) {
+    if (settings_.log_thousands_sep != 0) {
+        ss.imbue(std::locale(ss.getloc(), new separate_thousands(settings_.log_thousands_sep)));
+    }
+}
+
 BufferBase::BufferBase(Level level) : should_print_(level <= settings_.log_verbosity) {
     if (!should_print_) return;
 

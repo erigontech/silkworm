@@ -234,6 +234,14 @@ struct Segment
         std::vector<HeaderList::Header_Ref>::push_back(val);
     }
 
+    // remove Header_Ref from the segment with number greater than the given one
+    void remove_headers_higher_than(BlockNum max) {
+        std::erase_if(*this, [max](const HeaderList::Header_Ref& header) {
+            return header->number > max;
+        });
+    }
+
+    [[nodiscard]] HeaderList::Header_Ref highest_header() const { return front(); }
     [[nodiscard]] HeaderList::Header_Ref lowest_header() const { return back(); }
 
     using Slice = std::span<const HeaderList::Header_Ref>;  // a Segment slice
@@ -243,7 +251,6 @@ struct Segment
     }  // with c++20 it can be implemented as: return Slice(begin() + start, begin() + end);
 
   protected:
-    // std::vector<something> headersRaw; // todo: do we need this?
     std::shared_ptr<HeaderList> line_;  // all the headers
 };
 

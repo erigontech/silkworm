@@ -431,8 +431,10 @@ Stage::Result HashState::hash_from_account_changeset(db::RWTxn& txn, BlockNum pr
         auto source_initial_key{db::block_key(expected_blocknum)};
         db::Cursor source_changeset(txn, db::table::kAccountChangeSet);
         db::Cursor source_plainstate(txn, db::table::kPlainState);
-        auto changeset_data{source_changeset.find(db::to_slice(source_initial_key),
-                                                  /*throw_notfound=*/true)};  // Initial record MUST be found
+        auto changeset_data{
+            source_changeset.find(db::to_slice(source_initial_key),  // Initial record MUST be found because
+                                  /*throw_notfound=*/true)};         // there is at least 1 change per block
+                                                                     // (the miner reward)
         while (changeset_data.done) {
             reached_blocknum = endian::load_big_u64(db::from_slice(changeset_data.key).data());
             check_block_sequence(reached_blocknum, expected_blocknum);
@@ -513,9 +515,17 @@ Stage::Result HashState::hash_from_storage_changeset(db::RWTxn& txn, BlockNum pr
         db::Cursor source_changeset(txn, db::table::kStorageChangeSet);
         db::Cursor source_plainstate(txn, db::table::kPlainState);
 
-        auto source_initial_key{db::block_key(previous_progress + 1)};
-        auto changeset_data{source_changeset.lower_bound(db::to_slice(source_initial_key), /*throw_notfound=*/true)};
+        // find fist block with changes
+        BlockNum initial_block{previous_progress + 1};
+        auto source_initial_key{db::block_key(initial_block)};
+        auto changeset_data = source_changeset.lower_bound(db::to_slice(source_initial_key), /*throw_notfound=*/false);
+        while (!changeset_data.done && initial_block <= to) {
+            ++initial_block;
+            source_initial_key = db::block_key(initial_block);
+            changeset_data = source_changeset.lower_bound(db::to_slice(source_initial_key), /*throw_notfound=*/false);
+        }
 
+        // process changes
         while (changeset_data.done) {
             auto changeset_key_view{db::from_slice(changeset_data.key)};
             reached_blocknum = endian::load_big_u64(changeset_key_view.data());

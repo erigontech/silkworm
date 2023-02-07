@@ -19,9 +19,7 @@
 
 #include <silkworm/common/measure.hpp>
 #include <silkworm/db/access_layer.hpp>
-#include <silkworm/downloader/block_exchange.hpp>
 #include <silkworm/downloader/internals/types.hpp>
-#include <silkworm/downloader/messages/internal_message.hpp>
 #include <silkworm/stagedsync/stage.hpp>
 
 namespace silkworm::stagedsync {
@@ -63,27 +61,42 @@ namespace silkworm::stagedsync {
  */
 class HeadersStage : public Stage {
   public:
-    HeadersStage(SyncContext*, BlockExchange&, NodeSettings*);
+    HeadersStage(NodeSettings*, SyncContext*);
     HeadersStage(const HeadersStage&) = delete;  // not copyable
     HeadersStage(HeadersStage&&) = delete;       // nor movable
-    ~HeadersStage();
+    ~HeadersStage() = default;
 
     Stage::Result forward(db::RWTxn&) override;  // go forward, downloading headers
     Stage::Result unwind(db::RWTxn&) override;   // go backward, unwinding headers to new_height
     Stage::Result prune(db::RWTxn&) override;
 
-  private:
-    void send_header_requests();  // send requests for more headers
-    void send_announcements();
-    auto sync_header_chain(BlockNum highest_in_db) -> std::shared_ptr<InternalMessage<void>>;
-    auto withdraw_stable_headers() -> std::shared_ptr<InternalMessage<std::tuple<Headers, bool>>>;
-    auto update_bad_headers(std::set<Hash>) -> std::shared_ptr<InternalMessage<void>>;
-
+  protected:
     std::vector<std::string> get_log_progress() override;  // thread safe
     std::atomic<BlockNum> current_height_{0};
 
-    std::optional<BlockNum> target_block_;
-    BlockExchange& block_downloader_;
+    std::optional<BlockNum> forced_target_block_;
+
+    // HeaderDataModel has the responsibility to update headers related tables
+    class HeaderDataModel {
+      public:
+        explicit HeaderDataModel(db::RWTxn& tx, BlockNum headers_height);
+
+        void update_tables(const BlockHeader&);  // update header related tables
+
+        // remove header data from tables, used in unwind phase
+        static void remove_headers(BlockNum unwind_point, db::RWTxn& tx);
+
+        // holds the status of a batch insertion of headers
+        BlockNum highest_height() const;
+        Hash highest_hash() const;
+        BigInt total_difficulty() const;
+
+      private:
+        db::RWTxn& tx_;
+        Hash previous_hash_;
+        Total_Difficulty previous_td_{0};
+        BlockNum previous_height_{0};
+    };
 };
 
 }  // namespace silkworm::stagedsync

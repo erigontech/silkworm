@@ -59,8 +59,17 @@ Bytes read_header_raw(mdbx::txn& txn, ByteView key);
 //! \brief Reads a header with the specified hash
 std::optional<BlockHeader> read_header(mdbx::txn& txn, const evmc::bytes32& hash);
 
+//! \brief Reads all headers at the specified height
+std::vector<BlockHeader> read_headers(mdbx::txn& txn, BlockNum height);
+
+//! \brief Apply a user defined func to the headers at specific height
+size_t process_headers_at_height(mdbx::txn& txn, BlockNum height, std::function<void(BlockHeader&&)> process_func);
+
 //! \brief Reads a header without rlp-decoding it
 std::optional<ByteView> read_rlp_encoded_header(mdbx::txn& txn, BlockNum bn, const evmc::bytes32& hash);
+
+//! \brief Reads the canonical head
+std::tuple<BlockNum, evmc::bytes32> read_canonical_head(mdbx::txn& txn);
 
 //! \brief Reads the canonical header from a block number
 std::optional<BlockHeader> read_canonical_header(mdbx::txn& txn, BlockNum b);
@@ -90,6 +99,13 @@ void write_canonical_header_hash(mdbx::txn& txn, const uint8_t (&hash)[kHashLeng
 [[nodiscard]] bool read_body(mdbx::txn& txn, const evmc::bytes32& hash, BlockNum bn, BlockBody& body);
 [[nodiscard]] bool read_body(mdbx::txn& txn, const evmc::bytes32& hash, BlockBody& body);
 
+//! \brief Read the canonical block at specified height
+[[nodiscard]] bool read_canonical_block(mdbx::txn& txn, BlockNum height, Block& block);
+
+//! \brief Apply a user defined func to the bodies at specific height
+size_t process_blocks_at_height(mdbx::txn& txn, BlockNum height, std::function<void(Block&)> process_func,
+                                bool read_senders = false);
+
 //! \brief Check the presence of a block body using block number and hash
 [[nodiscard]] bool has_body(mdbx::txn& txn, BlockNum block_number, const uint8_t (&hash)[kHashLength]);
 [[nodiscard]] bool has_body(mdbx::txn& txn, BlockNum block_number, const evmc::bytes32& hash);
@@ -116,6 +132,7 @@ void write_total_difficulty(mdbx::txn& txn, const Bytes& key, const intx::uint25
 // Returns true on success and false on missing block.
 [[nodiscard]] bool read_block(mdbx::txn& txn, std::span<const uint8_t, kHashLength> hash, BlockNum number,
                               bool read_senders, Block& out);
+[[nodiscard]] bool read_block(mdbx::txn& txn, const evmc::bytes32& hash, BlockNum number, Block& block);
 
 // See Erigon ReadSenders
 std::vector<evmc::address> read_senders(mdbx::txn& txn, const Bytes& key);

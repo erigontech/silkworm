@@ -43,6 +43,7 @@ class MergeEngine : public IEngine {
     bool terminal_pow_block(const BlockHeader& header, const BlockState& state) const;
 
     ValidationResult validate_ommers(const Block& block, const BlockState& state) override;
+    ValidationResult pre_validate_transactions(const Block& block) override;
 
     intx::uint256 terminal_total_difficulty_;
     std::unique_ptr<IEngine> pre_merge_engine_;

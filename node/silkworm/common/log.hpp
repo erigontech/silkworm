@@ -74,6 +74,8 @@ bool test_verbosity(Level level);
 //! \note This function is not thread safe as it's meant to be used at start of process and never called again
 void tee_file(const std::filesystem::path& path);
 
+void prepare_for_logging(std::ostream&);
+
 class BufferBase {
   public:
     explicit BufferBase(Level level);

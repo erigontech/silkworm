@@ -28,14 +28,45 @@
 #include <silkworm/db/stages.hpp>
 #include <silkworm/downloader/block_exchange.hpp>
 #include <silkworm/downloader/sentry_client.hpp>
-#include <silkworm/stagedsync/sync_loop.hpp>
+#include <silkworm/stagedsync/execution_engine.hpp>
 
 #include "common.hpp"
+#include "silkworm/downloader/sync_engine.hpp"
 
 using namespace silkworm;
 
+// progress log
+class ResourceUsageLog : public ActiveComponent {
+    NodeSettings& node_settings_;
+
+  public:
+    ResourceUsageLog(NodeSettings& settings) : node_settings_{settings} {}
+
+    void execution_loop() override {  // todo: this is only a trick, instead use asio timers
+        using namespace std::chrono;
+        log::set_thread_name("progress-log  ");
+        auto start_time = steady_clock::now();
+        auto last_update = start_time;
+        while (!is_stopping()) {
+            std::this_thread::sleep_for(500ms);
+
+            auto now = steady_clock::now();
+            if (now - last_update > 300s) {
+                log::Info("Resource usage",
+                          {"mem", human_size(get_mem_usage()),
+                           "chain", human_size(node_settings_.data_directory->chaindata().size()),
+                           "etl-tmp", human_size(node_settings_.data_directory->etl().size()),
+                           "uptime", StopWatch::format(now - start_time)});
+                last_update = now;
+            }
+        }
+    }
+};
+
+// main
 int main(int argc, char* argv[]) {
     using namespace boost::placeholders;
+    using namespace std::chrono;
 
     CLI::App cli("Silkworm node");
     cli.get_formatter()->column_width(50);
@@ -45,9 +76,6 @@ int main(int argc, char* argv[]) {
         cmd::parse_silkworm_command_line(cli, argc, argv, settings);
 
         auto& node_settings = settings.node_settings;
-
-        // Trap OS signals
-        SignalHandler::init();
 
         // Initialize logging with cli settings
         log::init(settings.log_settings);
@@ -82,6 +110,8 @@ int main(int argc, char* argv[]) {
 
         auto chaindata_db{silkworm::db::open_env(node_settings.chaindata_env_config)};
 
+        PreverifiedHashes::load(node_settings.chain_config->chain_id);
+
         // Start boost asio
         using asio_guard_type = boost::asio::executor_work_guard<boost::asio::io_context::executor_type>;
         auto asio_guard = std::make_unique<asio_guard_type>(node_settings.asio_context.get_executor());
@@ -91,6 +121,10 @@ int main(int argc, char* argv[]) {
             node_settings.asio_context.run();
             log::Trace("Boost Asio", {"state", "stopped"});
         }};
+
+        // Resource usage logging
+        ResourceUsageLog resource_usage_log(node_settings);
+        auto resource_usage_logging = std::thread([&resource_usage_log]() { resource_usage_log.execution_loop(); });
 
         // BackEnd & KV server
         const auto node_name{silkworm::cmd::get_node_name_from_build_info(build_info)};
@@ -110,44 +144,35 @@ int main(int argc, char* argv[]) {
         BlockExchange block_exchange{sentry, db::ROAccess{chaindata_db}, node_settings.chain_config.value()};
         auto block_downloading = std::thread([&block_exchange]() { block_exchange.execution_loop(); });
 
-        // Start sync loop
-        auto start_time{std::chrono::steady_clock::now()};
-        stagedsync::SyncLoop sync_loop(&node_settings, &chaindata_db, block_exchange);
-        sync_loop.start(/*wait=*/false);
+        // ExecutionEngine executes transactions and builds state validating chain slices
+        silkworm::stagedsync::ExecutionEngine execution{node_settings, db::RWAccess{chaindata_db}};
 
-        // Keep waiting till sync_loop stops
-        // Signals are handled in sync_loop and below
-        auto t1{std::chrono::steady_clock::now()};
-        while (sync_loop.get_state() != Worker::State::kStopped) {
-            std::this_thread::sleep_for(std::chrono::milliseconds(500));
+        // ConsensusEngine drives headers and bodies sync, implementing fork choice rules
+        silkworm::chainsync::SyncEngine sync{block_exchange, execution};
 
-            // Check signals
-            if (SignalHandler::signalled()) {
-                sync_loop.stop(true);
-                continue;
-            }
+        // Trap OS signals
+        SignalHandler::init([&](int) {
+            log::Info() << "Requesting termination\n";
+            sync.stop();
+        });
 
-            auto t2{std::chrono::steady_clock::now()};
-            if ((t2 - t1) > std::chrono::seconds(60)) {
-                t1 = std::chrono::steady_clock::now();
-                auto total_duration{t1 - start_time};
-                log::Info("Resource usage",
-                          {"mem", human_size(get_mem_usage()),
-                           "chain", human_size(node_settings.data_directory->chaindata().size()),
-                           "etl-tmp", human_size(node_settings.data_directory->etl().size()),
-                           "uptime", StopWatch::format(total_duration)});
-            }
-        }
+        // Sync main loop
+        sync.execution_loop();  // currently sync & execution are on the same process, sync calls execution so due to
+                                // limitations related to the db rw tx owned by execution they must run on the same thread
 
+        // Close all resources
         backend.close();
         rpc_server.shutdown();
         rpc_server.join();
 
         block_exchange.stop();
         sentry.stop();
+        sync.stop();
+        resource_usage_log.stop();
         block_downloading.join();
         message_receiving.join();
         stats_receiving.join();
+        resource_usage_logging.join();
 
         asio_guard.reset();
         asio_thread.join();
@@ -155,7 +180,7 @@ int main(int argc, char* argv[]) {
         log::Message() << "Closing database chaindata path: " << node_settings.data_directory->chaindata().path();
         chaindata_db.close();
         log::Message() << "Database closed";
-        sync_loop.rethrow();  // Eventually throws the exception which caused the stop
+
         return 0;
 
     } catch (const CLI::ParseError& ex) {

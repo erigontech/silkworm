@@ -152,6 +152,17 @@ After any of those steps (wait for completion) launch Silkworm and point it to t
 cmd/silkworm --datadir <same-datadir-path-used-for-erigon>
 ```
 
+## Use Conan as Package Manager
+
+Silkworm uses Hunter as package manager, but will soon switch to Conan (https://conan.io/).
+
+To use Conan at this experimental stage add the `-DCONAN_PACKAGE_MANAGER` option set to `ON`, and optionally the Conan profile with the `-DCONAN_PROFILE` option, with the name of the profile to use.
+
+Example: 
+```
+cmake .. -DCONAN_PACKAGE_MANAGER=ON -DCONAN_PROFILE=linux_gcc_11_release
+```
+You can find all available conan profiles inside the `/conan` folder.
 
 <a name="guide"></a>
 ## Style Guide

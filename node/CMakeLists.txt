@@ -14,11 +14,23 @@
    limitations under the License.
 ]]
 
-find_package(absl CONFIG REQUIRED)
-find_package(asio-grpc CONFIG REQUIRED)
-find_package(Boost CONFIG REQUIRED container thread)
-find_package(nlohmann_json CONFIG REQUIRED)
-find_package(gRPC CONFIG REQUIRED)
+
+if(CONAN_PACKAGE_MANAGER)
+  find_package(absl REQUIRED)
+  find_package(asio-grpc REQUIRED)
+  find_package(Boost REQUIRED thread)
+  find_package(nlohmann_json REQUIRED)
+  find_package(gRPC REQUIRED)
+  find_package(benchmark REQUIRED)
+else()
+  find_package(absl CONFIG REQUIRED)
+  find_package(asio-grpc CONFIG REQUIRED)
+  find_package(Boost CONFIG REQUIRED container thread)
+  find_package(nlohmann_json CONFIG REQUIRED)
+  find_package(gRPC CONFIG REQUIRED)
+endif()
+
+
 
 get_filename_component(SILKWORM_MAIN_DIR ../ ABSOLUTE)
 
@@ -60,6 +72,7 @@ add_custom_target(generate_toml DEPENDS "${SILKWORM_TOML_SRC}" "${SILKWORM_EMBED
 
 file(GLOB_RECURSE SILKWORM_NODE_SRC CONFIGURE_DEPENDS "*.cpp" "*.hpp" "*.c" "*.h" "*.cc")
 list(FILTER SILKWORM_NODE_SRC EXCLUDE REGEX "_test\\.cpp$")
+list(FILTER SILKWORM_NODE_SRC EXCLUDE REGEX "_benchmark\\.cpp$")
 
 set(SILKWORM_INTERFACE_SRC
         ${SILKWORM_MAIN_DIR}/interfaces/p2psentry/sentry.grpc.pb.cc

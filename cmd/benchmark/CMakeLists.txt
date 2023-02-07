@@ -14,7 +14,7 @@
    limitations under the License.
 ]]
 
-find_package(benchmark CONFIG REQUIRED)
+find_package(benchmark REQUIRED)
 
 file(GLOB_RECURSE SILKWORM_BENCHMARK_TESTS CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/node/*_benchmark.cpp")
 add_executable(benchmark_test benchmark_test.cpp ${SILKWORM_BENCHMARK_TESTS})

@@ -14,11 +14,15 @@
    limitations under the License.
 ]]
 
-hunter_add_package(abseil)
-hunter_add_package(asio-grpc)
-hunter_add_package(benchmark)
-hunter_add_package(Boost COMPONENTS container thread)
-hunter_add_package(CLI11)
-hunter_add_package(gRPC)
-hunter_add_package(OpenSSL)
-hunter_add_package(Protobuf)
+if(CONAN_PACKAGE_MANAGER)
+    # Do nothing
+else()
+    hunter_add_package(abseil)
+    hunter_add_package(asio-grpc)
+    hunter_add_package(benchmark)
+    hunter_add_package(Boost COMPONENTS thread)
+    hunter_add_package(CLI11)
+    hunter_add_package(gRPC)
+    hunter_add_package(OpenSSL)
+    hunter_add_package(Protobuf)
+endif()

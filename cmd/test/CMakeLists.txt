@@ -14,13 +14,24 @@
    limitations under the License.
 ]]
 
-find_package(Catch2 CONFIG REQUIRED)
-find_package(Microsoft.GSL CONFIG REQUIRED)
+if(CONAN_PACKAGE_MANAGER)
+  find_package(Catch2 REQUIRED)
+  find_package(Microsoft.GSL REQUIRED)
+  find_package(absl REQUIRED)
+else()
+  find_package(Catch2 CONFIG REQUIRED)
+  find_package(Microsoft.GSL CONFIG REQUIRED)
+endif()
 
 # Silkworm Core Tests
 file(GLOB_RECURSE SILKWORM_CORE_TESTS CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/core/silkworm/*_test.cpp")
 add_executable(core_test unit_test.cpp ${SILKWORM_CORE_TESTS})
-target_link_libraries(core_test silkworm_core Catch2::Catch2 evmone)
+if(CONAN_PACKAGE_MANAGER)
+  target_link_libraries(core_test silkworm_core Catch2::Catch2 evmone absl::flat_hash_map absl::flat_hash_set absl::node_hash_map)
+else()
+  target_link_libraries(core_test silkworm_core Catch2::Catch2 evmone)
+endif()
+
 if(MSVC)
   target_compile_options(core_test PRIVATE /EHa- /EHsc)
 else()
@@ -37,8 +48,12 @@ if(NOT SILKWORM_CORE_ONLY)
   target_link_libraries(node_test silkworm_node Catch2::Catch2)
 
   # Ethereum Consensus Tests
-  hunter_add_package(CLI11)
-  find_package(CLI11 CONFIG REQUIRED)
+
+  if(NOT CONAN_PACKAGE_MANAGER)
+    hunter_add_package(CLI11)
+  endif()
+
+  find_package(CLI11 REQUIRED)
   add_executable(consensus consensus.cpp)
   target_compile_definitions(consensus PRIVATE SILKWORM_CONSENSUS_TEST_DIR="${CMAKE_SOURCE_DIR}/third_party/tests")
   target_link_libraries(consensus PRIVATE silkworm_node evmc::loader CLI11::CLI11)

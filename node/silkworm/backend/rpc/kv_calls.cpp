@@ -119,31 +119,29 @@ awaitable<void> TxCall::operator()() {
         max_idle_alarm.expires_after(max_idle_duration_);
         max_ttl_alarm.expires_after(max_ttl_duration_);
 
-        // Initiate read and write streams
+        // Setup read and write streams
         agrpc::GrpcStream read_stream{grpc_context_}, write_stream{grpc_context_};
-        const auto initiate_write = [&](const remote::Pair& response) {
-            if (!write_stream.is_running()) {
-                write_stream.initiate(agrpc::write, responder_, response);
-            }
-        };
         remote::Cursor request;
         read_stream.initiate(agrpc::read, responder_, request);
 
-        boost::asio::cancellation_signal signal;
         bool completed{false};
         while (!completed) {
             const auto rv = co_await (
                 read_stream.next() ||
                 max_idle_alarm.async_wait(as_tuple(use_awaitable)) ||
-                max_ttl_alarm.async_wait(as_tuple(use_awaitable)) ||
-                write_stream.next());
+                max_ttl_alarm.async_wait(as_tuple(use_awaitable)));
             if (0 == rv.index()) {  // read request completed
                 if (const bool read_ok = std::get<0>(rv); read_ok) {
                     // Handle incoming request from client
                     remote::Pair response{};
                     handle(&request, response);
                     // Schedule write for response
-                    initiate_write(response);
+                    write_stream.initiate(agrpc::write, responder_, std::move(response));
+                    if (const bool write_ok = co_await write_stream.next(); !write_ok) {
+                        SILK_WARN << "Tx closed by peer: " << server_context_.peer() << " error: write failed";
+                        completed = true;
+                        continue;
+                    }
                     // Reset request and schedule subsequent read
                     request.Clear();
                     read_stream.initiate(agrpc::read, responder_, request);
@@ -162,17 +160,12 @@ awaitable<void> TxCall::operator()() {
                     status = grpc::Status::CANCELLED;
                 }
                 completed = true;
-            } else if (2 == rv.index()) {  // max TTL timeout expired
+            } else {  // max TTL timeout expired
                 if (const auto [max_ttl_ec] = std::get<2>(rv); max_ttl_ec != boost::asio::error::operation_aborted) {
                     handle_max_ttl_timer_expired();
                     max_ttl_alarm.expires_after(max_ttl_duration_);
                 } else {
                     status = grpc::Status::CANCELLED;
-                    completed = true;
-                }
-            } else {  // write response completed
-                if (const bool write_ok = std::get<3>(rv); !write_ok) {
-                    SILK_WARN << "Tx closed by peer: " << server_context_.peer() << " error: write failed";
                     completed = true;
                 }
             }

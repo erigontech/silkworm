@@ -572,7 +572,7 @@ TEST_CASE("BackEndKvServer E2E: empty node settings", "[silkworm][node][rpc]") {
     }
 }
 
-TEST_CASE("BackEndKvServer E2E: KV", "[silkworm][node][rpc][.]") {
+TEST_CASE("BackEndKvServer E2E: KV", "[silkworm][node][rpc]") {
     BackEndKvE2eTest test{silkworm::log::Level::kNone};
     auto kv_client = *test.kv_client;
 
@@ -968,7 +968,7 @@ TEST_CASE("BackEndKvServer E2E: more than one Sentry all status KO", "[silkworm]
     }
 }
 
-TEST_CASE("BackEndKvServer E2E: trigger server-side write error", "[silkworm][node][rpc][.]") {
+TEST_CASE("BackEndKvServer E2E: trigger server-side write error", "[silkworm][node][rpc]") {
     {
         const uint32_t kNumTxs{1000};
         NodeSettings node_settings;
@@ -1027,7 +1027,7 @@ TEST_CASE("BackEndKvServer E2E: Tx max simultaneous readers exceeded", "[silkwor
     }
 }
 
-TEST_CASE("BackEndKvServer E2E: Tx max opened cursors exceeded", "[silkworm][node][rpc][.]") {
+TEST_CASE("BackEndKvServer E2E: Tx max opened cursors exceeded", "[silkworm][node][rpc]") {
     BackEndKvE2eTest test{silkworm::log::Level::kNone, NodeSettings{}};
     test.fill_tables();
     auto kv_client = *test.kv_client;
@@ -1122,7 +1122,7 @@ TEST_CASE("BackEndKvServer E2E: bidirectional idle timeout", "[silkworm][node][r
     }
 }
 
-TEST_CASE("BackEndKvServer E2E: Tx cursor valid operations", "[silkworm][node][rpc][.]") {
+TEST_CASE("BackEndKvServer E2E: Tx cursor valid operations", "[silkworm][node][rpc]") {
     BackEndKvE2eTest test{silkworm::log::Level::kNone};
     test.fill_tables();
     auto kv_client = *test.kv_client;
@@ -2054,7 +2054,7 @@ TEST_CASE("BackEndKvServer E2E: Tx cursor valid operations", "[silkworm][node][r
     }
 }
 
-TEST_CASE("BackEndKvServer E2E: Tx cursor invalid operations", "[silkworm][node][rpc][.]") {
+TEST_CASE("BackEndKvServer E2E: Tx cursor invalid operations", "[silkworm][node][rpc]") {
     BackEndKvE2eTest test{silkworm::log::Level::kNone};
     test.fill_tables();
     auto kv_client = *test.kv_client;
@@ -2215,7 +2215,7 @@ class TxMaxTimeToLiveGuard {
     ~TxMaxTimeToLiveGuard() { TxCall::set_max_ttl_duration(kMaxTxDuration); }
 };
 
-TEST_CASE("BackEndKvServer E2E: bidirectional max TTL duration", "[silkworm][node][rpc][.]") {
+TEST_CASE("BackEndKvServer E2E: bidirectional max TTL duration", "[silkworm][node][rpc]") {
     constexpr uint8_t kCustomMaxTimeToLive{100};
     TxMaxTimeToLiveGuard ttl_guard{kCustomMaxTimeToLive};
     BackEndKvE2eTest test{silkworm::log::Level::kNone, NodeSettings{}};

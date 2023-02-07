@@ -215,7 +215,7 @@ TEST_CASE("Headers receiving and saving") {
      *         h0 <------ h1 <----- h2
      *               |--- h1'
      */
-    SECTION("accepting 2 batch of headers, the second not changing the canonical") {
+    SECTION("accepting 2 batch of headers, the second not changing the canonical", "[.]") {
         // receiving 2 headers from a peer
         BlockHeader header1;
         header1.number = 1;

@@ -43,7 +43,6 @@ void load_preverified_hashes(PreverifiedHashes& destination, const uint64_t* (*p
 }
 
 PreverifiedHashes& PreverifiedHashes::load(uint64_t chain_id) {
-
     if (Environment::are_pre_verified_hashes_disabled()) {
         return current;
     }

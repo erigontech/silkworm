@@ -32,9 +32,10 @@ if(NOT SILKWORM_HAS_PARENT)
   endif()
 
   include(third_party/evmone/cmake/cable/HunterGate.cmake)
+  # https://github.com/cpp-pm/hunter/releases/
   HunterGate(
-    URL "https://github.com/cpp-pm/hunter/archive/v0.24.3.tar.gz"
-    SHA1 "10738b59e539818a01090e64c2d09896247530c7"
+    URL "https://github.com/cpp-pm/hunter/archive/v0.24.15.tar.gz"
+    SHA1 "8010d63d5ae611c564889d5fe12d3cb7a45703ac"
     LOCAL
     )
 endif()
@@ -47,8 +48,8 @@ add the following lines before the project command of your root CMakeLists.txt:
 include(silkworm/third_party/evmone/cmake/cable/bootstrap.cmake)
 include(silkworm/third_party/evmone/cmake/cable/HunterGate.cmake)
 HunterGate(
-  URL "https://github.com/cpp-pm/hunter/archive/v0.24.3.tar.gz"
-  SHA1 "10738b59e539818a01090e64c2d09896247530c7"
+  URL "https://github.com/cpp-pm/hunter/archive/v0.24.15.tar.gz"
+  SHA1 "8010d63d5ae611c564889d5fe12d3cb7a45703ac"
   FILEPATH "${CMAKE_SOURCE_DIR}/silkworm/cmake/Hunter/config.cmake"
 )
 

@@ -29,8 +29,8 @@
 #include <boost/asio/any_io_executor.hpp>
 #include <boost/asio/awaitable.hpp>
 #include <boost/asio/co_spawn.hpp>
+#include <boost/asio/deferred.hpp>
 #include <boost/asio/experimental/awaitable_operators.hpp>
-#include <boost/asio/experimental/deferred.hpp>
 #include <boost/asio/experimental/parallel_group.hpp>
 #include <boost/asio/this_coro.hpp>
 #include <boost/asio/use_awaitable.hpp>
@@ -45,7 +45,8 @@ using awaitable = boost::asio::awaitable<T, Executor>;
 template <typename Executor = boost::asio::any_io_executor>
 using use_awaitable_t = boost::asio::use_awaitable_t<Executor>;
 
-using boost::asio::experimental::deferred;
+using boost::asio::deferred;
+using boost::asio::experimental::make_parallel_group;
 
 namespace this_coro {
     using boost::asio::this_coro::executor;

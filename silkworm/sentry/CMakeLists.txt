@@ -16,10 +16,16 @@
 
 set(TARGET silkworm_sentry)
 
-hunter_add_package(Snappy)
+if(NOT CONAN_PACKAGE_MANAGER)
+  hunter_add_package(Snappy)
+endif()
 
 find_package(absl REQUIRED)
-find_package(Boost CONFIG REQUIRED thread)
+if(CONAN_PACKAGE_MANAGER)
+  find_package(Boost REQUIRED thread)
+else()
+  find_package(Boost CONFIG REQUIRED thread)
+endif()
 find_package(gRPC REQUIRED)
 find_package(Microsoft.GSL REQUIRED)
 find_package(OpenSSL REQUIRED)

@@ -15,7 +15,11 @@
 ]]
 
 find_package(absl REQUIRED)
-find_package(Boost CONFIG REQUIRED container thread)
+if(CONAN_PACKAGE_MANAGER)
+  find_package(Boost REQUIRED container thread)
+else()
+  find_package(Boost CONFIG REQUIRED container thread)
+endif()
 find_package(gRPC REQUIRED)
 
 file(GLOB_RECURSE SILKWORM_SYNC_SRC CONFIGURE_DEPENDS "*.cpp" "*.hpp" "*.c" "*.h" "*.cc")

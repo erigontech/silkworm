@@ -16,7 +16,12 @@
 
 find_package(absl REQUIRED)
 find_package(asio-grpc REQUIRED)
-find_package(Boost CONFIG REQUIRED container thread)
+if(CONAN_PACKAGE_MANAGER)
+  find_package(Boost REQUIRED container thread)
+  find_package(benchmark REQUIRED)
+else()
+  find_package(Boost CONFIG REQUIRED container thread)
+endif()
 find_package(nlohmann_json REQUIRED)
 find_package(gRPC REQUIRED)
 
@@ -58,6 +63,7 @@ add_custom_target(generate_toml DEPENDS "${SILKWORM_TOML_SRC}" "${SILKWORM_EMBED
 
 file(GLOB_RECURSE SILKWORM_NODE_SRC CONFIGURE_DEPENDS "*.cpp" "*.hpp" "*.c" "*.h" "*.cc")
 list(FILTER SILKWORM_NODE_SRC EXCLUDE REGEX "_test\\.cpp$")
+list(FILTER SILKWORM_NODE_SRC EXCLUDE REGEX "_benchmark\\.cpp$")
 
 set(SILKWORM_INTERFACE_SRC
         ${SILKWORM_MAIN_SRC_DIR}/interfaces/p2psentry/sentry.grpc.pb.cc

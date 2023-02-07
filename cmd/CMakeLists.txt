@@ -48,7 +48,12 @@ if(NOT SILKWORM_CORE_ONLY)
   target_link_libraries(toolbox PRIVATE silkworm_node CLI11::CLI11)
 
   add_executable(genesistool genesistool.cpp)
-  target_link_libraries(genesistool PRIVATE CLI11::CLI11)
+  if(CONAN_PACKAGE_MANAGER)
+    find_package(Boost REQUIRED thread)
+    target_link_libraries(genesistool PRIVATE CLI11::CLI11 Boost::thread)
+  else()
+    target_link_libraries(genesistool PRIVATE CLI11::CLI11)
+  endif()
 
   add_executable(check_hashstate check_hashstate.cpp)
   target_link_libraries(check_hashstate PRIVATE silkworm_node CLI11::CLI11)

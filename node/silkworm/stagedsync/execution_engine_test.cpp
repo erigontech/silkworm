@@ -64,7 +64,7 @@ TEST_CASE("ExecutionEngine") {
      *         h0 <----- h1
      */
 
-    SECTION("one invalid body after the genesis") {
+    SECTION("one invalid body after the genesis", "[.]") {
         auto header0_hash = db::read_canonical_hash(tx, 0);
         REQUIRE(header0_hash.has_value());
 

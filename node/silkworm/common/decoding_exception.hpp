@@ -34,7 +34,7 @@ class DecodingException : public std::runtime_error {
 };
 
 template <class T>
-inline void success_or_throw(tl::expected<T, DecodingError> res, const std::string& error_message = "") {
+inline void success_or_throw(const tl::expected<T, DecodingError>& res, const std::string& error_message = "") {
     if (!res) {
         throw DecodingException(res.error(), error_message);
     }

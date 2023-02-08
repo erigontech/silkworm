@@ -16,6 +16,8 @@
 
 #include "peer.hpp"
 
+#include <chrono>
+
 #include <boost/asio/co_spawn.hpp>
 #include <boost/asio/error.hpp>
 #include <boost/asio/experimental/channel_error.hpp>
@@ -25,10 +27,15 @@
 
 #include <silkworm/common/log.hpp>
 #include <silkworm/sentry/common/awaitable_wait_for_all.hpp>
+#include <silkworm/sentry/common/awaitable_wait_for_one.hpp>
+#include <silkworm/sentry/common/timeout.hpp>
 
 #include "auth/handshake.hpp"
+#include "common/disconnect_message.hpp"
 
 namespace silkworm::sentry::rlpx {
+
+using namespace std::chrono_literals;
 
 Peer::~Peer() {
     log::Debug() << "silkworm::sentry::rlpx::Peer::~Peer";
@@ -41,51 +48,55 @@ boost::asio::awaitable<void> Peer::start(const std::shared_ptr<Peer>& peer) {
     return boost::asio::co_spawn(peer->strand_, std::move(start), boost::asio::use_awaitable);
 }
 
+static bool is_fatal_network_error(const boost::system::system_error& ex) {
+    auto code = ex.code();
+    return (code == boost::asio::error::eof) &&
+           (code == boost::asio::error::connection_reset) &&
+           (code == boost::asio::error::broken_pipe);
+}
+
+static const std::chrono::milliseconds kPeerDisconnectTimeout = 2s;
+
 boost::asio::awaitable<void> Peer::handle(std::shared_ptr<Peer> peer) {
     co_await peer->handle();
 }
 
 boost::asio::awaitable<void> Peer::handle() {
     using namespace common::awaitable_wait_for_all;
+    using namespace common::awaitable_wait_for_one;
 
+    log::Debug() << "Peer::handle";
     auto _ = gsl::finally([this] { this->close(); });
 
     try {
-        log::Debug() << "Peer::handle";
-
-        auth::Handshake handshake{
-            node_key_,
-            client_id_,
-            node_listen_port_,
-            protocol_->capability(),
-            peer_public_key_.get(),
-        };
-        auto [message_stream, peer_public_key] = co_await handshake.execute(stream_);
-        peer_public_key_.set(peer_public_key);
+        auto message_stream = co_await handshake();
 
         co_await message_stream.send(protocol_->first_message());
         auto first_message = co_await message_stream.receive();
         log::Debug() << "Peer::handle first_message: " << int(first_message.id);
 
-        protocol_->handle_peer_first_message(first_message);
+        bool is_incompatible = false;
+        try {
+            protocol_->handle_peer_first_message(first_message);
+        } catch (const Protocol::IncompatiblePeerError&) {
+            is_incompatible = true;
+        }
+
+        if (is_incompatible) {
+            log::Debug() << "Peer::handle IncompatiblePeerError";
+            co_await (message_stream.send(DisconnectMessage{DisconnectReason::UselessPeer}.to_message()) ||
+                      common::Timeout::after(kPeerDisconnectTimeout));
+            co_return;
+        }
 
         co_await (send_messages(message_stream) && receive_messages(message_stream));
 
     } catch (const auth::Handshake::DisconnectError&) {
         log::Debug() << "Peer::handle DisconnectError";
         co_return;
-    } catch (const Protocol::IncompatiblePeerError&) {
-        log::Debug() << "Peer::handle IncompatiblePeerError";
-        co_return;
     } catch (const boost::system::system_error& ex) {
-        if (ex.code() == boost::asio::error::eof) {
-            log::Debug() << "Peer::handle EOF";
-            co_return;
-        } else if (ex.code() == boost::asio::error::connection_reset) {
-            log::Debug() << "Peer::handle connection reset";
-            co_return;
-        } else if (ex.code() == boost::asio::error::broken_pipe) {
-            log::Debug() << "Peer::handle broken pipe";
+        if (is_fatal_network_error(ex)) {
+            log::Debug() << "Peer::handle network error: " << ex.what();
             co_return;
         } else if (ex.code() == boost::system::errc::operation_canceled) {
             log::Debug() << "Peer::handle cancelled";
@@ -97,6 +108,56 @@ boost::asio::awaitable<void> Peer::handle() {
         log::Error() << "Peer::handle exception: " << ex.what();
         throw;
     }
+}
+
+boost::asio::awaitable<void> Peer::drop(const std::shared_ptr<Peer>& peer, DisconnectReason reason) {
+    return boost::asio::co_spawn(peer->strand_, Peer::drop_in_strand(peer, reason), boost::asio::use_awaitable);
+}
+
+boost::asio::awaitable<void> Peer::drop_in_strand(std::shared_ptr<Peer> self, DisconnectReason reason) {
+    co_await self->drop(reason);
+}
+
+boost::asio::awaitable<void> Peer::drop(DisconnectReason reason) {
+    using namespace common::awaitable_wait_for_one;
+
+    log::Debug() << "Peer::drop reason " << static_cast<int>(reason);
+    auto _ = gsl::finally([this] { this->close(); });
+
+    try {
+        auto message_stream = co_await handshake();
+        co_await (message_stream.send(DisconnectMessage{reason}.to_message()) ||
+                  common::Timeout::after(kPeerDisconnectTimeout));
+    } catch (const auth::Handshake::DisconnectError&) {
+        log::Debug() << "Peer::drop DisconnectError";
+        co_return;
+    } catch (const boost::system::system_error& ex) {
+        if (is_fatal_network_error(ex)) {
+            log::Debug() << "Peer::drop network error: " << ex.what();
+            co_return;
+        } else if (ex.code() == boost::system::errc::operation_canceled) {
+            log::Debug() << "Peer::drop cancelled";
+            co_return;
+        }
+        log::Error() << "Peer::drop system_error: " << ex.what();
+        throw;
+    } catch (const std::exception& ex) {
+        log::Error() << "Peer::drop exception: " << ex.what();
+        throw;
+    }
+}
+
+boost::asio::awaitable<framing::MessageStream> Peer::handshake() {
+    auth::Handshake handshake{
+        node_key_,
+        client_id_,
+        node_listen_port_,
+        protocol_->capability(),
+        peer_public_key_.get(),
+    };
+    auto [message_stream, peer_public_key] = co_await handshake.execute(stream_);
+    peer_public_key_.set(peer_public_key);
+    co_return std::move(message_stream);
 }
 
 void Peer::close() {

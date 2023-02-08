@@ -32,7 +32,9 @@
 #include <silkworm/sentry/common/ecc_public_key.hpp>
 #include <silkworm/sentry/common/message.hpp>
 #include <silkworm/sentry/common/socket_stream.hpp>
+#include <silkworm/sentry/common/task_group.hpp>
 
+#include "common/disconnect_reason.hpp"
 #include "framing/message_stream.hpp"
 #include "protocol.hpp"
 
@@ -55,13 +57,15 @@ class Peer {
           protocol_(std::move(protocol)),
           peer_public_key_(std::move(peer_public_key)),
           strand_(boost::asio::make_strand(io_context)),
+          send_message_tasks_(strand_, 1000),
           send_message_channel_(io_context),
           receive_message_channel_(io_context) {}
     ~Peer();
 
     static boost::asio::awaitable<void> start(const std::shared_ptr<Peer>& peer);
+    static boost::asio::awaitable<void> drop(const std::shared_ptr<Peer>& peer, DisconnectReason reason);
 
-    static void send_message_detached(const std::shared_ptr<Peer>& peer, const common::Message& message);
+    static void post_message(const std::shared_ptr<Peer>& peer, const common::Message& message);
     boost::asio::awaitable<common::Message> receive_message();
 
     class DisconnectedError : public std::runtime_error {
@@ -76,8 +80,12 @@ class Peer {
   private:
     static boost::asio::awaitable<void> handle(std::shared_ptr<Peer> peer);
     boost::asio::awaitable<void> handle();
+    static boost::asio::awaitable<void> drop_in_strand(std::shared_ptr<Peer> peer, DisconnectReason reason);
+    boost::asio::awaitable<void> drop(DisconnectReason reason);
+    boost::asio::awaitable<framing::MessageStream> handshake();
     void close();
 
+    static boost::asio::awaitable<void> send_message_tasks_wait(std::shared_ptr<Peer> self);
     static boost::asio::awaitable<void> send_message(std::shared_ptr<Peer> peer, common::Message message);
     boost::asio::awaitable<void> send_message(common::Message message);
     boost::asio::awaitable<void> send_messages(framing::MessageStream& message_stream);
@@ -91,6 +99,7 @@ class Peer {
     common::AtomicValue<std::optional<common::EccPublicKey>> peer_public_key_;
 
     boost::asio::strand<boost::asio::io_context::executor_type> strand_;
+    common::TaskGroup send_message_tasks_;
     common::Channel<common::Message> send_message_channel_;
     common::Channel<common::Message> receive_message_channel_;
 };

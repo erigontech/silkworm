@@ -20,22 +20,29 @@
 #include <memory>
 
 #include <boost/asio/co_spawn.hpp>
-#include <boost/asio/detached.hpp>
 #include <boost/asio/experimental/channel_error.hpp>
 #include <boost/asio/this_coro.hpp>
 #include <boost/asio/use_awaitable.hpp>
+#include <boost/system/errc.hpp>
 #include <boost/system/system_error.hpp>
 
 #include <silkworm/common/log.hpp>
+#include <silkworm/sentry/common/awaitable_wait_for_all.hpp>
 
 namespace silkworm::sentry {
 
 using namespace boost::asio;
 
 awaitable<void> MessageReceiver::start(std::shared_ptr<MessageReceiver> self, PeerManager& peer_manager) {
+    using namespace common::awaitable_wait_for_all;
+
     peer_manager.add_observer(std::weak_ptr(self));
 
-    co_await co_spawn(self->strand_, self->handle_calls(), use_awaitable);
+    auto start =
+        self->peer_tasks_.wait() &&
+        self->subscription_tasks_.wait() &&
+        self->handle_calls();
+    co_await co_spawn(self->strand_, std::move(start), use_awaitable);
 }
 
 awaitable<void> MessageReceiver::handle_calls() {
@@ -53,7 +60,7 @@ awaitable<void> MessageReceiver::handle_calls() {
             call.unsubscribe_signal_channel(),
         });
 
-        co_spawn(executor, unsubscribe_on_signal(call.unsubscribe_signal_channel()), detached);
+        subscription_tasks_.spawn(executor, unsubscribe_on_signal(call.unsubscribe_signal_channel()));
 
         co_await call.set_result(messages_channel);
     }
@@ -71,6 +78,9 @@ awaitable<void> MessageReceiver::unsubscribe_on_signal(std::shared_ptr<common::C
                 subscription->messages_channel->close();
                 subscriptions_.erase(subscription);
             }
+            co_return;
+        } else if (ex.code() == boost::system::errc::operation_canceled) {
+            log::Debug() << "MessageReceiver::unsubscribe_on_signal cancelled";
             co_return;
         }
         log::Error() << "MessageReceiver::unsubscribe_on_signal system_error: " << ex.what();
@@ -118,7 +128,7 @@ awaitable<void> MessageReceiver::receive_messages(std::shared_ptr<rlpx::Peer> pe
 
 // PeerManagerObserver
 void MessageReceiver::on_peer_added(std::shared_ptr<rlpx::Peer> peer) {
-    co_spawn(strand_, on_peer_added_in_strand(std::move(peer)), detached);
+    peer_tasks_.spawn(strand_, on_peer_added_in_strand(std::move(peer)));
 }
 
 // PeerManagerObserver
@@ -128,6 +138,13 @@ void MessageReceiver::on_peer_removed(std::shared_ptr<rlpx::Peer> /*peer*/) {
 awaitable<void> MessageReceiver::on_peer_added_in_strand(std::shared_ptr<rlpx::Peer> peer) {
     try {
         co_await receive_messages(peer);
+    } catch (const boost::system::system_error& ex) {
+        if (ex.code() == boost::system::errc::operation_canceled) {
+            log::Debug() << "MessageReceiver::on_peer_added_in_strand cancelled";
+            co_return;
+        }
+        log::Error() << "MessageReceiver::on_peer_added_in_strand system_error: " << ex.what();
+        throw;
     } catch (const std::exception& ex) {
         log::Error() << "MessageReceiver::on_peer_added_in_strand exception: " << ex.what();
         throw;

@@ -27,6 +27,7 @@
 #include <boost/asio/strand.hpp>
 
 #include <silkworm/sentry/common/channel.hpp>
+#include <silkworm/sentry/common/task_group.hpp>
 #include <silkworm/sentry/rpc/common/messages_call.hpp>
 
 #include "peer_manager.hpp"
@@ -35,9 +36,11 @@ namespace silkworm::sentry {
 
 class MessageReceiver : public PeerManagerObserver {
   public:
-    explicit MessageReceiver(boost::asio::io_context& io_context)
+    MessageReceiver(boost::asio::io_context& io_context, size_t max_peers)
         : message_calls_channel_(io_context),
-          strand_(boost::asio::make_strand(io_context)) {}
+          strand_(boost::asio::make_strand(io_context)),
+          peer_tasks_(strand_, max_peers),
+          subscription_tasks_(strand_, 1000) {}
 
     ~MessageReceiver() override = default;
 
@@ -59,6 +62,8 @@ class MessageReceiver : public PeerManagerObserver {
 
     common::Channel<rpc::common::MessagesCall> message_calls_channel_;
     boost::asio::strand<boost::asio::io_context::executor_type> strand_;
+    common::TaskGroup peer_tasks_;
+    common::TaskGroup subscription_tasks_;
 
     struct Subscription {
         std::shared_ptr<common::Channel<rpc::common::MessagesCall::MessageFromPeer>> messages_channel;

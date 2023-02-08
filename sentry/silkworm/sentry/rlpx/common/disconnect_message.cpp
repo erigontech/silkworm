@@ -31,7 +31,7 @@ const uint8_t DisconnectMessage::kId = 1;
 
 Bytes DisconnectMessage::rlp_encode() const {
     Bytes data;
-    rlp::encode(data, std::vector<uint8_t>{reason});
+    rlp::encode(data, std::vector<uint8_t>{static_cast<uint8_t>(reason)});
     return data;
 }
 
@@ -40,7 +40,7 @@ DisconnectMessage DisconnectMessage::rlp_decode(ByteView data) {
     success_or_throw(rlp::decode(data, reason), "Failed to decode DisconnectMessage RLP");
     DisconnectMessage message;
     if (!reason.empty()) {
-        message.reason = reason.front();
+        message.reason = static_cast<DisconnectReason>(reason.front());
     }
     return message;
 }

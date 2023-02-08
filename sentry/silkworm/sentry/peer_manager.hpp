@@ -28,7 +28,9 @@
 #include <boost/asio/strand.hpp>
 
 #include <silkworm/sentry/common/channel.hpp>
+#include <silkworm/sentry/common/task_group.hpp>
 #include <silkworm/sentry/rlpx/client.hpp>
+#include <silkworm/sentry/rlpx/common/disconnect_reason.hpp>
 #include <silkworm/sentry/rlpx/peer.hpp>
 #include <silkworm/sentry/rlpx/server.hpp>
 
@@ -38,8 +40,10 @@ class PeerManagerObserver;
 
 class PeerManager {
   public:
-    explicit PeerManager(boost::asio::io_context& io_context)
-        : strand_(boost::asio::make_strand(io_context)) {}
+    PeerManager(boost::asio::io_context& io_context, size_t max_peers)
+        : max_peers_(max_peers),
+          strand_(boost::asio::make_strand(io_context)),
+          peer_tasks_(strand_, PeerManager::max_peer_tasks(max_peers)) {}
 
     boost::asio::awaitable<void> start(rlpx::Server& server, rlpx::Client& client);
 
@@ -53,6 +57,11 @@ class PeerManager {
   private:
     boost::asio::awaitable<void> start_in_strand(common::Channel<std::shared_ptr<rlpx::Peer>>& peer_channel);
     boost::asio::awaitable<void> start_peer(const std::shared_ptr<rlpx::Peer>& peer);
+    boost::asio::awaitable<void> drop_peer(
+        const std::shared_ptr<rlpx::Peer>& peer,
+        DisconnectReason reason);
+
+    static size_t max_peer_tasks(size_t max_peers);
 
     boost::asio::awaitable<void> enumerate_peers_in_strand(EnumeratePeersCallback callback);
     boost::asio::awaitable<void> enumerate_random_peers_in_strand(size_t max_count, EnumeratePeersCallback callback);
@@ -62,7 +71,9 @@ class PeerManager {
     void on_peer_removed(std::shared_ptr<rlpx::Peer> peer);
 
     std::list<std::shared_ptr<rlpx::Peer>> peers_;
+    size_t max_peers_;
     boost::asio::strand<boost::asio::io_context::executor_type> strand_;
+    common::TaskGroup peer_tasks_;
 
     std::list<std::weak_ptr<PeerManagerObserver>> observers_;
     std::mutex observers_mutex_;

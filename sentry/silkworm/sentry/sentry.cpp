@@ -144,9 +144,9 @@ SentryImpl::SentryImpl(Settings settings)
       status_manager_(context_pool_.next_io_context()),
       rlpx_server_(context_pool_.next_io_context(), "0.0.0.0", settings_.port),
       rlpx_client_(context_pool_.next_io_context(), settings_.static_peers),
-      peer_manager_(context_pool_.next_io_context()),
+      peer_manager_(context_pool_.next_io_context(), settings_.max_peers),
       message_sender_(context_pool_.next_io_context()),
-      message_receiver_(std::make_shared<MessageReceiver>(context_pool_.next_io_context())),
+      message_receiver_(std::make_shared<MessageReceiver>(context_pool_.next_io_context(), settings_.max_peers)),
       rpc_server_(make_server_config(settings_), make_service_state(status_manager_.status_channel(), message_sender_, *message_receiver_)) {
 }
 

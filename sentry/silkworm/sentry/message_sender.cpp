@@ -33,7 +33,7 @@ boost::asio::awaitable<void> MessageSender::start(PeerManager& peer_manager) {
             auto key_opt = peer->peer_public_key();
             if (key_opt && (!peer_filter.peer_public_key || (key_opt.value() == peer_filter.peer_public_key.value()))) {
                 sent_peer_keys.push_back(key_opt.value());
-                rlpx::Peer::send_message_detached(peer, message);
+                rlpx::Peer::post_message(peer, message);
             }
         };
 

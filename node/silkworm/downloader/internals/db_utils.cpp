@@ -16,6 +16,7 @@
 
 #include "db_utils.hpp"
 
+#include <silkworm/common/decoding_exception.hpp>
 #include <silkworm/db/tables.hpp>
 #include <silkworm/db/util.hpp>
 
@@ -33,7 +34,7 @@ void read_headers_in_reverse_order(mdbx::txn& txn, size_t limit, std::function<v
         // read header
         BlockHeader header;
         ByteView data_view = db::from_slice(data.value);
-        rlp::success_or_throw(rlp::decode(data_view, header));
+        success_or_throw(rlp::decode(data_view, header));
         read++;
         // consume header
         callback(std::move(header));
@@ -62,7 +63,7 @@ std::tuple<BlockNum, Hash> header_with_biggest_td(mdbx::txn& txn, const std::set
         }
 
         BigInt td = 0;
-        rlp::success_or_throw(rlp::decode(value, td));
+        success_or_throw(rlp::decode(value, td));
 
         if (td > max_td) {
             max_td = td;

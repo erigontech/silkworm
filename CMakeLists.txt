@@ -74,6 +74,8 @@ option(SILKWORM_CORE_ONLY "Only build Silkworm Core" OFF)
 option(SILKWORM_CLANG_COVERAGE "Clang instrumentation for code coverage reports" OFF)
 option(SILKWORM_SANITIZE "Build instrumentation for sanitizers" OFF)
 
+get_filename_component(SILKWORM_MAIN_DIR . ABSOLUTE)
+
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/compiler_settings.cmake)
 
 # Include dependencies handled by Hunter package manager

@@ -56,22 +56,14 @@ Bytes Node::encode_for_storage() const {
     return buf;
 }
 
-std::optional<Node> Node::decode_from_storage(ByteView raw) {
-    Node node;
-    if (decode_from_storage(raw, node) == DecodingResult::kOk) {
-        return node;
-    }
-    return std::nullopt;
-}
-
 DecodingResult Node::decode_from_storage(ByteView raw, Node& node) {
     // At least state/tree/hash masks need to be present
     if (raw.length() < 6) {
-        return DecodingResult::kInputTooShort;
+        return tl::unexpected{DecodingError::kInputTooShort};
     }
     // Beyond the 6th byte the length must be a multiple of kHashLength
     if ((raw.length() - 6) % kHashLength != 0) {
-        return DecodingResult::kInvalidHashesLength;
+        return tl::unexpected{DecodingError::kInvalidHashesLength};
     }
 
     node.root_hash_.reset();
@@ -81,7 +73,7 @@ DecodingResult Node::decode_from_storage(ByteView raw, Node& node) {
     node.hash_mask_ = endian::load_big_u16(&raw[4]);
 
     if (!is_subset(node.tree_mask_, node.state_mask_) || !is_subset(node.hash_mask_, node.state_mask_)) {
-        return DecodingResult::kInvalidMasksSubsets;
+        return tl::unexpected{DecodingError::kInvalidMasksSubsets};
     }
 
     raw.remove_prefix(6);
@@ -90,12 +82,12 @@ DecodingResult Node::decode_from_storage(ByteView raw, Node& node) {
     size_t effective_num_hashes{raw.length() / kHashLength};
 
     if (effective_num_hashes < expected_num_hashes) {
-        return DecodingResult::kInvalidHashesLength;
+        return tl::unexpected{DecodingError::kInvalidHashesLength};
     }
 
     size_t delta{effective_num_hashes - expected_num_hashes};
     if (delta > 1) {
-        return DecodingResult::kInvalidHashesLength;
+        return tl::unexpected{DecodingError::kInvalidHashesLength};
     } else if (delta == 1) {
         node.root_hash_.emplace();
         std::memcpy(node.root_hash_->bytes, raw.data(), kHashLength);
@@ -105,7 +97,7 @@ DecodingResult Node::decode_from_storage(ByteView raw, Node& node) {
 
     node.hashes_.resize(effective_num_hashes);
     std::memcpy(node.hashes_.data(), raw.data(), raw.length());
-    return DecodingResult::kOk;
+    return {};
 }
 
 }  // namespace silkworm::trie

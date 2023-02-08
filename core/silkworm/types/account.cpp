@@ -17,6 +17,7 @@
 #include "account.hpp"
 
 #include <silkworm/common/endian.hpp>
+#include <silkworm/rlp/encode.hpp>
 
 namespace silkworm {
 
@@ -80,105 +81,103 @@ size_t Account::encoding_length_for_storage() const {
     return len;
 }
 
-static inline std::pair<uint8_t, DecodingResult> validate_encoded_head(ByteView& encoded_payload) noexcept {
+static inline tl::expected<uint8_t, DecodingError> validate_encoded_head(ByteView& encoded_payload) noexcept {
     if (encoded_payload.empty()) {
-        return {0, DecodingResult::kOk};
+        return 0;
     }
     if (encoded_payload[0] && encoded_payload.length() == 1) {
         // Must be at least 2 bytes : field_set + len of payload
-        return {encoded_payload[0], DecodingResult::kInputTooShort};
+        return tl::unexpected{DecodingError::kInputTooShort};
     }
     if (encoded_payload[0] > 15) {
         // Can only be at max 1 | 2 | 4 | 8
-        return {encoded_payload[0], DecodingResult::kInvalidFieldset};
+        return tl::unexpected{DecodingError::kInvalidFieldset};
     }
 
-    return {encoded_payload[0], DecodingResult::kOk};
+    return encoded_payload[0];
 }
 
-std::pair<Account, DecodingResult> Account::from_encoded_storage(ByteView encoded_payload) noexcept {
+tl::expected<Account, DecodingError> Account::from_encoded_storage(ByteView encoded_payload) noexcept {
     Account a;
-    auto [field_set, err] = validate_encoded_head(encoded_payload);
-    if (err != DecodingResult::kOk) {
-        return {a, err};
-    } else if (!field_set) {
-        return {a, DecodingResult::kOk};
+    const tl::expected<uint8_t, DecodingError> field_set{validate_encoded_head(encoded_payload)};
+    if (!field_set) {
+        return tl::unexpected{field_set.error()};
+    } else if (field_set == 0) {
+        return a;
     }
 
     size_t pos{1};
     for (int i{1}; i < 16; i *= 2) {
-        if (field_set & i) {
+        if (*field_set & i) {
             uint8_t len = encoded_payload[pos++];
             if (encoded_payload.length() < pos + len) {
-                return {a, DecodingResult::kInputTooShort};
+                return tl::unexpected{DecodingError::kInputTooShort};
             }
             const auto encoded_value{encoded_payload.substr(pos, len)};
             switch (i) {
-                case 1: {
-                    err = endian::from_big_compact(encoded_value, a.nonce);
-                    if (err != DecodingResult::kOk) {
-                        return {a, err};
+                case 1:
+                    if (DecodingResult res{endian::from_big_compact(encoded_value, a.nonce)}; !res) {
+                        return tl::unexpected{res.error()};
                     }
-                } break;
-                case 2: {
-                    err = endian::from_big_compact(encoded_value, a.balance);
-                    if (err != DecodingResult::kOk) {
-                        return {a, err};
+                    break;
+                case 2:
+                    if (DecodingResult res{endian::from_big_compact(encoded_value, a.balance)}; !res) {
+                        return tl::unexpected{res.error()};
                     }
-                } break;
-                case 4: {
-                    err = endian::from_big_compact(encoded_value, a.incarnation);
-                    if (err != DecodingResult::kOk) {
-                        return {a, err};
+                    break;
+                case 4:
+                    if (DecodingResult res{endian::from_big_compact(encoded_value, a.incarnation)}; !res) {
+                        return tl::unexpected{res.error()};
                     }
-                } break;
+                    break;
                 case 8:
                     if (len != kHashLength) {
-                        return {a, DecodingResult::kUnexpectedLength};
+                        return tl::unexpected{DecodingError::kUnexpectedLength};
                     }
                     std::memcpy(a.code_hash.bytes, &encoded_value[0], kHashLength);
                     break;
                 default:
-                    len = 0;
+                    len = 0;  // TODO(C++23) std::unreachable();
             }
             pos += len;
         }
     }
 
-    return {a, DecodingResult::kOk};
+    return a;
 }
 
-std::pair<uint64_t, DecodingResult> Account::incarnation_from_encoded_storage(ByteView encoded_payload) noexcept {
-    const auto [field_set, err] = validate_encoded_head(encoded_payload);
-    if (err != DecodingResult::kOk) {
-        return {0, err};
-    } else if (!field_set || !(field_set & /*incarnation mask*/ 4)) {
-        return {0, DecodingResult::kOk};
+tl::expected<uint64_t, DecodingError> Account::incarnation_from_encoded_storage(ByteView encoded_payload) noexcept {
+    const tl::expected<uint8_t, DecodingError> field_set{validate_encoded_head(encoded_payload)};
+    if (!field_set) {
+        return tl::unexpected{field_set.error()};
+    } else if (!(*field_set & /*incarnation mask*/ 4)) {
+        return 0;
     }
 
     size_t pos{1};
+    uint64_t incarnation{0};
     for (int i{1}; i < 8; i *= 2) {
-        if (field_set & i) {
+        if (*field_set & i) {
             uint8_t len = encoded_payload[pos++];
             if (encoded_payload.length() < pos + len) {
-                return {0, DecodingResult::kInputTooShort};
+                return tl::unexpected{DecodingError::kInputTooShort};
             }
             switch (i) {
                 case 1:
                 case 2:
                     break;
-                case 4: {
-                    uint64_t incarnation{0};
-                    DecodingResult res{endian::from_big_compact(encoded_payload.substr(pos, len), incarnation)};
-                    return {incarnation, res};
-                } break;
+                case 4:
+                    if (DecodingResult res{endian::from_big_compact(encoded_payload.substr(pos, len), incarnation)}; !res) {
+                        return tl::unexpected{res.error()};
+                    }
+                    return incarnation;
                 default:
-                    len = 0;
+                    len = 0;  // TODO(C++23) std::unreachable();
             }
             pos += len;
         }
     }
-    return {0, DecodingResult::kOk};
+    return incarnation;  // TODO(C++23) std::unreachable();
 }
 
 Bytes Account::rlp(const evmc::bytes32& storage_root) const {

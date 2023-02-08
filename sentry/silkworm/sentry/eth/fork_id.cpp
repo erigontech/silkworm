@@ -21,6 +21,7 @@
 #include <optional>
 #include <stdexcept>
 
+#include <silkworm/common/decoding_exception.hpp>
 #include <silkworm/common/endian.hpp>
 #include <silkworm/rlp/decode.hpp>
 #include <silkworm/rlp/encode_vector.hpp>
@@ -81,9 +82,7 @@ Bytes ForkId::rlp_encode() const {
 
 ForkId ForkId::rlp_decode(ByteView data) {
     ForkId value;
-    auto err = decode(data, value);
-    if (err != DecodingResult::kOk)
-        throw std::runtime_error("Failed to decode ForkId RLP");
+    success_or_throw(decode(data, value), "Failed to decode ForkId RLP");
     return value;
 }
 

@@ -18,6 +18,8 @@
 
 #include <stdexcept>
 
+#include <magic_enum.hpp>
+
 #include <silkworm/common/endian.hpp>
 #include <silkworm/common/log.hpp>
 #include <silkworm/common/util.hpp>
@@ -171,8 +173,8 @@ void TransactionIndex::build() {
                 ByteView body_rlp{body_buffer.data(), body_buffer.length()};
                 SILK_DEBUG << "double_read_ahead block_number: " << block_number << " body_rlp: " << to_hex(body_rlp);
                 auto decode_result = db::detail::decode_stored_block_body(body_rlp, body);
-                if (decode_result != DecodingResult::kOk) {
-                    SILK_ERROR << "cannot decode block " << block_number << " body: " << to_hex(body_rlp) << " result: " << int(decode_result);
+                if (!decode_result) {
+                    SILK_ERROR << "cannot decode block " << block_number << " body: " << to_hex(body_rlp) << " error: " << magic_enum::enum_name(decode_result.error());
                     return false;
                 }
                 body_buffer.clear();
@@ -185,8 +187,8 @@ void TransactionIndex::build() {
                         body_it.next(body_buffer);
                         body_rlp = ByteView{body_buffer.data(), body_buffer.length()};
                         decode_result = db::detail::decode_stored_block_body(body_rlp, body);
-                        if (decode_result != DecodingResult::kOk) {
-                            SILK_ERROR << "cannot decode block " << block_number << " body: " << to_hex(body_rlp) << " i: " << i << " result: " << int(decode_result);
+                        if (!decode_result) {
+                            SILK_ERROR << "cannot decode block " << block_number << " body: " << to_hex(body_rlp) << " i: " << i << " error: " << magic_enum::enum_name(decode_result.error());
                             return false;
                         }
                         body_buffer.clear();
@@ -208,8 +210,8 @@ void TransactionIndex::build() {
                         rlp::Header tx_header;
                         Transaction::Type tx_type;
                         decode_result = rlp::decode_transaction_header_and_type(tx_envelope_view, tx_header, tx_type);
-                        if (decode_result != DecodingResult::kOk) {
-                            SILK_ERROR << "cannot decode tx envelope: " << to_hex(tx_envelope) << " i: " << i << " result: " << int(decode_result);
+                        if (!decode_result) {
+                            SILK_ERROR << "cannot decode tx envelope: " << to_hex(tx_envelope) << " i: " << i << " error: " << magic_enum::enum_name(decode_result.error());
                             return false;
                         }
                         const std::size_t tx_payload_offset = tx_type == Transaction::Type::kLegacy ? 0 : (tx_envelope.length() - tx_header.payload_length);

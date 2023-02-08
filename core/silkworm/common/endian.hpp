@@ -80,29 +80,29 @@ ByteView to_big_compact(const intx::uint256& value);
 //! \param [in] data : byte view of a compacted value.
 //! Its length must not be greater than the sizeof the UnsignedIntegral type; otherwise, kOverflow is returned.
 //! \param [out] out: the corresponding integer with native endianness.
-//! \return kOk or kOverflow or kLeadingZero.
+//! \return Success or kOverflow or kLeadingZero.
 //! \remarks A "compact" big endian form strips leftmost bytes valued to zero;
 //! if the input is not compact kLeadingZero is returned.
 template <UnsignedIntegral T>
 static DecodingResult from_big_compact(ByteView data, T& out) {
     if (data.length() > sizeof(T)) {
-        return DecodingResult::kOverflow;
+        return tl::unexpected{DecodingError::kOverflow};
     }
 
     out = 0;
     if (data.empty()) {
-        return DecodingResult::kOk;
+        return {};
     }
 
     if (data[0] == 0) {
-        return DecodingResult::kLeadingZero;
+        return tl::unexpected{DecodingError::kLeadingZero};
     }
 
     auto* ptr{reinterpret_cast<uint8_t*>(&out)};
     std::memcpy(ptr + (sizeof(T) - data.length()), &data[0], data.length());
 
     out = intx::to_big_endian(out);
-    return DecodingResult::kOk;
+    return {};
 }
 
 }  // namespace silkworm::endian

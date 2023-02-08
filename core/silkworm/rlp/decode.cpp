@@ -23,12 +23,12 @@
 
 namespace silkworm::rlp {
 
-std::pair<Header, DecodingResult> decode_header(ByteView& from) noexcept {
-    Header h;
+tl::expected<Header, DecodingError> decode_header(ByteView& from) noexcept {
     if (from.empty()) {
-        return {h, DecodingResult::kInputTooShort};
+        return tl::unexpected{DecodingError::kInputTooShort};
     }
 
+    Header h;
     uint8_t b{from[0]};
     if (b < 0x80) {
         h.payload_length = 1;
@@ -37,27 +37,26 @@ std::pair<Header, DecodingResult> decode_header(ByteView& from) noexcept {
         h.payload_length = b - 0x80u;
         if (h.payload_length == 1) {
             if (from.empty()) {
-                return {h, DecodingResult::kInputTooShort};
+                return tl::unexpected{DecodingError::kInputTooShort};
             }
             if (from[0] < 0x80) {
-                return {h, DecodingResult::kNonCanonicalSize};
+                return tl::unexpected{DecodingError::kNonCanonicalSize};
             }
         }
     } else if (b < 0xC0) {
         from.remove_prefix(1);
         const size_t len_of_len{b - 0xB7u};
         if (from.length() < len_of_len) {
-            return {h, DecodingResult::kInputTooShort};
+            return tl::unexpected{DecodingError::kInputTooShort};
         }
         uint64_t len{0};
-        DecodingResult err{endian::from_big_compact(from.substr(0, len_of_len), len)};
-        if (err != DecodingResult::kOk) {
-            return {h, err};
+        if (DecodingResult res{endian::from_big_compact(from.substr(0, len_of_len), len)}; !res) {
+            return tl::unexpected{res.error()};
         }
         h.payload_length = static_cast<size_t>(len);
         from.remove_prefix(len_of_len);
         if (h.payload_length < 56) {
-            return {h, DecodingResult::kNonCanonicalSize};
+            return tl::unexpected{DecodingError::kNonCanonicalSize};
         }
     } else if (b < 0xF8) {
         from.remove_prefix(1);
@@ -68,25 +67,24 @@ std::pair<Header, DecodingResult> decode_header(ByteView& from) noexcept {
         h.list = true;
         const size_t len_of_len{b - 0xF7u};
         if (from.length() < len_of_len) {
-            return {h, DecodingResult::kInputTooShort};
+            return tl::unexpected{DecodingError::kInputTooShort};
         }
         uint64_t len{0};
-        DecodingResult err{endian::from_big_compact(from.substr(0, len_of_len), len)};
-        if (err != DecodingResult::kOk) {
-            return {h, err};
+        if (DecodingResult res{endian::from_big_compact(from.substr(0, len_of_len), len)}; !res) {
+            return tl::unexpected{res.error()};
         }
         h.payload_length = static_cast<size_t>(len);
         from.remove_prefix(len_of_len);
         if (h.payload_length < 56) {
-            return {h, DecodingResult::kNonCanonicalSize};
+            return tl::unexpected{DecodingError::kNonCanonicalSize};
         }
     }
 
     if (from.length() < h.payload_length) {
-        return {h, DecodingResult::kInputTooShort};
+        return tl::unexpected{DecodingError::kInputTooShort};
     }
 
-    return {h, DecodingResult::kOk};
+    return h;
 }
 
 template <>
@@ -96,29 +94,29 @@ DecodingResult decode(ByteView& from, evmc::bytes32& to) noexcept {
 
 template <>
 DecodingResult decode(ByteView& from, Bytes& to) noexcept {
-    auto [h, err]{decode_header(from)};
-    if (err != DecodingResult::kOk) {
-        return err;
+    const auto h{decode_header(from)};
+    if (!h) {
+        return tl::unexpected{h.error()};
     }
-    if (h.list) {
-        return DecodingResult::kUnexpectedList;
+    if (h->list) {
+        return tl::unexpected{DecodingError::kUnexpectedList};
     }
-    to = from.substr(0, h.payload_length);
-    from.remove_prefix(h.payload_length);
-    return DecodingResult::kOk;
+    to = from.substr(0, h->payload_length);
+    from.remove_prefix(h->payload_length);
+    return {};
 }
 
 template <>
 DecodingResult decode(ByteView& from, bool& to) noexcept {
     uint64_t i{0};
-    if (DecodingResult err{decode(from, i)}; err != DecodingResult::kOk) {
-        return err;
+    if (DecodingResult res{decode(from, i)}; !res) {
+        return tl::unexpected{res.error()};
     }
     if (i > 1) {
-        return DecodingResult::kOverflow;
+        return tl::unexpected{DecodingError::kOverflow};
     }
     to = i;
-    return DecodingResult::kOk;
+    return {};
 }
 
 }  // namespace silkworm::rlp

@@ -44,29 +44,32 @@ void encode(Bytes& to, const Withdrawal& w) {
 
 template <>
 DecodingResult decode(ByteView& from, Withdrawal& to) noexcept {
-    auto [rlp_head, err]{decode_header(from)};
-    if (err != DecodingResult::kOk) {
-        return err;
+    const auto rlp_head{decode_header(from)};
+    if (!rlp_head) {
+        return tl::unexpected{rlp_head.error()};
     }
-    if (!rlp_head.list) {
-        return DecodingResult::kUnexpectedString;
+    if (!rlp_head->list) {
+        return tl::unexpected{DecodingError::kUnexpectedString};
     }
-    uint64_t leftover{from.length() - rlp_head.payload_length};
+    uint64_t leftover{from.length() - rlp_head->payload_length};
 
-    if (err = decode(from, to.index); err != DecodingResult::kOk) {
-        return err;
+    if (DecodingResult res{decode(from, to.index)}; !res) {
+        return res;
     }
-    if (err = decode(from, to.validator_index); err != DecodingResult::kOk) {
-        return err;
+    if (DecodingResult res{decode(from, to.validator_index)}; !res) {
+        return res;
     }
-    if (err = decode(from, to.address.bytes); err != DecodingResult::kOk) {
-        return err;
+    if (DecodingResult res{decode(from, to.address.bytes)}; !res) {
+        return res;
     }
-    if (err = decode(from, to.amount); err != DecodingResult::kOk) {
-        return err;
+    if (DecodingResult res{decode(from, to.amount)}; !res) {
+        return res;
     }
 
-    return from.length() == leftover ? DecodingResult::kOk : DecodingResult::kListLengthMismatch;
+    if (from.length() != leftover) {
+        return tl::unexpected{DecodingError::kListLengthMismatch};
+    }
+    return {};
 }
 
 }  // namespace silkworm::rlp

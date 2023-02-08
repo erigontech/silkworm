@@ -20,6 +20,7 @@
 
 #include <silkworm/common/assert.hpp>
 #include <silkworm/common/cast.hpp>
+#include <silkworm/common/decoding_exception.hpp>
 #include <silkworm/common/endian.hpp>
 
 #include "bitmap.hpp"
@@ -102,7 +103,7 @@ std::optional<BlockHeader> read_header(mdbx::txn& txn, ByteView key) {
     }
     BlockHeader header;
     ByteView encoded_header{raw_header.data(), raw_header.length()};
-    rlp::success_or_throw(rlp::decode(encoded_header, header));
+    success_or_throw(rlp::decode(encoded_header, header));
     return header;
 }
 
@@ -130,7 +131,7 @@ bool read_header(mdbx::txn& txn, const evmc::bytes32& hash, BlockNum number, Blo
         return false;
     }
     ByteView raw_header_view(raw_header);
-    rlp::success_or_throw(rlp::decode(raw_header_view, header));
+    success_or_throw(rlp::decode(raw_header_view, header));
     return true;
 }
 
@@ -153,7 +154,7 @@ size_t process_headers_at_height(mdbx::txn& txn, BlockNum height, std::function<
             if (raw_header.empty()) throw std::logic_error("empty header in table Headers");
             BlockHeader header;
             ByteView encoded_header{raw_header.data(), raw_header.length()};
-            rlp::success_or_throw(rlp::decode(encoded_header, header));
+            success_or_throw(rlp::decode(encoded_header, header));
             process_func(std::move(header));
         },
         db::CursorMoveDirection::Forward);
@@ -231,7 +232,7 @@ std::optional<intx::uint256> read_total_difficulty(mdbx::txn& txn, ByteView key)
     }
     intx::uint256 td{0};
     ByteView data_view{from_slice(data.value)};
-    rlp::success_or_throw(rlp::decode(data_view, td));
+    success_or_throw(rlp::decode(data_view, td));
     return td;
 }
 
@@ -326,7 +327,7 @@ void read_transactions(mdbx::cursor& txn_table, uint64_t base_id, uint64_t count
     for (auto data{txn_table.find(to_slice(key), false)}; data.done && i < count;
          data = txn_table.to_next(/*throw_notfound = */ false), ++i) {
         ByteView data_view{from_slice(data.value)};
-        rlp::success_or_throw(rlp::decode(data_view, v.at(i)));
+        success_or_throw(rlp::decode(data_view, v.at(i)));
     }
     SILKWORM_ASSERT(i == count);
 }
@@ -359,7 +360,7 @@ bool read_block(mdbx::txn& txn, std::span<const uint8_t, kHashLength> hash, Bloc
         return false;
     }
     ByteView raw_header_view(raw_header);
-    rlp::success_or_throw(rlp::decode(raw_header_view, block.header));
+    success_or_throw(rlp::decode(raw_header_view, block.header));
 
     return read_body(txn, key, read_senders, block);
 }
@@ -587,8 +588,9 @@ std::optional<Account> read_account(mdbx::txn& txn, const evmc::address& address
         return std::nullopt;
     }
 
-    auto [acc, err]{Account::from_encoded_storage(encoded.value())};
-    rlp::success_or_throw(err);
+    const auto acc_res{Account::from_encoded_storage(encoded.value())};
+    success_or_throw(acc_res);
+    Account acc{*acc_res};
 
     if (acc.incarnation > 0 && acc.code_hash == kEmptyHash) {
         // restore code hash

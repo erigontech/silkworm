@@ -18,7 +18,6 @@
 
 #include <variant>
 
-#include <silkworm/common/rlp_err.hpp>
 #include <silkworm/downloader/internals/types.hpp>
 #include <silkworm/rlp/decode.hpp>
 #include <silkworm/rlp/encode.hpp>
@@ -46,23 +45,31 @@ namespace rlp {
     }
 
     inline DecodingResult decode(ByteView& from, HashOrNumber& to) noexcept {
-        ByteView copy(from);                  // a copy because we need only decode header and not consume it
-        auto [h, err] = decode_header(copy);  // so we can use full implementation of decode below
-        if (err != DecodingResult::kOk) return err;
-        if (h.list) return DecodingResult::kUnexpectedList;
+        ByteView copy(from);           // a copy because we need only decode header and not consume it
+        auto h = decode_header(copy);  // so we can use full implementation of decode below
+        if (!h) {
+            return tl::unexpected{h.error()};
+        }
+        if (h->list) {
+            return tl::unexpected{DecodingError::kUnexpectedList};
+        }
 
-        if (h.payload_length == 32) {
+        if (h->payload_length == 32) {
             Hash hash;
-            err = rlp::decode(from, dynamic_cast<evmc::bytes32&>(hash));  // consume header
+            if (DecodingResult res = rlp::decode(from, static_cast<evmc::bytes32&>(hash)); !res) {
+                return res;
+            }
             to = hash;
-        } else if (h.payload_length <= 8) {
+        } else if (h->payload_length <= 8) {
             BlockNum number{};
-            err = rlp::decode(from, number);  // consume header
+            if (DecodingResult res = rlp::decode(from, number); !res) {
+                return res;
+            }
             to = number;
         } else {
-            err = DecodingResult::kUnexpectedLength;
+            return tl::unexpected{DecodingError::kUnexpectedLength};
         }
-        return err;
+        return {};
     }
 
 }  // namespace rlp

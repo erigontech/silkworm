@@ -34,51 +34,57 @@ namespace silkworm::rlp {
 
 template <>
 DecodingResult decode(ByteView& from, Hash& to) noexcept {
-    return rlp::decode(from, dynamic_cast<evmc::bytes32&>(to));
+    return rlp::decode(from, static_cast<evmc::bytes32&>(to));
 }
 
 template <>
 DecodingResult decode(ByteView& from, NewBlockHash& to) noexcept {
-    auto [rlp_head, err0]{decode_header(from)};
-    if (err0 != DecodingResult::kOk) {
-        return err0;
+    const auto rlp_head{decode_header(from)};
+    if (!rlp_head) {
+        return tl::unexpected{rlp_head.error()};
     }
-    if (!rlp_head.list) {
-        return DecodingResult::kUnexpectedString;
-    }
-
-    uint64_t leftover{from.length() - rlp_head.payload_length};
-
-    if (DecodingResult err{rlp::decode(from, to.hash)}; err != DecodingResult::kOk) {
-        return err;
-    }
-    if (DecodingResult err{rlp::decode(from, to.number)}; err != DecodingResult::kOk) {
-        return err;
+    if (!rlp_head->list) {
+        return tl::unexpected{DecodingError::kUnexpectedString};
     }
 
-    return from.length() == leftover ? DecodingResult::kOk : DecodingResult::kListLengthMismatch;
+    uint64_t leftover{from.length() - rlp_head->payload_length};
+
+    if (DecodingResult res{rlp::decode(from, to.hash)}; !res) {
+        return res;
+    }
+    if (DecodingResult res{rlp::decode(from, to.number)}; !res) {
+        return res;
+    }
+
+    if (from.length() != leftover) {
+        return tl::unexpected{DecodingError::kListLengthMismatch};
+    }
+    return {};
 }
 
 template <>
 DecodingResult decode(ByteView& from, NewBlockPacket& to) noexcept {
-    auto [rlp_head, err0]{decode_header(from)};
-    if (err0 != DecodingResult::kOk) {
-        return err0;
+    const auto rlp_head{decode_header(from)};
+    if (!rlp_head) {
+        return tl::unexpected{rlp_head.error()};
     }
-    if (!rlp_head.list) {
-        return DecodingResult::kUnexpectedString;
-    }
-
-    uint64_t leftover{from.length() - rlp_head.payload_length};
-
-    if (DecodingResult err{rlp::decode(from, to.block)}; err != DecodingResult::kOk) {
-        return err;
-    }
-    if (DecodingResult err{rlp::decode(from, to.td)}; err != DecodingResult::kOk) {
-        return err;
+    if (!rlp_head->list) {
+        return tl::unexpected{DecodingError::kUnexpectedString};
     }
 
-    return from.length() == leftover ? DecodingResult::kOk : DecodingResult::kListLengthMismatch;
+    uint64_t leftover{from.length() - rlp_head->payload_length};
+
+    if (DecodingResult res{rlp::decode(from, to.block)}; !res) {
+        return res;
+    }
+    if (DecodingResult res{rlp::decode(from, to.td)}; !res) {
+        return res;
+    }
+
+    if (from.length() != leftover) {
+        return tl::unexpected{DecodingError::kListLengthMismatch};
+    }
+    return {};
 }
 
 template <>
@@ -103,32 +109,33 @@ DecodingResult decode(ByteView& from, GetBlockBodiesPacket66& to) noexcept {
 
 template <>
 DecodingResult decode(ByteView& from, GetBlockHeadersPacket& to) noexcept {
-    using namespace rlp;
-
-    auto [rlp_head, err0]{decode_header(from)};
-    if (err0 != DecodingResult::kOk) {
-        return err0;
+    const auto rlp_head{decode_header(from)};
+    if (!rlp_head) {
+        return tl::unexpected{rlp_head.error()};
     }
-    if (!rlp_head.list) {
-        return DecodingResult::kUnexpectedString;
+    if (!rlp_head->list) {
+        return tl::unexpected{DecodingError::kUnexpectedString};
     }
 
-    uint64_t leftover{from.length() - rlp_head.payload_length};
+    uint64_t leftover{from.length() - rlp_head->payload_length};
 
-    if (DecodingResult err{rlp::decode(from, to.origin)}; err != DecodingResult::kOk) {
-        return err;
+    if (DecodingResult res{rlp::decode(from, to.origin)}; !res) {
+        return res;
     }
-    if (DecodingResult err{rlp::decode(from, to.amount)}; err != DecodingResult::kOk) {
-        return err;
+    if (DecodingResult res{rlp::decode(from, to.amount)}; !res) {
+        return res;
     }
-    if (DecodingResult err{rlp::decode(from, to.skip)}; err != DecodingResult::kOk) {
-        return err;
+    if (DecodingResult res{rlp::decode(from, to.skip)}; !res) {
+        return res;
     }
-    if (DecodingResult err{rlp::decode(from, to.reverse)}; err != DecodingResult::kOk) {
-        return err;
+    if (DecodingResult res{rlp::decode(from, to.reverse)}; !res) {
+        return res;
     }
 
-    return from.length() == leftover ? DecodingResult::kOk : DecodingResult::kListLengthMismatch;
+    if (from.length() != leftover) {
+        return tl::unexpected{DecodingError::kListLengthMismatch};
+    }
+    return {};
 }
 
 }  // namespace silkworm::rlp

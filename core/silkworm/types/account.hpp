@@ -19,7 +19,7 @@
 #include <intx/intx.hpp>
 
 #include <silkworm/common/base.hpp>
-#include <silkworm/rlp/decode.hpp>
+#include <silkworm/common/decoding_result.hpp>
 
 namespace silkworm {
 
@@ -44,11 +44,11 @@ struct Account {
     [[nodiscard]] Bytes rlp(const evmc::bytes32& storage_root) const;
 
     //! \brief Returns an Account from it's encoded representation
-    [[nodiscard]] static std::pair<Account, DecodingResult> from_encoded_storage(ByteView encoded_payload) noexcept;
+    [[nodiscard]] static tl::expected<Account, DecodingError> from_encoded_storage(ByteView encoded_payload) noexcept;
 
     //! \brief Returns an Account Incarnation from it's encoded representation
     //! \remarks Similar to from_encoded_storage but faster as it parses only incarnation
-    [[nodiscard]] static std::pair<uint64_t, DecodingResult> incarnation_from_encoded_storage(
+    [[nodiscard]] static tl::expected<uint64_t, DecodingError> incarnation_from_encoded_storage(
         ByteView encoded_payload) noexcept;
 
     friend bool operator==(const Account&, const Account&) = default;

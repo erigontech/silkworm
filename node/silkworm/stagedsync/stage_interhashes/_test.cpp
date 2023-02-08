@@ -320,7 +320,8 @@ static std::map<Bytes, Node> read_all_nodes(mdbx::cursor& cursor) {
     cursor.to_first(/*throw_notfound=*/false);
     std::map<Bytes, Node> out;
     auto save_nodes{[&out](ByteView key, ByteView value) {
-        const Node node{*Node::decode_from_storage(value)};
+        Node node;
+        REQUIRE(Node::decode_from_storage(value, node));
         out.emplace(key, node);
     }};
     db::cursor_for_each(cursor, save_nodes);

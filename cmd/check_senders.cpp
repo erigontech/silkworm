@@ -19,10 +19,10 @@
 #include <silkworm/buildinfo.h>
 #include <silkworm/common/assert.hpp>
 #include <silkworm/common/base.hpp>
+#include <silkworm/common/decoding_exception.hpp>
 #include <silkworm/common/directories.hpp>
 #include <silkworm/common/endian.hpp>
 #include <silkworm/common/log.hpp>
-#include <silkworm/common/rlp_err.hpp>
 #include <silkworm/common/util.hpp>
 #include <silkworm/concurrency/signal_handler.hpp>
 #include <silkworm/db/stages.hpp>
@@ -148,7 +148,7 @@ int main(int argc, char* argv[]) {
 
                     // Decode transaction data as RLP buffer
                     Transaction tx;
-                    rlp::success_or_throw(rlp::decode(transaction_rlp, tx));
+                    success_or_throw(rlp::decode(transaction_rlp, tx));
 
                     // Recover transaction sender i.e. 'from' field
                     tx.recover_sender();

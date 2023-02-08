@@ -75,8 +75,10 @@ bool HeaderSnapshot::for_each_header(const Walker& walker) {
         SILK_DEBUG << "for_each_header encoded_header: " << to_hex(encoded_header);
         BlockHeader header;
         const auto decode_result = rlp::decode(encoded_header, header);
-        SILK_DEBUG << "for_each_header decode_result: " << magic_enum::enum_name<>(decode_result);
-        if (decode_result != DecodingResult::kOk) return false;
+        if (!decode_result) {
+            SILK_DEBUG << "for_each_header decode_result error: " << magic_enum::enum_name(decode_result.error());
+            return false;
+        }
         SILK_DEBUG << "for_each_header header number: " << header.number << " hash:" << to_hex(header.hash());
         return walker(&header);
     });
@@ -97,8 +99,10 @@ bool BodySnapshot::for_each_body(const Walker& walker) {
         SILK_DEBUG << "for_each_body number: " << number << " body_rlp: " << to_hex(body_rlp);
         db::detail::BlockBodyForStorage body;
         const auto decode_result = db::detail::decode_stored_block_body(body_rlp, body);
-        SILK_DEBUG << "for_each_body decode_result: " << magic_enum::enum_name<>(decode_result);
-        if (decode_result != DecodingResult::kOk) return false;
+        if (!decode_result) {
+            SILK_DEBUG << "for_each_body decode_result error: " << magic_enum::enum_name(decode_result.error());
+            return false;
+        }
         SILK_DEBUG << "for_each_body number: " << number << " txn_count: " << body.txn_count << " base_txn_id:" << body.base_txn_id;
         return walker(number, &body);
     });

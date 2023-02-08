@@ -21,9 +21,9 @@
 
 #include <absl/container/btree_set.h>
 
+#include <silkworm/common/decoding_exception.hpp>
 #include <silkworm/common/endian.hpp>
 #include <silkworm/common/lru_cache.hpp>
-#include <silkworm/common/rlp_err.hpp>
 #include <silkworm/common/stopwatch.hpp>
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/trie/nibbles.hpp>
@@ -262,9 +262,9 @@ trie::PrefixSet InterHashes::collect_account_changes(db::RWTxn& txn, BlockNum fr
             } else {
                 auto ps_data{plain_state.find(db::to_slice(address.bytes), false)};
                 if (ps_data && ps_data.value.length()) {
-                    auto [account, rlp_err]{Account::from_encoded_storage(db::from_slice(ps_data.value))};
-                    rlp::success_or_throw(rlp_err);
-                    plainstate_account.emplace(account);
+                    const auto account{Account::from_encoded_storage(db::from_slice(ps_data.value))};
+                    success_or_throw(account);
+                    plainstate_account.emplace(*account);
                 }
                 plainstate_accounts.put(address, plainstate_account);
             }
@@ -279,13 +279,13 @@ trie::PrefixSet InterHashes::collect_account_changes(db::RWTxn& txn, BlockNum fr
                 // happened (with possible recreation). If they don't match delete from TrieStorage all hashed addresses
                 // + incarnation
                 if (!changeset_value_view.empty()) {
-                    auto [changeset_account, rlp_err]{Account::from_encoded_storage(changeset_value_view)};
-                    rlp::success_or_throw(rlp_err);
-                    if (changeset_account.incarnation) {
+                    const auto changeset_account{Account::from_encoded_storage(changeset_value_view)};
+                    success_or_throw(changeset_account);
+                    if (changeset_account->incarnation) {
                         if (plainstate_account == std::nullopt ||
-                            plainstate_account->incarnation != changeset_account.incarnation) {
-                            (void)deleted_ts_prefixes.insert(
-                                db::storage_prefix(address.bytes, changeset_account.incarnation));
+                            plainstate_account->incarnation != changeset_account->incarnation) {
+                            deleted_ts_prefixes.insert(
+                                db::storage_prefix(address.bytes, changeset_account->incarnation));
                         }
                     }
                 } else {
@@ -299,9 +299,9 @@ trie::PrefixSet InterHashes::collect_account_changes(db::RWTxn& txn, BlockNum fr
                         if (changeset_value_view.empty()) {
                             deleted_ts_prefixes.insert(address.bytes);
                         } else {
-                            auto [changeset_account, rlp_err]{Account::from_encoded_storage(changeset_value_view)};
-                            rlp::success_or_throw(rlp_err);
-                            if (changeset_account.incarnation > plainstate_account->incarnation) {
+                            const auto changeset_account{Account::from_encoded_storage(changeset_value_view)};
+                            success_or_throw(changeset_account);
+                            if (changeset_account->incarnation > plainstate_account->incarnation) {
                                 deleted_ts_prefixes.insert(
                                     db::storage_prefix(address.bytes, plainstate_account->incarnation));
                             }

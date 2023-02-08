@@ -65,24 +65,27 @@ inline size_t length_eth66_packet(const T& from) noexcept {
 
 template <typename T>
 inline DecodingResult decode_eth66_packet(ByteView& from, T& to) noexcept {
-    auto [rlp_head, err0]{rlp::decode_header(from)};
-    if (err0 != DecodingResult::kOk) {
-        return err0;
+    const auto rlp_head{rlp::decode_header(from)};
+    if (!rlp_head) {
+        return tl::unexpected{rlp_head.error()};
     }
-    if (!rlp_head.list) {
-        return DecodingResult::kUnexpectedString;
-    }
-
-    uint64_t leftover{from.length() - rlp_head.payload_length};
-
-    if (DecodingResult err{rlp::decode(from, to.requestId)}; err != DecodingResult::kOk) {
-        return err;
-    }
-    if (DecodingResult err{rlp::decode(from, to.request)}; err != DecodingResult::kOk) {
-        return err;
+    if (!rlp_head->list) {
+        return tl::unexpected{DecodingError::kUnexpectedString};
     }
 
-    return from.length() == leftover ? DecodingResult::kOk : DecodingResult::kListLengthMismatch;
+    uint64_t leftover{from.length() - rlp_head->payload_length};
+
+    if (DecodingResult res{rlp::decode(from, to.requestId)}; !res) {
+        return res;
+    }
+    if (DecodingResult res{rlp::decode(from, to.request)}; !res) {
+        return res;
+    }
+
+    if (from.length() != leftover) {
+        return tl::unexpected{DecodingError::kListLengthMismatch};
+    }
+    return {};
 }
 
 }  // namespace silkworm::rlp

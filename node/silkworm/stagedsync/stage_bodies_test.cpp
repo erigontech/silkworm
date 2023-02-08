@@ -108,7 +108,7 @@ TEST_CASE("BodiesStage - data model") {
         ByteView encoded_view = encoded_header1.value();
         auto decoding_result = rlp::decode(encoded_view, block1.header);
         // Note: block1 has zero transactions and zero ommers on mainnet
-        REQUIRE(decoding_result == DecodingResult::kOk);
+        REQUIRE(decoding_result);
 
         BlockNum bodies_stage_height = 0;
         BodyDataModel_ForTest bm(tx, bodies_stage_height, chain_config);

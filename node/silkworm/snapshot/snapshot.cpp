@@ -97,12 +97,7 @@ bool BodySnapshot::for_each_body(const Walker& walker) {
         const BlockNum number = block_from_ + item.position;
         ByteView body_rlp{item.value.data(), item.value.length()};
         SILK_DEBUG << "for_each_body number: " << number << " body_rlp: " << to_hex(body_rlp);
-        db::detail::BlockBodyForStorage body;
-        const auto decode_result = db::detail::decode_stored_block_body(body_rlp, body);
-        if (!decode_result) {
-            SILK_DEBUG << "for_each_body decode_result error: " << magic_enum::enum_name(decode_result.error());
-            return false;
-        }
+        db::detail::BlockBodyForStorage body = db::detail::decode_stored_block_body(body_rlp);
         SILK_DEBUG << "for_each_body number: " << number << " txn_count: " << body.txn_count << " base_txn_id:" << body.base_txn_id;
         return walker(number, &body);
     });

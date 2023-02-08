@@ -85,8 +85,8 @@ class TxCall : public server::BidiStreamingCall<remote::Cursor, remote::Pair> {
     };
 
     struct CursorPosition {
-        std::string current_key;
-        std::string current_value;
+        std::optional<std::string> current_key;
+        std::optional<std::string> current_value;
     };
 
     void handle(const remote::Cursor* request, remote::Pair& response);

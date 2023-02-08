@@ -116,60 +116,70 @@ awaitable<void> TxCall::operator()() {
 
         // Create guard timers to 1) close idle transactions 2) close and reopen long-lived transactions.
         boost::asio::steady_timer max_idle_alarm{grpc_context_}, max_ttl_alarm{grpc_context_};
-        max_idle_alarm.expires_after(max_idle_duration_);
-        max_ttl_alarm.expires_after(max_ttl_duration_);
+        std::chrono::steady_clock::time_point max_idle_deadline{std::chrono::steady_clock::now() + max_idle_duration_};
+        std::chrono::steady_clock::time_point max_ttl_deadline{std::chrono::steady_clock::now() + max_ttl_duration_};
+        max_idle_alarm.expires_at(max_idle_deadline);
+        max_ttl_alarm.expires_at(max_ttl_deadline);
 
         // Setup read and write streams
         agrpc::GrpcStream read_stream{grpc_context_}, write_stream{grpc_context_};
         remote::Cursor request;
         read_stream.initiate(agrpc::read, responder_, request);
 
-        bool completed{false};
-        while (!completed) {
-            const auto rv = co_await (
-                read_stream.next() ||
-                max_idle_alarm.async_wait(as_tuple(use_awaitable)) ||
-                max_ttl_alarm.async_wait(as_tuple(use_awaitable)));
-            if (0 == rv.index()) {  // read request completed
-                if (const bool read_ok = std::get<0>(rv); read_ok) {
+        const auto read = [&]() -> awaitable<void> {
+            try {
+                while (co_await read_stream.next()) {
                     // Handle incoming request from client
                     remote::Pair response{};
                     handle(&request, response);
                     // Schedule write for response
                     write_stream.initiate(agrpc::write, responder_, std::move(response));
-                    if (const bool write_ok = co_await write_stream.next(); !write_ok) {
-                        SILK_WARN << "Tx closed by peer: " << server_context_.peer() << " error: write failed";
-                        completed = true;
-                        continue;
-                    }
                     // Reset request and schedule subsequent read
                     request.Clear();
                     read_stream.initiate(agrpc::read, responder_, request);
                     // Update idle timer deadline every time we receive an incoming request
-                    max_idle_alarm.expires_after(max_idle_duration_);
-                } else {
-                    SILK_WARN << "Tx closed by peer: " << server_context_.peer() << " error: read failed";
-                    completed = true;
+                    max_idle_deadline += max_idle_duration_;
                 }
-            } else if (1 == rv.index()) {  // max idle timeout expired
-                if (const auto [max_idle_ec] = std::get<1>(rv); max_idle_ec != boost::asio::error::operation_aborted) {
+            } catch (const mdbx::exception& e) {
+                const auto error_message = "start tx failed: " + std::string{e.what()};
+                SILK_ERROR << "Tx peer: " << peer() << " " << error_message;
+                status = grpc::Status{grpc::StatusCode::RESOURCE_EXHAUSTED, error_message};
+            } catch (const server::CallException& ce) {
+                status = ce.status();
+            } catch (const boost::system::system_error& se) {
+                if (se.code() != boost::asio::error::operation_aborted) {
+                    status = grpc::Status{grpc::StatusCode::INTERNAL, se.what()};
+                }
+            } catch (const std::exception& exc) {
+                status = grpc::Status{grpc::StatusCode::INTERNAL, exc.what()};
+            }
+        };
+        const auto write = [&]() -> awaitable<void> {
+            while (co_await write_stream.next()) {}
+        };
+        const auto max_idle_timer = [&]() -> awaitable<void> {
+            while (true) {
+                const auto [ec] = co_await max_idle_alarm.async_wait(as_tuple(use_awaitable));
+                if (!ec) {
                     const auto error_msg{"no incoming request in " + std::to_string(max_idle_duration_.count()) + " ms"};
                     SILK_WARN << "Tx idle peer: " << server_context_.peer() << " error: " << error_msg;
                     status = grpc::Status{grpc::StatusCode::DEADLINE_EXCEEDED, error_msg};
-                } else {
-                    status = grpc::Status::CANCELLED;
-                }
-                completed = true;
-            } else {  // max TTL timeout expired
-                if (const auto [max_ttl_ec] = std::get<2>(rv); max_ttl_ec != boost::asio::error::operation_aborted) {
-                    handle_max_ttl_timer_expired();
-                    max_ttl_alarm.expires_after(max_ttl_duration_);
-                } else {
-                    status = grpc::Status::CANCELLED;
-                    completed = true;
+                    break;
                 }
             }
-        }
+        };
+        const auto max_ttl_timer = [&]() -> awaitable<void> {
+            while (true) {
+                const auto [ec] = co_await max_idle_alarm.async_wait(as_tuple(use_awaitable));
+                if (!ec) {
+                    handle_max_ttl_timer_expired();
+                    max_ttl_deadline += max_ttl_duration_;
+                }
+            }
+        };
+
+        co_await (read() || write() || max_idle_timer() || max_ttl_timer());
+
         SILK_DEBUG << "TxCall peer: " << peer() << " read/write loop completed";
     } catch (const mdbx::exception& e) {
         const auto error_message = "start tx failed: " + std::string{e.what()};
@@ -349,14 +359,19 @@ void TxCall::handle_max_ttl_timer_expired() {
 
 bool TxCall::save_cursors(std::vector<CursorPosition>& positions) {
     for (const auto& [cursor_id, tx_cursor] : cursors_) {
-        const auto result = tx_cursor.cursor.current(/*throw_notfound=*/false);
-        SILK_DEBUG << "Tx save cursor: " << cursor_id << " result: " << detail::dump_mdbx_result(result);
-        if (!result) {
-            return false;
+        if (tx_cursor.cursor.is_dangling()) {
+            // Cursor is open but never used so no position to store, just be sure to reopen it
+            positions.emplace_back(CursorPosition{});
+        } else {
+            const auto result = tx_cursor.cursor.current(/*throw_notfound=*/false);
+            SILK_DEBUG << "Tx save cursor: " << cursor_id << " result: " << detail::dump_mdbx_result(result);
+            if (!result) {
+                return false;
+            }
+            mdbx::slice key = result.key;
+            mdbx::slice value = result.value;
+            positions.emplace_back(CursorPosition{key.as_string(), value.as_string()});
         }
-        mdbx::slice key = result.key;
-        mdbx::slice value = result.value;
-        positions.emplace_back(CursorPosition{key.as_string(), value.as_string()});
     }
 
     return true;
@@ -377,14 +392,18 @@ bool TxCall::restore_cursors(std::vector<CursorPosition>& positions) {
 
         const auto& [current_key, current_value] = *position_iterator;
         ++position_iterator;
-        SILK_DEBUG << "Tx restore cursor " << cursor_id << " current_key: " << current_key << " current_value: " << current_value;
-        mdbx::slice key{current_key.c_str()};
+        SILKWORM_ASSERT(current_key.has_value() == current_value.has_value());
+        if (!current_key && !current_value) {
+            continue;
+        }
+
+        SILK_DEBUG << "Tx restore cursor " << cursor_id << " current_key: " << *current_key << " current_value: " << *current_value;
+        mdbx::slice key{current_key->c_str()};
 
         // Restore each cursor saved position.
-        // TODO(canepat): change db::Cursor and replace with: cursor.map_flags() & MDBX_DUPSORT
-        if (cursor.txn().get_handle_info(cursor.map()).flags & MDBX_DUPSORT) {
+        if (cursor.is_multi_value()) {
             /* multi-value table */
-            mdbx::slice value{current_value.c_str()};
+            mdbx::slice value{current_value->c_str()};
             const auto lbm_result = cursor.lower_bound_multivalue(key, value, /*throw_notfound=*/false);
             SILK_DEBUG << "Tx restore cursor " << cursor_id << " for: " << bucket_name << " lbm_result: " << detail::dump_mdbx_result(lbm_result);
             // It may happen that key where we stopped disappeared after transaction reopen, then just move to next key

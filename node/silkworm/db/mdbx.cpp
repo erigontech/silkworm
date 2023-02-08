@@ -259,6 +259,21 @@ MDBX_stat Cursor::get_map_stat() const {
     return txn().get_map_stat(map());
 }
 
+MDBX_db_flags_t Cursor::get_map_flags() const {
+    if (!handle_) {
+        mdbx::error::success_or_throw(EINVAL);
+    }
+    return txn().get_handle_info(map()).flags;
+}
+
+bool Cursor::is_multi_value() const {
+    return get_map_flags() & MDBX_DUPSORT;
+}
+
+bool Cursor::is_dangling() const {
+    return eof() && !on_last();
+}
+
 size_t Cursor::size() const { return get_map_stat().ms_entries; }
 
 bool Cursor::empty() const { return size() == 0; }

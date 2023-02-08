@@ -1001,7 +1001,7 @@ TEST_CASE("BackEndKvServer E2E: Tx max simultaneous readers exceeded", "[silkwor
     // Start and keep open as many Tx calls as the maximum number of readers.
     std::vector<std::unique_ptr<grpc::ClientContext>> client_contexts;
     std::vector<TxStreamPtr> tx_streams;
-    for (uint32_t i{0}; i < test.database_env.get_info().mi_maxreaders; i++) {
+    for (uint32_t i{0}; i < test.database_env.max_readers(); i++) {
         auto& context = client_contexts.emplace_back(std::make_unique<grpc::ClientContext>());
         auto tx_stream = kv_client.tx_start(context.get());
         // You must read at least the first unsolicited incoming message (TxID announcement).
@@ -1014,10 +1014,12 @@ TEST_CASE("BackEndKvServer E2E: Tx max simultaneous readers exceeded", "[silkwor
     // Now trying to start another Tx call will exceed the maximum number of readers.
     grpc::ClientContext context;
     const auto failing_tx_stream = kv_client.tx_start(&context);
-    auto status2 = failing_tx_stream->Finish();
-    CHECK(!status2.ok());
-    CHECK(status2.error_code() == grpc::StatusCode::RESOURCE_EXHAUSTED);
-    CHECK(status2.error_message().find("start tx failed") != std::string::npos);
+    remote::Pair response;
+    REQUIRE(!failing_tx_stream->Read(&response));  // Tx RPC immediately fails for exhaustion, no TxID announcement
+    auto failing_tx_status = failing_tx_stream->Finish();
+    CHECK(!failing_tx_status.ok());
+    CHECK(failing_tx_status.error_code() == grpc::StatusCode::RESOURCE_EXHAUSTED);
+    CHECK(failing_tx_status.error_message().find("start tx failed") != std::string::npos);
 
     // Dispose all the opened Tx calls.
     for (const auto& tx_stream : tx_streams) {
@@ -2215,7 +2217,7 @@ class TxMaxTimeToLiveGuard {
     ~TxMaxTimeToLiveGuard() { TxCall::set_max_ttl_duration(kMaxTxDuration); }
 };
 
-TEST_CASE("BackEndKvServer E2E: bidirectional max TTL duration", "[silkworm][node][rpc][.]") {
+TEST_CASE("BackEndKvServer E2E: bidirectional max TTL duration", "[silkworm][node][rpc]") {
     constexpr uint8_t kCustomMaxTimeToLive{100};
     TxMaxTimeToLiveGuard ttl_guard{kCustomMaxTimeToLive};
     BackEndKvE2eTest test{silkworm::log::Level::kNone, NodeSettings{}};
@@ -2256,6 +2258,7 @@ TEST_CASE("BackEndKvServer E2E: bidirectional max TTL duration", "[silkworm][nod
         tx_reader_writer->WritesDone();
         auto status = tx_reader_writer->Finish();
         CHECK(status.ok());
+        CHECK(status.error_message() == "");
     }
 
     SECTION("Tx: cursor NEXT_DUP ops across renew are consecutive") {
@@ -2292,6 +2295,7 @@ TEST_CASE("BackEndKvServer E2E: bidirectional max TTL duration", "[silkworm][nod
         tx_reader_writer->WritesDone();
         auto status = tx_reader_writer->Finish();
         CHECK(status.ok());
+        CHECK(status.error_message() == "");
     }
 }
 #endif  // SILKWORM_SANITIZE

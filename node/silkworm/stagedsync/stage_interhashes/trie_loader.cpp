@@ -18,7 +18,7 @@
 
 #include <stdexcept>
 
-#include <silkworm/common/rlp_err.hpp>
+#include <silkworm/common/decoding_exception.hpp>
 #include <silkworm/concurrency/signal_handler.hpp>
 #include <silkworm/db/tables.hpp>
 #include <silkworm/trie/nibbles.hpp>
@@ -106,18 +106,18 @@ evmc::bytes32 TrieLoader::calculate_root() {
                 }
 
                 // Retrieve account data
-                const auto [account, err]{Account::from_encoded_storage(db::from_slice(hashed_account_data.value))};
-                rlp::success_or_throw(err);
+                const auto account{Account::from_encoded_storage(db::from_slice(hashed_account_data.value))};
+                success_or_throw(account);
 
                 evmc::bytes32 storage_root{kEmptyRoot};
-                if (account.incarnation) {
+                if (account->incarnation) {
                     // Calc storage root
-                    storage_prefix_buffer.assign(db::storage_prefix(hashed_account_data_key_view, account.incarnation));
+                    storage_prefix_buffer.assign(db::storage_prefix(hashed_account_data_key_view, account->incarnation));
                     storage_root = calculate_storage_root(trie_storage_cursor, storage_hash_builder, hashed_storage,
                                                           storage_prefix_buffer);
                 }
 
-                account_hash_builder.add_leaf(hashed_account_data_key_nibbled, account.rlp(storage_root));
+                account_hash_builder.add_leaf(hashed_account_data_key_nibbled, account->rlp(storage_root));
                 hashed_account_data = hashed_accounts.to_next(false);
             }
         }

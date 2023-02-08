@@ -174,7 +174,7 @@ TEST_CASE("ExecutionEngine", "[.]") {
         ByteView encoded_view = encoded_header1.value();
         auto decoding_result = rlp::decode(encoded_view, block1.header);
         // Note: block1 has zero transactions and zero ommers on mainnet
-        REQUIRE(decoding_result == DecodingResult::kOk);
+        REQUIRE(decoding_result);
 
         // getting initial status
         auto initial_progress = execution_engine.get_block_progress();

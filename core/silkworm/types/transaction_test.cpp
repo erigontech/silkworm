@@ -53,7 +53,7 @@ TEST_CASE("Legacy Transaction RLP") {
 
     Transaction decoded;
     ByteView view{encoded};
-    REQUIRE(rlp::decode<Transaction>(view, decoded) == DecodingResult::kOk);
+    REQUIRE(rlp::decode<Transaction>(view, decoded));
     CHECK(view.empty());
     CHECK(decoded == txn);
 
@@ -61,7 +61,7 @@ TEST_CASE("Legacy Transaction RLP") {
     decoded.access_list = access_list;
     decoded.from.emplace(0x811a752c8cd697e3cb27279c330ed1ada745a8d7_address);
     view = encoded;
-    REQUIRE(rlp::decode<Transaction>(view, decoded) == DecodingResult::kOk);
+    REQUIRE(rlp::decode<Transaction>(view, decoded));
     CHECK(view.empty());
     CHECK(decoded == txn);
     CHECK_FALSE(decoded.from.has_value());
@@ -90,16 +90,16 @@ TEST_CASE("EIP-2930 Transaction RLP") {
 
     Transaction decoded;
     ByteView view{encoded_raw};
-    REQUIRE(rlp::decode_transaction(view, decoded, rlp::Eip2718Wrapping::kNone) == DecodingResult::kOk);
+    REQUIRE(rlp::decode_transaction(view, decoded, rlp::Eip2718Wrapping::kNone));
     CHECK(view.empty());
     CHECK(decoded == txn);
 
     view = encoded_raw;
     CHECK(rlp::decode_transaction(view, decoded, rlp::Eip2718Wrapping::kString) ==
-          DecodingResult::kUnexpectedEip2718Serialization);
+          tl::unexpected{DecodingError::kUnexpectedEip2718Serialization});
 
     view = encoded_raw;
-    REQUIRE(rlp::decode_transaction(view, decoded, rlp::Eip2718Wrapping::kBoth) == DecodingResult::kOk);
+    REQUIRE(rlp::decode_transaction(view, decoded, rlp::Eip2718Wrapping::kBoth));
     CHECK(view.empty());
     CHECK(decoded == txn);
 
@@ -109,15 +109,15 @@ TEST_CASE("EIP-2930 Transaction RLP") {
 
     view = encoded_wrapped;
     CHECK(rlp::decode_transaction(view, decoded, rlp::Eip2718Wrapping::kNone) ==
-          DecodingResult::kUnexpectedEip2718Serialization);
+          tl::unexpected{DecodingError::kUnexpectedEip2718Serialization});
 
     view = encoded_wrapped;
-    REQUIRE(rlp::decode_transaction(view, decoded, rlp::Eip2718Wrapping::kString) == DecodingResult::kOk);
+    REQUIRE(rlp::decode_transaction(view, decoded, rlp::Eip2718Wrapping::kString));
     CHECK(view.empty());
     CHECK(decoded == txn);
 
     view = encoded_wrapped;
-    REQUIRE(rlp::decode_transaction(view, decoded, rlp::Eip2718Wrapping::kBoth) == DecodingResult::kOk);
+    REQUIRE(rlp::decode_transaction(view, decoded, rlp::Eip2718Wrapping::kBoth));
     CHECK(view.empty());
     CHECK(decoded == txn);
 }
@@ -144,7 +144,7 @@ TEST_CASE("EIP-1559 Transaction RLP") {
 
     Transaction decoded;
     ByteView view{encoded};
-    REQUIRE(rlp::decode<Transaction>(view, decoded) == DecodingResult::kOk);
+    REQUIRE(rlp::decode<Transaction>(view, decoded));
     CHECK(view.empty());
     CHECK(decoded == txn);
 }

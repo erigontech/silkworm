@@ -20,8 +20,6 @@ find_package(Boost CONFIG REQUIRED container thread)
 find_package(nlohmann_json CONFIG REQUIRED)
 find_package(gRPC CONFIG REQUIRED)
 
-get_filename_component(SILKWORM_MAIN_DIR ../ ABSOLUTE)
-
 # Generate source files containing snapshot TOML files as binary data
 set(SILKWORM_EMBED embed)
 find_package(CLI11 CONFIG REQUIRED)

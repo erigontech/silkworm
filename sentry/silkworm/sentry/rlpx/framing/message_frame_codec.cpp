@@ -21,6 +21,7 @@
 #include <stdexcept>
 #include <string>
 
+#include <silkworm/common/decoding_exception.hpp>
 #include <silkworm/rlp/decode.hpp>
 #include <silkworm/rlp/encode.hpp>
 
@@ -90,9 +91,7 @@ Message MessageFrameCodec::decode(ByteView frame_data) const {
 
     uint8_t id;
     auto id_data = ByteView{frame_data.substr(0, 1)};
-    auto err = rlp::decode(id_data, id);
-    if (err != DecodingResult::kOk)
-        throw std::runtime_error("MessageFrameCodec: failed to decode a message ID");
+    success_or_throw(rlp::decode(id_data, id), "MessageFrameCodec: failed to decode a message ID");
 
     Bytes data;
     if (!is_compression_enabled_) {

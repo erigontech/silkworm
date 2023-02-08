@@ -127,12 +127,8 @@ TEST_CASE("Account update") {
         data_value_view.remove_prefix(kAddressLength);
         REQUIRE(data_value_view.length() != 0);
 
-        auto exp_decoding_result{magic_enum::enum_name<DecodingResult>(DecodingResult::kOk)};
-        auto [previous_account, err]{Account::from_encoded_storage(data_value_view)};
-        auto act_decoding_result{magic_enum::enum_name<DecodingResult>(err)};
-
-        REQUIRE(exp_decoding_result == act_decoding_result);
-        REQUIRE(previous_account == initial_account);
+        auto previous_account{Account::from_encoded_storage(data_value_view)};
+        CHECK(previous_account == initial_account);
     }
 
     SECTION("Delete Contract account") {

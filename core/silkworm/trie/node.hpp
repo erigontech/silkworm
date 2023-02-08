@@ -56,9 +56,7 @@ class Node {
     [[nodiscard]] Bytes encode_for_storage() const;
 
     //! \see Erigon's UnmarshalTrieNodeTyped
-    [[nodiscard]] static std::optional<Node> decode_from_storage(ByteView raw);
-
-    static DecodingResult decode_from_storage(ByteView raw, Node& node);
+    [[nodiscard]] static DecodingResult decode_from_storage(ByteView raw, Node& node);
 
   protected:
     uint16_t state_mask_{0};  // Each bit set indicates parenting of a hashed state

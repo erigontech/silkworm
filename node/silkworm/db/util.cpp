@@ -20,8 +20,8 @@
 #include <stdexcept>
 
 #include <silkworm/common/assert.hpp>
+#include <silkworm/common/decoding_exception.hpp>
 #include <silkworm/common/endian.hpp>
-#include <silkworm/common/rlp_err.hpp>
 #include <silkworm/rlp/encode_vector.hpp>
 
 namespace silkworm::db {
@@ -157,33 +157,35 @@ namespace detail {
     }
 
     DecodingResult decode_stored_block_body(ByteView& from, BlockBodyForStorage& to) {
-        auto [header, err]{rlp::decode_header(from)};
-        rlp::success_or_throw(err);
-        if (!header.list) {
-            return DecodingResult::kUnexpectedString;
+        const auto header{rlp::decode_header(from)};
+        if (!header) {
+            return tl::unexpected{header.error()};
         }
-        uint64_t leftover{from.length() - header.payload_length};
+        if (!header->list) {
+            return tl::unexpected{DecodingError::kUnexpectedString};
+        }
+        uint64_t leftover{from.length() - header->payload_length};
 
-        if (const auto result{rlp::decode(from, to.base_txn_id)}; result != DecodingResult::kOk) {
-            return result;
+        if (const auto result{rlp::decode(from, to.base_txn_id)}; !result) {
+            return tl::unexpected{result.error()};
         }
-        if (const auto result{rlp::decode(from, to.txn_count)}; result != DecodingResult::kOk) {
-            return result;
+        if (const auto result{rlp::decode(from, to.txn_count)}; !result) {
+            return tl::unexpected{result.error()};
         }
-        if (const auto result{rlp::decode(from, to.ommers)}; result != DecodingResult::kOk) {
-            return result;
+        if (const auto result{rlp::decode(from, to.ommers)}; !result) {
+            return tl::unexpected{result.error()};
         }
 
         if (from.length() != leftover) {
-            return DecodingResult::kListLengthMismatch;
+            return tl::unexpected{DecodingError::kListLengthMismatch};
         }
 
-        return DecodingResult::kOk;
+        return {};
     }
 
     BlockBodyForStorage decode_stored_block_body(ByteView& from) {
         BlockBodyForStorage to;
-        rlp::success_or_throw(decode_stored_block_body(from, to));
+        success_or_throw(decode_stored_block_body(from, to));
         return to;
     }
 

@@ -20,7 +20,7 @@
 
 #include <catch2/catch.hpp>
 
-#include <silkworm/common/rlp_err.hpp>
+#include <silkworm/common/decoding_exception.cpp>
 #include <silkworm/test/log.hpp>
 #include <silkworm/test/snapshots.hpp>
 
@@ -114,7 +114,7 @@ TEST_CASE("TransactionIndex::build KO: invalid snapshot", "[silkworm][snapshot][
         test::SampleTransactionSnapshotFile valid_txs_snapshot{};
         test::SampleTransactionSnapshotPath txs_snapshot_path{valid_txs_snapshot.path()};  // necessary to tweak the block numbers
         TransactionIndex tx_index{txs_snapshot_path};
-        CHECK_THROWS_AS(tx_index.build(), rlp::DecodingError);
+        CHECK_THROWS_AS(tx_index.build(), DecodingException);
     }
 }
 

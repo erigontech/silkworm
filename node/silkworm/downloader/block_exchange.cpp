@@ -19,6 +19,7 @@
 #include <chrono>
 #include <thread>
 
+#include <silkworm/common/decoding_exception.cpp>
 #include <silkworm/common/log.hpp>
 #include <silkworm/downloader/internals/preverified_hashes.hpp>
 #include <silkworm/downloader/internals/random_number.hpp>
@@ -64,7 +65,7 @@ void BlockExchange::receive_message(const sentry::InboundMessage& raw_message) {
         SILK_TRACE << "BlockExchange received message " << *message;
 
         messages_.push(message);
-    } catch (rlp::DecodingError& error) {
+    } catch (DecodingException& error) {
         PeerId peer_id = bytes_from_H512(raw_message.peer_id()); /* clang-format off */
         log::Warning("BlockExchange") << "received and ignored a malformed message, peer= " << human_readable_id(peer_id)
             << ", msg-id= " << raw_message.id() << "/" << sentry::MessageId_Name(raw_message.id()) << " - " << error.what();

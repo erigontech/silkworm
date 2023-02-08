@@ -27,17 +27,19 @@ static T decode_success(std::string_view hex) {
     Bytes bytes{*from_hex(hex)};
     ByteView view{bytes};
     T res;
-    REQUIRE(decode<T>(view, res) == DecodingResult::kOk);
+    REQUIRE(decode<T>(view, res));
     CHECK(view.empty());  // check that the entire input was consumed
     return res;
 }
 
 template <class T>
-static DecodingResult decode_failure(std::string_view hex) {
+static DecodingError decode_failure(std::string_view hex) {
     Bytes bytes{*from_hex(hex)};
     ByteView view{bytes};
-    T res;
-    return decode<T>(view, res);
+    T x;
+    DecodingResult res{decode<T>(view, x)};
+    REQUIRE(!res);
+    return res.error();
 }
 
 template <class T>
@@ -45,7 +47,7 @@ static std::vector<T> decode_vector_success(std::string_view hex) {
     Bytes bytes{*from_hex(hex)};
     ByteView view{bytes};
     std::vector<T> res;
-    REQUIRE(decode<T>(view, res) == DecodingResult::kOk);
+    REQUIRE(decode<T>(view, res));
     CHECK(view.empty());  // check that the entire input was consumed
     return res;
 }
@@ -55,7 +57,7 @@ TEST_CASE("RLP decoding") {
         CHECK(to_hex(decode_success<Bytes>("00")) == "00");
         CHECK(to_hex(decode_success<Bytes>("8D6F62636465666768696A6B6C6D")) == "6f62636465666768696a6b6c6d");
 
-        CHECK(decode_failure<Bytes>("C0") == DecodingResult::kUnexpectedList);
+        CHECK(decode_failure<Bytes>("C0") == DecodingError::kUnexpectedList);
     }
 
     SECTION("uint64") {
@@ -64,12 +66,12 @@ TEST_CASE("RLP decoding") {
         CHECK(decode_success<uint64_t>("820505") == 0x0505);
         CHECK(decode_success<uint64_t>("85CE05050505") == 0xCE05050505);
 
-        CHECK(decode_failure<uint64_t>("C0") == DecodingResult::kUnexpectedList);
-        CHECK(decode_failure<uint64_t>("00") == DecodingResult::kLeadingZero);
-        CHECK(decode_failure<uint64_t>("8105") == DecodingResult::kNonCanonicalSize);
-        CHECK(decode_failure<uint64_t>("8200F4") == DecodingResult::kLeadingZero);
-        CHECK(decode_failure<uint64_t>("B8020004") == DecodingResult::kNonCanonicalSize);
-        CHECK(decode_failure<uint64_t>("8AFFFFFFFFFFFFFFFFFF7C") == DecodingResult::kOverflow);
+        CHECK(decode_failure<uint64_t>("C0") == DecodingError::kUnexpectedList);
+        CHECK(decode_failure<uint64_t>("00") == DecodingError::kLeadingZero);
+        CHECK(decode_failure<uint64_t>("8105") == DecodingError::kNonCanonicalSize);
+        CHECK(decode_failure<uint64_t>("8200F4") == DecodingError::kLeadingZero);
+        CHECK(decode_failure<uint64_t>("B8020004") == DecodingError::kNonCanonicalSize);
+        CHECK(decode_failure<uint64_t>("8AFFFFFFFFFFFFFFFFFF7C") == DecodingError::kOverflow);
     }
 
     SECTION("uint256") {
@@ -80,14 +82,14 @@ TEST_CASE("RLP decoding") {
         CHECK(decode_success<intx::uint256>("8AFFFFFFFFFFFFFFFFFF7C") ==
               intx::from_string<intx::uint256>("0xFFFFFFFFFFFFFFFFFF7C"));
 
-        CHECK(decode_failure<intx::uint256>("8BFFFFFFFFFFFFFFFFFF7C") == DecodingResult::kInputTooShort);
-        CHECK(decode_failure<intx::uint256>("C0") == DecodingResult::kUnexpectedList);
-        CHECK(decode_failure<intx::uint256>("00") == DecodingResult::kLeadingZero);
-        CHECK(decode_failure<intx::uint256>("8105") == DecodingResult::kNonCanonicalSize);
-        CHECK(decode_failure<intx::uint256>("8200F4") == DecodingResult::kLeadingZero);
-        CHECK(decode_failure<intx::uint256>("B8020004") == DecodingResult::kNonCanonicalSize);
+        CHECK(decode_failure<intx::uint256>("8BFFFFFFFFFFFFFFFFFF7C") == DecodingError::kInputTooShort);
+        CHECK(decode_failure<intx::uint256>("C0") == DecodingError::kUnexpectedList);
+        CHECK(decode_failure<intx::uint256>("00") == DecodingError::kLeadingZero);
+        CHECK(decode_failure<intx::uint256>("8105") == DecodingError::kNonCanonicalSize);
+        CHECK(decode_failure<intx::uint256>("8200F4") == DecodingError::kLeadingZero);
+        CHECK(decode_failure<intx::uint256>("B8020004") == DecodingError::kNonCanonicalSize);
         CHECK(decode_failure<intx::uint256>("A101000000000000000000000000000000000000008B000000000000000000000000") ==
-              DecodingResult::kOverflow);
+              DecodingError::kOverflow);
     }
 
     SECTION("vectors") {

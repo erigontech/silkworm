@@ -16,29 +16,28 @@
 
 #pragma once
 
-#include <tl/expected.hpp>
+#include <stdexcept>
+#include <string>
+
+#include <silkworm/common/decoding_result.hpp>
 
 namespace silkworm {
 
-// Error codes for RLP and other decoding
-enum class [[nodiscard]] DecodingError{
-    kOverflow,
-    kLeadingZero,
-    kInputTooShort,
-    kNonCanonicalSize,
-    kUnexpectedLength,
-    kUnexpectedString,
-    kUnexpectedList,
-    kListLengthMismatch,
-    kInvalidVInSignature,         // v != 27 && v != 28 && v < 35, see EIP-155
-    kUnsupportedTransactionType,  // EIP-2718
-    kInvalidFieldset,
-    kUnexpectedEip2718Serialization,
-    kInvalidHashesLength,  // trie::Node decoding
-    kInvalidMasksSubsets,  // trie::Node decoding
+class DecodingException : public std::runtime_error {
+  public:
+    explicit DecodingException(DecodingError err, const std::string& message = "");
+
+    [[nodiscard]] DecodingError err() const noexcept { return err_; }
+
+  private:
+    DecodingError err_;
 };
 
-// TODO(C++23) Switch to std::expected
-using DecodingResult = tl::expected<void, DecodingError>;
+template <class T>
+inline void success_or_throw(const tl::expected<T, DecodingError>& res, const std::string& error_message = "") {
+    if (!res) {
+        throw DecodingException(res.error(), error_message);
+    }
+}
 
 }  // namespace silkworm

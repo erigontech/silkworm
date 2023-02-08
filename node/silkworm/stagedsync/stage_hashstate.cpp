@@ -18,6 +18,7 @@
 
 #include <stdexcept>
 
+#include <silkworm/common/decoding_exception.hpp>
 #include <silkworm/common/endian.hpp>
 #include <silkworm/db/access_layer.hpp>
 
@@ -804,23 +805,23 @@ Stage::Result HashState::write_changes_from_changed_addresses(db::RWTxn& txn, co
             target_hashed_accounts.upsert(db::to_slice(address_hash.bytes), db::to_slice(current_encoded_value));
 
             // Lookup value in PlainCodeHash for Contract
-            auto [incarnation, err]{Account::incarnation_from_encoded_storage(current_encoded_value)};
-            rlp::success_or_throw(err);
-            if (incarnation) {
+            const auto incarnation{Account::incarnation_from_encoded_storage(current_encoded_value)};
+            success_or_throw(incarnation);
+            if (incarnation != 0) {
                 std::memcpy(&plain_code_key[0], address.bytes, kAddressLength);
                 std::memcpy(&hashed_code_key[0], address_hash.bytes, kHashLength);
-                endian::store_big_u64(&hashed_code_key[kHashLength], incarnation);
-                endian::store_big_u64(&plain_code_key[kAddressLength], incarnation);
+                endian::store_big_u64(&hashed_code_key[kHashLength], *incarnation);
+                endian::store_big_u64(&plain_code_key[kAddressLength], *incarnation);
                 auto code_data{source_plaincode.find(db::to_slice(plain_code_key),
                                                      /*throw_notfound=*/false)};
                 if (code_data.done && !code_data.value.empty()) {
                     target_hashed_code.upsert(db::to_slice(hashed_code_key), code_data.value);
                 } else {
-                    (void)target_hashed_code.erase(db::to_slice(hashed_code_key));
+                    target_hashed_code.erase(db::to_slice(hashed_code_key));
                 }
             }
         } else {
-            (void)target_hashed_accounts.erase(db::to_slice(address_hash.bytes));
+            target_hashed_accounts.erase(db::to_slice(address_hash.bytes));
         }
     }
 

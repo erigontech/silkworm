@@ -25,7 +25,6 @@
 #include <vector>
 
 #include <silkworm/chain/config.hpp>
-#include <silkworm/common/rlp_err.hpp>
 #include <silkworm/db/mdbx.hpp>
 #include <silkworm/db/util.hpp>
 #include <silkworm/types/account.hpp>

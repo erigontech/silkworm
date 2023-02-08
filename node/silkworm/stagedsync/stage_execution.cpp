@@ -19,6 +19,7 @@
 #include <span>
 #include <stdexcept>
 
+#include <silkworm/common/decoding_exception.hpp>
 #include <silkworm/common/endian.hpp>
 #include <silkworm/common/stopwatch.hpp>
 #include <silkworm/db/access_layer.hpp>
@@ -298,7 +299,7 @@ Stage::Result Execution::execute_batch(db::RWTxn& txn, BlockNum max_block_num, B
         log::Error(log_prefix_,
                    {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
         ret = Stage::Result::kDbError;
-    } catch (const rlp::DecodingError& ex) {
+    } catch (const DecodingException& ex) {
         log::Error(log_prefix_,
                    {"function", std::string(__FUNCTION__), "decoding error", std::string(ex.what())});
         return Stage::Result::kDecodingError;
@@ -567,8 +568,9 @@ void Execution::revert_state(ByteView key, ByteView value, mdbx::cursor& plain_s
                              mdbx::cursor& plain_code_table) {
     if (key.size() == kAddressLength) {
         if (!value.empty()) {
-            auto [account, err1]{Account::from_encoded_storage(value)};
-            rlp::success_or_throw(err1);
+            const auto account_res{Account::from_encoded_storage(value)};
+            SILKWORM_ASSERT(account_res);
+            Account account{*account_res};
             if (account.incarnation > 0 && account.code_hash == kEmptyHash) {
                 Bytes code_hash_key(kAddressLength + db::kIncarnationLength, '\0');
                 std::memcpy(&code_hash_key[0], &key[0], kAddressLength);
@@ -579,11 +581,10 @@ void Execution::revert_state(ByteView key, ByteView value, mdbx::cursor& plain_s
             // cleaning up contract codes
             auto state_account_encoded{plain_state_table.find(db::to_slice(key), /*throw_notfound=*/false)};
             if (state_account_encoded) {
-                auto [state_incarnation,
-                      err2]{Account::incarnation_from_encoded_storage(db::from_slice(state_account_encoded.value))};
-                rlp::success_or_throw(err2);
+                const auto state_incarnation{Account::incarnation_from_encoded_storage(db::from_slice(state_account_encoded.value))};
+                SILKWORM_ASSERT(state_incarnation);
                 // cleanup each code incarnation
-                for (uint64_t i = state_incarnation; i > account.incarnation; --i) {
+                for (uint64_t i = *state_incarnation; i > account.incarnation; --i) {
                     Bytes key_hash(kAddressLength + 8, '\0');
                     std::memcpy(&key_hash[0], key.data(), kAddressLength);
                     endian::store_big_u64(&key_hash[kAddressLength], i);

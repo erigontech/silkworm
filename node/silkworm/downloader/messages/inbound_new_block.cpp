@@ -19,6 +19,7 @@
 #include <algorithm>
 
 #include <silkworm/common/cast.hpp>
+#include <silkworm/common/decoding_exception.hpp>
 #include <silkworm/common/log.hpp>
 #include <silkworm/downloader/internals/random_number.hpp>
 #include <silkworm/downloader/rpc/send_message_by_id.hpp>
@@ -34,7 +35,7 @@ InboundNewBlock::InboundNewBlock(const sentry::InboundMessage& msg) {
     peerId_ = bytes_from_H512(msg.peer_id());
 
     ByteView data = string_view_to_byte_view(msg.data());  // copy for consumption
-    rlp::success_or_throw(rlp::decode(data, packet_));
+    success_or_throw(rlp::decode(data, packet_));
 
     SILK_TRACE << "Received message " << *this;
 }

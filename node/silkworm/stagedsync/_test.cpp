@@ -433,9 +433,9 @@ TEST_CASE("Sync Stages") {
             REQUIRE(hashed_accounts_table.seek(db::to_slice(hashed_sender.bytes)));
             {
                 auto account_encoded{db::from_slice(hashed_accounts_table.current().value)};
-                auto [account, _]{Account::from_encoded_storage(account_encoded)};
-                CHECK(account.nonce == 3);
-                CHECK(account.balance < kEther);
+                auto account{Account::from_encoded_storage(account_encoded)};
+                CHECK(account->nonce == 3);
+                CHECK(account->balance < kEther);
             }
 
             // ---------------------------------------
@@ -472,9 +472,9 @@ TEST_CASE("Sync Stages") {
             REQUIRE(hashed_accounts_table.seek(db::to_slice(hashed_sender.bytes)));
             {
                 auto account_encoded{db::from_slice(hashed_accounts_table.current().value)};
-                auto [account, _]{Account::from_encoded_storage(account_encoded)};
-                CHECK(account.nonce == 1);
-                CHECK(account.balance == kEther);
+                auto account{Account::from_encoded_storage(account_encoded)};
+                CHECK(account->nonce == 1);
+                CHECK(account->balance == kEther);
                 CHECK(db::stages::read_stage_progress(*txn, db::stages::kHashStateKey) == unwind_to);
             }
         }

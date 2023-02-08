@@ -155,7 +155,8 @@ awaitable<void> TxCall::operator()() {
             }
         };
         const auto write = [&]() -> awaitable<void> {
-            while (co_await write_stream.next()) {}
+            while (co_await write_stream.next()) {
+            }
         };
         const auto max_idle_timer = [&]() -> awaitable<void> {
             while (true) {

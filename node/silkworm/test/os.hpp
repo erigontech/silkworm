@@ -34,7 +34,7 @@ class OS {
     static uint64_t max_file_descriptors() {
         uint64_t max_descriptors;
 #if defined(__linux__) || defined(__APPLE__)
-        struct rlimit limit{};
+        rlimit limit{};
         getrlimit(RLIMIT_NOFILE, &limit);
         max_descriptors = limit.rlim_cur;
 #elif defined(_WIN32)

@@ -66,14 +66,14 @@ class DummyConsensusEngine : public consensus::IEngine {
     evmc::address get_beneficiary(const BlockHeader&) override { return {}; }
 };
 
-TEST_CASE("Headers receiving and saving", "[.]") {
+TEST_CASE("Headers receiving and saving") {
     test::SetLogVerbosityGuard log_guard(log::Level::kNone);
 
     test::Context context;
     context.add_genesis_data();
     context.commit_txn();
 
-    PreverifiedHashes::current.height = 1000;  // we need to skip header/block verification because we use fake blocks
+    PreverifiedHashes::current.clear();  // we need to skip header/block verification because we use fake blocks
 
     db::RWAccess db_access{context.env()};
 
@@ -240,6 +240,7 @@ TEST_CASE("Headers receiving and saving", "[.]") {
         Headers headers_to_persist = header_chain.withdraw_stable_headers();
 
         as_range::for_each(headers_to_persist, [&](const auto& header) {
+            chain_fork_view.add(*header);
             Block fake_block{{}, *header};
             exec_engine.insert_block(fake_block);
         });
@@ -357,6 +358,7 @@ TEST_CASE("Headers receiving and saving", "[.]") {
         Headers headers_to_persist = header_chain.withdraw_stable_headers();
 
         as_range::for_each(headers_to_persist, [&](const auto& header) {
+            chain_fork_view.add(*header);
             Block fake_block{{}, *header};
             exec_engine.insert_block(fake_block);
         });
@@ -403,6 +405,7 @@ TEST_CASE("Headers receiving and saving", "[.]") {
         Headers headers_to_persist_bis = header_chain.withdraw_stable_headers();
 
         as_range::for_each(headers_to_persist_bis, [&](const auto& header) {
+            chain_fork_view.add(*header);
             Block fake_block{{}, *header};
             exec_engine.insert_block(fake_block);
         });
@@ -473,6 +476,7 @@ TEST_CASE("Headers receiving and saving", "[.]") {
         Headers headers_to_persist = header_chain.withdraw_stable_headers();
 
         as_range::for_each(headers_to_persist, [&](const auto& header) {
+            chain_fork_view.add(*header);
             Block fake_block{{}, *header};
             exec_engine.insert_block(fake_block);
         });
@@ -522,6 +526,7 @@ TEST_CASE("Headers receiving and saving", "[.]") {
         Headers headers_to_persist_bis = header_chain.withdraw_stable_headers();
 
         as_range::for_each(headers_to_persist_bis, [&](const auto& header) {
+            chain_fork_view.add(*header);
             Block fake_block{{}, *header};
             exec_engine.insert_block(fake_block);
         });

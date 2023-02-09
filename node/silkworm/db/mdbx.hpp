@@ -229,6 +229,15 @@ class Cursor : public ::mdbx::cursor {
     //! \brief Returns stat info of underlying dbi
     [[nodiscard]] MDBX_stat get_map_stat() const;
 
+    //! \brief Returns flags of underlying dbi
+    [[nodiscard]] MDBX_db_flags_t get_map_flags() const;
+
+    //! \brief Flag indicating if table is single-value or multi-value
+    [[nodiscard]] bool is_multi_value() const;
+
+    //! \brief Flag indicating if cursor has been positioned or not
+    [[nodiscard]] bool is_dangling() const;
+
     //! \brief Returns the size of the underlying table
     [[nodiscard]] size_t size() const;
 

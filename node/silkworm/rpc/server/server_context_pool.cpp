@@ -69,7 +69,7 @@ template <typename WaitStrategy>
 void ServerContext::execute_loop_single_threaded(WaitStrategy&& wait_strategy) {
     SILK_DEBUG << "Single-thread execution loop start [" << std::this_thread::get_id() << "]";
     while (!io_context_->stopped()) {
-        std::size_t work_count = server_grpc_context_->poll();
+        int work_count = server_grpc_context_->poll();
         work_count += client_grpc_context_->poll_completion_queue();
         work_count += io_context_->poll();
         wait_strategy.idle(work_count);

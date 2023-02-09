@@ -76,24 +76,42 @@ void tee_file(const std::filesystem::path& path);
 
 void prepare_for_logging(std::ostream&);
 
+using Args = std::vector<std::string>;
+
 class BufferBase {
   public:
     explicit BufferBase(Level level);
-    explicit BufferBase(Level level, std::string_view msg, const std::vector<std::string>& args);
+    explicit BufferBase(Level level, std::string_view msg, const Args& args);
     ~BufferBase() { flush(); }
 
     // Accumulators
     template <class T>
-    inline void append(T const& t) {
+    inline void append(const T& t) {
         if (should_print_) ss_ << t;
     }
     template <class T>
-    BufferBase& operator<<(T const& t) {
+    BufferBase& operator<<(const T& t) {
         append(t);
+        return *this;
+    }
+    inline void append(const Args& args) {
+        append("", args);
+    }
+    inline BufferBase& operator<<(const Args& args) {
+        append(args);
         return *this;
     }
 
   protected:
+    inline void append(std::string_view msg, const Args& args) {
+        if (!should_print_) return;
+        ss_ << std::left << std::setw(35) << std::setfill(' ') << msg;
+        bool left{true};
+        for (const auto& arg : args) {
+            ss_ << (left ? kColorGreen : kColorWhiteHigh) << arg << kColorReset << (left ? "=" : " ") << kColorReset;
+            left = !left;
+        }
+    }
     void flush();
     const bool should_print_;
     std::stringstream ss_;
@@ -103,7 +121,7 @@ template <Level level>
 class LogBuffer : public BufferBase {
   public:
     explicit LogBuffer() : BufferBase(level) {}
-    explicit LogBuffer(std::string_view msg, std::vector<std::string> args = {}) : BufferBase(level, msg, args) {}
+    explicit LogBuffer(std::string_view msg, Args args = {}) : BufferBase(level, msg, args) {}
 };
 
 using Trace = LogBuffer<Level::kTrace>;

@@ -26,30 +26,33 @@
 
 namespace silkworm::log {
 
-// Custom LogBuffer just for testing to access buffered content
+//! Custom LogBuffer just for testing to access buffered content
 template <Level level>
-class TestLogBuffer : public LogBuffer<level> {
+class LogBuffer_ForTest : public LogBuffer<level> {
   public:
+    explicit LogBuffer_ForTest() : LogBuffer<level>() {}
+    explicit LogBuffer_ForTest(std::string_view msg, Args args) : LogBuffer<level>(msg, args) {}
+
     [[nodiscard]] std::string content() const { return LogBuffer<level>::ss_.str(); }
 };
 
-// Utility test function enforcing that log buffered content *IS* empty
+//! Utility test function enforcing that log buffered content *IS* empty
 template <Level level>
 void check_log_empty() {
-    auto log_buffer = TestLogBuffer<level>();
+    auto log_buffer = LogBuffer_ForTest<level>();
     log_buffer << "test";
     CHECK(log_buffer.content().empty());
 }
 
-// Utility test function enforcing that log buffered content *IS NOT* empty
+//! Utility test function enforcing that log buffered content *IS NOT* empty
 template <Level level>
 void check_log_not_empty() {
-    auto log_buffer = TestLogBuffer<level>();
+    auto log_buffer = LogBuffer_ForTest<level>();
     log_buffer << "test";
     CHECK(log_buffer.content().find("test") != std::string::npos);
 }
 
-// Utility class using RAII to swap the underlying buffers of the provided streams
+//! Utility class using RAII to swap the underlying buffers of the provided streams
 class StreamSwap {
   public:
     StreamSwap(std::ostream& o1, std::ostream& o2) : buffer_(o1.rdbuf()), stream_(o1) { o1.rdbuf(o2.rdbuf()); }
@@ -59,6 +62,18 @@ class StreamSwap {
     std::streambuf* buffer_;
     std::ostream& stream_;
 };
+
+//! Build the prettified key-value pair using color scheme
+static std::string prettified_key_value(const std::string& key, const std::string& value) {
+    std::string kv_pair{kColorGreen};
+    kv_pair.append(key);
+    kv_pair.append(kColorReset);
+    kv_pair.append("=");
+    kv_pair.append(kColorReset);
+    kv_pair.append(kColorWhiteHigh);
+    kv_pair.append(value);
+    return kv_pair;
+}
 
 TEST_CASE("LogBuffer", "[silkworm][common][log]") {
     // Temporarily override std::cout and std::cerr with null stream to avoid terminal output
@@ -97,7 +112,7 @@ TEST_CASE("LogBuffer", "[silkworm][common][log]") {
         // Default thread tracing
         std::stringstream thread_id_stream;
         thread_id_stream << std::this_thread::get_id();
-        auto log_buffer1 = TestLogBuffer<Level::kInfo>();
+        auto log_buffer1 = LogBuffer_ForTest<Level::kInfo>();
         log_buffer1 << "test";
         CHECK(log_buffer1.content().find(thread_id_stream.str()) == std::string::npos);
 
@@ -105,16 +120,31 @@ TEST_CASE("LogBuffer", "[silkworm][common][log]") {
         Settings log_settings;
         log_settings.log_threads = true;
         init(log_settings);
-        auto log_buffer2 = TestLogBuffer<Level::kInfo>();
+        auto log_buffer2 = LogBuffer_ForTest<Level::kInfo>();
         log_buffer2 << "test";
         CHECK(log_buffer2.content().find(thread_id_stream.str()) != std::string::npos);
 
         // Disable thread tracing
         log_settings.log_threads = false;
         init(log_settings);
-        auto log_buffer3 = TestLogBuffer<Level::kInfo>();
+        auto log_buffer3 = LogBuffer_ForTest<Level::kInfo>();
         log_buffer3 << "test";
         CHECK(log_buffer3.content().find(thread_id_stream.str()) == std::string::npos);
+    }
+
+    SECTION("Variable arguments: constructor") {
+        auto log_buffer = LogBuffer_ForTest<Level::kInfo>("test", {"key1", "value1", "key2", "value2"});
+        CHECK(log_buffer.content().find("test") != std::string::npos);
+        CHECK(log_buffer.content().find(prettified_key_value("key1", "value1")) != std::string::npos);
+        CHECK(log_buffer.content().find(prettified_key_value("key2", "value2")) != std::string::npos);
+    }
+
+    SECTION("Variable arguments: accumulators") {
+        auto log_buffer = LogBuffer_ForTest<Level::kInfo>();
+        log_buffer << "test" << Args{"key1", "value1", "key2", "value2"};
+        CHECK(log_buffer.content().find("test") != std::string::npos);
+        CHECK(log_buffer.content().find(prettified_key_value("key1", "value1")) != std::string::npos);
+        CHECK(log_buffer.content().find(prettified_key_value("key2", "value2")) != std::string::npos);
     }
 }
 

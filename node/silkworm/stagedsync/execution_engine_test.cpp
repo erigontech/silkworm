@@ -41,7 +41,7 @@ class ExecutionEngine_ForTest : public stagedsync::ExecutionEngine {
     using stagedsync::ExecutionEngine::tx_;
 };
 
-TEST_CASE("ExecutionEngine", "[.]") {
+TEST_CASE("ExecutionEngine") {
     test::SetLogVerbosityGuard log_guard(log::Level::kNone);
 
     test::Context context;

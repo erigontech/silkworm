@@ -76,7 +76,7 @@ struct ChainConfig {
     //! returns whether specific HF have occurred
     [[nodiscard]] evmc_revision revision(uint64_t block_number, uint64_t block_time) const noexcept;
 
-    std::vector<BlockNum> distinct_fork_numbers() const;
+    [[nodiscard]] std::vector<BlockNum> distinct_fork_numbers() const;
 
     //! \brief Return the JSON representation of this object
     [[nodiscard]] nlohmann::json to_json() const noexcept;

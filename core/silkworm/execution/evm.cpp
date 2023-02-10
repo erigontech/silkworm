@@ -157,12 +157,12 @@ evmc::Result EVM::create(const evmc_message& message) noexcept {
         const size_t code_len{evm_res.output_size};
         const uint64_t code_deploy_gas{code_len * fee::kGCodeDeposit};
 
-        if (rev >= EVMC_LONDON && code_len > 0 && evm_res.output_data[0] == 0xEF) {
-            // https://eips.ethereum.org/EIPS/eip-3541
-            evm_res.status_code = EVMC_CONTRACT_VALIDATION_FAILURE;
-        } else if (rev >= EVMC_SPURIOUS_DRAGON && code_len > param::kMaxCodeSize) {
-            // https://eips.ethereum.org/EIPS/eip-170
+        if (rev >= EVMC_SPURIOUS_DRAGON && code_len > param::kMaxCodeSize) {
+            // EIP-170: Contract code size limit
             evm_res.status_code = EVMC_OUT_OF_GAS;
+        } else if (rev >= EVMC_LONDON && code_len > 0 && evm_res.output_data[0] == 0xEF) {
+            // EIP-3541: Reject new contract code starting with the 0xEF byte
+            evm_res.status_code = EVMC_CONTRACT_VALIDATION_FAILURE;
         } else if (evm_res.gas_left >= 0 && static_cast<uint64_t>(evm_res.gas_left) >= code_deploy_gas) {
             evm_res.gas_left -= static_cast<int64_t>(code_deploy_gas);
             state_.set_code(contract_addr, {evm_res.output_data, evm_res.output_size});

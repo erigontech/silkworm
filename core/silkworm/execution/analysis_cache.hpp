@@ -31,7 +31,7 @@ using BaselineAnalysisCache = lru_cache<evmc::bytes32, std::shared_ptr<evmone::b
 
 /** @brief Cache of EVM advanced analyses.
  *
- * Adavanced interpreter analyses performed for different EVM revisions do not coexist in the cache
+ * Advanced interpreter analyses performed for different EVM revisions do not coexist in the cache
  * and all other revisions are evicted on revision update.
  */
 class AdvancedAnalysisCache {

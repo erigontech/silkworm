@@ -59,7 +59,7 @@ size_t get_mem_usage(bool resident) {
 
 #elif defined(__APPLE__)
     // Inspired by: http://miknight.blogspot.com/2005/11/resident-set-size-in-mac-os-x.html
-    struct task_basic_info t_info;
+    struct task_basic_info t_info {};
     mach_msg_type_number_t t_info_count = TASK_BASIC_INFO_COUNT;
     task_info(current_task(), TASK_BASIC_INFO, reinterpret_cast<task_info_t>(&t_info), &t_info_count);
     size_t size = (resident ? t_info.resident_size : t_info.virtual_size);

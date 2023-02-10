@@ -36,12 +36,6 @@ class Blockchain {
     /// Later on the state may only be modified by the created instance of Blockchain.
     explicit Blockchain(State& state, const ChainConfig& config, const Block& genesis_block);
 
-    /// Creates a new instance of Blockchain providing an existing consensus engine
-    /// In the beginning the state must have the genesis allocation.
-    /// Later on the state may only be modified by the created instance of Blockchain.
-    explicit Blockchain(State& state, std::unique_ptr<IEngine>& engine, const ChainConfig& config,
-                        const Block& genesis_block);
-
     // Not copyable nor movable
     Blockchain(const Blockchain&) = delete;
     Blockchain& operator=(const Blockchain&) = delete;

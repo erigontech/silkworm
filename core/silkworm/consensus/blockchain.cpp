@@ -26,12 +26,6 @@ Blockchain::Blockchain(State& state, const ChainConfig& config, const Block& gen
     prime_state_with_genesis(genesis_block);
 }
 
-Blockchain::Blockchain(State& state, std::unique_ptr<IEngine>& engine, const ChainConfig& config,
-                       const Block& genesis_block)
-    : state_{state}, config_{config}, engine_{std::move(engine)} {
-    prime_state_with_genesis(genesis_block);
-}
-
 ValidationResult Blockchain::insert_block(Block& block, bool check_state_root) {
     ValidationResult err{engine_->validate_block_header(block.header, state_, /*with_future_timestamp_check=*/true)};
     if (err != ValidationResult::kOk) {

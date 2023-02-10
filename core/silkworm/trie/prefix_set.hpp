@@ -49,8 +49,8 @@ class PrefixSet {
     //! of identical bytes
     std::pair<bool, ByteView> contains_and_next_marked(ByteView prefix, size_t invariant_prefix_len = 0);
 
-    size_t size() const { return keys_.size(); }
-    bool empty() const { return size() == 0; }
+    [[nodiscard]] size_t size() const { return keys_.size(); }
+    [[nodiscard]] bool empty() const { return keys_.empty(); }
 
     void clear() noexcept {
         keys_.clear();

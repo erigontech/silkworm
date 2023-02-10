@@ -30,9 +30,6 @@ class CliqueEngine : public EthashEngine {
     ValidationResult validate_seal(const BlockHeader& header) final;
 
     evmc::address get_beneficiary(const BlockHeader& header) final;
-
-  private:
-    evmc::address ecrecover(const BlockHeader& header);
 };
 
 }  // namespace silkworm::consensus

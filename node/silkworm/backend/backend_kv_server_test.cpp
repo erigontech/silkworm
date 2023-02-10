@@ -17,7 +17,6 @@
 #include "backend_kv_server.hpp"
 
 #include <chrono>
-#include <condition_variable>
 #include <functional>
 #include <mutex>
 #include <string>

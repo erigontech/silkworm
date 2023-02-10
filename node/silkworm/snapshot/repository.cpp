@@ -17,6 +17,7 @@
 #include "repository.hpp"
 
 #include <algorithm>
+#include <memory>
 #include <string_view>
 #include <utility>
 
@@ -24,6 +25,8 @@
 
 #include <silkworm/common/assert.hpp>
 #include <silkworm/common/log.hpp>
+#include <silkworm/concurrency/thread_pool.hpp>
+#include <silkworm/snapshot/index.hpp>
 #include <silkworm/types/block.hpp>
 
 namespace silkworm {
@@ -36,6 +39,50 @@ void SnapshotRepository::reopen_folder() {
     SILK_INFO << "Reopen snapshot repository folder: " << settings_.repository_dir.string();
     SnapshotPathList segment_files = get_segment_files();
     reopen_list(segment_files, /*.optimistic=*/false);
+}
+
+void SnapshotRepository::verify() {
+    SILK_INFO << "Verify snapshots in repository folder: " << settings_.repository_dir.string();
+    // TODO(canepat) implement
+}
+
+void SnapshotRepository::build_missing_indexes() {
+    thread_pool workers;
+
+    SnapshotPathList segment_files = get_segment_files();
+    for (const auto& seg_file : segment_files) {
+        SILK_INFO << "Segment file: " << seg_file.path() << " has index: " << seg_file.index_file().path();
+        const auto& index_file = seg_file.index_file();
+        if (!std::filesystem::exists(index_file.path())) {
+            std::shared_ptr<Index> index;
+            switch (seg_file.type()) {
+                case SnapshotType::headers: {
+                    index = std::make_shared<HeaderIndex>(seg_file);
+                    break;
+                }
+                case SnapshotType::bodies: {
+                    index = std::make_shared<BodyIndex>(seg_file);
+                    break;
+                }
+                case SnapshotType::transactions: {
+                    index = std::make_shared<TransactionIndex>(seg_file);
+                    break;
+                }
+                default: {
+                    SILKWORM_ASSERT(false);
+                }
+            }
+            if (index) {
+                workers.submit([&index]() {
+                    log::Info() << "[Snapshots] Build index: " << index->path().path().string() << " start";
+                    index->build();
+                    log::Info() << "[Snapshots] Build index: " << index->path().path().string() << " end";
+                });
+            }
+        }
+    }
+
+    workers.wait_for_tasks();
 }
 
 std::vector<BlockNumRange> SnapshotRepository::missing_block_ranges() const {

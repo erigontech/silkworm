@@ -151,6 +151,15 @@ void add_option_wait_mode(CLI::App& cli, silkworm::rpc::WaitMode& wait_mode) {
         ->default_val(silkworm::rpc::WaitMode::blocking);
 }
 
+void add_snapshot_options(CLI::App& cli, SnapshotSettings& snapshot_settings) {
+    cli.add_flag("--snapshots.enabled", snapshot_settings.enabled,
+                 "Flag indicating if usage of snapshots should be enabled or disable");
+    cli.add_flag("--snapshots.no_downloader", snapshot_settings.no_downloader,
+                 "If set, the snapshot downloader is disabled and just already present local snapshots are used");
+
+    // TODO(canepat) add options for the other snapshot settings and for all bittorrent settings
+}
+
 void parse_silkworm_command_line(CLI::App& cli, int argc, char* argv[], SilkwormCoreSettings& settings) {
     using namespace silkworm::cmd;
 
@@ -262,6 +271,10 @@ void parse_silkworm_command_line(CLI::App& cli, int argc, char* argv[], Silkworm
     silkworm::rpc::WaitMode wait_mode;
     add_option_wait_mode(cli, wait_mode);
 
+    // Snapshot&Bittorrent options
+    auto& snapshot_settings = settings.snapshot_settings;
+    add_snapshot_options(cli, snapshot_settings);
+
     cli.parse(argc, argv);
 
     // Validate and assign settings
@@ -311,6 +324,8 @@ void parse_silkworm_command_line(CLI::App& cli, int argc, char* argv[], Silkworm
     server_settings.set_address_uri(node_settings.private_api_addr);
     server_settings.set_num_contexts(num_contexts);
     server_settings.set_wait_mode(wait_mode);
+
+    snapshot_settings.bittorrent_settings.repository_path = snapshot_settings.repository_dir;
 }
 
 void run_preflight_checklist(NodeSettings& node_settings, bool init_if_empty) {

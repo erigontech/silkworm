@@ -50,7 +50,7 @@ class SleepingWaitStrategy {
   public:
     explicit SleepingWaitStrategy(std::chrono::milliseconds duration = 1ms) : duration_(duration) {}
 
-    inline void idle(int work_count) {
+    inline void idle(std::size_t work_count) {
         if (work_count > 0) {
             return;
         }
@@ -64,7 +64,7 @@ class SleepingWaitStrategy {
 
 class YieldingWaitStrategy {
   public:
-    inline void idle(int work_count) {
+    inline void idle(std::size_t work_count) {
         if (work_count > 0) {
             return;
         }
@@ -75,7 +75,7 @@ class YieldingWaitStrategy {
 
 class BusySpinWaitStrategy {
   public:
-    inline void idle(int /*work_count*/) {
+    inline void idle(std::size_t /*work_count*/) {
     }
 };
 

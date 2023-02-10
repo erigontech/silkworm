@@ -77,7 +77,7 @@ TEST_CASE("unparse wait mode", "[silkrpc][common][log]") {
 }
 
 template <typename W, typename R, typename P>
-inline void sleep_then_check_wait(W& w, const std::chrono::duration<R, P>& t, int executed_count) {
+inline void sleep_then_check_wait(W& w, const std::chrono::duration<R, P>& t, std::size_t executed_count) {
     std::this_thread::sleep_for(t);
     CHECK_NOTHROW(w.idle(executed_count));
 }

@@ -37,41 +37,9 @@
 #include <libtorrent/session_params.hpp>
 #pragma GCC diagnostic pop
 
+#include <silkworm/bittorrent/settings.hpp>
+
 namespace silkworm {
-
-//! The settings for handling BitTorrent protocol
-struct BitTorrentSettings {
-    inline const static std::filesystem::path kDefaultTorrentRepoPath{".torrent"};
-    constexpr static std::chrono::seconds kDefaultWaitBetweenAlertPolls{10};
-    constexpr static std::chrono::seconds kDefaultResumeDataSaveInterval{60};
-    constexpr static bool kDefaultSeeding{false};
-
-    constexpr static int kDefaultDownloadRateLimit{64 * 1024 * 1024};  // 64MiB
-    constexpr static int kDefaultUploadRateLimit{4 * 1024 * 1024};     // 4MiB
-    constexpr static int kDefaultActiveDownloads{6};
-    constexpr static int kDefaultMaxOutRequestQueue{6000};
-    constexpr static bool kDefaultAnnounceToAllTiers{true};
-    constexpr static int kDefaultAsyncIOThreads{32};
-
-    /* BitTorrentClient configuration settings */
-    //! Directory path where torrent files will be stored
-    std::filesystem::path repository_path{kDefaultTorrentRepoPath};
-    //! Path for magnet links
-    std::optional<std::string> magnets_file_path;
-    //! Time interval between two alert polling loops
-    std::chrono::seconds wait_between_alert_polls{kDefaultWaitBetweenAlertPolls};
-    //! Time interval between two resume data savings
-    std::chrono::seconds resume_data_save_interval{kDefaultResumeDataSaveInterval};
-    //! Flag indicating if the client should seed torrents when done or not
-    bool seeding{kDefaultSeeding};
-    /* BitTorrent protocol settings */
-    int download_rate_limit{kDefaultDownloadRateLimit};
-    int upload_rate_limit{kDefaultUploadRateLimit};
-    int active_downloads{kDefaultActiveDownloads};
-    int max_out_request_queue{kDefaultMaxOutRequestQueue};
-    bool announce_to_all_tiers{kDefaultAnnounceToAllTiers};
-    int aio_threads{kDefaultAsyncIOThreads};
-};
 
 //! The BitTorrent protocol client handling multiple torrents *asynchronously* using one thread.
 //! \details The user code should probably run the `execute_loop` method in a dedicated thread.

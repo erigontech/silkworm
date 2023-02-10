@@ -25,7 +25,7 @@
 #include <boost/process/environment.hpp>
 #include <magic_enum.hpp>
 
-#include <silkworm/bittorrent/bittorrent_client.hpp>
+#include <silkworm/bittorrent/client.hpp>
 #include <silkworm/buildinfo.h>
 #include <silkworm/common/log.hpp>
 #include <silkworm/snapshot/index.hpp>

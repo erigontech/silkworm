@@ -131,7 +131,7 @@ TEST_CASE("Stage History Index") {
             REQUIRE(!account_history.empty());
             REQUIRE(!storage_history.empty());
 
-            // Miner has mined 3 blocks hence is historical balance must be < current balanca
+            // Miner has mined 3 blocks hence is historical balance must be < current balance
             auto current_miner_account{db::read_account(*txn, miner)};
             auto historical_miner_account{db::read_account(*txn, miner, 2)};
             REQUIRE(current_miner_account.has_value());

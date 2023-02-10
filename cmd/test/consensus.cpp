@@ -485,17 +485,10 @@ RunResults blockchain_test(const nlohmann::json& json_test) {
     }
     const ChainConfig& config{config_it->second};
 
-    auto consensus_engine{consensus::engine_factory(config)};
-    if (!consensus_engine) {
-        std::cout << magic_enum::enum_name<SealEngineType>(config.seal_engine) << " seal engine is not supported yet"
-                  << std::endl;
-        return Status::kSkipped;
-    }
-
     InMemoryState state;
     init_pre_state(json_test["pre"], state);
 
-    Blockchain blockchain{state, consensus_engine, config, genesis_block};
+    Blockchain blockchain{state, config, genesis_block};
     blockchain.state_pool = &execution_state_pool;
     blockchain.exo_evm = exo_evm;
 

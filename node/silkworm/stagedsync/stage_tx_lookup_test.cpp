@@ -84,14 +84,14 @@ TEST_CASE("Stage Transaction Lookups") {
         // Retrieve block numbers associated with hashes
         auto lookup_data{lookup_table.find(db::to_slice(tx_hash_1.bytes), false)};
         REQUIRE(lookup_data.done);
-        REQUIRE(lookup_data.value.size());
+        REQUIRE(!lookup_data.value.empty());
         BlockNum lookup_data_block_num{0};
         REQUIRE(endian::from_big_compact(db::from_slice(lookup_data.value), lookup_data_block_num));
         REQUIRE(lookup_data_block_num == 1u);
 
         lookup_data = lookup_table.find(db::to_slice(tx_hash_2.bytes), false);
         REQUIRE(lookup_data.done);
-        REQUIRE(lookup_data.value.size());
+        REQUIRE(!lookup_data.value.empty());
         REQUIRE(endian::from_big_compact(db::from_slice(lookup_data.value), lookup_data_block_num));
         REQUIRE(lookup_data_block_num == 2u);
 
@@ -103,7 +103,7 @@ TEST_CASE("Stage Transaction Lookups") {
         // Block 1 should be still there
         lookup_data = lookup_table.find(db::to_slice(tx_hash_1.bytes), false);
         REQUIRE(lookup_data.done);
-        REQUIRE(lookup_data.value.size());
+        REQUIRE(!lookup_data.value.empty());
         REQUIRE(endian::from_big_compact(db::from_slice(lookup_data.value), lookup_data_block_num));
         REQUIRE(lookup_data_block_num == 1u);
 
@@ -137,7 +137,7 @@ TEST_CASE("Stage Transaction Lookups") {
         // Block 2 should still be there
         lookup_data = lookup_table.find(db::to_slice(tx_hash_2.bytes), false);
         REQUIRE(lookup_data.done);
-        REQUIRE(lookup_data.value.size());
+        REQUIRE(!lookup_data.value.empty());
         BlockNum lookup_data_block_num{0};
         REQUIRE(endian::from_big_compact(db::from_slice(lookup_data.value), lookup_data_block_num));
         REQUIRE(lookup_data_block_num == 2u);

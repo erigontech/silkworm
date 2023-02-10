@@ -25,7 +25,7 @@ class IntraBlockState;
 
 namespace state {
 
-    // Delta is a revertable change made to IntraBlockState.
+    // Delta is a revertible change made to IntraBlockState.
     class Delta {
       public:
         Delta(const Delta&) = delete;

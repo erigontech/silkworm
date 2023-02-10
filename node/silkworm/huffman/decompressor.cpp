@@ -336,7 +336,7 @@ void Decompressor::open() {
     compressed_file_->advise_random();
 }
 
-bool Decompressor::read_ahead(Decompressor::ReadAheadFunc fn) {
+bool Decompressor::read_ahead(ReadAheadFuncRef fn) {
     if (!compressed_file_) {
         throw std::logic_error{"decompressor closed, call open first"};
     }

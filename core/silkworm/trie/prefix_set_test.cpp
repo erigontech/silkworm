@@ -26,7 +26,7 @@ namespace silkworm::trie {
 TEST_CASE("Prefix set - no prefix") {
     PrefixSet ps;
     REQUIRE(ps.size() == 0);
-    REQUIRE(ps.empty() == true);
+    REQUIRE(ps.empty());
     CHECK(!ps.contains(string_view_to_byte_view("")));
     CHECK(!ps.contains(string_view_to_byte_view("a")));
 
@@ -40,7 +40,7 @@ TEST_CASE("Prefix set - no prefix") {
     ps.insert(string_view_to_byte_view("ab"));
 
     REQUIRE(ps.size() == 6);
-    REQUIRE(ps.empty() == false);
+    REQUIRE(!ps.empty());
 
     CHECK(ps.contains(string_view_to_byte_view("")));
     CHECK(ps.contains(string_view_to_byte_view("a")));
@@ -61,7 +61,7 @@ TEST_CASE("Prefix set - no prefix") {
     CHECK(!ps.contains(string_view_to_byte_view("yyz")));
 
     ps.clear();
-    REQUIRE(ps.empty() == true);
+    REQUIRE(ps.empty());
 }
 
 TEST_CASE("Prefix set - storage prefix") {

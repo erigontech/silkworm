@@ -40,7 +40,7 @@ class MergeEngine : public IEngine {
     evmc::address get_beneficiary(const BlockHeader& header) override;
 
   private:
-    bool terminal_pow_block(const BlockHeader& header, const BlockState& state) const;
+    [[nodiscard]] bool terminal_pow_block(const BlockHeader& header, const BlockState& state) const;
 
     ValidationResult validate_ommers(const Block& block, const BlockState& state) override;
     ValidationResult pre_validate_transactions(const Block& block) override;

@@ -72,9 +72,9 @@ void to_byte_array(fs::path& in, fs::path& out) {
         ++count;
     }
     out_stream << "};" << std::endl;
-    out_stream << "const char* " << var_name << "_data(void){return &" << var_name << "_data_internal[0];}"
+    out_stream << "const char* " << var_name << "_data(){return &" << var_name << "_data_internal[0];}"
                << std::endl;
-    out_stream << "size_t sizeof_" << var_name << "_data(void){return sizeof(" << var_name << "_data_internal);}"
+    out_stream << "size_t sizeof_" << var_name << "_data(){return sizeof(" << var_name << "_data_internal);}"
                << std::endl;
     out_stream.close();
 }

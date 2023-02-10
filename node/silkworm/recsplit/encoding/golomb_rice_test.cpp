@@ -49,7 +49,7 @@ static GolombRiceVector build_vector(const Uint64Sequence& keys, uint64_t golomb
         Uint32Sequence unary;
         for (uint64_t k : keys) {
             builder.append_fixed(k, golomb_param);
-            unary.push_back(k >> golomb_param);
+            unary.push_back(static_cast<uint32_t>(k >> golomb_param));
         }
         builder.append_unary_all(unary);
     }

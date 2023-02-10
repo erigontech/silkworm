@@ -38,7 +38,7 @@ TEST_CASE("MurmurHash3_x64_128", "[silkworm][recsplit][support]") {
     std::memset(res, 0, kHashBytes);
 
     // Hash keys of the form {0}, {0,1}, {0,1,2}... up to N=255 using 256-N as the seed
-    for (std::size_t i{0}; i < 256; ++i) {
+    for (uint32_t i{0}; i < 256; ++i) {
         key[i] = static_cast<uint8_t>(i);
         MurmurHash3_x64_128(key, i, 256 - i, &hashes[i * kHashBytes]);
     }

@@ -31,7 +31,7 @@ std::ostream& operator<<(std::ostream& out, const ServerContext& c) {
     return out;
 }
 
-inline static std::string build_thread_name(const char name_tag[11], uint32_t id) {
+inline static std::string build_thread_name(const char name_tag[11], size_t id) {
     return {name_tag + std::to_string(id)};
 }
 

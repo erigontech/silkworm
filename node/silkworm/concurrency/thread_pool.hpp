@@ -48,7 +48,6 @@ namespace silkworm {
  */
 class thread_pool {
     typedef std::uint_fast32_t ui32;
-    typedef std::uint_fast64_t ui64;
 
   public:
     // ============================
@@ -59,7 +58,7 @@ class thread_pool {
      * @brief Construct a new thread pool.
      *
      * @param thread_count The number of threads to use. The default value is the total number of hardware threads
-     * available, as reported by the implementation. With a hyperthreaded CPU, this will be twice the number of CPU
+     * available, as reported by the implementation. With a hyper-threaded CPU, this will be twice the number of CPU
      * cores.
      * @param stack_size The stack size to set for each created thread. If the argument is zero, the default OS value
      * will be used instead.
@@ -117,62 +116,6 @@ class thread_pool {
     ui32 get_thread_count() const { return thread_count_; }
 
     /**
-     * @brief Parallelize a loop by splitting it into blocks, submitting each block separately to the thread pool, and
-     * waiting for all blocks to finish executing. The user supplies a loop function, which will be called once per
-     * block and should iterate over the block's range.
-     *
-     * @tparam T1 The type of the first index in the loop. Should be a signed or unsigned integer.
-     * @tparam T2 The type of the index after the last index in the loop. Should be a signed or unsigned integer. If T1
-     * is not the same as T2, a common type will be automatically inferred.
-     * @tparam F The type of the function to loop through.
-     * @param first_index The first index in the loop.
-     * @param index_after_last The index after the last index in the loop. The loop will iterate from first_index to
-     * (index_after_last - 1) inclusive. In other words, it will be equivalent to "for (T i = first_index; i <
-     * index_after_last; i++)". Note that if first_index == index_after_last, the function will terminate without doing
-     * anything.
-     * @param loop The function to loop through. Will be called once per block. Should take exactly two arguments: the
-     * first index in the block and the index after the last index in the block. loop(start, end) should typically
-     * involve a loop of the form "for (T i = start; i < end; i++)".
-     * @param num_blocks The maximum number of blocks to split the loop into. The default is to use the number of
-     * threads in the pool.
-     */
-    template <typename T1, typename T2, typename F>
-    void parallelize_loop(const T1& first_index, const T2& index_after_last, const F& loop, ui32 num_blocks = 0) {
-        typedef std::common_type_t<T1, T2> T;
-        T the_first_index = first_index;
-        T last_index = index_after_last;
-        if (the_first_index == last_index) return;
-        if (last_index < the_first_index) {
-            T temp = last_index;
-            last_index = the_first_index;
-            the_first_index = temp;
-        }
-        last_index--;
-        if (num_blocks == 0) {
-            num_blocks = thread_count_;
-        }
-        ui64 total_size = last_index - the_first_index + 1;
-        ui64 block_size = total_size / num_blocks;
-        if (block_size == 0) {
-            block_size = 1;
-            num_blocks = total_size > 1 ? static_cast<ui32>(total_size) : 1;
-        }
-        std::atomic<ui32> blocks_running = 0;
-        for (ui32 t = 0; t < num_blocks; t++) {
-            T start = static_cast<T>(t * block_size) + the_first_index;
-            T end = (t == num_blocks - 1) ? last_index + 1 : (static_cast<T>((t + 1) * block_size) + the_first_index);
-            blocks_running++;
-            push_task([start, end, &loop, &blocks_running] {
-                loop(start, end);
-                blocks_running--;
-            });
-        }
-        while (blocks_running != 0) {
-            sleep_or_yield();
-        }
-    }
-
-    /**
      * @brief Push a function with no arguments or return value into the task queue.
      *
      * @tparam F The type of the function.
@@ -210,7 +153,7 @@ class thread_pool {
      * paused before resetting it, the new pool will be paused as well.
      *
      * @param thread_count The number of threads to use. The default value is the total number of hardware threads
-     * available, as reported by the implementation. With a hyperthreaded CPU, this will be twice the number of CPU
+     * available, as reported by the implementation. With a hyper-threaded CPU, this will be twice the number of CPU
      * cores.
      */
     void reset(ui32 thread_count = std::thread::hardware_concurrency()) {
@@ -220,7 +163,7 @@ class thread_pool {
         running_ = false;
         destroy_threads();
         thread_count_ = thread_count ? thread_count : 1;
-        threads_.reset(new boost::thread[thread_count_]);
+        threads_ = std::make_unique<boost::thread[]>(thread_count_);
         paused = was_paused;
         running_ = true;
         create_threads();
@@ -334,7 +277,7 @@ class thread_pool {
             attrs.set_stack_size(stack_size_);
         }
         for (ui32 i = 0; i < thread_count_; i++) {
-            threads_[i] = boost::thread(attrs, boost::bind(&thread_pool::worker, this));
+            threads_[i] = boost::thread(attrs, [this] { worker(); });
         }
     }
 
@@ -368,11 +311,12 @@ class thread_pool {
      * @brief Sleep for sleep_duration microseconds. If that variable is set to zero, yield instead.
      *
      */
-    void sleep_or_yield() {
-        if (sleep_duration)
+    void sleep_or_yield() const {
+        if (sleep_duration) {
             std::this_thread::sleep_for(std::chrono::microseconds(sleep_duration));
-        else
+        } else {
             std::this_thread::yield();
+        }
     }
 
     /**

@@ -24,15 +24,7 @@ ValidationResult CliqueEngine::validate_seal(const BlockHeader&) {
     return ValidationResult::kOk;
 }
 
-evmc::address CliqueEngine::get_beneficiary(const BlockHeader& header) {
-    if (header.extra_data.length() < kExtraSealSize) {
-        return EngineBase::get_beneficiary(header);
-    }
-    return ecrecover(header);
-}
-
-evmc::address
-CliqueEngine::ecrecover(const BlockHeader& header) {
+static evmc::address ecrecover(const BlockHeader& header) {
     evmc::address beneficiary = evmc::address{};
 
     evmc::bytes32 seal_hash = header.hash(false, true);
@@ -44,6 +36,13 @@ CliqueEngine::ecrecover(const BlockHeader& header) {
         return header.beneficiary;
     }
     return beneficiary;
+}
+
+evmc::address CliqueEngine::get_beneficiary(const BlockHeader& header) {
+    if (header.extra_data.length() < kExtraSealSize) {
+        return EngineBase::get_beneficiary(header);
+    }
+    return ecrecover(header);
 }
 
 }  // namespace silkworm::consensus

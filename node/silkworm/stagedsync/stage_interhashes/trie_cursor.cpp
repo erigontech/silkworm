@@ -19,7 +19,6 @@
 #include <bit>
 
 #include <silkworm/common/decoding_exception.hpp>
-#include <silkworm/common/log.hpp>
 #include <silkworm/trie/nibbles.hpp>
 
 namespace silkworm::trie {

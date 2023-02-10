@@ -64,7 +64,6 @@ class HeadersStage : public Stage {
     HeadersStage(NodeSettings*, SyncContext*);
     HeadersStage(const HeadersStage&) = delete;  // not copyable
     HeadersStage(HeadersStage&&) = delete;       // nor movable
-    ~HeadersStage() = default;
 
     Stage::Result forward(db::RWTxn&) override;  // go forward, downloading headers
     Stage::Result unwind(db::RWTxn&) override;   // go backward, unwinding headers to new_height
@@ -87,9 +86,9 @@ class HeadersStage : public Stage {
         static void remove_headers(BlockNum unwind_point, db::RWTxn& tx);
 
         // holds the status of a batch insertion of headers
-        BlockNum highest_height() const;
-        Hash highest_hash() const;
-        BigInt total_difficulty() const;
+        [[nodiscard]] BlockNum highest_height() const;
+        [[nodiscard]] Hash highest_hash() const;
+        [[nodiscard]] BigInt total_difficulty() const;
 
       private:
         db::RWTxn& tx_;

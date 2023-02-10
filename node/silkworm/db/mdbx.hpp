@@ -38,8 +38,8 @@
 namespace silkworm::db {
 
 inline constexpr std::string_view kDbDataFileName{"mdbx.dat"};
-inline constexpr std::string_view kDbLockFileName{"mdbx.lck"};
-inline constexpr size_t kMdbx_max_pages{2147483648ull};
+
+inline constexpr size_t kMdbxMaxPages{2147483648ull};
 
 namespace detail {
     struct cursor_handle_deleter {  // default deleter for pooled cursors
@@ -125,8 +125,8 @@ class RWTxn : public ROTxn {
 //!
 class ROAccess {
   public:
-    ROAccess(mdbx::env& env) : env_{env} {}
-    ROAccess(const ROAccess& copy) : env_{copy.env_} {}
+    explicit ROAccess(mdbx::env& env) : env_{env} {}
+    ROAccess(const ROAccess& copy) = default;
 
     ROTxn start_ro_tx() { return ROTxn(env_); }
 
@@ -140,8 +140,8 @@ class ROAccess {
 //!
 class RWAccess : public ROAccess {
   public:
-    RWAccess(mdbx::env& env) : ROAccess{env} {}
-    RWAccess(const RWAccess& copy) : ROAccess{copy} {}
+    explicit RWAccess(mdbx::env& env) : ROAccess{env} {}
+    RWAccess(const RWAccess& copy) = default;
 
     RWTxn start_rw_tx() { return RWTxn(env_); }
 };
@@ -194,12 +194,12 @@ struct MapConfig {
 //! \brief Computes the max size of value data to fit in a leaf data page
 //! \param [in] page_size : the actually configured MDBX's page size
 //! \param [in] key_size : the known key size to fit in bundle computed value size
-size_t max_value_size_for_leaf_page(const size_t page_size, const size_t key_size);
+size_t max_value_size_for_leaf_page(size_t page_size, size_t key_size);
 
 //! \brief Computes the max size of value data to fit in a leaf data page
 //! \param [in] txn : the transaction used to derive pagesize from
 //! \param [in] key_size : the known key size to fit in bundle computed value size
-size_t max_value_size_for_leaf_page(const ::mdbx::txn& txn, const size_t key_size);
+size_t max_value_size_for_leaf_page(const ::mdbx::txn& txn, size_t key_size);
 
 //! \brief Managed cursor class to access cursor API
 //! \remarks Unlike ::mdbx::cursor_managed this class withdraws and deposits allocated MDBX_cursor handles in a
@@ -262,13 +262,6 @@ bool has_map(::mdbx::txn& tx, const char* map_name);
 //! \return A path with file name
 static inline std::filesystem::path get_datafile_path(const std::filesystem::path& base_path) noexcept {
     return std::filesystem::path(base_path / std::filesystem::path(kDbDataFileName));
-}
-
-//! \brief Builds the full path to mdbx lockfile provided a directory
-//! \param [in] base_path : a reference to the directory holding the lock file
-//! \return A path with file name
-static inline std::filesystem::path get_lockfile_path(const std::filesystem::path& base_path) noexcept {
-    return std::filesystem::path(base_path / std::filesystem::path(kDbLockFileName));
 }
 
 //! \brief Defines the direction of cursor while looping by cursor_for_each or cursor_for_count

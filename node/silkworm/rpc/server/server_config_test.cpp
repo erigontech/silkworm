@@ -20,8 +20,6 @@
 
 #include <catch2/catch.hpp>
 
-#include <silkworm/common/base.hpp>
-
 namespace silkworm::rpc {
 
 // Exclude gRPC tests from sanitizer builds due to data race warnings inside gRPC library

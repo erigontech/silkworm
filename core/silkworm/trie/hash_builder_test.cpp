@@ -15,7 +15,6 @@
 */
 
 #include <iterator>
-#include <utility>
 
 #include <catch2/catch.hpp>
 #include <ethash/keccak.hpp>

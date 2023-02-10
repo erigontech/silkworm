@@ -16,15 +16,12 @@
 
 #include "execution.hpp"
 
-#include <cstring>
-
 #include <catch2/catch.hpp>
 #include <ethash/keccak.hpp>
 
 #include <silkworm/chain/protocol_param.hpp>
 #include <silkworm/common/test_util.hpp>
 #include <silkworm/execution/address.hpp>
-#include <silkworm/rlp/encode.hpp>
 #include <silkworm/state/in_memory_state.hpp>
 #include <silkworm/trie/vector_root.hpp>
 #include <silkworm/types/account.hpp>

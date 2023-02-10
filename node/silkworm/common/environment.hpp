@@ -26,7 +26,7 @@ class Environment {
     static void set_stop_at_block(BlockNum block_num);
 
     static std::optional<std::string> get_stop_before_stage();
-    static void set_stop_before_stage(std::string stage_name);
+    static void set_stop_before_stage(const std::string& stage_name);
 
     static bool are_pre_verified_hashes_disabled();
     static void set_pre_verified_hashes_disabled();

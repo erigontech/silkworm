@@ -18,8 +18,6 @@
 
 #include <algorithm>
 
-#include <silkworm/common/util.hpp>
-
 namespace silkworm::trie {
 
 void PrefixSet::insert(ByteView key, bool marker) { insert(Bytes(key), marker); }
@@ -86,4 +84,5 @@ void PrefixSet::ensure_sorted() {
         sorted_ = true;
     }
 }
+
 }  // namespace silkworm::trie

@@ -43,7 +43,7 @@ std::optional<std::string> Environment::get_stop_before_stage() {
     return stop_before_stage;
 }
 
-void Environment::set_stop_before_stage(std::string stage_name) {
+void Environment::set_stop_before_stage(const std::string& stage_name) {
     auto environment = boost::this_process::environment();
     environment["STOP_BEFORE_STAGE"] = stage_name;
 }

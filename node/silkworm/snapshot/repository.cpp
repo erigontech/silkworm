@@ -18,10 +18,7 @@
 
 #include <algorithm>
 #include <memory>
-#include <string_view>
 #include <utility>
-
-#include <magic_enum.hpp>
 
 #include <silkworm/common/assert.hpp>
 #include <silkworm/common/log.hpp>

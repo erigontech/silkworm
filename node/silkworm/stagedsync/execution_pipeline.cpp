@@ -198,7 +198,7 @@ Stage::Result ExecutionPipeline::forward(db::RWTxn& cycle_txn, BlockNum target_h
             current_stage_->second->set_log_prefix(get_log_prefix());
 
             // check if we have to stop due to environment variable
-            if (stop_stage_name && stop_stage_name == stage_id) {
+            if (stop_stage_name && *stop_stage_name == std::string(stage_id)) {
                 log::Warning("Stopping ...", {"STOP_BEFORE_STAGE", stop_stage_name->c_str(), "hit", "true"});
                 result = Stage::Result::kStoppedByEnv;
                 break;

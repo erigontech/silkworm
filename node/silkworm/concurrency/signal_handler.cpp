@@ -109,7 +109,7 @@ void SignalHandler::init(std::function<void(int)> custom_handler) {
     for (const int sig_code : kHandleableCodes) {
         signal(sig_code, &SignalHandler::handle);
     }
-    custom_handler_ = custom_handler;
+    custom_handler_ = std::move(custom_handler);
 }
 
 void SignalHandler::handle(int sig_code) {

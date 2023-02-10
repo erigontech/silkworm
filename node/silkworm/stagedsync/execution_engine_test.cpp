@@ -48,7 +48,8 @@ TEST_CASE("ExecutionEngine") {
     context.add_genesis_data();
     context.commit_txn();
 
-    PreverifiedHashes::current.clear();  // disable preverified hashes
+    PreverifiedHashes::current.clear();                           // disable preverified hashes
+    Environment::set_stop_before_stage(db::stages::kSendersKey);  // only headers, block hashes and bodies
 
     db::RWAccess db_access{context.env()};
     ExecutionEngine_ForTest execution_engine{context.node_settings(), db_access};
@@ -93,6 +94,11 @@ TEST_CASE("ExecutionEngine") {
         // inserting headers & bodies
         execution_engine.insert_block(block1);
 
+        // check db
+        BlockBody saved_body;
+        bool present = db::read_body(tx, block1.header.hash(), block1.header.number, saved_body);
+        REQUIRE(present);
+
         auto progress = execution_engine.get_block_progress();
         REQUIRE(progress == initial_progress);  // headers and bodies progress will change with pipeline execution
 
@@ -125,11 +131,7 @@ TEST_CASE("ExecutionEngine") {
         auto current_status = execution_engine.current_status();
         REQUIRE(holds_alternative<InvalidChain>(current_status));
 
-        // check db content
-        BlockBody saved_body;
-        bool present = db::read_body(tx, block1.header.hash(), block1.header.number, saved_body);
-        REQUIRE(present);
-
+        // check canonical
         auto present_in_canonical = execution_engine.get_canonical_hash(block1.header.number);
         REQUIRE(present_in_canonical);
 

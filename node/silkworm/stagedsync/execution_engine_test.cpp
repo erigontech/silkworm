@@ -41,14 +41,15 @@ class ExecutionEngine_ForTest : public stagedsync::ExecutionEngine {
     using stagedsync::ExecutionEngine::tx_;
 };
 
-TEST_CASE("ExecutionEngine", "[.]") {
+TEST_CASE("ExecutionEngine") {
     test::SetLogVerbosityGuard log_guard(log::Level::kNone);
 
     test::Context context;
     context.add_genesis_data();
     context.commit_txn();
 
-    PreverifiedHashes::current.clear();  // disable preverified hashes
+    PreverifiedHashes::current.clear();                           // disable preverified hashes
+    Environment::set_stop_before_stage(db::stages::kSendersKey);  // only headers, block hashes and bodies
 
     db::RWAccess db_access{context.env()};
     ExecutionEngine_ForTest execution_engine{context.node_settings(), db_access};
@@ -57,6 +58,7 @@ TEST_CASE("ExecutionEngine", "[.]") {
 
     using ValidChain = stagedsync::ExecutionEngine::ValidChain;
     using InvalidChain = stagedsync::ExecutionEngine::InvalidChain;
+    using ValidationError = stagedsync::ExecutionEngine::ValidationError;
 
     /* status:
      *         h0
@@ -93,6 +95,11 @@ TEST_CASE("ExecutionEngine", "[.]") {
         // inserting headers & bodies
         execution_engine.insert_block(block1);
 
+        // check db
+        BlockBody saved_body;
+        bool present = db::read_body(tx, block1.header.hash(), block1.header.number, saved_body);
+        REQUIRE(present);
+
         auto progress = execution_engine.get_block_progress();
         REQUIRE(progress == initial_progress);  // headers and bodies progress will change with pipeline execution
 
@@ -102,6 +109,13 @@ TEST_CASE("ExecutionEngine", "[.]") {
         // verifying the chain
         auto verification = execution_engine.verify_chain(block1.header.hash());
 
+        CHECK(db::stages::read_stage_progress(tx, db::stages::kHeadersKey) == 1);
+        CHECK(db::stages::read_stage_progress(tx, db::stages::kBlockHashesKey) == 1);
+        CHECK(db::stages::read_stage_progress(tx, db::stages::kBlockBodiesKey) == 1);
+        CHECK(db::stages::read_stage_progress(tx, db::stages::kSendersKey) == 0);
+        CHECK(db::stages::read_stage_progress(tx, db::stages::kExecutionKey) == 0);
+
+        CHECK(!holds_alternative<ValidationError>(verification));
         REQUIRE(holds_alternative<InvalidChain>(verification));
         auto invalid_chain = std::get<InvalidChain>(verification);
 
@@ -125,11 +139,7 @@ TEST_CASE("ExecutionEngine", "[.]") {
         auto current_status = execution_engine.current_status();
         REQUIRE(holds_alternative<InvalidChain>(current_status));
 
-        // check db content
-        BlockBody saved_body;
-        bool present = db::read_body(tx, block1.header.hash(), block1.header.number, saved_body);
-        REQUIRE(present);
-
+        // check canonical
         auto present_in_canonical = execution_engine.get_canonical_hash(block1.header.number);
         REQUIRE(present_in_canonical);
 

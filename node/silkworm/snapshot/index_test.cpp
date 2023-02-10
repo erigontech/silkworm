@@ -16,8 +16,6 @@
 
 #include "index.hpp"
 
-#include <utility>
-
 #include <catch2/catch.hpp>
 
 #include <silkworm/common/decoding_exception.cpp>

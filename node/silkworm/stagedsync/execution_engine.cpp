@@ -25,9 +25,10 @@
 
 namespace silkworm::stagedsync {
 
-static void ensure_invariant(bool condition, std::string message) {
-    if (!condition)
+static void ensure_invariant(bool condition, const std::string& message) {
+    if (!condition) {
         throw std::logic_error("Execution invariant violation: " + message);
+    }
 }
 
 ExecutionEngine::CanonicalChain::CanonicalChain(db::RWTxn& tx) : tx_{tx}, canonical_cache_{kCacheSize} {
@@ -176,8 +177,7 @@ void ExecutionEngine::insert_block(const Block& block) {
     insert_body(block);
 }
 
-template <typename BLOCK>
-requires std::is_base_of_v<Block, BLOCK>
+template <std::derived_from<Block> BLOCK>
 void ExecutionEngine::insert_blocks(std::vector<std::shared_ptr<BLOCK>>& blocks) {
     SILK_TRACE << "ExecutionEngine: inserting " << blocks.size() << " blocks";
     if (blocks.empty()) return;
@@ -229,7 +229,7 @@ auto ExecutionEngine::verify_chain(Hash head_block_hash) -> VerificationResult {
         case Stage::Result::kSuccess: {
             if (pipeline_.head_header_number() != canonical_chain_.current_head().number ||
                 pipeline_.head_header_hash() != canonical_chain_.current_head().hash) {
-                throw std::logic_error("forward succeded but pipeline head is not aligned with canonical head");
+                throw std::logic_error("forward succeeded but pipeline head is not aligned with canonical head");
             }
             verify_result = ValidChain{pipeline_.head_header_number()};
             break;
@@ -332,12 +332,12 @@ auto ExecutionEngine::get_header(Hash header_hash) -> std::optional<BlockHeader>
     return header;
 }
 
-auto ExecutionEngine::get_header(BlockNum header_heigth, Hash header_hash) -> std::optional<BlockHeader> {
+auto ExecutionEngine::get_header(BlockNum header_height, Hash header_hash) -> std::optional<BlockHeader> {
     // const BlockHeader* cached = header_cache_.get(header_hash);
     // if (cached) {
     //     return *cached;
     // }
-    std::optional<BlockHeader> header = db::read_header(tx_, header_heigth, header_hash);
+    std::optional<BlockHeader> header = db::read_header(tx_, header_height, header_hash);
     return header;
 }
 
@@ -346,8 +346,8 @@ auto ExecutionEngine::get_canonical_hash(BlockNum height) -> std::optional<Hash>
     return hash;
 }
 
-auto ExecutionEngine::get_header_td(BlockNum header_heigth, Hash header_hash) -> std::optional<BigInt> {
-    return db::read_total_difficulty(tx_, header_heigth, header_hash);
+auto ExecutionEngine::get_header_td(BlockNum header_height, Hash header_hash) -> std::optional<BigInt> {
+    return db::read_total_difficulty(tx_, header_height, header_hash);
 }
 
 auto ExecutionEngine::get_body(Hash header_hash) -> std::optional<BlockBody> {

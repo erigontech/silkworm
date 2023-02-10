@@ -55,8 +55,9 @@ class TrieLoader {
     //! TrieOfStorage bucket
     //! \return The computed hash
     //! \remark May throw
-    [[nodiscard]] evmc::bytes32 calculate_storage_root(TrieCursor& trie_storage_cursor,
-                                                       HashBuilder& storage_hash_builder, db::Cursor& hashed_storage,
-                                                       const Bytes& db_storage_prefix);
+    [[nodiscard]] static evmc::bytes32 calculate_storage_root(TrieCursor& trie_storage_cursor,
+                                                              HashBuilder& storage_hash_builder,
+                                                              db::Cursor& hashed_storage,
+                                                              const Bytes& db_storage_prefix);
 };
 }  // namespace silkworm::trie

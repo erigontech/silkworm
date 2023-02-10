@@ -38,8 +38,8 @@ class BlockHashes final : public Stage {
     std::atomic_uint32_t current_phase_{0};
     std::atomic<BlockNum> reached_block_num_{0};
 
-    void collect_and_load(db::RWTxn& txn, const BlockNum from,
-                          const BlockNum to);  // Accrues canonical hashes in collector and loads them
+    void collect_and_load(db::RWTxn& txn, BlockNum from,
+                          BlockNum to);  // Accrues canonical hashes in collector and loads them
 };
 
 }  // namespace silkworm::stagedsync

@@ -17,6 +17,7 @@
 #pragma once
 
 #include <atomic>
+#include <concepts>
 #include <set>
 #include <variant>
 #include <vector>
@@ -25,29 +26,32 @@
 #include <silkworm/common/lru_cache.hpp>
 #include <silkworm/common/stopwatch.hpp>
 #include <silkworm/downloader/internals/types.hpp>
+#include <silkworm/stagedsync/execution_pipeline.hpp>
 #include <silkworm/stagedsync/stage.hpp>
-
-#include "execution_pipeline.hpp"
-
-/* clang-format off */
 
 namespace silkworm::stagedsync {
 
 class ExecutionEngine : public Stoppable {
   public:
-    explicit ExecutionEngine(NodeSettings&, const db::RWAccess);
-    ~ExecutionEngine() = default;
+    explicit ExecutionEngine(NodeSettings&, db::RWAccess);
 
-    struct ValidChain {BlockNum current_point;};
-    struct InvalidChain {BlockNum unwind_point; Hash unwind_head; std::optional<Hash> bad_block; std::set<Hash> bad_headers;};
-    struct ValidationError {BlockNum last_point;};
+    struct ValidChain {
+        BlockNum current_point;
+    };
+    struct InvalidChain {
+        BlockNum unwind_point;
+        Hash unwind_head;
+        std::optional<Hash> bad_block;
+        std::set<Hash> bad_headers;
+    };
+    struct ValidationError {
+        BlockNum last_point;
+    };
     using VerificationResult = std::variant<ValidChain, InvalidChain, ValidationError>;
 
     // actions
-    template <typename BLOCK>
-    requires std::is_base_of_v<Block, BLOCK>
+    template <std::derived_from<Block> BLOCK>
     void insert_blocks(std::vector<std::shared_ptr<BLOCK>>&);
-
 
     auto verify_chain(Hash head_block_hash) -> VerificationResult;
 
@@ -82,7 +86,7 @@ class ExecutionEngine : public Stoppable {
 
     class CanonicalChain {
       public:
-        CanonicalChain(db::RWTxn&);
+        explicit CanonicalChain(db::RWTxn&);
 
         BlockNum find_forking_point(db::RWTxn& tx, Hash header_hash);
 

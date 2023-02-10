@@ -71,8 +71,9 @@ void HeadersStage::HeaderDataModel::update_tables(const BlockHeader& header) {
 
 void HeadersStage::HeaderDataModel::remove_headers(BlockNum unwind_point, db::RWTxn& tx) {
     auto canonical_hash = db::read_canonical_hash(tx, unwind_point);
-    if (!canonical_hash)
-        throw std::logic_error("Headers stage, expected canonical hash at heigth " + std::to_string(unwind_point));
+    if (!canonical_hash) {
+        throw std::logic_error("Headers stage, expected canonical hash at height " + std::to_string(unwind_point));
+    }
     db::write_head_header_hash(tx, *canonical_hash);
 }
 

@@ -25,8 +25,10 @@
 #include <string>
 #include <vector>
 
-#include "silkworm/common/base.hpp"
-#include "silkworm/common/memory_mapped_file.hpp"
+#include <absl/functional/function_ref.h>
+
+#include <silkworm/common/base.hpp>
+#include <silkworm/common/memory_mapped_file.hpp>
 
 namespace silkworm {
 
@@ -225,7 +227,8 @@ class Decompressor {
         //! Bit position [0..7] in current word of the data file
         uint8_t bit_position_{0};
     };
-    using ReadAheadFunc = std::function<bool(Iterator)>;
+
+    using ReadAheadFuncRef = absl::FunctionRef<bool(Iterator)>;
 
     explicit Decompressor(std::filesystem::path compressed_file);
     ~Decompressor();
@@ -239,7 +242,7 @@ class Decompressor {
     void open();
 
     //! Read the data stream eagerly applying the specified function, expected read in sequential order
-    bool read_ahead(ReadAheadFunc fn);
+    bool read_ahead(ReadAheadFuncRef fn);
 
     void close();
 

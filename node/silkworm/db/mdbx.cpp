@@ -126,10 +126,11 @@ static inline mdbx::cursor::move_operation move_operation(CursorMoveDirection di
             cp.geometry.pagesize = static_cast<intptr_t>(config.page_size);
     }
 
-    ::mdbx::env::operate_parameters op{};  // Operational parameters
-    op.mode = op.mode_from_flags(static_cast<MDBX_env_flags_t>(flags));
+    using OP = ::mdbx::env::operate_parameters;
+    OP op{};  // Operational parameters
+    op.mode = OP::mode_from_flags(static_cast<MDBX_env_flags_t>(flags));
     op.options = op.options_from_flags(static_cast<MDBX_env_flags_t>(flags));
-    op.durability = op.durability_from_flags(static_cast<MDBX_env_flags_t>(flags));
+    op.durability = OP::durability_from_flags(static_cast<MDBX_env_flags_t>(flags));
     op.max_maps = config.max_tables;
     op.max_readers = config.max_readers;
 

@@ -84,7 +84,6 @@ class Stage : public Stoppable {
         Prune,    // Executing Prune
     };
     explicit Stage(SyncContext* sync_context, const char* stage_name, NodeSettings* node_settings);
-    virtual ~Stage() = default;
 
     //! \brief Forward is called when the stage is executed. The main logic of the stage must be here.
     //! \param [in] txn : A db transaction holder
@@ -164,10 +163,6 @@ inline void success_or_throw(Stage::Result code) {
 // Return true if result indicates that an unwind operation is needed
 inline bool unwind_needed(Stage::Result result) {
     return (result == Stage::Result::kWrongFork || result == Stage::Result::kInvalidBlock);
-}
-// Return true if result indicates that an error or abortion happened
-inline bool error_or_abort(Stage::Result result) {
-    return (result == Stage::Result::kUnexpectedError || result == Stage::Result::kAborted);
 }
 
 }  // namespace silkworm::stagedsync

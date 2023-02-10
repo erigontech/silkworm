@@ -34,7 +34,7 @@
 namespace silkworm {
 
 struct NodeSettings {
-    std::string build_info{};                              // Hold build info (human readable)
+    std::string build_info{};                              // Hold build info (human-readable)
     boost::asio::io_context asio_context;                  // Async context (e.g. for timers)
     std::unique_ptr<DataDirectory> data_directory;         // Pointer to data folder
     db::EnvConfig chaindata_env_config{};                  // Chaindata db config

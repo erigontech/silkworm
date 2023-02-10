@@ -33,6 +33,8 @@ class Index {
     explicit Index(SnapshotPath segment_path) : segment_path_(std::move(segment_path)) {}
     virtual ~Index() = default;
 
+    [[nodiscard]] SnapshotPath path() const { return segment_path_.index_file(); }
+
     virtual void build();
 
   protected:

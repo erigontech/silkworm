@@ -37,6 +37,7 @@
 #include <silkworm/rpc/common/conversion.hpp>
 #include <silkworm/rpc/common/util.hpp>
 #include <silkworm/test/log.hpp>
+#include <silkworm/test/os.hpp>
 
 using namespace std::chrono_literals;
 
@@ -382,6 +383,16 @@ struct BackEndKvE2eTest {
         rw_cursor2.upsert(mdbx::slice{"AA"}, mdbx::slice{"11"});
         rw_cursor2.upsert(mdbx::slice{"AA"}, mdbx::slice{"22"});
         rw_cursor2.upsert(mdbx::slice{"BB"}, mdbx::slice{"22"});
+        rw_txn.commit();
+    }
+
+    void alter_tables() {
+        auto rw_txn = database_env.start_write();
+        db::Cursor rw_cursor1{rw_txn, kTestMap};
+        rw_cursor1.upsert(mdbx::slice{"CC"}, mdbx::slice{"22"});
+        db::Cursor rw_cursor2{rw_txn, kTestMultiMap};
+        rw_cursor2.upsert(mdbx::slice{"AA"}, mdbx::slice{"33"});
+        rw_cursor2.upsert(mdbx::slice{"BB"}, mdbx::slice{"33"});
         rw_txn.commit();
     }
 
@@ -993,6 +1004,11 @@ TEST_CASE("BackEndKvServer E2E: trigger server-side write error", "[silkworm][no
 }
 
 TEST_CASE("BackEndKvServer E2E: Tx max simultaneous readers exceeded", "[silkworm][node][rpc]") {
+    // This check can be improved in Catch2 version 3.3.0 where SKIP is available
+    if (test::OS::max_file_descriptors() < 1024) {
+        FAIL("insufficient number of process file descriptors, increase to 1024 at least");
+    }
+
     NodeSettings node_settings;
     BackEndKvE2eTest test{silkworm::log::Level::kNone, std::move(node_settings)};
     test.fill_tables();
@@ -2258,7 +2274,6 @@ TEST_CASE("BackEndKvServer E2E: bidirectional max TTL duration", "[silkworm][nod
         tx_reader_writer->WritesDone();
         auto status = tx_reader_writer->Finish();
         CHECK(status.ok());
-        CHECK(status.error_message() == "");
     }
 
     SECTION("Tx: cursor NEXT_DUP ops across renew are consecutive") {
@@ -2295,7 +2310,159 @@ TEST_CASE("BackEndKvServer E2E: bidirectional max TTL duration", "[silkworm][nod
         tx_reader_writer->WritesDone();
         auto status = tx_reader_writer->Finish();
         CHECK(status.ok());
-        CHECK(status.error_message() == "");
+    }
+
+    SECTION("Tx: cursor NEXT op after renew sees changes") {
+        grpc::ClientContext context;
+        // Start Tx RPC and open one cursor for TestMap table
+        const auto tx_reader_writer = kv_client.tx_start(&context);
+        remote::Pair response;
+        CHECK(tx_reader_writer->Read(&response));
+        CHECK(response.txid() != 0);
+        remote::Cursor open;
+        open.set_op(remote::Op::OPEN);
+        open.set_bucketname(kTestMap.name);
+        CHECK(tx_reader_writer->Write(open));
+        response.clear_txid();
+        CHECK(tx_reader_writer->Read(&response));
+        const auto cursor_id = response.cursorid();
+        CHECK(cursor_id != 0);
+        // Change database content *after* Tx RPC has been opened
+        test.alter_tables();
+        // Tx RPC opened *before* database changes won't see them
+        remote::Cursor next1;
+        next1.set_op(remote::Op::NEXT);
+        next1.set_cursor(cursor_id);
+        CHECK(tx_reader_writer->Write(next1));
+        response.clear_cursorid();
+        CHECK(tx_reader_writer->Read(&response));
+        CHECK(response.k() == "AA");
+        CHECK(response.v() == "00");
+        CHECK(tx_reader_writer->Write(next1));
+        response.clear_k();
+        response.clear_v();
+        CHECK(tx_reader_writer->Read(&response));
+        CHECK(response.k() == "BB");
+        CHECK(response.v() == "11");
+        CHECK(tx_reader_writer->Write(next1));
+        response.clear_k();
+        response.clear_v();
+        CHECK(tx_reader_writer->Read(&response));
+        CHECK(response.k().empty());
+        CHECK(response.v().empty());
+        // Let the max TTL timer expire causing server-side tx renewal
+        std::this_thread::sleep_for(std::chrono::milliseconds{kCustomMaxTimeToLive});
+        // Now the already existing cursor (i.e. same cursor_id) can see the changes
+        remote::Cursor first;
+        first.set_op(remote::Op::FIRST);
+        first.set_cursor(cursor_id);
+        CHECK(tx_reader_writer->Write(first));
+        response.clear_cursorid();
+        CHECK(tx_reader_writer->Read(&response));
+        CHECK(response.k() == "AA");
+        CHECK(response.v() == "00");
+        remote::Cursor next2;
+        next2.set_op(remote::Op::NEXT);
+        next2.set_cursor(cursor_id);
+        CHECK(tx_reader_writer->Write(next2));
+        response.clear_k();
+        response.clear_v();
+        CHECK(tx_reader_writer->Read(&response));
+        CHECK(response.k() == "BB");
+        CHECK(response.v() == "11");
+        CHECK(tx_reader_writer->Write(next2));
+        response.clear_k();
+        response.clear_v();
+        CHECK(tx_reader_writer->Read(&response));
+        CHECK(response.k() == "CC");
+        CHECK(response.v() == "22");
+        tx_reader_writer->WritesDone();
+        auto status = tx_reader_writer->Finish();
+        CHECK(status.ok());
+    }
+
+    SECTION("Tx: cursor NEXT_DUP op after renew sees changes") {
+        grpc::ClientContext context;
+        // Start Tx RPC and open one cursor for TestMultiMap table
+        const auto tx_reader_writer = kv_client.tx_start(&context);
+        remote::Pair response;
+        CHECK(tx_reader_writer->Read(&response));
+        CHECK(response.txid() != 0);
+        remote::Cursor open;
+        open.set_op(remote::Op::OPEN);
+        open.set_bucketname(kTestMultiMap.name);
+        CHECK(tx_reader_writer->Write(open));
+        response.clear_txid();
+        CHECK(tx_reader_writer->Read(&response));
+        const auto cursor_id = response.cursorid();
+        CHECK(cursor_id != 0);
+        // Change database content *after* Tx RPC has been opened
+        test.alter_tables();
+        // Tx RPC opened *before* database changes won't see them
+        remote::Cursor next_dup;
+        next_dup.set_op(remote::Op::NEXT_DUP);
+        next_dup.set_cursor(cursor_id);
+        CHECK(tx_reader_writer->Write(next_dup));
+        response.clear_cursorid();
+        CHECK(tx_reader_writer->Read(&response));
+        CHECK(response.k() == "AA");
+        CHECK(response.v() == "00");
+        CHECK(tx_reader_writer->Write(next_dup));
+        response.clear_k();
+        response.clear_v();
+        CHECK(tx_reader_writer->Read(&response));
+        CHECK(response.k() == "AA");
+        CHECK(response.v() == "11");
+        CHECK(tx_reader_writer->Write(next_dup));
+        response.clear_k();
+        response.clear_v();
+        CHECK(tx_reader_writer->Read(&response));
+        CHECK(response.k() == "AA");
+        CHECK(response.v() == "22");
+        CHECK(tx_reader_writer->Write(next_dup));
+        response.clear_k();
+        response.clear_v();
+        CHECK(tx_reader_writer->Read(&response));
+        CHECK(response.k().empty());
+        CHECK(response.v().empty());
+        // Let the max TTL timer expire causing server-side tx renewal
+        std::this_thread::sleep_for(std::chrono::milliseconds{kCustomMaxTimeToLive});
+        // Now the already existing cursor (i.e. same cursor_id) can see the changes
+        remote::Cursor first;
+        first.set_op(remote::Op::FIRST);
+        first.set_cursor(cursor_id);
+        CHECK(tx_reader_writer->Write(first));
+        response.clear_cursorid();
+        CHECK(tx_reader_writer->Read(&response));
+        CHECK(response.k() == "AA");
+        CHECK(response.v() == "00");
+        CHECK(tx_reader_writer->Write(next_dup));
+        response.clear_k();
+        response.clear_v();
+        CHECK(tx_reader_writer->Read(&response));
+        CHECK(response.k() == "AA");
+        CHECK(response.v() == "11");
+        CHECK(tx_reader_writer->Write(next_dup));
+        response.clear_k();
+        response.clear_v();
+        CHECK(tx_reader_writer->Read(&response));
+        CHECK(response.k() == "AA");
+        CHECK(response.v() == "22");
+        CHECK(tx_reader_writer->Write(next_dup));
+        response.clear_k();
+        response.clear_v();
+        CHECK(tx_reader_writer->Read(&response));
+        CHECK(response.k() == "AA");
+        CHECK(response.v() == "33");
+        CHECK(tx_reader_writer->Write(next_dup));
+        response.clear_k();
+        response.clear_v();
+        CHECK(tx_reader_writer->Read(&response));
+        CHECK(response.k().empty());
+        CHECK(response.v().empty());
+        tx_reader_writer->WritesDone();
+        auto status = tx_reader_writer->Finish();
+        CHECK(status.ok());
     }
 }
 #endif  // SILKWORM_SANITIZE

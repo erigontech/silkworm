@@ -171,7 +171,7 @@ awaitable<void> TxCall::operator()() {
         };
         const auto max_ttl_timer = [&]() -> awaitable<void> {
             while (true) {
-                const auto [ec] = co_await max_idle_alarm.async_wait(as_tuple(use_awaitable));
+                const auto [ec] = co_await max_ttl_alarm.async_wait(as_tuple(use_awaitable));
                 if (!ec) {
                     handle_max_ttl_timer_expired();
                     max_ttl_deadline += max_ttl_duration_;

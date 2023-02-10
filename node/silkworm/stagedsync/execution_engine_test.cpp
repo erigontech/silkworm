@@ -49,7 +49,7 @@ TEST_CASE("ExecutionEngine") {
     context.commit_txn();
 
     PreverifiedHashes::current.clear();                           // disable preverified hashes
-    Environment::set_stop_before_stage(db::stages::kSendersKey);  // only headers, block hashes and bodies
+    //Environment::set_stop_before_stage(db::stages::kSendersKey);  // only headers, block hashes and bodies
 
     db::RWAccess db_access{context.env()};
     ExecutionEngine_ForTest execution_engine{context.node_settings(), db_access};
@@ -107,6 +107,12 @@ TEST_CASE("ExecutionEngine") {
 
         // verifying the chain
         auto verification = execution_engine.verify_chain(block1.header.hash());
+
+        REQUIRE(db::stages::read_stage_progress(tx, db::stages::kHeadersKey) == 1);
+        REQUIRE(db::stages::read_stage_progress(tx, db::stages::kBlockHashesKey) == 1);
+        REQUIRE(db::stages::read_stage_progress(tx, db::stages::kBlockBodiesKey) == 1);
+        REQUIRE(db::stages::read_stage_progress(tx, db::stages::kSendersKey) == 0);
+        REQUIRE(db::stages::read_stage_progress(tx, db::stages::kExecutionKey) == 0);
 
         REQUIRE(holds_alternative<InvalidChain>(verification));
         auto invalid_chain = std::get<InvalidChain>(verification);

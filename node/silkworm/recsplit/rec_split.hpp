@@ -440,7 +440,7 @@ class RecSplit {
             const auto d = reader.read_next(golomb_param(m, memo));
             const std::size_t hmod = remap16(remix(hash.second + d + kStartSeed[level]), m);
 
-            const uint32_t split = ((uint16_t((m + 1) / 2 + kUpperAggregationBound - 1) / kUpperAggregationBound)) * kUpperAggregationBound;
+            const std::size_t split = ((static_cast<uint16_t>((m + 1) / 2 + kUpperAggregationBound - 1) / kUpperAggregationBound)) * kUpperAggregationBound;
             if (hmod < split) {
                 m = split;
             } else {
@@ -497,7 +497,7 @@ class RecSplit {
     // (following 11 bits) and the sum of the Golomb-Rice code lengths in the same
     // subtree (lower 16 bits).
     static constexpr void precompute_golomb_rice(const int m, std::array<uint32_t, kMaxBucketSize>* memo) {
-        std::array<int, kMaxFanout> k{0};
+        std::array<std::size_t, kMaxFanout> k{0};
 
         const auto [fanout, unit] = SplittingStrategy<LEAF_SIZE>::split_params(m);
 
@@ -644,7 +644,7 @@ class RecSplit {
             salt -= kStartSeed[level];
             const auto log2golomb = golomb_param(m, memo);
             gr_builder_.append_fixed(salt, log2golomb);
-            unary.push_back(salt >> log2golomb);
+            unary.push_back(static_cast<uint32_t>(salt >> log2golomb));
         } else {
             const auto [fanout, unit] = SplitStrategy::split_params(m);
 
@@ -679,7 +679,7 @@ class RecSplit {
             salt -= kStartSeed[level];
             const auto log2golomb = golomb_param(m, memo);
             gr_builder_.append_fixed(salt, log2golomb);
-            unary.push_back(salt >> log2golomb);
+            unary.push_back(static_cast<uint32_t>(salt >> log2golomb));
 
             std::size_t i;
             for (i = 0; i < m - unit; i += unit) {

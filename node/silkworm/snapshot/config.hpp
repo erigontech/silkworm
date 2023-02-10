@@ -16,24 +16,45 @@
 
 #pragma once
 
+#include <map>
+#include <memory>
 #include <string>
 #include <string_view>
 #include <vector>
 
+#include <silkworm/common/base.hpp>
+
 namespace silkworm::snapshot {
 
 struct PreverifiedEntry {
-    std::string name;
-    std::string hash;
+    std::string file_name;
+    std::string torrent_hash;
 };
 
 using PreverifiedList = std::vector<PreverifiedEntry>;
 
 PreverifiedList from_toml(std::string_view preverified_toml_doc);
 
-class SnapshotConfig {
+class Config {
   public:
-    SnapshotConfig() = default;
+    static std::shared_ptr<const Config> lookup_known_config(uint64_t chain_id, const std::vector<std::string>& whitelist);
+
+    explicit Config(PreverifiedList preverified_snapshots);
+
+    [[nodiscard]] const PreverifiedList& preverified_snapshots() const { return preverified_snapshots_; }
+    [[nodiscard]] BlockNum max_block_number() const { return max_block_number_; }
+
+  private:
+    static const Config kGoerliSnapshotConfig;
+    static const Config kMainnetSnapshotConfig;
+    static const Config kSepoliaSnapshotConfig;
+
+    static const std::map<uint64_t, const Config*> kKnownSnapshotConfigs;
+
+    BlockNum compute_max_block();
+
+    PreverifiedList preverified_snapshots_;
+    BlockNum max_block_number_;
 };
 
 }  // namespace silkworm::snapshot

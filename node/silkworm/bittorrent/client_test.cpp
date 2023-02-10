@@ -14,7 +14,7 @@
    limitations under the License.
 */
 
-#include "bittorrent_client.hpp"
+#include "client.hpp"
 
 #include <chrono>
 #include <filesystem>

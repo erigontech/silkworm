@@ -28,10 +28,11 @@
 #include <silkworm/db/stages.hpp>
 #include <silkworm/downloader/block_exchange.hpp>
 #include <silkworm/downloader/sentry_client.hpp>
+#include <silkworm/downloader/sync_engine.hpp>
+#include <silkworm/snapshot/sync.hpp>
 #include <silkworm/stagedsync/execution_engine.hpp>
 
 #include "common.hpp"
-#include "silkworm/downloader/sync_engine.hpp"
 
 using namespace silkworm;
 
@@ -76,6 +77,7 @@ int main(int argc, char* argv[]) {
         cmd::parse_silkworm_command_line(cli, argc, argv, settings);
 
         auto& node_settings = settings.node_settings;
+        auto& snapshot_settings = settings.snapshot_settings;
 
         // Initialize logging with cli settings
         log::init(settings.log_settings);
@@ -143,6 +145,16 @@ int main(int argc, char* argv[]) {
         // BlockExchange - download headers and bodies from remote peers using the sentry
         BlockExchange block_exchange{sentry, db::ROAccess{chaindata_db}, node_settings.chain_config.value()};
         auto block_downloading = std::thread([&block_exchange]() { block_exchange.execution_loop(); });
+
+        if (snapshot_settings.enabled) {
+            db::RWTxn rw_txn{chaindata_db};
+
+            // Snapshot sync - download chain from peers using snapshot files
+            SnapshotSync snapshot_sync{snapshot_settings, node_settings.chain_config.value()};
+            snapshot_sync.download_and_index_snapshots(rw_txn);
+        } else {
+            log::Info() << "Snapshot sync disabled, no snapshot must be downloaded";
+        }
 
         // ExecutionEngine executes transactions and builds state validating chain slices
         silkworm::stagedsync::ExecutionEngine execution{node_settings, db::RWAccess{chaindata_db}};

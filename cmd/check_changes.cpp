@@ -19,11 +19,11 @@
 #include <CLI/CLI.hpp>
 #include <absl/container/flat_hash_set.h>
 
-#include <silkworm/common/directories.hpp>
-#include <silkworm/common/log.hpp>
-#include <silkworm/db/access_layer.hpp>
-#include <silkworm/db/buffer.hpp>
-#include <silkworm/execution/processor.hpp>
+#include <silkworm/core/execution/processor.hpp>
+#include <silkworm/node/common/directories.hpp>
+#include <silkworm/node/common/log.hpp>
+#include <silkworm/node/db/access_layer.hpp>
+#include <silkworm/node/db/buffer.hpp>
 
 using namespace evmc::literals;
 using namespace silkworm;

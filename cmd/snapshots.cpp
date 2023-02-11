@@ -25,14 +25,14 @@
 #include <boost/process/environment.hpp>
 #include <magic_enum.hpp>
 
-#include <silkworm/bittorrent/client.hpp>
 #include <silkworm/buildinfo.h>
-#include <silkworm/chain/config.hpp>
-#include <silkworm/common/log.hpp>
-#include <silkworm/snapshot/index.hpp>
-#include <silkworm/snapshot/repository.hpp>
-#include <silkworm/snapshot/snapshot.hpp>
-#include <silkworm/snapshot/sync.hpp>
+#include <silkworm/core/chain/config.hpp>
+#include <silkworm/node/bittorrent/client.hpp>
+#include <silkworm/node/common/log.hpp>
+#include <silkworm/node/snapshot/index.hpp>
+#include <silkworm/node/snapshot/repository.hpp>
+#include <silkworm/node/snapshot/snapshot.hpp>
+#include <silkworm/node/snapshot/sync.hpp>
 
 #include "common.hpp"
 

@@ -14,19 +14,16 @@
    limitations under the License.
 */
 
-#include <iostream>
-
 #include <CLI/CLI.hpp>
 
-#include <silkworm/chain/config.hpp>
-#include <silkworm/common/directories.hpp>
-#include <silkworm/common/endian.hpp>
-#include <silkworm/common/log.hpp>
-#include <silkworm/common/util.hpp>
-#include <silkworm/concurrency/signal_handler.hpp>
-#include <silkworm/db/access_layer.hpp>
-#include <silkworm/db/stages.hpp>
-#include <silkworm/etl/collector.hpp>
+#include <silkworm/core/common/endian.hpp>
+#include <silkworm/core/common/util.hpp>
+#include <silkworm/node/common/directories.hpp>
+#include <silkworm/node/common/log.hpp>
+#include <silkworm/node/concurrency/signal_handler.hpp>
+#include <silkworm/node/db/access_layer.hpp>
+#include <silkworm/node/db/stages.hpp>
+#include <silkworm/node/etl/collector.hpp>
 
 using namespace silkworm;
 

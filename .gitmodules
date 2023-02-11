@@ -17,7 +17,7 @@
 	path = third_party/libmdbx
 	url = https://github.com/torquem-ch/libmdbx.git
 [submodule "interfaces/proto"]
-	path = interfaces/proto
+	path = silkworm/interfaces/proto
 	url = https://github.com/ledgerwatch/interfaces.git
 	branch = stable
 [submodule "silkpre"]

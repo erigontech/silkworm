@@ -18,7 +18,7 @@ find_package(Catch2 CONFIG REQUIRED)
 find_package(Microsoft.GSL CONFIG REQUIRED)
 
 # Silkworm Core Tests
-file(GLOB_RECURSE SILKWORM_CORE_TESTS CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/core/silkworm/*_test.cpp")
+file(GLOB_RECURSE SILKWORM_CORE_TESTS CONFIGURE_DEPENDS "${SILKWORM_MAIN_SRC_DIR}/core/*_test.cpp")
 add_executable(core_test unit_test.cpp ${SILKWORM_CORE_TESTS})
 target_link_libraries(core_test silkworm_core Catch2::Catch2 evmone)
 if(MSVC)
@@ -29,7 +29,7 @@ endif()
 
 if(NOT SILKWORM_CORE_ONLY)
   # Silkworm Node Tests
-  file(GLOB_RECURSE SILKWORM_NODE_TESTS CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/node/silkworm/*_test.cpp")
+  file(GLOB_RECURSE SILKWORM_NODE_TESTS CONFIGURE_DEPENDS "${SILKWORM_MAIN_SRC_DIR}/node/*_test.cpp")
   add_executable(node_test unit_test.cpp ${SILKWORM_NODE_TESTS})
   if(SILKWORM_SANITIZE)
     target_compile_definitions(node_test PRIVATE GRPC_ASAN_SUPPRESSED GRPC_TSAN_SUPPRESSED)
@@ -48,7 +48,7 @@ if(NOT SILKWORM_CORE_ONLY)
   target_link_libraries(backend_kv_test PRIVATE silkworm_node CLI11::CLI11)
 
   # Sentry Tests
-  file(GLOB_RECURSE SENTRY_TEST_FILES CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/sentry/*_test.cpp")
+  file(GLOB_RECURSE SENTRY_TEST_FILES CONFIGURE_DEPENDS "${SILKWORM_MAIN_SRC_DIR}/sentry/*_test.cpp")
   add_executable(sentry_test unit_test.cpp ${SENTRY_TEST_FILES})
   if(SILKWORM_SANITIZE)
     target_compile_definitions(sentry_test PRIVATE GRPC_ASAN_SUPPRESSED GRPC_TSAN_SUPPRESSED)

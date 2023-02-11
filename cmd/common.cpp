@@ -21,10 +21,10 @@
 
 #include <boost/asio/ip/address.hpp>
 
-#include <silkworm/chain/genesis.hpp>
-#include <silkworm/db/access_layer.hpp>
-#include <silkworm/db/genesis.hpp>
-#include <silkworm/db/stages.hpp>
+#include <silkworm/core/chain/genesis.hpp>
+#include <silkworm/node/db/access_layer.hpp>
+#include <silkworm/node/db/genesis.hpp>
+#include <silkworm/node/db/stages.hpp>
 
 namespace silkworm::cmd {
 

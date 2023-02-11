@@ -19,11 +19,11 @@
 
 #include <CLI/CLI.hpp>
 
-#include <silkworm/common/directories.hpp>
-#include <silkworm/consensus/engine.hpp>
-#include <silkworm/db/access_layer.hpp>
-#include <silkworm/db/buffer.hpp>
-#include <silkworm/execution/execution.hpp>
+#include <silkworm/core/execution/execution.hpp>
+#include <silkworm/core/consensus/engine.hpp>
+#include <silkworm/node/common/directories.hpp>
+#include <silkworm/node/db/access_layer.hpp>
+#include <silkworm/node/db/buffer.hpp>
 
 int main(int argc, char* argv[]) {
     CLI::App app{"Executes Ethereum blocks and scans txs for errored txs"};

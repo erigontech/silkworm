@@ -25,15 +25,15 @@
 #include <boost/asio/steady_timer.hpp>
 #include <boost/process/environment.hpp>
 
-#include <silkworm/backend/backend_kv_server.hpp>
-#include <silkworm/backend/ethereum_backend.hpp>
 #include <silkworm/buildinfo.h>
-#include <silkworm/chain/config.hpp>
-#include <silkworm/common/directories.hpp>
-#include <silkworm/common/log.hpp>
-#include <silkworm/db/mdbx.hpp>
-#include <silkworm/downloader/sentry_client.hpp>
-#include <silkworm/rpc/common/util.hpp>
+#include <silkworm/core/chain/config.hpp>
+#include <silkworm/node/backend/backend_kv_server.hpp>
+#include <silkworm/node/backend/ethereum_backend.hpp>
+#include <silkworm/node/common/directories.hpp>
+#include <silkworm/node/common/log.hpp>
+#include <silkworm/node/db/mdbx.hpp>
+#include <silkworm/node/downloader/sentry_client.hpp>
+#include <silkworm/node/rpc/common/util.hpp>
 
 #include "common.hpp"
 

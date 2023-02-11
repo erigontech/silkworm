@@ -18,13 +18,11 @@
 
 #include <CLI/CLI.hpp>
 
-#include <silkworm/common/directories.hpp>
-#include <silkworm/common/endian.hpp>
-#include <silkworm/common/log.hpp>
-#include <silkworm/common/stopwatch.hpp>
-#include <silkworm/db/stages.hpp>
-#include <silkworm/db/tables.hpp>
-#include <silkworm/etl/collector.hpp>
+#include <silkworm/core/common/endian.hpp>
+#include <silkworm/node/common/directories.hpp>
+#include <silkworm/node/common/log.hpp>
+#include <silkworm/node/common/stopwatch.hpp>
+#include <silkworm/node/db/tables.hpp>
 
 using namespace silkworm;
 

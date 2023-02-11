@@ -31,6 +31,7 @@ namespace silkworm::rpc {
 // Exclude gRPC tests from sanitizer builds due to data race warnings inside gRPC library
 #ifndef SILKWORM_SANITIZE
 TEST_CASE("ServerContext", "[silkworm][rpc][server_context]") {
+    test::SetLogVerbosityGuard guard{log::Level::kNone};
     grpc::ServerBuilder builder;
     std::unique_ptr<grpc::ServerCompletionQueue> scq = builder.AddCompletionQueue();
     grpc::ServerCompletionQueue* scq_ptr = scq.get();
@@ -71,7 +72,6 @@ TEST_CASE("ServerContext", "[silkworm][rpc][server_context]") {
     }
 
     SECTION("print") {
-        test::SetLogVerbosityGuard guard{log::Level::kNone};
         CHECK_NOTHROW(test::null_stream() << server_context);
     }
 }
@@ -142,7 +142,7 @@ TEST_CASE("ServerContextPool", "[silkworm][rpc][server_context]") {
         CHECK_NOTHROW(server_context_pool.stop());
     }
 
-    SECTION("join") {
+    SECTION("join", "[.]") {
         ServerContextPool server_context_pool{2};
         server_context_pool.add_context(builder.AddCompletionQueue(), WaitMode::blocking);
         server_context_pool.add_context(builder.AddCompletionQueue(), WaitMode::blocking);

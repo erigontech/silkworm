@@ -18,6 +18,8 @@
 
 #include <catch2/catch.hpp>
 
+#include <silkworm/node/test/log.hpp>
+
 namespace silkworm::rpc {
 
 TEST_CASE("BaseRpc", "[silkworm][rpc][call]") {
@@ -29,6 +31,7 @@ TEST_CASE("BaseRpc", "[silkworm][rpc][call]") {
         void cleanup() override {}
     };
 
+    test::SetLogVerbosityGuard log_guard{log::Level::kNone};
     boost::asio::io_context scheduler;
 
     SECTION("count live instances") {

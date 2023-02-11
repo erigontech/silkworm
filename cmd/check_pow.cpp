@@ -21,8 +21,8 @@
 #include <CLI/CLI.hpp>
 #include <ethash/ethash.hpp>
 
-#include <silkworm/core/common/endian.hpp>
 #include <silkworm/core/chain/config.hpp>
+#include <silkworm/core/common/endian.hpp>
 #include <silkworm/node/common/directories.hpp>
 #include <silkworm/node/common/log.hpp>
 #include <silkworm/node/common/stopwatch.hpp>

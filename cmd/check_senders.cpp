@@ -17,10 +17,10 @@
 #include <CLI/CLI.hpp>
 
 #include <silkworm/buildinfo.h>
-#include <silkworm/core/common/endian.hpp>
-#include <silkworm/core/common/util.hpp>
 #include <silkworm/core/common/assert.hpp>
 #include <silkworm/core/common/base.hpp>
+#include <silkworm/core/common/endian.hpp>
+#include <silkworm/core/common/util.hpp>
 #include <silkworm/node/common/decoding_exception.hpp>
 #include <silkworm/node/common/directories.hpp>
 #include <silkworm/node/common/log.hpp>

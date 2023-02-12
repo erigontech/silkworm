@@ -45,21 +45,37 @@ template <class T>
 static T decode_success(std::string_view encoded_hex) {
     Bytes encoded_bytes{*from_hex(encoded_hex)};
     T res{};
-    REQUIRE(ssz::decode(encoded_bytes, res) == DecodingResult::kOk);
+    REQUIRE(ssz::decode(encoded_bytes, res));
     return res;
 }
 
 template <class T>
-static DecodingResult decode_failure(std::string_view encoded_hex) {
+static DecodingError decode_failure(std::string_view encoded_hex) {
     Bytes encoded_bytes{*from_hex(encoded_hex)};
     T res{};
-    return ssz::decode(encoded_bytes, res);
+    const DecodingResult result = ssz::decode(encoded_bytes, res);
+    REQUIRE(!result);
+    return result.error();
 }
 
 template <class T>
-static DecodingResult decode_failure(ByteView encoded_view) {
+static DecodingError decode_failure(ByteView encoded_view) {
     T res{};
-    return ssz::decode(encoded_view, res);
+    const DecodingResult result = ssz::decode(encoded_view, res);
+    REQUIRE(!result);
+    return result.error();
+}
+
+inline DecodingError decode_dynamic_length_failure(ByteView encoded_view, std::size_t max_length, std::size_t& length) {
+    const DecodingResult result = ssz::decode_dynamic_length(encoded_view, max_length, length);
+    REQUIRE(!result);
+    return result.error();
+}
+
+inline DecodingError decode_dynamic_failure(ByteView encoded_view, std::size_t length, const ssz::DynamicReader& read_one) {
+    const DecodingResult result = ssz::decode_dynamic(encoded_view, length, read_one);
+    REQUIRE(!result);
+    return result.error();
 }
 
 }  // namespace silkworm::test

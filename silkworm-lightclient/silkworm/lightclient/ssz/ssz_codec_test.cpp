@@ -32,9 +32,9 @@ TEST_CASE("uint32_t SSZ") {
         CHECK(test::decode_success<uint32_t>(to_hex(b)) == a);
     }
     SECTION("decoding error") {
-        CHECK(test::decode_failure<uint32_t>("") == DecodingResult::kInputTooShort);
-        CHECK(test::decode_failure<uint32_t>("00") == DecodingResult::kInputTooShort);
-        CHECK(test::decode_failure<uint32_t>("0xFFFFFF") == DecodingResult::kInputTooShort);
+        CHECK(test::decode_failure<uint32_t>("") == DecodingError::kInputTooShort);
+        CHECK(test::decode_failure<uint32_t>("00") == DecodingError::kInputTooShort);
+        CHECK(test::decode_failure<uint32_t>("0xFFFFFF") == DecodingError::kInputTooShort);
     }
 }
 
@@ -47,9 +47,9 @@ TEST_CASE("uint64_t SSZ") {
         CHECK(test::decode_success<uint64_t>(to_hex(b)) == a);
     }
     SECTION("decoding error") {
-        CHECK(test::decode_failure<uint64_t>("") == DecodingResult::kInputTooShort);
-        CHECK(test::decode_failure<uint64_t>("00") == DecodingResult::kInputTooShort);
-        CHECK(test::decode_failure<uint64_t>("0xFFFFFFFFFFFFFF") == DecodingResult::kInputTooShort);
+        CHECK(test::decode_failure<uint64_t>("") == DecodingError::kInputTooShort);
+        CHECK(test::decode_failure<uint64_t>("00") == DecodingError::kInputTooShort);
+        CHECK(test::decode_failure<uint64_t>("0xFFFFFFFFFFFFFF") == DecodingError::kInputTooShort);
     }
 }
 
@@ -62,10 +62,10 @@ TEST_CASE("evmc::address SSZ") {
         CHECK(test::decode_success<evmc::address>(to_hex(b)) == a);
     }
     SECTION("decoding error") {
-        CHECK(test::decode_failure<evmc::address>("") == DecodingResult::kInputTooShort);
-        CHECK(test::decode_failure<evmc::address>("00") == DecodingResult::kInputTooShort);
+        CHECK(test::decode_failure<evmc::address>("") == DecodingError::kInputTooShort);
+        CHECK(test::decode_failure<evmc::address>("00") == DecodingError::kInputTooShort);
         CHECK(test::decode_failure<evmc::address>(
-                  "0xFF000000000000000000000000000000000000") == DecodingResult::kInputTooShort);
+                  "0xFF000000000000000000000000000000000000") == DecodingError::kInputTooShort);
     }
 }
 
@@ -78,10 +78,10 @@ TEST_CASE("evmc::bytes32 SSZ") {
         CHECK(test::decode_success<evmc::bytes32>(to_hex(b)) == a);
     }
     SECTION("decoding error") {
-        CHECK(test::decode_failure<evmc::bytes32>("") == DecodingResult::kInputTooShort);
-        CHECK(test::decode_failure<evmc::bytes32>("00") == DecodingResult::kInputTooShort);
+        CHECK(test::decode_failure<evmc::bytes32>("") == DecodingError::kInputTooShort);
+        CHECK(test::decode_failure<evmc::bytes32>("00") == DecodingError::kInputTooShort);
         CHECK(test::decode_failure<evmc::bytes32>(
-                  "0xFF000000000000000000EE00000000000000000000EE000000000000000000") == DecodingResult::kInputTooShort);
+                  "0xFF000000000000000000EE00000000000000000000EE000000000000000000") == DecodingError::kInputTooShort);
     }
 }
 
@@ -90,50 +90,50 @@ TEST_CASE("ssz::decode_dynamic_length") {
 
     SECTION("zero buffer") {
         std::size_t length{0};
-        CHECK(ssz::decode_dynamic_length(Bytes{}, kMaxLength, length) == DecodingResult::kOk);
+        CHECK(ssz::decode_dynamic_length(Bytes{}, kMaxLength, length));
         CHECK(length == 0);
     }
     SECTION("buffer too short") {
         std::size_t length{0};
-        CHECK(ssz::decode_dynamic_length(*from_hex("0C"), kMaxLength, length) == DecodingResult::kInputTooShort);
-        CHECK(ssz::decode_dynamic_length(*from_hex("0C00"), kMaxLength, length) == DecodingResult::kInputTooShort);
-        CHECK(ssz::decode_dynamic_length(*from_hex("0C0000"), kMaxLength, length) == DecodingResult::kInputTooShort);
+        CHECK(test::decode_dynamic_length_failure(*from_hex("0C"), kMaxLength, length) == DecodingError::kInputTooShort);
+        CHECK(test::decode_dynamic_length_failure(*from_hex("0C00"), kMaxLength, length) == DecodingError::kInputTooShort);
+        CHECK(test::decode_dynamic_length_failure(*from_hex("0C0000"), kMaxLength, length) == DecodingError::kInputTooShort);
     }
     SECTION("invalid offset") {
         std::size_t length{0};
-        CHECK(ssz::decode_dynamic_length(*from_hex("05000000"), kMaxLength, length) == DecodingResult::kUnexpectedLength);
+        CHECK(test::decode_dynamic_length_failure(*from_hex("05000000"), kMaxLength, length) == DecodingError::kUnexpectedLength);
     }
     SECTION("invalid offset") {
         std::size_t length{0};
-        CHECK(ssz::decode_dynamic_length(*from_hex("32000000"), kMaxLength, length) == DecodingResult::kUnexpectedLength);
+        CHECK(test::decode_dynamic_length_failure(*from_hex("32000000"), kMaxLength, length) == DecodingError::kUnexpectedLength);
     }
     SECTION("OK") {
         std::size_t length{0};
-        CHECK(ssz::decode_dynamic_length(*from_hex("0C000000"), kMaxLength, length) == DecodingResult::kOk);
+        CHECK(ssz::decode_dynamic_length(*from_hex("0C000000"), kMaxLength, length));
         CHECK(length == kMaxLength / kBytesPerLengthOffset);
     }
 }
 
 TEST_CASE("ssz::decode_dynamic") {
     const DynamicReader kEmptyReader{};
-    const DynamicReader kNopReader = [](std::size_t, ByteView) { return DecodingResult::kOk; };
+    const DynamicReader kNopReader = [](std::size_t, ByteView) -> DecodingResult { return {}; };
 
     SECTION("zero length") {
-        CHECK(ssz::decode_dynamic(Bytes{}, 0, kEmptyReader) == DecodingResult::kOk);
+        CHECK(ssz::decode_dynamic(Bytes{}, 0, kEmptyReader));
     }
     SECTION("buffer too short") {
-        CHECK(ssz::decode_dynamic(*from_hex("0C"), 1, kEmptyReader) == DecodingResult::kInputTooShort);
-        CHECK(ssz::decode_dynamic(*from_hex("0C00"), 1, kEmptyReader) == DecodingResult::kInputTooShort);
-        CHECK(ssz::decode_dynamic(*from_hex("0C0000"), 1, kEmptyReader) == DecodingResult::kInputTooShort);
+        CHECK(test::decode_dynamic_failure(*from_hex("0C"), 1, kEmptyReader) == DecodingError::kInputTooShort);
+        CHECK(test::decode_dynamic_failure(*from_hex("0C00"), 1, kEmptyReader) == DecodingError::kInputTooShort);
+        CHECK(test::decode_dynamic_failure(*from_hex("0C0000"), 1, kEmptyReader) == DecodingError::kInputTooShort);
     }
     SECTION("invalid end offset") {
-        CHECK(ssz::decode_dynamic(*from_hex("0C00000000000000"), 1, kEmptyReader) == DecodingResult::kUnexpectedLength);
-        CHECK(ssz::decode_dynamic(*from_hex("0C0000000D000000"), 2, kEmptyReader) == DecodingResult::kUnexpectedLength);
-        CHECK(ssz::decode_dynamic(*from_hex("0C0000000D000000FFFFFFFF"), 2, kEmptyReader) == DecodingResult::kUnexpectedLength);
+        CHECK(test::decode_dynamic_failure(*from_hex("0C00000000000000"), 1, kEmptyReader) == DecodingError::kUnexpectedLength);
+        CHECK(test::decode_dynamic_failure(*from_hex("0C0000000D000000"), 2, kEmptyReader) == DecodingError::kUnexpectedLength);
+        CHECK(test::decode_dynamic_failure(*from_hex("0C0000000D000000FFFFFFFF"), 2, kEmptyReader) == DecodingError::kUnexpectedLength);
     }
     SECTION("OK") {
-        CHECK(ssz::decode_dynamic(*from_hex("0C0000000C000000FFFFFFFF"), 2, kNopReader) == DecodingResult::kOk);
-        CHECK(ssz::decode_dynamic(*from_hex("0C0000000D000000FFFFFFFFFF"), 2, kNopReader) == DecodingResult::kOk);
+        CHECK(ssz::decode_dynamic(*from_hex("0C0000000C000000FFFFFFFF"), 2, kNopReader));
+        CHECK(ssz::decode_dynamic(*from_hex("0C0000000D000000FFFFFFFFFF"), 2, kNopReader));
     }
 }
 

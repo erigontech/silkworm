@@ -18,6 +18,8 @@
 
 #include <bit>
 
+#include <tl/expected.hpp>
+
 namespace silkworm::cl {
 
 bool operator==(const Eth1Data& lhs, const Eth1Data& rhs) {
@@ -243,27 +245,27 @@ EncodingResult encode(cl::Eth1Data& from, Bytes& to) noexcept {
 template <>
 DecodingResult decode(ByteView from, cl::Eth1Data& to) noexcept {
     if (from.size() != cl::Eth1Data::kSize) {
-        return DecodingResult::kUnexpectedLength;
+        return tl::unexpected(DecodingError::kUnexpectedLength);
     }
 
     std::size_t pos{0};
     ByteView encoded_root{from.substr(pos, kHashLength)};
-    if (auto err{ssz::decode(encoded_root, to.root)}; err != DecodingResult::kOk) {
-        return err;
+    if (auto res{ssz::decode(encoded_root, to.root)}; !res) {
+        return tl::unexpected(res.error());
     }
 
     pos += kHashLength;
     ByteView encoded_deposit_count{from.substr(pos, sizeof(uint64_t))};
-    if (auto err{ssz::decode(encoded_deposit_count, to.deposit_count)}; err != DecodingResult::kOk) {
-        return err;
+    if (auto res{ssz::decode(encoded_deposit_count, to.deposit_count)}; !res) {
+        return tl::unexpected(res.error());
     }
 
     pos += sizeof(uint64_t);
     ByteView encoded_block_hash{from.substr(pos, kHashLength)};
-    if (auto err{ssz::decode(encoded_block_hash, to.block_hash)}; err != DecodingResult::kOk) {
-        return err;
+    if (auto res{ssz::decode(encoded_block_hash, to.block_hash)}; !res) {
+        return tl::unexpected(res.error());
     }
-    return DecodingResult::kOk;
+    return {};
 }
 
 template <>
@@ -276,21 +278,21 @@ EncodingResult encode(cl::Checkpoint& from, Bytes& to) noexcept {
 template <>
 DecodingResult decode(ByteView from, cl::Checkpoint& to) noexcept {
     if (from.size() != cl::Checkpoint::kSize) {
-        return DecodingResult::kUnexpectedLength;
+        return tl::unexpected(DecodingError::kUnexpectedLength);
     }
 
     std::size_t pos{0};
     ByteView encoded_epoch{from.substr(pos, sizeof(uint64_t))};
-    if (auto err{ssz::decode(encoded_epoch, to.epoch)}; err != DecodingResult::kOk) {
-        return err;
+    if (auto res{ssz::decode(encoded_epoch, to.epoch)}; !res) {
+        return tl::unexpected(res.error());
     }
 
     pos += sizeof(uint64_t);
     ByteView encoded_root{from.substr(pos, kHashLength)};
-    if (auto err{ssz::decode(encoded_root, to.root)}; err != DecodingResult::kOk) {
-        return err;
+    if (auto res{ssz::decode(encoded_root, to.root)}; !res) {
+        return tl::unexpected(res.error());
     }
-    return DecodingResult::kOk;
+    return {};
 }
 
 template <>
@@ -312,36 +314,36 @@ EncodingResult encode(cl::AttestationData& from, Bytes& to) noexcept {
 template <>
 DecodingResult decode(ByteView from, cl::AttestationData& to) noexcept {
     if (from.size() != cl::AttestationData::kSize) {
-        return DecodingResult::kUnexpectedLength;
+        return tl::unexpected(DecodingError::kUnexpectedLength);
     }
 
     std::size_t pos{0};
-    if (auto err{ssz::decode(from.substr(pos, sizeof(uint64_t)), to.slot)}; err != DecodingResult::kOk) {
-        return err;
+    if (auto res{ssz::decode(from.substr(pos, sizeof(uint64_t)), to.slot)}; !res) {
+        return tl::unexpected(res.error());
     }
 
     pos += sizeof(uint64_t);
-    if (auto err{ssz::decode(from.substr(pos, sizeof(uint64_t)), to.index)}; err != DecodingResult::kOk) {
-        return err;
+    if (auto res{ssz::decode(from.substr(pos, sizeof(uint64_t)), to.index)}; !res) {
+        return tl::unexpected(res.error());
     }
 
     pos += sizeof(uint64_t);
-    if (auto err{ssz::decode(from.substr(pos, kHashLength), to.beacon_block_hash)}; err != DecodingResult::kOk) {
-        return err;
+    if (auto res{ssz::decode(from.substr(pos, kHashLength), to.beacon_block_hash)}; !res) {
+        return tl::unexpected(res.error());
     }
 
     pos += kHashLength;
     to.source = std::make_shared<cl::Checkpoint>();
-    if (auto err{ssz::decode(from.substr(pos, cl::Checkpoint::kSize), *to.source)}; err != DecodingResult::kOk) {
-        return err;
+    if (auto res{ssz::decode(from.substr(pos, cl::Checkpoint::kSize), *to.source)}; !res) {
+        return tl::unexpected(res.error());
     }
 
     pos += cl::Checkpoint::kSize;
     to.target = std::make_shared<cl::Checkpoint>();
-    if (auto err{ssz::decode(from.substr(pos, cl::Checkpoint::kSize), *to.target)}; err != DecodingResult::kOk) {
-        return err;
+    if (auto res{ssz::decode(from.substr(pos, cl::Checkpoint::kSize), *to.target)}; !res) {
+        return tl::unexpected(res.error());
     }
-    return DecodingResult::kOk;
+    return {};
 }
 
 template <>
@@ -357,34 +359,34 @@ EncodingResult encode(cl::BeaconBlockHeader& from, Bytes& to) noexcept {
 template <>
 DecodingResult decode(ByteView from, cl::BeaconBlockHeader& to) noexcept {
     if (from.size() != cl::BeaconBlockHeader::kSize) {
-        return DecodingResult::kUnexpectedLength;
+        return tl::unexpected(DecodingError::kUnexpectedLength);
     }
 
     std::size_t pos{0};
-    if (auto err{ssz::decode(from.substr(pos, sizeof(uint64_t)), to.slot)}; err != DecodingResult::kOk) {
-        return err;
+    if (auto res{ssz::decode(from.substr(pos, sizeof(uint64_t)), to.slot)}; !res) {
+        return tl::unexpected(res.error());
     }
 
     pos += sizeof(uint64_t);
-    if (auto err{ssz::decode(from.substr(pos, sizeof(uint64_t)), to.proposer_index)}; err != DecodingResult::kOk) {
-        return err;
+    if (auto res{ssz::decode(from.substr(pos, sizeof(uint64_t)), to.proposer_index)}; !res) {
+        return tl::unexpected(res.error());
     }
 
     pos += sizeof(uint64_t);
-    if (auto err{ssz::decode(from.substr(pos, kHashLength), to.parent_root)}; err != DecodingResult::kOk) {
-        return err;
+    if (auto res{ssz::decode(from.substr(pos, kHashLength), to.parent_root)}; !res) {
+        return tl::unexpected(res.error());
     }
 
     pos += kHashLength;
-    if (auto err{ssz::decode(from.substr(pos, kHashLength), to.root)}; err != DecodingResult::kOk) {
-        return err;
+    if (auto res{ssz::decode(from.substr(pos, kHashLength), to.root)}; !res) {
+        return tl::unexpected(res.error());
     }
 
     pos += kHashLength;
-    if (auto err{ssz::decode(from.substr(pos, kHashLength), to.body_root)}; err != DecodingResult::kOk) {
-        return err;
+    if (auto res{ssz::decode(from.substr(pos, kHashLength), to.body_root)}; !res) {
+        return tl::unexpected(res.error());
     }
-    return DecodingResult::kOk;
+    return {};
 }
 
 template <>
@@ -400,20 +402,20 @@ EncodingResult encode(cl::SignedBeaconBlockHeader& from, Bytes& to) noexcept {
 template <>
 DecodingResult decode(ByteView from, cl::SignedBeaconBlockHeader& to) noexcept {
     if (from.size() != cl::SignedBeaconBlockHeader::kSize) {
-        return DecodingResult::kUnexpectedLength;
+        return tl::unexpected(DecodingError::kUnexpectedLength);
     }
 
     std::size_t pos{0};
     to.header = std::make_shared<cl::BeaconBlockHeader>();
-    if (auto err{ssz::decode(from.substr(pos, cl::BeaconBlockHeader::kSize), *to.header)}; err != DecodingResult::kOk) {
-        return err;
+    if (auto res{ssz::decode(from.substr(pos, cl::BeaconBlockHeader::kSize), *to.header)}; !res) {
+        return tl::unexpected(res.error());
     }
 
     pos += cl::BeaconBlockHeader::kSize;
-    if (auto err{ssz::decode(from.substr(pos, cl::kSignatureSize), to.signature)}; err != DecodingResult::kOk) {
-        return err;
+    if (auto res{ssz::decode(from.substr(pos, cl::kSignatureSize), to.signature)}; !res) {
+        return tl::unexpected(res.error());
     }
-    return DecodingResult::kOk;
+    return {};
 }
 
 template <>
@@ -438,42 +440,42 @@ template <>
 DecodingResult decode(ByteView from, cl::IndexedAttestation& to) noexcept {
     const auto size = from.size();
     if (size < cl::IndexedAttestation::kMinSize) {
-        return DecodingResult::kInputTooShort;
+        return tl::unexpected(DecodingError::kInputTooShort);
     }
 
     std::size_t pos{0};
     uint32_t offset0{0};
-    if (auto err{ssz::decode_offset(from.substr(pos, sizeof(uint32_t)), offset0)}; err != DecodingResult::kOk) {
-        return err;
+    if (auto res{ssz::decode_offset(from.substr(pos, sizeof(uint32_t)), offset0)}; !res) {
+        return tl::unexpected(res.error());
     }
     if (offset0 < cl::IndexedAttestation::kMinSize || offset0 > size) {
-        return DecodingResult::kUnexpectedLength;
+        return tl::unexpected(DecodingError::kUnexpectedLength);
     }
 
     pos += sizeof(uint32_t);
     to.data = std::make_shared<cl::AttestationData>();
-    if (auto err{ssz::decode(from.substr(pos, cl::AttestationData::kSize), *to.data)}; err != DecodingResult::kOk) {
-        return err;
+    if (auto res{ssz::decode(from.substr(pos, cl::AttestationData::kSize), *to.data)}; !res) {
+        return tl::unexpected(res.error());
     }
 
     pos += cl::AttestationData::kSize;
-    if (auto err{ssz::decode(from.substr(pos, cl::kSignatureSize), to.signature)}; err != DecodingResult::kOk) {
-        return err;
+    if (auto res{ssz::decode(from.substr(pos, cl::kSignatureSize), to.signature)}; !res) {
+        return tl::unexpected(res.error());
     }
     const auto num_attesting_indices = (size - offset0) / CHAR_BIT;
     if (num_attesting_indices > cl::IndexedAttestation::kMaxAttestingIndices) {
-        return DecodingResult::kUnexpectedLength;
+        return tl::unexpected(DecodingError::kUnexpectedLength);
     }
 
     pos += cl::kSignatureSize;
     to.attesting_indices.resize(num_attesting_indices);
     for (std::size_t i{0}; i < num_attesting_indices; ++i) {
-        if (auto err{ssz::decode(from.substr(pos, sizeof(uint64_t)), to.attesting_indices[i])}; err != DecodingResult::kOk) {
-            return err;
+        if (auto res{ssz::decode(from.substr(pos, sizeof(uint64_t)), to.attesting_indices[i])}; !res) {
+            return tl::unexpected(res.error());
         }
         pos += sizeof(uint64_t);
     }
-    return DecodingResult::kOk;
+    return {};
 }
 
 template <>
@@ -492,22 +494,22 @@ EncodingResult encode(cl::ProposerSlashing& from, Bytes& to) noexcept {
 template <>
 DecodingResult decode(ByteView from, cl::ProposerSlashing& to) noexcept {
     if (from.size() != cl::ProposerSlashing::kSize) {
-        return DecodingResult::kUnexpectedLength;
+        return tl::unexpected(DecodingError::kUnexpectedLength);
     }
 
     std::size_t pos{0};
     to.header1 = std::make_shared<cl::SignedBeaconBlockHeader>();
-    if (auto err{ssz::decode(from.substr(pos, cl::SignedBeaconBlockHeader::kSize), *to.header1)}; err != DecodingResult::kOk) {
-        return err;
+    if (auto res{ssz::decode(from.substr(pos, cl::SignedBeaconBlockHeader::kSize), *to.header1)}; !res) {
+        return tl::unexpected(res.error());
     }
 
     pos += cl::SignedBeaconBlockHeader::kSize;
     to.header2 = std::make_shared<cl::SignedBeaconBlockHeader>();
-    if (auto err{ssz::decode(from.substr(pos, cl::SignedBeaconBlockHeader::kSize), *to.header2)}; err != DecodingResult::kOk) {
-        return err;
+    if (auto res{ssz::decode(from.substr(pos, cl::SignedBeaconBlockHeader::kSize), *to.header2)}; !res) {
+        return tl::unexpected(res.error());
     }
 
-    return DecodingResult::kOk;
+    return {};
 }
 
 template <>
@@ -534,43 +536,43 @@ template <>
 DecodingResult decode(ByteView from, cl::AttesterSlashing& to) noexcept {
     const auto size = from.size();
     if (size < cl::AttesterSlashing::kMinSize) {
-        return DecodingResult::kInputTooShort;
+        return tl::unexpected(DecodingError::kInputTooShort);
     }
     if (size > cl::AttesterSlashing::kMaxSize) {
-        return DecodingResult::kUnexpectedLength;
+        return tl::unexpected(DecodingError::kUnexpectedLength);
     }
 
     std::size_t pos{0};
     uint32_t offset0{0};
-    if (auto err{ssz::decode_offset(from.substr(pos, sizeof(uint32_t)), offset0)}; err != DecodingResult::kOk) {
-        return err;
+    if (auto res{ssz::decode_offset(from.substr(pos, sizeof(uint32_t)), offset0)}; !res) {
+        return tl::unexpected(res.error());
     }
     if (offset0 < cl::AttesterSlashing::kMinSize || offset0 > size) {
-        return DecodingResult::kUnexpectedLength;
+        return tl::unexpected(DecodingError::kUnexpectedLength);
     }
 
     pos += sizeof(uint32_t);
     uint32_t offset1{0};
-    if (auto err{ssz::decode_offset(from.substr(pos, sizeof(uint32_t)), offset1)}; err != DecodingResult::kOk) {
-        return err;
+    if (auto res{ssz::decode_offset(from.substr(pos, sizeof(uint32_t)), offset1)}; !res) {
+        return tl::unexpected(res.error());
     }
     if (offset1 < offset0 || offset1 > size) {
-        return DecodingResult::kUnexpectedLength;
+        return tl::unexpected(DecodingError::kUnexpectedLength);
     }
 
     pos += sizeof(uint32_t);
     to.attestation1 = std::make_shared<cl::IndexedAttestation>();
-    if (auto err{ssz::decode(from.substr(pos, offset1 - offset0), *to.attestation1)}; err != DecodingResult::kOk) {
-        return err;
+    if (auto res{ssz::decode(from.substr(pos, offset1 - offset0), *to.attestation1)}; !res) {
+        return tl::unexpected(res.error());
     }
 
     pos += offset1 - offset0;
     to.attestation2 = std::make_shared<cl::IndexedAttestation>();
-    if (auto err{ssz::decode(from.substr(pos, size - offset1), *to.attestation2)}; err != DecodingResult::kOk) {
-        return err;
+    if (auto res{ssz::decode(from.substr(pos, size - offset1), *to.attestation2)}; !res) {
+        return tl::unexpected(res.error());
     }
 
-    return DecodingResult::kOk;
+    return {};
 }
 
 template <>
@@ -594,36 +596,36 @@ template <>
 DecodingResult decode(ByteView from, cl::Attestation& to) noexcept {
     const auto size = from.size();
     if (size < cl::Attestation::kMinSize) {
-        return DecodingResult::kInputTooShort;
+        return tl::unexpected(DecodingError::kInputTooShort);
     }
     if (size > cl::Attestation::kMaxSize) {
-        return DecodingResult::kUnexpectedLength;
+        return tl::unexpected(DecodingError::kUnexpectedLength);
     }
 
     std::size_t pos{0};
     uint32_t offset0{0};
-    if (auto err{ssz::decode_offset(from.substr(pos, sizeof(uint32_t)), offset0)}; err != DecodingResult::kOk) {
-        return err;
+    if (auto res{ssz::decode_offset(from.substr(pos, sizeof(uint32_t)), offset0)}; !res) {
+        return tl::unexpected(res.error());
     }
     if (offset0 < cl::Attestation::kMinSize || offset0 > size) {
-        return DecodingResult::kUnexpectedLength;
+        return tl::unexpected(DecodingError::kUnexpectedLength);
     }
 
     pos += sizeof(uint32_t);
     to.data = std::make_shared<cl::AttestationData>();
-    if (auto err{ssz::decode(from.substr(pos, cl::AttestationData::kSize), *to.data)}; err != DecodingResult::kOk) {
-        return err;
+    if (auto res{ssz::decode(from.substr(pos, cl::AttestationData::kSize), *to.data)}; !res) {
+        return tl::unexpected(res.error());
     }
 
     pos += cl::AttestationData::kSize;
-    if (auto err{ssz::decode(from.substr(pos, cl::kSignatureSize), to.signature)}; err != DecodingResult::kOk) {
-        return err;
+    if (auto res{ssz::decode(from.substr(pos, cl::kSignatureSize), to.signature)}; !res) {
+        return tl::unexpected(res.error());
     }
 
     pos += cl::kSignatureSize;
     ByteView buffer = from.substr(pos);
-    if (auto err{ssz::validate_bitlist(buffer, cl::Attestation::kMaxAggregationBits)}; err != DecodingResult::kOk) {
-        return err;
+    if (auto res{ssz::validate_bitlist(buffer, cl::Attestation::kMaxAggregationBits)}; !res) {
+        return tl::unexpected(res.error());
     }
 
     if (to.aggregration_bits.capacity() == 0) {
@@ -631,7 +633,7 @@ DecodingResult decode(ByteView from, cl::Attestation& to) noexcept {
     }
     to.aggregration_bits += buffer;
 
-    return DecodingResult::kOk;
+    return {};
 }
 
 template <>
@@ -646,30 +648,30 @@ EncodingResult encode(cl::DepositData& from, Bytes& to) noexcept {
 template <>
 DecodingResult decode(ByteView from, cl::DepositData& to) noexcept {
     if (from.size() != cl::DepositData::kSize) {
-        return DecodingResult::kUnexpectedLength;
+        return tl::unexpected(DecodingError::kUnexpectedLength);
     }
 
     std::size_t pos{0};
-    if (auto err{ssz::decode(from.substr(pos, cl::kPublicKeySize), to.public_key)}; err != DecodingResult::kOk) {
-        return err;
+    if (auto res{ssz::decode(from.substr(pos, cl::kPublicKeySize), to.public_key)}; !res) {
+        return tl::unexpected(res.error());
     }
 
     pos += cl::kPublicKeySize;
-    if (auto err{ssz::decode(from.substr(pos, cl::kCredentialsSize), to.withdrawal_credentials)}; err != DecodingResult::kOk) {
-        return err;
+    if (auto res{ssz::decode(from.substr(pos, cl::kCredentialsSize), to.withdrawal_credentials)}; !res) {
+        return tl::unexpected(res.error());
     }
 
     pos += cl::kCredentialsSize;
-    if (auto err{ssz::decode(from.substr(pos, sizeof(uint64_t)), to.amount)}; err != DecodingResult::kOk) {
-        return err;
+    if (auto res{ssz::decode(from.substr(pos, sizeof(uint64_t)), to.amount)}; !res) {
+        return tl::unexpected(res.error());
     }
 
     pos += sizeof(uint64_t);
-    if (auto err{ssz::decode(from.substr(pos, cl::kSignatureSize), to.signature)}; err != DecodingResult::kOk) {
-        return err;
+    if (auto res{ssz::decode(from.substr(pos, cl::kSignatureSize), to.signature)}; !res) {
+        return tl::unexpected(res.error());
     }
 
-    return DecodingResult::kOk;
+    return {};
 }
 
 template <>
@@ -687,23 +689,23 @@ EncodingResult encode(cl::Deposit& from, Bytes& to) noexcept {
 template <>
 DecodingResult decode(ByteView from, cl::Deposit& to) noexcept {
     if (from.size() != cl::Deposit::kSize) {
-        return DecodingResult::kUnexpectedLength;
+        return tl::unexpected(DecodingError::kUnexpectedLength);
     }
 
     std::size_t pos{0};
     for (std::size_t i{0}; i < cl::kProofHashCount; ++i) {
-        if (auto err{ssz::decode(from.substr(pos, kHashLength), to.proof[i])}; err != DecodingResult::kOk) {
-            return err;
+        if (auto res{ssz::decode(from.substr(pos, kHashLength), to.proof[i])}; !res) {
+            return tl::unexpected(res.error());
         }
         pos += kHashLength;
     }
 
     to.data = std::make_shared<cl::DepositData>();
-    if (auto err{ssz::decode(from.substr(pos, cl::DepositData::kSize), *to.data)}; err != DecodingResult::kOk) {
-        return err;
+    if (auto res{ssz::decode(from.substr(pos, cl::DepositData::kSize), *to.data)}; !res) {
+        return tl::unexpected(res.error());
     }
 
-    return DecodingResult::kOk;
+    return {};
 }
 
 template <>
@@ -716,20 +718,20 @@ EncodingResult encode(cl::VoluntaryExit& from, Bytes& to) noexcept {
 template <>
 DecodingResult decode(ByteView from, cl::VoluntaryExit& to) noexcept {
     if (from.size() != cl::VoluntaryExit::kSize) {
-        return DecodingResult::kUnexpectedLength;
+        return tl::unexpected(DecodingError::kUnexpectedLength);
     }
 
     std::size_t pos{0};
-    if (auto err{ssz::decode(from.substr(pos, sizeof(uint64_t)), to.epoch)}; err != DecodingResult::kOk) {
-        return err;
+    if (auto res{ssz::decode(from.substr(pos, sizeof(uint64_t)), to.epoch)}; !res) {
+        return tl::unexpected(res.error());
     }
 
     pos += sizeof(uint64_t);
-    if (auto err{ssz::decode(from.substr(pos, sizeof(uint64_t)), to.validator_index)}; err != DecodingResult::kOk) {
-        return err;
+    if (auto res{ssz::decode(from.substr(pos, sizeof(uint64_t)), to.validator_index)}; !res) {
+        return tl::unexpected(res.error());
     }
 
-    return DecodingResult::kOk;
+    return {};
 }
 
 template <>
@@ -745,21 +747,21 @@ EncodingResult encode(cl::SignedVoluntaryExit& from, Bytes& to) noexcept {
 template <>
 DecodingResult decode(ByteView from, cl::SignedVoluntaryExit& to) noexcept {
     if (from.size() != cl::SignedVoluntaryExit::kSize) {
-        return DecodingResult::kUnexpectedLength;
+        return tl::unexpected(DecodingError::kUnexpectedLength);
     }
 
     std::size_t pos{0};
     to.voluntary_exit = std::make_shared<cl::VoluntaryExit>();
-    if (auto err{ssz::decode(from.substr(pos, cl::VoluntaryExit::kSize), *to.voluntary_exit)}; err != DecodingResult::kOk) {
-        return err;
+    if (auto res{ssz::decode(from.substr(pos, cl::VoluntaryExit::kSize), *to.voluntary_exit)}; !res) {
+        return tl::unexpected(res.error());
     }
 
     pos += cl::VoluntaryExit::kSize;
-    if (auto err{ssz::decode(from.substr(pos, cl::kSignatureSize), to.signature)}; err != DecodingResult::kOk) {
-        return err;
+    if (auto res{ssz::decode(from.substr(pos, cl::kSignatureSize), to.signature)}; !res) {
+        return tl::unexpected(res.error());
     }
 
-    return DecodingResult::kOk;
+    return {};
 }
 
 template <>
@@ -772,20 +774,20 @@ EncodingResult encode(cl::SyncAggregate& from, Bytes& to) noexcept {
 template <>
 DecodingResult decode(ByteView from, cl::SyncAggregate& to) noexcept {
     if (from.size() != cl::SyncAggregate::kSize) {
-        return DecodingResult::kUnexpectedLength;
+        return tl::unexpected(DecodingError::kUnexpectedLength);
     }
 
     std::size_t pos{0};
-    if (auto err{ssz::decode(from.substr(pos, cl::kCommiteeBitsSize), to.commitee_bits)}; err != DecodingResult::kOk) {
-        return err;
+    if (auto res{ssz::decode(from.substr(pos, cl::kCommiteeBitsSize), to.commitee_bits)}; !res) {
+        return tl::unexpected(res.error());
     }
 
     pos += cl::kCommiteeBitsSize;
-    if (auto err{ssz::decode(from.substr(pos, cl::kSignatureSize), to.commitee_signature)}; err != DecodingResult::kOk) {
-        return err;
+    if (auto res{ssz::decode(from.substr(pos, cl::kSignatureSize), to.commitee_signature)}; !res) {
+        return tl::unexpected(res.error());
     }
 
-    return DecodingResult::kOk;
+    return {};
 }
 
 template <>
@@ -837,102 +839,102 @@ template <>
 DecodingResult decode(ByteView from, cl::ExecutionPayload& to) noexcept {
     const auto size = from.size();
     if (size < cl::ExecutionPayload::kMinSize) {
-        return DecodingResult::kInputTooShort;
+        return tl::unexpected(DecodingError::kInputTooShort);
     }
     if (size > cl::ExecutionPayload::kMaxSize) {
-        return DecodingResult::kUnexpectedLength;
+        return tl::unexpected(DecodingError::kUnexpectedLength);
     }
 
     // Field (0) 'parent_hash'
     std::size_t pos{0};
-    if (auto err{ssz::decode(from.substr(pos, kHashLength), to.parent_hash)}; err != DecodingResult::kOk) {
-        return err;
+    if (auto res{ssz::decode(from.substr(pos, kHashLength), to.parent_hash)}; !res) {
+        return tl::unexpected(res.error());
     }
     pos += kHashLength;
 
     // Field (1) 'fee_recipient'
-    if (auto err{ssz::decode(from.substr(pos, kAddressLength), to.fee_recipient)}; err != DecodingResult::kOk) {
-        return err;
+    if (auto res{ssz::decode(from.substr(pos, kAddressLength), to.fee_recipient)}; !res) {
+        return tl::unexpected(res.error());
     }
     pos += kAddressLength;
 
     // Field (2) 'state_root'
-    if (auto err{ssz::decode(from.substr(pos, kHashLength), to.state_root)}; err != DecodingResult::kOk) {
-        return err;
+    if (auto res{ssz::decode(from.substr(pos, kHashLength), to.state_root)}; !res) {
+        return tl::unexpected(res.error());
     }
     pos += kHashLength;
 
     // Field (3) 'receipts_root'
-    if (auto err{ssz::decode(from.substr(pos, kHashLength), to.receipts_root)}; err != DecodingResult::kOk) {
-        return err;
+    if (auto res{ssz::decode(from.substr(pos, kHashLength), to.receipts_root)}; !res) {
+        return tl::unexpected(res.error());
     }
     pos += kHashLength;
 
     // Field (4) 'logs_bloom'
-    if (auto err{ssz::decode(from.substr(pos, cl::kLogsBloomSize), to.logs_bloom)}; err != DecodingResult::kOk) {
-        return err;
+    if (auto res{ssz::decode(from.substr(pos, cl::kLogsBloomSize), to.logs_bloom)}; !res) {
+        return tl::unexpected(res.error());
     }
     pos += cl::kLogsBloomSize;
 
     // Field (5) 'prev_randao'
-    if (auto err{ssz::decode(from.substr(pos, kHashLength), to.prev_randao)}; err != DecodingResult::kOk) {
-        return err;
+    if (auto res{ssz::decode(from.substr(pos, kHashLength), to.prev_randao)}; !res) {
+        return tl::unexpected(res.error());
     }
     pos += kHashLength;
 
     // Field (6) 'block_number'
-    if (auto err{ssz::decode(from.substr(pos, sizeof(uint64_t)), to.block_number)}; err != DecodingResult::kOk) {
-        return err;
+    if (auto res{ssz::decode(from.substr(pos, sizeof(uint64_t)), to.block_number)}; !res) {
+        return tl::unexpected(res.error());
     }
     pos += sizeof(uint64_t);
 
     // Field (7) 'gas_limit'
-    if (auto err{ssz::decode(from.substr(pos, sizeof(uint64_t)), to.gas_limit)}; err != DecodingResult::kOk) {
-        return err;
+    if (auto res{ssz::decode(from.substr(pos, sizeof(uint64_t)), to.gas_limit)}; !res) {
+        return tl::unexpected(res.error());
     }
     pos += sizeof(uint64_t);
 
     // Field (8) 'gas_used'
-    if (auto err{ssz::decode(from.substr(pos, sizeof(uint64_t)), to.gas_used)}; err != DecodingResult::kOk) {
-        return err;
+    if (auto res{ssz::decode(from.substr(pos, sizeof(uint64_t)), to.gas_used)}; !res) {
+        return tl::unexpected(res.error());
     }
     pos += sizeof(uint64_t);
 
     // Field (9) 'timestamp'
-    if (auto err{ssz::decode(from.substr(pos, sizeof(uint64_t)), to.timestamp)}; err != DecodingResult::kOk) {
-        return err;
+    if (auto res{ssz::decode(from.substr(pos, sizeof(uint64_t)), to.timestamp)}; !res) {
+        return tl::unexpected(res.error());
     }
     pos += sizeof(uint64_t);
 
     // Offset (10) 'extra_data'
     uint32_t offset10{0};
-    if (auto err{ssz::decode_offset(from.substr(pos, sizeof(uint32_t)), offset10)}; err != DecodingResult::kOk) {
-        return err;
+    if (auto res{ssz::decode_offset(from.substr(pos, sizeof(uint32_t)), offset10)}; !res) {
+        return tl::unexpected(res.error());
     }
     if (offset10 < cl::ExecutionPayload::kMinSize || offset10 > size) {
-        return DecodingResult::kUnexpectedLength;
+        return tl::unexpected(DecodingError::kUnexpectedLength);
     }
     pos += sizeof(uint32_t);
 
     // Field (11) 'base_fee_per_gas'
-    if (auto err{ssz::decode(from.substr(pos, kHashLength), to.base_fee_per_gas)}; err != DecodingResult::kOk) {
-        return err;
+    if (auto res{ssz::decode(from.substr(pos, kHashLength), to.base_fee_per_gas)}; !res) {
+        return tl::unexpected(res.error());
     }
     pos += kHashLength;
 
     // Field (12) 'block_hash'
-    if (auto err{ssz::decode(from.substr(pos, kHashLength), to.block_hash)}; err != DecodingResult::kOk) {
-        return err;
+    if (auto res{ssz::decode(from.substr(pos, kHashLength), to.block_hash)}; !res) {
+        return tl::unexpected(res.error());
     }
     pos += kHashLength;
 
     // Offset (13) 'transactions'
     uint32_t offset13{0};
-    if (auto err{ssz::decode_offset(from.substr(pos, sizeof(uint32_t)), offset13)}; err != DecodingResult::kOk) {
-        return err;
+    if (auto res{ssz::decode_offset(from.substr(pos, sizeof(uint32_t)), offset13)}; !res) {
+        return tl::unexpected(res.error());
     }
     if (offset13 < offset10 || offset13 > size) {
-        return DecodingResult::kUnexpectedLength;
+        return tl::unexpected(DecodingError::kUnexpectedLength);
     }
     pos += sizeof(uint32_t);
 
@@ -944,22 +946,22 @@ DecodingResult decode(ByteView from, cl::ExecutionPayload& to) noexcept {
 
     // Field (13) `transactions`
     std::size_t length{0};
-    if (auto err{ssz::decode_dynamic_length(from.substr(pos), 1048576, length)}; err != DecodingResult::kOk) {
-        return err;
+    if (auto res{ssz::decode_dynamic_length(from.substr(pos), 1048576, length)}; !res) {
+        return tl::unexpected(res.error());
     }
     to.transactions.resize(length);
-    if (auto err{ssz::decode_dynamic(from.substr(pos), length, [&](std::size_t index, ByteView buffer) {
+    if (auto res{ssz::decode_dynamic(from.substr(pos), length, [&](std::size_t index, ByteView buffer) -> DecodingResult {
             if (buffer.size() > 1073741824) {
-                return DecodingResult::kUnexpectedLength;
+                return tl::unexpected(DecodingError::kUnexpectedLength);
             }
             to.transactions[index].resize(buffer.size());
             std::copy(buffer.cbegin(), buffer.cend(), to.transactions[index].begin());
-            return DecodingResult::kOk;
-        })}; err != DecodingResult::kOk) {
-        return err;
+            return {};
+        })}; !res) {
+        return tl::unexpected(res.error());
     }
 
-    return DecodingResult::kOk;
+    return {};
 }
 
 template <>
@@ -969,7 +971,7 @@ EncodingResult encode(cl::SyncCommittee& /*from*/, Bytes& /*to*/) noexcept {
 
 template <>
 DecodingResult decode(ByteView /*from*/, cl::SyncCommittee& /*to*/) noexcept {
-    return DecodingResult::kOk;
+    return {};
 }
 
 template <>
@@ -979,7 +981,7 @@ EncodingResult encode(cl::LightClientBootstrap& /*from*/, Bytes& /*to*/) noexcep
 
 template <>
 DecodingResult decode(ByteView /*from*/, cl::LightClientBootstrap& /*to*/) noexcept {
-    return DecodingResult::kOk;
+    return {};
 }
 
 template <>
@@ -989,7 +991,7 @@ EncodingResult encode(cl::LightClientUpdate& /*from*/, Bytes& /*to*/) noexcept {
 
 template <>
 DecodingResult decode(ByteView /*from*/, cl::LightClientUpdate& /*to*/) noexcept {
-    return DecodingResult::kOk;
+    return {};
 }
 
 }  // namespace silkworm::ssz

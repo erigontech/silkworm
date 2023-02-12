@@ -40,12 +40,12 @@ TEST_CASE("Eth1Data SSZ") {
         CHECK(test::decode_success<Eth1Data>(to_hex(b)) == a);
     }
     SECTION("decoding error") {
-        CHECK(test::decode_failure<Eth1Data>("") == DecodingResult::kUnexpectedLength);
-        CHECK(test::decode_failure<Eth1Data>("00") == DecodingResult::kUnexpectedLength);
+        CHECK(test::decode_failure<Eth1Data>("") == DecodingError::kUnexpectedLength);
+        CHECK(test::decode_failure<Eth1Data>("00") == DecodingError::kUnexpectedLength);
         CHECK(test::decode_failure<Eth1Data>("FF000000000000000000EE00000000000000000000EE000000000000000000FF"
                                              "1F00000000000000"
                                              "FF000000000000000000EE00000000000000000000EE000000000000000000")
-              == DecodingResult::kUnexpectedLength);
+              == DecodingError::kUnexpectedLength);
     }
 }
 
@@ -64,11 +64,11 @@ TEST_CASE("Checkpoint SSZ") {
         CHECK(test::decode_success<Checkpoint>(to_hex(b)) == a);
     }
     SECTION("decoding error") {
-        CHECK(test::decode_failure<Checkpoint>("") == DecodingResult::kUnexpectedLength);
-        CHECK(test::decode_failure<Checkpoint>("00") == DecodingResult::kUnexpectedLength);
+        CHECK(test::decode_failure<Checkpoint>("") == DecodingError::kUnexpectedLength);
+        CHECK(test::decode_failure<Checkpoint>("00") == DecodingError::kUnexpectedLength);
         CHECK(test::decode_failure<Checkpoint>("1F00000000000000"
                                              "FF000000000000000000EE00000000000000000000EE000000000000000000")
-              == DecodingResult::kUnexpectedLength);
+              == DecodingError::kUnexpectedLength);
     }
 }
 
@@ -122,8 +122,8 @@ TEST_CASE("AttestationData SSZ") {
         CHECK(test::decode_success<AttestationData>(to_hex(b)) == a);
     }
     SECTION("decoding error") {
-        CHECK(test::decode_failure<AttestationData>("") == DecodingResult::kUnexpectedLength);
-        CHECK(test::decode_failure<AttestationData>("00") == DecodingResult::kUnexpectedLength);
+        CHECK(test::decode_failure<AttestationData>("") == DecodingError::kUnexpectedLength);
+        CHECK(test::decode_failure<AttestationData>("00") == DecodingError::kUnexpectedLength);
         CHECK(test::decode_failure<AttestationData>("7400000000000000"
                                                     "0600000000000000"
                                                     "FF000000000000000000EE00000000000000000000EE000000000000000000FF"
@@ -131,7 +131,7 @@ TEST_CASE("AttestationData SSZ") {
                                                     "FF000000000000000000EE00000000000000000000EE000000000000000000FF"
                                                     "1F00000000000000"
                                                     "FF000000000000000000EE00000000000000000000EE000000000000000000")
-              == DecodingResult::kUnexpectedLength);
+              == DecodingError::kUnexpectedLength);
     }
 }
 
@@ -155,14 +155,14 @@ TEST_CASE("BeaconBlockHeader SSZ") {
         CHECK(test::decode_success<BeaconBlockHeader>(to_hex(b)) == a);
     }
     SECTION("decoding error") {
-        CHECK(test::decode_failure<BeaconBlockHeader>("") == DecodingResult::kUnexpectedLength);
-        CHECK(test::decode_failure<BeaconBlockHeader>("00") == DecodingResult::kUnexpectedLength);
+        CHECK(test::decode_failure<BeaconBlockHeader>("") == DecodingError::kUnexpectedLength);
+        CHECK(test::decode_failure<BeaconBlockHeader>("00") == DecodingError::kUnexpectedLength);
         CHECK(test::decode_failure<BeaconBlockHeader>("1500000000000000"
                                                       "7800000000000000"
                                                       "FF000000000000000000EE00000000000000000000EE000000000000000000FF"
                                                       "FF000000000000000000EE00000000000000000000EE000000000000000000FF"
                                                       "FF000000000000000000EE00000000000000000000EE000000000000000000")
-              == DecodingResult::kUnexpectedLength);
+              == DecodingError::kUnexpectedLength);
     }
     /*SECTION("hash_tree_root") {
         BeaconBlockHeader a{
@@ -259,8 +259,8 @@ TEST_CASE("SignedBeaconBlockHeader SSZ") {
         CHECK(test::decode_success<SignedBeaconBlockHeader>(to_hex(b)) == a);
     }
     SECTION("decoding error") {
-        CHECK(test::decode_failure<SignedBeaconBlockHeader>("") == DecodingResult::kUnexpectedLength);
-        CHECK(test::decode_failure<SignedBeaconBlockHeader>("00") == DecodingResult::kUnexpectedLength);
+        CHECK(test::decode_failure<SignedBeaconBlockHeader>("") == DecodingError::kUnexpectedLength);
+        CHECK(test::decode_failure<SignedBeaconBlockHeader>("00") == DecodingError::kUnexpectedLength);
         CHECK(test::decode_failure<SignedBeaconBlockHeader>("1500000000000000"
                                                             "7800000000000000"
                                                             "FF000000000000000000EE00000000000000000000EE000000000000000000FF"
@@ -269,7 +269,7 @@ TEST_CASE("SignedBeaconBlockHeader SSZ") {
                                                             "0000000000000000000000000000000000000000000000000000000000000000"
                                                             "0000000000000000000000000000000000000000000000000000000000000000"
                                                             "00000000000000000000000000000000000000000000000000000000000000")
-              == DecodingResult::kUnexpectedLength);
+              == DecodingError::kUnexpectedLength);
     }
 }
 
@@ -369,8 +369,8 @@ TEST_CASE("IndexedAttestation SSZ") {
         CHECK(test::decode_success<IndexedAttestation>(to_hex(b)) == a);
     }
     SECTION("decoding error") {
-        CHECK(test::decode_failure<IndexedAttestation>("") == DecodingResult::kInputTooShort);
-        CHECK(test::decode_failure<IndexedAttestation>("00") == DecodingResult::kInputTooShort);
+        CHECK(test::decode_failure<IndexedAttestation>("") == DecodingError::kInputTooShort);
+        CHECK(test::decode_failure<IndexedAttestation>("00") == DecodingError::kInputTooShort);
         CHECK(test::decode_failure<IndexedAttestation>("E4000000"
                                                        "7800000000000000"
                                                        "0600000000000000"
@@ -382,7 +382,7 @@ TEST_CASE("IndexedAttestation SSZ") {
                                                        "0000000000000000000000000000000000000000000000000000000000000000"
                                                        "0000000000000000000000000000000000000000000000000000000000000000"
                                                        "00000000000000000000000000000000000000000000000000000000000000")
-              == DecodingResult::kInputTooShort);
+              == DecodingError::kInputTooShort);
     }
 }
 
@@ -486,10 +486,10 @@ TEST_CASE("AttesterSlashing SSZ") {
         CHECK(test::decode_success<AttesterSlashing>(to_hex(kSerialized))== a);
     }
     SECTION("decoding error") {
-        CHECK(test::decode_failure<AttesterSlashing>("") == DecodingResult::kInputTooShort);
-        CHECK(test::decode_failure<AttesterSlashing>("00") == DecodingResult::kInputTooShort);
+        CHECK(test::decode_failure<AttesterSlashing>("") == DecodingError::kInputTooShort);
+        CHECK(test::decode_failure<AttesterSlashing>("00") == DecodingError::kInputTooShort);
         // Next check truncates the input *one byte before* the attestation indices (8 * sizeof(uit64_t)) producing a corrupt serialization
-        CHECK(test::decode_failure<AttesterSlashing>(kSerialized.substr(0, kSerialized.size() - 65)) == DecodingResult::kInputTooShort);
+        CHECK(test::decode_failure<AttesterSlashing>(kSerialized.substr(0, kSerialized.size() - 65)) == DecodingError::kInputTooShort);
     }
 }
 
@@ -566,10 +566,10 @@ TEST_CASE("ProposerSlashing SSZ") {
         CHECK(test::decode_success<ProposerSlashing>(to_hex(kSerialized)) == a);
     }
     SECTION("decoding error") {
-        CHECK(test::decode_failure<ProposerSlashing>("") == DecodingResult::kUnexpectedLength);
-        CHECK(test::decode_failure<ProposerSlashing>("00") == DecodingResult::kUnexpectedLength);
+        CHECK(test::decode_failure<ProposerSlashing>("") == DecodingError::kUnexpectedLength);
+        CHECK(test::decode_failure<ProposerSlashing>("00") == DecodingError::kUnexpectedLength);
         // Next check truncates the input *one byte before* the end of the first SignedBeaconBlockHeader producing a corrupt serialization
-        CHECK(test::decode_failure<ProposerSlashing>(kSerialized.substr(0, SignedBeaconBlockHeader::kSize - 1)) == DecodingResult::kUnexpectedLength);
+        CHECK(test::decode_failure<ProposerSlashing>(kSerialized.substr(0, SignedBeaconBlockHeader::kSize - 1)) == DecodingError::kUnexpectedLength);
     }
 }
 
@@ -670,8 +670,8 @@ TEST_CASE("Attestation SSZ") {
         CHECK(test::decode_success<Attestation>(to_hex(b)) == a);
     }
     SECTION("decoding error") {
-        CHECK(test::decode_failure<Attestation>("") == DecodingResult::kInputTooShort);
-        CHECK(test::decode_failure<Attestation>("00") == DecodingResult::kInputTooShort);
+        CHECK(test::decode_failure<Attestation>("") == DecodingError::kInputTooShort);
+        CHECK(test::decode_failure<Attestation>("00") == DecodingError::kInputTooShort);
         CHECK(test::decode_failure<Attestation>("E4000000"
                                                 "7800000000000000"
                                                 "0600000000000000"
@@ -683,7 +683,7 @@ TEST_CASE("Attestation SSZ") {
                                                 "0000000000000000000000000000000000000000000000000000000000000000"
                                                 "0000000000000000000000000000000000000000000000000000000000000000"
                                                 "0000000000000000000000000000000000000000000000000000000000000000")
-              == DecodingResult::kInputTooShort);
+              == DecodingError::kInputTooShort);
     }
 }
 
@@ -728,15 +728,15 @@ TEST_CASE("DepositData SSZ") {
         CHECK(test::decode_success<DepositData>(to_hex(b)) == a);
     }
     SECTION("decoding error") {
-        CHECK(test::decode_failure<DepositData>("") == DecodingResult::kUnexpectedLength);
-        CHECK(test::decode_failure<DepositData>("00") == DecodingResult::kUnexpectedLength);
+        CHECK(test::decode_failure<DepositData>("") == DecodingError::kUnexpectedLength);
+        CHECK(test::decode_failure<DepositData>("00") == DecodingError::kUnexpectedLength);
         CHECK(test::decode_failure<DepositData>("FF00000000000000FF00FF00000000000000FF00000000000000FF00FF00000000000000FF00000000000000FF00FF00"
                                                 "AA000000000000000000000000000000000000000000000000000000000000BB"
                                                 "1000000000000000"
                                                 "0000000000000000000000000000000000000000000000000000000000000000"
                                                 "0000000000000000000000000000000000000000000000000000000000000000"
                                                 "00000000000000000000000000000000000000000000000000000000000000")
-              == DecodingResult::kUnexpectedLength);
+              == DecodingError::kUnexpectedLength);
     }
 }
 
@@ -798,11 +798,11 @@ TEST_CASE("Deposit SSZ") {
         CHECK(test::decode_success<Deposit>(to_hex(b)) == a);
     }
     SECTION("decoding error") {
-        CHECK(test::decode_failure<Deposit>("") == DecodingResult::kUnexpectedLength);
-        CHECK(test::decode_failure<Deposit>("00") == DecodingResult::kUnexpectedLength);
+        CHECK(test::decode_failure<Deposit>("") == DecodingError::kUnexpectedLength);
+        CHECK(test::decode_failure<Deposit>("00") == DecodingError::kUnexpectedLength);
         Bytes empty_serialized_bytes = *from_hex(kEmptySerialized);
         empty_serialized_bytes = empty_serialized_bytes.substr(0, empty_serialized_bytes.size() - 1);
-        CHECK(test::decode_failure<Deposit>(to_hex(empty_serialized_bytes)) == DecodingResult::kUnexpectedLength);
+        CHECK(test::decode_failure<Deposit>(to_hex(empty_serialized_bytes)) == DecodingError::kUnexpectedLength);
     }
 }
 
@@ -818,10 +818,10 @@ TEST_CASE("VoluntaryExit SSZ") {
         CHECK(test::decode_success<VoluntaryExit>(to_hex(b)) == a);
     }
     SECTION("decoding error") {
-        CHECK(test::decode_failure<VoluntaryExit>("") == DecodingResult::kUnexpectedLength);
-        CHECK(test::decode_failure<VoluntaryExit>("00") == DecodingResult::kUnexpectedLength);
+        CHECK(test::decode_failure<VoluntaryExit>("") == DecodingError::kUnexpectedLength);
+        CHECK(test::decode_failure<VoluntaryExit>("00") == DecodingError::kUnexpectedLength);
         CHECK(test::decode_failure<VoluntaryExit>("150000000000000002000000000000")
-              == DecodingResult::kUnexpectedLength);
+              == DecodingError::kUnexpectedLength);
     }
 }
 
@@ -844,13 +844,13 @@ TEST_CASE("SignedVoluntaryExit SSZ") {
         CHECK(test::decode_success<SignedVoluntaryExit>(to_hex(b)) == a);
     }
     SECTION("decoding error") {
-        CHECK(test::decode_failure<SignedVoluntaryExit>("") == DecodingResult::kUnexpectedLength);
-        CHECK(test::decode_failure<SignedVoluntaryExit>("00") == DecodingResult::kUnexpectedLength);
+        CHECK(test::decode_failure<SignedVoluntaryExit>("") == DecodingError::kUnexpectedLength);
+        CHECK(test::decode_failure<SignedVoluntaryExit>("00") == DecodingError::kUnexpectedLength);
         CHECK(test::decode_failure<SignedVoluntaryExit>("150000000000000002000000000000"
                                                         "0000000000000000000000000000000000000000000000000000000000000000"
                                                         "0000000000000000000000000000000000000000000000000000000000000000"
                                                         "00000000000000000000000000000000000000000000000000000000000000")
-              == DecodingResult::kUnexpectedLength);
+              == DecodingError::kUnexpectedLength);
     }
 }
 
@@ -874,11 +874,11 @@ TEST_CASE("SyncAggregate SSZ") {
         CHECK(test::decode_success<SyncAggregate>(to_hex(b)) == a);
     }
     SECTION("decoding error") {
-        CHECK(test::decode_failure<SyncAggregate>("") == DecodingResult::kUnexpectedLength);
-        CHECK(test::decode_failure<SyncAggregate>("00") == DecodingResult::kUnexpectedLength);
+        CHECK(test::decode_failure<SyncAggregate>("") == DecodingError::kUnexpectedLength);
+        CHECK(test::decode_failure<SyncAggregate>("00") == DecodingError::kUnexpectedLength);
         Bytes empty_serialized_bytes = *from_hex(kEmptySerialized);
         empty_serialized_bytes = empty_serialized_bytes.substr(0, empty_serialized_bytes.size() - 1);
-        CHECK(test::decode_failure<SyncAggregate>(to_hex(empty_serialized_bytes)) == DecodingResult::kUnexpectedLength);
+        CHECK(test::decode_failure<SyncAggregate>(to_hex(empty_serialized_bytes)) == DecodingError::kUnexpectedLength);
     }
     SECTION("commitee bits") {
         SyncAggregate a{

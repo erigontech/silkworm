@@ -21,6 +21,7 @@
 
 #include <evmc/evmc.hpp>
 #include <magic_enum.hpp>
+#include <tl/expected.hpp>
 
 #include <silkworm/common/base.hpp>
 #include <silkworm/common/decoding_result.hpp>
@@ -62,13 +63,13 @@ template <class T, std::size_t N>
 requires std::convertible_to<T, uint8_t>
 DecodingResult decode(ByteView from, T (&to)[N]) noexcept {
     if (from.size() < N) {
-        return DecodingResult::kInputTooShort;
+        return tl::unexpected(DecodingError::kInputTooShort);
     }
     for (std::size_t i{0}; i < N; ++i) {
         to[i] = static_cast<uint8_t>(from[i]);
     }
     from.remove_prefix(N);
-    return DecodingResult::kOk;
+    return {};
 }
 
 template <>

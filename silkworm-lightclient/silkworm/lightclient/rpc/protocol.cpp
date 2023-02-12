@@ -75,7 +75,8 @@ bool decode_and_read_no_context(ByteView data, ::ssz::Container& object) {
 
     // Unsnap the message and then unmarshall using SSZ
     Bytes payload = snappy::decompress(data.substr(length_size));
-    const bool ok = object.deserialize(payload.cbegin(), payload.cend());
+    const std::vector<uint8_t> object_payload{payload.cbegin(), payload.cend()};
+    const bool ok = object.deserialize(object_payload.cbegin(), object_payload.cend());
     if (!ok) {
         log::Error() << "decode_and_read_no_context: cannot unmarshal message " << to_hex(payload);
         return false;

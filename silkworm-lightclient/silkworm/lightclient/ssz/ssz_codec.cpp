@@ -48,44 +48,44 @@ void encode(evmc::bytes32& from, Bytes& to) noexcept {
 
 DecodingResult decode(ByteView from, uint32_t& to) noexcept {
     if (from.size() < sizeof(uint32_t)) {
-        return DecodingResult::kInputTooShort;
+        return tl::unexpected(DecodingError::kInputTooShort);
     }
     for (std::size_t i{0}; i < sizeof(uint32_t); ++i) {
         to += static_cast<uint32_t>(from[i]) << (i*8);
     }
-    return DecodingResult::kOk;
+    return {};
 }
 
 DecodingResult decode(ByteView from, uint64_t& to) noexcept {
     if (from.size() < sizeof(uint64_t)) {
-        return DecodingResult::kInputTooShort;
+        return tl::unexpected(DecodingError::kInputTooShort);
     }
     for (std::size_t i{0}; i < sizeof(uint64_t); ++i) {
         to += static_cast<uint64_t>(from[i]) << (i*8);
     }
-    return DecodingResult::kOk;
+    return {};
 }
 
 template <>
 DecodingResult decode(ByteView from, evmc::address& to) noexcept {
     if (from.size() < kAddressLength) {
-        return DecodingResult::kInputTooShort;
+        return tl::unexpected(DecodingError::kInputTooShort);
     }
     for (std::size_t i{0}; i < kAddressLength; ++i) {
         to.bytes[i] = from[i];
     }
-    return DecodingResult::kOk;
+    return {};
 }
 
 template <>
 DecodingResult decode(ByteView from, evmc::bytes32& to) noexcept {
     if (from.size() < kHashLength) {
-        return DecodingResult::kInputTooShort;
+        return tl::unexpected(DecodingError::kInputTooShort);
     }
     for (std::size_t i{0}; i < kHashLength; ++i) {
         to.bytes[i] = from[i];
     }
-    return DecodingResult::kOk;
+    return {};
 }
 
 void encode_offset(uint32_t from, Bytes& to) noexcept {
@@ -101,20 +101,20 @@ DecodingResult decode_dynamic_length(ByteView from, std::size_t max_length, std:
         length = 0;
     } else {
         if (from.size() < sizeof(uint32_t)) {
-            return DecodingResult::kInputTooShort;
+            return tl::unexpected(DecodingError::kInputTooShort);
         }
         const auto offset = endian::load_little_u32(from.data());
         if (offset % kBytesPerLengthOffset != 0) {
             length = 0;
-            return DecodingResult::kUnexpectedLength;
+            return tl::unexpected(DecodingError::kUnexpectedLength);
         }
 
         length = offset / kBytesPerLengthOffset;
         if (length > max_length) {
-            return DecodingResult::kUnexpectedLength;
+            return tl::unexpected(DecodingError::kUnexpectedLength);
         }
     }
-    return DecodingResult::kOk;
+    return {};
 }
 
 DecodingResult decode_dynamic(ByteView from, std::size_t length, const DynamicReader& read_one) noexcept {
@@ -124,53 +124,53 @@ DecodingResult decode_dynamic(ByteView from, std::size_t length, const DynamicRe
         std::size_t pos{0};
 
         uint32_t offset{0}, end_offset{0};
-        if (auto err{decode_offset(from.substr(pos, sizeof(uint32_t)), offset)}; err != DecodingResult::kOk) {
-            return err;
+        if (auto res{decode_offset(from.substr(pos, sizeof(uint32_t)), offset)}; !res) {
+            return tl::unexpected(res.error());
         }
         pos += sizeof(uint32_t);
 
         std::size_t index{0};
         for (; length > 0; --length) {
             if (length > 1) {
-                if (auto err{decode_offset(from.substr(pos, sizeof(uint32_t)), end_offset)}; err != DecodingResult::kOk) {
-                    return err;
+                if (auto res{decode_offset(from.substr(pos, sizeof(uint32_t)), end_offset)}; !res) {
+                    return tl::unexpected(res.error());
                 }
                 pos += sizeof(uint32_t);
             } else {
                 end_offset = size;
             }
             if (end_offset < offset || end_offset > size) {
-                return DecodingResult::kUnexpectedLength;
+                return tl::unexpected(DecodingError::kUnexpectedLength);
             }
 
             const std::size_t slice_size = end_offset - offset;
-            if (auto err{read_one(index, from.substr(offset, slice_size))}; err != DecodingResult::kOk) {
-                return err;
+            if (auto res{read_one(index, from.substr(offset, slice_size))}; !res) {
+                return tl::unexpected(res.error());
             }
             offset = end_offset;
 
             ++index;
         }
     }
-    return DecodingResult::kOk;
+    return {};
 }
 
 DecodingResult validate_bitlist(ByteView buffer, std::size_t bit_limit) noexcept {
     const std::size_t size = buffer.size();
     if (size == 0) {
-        return DecodingResult::kInputTooShort;  // TODO(canepat) kInvalidZeroLength
+        return tl::unexpected(DecodingError::kInputTooShort);  // TODO(canepat) kInvalidZeroLength
     }
 
     // Maximum possible bytes in a bitlist with provided bit limit
     const std::size_t max_bytes = (bit_limit >> 3) + 1;
     if (size > max_bytes) {
-        return DecodingResult::kUnexpectedLength;
+        return tl::unexpected(DecodingError::kUnexpectedLength);
     }
 
     // The most significant bit is present in the last byte in the array
     const uint8_t last_byte = buffer[size - 1];
     if (last_byte == 0) {
-        return DecodingResult::kInvalidFieldset;  // TODO(canepat) kTrailingByteIsZero
+        return tl::unexpected(DecodingError::kInvalidFieldset);  // TODO(canepat) kTrailingByteIsZero
     }
 
     // Determine the position of the most significant bit i.e. the minimum number of bits to represent last byte
@@ -181,10 +181,10 @@ DecodingResult validate_bitlist(ByteView buffer, std::size_t bit_limit) noexcept
     // bit. Subtract this value by 1 to determine the length of the bitlist
     const auto num_of_bits = 8 * (size - 1) + msb - 1;
     if (num_of_bits > bit_limit) {
-        return DecodingResult::kUnexpectedLength;
+        return tl::unexpected(DecodingError::kUnexpectedLength);
     }
 
-    return DecodingResult::kOk;
+    return {};
 }
 
 }  // namespace silkworm::ssz

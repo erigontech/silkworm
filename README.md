@@ -1,10 +1,12 @@
 # Silkworm - C++ Ethereum Execution Client
 
-C++ implementation of the Ethereum protocol based on the [Erigon architecture].
+C++ implementation of the Ethereum Execution Layer (EL) protocol based on the [Erigon Thorax architecture].
 
-[![CircleCI](https://circleci.com/gh/torquem-ch/silkworm.svg?style=svg)](https://circleci.com/gh/torquem-ch/silkworm)
-[![AppVeyor](https://ci.appveyor.com/api/projects/status/8npida1piyqw1844/branch/master?svg=true)](https://ci.appveyor.com/project/torquem/silkworm)
+[![CircleCI](https://circleci.com/gh/torquem-ch/silkworm.svg?style=shield)](https://circleci.com/gh/torquem-ch/silkworm)
+![GHActions](https://github.com/torquem-ch/silkworm/actions/workflows/ci.yml/badge.svg)
 [![CodeCov](https://codecov.io/gh/torquem-ch/silkworm/branch/master/graph/badge.svg)](https://codecov.io/gh/torquem-ch/silkworm)
+[![GitHub](https://img.shields.io/github/license/torquem-ch/silkworm.svg)](https://github.com/torquem-ch/silkworm/blob/master/LICENSE)
+![semver](https://img.shields.io/badge/semver-2.0.0-blue)
 
 ## Table of Contents
 
@@ -21,7 +23,7 @@ C++ implementation of the Ethereum protocol based on the [Erigon architecture].
 <a name="about"></a>
 ## About Silkworm
 
-Silkworm is a greenfield C++ implementation of the Ethereum protocol based on the [Erigon architecture].
+Silkworm is a greenfield C++ implementation of the Ethereum protocol based on the [Erigon Thorax architecture].
 It aims to be the fastest Ethereum client while maintaining the high quality and readability of its source code.
 Silkworm uses [libmdbx] as the database engine.
 
@@ -119,37 +121,62 @@ Use the following steps to detect/enable/disable memory compression:
 ## Codemap
 
 Apart from the submodules and some auxiliary directories, Silkworm contains the following components:
-* [`core`](./core)
-  <br /> The `core` library contains the bulk of the Ethereum protocol logic as described by the [Yellow Paper].
-  Code within `core` is compatible with WebAssembly and may not use C++ exceptions.
-* [`node`](./node)
-  <br /> The `node` library contains database, [staged sync] and other logic necessary for functioning as an Ethereum node.
-  The `node` library depends on the `core` library.
 * [`cmd`](./cmd)
-  <br /> The source code of  Silkworm executable binaries.
+  <br /> The source code of Silkworm executable binaries.
+* [`silkworm/core`](./silkworm/core)
+  <br /> This module contains the heart of the Ethereum protocol logic as described by the [Yellow Paper].
+  Source code within `core` is compatible with WebAssembly and cannot use C++ exceptions.
+* [`silkworm/node`](./silkworm/node)
+  <br /> This module contains the database, the [staged sync] and other logic necessary to function as an Ethereum node.
+  This module depends on the `core` module.
+* [`silkworm/sentry`](./silkworm/sentry)
+  <br /> This module implements the networking and protocol stacks for `Sentry` component for an Ethereum node based on [Erigon Thorax architecture].
+  This module depends on both the `core` and `node` modules.
+* [`silkworm/wasm`](./silkworm/wasm)
+  <br /> This module allows the `core` the run on WebAssembly. This module depends on both the `core` and `node` modules.
 
 <a name="testing_silkworm"></a>
 ## Testing Silkworm
 
-**Note : at current state of development Silkworm can't actually "sync" the chain like Erigon does. What instead does is a one-pass loop over all implemented stages to process all blocks which are already in the database. Due to that you NEED a primed database from Erigon.**
+**Note: at current state of development Silkworm can't actually sync the chain like Erigon does.**
 
-You can try to run Silkworm to test the stages implemented so far. To do that you need to obtain a primed database by Erigon (strictly from `stable` branch) by forcing it to stop before stage Senders.
+You can try to run Silkworm to test just the sync on the *pre-Merge* Ethereum chain. In order to do that you need to:
 
-On Linux [build Erigon](https://github.com/ledgerwatch/erigon#getting-started) and
+- run an instance of `Erigon Sentry` component from `devel` branch
+- set the environment variable `STOP_AT_BLOCK` to a value < 15'537'351 (e.g. STOP_AT_BLOCK=15000000)
+
+### Linux and macOS
+
+#### Erigon Sentry
 ```
-export STOP_BEFORE_STAGE="Senders"
-./build/bin/erigon --datadir <path-where-to-store-data>
+git clone --recurse-submodules https://github.com/ledgerwatch/erigon.git
+cd erigon
+git checkout devel
+make sentry
+./build/bin/sentry
 ```
 
-On Windows [build Erigon](https://github.com/ledgerwatch/erigon#windows) and
+#### Silkworm
 ```
-$env:STOP_BEFORE_STAGE="Senders"
-./build/bin/erigon.exe --datadir <path-where-to-store-data>
+export STOP_AT_BLOCK=15000000
+./cmd/silkworm
 ```
 
-After any of those steps (wait for completion) launch Silkworm and point it to the same data directory you've used for Erigon
+### Windows
+
+#### Erigon Sentry
 ```
-cmd/silkworm --datadir <same-datadir-path-used-for-erigon>
+git clone --recurse-submodules https://github.com/ledgerwatch/erigon.git
+cd erigon
+git checkout devel
+make sentry
+./build/bin/sentry.exe
+```
+
+#### Silkworm
+```
+$env:STOP_AT_BLOCK=15000000
+./cmd/silkworm.exe
 ```
 
 
@@ -178,7 +205,7 @@ See [LICENSE](LICENSE) for more information.
 [CMake]: http://cmake.org
 [Ethereum Consensus Tests]: https://github.com/ethereum/tests
 [Erigon]: https://github.com/ledgerwatch/erigon
-[Erigon architecture]: https://github.com/ledgerwatch/erigon#key-features
+[Erigon Thorax architecture]: https://github.com/ledgerwatch/erigon#key-features
 [GMP]: http://gmplib.org
 [Google's C++ Style Guide]: https://google.github.io/styleguide/cppguide.html
 [libmdbx]: https://github.com/erthink/libmdbx

@@ -1,7 +1,7 @@
-#[[
+/*
    Copyright 2022 The Silkworm Authors
 
-   Licensed under the Apache License, Version 2.0 (the "License");
+Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
    You may obtain a copy of the License at
 
@@ -12,18 +12,21 @@
    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
    See the License for the specific language governing permissions and
    limitations under the License.
-]]
+*/
 
-# Silkworm itself
-add_subdirectory(core)
+#pragma once
 
-if(NOT SILKWORM_CORE_ONLY)
-    add_subdirectory(interfaces)
-    add_subdirectory(lightclient)
-    add_subdirectory(node)
-    add_subdirectory(sentry)
-endif()
+#include <string>
 
-if(SILKWORM_WASM_API)
-    add_subdirectory(wasm)
-endif()
+#include <silkworm/node/concurrency/coroutine.hpp>
+
+#include <boost/asio/awaitable.hpp>
+
+#include <silkworm/core/common/base.hpp>
+
+namespace silkworm {
+
+//! \brief Create a short-lived HTTP session to perform an HTTP GET and return the result
+boost::asio::awaitable<Bytes> do_http_session(const std::string& uri);
+
+}  // namespace silkworm

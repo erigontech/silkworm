@@ -221,10 +221,6 @@ endif()
 # Silkworm itself
 add_subdirectory(silkworm)
 
-if(NOT SILKWORM_CORE_ONLY)
-  add_subdirectory(silkworm-lightclient)
-endif()
-
 if(NOT SILKWORM_HAS_PARENT)
   add_subdirectory(cmd)
 endif()

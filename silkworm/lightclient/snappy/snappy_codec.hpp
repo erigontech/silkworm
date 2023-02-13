@@ -1,4 +1,4 @@
-#[[
+/*
    Copyright 2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,18 +12,18 @@
    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
    See the License for the specific language governing permissions and
    limitations under the License.
-]]
+*/
 
-# Silkworm itself
-add_subdirectory(core)
+#pragma once
 
-if(NOT SILKWORM_CORE_ONLY)
-    add_subdirectory(interfaces)
-    add_subdirectory(lightclient)
-    add_subdirectory(node)
-    add_subdirectory(sentry)
-endif()
+#include <silkworm/core/common/base.hpp>
 
-if(SILKWORM_WASM_API)
-    add_subdirectory(wasm)
-endif()
+namespace silkworm::snappy {
+
+bool is_valid_compressed_data(ByteView data);
+
+Bytes compress(ByteView data);
+
+Bytes decompress(ByteView data);
+
+}  // namespace silkworm::snappy

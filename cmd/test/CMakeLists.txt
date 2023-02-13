@@ -67,7 +67,7 @@ if(NOT SILKWORM_CORE_ONLY)
   )
 
   # Lightclient Tests
-  file(GLOB_RECURSE LIGHTCLIENT_TEST_FILES CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/silkworm-lightclient/*_test.cpp")
+  file(GLOB_RECURSE LIGHTCLIENT_TEST_FILES CONFIGURE_DEPENDS "${SILKWORM_MAIN_SRC_DIR}/lightclient/*_test.cpp")
   add_executable(lightclient_test unit_test.cpp ${LIGHTCLIENT_TEST_FILES})
   target_link_libraries(lightclient_test silkworm_lightclient silkworm_node Catch2::Catch2)
 endif()

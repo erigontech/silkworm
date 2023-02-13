@@ -1,4 +1,4 @@
-#[[
+/*
    Copyright 2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,18 +12,22 @@
    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
    See the License for the specific language governing permissions and
    limitations under the License.
-]]
+*/
 
-# Silkworm itself
-add_subdirectory(core)
+#pragma once
 
-if(NOT SILKWORM_CORE_ONLY)
-    add_subdirectory(interfaces)
-    add_subdirectory(lightclient)
-    add_subdirectory(node)
-    add_subdirectory(sentry)
-endif()
+#include <memory>
+#include <string>
 
-if(SILKWORM_WASM_API)
-    add_subdirectory(wasm)
-endif()
+#include <silkworm/node/concurrency/coroutine.hpp>
+
+#include <boost/asio/awaitable.hpp>
+
+#include <silkworm/lightclient/ssz/beacon-chain/beacon_state.hpp>
+
+namespace silkworm::cl {
+
+//! \brief Get the beacon-chain state using checkpoint sync
+boost::asio::awaitable<std::unique_ptr<eth::BeaconState>> retrieve_beacon_state(const std::string& checkpoint_uri);
+
+}  // namespace silkworm::cl

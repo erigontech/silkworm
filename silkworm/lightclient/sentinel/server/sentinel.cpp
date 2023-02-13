@@ -1,4 +1,4 @@
-#[[
+/*
    Copyright 2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,18 +12,29 @@
    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
    See the License for the specific language governing permissions and
    limitations under the License.
-]]
+*/
 
-# Silkworm itself
-add_subdirectory(core)
+#include "sentinel.hpp"
 
-if(NOT SILKWORM_CORE_ONLY)
-    add_subdirectory(interfaces)
-    add_subdirectory(lightclient)
-    add_subdirectory(node)
-    add_subdirectory(sentry)
-endif()
+#include <silkworm/sentry/common/timeout.hpp>  // TODO(canepat) refactor
 
-if(SILKWORM_WASM_API)
-    add_subdirectory(wasm)
-endif()
+namespace silkworm::cl::sentinel {
+
+using namespace std::chrono;
+
+awaitable<void> Sentinel::start() {
+    sentry::common::Timeout timeout{1'000'000s};
+    co_await timeout();
+}
+
+awaitable<void> Sentinel::listen_for_peers() {
+    // TODO(canepat) implement
+    co_return;
+}
+
+awaitable<void> Sentinel::connect_to_bootnodes() {
+    // TODO(canepat) implement
+    co_return;
+}
+
+}  // namespace silkworm::cl::sentinel

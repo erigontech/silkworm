@@ -29,24 +29,24 @@
 #include <boost/format.hpp>
 #include <magic_enum.hpp>
 
-#include <silkworm/chain/config.hpp>
-#include <silkworm/chain/genesis.hpp>
-#include <silkworm/common/as_range.hpp>
-#include <silkworm/common/assert.hpp>
-#include <silkworm/common/cast.hpp>
-#include <silkworm/common/decoding_exception.hpp>
-#include <silkworm/common/directories.hpp>
-#include <silkworm/common/endian.hpp>
-#include <silkworm/common/log.hpp>
-#include <silkworm/common/stopwatch.hpp>
-#include <silkworm/concurrency/signal_handler.hpp>
-#include <silkworm/db/genesis.hpp>
-#include <silkworm/db/prune_mode.hpp>
-#include <silkworm/db/stages.hpp>
-#include <silkworm/stagedsync/stage_interhashes/trie_cursor.hpp>
-#include <silkworm/trie/hash_builder.hpp>
-#include <silkworm/trie/nibbles.hpp>
-#include <silkworm/trie/prefix_set.hpp>
+#include <silkworm/core/chain/config.hpp>
+#include <silkworm/core/chain/genesis.hpp>
+#include <silkworm/core/common/as_range.hpp>
+#include <silkworm/core/common/assert.hpp>
+#include <silkworm/core/common/cast.hpp>
+#include <silkworm/core/common/endian.hpp>
+#include <silkworm/core/trie/hash_builder.hpp>
+#include <silkworm/core/trie/nibbles.hpp>
+#include <silkworm/core/trie/prefix_set.hpp>
+#include <silkworm/node/common/decoding_exception.hpp>
+#include <silkworm/node/common/directories.hpp>
+#include <silkworm/node/common/log.hpp>
+#include <silkworm/node/common/stopwatch.hpp>
+#include <silkworm/node/concurrency/signal_handler.hpp>
+#include <silkworm/node/db/genesis.hpp>
+#include <silkworm/node/db/prune_mode.hpp>
+#include <silkworm/node/db/stages.hpp>
+#include <silkworm/node/stagedsync/stage_interhashes/trie_cursor.hpp>
 
 namespace fs = std::filesystem;
 using namespace silkworm;

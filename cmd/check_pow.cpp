@@ -21,14 +21,14 @@
 #include <CLI/CLI.hpp>
 #include <ethash/ethash.hpp>
 
-#include <silkworm/chain/config.hpp>
-#include <silkworm/common/directories.hpp>
-#include <silkworm/common/endian.hpp>
-#include <silkworm/common/log.hpp>
-#include <silkworm/common/stopwatch.hpp>
-#include <silkworm/concurrency/signal_handler.hpp>
-#include <silkworm/db/access_layer.hpp>
-#include <silkworm/db/stages.hpp>
+#include <silkworm/core/chain/config.hpp>
+#include <silkworm/core/common/endian.hpp>
+#include <silkworm/node/common/directories.hpp>
+#include <silkworm/node/common/log.hpp>
+#include <silkworm/node/common/stopwatch.hpp>
+#include <silkworm/node/concurrency/signal_handler.hpp>
+#include <silkworm/node/db/access_layer.hpp>
+#include <silkworm/node/db/stages.hpp>
 
 namespace fs = std::filesystem;
 using namespace silkworm;

@@ -19,13 +19,10 @@
 
 #include <CLI/CLI.hpp>
 
-#include <silkworm/common/directories.hpp>
-#include <silkworm/common/log.hpp>
-#include <silkworm/db/access_layer.hpp>
-#include <silkworm/db/stages.hpp>
-#include <silkworm/db/tables.hpp>
-#include <silkworm/db/util.hpp>
-#include <silkworm/etl/collector.hpp>
+#include <silkworm/node/common/directories.hpp>
+#include <silkworm/node/common/log.hpp>
+#include <silkworm/node/db/tables.hpp>
+#include <silkworm/node/db/util.hpp>
 
 using namespace silkworm;
 namespace fs = std::filesystem;

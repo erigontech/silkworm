@@ -18,19 +18,19 @@
 
 #include <CLI/CLI.hpp>
 
-#include <silkworm/backend/backend_kv_server.hpp>
 #include <silkworm/buildinfo.h>
-#include <silkworm/common/log.hpp>
-#include <silkworm/common/mem_usage.hpp>
-#include <silkworm/common/settings.hpp>
-#include <silkworm/common/stopwatch.hpp>
-#include <silkworm/concurrency/signal_handler.hpp>
-#include <silkworm/db/stages.hpp>
-#include <silkworm/downloader/block_exchange.hpp>
-#include <silkworm/downloader/sentry_client.hpp>
-#include <silkworm/downloader/sync_engine.hpp>
-#include <silkworm/snapshot/sync.hpp>
-#include <silkworm/stagedsync/execution_engine.hpp>
+#include <silkworm/core/common/mem_usage.hpp>
+#include <silkworm/node/backend/backend_kv_server.hpp>
+#include <silkworm/node/common/log.hpp>
+#include <silkworm/node/common/settings.hpp>
+#include <silkworm/node/common/stopwatch.hpp>
+#include <silkworm/node/concurrency/signal_handler.hpp>
+#include <silkworm/node/db/stages.hpp>
+#include <silkworm/node/downloader/block_exchange.hpp>
+#include <silkworm/node/downloader/sentry_client.hpp>
+#include <silkworm/node/downloader/sync_engine.hpp>
+#include <silkworm/node/snapshot/sync.hpp>
+#include <silkworm/node/stagedsync/execution_engine.hpp>
 
 #include "common.hpp"
 

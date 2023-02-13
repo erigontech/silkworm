@@ -1,4 +1,4 @@
 ignore:
   - "**/*_test.cpp"
   - "cmd"
-  - "interfaces"
+  - "silkworm/interfaces"

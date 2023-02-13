@@ -17,16 +17,16 @@
 #include <CLI/CLI.hpp>
 
 #include <silkworm/buildinfo.h>
-#include <silkworm/common/assert.hpp>
-#include <silkworm/common/base.hpp>
-#include <silkworm/common/decoding_exception.hpp>
-#include <silkworm/common/directories.hpp>
-#include <silkworm/common/endian.hpp>
-#include <silkworm/common/log.hpp>
-#include <silkworm/common/util.hpp>
-#include <silkworm/concurrency/signal_handler.hpp>
-#include <silkworm/db/stages.hpp>
-#include <silkworm/etl/collector.hpp>
+#include <silkworm/core/common/assert.hpp>
+#include <silkworm/core/common/base.hpp>
+#include <silkworm/core/common/endian.hpp>
+#include <silkworm/core/common/util.hpp>
+#include <silkworm/node/common/decoding_exception.hpp>
+#include <silkworm/node/common/directories.hpp>
+#include <silkworm/node/common/log.hpp>
+#include <silkworm/node/concurrency/signal_handler.hpp>
+#include <silkworm/node/db/stages.hpp>
+#include <silkworm/node/etl/collector.hpp>
 
 #include "common.hpp"
 

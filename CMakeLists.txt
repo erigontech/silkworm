@@ -76,6 +76,7 @@ option(SILKWORM_CLANG_COVERAGE "Clang instrumentation for code coverage reports"
 option(SILKWORM_SANITIZE "Build instrumentation for sanitizers" OFF)
 
 get_filename_component(SILKWORM_MAIN_DIR . ABSOLUTE)
+set(SILKWORM_MAIN_SRC_DIR "${SILKWORM_MAIN_DIR}/silkworm")
 
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/compiler_settings.cmake)
 
@@ -218,18 +219,8 @@ if(NOT MSVC)
 endif()
 
 # Silkworm itself
-add_subdirectory(core)
-
-if(NOT SILKWORM_CORE_ONLY)
-  add_subdirectory(interfaces)
-  add_subdirectory(node)
-  add_subdirectory(sentry)
-endif()
+add_subdirectory(silkworm)
 
 if(NOT SILKWORM_HAS_PARENT)
   add_subdirectory(cmd)
-endif()
-
-if(SILKWORM_WASM_API)
-  add_subdirectory(wasm)
 endif()

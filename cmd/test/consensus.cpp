@@ -27,18 +27,18 @@
 #include <magic_enum.hpp>
 #include <nlohmann/json.hpp>
 
-#include <silkworm/chain/difficulty.hpp>
-#include <silkworm/chain/intrinsic_gas.hpp>
-#include <silkworm/common/as_range.hpp>
-#include <silkworm/common/cast.hpp>
-#include <silkworm/common/endian.hpp>
-#include <silkworm/common/stopwatch.hpp>
-#include <silkworm/common/terminal.hpp>
-#include <silkworm/common/test_util.hpp>
-#include <silkworm/concurrency/thread_pool.hpp>
-#include <silkworm/consensus/blockchain.hpp>
-#include <silkworm/execution/evm.hpp>
-#include <silkworm/state/in_memory_state.hpp>
+#include <silkworm/core/chain/config.hpp>
+#include <silkworm/core/chain/difficulty.hpp>
+#include <silkworm/core/chain/intrinsic_gas.hpp>
+#include <silkworm/core/common/as_range.hpp>
+#include <silkworm/core/common/cast.hpp>
+#include <silkworm/core/common/test_util.hpp>
+#include <silkworm/core/consensus/blockchain.hpp>
+#include <silkworm/core/execution/evm.hpp>
+#include <silkworm/core/state/in_memory_state.hpp>
+#include <silkworm/node/common/stopwatch.hpp>
+#include <silkworm/node/common/terminal.hpp>
+#include <silkworm/node/concurrency/thread_pool.hpp>
 
 // See https://ethereum-tests.readthedocs.io
 

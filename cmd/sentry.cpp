@@ -20,8 +20,8 @@
 #include <boost/process/environment.hpp>
 
 #include <silkworm/buildinfo.h>
-#include <silkworm/common/util.hpp>
-#include <silkworm/rpc/common/util.hpp>
+#include <silkworm/core/common/util.hpp>
+#include <silkworm/node/rpc/common/util.hpp>
 #include <silkworm/sentry/sentry.hpp>
 #include <silkworm/sentry/settings.hpp>
 

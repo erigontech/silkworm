@@ -72,7 +72,6 @@ TEST_CASE("ServerContext", "[silkworm][rpc][server_context]") {
     }
 
     SECTION("print") {
-        test::SetLogVerbosityGuard guard{log::Level::kNone};
         CHECK_NOTHROW(test::null_stream() << server_context);
     }
 }

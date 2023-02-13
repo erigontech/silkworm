@@ -26,11 +26,7 @@
 #include <CLI/CLI.hpp>
 #include <magic_enum.hpp>
 
-#include <silkworm/common/log.hpp>
-#include <silkworm/common/stopwatch.hpp>
-#include <silkworm/common/terminal.hpp>
-#include <silkworm/common/test_util.hpp>
-#include <silkworm/concurrency/thread_pool.hpp>
+#include <silkworm/core/common/test_util.hpp>
 #include <silkworm/lightclient/snappy/snappy_codec.hpp>
 #include <silkworm/lightclient/ssz/beacon-chain/attestation.hpp>
 #include <silkworm/lightclient/ssz/beacon-chain/beacon_block.hpp>
@@ -42,6 +38,10 @@
 #include <silkworm/lightclient/ssz/beacon-chain/sync_aggregate.hpp>
 #include <silkworm/lightclient/ssz/beacon-chain/volutary_exit.hpp>
 #include <silkworm/lightclient/ssz/ssz_container.hpp>
+#include <silkworm/node/common/log.hpp>
+#include <silkworm/node/common/stopwatch.hpp>
+#include <silkworm/node/common/terminal.hpp>
+#include <silkworm/node/concurrency/thread_pool.hpp>
 
 // See https://github.com/ethereum/consensus-specs/tests/formats/ssz_static/core.md
 

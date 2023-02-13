@@ -156,6 +156,9 @@ jobs:
       fail-fast: false # This makes it so that if 1 of the tests in the matrix fail, they don't all fail
     if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository
     steps:
+    - name: Support long paths
+      run: git config --system core.longpaths true
+
     - uses: actions/checkout@v3
       with:
         submodules: recursive

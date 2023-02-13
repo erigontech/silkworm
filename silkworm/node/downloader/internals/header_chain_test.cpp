@@ -21,6 +21,7 @@
 #include <catch2/catch.hpp>
 
 #include <silkworm/core/common/cast.hpp>
+#include <silkworm/node/test/log.hpp>
 
 namespace silkworm {
 // Useful definitions
@@ -289,6 +290,7 @@ TEST_CASE("HeaderList - split_into_segments - Three headers connected") {
  *        3 segments: {h3?}, {h4?}, {h2, h1}
  */
 TEST_CASE("HeaderList - split_into_segments - Four headers connected") {
+    test::SetLogVerbosityGuard log_guard{log::Level::kNone};
     std::vector<BlockHeader> headers;
 
     BlockHeader header1;
@@ -1203,6 +1205,7 @@ TEST_CASE("HeaderChain - process_segment - (6) (malicious) siblings") {
 }
 
 TEST_CASE("HeaderChain - process_segment - (7) invalidating anchor") {
+    test::SetLogVerbosityGuard log_guard{log::Level::kNone};
     using namespace std;
 
     ChainConfig chain_config{kMainnetConfig};
@@ -1295,6 +1298,7 @@ TEST_CASE("HeaderChain - process_segment - (7) invalidating anchor") {
 }
 
 TEST_CASE("HeaderChain - process_segment - (8) sibling with anchor invalidation and links reduction") {
+    test::SetLogVerbosityGuard log_guard{log::Level::kNone};
     using namespace std;
 
     ChainConfig chain_config{kMainnetConfig};

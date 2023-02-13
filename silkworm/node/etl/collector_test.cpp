@@ -26,6 +26,7 @@
 #include <silkworm/node/common/log.hpp>
 #include <silkworm/node/common/test_context.hpp>
 #include <silkworm/node/db/tables.hpp>
+#include <silkworm/node/test/log.hpp>
 
 namespace silkworm::etl {
 
@@ -98,11 +99,18 @@ void run_collector_test(LoadFunc load_func, bool do_copy = true) {
     key_reader_thread.join();
 }
 
-TEST_CASE("collect_and_default_load") { run_collector_test(nullptr); }
+TEST_CASE("collect_and_default_load") {
+    test::SetLogVerbosityGuard log_guard{log::Level::kNone};
+    run_collector_test(nullptr);
+}
 
-TEST_CASE("collect_and_default_load_move") { run_collector_test(nullptr, false); }
+TEST_CASE("collect_and_default_load_move") {
+    test::SetLogVerbosityGuard log_guard{log::Level::kNone};
+    run_collector_test(nullptr, false);
+}
 
 TEST_CASE("collect_and_load") {
+    test::SetLogVerbosityGuard log_guard{log::Level::kNone};
     run_collector_test([](const Entry& entry, mdbx::cursor& table, MDBX_put_flags_t) {
         Bytes key{entry.key};
         key.at(0) = 1;

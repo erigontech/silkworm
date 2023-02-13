@@ -34,7 +34,7 @@ class SetLogVerbosityGuard {
     log::Level current_level_;
 };
 
-// Factory function creating one null output stream (all characters are discarded)
+//! Factory function creating one null output stream (all characters are discarded)
 inline std::ostream& null_stream() {
     static struct null_buf : public std::streambuf {
         int overflow(int c) override { return c; }
@@ -44,5 +44,16 @@ inline std::ostream& null_stream() {
     } null_strm;
     return null_strm;
 }
+
+//! Utility class using RAII to swap the underlying buffers of the provided streams
+class StreamSwap {
+  public:
+    StreamSwap(std::ostream& o1, std::ostream& o2) : buffer_(o1.rdbuf()), stream_(o1) { o1.rdbuf(o2.rdbuf()); }
+    ~StreamSwap() { stream_.rdbuf(buffer_); }
+
+  private:
+    std::streambuf* buffer_;
+    std::ostream& stream_;
+};
 
 }  // namespace silkworm::test

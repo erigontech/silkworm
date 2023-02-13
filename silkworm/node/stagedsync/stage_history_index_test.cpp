@@ -33,6 +33,10 @@ using namespace evmc::literals;
 namespace silkworm {
 
 TEST_CASE("Stage History Index") {
+    // Temporarily override std::cout and std::cerr with null stream to avoid terminal output
+    test::StreamSwap cout_swap{std::cout, test::null_stream()};
+    test::StreamSwap cerr_swap{std::cerr, test::null_stream()};
+
     test::Context context;
     db::RWTxn& txn{context.rw_txn()};
     txn.disable_commit();

@@ -27,11 +27,11 @@ Context::Context(bool with_create_tables, bool inmemory) {
     node_settings_.chain_config = silkworm::kMainnetConfig;
     node_settings_.chain_config->genesis_hash.emplace(kMainnetGenesisHash);
     node_settings_.chaindata_env_config =
-        db::EnvConfig{node_settings_.data_directory->chaindata().path().string(),
-                      /*create=*/true,
-                      /*readonly=*/false,
-                      /*exclusive=*/false,
-                      /*inmemory=*/inmemory};
+        db::EnvConfig{.path = node_settings_.data_directory->chaindata().path().string(),
+                      .create = true,
+                      .readonly = false,
+                      .exclusive = false,
+                      .inmemory = inmemory};
     node_settings_.prune_mode = std::make_unique<db::PruneMode>();
     env_ = db::open_env(node_settings_.chaindata_env_config);
     txn_ = std::make_unique<db::RWTxn>(env_);

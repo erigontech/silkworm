@@ -22,4 +22,5 @@ enum class DisconnectReason : uint8_t {
     DisconnectRequested = 0,
     UselessPeer = 3,
     TooManyPeers = 4,
+    ClientQuitting = 8,
 };

@@ -1433,13 +1433,16 @@ TEST_CASE("HeaderChain - process_segment - (8) sibling with anchor invalidation 
         seconds_t timeout = 5s;
 
         auto anchor1 = chain.anchors_[h5p.parent_hash];
-        anchor1->timeouts = 10;  // this cause invalidation
-        anchor1->timestamp = now - timeout;
+        chain.anchor_queue_.update(anchor1, [&](auto& a) {
+            a->timeouts = 10;  // this cause invalidation
+            a->timestamp = now - timeout;
+        });
 
         auto anchor2 = chain.anchors_[headers[3].parent_hash];
         anchor2->timestamp = now + timeout;  // avoid extension now
-
-        chain.anchor_queue_.fix();
+        chain.anchor_queue_.update(anchor2, [&](auto& a) {
+            a->timestamp = now + timeout;  // avoid extension now
+        });
 
         auto [packet, penalizations] = chain.anchor_extension_request(now, timeout);  // invalidate (=erase) anchor1
 

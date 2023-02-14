@@ -24,25 +24,118 @@
 
 namespace silkworm {
 
-TEST_CASE("heap_based_priority_queue - element ordering") {
-    heap_based_priority_queue<int> queue;
+TEST_CASE("set_based_priority_queue") {
+    set_based_priority_queue<int, std::greater<>> queue;
     queue.push(3);
     queue.push(2);
     queue.push(4);
     queue.push(1);
 
+    SECTION("element ordering") {
+        REQUIRE(queue.size() == 4);
+
+        auto begin = queue.begin();
+        CHECK(*begin == 4);
+        CHECK(*(++begin) == 3);
+        auto end = queue.end();
+        CHECK(*(--end) == 1);
+    }
+
+    SECTION("in order removal") {
+        REQUIRE(queue.size() == 4);
+
+        CHECK(queue.top() == 4);
+        queue.pop();
+        CHECK(queue.top() == 3);
+        queue.pop();
+        CHECK(queue.top() == 2);
+        queue.pop();
+        CHECK(queue.top() == 1);
+        queue.pop();
+
+        CHECK(queue.size() == 0);
+        CHECK(queue.empty());
+        CHECK(queue.begin() == queue.end());
+    }
+
+    SECTION("erasing from the top") {
+        REQUIRE(queue.size() == 4);
+
+        auto top = queue.top();
+        queue.erase(top);
+
+        REQUIRE(queue.size() == 3);
+
+        CHECK(queue.top() == 3);
+        queue.pop();
+        CHECK(queue.top() == 2);
+        queue.pop();
+        CHECK(queue.top() == 1);
+        queue.pop();
+    }
+
+    SECTION("erasing in the middle") {
+        queue.erase(2);
+
+        REQUIRE(queue.size() == 3);
+
+        CHECK(queue.top() == 4);
+        queue.pop();
+        CHECK(queue.top() == 3);
+        queue.pop();
+        CHECK(queue.top() == 1);
+        queue.pop();
+    }
+
+    SECTION("containment") {
+        CHECK(queue.contains(1));
+        CHECK(queue.contains(2));
+        CHECK(queue.contains(3));
+        CHECK(queue.contains(4));
+        CHECK(!queue.contains(5));
+    }
+
+    SECTION("updating items") {
+        REQUIRE(queue.size() == 4);
+
+        bool ok = queue.update(2, [](int& x) { x = 0; });
+        CHECK(ok);
+
+        CHECK(queue.top() == 4);
+        queue.pop();
+        CHECK(queue.top() == 3);
+        queue.pop();
+        CHECK(queue.top() == 1);
+        queue.pop();
+        CHECK(queue.top() == 0);
+        queue.pop();
+    }
+}
+
+TEST_CASE("set_based_priority_queue - shared_ptr") {
+
+    struct GreaterThan : public std::function<bool(std::shared_ptr<int>, std::shared_ptr<int>)> {
+        bool operator()(const std::shared_ptr<int>& x, const std::shared_ptr<int>& y) const {
+            return *x != *y ? *x > *y : x > y;  // operator <, when values are the same preserve identity
+        }
+    };
+
+    set_based_priority_queue<std::shared_ptr<int>, GreaterThan> queue;
+    queue.push(std::make_shared<int>(3));
+    queue.push(std::make_shared<int>(2));
+    queue.push(std::make_shared<int>(4));
+    queue.push(std::make_shared<int>(1));
+
     REQUIRE(queue.size() == 4);
 
-    REQUIRE(queue.top() == 4);
-    queue.pop();
-    REQUIRE(queue.top() == 3);
-    queue.pop();
-    REQUIRE(queue.top() == 2);
-    queue.pop();
-    REQUIRE(queue.top() == 1);
-    queue.pop();
-
-    REQUIRE(queue.size() == 0);
+    SECTION("updating items") {
+        auto top = queue.top();
+        bool updated = queue.update(top, [](auto& x) { *x = 0; });
+        CHECK(updated);
+        CHECK(*queue.top() == 3);
+        auto end = queue.end();
+        CHECK(**(--end) == 0);
+    }
 }
 
 TEST_CASE("Oldest_First_Anchor_Queue") {
@@ -88,27 +181,37 @@ TEST_CASE("Oldest_First_Anchor_Queue") {
         REQUIRE(queue.top()->timestamp == now + 4s);
         queue.pop();
 
-        REQUIRE(queue.size() == 0);
+        CHECK(queue.size() == 0);
     }
 
-    SECTION("fix the queue") {
+    SECTION("in order iterating") {
+        auto begin = queue.begin();
+        auto& elem1 = *begin;
+        CHECK((elem1->timestamp == now && elem1->blockHeight == 1));
+        auto& elem2 = *(++begin);
+        CHECK((elem2->timestamp == now && elem2->blockHeight == 3));
+        auto& elem3 = *(++begin);
+        CHECK((elem3->timestamp == now + 2s));
+        auto& elem4 = *(++begin);
+        CHECK((elem4->timestamp == now + 4s));
+
+        auto end = queue.end();
+        auto& elem4bis = *(--end);
+        CHECK((elem4bis->timestamp == now + 4s));
+    }
+
+    SECTION("updating items") {
         REQUIRE(queue.size() == 4);
 
         auto top_anchor = queue.top();
-        top_anchor->timestamp = now + 5s;
+        queue.update(top_anchor, [&](auto& a) { a->timestamp = now + 5s; });
 
-        // top anchor changed but queue is broken
-        REQUIRE((queue.top()->timestamp == now + 5s && queue.top()->blockHeight == 1));
-
-        // let fix it
-        queue.fix();
-        REQUIRE(
-            (queue.top()->timestamp == now && queue.top()->blockHeight == 3));  // now 2nd anchor is the new top anchor
+        CHECK((queue.top()->timestamp == now && queue.top()->blockHeight == 3));
         REQUIRE(queue.size() == 4);
         queue.pop();
         queue.pop();
         queue.pop();
-        REQUIRE((queue.top()->timestamp == now + 5s && queue.top()->blockHeight == 1));  // now top anchor is at bottom
+        CHECK((queue.top()->timestamp == now + 5s && queue.top()->blockHeight == 1));
     }
 
     SECTION("erase an element") {
@@ -116,14 +219,14 @@ TEST_CASE("Oldest_First_Anchor_Queue") {
 
         auto top_anchor = queue.top();
         queue.erase(top_anchor);
-        REQUIRE(queue.size() == 3);
-        REQUIRE((queue.top()->timestamp == now && queue.top()->blockHeight == 3));
+        CHECK(queue.size() == 3);
+        CHECK((queue.top()->timestamp == now && queue.top()->blockHeight == 3));
 
         queue.erase(anchor2);
-        REQUIRE(queue.size() == 2);
-        REQUIRE((queue.top()->timestamp == now && queue.top()->blockHeight == 3));
+        CHECK(queue.size() == 2);
+        CHECK((queue.top()->timestamp == now && queue.top()->blockHeight == 3));
         queue.pop();
-        REQUIRE(queue.top()->timestamp == now + 4s);
+        CHECK(queue.top()->timestamp == now + 4s);
     }
 }
 
@@ -154,62 +257,6 @@ TEST_CASE("Oldest_First_Anchor_Queue - siblings handling") {
     REQUIRE(queue.size() == 2);  // it should be present
     queue.erase(anchor1);        // erase 1 element only
     REQUIRE(queue.size() == 1);
-}
-
-TEST_CASE("Youngest_First_Link_Queue") {
-    using namespace std::literals::chrono_literals;
-    BlockHeader dummy_header;
-    bool persisted = false;
-
-    YoungestFirstLinkQueue queue;
-
-    auto link = std::make_shared<Link>(dummy_header, persisted);
-    link->blockHeight = 1;
-    queue.push(link);
-
-    link = std::make_shared<Link>(dummy_header, persisted);
-    link->blockHeight = 4;
-    queue.push(link);
-
-    link = std::make_shared<Link>(dummy_header, persisted);
-    link->blockHeight = 3;
-    queue.push(link);
-
-    link = std::make_shared<Link>(dummy_header, persisted);
-    link->blockHeight = 2;
-    queue.push(link);
-
-    auto link2 = link;  // copy
-
-    SECTION("element ordering") {
-        REQUIRE(queue.size() == 4);
-
-        REQUIRE(queue.top()->blockHeight == 4);
-        queue.pop();
-        REQUIRE(queue.top()->blockHeight == 3);
-        queue.pop();
-        REQUIRE(queue.top()->blockHeight == 2);
-        queue.pop();
-        REQUIRE(queue.top()->blockHeight == 1);
-        queue.pop();
-
-        REQUIRE(queue.size() == 0);
-    }
-
-    SECTION("erase an element") {
-        REQUIRE(queue.size() == 4);
-
-        auto top_link = queue.top();
-        queue.erase(top_link);
-        REQUIRE(queue.size() == 3);
-        REQUIRE(queue.top()->blockHeight == 3);
-
-        queue.erase(link2);
-        REQUIRE(queue.size() == 2);
-        REQUIRE(queue.top()->blockHeight == 3);
-        queue.pop();
-        REQUIRE(queue.top()->blockHeight == 1);
-    }
 }
 
 TEST_CASE("Oldest_First_Link_Queue") {

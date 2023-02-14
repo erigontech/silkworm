@@ -65,9 +65,9 @@ struct Anchor {
     BlockNum blockHeight;                      // block height of the anchor
     time_point_t timestamp;                    // request/arrival time
     time_point_t prev_timestamp;               // Used to restore timestamp when a request fails for network reasons
-    int timeouts = 0;                          // Number of timeout that this anchor has experienced;after certain threshold,it gets invalidated
+    int timeouts{0};                           // Number of timeout that this anchor has experienced;after certain threshold,it gets invalidated
     std::vector<std::shared_ptr<Link>> links;  // Links attached immediately to this anchor
-    BlockNum lastLinkHeight;                   // the blockHeight of the last link of the chain bundle anchored to this
+    BlockNum lastLinkHeight{0};                // the blockHeight of the last link of the chain bundle anchored to this
     PeerId peerId;
 
     Anchor(const BlockHeader& header, PeerId p) {
@@ -125,6 +125,14 @@ struct AnchorYoungerThan : public std::function<bool(std::shared_ptr<Link>, std:
     }
 };
 
+struct AnchorOlderThan : public std::function<bool(std::shared_ptr<Anchor>, std::shared_ptr<Anchor>)> {
+    bool operator()(const std::shared_ptr<Anchor>& x, const std::shared_ptr<Anchor>& y) const {
+        return x->timestamp != y->timestamp ? x->timestamp < y->timestamp :               // prefer smaller timestamp
+                   (x->blockHeight != y->blockHeight ? x->blockHeight < y->blockHeight :  // when timestamps are the same prioritise low blockHeight
+                        x < y);                                                           // when blockHeight are the same preserve identity
+    }
+};
+
 struct BlockOlderThan : public std::function<bool(BlockNum, BlockNum)> {
     bool operator()(const BlockNum& x, const BlockNum& y) const { return x < y; }
 };
@@ -149,28 +157,21 @@ struct mbpq_key<std::shared_ptr<silkworm::Link>> {                              
 };
 namespace silkworm {  // reopen namespace
 
+// A queue of older links to evict when we need to free memory
 using OldestFirstLinkMap = map_based_priority_queue<std::shared_ptr<Link>, BlockOlderThan>;
 
+// A queue of younger links to get the next link to process
 using OldestFirstLinkQueue = set_based_priority_queue<std::shared_ptr<Link>, LinkOlderThan>;
-
-// We need a queue for all links to
-// - store the links
-// - get younger links to evict when we need to free memory
-using YoungestFirstLinkQueue = set_based_priority_queue<std::shared_ptr<Link>,
-                                                        LinkYoungerThan>;  // c++ set put min at the top
 
 // We need a queue for anchors to get anchors in reverse order respect to timestamp
 // (that is the time at which we asked peers for ancestor of the anchor)
-using OldestFirstAnchorQueue = heap_based_priority_queue<std::shared_ptr<Anchor>,
-                                                         std::vector<std::shared_ptr<Anchor>>,  // inner impl
-                                                         AnchorYoungerThan>;                    // c++ heap is a max heap
-// (note that go heap is a min heap)
+using OldestFirstAnchorQueue = set_based_priority_queue<std::shared_ptr<Anchor>, AnchorOlderThan>;
 
-// Maps
+// Maps to get a link or an anchor by hash
 using LinkMap = std::map<Hash, std::shared_ptr<Link>>;      // hash = link hash
 using AnchorMap = std::map<Hash, std::shared_ptr<Anchor>>;  // hash = anchor *parent* hash
 
-/* todo: improve encapsulation
+/* We can improve encapsulation:
  * AnchorMap key is the anchor parent hash, note 'parent', so it is better to encapsulate this knowledge in a class
  * so we can write anchor_map.add(anchor) in place of anchor_map[anchor->parent_hash] = anchor
  * Also anchorQueue and anchorMap should be encapsulated because if one change an anchor then anchorQueue must be

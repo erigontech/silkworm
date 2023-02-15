@@ -248,15 +248,13 @@ TEST_CASE("Oldest_First_Anchor_Queue - siblings handling") {
     OldestFirstAnchorQueue queue;
 
     queue.push(anchor1);
-
+    CHECK(queue.size() == 1);
     queue.push(anchor2);   // add a sibling with different identity
+    CHECK(queue.size() == 2);
     queue.erase(anchor2);  // erase only 1 element using identity, not block number
-    REQUIRE(queue.size() == 1);
-
+    CHECK(queue.size() == 1);
     queue.push(anchor1);         // add the same object, same identity
-    REQUIRE(queue.size() == 2);  // it should be present
-    queue.erase(anchor1);        // erase 1 element only
-    REQUIRE(queue.size() == 1);
+    CHECK(queue.size() == 1);    // should not add it
 }
 
 TEST_CASE("Oldest_First_Link_Queue") {
@@ -318,7 +316,7 @@ TEST_CASE("Oldest_First_Link_Queue") {
 
         queue.push(link1);  // again, same identity
 
-        REQUIRE(queue.size() == 5);
+        CHECK(queue.size() == 4);
         bool link1_present = queue.contains(link1);
         REQUIRE(link1_present == true);
     }

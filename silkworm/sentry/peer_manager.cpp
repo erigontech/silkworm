@@ -54,7 +54,7 @@ awaitable<void> PeerManager::start_in_strand(common::Channel<std::shared_ptr<rlp
     }
 }
 
-boost::asio::awaitable<void> PeerManager::start_peer(const std::shared_ptr<rlpx::Peer>& peer) {
+boost::asio::awaitable<void> PeerManager::start_peer(std::shared_ptr<rlpx::Peer> peer) {
     try {
         co_await rlpx::Peer::start(peer);
     } catch (const boost::system::system_error& ex) {
@@ -72,7 +72,7 @@ boost::asio::awaitable<void> PeerManager::start_peer(const std::shared_ptr<rlpx:
 }
 
 boost::asio::awaitable<void> PeerManager::drop_peer(
-    const std::shared_ptr<rlpx::Peer>& peer,
+    std::shared_ptr<rlpx::Peer> peer,
     DisconnectReason reason) {
     try {
         co_await rlpx::Peer::drop(peer, reason);
@@ -131,15 +131,15 @@ void PeerManager::add_observer(std::weak_ptr<PeerManagerObserver> observer) {
     return observers;
 }
 
-void PeerManager::on_peer_added(std::shared_ptr<rlpx::Peer> peer) {
+void PeerManager::on_peer_added(const std::shared_ptr<rlpx::Peer>& peer) {
     for (auto& observer : observers()) {
-        observer->on_peer_added(std::move(peer));
+        observer->on_peer_added(peer);
     }
 }
 
-void PeerManager::on_peer_removed(std::shared_ptr<rlpx::Peer> peer) {
+void PeerManager::on_peer_removed(const std::shared_ptr<rlpx::Peer>& peer) {
     for (auto& observer : observers()) {
-        observer->on_peer_removed(std::move(peer));
+        observer->on_peer_removed(peer);
     }
 }
 

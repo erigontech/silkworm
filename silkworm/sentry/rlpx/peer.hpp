@@ -59,10 +59,11 @@ class Peer {
           strand_(boost::asio::make_strand(io_context)),
           send_message_tasks_(strand_, 1000),
           send_message_channel_(io_context),
-          receive_message_channel_(io_context) {}
+          receive_message_channel_(io_context),
+          pong_channel_(io_context) {}
     ~Peer();
 
-    static boost::asio::awaitable<void> start(const std::shared_ptr<Peer>& peer);
+    static boost::asio::awaitable<void> start(std::shared_ptr<Peer> peer);
     static boost::asio::awaitable<void> drop(const std::shared_ptr<Peer>& peer, DisconnectReason reason);
 
     static void post_message(const std::shared_ptr<Peer>& peer, const common::Message& message);
@@ -90,6 +91,7 @@ class Peer {
     boost::asio::awaitable<void> send_message(common::Message message);
     boost::asio::awaitable<void> send_messages(framing::MessageStream& message_stream);
     boost::asio::awaitable<void> receive_messages(framing::MessageStream& message_stream);
+    boost::asio::awaitable<void> ping_periodically(framing::MessageStream& message_stream);
 
     common::SocketStream stream_;
     common::EccKeyPair node_key_;
@@ -102,6 +104,7 @@ class Peer {
     common::TaskGroup send_message_tasks_;
     common::Channel<common::Message> send_message_channel_;
     common::Channel<common::Message> receive_message_channel_;
+    common::Channel<common::Message> pong_channel_;
 };
 
 }  // namespace silkworm::sentry::rlpx

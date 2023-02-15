@@ -56,9 +56,9 @@ class PeerManager {
 
   private:
     boost::asio::awaitable<void> start_in_strand(common::Channel<std::shared_ptr<rlpx::Peer>>& peer_channel);
-    boost::asio::awaitable<void> start_peer(const std::shared_ptr<rlpx::Peer>& peer);
-    boost::asio::awaitable<void> drop_peer(
-        const std::shared_ptr<rlpx::Peer>& peer,
+    boost::asio::awaitable<void> start_peer(std::shared_ptr<rlpx::Peer> peer);
+    static boost::asio::awaitable<void> drop_peer(
+        std::shared_ptr<rlpx::Peer> peer,
         DisconnectReason reason);
 
     static size_t max_peer_tasks(size_t max_peers);
@@ -67,8 +67,8 @@ class PeerManager {
     boost::asio::awaitable<void> enumerate_random_peers_in_strand(size_t max_count, EnumeratePeersCallback callback);
 
     [[nodiscard]] std::list<std::shared_ptr<PeerManagerObserver>> observers();
-    void on_peer_added(std::shared_ptr<rlpx::Peer> peer);
-    void on_peer_removed(std::shared_ptr<rlpx::Peer> peer);
+    void on_peer_added(const std::shared_ptr<rlpx::Peer>& peer);
+    void on_peer_removed(const std::shared_ptr<rlpx::Peer>& peer);
 
     std::list<std::shared_ptr<rlpx::Peer>> peers_;
     size_t max_peers_;

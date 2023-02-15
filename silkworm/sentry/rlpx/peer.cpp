@@ -30,9 +30,11 @@
 #include <silkworm/sentry/common/awaitable_wait_for_all.hpp>
 #include <silkworm/sentry/common/awaitable_wait_for_one.hpp>
 #include <silkworm/sentry/common/timeout.hpp>
+#include <silkworm/sentry/common/sleep.hpp>
 
 #include "auth/handshake.hpp"
 #include "common/disconnect_message.hpp"
+#include "ping_message.hpp"
 
 namespace silkworm::sentry::rlpx {
 
@@ -43,11 +45,11 @@ Peer::~Peer() {
     log::Debug() << "silkworm::sentry::rlpx::Peer::~Peer";
 }
 
-awaitable<void> Peer::start(const std::shared_ptr<Peer>& peer) {
-    using namespace common::awaitable_wait_for_all;
+awaitable<void> Peer::start(std::shared_ptr<Peer> peer) {
+    using namespace common::awaitable_wait_for_one;
 
-    auto start = Peer::handle(peer) && Peer::send_message_tasks_wait(peer);
-    return co_spawn(peer->strand_, std::move(start), use_awaitable);
+    auto start = Peer::handle(peer) || Peer::send_message_tasks_wait(peer);
+    co_await co_spawn(peer->strand_, std::move(start), use_awaitable);
 }
 
 static bool is_fatal_network_error(const boost::system::system_error& ex) {
@@ -58,6 +60,12 @@ static bool is_fatal_network_error(const boost::system::system_error& ex) {
 }
 
 static const std::chrono::milliseconds kPeerDisconnectTimeout = 2s;
+static const std::chrono::milliseconds kPeerPingInterval = 15s;
+
+class PingTimeoutError : public std::runtime_error {
+  public:
+    PingTimeoutError() : std::runtime_error("Peer ping timed out") {}
+};
 
 awaitable<void> Peer::handle(std::shared_ptr<Peer> peer) {
     co_await peer->handle();
@@ -92,8 +100,16 @@ awaitable<void> Peer::handle() {
         }
 
         bool is_cancelled = false;
+        bool is_ping_timed_out = false;
+
         try {
-            co_await (send_messages(message_stream) && receive_messages(message_stream));
+            co_await (
+                send_messages(message_stream) &&
+                receive_messages(message_stream) &&
+                ping_periodically(message_stream)
+            );
+        } catch (const PingTimeoutError&) {
+            is_ping_timed_out = true;
         } catch (const boost::system::system_error& ex) {
             if (ex.code() == boost::system::errc::operation_canceled) {
                 is_cancelled = true;
@@ -110,8 +126,17 @@ awaitable<void> Peer::handle() {
             throw boost::system::system_error(make_error_code(boost::system::errc::operation_canceled));
         }
 
+        if (is_ping_timed_out) {
+            log::Debug() << "Peer::handle ping timed out";
+            co_await (message_stream.send(DisconnectMessage{DisconnectReason::PingTimeout}.to_message()) ||
+                      common::Timeout::after(kPeerDisconnectTimeout));
+        }
+
     } catch (const auth::Handshake::DisconnectError&) {
         log::Debug() << "Peer::handle DisconnectError";
+        co_return;
+    } catch (const common::Timeout::ExpiredError&) {
+        log::Debug() << "Peer::handle sending a final DisconnectMessage timed out";
         co_return;
     } catch (const boost::system::system_error& ex) {
         if (is_fatal_network_error(ex)) {
@@ -249,9 +274,32 @@ awaitable<void> Peer::receive_messages(framing::MessageStream& message_stream) {
 
         if (message.id == DisconnectMessage::kId) {
             throw auth::Handshake::DisconnectError();
+        } else if (message.id == PingMessage::kId) {
+            co_await message_stream.send(PongMessage{}.to_message());
+            continue;
+        } else if (message.id == PongMessage::kId) {
+            co_await pong_channel_.send(std::move(message));
+            continue;
         }
 
         co_await receive_message_channel_.send(std::move(message));
+    }
+}
+
+awaitable<void> Peer::ping_periodically(framing::MessageStream& message_stream) {
+    using namespace common::awaitable_wait_for_one;
+
+    // loop until message_stream exception
+    while (true) {
+        co_await common::sleep(kPeerPingInterval);
+
+        co_await message_stream.send(PingMessage{}.to_message());
+
+        try {
+            co_await (pong_channel_.receive() || common::Timeout::after(kPeerPingInterval / 3));
+        } catch (const common::Timeout::ExpiredError&) {
+            throw PingTimeoutError();
+        }
     }
 }
 

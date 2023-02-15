@@ -506,7 +506,7 @@ void HeaderChain::request_nack(const GetBlockHeadersPacket66& packet) {
 
     log::Trace() << "[INFO] HeaderChain: restoring timestamp due to request nack, requestId=" << packet.requestId;
 
-    anchor_queue_.update(anchor, [&](const auto& anchor) { anchor->restore_timestamp(); });
+    anchor_queue_.update(anchor, [&](auto& anchor_) { anchor_->restore_timestamp(); });
 }
 
 bool HeaderChain::has_link(Hash hash) { return (links_.find(hash) != links_.end()); }

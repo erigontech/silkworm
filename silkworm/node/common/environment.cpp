@@ -23,8 +23,10 @@ namespace silkworm {
 std::optional<BlockNum> Environment::get_stop_at_block() {
     std::optional<BlockNum> target_block;
     // User can specify to stop downloading process at some block
-    if (const char* stop_at_block{std::getenv("STOP_AT_BLOCK")}; stop_at_block != nullptr) {
-        target_block = std::stoul(stop_at_block);
+    auto environment = boost::this_process::environment();
+    auto stop_at_block = environment["STOP_AT_BLOCK"];
+    if (!stop_at_block.empty()) {
+        target_block = std::stoul(stop_at_block.to_string());
     }
     return target_block;
 }
@@ -35,12 +37,14 @@ void Environment::set_stop_at_block(BlockNum block_num) {
 }
 
 std::optional<std::string> Environment::get_stop_before_stage() {
-    std::optional<std::string> stop_before_stage;
+    std::optional<std::string> stage;
     // User can specify to stop staged execution before some stage
-    if (const char* stop_stage_name{std::getenv("STOP_BEFORE_STAGE")}; stop_stage_name != nullptr) {
-        stop_before_stage = stop_stage_name;
+    auto environment = boost::this_process::environment();
+    auto stop_before_stage = environment["STOP_BEFORE_STAGE"];
+    if (!stop_before_stage.empty()) {
+        stage = stop_before_stage.to_string();
     }
-    return stop_before_stage;
+    return stage;
 }
 
 void Environment::set_stop_before_stage(const std::string& stage_name) {
@@ -51,9 +55,10 @@ void Environment::set_stop_before_stage(const std::string& stage_name) {
 bool Environment::are_pre_verified_hashes_disabled() {
     bool disabled = false;
     // User can specify to not use the pre-verified hashes and do a full header verification
-    const char* env_var{std::getenv("DISABLE_PRE_VERIFIED_HASHES")};
-    if (env_var != nullptr) {
-        disabled = std::stoul(env_var) != 0;
+    auto environment = boost::this_process::environment();
+     auto env_var = environment["DISABLE_PRE_VERIFIED_HASHES"];
+    if (!env_var.empty()) {
+        disabled = std::stoul(env_var.to_string()) != 0;
     }
     return disabled;
 }

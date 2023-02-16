@@ -41,6 +41,29 @@ namespace silkworm::sentry::rlpx {
 using namespace std::chrono_literals;
 using namespace boost::asio;
 
+Peer::Peer(
+    any_io_executor&& executor,
+    common::SocketStream stream,
+    common::EccKeyPair node_key,
+    std::string client_id,
+    uint16_t node_listen_port,
+    std::unique_ptr<Protocol> protocol,
+    std::optional<common::EnodeUrl> url,
+    std::optional<common::EccPublicKey> peer_public_key)
+    : stream_(std::move(stream)),
+      node_key_(std::move(node_key)),
+      client_id_(std::move(client_id)),
+      node_listen_port_(node_listen_port),
+      protocol_(std::move(protocol)),
+      url_(std::move(url)),
+      peer_public_key_(std::move(peer_public_key)),
+      strand_(make_strand(executor)),
+      send_message_tasks_(strand_, 1000),
+      send_message_channel_(executor),
+      receive_message_channel_(executor),
+      pong_channel_(executor) {
+}
+
 Peer::~Peer() {
     log::Debug() << "silkworm::sentry::rlpx::Peer::~Peer";
 }

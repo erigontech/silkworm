@@ -24,12 +24,14 @@
 
 #include <boost/asio/awaitable.hpp>
 #include <boost/asio/io_context.hpp>
+#include <boost/asio/any_io_executor.hpp>
 #include <boost/asio/strand.hpp>
 
 #include <silkworm/sentry/common/atomic_value.hpp>
 #include <silkworm/sentry/common/channel.hpp>
 #include <silkworm/sentry/common/ecc_key_pair.hpp>
 #include <silkworm/sentry/common/ecc_public_key.hpp>
+#include <silkworm/sentry/common/enode_url.hpp>
 #include <silkworm/sentry/common/message.hpp>
 #include <silkworm/sentry/common/socket_stream.hpp>
 #include <silkworm/sentry/common/task_group.hpp>
@@ -42,25 +44,54 @@ namespace silkworm::sentry::rlpx {
 
 class Peer {
   public:
-    explicit Peer(
+    Peer(
+        boost::asio::any_io_executor&& executor,
+        common::SocketStream stream,
+        common::EccKeyPair node_key,
+        std::string client_id,
+        uint16_t node_listen_port,
+        std::unique_ptr<Protocol> protocol,
+        std::optional<common::EnodeUrl> url,
+        std::optional<common::EccPublicKey> peer_public_key);
+
+    Peer(
+        boost::asio::any_io_executor& executor,
+        common::SocketStream stream,
+        common::EccKeyPair node_key,
+        std::string client_id,
+        uint16_t node_listen_port,
+        std::unique_ptr<Protocol> protocol,
+        std::optional<common::EnodeUrl> url,
+        std::optional<common::EccPublicKey> peer_public_key)
+        : Peer(
+              boost::asio::any_io_executor{executor},
+              std::move(stream),
+              std::move(node_key),
+              std::move(client_id),
+              node_listen_port,
+              std::move(protocol),
+              std::move(url),
+              std::move(peer_public_key)) {}
+
+    Peer(
         boost::asio::io_context& io_context,
         common::SocketStream stream,
         common::EccKeyPair node_key,
         std::string client_id,
         uint16_t node_listen_port,
         std::unique_ptr<Protocol> protocol,
+        std::optional<common::EnodeUrl> url,
         std::optional<common::EccPublicKey> peer_public_key)
-        : stream_(std::move(stream)),
-          node_key_(std::move(node_key)),
-          client_id_(std::move(client_id)),
-          node_listen_port_(node_listen_port),
-          protocol_(std::move(protocol)),
-          peer_public_key_(std::move(peer_public_key)),
-          strand_(boost::asio::make_strand(io_context)),
-          send_message_tasks_(strand_, 1000),
-          send_message_channel_(io_context),
-          receive_message_channel_(io_context),
-          pong_channel_(io_context) {}
+        : Peer(
+              boost::asio::any_io_executor{io_context.get_executor()},
+              std::move(stream),
+              std::move(node_key),
+              std::move(client_id),
+              node_listen_port,
+              std::move(protocol),
+              std::move(url),
+              std::move(peer_public_key)) {}
+
     ~Peer();
 
     static boost::asio::awaitable<void> start(std::shared_ptr<Peer> peer);
@@ -73,6 +104,10 @@ class Peer {
       public:
         DisconnectedError() : std::runtime_error("Peer is disconnected") {}
     };
+
+    std::optional<common::EnodeUrl> url() {
+        return url_.get();
+    }
 
     std::optional<common::EccPublicKey> peer_public_key() {
         return peer_public_key_.get();
@@ -98,9 +133,10 @@ class Peer {
     std::string client_id_;
     uint16_t node_listen_port_;
     std::unique_ptr<Protocol> protocol_;
+    common::AtomicValue<std::optional<common::EnodeUrl>> url_;
     common::AtomicValue<std::optional<common::EccPublicKey>> peer_public_key_;
 
-    boost::asio::strand<boost::asio::io_context::executor_type> strand_;
+    boost::asio::strand<boost::asio::any_io_executor> strand_;
     common::TaskGroup send_message_tasks_;
     common::Channel<common::Message> send_message_channel_;
     common::Channel<common::Message> receive_message_channel_;

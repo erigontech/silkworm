@@ -160,18 +160,16 @@ void ServerContextPool::add_context(std::unique_ptr<grpc::ServerCompletionQueue>
 void ServerContextPool::start() {
     SILK_TRACE << "ServerContextPool::start START";
 
-    if (!stopped_) {
-        // Create a pool of threads to run all the contexts (each context having 1 thread)
-        for (std::size_t i{0}; i < contexts_.size(); ++i) {
-            auto& context = contexts_[i];
-            context_threads_.create_thread([&, i = i]() {
-                log::set_thread_name(std::string("asio_ctx_s" + std::to_string(i)).c_str());
-                SILK_TRACE << "Thread start context[" << i << "] thread_id: " << std::this_thread::get_id();
-                context.execute_loop();
-                SILK_TRACE << "Thread end context[" << i << "] thread_id: " << std::this_thread::get_id();
-            });
-            SILK_DEBUG << "ServerContextPool::start context[" << i << "] started: " << context.io_context();
-        }
+    // Create a pool of threads to run all the contexts (each context having 1 thread)
+    for (std::size_t i{0}; i < contexts_.size(); ++i) {
+        auto& context = contexts_[i];
+        context_threads_.create_thread([&, i = i]() {
+            log::set_thread_name(std::string("asio_ctx_s" + std::to_string(i)).c_str());
+            SILK_TRACE << "Thread start context[" << i << "] thread_id: " << std::this_thread::get_id();
+            context.execute_loop();
+            SILK_TRACE << "Thread end context[" << i << "] thread_id: " << std::this_thread::get_id();
+        });
+        SILK_DEBUG << "ServerContextPool::start context[" << i << "] started: " << context.io_context();
     }
 
     SILK_TRACE << "ServerContextPool::start END";
@@ -190,14 +188,12 @@ void ServerContextPool::join() {
 void ServerContextPool::stop() {
     SILK_TRACE << "ServerContextPool::stop START";
 
-    if (!stopped_) {
+    if (!stopped_.exchange(true)) {
         // Explicitly stop all context runnable components
         for (std::size_t i{0}; i < contexts_.size(); ++i) {
             contexts_[i].stop();
             SILK_DEBUG << "ServerContextPool::stop context[" << i << "] stopped: " << contexts_[i].io_context();
         }
-
-        stopped_ = true;
     }
 
     SILK_TRACE << "ServerContextPool::stop END";
@@ -210,8 +206,9 @@ void ServerContextPool::run() {
 
 const ServerContext& ServerContextPool::next_context() {
     // Use a round-robin scheme to choose the next context to use
-    const auto& context = contexts_[next_index_];
-    next_index_ = (next_index_ + 1) % contexts_.size();
+    // Increment the next index first to make sure that different calling threads get different contexts.
+    size_t index = next_index_.fetch_add(1) % contexts_.size();
+    const auto& context = contexts_[index];
     return context;
 }
 

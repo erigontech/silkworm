@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <atomic>
 #include <cstddef>
 #include <functional>
 #include <memory>
@@ -124,10 +125,10 @@ class ServerContextPool {
     boost::asio::detail::thread_group context_threads_;
 
     //! The index for obtaining next context to use (round-robin).
-    std::size_t next_index_;
+    std::atomic_size_t next_index_;
 
     //! Flag indicating if pool has been stopped.
-    bool stopped_{false};
+    std::atomic_bool stopped_{false};
 };
 
 }  // namespace silkworm::rpc

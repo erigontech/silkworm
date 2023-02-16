@@ -18,29 +18,23 @@
 
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/use_awaitable.hpp>
+#include <boost/asio/this_coro.hpp>
 #include <boost/system/errc.hpp>
 #include <boost/system/system_error.hpp>
 
 #include <silkworm/node/common/log.hpp>
 #include <silkworm/sentry/common/socket_stream.hpp>
-#include <silkworm/sentry/common/timeout.hpp>
+#include <silkworm/sentry/common/sleep.hpp>
 
 namespace silkworm::sentry::rlpx {
 
 using namespace std::chrono_literals;
 using namespace boost::asio;
 
-awaitable<void> Client::start(
-    silkworm::rpc::ServerContextPool& context_pool,
-    common::EccKeyPair node_key,
-    std::string client_id,
-    uint16_t node_listen_port,
-    std::function<std::unique_ptr<Protocol>()> protocol_factory) {
-    if (peer_urls_.empty()) {
-        co_return;
-    }
-    auto& peer_url = peer_urls_.front();
-    auto& client_context = context_pool.next_io_context();
+awaitable<std::unique_ptr<Peer>> Client::connect(common::EnodeUrl peer_url) {
+    log::Debug() << "RLPx client connecting to " << peer_url.to_string();
+
+    auto client_context = co_await boost::asio::this_coro::executor;
 
     ip::tcp::resolver resolver{client_context};
     auto endpoints = co_await resolver.async_resolve(
@@ -64,11 +58,7 @@ awaitable<void> Client::start(
         if (!is_connected) {
             stream = common::SocketStream{client_context};
             log::Warning() << "Failed to connect to " << peer_url.to_string() << ", reconnecting...";
-            common::Timeout timeout(10s);
-            try {
-                co_await timeout();
-            } catch (const common::Timeout::ExpiredError&) {
-            }
+            co_await common::sleep(10s);
         }
     }
 
@@ -76,16 +66,15 @@ awaitable<void> Client::start(
     log::Debug() << "RLPx client connected to "
                  << remote_endpoint.address().to_string() << ":" << remote_endpoint.port();
 
-    auto peer = std::make_unique<Peer>(
+    co_return std::make_unique<Peer>(
         client_context,
         std::move(stream),
-        node_key,
-        client_id,
-        node_listen_port,
-        protocol_factory(),
+        node_key_,
+        client_id_,
+        node_listen_port_,
+        protocol_factory_(),
+        std::optional{peer_url},
         std::optional{peer_url.public_key()});
-
-    co_await peer_channel_.send(std::move(peer));
 }
 
 }  // namespace silkworm::sentry::rlpx

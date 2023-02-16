@@ -17,17 +17,13 @@
 #pragma once
 
 #include <functional>
-#include <memory>
 #include <string>
-#include <vector>
+#include <memory>
 
 #include <silkworm/node/concurrency/coroutine.hpp>
 
 #include <boost/asio/awaitable.hpp>
-#include <boost/asio/io_context.hpp>
 
-#include <silkworm/node/rpc/server/server_context_pool.hpp>
-#include <silkworm/sentry/common/channel.hpp>
 #include <silkworm/sentry/common/ecc_key_pair.hpp>
 #include <silkworm/sentry/common/enode_url.hpp>
 
@@ -38,26 +34,25 @@ namespace silkworm::sentry::rlpx {
 
 class Client {
   public:
-    explicit Client(
-        boost::asio::io_context& io_context,
-        std::vector<common::EnodeUrl> peer_urls)
-        : peer_urls_(std::move(peer_urls)),
-          peer_channel_(io_context) {}
-
-    boost::asio::awaitable<void> start(
-        silkworm::rpc::ServerContextPool& context_pool,
+    Client(
         common::EccKeyPair node_key,
         std::string client_id,
         uint16_t node_listen_port,
-        std::function<std::unique_ptr<Protocol>()> protocol_factory);
-
-    common::Channel<std::shared_ptr<Peer>>& peer_channel() {
-        return peer_channel_;
+        std::function<std::unique_ptr<Protocol>()> protocol_factory)
+        : node_key_(std::move(node_key)),
+          client_id_(std::move(client_id)),
+          node_listen_port_(node_listen_port),
+          protocol_factory_(std::move(protocol_factory)) {
     }
 
+    boost::asio::awaitable<std::unique_ptr<Peer>> connect(
+        common::EnodeUrl peer_url);
+
   private:
-    const std::vector<common::EnodeUrl> peer_urls_;
-    common::Channel<std::shared_ptr<Peer>> peer_channel_;
+    common::EccKeyPair node_key_;
+    std::string client_id_;
+    uint16_t node_listen_port_;
+    std::function<std::unique_ptr<Protocol>()> protocol_factory_;
 };
 
 }  // namespace silkworm::sentry::rlpx

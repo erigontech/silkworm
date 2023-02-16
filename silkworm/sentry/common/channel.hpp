@@ -33,12 +33,15 @@ namespace silkworm::sentry::common {
 template <typename T>
 class Channel {
   public:
-    explicit Channel(boost::asio::io_context& io_context) : channel_(io_context) {}
+    explicit Channel(boost::asio::any_io_executor&& executor) : channel_(executor) {}
     explicit Channel(boost::asio::any_io_executor& executor) : channel_(executor) {}
-    Channel(boost::asio::io_context& io_context, std::size_t max_buffer_size)
-        : channel_(io_context, max_buffer_size) {}
+    explicit Channel(boost::asio::io_context& io_context) : channel_(io_context) {}
+    Channel(boost::asio::any_io_executor&& executor, std::size_t max_buffer_size)
+        : channel_(executor, max_buffer_size) {}
     Channel(boost::asio::any_io_executor& executor, std::size_t max_buffer_size)
         : channel_(executor, max_buffer_size) {}
+    Channel(boost::asio::io_context& io_context, std::size_t max_buffer_size)
+        : channel_(io_context, max_buffer_size) {}
 
     boost::asio::awaitable<void> send(T value) {
         try {

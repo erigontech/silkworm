@@ -39,6 +39,8 @@ class EnodeUrl {
 
     [[nodiscard]] std::string to_string() const;
 
+    bool operator<(const EnodeUrl& other) const;
+
   private:
     common::EccPublicKey public_key_;
     boost::asio::ip::address ip_;

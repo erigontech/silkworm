@@ -57,4 +57,8 @@ string EnodeUrl::to_string() const {
     return out.str();
 }
 
+bool EnodeUrl::operator<(const EnodeUrl& other) const {
+    return to_string() < other.to_string();
+}
+
 }  // namespace silkworm::sentry::common

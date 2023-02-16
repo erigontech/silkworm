@@ -80,6 +80,7 @@ awaitable<void> Server::start(
             client_id,
             port_,
             protocol_factory(),
+            std::nullopt,
             std::nullopt);
 
         co_await peer_channel_.send(std::move(peer));

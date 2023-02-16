@@ -50,9 +50,7 @@ TEST_CASE("Sync Stages") {
                              std::nullopt, std::nullopt, std::nullopt, std::nullopt, std::nullopt,
                              std::nullopt, std::nullopt, std::nullopt, std::nullopt, std::nullopt);
 
-    log::Settings log_settings{};
-    log_settings.log_std_out = true;
-    log::init(log_settings);
+    test::SetLogVerbosityGuard log_guard{log::Level::kNone};
 
     auto chaindata_env{db::open_env(node_settings.chaindata_env_config)};
     db::RWTxn txn(chaindata_env);

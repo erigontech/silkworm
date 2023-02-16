@@ -37,13 +37,13 @@
 #include <silkworm/interfaces/remote/kv.grpc.pb.h>
 #include <silkworm/node/common/log.hpp>
 #include <silkworm/node/db/tables.hpp>
-#include <silkworm/node/rpc/common/completion_tag.hpp>
 #include <silkworm/node/rpc/common/conversion.hpp>
 #include <silkworm/node/rpc/common/util.hpp>
 
 using namespace std::literals;
 
-using silkworm::rpc::TagProcessor;
+//! The callback to activate reading each event from the gRPC completion queue.
+using TagProcessor = std::function<void(bool)>;
 
 struct UnaryStats {
     uint64_t started_count{0};

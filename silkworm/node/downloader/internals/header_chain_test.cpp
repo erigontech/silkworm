@@ -1218,6 +1218,7 @@ TEST_CASE("HeaderChain - process_segment - (6) (malicious) siblings") {
 }
 
 TEST_CASE("HeaderChain - process_segment - (7) invalidating anchor") {
+    test::SetLogVerbosityGuard log_guard{log::Level::kNone};
     using namespace std;
 
     ChainConfig chain_config{kMainnetConfig};
@@ -1310,6 +1311,7 @@ TEST_CASE("HeaderChain - process_segment - (7) invalidating anchor") {
 }
 
 TEST_CASE("HeaderChain - process_segment - (8) sibling with anchor invalidation and links reduction") {
+    test::SetLogVerbosityGuard log_guard{log::Level::kNone};
     using namespace std;
 
     ChainConfig chain_config{kMainnetConfig};

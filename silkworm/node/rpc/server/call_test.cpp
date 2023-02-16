@@ -18,42 +18,42 @@
 
 #include <catch2/catch.hpp>
 
+#include <silkworm/node/test/log.hpp>
+
 namespace silkworm::rpc {
 
 TEST_CASE("BaseRpc", "[silkworm][rpc][call]") {
-    class FakeRpc : public BaseRpc {
+    class FakeRpc : public server::Call {
       public:
-        explicit FakeRpc(boost::asio::io_context& scheduler) : BaseRpc(scheduler) {}
-
-      protected:
-        void cleanup() override {}
+        explicit FakeRpc(grpc::ServerContext& server_context) : server::Call(server_context) {}
     };
 
-    boost::asio::io_context scheduler;
+    test::SetLogVerbosityGuard log_guard{log::Level::kNone};
+    grpc::ServerContext server_context;
 
     SECTION("count live instances") {
-        REQUIRE(BaseRpc::instance_count() == 0);
+        REQUIRE(FakeRpc::instance_count() == 0);
         {
-            FakeRpc rpc1{scheduler};
-            CHECK(BaseRpc::instance_count() == 1);
+            FakeRpc rpc1{server_context};
+            CHECK(FakeRpc::instance_count() == 1);
         }
-        REQUIRE(BaseRpc::instance_count() == 0);
+        REQUIRE(FakeRpc::instance_count() == 0);
         {
-            FakeRpc rpc1{scheduler};
-            CHECK(BaseRpc::instance_count() == 1);
-            FakeRpc rpc2{scheduler};
-            CHECK(BaseRpc::instance_count() == 2);
+            FakeRpc rpc1{server_context};
+            CHECK(FakeRpc::instance_count() == 1);
+            FakeRpc rpc2{server_context};
+            CHECK(FakeRpc::instance_count() == 2);
         }
-        REQUIRE(BaseRpc::instance_count() == 0);
+        REQUIRE(FakeRpc::instance_count() == 0);
     }
 
     SECTION("count total instances") {
-        FakeRpc rpc{scheduler};
-        CHECK(BaseRpc::total_count() > 0);
+        FakeRpc rpc{server_context};
+        CHECK(FakeRpc::total_count() > 0);
     }
 
     SECTION("peer") {
-        FakeRpc rpc{scheduler};
+        FakeRpc rpc{server_context};
         CHECK(rpc.peer().empty());
     }
 }

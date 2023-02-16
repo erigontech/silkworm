@@ -21,10 +21,12 @@
 #include <silkworm/node/common/test_context.hpp>
 #include <silkworm/node/db/buffer.hpp>
 #include <silkworm/node/db/tables.hpp>
+#include <silkworm/node/test/log.hpp>
 
 namespace silkworm::db {
 
 TEST_CASE("Storage update") {
+    test::SetLogVerbosityGuard log_guard{log::Level::kNone};
     test::Context context;
     auto& txn{context.txn()};
 
@@ -68,6 +70,7 @@ TEST_CASE("Storage update") {
 }
 
 TEST_CASE("Account update") {
+    test::SetLogVerbosityGuard log_guard{log::Level::kNone};
     test::Context context;
     auto& txn{context.txn()};
 

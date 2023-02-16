@@ -34,6 +34,7 @@ class HeaderChain_ForTest : public HeaderChain {
     using HeaderChain::find_anchor;
     using HeaderChain::generate_request_id;
     using HeaderChain::HeaderChain;
+    using HeaderChain::last_nack_;
     using HeaderChain::links_;
     using HeaderChain::pending_links;
     using HeaderChain::reduce_links_to;
@@ -1443,21 +1444,32 @@ TEST_CASE("HeaderChain - process_segment - (8) sibling with anchor invalidation 
     INFO("requesting again an anchor") {
         using namespace std::literals::chrono_literals;
 
+        // affected anchor
         std::shared_ptr<Anchor> anchor = chain.anchor_queue_.top();
-        auto timeouts = anchor->timeouts;
-        auto now = anchor->timestamp + 5s;
+        auto prev_timeouts = anchor->timeouts;
+        auto prev_timestamp = anchor->timestamp;
+        auto now = prev_timestamp + 5s;
 
+        // request an anchor extension
         auto [packet, penalizations] = chain.anchor_extension_request(now, 5s);
 
+        // checks
         CHECK(packet != std::nullopt);
         CHECK(penalizations.empty());
 
-        CHECK(anchor->timeouts == timeouts + 1);
+        CHECK(anchor->timeouts == prev_timeouts + 1);
         CHECK(anchor->timestamp > now);
 
         CHECK(chain.anchor_queue_.size() == 2);
         CHECK(chain.anchors_.size() == 2);
         CHECK(chain.links_.size() == 4);
+
+        // undo the request
+        REQUIRE(packet != std::nullopt);
+        chain.request_nack(*packet);
+
+        CHECK(anchor->timeouts == prev_timeouts);
+        CHECK(anchor->timestamp == prev_timestamp);
     }
 
     INFO("invalidating") {
@@ -1465,6 +1477,8 @@ TEST_CASE("HeaderChain - process_segment - (8) sibling with anchor invalidation 
 
         time_point_t now = std::chrono::system_clock::now();
         seconds_t timeout = 5s;
+
+        chain.last_nack_ = now - timeout;  // otherwise the request is ignored
 
         auto anchor1 = chain.anchors_[h5p.parent_hash];
         chain.anchor_queue_.update(anchor1, [&](auto& a) {

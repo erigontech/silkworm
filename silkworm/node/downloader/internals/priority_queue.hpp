@@ -47,10 +47,10 @@ class set_based_priority_queue {  // use boost::priority_queue instead?
         return inserted;
     }
 
-    void push_all(const std::vector<T>& source) { for (auto& element : source) push(element); }  // bulk insert
+    void push_all(const std::vector<T>& source) {
+        for (auto& element : source) push(element);
+    }  // bulk insert
 
-    //typename impl_t::iterator begin() { return elements_.begin(); }
-    //typename impl_t::iterator end() { return elements_.end(); }
     typename impl_t::const_iterator begin() const { return elements_.begin(); }
     typename impl_t::const_iterator end() const { return elements_.end(); }
 };
@@ -96,16 +96,3 @@ class map_based_priority_queue {
     std::pair<typename impl_t::const_iterator, typename impl_t::const_iterator>
     equal_range(const typename mbpq_key<T>::type& key) { return elements_.equal_range(key); };
 };
-
-/* Note
-  Alternative implementation (by greg7mdp)
-
-  using HMap = btree_map<std::pair<BlockNum, Hash>, Link>;
-
-  - ordering:
-      sorted first by BlockNum, then by the Hash (default lexicographical comparison by std::pair)
-  - lookup:
-      map[HMap::key_type(block_number, hash)]
-  - erase:
-      map.erase(map.begin(), map.lower_bound(HMap::key_type(x,0)));
- */

@@ -23,29 +23,33 @@
 #include <boost/asio/experimental/channel_error.hpp>
 #include <boost/system/errc.hpp>
 #include <boost/system/system_error.hpp>
+#include <boost/asio/this_coro.hpp>
 #include <gsl/util>
 
 #include <silkworm/node/common/log.hpp>
 #include <silkworm/sentry/common/awaitable_wait_for_all.hpp>
 #include <silkworm/sentry/common/awaitable_wait_for_one.hpp>
 #include <silkworm/sentry/common/timeout.hpp>
+#include <silkworm/sentry/common/sleep.hpp>
 
 #include "auth/handshake.hpp"
 #include "common/disconnect_message.hpp"
+#include "ping_message.hpp"
 
 namespace silkworm::sentry::rlpx {
 
 using namespace std::chrono_literals;
+using namespace boost::asio;
 
 Peer::~Peer() {
     log::Debug() << "silkworm::sentry::rlpx::Peer::~Peer";
 }
 
-boost::asio::awaitable<void> Peer::start(const std::shared_ptr<Peer>& peer) {
-    using namespace common::awaitable_wait_for_all;
+awaitable<void> Peer::start(std::shared_ptr<Peer> peer) {
+    using namespace common::awaitable_wait_for_one;
 
-    auto start = Peer::handle(peer) && Peer::send_message_tasks_wait(peer);
-    return boost::asio::co_spawn(peer->strand_, std::move(start), boost::asio::use_awaitable);
+    auto start = Peer::handle(peer) || Peer::send_message_tasks_wait(peer);
+    co_await co_spawn(peer->strand_, std::move(start), use_awaitable);
 }
 
 static bool is_fatal_network_error(const boost::system::system_error& ex) {
@@ -56,12 +60,18 @@ static bool is_fatal_network_error(const boost::system::system_error& ex) {
 }
 
 static const std::chrono::milliseconds kPeerDisconnectTimeout = 2s;
+static const std::chrono::milliseconds kPeerPingInterval = 15s;
 
-boost::asio::awaitable<void> Peer::handle(std::shared_ptr<Peer> peer) {
+class PingTimeoutError : public std::runtime_error {
+  public:
+    PingTimeoutError() : std::runtime_error("Peer ping timed out") {}
+};
+
+awaitable<void> Peer::handle(std::shared_ptr<Peer> peer) {
     co_await peer->handle();
 }
 
-boost::asio::awaitable<void> Peer::handle() {
+awaitable<void> Peer::handle() {
     using namespace common::awaitable_wait_for_all;
     using namespace common::awaitable_wait_for_one;
 
@@ -89,10 +99,44 @@ boost::asio::awaitable<void> Peer::handle() {
             co_return;
         }
 
-        co_await (send_messages(message_stream) && receive_messages(message_stream));
+        bool is_cancelled = false;
+        bool is_ping_timed_out = false;
+
+        try {
+            co_await (
+                send_messages(message_stream) &&
+                receive_messages(message_stream) &&
+                ping_periodically(message_stream)
+            );
+        } catch (const PingTimeoutError&) {
+            is_ping_timed_out = true;
+        } catch (const boost::system::system_error& ex) {
+            if (ex.code() == boost::system::errc::operation_canceled) {
+                is_cancelled = true;
+            } else {
+                throw;
+            }
+        }
+
+        if (is_cancelled) {
+            log::Debug() << "Peer::handle cancelled - quitting gracefully";
+            co_await boost::asio::this_coro::reset_cancellation_state();
+            co_await (message_stream.send(DisconnectMessage{DisconnectReason::ClientQuitting}.to_message()) ||
+                      common::Timeout::after(kPeerDisconnectTimeout));
+            throw boost::system::system_error(make_error_code(boost::system::errc::operation_canceled));
+        }
+
+        if (is_ping_timed_out) {
+            log::Debug() << "Peer::handle ping timed out";
+            co_await (message_stream.send(DisconnectMessage{DisconnectReason::PingTimeout}.to_message()) ||
+                      common::Timeout::after(kPeerDisconnectTimeout));
+        }
 
     } catch (const auth::Handshake::DisconnectError&) {
         log::Debug() << "Peer::handle DisconnectError";
+        co_return;
+    } catch (const common::Timeout::ExpiredError&) {
+        log::Debug() << "Peer::handle sending a final DisconnectMessage timed out";
         co_return;
     } catch (const boost::system::system_error& ex) {
         if (is_fatal_network_error(ex)) {
@@ -110,15 +154,15 @@ boost::asio::awaitable<void> Peer::handle() {
     }
 }
 
-boost::asio::awaitable<void> Peer::drop(const std::shared_ptr<Peer>& peer, DisconnectReason reason) {
-    return boost::asio::co_spawn(peer->strand_, Peer::drop_in_strand(peer, reason), boost::asio::use_awaitable);
+awaitable<void> Peer::drop(const std::shared_ptr<Peer>& peer, DisconnectReason reason) {
+    return co_spawn(peer->strand_, Peer::drop_in_strand(peer, reason), use_awaitable);
 }
 
-boost::asio::awaitable<void> Peer::drop_in_strand(std::shared_ptr<Peer> self, DisconnectReason reason) {
+awaitable<void> Peer::drop_in_strand(std::shared_ptr<Peer> self, DisconnectReason reason) {
     co_await self->drop(reason);
 }
 
-boost::asio::awaitable<void> Peer::drop(DisconnectReason reason) {
+awaitable<void> Peer::drop(DisconnectReason reason) {
     using namespace common::awaitable_wait_for_one;
 
     log::Debug() << "Peer::drop reason " << static_cast<int>(reason);
@@ -147,7 +191,7 @@ boost::asio::awaitable<void> Peer::drop(DisconnectReason reason) {
     }
 }
 
-boost::asio::awaitable<framing::MessageStream> Peer::handshake() {
+awaitable<framing::MessageStream> Peer::handshake() {
     auth::Handshake handshake{
         node_key_,
         client_id_,
@@ -173,11 +217,11 @@ void Peer::post_message(const std::shared_ptr<Peer>& peer, const common::Message
     peer->send_message_tasks_.spawn(peer->strand_, Peer::send_message(peer, message));
 }
 
-boost::asio::awaitable<void> Peer::send_message_tasks_wait(std::shared_ptr<Peer> self) {
+awaitable<void> Peer::send_message_tasks_wait(std::shared_ptr<Peer> self) {
     co_await self->send_message_tasks_.wait();
 }
 
-boost::asio::awaitable<void> Peer::send_message(std::shared_ptr<Peer> peer, common::Message message) {
+awaitable<void> Peer::send_message(std::shared_ptr<Peer> peer, common::Message message) {
     try {
         co_await peer->send_message(std::move(message));
     } catch (const DisconnectedError& ex) {
@@ -195,7 +239,7 @@ boost::asio::awaitable<void> Peer::send_message(std::shared_ptr<Peer> peer, comm
     }
 }
 
-boost::asio::awaitable<void> Peer::send_message(common::Message message) {
+awaitable<void> Peer::send_message(common::Message message) {
     try {
         co_await send_message_channel_.send(std::move(message));
     } catch (const boost::system::system_error& ex) {
@@ -205,7 +249,7 @@ boost::asio::awaitable<void> Peer::send_message(common::Message message) {
     }
 }
 
-boost::asio::awaitable<void> Peer::send_messages(framing::MessageStream& message_stream) {
+awaitable<void> Peer::send_messages(framing::MessageStream& message_stream) {
     // loop until message_stream exception
     while (true) {
         auto message = co_await send_message_channel_.receive();
@@ -213,7 +257,7 @@ boost::asio::awaitable<void> Peer::send_messages(framing::MessageStream& message
     }
 }
 
-boost::asio::awaitable<common::Message> Peer::receive_message() {
+awaitable<common::Message> Peer::receive_message() {
     try {
         co_return (co_await receive_message_channel_.receive());
     } catch (const boost::system::system_error& ex) {
@@ -223,11 +267,39 @@ boost::asio::awaitable<common::Message> Peer::receive_message() {
     }
 }
 
-boost::asio::awaitable<void> Peer::receive_messages(framing::MessageStream& message_stream) {
+awaitable<void> Peer::receive_messages(framing::MessageStream& message_stream) {
     // loop until message_stream exception
     while (true) {
         auto message = co_await message_stream.receive();
+
+        if (message.id == DisconnectMessage::kId) {
+            throw auth::Handshake::DisconnectError();
+        } else if (message.id == PingMessage::kId) {
+            co_await message_stream.send(PongMessage{}.to_message());
+            continue;
+        } else if (message.id == PongMessage::kId) {
+            co_await pong_channel_.send(std::move(message));
+            continue;
+        }
+
         co_await receive_message_channel_.send(std::move(message));
+    }
+}
+
+awaitable<void> Peer::ping_periodically(framing::MessageStream& message_stream) {
+    using namespace common::awaitable_wait_for_one;
+
+    // loop until message_stream exception
+    while (true) {
+        co_await common::sleep(kPeerPingInterval);
+
+        co_await message_stream.send(PingMessage{}.to_message());
+
+        try {
+            co_await (pong_channel_.receive() || common::Timeout::after(kPeerPingInterval / 3));
+        } catch (const common::Timeout::ExpiredError&) {
+            throw PingTimeoutError();
+        }
     }
 }
 

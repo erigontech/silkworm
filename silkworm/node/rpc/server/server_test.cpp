@@ -54,6 +54,7 @@ static const std::string kTestAddressUri{"localhost:12345"};
 // Exclude gRPC tests from sanitizer builds due to data race warnings inside gRPC library
 #ifndef SILKWORM_SANITIZE
 TEST_CASE("Barebone gRPC Server", "[silkworm][node][rpc]") {
+    test::SetLogVerbosityGuard guard{log::Level::kNone};
     grpc::ServerBuilder builder;
     // Add *at least one non-empty* ServerCompletionQueue (otherwise: ASAN SEGV error in Shutdown)
     std::unique_ptr<grpc::ServerCompletionQueue> cq = builder.AddCompletionQueue();

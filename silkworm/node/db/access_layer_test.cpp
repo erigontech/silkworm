@@ -31,6 +31,7 @@
 #include <silkworm/node/db/tables.hpp>
 #include <silkworm/node/stagedsync/stage.hpp>
 #include <silkworm/node/stagedsync/stage_history_index.hpp>
+#include <silkworm/node/test/log.hpp>
 
 namespace silkworm {
 
@@ -86,6 +87,7 @@ static BlockBody sample_block_body() {
 namespace db {
 
     TEST_CASE("Db Opening") {
+        test::SetLogVerbosityGuard log_guard{log::Level::kNone};
         // Empty dir
         std::string empty{};
         db::EnvConfig db_config{empty};
@@ -130,6 +132,7 @@ namespace db {
     }
 
     TEST_CASE("Methods cursor_for_each/cursor_for_count") {
+        test::SetLogVerbosityGuard log_guard{log::Level::kNone};
         test::Context context;
         auto& txn{context.txn()};
 
@@ -166,6 +169,7 @@ namespace db {
     }
 
     TEST_CASE("Sequences") {
+        test::SetLogVerbosityGuard log_guard{log::Level::kNone};
         test::Context context;
         auto& txn{context.txn()};
 
@@ -212,6 +216,7 @@ namespace db {
     }
 
     TEST_CASE("Schema Version") {
+        test::SetLogVerbosityGuard log_guard{log::Level::kNone};
         test::Context context(/*with_create_tables=*/false);
 
         SECTION("Read/Write") {
@@ -249,6 +254,7 @@ namespace db {
     }
 
     TEST_CASE("Storage and Prune Modes") {
+        test::SetLogVerbosityGuard log_guard{log::Level::kNone};
         test::Context context;
         auto& txn{context.txn()};
 
@@ -375,6 +381,7 @@ namespace db {
     }
 
     TEST_CASE("Stages") {
+        test::SetLogVerbosityGuard log_guard{log::Level::kNone};
         test::Context context;
         auto& txn{context.txn()};
 
@@ -439,6 +446,7 @@ namespace db {
     }
 
     TEST_CASE("Headers and bodies") {
+        test::SetLogVerbosityGuard log_guard{log::Level::kNone};
         test::Context context;
         auto& txn{context.txn()};
 
@@ -559,6 +567,7 @@ namespace db {
     }
 
     TEST_CASE("Account") {
+        test::SetLogVerbosityGuard log_guard{log::Level::kNone};
         test::Context context;
         db::RWTxn& txn{context.rw_txn()};
 
@@ -602,6 +611,7 @@ namespace db {
     }
 
     TEST_CASE("Storage") {
+        test::SetLogVerbosityGuard log_guard{log::Level::kNone};
         test::Context context;
         auto& txn{context.txn()};
 
@@ -689,6 +699,7 @@ namespace db {
     }
 
     TEST_CASE("Storage changes") {
+        test::SetLogVerbosityGuard log_guard{log::Level::kNone};
         test::Context context;
         auto& txn{context.txn()};
 
@@ -768,6 +779,7 @@ namespace db {
     }
 
     TEST_CASE("Chain config") {
+        test::SetLogVerbosityGuard log_guard{log::Level::kNone};
         test::Context context;
         auto& txn{context.txn()};
 
@@ -790,6 +802,7 @@ namespace db {
     }
 
     TEST_CASE("Head header") {
+        test::SetLogVerbosityGuard log_guard{log::Level::kNone};
         test::Context context;
         auto& txn{context.txn()};
 

@@ -34,6 +34,7 @@ class HeaderChain_ForTest : public HeaderChain {
     using HeaderChain::find_anchor;
     using HeaderChain::generate_request_id;
     using HeaderChain::HeaderChain;
+    using HeaderChain::last_nack_;
     using HeaderChain::links_;
     using HeaderChain::pending_links;
     using HeaderChain::reduce_links_to;
@@ -43,8 +44,9 @@ class HeaderChain_ForTest : public HeaderChain {
 // ----------------------------------------------------------------------------
 
 TEST_CASE("HeaderList - split_into_segments - No headers") {
-    std::vector<BlockHeader> headers;
+    test::SetLogVerbosityGuard guard{log::Level::kNone};
 
+    std::vector<BlockHeader> headers;
     auto headerList = HeaderList::make(headers);
 
     auto [segments, penalty] = headerList->split_into_segments();
@@ -54,6 +56,8 @@ TEST_CASE("HeaderList - split_into_segments - No headers") {
 }
 
 TEST_CASE("HeaderList - split_into_segments - Single header") {
+    test::SetLogVerbosityGuard guard{log::Level::kNone};
+
     std::vector<BlockHeader> headers;
     BlockHeader header;
     header.number = 5;
@@ -68,6 +72,8 @@ TEST_CASE("HeaderList - split_into_segments - Single header") {
 }
 
 TEST_CASE("HeaderList - split_into_segments - Single header repeated twice") {
+    test::SetLogVerbosityGuard guard{log::Level::kNone};
+
     std::vector<BlockHeader> headers;
     BlockHeader header;
     header.number = 5;
@@ -83,6 +89,7 @@ TEST_CASE("HeaderList - split_into_segments - Single header repeated twice") {
 }
 
 TEST_CASE("HeaderList - split_into_segments - Two connected headers") {
+    test::SetLogVerbosityGuard guard{log::Level::kNone};
     std::vector<BlockHeader> headers;
 
     BlockHeader header1;
@@ -108,6 +115,7 @@ TEST_CASE("HeaderList - split_into_segments - Two connected headers") {
 }
 
 TEST_CASE("HeaderList - split_into_segments - Two connected headers with wrong numbers") {
+    test::SetLogVerbosityGuard guard{log::Level::kNone};
     std::vector<BlockHeader> headers;
 
     BlockHeader header1;
@@ -136,6 +144,7 @@ TEST_CASE("HeaderList - split_into_segments - Two connected headers with wrong n
  *         3 segments: {h3}, {h2}, {h1}   (in this order)
  */
 TEST_CASE("HeaderList - split_into_segments - Two headers connected to the third header") {
+    test::SetLogVerbosityGuard guard{log::Level::kNone};
     std::vector<BlockHeader> headers;
 
     BlockHeader header1;
@@ -172,6 +181,7 @@ TEST_CASE("HeaderList - split_into_segments - Two headers connected to the third
 }
 
 TEST_CASE("HeaderList - split_into_segments - Same three headers, but in a reverse order") {
+    test::SetLogVerbosityGuard guard{log::Level::kNone};
     std::vector<BlockHeader> headers;
 
     BlockHeader header1;
@@ -213,6 +223,7 @@ TEST_CASE("HeaderList - split_into_segments - Same three headers, but in a rever
  *         2 segments: {h3?}, {h2?}
  */
 TEST_CASE("HeaderList - split_into_segments - Two headers not connected to each other") {
+    test::SetLogVerbosityGuard guard{log::Level::kNone};
     std::vector<BlockHeader> headers;
 
     BlockHeader header1;
@@ -251,6 +262,7 @@ TEST_CASE("HeaderList - split_into_segments - Two headers not connected to each 
  *        1 segment: {h3, h2, h1}   (with header in this order)
  */
 TEST_CASE("HeaderList - split_into_segments - Three headers connected") {
+    test::SetLogVerbosityGuard guard{log::Level::kNone};
     std::vector<BlockHeader> headers;
 
     BlockHeader header1;
@@ -290,7 +302,7 @@ TEST_CASE("HeaderList - split_into_segments - Three headers connected") {
  *        3 segments: {h3?}, {h4?}, {h2, h1}
  */
 TEST_CASE("HeaderList - split_into_segments - Four headers connected") {
-    test::SetLogVerbosityGuard log_guard{log::Level::kNone};
+    test::SetLogVerbosityGuard guard{log::Level::kNone};
     std::vector<BlockHeader> headers;
 
     BlockHeader header1;
@@ -336,6 +348,7 @@ TEST_CASE("HeaderList - split_into_segments - Four headers connected") {
 
 TEST_CASE("HeaderChain - process_segment - (1) simple chain") {
     using namespace std;
+    test::SetLogVerbosityGuard guard{log::Level::kNone};
 
     ChainConfig chain_config{kMainnetConfig};
     chain_config.genesis_hash.emplace(kMainnetGenesisHash);
@@ -1430,20 +1443,55 @@ TEST_CASE("HeaderChain - process_segment - (8) sibling with anchor invalidation 
         REQUIRE(anchor2->links[0]->next[0]->next[0]->next.empty());
     }
 
+    INFO("requesting again an anchor") {
+        using namespace std::literals::chrono_literals;
+
+        // affected anchor
+        std::shared_ptr<Anchor> anchor = chain.anchor_queue_.top();
+        auto prev_timeouts = anchor->timeouts;
+        auto prev_timestamp = anchor->timestamp;
+        auto now = prev_timestamp + 5s;
+
+        // request an anchor extension
+        auto [packet, penalizations] = chain.anchor_extension_request(now, 5s);
+
+        // checks
+        CHECK(packet != std::nullopt);
+        CHECK(penalizations.empty());
+
+        CHECK(anchor->timeouts == prev_timeouts + 1);
+        CHECK(anchor->timestamp > now);
+
+        CHECK(chain.anchor_queue_.size() == 2);
+        CHECK(chain.anchors_.size() == 2);
+        CHECK(chain.links_.size() == 4);
+
+        // undo the request
+        REQUIRE(packet != std::nullopt);
+        chain.request_nack(*packet);
+
+        CHECK(anchor->timeouts == prev_timeouts);
+        CHECK(anchor->timestamp == prev_timestamp);
+    }
+
     INFO("invalidating") {
         using namespace std::literals::chrono_literals;
 
         time_point_t now = std::chrono::system_clock::now();
         seconds_t timeout = 5s;
 
+        chain.last_nack_ = now - timeout;  // otherwise the request is ignored
+
         auto anchor1 = chain.anchors_[h5p.parent_hash];
-        anchor1->timeouts = 10;  // this cause invalidation
-        anchor1->timestamp = now - timeout;
+        chain.anchor_queue_.update(anchor1, [&](auto& a) {
+            a->timeouts = 10;  // this cause invalidation
+            a->timestamp = now - timeout;
+        });
 
         auto anchor2 = chain.anchors_[headers[3].parent_hash];
-        anchor2->timestamp = now + timeout;  // avoid extension now
-
-        chain.anchor_queue_.fix();
+        chain.anchor_queue_.update(anchor2, [&](auto& a) {
+            a->timestamp = now + timeout;  // avoid extension now
+        });
 
         auto [packet, penalizations] = chain.anchor_extension_request(now, timeout);  // invalidate (=erase) anchor1
 

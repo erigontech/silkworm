@@ -410,7 +410,7 @@ auto HeaderChain::anchor_extension_request(time_point_t time_point, seconds_t ti
 
     std::vector<PeerPenalization> penalties;
     while (!anchor_queue_.empty()) {
-        auto anchor = anchor_queue_.top();
+        std::shared_ptr<Anchor> anchor = anchor_queue_.top();
 
         if (!anchors_.contains(anchor->parentHash)) {
             anchor_queue_.pop();  // anchor disappeared (i.e. it became link as per our request) or unavailable,
@@ -423,8 +423,7 @@ auto HeaderChain::anchor_extension_request(time_point_t time_point, seconds_t ti
         }
 
         if (anchor->timeouts < 10) {
-            anchor->update_timestamp(time_point + timeout);
-            anchor_queue_.fix();  // re-sort
+            anchor_queue_.update(anchor, [&](const auto& a) { return a->update_timestamp(time_point + timeout); });
 
             GetBlockHeadersPacket66 packet{
                 generate_request_id(),  // RANDOM_NUMBER.generate_one(),
@@ -507,8 +506,7 @@ void HeaderChain::request_nack(const GetBlockHeadersPacket66& packet) {
 
     log::Trace() << "[INFO] HeaderChain: restoring timestamp due to request nack, requestId=" << packet.requestId;
 
-    anchor->restore_timestamp();
-    anchor_queue_.fix();
+    anchor_queue_.update(anchor, [&](auto& anchor_) { anchor_->restore_timestamp(); });
 }
 
 bool HeaderChain::has_link(Hash hash) { return (links_.find(hash) != links_.end()); }

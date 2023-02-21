@@ -494,7 +494,13 @@ void TxCall::handle_seek_exact(const remote::Cursor* request, db::Cursor& cursor
     SILK_DEBUG << "Tx SEEK_EXACT found: " << std::boolalpha << found;
 
     if (found) {
-        response.set_k(request->k());
+        const auto result = cursor.current(/*throw_notfound=*/false);
+        SILK_DEBUG << "Tx SEEK_EXACT result: " << detail::dump_mdbx_result(result);
+
+        if (result) {
+            response.set_k(request->k());
+            response.set_v(result.value.as_string());
+        }
     }
 
     SILK_TRACE << "TxCall::handle_seek_exact " << this << " END";

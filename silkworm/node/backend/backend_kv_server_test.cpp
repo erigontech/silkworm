@@ -1860,7 +1860,7 @@ TEST_CASE("BackEndKvServer E2E: Tx cursor valid operations", "[silkworm][node][r
         CHECK(responses[0].txid() != 0);
         CHECK(responses[1].cursorid() != 0);
         CHECK(responses[2].k() == "BB");
-        CHECK(responses[2].v().empty());
+        CHECK(responses[2].v() == "11");
         CHECK(responses[3].cursorid() == 0);
     }
 

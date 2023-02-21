@@ -22,7 +22,7 @@
 
 namespace silkworm::rpc {
 
-TEST_CASE("BaseRpc", "[silkworm][rpc][call]") {
+TEST_CASE("BaseRpc", "[silkworm][rpc][call][.]") {
     class FakeRpc : public server::Call {
       public:
         explicit FakeRpc(grpc::ServerContext& server_context) : server::Call(server_context) {}

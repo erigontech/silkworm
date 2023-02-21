@@ -21,6 +21,7 @@
 #include <list>
 #include <optional>
 #include <random>
+#include <vector>
 
 #include <silkworm/core/common/base.hpp>
 
@@ -62,6 +63,14 @@ std::list<T*> random_list_items(std::list<T>& l, size_t max_count) {
     std::list<T*> out;
     std::default_random_engine random_engine{std::random_device{}()};
     std::sample(l.begin(), l.end(), BackInsertPtrIterator(out), max_count, random_engine);
+    return out;
+}
+
+template <typename T>
+std::vector<T> random_vector_items(std::vector<T>& l, size_t max_count) {
+    std::vector<T> out;
+    std::default_random_engine random_engine{std::random_device{}()};
+    std::sample(l.begin(), l.end(), std::back_inserter(out), max_count, random_engine);
     return out;
 }
 

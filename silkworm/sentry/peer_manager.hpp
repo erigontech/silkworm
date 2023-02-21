@@ -20,8 +20,12 @@
 #include <list>
 #include <memory>
 #include <mutex>
+#include <optional>
+#include <set>
+#include <vector>
 
 #include <silkworm/node/concurrency/coroutine.hpp>
+#include <silkworm/node/rpc/server/server_context_pool.hpp>
 
 #include <boost/asio/awaitable.hpp>
 #include <boost/asio/io_context.hpp>
@@ -29,9 +33,12 @@
 
 #include <silkworm/sentry/common/channel.hpp>
 #include <silkworm/sentry/common/task_group.hpp>
-#include <silkworm/sentry/rlpx/client.hpp>
+#include <silkworm/sentry/common/event_notifier.hpp>
+#include <silkworm/sentry/common/enode_url.hpp>
+#include <silkworm/sentry/discovery/discovery.hpp>
 #include <silkworm/sentry/rlpx/common/disconnect_reason.hpp>
 #include <silkworm/sentry/rlpx/peer.hpp>
+#include <silkworm/sentry/rlpx/client.hpp>
 #include <silkworm/sentry/rlpx/server.hpp>
 
 namespace silkworm::sentry {
@@ -40,12 +47,22 @@ class PeerManagerObserver;
 
 class PeerManager {
   public:
-    PeerManager(boost::asio::io_context& io_context, size_t max_peers)
+    PeerManager(
+        boost::asio::io_context& io_context,
+        size_t max_peers,
+        silkworm::rpc::ServerContextPool& context_pool)
         : max_peers_(max_peers),
           strand_(boost::asio::make_strand(io_context)),
-          peer_tasks_(strand_, PeerManager::max_peer_tasks(max_peers)) {}
+          peer_tasks_(strand_, PeerManager::max_peer_tasks(max_peers)),
+          context_pool_(context_pool),
+          need_peers_notifier_(io_context),
+          connect_peer_tasks_(strand_, max_peers),
+          client_peer_channel_(io_context) {}
 
-    boost::asio::awaitable<void> start(rlpx::Server& server, rlpx::Client& client);
+    boost::asio::awaitable<void> start(
+        rlpx::Server& server,
+        discovery::Discovery& discovery,
+        std::function<std::unique_ptr<rlpx::Client>()> client_factory);
 
     using EnumeratePeersCallback = std::function<void(std::shared_ptr<rlpx::Peer>)>;
 
@@ -70,10 +87,24 @@ class PeerManager {
     void on_peer_added(const std::shared_ptr<rlpx::Peer>& peer);
     void on_peer_removed(const std::shared_ptr<rlpx::Peer>& peer);
 
+    std::vector<common::EnodeUrl> peer_urls() const;
+    boost::asio::awaitable<void> discover_peers(
+        discovery::Discovery& discovery,
+        std::function<std::unique_ptr<rlpx::Client>()> client_factory);
+    boost::asio::awaitable<void> connect_peer(
+        common::EnodeUrl peer_url,
+        std::unique_ptr<rlpx::Client> client);
+
     std::list<std::shared_ptr<rlpx::Peer>> peers_;
     size_t max_peers_;
     boost::asio::strand<boost::asio::io_context::executor_type> strand_;
     common::TaskGroup peer_tasks_;
+
+    std::set<common::EnodeUrl> connecting_peer_urls_;
+    silkworm::rpc::ServerContextPool& context_pool_;
+    common::EventNotifier need_peers_notifier_;
+    common::TaskGroup connect_peer_tasks_;
+    common::Channel<std::shared_ptr<rlpx::Peer>> client_peer_channel_;
 
     std::list<std::weak_ptr<PeerManagerObserver>> observers_;
     std::mutex observers_mutex_;

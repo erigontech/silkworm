@@ -17,6 +17,7 @@
 #pragma once
 
 #include <chrono>
+
 #include <boost/asio/awaitable.hpp>
 
 namespace silkworm::sentry::common {

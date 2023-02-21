@@ -25,20 +25,20 @@
 #include <vector>
 
 #include <silkworm/node/concurrency/coroutine.hpp>
-#include <silkworm/node/rpc/server/server_context_pool.hpp>
 
 #include <boost/asio/awaitable.hpp>
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/strand.hpp>
 
+#include <silkworm/node/rpc/server/server_context_pool.hpp>
 #include <silkworm/sentry/common/channel.hpp>
-#include <silkworm/sentry/common/task_group.hpp>
-#include <silkworm/sentry/common/event_notifier.hpp>
 #include <silkworm/sentry/common/enode_url.hpp>
+#include <silkworm/sentry/common/event_notifier.hpp>
+#include <silkworm/sentry/common/task_group.hpp>
 #include <silkworm/sentry/discovery/discovery.hpp>
+#include <silkworm/sentry/rlpx/client.hpp>
 #include <silkworm/sentry/rlpx/common/disconnect_reason.hpp>
 #include <silkworm/sentry/rlpx/peer.hpp>
-#include <silkworm/sentry/rlpx/client.hpp>
 #include <silkworm/sentry/rlpx/server.hpp>
 
 namespace silkworm::sentry {

@@ -22,9 +22,9 @@
 
 #include <silkworm/node/concurrency/coroutine.hpp>
 
+#include <boost/asio/any_io_executor.hpp>
 #include <boost/asio/awaitable.hpp>
 #include <boost/asio/io_context.hpp>
-#include <boost/asio/any_io_executor.hpp>
 #include <boost/asio/strand.hpp>
 
 #include <silkworm/sentry/common/atomic_value.hpp>

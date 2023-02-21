@@ -14,7 +14,10 @@
    limitations under the License.
 */
 
+// clang-format off
 #include <silkworm/node/downloader/internals/types.hpp>  // types
+// clang-format on
+
 #include <silkworm/core/rlp/encode_vector.hpp>  // generic implementations (must follow types)
 
 #include "block_bodies_packet.hpp"
@@ -23,7 +26,6 @@
 #include "get_block_headers_packet.hpp"
 #include "new_block_hashes_packet.hpp"
 #include "new_block_packet.hpp"
-
 #include "rlp_eth66_packet_coding.hpp"
 
 namespace silkworm::rlp {

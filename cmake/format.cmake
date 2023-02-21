@@ -37,15 +37,13 @@ file(
     GLOB_RECURSE SRC
     LIST_DIRECTORIES false
     "cmd/*.?pp"
-    "core/*.?pp"
-    "node/*.?pp"
-    "sentry/*.?pp"
-    "wasm/*.?pp"
+    "silkworm/*.?pp"
 )
-list(FILTER SRC EXCLUDE REGEX "core/silkworm/chain/genesis_[a-z]+.cpp\$")
-list(FILTER SRC EXCLUDE REGEX "core/silkworm/chain/dao.hpp$")
-list(FILTER SRC EXCLUDE REGEX "node/silkworm/downloader/internals/preverified_hashes_[a-z]+.cpp\$")
-list(FILTER SRC EXCLUDE REGEX "node/silkworm/snapshot/config/[a-z_]+.cpp\$")
-list(FILTER SRC EXCLUDE REGEX "node/silkworm/snapshot/toml.hpp$$")
+list(FILTER SRC EXCLUDE REGEX "silkworm/interfaces/")
+list(FILTER SRC EXCLUDE REGEX "silkworm/core/chain/genesis_[a-z]+.cpp\$")
+list(FILTER SRC EXCLUDE REGEX "silkworm/core/chain/dao.hpp$")
+list(FILTER SRC EXCLUDE REGEX "silkworm/node/downloader/internals/preverified_hashes_[a-z]+.cpp\$")
+list(FILTER SRC EXCLUDE REGEX "silkworm/node/snapshot/config/[a-z_]+.cpp\$")
+list(FILTER SRC EXCLUDE REGEX "silkworm/node/snapshot/toml.hpp$$")
 
 execute_process(COMMAND ${CLANG_FORMAT} -style=file -i ${SRC})

@@ -21,16 +21,16 @@
 #include <boost/asio/co_spawn.hpp>
 #include <boost/asio/error.hpp>
 #include <boost/asio/experimental/channel_error.hpp>
+#include <boost/asio/this_coro.hpp>
 #include <boost/system/errc.hpp>
 #include <boost/system/system_error.hpp>
-#include <boost/asio/this_coro.hpp>
 #include <gsl/util>
 
 #include <silkworm/node/common/log.hpp>
 #include <silkworm/sentry/common/awaitable_wait_for_all.hpp>
 #include <silkworm/sentry/common/awaitable_wait_for_one.hpp>
-#include <silkworm/sentry/common/timeout.hpp>
 #include <silkworm/sentry/common/sleep.hpp>
+#include <silkworm/sentry/common/timeout.hpp>
 
 #include "auth/handshake.hpp"
 #include "common/disconnect_message.hpp"
@@ -129,8 +129,7 @@ awaitable<void> Peer::handle() {
             co_await (
                 send_messages(message_stream) &&
                 receive_messages(message_stream) &&
-                ping_periodically(message_stream)
-            );
+                ping_periodically(message_stream));
         } catch (const PingTimeoutError&) {
             is_ping_timed_out = true;
         } catch (const boost::system::system_error& ex) {

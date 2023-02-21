@@ -10,7 +10,7 @@ PointerAlignment: Left
 IncludeCategories:
   # coroutine.hpp has to go before the boost headers,
   # otherwise boost::asio fails to compile on GCC 12
-  - Regex:           '<silkworm/concurrency/coroutine\.hpp>'
+  - Regex:           '<silkworm/node/concurrency/coroutine\.hpp>'
     Priority:        30
   
   # Silkworm headers

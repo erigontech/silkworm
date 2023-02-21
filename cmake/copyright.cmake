@@ -48,17 +48,15 @@ file(
     GLOB_RECURSE SRC
     LIST_DIRECTORIES false
     "cmd/*.?pp"
-    "core/*.?pp"
-    "node/*.?pp"
-    "sentry/*.?pp"
-    "wasm/*.?pp"
+    "silkworm/*.?pp"
 )
-list(FILTER SRC EXCLUDE REGEX "core/silkworm/chain/genesis_[a-z]+\\.cpp\$")
-list(FILTER SRC EXCLUDE REGEX "core/silkworm/common/lru_cache(_test)?\\..pp\$")
-list(FILTER SRC EXCLUDE REGEX "node/silkworm/concurrency/thread_pool\\.hpp\$")
-list(FILTER SRC EXCLUDE REGEX "node/silkworm/downloader/internals/preverified_hashes_[a-z]+\\.cpp\$")
-list(FILTER SRC EXCLUDE REGEX "node/silkworm/snapshot/config/[a-z_]+.cpp\$")
-list(FILTER SRC EXCLUDE REGEX "node/silkworm/snapshot/toml.hpp$$")
+list(FILTER SRC EXCLUDE REGEX "silkworm/interfaces/")
+list(FILTER SRC EXCLUDE REGEX "silkworm/core/chain/genesis_[a-z]+\\.cpp\$")
+list(FILTER SRC EXCLUDE REGEX "silkworm/core/common/lru_cache(_test)?\\..pp\$")
+list(FILTER SRC EXCLUDE REGEX "silkworm/node/concurrency/thread_pool\\.hpp\$")
+list(FILTER SRC EXCLUDE REGEX "silkworm/node/downloader/internals/preverified_hashes_[a-z]+\\.cpp\$")
+list(FILTER SRC EXCLUDE REGEX "silkworm/node/snapshot/config/[a-z_]+.cpp\$")
+list(FILTER SRC EXCLUDE REGEX "silkworm/node/snapshot/toml.hpp$$")
 
 foreach(F IN LISTS SRC)
     check("${F}")

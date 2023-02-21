@@ -17,14 +17,14 @@
 #include "client.hpp"
 
 #include <boost/asio/ip/tcp.hpp>
-#include <boost/asio/use_awaitable.hpp>
 #include <boost/asio/this_coro.hpp>
+#include <boost/asio/use_awaitable.hpp>
 #include <boost/system/errc.hpp>
 #include <boost/system/system_error.hpp>
 
 #include <silkworm/node/common/log.hpp>
-#include <silkworm/sentry/common/socket_stream.hpp>
 #include <silkworm/sentry/common/sleep.hpp>
+#include <silkworm/sentry/common/socket_stream.hpp>
 
 namespace silkworm::sentry::rlpx {
 

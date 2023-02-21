@@ -36,17 +36,17 @@
 #include <silkworm/node/rpc/server/server_context_pool.hpp>
 #include <silkworm/sentry/common/awaitable_wait_for_all.hpp>
 
+#include "discovery/discovery.hpp"
 #include "eth/protocol.hpp"
 #include "message_receiver.hpp"
 #include "message_sender.hpp"
 #include "node_key_config.hpp"
 #include "peer_manager.hpp"
+#include "rlpx/client.hpp"
 #include "rlpx/protocol.hpp"
 #include "rlpx/server.hpp"
-#include "rlpx/client.hpp"
 #include "rpc/server.hpp"
 #include "status_manager.hpp"
-#include "discovery/discovery.hpp"
 
 namespace silkworm::sentry {
 

@@ -17,8 +17,8 @@
 #pragma once
 
 #include <functional>
-#include <string>
 #include <memory>
+#include <string>
 
 #include <silkworm/node/concurrency/coroutine.hpp>
 

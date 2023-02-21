@@ -56,7 +56,7 @@ bool Environment::are_pre_verified_hashes_disabled() {
     bool disabled = false;
     // User can specify to not use the pre-verified hashes and do a full header verification
     auto environment = boost::this_process::environment();
-     auto env_var = environment["DISABLE_PRE_VERIFIED_HASHES"];
+    auto env_var = environment["DISABLE_PRE_VERIFIED_HASHES"];
     if (!env_var.empty()) {
         disabled = std::stoul(env_var.to_string()) != 0;
     }

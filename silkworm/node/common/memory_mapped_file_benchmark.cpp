@@ -14,8 +14,6 @@
    limitations under the License.
 */
 
-#include "memory_mapped_file.hpp"
-
 #include <filesystem>
 #include <fstream>
 #include <random>
@@ -24,6 +22,8 @@
 
 #include <silkworm/core/common/base.hpp>
 #include <silkworm/node/common/directories.hpp>
+
+#include "memory_mapped_file.hpp"
 
 constexpr uint64_t k4MiBFileSize{4u * silkworm::kMebi};
 

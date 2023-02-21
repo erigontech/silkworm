@@ -43,4 +43,4 @@ sentry::common::Message PongMessage::to_message() const {
     return sentry::common::Message{kId, rlp_encode()};
 }
 
-}
+}  // namespace silkworm::sentry::rlpx

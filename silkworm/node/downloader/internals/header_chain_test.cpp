@@ -1249,8 +1249,8 @@ TEST_CASE("HeaderChain - process_segment - (7) invalidating anchor") {
         auto [penalty, requestMoreHeaders] =
             chain.accept_headers({headers[5], h5p, headers[6], headers[7]}, request_id, peer_id);
 
-        CHECK(penalty == Penalty::NoPenalty);
-        CHECK(requestMoreHeaders == true);
+        REQUIRE(penalty == Penalty::NoPenalty);
+        REQUIRE(requestMoreHeaders == true);
         REQUIRE(chain.anchor_queue_.size() == 1);
         REQUIRE(chain.anchors_.size() == 1);
         REQUIRE(chain.links_.size() == 4);
@@ -1259,7 +1259,7 @@ TEST_CASE("HeaderChain - process_segment - (7) invalidating anchor") {
         REQUIRE(anchor != nullptr);
         REQUIRE(anchor->parentHash == headers[5].parent_hash);
         REQUIRE(anchor->blockHeight == headers[5].number);
-        CHECK(anchor->peerId == peer_id);
+        REQUIRE(anchor->peerId == peer_id);
 
         REQUIRE(anchor->links.size() == 2);
         REQUIRE(anchor->has_child(headers[5].hash()));

@@ -40,6 +40,7 @@ class EnodeUrl {
     [[nodiscard]] std::string to_string() const;
 
     bool operator<(const EnodeUrl& other) const;
+    friend bool operator==(const EnodeUrl&, const EnodeUrl&) = default;
 
   private:
     common::EccPublicKey public_key_;

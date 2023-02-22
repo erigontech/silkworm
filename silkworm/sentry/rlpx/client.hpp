@@ -46,7 +46,8 @@ class Client {
     }
 
     boost::asio::awaitable<std::unique_ptr<Peer>> connect(
-        common::EnodeUrl peer_url);
+        common::EnodeUrl peer_url,
+        bool is_static_peer);
 
   private:
     common::EccKeyPair node_key_;

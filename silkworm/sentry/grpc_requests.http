@@ -1,0 +1,10 @@
+# Use with the JetBrains gRPC plugin
+
+###
+GRPC localhost:9091/sentry.Sentry/PeerCount
+
+###
+GRPC localhost:9091/sentry.Sentry/Peers
+
+###
+GRPC localhost:9091/sentry.Sentry/PeerEvents

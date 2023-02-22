@@ -25,6 +25,7 @@
 #include <boost/asio/any_io_executor.hpp>
 #include <boost/asio/awaitable.hpp>
 #include <boost/asio/io_context.hpp>
+#include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/strand.hpp>
 
 #include <silkworm/sentry/common/atomic_value.hpp>
@@ -33,9 +34,11 @@
 #include <silkworm/sentry/common/ecc_public_key.hpp>
 #include <silkworm/sentry/common/enode_url.hpp>
 #include <silkworm/sentry/common/message.hpp>
+#include <silkworm/sentry/common/promise.hpp>
 #include <silkworm/sentry/common/socket_stream.hpp>
 #include <silkworm/sentry/common/task_group.hpp>
 
+#include "auth/hello_message.hpp"
 #include "common/disconnect_reason.hpp"
 #include "framing/message_stream.hpp"
 #include "protocol.hpp"
@@ -52,7 +55,9 @@ class Peer {
         uint16_t node_listen_port,
         std::unique_ptr<Protocol> protocol,
         std::optional<common::EnodeUrl> url,
-        std::optional<common::EccPublicKey> peer_public_key);
+        std::optional<common::EccPublicKey> peer_public_key,
+        bool is_inbound,
+        bool is_static);
 
     Peer(
         boost::asio::any_io_executor& executor,
@@ -62,7 +67,9 @@ class Peer {
         uint16_t node_listen_port,
         std::unique_ptr<Protocol> protocol,
         std::optional<common::EnodeUrl> url,
-        std::optional<common::EccPublicKey> peer_public_key)
+        std::optional<common::EccPublicKey> peer_public_key,
+        bool is_inbound,
+        bool is_static)
         : Peer(
               boost::asio::any_io_executor{executor},
               std::move(stream),
@@ -71,7 +78,9 @@ class Peer {
               node_listen_port,
               std::move(protocol),
               std::move(url),
-              std::move(peer_public_key)) {}
+              std::move(peer_public_key),
+              is_inbound,
+              is_static) {}
 
     Peer(
         boost::asio::io_context& io_context,
@@ -81,7 +90,9 @@ class Peer {
         uint16_t node_listen_port,
         std::unique_ptr<Protocol> protocol,
         std::optional<common::EnodeUrl> url,
-        std::optional<common::EccPublicKey> peer_public_key)
+        std::optional<common::EccPublicKey> peer_public_key,
+        bool is_inbound,
+        bool is_static)
         : Peer(
               boost::asio::any_io_executor{io_context.get_executor()},
               std::move(stream),
@@ -90,12 +101,15 @@ class Peer {
               node_listen_port,
               std::move(protocol),
               std::move(url),
-              std::move(peer_public_key)) {}
+              std::move(peer_public_key),
+              is_inbound,
+              is_static) {}
 
     ~Peer();
 
     static boost::asio::awaitable<void> start(std::shared_ptr<Peer> peer);
     static boost::asio::awaitable<void> drop(const std::shared_ptr<Peer>& peer, DisconnectReason reason);
+    static boost::asio::awaitable<bool> wait_for_handshake(std::shared_ptr<Peer> self);
 
     static void post_message(const std::shared_ptr<Peer>& peer, const common::Message& message);
     boost::asio::awaitable<common::Message> receive_message();
@@ -111,6 +125,21 @@ class Peer {
 
     std::optional<common::EccPublicKey> peer_public_key() {
         return peer_public_key_.get();
+    }
+
+    boost::asio::ip::tcp::endpoint local_endpoint() const {
+        return stream_.socket().local_endpoint();
+    }
+
+    boost::asio::ip::tcp::endpoint remote_endpoint() const {
+        return stream_.socket().remote_endpoint();
+    }
+
+    bool is_inbound() const { return is_inbound_; };
+    bool is_static() const { return is_static_; };
+
+    std::optional<auth::HelloMessage> hello_message() {
+        return hello_message_.get();
     }
 
   private:
@@ -135,6 +164,11 @@ class Peer {
     std::unique_ptr<Protocol> protocol_;
     common::AtomicValue<std::optional<common::EnodeUrl>> url_;
     common::AtomicValue<std::optional<common::EccPublicKey>> peer_public_key_;
+    bool is_inbound_;
+    bool is_static_;
+
+    common::AtomicValue<std::optional<auth::HelloMessage>> hello_message_{std::nullopt};
+    common::Promise<bool> handshake_promise_;
 
     boost::asio::strand<boost::asio::any_io_executor> strand_;
     common::TaskGroup send_message_tasks_;

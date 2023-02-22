@@ -52,10 +52,16 @@ bool HelloMessage::contains_capability(const Capability& capability) const {
     return (it != capabilities_.end());
 }
 
+std::string HelloMessage::Capability::to_string() const {
+    std::ostringstream stream;
+    stream << name() << "/" << static_cast<int>(version);
+    return stream.str();
+}
+
 std::string HelloMessage::capabilities_description() {
     std::ostringstream stream;
-    for (auto& c : capabilities_) {
-        stream << c.name() << "-v" << static_cast<int>(c.version) << ";";
+    for (auto& capability : capabilities_) {
+        stream << capability.to_string() << ";";
     }
     return stream.str();
 }

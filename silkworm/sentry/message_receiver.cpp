@@ -40,7 +40,7 @@ awaitable<void> MessageReceiver::start(std::shared_ptr<MessageReceiver> self, Pe
 
     auto start =
         self->peer_tasks_.wait() &&
-        self->subscription_tasks_.wait() &&
+        self->unsubscription_tasks_.wait() &&
         self->handle_calls();
     co_await co_spawn(self->strand_, std::move(start), use_awaitable);
 }
@@ -57,29 +57,20 @@ awaitable<void> MessageReceiver::handle_calls() {
         subscriptions_.push_back({
             messages_channel,
             call.message_id_filter(),
-            call.unsubscribe_signal_channel(),
+            call.unsubscribe_signal(),
         });
 
-        subscription_tasks_.spawn(executor, unsubscribe_on_signal(call.unsubscribe_signal_channel()));
+        unsubscription_tasks_.spawn(executor, unsubscribe_on_signal(call.unsubscribe_signal()));
 
-        co_await call.set_result(messages_channel);
+        call.set_result(messages_channel);
     }
 }
 
-awaitable<void> MessageReceiver::unsubscribe_on_signal(std::shared_ptr<common::Channel<std::monostate>> unsubscribe_signal_channel) {
+awaitable<void> MessageReceiver::unsubscribe_on_signal(std::shared_ptr<common::EventNotifier> unsubscribe_signal) {
     try {
-        co_await unsubscribe_signal_channel->receive();
+        co_await unsubscribe_signal->wait();
     } catch (const boost::system::system_error& ex) {
-        if (ex.code() == experimental::error::channel_closed) {
-            auto subscription = std::find_if(subscriptions_.begin(), subscriptions_.end(), [=](const Subscription& s) {
-                return s.unsubscribe_signal_channel == unsubscribe_signal_channel;
-            });
-            if (subscription != subscriptions_.end()) {
-                subscription->messages_channel->close();
-                subscriptions_.erase(subscription);
-            }
-            co_return;
-        } else if (ex.code() == boost::system::errc::operation_canceled) {
+        if (ex.code() == boost::system::errc::operation_canceled) {
             log::Debug() << "MessageReceiver::unsubscribe_on_signal cancelled";
             co_return;
         }
@@ -88,6 +79,14 @@ awaitable<void> MessageReceiver::unsubscribe_on_signal(std::shared_ptr<common::C
     } catch (const std::exception& ex) {
         log::Error() << "MessageReceiver::unsubscribe_on_signal exception: " << ex.what();
         throw;
+    }
+
+    auto subscription = std::find_if(subscriptions_.begin(), subscriptions_.end(), [=](const Subscription& s) {
+        return s.unsubscribe_signal == unsubscribe_signal;
+    });
+    if (subscription != subscriptions_.end()) {
+        subscription->messages_channel->close();
+        subscriptions_.erase(subscription);
     }
 }
 

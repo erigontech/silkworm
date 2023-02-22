@@ -42,6 +42,7 @@
 #include "message_sender.hpp"
 #include "node_key_config.hpp"
 #include "peer_manager.hpp"
+#include "peer_manager_api.hpp"
 #include "rlpx/client.hpp"
 #include "rlpx/protocol.hpp"
 #include "rlpx/server.hpp"
@@ -75,6 +76,7 @@ class SentryImpl final {
     boost::asio::awaitable<void> start_peer_manager();
     boost::asio::awaitable<void> start_message_sender();
     boost::asio::awaitable<void> start_message_receiver();
+    boost::asio::awaitable<void> start_peer_manager_api();
     std::unique_ptr<rlpx::Protocol> make_protocol();
     std::function<std::unique_ptr<rlpx::Protocol>()> protocol_factory();
     std::unique_ptr<rlpx::Client> make_client();
@@ -93,6 +95,7 @@ class SentryImpl final {
 
     MessageSender message_sender_;
     std::shared_ptr<MessageReceiver> message_receiver_;
+    std::shared_ptr<PeerManagerApi> peer_manager_api_;
 
     rpc::Server rpc_server_;
 
@@ -113,12 +116,17 @@ static silkworm::rpc::ServerConfig make_server_config(const Settings& settings) 
 static rpc::common::ServiceState make_service_state(
     common::Channel<eth::StatusData>& status_channel,
     MessageSender& message_sender,
-    MessageReceiver& message_receiver) {
+    MessageReceiver& message_receiver,
+    PeerManagerApi& peer_manager_api) {
     return rpc::common::ServiceState{
         eth::Protocol::kVersion,
         status_channel,
         message_sender.send_message_channel(),
         message_receiver.message_calls_channel(),
+        peer_manager_api.peer_count_calls_channel(),
+        peer_manager_api.peers_calls_channel(),
+        peer_manager_api.peer_calls_channel(),
+        peer_manager_api.peer_events_calls_channel(),
     };
 }
 
@@ -150,7 +158,8 @@ SentryImpl::SentryImpl(Settings settings)
       peer_manager_(context_pool_.next_io_context(), settings_.max_peers, context_pool_),
       message_sender_(context_pool_.next_io_context()),
       message_receiver_(std::make_shared<MessageReceiver>(context_pool_.next_io_context(), settings_.max_peers)),
-      rpc_server_(make_server_config(settings_), make_service_state(status_manager_.status_channel(), message_sender_, *message_receiver_)) {
+      peer_manager_api_(std::make_shared<PeerManagerApi>(context_pool_.next_io_context(), peer_manager_)),
+      rpc_server_(make_server_config(settings_), make_service_state(status_manager_.status_channel(), message_sender_, *message_receiver_, *peer_manager_api_)) {
 }
 
 void SentryImpl::start() {
@@ -192,7 +201,8 @@ boost::asio::awaitable<void> SentryImpl::run_tasks() {
         start_discovery() &&
         start_peer_manager() &&
         start_message_sender() &&
-        start_message_receiver());
+        start_message_receiver() &&
+        start_peer_manager_api());
 }
 
 std::unique_ptr<rlpx::Protocol> SentryImpl::make_protocol() {
@@ -233,6 +243,10 @@ boost::asio::awaitable<void> SentryImpl::start_message_sender() {
 
 boost::asio::awaitable<void> SentryImpl::start_message_receiver() {
     return MessageReceiver::start(message_receiver_, peer_manager_);
+}
+
+boost::asio::awaitable<void> SentryImpl::start_peer_manager_api() {
+    return PeerManagerApi::start(peer_manager_api_);
 }
 
 void SentryImpl::stop() {

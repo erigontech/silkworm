@@ -44,7 +44,7 @@ boost::asio::awaitable<void> MessageSender::start(PeerManager& peer_manager) {
             co_await peer_manager.enumerate_peers(sender);
         }
 
-        co_await call.set_result(std::move(sent_peer_keys));
+        call.set_result(std::move(sent_peer_keys));
     }
 }
 

@@ -18,6 +18,8 @@
 
 #include <chrono>
 
+#include <silkworm/node/concurrency/coroutine.hpp>
+
 #include <boost/asio/awaitable.hpp>
 
 namespace silkworm::sentry::common {

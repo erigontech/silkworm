@@ -31,6 +31,7 @@
 #include <silkworm/sentry/rlpx/framing/message_stream.hpp>
 
 #include "auth_keys.hpp"
+#include "hello_message.hpp"
 
 namespace silkworm::sentry::rlpx::auth {
 
@@ -49,7 +50,13 @@ class Handshake {
           is_initiator_(peer_public_key.has_value()),
           peer_public_key_(std::move(peer_public_key)) {}
 
-    boost::asio::awaitable<std::pair<framing::MessageStream, common::EccPublicKey>> execute(common::SocketStream& stream);
+    struct HandshakeResult {
+        framing::MessageStream message_stream;
+        common::EccPublicKey peer_public_key;
+        HelloMessage hello_reply_message;
+    };
+
+    boost::asio::awaitable<HandshakeResult> execute(common::SocketStream& stream);
 
     class DisconnectError : public std::runtime_error {
       public:

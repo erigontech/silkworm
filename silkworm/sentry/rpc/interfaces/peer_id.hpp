@@ -16,12 +16,15 @@
 
 #pragma once
 
+#include <string>
+
 #include <silkworm/interfaces/types/types.pb.h>
 #include <silkworm/sentry/common/ecc_public_key.hpp>
 
 namespace silkworm::sentry::rpc::interfaces {
 
 ::types::H512 peer_id_from_public_key(const sentry::common::EccPublicKey& key);
+std::string peer_id_string_from_public_key(const sentry::common::EccPublicKey& key);
 sentry::common::EccPublicKey peer_public_key_from_id(const ::types::H512& peer_id);
 
 }  // namespace silkworm::sentry::rpc::interfaces

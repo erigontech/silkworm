@@ -15,7 +15,8 @@
 */
 
 #include <algorithm>
-#include <optional>
+#include <memory>
+#include <sstream>
 #include <vector>
 
 #include <boost/asio/awaitable.hpp>
@@ -26,10 +27,13 @@
 #include <silkworm/node/common/log.hpp>
 #include <silkworm/node/rpc/interfaces/types.hpp>
 #include <silkworm/node/rpc/server/call.hpp>
-#include <silkworm/sentry/common/timeout.hpp>
+#include <silkworm/sentry/common/promise.hpp>
 #include <silkworm/sentry/eth/fork_id.hpp>
 
 #include "common/messages_call.hpp"
+#include "common/peer_call.hpp"
+#include "common/peer_events_call.hpp"
+#include "common/peer_info.hpp"
 #include "common/send_message_call.hpp"
 #include "common/service_state.hpp"
 #include "interfaces/message.hpp"
@@ -209,8 +213,8 @@ class MessagesCall : public sw_rpc::server::ServerStreamingCall<proto::MessagesR
             executor,
         };
 
-        auto unsubscribe_signal_channel = call.unsubscribe_signal_channel();
-        auto _ = gsl::finally([=]() { unsubscribe_signal_channel->close(); });
+        auto unsubscribe_signal = call.unsubscribe_signal();
+        auto _ = gsl::finally([=]() { unsubscribe_signal->notify(); });
 
         co_await state.message_calls_channel.send(call);
         auto messages_channel = co_await call.result();
@@ -221,7 +225,7 @@ class MessagesCall : public sw_rpc::server::ServerStreamingCall<proto::MessagesR
 
             proto::InboundMessage reply = interfaces::inbound_message_from_message(message.message);
             if (message.peer_public_key) {
-                *reply.mutable_peer_id() = interfaces::peer_id_from_public_key(message.peer_public_key.value());
+                reply.mutable_peer_id()->CopyFrom(interfaces::peer_id_from_public_key(message.peer_public_key.value()));
             }
 
             write_ok = co_await agrpc::write(responder_, reply);
@@ -240,13 +244,51 @@ class MessagesCall : public sw_rpc::server::ServerStreamingCall<proto::MessagesR
     }
 };
 
+proto_types::PeerInfo make_peer_info(const common::PeerInfo& peer) {
+    proto_types::PeerInfo info;
+    info.set_id(interfaces::peer_id_string_from_public_key(peer.peer_public_key));
+    info.set_name(peer.client_id);
+    info.set_enode(peer.url.to_string());
+
+    // TODO: PeerInfo.enr
+    // info.set_enr("TODO");
+
+    for (auto& capability : peer.capabilities) {
+        info.add_caps(capability);
+    }
+
+    std::ostringstream local_endpoint_str;
+    local_endpoint_str << peer.local_endpoint;
+    info.set_connlocaladdr(local_endpoint_str.str());
+
+    std::ostringstream remote_endpoint_str;
+    remote_endpoint_str << peer.remote_endpoint;
+    info.set_connremoteaddr(remote_endpoint_str.str());
+
+    info.set_connisinbound(peer.is_inbound);
+    info.set_connistrusted(false);
+    info.set_connisstatic(peer.is_static);
+    return info;
+}
+
 // rpc Peers(google.protobuf.Empty) returns (PeersReply);
 class PeersCall : public sw_rpc::server::UnaryCall<protobuf::Empty, proto::PeersReply> {
   public:
     using Base::UnaryCall;
 
-    awaitable<void> operator()(const ServiceState& /*state*/) {
-        co_await agrpc::finish_with_error(responder_, grpc::Status{grpc::StatusCode::UNIMPLEMENTED, "PeersCall"});
+    awaitable<void> operator()(const ServiceState& state) {
+        auto executor = co_await boost::asio::this_coro::executor;
+        auto call = std::make_shared<sentry::common::Promise<common::PeerInfos>>(executor);
+
+        co_await state.peers_calls_channel.send(call);
+        auto peers = co_await call->wait();
+
+        proto::PeersReply reply;
+        for (auto& peer : peers) {
+            reply.add_peers()->CopyFrom(make_peer_info(peer));
+        }
+
+        co_await agrpc::finish(responder_, reply, grpc::Status::OK);
     }
 };
 
@@ -255,8 +297,16 @@ class PeerCountCall : public sw_rpc::server::UnaryCall<proto::PeerCountRequest, 
   public:
     using Base::UnaryCall;
 
-    awaitable<void> operator()(const ServiceState& /*state*/) {
-        co_await agrpc::finish_with_error(responder_, grpc::Status{grpc::StatusCode::UNIMPLEMENTED, "PeerCountCall"});
+    awaitable<void> operator()(const ServiceState& state) {
+        auto executor = co_await boost::asio::this_coro::executor;
+        auto call = std::make_shared<sentry::common::Promise<size_t>>(executor);
+
+        co_await state.peer_count_calls_channel.send(call);
+        auto count = co_await call->wait();
+
+        proto::PeerCountReply reply;
+        reply.set_count(count);
+        co_await agrpc::finish(responder_, reply, grpc::Status::OK);
     }
 };
 
@@ -265,8 +315,20 @@ class PeerByIdCall : public sw_rpc::server::UnaryCall<proto::PeerByIdRequest, pr
   public:
     using Base::UnaryCall;
 
-    awaitable<void> operator()(const ServiceState& /*state*/) {
-        co_await agrpc::finish_with_error(responder_, grpc::Status{grpc::StatusCode::UNIMPLEMENTED, "PeerByIdCall"});
+    awaitable<void> operator()(const ServiceState& state) {
+        auto peer_public_key = interfaces::peer_public_key_from_id(request_.peer_id());
+        auto executor = co_await boost::asio::this_coro::executor;
+        common::PeerCall call{peer_public_key, executor};
+
+        co_await state.peer_calls_channel.send(call);
+        auto peer_opt = co_await call.result_promise->wait();
+
+        proto::PeerByIdReply reply;
+        if (peer_opt) {
+            reply.mutable_peer()->CopyFrom(make_peer_info(peer_opt.value()));
+        }
+
+        co_await agrpc::finish(responder_, reply, grpc::Status::OK);
     }
 };
 
@@ -286,13 +348,37 @@ class PeerEventsCall : public sw_rpc::server::ServerStreamingCall<proto::PeerEve
   public:
     using Base::ServerStreamingCall;
 
-    awaitable<void> operator()(const ServiceState& /*state*/) {
-        // TODO: implement
-        using namespace std::chrono_literals;
-        silkworm::sentry::common::Timeout timeout(1h);
-        co_await timeout();
+    awaitable<void> operator()(const ServiceState& state) {
+        auto executor = co_await boost::asio::this_coro::executor;
+        common::PeerEventsCall call{executor};
 
-        co_await agrpc::finish(responder_, grpc::Status{grpc::StatusCode::UNIMPLEMENTED, "PeerEventsCall"});
+        auto unsubscribe_signal = call.unsubscribe_signal;
+        auto _ = gsl::finally([=]() { unsubscribe_signal->notify(); });
+
+        co_await state.peer_events_calls_channel.send(call);
+        auto events_channel = co_await call.result_promise->wait();
+
+        bool write_ok = true;
+        while (write_ok) {
+            auto event = co_await events_channel->receive();
+
+            proto::PeerEvent reply;
+            if (event.peer_public_key) {
+                reply.mutable_peer_id()->CopyFrom(interfaces::peer_id_from_public_key(event.peer_public_key.value()));
+            }
+            switch (event.event_id) {
+                case common::PeerEventsCall::PeerEventId::kAdded:
+                    reply.set_event_id(proto::PeerEvent_PeerEventId_Connect);
+                    break;
+                case common::PeerEventsCall::PeerEventId::kRemoved:
+                    reply.set_event_id(proto::PeerEvent_PeerEventId_Disconnect);
+                    break;
+            }
+
+            write_ok = co_await agrpc::write(responder_, reply);
+        }
+
+        co_await agrpc::finish(responder_, grpc::Status::OK);
     }
 };
 

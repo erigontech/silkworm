@@ -28,24 +28,19 @@ namespace silkworm {
 
 OutboundGetBlockHeaders::OutboundGetBlockHeaders() {}
 
-GetBlockHeadersPacket66& OutboundGetBlockHeaders::packet() {
-    present_ = true;
-    return packet_;
-}
-
+GetBlockHeadersPacket66& OutboundGetBlockHeaders::packet() { return packet_; }
 std::vector<PeerPenalization>& OutboundGetBlockHeaders::penalties() { return penalizations_; }
-bool OutboundGetBlockHeaders::packet_present() { return present_; }
+bool OutboundGetBlockHeaders::packet_present() const { return (packet_.request.amount != 0); }
 
 void OutboundGetBlockHeaders::execute(db::ROAccess, HeaderChain& hc, BodySequence&, SentryClient& sentry) {
     using namespace std::literals::chrono_literals;
     seconds_t response_timeout = 1s;
 
-    if (present_) {
-        auto send_outcome = send_packet(sentry, packet_, response_timeout);
+    if (packet_present()) {
+        auto send_outcome = send_packet(sentry, response_timeout);
 
-        SILK_TRACE << "Headers request sent (OutboundGetBlockHeaders/" << packet_
-                   << "), received by " << send_outcome.peers_size()
-                   << "/" << sentry.active_peers() << " peer(s)";
+        SILK_TRACE << "Headers request sent (OutboundGetBlockHeaders/" << packet_ << "), received by "
+                   << send_outcome.peers_size() << "/" << sentry.active_peers() << " peer(s)";
 
         if (send_outcome.peers_size() == 0) {
             hc.request_nack(packet_);
@@ -61,13 +56,11 @@ void OutboundGetBlockHeaders::execute(db::ROAccess, HeaderChain& hc, BodySequenc
     }
 }
 
-sentry::SentPeers OutboundGetBlockHeaders::send_packet(SentryClient& sentry,
-                                                       const GetBlockHeadersPacket66& packet_, seconds_t timeout) {
+sentry::SentPeers OutboundGetBlockHeaders::send_packet(SentryClient& sentry, seconds_t timeout) {
     if (std::holds_alternative<Hash>(packet_.request.origin))
         throw std::logic_error("OutboundGetBlockHeaders expects block number not hash");
 
-    if (std::get<BlockNum>(packet_.request.origin) == 0 ||
-        packet_.request.amount == 0)
+    if (std::get<BlockNum>(packet_.request.origin) == 0 || packet_.request.amount == 0)
         throw std::logic_error("OutboundGetBlockHeaders expects block number > 0 and amount > 0");
 
     BlockNum min_block = std::get<BlockNum>(packet_.request.origin);  // choose target peer
@@ -113,7 +106,7 @@ void OutboundGetBlockHeaders::send_penalization(SentryClient& sentry, const Peer
 std::string OutboundGetBlockHeaders::content() const {
     std::stringstream content;
     log::prepare_for_logging(content);
-    if (present_)
+    if (packet_present())
         content << packet_;
     if (!penalizations_.empty()) {
         content << " penalizations: ";
@@ -121,7 +114,7 @@ std::string OutboundGetBlockHeaders::content() const {
             content << " " << penalization << ", ";
         }
     }
-    if (!present_ && penalizations_.empty())
+    if (!packet_present() && penalizations_.empty())
         content << "-no message-";
     return content.str();
 }

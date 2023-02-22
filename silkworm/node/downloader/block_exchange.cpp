@@ -181,14 +181,24 @@ size_t BlockExchange::request_bodies(time_point_t tp, size_t max_nr_of_requests)
     if (!downloading_active_) return 0;
     if (body_sequence_.has_completed()) return 0;
 
-    auto request_message = std::make_shared<OutboundGetBlockBodies>(max_nr_of_requests, sentry_.active_peers());
-    request_message->execute(db_access_, header_chain_, body_sequence_, sentry_);
+    size_t sent_requests = 0;
+    do {
+        auto request_message = body_sequence_.request_bodies(tp);
+        statistics_.tried_msgs += 1;
 
-    statistics_.tried_msgs += max_nr_of_requests;
-    statistics_.sent_msgs += request_message->sent_requests();
-    statistics_.nack_msgs += request_message->nack_requests();
+        if (!request_message) break;
 
-    return request_message->sent_requests();
+        request_message->execute(db_access_, header_chain_, body_sequence_, sentry_);
+
+        statistics_.sent_msgs += request_message->sent_requests();
+        statistics_.nack_msgs += request_message->nack_requests();
+
+        if (request_message->nack_requests() > 0) break;
+
+        sent_requests++;
+    } while (sent_requests < max_nr_of_requests);
+
+    return sent_requests;
 }
 
 void BlockExchange::collect_headers() {

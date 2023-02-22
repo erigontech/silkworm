@@ -135,17 +135,17 @@ Penalty BodySequence::accept_new_block(const Block& block, const PeerId&) {
     return Penalty::NoPenalty;
 }
 
-auto BodySequence::request_more_bodies(time_point_t tp)
-    -> std::tuple<GetBlockBodiesPacket66, std::vector<PeerPenalization>, MinBlock> {
-    GetBlockBodiesPacket66 packet;
-    packet.requestId = RANDOM_NUMBER.generate_one();
+auto BodySequence::request_bodies(time_point_t tp) -> std::shared_ptr<OutboundMessage>
+{
+    if (tp - last_nack_ < SentryClient::kNoPeerDelay)
+        return nullptr;
 
     seconds_t timeout = SentryClient::kRequestDeadline;
-
     BlockNum min_block{0};
 
-    if (tp - last_nack_ < SentryClient::kNoPeerDelay)
-        return {};
+    auto body_request = std::make_shared<OutboundGetBlockBodies>();
+    auto& packet = body_request->packet();
+    packet.requestId = RANDOM_NUMBER.generate_one();
 
     auto penalizations = renew_stale_requests(packet, min_block, tp, timeout);
 
@@ -160,7 +160,10 @@ auto BodySequence::request_more_bodies(time_point_t tp)
         SILK_TRACE << "BodySequence, no more bodies to request";
     }
 
-    return {std::move(packet), std::move(penalizations), min_block};
+    body_request->penalties() = std::move(penalizations);
+    body_request->min_block() = min_block;
+
+    return body_request;
 }
 
 //! Re-evaluate past (stale) requests

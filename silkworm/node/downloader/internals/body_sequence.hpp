@@ -19,8 +19,8 @@
 #include <list>
 
 #include <silkworm/node/db/access_layer.hpp>
+#include <silkworm/node/downloader/messages/outbound_get_block_bodies.hpp>
 #include <silkworm/node/downloader/packets/block_bodies_packet.hpp>
-#include <silkworm/node/downloader/packets/get_block_bodies_packet.hpp>
 #include <silkworm/node/downloader/packets/new_block_packet.hpp>
 
 #include "chain_elements.hpp"
@@ -55,9 +55,7 @@ class BodySequence {
     void download_bodies(const Headers& headers);
 
     //! core functionalities: trigger the internal algorithms to decide what bodies we miss
-    using MinBlock = BlockNum;
-    auto request_more_bodies(time_point_t tp)
-        -> std::tuple<GetBlockBodiesPacket66, std::vector<PeerPenalization>, MinBlock>;
+    auto request_bodies(time_point_t tp) -> std::shared_ptr<OutboundMessage>;
 
     //! it needs to know if the request issued was not delivered
     void request_nack(const GetBlockBodiesPacket66&);
@@ -89,9 +87,10 @@ class BodySequence {
     static constexpr BlockNum kMaxAnnouncedBlocks = 10000;
 
   protected:
+    using MinBlock = BlockNum;
     auto renew_stale_requests(GetBlockBodiesPacket66&, MinBlock&, time_point_t, seconds_t timeout)
         -> std::vector<PeerPenalization>;
-    void make_new_requests(GetBlockBodiesPacket66&, BlockNum&, time_point_t, seconds_t timeout);
+    void make_new_requests(GetBlockBodiesPacket66&, MinBlock&, time_point_t, seconds_t timeout);
 
     static bool is_valid_body(const BlockHeader&, const BlockBody&);
 

@@ -42,7 +42,7 @@ class BlockExchange final : public ActiveComponent {
     enum class Target_Tracking { kByAnnouncements, kByNewPayloads };
     void download_blocks(BlockNum current_height, Target_Tracking);  // start downloading blocks from current_height
 
-    void new_target_block(Block);  // set a new target block to download, to use with Target_Tracking::kExplicit
+    void new_target_block(const Block&);  // set a new target block to download, to use with Target_Tracking::kByNewPayloads
 
     void stop_downloading();  // stop downloading blocks
 

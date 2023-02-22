@@ -283,4 +283,15 @@ void BlockExchange::stop_downloading() {
     downloading_active_ = false;
 }
 
+void BlockExchange::new_target_block(const Block& block)
+{
+    auto message = std::make_shared<InternalMessage<void>>(
+        [=, this](HeaderChain& hc, BodySequence& bc) {
+            hc.add_header(block.header, std::chrono::system_clock::now());
+            bc.accept_new_block(block, no_peer);
+        });
+
+    accept(message);
+}
+
 }  // namespace silkworm

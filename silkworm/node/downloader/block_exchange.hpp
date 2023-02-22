@@ -35,17 +35,24 @@ class BlockExchange final : public ActiveComponent {
     BlockExchange(SentryClient&, const db::ROAccess&, const ChainConfig&);
     virtual ~BlockExchange() override;
 
-    void initial_state(std::vector<BlockHeader> last_headers);
+    // public interface for block downloading
 
-    static constexpr std::optional<BlockNum> kTipOfTheChain{std::nullopt};
+    void initial_state(std::vector<BlockHeader> last_headers);  // set the initial state of the downloader
 
-    void download_blocks(BlockNum current_height, std::optional<BlockNum> target_height);
-    void stop_downloading();
+    enum class Target_Tracking { kByAnnouncements, kByNewPayloads };
+    void download_blocks(BlockNum current_height, Target_Tracking);  // start downloading blocks from current_height
+
+    void new_target_block(Block);  // set a new target block to download, to use with Target_Tracking::kExplicit
+
+    void stop_downloading();  // stop downloading blocks
 
     using ResultQueue = ConcurrentQueue<Blocks>;
-    ResultQueue& result_queue();
-    bool in_sync() const;
-    BlockNum current_height() const;
+    ResultQueue& result_queue();  // get the queue where to receive downloaded blocks
+
+    bool in_sync() const;  // true if the downloader is in sync with the network
+    BlockNum current_height() const;  // the current height of the downloader
+
+    // public generic interface
 
     void accept(std::shared_ptr<Message>); /*[[thread_safe]]*/
     void execution_loop() override;        /*[[long_running]]*/
@@ -58,8 +65,8 @@ class BlockExchange final : public ActiveComponent {
 
     void receive_message(const sentry::InboundMessage& raw_message);
     void send_penalization(PeerId id, Penalty p) noexcept;
-    size_t request_headers(size_t max_requests);
-    size_t request_bodies(size_t max_requests);
+    size_t request_headers(time_point_t tp, size_t max_requests);
+    size_t request_bodies(time_point_t tp, size_t max_requests);
     void collect_headers();
     void collect_bodies();
     void log_status();

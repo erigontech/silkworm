@@ -19,15 +19,14 @@
 #include <sstream>
 
 #include <silkworm/node/common/log.hpp>
+#include <silkworm/node/downloader/internals/body_sequence.hpp>
+#include <silkworm/node/downloader/internals/header_chain.hpp>
 #include <silkworm/node/downloader/rpc/penalize_peer.hpp>
 #include <silkworm/node/downloader/rpc/send_message_by_min_block.hpp>
 
 namespace silkworm {
 
 OutboundGetBlockBodies::OutboundGetBlockBodies(size_t mr, uint64_t ap) : max_reqs_{mr}, active_peers_{ap} {}
-
-size_t OutboundGetBlockBodies::sent_requests() const { return sent_reqs_; }
-size_t OutboundGetBlockBodies::nack_requests() const { return nack_reqs_; }
 
 void OutboundGetBlockBodies::execute(db::ROAccess, HeaderChain&, BodySequence& bs, SentryClient& sentry) {
     using namespace std::literals::chrono_literals;

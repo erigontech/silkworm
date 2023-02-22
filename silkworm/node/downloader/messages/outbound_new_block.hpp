@@ -16,10 +16,10 @@
 
 #pragma once
 
-#include <silkworm/node/downloader/internals/header_chain.hpp>
 #include <silkworm/node/downloader/packets/new_block_packet.hpp>
 
 #include "outbound_message.hpp"
+#include "silkworm/node/downloader/internals/body_sequence.hpp"
 
 namespace silkworm {
 

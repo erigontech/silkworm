@@ -13,27 +13,11 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 */
-
-#pragma once
-
-#include <silkworm/node/downloader/packets/new_block_hashes_packet.hpp>
-
-#include "outbound_message.hpp"
+#include <silkworm/node/downloader/messages/outbound_message.hpp>
 
 namespace silkworm {
 
-class OutboundNewBlockHashes : public OutboundMessage {
-  public:
-    OutboundNewBlockHashes(bool is_first_sync);
+size_t OutboundMessage::sent_requests() const { return sent_reqs_; }
+size_t OutboundMessage::nack_requests() const { return nack_reqs_; }
 
-    std::string name() const override { return "OutboundNewBlockHashes"; }
-    std::string content() const override;
-
-    void execute(db::ROAccess, HeaderChain&, BodySequence&, SentryClient&) override;
-
-  private:
-    NewBlockHashesPacket packet_;
-    bool is_first_sync_;
-};
-
-}  // namespace silkworm
+}

@@ -27,9 +27,9 @@
 
 namespace silkworm::chainsync {
 
-class SyncEngine : public ActiveComponent {
+class PoWSync : public ActiveComponent {
   public:
-    SyncEngine(BlockExchange&, stagedsync::ExecutionEngine&);
+    PoWSync(BlockExchange&, stagedsync::ExecutionEngine&);
 
     void execution_loop() final; /*[[long_running]]*/
 

@@ -18,8 +18,9 @@
 
 #include <silkworm/core/rlp/encode_vector.hpp>
 #include <silkworm/node/common/log.hpp>
+#include <silkworm/node/downloader/internals/body_sequence.hpp>
+#include <silkworm/node/downloader/internals/header_chain.hpp>
 #include <silkworm/node/downloader/rpc/send_message_to_all.hpp>
-
 namespace silkworm {
 
 OutboundNewBlockHashes::OutboundNewBlockHashes(bool f) : is_first_sync_{f} {}

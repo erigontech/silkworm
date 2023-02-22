@@ -20,7 +20,7 @@
 
 #include <silkworm/core/common/lru_cache.hpp>
 #include <silkworm/core/consensus/engine.hpp>
-#include <silkworm/node/downloader/packets/get_block_headers_packet.hpp>
+#include <silkworm/node/downloader/messages/outbound_get_block_headers.hpp>
 
 #include "chain_elements.hpp"
 #include "header_only_state.hpp"
@@ -77,16 +77,11 @@ class HeaderChain {
     size_t outstanding_requests(time_point_t tp) const;
     const Download_Statistics& statistics() const;
 
-    // core functionalities: requesting new headers - NEW API -
-    // auto request_more_headers(time_point_t tp, seconds_t timeout)
-    //    -> std::tuple<std::vector<GetBlockHeadersPacket66>, std::vector<PeerPenalization>>;
+    // core functionalities: requesting new headers
+    auto request_headers(time_point_t) -> std::shared_ptr<OutboundMessage>;
 
-    // anchor collection: to collect headers more quickly we request headers in a wide range, as seed to grow later
-    auto anchor_skeleton_request(time_point_t tp, seconds_t timeout) -> std::optional<GetBlockHeadersPacket66>;
-
-    // anchor extension: to extend an anchor we do a request of many headers that are children of the anchor
-    auto anchor_extension_request(time_point_t tp, seconds_t timeout)
-        -> std::tuple<std::optional<GetBlockHeadersPacket66>, std::vector<PeerPenalization>>;
+    // core functionalities: add a new header
+    auto add_header(const BlockHeader& anchor, time_point_t) -> std::shared_ptr<OutboundMessage>;
 
     // also we need to know if the request issued was not delivered
     void request_nack(const GetBlockHeadersPacket66& packet);
@@ -115,6 +110,14 @@ class HeaderChain {
     static constexpr size_t link_total = 1024 * 1024;
     static constexpr size_t persistent_link_limit = link_total / 16;
     static constexpr size_t link_limit = link_total - persistent_link_limit;
+    static constexpr seconds_t skeleton_req_interval{30};
+    static constexpr seconds_t extension_req_timeout{30};
+
+    // anchor collection: to collect headers more quickly we request headers in a wide range, as seed to grow later
+    auto anchor_skeleton_request(time_point_t) -> std::shared_ptr<OutboundMessage>;
+
+    // anchor extension: to extend an anchor we do a request of many headers that are children of the anchor
+    auto anchor_extension_request(time_point_t) -> std::shared_ptr<OutboundMessage>;
 
     // process a segment of headers
     auto process_segment(const Segment&, bool is_a_new_block, const PeerId&) -> RequestMoreHeaders;

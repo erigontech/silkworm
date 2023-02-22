@@ -17,12 +17,12 @@
 #pragma once
 
 #include <silkworm/node/db/access_layer.hpp>
-#include <silkworm/node/downloader/internals/body_sequence.hpp>
-#include <silkworm/node/downloader/internals/header_chain.hpp>
 #include <silkworm/node/downloader/internals/types.hpp>
 #include <silkworm/node/downloader/sentry_client.hpp>
 
 namespace silkworm {
+class HeaderChain;
+class BodySequence;
 
 class Message {
   public:

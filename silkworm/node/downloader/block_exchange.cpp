@@ -121,10 +121,10 @@ void BlockExchange::execution_loop() {
                                      ? RANDOM_NUMBER.generate_one() % 2  // 50% chance to request a body
                                      : room_for_new_requests / 2;        // a slight bias towards headers
 
-            room_for_new_requests -= request_bodies(body_requests);           // do the computed nr. of body requests
-            room_for_new_requests -= request_headers(room_for_new_requests);  // do the remaining nr. of header requests
+            room_for_new_requests -= request_bodies(now, body_requests);           // do the computed nr. of body requests
+            room_for_new_requests -= request_headers(now, room_for_new_requests);  // do the remaining nr. of header requests
 
-            request_bodies(room_for_new_requests);  // if headers do not used all the room we use it for body requests
+            request_bodies(now, room_for_new_requests);  // if headers do not used all the room we use it for body requests
 
             // todo: check if it is better to apply a policy based on the current sync status
             // for example: if (header_chain_.current_heigth() - body_sequence_.current_heigth() > stride) { ... }
@@ -151,22 +151,32 @@ void BlockExchange::execution_loop() {
     stop();
 }
 
-size_t BlockExchange::request_headers(size_t max_nr_of_requests) {
+size_t BlockExchange::request_headers(time_point_t tp, size_t max_nr_of_requests) {
     if (max_nr_of_requests == 0) return 0;
     if (!downloading_active_) return 0;
     if (header_chain_.in_sync()) return 0;
 
-    auto request_message = std::make_shared<OutboundGetBlockHeaders>(max_nr_of_requests, sentry_.active_peers());
-    request_message->execute(db_access_, header_chain_, body_sequence_, sentry_);
+    size_t sent_requests = 0;
+    do {
+        auto request_message = header_chain_.request_headers(tp);
+        statistics_.tried_msgs += 1;
 
-    statistics_.tried_msgs += max_nr_of_requests;
-    statistics_.sent_msgs += request_message->sent_requests();
-    statistics_.nack_msgs += request_message->nack_requests();
+        if (!request_message) break;
 
-    return request_message->sent_requests();
+        request_message->execute(db_access_, header_chain_, body_sequence_, sentry_);
+
+        statistics_.sent_msgs += request_message->sent_requests();
+        statistics_.nack_msgs += request_message->nack_requests();
+
+        if (request_message->nack_requests() > 0) break;
+
+        sent_requests++;
+    } while (sent_requests < max_nr_of_requests);
+
+    return sent_requests;
 }
 
-size_t BlockExchange::request_bodies(size_t max_nr_of_requests) {
+size_t BlockExchange::request_bodies(time_point_t tp, size_t max_nr_of_requests) {
     if (max_nr_of_requests == 0) return 0;
     if (!downloading_active_) return 0;
     if (body_sequence_.has_completed()) return 0;
@@ -256,8 +266,8 @@ void BlockExchange::initial_state(std::vector<BlockHeader> last_headers) {
     accept(message);
 }
 
-void BlockExchange::download_blocks(BlockNum current_height, [[maybe_unused]] std::optional<BlockNum> target_height) {
-    // todo: use target_height, if it is not present use target_height = tip of the chain
+void BlockExchange::download_blocks(BlockNum current_height, Target_Tracking) {
+    // todo: handle the Target_Tracking mode
 
     auto message = std::make_shared<InternalMessage<void>>(
         [=, this](HeaderChain& hc, BodySequence& bc) {

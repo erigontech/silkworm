@@ -21,6 +21,7 @@
 #include <magic_enum.hpp>
 
 #include <silkworm/core/common/assert.hpp>
+#include <silkworm/core/common/cast.hpp>
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/rlp/decode.hpp>
 #include <silkworm/core/rlp/encode.hpp>
@@ -89,6 +90,8 @@ inline std::ostream& operator<<(std::ostream& out, const evmc::bytes32& b32) {
 
 // Peers
 using PeerId = Bytes;
+
+static inline const PeerId no_peer{byte_ptr_cast("")};
 
 // Bytes already has operator<<, so PeerId but PeerId is too long
 inline Bytes human_readable_id(const PeerId& peer_id) {

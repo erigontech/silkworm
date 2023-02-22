@@ -160,7 +160,17 @@ int main(int argc, char* argv[]) {
         silkworm::stagedsync::ExecutionEngine execution{node_settings, db::RWAccess{chaindata_db}};
 
         // ConsensusEngine drives headers and bodies sync, implementing fork choice rules
-        silkworm::chainsync::SyncEngine sync{block_exchange, execution};
+        silkworm::chainsync::PoWSync sync{block_exchange, execution};
+        /*
+        std::unique_ptr<silkworm::chainsync::PoWSync> sync;
+
+        if (is_pow(node_settings.chain_config))
+            sync = std::make_unique<silkworm::chainsync::pow::PoWSync>(block_exchange, execution);
+        else (is_pos(node_settings.chain_config))
+            sync = std::make_unique<silkworm::chainsync::pos::PoWSync>(block_exchange, execution);
+        else
+            throw std::invalid_argument("Invalid chain config");
+        */
 
         // Trap OS signals
         SignalHandler::init([&](int) {

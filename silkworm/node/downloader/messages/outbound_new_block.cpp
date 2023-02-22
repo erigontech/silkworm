@@ -17,6 +17,8 @@
 #include "outbound_new_block.hpp"
 
 #include <silkworm/node/common/log.hpp>
+#include <silkworm/node/downloader/internals/body_sequence.hpp>
+#include <silkworm/node/downloader/internals/header_chain.hpp>
 #include <silkworm/node/downloader/rpc/send_message_to_random_peers.hpp>
 
 namespace silkworm {

@@ -19,65 +19,45 @@
 #include <sstream>
 
 #include <silkworm/node/common/log.hpp>
+#include <silkworm/node/downloader/internals/body_sequence.hpp>
+#include <silkworm/node/downloader/internals/header_chain.hpp>
 #include <silkworm/node/downloader/rpc/penalize_peer.hpp>
 #include <silkworm/node/downloader/rpc/send_message_by_min_block.hpp>
 
 namespace silkworm {
 
-OutboundGetBlockHeaders::OutboundGetBlockHeaders(size_t mr, uint64_t ap) : max_reqs_{mr}, active_peers_{ap} {}
+OutboundGetBlockHeaders::OutboundGetBlockHeaders() {}
 
-size_t OutboundGetBlockHeaders::sent_requests() const { return sent_reqs_; }
-size_t OutboundGetBlockHeaders::nack_requests() const { return nack_reqs_; }
+GetBlockHeadersPacket66& OutboundGetBlockHeaders::packet() {
+    present_ = true;
+    return packet_;
+}
+
+std::vector<PeerPenalization>& OutboundGetBlockHeaders::penalties() { return penalizations_; }
+bool OutboundGetBlockHeaders::packet_present() { return present_; }
 
 void OutboundGetBlockHeaders::execute(db::ROAccess, HeaderChain& hc, BodySequence&, SentryClient& sentry) {
     using namespace std::literals::chrono_literals;
-
-    time_point_t now = std::chrono::system_clock::now();
-    seconds_t request_timeout = 30s;
     seconds_t response_timeout = 1s;
 
-    // anchor extension
-    do {
-        auto [packet, penalizations] = hc.anchor_extension_request(now, request_timeout);
+    if (present_) {
+        auto send_outcome = send_packet(sentry, packet_, response_timeout);
 
-        if (packet == std::nullopt) break;
-
-        auto send_outcome = send_packet(sentry, *packet, response_timeout);
-
-        packets_ += "o=" + std::to_string(std::get<BlockNum>(packet->request.origin)) + ",";
-        SILK_TRACE << "Headers request sent (OutboundGetBlockHeaders/" << *packet << "), received by " << send_outcome.peers_size()
-                   << "/" << active_peers_ << " peer(s)";
+        SILK_TRACE << "Headers request sent (OutboundGetBlockHeaders/" << packet_
+                   << "), received by " << send_outcome.peers_size()
+                   << "/" << sentry.active_peers() << " peer(s)";
 
         if (send_outcome.peers_size() == 0) {
-            hc.request_nack(*packet);
-            ++nack_reqs_;
-            break;
+            hc.request_nack(packet_);
+            nack_reqs_++;
+        } else {
+            sent_reqs_++;
         }
-
-        requested_headers_ += packet->request.amount;
-        ++sent_reqs_;
-
-        for (auto& penalization : penalizations) {
-            SILK_TRACE << "Penalizing " << penalization;
-            send_penalization(sentry, penalization, 1s);
-        }
-
-    } while (sent_reqs_ < max_reqs_);  // && packet != std::nullopt && receiving_peers != nullptr
-
-    // anchor collection
-    auto packet = hc.anchor_skeleton_request(now, request_timeout);
-
-    if (packet != std::nullopt) {
-        auto send_outcome = send_packet(sentry, *packet, response_timeout);
-        sent_reqs_++;
-        requested_headers_ += packet->request.amount;
-        packets_ += "SK o=" + std::to_string(std::get<BlockNum>(packet->request.origin)) + ",";
-        SILK_TRACE << "Headers skeleton request sent (" << *packet << "), received by " << send_outcome.peers_size()
-                   << "/" << active_peers_ << " peer(s)";
     }
 
-    if (!packets_.empty()) {
-        SILK_TRACE << "Sent message " << *this;
+    for (auto& penalization : penalizations_) {
+        SILK_TRACE << "Penalizing " << penalization;
+        send_penalization(sentry, penalization, 1s);
     }
 }
 
@@ -133,9 +113,15 @@ void OutboundGetBlockHeaders::send_penalization(SentryClient& sentry, const Peer
 std::string OutboundGetBlockHeaders::content() const {
     std::stringstream content;
     log::prepare_for_logging(content);
-    if (!packets_.empty())
-        content << "GetBlockHeadersPackets " << packets_;
-    else
+    if (present_)
+        content << packet_;
+    if (!penalizations_.empty()) {
+        content << " penalizations: ";
+        for (auto& penalization : penalizations_) {
+            content << " " << penalization << ", ";
+        }
+    }
+    if (!present_ && penalizations_.empty())
         content << "-no message-";
     return content.str();
 }

@@ -26,8 +26,8 @@
 #include <silkworm/core/rlp/decode.hpp>
 #include <silkworm/core/rlp/encode.hpp>
 #include <silkworm/core/types/block.hpp>
+#include <silkworm/core/types/hash.hpp>
 #include <silkworm/core/types/transaction.hpp>
-#include <silkworm/node/types/hash.hpp>
 
 namespace silkworm {
 

@@ -20,7 +20,7 @@
 #include <types/types.pb.h>
 
 #include <silkworm/core/common/base.hpp>
-#include <silkworm/node/types/hash.hpp>
+#include <silkworm/core/types/hash.hpp>
 
 namespace silkworm {
 

@@ -18,12 +18,12 @@
 
 #include <magic_enum.hpp>
 
+#include <silkworm/core/types/hash.hpp>
 #include <silkworm/node/common/log.hpp>
 #include <silkworm/node/db/stages.hpp>
 #include <silkworm/node/etl/collector.hpp>
 #include <silkworm/node/snapshot/config.hpp>
 #include <silkworm/node/snapshot/path.hpp>
-#include <silkworm/node/types/hash.hpp>
 
 namespace silkworm {
 

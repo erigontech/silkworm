@@ -22,9 +22,9 @@
 
 #include <silkworm/core/common/endian.hpp>
 #include <silkworm/core/common/util.hpp>
+#include <silkworm/core/types/hash.hpp>
 #include <silkworm/node/common/log.hpp>
 #include <silkworm/node/test/snapshots.hpp>
-#include <silkworm/node/types/hash.hpp>
 
 namespace silkworm {
 

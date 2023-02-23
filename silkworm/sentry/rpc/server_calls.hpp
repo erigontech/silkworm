@@ -31,6 +31,7 @@
 #include <silkworm/sentry/eth/fork_id.hpp>
 
 #include "common/messages_call.hpp"
+#include "common/node_info.hpp"
 #include "common/peer_call.hpp"
 #include "common/peer_events_call.hpp"
 #include "common/peer_info.hpp"
@@ -107,8 +108,30 @@ class NodeInfoCall : public sw_rpc::server::UnaryCall<protobuf::Empty, proto_typ
   public:
     using Base::UnaryCall;
 
-    awaitable<void> operator()(const ServiceState& /*state*/) {
-        co_await agrpc::finish_with_error(responder_, grpc::Status{grpc::StatusCode::UNIMPLEMENTED, "NodeInfoCall"});
+    awaitable<void> operator()(const ServiceState& state) {
+        auto reply = make_node_info_reply(state.node_info_provider());
+        co_await agrpc::finish(responder_, reply, grpc::Status::OK);
+    }
+
+    static proto_types::NodeInfoReply make_node_info_reply(const common::NodeInfo& info) {
+        proto_types::NodeInfoReply reply;
+        reply.set_id(interfaces::peer_id_string_from_public_key(info.node_public_key));
+        reply.set_name(info.client_id);
+        reply.set_enode(info.node_url.to_string());
+
+        // TODO: NodeInfo.enr
+        // reply.set_enr("TODO");
+
+        reply.mutable_ports()->set_listener(info.rlpx_server_port);
+
+        // TODO: NodeInfo.discovery_port
+        // reply.mutable_ports()->set_discovery(0);
+
+        std::ostringstream rlpx_server_listen_endpoint_str;
+        rlpx_server_listen_endpoint_str << info.rlpx_server_listen_endpoint;
+        reply.set_listeneraddr(rlpx_server_listen_endpoint_str.str());
+
+        return reply;
     }
 };
 

@@ -8,3 +8,6 @@ GRPC localhost:9091/sentry.Sentry/Peers
 
 ###
 GRPC localhost:9091/sentry.Sentry/PeerEvents
+
+###
+GRPC localhost:9091/sentry.Sentry/NodeInfo

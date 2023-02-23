@@ -24,6 +24,8 @@
 
 #include <boost/asio/awaitable.hpp>
 #include <boost/asio/io_context.hpp>
+#include <boost/asio/ip/address.hpp>
+#include <boost/asio/ip/tcp.hpp>
 
 #include <silkworm/node/rpc/server/server_context_pool.hpp>
 #include <silkworm/sentry/common/channel.hpp>
@@ -38,7 +40,6 @@ class Server final {
   public:
     Server(
         boost::asio::io_context& io_context,
-        std::string host,
         uint16_t port);
 
     boost::asio::awaitable<void> start(
@@ -47,12 +48,15 @@ class Server final {
         std::string client_id,
         std::function<std::unique_ptr<Protocol>()> protocol_factory);
 
+    const boost::asio::ip::address& ip() const { return ip_; }
+    boost::asio::ip::tcp::endpoint listen_endpoint() const;
+
     common::Channel<std::shared_ptr<Peer>>& peer_channel() {
         return peer_channel_;
     }
 
   private:
-    std::string host_;
+    boost::asio::ip::address ip_;
     uint16_t port_;
     common::Channel<std::shared_ptr<Peer>> peer_channel_;
 };

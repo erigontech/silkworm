@@ -266,8 +266,7 @@ void HeaderChain::reduce_persisted_links_to(size_t limit) {
 /*
  * Add a ready header to the chain, if it becomes a new anchor then try to extend it if there are no other anchors
  */
-auto HeaderChain::add_header(const BlockHeader& anchor, time_point_t tp) -> std::shared_ptr<OutboundMessage>
-{
+auto HeaderChain::add_header(const BlockHeader& anchor, time_point_t tp) -> std::shared_ptr<OutboundMessage> {
     SILK_TRACE << "HeaderChain: adding header " << anchor.number << " " << anchor.hash();
 
     statistics_.received_items += 1;
@@ -296,8 +295,7 @@ auto HeaderChain::add_header(const BlockHeader& anchor, time_point_t tp) -> std:
 /*
  * Advance the chain requesting new headers
  */
-auto HeaderChain::request_headers(time_point_t tp) -> std::shared_ptr<OutboundMessage>
-{
+auto HeaderChain::request_headers(time_point_t tp) -> std::shared_ptr<OutboundMessage> {
     auto skeleton_req = anchor_skeleton_request(tp);
     if (skeleton_req) return skeleton_req;
 
@@ -359,7 +357,7 @@ auto HeaderChain::anchor_skeleton_request(time_point_t time_point) -> std::share
                 skeleton_condition_ = "near the top";
                 auto request_message = std::make_shared<OutboundGetBlockHeaders>();
                 request_message->packet().requestId = generate_request_id();
-                request_message->packet().request = {top, max_len, 0, true}; // request top header only
+                request_message->packet().request = {top, max_len, 0, true};  // request top header only
                 return request_message;
             } else {
                 skeleton_condition_ = "wait tip announce";
@@ -460,9 +458,9 @@ auto HeaderChain::anchor_extension_request(time_point_t time_point) -> std::shar
             auto request_message = send_penalties;
             auto& packet = request_message->packet();
             packet.requestId = generate_request_id();
-            packet.request = {anchor->blockHeight, // requesting from origin=blockHeight-1 make debugging difficult
+            packet.request = {anchor->blockHeight,  // requesting from origin=blockHeight-1 make debugging difficult
                               max_len, 0,
-                              true}; // we use blockHeight in place of parentHash to get also ommers if presents
+                              true};  // we use blockHeight in place of parentHash to get also ommers if presents
 
             statistics_.requested_items += max_len;
 

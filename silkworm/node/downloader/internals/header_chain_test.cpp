@@ -29,8 +29,11 @@ namespace silkworm {
 
 class HeaderChain_ForTest : public HeaderChain {
   public:  // publication of internal members to test methods functioning
+    using HeaderChain::anchor_extension_request;
     using HeaderChain::anchor_queue_;
+    using HeaderChain::anchor_skeleton_request;
     using HeaderChain::anchors_;
+    using HeaderChain::extension_req_timeout;
     using HeaderChain::find_anchor;
     using HeaderChain::generate_request_id;
     using HeaderChain::HeaderChain;
@@ -38,9 +41,6 @@ class HeaderChain_ForTest : public HeaderChain {
     using HeaderChain::links_;
     using HeaderChain::pending_links;
     using HeaderChain::reduce_links_to;
-    using HeaderChain::extension_req_timeout;
-    using HeaderChain::anchor_extension_request;
-    using HeaderChain::anchor_skeleton_request;
 };
 
 // TESTs related to HeaderList::split_into_segments
@@ -1282,7 +1282,7 @@ TEST_CASE("HeaderChain - process_segment - (7) invalidating anchor") {
         REQUIRE(message != nullptr);
 
         auto get_headers_msg = std::dynamic_pointer_cast<OutboundGetBlockHeaders>(message);
-        REQUIRE (get_headers_msg != nullptr);
+        REQUIRE(get_headers_msg != nullptr);
 
         CHECK(!get_headers_msg->packet_present());
         auto penalizations = get_headers_msg->penalties();
@@ -1512,7 +1512,7 @@ TEST_CASE("HeaderChain - process_segment - (8) sibling with anchor invalidation 
         REQUIRE(message != nullptr);
 
         auto get_headers_msg = std::dynamic_pointer_cast<OutboundGetBlockHeaders>(message);
-        REQUIRE (get_headers_msg != nullptr);
+        REQUIRE(get_headers_msg != nullptr);
 
         CHECK(!get_headers_msg->packet_present());
         CHECK(!get_headers_msg->penalties().empty());

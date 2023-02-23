@@ -16,7 +16,7 @@
 
 #include "server.hpp"
 
-#include <boost/asio/ip/tcp.hpp>
+#include <boost/asio/ip/address_v4.hpp>
 #include <boost/asio/this_coro.hpp>
 #include <boost/asio/use_awaitable.hpp>
 
@@ -29,12 +29,15 @@ namespace silkworm::sentry::rlpx {
 using namespace boost::asio;
 
 Server::Server(
-    boost::asio::io_context& io_context,
-    std::string host,
+    io_context& io_context,
     uint16_t port)
-    : host_(std::move(host)),
+    : ip_(ip::address{ip::address_v4::any()}),
       port_(port),
       peer_channel_(io_context) {}
+
+ip::tcp::endpoint Server::listen_endpoint() const {
+    return ip::tcp::endpoint{ip_, port_};
+}
 
 awaitable<void> Server::start(
     silkworm::rpc::ServerContextPool& context_pool,
@@ -43,9 +46,7 @@ awaitable<void> Server::start(
     std::function<std::unique_ptr<Protocol>()> protocol_factory) {
     auto executor = co_await this_coro::executor;
 
-    ip::tcp::resolver resolver{executor};
-    auto endpoints = co_await resolver.async_resolve(host_, std::to_string(port_), use_awaitable);
-    const ip::tcp::endpoint& endpoint = *endpoints.cbegin();
+    auto endpoint = listen_endpoint();
 
     ip::tcp::acceptor acceptor{executor, endpoint.protocol()};
     acceptor.set_option(ip::tcp::acceptor::reuse_address(true));

@@ -35,6 +35,7 @@
 #include <silkworm/node/common/log.hpp>
 #include <silkworm/node/rpc/server/server_context_pool.hpp>
 #include <silkworm/sentry/common/awaitable_wait_for_all.hpp>
+#include <silkworm/sentry/common/enode_url.hpp>
 
 #include "discovery/discovery.hpp"
 #include "eth/protocol.hpp"
@@ -46,6 +47,7 @@
 #include "rlpx/client.hpp"
 #include "rlpx/protocol.hpp"
 #include "rlpx/server.hpp"
+#include "rpc/common/node_info.hpp"
 #include "rpc/server.hpp"
 #include "status_manager.hpp"
 
@@ -82,6 +84,9 @@ class SentryImpl final {
     std::unique_ptr<rlpx::Client> make_client();
     std::function<std::unique_ptr<rlpx::Client>()> client_factory();
     [[nodiscard]] std::string client_id() const;
+    common::EnodeUrl make_node_url() const;
+    rpc::common::NodeInfo make_node_info() const;
+    std::function<rpc::common::NodeInfo()> node_info_provider() const;
 
     Settings settings_;
     std::optional<NodeKey> node_key_;
@@ -117,7 +122,8 @@ static rpc::common::ServiceState make_service_state(
     common::Channel<eth::StatusData>& status_channel,
     MessageSender& message_sender,
     MessageReceiver& message_receiver,
-    PeerManagerApi& peer_manager_api) {
+    PeerManagerApi& peer_manager_api,
+    std::function<rpc::common::NodeInfo()> node_info_provider) {
     return rpc::common::ServiceState{
         eth::Protocol::kVersion,
         status_channel,
@@ -127,6 +133,7 @@ static rpc::common::ServiceState make_service_state(
         peer_manager_api.peers_calls_channel(),
         peer_manager_api.peer_calls_channel(),
         peer_manager_api.peer_events_calls_channel(),
+        std::move(node_info_provider),
     };
 }
 
@@ -153,13 +160,13 @@ SentryImpl::SentryImpl(Settings settings)
     : settings_(std::move(settings)),
       context_pool_(settings_.num_contexts, settings_.wait_mode, [] { return make_unique<DummyServerCompletionQueue>(); }),
       status_manager_(context_pool_.next_io_context()),
-      rlpx_server_(context_pool_.next_io_context(), "0.0.0.0", settings_.port),
+      rlpx_server_(context_pool_.next_io_context(), settings_.port),
       discovery_(settings_.static_peers),
       peer_manager_(context_pool_.next_io_context(), settings_.max_peers, context_pool_),
       message_sender_(context_pool_.next_io_context()),
       message_receiver_(std::make_shared<MessageReceiver>(context_pool_.next_io_context(), settings_.max_peers)),
       peer_manager_api_(std::make_shared<PeerManagerApi>(context_pool_.next_io_context(), peer_manager_)),
-      rpc_server_(make_server_config(settings_), make_service_state(status_manager_.status_channel(), message_sender_, *message_receiver_, *peer_manager_api_)) {
+      rpc_server_(make_server_config(settings_), make_service_state(status_manager_.status_channel(), message_sender_, *message_receiver_, *peer_manager_api_, node_info_provider())) {
 }
 
 void SentryImpl::start() {
@@ -282,6 +289,29 @@ std::string SentryImpl::client_id() const {
     if (settings_.build_info)
         return make_client_id(*settings_.build_info);
     return "silkworm";
+}
+
+common::EnodeUrl SentryImpl::make_node_url() const {
+    return common::EnodeUrl{
+        node_key_.value().public_key(),
+        // TODO: need an external IP here
+        rlpx_server_.ip(),
+        settings_.port,
+    };
+}
+
+rpc::common::NodeInfo SentryImpl::make_node_info() const {
+    return {
+        make_node_url(),
+        node_key_.value().public_key(),
+        client_id(),
+        rlpx_server_.listen_endpoint(),
+        settings_.port,
+    };
+}
+
+std::function<rpc::common::NodeInfo()> SentryImpl::node_info_provider() const {
+    return [this] { return this->make_node_info(); };
 }
 
 Sentry::Sentry(Settings settings)

@@ -54,4 +54,10 @@ awaitable<std::vector<common::EnodeUrl>> Discovery::request_peer_urls(
     co_return common::random_vector_items(peer_urls, max_count);
 }
 
+bool Discovery::is_static_peer_url(const common::EnodeUrl& peer_url) {
+    return std::any_of(peer_urls_.cbegin(), peer_urls_.cend(), [&peer_url](const common::EnodeUrl& it) {
+        return it == peer_url;
+    });
+}
+
 }  // namespace silkworm::sentry::discovery

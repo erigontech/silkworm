@@ -42,6 +42,7 @@ awaitable<void> PeerManager::start(
         start_in_strand(client_peer_channel_) &&
         discover_peers(discovery, client_factory) &&
         connect_peer_tasks_.wait() &&
+        drop_peer_tasks_.wait() &&
         peer_tasks_.wait();
     co_await co_spawn(strand_, std::move(start), use_awaitable);
 }
@@ -51,20 +52,26 @@ awaitable<void> PeerManager::start_in_strand(common::Channel<std::shared_ptr<rlp
     while (true) {
         auto peer = co_await peer_channel.receive();
 
-        if (peers_.size() >= max_peers_) {
-            peer_tasks_.spawn(strand_, drop_peer(peer, DisconnectReason::TooManyPeers));
+        if (peers_.size() + starting_peers_.size() >= max_peers_) {
+            if (drop_peer_tasks_count_ < kMaxSimultaneousDropPeerTasks) {
+                drop_peer_tasks_count_++;
+                drop_peer_tasks_.spawn(strand_, drop_peer(peer, DisconnectReason::TooManyPeers));
+            } else {
+                log::Warning() << "PeerManager::start_in_strand too many extra peers to disconnect gracefully, dropping a peer on the floor";
+            }
             continue;
         }
 
-        peers_.push_back(peer);
-        on_peer_added(peer);
+        starting_peers_.push_back(peer);
         peer_tasks_.spawn(strand_, start_peer(peer));
     }
 }
 
 boost::asio::awaitable<void> PeerManager::start_peer(std::shared_ptr<rlpx::Peer> peer) {
+    using namespace common::awaitable_wait_for_all;
+
     try {
-        co_await rlpx::Peer::start(peer);
+        co_await (rlpx::Peer::start(peer) && wait_for_peer_handshake(peer));
     } catch (const boost::system::system_error& ex) {
         if (ex.code() == boost::system::errc::operation_canceled) {
             log::Debug() << "PeerManager::start_peer Peer::start cancelled";
@@ -75,15 +82,27 @@ boost::asio::awaitable<void> PeerManager::start_peer(std::shared_ptr<rlpx::Peer>
         log::Error() << "PeerManager::start_peer Peer::start exception: " << ex.what();
     }
 
-    peers_.remove(peer);
-    on_peer_removed(peer);
+    starting_peers_.remove(peer);
+    if (peers_.remove(peer)) {
+        on_peer_removed(peer);
+    }
 
     need_peers_notifier_.notify();
+}
+
+boost::asio::awaitable<void> PeerManager::wait_for_peer_handshake(std::shared_ptr<rlpx::Peer> peer) {
+    bool ok = co_await rlpx::Peer::wait_for_handshake(peer);
+    if (starting_peers_.remove(peer) && ok) {
+        peers_.push_back(peer);
+        on_peer_added(peer);
+    }
 }
 
 boost::asio::awaitable<void> PeerManager::drop_peer(
     std::shared_ptr<rlpx::Peer> peer,
     DisconnectReason reason) {
+    auto _ = gsl::finally([this] { this->drop_peer_tasks_count_--; });
+
     try {
         co_await rlpx::Peer::drop(peer, reason);
     } catch (const boost::system::system_error& ex) {
@@ -97,9 +116,8 @@ boost::asio::awaitable<void> PeerManager::drop_peer(
     }
 }
 
-size_t PeerManager::max_peer_tasks(size_t max_peers) {
-    static const size_t kMaxSimultaneousDropPeerTasks = 10;
-    return max_peers + kMaxSimultaneousDropPeerTasks;
+awaitable<size_t> PeerManager::count_peers() {
+    co_return (co_await co_spawn(strand_, count_peers_in_strand(), use_awaitable));
 }
 
 awaitable<void> PeerManager::enumerate_peers(EnumeratePeersCallback callback) {
@@ -108,6 +126,10 @@ awaitable<void> PeerManager::enumerate_peers(EnumeratePeersCallback callback) {
 
 awaitable<void> PeerManager::enumerate_random_peers(size_t max_count, EnumeratePeersCallback callback) {
     co_await co_spawn(strand_, enumerate_random_peers_in_strand(max_count, callback), use_awaitable);
+}
+
+awaitable<size_t> PeerManager::count_peers_in_strand() {
+    co_return peers_.size();
 }
 
 awaitable<void> PeerManager::enumerate_peers_in_strand(EnumeratePeersCallback callback) {
@@ -153,9 +175,9 @@ void PeerManager::on_peer_removed(const std::shared_ptr<rlpx::Peer>& peer) {
     }
 }
 
-std::vector<common::EnodeUrl> PeerManager::peer_urls() const {
+std::vector<common::EnodeUrl> PeerManager::peer_urls(const std::list<std::shared_ptr<rlpx::Peer>>& peers) {
     std::vector<common::EnodeUrl> urls;
-    for (auto& peer : peers_) {
+    for (auto& peer : peers) {
         auto url_opt = peer->url();
         if (url_opt) {
             urls.push_back(url_opt.value());
@@ -171,28 +193,31 @@ awaitable<void> PeerManager::discover_peers(
     while (true) {
         co_await need_peers_notifier_.wait();
 
-        size_t ongoing_peers_count = peers_.size() + connecting_peer_urls_.size();
+        size_t ongoing_peers_count = peers_.size() + starting_peers_.size() + connecting_peer_urls_.size();
         if (ongoing_peers_count >= max_peers_) continue;
         size_t needed_count = max_peers_ - ongoing_peers_count;
 
-        auto ongoing_peers_urls = peer_urls();
+        auto ongoing_peers_urls = peer_urls(peers_);
+        auto starting_peer_urls = peer_urls(starting_peers_);
+        ongoing_peers_urls.insert(ongoing_peers_urls.end(), starting_peer_urls.begin(), starting_peer_urls.end());
         ongoing_peers_urls.insert(ongoing_peers_urls.end(), connecting_peer_urls_.begin(), connecting_peer_urls_.end());
 
         auto discovered_peer_urls = co_await discovery.request_peer_urls(needed_count, ongoing_peers_urls);
 
         for (auto& peer_url : discovered_peer_urls) {
             connecting_peer_urls_.insert(peer_url);
-            connect_peer_tasks_.spawn(strand_, connect_peer(peer_url, client_factory()));
+            bool is_static_peer = discovery.is_static_peer_url(peer_url);
+            connect_peer_tasks_.spawn(strand_, connect_peer(peer_url, is_static_peer, client_factory()));
         }
     }
 }
 
-awaitable<void> PeerManager::connect_peer(common::EnodeUrl peer_url, std::unique_ptr<rlpx::Client> client) {
+awaitable<void> PeerManager::connect_peer(common::EnodeUrl peer_url, bool is_static_peer, std::unique_ptr<rlpx::Client> client) {
     auto _ = gsl::finally([this, peer_url] { this->connecting_peer_urls_.erase(peer_url); });
 
     try {
         auto& client_context = context_pool_.next_io_context();
-        auto peer1 = co_await co_spawn(client_context, client->connect(peer_url), use_awaitable);
+        auto peer1 = co_await co_spawn(client_context, client->connect(peer_url, is_static_peer), use_awaitable);
         auto peer = std::shared_ptr(std::move(peer1));
         co_await client_peer_channel_.send(peer);
     } catch (const boost::system::system_error& ex) {

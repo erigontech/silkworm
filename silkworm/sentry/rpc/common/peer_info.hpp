@@ -16,30 +16,27 @@
 
 #pragma once
 
+#include <string>
 #include <vector>
 
-#include <silkworm/node/concurrency/coroutine.hpp>
+#include <boost/asio/ip/tcp.hpp>
 
-#include <boost/asio/awaitable.hpp>
-
+#include <silkworm/sentry/common/ecc_public_key.hpp>
 #include <silkworm/sentry/common/enode_url.hpp>
 
-namespace silkworm::sentry::discovery {
+namespace silkworm::sentry::rpc::common {
 
-class Discovery {
-  public:
-    Discovery(std::vector<common::EnodeUrl> peer_urls);
-
-    boost::asio::awaitable<void> start();
-
-    boost::asio::awaitable<std::vector<common::EnodeUrl>> request_peer_urls(
-        size_t max_count,
-        std::vector<common::EnodeUrl> exclude_urls);
-
-    bool is_static_peer_url(const common::EnodeUrl& peer_url);
-
-  private:
-    const std::vector<common::EnodeUrl> peer_urls_;
+struct PeerInfo {
+    sentry::common::EnodeUrl url;
+    sentry::common::EccPublicKey peer_public_key;
+    boost::asio::ip::tcp::endpoint local_endpoint;
+    boost::asio::ip::tcp::endpoint remote_endpoint;
+    bool is_inbound;
+    bool is_static;
+    std::string client_id;
+    std::vector<std::string> capabilities;
 };
 
-}  // namespace silkworm::sentry::discovery
+using PeerInfos = std::vector<PeerInfo>;
+
+}  // namespace silkworm::sentry::rpc::common

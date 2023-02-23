@@ -49,7 +49,9 @@ Peer::Peer(
     uint16_t node_listen_port,
     std::unique_ptr<Protocol> protocol,
     std::optional<common::EnodeUrl> url,
-    std::optional<common::EccPublicKey> peer_public_key)
+    std::optional<common::EccPublicKey> peer_public_key,
+    bool is_inbound,
+    bool is_static)
     : stream_(std::move(stream)),
       node_key_(std::move(node_key)),
       client_id_(std::move(client_id)),
@@ -57,6 +59,9 @@ Peer::Peer(
       protocol_(std::move(protocol)),
       url_(std::move(url)),
       peer_public_key_(std::move(peer_public_key)),
+      is_inbound_(is_inbound),
+      is_static_(is_static),
+      handshake_promise_(executor),
       strand_(make_strand(executor)),
       send_message_tasks_(strand_, 1000),
       send_message_channel_(executor),
@@ -77,8 +82,8 @@ awaitable<void> Peer::start(std::shared_ptr<Peer> peer) {
 
 static bool is_fatal_network_error(const boost::system::system_error& ex) {
     auto code = ex.code();
-    return (code == boost::asio::error::eof) &&
-           (code == boost::asio::error::connection_reset) &&
+    return (code == boost::asio::error::eof) ||
+           (code == boost::asio::error::connection_reset) ||
            (code == boost::asio::error::broken_pipe);
 }
 
@@ -99,7 +104,10 @@ awaitable<void> Peer::handle() {
     using namespace common::awaitable_wait_for_one;
 
     log::Debug() << "Peer::handle";
-    auto _ = gsl::finally([this] { this->close(); });
+    auto _ = gsl::finally([this] {
+        this->handshake_promise_.set_value(false);
+        this->close();
+    });
 
     try {
         auto message_stream = co_await handshake();
@@ -121,6 +129,8 @@ awaitable<void> Peer::handle() {
                       common::Timeout::after(kPeerDisconnectTimeout));
             co_return;
         }
+
+        handshake_promise_.set_value(true);
 
         bool is_cancelled = false;
         bool is_ping_timed_out = false;
@@ -158,7 +168,7 @@ awaitable<void> Peer::handle() {
         log::Debug() << "Peer::handle DisconnectError";
         co_return;
     } catch (const common::Timeout::ExpiredError&) {
-        log::Debug() << "Peer::handle sending a final DisconnectMessage timed out";
+        log::Debug() << "Peer::handle timeout expired";
         co_return;
     } catch (const boost::system::system_error& ex) {
         if (is_fatal_network_error(ex)) {
@@ -221,9 +231,14 @@ awaitable<framing::MessageStream> Peer::handshake() {
         protocol_->capability(),
         peer_public_key_.get(),
     };
-    auto [message_stream, peer_public_key] = co_await handshake.execute(stream_);
-    peer_public_key_.set(peer_public_key);
-    co_return std::move(message_stream);
+    auto result = co_await handshake.execute(stream_);
+    peer_public_key_.set(std::move(result.peer_public_key));
+    hello_message_.set(std::move(result.hello_reply_message));
+    co_return std::move(result.message_stream);
+}
+
+awaitable<bool> Peer::wait_for_handshake(std::shared_ptr<Peer> self) {
+    co_return (co_await self->handshake_promise_.wait());
 }
 
 void Peer::close() {

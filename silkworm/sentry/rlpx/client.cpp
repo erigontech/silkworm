@@ -31,7 +31,9 @@ namespace silkworm::sentry::rlpx {
 using namespace std::chrono_literals;
 using namespace boost::asio;
 
-awaitable<std::unique_ptr<Peer>> Client::connect(common::EnodeUrl peer_url) {
+awaitable<std::unique_ptr<Peer>> Client::connect(
+    common::EnodeUrl peer_url,
+    bool is_static_peer) {
     log::Debug() << "RLPx client connecting to " << peer_url.to_string();
 
     auto client_context = co_await boost::asio::this_coro::executor;
@@ -74,7 +76,9 @@ awaitable<std::unique_ptr<Peer>> Client::connect(common::EnodeUrl peer_url) {
         node_listen_port_,
         protocol_factory_(),
         std::optional{peer_url},
-        std::optional{peer_url.public_key()});
+        std::optional{peer_url.public_key()},
+        /* is_inbound = */ false,
+        /* is_static = */ is_static_peer);
 }
 
 }  // namespace silkworm::sentry::rlpx

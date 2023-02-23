@@ -17,9 +17,13 @@
 #pragma once
 
 #include <silkworm/sentry/common/channel.hpp>
+#include <silkworm/sentry/common/promise.hpp>
 #include <silkworm/sentry/eth/status_data.hpp>
 
 #include "messages_call.hpp"
+#include "peer_call.hpp"
+#include "peer_events_call.hpp"
+#include "peer_info.hpp"
 #include "send_message_call.hpp"
 
 namespace silkworm::sentry::rpc::common {
@@ -29,6 +33,11 @@ struct ServiceState {
     sentry::common::Channel<eth::StatusData>& status_channel;
     sentry::common::Channel<SendMessageCall>& send_message_channel;
     sentry::common::Channel<MessagesCall>& message_calls_channel;
+
+    sentry::common::Channel<std::shared_ptr<sentry::common::Promise<size_t>>>& peer_count_calls_channel;
+    sentry::common::Channel<std::shared_ptr<sentry::common::Promise<PeerInfos>>>& peers_calls_channel;
+    sentry::common::Channel<PeerCall>& peer_calls_channel;
+    sentry::common::Channel<PeerEventsCall>& peer_events_calls_channel;
 };
 
 }  // namespace silkworm::sentry::rpc::common

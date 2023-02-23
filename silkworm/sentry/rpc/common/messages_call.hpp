@@ -20,7 +20,6 @@
 #include <optional>
 #include <set>
 #include <utility>
-#include <variant>
 
 #include <silkworm/node/concurrency/coroutine.hpp>
 
@@ -29,7 +28,9 @@
 
 #include <silkworm/sentry/common/channel.hpp>
 #include <silkworm/sentry/common/ecc_public_key.hpp>
+#include <silkworm/sentry/common/event_notifier.hpp>
 #include <silkworm/sentry/common/message.hpp>
+#include <silkworm/sentry/common/promise.hpp>
 
 namespace silkworm::sentry::rpc::common {
 
@@ -47,29 +48,29 @@ class MessagesCall final {
         MessageIdSet message_id_filter,
         boost::asio::any_io_executor& executor)
         : message_id_filter_(std::move(message_id_filter)),
-          result_channel_(std::make_shared<sentry::common::Channel<TResult>>(executor)),
-          unsubscribe_signal_channel_(std::make_shared<sentry::common::Channel<std::monostate>>(executor)) {}
+          result_promise_(std::make_shared<sentry::common::Promise<TResult>>(executor)),
+          unsubscribe_signal_(std::make_shared<sentry::common::EventNotifier>(executor)) {}
 
     MessagesCall() = default;
 
     [[nodiscard]] const MessageIdSet& message_id_filter() const { return message_id_filter_; }
 
     boost::asio::awaitable<TResult> result() {
-        return result_channel_->receive();
+        return result_promise_->wait();
     }
 
-    boost::asio::awaitable<void> set_result(TResult result) {
-        co_await result_channel_->send(std::move(result));
+    void set_result(TResult result) {
+        result_promise_->set_value(std::move(result));
     }
 
-    [[nodiscard]] std::shared_ptr<sentry::common::Channel<std::monostate>> unsubscribe_signal_channel() const {
-        return unsubscribe_signal_channel_;
+    [[nodiscard]] std::shared_ptr<sentry::common::EventNotifier> unsubscribe_signal() const {
+        return unsubscribe_signal_;
     }
 
   private:
     MessageIdSet message_id_filter_;
-    std::shared_ptr<sentry::common::Channel<TResult>> result_channel_;
-    std::shared_ptr<sentry::common::Channel<std::monostate>> unsubscribe_signal_channel_;
+    std::shared_ptr<sentry::common::Promise<TResult>> result_promise_;
+    std::shared_ptr<sentry::common::EventNotifier> unsubscribe_signal_;
 };
 
 }  // namespace silkworm::sentry::rpc::common

@@ -25,7 +25,6 @@
 #include "auth_initiator.hpp"
 #include "auth_recipient.hpp"
 #include "ecies_cipher.hpp"
-#include "hello_message.hpp"
 
 namespace silkworm::sentry::rlpx::auth {
 
@@ -43,7 +42,7 @@ boost::asio::awaitable<AuthKeys> Handshake::auth(common::SocketStream& stream) {
     }
 }
 
-boost::asio::awaitable<std::pair<framing::MessageStream, common::EccPublicKey>> Handshake::execute(common::SocketStream& stream) {
+boost::asio::awaitable<Handshake::HandshakeResult> Handshake::execute(common::SocketStream& stream) {
     auto auth_keys = co_await auth(stream);
     log::Debug() << "AuthKeys.peer_ephemeral_public_key: " << auth_keys.peer_ephemeral_public_key.hex();
 
@@ -92,7 +91,11 @@ boost::asio::awaitable<std::pair<framing::MessageStream, common::EccPublicKey>> 
 
     message_stream.enable_compression();
 
-    co_return std::pair{std::move(message_stream), std::move(auth_keys.peer_public_key)};
+    co_return Handshake::HandshakeResult{
+        std::move(message_stream),
+        std::move(auth_keys.peer_public_key),
+        std::move(hello_reply_message),
+    };
 }
 
 }  // namespace silkworm::sentry::rlpx::auth

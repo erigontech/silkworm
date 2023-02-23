@@ -45,6 +45,8 @@ class HelloMessage {
             return {reinterpret_cast<const char*>(name_bytes.data()), name_bytes.size()};
         }
 
+        [[nodiscard]] std::string to_string() const;
+
         Bytes name_bytes;
         uint8_t version{0};
     };
@@ -64,6 +66,8 @@ class HelloMessage {
     [[nodiscard]] std::string_view client_id() const {
         return {reinterpret_cast<const char*>(client_id_bytes_.data()), client_id_bytes_.size()};
     }
+
+    [[nodiscard]] const std::vector<Capability>& capabilities() const { return capabilities_; }
 
     [[nodiscard]] bool contains_capability(const Capability& capability) const;
 

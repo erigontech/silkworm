@@ -18,7 +18,6 @@
 
 #include <list>
 #include <memory>
-#include <variant>
 
 #include <silkworm/node/concurrency/coroutine.hpp>
 
@@ -27,6 +26,7 @@
 #include <boost/asio/strand.hpp>
 
 #include <silkworm/sentry/common/channel.hpp>
+#include <silkworm/sentry/common/event_notifier.hpp>
 #include <silkworm/sentry/common/task_group.hpp>
 #include <silkworm/sentry/rpc/common/messages_call.hpp>
 
@@ -40,7 +40,7 @@ class MessageReceiver : public PeerManagerObserver {
         : message_calls_channel_(io_context),
           strand_(boost::asio::make_strand(io_context)),
           peer_tasks_(strand_, max_peers),
-          subscription_tasks_(strand_, 1000) {}
+          unsubscription_tasks_(strand_, 1000) {}
 
     ~MessageReceiver() override = default;
 
@@ -52,7 +52,7 @@ class MessageReceiver : public PeerManagerObserver {
 
   private:
     boost::asio::awaitable<void> handle_calls();
-    boost::asio::awaitable<void> unsubscribe_on_signal(std::shared_ptr<common::Channel<std::monostate>> unsubscribe_signal_channel);
+    boost::asio::awaitable<void> unsubscribe_on_signal(std::shared_ptr<common::EventNotifier> unsubscribe_signal);
     boost::asio::awaitable<void> receive_messages(std::shared_ptr<rlpx::Peer> peer);
 
     // PeerManagerObserver
@@ -63,12 +63,12 @@ class MessageReceiver : public PeerManagerObserver {
     common::Channel<rpc::common::MessagesCall> message_calls_channel_;
     boost::asio::strand<boost::asio::io_context::executor_type> strand_;
     common::TaskGroup peer_tasks_;
-    common::TaskGroup subscription_tasks_;
+    common::TaskGroup unsubscription_tasks_;
 
     struct Subscription {
         std::shared_ptr<common::Channel<rpc::common::MessagesCall::MessageFromPeer>> messages_channel;
         rpc::common::MessagesCall::MessageIdSet message_id_filter;
-        std::shared_ptr<common::Channel<std::monostate>> unsubscribe_signal_channel;
+        std::shared_ptr<common::EventNotifier> unsubscribe_signal;
     };
 
     std::list<Subscription> subscriptions_;

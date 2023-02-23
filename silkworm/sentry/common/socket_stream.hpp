@@ -37,6 +37,7 @@ class SocketStream {
     SocketStream& operator=(SocketStream&&) = default;
 
     [[nodiscard]] boost::asio::ip::tcp::socket& socket() { return socket_; }
+    [[nodiscard]] const boost::asio::ip::tcp::socket& socket() const { return socket_; }
 
     boost::asio::awaitable<void> send(Bytes data);
 

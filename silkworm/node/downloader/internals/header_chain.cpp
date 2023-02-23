@@ -263,13 +263,46 @@ void HeaderChain::reduce_persisted_links_to(size_t limit) {
                << persisted_link_queue_.size();
 }
 
-// Note: Erigon's HeadersForward is implemented in OutboundGetBlockHeaders message
+/*
+ * Add a ready header to the chain, if it becomes a new anchor then try to extend it if there are no other anchors
+ */
+auto HeaderChain::add_header(const BlockHeader& anchor, time_point_t tp) -> std::shared_ptr<OutboundMessage>
+{
+    SILK_TRACE << "HeaderChain: adding header " << anchor.number << " " << anchor.hash();
 
-// auto HeaderChain::request_more_headers(time_point_t tp, seconds_t timeout)
-//     -> std::tuple<std::vector<GetBlockHeadersPacket66>, std::vector<PeerPenalization>>
-//{
-//     // if distance(target_height, top_anchor) < stride then request the anchor at target_height
-// }
+    statistics_.received_items += 1;
+
+    auto header_list = HeaderList::make({anchor});
+
+    auto [segments, penalty] = header_list->split_into_segments();
+
+    if (penalty != Penalty::NoPenalty) {
+        statistics_.reject_causes.invalid += 1;
+        return nullptr;
+    }
+
+    SILKWORM_ASSERT(segments.size() == 1);
+
+    auto segment = segments[0];
+
+    if (target_block_) segment.remove_headers_higher_than(*target_block_);
+
+    auto want_to_extend = process_segment(segment, true, no_peer);
+    if (!want_to_extend) return nullptr;
+
+    return anchor_extension_request(tp);
+}
+
+/*
+ * Advance the chain requesting new headers
+ */
+auto HeaderChain::request_headers(time_point_t tp) -> std::shared_ptr<OutboundMessage>
+{
+    auto skeleton_req = anchor_skeleton_request(tp);
+    if (skeleton_req) return skeleton_req;
+
+    return anchor_extension_request(tp);
+}
 
 /*
  * Skeleton query.
@@ -278,17 +311,16 @@ void HeaderChain::reduce_persisted_links_to(size_t limit) {
  * If there is an anchor at height < topSeenHeight this will be the top limit: this way we prioritize the fill of a big
  * hole near the bottom. If the lowest hole is not so big we do not need a skeleton query yet.
  */
-auto HeaderChain::anchor_skeleton_request(time_point_t tp, seconds_t timeout)
-    -> std::optional<GetBlockHeadersPacket66> {
+auto HeaderChain::anchor_skeleton_request(time_point_t time_point) -> std::shared_ptr<OutboundMessage> {
     using namespace std::chrono_literals;
 
     // if last skeleton request was too recent, do not request another one
-    if (tp - last_skeleton_request_ < timeout) {
+    if (time_point - last_skeleton_request_ < skeleton_req_interval) {
         skeleton_condition_ = "too recent";
-        return std::nullopt;
+        return nullptr;
     }
 
-    last_skeleton_request_ = tp;
+    last_skeleton_request_ = time_point;
 
     // BlockNum top = target_height ? std::min(top_seen_height_, *target_height) : top_seen_height_;
     BlockNum top = target_block_ ? std::min(top_seen_height_, *target_block_) : top_seen_height_;
@@ -302,12 +334,12 @@ auto HeaderChain::anchor_skeleton_request(time_point_t tp, seconds_t timeout)
 
     if (anchors_.size() > 64) {
         skeleton_condition_ = "busy";
-        return std::nullopt;
+        return nullptr;
     }
 
     if (top <= highest_in_db_) {
         skeleton_condition_ = "end";
-        return std::nullopt;
+        return nullptr;
     }
 
     auto lowest_anchor = lowest_anchor_within_range(highest_in_db_, top + 1);
@@ -318,20 +350,20 @@ auto HeaderChain::anchor_skeleton_request(time_point_t tp, seconds_t timeout)
     if (lowest_anchor) {
         if (*lowest_anchor - highest_in_db_ <= stride) {  // the lowest_anchor is too close to highest_in_db
             skeleton_condition_ = "working";
-            return std::nullopt;
+            return nullptr;
         } else
             next_target = *lowest_anchor;
     } else {                                   // there are no anchors
         if (top - highest_in_db_ <= stride) {  // the top is too close to highest_in_db
             if (target_block_) {               // we are syncing to a specific block
                 skeleton_condition_ = "near the top";
-                GetBlockHeadersPacket66 packet{// request top header only
-                                               generate_request_id(),
-                                               {top, max_len, 0, true}};
-                return packet;
+                auto request_message = std::make_shared<OutboundGetBlockHeaders>();
+                request_message->packet().requestId = generate_request_id();
+                request_message->packet().request = {top, max_len, 0, true}; // request top header only
+                return request_message;
             } else {
                 skeleton_condition_ = "wait tip announce";
-                return std::nullopt;
+                return nullptr;
             }
         }
     }
@@ -342,10 +374,11 @@ auto HeaderChain::anchor_skeleton_request(time_point_t tp, seconds_t timeout)
 
     if (length == 0) {
         skeleton_condition_ = "low";
-        return std::nullopt;
+        return nullptr;
     }
 
-    GetBlockHeadersPacket66 packet;
+    auto request_message = std::make_shared<OutboundGetBlockHeaders>();
+    auto& packet = request_message->packet();
     packet.requestId = generate_request_id();
     packet.request.origin = highest_in_db_ + stride;
     packet.request.amount = length;
@@ -355,7 +388,7 @@ auto HeaderChain::anchor_skeleton_request(time_point_t tp, seconds_t timeout)
     statistics_.requested_items += length;
     skeleton_condition_ = "ok";
 
-    return {packet};
+    return request_message;
 }
 
 size_t HeaderChain::anchors_within_range(BlockNum max) {
@@ -396,8 +429,7 @@ std::shared_ptr<Anchor> HeaderChain::highest_anchor() {
  * and all its descendants get deleted from consideration (invalidate_anchor function). This would happen if anchor
  * was "fake", i.e. it corresponds to a header without existing ancestors.
  */
-auto HeaderChain::anchor_extension_request(time_point_t time_point, seconds_t timeout)
-    -> std::tuple<std::optional<GetBlockHeadersPacket66>, std::vector<PeerPenalization>> {
+auto HeaderChain::anchor_extension_request(time_point_t time_point) -> std::shared_ptr<OutboundMessage> {
     using std::nullopt;
 
     if (time_point - last_nack_ < SentryClient::kNoPeerDelay)
@@ -408,7 +440,7 @@ auto HeaderChain::anchor_extension_request(time_point_t time_point, seconds_t ti
         return {};
     }
 
-    std::vector<PeerPenalization> penalties;
+    auto send_penalties = std::make_shared<OutboundGetBlockHeaders>();
     while (!anchor_queue_.empty()) {
         std::shared_ptr<Anchor> anchor = anchor_queue_.top();
 
@@ -419,35 +451,36 @@ auto HeaderChain::anchor_extension_request(time_point_t time_point, seconds_t ti
 
         if (anchor->timestamp > time_point) {
             SILK_TRACE << "HeaderChain: no anchor ready for extension yet";
-            return {nullopt, penalties};  // anchor not ready for "extend" re-request yet
+            return send_penalties;  // anchor not ready for "extend" re-request yet, send only penalties if any
         }
 
         if (anchor->timeouts < 10) {
-            anchor_queue_.update(anchor, [&](const auto& a) { return a->update_timestamp(time_point + timeout); });
+            anchor_queue_.update(anchor, [&](const auto& a) { return a->update_timestamp(time_point + extension_req_timeout); });
 
-            GetBlockHeadersPacket66 packet{
-                generate_request_id(),  // RANDOM_NUMBER.generate_one(),
-                {anchor->blockHeight, max_len, 0,
-                 true}};  // we use blockHeight in place of parentHash to get also ommers if presents
-            // we could request from origin=blockHeight-1 but debugging becomes more difficult
+            auto request_message = send_penalties;
+            auto& packet = request_message->packet();
+            packet.requestId = generate_request_id();
+            packet.request = {anchor->blockHeight, // requesting from origin=blockHeight-1 make debugging difficult
+                              max_len, 0,
+                              true}; // we use blockHeight in place of parentHash to get also ommers if presents
 
             statistics_.requested_items += max_len;
 
             SILK_TRACE << "HeaderChain: trying to extend anchor " << anchor->blockHeight
                        << " (chain bundle len = " << anchor->chainLength() << ", last link = " << anchor->lastLinkHeight << " )";
 
-            return {std::move(packet), std::move(penalties)};  // try (again) to extend this anchor
+            return request_message;  // try (again) to extend this anchor
         } else {
             // ancestors of this anchor seem to be unavailable, invalidate and move on
             log::Warning("HeaderChain") << "invalidating anchor for suspected unavailability, "
                                         << "height=" << anchor->blockHeight;
             // no need to do anchor_queue_.pop(), implicitly done in the following
             invalidate(anchor);
-            penalties.emplace_back(Penalty::AbandonedAnchorPenalty, anchor->peerId);
+            send_penalties->penalties().emplace_back(Penalty::AbandonedAnchorPenalty, anchor->peerId);
         }
     }
 
-    return {nullopt, penalties};
+    return send_penalties;
 }
 
 void HeaderChain::invalidate(std::shared_ptr<Anchor> anchor) {
@@ -569,26 +602,6 @@ auto HeaderChain::accept_headers(const std::vector<BlockHeader>& headers, uint64
     }
 
     return {Penalty::NoPenalty, request_more_headers};
-}
-
-auto HeaderList::to_ref() -> std::vector<Header_Ref> {
-    std::vector<Header_Ref> refs;
-    for (Header_Ref i = headers_.begin(); i < headers_.end(); i++) refs.push_back(i);
-    return refs;
-}
-
-std::tuple<bool, Penalty> HeaderList::childParentValidity(Header_Ref child, Header_Ref parent) {
-    if (parent->number + 1 != child->number) return {false, Penalty::WrongChildBlockHeightPenalty};
-    return {true, NoPenalty};
-}
-
-std::tuple<bool, Penalty> HeaderList::childrenParentValidity(const std::vector<Header_Ref>& children,
-                                                             Header_Ref parent) {
-    for (auto& child : children) {
-        auto [valid, penalty] = childParentValidity(child, parent);
-        if (!valid) return {false, penalty};
-    }
-    return {true, Penalty::NoPenalty};
 }
 
 /*
@@ -715,7 +728,7 @@ auto HeaderChain::process_segment(const Segment& segment, bool is_a_new_block, c
 
     reduce_links_to(link_limit);
 
-    return requestMore /* && hd.requestChaining */;  // todo: implement requestChaining
+    return requestMore;
 }
 
 void HeaderChain::reduce_links_to(size_t limit) {

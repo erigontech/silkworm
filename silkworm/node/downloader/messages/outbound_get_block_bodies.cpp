@@ -19,52 +19,47 @@
 #include <sstream>
 
 #include <silkworm/node/common/log.hpp>
+#include <silkworm/node/downloader/internals/body_sequence.hpp>
+#include <silkworm/node/downloader/internals/header_chain.hpp>
 #include <silkworm/node/downloader/rpc/penalize_peer.hpp>
 #include <silkworm/node/downloader/rpc/send_message_by_min_block.hpp>
 
 namespace silkworm {
 
-OutboundGetBlockBodies::OutboundGetBlockBodies(size_t mr, uint64_t ap) : max_reqs_{mr}, active_peers_{ap} {}
+OutboundGetBlockBodies::OutboundGetBlockBodies() {}
 
-size_t OutboundGetBlockBodies::sent_requests() const { return sent_reqs_; }
-size_t OutboundGetBlockBodies::nack_requests() const { return nack_reqs_; }
+GetBlockBodiesPacket66& OutboundGetBlockBodies::packet() { return packet_; }
+std::vector<PeerPenalization>& OutboundGetBlockBodies::penalties() { return penalizations_; }
+BlockNum& OutboundGetBlockBodies::min_block() { return min_block_; }
+bool OutboundGetBlockBodies::packet_present() const { return !packet_.request.empty(); }
 
 void OutboundGetBlockBodies::execute(db::ROAccess, HeaderChain&, BodySequence& bs, SentryClient& sentry) {
     using namespace std::literals::chrono_literals;
 
     seconds_t timeout = 1s;
 
-    do {
-        time_point_t now = std::chrono::system_clock::now();
+    if (packet_present()) {
+        auto send_outcome = send_packet(sentry, timeout);
 
-        auto [packet, penalizations, min_block] = bs.request_more_bodies(now);
-
-        if (packet.request.empty()) break;
-
-        auto send_outcome = send_packet(sentry, packet, min_block, timeout);
-
-        SILK_TRACE << "Bodies request sent (OutboundGetBlockBodies/" << packet << "), min_block " << min_block
-                   << ", received by " << send_outcome.peers_size() << "/" << active_peers_ << " peer(s)";
+        SILK_TRACE << "Bodies request sent (OutboundGetBlockBodies/" << packet_ << "), min_block " << min_block_
+                   << ", received by " << send_outcome.peers_size() << "/" << sentry.active_peers() << " peer(s)";
 
         if (send_outcome.peers_size() == 0) {
-            bs.request_nack(packet);
-            ++nack_reqs_;
-            break;
+            bs.request_nack(packet_);
+            nack_reqs_++;
+        } else {
+            sent_reqs_++;
         }
+    }
 
-        requested_bodies_ += packet.request.size();
-        ++sent_reqs_;
+    for (auto& penalization : penalizations_) {
+        SILK_TRACE << "Penalizing " << penalization;
+        send_penalization(sentry, penalization, 1s);
+    }
 
-        for (auto& penalization : penalizations) {
-            SILK_TRACE << "Penalizing " << penalization;
-            send_penalization(sentry, penalization, 1s);
-        }
-
-    } while (sent_reqs_ < max_reqs_);  // && packet != std::nullopt && receiving_peers != nullptr
 }
 
-sentry::SentPeers OutboundGetBlockBodies::send_packet(SentryClient& sentry, const GetBlockBodiesPacket66& packet_,
-                                                      BlockNum min_block, seconds_t timeout) {
+sentry::SentPeers OutboundGetBlockBodies::send_packet(SentryClient& sentry, seconds_t timeout) {
     auto request = std::make_unique<sentry::OutboundMessageData>();  // create header request
 
     request->set_id(sentry::MessageId::GET_BLOCK_BODIES_66);
@@ -75,7 +70,7 @@ sentry::SentPeers OutboundGetBlockBodies::send_packet(SentryClient& sentry, cons
 
     // SILK_TRACE << "Sending message OutboundGetBlockBodies with send_message_by_min_block, content:" << packet_;
 
-    rpc::SendMessageByMinBlock rpc{min_block, std::move(request)};
+    rpc::SendMessageByMinBlock rpc{min_block_, std::move(request)};
 
     rpc.timeout(timeout);
     rpc.do_not_throw_on_failure();
@@ -106,10 +101,15 @@ void OutboundGetBlockBodies::send_penalization(SentryClient& sentry, const PeerP
 std::string OutboundGetBlockBodies::content() const {
     std::stringstream content;
     log::prepare_for_logging(content);
-    if (requested_bodies_ > 0)
-        content << "OutboundGetBlockBodiesPackets " << requested_bodies_ << " bodies requested in " << sent_reqs_
-                << " packets";
-    else
+    if (packet_present())
+        content << packet_;
+    if (!penalizations_.empty()) {
+        content << " penalizations: ";
+        for (auto& penalization : penalizations_) {
+            content << " " << penalization << ", ";
+        }
+    }
+    if (!packet_present() && penalizations_.empty())
         content << "-no message-";
     return content.str();
 }

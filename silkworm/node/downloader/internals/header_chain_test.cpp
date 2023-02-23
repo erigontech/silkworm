@@ -38,6 +38,9 @@ class HeaderChain_ForTest : public HeaderChain {
     using HeaderChain::links_;
     using HeaderChain::pending_links;
     using HeaderChain::reduce_links_to;
+    using HeaderChain::extension_req_timeout;
+    using HeaderChain::anchor_extension_request;
+    using HeaderChain::anchor_skeleton_request;
 };
 
 // TESTs related to HeaderList::split_into_segments
@@ -1246,8 +1249,8 @@ TEST_CASE("HeaderChain - process_segment - (7) invalidating anchor") {
         auto [penalty, requestMoreHeaders] =
             chain.accept_headers({headers[5], h5p, headers[6], headers[7]}, request_id, peer_id);
 
-        REQUIRE(penalty == Penalty::NoPenalty);
-        REQUIRE(requestMoreHeaders == true);
+        CHECK(penalty == Penalty::NoPenalty);
+        CHECK(requestMoreHeaders == true);
         REQUIRE(chain.anchor_queue_.size() == 1);
         REQUIRE(chain.anchors_.size() == 1);
         REQUIRE(chain.links_.size() == 4);
@@ -1256,7 +1259,7 @@ TEST_CASE("HeaderChain - process_segment - (7) invalidating anchor") {
         REQUIRE(anchor != nullptr);
         REQUIRE(anchor->parentHash == headers[5].parent_hash);
         REQUIRE(anchor->blockHeight == headers[5].number);
-        REQUIRE(anchor->peerId == peer_id);
+        CHECK(anchor->peerId == peer_id);
 
         REQUIRE(anchor->links.size() == 2);
         REQUIRE(anchor->has_child(headers[5].hash()));
@@ -1269,20 +1272,25 @@ TEST_CASE("HeaderChain - process_segment - (7) invalidating anchor") {
         using namespace std::literals::chrono_literals;
 
         time_point_t now = std::chrono::system_clock::now();
-        seconds_t timeout = 5s;
+        seconds_t timeout = HeaderChain_ForTest::extension_req_timeout;
 
         auto anchor = chain.anchor_queue_.top();
         anchor->timeouts = 10;
         anchor->timestamp = now - timeout;
 
-        auto [packet, penalizations] = chain.anchor_extension_request(now, timeout);
+        std::shared_ptr<OutboundMessage> message = chain.anchor_extension_request(now);
+        REQUIRE(message != nullptr);
 
-        REQUIRE(packet == std::nullopt);
-        REQUIRE(!penalizations.empty());
+        auto get_headers_msg = std::dynamic_pointer_cast<OutboundGetBlockHeaders>(message);
+        REQUIRE (get_headers_msg != nullptr);
 
-        REQUIRE(chain.anchor_queue_.empty());
-        REQUIRE(chain.anchors_.empty());
-        REQUIRE(chain.links_.empty());
+        CHECK(!get_headers_msg->packet_present());
+        auto penalizations = get_headers_msg->penalties();
+        CHECK(!penalizations.empty());
+
+        CHECK(chain.anchor_queue_.empty());
+        CHECK(chain.anchors_.empty());
+        CHECK(chain.links_.empty());
     }
 
     INFO("new_anchor again") {
@@ -1450,13 +1458,21 @@ TEST_CASE("HeaderChain - process_segment - (8) sibling with anchor invalidation 
         std::shared_ptr<Anchor> anchor = chain.anchor_queue_.top();
         auto prev_timeouts = anchor->timeouts;
         auto prev_timestamp = anchor->timestamp;
-        auto now = prev_timestamp + 5s;
+        auto timeout = HeaderChain_ForTest::extension_req_timeout;
+        auto now = prev_timestamp + timeout;
 
         // request an anchor extension
-        auto [packet, penalizations] = chain.anchor_extension_request(now, 5s);
+        std::shared_ptr<OutboundMessage> message = chain.anchor_extension_request(now);
+        REQUIRE(message != nullptr);
+
+        auto get_headers_msg = std::dynamic_pointer_cast<OutboundGetBlockHeaders>(message);
+        REQUIRE(get_headers_msg != nullptr);
 
         // checks
-        CHECK(packet != std::nullopt);
+        CHECK(get_headers_msg->packet_present());
+        auto packet = get_headers_msg->packet();
+
+        auto penalizations = get_headers_msg->penalties();
         CHECK(penalizations.empty());
 
         CHECK(anchor->timeouts == prev_timeouts + 1);
@@ -1467,8 +1483,7 @@ TEST_CASE("HeaderChain - process_segment - (8) sibling with anchor invalidation 
         CHECK(chain.links_.size() == 4);
 
         // undo the request
-        REQUIRE(packet != std::nullopt);
-        chain.request_nack(*packet);
+        chain.request_nack(packet);
 
         CHECK(anchor->timeouts == prev_timeouts);
         CHECK(anchor->timestamp == prev_timestamp);
@@ -1478,7 +1493,7 @@ TEST_CASE("HeaderChain - process_segment - (8) sibling with anchor invalidation 
         using namespace std::literals::chrono_literals;
 
         time_point_t now = std::chrono::system_clock::now();
-        seconds_t timeout = 5s;
+        seconds_t timeout = HeaderChain_ForTest::extension_req_timeout;
 
         chain.last_nack_ = now - timeout;  // otherwise the request is ignored
 
@@ -1493,10 +1508,14 @@ TEST_CASE("HeaderChain - process_segment - (8) sibling with anchor invalidation 
             a->timestamp = now + timeout;  // avoid extension now
         });
 
-        auto [packet, penalizations] = chain.anchor_extension_request(now, timeout);  // invalidate (=erase) anchor1
+        std::shared_ptr<OutboundMessage> message = chain.anchor_extension_request(now);
+        REQUIRE(message != nullptr);
 
-        REQUIRE(packet == std::nullopt);
-        REQUIRE(!penalizations.empty());
+        auto get_headers_msg = std::dynamic_pointer_cast<OutboundGetBlockHeaders>(message);
+        REQUIRE (get_headers_msg != nullptr);
+
+        CHECK(!get_headers_msg->packet_present());
+        CHECK(!get_headers_msg->penalties().empty());
 
         REQUIRE(chain.anchor_queue_.size() == 1);  // one less
         REQUIRE(chain.anchors_.size() == 1);       // one less

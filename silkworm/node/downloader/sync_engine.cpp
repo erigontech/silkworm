@@ -28,7 +28,7 @@ static void ensure_invariant(bool condition, std::string message) {
         throw std::logic_error("Consensus invariant violation: " + message);
 }
 
-SyncEngine::SyncEngine(BlockExchange& be, stagedsync::ExecutionEngine& ee)
+PoWSync::PoWSync(BlockExchange& be, stagedsync::ExecutionEngine& ee)
     : block_exchange_{be},
       exec_engine_{ee},
       chain_fork_view_{ee.get_canonical_head(), ee} {
@@ -36,7 +36,7 @@ SyncEngine::SyncEngine(BlockExchange& be, stagedsync::ExecutionEngine& ee)
     block_exchange_.initial_state(exec_engine_.get_last_headers(65536));
 }
 
-auto SyncEngine::resume() -> NewHeight {  // find the point (head) where we left off
+auto PoWSync::resume() -> NewHeight {  // find the point (head) where we left off
     auto canonical_head = exec_engine_.get_canonical_head();
     auto block_progress = exec_engine_.get_block_progress();
 
@@ -58,15 +58,15 @@ auto SyncEngine::resume() -> NewHeight {  // find the point (head) where we left
     return {chain_fork_view_.head().height, chain_fork_view_.head().hash};
 }
 
-auto SyncEngine::forward_and_insert_blocks() -> NewHeight {
+auto PoWSync::forward_and_insert_blocks() -> NewHeight {
     using ResultQueue = BlockExchange::ResultQueue;
 
-    ResultQueue& downloading = block_exchange_.result_queue();
+    ResultQueue& downloading_queue = block_exchange_.result_queue();
 
     auto initial_block_progress = exec_engine_.get_block_progress();
     auto block_progress = initial_block_progress;
 
-    block_exchange_.download_blocks(initial_block_progress, BlockExchange::kTipOfTheChain);
+    block_exchange_.download_blocks(initial_block_progress, BlockExchange::Target_Tracking::kByAnnouncements);
 
     StopWatch timing(StopWatch::kStart);
     RepeatedMeasure<BlockNum> downloaded_headers(initial_block_progress);
@@ -77,7 +77,7 @@ auto SyncEngine::forward_and_insert_blocks() -> NewHeight {
         Blocks blocks;
 
         // wait for a batch of blocks
-        bool present = downloading.timed_wait_and_pop(blocks, 100ms);
+        bool present = downloading_queue.timed_wait_and_pop(blocks, 100ms);
         if (!present) continue;
 
         Blocks announcements_to_do;
@@ -114,11 +114,11 @@ auto SyncEngine::forward_and_insert_blocks() -> NewHeight {
     return {.block_num = chain_fork_view_.head_height(), .hash = chain_fork_view_.head_hash()};
 }
 
-void SyncEngine::unwind(UnwindPoint) {
+void PoWSync::unwind(UnwindPoint) {
     // does nothing
 }
 
-void SyncEngine::execution_loop() {
+void PoWSync::execution_loop() {
     using namespace stagedsync;
     using ValidChain = ExecutionEngine::ValidChain;
     using ValidationError = ExecutionEngine::ValidationError;
@@ -165,7 +165,7 @@ void SyncEngine::execution_loop() {
     }
 };
 
-auto SyncEngine::update_bad_headers(std::set<Hash> bad_headers) -> std::shared_ptr<InternalMessage<void>> {
+auto PoWSync::update_bad_headers(std::set<Hash> bad_headers) -> std::shared_ptr<InternalMessage<void>> {
     auto message = std::make_shared<InternalMessage<void>>(
         [bads = std::move(bad_headers)](HeaderChain& hc, BodySequence&) { hc.add_bad_headers(bads); });
 
@@ -175,14 +175,14 @@ auto SyncEngine::update_bad_headers(std::set<Hash> bad_headers) -> std::shared_p
 }
 
 // New block hash announcements propagation
-void SyncEngine::send_new_block_hash_announcements() {
+void PoWSync::send_new_block_hash_announcements() {
     auto message = std::make_shared<OutboundNewBlockHashes>(is_first_sync_);
 
     block_exchange_.accept(message);
 }
 
 // New block announcements propagation
-void SyncEngine::send_new_block_announcements(Blocks&& blocks) {
+void PoWSync::send_new_block_announcements(Blocks&& blocks) {
     if (blocks.empty()) return;
 
     auto message = std::make_shared<OutboundNewBlock>(std::move(blocks), is_first_sync_);

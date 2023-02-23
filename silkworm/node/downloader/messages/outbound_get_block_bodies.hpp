@@ -24,25 +24,26 @@ namespace silkworm {
 
 class OutboundGetBlockBodies : public OutboundMessage {
   public:
-    OutboundGetBlockBodies(size_t max_reqs, uint64_t active_peers);
+    OutboundGetBlockBodies();
 
     std::string name() const override { return "OutboundGetBlockBodies"; }
     std::string content() const override;
 
     void execute(db::ROAccess, HeaderChain&, BodySequence&, SentryClient&) override;
 
-    size_t sent_requests() const;
-    size_t nack_requests() const;
+    GetBlockBodiesPacket66& packet();
+    std::vector<PeerPenalization>& penalties();
+    BlockNum& min_block();
+
+    bool packet_present() const;
 
   private:
-    sentry::SentPeers send_packet(SentryClient&, const GetBlockBodiesPacket66&, BlockNum min_block, seconds_t timeout);
+    sentry::SentPeers send_packet(SentryClient&, seconds_t timeout);
     void send_penalization(SentryClient&, const PeerPenalization&, seconds_t timeout);
 
-    size_t max_reqs_;
-    size_t sent_reqs_{0};
-    size_t nack_reqs_{0};
-    size_t requested_bodies_{0};
-    uint64_t active_peers_;
+    GetBlockBodiesPacket66 packet_{};
+    std::vector<PeerPenalization> penalizations_;
+    BlockNum min_block_{0};
 };
 
 }  // namespace silkworm

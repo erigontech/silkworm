@@ -15,8 +15,6 @@
 */
 #pragma once
 
-#include <silkworm/node/downloader/sentry_client.hpp>
-
 #include "message.hpp"
 
 namespace silkworm {
@@ -25,7 +23,14 @@ class OutboundMessage : public Message {
   public:
     void execute(db::ROAccess, HeaderChain&, BodySequence&, SentryClient&) override = 0;
 
+    size_t sent_requests() const;
+    size_t nack_requests() const;
+
     virtual std::string content() const = 0;
+
+  protected:
+    size_t sent_reqs_{0};
+    size_t nack_reqs_{0};
 };
 
 inline std::ostream& operator<<(std::ostream& os, const silkworm::OutboundMessage& msg) {

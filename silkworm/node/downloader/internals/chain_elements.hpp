@@ -211,16 +211,29 @@ struct HeaderList : std::enable_shared_from_this<HeaderList> {
     std::vector<BlockHeader>& headers() { return headers_; }
 
   private:
-    HeaderList(std::vector<BlockHeader> headers)
-        : headers_(std::move(headers)) {}  // private, it needs to stay in the heap,
-    // use make method to get an instance
+    // ctor is private because instances need to stay in the heap, use the provided make() method to create an instance
+    HeaderList(std::vector<BlockHeader> headers) : headers_(std::move(headers)) {}
+
     std::vector<BlockHeader> headers_;
 
-    std::vector<Header_Ref> to_ref();
+    std::vector<Header_Ref> to_ref() {
+        std::vector<Header_Ref> refs;
+        for (Header_Ref i = headers_.begin(); i < headers_.end(); i++) refs.push_back(i);
+        return refs;
+    }
 
-    std::tuple<bool, Penalty> static childParentValidity(Header_Ref child, Header_Ref parent);
+    static auto childParentValidity(Header_Ref child, Header_Ref parent) -> std::tuple<bool, Penalty> {
+        if (parent->number + 1 != child->number) return {false, Penalty::WrongChildBlockHeightPenalty};
+        return {true, NoPenalty};
+    }
 
-    std::tuple<bool, Penalty> static childrenParentValidity(const std::vector<Header_Ref>& children, Header_Ref parent);
+    static auto childrenParentValidity(const std::vector<Header_Ref>& children, Header_Ref parent) -> std::tuple<bool, Penalty> {
+        for (auto& child : children) {
+            auto [valid, penalty] = childParentValidity(child, parent);
+            if (!valid) return {false, penalty};
+        }
+        return {true, Penalty::NoPenalty};
+    }
 };
 
 // Segment, a sequence of headers connected to one another (with parent-hash relationship),

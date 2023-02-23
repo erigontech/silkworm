@@ -19,6 +19,8 @@
 #include <silkworm/core/common/cast.hpp>
 #include <silkworm/node/common/decoding_exception.hpp>
 #include <silkworm/node/common/log.hpp>
+#include <silkworm/node/downloader/internals/body_sequence.hpp>
+#include <silkworm/node/downloader/internals/header_chain.hpp>
 #include <silkworm/node/downloader/internals/header_retrieval.hpp>
 #include <silkworm/node/downloader/packets/block_headers_packet.hpp>
 #include <silkworm/node/downloader/rpc/send_message_by_id.hpp>

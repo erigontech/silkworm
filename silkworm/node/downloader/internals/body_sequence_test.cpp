@@ -99,11 +99,21 @@ TEST_CASE("body downloading", "[silkworm][downloader][BodySequence]") {
         REQUIRE(bs.lowest_block_in_memory() == highest_header);
 
         // requesting
-        auto [packet, penalizations, min_block] = bs.request_more_bodies(tp);
+        std::shared_ptr<OutboundMessage> message = bs.request_bodies(tp);
+        REQUIRE(message != nullptr);
 
-        REQUIRE(penalizations.empty());
-        REQUIRE(min_block > 0);
-        REQUIRE(packet.requestId != 0);  // packet = GetBlockBodiesPacket66
+        auto get_bodies_msg = std::dynamic_pointer_cast<OutboundGetBlockBodies>(message);
+        REQUIRE(get_bodies_msg != nullptr);
+
+        CHECK(get_bodies_msg->packet_present());
+        auto penalizations = get_bodies_msg->penalties();
+        CHECK(penalizations.empty());
+
+        CHECK(get_bodies_msg->penalties().empty());
+        CHECK(get_bodies_msg->min_block() > 0);
+        REQUIRE(get_bodies_msg->packet_present());
+
+        auto& packet = get_bodies_msg->packet();
 
         std::vector<Hash>& block_requested = packet.request;
         REQUIRE(!block_requested.empty());
@@ -156,7 +166,7 @@ TEST_CASE("body downloading", "[silkworm][downloader][BodySequence]") {
 
     SECTION("should renew the request of block 1") {
         // requesting
-        auto [packet1, penalizations1, min_block1] = bs.request_more_bodies(tp);
+        std::shared_ptr<OutboundMessage> message1 = bs.request_bodies(tp);
 
         auto rs = bs.body_requests_.find(header1.number);
         REQUIRE(rs != bs.body_requests_.end());
@@ -169,7 +179,7 @@ TEST_CASE("body downloading", "[silkworm][downloader][BodySequence]") {
         request_status1.request_time -= request_timeout;  // make request stale
 
         // make another request
-        auto [packet2, penalizations2, min_block2] = bs.request_more_bodies(tp);
+        std::shared_ptr<OutboundMessage> message2 = bs.request_bodies(tp);
 
         rs = bs.body_requests_.find(1);
         REQUIRE(rs != bs.body_requests_.end());
@@ -193,7 +203,13 @@ TEST_CASE("body downloading", "[silkworm][downloader][BodySequence]") {
 
     SECTION("should ignore response with non requested bodies") {
         // requesting
-        auto [packet, penalizations, min_block] = bs.request_more_bodies(tp);
+        std::shared_ptr<OutboundMessage> message = bs.request_bodies(tp);
+        REQUIRE(message != nullptr);
+
+        auto get_bodies_msg = std::dynamic_pointer_cast<OutboundGetBlockBodies>(message);
+        REQUIRE(get_bodies_msg != nullptr);
+
+        auto& packet = get_bodies_msg->packet();
 
         auto rs = bs.body_requests_.find(header1.number);
         REQUIRE(rs != bs.body_requests_.end());
@@ -232,7 +248,13 @@ TEST_CASE("body downloading", "[silkworm][downloader][BodySequence]") {
 
     SECTION("should ignore response with already received bodies") {
         // requesting
-        auto [packet, penalizations, min_block] = bs.request_more_bodies(tp);
+        std::shared_ptr<OutboundMessage> message = bs.request_bodies(tp);
+        REQUIRE(message != nullptr);
+
+        auto get_bodies_msg = std::dynamic_pointer_cast<OutboundGetBlockBodies>(message);
+        REQUIRE(get_bodies_msg != nullptr);
+
+        auto& packet = get_bodies_msg->packet();
 
         auto rs = bs.body_requests_.find(header1.number);
         REQUIRE(rs != bs.body_requests_.end());
@@ -268,7 +290,13 @@ TEST_CASE("body downloading", "[silkworm][downloader][BodySequence]") {
 
     SECTION("should accept response with wrong request id (slow peer, request renewed)") {
         // requesting
-        auto [packet, penalizations, min_block] = bs.request_more_bodies(tp);
+        std::shared_ptr<OutboundMessage> message = bs.request_bodies(tp);
+        REQUIRE(message != nullptr);
+
+        auto get_bodies_msg = std::dynamic_pointer_cast<OutboundGetBlockBodies>(message);
+        REQUIRE(get_bodies_msg != nullptr);
+
+        auto& packet = get_bodies_msg->packet();
 
         auto rs = bs.body_requests_.find(header1.number);
         REQUIRE(rs != bs.body_requests_.end());
@@ -305,12 +333,18 @@ TEST_CASE("body downloading", "[silkworm][downloader][BodySequence]") {
         REQUIRE(highest_header == 1);  // test pre-requisite
 
         // requesting
-        auto [packet1, penalizations1, min_block1] = bs.request_more_bodies(tp);
+        std::shared_ptr<OutboundMessage> message1 = bs.request_bodies(tp);
 
         REQUIRE(bs.body_requests_.size() == 1);
 
         // make another request in the same time
-        auto [packet2, penalizations2, min_block2] = bs.request_more_bodies(tp);
+        std::shared_ptr<OutboundMessage> message2 = bs.request_bodies(tp);
+        REQUIRE(message2 != nullptr);
+
+        auto get_bodies_msg2 = std::dynamic_pointer_cast<OutboundGetBlockBodies>(message2);
+        REQUIRE(get_bodies_msg2 != nullptr);
+
+        auto& packet2 = get_bodies_msg2->packet();
 
         REQUIRE(packet2.request.empty());  // no new request, highest_header == 1 and we already requested body 1
         REQUIRE(bs.body_requests_.size() == 1);
@@ -335,7 +369,13 @@ TEST_CASE("body downloading", "[silkworm][downloader][BodySequence]") {
         REQUIRE(highest_header == 1);  // test pre-requisite
 
         // requesting
-        auto [packet1, penalizations1, min_block1] = bs.request_more_bodies(tp);
+        std::shared_ptr<OutboundMessage> message1 = bs.request_bodies(tp);
+        REQUIRE(message1 != nullptr);
+
+        auto get_bodies_msg1 = std::dynamic_pointer_cast<OutboundGetBlockBodies>(message1);
+        REQUIRE(get_bodies_msg1 != nullptr);
+
+        auto& packet1 = get_bodies_msg1->packet();
 
         REQUIRE(bs.body_requests_.size() == 1);
         auto rs = bs.body_requests_.find(header1.number);
@@ -355,9 +395,9 @@ TEST_CASE("body downloading", "[silkworm][downloader][BodySequence]") {
         REQUIRE(statistic.requested_items == 0);  // reset
 
         // make another request in the same time
-        auto [packet2, penalizations2, min_block2] = bs.request_more_bodies(tp);
+        std::shared_ptr<OutboundMessage> message2 = bs.request_bodies(tp);
+        REQUIRE(message2 == nullptr);  // no new request, last was a nack
 
-        REQUIRE(packet2.request.empty());  // no new request, last was a nack
         REQUIRE(bs.body_requests_.size() == 1);
 
         // statistics
@@ -371,7 +411,7 @@ TEST_CASE("body downloading", "[silkworm][downloader][BodySequence]") {
         REQUIRE(highest_header == 1);  // test pre-requisite
 
         // requesting
-        auto [packet1, penalizations1, min_block1] = bs.request_more_bodies(tp);
+        std::shared_ptr<OutboundMessage> message1 = bs.request_bodies(tp);
 
         REQUIRE(bs.body_requests_.size() == 1);
         auto rs = bs.body_requests_.find(header1.number);
@@ -382,7 +422,13 @@ TEST_CASE("body downloading", "[silkworm][downloader][BodySequence]") {
         tp += 2 * SentryClient::kRequestDeadline;  // make it stale
 
         // make another request in the same time
-        auto [packet2, penalizations2, min_block2] = bs.request_more_bodies(tp);
+        std::shared_ptr<OutboundMessage> message2 = bs.request_bodies(tp);
+        REQUIRE(message2 != nullptr);
+
+        auto get_bodies_msg2 = std::dynamic_pointer_cast<OutboundGetBlockBodies>(message2);
+        REQUIRE(get_bodies_msg2 != nullptr);
+
+        auto& packet2 = get_bodies_msg2->packet();
 
         REQUIRE(packet2.request.empty());  // no new request, highest_header == 1 and we already requested body 1
         REQUIRE(bs.body_requests_.size() == 1);
@@ -390,7 +436,7 @@ TEST_CASE("body downloading", "[silkworm][downloader][BodySequence]") {
 
     SECTION("should not renew recent requests but make new requests") {
         // requesting
-        auto [packet1, penalizations1, min_block1] = bs.request_more_bodies(tp);
+        std::shared_ptr<OutboundMessage> message1 = bs.request_bodies(tp);
 
         REQUIRE(bs.body_requests_.size() == 1);
         auto rs = bs.body_requests_.find(header1.number);
@@ -408,7 +454,13 @@ TEST_CASE("body downloading", "[silkworm][downloader][BodySequence]") {
         txn2.commit();
         bs.download_bodies({make_shared<BlockHeader>(header2)});
 
-        auto [packet2, penalizations2, min_block2] = bs.request_more_bodies(tp);
+        std::shared_ptr<OutboundMessage> message2 = bs.request_bodies(tp);
+        REQUIRE(message2 != nullptr);
+
+        auto get_bodies_msg2 = std::dynamic_pointer_cast<OutboundGetBlockBodies>(message2);
+        REQUIRE(get_bodies_msg2 != nullptr);
+
+        auto& packet2 = get_bodies_msg2->packet();
 
         REQUIRE(!packet2.request.empty());
         REQUIRE(bs.body_requests_.size() == 2);
@@ -434,10 +486,14 @@ TEST_CASE("body downloading", "[silkworm][downloader][BodySequence]") {
         REQUIRE(bs.announced_blocks_.size() == 1);
 
         // requesting block 1 and finding it in announcements
-        auto [packet, penalizations, min_block] = bs.request_more_bodies(tp);
+        std::shared_ptr<OutboundMessage> message = bs.request_bodies(tp);
+        REQUIRE(message != nullptr);
 
-        REQUIRE(penalizations.empty());
-        REQUIRE(packet.request.empty());  // no new request, we reached highest_header (=1)
+        auto get_bodies_msg = std::dynamic_pointer_cast<OutboundGetBlockBodies>(message);
+        REQUIRE(get_bodies_msg != nullptr);
+
+        REQUIRE(get_bodies_msg->penalties().empty());
+        REQUIRE(!get_bodies_msg->packet_present());  // no new request, we reached highest_header (=1)
 
         REQUIRE(!bs.body_requests_.empty());
         auto rs = bs.body_requests_.find(header1.number);

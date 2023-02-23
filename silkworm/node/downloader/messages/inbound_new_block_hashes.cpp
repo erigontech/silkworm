@@ -22,6 +22,8 @@
 #include <silkworm/node/common/decoding_exception.hpp>
 #include <silkworm/node/common/log.hpp>
 #include <silkworm/node/downloader/internals/random_number.hpp>
+#include <silkworm/node/downloader/internals/body_sequence.hpp>
+#include <silkworm/node/downloader/internals/header_chain.hpp>
 #include <silkworm/node/downloader/packets/rlp_eth66_packet_coding.hpp>
 #include <silkworm/node/downloader/rpc/send_message_by_id.hpp>
 

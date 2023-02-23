@@ -193,16 +193,16 @@ PayloadStatus PoSSync::new_payload(const ExecutionPayload& payload, seconds_t ti
     }
 }
 
-PayloadStatus PoSSync::fork_choice_update(const ForkChoiceState& state,
-                                          const std::optional<PayloadAttributes>& attributes, seconds_t timeout) {
+PayloadStatus PoSSync::fork_choice_update(const ForkChoiceState& /*state*/,
+                                          const std::optional<PayloadAttributes>& attributes, seconds_t /*timeout*/) {
     // Implementation of engine_forkchoiceUpdatedV1 method
 }
 
-ExecutionPayload PoSSync::get_payload(std::string payloadId, seconds_t timeout) {
+ExecutionPayload PoSSync::get_payload(std::string /*payloadId*/, seconds_t /*timeout*/) {
     // Implementation of engine_getPayloadV1 method
 }
 
-TransitionConfiguration PoSSync::exchange_transition_config(const TransitionConfiguration& config, seconds_t timeout) {
+TransitionConfiguration PoSSync::exchange_transition_config(const TransitionConfiguration& /*config*/, seconds_t /*timeout*/) {
     // Implementation of engine_exchangeTransitionConfigurationV1 method
 }
 

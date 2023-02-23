@@ -138,10 +138,15 @@ Block PoSSync::make_execution_block(const ExecutionPayload& payload) {
 }
 
 void PoSSync::validate_execution_block(evmc::bytes32 blockHash, const Block& block) {
-    // throw exception if payload is invalid
+    // use consensus VerifyHeader?
 }
 
-PayloadStatus PoSSync::new_payload(const ExecutionPayload& payload, seconds_t timeout) {
+bool PoSSync::extends_canonical(const Block& block) {
+    auto canonical_parent = exec_engine_.get_canonical_hash(block.header.number - 1);
+    return canonical_parent == block.header.parent_hash;
+}
+
+PayloadStatus PoSSync::new_payload(const ExecutionPayload& payload, seconds_t /*timeout*/) {
     using ValidChain = stagedsync::ExecutionEngine::ValidChain;
     using InvalidChain = stagedsync::ExecutionEngine::InvalidChain;
     using ValidationError = stagedsync::ExecutionEngine::ValidationError;
@@ -194,16 +199,19 @@ PayloadStatus PoSSync::new_payload(const ExecutionPayload& payload, seconds_t ti
 }
 
 PayloadStatus PoSSync::fork_choice_update(const ForkChoiceState& /*state*/,
-                                          const std::optional<PayloadAttributes>& attributes, seconds_t /*timeout*/) {
+                                          const std::optional<PayloadAttributes>& /*attributes*/, seconds_t /*timeout*/) {
     // Implementation of engine_forkchoiceUpdatedV1 method
+    ensure_invariant(false, "fork_choice_update not implemented");
 }
 
 ExecutionPayload PoSSync::get_payload(std::string /*payloadId*/, seconds_t /*timeout*/) {
     // Implementation of engine_getPayloadV1 method
+    ensure_invariant(false, "get_payload not implemented");
 }
 
 TransitionConfiguration PoSSync::exchange_transition_config(const TransitionConfiguration& /*config*/, seconds_t /*timeout*/) {
     // Implementation of engine_exchangeTransitionConfigurationV1 method
+    ensure_invariant(false, "exchange_transition_config not implemented");
 }
 
 }  // namespace silkworm::chainsync::pos

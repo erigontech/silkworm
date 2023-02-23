@@ -39,7 +39,10 @@ class BlockExchange final : public ActiveComponent {
 
     void initial_state(std::vector<BlockHeader> last_headers);  // set the initial state of the downloader
 
-    enum class Target_Tracking { kByAnnouncements, kByNewPayloads };
+    enum class Target_Tracking {
+        kByAnnouncements,
+        kByNewPayloads
+    };
     void download_blocks(BlockNum current_height, Target_Tracking);  // start downloading blocks from current_height
 
     void new_target_block(const Block&);  // set a new target block to download, to use with Target_Tracking::kByNewPayloads
@@ -49,7 +52,7 @@ class BlockExchange final : public ActiveComponent {
     using ResultQueue = ConcurrentQueue<Blocks>;
     ResultQueue& result_queue();  // get the queue where to receive downloaded blocks
 
-    bool in_sync() const;  // true if the downloader is in sync with the network
+    bool in_sync() const;             // true if the downloader is in sync with the network
     BlockNum current_height() const;  // the current height of the downloader
 
     // public generic interface

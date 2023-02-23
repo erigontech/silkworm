@@ -20,4 +20,4 @@ namespace silkworm {
 size_t OutboundMessage::sent_requests() const { return sent_reqs_; }
 size_t OutboundMessage::nack_requests() const { return nack_reqs_; }
 
-}
+}  // namespace silkworm

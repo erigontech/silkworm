@@ -135,8 +135,7 @@ Penalty BodySequence::accept_new_block(const Block& block, const PeerId&) {
     return Penalty::NoPenalty;
 }
 
-auto BodySequence::request_bodies(time_point_t tp) -> std::shared_ptr<OutboundMessage>
-{
+auto BodySequence::request_bodies(time_point_t tp) -> std::shared_ptr<OutboundMessage> {
     if (tp - last_nack_ < SentryClient::kNoPeerDelay)
         return nullptr;
 

@@ -56,7 +56,6 @@ void OutboundGetBlockBodies::execute(db::ROAccess, HeaderChain&, BodySequence& b
         SILK_TRACE << "Penalizing " << penalization;
         send_penalization(sentry, penalization, 1s);
     }
-
 }
 
 sentry::SentPeers OutboundGetBlockBodies::send_packet(SentryClient& sentry, seconds_t timeout) {

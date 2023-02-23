@@ -52,6 +52,7 @@ class ExecutionEngine : public Stoppable {
     // actions
     template <std::derived_from<Block> BLOCK>
     void insert_blocks(std::vector<std::shared_ptr<BLOCK>>&);
+    void insert_block(const Block& block);
 
     auto verify_chain(Hash head_block_hash) -> VerificationResult;
 
@@ -72,7 +73,6 @@ class ExecutionEngine : public Stoppable {
   protected:
     void insert_header(const BlockHeader&);
     void insert_body(const Block&);
-    void insert_block(const Block& block);
 
     std::set<Hash> collect_bad_headers(db::RWTxn& tx, InvalidChain& invalid_chain);
 

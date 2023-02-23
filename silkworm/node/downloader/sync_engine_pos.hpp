@@ -41,6 +41,11 @@ class PoSSync : public ActiveComponent {
     TransitionConfiguration exchange_transition_config(const TransitionConfiguration&, seconds_t timeout = 1s);
 
   private:
+    static constexpr BlockNum TRANSITION_BLOCK = 15537394;  // todo: get from chain config
+    Block make_execution_block(const ExecutionPayload& payload);
+    void validate_execution_block(evmc::bytes32 blockHash, const Block& block);
+    bool extends_canonical(const Block&);
+
     BlockExchange& block_exchange_;
     stagedsync::ExecutionEngine& exec_engine_;
     ChainForkView chain_fork_view_;

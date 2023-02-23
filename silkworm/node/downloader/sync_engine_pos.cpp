@@ -13,9 +13,12 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 */
+#include <magic_enum.hpp>
 
+#include <silkworm/core/consensus/base/engine.hpp>
 #include <silkworm/core/common/as_range.hpp>
 #include <silkworm/node/common/measure.hpp>
+#include <silkworm/node/stagedsync/execution_engine.hpp>
 
 #include "sync_engine_pos.hpp"
 
@@ -25,6 +28,13 @@ static void ensure_invariant(bool condition, std::string message) {
     if (!condition)
         throw std::logic_error("Consensus invariant violation: " + message);
 }
+
+class PayloadValidationError : public std::logic_error {
+  public:
+    PayloadValidationError() : std::logic_error("payload validation error, unknown reason") {}
+
+    explicit PayloadValidationError(const std::string& reason) : std::logic_error(reason) {}
+};
 
 PoSSync::PoSSync(BlockExchange& be, stagedsync::ExecutionEngine& ee)
     : block_exchange_{be},
@@ -82,57 +92,111 @@ void PoSSync::execution_loop() {
     log::Warning("Sync") << "PoS sync loop exited";
 }
 
-// a function that convert an ExecutionPayload to a BlockHeader
-/*
-Block convert(const ExecutionPayload& payload) {
+// Convert an ExecutionPayload to a Block as per "Engine API - Paris" specs
+Block PoSSync::make_execution_block(const ExecutionPayload& payload) {
 
-        BlockHeader header;
-        header.number = payload.number;
+    Block block;
+    BlockHeader& header = block.header;
 
-        header.parent_hash = payload.parent_hash;
-        header.state_root = payload.state_root;
-        header.receipts_root = payload.receipts_root;
-        header.logs_bloom = payload.logs_bloom;
-        header.gas_used = payload.gas_used;
-        header.gas_limit = payload.gas_limit;
-        header.timestamp = payload.timestamp;
-        header.extra_data = payload.extra_data;
-        header.base_fee_per_gas = payload.base_fee;
+    header.number = payload.number;
+    header.timestamp = payload.timestamp;
+    header.parent_hash = payload.parent_hash;
+    header.state_root = payload.state_root;
+    header.receipts_root = payload.receipts_root;
+    header.logs_bloom = payload.logs_bloom;
+    header.gas_used = payload.gas_used;
+    header.gas_limit = payload.gas_limit;
+    header.timestamp = payload.timestamp;
+    header.extra_data = payload.extra_data;
+    header.base_fee_per_gas = payload.base_fee;
+    header.beneficiary = payload.suggested_fee_recipient;
 
-        header.hash = payload.block_hash;
-        header.ommers_hash = payload.ommers_hash;
-        header.beneficiary = payload.beneficiary;
-        header.transactions_root = payload.transactions_root;
-        header.difficulty = payload.difficulty;
+    for (const auto& rlp_encoded_tx : payload.transactions) {
+        ByteView rlp_encoded_tx_view{rlp_encoded_tx};
+        Transaction tx;
+        auto decoding_result = rlp::decode_transaction(rlp_encoded_tx_view, tx, rlp::Eip2718Wrapping::kBoth);
+        if (!decoding_result) {
+            std::string reason{magic_enum::enum_name<DecodingError>(decoding_result.error())};
+            throw PayloadValidationError("tx rlp decoding error: " + reason);
+        }
+        block.transactions.push_back(tx);
+    }
+    header.transactions_root = consensus::EngineBase::compute_transaction_root(block);
 
-        header.mix_hash = payload.mix_hash;
-        header.nonce = payload.nonce;
+    // as per EIP-3675
+    header.ommers_hash = kEmptyListHash;  // = Keccak256(RLP([]))
+    header.difficulty = 0;
+    header.mix_hash = 0x0000000000000000000000000000000000000000000000000000000000000000_bytes32;
+    header.nonce = {0, 0, 0, 0, 0, 0, 0, 0};
+    block.ommers = {};  // RLP([]) = 0xc0
 
-        BlockBody body;
-        body.ommers = payload.ommers;
-        body.transactions = payload.transactions;
+    // as per EIP-4399
+    if (payload.number >= TRANSITION_BLOCK) {
+        header.mix_hash = payload.prev_randao;
+    }
 
-        return {header,body};
+    return block;
 }
-*/
+
+void PoSSync::validate_execution_block(evmc::bytes32 blockHash, const Block& block) {
+    // throw exception if payload is invalid
+}
+
 PayloadStatus PoSSync::new_payload(const ExecutionPayload& payload, seconds_t timeout) {
-    /*
-    // Implementation of engine_newPayloadV1 method
+    using ValidChain = stagedsync::ExecutionEngine::ValidChain;
+    using InvalidChain = stagedsync::ExecutionEngine::InvalidChain;
+    using ValidationError = stagedsync::ExecutionEngine::ValidationError;
+    constexpr evmc::bytes32 kZeroHash = 0x0000000000000000000000000000000000000000000000000000000000000000_bytes32;
 
-    auto block = make_ExecutionBlock_from(payload);  // as per the EngineAPI spec
+    try {
+        Block block = make_execution_block(payload);  // as per the EngineAPI spec
 
-    // send payload to the execution engine, it it respond ok exit
-    if (has_parent(block)) {
-        exec_engine_.insert_block(block);
-        auto verification = exec_engine_.verify_chain(block.hash());
-        // todo: handle results
-        return PayloadStatus::kValid or not;
+        Hash block_hash = block.header.hash();
+        if (payload.block_hash != block_hash) return {.status = PayloadStatus::kInvalidBlockHash};
+
+        validate_execution_block(payload.block_hash, block);
+
+        auto parent = exec_engine_.get_header(block.header.parent_hash);  // todo: use chain_fork_view_ cache?
+        if (!parent) {
+            // send payload to the block exchange to extend the chain up to it
+            block_exchange_.new_target_block(block);
+            return {.status = PayloadStatus::kSyncing};  // .latestValidHash = nullopt
+        }
+
+        if (extends_canonical(block)) {
+            exec_engine_.insert_block(block);
+            auto verification = exec_engine_.verify_chain(block_hash);
+
+            if (std::holds_alternative<ValidChain>(verification)) {
+                // VALID
+                return {.status = PayloadStatus::kValid, .latest_valid_hash = block_hash};
+            }
+            else if (std::holds_alternative<InvalidChain>(verification)) {
+                // INVALID
+                auto invalid_chain = std::get<InvalidChain>(verification);
+                Hash latest_valid_hash = invalid_chain.unwind_point < TRANSITION_BLOCK
+                    ? kZeroHash
+                    : invalid_chain.unwind_head;  // todo: check!
+                return {.status = PayloadStatus::kInvalid, .latest_valid_hash = latest_valid_hash};
+            }
+            else {
+                // ERROR
+                return {PayloadStatus::kInvalid, std::nullopt, "unknown execution error"};
+            }
+        }
+        else {
+            return {PayloadStatus::kAccepted};  // .latestValidHash = nullopt
+        }
+
     }
-    else {
-        // send payload to the block exchange to extend the chain up to it
-        block_exchange_.new_target_block(block);
+    catch(const PayloadValidationError& e) {
+        log::Error("Sync") << "Error processing payload: " << e.what();
+        return {PayloadStatus::kInvalid, std::nullopt, e.what()};
     }
-    */
+    catch(const std::exception& e) {
+        log::Error("Sync") << "Error processing payload: " << e.what();
+        return {PayloadStatus::kInvalid, std::nullopt, e.what()};
+    }
 }
 
 PayloadStatus PoSSync::fork_choice_update(const ForkChoiceState& state,

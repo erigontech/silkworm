@@ -61,6 +61,12 @@ struct PayloadAttributes {
 
 //! PayloadStatus as specified by https://github.com/ethereum/execution-apis/blob/main/src/engine/specification.md
 struct PayloadStatus {
+    static inline const char* kValid = "VALID";
+    static inline const char* kInvalid = "INVALID";
+    static inline const char* kSyncing = "SYNCING";
+    static inline const char* kAccepted = "ACCEPTED";
+    static inline const char* kInvalidBlockHash = "INVALID_BLOCK_HASH";
+
     std::string status;
     std::optional<evmc::bytes32> latest_valid_hash;
     std::optional<std::string> validation_error;

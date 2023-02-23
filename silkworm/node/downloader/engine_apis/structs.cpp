@@ -14,27 +14,27 @@
    limitations under the License.
 */
 
+#include "structs.hpp"
+
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/node/downloader/internals/types.hpp>
-
-#include "structs.hpp"
 
 namespace silkworm {
 std::ostream& operator<<(std::ostream& out, const ExecutionPayload& payload) {
     auto bloom_bytes{silkworm::ByteView(&payload.logs_bloom[0], 256)};
     out << "number: " << payload.number
-    << " block_hash: " << payload.block_hash
-    << " parent_hash: " << payload.parent_hash
-    << " timestamp: " << payload.timestamp
-    << " gas_limit: " << payload.gas_limit
-    << " gas_used: " << payload.gas_used
-    << " suggested_fee_recipient: " << payload.suggested_fee_recipient
-    << " state_root: " << payload.state_root
-    << " receipts_root: " << payload.receipts_root
-    << " prev_randao: " << payload.prev_randao
-    << " logs_bloom: " << silkworm::to_hex(bloom_bytes)
-    << " extra_data: " << silkworm::to_hex(payload.extra_data)
-    << "#transactions: " << payload.transactions.size();
+        << " block_hash: " << payload.block_hash
+        << " parent_hash: " << payload.parent_hash
+        << " timestamp: " << payload.timestamp
+        << " gas_limit: " << payload.gas_limit
+        << " gas_used: " << payload.gas_used
+        << " suggested_fee_recipient: " << payload.suggested_fee_recipient
+        << " state_root: " << payload.state_root
+        << " receipts_root: " << payload.receipts_root
+        << " prev_randao: " << payload.prev_randao
+        << " logs_bloom: " << silkworm::to_hex(bloom_bytes)
+        << " extra_data: " << silkworm::to_hex(payload.extra_data)
+        << "#transactions: " << payload.transactions.size();
 
     return out;
 }
@@ -51,4 +51,4 @@ std::ostream& operator<<(std::ostream& out, const PayloadStatus& payload_status)
 
     return out;
 }
-} // namespace silkrpc
+}  // namespace silkworm

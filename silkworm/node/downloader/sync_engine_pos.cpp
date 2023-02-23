@@ -13,14 +13,14 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 */
+#include "sync_engine_pos.hpp"
+
 #include <magic_enum.hpp>
 
-#include <silkworm/core/consensus/base/engine.hpp>
 #include <silkworm/core/common/as_range.hpp>
+#include <silkworm/core/consensus/base/engine.hpp>
 #include <silkworm/node/common/measure.hpp>
 #include <silkworm/node/stagedsync/execution_engine.hpp>
-
-#include "sync_engine_pos.hpp"
 
 namespace silkworm::chainsync::pos {
 
@@ -94,7 +94,6 @@ void PoSSync::execution_loop() {
 
 // Convert an ExecutionPayload to a Block as per "Engine API - Paris" specs
 Block PoSSync::make_execution_block(const ExecutionPayload& payload) {
-
     Block block;
     BlockHeader& header = block.header;
 
@@ -170,37 +169,32 @@ PayloadStatus PoSSync::new_payload(const ExecutionPayload& payload, seconds_t ti
             if (std::holds_alternative<ValidChain>(verification)) {
                 // VALID
                 return {.status = PayloadStatus::kValid, .latest_valid_hash = block_hash};
-            }
-            else if (std::holds_alternative<InvalidChain>(verification)) {
+            } else if (std::holds_alternative<InvalidChain>(verification)) {
                 // INVALID
                 auto invalid_chain = std::get<InvalidChain>(verification);
                 Hash latest_valid_hash = invalid_chain.unwind_point < TRANSITION_BLOCK
-                    ? kZeroHash
-                    : invalid_chain.unwind_head;  // todo: check!
+                                             ? kZeroHash
+                                             : invalid_chain.unwind_head;  // todo: check!
                 return {.status = PayloadStatus::kInvalid, .latest_valid_hash = latest_valid_hash};
-            }
-            else {
+            } else {
                 // ERROR
                 return {PayloadStatus::kInvalid, std::nullopt, "unknown execution error"};
             }
-        }
-        else {
+        } else {
             return {PayloadStatus::kAccepted};  // .latestValidHash = nullopt
         }
 
-    }
-    catch(const PayloadValidationError& e) {
+    } catch (const PayloadValidationError& e) {
         log::Error("Sync") << "Error processing payload: " << e.what();
         return {PayloadStatus::kInvalid, std::nullopt, e.what()};
-    }
-    catch(const std::exception& e) {
+    } catch (const std::exception& e) {
         log::Error("Sync") << "Error processing payload: " << e.what();
         return {PayloadStatus::kInvalid, std::nullopt, e.what()};
     }
 }
 
 PayloadStatus PoSSync::fork_choice_update(const ForkChoiceState& state,
-                                             const std::optional<PayloadAttributes>& attributes, seconds_t timeout) {
+                                          const std::optional<PayloadAttributes>& attributes, seconds_t timeout) {
     // Implementation of engine_forkchoiceUpdatedV1 method
 }
 

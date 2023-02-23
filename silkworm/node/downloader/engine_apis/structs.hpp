@@ -16,12 +16,13 @@
 
 #pragma once
 
-#include <vector>
 #include <optional>
 #include <string>
+#include <vector>
 
 #include <evmc/evmc.hpp>
 #include <intx/intx.hpp>
+
 #include <silkworm/core/common/base.hpp>
 #include <silkworm/core/types/bloom.hpp>
 
@@ -96,5 +97,4 @@ std::ostream& operator<<(std::ostream& out, const PayloadAttributes& payload_att
 std::ostream& operator<<(std::ostream& out, const ForkChoiceUpdatedReply& fork_choice_updated_reply);
 std::ostream& operator<<(std::ostream& out, const TransitionConfiguration& transition_configuration);
 
-} // namespace silkworm
-
+}  // namespace silkworm

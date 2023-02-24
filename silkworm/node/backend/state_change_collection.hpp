@@ -22,6 +22,7 @@
 #include <mutex>
 #include <optional>
 
+#include <absl/base/thread_annotations.h>
 #include <evmc/evmc.hpp>
 #include <gsl/pointers>
 
@@ -99,7 +100,7 @@ class StateChangeCollection : public StateChangeSource {
     std::map<evmc::address, std::map<evmc::bytes32, std::size_t>> storage_change_index_;
 
     //! The registered batch consumers.
-    std::map<StateChangeToken, StateChangeConsumer> consumers_;
+    std::map<StateChangeToken, StateChangeConsumer> consumers_ ABSL_GUARDED_BY(consumers_mutex_);
 
     //! The mutual exclusion protecting access to the registered consumers.
     std::mutex consumers_mutex_;

@@ -138,8 +138,8 @@ TEST_CASE("ssz::decode_dynamic") {
 }
 
 TEST_CASE("ssz::success_or_throw") {
-    CHECK_NOTHROW(success_or_throw(EncodingResult::kOk));
-    CHECK_THROWS_AS(success_or_throw(EncodingResult::kTooManyElements), std::runtime_error);
+    CHECK_NOTHROW(success_or_throw(EncodingResult{}));
+    CHECK_THROWS_AS(success_or_throw(tl::unexpected(EncodingError::kTooManyElements)), std::runtime_error);
 }
 
 }  // namespace silkworm::ssz

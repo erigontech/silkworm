@@ -24,7 +24,7 @@
 namespace silkworm::snappy {
 
 //! Theoretically this method could use ::snappy::IsValidCompressedBuffer but doing so would produce
-//! an invalid result as of Snappy 1.1.9 for some invalid inputs [https://go.dev/play/p/nr86lSFGBKU]
+//! a valid result as of Snappy 1.1.9 for some invalid inputs [https://go.dev/play/p/nr86lSFGBKU]
 //! So we fall back to a round-trip comparison to check validity (bad for performance).
 bool is_valid_compressed_data(ByteView data) {
     Bytes uncompressed = decompress(data);
@@ -54,7 +54,9 @@ static size_t snappy_uncompressed_length(ByteView data) {
         reinterpret_cast<const char*>(data.data()),
         data.size(),
         &uncompressed_length);
-    if (!ok) throw std::runtime_error("invalid snappy uncompressed length");
+    if (!ok) {
+        throw std::runtime_error("invalid snappy uncompressed length");
+    }
 
     return uncompressed_length;
 }
@@ -67,7 +69,9 @@ Bytes decompress(ByteView data) {
         reinterpret_cast<const char*>(data.data()),
         data.size(),
         reinterpret_cast<char*>(output.data()));
-    if (!ok) throw std::runtime_error("invalid snappy data");
+    if (!ok) {
+        throw std::runtime_error("invalid snappy data");
+    }
 
     return output;
 }

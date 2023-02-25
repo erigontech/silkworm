@@ -1,17 +1,17 @@
 /*
-Copyright 2022 The Silkworm Authors
+   Copyright 2022 The Silkworm Authors
 
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
 
-    http://www.apache.org/licenses/LICENSE-2.0
+       http://www.apache.org/licenses/LICENSE-2.0
 
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
 */
 
 #include <catch2/catch.hpp>
@@ -25,7 +25,7 @@ namespace silkworm::test {
 template <class T>
 static bool encode_success(T& obj, std::string_view encoded_hex) {
     Bytes encoded_bytes{};
-    REQUIRE(ssz::encode(obj, encoded_bytes) == EncodingResult::kOk);
+    REQUIRE(ssz::encode(obj, encoded_bytes));
     return to_hex(encoded_bytes) == encoded_hex;
 }
 
@@ -37,7 +37,7 @@ static bool encode_success(T& obj, ByteView encoded_view) {
 template <class T>
 static Bytes encode_success(T& obj) {
     Bytes encoded_bytes{};
-    REQUIRE(ssz::encode(obj, encoded_bytes) == EncodingResult::kOk);
+    REQUIRE(ssz::encode(obj, encoded_bytes));
     return encoded_bytes;
 }
 

@@ -45,7 +45,7 @@ EncodingResult encode(T (&from)[N], Bytes& to) noexcept {
     for (std::size_t i{0}; i < N; ++i) {
         to += from[i];
     }
-    return EncodingResult::kOk;
+    return {};
 }
 
 void encode(evmc::address& from, Bytes& to) noexcept;
@@ -90,8 +90,8 @@ DecodingResult decode_dynamic(ByteView from, std::size_t length, const DynamicRe
 DecodingResult validate_bitlist(ByteView from, std::size_t bit_limit) noexcept;
 
 inline void success_or_throw(EncodingResult result) {
-    if (result != EncodingResult::kOk) {
-        throw std::runtime_error{"encoding error: " + std::string(magic_enum::enum_name(result))};
+    if (!result) {
+        throw std::runtime_error{"encoding error: " + std::string(magic_enum::enum_name(result.error()))};
     }
 }
 

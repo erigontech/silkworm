@@ -239,7 +239,7 @@ EncodingResult encode(cl::Eth1Data& from, Bytes& to) noexcept {
     ssz::encode(from.root, to);
     ssz::encode(from.deposit_count, to);
     ssz::encode(from.block_hash, to);
-    return EncodingResult::kOk;
+    return {};
 }
 
 template <>
@@ -272,7 +272,7 @@ template <>
 EncodingResult encode(cl::Checkpoint& from, Bytes& to) noexcept {
     ssz::encode(from.epoch, to);
     ssz::encode(from.root, to);
-    return EncodingResult::kOk;
+    return {};
 }
 
 template <>
@@ -308,7 +308,7 @@ EncodingResult encode(cl::AttestationData& from, Bytes& to) noexcept {
         from.target = std::make_shared<cl::Checkpoint>();
     }
     (void)ssz::encode(*from.target, to);
-    return EncodingResult::kOk;
+    return {};
 }
 
 template <>
@@ -353,7 +353,7 @@ EncodingResult encode(cl::BeaconBlockHeader& from, Bytes& to) noexcept {
     ssz::encode(from.parent_root, to);
     ssz::encode(from.root, to);
     ssz::encode(from.body_root, to);
-    return EncodingResult::kOk;
+    return {};
 }
 
 template <>
@@ -396,7 +396,7 @@ EncodingResult encode(cl::SignedBeaconBlockHeader& from, Bytes& to) noexcept {
     }
     (void)ssz::encode(*from.header, to);
     (void)ssz::encode(from.signature, to);
-    return EncodingResult::kOk;
+    return {};
 }
 
 template <>
@@ -428,12 +428,12 @@ EncodingResult encode(cl::IndexedAttestation& from, Bytes& to) noexcept {
     (void)ssz::encode(from.signature, to);
 
     if (from.attesting_indices.size() > cl::IndexedAttestation::kMaxAttestingIndices) {
-        return EncodingResult::kTooManyElements;
+        return tl::unexpected(EncodingError::kTooManyElements);
     }
     for (const auto attesting_index : from.attesting_indices) {
         ssz::encode(attesting_index, to);
     }
-    return EncodingResult::kOk;
+    return {};
 }
 
 template <>
@@ -488,7 +488,7 @@ EncodingResult encode(cl::ProposerSlashing& from, Bytes& to) noexcept {
         from.header2 = std::make_shared<cl::SignedBeaconBlockHeader>();
     }
     (void)ssz::encode(*from.header2, to);
-    return EncodingResult::kOk;
+    return {};
 }
 
 template <>
@@ -529,7 +529,7 @@ EncodingResult encode(cl::AttesterSlashing& from, Bytes& to) noexcept {
 
     (void)ssz::encode(*from.attestation1, to);
     (void)ssz::encode(*from.attestation2, to);
-    return EncodingResult::kOk;
+    return {};
 }
 
 template <>
@@ -586,10 +586,10 @@ EncodingResult encode(cl::Attestation& from, Bytes& to) noexcept {
     (void)ssz::encode(from.signature, to);
 
     if (from.aggregration_bits.size() > cl::Attestation::kMaxAggregationBits) {
-        return EncodingResult::kTooManyElements;
+        return tl::unexpected(EncodingError::kTooManyElements);
     }
     to += from.aggregration_bits;
-    return EncodingResult::kOk;
+    return {};
 }
 
 template <>
@@ -642,7 +642,7 @@ EncodingResult encode(cl::DepositData& from, Bytes& to) noexcept {
     (void)ssz::encode(from.withdrawal_credentials, to);
     ssz::encode(from.amount, to);
     (void)ssz::encode(from.signature, to);
-    return EncodingResult::kOk;
+    return {};
 }
 
 template <>
@@ -683,7 +683,7 @@ EncodingResult encode(cl::Deposit& from, Bytes& to) noexcept {
         from.data = std::make_shared<cl::DepositData>();
     }
     (void)ssz::encode(*from.data, to);
-    return EncodingResult::kOk;
+    return {};
 }
 
 template <>
@@ -712,7 +712,7 @@ template <>
 EncodingResult encode(cl::VoluntaryExit& from, Bytes& to) noexcept {
     ssz::encode(from.epoch, to);
     ssz::encode(from.validator_index, to);
-    return EncodingResult::kOk;
+    return {};
 }
 
 template <>
@@ -741,7 +741,7 @@ EncodingResult encode(cl::SignedVoluntaryExit& from, Bytes& to) noexcept {
     }
     (void)ssz::encode(*from.voluntary_exit, to);
     (void)ssz::encode(from.signature, to);
-    return EncodingResult::kOk;
+    return {};
 }
 
 template <>
@@ -768,7 +768,7 @@ template <>
 EncodingResult encode(cl::SyncAggregate& from, Bytes& to) noexcept {
     (void)ssz::encode(from.commitee_bits, to);
     (void)ssz::encode(from.commitee_signature, to);
-    return EncodingResult::kOk;
+    return {};
 }
 
 template <>
@@ -813,12 +813,12 @@ EncodingResult encode(cl::ExecutionPayload& from, Bytes& to) noexcept {
     ssz::encode_offset(offset, to);
 
     if (from.extra_data.size() > cl::ExecutionPayload::kMaxExtraDataSize) {
-        return EncodingResult::kTooManyElements;
+        return tl::unexpected(EncodingError::kTooManyElements);
     }
     to += from.extra_data;
 
     if (from.transactions.size() > cl::ExecutionPayload::kMaxTransactionCount) {
-        return EncodingResult::kTooManyElements;
+        return tl::unexpected(EncodingError::kTooManyElements);
     }
     offset = sizeof(uint32_t) * from.transactions.size();
     for (const auto& transaction : from.transactions) {
@@ -827,12 +827,12 @@ EncodingResult encode(cl::ExecutionPayload& from, Bytes& to) noexcept {
     }
     for (const auto& transaction : from.transactions) {
         if (transaction.size() > cl::ExecutionPayload::kMaxTransactionSize) {
-            return EncodingResult::kTooManyElements;
+            return tl::unexpected(EncodingError::kTooManyElements);
         }
         to += transaction;
     }
 
-    return EncodingResult::kOk;
+    return {};
 }
 
 template <>
@@ -966,7 +966,7 @@ DecodingResult decode(ByteView from, cl::ExecutionPayload& to) noexcept {
 
 template <>
 EncodingResult encode(cl::SyncCommittee& /*from*/, Bytes& /*to*/) noexcept {
-    return EncodingResult::kOk;
+    return {};
 }
 
 template <>
@@ -976,7 +976,7 @@ DecodingResult decode(ByteView /*from*/, cl::SyncCommittee& /*to*/) noexcept {
 
 template <>
 EncodingResult encode(cl::LightClientBootstrap& /*from*/, Bytes& /*to*/) noexcept {
-    return EncodingResult::kOk;
+    return {};
 }
 
 template <>
@@ -986,7 +986,7 @@ DecodingResult decode(ByteView /*from*/, cl::LightClientBootstrap& /*to*/) noexc
 
 template <>
 EncodingResult encode(cl::LightClientUpdate& /*from*/, Bytes& /*to*/) noexcept {
-    return EncodingResult::kOk;
+    return {};
 }
 
 template <>

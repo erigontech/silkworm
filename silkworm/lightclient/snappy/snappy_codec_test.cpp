@@ -22,7 +22,7 @@
 
 namespace silkworm::snappy {
 
-TEST_CASE("Snappy") {
+TEST_CASE("Snappy: Block Format") {
     const Bytes kUncompressed{*from_hex(
         "2a817b45ec456cfe6327b70769498f51ffffffffffffffffffffffffffffffff"
         "ffffffffffffffffffffffffffffffff000000000000000053bee62ce3d5c7b0"

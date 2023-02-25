@@ -16,12 +16,16 @@ limitations under the License.
 
 #pragma once
 
+#include <tl/expected.hpp>
+
 namespace silkworm {
 
-    // Error codes for RLP and other encoding
-    enum class [[nodiscard]] EncodingResult{
-        kOk = 0,
-        kTooManyElements,
-    };
+// Error codes for RLP and other encoding
+enum class [[nodiscard]] EncodingError{
+    kTooManyElements,
+};
+
+// TODO(C++23) Switch to std::expected
+using EncodingResult = tl::expected<void, EncodingError>;
 
 }  // namespace silkworm

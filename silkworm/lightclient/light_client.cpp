@@ -166,19 +166,22 @@ awaitable<void> LightClientImpl::run_tasks() {
 
     log::Info() << "[LightClient] Waiting for bootstrap sequence...";
 
-    const auto checkpoint_uri = get_checkpoint_sync_endpoint(settings_.chain_id);
+    auto checkpoint_uri = get_checkpoint_sync_endpoint(settings_.chain_id);
     SILKWORM_ASSERT(checkpoint_uri);
+    // TODO(canepat) hard-coded just for test, remove it
+    *checkpoint_uri = "https://sync.invis.tools/eth/v2/debug/beacon/states/finalized";
 
     constexpr auto kRetryInterval{5s};
     sentry::common::Timeout timeout{kRetryInterval, /*no_throw*/true};
     std::unique_ptr<eth::BeaconState> beacon_state;
     do {
+        log::Info() << "[Checkpoint Sync] Requesting beacon state [uri: " << *checkpoint_uri << "]";
         beacon_state = co_await retrieve_beacon_state(*checkpoint_uri);
         if (!beacon_state) co_await timeout();
     } while (!beacon_state);
-    log::Info() << "[LightClient] Beacon state retrieved [gvr: " << to_hex(beacon_state->genesis_validators_root().to_array()) << "]";
 
     const auto finalized_root = beacon_state->finalized_checkpoint().root;
+    log::Info() << "[Checkpoint Sync] Beacon state retrieved [root: " << to_hex(finalized_root.to_array()) << "]";
 
     const bool result = co_await bootstrap_checkpoint(finalized_root);
     log::Info() << "[LightClient] Bootstrap sequence completed [result=" << result << "]";
@@ -211,9 +214,7 @@ LightClient::LightClient(Settings settings)
     : p_impl_(std::make_unique<LightClientImpl>(std::move(settings))) {
 }
 
-LightClient::~LightClient() {
-    log::Trace() << "silkworm::sentry::Sentry::~Sentry";
-}
+LightClient::~LightClient() = default;
 
 void LightClient::start() { p_impl_->start(); }
 

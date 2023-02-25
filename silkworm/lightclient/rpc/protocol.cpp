@@ -37,8 +37,8 @@ Bytes encode_and_write(const ::ssz::Container& object) {
     const auto length_size = encode_varint(object.get_ssz_size(), length_buffer);
 
     // Marshal object into message using SSZ and snap it
-    const auto payload = object.serialize();
-    Bytes compressed_payload = snappy::compress({payload.data(), payload.size()});
+    const auto ssz_payload = object.serialize();
+    Bytes compressed_payload = snappy::compress({ssz_payload.data(), ssz_payload.size()});
 
     // Put together length + payload
     Bytes protocol_packet;

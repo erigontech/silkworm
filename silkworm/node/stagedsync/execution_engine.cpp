@@ -191,6 +191,8 @@ void ExecutionEngine::insert_blocks(std::vector<std::shared_ptr<BLOCK>>& blocks)
         insert_header(block->header);
         insert_body(*block);
     });
+
+    // we can commit here, and then use the last record in the kHeaders table to respond to get_block_progress()
 }
 
 // we need template explicit instantiation

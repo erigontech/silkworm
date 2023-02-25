@@ -28,7 +28,7 @@
 #include <silkworm/node/db/stages.hpp>
 #include <silkworm/node/downloader/block_exchange.hpp>
 #include <silkworm/node/downloader/sentry_client.hpp>
-#include <silkworm/node/downloader/sync_engine.hpp>
+#include <silkworm/node/downloader/sync_engine_pow.hpp>
 #include <silkworm/node/snapshot/sync.hpp>
 #include <silkworm/node/stagedsync/execution_engine.hpp>
 

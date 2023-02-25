@@ -207,8 +207,8 @@ auto ExecutionEngine::verify_chain(Hash head_block_hash) -> VerificationResult {
     ensure_invariant(header.has_value(), "header to verify non present");
 
     // db commit policy
-    bool cycle_in_one_tx = !is_first_sync && header->number - canonical_chain_.current_head().number < 4096;
-    if (cycle_in_one_tx)
+    bool commit_at_each_stage = is_first_sync || header->number - canonical_chain_.current_head().number > 4096;
+    if (!commit_at_each_stage)
         tx_.disable_commit();
 
     // the new head is on a new fork?
@@ -220,7 +220,7 @@ auto ExecutionEngine::verify_chain(Hash head_block_hash) -> VerificationResult {
         success_or_throw(unwind_result);  // unwind must complete with success
         // remove last part of canonical
         canonical_chain_.delete_down_to(forking_point);
-    }  // todo for PoS: do not unwind, just find the correct overlay
+    }
 
     // update canonical up to header_hash
     canonical_chain_.update_up_to(header->number, head_block_hash);
@@ -263,7 +263,7 @@ auto ExecutionEngine::verify_chain(Hash head_block_hash) -> VerificationResult {
     // finish
     current_status_ = verify_result;
     tx_.enable_commit();
-    tx_.commit_and_renew();  // todo for PoS: do nothing, wait update_fork_choice to persist the correct overlay
+    tx_.commit_and_renew();
     return verify_result;
 }
 

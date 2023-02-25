@@ -172,7 +172,7 @@ void PoWSync::execution_loop() {
             throw std::logic_error("Consensus, unknown error");
         }
 
-        is_first_sync_ = is_starting_up ? true : false;
+        is_first_sync_ = is_starting_up;
         is_starting_up = false;
     }
 };

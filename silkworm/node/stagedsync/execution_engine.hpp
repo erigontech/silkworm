@@ -77,15 +77,6 @@ class ExecutionEngine : public Stoppable {
 
     std::set<Hash> collect_bad_headers(db::RWTxn& tx, InvalidChain& invalid_chain);
 
-    NodeSettings& node_settings_;
-    db::RWAccess db_access_;
-    db::RWTxn tx_;
-    ExecutionPipeline pipeline_;
-    bool is_first_sync{true};
-    VerificationResult current_status_;  // equal to canonical_chain_.current_head()
-    BlockId last_fork_choice_;
-    // lru_cache<Hash, BlockHeader> header_cache_;  // use cache if it improves performances
-
     class CanonicalChain {
       public:
         explicit CanonicalChain(db::RWTxn&);
@@ -108,6 +99,18 @@ class ExecutionEngine : public Stoppable {
 
         static constexpr size_t kCacheSize = 1000;
         lru_cache<BlockNum, Hash> canonical_cache_;
-    } canonical_chain_;
+    };
+
+    NodeSettings& node_settings_;
+    db::RWAccess db_access_;
+    db::RWTxn tx_;
+    bool is_first_sync{true};
+    // lru_cache<Hash, BlockHeader> header_cache_;  // use cache if it improves performances
+
+    ExecutionPipeline pipeline_;
+
+    CanonicalChain canonical_chain_;
+    VerificationResult canonical_status_;
+    BlockId last_fork_choice_;
 };
 }  // namespace silkworm::stagedsync

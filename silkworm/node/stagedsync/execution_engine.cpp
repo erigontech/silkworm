@@ -146,15 +146,15 @@ ExecutionEngine::ExecutionEngine(NodeSettings& ns, const db::RWAccess dba)
       db_access_{dba},
       tx_{db_access_.start_rw_tx()},
       pipeline_{&ns},
-      current_status_{ValidChain{0}},
-      last_fork_choice_{0},
-      canonical_chain_(tx_)
+      canonical_chain_(tx_),
+      canonical_status_{ValidChain{0}},  // we do not know the last status yet
+      last_fork_choice_{0}
 // header_cache_{kCacheSize}
 {
 }
 
 auto ExecutionEngine::current_status() -> VerificationResult {
-    return current_status_;
+    return canonical_status_;
 }
 
 auto ExecutionEngine::last_fork_choice() -> BlockId {
@@ -197,10 +197,7 @@ void ExecutionEngine::insert_blocks(std::vector<std::shared_ptr<BLOCK>>& blocks)
 template void ExecutionEngine::insert_blocks<BlockEx>(std::vector<std::shared_ptr<BlockEx>>& blocks);
 
 auto ExecutionEngine::verify_chain(Hash head_block_hash) -> VerificationResult {
-    // "nothing to do" condition
-    if (canonical_chain_.current_head().hash == head_block_hash) {
-        return ValidChain{canonical_chain_.current_head().number};
-    }
+    SILK_TRACE << "ExecutionEngine: verifying chain " << head_block_hash.to_hex();
 
     // retrieve the head header
     auto header = get_header(head_block_hash);
@@ -261,7 +258,7 @@ auto ExecutionEngine::verify_chain(Hash head_block_hash) -> VerificationResult {
     }
 
     // finish
-    current_status_ = verify_result;
+    canonical_status_ = verify_result;
     tx_.enable_commit();
     tx_.commit_and_renew();
     return verify_result;

@@ -59,7 +59,8 @@ class ExecutionEngine : public Stoppable {
     bool notify_fork_choice_updated(Hash head_block_hash);
 
     // state
-    VerificationResult current_status();
+    auto current_status() -> VerificationResult;
+    auto last_fork_choice() -> BlockId;
     auto get_canonical_head() -> ChainHead;
     auto get_block_progress() -> BlockNum;
 
@@ -81,8 +82,9 @@ class ExecutionEngine : public Stoppable {
     db::RWTxn tx_;
     ExecutionPipeline pipeline_;
     bool is_first_sync{true};
-    VerificationResult current_status_;
-    // lru_cache<Hash, BlockHeader> header_cache_; // todo: use cache if improve performances
+    VerificationResult current_status_;  // equal to canonical_chain_.current_head()
+    BlockId last_fork_choice_;
+    // lru_cache<Hash, BlockHeader> header_cache_;  // use cache if it improves performances
 
     class CanonicalChain {
       public:

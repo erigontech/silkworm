@@ -65,7 +65,7 @@ BlockNum ExecutionEngine::CanonicalChain::find_forking_point(db::RWTxn& tx, Hash
     else {
         auto parent = db::read_header(tx, height - 1, parent_hash);  // todo: maybe use parent cache?
         ensure_invariant(parent.has_value(),
-                         "CanonicalChain could not find parent with hash " + to_hex(parent_hash) +
+                         "canonical chain could not find parent with hash " + to_hex(parent_hash) +
                              " and height " + std::to_string(height - 1) + " for header " + to_hex(header->hash()));
 
         auto ancestor_hash = parent->parent_hash;
@@ -147,6 +147,7 @@ ExecutionEngine::ExecutionEngine(NodeSettings& ns, const db::RWAccess dba)
       tx_{db_access_.start_rw_tx()},
       pipeline_{&ns},
       current_status_{ValidChain{0}},
+      last_fork_choice_{0},
       canonical_chain_(tx_)
 // header_cache_{kCacheSize}
 {
@@ -154,6 +155,10 @@ ExecutionEngine::ExecutionEngine(NodeSettings& ns, const db::RWAccess dba)
 
 auto ExecutionEngine::current_status() -> VerificationResult {
     return current_status_;
+}
+
+auto ExecutionEngine::last_fork_choice() -> BlockId {
+    return last_fork_choice_;
 }
 
 void ExecutionEngine::insert_header(const BlockHeader& header) {
@@ -263,32 +268,22 @@ auto ExecutionEngine::verify_chain(Hash head_block_hash) -> VerificationResult {
 }
 
 bool ExecutionEngine::notify_fork_choice_updated(Hash head_block_hash) {
-    // db commit policy
-    bool cycle_in_one_tx = !is_first_sync;
-    std::unique_ptr<db::RWTxn> inner_tx{nullptr};
-    if (cycle_in_one_tx)
-        tx_.disable_commit();
-
-    if (canonical_chain_.current_head().hash != head_block_hash) {  // todo for PoS: choose the corresponding overlay and do commit
+    if (canonical_chain_.current_head().hash != head_block_hash) {
         // usually update_fork_choice must follow verify_chain with the same header
-        // except when verify_chain returned InvalidChain, so we need to do an unwind
+        // except when verify_chain returned InvalidChain, in which case we expect
+        // update_fork_choice to be called with a previous valid head block hash
 
-        BlockNum forking_point = canonical_chain_.find_forking_point(tx_, head_block_hash);  // the forking origin on the canonical
+        auto verification = verify_chain(head_block_hash);
 
-        auto unwind_result = pipeline_.unwind(tx_, forking_point);
-        success_or_throw(unwind_result);  // unwind must complete with success
+        if (!std::holds_alternative<ValidChain>(verification)) return false;
 
-        // remove last part of canonical
-        canonical_chain_.delete_down_to(forking_point);
-
-        current_status_ = ValidChain{.current_point = forking_point};
+        ensure_invariant(canonical_chain_.current_head().hash == head_block_hash,
+                         "canonical head not aligned with fork choice");
     }
 
-    is_first_sync = false;
+    last_fork_choice_ = canonical_chain_.current_head();
 
-    // finish
-    tx_.enable_commit();
-    tx_.commit_and_renew();  // todo for PoS: commit the correct shard and discard the others
+    is_first_sync = false;
 
     return true;
 }

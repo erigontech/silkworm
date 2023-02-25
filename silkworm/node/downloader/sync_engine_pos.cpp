@@ -46,10 +46,6 @@ PoSSync::PoSSync(BlockExchange& be, stagedsync::ExecutionEngine& ee)
 
 // Wait for blocks arrival from BlockExchange and insert them into ExecutionEngine
 void PoSSync::execution_loop() {
-    using namespace stagedsync;
-    using ValidChain = ExecutionEngine::ValidChain;
-    using ValidationError = ExecutionEngine::ValidationError;
-    using InvalidChain = ExecutionEngine::InvalidChain;
     using ResultQueue = BlockExchange::ResultQueue;
 
     ResultQueue& downloading_queue = block_exchange_.result_queue();
@@ -137,7 +133,7 @@ Block PoSSync::make_execution_block(const ExecutionPayload& payload) {
     return block;
 }
 
-void PoSSync::validate_execution_block(evmc::bytes32 blockHash, const Block& block) {
+void PoSSync::validate_execution_block(evmc::bytes32 /*blockHash*/, const Block&) {
     // use consensus VerifyHeader?
 }
 
@@ -149,7 +145,6 @@ bool PoSSync::extends_canonical(const Block& block) {
 PayloadStatus PoSSync::new_payload(const ExecutionPayload& payload, seconds_t /*timeout*/) {
     using ValidChain = stagedsync::ExecutionEngine::ValidChain;
     using InvalidChain = stagedsync::ExecutionEngine::InvalidChain;
-    using ValidationError = stagedsync::ExecutionEngine::ValidationError;
     constexpr evmc::bytes32 kZeroHash = 0x0000000000000000000000000000000000000000000000000000000000000000_bytes32;
 
     try {
@@ -202,16 +197,19 @@ PayloadStatus PoSSync::fork_choice_update(const ForkChoiceState& /*state*/,
                                           const std::optional<PayloadAttributes>& /*attributes*/, seconds_t /*timeout*/) {
     // Implementation of engine_forkchoiceUpdatedV1 method
     ensure_invariant(false, "fork_choice_update not implemented");
+    return {.status = PayloadStatus::kInvalid};
 }
 
 ExecutionPayload PoSSync::get_payload(std::string /*payloadId*/, seconds_t /*timeout*/) {
     // Implementation of engine_getPayloadV1 method
     ensure_invariant(false, "get_payload not implemented");
+    return {};
 }
 
 TransitionConfiguration PoSSync::exchange_transition_config(const TransitionConfiguration& /*config*/, seconds_t /*timeout*/) {
     // Implementation of engine_exchangeTransitionConfigurationV1 method
     ensure_invariant(false, "exchange_transition_config not implemented");
+    return {};
 }
 
 }  // namespace silkworm::chainsync::pos

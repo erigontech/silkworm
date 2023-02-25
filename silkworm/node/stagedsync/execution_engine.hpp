@@ -104,7 +104,7 @@ class ExecutionEngine : public Stoppable {
     NodeSettings& node_settings_;
     db::RWAccess db_access_;
     db::RWTxn tx_;
-    bool is_first_sync{true};
+    bool is_first_sync_{true};
     // lru_cache<Hash, BlockHeader> header_cache_;  // use cache if it improves performances
 
     ExecutionPipeline pipeline_;

@@ -100,7 +100,7 @@ TEST_CASE("ExecutionEngine") {
         REQUIRE(present);
 
         auto progress = execution_engine.get_block_progress();
-        REQUIRE(progress == initial_progress);  // headers and bodies progress will change with pipeline execution
+        REQUIRE(progress == 1);
 
         auto canonical_head = execution_engine.get_canonical_head();
         REQUIRE(canonical_head == initial_canonical_head);  // doesn't change

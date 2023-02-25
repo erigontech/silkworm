@@ -192,7 +192,7 @@ void ExecutionEngine::insert_blocks(std::vector<std::shared_ptr<BLOCK>>& blocks)
         insert_body(*block);
     });
 
-    // we can commit here, and then use the last record in the kHeaders table to respond to get_block_progress()
+    if (is_first_sync_) tx_.commit_and_renew();
 }
 
 // we need template explicit instantiation
@@ -206,9 +206,8 @@ auto ExecutionEngine::verify_chain(Hash head_block_hash) -> VerificationResult {
     ensure_invariant(header.has_value(), "header to verify non present");
 
     // db commit policy
-    bool commit_at_each_stage = is_first_sync || header->number - canonical_chain_.current_head().number > 4096;
-    if (!commit_at_each_stage)
-        tx_.disable_commit();
+    bool commit_at_each_stage = is_first_sync_;
+    if (!commit_at_each_stage) tx_.disable_commit();
 
     // the new head is on a new fork?
     BlockNum forking_point = canonical_chain_.find_forking_point(tx_, head_block_hash);  // the forking origin
@@ -262,7 +261,7 @@ auto ExecutionEngine::verify_chain(Hash head_block_hash) -> VerificationResult {
     // finish
     canonical_status_ = verify_result;
     tx_.enable_commit();
-    tx_.commit_and_renew();
+    if (commit_at_each_stage) tx_.commit_and_renew();
     return verify_result;
 }
 
@@ -280,9 +279,11 @@ bool ExecutionEngine::notify_fork_choice_updated(Hash head_block_hash) {
                          "canonical head not aligned with fork choice");
     }
 
+    tx_.commit_and_renew();
+
     last_fork_choice_ = canonical_chain_.current_head();
 
-    is_first_sync = false;
+    is_first_sync_ = false;
 
     return true;
 }
@@ -352,14 +353,13 @@ auto ExecutionEngine::get_body(Hash header_hash) -> std::optional<BlockBody> {
 }
 
 auto ExecutionEngine::get_block_progress() -> BlockNum {
-    // header progress
-    auto header_progress = db::stages::read_stage_progress(tx_, db::stages::kHeadersKey);
-    // body progress must be the same for bodies, here we read it only to check the invariant
-    auto body_progress = db::stages::read_stage_progress(tx_, db::stages::kBlockBodiesKey);
-    ensure_invariant(header_progress == body_progress, "header and body progress mismatch: " +
-                                                           std::to_string(header_progress) + " != " + std::to_string(body_progress));
-    // return one
-    return header_progress;
+    BlockNum block_progress = 0;
+
+    read_headers_in_reverse_order(tx_, 1, [&block_progress](BlockHeader&& header) {
+        block_progress = header.number;
+    });
+
+    return block_progress;
 }
 
 auto ExecutionEngine::get_canonical_head() -> ChainHead {

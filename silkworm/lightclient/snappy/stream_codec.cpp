@@ -522,13 +522,14 @@ class FramingDecompressor : public boost::iostreams::multichar_input_filter {
         }
 
         std::streamsize read(char* s, std::streamsize n) {
+            using traits_type = boost::iostreams::char_traits<char_type>;
             std::streamsize result = 0;
 
             // Copy characters from putback buffer
             auto pb_size = static_cast<std::streamsize>(putback_.size());
             if (offset_ < pb_size) {
                 result = (std::min)(n, pb_size - offset_);
-                BOOST_IOSTREAMS_CHAR_TRAITS(char)::copy(s, putback_.data() + offset_, result);
+                traits_type::copy(s, putback_.data() + offset_, static_cast<std::size_t>(result));
                 offset_ += result;
                 if (result == n) {
                     return result;

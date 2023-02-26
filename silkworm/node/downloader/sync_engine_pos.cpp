@@ -137,9 +137,9 @@ void PoSSync::validate_execution_block(evmc::bytes32 /*blockHash*/, const Block&
     // use consensus VerifyHeader?
 }
 
-bool PoSSync::extends_canonical(const Block& block) {
-    auto canonical_parent = exec_engine_.get_canonical_hash(block.header.number - 1);
-    return canonical_parent == block.header.parent_hash;
+bool PoSSync::extends_canonical(const Block& block, Hash block_hash) {
+    // specs are not clear on the meaning of extends_canonical, we implement this as follows
+    return exec_engine_.extends_last_fork_choice(block.header.number, block_hash);
 }
 
 PayloadStatus PoSSync::new_payload(const ExecutionPayload& payload, seconds_t /*timeout*/) {
@@ -162,26 +162,26 @@ PayloadStatus PoSSync::new_payload(const ExecutionPayload& payload, seconds_t /*
             return {.status = PayloadStatus::kSyncing};  // .latestValidHash = nullopt
         }
 
-        if (extends_canonical(block)) {
-            exec_engine_.insert_block(block);
-            auto verification = exec_engine_.verify_chain(block_hash);
-
-            if (std::holds_alternative<ValidChain>(verification)) {
-                // VALID
-                return {.status = PayloadStatus::kValid, .latest_valid_hash = block_hash};
-            } else if (std::holds_alternative<InvalidChain>(verification)) {
-                // INVALID
-                auto invalid_chain = std::get<InvalidChain>(verification);
-                Hash latest_valid_hash = invalid_chain.unwind_point < TRANSITION_BLOCK
-                                             ? kZeroHash
-                                             : invalid_chain.unwind_head;  // todo: check!
-                return {.status = PayloadStatus::kInvalid, .latest_valid_hash = latest_valid_hash};
-            } else {
-                // ERROR
-                return {PayloadStatus::kInvalid, std::nullopt, "unknown execution error"};
-            }
-        } else {
+        if (!extends_canonical(block, block_hash)) {
             return {PayloadStatus::kAccepted};  // .latestValidHash = nullopt
+        }
+
+        exec_engine_.insert_block(block);
+        auto verification = exec_engine_.verify_chain(block_hash);
+
+        if (std::holds_alternative<ValidChain>(verification)) {
+            // VALID
+            return {.status = PayloadStatus::kValid, .latest_valid_hash = block_hash};
+        } else if (std::holds_alternative<InvalidChain>(verification)) {
+            // INVALID
+            auto invalid_chain = std::get<InvalidChain>(verification);
+            Hash latest_valid_hash = invalid_chain.unwind_point < TRANSITION_BLOCK
+                                         ? kZeroHash
+                                         : invalid_chain.unwind_head;  // todo: check!
+            return {.status = PayloadStatus::kInvalid, .latest_valid_hash = latest_valid_hash};
+        } else {
+            // ERROR
+            return {PayloadStatus::kInvalid, std::nullopt, "unknown execution error"};
         }
 
     } catch (const PayloadValidationError& e) {

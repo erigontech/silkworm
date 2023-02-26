@@ -265,7 +265,7 @@ auto ExecutionEngine::verify_chain(Hash head_block_hash) -> VerificationResult {
     return verify_result;
 }
 
-bool ExecutionEngine::notify_fork_choice_updated(Hash head_block_hash) {
+bool ExecutionEngine::notify_fork_choice_update(Hash head_block_hash) {
     if (canonical_chain_.current_head().hash != head_block_hash) {
         // usually update_fork_choice must follow verify_chain with the same header
         // except when verify_chain returned InvalidChain, in which case we expect
@@ -380,6 +380,19 @@ auto ExecutionEngine::get_last_headers(BlockNum limit) -> std::vector<BlockHeade
     });
 
     return headers;
+}
+
+auto ExecutionEngine::extends_last_fork_choice(BlockNum height, Hash hash) -> bool {
+    while (height > last_fork_choice_.number) {
+        auto header = get_header(height, hash);
+        if (!header) return false;
+        if (header->parent_hash == last_fork_choice_.hash) return true;
+        height--;
+        hash = header->parent_hash;
+    }
+    if (height == last_fork_choice_.number) return hash == last_fork_choice_.hash;
+
+    return false;
 }
 
 }  // namespace silkworm::stagedsync

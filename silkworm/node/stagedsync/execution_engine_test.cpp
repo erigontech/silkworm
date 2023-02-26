@@ -143,7 +143,7 @@ TEST_CASE("ExecutionEngine") {
         REQUIRE(present_in_canonical);
 
         // reverting the chain
-        execution_engine.notify_fork_choice_updated(*header0_hash);
+        execution_engine.notify_fork_choice_update(*header0_hash);
 
         // checking the status
         present_in_canonical = execution_engine.get_canonical_hash(block1.header.number);
@@ -184,6 +184,7 @@ TEST_CASE("ExecutionEngine") {
         auto decoding_result = rlp::decode(encoded_view, block1.header);
         // Note: block1 has zero transactions and zero ommers on mainnet
         REQUIRE(decoding_result);
+        auto block1_hash = block1.header.hash();
 
         // getting initial status
         auto initial_progress = execution_engine.get_block_progress();
@@ -199,7 +200,7 @@ TEST_CASE("ExecutionEngine") {
 
         // inserting & verifying the block
         execution_engine.insert_block(block1);
-        auto verification = execution_engine.verify_chain(block1.header.hash());
+        auto verification = execution_engine.verify_chain(block1_hash);
 
         REQUIRE(holds_alternative<ValidChain>(verification));
         auto valid_chain = std::get<ValidChain>(verification);
@@ -207,15 +208,15 @@ TEST_CASE("ExecutionEngine") {
 
         // check status
         REQUIRE(execution_engine.pipeline_.head_header_number() == block1.header.number);
-        REQUIRE(execution_engine.pipeline_.head_header_hash() == block1.header.hash());
+        REQUIRE(execution_engine.pipeline_.head_header_hash() == block1_hash);
 
         auto final_canonical_head = execution_engine.get_canonical_head();
         REQUIRE(final_canonical_head.height == block1.header.number);
-        REQUIRE(final_canonical_head.hash == block1.header.hash());
+        REQUIRE(final_canonical_head.hash == block1_hash);
         REQUIRE(final_canonical_head.total_difficulty > initial_canonical_head.total_difficulty);
 
         REQUIRE(execution_engine.canonical_chain_.current_head().number == block1.header.number);
-        REQUIRE(execution_engine.canonical_chain_.current_head().hash == block1.header.hash());
+        REQUIRE(execution_engine.canonical_chain_.current_head().hash == block1_hash);
 
         auto current_status = execution_engine.current_status();
         REQUIRE(holds_alternative<ValidChain>(current_status));
@@ -223,14 +224,14 @@ TEST_CASE("ExecutionEngine") {
 
         // check db content
         BlockBody saved_body;
-        bool present = db::read_body(tx, block1.header.hash(), block1.header.number, saved_body);
+        bool present = db::read_body(tx, block1_hash, block1.header.number, saved_body);
         REQUIRE(present);
 
         auto present_in_canonical = execution_engine.get_canonical_hash(block1.header.number);
         REQUIRE(present_in_canonical);
 
         // confirming the chain
-        execution_engine.notify_fork_choice_updated(block1.header.hash());
+        execution_engine.notify_fork_choice_update(block1_hash);
 
         // checking the status
         present_in_canonical = execution_engine.get_canonical_hash(block1.header.number);
@@ -238,9 +239,32 @@ TEST_CASE("ExecutionEngine") {
 
         final_canonical_head = execution_engine.get_canonical_head();
         REQUIRE(final_canonical_head.height == block1.header.number);
-        REQUIRE(final_canonical_head.hash == block1.header.hash());
+        REQUIRE(final_canonical_head.hash == block1_hash);
         REQUIRE(execution_engine.canonical_chain_.current_head().number == block1.header.number);
-        REQUIRE(execution_engine.canonical_chain_.current_head().hash == block1.header.hash());
+        REQUIRE(execution_engine.canonical_chain_.current_head().hash == block1_hash);
+
+        // testing other methods
+        Block block1b;
+        block1b.header.number = 1;
+        block1b.header.difficulty = 1'000'000'000;  // a random value
+        block1b.header.parent_hash = *header0_hash;
+        execution_engine.insert_block(block1b);
+        bool extends_canonical = execution_engine.extends_last_fork_choice(block1b.header.number, block1b.header.hash());
+        CHECK(!extends_canonical);
+        Block block2;
+        block2.header.number = 2;
+        block2.header.difficulty = 1'171'480'576;  // a random value
+        block2.header.parent_hash = block1_hash;
+        execution_engine.insert_block(block2);
+        extends_canonical = execution_engine.extends_last_fork_choice(block2.header.number, block2.header.hash());
+        CHECK(extends_canonical);
+        Block block3;
+        block3.header.number = 3;
+        block3.header.difficulty = 1'171'480'576;  // a random value
+        block3.header.parent_hash = block2.header.hash();
+        execution_engine.insert_block(block3);
+        extends_canonical = execution_engine.extends_last_fork_choice(block3.header.number, block3.header.hash());
+        CHECK(extends_canonical);
     }
 }
 

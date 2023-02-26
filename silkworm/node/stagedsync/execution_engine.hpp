@@ -56,7 +56,7 @@ class ExecutionEngine : public Stoppable {
 
     auto verify_chain(Hash head_block_hash) -> VerificationResult;
 
-    bool notify_fork_choice_updated(Hash head_block_hash);
+    bool notify_fork_choice_update(Hash head_block_hash);
 
     // state
     auto current_status() -> VerificationResult;
@@ -70,6 +70,7 @@ class ExecutionEngine : public Stoppable {
     auto get_header_td(BlockNum, Hash) -> std::optional<Total_Difficulty>;
     auto get_body(Hash) -> std::optional<BlockBody>;
     auto get_last_headers(BlockNum limit) -> std::vector<BlockHeader>;
+    auto extends_last_fork_choice(BlockNum, Hash) -> bool;
 
   protected:
     void insert_header(const BlockHeader&);

@@ -373,17 +373,13 @@ void ChunkBody::reset(const ChunkHeader& header) {
 
 class FramingDecompressor : public boost::iostreams::multichar_input_filter {
   public:
-    explicit FramingDecompressor() : state_{kStart}, magic_body_{magic_header_}, body_{header_} {
-        //decode_buffer_.reserve(kMaxBlockSize);
-        buffer_.reserve(kMaxEncodedLenOfMaxBlockSize + kChecksumSize);
-    }
+    explicit FramingDecompressor() : state_{kStart}, magic_body_{magic_header_}, body_{header_} {}
 
     template<typename Source>
     std::streamsize read(Source& src, char* s, std::streamsize n) {
         using traits_type = boost::iostreams::char_traits<char_type>;
         std::streamsize result = 0;
 
-        PeekableSource<Source> peek{src, putback_};
         while (result < n && state_ != kDone) {
             switch (state_) {
                 case kStart: {
@@ -392,7 +388,7 @@ class FramingDecompressor : public boost::iostreams::multichar_input_filter {
                     break;
                 }
                 case kStreamHeader: {
-                    const traits_type::int_type c = boost::iostreams::get(peek);
+                    const traits_type::int_type c = boost::iostreams::get(src);
                     if (traits_type::is_eof(c)) {
                         throw std::runtime_error{"invalid snappy: unexpected EOF in stream header"};
                     } else if (traits_type::would_block(c)) {
@@ -412,7 +408,7 @@ class FramingDecompressor : public boost::iostreams::multichar_input_filter {
                     break;
                 }
                 case kStreamBody: {
-                    const traits_type::int_type c = boost::iostreams::get(peek);
+                    const traits_type::int_type c = boost::iostreams::get(src);
                     if (traits_type::is_eof(c)) {
                         throw std::runtime_error{"invalid snappy: unexpected EOF in stream body"};
                     } else if (traits_type::would_block(c)) {
@@ -420,25 +416,16 @@ class FramingDecompressor : public boost::iostreams::multichar_input_filter {
                     }
                     magic_body_.process(c);
                     if (magic_body_.done()) {
-                        const traits_type::int_type i = boost::iostreams::get(peek);
-                        if (traits_type::is_eof(i)) {
-                            state_ = kDone;
-                        } else {
-                            std::string back;
-                            back.push_back(i);
-                            peek.putback(back);
-                            //magic_header_.reset();
-                            //magic_body_.reset(magic_header_);
-                            state_ = kChunkHeader;
-                        }
+                        magic_header_.reset();
+                        magic_body_.reset(magic_header_);
+                        state_ = kChunkHeader;
                     }
                     break;
                 }
                 case kChunkHeader: {
-                    const traits_type::int_type c = boost::iostreams::get(peek);
+                    const traits_type::int_type c = boost::iostreams::get(src);
                     if (traits_type::is_eof(c)) {
                         if (header_.pristine()) {
-                            result = -1;
                             state_ = kDone;
                             break;
                         } else {
@@ -455,7 +442,7 @@ class FramingDecompressor : public boost::iostreams::multichar_input_filter {
                     break;
                 }
                 case kChunkBody: {
-                    const traits_type::int_type c = boost::iostreams::get(peek);
+                    const traits_type::int_type c = boost::iostreams::get(src);
                     if (traits_type::is_eof(c)) {
                         throw std::runtime_error{"invalid snappy: unexpected EOF in chunk body"};
                     } else if (traits_type::would_block(c)) {
@@ -465,6 +452,7 @@ class FramingDecompressor : public boost::iostreams::multichar_input_filter {
                     result++;
                     if (body_.done()) {
                         if (header_.chunk_type() == kChunkTypeStreamIdentifier) {
+                            result = -1;
                             header_.reset();
                             body_.reset(header_);
                             state_ = kChunkHeader;
@@ -476,17 +464,9 @@ class FramingDecompressor : public boost::iostreams::multichar_input_filter {
                             //std::cout << "sss: " << to_hex(Bytes{body_buffer.cbegin(), body_buffer.cend()}) << "\n" << std::flush;
                             result = static_cast<std::streamsize>(body_buffer.size());
 
-                            const traits_type::int_type i = boost::iostreams::get(peek);
-                            if (traits_type::is_eof(i)) {
-                                state_ = kDone;
-                            } else {
-                                std::string back;
-                                back.push_back(i);
-                                peek.putback(back);
-                                header_.reset();
-                                body_.reset(header_);
-                                state_ = kChunkHeader;
-                            }
+                            header_.reset();
+                            body_.reset(header_);
+                            state_ = kChunkHeader;
                         }
                     }
                     break;
@@ -496,79 +476,16 @@ class FramingDecompressor : public boost::iostreams::multichar_input_filter {
                 }
             }
         }
-        if (peek.has_unconsumed_input()) {
-            putback_ = peek.unconsumed_input();
-        } else {
-            putback_.clear();
-        }
 
         return result != 0 || state_ != kDone ? result : -1;
     }
 
     template<typename Source>
-    void close(Source& /*src*/) {  // NOLINT()
+    void close(Source& /*src*/) {  // NOLINT
         state_ = kStart;
     }
 
   private:
-    // Source adapter allowing an arbitrary character sequence to be put back
-    template<typename Source>
-    struct PeekableSource {
-        using char_type [[maybe_unused]] = char;
-        struct category : boost::iostreams::source_tag, boost::iostreams::peekable_tag {};
-
-        explicit PeekableSource(Source& src, std::string putback = "")
-            : src_(src), putback_(std::move(putback)), offset_(0) {
-        }
-
-        std::streamsize read(char* s, std::streamsize n) {
-            using traits_type = boost::iostreams::char_traits<char_type>;
-            std::streamsize result = 0;
-
-            // Copy characters from putback buffer
-            auto pb_size = static_cast<std::streamsize>(putback_.size());
-            if (offset_ < pb_size) {
-                result = (std::min)(n, pb_size - offset_);
-                traits_type::copy(s, putback_.data() + offset_, static_cast<std::size_t>(result));
-                offset_ += result;
-                if (result == n) {
-                    return result;
-                }
-            }
-
-            // Read characters from source
-            std::streamsize amt = boost::iostreams::read(src_, s + result, n - result);
-            return amt != -1 ? result + amt : result ? result : -1;
-        }
-
-        bool putback(char c) {
-            if (offset_) {
-                putback_[static_cast<std::size_t>(--offset_)] = c;
-            } else {
-                boost::throw_exception(boost::iostreams::detail::bad_putback());
-            }
-            return true;
-        }
-
-        void putback(const std::string& s) {
-            putback_.replace(0, static_cast<std::size_t>(offset_), s);
-            offset_ = 0;
-        }
-
-        // Returns true if some characters have been putback but not re-read
-        [[nodiscard]] bool has_unconsumed_input() const {
-            return offset_ < static_cast<std::streamsize>(putback_.size());
-        }
-
-        // Returns the sequence of characters that have been put back but not re-read
-        [[nodiscard]] std::string unconsumed_input() const {
-            return {putback_, static_cast<std::size_t>(offset_), putback_.size() - static_cast<std::size_t>(offset_)};
-        }
-        Source& src_;
-        std::string putback_;
-        std::streamsize offset_;
-    };
-
     template<typename Source>
     static std::streamsize read_n(Source& src, std::string& data, std::streamsize n) {
         using traits_type = boost::iostreams::char_traits<char_type>;
@@ -614,11 +531,6 @@ class FramingDecompressor : public boost::iostreams::multichar_input_filter {
 
     ChunkHeader header_;
     ChunkBody body_;
-
-    std::string putback_;
-
-    //! Compressed buffer containing one max block plus checksum at most (i.e. kMaxEncodedLenOfMaxBlockSize + kChecksumSize)
-    std::string buffer_;
 };
 
 std::string framing_compress(std::string_view uncompressed) {

@@ -20,7 +20,15 @@
 #include <utility>
 
 #include <boost/crc.hpp>
+// GCC 12.x with x < 3 emit bogus restrict warning: https://gcc.gnu.org/bugzilla/show_bug.cgi?id=105329
+#if !defined(__clang__) && defined(__GNUC__) && __GNUC__ == 12 && __GNUC_MINOR__ < 3
+  #pragma GCC diagnostic push
+  #pragma GCC diagnostic ignored "-Wrestrict"
+#endif  // __GNUC__
 #include <boost/iostreams/device/back_inserter.hpp>
+#if !defined(__clang__) && defined(__GNUC__) && __GNUC__ == 12 && __GNUC_MINOR__ < 3
+  #pragma GCC diagnostic pop
+#endif  // __GNUC__
 #include <boost/iostreams/filtering_stream.hpp>
 #include <boost/range/iterator_range.hpp>
 #include <snappy.h>

@@ -489,24 +489,19 @@ class FramingDecompressor : public boost::iostreams::multichar_input_filter {
     template<typename Source>
     static std::streamsize read_n(Source& src, std::string& data, std::streamsize n) {
         using traits_type = boost::iostreams::char_traits<char_type>;
-        static int count{0};
 
         std::streamsize result = 0;
         traits_type::int_type c = traits_type::good();
         while (result < n && !traits_type::is_eof(c)) {
             c = boost::iostreams::get(src);
             if (traits_type::would_block(c)) {
-                std::cout << "would_block c=" << c << " result=" << result << "\n" << std::flush;
                 return result;
             }
             if (traits_type::is_eof(c)) {
-                std::cout << "c=" << c << " n=" << n << " result=" << result << " buffer.size()=" << data.size() << " count=" << count << "\n" << std::flush;
                 return -1;
             }
             data.push_back(traits_type::to_char_type(c));
             result++;
-            count++;
-            std::cout << "c=" << c << " n=" << n << " result=" << result << " buffer.size()=" << data.size() << " count=" << count << "\n" << std::flush;
         }
         SILKWORM_ASSERT(result == n);
         return result;

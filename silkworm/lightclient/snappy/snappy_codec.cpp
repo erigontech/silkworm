@@ -32,6 +32,37 @@ bool is_valid_compressed_data(ByteView data) {
     return compressed == data;
 }
 
+//! Apply Snappy block-format compression
+std::string compress(std::string_view input) {
+    std::string output;
+    output.resize(::snappy::MaxCompressedLength(input.size()));
+
+    size_t compressed_length;
+    ::snappy::RawCompress(input.data(), input.size(), output.data(), &compressed_length);
+    output.resize(compressed_length);
+
+    return output;
+}
+
+//! Apply Snappy block-format decompression
+std::string decompress(std::string_view input) {
+    std::size_t uncompressed_length;
+    bool ok = ::snappy::GetUncompressedLength(input.data(), input.size(), &uncompressed_length);
+    if (!ok) {
+        throw std::runtime_error("invalid snappy uncompressed length");
+    }
+
+    std::string output;
+    output.resize(uncompressed_length);
+
+    ok = ::snappy::RawUncompress(input.data(), input.size(), output.data());
+    if (!ok) {
+        throw std::runtime_error("invalid snappy data");
+    }
+
+    return output;
+}
+
 Bytes compress(ByteView data) {
     Bytes output;
     output.resize(::snappy::MaxCompressedLength(data.size()));

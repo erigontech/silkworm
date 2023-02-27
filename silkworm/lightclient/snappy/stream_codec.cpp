@@ -35,6 +35,50 @@
 #include <snappy.h>
 
 #include <silkworm/core/common/base.hpp>
+#include <silkworm/lightclient/snappy/snappy_codec.hpp>
+
+namespace silkworm::snappy {
+
+enum class FramingErrorCode {
+    kMissingStreamIdentifier = 100,
+    kCorruptedMagicBody = 101,
+    kCorruptedChunk = 102,
+    kReservedUnskippableChunk = 103,
+};
+
+}  // namespace silkworm::snappy
+
+namespace {  // anonymous namespace
+
+using namespace silkworm::snappy;
+
+struct SnappyFramingErrorCategory : std::error_category {
+    [[nodiscard]] const char* name() const noexcept override;
+    [[nodiscard]] std::string message(int ev) const override;
+};
+
+const char* SnappyFramingErrorCategory::name() const noexcept {
+    return "snappy_framing";
+}
+
+std::string SnappyFramingErrorCategory::message(int ev) const {
+    switch (static_cast<FramingErrorCode>(ev)) {
+        case FramingErrorCode::kMissingStreamIdentifier:
+            return "missing stream identifier";
+        case FramingErrorCode::kCorruptedMagicBody:
+            return "corrupted magic body";
+        case FramingErrorCode::kCorruptedChunk:
+            return "corrupted chunk";
+        case FramingErrorCode::kReservedUnskippableChunk:
+            return "reserved unskippable chunk";
+        default:
+            return "unknown error";
+    }
+}
+
+const SnappyFramingErrorCategory kSnappyFramingErrorCategory{};
+
+}  // anonymous namespace
 
 namespace silkworm::snappy {
 
@@ -68,32 +112,15 @@ static uint32_t masked_crc32c(std::string_view buffer) {
     return uint32_t(c >> 15 | c << 17) + 0xa282ead8;
 }
 
-//! Apply Snappy block-format compression
-std::string compress(std::string_view input) {
-    std::string output;
-    output.resize(::snappy::MaxCompressedLength(input.size()));
-
-    size_t compressed_length;
-    ::snappy::RawCompress(input.data(), input.size(), output.data(), &compressed_length);
-    output.resize(compressed_length);
-
-    return output;
+std::error_code make_error_code(FramingErrorCode e) {
+    return {static_cast<int>(e), kSnappyFramingErrorCategory};
 }
 
-//! Apply Snappy block-format decompression
-std::string decompress(std::string_view input) {
-    std::size_t uncompressed_length;
-    bool ok = ::snappy::GetUncompressedLength(input.data(), input.size(), &uncompressed_length);
-    if (!ok) throw std::runtime_error("invalid snappy uncompressed length");
-
-    std::string output;
-    output.resize(uncompressed_length);
-
-    ok = ::snappy::RawUncompress(input.data(), input.size(), output.data());
-    if (!ok) throw std::runtime_error("invalid snappy data");
-
-    return output;
-}
+class FramingError : public std::ios_base::failure {
+  public:
+    explicit FramingError(const std::string& msg, FramingErrorCode code)
+        : std::ios_base::failure(msg, make_error_code(code)) {}
+};
 
 class FramingCompressor : public boost::iostreams::multichar_output_filter {
   public:
@@ -291,7 +318,7 @@ void ChunkBody::process(char c) {
             encoded_buffer_.push_back(c);
             if (encoded_buffer_.size() == header_.chunk_length()) {
                 if (encoded_buffer_ != kMagicBody) {
-                    throw std::runtime_error{"invalid snappy: corrupted magic body"};
+                    throw FramingError{"invalid body", FramingErrorCode::kCorruptedMagicBody};
                 }
                 state_ = kDone;
             }
@@ -300,7 +327,7 @@ void ChunkBody::process(char c) {
         case kCompressedData: {
             // Section 4.2. Compressed data (chunk type 0x00)
             if (header_.chunk_length() < kChecksumSize) {
-                throw std::runtime_error{"invalid snappy: corrupted compressed chunk"};
+                throw FramingError{"compressed length too low", FramingErrorCode::kCorruptedChunk};
             }
             encoded_buffer_.push_back(c);
             if (encoded_buffer_.size() == header_.chunk_length()) {
@@ -308,10 +335,10 @@ void ChunkBody::process(char c) {
                 const auto data_length = header_.chunk_length() - kChecksumSize;
                 auto uncompressed = decompress({encoded_buffer_.data() + kChecksumSize, data_length});
                 if (uncompressed.length() > kMaxBlockSize) {
-                    throw std::runtime_error{"invalid snappy: max block size exceeded in compressed chunk"};
+                    throw FramingError{"compressed max block size exceeded", FramingErrorCode::kCorruptedChunk};
                 }
                 if (masked_crc32c(uncompressed) != checksum) {
-                    throw std::runtime_error{"invalid snappy: compressed chunk checksum error"};
+                    throw FramingError{"compressed wrong checksum", FramingErrorCode::kCorruptedChunk};
                 }
                 decoded_buffer_ = std::move(uncompressed);
                 state_ = kDone;
@@ -321,18 +348,18 @@ void ChunkBody::process(char c) {
         case kUncompressedData: {
             // Section 4.3. Uncompressed data (chunk type 0x01)
             if (header_.chunk_length() < kChecksumSize) {
-                throw std::runtime_error{"invalid snappy: corrupted uncompressed chunk"};
+                throw FramingError{"uncompressed length too low", FramingErrorCode::kCorruptedChunk};
             }
             encoded_buffer_.push_back(c);
             if (encoded_buffer_.size() == header_.chunk_length()) {
                 const auto checksum = load_little_u32(reinterpret_cast<const uint8_t*>(encoded_buffer_.data()));
                 const auto data_length = header_.chunk_length() - kChecksumSize;
                 if (data_length > kMaxBlockSize) {
-                    throw std::runtime_error{"invalid snappy: max block size exceeded in uncompressed chunk"};
+                    throw FramingError{"uncompressed max block size exceeded", FramingErrorCode::kCorruptedChunk};
                 }
                 std::string_view uncompressed{encoded_buffer_.data() + kChecksumSize, data_length};
                 if (masked_crc32c(uncompressed) != checksum) {
-                    throw std::runtime_error{"invalid snappy: wrong checksum in uncompressed chunk"};
+                    throw FramingError{"uncompressed wrong checksum", FramingErrorCode::kCorruptedChunk};
                 }
                 decoded_buffer_ = uncompressed;
                 state_ = kDone;
@@ -380,7 +407,7 @@ void ChunkBody::reset(const ChunkHeader& header) {
         default: {
             if (chunk_type <= 0x7f) {
                 // Section 4.5. Reserved unskippable chunks (chunk types 0x02-0x7f)
-                throw std::runtime_error{"invalid snappy: reserved unskippable chunk"};
+                throw FramingError{"invalid chunk type", FramingErrorCode::kReservedUnskippableChunk};
             }
             state_ = kSkippableChunks;
         }
@@ -406,17 +433,17 @@ class FramingDecompressor : public boost::iostreams::multichar_input_filter {
                 case kStreamHeader: {
                     const traits_type::int_type c = boost::iostreams::get(src);
                     if (traits_type::is_eof(c)) {
-                        throw std::runtime_error{"invalid snappy: unexpected EOF in stream header"};
+                        throw FramingError{"unexpected EOF in stream header", FramingErrorCode::kMissingStreamIdentifier};
                     } else if (traits_type::would_block(c)) {
                         break;
                     }
                     magic_header_.process(c);
                     if (magic_header_.done()) {
                         if (magic_header_.chunk_type() != kChunkTypeStreamIdentifier) {
-                            throw std::runtime_error{"invalid snappy: bad stream identifier"};
+                            throw FramingError{"bad stream identifier", FramingErrorCode::kMissingStreamIdentifier};
                         }
                         if (magic_header_.chunk_length() != kMagicBody.size()) {
-                            throw std::runtime_error{"invalid snappy: wrong size for magic body"};
+                            throw FramingError{"wrong size for magic body", FramingErrorCode::kMissingStreamIdentifier};
                         }
                         magic_body_.reset(magic_header_);
                         state_ = kStreamBody;
@@ -426,7 +453,7 @@ class FramingDecompressor : public boost::iostreams::multichar_input_filter {
                 case kStreamBody: {
                     const traits_type::int_type c = boost::iostreams::get(src);
                     if (traits_type::is_eof(c)) {
-                        throw std::runtime_error{"invalid snappy: unexpected EOF in stream body"};
+                        throw FramingError{"unexpected EOF in stream body", FramingErrorCode::kMissingStreamIdentifier};
                     } else if (traits_type::would_block(c)) {
                         break;
                     }
@@ -445,7 +472,7 @@ class FramingDecompressor : public boost::iostreams::multichar_input_filter {
                             state_ = kDone;
                             break;
                         } else {
-                            throw std::runtime_error{"invalid snappy: unexpected EOF in chunk header"};
+                            throw FramingError{"unexpected EOF in chunk header", FramingErrorCode::kCorruptedChunk};
                         }
                     } else if (traits_type::would_block(c)) {
                         break;
@@ -460,7 +487,7 @@ class FramingDecompressor : public boost::iostreams::multichar_input_filter {
                 case kChunkBody: {
                     const traits_type::int_type c = boost::iostreams::get(src);
                     if (traits_type::is_eof(c)) {
-                        throw std::runtime_error{"invalid snappy: unexpected EOF in chunk body"};
+                        throw FramingError{"unexpected EOF in chunk body", FramingErrorCode::kCorruptedChunk};
                     } else if (traits_type::would_block(c)) {
                         break;
                     }
@@ -553,8 +580,10 @@ std::string framing_compress(std::string_view uncompressed) {
     output.push(boost::iostreams::back_inserter(compressed));
     output.write(uncompressed.data(), static_cast<std::streamsize>(uncompressed.size()));
     output.flush();
+    // Exception support in Boost IoStreams 1.81 seems broken: https://github.com/boostorg/iostreams/issues/151
+    // so we end up relying on basic std::ifstream error handling
     if (output.bad()) {
-        throw std::runtime_error{std::string{"snappy framing compression error: "} + std::strerror(errno)};
+        throw std::runtime_error{"snappy framing compression error"};
     }
 
     return compressed;
@@ -576,8 +605,10 @@ std::string framing_uncompress(std::string_view compressed) {
         }
         uncompressed.push_back(traits_type::to_char_type(c));
     }
+    // Exception support in Boost IoStreams 1.81 seems broken: https://github.com/boostorg/iostreams/issues/151
+    // so we end up relying on basic std::ifstream error handling
     if (input.bad()) {
-        throw std::runtime_error{std::string{"snappy framing decompression error: "} + std::strerror(errno)};
+        throw std::runtime_error{"snappy framing decompression error"};
     }
 
     return uncompressed;

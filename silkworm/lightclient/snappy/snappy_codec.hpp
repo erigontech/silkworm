@@ -16,6 +16,9 @@
 
 #pragma once
 
+#include <string>
+#include <string_view>
+
 #include <silkworm/core/common/base.hpp>
 
 namespace silkworm::snappy {
@@ -27,6 +30,10 @@ namespace silkworm::snappy {
 // Snappy block format description: https://github.com/google/snappy/blob/main/format_description.txt
 
 bool is_valid_compressed_data(ByteView data);
+
+std::string compress(std::string_view data);
+
+std::string decompress(std::string_view data);
 
 Bytes compress(ByteView data);
 

@@ -1,0 +1,48 @@
+@startuml
+'https://plantuml.com/component-diagram
+
+component Silkworm #LightYellow {
+    package "Execution Layer" {
+        package Core #LightGreen
+        package Node #Yellow
+        package Sentry #Pink
+        package RpcDaemon #Yellow
+        package Sync #Orange
+        package Consensus #Orange
+
+        database DataStore #LightGrey
+
+        Node -left-> DataStore
+        Node -right-> Core
+        'Sync -right-> Consensus
+        Node -up-> Sentry
+
+        Sync -up-> Node
+        RpcDaemon -up-> Node
+        'RpcDaemon -up-> DataStore
+    }
+
+    package "Consensus Layer" {
+        package LightClient #Yellow
+        package Sentinel #Pink
+
+        LightClient -up-> Sentinel
+    }
+
+    LightClient --> DataStore
+    LightClient --> Sync
+}
+
+together {
+interface BEACON_LIBP2P_IF #Blue
+}
+together {
+interface ETH1_DEVP2P_IF #Blue
+}
+interface ETH1_RPC_JSON_IF #Blue
+
+Sentry -left- ETH1_DEVP2P_IF
+Sentinel -right- BEACON_LIBP2P_IF
+RpcDaemon -down- ETH1_RPC_JSON_IF
+
+@enduml

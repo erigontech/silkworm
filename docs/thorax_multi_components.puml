@@ -1,0 +1,72 @@
+@startuml
+'https://plantuml.com/component-diagram
+
+package "Execution Layer" {
+
+    component Silkworm_Node <<runnable>> #LightYellow {
+        package Core #LightGreen
+        package Node #Yellow
+        database DataStore #LightGrey
+
+        Node -left-> DataStore
+        Node -right-> Core
+    }
+
+    component Silkworm_Sentry <<runnable>> #LightYellow {
+        package Sentry #Pink
+    }
+
+    component Silkworm_RpcDaemon <<runnable>> #LightYellow {
+        package RpcDaemon #Yellow
+    }
+
+    component Silkworm_Sync <<runnable>> #LightYellow {
+        package Sync #Orange
+        package Consensus #Orange
+
+        Consensus <-left- Sync
+    }
+
+    interface EL_P2P_IF #LightBlue
+    interface EXECUTION_IF #LightBlue
+    interface REMOTE_KV_IF #LightBlue
+    interface REMOTE_BE_IF #LightBlue
+
+    EXECUTION_IF -up- Node
+    EXECUTION_IF <-down- Sync
+    EL_P2P_IF <-down- Node
+
+    Node -- REMOTE_KV_IF
+    Node -- REMOTE_BE_IF
+    Sentry -down- EL_P2P_IF
+
+    REMOTE_KV_IF <-- RpcDaemon
+    REMOTE_BE_IF <-- RpcDaemon
+}
+
+package "Consensus Layer" {
+    component Silkworm_Sentinel <<runnable>> #LightYellow {
+        package Sentinel #Pink
+    }
+
+    component Silkworm_LightClient <<runnable>> #LightYellow {
+        package LightClient #Yellow
+    }
+
+    interface CL_P2P_IF #LightBlue
+
+    CL_P2P_IF -up- Sentinel
+    LightClient -up-> CL_P2P_IF
+    LightClient -right-> DataStore
+    LightClient -right-> Sync
+}
+
+interface ETH1_DEVP2P_IF #Blue
+interface BEACON_LIBP2P_IF #Blue
+interface ETH1_JSON_RPC_IF #Blue
+
+Sentry -up- ETH1_DEVP2P_IF
+Sentinel -up- BEACON_LIBP2P_IF
+RpcDaemon -down- ETH1_JSON_RPC_IF
+
+@enduml

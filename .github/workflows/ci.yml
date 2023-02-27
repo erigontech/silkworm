@@ -189,7 +189,7 @@ jobs:
     - name: Build
       working-directory: C:\build
       # Execute the build. You can specify a specific target with "--target <NAME>"
-      run: cmake --build . --config ${{ matrix.config.build_type }} -j 2
+      run: cmake --build . --config ${{ matrix.config.build_type }} -j 1
 
     - name: Test
       working-directory: C:\build

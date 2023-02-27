@@ -17,6 +17,7 @@
 #include "stream_codec.hpp"
 
 #include <algorithm>
+
 #include <catch2/catch.hpp>
 
 #include <silkworm/core/common/util.hpp>
@@ -77,12 +78,11 @@ TEST_CASE("Snappy: Framing format") {
         const Bytes src = build_uncompressed(kMaxBlockSize);
         CHECK(framing_roundtrip(src));
     }
-    /*SECTION("larger than maxBlockSize") {
-        // 1e6 was chosen because 1e6 / 10 = 1e5 is larger than max block size (64k)
-        //8*kMaxBlockSize
-        Bytes src = build_uncompressed(524288 + 13211 + 1);
+    SECTION("larger than maxBlockSize") {
+        // Uncompressed size 1e6 is chosen because 1e6 / 10 = 1e5 is larger than max block size (64k)
+        Bytes src = build_uncompressed(1e6);
         CHECK(framing_roundtrip(src));
-    }*/
+    }
     SECTION("single stream identifier") {
         CHECK(framing_uncompress(kSingleStreamIdentifier).empty());
     }

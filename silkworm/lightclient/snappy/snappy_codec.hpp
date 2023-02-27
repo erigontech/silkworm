@@ -20,6 +20,12 @@
 
 namespace silkworm::snappy {
 
+// Snappy is a compression/decompression library. It does not aim for maximum compression, or compatibility
+// with any other compression library; instead, it aims for very high speeds and reasonable compression.
+// Snappy can be used in one of two modes: block format and framing (a.k.a. stream) format
+
+// Snappy block format description: https://github.com/google/snappy/blob/main/format_description.txt
+
 bool is_valid_compressed_data(ByteView data);
 
 Bytes compress(ByteView data);

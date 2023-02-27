@@ -17,6 +17,7 @@
 #include "stream_codec.hpp"
 
 #include <fstream>
+#include <iostream>
 #include <utility>
 
 #include <boost/crc.hpp>
@@ -67,7 +68,7 @@ static uint32_t masked_crc32c(std::string_view buffer) {
     return uint32_t(c >> 15 | c << 17) + 0xa282ead8;
 }
 
-//! Compress
+//! Apply Snappy block-format compression
 std::string compress(std::string_view input) {
     std::string output;
     output.resize(::snappy::MaxCompressedLength(input.size()));
@@ -79,7 +80,7 @@ std::string compress(std::string_view input) {
     return output;
 }
 
-//! Decompress
+//! Apply Snappy block-format decompression
 std::string decompress(std::string_view input) {
     std::size_t uncompressed_length;
     bool ok = ::snappy::GetUncompressedLength(input.data(), input.size(), &uncompressed_length);
@@ -125,14 +126,18 @@ class FramingCompressor : public boost::iostreams::multichar_output_filter {
                 chunk_length = kChecksumSize + compressed.length();
             }
 
-            // Fill in the chunk header that comes before the body
-            if (const bool ok = write_chunk_header(dst, chunk_type, chunk_length, checksum); !ok) {
+            // Fill in the chunk header
+            if (const bool ok = write_chunk_header(dst, chunk_type, chunk_length); !ok) {
                 return n - rest;
             }
 
-            // Fill in the chunk body
+            // Fill in the chunk body: for compressed/uncompressed chunk types this is checksum followed by data
+            if (const bool ok = write_checksum(dst, checksum); !ok) {
+                return n - rest;
+            }
+
             std::string_view chunk_body = chunk_type == kChunkTypeCompressedData ? compressed : uncompressed;
-            if (const bool put_n_ok = write_n(dst, chunk_body); !put_n_ok) {
+            if (const bool ok = write_n(dst, chunk_body); !ok) {
                 return n - rest;
             }
             rest -= std::streamsize(uncompressed.length());
@@ -158,27 +163,30 @@ class FramingCompressor : public boost::iostreams::multichar_output_filter {
     }
 
     template<typename Sink>
-    static bool write_chunk_header(Sink& dst, uint8_t type, std::size_t length, uint32_t checksum) {
-        if (const bool ok = boost::iostreams::put(dst, char(type)); !ok) return false;
-        //if (const bool ok = boost::iostreams::put(s, char(length >> 0)); !ok) return false;
-        //if (const bool ok = boost::iostreams::put(s, char(length >> 8)); !ok) return false;
-        //if (const bool ok = boost::iostreams::put(s, char(length >> 16)); !ok) return false;
-        std::string buffer1{3, '\0'};
-        boost::endian::store_little_u24(reinterpret_cast<uint8_t*>(buffer1.data()), length);
-        const auto count = boost::iostreams::write(dst, buffer1.data(), 3);
-        if (count != 3) {
+    static bool write_chunk_header(Sink& dst, uint8_t type, std::size_t length) {
+        // Encode chunk type using 1 byte
+        if (const bool ok = boost::iostreams::put(dst, char(type)); !ok) {
             return false;
         }
-        std::string buffer{4, '\0'};
+        // Encode chunk length using 3 bytes in LE format
+        std::string length_buffer{kChunkLengthSize, '\0'};
+        boost::endian::store_little_u24(reinterpret_cast<uint8_t*>(length_buffer.data()), length);
+        const auto count = boost::iostreams::write(dst, length_buffer.data(), kChunkLengthSize);
+        if (count != kChunkLengthSize) {
+            return false;
+        }
+        return true;
+    }
+
+    template<typename Sink>
+    static bool write_checksum(Sink& dst, uint32_t checksum) {
+        // Encode checksum using 4 bytes in LE format
+        std::string buffer{kChecksumSize, '\0'};
         boost::endian::store_little_u32(reinterpret_cast<uint8_t*>(buffer.data()), checksum);
         const auto write_count = boost::iostreams::write(dst, buffer.data(), kChecksumSize);
         if (write_count != kChecksumSize) {
             return false;
         }
-        /*if (const bool ok = boost::iostreams::put(s, char(checksum >> 0)); !ok) return false;
-        if (const bool ok = boost::iostreams::put(s, char(checksum >> 8)); !ok) return false;
-        if (const bool ok = boost::iostreams::put(s, char(checksum >> 16)); !ok) return false;
-        if (const bool ok = boost::iostreams::put(s, char(checksum >> 24)); !ok) return false;*/
         return true;
     }
 
@@ -457,7 +465,6 @@ class FramingDecompressor : public boost::iostreams::multichar_input_filter {
                         break;
                     }
                     body_.process(c);
-                    result++;
                     if (body_.done()) {
                         if (header_.chunk_type() == kChunkTypeStreamIdentifier) {
                             result = -1;
@@ -468,10 +475,7 @@ class FramingDecompressor : public boost::iostreams::multichar_input_filter {
                         } else {
                             const auto body_buffer = body_.decoded_buffer();
                             traits_type::copy(s, body_buffer.data(), body_buffer.size());
-                            //std::cout << "s  : " << to_hex(Bytes{reinterpret_cast<uint8_t*>(s), body_buffer.size()}) << "\n" << std::flush;
-                            //std::cout << "sss: " << to_hex(Bytes{body_buffer.cbegin(), body_buffer.cend()}) << "\n" << std::flush;
                             result = static_cast<std::streamsize>(body_buffer.size());
-
                             header_.reset();
                             body_.reset(header_);
                             state_ = kChunkHeader;
@@ -575,8 +579,6 @@ std::string framing_uncompress(std::string_view compressed) {
     if (input.bad()) {
         throw std::runtime_error{std::string{"snappy framing decompression error: "} + std::strerror(errno)};
     }
-
-    //std::cout << "uncompressed.size()=" << uncompressed.size() << "\n" << std::flush;
 
     return uncompressed;
 }

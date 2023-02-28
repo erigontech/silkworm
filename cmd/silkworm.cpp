@@ -161,16 +161,6 @@ int main(int argc, char* argv[]) {
 
         // ConsensusEngine drives headers and bodies sync, implementing fork choice rules
         silkworm::chainsync::PoWSync sync{block_exchange, execution};
-        /*
-        std::unique_ptr<silkworm::chainsync::PoWSync> sync;
-
-        if (is_pow(node_settings.chain_config))
-            sync = std::make_unique<silkworm::chainsync::pow::PoWSync>(block_exchange, execution);
-        else (is_pos(node_settings.chain_config))
-            sync = std::make_unique<silkworm::chainsync::pos::PoWSync>(block_exchange, execution);
-        else
-            throw std::invalid_argument("Invalid chain config");
-        */
 
         // Trap OS signals
         SignalHandler::init([&](int) {
@@ -181,6 +171,35 @@ int main(int argc, char* argv[]) {
         // Sync main loop
         sync.execution_loop();  // currently sync & execution are on the same process, sync calls execution so due to
                                 // limitations related to the db rw tx owned by execution they must run on the same thread
+
+        /*
+        if (is_pow(node_settings.chain_config)) {
+            silkworm::stagedsync::ExecutionEngine execution{node_settings, db::RWAccess{chaindata_db}};
+
+            chainsync::pow::SyncEngine sync(block_exchange, execution);
+
+            SignalHandler::init([&](int) { sync.stop(); });
+
+            sync.execution_loop();
+        }
+        else (is_pos(node_settings.chain_config)) {
+            ExecutionServer exec_server;
+
+            ExecutionClient exec_client(exec_server);
+
+            chainsync::pos::SyncEngine sync(block_exchange, exec_client);
+            auto sync_running = std::thread([&sync]() { sync.execution_loop(); });
+
+            ExtConsensusClient cons(sync);
+            auto cons_running = std::thread([&cons]() { cons.execution_loop(); });
+
+            SignalHandler::init([&](int) { exec_server.stop(); });
+
+            exec_server.execution_loop();  // MDBX wr thread
+        }
+        else
+            throw std::invalid_argument("Invalid chain config");
+        */
 
         // Close all resources
         backend.close();

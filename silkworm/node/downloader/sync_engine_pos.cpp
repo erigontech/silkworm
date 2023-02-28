@@ -139,7 +139,7 @@ void PoSSync::validate_execution_block(evmc::bytes32 /*blockHash*/, const Block&
 
 bool PoSSync::extends_canonical(const Block& block, Hash block_hash) {
     // specs are not clear on the meaning of extends_canonical, we implement this as follows
-    return exec_engine_.extends_last_fork_choice(block.header.number, block_hash);
+    return exec_engine_.extends_last_fork_choice(block.header.number, block_hash);  // todo: use chain_fork_view_ cache?
 }
 
 PayloadStatus PoSSync::new_payload(const ExecutionPayload& payload, seconds_t /*timeout*/) {
